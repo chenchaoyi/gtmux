@@ -28,9 +28,9 @@ const flush = async () => {
   for (let i = 0; i < 6; i++) await act(async () => { await Promise.resolve(); });
 };
 
-async function mount(sendResult: jest.Mock, navigate?: jest.Mock, transcript?: jest.Mock) {
+async function mount(sendResult: jest.Mock, navigate?: jest.Mock, transcript?: jest.Mock, status = 'idle') {
   const agent: any = {pane_id: '%12', session: 'dev', window: '0', pane: '0', loc: 'dev:0.0', agent: 'Claude Code',
-    status: 'idle', task: '', latest: false, activity: false, source: 'tmux'};
+    status, task: '', latest: false, activity: false, source: 'tmux'};
   const client = {
     pane: jest.fn().mockResolvedValue({text: 'ready\n', cols: 80, cursor: {x: 0, up: 0, visible: true}}),
     transcript: transcript ?? jest.fn().mockResolvedValue({turns: [], dropped: 0}),
@@ -139,4 +139,53 @@ test('a retry preserves send identity and does not recreate an echo already conf
   await act(async () => t.root.findByProps({testID: 'send-failed-retry'}).props.onPress()); await flush();
   expect(sendResult.mock.calls[1][1].send_id).toBe(sendResult.mock.calls[0][1].send_id);
   expect(t.root.findByType(ChatView).props.pendingPrompt).toBe('');
+});
+
+
+test('working-send receipt expires even when the agent never becomes idle', async () => {
+  jest.useFakeTimers();
+  const t = await mount(jest.fn().mockResolvedValue({ok: true}), undefined, undefined, 'working');
+  await send(t, 'please check this');
+  expect(t.root.findAllByType(Text).filter(n => n.props.testID === 'send-busy-note')).toHaveLength(1);
+  await act(async () => jest.advanceTimersByTime(6100)); await flush();
+  expect(t.root.findAllByType(Text).filter(n => n.props.testID === 'send-busy-note')).toHaveLength(0);
+});
+
+test('the matching transcript retires a working receipt before the next idle transition', async () => {
+  jest.useFakeTimers();
+  let turns: any[] = [];
+  const transcript = jest.fn(async () => ({turns: [...turns], dropped: 0}));
+  const t = await mount(jest.fn().mockResolvedValue({ok: true}), undefined, transcript, 'working');
+  await send(t, 'please check this');
+  expect(t.root.findAllByType(Text).filter(n => n.props.testID === 'send-busy-note')).toHaveLength(1);
+  turns = [{prompt: 'please check this', response: 'I am checking it', time: '2026-10-17T10:00:00Z'}];
+  await act(async () => jest.advanceTimersByTime(2500)); await flush();
+  expect(t.root.findByType(ChatView).props.pendingPrompt).toBe('');
+  expect(t.root.findAllByType(Text).filter(n => n.props.testID === 'send-busy-note')).toHaveLength(0);
+});
+
+test('a late send response cannot recreate its receipt after transcript confirmation', async () => {
+  jest.useFakeTimers();
+  let finish!: (r: unknown) => void;
+  let turns: any[] = [];
+  const transcript = jest.fn(async () => ({turns: [...turns], dropped: 0}));
+  const t = await mount(jest.fn().mockReturnValue(new Promise(resolve => {finish = resolve;})), undefined, transcript, 'working');
+  await send(t, 'please check this');
+  turns = [{prompt: 'please check this', response: 'Checking', time: '2026-10-17T10:00:00Z'}];
+  await act(async () => jest.advanceTimersByTime(2500)); await flush();
+  expect(t.root.findByType(ChatView).props.pendingPrompt).toBe('');
+  await act(async () => finish({ok: true})); await flush();
+  expect(t.root.findAllByType(Text).filter(n => n.props.testID === 'send-busy-note')).toHaveLength(0);
+});
+
+test('a newer success gets its own expiry instead of inheriting the old timer', async () => {
+  jest.useFakeTimers();
+  const t = await mount(jest.fn().mockResolvedValue({ok: true}), undefined, undefined, 'working');
+  await send(t, 'first');
+  await act(async () => jest.advanceTimersByTime(5000)); await flush();
+  await send(t, 'second');
+  await act(async () => jest.advanceTimersByTime(1500)); await flush();
+  expect(t.root.findAllByType(Text).filter(n => n.props.testID === 'send-busy-note')).toHaveLength(1);
+  await act(async () => jest.advanceTimersByTime(4600)); await flush();
+  expect(t.root.findAllByType(Text).filter(n => n.props.testID === 'send-busy-note')).toHaveLength(0);
 });

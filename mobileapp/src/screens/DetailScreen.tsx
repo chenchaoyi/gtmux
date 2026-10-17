@@ -329,10 +329,10 @@ function PaneDetailView({
   const latestTurns = useRef(turns); latestTurns.current = turns;
   useEffect(() => {
     if (pendingEcho.current && chatEchoRecorded(pendingEcho.current, turns)) {
-      pendingEcho.current = null; setPendingPrompt('');
+      pendingEcho.current = null; setPendingPrompt(''); setBusyHint(null);
     }
   }, [turns, pendingPrompt]);
-  useEffect(() => {pendingEcho.current = null; echoAttempts.current.clear(); setPendingPrompt(''); setPendingDelivered(false);}, [client, agent.pane_id]);
+  useEffect(() => {pendingEcho.current = null; echoAttempts.current.clear(); setPendingPrompt(''); setPendingDelivered(false); setBusyHint(null);}, [client, agent.pane_id]);
   const [chatLoaded, setChatLoaded] = useState(false);
   // How many OLDER turns the server left out to bound the payload — shown by ChatView so
   // a truncated history never reads as the whole conversation (transcript-render-bounds).
@@ -351,9 +351,10 @@ function PaneDetailView({
   const [refill, setRefill] = useState<{text: string; at: number} | null>(null);
   // Outside the navigator (the demo) there is nowhere to pair again, and it is not offered.
   const navigation = React.useContext(NavigationContext) as {navigate: (r: string) => void} | undefined;
-  // "it is working; it may only get to this once it finishes" — cleared by the next
-  // send, and by the turn ending (see the effect below).
-  const [busyHint, setBusyHint] = useState('');
+  // A short receipt, not a queue/liveness indicator. A continuous working turn
+  // may already have consumed this message without ever becoming idle.
+  const [busyHint, setBusyHint] = useState<{id: string; text: string} | null>(null);
+  const sendAttempt = useRef(0);
   // B1: 对话 ↔ 终端. Initial mode = the global "default mode" setting (B2, default
   // 终端 — preserves the established read-the-pane behavior; 对话 is a visible-
   // screen glance, not a full transcript), overridden by this pane's own
@@ -372,12 +373,12 @@ function PaneDetailView({
   const [seenTerm, setSeenTerm] = useState((initialMode ?? defaultDetailMode) === 'terminal');
   const [switching, setSwitching] = useState(false);
 
-  // The note is about a turn that was running. When it stops, the note is no longer true,
-  // and a stale "it is running" is exactly the kind of false liveness this app has been
-  // bitten by before.
   useEffect(() => {
-    if (live.status !== 'working') setBusyHint('');
-  }, [live.status]);
+    if (!busyHint) return;
+    if (live.status !== 'working') { setBusyHint(null); return; }
+    const timer = setTimeout(() => setBusyHint(null), 6000);
+    return () => clearTimeout(timer);
+  }, [busyHint, live.status]);
 
   useEffect(() => {
     if (mode === 'chat') setSeenChat(true);
@@ -504,7 +505,8 @@ function PaneDetailView({
       setFailedSend(null);
       setFailedReason('');
       setFailedStatus(undefined);
-      setBusyHint('');
+      setBusyHint(null);
+      const attempt = ++sendAttempt.current;
       // sendResult keeps the server's own refusal, which is what lets the bar say
       // WHICH refusal it was. The old `send` returned null for all of them.
       const lane = paneRead.current;
@@ -524,11 +526,13 @@ function PaneDetailView({
             if ((r.status === 401 || r.status === 403) && p.text) setRefill({text: p.text, at: Date.now()});
             return;
           }
-          // It landed. If the session is mid-turn, the agent may only take it once it
-          // finishes what it is doing; the server does not report when, so busyNote reads
-          // the status the radar already has and promises no more than that.
-          if (pendingEcho.current?.id === p.send_id) setPendingDelivered(true);
-          setBusyHint(busyNote(live.status, lang === 'zh'));
+          if (pendingEcho.current?.id === p.send_id) {
+            setPendingDelivered(true);
+            const note = busyNote(live.status, lang === 'zh');
+            // A late receipt cannot resurrect a notice after transcript confirmation
+            // or replace feedback for a newer submission/control key.
+            if (attempt === sendAttempt.current && note) setBusyHint({id: p.send_id!, text: note});
+          }
           // Retire a capture started before this accepted send.
           lane.invalidate();
           const snap = r.pane;
@@ -1027,11 +1031,10 @@ function PaneDetailView({
       {/* input — types into the pane via POST /api/send (MOBILE §4). A guest may type
           only into a pane on the host's input allowlist; a view-only pane is read-only
           (the server would 403 the send anyway — this just makes it visible). */}
-      {/* The message landed in a session that was mid-turn. It clears when the turn ends
-          (the effect below), so it can never be left standing as a false "still running". */}
+      {/* Brief terminal-delivery feedback; persistent recovery belongs to failures below. */}
       {!failedSend && !!busyHint && (
         <Text testID="send-busy-note" style={[styles.busyNote, {color: pal.fg3}]} numberOfLines={2}>
-          {busyHint}
+          {busyHint.text}
         </Text>
       )}
       {failedSend && (

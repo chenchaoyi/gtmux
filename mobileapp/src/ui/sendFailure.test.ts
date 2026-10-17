@@ -60,20 +60,20 @@ describe('what the reader is offered', () => {
 });
 
 describe('a send into a session that is mid-turn', () => {
-  test('says it may wait, and only for a working target', () => {
-    expect(busyNote('working', false)).toContain('once it finishes what it is doing');
-    expect(busyNote('working', true)).toContain('手头的事做完');
+  test('acknowledges delivery only for a working target', () => {
+    expect(busyNote('working', false)).toBe('Sent to terminal. The agent is working.');
+    expect(busyNote('working', true)).toBe('已发送到终端，当前会话正在工作。');
     expect(busyNote('idle', false)).toBe('');
     expect(busyNote(undefined, false)).toBe('');
   });
 
-  test('it is worded as an expectation, because that is what it is', () => {
+  test('does not imply an unsent message or promise when the agent takes it', () => {
     // The server does not report queueing on this path (the phone's send never runs the
     // queued detection). This is read off the target's status, so it must not claim to
     // have observed anything.
     // Nor promise the turn's end: whether a message waits for it differs by agent.
     const en = busyNote('working', false);
-    expect(en).toContain('may only get to this');
+    expect(en).toContain('Sent to terminal');
     expect(en).not.toMatch(/queued|observed|turn/i);
     expect(busyNote('working', true)).not.toMatch(/排在|这一轮|回合/);
   });

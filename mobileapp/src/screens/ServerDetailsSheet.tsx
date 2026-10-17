@@ -18,6 +18,7 @@ import {PairedMac} from '../pairing/qr';
 import {HostAnswer} from '../api/types';
 import {SheetShell} from '../ui/SettingsRow';
 import {SIcon} from '../ui/SettingsIcons';
+import {ServerConnectionMark} from '../ui/ServerConnectionMark';
 import {BRAND} from '../ui/theme';
 import {Lang} from '../i18n';
 import {chipLabel, hostName, hostSystem, loadHost, memoryLabel, sinceLabel} from '../state/hostInfo';
@@ -97,7 +98,7 @@ export function ServerDetailsSheet({mac, status, pal, lang, t, onClose}: {
               </Text>
               {!!status && (
                 <View style={styles.statusLine}>
-                  <View style={[styles.dot, status.st.filled ? {backgroundColor: status.tone} : [styles.dotHollow, {borderColor: status.tone}]]} />
+                  <ServerConnectionMark color={status.tone} filled={status.st.filled} />
                   <Text style={[styles.status, {color: pal.fg2}]} numberOfLines={2}>{status.text}</Text>
                 </View>
               )}
@@ -172,8 +173,6 @@ const styles = StyleSheet.create({
   headText: {flex: 1, minWidth: 0, gap: 4},
   title: {fontSize: 22, lineHeight: 28, fontWeight: '700'},
   statusLine: {flexDirection: 'row', alignItems: 'center', gap: 7},
-  dot: {width: 8, height: 8, borderRadius: 4},
-  dotHollow: {borderWidth: 1.5},
   status: {fontSize: 15, lineHeight: 20, flexShrink: 1},
   done: {minHeight: 44, justifyContent: 'center', paddingHorizontal: 10, marginTop: -8},
   doneText: {fontSize: 17, fontWeight: '600'},

@@ -866,3 +866,34 @@ test('read deadline releases its slot even when the transport ignores abort', as
   assert.equal(calls, 2); assert.deepEqual(applied, ['new']);
   h.api.cancelReads();
 });
+
+test('busy delivery feedback expires without an idle transition and never dismisses a later failure', async () => {
+  for (const language of ['en-US', 'zh-CN']) {
+    const reply = {ok: true, json: async () => ({})};
+    const h = harness(reply, language);
+    const timers = new Map(); let next = 0;
+    h.context.setTimeout = (fn, ms) => { const id = ++next; timers.set(id, {fn, ms}); return id; };
+    h.context.clearTimeout = id => timers.delete(id);
+    h.api.setAgents([{pane_id: '%21', status: 'working'}]);
+    const c = h.api.makeComposer(() => '%21', () => {}, false);
+    const send = () => c.el.children[0].children[3].onclick({stopPropagation() {}});
+    c.input.value = 'Please check'; send();
+    await new Promise(resolve => setImmediate(resolve));
+    const note = c.el.children[2];
+    assert.equal(note.hidden, false);
+    assert.match(note.textContent, language === 'zh-CN' ? /已发送到终端/ : /Sent to terminal/);
+    const expiry = [...timers.values()].find(t => t.ms === 6000);
+    assert.ok(expiry); expiry.fn();
+    assert.equal(note.hidden, true);
+    c.input.value = 'Try again'; send();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(note.hidden, false);
+    Object.assign(reply, {ok: false, status: 409, json: async () => ({error: 'pane has a draft'})});
+    c.input.value = 'Do not lose this'; send();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(note.textContent, 'pane has a draft');
+    assert.equal(note.hidden, false);
+    assert.equal(timers.size, 0);
+    assert.equal(c.input.value, 'Do not lose this');
+  }
+});

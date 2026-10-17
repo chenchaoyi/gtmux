@@ -1468,3 +1468,8 @@ CJK anchors, equal-height layouts, live/history intent, polling and cancellation
 actual phone/iPad redraw timing and VoiceOver require separate device acceptance.
 
 Phone and iPad share external-only history, source filters and summaries. The API client always requests and verifies external origin, including baseline queries; old servers require an update. Internal tools and unidentified history remain in diagnostics. Recording rules opens an accessible alert explaining coverage, sampling, retention and request acceptance.
+
+## Connection marks and send receipts
+The server list and detail sheet share a fixed 14pt vector connection mark. The filled/hollow dot and optional keep-running ring share one centre, so independent view rounding cannot shift them. Status words remain the accessible description; the mark is decorative.
+
+An accepted text send to a working agent shows a concise terminal-delivery receipt for at most six seconds. A matching prompt in the transcript, a non-working state or a pane/server change clears it earlier. It does not mean the message is queued or still waiting; a late HTTP response cannot restore a transcript-confirmed receipt. Keys do not create it. Failure and uncertain-send recovery remain persistent. Phone and iPad share this behavior.

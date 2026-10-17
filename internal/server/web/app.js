@@ -1480,11 +1480,13 @@
 
     root.appendChild(row); root.appendChild(keys); root.appendChild(note);
 
-    function clearNote() { note.hidden = true; note.textContent = ''; }
+    var noteTimer = null;
+    function clearNote() { clearTimeout(noteTimer); noteTimer = null; note.hidden = true; note.textContent = ''; }
     function sayRefusal(r, restore) {
       if (!r) return;
       r.json().then(function (j) {
         var why = (j && j.error) || (ZH ? '发送失败（' + r.status + '）' : 'send failed (' + r.status + ')');
+        clearNote();
         note.textContent = why;
         note.className = 'cx-note';
         note.hidden = false;
@@ -1492,6 +1494,7 @@
         // be typing the next thing, and overwriting that would be its own small theft.
         if (restore && !ta.value) { ta.value = restore; grow(); }
       }).catch(function () {
+        clearNote();
         note.textContent = ZH ? '发送失败（' + r.status + '）' : 'send failed (' + r.status + ')';
         note.className = 'cx-note';
         note.hidden = false;
@@ -1502,6 +1505,7 @@
     // A message the page could not send goes back into the box, and the reader is told why.
     // Only into an empty box: the reader may already be typing the next thing.
     function giveBack(restore, why) {
+      clearNote();
       note.textContent = why;
       note.className = 'cx-note';
       note.hidden = false;
@@ -1518,18 +1522,15 @@
       }
       if (r.status === 401) { token = null; try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} gate('expired'); return; }
       if (!r.ok) { sayRefusal(r, restore); return; }
-      // It landed. A session that is MID-TURN takes it when the agent is ready, which may
-      // be only once it finishes what it is doing; nothing on the wire says when (the
-      // phone's send path never runs the queued detection either). So this is read off
-      // the status the radar already has, and says no more than that: not "queued", not
-      // "after the current turn". Same sentence as the phone's busyNote.
+      // This is a brief delivery receipt, not evidence of a pending queue. A busy
+      // agent can consume the message without becoming idle. Errors stay persistent.
+      clearNote();
       var live = byId(lastAgents, getId());
-      if (live && live.status === 'working') {
-        note.textContent = T('Sent. It is working, so it may only get to this once it finishes what it is doing.', '已送出。它正在忙，可能要等手头的事做完才会处理这条。');
+      if (restore && live && live.status === 'working') {
+        note.textContent = T('Sent to terminal. The agent is working.', '已发送到终端，当前会话正在工作。');
         note.className = 'cx-note info';
         note.hidden = false;
-      } else {
-        clearNote();
+        noteTimer = setTimeout(clearNote, 6000);
       }
       r.json().then(function (j) { if (j && typeof j.text === 'string') echo(j.text); });
     }
