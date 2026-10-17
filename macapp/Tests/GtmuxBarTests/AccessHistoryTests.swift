@@ -27,3 +27,30 @@ import XCTest
         XCTAssertTrue(store.entries.isEmpty)
     }
 }
+
+final class AccessHistoryPresentationTests: XCTestCase {
+    private func record(_ id: String, _ at: String) -> AccessHistoryEntry {
+        AccessHistoryEntry(id: id, at: at, actor: "phone:device-a", name: "My iPhone", scope: "device",
+            labelEn: "Read conversation", labelZh: "读取对话", outcome: "ok", deviceId: "device-full-identity",
+            platform: "iOS 26.6", sourceIp: "203.0.113.8", method: "GET", target: "%21", status: 200, durationMs: 18)
+    }
+    func testDateLanguageAndLocalBoundaryAreIndependentOfSystemLocale() {
+        let entries = [record("a", "2026-10-16T16:00:01.123Z"), record("b", "2026-10-16T16:00:01Z"), record("c", "2026-10-16T15:59:59Z")]
+        let lines = AccessHistoryPresentation.lines(entries, zh: true, timeZone: TimeZone(secondsFromGMT: 8 * 3600)!)
+        XCTAssertEqual(lines.map(\.clock), ["00:00:01", "00:00:01", "23:59:59"])
+        XCTAssertEqual(lines.map(\.day), ["2026年10月17日", nil, "2026年10月16日"])
+        XCTAssertEqual(lines.map(\.id), ["a", "b", "c"])
+        XCTAssertEqual(AccessHistoryPresentation.lines(entries, zh: false, timeZone: TimeZone(secondsFromGMT: 0)!)[0].day, "Oct 16, 2026")
+        let invalid = AccessHistoryPresentation.lines([record("x", "bad-clock")], zh: true)
+        XCTAssertEqual(invalid[0].clock, "bad-clock"); XCTAssertEqual(invalid[0].day, "时间未知")
+    }
+    func testMetadataAndCopyRetainFullIdentityWithoutDisclosure() {
+        let e = record("a", "2026-10-17T10:00:00+08:00")
+        XCTAssertEqual(AccessHistoryPresentation.metadata(e, zh: false), "iOS 26.6 · 203.0.113.8 · Device device-full-identity · GET · 18 ms")
+        let copy = AccessHistoryPresentation.copyText(e, zh: true)
+        for value in [e.at, "My iPhone", "读取对话", "%21", "device-full-identity", "200"] { XCTAssertTrue(copy.contains(value)) }
+        let failed = AccessHistoryEntry(id: "failed", at: e.at, actor: "owner", name: "Owner credential", scope: "master", labelEn: "Download HQ archive", labelZh: "下载 HQ 档案", outcome: "failed", status: 200)
+        XCTAssertEqual(AccessHistoryPresentation.outcome(failed, zh: true), "失败 · 200")
+        XCTAssertEqual(AccessHistoryPresentation.name(failed, zh: true), "所有者凭据")
+    }
+}

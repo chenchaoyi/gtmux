@@ -66,6 +66,7 @@ func (s *Server) handleCreateSession(w http.ResponseWriter, r *http.Request) {
 		fail(http.StatusServiceUnavailable, "create_failed")
 		return
 	}
+	setAccessPane(r, result.PaneID)
 	lg.Act("act.new", actorOf(r.Context()), result.PaneID, diag.OK, "created or recovered a remote session", "request_id", req.RequestID, "session", result.Session, "via", via(r))
 	writeJSON(w, http.StatusOK, result)
 }

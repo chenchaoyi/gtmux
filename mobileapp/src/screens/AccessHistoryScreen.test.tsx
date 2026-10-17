@@ -21,7 +21,7 @@ beforeEach(() => {
 afterEach(() => {act(() => tree?.unmount()); jest.restoreAllMocks();});
 test('renders verified metadata and paginates without repeating records', async () => {
   await mount();
-  expect(words()).toContain('My iPhone'); expect(words()).toContain('%21'); expect(words()).toContain('Request accepted');
+  expect(words()).toContain('My iPhone'); expect(words()).toContain('%21'); expect(words()).toContain('Accepted');
   client.accessHistory.mockResolvedValueOnce({entries: [record, {...record, id: 'r2', name: 'Browser'}], retain_days: 30});
   await press('Load earlier');
   expect(client.accessHistory).toHaveBeenLastCalledWith('cursor', expect.anything());
@@ -49,10 +49,24 @@ test('a late response from another server cannot replace the current history', a
   expect(words()).toContain('New server device'); expect(words()).not.toContain('Stale server device');
 });
 
-test('keeps full device identity behind an explicit disclosure', async () => {
-  client.accessHistory.mockResolvedValueOnce({entries: [{...record, device_id: 'device-full-identity'}], retain_days: 30});
-  await mount(); expect(words()).not.toContain('device-full-identity');
-  expect(words()).toContain('Source: ');
-  await press('Device ID'); expect(words()).toContain('device-full-identity');
-  await press('Hide device ID'); expect(words()).not.toContain('device-full-identity');
+test('shows device identity inline without a disclosure', async () => {
+  client.accessHistory.mockResolvedValueOnce({entries: [{...record, device_id: 'device-full-identity', duration_ms: 24, method: 'POST'}], retain_days: 30});
+  await mount(); expect(words()).toContain('device-full-identity'); expect(words()).toContain('203.0.113.1');
+  expect(words()).toContain('24 ms'); expect(words()).toContain('POST');
+  expect(tree.root.findAllByType(TouchableOpacity).some(n => n.props.accessibilityState?.expanded !== undefined)).toBe(false);
+});
+
+test('Chinese dates follow UI language and equal-day records share one heading', async () => {
+  (useApp as jest.Mock).mockReturnValue({lang: 'zh', pal: paletteFor('light'), mac: {scope: 'device'}});
+  client.accessHistory.mockResolvedValueOnce({entries: [record, {...record, id: 'two'}], retain_days: 30});
+  await mount();
+  expect(words()).toContain('2026年10月'); expect(words()).not.toContain('Oct');
+  const dates = tree.root.findAllByType(Text).filter(n => n.props.accessibilityRole === 'header' && String(n.props.children).includes('2026'));
+  expect(dates).toHaveLength(1);
+});
+
+test('a failed archive with HTTP 200 is shown as failed, not accepted', async () => {
+  client.accessHistory.mockResolvedValueOnce({entries: [{...record, outcome: 'failed', label_en: 'Download HQ archive', session_id: '12345678-abcd-1234-abcd-123456789abc', target: undefined}], retain_days: 30});
+  await mount(); expect(words()).toContain('Failed · 200'); expect(words()).not.toContain('Accepted');
+  expect(words()).toContain('Codex · 12345678-abcd-1234-abcd-123456789abc');
 });

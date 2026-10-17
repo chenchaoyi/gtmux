@@ -2272,12 +2272,18 @@ controls SHALL remain adjacent to their own field.
 - **THEN** the label stays readable above the full wrapping value
 
 ### Requirement: Owners can inspect server access history
-Phone and iPad SHALL share a read-only access-history screen under server management, using the owner-only API and bounded pagination. It SHALL show device, time, operation, optional pane and HTTP outcome, with full device identity under a disclosure. It SHALL support refresh/earlier records and distinguish unsupported servers, denied access, expired pages and transient failures. Failed pagination SHALL preserve loaded records; server switching SHALL invalidate late responses. Guest credentials SHALL NOT request history.
+Phone and iPad SHALL share a read-only access-history screen under server management, using the owner-only API and bounded pagination. It SHALL show device, time, operation, optional pane/session and HTTP outcome in compact date-grouped log rows, with full device identity and metadata inline without a disclosure. Local 24-hour times SHALL include seconds; day headings SHALL follow the selected UI language. It SHALL support refresh/earlier records and distinguish unsupported servers, denied access, expired pages and transient failures. Failed pagination SHALL preserve loaded records; server switching SHALL invalidate late responses. Guest credentials SHALL NOT request history.
 
 #### Scenario: A history page expires during inspection
 - **WHEN** an earlier-page request returns HTTP 410
 - **THEN** already loaded records remain visible and the user can refresh from the newest page
 - **AND** a response from a previously selected server cannot replace the current history
+
+#### Scenario: Scanning compact access records in Chinese
+- **WHEN** the owner opens access history with the Chinese UI on an English-language system
+- **THEN** dates are Chinese, each local time includes seconds, and same-day rows share a date heading
+- **AND** full device identity, target, metadata and HTTP outcome are readable without expanding a row
+- **AND** pagination preserves source order and does not repeat the same-day heading
 
 ### Requirement: Demonstration fixtures form a coherent isolated world
 The offline demonstration SHALL reuse the production phone/iPad views with synthetic data only. Permission approval and refusal SHALL have distinct outcomes. Radar, terminal, chat, HQ assessment and pane titles SHALL agree after a decision. A client SHALL retain its session start timestamps across reads, and exiting SHALL cancel its pending scripted transitions. Usage identities and totals, knowledge topic counts and bodies SHALL agree with the sampled content. The tour SHALL include Codex segmented replies and a public desktop conversation shown through the production read-only view, without enabling desktop input or real host administration. The fake HTTP screenshot seed SHALL reuse these data sources.

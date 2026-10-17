@@ -53,6 +53,7 @@ func (s *Server) handleSessionFollow(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 400, errBody("session_id is required"))
 		return
 	}
+	setAccessSession(r, id)
 	v, err := s.deps.SessionFollow(id, next, actorOf(r.Context()), home)
 	if err != nil {
 		code := http.StatusInternalServerError
