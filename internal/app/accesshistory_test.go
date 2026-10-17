@@ -40,3 +40,25 @@ func TestAccessCLIShowsDesktopSessionTarget(t *testing.T) {
 		t.Fatal("desktop attribution missing from terminal history")
 	}
 }
+
+func TestAccessCLIGroupingAndContinuationPreserveFilters(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	for i := 0; i < 3; i++ {
+		diag.For("serve").Access(diag.AccessEntry{Actor: "phone:a", DeviceID: "id-with-quote'", Name: "Phone", Operation: "send", Outcome: diag.Failed})
+	}
+	output := captureStdout(t, func() {
+		if cmdLogs([]string{"--access", "--device-id", "id-with-quote'", "--operation", "send", "--outcome", "failed", "--group-by", "device", "--limit", "1", "--since", "1h"}) != 0 {
+			t.Fatal("grouping failed")
+		}
+	})
+	for _, value := range []string{"--device-id", shellQuote("id-with-quote'"), "--operation 'send'", "--outcome 'failed'", "--group-by 'device'", "--since '"} {
+		if !strings.Contains(output, value) {
+			t.Fatalf("continuation lost %q: %s", value, output)
+		}
+	}
+	for _, args := range [][]string{{"--group-by", "device"}, {"--access", "--group-by", "name"}, {"--access", "--outcome", "unknown"}} {
+		if cmdLogs(args) != 2 {
+			t.Fatal("invalid filter accepted", args)
+		}
+	}
+}

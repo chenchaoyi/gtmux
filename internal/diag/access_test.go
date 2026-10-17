@@ -76,6 +76,14 @@ func TestAccessReaderBudgetHasAContinuableEmptyPage(t *testing.T) {
 	if err != nil || len(next.Entries) != 1 {
 		t.Fatalf("older record lost at cut boundary: %+v %v", next, err)
 	}
+	grouped, err := ReadAccess(AccessQuery{GroupBy: "device"})
+	if err != nil || len(grouped.Groups) != 0 || grouped.Next == "" || !grouped.Partial {
+		t.Fatalf("empty summary must remain continuable: %+v %v", grouped, err)
+	}
+	older, err := ReadAccess(AccessQuery{GroupBy: "device", Before: grouped.Next})
+	if err != nil || len(older.Groups) != 1 || older.Groups[0].Count != 1 || len(older.Entries) != 0 {
+		t.Fatalf("summary lost older activity: %+v %v", older, err)
+	}
 	_ = os.Remove(path)
 	if _, err := ReadAccess(AccessQuery{Before: first.Next}); err != ErrAccessCursor {
 		t.Fatalf("expired cursor: %v", err)

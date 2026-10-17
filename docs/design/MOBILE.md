@@ -1435,6 +1435,8 @@ field rather than competing for label width.
 ## Server access history
 Settings → Manage server → Access history is available to owners on phone and iPad. Both shells share one API client, virtualized list and readable content width. Refresh/earlier-page actions distinguish unsupported, denied, expired and transient failures; late responses from another server are ignored. Compact date-grouped log rows show local clocks with seconds, selected-language dates and full device identity inline, without per-record disclosures. See [coverage and privacy](server-access-audit.md).
 
+The same screen offers Logs/Devices, exact full-ID/operation/outcome filters, and device-to-log drill-down. Device choices show full IDs; a native text prompt accepts an undiscovered historical ID. Summaries accumulate bounded pages with an explicit partial state. Counts are recorded activity, not complete request totals. Filter/server changes reset pagination and ignore late replies.
+
 ### Settings and remote-key icon legibility
 
 Settings uses distinct existing outline icons: Info for connection status, opposing

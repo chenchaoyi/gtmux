@@ -200,3 +200,24 @@ func TestAccessCreatedSessionCarriesReturnedPane(t *testing.T) {
 		t.Fatal("request text entered audit")
 	}
 }
+
+func TestAccessFilterAPIRejectsUnknownValuesAndEchoesAppliedQuery(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	s := New(Config{Token: "owner"}, Deps{})
+	for _, path := range []string{"/api/access-history?group_by=name", "/api/access-history?outcome=unknown", "/api/access-history?operation=unknown"} {
+		r := httptest.NewRequest("GET", path, nil)
+		r.Header.Set("Authorization", "Bearer owner")
+		w := httptest.NewRecorder()
+		s.Handler().ServeHTTP(w, r)
+		if w.Code != 400 {
+			t.Fatalf("invalid filter: %s %d", path, w.Code)
+		}
+	}
+	r := httptest.NewRequest("GET", "/api/access-history?device_id=full-id&group_by=device&outcome=failed", nil)
+	r.Header.Set("Authorization", "Bearer owner")
+	w := httptest.NewRecorder()
+	s.Handler().ServeHTTP(w, r)
+	if w.Code != 200 || !strings.Contains(w.Body.String(), `"device_id":"full-id"`) || !strings.Contains(w.Body.String(), `"group_by":"device"`) || !strings.Contains(w.Body.String(), `"groups":[]`) {
+		t.Fatal(w.Code, w.Body.String())
+	}
+}

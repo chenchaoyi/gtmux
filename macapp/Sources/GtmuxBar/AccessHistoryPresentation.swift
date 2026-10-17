@@ -34,8 +34,11 @@ enum AccessHistoryPresentation {
     }
 
     static func name(_ e: AccessHistoryEntry, zh: Bool) -> String {
-        e.scope == "master" ? (zh ? "所有者凭据" : "Owner credential") :
-        e.scope == "anonymous" ? (zh ? "未知凭据" : "Unknown credential") : e.name
+        name(scope: e.scope, value: e.name, zh: zh)
+    }
+    static func name(scope: String, value: String, zh: Bool) -> String {
+        scope == "master" ? (zh ? "所有者凭据" : "Owner credential") :
+        scope == "anonymous" ? (zh ? "未知凭据" : "Unknown credential") : value
     }
     static func operation(_ e: AccessHistoryEntry, zh: Bool) -> String {
         let target = e.target ?? e.sessionId.map { "Codex · " + $0 }

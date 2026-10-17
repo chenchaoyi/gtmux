@@ -54,3 +54,60 @@ final class AccessHistoryPresentationTests: XCTestCase {
         XCTAssertEqual(AccessHistoryPresentation.name(failed, zh: true), "所有者凭据")
     }
 }
+
+@MainActor final class AccessHistoryFilterTests: XCTestCase {
+    private let grouped = #"{"entries":[],"groups":[{"key":"device:a","actor":"phone:a","device_id":"a","name":"Phone","scope":"device","count":3,"accepted":2,"refused":0,"failed":1,"first_at":"2026-10-16T10:00:00Z","last_at":"2026-10-17T10:00:00Z"}],"query":{"group_by":"device"},"next":"older","retain_days":30}"#
+    private func settle(_ store: AccessHistoryStore) async throws {
+        for _ in 0..<200 { if !store.loading { return }; try await Task.sleep(nanoseconds: 5_000_000) }
+        XCTFail("read did not finish")
+    }
+    func testGroupPagesSumAndDrillDownUsesExactID() async throws {
+        let response = grouped
+        let store = AccessHistoryStore { args in
+            if args.contains("--group-by") { return (0, response, "") }
+            XCTAssertTrue(args.contains("--device-id")); XCTAssertTrue(args.contains("a")); XCTAssertFalse(args.contains("--before"))
+            return (0, #"{"entries":[],"groups":[],"query":{"device_id":"a"},"retain_days":30}"#, "")
+        }
+        store.select(.init(groupBy: "device")); try await settle(store)
+        store.load(earlier: true); try await settle(store)
+        XCTAssertEqual(store.groups[0].count, 6)
+        store.selectGroup(store.groups[0]); try await settle(store)
+        XCTAssertEqual(store.query.deviceId, "a"); XCTAssertNil(store.query.groupBy); XCTAssertFalse(store.failed)
+    }
+    func testUnsupportedQueryDoesNotPresentUnfilteredResults() async throws {
+        let store = AccessHistoryStore { _ in (0, #"{"entries":[],"retain_days":30}"#, "") }
+        store.select(.init(deviceId: "full-id")); try await settle(store)
+        XCTAssertTrue(store.failed); XCTAssertTrue(store.unsupported); XCTAssertTrue(store.entries.isEmpty)
+    }
+    func testGroupingPreservesLatestMetadataAndSeparatesSameNames() throws {
+        let decoder = JSONDecoder(); decoder.keyDecodingStrategy = .convertFromSnakeCase
+        let g = try decoder.decode(AccessHistoryPage.self, from: Data(grouped.utf8)).groups![0]
+        var older = g; older.name = "Older name"; older.lastAt = "2026-10-16T11:00:00Z"
+        let result = AccessHistoryGrouping.merge([g], [older], sum: true)
+        XCTAssertEqual(result[0].name, "Phone"); XCTAssertEqual(result[0].count, 6)
+        XCTAssertEqual(AccessHistoryGrouping.merge([g], [older], sum: false)[0].count, 3)
+        let other = try decoder.decode(AccessHistoryPage.self, from: Data(grouped.replacingOccurrences(of: "device:a", with: "device:b").replacingOccurrences(of: "\"device_id\":\"a\"", with: "\"device_id\":\"b\"").utf8)).groups![0]
+        XCTAssertEqual(AccessHistoryGrouping.merge([g], [other], sum: true).map(\.key), ["device:a", "device:b"])
+    }
+}
+
+@MainActor final class AccessHistoryQueryRaceTests: XCTestCase {
+    func testLateOldQueryCannotReplaceNewFilter() async throws {
+        let started = DispatchSemaphore(value: 0), release = DispatchSemaphore(value: 0)
+        defer { release.signal() }
+        let store = AccessHistoryStore { args in
+            let old = args.contains("send")
+            if old { started.signal(); _ = release.wait(timeout: .now() + 3) }
+            let op = old ? "send" : "terminal"
+            let name = old ? "Stale result" : "Filtered result"
+            return (0, "{\"entries\":[{\"id\":\"one\",\"at\":\"2026-10-17T10:00:00Z\",\"actor\":\"a\",\"name\":\"\(name)\",\"scope\":\"device\",\"label_en\":\"Read\",\"label_zh\":\"读取\",\"outcome\":\"ok\"}],\"query\":{\"operation\":\"\(op)\"},\"retain_days\":30}", "")
+        }
+        store.select(.init(operation: "send"))
+        XCTAssertEqual(started.wait(timeout: .now() + 1), .success)
+        store.select(.init(operation: "terminal"))
+        for _ in 0..<200 { if !store.loading { break }; try await Task.sleep(nanoseconds: 5_000_000) }
+        release.signal(); try await Task.sleep(nanoseconds: 50_000_000)
+        XCTAssertEqual(store.entries.first?.name, "Filtered result")
+        XCTAssertEqual(store.query.operation, "terminal")
+    }
+}

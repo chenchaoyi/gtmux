@@ -949,3 +949,5 @@ paragraphs describing an unchanged head/jump are superseded by this entry.
 
 ## Server access history
 Preferences → paired devices → Access history opens a bounded read-only window over the shared CLI projection. Compact date-grouped log rows show local time, device, operation/target and HTTP result, with full identity and source metadata inline; dates follow the UI language. Refresh/pagination failures preserve loaded records. See [recording and permission boundaries](server-access-audit.md).
+
+Access history offers Logs/Devices and exact device, operation and outcome filters. Full pairing IDs distinguish same-name devices; device summaries open their matching log. Incremental summaries state when earlier pages remain, and counts describe recorded sampled activity. Native controls share the core filter vocabulary; stale query replies cannot replace the selected view.

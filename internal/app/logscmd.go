@@ -62,6 +62,7 @@ func cmdLogs(args []string) int {
 	follow, asJSON, stats := false, false, false
 	access, before, limit := false, "", 100
 	accessPageFlag := false
+	var deviceID, operation, outcome, groupBy string
 	next := func(i *int, name string) (string, bool) {
 		if *i+1 >= len(args) {
 			i18n.Sae("gtmux logs: "+name+" needs a value", "gtmux logs: "+name+" 需要一个值")
@@ -125,6 +126,22 @@ func cmdLogs(args []string) int {
 			f.event = v
 		case a == "--access":
 			access = true
+		case a == "--device-id" || a == "--operation" || a == "--outcome" || a == "--group-by":
+			accessPageFlag = true
+			v, ok := next(&i, a)
+			if !ok {
+				return 2
+			}
+			switch a {
+			case "--device-id":
+				deviceID = v
+			case "--operation":
+				operation = v
+			case "--outcome":
+				outcome = v
+			case "--group-by":
+				groupBy = v
+			}
 		case a == "--before":
 			accessPageFlag = true
 			v, ok := next(&i, a)
@@ -158,7 +175,7 @@ func cmdLogs(args []string) int {
 
 	if access {
 		if follow || stats || f.event != "" || len(f.components) > 0 || f.actsOnly || f.minLevel != diag.Debug || !f.until.IsZero() {
-			i18n.Sae("gtmux logs --access: use --json, --since, --actor, --before and --limit only", "gtmux logs --access 仅支持 --json、--since、--actor、--before 和 --limit")
+			i18n.Sae("gtmux logs --access: do not combine with --follow, --stats or diagnostic filters", "访问历史不能与 --follow、--stats 或诊断筛选混用")
 			return 2
 		}
 		since := time.Time{}
@@ -168,8 +185,12 @@ func cmdLogs(args []string) int {
 				break
 			}
 		}
-		page, err := diag.ReadAccess(diag.AccessQuery{Since: since, Before: before, Actor: f.actor, Limit: limit})
+		page, err := diag.ReadAccess(diag.AccessQuery{Since: since, Before: before, Actor: f.actor, Limit: limit, DeviceID: deviceID, Operation: operation, Outcome: outcome, GroupBy: groupBy})
 		if err != nil {
+			if err == diag.ErrAccessFilter {
+				i18n.Sae("Invalid access-history filter", "访问历史筛选条件无效")
+				return 2
+			}
 			i18n.Sae("Access history unavailable: "+err.Error(), "无法读取访问历史："+err.Error())
 			return 1
 		}
@@ -190,16 +211,32 @@ func cmdLogs(args []string) int {
 			fmt.Printf("%s  %s · %s · %s · HTTP %d\n", e.At, e.Name, i18n.Tr(e.LabelEN, e.LabelZH)+target, e.Outcome, e.Status)
 			fmt.Printf("  %s · %s · %s\n", e.Actor, e.Platform, e.SourceIP)
 		}
-		if len(page.Entries) == 0 {
+		if groupBy == "device" {
+			for _, g := range page.Groups {
+				fmt.Printf("%s · %s · "+i18n.Tr("%d recorded · %d refused · %d failed", "%d 条已记录 · %d 次拒绝 · %d 次失败")+" · %s\n", g.Name, g.Key, g.Count, g.Refused, g.Failed, g.LastAt)
+			}
+			i18n.Say("Counts describe recorded activity; reads are sampled. Continue earlier pages for a fuller summary.", "汇总的是已记录活动，读取经过采样；可继续载入更早记录以扩展汇总。")
+		}
+		if len(page.Entries) == 0 && len(page.Groups) == 0 {
 			i18n.Say("No access records in this page.", "本页没有访问记录。")
 		}
 		if page.Next != "" {
-			i18n.Say("Earlier records: gtmux logs --access --before "+page.Next, "更早记录：gtmux logs --access --before "+page.Next)
+			command := []string{"gtmux", "logs", "--access", "--before", shellQuote(page.Next), "--limit", strconv.Itoa(limit)}
+			for _, pair := range [][2]string{{"--device-id", deviceID}, {"--actor", f.actor}, {"--operation", operation}, {"--outcome", outcome}, {"--group-by", groupBy}} {
+				if pair[1] != "" {
+					command = append(command, pair[0], shellQuote(pair[1]))
+				}
+			}
+			if !since.IsZero() {
+				command = append(command, "--since", shellQuote(since.Format(time.RFC3339Nano)))
+			}
+			hint := strings.Join(command, " ")
+			i18n.Say("Earlier records: "+hint, "更早记录："+hint)
 		}
 		return 0
 	}
 	if accessPageFlag {
-		i18n.Sae("gtmux logs: --before and --limit require --access", "gtmux logs: --before 和 --limit 需与 --access 一起使用")
+		i18n.Sae("gtmux logs: access-history filters and pagination require --access", "gtmux logs: 访问历史筛选及分页需与 --access 一起使用")
 		return 2
 	}
 	if stats {

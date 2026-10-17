@@ -176,9 +176,12 @@ func (s *Server) handleAccessHistory(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, errBody("invalid actor"))
 		return
 	}
-	page, err := diag.ReadAccess(diag.AccessQuery{Before: r.URL.Query().Get("before"), Actor: actor, Limit: limit})
+	page, err := diag.ReadAccess(diag.AccessQuery{Before: r.URL.Query().Get("before"), Actor: actor, Limit: limit, DeviceID: r.URL.Query().Get("device_id"), Operation: r.URL.Query().Get("operation"), Outcome: r.URL.Query().Get("outcome"), GroupBy: r.URL.Query().Get("group_by")})
 	if err != nil {
 		status := http.StatusServiceUnavailable
+		if err == diag.ErrAccessFilter {
+			status = http.StatusBadRequest
+		}
 		if err == diag.ErrAccessCursor {
 			status = http.StatusGone
 		}

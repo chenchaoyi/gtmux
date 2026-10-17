@@ -1,6 +1,7 @@
 import React from 'react';
 import renderer, {act} from 'react-test-renderer';
 import {Text, TouchableOpacity} from 'react-native';
+import {AccessHistoryControls} from './AccessHistoryControls';
 import {AccessHistoryScreen} from './AccessHistoryScreen';
 import {ApiError} from '../api/client';
 import {useApp} from '../state/AppContext';
@@ -24,7 +25,7 @@ test('renders verified metadata and paginates without repeating records', async 
   expect(words()).toContain('My iPhone'); expect(words()).toContain('%21'); expect(words()).toContain('Accepted');
   client.accessHistory.mockResolvedValueOnce({entries: [record, {...record, id: 'r2', name: 'Browser'}], retain_days: 30});
   await press('Load earlier');
-  expect(client.accessHistory).toHaveBeenLastCalledWith('cursor', expect.anything());
+  expect(client.accessHistory).toHaveBeenLastCalledWith('cursor', expect.anything(), {});
   expect(words().match(/My iPhone/g)).toHaveLength(1); expect(words()).toContain('Browser');
   expect(words()).toContain('not agent completion');
 });
@@ -69,4 +70,34 @@ test('a failed archive with HTTP 200 is shown as failed, not accepted', async ()
   client.accessHistory.mockResolvedValueOnce({entries: [{...record, outcome: 'failed', label_en: 'Download HQ archive', session_id: '12345678-abcd-1234-abcd-123456789abc', target: undefined}], retain_days: 30});
   await mount(); expect(words()).toContain('Failed · 200'); expect(words()).not.toContain('Accepted');
   expect(words()).toContain('Codex · 12345678-abcd-1234-abcd-123456789abc');
+});
+
+test('device summaries accumulate pages and drill into an exact device without carrying the cursor', async () => {
+  const g = {key: 'device:full-a', device_id: 'full-a', actor: 'phone:a', name: 'Same name', scope: 'device', count: 3, accepted: 3, refused: 0, failed: 0, first_at: record.at, last_at: record.at};
+  client.accessHistory.mockImplementation((_before: string, _signal: unknown, filter: any) => Promise.resolve(filter.group_by ? {entries: [], groups: [g], next: 'group-cursor', retain_days: 30} : {entries: [record], groups: [g], retain_days: 30}));
+  await mount(); await press('Devices'); expect(words()).toContain('3 recorded');
+  await press('Continue summary'); expect(words()).toContain('6 recorded');
+  const row = tree.root.findAllByType(TouchableOpacity).find(n => n.props.accessibilityLabel?.startsWith('View device log:'))!;
+  await act(async () => row.props.onPress());
+  expect(client.accessHistory).toHaveBeenLastCalledWith(undefined, expect.anything(), expect.objectContaining({device_id: 'full-a', group_by: undefined}));
+});
+
+test('changing filters ignores a late unfiltered response', async () => {
+  let finish!: (page: unknown) => void;
+  client.accessHistory.mockReturnValueOnce(new Promise(resolve => {finish = resolve;}));
+  await mount();
+  client.accessHistory.mockResolvedValueOnce({entries: [{...record, name: 'Filtered device'}], retain_days: 30});
+  await act(async () => tree.root.findByType(AccessHistoryControls).props.onChange({outcome: 'failed'}));
+  await act(async () => finish({entries: [{...record, name: 'Stale unfiltered device'}], retain_days: 30}));
+  expect(words()).toContain('Filtered device'); expect(words()).not.toContain('Stale unfiltered device');
+});
+
+
+test('switching server resets identity filters instead of sending another server’s device ID', async () => {
+  await mount();
+  await act(async () => tree.root.findByType(AccessHistoryControls).props.onChange({device_id: 'old-server-device', outcome: 'failed'}));
+  client = {accessHistory: jest.fn().mockResolvedValue({entries: [record], retain_days: 30})};
+  await act(async () => tree.update(<AccessHistoryScreen navigation={{goBack: jest.fn()}} />));
+  expect(client.accessHistory).toHaveBeenCalledTimes(1);
+  expect(client.accessHistory).toHaveBeenLastCalledWith(undefined, expect.anything(), {});
 });
