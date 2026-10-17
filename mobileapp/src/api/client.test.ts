@@ -707,15 +707,15 @@ describe('periodic reads retain failure semantics and accept cancellation', () =
 
 describe('request diagnostic outcomes', () => {
   it('keeps 304 transcript validation out of failure logs and marks recovery', async () => {
-    apiWatch.ok('GET /api/transcript');
-    apiWatch.failed('GET /api/transcript', {status: 503}, 20);
+    apiWatch.ok('GET /api/transcript', BASE);
+    apiWatch.failed('GET /api/transcript', {status: 503}, 20, BASE);
     const record = jest.spyOn(diagBuffer, 'record');
     const failed = jest.spyOn(apiWatch, 'failed');
     const ok = jest.spyOn(apiWatch, 'ok');
     fetchMock.mockResolvedValueOnce(okJson(null, false, 304));
     expect(await client().transcript('%17', 'cached-etag')).toMatchObject({unchanged: true, etag: 'cached-etag'});
     expect(failed).not.toHaveBeenCalled();
-    expect(ok).toHaveBeenCalledWith('GET /api/transcript');
+    expect(ok).toHaveBeenCalledWith('GET /api/transcript', BASE);
     expect(record).toHaveBeenCalledWith(expect.objectContaining({event: 'api.recovered', attrs: expect.objectContaining({route: 'GET /api/transcript'})}));
     fetchMock.mockResolvedValueOnce(okJson(null, false, 304));
     expect(await client().desktopTranscript('desktop-id', 'desktop-etag')).toMatchObject({unchanged: true});
@@ -735,7 +735,7 @@ describe('request diagnostic outcomes', () => {
     abortAtDeadline(deadline);
     fetchMock.mockRejectedValueOnce(cancelled);
     await expect(client().transcript('%17', undefined, 0, deadline.signal)).rejects.toBe(cancelled);
-    expect(failed).toHaveBeenCalledWith('GET /api/transcript', expect.objectContaining({reason: 'timeout'}), expect.any(Number));
+    expect(failed).toHaveBeenCalledWith('GET /api/transcript', expect.objectContaining({reason: 'timeout'}), expect.any(Number), BASE);
   });
 
   it('retains real HTTP and network failures', async () => {
@@ -743,11 +743,11 @@ describe('request diagnostic outcomes', () => {
     for (const status of [401, 500]) {
       fetchMock.mockResolvedValueOnce(okJson(null, false, status));
       await client().agents().catch(() => {});
-      expect(failed).toHaveBeenCalledWith('GET /api/agents', {status}, expect.any(Number));
+      expect(failed).toHaveBeenCalledWith('GET /api/agents', {status}, expect.any(Number), BASE);
     }
     fetchMock.mockRejectedValueOnce(new Error('network unavailable'));
     await expect(client().agents()).rejects.toThrow('network unavailable');
-    expect(failed).toHaveBeenLastCalledWith('GET /api/agents', expect.objectContaining({reason: 'network'}), expect.any(Number));
+    expect(failed).toHaveBeenLastCalledWith('GET /api/agents', expect.objectContaining({reason: 'network'}), expect.any(Number), BASE);
   });
 });
 
@@ -801,4 +801,28 @@ test('baseline access history requires external provenance even without user fil
     fetchMock.mockResolvedValueOnce(okJson({entries: [{id: 'internal', origin}], groups: [], query: {origin: 'external'}, retain_days: 30}));
     await expect(client().accessHistory()).rejects.toThrow('Invalid external access history');
   }
+});
+
+describe('multi-server diagnostic attribution through the real client', () => {
+  it('keeps one origin failure open while another push registration succeeds', async () => {
+    const record = jest.spyOn(diagBuffer, 'record');
+    const a = new GtmuxClient('https://push-a.invalid', TOKEN);
+    const b = new GtmuxClient('https://push-b.invalid', TOKEN);
+    fetchMock.mockResolvedValueOnce(okJson(null, false, 530));
+    expect(await a.registerPush('synthetic-apns')).toBe(false);
+    fetchMock.mockResolvedValueOnce(okJson(null, false, 502));
+    expect(await b.registerPush('synthetic-apns')).toBe(false);
+    fetchMock.mockResolvedValueOnce(okJson(null));
+    expect(await b.registerPush('synthetic-apns')).toBe(true);
+    const recoveries = () => record.mock.calls.map(([e]) => e).filter(e => e.event === 'api.recovered');
+    expect(recoveries().map(e => e.attrs?.origin)).toEqual(['https://push-b.invalid']);
+    expect(record).toHaveBeenCalledWith(expect.objectContaining({event: 'api.failed', attrs: expect.objectContaining({origin: 'https://push-a.invalid', status: 530})}));
+    expect(record).toHaveBeenCalledWith(expect.objectContaining({event: 'act.push.register', outcome: 'ok', attrs: expect.objectContaining({server: 'https://push-b.invalid'})}));
+    fetchMock.mockResolvedValueOnce(okJson(null));
+    expect(await a.registerPush('synthetic-apns')).toBe(true);
+    expect(recoveries().map(e => e.attrs?.origin)).toEqual(['https://push-b.invalid', 'https://push-a.invalid']);
+    fetchMock.mockResolvedValueOnce(okJson(null));
+    await new GtmuxClient('https://relay.invalid/p12', TOKEN).registerPush('synthetic-apns');
+    expect(record).toHaveBeenLastCalledWith(expect.objectContaining({event: 'act.push.register', attrs: expect.objectContaining({server: 'https://relay.invalid/p12'})}));
+  });
 });

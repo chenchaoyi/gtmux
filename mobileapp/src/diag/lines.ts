@@ -118,14 +118,14 @@ export function describeEntry(e: Entry, zh: boolean): {title: string; detail?: s
         title: status ? (zh ? '服务器请求失败' : 'Server request failed')
           : timeout ? (zh ? '请求超时' : 'Request timed out')
           : (zh ? '请求未完成' : 'Request did not complete'),
-        detail: join(answered, again),
+        detail: join(str(a.origin), answered, again),
       };
     }
     case 'api.recovered':
       return {
-        title: zh ? '服务器连接已恢复' : 'The server is answering again',
+        title: zh ? '请求已恢复' : 'Request succeeded again',
         detail: join(
-          str(a.route),
+          str(a.origin), str(a.route),
           spell(num(a.failingSec), zh) &&
             (zh ? `失败了 ${spell(num(a.failingSec), zh)}` : `it had been failing for ${spell(num(a.failingSec), zh)}`),
         ),
@@ -157,12 +157,12 @@ export function describeEntry(e: Entry, zh: boolean): {title: string; detail?: s
       if (e.outcome === 'ok') {
         return {
           title: zh ? '已登记推送通知' : 'Registered for push notifications',
-          detail: kinds ? kinds.split(',').join(zh ? '、' : ' and ') : undefined,
+          detail: join(str(a.server), kinds ? kinds.split(',').join(zh ? '、' : ' and ') : undefined),
         };
       }
       return {
         title: zh ? '推送通知注册失败' : 'Push notifications could not be registered',
-        detail: num(a.status) ? `HTTP ${num(a.status)}` : undefined,
+        detail: join(str(a.server), num(a.status) ? `HTTP ${num(a.status)}` : undefined),
       };
     }
     default: {
