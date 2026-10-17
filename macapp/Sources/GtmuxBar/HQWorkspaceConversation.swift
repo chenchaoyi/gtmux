@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import CryptoKit
 import SwiftUI
 
@@ -35,14 +36,19 @@ struct HQConversationRow: Identifiable {
 }
 
 private struct HQTailPreference: PreferenceKey {
-    static var defaultValue: CGFloat = 0
+    static var defaultValue: CGFloat = .greatestFiniteMagnitude
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
 }
 
 struct HQWorkspaceConversationView: View {
     @ObservedObject var l10n: L10n
     @ObservedObject var store: HQWorkspaceStore
+    /// Native harnesses observe actual tail geometry, not virtual document estimates.
+    var scrollObserver: ((ScrollViewProxy, Bool, Bool) -> Void)? = nil
     @State private var atTail = true
+    @State private var tailObserved = false
+    @State private var positioning = true
+    @StateObject private var scrollIntent = HQConversationScrollIntent()
     @State private var newContent = false
     @State private var uncertain: HQWorkspaceMessage?
     var body: some View {
@@ -63,12 +69,14 @@ struct HQWorkspaceConversationView: View {
                                     .frame(maxWidth: .infinity)
                             }
                             ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                                if let date = separators[index] { HQChatTimeSeparator(date: date, l10n: l10n) }
-                                if let message = row.message {
-                                    messageRow(message)
-                                } else if let turn = row.turn {
-                                    HQTranscriptExchange(l10n: l10n, turn: turn)
-                                }
+                                VStack(alignment: .leading, spacing: 20) {
+                                    if let date = separators[index] { HQChatTimeSeparator(date: date, l10n: l10n) }
+                                    if let message = row.message {
+                                        messageRow(message)
+                                    } else if let turn = row.turn {
+                                        HQTranscriptExchange(l10n: l10n, turn: turn)
+                                    }
+                                }.id(row.id)
                             }
                             ForEach(Array(Set(store.detail?.warnings ?? [])).sorted(), id: \.self) { code in
                                 Text(hqWorkspaceWarning(code, l10n)).font(HQTypography.caption).foregroundStyle(
@@ -82,13 +90,34 @@ struct HQWorkspaceConversationView: View {
                                             value: geometry.frame(in: .named("workspaceScroll")).maxY)
                                     })
                         }.padding(18)
-                    }.coordinateSpace(name: "workspaceScroll")
+                    }.modifier(HQConversationInitialAnchor())
+                        .coordinateSpace(name: "workspaceScroll")
+                        .task(id: store.conversationRevealSerial) {
+                            positioning = true
+                            atTail = true
+                            newContent = false
+                            let selection = store.selection
+                            let scrollIntent = self.scrollIntent
+                            let intent = scrollIntent.generation
+                            scrollObserver?(proxy, atTail, false)
+                            let revealed = await HQConversationTailReveal.run(
+                                isCurrent: { selection == store.selection && intent == scrollIntent.generation },
+                                reveal: { proxy.scrollTo("tail", anchor: .bottom) },
+                                isVisible: { tailObserved && atTail })
+                            guard !Task.isCancelled else { return }
+                            positioning = false
+                            if !revealed { newContent = !(tailObserved && atTail) }
+                            scrollObserver?(proxy, atTail, true)
+                        }
                         .onChange(of: store.selection) { _, _ in
                             atTail = true
                             newContent = false
                         }
                         .onPreferenceChange(HQTailPreference.self) { y in
+                            tailObserved = y < .greatestFiniteMagnitude
                             atTail = y <= bounds.size.height + 36
+                            if atTail { newContent = false }
+                            scrollObserver?(proxy, atTail, !positioning)
                         }
                         .onChange(of: rows.map(\.changeToken)) { old, new in
                             guard old != new else { return }
@@ -99,10 +128,7 @@ struct HQWorkspaceConversationView: View {
                             }
                         }
                     if newContent {
-                        Button(l10n.tr("New messages ↓", "新消息 ↓")) {
-                            proxy.scrollTo("tail", anchor: .bottom)
-                            newContent = false
-                        }
+                        Button(l10n.tr("Latest messages ↓", "最新消息 ↓")) { store.select(store.selection) }
                         .buttonStyle(.borderedProminent).padding(12)
                     }
                 }

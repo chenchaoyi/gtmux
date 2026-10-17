@@ -28,29 +28,30 @@ struct HQImportSheet: View {
                     .font(.system(size: 24)).foregroundStyle(Color.accentColor)
                     .frame(width: 36)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(title).font(.title3.weight(.semibold))
-                    Text(stepTitle).font(.callout).foregroundStyle(.secondary)
+                    Text(title).font(HQTypography.section)
+                    Text(stepTitle).font(HQTypography.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
             }.padding(24)
             Divider()
             content.padding(24)
             if flow.busy {
-                HStack(spacing: 8) { ProgressView().controlSize(.small); Text(flow.progress).font(.callout) }
+                HStack(spacing: 8) { ProgressView().controlSize(.small); Text(flow.progress).font(HQTypography.caption) }
                     .padding(.horizontal, 24).padding(.bottom, 16)
             }
             if let error = flow.error, !error.isEmpty {
                 Label { ScrollView { Text(error).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading) }.frame(maxHeight: 70) }
                     icon: { Image(systemName: "exclamationmark.triangle") }
-                    .font(.callout).foregroundStyle(.red).padding(.horizontal, 24).padding(.bottom, 16)
+                    .font(HQTypography.caption).foregroundStyle(.red).padding(.horizontal, 24).padding(.bottom, 16)
             }
             if !flow.result.isEmpty, flow.step != .done {
-                Text(flow.result).font(.callout).foregroundStyle(.secondary).textSelection(.enabled)
+                Text(flow.result).font(HQTypography.caption).foregroundStyle(.secondary).textSelection(.enabled)
                     .lineLimit(3).padding(.horizontal, 24).padding(.bottom, 16)
             }
             Divider()
             footer.padding(.horizontal, 24).padding(.vertical, 16)
         }
+        .font(HQTypography.body)
         .frame(width: reviewing ? 820 : 560)
         .fixedSize(horizontal: false, vertical: true)
         .disabled(flow.busy)
@@ -68,15 +69,15 @@ struct HQImportSheet: View {
             VStack(alignment: .leading, spacing: 12) {
                 HQImportReview(l10n: l10n, flow: flow).frame(height: 390)
                 Text(l10n.tr("Stop HQ before importing. You can close this window and resume the review later.", "导入前请先退出 HQ。所选内容已暂存，可稍后继续核对。"))
-                    .font(.callout).foregroundStyle(.secondary)
+                    .font(HQTypography.caption).foregroundStyle(.secondary)
             }
         case .stages:
             stages
         case .done:
             VStack(alignment: .leading, spacing: 16) {
                 Label(l10n.tr("HQ backup restored", "HQ 备份已恢复"), systemImage: "checkmark.circle.fill")
-                    .font(.headline).foregroundStyle(.green)
-                ScrollView { Text(flow.result).font(.callout).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading) }
+                    .font(HQTypography.rowTitle).foregroundStyle(.green)
+                ScrollView { Text(flow.result).font(HQTypography.caption).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading) }
                     .frame(height: 140)
             }
         }
@@ -88,7 +89,7 @@ struct HQImportSheet: View {
                 Button(l10n.tr("Back", "上一步")) { flow.changeArchive() }
             } else if reviewing && flow.reviewTab == 0 {
                 Text(l10n.tr("\(flow.selected.count) selected", "已选 \(flow.selected.count) 条"))
-                    .font(.callout).foregroundStyle(.secondary)
+                    .font(HQTypography.caption).foregroundStyle(.secondary)
             }
             Spacer()
             Button(flow.step == .choose || flow.step == .preview ? l10n.tr("Cancel", "取消") : l10n.tr("Close", "关闭"), action: onClose)
@@ -142,7 +143,7 @@ struct HQImportSheet: View {
                             HStack {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(Date(timeIntervalSince1970: TimeInterval(stage.created_at)), style: .date)
-                                    Text(stage.id).font(.caption.monospaced()).foregroundStyle(.secondary)
+                                    Text(stage.id).font(HQTypography.code).foregroundStyle(.secondary)
                                 }
                                 Spacer()
                                 Button(l10n.tr("Review", "继续核对")) { flow.manifest = stage; flow.loadReview(l10n: l10n) }

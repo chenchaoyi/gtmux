@@ -52,7 +52,7 @@ struct HQWorkspaceComposer: View {
             return l10n.tr("Matter unavailable · reload to continue", "事项暂不可用 · 请重新读取")
         }
         return store.selection == .newTask
-            ? l10n.tr("New matter · Enter for a newline, ⌘Return to send", "新事项 · 回车换行，⌘回车发送")
-            : l10n.tr("Global HQ conversation", "与 HQ 对话 · 不关联具体事项")
+            ? l10n.tr("Task details", "任务内容")
+            : l10n.tr("Message HQ", "给 HQ 发消息")
     }
 }

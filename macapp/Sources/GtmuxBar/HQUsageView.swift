@@ -47,12 +47,12 @@ struct HQUsageView: View {
         if let t = pool.max(by: { $0.pctUsed < $1.pctUsed }) {
             let name = t.agentName ?? t.agent ?? ""
             HStack(spacing: 8) {
-                Text("\(t.pctUsed)%").font(.system(size: 20, weight: .semibold)).foregroundStyle(p.fg)
+                Text("\(t.pctUsed)%").font(HQTypography.title).foregroundStyle(p.fg)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(
                         l10n.tr(
-                            "tightest: \(name) \(hqWindowTitle(t, zh: zh))",
-                            "最紧：\(name) \(hqWindowTitle(t, zh: zh))")
+                            "Highest usage: \(name) \(hqWindowTitle(t, zh: zh))",
+                            "用量最高：\(name) \(hqWindowTitle(t, zh: zh))")
                     )
                     .font(HQTypography.rowTitle).foregroundStyle(p.fg)
                     let r = hqResetTitle(t, zh: zh)
@@ -98,7 +98,7 @@ struct HQUsageView: View {
         let wins = u.limits?.windows ?? []
         if wins.isEmpty {
             Text(
-                l10n.tr("No plan readable. Run /usage once inside the agent", "读不到套餐，在 agent 里跑一次 /usage")
+                l10n.tr("No quota data available. Open /usage in the agent to refresh it.", "暂无额度数据，请在 agent 中打开 /usage 刷新。")
             )
             .font(HQTypography.caption).foregroundStyle(p.fg3)
         } else {
@@ -170,7 +170,7 @@ struct HQUsageView: View {
             HStack(alignment: .firstTextBaseline, spacing: 18) {
                 ForEach(Array(grid.figs.enumerated()), id: \.offset) { _, f in
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(f.0).font(.system(size: 20, weight: .semibold)).foregroundStyle(p.fg)
+                        Text(f.0).font(HQTypography.title).foregroundStyle(p.fg)
                         Text(f.1).font(HQTypography.caption).foregroundStyle(p.fg3)
                     }
                 }
@@ -321,11 +321,11 @@ struct HQUsageView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline, spacing: 18) {
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(hqCompactTok(today)).font(.system(size: 20, weight: .semibold)).foregroundStyle(p.fg)
+                    Text(hqCompactTok(today)).font(HQTypography.title).foregroundStyle(p.fg)
                     Text(l10n.tr("today", "今天")).font(HQTypography.caption).foregroundStyle(p.fg3)
                 }
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(hqCompactTok(week)).font(.system(size: 20, weight: .semibold)).foregroundStyle(p.fg)
+                    Text(hqCompactTok(week)).font(HQTypography.title).foregroundStyle(p.fg)
                     Text(l10n.tr("this week", "本周")).font(HQTypography.caption).foregroundStyle(p.fg3)
                 }
                 Spacer()

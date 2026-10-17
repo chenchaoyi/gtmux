@@ -17,7 +17,7 @@ import XCTest
 /// buttons never move under the pointer while you type.
 final class ExportSheetLayoutTests: XCTestCase {
     @MainActor private func size(_ setup: (HQExportFlow) -> Void) -> CGSize? {
-        let flow = HQExportFlow()
+        let flow = HQExportFlow(readPassphrase: { nil })
         flow.remembered = false
         flow.editing = false
         setup(flow)
@@ -44,9 +44,11 @@ final class ExportSheetLayoutTests: XCTestCase {
     /// Chinese labels and copy must not change the width either — a side label could not
     /// serve both languages, which is the whole reason the labels moved.
     @MainActor func testChineseDoesNotResizeIt() {
+        let original = L10n.shared.mode
+        defer { L10n.shared.mode = original }
+        L10n.shared.mode = .en
         let en = size { $0.passphrase = "correcthorsebattery"; $0.confirm = "correcthorsebattery" }
         L10n.shared.mode = .zh
-        defer { L10n.shared.mode = .en }
         let zh = size { $0.passphrase = "correcthorsebattery"; $0.confirm = "correcthorsebattery" }
         XCTAssertEqual(en?.width, zh?.width)
     }
@@ -68,5 +70,15 @@ final class ExportSheetLayoutTests: XCTestCase {
         let line = size { $0.remembered = true; $0.passphrase = "correcthorsebattery" }
         guard let f = form?.height, let l = line?.height else { XCTFail("no render"); return }
         XCTAssertLessThan(l, f - 60, "the remembered state is not collapsing to a line")
+    }
+    @MainActor func testLongFailureKeepsTheCloseActionWithinWorkspaceBounds() {
+        let flow = HQExportFlow(readPassphrase: { nil })
+        flow.step = .failed(String(repeating: "Synthetic command failure with a long diagnostic record.\n", count: 300))
+        let bounds = CGSize(width: 460, height: 500)
+        let renderer = ImageRenderer(content: HQExportSheet(l10n: .shared, flow: flow, onClose: {})
+            .environment(\.hqWorkspaceSheetSize, bounds))
+        guard let size = renderer.nsImage?.size else { XCTFail("No failure view rendered"); return }
+        XCTAssertLessThanOrEqual(size.width, bounds.width)
+        XCTAssertLessThanOrEqual(size.height, bounds.height, "Long error text must scroll inside the sheet")
     }
 }

@@ -14,6 +14,7 @@ final class HQWorkspaceStore: ObservableObject {
     @Published private(set) var acting = false
     @Published private(set) var delivering = false
     @Published private(set) var refreshSerial = 0
+    @Published private(set) var conversationRevealSerial = 0
     @Published private(set) var collapsedSections: Set<HQSidebarSection> = []
     let resources: HQResourceStore
     private let client: HQWorkspaceServing
@@ -76,7 +77,12 @@ final class HQWorkspaceStore: ObservableObject {
     }
 
     func select(_ target: HQWorkspaceSelection) {
-        guard selection != target else { return }
+        let reveal = target.showsComposer && target.scope != nil
+        if reveal { conversationRevealSerial &+= 1 }
+        guard selection != target else {
+            if reveal { refresh(quiet: true) }
+            return
+        }
         drafts[selection] = draft
         selection = target
         updateResourceLifecycle()

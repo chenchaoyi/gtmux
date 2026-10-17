@@ -139,8 +139,8 @@ final class HQExportFlow: ObservableObject {
     @Published var remembered = false
     @Published var editing = false
 
-    init() {
-        if let saved = ExportPassphraseStore.read(), !saved.isEmpty {
+    init(readPassphrase: () -> String? = ExportPassphraseStore.read) {
+        if let saved = readPassphrase(), !saved.isEmpty {
             passphrase = saved
             confirm = saved
             remembered = true
@@ -159,7 +159,7 @@ final class HQExportFlow: ObservableObject {
     func run(l10n: L10n) {
         guard ready else { return }
         let panel = NSSavePanel()
-        panel.title = l10n.tr("Export HQ's records", "导出 HQ 的档案")
+        panel.title = l10n.tr("Export HQ backup", "导出 HQ 备份")
         panel.nameFieldStringValue = "gtmux-hq-" + memoryDateStamp() + ".tar.gz.age"
         panel.allowedContentTypes = []
         panel.message = l10n.tr(
@@ -200,6 +200,7 @@ struct HQExportSheet: View {
     @ObservedObject var flow: HQExportFlow
     var onClose: () -> Void
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.hqWorkspaceSheetSize) private var sheetSize
 
     var body: some View {
         let p = Theme.Palette.of(scheme)
@@ -209,7 +210,7 @@ struct HQExportSheet: View {
             case .exporting:
                 HStack(spacing: 8) {
                     ProgressView().controlSize(.small)
-                    Text(l10n.tr("Writing and locking…", "正在写入并上锁…")).font(.system(size: 12.5))
+                    Text(l10n.tr("Encrypting backup…", "正在加密备份…")).font(HQTypography.body)
                 }
                 .frame(maxWidth: .infinity, minHeight: 80)
             case let .done(path, size): done(path: path, size: size, p)
@@ -217,7 +218,8 @@ struct HQExportSheet: View {
             }
         }
         .padding(22)
-        .frame(width: 480)
+        .frame(width: min(480, sheetSize.width))
+        .font(HQTypography.body)
         .background(p.bg)
     }
 
@@ -232,11 +234,11 @@ struct HQExportSheet: View {
     /// sentence; at 440 it read "Choose where and exp…".
     @ViewBuilder private func ask(_ p: Theme.Palette) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(l10n.tr("Export HQ's records", "导出 HQ 的档案")).font(.system(size: 15, weight: .semibold))
+            Text(l10n.tr("Export HQ backup", "导出 HQ 备份")).font(HQTypography.section)
             Text(l10n.tr(
                 "The export includes the board, knowledge base and LOCAL.md. Choose a passphrase to encrypt the file before saving it.",
-                "导出内容包括态势板、知识库和 LOCAL.md。请设置口令，加密后再保存。"))
-                .font(.system(size: 12)).foregroundStyle(p.fg2)
+                "导出内容包括态势板、知识库和 LOCAL.md。请设置密码，加密后再保存。"))
+                .font(HQTypography.caption).foregroundStyle(p.fg2)
                 .fixedSize(horizontal: false, vertical: true)
         }
 
@@ -245,16 +247,16 @@ struct HQExportSheet: View {
         if flow.remembered && !flow.editing {
             // The keychain has one. A line, not a form: the decision was made last time.
             HStack(spacing: 9) {
-                Image(systemName: "key.fill").font(.system(size: 12)).foregroundStyle(p.fg2)
-                Text(l10n.tr("Using the passphrase kept in this Mac's keychain", "用这台 Mac 钥匙串里记着的口令"))
-                    .font(.system(size: 12))
+                Image(systemName: "key.fill").font(HQTypography.caption).foregroundStyle(p.fg2)
+                Text(l10n.tr("Using the password saved in Keychain", "使用钥匙串中保存的密码"))
+                    .font(HQTypography.caption)
                 Spacer()
-                Button(l10n.tr("Change…", "换一个…")) {
+                Button(l10n.tr("Change…", "更改…")) {
                     flow.editing = true
                     flow.passphrase = ""
                     flow.confirm = ""
                 }
-                .buttonStyle(.link).font(.system(size: 12))
+                .buttonStyle(.link).font(HQTypography.caption)
             }
             .padding(11)
             .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(p.rowSelected.opacity(0.5)))
@@ -263,15 +265,15 @@ struct HQExportSheet: View {
                 // `Show` rides the FIRST field's own label line: it belongs to that field,
                 // and it used to sit beside the strength reading, which is a different
                 // subject entirely.
-                field(l10n.tr("Passphrase", "口令"), text: $flow.passphrase, p) {
+                field(l10n.tr("Password", "密码"), text: $flow.passphrase, p) {
                     Toggle(l10n.tr("Show", "显示"), isOn: $flow.reveal)
-                        .toggleStyle(.checkbox).font(.system(size: 11.5))
+                        .toggleStyle(.checkbox).font(HQTypography.caption)
                 }
-                field(l10n.tr("Once more", "再输一次"), text: $flow.confirm, p) { EmptyView() }
+                field(l10n.tr("Confirm password", "确认密码"), text: $flow.confirm, p) { EmptyView() }
                 hint(p)
-                Toggle(l10n.tr("Remember it in this Mac's keychain, so the next export will not ask",
-                               "记在这台 Mac 的钥匙串里，下次导出就不再问"), isOn: $flow.remember)
-                    .toggleStyle(.checkbox).font(.system(size: 12))
+                Toggle(l10n.tr("Save password in Keychain",
+                               "将密码保存到钥匙串"), isOn: $flow.remember)
+                    .toggleStyle(.checkbox).font(HQTypography.caption)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -281,14 +283,14 @@ struct HQExportSheet: View {
         // The warning gets its own line. Nothing shares a row with the buttons any more,
         // which is what lets the primary one say what it does.
         VStack(alignment: .leading, spacing: 14) {
-            Text(l10n.tr("Lose the passphrase and the file stays shut. gtmux keeps no copy.",
-                         "口令丢了文件就打不开。gtmux 不留副本。"))
-                .font(.system(size: 11.5)).foregroundStyle(p.fg3)
+            Text(l10n.tr("Keep your password safe. This backup cannot be recovered without it.",
+                         "请妥善保存密码，遗失后将无法恢复这份备份。"))
+                .font(HQTypography.caption).foregroundStyle(p.fg3)
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 10) {
                 Spacer()
                 Button(l10n.tr("Cancel", "取消"), action: onClose).keyboardShortcut(.cancelAction)
-                Button(l10n.tr("Choose where and export…", "选位置并导出…")) { flow.run(l10n: l10n) }
+                Button(l10n.tr("Export backup…", "导出备份…")) { flow.run(l10n: l10n) }
                     .keyboardShortcut(.defaultAction)
                     .disabled(!flow.ready)
             }
@@ -302,14 +304,16 @@ struct HQExportSheet: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             HStack(spacing: 8) {
-                Text(label).font(.system(size: 12, weight: .medium)).foregroundStyle(p.fg)
+                Text(label).font(HQTypography.navigation).foregroundStyle(p.fg)
                 Spacer()
                 trailing()
             }
             if flow.reveal {
-                TextField("", text: text).textFieldStyle(.roundedBorder).font(.system(size: 13))
+                TextField("", text: text).textFieldStyle(.roundedBorder).font(HQTypography.body)
+                    .accessibilityLabel(label)
             } else {
-                SecureField("", text: text).textFieldStyle(.roundedBorder).font(.system(size: 13))
+                SecureField("", text: text).textFieldStyle(.roundedBorder).font(HQTypography.body)
+                    .accessibilityLabel(label)
             }
         }
     }
@@ -329,23 +333,23 @@ struct HQExportSheet: View {
             if flow.passphrase.isEmpty { return ("", p.fg3, "") }
             switch flow.strength {
             case .short:
-                return (l10n.tr("Too short: \(ExportPassphrase.minLength) characters at least", "太短：至少 \(ExportPassphrase.minLength) 位"),
+                return (l10n.tr("Use at least \(ExportPassphrase.minLength) characters", "密码至少需要 \(ExportPassphrase.minLength) 位"),
                         Theme.Status.waiting, "exclamationmark.circle")
             case .ok, .good:
                 if !flow.confirm.isEmpty && !flow.matches {
-                    return (l10n.tr("The two differ", "两次不一样"), Theme.Status.waiting, "exclamationmark.circle")
+                    return (l10n.tr("Passwords do not match", "两次输入的密码不一致"), Theme.Status.waiting, "exclamationmark.circle")
                 }
                 if flow.strength == .good {
-                    return (l10n.tr("Good passphrase", "口令强度：好"), Theme.Status.idle, "checkmark")
+                    return (l10n.tr("Recommended password length", "密码长度符合建议"), Theme.Status.idle, "checkmark")
                 }
-                return (l10n.tr("Fine: 12 characters or more is better", "可以：12 位以上更好"), p.fg2, "circle")
+                return (l10n.tr("Use 12 or more characters for a stronger password", "建议使用至少 12 位密码"), p.fg2, "circle")
             }
         }()
         HStack(spacing: 6) {
             if !symbol.isEmpty {
-                Image(systemName: symbol).font(.system(size: 11, weight: .semibold)).foregroundStyle(color)
+                Image(systemName: symbol).font(HQTypography.caption).foregroundStyle(color)
             }
-            Text(text).font(.system(size: 11.5)).foregroundStyle(color)
+            Text(text).font(HQTypography.caption).foregroundStyle(color)
             Spacer()
         }
         .frame(minHeight: 16) // a floor; the row being present at all is what holds it
@@ -353,14 +357,14 @@ struct HQExportSheet: View {
 
     @ViewBuilder private func done(path: String, size: String, _ p: Theme.Palette) -> some View {
         HStack(spacing: 8) {
-            Image(systemName: "lock.fill").font(.system(size: 14)).foregroundStyle(Theme.Status.idle)
-            Text(l10n.tr("Exported and locked", "已导出并上锁")).font(.system(size: 15, weight: .semibold))
+            Image(systemName: "lock.fill").font(HQTypography.navigation).foregroundStyle(Theme.Status.idle)
+            Text(l10n.tr("Encrypted backup exported", "已导出加密备份")).font(HQTypography.section)
         }
         VStack(alignment: .leading, spacing: 5) {
-            Text(path).font(Theme.Font.mono).foregroundStyle(p.fg).textSelection(.enabled)
+            Text(path).font(HQTypography.code).foregroundStyle(p.fg).textSelection(.enabled)
                 .lineLimit(2).truncationMode(.middle)
             if !size.isEmpty {
-                Text(size).font(.system(size: 12)).foregroundStyle(p.fg2)
+                Text(size).font(HQTypography.caption).foregroundStyle(p.fg2)
             }
         }
         .padding(10)
@@ -371,7 +375,7 @@ struct HQExportSheet: View {
                        "口令已存入这台 Mac 的钥匙串。可用 `gtmux hq --import` 或 age 工具解密。")
              : l10n.tr("Opens with your passphrase: `gtmux hq --import`, or any age tool. gtmux keeps no copy of it.",
                        "可用你的口令通过 `gtmux hq --import` 或 age 工具解密。gtmux 不保存口令。"))
-            .font(.system(size: 12)).foregroundStyle(p.fg2)
+            .font(HQTypography.caption).foregroundStyle(p.fg2)
             .fixedSize(horizontal: false, vertical: true)
         HStack {
             Button(l10n.tr("Show in Finder", "在访达中显示")) {
@@ -383,10 +387,12 @@ struct HQExportSheet: View {
     }
 
     @ViewBuilder private func failed(_ msg: String, _ p: Theme.Palette) -> some View {
-        Text(l10n.tr("Export failed", "导出失败")).font(.system(size: 15, weight: .semibold))
+        Text(l10n.tr("Export failed", "导出失败")).font(HQTypography.section)
         // The CLI's own words, unedited — they already say what to do next.
-        Text(msg).font(Theme.Font.mono).foregroundStyle(Theme.Status.waiting).textSelection(.enabled)
-            .fixedSize(horizontal: false, vertical: true)
+        ScrollView {
+            Text(msg).font(HQTypography.code).foregroundStyle(Theme.Status.waiting).textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }.frame(height: min(220, max(80, sheetSize.height - 160)))
         HStack {
             Spacer()
             Button(l10n.tr("Back", "返回")) { flow.step = .ask }
