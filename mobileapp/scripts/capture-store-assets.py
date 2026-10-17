@@ -8,8 +8,9 @@ import os
 from pathlib import Path
 import plistlib
 import shutil
-import struct
 import subprocess
+
+from store_artifacts import checkpoint_group, load_checkpoint, save, tree_hash
 
 
 def command(args, **kwargs):
@@ -88,7 +89,12 @@ def prebuild_wda(appium_home, udid, output, slot, platform_version, run=command)
                        stdout=log, stderr=subprocess.STDOUT, check=True, timeout=900)
 
 
-def capture_device(source, app, output, slot, device_type, runtime, run=command):
+def capture_device(source, app, output, slot, device_type, runtime, run=command, context=None):
+    checkpoint = load_checkpoint(output, context) if context else {"groups": {}}
+    languages = [lang for lang in ("en", "zh") if slot + "-" + lang not in checkpoint["groups"]]
+    if not languages:
+        progress(output, "reused", slot=slot)
+        return
     # Only this newly returned device ID is ever shut down or deleted.
     progress(output, "create", slot=slot, runtime=runtime.get("version"))
     udid = run(["xcrun", "simctl", "create", f"gtmux-store-{slot}", device_type["identifier"], runtime["identifier"]])
@@ -104,24 +110,21 @@ def capture_device(source, app, output, slot, device_type, runtime, run=command)
                    GTMUX_E2E_CAPTURE_CI="1",
                    GTMUX_E2E_WDA_DERIVED=str(output / "wda"))
         test = "appstore-shots-ipad.test.ts" if slot == "ipad" else "appstore-shots.test.ts"
-        for language in ("en", "zh"):
+        for language in languages:
             progress(output, "capture", slot=slot, language=language)
             env["GTMUX_SHOTS_LANG"] = language
             subprocess.run(["npm", "run", "test:e2e", "--", test], cwd=source, env=env, check=True, timeout=1200)
+            if context:
+                folder = ("ipad-" if slot == "ipad" else "") + language
+                checkpoint_group(output, context, slot + "-" + language, source / ".e2e-artifacts/appstore" / folder,
+                                 origin={"run_id": os.environ.get("GITHUB_RUN_ID"), "workflow_commit": os.environ.get("WORKFLOW_COMMIT")})
+                progress(output, "checkpoint", slot=slot, language=language)
     finally:
         for action in ("shutdown", "delete"):
             try:
                 run(["xcrun", "simctl", action, udid])
             except subprocess.CalledProcessError:
                 pass
-
-
-def image_record(path, output):
-    data = path.read_bytes()
-    if data[:8] != b"\x89PNG\r\n\x1a\n":
-        raise ValueError(f"Not a PNG: {path.name}")
-    return {"file": str(path.relative_to(output)), "sha256": hashlib.sha256(data).hexdigest(),
-            "bytes": len(data), "size": list(struct.unpack(">II", data[16:24]))}
 
 
 def main():
@@ -134,13 +137,13 @@ def main():
     source, app, output = args.source.resolve(), args.app.resolve(), args.output.resolve()
     if os.environ.get("GITHUB_ACTIONS") != "true":
         raise ValueError("This headless helper requires an isolated Actions runner; use the local e2e workflow on a shared Mac")
-    if not app.is_dir() or output.exists():
-        raise ValueError("Need a simulator app and a fresh output directory")
+    if not app.is_dir():
+        raise ValueError("Need a verified simulator app")
     actual_commit = command(["git", "rev-parse", "HEAD"], cwd=source)
     info = plistlib.loads((app / "Info.plist").read_bytes())
     if actual_commit != os.environ["STORE_COMMIT"] or info.get("CFBundleShortVersionString") != os.environ["STORE_TAG"].removeprefix("v"):
         raise ValueError("Source or simulator app version differs from the requested release")
-    output.mkdir(parents=True)
+    output.mkdir(parents=True, exist_ok=True)
     runtime, devices = simulator_plan(
         json.loads(command(["xcrun", "simctl", "list", "runtimes", "--json"]))["runtimes"],
         json.loads(command(["xcrun", "simctl", "list", "devicetypes", "--json"]))["devicetypes"])
@@ -148,37 +151,18 @@ def main():
     context = {"release_tag": os.environ["STORE_TAG"], "source_commit": os.environ["STORE_COMMIT"],
                "workflow_commit": os.environ["WORKFLOW_COMMIT"], "capture_harness_commit": os.environ["WORKFLOW_COMMIT"],
                "capture_harness_files": harness_files, "runtime": runtime["version"],
-               "xcode": command(["xcodebuild", "-version"]), "synthetic_demo_only": True, "submitted": False}
-    (output / "capture-context.json").write_text(json.dumps(context, indent=2) + "\n")
+               "xcode": command(["xcodebuild", "-version"]), "app_sha256": tree_hash(app),
+               "synthetic_demo_only": True, "submitted": False}
+    # Run/workflow identity is evidence, not a capture input. Only matching app,
+    # harness, runtime and Xcode can reuse completed groups.
+    identity = {key: value for key, value in context.items() if key not in ("workflow_commit", "capture_harness_commit")}
+    checkpoint = load_checkpoint(output, identity)
+    checkpoint.setdefault("attempts", []).append({**context, "run_id": os.environ.get("GITHUB_RUN_ID")})
+    save(output / "checkpoint.json", checkpoint)
+    save(output / "capture-context.json", context)
     for slot, device_type in devices:
-        capture_device(source, app, output, slot, device_type, runtime)
-    for language, locale in (("en", "en-US"), ("zh", "zh-Hans")):
-        progress(output, "frame", language=language)
-        raw = source / ".e2e-artifacts/appstore" / language
-        subprocess.run(["node", "scripts/render-lockscreen.mjs", "--lang", language, "--out", str(raw)], cwd=source, check=True)
-        for slot in ("phone", "ipad"):
-            name = f"ipad-{language}" if slot == "ipad" else language
-            options = ["--prefix", "ipad-"] if slot == "ipad" else []
-            subprocess.run(["node", "scripts/frame-shots.mjs", "--slot", slot, "--in", f".e2e-artifacts/appstore/{name}",
-                            "--lang", name, "--out", str(output / "screenshots" / locale), *options], cwd=source, check=True)
-        subprocess.run(["node", "scripts/frame-creative.mjs", "--lang", language, "--ipad", f".e2e-artifacts/appstore/ipad-{language}",
-                        "--phone", f".e2e-artifacts/appstore/{language}", "--out", str(output / "creative" / locale)], cwd=source, check=True)
-    for path in (source / ".e2e-artifacts/appstore").glob("*/*.png"):
-        destination = output / "raw" / path.parent.name / path.name
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(path, destination)
-    shutil.rmtree(output / "wda", ignore_errors=True)
-    images = [image_record(p, output) for p in sorted(output.rglob("*.png"))]
-    framed = [i for i in images if i["file"].startswith("screenshots/")]
-    creative = [i for i in images if i["file"].startswith("creative/")]
-    if len(framed) != 22 or len(creative) != 2:
-        raise ValueError("Expected 22 screenshots and two creative images")
-    for image in framed + creative:
-        expected = [5244, 2950] if image in creative else ([2752, 2064] if Path(image["file"]).name.startswith("ipad-") else [1320, 2868])
-        if image["size"] != expected:
-            raise ValueError(f"Unexpected image dimensions: {image['file']}")
-    provenance = {**context, "images": images}
-    (output / "manifest.json").write_text(json.dumps(provenance, indent=2) + "\n")
+        capture_device(source, app, output, slot, device_type, runtime, context=identity)
+    progress(output, "capture-complete")
 
 
 if __name__ == "__main__":

@@ -1,25 +1,42 @@
 # 在 Actions 中采集 App Store 素材
 
-本机磁盘不足时，从 `main` 运行 **App Store screenshots (maintainers)**
-（`ios-store-assets.yml`），指定已正式发布的 `release_tag`。
-流程核对发行版及其主分支 CI，再从准确的源码提交构建模拟器 App。
-不需要签名、分发服务或 App Store 凭据。
+从 `main` 运行 **App Store screenshots (maintainers)**（`ios-store-assets.yml`），
+指定正式发布的 `release_tag`。流程核对发行版与主分支 CI，不需要签名、分发或 ASC 凭据。
+[English](assets-ci.md)
 
-流程复用现有演示采集与排版脚本，在专用 iPhone 17 Pro Max 和 iPad Pro 13-inch
-模拟器上分别采集中英文，只删除本轮创建的模拟器。产物包括 22 张商店截图、
-两张创意图、演示原图，以及记录源码提交和图片哈希的清单。锁屏图仍由脚本绘制，
-不能当作真实推送测试。
+流程拆成三个独立任务：
+
+1. **build**：只构建一次准确的发行版。公开附件 `store-simulator-<run>-<attempt>`
+   包含未签名的模拟器 App，以及源码、工具链和内容哈希清单。
+2. **capture**：直接安装成品，不安装 Pods、不重做原生构建。专用 iPhone 17 Pro Max、
+   iPad Pro 13-inch 分别采集中英文。每完成一组就保存哈希与原图，失败时也上传
+   `store-checkpoint-<run>-<attempt>`。只关闭和删除本轮创建的模拟器。
+3. **render**：核对四组原图，用当前已审核的脚本和标题生成 22 张截图、两张创意图。
+   widget 绘制读取发行版源码。`appstore-assets-<tag>-<run>-<attempt>` 包含原图以及分开记录的采集/排版来源。
 
 ```sh
+# 全新采集
 gh workflow run ios-store-assets.yml --ref main -f release_tag=vX.Y.Z
+# 复用已结束的失败或成功运行中的构建和有效截图组
+gh workflow run ios-store-assets.yml --ref main -f release_tag=vX.Y.Z -f reuse_run=RUN_ID
+# 仅改标题/排版：不构建 App，不启动 Appium 或模拟器
+gh workflow run ios-store-assets.yml --ref main -f release_tag=vX.Y.Z \
+  -f reuse_run=RUN_ID -f stage=render-only
 ```
 
-私下下载 `appstore-assets-<tag>-<run>` 产物，逐张按原尺寸检查。
-将 `screenshots/<locale>/`、`creative/<locale>/` 复制到
-`mobileapp/fastlane/` 对应目录，并将清单留在发布证据中。
-按[上架流程](submit.md)放置并读回四组截图，以及中英文的页头和搜索结果四个位置。
-本流程不向 App Store Connect 上传或提交审核；这些图片也不代表已完成真机、
-VoiceOver、APNs 或实时活动验收。
+只允许复用本仓库主分支上、由同一工作流手动触发且已结束的运行。
+要复用构建，应选采集运行；仅排版运行会转存原图检查点，但没有构建附件。
+源码、Xcode、架构及 App 哈希必须匹配；构建不匹配时明确停止，需重新构建。
+采集输入变化会使已完成标记失效；已记录文件缺失或损坏时会报错，不能继续当作有效原图。
+仅排版必须有四组完整且版本一致的原图。附件 **7 天**到期，必要附件缺失或过期时需重新采集；
+已验收原图和清单应另作私有长期留存。部分检查点不能当作最终素材清单。
+当前标题改动可以重新排版已验证的旧原图，保留原始来源且不改变发行版 App。
+
+下载成品后逐张按原尺寸检查，将截图与创意图目录复制到 `mobileapp/fastlane/` 对应位置，
+保留来源清单，按[准备与读回指引](preparation.zh.md)继续。
+锁屏图仍由 widget 定义绘制，不能作为真实推送验收。本工作流不会修改 ASC 或提交审核，
+也不能证明真机、VoiceOver、APNs 或实时活动验收通过。
+公开产物不能包含真机 IPA、profile、凭据或真实会话数据。
 
 运行器从 npm 注册发行版 lockfile 指定版本的 XCUITest 驱动。不要对已安装的
 `node_modules` 目录使用 `--source=local`：Appium 会把它当作源码目录并执行

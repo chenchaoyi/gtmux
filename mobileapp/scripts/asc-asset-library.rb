@@ -11,7 +11,7 @@
 # parent surface, so they need one that is still editable; an asset can also be submitted
 # on its own from the Asset Library page in App Store Connect.
 #
-# Usage (from mobileapp/, ASC key in the env, e.g. `. ../ops/asc-env.sh`):
+# Usage (from mobileapp/, existing ASC key explicitly configured in the environment):
 #   bundle exec ruby scripts/asc-asset-library.rb list [--category CREATIVE_ASSETS]
 #   bundle exec ruby scripts/asc-asset-library.rb upload FILE --category CREATIVE_ASSETS --name "…"
 #   bundle exec ruby scripts/asc-asset-library.rb delete IMAGE_ID
@@ -50,7 +50,7 @@
 # compares, read-only; an image deliver uploaded before this script counts as the same
 # file when its file name and byte size match. `--dir` points at another screenshot tree.
 
-require 'spaceship'
+require_relative 'asc-progress'
 require 'net/http'
 require 'json'
 require 'digest'
@@ -59,21 +59,33 @@ APP_ID = 'com.gtmux.app'
 API = 'https://api.appstoreconnect.apple.com'
 CATEGORIES = %w[CREATIVE_ASSETS APP_SCREENSHOTS_AND_PREVIEWS].freeze
 
-TOKEN = Spaceship::ConnectAPI::Token.create(
-  key_id: ENV.fetch('ASC_KEY_ID'),
-  issuer_id: ENV['ASC_ISSUER_ID'],
-  filepath: File.expand_path(ENV.fetch('ASC_KEY_PATH'))
-)
+def token
+  @token ||= begin
+    %w[ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_PATH].each do |key|
+      abort "Missing #{key}; configure the existing ASC key in the current shell" if ENV[key].to_s.empty?
+    end
+    abort 'ASC_KEY_PATH must name an existing private key file' unless File.file?(File.expand_path(ENV.fetch('ASC_KEY_PATH')))
+    require 'spaceship'
+    Spaceship::ConnectAPI::Token.create(key_id: ENV.fetch('ASC_KEY_ID'), issuer_id: ENV.fetch('ASC_ISSUER_ID'),
+                                       filepath: File.expand_path(ENV.fetch('ASC_KEY_PATH')))
+  end
+end
+
+
+def store_progress
+  @store_progress ||= StoreProgress.new(journal: opt('journal') || ENV['ASC_PROGRESS_JOURNAL'])
+end
 
 def call(method, path, body = nil)
   uri = URI(path.start_with?('http') ? path : "#{API}#{path}")
+  abort 'Unexpected ASC API origin' unless uri.scheme == 'https' && uri.host == 'api.appstoreconnect.apple.com' && uri.port == 443
   req = Net::HTTP.const_get(method.capitalize).new(uri)
-  req['Authorization'] = "Bearer #{TOKEN.text}"
+  req['Authorization'] = "Bearer #{token.text}"
   if body
     req['Content-Type'] = 'application/json'
     req.body = JSON.generate(body)
   end
-  res = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |h| h.request(req) }
+  res = Net::HTTP.start(uri.host, uri.port, use_ssl: true, open_timeout: 15, read_timeout: 60, write_timeout: 60) { |h| h.request(req) }
   data = res.body.to_s.empty? ? {} : JSON.parse(res.body)
   return data if res.code.to_i < 300
 
@@ -87,7 +99,8 @@ def opt(name)
 end
 
 def library_id
-  Spaceship::ConnectAPI.token = TOKEN
+  current_token = token
+  Spaceship::ConnectAPI.token = current_token
   app = Spaceship::ConnectAPI::App.find(APP_ID) or abort "no app #{APP_ID}"
   call('get', "/v1/apps/#{app.id}/assetLibrary").dig('data', 'id')
 end
@@ -129,13 +142,10 @@ def usable(pool, name)
 end
 
 def wait_processed(id)
-  60.times do
-    img = call('get', "/v1/appAssetLibraryImages/#{id}")['data']
-    return img unless %w[AWAITING_UPLOAD UPLOAD_COMPLETE].include?(img.dig('attributes', 'state'))
-
-    sleep 5
+  timeout = Integer(ENV.fetch('ASC_PROCESSING_WAIT_SECONDS', '900'), 10)
+  store_progress.wait(id, timeout: timeout) do
+    call('get', "/v1/appAssetLibraryImages/#{id}")['data']
   end
-  abort "still processing after 5 minutes: #{id}"
 end
 
 # Settle the images of this name before deciding to upload: delete a reservation that never
@@ -153,6 +163,8 @@ def settle(pool, name)
       puts "deleted an unfinished upload of #{name} (#{i['id']})"
     when 'UPLOAD_COMPLETE'
       i.replace(wait_processed(i['id']))
+      state = i.dig('attributes', 'state')
+      abort 'Unknown processed image state; inspect ASC before retrying' unless USABLE.include?(state) || %w[FAILED REJECTED ARCHIVED].include?(state)
     end
   end
 end
@@ -166,6 +178,7 @@ def upload(lib, file, category, name, pool = nil)
   pool ||= images(lib, category)
   settle(pool, name)
   if (have = usable(pool, name))
+    store_progress.event('reused', image_id: have['id'], name: name)
     puts 'already in the library, left alone:'
     show(have)
     return have
@@ -185,11 +198,12 @@ def upload(lib, file, category, name, pool = nil)
       req = Net::HTTP.const_get(op['method'].capitalize).new(uri)
       (op['requestHeaders'] || []).each { |h| req[h['name']] = h['value'] }
       req.body = bytes.byteslice(op['offset'], op['length'])
-      put = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |h| h.request(req) }
+      put = Net::HTTP.start(uri.host, uri.port, use_ssl: true, open_timeout: 15, read_timeout: 60, write_timeout: 60) { |h| h.request(req) }
       abort "upload part at #{op['offset']} -> HTTP #{put.code}" unless put.code.to_i < 300
     end
     call('patch', "/v1/appAssetLibraryImages/#{id}", {data: {type: 'appAssetLibraryImages', id: id, attributes: {uploaded: true}}})
     committed = true
+    store_progress.event('uploaded', image_id: id, name: name)
   ensure
     unless committed
       begin
@@ -207,6 +221,7 @@ def upload(lib, file, category, name, pool = nil)
   abort "#{id} finished processing in state #{state}, which this script does not know; nothing was placed. Check it in App Store Connect." unless USABLE.include?(state)
   show(img)
   puts "  spec #{img.dig('attributes', 'specId')}"
+  store_progress.event('ready', image_id: id, name: name)
   pool.unshift(img)
   img
 end
@@ -246,7 +261,8 @@ def creative_name(locale, file)
 end
 
 def version_localizations(version)
-  Spaceship::ConnectAPI.token = TOKEN
+  current_token = token
+  Spaceship::ConnectAPI.token = current_token
   app = Spaceship::ConnectAPI::App.find(APP_ID)
   v = app.get_app_store_versions(filter: {versionString: version}).first or abort "no version #{version} in App Store Connect"
   [v, v.get_app_store_version_localizations.to_h { |l| [l.locale, l.id] }]
@@ -285,7 +301,7 @@ def creative_status(lib, version)
     placed = r[:placed] ? "placed #{r[:placed].dig('attributes', 'state')}" : 'not placed'
     puts "#{r[:ok] ? 'ok  ' : 'TODO'}  #{r[:locale]}  #{r[:type]}  #{r[:name]}  asset: #{asset}  #{placed}"
   end
-  exit(rows.all? { |r| r[:ok] } ? 0 : 1)
+  rows.all? { |r| r[:ok] }
 end
 
 def place_creative(lib, version)
@@ -305,6 +321,7 @@ def place_creative(lib, version)
       relationships: {image: {data: {type: 'appAssetLibraryImages', id: asset['id']}},
                       appStoreVersionLocalization: {data: {type: 'appStoreVersionLocalizations', id: r[:loc]}}}
     }})
+    store_progress.event("placed", locale: r[:locale], placement: r[:type], image_id: asset["id"])
     puts "placed #{r[:locale]} #{r[:type]} <- #{r[:name]}"
   end
   creative_status(lib, version)
@@ -354,7 +371,7 @@ end
 # file name and byte size, or nil. The weak match is only for images this script did not
 # name: deliver's uploads, which the library migration named like "ipad-04.png (87)".
 def same_file(image, file)
-  return nil unless image
+  return nil unless image && USABLE.include?(image.dig('attributes', 'state'))
 
   a = image['attributes']
   return :hash if a['referenceName'] == shot_name(file)
@@ -393,7 +410,7 @@ def screenshot_status(version, dir)
       puts "      #{i + 1}. #{File.basename(f)}  #{seen}"
     end
   end
-  exit(rows.all? { |r| r[:ok] } ? 0 : 1)
+  rows.all? { |r| r[:ok] }
 end
 
 def place_screenshots(lib, version, dir, dry)
@@ -428,15 +445,29 @@ def place_screenshots(lib, version, dir, dry)
   screenshot_status(version, dir) unless dry
 end
 
-lib = library_id
-case ARGV.first
-when 'list' then images(lib, opt('category')).each { |i| show(i) }
-when 'upload' then upload(lib, ARGV[1], opt('category'), opt('name'))
-when 'delete' then delete_image(ARGV[1] || abort('delete needs an image id'))
-when 'creative-status' then creative_status(lib, opt('version') || abort('--version is required'))
-when 'place-creative' then place_creative(lib, opt('version') || abort('--version is required'))
-when 'screenshot-status' then screenshot_status(opt('version') || abort('--version is required'), opt('dir') || SHOT_DIR)
-when 'place-screenshots'
-  place_screenshots(lib, opt('version') || abort('--version is required'), opt('dir') || SHOT_DIR, ARGV.include?('--dry-run'))
-else abort File.read(__FILE__)[/^# Usage.*?\n#\n/m]
+if $PROGRAM_NAME == __FILE__
+  begin
+    if ARGV.empty? || ARGV.include?('--help')
+      puts File.read(__FILE__)[/^# Usage.*?\n#\n/m]
+      puts '--journal PRIVATE.jsonl records progress; ASC_PROCESSING_WAIT_SECONDS=900 (1..1800). Exit 75 means pending; rerun to resume.'
+      exit 0
+    end
+    store_progress.event('start', command: ARGV.first)
+    lib = library_id
+    result = case ARGV.first
+    when 'list' then images(lib, opt('category')).each { |i| show(i) }
+    when 'upload' then upload(lib, ARGV[1], opt('category'), opt('name'))
+    when 'delete' then delete_image(ARGV[1] || abort('delete needs an image id'))
+    when 'creative-status' then creative_status(lib, opt('version') || abort('--version is required'))
+    when 'place-creative' then place_creative(lib, opt('version') || abort('--version is required'))
+    when 'screenshot-status' then screenshot_status(opt('version') || abort('--version is required'), opt('dir') || SHOT_DIR)
+    when 'place-screenshots'
+      place_screenshots(lib, opt('version') || abort('--version is required'), opt('dir') || SHOT_DIR, ARGV.include?('--dry-run'))
+    else abort 'Unknown command; use --help'
+    end
+    exit(result == false ? 1 : 0)
+  rescue StoreProgress::Pending => e
+    warn e.message
+    exit 75
+  end
 end

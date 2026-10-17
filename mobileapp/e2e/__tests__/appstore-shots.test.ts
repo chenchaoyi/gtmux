@@ -86,7 +86,10 @@ gated('app store demo shots', () => {
     //    the your-call / activity / console zones (hq-command-page removed the old fleet
     //    board). Tapping the disc opens the real HQScreen.
     await hqDisc.click();
-    await settle(1800);
+    // The mounted page can still contain the initial empty digest. Require the
+    // demo's actual pending item before recording HQ.
+    await driver.$('~hq-verdict').waitForDisplayed({timeout: 15_000});
+    await driver.$('~hq-call-api:0.0').waitForDisplayed({timeout: 20_000});
     shot('03-hq');
 
     // 4) The console — HQ's words with the acts it recorded threaded in. The page's whole

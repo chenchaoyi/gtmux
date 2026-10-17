@@ -237,8 +237,18 @@ def verify_export(root, version, build, team):
 
 
 def recovery_files(root):
-    # Allowlist: never archive signing secrets, provisioning files or source checkouts.
-    return [p for p in root.rglob("*") if p.is_file() and not p.is_symlink() and (p.parent == root / "logs" or (p.parent == root / "export" and p.suffix == ".ipa") or (p.parent == root and p.name in ("receipt.json", "publication.json", "publication.log")))]
+    # Preserve the canonical archive and matching symbols, excluding profiles,
+    # signing setup, external links and source checkouts. Recovery remains encrypted.
+    result = []
+    for p in root.rglob("*"):
+        if not p.is_file() or p.is_symlink() or any(part.is_symlink() for part in p.parents if part != root and part.is_relative_to(root)):
+            continue
+        rel = p.relative_to(root)
+        archive = rel.parts[0] == "App.xcarchive" and len(rel.parts) > 1 and rel.parts[1] in ("Info.plist", "Products", "dSYMs") and p.suffix != ".mobileprovision"
+        ordinary = p.parent == root / "logs" or (p.parent == root / "export" and p.suffix == ".ipa") or (p.parent == root and p.name in ("receipt.json", "publication.json", "publication.log"))
+        if archive or ordinary:
+            result.append(p)
+    return result
 
 
 def seal(root, destination, recipient):

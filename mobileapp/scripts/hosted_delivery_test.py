@@ -171,13 +171,13 @@ class HostedDeliveryTests(unittest.TestCase):
     def test_recovery_allowlist_excludes_credentials_profiles_and_symlinks(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            names = ["logs/archive.log", "export/app.ipa", "receipt.json", "publication.json", "publication.log", "signing/keychain-password", "signing/certificate.p12", "signing/profiles.json", "signing/profile.mobileprovision", "export/profile.mobileprovision", "source/secret.py", "recovery.tar.gz"]
+            names = ["logs/archive.log", "export/app.ipa", "receipt.json", "publication.json", "publication.log", "signing/keychain-password", "signing/certificate.p12", "signing/profiles.json", "signing/profile.mobileprovision", "export/profile.mobileprovision", "source/secret.py", "recovery.tar.gz", "App.xcarchive/Info.plist", "App.xcarchive/Products/Applications/app.app/executable", "App.xcarchive/dSYMs/app.app.dSYM/Contents/Resources/DWARF/app", "App.xcarchive/Products/Applications/app.app/embedded.mobileprovision"]
             for name in names:
                 path = root / name
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text("synthetic")
             (root / "logs/link.log").symlink_to(root / "signing/keychain-password")
-            self.assertEqual({str(p.relative_to(root)) for p in delivery.recovery_files(root)}, {"logs/archive.log", "export/app.ipa", "receipt.json", "publication.json", "publication.log"})
+            self.assertEqual({str(p.relative_to(root)) for p in delivery.recovery_files(root)}, {"logs/archive.log", "export/app.ipa", "receipt.json", "publication.json", "publication.log", "App.xcarchive/Info.plist", "App.xcarchive/Products/Applications/app.app/executable", "App.xcarchive/dSYMs/app.app.dSYM/Contents/Resources/DWARF/app"})
 
     def test_failed_child_output_never_echoed(self):
         with tempfile.TemporaryDirectory() as tmp:

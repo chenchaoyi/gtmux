@@ -1,6 +1,7 @@
 name: App Store screenshots (maintainers)
 
-# Synthetic demo data only. This workflow has no signing, upload or submission secrets.
+# Manual, synthetic demo data. Public artifacts include an UNSIGNED Simulator app,
+# never device IPAs, signing material, real session data or ASC credentials.
 on:
   workflow_dispatch:
     inputs:
@@ -8,6 +9,15 @@ on:
         description: Published stable release to capture (vX.Y.Z)
         required: true
         type: string
+      reuse_run:
+        description: Completed run of this workflow to reuse (blank starts fresh)
+        required: false
+        type: string
+      stage:
+        description: Render-only reuses complete raw captures with current captions
+        default: capture
+        type: choice
+        options: [capture, render-only]
 
 permissions:
   contents: read
@@ -18,9 +28,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  capture:
-    runs-on: macos-latest
-    timeout-minutes: 60
+  source:
+    runs-on: ubuntu-latest
+    outputs:
+      commit: ${{ steps.source.outputs.commit }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
@@ -30,11 +41,15 @@ jobs:
         id: source
         env:
           TAG: ${{ inputs.release_tag }}
+          REUSE: ${{ inputs.reuse_run }}
+          STAGE: ${{ inputs.stage }}
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           [[ "$GITHUB_REF" == refs/heads/main ]]
           [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          [[ -z "$REUSE" || "$REUSE" =~ ^[1-9][0-9]*$ ]]
+          [[ "$STAGE" == capture || ( "$STAGE" == render-only && -n "$REUSE" ) ]]
           sha=$(git rev-parse --verify "refs/tags/$TAG^{commit}")
           git merge-base --is-ancestor "$sha" origin/main
           mkdir -p "$RUNNER_TEMP/store-ref"
@@ -42,66 +57,200 @@ jobs:
           gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$sha&event=push&per_page=100" > "$RUNNER_TEMP/store-ref/ci.json"
           python3 mobileapp/scripts/hosted-ios-delivery.py release --root "$RUNNER_TEMP/store-ref" --tag "$TAG" --commit "$sha"
           echo "commit=$sha" >> "$GITHUB_OUTPUT"
+
+  build:
+    if: inputs.stage != 'render-only'
+    needs: source
+    runs-on: macos-latest
+    timeout-minutes: 35
+    env:
+      STORE_TAG: ${{ inputs.release_tag }}
+      STORE_COMMIT: ${{ needs.source.outputs.commit }}
+    steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
-          ref: ${{ steps.source.outputs.commit }}
+          persist-credentials: false
+      - name: Reuse a validated build when available
+        id: reuse
+        env:
+          REUSE: ${{ inputs.reuse_run }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [[ -n "$REUSE" ]]; then
+            python3 mobileapp/scripts/store_artifacts.py fetch --root "$RUNNER_TEMP/simulator" --run "$REUSE" --kind simulator --optional
+          fi
+          if [[ -f "$RUNNER_TEMP/simulator/build.json" ]]; then
+            python3 mobileapp/scripts/store_artifacts.py unpack-build --root "$RUNNER_TEMP/simulator" \
+              --tag "$STORE_TAG" --commit "$STORE_COMMIT" --xcode "$(xcodebuild -version)" --arch "$(uname -m)"
+            echo 'ready=true' >> "$GITHUB_OUTPUT"
+            echo 'Reused verified Simulator build.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        if: steps.reuse.outputs.ready != 'true'
+        with:
+          ref: ${{ needs.source.outputs.commit }}
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        if: steps.reuse.outputs.ready != 'true'
+        with:
+          node-version: '22'
+      - uses: ruby/setup-ruby@e81a8fa391b11a595c1b7ed84177cc0fe02faf83 # v1
+        if: steps.reuse.outputs.ready != 'true'
+        with:
+          working-directory: source/mobileapp
+          bundler-cache: false
+      - name: Build exact published source once
+        if: steps.reuse.outputs.ready != 'true'
+        working-directory: source/mobileapp
+        run: |
+          set -euo pipefail
+          python3 -c 'import shutil; assert shutil.disk_usage(".").free >= 25*1024**3, "Need 25 GiB before the simulator build"'
+          npm ci
+          bundle install
+          (cd ios && bundle exec pod install)
+          xcodebuild -workspace ios/GtmuxMobile.xcworkspace -scheme GtmuxMobile \
+            -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -jobs 2 \
+            -derivedDataPath "$RUNNER_TEMP/store-build" ARCHS="$(uname -m)" CODE_SIGNING_ALLOWED=NO \
+            build 2>&1 | tee "$RUNNER_TEMP/store-build.log"
+          python3 "$GITHUB_WORKSPACE/mobileapp/scripts/store_artifacts.py" pack-build \
+            --app "$RUNNER_TEMP/store-build/Build/Products/Release-iphonesimulator/gtmux.app" \
+            --root "$RUNNER_TEMP/simulator" --tag "$STORE_TAG" --commit "$STORE_COMMIT" \
+            --xcode "$(xcodebuild -version)" --arch "$(uname -m)"
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: store-simulator-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/simulator/build.json
+            ${{ runner.temp }}/simulator/simulator-app.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: failure()
+        with:
+          name: store-build-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/store-build.log
+          retention-days: 3
+
+  capture:
+    needs: [source, build]
+    runs-on: macos-latest
+    timeout-minutes: 45
+    env:
+      STORE_TAG: ${{ inputs.release_tag }}
+      STORE_COMMIT: ${{ needs.source.outputs.commit }}
+      WORKFLOW_COMMIT: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ needs.source.outputs.commit }}
           path: source
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
-      - uses: ruby/setup-ruby@e81a8fa391b11a595c1b7ed84177cc0fe02faf83 # v1
-        with:
-          working-directory: source/mobileapp
-          bundler-cache: false
-      - name: Simulator dependencies and runner space
+      - name: Retrieve build and any completed capture groups
+        env:
+          REUSE: ${{ inputs.reuse_run }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download "$GITHUB_RUN_ID" --name "store-simulator-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" --dir "$RUNNER_TEMP/simulator"
+          python3 mobileapp/scripts/store_artifacts.py unpack-build --root "$RUNNER_TEMP/simulator" \
+            --tag "$STORE_TAG" --commit "$STORE_COMMIT" --xcode "$(xcodebuild -version)" --arch "$(uname -m)"
+          if [[ -n "$REUSE" ]]; then
+            python3 mobileapp/scripts/store_artifacts.py fetch --root "$RUNNER_TEMP/capture" --run "$REUSE" --kind checkpoint --optional
+          fi
+      - name: Install capture dependencies (no Pods or native rebuild)
         working-directory: source/mobileapp
         run: |
-          python3 -c 'import shutil; assert shutil.disk_usage(".").free >= 25*1024**3, "Need 25 GiB before the simulator build"'
+          set -euo pipefail
+          python3 -c 'import shutil; assert shutil.disk_usage(".").free >= 15*1024**3, "Need 15 GiB for isolated simulators"'
           export APPIUM_HOME="$RUNNER_TEMP/store-appium"
           echo "APPIUM_HOME=$APPIUM_HOME" >> "$GITHUB_ENV"
           npm ci
-          bundle install
-          (cd ios && bundle exec pod install)
           driver_version=$(node -p "require('./package-lock.json').packages['node_modules/appium-xcuitest-driver'].version")
           npx appium driver install --source=npm "appium-xcuitest-driver@$driver_version"
-      - name: Build the published app for Simulator
-        working-directory: source/mobileapp
+      - name: Capture missing groups and checkpoint each completed locale
         run: |
-          set -o pipefail
-          xcodebuild -workspace ios/GtmuxMobile.xcworkspace -scheme GtmuxMobile \
-            -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -jobs 2 \
-            -derivedDataPath "$RUNNER_TEMP/store-build" ARCHS="$(uname -m)" CODE_SIGNING_ALLOWED=NO \
-            build 2>&1 | tee "$RUNNER_TEMP/store-build.log"
-      - name: Capture both languages on iPhone and iPad and frame the assets
-        env:
-          STORE_TAG: ${{ inputs.release_tag }}
-          STORE_COMMIT: ${{ steps.source.outputs.commit }}
-          WORKFLOW_COMMIT: ${{ github.sha }}
-        run: |
-          python3 mobileapp/scripts/capture-store-assets.py \
-            --source source/mobileapp \
-            --harness mobileapp/e2e \
-            --app "$RUNNER_TEMP/store-build/Build/Products/Release-iphonesimulator/gtmux.app" \
-            --output "$RUNNER_TEMP/store-assets"
-      - name: Upload demo images and provenance (no binary or credentials)
+          python3 mobileapp/scripts/capture-store-assets.py --source source/mobileapp --harness mobileapp/e2e \
+            --app "$RUNNER_TEMP/simulator/gtmux.app" --output "$RUNNER_TEMP/capture"
+      - name: Preserve completed groups even after failure
+        if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: appstore-assets-${{ inputs.release_tag }}-${{ github.run_id }}
-          path: ${{ runner.temp }}/store-assets
-          if-no-files-found: error
+          name: store-checkpoint-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/capture/checkpoint.json
+            ${{ runner.temp }}/capture/raw
+            ${{ runner.temp }}/capture/capture-context.json
+          if-no-files-found: warn
           retention-days: 7
-      - name: Capture failure evidence
+      - name: Capture diagnostics
         if: failure()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: appstore-assets-failure-${{ github.run_id }}
+          name: store-capture-failure-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
-            ${{ runner.temp }}/store-build.log
-            ${{ runner.temp }}/store-assets/capture-context.json
-            ${{ runner.temp }}/store-assets/progress.jsonl
-            ${{ runner.temp }}/store-assets/wda-build-*.log
+            ${{ runner.temp }}/capture/progress.jsonl
+            ${{ runner.temp }}/capture/wda-build-*.log
             source/mobileapp/.e2e-artifacts/**/appium.log
             source/mobileapp/.e2e-artifacts/**/*.png
           include-hidden-files: true
           retention-days: 3
+
+  render:
+    if: always() && needs.source.result == 'success' && (needs.capture.result == 'success' || inputs.stage == 'render-only')
+    needs: [source, capture]
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ needs.source.outputs.commit }}
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: Render current captions from verified release captures
+        env:
+          REUSE: ${{ inputs.reuse_run }}
+          STAGE: ${{ inputs.stage }}
+          TAG: ${{ inputs.release_tag }}
+          COMMIT: ${{ needs.source.outputs.commit }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [[ "$STAGE" == render-only ]]; then
+            python3 mobileapp/scripts/store_artifacts.py fetch --root "$RUNNER_TEMP/capture" --run "$REUSE" --kind checkpoint
+          else
+            gh run download "$GITHUB_RUN_ID" --name "store-checkpoint-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" --dir "$RUNNER_TEMP/capture"
+          fi
+          python3 mobileapp/scripts/store_artifacts.py render --source source/mobileapp --renderer mobileapp/scripts \
+            --captures "$RUNNER_TEMP/capture" --root "$RUNNER_TEMP/store-assets" --tag "$TAG" --commit "$COMMIT" --render-commit "$GITHUB_SHA"
+          echo 'All four capture groups verified. Images generated; human visual review and ASC placement are still required.' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: appstore-assets-${{ inputs.release_tag }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/store-assets
+          if-no-files-found: error
+          retention-days: 7
+      - name: Forward verified raw checkpoint for later render-only retries
+        if: inputs.stage == 'render-only'
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: store-checkpoint-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/capture/checkpoint.json
+            ${{ runner.temp }}/capture/raw
+            ${{ runner.temp }}/capture/capture-context.json
+          if-no-files-found: error
+          retention-days: 7
