@@ -131,6 +131,7 @@ class ArtifactTests(unittest.TestCase):
             context = {'release_tag': 'v1.2.3', 'source_commit': 'a' * 40}
             for key in store.GROUPS:
                 store.checkpoint_group(captures, context, key, self.group(root, key))
+            png(captures / 'raw/phone-en/unrecorded.png', [1320, 2868], 'not covered by checkpoint')
             calls = []
             def render(args, **kwargs):
                 calls.append((args, kwargs))
@@ -144,6 +145,8 @@ class ArtifactTests(unittest.TestCase):
             with patch.object(store.subprocess, 'run', side_effect=render):
                 store.render(source, renderer, captures, output, 'v1.2.3', 'a' * 40, 'b' * 40)
             manifest = json.loads((output / 'manifest.json').read_text())
+            self.assertFalse((output / 'raw/en/unrecorded.png').exists())
+            self.assertFalse(any('unrecorded' in image['file'] for image in manifest['images']))
             self.assertEqual(manifest['render_commit'], 'b' * 40)
             self.assertEqual(manifest['source_commit'], 'a' * 40)
             self.assertEqual(manifest['render_files']['shot-captions.json'], store.digest(renderer / 'shot-captions.json'))

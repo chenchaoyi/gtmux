@@ -150,7 +150,10 @@ def render(source, renderer, captures, output, tag, commit, render_commit):
                 raise ValueError('Caption references an uncaptured screen')
     output.mkdir(parents=True)
     for key in GROUPS:
-        shutil.copytree(captures / 'raw' / key, output / 'raw' / key.replace('phone-', ''))
+        destination = output / 'raw' / key.replace('phone-', '')
+        destination.mkdir(parents=True)
+        for record in data['groups'][key]:
+            shutil.copyfile(captures / record['file'], destination / Path(record['file']).name)
     for language, locale in (('en', 'en-US'), ('zh', 'zh-Hans')):
         phone, ipad = output / 'raw' / language, output / 'raw' / ('ipad-' + language)
         # Widget definition and renderer stay tied to the released application.
