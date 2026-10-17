@@ -1889,7 +1889,7 @@ After a successful CLI update, the newly installed executable runs a read-only
 `doctor --no-prompt --progress` check (90-second limit). Findings do not turn a
 successful installation into a failed update. Menu-bar updates hand this check to
 the relaunched app: it checks once per version and keeps the last valid report.
-Open **Environment check** from the gear menu or Preferences → Diagnostics to
+Open **Environment check** from Preferences → Diagnostics to
 review results or retry. **Review repairs…** opens `doctor --fix` in a terminal,
 where each action is explained and confirmed. Check again after completing repairs.
 

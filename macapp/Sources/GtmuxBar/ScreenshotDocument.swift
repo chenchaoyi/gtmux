@@ -85,6 +85,7 @@ final class ScreenshotDocument: ObservableObject {
     @Published private(set) var items: [Annotation] = []
     /// The editor window's undo manager, so ⌘Z / ⇧⌘Z from the app's Edit menu work.
     weak var undoManager: UndoManager?
+    var editingEnabled = true
 
     var scale: CGFloat { pointSize.width > 0 ? CGFloat(image.width) / pointSize.width : 1 }
     var bounds: CGRect { CGRect(origin: .zero, size: pointSize) }
@@ -109,12 +110,13 @@ final class ScreenshotDocument: ObservableObject {
     }
 
     func add(_ a: Annotation) {
+        guard editingEnabled else { return }
         items.append(a)
         undoManager?.registerUndo(withTarget: self) { $0.remove(a) }
     }
 
     func remove(_ a: Annotation) {
-        guard let i = items.lastIndex(where: { $0.id == a.id }) else { return }
+        guard editingEnabled, let i = items.lastIndex(where: { $0.id == a.id }) else { return }
         items.remove(at: i)
         undoManager?.registerUndo(withTarget: self) { $0.add(a) }
     }

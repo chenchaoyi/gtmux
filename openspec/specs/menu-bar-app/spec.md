@@ -37,23 +37,24 @@ emphasized.
 
 ### Requirement: New session prompt is compact and ready for typing
 
-The New session action SHALL open a small, left-aligned window with one optional
-session-name field. The field SHALL have an insertion point when the window opens.
-The label and field SHALL share one compact form row, with an automatic-naming
-placeholder instead of a separate explanation. The window SHALL size to the native
-controls and keep Cancel/Create together immediately below the form. Cancel SHALL create nothing;
-Create SHALL run `gtmux new` with either no name or the trimmed name as one argument.
+The New session action SHALL open a small, left-aligned window with one session-name
+field. The field SHALL receive focus and show a selected concrete suggested name
+(`work-` plus eight random hexadecimal characters), ready to accept or replace.
+The same name SHALL remain as the placeholder after clearing the field. The label
+and field SHALL share one compact row. The window SHALL size to native controls
+and keep Cancel/Create immediately below. Opening or cancelling SHALL create nothing.
+Create SHALL pass either the trimmed entered name or the exact displayed suggestion
+as one argument to `gtmux new`. CLI and mobile blank-name defaults SHALL remain unchanged.
 
 #### Scenario: Create a session without entering a name
 
-- **WHEN** the user opens New session and immediately confirms
-- **THEN** the app runs `gtmux new`, allowing tmux to choose the name
+- **WHEN** the user immediately confirms or clears the suggested name and confirms
+- **THEN** the app passes the exact displayed suggestion as the name to `gtmux new`
 
 #### Scenario: Type and create a named session
 
-- **WHEN** the user opens New session, types a name and confirms
-- **THEN** the insertion point is already in the name field and the app passes
-  the trimmed name as one argument to `gtmux new`
+- **WHEN** the user replaces the selected suggestion and confirms
+- **THEN** the app passes the trimmed entered name as one argument to `gtmux new`
 
 ### Requirement: The popover grows with the fleet and stays on screen
 
@@ -1223,8 +1224,8 @@ The menu-bar app SHALL show a compact, resizable What's new window after an
 upgrade when the user first opens the menu, following the phone's newest-expanded/older-folded version grouping.
 Hidden background launches SHALL NOT activate the reading window; a response after
 the menu closes SHALL wait for the next opening.
-It SHALL show only notes up to the installed app version and provide permanent
-gear-menu and Software update preferences entries. Prose SHALL wrap to the actual
+It SHALL show only notes up to the installed app version and provide
+a permanent Software update preferences entry. Prose SHALL wrap to the actual
 window width and scroll; Return, Escape and window close SHALL dismiss the reader.
 It SHALL acknowledge successfully read notes on dismissal, not on fetch start.
 First installation SHALL be quiet; downgrade SHALL not lower acknowledgement.
@@ -1338,3 +1339,33 @@ Existing action kinds SHALL be classified as instruction delivery, updates, matt
 - **WHEN** the reader opens Knowledge
 - **THEN** Export and Import use matching text size and control size
 - **AND** clicking HQ archives opens readable archive details without requiring hover
+
+### Requirement: Screenshot delivery owns the editor until its receipt
+While sending, a centered gtmux delivery panel SHALL cover the blurred, inactive
+editor and identify the captured destination and terminal-confirmation state.
+Notes, annotations, target selection, export controls and keyboard/undo routes
+SHALL all be unavailable; close SHALL be disabled while sending. Copy SHALL NOT
+replace delivery state. Confirmed sent/queued results SHALL remain locked until
+the existing automatic close, which SHALL target only that editor. Every refusal,
+failure or unconfirmed receipt SHALL restore editing with the note and marks
+preserved, without automatic retry. The panel SHALL NOT claim task completion.
+Progress SHALL respect reduced-motion and reduced-transparency preferences.
+
+#### Scenario: Export and undo during a send
+- **WHEN** the user invokes Copy, Save, Undo or Send again while delivery is pending
+- **THEN** no export, edit, extra delivery or status overwrite occurs
+- **AND** the original undo history remains usable after a failed receipt
+
+#### Scenario: A late success belongs to an older editor
+- **WHEN** a successful editor schedules its close and another editor opens
+- **THEN** the old close cannot dismiss the newer editor
+
+### Requirement: Gear menu exposes frequent actions
+The gear menu SHALL contain Preferences, Pair a device, Check for updates and Quit.
+It SHALL NOT duplicate What's new or Environment check entries. Upgrade notes SHALL
+remain automatically presented and manually accessible in Software update preferences;
+post-update environment checks SHALL retain their existing flow.
+
+#### Scenario: Open the gear menu
+- **WHEN** a user opens the menu
+- **THEN** the two secondary entries are absent while the four frequent actions remain

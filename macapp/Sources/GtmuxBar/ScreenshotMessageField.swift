@@ -11,6 +11,7 @@ struct MultilineMessageField: NSViewRepresentable {
     let onSend: () -> Void
     var focusKey: String? = nil
     var fontSize: CGFloat = 13
+    @Environment(\.isEnabled) private var isEnabled
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -43,6 +44,8 @@ struct MultilineMessageField: NSViewRepresentable {
     func updateNSView(_ scroll: NSScrollView, context: Context) {
         context.coordinator.parent = self
         guard let note = scroll.documentView as? MessageTextView else { return }
+        note.isEditable = isEnabled
+        note.isSelectable = isEnabled
         // Do not replace text during composition or ordinary cursor movement.
         if note.string != text && !note.hasMarkedText() {
             let selection = note.selectedRange()
@@ -54,6 +57,8 @@ struct MultilineMessageField: NSViewRepresentable {
         note.onSend = onSend
         if let focusKey, context.coordinator.focusKey != focusKey {
             context.coordinator.focusKey = focusKey; note.focusPending = true
+        }
+        if isEnabled && note.focusPending {
             DispatchQueue.main.async { note.focusIfNeeded() }
         }
         note.setAccessibilityLabel(label)
@@ -66,7 +71,7 @@ struct MultilineMessageField: NSViewRepresentable {
         var parent: MultilineMessageField
         init(_ parent: MultilineMessageField) { self.parent = parent }
         func textDidChange(_ notification: Notification) {
-            guard let note = notification.object as? NSTextView else { return }
+            guard let note = notification.object as? NSTextView, note.isEditable else { return }
             parent.text = note.string
         }
     }
@@ -76,7 +81,7 @@ class MessageTextView: NSTextView {
     var focusPending = false
     override func viewDidMoveToWindow() { super.viewDidMoveToWindow(); focusIfNeeded() }
     func focusIfNeeded() {
-        if focusPending, let window, window.makeFirstResponder(self) { focusPending = false }
+        if isEditable, focusPending, let window, window.makeFirstResponder(self) { focusPending = false }
     }
     var canSend: () -> Bool = { false }
     var onSend: () -> Void = {}
@@ -84,7 +89,7 @@ class MessageTextView: NSTextView {
     private func handleSend(_ event: NSEvent) -> Bool {
         let modifiers = event.modifierFlags.intersection([.command, .shift, .option, .control])
         guard [UInt16(36), UInt16(76)].contains(event.keyCode), modifiers == .command else { return false }
-        if !event.isARepeat && !hasMarkedText() && canSend() { onSend() }
+        if isEditable && !event.isARepeat && !hasMarkedText() && canSend() { onSend() }
         return true
     }
     override func performKeyEquivalent(with event: NSEvent) -> Bool {

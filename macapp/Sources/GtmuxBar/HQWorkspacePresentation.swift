@@ -35,9 +35,15 @@ enum HQMatterGroup: String, CaseIterable, Hashable, Identifiable {
     }
 }
 
-enum HQSidebarSection: Hashable {
+enum HQSidebarSection: Hashable, Identifiable {
     case matters(HQMatterGroup)
     case resources
+    var id: String {
+        switch self {
+        case .matters(let group): return group.rawValue
+        case .resources: return "resources"
+        }
+    }
 }
 
 /// An unread value must not masquerade as an empty result, even before a task starts.

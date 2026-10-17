@@ -11,6 +11,8 @@ final class NewSessionController: NSObject, NSWindowDelegate {
     private var window: NSWindow?
     private var nameField: NSTextField?
     private var onCreate: ((String) -> Void)?
+    private var suggestedName = ""
+    var makeSuggestedName: () -> String = { "work-" + UUID().uuidString.prefix(8).lowercased() }
 
     static func arguments(for name: String) -> [String] {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -21,10 +23,11 @@ final class NewSessionController: NSObject, NSWindowDelegate {
         // Rebuild the small window so labels follow the current app language.
         window?.close()
         self.onCreate = onCreate
+        suggestedName = makeSuggestedName()
         build(l10n: l10n)
         guard let window, let nameField else { return }
         window.title = l10n.tr("New session", "新建会话")
-        nameField.stringValue = ""
+        nameField.stringValue = suggestedName
         window.center()
         NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
@@ -45,9 +48,9 @@ final class NewSessionController: NSObject, NSWindowDelegate {
         label.font = .systemFont(ofSize: 13, weight: .medium)
         let field = NSTextField()
         field.font = .systemFont(ofSize: 13)
-        field.placeholderString = l10n.tr("Automatic", "自动命名")
+        field.placeholderString = suggestedName
         field.bezelStyle = .roundedBezel
-        field.toolTip = l10n.tr("Enter a name, or leave blank to name the session automatically.", "输入会话名称，留空则自动命名。")
+        field.toolTip = l10n.tr("Leave blank to use \(suggestedName).", "留空时使用 \(suggestedName)。")
         field.setAccessibilityIdentifier("new-session-name")
         field.setAccessibilityLabel(l10n.tr("Session name", "会话名称"))
         let cancel = NSButton(title: l10n.tr("Cancel", "取消"), target: self,
@@ -97,7 +100,8 @@ final class NewSessionController: NSObject, NSWindowDelegate {
 
     @objc private func createClicked() {
         guard let nameField else { return }
-        let name = nameField.stringValue
+        let typed = nameField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        let name = typed.isEmpty ? suggestedName : typed
         let callback = onCreate
         window?.close()
         callback?(name)

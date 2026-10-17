@@ -17,9 +17,6 @@ struct HQResourcesView: View {
                 }
                 Label(page.title(l10n), systemImage: page.symbol).font(HQTypography.title)
                 Spacer()
-                if store.refreshingPages.contains(page), store.loadedPages.contains(page) {
-                    HQBrandLoading(label: l10n.tr("Refreshing", "正在刷新"), compact: true)
-                }
             }.padding(16)
             Divider()
             if store.failedPages.contains(page) {

@@ -37,6 +37,7 @@ final class NewSessionControllerTests: XCTestCase {
             l10n.mode = mode
             for dark in [false, true] {
                 let controller = NewSessionController()
+                controller.makeSuggestedName = { "work-preview" }
                 var names: [String] = []
                 controller.show(l10n: l10n) { names.append($0) }
                 let window = try XCTUnwrap(NSApp.windows.first { $0.title == l10n.tr("New session", "新建会话") && $0.isVisible })
@@ -57,7 +58,9 @@ final class NewSessionControllerTests: XCTestCase {
                 XCTAssertEqual(label.frame.midY, field.frame.midY, accuracy: 1)
                 XCTAssertEqual(field.frame.minY - create.frame.maxY, 20, accuracy: 1)
                 XCTAssertGreaterThan(field.frame.width, 240)
-                XCTAssertEqual(field.placeholderString, l10n.tr("Automatic", "自动命名"))
+                XCTAssertEqual(field.placeholderString, "work-preview")
+                XCTAssertEqual(field.stringValue, "work-preview")
+                XCTAssertEqual(field.currentEditor()?.selectedRange, NSRange(location: 0, length: 12))
                 XCTAssertTrue(window.firstResponder === field.currentEditor())
                 XCTAssertEqual(create.keyEquivalent, "\r")
                 XCTAssertEqual(cancel.keyEquivalent, "\u{1b}")
@@ -77,6 +80,27 @@ final class NewSessionControllerTests: XCTestCase {
                 XCTAssertFalse(reopened.isVisible)
             }
         }
+    }
+
+    @MainActor func testClearingTheSuggestionCreatesExactlyTheDisplayedName() throws {
+        let controller = NewSessionController()
+        var suggestions = ["work-first", "work-second"]
+        controller.makeSuggestedName = { suggestions.removeFirst() }
+        var names: [String] = []
+        for expected in ["work-first", "work-second"] {
+            controller.show(l10n: .shared) { names.append($0) }
+            let window = try XCTUnwrap(NSApp.windows.first { $0.isVisible && $0.title == L10n.shared.tr("New session", "新建会话") })
+            let field = try XCTUnwrap(window.contentView?.subviews.compactMap { $0 as? NSTextField }.first { $0.isEditable })
+            XCTAssertEqual(field.stringValue, expected)
+            XCTAssertEqual(field.placeholderString, expected)
+            XCTAssertTrue(names.count < 2, "Opening never creates a session")
+            field.stringValue = " \n "
+            let create = try XCTUnwrap(window.contentView?.subviews.compactMap { $0 as? NSButton }.first { $0.keyEquivalent == "\r" })
+            create.performClick(nil)
+            XCTAssertEqual(names.last, expected, "Clearing the field must not delegate to an unknown tmux-generated name")
+            XCTAssertEqual(NewSessionController.arguments(for: try XCTUnwrap(names.last)), ["new", expected])
+        }
+        XCTAssertEqual(names, ["work-first", "work-second"])
     }
 
 }

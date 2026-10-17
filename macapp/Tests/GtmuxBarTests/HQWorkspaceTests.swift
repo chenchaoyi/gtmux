@@ -945,3 +945,120 @@ extension HQWorkspaceTests {
         }
     }
 }
+
+
+extension HQWorkspaceTests {
+    func testToolbarGeometrySurvivesSidebarAndRefreshChanges() async throws {
+        NativeUIProbe.prepareAccessibility()
+        let fake = WorkspaceFake()
+        let resourceFake = ResourceReadFake()
+        let resources = HQResourceStore(read: resourceFake.read)
+        let store = HQWorkspaceStore(client: fake, resources: resources)
+        let controller = HQWorkspaceController(store: store, autosaveName: nil)
+        controller.show(l10n: .shared)
+        let window = try XCTUnwrap(controller.window)
+        defer { window.close(); store.stop() }
+        try await settled(store)
+        func controls() throws -> [NativeUIElement] {
+            try ["hq-toolbar-sidebar", "hq-toolbar-refresh", "hq-toolbar-terminal"].map {
+                try XCTUnwrap(NativeUIProbe.find($0, in: window), "Missing toolbar control \($0)")
+            }
+        }
+        func settleLayout() async throws {
+            for _ in 0..<15 {
+                window.contentView?.layoutSubtreeIfNeeded()
+                try await Task.sleep(nanoseconds: 20_000_000)
+            }
+        }
+        try await settleLayout()
+        let initial = try controls().map { $0.accessibilityFrame() }
+        let toolbarIDs = window.toolbar?.items.map(\.itemIdentifier)
+        XCTAssertTrue(initial.allSatisfy { $0.width > 0 && $0.height > 0 })
+        XCTAssertLessThan(initial.last!.midX - window.frame.minX, 300, "Actions belong at the leading edge")
+        for expanded in [false, true] {
+            XCTAssertTrue(try controls()[0].accessibilityPerformPress())
+            try await settleLayout()
+            XCTAssertEqual(try controls()[0].accessibilityValue() as? String,
+                           L10n.shared.tr(expanded ? "Visible" : "Hidden", expanded ? "已显示" : "已隐藏"))
+            for (frame, before) in zip(try controls().map { $0.accessibilityFrame() }, initial) {
+                XCTAssertEqual(frame.midX, before.midX, accuracy: 1, "Collapsing the sidebar must not relocate actions")
+            }
+            fake.delay = 0.7
+            XCTAssertTrue(try controls()[1].accessibilityPerformPress())
+            try await Task.sleep(nanoseconds: 40_000_000)
+            XCTAssertTrue(store.loading)
+            window.contentView?.layoutSubtreeIfNeeded()
+            for (frame, before) in zip(try controls().map { $0.accessibilityFrame() }, initial) {
+                // AX bounds can follow the drawn glyph; the arrow and brand have
+                // different widths, but their centers and neighboring controls stay put.
+                XCTAssertEqual(frame.midX, before.midX, accuracy: 1, "Progress must not relocate controls")
+                XCTAssertEqual(frame.midY, before.midY, accuracy: 1)
+            }
+            XCTAssertEqual(window.toolbar?.items.map(\.itemIdentifier), toolbarIDs, "Refreshing cannot insert another toolbar item")
+            try await settled(store)
+            fake.delay = 0
+        }
+        store.select(.resource(.machine))
+        try await settled(store)
+        for _ in 0..<100 {
+            if resources.refreshingPages.isEmpty { break }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        XCTAssertTrue(resources.loadedPages.contains(.machine))
+        resourceFake.delay = 0.3
+        try await settleLayout()
+        XCTAssertTrue(try controls()[1].accessibilityPerformPress())
+        try await Task.sleep(nanoseconds: 40_000_000)
+        XCTAssertTrue(resources.refreshingPages.contains(.machine))
+        XCTAssertEqual(try controls()[1].accessibilityLabel(), L10n.shared.tr("Refreshing HQ", "正在刷新 HQ"))
+        for (frame, before) in zip(try controls().map { $0.accessibilityFrame() }, initial) {
+            XCTAssertEqual(frame.midX, before.midX, accuracy: 1, "Resource refresh uses the same stable toolbar slot")
+        }
+        for _ in 0..<100 {
+            if resources.refreshingPages.isEmpty { break }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        resourceFake.delay = 0
+        window.setContentSize(NSSize(width: 960, height: 620))
+        try await settleLayout()
+        for (frame, before) in zip(try controls().map { $0.accessibilityFrame() }, initial) {
+            XCTAssertEqual(frame.midX, before.midX, accuracy: 1)
+        }
+        if let path = ProcessInfo.processInfo.environment["GTMUX_WORKSPACE_PREVIEW_DIR"], let view = window.contentView?.superview {
+            let bitmap = try XCTUnwrap(view.bitmapImageRepForCachingDisplay(in: view.bounds))
+            view.cacheDisplay(in: view.bounds, to: bitmap)
+            try XCTUnwrap(bitmap.representation(using: .png, properties: [:])).write(to: URL(fileURLWithPath: path).appendingPathComponent("hq-toolbar.png"))
+        }
+        XCTAssertTrue(fake.actions.isEmpty, "Native UI checks must never send instructions")
+    }
+
+    func testSidebarChildrenAreIndentedAndStillSelectAndCollapse() async throws {
+        NativeUIProbe.prepareAccessibility()
+        let fake = WorkspaceFake()
+        let store = HQWorkspaceStore(client: fake, resources: HQResourceStore(read: { _ in nil }))
+        store.refresh(); try await settled(store)
+        let host = NSHostingView(rootView: HQWorkspaceSidebar(l10n: .shared, store: store))
+        let window = NSWindow(contentRect: NSRect(x: 100, y: 100, width: 300, height: 800),
+                              styleMask: [.titled], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        window.contentView = host
+        window.orderFront(nil)
+        defer { window.close(); store.stop() }
+        try await Task.sleep(nanoseconds: 100_000_000)
+        host.layoutSubtreeIfNeeded()
+        let header = try XCTUnwrap(NativeUIProbe.find("hq-sidebar-section-following", in: host))
+        let child = try XCTUnwrap(NativeUIProbe.find("hq-sidebar-matter-matter-a", in: host))
+        XCTAssertGreaterThanOrEqual(child.accessibilityFrame().minX - header.accessibilityFrame().minX, 18)
+        let resourceHeader = try XCTUnwrap(NativeUIProbe.find("hq-sidebar-section-resources", in: host))
+        let resourceChild = try XCTUnwrap(NativeUIProbe.find("hq-sidebar-resource-knowledge", in: host))
+        XCTAssertGreaterThanOrEqual(resourceChild.accessibilityFrame().minX - resourceHeader.accessibilityFrame().minX, 18)
+        XCTAssertTrue(child.accessibilityPerformPress())
+        XCTAssertEqual(store.selection, .matter("matter-a"))
+        XCTAssertTrue(header.accessibilityPerformPress())
+        try await Task.sleep(nanoseconds: 50_000_000)
+        XCTAssertTrue(store.collapsedSections.contains(.matters(.following)))
+        XCTAssertNil(NativeUIProbe.find("hq-sidebar-matter-matter-a", in: host))
+        XCTAssertEqual(store.selection, .matter("matter-a"), "Collapsing must not change the selected matter")
+        XCTAssertTrue(fake.actions.isEmpty)
+    }
+}
