@@ -264,7 +264,9 @@ The cgo-free CLI/server supports macOS and Linux amd64/arm64; the native menu-ba
   Local readiness is not proof of remote authorization or Apple signing.
   Routine uploads need no ccy.dev
   code change, PR or redeployment, and no new bucket/credential per release.
-  App Store/TestFlight stays a separate flow. See
+  App Store/TestFlight stays a separate flow. Store preparation uses `docs/appstore/preparation.md`
+  and its Chinese twin: pre-upload package verification, resumable hosted assets,
+  independent ASC readback and a user-only final Submit step. See
   `mobileapp/DISTRIBUTION.md` and its Chinese twin for signing, publication, retry,
   disk-space and acceptance requirements. A package published or a link downloaded
   is not a phone installation; a user-confirmed installation is not proof of retained

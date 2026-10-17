@@ -70,7 +70,8 @@ gated('app store demo shots (iPad)', () => {
 
     await driver.$('~radar-hq-card').click();
     await driver.$('~hq-inspector').waitForDisplayed({timeout: 10_000});
-    await settle(1600);
+    await driver.$('~hq-verdict').waitForDisplayed({timeout: 15_000});
+    await driver.$('~hq-call-api:0.0').waitForDisplayed({timeout: 20_000});
     shot('02-hq');
 
     await driver.$(`~${TestIds.radar.panes}`).click();

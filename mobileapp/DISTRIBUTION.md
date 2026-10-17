@@ -423,3 +423,12 @@ Any change to signing, profiles, publisher credentials, deploy keys, recipients 
 inputs must update this bilingual guide, the private ledger, recovery README, manifests,
 reminders and encrypted backup. Record whether reminders were merely exported or actually
 scheduled; no automatic renewal is provided. GitHub Secrets cannot be read back as a backup.
+
+### Archive recovery retention
+
+Hosted encrypted recovery also retains `App.xcarchive` Info, Products and dSYMs,
+excluding embedded provisioning profiles, signing setup and symlinks. It expires after
+14 days. Privately retrieve/decrypt it and verify native UUIDs before expiry, then keep
+an encrypted off-machine backup. A sanitized archive needs separately supplied profiles
+to export again. This does not configure a hosted App Store upload; see
+[Store preparation](../docs/appstore/preparation.md).

@@ -1,27 +1,48 @@
 # Capture App Store images in Actions
 
-When local disk space is limited, run **App Store screenshots (maintainers)**
-(`ios-store-assets.yml`) from `main`, with a published stable `release_tag`.
-The workflow verifies the release and successful main CI, then builds that exact
-source for Simulator. It needs no signing, publisher or App Store credentials.
+Run **App Store screenshots (maintainers)** (`ios-store-assets.yml`) from `main`
+with a published stable `release_tag`. It verifies the release and successful main CI.
+No signing, publisher or ASC credential is needed. [中文](assets-ci.zh.md)
 
-It reuses the existing demo capture and framing scripts. A dedicated iPhone 17 Pro
-Max and iPad Pro 13-inch simulator each capture English and Chinese. Only simulators
-created by the run are removed. The artifact contains 22 framed screenshots, two
-creative images, the raw demo captures and a manifest of source IDs and image hashes.
-The lock-screen image remains a rendering of the widget, not a real push test.
+The workflow separates three jobs:
+
+1. **build** creates the exact released app once. Its public `store-simulator-<run>-<attempt>`
+   artifact contains an unsigned Simulator app and source/toolchain/content manifest.
+2. **capture** installs that app without Pods or a native rebuild. Dedicated iPhone
+   17 Pro Max and iPad Pro 13-inch simulators capture English/Chinese. Each completed
+   group is hashed and saved in `store-checkpoint-<run>-<attempt>`, including on failure.
+   Only newly created simulator IDs are shut down/deleted.
+3. **render** validates all four groups and generates 22 screenshots plus two creative
+   images with current reviewed scripts/captions. Widget rendering uses released source.
+   `appstore-assets-<tag>-<run>-<attempt>` includes raw images and separate capture/render provenance.
 
 ```sh
+# Fresh capture
 gh workflow run ios-store-assets.yml --ref main -f release_tag=vX.Y.Z
+# Resume a completed failed/successful run, reusing its build and valid groups
+gh workflow run ios-store-assets.yml --ref main -f release_tag=vX.Y.Z -f reuse_run=RUN_ID
+# Caption/layout update only: no native build, Appium or simulator
+gh workflow run ios-store-assets.yml --ref main -f release_tag=vX.Y.Z \
+  -f reuse_run=RUN_ID -f stage=render-only
 ```
 
-Download the resulting `appstore-assets-<tag>-<run>` artifact privately. Inspect every
-image at its original size. Copy `screenshots/<locale>/` and `creative/<locale>/` to
-the corresponding `mobileapp/fastlane/` folders; retain the manifest with release
-evidence. Follow [the submission runbook](submit.md) to place and read back all four
-screenshot groups and the four Header/Search Results placements. This workflow
-does not upload to App Store Connect or submit a version for review. Its images do
-not establish real-device, VoiceOver, APNs or Live Activity acceptance.
+Reuse requires a completed manual run of this workflow on this repository's main.
+Select a capture run to reuse its build; a render-only run forwards raw checkpoints
+but has no build artifact. Source, Xcode, architecture and app hashes must match.
+Mismatched build artifacts stop with guidance to build fresh. Changed capture inputs
+invalidate group completion; corrupted/missing recorded files fail rather than being
+silently trusted. Render-only requires four complete matching groups. Artifacts expire
+after **7 days**; missing required/expired artifacts need a fresh capture. Keep accepted
+raws/manifests privately for longer retention. A partial checkpoint is never a final
+asset manifest. Current caption edits can reframe old verified raw images without
+changing the released app or losing original capture provenance.
+
+Download final assets, inspect every image at original size, and copy screenshots
+and creative trees into the corresponding `mobileapp/fastlane/` folders. Retain the
+manifest and follow [preparation/readback](preparation.md). The lock-screen image
+remains a widget rendering, not real push acceptance. This workflow does not write to
+ASC or submit. It does not establish real-device, VoiceOver, APNs or Live Activity acceptance.
+Public output must never contain device IPAs, profiles, credentials or real session data.
 
 The runner registers the XCUITest driver from npm at the version in the release's
 lockfile. Do not register its installed `node_modules` folder with `--source=local`:

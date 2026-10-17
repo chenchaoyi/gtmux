@@ -28,3 +28,17 @@ Widget 和通知扩展各自的 App Store 描述文件。选择 ASC 中尚未使
 原有配对已经验收。用 `asc-attach-build.rb` 关联准确的构建，再读回确认。
 被替代的上传保持未选中，不要误提交。其余文字和素材按[上架流程](submit.md)处理；
 用户要求自行 Submit 时，最终提交步骤留给用户。
+
+## 上传前强制校验
+
+上传命令现在必须提供原始 IPA/归档及明确的候选版本：
+
+```sh
+bundle exec fastlane upload ipa:/private/path/store.ipa \
+  baseline:/private/path/original.ipa version:X.Y.Z build:N
+```
+
+命令在网络上传前运行 `scripts/store_package.py`，保存 `build/store-package.json`。
+正常的 `fastlane release` 使用明确保留的 `build/GtmuxMobile.xcarchive` 作基线，
+并要求原生 dSYM 匹配。见[准备与独立读回](preparation.zh.md)。
+原始 IPA 备用路径缺失的符号仍需明确说明，不能视为已补齐。

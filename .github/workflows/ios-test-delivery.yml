@@ -243,7 +243,7 @@ jobs:
           name: ios-delivery-encrypted-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/ios-delivery.tar.gz.age
           if-no-files-found: error
-          retention-days: 3
+          retention-days: 14
       - name: Remove runner signing material and private output
         if: always()
         run: python3 workflow/mobileapp/scripts/hosted-ios-delivery.py cleanup --root "$DELIVERY_ROOT"

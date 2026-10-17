@@ -3,6 +3,9 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+
+from store_artifacts_test import png
+from store_artifacts import GROUPS, checkpoint_group, load_checkpoint
 from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location("capture", Path(__file__).with_name("capture-store-assets.py"))
@@ -136,6 +139,44 @@ class CaptureTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 capture.copy_capture_harness(source, harness)
             self.assertFalse(source.exists())
+
+    def test_resume_skips_completed_locale_and_failure_keeps_its_checkpoint(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            output, raw = root / "output", root / "raw"
+            context = {"release_tag": "v1.2.3"}
+            for name in GROUPS["phone-en"]:
+                png(raw / (name + ".png"), [1320, 2868], name)
+            checkpoint_group(output, context, "phone-en", raw)
+            commands = []
+            def run(args):
+                return "owned-device-id" if "create" in args else ""
+            def launch(*args, **kwargs):
+                commands.append(kwargs["env"]["GTMUX_SHOTS_LANG"])
+                raise subprocess.CalledProcessError(1, args)
+            with patch.dict(capture.os.environ, {"APPIUM_HOME": "/ci/appium"}), \
+                    patch.object(capture, "prebuild_wda"), \
+                    patch.object(capture.subprocess, "run", side_effect=launch):
+                with self.assertRaises(subprocess.CalledProcessError):
+                    capture.capture_device(root, root / "app", output, "phone", {"identifier": "type", "name": "phone"},
+                                           {"identifier": "runtime", "version": "26.5"}, run, context)
+            self.assertEqual(commands, ["zh"])
+            self.assertEqual(set(load_checkpoint(output, context)["groups"]), {"phone-en"})
+
+    def test_complete_device_does_not_create_or_boot_a_simulator(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            output = root / "output"
+            context = {"release_tag": "v1.2.3"}
+            for lang in ("en", "zh"):
+                raw = root / lang
+                for name in GROUPS["phone-" + lang]:
+                    png(raw / (name + ".png"), [1320, 2868], name)
+                checkpoint_group(output, context, "phone-" + lang, raw)
+            with patch.object(capture, "command") as run, patch.object(capture, "prebuild_wda") as compiler:
+                capture.capture_device(root, root / "app", output, "phone", {}, {}, run=run, context=context)
+            run.assert_not_called()
+            compiler.assert_not_called()
 
     def types(self):
         return [{"identifier": "com.apple.CoreSimulator.SimDeviceType." + name, "name": name}

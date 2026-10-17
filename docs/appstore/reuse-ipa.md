@@ -34,3 +34,18 @@ Attach the exact processed build with `asc-attach-build.rb`, then read the
 association back. A superseded upload stays unselected; do not silently submit it.
 Follow the [submission runbook](submit.md) for metadata and assets, and retain the
 operator's final Submit step when requested.
+
+## Enforced upload gate
+
+The upload lane now requires the original IPA/archive and explicit candidate identity:
+
+```sh
+bundle exec fastlane upload ipa:/private/path/store.ipa \
+  baseline:/private/path/original.ipa version:X.Y.Z build:N
+```
+
+It runs `scripts/store_package.py` before network upload and saves
+`build/store-package.json`. Canonical `fastlane release` uses its explicit
+`build/GtmuxMobile.xcarchive` baseline and requires matching native dSYMs.
+See [preparation and independent readback](preparation.md). Missing symbols in an
+original-IPA fallback remain an explicit limitation.
