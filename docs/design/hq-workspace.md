@@ -232,7 +232,7 @@ and actual VoiceOver acceptance.
 
 Opening or reselecting Talk to HQ or a matter reveals its newest loaded conversation,
 including when the content was cached before the view appeared. Refreshing while reading
-older messages does not jump to the bottom; a New messages button returns there explicitly.
+older messages does not jump to the bottom; a Latest messages button returns there explicitly.
 Earlier-page loading and scope drafts retain their existing behavior. The composer says
 Message HQ, Task details, or the actual current matter title; it does not describe internal
 routing or imply that conversations cannot be associated with matters.
@@ -262,3 +262,6 @@ checks do not establish installed-app interaction or actual VoiceOver speech acc
 The usability findings and acceptance boundaries are recorded in [the review](hq-workspace-usability-review.md). UI actions Choose audience, Apply knowledge and Record destination map to the existing promote, land-without-ref and land-with-ref ledger operations; choosing an audience alone does not distribute the entry.
 
 Knowledge actions use an intact horizontal row when it fits and a vertical action list in narrow readers. Audience metadata appears once; the repository path remains available when applicable.
+
+Explicit latest-position requests use at most 24 layout checks at 50 ms intervals for lazy rows to settle, ending after two tail-visible samples. They cancel on navigation and do not run for ordinary historical refresh. If the bound is reached, Latest messages remains available to retry. Known CLI backup observations remain in the archive popover with clearer wording; unknown observations are preserved verbatim.
+User-initiated live scrolling cancels a pending entry request, including legacy mouse events without a tracking pair. Tests wait for the actual request completion and verify a mid-entry live-scroll cancellation.

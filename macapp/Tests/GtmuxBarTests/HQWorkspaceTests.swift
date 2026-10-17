@@ -774,13 +774,20 @@ extension HQWorkspaceTests {
         store.select(.conversation); try await settled(store)
         var navigation: ScrollViewProxy?
         var tailIsVisible = false
-        let host = NSHostingView(rootView: HQWorkspaceConversationView(l10n: .shared, store: store, scrollObserver: { proxy, visible in
-            navigation = proxy; tailIsVisible = visible
+        var entrySettled = false
+        var revealsStarted = 0
+        let host = NSHostingView(rootView: HQWorkspaceConversationView(l10n: .shared, store: store, scrollObserver: { proxy, visible, settled in
+            navigation = proxy; tailIsVisible = visible; entrySettled = settled
+            if !settled { revealsStarted += 1 }
         })
             .font(HQTypography.body).environment(\.markdownTypography, .workspace))
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 800, height: 480), styleMask: [.borderless], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false; window.contentView = host; window.orderFront(nil)
-        defer { window.close(); store.stop() }
+        let resizeDuringEntry = Task { @MainActor in
+            do { try await Task.sleep(nanoseconds: 25_000_000) } catch { return }
+            window.setContentSize(NSSize(width: 760, height: 430))
+        }
+        defer { resizeDuringEntry.cancel(); window.close(); store.stop() }
         func scrollView(_ view: NSView) -> NSScrollView? {
             if let s = view as? NSScrollView, (s.documentView?.bounds.height ?? 0) > s.contentView.bounds.height + 100 { return s }
             for child in view.subviews { if let found = scrollView(child) { return found } }
@@ -789,14 +796,14 @@ extension HQWorkspaceTests {
         var scroll: NSScrollView?
         for _ in 0..<100 {
             host.layoutSubtreeIfNeeded(); scroll = scrollView(host)
-            if scroll != nil, tailIsVisible { break }
+            if scroll != nil, tailIsVisible, entrySettled { break }
             try await Task.sleep(nanoseconds: 20_000_000)
         }
         let scroller = try XCTUnwrap(scroll)
         XCTAssertTrue(tailIsVisible, "Already-loaded content must reveal the actual tail marker")
+        XCTAssertTrue(entrySettled, "Entry must stop positioning before testing deliberate history reading")
         // A SwiftUI-hosted scroll view owns a virtual document. Navigate by record ID
         // rather than mutating the clip origin behind that owner.
-        try await Task.sleep(nanoseconds: 150_000_000)
         try XCTUnwrap(navigation).scrollTo("message-0", anchor: .top)
         func viewport() throws -> NSBitmapImageRep {
             host.layoutSubtreeIfNeeded()
@@ -841,10 +848,25 @@ extension HQWorkspaceTests {
         }
         XCTAssertEqual(before, after, "Refresh must preserve the visible historical content")
         XCTAssertFalse(tailIsVisible, "An appended reply must not pull a historical reader to the tail")
+        // A live user scroll cancels a pending explicit reveal, including legacy mouse
+        // events that do not have a willStart/didEnd notification pair.
+        entrySettled = false
+        let previousStarts = revealsStarted
+        store.select(.conversation)
+        for _ in 0..<100 {
+            if revealsStarted > previousStarts { break }
+            try await Task.sleep(nanoseconds: 5_000_000)
+        }
+        XCTAssertGreaterThan(revealsStarted, previousStarts, "The cancellation must exercise an active entry request")
+        NotificationCenter.default.post(name: NSScrollView.didLiveScrollNotification, object: scroller)
+        try XCTUnwrap(navigation).scrollTo("message-0", anchor: .top)
+        try await Task.sleep(nanoseconds: 150_000_000)
+        XCTAssertFalse(tailIsVisible, "A live scroll cannot be undone by the entry stabilizer")
+        entrySettled = false
         store.select(.conversation); try await settled(store)
         for _ in 0..<100 {
             host.layoutSubtreeIfNeeded()
-            if tailIsVisible { break }
+            if tailIsVisible, entrySettled { break }
             try await Task.sleep(nanoseconds: 20_000_000)
         }
         XCTAssertTrue(tailIsVisible, "Clicking the selected conversation again must reveal the latest record")

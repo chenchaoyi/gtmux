@@ -179,7 +179,7 @@ SHALL open separately without expanding the matter header beyond its container.
 - **AND** the close action remains available without sending any instruction
 
 ### Requirement: Conversation entry reveals current content without disrupting reading
-Opening or reselecting Talk to HQ or a matter SHALL reveal the newest loaded conversation, including cached content. Refresh while deliberately reading older messages SHALL preserve the reading position; a visible new-message action SHALL return to the latest content. Earlier-page loading and drafts SHALL retain their existing scope and content. Composer destination labels SHALL name HQ, the new task or the actual matter without internal routing prose or implying that matter association is impossible.
+Opening or reselecting Talk to HQ or a matter SHALL reveal the newest loaded conversation, including cached content. Refresh while deliberately reading older messages SHALL preserve the reading position; a visible new-message action SHALL return to the latest content. Earlier-page loading and drafts SHALL retain their existing scope and content. Explicit latest-position requests SHALL tolerate lazy-row measurement changes within a bounded, navigation-cancelled layout window. They SHALL not run for ordinary historical refresh, and the latest-message action SHALL remain available if the bound is reached. Composer destination labels SHALL name HQ, the new task or the actual matter without internal routing prose or implying that matter association is impossible.
 
 #### Scenario: A cached conversation is opened again
 - **WHEN** the selected conversation already has loaded history before its view appears

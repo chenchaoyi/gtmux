@@ -834,7 +834,7 @@ show a remembered passphrase as a single line with a way to change it, SHALL han
 passphrase to the CLI over stdin and never on the command line, and SHALL end on a
 confirmation page carrying the written path, its size, and how the file opens — or, on
 failure, the CLI's own words. A clickable archive explanation SHALL show when the last export was made and whether it
-was encrypted, together with archive size, local snapshots and the local-storage boundary.
+was encrypted, together with archive size, local snapshots, reported backup-destination observations and the local-storage boundary. Unknown backup observations SHALL remain available without an invented conclusion.
 
 #### Scenario: First export on a Mac
 

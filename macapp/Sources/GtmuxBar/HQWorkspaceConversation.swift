@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import CryptoKit
 import SwiftUI
 
@@ -43,8 +44,11 @@ struct HQWorkspaceConversationView: View {
     @ObservedObject var l10n: L10n
     @ObservedObject var store: HQWorkspaceStore
     /// Native harnesses observe actual tail geometry, not virtual document estimates.
-    var scrollObserver: ((ScrollViewProxy, Bool) -> Void)? = nil
+    var scrollObserver: ((ScrollViewProxy, Bool, Bool) -> Void)? = nil
     @State private var atTail = true
+    @State private var tailObserved = false
+    @State private var positioning = true
+    @State private var scrollIntent = 0
     @State private var newContent = false
     @State private var uncertain: HQWorkspaceMessage?
     var body: some View {
@@ -88,24 +92,35 @@ struct HQWorkspaceConversationView: View {
                         }.padding(18)
                     }.modifier(HQConversationInitialAnchor())
                         .coordinateSpace(name: "workspaceScroll")
-                        .task {
-                            let selection = store.selection
-                            await Task.yield()
-                            guard !Task.isCancelled, selection == store.selection else { return }
-                            proxy.scrollTo("tail", anchor: .bottom)
-                        }
-                        .onChange(of: store.conversationRevealSerial) { _, _ in
+                        .task(id: store.conversationRevealSerial) {
+                            positioning = true
                             atTail = true
                             newContent = false
-                            proxy.scrollTo("tail", anchor: .bottom)
+                            let selection = store.selection
+                            let intent = scrollIntent
+                            scrollObserver?(proxy, atTail, false)
+                            let revealed = await HQConversationTailReveal.run(
+                                isCurrent: { selection == store.selection && intent == scrollIntent },
+                                reveal: { proxy.scrollTo("tail", anchor: .bottom) },
+                                isVisible: { tailObserved && atTail })
+                            guard !Task.isCancelled else { return }
+                            positioning = false
+                            if !revealed { newContent = !(tailObserved && atTail) }
+                            scrollObserver?(proxy, atTail, true)
+                        }
+                        .onReceive(NotificationCenter.default.publisher(for: NSScrollView.willStartLiveScrollNotification)
+                            .merge(with: NotificationCenter.default.publisher(for: NSScrollView.didLiveScrollNotification))) { _ in
+                            scrollIntent &+= 1
                         }
                         .onChange(of: store.selection) { _, _ in
                             atTail = true
                             newContent = false
                         }
                         .onPreferenceChange(HQTailPreference.self) { y in
+                            tailObserved = y < .greatestFiniteMagnitude
                             atTail = y <= bounds.size.height + 36
-                            scrollObserver?(proxy, atTail)
+                            if atTail { newContent = false }
+                            scrollObserver?(proxy, atTail, !positioning)
                         }
                         .onChange(of: rows.map(\.changeToken)) { old, new in
                             guard old != new else { return }
@@ -116,11 +131,7 @@ struct HQWorkspaceConversationView: View {
                             }
                         }
                     if newContent {
-                        Button(l10n.tr("New messages ↓", "新消息 ↓")) {
-                            atTail = true
-                            proxy.scrollTo("tail", anchor: .bottom)
-                            newContent = false
-                        }
+                        Button(l10n.tr("Latest messages ↓", "最新消息 ↓")) { store.select(store.selection) }
                         .buttonStyle(.borderedProminent).padding(12)
                     }
                 }
