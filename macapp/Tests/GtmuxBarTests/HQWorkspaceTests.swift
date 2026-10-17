@@ -860,8 +860,13 @@ extension HQWorkspaceTests {
         XCTAssertGreaterThan(revealsStarted, previousStarts, "The cancellation must exercise an active entry request")
         NotificationCenter.default.post(name: NSScrollView.didLiveScrollNotification, object: scroller)
         try XCTUnwrap(navigation).scrollTo("message-0", anchor: .top)
-        try await Task.sleep(nanoseconds: 150_000_000)
+        for _ in 0..<100 {
+            host.layoutSubtreeIfNeeded()
+            if !tailIsVisible, entrySettled { break }
+            try await Task.sleep(nanoseconds: 20_000_000)
+        }
         XCTAssertFalse(tailIsVisible, "A live scroll cannot be undone by the entry stabilizer")
+        XCTAssertTrue(entrySettled, "The cancelled entry request must finish")
         entrySettled = false
         store.select(.conversation); try await settled(store)
         for _ in 0..<100 {

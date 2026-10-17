@@ -48,7 +48,7 @@ struct HQWorkspaceConversationView: View {
     @State private var atTail = true
     @State private var tailObserved = false
     @State private var positioning = true
-    @State private var scrollIntent = 0
+    @StateObject private var scrollIntent = HQConversationScrollIntent()
     @State private var newContent = false
     @State private var uncertain: HQWorkspaceMessage?
     var body: some View {
@@ -97,20 +97,17 @@ struct HQWorkspaceConversationView: View {
                             atTail = true
                             newContent = false
                             let selection = store.selection
-                            let intent = scrollIntent
+                            let scrollIntent = self.scrollIntent
+                            let intent = scrollIntent.generation
                             scrollObserver?(proxy, atTail, false)
                             let revealed = await HQConversationTailReveal.run(
-                                isCurrent: { selection == store.selection && intent == scrollIntent },
+                                isCurrent: { selection == store.selection && intent == scrollIntent.generation },
                                 reveal: { proxy.scrollTo("tail", anchor: .bottom) },
                                 isVisible: { tailObserved && atTail })
                             guard !Task.isCancelled else { return }
                             positioning = false
                             if !revealed { newContent = !(tailObserved && atTail) }
                             scrollObserver?(proxy, atTail, true)
-                        }
-                        .onReceive(NotificationCenter.default.publisher(for: NSScrollView.willStartLiveScrollNotification)
-                            .merge(with: NotificationCenter.default.publisher(for: NSScrollView.didLiveScrollNotification))) { _ in
-                            scrollIntent &+= 1
                         }
                         .onChange(of: store.selection) { _, _ in
                             atTail = true

@@ -23,3 +23,5 @@
 云端验证进一步暴露了初始定位保证不足：立即滚动和虚拟文档边界不足以证明定位正确。macOS 15 及以上仅设置初始位置锚点，并安排可取消的延后定位；测试观察实际尾部标记和非空可见画面。不使用同时影响后续尺寸变化的旧默认锚点，参见 [Apple 锚点角色说明](https://developer.apple.com/documentation/swiftui/view/defaultscrollanchor(_:for:))；旧系统运行时仍须单独验收。
 
 显式定位最新内容时最多进行 24 次、间隔 50ms 的布局采样，连续两次确认尾部可见后结束；切换页面即取消，主动阅读旧消息时的普通刷新不执行此定位。超过上限仍可点击“最新消息”重试。档案浮层保留 CLI 检测到的备份信息，仅优化已知文案，未知信息原样保留。
+
+用户滚动意图由独立、稳定的可观察组件管理，不依赖 SwiftUI 正文重建时的订阅。监听 AppKit 的[用户滚动通知](https://developer.apple.com/documentation/appkit/nsscrollview/didlivescrollnotification)，覆盖无完整起止事件的旧式鼠标。测试验证即时失效与对象释放；原生取消验证等待实际完成，不依赖固定睡眠时间。
