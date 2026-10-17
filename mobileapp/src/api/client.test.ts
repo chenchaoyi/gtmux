@@ -763,3 +763,26 @@ describe('server access history', () => {
     expect(init.headers.Authorization).toBe(`Bearer ${TOKEN}`);
   });
 });
+
+describe('access filters', () => {
+  it('encodes full IDs and checks the server applied every requested filter', async () => {
+    const filter = {device_id: 'full/+id', outcome: 'failed', group_by: 'device' as const};
+    fetchMock.mockResolvedValueOnce(okJson({entries: [], retain_days: 30, groups: [], query: filter}));
+    await client().accessHistory(undefined, undefined, filter);
+    expect(call()[0]).toContain('device_id=full%2F%2Bid');
+    expect(call()[0]).toContain('group_by=device');
+    fetchMock.mockResolvedValueOnce(okJson({entries: [], retain_days: 30}));
+    await expect(client().accessHistory(undefined, undefined, filter)).rejects.toMatchObject({status: 501});
+    fetchMock.mockResolvedValueOnce(okJson({entries: [], retain_days: 30, groups: [], query: {...filter, outcome: 'ok'}}));
+    await expect(client().accessHistory(undefined, undefined, filter)).rejects.toMatchObject({status: 501});
+  });
+});
+
+
+test('rejects malformed access summaries rather than displaying impossible counts', async () => {
+  const g = {key: 'device:a', actor: 'phone:a', name: 'Phone', scope: 'device', first_at: '2026-10-17T10:00:00Z', last_at: '2026-10-17T10:00:00Z', count: 2, accepted: 1, refused: 0, failed: 1};
+  for (const groups of [[{...g, failed: 3}], [{...g, count: -1}], [{...g, count: 1.5}], [{...g, actor: null}], [{...g, device_id: {}}], 'invalid']) {
+    fetchMock.mockResolvedValueOnce(okJson({entries: [], retain_days: 30, groups}));
+    await expect(client().accessHistory()).rejects.toThrow('Invalid access summary');
+  }
+});

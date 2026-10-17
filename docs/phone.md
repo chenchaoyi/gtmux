@@ -145,3 +145,5 @@ Mac was offline. Compare their timestamps with later successful reads and the Ma
 
 ## Review server access
 Open Settings → Manage server → Access history to inspect device/browser requests and HTTP results in a compact log. Local times include seconds, dates follow the app language, and full identity/source metadata is visible without expanding rows. This is owner-only; guest links cannot read it. Refresh starts at the newest records; Load earlier keeps the current list. An old server must be updated before it supports history. Details about sampling, private storage and permission limits are in [Server access history](design/server-access-audit.md).
+
+In Access history, choose Logs or Devices. Filter by a full pairing ID, operation or outcome; selecting a device summary opens that device's log. Clear broadens the view. Continue summary reads earlier pages when the total is still partial. Counts describe recorded activity: successful reads are sampled, and device names do not identify a unique pairing. Older servers must be updated for filtering/grouping.

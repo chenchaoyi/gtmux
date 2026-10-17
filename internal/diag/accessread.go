@@ -14,28 +14,39 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
+var ErrAccessFilter = errors.New("invalid access-history filter")
+
 var ErrAccessCursor = errors.New("invalid or expired access-history cursor")
 
 const accessReadBudget = 4 << 20
 
 type AccessQuery struct {
-	Before, Actor string
-	Limit         int
-	Since         time.Time
+	Before, Actor                         string
+	DeviceID, Operation, Outcome, GroupBy string
+	Limit                                 int
+	Since                                 time.Time
 }
 type AccessPage struct {
-	Entries    []AccessEntry `json:"entries"`
-	Next       string        `json:"next,omitempty"`
-	Partial    bool          `json:"partial,omitempty"`
-	RetainDays int           `json:"retain_days"`
+	Entries    []AccessEntry     `json:"entries"`
+	Next       string            `json:"next,omitempty"`
+	Partial    bool              `json:"partial,omitempty"`
+	RetainDays int               `json:"retain_days"`
+	Groups     []AccessGroup     `json:"groups"`
+	Query      AccessFilter      `json:"query"`
+	Operations []AccessOperation `json:"operations"`
 }
 type accessCursor struct {
 	File   string `json:"file"`
 	Offset int64  `json:"offset"`
+	Query  string `json:"query,omitempty"`
 }
 
-func encodeAccessCursor(file string, offset int64) string {
-	data, _ := json.Marshal(accessCursor{file, offset})
+func encodeAccessCursor(file string, offset int64, query ...string) string {
+	key := ""
+	if len(query) > 0 {
+		key = query[0]
+	}
+	data, _ := json.Marshal(accessCursor{file, offset, key})
 	return base64.RawURLEncoding.EncodeToString(data)
 }
 
@@ -44,7 +55,13 @@ func encodeAccessCursor(file string, offset int64) string {
 // A page can be empty with Next set when ordinary diagnostics fill the scan budget.
 func ReadAccess(q AccessQuery) (AccessPage, error) {
 	lim := LoadLimits()
-	page := AccessPage{Entries: []AccessEntry{}, RetainDays: lim.RetainDays}
+	filter := AccessFilter{Actor: q.Actor, DeviceID: q.DeviceID, Operation: q.Operation, Outcome: q.Outcome, GroupBy: q.GroupBy}
+	page := AccessPage{Entries: []AccessEntry{}, Groups: []AccessGroup{}, RetainDays: lim.RetainDays, Query: filter, Operations: AccessOperations()}
+	if !filter.valid() {
+		return page, ErrAccessFilter
+	}
+	key := filter.key()
+	groups := map[string]int{}
 	if q.Limit <= 0 {
 		q.Limit = 100
 	}
@@ -80,7 +97,7 @@ func ReadAccess(q AccessQuery) (AccessPage, error) {
 				break
 			}
 		}
-		if !found {
+		if !found || (cursor.Query != key && (cursor.Query != "" || filter != (AccessFilter{}))) {
 			return page, ErrAccessCursor
 		}
 	}
@@ -126,28 +143,31 @@ func ReadAccess(q AccessQuery) (AccessPage, error) {
 				continue
 			}
 			e, valid := accessFromEntry(record)
-			if !valid || record.Time().Before(q.Since) || (q.Actor != "" && e.Actor != q.Actor && e.DeviceID != q.Actor) {
+			if !valid || record.Time().Before(q.Since) || !filter.matches(e) {
 				continue
 			}
-			page.Entries = append(page.Entries, e)
-			if len(page.Entries) == q.Limit {
+			page.Groups = addAccessGroup(page.Groups, groups, e)
+			if q.GroupBy == "" {
+				page.Entries = append(page.Entries, e)
+			}
+			if (q.GroupBy == "" && len(page.Entries) == q.Limit) || (q.GroupBy == "device" && len(page.Groups) == q.Limit) {
 				offset := start + int64(lineStart)
 				if offset > 0 {
-					page.Next = encodeAccessCursor(filepath.Base(sf.Path), offset)
+					page.Next = encodeAccessCursor(filepath.Base(sf.Path), offset, key)
 				} else if index > 0 {
-					page.Next = encodeAccessCursor(filepath.Base(files[index-1].Path), files[index-1].Size)
+					page.Next = encodeAccessCursor(filepath.Base(files[index-1].Path), files[index-1].Size, key)
 				}
 				return page, nil
 			}
 		}
 		if start > 0 {
-			page.Next = encodeAccessCursor(filepath.Base(sf.Path), start)
+			page.Next = encodeAccessCursor(filepath.Base(sf.Path), start, key)
 			page.Partial = true
 			return page, nil
 		}
 		end = -1
 		if budget <= 0 && index > 0 {
-			page.Next = encodeAccessCursor(filepath.Base(files[index-1].Path), files[index-1].Size)
+			page.Next = encodeAccessCursor(filepath.Base(files[index-1].Path), files[index-1].Size, key)
 			page.Partial = true
 			return page, nil
 		}

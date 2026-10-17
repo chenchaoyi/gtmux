@@ -139,8 +139,12 @@ var helpCommands = []command{
 		ZH: "gtmux 在本机看到了什么、做了什么",
 		Flags: []cmdFlag{
 			{Name: "--access", EN: "server access history; --json returns a paginated object", ZH: "服务器访问历史；--json 返回分页对象"},
+			{Name: "--device-id <id>", EN: "exact full device ID; --access only", ZH: "按完整设备 ID 精确筛选；仅用于 --access"},
+			{Name: "--operation <key>", EN: "key from operations in --access --json; --access only", ZH: "操作标识见 --access --json 的 operations；仅用于 --access"},
+			{Name: "--outcome <value>", EN: "access outcome; --access only", ZH: "访问结果；仅用于 --access", Values: []string{"ok", "refused", "failed"}},
+			{Name: "--group-by <device>", EN: "bounded device summaries of recorded activity; --access only", ZH: "按设备汇总已记录活动，支持分页；仅用于 --access", Values: []string{"device"}},
 			{Name: "--before <cursor>", EN: "an earlier access-history page", ZH: "更早的访问历史页"},
-			{Name: "--limit <1..200>", EN: "access page size (default 100)", ZH: "访问历史每页条数（默认 100）"},
+			{Name: "--limit <1..200>", EN: "access records or summary identities per page (default 100)", ZH: "每页访问记录或汇总来源数（默认 100）"},
 			{Name: "--since <when>", EN: "how far back: 30m, 2h, 3d, or a date (default 1h; access history uses retention window)", ZH: "时间范围：30m、2h、3d 或日期（默认 1h；访问历史默认整个保留期）"},
 			{Name: "--until <when>", EN: "stop at this point", ZH: "看到这个时间为止"},
 			{Name: "--component <c>", EN: "one part of gtmux", ZH: "只看 gtmux 的某一部分",

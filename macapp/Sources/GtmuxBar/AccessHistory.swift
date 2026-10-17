@@ -1,37 +1,6 @@
 import AppKit
 import SwiftUI
 
-@MainActor final class AccessHistoryStore: ObservableObject {
-    @Published private(set) var entries: [AccessHistoryEntry] = []
-    @Published private(set) var loading = false
-    @Published private(set) var failed = false
-    @Published private(set) var next: String?
-    @Published private(set) var retainDays = 30
-    private let run: ([String]) -> (status: Int32, stdout: String, stderr: String)
-    init(run: @escaping ([String]) -> (status: Int32, stdout: String, stderr: String) = { GtmuxCLI.captureBounded($0, timeout: 20) }) { self.run = run }
-    func load(earlier: Bool = false) {
-        guard !loading, !earlier || next != nil else { return }
-        loading = true; failed = false
-        var args = ["logs", "--access", "--json", "--limit", "100"]
-        if earlier, let next { args += ["--before", next] }
-        let run = run
-        Task.detached(priority: .userInitiated) {
-            let result = run(args)
-            let decoder = JSONDecoder(); decoder.keyDecodingStrategy = .convertFromSnakeCase
-            let page = result.status == 0 ? try? decoder.decode(AccessHistoryPage.self, from: Data(result.stdout.utf8)) : nil
-            await MainActor.run {
-                if let page {
-                    let prior = earlier ? self.entries : []
-                    var ids = Set(prior.map(\.id))
-                    self.entries = prior + page.entries.filter { ids.insert($0.id).inserted }
-                    self.next = page.next; self.retainDays = page.retainDays
-                } else { self.failed = true }
-                self.loading = false
-            }
-        }
-    }
-}
-
 @MainActor final class AccessHistoryController {
     static let shared = AccessHistoryController()
     private var window: NSWindow?
@@ -58,30 +27,38 @@ struct AccessHistoryView: View {
                 Text(l10n.tr("Device and browser activity", "设备与浏览器的访问记录"))
                     .font(Theme.Font.session)
                 Spacer()
-                Text(l10n.tr("\(store.entries.count) loaded", "已载入 \(store.entries.count) 条"))
+                Text(store.query.groupBy == nil ? l10n.tr("\(store.entries.count) loaded", "已载入 \(store.entries.count) 条") : l10n.tr("\(store.groups.count) sources", "\(store.groups.count) 个来源"))
                     .font(Theme.Font.window).foregroundStyle(.secondary)
                 Button(l10n.tr("Refresh", "刷新")) { store.load() }.disabled(store.loading)
             }
+            AccessHistoryFilters(query: store.query, groups: store.known, operations: store.operations, zh: l10n.lang == "zh", change: store.select)
+            if store.query.groupBy != nil {
+                Text(l10n.tr("\(store.groups.reduce(0) { $0 + $1.count }) recorded activities" + (store.next == nil ? "" : " · Partial summary; continue below"),
+                    "已汇总 \(store.groups.reduce(0) { $0 + $1.count }) 条已记录活动" + (store.next == nil ? "" : " · 部分结果，可继续汇总")))
+                    .font(Theme.Font.window).foregroundStyle(.secondary)
+            }
             if store.failed {
                 HStack {
-                    Text(l10n.tr("Could not load history. Loaded records are kept.", "无法载入访问历史，已载入的记录仍保留。"))
+                    Text(store.unsupported ? l10n.tr("Update gtmux to use filters and summaries.", "请更新 gtmux 后使用筛选与汇总。") : l10n.tr("Could not load history. Loaded records are kept.", "无法载入访问历史，已载入的记录仍保留。"))
                         .font(Theme.Font.task).foregroundStyle(Theme.Status.errored)
                     Button(l10n.tr("Retry", "重试")) { store.load() }.disabled(store.loading)
                 }
             }
-            if store.loading && store.entries.isEmpty {
+            if store.loading && store.entries.isEmpty && store.groups.isEmpty {
                 HQBrandLoading(label: l10n.tr("Loading access history…", "正在载入访问历史…"))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView {
-                    AccessHistoryLog(entries: store.entries, zh: l10n.lang == "zh")
-                    if store.entries.isEmpty {
-                        Text(store.next == nil ? l10n.tr("No access history yet.", "暂无访问记录。")
+                    if store.query.groupBy == "device" {
+                        AccessHistoryGroups(groups: store.groups, zh: l10n.lang == "zh") { group in store.selectGroup(group) }
+                    } else { AccessHistoryLog(entries: store.entries, zh: l10n.lang == "zh") }
+                    if !store.failed && store.entries.isEmpty && store.groups.isEmpty {
+                        Text(store.next == nil ? (store.query.hasFilters ? l10n.tr("No matching records. Clear filters to broaden the search.", "没有匹配记录，可清除筛选扩大范围。") : l10n.tr("No access history yet.", "暂无访问记录。"))
                             : l10n.tr("No matches in this page. Continue to earlier records.", "本页没有匹配记录，可继续载入更早记录。"))
                             .font(Theme.Font.task).foregroundStyle(.secondary).padding(.vertical, 28)
                     }
                     if store.next != nil {
-                        Button(l10n.tr("Load earlier", "载入更早记录")) { store.load(earlier: true) }.disabled(store.loading)
+                        Button(store.query.groupBy == nil ? l10n.tr("Load earlier", "载入更早记录") : l10n.tr("Continue summary", "继续汇总")) { store.load(earlier: true) }.disabled(store.loading)
                             .padding(.vertical, 8)
                     }
                 }
