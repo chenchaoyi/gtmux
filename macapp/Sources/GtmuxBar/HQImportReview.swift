@@ -69,7 +69,7 @@ struct HQImportReview: View {
                 if let entry = flow.entry {
                     VStack(alignment: .leading, spacing: 10) {
                         let resolved = entry.resolved(l10n.lang)
-                        Text(resolved.title).font(.system(size: 14, weight: .semibold))
+                        Text(resolved.title).font(HQTypography.section)
                         Text(entry.id + " · " + l10n.tr("\(entry.records) history records", "\(entry.records) 条历史记录")).font(HQTypography.caption).foregroundStyle(p.fg3)
                         if !resolved.tag.isEmpty { Text(resolved.tag).font(HQTypography.caption).foregroundStyle(p.fg3) }
                         MarkdownBody(markdown: resolved.body, p: p)

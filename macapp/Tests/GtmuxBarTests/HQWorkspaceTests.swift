@@ -739,3 +739,138 @@ private final class WorkspaceFake: HQWorkspaceServing, @unchecked Sendable {
     }
 
 }
+
+extension HQWorkspaceTests {
+    func testReselectingConversationRequestsLatestWithoutDiscardingDraftOrHistory() async throws {
+        let fake = WorkspaceFake()
+        let store = HQWorkspaceStore(client: fake)
+        store.select(.conversation); try await settled(store)
+        let serial = store.conversationRevealSerial
+        let ids = store.detail?.messages.map(\.id)
+        store.draft = "An unfinished request"
+        store.select(.conversation); try await settled(store)
+        XCTAssertEqual(store.conversationRevealSerial, serial + 1)
+        XCTAssertEqual(store.draft, "An unfinished request")
+        XCTAssertEqual(store.detail?.messages.map(\.id), ids)
+        store.select(.activity); try await settled(store)
+        XCTAssertEqual(store.conversationRevealSerial, serial + 1)
+        store.select(.matter("matter-a")); try await settled(store)
+        XCTAssertEqual(store.conversationRevealSerial, serial + 2)
+        XCTAssertTrue(fake.actions.isEmpty)
+    }
+
+    func testCachedConversationOpensAtLatestAndReselectionReturnsFromHistory() async throws {
+        let fake = WorkspaceFake()
+        var count = 50
+        fake.page = { _, _, _ in
+            var detail: HQWorkspaceDetail = decodeWorkspace(detailFixture)
+            detail.messages = (0..<count).map { i in
+                HQWorkspaceMessage(id: "message-\(i)", speaker: "hq", kind: "reply",
+                    body: "Reply \(i): a synthetic record for checking retained reading position.", at: Int64(1792190000 + i), seq: UInt64(i + 1))
+            }
+            return detail
+        }
+        let store = HQWorkspaceStore(client: fake)
+        store.select(.conversation); try await settled(store)
+        let host = NSHostingView(rootView: HQWorkspaceConversationView(l10n: .shared, store: store)
+            .font(HQTypography.body).environment(\.markdownTypography, .workspace))
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 800, height: 480), styleMask: [.borderless], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false; window.contentView = host; window.orderFront(nil)
+        defer { window.close(); store.stop() }
+        func scrollView(_ view: NSView) -> NSScrollView? {
+            if let s = view as? NSScrollView, (s.documentView?.bounds.height ?? 0) > s.contentView.bounds.height + 100 { return s }
+            for child in view.subviews { if let found = scrollView(child) { return found } }
+            return nil
+        }
+        func isAtTail(_ scroll: NSScrollView) -> Bool {
+            guard let document = scroll.documentView else { return false }
+            let visible = scroll.documentVisibleRect
+            return document.isFlipped ? abs(document.bounds.maxY - visible.maxY) < 45 : abs(visible.minY - document.bounds.minY) < 45
+        }
+        var scroll: NSScrollView?
+        for _ in 0..<100 {
+            host.layoutSubtreeIfNeeded(); scroll = scrollView(host)
+            if let scroll, isAtTail(scroll) { break }
+            try await Task.sleep(nanoseconds: 20_000_000)
+        }
+        let scroller = try XCTUnwrap(scroll)
+        XCTAssertTrue(isAtTail(scroller), "Already-loaded content must not first open at the oldest record")
+        let top = scroller.documentView!.isFlipped ? CGFloat(0) : scroller.documentView!.bounds.maxY - scroller.contentView.bounds.height
+        scroller.contentView.scroll(to: NSPoint(x: 0, y: top)); scroller.reflectScrolledClipView(scroller.contentView)
+        try await Task.sleep(nanoseconds: 60_000_000)
+        let before = scroller.documentVisibleRect
+        count += 1; fake.snapshotValue.revision += 1
+        store.refresh(); try await settled(store)
+        try await Task.sleep(nanoseconds: 60_000_000)
+        XCTAssertLessThan(abs(scroller.documentVisibleRect.minY - before.minY), 45, "A refresh cannot pull a historical reader back to the tail")
+        store.select(.conversation); try await settled(store)
+        for _ in 0..<100 {
+            host.layoutSubtreeIfNeeded()
+            if isAtTail(scroller) { break }
+            try await Task.sleep(nanoseconds: 20_000_000)
+        }
+        XCTAssertTrue(isAtTail(scroller), "Clicking the selected conversation again must reveal the latest record")
+        XCTAssertTrue(fake.actions.isEmpty)
+    }
+}
+
+extension HQWorkspaceTests {
+    /// Real native controls with synthetic content, independent of installed HQ/keychain data.
+    func testReadingComponentsFitAndRenderInBothLanguagesAndAppearances() async throws {
+        let language = L10n.shared.mode
+        defer { L10n.shared.mode = language }
+        let resources = HQResourceStore(read: { args in
+            if args.contains("--records") { return Data(#"{"exists":true,"bytes":12582912,"snapshots":14}"#.utf8) }
+            return Data("[]".utf8)
+        })
+        resources.start(page: .knowledge)
+        for _ in 0..<200 {
+            if resources.refreshingPages.isEmpty { break }
+            try await Task.sleep(nanoseconds: 5_000_000)
+        }
+        resources.stop()
+        let entries: [KBEntry] = decodeWorkspace(###"[{"id":"safe-cleanup","topic":"preferences","title":"Review storage before removing build files","body":"## Safe cleanup\n\nCheck available storage and identify task-owned build artifacts.\n\nPreserve active workspaces and shared caches.","lang":"en","alt":{"lang":"zh","title":"清理构建文件前先检查磁盘","body":"## 安全清理\n\n检查可用空间，确认构建产物属于当前任务。\n\n保留正在使用的工作区和共享缓存。"}}]"###)
+        resources.setEntriesForTest(entries)
+        resources.knowledgeNavigation.pane = .entry(id: "safe-cleanup")
+        for mode in [LangMode.en, .zh] {
+            L10n.shared.mode = mode
+            let flow = HQExportFlow(readPassphrase: { nil })
+            let fake = WorkspaceFake()
+            let store = HQWorkspaceStore(client: fake)
+            store.select(.conversation); try await settled(store)
+            store.draft = mode == .en ? "Check storage and report before deleting anything." : "请检查磁盘占用，先汇报再清理。"
+            let views: [(String, AnyView, CGSize)] = [
+                ("knowledge", AnyView(HQKnowledgeView(l10n: .shared, store: resources, navigation: resources.knowledgeNavigation)), CGSize(width: 920, height: 680)),
+                ("export", AnyView(HQExportSheet(l10n: .shared, flow: flow, onClose: {})), CGSize(width: 480, height: 620)),
+                ("import", AnyView(HQImportSheet(l10n: .shared, flow: HQImportFlow(purpose: .restore, runner: { _, _ in XCTFail("Preview cannot invoke import"); return (1, "", "unexpected") }), onClose: {})), CGSize(width: 560, height: 620)),
+                ("composer", AnyView(HQWorkspaceComposer(l10n: .shared, store: store)), CGSize(width: 560, height: 180)),
+            ]
+            for scheme in [ColorScheme.light, .dark] {
+                for (name, view, size) in views {
+                    let host = NSHostingView(rootView: view.environment(\.colorScheme, scheme)
+                        .font(HQTypography.body).environment(\.markdownTypography, .workspace)
+                        .background(Color(nsColor: .windowBackgroundColor)))
+                    let window = NSWindow(contentRect: NSRect(origin: .zero, size: size), styleMask: [.borderless], backing: .buffered, defer: false)
+                    window.isReleasedWhenClosed = false
+                    window.appearance = NSAppearance(named: scheme == .light ? .aqua : .darkAqua)
+                    window.contentView = host
+                    host.layoutSubtreeIfNeeded()
+                    XCTAssertLessThanOrEqual(host.fittingSize.width, size.width + 1, "\(name) overflows in \(mode)")
+                    XCTAssertLessThanOrEqual(host.fittingSize.height, size.height + 1, "\(name) clips vertically in \(mode)")
+                    if let path = ProcessInfo.processInfo.environment["GTMUX_WORKSPACE_PREVIEW_DIR"] {
+                        window.orderFront(nil)
+                        try await Task.sleep(nanoseconds: 100_000_000)
+                        host.layoutSubtreeIfNeeded()
+                        let bitmap = try XCTUnwrap(host.bitmapImageRepForCachingDisplay(in: host.bounds))
+                        window.appearance?.performAsCurrentDrawingAppearance { host.cacheDisplay(in: host.bounds, to: bitmap) }
+                        try XCTUnwrap(bitmap.representation(using: .png, properties: [:])).write(to: URL(fileURLWithPath: path)
+                            .appendingPathComponent("hq-\(name)-\(mode.rawValue)-\(scheme == .light ? "light" : "dark").png"))
+                    }
+                    window.close()
+                }
+            }
+            XCTAssertTrue(fake.actions.isEmpty)
+            store.stop()
+        }
+    }
+}

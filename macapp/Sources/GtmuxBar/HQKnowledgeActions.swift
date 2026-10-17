@@ -83,9 +83,9 @@ enum KnowledgeAudience: String, CaseIterable {
 
     func word(_ l10n: L10n) -> String {
         switch self {
-        case .hq: return l10n.tr("HQ · only this supervisor", "HQ · 只给 HQ 自己")
-        case .machine: return l10n.tr("This machine · every agent here", "本机 · 这台机器上所有 agent")
-        case .repo: return l10n.tr("A repository · the agents working there", "仓库 · 在那个仓库干活的 agent")
+        case .hq: return l10n.tr("HQ only", "仅 HQ")
+        case .machine: return l10n.tr("This computer · all local agents", "本机 · 所有本地 agent")
+        case .repo: return l10n.tr("A repository · its agents", "项目仓库 · 仓库内的 agent")
         case .everyone: return l10n.tr("Everyone · the product", "全体 · gtmux 产品")
         }
     }
@@ -105,10 +105,8 @@ func audienceShort(_ audience: String?, _ l10n: L10n) -> String {
 /// The words one act wears: the row's button, and the confirm sheet's title, hint and
 /// example.
 ///
-/// `land` and `retire` are the phone's copy, carried over verbatim (KnowledgeSheet.tsx /
-/// knowledgeModel.ts). The commander meets the same verbs on two screens and should not
-/// have to notice they are the same; a third phrasing invented here would be a third
-/// thing to keep true.
+/// UI labels describe the user's decision; argv retains the established ledger verbs.
+/// Choosing an audience prepares a brief and never silently applies it.
 struct KnowledgeActCopy {
     let button: String
     let title: String
@@ -123,8 +121,8 @@ extension KnowledgeAct {
         switch self {
         case .land:
             return KnowledgeActCopy(
-                button: l10n.tr("Mark it landed…", "标记为已落地…"),
-                title: l10n.tr("Mark it landed", "标记为已落地"),
+                button: l10n.tr("Record destination…", "记录分发位置…"),
+                title: l10n.tr("Record where this knowledge was shared", "记录知识分发位置"),
                 hint: l10n.tr(
                     "Enter where you recorded it, such as a PR, spec, runbook or issue. The ledger keeps this reference.",
                     "填写实际记录位置，例如 PR、规范、操作手册或 issue。台账会保存这项信息。"),
@@ -132,8 +130,8 @@ extension KnowledgeAct {
                 field: "--ref")
         case .carry:
             return KnowledgeActCopy(
-                button: l10n.tr("Write it in", "写进去"),
-                title: l10n.tr("Let gtmux write it", "由 gtmux 写入"),
+                button: l10n.tr("Apply knowledge", "写入所选范围"),
+                title: l10n.tr("Apply knowledge to the selected audience", "将知识写入所选范围"),
                 hint: l10n.tr(
                     "gtmux writes it to LOCAL.md, the machine knowledge block or the repository instructions, then marks it landed. Repository files are not committed automatically.",
                     "gtmux 会按所选范围写入 LOCAL.md、本机知识块或仓库指令文件，并标记为已落地。仓库文件不会自动提交。"),
@@ -141,11 +139,11 @@ extension KnowledgeAct {
                 field: "")
         case .withdraw:
             return KnowledgeActCopy(
-                button: l10n.tr("Withdraw the promotion…", "撤回晋升…"),
-                title: l10n.tr("withdraw this promotion", "撤回这次晋升"),
+                button: l10n.tr("Cancel sharing…", "取消分发…"),
+                title: l10n.tr("Cancel knowledge sharing", "取消知识分发"),
                 hint: l10n.tr(
-                    "The entry stays; only its promotion is withdrawn. Enter a reason for the activity log.",
-                    "原条目会保留，只撤销晋升。请填写原因，供日后查阅。"),
+                    "The knowledge entry stays. Cancel its pending sharing request and record the reason.",
+                    "保留知识条目，取消尚未完成的分发，并记录原因。"),
                 placeholder: l10n.tr("e.g. only true on this machine", "例如 只在这台机器上成立"),
                 field: "--why")
         case .retire:
@@ -160,13 +158,13 @@ extension KnowledgeAct {
                 field: "--why")
         case .promote:
             return KnowledgeActCopy(
-                button: l10n.tr("Promote it…", "晋升这一条…"),
-                title: l10n.tr("promote this entry", "晋升这一条"),
+                button: l10n.tr("Choose audience…", "设置分发范围…"),
+                title: l10n.tr("Choose who needs this knowledge", "设置知识分发范围"),
                 hint: l10n.tr(
-                    "Choose who needs this knowledge and explain why. Both go into the handoff brief.",
-                    "选择需要知道这条知识的范围，并说明原因。这些信息会写进带走简报。"),
+                    "Choose an audience and explain why. This prepares a sharing brief; it does not apply the knowledge yet.",
+                    "选择需要使用这条知识的范围，并说明原因。此步生成分发简报，尚不写入目标位置。"),
                 placeholder: l10n.tr("e.g. every dispatch repeats this mistake",
-                                     "例如 每次派活都在重犯这个错"),
+                                     "例如 多个 agent 反复遇到同一问题"),
                 field: "--why")
         case .dismiss:
             return KnowledgeActCopy(

@@ -89,7 +89,7 @@ struct HQMachineView: View {
     @ViewBuilder private func orphanList(_ orphans: [ResourceReport.Orphan], _ p: Theme.Palette)
         -> some View
     {
-        Text(l10n.tr("Reclaimable: no live agent owns these", "可回收：没有活着的 agent 拥有它们"))
+        Text(l10n.tr("Processes without an active agent", "无活跃 agent 关联的进程"))
             .font(HQTypography.rowTitle).foregroundStyle(p.fg3)
         ForEach(orphans) { o in
             VStack(alignment: .leading, spacing: 2) {
@@ -145,14 +145,14 @@ struct HQMachineView: View {
             switch m.tier ?? "" {
             case "red":
                 return l10n.tr(
-                    "Red: \(w). This is what the ⚠ on the HQ badge means.", "红档：\(w)。HQ 徽章上的 ⚠ 说的就是它。")
+                    "Critical resource warning: \(w)", "资源告警：\(w)")
             default:
                 return l10n.tr(
-                    "Amber: \(w). Worth knowing; nothing is blocked yet.", "琥珀：\(w)。提个醒，目前还没卡住什么。")
+                    "Resource warning: \(w)", "资源提醒：\(w)")
             }
         }
         return l10n.tr(
-            "Nothing is short. These readings come from gtmux resource.", "没有短缺。这些读数来自 gtmux resource。")
+            "No resource warnings", "资源状态正常")
     }
 
     @ViewBuilder private func readingCard(
@@ -190,7 +190,7 @@ struct HQMachineView: View {
     ) -> some View {
         HStack(spacing: 10) {
             Text(pane).font(HQTypography.code).foregroundStyle(p.fg3).frame(width: 44, alignment: .leading)
-            Text(name).font(HQTypography.caption).foregroundStyle(p.fg).lineLimit(1)
+            Text(name).font(HQTypography.body).foregroundStyle(p.fg).lineLimit(1)
                 .frame(maxWidth: .infinity, alignment: .leading)
             Text("\(rss) MB").font(HQTypography.code).foregroundStyle(hot ? Theme.Status.waiting : p.fg2)
                 .frame(width: 72, alignment: .trailing)

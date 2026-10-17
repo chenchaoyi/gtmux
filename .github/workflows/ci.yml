@@ -355,7 +355,21 @@ jobs:
         run: cd macapp && swift build -c release
 
       - name: swift test (model + design conformance)
-        run: cd macapp && swift test
+        env:
+          GTMUX_WORKSPACE_PREVIEW_DIR: ${{ runner.temp }}/hq-workspace-previews
+        run: |
+          mkdir -p "$GTMUX_WORKSPACE_PREVIEW_DIR"
+          cd macapp && swift test
+
+      # These fixtures contain synthetic records only; never capture the installed app.
+      - name: HQ synthetic UI previews
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: hq-workspace-previews
+          path: ${{ runner.temp }}/hq-workspace-previews/*.png
+          retention-days: 7
+          if-no-files-found: ignore
 
       - name: design + architecture conformance
         run: ./scripts/check-design.sh

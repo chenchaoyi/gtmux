@@ -177,7 +177,8 @@ send there. Global, matter and new-task drafts survive resource navigation.
 Knowledge keeps search and a responsive list/detail split. HQ archives places
 Export and Import here; Import retains Restore backup, Move from another Mac and
 Continue staged migration. Size, local snapshots, protection status and last-export
-details are available in the archive label’s help. Migration remains selective and
+details are available by clicking HQ archives; they do not require hover. Export and
+Import share the same 14pt regular-size controls. Migration remains selective and
 never imports the old machine’s board or operational workspace.
 
 Only the selected resource page polls (20 seconds), through bounded CLI reads and
@@ -209,8 +210,8 @@ installed-app and VoiceOver acceptance.
 
 ## 9. Activity categories and reading hierarchy
 
-Activity keeps the two original sources and their order, with an All actions menu
-filtering loaded records into Instructions & delivery, Progress & decisions,
+Activity merges the two original sources by recorded time (newest first), with an
+All actions menu filtering loaded records into Instructions & delivery, Progress & decisions,
 Matters & conversations, Supervision, Knowledge, Maintenance & rotation, and Other.
 Semantic SF Symbols distinguish actions such as linking a conversation, changing its
 included interval, recording a decision and rotating HQ. The category is also available
@@ -225,3 +226,37 @@ readers and the native composer share this scale. The compact menu popover and o
 Markdown hosts retain their existing sizes. Layout tests cover narrow/wide windows
 and light/dark appearances. Mock rendering is separate from installed-app interaction
 and actual VoiceOver acceptance.
+
+
+## 10. Conversation entry and a readable activity timeline
+
+Opening or reselecting Talk to HQ or a matter reveals its newest loaded conversation,
+including when the content was cached before the view appeared. Refreshing while reading
+older messages does not jump to the bottom; a New messages button returns there explicitly.
+Earlier-page loading and scope drafts retain their existing behavior. The composer says
+Message HQ, Task details, or the actual current matter title; it does not describe internal
+routing or imply that conversations cannot be associated with matters.
+
+Activity uses local calendar-day headings, a 24-hour time gutter and a continuous rail.
+Only adjacent workspace actions carrying the same explicit matter ID within a five-minute
+window share a group; journal pane/session IDs do not establish matter membership. A group
+shows its time range. Every original action remains visible, and its full record, exact time,
+source and IDs open in a bounded detail sheet. Missing titles or times are not invented.
+Cross-source timestamp ties have a stable display order, not a claimed causal sequence.
+Filtering removes records from existing groups; it cannot merge groups across a hidden
+unrelated record. Counts refer to matching loaded source records, never display groups or
+all-time activity. A clickable Recording scope explanation states the existing source limits
+and that a recorded request is not proof of task completion.
+
+Knowledge uses readable primary labels, standard SF Symbol disclosures with accessible
+expanded/collapsed states, and a bounded prose column on wide windows. Associated conversation
+cards and archive export/import forms use the workspace type scale. Resource warnings state
+what is known without claiming that work is unblocked or that a process is safe to kill.
+
+Native tests cover cached-content entry, explicit reselection, preserved reading position,
+drafts, chronology, filtering, legacy duplicate journal IDs, unknown data, narrow/wide sizing
+and English/Chinese light/dark components. The macOS CI job retains synthetic PNG previews
+for seven days. These captures contain no live HQ or knowledge data. Native render/layout
+checks do not establish installed-app interaction or actual VoiceOver speech acceptance.
+
+The usability findings and acceptance boundaries are recorded in [the review](hq-workspace-usability-review.md). UI actions Choose audience, Apply knowledge and Record destination map to the existing promote, land-without-ref and land-with-ref ledger operations; choosing an audience alone does not distribute the entry.

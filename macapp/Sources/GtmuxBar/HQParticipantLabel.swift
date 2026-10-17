@@ -47,13 +47,13 @@ struct HQParticipantLabel: View {
     var body: some View {
         let info = HQParticipantPresentation(participant: participant, current: current)
         VStack(alignment: .leading, spacing: 3) {
-            if showTitle { Text(info.title).font(Theme.Font.session).lineLimit(1).help(info.title) }
-            Text(info.metadata(l10n)).font(Theme.Font.window).foregroundStyle(.secondary).lineLimit(1)
+            if showTitle { Text(info.title).font(HQTypography.rowTitle).lineLimit(1).help(info.title) }
+            Text(info.metadata(l10n)).font(HQTypography.caption).foregroundStyle(.secondary).lineLimit(1)
             HStack(spacing: 5) {
                 if let value = info.current?.status, let status = Status(rawValue: value) {
                     StatusBadge(status: status, size: 12)
                 }
-                Text(info.state(l10n)).font(Theme.Font.window).foregroundStyle(.secondary).lineLimit(1)
+                Text(info.state(l10n)).font(HQTypography.caption).foregroundStyle(.secondary).lineLimit(1)
             }
         }.accessibilityElement(children: .combine)
     }

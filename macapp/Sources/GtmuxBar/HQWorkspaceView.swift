@@ -34,7 +34,7 @@ struct HQWorkspaceView: View {
                 } else if store.selection == .overview {
                     HQWorkspaceOverview(l10n: l10n, store: store)
                 } else if store.selection == .activity {
-                    HQWorkspaceActivityView(l10n: l10n, detail: store.detail)
+                    HQWorkspaceActivityView(l10n: l10n, detail: store.detail) { store.select(.matter($0)) }
                 } else if store.selection == .newTask {
                     newTask
                 } else {
@@ -63,7 +63,7 @@ struct HQWorkspaceView: View {
                 TextField(l10n.tr("Name", "名称"), text: $titleDraft).textFieldStyle(.roundedBorder)
                 HStack {
                     Spacer()
-                    Button(l10n.tr("Cancel", "取消")) { rename = false }
+                    Button(l10n.tr("Cancel", "取消")) { rename = false }.keyboardShortcut(.cancelAction)
                     Button(l10n.tr("Rename", "修改")) {
                         guard let matter = store.currentMatter else { return }
                         store.perform(
@@ -120,7 +120,8 @@ struct HQWorkspaceView: View {
                         }
                     } label: {
                         Image(systemName: "ellipsis")
-                    }.menuStyle(.borderlessButton).frame(width: 28)
+                    }.menuStyle(.borderlessButton).frame(width: 32, height: 28)
+                        .accessibilityLabel(l10n.tr("Matter actions", "事项操作"))
                 }
                 HStack {
                     Text(l10n.tr("Conversations", "关联会话")).font(HQTypography.rowTitle)
@@ -166,7 +167,7 @@ struct HQWorkspaceView: View {
                     "Describe the goal and any limits. HQ will organize the work and keep you informed.",
                     "说明要解决的问题和执行范围，HQ 会组织跟进并向你汇报。")
             )
-            .font(.system(size: 14)).foregroundStyle(.secondary)
+            .font(HQTypography.body).foregroundStyle(.secondary)
             if store.snapshot != nil, store.snapshot?.supervisor == nil {
                 Label(
                     l10n.tr(
@@ -190,13 +191,15 @@ struct HQWorkspaceView: View {
             } label: {
                 Image(systemName: "arrow.clockwise")
             }
-            .help(l10n.tr("Refresh", "重新读取")).disabled(store.acting)
+            .help(l10n.tr("Refresh", "重新读取"))
+            .accessibilityLabel(l10n.tr("Refresh HQ", "重新读取 HQ")).disabled(store.acting)
             Button {
                 GtmuxCLI.spawn(["hq"])
             } label: {
                 Image(systemName: "terminal")
             }
             .help(l10n.tr("Open HQ in Terminal", "在终端打开 HQ"))
+            .accessibilityLabel(l10n.tr("Open HQ in Terminal", "在终端打开 HQ"))
         }
     }
 }

@@ -105,7 +105,7 @@ struct HQKnowledgeView: View {
     @ViewBuilder private func knowledgeDetail(_ p: Theme.Palette) -> some View {
         switch navigation.pane {
         case .index:
-            HQResourceEmpty(l10n.tr("Pick an entry on the left", "在左边选一条"), p)
+            HQResourceEmpty(l10n.tr("Select a knowledge entry", "选择一条知识查看内容"), p)
         case .entry(let id):
             if let e = store.entries.first(where: { $0.id == id }) {
                 entryDetail(e, p)
@@ -114,7 +114,7 @@ struct HQKnowledgeView: View {
                 // Saying so beats an empty pane with a back button.
                 VStack(spacing: 0) {
                     topicLine(l10n.tr("Knowledge", "知识库"), p)
-                    HQResourceEmpty(l10n.tr("That entry is no longer live", "这条已不在有效集里"), p)
+                    HQResourceEmpty(l10n.tr("This entry is no longer available", "这条知识已不再有效"), p)
                 }
             }
         case .candidate(let key):
@@ -159,7 +159,7 @@ struct HQKnowledgeView: View {
                         // What the commander owes leads, exactly as it does on the phone:
                         // carrying a promoted lesson somewhere durable is the only step of
                         // this lifecycle that waits on a person.
-                        sectionHead(l10n.tr("waiting on you", "待你带走"), store.pending.count, p, accent: true)
+                        sectionHead(l10n.tr("Ready to share", "待分发"), store.pending.count, p, accent: true)
                         // What a promotion IS, said where it matters. This base is one of
                         // THREE places a rule can live — gtmux's shipped charter, the
                         // operator's own LOCAL.md, and this machine's ledger — and a
@@ -169,17 +169,14 @@ struct HQKnowledgeView: View {
                         Button {
                             whyOpen.toggle()
                         } label: {
-                            Text(
-                                whyOpen
-                                    ? l10n.tr("What this is ⌃", "这是什么 ⌃")
-                                    : l10n.tr("What this is ⌄", "这是什么 ⌄")
-                            )
-                            .font(HQTypography.caption)
-                            .foregroundStyle(p.fg2)
+                            Label(l10n.tr("Sharing guidance", "分发说明"), systemImage: whyOpen ? "chevron.down" : "chevron.right")
+                                .font(HQTypography.navigation)
+                                .foregroundStyle(p.fg2)
                         }
                         .buttonStyle(.plain)
+                        .accessibilityValue(l10n.tr(whyOpen ? "Expanded" : "Collapsed", whyOpen ? "已展开" : "已折叠"))
                         .padding(.horizontal, 12)
-                        .padding(.bottom, 6)
+                        .padding(.vertical, 6)
                         if whyOpen {
                             Text(
                                 l10n.tr(
@@ -229,8 +226,8 @@ struct HQKnowledgeView: View {
                         // sentence as the phone's.
                         Text(
                             l10n.tr(
-                                "across every topic; each one also sits under its topic below",
-                                "跨全部主题 · 这几条同时也在下面各自的主题里")
+                                "Across all topics",
+                                "全部主题")
                         )
                         .font(HQTypography.caption)
                         .foregroundStyle(p.fg3)
@@ -267,8 +264,8 @@ struct HQKnowledgeView: View {
             }
         } label: {
             HStack(spacing: 8) {
-                Text(shown ? "▾" : "▸")
-                    .font(HQTypography.caption).foregroundStyle(p.fg3).frame(width: 11, alignment: .leading)
+                Image(systemName: shown ? "chevron.down" : "chevron.right")
+                    .font(HQTypography.navigation).foregroundStyle(p.fg2).frame(width: 16, height: 16)
                 Text(t.name).font(HQTypography.rowTitle).foregroundStyle(p.fg)
                 Spacer(minLength: 6)
                 Text("\(t.entries.count)")
@@ -279,6 +276,8 @@ struct HQKnowledgeView: View {
             .padding(.vertical, 7)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(t.name)
+        .accessibilityValue(l10n.tr(shown ? "Expanded" : "Collapsed", shown ? "已展开" : "已折叠"))
         Divider().overlay(p.divider)
         if shown {
             ForEach(t.entries) { e in row(e, p, showWhy: false) }
@@ -321,7 +320,7 @@ struct HQKnowledgeView: View {
                             .truncationMode(.middle)
                     }
                     Text(parts.rest)
-                        .font(HQTypography.caption)
+                        .font(HQTypography.sidebarItem)
                         .foregroundStyle(p.fg)
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
@@ -390,7 +389,7 @@ struct HQKnowledgeView: View {
 
                     if e.pending {
                         VStack(alignment: .leading, spacing: 3) {
-                            Text(l10n.tr("Promoted · waiting on you", "已晋升 · 待你带走"))
+                            Text(l10n.tr("Ready to share", "待分发"))
                                 .font(HQTypography.rowTitle).tracking(0.8)
                                 .foregroundStyle(Theme.Status.waiting)
                             if let why = e.promoteWhy, !why.isEmpty {
@@ -408,8 +407,8 @@ struct HQKnowledgeView: View {
                             } else {
                                 Text(
                                     l10n.tr(
-                                        "no audience chosen; withdraw, then promote again saying who must know it",
-                                        "没选读者，撤回后重新晋升，说清给谁看")
+                                        "No audience selected. Cancel sharing, then choose an audience.",
+                                        "未指定分发范围，请撤回后重新选择。")
                                 )
                                 .font(HQTypography.caption).foregroundStyle(p.fg3)
                             }
@@ -440,12 +439,13 @@ struct HQKnowledgeView: View {
                     // leaving a reader hunting for a button that is not coming.
                     Text(
                         l10n.tr(
-                            "Writing an entry stays in the CLI: `gtmux knowledge add`",
-                            "写入新条目仍在 CLI：`gtmux knowledge add`")
+                            "Add knowledge from the command line: `gtmux knowledge add`",
+                            "通过命令行添加知识：`gtmux knowledge add`")
                     )
                     .font(HQTypography.caption).foregroundStyle(p.fg3)
                 }
-                .padding(14)
+                .padding(14).frame(maxWidth: 900, alignment: .leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
@@ -465,7 +465,7 @@ struct HQKnowledgeView: View {
                 navigation.pane = .index
             } label: {
                 HStack(spacing: 3) {
-                    Text("‹").font(.system(size: 14))
+                    Image(systemName: "chevron.left").font(HQTypography.navigation)
                     Text(l10n.tr("Knowledge", "知识库")).font(HQTypography.caption)
                 }
                 .foregroundStyle(p.fg2)

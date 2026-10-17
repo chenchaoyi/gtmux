@@ -167,6 +167,7 @@ struct HQWorkspaceParticipants: View {
                                         })
                                 ) { EmptyView() }.toggleStyle(.checkbox).labelsHidden().help(
                                     l10n.tr("Select for splitting", "选择用于拆分"))
+                                    .accessibilityLabel(l10n.tr("Select for splitting: ", "选择用于拆分：") + p.conversation.name)
                                 HQParticipantLabel(
                                     l10n: l10n, participant: p,
                                     current: store.snapshot?.conversations.first { $0.id == p.conversation.id })

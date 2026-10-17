@@ -35,7 +35,7 @@ struct HQConversationRow: Identifiable {
 }
 
 private struct HQTailPreference: PreferenceKey {
-    static var defaultValue: CGFloat = 0
+    static var defaultValue: CGFloat = .greatestFiniteMagnitude
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
 }
 
@@ -82,7 +82,14 @@ struct HQWorkspaceConversationView: View {
                                             value: geometry.frame(in: .named("workspaceScroll")).maxY)
                                     })
                         }.padding(18)
-                    }.coordinateSpace(name: "workspaceScroll")
+                    }.modifier(HQConversationInitialAnchor())
+                        .coordinateSpace(name: "workspaceScroll")
+                        .onAppear { proxy.scrollTo("tail", anchor: .bottom) }
+                        .onChange(of: store.conversationRevealSerial) { _, _ in
+                            atTail = true
+                            newContent = false
+                            proxy.scrollTo("tail", anchor: .bottom)
+                        }
                         .onChange(of: store.selection) { _, _ in
                             atTail = true
                             newContent = false
@@ -100,6 +107,7 @@ struct HQWorkspaceConversationView: View {
                         }
                     if newContent {
                         Button(l10n.tr("New messages ↓", "新消息 ↓")) {
+                            atTail = true
                             proxy.scrollTo("tail", anchor: .bottom)
                             newContent = false
                         }
