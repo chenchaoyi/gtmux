@@ -76,6 +76,10 @@ Full flags: [`gtmux pair`](cli.md#gtmux-pair-enroll-your-own-devices-full-contro
 [`gtmux share`](cli.md#gtmux-share-scoped-revocable-access-for-a-collaborator) and
 [`gtmux devices`](cli.md).
 
+## Message delivery
+
+After sending, the temporary chat bubble distinguishes Sending from Sent to terminal. The latter confirms terminal delivery, not that the agent has read or finished it. The bubble is removed when a new matching prompt reaches the transcript, even if later turns arrive in the same refresh; it does not reappear as the conversation advances.
+
 ## Availability and notifications
 
 The Mac must remain awake for remote access. A closed MacBook normally sleeps;
@@ -147,5 +151,3 @@ Mac was offline. Compare their timestamps with later successful reads and the Ma
 Open Settings → Manage server → Access history to inspect device/browser requests and HTTP results in a compact log. Local times include seconds, dates follow the app language, and full identity/source metadata is visible without expanding rows. This is owner-only; guest links cannot read it. Refresh starts at the newest records; Load earlier keeps the current list. An old server must be updated before it supports history. Details about sampling, private storage and permission limits are in [Server access history](design/server-access-audit.md).
 
 In Access history, choose Logs or Devices. Filter by a full pairing ID, operation or outcome; selecting a device summary opens that device's log. Clear broadens the view. Continue summary reads earlier pages when the total is still partial. Counts describe recorded activity: successful reads are sampled, and device names do not identify a unique pairing. Older servers must be updated for filtering/grouping.
-
-After sending, the temporary chat bubble distinguishes Sending from Sent to terminal. The latter confirms terminal delivery, not that the agent has read or finished it. The bubble is removed when a new matching prompt reaches the transcript, even if later turns arrive in the same refresh; it does not reappear as the conversation advances.
