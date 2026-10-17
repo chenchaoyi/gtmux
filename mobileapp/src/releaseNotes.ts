@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.124',
+    en: [
+      'Diagnostic records now show the server address for failed requests and push registration, making connection issues easier to trace.',
+      'Failures and recovery are tracked separately for each server, so success at one address no longer hides another address’s errors.',
+    ],
+    zh: [
+      '请求失败和推送注册记录显示服务器地址，方便定位连接问题。',
+      '不同服务器的失败与恢复分别记录，避免一台连接成功时掩盖另一台的错误。',
+    ],
+  },
+  {
     version: '1.0.123',
     en: [
       'Access history now focuses on external devices and browsers, with consistent filters and device totals. Local maintenance traffic stays in diagnostics.',

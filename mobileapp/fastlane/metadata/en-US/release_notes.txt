@@ -1,3 +1,2 @@
-• Access history now focuses on external devices and browsers, with consistent filters and device totals. Local maintenance traffic stays in diagnostics.
-• Clearer recording information explains the scope and limits of access history.
-• Server connection indicators are centered, and confirmed message notices no longer linger after a reply.
+• Diagnostic records now show the server address for failed requests and push registration, making connection issues easier to trace.
+• Failures and recovery are tracked separately for each server, so success at one address no longer hides another address’s errors.

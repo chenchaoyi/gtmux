@@ -1,0 +1,2 @@
+• Diagnostic records now show the server address for failed requests and push registration, making connection issues easier to trace.
+• Failures and recovery are tracked separately for each server, so success at one address no longer hides another address’s errors.
