@@ -248,7 +248,7 @@ named control keys, and the waiting-pane `1/2/3` approval choices — via
 `POST /api/send`, gated ONLY by the pairing bearer token (no separate
 authorization), so the token must be treated as a password. After a send, the app
 SHALL refresh the pane promptly (not wait for the next poll) so the user sees the
-effect of their input quickly; it MAY optimistically echo a sent prompt.
+effect of their input quickly; it MAY optimistically echo a sent prompt. The echo SHALL distinguish a request in flight from an accepted terminal delivery, without claiming agent execution. Once a newly recorded matching prompt appears anywhere in a refreshed transcript, the echo SHALL be retired and SHALL not reappear after later turns. Pre-existing identical prompts SHALL not confirm a repeated send, and a late send failure SHALL not clear a newer echo.
 The control-key row SHALL acknowledge a local tap with brief in-place visual and
 selection-haptic feedback, since a remote TUI may not redraw or visibly change.
 This acknowledgement SHALL NOT claim server delivery; a failed send remains visible
@@ -260,6 +260,11 @@ ordinary pane Detail and the HQ console, and SHALL not acknowledge disabled inpu
 - **WHEN** the user types a message in the composer and sends it
 - **THEN** the text is delivered via `/api/send` and the pane refreshes promptly to
   show the result
+
+#### Scenario: Transcript polling skips past the just-sent prompt
+- **WHEN** the next transcript contains the sent prompt followed by later turns
+- **THEN** its temporary echo is removed permanently, while older identical prompts alone do not confirm a new send
+- **AND** an accepted terminal delivery waiting for a transcript is labelled as sent, not left looking unsent
 
 #### Scenario: A camera that does not open says why
 

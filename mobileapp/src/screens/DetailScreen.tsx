@@ -28,6 +28,7 @@ import {Debug} from '../debug';
 import {SendPayload, TranscriptTurn} from '../api/client';
 import {useAgents} from '../state/AgentsContext';
 import {createReadTask, startReadPolling} from '../state/readTask';
+import {beginChatEcho, chatEchoRecorded, type PendingChatEcho} from './pendingChatEcho';
 import {useApp} from '../state/AppContext';
 import {StatusBadge} from '../ui/StatusBadge';
 import {AgentAvatar} from '../ui/AgentAvatar';
@@ -308,7 +309,10 @@ function PaneDetailView({
   const [terminalLayout, setTerminalLayout] = useState<TerminalLayout>('fit');
   const [terminalSelection, setTerminalSelection] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
-  const [pendingPrompt, setPendingPrompt] = useState(''); // optimistic chat echo
+  const [pendingPrompt, setPendingPrompt] = useState('');
+  const [pendingDelivered, setPendingDelivered] = useState(false);
+  const pendingEcho = useRef<PendingChatEcho | null>(null);
+  const echoAttempts = useRef(new Map<string, PendingChatEcho>());
   const [diffOpen, setDiffOpen] = useState(false);
   const [options, setOptions] = useState<ReplyOption[]>([]);
   // When an approval choice was just tapped (epoch ms). For a short settle window
@@ -322,6 +326,13 @@ function PaneDetailView({
   // flipping 终端→对话 shows the cached history instantly instead of re-fetching +
   // spinning every time. Polled on status/prompt change; turns are never cleared.
   const [turns, setTurns] = useState<TranscriptTurn[]>([]);
+  const latestTurns = useRef(turns); latestTurns.current = turns;
+  useEffect(() => {
+    if (pendingEcho.current && chatEchoRecorded(pendingEcho.current, turns)) {
+      pendingEcho.current = null; setPendingPrompt('');
+    }
+  }, [turns, pendingPrompt]);
+  useEffect(() => {pendingEcho.current = null; echoAttempts.current.clear(); setPendingPrompt(''); setPendingDelivered(false);}, [client, agent.pane_id]);
   const [chatLoaded, setChatLoaded] = useState(false);
   // How many OLDER turns the server left out to bound the payload — shown by ChatView so
   // a truncated history never reads as the whole conversation (transcript-render-bounds).
@@ -479,6 +490,17 @@ function PaneDetailView({
       // send may have landed on the Mac but the response never came back — can be retried
       // without double-sending: the server no-ops a send_id that already landed.
       const p: SendPayload = payload.send_id ? payload : {...payload, send_id: newSendId()};
+      if (p.text) {
+        const echo = echoAttempts.current.get(p.send_id!) ?? beginChatEcho(p.send_id!, p.text, latestTurns.current);
+        echoAttempts.current.set(echo.id, echo);
+        if (echoAttempts.current.size > 16) echoAttempts.current.delete(echoAttempts.current.keys().next().value!);
+        pendingEcho.current = chatEchoRecorded(echo, latestTurns.current) ? null : echo;
+        setPendingPrompt(pendingEcho.current?.text ?? ''); setPendingDelivered(false);
+      }
+      const clearEcho = () => {
+        if (pendingEcho.current?.id !== p.send_id) return;
+        pendingEcho.current = null; setPendingPrompt('');
+      };
       setFailedSend(null);
       setFailedReason('');
       setFailedStatus(undefined);
@@ -496,7 +518,7 @@ function PaneDetailView({
             setFailedSend(p);
             setFailedReason(r.reason);
             setFailedStatus(r.status);
-            setPendingPrompt('');
+            clearEcho();
             // Refused (401: pair again) or not shared (403): no retry can land, so the
             // text goes back into the box, where it is kept as the pane's draft.
             if ((r.status === 401 || r.status === 403) && p.text) setRefill({text: p.text, at: Date.now()});
@@ -505,6 +527,7 @@ function PaneDetailView({
           // It landed. If the session is mid-turn, the agent may only take it once it
           // finishes what it is doing; the server does not report when, so busyNote reads
           // the status the radar already has and promises no more than that.
+          if (pendingEcho.current?.id === p.send_id) setPendingDelivered(true);
           setBusyHint(busyNote(live.status, lang === 'zh'));
           // Retire a capture started before this accepted send.
           lane.invalidate();
@@ -515,7 +538,10 @@ function PaneDetailView({
             if (snap.cursor) setCursor(snap.cursor);
           }
         })
-        .catch(() => setFailedSend(p))
+        .catch(() => {
+          if (!lane?.isActive() || paneRead.current !== lane) return;
+          setFailedSend(p); clearEcho();
+        })
         .finally(bumpPane);
     },
     [client, agent.pane_id, bumpPane, live.status, lang],
@@ -549,9 +575,6 @@ function PaneDetailView({
   sendRef.current = sendPane;
   const onComposerSend = useCallback((p: SendPayload) => {
     sendRef.current(p);
-    // optimistic echo in 对话 mode: show the sent text immediately as a pending bubble
-    // until the transcript refetch confirms it.
-    if (p.text) setPendingPrompt(p.text);
   }, []);
   const onComposerUpload = useCallback(
     (uri: string, name: string, type: string, onProgress?: (fraction: number) => void) => client.upload(uri, name, type, onProgress),
@@ -620,9 +643,9 @@ function PaneDetailView({
   // trees in JS even when nothing changed — that was the "停顿 on unchanging content".
   const chatEl = useMemo(
     () => (
-      <ChatView agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} pendingPrompt={pendingPrompt} fontPref={fontPref} onLiveEdge={chatEdge} topPad={chromeH} controlsTop={fullscreen ? insets.top : chromeH} controlsShift={fullscreen ? undefined : collapse.interpolate({inputRange: [0, 1], outputRange: [0, -chromeH]})} maxWidth={isWide ? READING_WIDTH : undefined} />
+      <ChatView agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} pendingPrompt={pendingPrompt} pendingDelivered={pendingDelivered} fontPref={fontPref} onLiveEdge={chatEdge} topPad={chromeH} controlsTop={fullscreen ? insets.top : chromeH} controlsShift={fullscreen ? undefined : collapse.interpolate({inputRange: [0, 1], outputRange: [0, -chromeH]})} maxWidth={isWide ? READING_WIDTH : undefined} />
     ),
-    [live, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, pendingPrompt, fontPref, chatEdge, chromeH, fullscreen, insets.top, isWide, collapse],
+    [live, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, pendingPrompt, pendingDelivered, fontPref, chatEdge, chromeH, fullscreen, insets.top, isWide, collapse],
   );
   // Codex pins the prompt of the turn on screen to the top row, cut to the pane's width
   // (ui/codexPinned). When that row is recognised, the full prompt from the conversation

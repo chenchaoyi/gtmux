@@ -68,6 +68,7 @@ interface Props {
   // The just-sent prompt, echoed optimistically as a trailing bubble until the
   // transcript refetch catches up — so sending feels instant over the tunnel.
   pendingPrompt?: string;
+  pendingDelivered?: boolean;
   // Font-family config (same value the terminal uses), so chat text matches the
   // terminal font — resolved via the shared nativeFontFamily().
   fontPref?: string;
@@ -171,7 +172,7 @@ export function liveLabel(since: number | undefined, nowSec: number, lang: Lang)
   return el ? `${base} · ${el}` : base;
 }
 
-export function ChatView({readOnly = false, agent, lines, status, fontSize, lang, turns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, pendingPrompt, fontPref, workingSince, onLiveEdge, topPad = 0, controlsTop, controlsShift, maxWidth}: Props) {
+export function ChatView({readOnly = false, agent, lines, status, fontSize, lang, turns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, pendingPrompt, pendingDelivered = false, fontPref, workingSince, onLiveEdge, topPad = 0, controlsTop, controlsShift, maxWidth}: Props) {
   const fontFamily = nativeFontFamily(fontPref); // match the terminal font (shared resolver)
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({}); // per step-group
   const scrollRef = React.useRef<ScrollView>(null);
@@ -639,10 +640,11 @@ export function ChatView({readOnly = false, agent, lines, status, fontSize, lang
       {actRows(placed.after)}
 
       {/* optimistic echo: the just-sent prompt, until the transcript catches up */}
-      {!!pendingPrompt && (turns.length === 0 || turns[turns.length - 1].prompt !== pendingPrompt) && (
+      {!!pendingPrompt && (
         <View style={styles.userRow}>
-          <View style={[styles.userBubble, styles.userBubblePending]}>
+          <View testID="chat-pending-echo" style={[styles.userBubble, !pendingDelivered && styles.userBubblePending]}>
             <Text style={[styles.userText, {fontFamily, fontSize, lineHeight}]}>{pendingPrompt}</Text>
+            <Text style={styles.echoStatus}>{pendingDelivered ? (lang === 'zh' ? '已发送到终端，等待对话记录' : 'Sent to terminal · awaiting transcript') : (lang === 'zh' ? '正在发送…' : 'Sending…')}</Text>
           </View>
           <UserAvatar size={26} />
         </View>
@@ -744,6 +746,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   userBubblePending: {opacity: 0.55},
+  echoStatus: {fontSize: 12, color: 'rgba(230,247,251,0.7)', marginTop: 5},
   userText: {color: '#E6F7FB', fontSize: 14, lineHeight: 20},
   // expand/collapse toggle for an auto-collapsed long prompt — right-aligned under
   // the bubble (marginRight = avatar 26 + gap 8, so it sits under the bubble's edge).

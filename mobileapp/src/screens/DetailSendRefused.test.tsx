@@ -9,6 +9,8 @@ import {Composer} from '../ui/Composer';
 // Composer is memoized; the test tree holds the function it wraps.
 const ComposerFn = (Composer as unknown as {type: React.ComponentType<any>}).type;
 import {SendFailedBar} from '../ui/SendFailedBar';
+import {ChatView} from '../ui/ChatView';
+import {Text} from 'react-native';
 import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
 import {paletteFor} from '../ui/theme';
@@ -20,17 +22,18 @@ let tree: renderer.ReactTestRenderer | undefined;
 afterEach(() => {
   act(() => tree?.unmount());
   tree = undefined;
+  jest.useRealTimers();
 });
 const flush = async () => {
   for (let i = 0; i < 6; i++) await act(async () => { await Promise.resolve(); });
 };
 
-async function mount(sendResult: jest.Mock, navigate?: jest.Mock) {
+async function mount(sendResult: jest.Mock, navigate?: jest.Mock, transcript?: jest.Mock) {
   const agent: any = {pane_id: '%12', session: 'dev', window: '0', pane: '0', loc: 'dev:0.0', agent: 'Claude Code',
     status: 'idle', task: '', latest: false, activity: false, source: 'tmux'};
   const client = {
     pane: jest.fn().mockResolvedValue({text: 'ready\n', cols: 80, cursor: {x: 0, up: 0, visible: true}}),
-    transcript: jest.fn().mockResolvedValue({turns: [], dropped: 0}),
+    transcript: transcript ?? jest.fn().mockResolvedValue({turns: [], dropped: 0}),
     sendResult,
     panes: jest.fn().mockResolvedValue([]),
     options: jest.fn().mockResolvedValue([]),
@@ -42,7 +45,7 @@ async function mount(sendResult: jest.Mock, navigate?: jest.Mock) {
   (useApp as jest.Mock).mockReturnValue({
     pal: paletteFor('dark'), lang: 'en', fontPref: 'auto', mac: {name: 'Mac'}, returnSends: false, defaultDetailMode: 'terminal',
   });
-  const view = <DetailView agent={agent} initialMode="terminal" />;
+  const view = <DetailView agent={agent} initialMode={transcript ? 'chat' : 'terminal'} />;
   await act(async () => {
     tree = renderer.create(navigate ? <NavigationContext.Provider value={{navigate} as any}>{view}</NavigationContext.Provider> : view);
   });
@@ -89,4 +92,51 @@ test('a pane not shared for typing (403): no pairing, no retry, the text back in
   expect(t.root.findAllByProps({testID: 'send-failed-retry'})).toHaveLength(0);
   expect(t.root.findByType(ComposerFn).props.prefill).toMatchObject({text: 'can I type here'});
   expect(navigate).not.toHaveBeenCalled();
+});
+
+
+test('retires the sent echo after a poll containing its prompt and later turns; it stays gone', async () => {
+  jest.useFakeTimers();
+  let turns: any[] = [{prompt: 'older', response: 'done', time: '2026-10-17T10:00:00Z'}];
+  const transcript = jest.fn(async () => ({turns: [...turns], dropped: 0}));
+  const t = await mount(jest.fn().mockResolvedValue({ok: true}), undefined, transcript);
+  await send(t, 'please fix it');
+  expect(t.root.findByType(ChatView).props.pendingDelivered).toBe(true);
+  expect(t.root.findAllByType(Text).map(n => n.props.children).join(' ')).toContain('Sent to terminal');
+  turns = [...turns, {prompt: 'please fix it', response: 'fixed', time: '2026-10-17T10:01:00Z'}, {prompt: 'continue', response: '', time: '2026-10-17T10:02:00Z'}];
+  await act(async () => jest.advanceTimersByTime(9000)); await flush();
+  expect(t.root.findByType(ChatView).props.pendingPrompt).toBe('');
+  turns.push({prompt: 'later still', response: '', time: '2026-10-17T10:03:00Z'});
+  await act(async () => jest.advanceTimersByTime(9000)); await flush();
+  expect(t.root.findByType(ChatView).props.pendingPrompt).toBe('');
+});
+
+test('old identical text does not hide a new send; late failure clears only its own echo', async () => {
+  jest.useFakeTimers();
+  const transcript = jest.fn().mockResolvedValue({turns: [{prompt: 'continue', response: 'done', time: '2026-10-17T10:00:00Z'}], dropped: 0});
+  let rejectOld!: (error: Error) => void;
+  const sendResult = jest.fn().mockReturnValueOnce(new Promise((_, reject) => {rejectOld = reject;})).mockResolvedValue({ok: true});
+  const t = await mount(sendResult, undefined, transcript);
+  await send(t, 'continue');
+  expect(t.root.findByType(ChatView).props.pendingPrompt).toBe('continue');
+  await send(t, 'a new request');
+  await act(async () => rejectOld(new Error('late network failure'))); await flush();
+  expect(t.root.findByType(ChatView).props.pendingPrompt).toBe('a new request');
+  expect(t.root.findByType(ChatView).props.pendingDelivered).toBe(true);
+});
+
+
+test('a retry preserves send identity and does not recreate an echo already confirmed by the transcript', async () => {
+  jest.useFakeTimers();
+  let turns: any[] = [];
+  const transcript = jest.fn(async () => ({turns: [...turns], dropped: 0}));
+  const sendResult = jest.fn().mockRejectedValueOnce(new Error('response lost')).mockResolvedValue({ok: true});
+  const t = await mount(sendResult, undefined, transcript);
+  await send(t, 'run once');
+  expect(t.root.findByType(ChatView).props.pendingPrompt).toBe('');
+  turns = [{prompt: 'run once', response: 'done', time: '2026-10-17T10:01:00Z'}];
+  await act(async () => jest.advanceTimersByTime(9000)); await flush();
+  await act(async () => t.root.findByProps({testID: 'send-failed-retry'}).props.onPress()); await flush();
+  expect(sendResult.mock.calls[1][1].send_id).toBe(sendResult.mock.calls[0][1].send_id);
+  expect(t.root.findByType(ChatView).props.pendingPrompt).toBe('');
 });

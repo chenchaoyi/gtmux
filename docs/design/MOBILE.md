@@ -1462,3 +1462,5 @@ native selection still defers changes. This is a client layout change, not a tmu
 resize or recovery of missing terminal history. Component tests cover scheduling,
 CJK anchors, equal-height layouts, live/history intent, polling and cancellation;
 actual phone/iPad redraw timing and VoiceOver require separate device acceptance.
+
+Temporary chat echoes track a send-specific baseline of matching prompt timestamps/occurrences, rather than comparing only the transcript tail. A new matching occurrence retires the echo permanently; older identical text cannot acknowledge a repeated send. Accepted delivery is labelled Sent to terminal while the transcript lags. Refused/failed sends use the existing failure bar, and late failures cannot clear another send’s echo. Scope changes clear temporary state. No automatic resend or claim of agent execution is added.
