@@ -260,3 +260,5 @@ for seven days. These captures contain no live HQ or knowledge data. Native rend
 checks do not establish installed-app interaction or actual VoiceOver speech acceptance.
 
 The usability findings and acceptance boundaries are recorded in [the review](hq-workspace-usability-review.md). UI actions Choose audience, Apply knowledge and Record destination map to the existing promote, land-without-ref and land-with-ref ledger operations; choosing an audience alone does not distribute the entry.
+
+Knowledge actions use an intact horizontal row when it fits and a vertical action list in narrow readers. Audience metadata appears once; the repository path remains available when applicable.

@@ -42,6 +42,8 @@ private struct HQTailPreference: PreferenceKey {
 struct HQWorkspaceConversationView: View {
     @ObservedObject var l10n: L10n
     @ObservedObject var store: HQWorkspaceStore
+    /// Isolated native harnesses use the same semantic scrolling API as the UI.
+    var scrollProxyReady: ((ScrollViewProxy) -> Void)? = nil
     @State private var atTail = true
     @State private var newContent = false
     @State private var uncertain: HQWorkspaceMessage?
@@ -63,12 +65,14 @@ struct HQWorkspaceConversationView: View {
                                     .frame(maxWidth: .infinity)
                             }
                             ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                                if let date = separators[index] { HQChatTimeSeparator(date: date, l10n: l10n) }
-                                if let message = row.message {
-                                    messageRow(message)
-                                } else if let turn = row.turn {
-                                    HQTranscriptExchange(l10n: l10n, turn: turn)
-                                }
+                                VStack(alignment: .leading, spacing: 20) {
+                                    if let date = separators[index] { HQChatTimeSeparator(date: date, l10n: l10n) }
+                                    if let message = row.message {
+                                        messageRow(message)
+                                    } else if let turn = row.turn {
+                                        HQTranscriptExchange(l10n: l10n, turn: turn)
+                                    }
+                                }.id(row.id)
                             }
                             ForEach(Array(Set(store.detail?.warnings ?? [])).sorted(), id: \.self) { code in
                                 Text(hqWorkspaceWarning(code, l10n)).font(HQTypography.caption).foregroundStyle(
@@ -82,9 +86,11 @@ struct HQWorkspaceConversationView: View {
                                             value: geometry.frame(in: .named("workspaceScroll")).maxY)
                                     })
                         }.padding(18)
-                    }.modifier(HQConversationInitialAnchor())
-                        .coordinateSpace(name: "workspaceScroll")
-                        .onAppear { proxy.scrollTo("tail", anchor: .bottom) }
+                    }.coordinateSpace(name: "workspaceScroll")
+                        .onAppear {
+                            scrollProxyReady?(proxy)
+                            proxy.scrollTo("tail", anchor: .bottom)
+                        }
                         .onChange(of: store.conversationRevealSerial) { _, _ in
                             atTail = true
                             newContent = false

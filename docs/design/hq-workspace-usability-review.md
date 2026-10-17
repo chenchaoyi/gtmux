@@ -12,7 +12,10 @@ Scope: the native HQ Overview, conversation and matter detail, linked conversati
 | P2 | Resource wording implies that no work is blocked, or that detached processes are necessarily safe to reclaim. | State the resource warning and absence of an active-agent association without those claims. Resource data and actions are unchanged. |
 | P2 | A long export failure expands the sheet beyond its parent; password fields lack explicit accessible labels. | Bounded scrolling error text and labelled native fields. A 300-line synthetic failure fits a smaller workspace. |
 | P2 | Export rendering tests read the operator’s Keychain. | Inject the password reader; fixtures pass a nil reader. Production still uses the same Keychain lookup. No credential is captured in previews. |
+| P2 | Four pending knowledge actions squeeze English labels into broken words in a narrow reader; audience metadata is repeated. | A responsive action layout keeps labels intact and removes duplicate audience text. Native narrow/wide layout tests and bilingual pending-entry fixtures cover this case. |
 
 ## Verification boundaries
 
 Native fixtures exercise loading, retained refresh, empty/error content, history, source-reader bounds, narrow/wide windows and both appearances. Synthetic PNGs are retained by the macOS CI job for seven days. Full-window cache captures can omit the system-composited sidebar, so they are not evidence that its real pixels or VoiceOver speech passed; standalone resource/form captures and sizing tests supplement them. Installed-app interaction and real VoiceOver remain separate acceptance work. Phone, iPad, Web and terminal behavior are outside this native UI change; no new release or installation is included.
+
+The history regression navigates by stable message ID through SwiftUI, verifies that the viewport has actually left the tail, then compares nonblank before/after viewport pixels. Direct NSClipView origin changes and raw document offsets are not evidence of a user scroll in a virtualized LazyVStack.

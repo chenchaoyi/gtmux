@@ -396,15 +396,11 @@ struct HQKnowledgeView: View {
                                 Text(why).font(HQTypography.caption).foregroundStyle(p.fg2)
                             }
                             let aud = audienceShort(e.audience, l10n)
-                            if !aud.isEmpty {
-                                Text(
-                                    l10n.tr("for: ", "给：") + aud
-                                        + ((e.audienceRepo ?? "").isEmpty ? "" : " · " + (e.audienceRepo ?? ""))
-                                )
-                                .font(HQTypography.caption).foregroundStyle(p.fg3)
-                            } else if let target = e.promoteTarget, !target.isEmpty {
+                            if let repo = e.audienceRepo, !repo.isEmpty {
+                                Text(repo).font(HQTypography.caption).foregroundStyle(p.fg3)
+                            } else if aud.isEmpty, let target = e.promoteTarget, !target.isEmpty {
                                 Text("→ \(target)").font(HQTypography.caption).foregroundStyle(p.fg3)
-                            } else {
+                            } else if aud.isEmpty {
                                 Text(
                                     l10n.tr(
                                         "No audience selected. Cancel sharing, then choose an audience.",
@@ -429,11 +425,10 @@ struct HQKnowledgeView: View {
 
                     Divider().padding(.vertical, 2)
 
-                    HStack(spacing: 8) {
+                    HQActionLayout {
                         ForEach(knowledgeActs(for: e), id: \.self) { act in
-                            actButton(act, subject: e.title, p)
+                            actButton(act, subject: e.title, p).fixedSize()
                         }
-                        Spacer(minLength: 0)
                     }
                     // Authoring stays off this screen on purpose, and saying so beats
                     // leaving a reader hunting for a button that is not coming.

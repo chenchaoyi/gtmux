@@ -772,7 +772,8 @@ extension HQWorkspaceTests {
         }
         let store = HQWorkspaceStore(client: fake)
         store.select(.conversation); try await settled(store)
-        let host = NSHostingView(rootView: HQWorkspaceConversationView(l10n: .shared, store: store)
+        var navigation: ScrollViewProxy?
+        let host = NSHostingView(rootView: HQWorkspaceConversationView(l10n: .shared, store: store, scrollProxyReady: { navigation = $0 })
             .font(HQTypography.body).environment(\.markdownTypography, .workspace))
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 800, height: 480), styleMask: [.borderless], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false; window.contentView = host; window.orderFront(nil)
@@ -795,14 +796,53 @@ extension HQWorkspaceTests {
         }
         let scroller = try XCTUnwrap(scroll)
         XCTAssertTrue(isAtTail(scroller), "Already-loaded content must not first open at the oldest record")
-        let top = scroller.documentView!.isFlipped ? CGFloat(0) : scroller.documentView!.bounds.maxY - scroller.contentView.bounds.height
-        scroller.contentView.scroll(to: NSPoint(x: 0, y: top)); scroller.reflectScrolledClipView(scroller.contentView)
-        try await Task.sleep(nanoseconds: 60_000_000)
-        let before = scroller.documentVisibleRect
+        // A SwiftUI-hosted scroll view owns a virtual document. Navigate by record ID
+        // rather than mutating the clip origin behind that owner.
+        try await Task.sleep(nanoseconds: 150_000_000)
+        try XCTUnwrap(navigation).scrollTo("message-0", anchor: .top)
+        func viewport() throws -> NSBitmapImageRep {
+            host.layoutSubtreeIfNeeded()
+            let clip = scroller.contentView
+            let rect = NSRect(x: clip.bounds.minX + 20, y: clip.bounds.minY + 20,
+                width: clip.bounds.width - 60, height: min(300, clip.bounds.height - 40))
+            let image = try XCTUnwrap(clip.bitmapImageRepForCachingDisplay(in: rect))
+            clip.cacheDisplay(in: rect, to: image)
+            return image
+        }
+        func png(_ image: NSBitmapImageRep) throws -> Data {
+            try XCTUnwrap(image.representation(using: .png, properties: [:]))
+        }
+        // LazyVStack can revise its document origin while realizing old rows. Verify
+        // the actual viewport after layout settles, not a renderer-private offset.
+        var before: Data?
+        var stable = 0
+        for _ in 0..<100 {
+            let current = try png(viewport())
+            stable = current == before ? stable + 1 : 0
+            before = current
+            if stable >= 5 { break }
+            try await Task.sleep(nanoseconds: 20_000_000)
+        }
+        XCTAssertGreaterThanOrEqual(stable, 5, "Historical content must settle before refresh")
+        XCTAssertFalse(isAtTail(scroller), "Navigation must actually leave the tail before testing refresh")
+        let bitmap = try viewport()
+        let pixels = try XCTUnwrap(bitmap.bitmapData)
+        XCTAssertGreaterThan(Set(Data(bytes: pixels, count: bitmap.bytesPerRow * bitmap.pixelsHigh)).count, 8,
+            "A blank capture cannot prove reading-position preservation")
         count += 1; fake.snapshotValue.revision += 1
         store.refresh(); try await settled(store)
-        try await Task.sleep(nanoseconds: 60_000_000)
-        XCTAssertLessThan(abs(scroller.documentVisibleRect.minY - before.minY), 45, "A refresh cannot pull a historical reader back to the tail")
+        var after: Data?
+        for _ in 0..<100 {
+            after = try png(viewport())
+            if after == before { break }
+            try await Task.sleep(nanoseconds: 20_000_000)
+        }
+        if let path = ProcessInfo.processInfo.environment["GTMUX_WORKSPACE_PREVIEW_DIR"] {
+            try before?.write(to: URL(fileURLWithPath: path).appendingPathComponent("hq-scroll-before.png"))
+            try after?.write(to: URL(fileURLWithPath: path).appendingPathComponent("hq-scroll-after.png"))
+        }
+        XCTAssertEqual(before, after, "Refresh must preserve the visible historical content")
+        XCTAssertFalse(isAtTail(scroller), "An appended reply must not pull a historical reader to the tail")
         store.select(.conversation); try await settled(store)
         for _ in 0..<100 {
             host.layoutSubtreeIfNeeded()
@@ -832,6 +872,10 @@ extension HQWorkspaceTests {
         let entries: [KBEntry] = decodeWorkspace(###"[{"id":"safe-cleanup","topic":"preferences","title":"Review storage before removing build files","body":"## Safe cleanup\n\nCheck available storage and identify task-owned build artifacts.\n\nPreserve active workspaces and shared caches.","lang":"en","alt":{"lang":"zh","title":"清理构建文件前先检查磁盘","body":"## 安全清理\n\n检查可用空间，确认构建产物属于当前任务。\n\n保留正在使用的工作区和共享缓存。"}}]"###)
         resources.setEntriesForTest(entries)
         resources.knowledgeNavigation.pane = .entry(id: "safe-cleanup")
+        let pendingResources = HQResourceStore(read: { _ in nil })
+        let pending: [KBEntry] = decodeWorkspace(#"[{"id":"shared-rule","topic":"preferences","title":"Shared testing requirement","body":"Review the original source and record the destination before closing this request.","promoted_at":100,"audience":"everyone","issue_url":"https://example.invalid/new-issue"}]"#)
+        pendingResources.setEntriesForTest(pending)
+        pendingResources.knowledgeNavigation.pane = .entry(id: "shared-rule")
         for mode in [LangMode.en, .zh] {
             L10n.shared.mode = mode
             let flow = HQExportFlow(readPassphrase: { nil })
@@ -840,7 +884,9 @@ extension HQWorkspaceTests {
             store.select(.conversation); try await settled(store)
             store.draft = mode == .en ? "Check storage and report before deleting anything." : "请检查磁盘占用，先汇报再清理。"
             let views: [(String, AnyView, CGSize)] = [
+                ("sidebar", AnyView(HQWorkspaceSidebar(l10n: .shared, store: store)), CGSize(width: 260, height: 680)),
                 ("knowledge", AnyView(HQKnowledgeView(l10n: .shared, store: resources, navigation: resources.knowledgeNavigation)), CGSize(width: 920, height: 680)),
+                ("knowledge-pending", AnyView(HQKnowledgeView(l10n: .shared, store: pendingResources, navigation: pendingResources.knowledgeNavigation)), CGSize(width: 620, height: 680)),
                 ("export", AnyView(HQExportSheet(l10n: .shared, flow: flow, onClose: {})), CGSize(width: 480, height: 620)),
                 ("import", AnyView(HQImportSheet(l10n: .shared, flow: HQImportFlow(purpose: .restore, runner: { _, _ in XCTFail("Preview cannot invoke import"); return (1, "", "unexpected") }), onClose: {})), CGSize(width: 560, height: 620)),
                 ("composer", AnyView(HQWorkspaceComposer(l10n: .shared, store: store)), CGSize(width: 560, height: 180)),
