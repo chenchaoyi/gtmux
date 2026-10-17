@@ -1,4 +1,4 @@
-• Switching between Wrap lines and Original width shows loading feedback and keeps your reading position.
-• Remote arrow, Return and Backspace keys are larger. Settings uses distinct icons for connection status, switching servers and local HQ records.
-• The Mac HQ workspace has larger text and activity filters, with icons for different types of action.
-• Demo now reflects current conversations, HQ controls and usage information more accurately.
+• Review server access in a compact log with local timestamps and device details.
+• Filter activity by device, action or result. Open a device summary to see its matching log.
+• Chat now distinguishes sending from terminal delivery. Confirmed messages no longer reappear as pending after later replies.
+• Access history records session creation, archive downloads and desktop conversation access more reliably.

@@ -12,6 +12,21 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.122',
+    en: [
+      'Review server access in a compact log with local timestamps and device details.',
+      'Filter activity by device, action or result. Open a device summary to see its matching log.',
+      'Chat now distinguishes sending from terminal delivery. Confirmed messages no longer reappear as pending after later replies.',
+      'Access history records session creation, archive downloads and desktop conversation access more reliably.',
+    ],
+    zh: [
+      '访问历史改为紧凑日志，显示本地时间和设备详情，更便于排查。',
+      '支持按设备、操作和结果筛选；点击设备汇总即可查看对应日志。',
+      '对话中明确区分发送中与终端已接收，已确认的消息不再随后续对话重复显示。',
+      '完善会话创建、档案下载和桌面对话访问等操作的审计记录。',
+    ],
+  },
+  {
     version: '1.0.121',
     en: [
       'Switching between Wrap lines and Original width shows loading feedback and keeps your reading position.',
