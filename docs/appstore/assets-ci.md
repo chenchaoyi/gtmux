@@ -92,3 +92,10 @@ waits retain their short bounds and ordinary local tests keep two minutes. Run
 38920162585 reached six phone screens before the old overall two-minute budget
 expired. The usage sheet closes through its visible Done button, without waiting
 for an absent detail Back button. Each saved raw image logs its name and time.
+
+Rendering respects cancellation; it is not kept alive by an unconditional `always()` guard.
+Checkpoint/evidence cleanup still runs where possible. Forced runner termination can
+interrupt artifact upload, so an absent checkpoint must not be treated as saved progress.
+
+Rendering exports only checkpoint-recorded raw images and the released widget rendering.
+Unrecorded leftover files are not copied into the final asset tree.

@@ -136,7 +136,7 @@ The canonical Store lane SHALL preserve its archive and require matching app/ext
 
 ### Requirement: Hosted Store assets support validated reuse by stage
 
-Manual main-only capture SHALL separate unsigned simulator builds, checkpointed device/locale captures and rendering. Reused runs SHALL belong to the same repository/workflow, be manual on main and completed. Build source/toolchain/architecture/content and recorded group hashes SHALL be verified before reuse. Changed capture inputs SHALL invalidate group completion. Corruption SHALL fail closed. Each completed locale SHALL be preserved even if a later one fails. Rendering-only SHALL require all four groups for the exact release and record current renderer/caption identity separately from original app/capture evidence. No signing credentials or real data SHALL enter public artifacts.
+Manual main-only capture SHALL separate unsigned simulator builds, checkpointed device/locale captures and rendering. Reused runs SHALL belong to the same repository/workflow, be manual on main and completed. Build source/toolchain/architecture/content and recorded group hashes SHALL be verified before reuse. Changed capture inputs SHALL invalidate group completion. Corruption SHALL fail closed. Rendered raw exports SHALL include only checkpoint-recorded inputs plus release-derived widget rendering; unrecorded files SHALL NOT be carried into final assets. Each completed locale SHALL be preserved even if a later one fails. Rendering-only SHALL require all four groups for the exact release and record current renderer/caption identity separately from original app/capture evidence. No signing credentials or real data SHALL enter public artifacts.
 
 #### Scenario: The second locale fails after the first completed
 - **WHEN** the operator resumes using the completed failed run
@@ -147,6 +147,11 @@ Manual main-only capture SHALL separate unsigned simulator builds, checkpointed 
 - **WHEN** rendering-only selects a complete matching capture checkpoint
 - **THEN** no native build or simulator is needed
 - **AND** the manifest preserves capture origin and records the new rendering inputs
+
+#### Scenario: An operator cancels rendering
+- **WHEN** the workflow is cancelled
+- **THEN** rendering is not forced to continue by an unconditional status guard
+- **AND** checkpoint/evidence cleanup remains best effort, without claiming absent uploads were saved
 
 ### Requirement: Store processing and readiness are explicit and independently checked
 

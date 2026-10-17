@@ -2,6 +2,9 @@
 
 Build and gate commands live in `CLAUDE.md`. Run `make check` before every commit;
 `scripts/check-design.sh` is the design and architecture half of the same gate.
+The maintainer helper tests in `make check` require Python 3.12+ and Ruby 3+
+(standard libraries only; no Apple account, signing identity or ASC key). Actual
+iOS build/upload tooling uses `mobileapp/.ruby-version` and `Gemfile.lock`.
 
 PR CI selects checks conservatively from changed paths; see [PR checks](docs/ci.md)
 ([中文](docs/ci.zh.md)). Review the generated selection summary. Unknown/shared impact

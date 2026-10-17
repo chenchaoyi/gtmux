@@ -204,7 +204,7 @@ jobs:
           retention-days: 3
 
   render:
-    if: always() && needs.source.result == 'success' && (needs.capture.result == 'success' || inputs.stage == 'render-only')
+    if: ${{ !cancelled() && needs.source.result == 'success' && (needs.capture.result == 'success' || inputs.stage == 'render-only') }}
     needs: [source, capture]
     runs-on: macos-latest
     timeout-minutes: 15
