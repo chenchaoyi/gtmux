@@ -1022,6 +1022,7 @@ export class GtmuxClient {
     name: string,
     type: string,
     onProgress?: (fraction: number) => void,
+    pane?: string,
   ): Promise<UploadResult> {
     return new Promise(resolve => {
       const form = new FormData();
@@ -1046,7 +1047,7 @@ export class GtmuxClient {
           finish({error: 'failed'});
         }
       }, 1000);
-      xhr.open('POST', `${this.base}/api/upload`);
+      xhr.open('POST', `${this.base}/api/upload${pane ? `?id=${encodeURIComponent(pane)}` : ''}`);
       for (const [k, v] of Object.entries(this.h())) xhr.setRequestHeader(k, v);
       if (xhr.upload) {
         xhr.upload.onprogress = e => {

@@ -372,22 +372,6 @@ func HQSessionPredecessor(successor string, now int64) string {
 // HQSessionPredecessorLink returns the predecessor session id and its persisted agent
 // key when available. Legacy records return an empty agent key and preserve the old
 // summary-based lookup behavior.
-func HQSessionPredecessorLink(successor string, now int64) (sessionID, agentKey string) {
-	if successor == "" {
-		return "", ""
-	}
-	prefix := successor + " replaces "
-	var found Record
-	for _, r := range Read(0, now) {
-		if r.Event == AuditEventHQSession && (r.AgentSession == successor || strings.HasPrefix(r.Summary, prefix)) {
-			found = r // the newest record wins
-		}
-	}
-	if found.PreviousAgentSession != "" {
-		return found.PreviousAgentSession, found.PreviousAgentKey
-	}
-	if strings.HasPrefix(found.Summary, prefix) {
-		return strings.TrimPrefix(found.Summary, prefix), ""
-	}
-	return "", ""
+func HQSessionPredecessorLink(successor string, _ int64) (sessionID, agentKey string) {
+	return hqSessions.Predecessor(successor)
 }

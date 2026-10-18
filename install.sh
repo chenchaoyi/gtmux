@@ -12,7 +12,7 @@
 #   blocked), bootstrap from a mirror — the script then mirror-falls-back its own
 #   downloads automatically:
 #   curl -fsSL https://cdn.jsdelivr.net/gh/chenchaoyi/gtmux@main/install.sh | bash
-#   (Already have gtmux? `gtmux update` fetches this script via the same mirrors.)
+#   (Already have gtmux? `gtmux update` installs assets without executing this script.)
 #
 # CN networks (GitHub asset downloads often stall on objects.githubusercontent.com):
 #   the installer is GitHub-first and AUTO-falls back to a mirror chain. Force a mode:
@@ -255,7 +255,7 @@ step 4 "Install" "${BIN_DIR}/gtmux"
 APP_DIR="${HOME}/Applications"
 # Co-locate with an existing install so the two app channels don't diverge into two
 # copies: the Homebrew cask installs to /Applications/Gtmux.app, this installer (and
-# `gtmux update`, which runs this script) to ~/Applications. If the app ALREADY lives
+# `gtmux update`) to ~/Applications. If the app ALREADY lives
 # in /Applications (a `brew install --cask gtmux-app`) and NOT in ~/Applications,
 # update that bundle in place — otherwise `gtmux update` would leave a second copy in
 # ~/Applications while the cask's /Applications one goes stale, which then breaks a

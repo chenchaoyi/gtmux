@@ -581,8 +581,8 @@ function PaneDetailView({
     sendRef.current(p);
   }, []);
   const onComposerUpload = useCallback(
-    (uri: string, name: string, type: string, onProgress?: (fraction: number) => void) => client.upload(uri, name, type, onProgress),
-    [client],
+    (uri: string, name: string, type: string, onProgress?: (fraction: number) => void) => client.upload(uri, name, type, onProgress, agent.pane_id),
+    [client, agent.pane_id],
   );
 
   // Approval card (B1): only while waiting (cardinal rule), poll the pane's 1/2/3

@@ -5,6 +5,8 @@
 > Implementation entry point: `internal/server/web/` (`index.html` / `app.js` / `style.css`). Everything underneath
 > reuses the existing contracts (`/api/agents · /api/pane · /api/transcript · /api/diff · /api/icon`); the browser polls view data and fetches icons as needed. Authorized input uses `/api/send` and `/api/upload`; permissions and choices use `/api/share` and `/api/options`. The other panes, appearance and enrollment flows use `/api/panes`, `/api/theme` and `/api/enroll`.
 
+Uploads use multipart `file` with `POST /api/upload?id=<pane_id>`. Guest links require host input consent, current grants, and that link's input permission for the target pane, just like `/api/send`. Owner/device callers retain support for uploads without `id`.
+
 ## Positioning
 
 A browser has a big screen and a real keyboard and mouse. The web mirror must not be a port of the phone's single column layout; it is a desktop workbench. An agent directory grouped by state and window on the left; drag a listed pane onto a board, arrange and resize freely, compose your own view the way you would in tmux. Typing is available only for panes the caller may control.

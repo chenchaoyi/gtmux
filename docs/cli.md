@@ -1896,6 +1896,11 @@ code, and open the same access.
 
 `gtmux doctor --progress` also shows progress in piped output; `--bundle` collects diagnostics. See [installation](install.md) for setup.
 
+`gtmux update` installs release assets using local code and never executes a downloaded
+installer script. CLI archives from mirrors must match SHA256 checksums fetched directly
+from GitHub; if those checksums are unavailable, updating stops. The menu-bar app is
+downloaded directly from GitHub. Use `--cli-only` to skip it.
+
 
 After a successful CLI update, the newly installed executable runs a read-only
 `doctor --no-prompt --progress` check (90-second limit). Findings do not turn a
