@@ -103,3 +103,7 @@ uploads. Existing placements remain until replacement images for their group are
 A reservation without committed bytes can be recreated; a processing image is not
 reuploaded merely because the wait expired. Unknown/failed processing is not ready.
 No automatic submission is part of this recovery.
+
+## Accessibility metadata
+
+Follow [the accessibility evaluation procedure](accessibility.md) against the live Store version. The optional Accessibility URL may remain empty. Publish only verified device-family capabilities; final app Submit remains manual.

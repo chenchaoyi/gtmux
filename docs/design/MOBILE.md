@@ -1289,7 +1289,7 @@ was "corner mark + a diagonal", 8 paths in all, blurring into a blob at 15pt (20
 The general rule for small icons: remove strokes and keep the size.
 No single diagonal arrow (tried and replaced; alone it reads as "resize" rather than "leave"); no `✕` either,
 since `✕` beside a large body of text reads as "close this content", and there is nothing here to close. Brand colour because it floats over a full screen of terminal output and
-must be findable. The words moved into `accessibilityHint` (`accessibilityLabel` in this file is the automation handle; e2e locates by it).
+must be findable. Spoken action names belong in `accessibilityLabel`, optional context in `accessibilityHint`, and automation identifiers in `testID`; e2e locates by the identifier, never by an opaque spoken label.
 
 Back-to-bottom is "an arrow + a bar" (`ArrowToBottomIcon`): a bare `↓` says
 "scroll down"; only the bar beneath it says the end, and this key goes all the way there in one press. The colour is brand cyan
@@ -1473,3 +1473,7 @@ Phone and iPad share external-only history, source filters and summaries. The AP
 The server list and detail sheet share a fixed 14pt vector connection mark. The filled/hollow dot and optional keep-running ring share one centre, so independent view rounding cannot shift them. Status words remain the accessible description; the mark is decorative.
 
 An accepted text send to a working agent shows a concise terminal-delivery receipt for at most six seconds. A matching prompt in the transcript, a non-working state or a pane/server change clears it earlier. It does not mean the message is queued or still waiting; a late HTTP response cannot restore a transcript-confirmed receipt. Keys do not create it. Failure and uncertain-send recovery remain persistent. Phone and iPad share this behavior.
+
+### Conversation block Copy feedback (2026-10-18)
+
+iOS conversation long-press Copy retains its whole-block scope and highlights that block while the native menu is open. Dismissal, removal or changed text clears the highlight and invalidates stale Copy actions. Markdown formatting, inline links, text scaling and spacing remain in the existing Text renderer; a conversation-only native wrapper owns the menu feedback. This is not word/range selection. Android and other Markdown surfaces keep their existing behavior. HQ and approval controls speak meaningful localized labels; their old automation handles remain in testID. Store accessibility declarations follow [the separate evaluation procedure](../appstore/accessibility.md), not assumptions from these two controls.

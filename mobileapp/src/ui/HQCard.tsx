@@ -70,7 +70,9 @@ export function HQCard({
         </Text>
       </View>
       <TouchableOpacity
-        accessibilityLabel="radar-hq-card"
+        accessibilityRole="button"
+        accessibilityLabel={zh ? '打开 HQ' : 'Open HQ'}
+        accessibilityHint={fleetHeadline(hq, workers, zh, resourceCritical)}
         testID="radar-hq-card"
         activeOpacity={0.7}
         style={[
