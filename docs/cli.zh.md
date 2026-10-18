@@ -585,13 +585,13 @@ session 从你运行它的目录起步；菜单栏的「新建 session」在 `/`
 
 ## `gtmux transcript`
 
-当前支持已核实 thread 身份的外部 Codex 对话，包括 CLI 创建的对话。创建来源不代表当前控制端。
+支持身份已核实的外部 Codex 和 DeepSeek Harness 对话；Codex 包括 CLI 创建的对话，创建来源不代表当前控制端。
 可从 `gtmux agents --json` 取 `home_id`，为 `transcript` 或 `follow` 传入 `--home-id <home_id>`。
-读取不改变授权；跟进按服务器、Codex 目录和 thread 隔离，继续回复请回到原客户端。
+读取不改变授权；跟进按服务器、配置目录和会话隔离，继续回复请回到原客户端。
 Codex 暂不支持转入 tmux，其他 agent 保持原操作。
 
 
-读取已核实的外部 Codex 对话，不开启 HQ 跟进。精确 `session_id` 来自
+读取已核实的外部 Codex 或 DeepSeek Harness 对话，不开启 HQ 跟进。精确 `session_id` 来自
 `gtmux agents --json`。
 
 ```sh
@@ -602,12 +602,12 @@ gtmux transcript <session_id> --json --etag <revision>
 
 JSON 包含工具步骤。条件读取未变化时返回 `turns:null` 和 `unchanged:true`；失败时返回
 非零退出码，不伪装为空历史。视图至多 300 轮、512 KiB。身份未核实则拒绝。
-Mac 与已配对手机／iPad 提供[只读查看及更新](design/desktop-conversation.zh.md)，
-Web 仍只显示状态；回复请回到原客户端。
+Mac、已配对手机／iPad 和 Web 均提供[只读查看及更新](design/desktop-conversation.zh.md)。
+回复请回到原客户端；DSH 历史发现与专用 Cordis hook 见 [DeepSeek Harness 指南](guides/deepseek-harness.zh.md)。
 
 ## `gtmux follow`
 
-为一段身份已核实的外部 Codex 会话设置 HQ 跟进。检测到会话时，
+为一段身份已核实的外部 Codex 或 DeepSeek Harness 会话设置 HQ 跟进。检测到会话时，
 gtmux 默认只显示状态。会话的 `session_id` 可从 `gtmux agents --json` 获取。
 
 ```sh
@@ -624,7 +624,7 @@ gtmux follow <session_id> --hq off                # 停止跟进，同时关闭�
 不会回溯采集此前对话。
 
 HQ 跟进不包含输入、批准操作或转入 tmux。Native Codex 的当前控制端未确认，
-创建来源不赋予任何权限。其他 agent 保持原行为。菜单栏和已配对的手机／iPad 提供同样的设置；访客链接无权修改。
+创建来源不赋予任何权限。其他 agent 保持原行为。菜单栏、已配对的手机／iPad 及 Web 提供同样的设置；访客链接无权修改。
 
 ## `gtmux adopt`
 

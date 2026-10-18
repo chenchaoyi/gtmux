@@ -7,7 +7,10 @@ lock-screen push notifications on your phone.
 > `gtmux-relay.ccy.dev` is the Cloudflare Worker in `../relay-worker/` (TS), deployed
 > with `cd relay-worker && npx wrangler deploy`. **Keep the two payload builders in
 > sync** (`relay/apns.go` ↔ `relay-worker/src/index.ts`) and redeploy the Worker —
-> editing only this Go file changes nothing live. See CLAUDE.md → "Deploy".
+> editing only this Go file changes nothing live. Shared fixtures in
+> `api/testdata/apns-contract.json` check both implementations. See CLAUDE.md → "Deploy".
+
+[中文](README.zh.md)
 
 ## Why it exists
 
@@ -32,10 +35,11 @@ for the app's bundle identifier; it still delivers through Apple.
 > Push is delivered by Apple over any network, so it reaches the phone even when
 > it's **off the VPN**. Opening the live view/control separately needs a reachable Mac: LAN, a VPN, or a tunnel.
 
-The Go reference currently handles alert and silent-update payloads. The hosted
-Worker additionally handles Live Activity requests and per-token APNs environments;
-those fields are not implemented by this Go reference. Its `APNS_ENV` applies to
-all requests. Do not assume full feature parity when choosing a relay.
+Both implementations handle alert, silent badge and Live Activity update/end
+requests. Per-token `env` selects the APNs endpoint; `APNS_ENV` is the fallback
+for older requests without that field. APNs rejection status is preserved in a
+structured error so serve can retire a dead token. Shared fixtures verify these
+wire shapes, not live Apple delivery.
 
 ## Run
 
@@ -66,7 +70,7 @@ Replace the credential placeholders before running. Then point the Mac at it: `g
 | `APNS_KEY_ID` | the key's Key ID |
 | `APNS_TEAM_ID` | your Apple Developer Team ID |
 | `APNS_TOPIC` | the app's bundle id (`apns-topic`) |
-| `APNS_ENV` | `sandbox` → dev endpoint; anything else → production |
+| `APNS_ENV` | fallback when request `env` is absent: `sandbox` → dev endpoint; anything else → production |
 
 With the `APNS_*` vars unset the relay still starts (so you can deploy first):
 `/health` works and `/push` for `ios` returns `unsupported platform` until
@@ -83,12 +87,13 @@ credentials are added.
 Auth: `Authorization: Bearer <GTMUX_RELAY_TOKEN>` when the token is set.
 ```
 body: {"token","platform","title","body","pane","kind"}   // platform defaults to ios
-optional: {"subtitle","options","silent","badge","collapseId"}
+optional: {"subtitle","options","silent","badge","collapseId","env","liveActivity","event","contentState","staleDate"}
 200 {"status":"ok"}
 400 {"error":"invalid request"}            // missing device token / bad body
 400 {"error":"unsupported platform: …"}    // no gateway for that platform
 401 {"error":"unauthorized"}               // bad/absent relay token
-502 {"error":"push failed: …"}             // the gateway (APNs) rejected it
+502 {"error":"apns","status":410,"detail":"…"} // APNs rejected it; preserve its status
+502 {"error":"push failed: …"}             // transport/other gateway failure
 ```
 
 ## Multi-platform

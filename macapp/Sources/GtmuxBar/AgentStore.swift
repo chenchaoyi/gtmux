@@ -273,7 +273,7 @@ final class AgentStore: ObservableObject {
     private let resourceGate = AgentRefreshGate()
     private let readPoll: ([String]) -> Data?
 
-    init(readPoll: @escaping ([String]) -> Data? = { GtmuxCLI.capturePoll($0) }) {
+    init(readPoll: @escaping ([String]) -> Data? = { RadarSnapshotReader.shared.capture($0) }) {
         self.readPoll = readPoll
     }
 

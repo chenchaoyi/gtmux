@@ -7,7 +7,13 @@
 Known implementation gaps are tracked in [the design traceability matrix](../test/DESIGN-TRACEABILITY.md); this document is not a record that every requirement has passed acceptance.
 
 Target implementation: native macOS, NSStatusItem + NSPopover + SwiftUI (a custom popover view; no system
-NSMenu). Data comes from `gtmux agents --json` (contract in `internal/radar/agents.go`).
+NSMenu). Data follows the `gtmux agents --json` contract (`internal/radar/agents.go`).
+Normal polling reuses the running serve’s authenticated loopback `/api/agents` snapshot:
+one producer shared with HTTP/SSE, cached for at most 1.5s / 4 MiB. A fresh running
+status and saved owner token are required; redirects, invalid or oversized responses
+fall back to the standalone CLI, with a 10s service retry cooldown. Explicit CLI or
+native-home overrides keep their own CLI reader. The configured refresh cadence
+(default 1.5s) and hidden status/notification updates are unchanged.
 
 ---
 

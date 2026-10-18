@@ -9,6 +9,8 @@
 //   node --experimental-strip-types --test src/index.test.ts
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import worker, {type Env} from './index.ts';
 import {buildApnsRequest, buildLiveActivityAps} from './index.ts';
 
 const JWT = 'jwt-abc';
@@ -92,4 +94,38 @@ test('live activity without a stale-date omits the key (no undefined leak)', () 
   const aps = buildLiveActivityAps({token: 'act', liveActivity: true, contentState: {}}, 1_700_000_000);
   assert.deepEqual(aps, {timestamp: 1_700_000_000, event: 'update', 'content-state': {}});
   assert.equal('stale-date' in aps, false);
+});
+
+
+test('actual Worker requests match the shared Go/Worker APNs contract', async () => {
+  const fixtures = JSON.parse(readFileSync(new URL('../../api/testdata/apns-contract.json', import.meta.url), 'utf8'));
+  const pair = await crypto.subtle.generateKey({name: 'ECDSA', namedCurve: 'P-256'}, true, ['sign', 'verify']);
+  const pem = Buffer.from(await crypto.subtle.exportKey('pkcs8', pair.privateKey)).toString('base64');
+  const env: Env = {RELAY_TOKEN: 'fixture', APNS_KEY: `-----BEGIN PRIVATE KEY-----\n${pem}\n-----END PRIVATE KEY-----`, APNS_KEY_ID: 'K', APNS_TEAM_ID: 'T', APNS_TOPIC: TOPIC, APNS_ENV: 'production'};
+  const oldFetch = globalThis.fetch;
+  const oldNow = Date.now;
+  try {
+    for (const fixture of fixtures) {
+      Date.now = () => fixture.now * 1000;
+      let calls = 0;
+      globalThis.fetch = async (input, init) => {
+        calls++;
+        assert.equal(String(input), 'https://api.push.apple.com/3/device/fixture');
+        const headers = Object.fromEntries(new Headers(init?.headers));
+        assert.match(headers.authorization, /^bearer [^.]+\.[^.]+\.[^.]+$/);
+        headers.authorization = 'bearer ' + JWT;
+        assert.deepEqual(headers, fixture.headers, fixture.name);
+        assert.deepEqual(JSON.parse(String(init?.body)), fixture.payload, fixture.name);
+        return new Response('', {status: 200});
+      };
+      const response = await worker.fetch(new Request('https://relay.example.test/push', {
+        method: 'POST', headers: {Authorization: 'Bearer fixture'}, body: JSON.stringify(fixture.intent),
+      }), env);
+      assert.equal(response.status, 200, fixture.name);
+      assert.equal(calls, 1, fixture.name);
+    }
+  } finally {
+    globalThis.fetch = oldFetch;
+    Date.now = oldNow;
+  }
 });

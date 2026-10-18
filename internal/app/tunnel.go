@@ -284,7 +284,11 @@ func tunnelHosted(port int, name string, yes bool) int {
 		return 1
 	}
 
-	token := startLocalRadar(port)
+	token, err := startLocalRadar(port)
+	if err != nil {
+		i18n.Sae("gtmux tunnel: local radar unavailable: "+err.Error(), "gtmux tunnel: 本机雷达未就绪："+err.Error())
+		return 1
+	}
 	// Record the live tunnel URL so the menu-bar "Pair phone" QR can hand the
 	// phone the address that actually works (serve here is loopback-only — a LAN
 	// IP wouldn't be reachable). Clean up on exit unless the always-on service
@@ -451,7 +455,11 @@ func tunnelQuick(port int, name string, yes bool) int {
 			return 1
 		}
 	}
-	token := startLocalRadar(port)
+	token, err := startLocalRadar(port)
+	if err != nil {
+		i18n.Sae("gtmux tunnel: local radar unavailable: "+err.Error(), "gtmux tunnel: 本机雷达未就绪："+err.Error())
+		return 1
+	}
 	i18n.Say("Opening a quick tunnel (no account, ephemeral URL)…",
 		"正在打开临时隧道（免账号、临时地址）…")
 	args := []string{"tunnel", "--no-autoupdate", "--metrics", cloudflaredMetricsAddr, "--protocol", cloudflaredProtocol(), "--url", fmt.Sprintf("http://localhost:%d", port)}
@@ -476,23 +484,36 @@ func cloudflaredProtocol() string {
 	return "http2"
 }
 
-// startLocalRadar makes sure something read-only answers on the port: if `gtmux
-// serve` is already up we tunnel to it (token matches — same file); otherwise we
-// start the radar in-process bound to loopback. Returns the serve token.
-func startLocalRadar(port int) string {
-	token := resolveServeToken("")
+// startLocalRadar reuses the authenticated local API or starts one under the
+// same port lease as foreground serve. A failed bind never announces readiness.
+func startLocalRadar(port int) (string, error) {
 	if portInUse(port) {
-		i18n.Say(i18n.Dim+"Using the radar already running here."+i18n.Reset,
-			i18n.Dim+"复用本机已在运行的雷达。"+i18n.Reset)
-		return token
+		token, err := existingRadarToken(port)
+		if err != nil {
+			return "", err
+		}
+		i18n.Say(i18n.Dim+"Using the radar already running here."+i18n.Reset, i18n.Dim+"复用本机已在运行的雷达。"+i18n.Reset)
+		return token, nil
 	}
+	listener, lease, err := bindServePort("127.0.0.1", port)
+	if err != nil {
+		// Another entry point may be between its lease and completed startup.
+		deadline := time.Now().Add(2 * time.Second)
+		for time.Now().Before(deadline) {
+			if token, readyErr := existingRadarToken(port); readyErr == nil {
+				return token, nil
+			}
+			time.Sleep(20 * time.Millisecond)
+		}
+		return "", err
+	}
+	token := resolveServeToken("")
 	srv := newServeServer("127.0.0.1", port, token, "", "")
-	go func() { _ = srv.ListenAndServe() }()
-	for i := 0; i < 100 && !portInUse(port); i++ {
-		time.Sleep(20 * time.Millisecond)
-	}
+	serveRunning = serveIdentity{bind: "127.0.0.1", port: port, boot: srv.Boot()}
+	publishServeStatus()
+	go func() { defer lease.Close(); _ = srv.Serve(listener) }()
 	i18n.Say(i18n.Dim+"Local radar ready."+i18n.Reset, i18n.Dim+"本机雷达已就绪。"+i18n.Reset)
-	return token
+	return token, nil
 }
 
 // runCloudflared runs cloudflared, echoes its log dimmed, calls onReady once on

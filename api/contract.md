@@ -889,8 +889,8 @@ body: {"token":"<device-token>","platform":"ios","env":"production","kinds":["wa
 of e.g. completion notifications from the settings screen.
 
 `env` selects `sandbox` for a development-signed build or `production` for App
-Store/TestFlight. If omitted, the relay uses its default. The hosted Worker honors
-this per-token field; the self-host Go reference uses its global `APNS_ENV`.
+Store/TestFlight. Both the hosted Worker and self-host Go reference honor this
+per-token field; if omitted, the relay uses its configured `APNS_ENV` default.
 
 The server BINDS the token to the caller's enrolled device — it stamps `deviceId`
 from the bearer token's roster entry (never the request body), so revoking that

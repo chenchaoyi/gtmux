@@ -1390,10 +1390,23 @@ The browser SHALL coalesce overlapping periodic reads for the same resource, vie
 - **WHEN** a periodic request does not complete before its deadline
 - **THEN** the request is cancelled, its slot is released, and a later poll can recover
 
-
 ### Requirement: Web composer delivery receipts are transient
 Accepted text delivery to a working agent SHALL briefly confirm terminal delivery without claiming message consumption, queue position or task completion. Informational feedback SHALL expire after six seconds. Starting another submission SHALL cancel the old expiry timer. Refused and uncertain sends SHALL retain persistent recovery feedback and recoverable text. Control keys SHALL NOT create message-waiting notices.
 
 #### Scenario: A successful send is followed by a refusal
 - **WHEN** a working-send receipt is followed by a refused submission
 - **THEN** the refusal and recoverable text remain visible and the old informational timer cannot dismiss them
+
+### Requirement: Own the local listener before publishing serve identity
+
+Foreground serve and tunnel-owned serve SHALL acquire the same non-expiring per-user/port kernel lease and bind before creating or advertising credentials, enrollment codes, status or background API work. Failure SHALL leave an existing owner's status and saved credential unchanged. Process exit SHALL release the lease without unlinking its lock target. SSE work SHALL end with the serving listener. Tunnel reuse SHALL require a ready gtmux health response and acceptance of the existing saved owner credential; an occupied foreign port SHALL NOT be advertised as ready.
+
+#### Scenario: A second launch uses another bind address
+
+- **WHEN** another process holds the same user's port lease
+- **THEN** the contender fails before publishing identity or creating a credential even if its requested bind differs
+
+#### Scenario: A tunnel encounters an unrelated service
+
+- **WHEN** the port is occupied by a foreign service or the saved owner credential is missing or rejected
+- **THEN** tunnel startup reports that the local radar is unavailable instead of minting a new credential or claiming readiness

@@ -14,6 +14,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 )
@@ -21,13 +22,18 @@ import (
 // pushRequest is the wire payload from `gtmux serve` (mirrors internal/server
 // PushIntent; the two services share a JSON contract, not a Go type).
 type pushRequest struct {
-	Token    string `json:"token"`
-	Platform string `json:"platform"` // "ios" | "android" | "harmony"
-	Title    string `json:"title"`
-	Body     string `json:"body"`
-	Subtitle string `json:"subtitle,omitempty"` // the sending Mac's name (which server)
-	Pane     string `json:"pane"`
-	Kind     string `json:"kind"`
+	Token        string         `json:"token"`
+	Platform     string         `json:"platform"` // "ios" | "android" | "harmony"
+	Env          string         `json:"env,omitempty"`
+	LiveActivity bool           `json:"liveActivity,omitempty"`
+	Event        *string        `json:"event,omitempty"`
+	ContentState map[string]any `json:"contentState,omitempty"`
+	StaleDate    int64          `json:"staleDate,omitempty"`
+	Title        string         `json:"title"`
+	Body         string         `json:"body"`
+	Subtitle     string         `json:"subtitle,omitempty"` // the sending Mac's name (which server)
+	Pane         string         `json:"pane"`
+	Kind         string         `json:"kind"`
 	// Options is how many numbered choices the waiting pane offers, so the quick-reply
 	// category can have that many buttons. Pointer: absent (older Mac) must stay
 	// distinguishable from 0 (nothing parseable → offer no buttons). See waitingCategory.
@@ -88,7 +94,12 @@ func (s *relayServer) handlePush(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
 	if err := pusher.Push(ctx, req); err != nil {
-		writeJSON(w, http.StatusBadGateway, errBody("push failed: "+err.Error()))
+		var rejection *apnsFailure
+		if errors.As(err, &rejection) {
+			writeJSON(w, http.StatusBadGateway, map[string]any{"error": "apns", "status": rejection.Status, "detail": rejection.Detail})
+		} else {
+			writeJSON(w, http.StatusBadGateway, errBody("push failed: "+err.Error()))
+		}
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})

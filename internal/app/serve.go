@@ -171,6 +171,14 @@ func cmdServe(args []string) int {
 	// Before the first byte is written: under launchd stdout and stderr are a log file
 	// launchd created world-readable, in a home other accounts on the Mac can list.
 	privatizeStdio()
+	listener, lease, err := bindServePort(bind, port)
+	if err != nil {
+		i18n.Sae("gtmux serve: "+err.Error(), "gtmux serve: "+err.Error())
+		return 1
+	}
+	defer lease.Close()
+	defer listener.Close()
+	// No credentials, status, housekeeping or API work precedes a successful bind.
 	memory := startMemoryDiagnostics(memoryDir)
 	defer memory.Close()
 	token = resolveServeToken(token)
@@ -195,7 +203,7 @@ func cmdServe(args []string) int {
 	diag.For("serve").Info("serve.start", "serve started", "bind", bind, "port", port,
 		"boot", srv.Boot(), "backend", tunnelBackend())
 	stopOnSignal(func() { _ = memory.Close() })
-	if err := srv.ListenAndServe(); err != nil {
+	if err := srv.Serve(listener); err != nil {
 		diag.For("serve").Error("serve.stop", "serve stopped: it could not keep listening", "error", err)
 		i18n.Sae("gtmux serve: "+err.Error(), "gtmux serve: "+err.Error())
 		return 1
@@ -295,7 +303,7 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 			return server.SessionCreated{Session: result.Session, PaneID: result.PaneID, Window: result.Window, Pane: result.Pane, Loc: result.Loc}, nil
 		},
 		// With or without a tmux server, as `agents --json`: native rows exist without one.
-		AgentsJSON: radar.AgentsJSONBytes,
+		AgentsJSON: radar.CachedAgentsJSONBytes,
 		PanesJSON: func() ([]byte, error) {
 			if !tmux.ServerUp() { // no tmux → empty array, same as `panes --json`
 				return []byte("[]"), nil
@@ -766,32 +774,7 @@ func diffForPane(id string) (string, error) {
 	if cwd == "" {
 		return "", fmt.Errorf("pane not found")
 	}
-	git := func(args ...string) string {
-		c := exec.Command("git", append([]string{"-C", cwd, "-c", "color.ui=never"}, args...)...)
-		out, _ := c.Output()
-		return string(out)
-	}
-	// Not a git repo → empty diff (the app shows a friendly note, not an error).
-	c := exec.Command("git", "-C", cwd, "rev-parse", "--is-inside-work-tree")
-	if c.Run() != nil {
-		return "", nil
-	}
-	var b strings.Builder
-	if branch := strings.TrimSpace(git("rev-parse", "--abbrev-ref", "HEAD")); branch != "" {
-		fmt.Fprintf(&b, "# branch %s\n", branch)
-	}
-	b.WriteString(git("diff", "HEAD"))
-	if u := strings.TrimSpace(git("ls-files", "--others", "--exclude-standard")); u != "" {
-		b.WriteString("\n# untracked:\n")
-		for _, f := range strings.Split(u, "\n") {
-			fmt.Fprintf(&b, "+ %s\n", f)
-		}
-	}
-	out := b.String()
-	if len(out) > maxDiffBytes {
-		out = out[:maxDiffBytes] + "\n… (diff truncated)\n"
-	}
-	return out, nil
+	return diffForCwd(cwd)
 }
 
 // serverDisplayName is this host's human name, shown as the push notification's

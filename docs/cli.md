@@ -664,7 +664,7 @@ folder.
 
 ## `gtmux transcript`
 
-Read a verified external Codex conversation without enabling HQ follow.
+Read a verified external Codex or DeepSeek Harness conversation without enabling HQ follow.
 Take its exact `session_id` from `gtmux agents --json`.
 
 ```sh
@@ -677,12 +677,13 @@ JSON includes tool segments. Unchanged conditional reads return `turns:null` and
 `unchanged:true`; errors exit nonzero instead of pretending history is empty.
 The view is bounded to 300 turns and 512 KiB. Unverified identities are refused.
 Use `--home-id <home_id>` from the radar row to select its configuration identity.
-Mac and paired phone/iPad offer [read-only viewing with updates](design/desktop-conversation.md);
-Web remains status-only. Continue replies in the original client.
+Mac, paired phone/iPad and Web offer [read-only viewing with updates](design/desktop-conversation.md).
+Continue replies in the original client. For DSH history discovery and its dedicated
+Cordis hook, see [DeepSeek Harness](guides/deepseek-harness.md).
 
 ## `gtmux follow`
 
-Set HQ follow for one verified external Codex conversation. Detection alone
+Set HQ follow for one verified external Codex or DeepSeek Harness conversation. Detection alone
 only displays its status. Take its `session_id` from `gtmux agents --json`.
 
 ```sh
@@ -702,7 +703,7 @@ enabling it (the next Unix second); it does not mine the earlier conversation.
 HQ follow does not grant input, approval or Move to tmux. Native Codex current control
 remains unconfirmed; its creation originator does not grant authority. Other agents keep
 their existing behavior. `--home-id <home_id>` scopes follow to the selected configuration.
-The menu bar and paired phone/iPad offer the same settings; guest links cannot change them.
+The menu bar, paired phone/iPad and Web offer the same settings; guest links cannot change them.
 
 ## `gtmux adopt`
 

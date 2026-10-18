@@ -113,8 +113,10 @@ func readCodexRecords(r io.Reader, start int64, st *parseState) (int64, error) {
 func (l *Loader) loadCodexFile(path string, maxTurns int) ([]Turn, error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
+	hit := l.cached(path)
 	f, err := os.Open(path)
 	if err != nil {
+		delete(l.m, path)
 		return nil, err
 	}
 	defer f.Close()
@@ -124,7 +126,7 @@ func (l *Loader) loadCodexFile(path string, maxTurns int) ([]Turn, error) {
 	}
 	st := &parseState{turnCap: cacheTurnCap}
 	start := int64(0)
-	if hit := l.m[path]; hit != nil && hit.file != nil && os.SameFile(hit.file, fi) {
+	if hit != nil && hit.file != nil && os.SameFile(hit.file, fi) {
 		if fi.Size() == hit.size && fi.ModTime().Equal(hit.mtime) {
 			return lastN(hit.turns, maxTurns), nil
 		}
@@ -156,9 +158,6 @@ func (l *Loader) loadCodexFile(path string, maxTurns int) ([]Turn, error) {
 	if n := len(st.turnStarts); n > 0 {
 		last = st.turnStarts[n-1]
 	}
-	if l.m == nil {
-		l.m = make(map[string]*cacheEntry)
-	}
-	l.m[path] = &cacheEntry{path: path, size: fi.Size(), turns: st.turns, lastTurn: last, nextLine: next, file: fi, mtime: fi.ModTime()}
+	l.retain(&cacheEntry{path: path, size: fi.Size(), turns: st.turns, lastTurn: last, nextLine: next, file: fi, mtime: fi.ModTime()})
 	return lastN(st.turns, maxTurns), nil
 }
