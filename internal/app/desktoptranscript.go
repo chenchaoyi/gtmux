@@ -25,29 +25,37 @@ func desktopTranscriptRead(id, etag string, homes ...string) ([]byte, server.Tra
 	if !sessionpolicy.ValidRequest(id, home) {
 		return nil, meta, sessionpolicy.ErrUnverified
 	}
-	if id == "" || len(id) > 256 || strings.ContainsAny(id, `*/?[]\`) || !sessionpolicy.Eligible(id) {
+	ref, resolveErr := sessionpolicy.Resolve(id, home)
+	if resolveErr != nil {
 		return nil, meta, sessionpolicy.ErrUnverified
 	}
 	// Read the validator before content: an append during parsing must force another
 	// read, not mark older content with a newer revision.
-	if revision := transcript.LogRevision("codex", id); revision != "" {
-		meta.Etag = fmt.Sprintf("W/%q", transcript.CodexHomeID()+"-"+id+"-"+revision)
+	if revision := transcript.LogRevision(ref.Agent, id); revision != "" {
+		meta.Etag = fmt.Sprintf("W/%q", ref.HomeID+"-"+id+"-"+revision)
 	}
 	if etag != "" && meta.Etag == etag {
 		return nil, meta, nil
 	}
-	turns, err := transcript.Load("codex", id, maxTranscriptTurns)
+	var turns []transcript.Turn
+	var err error
+	retained := 0
+	if ref.Agent == "dsh" {
+		turns, retained, err = transcript.LoadDSH(id, maxTranscriptTurns)
+	} else {
+		turns, err = transcript.Load(ref.Agent, id, maxTranscriptTurns)
+	}
 	if err != nil {
 		return nil, meta, err
 	}
 	for i := range turns {
-		turns[i].Agent = "codex"
+		turns[i].Agent = ref.Agent
 	}
 	kept, dropped := turnsWithinBudget(turns, transcriptByteBudget)
 	if kept == nil {
 		kept = []transcript.Turn{}
 	}
-	meta.Dropped = dropped
+	meta.Dropped = dropped + retained
 	b, err := json.Marshal(kept)
 	return b, meta, err
 }
@@ -87,7 +95,7 @@ func cmdTranscript(args []string) int {
 	}
 	b, meta, err := desktopTranscriptRead(args[0], etag, home)
 	if err != nil {
-		i18n.Sae("Could not read this Codex conversation: "+err.Error(), "无法读取此 Codex 会话："+err.Error())
+		i18n.Sae("Could not read this conversation: "+err.Error(), "无法读取此会话："+err.Error())
 		return 1
 	}
 	if jsonOut {

@@ -24,6 +24,7 @@ import {join, resolve} from 'path';
 export const AGENT_KEYS: Readonly<Record<string, string>> = {
   'Claude Code': 'claude',
   Codex: 'codex',
+  'DeepSeek Harness': 'dsh',
   Gemini: 'gemini',
   Cursor: 'cursor',
   opencode: 'opencode',

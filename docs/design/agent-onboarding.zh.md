@@ -272,3 +272,11 @@ App 已读取 Go 提供的 `icon` hint，但各自保留备用字母标表；加
 - [ ] 菜单栏 + 手机的标记/图标已更新。
 - [ ] `make check` + `scripts/check-design.sh` 绿。
 - [ ] 面向用户的 agent 在 CLAUDE.md / `docs/cli.md` 里有提及；行为变了就更新 spec。
+
+## 外部对话提供器
+
+`Manifest.NativeReader` 在 `internal/conversation` 中声明经过身份核验的外部历史
+适配器；一致性测试会拒绝缺少实现的声明。共用阅读和跟进接口使用不透明的目录身份，
+`sessionpolicy` 按 agent、目录和会话共同隔离授权。增加提供器不代表支持 tmux 识别、
+恢复、无界面运行或输入控制。DeepSeek Harness 使用原生 Cordis 插件和有上限的 v4
+只读日志读取器，其启动进程的祖先不能证明 pane 归属。见 [DSH 接入及边界](../guides/deepseek-harness.zh.md)。

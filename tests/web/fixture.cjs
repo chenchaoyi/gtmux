@@ -15,7 +15,7 @@ const turns = () => [{prompt: 'Check **retries**', response: 'Initial finding',
   segments: [{text: 'Initial finding', steps: [{title: 'Read logs', detail: 'Synthetic detail'}]}]}];
 
 async function start() {
-  const state = {deny: false, share: {input: true, all: true, panes: [], view_panes: []}, turns: {}, sends: []};
+  const state = {agents:null, follow:{hq:false,notify:false,knowledge:false,revision:0}, deny: false, share: {input: true, all: true, panes: [], view_panes: []}, turns: {}, sends: []};
   const json = (res, status, body) => {
     res.writeHead(status, {'Content-Type': 'application/json', 'Cache-Control': 'no-store'});
     res.end(JSON.stringify(body));
@@ -38,12 +38,27 @@ async function start() {
         if (state.deny) return json(res, 401, {error: 'unauthorized'});
         const id = url.searchParams.get('id');
         if (['/api/pane', '/api/transcript', '/api/diff'].includes(p) && !id) return json(res, 400, {error: 'id required'});
-        if (p === '/api/agents') return json(res, 200, agents);
+        if (p === '/api/agents') return json(res, 200, state.agents || agents);
         if (p === '/api/share') return json(res, 200, state.share);
         if (p === '/api/panes') return json(res, 200, [...agents.filter(a => a.pane_id).map(a => ({...a, tier: 'agent', window: '0', command: a.agent})),
           {pane_id: '%904', session: 'Shell', tier: 'plain', command: 'bash', window: '0', cwd: '/tmp/synthetic'}]);
         if (p === '/api/pane') return json(res, 200, {id, text: 'Synthetic terminal\n› Ready', cols: 90});
         if (p === '/api/transcript') return json(res, 200, state.turns[id] || turns());
+        if (p === '/api/session/transcript') {
+          if (url.searchParams.get('home_id') !== 'synthetic-dsh-home') return json(res,422,{error:'home'});
+          res.setHeader('ETag','W/"dsh-test-1"');res.setHeader('X-Gtmux-Turns-Dropped','2');
+          if(req.headers['if-none-match']==='W/"dsh-test-1"'){res.writeHead(304);return res.end();}
+          return json(res,200,turns());
+        }
+        if (p === '/api/session-follow') {
+          if(req.method==='POST') {const input=await body(req);if(input.home_id!=='synthetic-dsh-home')return json(res,422,{error:'home'});
+            if(input.settings.revision!==state.follow.revision)return json(res,409,{error:'conflict'});
+            state.follow={...input.settings,revision:state.follow.revision+1};}
+          return json(res,200,state.follow);
+        }
+        if (p === '/api/icon' && url.searchParams.get('agent') === 'DeepSeek Harness') {
+          const image=await fs.readFile(path.resolve(__dirname,'../../assets/agent-icons/dsh.png'));res.writeHead(200,{'Content-Type':'image/png'});return res.end(image);
+        }
         if (p === '/api/options') return json(res, 200, {options: id === '%902' ? [{n: 1, label: 'Proceed'}, {n: 2, label: 'Cancel'}] : []});
         if (p === '/api/theme') return json(res, 200, {});
         if (p === '/api/diff') return json(res, 200, {diff: 'diff --git a/a b/a\n--- a/a\n+++ b/a\n-old\n+new'});

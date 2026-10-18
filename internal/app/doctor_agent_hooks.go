@@ -57,6 +57,11 @@ func agentHookPresent(key string) bool {
 }
 
 func agentHooksInstalled(inst agentInstaller) bool {
+	if inst.key == "dsh" {
+		b, e := os.ReadFile(inst.configPath())
+		y, f := os.ReadFile(dshOverlayPath(inst))
+		return e == nil && f == nil && strings.Contains(string(b), "export function apply(ctx)") && strings.Contains(string(y), "gtmux-native-dsh")
+	}
 	if inst.plugin != nil {
 		b, err := os.ReadFile(inst.configPath())
 		return (err == nil && strings.Contains(string(b), "export const GtmuxHook")) || ownedOpencodePlugin(legacyOpencodePluginPath())

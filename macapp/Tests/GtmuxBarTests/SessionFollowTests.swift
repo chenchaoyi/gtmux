@@ -55,7 +55,7 @@ final class SessionFollowTests: XCTestCase {
         store.setAgentsForTesting([rows[0]])
         XCTAssertEqual(store.total, 0)
         XCTAssertEqual(view.contentState, .list, "a desktop-only launch must offer follow settings")
-        XCTAssertEqual(view.summaryText, "External Codex · HQ off")
+        XCTAssertEqual(view.summaryText, "External conversations · HQ off")
         store.setAgentsForTesting(rows)
         XCTAssertEqual(view.contentState, .list, "native-only sessions must not be mistaken for no search matches")
         XCTAssertEqual(view.summaryText, "1 agent · 1 awaiting input · 0 working · 0 idle")

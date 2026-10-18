@@ -91,7 +91,7 @@ final class DesktopConversationController: NSObject, NSWindowDelegate {
                          styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
         w.isReleasedWhenClosed = false
         w.minSize = NSSize(width: 520, height: 360)
-        w.title = agent.primary.isEmpty ? l10n.tr("Codex conversation", "Codex 对话") : agent.primary
+        w.title = agent.primary.isEmpty ? l10n.tr("conversation", "会话") : agent.primary
         let model = DesktopConversationModel(agent: agent, active: { [weak w] in w?.isVisible == true && w?.isMiniaturized != true && NSApp.isActive })
         self.model = model
         w.contentView = NSHostingView(rootView: DesktopConversationView(model: model, l10n: l10n))
@@ -143,7 +143,7 @@ struct DesktopConversationView: View {
                                 ForEach(Array(segments.enumerated()), id: \.offset) { _, segment in
                                     VStack(alignment: .leading, spacing: 8) {
                                         if let text = segment.text, !text.isEmpty {
-                                            Text("Codex").font(.caption).foregroundStyle(p.fg2)
+                                            Text(model.agent.agent).font(.caption).foregroundStyle(p.fg2)
                                             Text(.init(text)).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
                                         }
                                         if let steps = segment.steps, !steps.isEmpty {

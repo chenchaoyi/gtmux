@@ -111,7 +111,7 @@ struct SessionFollowView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(model.agent.primary.isEmpty ? model.agent.agent : model.agent.primary)
                         .font(.headline).lineLimit(2)
-                    Text(l10n.tr("ChatGPT desktop · This Mac", "ChatGPT 桌面版 · 当前 Mac"))
+                    Text(l10n.tr("External conversation · This Mac", "外部会话 · 当前 Mac"))
                         .font(.caption).foregroundStyle(p.fg2)
                 }
             }
@@ -138,7 +138,7 @@ struct SessionFollowView: View {
                                            detail: l10n.tr("Keep reusable lessons from future activity.", "从开启后的活动中整理可复用经验。"),
                                            value: $model.draft.knowledge, identifier: "follow-knowledge")
                             }.padding(14).background(p.rowSelected).clipShape(RoundedRectangle(cornerRadius: 8))
-                            Text(l10n.tr("Continue conversations in ChatGPT desktop.", "请在 ChatGPT 桌面版继续对话。"))
+                            Text(l10n.tr("Continue conversations in the original client.", "请在原客户端继续对话。"))
                                 .font(.caption).foregroundStyle(p.fg2).padding(.top, 12)
                         } else if model.current.hq {
                             Text(l10n.tr("Existing records and knowledge will be kept.", "停止后保留已有记录和知识。"))

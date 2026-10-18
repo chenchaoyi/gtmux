@@ -188,7 +188,7 @@ struct MenuView: View {
         let n = store.total
         if n == 0 {
             return store.agents.isEmpty ? l10n.tr("no agents", "没有 agent")
-                : l10n.tr("External Codex · HQ off", "外部 Codex · 未开启 HQ 跟进")
+                : l10n.tr("External conversations · HQ off", "外部会话 · 未开启 HQ 跟进")
         }
         // Per-status counts describe the SECTIONS below, which exclude the
         // supervisor (it renders as the HQ card) — exclude it here too so the
@@ -1113,7 +1113,7 @@ private struct NativeHeader: View {
     var body: some View {
         let p = Theme.Palette.of(scheme)
         HStack(spacing: 6) {
-            Text(desktop ? l10n.tr("EXTERNAL CODEX", "外部 Codex") : l10n.tr("ELSEWHERE", "不在 tmux")).font(Theme.Font.section).kerning(0.5).foregroundStyle(p.fg3)
+            Text(desktop ? l10n.tr("EXTERNAL CODEX", "外部会话") : l10n.tr("ELSEWHERE", "不在 tmux")).font(Theme.Font.section).kerning(0.5).foregroundStyle(p.fg3)
             Text("\(count)").font(.system(size: 9, weight: .bold)).foregroundStyle(p.fg3)
             Spacer()
             Text(desktop ? l10n.tr("Follow per conversation", "按会话设置跟进") : l10n.tr("sensed · not in tmux", "已感知 · 不在 tmux")).font(Theme.Font.footer).foregroundStyle(p.fg3)

@@ -20,6 +20,7 @@ import (
 	"github.com/chenchaoyi/gtmux/assets"
 	"github.com/chenchaoyi/gtmux/internal/agents"
 	"github.com/chenchaoyi/gtmux/internal/diag"
+	"github.com/chenchaoyi/gtmux/internal/dsh"
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
@@ -747,7 +748,10 @@ func Run(stdin io.Reader, args []string) int {
 	// is empty we ask the process tree instead — see paneidentity.go.
 	envPane := os.Getenv("TMUX_PANE")
 	pane := envPane
-	codexPaneChecked := false
+	codexPaneChecked := agentKey == "dsh"
+	if agentKey == "dsh" {
+		pane = ""
+	} // A shared Web server's launcher never owns a pane.
 	if agentKey == "codex" && rawEvent == "UserPromptSubmit" && transcript.SessionBindingToken(promptText) != "" {
 		// A rejected witness must not be bypassed by the older unique-cwd
 		// fallback. Leave it pane-less until its exact target can be verified.
@@ -821,6 +825,10 @@ func Run(stdin io.Reader, args []string) int {
 			pane = p
 		}
 	}
+	if agentKey == "dsh" {
+		pane = ""
+	}
+
 	session := ""
 	if pane != "" {
 		session = tmux.Display(pane, "#{session_name}")
@@ -850,6 +858,9 @@ func Run(stdin io.Reader, args []string) int {
 	homeID, creationClient := "", ""
 	if agentKey == "codex" {
 		homeID, creationClient = transcript.CodexHomeID(), transcript.CodexClient(agentSession)
+	}
+	if agentKey == "dsh" {
+		homeID = dsh.HomeID()
 	}
 	if pane != "" && resume.Resumable(agentKey) {
 		if loc := tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}"); loc != "" {
@@ -911,7 +922,7 @@ func Run(stdin io.Reader, args []string) int {
 	// Other agents retire their native record; shared Codex frontends need stronger proof.
 	if event == "SessionEnd" && agentSession != "" {
 		if agentKey != "codex" {
-			native.Remove(agentSession)
+			native.Remove(agentSession, homeID)
 		}
 		// Codex's shared backend PID is not a frontend attachment identity. A late
 		// SessionEnd cannot retire another frontend's newer observation. Exact binding
@@ -1043,15 +1054,15 @@ func Run(stdin io.Reader, args []string) int {
 		goal = goalOf(promptText)
 	}
 	client := ""
-	if pane == "" && agentKey == "codex" {
+	if pane == "" && (agentKey == "codex" || agentKey == "dsh") {
 		client = "unconfirmed"
 	}
 	var learning *bool
 	if client == "unconfirmed" {
-		allowed := sessionpolicy.LearnEvent(pane, agentKey, agentSession, client, time.Now().Unix())
+		allowed := sessionpolicy.LearnEvent(pane, agentKey, agentSession, client, time.Now().Unix(), homeID)
 		learning = &allowed
 	}
-	observe := sessionpolicy.ObserveEvent(pane, agentKey, agentSession, client, time.Now().Unix())
+	observe := sessionpolicy.ObserveEvent(pane, agentKey, agentSession, client, time.Now().Unix(), homeID)
 	summary, evClass := "", ""
 	if event != "" {
 		if observe {

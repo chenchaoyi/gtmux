@@ -370,3 +370,13 @@ Review both when adding an agent:
 - [ ] `make check` + `scripts/check-design.sh` green.
 - [ ] CLAUDE.md / `docs/cli.md` mention the agent if it's user-facing; spec updated if
   behavior changed.
+
+## External conversation providers
+
+`Manifest.NativeReader` declares a verified external-history adapter in
+`internal/conversation`. Its conformance test rejects missing adapters. The shared
+reader and follow APIs use opaque home IDs, and `sessionpolicy` namespaces grants
+by agent/home/session. Adding a provider must not imply tmux detection, resume,
+headless execution or input control. DeepSeek Harness uses a native Cordis plugin
+plus a bounded read-only v4 artifact reader; its launcher ancestry never proves
+pane ownership. See [DSH onboarding and boundaries](../guides/deepseek-harness.md).

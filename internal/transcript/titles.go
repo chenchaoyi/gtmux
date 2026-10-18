@@ -3,6 +3,7 @@ package transcript
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/chenchaoyi/gtmux/internal/dsh"
 	"io"
 	"os"
 	"path/filepath"
@@ -15,6 +16,15 @@ const titleIndexLimit = 4 << 20
 // unsupported metadata leaves the caller's existing label fallback intact. Read
 // once per radar poll, not once per row; no transcript text is promoted to a title.
 func SessionTitles(agent string) map[string]string {
+	if normalizeAgent(agent) == "dsh" {
+		out := map[string]string{}
+		if rows, err := dsh.Sessions.List(); err == nil {
+			for _, s := range rows {
+				out[s.ID] = strings.Join(strings.Fields(s.Title), " ")
+			}
+		}
+		return out
+	}
 	if normalizeAgent(agent) != "codex" {
 		return nil
 	}

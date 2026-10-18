@@ -90,6 +90,7 @@ type agentInstaller struct {
 
 // agentInstallers are the non-Claude agents `install-hooks --agent <key>` can wire.
 var agentInstallers = map[string]agentInstaller{
+	"dsh": {key: "dsh", display: "DeepSeek Harness", relDir: ".dsh", envDir: "DSH_HOME", file: "gtmux/gtmux.mjs", dedicated: true, plugin: dshPluginJS},
 	"codex": {
 		// Codex's hooks system (~/.codex/hooks.json + features.hooks=true) — the
 		// additive path that COEXISTS with an existing `notify` (e.g. computer-use),
@@ -371,6 +372,9 @@ func (inst agentInstaller) timeoutFor(b agentHookBinding) int {
 // installAgentHooks writes (or removes) one non-Claude agent's hooks file.
 // Idempotent and reversible, preserving any foreign hooks already present.
 func installAgentHooks(inst agentInstaller, yes bool) int {
+	if inst.key == "dsh" {
+		return installDSHHooks(inst)
+	}
 	bin := selfPath()
 	path := inst.configPath()
 	if inst.plugin != nil {
@@ -409,6 +413,13 @@ func installAgentHooks(inst agentInstaller, yes bool) int {
 
 // uninstallAgentHooks reverses installAgentHooks for one agent.
 func uninstallAgentHooks(inst agentInstaller) int {
+	if inst.key == "dsh" {
+		if err := updateDSHPlugin(inst, "", false); err != nil {
+			i18n.Sae(err.Error(), err.Error())
+			return 1
+		}
+		return 0
+	}
 	path := inst.configPath()
 	if inst.plugin != nil {
 		// A plugin file is wholly gtmux's — remove it outright (no-op if absent).

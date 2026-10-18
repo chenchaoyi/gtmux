@@ -717,3 +717,8 @@ svg .spin { transform-origin: 8px 8px; animation: gtmux-ring-spin 2s linear infi
 
 /* Native sessions have no pane target in either browser layout. */
 .tree-row.native { cursor: default; }
+
+/* External conversations share the chat column and never acquire pane controls. */
+.external-controls {padding: 12px 0; color: var(--fg2); font-size: 13px;}
+.external-toggle {display: flex; align-items: center; gap: 10px; min-height: 36px;}
+.row.native[role="button"] {cursor: pointer;}

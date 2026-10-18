@@ -116,7 +116,7 @@ export function SessionFollowSheet({agent, client, lang, pal, onClose, onSaved}:
         <ScrollView style={s.scroll} contentContainerStyle={s.body}>
           <View style={s.identity}><AgentAvatar agent={agent} size={38} radius={11} bg={pal.raised} fg={pal.fg2} border={pal.divider} />
             <View style={s.copy}><Text style={[s.identityTitle, {color: pal.fg}]} numberOfLines={2}>{primary(agent) || agent.agent}</Text>
-              <Text style={[s.sub, {color: pal.fg2}]}>{tr('ChatGPT desktop · This computer', 'ChatGPT 桌面版 · 当前计算机')}</Text></View>
+              <Text style={[s.sub, {color: pal.fg2}]}>{tr('External conversation · This computer', '外部会话 · 当前计算机')}</Text></View>
           </View>
           <View style={[s.mainSetting, {borderColor: pal.divider}]}>
             {toggle('hq', tr('HQ follow', 'HQ 跟进'), tr('Read the conversation and report progress.', '读取对话，分析并汇报进展。'))}
