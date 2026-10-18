@@ -1,0 +1,3 @@
+• Read verified DeepSeek Harness conversations alongside Codex histories, with the official DeepSeek icon.
+• Choose follow, notifications and future knowledge retention separately for each external conversation.
+• External conversations stay read-only; continue interacting in the original client.

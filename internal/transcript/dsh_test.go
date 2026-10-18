@@ -25,6 +25,7 @@ func TestDSHCurrentPublicTranscriptIsIncrementalAndPrivateFieldsStayPrivate(t *t
 		`{"type":"tool/call","seq":4,"time":2200,"data":{"name":"bash","arguments":"{\"command\":\"go test ./...\"}"}}`,
 		`{"type":"assistant/message","seq":5,"time":2300,"data":{"message":{"role":"assistant","content":[{"type":"text","text":"Tests pass"}]}} ,"surfaceOp":"append"}`,
 	}
+	rows = append(rows, `{"type":"user/message","seq":6,"time":2350,"surfaceOp":{"op":"replace","startSeq":2,"endSeq":2},"data":{"role":"user","source":{"kind":"user"},"content":[{"type":"text","text":"OLD USER COPY"}]}}`)
 	enc, _ := zstd.NewWriter(nil, zstd.WithEncoderCRC(true))
 	defer enc.Close()
 	var data []byte
@@ -56,7 +57,7 @@ func TestDSHCurrentPublicTranscriptIsIncrementalAndPrivateFieldsStayPrivate(t *t
 	if err != nil {
 		t.Fatal(err)
 	}
-	next := `{"type":"assistant/message","seq":6,"time":2400,"data":{"message":{"role":"assistant","content":[{"type":"text","text":"Final update"}]}},"surfaceOp":"append"}`
+	next := `{"type":"assistant/message","seq":7,"time":2400,"data":{"message":{"role":"assistant","content":[{"type":"text","text":"Final update"}]}},"surfaceOp":"append"}`
 	_, _ = f.Write(enc.EncodeAll([]byte(next+"\n"), nil))
 	f.Close()
 	updated, err := l.load("dsh", "visible", 300)

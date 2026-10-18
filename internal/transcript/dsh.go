@@ -29,6 +29,9 @@ func dshStep(line []byte, st *parseState) error {
 	if err := json.Unmarshal(line, &event); err != nil {
 		return err
 	}
+	if !event.AppendsHistory() {
+		return nil
+	}
 	switch event.Type {
 	case "user/message":
 		var msg dshMessage

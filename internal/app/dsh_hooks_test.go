@@ -58,6 +58,7 @@ const root = {id:'root',header:{version:4,cwd:'/work'}};
 const event = (type,data={},session=root)=>listeners['session/event'](session,{type,data});
 event('user/message',{role:'user',source:{kind:'plugin'},content:[{type:'text',text:'private injected context'}]});
 event('user/message',{role:'user',source:{kind:'user'},content:[{type:'text',text:'child'}]},{id:'child',header:{version:4,origin:'subagent'}});
+listeners['session/event'](root,{type:'user/message',surfaceOp:{op:'replace',startSeq:0,endSeq:0},data:{role:'user',source:{kind:'user'},content:[{type:'text',text:'old user copy'}]}});
 event('approval/asked',{toolName:'bash'});
 event('tool/call',{name:'bash'});
 assert.equal(calls.length,0);

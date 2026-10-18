@@ -12,6 +12,7 @@ export function observe(ctx, emit) {
     const payload = {session_id: session.id, cwd: session.header.cwd || '', turn_id: String(d.turn ?? '')};
     switch (event.type) {
       case 'user/message':
+        if (event.surfaceOp && event.surfaceOp !== 'append') break;
         if (d.source?.kind === 'user' && d.role === 'user') emit('UserPromptSubmit', {...payload, prompt: text(d.content)});
         break;
       case 'turn/start': turns.set(session,payload.turn_id); questions.set(session,new Set()); emit('TurnStarted', payload); break;

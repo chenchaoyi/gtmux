@@ -67,3 +67,5 @@ Native contracts: [session types](https://github.com/deepseek-ai/deepseek-harnes
 [approval service](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/interaction/user-approval/src/index.ts).
 
 The first discovery builds metadata by walking selected artifacts once; subsequent unchanged polls reuse it, and append reads decode only new complete frames.
+
+Model-surface replacement copies are not fresh prompts, lifecycle events or learning input; the original public append remains visible.

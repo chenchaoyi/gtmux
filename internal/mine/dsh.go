@@ -44,7 +44,7 @@ func readDSH(path string, start int64, o readOpts) (readResult, int64, error) {
 		if err := json.Unmarshal(line, &e); err != nil {
 			return err
 		}
-		if e.Type == "session" || e.Time/1000 < o.policySince {
+		if !e.AppendsHistory() || e.Type == "session" || e.Time/1000 < o.policySince {
 			return nil
 		}
 		c.sourceFile, c.sourceOffset = path, cursor.Offset

@@ -289,6 +289,9 @@ func (e *catalogEntry) fold(line []byte) error {
 	if event.Type == "session" {
 		return fmt.Errorf("duplicate DSH session header")
 	}
+	if !event.AppendsHistory() {
+		return nil
+	}
 	at := event.Time / 1000
 	switch event.Type {
 	case "user/message":

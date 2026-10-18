@@ -53,3 +53,5 @@ gtmux install-hooks --agent dsh
 [审批服务](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/interaction/user-approval/src/index.ts)。
 
 首次发现会遍历选中的文件建立元数据，之后未变化的轮询复用索引，追加读取只解码新的完整帧。
+
+模型表层的替换副本不会当作新提示、生命周期事件或学习输入，原先追加的公开对话仍可见。

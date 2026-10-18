@@ -4,6 +4,7 @@ package dsh
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/binary"
 	"encoding/json"
 	"errors"
@@ -24,10 +25,17 @@ var ErrAmbiguous = errors.New("ambiguous DeepSeek Harness session identity")
 // Event is a current v4 durable record. Content remains opaque until the owning
 // consumer selects a public event; system context and replay metadata are ignored.
 type Event struct {
-	Type string          `json:"type"`
-	Seq  int64           `json:"seq"`
-	Time int64           `json:"time"`
-	Data json.RawMessage `json:"data"`
+	Type      string          `json:"type"`
+	Seq       int64           `json:"seq"`
+	Time      int64           `json:"time"`
+	Data      json.RawMessage `json:"data"`
+	SurfaceOp json.RawMessage `json:"surfaceOp"`
+}
+
+// AppendsHistory excludes model-surface replacement copies from fresh dialogue.
+// Missing metadata remains compatible with log-only public events.
+func (e Event) AppendsHistory() bool {
+	return len(e.SurfaceOp) == 0 || bytes.Equal(bytes.TrimSpace(e.SurfaceOp), []byte(`"append"`))
 }
 
 type Header struct {
