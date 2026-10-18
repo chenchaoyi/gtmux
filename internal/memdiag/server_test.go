@@ -14,9 +14,32 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 )
+
+type directoryOwner struct {
+	os.FileInfo
+	uid uint32
+}
+
+func (d directoryOwner) Sys() any { return &syscall.Stat_t{Uid: d.uid} }
+
+func TestParentOwnershipBoundary(t *testing.T) {
+	info, err := os.Stat(privateDir(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, uid := range []uint32{0, uint32(os.Geteuid())} {
+		if !protectedParent(directoryOwner{FileInfo: info, uid: uid}) {
+			t.Fatal("trusted owner rejected")
+		}
+	}
+	if protectedParent(directoryOwner{FileInfo: info, uid: uint32(os.Geteuid() + 1)}) {
+		t.Fatal("foreign owner can replace our socket subtree")
+	}
+}
 
 func privateDir(t *testing.T) string {
 	t.Helper()
@@ -218,6 +241,15 @@ func TestRequestBoundaries(t *testing.T) {
 }
 
 func TestProfileBudgetsFailureCancellationAndConcurrency(t *testing.T) {
+	t.Run("bucket metadata", func(t *testing.T) {
+		h := newHandler("test")
+		h.memstats = func(m *runtime.MemStats) { m.BuckHashSys = maxProfileBuckets + 1 }
+		h.records = func() int { t.Fatal("over-budget metadata traversed"); return 0 }
+		h.profile = func(io.Writer, string) error { t.Fatal("over-budget profile generated"); return nil }
+		if request(h, "/heap").Code != 413 || request(h, "/stats").Code != 200 {
+			t.Fatal("metadata budget must refuse profiles and retain counters")
+		}
+	})
 	t.Run("records", func(t *testing.T) {
 		h := newHandler("test")
 		h.records = func() int { return maxProfileRecords + 1 }

@@ -18,6 +18,7 @@ import (
 const (
 	maxProfileBytes   = 8 << 20
 	maxProfileRecords = 16384
+	maxProfileBuckets = 32 << 20
 	profileInterval   = 5 * time.Second
 )
 
@@ -41,17 +42,19 @@ type handler struct {
 	lastProfile time.Time
 	profile     func(io.Writer, string) error
 	records     func() int
+	memstats    func(*runtime.MemStats)
 }
 
 func newHandler(version string) *handler {
 	return &handler{version: version, started: time.Now().UTC(),
-		profile: func(w io.Writer, name string) error { return pprof.Lookup(name).WriteTo(w, 0) },
-		records: func() int { n, _ := runtime.MemProfile(nil, true); return n }}
+		profile:  func(w io.Writer, name string) error { return pprof.Lookup(name).WriteTo(w, 0) },
+		records:  func() int { n, _ := runtime.MemProfile(nil, true); return n },
+		memstats: runtime.ReadMemStats}
 }
 
 func (h *handler) snapshot() Snapshot {
 	var m runtime.MemStats
-	runtime.ReadMemStats(&m)
+	h.memstats(&m)
 	return Snapshot{PID: os.Getpid(), Version: h.version, GoVersion: runtime.Version(),
 		StartedAt: h.started, CapturedAt: time.Now().UTC(), HeapAlloc: m.HeapAlloc,
 		HeapInuse: m.HeapInuse, HeapIdle: m.HeapIdle, HeapReleased: m.HeapReleased,
@@ -87,10 +90,6 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		h.lastProfile = time.Now()
-		if h.records() > maxProfileRecords {
-			http.Error(w, "profile exceeds sampling-record budget", http.StatusRequestEntityTooLarge)
-			return
-		}
 	}
 	m := h.snapshot()
 	w.Header().Set("X-Gtmux-PID", strconv.Itoa(m.PID))
@@ -100,6 +99,12 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path == "/stats" {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(m)
+		return
+	}
+	// Check cheap allocator metadata before walking the runtime's profile records.
+	// A large profiling-bucket table can itself be the memory problem under study.
+	if m.BuckHashSys > maxProfileBuckets || h.records() > maxProfileRecords {
+		http.Error(w, "profile exceeds sampling-metadata budget", http.StatusRequestEntityTooLarge)
 		return
 	}
 	// Buffer only a bounded encoded profile so a failure never returns a truncated

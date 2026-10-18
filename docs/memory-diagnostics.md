@@ -11,7 +11,8 @@ cannot recover the old process's heap. This capability is not a leak fix.
 ## Start and collect
 
 Use an existing absolute directory owned by the service user, mode 0700, with no
-leaf symlink or non-sticky group/world-writable ancestor. Keep the path short
+leaf symlink or non-sticky group/world-writable ancestor. Ancestors must belong
+to the service user or root; a foreign owner could replace the private subtree. Keep the path short
 (Unix socket path lengths are limited, especially on macOS). For an **isolated
 foreground service** whose bind address and port have already been chosen:
 
@@ -83,8 +84,10 @@ labelled as an intervention, never substituted for production's unmodified state
 Only GET `/stats`, `/heap` and `/allocs`, without queries or bodies, are accepted.
 There is no GC, goroutine, trace, CPU profile or command-line endpoint. No GC or
 sampling setting is changed. Busy captures return 429 instead of queuing;
-profiles share a five-second minimum admission interval. More than 16384 sampled
-records at preflight or more than 8 MiB encoded output returns 413. Failed captures
+profiles share a five-second minimum admission interval. More than 32 MiB of
+`BuckHashSys` profiling metadata returns 413 before traversing sampling records.
+More than 16384 sampled records at preflight or more than 8 MiB encoded output also
+returns 413. Failed captures
 never return a partial successful profile. Stats remain available after the active
 capture finishes, even when profiles exceed budget.
 

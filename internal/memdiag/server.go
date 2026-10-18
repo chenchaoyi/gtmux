@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/state"
@@ -57,7 +58,7 @@ func Start(dir, version string) (*Server, error) {
 		if e != nil {
 			return nil, e
 		}
-		if p.Mode().Perm()&0o022 != 0 && p.Mode()&os.ModeSticky == 0 {
+		if !protectedParent(p) {
 			return nil, errors.New("memory diagnostics require protected parent directories")
 		}
 		if parent == filepath.Dir(parent) {
@@ -93,6 +94,14 @@ func Start(dir, version string) (*Server, error) {
 		ReadTimeout: 5 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 3 * time.Second, MaxHeaderBytes: 4096}
 	go func() { _ = s.http.Serve(l) }()
 	return s, nil
+}
+
+func protectedParent(info os.FileInfo) bool {
+	owner, ok := info.Sys().(*syscall.Stat_t)
+	// The owner can replace children even in a 0755 or sticky directory. A
+	// foreign owner's directory therefore cannot protect our socket subtree.
+	return ok && (owner.Uid == 0 || int(owner.Uid) == os.Geteuid()) &&
+		(info.Mode().Perm()&0o022 == 0 || info.Mode()&os.ModeSticky != 0)
 }
 
 // Close stops accepting reads and removes only this instance's socket/directory.
