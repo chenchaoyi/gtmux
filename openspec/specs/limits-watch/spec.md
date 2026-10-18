@@ -28,3 +28,39 @@ preserve the existing window report.
 
 - **WHEN** the plan type is absent, empty or all whitespace
 - **THEN** the windows are still reported with no plan-type metadata
+
+### Requirement: Codex quota reads have a bounded tail allocation
+
+For each considered rollout, the system SHALL open the file once, obtain its size
+and modification time from that descriptor, and read at most the final 1 MiB plus
+one preceding boundary byte from that size snapshot. Read buffers SHALL NOT grow
+with the complete rollout size. The newest valid rate-limit record and existing
+window/reset/plan semantics SHALL remain unchanged.
+
+A first record cut by the tail boundary SHALL be ignored, including a suffix that
+happens to be valid JSON. A complete record exactly at that boundary or a valid
+final record without a trailing newline SHALL remain eligible. Appends beyond the
+sampled size SHALL wait for the next poll. Short reads, including concurrent
+truncation, and read errors SHALL discard that file's reading without retrying or
+parsing partial bytes. This bounded read does not promise an atomic snapshot of
+concurrent in-place rewrites.
+
+#### Scenario: A rollout grows much larger than the tail budget
+
+- **WHEN** a rollout contains a recent valid quota record after a large prefix
+- **THEN** the quota is reported with bounded read bytes and allocations independent of prefix size
+
+#### Scenario: The tail begins in the middle of a record
+
+- **WHEN** the first tail fragment is not preceded by a newline
+- **THEN** that fragment is skipped and later complete records remain eligible
+
+#### Scenario: A rollout changes during the read
+
+- **WHEN** bytes are appended beyond the descriptor's sampled size
+- **THEN** they are deferred to the next poll without increasing this read's budget
+
+#### Scenario: A read cannot supply its sampled tail
+
+- **WHEN** truncation or a read failure prevents a complete bounded read
+- **THEN** that file yields no reading and no partial record is accepted
