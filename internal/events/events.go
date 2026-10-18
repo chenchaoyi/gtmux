@@ -298,24 +298,33 @@ func OverCeiling() bool {
 // oldest-first, spanning the rotated generation so a recent window isn't cut at
 // a rotation boundary. now is the reference time in unix seconds.
 func Read(sinceSecs, now int64) []Record {
-	var out []Record
 	cutoff := int64(0)
 	if sinceSecs > 0 {
 		cutoff = now - sinceSecs
 	}
+	return readMatching(func(r Record) bool { return cutoff <= 0 || r.Ts >= cutoff })
+}
+
+// Filter while scanning, before retaining Record values and their strings. A
+// caught-up cursor must not materialize the entire journal on every serve tick.
+func readMatching(keep func(Record) bool) []Record {
+	var out []Record
 	for _, p := range []string{rotatedPath(), Path()} { // oldest generation first
-		out = append(out, readFile(p, cutoff)...)
+		scanFile(p, func(r Record) {
+			if keep(r) {
+				out = append(out, r)
+			}
+		})
 	}
 	return out
 }
 
-func readFile(path string, cutoff int64) []Record {
+func scanFile(path string, visit func(Record)) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil
+		return
 	}
 	defer f.Close()
-	var out []Record
 	sc := bufio.NewScanner(f)
 	sc.Buffer(make([]byte, 64*1024), 1<<20)
 	for sc.Scan() {
@@ -323,12 +332,8 @@ func readFile(path string, cutoff int64) []Record {
 		if json.Unmarshal(sc.Bytes(), &r) != nil {
 			continue
 		}
-		if cutoff > 0 && r.Ts < cutoff {
-			continue
-		}
-		out = append(out, r)
+		visit(r)
 	}
-	return out
 }
 
 // Format renders a record as one compact human line (shared by the CLI printer
