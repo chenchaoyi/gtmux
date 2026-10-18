@@ -12,6 +12,8 @@ Use the existing `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_PATH` in the current pr
 verify the private key exists. Do not depend on another machine's shell profile or
 an earlier task's temporary directory. Missing settings fail before API access.
 Do not put the key, profiles or authenticated download URLs into Git or public artifacts.
+Include [accessibility change review](accessibility.md) in the initial plan. Existing
+Store labels are not automatic acceptance of the next version.
 
 ## 2. Build and validate the binary before upload
 
@@ -60,6 +62,10 @@ demo content is present; it cannot establish every layout, VoiceOver or real pus
 
 ## 4. Place assets and independently read everything back
 
+First create and complete the version-bound private accessibility review using
+`asc-accessibility.rb init` ([fields and evidence](accessibility.md#required-checkpoint-for-every-store-submission)).
+Missing or stale reviews block readiness and are checked before asset writes.
+
 Use existing metadata and build attachment commands from [the submission runbook](submit.md).
 Then run:
 
@@ -68,6 +74,7 @@ mkdir -p build
 bundle exec ruby scripts/asc-preparation.rb assets \
   --version X.Y.Z --build N --ipa /private/path/store.ipa \
   --package-receipt build/store-package.json \
+  --accessibility-review build/store-accessibility-review.json \
   --state build/store-state.json --journal build/store-progress.jsonl
 ```
 
@@ -81,12 +88,14 @@ legacy name/size matches or inactive placements prevent readiness.
 ```sh
 bundle exec ruby scripts/asc-preparation.rb status \
   --version X.Y.Z --build N --ipa /private/path/store.ipa \
-  --package-receipt build/store-package.json --state build/store-state.json
+  --package-receipt build/store-package.json --state build/store-state.json \
+  --accessibility-review build/store-accessibility-review.json
 ```
 
 The private state is replaced on every check; network errors cannot leave an earlier
 ready result current. It reports each check and only emits `ready_for_user_review`
-when all pass. The scope is package/build, version text, screenshots and creative;
+when all pass. The scope is package/build, version text, screenshots, creative and
+the candidate accessibility review with live-declaration readback;
 it does not validate account agreements, age-rating/privacy forms, review contact,
 app-info name/subtitle or ASC web preview. Follow the runbook for those checks.
 Never interpret a saved receipt as a live readiness result without running `status`.
@@ -106,4 +115,9 @@ No automatic submission is part of this recovery.
 
 ## Accessibility metadata
 
-Follow [the accessibility evaluation procedure](accessibility.md) against the live Store version. The optional Accessibility URL may remain empty. Publish only verified device-family capabilities; final app Submit remains manual.
+Follow [the accessibility evaluation procedure](accessibility.md): review the candidate
+against the live Store baseline, verify iPhone/iPad separately and record limitations.
+The optional Accessibility URL may remain empty. Keep new claims in the post-live
+handoff; once that exact version/build is live, publish verified support and run
+`asc-accessibility.rb live-status`. Save its result and separately record Store preview.
+Final app Submit remains manual; neither helper publishes claims or submits a version.

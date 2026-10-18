@@ -38,3 +38,67 @@ iOS 对话中，长按复制的范围是**整个文本块**；菜单打开时高
 
 本次实测结果和 ASC 写入回执保留在任务的私有证据中；本文描述可重复执行的流程，
 不代表未来版本自动取得同样结论。
+
+## 每次上架必须复评
+
+以下命令从 `mobileapp/` 运行，沿用当前进程里的 ASC 凭据。脚本只读 ASC，
+不会发布声明或提交 App；公开 PR 的 CI 也不接触真实凭据。
+
+候选包校验完成后，新建一份私有复评：
+
+```sh
+bundle exec ruby scripts/asc-accessibility.rb init \
+  --version X.Y.Z --build N --package-receipt build/store-package.json
+```
+
+默认保存到 Git 忽略的 `build/store-accessibility-review.json`，仅当前用户可读写。
+已有文件不会覆盖；新一轮评估可用 `--review /private/path/new-review.json` 指定新路径。
+模板读取当前商店版本、build 和全部分页的 PUBLISHED 声明，草稿不算已发布。
+ASC 的历史已发布版本也会保留 READY 状态，脚本按数字版本号选择最新已发布的
+iOS 版，排除未上线候选版。首次上架或分发情况不明确时须人工核对，不能算作通过。
+
+填写模板。空白项和 `supported: null` 默认不通过：
+
+- `reviewed_by`、`reviewed_at`（ISO 8601）、`change_review`：记录评估人、时间及
+  相对商店在线版本的变化。检查新增常用流程、导航、主题/颜色、文字/缩放、动效、
+  回复、SDK/RN/原生依赖和扩展。每次提交都复核；结论不变也要有依据。
+- `url_review`：确认可选网址继续留空，或已有页面可访问、内容符合在线版本。
+- `families.IPHONE`、`families.IPAD`：分别填写 `environment` 中的准确源码/产物、
+  系统与设备；记录常用流程证据和 `limitations`。覆盖首次启动/配对、雷达、对话/
+  终端、回复/选项、HQ、服务器/设置、错误/弹层、通知/实时活动入口。区分源码检查、
+  模拟器截图和真机验收，没测不能填通过。
+- 九项 `capabilities`：`supported` 填布尔值，`evidence` 填证据；不声明支持时写明
+  原因，例如“尚未验收”。声明支持仍须符合 Apple 的完整常用流程标准。
+
+完成后检查：
+
+```sh
+bundle exec ruby scripts/asc-accessibility.rb status \
+  --version X.Y.Z --build N --package-receipt build/store-package.json
+```
+
+`asc-preparation.rb status|assets` 也会强制执行同一检查，可用
+`--accessibility-review FILE` 指定非默认复评。版本、build、包回执哈希不符，证据
+缺失，或在线基线/声明已变化，都会阻止“准备完成”；`assets` 在放置素材前检查。
+已有能力回退时，先修复；若原声明确实不准确，须在 ASC 更正后重新复评，不能只
+承诺上线后再修。网络失败也不能保留旧的通过结果。脚本能核对身份和完整性，
+不能证明人工结论属实，更不能代替 VoiceOver 真机验收。
+
+## 上线后核对声明
+
+准确的既有声明可以保留。候选版本新增能力时，填写 `after_release.owner` 和
+`after_release.plan`，随私有交接保留到上线后处理；准备检查会列出待发布能力，
+不会提前写入。包已上传或审核通过，都不等于已上线。
+
+**确切版本和 build 上线后**，在 ASC → App Accessibility 中按 iPhone、iPad 分别
+发布已验证的能力，不顺带修改其他设备类别、隐私或可选网址。随后运行：
+
+```sh
+bundle exec ruby scripts/asc-accessibility.rb live-status \
+  --version X.Y.Z --build N --package-receipt build/store-package.json
+```
+
+非默认复评加 `--review FILE`。命令比较在线 build 和两类设备的 PUBLISHED 能力；
+缺失或不一致仍为未完成。将输出与复评、包回执、证据一起留存，再分别预览两类
+设备的商店辅助功能区域。API 回读和用户实际看到的页面分开记录，Apple 说明标签
+更新可能需要 24 小时显示；两者都不代表真机辅助功能验收。

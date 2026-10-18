@@ -10,6 +10,7 @@
 在当前进程配置已有的 `ASC_KEY_ID`、`ASC_ISSUER_ID`、`ASC_KEY_PATH`，确认私钥文件存在。
 不要依赖另一台机器的 shell 配置或上一轮任务的临时目录。缺少配置时，脚本在访问 API 前报错。
 密钥、profile 和带鉴权的下载链接不能进入 Git 或公开附件。
+同时安排[辅助功能复评](accessibility.zh.md)，既有商店标签不能代替新版检查。
 
 ## 2. 上传前构建并验证商店包
 
@@ -51,13 +52,18 @@ widget 源码和原始采集的来源记录。
 
 ## 4. 放置素材并独立读回
 
-按[上架手册](submit.md)完成文字上传和准确 build 关联，再运行：
+先运行 `asc-accessibility.rb init` 并完成版本绑定的私有复评，字段和证据要求见
+[辅助功能流程](accessibility.zh.md#每次上架必须复评)。复评缺失或过期时不能就绪，
+也不能执行素材放置。
+
+按[上架手册](submit.zh.md)完成文字上传和准确 build 关联，再运行：
 
 ```sh
 mkdir -p build
 bundle exec ruby scripts/asc-preparation.rb assets \
   --version X.Y.Z --build N --ipa /private/path/store.ipa \
   --package-receipt build/store-package.json \
+  --accessibility-review build/store-accessibility-review.json \
   --state build/store-state.json --journal build/store-progress.jsonl
 ```
 
@@ -69,11 +75,13 @@ bundle exec ruby scripts/asc-preparation.rb assets \
 ```sh
 bundle exec ruby scripts/asc-preparation.rb status \
   --version X.Y.Z --build N --ipa /private/path/store.ipa \
-  --package-receipt build/store-package.json --state build/store-state.json
+  --package-receipt build/store-package.json --state build/store-state.json \
+  --accessibility-review build/store-accessibility-review.json
 ```
 
 每次检查都会替换私有状态，网络失败不会留下仍显示就绪的旧结论。
-只有各项通过才显示 `ready_for_user_review`。该检查覆盖包/build、版本文案、截图和创意图；
+只有各项通过才显示 `ready_for_user_review`。该检查覆盖包/build、版本文案、截图、创意图，
+以及候选版辅助功能复评和在线声明回读；
 协议、年龄分级/隐私表单、审核联系人、应用名称/副标题和 ASC 网页预览仍按上架手册核对。
 不要只读取旧回执判断当前是否可以提交，应重新运行 `status`。
 
@@ -88,4 +96,8 @@ bundle exec ruby scripts/asc-preparation.rb status \
 
 ## 辅助功能信息
 
-按[辅助功能核验流程](accessibility.zh.md)检查当前已上架版本。Accessibility URL 可留空，按设备类别仅发布已验证的能力；最终 App Submit 仍由操作者执行。
+按[辅助功能复评流程](accessibility.zh.md)，以商店在线版本为基线，分别检查候选版的
+iPhone/iPad 常用流程并记录限制。既有声明不能自动证明新版也支持。可选 URL 可以留空。
+新增能力留在上线后交接里；确切版本/build 上线后，发布已验证声明，再运行
+`asc-accessibility.rb live-status`，保存结果并另外记录商店预览。最终 App Submit 仍由
+操作者执行；检查脚本不发布声明、不提交版本。

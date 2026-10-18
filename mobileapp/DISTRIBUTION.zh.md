@@ -14,7 +14,7 @@
   交付网页安装链接。不要求用户每轮自己选择。
 - 两条路径复用同一份已验签的 Ad Hoc IPA。用户明确要求验收网页安装流程时，直接上传；
   明确要求开发包时，使用 [README.md](./README.md) 的开发构建，推送走 sandbox。
-- App Store/TestFlight：遵循 [submit.md](../docs/appstore/submit.md)。上传 Ad Hoc 包不等于上传 ASC 或提交审核。
+- App Store/TestFlight：遵循 [submit.md](../docs/appstore/submit.zh.md)。上传 Ad Hoc 包不等于上传 ASC 或提交审核。
 
 沿用分支 → PR → CI 通过 → 合入 → 带用户更新说明的 tag；同步版本号、更新说明和官网文档。
 CLI 与公证后的 Mac App 两项 release job 都完成后再运行 `gtmux update`，分别核对安装版本。
@@ -211,7 +211,7 @@ BUILDS_PYTHON="$BUILDS_VENV/bin/python"
 
 从目标 release commit 构建。使用 `scripts/set-version.sh` 同步版本与中英文更新说明，再跑
 仓库要求的检查。遵循仓库 Ruby/CocoaPods 配置，导出时让 `/usr/bin/rsync` 排在 Homebrew
-版本之前；签名及 PATH 的常见问题见 [ASC 流程](../docs/appstore/submit.md)。
+版本之前；签名及 PATH 的常见问题见 [ASC 流程](../docs/appstore/submit.zh.md)。
 
 目标使用通用 iOS 平台，归档不需要手机连接或解锁。分发包使用 production APNs，不沿用
 开发包的 `APS_ENVIRONMENT=development`。

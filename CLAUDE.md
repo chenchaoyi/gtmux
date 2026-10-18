@@ -266,8 +266,15 @@ The cgo-free CLI/server supports macOS and Linux amd64/arm64; the native menu-ba
   code change, PR or redeployment, and no new bucket/credential per release.
   App Store/TestFlight stays a separate flow. Store preparation uses `docs/appstore/preparation.md`
   and its Chinese twin: pre-upload package verification, resumable hosted assets,
-  independent ASC readback and a user-only final Submit step. See
-  `mobileapp/DISTRIBUTION.md` and its Chinese twin for signing, publication, retry,
+  independent ASC readback and a user-only final Submit step.
+  `docs/appstore/accessibility.md` / `.zh.md`: EVERY Store submission needs a private
+  candidate package/version/build-bound review, separate iPhone/iPad evidence and
+  current PUBLISHED declaration readback. `asc-preparation.rb status|assets` requires
+  it; unchanged answers still need review. Do not infer VoiceOver support from labels
+  or CI. New claims wait for the exact live build; retain an owner/follow-up and run
+  `asc-accessibility.rb live-status` after manual ASC publication. The optional URL
+  can stay empty; public CI only tests synthetic data, never publishes declarations.
+  See `mobileapp/DISTRIBUTION.md` and its Chinese twin for signing, publication, retry,
   disk-space and acceptance requirements. A package published or a link downloaded
   is not a phone installation; a user-confirmed installation is not proof of retained
   pairing, APNs, Live Activity, iPad layout or VoiceOver. Record each result separately.
