@@ -47,6 +47,17 @@ COUNTER as the target (with an empty tail the retained maximum equals the
 cursor — a no-op suggestion). A cursor of 0 ("everything retained") never
 reports a leading gap.
 
+Cursor reads SHALL filter consumed records while scanning, before accumulating
+the retained tail. They SHALL NOT build an in-memory copy of consumed history
+on each resident tick. Both retained generations, ordering and gap detection
+remain unchanged; this does not cap or omit unread events.
+
+#### Scenario: A caught-up cursor over a large retained journal
+
+- **WHEN** thousands of consumed records precede one unread event
+- **THEN** the reader retains only the matching tail while scanning, returns that
+  event, and preserves the existing gap checks
+
 **A gap read is NOT consumption.** A read that detected a gap SHALL NOT advance
 the consumption watermark implicitly — the warning would otherwise get exactly
 one chance to be seen before the debt vanished. The debt stands, every
