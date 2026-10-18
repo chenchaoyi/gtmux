@@ -7,6 +7,8 @@
 > 获准的输入使用 `/api/send` 和 `/api/upload`；权限和选项使用 `/api/share` 和 `/api/options`。
 > 其他 pane、外观和配对流程使用 `/api/panes`、`/api/theme` 和 `/api/enroll`。
 
+上传通过 `POST /api/upload?id=<pane_id>` 提交 multipart `file`。Guest 链接须同时满足主机输入授权、pane 授权未失效、该链接拥有目标 pane 的输入权限，与 `/api/send` 一致。主人及其配对设备仍支持不带 `id` 的上传。
+
 ## 定位
 
 浏览器屏大、有真键鼠。网页镜像不能照搬手机的单栏布局，它是桌面工作台。左侧 agent 目录按状态和窗口分组，

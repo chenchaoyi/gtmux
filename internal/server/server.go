@@ -807,15 +807,11 @@ func (s *Server) handleSend(w http.ResponseWriter, r *http.Request) {
 	// pane is on THAT LINK's input allowlist (pair-share-model). The owner
 	// (master/device) is unrestricted. This is the authoritative server-side check —
 	// the web UI only mirrors it.
-	if callerScope(r.Context()) == scopeGuest {
-		dev, ok := callerDevice(r.Context())
-		if !ok || s.deps.Share == nil || !s.deps.Share.InputEnabled() ||
-			s.deps.Share.GrantsStale() || !dev.MayInput(req.ID) {
-			lg.Act("act.send", actorOf(r.Context()), req.ID, diag.Refused,
-				"typing into a pane was refused: input is not shared for it", "reason", "not-shared")
-			writeJSON(w, http.StatusForbidden, errBody("input not shared for this pane"))
-			return
-		}
+	if !s.mayInputPane(r, req.ID) {
+		lg.Act("act.send", actorOf(r.Context()), req.ID, diag.Refused,
+			"typing into a pane was refused: input is not shared for it", "reason", "not-shared")
+		writeJSON(w, http.StatusForbidden, errBody("input not shared for this pane"))
+		return
 	}
 	if req.Key == "" && req.Text == "" && !req.Enter {
 		writeJSON(w, http.StatusBadRequest, errBody("nothing to send"))
@@ -876,7 +872,8 @@ type sendResponse struct {
 }
 
 // handleUpload accepts a multipart "file" and saves it on the Mac (≤ 30 MB),
-// returning {"path": "..."} so the client can reference it to an agent.
+// returning {"path": "..."} so the client can reference it to an agent. Guests
+// must name their input-allowed pane with ?id=, checked before reading the body.
 func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeJSON(w, http.StatusMethodNotAllowed, errBody("method not allowed"))
@@ -886,12 +883,21 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusServiceUnavailable, errBody("upload not available"))
 		return
 	}
+	id := r.URL.Query().Get("id")
+	setAccessPane(r, id)
+	if !s.mayInputPane(r, id) {
+		lg.Act("act.upload", actorOf(r.Context()), id, diag.Refused,
+			"a file upload was refused: input is not shared for this pane", "reason", "not-shared")
+		writeJSON(w, http.StatusForbidden, errBody("input not shared for this pane"))
+		return
+	}
 	const maxBytes = 30 << 20
 	r.Body = http.MaxBytesReader(w, r.Body, maxBytes)
 	if err := r.ParseMultipartForm(maxBytes); err != nil {
 		writeJSON(w, http.StatusBadRequest, errBody("bad upload (too large?)"))
 		return
 	}
+	defer r.MultipartForm.RemoveAll()
 	file, header, err := r.FormFile("file")
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, errBody("missing file"))

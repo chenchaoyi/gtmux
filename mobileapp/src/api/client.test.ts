@@ -259,6 +259,14 @@ describe('send', () => {
 });
 
 describe('upload', () => {
+  it('names the pane for guest input authorization', async () => {
+    const p = client().upload('file:///x', 'x', 'image/png', undefined, '%4');
+    const xhr = lastXHR();
+    expect(xhr.url).toBe(`${BASE}/api/upload?id=%254`);
+    xhr.status = 403;
+    xhr.onload?.();
+    expect(await p).toEqual({error: 'failed'});
+  });
   it('POSTs multipart FormData with bearer, reports progress, returns the saved path', async () => {
     const fracs: number[] = [];
     const p = client().upload('file:///x.png', 'x.png', 'image/png', f => fracs.push(f));

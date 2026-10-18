@@ -313,9 +313,17 @@ machine was told to do, which is a different thing to hand out.
 `~/.local/share/gtmux/uploads/<rand>-<name>` and returns its path, so the phone
 can hand a photo/file to an agent by path (e.g. send `look at <path>`).
 
+Guest requests MUST supply the target pane as `?id=<pane_id>` (URL-encoded),
+with the same host consent, non-stale grants and **that link's** input allowlist
+used by `/api/send`. Missing or disallowed pane IDs receive `403` before the
+multipart body is parsed or any upload is saved. A multipart `id` field does not
+override the query. Owner/master and paired-device uploads remain compatible
+without `id`. Web and phone/iPad clients include their composer's target pane.
+
 ```
 200 {"path":"/Users/…/.local/share/gtmux/uploads/ab12cd34-photo.jpg"}
 400 {"error":"missing file" | "bad upload (too large?)"}
+403 {"error":"input not shared for this pane"}
 405 {"error":"method not allowed"}
 503 {"error":"upload not available"}
 ```

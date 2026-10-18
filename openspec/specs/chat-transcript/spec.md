@@ -176,6 +176,22 @@ an HQ request with `earlier=N` can prepend earlier sessions from its recorded re
 chain, as described in the [HTTP contract](../../../api/contract.md#get-apitranscriptidn--the-panes-parsed-chat-history-read-only).
 The byte budget applies independently, so a reset and dropped turns can both be reported.
 
+Only the live supervisor pane SHALL follow or advertise the HQ replacement chain.
+The predecessor lookup SHALL retain only handoff links and incrementally read complete
+journal lines appended since its previous lookup. An unchanged poll SHALL NOT decode
+the retained lifecycle journal again. Rotation, replacement and truncation SHALL
+rebuild from the retained generations; incomplete lines SHALL wait for completion.
+
+#### Scenario: A worker opens Chat
+
+- **WHEN** a non-supervisor pane requests its transcript, including with `earlier=N`
+- **THEN** only its current session is served and no HQ predecessor is advertised
+
+#### Scenario: Repeated HQ history checks
+
+- **WHEN** HQ's transcript is polled repeatedly without a journal append
+- **THEN** predecessor lookups reuse their handoff index without decoding journal records
+
 Announcing it is required because otherwise a reset is indistinguishable from a fault. A
 cleared supervisor shift served three reply bubbles where the shift before it had
 hundreds, and the emptiness was diagnosed as a truncation bug that did not exist.

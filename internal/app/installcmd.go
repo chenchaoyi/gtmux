@@ -93,7 +93,7 @@ func installAppAct() int {
 	return diag.DidRC("act.install.app", "Gtmux.app", installApp(), "installed the menu-bar app")
 }
 
-// installApp fetches + runs the official installer. The app is a SIGNED bundle, so
+// installApp downloads and installs official release assets. The app is a SIGNED bundle, so
 // unlike the hooks it cannot be assembled locally — this is the same path
 // `doctor --fix` takes.
 func installApp() int {
@@ -107,8 +107,8 @@ func installApp() int {
 			"菜单栏 app 已安装，用 `gtmux app` 启动它。")
 		return 0
 	}
-	i18n.Say("Fetching the official installer (it adds the signed menu-bar app).",
-		"正在拉取官方安装脚本（用于安装已签名的菜单栏 app）。")
+	i18n.Say("Downloading the official release (it adds the signed menu-bar app).",
+		"正在下载官方发布包（用于安装已签名的菜单栏 app）。")
 	i18n.Say("  Why the app: desktop notifications come from it, and nothing else posts them.",
 		"  为什么需要它：桌面通知由它负责发出，没有它就没有通知。")
 	return runInstaller(false, fetchLatestTag())
