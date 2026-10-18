@@ -29,6 +29,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/hq"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/knowledge"
+	"github.com/chenchaoyi/gtmux/internal/memdiag"
 	"github.com/chenchaoyi/gtmux/internal/panefocus"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/radar"
@@ -67,6 +68,7 @@ func cmdServe(args []string) int {
 	relayToken := ""
 	service := false
 	unservice := false
+	memoryDir := ""
 
 	for i := 0; i < len(args); i++ {
 		a := args[i]
@@ -135,12 +137,27 @@ func cmdServe(args []string) int {
 			service = true
 		case a == "--unservice":
 			unservice = true
+		case a == "--memory-diagnostics":
+			v, ok := next()
+			if !ok || v == "" {
+				return serveUsageErr()
+			}
+			memoryDir = v
+		case strings.HasPrefix(a, "--memory-diagnostics="):
+			memoryDir = strings.TrimPrefix(a, "--memory-diagnostics=")
+			if memoryDir == "" {
+				return serveUsageErr()
+			}
 		default:
 			i18n.Sae("gtmux serve: unknown option '"+a+"'", "gtmux serve: 未知选项 '"+a+"'")
 			return 2
 		}
 	}
 
+	if memoryDir != "" && (service || unservice) {
+		i18n.Sae("gtmux serve: --memory-diagnostics is only for a foreground serve", "gtmux serve: --memory-diagnostics 仅用于前台 serve")
+		return 2
+	}
 	// LAN access as a managed launchd agent — the free local-network remote mode,
 	// the counterpart to the always-on tunnel (`gtmux tunnel --service`).
 	if unservice {
@@ -153,6 +170,8 @@ func cmdServe(args []string) int {
 	// Before the first byte is written: under launchd stdout and stderr are a log file
 	// launchd created world-readable, in a home other accounts on the Mac can list.
 	privatizeStdio()
+	memory := startMemoryDiagnostics(memoryDir)
+	defer memory.Close()
 	token = resolveServeToken(token)
 	// Whatever a later log line happens to carry, these never reach the log store.
 	diag.RegisterSecret(token)
@@ -174,7 +193,7 @@ func cmdServe(args []string) int {
 	diag.SetProcess("serve", "system")
 	diag.For("serve").Info("serve.start", "serve started", "bind", bind, "port", port,
 		"boot", srv.Boot(), "backend", tunnelBackend())
-	stopOnSignal()
+	stopOnSignal(func() { _ = memory.Close() })
 	if err := srv.ListenAndServe(); err != nil {
 		diag.For("serve").Error("serve.stop", "serve stopped: it could not keep listening", "error", err)
 		i18n.Sae("gtmux serve: "+err.Error(), "gtmux serve: "+err.Error())
@@ -223,17 +242,32 @@ func tunnelBackend() string {
 // says it stopped rather than leaving a gap that looks like a crash. It then dies of the
 // same signal, not with exit 0: launchd's restart decision depends on how the process
 // ended, and logging must not change that.
-func stopOnSignal() {
+func stopOnSignal(cleanup ...func()) {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		sig := <-c
+		for _, close := range cleanup {
+			close()
+		}
 		diag.For("serve").Info("serve.stop", "serve stopped on a signal", "signal", sig.String())
 		signal.Reset(sig)
 		if s, ok := sig.(syscall.Signal); ok {
 			_ = syscall.Kill(os.Getpid(), s)
 		}
 	}()
+}
+
+// Diagnostics are optional: an unsafe/unavailable directory must never prevent
+// the primary service from starting, or silently enable a less private fallback.
+func startMemoryDiagnostics(dir string) *memdiag.Server {
+	s, err := memdiag.Start(dir, Version)
+	if err != nil {
+		i18n.Sae("gtmux: memory diagnostics disabled: "+err.Error(), "gtmux: 内存诊断未启用："+err.Error())
+	} else if s != nil {
+		i18n.Sae("gtmux: local memory diagnostics: "+s.Path, "gtmux: 本机内存诊断："+s.Path)
+	}
+	return s
 }
 
 // newServeServer builds the gtmux HTTP server, radar and pane control (shared by `gtmux serve`
