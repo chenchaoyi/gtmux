@@ -2,6 +2,8 @@
 
 Build and gate commands live in `CLAUDE.md`. Run `make check` before every commit;
 `scripts/check-design.sh` is the design and architecture half of the same gate.
+OpenSpec invocation failures fail with a tool/setup diagnosis; only complete structured
+results from this checkout establish an invalid-spec verdict.
 The maintainer helper tests in `make check` require Python 3.12+ and Ruby 3+
 (standard libraries only; no Apple account, signing identity or ASC key). Actual
 iOS build/upload tooling uses `mobileapp/.ruby-version` and `Gemfile.lock`.
@@ -26,7 +28,7 @@ docs; see CLAUDE.md.
 | Path | What it is |
 |---|---|
 | `cmd/gtmux` + `internal/` | the Go CLI core (cgo-free): radar, HQ, dispatch, `serve` |
-| `macapp/` | native macOS menu-bar app (Swift/AppKit), a pure consumer of `gtmux agents --json` |
+| `macapp/` | native macOS menu-bar app (Swift/AppKit), a consumer of the core radar contract (local serve or standalone CLI) |
 | `mobileapp/` | the iPhone and iPad app (bare React Native) |
 | `relay-worker/` | the deployed push relay (Cloudflare Worker behind `gtmux-relay.ccy.dev`) |
 | `relay/` | Go self-host reference implementation of the push relay, never deployed |
@@ -41,7 +43,9 @@ docs; see CLAUDE.md.
 
 The two Workers are live, so a change to either ships only with `npx wrangler deploy` from
 its directory, and merging the code alone changes nothing live. `relay/` is not deployed, and its payload shape
-has to be kept in step with `relay-worker/` by hand.
+is checked against `relay-worker/` through shared `api/testdata/apns-contract.json`
+fixtures. Keep both implementations and those fixtures in step; the Go integration
+test also exercises an APNs rejection through the real serve relay client.
 
 ## Before you commit a test
 

@@ -31,6 +31,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -392,11 +393,25 @@ func (s *Server) Handler() http.Handler {
 	return s.recoverPanics(mux)
 }
 
-// ListenAndServe starts the SSE diff loop, then binds cfg.Addr and serves until
-// error. The loop runs for the lifetime of the process.
+// ListenAndServe binds before starting background work. Command entry points can
+// bind earlier and use Serve to publish their identity only after owning the port.
 func (s *Server) ListenAndServe() error {
-	go s.hub.run(context.Background())
-	return s.httpServer().ListenAndServe()
+	addr := s.cfg.Addr
+	if addr == "" {
+		addr = ":http"
+	}
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		return err
+	}
+	return s.Serve(listener)
+}
+
+func (s *Server) Serve(listener net.Listener) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go s.hub.run(ctx)
+	return s.httpServer().Serve(listener)
 }
 
 // How long a connection may take to finish sending its request headers, and how long an

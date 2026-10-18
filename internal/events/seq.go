@@ -51,9 +51,8 @@ func nextSeq() (seq int64) {
 }
 
 // CurrentSeq returns the last sequence number ASSIGNED — a single small file read,
-// with no parsing of the log at all. `LatestSeq` answers the same question by scanning
-// every retained record (tens of MB), which is fine once per pull but not on a 20 s
-// tick: the unconsumed-watermark sensor compares the stream's end against HQ's cursor
+// with no parsing of the log at all. `LatestSeq` reports the highest retained record through an incremental index.
+// A last-assigned watermark is cheaper and deliberately has a different meaning: the unconsumed-watermark sensor compares the stream's end against HQ's cursor
 // on EVERY tick, and a full-log scan there would make perception cost more than the
 // events it is watching.
 //

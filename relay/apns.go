@@ -19,7 +19,7 @@ import (
 )
 
 // apnsProd / apnsSandbox are Apple's push endpoints. Sandbox is for development
-// builds (Xcode/TestFlight dev), production for App Store / TestFlight.
+// builds signed for development; production is for Ad Hoc / App Store / TestFlight.
 const (
 	apnsProd    = "https://api.push.apple.com"
 	apnsSandbox = "https://api.sandbox.push.apple.com"
@@ -60,36 +60,25 @@ func newAPNSPusher(baseURL, topic, keyID, teamID string, p8 []byte) (*apnsPusher
 	}, nil
 }
 
-// Push sends one alert notification to APNs for req.Token.
+// Push sends an alert, badge sync or Live Activity update to APNs for req.Token.
 func (a *apnsPusher) Push(ctx context.Context, req pushRequest) error {
 	jwt, err := a.bearer()
 	if err != nil {
 		return err
 	}
-	body, err := json.Marshal(apnsPayload(req))
+	payload, headers := apnsRequest(req, jwt, a.topic, time.Now().Unix())
+	body, err := json.Marshal(payload)
 	if err != nil {
 		return err
 	}
-	url := a.baseURL + "/3/device/" + req.Token
+	url := a.endpoint(req.Env) + "/3/device/" + req.Token
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
 		return err
 	}
-	httpReq.Header.Set("authorization", "bearer "+jwt)
-	httpReq.Header.Set("apns-topic", a.topic)
-	// A silent (content-available) push must be sent as a background type at low
-	// priority, or APNs throttles/rejects it; alerts stay high-priority.
-	if req.Silent {
-		httpReq.Header.Set("apns-push-type", "background")
-		httpReq.Header.Set("apns-priority", "5")
-	} else {
-		httpReq.Header.Set("apns-push-type", "alert")
+	for name, value := range headers {
+		httpReq.Header.Set(name, value)
 	}
-	// Collapsing merges an agent's banners (re-nudge / cross-device dismiss) into one.
-	if req.CollapseID != "" {
-		httpReq.Header.Set("apns-collapse-id", req.CollapseID)
-	}
-	httpReq.Header.Set("content-type", "application/json")
 
 	resp, err := a.client.Do(httpReq)
 	if err != nil {
@@ -101,14 +90,7 @@ func (a *apnsPusher) Push(ctx context.Context, req pushRequest) error {
 	}
 	// APNs returns a JSON {"reason":"..."} on failure (e.g. BadDeviceToken).
 	rb, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<12))
-	reason := ""
-	var e struct {
-		Reason string `json:"reason"`
-	}
-	if json.Unmarshal(rb, &e) == nil {
-		reason = e.Reason
-	}
-	return fmt.Errorf("apns status %d %s", resp.StatusCode, reason)
+	return &apnsFailure{Status: resp.StatusCode, Detail: string(rb)}
 }
 
 // apnsPayload builds the aps dictionary. Pane rides along as a custom key so the

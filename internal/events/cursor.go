@@ -61,12 +61,4 @@ func readSinceFrom(all []Record, cursor int64) (recs []Record, gap bool) {
 // LatestSeq returns the highest sequence number currently retained (0 when the
 // log is empty or holds only legacy records). Used for startup reconciliation and
 // health/status.
-func LatestSeq() int64 {
-	var max int64
-	for _, r := range Read(0, 0) {
-		if r.Seq > max {
-			max = r.Seq
-		}
-	}
-	return max
-}
+func LatestSeq() int64 { return retainedSequences.latest() }

@@ -76,22 +76,14 @@ func EventsJSON(minSeverity string, limit int, actsOnly bool) ([]byte, error) {
 	if actsOnly {
 		window = actsWindow
 	}
-	all := events.Read(window, time.Now().Unix())
-	// Walk backwards: the newest records are the ones a feed shows, and stopping at the
-	// cap means a long window costs no more than a short one to marshal.
-	out := make([]events.Record, 0, limit)
-	for i := len(all) - 1; i >= 0 && len(out) < limit; i-- {
-		r := all[i]
+	out := events.Recent(window, time.Now().Unix(), limit, func(r events.Record) bool {
 		if !events.IsAudit(r) && !sessionpolicy.ObserveEvent(r.Pane, r.Agent, r.AgentSession, r.Client, r.Ts, r.HomeID) {
-			continue
+			return false
 		}
-		if minSeverity != "" && events.SeverityRank(all[i].Severity) < minRank {
-			continue
+		if minSeverity != "" && events.SeverityRank(r.Severity) < minRank {
+			return false
 		}
-		if actsOnly && !events.IsSupervisorAct(all[i]) {
-			continue
-		}
-		out = append(out, all[i])
-	}
+		return !actsOnly || events.IsSupervisorAct(r)
+	})
 	return json.Marshal(out)
 }

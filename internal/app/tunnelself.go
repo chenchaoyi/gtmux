@@ -322,7 +322,11 @@ func tunnelSelf(port int, name string) int {
 		return 2
 	}
 	removeLegacyChiselBinary() // in-process now — drop the flagged standalone binary
-	token := startLocalRadar(port)
+	token, err := startLocalRadar(port)
+	if err != nil {
+		i18n.Sae("gtmux tunnel: local radar unavailable: "+err.Error(), "gtmux tunnel: 本机雷达未就绪："+err.Error())
+		return 1
+	}
 	pairURL := selfTunnelPairURL(url) // per-device path so multiple Macs don't collide
 	writeTunnelURL(pairURL)
 	publishTunnelAddresses(pairURL)

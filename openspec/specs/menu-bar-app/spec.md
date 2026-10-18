@@ -4,7 +4,8 @@
 
 An always-visible macOS menu-bar app that shows, at a glance, the most-urgent
 agent state and a popover list grouped by who needs you. It is a pure consumer of
-the CLI (polls `gtmux agents --json`, shells out to `gtmux focus`) and the click
+the core radar contract (local serve with standalone CLI fallback), shells out
+to `gtmux focus`, and is the click
 target for notifications.
 
 ## Requirements
@@ -1389,3 +1390,17 @@ post-update environment checks SHALL retain their existing flow.
 #### Scenario: Open the gear menu
 - **WHEN** a user opens the menu
 - **THEN** the two secondary entries are absent while the four frequent actions remain
+
+### Requirement: Reuse the running core radar without changing refresh cadence
+
+The menu bar SHALL prefer an authenticated loopback snapshot of the running serve for its normal agents poll. Serve SHALL share one single-flight producer snapshot across HTTP and SSE readers for at most 1.5 seconds, retaining at most 4 MiB, without exposing mutable cached storage or crossing profile homes. The menu bar SHALL require a fresh running status file and a saved owner credential, reject redirects and oversized or malformed responses, and fall back to the existing fresh CLI reader on failure with a bounded retry interval. Explicit CLI/native-home overrides SHALL retain their standalone reader. Other CLI reads and the configured poll cadence SHALL remain unchanged.
+
+#### Scenario: Multiple surfaces read the same radar
+
+- **WHEN** the menu bar, HTTP and SSE readers request within the shared snapshot interval
+- **THEN** they reuse the same core collection without a second menu-bar subprocess
+
+#### Scenario: The service is stale or unusable
+
+- **WHEN** serve status is stale, the request fails, or its response is invalid
+- **THEN** the menu bar reads the standalone CLI and retries the shared service after its cooldown

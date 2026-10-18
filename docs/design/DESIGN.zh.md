@@ -7,7 +7,11 @@
 已知实现缺口见[设计跟随矩阵](../test/DESIGN-TRACEABILITY.md)；本文不是所有要求均已验收通过的记录。
 
 目标实现：原生 macOS，NSStatusItem + NSPopover + SwiftUI（自定义 popover 视图，
-不用系统 NSMenu）。数据来自 `gtmux agents --json`（契约见 `internal/radar/agents.go`）。
+不用系统 NSMenu）。数据遵循 `gtmux agents --json` 契约（`internal/radar/agents.go`）。
+常规轮询优先读取已运行 serve 的鉴权回环 `/api/agents`，与 HTTP/SSE 共用一次采集，
+缓存至多 1.5s、4 MiB。要求状态文件仍在有效期且为运行中，并使用已保存的 owner token；
+重定向、无效或过大的响应均回退 CLI，10s 后再试服务。显式 CLI 或 native 目录覆盖
+继续使用独立 CLI。刷新频率仍按设置（默认 1.5s），隐藏时的状态和通知更新也保持原有节奏。
 
 ---
 

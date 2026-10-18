@@ -686,16 +686,21 @@ type cacheEntry struct {
 	// atomic replace is another file at the same path) and when it last changed (a
 	// rewrite in place can keep the size). Size alone used to stand for "unchanged",
 	// so a same-size rewrite or replace served the old turns (%12, 2026-10-06).
-	file  os.FileInfo
-	mtime time.Time
+	file          os.FileInfo
+	mtime         time.Time
+	lastUse       time.Time
+	used          uint64
+	retainedBytes int64
 }
 
 // Loader caches parsed transcripts per session and re-parses incrementally as the
 // log grows (see Load).
 type Loader struct {
-	mu  sync.Mutex
-	m   map[string]*cacheEntry
-	dsh map[string]*dshCacheEntry
+	mu         sync.Mutex
+	m          map[string]*cacheEntry
+	dsh        map[string]*dshCacheEntry
+	cacheNow   func() time.Time
+	cacheClock uint64
 }
 
 var defaultLoader = &Loader{m: map[string]*cacheEntry{}}
@@ -752,7 +757,7 @@ func (l *Loader) loadFile(path string, step stepFn, maxTurns int) ([]Turn, error
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	if hit := l.m[path]; hit != nil && hit.path == path {
+	if hit := l.cached(path); hit != nil && hit.path == path {
 		if fi, err := os.Stat(path); err == nil {
 			same := hit.file != nil && os.SameFile(hit.file, fi)
 			switch {
@@ -772,7 +777,7 @@ func (l *Loader) loadFile(path string, step stepFn, maxTurns int) ([]Turn, error
 					if len(merged) > cacheTurnCap {
 						merged = append([]Turn(nil), merged[len(merged)-cacheTurnCap:]...)
 					}
-					l.m[path] = &cacheEntry{path: path, size: size, turns: merged, lastTurn: newLast, file: fi, mtime: fi.ModTime()}
+					l.retain(&cacheEntry{path: path, size: size, turns: merged, lastTurn: newLast, file: fi, mtime: fi.ModTime()})
 					return lastN(merged, maxTurns), nil
 				}
 			}
@@ -783,6 +788,7 @@ func (l *Loader) loadFile(path string, step stepFn, maxTurns int) ([]Turn, error
 	fi, _ := os.Stat(path) // nil leaves the next call to parse again
 	turns, last, size, err := parseTurns(path, -1, step)
 	if err != nil {
+		delete(l.m, path)
 		return nil, err
 	}
 	if len(turns) > cacheTurnCap {
@@ -792,7 +798,7 @@ func (l *Loader) loadFile(path string, step stepFn, maxTurns int) ([]Turn, error
 	if fi != nil {
 		entry.file, entry.mtime = fi, fi.ModTime()
 	}
-	l.m[path] = entry
+	l.retain(entry)
 	if len(turns) == 0 {
 		return nil, nil
 	}
