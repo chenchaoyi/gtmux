@@ -6,6 +6,7 @@ import SwiftUI
 func agentMonogram(_ name: String) -> String {
     switch name {
     case "Claude Code": return "C"
+    case "DeepSeek Harness", "dsh": return "DS"
     case "Codex":       return "Cx"
     case "Gemini":      return "G"
     case "Copilot":     return "Co"

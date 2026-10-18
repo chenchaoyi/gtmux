@@ -1,5 +1,5 @@
 // Package sessionpolicy owns the explicit per-conversation permissions for
-// verified external Codex sessions. Its state is local to this Mac, outside HQ
+// verified external sessions. Its state is local to this Mac, outside HQ
 // archives: detecting a conversation never enrolls it for observation or learning.
 package sessionpolicy
 
@@ -14,13 +14,15 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/agents"
+	"github.com/chenchaoyi/gtmux/internal/conversation"
 	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/native"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
 
-// Settings is additive to the radar contract only for verified external Codex rows.
+// Settings is additive to the radar contract only for verified external rows.
 // Consent times fence off events and transcript content from prior intervals.
 type Settings struct {
 	HQ                bool  `json:"hq"`
@@ -38,23 +40,25 @@ type stored struct {
 }
 
 var ErrConflict = errors.New("conversation settings changed; reload before saving")
-var ErrUnverified = errors.New("not a verified Codex conversation")
+var ErrUnverified = errors.New("not a verified conversation")
 
 // Desktop requires the session's own explicit originator, not a cwd or app name.
 func Desktop(id string) bool { return transcript.CodexClient(id) == "chatgpt_desktop" }
 
 func Eligible(id string) bool { _, ok := transcript.CodexIdentityFor(id); return ok }
 
-func path(id string) string {
-	sum := sha256.Sum256([]byte("codex\x00" + transcript.CodexHomeID() + "\x00" + id))
+func path(id string) string { return pathFor("codex", id) }
+
+func pathFor(agent, id string) string {
+	sum := sha256.Sum256([]byte(agent + "\x00" + conversation.HomeID(agent) + "\x00" + id))
 	return filepath.Join(state.Dir(), "session-follow", hex.EncodeToString(sum[:])+".json")
 }
 
-func read(id string) (Settings, error) {
-	b, err := os.ReadFile(path(id))
+func readFor(agent, id string) (Settings, error) {
+	b, err := os.ReadFile(pathFor(agent, id))
 	// Only the original default home may read pre-scope grants. A configured
 	// alternate home with a copied thread ID cannot inherit them.
-	if os.IsNotExist(err) && transcript.DefaultCodexHome() {
+	if os.IsNotExist(err) && agent == "codex" && transcript.DefaultCodexHome() {
 		sum := sha256.Sum256([]byte("codex\x00" + id))
 		b, err = os.ReadFile(filepath.Join(state.Dir(), "session-follow", hex.EncodeToString(sum[:])+".json"))
 	}
@@ -75,8 +79,13 @@ func read(id string) (Settings, error) {
 }
 
 // Get fails closed on corrupt/unreadable permissions and leaves a diagnostic.
-func Get(id string) Settings {
-	v, err := read(id)
+func Get(id string) Settings { return GetFor("codex", id) }
+
+func GetFor(agent, id string) Settings {
+	if !conversation.Supports(agent) {
+		return Settings{}
+	}
+	v, err := readFor(agent, id)
 	if err != nil {
 		diag.For("session-follow").Warn("policy.read.failed", "could not read conversation permissions; using status-only", "agent_session", id, "error", err)
 	}
@@ -87,10 +96,18 @@ func Get(id string) Settings {
 // one-session document. A stale screen cannot silently overwrite another device.
 func Save(id string, next Settings) (Settings, error) { return saveAt(id, next, time.Now().Unix()) }
 func saveAt(id string, next Settings, now int64) (Settings, error) {
-	if !Eligible(id) {
+	return saveAtFor("codex", id, next, now)
+}
+
+func SaveFor(agent, id string, next Settings) (Settings, error) {
+	return saveAtFor(agent, id, next, time.Now().Unix())
+}
+
+func saveAtFor(agent, id string, next Settings, now int64) (Settings, error) {
+	if !conversation.Verified(agent, id, conversation.HomeID(agent)) {
 		return Settings{}, ErrUnverified
 	}
-	file := path(id)
+	file := pathFor(agent, id)
 	if err := os.MkdirAll(filepath.Dir(file), 0700); err != nil {
 		return Settings{}, err
 	}
@@ -103,7 +120,7 @@ func saveAt(id string, next Settings, now int64) (Settings, error) {
 		return Settings{}, err
 	}
 	defer syscall.Flock(int(lock.Fd()), syscall.LOCK_UN) //nolint:errcheck
-	old, err := read(id)
+	old, err := readFor(agent, id)
 	if err != nil {
 		return Settings{}, fmt.Errorf("read conversation settings: %w", err)
 	}
@@ -159,7 +176,17 @@ func saveAt(id string, next Settings, now int64) (Settings, error) {
 // ObserveEvent is the common HQ debt/pull gate. Legacy events may resolve their
 // originator by ID; unknown clients and all real tmux rows retain their behavior.
 func ObserveEvent(pane, agent, id, client string, at int64, homes ...string) bool {
-	if pane == "" && len(homes) > 0 && !ValidHome(homes[0]) {
+	if agent == "dsh" || agents.KeyForLabel(agent) == "dsh" {
+		if pane != "" || id == "" {
+			return false
+		}
+		if len(homes) == 0 || homes[0] != conversation.HomeID("dsh") {
+			return false
+		}
+		s := GetFor("dsh", id)
+		return s.HQ && at >= s.FollowSince
+	}
+	if pane == "" && len(homes) > 0 && homes[0] != "" && homes[0] != conversation.HomeID("codex") {
 		return false
 	}
 	if pane != "" || id == "" || (client != "chatgpt_desktop" && agent != "Codex" && agent != "codex") {
@@ -174,7 +201,17 @@ func ObserveEvent(pane, agent, id, client string, at int64, homes ...string) boo
 
 // LearnEvent is the retention boundary for desktop activity in the HQ feed.
 func LearnEvent(pane, agent, id, client string, at int64, homes ...string) bool {
-	if pane == "" && len(homes) > 0 && !ValidHome(homes[0]) {
+	if agent == "dsh" || agents.KeyForLabel(agent) == "dsh" {
+		if pane != "" || id == "" {
+			return false
+		}
+		if len(homes) == 0 || homes[0] != conversation.HomeID("dsh") {
+			return false
+		}
+		s := GetFor("dsh", id)
+		return s.HQ && s.Knowledge && at >= s.KnowledgeSince
+	}
+	if pane == "" && len(homes) > 0 && homes[0] != "" && homes[0] != conversation.HomeID("codex") {
 		return false
 	}
 	if pane != "" || id == "" || (client != "chatgpt_desktop" && agent != "Codex" && agent != "codex") {
@@ -187,10 +224,10 @@ func LearnEvent(pane, agent, id, client string, at int64, homes ...string) bool 
 	return p.HQ && p.Knowledge && at >= p.KnowledgeSince
 }
 
-// ValidHome binds a reader/settings request to this server's configured Codex home.
+// ValidHome binds a reader/settings request to this server's configured conversation home.
 // An absent scope remains compatible with older clients; the caller's server is
 // still the boundary. Explicit foreign scopes always fail before reading content.
-func ValidHome(home string) bool { return home == "" || home == transcript.CodexHomeID() }
+func ValidHome(home string) bool { return conversation.ValidHome(home) }
 
 // ValidRequest keeps old ID-only clients from silently selecting a same-ID copy.
 func ValidRequest(id, home string) bool {
@@ -206,4 +243,16 @@ func ValidRequest(id, home string) bool {
 		}
 	}
 	return true
+}
+
+// Resolve verifies both scope and persisted identity before a reader or settings edit.
+func Resolve(id, home string) (conversation.Ref, error) {
+	if !ValidRequest(id, home) {
+		return conversation.Ref{}, ErrUnverified
+	}
+	ref, err := conversation.Resolve(id, home)
+	if err != nil {
+		return conversation.Ref{}, ErrUnverified
+	}
+	return ref, nil
 }

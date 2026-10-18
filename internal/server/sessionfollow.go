@@ -46,7 +46,7 @@ func (s *Server) handleSessionFollow(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !sessionpolicy.ValidHome(home) {
-		writeJSON(w, 422, errBody("Codex home unavailable"))
+		writeJSON(w, 422, errBody("conversation home unavailable"))
 		return
 	}
 	if id == "" || len(id) > 256 {

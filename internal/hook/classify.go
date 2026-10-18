@@ -197,6 +197,10 @@ func eventSemantic(source, event string) semantic {
 // so side-effecting tools still escalate. Ported from cmux's
 // feedEventSemanticRegistry.
 var agentEventSemantics = map[string]map[string]semantic{
+	"dsh": {
+		"UserPromptSubmit": semPromptSubmit, "TurnStarted": semTurnStarted, "Stop": semResponse, "StopFailure": semResponseFailure, "Interrupt": semInterrupt,
+		"PermissionRequest": semToolStart, "PreToolUse": semToolStart, "Question": semQuestion, "Resumed": semToolEndResume,
+	},
 	"gemini": {
 		// The Notification payload, not an auto-approved tool call, signals a wait.
 		"PreToolUse":  semToolStart,

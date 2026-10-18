@@ -24,6 +24,7 @@ func TestCarriersResolveHomeAndEnv(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("CODEX_HOME", "")
 	t.Setenv("KIMI_CODE_HOME", "")
+	t.Setenv("DSH_HOME", "")
 	byAgent := map[string]string{}
 	for _, c := range Carriers() {
 		byAgent[c.Agent] = c.Path
@@ -109,14 +110,15 @@ func TestMachineSyncWritesIndexNotText(t *testing.T) {
 	asHQ(t)
 	t.Setenv("CODEX_HOME", "")
 	t.Setenv("KIMI_CODE_HOME", "")
+	t.Setenv("DSH_HOME", "")
 	writeOps(t, promoted("pitfalls/p", "never run cp in a script", AudienceMachine, ""))
 	writeOps(t, withPromotion("pitfalls/p", AudienceMachine, "")...)
 	rep, err := SyncMachine(false)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(rep.Written) != 4 || len(rep.Refused) != 0 {
-		t.Fatalf("all four carriers created: %+v", rep)
+	if len(rep.Written) != 5 || len(rep.Refused) != 0 {
+		t.Fatalf("all five carriers created: %+v", rep)
 	}
 	for _, c := range Carriers() {
 		b := mustReadFile(t, c.Path)
@@ -139,7 +141,7 @@ func TestMachineSyncWritesIndexNotText(t *testing.T) {
 	}
 	// Second sync: everything kept.
 	rep, _ = SyncMachine(false)
-	if len(rep.Kept) != 4 || len(rep.Written) != 0 {
+	if len(rep.Kept) != 5 || len(rep.Written) != 0 {
 		t.Fatalf("idempotent: %+v", rep)
 	}
 	sts, _ := CarrierStatuses()
@@ -175,6 +177,7 @@ func TestLandCarriesByAudience(t *testing.T) {
 	asHQ(t)
 	t.Setenv("CODEX_HOME", "")
 	t.Setenv("KIMI_CODE_HOME", "")
+	t.Setenv("DSH_HOME", "")
 	repo := t.TempDir()
 	os.WriteFile(filepath.Join(repo, "CLAUDE.md"), []byte("# repo rules\n"), 0o644)
 

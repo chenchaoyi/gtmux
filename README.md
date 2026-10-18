@@ -33,6 +33,10 @@ gtmux assumes each agent runs in its own tmux pane. We recommend
 
 The cgo-free CLI/server supports **macOS and Linux (amd64/arm64)**. Run it beside your tmux sessions and connect from the phone, iPad or browser. The menu-bar app, desktop focus and lid controls are macOS features. See the [Linux setup guide](docs/linux.md) for same-user sockets, systemd and headless operation.
 
+DeepSeek Harness Web conversations are available as read-only external histories
+on the menu bar, phone, iPad, Web and CLI. A dedicated native Cordis plugin adds
+future lifecycle events; TUI control is not included. See [DSH setup and limits](docs/guides/deepseek-harness.md).
+
 ## Five ways in
 
 - In the terminal, `gtmux agents` lists every agent, `focus` jumps to a pane and `spawn` hands an agent a task.

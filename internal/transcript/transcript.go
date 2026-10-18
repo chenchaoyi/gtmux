@@ -21,6 +21,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/chenchaoyi/gtmux/internal/dsh"
 )
 
 // tsField matches a log line's "timestamp":"<RFC3339>" — the wall-clock the agent
@@ -99,6 +101,13 @@ func messageTimeIn(agent, buf string, last bool) int64 {
 // mtime, this does not advance on a resume/rewrite without real activity.
 // 0 when the bounded tail contains no supported activity with a timestamp.
 func LastMessageTime(agent, sessionID string) int64 {
+	if normalizeAgent(agent) == "dsh" {
+		s, e := dsh.Sessions.Resolve(sessionID)
+		if e == nil {
+			return s.ActivityAt
+		}
+		return 0
+	}
 	if normalizeAgent(agent) == "codex" {
 		return codexLastMessageTime(directCodexPathResolver{}, sessionID)
 	}
@@ -157,6 +166,13 @@ func lastMessageTimeInFile(agent, path string) int64 {
 // costs one small read no matter how large the log has grown. 0 when the log or a
 // timestamp can't be found.
 func FirstMessageTime(agent, sessionID string) int64 {
+	if normalizeAgent(agent) == "dsh" {
+		s, e := dsh.Sessions.Resolve(sessionID)
+		if e == nil {
+			return s.FirstAt
+		}
+		return 0
+	}
 	if normalizeAgent(agent) == "codex" {
 		var earliest int64
 		for _, path := range codexLogPaths(sessionID) {
@@ -277,6 +293,10 @@ func SessionOrigin(agent, sessionID string) (reset string, at int64) {
 // (their last message is a normal assistant/user entry). Non-Claude or unreadable
 // logs → (false, ""). Reads the same tail as LastMessageTime.
 func LastMessageError(agent, sessionID string) (bool, string) {
+	if normalizeAgent(agent) == "dsh" {
+		s, e := dsh.Sessions.Resolve(sessionID)
+		return e == nil && s.EndReason == "error", ""
+	}
 	path, _ := resolveLog(agent, sessionID)
 	if path == "" {
 		return false, ""
@@ -492,6 +512,12 @@ func AgentForSession(sessionID string) string {
 
 func resolveLog(agent, sessionID string) (string, stepFn) {
 	switch normalizeAgent(agent) {
+	case "dsh":
+		s, e := dsh.Sessions.Resolve(sessionID)
+		if e != nil {
+			return "", nil
+		}
+		return s.Path, func(line string, st *parseState) { _ = dshStep([]byte(line), st) }
 	case "claude":
 		return claudeLogPath(sessionID), claudeStep
 	case "codex":
@@ -667,8 +693,9 @@ type cacheEntry struct {
 // Loader caches parsed transcripts per session and re-parses incrementally as the
 // log grows (see Load).
 type Loader struct {
-	mu sync.Mutex
-	m  map[string]*cacheEntry
+	mu  sync.Mutex
+	m   map[string]*cacheEntry
+	dsh map[string]*dshCacheEntry
 }
 
 var defaultLoader = &Loader{m: map[string]*cacheEntry{}}
@@ -676,6 +703,10 @@ var defaultLoader = &Loader{m: map[string]*cacheEntry{}}
 func (l *Loader) load(agent, sessionID string, maxTurns int) ([]Turn, error) {
 	if sessionID == "" {
 		return nil, nil
+	}
+	if normalizeAgent(agent) == "dsh" {
+		turns, _, err := l.loadDSH(sessionID, maxTurns)
+		return turns, err
 	}
 	if normalizeAgent(agent) == "codex" {
 		return l.loadCodexPaths(codexLogPaths(sessionID), maxTurns)
@@ -779,6 +810,8 @@ func normalizeAgent(agent string) string {
 		return "codex"
 	case strings.Contains(a, "opencode"):
 		return "opencode"
+	case a == "dsh" || strings.Contains(a, "deepseek"):
+		return "dsh"
 	case strings.Contains(a, "kimi"):
 		return "kimi"
 	}

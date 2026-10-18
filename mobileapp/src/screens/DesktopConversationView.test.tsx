@@ -101,3 +101,12 @@ test('the offline sample uses the same read-only view and stays visibly labelled
  expect(JSON.stringify(tree!.toJSON())).toContain('DEMO');
  demo.dispose();
 });
+
+
+test('DSH Web uses the shared scoped reader and never exposes pane input', async () => {
+ const dsh = toAgent({agent:'DeepSeek Harness',source:'native',session_id:'dsh-web',home_id:'dsh-home',current_client:'unconfirmed',can_read_conversation:true,status:'working'});
+ await act(async () => {tree=renderer.create(<DetailView agent={dsh}/>);});
+ expect(props().readOnly).toBe(true);expect(props().agent.agent).toBe('DeepSeek Harness');
+ expect(client.desktopTranscript.mock.calls[0][0]).toBe('dsh-web');expect(client.desktopTranscript.mock.calls[0][3]).toBe('dsh-home');
+ expect(tree!.root.findAllByType(TextInput)).toHaveLength(0);expect(client.pane).not.toHaveBeenCalled();expect(client.sendResult).not.toHaveBeenCalled();
+});

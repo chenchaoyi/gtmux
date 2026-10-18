@@ -149,3 +149,28 @@ scenario('Slow chat reads stay single and render when they finish', {viewport: {
     await page.screenshot({path: path.join(process.env.GTMUX_WEB_EVIDENCE, 'web-slow-chat.png')});
   }
 });
+
+
+for (const viewport of [{width:1280,height:850},{width:390,height:844}]) {
+ scenario(`DSH external reader and scoped follow ${viewport.width}`,{viewport,locale:'en-US'},async(page,fixture)=>{
+   fixture.state.agents=[{agent:'DeepSeek Harness',icon:'synthetic-dsh.png',source:'native',session_id:'synthetic-dsh',home_id:'synthetic-dsh-home',can_read_conversation:true,current_client:'unconfirmed',status:'working',task:'DSH Web research'}];
+   await page.goto(fixture.url+'/#code=TEST-1234');
+   const row=page.locator(viewport.width>=900?'.tree-row.native':'.row.native');await row.waitFor();await row.click();
+   await page.getByText('Initial finding',{exact:true}).waitFor();
+   assert.match(await page.locator('.external-controls').innerText(),/Read only/);
+   assert.match(await page.locator('.external-controls').innerText(),/Earlier messages omitted/);
+   assert.equal(await page.locator('#mode').isVisible(),false);
+   assert.equal(await page.locator('#pane-input').isVisible(),false);
+   assert.equal(await page.locator('.external-controls input').nth(1).isDisabled(),true);
+   await page.locator('.external-controls input').nth(0).check();
+   await page.waitForFunction(()=>!document.querySelectorAll('.external-controls input')[1].disabled);
+   assert.equal(fixture.state.follow.hq,true);assert.equal(fixture.state.follow.notify,false);assert.equal(fixture.state.follow.knowledge,false);
+   await page.locator('.external-controls input').nth(2).check();
+   await page.waitForFunction(()=>!document.querySelectorAll('.external-controls input')[0].disabled);
+   assert.equal(fixture.state.follow.knowledge,true);
+   assert.equal(await page.locator('.chat-state .avatar img').evaluate(img=>img.naturalWidth>0),true);
+   assert.equal(fixture.state.sends.length,0);
+   await page.screenshot({path:`/tmp/gtmux-dsh-web-${viewport.width}.png`,fullPage:false});
+   await page.locator('#back').click();await row.waitFor();
+ });
+}

@@ -23,7 +23,7 @@ import (
 //                agent's global instruction file carrying an INDEX: one line per entry and
 //                the canonical path. Never the full text — the block sits in every session's
 //                context, and an index cannot grow into a problem (Skills' progressive
-//                disclosure). Codex, opencode and Kimi cannot import a file; all four can
+//                disclosure). Codex, opencode, Kimi and DSH cannot import a file; all carriers can
 //                read one when the index points at it.
 //   - repo     → the same managed block, full text, in that repository's AGENTS.md (or
 //                CLAUDE.md when only that exists). gtmux never commits.
@@ -55,7 +55,7 @@ func Carriers() []Carrier {
 
 // resolveInstructions expands the manifest's path: `~` is the user's home, and when the
 // agent's home env var is set the file moves with it (the same rule the transcript
-// readers apply to $CODEX_HOME / $KIMI_CODE_HOME).
+// readers apply to $CODEX_HOME / $KIMI_CODE_HOME / $DSH_HOME).
 func resolveInstructions(m agents.Manifest) string {
 	if m.InstructionsEnv != "" {
 		if h := os.Getenv(m.InstructionsEnv); h != "" {

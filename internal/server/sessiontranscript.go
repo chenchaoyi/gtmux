@@ -19,7 +19,7 @@ func (s *Server) handleSessionTranscript(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	if !sessionpolicy.ValidHome(r.URL.Query().Get("home_id")) {
-		writeJSON(w, 422, errBody("Codex home unavailable"))
+		writeJSON(w, 422, errBody("conversation home unavailable"))
 		return
 	}
 	id := r.URL.Query().Get("session_id")

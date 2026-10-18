@@ -20,7 +20,7 @@ func sortedSet(s []string) []string {
 
 func TestHookEquippedKeys_matchesLegacy(t *testing.T) {
 	// internal/driver/driver.go hookEquippedAgents
-	want := []string{"claude", "codex", "gemini", "cursor", "cursor-agent", "opencode", "kimi", "copilot", "kiro"}
+	want := []string{"claude", "codex", "gemini", "cursor", "cursor-agent", "opencode", "kimi", "copilot", "kiro", "dsh", "deepseek-harness"}
 	if got := HookEquippedKeys(); !reflect.DeepEqual(got, want) {
 		t.Fatalf("HookEquippedKeys()=%v, want %v", got, want)
 	}
@@ -48,7 +48,7 @@ func TestDisplayNames_matchesLegacy(t *testing.T) {
 	// internal/hook/hook.go agentDisplay
 	want := map[string]string{
 		"claude": "Claude Code", "codex": "Codex", "gemini": "Gemini", "cursor": "Cursor",
-		"opencode": "opencode", "kimi": "Kimi Code", "copilot": "Copilot", "hermes-agent": "Hermes", "kiro": "Kiro",
+		"opencode": "opencode", "kimi": "Kimi Code", "copilot": "Copilot", "hermes-agent": "Hermes", "kiro": "Kiro", "dsh": "DeepSeek Harness",
 	}
 	if got := DisplayNames(); !reflect.DeepEqual(got, want) {
 		t.Fatalf("DisplayNames()=%v, want %v", got, want)
@@ -86,7 +86,7 @@ func TestContentAndHeadlessKeys_matchesLegacy(t *testing.T) {
 	// Content parsers: claude + codex + kimi read the agent's own on-disk log; opencode
 	// has no readable log, so gtmux keeps its OWN transcript (internal/transcript/opencode.go,
 	// fed by the plugin via `gtmux hook`). Headless one-shot stays claude+codex only.
-	if got, want := sortedSet(ContentKeys()), []string{"claude", "codex", "kimi", "opencode"}; !reflect.DeepEqual(got, want) {
+	if got, want := sortedSet(ContentKeys()), []string{"claude", "codex", "dsh", "kimi", "opencode"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("ContentKeys()=%v, want %v", got, want)
 	}
 	if got, want := sortedSet(HeadlessKeys()), []string{"claude", "codex"}; !reflect.DeepEqual(got, want) {
@@ -96,7 +96,7 @@ func TestContentAndHeadlessKeys_matchesLegacy(t *testing.T) {
 
 func TestDedicatedSemanticsKeys_matchesLegacy(t *testing.T) {
 	// internal/hook/classify.go agentEventSemantics
-	want := []string{"claude", "codex", "copilot", "cursor", "gemini", "hermes-agent", "kimi", "kiro", "opencode"}
+	want := []string{"claude", "codex", "copilot", "cursor", "dsh", "gemini", "hermes-agent", "kimi", "kiro", "opencode"}
 	if got := sortedSet(DedicatedSemanticsKeys()); !reflect.DeepEqual(got, want) {
 		t.Fatalf("DedicatedSemanticsKeys()=%v, want %v", got, want)
 	}

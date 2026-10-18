@@ -6,6 +6,8 @@
 const MARKS: Record<string, string> = {
   'claude code': 'CC',
   claude: 'CC',
+  'deepseek harness': 'DS',
+  dsh: 'DS',
   codex: 'Cx',
   gemini: 'G',
   copilot: 'Co',

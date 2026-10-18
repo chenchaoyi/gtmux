@@ -60,7 +60,8 @@ function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
   assert.ok(source.includes(marker), 'web boot marker changed');
   const script = source.replace(marker, `
     globalThis.__test = {drawChat, renderTileChat, mdRender, labelChrome, setupCodeBox, connStateFor, makeComposer, isHQPane, paneSessionTitle, paneToAgent, renderPanes, renderRadar,
-      show, gate, runRead, cancelReads, pollPane, pollChat, pollRadar, renderChat, tilePollChat, renderTree, treeRow, renderCmdk, cyclePane,
+      openConversation, pollConversation, conversationControls, readableConversation,
+ setExternalSettings: s => {externalSettings=s;}, show, gate, runRead, cancelReads, pollPane, pollChat, pollRadar, renderChat, tilePollChat, renderTree, treeRow, renderCmdk, cyclePane,
       onDraw: fn => {drawChat = fn;},
       setWorkbenchAgents: rows => {WB.agents = rows;},
       setTiles: tiles => {WB.tiles = tiles;},
@@ -563,7 +564,7 @@ test('a failed options request clears the choices it had shown', async () => {
 
 
 test('desktop work conversations have a distinct group and saved follow badge', () => {
- for (const [lang,label,only,followed] of [['en-US','External Codex','Status only','HQ following'],['zh-CN','外部 Codex','仅显示状态','HQ 跟进中']]) {
+ for (const [lang,label,only,followed] of [['en-US','External conversations','Status only','HQ following'],['zh-CN','外部会话','仅显示状态','HQ 跟进中']]) {
   const h=harness({ok:true},lang);
   const a={source:'native',client:'chatgpt_desktop',session_id:'desk',agent:'Codex',status:'working',task:'Crash investigation',follow:{hq:false,revision:0}};
   h.api.renderRadar([a]);
@@ -915,4 +916,41 @@ test('busy delivery feedback expires without an idle transition and never dismis
     assert.equal(timers.size, 0);
     assert.equal(c.input.value, 'Do not lose this');
   }
+});
+
+
+test('DSH external history has scoped requests, read-only chrome and independent grants', async () => {
+ const reply={ok:true,status:200,headers:{get:()=>null},json:async()=>[{prompt:'Public prompt',response:'Public reply'}]};
+ const h=harness(reply);h.node('workbench').hidden=true;
+ const a={agent:'DeepSeek Harness',source:'native',session_id:'dsh-one',home_id:'dsh-home',current_client:'unconfirmed',can_read_conversation:true,status:'working'};
+ h.api.openConversation(a);await new Promise(r=>setImmediate(r));
+ assert.ok(h.requests.some(r=>r.url.endsWith('/api/session/transcript?session_id=dsh-one&home_id=dsh-home')));
+ assert.ok(h.requests.every(r=>!r.url.includes('/api/pane?')&&!r.url.includes('/api/send')));
+ assert.equal(h.node('mode').hidden,true);assert.equal(h.api.turns()[0].response,'Public reply');
+ h.api.setExternalSettings({hq:false,notify:false,knowledge:false,revision:0});
+ const inputs=h.api.conversationControls().children.filter(c=>c.tagName==='label').map(c=>c.children[0]);
+ assert.deepEqual(inputs.map(i=>i.disabled),[false,true,true]);
+ h.api.setExternalSettings({hq:true,notify:false,knowledge:false,revision:1});
+ const enabled=h.api.conversationControls().children.filter(c=>c.tagName==='label').map(c=>c.children[0]);
+ assert.deepEqual(enabled.map(i=>i.checked),[true,false,false]);h.api.cancelReads();
+});
+
+test('a late external conversation cannot repaint another home or a closed reader', async () => {
+ const h=harness({ok:true,status:200,json:async()=>({hq:false,notify:false,knowledge:false,revision:0})});
+ let resolveOld;const old=new Promise(r=>{resolveOld=r;});
+ h.context.fetch=(url)=>url.includes('/session/transcript')?old:Promise.resolve({ok:true,status:200,json:async()=>({hq:false,notify:false,knowledge:false,revision:0})});
+ const a={agent:'DeepSeek Harness',source:'native',session_id:'same',home_id:'old',current_client:'unconfirmed',can_read_conversation:true};
+ h.api.openConversation(a);h.api.show('radar');
+ resolveOld({ok:true,status:200,headers:{get:()=>null},json:async()=>[{prompt:'OLD PRIVATE'}]});
+ await new Promise(r=>setImmediate(r));assert.equal(h.api.turns().length,0);h.api.cancelReads();
+});
+
+
+test('external reader retries a failed body without accepting its validator', async () => {
+ const reply={ok:true,status:200,headers:{get:()=> 'W/"unread"'},json:async()=>{throw new Error('torn body');}};
+ const h=harness(reply);h.api.openConversation({agent:'DeepSeek Harness',source:'native',session_id:'dsh-one',home_id:'home',can_read_conversation:true});
+ await new Promise(r=>setImmediate(r));
+ reply.json=async()=>[];h.api.pollConversation();await new Promise(r=>setImmediate(r));
+ const reads=h.requests.filter(r=>r.url.includes('/session/transcript'));
+ assert.equal(reads.length,2);assert.equal(reads[1].options.headers['If-None-Match'],undefined);h.api.cancelReads();
 });

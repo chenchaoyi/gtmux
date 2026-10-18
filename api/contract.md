@@ -108,10 +108,10 @@ focused or sent input.
 | `terminal` | string? | native session's hosting terminal display name, sensed from the hook's environment/ancestry; absent when unrecognized. It does not make the row focusable. |
 | `client` | string? | native Codex creation metadata (legacy compatibility): `chatgpt_desktop` for matching rollout metadata's exact `codex_work_desktop` or `Codex Desktop` originator, `terminal` for `codex-tui`; otherwise absent. `source` remains `native`. Creation metadata never proves current ownership. |
 | `creation_client` | string? | Explicit creation source; same values as legacy `client`. Never current control. |
-| `current_client` | string? | Native Codex currently emits `unconfirmed`; the public protocol cannot establish a frontend owner. |
-| `home_id` | string? | Opaque canonical Codex configuration identity. Pair with server and `session_id`; never merge copies across homes. |
-| `can_read_conversation` | bool? | Verified public history in this server's configured Codex home. Read-only; no input or consent grant. |
-| `follow` | object? | Verified native Codex conversation policy: `hq`, `notify`, `knowledge` (booleans), `revision` (integer), optional `follow_since`/`knowledge_since` (Unix seconds) and `knowledge_revision` (learning-interval identity). Missing settings default to all false; old cores omit this field. Status-only external Codex rows do not count toward managed attention. |
+| `current_client` | string? | Native Codex and DeepSeek Harness currently emit `unconfirmed`; the public protocol cannot establish a frontend owner. |
+| `home_id` | string? | Opaque canonical conversation-home identity (agent-specific). Pair with server and `session_id`; never merge copies across homes. |
+| `can_read_conversation` | bool? | Verified public history in this server's configured Codex or DSH home. Read-only; no input or consent grant. |
+| `follow` | object? | Verified native conversation policy: `hq`, `notify`, `knowledge` (booleans), `revision` (integer), optional `follow_since`/`knowledge_since` (Unix seconds) and `knowledge_revision` (learning-interval identity). Missing settings default to all false; old cores omit this field. Status-only external conversation rows do not count toward managed attention. |
 | `watched` | bool? | a user-promoted PLAIN pane (tiered-pane-control), not an agent; omitted for agents |
 | `icon` | string? | identity-icon hint (`.app`/image path); omitted if none |
 | `activity_at` `since` | int? | epoch seconds (last activity / current-state start) |
@@ -123,9 +123,9 @@ without a newer message or active/wait marker. This correction is not a new comp
 and does not change `latest`. If no supported activity or prior marker is available,
 `since` is omitted/zero; consumers must not treat `activity_at` as a completion receipt.
 
-### `GET /api/session-follow` / `POST /api/session-follow` — Codex follow (OWNER only)
+### `GET /api/session-follow` / `POST /api/session-follow` — external conversation follow (OWNER only)
 
-Paired owners and the master token may read/change one verified Codex conversation;
+Paired owners and the master token may read/change one verified Codex or DSH conversation;
 guests receive 403 before any policy read or write. A GET takes `?session_id=<id>&home_id=<home_id>`. POST also accepts optional `home_id`.
 A POST takes `{"session_id":"<id>","settings":{"hq":true,"notify":false,"knowledge":false,"revision":0}}`.
 Both return the saved settings object described above. Successful POST increments the
@@ -361,18 +361,25 @@ from the phone. `diff` is `""` when the cwd isn't a git repo. Capped at ~400 KB.
 503 {"error":"diff not available"}   // Diff dep not wired
 ```
 
-### `GET /api/session/transcript?session_id=<id>` — verified Codex history
+### `GET /api/session/transcript?session_id=<id>` — verified external history
 
 Owner/master and paired-device tokens only; guest tokens receive 403 before any
-transcript read. Requires the exact Codex conversation ID with verified thread
-metadata. This manual read never enables HQ follow, notifications or
-knowledge collection. No pane ID or caller-provided file path is accepted. Optional `home_id` binds the request to the selected home; foreign scopes fail before content reads. Old ID-only requests fail on ambiguous recorded scopes.
+transcript read. Requires an exact conversation identity with verified persisted metadata in a
+configured Codex or DSH home. This manual read never enables HQ follow, notifications or
+knowledge collection. No pane ID or caller-provided file path is accepted. Optional `home_id` binds the request to the selected home; foreign scopes fail before content reads. Old ID-only requests fail on ambiguous recorded scopes or identities shared by multiple providers.
 
 200 returns the same public turn array and ETag/`X-Gtmux-Turns-Dropped` headers as
-`/api/transcript`, bounded to 300 turns and 512 KiB. The parser combines verified
-resumed rollout files, includes public commentary/tools before the final answer,
+`/api/transcript`, bounded to 300 turns and 512 KiB. The Codex parser combines verified
+resumed rollout files. Both providers include public commentary/tools before the final answer,
 and excludes private analysis and injected instructions. `If-None-Match` can return
 304; retain the previous turns and dropped count. `Cache-Control: no-store` applies.
+
+DSH reads the highest canonical v4 JSONL / concatenated checksummed Zstandard
+artifact without modifying it. Unknown generations, ambiguous copies/encodings and
+corrupt complete records are unavailable; incomplete tails wait. Public append
+history is retained through model compaction; injected checkpoints, reasoning,
+replay state and raw tool results are excluded. Saved metadata does not prove a
+live Web client. See [DSH support and limits](../docs/guides/deepseek-harness.md).
 
 Errors: 400 invalid ID, 405 non-GET (Allow: GET), 422 unknown identity or unavailable/ambiguous home,
 503 missing core capability, 500 failed read. Error bodies do not disclose file paths.
@@ -1287,7 +1294,7 @@ Owner or paired-device credential only; guest 403, missing/unknown bearer 401. R
 
 `entries` is always an array; `next`/`partial` and optional entry metadata may be absent. An empty page with `next` is continuable (ordinary diagnostics may consume the scan budget). Invalid or expired/truncated cursor: 410; unreadable store: 503; invalid limit/actor: 400. Refresh without `before` restarts. Clients must retain existing content on errors and discard stale replies after server switching.
 
-This projection exposes only allowlisted access metadata, never arbitrary diagnostic attributes. Successful repeated reads are sampled over five minutes per verified identity/operation/pane or session; HTTP mutations, failed reads and every HQ archive download (`archive_export`) are individual. `session_id` is additive and optional: only a structured Codex UUID from a home-validated transcript/follow-up request, never arbitrary query text. Creation includes its returned `%pane` in `target`. Notification-registration reads use `notification_read`. An archive generation failure has `outcome:failed` even after HTTP 200 headers were committed; before output it returns 500. Archive download supports GET only (other methods: 405). SSE/attach connection boundaries are separate records, not their contents/keystrokes. Unknown bearer access receipts are sampled once per minute per external/local/unknown origin, separately from the global diagnostic warning counter. HTTP success is acceptance, not agent completion. Existing log retention/cap applies. See [design and boundaries](../docs/design/server-access-audit.md).
+This projection exposes only allowlisted access metadata, never arbitrary diagnostic attributes. Successful repeated reads are sampled over five minutes per verified identity/operation/pane or session; HTTP mutations, failed reads and every HQ archive download (`archive_export`) are individual. `session_id` is additive and optional: only a structured UUID from a home-validated transcript/follow-up request (other ID shapes are omitted), never arbitrary query text. Creation includes its returned `%pane` in `target`. Notification-registration reads use `notification_read`. An archive generation failure has `outcome:failed` even after HTTP 200 headers were committed; before output it returns 500. Archive download supports GET only (other methods: 405). SSE/attach connection boundaries are separate records, not their contents/keystrokes. Unknown bearer access receipts are sampled once per minute per external/local/unknown origin, separately from the global diagnostic warning counter. HTTP success is acceptance, not agent completion. Existing log retention/cap applies. See [design and boundaries](../docs/design/server-access-audit.md).
 
 ### Access-history filters and grouping
 Optional `device_id` (exact full pairing ID), `operation` (allowlisted key), `outcome` (`ok|refused|failed`) and `group_by=device` apply before pagination. Existing exact `actor` and retention rules remain. Invalid values return 400. `query` echoes the normalized applied filter; new clients must refuse any response (including baseline) from old servers that omit or mismatch it, rather than presenting unfiltered data as filtered.

@@ -20,7 +20,7 @@ func TestRegistryMatchesFormerHookAgents(t *testing.T) {
 	// Agents onboarded SINCE the migration. The guard is still exact — an agent that
 	// gains the event-first path by accident fails here — but a deliberate onboarding
 	// is one line, named, rather than a number nobody can read back.
-	since := []string{"kimi"}
+	since := []string{"kimi", "dsh", "deepseek-harness"}
 	for _, k := range append(append([]string{}, former...), since...) {
 		if For(k).Receipt == nil {
 			t.Errorf("For(%q).Receipt = nil; it is expected to be hook-equipped", k)

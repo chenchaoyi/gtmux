@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.126',
+    en: [
+      'Read verified DeepSeek Harness conversations alongside Codex histories, with the official DeepSeek icon.',
+      'Choose follow, notifications and future knowledge retention separately for each external conversation.',
+      'External conversations stay read-only; continue interacting in the original client.',
+    ],
+    zh: [
+      '与 Codex 历史一起查看身份已核实的 DeepSeek Harness 对话，使用 DeepSeek 官方图标。',
+      '为每段外部会话分别控制跟进、通知与后续知识留存。',
+      '外部对话保持只读，继续交互请回到原客户端。',
+    ],
+  },
+  {
     version: '1.0.124',
     en: [
       'Diagnostic records now show the server address for failed requests and push registration, making connection issues easier to trace.',

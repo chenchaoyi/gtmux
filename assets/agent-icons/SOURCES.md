@@ -18,6 +18,7 @@ delete `<key>.png`; a missing icon simply falls back to the neutral monogram.
 | `grok.png` | Grok | xAI |
 | `glm.png` | GLM | Zhipu AI |
 | `kimi.png` | Kimi | Moonshot AI |
+| `dsh.png` | DeepSeek Harness | DeepSeek |
 
 Notes:
 - `grok` and `glm` need registry entries (detection commands) before their panes are
@@ -25,3 +26,10 @@ Notes:
   already detected.
 - `gemini.png` is a wide wordmark (2:1) rather than a square glyph — replace with a
   square icon when available for a cleaner avatar.
+
+`dsh.png` is rasterized at 512×512 from DeepSeek Harness's official whale
+[apps/web/public/favicon.svg](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/apps/web/public/favicon.svg)
+(as shipped in `@deepseek-ai/dsh` 0.2.0-rc.2). Source SVG SHA-256:
+`9e983b4f649c25c6ca0623a50be1a6e705fd8f49f756638b980fa13b40575ab6`.
+The paths are unchanged; a white canvas keeps the official black mark legible in
+both UI themes. This identifies compatibility and implies no endorsement.

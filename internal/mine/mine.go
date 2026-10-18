@@ -26,6 +26,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/chenchaoyi/gtmux/internal/dsh"
 	"github.com/chenchaoyi/gtmux/internal/sessionpolicy"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
@@ -103,6 +104,8 @@ func readerFor(agent string) reader {
 		return readClaude
 	case "codex":
 		return readCodex
+	case "dsh":
+		return readDSH
 	case "opencode":
 		return readOpencode
 	case "kimi":
@@ -151,6 +154,20 @@ func Run(dir string, o Options) (Report, error) {
 		}
 		src := led.Sources[f.path]
 		policySince, policyRevision := int64(0), int64(0)
+		if f.agent == "dsh" {
+			identity, err := dshIdentity(f.path)
+			if err != nil {
+				continue
+			}
+			p := sessionpolicy.GetFor("dsh", identity.ID)
+			if !p.HQ || !p.Knowledge {
+				continue
+			}
+			policySince, policyRevision = p.KnowledgeSince, p.KnowledgeRevision
+			if src.PolicySince != policySince || src.PolicyRevision != policyRevision {
+				src = sourceMark{}
+			}
+		}
 		if f.agent == "codex" {
 			id, client := transcript.CodexFileIdentity(f.path)
 			if sessionpolicy.RequiresConsent(id, client) {
@@ -239,6 +256,7 @@ func Run(dir string, o Options) (Report, error) {
 // same overrides the transcript package does ($CODEX_HOME, $KIMI_CODE_HOME).
 func DefaultRoots() []Root {
 	return []Root{
+		{Agent: "dsh", Dir: filepath.Join(dsh.Home(), "sessions"), Glob: filepath.Join("*", "*", "session.v4.jsonl*")},
 		{Agent: "claude", Dir: filepath.Join(state.Home(), ".claude", "projects"), Glob: filepath.Join("*", "*.jsonl")},
 		{Agent: "codex", Dir: filepath.Join(transcript.CodexHome(), "sessions"), Glob: filepath.Join("*", "*", "*", "*.jsonl")},
 		{Agent: "opencode", Dir: transcript.OpencodeDir(), Glob: "*.jsonl"},

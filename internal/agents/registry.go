@@ -42,11 +42,12 @@ type Manifest struct {
 	Resume   []string // resume argv; nil ⇒ not resumable by session id
 	Resource string   // resource-attribution name; "" ⇒ not attributed
 
-	HookDisplay bool   // registered in the hook-time known-agent/display gate
-	Hooked      bool   // hook-equipped: its events feed the receipt/ready stream
-	Content     string // transcript-parser key ("claude", "codex", "opencode", "kimi"); "" ⇒ none
-	Headless    string // headless one-shot key ("claude"/"codex"); "" ⇒ none
-	Semantics   bool   // has a DEDICATED classifier event-semantics table (else generic)
+	HookDisplay  bool   // registered in the hook-time known-agent/display gate
+	Hooked       bool   // hook-equipped: its events feed the receipt/ready stream
+	Content      string // transcript-parser key ("claude", "codex", "opencode", "kimi"); "" ⇒ none
+	NativeReader string // verified external-conversation provider; empty means no external reader
+	Headless     string // headless one-shot key ("claude"/"codex"); "" ⇒ none
+	Semantics    bool   // has a DEDICATED classifier event-semantics table (else generic)
 	// Instructions is the agent's GLOBAL instruction file (`~`-relative), the carrier the
 	// knowledge base distributes this machine's lessons into (hq-knowledge-engine);
 	// InstructionsEnv names the env var that relocates the agent's home, in which case
@@ -66,7 +67,7 @@ var manifests = []Manifest{
 		Instructions: "~/.claude/CLAUDE.md",
 	},
 	{
-		Key: "codex", Label: "Codex",
+		Key: "codex", Label: "Codex", NativeReader: "codex",
 		Detect: []string{"codex"}, // icon: committed assets/agent-icons/codex.png (the Codex mark, NOT ChatGPT)
 		Resume: []string{"codex", "resume"}, Resource: "codex",
 		HookDisplay: true, Hooked: true, Content: "codex", Headless: "codex", Semantics: true,
@@ -127,6 +128,11 @@ var manifests = []Manifest{
 	{
 		Key: "grok", Label: "Grok",
 		Resume: []string{"grok", "-r"},
+	},
+	{
+		Key: "dsh", Aliases: []string{"deepseek-harness"}, Label: "DeepSeek Harness",
+		NativeReader: "dsh", HookDisplay: true, Hooked: true, Content: "dsh", Semantics: true,
+		Instructions: "~/.dsh/AGENTS.md", InstructionsEnv: "DSH_HOME",
 	},
 	// Radar-detected but not (yet) hook-equipped.
 	{Key: "aider", Label: "Aider", Detect: []string{"aider"}, Resource: "aider"},

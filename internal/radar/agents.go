@@ -24,8 +24,10 @@ import (
 
 	"github.com/chenchaoyi/gtmux/assets"
 	"github.com/chenchaoyi/gtmux/internal/agents"
+	"github.com/chenchaoyi/gtmux/internal/conversation"
 	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
+	"github.com/chenchaoyi/gtmux/internal/dsh"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/native"
@@ -1455,6 +1457,25 @@ func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 
 func nativePanesScoped(tmuxPanes []Pane, profiles []agentProfile, now int64, codexScope *transcript.CodexPathScope) []Pane {
 	recs := native.Live(now)
+	seenDSH := map[string]int{}
+	for i, r := range recs {
+		if r.Agent == "dsh" && r.HomeID == dsh.HomeID() {
+			seenDSH[r.SessionID] = i
+		}
+	}
+	if sessions, err := dsh.Sessions.List(); err == nil {
+		for _, v := range sessions {
+			if i, seen := seenDSH[v.ID]; seen {
+				if v.ActivityAt > recs[i].UpdatedAt {
+					recs[i].State = v.State
+					recs[i].EndReason = v.EndReason
+					recs[i].UpdatedAt = v.ActivityAt
+				}
+			} else {
+				recs = append(recs, native.Record{Agent: "dsh", SessionID: v.ID, HomeID: v.HomeID, Cwd: v.Cwd, State: v.State, EndReason: v.EndReason, UpdatedAt: v.ActivityAt})
+			}
+		}
+	}
 	// Legacy records predate home identity. Only the default home can interpret
 	// them, and a newer scoped observation for that same thread takes precedence.
 	if transcript.DefaultCodexHome() {
@@ -1555,17 +1576,21 @@ func nativePanesScoped(tmuxPanes []Pane, profiles []agentProfile, now int64, cod
 				client = r.CreationClient
 			}
 		}
+		if r.Agent == "dsh" && nativeReadableScope(r) {
+			ref, err := conversation.Resolve(r.SessionID, r.HomeID)
+			codexVerified = err == nil && ref.Agent == "dsh"
+		}
 		currentClient := ""
-		if r.Agent == "codex" {
+		if conversation.Supports(r.Agent) {
 			currentClient = "unconfirmed"
 		}
 		var follow *sessionpolicy.Settings
 		role := roleForCwd(r.Cwd)
-		if r.Agent == "codex" {
+		if conversation.Supports(r.Agent) {
 			role = "" // A desktop conversation sharing HQ cwd is not the HQ process.
 			v := sessionpolicy.Settings{}
 			if nativeReadableScope(r) && codexVerified {
-				v = sessionpolicy.Get(r.SessionID)
+				v = sessionpolicy.GetFor(r.Agent, r.SessionID)
 				follow = &v
 			}
 		}
@@ -1585,7 +1610,7 @@ func nativePanesScoped(tmuxPanes []Pane, profiles []agentProfile, now int64, cod
 			Task:      nativeTitle(r, titles[r.Agent]),
 			cwd:       r.Cwd, role: role,
 			terminal: r.Terminal,
-			client:   client, Follow: follow, homeID: r.HomeID, currentClient: currentClient, canReadConversation: r.Agent == "codex" && nativeReadableScope(r) && codexVerified,
+			client:   client, Follow: follow, homeID: r.HomeID, currentClient: currentClient, canReadConversation: conversation.Supports(r.Agent) && nativeReadableScope(r) && codexVerified,
 			project: project, branch: branch, icon: icon,
 			activityAt: r.UpdatedAt, Since: since,
 			sessionID: r.SessionID, adoptable: adoptRefusal(r.Agent, status, lastMsg, client) == "",
@@ -1722,6 +1747,9 @@ func displayForKey(key string, profiles []agentProfile) (name, icon string) {
 	}
 	// No profile claims this key. It is still the AGENT KEY, so the committed icon can be
 	// looked up directly — a sensed agent gtmux has no profile for still gets its mark.
+	if m, ok := agents.For(key); ok && m.NativeReader != "" {
+		return m.Label, BuiltinIconPath(m.Key)
+	}
 	return key, BuiltinIconPath(key)
 }
 
@@ -1914,6 +1942,9 @@ func subtreeUse(root int, procs map[int]procInfo, children map[int][]int) (rssMB
 }
 
 func nativeReadableScope(r native.Record) bool {
+	if r.Agent == "dsh" {
+		return r.HomeID == dsh.HomeID()
+	}
 	return r.Agent != "codex" || r.HomeID == transcript.CodexHomeID() || r.HomeID == "" && transcript.DefaultCodexHome()
 }
 func nativeTitle(r native.Record, titles map[string]string) string {

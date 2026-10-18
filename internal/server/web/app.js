@@ -15,7 +15,7 @@
   var LABEL; // the section and status words, in the reader's language: set beside T below
   // terminal defaults taken from the user's Ghostty config (Hack 15, #17171a/#d4d2cc).
   var GHOSTTY = {bg: '#17171a', fg: '#d4d2cc', cursor: '#bbc1ff', sel: '#2a2a33', font: 'Hack, Menlo, Monaco, "Courier New", monospace', size: 15};
-  var MARKS = {'claude code': 'CC', claude: 'CC', codex: 'Cx', gemini: 'G', aider: 'Ai', opencode: 'oc', cursor: 'Cu', crush: 'Cr', amp: 'Am', cline: 'Cl'};
+  var MARKS = {'deepseek harness':'DS', dsh:'DS', 'claude code': 'CC', claude: 'CC', codex: 'Cx', gemini: 'G', aider: 'Ai', opencode: 'oc', cursor: 'Cu', crush: 'Cr', amp: 'Am', cline: 'Cl'};
 
   var $ = function (id) { return document.getElementById(id); };
   var token = null, radarTimer = null, paneTimer = null, selIdx = -1;
@@ -322,6 +322,7 @@
   function renderConn(el, st) { el.className = 'conn ' + st; el.textContent = serverLabel(); el.title = CONN_TITLE[st] || ''; }
   function setConn(ok) { renderConn($('conn'), connStateFor(ok)); }
   function isNative(a) { return a.source === 'native'; }
+  function readableConversation(a) { return !!a && isNative(a) && a.can_read_conversation === true && !!a.session_id; }
   function hasPane(a) { return !!a && !isNative(a) && !!a.pane_id; }
   function primary(a) {
     if (a.task) return a.task;
@@ -536,6 +537,7 @@
     if (isNative(a)) {
       var nt = document.createElement('span'); nt.className = 'native-tag'; nt.textContent = (a.current_client === 'unconfirmed' || a.client === 'chatgpt_desktop') ? (a.follow && a.follow.hq ? T('HQ following', 'HQ 跟进中') : T('Status only', '仅显示状态')) : 'native'; right.appendChild(nt);
       row.classList.add('native');
+      if (readableConversation(a)) { row.onclick = function () { openConversation(a); }; row.tabIndex=0; row.setAttribute('role','button'); row.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();openConversation(a);}}; }
     } else {
       var ch = document.createElement('span'); ch.className = 'chev'; ch.textContent = '›'; right.appendChild(ch);
       row.onclick = function () { openAgent(a); };
@@ -572,7 +574,7 @@
     // for "an agent is waiting for your input".
     ORDER.forEach(function (st) { section(LABEL[st], by[st], st === 'errored' ? 'errored' : ''); });
     section(T('Elsewhere', '不在 tmux'), natives);
-    section(T('External Codex', '外部 Codex'), desktops);
+    section(T('External conversations', '外部会话'), desktops);
     if (!root.children.length) { var e = document.createElement('div'); e.className = 'group-label'; e.textContent = T('no agents yet · start one in a tmux pane', '还没有 agent · 在 tmux 的 pane 里启动一个'); root.appendChild(e); }
     if (selIdx >= 0) { selIdx = Math.min(selIdx, radarRows().length - 1); highlightSel(); }
   }
@@ -1564,7 +1566,213 @@
   // openAgent enters the pane view for an agent; the selected tab (terminal mirror
   // vs chat history) is remembered across agents (gtmux.paneMode).
   var focusFromWB = false;
+  var externalEtag = '',
+    externalDropped = 0,
+    externalSettings = null,
+    externalBusy = false,
+    externalError = '';
+  function conversationQuery(a) {
+    return (
+      '?session_id=' + encodeURIComponent(a.session_id) + '&home_id=' + encodeURIComponent(a.home_id || '')
+    );
+  }
+  function openConversation(a) {
+    if (!readableConversation(a)) return;
+    focusFromWB = !$('workbench').hidden;
+    curPane = null;
+    curAgent = a;
+    paneMode = 'chat';
+    clearInterval(radarTimer);
+    radarTimer = null;
+    clearInterval(paneTimer);
+    paneTimer = null;
+    clearInterval(chatTimer);
+    show('chat');
+    hideFocusChrome();
+    $('bar').hidden = false;
+    $('back').hidden = false;
+    $('mode').hidden = true;
+    $('panes-btn').hidden = true;
+    $('title').textContent = primary(a) || a.agent;
+    $('sub').textContent = a.agent;
+    externalEtag = '';
+    externalDropped = 0;
+    externalSettings = null;
+    externalBusy = false;
+    externalError = '';
+    chatSig = '';
+    lastTurns = [];
+    chatExpanded = {};
+    showChatLoader();
+    updateInputBar();
+    pollConversation();
+    chatTimer = setInterval(pollConversation, 2500);
+  }
+  function pollConversation() {
+    if (!readableConversation(curAgent) || $('chat').hidden) return;
+    pollConversationStatus();
+    runRead(
+      'conversation',
+      function (signal) {
+        var a = curAgent,
+          current = currentRead('conversation', signal);
+        var headers = externalEtag ? { 'If-None-Match': externalEtag } : {};
+        return api('/api/session/transcript' + conversationQuery(a), { signal: signal, headers: headers })
+          .then(function (r) {
+            if (!current()) return null;
+            if (r.status === 401) {
+              token = null;
+              localStorage.removeItem(TOKEN_KEY);
+              gate('expired');
+              return null;
+            }
+            if (r.status === 403 || r.status === 422) {
+              lastTurns = [];
+              externalEtag = '';
+              drawChat([]);
+              throw new Error('unavailable');
+            }
+            if (r.status === 304) return null;
+            if (!r.ok) throw new Error('conversation');
+            var etag = r.headers.get('ETag') || '',
+              dropped = Number(r.headers.get('X-Gtmux-Turns-Dropped') || 0);
+            return r.json().then(function (turns) {
+              if (!current()) return null;
+              externalEtag = etag;
+              externalDropped = dropped;
+              return turns;
+            });
+          })
+          .then(function (turns) {
+            if (!current(true)) return;
+            setConn(true);
+            externalError = '';
+            hideChatLoader();
+            if (turns !== null) renderChat(turns || []);
+          })
+          .catch(function () {
+            if (current()) {
+              setConn(false);
+              hideChatLoader();
+              externalError = T('Could not update this conversation. Retry shortly.', '暂时无法更新此对话，将稍后重试。');
+              drawChat(lastTurns);
+            }
+          });
+      },
+      15000,
+      function () {
+        setConn(false);
+      }
+    );
+    if (!externalBusy)
+      runRead('follow', function (signal) {
+        var current = currentRead('follow', signal);
+        return api('/api/session-follow' + conversationQuery(curAgent), { signal: signal })
+          .then(function (r) {
+            if (!r.ok) throw new Error('follow');
+            return r.json();
+          })
+          .then(function (v) {
+            if (current(true) && !externalBusy && JSON.stringify(externalSettings) !== JSON.stringify(v)) {
+              externalSettings = v;
+              drawChat(lastTurns);
+            }
+          })
+          .catch(function () {
+            if (current() && !externalBusy) {
+              externalSettings = null;
+              drawChat(lastTurns);
+            }
+          });
+      });
+  }
+  function pollConversationStatus() {
+    runRead('conversation-status', function (signal) {
+      var current = currentRead('conversation-status', signal), a = curAgent;
+      return api('/api/agents', {signal: signal}).then(function (r) {
+        if (!r.ok) throw new Error('status');
+        return r.json();
+      }).then(function (rows) {
+        if (!current(true) || !Array.isArray(rows)) return;
+        var next = rows.find(function (row) {return row.source === 'native' && row.session_id === a.session_id && row.home_id === a.home_id;});
+        if (!next) return;
+        var changed = next.status !== a.status || next.task !== a.task || next.can_read_conversation !== a.can_read_conversation;
+        curAgent = next;
+        if (!readableConversation(next)) {lastTurns = []; externalSettings = null;}
+        if (changed) {$('title').textContent = primary(next) || next.agent; drawChat(lastTurns);}
+      }).catch(function () {});
+    });
+  }
+  function conversationControls() {
+    var box = el('div', 'external-controls'),
+      msg = el('p', '', T('Read only · Continue in the original client', '只读 · 请在原客户端继续对话'));
+    box.appendChild(msg);
+    if (externalDropped > 0) box.appendChild(el('p', '', T('Earlier messages omitted', '已省略部分较早对话')));
+    if (externalError) box.appendChild(el('p', '', externalError));
+    var titles = {
+      hq: T('HQ follow', 'HQ 跟进'),
+      notify: T('Conversation notifications', '会话通知'),
+      knowledge: T('Save future lessons to knowledge', '留存开启后的知识'),
+    };
+    Object.keys(titles).forEach(function (key) {
+      var label = el('label', 'external-toggle'),
+        input = document.createElement('input');
+      input.type = 'checkbox';
+      input.checked = !!(externalSettings && externalSettings[key]);
+      input.disabled = externalBusy || !externalSettings || (key !== 'hq' && !externalSettings.hq);
+      input.onchange = function () {
+        var epoch = viewEpoch,
+          credential = token,
+          a = curAgent,
+          next = Object.assign({}, externalSettings);
+        next[key] = input.checked;
+        if (key === 'hq' && !next.hq) {
+          next.notify = false;
+          next.knowledge = false;
+        }
+        externalBusy = true;
+        externalError = '';
+        cancelRead('follow');
+        drawChat(lastTurns);
+        api('/api/session-follow', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id: a.session_id, home_id: a.home_id, settings: next }),
+        })
+          .then(function (r) {
+            if (!r.ok) throw new Error('save');
+            return r.json();
+          })
+          .then(function (v) {
+            if (epoch === viewEpoch && credential === token) {
+              externalSettings = v;
+            }
+          })
+          .catch(function () {
+            if (epoch === viewEpoch && credential === token) {
+              externalSettings = null;
+              externalError = T('Update not confirmed. Reloading current settings.', '更新未确认，正在重新读取设置。');
+            }
+          })
+          .finally(function () {
+            if (epoch === viewEpoch && credential === token) {
+              externalBusy = false;
+              drawChat(lastTurns);
+              pollConversation();
+            }
+          });
+      };
+      label.appendChild(input);
+      label.appendChild(document.createTextNode(titles[key]));
+      box.appendChild(label);
+    });
+    if (!externalSettings)
+      box.appendChild(el('p', '', T('Follow settings are unavailable until verified.', '跟进设置尚未确认。')));
+    return box;
+  }
+
   function openAgent(a) {
+    if (readableConversation(a)) {openConversation(a);return;}
     if (!hasPane(a)) return;
     // Previous/next changes the pane, not the top-level view it was opened from.
     if ($('pane').hidden && $('chat').hidden) focusFromWB = !$('workbench').hidden;
@@ -1642,6 +1850,7 @@
     if (wide) root.appendChild(buildOutline(turns));
     var scroll = document.createElement('div'); scroll.className = 'conv-scroll';
     var col = document.createElement('div'); col.className = 'chat-col';
+    if(readableConversation(a)) col.appendChild(conversationControls());
 
     var sr = document.createElement('div'); sr.className = 'chat-state';
     sr.appendChild(avatarEl(a, 30, false));
@@ -1654,7 +1863,7 @@
 
     if (!turns.length) {
       var e = document.createElement('div'); e.className = 'chat-empty';
-      e.textContent = T('No conversation yet. Switch to Terminal to see the current screen.',
+      e.textContent = readableConversation(a) ? T('No recorded conversation yet.','尚无已记录的对话。') : T('No conversation yet. Switch to Terminal to see the current screen.',
         '暂无对话记录。可切换到「终端」查看当前屏幕。');
       col.appendChild(e);
     }
@@ -1704,7 +1913,7 @@
       col.appendChild(ct);
     });
     // waiting → an inline approval card (read-only 1/2/3 from /api/options).
-    if (a.status === 'waiting') col.appendChild(approvalCard());
+    if (!isNative(a) && a.status === 'waiting') col.appendChild(approvalCard());
     scroll.appendChild(col); root.appendChild(scroll);
     scroll.scrollTop = atBottom ? scroll.scrollHeight : prevTop;
     if (curTurnIdx >= turns.length) curTurnIdx = Math.max(0, turns.length - 1);
@@ -2015,7 +2224,7 @@
     var nm = document.createElement('div'); nm.className = 'tr-name'; nm.textContent = primary(a);
     var sb = document.createElement('div'); sb.className = 'tr-sub'; sb.textContent = hasPane(a) ? a.pane_id + (a.agent ? ' · ' + shortAgent(a.agent) : '') : [a.agent, T('Status only', '仅显示状态')].filter(Boolean).join(' · ');
     tx.appendChild(nm); tx.appendChild(sb); row.appendChild(tx);
-    if (!hasPane(a)) { row.classList.add('native'); return row; }
+    if (!hasPane(a)) { row.classList.add('native'); if(readableConversation(a)){row.onclick=function(){openConversation(a);};row.tabIndex=0;row.setAttribute('role','button');row.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();openConversation(a);}};} return row; }
     var g = document.createElement('span'); g.className = 'tr-grip'; g.textContent = '⠿'; row.appendChild(g);
     row.addEventListener('dragstart', function (e) { e.dataTransfer.setData('text/pane', a.pane_id); e.dataTransfer.effectAllowed = 'copy'; });
     row.ondblclick = function () { addTile(a); };

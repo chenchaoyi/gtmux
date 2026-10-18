@@ -10,7 +10,6 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/sessionpolicy"
-	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
 
 func serveSessionFollow(id string, next *sessionpolicy.Settings) (sessionpolicy.Settings, error) {
@@ -22,20 +21,21 @@ func serveSessionFollowAs(id string, next *sessionpolicy.Settings, actor string,
 	if len(homes) > 0 {
 		home = homes[0]
 	}
-	if !sessionpolicy.ValidRequest(id, home) || !sessionpolicy.Eligible(id) {
+	ref, resolveErr := sessionpolicy.Resolve(id, home)
+	if resolveErr != nil {
 		return sessionpolicy.Settings{}, sessionpolicy.ErrUnverified
 	}
 	if next == nil {
-		return sessionpolicy.Get(id), nil
+		return sessionpolicy.GetFor(ref.Agent, id), nil
 	}
-	saved, err := sessionpolicy.Save(id, *next)
+	saved, err := sessionpolicy.SaveFor(ref.Agent, id, *next)
 	if err != nil {
 		diag.For("session-follow").Act("act.session.follow", actor, id, diag.Failed, "could not save conversation permissions", "error", err)
 		return saved, err
 	}
 	diag.For("session-follow").Act("act.session.follow", actor, id, diag.OK, "conversation permissions saved", "hq", saved.HQ, "notify", saved.Notify, "knowledge", saved.Knowledge, "revision", saved.Revision)
 	// No conversation text in this receipt; permissions are reviewable after the row disappears.
-	events.Append(events.Record{Event: "gtmux:audit:session-follow", Agent: "Codex", AgentSession: id, HomeID: transcript.CodexHomeID(), Client: "unconfirmed", Actor: actor, Outcome: "saved", Summary: fmt.Sprintf("hq=%t notify=%t knowledge=%t revision=%d", saved.HQ, saved.Notify, saved.Knowledge, saved.Revision)})
+	events.Append(events.Record{Event: "gtmux:audit:session-follow", Agent: ref.Agent, AgentSession: id, HomeID: ref.HomeID, Client: "unconfirmed", Actor: actor, Outcome: "saved", Summary: fmt.Sprintf("hq=%t notify=%t knowledge=%t revision=%d", saved.HQ, saved.Notify, saved.Knowledge, saved.Revision)})
 	return saved, nil
 }
 
@@ -58,7 +58,7 @@ func cmdFollow(args []string) int {
 	}
 	next, err := serveSessionFollowAs(id, nil, diag.Caller(), home)
 	if err != nil {
-		i18n.Sae("gtmux follow: "+err.Error(), "gtmux follow：未找到可确认身份的 Codex 会话")
+		i18n.Sae("gtmux follow: "+err.Error(), "gtmux follow：未找到可确认身份的会话")
 		return 1
 	}
 	writing, jsonOut := false, false
