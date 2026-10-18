@@ -138,6 +138,9 @@ class PreparationTest
     define_singleton_method(:shot_rows) { |*| [v, shot_rows] }
     define_singleton_method(:library_id) { 'lib' }
     define_singleton_method(:creative_rows) { |*| [v, Array.new(4) { {ok: failed != 'creative', placed: {'attributes' => {'state' => 'ACTIVE'}}} }, []] }
+    define_singleton_method(:accessibility_status) do |*|
+      {ok: failed != 'accessibility', errors: failed == 'accessibility' ? ['Candidate accessibility review is incomplete'] : [], post_live_claims: []}
+    end
     [ipa, receipt]
   end
 
@@ -157,7 +160,7 @@ class PreparationTest
   def test_each_incomplete_check_prevents_ready_and_state_is_replaced_by_fresh_readback
     Dir.mktmpdir do |dir|
       state = File.join(dir, 'state.json')
-      [nil, 'package', 'build', 'metadata', 'screenshots', 'creative', nil].each do |failed|
+      [nil, 'package', 'build', 'metadata', 'screenshots', 'creative', 'accessibility', nil].each do |failed|
         ipa, receipt = status_fixture(dir, failed)
         ok = nil
         capture_io { ok = preparation_status(version: '1.2.3', build: '26', ipa: ipa, receipt: receipt, state: state, metadata_dir: 'metadata', screenshots: 'shots') }
@@ -166,6 +169,7 @@ class PreparationTest
         assert_equal(failed.nil? ? 'ready_for_user_review' : 'incomplete', result['status'])
         assert_equal false, result['submitted']
         assert_equal true, result['user_preview_required']
+        assert_equal(failed != 'accessibility', result.dig('accessibility', 'ok'))
         assert_equal 0, File.stat(state).mode & 0o077
       end
     end

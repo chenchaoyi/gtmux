@@ -49,3 +49,77 @@ the app's three terminal font sizes do not establish the required 200% text supp
 
 Current evaluation results and ASC write receipts belong in the task's private evidence;
 this document is the repeatable process, not a claim that a future version is certified.
+
+## Required checkpoint for every Store submission
+
+Run from `mobileapp/`, using the current process's existing ASC credentials. The helper
+only reads ASC; neither it nor public PR CI publishes declarations or submits an app.
+
+After validating the candidate package, create a **new** private review:
+
+```sh
+bundle exec ruby scripts/asc-accessibility.rb init \
+  --version X.Y.Z --build N --package-receipt build/store-package.json
+```
+
+The default `build/store-accessibility-review.json` is owner-only and Git-ignored.
+`init` refuses to overwrite it; use `--review /private/path/new-review.json` for a new
+assessment. It reads the live version/build and PUBLISHED declarations, including all
+pages. Draft answers do not count. ASC keeps READY states on historical releases;
+the helper chooses the numerically latest released iOS version, excluding unreleased
+candidates. A first release or ambiguous availability needs manual review.
+
+Fill the generated file; blank fields and `supported: null` deliberately fail:
+
+- `reviewed_by`, `reviewed_at` (ISO 8601), `change_review`: identify the reviewer and
+  assess changes since the live Store version, including new common tasks, navigation,
+  themes/colors, text/scaling, motion, replies, SDK/RN/native libraries and extensions.
+  Review every submission; an unchanged capability still needs a reviewed conclusion.
+- `url_review`: confirm the optional URL remains empty, or verify the existing page
+  opens and accurately describes the live app. New support must not be advertised early.
+- `families.IPHONE` and `families.IPAD`: record the exact source/artifact and OS/device
+  in `environment`, common-task evidence references, and honest `limitations`. Include
+  first launch/pairing, radar, chat/terminal, replies/choices, HQ, servers/settings,
+  errors/sheets and notification/Live Activity entry points. Record which evidence is
+  source review, simulator capture or physical acceptance; untested is not passed.
+- Each of the nine `capabilities`: choose a boolean `supported` and give `evidence`.
+  For false, explain why support is not claimed (for example, not evaluated). True
+  requires evidence for Apple's whole-common-task standard, not just one control.
+
+`status` checks the exact package-receipt hash, version/build and current live baseline:
+
+```sh
+bundle exec ruby scripts/asc-accessibility.rb status \
+  --version X.Y.Z --build N --package-receipt build/store-package.json
+```
+
+The same check is **required** by `asc-preparation.rb status|assets`, using the default
+review or `--accessibility-review FILE`. Missing evidence, stale package/version/build,
+changed live baseline or a regression in a published claim prevents readiness. `assets`
+checks it before placement writes. Resolve regressions, or correct demonstrably inaccurate
+live claims in ASC and create a fresh review; a promise to fix later is insufficient.
+Network failure also prevents a current ready result. Scripts validate identity and
+completeness, not the truth of a person's evaluation or physical VoiceOver behavior.
+
+## Publish and close the loop after release
+
+Existing accurate live claims can stay published. If the candidate adds a claim, fill
+`after_release.owner` and `after_release.plan`; preparation reports the pending claims
+without publishing them. Keep this follow-up with the private release handoff, even
+after the operator submits. An approved/uploaded candidate is not a live version.
+
+Once the **exact candidate version/build is live**, publish only verified capabilities
+in ASC → App Accessibility, separately for iPhone and iPad. Do not change other families,
+privacy answers or the optional URL as a side effect. Then run:
+
+```sh
+bundle exec ruby scripts/asc-accessibility.rb live-status \
+  --version X.Y.Z --build N --package-receipt build/store-package.json
+```
+
+Use `--review FILE` for a non-default review. It compares the live build and both
+PUBLISHED capability sets with the reviewed decisions. Missing/mismatched declarations
+remain incomplete. Retain the JSON output with the review, package receipt and evidence;
+then preview the Store's accessibility section on both device families. ASC readback
+and customer-visible rendering are separate results; Apple allows up to 24 hours for
+label changes to appear. Never call API readback a physical accessibility acceptance.

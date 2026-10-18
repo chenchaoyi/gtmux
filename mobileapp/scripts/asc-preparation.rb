@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 # Independent readback and idempotent asset placement. Never submits a version.
 require_relative 'asc-asset-library'
+require_relative 'asc-accessibility'
 require 'fileutils'
 
 METADATA_FIELDS = {'description' => 'description', 'keywords' => 'keywords', 'marketing_url' => 'marketingUrl',
@@ -25,7 +26,11 @@ def package_receipt_ok(receipt, ipa, version, build)
     receipt.fetch('packages', []).map { |p| p['bundle'] }.sort == %w[com.gtmux.app com.gtmux.app.notificationservice com.gtmux.app.widget]
 end
 
-def preparation_status(version:, build:, ipa:, receipt:, state:, metadata_dir:, screenshots:)
+def accessibility_status(review, receipt, version, build)
+  StoreAccessibility.new(method(:call)).check(review, receipt: receipt, version: version, build: build)
+end
+
+def preparation_status(version:, build:, ipa:, receipt:, state:, metadata_dir:, screenshots:, accessibility_review: 'build/store-accessibility-review.json')
   # Read local inputs before contacting Apple. Authentication uses explicit current
   # environment settings; it never reads a previous task's temporary configuration.
   FileUtils.mkdir_p(File.dirname(File.expand_path(state)), mode: 0o700)
@@ -33,6 +38,9 @@ def preparation_status(version:, build:, ipa:, receipt:, state:, metadata_dir:, 
   expected = metadata_plan(metadata_dir)
   package = JSON.parse(File.read(receipt))
   checks = {'package' => package_receipt_ok(package, ipa, version, build)}
+  accessibility = accessibility_status(accessibility_review, receipt, version, build)
+  checks['accessibility'] = accessibility[:ok]
+  accessibility[:errors].each { |message| store_progress.event('accessibility-incomplete', reason: message) }
   v, locs = version_localizations(version)
   actual_build = call('get', "/v1/appStoreVersions/#{v.id}/build")['data']
   checks['build'] = v.app_store_state == 'PREPARE_FOR_SUBMISSION' && actual_build&.dig('attributes', 'version') == build && actual_build&.dig('attributes', 'processingState') == 'VALID'
@@ -51,10 +59,14 @@ def preparation_status(version:, build:, ipa:, receipt:, state:, metadata_dir:, 
             inputs: {ipa_sha256: Digest::SHA256.file(ipa).hexdigest, package_receipt_sha256: Digest::SHA256.file(receipt).hexdigest,
                      metadata_sha256: Digest::SHA256.hexdigest(JSON.generate(expected))},
             symbols: package['matching_symbols'] == true ? 'verified_against_archive' : 'unavailable_original_ipa_fallback',
+            accessibility: accessibility,
             user_preview_required: true, submitted: false}
   FileUtils.mkdir_p(File.dirname(File.expand_path(state)), mode: 0o700)
   StoreProgress.save(state, result)
   checks.each { |name, ok| store_progress.event('readback', check: name, result: ok ? 'passed' : 'incomplete') }
+  unless accessibility[:post_live_claims].empty?
+    store_progress.event('accessibility-post-live-required', claims: accessibility[:post_live_claims])
+  end
   puts ready ? 'Ready for user review in App Store Connect. Preview both locales, then Submit manually.' : 'Preparation incomplete; see the failed checks above. Existing uploads can be reused.'
   ready
 rescue StandardError, SystemExit
@@ -64,8 +76,8 @@ end
 
 if $PROGRAM_NAME == __FILE__
   if ARGV.empty? || ARGV.include?('--help')
-    puts 'Usage: bundle exec ruby scripts/asc-preparation.rb status|assets --version X.Y.Z --build N --ipa FILE --package-receipt FILE [--state PRIVATE.json] [--dir screenshots] [--metadata-dir metadata] [--journal PRIVATE.jsonl]'
-    puts 'status independently reads package/build/text/screenshots/creative. assets places images idempotently, then performs the same readback. Neither command uploads a binary or submits a version.'
+    puts 'Usage: bundle exec ruby scripts/asc-preparation.rb status|assets --version X.Y.Z --build N --ipa FILE --package-receipt FILE [--accessibility-review build/store-accessibility-review.json] [--state PRIVATE.json] [--dir screenshots] [--metadata-dir metadata] [--journal PRIVATE.jsonl]'
+    puts 'status independently reads package/build/text/screenshots/creative and requires a completed candidate accessibility review. assets checks that review before placing images, then performs the same readback. Neither command publishes declarations, uploads a binary or submits a version.'
     exit 0
   end
   abort 'Use status or assets' unless %w[status assets].include?(ARGV.first)
@@ -80,15 +92,21 @@ if $PROGRAM_NAME == __FILE__
       # All local prerequisites must be valid before any write to ASC.
       metadata_plan(opt('metadata-dir') || 'fastlane/metadata')
       abort 'Package receipt differs from the selected IPA/version/build' unless package_receipt_ok(JSON.parse(File.read(options['package-receipt'])), options['ipa'], options['version'], options['build'])
+      review = accessibility_status(opt('accessibility-review') || 'build/store-accessibility-review.json', options['package-receipt'], options['version'], options['build'])
+      abort "Accessibility review incomplete: #{review[:errors].join('; ')}" unless review[:ok]
       place_screenshots(library_id, options['version'], opt('dir') || SHOT_DIR, false)
       place_creative(library_id, options['version'])
     end
     ok = preparation_status(version: options['version'], build: options['build'], ipa: options['ipa'], receipt: options['package-receipt'],
-                            state: opt('state') || 'build/store-state.json', metadata_dir: opt('metadata-dir') || 'fastlane/metadata', screenshots: opt('dir') || SHOT_DIR)
-    exit(ok ? 0 : 1)
+                            state: opt('state') || 'build/store-state.json', metadata_dir: opt('metadata-dir') || 'fastlane/metadata', screenshots: opt('dir') || SHOT_DIR,
+                            accessibility_review: opt('accessibility-review') || 'build/store-accessibility-review.json')
   rescue StoreProgress::Pending => e
     StoreProgress.save(state, {schema: 1, version: options['version'], build: options['build'], status: 'pending', submitted: false})
     warn e.message
     exit 75
+  rescue StandardError, SystemExit
+    StoreProgress.save(state, {schema: 1, version: options['version'], build: options['build'], status: 'incomplete', submitted: false})
+    raise
   end
+  exit(ok ? 0 : 1)
 end

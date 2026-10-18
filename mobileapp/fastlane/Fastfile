@@ -29,7 +29,8 @@
 #   bundle exec fastlane verify       # prove the key wiring, no build
 #   bundle exec fastlane release      # build -> ASC (TestFlight processing)
 #   bundle exec fastlane metadata     # listing text; assets are separate
-#   # then pick the build + Submit in ASC.
+#   # Complete docs/appstore/preparation.md, including the private accessibility review.
+#   # Then preview; only the operator submits in ASC. Reconcile labels after release.
 
 default_platform(:ios)
 
