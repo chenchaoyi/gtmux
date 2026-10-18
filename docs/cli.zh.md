@@ -1428,6 +1428,8 @@ pane 看起来多空闲，都读作 `✗ undelivered`。`queued` 的投递不算
 
 运行手机和网页连接的本地服务，默认端口 8765。局域网内使用 `gtmux serve`；跨网络可用 `gtmux tunnel`。完整绑定地址、端口和凭据参数用 `gtmux serve --help` 查看。
 
+本机 Go 内存排查可显式使用前台参数 `--memory-diagnostics DIR`，通过私有 Unix socket 读取计数和有界 heap/allocs profile。默认关闭，不增加手机/网页路由。目录权限、采集与限制见[本机内存诊断](memory-diagnostics.zh.md)。
+
 ## `gtmux tunnel`
 
 Standard 使用固定的托管地址，`--backend self` 使用 Direct。`--service` 让隧道开机常驻，

@@ -1667,6 +1667,8 @@ that lingers, an acted-on one costs a session's whole context.
 
 Run the local service used by the phone and browser, on port 8765 by default. Use `gtmux serve` on a reachable local network, or `gtmux tunnel` across networks. Run `gtmux serve --help` for bind, port and credential flags.
 
+For local Go memory investigation, the opt-in foreground flag `--memory-diagnostics DIR` adds a private Unix socket for counters and bounded heap/allocs profiles. It is disabled by default and adds no phone/browser route. See [local memory diagnostics](memory-diagnostics.md) for private-directory requirements, collection and limits.
+
 ## `gtmux tunnel`
 
 Standard uses a stable hosted address; `--backend self` uses Direct. `--service`

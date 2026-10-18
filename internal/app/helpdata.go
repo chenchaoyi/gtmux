@@ -268,6 +268,7 @@ var helpCommands = []command{
 		Flags: []cmdFlag{
 			{Name: "--port N", EN: "which port to listen on", ZH: "监听哪个端口"},
 			{Name: "--bind ADDR", EN: "which address to listen on", ZH: "绑哪个地址"},
+			{Name: "--memory-diagnostics DIR", EN: "opt-in local memory socket in an existing owned 0700 directory; foreground only", ZH: "在本人拥有的现有 0700 目录中启用本机内存 socket；仅前台运行"},
 			{Name: "--token TOKEN", EN: "the bearer token; one is generated and kept on first run", ZH: "bearer token；第一次跑会自动生成并存下来"},
 			{Name: "--relay-url URL", EN: "point push at a relay so alerts reach the lock screen", ZH: "把推送指向中继，提醒才能到锁屏",
 				Requires: []string{"--relay-token"}},
