@@ -8,6 +8,30 @@ guest links remain limited to the panes and input scope granted by the host.
 
 ## Requirements
 
+### Requirement: Attachments obey the caller's pane input grants
+
+`POST /api/upload` SHALL apply the same host input consent, grant freshness and
+per-link input allowlist as `/api/send` before parsing or saving a guest upload.
+Guests SHALL name the target pane in the `id` query parameter; missing or denied
+targets SHALL return `403`. Multipart fields SHALL NOT override that target.
+Owners and paired devices SHALL retain uploads without a pane parameter.
+
+#### Scenario: A guest has view permission only
+
+- **WHEN** the guest uploads for a pane it may view but not type into
+- **THEN** the server returns `403` without invoking the upload dependency
+
+#### Scenario: A different link has input permission
+
+- **WHEN** a guest targets a pane allowed only for another link
+- **THEN** that other link's grants do not authorize the upload
+
+#### Scenario: Authorized attachment or legacy owner client
+
+- **WHEN** the host consents and the guest names its own current input-allowed pane
+- **THEN** the attachment is saved under the existing uploads directory
+- **AND** an owner or paired device can still upload without the query parameter
+
 ### Requirement: Browser interactions preserve their target and access boundary
 
 The Web mirror SHALL bind roster and focused-pane reads to the requesting view

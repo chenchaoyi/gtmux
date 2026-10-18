@@ -1550,7 +1550,7 @@
     function uploadInto(f) {
       attach.disabled = true; attach.textContent = '…';
       var form = new FormData(); form.append('file', f);
-      api('/api/upload', {method: 'POST', body: form}).then(function (r) {
+      api('/api/upload?id=' + encodeURIComponent(getId()), {method: 'POST', body: form}).then(function (r) {
         attach.disabled = false; attach.textContent = '＋';
         if (r && r.status === 403) { ta.placeholder = T('Input is not allowed in this pane', '此 pane 不允许输入'); return null; }
         if (!r || !r.ok) { ta.placeholder = T('upload failed, try again', '上传失败，请重试'); return null; }

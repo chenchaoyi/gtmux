@@ -27,6 +27,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/hook"
 	"github.com/chenchaoyi/gtmux/internal/hostinfo"
 	"github.com/chenchaoyi/gtmux/internal/hq"
+	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/knowledge"
 	"github.com/chenchaoyi/gtmux/internal/memdiag"
@@ -885,13 +886,15 @@ func transcriptForPane(id string, earlier int) ([]byte, server.TranscriptMeta, e
 	// first, with a break marked on the first turn of each later session. Only HQ's
 	// sessions are chained; any other pane has nothing before its current log.
 	now := time.Now().Unix()
-	var oldest string
-	turns, oldest = stitchEarlier(turns, rec.SessionID, meta.Reset, meta.ResetAt, earlier, now)
-	if predecessor, agent := events.HQSessionPredecessorLink(oldest, now); predecessor != "" {
-		if agent == "" {
-			agent = transcript.AgentForSession(predecessor)
+	oldest := rec.SessionID
+	if hqpane.Find() == id {
+		turns, oldest = stitchEarlier(turns, rec.SessionID, meta.Reset, meta.ResetAt, earlier, now)
+		if predecessor, agent := events.HQSessionPredecessorLink(oldest, now); predecessor != "" {
+			if agent == "" {
+				agent = transcript.AgentForSession(predecessor)
+			}
+			meta.EarlierAvailable = agent != "" && transcript.LogPath(agent, predecessor) != ""
 		}
-		meta.EarlierAvailable = agent != "" && transcript.LogPath(agent, predecessor) != ""
 	}
 	if len(turns) == 0 {
 		return empty, meta, nil

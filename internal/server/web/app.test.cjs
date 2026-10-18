@@ -185,6 +185,25 @@ test('composer restores a refused message and shows the server reason', async ()
   assert.equal(c.el.children[2].hidden, false);
 });
 
+test('attachments name the pane and preserve the input refusal', async () => {
+  for (const status of [200, 403]) {
+    const h = harness({ok: status === 200, status, json: async () => ({path: '/uploads/image.png'})});
+    h.context.FormData = class { append() {} };
+    const c = h.api.makeComposer(() => '%21', () => {}, false);
+    const picker = c.el.children[0].children[1];
+    picker.files = [{name: 'image.png'}];
+    picker.onchange();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(h.requests[0].url, '/p8765/api/upload?id=%2521');
+    if (status === 403) {
+      assert.equal(c.input.value, '');
+      assert.equal(c.input.placeholder, 'Input is not allowed in this pane');
+    } else {
+      assert.equal(c.input.value, '/uploads/image.png ');
+    }
+  }
+});
+
 test('pane browser HQ identity uses role, preserves custom names and raw targets', () => {
   const h = harness({ok: true});
   const p = {pane_id: '%1', session: 'hq', loc: 'hq:0.0', tier: 'agent', command: 'codex'};

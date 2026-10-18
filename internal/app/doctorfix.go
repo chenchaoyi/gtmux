@@ -824,7 +824,7 @@ func insertTomlTopLevel(content, line string) string {
 
 // stepAppInstall offers to install the menu-bar app (needed for desktop
 // notifications) by running the official installer. Unlike the tmux/hook steps it
-// fetches + runs install.sh (CLI + app) — the app is a signed bundle we can't
+// installs official release assets (CLI + app) — the app is a signed bundle we can't
 // assemble locally. No-op when it's already present.
 func (s *fixState) stepAppInstall() int {
 	if !hostplatform.Current().MenuBar {
@@ -834,8 +834,8 @@ func (s *fixState) stepAppInstall() int {
 		return 0
 	}
 	detail := i18n.Tr(
-		"  Fetch + run the official installer (install.sh) to add the menu-bar app.\n  Why: desktop notifications (the \"waiting on you\" alert) come from the app, and nothing else posts them.",
-		"  拉取并运行官方安装脚本（install.sh）装上菜单栏 app。\n  原因：桌面通知（\"等你输入\"提醒）由这个 app 负责发出，没有它就没有通知。")
+		"  Download and install the official release to add the menu-bar app.\n  Why: desktop notifications (the \"waiting on you\" alert) come from the app, and nothing else posts them.",
+		"  下载并安装官方发布包装上菜单栏 app。\n  原因：桌面通知（\"等你输入\"提醒）由这个 app 负责发出，没有它就没有通知。")
 	if !s.ask(i18n.Tr("menu-bar app  (for desktop notifications)", "菜单栏 app（桌面通知需要）"), detail) {
 		return 0
 	}

@@ -1625,6 +1625,10 @@ on`）能往更短的那份「可输入」清单里打字。owner 设置和 HQ A
 
 `gtmux doctor --progress` 在非交互输出中也显示检查进度；`--bundle` 收集诊断。安装步骤见[安装文档](install.zh.md)。
 
+`gtmux update` 使用本地代码安装发布包，不再执行下载的安装脚本。镜像提供的 CLI
+压缩包必须匹配从 GitHub 直取的 SHA256 校验值；取不到官方校验值时停止更新。
+菜单栏 App 仅从 GitHub 直取，可用 `--cli-only` 跳过。
+
 
 命令行更新成功后，由新版程序运行只读检查 `doctor --no-prompt --progress`，
 最多等待 90 秒。发现环境问题不会把安装成功改报为更新失败。

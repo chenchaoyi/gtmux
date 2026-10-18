@@ -196,6 +196,17 @@ func (m *ShareManager) InputEnabled() bool {
 	return m.enabled
 }
 
+// mayInputPane is shared by typing and attachments: both let a caller supply
+// input to an agent. Owner devices retain their unrestricted, legacy API.
+func (s *Server) mayInputPane(r *http.Request, id string) bool {
+	if callerScope(r.Context()) != scopeGuest {
+		return true
+	}
+	dev, ok := callerDevice(r.Context())
+	return ok && s.deps.Share != nil && s.deps.Share.InputEnabled() &&
+		!s.deps.Share.GrantsStale() && dev.MayInput(id)
+}
+
 func toSet(items []string) map[string]bool {
 	set := map[string]bool{}
 	for _, p := range items {

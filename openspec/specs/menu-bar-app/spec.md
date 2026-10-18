@@ -155,7 +155,27 @@ red `waiting`/needs-you color.
 
 The app SHALL check for a newer release (reusing the CLI's own `gtmux update --check`)
 and offer a one-click update that reuses `gtmux update` (CLI + app), spawned DETACHED
-so it survives the installer pkill'ing + relaunching the app.
+so it survives replacement and relaunch of the app.
+
+The CLI update path SHALL install release assets using local code without fetching
+or executing a remote installer script. A CLI archive, including one supplied by a
+mirror, SHALL match SHA256 checksums downloaded over official GitHub HTTPS.
+Unavailable, invalid or mismatched official checksums SHALL stop installation.
+Checksum and app-ZIP requests and their redirects SHALL remain on HTTPS at
+`github.com`, `release-assets.githubusercontent.com` or `objects.githubusercontent.com`,
+with no URL credentials or non-default HTTPS port. The app ZIP is published outside
+the CLI checksum artifact and SHALL use official HTTPS only, without mirror fallback.
+The updater SHALL preserve the existing binary until verification and staging succeed.
+
+#### Scenario: A proxy supplies replacement executable bytes
+
+- **WHEN** a mirror archive does not match the checksum fetched from GitHub
+- **THEN** those bytes are not installed or executed
+
+#### Scenario: The official checksum source is unavailable or redirects to a proxy
+
+- **WHEN** checksum retrieval fails or redirects outside the official HTTPS boundary
+- **THEN** update fails without accepting a mirror checksum or replacing the CLI
 
 The one-click update SHALL ALWAYS terminate in a defined state — **relaunched to the
 new version**, or an **`updateFailed` retry** — and SHALL NOT sit on the "Updating…"
@@ -168,7 +188,7 @@ spinner forever. Concretely:
   remains.
 - The detached job records its exit code. A **non-zero exit** (network blip / SHA
   mismatch) SHALL flip to `updateFailed` with a retry.
-- On a recorded **exit 0**, the installer is expected to have pkill'd + relaunched the
+- On a recorded **exit 0**, the updater is expected to have replaced + relaunched the
   app; if the app is nonetheless STILL running past a short grace period, the relaunch
   did not take, and the app SHALL self-heal by comparing the on-disk installed bundle
   version to its own running version:
