@@ -309,6 +309,9 @@ gtmux does not estimate subscription usage from its local token totals:
   an agent. Each read considers the eight newest rollout files by modification time,
   looking for a reading in each file's last 1 MiB. It also does this when the command
   is disabled or its cache is fresh.
+  Reads are capped at 1 MiB plus one boundary byte; a large log is never loaded in
+  full. A partial first record is skipped. Appends after the size snapshot wait for
+  the next poll; a short or failed read provides no reading from that file.
 
 Two rules apply to the log route. A window is named by its duration, never by its
 position in the source (Codex's `primary` field is observed carrying the weekly window

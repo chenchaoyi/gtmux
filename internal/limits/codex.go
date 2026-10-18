@@ -1,7 +1,9 @@
 package limits
 
 import (
+	"bytes"
 	"encoding/json"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -49,7 +51,8 @@ import (
 const codexScanFiles = 8
 
 // codexTailBytes is how much of a rollout's end to read looking for the newest
-// `rate_limits`. They ride `token_count` events, which are frequent.
+// `rate_limits`. They ride `token_count` events, which are frequent. One extra
+// byte identifies whether the tail starts at a complete JSONL record.
 const codexTailBytes = 1 << 20
 
 type codexRateLine struct {
@@ -113,20 +116,18 @@ func codexUnknown(now time.Time) bool {
 
 // codexWindowsIn reads one rollout's tail for its LAST rate-limit reading.
 func codexWindowsIn(path string, now time.Time) (live []Window, found bool, at time.Time) {
-	fi, err := os.Stat(path)
+	f, err := os.Open(path)
 	if err != nil {
 		return nil, false, time.Time{}
 	}
-	from := fi.Size() - codexTailBytes
-	if from < 0 {
-		from = 0
-	}
-	b, err := os.ReadFile(path)
+	defer f.Close()
+	fi, err := f.Stat()
 	if err != nil {
 		return nil, false, time.Time{}
 	}
-	if int64(len(b)) > from {
-		b = b[from:]
+	b, err := readCodexTail(f, fi.Size())
+	if err != nil {
+		return nil, false, time.Time{}
 	}
 	lines := strings.Split(string(b), "\n")
 	for i := len(lines) - 1; i >= 0; i-- {
@@ -146,6 +147,41 @@ func codexWindowsIn(path string, now time.Time) (live []Window, found bool, at t
 		return codexToWindows(l.Payload.Limits.Primary, l.Payload.Limits.Secondary, now, l.Payload.Limits.PlanType), true, fi.ModTime()
 	}
 	return nil, false, time.Time{}
+}
+
+// readCodexTail reads one size snapshot from the already-open rollout. Appends
+// beyond that size wait until the next poll; a short read (including concurrent
+// truncation) rejects this reading rather than parsing an incomplete snapshot.
+// At most codexTailBytes+1 bytes are read/allocated, regardless of rollout size.
+func readCodexTail(r io.ReaderAt, size int64) ([]byte, error) {
+	if size <= 0 {
+		return nil, nil
+	}
+	from := max(int64(0), size-codexTailBytes)
+	if from > 0 {
+		from-- // Include the preceding byte to recognize an exact line boundary.
+	}
+	b := make([]byte, int(size-from))
+	n, err := r.ReadAt(b, from)
+	if err != nil {
+		return nil, err
+	}
+	if n != len(b) {
+		return nil, io.ErrUnexpectedEOF
+	}
+	if size > codexTailBytes {
+		boundary := b[0] == '\n'
+		b = b[1:]
+		if !boundary {
+			// A suffix that happens to be valid JSON is not a complete record.
+			i := bytes.IndexByte(b, '\n')
+			if i < 0 {
+				return nil, nil
+			}
+			b = b[i+1:]
+		}
+	}
+	return b, nil
 }
 
 // codexHasWindow reports whether a reading names any window at all. Codex writes nulls
