@@ -14,6 +14,7 @@ import {Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 're
 import {AnsiLine} from './ansi';
 import {AgentAvatar} from './AgentAvatar';
 import {ReplyActions} from './ReplyActions';
+import {CopyableText, CopyFeedbackContext} from './CopyableText';
 import {JumpToBottom} from './JumpToBottom';
 import {SenderAvatar} from './SenderAvatar';
 import {TimeSeparator} from './TimeSeparator';
@@ -104,10 +105,7 @@ interface Props {
 // text is light-on-dark regardless of the app's light/dark appearance. Using the
 // theme palette (pal.fg) here made the agent name + response invisible in light
 // mode (dark text on the dark bubble). These fixed colors keep it readable.
-// Explicit selection tint for long-press copy. iOS won't paint the DEFAULT
-// highlight on the chat's colored/nested <Text selectable> (the same quirk
-// NativeTerm hits), so we force a visible band — same blue the terminal overlay
-// uses. Without this, long-press copies but shows no highlight.
+// Android range-selection tint. iOS block Copy feedback is owned by CopyableText.
 const SEL_COLOR = 'rgba(52,120,247,0.5)';
 const hitSlop = {top: 8, bottom: 8, left: 12, right: 12};
 const CHAT_FG = 'rgba(255,255,255,0.92)'; // primary text on the dark chat surface
@@ -361,6 +359,7 @@ export function ChatView({readOnly = false, agent, lines, status, fontSize, lang
   const liveShown = lines.slice(Math.max(0, end - 14), end);
 
   return (
+    <CopyFeedbackContext.Provider value>
     <View style={styles.root}>
       {/* FIXED one-tap collapse / expand-all bar (outside the scroll, so it's always
           reachable even after the chat auto-scrolls to the latest turn). */}
@@ -527,13 +526,13 @@ export function ChatView({readOnly = false, agent, lines, status, fontSize, lang
                   <View style={styles.userRow}>
                     <View style={styles.userBubble}>
                       {collapsed ? (
-                        <Text selectable selectionColor={SEL_COLOR} numberOfLines={8}
+                        <CopyableText lang={lang} selectable selectionColor={SEL_COLOR} numberOfLines={8}
                           style={[styles.userText, {fontFamily, fontSize, lineHeight}]}>
                           {t.prompt}
-                        </Text>
+                        </CopyableText>
                       ) : (
                         <MarkdownView source={t.prompt} colors={USER_MD_COLORS} fontSize={fontSize}
-                          fontFamily={fontFamily} selectable selectionColor={SEL_COLOR} />
+                          fontFamily={fontFamily} lang={lang} selectable selectionColor={SEL_COLOR} />
                       )}
                     </View>
                     {t.from ? <SenderAvatar from={t.from} size={26} /> : <UserAvatar size={26} />}
@@ -588,7 +587,7 @@ export function ChatView({readOnly = false, agent, lines, status, fontSize, lang
                           follow-ups looking orphaned. */}
                       <AgentAvatar agent={agentForTurn(t, agent)} size={26} radius={7} bg="#1C1C1F" fg="rgba(235,235,245,0.7)" />
                       <View style={styles.agentBubble}>
-                        <MarkdownView source={seg.text} colors={MD_COLORS} fontSize={fontSize} fontFamily={fontFamily} selectable selectionColor={SEL_COLOR} />
+                        <MarkdownView source={seg.text} colors={MD_COLORS} fontSize={fontSize} fontFamily={fontFamily} lang={lang} selectable selectionColor={SEL_COLOR} />
                       </View>
                     </View>
                   )}
@@ -695,6 +694,7 @@ export function ChatView({readOnly = false, agent, lines, status, fontSize, lang
       )}
       <JumpToBottom visible={!atBottom && turns.length > 0} onPress={jumpToBottom} lang={lang} />
     </View>
+    </CopyFeedbackContext.Provider>
   );
 }
 

@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		079DDB2F5521E6812FA0D02F /* GtmuxActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1819D8849B51096E179E069 /* GtmuxActivityAttributes.swift */; };
+		093C8A7BF3C604829E356F61 /* CopyText.m in Sources */ = {isa = PBXBuildFile; fileRef = AE647AA99846EFD4CD81447D /* CopyText.m */; };
 		0C80B921A6F3F58F76C31292 /* libPods-GtmuxMobile.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DCACB8F33CDC322A6C60F78 /* libPods-GtmuxMobile.a */; };
 		11CF7E4DEBC3064007292C65 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
@@ -18,12 +19,14 @@
 		43F2CAF95925B646D7809AB3 /* DebugSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12685C65B3B24D76DCD8E1FC /* DebugSettings.swift */; };
 		488CA07828C353055FC40FE3 /* KeyCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = F614C1FAF7A8DE3E89DABBDB /* KeyCommands.swift */; };
 		4C4E22343DFB2E044AD8F4C3 /* KeyCommands.m in Sources */ = {isa = PBXBuildFile; fileRef = DDC63FD2A3416F739D0A1839 /* KeyCommands.m */; };
+		4CA2546E602365F6B5CE344E /* CopyTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B2317FBEDEE60A62CEA4AB6 /* CopyTextView.swift */; };
 		50B8E5CA296B6F03F6B84ECB /* TermSelectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 471385D5B115EF46A41392AC /* TermSelectionManager.swift */; };
 		5167744A528038764DAF9BD8 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 093EDA5FAEFE3016E1CC45F3 /* Haptics.swift */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		796520A51FA5C1C9E776A832 /* TermSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F72C64B2FB140D5F0520CA0D /* TermSelectionView.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		83BC7F134D226E8CB6317C68 /* HQMemory.m in Sources */ = {isa = PBXBuildFile; fileRef = 03497385A8CDE336A262AE97 /* HQMemory.m */; };
+		90337D0D47584D8ED7702B27 /* CopyTextManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2C35001BD69F212C27C0E37 /* CopyTextManager.swift */; };
 		9362A88EBB6225D84FBAA822 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6450CBE20B8C88B43F242B3C /* Foundation.framework */; };
 		9B1C87A523DBCCFF3901E6DB /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6534B8BD6B0B1AC648A6992 /* NotificationService.swift */; };
 		9CB616CCA2E1A0787F5AB6E3 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6450CBE20B8C88B43F242B3C /* Foundation.framework */; };
@@ -71,6 +74,7 @@
 /* Begin PBXFileReference section */
 		03497385A8CDE336A262AE97 /* HQMemory.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = HQMemory.m; path = GtmuxMobile/HQMemory.m; sourceTree = "<group>"; };
 		093EDA5FAEFE3016E1CC45F3 /* Haptics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = Haptics.swift; path = GtmuxMobile/Haptics.swift; sourceTree = "<group>"; };
+		0B2317FBEDEE60A62CEA4AB6 /* CopyTextView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CopyTextView.swift; sourceTree = "<group>"; };
 		0DE4F217AE1C55AC5BC16A0B /* TermSelection.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = TermSelection.m; sourceTree = "<group>"; };
 		12685C65B3B24D76DCD8E1FC /* DebugSettings.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = DebugSettings.swift; path = GtmuxMobile/DebugSettings.swift; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* GtmuxMobile.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GtmuxMobile.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -91,7 +95,9 @@
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = GtmuxMobile/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		8C33A1DEFD37FCD54FCBB330 /* GtmuxNotificationService.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GtmuxNotificationService.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		91D5E11FEF927BEFA4B1338A /* GtmuxWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GtmuxWidget.swift; sourceTree = "<group>"; };
+		A2C35001BD69F212C27C0E37 /* CopyTextManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CopyTextManager.swift; sourceTree = "<group>"; };
 		A660F7F131237D343EC00CAE /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		AE647AA99846EFD4CD81447D /* CopyText.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = CopyText.m; sourceTree = "<group>"; };
 		AE9A810E4413FBDAACA7916E /* LiveActivityModule.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = LiveActivityModule.swift; path = GtmuxMobile/LiveActivityModule.swift; sourceTree = "<group>"; };
 		CC356C44C721110E87B71238 /* GtmuxWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GtmuxWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		CD1AC6D8B3BC135CA56C5653 /* Haptics.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = Haptics.m; path = GtmuxMobile/Haptics.m; sourceTree = "<group>"; };
@@ -174,6 +180,17 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		5C84F1475037DF8166F36D53 /* CopyText */ = {
+			isa = PBXGroup;
+			children = (
+				0B2317FBEDEE60A62CEA4AB6 /* CopyTextView.swift */,
+				A2C35001BD69F212C27C0E37 /* CopyTextManager.swift */,
+				AE647AA99846EFD4CD81447D /* CopyText.m */,
+			);
+			name = CopyText;
+			path = CopyText;
+			sourceTree = "<group>";
+		};
 		7AD476B68475D8875A33F26E /* iOS */ = {
 			isa = PBXGroup;
 			children = (
@@ -200,6 +217,7 @@
 				C3ECC1BD2307C0A643A96A7C /* GtmuxWidget */,
 				AA2A85A60DAF96D974DC690A /* GtmuxNotificationService */,
 				2894C57B689AF715A87AC7F9 /* TermSelection */,
+				5C84F1475037DF8166F36D53 /* CopyText */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -464,6 +482,9 @@
 				E190B585A37BBB5CBBB56670 /* Haptics.m in Sources */,
 				488CA07828C353055FC40FE3 /* KeyCommands.swift in Sources */,
 				4C4E22343DFB2E044AD8F4C3 /* KeyCommands.m in Sources */,
+				4CA2546E602365F6B5CE344E /* CopyTextView.swift in Sources */,
+				90337D0D47584D8ED7702B27 /* CopyTextManager.swift in Sources */,
+				093C8A7BF3C604829E356F61 /* CopyText.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -87,3 +87,14 @@ test('a critical machine outranks "all normal", and HQ waiting outranks both', (
   expect(fleetHeadline(mk({status: 'working'}), [mk({status: 'idle'})], true, true)).toBe('机器资源紧张');
   expect(fleetHeadline(mk({status: 'waiting'}), [mk({status: 'idle'})], false, true)).toBe('needs your call');
 });
+
+test.each(['en', 'zh'])('HQ card speaks its action and fleet state, retaining its automation identifier (%s)', lang => {
+  const hq = mk({role: 'supervisor', status: 'idle'});
+  let tree!: renderer.ReactTestRenderer;
+  act(() => { tree = renderer.create(<HQCard hq={hq} agents={[hq]} pal={pal} lang={lang} onPress={() => {}} />); });
+  const card = tree.root.findByProps({testID: 'radar-hq-card'});
+  expect(card.props.accessibilityRole).toBe('button');
+  expect(card.props.accessibilityLabel).toBe(lang === 'zh' ? '打开 HQ' : 'Open HQ');
+  expect(card.props.accessibilityHint).toBe(fleetHeadline(hq, [], lang === 'zh'));
+  act(() => tree.unmount());
+});

@@ -7,6 +7,7 @@ import React from 'react';
 import {Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {Block, Inline, parseBlocks} from './markdown';
 import {DisclosureChevron} from './DisclosureChevron';
+import {CopyableText} from './CopyableText';
 import {Lang} from '../i18n';
 
 export interface MdColors {
@@ -24,9 +25,7 @@ interface Props {
   colors: MdColors;
   fontSize?: number;
   selectable?: boolean; // long-press to select + Copy (per block; chat uses this)
-  // iOS won't paint the DEFAULT selection tint on nested/colored <Text selectable>
-  // (the same quirk NativeTerm works around). Passing an explicit selectionColor
-  // forces the highlight to render, so the chat shows a visible selection band.
+  // Android range-selection tint. iOS highlights the whole block during Copy.
   selectionColor?: string;
   // Optional font family for PROSE blocks (headings/paragraphs/lists/quotes/tables);
   // chat passes the terminal's font so the two surfaces match. Code stays monospace.
@@ -141,6 +140,7 @@ function TableRow({
   sc,
   ff,
   calm,
+  lang,
 }: {
   cells: Inline[][];
   align: import('./markdown').Align[];
@@ -151,12 +151,13 @@ function TableRow({
   sc?: string;
   ff?: string;
   calm?: boolean;
+  lang?: Lang;
 }) {
   return (
     <View style={styles.tr}>
       {cells.map((cell, i) => (
         <View key={i} style={[styles.td, {borderColor: c.border, backgroundColor: header ? c.codeBg : 'transparent'}]}>
-          <Text
+          <CopyableText lang={lang}
             selectable={sel}
             selectionColor={sc}
             style={{
@@ -168,7 +169,7 @@ function TableRow({
               textAlign: align[i] ?? 'left',
             }}>
             {renderSpans(cell, c, fs, calm)}
-          </Text>
+          </CopyableText>
         </View>
       ))}
     </View>
@@ -202,13 +203,13 @@ function Paragraph({
   const long = clamp === true && plainLength(b.spans) > PROSE_CLAMP_CHARS;
   const [open, setOpen] = React.useState(false);
   const body = (
-    <Text
+    <CopyableText lang={lang}
       selectable={sel}
       selectionColor={sc}
       numberOfLines={long && !open ? PROSE_CLAMP_LINES : undefined}
       style={[styles.block, {color: c.text, fontFamily: ff, fontSize: fs, lineHeight: fs * 1.45}]}>
       {renderSpans(b.spans, c, fs, calm)}
-    </Text>
+    </CopyableText>
   );
   if (!long) return body;
   return (
@@ -344,9 +345,9 @@ function StackedTable({b, c, fs, sel, sc, ff, calm, fold, lang = 'en'}: {b: Extr
                 <DisclosureChevron open={!shut} color={c.dim} />
               </TouchableOpacity>
             ) : (
-              <Text selectable={sel} selectionColor={sc} style={{color: c.text, fontFamily: ff, fontSize: fs, fontWeight: '600', lineHeight: fs * 1.4, marginBottom: 3}}>
+              <CopyableText lang={lang} selectable={sel} selectionColor={sc} style={{color: c.text, fontFamily: ff, fontSize: fs, fontWeight: '600', lineHeight: fs * 1.4, marginBottom: 3}}>
                 {renderSpans(r.head, c, fs, calm)}
-              </Text>
+              </CopyableText>
             )}
             {!shut && r.fields.map((f, j) => (
               <View key={j} style={fold ? styles.stackFieldVertical : styles.stackField}>
@@ -356,9 +357,9 @@ function StackedTable({b, c, fs, sel, sc, ff, calm, fold, lang = 'en'}: {b: Extr
                 {fold ? (
                   <Paragraph b={{t: 'p', spans: f.value}} c={c} fs={fs} sel={sel} sc={sc} ff={ff} calm={calm} clamp lang={lang} />
                 ) : (
-                  <Text selectable={sel} selectionColor={sc} style={{flex: 1, color: c.text, fontFamily: ff, fontSize: fs - 1, lineHeight: (fs - 1) * 1.4}}>
+                  <CopyableText lang={lang} selectable={sel} selectionColor={sc} style={{flex: 1, color: c.text, fontFamily: ff, fontSize: fs - 1, lineHeight: (fs - 1) * 1.4}}>
                     {renderSpans(f.value, c, fs - 1, calm)}
-                  </Text>
+                  </CopyableText>
                 )}
               </View>
             ))}
@@ -373,9 +374,9 @@ function BlockView({b, c, fs, sel, sc, ff, calm, fold, clampProse, lang}: {b: Bl
   switch (b.t) {
     case 'h':
       return (
-        <Text selectable={sel} selectionColor={sc} style={[styles.block, {color: c.text, fontFamily: ff, fontSize: fs + ((calm ? HEADING_SIZE_CALM : HEADING_SIZE)[b.level] ?? 0), fontWeight: '700', lineHeight: (fs + 6) * 1.3, marginTop: calm ? 10 : 0}]}>
+        <CopyableText lang={lang} selectable={sel} selectionColor={sc} style={[styles.block, {color: c.text, fontFamily: ff, fontSize: fs + ((calm ? HEADING_SIZE_CALM : HEADING_SIZE)[b.level] ?? 0), fontWeight: '700', lineHeight: (fs + 6) * 1.3, marginTop: calm ? 10 : 0}]}>
           {renderSpans(b.spans, c, fs, calm)}
-        </Text>
+        </CopyableText>
       );
     case 'p':
       return <Paragraph b={b} c={c} fs={fs} sel={sel} sc={sc} ff={ff} calm={calm} clamp={clampProse} lang={lang} />;
@@ -386,7 +387,7 @@ function BlockView({b, c, fs, sel, sc, ff, calm, fold, clampProse, lang}: {b: Bl
           showsHorizontalScrollIndicator={false}
           style={[styles.codeBlock, {backgroundColor: c.codeBg, borderColor: c.border}]}
           contentContainerStyle={styles.codeBlockContent}>
-          <Text selectable={sel} selectionColor={sc} style={[styles.codeBlockText, {color: c.code, fontSize: fs - 1, lineHeight: (fs - 1) * 1.4}]}>{b.text}</Text>
+          <CopyableText lang={lang} selectable={sel} selectionColor={sc} style={[styles.codeBlockText, {color: c.code, fontSize: fs - 1, lineHeight: (fs - 1) * 1.4}]}>{b.text}</CopyableText>
         </ScrollView>
       );
     case 'ul':
@@ -396,7 +397,7 @@ function BlockView({b, c, fs, sel, sc, ff, calm, fold, clampProse, lang}: {b: Bl
           {b.items.map((item, i) => (
             <View key={i} style={styles.li}>
               <Text style={[styles.bullet, {color: c.dim, fontFamily: ff, fontSize: fs, lineHeight: fs * 1.45}]}>{b.t === 'ol' ? `${b.start + i}. ` : '• '}</Text>
-              <Text selectable={sel} selectionColor={sc} style={[styles.liText, {color: c.text, fontFamily: ff, fontSize: fs, lineHeight: fs * 1.45}]}>{renderSpans(item, c, fs, calm)}</Text>
+              <CopyableText lang={lang} selectable={sel} selectionColor={sc} style={[styles.liText, {color: c.text, fontFamily: ff, fontSize: fs, lineHeight: fs * 1.45}]}>{renderSpans(item, c, fs, calm)}</CopyableText>
             </View>
           ))}
         </View>
@@ -404,7 +405,7 @@ function BlockView({b, c, fs, sel, sc, ff, calm, fold, clampProse, lang}: {b: Bl
     case 'quote':
       return (
         <View style={[styles.quote, {borderLeftColor: c.border}]}>
-          <Text selectable={sel} selectionColor={sc} style={{color: c.dim, fontFamily: ff, fontSize: fs, lineHeight: fs * 1.45, fontStyle: 'italic'}}>{renderSpans(b.spans, c, fs, calm)}</Text>
+          <CopyableText lang={lang} selectable={sel} selectionColor={sc} style={{color: c.dim, fontFamily: ff, fontSize: fs, lineHeight: fs * 1.45, fontStyle: 'italic'}}>{renderSpans(b.spans, c, fs, calm)}</CopyableText>
         </View>
       );
     case 'table':
@@ -416,9 +417,9 @@ function BlockView({b, c, fs, sel, sc, ff, calm, fold, clampProse, lang}: {b: Bl
       return (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.block}>
           <View>
-            <TableRow cells={b.header} align={b.align} c={c} fs={fs} header sel={sel} sc={sc} ff={ff} calm={calm} />
+            <TableRow cells={b.header} align={b.align} c={c} fs={fs} header sel={sel} sc={sc} ff={ff} calm={calm} lang={lang} />
             {b.rows.map((row, i) => (
-              <TableRow key={i} cells={row} align={b.align} c={c} fs={fs} sel={sel} sc={sc} ff={ff} calm={calm} />
+              <TableRow key={i} cells={row} align={b.align} c={c} fs={fs} sel={sel} sc={sc} ff={ff} calm={calm} lang={lang} />
             ))}
           </View>
         </ScrollView>

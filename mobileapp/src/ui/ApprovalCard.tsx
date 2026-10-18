@@ -47,7 +47,9 @@ export function ApprovalCard({
             <TouchableOpacity
               key={o.n}
               onPress={() => onSend(o.n)}
-              accessibilityLabel={`reply-${o.n}`}
+              testID={`reply-${o.n}`}
+              accessibilityRole="button"
+              accessibilityLabel={`${o.n}. ${o.label || (lang === 'zh' ? '选择此项' : 'Choose this option')}`}
               style={[
                 styles.optRow,
                 i < options.length - 1 && {
