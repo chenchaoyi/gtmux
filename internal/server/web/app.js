@@ -297,7 +297,7 @@
     // The next successful pairing restores only panes in its authorized roster.
     if (WB.tiles.length) {
       WB.saved = WB.tiles.map(function (t) { return {id: t.id, x: t.x, y: t.y, w: t.w, h: t.h, mode: t.mode}; });
-      WB.tiles.forEach(function (t) { clearInterval(t.timer); t.removed = true; if (t.term) t.term.dispose(); t.el.remove(); });
+      WB.tiles.forEach(function (t) { clearInterval(t.timer); t.removed = true; if (t.inputDispose) t.inputDispose(); if (t.term) t.term.dispose(); t.el.remove(); });
       WB.tiles = []; maxedTile = null; $('board').classList.remove('maximized');
       var exit = $('board').querySelector('.max-exit'); if (exit) exit.remove();
     }
@@ -1377,11 +1377,13 @@
     el.classList.toggle('cap-ro', !can);
     el.textContent = can ? T('⌨ can type', '⌨ 可输入') : T('👁 read-only', '👁 只读');
   }
+  var paneComposer = null;
   function updateInputBar() {
     var bar = $('pane-input'); if (!bar) return;
     var inPaneTerm = !$('pane').hidden && paneMode === 'term';
     var can = paneCanInput(curPane);
     bar.hidden = !(inPaneTerm && can);
+    if (paneComposer && paneComposer.sync) paneComposer.sync(inPaneTerm && can);
     // read-only panes state WHY there is no input row (one line, no empty textbox)
     var ro = $('pane-ro'); if (ro) ro.hidden = !(inPaneTerm && SHARE.known && !can);
     $('pane').classList.toggle('has-input', inPaneTerm && SHARE.known);
@@ -1417,6 +1419,7 @@
     if (!t) return;
     var can = paneCanInput(t.id);
     if (t.inputEl) t.inputEl.hidden = !(t.mode === 'term' && can);
+    if (t.inputSync) t.inputSync(t.mode === 'term' && can);
     if (t.roEl) t.roEl.hidden = !(t.mode === 'term' && SHARE.known && !can);
     if (t.capEl) { t.capEl.hidden = !SHARE.known; setCapChip(t.capEl, can); }
   }
@@ -1483,9 +1486,11 @@
     row.appendChild(attach); row.appendChild(file); row.appendChild(ta); row.appendChild(send);
 
     var keys = document.createElement('div'); keys.className = 'cx-keys';
+    var terminalKeyboard = window.GtmuxTerminalKeys ? window.GtmuxTerminalKeys.create({zh: ZH, getId: getId, canInput: function () {return paneCanInput(getId());}, request: api, send: postSend, echo: echo}) : null;
+    if (terminalKeyboard) keys.appendChild(terminalKeyboard.button);
     [['Tab', '⇥', 'Tab'], ['Escape', 'esc', 'Esc'], ['C-c', '^C', 'Ctrl-C'], ['Up', '↑', 'Up'], ['Down', '↓', 'Down']].forEach(function (k) {
       var b = document.createElement('button'); b.type = 'button'; b.textContent = k[1]; b.title = k[2];
-      b.onclick = function (e) { e.stopPropagation(); postSend(getId(), {key: k[0]}).then(function (r) { then(r); }); ta.focus(); };
+      b.onclick = function (e) { e.stopPropagation(); if (terminalKeyboard && terminalKeyboard.legacy(k[0])) return; postSend(getId(), {key: k[0]}).then(function (r) { then(r); }); ta.focus(); };
       keys.appendChild(b);
     });
 
@@ -1498,6 +1503,7 @@
     var note = document.createElement('div');
     note.className = 'cx-note'; note.hidden = true;
 
+    if (terminalKeyboard) root.appendChild(terminalKeyboard.notice);
     root.appendChild(row); root.appendChild(keys); root.appendChild(note);
 
     var noteTimer = null;
@@ -1555,6 +1561,7 @@
       r.json().then(function (j) { if (j && typeof j.text === 'string') echo(j.text); });
     }
     function submit() {
+      if (terminalKeyboard && terminalKeyboard.blocked()) return;
       var v = ta.value;
       if (!v.trim()) return;
       ta.value = ''; grow(); clearNote();
@@ -1578,7 +1585,7 @@
       }).catch(function () { attach.disabled = false; attach.textContent = '＋'; });
     }
 
-    return {el: root, focus: function () { ta.focus(); }, input: ta};
+    return {el: root, focus: function () { ta.focus(); }, input: ta, sync: function (visible) {if (terminalKeyboard) terminalKeyboard.sync(visible);}, dispose: function () {if (terminalKeyboard) terminalKeyboard.dispose();}};
   }
 
   // openAgent enters the pane view for an agent; the selected tab (terminal mirror
@@ -2350,6 +2357,7 @@
     cancelRead('tile:' + t.id);
     t.removed = true;
     clearInterval(t.timer); if (t.term) { try { t.term.dispose(); } catch (e) {} }
+    if (t.inputDispose) t.inputDispose();
     t.el.remove(); WB.tiles = WB.tiles.filter(function (x) { return x !== t; });
     updateEmpty(); wbSave();
   }
@@ -2385,7 +2393,7 @@
     // shared-input row (web-shared-input): the SAME composer as the single-pane view,
     // in its compact variant — shown for a term-mode tile the host allowed.
     var tc = makeComposer((function (tid) { return function () { return tid; }; })(t.id), function (text) { if (t.term) tileWrite(t, text); }, true);
-    tc.el.hidden = true; t.inputEl = tc.el;
+    tc.el.hidden = true; t.inputEl = tc.el; t.inputSync = tc.sync; t.inputDispose = tc.dispose;
     el.appendChild(tc.el);
     // read-only note — states WHY there's no input row instead of leaving a gap
     var ro = document.createElement('div'); ro.className = 'tile-ro'; ro.hidden = true;
@@ -2632,7 +2640,7 @@
     // Shared composer (multiline + attach/upload + key strip) → POST /api/send. The
     // server gate (guest consent + allowlist) stays authoritative; this just targets
     // the current pane and echoes the post-send screen.
-    var paneComposer = makeComposer(function () { return curPane; }, function (text) { renderPane(text); hidePaneLoader(); }, false);
+    paneComposer = makeComposer(function () { return curPane; }, function (text) { renderPane(text); hidePaneLoader(); }, false);
     if ($('pane-input')) $('pane-input').appendChild(paneComposer.el);
     $('jump').onclick = function () { if (term) term.scrollToBottom(); updateJump(false); };
   }

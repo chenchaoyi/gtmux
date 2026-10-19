@@ -59,7 +59,7 @@ function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
   const marker = "  if (document.readyState === 'loading')";
   assert.ok(source.includes(marker), 'web boot marker changed');
   const script = source.replace(marker, `
-    globalThis.__test = {toolStepsEl, drawChat, renderTileChat, mdRender, labelChrome, setupCodeBox, connStateFor, makeComposer, isHQPane, paneSessionTitle, paneToAgent, renderPanes, renderRadar,
+    globalThis.__test = {toolStepsEl, updateInputBar, setupFocus, drawChat, renderTileChat, mdRender, labelChrome, setupCodeBox, connStateFor, makeComposer, isHQPane, paneSessionTitle, paneToAgent, renderPanes, renderRadar,
       openConversation, pollConversation, conversationControls, readableConversation, nativeSourceLabel, nativeEvidenceLabel, launchHost,
  setExternalSettings: s => {externalSettings=s;}, show, gate, runRead, cancelReads, pollPane, pollChat, pollRadar, renderChat, tilePollChat, renderTree, treeRow, renderCmdk, cyclePane,
       onDraw: fn => {drawChat = fn;},
@@ -986,6 +986,15 @@ for (const [language, idleLabel] of [['en-US', 'idle'], ['zh-CN', '空闲']]) {
   });
 }
 
+
+test('single-pane input sync uses the composer created during focus setup', () => {
+  const h = harness({ok: true});
+  const visibility = [];
+  h.context.window.GtmuxTerminalKeys = {create: () => ({button: {}, notice: {}, sync: visible => visibility.push(visible)})};
+  h.api.setupFocus();
+  assert.doesNotThrow(() => h.api.updateInputBar());
+  assert.deepEqual(visibility, [false]);
+});
 
 test('activity counts repeated tools and renders ordered plain-text details', () => {
   const h = harness({ok:true});

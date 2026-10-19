@@ -4,6 +4,7 @@ import renderer, {act} from 'react-test-renderer';
 import {launchImageLibrary} from 'react-native-image-picker';
 import {Composer} from './Composer';
 import {ImageMarkup} from './ImageMarkup';
+import {AttachSheet} from './AttachSheet';
 import {paletteFor} from './theme';
 
 // A picked photo opens the markup editor. That is the operator's call, made after one
@@ -58,7 +59,7 @@ const chooseLibrary = async (t: renderer.ReactTestRenderer) => {
   act(() => t.root.findAllByProps({testID: 'composer-kbd'})[0].props.onPress());
   act(() => t.root.findAllByProps({testID: 'composer-attach'})[0].props.onPress());
   act(() => t.root.findAll(n => n.props?.testID === 'attach-0')[0].props.onPress());
-  const sheet = t.root.findAll(n => n.props?.onDismiss != null && n.props?.animationType != null)[0];
+  const sheet = t.root.findByType(AttachSheet).findAll(n => n.props?.onDismiss != null && n.props?.animationType != null)[0];
   // The sheet returns the deferred picker promise so React's async act can cover the
   // resulting Composer state update instead of letting it land after the assertion.
   await act(async () => {

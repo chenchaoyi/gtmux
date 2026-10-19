@@ -1,7 +1,9 @@
 import React from 'react';
-import {StyleSheet, Text} from 'react-native';
+import {StyleSheet, Text, TextInput} from 'react-native';
 import renderer, {act} from 'react-test-renderer';
 import {Composer} from './Composer';
+import {TerminalKeyPanel} from './TerminalKeyPanel';
+import type {InputCapabilities, KeyResult} from './terminalKeys';
 import {paletteFor} from './theme';
 import {TestIds} from '../constants/testIds';
 import {Haptics} from '../native/haptics';
@@ -117,4 +119,23 @@ test('symbol keys have readable glyphs, 44pt targets and spoken labels', async (
     expect(StyleSheet.flatten(label!.props.style).fontSize).toBeGreaterThanOrEqual(24);
     expect(label!.props.allowFontScaling).toBe(false); // printed key symbols behave like the adjacent vector icons
   }
+});
+
+
+test('a terminal key blocks even a text-send callback captured before the next render', async () => {
+ const onSend = jest.fn();
+ let finish!: (r: KeyResult) => void;
+ const sendKey = () => new Promise<KeyResult>(resolve => {finish = resolve;});
+ const load = async (): Promise<InputCapabilities> => ({version:1, can_input:true, context:{boot:'b',pane_binding:'p',proof:'s',expires_at:Math.floor(Date.now()/1000)+120},retry_seconds:120,keys:[],actions:[]});
+ let tree!: renderer.ReactTestRenderer;
+ await act(async () => {tree = renderer.create(<Composer pal={pal} lang="en" demo onSend={onSend} keyTarget="fixture|%1" onLoadKeys={load} onSendKey={sendKey} />);});
+ mounted.push(tree);
+ act(() => tree.root.findAllByProps({testID:'composer-kbd'})[0].props.onPress());
+ act(() => tree.root.findAllByType(TextInput)[0].props.onChangeText('Keep this draft'));
+ const submit = tree.root.find(n => n.props.testID === 'composer-send' && typeof n.props.onPress === 'function').props.onPress;
+ const control = tree.root.findByType(TerminalKeyPanel).props.control;
+ act(() => {control.fire({key:'F2',modifiers:[]});submit();});
+ expect(onSend).not.toHaveBeenCalled();
+ expect(tree.root.findAllByType(TextInput)[0].props.value).toBe('Keep this draft');
+ await act(async () => finish({ok:true}));
 });
