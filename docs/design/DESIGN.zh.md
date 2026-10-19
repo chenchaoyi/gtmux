@@ -242,6 +242,14 @@ gtmux 支持 tmux 里的 agent，也支持直接跑在原生终端（无 tmux）
 
 CLI、API、HQ 边界与知识采集时间见[桌面跟进设计](desktop-follow.zh.md)。
 
+### 外部会话分组的展示
+
+“外部会话”和“不在 tmux”均有独立记忆的展开／收起标题按钮，折叠后保留箭头和数量，
+从扁平列表中移除所属行；其他分组和逐对话跟进设置不受影响。没有记录 PID、也未主动
+开启 HQ 跟进的已完成／空闲 Codex 观察记录退出实时总览；核心保留观察与历史，新的
+工作中／等待输入事件可使其重新显示。这表示缺少存活依据，不表示确认前端已经关闭。
+详见[agent 接入机制](../guides/agent-integrations.zh.md#哪些外部-codex-对话继续显示)。
+
 ### Native 启动宿主历史观察
 
 有有效 `launch_host` 时，副标题显示 harness 与宿主，例如 `Codex · sample-client`；

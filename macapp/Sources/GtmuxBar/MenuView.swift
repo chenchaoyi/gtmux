@@ -17,7 +17,7 @@ struct MenuView: View {
     @ObservedObject var share = ShareStore.shared
     @ObservedObject private var updater = Updater.shared
     @ObservedObject private var health = EnvironmentHealth.shared
-    @ObservedObject private var collapse = SectionCollapse.shared
+    @ObservedObject var collapse = SectionCollapse.shared
     @ObservedObject private var visibility = MenuVisibility.shared
     /// The HQ card's report (menubar-hq-report): open or closed, remembered across
     /// openings. It also opens itself the moment the card turns red — see
@@ -505,9 +505,9 @@ struct MenuView: View {
                                 }
                             }
                         case let .nativeHeader(count):
-                            NativeHeader(count: count, l10n: l10n)
+                            NativeHeader(count: count, l10n: l10n, collapsed: collapse.isCollapsed(.elsewhere)) { collapse.toggle(.elsewhere) }
                         case let .desktopHeader(count):
-                            NativeHeader(count: count, l10n: l10n, desktop: true)
+                            NativeHeader(count: count, l10n: l10n, desktop: true, collapsed: collapse.isCollapsed(.external)) { collapse.toggle(.external) }
                         case let .native(agent):
                             // Sense-only: no jump on tap, no reply. Adoptable ones can
                             // be resumed into tmux.
@@ -557,7 +557,7 @@ struct MenuView: View {
 
     /// Flattened list of section headers + agent rows, each with a stable id, so
     /// SwiftUI reconciles a single identity space (no cross-section staleness).
-    private enum ListItem: Identifiable {
+    enum ListItem: Identifiable {
         case header(Status, Bool, Int) // status, errored-section?, count
         case agent(Agent, Int) // agent + its flat index (for keyboard selection)
         case desktopHeader(Int)
@@ -580,7 +580,7 @@ struct MenuView: View {
         }
     }
 
-    private var listItems: [ListItem] {
+    var listItems: [ListItem] {
         var items: [ListItem] = []
         var idx = 0
         for section in sections {
@@ -605,12 +605,16 @@ struct MenuView: View {
         let natives = store.nativeSessions(query: query)
         if !natives.isEmpty {
             items.append(.nativeHeader(natives.count))
-            for a in natives { items.append(.native(a)) }
+            if !collapse.isCollapsed(.elsewhere) {
+                for a in natives { items.append(.native(a)) }
+            }
         }
         let desktops = store.nativeSessions(query: query, desktop: true)
         if !desktops.isEmpty {
             items.append(.desktopHeader(desktops.count))
-            for a in desktops { items.append(.native(a)) }
+            if !collapse.isCollapsed(.external) {
+                for a in desktops { items.append(.native(a)) }
+            }
         }
         return items
     }
@@ -1076,48 +1080,34 @@ private struct SectionHeader: View {
     }
 }
 
-/// SectionCollapse remembers which popover sections the user folded (A4), so the
-/// choice survives reopen. The count stays visible when a section is collapsed.
-final class SectionCollapse: ObservableObject {
-    static let shared = SectionCollapse()
-    @Published private var collapsed: Set<String>
-    private let key = "popover.collapsedSections"
-
-    private init() {
-        let raw = UserDefaults.standard.string(forKey: key) ?? ""
-        collapsed = Set(raw.split(separator: ",").map(String.init))
-    }
-
-    /// The errored section folds on its OWN key: folding "finished" must not take the
-    /// failures with it, which is what a shared key would do (both are idle sessions).
-    private func key(_ s: Status, errored: Bool) -> String { errored ? "errored" : s.rawValue }
-
-    func isCollapsed(_ s: Status, errored: Bool = false) -> Bool { collapsed.contains(key(s, errored: errored)) }
-
-    func toggle(_ s: Status, errored: Bool = false) {
-        let k = key(s, errored: errored)
-        if collapsed.contains(k) { collapsed.remove(k) } else { collapsed.insert(k) }
-        UserDefaults.standard.set(collapsed.sorted().joined(separator: ","), forKey: key)
-    }
-}
-
 // MARK: - Native (non-tmux) category
 
 /// Header for the sensed non-tmux sessions — visually quieter than the status
 /// groups (these are informational, not actionable in place).
-private struct NativeHeader: View {
+struct NativeHeader: View {
     let count: Int
     @ObservedObject var l10n: L10n
     var desktop = false
+    let collapsed: Bool
+    var onToggle: () -> Void
     @Environment(\.colorScheme) private var scheme
     var body: some View {
         let p = Theme.Palette.of(scheme)
-        HStack(spacing: 6) {
-            Text(desktop ? l10n.tr("EXTERNAL CODEX", "外部会话") : l10n.tr("ELSEWHERE", "不在 tmux")).font(Theme.Font.section).kerning(0.5).foregroundStyle(p.fg3)
-            Text("\(count)").font(.system(size: 9, weight: .bold)).foregroundStyle(p.fg3)
-            Spacer()
-            Text(desktop ? l10n.tr("Follow per conversation", "按会话设置跟进") : l10n.tr("sensed · not in tmux", "已感知 · 不在 tmux")).font(Theme.Font.footer).foregroundStyle(p.fg3)
+        Button(action: onToggle) {
+            HStack(spacing: 6) {
+                Text(desktop ? l10n.tr("EXTERNAL SESSIONS", "外部会话") : l10n.tr("ELSEWHERE", "不在 tmux")).font(Theme.Font.section).kerning(0.5).foregroundStyle(p.fg3)
+                Text("\(count)").font(.system(size: 9, weight: .bold)).foregroundStyle(p.fg3)
+                Spacer()
+                Text(collapsed ? l10n.tr("Show", "展开") : l10n.tr("Hide", "收起"))
+                    .font(Theme.Font.footer).foregroundStyle(p.fg3)
+                Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold)).foregroundStyle(p.fg3)
+                    .rotationEffect(.degrees(collapsed ? 0 : 90))
+                    .animation(.easeInOut(duration: 0.15), value: collapsed)
+            }
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .accessibilityValue(collapsed ? l10n.tr("Collapsed", "已收起") : l10n.tr("Expanded", "已展开"))
         .padding(.horizontal, 12).padding(.top, 9).padding(.bottom, 2)
     }
 }

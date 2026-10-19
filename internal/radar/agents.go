@@ -1649,6 +1649,11 @@ func nativePanesScoped(tmuxPanes []Pane, profiles []agentProfile, now int64, cod
 				follow = &v
 			}
 		}
+		// Saved completion is history, not process liveness. Keep the observation
+		// and consent intact so a new turn or explicit follow can surface it again.
+		if r.Agent == "codex" && r.PID <= 0 && status == "idle" && (follow == nil || !follow.HQ) {
+			continue
+		}
 		// errored-idle, as for a tmux row: when the transcript reader finds the session's
 		// last message is an error (today a readable Claude log ending on an API error;
 		// a missing or unreadable log, or another agent's, reads as no error), the row

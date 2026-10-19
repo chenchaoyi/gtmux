@@ -195,9 +195,15 @@ func TestNativeCodexResumedRolloutCompletesAfterHook(t *testing.T) {
 		`{"timestamp":"2026-09-29T06:00:00Z","type":"event_msg","payload":{"type":"task_started"}}`)
 	write("rollout-2026-09-29T07-00-00-"+sid+"_instance.jsonl",
 		`{"timestamp":"2026-09-29T07:30:59Z","type":"event_msg","payload":{"type":"task_complete"}}`)
-	panes := nativePanes(nil, nil, now)
-	if len(panes) != 1 || panes[0].Status != "idle" || panes[0].Since != now-541 || panes[0].client != "chatgpt_desktop" || panes[0].adoptable {
-		t.Fatalf("resumed desktop Codex = %+v", panes)
+	r, ok := native.Load(sid, transcript.CodexHomeID())
+	if !ok {
+		t.Fatal("observation missing")
+	}
+	if status, since := NativeStatus(r); status != "idle" || since != now-541 {
+		t.Fatalf("resumed desktop Codex status=%s since=%d", status, since)
+	}
+	if panes := nativePanes(nil, nil, now); len(panes) != 0 {
+		t.Fatalf("completed PID-less history occupied live overview: %+v", panes)
 	}
 }
 
@@ -317,7 +323,8 @@ func TestNativePanesHideRecordWithNoEvidence(t *testing.T) {
 	}
 
 	// A conversation on disk is evidence enough — a real session whose process gtmux
-	// could not sense (Codex's detached hook path) must stay visible.
+	// could not sense must stay visible for non-Codex agents. Completed PID-less
+	// Codex observations have a separate live-overview eligibility rule.
 	dir := filepath.Join(os.Getenv("HOME"), ".claude", "projects", "p")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
