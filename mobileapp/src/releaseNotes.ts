@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.136',
+    en: [
+      'Use the Keys panel on phone, iPad and Web to send F1–F12 and one-shot Ctrl, Alt and Shift combinations.',
+      'Open supported Codex question hints without submitting your draft or adding a session status.',
+      'Read tool calls in a collapsible Activity card with ordered rows, descriptions and wrapping command summaries.',
+    ],
+    zh: [
+      '手机、iPad 和 Web 新增按键面板，支持 F1–F12 以及单次 Ctrl、Alt、Shift 组合键。',
+      '识别到 Codex 折叠问题提示时可直接查看，保留草稿，不增加会话状态。',
+      '工具调用整理为可折叠的执行过程卡片，按序展示工具名和描述，命令摘要可换行。',
+    ],
+  },
+  {
     version: '1.0.133',
     en: [
       'A clearer launch screen: every pane stays visible in light and dark appearance, with a shared native and in-app identity.',
