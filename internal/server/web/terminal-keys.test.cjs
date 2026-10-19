@@ -57,3 +57,17 @@ test('network uncertainty blocks later input and retry uses the same payload, ne
     walk(document.body).find(x=>x.textContent==='不重试，继续操作').click();assert.equal(keyboard.blocked(),false);
   } finally {keyboard.dispose();delete global.document;}
 });
+
+
+test('catalog cache is tied to the server boot and new schema-compatible keys render', async () => {
+ dom();let current=cap();const urls=[];
+ const keyboard=create({zh:false,getId:()=>'%1',canInput:()=>true,request:async url=>{urls.push(url);return {ok:true,json:async()=>current};},send:async()=>null,echo:()=>{}});
+ document.body.appendChild(keyboard.button);
+ try {
+  await keyboard.refresh();await flush();await keyboard.refresh();
+  assert.match(urls.at(-1),/catalog_version=1&catalog_boot=b/);
+  current={...cap(),context:{...cap().context,boot:'new-server'},keys:[{key:'F9',label:'F9',label_zh:'F9',group:'function',modifier_sets:[[]]}]};
+  await keyboard.refresh();keyboard.button.click();walk(document.body).find(x=>x.textContent==='Function').click();
+  assert.ok(walk(document.body).some(x=>x.dataset.key==='F9'));
+ } finally {keyboard.dispose();delete global.document;}
+});

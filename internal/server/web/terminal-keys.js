@@ -18,7 +18,7 @@
       if (getTarget() !== target) clearTarget();
       if (!target || reading) return Promise.resolve();
       var epoch = generation; reading = true;
-      return opts.request('/api/input-capabilities?id=' + encodeURIComponent(target) + (cap ? '&catalog_version=' + cap.version : '')).then(function (r) { var date = r && r.headers && r.headers.get('Date'); if (date && Number.isFinite(Date.parse(date))) clockOffset = Date.parse(date) - Date.now(); return r && r.ok ? r.json() : null; }).then(function (next) {
+      return opts.request('/api/input-capabilities?id=' + encodeURIComponent(target) + (cap ? '&catalog_version=' + cap.version + '&catalog_boot=' + encodeURIComponent(cap.context.boot) : '')).then(function (r) { var date = r && r.headers && r.headers.get('Date'); if (date && Number.isFinite(Date.parse(date))) clockOffset = Date.parse(date) - Date.now(); return r && r.ok ? r.json() : null; }).then(function (next) {
         if (epoch !== generation) return;
         if (next && next.version === 1 && next.context && Array.isArray(next.actions)) {
           next.keys = next.keys || (cap && cap.keys); next.legacy_events = next.legacy_events || (cap && cap.legacy_events); cap = next;

@@ -13,7 +13,7 @@ import {
 export type KeyResult =
   | {ok: true}
   | {ok: false; status?: number; reason: string};
-export type LoadKeys = (version?: number) => Promise<InputCapabilities | null>;
+export type LoadKeys = (version?: number, boot?: string) => Promise<InputCapabilities | null>;
 export type SendKey = (payload: SendPayload) => Promise<KeyResult>;
 
 export function useTerminalKeys(
@@ -41,7 +41,7 @@ export function useTerminalKeys(
     const epoch = active.current;
     refreshing.current = true;
     try {
-      const next = await load(cache.current?.version);
+      const next = await load(cache.current?.version, cache.current?.context.boot);
       if (epoch !== active.current) return;
       const merged = next
         ? {

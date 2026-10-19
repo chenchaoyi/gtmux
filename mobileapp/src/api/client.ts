@@ -691,8 +691,8 @@ export class GtmuxClient {
     return r.json();
   }
 
-  async inputCapabilities(id: string, version?: number): Promise<InputCapabilities | null> {
-    const r = await tfetch(`${this.base}/api/input-capabilities?id=${encodeURIComponent(id)}${version ? `&catalog_version=${version}` : ''}`, {headers: this.h()});
+  async inputCapabilities(id: string, version?: number, boot?: string): Promise<InputCapabilities | null> {
+    const r = await tfetch(`${this.base}/api/input-capabilities?id=${encodeURIComponent(id)}${version ? `&catalog_version=${version}&catalog_boot=${encodeURIComponent(boot ?? "")}` : ''}`, {headers: this.h()});
     if (r.status === 404 || r.status === 503) return null;
     if (!r.ok) throw new ApiError(r.status, 'input-capabilities');
     return parseInputCapabilities(await r.json());

@@ -356,7 +356,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
   );
   const keyRoute = useRef('');
   keyRoute.current = `${client.base}|${hq.pane_id}`;
-  const onLoadKeys = useCallback((version?: number) => client.inputCapabilities(hq.pane_id, version), [client, hq.pane_id]);
+  const onLoadKeys = useCallback((version?: number, boot?: string) => client.inputCapabilities(hq.pane_id, version, boot), [client, hq.pane_id]);
   const onSendKey = useCallback(async (payload: SendPayload) => {
     const route = keyRoute.current;
     const result = await client.sendResult(hq.pane_id, payload);

@@ -212,3 +212,26 @@ func TestTerminalKeyInputStrictAndUnconfirmed(t *testing.T) {
 		t.Fatal("old boot replayed")
 	}
 }
+
+func TestTerminalKeyCatalogCacheRequiresCurrentBoot(t *testing.T) {
+	s := New(Config{Token: testToken}, Deps{InputTarget: func(string) (terminalkeys.Target, error) { return terminalkeys.Target{Binding: "pane"}, nil }, InputKey: func(string, string, terminalkeys.Event, *terminalkeys.ActionRequest) error { return nil }})
+	read := func(query string) keyCapabilities {
+		t.Helper()
+		r := do(t, s.Handler(), "GET", "/api/input-capabilities?id=%251"+query, testToken)
+		var c keyCapabilities
+		if r.Code != 200 || json.Unmarshal(r.Body.Bytes(), &c) != nil {
+			t.Fatalf("catalog %d %s", r.Code, r.Body)
+		}
+		return c
+	}
+	first := read("")
+	for _, query := range []string{"&catalog_version=1", "&catalog_version=1&catalog_boot=previous-server"} {
+		if len(read(query).Keys) == 0 {
+			t.Fatal("same schema version hid the catalog from an older server boot")
+		}
+	}
+	cached := read("&catalog_version=1&catalog_boot=" + first.Context.Boot)
+	if len(cached.Keys) != 0 || cached.Context.Boot != first.Context.Boot {
+		t.Fatal("current boot did not reuse its catalog")
+	}
+}

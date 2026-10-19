@@ -157,3 +157,18 @@ test('malformed capability metadata is refused rather than enabling guessed comb
     }),
   ).toBeNull();
 });
+
+
+test('catalog reuse includes its server boot and accepts new keys without a schema bump', async () => {
+ let next = capabilities();
+ const load = jest.fn(async (_version?: number, _boot?: string) => next);
+ function Harness() {control = useTerminalKeys('host|%1', true, load);return null;}
+ await act(async () => {tree = renderer.create(<Harness />);});
+ await act(async () => {await control.refresh();});
+ expect(load).toHaveBeenLastCalledWith(1, 'boot');
+ next = {...capabilities(), context:{...capabilities().context,boot:'updated-server'},keys:[{key:'F9',label:'F9',label_zh:'F9',group:'function',modifier_sets:[[]]}]};
+ await act(async () => {await control.refresh();});
+ expect(control.cap?.version).toBe(1);expect(control.cap?.keys?.[0].key).toBe('F9');
+ await act(async () => {await control.refresh();});
+ expect(load).toHaveBeenLastCalledWith(1, 'updated-server');
+});

@@ -89,7 +89,7 @@ func (s *Server) handleInputCapabilities(w http.ResponseWriter, r *http.Request)
 	}
 	w.Header().Set("Cache-Control", "no-store")
 	cap := keyCapabilities{Version: terminalkeys.Version, Context: c, CanInput: s.mayInputPane(r, id), Actions: actions, RetrySeconds: keyContextSeconds}
-	if r.URL.Query().Get("catalog_version") != strconv.Itoa(terminalkeys.Version) {
+	if r.URL.Query().Get("catalog_version") != strconv.Itoa(terminalkeys.Version) || r.URL.Query().Get("catalog_boot") != s.keyInputs.boot {
 		cap.Keys = terminalkeys.Catalog()
 		cap.LegacyEvents = terminalkeys.LegacyEvents()
 	}

@@ -580,7 +580,7 @@ function PaneDetailView({
   const onComposerSend = useCallback((p: SendPayload) => {
     sendRef.current(p);
   }, []);
-  const onLoadKeys = useCallback((version?: number) => client.inputCapabilities(agent.pane_id, version), [client, agent.pane_id]);
+  const onLoadKeys = useCallback((version?: number, boot?: string) => client.inputCapabilities(agent.pane_id, version, boot), [client, agent.pane_id]);
   const onSendKey = useCallback(async (p: SendPayload) => {
     const lane = paneRead.current;
     const r = await client.sendResult(agent.pane_id, p);

@@ -295,8 +295,9 @@ eligible; a native/external conversation does not gain an input target. Returns
 `version:1`, `can_input`, `keys`, `legacy_events`, `actions`, `retry_seconds:120` and
 `context:{boot,pane_binding,expires_at,proof}`. Context is opaque and caller/pane-bound;
 `proof` is signed with a private server secret, separate from the public boot ID.
-Responses use `Cache-Control: no-store`. `catalog_version=1` omits unchanged catalog
-fields. It does not omit current context, grants or contextual actions.
+Responses use `Cache-Control: no-store`. `catalog_version=1&catalog_boot=<context.boot>` omits the catalog only for that
+server boot. A new server boot always returns the complete catalog, so new keys within
+the existing schema do not require a client encoding update. It does not omit current context, grants or contextual actions.
 
 Keys contain `{key,label,label_zh,group,modifier_sets}`. Modifiers are `control`, `alt`
 and `shift`; only advertised sets are supported. The core owns the catalog and encoder

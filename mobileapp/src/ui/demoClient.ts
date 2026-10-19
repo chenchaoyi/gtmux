@@ -1,3 +1,4 @@
+import {serverNowSec} from '../api/clock';
 // demoClient — a FAKE GtmuxClient for the Demo tour. It answers the handful of
 // methods DetailView / ChatView / NativeTerm / ApprovalCard / DiffModal / HQScreen
 // call, over the canned data in demoData, with just enough state to feel live:
@@ -109,10 +110,10 @@ export function makeDemoClient(lang: 'en' | 'zh', onAgents?: (agents: Agent[]) =
   // Everything not named below MUST be implemented, so adding a client method is a
   // compile error here until someone decides what the tour should show.
   const fake: Omit<GtmuxClient, NotInDemo> & {dispose: () => void} = {
-    async inputCapabilities(id, version) {
+    async inputCapabilities(id, version, boot) {
       const can = demoPanes(initial).some(p => p.pane_id === id);
-      return {version: 1, can_input: can, context: {boot: 'demo', pane_binding: `demo-${id}`, expires_at: Math.floor(Date.now() / 1000) + 120, proof: 'demo'}, actions: [], retry_seconds: 120,
-        ...(version ? {} : demoKeyCatalog)} as InputCapabilities;
+      return {version: 1, can_input: can, context: {boot: 'demo', pane_binding: `demo-${id}`, expires_at: serverNowSec() + 120, proof: 'demo'}, actions: [], retry_seconds: 120,
+        ...(version === 1 && boot === 'demo' ? {} : demoKeyCatalog)} as InputCapabilities;
     },
     dispose() { clearTimeout(timer); },
     // No Mac behind this one. Anything building a URL from it would be reaching for a
