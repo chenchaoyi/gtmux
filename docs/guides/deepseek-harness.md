@@ -65,7 +65,8 @@ not authorize input. The same conversation is suppressed from external history
 rows while managed. Mac, phone, iPad, Web and CLI use the same core data and icon.
 
 Use ordinary pane capture/focus/chat/send workflows. `gtmux spawn --agent dsh`
-launches the declared client; verified terminal resume records relaunch that same
+launches the declared client directly in its chat workspace, skipping the landing
+screen; a native live root can be recognized before its first history file. Verified terminal resume records relaunch that same
 home/client. Select the model in dst: this adapter refuses generic `--model` and
 one-shot spawn. Submitted text travels through a session-targeted native command,
 with a private one-use request and an acceptance receipt from the actual receiving

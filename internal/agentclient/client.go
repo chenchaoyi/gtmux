@@ -31,20 +31,21 @@ var instancePattern = regexp.MustCompile(`^[a-f0-9]{32}$`)
 // Attachment is a short-lived native bridge witness, never a caller-supplied
 // path. Session and home identity are checked against the configured harness.
 type Attachment struct {
-	Version      int    `json:"version"`
-	Agent        string `json:"agent"`
-	Client       string `json:"client"`
-	Pane         string `json:"pane"`
-	PID          int    `json:"pid"`
-	Instance     string `json:"instance"`
-	HomeID       string `json:"home_id"`
-	SessionID    string `json:"session_id"`
-	Cwd          string `json:"cwd"`
-	ServerEpoch  string `json:"server_epoch"`
-	BindingEpoch int64  `json:"binding_epoch"`
-	StartedAt    int64  `json:"started_at"`
-	UpdatedAt    int64  `json:"updated_at"`
-	InputReady   bool   `json:"input_ready"`
+	Version       int    `json:"version"`
+	Agent         string `json:"agent"`
+	Client        string `json:"client"`
+	Pane          string `json:"pane"`
+	PID           int    `json:"pid"`
+	Instance      string `json:"instance"`
+	HomeID        string `json:"home_id"`
+	SessionID     string `json:"session_id"`
+	Cwd           string `json:"cwd"`
+	ServerEpoch   string `json:"server_epoch"`
+	BindingEpoch  int64  `json:"binding_epoch"`
+	StartedAt     int64  `json:"started_at"`
+	UpdatedAt     int64  `json:"updated_at"`
+	InputReady    bool   `json:"input_ready"`
+	NativeSession bool   `json:"native_session"`
 }
 
 func Dir() string { return filepath.Join(state.Dir(), "terminal-clients") }
@@ -93,7 +94,7 @@ func productionInspector() Inspector {
 			return false
 		}
 		s, err := dsh.Sessions.Resolve(id)
-		return err == nil && s.ID == id && s.Origin != "subagent"
+		return err == nil && s.ID == id && s.Origin != "subagent" || os.IsNotExist(err)
 	}}
 }
 
@@ -121,7 +122,7 @@ func Load(dir string, inspect Inspector) []Attachment {
 		provider, ok := adapters[a.Client]
 		if !ok || !declared(a.Agent, a.Client) || a.Version != ProtocolVersion ||
 			!panePattern.MatchString(a.Pane) || !instancePattern.MatchString(a.Instance) ||
-			a.PID <= 0 || a.SessionID == "" || len(a.SessionID) > 256 ||
+			!a.NativeSession || a.PID <= 0 || a.SessionID == "" || len(a.SessionID) > 256 ||
 			a.BindingEpoch <= 0 || a.StartedAt <= 0 || a.ServerEpoch == "" {
 			continue
 		}

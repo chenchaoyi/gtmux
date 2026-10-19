@@ -3,6 +3,7 @@ package agentclient
 import (
 	"encoding/json"
 	"errors"
+	"github.com/chenchaoyi/gtmux/internal/dsh"
 	"os"
 	"path/filepath"
 	"testing"
@@ -30,7 +31,7 @@ func attachmentFixture(t *testing.T) (string, Attachment, Inspector) {
 	now := time.Unix(1900000000, 0)
 	a := Attachment{Version: 1, Agent: "dsh", Client: "dst", Pane: "%44", PID: 99,
 		Instance: "0123456789abcdef0123456789abcdef", HomeID: "home", SessionID: "session", Cwd: "/work",
-		ServerEpoch: "7", BindingEpoch: 9, StartedAt: now.Add(-time.Minute).UnixMilli(), UpdatedAt: now.UnixMilli(), InputReady: true}
+		ServerEpoch: "7", BindingEpoch: 9, StartedAt: now.Add(-time.Minute).UnixMilli(), UpdatedAt: now.UnixMilli(), InputReady: true, NativeSession: true}
 	dir := filepath.Join(home, "bridges")
 	putJSON(t, filepath.Join(dir, "99.json"), a)
 	putJSON(t, filepath.Join(home, ".dsh-tui", "inject", "servers.json"), []any{map[string]any{"pid": 99, "sessionId": "session", "startedAt": 9}})
@@ -65,6 +66,7 @@ func TestAttachmentRejectsStaleForeignAndConflictingEvidence(t *testing.T) {
 		name string
 		edit func(*Attachment, *Inspector)
 	}{
+		{"no native root", func(a *Attachment, _ *Inspector) { a.NativeSession = false }},
 		{"stale", func(a *Attachment, _ *Inspector) { a.UpdatedAt -= 6000 }},
 		{"future", func(a *Attachment, _ *Inspector) { a.UpdatedAt += 6000 }},
 		{"wrong home", func(a *Attachment, _ *Inspector) { a.HomeID = "other" }},
@@ -126,4 +128,18 @@ func TestDirectPaneProcessIsValidAncestry(t *testing.T) {
 	if len(Load(dir, inspect)) != 1 {
 		t.Fatal("native host exec'd directly in pane was rejected")
 	}
+}
+
+func TestFreshNativeSessionCanPrecedeItsFirstDurableArtifact(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("DSH_HOME", t.TempDir())
+	inspect := productionInspector()
+	if !inspect.Session("dsh", dsh.HomeID(), "synthetic-unsaved") {
+		t.Fatal("fresh native session was required to persist before its first input")
+	}
+	if inspect.Session("dsh", "foreign", "synthetic-unsaved") {
+		t.Fatal("fresh session accepted a foreign home")
+	}
+	// The on-disk exception still requires the independently published native root
+	// proof in Load, pinned by the no-native-root attachment rejection above.
 }

@@ -29,9 +29,14 @@ deduplication and resume regressions pass. The installed dst manifest parser and
 actual native host admit the component and register its declared command. A native
 DSH CommandRuntime prototype queues only the addressed synthetic agent once.
 
-Live acceptance limitation: isolated dst 0.16.1 with official DSH 0.2.0-rc.2 shows
-a blank conversation UI, including a bridge-free control. Its static renderer
-smoke test succeeds. Therefore pane-to-composer delivery, live TUI queue acceptance,
-real model execution and live mobile/Mac UI acceptance are not established. The
-real existing pane was neither restarted nor sent a probe. This is author evidence,
-not independent review.
+Live acceptance: a clean pinned dst 0.16.1 / official DSH 0.2.0-rc.2 temporary
+installation displays the real chat UI. The normal verified CLI send reaches the
+actual native agent, returns a matching acceptance receipt and persists exactly one
+synthetic public message without its wire command. Its review cursor remains -1.
+This exposed and fixed landing-screen launch and unsaved-first-session identity
+boundaries. Earlier blank controls used mixed development dependency resolution;
+they are not the final acceptance result.
+
+Not covered: real model execution/completion, live mobile/Mac UI acceptance and an
+independent review of this patch. The real existing pane was neither restarted nor
+sent a probe. Local component/fixture checks remain author evidence.

@@ -10,7 +10,9 @@ external, read-only behavior and opt-in follow policy.
 
 `internal/agentclient` verifies a private, five-second native witness against the
 canonical DSH home, exact root session, tmux server epoch, live process ancestry,
-dst's foreground injection registry and its mounted-session registry. A background
+dst's foreground injection registry, mounted-session registry and a live v4 root
+from the native session registry. A fresh session may precede its first durable
+artifact; an existing corrupt or unsupported artifact is still refused. A background
 mount alone cannot select a pane. Conflicts and stale evidence revoke input. Radar
 and transcripts use the current binding; the same session is suppressed from the
 external list. All surfaces consume the shared core and existing official assets.
@@ -66,7 +68,8 @@ refused. Nonempty flow-style root arrays require manual conversion to a block
 sequence. No third-party npm package is installed or upgraded by gtmux.
 
 Ordinary `dst --backend dsh` uses the profile bridge. `spawn --agent dsh` selects
-this declared client; terminal resume records remain specific to the verified home
+this declared client with its launchpad disabled and an explicit current workspace,
+so a new goal waits for the chat composer; terminal resume records remain specific to the verified home
 and client. Web adoption stays disabled. Model selection stays in dst; generic
 `spawn --model` and one-shot execution are refused for this adapter.
 

@@ -140,9 +140,15 @@ export function apply(ctx) {
         try { unlinkSync(leaseFile); } catch {}
         return;
       }
+      const nativeSession = ctx.get('sessions', false)?.get(selected.session_id);
+      if (nativeSession?.header?.version !== 4 || nativeSession.header.origin === 'subagent' || nativeSession.id !== selected.session_id) {
+        current = undefined;
+        try { unlinkSync(leaseFile); } catch {}
+        return;
+      }
       const previous = current;
       current = {version: 1, agent: 'dsh', client: 'dst', pane, pid, instance, home_id: homeID, ...selected,
-        server_epoch: serverEpoch, started_at: startedAt, updated_at: Date.now(),
+        native_session: true, server_epoch: serverEpoch, started_at: startedAt, updated_at: Date.now(),
         input_ready: host.grants.allows(ctx, 'commands.invoke', COMPONENT_COMMAND)};
       atomicJSON(leaseFile, current);
       if (!previous || previous.session_id !== current.session_id || previous.binding_epoch !== current.binding_epoch) {

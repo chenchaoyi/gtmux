@@ -13,7 +13,10 @@ func Command(agent, client, sessionID string) (string, bool) {
 	var argv []string
 	switch client {
 	case "dst":
-		argv = []string{"dst", "--backend", "dsh"}
+		argv = []string{"env", "DSH_TUI_NO_LAUNCHPAD=1", "dst", "--backend", "dsh"}
+		if sessionID == "" {
+			argv = append(argv, ".")
+		}
 	default:
 		return "", false
 	}
