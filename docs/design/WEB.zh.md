@@ -182,3 +182,7 @@ owner 可输入其 owner 凭证控制的 pane；guest 需同时满足该分享�
 不把进行中改成其他状态；无法识别的键位提示不提供语义操作。回执只说「已发送到终端」，不代表 agent 已执行。
 结果未确认时暂停后续发送；主动重试复用原 ID 和上下文，过期或更换目标后不能补发。
 详见 [HTTP 契约](../../api/contract.md#typed-keyaction-forms-of-post-apisend) 和 [调研与验证边界](terminal-keyboard-research.zh.md)。
+
+### 执行过程卡片（2026-10-19）
+
+专注对话与手机/iPad 采用一致层级：标题、调用数、收起时的工具数量摘要、展开后的有序纯文本条目。折叠按钮有名称和 `aria-expanded`，至少 44px 高；长名称与细节可换行。历史默认收起，实时更新保留用户的展开选择。工作台紧凑小窗仍只显示回复。[来源和边界](transcript-activity-research.zh.md)。

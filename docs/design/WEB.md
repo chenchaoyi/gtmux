@@ -175,3 +175,7 @@ suppress that action. A receipt says **Sent to terminal**, never that the agent 
 An uncertain result pauses further sends; an explicit retry reuses the exact original
 ID/context. Changed/expired context cannot replay it. See the [HTTP contract](../../api/contract.md#typed-keyaction-forms-of-post-apisend)
 and [research and acceptance boundaries](terminal-keyboard-research.md).
+
+### Transcript activity cards (2026-10-19)
+
+Focused Chat uses the same Activity hierarchy as phone/iPad: heading, call count, folded tool-count summary and ordered plain-text tool rows. The disclosure is a labelled button with `aria-expanded`, at least 44px tall; long names and details wrap. History stays folded until opened, preserving the choice during live updates. Compact workbench tiles retain reply-only rendering. [Sources and limits](transcript-activity-research.md).

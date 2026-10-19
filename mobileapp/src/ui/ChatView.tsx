@@ -25,6 +25,7 @@ import {separatorLabels} from './time';
 import {nativeFontFamily} from './term';
 import {BrandLoader} from './BrandLoader';
 import {segmentKey, stepsOpen} from './chatSteps';
+import {ToolSteps} from './ToolSteps';
 import {Agent, StatusName} from '../api/types';
 import {TranscriptSegment, TranscriptTurn} from '../api/client';
 import {statusLabel, Lang} from '../i18n';
@@ -597,28 +598,8 @@ export function ChatView({readOnly = false, agent, lines, status, fontSize, lang
                     const stepCtx = {isLatestTurn: i === turns.length - 1, working: status === 'working'};
                     const stepsShown = stepsOpen(expanded[key], stepCtx);
                     return (
-                    <>
-                      <TouchableOpacity
-                        style={styles.stepsToggle}
-                        activeOpacity={0.7}
-                        onPress={() => setExpanded(e => ({...e, [key]: !stepsShown}))}>
-                        <Text style={styles.stepsToggleText}>
-                          {stepsShown ? '▾ ' : '▸ '}
-                          {lang === 'zh' ? `${seg.steps.length} 个步骤` : `${seg.steps.length} step${seg.steps.length > 1 ? 's' : ''}`}
-                        </Text>
-                      </TouchableOpacity>
-                      {stepsShown &&
-                        seg.steps.map((s, j) => (
-                          <View key={j} style={styles.stepRow}>
-                            <Text style={styles.stepName}>{s.title}</Text>
-                            {!!s.detail && (
-                              <Text style={styles.stepDetail} numberOfLines={1}>
-                                {s.detail}
-                              </Text>
-                            )}
-                          </View>
-                        ))}
-                    </>
+                    <ToolSteps steps={seg.steps} open={stepsShown} lang={lang} fontSize={fontSize}
+                      onToggle={() => setExpanded(e => ({...e, [key]: !stepsShown}))} />
                     );
                   })()}
                 </View>
@@ -753,13 +734,6 @@ const styles = StyleSheet.create({
   userToggle: {alignSelf: 'flex-end', marginRight: 34, marginTop: 3, paddingVertical: 2},
   userToggleText: {fontSize: 12.5, color: 'rgba(230,247,251,0.6)', fontWeight: '600'},
   sender: {fontSize: 11.5, color: CHAT_FG_DIM, textAlign: 'right', marginTop: 3, marginRight: 34},
-
-  // collapsed middle steps.
-  stepsToggle: {alignSelf: 'flex-start', marginLeft: 35, paddingVertical: 2},
-  stepsToggleText: {fontSize: 11.5, color: 'rgba(235,235,245,0.45)', fontWeight: '600'},
-  stepRow: {marginLeft: 35, flexDirection: 'row', alignItems: 'baseline', gap: 6},
-  stepName: {fontSize: 11, fontWeight: '700', color: '#27C7E6', fontFamily: 'Menlo'},
-  stepDetail: {fontSize: 11, color: 'rgba(235,235,245,0.55)', fontFamily: 'Menlo', flexShrink: 1},
 
   // one reply segment = a text bubble + its trailing step group (small inner gap).
   segBlock: {gap: 4},

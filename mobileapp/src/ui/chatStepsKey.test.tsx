@@ -1,5 +1,5 @@
 import React from 'react';
-import {Text, TouchableOpacity} from 'react-native';
+import {Text, TouchableOpacity, View} from 'react-native';
 import renderer, {act} from 'react-test-renderer';
 import {ChatView} from './ChatView';
 import {Agent} from '../api/types';
@@ -38,12 +38,7 @@ const render = (turns: TranscriptTurn[]) => {
 
 /** The step toggles on screen, in order, as their labels read. */
 const toggles = (t: renderer.ReactTestRenderer) =>
-  t.root
-    .findAllByType(TouchableOpacity)
-    .filter(n => {
-      const texts = n.findAllByType(Text).flatMap(x => ([] as unknown[]).concat(x.props.children as unknown[]));
-      return texts.some(c => typeof c === 'string' && /steps?$/.test(c.trim()));
-    });
+  t.root.findAllByType(TouchableOpacity).filter(n => n.props.testID === 'tool-steps-toggle');
 
 test('an expansion follows its turn when the server drops an older one', () => {
   const four = [turn(1), turn(2), turn(3), turn(4)];
@@ -55,8 +50,7 @@ test('an expansion follows its turn when the server drops an older one', () => {
   act(() => {
     before[3].props.onPress();
   });
-  const openCountBefore = t.root
-    .findAllByType(Text)
+  const openCountBefore = t.root.findAllByType(View).filter(n => n.props.testID === 'tool-step-row').flatMap(row => row.findAllByType(Text))
     .filter(n => ([] as unknown[]).concat(n.props.children as unknown[]).some(c => c === 'step-of-4')).length;
   expect(openCountBefore).toBeGreaterThan(0);
 
@@ -79,8 +73,7 @@ test('an expansion follows its turn when the server drops an older one', () => {
   });
 
   const openNow = (name: string) =>
-    t.root
-      .findAllByType(Text)
+    t.root.findAllByType(View).filter(n => n.props.testID === 'tool-step-row').flatMap(row => row.findAllByType(Text))
       .filter(n => ([] as unknown[]).concat(n.props.children as unknown[]).some(c => c === name)).length > 0;
 
   // The choice must still belong to question 4 — and must NOT have migrated to another.

@@ -483,7 +483,7 @@ func codexToolName(name string) string {
 }
 
 // codexToolDetail pulls a short summary out of a function_call's JSON-string args
-// (cmd / command / path / workdir).
+// (explicit title / description, then command / path / workdir).
 func codexToolDetail(args string) string {
 	if strings.TrimSpace(args) == "" {
 		return ""
@@ -492,7 +492,7 @@ func codexToolDetail(args string) string {
 	if json.Unmarshal([]byte(args), &m) != nil {
 		return clip(args, 80)
 	}
-	for _, k := range []string{"cmd", "command", "file_path", "path", "query", "workdir"} {
+	for _, k := range []string{"title", "description", "cmd", "command", "file_path", "path", "query", "workdir"} {
 		if v, ok := m[k]; ok {
 			switch t := v.(type) {
 			case string:
@@ -500,6 +500,9 @@ func codexToolDetail(args string) string {
 					return clip(t, 80)
 				}
 			case []any:
+				if k == "title" || k == "description" {
+					continue
+				}
 				var parts []string
 				for _, x := range t {
 					if s, ok := x.(string); ok {

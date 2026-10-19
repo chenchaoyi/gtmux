@@ -1554,3 +1554,7 @@ RN 中的品牌名称保持标识字号，说明和加载文案跟随系统字�
 不把进行中改成其他状态；无法识别的键位提示不提供语义操作。回执只说「已发送到终端」，不代表 agent 已执行。
 结果未确认时暂停后续发送；主动重试复用原 ID 和上下文，过期或更换目标后不能补发。
 详见 [HTTP 契约](../../api/contract.md#typed-keyaction-forms-of-post-apisend) 和 [调研与验证边界](terminal-keyboard-research.zh.md)。
+
+### 执行过程卡片（2026-10-19）
+
+工具步骤统一使用 `ToolSteps`：中性描边卡片显示「执行过程」、调用数和工具数量摘要，展开后按编号显示工具名与可换行的纯文本参数摘要。执行中/历史的默认折叠及用户选择仍由 `chatSteps.ts` 控制，不推测调用结果。手机/iPad 的详情与 HQ 共用。来源与数据边界见[调研](transcript-activity-research.zh.md)。

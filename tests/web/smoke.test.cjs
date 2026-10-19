@@ -174,3 +174,43 @@ for (const viewport of [{width:1280,height:850},{width:390,height:844}]) {
    await page.locator('#back').click();await row.waitFor();
  });
 }
+
+for (const width of [320, 1280]) {
+  scenario(`Structured activity at ${width}px`, {viewport: {width, height: 850}, locale: 'en-US'}, async (page, fixture) => {
+    const steps = [
+      ...Array.from({length: 6}, (_, i) => ({kind: 'tool', title: 'js', detail: `Inspect layout ${i + 1}`})),
+      {kind: 'tool', title: 'wait', detail: '<img src=x onerror=alert(1)>'},
+      {kind: 'tool', title: 'tool_' + 'long'.repeat(40), detail: '/tmp/' + 'unbroken'.repeat(30)},
+    ];
+    fixture.state.turns['%901'] = [{prompt: 'Inspect commands', response: 'Review activity', segments: [{text: 'Review activity', steps}]}];
+    await page.goto(fixture.url);
+    await page.locator('#gate-code-input').fill('TEST-1234');
+    await page.locator('#gate-code-go').click();
+    if (width > 900) {
+      // Go through the narrow radar to enter the same focused Chat on either width.
+      await page.setViewportSize({width: 390, height: 850});
+    }
+    await page.getByText('Investigate retries', {exact: true}).click();
+    await page.getByRole('button', {name: 'Chat', exact: true}).click();
+    if (width > 900) await page.setViewportSize({width, height: 850});
+    const card = page.locator('#chat .tool-steps');
+    const toggle = card.getByRole('button', {name: 'Activity, 8 calls'});
+    await toggle.waitFor();
+    assert.equal(await toggle.getAttribute('aria-expanded'), 'false');
+    assert.equal(await card.locator('.step-row').count(), 0);
+    assert.match(await card.innerText(), /js ×6/);
+    assert.ok((await toggle.boundingBox()).height >= 44);
+    await toggle.click();
+    assert.equal(await toggle.getAttribute('aria-expanded'), 'true');
+    assert.deepEqual(await card.locator('.step-name').allTextContents(), steps.map(s => s.title));
+    assert.equal(await card.locator('img').count(), 0);
+    assert.equal(await card.locator('.step-detail').nth(6).innerText(), steps[6].detail);
+    const bounds = await card.evaluate(node => ({width: node.clientWidth, scroll: node.scrollWidth}));
+    assert.ok(bounds.scroll <= bounds.width + 1, JSON.stringify(bounds));
+    fixture.state.turns['%901'][0].segments[0].steps = [...steps, {kind:'tool',title:'exec',detail:'go test ./...'}];
+    await card.getByRole('button', {name: 'Activity, 9 calls'}).waitFor();
+    assert.equal(await card.locator('.step-row').count(), 9, 'reader expansion survives a live update');
+    await card.getByRole('button', {name: 'Activity, 9 calls'}).click();
+    assert.equal(await card.locator('.step-row').count(), 0);
+  });
+}

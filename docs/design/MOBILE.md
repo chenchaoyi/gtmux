@@ -1534,3 +1534,7 @@ suppress that action. A receipt says **Sent to terminal**, never that the agent 
 An uncertain result pauses further sends; an explicit retry reuses the exact original
 ID/context. Changed/expired context cannot replay it. See the [HTTP contract](../../api/contract.md#typed-keyaction-forms-of-post-apisend)
 and [research and acceptance boundaries](terminal-keyboard-research.md).
+
+### Transcript activity cards (2026-10-19)
+
+Tool segments use `ToolSteps`: a neutral bordered Activity card, call count and compact tool-count summary, then ordered rows with the tool name and wrapping plain-text argument summary. Live/history defaults and reader choices remain in `chatSteps.ts`; no result state is inferred. This is shared by Detail and HQ on phone/iPad. Sources and data limits: [research](transcript-activity-research.md).
