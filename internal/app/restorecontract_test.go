@@ -316,7 +316,7 @@ func TestRestoreContract(t *testing.T) {
 		drift := layoutDrift(savedShapes(resurrectLastSave()), liveShapes())
 		if len(drift) != 0 {
 			t.Errorf("a faithful restore reported drift — the checker is crying wolf:\n  %s",
-				strings.Join(drift, "\n  "))
+				fmt.Sprint(drift))
 		}
 	})
 
@@ -330,10 +330,10 @@ func TestRestoreContract(t *testing.T) {
 		drift := layoutDrift(savedShapes(resurrectLastSave()), liveShapes())
 		if len(drift) != 1 {
 			t.Fatalf("want exactly one drift line for gamma:0, got %d:\n  %s",
-				len(drift), strings.Join(drift, "\n  "))
+				len(drift), fmt.Sprint(drift))
 		}
-		if !strings.Contains(drift[0], "gamma:0") {
-			t.Errorf("drift line must name the window that changed; got %q", drift[0])
+		if !strings.Contains(drift[0].detail(), "gamma:0") {
+			t.Errorf("drift line must name the window that changed; got %q", drift[0].detail())
 		}
 	})
 }

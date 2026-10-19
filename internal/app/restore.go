@@ -118,8 +118,8 @@ func ensureServer() {
 	}
 
 	if script != "" {
-		i18n.Say("tmux server not running. Restoring your saved sessions via tmux-resurrect (may take a moment)...",
-			"tmux server 未运行，正在用 tmux-resurrect 恢复你的存档 session（可能要等一会）...")
+		i18n.Say("Restoring the workspace from your save… (tmux-resurrect)",
+			"正在恢复存档工作区…（tmux-resurrect）")
 		driveResurrectRestore(script) // direct subprocess w/ a sane PATH — NOT run-shell (see func doc)
 		restored := waitForRestoredSessions(boot, 120*time.Second)
 		restoreLogf("restore.server", "ensureServer: driven-restore restored=%v liveSessions=%v", restored, sessionNamesList())
@@ -129,8 +129,8 @@ func ensureServer() {
 			// without an attached client — and we just restored headlessly. Replay it.
 			restoreActiveSpots(save)
 			afterRestore(save)
-			i18n.Say("Restored layout, dirs and screen text. Bringing your agent conversations back…",
-				"已恢复布局、目录、屏幕文本，正在接回你的 agent 会话…")
+			i18n.Say("Workspace loaded. Bringing your agent conversations back…",
+				"工作区已载入，正在接回 agent 对话…")
 			resumeAgents()
 			return
 		}
@@ -603,6 +603,8 @@ func restoreSessions(list []string, dryRun bool) int {
 			"退路：在每个 tab 里手动运行 gtmux restore --one")
 		return 1
 	}
+	i18n.Say(fmt.Sprintf("Terminal: opened tabs for %d session(s).", len(list)),
+		fmt.Sprintf("终端：已为 %d 个会话打开标签页。", len(list)))
 	return 0
 }
 
@@ -660,7 +662,7 @@ func cmdRestore(args []string) int {
 		if asJSON {
 			printRestorePlanJSON()
 		} else {
-			printRestorePlan(buildRestorePlan())
+			printRestorePlan(buildRestorePlan(), true)
 		}
 		return 0
 	}
@@ -712,10 +714,10 @@ func cmdRestore(args []string) int {
 	}
 
 	// Preview what's about to come back BEFORE touching tmux (read-only) — the user
-	// sees which sessions and agent conversations restore is bringing back, and it
+	// sees a compact inventory of the sessions and agents restore can bring back; it
 	// doubles as the review checklist afterward. Skipped when nothing is saved.
 	if plan := buildRestorePlan(); len(plan.Sessions) > 0 {
-		printRestorePlan(plan)
+		printRestorePlan(plan, false)
 	}
 
 	// default: one terminal tab per unattached session, in the recorded tab

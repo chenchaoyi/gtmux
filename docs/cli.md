@@ -573,11 +573,13 @@ One restore at a time: a run holds a lock (pid + start time) and a second run sa
 and does nothing. A lock whose process is gone, or older than 10 minutes, is taken over.
 `--plan` and `--dry-run` are exempt from the lock.
 
-A real `gtmux restore` prints its plan up front: the sessions it is about to bring back
-and the agent conversation (goal) under each pane. `--plan` is that preview on its own:
-it reads the last resurrect save plus the resume records and starts no tmux (safe to run
-or poll anytime). An agent line marked `×` is a conversation whose transcript is gone
-from disk and will not resume.
+A real `gtmux restore` starts with a compact table: session name, window count, pane
+count and agent types. Historical messages stay out of progress output. For a detailed
+preview, `--plan` adds one short conversation excerpt per agent, with its window.pane
+position. It reads the same last resurrect save and resume records without starting
+tmux (safe to run or poll anytime). Names and excerpts fit the terminal width, up to
+100 columns. `--plan --json` retains the complete plan fields. Missing transcripts
+are counted separately as skipped; `×` marks them in the detailed preview.
 
 Only a pane that was running an agent when the layout was saved gets one back; restore
 reads that from the save's own record of each pane's command. A pane that was a plain
@@ -604,8 +606,11 @@ reloading the file will not add a duplicate. If doctor reports multiple triggers
 review the existing status line: the fixer will not remove custom entries.
 
 After a restore, gtmux compares every saved window's pane count and arrangement against
-the live one and names any that differ, on the terminal and in the log store
-(`gtmux logs --component restore`), since tmux-resurrect discards its own layout errors.
+the live one. A separate warning names up to five affected windows with short facts
+such as `panes 4 → 2`, plus the remaining count. Complete diagnoses and geometry stay
+in `gtmux logs --component restore --since 1d`, whose command is always printed with
+the warning. A successfully started agent resume command does not imply the layout
+was fully restored. tmux-resurrect discards its own layout errors.
 
 A tmux pane id is a per-server sequence number: restart the server and `%25` is handed
 to a different pane. gtmux keys a lot of state by that number, so restore (and, every

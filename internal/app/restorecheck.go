@@ -135,51 +135,50 @@ func liveShapes() []windowShape {
 	return out
 }
 
-// layoutDrift compares what was saved against what came back and returns one localized
-// line per window that differs — pane count first, because a pane-count mismatch is what
-// makes `select-layout` refuse the window outright and is therefore the CAUSE of most
-// layout drift, not another symptom of it.
-//
-// A saved window with no live counterpart is reported as missing. The reverse (a live
-// window the save never had) is deliberately NOT reported: sessions the user created
-// after the save are normal and expected, and flagging them would bury the real signal.
-// Pure — no tmux, no files — so the comparison is unit-testable.
-func layoutDrift(saved, live []windowShape) []string {
+// layoutDifference keeps the full evidence for logs and a short terminal diagnosis.
+type layoutDifference struct {
+	saved, live windowShape
+	missing     bool
+}
+
+func (d layoutDifference) detail() string {
+	s, l := d.saved, d.live
+	switch {
+	case d.missing:
+		return i18n.Tr(fmt.Sprintf("%s: window did not come back", s.key()), fmt.Sprintf("%s: 窗口未恢复", s.key()))
+	case s.Panes != l.Panes:
+		return i18n.Tr(
+			fmt.Sprintf("%s: saved with %d pane(s), came back with %d. tmux refuses to apply a layout to the wrong number of panes, so this window kept the default arrangement", s.key(), s.Panes, l.Panes),
+			fmt.Sprintf("%s: 存档里 %d 个窗格，回来是 %d 个。窗格数对不上时 tmux 不会套用布局，这扇窗停在了默认排布", s.key(), s.Panes, l.Panes))
+	default:
+		return i18n.Tr(
+			fmt.Sprintf("%s: arrangement differs: saved %s, now %s", s.key(), s.Layout, l.Layout),
+			fmt.Sprintf("%s: 排布和存档不一样：存档 %s，现在 %s", s.key(), s.Layout, l.Layout))
+	}
+}
+
+// layoutDrift compares arrangements, preferring pane-count mismatch over geometry.
+// Newly created live windows are deliberately not drift; missing saved windows are.
+func layoutDrift(saved, live []windowShape) []layoutDifference {
 	byKey := map[string]windowShape{}
 	for _, w := range live {
 		byKey[w.key()] = w
 	}
-	var out []string
+	var out []layoutDifference
 	for _, s := range saved {
 		l, ok := byKey[s.key()]
 		if !ok {
-			out = append(out, i18n.Tr(
-				fmt.Sprintf("%s: window did not come back", s.key()),
-				fmt.Sprintf("%s: 这扇窗没回来", s.key())))
-			continue
-		}
-		switch {
-		case s.Panes != l.Panes:
-			out = append(out, i18n.Tr(
-				fmt.Sprintf("%s: saved with %d pane(s), came back with %d. tmux refuses to apply a layout to the wrong number of panes, so this window kept the default arrangement", s.key(), s.Panes, l.Panes),
-				fmt.Sprintf("%s: 存档里 %d 个窗格，回来是 %d 个。窗格数对不上时 tmux 不会套用布局，这扇窗停在了默认排布", s.key(), s.Panes, l.Panes)))
-		case s.Layout != "" && s.Layout != l.Layout:
-			out = append(out, i18n.Tr(
-				fmt.Sprintf("%s: arrangement differs: saved %s, now %s", s.key(), s.Layout, l.Layout),
-				fmt.Sprintf("%s: 排布和存档不一样：存档 %s，现在 %s", s.key(), s.Layout, l.Layout)))
+			out = append(out, layoutDifference{saved: s, missing: true})
+		} else if s.Panes != l.Panes || s.Layout != "" && s.Layout != l.Layout {
+			out = append(out, layoutDifference{saved: s, live: l})
 		}
 	}
 	return out
 }
 
-// driftReportMax is how many drift lines are printed to the TERMINAL. All of them go to the
-// log store; the terminal gets a bounded head plus a count, because a restore that went
-// badly wrong should not bury the one line telling you where the save is.
+// All differences go to the log; only a bounded head appears in the terminal.
 const driftReportMax = 5
 
-// reportLayoutDrift compares the save against the live server and reports every window
-// that came back differently — to the log store always, and to the user when there is
-// something to say. Silent when everything matches, which is the normal case.
 func reportLayoutDrift(save string) {
 	if save == "" {
 		return
@@ -199,25 +198,47 @@ func reportLayoutDrift(save string) {
 		restoreLogf("restore.layout", "layout-check: %d saved window(s) all came back with the same panes and arrangement", len(saved))
 		return
 	}
-	restoreLogf("restore.layout", "layout-check: %d of %d saved window(s) came back DIFFERENT:\n  %s",
-		len(drift), len(saved), strings.Join(drift, "\n  "))
-	// NOT "2/21 扇窗": in Chinese that reads as a DATE before it reads as a count, and it
-	// did — the commander saw the line and asked why February was in his restore output
-	// (2026-09-24). A count of a total is spelled out in both languages.
-	head := i18n.Tr(
-		fmt.Sprintf("⚠ %d of the %d restored windows don't match the save:", len(drift), len(saved)),
-		fmt.Sprintf("⚠ 恢复的 %d 扇窗里，有 %d 扇和存档不一样：", len(saved), len(drift)))
-	i18n.Sae(head, head)
+	// One record per window prevents a large restore from truncating the tail at
+	// the diagnostic store's per-entry limit. The terminal still gets only a head.
+	restoreLogf("restore.layout", "layout-check: %d of %d saved window(s) came back DIFFERENT", len(drift), len(saved))
+	for _, d := range drift {
+		restoreLogf("restore.layout.window", "%s", d.detail())
+	}
+	fmt.Fprint(os.Stderr, renderLayoutDrift(len(saved), drift, termWidth()))
+}
+
+func renderLayoutDrift(total int, drift []layoutDifference, width int) string {
+	if len(drift) == 0 {
+		return ""
+	}
+	width = maxInt(1, min(width, 100))
+	var b strings.Builder
+	line := func(s string) { b.WriteString(i18n.TruncDisp(s, width) + "\n") }
+	b.WriteByte('\n')
+	// Spell out both totals: a bare "2/21" was mistaken for a date (2026-09-24).
+	line(i18n.Tr(fmt.Sprintf("⚠ Layout: %d of %d saved windows differ", len(drift), total),
+		fmt.Sprintf("⚠ 布局需留意：%d 个存档窗口中，%d 个不一致", total, len(drift))))
 	for i, d := range drift {
 		if i == driftReportMax {
-			more := i18n.Tr(
-				fmt.Sprintf("  … and %d more; full list: %s", len(drift)-driftReportMax, restoreTraceHint),
-				fmt.Sprintf("  …… 还有 %d 条，完整列表见 %s", len(drift)-driftReportMax, restoreTraceHint))
-			i18n.Sae(more, more)
+			line(i18n.Tr(fmt.Sprintf("  … %d more windows", len(drift)-driftReportMax),
+				fmt.Sprintf("  …… 另有 %d 个窗口", len(drift)-driftReportMax)))
 			break
 		}
-		i18n.Sae("  "+d, "  "+d)
+		fact := i18n.Tr("window missing", "窗口未恢复")
+		if !d.missing {
+			fact = i18n.Tr("arrangement changed", "排布不同")
+			if d.saved.Panes != d.live.Panes {
+				fact = i18n.Tr(fmt.Sprintf("panes %d → %d", d.saved.Panes, d.live.Panes),
+					fmt.Sprintf("窗格 %d → %d", d.saved.Panes, d.live.Panes))
+			}
+		}
+		// Preserve the diagnosis even when the window name is long.
+		key := i18n.TruncDisp(restoreInline(d.saved.key()), maxInt(1, width-i18n.DispWidth(fact)-6))
+		line("  " + key + "  " + fact)
 	}
+	// Keep the command intact and copyable even on a narrow terminal.
+	b.WriteString(i18n.Tr("Full details:", "完整明细：") + "\n  " + restoreTraceHint + "\n\n")
+	return b.String()
 }
 
 // saveAgeNote is the one line that says WHICH moment is being restored: the save's

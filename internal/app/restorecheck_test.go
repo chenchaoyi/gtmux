@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -93,18 +92,18 @@ func TestLayoutDriftCatchesTheExtraPaneThatBreaksSelectLayout(t *testing.T) {
 	if len(drift) != 1 {
 		t.Fatalf("drift = %v; want exactly one line about gtmux dev:0", drift)
 	}
-	if !strings.Contains(drift[0], "gtmux dev:0") {
-		t.Errorf("drift line %q must name the window", drift[0])
+	if !strings.Contains(drift[0].detail(), "gtmux dev:0") {
+		t.Errorf("drift line %q must name the window", drift[0].detail())
 	}
-	if !strings.Contains(drift[0], "2") || !strings.Contains(drift[0], "3") {
-		t.Errorf("drift line %q must name both pane counts — that number IS the diagnosis", drift[0])
+	if !strings.Contains(drift[0].detail(), "2") || !strings.Contains(drift[0].detail(), "3") {
+		t.Errorf("drift line %q must name both pane counts — that number IS the diagnosis", drift[0].detail())
 	}
 }
 
 func TestLayoutDriftCatchesARearrangedWindow(t *testing.T) {
 	saved := []windowShape{{Session: "MP", Index: "1", Panes: 2, Layout: "189x48,0,0{94x48,0,0,94x48,95,0}"}}
 	live := []windowShape{{Session: "MP", Index: "1", Panes: 2, Layout: "189x48,0,0[189x24,0,0,189x23,0,25]"}}
-	if drift := layoutDrift(saved, live); len(drift) != 1 || !strings.Contains(drift[0], "MP:1") {
+	if drift := layoutDrift(saved, live); len(drift) != 1 || !strings.Contains(drift[0].detail(), "MP:1") {
 		t.Fatalf("side-by-side coming back stacked must be reported; got %v", drift)
 	}
 }
@@ -127,7 +126,7 @@ func TestLayoutDriftIsSilentWhenTheRestoreWasFaithful(t *testing.T) {
 func TestLayoutDriftReportsAWindowThatNeverCameBack(t *testing.T) {
 	saved := []windowShape{{Session: "worker", Index: "2", Panes: 1, Layout: "189x48,0,0"}}
 	drift := layoutDrift(saved, []windowShape{{Session: "worker", Index: "0", Panes: 1, Layout: "189x48,0,0"}})
-	if len(drift) != 1 || !strings.Contains(drift[0], "worker:2") {
+	if len(drift) != 1 || !strings.Contains(drift[0].detail(), "worker:2") {
 		t.Fatalf("a saved window with no live counterpart must be reported; got %v", drift)
 	}
 }
@@ -176,9 +175,7 @@ func TestShortAge(t *testing.T) {
 func TestACountOfATotalDoesNotReadAsADate(t *testing.T) {
 	for _, lang := range []string{"zh", "en"} {
 		i18n.SetLang(lang)
-		head := i18n.Tr(
-			fmt.Sprintf("⚠ %d of the %d restored windows don't match the save:", 2, 21),
-			fmt.Sprintf("⚠ 恢复的 %d 扇窗里，有 %d 扇和存档不一样：", 21, 2))
+		head := strings.Split(renderLayoutDrift(21, []layoutDifference{{missing: true}, {missing: true}}, 100), "\n")[1]
 		if strings.Contains(head, "2/21") || strings.Contains(head, "21/2") {
 			t.Fatalf("%s: the line still carries a bare fraction: %s", lang, head)
 		}

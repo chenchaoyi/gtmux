@@ -546,7 +546,8 @@ the save are normal, and reporting them would bury the signal).
 
 - **WHEN** a window recorded with 2 panes comes back with 3
 - **THEN** the restore names that window and both pane counts, on the terminal and in the
-  restore log, explaining that the layout could not be applied
+  restore log; the terminal uses a short count-change fact and the log explains why
+  the layout could not be applied
 
 #### Scenario: A faithful restore says nothing
 
@@ -703,3 +704,19 @@ Before resuming any shell pane, the system SHALL reserve conversation IDs bound 
 #### Scenario: A unique rename remains recoverable
 - **WHEN** exactly one fresh candidate shares cwd and position, its original locator is absent, and its conversation is not reserved
 - **THEN** both plan and restore select that conversation
+
+### Requirement: Restore output separates the inventory from diagnostic detail
+
+Normal `gtmux restore` output SHALL show a compact session inventory with window, pane and resumable-agent counts, without historical prompts. The existing read-only `--plan` preview SHALL retain bounded conversation excerpts, while `--plan --json` SHALL preserve its contract. Human rows SHALL use display-width-aware truncation. Layout warnings SHALL show the affected and saved totals, bounded short per-window facts and a full-log command; full geometry and diagnoses SHALL remain in the restore log. Progress SHALL NOT claim a faithful layout or recovered screen text before that is established.
+
+#### Scenario: A large workspace has long historical prompts
+
+- **WHEN** normal restore prints its inventory
+- **THEN** each session occupies one compact row and historical prompts appear only in the explicit preview
+- **AND** missing transcripts are counted separately from resumable agents
+
+#### Scenario: Several restored windows differ
+
+- **WHEN** pane counts, geometry or missing windows differ from the save
+- **THEN** the warning retains both totals and short per-window facts without repeating the full explanation
+- **AND** the complete diagnosis remains available through the printed restore-log command

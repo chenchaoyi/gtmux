@@ -177,7 +177,7 @@ var helpCommands = []command{
 			{Name: "--pick, -p", EN: "list them and choose: a number, Enter for all, q to cancel", ZH: "列出来选：数字 / 回车全选 / q 取消"},
 			{Name: "--one", EN: "this tab joins the next session nobody is attached to", ZH: "让当前 tab 接上下一个没人连着的 session"},
 			{Name: "--dry-run", EN: "print what it would do and do nothing", ZH: "只打印会做什么，不动手"},
-			{Name: "--plan [--json]", EN: "what would come back, session by session; starts no tmux", ZH: "逐个 session 预览会恢复什么；不启动 tmux"},
+			{Name: "--plan [--json]", EN: "preview sessions and conversation excerpts; starts no tmux", ZH: "预览会话及对话摘要；不启动 tmux"},
 			{Name: "--resume-agents=<mode>", EN: "what to do with the agent conversations under each pane", ZH: "每个 pane 底下的 agent 对话怎么处理",
 				Values: []string{"auto", "type", "off"}},
 		},
