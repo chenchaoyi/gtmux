@@ -33,6 +33,18 @@ final class ModelTests: XCTestCase {
         XCTAssertLessThan(Status.idle.rank, Status.running.rank)
     }
 
+    func testNeutralAgentSharesIdleWithoutInventingCompletion() {
+        var neutral = Agent(); neutral.paneID = "%4"; neutral.status = "running"; neutral.agent = "DeepSeek"
+        var done = Agent(); done.paneID = "%5"; done.status = "idle"; done.since = 200
+        let store = AgentStore(); store.setAgentsForTesting([neutral, done])
+        let groups = store.sections(query: "")
+        XCTAssertEqual(groups.map { $0.status }, [.idle])
+        XCTAssertEqual(groups[0].agents.map { $0.paneID }, ["%5", "%4"])
+        XCTAssertEqual(groups[0].agents[1].state, .running)
+        XCTAssertEqual(groups[0].agents[1].since, 0)
+        XCTAssertEqual(hex(groups[0].agents[1].state.nsColor), "8E8E93")
+    }
+
     // MARK: relative time (DESIGN §3)
 
     func testRelativeTime() {

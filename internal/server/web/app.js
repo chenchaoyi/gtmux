@@ -11,7 +11,9 @@
   // says how an idle turn ENDED. It sits right after "needs you" because a session stopped
   // on a failure needs a person — but NOT inside it, because that section means an agent is
   // asking something you can answer, and an error is not a question.
-  var ORDER = ['waiting', 'errored', 'working', 'idle', 'running'];
+  var ORDER = ['waiting', 'errored', 'working', 'idle'];
+  // A quiet presentation group does not rewrite lifecycle evidence on the row.
+  function sectionStatus(status) { return status === 'waiting' || status === 'working' ? status : 'idle'; }
   var LABEL; // the section and status words, in the reader's language: set beside T below
   // terminal defaults taken from the user's Ghostty config (Hack 15, #17171a/#d4d2cc).
   var GHOSTTY = {bg: '#17171a', fg: '#d4d2cc', cursor: '#bbc1ff', sel: '#2a2a33', font: 'Hack, Menlo, Monaco, "Courier New", monospace', size: 15};
@@ -153,7 +155,7 @@
   // The radar's section headers, the rail's groups and the ⌘K rows. These were English on
   // a Chinese page (%12, 2026-10-06, after #1441's first round); the words are the phone's.
   // Set here, not where the other constants are, because T reads ZH, which is set above.
-  LABEL = {waiting: T('needs you', '需要你'), errored: T('errored', '出错'), working: T('working', '运行中'), idle: T('idle', '空闲'), running: T('running', '待命')};
+  LABEL = {waiting: T('needs you', '需要你'), errored: T('errored', '出错'), working: T('working', '运行中'), idle: T('idle', '空闲'), running: T('idle', '空闲')};
 
   // Chrome that lives in index.html, labelled once at boot. Keeping the markup's text as
   // the CHINESE half and translating in one place beats sprinkling data-en attributes
@@ -570,14 +572,14 @@
     lastSig = sig;
     // tmux agents bucket by status; native (non-tmux) agents are SENSED read-only, so
     // they get their own "Elsewhere" section at the end (mirrors the app / menu-bar).
-    var by = {waiting: [], errored: [], working: [], idle: [], running: []};
+    var by = {waiting: [], errored: [], working: [], idle: []};
     var natives = [], desktops = [];
     agents.forEach(function (a) {
       if (isNative(a)) { ((a.current_client === 'unconfirmed' || a.client === 'chatgpt_desktop') ? desktops : natives).push(a); return; }
       // An idle turn that ended on a failure is not "finished" — it was sitting under a
       // green tick among the completed ones.
       if (a.status === 'idle' && a.error) { by.errored.push(a); return; }
-      (by[a.status] || by.running).push(a);
+      by[sectionStatus(a.status)].push(a);
     });
     var root = $('radar'); root.innerHTML = '';
     function section(label, list, cls) {
@@ -2200,13 +2202,13 @@
     // below read `undefined.length` on its pass and threw: the rail rendered the first
     // group and stopped, and the failure also fell through to the poll's catch, which
     // parked the connection dot on "reconnecting" while the board kept updating.
-    var by = {waiting: [], errored: [], working: [], idle: [], running: []}, natives = [];
+    var by = {waiting: [], errored: [], working: [], idle: []}, natives = [];
     agents.forEach(function (a) {
       if (!match(a)) return;
       if (!hasPane(a)) { natives.push(a); return; }
       // Same rule as the radar: an idle turn that ended on a failure is not finished.
       if (a.status === 'idle' && a.error) { by.errored.push(a); return; }
-      (by[a.status] || by.running).push(a);
+      by[sectionStatus(a.status)].push(a);
     });
     var root = $('tree'); root.innerHTML = '';
     var nWait = (by.waiting || []).length;

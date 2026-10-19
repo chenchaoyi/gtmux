@@ -70,6 +70,9 @@ struct ResourceReport: Decodable {
 enum Status: String, CaseIterable {
     case waiting, working, idle, running
 
+    /// Quiet agents share one user-facing group; raw status remains evidence.
+    var section: Status { self == .running ? .idle : self }
+
     var color: Color {
         switch self {
         case .waiting: return Theme.Status.waiting
@@ -387,7 +390,7 @@ final class AgentStore: ObservableObject {
         return ""
     }
 
-    /// Agents grouped into the four sections, in fixed rank order, each non-empty
+    /// Agents grouped into three activity sections, in fixed order, each non-empty
     /// section only. Applies fuzzy search.
     /// `errored` marks the section of idle sessions whose turn ended on a FAILURE. It is
     /// a section, not a status: the state language has exactly four states, and an error
@@ -399,13 +402,13 @@ final class AgentStore: ObservableObject {
     /// something you can answer, and an error is not a question (commander, 2026-08-17).
     func sections(query: String) -> [(status: Status, errored: Bool, agents: [Agent])] {
         var out: [(Status, Bool, [Agent])] = []
-        for st in [Status.waiting, .working, .idle, .running] {
+        for st in [Status.waiting, .working, .idle] {
             // Native (non-tmux) sessions are their own category, not mixed into the
             // tmux status groups.
             // The supervisor renders as its own HQ card, never inside the sections.
             // Watched (opt-in plain) panes render in their OWN section below, not here.
             let group = agents.filter {
-                $0.state == st && !($0.state == .idle && $0.errored)
+                $0.state.section == st && !($0.state == .idle && $0.errored)
                     && !$0.isNative && !$0.isSupervisor && !$0.watched && matches($0, query)
             }
             // Finished (idle): most-recently-finished first (its `since` is frozen at

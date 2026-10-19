@@ -36,8 +36,9 @@ Every agent has four statuses (matching the CLI, see `internal/radar/agents.go`)
 | `waiting` | blocked on you, waiting for your input (most urgent, sorted first) | `#EF4444` red | **square** (corner radius ~3.5px) | **double bar ⏸** (pause) |
 | `working` | busy, running (don't interrupt) | `#06B6D4` cyan | circle | **loading ring** (open ring, **slowly rotating**, see §10) |
 | `idle` | this turn finished, your move (not urgent) | `#22C55E` green | circle | **checkmark ✓** (done) |
-| `running` | alive, sitting at the prompt | `#8E8E93` grey | circle | **small dot** |
+| `running` | alive; no confirmed working/waiting/completion signal | `#8E8E93` grey | circle | **small dot** |
 
+- UI grouping is deliberately simpler than evidence: neutral `running` belongs to Idle, with its grey dot and original timestamps preserved. It never creates a separate standby group or claims a completed turn.
 - "Most urgent status" priority: `waiting > working > idle/running`.
 - This glyph language is uniform across every surface: the menu-bar status item, popover row badges, the legend and Preferences all use the same set.
 - **The colour channel is reserved for status alone**; never use it to tell agent types apart (see §6).
@@ -110,7 +111,7 @@ Material: vibrancy (frosted glass). Light and dark both supported.
    the summary `5 agents · 1 waiting · 2 working · 2 idle` (localised, see `Summary`). In search mode the summary
    line becomes the search field.
 2. Grouped list: the section order is fixed, needs you (waiting) → errored → working →
-   idle → standby (running). Each section has a small title (all caps, weight 700, +0.5 tracking) + a count;
+   idle (including neutral `running` agents). Each section has a small title (all caps, weight 700, +0.5 tracking) + a count;
    the waiting section title is red, the errored section amber, the rest neutral.
    - "Errored" is a section inside the four-status language (2026-08-17): the status language still has exactly four entries; errored describes
      how this turn's idle ended. It gets its own section because "finished" and "stopped on an error" ask different

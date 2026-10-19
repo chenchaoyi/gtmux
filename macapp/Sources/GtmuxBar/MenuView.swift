@@ -6,7 +6,7 @@ enum MenuAction {
 }
 
 /// MenuView is the popover (DESIGN §3): a header (logo + search + summary), the
-/// agents grouped Needs-you → Working → Idle → Running, and an
+/// agents grouped Needs-you → Working → Idle, and an
 /// actions footer. A custom view (not NSMenu) so it can group, emphasize "needs
 /// you", and stay calm elsewhere.
 struct MenuView: View {
@@ -198,7 +198,7 @@ struct MenuView: View {
         let rows = store.managedAgents.filter { !$0.isSupervisor }
         let waiting = rows.filter { $0.state == .waiting }.count
         let working = rows.filter { $0.state == .working }.count
-        let idle = rows.filter { $0.state == .idle }.count
+        let idle = rows.filter { $0.state.section == .idle && !$0.errored }.count
         var parts: [String] = []
         if waiting > 0 { parts.append(l10n.tr("\(waiting) awaiting input", "\(waiting) 待输入")) }
         parts.append(l10n.tr("\(working) working", "\(working) 运行中"))
@@ -1071,7 +1071,7 @@ private struct SectionHeader: View {
         // background task running read as fully done. "Idle" is accurate for both the
         // clean-done and the background-running case.
         case .idle:    return l10n.tr("Idle", "空闲")
-        case .running: return l10n.tr("Running", "待命")
+        case .running: return l10n.tr("Idle", "空闲")
         }
     }
 }

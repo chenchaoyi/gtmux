@@ -1,0 +1,3 @@
+• A clearer launch screen: every pane stays visible in light and dark appearance, with a shared native and in-app identity.
+• Refined startup typography and spacing, readable loading feedback, and safe-area support for larger text and landscape. Loading respects Reduce Motion.
+• Quiet sessions now share the existing Idle group; neutral evidence keeps its dot without adding a Standby state.

@@ -116,7 +116,7 @@ describe('statusLabel', () => {
     ['waiting', 'waiting', '等输入'],
     ['working', 'working', '运行中'],
     ['idle', 'idle', '空闲'],
-    ['running', 'running', '待命'],
+    ['running', 'idle', '空闲'],
   ];
 
   it.each(cases)('maps %s in en and zh', (status, en, zh) => {

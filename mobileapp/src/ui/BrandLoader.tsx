@@ -6,7 +6,7 @@
 // pulse fits "动效最小" while staying on-brand.
 
 import React from 'react';
-import {Animated, Easing, StyleSheet, Text, View} from 'react-native';
+import {AccessibilityInfo, Animated, Easing, StyleSheet, Text, View} from 'react-native';
 import {BrandMark} from './BrandMark';
 
 export function BrandLoader({
@@ -20,17 +20,35 @@ export function BrandLoader({
   label?: string;
   labelColor?: string;
 }) {
-  const o = React.useRef(new Animated.Value(0.42)).current;
+  const o = React.useRef(new Animated.Value(1)).current;
+  const [reduce, setReduce] = React.useState<boolean | null>(null);
   React.useEffect(() => {
+    let alive = true;
+    let changed = false;
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', value => {
+      changed = true;
+      if (alive) setReduce(value);
+    });
+    // A live setting change wins over a slower initial preference query.
+    AccessibilityInfo.isReduceMotionEnabled().then(value => {
+      if (alive && !changed) setReduce(value);
+    }).catch(() => {});
+    return () => { alive = false; sub?.remove?.(); };
+  }, []);
+  React.useEffect(() => {
+    if (reduce !== false) {
+      o.setValue(1);
+      return;
+    }
     const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(o, {toValue: 1, duration: 650, easing: Easing.inOut(Easing.quad), useNativeDriver: true}),
-        Animated.timing(o, {toValue: 0.42, duration: 650, easing: Easing.inOut(Easing.quad), useNativeDriver: true}),
+        Animated.timing(o, {toValue: 0.55, duration: 650, easing: Easing.inOut(Easing.quad), useNativeDriver: true}),
       ]),
     );
     loop.start();
     return () => loop.stop();
-  }, [o]);
+  }, [o, reduce]);
 
   return (
     <View style={styles.wrap}>

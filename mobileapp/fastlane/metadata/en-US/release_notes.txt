@@ -1,2 +1,3 @@
-• External conversations show the observed launch application or executable when available, with its observation time in details.
-• Unknown sources appear as external sessions. Current input ownership and read-only controls remain explicit.
+• A clearer launch screen: every pane stays visible in light and dark appearance, with a shared native and in-app identity.
+• Refined startup typography and spacing, readable loading feedback, and safe-area support for larger text and landscape. Loading respects Reduce Motion.
+• Quiet sessions now share the existing Idle group; neutral evidence keeps its dot without adding a Standby state.

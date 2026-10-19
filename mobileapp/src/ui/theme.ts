@@ -33,7 +33,9 @@ export const statusRank: Record<StatusName, number> = {
   running: 3,
 };
 
-export const SECTION_ORDER: StatusName[] = ['waiting', 'working', 'idle', 'running'];
+// Neutral evidence stays gray on the row, inside the existing idle group.
+export const sectionStatus = (status: StatusName): StatusName => status === 'running' ? 'idle' : status;
+export const SECTION_ORDER: StatusName[] = ['waiting', 'working', 'idle'];
 
 export const Size = {
   avatar: 34,
@@ -96,7 +98,7 @@ export interface Section {
   agents: Agent[];
 }
 
-// Group agents into the four sections in fixed rank order, non-empty only. The
+// Group agents into three activity sections in fixed rank order, non-empty only. The
 // FINISHED (idle) section is ordered most-recently-finished first (`since` desc —
 // stable, since an idle agent's `since` is frozen at its last activity); every
 // other section is by `primary` case-insensitively. Mirrors the server's sortPanes
@@ -120,7 +122,7 @@ export function sections(agents: Agent[]): Section[] {
     // instead of its own "Watched / 关注" section (mirrors the menu-bar).
     const rows = agents
       // An ERRORED idle session is pulled out below — it is not "finished".
-      .filter(a => a.status === st && !(st === 'idle' && a.error) &&
+      .filter(a => sectionStatus(a.status) === st && !(a.status === 'idle' && a.error) &&
         a.source !== 'native' && a.role !== 'supervisor' && !a.watched && !statusOnlyDesktop(a))
       .sort((l, r) =>
         st === 'idle'

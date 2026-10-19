@@ -42,6 +42,9 @@ export const Debug = {
   resetServers: flag('RESET_SERVERS') === '1', // clear saved servers on launch (test isolation)
   seedServers: flag('SERVERS'), // JSON array of PairedMac to seed (pair-share UI tests)
   noPush: flag('NO_PUSH') === '1',
+  // Isolated capture only: keep the real startup component visible, without a
+  // production launch delay, pairing mutation or fake network connection.
+  showSplash: flag('SHOW_SPLASH') === '1',
   // e2e only: record this version as seen without the What's New popup. A version bump
   // otherwise put the popup over the first screen of every suite's first run, and 14
   // cases failed on it at once (%6, 2026-10-06). The flag file is written by the e2e

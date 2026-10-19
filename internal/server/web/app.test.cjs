@@ -628,7 +628,7 @@ test('focus HTML preserves Chat before Terminal alongside the real tile controls
   assert.deepEqual([...controls.matchAll(/data-mode="([^"]+)"/g)].map(m => m[1]), ['chat', 'term']);
 });
 
-for (const [language, names] of [['en-US', ['needs you', 'working', 'idle', 'running']], ['zh-CN', ['需要你', '运行中', '空闲', '待命']]]) {
+for (const [language, names] of [['en-US', ['needs you', 'working', 'idle', 'idle']], ['zh-CN', ['需要你', '运行中', '空闲', '空闲']]]) {
   test(`pane status accessible names match shared labels in ${language}`, () => {
     const h = harness({}, language);
     const statuses = ['waiting', 'working', 'idle', 'running'];
@@ -968,3 +968,20 @@ test('native host presentation retains uncertainty and read-only routing in both
   assert.ok(h.requests.every(r=>!r.url.includes('/api/send')&&!r.url.includes('/api/pane?')));h.api.cancelReads();
  }
 });
+
+for (const [language, idleLabel] of [['en-US', 'idle'], ['zh-CN', '空闲']]) {
+  test(`neutral and completed agents share the existing quiet group in ${language}`, () => {
+    const h = harness({}, language);
+    const neutral = {pane_id: '%4', source: 'tmux', agent: 'DeepSeek', status: 'running', since: 0};
+    const done = {pane_id: '%5', source: 'tmux', agent: 'Codex', status: 'idle', since: 100};
+    h.api.renderRadar([neutral, done]);
+    const headers = allNodes(h.node('radar')).filter(n => n.className === 'group-label');
+    assert.deepEqual(headers.map(n => n.textContent), [idleLabel + '  2']);
+    assert.equal(allNodes(h.node('radar')).filter(n => n.className === 'row').length, 2);
+    h.api.renderTree([neutral, done]);
+    const groups = allNodes(h.node('tree')).filter(n => n.className === 'tree-group');
+    assert.deepEqual(groups.map(n => n.textContent), [idleLabel + ' 2']);
+    assert.equal(neutral.status, 'running');
+    assert.equal(neutral.since, 0);
+  });
+}

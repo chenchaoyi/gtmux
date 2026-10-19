@@ -49,7 +49,7 @@ describe('statusRank + SECTION_ORDER (needs-you → working → idle → running
   });
 
   it('SECTION_ORDER matches the rank order', () => {
-    expect(SECTION_ORDER).toEqual(['waiting', 'working', 'idle', 'running']);
+    expect(SECTION_ORDER).toEqual(['waiting', 'working', 'idle']);
     const byRank = ([...SECTION_ORDER] as StatusName[]).sort(
       (a, b) => statusRank[a] - statusRank[b],
     );
@@ -241,4 +241,17 @@ describe('the errored section', () => {
     expect(c.errored).toBe(1);
     expect(c.idle).toBe(1);
   });
+});
+
+// A section is presentation, never a lifecycle/completion assertion.
+test('neutral DeepSeek shares idle without changing its evidence, badge or completion', () => {
+  const neutral = mk({pane_id: '%4', agent: 'DeepSeek', status: 'running', since: 0});
+  const done = mk({pane_id: '%5', status: 'idle', since: 200});
+  const failure = mk({pane_id: '%6', status: 'idle', error: true, since: 250});
+  const out = sections([neutral, done, failure]);
+  expect(out.map(s => s.status)).toEqual(['errored', 'idle']);
+  expect(out[1].agents).toEqual([done, neutral]);
+  expect(counts([neutral, done, failure]).idle).toBe(2);
+  expect(neutral).toMatchObject({status: 'running', since: 0});
+  expect(StatusColor[neutral.status]).toBe('#8E8E93');
 });
