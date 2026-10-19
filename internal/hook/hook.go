@@ -533,12 +533,12 @@ func argsHave(args []string, flag string) bool {
 // returns immediately — so a Codex SYNC hook does not block Codex's turn on the tmux
 // captures/nudges. Returns false if it could not start (caller then runs synchronously).
 // darwin-only build (goreleaser targets darwin), so SysProcAttr.Setsid is available.
-func startDetachedHookWorker(args []string, payload []byte, origin launchhost.Evidence) bool {
+func startDetachedHookWorker(args []string, payload []byte, origin launchhost.Evidence, process launchhost.AgentProcess) bool {
 	exe, err := os.Executable()
 	if err != nil {
 		return false
 	}
-	return spawnDetached(exe, append([]string{"hook", "--detached"}, args...), payload, launchHostEnv+"="+launchhost.Encode(origin))
+	return spawnDetached(exe, append([]string{"hook", "--detached"}, args...), payload, launchHostEnv+"="+launchhost.Encode(origin), agentProcessEnv+"="+launchhost.EncodeAgent(process))
 }
 
 // spawnDetached starts exe in its own session with payload as its stdin, and returns
@@ -639,13 +639,14 @@ func Run(stdin io.Reader, args []string) int {
 		originEvent = head.Event
 	}
 	origin := hookLaunchHost(agentKey, originEvent, argsHave(args, "--detached"))
+	process := hookAgentProcess(agentKey, argsHave(args, "--detached"))
 	// Codex hooks are installed SYNC (Codex 0.146.0 SKIPS async hooks — see
 	// agent_hooks.go), so a codex hook BLOCKS Codex's turn until this process returns. Keep
 	// the turn fast: re-exec ourselves DETACHED to do the slow (tmux-capturing) work and
 	// return immediately. `--detached` marks the worker so it never re-detaches; gated to
 	// codex so Claude/others' hook path is untouched. On any detach failure we fall through
 	// and run synchronously with the already-buffered `raw`.
-	if shouldDetachCodexHook(agentKey, args) && startHookWorker(args, raw, origin) {
+	if shouldDetachCodexHook(agentKey, args) && startHookWorker(args, raw, origin, process) {
 		return 0
 	}
 	// A detached worker that read nothing lost its payload on the way: say so, or the event
@@ -963,7 +964,13 @@ func Run(stdin io.Reader, args []string) int {
 			}
 		}
 		if st, remove := nativeStateFor(event); !remove && st != "" {
-			pid, comm := agentAncestorPID()
+			pid, comm := 0, ""
+			processStart := ""
+			if agentKey == "codex" {
+				pid, comm, processStart = process.PID, process.Comm, process.Start
+			} else {
+				pid, comm = agentAncestorPID()
+			}
 			host := previous.LaunchHost
 			if launchIdentityEvent(originEvent) {
 				host = origin
@@ -976,7 +983,7 @@ func Run(stdin io.Reader, args []string) int {
 					Agent: agentKey, SessionID: agentSession, Cwd: resumeCwd,
 					HomeID: homeID, CreationClient: creationClient, LaunchHost: host,
 					Event: event,
-					State: st, UpdatedAt: time.Now().Unix(), PID: pid, Comm: comm,
+					State: st, UpdatedAt: time.Now().Unix(), PID: pid, Comm: comm, ProcessStart: processStart,
 					EndReason: turnOutcome(event), TurnID: nativeTurnID,
 					// The hook runs under the agent, under the shell, under the terminal
 					// app — so its own env/ancestry names the hosting terminal (Warp,

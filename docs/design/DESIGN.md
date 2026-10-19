@@ -266,6 +266,16 @@ agent detection. Existing avatar and semantic palette apply.
 
 CLI, API, HQ boundaries and learning times: [desktop follow design](desktop-follow.md).
 
+### External group visibility
+
+Both **External sessions** and **Elsewhere** have independent, persisted Show/Hide
+header buttons, with a chevron and count retained when folded. Their rows leave the
+flat list when folded; other groups and per-conversation follow choices are unaffected.
+Completed/idle Codex observations without a recorded process ID or explicit HQ follow
+stay outside the live overview; the core retains their records/history, and fresh
+working/waiting activity can surface them again. This is absence of live evidence,
+not a claim that a frontend closed. See [agent integrations](../guides/agent-integrations.md#which-external-codex-conversations-remain-visible).
+
 ### Historical native launch host
 
 A valid optional `launch_host` displays the harness and observed host (for example,

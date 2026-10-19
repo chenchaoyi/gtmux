@@ -127,6 +127,33 @@ liveness, or permission to send, follow, adopt or bind a pane. Multiple conversa
 share the same host process. Creation metadata, host evidence and current control remain
 separate. Terminal, menu bar, phone, iPad and Web all consume the same core projection.
 
+## Which external Codex conversations remain visible
+
+The live overview does not use saved history as proof that a client is still open.
+An idle or completed Codex observation with **no recorded process ID** and **HQ follow
+off** leaves the radar list. Its observation, conversation files and consent remain
+intact; a later accepted working/waiting hook or explicit HQ follow can surface it
+again under the usual eligibility rules. This does not declare the frontend closed.
+A process-backed idle session keeps the existing liveness checks; unreadable process
+metadata receives the existing twelve-hour grace. DSH Web's saved-session discovery
+is unchanged.
+
+Codex hooks separately capture the original agent process before the worker detaches,
+on each lifecycle hook. This narrow snapshot records PID, executable basename and
+birth time, with an eight-ancestor / 350 ms / 4 KiB-per-command bound and revalidation.
+It does not require a recognizable launch host. Private worker handoff expires after
+60 seconds. A recorded exact birth is compared on subsequent process checks; a reused
+PID is removed and an unreadable birth receives the unknown-process grace. Older
+PID-less observations are not assigned to a process by cwd, title or a host name.
+Birth times have one-second resolution; same-name PID reuse within that second
+cannot be distinguished. Sampling uses UTC to avoid a timezone change looking like
+a new process. This establishes backend process liveness only, never exclusive frontend ownership
+or permission to send input.
+
+In the Mac popover, **External sessions** and **Elsewhere** each have Show/Hide controls.
+Folding keeps the header and count visible, preserves the other groups, and survives
+reopening the popover. It changes presentation only; follow settings remain per conversation.
+
 ## Capability map
 
 “Process” means a built-in radar command profile, not every possible title or custom

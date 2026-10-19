@@ -204,8 +204,8 @@ func TestGatherAgentsSharesOneCodexPathDiscovery(t *testing.T) {
 	if got := transcript.CodexCandidateDiscoveryCount() - discoveriesBefore; got != 1 {
 		t.Fatalf("one gather performed %d total Codex candidate enumerations, want 1", got)
 	}
-	if len(rows) != 5 {
-		t.Fatalf("gather rows = %+v, want two tmux Codex rows, two native Codex rows, and one Claude control", rows)
+	if len(rows) != 3 {
+		t.Fatalf("gather rows = %+v, want two tmux Codex rows and one Claude control; completed PID-less Codex observations stay historical", rows)
 	}
 	foundTmux := false
 	for _, row := range rows {

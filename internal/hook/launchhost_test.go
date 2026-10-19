@@ -26,7 +26,7 @@ func TestLaunchHostCapturedBeforeDetachWithPayloadEvent(t *testing.T) {
 		return e
 	}
 	raw := `{"hook_event_name":"UserPromptSubmit","session_id":"one","cwd":"/test","prompt":"hello"}`
-	startHookWorker = func(args []string, payload []byte, host launchhost.Evidence) bool {
+	startHookWorker = func(args []string, payload []byte, host launchhost.Evidence, process launchhost.AgentProcess) bool {
 		calls = append(calls, "detach")
 		if host != e || string(payload) != raw {
 			t.Fatal(host, string(payload))

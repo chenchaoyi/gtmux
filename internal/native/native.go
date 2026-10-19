@@ -28,7 +28,9 @@ import (
 // does NOT apply to a process confirmed alive: an idle session sends no hooks, and the
 // spec keeps an idle-but-alive one however long it idles. It used to apply to every
 // record, so a session idle for twelve hours vanished while its process ran (%12,
-// 2026-10-06). SessionEnd removes a record immediately.
+// 2026-10-06). Non-Codex SessionEnd removes a record immediately; Codex retirement
+// requires exact binding or process/grace evidence. Radar may omit PID-less idle
+// unfollowed Codex observations without deleting this store record.
 const StaleAfter = 12 * time.Hour
 
 // Record is one agent session sensed outside tmux.
@@ -52,8 +54,9 @@ type Record struct {
 	// PID/Comm identify the agent PROCESS that fired the hook, so a "move to tmux"
 	// can exit the original once the resumed session is up. Comm guards against PID
 	// reuse (kill only if the pid is still that command). 0 = unknown (don't kill).
-	PID  int    `json:"pid,omitempty"`
-	Comm string `json:"comm,omitempty"`
+	PID          int    `json:"pid,omitempty"`
+	Comm         string `json:"comm,omitempty"`
+	ProcessStart string `json:"process_start,omitempty"` // exact process birth captured before detach
 }
 
 // Dir is where per-session native records live.
@@ -163,7 +166,7 @@ func Live(now int64) []Record {
 			removeSnapshot(r)
 			continue
 		}
-		switch processState(r.PID, r.Comm, r.UpdatedAt) {
+		switch recordProcessState(r) {
 		case processGone:
 			removeSnapshot(r)
 			continue
@@ -192,6 +195,30 @@ const (
 // presumption, not a proof: a process with the recorded command name that took the pid
 // within startSlack of the record's last update cannot be told apart from the writer.
 const startSlack = 120
+
+// Exact snapshots avoid the legacy elapsed-time tolerance. Missing metadata is
+// unknown, and a reused PID never inherits a previous process's observation.
+var readAgentProcess = launchhost.ReadAgent
+
+func recordProcessState(r Record) liveness {
+	if r.ProcessStart == "" {
+		return processState(r.PID, r.Comm, r.UpdatedAt)
+	}
+	if r.PID <= 1 {
+		return processUnknown
+	}
+	if err := syscall.Kill(r.PID, 0); err == syscall.ESRCH {
+		return processGone
+	}
+	p, ok := readAgentProcess(r.PID)
+	if !ok {
+		return processUnknown
+	}
+	if p.PID != r.PID || p.Start != r.ProcessStart || p.Comm != r.Comm {
+		return processGone
+	}
+	return processAlive
+}
 
 // processState reports what can be established about the process a record was written
 // for. Its pid-reuse guards matter most right after a reboot, when the OS hands a dead

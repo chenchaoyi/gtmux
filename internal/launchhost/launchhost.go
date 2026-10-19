@@ -188,7 +188,7 @@ func (w *boundedOutput) Write(b []byte) (int, error) {
 func run(ctx context.Context, name string, args ...string) string {
 	cmd := exec.CommandContext(ctx, name, args...)
 	cmd.WaitDelay = 50 * time.Millisecond
-	cmd.Env = append(os.Environ(), "LC_ALL=C")
+	cmd.Env = append(os.Environ(), "LC_ALL=C", "TZ=UTC")
 	var out boundedOutput
 	cmd.Stdout = &out
 	if cmd.Run() != nil || out.large {
