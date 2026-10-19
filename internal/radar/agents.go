@@ -23,6 +23,7 @@ import (
 	"unicode"
 
 	"github.com/chenchaoyi/gtmux/assets"
+	"github.com/chenchaoyi/gtmux/internal/agentclient"
 	"github.com/chenchaoyi/gtmux/internal/agents"
 	"github.com/chenchaoyi/gtmux/internal/conversation"
 	"github.com/chenchaoyi/gtmux/internal/diag"
@@ -47,6 +48,14 @@ var paneCapture = tmux.CapturePane
 // Such a record remains useful for restore history, but its transcript cannot
 // describe the new agent's state, digest, completion time, or native identity.
 func boundResume(loc, agent string) (resume.Record, bool) {
+	if key := agents.KeyForLabel(agent); key != "" {
+		if manifest, ok := agents.For(key); ok && len(manifest.TerminalClients) > 0 {
+			if a, ok := agentclient.ForPane(tmux.Display(loc, "#{pane_id}")); ok && a.Agent == key {
+				return resume.Record{Agent: a.Agent, SessionID: a.SessionID, HomeID: a.HomeID, Cwd: a.Cwd, TerminalClient: a.Client}, true
+			}
+			return resume.Record{}, false
+		}
+	}
 	rec, ok := resume.Load(loc)
 	if !ok || rec.SessionID == "" || rec.Agent == "codex" && rec.HomeID != "" && rec.HomeID != transcript.CodexHomeID() {
 		return resume.Record{}, false
@@ -907,6 +916,14 @@ func stripDefaultTitle(title, host string) string {
 
 // paneIdentity is what a pane IS: whether a coding agent runs there and which, read from
 // its title, its foreground command and its process tree. Reading it writes nothing.
+var terminalAttachments = func() map[string]agentclient.Attachment {
+	out := map[string]agentclient.Attachment{}
+	for _, a := range agentclient.All() {
+		out[a.Pane] = a
+	}
+	return out
+}
+
 type paneIdentity struct {
 	isAgent             bool
 	agent, status, task string // status is what the title alone says; GatherAgents refines it
@@ -918,7 +935,17 @@ type paneIdentity struct {
 
 // identifyPane classifies one radar scan line (paneSource's fields). GatherAgents and the
 // pane browser's agentPaneSet both use it, so "agent" means the same thing in both.
-func identifyPane(f []string, procs map[int]procInfo, children map[int][]int, profiles []agentProfile) paneIdentity {
+func identifyPane(f []string, procs map[int]procInfo, children map[int][]int, profiles []agentProfile, attachments ...map[string]agentclient.Attachment) paneIdentity {
+	if len(attachments) > 0 {
+		if a, ok := attachments[0][f[0]]; ok {
+			manifest, _ := agents.For(a.Agent)
+			pid := 0
+			if len(f) > 8 {
+				pid, _ = strconv.Atoi(f[8])
+			}
+			return paneIdentity{isAgent: true, agent: manifest.Label, status: "running", panePid: pid}
+		}
+	}
 	isAgent, agent, status, task := classifyAgent(f[4], f[5], profiles)
 	// A spinner title over a shell. tmux names the pane's foreground process-group
 	// leader, so a shell there means no agent holds the terminal, unless one runs
@@ -974,6 +1001,7 @@ func processChildren(procs map[int]procInfo) map[int][]int {
 // in its orphan sweep (%12, 2026-10-06). Rows carry PaneID, Agent, icon and role only.
 func identifiedAgentPanes() []Pane {
 	profiles := LoadProfiles()
+	terminal := terminalAttachments()
 	procs := procSnapshot()
 	children := processChildren(procs)
 	hostname, _ := os.Hostname()
@@ -987,7 +1015,7 @@ func identifiedAgentPanes() []Pane {
 		}
 		seen[f[0]] = true
 		f[4] = stripDefaultTitle(f[4], hostname)
-		idn := identifyPane(f, procs, children, profiles)
+		idn := identifyPane(f, procs, children, profiles, terminal)
 		if !idn.isAgent {
 			continue
 		}
@@ -1023,6 +1051,7 @@ func gatherAgentsWithCodexScope(codexScope *transcript.CodexPathScope) ([]Pane, 
 		codexScope = transcript.NewCodexPathScope()
 	}
 	profiles := LoadProfiles()
+	terminal := terminalAttachments()
 	lastFinished := state.ReadLastFinished()
 	waiting := state.WaitingSet()
 	now := time.Now().Unix()
@@ -1058,7 +1087,7 @@ func gatherAgentsWithCodexScope(codexScope *transcript.CodexPathScope) ([]Pane, 
 		// (classify → Task, watched-pane rows) sees "no title", not the hostname.
 		f[4] = stripDefaultTitle(f[4], hostname)
 		paneFieldsByID[f[0]] = f
-		idn := identifyPane(f, procs, children, profiles)
+		idn := identifyPane(f, procs, children, profiles, terminal)
 		isAgent, agent, status, task := idn.isAgent, idn.agent, idn.status, idn.task
 		// hookFreeStatus tells WORKING from IDLE for an agent whose title can't (Codex
 		// sets no idle glyph like Claude's ✳): working if the screen is changing (frame)
@@ -1524,6 +1553,9 @@ func nativePanesScoped(tmuxPanes []Pane, profiles []agentProfile, now int64, cod
 		}
 	}
 	inTmux := map[string]bool{}
+	for _, a := range terminalAttachments() {
+		inTmux[a.HomeID+"\x00"+a.SessionID] = true
+	}
 	for _, p := range tmuxPanes {
 		if rec, ok := boundResume(p.Loc, p.Agent); ok {
 			inTmux[rec.HomeID+"\x00"+rec.SessionID] = true

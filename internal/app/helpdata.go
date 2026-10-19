@@ -83,11 +83,11 @@ var helpCommands = []command{
 		DetailEN: "Per agent: the goal it was given, the end of its last reply, and what it is asking when it waits. No model calls; this is read off what is already on disk and on screen. It is also what HQ reads.",
 		DetailZH: "每个 agent 一段：它领到的目标、最新回复的结尾、以及它等待时在问什么。不调用任何模型，读的是磁盘和屏幕上已有的东西。HQ 读的也是这份。",
 	},
-	{Name: "transcript", Args: "<session_id> [--json]", Group: "look",
+	{Name: "transcript", Args: "<session_id> [--json]", Group: "look", Writes: true,
 		EN: "read a verified external conversation", ZH: "读取外部会话的对话记录",
-		DetailEN: "Read-only. Supports verified Codex and DeepSeek Harness conversations; does not enable HQ follow or resume the session. --json returns turns, dropped count and a polling revision.",
-		DetailZH: "只读，支持身份已确认的 Codex 和 DeepSeek Harness 会话。不会开启 HQ 跟进或恢复会话。--json 返回对话、省略数量和更新标识。",
-		Flags:    []cmdFlag{{Name: "--home-id <id>", EN: "require this conversation home identity", ZH: "指定会话数据目录身份"}, {Name: "--json", EN: "structured transcript and revision", ZH: "输出结构化对话与更新标识"}, {Name: "--etag <revision>", EN: "skip unchanged content; requires --json", ZH: "跳过未变更内容；须与 --json 一起使用"}}},
+		DetailEN: "Read-only unless --review-through explicitly records a DSH review declaration. Supports verified Codex and DeepSeek Harness conversations; does not enable HQ follow or resume the session. --json returns turns, dropped count and a polling revision.",
+		DetailZH: "默认只读；--review-through 会明确记录 DSH 审阅声明。支持身份已确认的 Codex 和 DeepSeek Harness 会话。不会开启 HQ 跟进或恢复会话。--json 返回对话、省略数量和更新标识。",
+		Flags:    []cmdFlag{{Name: "--home-id <id>", EN: "require this conversation home identity", ZH: "指定会话数据目录身份"}, {Name: "--json", EN: "structured transcript and revision", ZH: "输出结构化对话与更新标识"}, {Name: "--etag <revision>", EN: "skip unchanged content; requires --json", ZH: "跳过未变更内容；须与 --json 一起使用"}, {Name: "--messages", EN: "DSH public message page as JSON; no automatic review acknowledgement", ZH: "以 JSON 逐条读取 DSH 公开消息；读取不等于审阅"}, {Name: "--after-seq <n>", EN: "messages after source sequence; requires --messages; default -1", ZH: "读取此源序号之后的消息；须配合 --messages；默认 -1"}, {Name: "--limit <n>", EN: "message count, 1–200; requires --messages; default 100", ZH: "消息数量，1–200；须配合 --messages；默认 100"}, {Name: "--review-through <n>", EN: "explicitly declare review through a returned message sequence; requires --messages", ZH: "明确声明已审阅至本页返回的消息序号；须配合 --messages"}}},
 
 	{
 		Name: "follow", Args: "<session_id> [options]", Group: "setup", Writes: true,

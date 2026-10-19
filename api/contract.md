@@ -1305,3 +1305,18 @@ Log mode retains `entries`; grouped mode returns `entries:[]` and bounded group 
 
 
 Access history defaults to `origin=external`; explicit `external|local|unknown|all` is supported for diagnostics. `query.origin` is always echoed. Filtering occurs before entries, groups and page limits. Every entry has `origin` and bounded `origin_basis`; each group has `origin`. UI clients require external origin on all returned entries/groups. Under `all`, a group spanning origins reports unknown. A verified paired/shared-link identity remains external over loopback transport; otherwise existing trusted peer/forwarding evidence determines external access. Loopback master scope alone is ambiguous. Recognized local-tool master requests without forwarding hints are local. Unresolved and historical records without positive device/non-loopback evidence remain unknown. No history is rewritten. See the design for evidence and privacy limits.
+
+### DeepSeek Harness terminal evidence
+
+A verified DSH terminal attachment uses the existing `dsh` agent identity and pane
+routes; all send scope, consent and draft checks still apply. Web conversations
+remain external and read-only. Native input acceptance proves queued input, not
+model execution or task completion.
+
+Lifecycle records may additionally carry `message_id` (stable public-message key),
+`message_seq` (source sequence; gaps include filtered private/tool records), and
+`message_role` (`user` or `assistant`). `ConversationMessage` carries a short public
+summary for verified foreground intervals; `ConversationGap` reports unavailable or
+changed source coverage. No HTTP route marks messages reviewed. Local
+`transcript --messages --review-through` is an explicit declaration, independent of
+HQ event-stream consumption. Existing transcript HTTP response shapes are unchanged.

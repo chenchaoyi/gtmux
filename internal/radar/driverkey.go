@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/chenchaoyi/gtmux/internal/agentclient"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
@@ -18,6 +19,12 @@ import (
 func AgentDriverKey(paneID string) string {
 	if paneID == "" {
 		return ""
+	}
+	if a, ok := agentclient.ForPane(paneID); ok {
+		return a.Agent
+	}
+	if agentclient.CandidatePane(paneID) {
+		return "dsh" // the transport refuses input until the actual binding is verified
 	}
 	pidStr := strings.TrimSpace(tmux.Display(paneID, "#{pane_pid}"))
 	pid, err := strconv.Atoi(pidStr)

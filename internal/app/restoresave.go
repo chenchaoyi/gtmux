@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/agentclient"
 	"github.com/chenchaoyi/gtmux/internal/resume"
 )
 
@@ -100,6 +101,15 @@ func (e paneEvidence) String() string {
 func (e paneEvidence) allowsResume() bool { return e == evidenceAgent || e == evidenceUnclear }
 
 // evidence classifies what this saved pane was doing.
+func (sp savedPane) resumeEvidence() paneEvidence {
+	if rec, ok := resume.Load(sp.Loc); ok && rec.Agent == "dsh" && rec.TerminalClient != "" && agentclient.MatchesSavedClient(rec.TerminalClient, sp.Full) {
+		if _, alive := resume.Resolve(rec); alive {
+			return evidenceAgent
+		}
+	}
+	return sp.evidence()
+}
+
 func (sp savedPane) evidence() paneEvidence {
 	if sp.Full != "" {
 		// Agent first, shell second: an agent installed as a shebang script runs as

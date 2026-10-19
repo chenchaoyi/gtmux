@@ -28,7 +28,7 @@ gtmux 的前提是每个 agent 各占一个 tmux pane。我们推荐 [Ghostty](h
 
 纯 Go CLI／服务端支持 **macOS 和 Linux（amd64、arm64）**。在 tmux 所在主机运行，即可从手机、iPad 或网页连接。菜单栏 App、桌面跳转和合盖控制仅适用于 macOS。Linux 的用户、socket、systemd 和无桌面运行方式见 [Linux 指南](docs/linux.zh.md)。
 
-DeepSeek Harness Web 对话可在菜单栏、手机、iPad、Web 和终端中作为外部历史只读查看。
+DeepSeek Harness 统一身份，dst 适配器支持核验后的 pane 管理和原生目标输入，见 [DSH 指南](docs/guides/deepseek-harness.zh.md)。Web 对话仍作为外部历史只读查看。
 专用原生 Cordis 插件接入后续生命周期事件，本轮不包含 TUI 控制。见 [DSH 配置与边界](docs/guides/deepseek-harness.zh.md)。
 
 ## 五个入口

@@ -14,6 +14,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/chenchaoyi/gtmux/internal/agentclient"
 	"github.com/chenchaoyi/gtmux/internal/agentenv"
 	"github.com/chenchaoyi/gtmux/internal/agents"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
@@ -148,6 +149,17 @@ func spawnRun(args []string) int {
 	if err := validateSpawnMatter(workspaceStore(), matter); err != nil {
 		fmt.Fprintln(os.Stderr, "gtmux spawn:", err)
 		return 2
+	}
+	if agent == "dsh" && paneFlag == "" {
+		if oneshot || model != "" {
+			i18n.Sae("DSH terminal spawn does not accept --oneshot or --model; choose the model in dst.", "DSH 终端派发暂不接受 --oneshot 或 --model；请在 dst 中选择模型。")
+			return 2
+		}
+		profile, oldProfile, configuredProfile, profileErr := prepareDSTProfile(agentInstallers["dsh"], true)
+		if lookTool("dst") == "" || profile == "" || profileErr != nil || string(oldProfile) != string(configuredProfile) || rowDSHHook(agentInstallers["dsh"]).status != stOK {
+			i18n.Sae("Install dst and run gtmux install hooks --agent dsh before spawning a DSH terminal.", "请先安装 dst 并运行 gtmux install hooks --agent dsh，再启动 DSH 终端。")
+			return 2
+		}
 	}
 	started := time.Now().Unix()
 	bindingToken := ""
@@ -492,6 +504,12 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOp
 		}
 	}
 
+	// Terminal clients start as the new pane command, so shell initialization
+	// cannot swallow their launch Enter. Existing panes retain the usual path.
+	directCommand := ""
+	if manifest, known := agents.For(agent); known && len(manifest.TerminalClients) > 0 && !oneshot {
+		directCommand = agentenv.Wrap(agentLaunchCommand(agent, model))
+	}
 	// Create a detached session (named from the branch/goal), optionally in runDir.
 	create := newSessionArgs(uniqueSessionName(name, sessionExists))
 	startDir := runDir
@@ -501,12 +519,18 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOp
 	if startDir != "" {
 		create = append(create, "-c", startDir)
 	}
+	if directCommand != "" {
+		create = append(create, directCommand)
+	}
 	created, err := tmux.Run(create...)
 	if err != nil || created == "" {
 		// Name collision / bad name → let tmux auto-name.
 		auto := []string{"new-session", "-d", "-P", "-F", "#{session_name}"}
 		if startDir != "" {
 			auto = append(auto, "-c", startDir)
+		}
+		if directCommand != "" {
+			auto = append(auto, directCommand)
 		}
 		created, err = tmux.Run(auto...)
 	}
@@ -517,8 +541,10 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOp
 		return "", "", false, "", "", "", 1, nil
 	}
 	pane = tmux.Display(created, "#{pane_id}")
-	if err := launch(pane); err != nil {
-		return pane, created, true, wtPath, branch, "", 0, err
+	if directCommand == "" {
+		if err := launch(pane); err != nil {
+			return pane, created, true, wtPath, branch, "", 0, err
+		}
 	}
 	nameDispatchWindow(pane, spawnSlug(title, branch, goal), headless) // task-named for a readable fleet
 
@@ -655,6 +681,11 @@ func launchAgent(pane, agent, model string) {
 
 func agentLaunchCommand(agent, model string) string {
 	cmd := agents.InteractiveCommand(agent)
+	if manifest, ok := agents.For(strings.TrimSpace(agent)); ok && len(manifest.TerminalClients) > 0 {
+		if launch, ok := agentclient.Command(manifest.Key, manifest.TerminalClients[0], ""); ok {
+			cmd = launch
+		}
+	}
 	if model != "" {
 		cmd += " --model " + model
 	}

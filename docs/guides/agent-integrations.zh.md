@@ -53,7 +53,7 @@ order: 6
 | `kimi` | `kimi`、`kimi-code` | 命令 hook | Kimi wire 日志 | 可恢复；无一次性执行 |
 | `copilot` | 无 | 命令 hook | 无 | 有恢复命令；无一次性执行 |
 | `kiro` | 无 | V3 全局 hook / 旧版 agent profile | 无 | 有恢复命令；无一次性执行 |
-| `dsh` | 无；仅安装检测探测 `dsh` | DSH 原生插件 | v4 文件；外部对话适配器 | 无恢复、TUI 输入及一次性执行 |
+| `dsh` | 核验终端客户端绑定；安装探测 `dsh`/`dst` | DSH 原生组件 | v4 文件；共享 pane 与外部读取器 | dst 原生输入、恢复；Web 只读；无一次性执行 |
 | `hermes-agent` | 无 | 仅事件分类器，无安装器 | 无 | 仅有恢复命令 |
 | `grok` | 无 | 无 | 无 | 仅有恢复命令 |
 | `aider` | `aider` | 无 | 无 | 均无 |
@@ -186,7 +186,7 @@ SessionStart、提示、工具前后和 Stop 事件接入桥接。工具开始�
 
 实现：[hook 契约](../design/agent-hooks.zh.md)、[分版本安装器](../../internal/app/kiro_hooks.go)。
 
-## DeepSeek Harness Web — `dsh`
+## DeepSeek Harness — `dsh`
 
 **先读历史。** 外部对话适配器读取 `$DSH_HOME/sessions`，默认 `~/.dsh/sessions`，
 针对 DSH **0.2.0-rc.2** 的 v4 文件格式，支持原始 JSONL 和带校验的连续 Zstandard 帧。
@@ -198,14 +198,14 @@ SessionStart、提示、工具前后和 Stop 事件接入桥接。工具开始�
 **再接未来事件。** Gtmux 随二进制打包的是**我们编写的事件桥接脚本**，没有内置 Cordis
 框架；Cordis 扩展运行时由 DSH 提供。安装器写出 `$DSH_HOME/gtmux/gtmux.mjs` 和
 `gtmux.cordis.yml`，不用另外装 npm 包。下次主动启动 Web 时，使用安装器打印的
-`dsh web --patch '…/gtmux/gtmux.cordis.yml'`。安装不会修改用户 profile，也不会重启当前 Web。
+`dsh web --patch '…/gtmux/gtmux.cordis.yml'`。安装不会重启现有工作；已有 dst profile 会管理一段自有原生组件配置，其他设置保留。
 
 脚本使用 DSH 自己的 `session/event`、`user-questions/request`，**不走 Codex 兼容 hook**。
 它跟踪根会话提示、回合结果和未回答的问题，将问题原样交给 DSH，不代答、不批准。
 `approval/asked` 不能证明正在等用户处理，批准卡片检测尚未实现。队列和子进程有边界，
-stdin 使用管道。Doctor 检查两份托管文件的准确内容，但会说明运行中是否加载尚未核实。
-`InstallDetect: dsh` 只用于安装探测，没有开启 DSH TUI 发现、恢复、adopt、输入、用量
-和一次性执行。知识写入 `$DSH_HOME/AGENTS.md`。
+stdin 使用管道。终端适配器核对数据目录、前台会话、进程祖先和 tmux 代际，再开放受管 pane；后台挂载本身不授予输入能力。原生命令拿到真实目标 agent，校验一次性请求并返回对应回执，保留草稿、菜单和会话切换保护。各端仍显示 DeepSeek Harness 和官方图标，dst 只是内部客户端适配器。
+
+Doctor 区分文件已安装、实时绑定和输入权限。适配器支持普通 `dst --backend dsh`、终端派发与恢复，以及 HQ 逐条读取公开消息并明确标记审阅。Web 继续外部只读，仍无 Web adopt、用量和一次性执行；较早的 Web 或后台区间不自动纳管。知识写入 `$DSH_HOME/AGENTS.md`。见[终端设计与验证边界](../design/dsh-terminal-clients.zh.md)。
 
 实现：[安装、上游契约与官方图标](deepseek-harness.zh.md)、
 [插件源码](../../internal/app/dsh_plugin.mjs)、[文件读取器](../../internal/dsh/log.go)。

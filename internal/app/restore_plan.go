@@ -106,7 +106,7 @@ func buildRestorePlanFrom(save string) restorePlan {
 
 	var pending []savedPane
 	for _, sp := range layout.Panes {
-		if !sp.evidence().allowsResume() {
+		if !sp.resumeEvidence().allowsResume() {
 			continue
 		}
 		if rec, ok := resume.Load(sp.Loc); ok && rec.SessionID != "" {

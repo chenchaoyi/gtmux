@@ -27,6 +27,9 @@ import (
 
 // Record is one logged lifecycle event (the stable additive contract).
 type Record struct {
+	MessageID      string `json:"message_id,omitempty"`
+	MessageSeq     int64  `json:"message_seq,omitempty"`
+	MessageRole    string `json:"message_role,omitempty"`
 	HomeID         string `json:"home_id,omitempty"`
 	TaskID         string `json:"task_id,omitempty"`
 	BindingID      string `json:"binding_id,omitempty"`
@@ -211,6 +214,15 @@ func Append(r Record) {
 	if err := appendChecked(r); err != nil {
 		diag.ReportStoreFailure("events", err)
 	}
+}
+
+// AppendChecked lets a source reconciler advance only after journal delivery.
+// A disabled journal cannot claim coverage of a conversation's messages.
+func AppendChecked(r Record) error {
+	if capBytes() <= 0 {
+		return fmt.Errorf("event journal is disabled")
+	}
+	return appendChecked(r)
 }
 
 func appendChecked(r Record) error {

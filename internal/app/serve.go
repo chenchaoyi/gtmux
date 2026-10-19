@@ -19,10 +19,12 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/assets"
+	"github.com/chenchaoyi/gtmux/internal/agentclient"
 	"github.com/chenchaoyi/gtmux/internal/agents"
 	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
+	"github.com/chenchaoyi/gtmux/internal/dshfeed"
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hook"
 	"github.com/chenchaoyi/gtmux/internal/hostinfo"
@@ -358,6 +360,7 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		// The HQ nudge drain's backstop: a knock queued behind a half-typed draft
 		// lands within seconds of the box clearing, not on the sampling cadence.
 		OnFastTick: func() {
+			dshfeed.Schedule()
 			scheduleWorkspaceWork()
 			hq.DrainHQNudges()
 		},
@@ -849,6 +852,11 @@ func transcriptForPane(id string, earlier int) ([]byte, server.TranscriptMeta, e
 		return empty, meta, nil
 	}
 	rec, ok := resume.Load(loc)
+	if a, bound := agentclient.ForPane(id); bound {
+		rec, ok = resume.Record{Agent: a.Agent, SessionID: a.SessionID, HomeID: a.HomeID, Cwd: a.Cwd, TerminalClient: a.Client}, true
+	} else if ok && rec.Agent == "dsh" {
+		return empty, meta, nil
+	}
 	if !ok {
 		return empty, meta, nil
 	}
@@ -1313,6 +1321,7 @@ func hasPendingAsk(id string) bool {
 // both say the phone stays protected).
 func phoneDeliverOpts(pane, agentCmd, sendID string, tune dispatch.Tuning) dispatch.Opts {
 	opts := dispatchbridge.DeliverOpts(pane, agentCmd, sendID != "", tune)
+	opts.DeliveryID = sendID
 	opts.ClobberDraft = false
 	return opts
 }

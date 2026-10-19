@@ -294,6 +294,9 @@ func doctorSectionsWithProgress(progress func(string)) []dsection {
 					checks = append(checks, doctorRowCheck{agentInstallers[key].display + " hook", func() dcheck { return rowAgentHook(key) }})
 				}
 			}
+			if agentHookPresent("dsh") {
+				checks = append(checks, doctorRowCheck{"DeepSeek Harness terminal", rowDSHTerminal})
+			}
 			checks = append(checks,
 				doctorRowCheck{i18n.Tr("chat binding", "会话绑定"), rowStaleBindings},
 				doctorRowCheck{i18n.Tr("hook traffic", "hook 通路"), rowHookSilence})

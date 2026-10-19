@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/agentclient"
 	"github.com/chenchaoyi/gtmux/internal/agents"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/driver"
@@ -79,7 +80,7 @@ func DispatchIO(pane string, agentCmd ...string) dispatch.IO {
 		// An unbound Codex has no trustworthy pane-only receipt. The screen
 		// verifier remains available while the hook cannot prove ownership.
 	}
-	return dispatch.IO{
+	dio := dispatch.IO{
 		Capture:      func() string { return tmux.CaptureFull(pane) },
 		CaptureColor: func() string { return tmux.CaptureFullColor(pane) },
 		Paste:        func(text string) error { return tmux.Paste(pane, text) },
@@ -99,6 +100,11 @@ func DispatchIO(pane string, agentCmd ...string) dispatch.IO {
 		RecordSend: dispatch.RecordSend,
 		ForgetSend: dispatch.ForgetSend,
 	}
+	knownDSH := len(agentCmd) > 0 && agentKey(agentCmd[0]) == "dsh"
+	if _, ok := agentclient.ForPane(pane); ok || knownDSH || agentclient.CandidatePane(pane) {
+		return agentclient.WrapIO(pane, dio, agentclient.ForPane)
+	}
+	return dio
 }
 
 // DeliverOpts builds the verify options for a pane + agent, applying tuning.
@@ -174,7 +180,7 @@ func WaitAgentReady(pane, agentCmd string, timeout time.Duration) bool {
 	g := readyGate{agent: agentKey(agentCmd), sessionUp: driverReady(pane, agentKey(agentCmd))}
 	for {
 		if g.step(tmux.Display(pane, "#{pane_current_command}"),
-			func() string { return tmux.CaptureFull(pane) }) {
+			func() string { return tmux.CaptureFull(pane) }) && terminalTransportReady(pane, g.agent, agentclient.ForPane) {
 			return true
 		}
 		if time.Now().After(deadline) {
@@ -210,6 +216,9 @@ func ReadyBlocker(pane, agentCmd string) (blocker, capture string) {
 		return "the agent never started — the pane is still a bare shell (" + cmd + ")", tmux.CaptureFull(pane)
 	}
 	capture = tmux.CaptureFull(pane)
+	if !terminalTransportReady(pane, agentKey(agentCmd), agentclient.ForPane) {
+		return "the native terminal attachment or its input grant is not ready", capture
+	}
 	return readyBlockerOf(capture, agentKey(agentCmd)), capture
 }
 
@@ -307,4 +316,15 @@ var serverStart struct {
 	sync.Mutex
 	v  int64
 	at time.Time
+}
+
+// Terminal clients need their native receiver as well as a rendered composer.
+// A fast first frame must not race bridge activation during managed spawn.
+func terminalTransportReady(pane, agent string, lookup func(string) (agentclient.Attachment, bool)) bool {
+	m, known := agents.For(agent)
+	if !known || len(m.TerminalClients) == 0 {
+		return true
+	}
+	a, ok := lookup(pane)
+	return ok && a.Agent == agent && a.InputReady
 }

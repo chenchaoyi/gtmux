@@ -185,12 +185,14 @@ import (
 //
 // v55 — explicit workspace matter IDs, durable instructions and typed replies.
 // v56 — enroll verified existing goals without replay and preserve HQ-follow consent.
-const hqPlaybookVersion = 56
+// v57 — explicit DSH public-message review and coverage boundaries.
+const hqPlaybookVersion = 57
 
 // playbookFingerprints files the charter text under the version that carries it, so an
 // edit that forgets to bump the number fails instead of shipping to nobody (see
 // playbook_version_test.go for why the floors above cannot catch that).
 var playbookFingerprints = map[int]string{
+	57: "60b9b7a7ed9a13d6",
 	56: "7a70c00da823fb4b",
 	55: "bccecdff01b51072",
 	36: "e2154b7242720d6b",
@@ -1174,7 +1176,7 @@ func deliverHQBriefing(pane, agentCmd string) {
 // one anchor set (enforced by TestChartersShareSkeletonAndAnchors).
 const hqInstructions = hqInstructionsEN
 
-const hqInstructionsEN = hqInstructionsBaseEN + "\n" + hqWorkspaceInstructionsEN
+const hqInstructionsEN = hqInstructionsBaseEN + "\n" + hqWorkspaceInstructionsEN + "\n" + hqDSHMessagesEN
 
 const hqInstructionsBaseEN = `# gtmux Supervisor HQ
 

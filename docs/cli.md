@@ -424,6 +424,7 @@ act.doctor.bundle       doctor
 act.doctor.fix          doctor
 act.focus               focus, serve
 act.session.follow      follow, serve
+act.session.review      transcript
 act.hq.brief            hq
 act.hq.export           hq
 act.hq.import           hq
@@ -680,6 +681,8 @@ Use `--home-id <home_id>` from the radar row to select its configuration identit
 Mac, paired phone/iPad and Web offer [read-only viewing with updates](design/desktop-conversation.md).
 Continue replies in the original client. For DSH history discovery and its dedicated
 Cordis hook, see [DeepSeek Harness](guides/deepseek-harness.md).
+
+For DSH public message pages, use `gtmux transcript <session_id> --messages --after-seq -1 --limit 100 --json` (`--limit` 1–200). Continue from the returned sequence. Reading never marks review. After judging a page, repeat its read with `--review-through <last_message_seq>` to declare review; read from the existing `reviewed_through` cursor before advancing it. `has_more` marks another page; `source_seq` and `revision` describe the observed source. Replacements and observed truncation reset terminal reconciliation coverage and emit `ConversationGap`. See the [DSH guide](guides/deepseek-harness.md) for managed terminal input and installation.
 
 ## `gtmux follow`
 
@@ -2288,7 +2291,7 @@ gtmux uninstall [hooks|app|all]     # reverse it (asks when no target)
 ```
 
 Without `--agent`, hooks still default to Claude. `--agent auto` detects supported homes/installations and skips agents whose settings disable hooks.
-The DSH Cordis plugin is bundled; no npm package is needed. Doctor can install/repair its module and launch overlay, and prints the next `dsh web --patch …` command without claiming the running process loaded it. See the [DSH guide](guides/deepseek-harness.md).
+The DSH Cordis plugin is bundled; no npm package is needed. Doctor can install/repair its modules, component manifest, owned dst profile block and Web launch overlay, and prints the next `dsh web --patch …` command without claiming the running process loaded it. See the [DSH guide](guides/deepseek-harness.md).
 
 `gtmux install hooks` registers `gtmux hook` in `~/.claude/settings.json` for turn,
 permission, session, compaction and tool events (idempotent; preserves other hooks and

@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/assets"
+	"github.com/chenchaoyi/gtmux/internal/agentclient"
 	"github.com/chenchaoyi/gtmux/internal/agents"
 	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/dsh"
@@ -649,7 +650,10 @@ func Run(stdin io.Reader, args []string) int {
 	var payload struct {
 		HookEventName    string `json:"hook_event_name"`
 		TurnID           string `json:"turn_id"`
-		SessionID        string `json:"session_id"`        // the agent's session id (Claude); "" otherwise
+		SessionID        string `json:"session_id"` // the agent's session id (Claude); "" otherwise
+		TerminalClient   string `json:"terminal_client"`
+		ClientPID        int    `json:"client_pid"`
+		ClientInstance   string `json:"client_instance"`
 		ToolName         string `json:"tool_name"`         // the tool a PreToolUse refers to (Claude)
 		Cwd              string `json:"cwd"`               // the agent's working dir (Claude)
 		NotificationType string `json:"notification_type"` // Claude Notification kind (permission_prompt / idle_prompt / …)
@@ -752,6 +756,14 @@ func Run(stdin io.Reader, args []string) int {
 	if agentKey == "dsh" {
 		pane = ""
 	} // A shared Web server's launcher never owns a pane.
+	var terminalAttachment agentclient.Attachment
+	if agentKey == "dsh" && payload.TerminalClient != "" {
+		if a, ok := agentclient.ForSession(agentKey, dsh.HomeID(), agentSession); ok &&
+			a.Client == payload.TerminalClient && a.PID == payload.ClientPID && a.Instance == payload.ClientInstance {
+			terminalAttachment = a
+			pane = a.Pane
+		}
+	}
 	if agentKey == "codex" && rawEvent == "UserPromptSubmit" && transcript.SessionBindingToken(promptText) != "" {
 		// A rejected witness must not be bypassed by the older unique-cwd
 		// fallback. Leave it pane-less until its exact target can be verified.
@@ -826,7 +838,7 @@ func Run(stdin io.Reader, args []string) int {
 		}
 	}
 	if agentKey == "dsh" {
-		pane = ""
+		pane = terminalAttachment.Pane
 	}
 
 	session := ""
@@ -862,7 +874,7 @@ func Run(stdin io.Reader, args []string) int {
 	if agentKey == "dsh" {
 		homeID = dsh.HomeID()
 	}
-	if pane != "" && resume.Resumable(agentKey) {
+	if pane != "" && (resume.Resumable(agentKey) || terminalAttachment.Client != "") {
 		if loc := tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}"); loc != "" {
 			cwd := resumeCwd
 			if cwd == "" {
@@ -879,10 +891,11 @@ func Run(stdin io.Reader, args []string) int {
 			// runs slash commands (`/usage`) as their OWN session in the SAME pane, and
 			// letting one of those claim the record pointed restore at a command stub
 			// instead of the work session. See resumeowner.go.
-			if sid != "" && ownsPane(loc, agentKey, sid) {
+			if sid != "" && (terminalAttachment.Client != "" || ownsPane(loc, agentKey, sid)) {
 				_ = resume.Save(loc, resume.Record{
-					HomeID: homeID,
-					Agent:  agentKey, SessionID: sid, Cwd: cwd,
+					HomeID:         homeID,
+					TerminalClient: terminalAttachment.Client,
+					Agent:          agentKey, SessionID: sid, Cwd: cwd,
 					Launcher:  launcherFor(loc, pane, agentKey, event),
 					UpdatedAt: time.Now().Unix(),
 				})
