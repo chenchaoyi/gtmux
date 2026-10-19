@@ -200,6 +200,16 @@ Compact canvases use a bottom sheet; regular canvases use a centred form capped 
 
 Creation locks submission and dismissal until a result. Inline errors preserve the name. Uncertain delivery retains the same request ID and canonical name, offering Retry and Check sessions; no automatic retry. Success closes the form before Workspace selects the exact returned pane in Terminal. All panes refreshes on a result/list check. Unmounting on a server switch discards callbacks, so a late result never opens a pane on another Mac. No successful result is inferred from a lost response.
 
+### Historical native launch host
+
+A valid optional `launch_host` displays the harness and observed host (for example,
+`Codex · sample-client`). An unconfirmed native client without host evidence displays
+`Codex · External session`. Conversation details show the host observation time and
+retain “Current input client unconfirmed”; the host never changes action permissions.
+All detection belongs to the Go core, with no consumer-side ancestry lookup. See
+[agent integrations](../guides/agent-integrations.md#where-an-external-conversation-was-launched)
+for extraction and privacy limits. The observation can be old; it is not current ownership.
+
 ## 4. Detail interaction (pane view + input)
 
 ### Long-pressing a row: feedback has three layers (2026-09-10)

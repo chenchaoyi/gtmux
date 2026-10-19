@@ -146,7 +146,10 @@ func agentsTable(panes []radar.Pane) string {
 		}
 		location := p.Loc
 		if p.DesktopClient() == "unconfirmed" {
-			location = i18n.Tr("client unconfirmed", "控制端未确认")
+			location = i18n.Tr("external session", "外部会话")
+		}
+		if host := p.LaunchHostDisplay(); host != nil {
+			location = host.Name
 		}
 		fmt.Fprintf(&b, "%s%s%s %s%s%s %s%s%s %s%s%s %s%s%s%s\n",
 			color, glyph, i18n.Reset,

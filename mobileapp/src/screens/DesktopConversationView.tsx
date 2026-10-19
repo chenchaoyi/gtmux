@@ -2,7 +2,7 @@ import React, {useContext, useEffect, useState} from 'react';
 import {AppState, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {NavigationContext} from '@react-navigation/native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {Agent, primary, sameAgent} from '../api/types';
+import {Agent, primary, secondary, nativeEvidenceLabel, sameAgent} from '../api/types';
 import {useApp} from '../state/AppContext';
 import {useAgents} from '../state/AgentsContext';
 import {useDesktopTranscript} from '../state/useDesktopTranscript';
@@ -38,7 +38,7 @@ export function DesktopConversationView({agent, onBack}: {agent: Agent; onBack?:
     <View style={styles.header}>
       {demo && <Text style={[styles.notice, {color: pal.fg2}]}>DEMO</Text>}
       {onBack && <TouchableOpacity onPress={onBack} accessibilityRole="button" accessibilityLabel={zh ? '返回' : 'Back'} style={styles.back}><Text style={{color: pal.fg}}>‹</Text></TouchableOpacity>}
-      <View style={styles.identity}><Text numberOfLines={2} style={[styles.title, {color: pal.fg}]}>{primary(live)}</Text><Text style={[styles.notice, {color: pal.fg2}]}>{zh ? '只读 · 请在原客户端继续对话' : 'Read only · Continue in the original client'}</Text></View>
+      <View style={styles.identity}><Text numberOfLines={2} style={[styles.title, {color: pal.fg}]}>{primary(live)}</Text><Text style={[styles.notice, {color: pal.fg2}]}>{secondary(live, lang)}</Text><Text style={[styles.notice, {color: pal.fg2}]}>{zh ? '只读 · 请在原客户端继续对话' : 'Read only · Continue in the original client'}</Text>{!!nativeEvidenceLabel(live, lang) && <Text style={[styles.notice, {color: pal.fg2}]}>{nativeEvidenceLabel(live, lang)}</Text>}</View>
     </View>
     {(failed || isGuest) && <View testID="desktop-transcript-error" style={[styles.error, {backgroundColor: pal.surface}]}>
       <Text style={[styles.message, {color: pal.fg}]}>{message}</Text>

@@ -60,7 +60,7 @@ function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
   assert.ok(source.includes(marker), 'web boot marker changed');
   const script = source.replace(marker, `
     globalThis.__test = {drawChat, renderTileChat, mdRender, labelChrome, setupCodeBox, connStateFor, makeComposer, isHQPane, paneSessionTitle, paneToAgent, renderPanes, renderRadar,
-      openConversation, pollConversation, conversationControls, readableConversation,
+      openConversation, pollConversation, conversationControls, readableConversation, nativeSourceLabel, nativeEvidenceLabel, launchHost,
  setExternalSettings: s => {externalSettings=s;}, show, gate, runRead, cancelReads, pollPane, pollChat, pollRadar, renderChat, tilePollChat, renderTree, treeRow, renderCmdk, cyclePane,
       onDraw: fn => {drawChat = fn;},
       setWorkbenchAgents: rows => {WB.agents = rows;},
@@ -953,4 +953,18 @@ test('external reader retries a failed body without accepting its validator', as
  reply.json=async()=>[];h.api.pollConversation();await new Promise(r=>setImmediate(r));
  const reads=h.requests.filter(r=>r.url.includes('/session/transcript'));
  assert.equal(reads.length,2);assert.equal(reads[1].options.headers['If-None-Match'],undefined);h.api.cancelReads();
+});
+
+
+test('native host presentation retains uncertainty and read-only routing in both languages', async () => {
+ for (const language of ['en-US', 'zh-CN']) {
+  const h=harness({ok:true,status:200,headers:{get:()=>null},json:async()=>[]},language);
+  const a={agent:'Codex',source:'native',session_id:'sample',current_client:'unconfirmed',can_read_conversation:true,launch_host:{name:'sample-client',kind:'process',observed_at:1700000000}};
+  assert.equal(h.api.nativeSourceLabel(a),'Codex · sample-client');
+  assert.match(h.api.nativeEvidenceLabel(a),language==='en-US'?/observed.*Current input client unconfirmed/:/记录于.*当前输入客户端未确认/);
+  assert.match(h.api.nativeSourceLabel({...a,launch_host:null}),language==='en-US'?/External session/:/外部会话/);
+  h.api.openConversation(a);await new Promise(r=>setImmediate(r));
+  assert.ok(h.api.conversationControls().children.some(c=>c.textContent.includes('sample-client')));
+  assert.ok(h.requests.every(r=>!r.url.includes('/api/send')&&!r.url.includes('/api/pane?')));h.api.cancelReads();
+ }
 });

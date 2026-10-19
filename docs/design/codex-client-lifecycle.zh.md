@@ -80,7 +80,7 @@ writer 空闲也可能存活；已加载线程可能只是缓存；保存的对�
 ## 4. 展示与操作设计
 
 标题为主，一行简短副标题，沿用状态图标。如 `Codex · tmux %N`、`Codex · ChatGPT 桌面版`、
-`Codex · 控制端未确认`。创建来源放详情，不当作当前客户端标签。纯历史不计入活跃数量。
+`Codex · 外部会话`，有启动宿主观察时显示宿主名。创建来源放详情，不当作当前客户端标签。纯历史不计入活跃数量。
 HQ 标记只来自当前已核实 HQ 绑定。不默认将所有 Desktop 历史加入雷达。
 
 | 操作 | 条件与行为 |
@@ -177,7 +177,8 @@ internal/app/reap_receipt_test.go 覆盖资源关闭、失败台账及关联。
 Native Codex 新增 `creation_client`（同时保留旧 `client`）、
 `current_client:"unconfirmed"`、不包含目录原文的 `home_id` 和
 `can_read_conversation`。Originator 只描述创建来源。现有公开协议无法确认共享后台由哪个
-前台控制，因此界面显示「控制端未确认」。Native Codex 不会因工作目录相同而获得 HQ 身份。
+前台控制；行上显示历史宿主名或「外部会话」，详情保留「当前输入客户端未确认」及宿主记录时间。
+提取边界见[agent 接入说明](../guides/agent-integrations.zh.md#外部对话从哪里启动)。Native Codex 不会因工作目录相同而获得 HQ 身份。
 「外部 Codex」默认仅显示状态；HQ 跟进、通知和后续知识整理均需按会话授权。
 实际外部回合活动会留下持久的授权边界，native 记录移除后仍然有效，防止 CLI 创建的对话
 后来在桌面端继续时绕过授权。tmux 中的输入仍发往明确的物理窗格。

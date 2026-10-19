@@ -31,6 +31,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/dsh"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/launchhost"
 	"github.com/chenchaoyi/gtmux/internal/native"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/resume"
@@ -306,6 +307,7 @@ type Pane struct {
 	terminal            string
 	client              string // compatibility creation metadata; never current owner
 	homeID              string
+	launchHost          *launchhost.Display
 	currentClient       string
 	canReadConversation bool
 	Follow              *sessionpolicy.Settings
@@ -386,6 +388,7 @@ type agentJSON struct {
 	Follow              *sessionpolicy.Settings `json:"follow,omitempty"`
 	HomeID              string                  `json:"home_id,omitempty"`
 	CreationClient      string                  `json:"creation_client,omitempty"`
+	LaunchHost          *launchhost.Display     `json:"launch_host,omitempty"`
 	CurrentClient       string                  `json:"current_client,omitempty"`
 	CanReadConversation bool                    `json:"can_read_conversation,omitempty"`
 	Client              string                  `json:"client,omitempty"` // native Codex: chatgpt_desktop | terminal
@@ -1641,8 +1644,8 @@ func nativePanesScoped(tmuxPanes []Pane, profiles []agentProfile, now int64, cod
 			EndReason: failedTurnOutcome(nativeTurnOutcomeScoped(codexScope, r), errored),
 			Task:      nativeTitle(r, titles[r.Agent]),
 			cwd:       r.Cwd, role: role,
-			terminal: r.Terminal,
-			client:   client, Follow: follow, homeID: r.HomeID, currentClient: currentClient, canReadConversation: conversation.Supports(r.Agent) && nativeReadableScope(r) && codexVerified,
+			terminal:   r.Terminal,
+			launchHost: r.LaunchHost.Display(), client: client, Follow: follow, homeID: r.HomeID, currentClient: currentClient, canReadConversation: conversation.Supports(r.Agent) && nativeReadableScope(r) && codexVerified,
 			project: project, branch: branch, icon: icon,
 			activityAt: r.UpdatedAt, Since: since,
 			sessionID: r.SessionID, adoptable: adoptRefusal(r.Agent, status, lastMsg, client) == "",
@@ -1935,7 +1938,7 @@ func agentsJSONBytes(panes []Pane) ([]byte, error) {
 			PaneID: p.PaneID, Session: p.session, Window: p.window, Pane: p.pane,
 			Loc: p.Loc, Agent: p.Agent, Status: p.Status, Task: p.Task,
 			Latest: p.Latest, Activity: p.Activity,
-			HomeID: p.homeID, CreationClient: p.client, CurrentClient: p.currentClient, CanReadConversation: p.canReadConversation,
+			LaunchHost: p.launchHost, HomeID: p.homeID, CreationClient: p.client, CurrentClient: p.currentClient, CanReadConversation: p.canReadConversation,
 			Source: src, Role: p.role, Project: p.project, Branch: p.branch, Terminal: p.terminal, Client: p.client, Tab: p.tab,
 			ActivityAt: p.activityAt, Since: p.Since, Icon: p.icon,
 			SessionID: p.sessionID, Adoptable: p.adoptable, Follow: p.Follow,
@@ -1987,3 +1990,6 @@ func nativeTitle(r native.Record, titles map[string]string) string {
 }
 
 func (p Pane) NativeHomeID() string { return p.homeID }
+
+// LaunchHostDisplay is historical display context, independent of control evidence.
+func (p Pane) LaunchHostDisplay() *launchhost.Display { return p.launchHost }

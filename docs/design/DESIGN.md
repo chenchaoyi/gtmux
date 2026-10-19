@@ -265,6 +265,16 @@ agent detection. Existing avatar and semantic palette apply.
 
 CLI, API, HQ boundaries and learning times: [desktop follow design](desktop-follow.md).
 
+### Historical native launch host
+
+A valid optional `launch_host` displays the harness and observed host (for example,
+`Codex · sample-client`). An unconfirmed native client without host evidence displays
+`Codex · External session`. Conversation details show the host observation time and
+retain “Current input client unconfirmed”; the host never changes action permissions.
+All detection belongs to the Go core, with no consumer-side ancestry lookup. See
+[agent integrations](../guides/agent-integrations.md#where-an-external-conversation-was-launched)
+for extraction and privacy limits. The observation can be old; it is not current ownership.
+
 ## 8. Preferences window
 
 The standard macOS settings grid (labels right-aligned, controls left-aligned). Fields:

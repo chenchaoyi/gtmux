@@ -39,6 +39,16 @@ connection indicator (server name + status dot, never the word "live") · appear
 - The tile stack is isolated within the board, so it cannot cover the sidebar tab or other surrounding controls. A maximized tile also remains below its Restore control after repeated focus clicks.
 - Resizable: a col-resize handle on the right edge, width remembered (localStorage). Below 900px the top-level page uses the single-column radar instead of the workbench.
 
+### Historical native launch host
+
+A valid optional `launch_host` displays the harness and observed host (for example,
+`Codex · sample-client`). An unconfirmed native client without host evidence displays
+`Codex · External session`. Conversation details show the host observation time and
+retain “Current input client unconfirmed”; the host never changes action permissions.
+All detection belongs to the Go core, with no consumer-side ancestry lookup. See
+[agent integrations](../guides/agent-integrations.md#where-an-external-conversation-was-launched)
+for extraction and privacy limits. The observation can be old; it is not current ownership.
+
 ## 3. Free-form board
 
 - Each tile = a live xterm mirror of one pane (reusing the existing xterm write + scroll lock in `app.js`).

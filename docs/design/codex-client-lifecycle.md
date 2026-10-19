@@ -91,7 +91,7 @@ exit does not prove backend writer or background turn release. Report these sepa
 ## 4. Presentation and actions
 
 Title first, one compact secondary line, existing status glyphs. Examples:
-`Codex · tmux %N`, `Codex · ChatGPT Desktop`, `Codex · controller unconfirmed`.
+`Codex · tmux %N`, `Codex · ChatGPT Desktop`, `Codex · External session` (or an observed launch-host name).
 Creation source belongs in details, not the current-client badge. Historical records
 stay outside live counts. HQ badge requires verified current HQ binding. Do not add a
 default stream of all Desktop history.
@@ -219,6 +219,8 @@ Native Codex rows now expose `creation_client` (with legacy `client` retained),
 `current_client:"unconfirmed"`, opaque `home_id`, and `can_read_conversation`.
 Originator remains creation metadata. The current public protocol does not prove which
 frontend controls a shared backend, so no Desktop/Terminal ownership is invented.
+Rows may show a historical launch-host name or “External session”; details retain current
+input uncertainty and the host observation time. See [agent integrations](../guides/agent-integrations.md#where-an-external-conversation-was-launched).
 Native Codex never inherits HQ role from cwd. Its external group defaults to status only;
 HQ follow, notifications and future knowledge capture require per-conversation consent.
 Actual external turn activity writes a durable consent boundary, which survives native

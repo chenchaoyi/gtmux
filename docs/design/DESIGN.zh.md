@@ -241,6 +241,14 @@ gtmux 支持 tmux 里的 agent，也支持直接跑在原生终端（无 tmux）
 
 CLI、API、HQ 边界与知识采集时间见[桌面跟进设计](desktop-follow.zh.md)。
 
+### Native 启动宿主历史观察
+
+有有效 `launch_host` 时，副标题显示 harness 与宿主，例如 `Codex · sample-client`；
+控制端未确认且没有宿主证据时，显示 `Codex · 外部会话`。对话详情列出宿主记录时间，
+并保留“当前输入客户端未确认”。来源名称不改变任何操作权限；识别只在 Go 核心完成，
+界面不查进程树。提取方法与隐私边界见[agent 接入说明](../guides/agent-integrations.zh.md#外部对话从哪里启动)。
+这份观察可能已经过时，不能用它确认当前控制端。
+
 ## 8. 偏好设置（Preferences window）
 
 标准 macOS 设置窗口栅格（标签右对齐、控件左对齐）。字段：
