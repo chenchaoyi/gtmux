@@ -1,9 +1,6 @@
 package hook
 
 import (
-	"path/filepath"
-	"strings"
-
 	"github.com/chenchaoyi/gtmux/internal/agents"
 	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
@@ -31,49 +28,8 @@ func paneLauncher(pane, agentKey string) string {
 // launcherFrom is the decision itself, kept free of tmux so the rules are testable as
 // rules — and so a test can prove the rules are actually APPLIED, which a test of the
 // helpers alone cannot (removing the version guard left every helper test green).
-func launcherFrom(cmd, agentKey string) string {
-	cmd = strings.TrimSpace(cmd)
-	if cmd == "" {
-		return ""
-	}
-	base := filepath.Base(cmd)
-	// A shell is the pane's own process, not a launcher — recording "bash" would resume
-	// the conversation by running bash.
-	if isShellComm(base) {
-		return ""
-	}
-	// The agent under its own name needs no record: that IS the registry form.
-	if known, ok := agents.CommandKeys()[base]; ok && known == agentKey {
-		return ""
-	}
-	// A Claude pane reports its VERSION as the command ("2.1.250"). That is not a
-	// command anyone can run, and recording it would turn a resumable conversation into
-	// a broken one — the mirror image of the bug this exists to fix.
-	if looksLikeVersion(base) {
-		return ""
-	}
-	return base
-}
-
-// looksLikeVersion reports whether a command name is really a version string — what tmux
-// reports for a Claude pane (`pane_current_command` = "2.1.250"). Running it would fail;
-// recording it as a launcher would turn a resumable conversation into a broken command.
-func looksLikeVersion(s string) bool {
-	if s == "" {
-		return false
-	}
-	dots := 0
-	for _, r := range s {
-		switch {
-		case r >= '0' && r <= '9':
-		case r == '.':
-			dots++
-		default:
-			return false
-		}
-	}
-	return dots > 0
-}
+func launcherFrom(cmd, agentKey string) string { return agents.LauncherFromCommand(cmd, agentKey) }
+func looksLikeVersion(s string) bool           { return agents.LooksLikeVersion(s) }
 
 // launcherFor decides what to record as this pane's launcher for a given event.
 //

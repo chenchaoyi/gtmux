@@ -259,13 +259,7 @@ func psInfo(pid int) (ppid int, comm string) {
 	return ppid, filepath.Base(f[len(f)-1])
 }
 
-func isShellComm(comm string) bool {
-	switch strings.TrimPrefix(comm, "-") {
-	case "sh", "bash", "zsh", "dash", "fish", "gtmux", "login", "env", "tmux":
-		return true
-	}
-	return false
-}
+func isShellComm(comm string) bool { return agents.ShellProcess(comm) }
 
 // isSpareProcess reports whether comm names an agent's internal warm-spare/pool
 // process rather than a real user-facing session. Claude pre-warms subprocesses
