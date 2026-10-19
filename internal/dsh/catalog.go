@@ -42,6 +42,7 @@ type Session struct {
 	Header
 	Path, HomeID, Title, State, EndReason, Revision string
 	ActivityAt, FirstAt                             int64
+	TurnAt                                          int64 // explicit native turn boundary, Unix milliseconds
 	HasMessages                                     bool
 }
 
@@ -312,10 +313,12 @@ func (e *catalogEntry) fold(line []byte) error {
 			}
 		}
 	case "turn/start":
+		e.value.TurnAt = event.Time
 		e.value.State = "working"
 		e.value.EndReason = ""
 		e.value.ActivityAt = at
 	case "turn/end":
+		e.value.TurnAt = event.Time
 		var d struct {
 			Reason struct {
 				Kind string `json:"kind"`

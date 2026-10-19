@@ -60,13 +60,18 @@ type Inspector struct {
 }
 
 type adapter struct {
-	process func(string) bool
-	current func(Attachment) bool
+	process   func(string) bool
+	current   func(Attachment) bool
+	lifecycle bool // native start/wait/end events are observed by the admitted bridge
 }
 
 var adapters = map[string]adapter{
-	"dst": {dstProcess, dstCurrent},
+	"dst": {process: dstProcess, current: dstCurrent, lifecycle: true},
 }
+
+// ProvidesLifecycle is an adapter capability, not verification of an attachment.
+// Callers must first obtain a current attachment through Load/All.
+func ProvidesLifecycle(client string) bool { return adapters[client].lifecycle }
 
 func declared(agent, client string) bool {
 	m, ok := agents.For(agent)

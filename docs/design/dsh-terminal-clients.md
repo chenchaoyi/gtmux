@@ -83,3 +83,22 @@ reports must separately name screen, native queue and real-model coverage.
 Primary interface source: [dst v0.16.1](https://github.com/ccch1mneyyy/dsh-TUI/tree/73ff99fbed56563bf154d719effd09f9f9725349)
 (foreground discovery, host admission and commands),
 [DSH session contracts](https://github.com/deepseek-ai/deepseek-harness/tree/dsh-v0.2.0-rc.2/packages/core/session).
+
+## Native terminal status during repaint
+
+A verified lifecycle-aware terminal adapter uses a separate native event snapshot,
+bound to its current harness, data home, session, pane and client incarnation.
+Start, question, resume and end hooks determine the phase; frame/CPU changes and
+generic active/finished caches cannot override it. In particular, a finished-time
+cache may have been inferred by radar and is not proof of a native completion.
+
+A later explicit turn boundary in the exact DSH durable history can recover a
+missed hook. Default history state, unrelated sessions and older boundaries cannot.
+The reader uses the existing incremental DSH catalog, not the global event journal.
+Without either source the row stays neutral (`running`), with no invented completion
+time. Existing sessions need a natural hook or explicit history boundary; there is
+no guessed backfill or extra plugin to install. A native question remains waiting
+through repaint until a native resume/end or later explicit turn boundary settles it.
+The adapter declares this capability; replacing the community client keeps `dsh`
+as the harness identity. Other integrations retain their existing documented fallbacks. A tracked goal still
+blocked in the input box retains the separate undelivered-dispatch waiting guard.
