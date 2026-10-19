@@ -770,7 +770,7 @@ func Run(stdin io.Reader, args []string) int {
 	} // A shared Web server's launcher never owns a pane.
 	var terminalAttachment agentclient.Attachment
 	if agentKey == "dsh" && payload.TerminalClient != "" {
-		if a, ok := agentclient.ForSession(agentKey, dsh.HomeID(), agentSession); ok &&
+		if a, ok := terminalForSession(agentKey, dsh.HomeID(), agentSession); ok &&
 			a.Client == payload.TerminalClient && a.PID == payload.ClientPID && a.Instance == payload.ClientInstance {
 			terminalAttachment = a
 			pane = a.Pane
@@ -1026,6 +1026,11 @@ func Run(stdin io.Reader, args []string) int {
 		}
 		applyState(d, pane)
 		applyTurnOutcome(event, pane)
+		if terminalAttachment.Pane == pane && agentclient.ProvidesLifecycle(terminalAttachment.Client) {
+			if err := agentclient.ObserveLifecycle(terminalAttachment, event, payload.TurnID, time.Now()); err != nil {
+				diag.For("hook").Warn("terminal.lifecycle.write_failed", "native lifecycle evidence could not be saved", "error", err.Error())
+			}
+		}
 		// Record the agent session on the active marker so a later superseded Stop
 		// can be told apart (#5908). No session id → plain marker, unchanged.
 		if d.setActive && agentSession != "" {

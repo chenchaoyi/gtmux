@@ -35,6 +35,15 @@ There are three paths into the same Go core:
    dedicated external-conversation providers, which discover histories without a
    tmux pane or a loaded hook. Other outside-tmux observations depend on hook traffic.
 
+The status design prioritises a trustworthy native hook bound to the current
+session. Other evidence supplements information the hook does not supply, or
+handles unsupported hooks and documented upstream faults. It must not silently
+overrule a reliable native lifecycle event. For example, Codex permission hooks
+arrive before auto-review finishes, so its adapter confirms a user-facing approval
+menu before reporting a human wait. Missing evidence is unknown, not completion.
+The dst path below enforces this priority with a separate native event snapshot;
+older adapters still have the specific recovery paths described in their sections.
+
 For interactive **tmux** sessions, input stays in the pane: dispatch checks the
 composer, pastes text and submits it. A matching prompt event can confirm receipt;
 otherwise verification falls back to screen evidence. Receipt means the prompt
@@ -293,6 +302,23 @@ compatibility hooks**. It tracks root prompts, turn outcomes and pending questio
 delegates questions unchanged, and never approves or answers them. `approval/asked`
 is not proof of a human wait; approval-card detection is not implemented. The queue
 and child processes are bounded and stdin is piped. The terminal adapter verifies home, foreground session, process ancestry and tmux epoch before exposing a managed pane; a background mount alone grants no input. Its native command receives the actual target agent and returns an addressed, one-use acceptance receipt. Drafts, menus and switches remain guarded. All consumers retain the DeepSeek Harness label and official icon; dst is only the internal client adapter.
+
+A verified lifecycle-aware terminal adapter uses a separate native event snapshot,
+bound to its current harness, data home, session, pane and client incarnation.
+Start, question, resume and end hooks determine the phase; frame/CPU changes and
+generic active/finished caches cannot override it. In particular, a finished-time
+cache may have been inferred by radar and is not proof of a native completion.
+
+A later explicit turn boundary in the exact DSH durable history can recover a
+missed hook. Default history state, unrelated sessions and older boundaries cannot.
+The reader uses the existing incremental DSH catalog, not the global event journal.
+Without either source the row stays neutral (`running`), with no invented completion
+time. Existing sessions need a natural hook or explicit history boundary; there is
+no guessed backfill or extra plugin to install. A native question remains waiting
+through repaint until a native resume/end or later explicit turn boundary settles it.
+The adapter declares this capability; replacing the community client keeps `dsh`
+as the harness identity. Other integrations retain their existing documented fallbacks. A tracked goal still
+blocked in the input box retains the separate undelivered-dispatch waiting guard.
 
 Doctor distinguishes installed configuration from a fresh loaded attachment and input grant. Ordinary `dst --backend dsh`, terminal spawn/resume and explicit HQ public-message review are supported by the adapter. Web remains external/read-only; Web adoption, usage and one-shot are not enabled. Older Web/background intervals are not silently enrolled. Knowledge uses `$DSH_HOME/AGENTS.md`. See the [terminal design and validation boundary](../design/dsh-terminal-clients.md).
 

@@ -4,8 +4,11 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/chenchaoyi/gtmux/internal/agentclient"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
+
+var terminalForSession = agentclient.ForSession
 
 // classifyPayload keeps an agent's terminal outcome separate from a normal Stop.
 // Tool failures and recoverable errors do not end the parent turn.

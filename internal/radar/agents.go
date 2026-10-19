@@ -1106,7 +1106,8 @@ func gatherAgentsWithCodexScope(codexScope *transcript.CodexPathScope) ([]Pane, 
 			}
 			return "idle"
 		}
-		if idn.sample {
+		nativeLifecycle := agentclient.ProvidesLifecycle(terminal[f[0]].Client) && terminal[f[0]].NativeSession
+		if idn.sample && !nativeLifecycle {
 			status = hookFreeStatus(f[0], idn.panePid)
 		}
 		if !isAgent {
@@ -1116,7 +1117,7 @@ func gatherAgentsWithCodexScope(codexScope *transcript.CodexPathScope) ([]Pane, 
 		// "running" — classifyAgent can't tell idle from working without an idle glyph.
 		// Refine it the same hook-free way, so a FINISHED Codex shows idle (✓) rather
 		// than a grey "running" dot. (Claude's ✳ already resolves this upstream.)
-		if status == "running" && len(f) >= 9 {
+		if status == "running" && len(f) >= 9 && !nativeLifecycle {
 			if panePid, err := strconv.Atoi(f[8]); err == nil {
 				status = hookFreeStatus(f[0], panePid)
 			}
@@ -1131,120 +1132,124 @@ func gatherAgentsWithCodexScope(codexScope *transcript.CodexPathScope) ([]Pane, 
 		if len(f) >= 8 {
 			activityAt, _ = strconv.ParseInt(f[7], 10, 64)
 		}
-		// liveWorking reports whether the pane is DEMONSTRABLY working right now (screen
-		// changing / subtree burning CPU) — the reliable signal, unlike the pane TITLE's
-		// braille spinner, which stays frozen on its last frame while the agent is BLOCKED
-		// on a prompt. Reuse the frame/CPU sample if it was already taken this pane
-		// (glyph-less agents); otherwise sample it here — lazily, so the capture cost is
-		// paid only when a fresh mark actually needs disambiguating.
-		liveWorking := func() bool {
-			if hfsCalled {
-				return status == "working"
+		if !nativeLifecycle {
+			// liveWorking reports whether the pane is DEMONSTRABLY working right now (screen
+			// changing / subtree burning CPU) — the reliable signal, unlike the pane TITLE's
+			// braille spinner, which stays frozen on its last frame while the agent is BLOCKED
+			// on a prompt. Reuse the frame/CPU sample if it was already taken this pane
+			// (glyph-less agents); otherwise sample it here — lazily, so the capture cost is
+			// paid only when a fresh mark actually needs disambiguating.
+			liveWorking := func() bool {
+				if hfsCalled {
+					return status == "working"
+				}
+				return hookFreeStatus(id, panePid) == "working"
 			}
-			return hookFreeStatus(id, panePid) == "working"
-		}
-		// WORKING is hook-driven too, on the same principle as waiting: the hook knows
-		// a turn started and has not ended, which is the fact — the pane TITLE only ever
-		// carried a hint about it.
-		//
-		// It used to be the only source: Claude animated the title with a braille spinner
-		// while it worked and showed ✳ when ready, so the glyph told you the state. Claude
-		// 2.1.237 stopped animating it — a pane working flat out now shows the same ✳ as an
-		// idle one — and every Claude pane in the fleet read "idle" forever. Measured on a
-		// pane running commands the whole time: eight title samples over six seconds, ✳
-		// every one. A signal owned by someone else can stop meaning what it meant, and
-		// the hook marker had been sitting right there, used only to say how long.
-		//
-		// Applied BEFORE resolveWaiting so a waiting mark still wins: blocked on you is a
-		// more specific truth than in a turn, and both come from the same hook.
-		if status == "idle" || status == "running" {
-			if turnInProgress(id, activityAt, now) {
-				status = "working"
+			// WORKING is hook-driven too, on the same principle as waiting: the hook knows
+			// a turn started and has not ended, which is the fact — the pane TITLE only ever
+			// carried a hint about it.
+			//
+			// It used to be the only source: Claude animated the title with a braille spinner
+			// while it worked and showed ✳ when ready, so the glyph told you the state. Claude
+			// 2.1.237 stopped animating it — a pane working flat out now shows the same ✳ as an
+			// idle one — and every Claude pane in the fleet read "idle" forever. Measured on a
+			// pane running commands the whole time: eight title samples over six seconds, ✳
+			// every one. A signal owned by someone else can stop meaning what it meant, and
+			// the hook marker had been sitting right there, used only to say how long.
+			//
+			// Applied BEFORE resolveWaiting so a waiting mark still wins: blocked on you is a
+			// more specific truth than in a turn, and both come from the same hook.
+			if status == "idle" || status == "running" {
+				if turnInProgress(id, activityAt, now) {
+					status = "working"
+				}
 			}
-		}
-		var clearMark bool
-		// askOnScreen: is the agent's numbered question still up? Lazy — only the narrow
-		// "fresh mark over a live-working pane" branch pays for the capture.
-		askOnScreen := func() bool {
-			frame := tmux.CapturePane(id)
-			if agents.KeyForLabel(agent) == "codex" {
-				return prompt.WaitingOptions(frame) != nil
+			var clearMark bool
+			// askOnScreen: is the agent's numbered question still up? Lazy — only the narrow
+			// "fresh mark over a live-working pane" branch pays for the capture.
+			askOnScreen := func() bool {
+				frame := tmux.CapturePane(id)
+				if agents.KeyForLabel(agent) == "codex" {
+					return prompt.WaitingOptions(frame) != nil
+				}
+				return len(prompt.ParseOptions(frame)) > 0
 			}
-			return len(prompt.ParseOptions(frame)) > 0
-		}
-		status, clearMark = resolveWaiting(status, waiting[id], waitMarkStale(id, activityAt), liveWorking, askOnScreen)
-		if clearMark {
-			state.Remove(state.WaitingPath(id))
-			delete(waiting, id)
-		}
-		// A shared Codex app-server can deliver an ownerless PermissionRequest
-		// with another pane's inherited TMUX_PANE. Older hooks wrote that wait
-		// marker to the innocent pane. A quiet Codex pane displaying its ready
-		// composer contradicts the marker; clear the false wait (and its orphan
-		// active marker) rather than keep telling the user to answer it.
-		if codexReadyContradictsWait(agent, status, observedStatus, tmux.CapturePane, id) {
-			state.Remove(state.WaitingPath(id))
-			state.Remove(state.ActivePath(id))
-			delete(waiting, id)
-			status = "idle"
-		}
-		// A Codex Stop can arrive from a shared app-server with another pane's
-		// inherited TMUX_PANE and no session/cwd. Its own rollout still records the
-		// exact task completion. Reconcile only the pane whose active marker and
-		// resume binding name that same session, after both marker timestamps.
-		if (status == "waiting" || status == "working") && len(f) > 9 && agents.KeyForLabel(agent) == "codex" {
-			loc := fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3])
-			if at, kind, ok := codexTurnEnded(id, loc, f[9], codexScope.CodexLastTurnBoundary); ok {
+			staleWait := waitMarkStale(id, activityAt)
+			status, clearMark = resolveWaiting(status, waiting[id], staleWait, liveWorking, askOnScreen)
+			if clearMark {
+				state.Remove(state.WaitingPath(id))
+				delete(waiting, id)
+			}
+			// A shared Codex app-server can deliver an ownerless PermissionRequest
+			// with another pane's inherited TMUX_PANE. Older hooks wrote that wait
+			// marker to the innocent pane. A quiet Codex pane displaying its ready
+			// composer contradicts the marker; clear the false wait (and its orphan
+			// active marker) rather than keep telling the user to answer it.
+			if codexReadyContradictsWait(agent, status, observedStatus, tmux.CapturePane, id) {
 				state.Remove(state.WaitingPath(id))
 				state.Remove(state.ActivePath(id))
 				delete(waiting, id)
-				if kind == "turn_aborted" {
-					_ = state.WriteMarker(state.TurnOutcomePath(id), "interrupted")
-				} else {
-					state.Remove(state.TurnOutcomePath(id))
-					fp := state.FinishedPath(id)
-					if state.Touch(fp) == nil {
-						_ = os.Chtimes(fp, at, at)
-					}
-				}
 				status = "idle"
 			}
-		}
-		// A Codex approval with no session/cwd is deliberately left pane-less by
-		// the hook. Once its menu appears in a pane, the screen itself supplies
-		// the missing identity. The slow tick persists this as a normal wait.
-		if status != "waiting" && CodexScreenWaitKind(id, agent) != "" {
-			status = "waiting"
-		}
-		// STUCK-DISPATCH GUARD: a dispatched worker blocked BEFORE running a turn (a
-		// startup/permission gate, or its goal left unsubmitted in the composer) fires no
-		// hook, so resolveWaiting left it idle/running — and idle → done in `gtmux tasks`,
-		// wrongly reporting a task that never ran as finished. If this is a TRACKED
-		// dispatch whose screen shows a gate or holds its own undelivered draft, read it
-		// as waiting (needs-you). Narrow, hook-free, DISPLAY-only — the serve slow-tick
-		// (the single writer) owns the marker + the `waiting` wake.
-		if status == "idle" || status == "running" {
-			if StuckDispatchKind(id, agent) != "" {
+			// A Codex Stop can arrive from a shared app-server with another pane's
+			// inherited TMUX_PANE and no session/cwd. Its own rollout still records the
+			// exact task completion. Reconcile only the pane whose active marker and
+			// resume binding name that same session, after both marker timestamps.
+			if (status == "waiting" || status == "working") && len(f) > 9 && agents.KeyForLabel(agent) == "codex" {
+				loc := fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3])
+				if at, kind, ok := codexTurnEnded(id, loc, f[9], codexScope.CodexLastTurnBoundary); ok {
+					state.Remove(state.WaitingPath(id))
+					state.Remove(state.ActivePath(id))
+					delete(waiting, id)
+					if kind == "turn_aborted" {
+						_ = state.WriteMarker(state.TurnOutcomePath(id), "interrupted")
+					} else {
+						state.Remove(state.TurnOutcomePath(id))
+						fp := state.FinishedPath(id)
+						if state.Touch(fp) == nil {
+							_ = os.Chtimes(fp, at, at)
+						}
+					}
+					status = "idle"
+				}
+			}
+			// A Codex approval with no session/cwd is deliberately left pane-less by
+			// the hook. Once its menu appears in a pane, the screen itself supplies
+			// the missing identity. The slow tick persists this as a normal wait.
+			if status != "waiting" && CodexScreenWaitKind(id, agent) != "" {
 				status = "waiting"
 			}
-		}
-		// Codex can repaint an idle pane for a quota warning (or other TUI
-		// chrome) without starting a turn. A frame/CPU hint alone must not
-		// override that pane's own completed rollout: otherwise the false
-		// working→idle edge becomes a "done" push. A new task_started boundary
-		// or a current hook marker restores normal working detection.
-		if status == "working" && observedStatus == "working" && agents.KeyForLabel(agent) == "codex" && len(f) > 9 {
-			loc := fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3])
-			if codexCompletedTurnContradictsFrame(id, loc, f[9], codexScope.CodexLastTurnBoundary) ||
-				codexIdleComposerContradictsFrame(id, paneCapture(id)) {
-				status = "idle"
-				if rec, ok := resume.Load(loc); ok && rec.Agent == "codex" && hqpane.SameDir(rec.Cwd, f[9]) {
-					if kind, _ := codexScope.CodexLastTurnBoundary(rec.SessionID); kind == "turn_aborted" {
-						_ = state.WriteMarker(state.TurnOutcomePath(id), "interrupted")
+			// STUCK-DISPATCH GUARD: a dispatched worker blocked BEFORE running a turn (a
+			// startup/permission gate, or its goal left unsubmitted in the composer) fires no
+			// hook, so resolveWaiting left it idle/running — and idle → done in `gtmux tasks`,
+			// wrongly reporting a task that never ran as finished. If this is a TRACKED
+			// dispatch whose screen shows a gate or holds its own undelivered draft, read it
+			// as waiting (needs-you). Narrow, hook-free, DISPLAY-only — the serve slow-tick
+			// (the single writer) owns the marker + the `waiting` wake.
+			if status == "idle" || status == "running" {
+				if StuckDispatchKind(id, agent) != "" {
+					status = "waiting"
+				}
+			}
+			// Codex can repaint an idle pane for a quota warning (or other TUI
+			// chrome) without starting a turn. A frame/CPU hint alone must not
+			// override that pane's own completed rollout: otherwise the false
+			// working→idle edge becomes a "done" push. A new task_started boundary
+			// or a current hook marker restores normal working detection.
+			if status == "working" && observedStatus == "working" && agents.KeyForLabel(agent) == "codex" && len(f) > 9 {
+				loc := fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3])
+				if codexCompletedTurnContradictsFrame(id, loc, f[9], codexScope.CodexLastTurnBoundary) ||
+					codexIdleComposerContradictsFrame(id, paneCapture(id)) {
+					status = "idle"
+					if rec, ok := resume.Load(loc); ok && rec.Agent == "codex" && hqpane.SameDir(rec.Cwd, f[9]) {
+						if kind, _ := codexScope.CodexLastTurnBoundary(rec.SessionID); kind == "turn_aborted" {
+							_ = state.WriteMarker(state.TurnOutcomePath(id), "interrupted")
+						}
 					}
 				}
 			}
 		}
+
 		// since = when the agent entered its CURRENT state, for a "working 7m" /
 		// "waiting 11m" / "idle 3m" duration. Hook markers give the turn/wait/finish
 		// start; otherwise fall back to last activity.
@@ -1269,7 +1274,7 @@ func gatherAgentsWithCodexScope(codexScope *transcript.CodexPathScope) ([]Pane, 
 		// DISPLAY-only, like the stuck-dispatch guard below: the radar reports what it
 		// sees and does not reach into the hook's markers. Stamping state from here is
 		// what made a dead log look alive on 2026-08-20.
-		if status == "working" {
+		if !nativeLifecycle && status == "working" {
 			loc := fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3])
 			if rec, ok := boundResume(loc, agent); ok {
 				if e, txt := scopedLastMessageError(rec.Agent, rec.SessionID); e {
@@ -1280,33 +1285,48 @@ func gatherAgentsWithCodexScope(codexScope *transcript.CodexPathScope) ([]Pane, 
 		var bg bool
 		var bgCount int
 		var bgText string
-		switch status {
-		case "working":
-			if mt := FileMtime(state.ActivePath(id)); mt > 0 {
-				since = mt
-			}
-		case "waiting":
-			if mt := FileMtime(state.WaitingPath(id)); mt > 0 {
-				since = mt
-			}
-		case "idle":
-			var paneCwd string
-			if len(f) > 9 {
-				paneCwd = f[9]
-			}
-			since = idleSince(id, fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3]), paneCwd, agent, activityAt, codexScope)
-			// errored-idle: did this session END on an API/tool error (last transcript
-			// message is isApiErrorMessage)? Mark it so surfaces show ⚠ not ✓.
-			loc := fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3])
-			if rec, ok := boundResume(loc, agent); ok {
-				if e, txt := scopedLastMessageError(rec.Agent, rec.SessionID); e {
-					errored, errorText = true, txt
+		if !nativeLifecycle {
+			switch status {
+			case "working":
+				if mt := FileMtime(state.ActivePath(id)); mt > 0 {
+					since = mt
+				}
+			case "waiting":
+				if mt := FileMtime(state.WaitingPath(id)); mt > 0 {
+					since = mt
+				}
+			case "idle":
+				var paneCwd string
+				if len(f) > 9 {
+					paneCwd = f[9]
+				}
+				since = idleSince(id, fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3]), paneCwd, agent, activityAt, codexScope)
+				// errored-idle: did this session END on an API/tool error (last transcript
+				// message is isApiErrorMessage)? Mark it so surfaces show ⚠ not ✓.
+				loc := fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3])
+				if rec, ok := boundResume(loc, agent); ok {
+					if e, txt := scopedLastMessageError(rec.Agent, rec.SessionID); e {
+						errored, errorText = true, txt
+					}
+				}
+				// background-running: the Stop hook stamped bg/<pane> because the turn
+				// ended with background work still in flight → mark the idle row ⧗ (not ✓).
+				if n, label := state.ReadBackground(id); n > 0 {
+					bg, bgCount, bgText = true, n, label
 				}
 			}
-			// background-running: the Stop hook stamped bg/<pane> because the turn
-			// ended with background work still in flight → mark the idle row ⧗ (not ✓).
-			if n, label := state.ReadBackground(id); n > 0 {
-				bg, bgCount, bgText = true, n, label
+		}
+		endReason := failedTurnOutcome(state.ReadMarker(state.TurnOutcomePath(id)), errored)
+		latest := id == lastFinished && status != "working" && status != "waiting"
+		if nativeLifecycle {
+			native := terminalStatus(terminal[id], time.Unix(now, 0))
+			status, since, endReason = native.status, native.since, native.reason
+			errored = endReason == "error"
+			latest = id == lastFinished && status == "idle" && endReason == ""
+			// A tracked undelivered goal is a separate delivery fact, not UI
+			// activity starting a turn. Preserve its existing blocked-draft guard.
+			if (status == "idle" || status == "running") && terminalStuckDispatch(id, agent) != "" {
+				status, since, endReason, errored, latest = "waiting", activityAt, "", false, false
 			}
 		}
 		// radar++ : the pane's cwd → git repo root basename (project) + branch,
@@ -1335,7 +1355,7 @@ func gatherAgentsWithCodexScope(codexScope *transcript.CodexPathScope) ([]Pane, 
 			Task:       task,
 			Status:     status,
 			Activity:   f[6] == "1",
-			Latest:     id == lastFinished && status != "working" && status != "waiting",
+			Latest:     latest,
 			source:     "tmux",
 			cwd:        cwd,
 			role:       roleForCwd(cwd),
@@ -1345,7 +1365,7 @@ func gatherAgentsWithCodexScope(codexScope *transcript.CodexPathScope) ([]Pane, 
 			activityAt: activityAt,
 			Since:      since,
 			Errored:    errored,
-			EndReason:  failedTurnOutcome(state.ReadMarker(state.TurnOutcomePath(id)), errored),
+			EndReason:  endReason,
 			ErrorText:  errorText,
 			Bg:         bg,
 			BgCount:    bgCount,

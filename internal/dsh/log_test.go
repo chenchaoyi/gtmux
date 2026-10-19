@@ -164,3 +164,44 @@ func TestExactReadIncludesOldSessionsAndRejectsEncodingCopies(t *testing.T) {
 		t.Fatal("mixed encoding silently selected", err)
 	}
 }
+
+func TestCatalogTurnBoundaryIsExplicitAndSeparateFromActivity(t *testing.T) {
+	t.Setenv("DSH_HOME", t.TempDir())
+	file := artifact(t, "project", "boundary", "", head("boundary"), promptEvent)
+	catalog := &Catalog{}
+	read := func() Session {
+		t.Helper()
+		s, err := catalog.Resolve("boundary")
+		if err != nil {
+			t.Fatal(err)
+		}
+		return s
+	}
+	if s := read(); s.TurnAt != 0 {
+		t.Fatal("default idle was a boundary", s)
+	}
+	appendEvent := func(line string) {
+		t.Helper()
+		f, err := os.OpenFile(file, os.O_APPEND|os.O_WRONLY, 0600)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, err = f.WriteString(line + "\n")
+		_ = f.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	appendEvent(`{"type":"turn/start","seq":2,"time":3001,"data":{}}`)
+	if s := read(); s.TurnAt != 3001 || s.State != "working" {
+		t.Fatal(s)
+	}
+	appendEvent(`{"type":"tool/result","seq":3,"time":4002,"data":{}}`)
+	if s := read(); s.TurnAt != 3001 || s.ActivityAt != 4 {
+		t.Fatal("tool activity became a turn boundary", s)
+	}
+	appendEvent(`{"type":"turn/end","seq":4,"time":5003,"data":{"reason":{"kind":"completed"}}}`)
+	if s := read(); s.TurnAt != 5003 || s.State != "idle" {
+		t.Fatal(s)
+	}
+}
