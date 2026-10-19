@@ -65,7 +65,12 @@ type Ev struct {
 // tests. Every field that Deliver may call must be non-nil except the optional
 // ClearDraft / Events / RecentSend / RecordSend (guarded before use).
 type IO struct {
-	Capture func() string // full-screen capture (with scrollback margin)
+	// Begin selects optional transport retry semantics before any draft check.
+	// It never types or bypasses the ordinary pane safeguards.
+	Begin func(Opts, string)
+	// Accepted proves this exact prepared transport request was already queued.
+	Accepted func() bool
+	Capture  func() string // full-screen capture (with scrollback margin)
 	// CaptureColor is the COLOR capture (`capture-pane -e`) the draft guard reads, so
 	// Claude Code's FAINT suggested-next-command ghost text is excluded. Optional; falls
 	// back to Capture, which cannot tell the ghost from a typed draft.
@@ -114,6 +119,7 @@ func held(io IO) string {
 
 // Opts configures a delivery.
 type Opts struct {
+	DeliveryID   string // caller idempotency key for an addressed native transport
 	Pane         string
 	HookEquipped bool // prefer the deterministic event stream over the screen
 	Force        bool // override the re-send interlock
@@ -165,6 +171,12 @@ func (o *Opts) fillDefaults() {
 // hq-dispatch design for the full state machine.
 func Deliver(io IO, opts Opts, text string) Result {
 	opts.fillDefaults()
+	if io.Begin != nil {
+		io.Begin(opts, text)
+	}
+	if io.Accepted != nil && io.Accepted() {
+		return Result{Delivered: true, State: StateLanded, JudgedBy: JudgedByDriver}
+	}
 	// The event needle rides the SAME pipeline as the hook-recorded Summary
 	// (NormalizeNeedle) so a cleaning difference can never make the verifier
 	// ignore a genuine submit event. Screen comparisons keep using the raw text —
@@ -247,7 +259,9 @@ func Deliver(io IO, opts Opts, text string) Result {
 			Evidence: EvidenceHeldBeforeEnter + why + "\n" + evidenceTail(io.Capture()), JudgedBy: JudgedByScreen})
 	}
 	attempts := 1
-	_ = io.Enter()
+	if err := io.Enter(); err != nil {
+		return failed(io, opts, text, Result{State: StateFailed, Evidence: err.Error(), Attempts: attempts})
+	}
 	lastEnter := io.Now()
 	heldWhy := "" // set once Hold stops the Enter retries
 
@@ -322,7 +336,9 @@ func Deliver(io IO, opts Opts, text string) Result {
 			if ours && prevOurs && attempts <= opts.EnterRetries && heldWhy == "" &&
 				io.Now()-lastEnter >= backoff(attempts) {
 				if heldWhy = held(io); heldWhy == "" {
-					_ = io.Enter() // swallowed Enter (incident ②) — re-submit with backoff
+					if err := io.Enter(); err != nil {
+						return failed(io, opts, text, Result{State: StateFailed, Evidence: err.Error(), Attempts: attempts})
+					}
 					attempts++
 					lastEnter = io.Now()
 				}
@@ -418,6 +434,12 @@ func submitConfirmed(io IO, opts Opts, head string, since int64) bool {
 // Returns whether Enter was sent (true once the paste was placed by any of the above).
 func PasteAndSubmit(io IO, opts Opts, text string) (ok bool, refused State) {
 	opts.fillDefaults()
+	if io.Begin != nil {
+		io.Begin(opts, text)
+	}
+	if io.Accepted != nil && io.Accepted() {
+		return true, ""
+	}
 	// The UNVERIFIED path needs the draft guard just as much — more, in fact. It is what
 	// `POST /api/send` uses, so it is a send from ANOTHER DEVICE into a pane whose owner
 	// may be mid-sentence at the keyboard: the one case where nobody watching can undo it.
@@ -436,7 +458,9 @@ func PasteAndSubmit(io IO, opts Opts, text string) (ok bool, refused State) {
 	if held(io) != "" {
 		return false, StateRefusedWaiting // pasted, not submitted
 	}
-	_ = io.Enter()
+	if io.Enter() != nil {
+		return false, StateFailed
+	}
 	return true, ""
 }
 

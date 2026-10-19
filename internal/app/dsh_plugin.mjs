@@ -48,7 +48,7 @@ export function observe(ctx, emit) {
     }
   }, {global: true, prepend: true});
 }
-export function apply(ctx) {
+export function hookSink(ctx, extra = () => ({})) {
   const BIN = __GTMUX_BIN__;
   const queue = [];
   let child, disposed = false, timer;
@@ -69,9 +69,16 @@ export function apply(ctx) {
       timer.unref();
     } catch { child = undefined; queueMicrotask(drain); }
   };
-  observe(ctx, (token, payload) => {
+  const send = (token, payload) => {
     // An unavailable CLI must never backpressure the agent or retain chat history.
-    if (!disposed && queue.length < 64) { queue.push([token, payload]); drain(); }
-  });
+    if (!disposed && queue.length < 64) { queue.push([token, {...payload, ...extra(payload)}]); drain(); }
+  };
   ctx.on('dispose', () => { disposed = true; queue.length = 0; clearTimeout(timer); child?.kill('SIGKILL'); });
+  return send;
+}
+export function apply(ctx) {
+  // Terminal clients load their own admitted bridge and retain the same harness
+  // identity. A Web overlay in that profile must not duplicate its observations.
+  if (ctx.get?.('tuiPluginHost', false)) return;
+  observe(ctx, hookSink(ctx));
 }

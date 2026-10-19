@@ -27,3 +27,5 @@ current in the same PR (dated logs are single-language; `scripts/check-design.sh
 
 Before changing any UI, read the authority for that surface and follow it; a deliberate
 deviation is proposed first and written back into the document, never left silent.
+
+[DeepSeek Harness terminal clients](dsh-terminal-clients.md) — native client adapters, addressed input and explicit message review.

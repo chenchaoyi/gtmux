@@ -376,6 +376,7 @@ act.doctor.bundle       doctor
 act.doctor.fix          doctor
 act.focus               focus, serve
 act.session.follow      follow, serve
+act.session.review      transcript
 act.hq.brief            hq
 act.hq.export           hq
 act.hq.import           hq
@@ -604,6 +605,8 @@ JSON 包含工具步骤。条件读取未变化时返回 `turns:null` 和 `uncha
 非零退出码，不伪装为空历史。视图至多 300 轮、512 KiB。身份未核实则拒绝。
 Mac、已配对手机／iPad 和 Web 均提供[只读查看及更新](design/desktop-conversation.zh.md)。
 回复请回到原客户端；DSH 历史发现与专用 Cordis hook 见 [DeepSeek Harness 指南](guides/deepseek-harness.zh.md)。
+
+DSH 可用 `gtmux transcript <session_id> --messages --after-seq -1 --limit 100 --json` 逐条分页读取公开消息（`--limit` 为 1–200）。从返回序号继续。读取不等于审阅；判断完本页后，用相同分页参数加 `--review-through <最后审阅的消息序号>` 明确声明。推进前需从已有 `reviewed_through` 开始读取。`has_more` 表示还有下一页，`source_seq` 和 `revision` 描述观察到的源。替换或观察到截断会重置终端核对覆盖，并产生 `ConversationGap`。受管终端输入和安装见 [DSH 指南](guides/deepseek-harness.zh.md)。
 
 ## `gtmux follow`
 
@@ -1967,7 +1970,7 @@ gtmux uninstall [hooks|app|all]     # reverse it (asks when no target)
 
 不带 `--agent` 仍默认 Claude；`--agent auto` 自动识别已有目录或可执行文件，跳过配置中禁用 hook 的 agent。
 DSH 插件随 gtmux 内置，无需另装 npm 包；`doctor --fix` 可安装或修复模块及启动覆盖文件，
-并给出下次 `dsh web --patch …` 的命令，不把文件存在当作运行中已加载。见 [DSH 指南](guides/deepseek-harness.zh.md)。
+也会管理已有 dst profile 的自有桥接段，并给出下次 `dsh web --patch …` 的命令，不把文件存在当作运行中已加载。见 [DSH 指南](guides/deepseek-harness.zh.md)。
 
 `gtmux install hooks` 把 `gtmux hook` 注册到 `~/.claude/settings.json` 的回合、授权、
 会话、压缩及工具事件上（幂等；保留其它 hook，给文件留备份）。

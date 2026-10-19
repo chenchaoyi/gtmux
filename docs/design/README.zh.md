@@ -25,3 +25,5 @@
 | `mockup/preview-*.png` | 菜单栏静态参照。 |
 
 改任何 UI 前，先读对应形态的权威规范并遵循；要偏离就先提出、再写回文档，不留下没说的偏差。
+
+[DeepSeek Harness 终端客户端](dsh-terminal-clients.zh.md)：原生客户端适配、目标明确的输入和显式消息审阅。

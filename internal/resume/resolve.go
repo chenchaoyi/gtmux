@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/chenchaoyi/gtmux/internal/dsh"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
@@ -87,6 +88,17 @@ func cwdFromTranscript(path string) string {
 // For any other agent it is a no-op returning alive=true: we can't verify their layout,
 // so behavior is unchanged.
 func Resolve(r Record) (Record, bool) {
+	if r.Agent == "dsh" {
+		if r.TerminalClient == "" || r.HomeID != dsh.HomeID() {
+			return r, false
+		}
+		s, err := dsh.Sessions.Resolve(r.SessionID)
+		if err != nil || s.Origin == "subagent" {
+			return r, false
+		}
+		r.Cwd = s.Cwd
+		return r, true
+	}
 	if r.Agent != "claude" || r.SessionID == "" {
 		return r, true
 	}

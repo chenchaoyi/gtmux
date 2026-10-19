@@ -65,6 +65,11 @@ func cmdTranscript(args []string) int {
 		commandHelp("transcript")
 		return 2
 	}
+	for _, arg := range args[1:] {
+		if arg == "--messages" {
+			return cmdMessageTranscript(args)
+		}
+	}
 	jsonOut, etag := false, ""
 	home := ""
 	for i := 1; i < len(args); i++ {

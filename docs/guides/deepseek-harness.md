@@ -1,89 +1,108 @@
 ---
-title: DeepSeek Harness Web conversations
-description: Read DSH Web conversations and connect its native lifecycle events.
-order: 5
+title: DeepSeek Harness conversations
+description: Read Web histories and manage verified DeepSeek Harness terminal sessions.
+order: 18
 ---
 
-**English** · [中文](deepseek-harness.zh.md)
+DeepSeek Harness keeps one identity and its official whale icon, whether you use
+Web or a supported community terminal client. dst is the first terminal adapter;
+it is not another agent category. See the [all-agent integration map](agent-integrations.md).
 
-Gtmux discovers saved user conversations under `$DSH_HOME/sessions` (default
-`~/.dsh/sessions`). Open **External conversations** on the menu bar, phone, iPad
-or Web to read prompts, public assistant text and tool steps. CLI users can run
-`gtmux agents --json`, then `gtmux transcript SESSION_ID --home-id HOME_ID --json`
-using the row's `session_id` and `home_id`. Continue interacting in DSH Web.
-Reading history does not grant HQ follow, notifications or knowledge retention.
-Guests cannot read or change these external conversations.
+## Web histories
 
-The adapter targets the current **v4** JSONL format shipped by DSH **0.2.0-rc.2**,
-including concatenated checksummed Zstandard frames. It chooses the highest saved
-generation and refuses unknown generations, corrupt records, duplicate identities
-or two encodings of the same generation. Earlier generations are not migrated or
-silently selected. A partially written final frame waits for the next poll.
-Discovery lists the 128 most recently changed root conversations; an exact ID read
-can still open an older one. Child agents and conversations without user messages
-are excluded. Views keep a bounded recent window and report omitted turns.
+Gtmux discovers saved root conversations under `$DSH_HOME/sessions` (default
+`~/.dsh/sessions`). External conversations are read-only on the menu bar, phone,
+iPad and Web. Explicit CLI reads need no plugin, credentials, model request or
+session writer lease:
 
-This is a public append history, including earlier user dialogue before model
-compaction; it is not DSH's reconstructed model context. Injected instructions,
-compaction checkpoints, hidden reasoning, replay metadata and raw tool results
-are excluded. No credentials file, writer lease or DSH HTTP endpoint is needed.
-Saved activity is not proof of a currently connected Web page. The controlling
-client remains unconfirmed; gtmux does not resume, adopt or send input to DSH.
-TUI control and usage/context figures are not supported in this integration.
+```sh
+gtmux transcript <session_id> --json
+```
 
-## Native lifecycle plugin
+Discovery supports DSH 0.2.0-rc.2 v4 JSONL and concatenated checksummed Zstandard
+frames. Partial appends wait; unknown generations, ambiguous IDs and corrupt
+sources are refused. Public text and tool steps are readable; private reasoning,
+raw tool results, injected instructions and replacement/replay copies are excluded.
+Detection alone does not enable HQ follow, notifications or learning. Use the
+existing `gtmux follow <session_id> …` controls for one external conversation.
+Web histories cannot receive input, be adopted, or be relaunched by gtmux.
 
-Saved-history reading needs no plugin. For future lifecycle events, gtmux bundles
-a **gtmux-authored native event bridge script**, loaded as a Cordis plugin by DSH.
-DSH supplies the Cordis framework and runtime; gtmux does not embed them. No separate
-npm package is required. The [agent integration map](agent-integrations.md) compares
-this with every other supported agent. Install it with:
+## Native bridge and terminal setup
+
+No separate gtmux npm package is needed. Gtmux bundles bridge scripts; DSH supplies
+its own Cordis runtime. Install the official DSH CLI and the community dst client
+separately and complete dst's first profile initialization, then run:
 
 ```sh
 gtmux install hooks --agent dsh
+# --agent auto and the regular installer also detect dsh/dst.
+dst --backend dsh
+gtmux doctor
 ```
 
-To detect supported agents and install their hooks, use `gtmux install hooks --agent auto`.
-Without `--agent`, hooks keep the existing Claude default. Auto mode detects configured
-homes or installed executables and preserves disabled-hook settings. `gtmux doctor`
-also detects DSH and checks both the module and its exact launch overlay;
-`gtmux doctor --fix` repairs the same owned files. An installed file does not prove
-that a running Web server loaded it: doctor prints the next-launch command and
-keeps runtime loading unverified.
+The installer writes its owned modules, native component manifest and overlays
+under `$DSH_HOME/gtmux`. When a dst profile already exists, it adds a marked block
+to `profiles/dsh-tui/cordis.patch.yml`, preserving other text and custom tags and
+saving a content-addressed backup. Uninstall removes only that block and gtmux's
+owned files. It refuses linked/ambiguous configuration and foreign artifacts.
+Nonempty flow-style root arrays require conversion to a block sequence. No
+third-party client is installed or upgraded automatically, and no process is restarted.
 
-The command prints `dsh web --patch '…/gtmux/gtmux.cordis.yml'`. Add that overlay
-to your next intentional Web launch. The currently running server is not restarted
-or reconfigured. Existing conversation reading works before installing the plugin.
-The installer owns only `$DSH_HOME/gtmux/gtmux.mjs` and `gtmux.cordis.yml`; it
-preserves profile patches and other plugins. `gtmux uninstall hooks --agent dsh`
-removes those two owned files. Omit the overlay on later launches after removal.
+For native **Web lifecycle events**, deliberately select the separately printed
+`dsh web --patch '…/gtmux/gtmux.cordis.yml'` on your next Web launch. Reading saved
+history does not need it. The bridge uses DSH's own `session/event` and
+`user-questions/request`; it does not use Codex compatibility hooks, answer questions
+or approve permissions. Doctor distinguishes installation from live terminal
+attachment and input permission; it cannot prove a running Web loaded the overlay.
 
-The plugin uses DSH's native `session/event` and `user-questions/request` APIs,
-not its Codex/Claude compatibility hooks. It observes root prompts, turn start,
-success, interruption and failure. It delegates every question unchanged and
-clears a pending question when that request settles. It never answers a question
-or approves a tool. `approval/asked` is deliberately not a human-wait signal:
-automatic policy/plugins may handle it. Human approval-card detection is not yet
-available through a confirmed native Host event; approvals stay in DSH Web.
-Subprocesses use piped stdin, a bounded queue and a timeout, so the plugin cannot
-steal terminal input or block DSH on an unavailable CLI.
+## Managed terminal conversations
 
-Enable **HQ follow** per conversation before HQ may observe new activity. Enable
-**Conversation notifications** separately for completion/question notices and
-**Save to knowledge** separately for future reusable lessons. Disabling HQ clears
-both dependent grants. Re-enabling knowledge starts a new time boundary and does
-not mine the old conversation. Grants belong to the agent, canonical data home
-and session together; a copied ID in another home cannot inherit them. Settings
-use revision checks so another device's edit is not overwritten silently.
-Lifecycle feed updates require the native plugin; saved-history polling alone
-reads metadata and does not replay old events into HQ.
+The terminal adapter targets dst 0.16.1's DSH backend. A fresh native bridge must
+agree with the exact DSH home/session, process ancestry, tmux server and current
+foreground selection before the core presents a managed DeepSeek Harness pane.
+Background mounts, another dst backend, stale records and ambiguous bindings do
+not authorize input. The same conversation is suppressed from external history
+rows while managed. Mac, phone, iPad, Web and CLI use the same core data and icon.
 
-The whale mark comes from [DeepSeek Harness's official favicon](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/apps/web/public/favicon.svg).
-Source and checksum are recorded in [icon provenance](../../assets/agent-icons/SOURCES.md).
-Native contracts: [session types](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/core/session/src/types.ts),
-[session observer](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/session/session-telemetry/src/coordinator.ts),
-[approval service](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/interaction/user-approval/src/index.ts).
+Use ordinary pane capture/focus/chat/send workflows. `gtmux spawn --agent dsh`
+launches the declared client; verified terminal resume records relaunch that same
+home/client. Select the model in dst: this adapter refuses generic `--model` and
+one-shot spawn. Submitted text travels through a session-targeted native command,
+with a private one-use request and an acceptance receipt from the actual receiving
+agent. It protects existing drafts and refuses a switch, menu, question, Vim normal
+mode or expanded editor. Narrow wrapped command tokens may also refuse. An
+acceptance receipt means queued, not executed or completed. Unknown delivery
+outcomes are not automatically re-enqueued. Completed retry metadata lasts 24h;
+unresolved claims eventually stop new sends at the bounded spool cap.
 
-The first discovery builds metadata by walking selected artifacts once; subsequent unchanged polls reuse it, and append reads decode only new complete frames.
+## HQ public-message review
 
-Model-surface replacement copies are not fresh prompts, lifecycle events or learning input; the original public append remains visible.
+The reconciler incrementally recovers committed public user and assistant messages
+for verified foreground intervals; it does not enroll older Web/background activity.
+`ConversationMessage` events carry stable identity and a short public summary.
+For full public text, use bounded pages:
+
+```sh
+gtmux transcript <session_id> --messages --after-seq -1 --limit 100 --json
+# After judging the returned messages, explicitly declare review of that page:
+gtmux transcript <session_id> --messages --after-seq -1 --limit 100 --review-through <last_message_seq> --json
+```
+
+Continue from `reviewed_through`; `has_more` means another page remains. Reading
+messages, consuming the HQ event stream, notifications and input receipts never
+mark a message reviewed. Review is observation, not a pre-execution approval gate.
+Source failures/replacement/truncation produce `ConversationGap`; replacement resets
+review coverage. Reconcile missing history rather than claiming complete coverage.
+Only text messages are in this page view; tool/permission interactions remain in
+the original client. Usage metering is not implemented for DSH.
+
+## Sources and validation
+
+The [official favicon](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/apps/web/public/favicon.svg)
+is the shared icon source. Native APIs:
+[DSH sessions](https://github.com/deepseek-ai/deepseek-harness/tree/dsh-v0.2.0-rc.2/packages/core/session),
+[dst v0.16.1](https://github.com/ccch1mneyyy/dsh-TUI/tree/73ff99fbed56563bf154d719effd09f9f9725349).
+See the [terminal design](../design/dsh-terminal-clients.md) for trust, retention
+and validation boundaries. Author fixtures, actual component admission, live TUI
+queue acceptance and model execution are separate evidence; consult the delivery
+report for which were established on the installed version combination.

@@ -3,7 +3,9 @@ package resume
 import (
 	"strings"
 
+	"github.com/chenchaoyi/gtmux/internal/agentclient"
 	"github.com/chenchaoyi/gtmux/internal/agents"
+	"github.com/chenchaoyi/gtmux/internal/dsh"
 )
 
 // resumeArgv is each agent's "continue a specific conversation" command. The
@@ -25,6 +27,25 @@ func Resumable(agent string) bool {
 // still succeeds if the dir is gone. Returns ok=false when the record isn't
 // resumable (unknown agent or no session id).
 func Command(r Record) (string, bool) {
+	if r.TerminalClient != "" && r.Agent == "dsh" {
+		if r.HomeID != dsh.HomeID() || r.SessionID == "" {
+			return "", false
+		}
+		var alive bool
+		r, alive = Resolve(r)
+		if !alive {
+			return "", false
+		}
+		cmd, ok := agentclient.Command(r.Agent, r.TerminalClient, r.SessionID)
+		if !ok {
+			return "", false
+		}
+		if r.Cwd != "" {
+			q := shellSingleQuote(r.Cwd)
+			cmd = "{ cd -- " + q + " 2>/dev/null || [ ! -d " + q + " ]; } && " + cmd
+		}
+		return cmd, true
+	}
 	argv, ok := resumeArgv[r.Agent]
 	if !ok || r.SessionID == "" {
 		return "", false

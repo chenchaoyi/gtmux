@@ -119,7 +119,7 @@ func resumeAgents() {
 			sp, ok := layout.ByLoc[p.loc]
 			ev := evidenceMissing
 			if ok {
-				ev = sp.evidence()
+				ev = sp.resumeEvidence()
 			}
 			if !ev.allowsResume() {
 				restoreLogf("restore.resume", "resume[not-live] pane=%s loc=%s cwd=%s — save says %s (cmd=%q full=%q shifted=%v); not resuming",

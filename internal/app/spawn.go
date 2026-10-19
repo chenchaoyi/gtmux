@@ -14,6 +14,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/chenchaoyi/gtmux/internal/agentclient"
 	"github.com/chenchaoyi/gtmux/internal/agentenv"
 	"github.com/chenchaoyi/gtmux/internal/agents"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
@@ -148,6 +149,17 @@ func spawnRun(args []string) int {
 	if err := validateSpawnMatter(workspaceStore(), matter); err != nil {
 		fmt.Fprintln(os.Stderr, "gtmux spawn:", err)
 		return 2
+	}
+	if agent == "dsh" && paneFlag == "" {
+		if oneshot || model != "" {
+			i18n.Sae("DSH terminal spawn does not accept --oneshot or --model; choose the model in dst.", "DSH 终端派发暂不接受 --oneshot 或 --model；请在 dst 中选择模型。")
+			return 2
+		}
+		profile, oldProfile, configuredProfile, profileErr := prepareDSTProfile(agentInstallers["dsh"], true)
+		if lookTool("dst") == "" || profile == "" || profileErr != nil || string(oldProfile) != string(configuredProfile) || rowDSHHook(agentInstallers["dsh"]).status != stOK {
+			i18n.Sae("Install dst and run gtmux install hooks --agent dsh before spawning a DSH terminal.", "请先安装 dst 并运行 gtmux install hooks --agent dsh，再启动 DSH 终端。")
+			return 2
+		}
 	}
 	started := time.Now().Unix()
 	bindingToken := ""
@@ -655,6 +667,11 @@ func launchAgent(pane, agent, model string) {
 
 func agentLaunchCommand(agent, model string) string {
 	cmd := agents.InteractiveCommand(agent)
+	if manifest, ok := agents.For(strings.TrimSpace(agent)); ok && len(manifest.TerminalClients) > 0 {
+		if launch, ok := agentclient.Command(manifest.Key, manifest.TerminalClients[0], ""); ok {
+			cmd = launch
+		}
+	}
 	if model != "" {
 		cmd += " --model " + model
 	}

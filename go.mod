@@ -17,6 +17,8 @@ require (
 
 require github.com/klauspost/compress v1.19.0
 
+require gopkg.in/yaml.v3 v3.0.1 // indirect
+
 require (
 	filippo.io/hpke v0.4.0 // indirect
 	github.com/andrew-d/go-termutil v0.0.0-20150726205930-009166a695a2 // indirect

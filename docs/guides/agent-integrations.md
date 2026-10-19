@@ -64,7 +64,7 @@ availability checks. It is not permission to take over an external client.
 | `kimi` | `kimi`, `kimi-code` | Command hooks | Kimi wire journal | Resume; no one-shot |
 | `copilot` | None | Command hooks | None | Resume recipe; no one-shot |
 | `kiro` | None | V3 global hooks / legacy agent profile | None | Resume recipe; no one-shot |
-| `dsh` | None; installer probes `dsh` only | Native DSH plugin | v4 artifacts; external provider | No resume, TUI input or one-shot |
+| `dsh` | Verified terminal-client attachment; installer probes `dsh`/`dst` | Native DSH components | v4 artifacts; shared pane/external reader | dst native input/resume; Web read-only; no one-shot |
 | `hermes-agent` | None | Classifier only; no installer | None | Resume recipe only |
 | `grok` | None | None | None | Resume recipe only |
 | `aider` | `aider` | None | None | Neither |
@@ -226,7 +226,7 @@ subject to valid mapping; a resume recipe is not a complete detection integratio
 Sources: [hook contracts](../design/agent-hooks.md),
 [version-specific installer](../../internal/app/kiro_hooks.go).
 
-## DeepSeek Harness Web — `dsh`
+## DeepSeek Harness — `dsh`
 
 **History first.** The external provider reads `$DSH_HOME/sessions` (default
 `~/.dsh/sessions`), targeting DSH **0.2.0-rc.2** v4 artifacts. It handles raw JSONL
@@ -242,17 +242,15 @@ acquire its writer lease, and needs **no plugin**.
 not the Cordis framework. DSH supplies the Cordis extension runtime. Installation
 writes `$DSH_HOME/gtmux/gtmux.mjs` and `gtmux.cordis.yml`; no separate npm package is
 required. On the next intentional launch, select the printed
-`dsh web --patch '…/gtmux/gtmux.cordis.yml'` overlay. The installer does not edit the
-user's profile or restart a running Web server.
+`dsh web --patch '…/gtmux/gtmux.cordis.yml'` overlay. It never restarts running work. For an existing dst profile, installation also manages a marked native-component block while preserving other configuration.
 
 The bridge uses DSH's own `session/event` and `user-questions/request`, **not Codex
 compatibility hooks**. It tracks root prompts, turn outcomes and pending questions,
 delegates questions unchanged, and never approves or answers them. `approval/asked`
 is not proof of a human wait; approval-card detection is not implemented. The queue
-and child processes are bounded and stdin is piped. Doctor checks both exact owned
-artifacts but reports runtime loading as unverified. `InstallDetect: dsh` detects
-installation only; DSH TUI discovery, resume, adoption, input, usage and one-shot
-are not enabled. Knowledge uses `$DSH_HOME/AGENTS.md`.
+and child processes are bounded and stdin is piped. The terminal adapter verifies home, foreground session, process ancestry and tmux epoch before exposing a managed pane; a background mount alone grants no input. Its native command receives the actual target agent and returns an addressed, one-use acceptance receipt. Drafts, menus and switches remain guarded. All consumers retain the DeepSeek Harness label and official icon; dst is only the internal client adapter.
+
+Doctor distinguishes installed configuration from a fresh loaded attachment and input grant. Ordinary `dst --backend dsh`, terminal spawn/resume and explicit HQ public-message review are supported by the adapter. Web remains external/read-only; Web adoption, usage and one-shot are not enabled. Older Web/background intervals are not silently enrolled. Knowledge uses `$DSH_HOME/AGENTS.md`. See the [terminal design and validation boundary](../design/dsh-terminal-clients.md).
 
 Sources: [setup, upstream contracts and official logo](deepseek-harness.md),
 [plugin source](../../internal/app/dsh_plugin.mjs), [artifact reader](../../internal/dsh/log.go).

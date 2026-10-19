@@ -1,72 +1,82 @@
 ---
-title: DeepSeek Harness Web 对话
-description: 查看 DSH Web 对话，并接入专用原生生命周期事件。
-order: 5
+title: DeepSeek Harness 对话
+description: 读取 Web 历史，管理已核验的 DeepSeek Harness 终端会话。
+order: 18
 ---
 
-[English](deepseek-harness.md) · **中文**
+从 Web 或支持的社区终端客户端使用，身份都保持 DeepSeek Harness，沿用官方鲸鱼图标。
+dst 是首个终端适配器，不是另一种 agent。各 agent 的实现统一见[接入说明](agent-integrations.zh.md)。
 
-Gtmux 从 `$DSH_HOME/sessions`（默认 `~/.dsh/sessions`）发现已保存的用户对话。
-在菜单栏、手机、iPad 或 Web 的**外部会话**中打开，查看用户提示、助手公开文本和工具步骤。
-终端可先运行 `gtmux agents --json`，再使用对应行的 `session_id` 和 `home_id`：
-`gtmux transcript SESSION_ID --home-id HOME_ID --json`。继续交互请回到 DSH Web。
-读取历史不会开启 HQ 跟进、通知或知识留存；访客无权读取或更改这些外部会话。
+## Web 历史
 
-适配器支持 DSH **0.2.0-rc.2** 当前使用的 **v4** JSONL，包括多个带校验和的
-Zstandard 帧。选择已保存的最高格式代际；遇到未知代际、损坏记录、重复身份或同一代际的
-两种编码会拒绝读取，不迁移或偷偷回退旧格式。尚未写完的末帧留待下次轮询。
-列表展示最近变更的 128 个根会话，指定准确 ID 仍能读取更早的会话。子 agent 和没有
-用户消息的会话不进入列表。视图只保留有上限的近期窗口，并报告省略的轮数。
+Gtmux 从 `$DSH_HOME/sessions`（默认 `~/.dsh/sessions`）发现保存的根会话，在菜单栏、手机、
+iPad、Web 的外部对话中只读显示。明确的 CLI 读取不需要插件、凭证、模型请求或会话写入租约：
 
-这里展示公开追加历史，包括模型压缩前的用户对话，不是 DSH 重建的模型上下文。
-注入指令、压缩检查点、隐藏推理、模型重放数据和原始工具结果不会展示。
-无需读取凭证文件、获取写锁或访问 DSH HTTP 接口。保存的活动不能证明某个 Web
-页面现在仍连接着，控制端显示为未确认。Gtmux 不恢复、接管或向 DSH 发送输入。
-本轮不支持 TUI 控制和用量、上下文占比。
+```sh
+gtmux transcript <session_id> --json
+```
 
-## 原生生命周期插件
+支持 DSH 0.2.0-rc.2 的 v4 JSONL 和带校验的连续 Zstandard 帧。未写完的尾部等下一轮；
+未知代际、身份歧义或损坏源文件会拒绝。可读公开文本和工具步骤，排除思考、原始工具结果、
+注入与替换、重放副本。发现本身不开启 HQ 跟进、通知或学习；需用既有
+`gtmux follow <session_id> …` 为单个外部对话设置。Web 历史不能输入、adopt 或由 gtmux 重启。
 
-读取已保存对话不需要插件。后续生命周期事件由 **gtmux 编写的原生事件桥接脚本**接入，
-作为 Cordis 插件由 DSH 加载。Cordis 框架和运行时由 DSH 提供，gtmux 没有内置它们，
-也不需要另装 npm 包。与其他 agent 的对比见[各 Agent 接入机制](agent-integrations.zh.md)。
-安装方式：
+## 原生桥接与终端安装
+
+不用另装 gtmux npm 包。Gtmux 打包桥接脚本，Cordis 运行时由 DSH 自己提供。先单独安装
+官方 DSH CLI 和社区 dst，完成 dst 首次 profile 初始化，再运行：
 
 ```sh
 gtmux install hooks --agent dsh
+# --agent auto 和常规安装也会探测 dsh/dst。
+dst --backend dsh
+gtmux doctor
 ```
 
-自动识别已有 agent 目录或可执行文件并安装 hooks，可用 `gtmux install hooks --agent auto`；
-不带 `--agent` 仍保持默认 Claude。自动模式会保留配置中禁用 hook 的选择。
-`gtmux doctor` 也能识别 DSH，同时检查模块和准确的启动覆盖内容；
-`gtmux doctor --fix` 修复同一组自有文件。文件已装不等于运行中的 Web 已加载：
-doctor 会给出下次启动命令，并明确标注运行中的加载状态尚未核实。
+安装器在 `$DSH_HOME/gtmux` 写出自有模块、组件清单与覆盖文件；已有 dst profile 会在
+`profiles/dsh-tui/cordis.patch.yml` 增加自有标记段，保留其他文本与自定义标签，按内容生成
+备份。卸载只删该段和自有文件。符号链接、歧义配置或归属不明的文件会拒绝处理；非空行内
+根数组需先转为块序列。不会自动安装、升级第三方客户端，也不会重启现有进程。
 
-命令会输出 `dsh web --patch '…/gtmux/gtmux.cordis.yml'`。下次主动启动 Web 时
-加上这个覆盖文件即可。安装器不重启、不改动当前服务；已有对话的读取也不依赖插件。
-安装器仅管理 `$DSH_HOME/gtmux/gtmux.mjs` 和 `gtmux.cordis.yml`，保留用户配置
-和其他插件。`gtmux uninstall hooks --agent dsh` 仅删除这两个自有文件；删除后
-后续启动不再传入该覆盖文件。
+若要接 **Web 的原生生命周期事件**，下次主动启动 Web 时使用安装器另外打印的
+`dsh web --patch '…/gtmux/gtmux.cordis.yml'`。读取历史不依赖它。桥接使用 DSH 的
+`session/event` 和 `user-questions/request`，不走 Codex 兼容 hook，不代答、不批准权限。
+Doctor 分开报告安装、终端实时绑定和输入权限，不能证明运行中的 Web 已加载覆盖文件。
 
-插件直接使用 DSH 的 `session/event` 和 `user-questions/request` 原生接口，
-不经过 Codex 或 Claude 兼容 hook。它观察根会话的用户提示、开始、完成、中断和失败，
-把每次提问原样交给 DSH 原有处理器，等请求结束后清除等待状态，不回答问题或批准工具。
-`approval/asked` 可能被自动策略或其他插件处理，因此不据此声称“等待你批准”。
-目前没有核实到明确代表人工审批卡片的原生 Host 事件，审批仍在 DSH Web 处理。
-子进程使用管道输入、有上限的队列和超时，不会抢走终端输入，也不会因 CLI 不可用阻塞 DSH。
+## 受管终端会话
 
-每段会话分别开启 **HQ 跟进**，HQ 才能观察后续活动；**会话通知**另行开启完成和
-提问通知，**知识留存**另行允许从后续活动整理经验。关闭 HQ 会同时关闭后两项。
-重新开启知识留存会建立新的时间边界，不追溯挖掘旧对话。授权同时绑定 agent、规范化
-数据目录和会话 ID，复制到另一个目录的同名 ID 不继承授权。设置带版本校验，避免
-悄悄覆盖另一设备的修改。生命周期事件流需要原生插件；仅轮询已保存历史只读取元数据，
-不会把旧事件重新投递给 HQ。
+终端适配器针对 dst 0.16.1 的 DSH 后端。实时桥接需与精确数据目录、根会话、进程祖先、
+tmux 代际和前台选择一致，核心才呈现受管 DeepSeek Harness pane。后台挂载、dst 的其他
+后端、过期或歧义记录不能授权输入。受管期间，同一对话不再重复出现在外部历史列表。
+Mac、手机、iPad、Web 和 CLI 消费同一份核心数据及图标。
 
-鲸鱼标记来自 [DeepSeek Harness 官方 favicon](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/apps/web/public/favicon.svg)，
-来源及校验值见 [图标溯源](../../assets/agent-icons/SOURCES.md)。
-原生接口依据：[会话类型](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/core/session/src/types.ts)、
-[会话观察器](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/session/session-telemetry/src/coordinator.ts)、
-[审批服务](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/interaction/user-approval/src/index.ts)。
+可使用既有 pane 捕获、聚焦、对话与发送流程。`gtmux spawn --agent dsh` 启动声明的客户端；
+核验过的终端恢复记录限定相同数据目录和客户端。模型在 dst 中选择，暂不支持通用
+`--model` 和一次性派发。正文通过目标明确的原生命令提交，私有一次性请求由真实接收
+agent 校验后返回回执。保留草稿保护，切换会话、菜单、提问、Vim 普通模式或展开编辑器时
+拒绝提交；窗口过窄导致令牌折行也可能拒绝。回执只证明入队，不代表执行或任务完成。
+结果不明不自动重投；完成请求的重试记录保留 24 小时，未解决请求到有界上限后停止新发送。
 
-首次发现会遍历选中的文件建立元数据，之后未变化的轮询复用索引，追加读取只解码新的完整帧。
+## HQ 逐条审阅公开消息
 
-模型表层的替换副本不会当作新提示、生命周期事件或学习输入，原先追加的公开对话仍可见。
+核对器增量恢复已核验前台区间内提交的公开用户与助手消息，不自动纳管较早的 Web 或后台
+活动。`ConversationMessage` 事件携带消息身份与简短公开摘要，完整公开正文按页读取：
+
+```sh
+gtmux transcript <session_id> --messages --after-seq -1 --limit 100 --json
+# 判断完本页返回的消息，再明确声明审阅进度：
+gtmux transcript <session_id> --messages --after-seq -1 --limit 100 --review-through <last_message_seq> --json
+```
+
+随后从 `reviewed_through` 继续，`has_more` 表示还有下一页。读取消息、消费 HQ 事件、收到
+通知和输入回执都不会自动标记已审阅。审阅用于观察与跟进，不是事前批准关卡。源失败、替换
+或截断会产生 `ConversationGap`，替换会重置审阅覆盖；应核对缺失历史，不能声称完整覆盖。
+分页只含文本消息，工具及权限交互仍在原客户端。DSH 用量统计尚未实现。
+
+## 来源与验证
+
+各端图标来源为[官方 favicon](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/apps/web/public/favicon.svg)。
+原生接口依据 [DSH 会话](https://github.com/deepseek-ai/deepseek-harness/tree/dsh-v0.2.0-rc.2/packages/core/session)和
+[dst v0.16.1](https://github.com/ccch1mneyyy/dsh-TUI/tree/73ff99fbed56563bf154d719effd09f9f9725349)。
+信任、保留和验证边界见[终端设计](../design/dsh-terminal-clients.zh.md)。作者构造数据测试、
+真实组件加载、TUI 原生入队和模型执行是不同证据；本机版本组合实际通过哪些，以交付报告为准。

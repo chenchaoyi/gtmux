@@ -7,7 +7,9 @@ import (
 	"testing"
 
 	"github.com/chenchaoyi/gtmux/internal/dsh"
+	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/sessionpolicy"
+	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
 func TestDSHReaderUsesHomeAndLeavesSourceAndConsentUnchanged(t *testing.T) {
@@ -41,5 +43,27 @@ func TestDSHReaderUsesHomeAndLeavesSourceAndConsentUnchanged(t *testing.T) {
 	}
 	if got := sessionpolicy.GetFor("dsh", "web"); got.HQ || got.Notify || got.Knowledge || got.Revision != 0 {
 		t.Fatal("manual reading granted follow", got)
+	}
+}
+
+func TestDSHTerminalRevocationDoesNotServeStalePaneHistory(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("DSH_HOME", t.TempDir())
+	stub := filepath.Join(t.TempDir(), "tmux")
+	if err := os.WriteFile(stub, []byte("#!/bin/sh\nprintf 'synthetic:0.0\\n'\n"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	old := tmux.Bin
+	tmux.Bin = stub
+	defer func() { tmux.Bin = old }()
+	dir := filepath.Join(dsh.Home(), "sessions", "work", "synthetic")
+	_ = os.MkdirAll(dir, 0700)
+	_ = os.WriteFile(filepath.Join(dir, "session.v4.jsonl"), []byte(`{"type":"session","version":4,"id":"synthetic"}`+"\n"+`{"type":"user/message","seq":1,"time":2000,"data":{"role":"user","source":{"kind":"user"},"content":[{"type":"text","text":"stale conversation text"}]}}`+"\n"), 0600)
+	if err := resume.Save("synthetic:0.0", resume.Record{Agent: "dsh", HomeID: dsh.HomeID(), SessionID: "synthetic", TerminalClient: "dst"}); err != nil {
+		t.Fatal(err)
+	}
+	b, _, err := transcriptForPane("%44", 0)
+	if err != nil || strings.Contains(string(b), "stale conversation text") {
+		t.Fatalf("revoked binding returned stale history: %s %v", b, err)
 	}
 }

@@ -3,7 +3,7 @@ package hq
 // hqInstructionsZH is the Chinese edition of the supervisor charter. Same
 // skeleton, same command/class/signal anchors as hqInstructionsEN — only the
 // prose differs; TestChartersShareSkeletonAndAnchors enforces the alignment.
-const hqInstructionsZH = hqInstructionsBaseZH + "\n" + hqWorkspaceInstructionsZH
+const hqInstructionsZH = hqInstructionsBaseZH + "\n" + hqWorkspaceInstructionsZH + "\n" + hqDSHMessagesZH
 
 const hqInstructionsBaseZH = `# gtmux 中控 (Supervisor HQ)
 

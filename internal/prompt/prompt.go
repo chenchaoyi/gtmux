@@ -415,6 +415,12 @@ func hasPromptLine(capture, agent string) bool {
 		// check accepts Claude's ❯ (or a > in prose) as Codex's composer and sends
 		// the first briefing before Codex has drawn its own input box. Codex's
 		// composer begins with › in both the captured 0.146 and 0.157 UI.
+		if strings.EqualFold(agent, "dsh") || strings.EqualFold(agent, "DeepSeek Harness") {
+			if strings.HasPrefix(s, "⌸ ❯") && !strings.HasPrefix(strings.TrimSpace(strings.TrimPrefix(s, "⌸ ❯")), "NORMAL") {
+				return true
+			}
+			continue
+		}
 		if strings.EqualFold(agent, "codex") {
 			if strings.HasPrefix(s, "› ") || s == "›" {
 				return true

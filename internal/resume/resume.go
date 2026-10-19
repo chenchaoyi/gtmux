@@ -22,10 +22,11 @@ import (
 
 // Record is one resumable agent session captured from a hook.
 type Record struct {
-	HomeID    string `json:"home_id,omitempty"`
-	Agent     string `json:"agent"`     // the agent key (claude/codex/cursor/…)
-	SessionID string `json:"sessionId"` // the agent's resumable conversation id
-	Cwd       string `json:"cwd,omitempty"`
+	TerminalClient string `json:"terminal_client,omitempty"`
+	HomeID         string `json:"home_id,omitempty"`
+	Agent          string `json:"agent"`     // the agent key (claude/codex/cursor/…)
+	SessionID      string `json:"sessionId"` // the agent's resumable conversation id
+	Cwd            string `json:"cwd,omitempty"`
 	// Launcher is the executable that actually started this agent, when it is not the
 	// agent's own name — a wrapper, an alias, an `npx`-style shim.
 	//

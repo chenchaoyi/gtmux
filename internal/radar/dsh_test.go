@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/agentclient"
 	"github.com/chenchaoyi/gtmux/internal/dsh"
 )
 
@@ -34,5 +35,35 @@ func TestDSHSavedConversationUsesExternalContractWithoutClaimingControl(t *testi
 	}
 	if p.PaneID != "" || p.adoptable || p.role != "" || !p.StatusOnlyDesktop() || p.DesktopNotifications() {
 		t.Fatal("saved history claimed control or attention without consent")
+	}
+}
+
+func TestVerifiedTerminalIdentityAndExternalDedup(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("DSH_HOME", t.TempDir())
+	t.Setenv("CODEX_HOME", t.TempDir())
+	a := agentclient.Attachment{Agent: "dsh", Client: "dst", Pane: "%44", HomeID: dsh.HomeID(), SessionID: "synthetic"}
+	terminal := map[string]agentclient.Attachment{a.Pane: a}
+	fields := []string{a.Pane, "session", "0", "0", "unbranded", "node", "/project", "0", "123"}
+	identity := identifyPane(fields, nil, nil, LoadProfiles(), terminal)
+	if !identity.isAgent || identity.agent != "DeepSeek Harness" {
+		t.Fatal("community client lost harness identity", identity)
+	}
+	if identifyPane(fields, nil, nil, LoadProfiles(), map[string]agentclient.Attachment{}).isAgent {
+		t.Fatal("unverified client became an agent")
+	}
+	old := terminalAttachments
+	terminalAttachments = func() map[string]agentclient.Attachment { return terminal }
+	defer func() { terminalAttachments = old }()
+	dir := filepath.Join(dsh.Home(), "sessions", "project", "synthetic")
+	_ = os.MkdirAll(dir, 0700)
+	text := `{"type":"session","version":4,"id":"synthetic"}` + "\n" + `{"type":"user/message","seq":1,"time":2000,"data":{"role":"user","source":{"kind":"user"},"content":[{"type":"text","text":"synthetic"}]}}` + "\n"
+	_ = os.WriteFile(filepath.Join(dir, "session.v4.jsonl"), []byte(text), 0600)
+	if rows := nativePanes(nil, nil, time.Now().Unix()); len(rows) != 0 {
+		t.Fatal("managed session duplicated as external")
+	}
+	terminal = map[string]agentclient.Attachment{}
+	if rows := nativePanes(nil, nil, time.Now().Unix()); len(rows) != 1 || rows[0].adoptable {
+		t.Fatal("released session did not retain external read-only behavior")
 	}
 }

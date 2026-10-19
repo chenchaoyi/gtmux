@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/agentclient"
 	"github.com/chenchaoyi/gtmux/internal/agents"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/driver"
@@ -79,7 +80,7 @@ func DispatchIO(pane string, agentCmd ...string) dispatch.IO {
 		// An unbound Codex has no trustworthy pane-only receipt. The screen
 		// verifier remains available while the hook cannot prove ownership.
 	}
-	return dispatch.IO{
+	dio := dispatch.IO{
 		Capture:      func() string { return tmux.CaptureFull(pane) },
 		CaptureColor: func() string { return tmux.CaptureFullColor(pane) },
 		Paste:        func(text string) error { return tmux.Paste(pane, text) },
@@ -99,6 +100,11 @@ func DispatchIO(pane string, agentCmd ...string) dispatch.IO {
 		RecordSend: dispatch.RecordSend,
 		ForgetSend: dispatch.ForgetSend,
 	}
+	knownDSH := len(agentCmd) > 0 && agentKey(agentCmd[0]) == "dsh"
+	if _, ok := agentclient.ForPane(pane); ok || knownDSH || agentclient.CandidatePane(pane) {
+		return agentclient.WrapIO(pane, dio, agentclient.ForPane)
+	}
+	return dio
 }
 
 // DeliverOpts builds the verify options for a pane + agent, applying tuning.
