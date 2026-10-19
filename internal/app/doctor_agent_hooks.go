@@ -3,11 +3,12 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/chenchaoyi/gtmux/internal/agents"
-	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/chenchaoyi/gtmux/internal/agents"
+	"github.com/chenchaoyi/gtmux/internal/i18n"
 )
 
 var additionalHookAgents = func() []string {
@@ -31,7 +32,7 @@ func agentHookPresent(key string) bool {
 		return false
 	}
 	if inst.envDir != "" && os.Getenv(inst.envDir) != "" {
-		return fileExists(os.Getenv(inst.envDir))
+		return fileExists(os.Getenv(inst.envDir)) || agentHookExecutablePresent(key)
 	}
 	root := filepath.Join(homeDir(), strings.Split(inst.relDir, "/")[0])
 	if key == "opencode" {
@@ -46,10 +47,16 @@ func agentHookPresent(key string) bool {
 	if key == "copilot" {
 		return lookTool("copilot") != ""
 	}
+	return agentHookExecutablePresent(key)
+}
+
+func agentHookExecutablePresent(key string) bool {
 	if manifest, ok := agents.For(key); ok {
-		for _, bin := range manifest.Detect {
-			if lookTool(bin) != "" {
-				return true
+		for _, probes := range [][]string{manifest.Detect, manifest.InstallDetect} {
+			for _, bin := range probes {
+				if lookTool(bin) != "" {
+					return true
+				}
 			}
 		}
 	}
@@ -212,6 +219,9 @@ func hookPolicyDisabled(key, path string) bool {
 func rowAgentHook(key string) dcheck {
 	inst, _ := selectedAgentInstaller(key)
 	label := inst.display + " hook"
+	if key == "dsh" {
+		return rowDSHHook(inst)
+	}
 	if hookPolicyDisabled(key, inst.configPath()) {
 		return dcheck{stRec, label, i18n.Tr("disabled by settings", "配置已禁用"), i18n.Tr("enable hooks in the agent settings; doctor preserves this choice", "在 agent 设置中启用 hook；doctor 会保留这一选择")}
 	}
@@ -249,15 +259,13 @@ func (s *fixState) stepAgentHook(key string) int {
 		return 0
 	}
 	detail := i18n.Tr("  Update gtmux state hooks in "+tildeify(inst.configPath())+". Foreign hooks are preserved; the file is backed up first. Restart running sessions to load it.", "  更新 "+tildeify(inst.configPath())+" 中 gtmux 的状态 hook；保留其它 hook，写入前先备份。运行中的会话需要重启才能加载。")
+	if key == "dsh" {
+		detail = i18n.Tr("  Install or repair gtmux's native Cordis module and launch overlay. User profiles, other plugins and the running Web server are unchanged.", "  安装或修复 gtmux 的原生 Cordis 模块与启动覆盖文件，保留用户 profile、其他插件和正在运行的 Web 服务。")
+	}
 	if !s.ask(inst.display+" hook", detail) {
 		return 0
 	}
-	var err error
-	if inst.plugin != nil {
-		err = installOpencodePlugin(inst, s.hookBin())
-	} else {
-		err = updateAgentSettings(inst, inst.configPath(), s.hookBin(), true)
-	}
+	err := writeAgentHookFiles(inst, s.hookBin())
 	if err != nil {
 		i18n.Sae("  ✗ "+err.Error(), "  ✗ "+err.Error())
 		s.rc = 1
@@ -267,7 +275,11 @@ func (s *fixState) stepAgentHook(key string) int {
 		s.rc = 1
 		return 0
 	}
-	i18n.Say("  ✓ configured. Restart running sessions to load it", "  ✓ 已配置。运行中的会话需要重启才能加载")
+	if key == "dsh" {
+		printDSHLaunch(inst)
+	} else {
+		i18n.Say("  ✓ configured. Restart running sessions to load it", "  ✓ 已配置。运行中的会话需要重启才能加载")
+	}
 	if inst.note != nil {
 		fmt.Println(inst.note())
 	}

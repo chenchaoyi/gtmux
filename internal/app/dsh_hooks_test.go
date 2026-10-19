@@ -88,3 +88,84 @@ finishB(answer);await second;assert.equal(calls.at(-1).token,'Resumed');
 		t.Fatalf("native contract: %v\n%s", err, out)
 	}
 }
+
+func TestDSHDoctorRepairsBothFilesWithoutOpenCodeMigration(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("DSH_HOME", filepath.Join(homeDir(), ".dsh"))
+	if err := os.MkdirAll(os.Getenv("DSH_HOME"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	legacy := legacyOpencodePluginPath()
+	foreignAgent := "// gtmux hook bridge for opencode\nexport const GtmuxHook = async () => ({});\n"
+	if err := writeAgentPlugin(legacy, foreignAgent); err != nil {
+		t.Fatal(err)
+	}
+	inst := agentInstallers["dsh"]
+	s := &fixState{yes: true, bin: "/opt/gtmux"}
+	if n := s.stepAgentHook("dsh"); n != 1 || s.rc != 0 {
+		t.Fatalf("fresh repair: applied=%d rc=%d", n, s.rc)
+	}
+	if !agentHooksInstalled(inst) {
+		t.Fatal("DSH doctor did not install both artifacts")
+	}
+	b, err := os.ReadFile(legacy)
+	if err != nil || string(b) != foreignAgent {
+		t.Fatal("DSH repair migrated an unrelated OpenCode plugin")
+	}
+	if n := s.stepAgentHook("dsh"); n != 0 {
+		t.Fatal("healthy repair was not idempotent")
+	}
+	if err := os.Remove(dshOverlayPath(inst)); err != nil {
+		t.Fatal(err)
+	}
+	if n := s.stepAgentHook("dsh"); n != 1 || s.rc != 0 {
+		t.Fatal("missing overlay could not be repaired")
+	}
+}
+
+func TestDSHDoctorRejectsStaleLaunchOverlay(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("DSH_HOME", t.TempDir())
+	inst := agentInstallers["dsh"]
+	if err := updateDSHPlugin(inst, "/opt/gtmux", true); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(dshOverlayPath(inst), []byte("# gtmux native DeepSeek Harness overlay\n# gtmux-native-dsh\n- insert: []\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if rowAgentHook("dsh").status == stOK {
+		t.Fatal("malformed launch overlay passed doctor")
+	}
+	s := &fixState{yes: true, bin: "/opt/gtmux"}
+	if n := s.stepAgentHook("dsh"); n != 1 || s.rc != 0 {
+		t.Fatal("owned stale overlay not repaired")
+	}
+}
+
+func TestDSHDoctorPreservesForeignOverlayAndUserProfile(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("DSH_HOME", t.TempDir())
+	inst := agentInstallers["dsh"]
+	if err := updateDSHPlugin(inst, "/opt/old-gtmux", true); err != nil {
+		t.Fatal(err)
+	}
+	moduleBefore, _ := os.ReadFile(inst.configPath())
+	foreign := []byte("- insert: [{id: user-plugin}]\n")
+	if err := os.WriteFile(dshOverlayPath(inst), foreign, 0600); err != nil {
+		t.Fatal(err)
+	}
+	profile := filepath.Join(os.Getenv("DSH_HOME"), "profiles", "web", "cordis.patch.yml")
+	if err := writeAgentPlugin(profile, "# user profile\n"); err != nil {
+		t.Fatal(err)
+	}
+	s := &fixState{yes: true, bin: "/opt/gtmux"}
+	if n := s.stepAgentHook("dsh"); n != 0 || s.rc != 1 {
+		t.Fatal("foreign overlay reported repaired")
+	}
+	moduleAfter, _ := os.ReadFile(inst.configPath())
+	overlayAfter, _ := os.ReadFile(dshOverlayPath(inst))
+	userAfter, _ := os.ReadFile(profile)
+	if string(moduleAfter) != string(moduleBefore) || string(overlayAfter) != string(foreign) || string(userAfter) != "# user profile\n" {
+		t.Fatal("foreign/profile/module files changed on refused repair")
+	}
+}

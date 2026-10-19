@@ -356,11 +356,11 @@ var helpCommands = []command{
 		Flags: []cmdFlag{
 			{Name: "hooks [--yes]", EN: "register the agent hooks", ZH: "注册 agent hook"},
 			{Name: "--agent <a>", EN: "the agent to configure", ZH: "要配置的 agent",
-				Values: []string{"claude", "codex", "cursor", "gemini", "copilot", "kiro", "opencode", "kimi"}},
+				Values: append([]string{"auto"}, installableHookAgentKeys()...)},
 			{Name: "app", EN: "the menu-bar app, which delivers desktop notifications", ZH: "菜单栏 app，桌面通知由它发"},
 		},
-		DetailEN: "No target and it asks. `doctor --fix` does the same thing as part of the walk-through.",
-		DetailZH: "不给参数就问你。`doctor --fix` 在它那趟流程里也会做同一件事。",
+		DetailEN: "No target and it asks. Hooks default to Claude; --agent auto detects supported agent homes/installations. --agent dsh installs the bundled native Cordis module and prints the next Web launch command. `doctor --fix` repairs the same files.",
+		DetailZH: "不给安装对象就询问。hooks 默认 Claude；--agent auto 识别已有的 agent 目录或安装。--agent dsh 安装自带 Cordis 模块并打印下次 Web 启动命令。`doctor --fix` 修复同一组文件。",
 	},
 	{
 		Name: "uninstall", Args: "[hooks|app]", Group: "setup", Writes: true,

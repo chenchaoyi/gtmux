@@ -823,3 +823,17 @@ The file-permission check SHALL inspect both gtmux data/config trees for ownersh
 #### Scenario: Private modes coexist with an unresolved symbolic link
 - **WHEN** owned files are mode 0600 but a symbolic link cannot be verified
 - **THEN** doctor reports an unverified path and does not claim the entire tree is private
+
+### Requirement: Distinguish DSH installation from runtime loading
+
+Doctor SHALL check the current owned Cordis module and exact launch overlay, rather than accepting marker substrings alone. A healthy installed integration SHALL include the actionable `dsh web --patch` command and state that loading in an already running Web process is unverified. Doctor SHALL NOT restart that process, edit its user profile, infer live loading from saved conversation history or use Codex compatibility hooks to repair the native integration.
+
+#### Scenario: Both files are current but Web predates installation
+
+- **WHEN** doctor observes a current installed module and overlay
+- **THEN** it reports files installed with runtime loading unverified and supplies the next-launch command
+
+#### Scenario: A valid module has a malformed overlay
+
+- **WHEN** an overlay contains the plugin id but does not match the generated configuration
+- **THEN** doctor reports repair needed rather than a healthy integration

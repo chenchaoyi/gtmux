@@ -2,6 +2,15 @@
 
 **English** · [中文](install.zh.md)
 
+## Agent plugins and hooks
+
+After installing the CLI/app, `gtmux install hooks --agent auto` detects supported
+agent homes/installations and skips hooks disabled by settings. Use `--agent dsh`
+for DSH alone; omitting `--agent` keeps the Claude default. `gtmux doctor` inspects;
+`gtmux doctor --fix` offers repairs one by one. The DSH Cordis plugin is bundled,
+with no separate npm package. History reading needs no plugin; lifecycle events
+require the generated `--patch` on the next Web launch. See the [DSH guide](guides/deepseek-harness.md).
+
 ## Linux
 
 The same installer supports Linux amd64/arm64 and automatically skips the macOS app. Install tmux with your distribution's package manager. See [Linux server](linux.md) for pairing, foreground access, systemd user services and platform limits.
@@ -76,18 +85,16 @@ its own downloads on its own:
 curl -fsSL https://cdn.jsdelivr.net/gh/chenchaoyi/gtmux@main/install.sh | bash
 ```
 
-Two mirror chains are involved, one for each kind of download:
+`gtmux update` uses the local Go installer; it does not download or execute an
+installation script. CLI checksums come only from official GitHub HTTPS. Mirrors
+may supply archive bytes only when they match that digest; the app uses official
+HTTPS only. Official requests and redirects are restricted to permitted GitHub
+hosts, and installation fails without trusted verification.
 
-- The install script itself. `gtmux update` fetches it from GitHub first, then
-  tries jsdelivr, gh-proxy.com, ghfast.top and ghproxy.net in that order. So once
-  gtmux is installed, updates can try these fallbacks automatically.
-- The release files (the CLI tarball and the app zip). The installer tries GitHub
-  first and, when a download stalls, tries ghfast.top, gh-proxy.com and ghproxy.net
-  in that order. `SHASUMS256.txt` is tried directly from GitHub first, but can
-  also fall back to a mirror. SHA256 is still checked; if the checksum file comes
-  from a mirror, verification relies on that mirror. The installer prints which
-  source supplied it. The app zip is checked for archive integrity separately;
-  it is not included in `SHASUMS256.txt`.
+The explicit `curl … | bash` bootstrap above is a separate path: its script and
+release assets may still use mirrors, including a checksum mirror. In that case
+verification depends on that mirror. App ZIP integrity is checked separately and
+is outside the CLI checksum list. The script prints the actual source.
 
 Override with `GTMUX_INSTALL_MIRROR`:
 

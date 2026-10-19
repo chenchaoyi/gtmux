@@ -2282,9 +2282,13 @@ files under `~/.local/share/gtmux/`. gtmux ships that hook built in:
 ```sh
 gtmux install                       # asks: hooks | app | all
 gtmux install hooks                 # Claude, one-time setup (macOS)
-gtmux install hooks --agent codex   # or cursor|gemini|copilot|kiro|opencode|kimi
+gtmux install hooks --agent codex    # or cursor|gemini|copilot|kiro|opencode|kimi|dsh
+gtmux install hooks --agent auto     # detect supported agent homes/installations
 gtmux uninstall [hooks|app|all]     # reverse it (asks when no target)
 ```
+
+Without `--agent`, hooks still default to Claude. `--agent auto` detects supported homes/installations and skips agents whose settings disable hooks.
+The DSH Cordis plugin is bundled; no npm package is needed. Doctor can install/repair its module and launch overlay, and prints the next `dsh web --patch …` command without claiming the running process loaded it. See the [DSH guide](guides/deepseek-harness.md).
 
 `gtmux install hooks` registers `gtmux hook` in `~/.claude/settings.json` for turn,
 permission, session, compaction and tool events (idempotent; preserves other hooks and

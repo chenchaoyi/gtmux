@@ -163,8 +163,8 @@ func installUsage() int {
 	i18n.Say("  app    install the menu-bar app (it delivers desktop notifications)",
 		"  app    安装菜单栏 app（桌面通知由它发出）")
 	i18n.Say("  all    both", "  all    两者都装")
-	i18n.Say("  hooks takes --agent <key> and --yes; with no target it asks.",
-		"  hooks 支持 --agent <key> 与 --yes；不给参数时会询问。")
+	i18n.Say("  hooks takes --agent <key|auto> and --yes; defaults to Claude. With no target it asks.",
+		"  hooks 支持 --agent <key|auto> 与 --yes，默认 Claude；不给安装对象时会询问。")
 	return 0
 }
 

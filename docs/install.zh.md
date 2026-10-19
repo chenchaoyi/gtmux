@@ -2,6 +2,14 @@
 
 [English](install.md) · **中文**
 
+## Agent 插件与 hooks
+
+安装 CLI／App 后，运行 `gtmux install hooks --agent auto` 可识别已有的 agent 目录或安装，
+跳过配置中禁用 hook 的 agent。只装 DSH 则用 `gtmux install hooks --agent dsh`；
+不带 `--agent` 保留默认 Claude。`gtmux doctor` 只检查，`gtmux doctor --fix` 逐项提出修复。
+DSH 的 Cordis 插件自带于 gtmux，不需要 npm 包。已有对话无需插件即可读取；
+生命周期事件需在下次启动 Web 时带生成的 `--patch`，详见 [DSH 指南](guides/deepseek-harness.zh.md)。
+
 ## Linux
 
 同一安装脚本支持 Linux amd64、arm64，自动跳过 macOS App。tmux 通过系统包管理器安装。配对、前台运行、systemd 用户服务和能力边界见 [Linux 服务器](linux.zh.md)。
@@ -68,16 +76,13 @@ CLI 二进制和 gtmux 的已有记录。Homebrew 安装的还需用 `brew unins
 curl -fsSL https://cdn.jsdelivr.net/gh/chenchaoyi/gtmux@main/install.sh | bash
 ```
 
-这里有两条镜像链，对应两种下载：
+`gtmux update` 现在使用本地 Go 安装器，不再下载或执行远端安装脚本。CLI 校验文件
+只从官方 GitHub HTTPS 获取；镜像仅提供压缩包，必须匹配官方摘要。App 只从官方 HTTPS
+获取，不走镜像。官方请求及重定向限制在允许的 GitHub 主机，无法可信校验时更新失败。
 
-- 安装脚本本身。`gtmux update` 先从 GitHub 取，取不到就依次试 jsdelivr、gh-proxy.com、
-  ghfast.top、ghproxy.net。装好之后，更新会自动尝试这些备用来源。
-- 发布文件（CLI 压缩包和 app 的 zip）。安装脚本先走 GitHub，卡住了就依次试 ghfast.top、
-  gh-proxy.com、ghproxy.net。`SHASUMS256.txt` 优先从 GitHub 直取，失败后也可能走镜像。
-  SHA256 仍会校验；校验文件也来自镜像时，验证依赖的就是该镜像。安装脚本会打印实际来源。
-  app 的 zip 另做压缩包完整性检查，不在 `SHASUMS256.txt` 内。
-
-用 `GTMUX_INSTALL_MIRROR` 可以指定：
+上面的显式 `curl … | bash` 属于独立 bootstrap 路径：脚本和发布文件仍可能使用镜像，
+摘要也来自镜像时，验证依赖该镜像；App ZIP 另做完整性检查，不在 CLI 摘要清单中。
+脚本会打印实际来源。用 `GTMUX_INSTALL_MIRROR` 选择镜像：
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | GTMUX_INSTALL_MIRROR=ghproxy bash
