@@ -17,7 +17,7 @@ require (
 
 require github.com/klauspost/compress v1.19.0
 
-require gopkg.in/yaml.v3 v3.0.1 // indirect
+require gopkg.in/yaml.v3 v3.0.1
 
 require (
 	filippo.io/hpke v0.4.0 // indirect
