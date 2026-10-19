@@ -1,6 +1,7 @@
 import React from 'react';
 import renderer, {act} from 'react-test-renderer';
 import {ChatView} from './ChatView';
+import {ToolSteps} from './ToolSteps';
 import {Agent} from '../api/types';
 import {TranscriptTurn} from '../api/client';
 
@@ -64,15 +65,14 @@ test('the turn in flight shows its steps, not just a toggle', () => {
 });
 
 test('history stays collapsed while the newest turn runs', () => {
-  const out = texts(render({turns: [history, live], status: 'working'}));
-  expect(out).not.toContain('ran digest');
-  expect(out).toContain('2 steps'); // the toggle is still there to open it
+  const tree = render({turns: [history, live], status: 'working'});
+  expect(tree.root.findAllByType(ToolSteps).map(n => n.props.open)).toEqual([false, true]);
+  expect(texts(tree)).toContain('2 calls');
 });
 
 test('a finished conversation reads as a conversation, not a log of tool calls', () => {
-  const out = texts(render({turns: [history, live], status: 'idle'}));
-  expect(out).not.toContain('read the board');
-  expect(out).not.toContain('ran digest');
+  const tree = render({turns: [history, live], status: 'idle'});
+  expect(tree.root.findAllByType(ToolSteps).map(n => n.props.open)).toEqual([false, false]);
 });
 
 // Nothing to show yet is the case that reads as "the app froze", and it keeps the

@@ -1511,3 +1511,7 @@ they do not substitute for native visual or VoiceOver acceptance. The isolated
 ### Quiet session grouping
 
 Activity groups are needs-you → errored (when present) → working → idle. Neutral `running` sessions without authoritative lifecycle evidence also belong to idle, retaining their grey dot and original timestamps. They do not create a standby group or assert completion. Errors, watched panes and external conversations keep their existing separate categories.
+
+### Transcript activity cards (2026-10-19)
+
+Tool segments use `ToolSteps`: a neutral bordered Activity card, call count and compact tool-count summary, then ordered rows with the tool name and wrapping plain-text argument summary. Live/history defaults and reader choices remain in `chatSteps.ts`; no result state is inferred. This is shared by Detail and HQ on phone/iPad. Sources and data limits: [research](transcript-activity-research.md).

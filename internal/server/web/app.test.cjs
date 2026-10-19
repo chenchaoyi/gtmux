@@ -59,7 +59,7 @@ function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
   const marker = "  if (document.readyState === 'loading')";
   assert.ok(source.includes(marker), 'web boot marker changed');
   const script = source.replace(marker, `
-    globalThis.__test = {drawChat, renderTileChat, mdRender, labelChrome, setupCodeBox, connStateFor, makeComposer, isHQPane, paneSessionTitle, paneToAgent, renderPanes, renderRadar,
+    globalThis.__test = {toolStepsEl, drawChat, renderTileChat, mdRender, labelChrome, setupCodeBox, connStateFor, makeComposer, isHQPane, paneSessionTitle, paneToAgent, renderPanes, renderRadar,
       openConversation, pollConversation, conversationControls, readableConversation, nativeSourceLabel, nativeEvidenceLabel, launchHost,
  setExternalSettings: s => {externalSettings=s;}, show, gate, runRead, cancelReads, pollPane, pollChat, pollRadar, renderChat, tilePollChat, renderTree, treeRow, renderCmdk, cyclePane,
       onDraw: fn => {drawChat = fn;},
@@ -985,3 +985,26 @@ for (const [language, idleLabel] of [['en-US', 'idle'], ['zh-CN', '空闲']]) {
     assert.equal(neutral.since, 0);
   });
 }
+
+
+test('activity counts repeated tools and renders ordered plain-text details', () => {
+  const h = harness({ok:true});
+  const steps = [{title:'js',detail:'Inspect narrow layout'}, {title:'js',detail:'<img src=x onerror=alert(1)>'}, {title:'wait'}];
+  let toggled = 0;
+  const closed = h.api.toolStepsEl(steps, false, () => toggled++);
+  const toggle = closed.children[0];
+  assert.equal(toggle.attrs['aria-expanded'], 'false');
+  assert.equal(toggle.children[0].children[1].textContent, '3 calls');
+  assert.equal(toggle.children[1].textContent, 'js ×2 · wait');
+  assert.equal(closed.children.length, 1);
+  toggle.onclick(); assert.equal(toggled, 1);
+  const open = h.api.toolStepsEl(steps, true, () => {});
+  assert.equal(open.children[0].attrs['aria-expanded'], 'true');
+  const list = open.children[1];
+  assert.equal(list.tagName, 'ol');
+  assert.deepEqual(list.children.map(row => row.children[0].children[0].textContent), ['js','js','wait']);
+  const detail = list.children[1].children[0].children[1];
+  assert.equal(detail.textContent, steps[1].detail);
+  assert.equal(detail.html, undefined, 'arguments must not become HTML');
+  assert.equal(list.children[2].children[0].children.length, 1);
+});

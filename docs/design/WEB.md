@@ -152,3 +152,7 @@ Plain panes retain the same `plainLabel` title when opened in focus; their subti
 
 ### Transient send receipts
 The composer briefly confirms accepted text delivery to a working agent without promising when it is consumed. This informational note expires after six seconds. Starting another send cancels its timer; a later refusal or uncertain-send warning remains visible with recoverable text. Control keys do not create a message-waiting note. This follows the phone/iPad receipt wording and expiry policy.
+
+### Transcript activity cards (2026-10-19)
+
+Focused Chat uses the same Activity hierarchy as phone/iPad: heading, call count, folded tool-count summary and ordered plain-text tool rows. The disclosure is a labelled button with `aria-expanded`, at least 44px tall; long names and details wrap. History stays folded until opened, preserving the choice during live updates. Compact workbench tiles retain reply-only rendering. [Sources and limits](transcript-activity-research.md).

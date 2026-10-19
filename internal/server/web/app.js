@@ -1916,19 +1916,9 @@
         if (seg.steps && seg.steps.length) {
           var sk = idx + '-' + k;
           var open = !!chatExpanded[sk];
-          var tog = document.createElement('button'); tog.className = 'steps-toggle';
-          tog.textContent = (open ? '▾ ' : '▸ ') + (ZH ? seg.steps.length + ' 个步骤'
-            : seg.steps.length + ' step' + (seg.steps.length > 1 ? 's' : ''));
-          tog.onclick = (function (key) { return function () { chatExpanded[key] = !chatExpanded[key]; drawChat(lastTurns); }; })(sk);
-          ct.appendChild(tog);
-          if (open) {
-            seg.steps.forEach(function (s) {
-              var row = document.createElement('div'); row.className = 'step-row';
-              var sn = document.createElement('span'); sn.className = 'step-name'; sn.textContent = s.title || ''; row.appendChild(sn);
-              if (s.detail) { var sd = document.createElement('span'); sd.className = 'step-detail'; sd.textContent = s.detail; row.appendChild(sd); }
-              ct.appendChild(row);
-            });
-          }
+          ct.appendChild(toolStepsEl(seg.steps, open, (function (key) {
+            return function () { chatExpanded[key] = !chatExpanded[key]; drawChat(lastTurns); };
+          })(sk)));
         }
       });
       col.appendChild(ct);
@@ -1939,6 +1929,44 @@
     scroll.scrollTop = atBottom ? scroll.scrollHeight : prevTop;
     if (curTurnIdx >= turns.length) curTurnIdx = Math.max(0, turns.length - 1);
     if (wide) syncOutline();
+  }
+
+  // Plain text only: tool arguments are untrusted transcript content, never markup.
+  function toolStepsEl(steps, open, onToggle) {
+    var card = el('div', 'tool-steps');
+    var toggle = el('button', 'steps-toggle');
+    var count = T(steps.length + ' call' + (steps.length === 1 ? '' : 's'), steps.length + ' 次调用');
+    var title = T('Activity', '执行过程');
+    toggle.type = 'button';
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', title + ', ' + count);
+    toggle.onclick = onToggle;
+    var head = el('span', 'steps-heading');
+    head.appendChild(el('span', 'steps-title', title));
+    head.appendChild(el('span', 'steps-count', count));
+    head.appendChild(el('span', 'steps-chevron', open ? '⌃' : '⌄'));
+    toggle.appendChild(head);
+    if (!open) {
+      var counts = new Map();
+      steps.forEach(function (s) { var name = s.title || 'tool'; counts.set(name, (counts.get(name) || 0) + 1); });
+      var tools = Array.from(counts);
+      var summary = tools.slice(0, 3).map(function (p) { return p[0] + (p[1] > 1 ? ' ×' + p[1] : ''); }).join(' · ')
+        + (tools.length > 3 ? ' · +' + (tools.length - 3) : '');
+      toggle.appendChild(el('span', 'steps-summary', summary));
+    }
+    card.appendChild(toggle);
+    if (open) {
+      var list = el('ol', 'steps-list');
+      steps.forEach(function (s) {
+        var row = el('li', 'step-row');
+        var body = el('div', 'step-body');
+        body.appendChild(el('span', 'step-name', s.title || 'tool'));
+        if (s.detail) body.appendChild(el('span', 'step-detail', s.detail));
+        row.appendChild(body); list.appendChild(row);
+      });
+      card.appendChild(list);
+    }
+    return card;
   }
 
   // ---- §03 wide-chat helpers --------------------------------------------

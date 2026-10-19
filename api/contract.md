@@ -463,6 +463,13 @@ invocation; for other agents no claim is made rather than a wrong one.
 `segment` = `{"text":string?, "steps":[{step}]?}`; `step` =
 `{"kind":"tool", "title":"Edit|Bash|exec_command|…", "detail":"<short arg summary>"?}`.
 
+`detail` is a bounded plain-text argument summary, not the full tool input or output.
+For Codex, non-empty string `title` then `description` takes precedence over the
+existing command/path fallbacks; whitespace is collapsed and the limit remains
+80 Unicode code points plus an ellipsis. A recorded call alone says nothing about
+success, completion, exit code or duration. Clients must not interpret tool names
+or details as HTML.
+
 **Earlier sessions (hq-console-history).** For the HQ pane, `?earlier=N` stitches the N
 sessions before the current one in front of it, oldest first, following the `hq-session`
 audit chain (`gtmux:audit:hq-session` records say which session id replaced which; only
