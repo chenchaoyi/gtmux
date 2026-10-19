@@ -1104,11 +1104,11 @@ struct NativeHeader: View {
                     .rotationEffect(.degrees(collapsed ? 0 : 90))
                     .animation(.easeInOut(duration: 0.15), value: collapsed)
             }
+            .padding(.horizontal, 12).padding(.top, 9).padding(.bottom, 2)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityValue(collapsed ? l10n.tr("Collapsed", "已收起") : l10n.tr("Expanded", "已展开"))
-        .padding(.horizontal, 12).padding(.top, 9).padding(.bottom, 2)
     }
 }
 
