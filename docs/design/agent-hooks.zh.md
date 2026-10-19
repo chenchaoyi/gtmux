@@ -2,6 +2,8 @@
 
 [English](agent-hooks.md) · 核查日期 2026-10-11。这里只记录已有的八个 hook 集成，不新增 agent 支持。[Agent 接入流程](agent-onboarding.md)仍是实现检查清单。
 
+所有内置 agent 的历史来源和输入边界见[各 Agent 接入机制](../guides/agent-integrations.zh.md)；DSH 使用单独的[原生事件桥接](../guides/deepseek-harness.zh.md)。
+
 hook 只观察 agent，不应批准工具、修改提示、阻止回合或重启会话。**正常完成、用户中断、终止错误是三种结果。** 中断和错误会清除工作、等待状态，把结束原因留给独立通知轮询器，不发送完成通知，也不更新最近完成的 pane。真正的新回合开始后才清除该原因。单个工具失败不等于父回合终止。
 
 | Agent／官方契约 | 状态相关绑定与本轮修正 | 边界 |

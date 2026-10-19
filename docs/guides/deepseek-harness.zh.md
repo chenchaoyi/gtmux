@@ -26,8 +26,10 @@ Zstandard 帧。选择已保存的最高格式代际；遇到未知代际、损�
 
 ## 原生生命周期插件
 
-读取已保存对话不需要插件。接入后续生命周期事件使用 gtmux 自带的专用 **Cordis 插件**，
-无需另装 npm 包：
+读取已保存对话不需要插件。后续生命周期事件由 **gtmux 编写的原生事件桥接脚本**接入，
+作为 Cordis 插件由 DSH 加载。Cordis 框架和运行时由 DSH 提供，gtmux 没有内置它们，
+也不需要另装 npm 包。与其他 agent 的对比见[各 Agent 接入机制](agent-integrations.zh.md)。
+安装方式：
 
 ```sh
 gtmux install hooks --agent dsh

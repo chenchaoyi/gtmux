@@ -59,7 +59,7 @@ gtmux agent · 7 agent · 1 等输入 · 2 运行中 · 3 空闲 · 1 只有 she
 
 按紧急程度排序。各端用同一套颜色：红色在等你，青色在跑，绿色空闲，灰色是识别出了 agent 进程，但还没有确定的回合状态。
 
-装了 gtmux hook（agent 每轮开始和结束时调用的一小段回调）的 agent 会直接上报状态。在 tmux 里，gtmux 从命令、标题和进程树识别 agent；没有 hook 上报时，屏幕和 CPU 采样可以补充状态。tmux 之外的 agent 只有装了 hook 才看得到，只读列出。空闲、支持恢复且已有对话记录的会话，可以用 `gtmux adopt <id>` 在 tmux 里恢复；ChatGPT 桌面版的会话不能转入。
+装了 gtmux hook（agent 每轮开始和结束时调用的一小段回调）的 agent 会直接上报状态。在 tmux 里，gtmux 从命令、标题和进程树识别 agent；没有 hook 上报时，屏幕和 CPU 采样可以补充状态。tmux 之外，hook 提供只读观测，Codex 和 DSH 还可通过专用读取器发现已保存的历史，无需 hook。符合条件、空闲且已有记录的非 Codex 可恢复会话，可以用 `gtmux adopt <id>` 转入 tmux；外部 Codex 和 DSH 对话不能转入。
 
 ## HQ（中控）
 
@@ -96,7 +96,7 @@ gtmux app                    # 启动菜单栏 app（别名 menubar）
 gtmux update                 # 更新 CLI 和菜单栏 app
 ```
 
-菜单栏 app 已安装并运行时，`gtmux install hooks` 注册用于通知的 agent hook，Claude Code 以外的 agent 加上 `--agent codex|cursor|gemini|copilot|kiro|opencode|kimi`。
+菜单栏 app 已安装并运行时，`gtmux install hooks` 注册用于通知的 agent hook，Claude Code 以外的 agent 加上 `--agent codex|cursor|gemini|copilot|kiro|opencode|kimi|dsh`，也可用 `--agent auto` 自动识别支持的安装。
 
 想在手机上看，在可互通的局域网下跑 `gtmux serve`，或用 `gtmux tunnel` 提供可从其他网络访问的 HTTPS 地址（不用 VPN），再配对 iOS app。所在网络仍需允许这条连接，详见 [docs/phone.zh.md](docs/phone.zh.md)。
 
@@ -117,6 +117,7 @@ claude-squad、uzi、dmux 这类工具负责启动 agent 并放进 git worktree�
 
 ## 文档
 
+- [各 Agent 接入机制](docs/guides/agent-integrations.zh.md)：14 个内置条目的事件桥接、历史来源、安装方式与支持边界。
 - [CLI 与命令](docs/cli.zh.md)：所有命令、HQ、识别原理、各 agent 的 hook、tmux 按键绑定。
 - [远程访问参考](docs/phone.zh.md)：连接方式、权限、通知条件与故障排查。
 - [HQ 记住的东西](docs/knowledge.zh.md)：知识库存在哪、分几层、你自己能改什么。

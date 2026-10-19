@@ -72,9 +72,10 @@ you, cyan is working, green is idle, and grey is an identified agent process who
 Agents with the gtmux hook (a small callback the agent runs at the start and end of each
 turn) report their state directly. Inside tmux, gtmux recognises agents from their
 command, title and process tree; screen and CPU sampling can supply state when no
-hook reports it. Outside tmux, gtmux sees an agent only through the hook and lists it
-read-only. `gtmux adopt <id>` can resume an idle, resumable conversation with saved
-messages in tmux; ChatGPT desktop conversations cannot be adopted.
+hook reports it. Outside tmux, hooks provide read-only observations; dedicated
+Codex and DSH readers can also discover saved histories without hooks. Eligible idle,
+resumable non-Codex conversations with saved messages can move into tmux through
+`gtmux adopt <id>`; external Codex and DSH conversations cannot be adopted.
 
 ## HQ, the supervisor
 
@@ -122,7 +123,7 @@ gtmux update                 # update the CLI and the menu-bar app
 ```
 
 With the menu-bar app installed and running, `gtmux install hooks` registers the agent hook for notifications (add
-`--agent codex|cursor|gemini|copilot|kiro|opencode|kimi` for agents other than Claude Code).
+`--agent codex|cursor|gemini|copilot|kiro|opencode|kimi|dsh` for another agent, or `--agent auto` to detect supported installations).
 
 To use your phone, run `gtmux serve` on a reachable local network, or `gtmux tunnel`
 for an HTTPS address reachable from other networks without a VPN, then pair the iOS
@@ -151,6 +152,7 @@ Walkthroughs with screenshots, one task each:
 
 ## Docs
 
+- [How each agent connects](docs/guides/agent-integrations.md): all 14 built-in entries, event bridges, history sources, setup and limits.
 - [CLI and commands](docs/cli.md): every command, HQ, detection, per-agent hooks, tmux key bindings.
 - [Remote access reference](docs/phone.md): connection methods, permissions, notifications and troubleshooting.
 - [What HQ remembers](docs/knowledge.md): the knowledge base, the three layers, and what you can change.
