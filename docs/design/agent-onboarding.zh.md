@@ -6,6 +6,7 @@
 规范：`openspec/specs/agent-integration/spec.md`。注册表：`internal/agents`。
 Codex 的特殊处理与排查入口：[CODEX.zh.md](CODEX.zh.md)。
 八款 agent 的 hook 契约、升级与生命周期边界：[agent-hooks.zh.md](agent-hooks.zh.md)。
+各 agent 的完整实现说明（含部分接入及 DSH）：[各 Agent 接入机制](../guides/agent-integrations.zh.md)。
 
 ---
 

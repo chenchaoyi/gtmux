@@ -16,6 +16,7 @@ current in the same PR (dated logs are single-language; `scripts/check-design.sh
 | `knowledge-layers.md` | The three layers of knowledge (factory charter / your rules / this machine's ledger): who writes each, when it reaches whose head, how an entry moves up. |
 | `hq-move-between-macs.md` | Implemented move to a new Mac: preview, stage and review selected knowledge and user instructions; keep the old board and generated instructions out of the migration. |
 | `knowledge-engineering-research.md` | The survey behind the knowledge engine: nine practices compared, what was borrowed and what was not. |
+| [Agent integration map](../guides/agent-integrations.md) | Every built-in agent: discovery, events, history, input, installation and limits, with implementation links. |
 | `agent-onboarding.md` | How to add or iterate a coding agent: support tiers, the registry as the single source of identity, the step list and the pitfalls. |
 | `HANDOFF.md` | The order of landing and the acceptance checks for a design round. |
 | `SECURITY.md` | The security posture and its boundaries. |

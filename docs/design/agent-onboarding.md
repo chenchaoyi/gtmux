@@ -7,7 +7,8 @@ before calling it done.
 
 Spec: `openspec/specs/agent-integration/spec.md`. Registry: `internal/agents`.
 Codex-specific behavior and diagnostics: [CODEX.md](CODEX.md).
-All eight hook contracts, configuration upgrades and lifecycle limits: [agent-hooks.md](agent-hooks.md).
+Per-agent implementation map (including limited integrations and DSH): [How each agent connects](../guides/agent-integrations.md).
+Terminal hook contracts, configuration upgrades and lifecycle limits: [agent-hooks.md](agent-hooks.md).
 
 ---
 

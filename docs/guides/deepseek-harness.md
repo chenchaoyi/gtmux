@@ -34,7 +34,10 @@ TUI control and usage/context figures are not supported in this integration.
 ## Native lifecycle plugin
 
 Saved-history reading needs no plugin. For future lifecycle events, gtmux bundles
-a dedicated **Cordis plugin**; no separate npm package is required:
+a **gtmux-authored native event bridge script**, loaded as a Cordis plugin by DSH.
+DSH supplies the Cordis framework and runtime; gtmux does not embed them. No separate
+npm package is required. The [agent integration map](agent-integrations.md) compares
+this with every other supported agent. Install it with:
 
 ```sh
 gtmux install hooks --agent dsh

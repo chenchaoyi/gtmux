@@ -2,6 +2,8 @@
 
 [中文](agent-hooks.zh.md) · audited 2026-10-11. This records the eight existing hook integrations, not additional agent support. [Agent onboarding](agent-onboarding.md) remains the integration checklist.
 
+For all built-in agents, history sources and input boundaries, use the [agent integration map](../guides/agent-integrations.md). DSH uses a separate [native event bridge](../guides/deepseek-harness.md).
+
 A hook observes the agent; it must not approve tools, change prompts, block a turn, or restart a session. **A successful completion, a cancellation and a terminal error are different outcomes.** Cancellation/error clear working and waiting, retain their outcome for the independent alert poller, and do not earn a completion notification or update the latest completed pane. A subsequent real turn start resets the outcome. A tool failure is not necessarily a failed parent turn.
 
 | Agent / primary contract | State-relevant bindings and changes | Limits |
