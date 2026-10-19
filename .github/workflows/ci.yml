@@ -227,7 +227,7 @@ jobs:
           cache: npm
           cache-dependency-path: tests/web/package-lock.json
       - name: Web logic regressions
-        run: node --test internal/server/web/app.test.cjs
+        run: node --test internal/server/web/*.test.cjs
       - name: Browser dependencies
         working-directory: tests/web
         run: npm ci && npx playwright install --with-deps chromium

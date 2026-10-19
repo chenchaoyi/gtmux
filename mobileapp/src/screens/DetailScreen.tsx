@@ -580,6 +580,18 @@ function PaneDetailView({
   const onComposerSend = useCallback((p: SendPayload) => {
     sendRef.current(p);
   }, []);
+  const onLoadKeys = useCallback((version?: number, boot?: string) => client.inputCapabilities(agent.pane_id, version, boot), [client, agent.pane_id]);
+  const onSendKey = useCallback(async (p: SendPayload) => {
+    const lane = paneRead.current;
+    const r = await client.sendResult(agent.pane_id, p);
+    if (r.ok && r.pane && lane?.isActive() && paneRead.current === lane) {
+      lane.invalidate();
+      if (typeof r.pane.text === 'string') setText(r.pane.text);
+      if (r.pane.cols) setPaneCols(r.pane.cols);
+      if (r.pane.cursor) setCursor(r.pane.cursor);
+    }
+    return r;
+  }, [client, agent.pane_id]);
   const onComposerUpload = useCallback(
     (uri: string, name: string, type: string, onProgress?: (fraction: number) => void) => client.upload(uri, name, type, onProgress, agent.pane_id),
     [client, agent.pane_id],
@@ -1069,6 +1081,9 @@ function PaneDetailView({
           returnSends={returnSends}
           prefill={refill}
           onSend={onComposerSend}
+          keyTarget={`${client.base}|${agent.pane_id}`}
+          onLoadKeys={onLoadKeys}
+          onSendKey={onSendKey}
           onUpload={onComposerUpload}
         />
       )}

@@ -1,3 +1,4 @@
+import {serverNowSec} from '../api/clock';
 // demoClient — a FAKE GtmuxClient for the Demo tour. It answers the handful of
 // methods DetailView / ChatView / NativeTerm / ApprovalCard / DiffModal / HQScreen
 // call, over the canned data in demoData, with just enough state to feel live:
@@ -12,6 +13,8 @@ import {Agent, PaneResponse, ReplyOption, TermTheme} from '../api/types';
 import {sampleAgents, demoPanes, demoDigest, demoBoard, demoEvents, demoKnowledge, demoKnowledgeBody, demoPaneText, demoTranscript, demoOptions, demoDiff, demoReply, demoHQReply, demoTheme, DEMO_DESKTOP_ID, DEMO_HOME_ID} from './demoData';
 import {demoUsage} from './demoUsage';
 import type {SendResult, UploadResult} from '../api/client';
+import demoKeyCatalog from '../api/terminalKeysCatalog.json';
+import type {InputCapabilities} from './terminalKeys';
 
 // What the hero pane (%7) shows AFTER you approve running the tests.
 const TESTS_RAN =
@@ -107,6 +110,11 @@ export function makeDemoClient(lang: 'en' | 'zh', onAgents?: (agents: Agent[]) =
   // Everything not named below MUST be implemented, so adding a client method is a
   // compile error here until someone decides what the tour should show.
   const fake: Omit<GtmuxClient, NotInDemo> & {dispose: () => void} = {
+    async inputCapabilities(id, version, boot) {
+      const can = demoPanes(initial).some(p => p.pane_id === id);
+      return {version: 1, can_input: can, context: {boot: 'demo', pane_binding: `demo-${id}`, expires_at: serverNowSec() + 120, proof: 'demo'}, actions: [], retry_seconds: 120,
+        ...(version === 1 && boot === 'demo' ? {} : demoKeyCatalog)} as InputCapabilities;
+    },
     dispose() { clearTimeout(timer); },
     // No Mac behind this one. Anything building a URL from it would be reaching for a
     // server that does not exist, so it is empty rather than plausible.

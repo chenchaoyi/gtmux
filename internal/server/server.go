@@ -42,12 +42,15 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/sessionpolicy"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
+	"github.com/chenchaoyi/gtmux/internal/terminalkeys"
 )
 
 // Deps are the read and control capabilities the HTTP layer needs. The caller
 // (internal/app) supplies them from gtmux's existing internals, so this package
 // stays decoupled from app and easy to test with fakes.
 type Deps struct {
+	InputTarget   func(id string) (terminalkeys.Target, error)
+	InputKey      func(id, binding string, event terminalkeys.Event, action *terminalkeys.ActionRequest) error
 	SessionFollow func(string, *sessionpolicy.Settings, string, string) (sessionpolicy.Settings, error)
 	// AgentsJSON returns the marshaled agents array — byte-identical to
 	// `gtmux agents --json` — so app, menu-bar app, and mobile app share one
@@ -285,6 +288,7 @@ type Server struct {
 	// A share link's code is short enough to read out loud only because of this.
 	redeem      *redeemLimiter
 	accessReads accessReads
+	keyInputs   keyInputs
 }
 
 // New returns a Server. cfg.Token must be non-empty (callers generate one).
@@ -294,10 +298,11 @@ func New(cfg Config, deps Deps) *Server {
 		onAlert = deps.Push.OnAlert
 	}
 	s := &Server{
-		cfg:    cfg,
-		deps:   deps,
-		redeem: newRedeemLimiter(),
-		hub:    newHub(deps.AgentStatuses, eventsInterval, onAlert),
+		cfg:       cfg,
+		keyInputs: keyInputs{boot: newKeyBoot(), secret: newKeyBoot(), receipts: make(map[string]keyReceipt)},
+		deps:      deps,
+		redeem:    newRedeemLimiter(),
+		hub:       newHub(deps.AgentStatuses, eventsInterval, onAlert),
 	}
 	if deps.Push != nil && deps.Enroll != nil {
 		// A push goes to the owner's devices only: an enrolled device that is not a
@@ -372,6 +377,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/sessions", s.auth(http.HandlerFunc(s.handleCreateSession)))
 	mux.Handle("/api/focus", s.auth(http.HandlerFunc(s.handleFocus)))
 	mux.Handle("/api/send", s.auth(http.HandlerFunc(s.handleSend)))
+	mux.Handle("/api/input-capabilities", s.auth(http.HandlerFunc(s.handleInputCapabilities)))
 	mux.Handle("/api/upload", s.auth(http.HandlerFunc(s.handleUpload)))
 	mux.Handle("/api/icon", s.auth(http.HandlerFunc(s.handleIcon)))
 	mux.Handle("/api/diff", s.auth(http.HandlerFunc(s.handleDiff)))
@@ -789,14 +795,53 @@ func (s *Server) handleFocus(w http.ResponseWriter, r *http.Request) {
 // sendRequest is the JSON body of POST /api/send. Provide `key` for a named
 // control key (Enter, C-c, …) OR `text` for literal input (+ `enter`).
 type sendRequest struct {
-	ID    string `json:"id"`
-	Text  string `json:"text"`
-	Key   string `json:"key"`
-	Enter bool   `json:"enter"`
+	KeyEvent     *terminalkeys.Event         `json:"key_event,omitempty"`
+	InputContext *terminalkeys.Context       `json:"input_context,omitempty"`
+	Action       *terminalkeys.ActionRequest `json:"action,omitempty"`
+	ID           string                      `json:"id"`
+	Text         string                      `json:"text"`
+	Key          string                      `json:"key"`
+	Enter        bool                        `json:"enter"`
 	// SendID is a client-generated idempotency token (reused across a retry) so an
 	// ambiguous network failure can be retried without double-sending (send-idempotent-
 	// receipt). Optional — an old client that omits it falls back to the payload interlock.
 	SendID string `json:"send_id,omitempty"`
+}
+
+// Keep legacy decoding tolerant; the new key protocol accepts exactly one form
+// and rejects unrecognized nested fields instead of silently dropping modifiers.
+func (req *sendRequest) UnmarshalJSON(data []byte) error {
+	type plain sendRequest
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return err
+	}
+	_, event := fields["key_event"]
+	_, action := fields["action"]
+	_, context := fields["input_context"]
+	var p plain
+	if event || action || context {
+		if event == action || !context {
+			return errors.New("invalid key input form")
+		}
+		for _, name := range []string{"text", "key", "enter"} {
+			if _, exists := fields[name]; exists {
+				return errors.New("mixed input forms")
+			}
+		}
+		decoder := json.NewDecoder(strings.NewReader(string(data)))
+		decoder.DisallowUnknownFields()
+		if err := decoder.Decode(&p); err != nil {
+			return err
+		}
+		if p.KeyEvent == nil && p.Action == nil {
+			return errors.New("empty key input")
+		}
+	} else if err := json.Unmarshal(data, &p); err != nil {
+		return err
+	}
+	*req = sendRequest(p)
+	return nil
 }
 
 func (s *Server) handleSend(w http.ResponseWriter, r *http.Request) {
@@ -804,7 +849,7 @@ func (s *Server) handleSend(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusMethodNotAllowed, errBody("method not allowed"))
 		return
 	}
-	if s.deps.Send == nil {
+	if s.deps.Send == nil && s.deps.InputKey == nil {
 		writeJSON(w, http.StatusServiceUnavailable, errBody("input not available"))
 		return
 	}
@@ -828,6 +873,17 @@ func (s *Server) handleSend(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusForbidden, errBody("input not shared for this pane"))
 		return
 	}
+	if req.KeyEvent != nil || req.Action != nil {
+		if !s.sendKeyEvent(w, r, req) {
+			return
+		}
+		s.writeSendResponse(w, req.ID)
+		return
+	}
+	if s.deps.Send == nil {
+		writeJSON(w, http.StatusServiceUnavailable, errBody("input not available"))
+		return
+	}
 	if req.Key == "" && req.Text == "" && !req.Enter {
 		writeJSON(w, http.StatusBadRequest, errBody("nothing to send"))
 		return
@@ -848,20 +904,24 @@ func (s *Server) handleSend(w http.ResponseWriter, r *http.Request) {
 	// in a SINGLE round-trip instead of a separate /api/pane fetch — the big latency
 	// win over a remote tunnel (two RTTs → one). Settle briefly first so the agent's
 	// TUI has a frame to redraw the typed input into the captured screen.
+	s.writeSendResponse(w, req.ID)
+}
+
+func (s *Server) writeSendResponse(w http.ResponseWriter, id string) {
 	resp := sendResponse{Status: "ok"}
 	if s.deps.PaneText != nil {
 		if sendSettle > 0 {
 			time.Sleep(sendSettle)
 		}
-		if text, ok := s.deps.PaneText(req.ID); ok {
+		if text, ok := s.deps.PaneText(id); ok {
 			resp.Text = text
 			if s.deps.PaneColumns != nil {
-				if cols := s.deps.PaneColumns(req.ID); cols > 0 {
+				if cols := s.deps.PaneColumns(id); cols > 0 {
 					resp.Cols = cols
 				}
 			}
 			if s.deps.PaneCursor != nil {
-				if x, up, vis, ok := s.deps.PaneCursor(req.ID); ok {
+				if x, up, vis, ok := s.deps.PaneCursor(id); ok {
 					resp.Cursor = &paneCursor{X: x, Up: up, Visible: vis}
 				}
 			}

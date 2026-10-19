@@ -50,6 +50,8 @@ import {HistoryStore, emptyStore, historyFor, loadHistory, pushHistory, removeHi
 import {demoInputHistory} from './demoData';
 import {Haptics} from '../native/haptics';
 import {MODAL_ORIENTATIONS} from './modalOrientations';
+import {useTerminalKeys, type LoadKeys, type SendKey} from './terminalKeys';
+import {TerminalKeyPanel, TerminalKeyFeedback} from './TerminalKeyPanel';
 
 // iOS docks the key row on the keyboard via this accessory id (so it replaces the
 // default assistant bar instead of stacking another sparse row above it).
@@ -181,6 +183,8 @@ function ComposerKey({
   return (
     <TouchableOpacity
       testID={testID}
+      accessibilityRole="button"
+      accessibilityState={{disabled: !!disabled}}
       accessibilityLabel={spoken || (typeof children === 'string' ? children : undefined)}
       onPress={onPress}
       disabled={disabled}
@@ -218,10 +222,16 @@ export const Composer = React.memo(function Composer({
   onSend,
   onUpload,
   prefill,
+  keyTarget,
+  onLoadKeys,
+  onSendKey,
 }: {
   pal: Palette;
   lang: Lang;
   enabled?: boolean;
+  keyTarget?: string;
+  onLoadKeys?: LoadKeys;
+  onSendKey?: SendKey;
   returnSends?: boolean; // D7: when off (default) Return = newline; send via ↑ only
   // In Demo mode the composer must NOT read or write the real input-history store: it
   // holds the actual messages you typed against your Mac, so showing them in Demo leaks
@@ -262,6 +272,18 @@ export const Composer = React.memo(function Composer({
   // the box is still untouched.
   const typed = useRef(false);
   const inputRef = useRef<TextInput>(null);
+  const terminalKeys = useTerminalKeys(keyTarget, enabled, onLoadKeys, onSendKey);
+  const keyBlocked = terminalKeys.busy || terminalKeys.uncertain;
+  const [keysOpen, setKeysOpen] = useState(false);
+  const focusAfterKeys = useRef(false);
+  const finishKeysDismissal = () => {
+    if (!focusAfterKeys.current) return;
+    focusAfterKeys.current = false;
+    inputRef.current?.focus();
+  };
+  const openKeys = () => { focusAfterKeys.current = inputRef.current?.isFocused() ?? false; Keyboard.dismiss(); terminalKeys.refresh(); setKeysOpen(true); };
+  const closeKeys = () => { setKeysOpen(false); if (Platform.OS !== 'ios') requestAnimationFrame(finishKeysDismissal); };
+  useEffect(() => { setKeysOpen(false); focusAfterKeys.current = false; }, [keyTarget]);
   useEffect(() => {
     if (!prefill || !prefill.text) return;
     typed.current = true; // a hand-off outranks a stored draft
@@ -367,11 +389,12 @@ export const Composer = React.memo(function Composer({
   // scoped to the Return path only (see dropDoubleSubmit); the button never debounces.
   const lastSubmit = useRef(0);
   const send = (p: SendPayload) => {
-    if (enabled && onSend) onSend(p);
+    if (enabled && !terminalKeys.isBlocked() && onSend) onSend(p);
   };
   const pressControlKey = (key: string) => {
-    if (!enabled || !onSend) return;
-    onSend({key});
+    if (!enabled || !onSend || terminalKeys.isBlocked()) return;
+    const event = terminalKeys.cap?.legacy_events?.[key];
+    if (event) terminalKeys.fire(event); else onSend({key});
     Haptics.select();
     setTappedKey(key);
     if (tappedKeyTimer.current !== null) clearTimeout(tappedKeyTimer.current);
@@ -385,6 +408,7 @@ export const Composer = React.memo(function Composer({
   // cleared — the text + attachments stay staged and `sendError` invites a retry.
   // `fromSubmit` = triggered by Return (onSubmitEditing); the ↑ button passes false.
   const sendText = async (fromSubmit = false) => {
+    if (terminalKeys.isBlocked()) return;
     if (sending) return;
     const body = text.trim();
     if (!body && attachments.length === 0) return;
@@ -532,10 +556,13 @@ export const Composer = React.memo(function Composer({
         )}
       </ComposerKey>
       <View style={[styles.sep, {backgroundColor: pal.divider}]} />
+      <ComposerKey pal={pal} onPress={openKeys} testID="composer-terminal-keys" spoken={lang === 'zh' ? '打开终端按键' : 'Open terminal keys'}>
+        {lang === 'zh' ? '按键' : 'Keys'}
+      </ComposerKey>
       {CONTROL_KEYS.map(k => (
         <ComposerKey pal={pal} key={k.label} glyph={k.glyph} onPress={() => pressControlKey(k.key)}
           spoken={k.spoken?.[lang === 'zh' ? 1 : 0]}
-          acknowledged={tappedKey === k.key} disabled={!enabled || !onSend}
+          acknowledged={tappedKey === k.key} disabled={!enabled || !onSend || keyBlocked}
           testID={`${TestIds.composer.controlKey}-${k.key}`}>
           {k.label}
         </ComposerKey>
@@ -556,7 +583,7 @@ export const Composer = React.memo(function Composer({
   // key row rides up docked to the keyboard (inputAccessoryViewID). Staged
   // attachments show as a thumbnail strip ABOVE the input (the field wraps below),
   // with a per-thumbnail upload % overlay during send and a × to remove before it.
-  const canSend = text.trim().length > 0 || attachments.length > 0;
+  const canSend = !keyBlocked && (text.trim().length > 0 || attachments.length > 0);
   const renderInputRow = () => (
     <View>
       {attachments.length > 0 && (
@@ -701,7 +728,12 @@ export const Composer = React.memo(function Composer({
         },
         !enabled && styles.disabled,
       ]}>
+      {(terminalKeys.cap?.actions ?? []).map(action => <ComposerKey key={action.id} pal={pal} disabled={!enabled || !terminalKeys.cap?.can_input || keyBlocked} onPress={() => terminalKeys.fire(action.event, action)} testID="composer-view-question">
+        {lang === 'zh' ? `${action.count ?? 1} 个问题 · 查看` : `${action.count ?? 1} question${action.count === 1 ? '' : 's'} · View`}
+      </ComposerKey>)}
+      <TerminalKeyFeedback control={terminalKeys} pal={pal} lang={lang} />
       {renderKeys()}
+      <TerminalKeyPanel visible={keysOpen} onClose={closeKeys} onDismiss={finishKeysDismissal} control={terminalKeys} enabled={enabled} pane={draftKey} pal={pal} lang={lang} />
       {composing && renderInputRow()}
 
       {/* An empty accessory replaces (and thus suppresses) iOS's sparse

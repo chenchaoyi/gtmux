@@ -1,4 +1,5 @@
 import type {AccessPage, AccessFilter} from './accessHistory';
+import {parseInputCapabilities, type InputCapabilities, type InputContext, type TerminalKeyEvent} from './terminalKeys';
 // GtmuxClient — every /api/* call sends `Authorization: Bearer <token>`.
 // Mirrors api/contract.md. `focus` selects a pane; `send` types into one (a WRITE
 // gated only by the bearer token).
@@ -50,6 +51,9 @@ export class SessionCreateError extends Error {
 }
 
 export interface SendPayload {
+	key_event?: TerminalKeyEvent;
+	input_context?: InputContext;
+	action?: {id: string; revision: string};
   text?: string;
   key?: string;
   enter?: boolean;
@@ -685,6 +689,13 @@ export class GtmuxClient {
     );
     if (!r.ok) throw new Error(`pane: HTTP ${r.status}`);
     return r.json();
+  }
+
+  async inputCapabilities(id: string, version?: number, boot?: string): Promise<InputCapabilities | null> {
+    const r = await tfetch(`${this.base}/api/input-capabilities?id=${encodeURIComponent(id)}${version ? `&catalog_version=${version}&catalog_boot=${encodeURIComponent(boot ?? "")}` : ''}`, {headers: this.h()});
+    if (r.status === 404 || r.status === 503) return null;
+    if (!r.ok) throw new ApiError(r.status, 'input-capabilities');
+    return parseInputCapabilities(await r.json());
   }
 
   // Explicit retries reuse requestID. No automatic network retry of a mutation.
