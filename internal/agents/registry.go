@@ -35,9 +35,10 @@ type Manifest struct {
 	Aliases []string // alternate keys that resolve to this agent (e.g. cursor-agent → cursor)
 	Label   string   // radar profile name / user-facing label
 
-	Detect    []string // radar detection commands; empty ⇒ no radar profile
-	IdleGlyph string
-	Icon      string
+	Detect        []string // radar detection commands; empty ⇒ no radar profile
+	InstallDetect []string // installer-only executable probes; do not enable pane/TUI detection
+	IdleGlyph     string
+	Icon          string
 
 	Resume   []string // resume argv; nil ⇒ not resumable by session id
 	Resource string   // resource-attribution name; "" ⇒ not attributed
@@ -130,7 +131,7 @@ var manifests = []Manifest{
 		Resume: []string{"grok", "-r"},
 	},
 	{
-		Key: "dsh", Aliases: []string{"deepseek-harness"}, Label: "DeepSeek Harness",
+		Key: "dsh", InstallDetect: []string{"dsh"}, Aliases: []string{"deepseek-harness"}, Label: "DeepSeek Harness",
 		NativeReader: "dsh", HookDisplay: true, Hooked: true, Content: "dsh", Semantics: true,
 		Instructions: "~/.dsh/AGENTS.md", InstructionsEnv: "DSH_HOME",
 	},

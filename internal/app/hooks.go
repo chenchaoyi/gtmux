@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/chenchaoyi/gtmux/internal/agents"
 	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/hostplatform"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
@@ -138,6 +139,12 @@ func installHooks(args []string) int {
 		}
 	}
 
+	if agent == "auto" {
+		return installDetectedHooks(detectedHookAgents(), args, hookSelectionDisabled, installHooks)
+	}
+	if manifest, ok := agents.For(agent); ok {
+		agent = manifest.Key
+	}
 	if agent == "codex" {
 		// Codex takes the additive hooks-system path (hooks.json + features.hooks),
 		// which coexists with any existing `notify` — see installCodexHooks.
@@ -152,8 +159,8 @@ func installHooks(args []string) int {
 		return installAgentHooks(inst, yes)
 	}
 	if agent != "claude" {
-		i18n.Sae("unsupported agent: "+agent+" (try: claude, codex, cursor, gemini, kimi, copilot, kiro)",
-			"不支持的 agent："+agent+"（可选：claude、codex、cursor、gemini、kimi、copilot、kiro）")
+		i18n.Sae("unsupported agent: "+agent+" (try: auto, "+strings.Join(installableHookAgentKeys(), ", ")+")",
+			"不支持的 agent："+agent+"（可选：auto、"+strings.Join(installableHookAgentKeys(), "、")+"）")
 		return 1
 	}
 	bin := selfPath()

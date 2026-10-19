@@ -1,4 +1,10 @@
-# DeepSeek Harness Web 对话
+---
+title: DeepSeek Harness Web 对话
+description: 查看 DSH Web 对话，并接入专用原生生命周期事件。
+order: 5
+---
+
+[English](deepseek-harness.md) · **中文**
 
 Gtmux 从 `$DSH_HOME/sessions`（默认 `~/.dsh/sessions`）发现已保存的用户对话。
 在菜单栏、手机、iPad 或 Web 的**外部会话**中打开，查看用户提示、助手公开文本和工具步骤。
@@ -20,16 +26,23 @@ Zstandard 帧。选择已保存的最高格式代际；遇到未知代际、损�
 
 ## 原生生命周期插件
 
-通过专用 **Cordis 插件**接入后续活动：
+读取已保存对话不需要插件。接入后续生命周期事件使用 gtmux 自带的专用 **Cordis 插件**，
+无需另装 npm 包：
 
 ```sh
-gtmux install-hooks --agent dsh
+gtmux install hooks --agent dsh
 ```
+
+自动识别已有 agent 目录或可执行文件并安装 hooks，可用 `gtmux install hooks --agent auto`；
+不带 `--agent` 仍保持默认 Claude。自动模式会保留配置中禁用 hook 的选择。
+`gtmux doctor` 也能识别 DSH，同时检查模块和准确的启动覆盖内容；
+`gtmux doctor --fix` 修复同一组自有文件。文件已装不等于运行中的 Web 已加载：
+doctor 会给出下次启动命令，并明确标注运行中的加载状态尚未核实。
 
 命令会输出 `dsh web --patch '…/gtmux/gtmux.cordis.yml'`。下次主动启动 Web 时
 加上这个覆盖文件即可。安装器不重启、不改动当前服务；已有对话的读取也不依赖插件。
 安装器仅管理 `$DSH_HOME/gtmux/gtmux.mjs` 和 `gtmux.cordis.yml`，保留用户配置
-和其他插件。`gtmux uninstall-hooks --agent dsh` 仅删除这两个自有文件；删除后
+和其他插件。`gtmux uninstall hooks --agent dsh` 仅删除这两个自有文件；删除后
 后续启动不再传入该覆盖文件。
 
 插件直接使用 DSH 的 `session/event` 和 `user-questions/request` 原生接口，

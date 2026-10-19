@@ -1,4 +1,10 @@
-# DeepSeek Harness Web conversations
+---
+title: DeepSeek Harness Web conversations
+description: Read DSH Web conversations and connect its native lifecycle events.
+order: 5
+---
+
+**English** · [中文](deepseek-harness.zh.md)
 
 Gtmux discovers saved user conversations under `$DSH_HOME/sessions` (default
 `~/.dsh/sessions`). Open **External conversations** on the menu bar, phone, iPad
@@ -27,17 +33,26 @@ TUI control and usage/context figures are not supported in this integration.
 
 ## Native lifecycle plugin
 
-For future activity, install gtmux's dedicated **Cordis plugin**:
+Saved-history reading needs no plugin. For future lifecycle events, gtmux bundles
+a dedicated **Cordis plugin**; no separate npm package is required:
 
 ```sh
-gtmux install-hooks --agent dsh
+gtmux install hooks --agent dsh
 ```
+
+To detect supported agents and install their hooks, use `gtmux install hooks --agent auto`.
+Without `--agent`, hooks keep the existing Claude default. Auto mode detects configured
+homes or installed executables and preserves disabled-hook settings. `gtmux doctor`
+also detects DSH and checks both the module and its exact launch overlay;
+`gtmux doctor --fix` repairs the same owned files. An installed file does not prove
+that a running Web server loaded it: doctor prints the next-launch command and
+keeps runtime loading unverified.
 
 The command prints `dsh web --patch '…/gtmux/gtmux.cordis.yml'`. Add that overlay
 to your next intentional Web launch. The currently running server is not restarted
 or reconfigured. Existing conversation reading works before installing the plugin.
 The installer owns only `$DSH_HOME/gtmux/gtmux.mjs` and `gtmux.cordis.yml`; it
-preserves profile patches and other plugins. `gtmux uninstall-hooks --agent dsh`
+preserves profile patches and other plugins. `gtmux uninstall hooks --agent dsh`
 removes those two owned files. Omit the overlay on later launches after removal.
 
 The plugin uses DSH's native `session/event` and `user-questions/request` APIs,

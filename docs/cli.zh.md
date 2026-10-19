@@ -1960,9 +1960,14 @@ fi
 ```sh
 gtmux install                       # asks: hooks | app | all
 gtmux install hooks                 # Claude, one-time setup (macOS)
-gtmux install hooks --agent codex   # or cursor|gemini|copilot|kiro|opencode|kimi
+gtmux install hooks --agent codex    # or cursor|gemini|copilot|kiro|opencode|kimi|dsh
+gtmux install hooks --agent auto     # detect supported agent homes/installations
 gtmux uninstall [hooks|app|all]     # reverse it (asks when no target)
 ```
+
+不带 `--agent` 仍默认 Claude；`--agent auto` 自动识别已有目录或可执行文件，跳过配置中禁用 hook 的 agent。
+DSH 插件随 gtmux 内置，无需另装 npm 包；`doctor --fix` 可安装或修复模块及启动覆盖文件，
+并给出下次 `dsh web --patch …` 的命令，不把文件存在当作运行中已加载。见 [DSH 指南](guides/deepseek-harness.zh.md)。
 
 `gtmux install hooks` 把 `gtmux hook` 注册到 `~/.claude/settings.json` 的回合、授权、
 会话、压缩及工具事件上（幂等；保留其它 hook，给文件留备份）。

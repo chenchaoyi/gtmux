@@ -86,11 +86,14 @@ type agentInstaller struct {
 	// removes it. bindings/format are unused in this mode; the event mapping lives
 	// inside the plugin source.
 	plugin func(bin string) string
+	// writePlugin owns provider-specific artifacts and migrations. Shared by install
+	// and doctor; one provider must never run another provider's migration.
+	writePlugin func(agentInstaller, string) error
 }
 
 // agentInstallers are the non-Claude agents `install-hooks --agent <key>` can wire.
 var agentInstallers = map[string]agentInstaller{
-	"dsh": {key: "dsh", display: "DeepSeek Harness", relDir: ".dsh", envDir: "DSH_HOME", file: "gtmux/gtmux.mjs", dedicated: true, plugin: dshPluginJS},
+	"dsh": {key: "dsh", display: "DeepSeek Harness", relDir: ".dsh", envDir: "DSH_HOME", file: "gtmux/gtmux.mjs", dedicated: true, plugin: dshPluginJS, writePlugin: installDSHPlugin},
 	"codex": {
 		// Codex's hooks system (~/.codex/hooks.json + features.hooks=true) — the
 		// additive path that COEXISTS with an existing `notify` (e.g. computer-use),
@@ -197,8 +200,9 @@ var agentInstallers = map[string]agentInstaller{
 	"opencode": {
 		key: "opencode", display: "opencode",
 		relDir: ".config/opencode/plugins", file: "gtmux.js",
-		dedicated: true,
-		plugin:    opencodePluginJS,
+		dedicated:   true,
+		plugin:      opencodePluginJS,
+		writePlugin: installOpencodePlugin,
 		note: func() string {
 			return i18n.Tr(
 				"opencode auto-loads the plugin from ~/.config/opencode/plugins/ on start.",
@@ -369,6 +373,17 @@ func (inst agentInstaller) timeoutFor(b agentHookBinding) int {
 	return inst.timeoutMs
 }
 
+// writeAgentHookFiles is the shared installation path, including multi-file plugins.
+func writeAgentHookFiles(inst agentInstaller, bin string) error {
+	if inst.plugin != nil {
+		if inst.writePlugin == nil {
+			return fmt.Errorf("no plugin writer registered for %s", inst.key)
+		}
+		return inst.writePlugin(inst, bin)
+	}
+	return updateAgentSettings(inst, inst.configPath(), bin, true)
+}
+
 // installAgentHooks writes (or removes) one non-Claude agent's hooks file.
 // Idempotent and reversible, preserving any foreign hooks already present.
 func installAgentHooks(inst agentInstaller, yes bool) int {
@@ -378,7 +393,7 @@ func installAgentHooks(inst agentInstaller, yes bool) int {
 	bin := selfPath()
 	path := inst.configPath()
 	if inst.plugin != nil {
-		if err := installOpencodePlugin(inst, bin); err != nil {
+		if err := writeAgentHookFiles(inst, bin); err != nil {
 			i18n.Sae(fmt.Sprintf("failed to write %s: %v", path, err),
 				fmt.Sprintf("写入 %s 失败：%v", path, err))
 			return 1
