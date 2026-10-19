@@ -127,7 +127,19 @@ enum AgentIcons {
         let fm = FileManager.default
         if !hint.isEmpty, fm.fileExists(atPath: hint) {
             if hint.hasSuffix(".app") { return NSWorkspace.shared.icon(forFile: hint) }
-            return NSImage(contentsOfFile: hint)
+            guard let image = NSImage(contentsOfFile: hint) else { return nil }
+            let url = URL(fileURLWithPath: hint)
+            // The official whale fills its canvas, unlike the Codex/Claude icons.
+            // Balance only our built-in copy; custom icons keep their own layout.
+            if url.lastPathComponent == "dsh.png", url.deletingLastPathComponent().lastPathComponent == "agent-icons" {
+                return NSImage(size: image.size, flipped: false) { rect in
+                    NSColor.white.setFill()
+                    rect.fill()
+                    image.draw(in: rect.insetBy(dx: rect.width * 0.1, dy: rect.height * 0.1))
+                    return true
+                }
+            }
+            return image
         }
         // no-config drop-in: ~/.config/gtmux/icons/<agent-key>.png
         let slug = name.lowercased().replacingOccurrences(of: " ", with: "-")

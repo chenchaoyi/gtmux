@@ -1,6 +1,6 @@
 import AppKit
 
-/// Only Restore and automatic release notes opt the current presentation out of
+/// Restore, automatic release notes and screenshots opt the current presentation out of
 /// AppKit's activation-driven dismissal. User dismissal still wins; no callback
 /// shows or activates the menu again. The next opening is transient by default.
 final class MenuPopoverPresentation {
@@ -9,6 +9,7 @@ final class MenuPopoverPresentation {
     private var closeObserver: NSObjectProtocol?
     private var localMonitor: Any?
     private var globalMonitor: Any?
+    private var selectingScreenshot = false
 
     init(popover: NSPopover) {
         self.popover = popover
@@ -34,6 +35,23 @@ final class MenuPopoverPresentation {
         protectFromActivation()
     }
 
+    /// Keep the live menu in the frozen display, including when the selector or
+    /// system fallback takes focus. Selection clicks belong to the capture.
+    func screenshotStarted() {
+        guard popover.isShown else { return }
+        selectingScreenshot = true
+        protectFromActivation()
+    }
+
+    func screenshotFinished(_ outcome: CaptureOutcome) {
+        guard selectingScreenshot else { return }
+        selectingScreenshot = false
+        if case .image = outcome { popover.performClose(nil) }
+        // Cancellation/failure leaves the menu open with normal explicit dismissal.
+        // Keep activation protection until close: the system selector may still
+        // restore the previously active application after its completion callback.
+    }
+
     /// The caller retains the pending receipt when the menu is no longer visible.
     /// Protect BEFORE showing the reader: ordering its window can change activation.
     @discardableResult
@@ -53,6 +71,7 @@ final class MenuPopoverPresentation {
         let clicks: NSEvent.EventTypeMask = [.leftMouseDown, .rightMouseDown, .otherMouseDown]
         localMonitor = NSEvent.addLocalMonitorForEvents(matching: [clicks, .keyDown]) { [weak self] event in
             guard let self, self.popover.isShown else { return event }
+            guard !self.selectingScreenshot else { return event }
             if event.type == .keyDown {
                 // Do not consume Escape destined for a terminal or the notes reader.
                 if event.keyCode == 53, self.isMenuWindow(event.window) {
@@ -67,7 +86,8 @@ final class MenuPopoverPresentation {
         // Mouse observation needs no Accessibility/key-monitor permission. Never
         // monitor global keys or consume events intended for another application.
         globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: clicks) { [weak self] _ in
-            self?.popover.performClose(nil)
+            guard let self, !self.selectingScreenshot else { return }
+            self.popover.performClose(nil)
         }
     }
 
@@ -90,6 +110,7 @@ final class MenuPopoverPresentation {
     }
 
     private func reset() {
+        selectingScreenshot = false
         removeMonitors()
         companion = nil
         popover.behavior = .transient

@@ -1088,7 +1088,7 @@ The menu bar app SHALL start a screenshot from a global hotkey (⌥⌘4) and fro
 the popover's header row, without changing the existing ⌥⌘G palette hotkey. Before
 capturing it SHALL check Screen Recording permission; without it, it SHALL request it once
 and explain where to grant it, with a button that opens that System Settings pane, and
-SHALL NOT capture. It SHALL close its own popover and palette before capturing, then freeze
+SHALL NOT capture. It SHALL close the palette and preserve an already open popover during display freezing and selection, including the system fallback, so a region can contain the menu itself. Selection clicks and Escape SHALL belong to the selector. Cancellation or failure SHALL leave the menu open with explicit dismissal available; success SHALL close it before the editor opens. Completion SHALL NOT reopen a dismissed menu, and the next opening SHALL return to transient behavior. It SHALL then freeze
 every display and let the user select on the frozen picture: a crosshair in the brand colour,
 and a loupe beside the pointer showing the pixels under it magnified, with the pixel under the
 hot spot marked. A drag SHALL select a region on one display, cut from the frozen picture at
@@ -1159,6 +1159,18 @@ recently active agent, and SHALL happen only when the user presses Send.
 
 - **WHEN** an editor is open and the user presses ⌥⌘4 again
 - **THEN** the open editor comes to the front instead of a new capture starting
+
+#### Scenario: Capture the open menu itself
+
+- **WHEN** the owner starts a screenshot with the menu already open
+- **THEN** the frozen display includes the menu and region selection does not dismiss it
+- **AND** a successful capture closes the menu before the annotation editor opens
+
+#### Scenario: Cancel a menu capture
+
+- **WHEN** the owner cancels selection with Escape
+- **THEN** the menu stays open and an outside click can dismiss it
+- **AND** a later opening uses ordinary transient behavior
 
 ### Requirement: Sending a screenshot never answers a prompt or sends twice
 
@@ -1404,3 +1416,12 @@ The menu bar SHALL prefer an authenticated loopback snapshot of the running serv
 
 - **WHEN** serve status is stale, the request fails, or its response is invalid
 - **THEN** the menu bar reads the standalone CLI and retries the shared service after its cooldown
+
+### Requirement: Balanced built-in DeepSeek identity mark
+
+The Mac shared icon reader SHALL add 10% white inset on each edge of the built-in DeepSeek whale without changing its official geometry, avatar frame or status badge. Custom icon hints SHALL retain their original layout.
+
+#### Scenario: DeepSeek shares a list with Codex and Claude
+- **WHEN** the Mac renders the built-in DeepSeek icon in an agent avatar
+- **THEN** its mark has comparable visual weight inside the shared frame
+- **AND** a custom icon is displayed without the built-in inset

@@ -101,4 +101,75 @@ final class MenuPopoverPresentationTests: XCTestCase {
         XCTAssertFalse(popover.isShown)
         XCTAssertEqual(popover.behavior, .transient)
     }
+
+    func testScreenshotSelectionKeepsMenuAndCancellationRestoresOutsideDismissal() {
+        let (window, popover, presentation) = fixture()
+        defer { popover.close(); window.close() }
+        presentation.screenshotStarted()
+        XCTAssertTrue(popover.isShown)
+        XCTAssertEqual(popover.behavior, .applicationDefined)
+        func clickOutside() {
+            let click = NSEvent.mouseEvent(with: .leftMouseDown, location: .zero, modifierFlags: [],
+                                          timestamp: 0, windowNumber: window.windowNumber,
+                                          context: nil, eventNumber: 0, clickCount: 1, pressure: 1)!
+            NSApp.postEvent(click, atStart: true)
+            if let event = NSApp.nextEvent(matching: .leftMouseDown, until: Date().addingTimeInterval(1), inMode: .default, dequeue: true) {
+                NSApp.sendEvent(event)
+            } else { XCTFail("selection click was not delivered") }
+        }
+        clickOutside() // the selector is another window; its click must reach it
+        XCTAssertTrue(popover.isShown)
+        presentation.screenshotFinished(.cancelled)
+        XCTAssertTrue(popover.isShown)
+        clickOutside()
+        XCTAssertFalse(popover.isShown)
+        XCTAssertEqual(popover.behavior, .transient)
+    }
+
+    func testScreenshotSuccessClosesAndLateCompletionDoesNotCloseANewOpening() {
+        let (window, popover, presentation) = fixture()
+        defer { popover.close(); window.close() }
+        presentation.screenshotStarted()
+        presentation.screenshotFinished(.failed("capture unavailable"))
+        XCTAssertTrue(popover.isShown)
+        presentation.screenshotStarted()
+        presentation.screenshotFinished(.image(URL(fileURLWithPath: "/tmp/unused-shot.png")))
+        XCTAssertFalse(popover.isShown)
+        XCTAssertEqual(popover.behavior, .transient)
+        presentation.screenshotStarted() // hotkey while closed must not reopen it
+        XCTAssertEqual(popover.behavior, .transient)
+        presentation.prepareToShow(restoring: false)
+        let anchor = window.contentView!.subviews.first!
+        popover.show(relativeTo: anchor.bounds, of: anchor, preferredEdge: .maxX)
+        presentation.screenshotFinished(.image(URL(fileURLWithPath: "/tmp/unused-shot.png")))
+        XCTAssertTrue(popover.isShown)
+        XCTAssertEqual(popover.behavior, .transient)
+    }
+
+    func testCaptureFlowProtectsBeforeSelectorAndFinishesCancellationOnce() {
+        let (window, popover, presentation) = fixture()
+        defer { popover.close(); window.close() }
+        let controller = ScreenshotController()
+        controller.access.preflight = { true }
+        let completed = expectation(description: "cancelled selection")
+        var prepared = 0, finished = 0
+        controller.capture = { _, completion in
+            XCTAssertTrue(popover.isShown)
+            XCTAssertEqual(popover.behavior, .applicationDefined)
+            completion(.cancelled)
+        }
+        let prepare = { prepared += 1; presentation.screenshotStarted() }
+        let finish: (CaptureOutcome) -> Void = { outcome in
+            finished += 1
+            presentation.screenshotFinished(outcome)
+            completed.fulfill()
+        }
+        let store = AgentStore(readPoll: { _ in nil })
+        controller.start(store: store, l10n: .shared, prepareSurfaces: prepare, finishSurfaces: finish)
+        controller.start(store: store, l10n: .shared, prepareSurfaces: prepare, finishSurfaces: finish)
+        wait(for: [completed], timeout: 3)
+        XCTAssertEqual(prepared, 1, "reentry must not stack presentation protection")
+        XCTAssertEqual(finished, 1)
+        XCTAssertTrue(popover.isShown)
+    }
 }

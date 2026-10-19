@@ -1,16 +1,19 @@
 import AppKit
 
-/// The screenshot flow: permission → close our own surfaces → capture → editor. Nothing
+/// The screenshot flow: permission → preserve the open menu → capture → editor. Nothing
 /// here touches a pane; only the editor's Send does, when the user presses it.
 final class ScreenshotController {
     static let shared = ScreenshotController()
 
     var access = ScreenCaptureAccess()
+    var capture: (URL, @escaping (CaptureOutcome) -> Void) -> Void = ScreenshotSelector.run
     private var capturing = false
     private static let requestedKey = "screenshot.permissionRequested"
 
-    /// `closeSurfaces` closes the popover and the palette so neither is in the picture.
-    func start(store: AgentStore, l10n: L10n, closeSurfaces: @escaping () -> Void) {
+    /// Prepare only after permission and reentry checks. Finish on every capture
+    /// outcome, before alerts or the editor can change focus.
+    func start(store: AgentStore, l10n: L10n, prepareSurfaces: @escaping () -> Void,
+               finishSurfaces: @escaping (CaptureOutcome) -> Void) {
         let editor = ScreenshotEditorController.shared
         if editor.isOpen {
             // A second press keeps the work in progress instead of replacing it.
@@ -22,7 +25,7 @@ final class ScreenshotController {
             askForPermission(l10n: l10n)
             return
         }
-        closeSurfaces()
+        prepareSurfaces()
         capturing = true
         AgentStoreSnapshot.store = store
 
@@ -35,11 +38,12 @@ final class ScreenshotController {
             lookup.leave()
         }
 
-        // Let the popover's close animation finish before the screen is captured.
+        // Let the palette's close animation finish; the menu stays in the picture.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
             let file = ScreenshotCapture.temporaryURL()
-            ScreenshotSelector.run(output: file) { outcome in
+            self?.capture(file) { outcome in
                 self?.capturing = false
+                finishSurfaces(outcome)
                 switch outcome {
                 case .cancelled:
                     DiagLog.act("act.screenshot.capture", target: "", outcome: "refused", "screenshot cancelled")
