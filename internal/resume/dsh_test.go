@@ -10,6 +10,7 @@ import (
 
 func TestDSHResumeRequiresVerifiedTerminalHomeAndExistingRoot(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
+	t.Setenv("PATH", t.TempDir())
 	t.Setenv("DSH_HOME", t.TempDir())
 	dir := filepath.Join(dsh.Home(), "sessions", "work", "synthetic")
 	_ = os.MkdirAll(dir, 0700)

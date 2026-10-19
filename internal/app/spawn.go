@@ -504,6 +504,12 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOp
 		}
 	}
 
+	// Terminal clients start as the new pane command, so shell initialization
+	// cannot swallow their launch Enter. Existing panes retain the usual path.
+	directCommand := ""
+	if manifest, known := agents.For(agent); known && len(manifest.TerminalClients) > 0 && !oneshot {
+		directCommand = agentenv.Wrap(agentLaunchCommand(agent, model))
+	}
 	// Create a detached session (named from the branch/goal), optionally in runDir.
 	create := newSessionArgs(uniqueSessionName(name, sessionExists))
 	startDir := runDir
@@ -513,12 +519,18 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOp
 	if startDir != "" {
 		create = append(create, "-c", startDir)
 	}
+	if directCommand != "" {
+		create = append(create, directCommand)
+	}
 	created, err := tmux.Run(create...)
 	if err != nil || created == "" {
 		// Name collision / bad name → let tmux auto-name.
 		auto := []string{"new-session", "-d", "-P", "-F", "#{session_name}"}
 		if startDir != "" {
 			auto = append(auto, "-c", startDir)
+		}
+		if directCommand != "" {
+			auto = append(auto, directCommand)
 		}
 		created, err = tmux.Run(auto...)
 	}
@@ -529,8 +541,10 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOp
 		return "", "", false, "", "", "", 1, nil
 	}
 	pane = tmux.Display(created, "#{pane_id}")
-	if err := launch(pane); err != nil {
-		return pane, created, true, wtPath, branch, "", 0, err
+	if directCommand == "" {
+		if err := launch(pane); err != nil {
+			return pane, created, true, wtPath, branch, "", 0, err
+		}
 	}
 	nameDispatchWindow(pane, spawnSlug(title, branch, goal), headless) // task-named for a readable fleet
 

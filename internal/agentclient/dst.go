@@ -46,7 +46,21 @@ func CandidatePane(pane string) bool {
 
 // MatchesSavedClient is client liveness evidence only. A saved DSH resume record
 // must independently supply the verified harness/home/session identity.
-func MatchesSavedClient(client, command string) bool { return client == "dst" && dstProcess(command) }
+func MatchesSavedClient(client, command string) bool {
+	if client != "dst" || !dstProcess(command) {
+		return false
+	}
+	fields := strings.Fields(command)
+	for i, field := range fields {
+		if field == "--backend" && i+1 < len(fields) && fields[i+1] != "dsh" {
+			return false
+		}
+		if backend, ok := strings.CutPrefix(field, "--backend="); ok && backend != "dsh" {
+			return false
+		}
+	}
+	return true
+}
 
 func dstProcess(command string) bool {
 	return strings.Contains(command, "/@deepseek-harness-tui/dsh-tui/lib/types/dsh-adapter/host-entry.js") ||

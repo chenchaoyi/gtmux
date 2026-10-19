@@ -1,6 +1,8 @@
 package agentclient
 
 import (
+	"github.com/chenchaoyi/gtmux/internal/dsh"
+	"os/exec"
 	"strings"
 )
 
@@ -13,7 +15,10 @@ func Command(agent, client, sessionID string) (string, bool) {
 	var argv []string
 	switch client {
 	case "dst":
-		argv = []string{"env", "DSH_TUI_NO_LAUNCHPAD=1", "dst", "--backend", "dsh"}
+		argv = []string{"env", "DSH_HOME=" + dsh.Home(), "DSH_TUI_NO_LAUNCHPAD=1", "dst", "--backend", "dsh"}
+		if executable, err := exec.LookPath("dst"); err == nil {
+			argv[3] = executable
+		}
 		if sessionID == "" {
 			argv = append(argv, ".")
 		}

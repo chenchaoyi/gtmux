@@ -69,7 +69,9 @@ sequence. No third-party npm package is installed or upgraded by gtmux.
 
 Ordinary `dst --backend dsh` uses the profile bridge. `spawn --agent dsh` selects
 this declared client with its launchpad disabled and an explicit current workspace,
-so a new goal waits for the chat composer; terminal resume records remain specific to the verified home
+so a new goal waits for both the chat composer and the native receiver. New panes
+start the client directly instead of typing into an initializing shell, and the
+configured DSH home is explicit; terminal resume records remain specific to the verified home
 and client. Web adoption stays disabled. Model selection stays in dst; generic
 `spawn --model` and one-shot execution are refused for this adapter.
 

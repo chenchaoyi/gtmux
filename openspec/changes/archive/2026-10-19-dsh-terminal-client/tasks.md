@@ -33,6 +33,10 @@ Live acceptance: a clean pinned dst 0.16.1 / official DSH 0.2.0-rc.2 temporary
 installation displays the real chat UI. The normal verified CLI send reaches the
 actual native agent, returns a matching acceptance receipt and persists exactly one
 synthetic public message without its wire command. Its review cursor remains -1.
+A real draft-preservation check refuses a second message without altering the
+synthetic draft. A complete fresh `spawn --agent dsh --headless` in a clean tmux
+server directly launches the client, waits for its native receiver and returns
+`landed` from the addressed driver receipt.
 This exposed and fixed landing-screen launch and unsaved-first-session identity
 boundaries. Earlier blank controls used mixed development dependency resolution;
 they are not the final acceptance result.
