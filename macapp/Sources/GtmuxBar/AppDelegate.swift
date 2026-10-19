@@ -588,13 +588,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in self?.store.refresh() }
     }
 
-    /// Closes our own surfaces first so neither is in the picture. Capturing and annotating
+    /// Preserves the open menu so it can be captured. Capturing and annotating
     /// never touch a pane; only the editor's Send does, when the user presses it.
     private func startScreenshot() {
-        ScreenshotController.shared.start(store: store, l10n: l10n) { [weak self] in
-            self?.popover.performClose(nil)
+        ScreenshotController.shared.start(store: store, l10n: l10n, prepareSurfaces: { [weak self] in
+            self?.menuPresentation.screenshotStarted()
             CommandPaletteController.shared.dismiss()
-        }
+        }, finishSurfaces: { [weak self] outcome in
+            self?.menuPresentation.screenshotFinished(outcome)
+        })
     }
 
     /// Send literal text to a pane (notification 1/2/3 + free-text reply, A2).
@@ -644,7 +646,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             popover.performClose(nil)
             PaneBrowserController.shared.show(l10n: l10n, radar: store)
         case .screenshot:
-            startScreenshot() // closes the popover itself, before the capture
+            startScreenshot() // preserves the menu until the selection is captured
         case .quit:       quitApp()
         case .startHQ:    GtmuxCLI.spawn(["hq"]) // spawns/focuses the supervisor session + tab
         }

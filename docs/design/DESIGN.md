@@ -214,6 +214,7 @@ Copy requirement: plain and matter-of-fact, no marketing voice (nothing like "se
 - **Real logos are third-party trademarks and are not drawn in the design.** The system leaves a hook: add an
   `icon` field to the agent profile (`~/.config/gtmux/agents.json`, see `agentProfile` in `internal/radar/agents.go`), and the app
   loads the official icon at runtime under each vendor's brand rules (the repo hook already has precedent, caching the Claude icon).
+- Built-in identity marks share the avatar frame. The official DeepSeek whale fills its source canvas; the Mac icon reader adds 10% white inset on each edge so it has comparable visual weight to Codex and Claude. The source mark, avatar size, status badge and custom icon layout stay unchanged.
 - A Preferences toggle "show agent name": when on, the second line is prefixed with a dim agent name (`Codex · task…`).
 
 ---
@@ -841,9 +842,9 @@ it or hand it with a note to an agent pane. Nothing touches a pane until Send.
 - **Permission:** Screen Recording is checked first. The first time, macOS shows its own
   prompt; after that, an alert says where the switch is, with Open System Settings. No
   capture happens without it.
-- **Capture:** the popover and the palette close, then gtmux's own selector (the system's
+- **Capture:** the palette closes. An open popover stays visible while the displays freeze and throughout selection, including the system fallback, so a region can include the menu itself. Selection clicks and Escape belong to the selector; cancellation or failure leaves the menu open with ordinary outside-click, Escape and status-item dismissal. A successful capture closes the menu before opening the editor; completion never reopens a dismissed menu. gtmux uses its own selector because the system's
   `screencapture -i` has no magnifier, so a corner could be placed only as precisely as the
-  pointer could be seen). Every display is frozen first (ScreenCaptureKit, under the same Screen
+  pointer could be seen. Every display is frozen first (ScreenCaptureKit, under the same Screen
   Recording permission), then shown full screen, a little dimmed, under a crosshair in brand
   cyan (§12's lit pane — brand, not a status) with guides across the display. Beside the
   pointer a loupe shows the 15 × 15 pixels under it, unsmoothed, the hot spot's pixel outlined
