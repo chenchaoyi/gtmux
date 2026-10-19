@@ -276,7 +276,7 @@ struct CommandPaletteView: View {
         case .waiting: return l10n.tr("Needs you", "需要你")
         case .working: return l10n.tr("Working", "运行中")
         case .idle:    return l10n.tr("Idle", "空闲")
-        case .running: return l10n.tr("Running", "待命")
+        case .running: return l10n.tr("Idle", "空闲")
         }
     }
 

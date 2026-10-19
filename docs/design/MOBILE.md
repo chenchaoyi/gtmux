@@ -871,7 +871,7 @@ scroll together); C keeps the phone's tabs, just wider (no new layout to maintai
 
 - Status: waiting `#EF4444` red square·double bar / working `#06B6D4` cyan circle·loading ring (slow rotation, 2s per turn, respecting Reduce Motion; DESIGN §10) /
   idle `#22C55E` green circle·check / running `#8E8E93` grey circle·dot.
-- Section order: needs-you → working → idle → running; the waiting section title is red, the rest neutral.
+- Activity groups: needs-you → errored (when present) → working → idle, including neutral `running` agents. Neutral rows retain their grey dot and original timestamps; grouping never asserts completion. The waiting title is red, errors amber, the rest neutral.
 - Dark/light (theme.ts): dark `bg #0D0D0F · surface #1C1C1F`; light `bg #F2F2F7 · surface #FFF`.
 - i18n: en/zh follows the system, lockable in Settings; CJK truncates with an ellipsis, never wraps.
 - Motion: only the single idle→waiting pulse; everything else quiet. No gratuitous gradients, no glowing shadows, no marketing copy.
@@ -1487,3 +1487,27 @@ An accepted text send to a working agent shows a concise terminal-delivery recei
 ### Conversation block Copy feedback (2026-10-18)
 
 iOS conversation long-press Copy retains its whole-block scope and highlights that block while the native menu is open. Dismissal, removal or changed text clears the highlight and invalidates stale Copy actions. Markdown formatting, inline links, text scaling and spacing remain in the existing Text renderer; a conversation-only native wrapper owns the menu feedback. This is not word/range selection. Android and other Markdown surfaces keep their existing behavior. HQ and approval controls speak meaningful localized labels; their old automation handles remain in testID. Store accessibility declarations follow [the separate evaluation procedure](../appstore/accessibility.md), not assumptions from these two controls.
+
+## Launch identity and loading feedback
+
+The light and dark launch views share a 112pt ink-ground pane mark. Neutral panes
+remain visible in both appearances; the top-right pane retains the brand cyan.
+`gen-launch-mark.swift` generates the 1×/2×/3× sRGB artwork used by both
+`LaunchScreen.storyboard` and RN's `LaunchMark`. App icons and agent artwork do not change.
+Native launch uses appearance-aware named background/foreground colours and a static
+mark/name. RN keeps that identity, then adds the short localised tagline and loading
+feedback. It imposes no minimum display time.
+
+The RN composition keeps the wordmark at its brand size; explanatory and loading
+text follows system text size. Scrollable content reserves top and bottom safe areas,
+including a larger loading footer, so landscape and large-text layouts remain reachable.
+The shared `BrandLoader` stays static until Reduce Motion is known to be off, stops
+when it is enabled, and releases its observer/animation on unmount. The indeterminate
+loading announcement is one accessibility element; decorative panes are hidden.
+Pixel contrast tests cover the actual shipped mark and text checks cover both themes;
+they do not substitute for native visual or VoiceOver acceptance. The isolated
+`GTMUX_DEBUG_SHOW_SPLASH` capture flag is never part of an ordinary launch.
+
+### Quiet session grouping
+
+Activity groups are needs-you → errored (when present) → working → idle. Neutral `running` sessions without authoritative lifecycle evidence also belong to idle, retaining their grey dot and original timestamps. They do not create a standby group or assert completion. Errors, watched panes and external conversations keep their existing separate categories.

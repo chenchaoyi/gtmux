@@ -223,9 +223,9 @@ function Root() {
     (navRef as any).navigate(route, params);
   }, [navRef]);
 
-  // D8: a branded splash (matches the native LaunchScreen) while we restore the
-  // paired Mac + settings, instead of a bare spinner.
-  if (!ready) {
+  // Restore settings with the shared launch identity. The capture flag is only
+  // supplied to an isolated UI-test app; ordinary startup has no minimum delay.
+  if (!ready || Debug.showSplash) {
     return <Splash pal={pal} lang={lang} />;
   }
 

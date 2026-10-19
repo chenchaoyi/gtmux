@@ -45,7 +45,7 @@ const S: Dict = {
   waiting: {en: 'waiting', zh: '等输入'},
   working: {en: 'working', zh: '运行中'},
   idle: {en: 'idle', zh: '空闲'},
-  running: {en: 'running', zh: '待命'},
+  running: {en: 'idle', zh: '空闲'},
   errored: {en: 'errored', zh: '出错'},
   desktop: {en: 'External conversations', zh: '外部会话'},
   native: {en: 'Elsewhere', zh: '不在 tmux'},

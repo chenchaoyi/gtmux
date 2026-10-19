@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.133',
+    en: [
+      'A clearer launch screen: every pane stays visible in light and dark appearance, with a shared native and in-app identity.',
+      'Refined startup typography and spacing, readable loading feedback, and safe-area support for larger text and landscape. Loading respects Reduce Motion.',
+      'Quiet sessions now share the existing Idle group; neutral evidence keeps its dot without adding a Standby state.',
+    ],
+    zh: [
+      '优化启动页：浅深色下每个 pane 都清晰可见，系统启动屏与应用内页面共用一套标识。',
+      '调整启动页排版、留白和加载提示，适配大字号、横屏与安全区；加载动效遵循“减弱动态效果”。',
+      '将没有可靠运行信号的会话归入现有“空闲”分组，保留中性圆点，不再单列“待命”。',
+    ],
+  },
+  {
     version: '1.0.131',
     en: [
       'External conversations show the observed launch application or executable when available, with its observation time in details.',
