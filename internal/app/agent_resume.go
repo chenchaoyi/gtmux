@@ -289,14 +289,15 @@ func posSuffix(loc string) string {
 // notification, so the user sees that restore brought their conversations back —
 // the old code was silent when nothing matched, which read as "it didn't work".
 func reportResume(mode resumeMode, n int) {
+	fmt.Println()
 	if n == 0 {
-		i18n.Say("No saved agent conversations matched the restored panes.",
-			"没有可接回的 agent 会话（无匹配记录，或窗格已在运行）。")
+		i18n.Say("Agents: no new conversations resumed (no match, or panes already running).",
+			"Agent：未接回新对话（无匹配记录，或窗格已在运行）。")
 		return
 	}
 	if mode == resumeAuto {
-		i18n.Say(fmt.Sprintf("↻ resumed %d agent conversation(s).", n),
-			fmt.Sprintf("↻ 已接回 %d 个 agent 会话。", n))
+		i18n.Say(fmt.Sprintf("Agents: started %d resume command(s).", n),
+			fmt.Sprintf("Agent：已启动 %d 条接回命令。", n))
 		notify.Send(notify.Options{
 			Kind:    "done",
 			Title:   "gtmux",

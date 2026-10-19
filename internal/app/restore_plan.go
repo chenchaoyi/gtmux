@@ -182,28 +182,67 @@ func printRestorePlanJSON() {
 	fmt.Println(string(b))
 }
 
-// printRestorePlan prints the plan as a human checklist — what `gtmux restore` is
-// about to bring back, session by session, with the agent conversations under each.
-// Used both for `restore --plan` (preview) and folded into the real restore's output.
-func printRestorePlan(p restorePlan) {
+// printRestorePlan shares the inventory between restore and its read-only preview.
+// Conversation excerpts belong only in the explicit preview, not boot progress.
+func printRestorePlan(p restorePlan, details bool) {
+	fmt.Print(renderRestorePlan(p, termWidth(), details))
+}
+
+func renderRestorePlan(p restorePlan, width int, details bool) string {
 	if len(p.Sessions) == 0 {
-		i18n.Say("Nothing saved to restore.", "没有可恢复的存档。")
-		return
+		return i18n.Tr("Nothing saved to restore.\n", "没有可恢复的存档。\n")
 	}
-	// Count the RESUMABLE (↻) agents in the headline — that's the number that will
-	// actually come back (and that the "resumed N" line reports). Any dead (×) ones are
-	// noted separately so the two counts never look like a silent failure.
-	headEN := fmt.Sprintf("%d session(s), %d agent conversation(s) to bring back", len(p.Sessions), p.resumableCount())
-	headZH := fmt.Sprintf("待恢复：%d 个 session，%d 个 agent 会话", len(p.Sessions), p.resumableCount())
+	// Bound line length even on a very wide display; narrow terminals retain counts.
+	width = maxInt(1, min(width, 100))
+	var b strings.Builder
+	line := func(s string) { b.WriteString(i18n.TruncDisp(s, width) + "\n") }
+	line(i18n.Tr("Restore plan", "恢复计划"))
+	line(i18n.Tr(fmt.Sprintf("%d sessions · %d agents resumable", len(p.Sessions), p.resumableCount()),
+		fmt.Sprintf("%d 个会话 · %d 个 agent 可接回", len(p.Sessions), p.resumableCount())))
 	if dead := p.deadCount(); dead > 0 {
-		headEN += fmt.Sprintf(" (+%d with no saved transcript, shown ×)", dead)
-		headZH += fmt.Sprintf("（另有 %d 个无存档记录，标记 ×）", dead)
+		line(i18n.Tr(fmt.Sprintf("Skipped: %d missing transcripts (×)", dead),
+			fmt.Sprintf("跳过：%d 个对话记录缺失（×）", dead)))
 	}
-	i18n.Say(headEN+":", headZH+"：")
+	b.WriteByte('\n')
+	nameW := min(32, width/3)
+	winW, paneW := 4, 5
+	row := func(name, windows, panes, agents string) {
+		lead := "  " + i18n.PadRight(i18n.TruncDisp(restoreInline(name), nameW), nameW) + "  " +
+			i18n.PadLeft(windows, winW) + "  " + i18n.PadLeft(panes, paneW) + "  "
+		line(lead + i18n.TruncDisp(agents, width-i18n.DispWidth(lead)))
+	}
+	row(i18n.Tr("Session", "会话"), i18n.Tr("Win", "窗口"), i18n.Tr("Panes", "窗格"), i18n.Tr("Agents", "Agent"))
 	for _, s := range p.Sessions {
-		i18n.Say(
-			fmt.Sprintf("  • %s: %d window(s), %d pane(s)", s.Name, s.Windows, s.Panes),
-			fmt.Sprintf("  • %s：%d 窗口 / %d 窗格", s.Name, s.Windows, s.Panes))
+		counts := map[string]int{}
+		var kinds []string
+		dead := 0
+		for _, a := range s.Agents {
+			if !a.Alive {
+				dead++
+				continue
+			}
+			kind := restoreInline(a.Agent)
+			if counts[kind] == 0 {
+				kinds = append(kinds, kind)
+			}
+			counts[kind]++
+		}
+		for i, kind := range kinds {
+			if counts[kind] > 1 {
+				kinds[i] = fmt.Sprintf("%s ×%d", kind, counts[kind])
+			}
+		}
+		if dead > 0 {
+			kinds = append(kinds, i18n.Tr(fmt.Sprintf("skip %d", dead), fmt.Sprintf("跳过 %d", dead)))
+		}
+		agents := strings.Join(kinds, ", ")
+		if agents == "" {
+			agents = "—"
+		}
+		row(s.Name, fmt.Sprint(s.Windows), fmt.Sprint(s.Panes), agents)
+		if !details {
+			continue
+		}
 		for _, a := range s.Agents {
 			mark := "↻"
 			if !a.Alive {
@@ -213,9 +252,25 @@ func printRestorePlan(p restorePlan) {
 			if goal == "" {
 				goal = a.Cwd
 			}
-			i18n.Say(
-				fmt.Sprintf("      %s %s  %s", mark, a.Agent, goal),
-				fmt.Sprintf("      %s %s  %s", mark, a.Agent, goal))
+			line(fmt.Sprintf("    %s %s [%s]  %s", mark, restoreInline(a.Agent),
+				restoreInline(posSuffix(a.Loc)), restoreInline(goal)))
 		}
 	}
+	if !details {
+		b.WriteByte('\n')
+		line(i18n.Tr("Conversation preview: gtmux restore --plan", "对话预览：gtmux restore --plan"))
+	}
+	b.WriteByte('\n')
+	return b.String()
+}
+
+// Keep untrusted names/excerpts on one terminal line; never interpret their escapes.
+func restoreInline(s string) string {
+	s = strings.Map(func(r rune) rune {
+		if r < 32 || r == 127 || r >= 0x80 && r <= 0x9f {
+			return ' '
+		}
+		return r
+	}, s)
+	return strings.Join(strings.Fields(s), " ")
 }

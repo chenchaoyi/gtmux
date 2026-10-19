@@ -512,10 +512,11 @@ gtmux restore --plan --json   # the same plan as JSON (the menu bar's source for
 什么都不做。锁的进程没了、或者锁超过 10 分钟，就会被接管。`--plan` 和 `--dry-run`
 不受锁的限制。
 
-真正的 `gtmux restore` 会在开头打印计划：它即将带回来的会话，以及每个 pane 下面那段
-agent 对话（目标）。`--plan` 就是单独的预览：读最后一次 resurrect 存档加上 resume 记录，
-不启动任何 tmux（随时跑、随时轮询都安全）。标着 `×` 的 agent 行，是 transcript 已经从
-磁盘上消失、恢复不了的对话。
+真正的 `gtmux restore` 先打印紧凑清单：会话名、窗口数、窗格数和 agent 类型，恢复进度里
+不再夹着历史消息。需要详细预览时，运行 `--plan`：每个 agent 多显示一条简短对话摘要，
+并标出窗口.窗格位置。两者读取相同的 resurrect 存档和 resume 记录；预览不启动 tmux，
+随时跑、随时轮询都安全。名称和摘要按终端显示宽度截短，最多占 100 列；`--plan --json`
+保留完整计划字段。缺失的对话记录会单独计为跳过，详细预览用 `×` 标记。
 
 只有存布局时确实在跑 agent 的 pane 才会把 agent 带回来；恢复是从存档里每个 pane 自己的
 命令记录读出来的。存档时是普通 shell 的 pane，回来还是普通 shell，哪怕你上周在里面跑过
@@ -533,9 +534,10 @@ agent。一个 pane 拿到哪段对话，按它的 resume 记录来；记录丢�
 托管块里，写入前会备份；重新加载配置也不会重复添加。如果 doctor 报告有多个触发器，
 请检查现有状态栏配置：修复程序不会擅自删除自定义内容。
 
-恢复之后，gtmux 把每个存下来的窗口的 pane 数量和排布跟活着的那个比一遍，把对不上的
-点名出来，打在终端上并写进日志库（`gtmux logs --component restore`），因为 tmux-resurrect
-会把自己的布局错误丢掉。
+恢复之后，gtmux 会核对存档与当前窗口的窗格数量和排布。异常单独成段，最多列出五个
+窗口，用「窗格 4 → 2」这样的短句说明事实，并注明还有几个窗口。完整原因和布局数据
+保留在 `gtmux logs --component restore --since 1d`，每次警告都会给出这条命令。
+成功启动 agent 的接回命令不代表布局已完整恢复；tmux-resurrect 本身会丢掉布局错误。
 
 tmux 的 pane id 是每个服务器的序号：重启服务器之后，`%25` 会发给另一个 pane。gtmux 有
 很多状态按这个号索引，所以恢复时（以及 `gtmux serve` 每隔几分钟）会丢掉那些 pane 已经
