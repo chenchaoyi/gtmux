@@ -42,6 +42,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/sessionpolicy"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
+	"github.com/chenchaoyi/gtmux/internal/terminalkeys"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
@@ -378,6 +379,8 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		AttachCursor: attachCursor,
 		Focus:        func(id string) error { return panefocus.FocusPaneByID(id) },
 		Send:         sendToPane,
+		InputTarget:  terminalInputTarget,
+		InputKey:     sendTerminalKey,
 		// `gtmux attach` bridges a tmux client (spawned in a server-side PTY) to a WS.
 		// Resolve the pane's session and attach to it. Only owners and paired devices get
 		// here: the handler refuses a share link before this runs, because this client
@@ -754,12 +757,7 @@ func randToken() string {
 
 // allowedSendKeys whitelists the named control keys POST /api/send accepts (a
 // tmux key name must never be free-form — the rest goes through as literal text).
-var allowedSendKeys = map[string]bool{
-	"Enter": true, "C-c": true, "Escape": true, "Tab": true,
-	"Up": true, "Down": true, "Left": true, "Right": true,
-	"Space":  true, // toggle a checkbox in a multi-select TUI picker (AskUserQuestion)
-	"BSpace": true, "C-d": true, "C-z": true, "C-l": true,
-}
+var allowedSendKeys = terminalkeys.LegacyKeys()
 
 // maxDiffBytes caps the diff payload so a huge working tree can't bloat the phone
 // (the rest is the agent's recent edits; a 400 KB head is plenty to review).
@@ -986,6 +984,9 @@ func turnsWithinBudget(turns []transcript.Turn, budget int) (kept []transcript.T
 func sendToPane(id, text, key string, enter bool, sendID string) error {
 	if tmux.Bin == "" || tmux.Display(id, "#{pane_id}") == "" {
 		return fmt.Errorf("pane not found")
+	}
+	if key != "" && !terminalkeys.Legacy(key) {
+		return fmt.Errorf("key not allowed")
 	}
 	// A pane in copy/view-mode swallows input as mode-nav commands; drop out first so
 	// the phone's key/text actually reaches the agent (matches the CLI send path).

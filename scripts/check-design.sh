@@ -293,6 +293,9 @@ writers=$(grep -rn "tmux\.Paste(\|tmux\.SendText(\|tmux\.SendKey(" internal --in
   | grep -v '_test\.go:' | grep -v '^internal/tmux/' \
   | grep -v ':[0-9]*:[[:space:]]*//' \
   | cut -d: -f1 | sort -u)
+# terminalkeys.go is explicit authorized interactive input (including Return and
+# Ctrl+M), like serve.go's legacy controls. It never pastes automated text. Requiring
+# an empty composer here would prevent the editing/navigation the user requested.
 known="internal/app/adopt.go
 internal/app/agent_resume.go
 internal/app/oneshot.go
@@ -300,6 +303,7 @@ internal/app/plainsend.go
 internal/app/send.go
 internal/app/serve.go
 internal/app/spawn.go
+internal/app/terminalkeys.go
 internal/dispatchbridge/dispatchbridge.go
 internal/hq/hq.go
 internal/hq/launchtarget.go

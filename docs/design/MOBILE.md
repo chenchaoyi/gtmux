@@ -1511,3 +1511,26 @@ they do not substitute for native visual or VoiceOver acceptance. The isolated
 ### Quiet session grouping
 
 Activity groups are needs-you → errored (when present) → working → idle. Neutral `running` sessions without authoritative lifecycle evidence also belong to idle, retaining their grey dot and original timestamps. They do not create a standby group or assert completion. Errors, watched panes and external conversations keep their existing separate categories.
+
+
+## Terminal Keys panel (2026-10-19)
+
+The terminal composer has one visible **Keys** entry beside the keyboard toggle, with
+Navigation, Function (F1–F12) and Characters. Existing frequent controls retain their
+order and use the shared server catalog when available. Ctrl/Alt/Shift affect the next
+explicit tap only; they clear on tap, dismissal, target change, backgrounding or input
+permission loss. Unsupported combinations are disabled with an accessible reason.
+The panel preserves drafts and attachments and does not append Return. Selecting
+Return or Ctrl+M deliberately sends Return; the Characters panel explains aliases.
+
+The phone and iPad use the same component, with a 480pt cap, safe-area/height limits,
+scrolling and at least 44pt buttons. It takes no global hardware shortcuts or IME input.
+The browser uses the same catalog and a scoped, keyboard-accessible dialog. There are
+no macros, modifier locking, repeats or offline queues. Old servers retain legacy keys.
+
+Only input-authorized live tmux routes can send. A fresh Codex collapsed-question hint
+may add **View question** without changing `working` to another status. Unknown hints
+suppress that action. A receipt says **Sent to terminal**, never that the agent acted.
+An uncertain result pauses further sends; an explicit retry reuses the exact original
+ID/context. Changed/expired context cannot replay it. See the [HTTP contract](../../api/contract.md#typed-keyaction-forms-of-post-apisend)
+and [research and acceptance boundaries](terminal-keyboard-research.md).

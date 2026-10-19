@@ -288,6 +288,68 @@ interlock.
 The successful response includes the post-send pane snapshot when it can be read.
 `cols` and `cursor` are optional, with the same meanings as `GET /api/pane`.
 
+### `GET /api/input-capabilities?id=%N` — terminal key catalog
+
+Authenticated and subject to the caller's view grant. Only a live tmux pane route is
+eligible; a native/external conversation does not gain an input target. Returns
+`version:1`, `can_input`, `keys`, `legacy_events`, `actions`, `retry_seconds:120` and
+`context:{boot,pane_binding,expires_at,proof}`. Context is opaque and caller/pane-bound;
+`proof` is signed with a private server secret, separate from the public boot ID.
+Responses use `Cache-Control: no-store`. `catalog_version=1` omits unchanged catalog
+fields. It does not omit current context, grants or contextual actions.
+
+Keys contain `{key,label,label_zh,group,modifier_sets}`. Modifiers are `control`, `alt`
+and `shift`; only advertised sets are supported. The core owns the catalog and encoder
+(`internal/terminalkeys`). Initial families: navigation/editing, F1–F12 and printable
+ASCII shortcuts. Character shortcuts use classic terminal bytes; named keys follow
+current tmux application modes. Shift+letters become uppercase characters. Ambiguous
+Ctrl+Shift letters, Ctrl+digits and modified Enter/Tab combinations are withheld.
+Ctrl+I is Tab, Ctrl+M is Return, and Ctrl+[ is Escape. No macros, repeat, raw escape
+sequence API or promise of distinct extended character codes.
+
+`404` means no route; `403` means no view grant; `503` means the feature is unavailable.
+New clients keep legacy shortcuts on old servers and never convert unsupported keys
+to text. Read permission does not imply input permission.
+
+### Typed key/action forms of `POST /api/send`
+
+In addition to the legacy fields above, an authorized client may send exactly one of:
+
+```json
+{"id":"%1","key_event":{"key":"F2","modifiers":["shift"]},"send_id":"key-unique-id","input_context":{"boot":"…","pane_binding":"…","expires_at":1792400000,"proof":"…"}}
+```
+
+Or `action:{id,revision}` in place of `key_event`, using a currently advertised action.
+The server resolves the action to a key. New forms require a 1–160 byte `send_id` and
+the original context; reject unknown fields, mixed `key`/`text`/`enter` forms (including
+empty fields), duplicate/unknown modifiers and stale action revisions before terminal
+side effects. No appended Enter. Explicit Return/Ctrl+M still sends a Return.
+
+The existing owner/guest consent and per-link input grants are checked again after
+waiting for the injection lock. Boot, signed context and live pane binding are checked
+before injection and duplicate acknowledgment. Same-caller concurrent retries with the
+same payload/context inject at most once during context validity. Changed payloads
+with the same ID get `409`. Context expires after 120 seconds; receipts are retained
+for at least that validity, with a 512-entry bound and refusal rather than eviction of
+active receipts. A failed injection is retained as unconfirmed because tmux may already
+have accepted bytes. Cached acknowledgments are not logged as new injections.
+
+`400`: malformed key/form; `403`: input grant refused; `409`: stale/collision/unconfirmed;
+`422`: unsupported combination; `503`: unavailable/full receipt cache. Success has the
+same optional pane snapshot as legacy send and means delivery to the terminal only.
+Clients serialize sends, stop subsequent sends on uncertainty and offer an explicit
+same-event retry only with unchanged, unexpired boot/binding context. No automatic
+replay after reconnect or restart; no exactly-once guarantee across process crashes.
+Pane/process inspection and tmux injection are separate observations, not an atomic
+lock on the agent's UI; users should inspect the terminal before resuming after errors.
+
+The initial Codex `codex.view-question` action recognizes only a fresh collapsed footer
+with count, a known displayed binding and a following composer, plus a live Codex route.
+It supports the observed Shift+Left and Alt+Up hints, not arbitrary custom bindings.
+It does not answer a question or change agent status. The pinned Codex hook registry
+has no asynchronous-question lifecycle hook; see the source/acceptance boundaries in
+[terminal-key research](../docs/design/terminal-keyboard-research.md).
+
 ### `GET /api/tasks` — what was dispatched, and whether it is still running (OWNER)
 
 The dispatch ledger joined with each task's live pane status. gtmux has had both halves

@@ -95,6 +95,7 @@ export function AgentRow({
       }}>
     <Pressable
       testID={`${TestIds.agent.row}-${agent.pane_id}`}
+      accessibilityRole="button"
       accessibilityLabel={`${primary(agent)}, ${statusLabel(agent.status, lang)}`}
       onPress={onPress}
       onPressIn={down}

@@ -49,7 +49,7 @@ func (a *accessReads) keep(key string, now time.Time) bool {
 
 var accessRoutes = map[string]string{
 	"/api/agents": "sessions", "/api/panes": "sessions", "/api/digest": "hq",
-	"/api/pane": "terminal", "/api/transcript": "conversation", "/api/session/transcript": "conversation",
+	"/api/pane": "terminal", "/api/input-capabilities": "terminal", "/api/transcript": "conversation", "/api/session/transcript": "conversation",
 	"/api/diff": "terminal", "/api/usage": "usage", "/api/hq/board": "hq", "/api/hq/events": "hq",
 	"/api/hq/knowledge": "knowledge", "/api/hq/knowledge/entry": "knowledge", "/api/hq/memory": "archive_export",
 	"/api/push/tokens": "notification_read",

@@ -354,6 +354,15 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
     },
     [client, hq.pane_id],
   );
+  const keyRoute = useRef('');
+  keyRoute.current = `${client.base}|${hq.pane_id}`;
+  const onLoadKeys = useCallback((version?: number) => client.inputCapabilities(hq.pane_id, version), [client, hq.pane_id]);
+  const onSendKey = useCallback(async (payload: SendPayload) => {
+    const route = keyRoute.current;
+    const result = await client.sendResult(hq.pane_id, payload);
+    if (keyRoute.current === route && result.ok && result.pane) setPaneText(result.pane.text ?? '');
+    return result;
+  }, [client, hq.pane_id]);
   const command = useCallback((text: string) => sendHQ({text, enter: true}), [sendHQ]);
   // What the composer opens with: the radar's pane mention on arrival, or a board
   // item's quote when the commander chose to word a decision himself (board-ask-reply).
@@ -598,6 +607,9 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
             draftKey={hq.pane_id}
             historyScope={historyScope(hq)}
             onSend={sendHQ}
+            keyTarget={`${client.base}|${hq.pane_id}`}
+            onLoadKeys={onLoadKeys}
+            onSendKey={onSendKey}
             prefill={prefill}
           />
     </>
