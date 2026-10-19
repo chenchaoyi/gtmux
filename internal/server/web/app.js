@@ -1377,6 +1377,7 @@
     el.classList.toggle('cap-ro', !can);
     el.textContent = can ? T('⌨ can type', '⌨ 可输入') : T('👁 read-only', '👁 只读');
   }
+  var paneComposer = null;
   function updateInputBar() {
     var bar = $('pane-input'); if (!bar) return;
     var inPaneTerm = !$('pane').hidden && paneMode === 'term';
@@ -2611,7 +2612,7 @@
     // Shared composer (multiline + attach/upload + key strip) → POST /api/send. The
     // server gate (guest consent + allowlist) stays authoritative; this just targets
     // the current pane and echoes the post-send screen.
-    var paneComposer = makeComposer(function () { return curPane; }, function (text) { renderPane(text); hidePaneLoader(); }, false);
+    paneComposer = makeComposer(function () { return curPane; }, function (text) { renderPane(text); hidePaneLoader(); }, false);
     if ($('pane-input')) $('pane-input').appendChild(paneComposer.el);
     $('jump').onclick = function () { if (term) term.scrollToBottom(); updateJump(false); };
   }
