@@ -41,6 +41,14 @@ gtmux logo · 布局预设下拉（Frontend trio…）· 贴齐网格开关 · �
 - 可收起：头部 ⇤ 收入；收起后画板左缘留带 waiting 计数的小标签（⇥）可重开。
 - 可调宽：右缘 col-resize 拖柄，记住宽度（localStorage）。窄于 900px 时，顶层页面改用单栏雷达，不显示工作台。
 
+### Native 启动宿主历史观察
+
+有有效 `launch_host` 时，副标题显示 harness 与宿主，例如 `Codex · sample-client`；
+控制端未确认且没有宿主证据时，显示 `Codex · 外部会话`。对话详情列出宿主记录时间，
+并保留“当前输入客户端未确认”。来源名称不改变任何操作权限；识别只在 Go 核心完成，
+界面不查进程树。提取方法与隐私边界见[agent 接入说明](../guides/agent-integrations.zh.md#外部对话从哪里启动)。
+这份观察可能已经过时，不能用它确认当前控制端。
+
 ## 3. 自由画板
 
 - 每块 tile = 一个 pane 的实时 xterm 镜像（复用现有 `app.js` 的 xterm 写入 + 滚动锁定）。

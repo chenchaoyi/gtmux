@@ -1,3 +1,2 @@
-• Read verified DeepSeek Harness conversations alongside Codex histories, with the official DeepSeek icon.
-• Choose follow, notifications and future knowledge retention separately for each external conversation.
-• External conversations stay read-only; continue interacting in the original client.
+• External conversations show the observed launch application or executable when available, with its observation time in details.
+• Unknown sources appear as external sessions. Current input ownership and read-only controls remain explicit.

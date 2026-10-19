@@ -48,10 +48,12 @@ func TestBindingRetiresExactProvisionalObservation(t *testing.T) {
 }
 
 func TestBindingPreservesRealAndUnprovenNativeObservations(t *testing.T) {
-	for _, kind := range []string{"process", "terminal", "turn", "working", "stop", "newer", "too old", "other cwd", "other agent", "legacy startup", "delayed startup"} {
+	for _, kind := range []string{"launch host", "process", "terminal", "turn", "working", "stop", "newer", "too old", "other cwd", "other agent", "legacy startup", "delayed startup"} {
 		t.Run(kind, func(t *testing.T) {
 			b, r := retirementFixture(t)
 			switch kind {
+			case "launch host":
+				r.LaunchHost.Name = "sample-client"
 			case "process":
 				r.PID = 123
 			case "terminal":

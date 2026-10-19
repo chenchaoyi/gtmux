@@ -154,6 +154,7 @@ struct Agent: Identifiable, Equatable {
     var homeID = ""
     var creationClient = ""
     var currentClient = ""
+    var launchHost: LaunchHost?
     var canReadConversation: Bool?
     var client = ""  // native Codex origin: chatgpt_desktop | terminal
     var tab = ""
@@ -234,6 +235,7 @@ extension Agent: Decodable {
         source = (try? c.decode(String.self, forKey: .source)) ?? "tmux"
         role = s(.role)
         homeID = s(.homeID); creationClient = s(.creationClient); currentClient = s(.currentClient)
+        launchHost = try? c.decode(LaunchHost.self, forKey: .launchHost)
         canReadConversation = try? c.decode(Bool.self, forKey: .canReadConversation)
         follow = try? c.decode(SessionFollowSettings.self, forKey: .follow)
         project = s(.project); terminal = s(.terminal); client = s(.client); tab = s(.tab)
@@ -247,6 +249,7 @@ extension Agent: Decodable {
         watched = b(.watched)
     }
     enum CodingKeys: String, CodingKey {
+        case launchHost = "launch_host"
         case homeID = "home_id", creationClient = "creation_client", currentClient = "current_client", canReadConversation = "can_read_conversation"
         case paneID = "pane_id"
         case session, window, pane, loc, agent, status, task, latest, activity, watched

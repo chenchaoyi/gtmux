@@ -108,6 +108,7 @@ focused or sent input.
 | `terminal` | string? | native session's hosting terminal display name, sensed from the hook's environment/ancestry; absent when unrecognized. It does not make the row focusable. |
 | `client` | string? | native Codex creation metadata (legacy compatibility): `chatgpt_desktop` for matching rollout metadata's exact `codex_work_desktop` or `Codex Desktop` originator, `terminal` for `codex-tui`; otherwise absent. `source` remains `native`. Creation metadata never proves current ownership. |
 | `creation_client` | string? | Explicit creation source; same values as legacy `client`. Never current control. |
+| `launch_host` | object? | Historical native hosting observation: `name` (display string, ≤80 Unicode characters), `kind` (`app` or `process`), `observed_at` (positive Unix seconds). Absent when unknown. No PID, process birth time, executable path or arguments. Display-only; does not establish current ownership, liveness, pane binding or action authority. |
 | `current_client` | string? | Native Codex and DeepSeek Harness currently emit `unconfirmed`; the public protocol cannot establish a frontend owner. |
 | `home_id` | string? | Opaque canonical conversation-home identity (agent-specific). Pair with server and `session_id`; never merge copies across homes. |
 | `can_read_conversation` | bool? | Verified public history in this server's configured Codex or DSH home. Read-only; no input or consent grant. |

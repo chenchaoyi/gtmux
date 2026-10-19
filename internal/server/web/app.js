@@ -329,8 +329,24 @@
     if (isNative(a)) return a.project || a.terminal || '';
     return a.session || a.loc || a.pane_id || '';
   }
+  function launchHost(a) {
+    var h = a && a.launch_host;
+    return h && typeof h.name === 'string' && h.name && Array.from(h.name).length <= 80 && (h.kind === 'app' || h.kind === 'process') && Number.isSafeInteger(h.observed_at) && h.observed_at > 0 ? h : null;
+  }
+  function nativeSourceLabel(a) {
+    var h = launchHost(a);
+    if (h) return a.agent + ' · ' + h.name;
+    if (a.current_client === 'unconfirmed') return a.agent + ' · ' + T('External session', '外部会话');
+    return [a.agent, a.terminal].filter(Boolean).join(' · ');
+  }
+  function nativeEvidenceLabel(a) {
+    var h = launchHost(a), parts = [];
+    if (h) parts.push(T('Launch host: ', '启动宿主：') + h.name + T(' · observed ', ' · 记录于 ') + new Date(h.observed_at * 1000).toLocaleString(ZH ? 'zh' : 'en'));
+    if (a && a.current_client === 'unconfirmed') parts.push(T('Current input client unconfirmed', '当前输入客户端未确认'));
+    return parts.join(' · ');
+  }
   function secondary(a) {
-    if (isNative(a)) return a.terminal || a.agent || ''; // sensed agent, no pane locator
+    if (isNative(a)) return nativeSourceLabel(a); // sensed agent, no pane locator
     var b = a.session || a.loc || '';
     return a.pane_id ? b + ' · ' + a.pane_id : b;
   }
@@ -527,7 +543,7 @@
     text.appendChild(p); text.appendChild(s);
 
     var right = document.createElement('div'); right.className = 'right';
-    if (isNative(a) && a.current_client === 'unconfirmed') { var origin = document.createElement('span'); origin.className = 'task'; origin.textContent = T('Client unconfirmed', '控制端未确认'); s.appendChild(origin); }
+    if (isNative(a) && (a.current_client === 'unconfirmed' || launchHost(a))) { var origin = document.createElement('span'); origin.className = 'task'; origin.textContent = nativeSourceLabel(a); s.appendChild(origin); }
     // An unknown completion must not be dated by a window repaint.
     var t = relTime(a.since || (a.status !== 'idle' ? a.activity_at : 0));
     if (t) { var tm = document.createElement('span'); tm.className = 'time'; tm.textContent = t; right.appendChild(tm); }
@@ -549,7 +565,7 @@
 
   function renderRadar(agents) {
     // only repaint when something actually changed (avoids list flicker every poll)
-    var sig = JSON.stringify(agents.map(function (a) { return [a.pane_id, a.source, a.session_id, a.home_id, a.current_client, a.client, a.follow, a.project, a.terminal, a.status, a.task, a.since, a.icon, a.error, a.error_text, a.bg, a.bg_count, a.bg_text]; }));
+    var sig = JSON.stringify(agents.map(function (a) { return [a.pane_id, a.source, a.session_id, a.home_id, a.current_client, a.launch_host, a.client, a.follow, a.project, a.terminal, a.status, a.task, a.since, a.icon, a.error, a.error_text, a.bg, a.bg_count, a.bg_text]; }));
     if (sig === lastSig) return;
     lastSig = sig;
     // tmux agents bucket by status; native (non-tmux) agents are SENSED read-only, so
@@ -1594,7 +1610,7 @@
     $('mode').hidden = true;
     $('panes-btn').hidden = true;
     $('title').textContent = primary(a) || a.agent;
-    $('sub').textContent = a.agent;
+    $('sub').textContent = nativeSourceLabel(a);
     externalEtag = '';
     externalDropped = 0;
     externalSettings = null;
@@ -1696,10 +1712,10 @@
         if (!current(true) || !Array.isArray(rows)) return;
         var next = rows.find(function (row) {return row.source === 'native' && row.session_id === a.session_id && row.home_id === a.home_id;});
         if (!next) return;
-        var changed = next.status !== a.status || next.task !== a.task || next.can_read_conversation !== a.can_read_conversation;
+        var changed = next.status !== a.status || next.task !== a.task || next.can_read_conversation !== a.can_read_conversation || next.current_client !== a.current_client || JSON.stringify(next.launch_host) !== JSON.stringify(a.launch_host);
         curAgent = next;
         if (!readableConversation(next)) {lastTurns = []; externalSettings = null;}
-        if (changed) {$('title').textContent = primary(next) || next.agent; drawChat(lastTurns);}
+        if (changed) {$('title').textContent = primary(next) || next.agent; $('sub').textContent = nativeSourceLabel(next); drawChat(lastTurns);}
       }).catch(function () {});
     });
   }
@@ -1707,6 +1723,9 @@
     var box = el('div', 'external-controls'),
       msg = el('p', '', T('Read only · Continue in the original client', '只读 · 请在原客户端继续对话'));
     box.appendChild(msg);
+    if (curAgent) box.appendChild(el('p', '', nativeSourceLabel(curAgent)));
+    var evidence = nativeEvidenceLabel(curAgent);
+    if (evidence) box.appendChild(el('p', '', evidence));
     if (externalDropped > 0) box.appendChild(el('p', '', T('Earlier messages omitted', '已省略部分较早对话')));
     if (externalError) box.appendChild(el('p', '', externalError));
     var titles = {
@@ -2222,7 +2241,7 @@
     row.appendChild(avatarEl(a, 24, true));
     var tx = document.createElement('div'); tx.className = 'tr-text';
     var nm = document.createElement('div'); nm.className = 'tr-name'; nm.textContent = primary(a);
-    var sb = document.createElement('div'); sb.className = 'tr-sub'; sb.textContent = hasPane(a) ? a.pane_id + (a.agent ? ' · ' + shortAgent(a.agent) : '') : [a.agent, T('Status only', '仅显示状态')].filter(Boolean).join(' · ');
+    var sb = document.createElement('div'); sb.className = 'tr-sub'; sb.textContent = hasPane(a) ? a.pane_id + (a.agent ? ' · ' + shortAgent(a.agent) : '') : [nativeSourceLabel(a), T('Status only', '仅显示状态')].filter(Boolean).join(' · ');
     tx.appendChild(nm); tx.appendChild(sb); row.appendChild(tx);
     if (!hasPane(a)) { row.classList.add('native'); if(readableConversation(a)){row.onclick=function(){openConversation(a);};row.tabIndex=0;row.setAttribute('role','button');row.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();openConversation(a);}};} return row; }
     var g = document.createElement('span'); g.className = 'tr-grip'; g.textContent = '⠿'; row.appendChild(g);

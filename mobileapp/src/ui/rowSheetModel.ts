@@ -8,7 +8,7 @@
 // that is not merely terse, it is wrong: a sensed session cannot be jumped to, and a
 // plain pane has no agent status to report.
 
-import {Agent, primary, secondary} from '../api/types';
+import {Agent, primary, secondary, nativeEvidenceLabel} from '../api/types';
 import {Lang, statusLabel} from '../i18n';
 
 // The actions are what you can DO to a session from the list, ordered by how often you
@@ -88,6 +88,7 @@ export function buildRowSheet(a: Agent, lang: Lang, nowSecs: number): RowSheetMo
     ? (primary(a) || a.agent)
     : (a.session ? `${a.session} · ${a.pane_id}` : a.pane_id);
   const whereParts = [a.project, a.branch].filter(Boolean);
+  if (native && nativeEvidenceLabel(a, lang)) whereParts.push(nativeEvidenceLabel(a, lang));
   if (native) whereParts.unshift(zh ? '不在 tmux 里' : 'not in tmux');
   if (native && (a.current_client || a.client === 'chatgpt_desktop' || a.client === 'terminal')) {
     whereParts.splice(1, 0, secondary(a, lang));

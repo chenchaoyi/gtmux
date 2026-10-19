@@ -26,6 +26,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/launchhost"
 	"github.com/chenchaoyi/gtmux/internal/native"
 	"github.com/chenchaoyi/gtmux/internal/notify"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
@@ -538,12 +539,12 @@ func argsHave(args []string, flag string) bool {
 // returns immediately — so a Codex SYNC hook does not block Codex's turn on the tmux
 // captures/nudges. Returns false if it could not start (caller then runs synchronously).
 // darwin-only build (goreleaser targets darwin), so SysProcAttr.Setsid is available.
-func startDetachedHookWorker(args []string, payload []byte) bool {
+func startDetachedHookWorker(args []string, payload []byte, origin launchhost.Evidence) bool {
 	exe, err := os.Executable()
 	if err != nil {
 		return false
 	}
-	return spawnDetached(exe, append([]string{"hook", "--detached"}, args...), payload)
+	return spawnDetached(exe, append([]string{"hook", "--detached"}, args...), payload, launchHostEnv+"="+launchhost.Encode(origin))
 }
 
 // spawnDetached starts exe in its own session with payload as its stdin, and returns
@@ -556,7 +557,7 @@ func startDetachedHookWorker(args []string, payload []byte) bool {
 // UserPromptSubmit records in two days carried a summary), which left every Codex
 // delivery without its receipt and made `gtmux send` and the HQ wake judge by the screen
 // alone. A file has no copier: the worker reads the bytes whenever it gets to them.
-func spawnDetached(exe string, argv []string, payload []byte) bool {
+func spawnDetached(exe string, argv []string, payload []byte, extraEnv ...string) bool {
 	f, err := payloadFile(payload)
 	if err != nil {
 		return false
@@ -564,6 +565,7 @@ func spawnDetached(exe string, argv []string, payload []byte) bool {
 	defer f.Close() // the worker holds its own copy of the descriptor
 	cmd := exec.Command(exe, argv...)
 	cmd.Stdin = f // discard stdout/stderr (nil)
+	cmd.Env = append(os.Environ(), extraEnv...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 	if err := cmd.Start(); err != nil {
 		return false
@@ -633,13 +635,23 @@ func Run(stdin io.Reader, args []string) int {
 			}
 		}
 	}
+	// Capture historical ancestry before setsid/reparenting loses the launch chain.
+	originEvent := rawEvent
+	if originEvent == "" {
+		var head struct {
+			Event string `json:"hook_event_name"`
+		}
+		_ = json.Unmarshal(raw, &head)
+		originEvent = head.Event
+	}
+	origin := hookLaunchHost(agentKey, originEvent, argsHave(args, "--detached"))
 	// Codex hooks are installed SYNC (Codex 0.146.0 SKIPS async hooks — see
 	// agent_hooks.go), so a codex hook BLOCKS Codex's turn until this process returns. Keep
 	// the turn fast: re-exec ourselves DETACHED to do the slow (tmux-capturing) work and
 	// return immediately. `--detached` marks the worker so it never re-detaches; gated to
 	// codex so Claude/others' hook path is untouched. On any detach failure we fall through
 	// and run synchronously with the already-buffered `raw`.
-	if shouldDetachCodexHook(agentKey, args) && startDetachedHookWorker(args, raw) {
+	if shouldDetachCodexHook(agentKey, args) && startHookWorker(args, raw, origin) {
 		return 0
 	}
 	// A detached worker that read nothing lost its payload on the way: say so, or the event
@@ -958,13 +970,17 @@ func Run(stdin io.Reader, args []string) int {
 		}
 		if st, remove := nativeStateFor(event); !remove && st != "" {
 			pid, comm := agentAncestorPID()
+			host := previous.LaunchHost
+			if launchIdentityEvent(originEvent) {
+				host = origin
+			}
 			// Skip an agent's internal warm-spare/pool process (Claude's "bg-spare"):
 			// it fires hooks with a session id but is never a real user-facing session
 			// (no conversation), so recording it would pop a phantom "native" radar row.
 			if !isSpareProcess(comm) {
 				if err := native.Save(native.Record{
 					Agent: agentKey, SessionID: agentSession, Cwd: resumeCwd,
-					HomeID: homeID, CreationClient: creationClient,
+					HomeID: homeID, CreationClient: creationClient, LaunchHost: host,
 					Event: event,
 					State: st, UpdatedAt: time.Now().Unix(), PID: pid, Comm: comm,
 					EndReason: turnOutcome(event), TurnID: nativeTurnID,

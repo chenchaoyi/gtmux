@@ -7,7 +7,7 @@ order: 6
 **English** · [中文](agent-integrations.zh.md)
 
 This is the central map of gtmux's agent integrations. It describes the implementation
-shipped in **v1.0.128**, checked against the source on **2026-10-19**. “Supported” has
+in this checkout, checked against the source on **2026-10-19**. “Supported” has
 several meanings: recognising a process, receiving events, reading a conversation and
 controlling a session are separate capabilities. The 14 entries below include the
 limited integrations, so a registered name is never mistaken for full support.
@@ -46,6 +46,50 @@ An external history has no input route merely because it is readable. Codex and 
 follow grants are scoped to the agent, canonical data home and conversation. HQ
 observation, notifications and future knowledge retention require their respective
 grants; they grant no takeover permission. Guest links cannot read these histories.
+
+## Where an external conversation was launched
+
+The harness remains the identity: a row can say `Codex · sample-client` without
+adding a new agent integration for that client. `launch_host` describes **where a
+hook observed the agent being hosted**, not which frontend currently owns the input.
+When current input ownership is unconfirmed and there is no host observation, the
+subtitle says `Codex · External session`. Details retain “Current input client
+unconfirmed” and show the host observation time when available.
+
+The shared Go collector (`internal/launchhost`, called by `internal/hook`) works as follows:
+
+1. At a `SessionStart`, `UserPromptSubmit` or explicit `Resumed` hook, start at the
+   hook's parent process. Capture before Codex's worker detaches, since reparenting
+   loses the original ancestry. The detached worker receives a bounded, fresh internal
+   environment value; it does not try to reconstruct its former parent chain.
+2. Read at most eight ancestors, with one 350 ms deadline. Each `ps` query requests
+   only the parent PID, process birth time and executable command name (`comm`),
+   never the full arguments. Each command's stdout is capped at 4 KiB. This follows
+   only the hook's ancestry; it does not enumerate other processes or open files.
+3. Match the agent executable against the existing registry. Skip ordinary shells
+   and launch shims. After the agent, prefer the outer enclosing macOS `.app` name
+   from `CFBundleDisplayName`, then `CFBundleName`, then the bundle basename. The plist
+   must be a regular file no larger than 256 KiB. Otherwise use the executable basename.
+   Linux uses the basename. Generic runtimes such as `node` or `python`, a tmux/service
+   boundary, invalid names, missing parents, cycles or excessive depth leave the host
+   unknown. A runtime inside an identifiable macOS app may use that app's name.
+4. Re-read the sampled chain before accepting it. Any changed parent, command or birth
+   time discards the observation. PID and birth-time snapshots stay in the private
+   native record; CLI JSON and HTTP expose only `{name, kind, observed_at}`, with kind
+   `app` or `process` and Unix seconds. No executable path or full argument list is sent.
+
+Non-identity hooks preserve the old observation and its original timestamp. A new
+identity hook replaces it, including clearing it if the new source cannot be established.
+Old records are not backfilled: another natural identity hook is needed. History-only
+discovery without hooks cannot supply this evidence, and a process hidden behind an
+unidentifiable interpreter stays unknown. No extra source-detection plugin is installed.
+
+Process birth times have the system’s second-level precision. Names and bundle
+metadata can be changed by their owner. These are best-effort historical
+display hints, not authenticated application identity, proof of current attachment or
+liveness, or permission to send, follow, adopt or bind a pane. Multiple conversations can
+share the same host process. Creation metadata, host evidence and current control remain
+separate. Terminal, menu bar, phone, iPad and Web all consume the same core projection.
 
 ## Capability map
 

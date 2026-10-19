@@ -1,4 +1,4 @@
-import {toAgent, agentId, primary, secondary, serverModeNeedsAttention, paneRowToAgent, paneLabel, isHQPane, paneSessionTitle, PaneRow, nativeReadOnlyNotice, sameAgent} from './types';
+import {toAgent, agentId, primary, secondary, serverModeNeedsAttention, paneRowToAgent, paneLabel, isHQPane, paneSessionTitle, PaneRow, nativeReadOnlyNotice, sameAgent, nativeEvidenceLabel} from './types';
 
 describe('toAgent', () => {
   it('decodes a fully populated agent', () => {
@@ -412,5 +412,18 @@ test('native Codex scope separates equal IDs and creation does not claim current
   const b = toAgent({...a, home_id: 'home-b'});
   expect(agentId(a)).not.toBe(agentId(b));
   expect(sameAgent(a, b)).toBe(false);
-  expect(secondary(a, 'zh')).toBe('Codex · 控制端未确认');
+  expect(secondary(a, 'zh')).toBe('Codex · 外部会话');
+});
+
+
+test('launch host is historical display metadata, not an input permission', () => {
+  const a = toAgent({agent: 'Codex', source: 'native', current_client: 'unconfirmed', can_read_conversation: true, launch_host: {name: 'sample-client', kind: 'process', observed_at: 1700000000}});
+  expect(secondary(a)).toBe('Codex · sample-client');
+  expect(a.current_client).toBe('unconfirmed'); expect(a.adoptable).toBeUndefined();
+  expect(nativeEvidenceLabel(a)).toContain('observed'); expect(nativeEvidenceLabel(a)).toContain('Current input client unconfirmed');
+  expect(nativeEvidenceLabel(a, 'zh')).toContain('记录于');
+  for (const h of [{name: 'sample-client', kind: 'unknown', observed_at: 1}, {name: 'sample-client', kind: 'process', observed_at: -1}, {name: 'x'.repeat(81), kind: 'process', observed_at: 1}]) {
+    expect(toAgent({launch_host: h}).launch_host).toBeUndefined();
+  }
+  expect(secondary(toAgent({...a, launch_host: undefined}))).toBe('Codex · External session');
 });

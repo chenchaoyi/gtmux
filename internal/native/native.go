@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/diag"
+	"github.com/chenchaoyi/gtmux/internal/launchhost"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
@@ -32,17 +33,18 @@ const StaleAfter = 12 * time.Hour
 
 // Record is one agent session sensed outside tmux.
 type Record struct {
-	HomeID         string `json:"home_id,omitempty"`         // opaque Codex home scope, empty on legacy/other agents
-	CreationClient string `json:"creation_client,omitempty"` // creation metadata, never current ownership
-	Revision       string `json:"revision,omitempty"`        // unique write generation, including same-second updates
-	Event          string `json:"event,omitempty"`           // accepted hook; legacy records have no event
-	Agent          string `json:"agent"`                     // agent key (claude/codex/…)
-	SessionID      string `json:"sessionId"`                 // the agent's session id (the record key)
-	Cwd            string `json:"cwd,omitempty"`
-	State          string `json:"state"` // working | waiting | idle
-	TurnID         string `json:"turnId,omitempty"`
-	EndReason      string `json:"endReason,omitempty"` // interrupted | error; never a successful completion
-	UpdatedAt      int64  `json:"updatedAt"`           // unix seconds, last hook update
+	LaunchHost     launchhost.Evidence `json:"launch_host,omitzero"`
+	HomeID         string              `json:"home_id,omitempty"`         // opaque Codex home scope, empty on legacy/other agents
+	CreationClient string              `json:"creation_client,omitempty"` // creation metadata, never current ownership
+	Revision       string              `json:"revision,omitempty"`        // unique write generation, including same-second updates
+	Event          string              `json:"event,omitempty"`           // accepted hook; legacy records have no event
+	Agent          string              `json:"agent"`                     // agent key (claude/codex/…)
+	SessionID      string              `json:"sessionId"`                 // the agent's session id (the record key)
+	Cwd            string              `json:"cwd,omitempty"`
+	State          string              `json:"state"` // working | waiting | idle
+	TurnID         string              `json:"turnId,omitempty"`
+	EndReason      string              `json:"endReason,omitempty"` // interrupted | error; never a successful completion
+	UpdatedAt      int64               `json:"updatedAt"`           // unix seconds, last hook update
 	// Terminal is the app hosting the session ("Warp", "Ghostty", …), sensed from
 	// the hook's own environment/ancestry at record time. "" when unrecognized.
 	// Display-only (the radar row's `terminal` field); native jump stays deferred.

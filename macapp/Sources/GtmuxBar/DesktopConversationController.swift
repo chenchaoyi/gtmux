@@ -109,8 +109,12 @@ struct DesktopConversationView: View {
         let p = Theme.Palette.of(scheme)
         VStack(spacing: 0) {
             HStack {
-                Text(l10n.tr("Read only · Continue in the original client", "只读 · 请在原客户端继续对话"))
-                    .font(.caption).foregroundStyle(p.fg2)
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(nativeOriginLabel(model.agent, l10n: l10n))
+                    Text(l10n.tr("Read only · Continue in the original client", "只读 · 请在原客户端继续对话"))
+                    let evidence = nativeEvidenceLabel(model.agent, l10n: l10n)
+                    if !evidence.isEmpty { Text(evidence).textSelection(.enabled) }
+                }.font(.caption).foregroundStyle(p.fg2)
                 Spacer()
                 if model.loading { ProgressView().controlSize(.small) }
             }.padding(16)

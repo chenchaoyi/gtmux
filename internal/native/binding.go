@@ -77,7 +77,7 @@ func provisional(r Record, b Binding) bool {
 	// Without an explicit legacy start witness, only its minimal PID-less idle
 	// startup shape is eligible. Real turns/processes/terminal attachments survive.
 	return r.Agent == "codex" && r.HomeID == b.HomeID && r.SessionID == b.SessionID && r.Cwd == b.Cwd &&
-		r.PID == 0 && r.Comm == "" && r.Terminal == "" && r.State == "idle" &&
+		r.PID == 0 && r.Comm == "" && r.Terminal == "" && r.LaunchHost == (Record{}).LaunchHost && r.State == "idle" &&
 		r.TurnID == "" && r.EndReason == "" && (r.Event == "" || r.Event == "SessionStart") &&
 		r.UpdatedAt > 0 && r.UpdatedAt <= b.BoundAt && (r.Event == "SessionStart" || r.UpdatedAt <= b.PreparedAt) && r.UpdatedAt >= b.PreparedAt-600
 }

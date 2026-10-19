@@ -1174,15 +1174,6 @@ private struct NativeRowView: View {
     }
 }
 
-private func nativeOriginLabel(_ agent: Agent, l10n: L10n) -> String {
-    if agent.currentClient == "unconfirmed" { return "\(agent.agent) · \(l10n.tr("Client unconfirmed", "控制端未确认"))" }
-    switch agent.client {
-    case "chatgpt_desktop": return "\(l10n.tr("ChatGPT desktop", "ChatGPT 桌面版")) · \(agent.follow?.hq == true ? l10n.tr("HQ following", "HQ 跟进中") : l10n.tr("HQ off", "未开启 HQ 跟进"))"
-    case "terminal": return "\(agent.agent) · \(agent.terminal.isEmpty ? l10n.tr("terminal", "终端") : agent.terminal)"
-    default: return agent.terminal.isEmpty ? agent.agent : "\(agent.agent) · \(agent.terminal)"
-    }
-}
-
 /// Header for the opt-in watched-pane section (tiered-pane-control) — a hairline
 /// divider above it sets it apart from the agent sections, with a quiet "WATCHED"
 /// label so a promoted plain pane never reads as an agent.

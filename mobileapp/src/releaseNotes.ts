@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.131',
+    en: [
+      'External conversations show the observed launch application or executable when available, with its observation time in details.',
+      'Unknown sources appear as external sessions. Current input ownership and read-only controls remain explicit.',
+    ],
+    zh: [
+      '外部对话可显示曾观察到的启动应用或命令名，详情列出记录时间。',
+      '无法识别来源时显示“外部会话”，详情继续说明当前输入客户端是否已确认，并保留只读边界。',
+    ],
+  },
+  {
     version: '1.0.126',
     en: [
       'Read verified DeepSeek Harness conversations alongside Codex histories, with the official DeepSeek icon.',

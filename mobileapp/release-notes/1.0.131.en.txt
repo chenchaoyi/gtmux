@@ -1,0 +1,2 @@
+• External conversations show the observed launch application or executable when available, with its observation time in details.
+• Unknown sources appear as external sessions. Current input ownership and read-only controls remain explicit.

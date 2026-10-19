@@ -18,6 +18,21 @@ export const isDesktopSession = (a: Agent): boolean => a.source === 'native' && 
 export const canReadConversation = (a: Agent): boolean => a.source === 'native' && (a.can_read_conversation ?? (!a.current_client && a.client === 'chatgpt_desktop'));
 export const statusOnlyDesktop = (a: Agent): boolean => isDesktopSession(a) && !a.follow?.hq;
 
+export interface LaunchHost { name: string; kind: 'app' | 'process'; observed_at: number }
+export function parseLaunchHost(raw: unknown): LaunchHost | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const h = raw as Partial<LaunchHost>;
+  if (typeof h.name !== 'string' || !h.name || [...h.name].length > 80 || (h.kind !== 'app' && h.kind !== 'process') || !Number.isSafeInteger(h.observed_at) || h.observed_at! <= 0) return undefined;
+  return {name: h.name, kind: h.kind, observed_at: h.observed_at!};
+}
+// The timestamp describes a past hook observation, not the currently attached client.
+export const nativeEvidenceLabel = (a: Agent, lang: 'en' | 'zh' = 'en'): string => {
+  const h = parseLaunchHost(a.launch_host), parts: string[] = [];
+  if (h) parts.push(lang === 'zh' ? `启动宿主：${h.name} · 记录于 ${new Date(h.observed_at * 1000).toLocaleString(lang)}` : `Launch host: ${h.name} · observed ${new Date(h.observed_at * 1000).toLocaleString(lang)}`);
+  if (a.current_client === 'unconfirmed') parts.push(lang === 'zh' ? '当前输入客户端未确认' : 'Current input client unconfirmed');
+  return parts.join(' · ');
+};
+
 export interface Agent {
   pane_id: string;
   session: string;
@@ -39,6 +54,7 @@ export interface Agent {
   home_id?: string;
   creation_client?: string;
   current_client?: string;
+  launch_host?: LaunchHost;
   can_read_conversation?: boolean;
   client?: string; // native Codex origin: chatgpt_desktop | terminal
   // native only: the agent's conversation id (what `gtmux adopt` takes, and the row's
@@ -190,6 +206,7 @@ export function toAgent(raw: any): Agent {
     branch: s('branch') || undefined,
     terminal: s('terminal') || undefined,
     client: s('client') || undefined,
+    launch_host: parseLaunchHost(raw?.launch_host),
     home_id: s('home_id') || undefined, creation_client: s('creation_client') || undefined, current_client: s('current_client') || undefined,
     can_read_conversation: typeof raw?.can_read_conversation === 'boolean' ? raw.can_read_conversation : undefined,
     follow: raw?.follow && typeof raw.follow.revision === 'number' ? {hq: raw.follow.hq === true, notify: raw.follow.notify === true, knowledge: raw.follow.knowledge === true, revision: raw.follow.revision} : undefined,
@@ -238,7 +255,9 @@ export const primary = (a: Agent): string => {
 // Row line 2 (dim): where it lives — "session · %pane", or the native terminal.
 export const secondary = (a: Agent, lang: 'en' | 'zh' = 'en'): string => {
   if (isNative(a)) {
-    if (a.current_client === 'unconfirmed') return `${a.agent} · ${lang === 'zh' ? '控制端未确认' : 'Client unconfirmed'}`;
+    const host = parseLaunchHost(a.launch_host);
+    if (host) return `${a.agent} · ${host.name}`;
+    if (a.current_client === 'unconfirmed') return `${a.agent} · ${lang === 'zh' ? '外部会话' : 'External session'}`;
     if (a.client === 'chatgpt_desktop') return `${a.agent} · ${lang === 'zh' ? 'ChatGPT 桌面版' : 'ChatGPT desktop'}`;
     if (a.client === 'terminal') return `${a.agent} · ${a.terminal || (lang === 'zh' ? '终端' : 'terminal')}`;
     return a.terminal || a.agent;
