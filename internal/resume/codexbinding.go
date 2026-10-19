@@ -14,6 +14,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/agents"
+	"github.com/chenchaoyi/gtmux/internal/codexterminal"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/native"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
@@ -32,11 +34,15 @@ func (e *CodexBindingReceiptError) Unwrap() error { return e.Err }
 
 // CodexBindingTarget identifies the live pane incarnation, not just its cwd.
 type CodexBindingTarget struct {
-	Pane    string `json:"pane"`
-	Loc     string `json:"loc"`
-	Cwd     string `json:"cwd"`
-	PID     int    `json:"pid"`     // actual Codex client, not the shell
-	PanePID int    `json:"panePid"` // tmux's root process
+	Pane        string `json:"pane"`
+	Loc         string `json:"loc"`
+	Cwd         string `json:"cwd"`
+	PID         int    `json:"pid"`     // actual Codex client, not the shell
+	PanePID     int    `json:"panePid"` // tmux's root process
+	Launcher    string `json:"launcher,omitempty"`
+	ClientStart string `json:"clientStart,omitempty"`
+	RootStart   string `json:"rootStart,omitempty"`
+	TTY         string `json:"tty,omitempty"`
 }
 
 // CodexBindingIntent is a one-use witness of a specific task sent to a pane.
@@ -54,14 +60,27 @@ func codexBindingDir() string { return filepath.Join(Dir(), "codex-binding") }
 
 func codexBindingPath(token string) string { return filepath.Join(codexBindingDir(), token+".json") }
 
+var resolveWrappedCodexTarget = codexterminal.Resolve
+
 // LiveCodexBindingTarget reads identity and foreground command together. Callers
 // must not populate a live target from a stale radar snapshot or inherited env.
 func LiveCodexBindingTarget(pane string) (CodexBindingTarget, bool) {
-	f := strings.Split(tmux.Display(pane, "#{pane_id}\t#{session_name}:#{window_index}.#{pane_index}\t#{pane_current_path}\t#{pane_pid}\t#{pane_current_command}"), "\t")
-	if len(f) != 5 || f[0] != pane || f[4] != "codex" {
+	f := strings.Split(tmux.Display(pane, "#{pane_id}\t#{session_name}:#{window_index}.#{pane_index}\t#{pane_current_path}\t#{pane_pid}\t#{pane_current_command}\t#{pane_tty}"), "\t")
+	if (len(f) != 5 && len(f) != 6) || f[0] != pane {
 		return CodexBindingTarget{}, false
 	}
 	pid, _ := strconv.Atoi(f[3])
+	if f[4] != "codex" {
+		if len(f) != 6 || f[1] == "" || f[2] == "" {
+			return CodexBindingTarget{}, false
+		}
+		clients := resolveWrappedCodexTarget([]codexterminal.Pane{{ID: pane, Command: f[4], PID: pid, TTY: f[5], Cwd: f[2], Loc: f[1]}})
+		c, ok := clients[pane]
+		if !ok {
+			return CodexBindingTarget{}, false
+		}
+		return CodexBindingTarget{Pane: f[0], Loc: f[1], Cwd: f[2], PID: c.PID, PanePID: pid, ClientStart: c.Start, RootStart: c.RootStart, TTY: c.TTY, Launcher: agents.LauncherFromCommand(f[4], "codex")}, true
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	processes, err := exec.CommandContext(ctx, "ps", "-axo", "pid=,ppid=,comm=").Output()
@@ -253,7 +272,8 @@ func completeCodexBinding(scope *transcript.CodexPathScope, intent CodexBindingI
 		}
 	}
 	if sid == "" || client != "terminal" || live.Pane != intent.Pane ||
-		live.Loc != intent.Loc || live.PID != intent.PID || live.PanePID != intent.PanePID || live.PID <= 0 || !hqpane.SameDir(live.Cwd, intent.Cwd) ||
+		live.Loc != intent.Loc || live.PID != intent.PID || live.PanePID != intent.PanePID ||
+		live.ClientStart != intent.ClientStart || live.RootStart != intent.RootStart || live.TTY != intent.TTY || live.Launcher != intent.Launcher || live.PID <= 0 || !hqpane.SameDir(live.Cwd, intent.Cwd) ||
 		intent.HomeID != "" && intent.HomeID != transcript.CodexHomeID() || now < intent.CreatedAt || now-intent.CreatedAt > int64(codexBindingTTL/time.Second) {
 		return errors.New("codex binding witness does not identify this live target")
 	}
@@ -286,7 +306,7 @@ func completeCodexBinding(scope *transcript.CodexPathScope, intent CodexBindingI
 	if observation.SessionID != "" {
 		receiptHome = observation.HomeID
 	}
-	if err := writeBindingJSON(fileFor(live.Loc), Record{Agent: "codex", HomeID: transcript.CodexHomeID(), SessionID: sid, Cwd: live.Cwd, UpdatedAt: now}); err != nil {
+	if err := writeBindingJSON(fileFor(live.Loc), Record{Agent: "codex", HomeID: transcript.CodexHomeID(), SessionID: sid, Cwd: live.Cwd, UpdatedAt: now, Launcher: live.Launcher}); err != nil {
 		return err
 	}
 	if err := native.ConfirmBinding(native.Binding{HomeID: receiptHome, ID: bindingSHA(intent.Token), SessionID: sid, Pane: live.Pane, Loc: live.Loc,

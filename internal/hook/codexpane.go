@@ -5,10 +5,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/codexterminal"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
+	"strconv"
 )
 
 type codexPane struct {
@@ -83,15 +85,32 @@ func codexEndPane(expected, sessionID string, panes []codexPane, bound map[strin
 
 // codexPanes collects the live clients in one tmux call. A hook's inherited
 // TMUX_PANE can describe the app-server's first client rather than this session.
+var resolveWrappedCodex = codexterminal.Resolve
+
 func codexPanes() []codexPane {
-	lines := tmux.Lines("list-panes", "-a", "-F", "#{pane_id}\t#{pane_current_command}\t#{pane_current_path}\t#{session_name}:#{window_index}.#{pane_index}")
+	lines := tmux.Lines("list-panes", "-a", "-F", "#{pane_id}\t#{pane_current_command}\t#{pane_current_path}\t#{session_name}:#{window_index}.#{pane_index}\t#{pane_pid}\t#{pane_tty}")
 	var panes []codexPane
+	var wrapped []codexterminal.Pane
 	for _, line := range lines {
-		f := strings.SplitN(line, "\t", 4)
-		if len(f) == 4 {
-			panes = append(panes, codexPane{f[0], f[1], f[2], f[3]})
+		f := strings.Split(line, "\t")
+		if len(f) < 4 {
+			continue
+		}
+		panes = append(panes, codexPane{f[0], f[1], f[2], f[3]})
+		if f[1] != "codex" && len(f) == 6 {
+			pid, _ := strconv.Atoi(f[4])
+			wrapped = append(wrapped, codexterminal.Pane{ID: f[0], Command: f[1], PID: pid, TTY: f[5], Cwd: f[2], Loc: f[3]})
 		}
 	}
+	// The resolvers below retain all existing session/cwd guards. A generic
+	// launcher becomes a Codex candidate only through live terminal evidence.
+	verified := resolveWrappedCodex(wrapped)
+	for i := range panes {
+		if _, ok := verified[panes[i].id]; ok {
+			panes[i].command = "codex"
+		}
+	}
+
 	return panes
 }
 

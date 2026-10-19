@@ -56,6 +56,33 @@ follow grants are scoped to the agent, canonical data home and conversation. HQ
 observation, notifications and future knowledge retention require their respective
 grants; they grant no takeover permission. Guest links cannot read these histories.
 
+## Codex launched through another executable
+
+A generic launcher does not create a different harness: a wrapper that starts an
+interactive Codex in a tmux pane can use the normal Codex input, draft protection,
+hooks, conversation binding and delivery receipts. The existing launcher record
+keeps the startup executable separate from the Codex identity; no private wrapper
+brand is registered as an agent.
+
+Radar recognition alone does not enable this path. `internal/codexterminal` checks
+launcher-owned candidates with two shared process snapshots under one two-second
+budget. One Codex descendant must share the pane's controlling terminal and foreground
+process group, and its stdin must be that exact terminal. macOS reads only stdin's
+file descriptor through `lsof`; Linux reads `/proc/<pid>/fd/0`. Snapshot collection
+reads process names and birth times, never full arguments. The collector rechecks the
+ancestor identities, current pane and stdin; a new ambiguous branch also invalidates
+the result. Hook routing then keeps its existing exact-session/cwd rules, and a
+message-binding witness additionally pins client/root birth times, terminal and
+launcher. Resume recipes use the same generic launcher rules as identity hooks; a launcher with incompatible resume arguments needs its own recipe/adapter. Birth times have the OS second-level precision, so exact session/payload proof remains separate.
+
+A wrapper's pipe-backed app-server, detached worker or background Codex is not an
+interactive terminal attachment. A frontend which owns such a backend needs its own
+addressed input adapter, as dst does for DeepSeek Harness. Old external observations
+without process/attachment proof remain external: a readable history, matching working
+directory or host name cannot attach them to the current pane. No test message is
+needed to discover eligible terminal metadata; metadata discovery does not prove a
+complete model turn or delivery.
+
 ## Where an external conversation was launched
 
 The harness remains the identity: a row can say `Codex · sample-client` without

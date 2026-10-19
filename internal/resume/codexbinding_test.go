@@ -119,7 +119,7 @@ func TestCodexBindingExactPayloadAndOneUse(t *testing.T) {
 }
 
 func TestCodexBindingRejectsChangedTargets(t *testing.T) {
-	for _, kind := range []string{"pane", "loc", "pid", "pane pid", "cwd", "owner", "missing log", "desktop", "unknown", "expired", "future", "changed intent", "concurrent consumer"} {
+	for _, kind := range []string{"pane", "loc", "pid", "pane pid", "client birth", "root birth", "tty", "launcher", "cwd", "owner", "missing log", "desktop", "unknown", "expired", "future", "changed intent", "concurrent consumer"} {
 		t.Run(kind, func(t *testing.T) {
 			origin := "codex-tui"
 			if kind == "desktop" {
@@ -130,6 +130,14 @@ func TestCodexBindingRejectsChangedTargets(t *testing.T) {
 			target, wire, intent, now := bindingFixture(t, origin)
 			live, sid, at := target, "worker-session", now
 			switch kind {
+			case "client birth":
+				live.ClientStart = "changed birth"
+			case "root birth":
+				live.RootStart = "changed birth"
+			case "tty":
+				live.TTY = "changed tty"
+			case "launcher":
+				live.Launcher = "changed launcher"
 			case "pane":
 				live.Pane = "%28"
 			case "loc":
