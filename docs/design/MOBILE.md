@@ -1570,4 +1570,5 @@ profiles explain the chief-of-staff role and separate recorded message identity
 from the same connected radar's current supervisor. The global reply-fold action
 uses brand-coloured Collapse all / Expand all text. See [profile scope](agent-profiles.md#hq-identity).
 
+
 Push registration reconciliation runs in the foreground. Leaving it cancels the current request as lifecycle cancellation, stops alternate routes and keeps synchronization pending; returning to the foreground retries through the existing queue. A transport that ignores abort cannot hold the queue indefinitely. Real foreground deadlines and HTTP failures remain in Diagnostics. Mac-side route health is not phone-network acceptance.
