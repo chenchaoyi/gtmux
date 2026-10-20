@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.140',
+    en: [
+      'Usage now follows installed and observed agents, with DeepSeek Harness token totals, exact account balances and clear stale-data timestamps.',
+      'Agent and HQ profiles use a compact layout, consistent provider names and a clearer explanation of HQ responsibilities.',
+      'Push registration pauses when the app enters the background and resumes in queue order when you return.',
+    ],
+    zh: [
+      '用量根据本机安装和已观测会话调整，新增 DeepSeek Harness 会话 Token 与账户余额，并明确标注旧数据。',
+      'Agent 和 HQ 资料更紧凑，供应商品牌大小写统一，HQ 的职责介绍更清楚。',
+      '推送注册随 App 进入后台而暂停，回到前台按顺序继续同步。',
+    ],
+  },
+  {
     version: '1.0.139',
     en: [
       '- Keep tool activity in a compact folded list; inspect real command details when needed.',
