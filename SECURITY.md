@@ -29,6 +29,15 @@ identifiers (account/zone/KV IDs) — never put a token there; that file is plai
 - **`.gitignore`** blocks secret-bearing filenames (`.dev.vars`, `*.env`, `*.p8/*.p12/
   *.pem/*.key`, `AuthKey_*`, `id_rsa*`). NB: `.gitignore` allows no inline comments —
   patterns are one-per-line.
+- **Private source policy:** exact personal/operator identifiers live in the
+  `GTMUX_PRIVATE_TERMS` Actions secret or an ignored local JSON file, never in the
+  public checker. Its output withholds matched content. Repository-owned CI requires
+  the policy; forks need a maintainer's private check before merge. See [CI coverage](docs/ci.md#private-disclosure-policy).
+
+Release logs mask the derived signing identity before exporting it to later steps.
+This reduces unnecessary log disclosure; the publisher identity in a distributed
+code-signing certificate remains public by design. Cleaning current source also
+does not remove values from previously published Git history or release artifacts.
 
 ## If a secret ever lands in a commit
 

@@ -29,6 +29,23 @@ delivery helpers with synthetic credentials. `check-design.sh --source-only` omi
 compilation and transitive-import resolution; complete Go/platform gates enforce those.
 It checks mechanically verifiable claims, not whether every sentence is accurate.
 
+## Private disclosure policy
+
+Exact operator-specific names and device identifiers must not be written into the
+public checker itself. `check_private_source.py` reads a JSON list from the
+`GTMUX_PRIVATE_TERMS` Actions secret, or locally from `GTMUX_PRIVATE_TERMS_FILE`
+pointing to an ignored/private file. It checks every tracked text file, including
+checker code and fixtures, and logs only matching paths/line numbers. Policy values
+and matching source lines are never printed. Configuration/read failures fail the
+check; the design wrapper removes policy variables before running other helpers.
+
+The always-on policy job requires this configuration for repository-owned PRs,
+main pushes and manual runs. Fork PRs receive no private policy: CI explicitly
+reports that exact-term coverage was skipped. Before merging an outside
+contribution, a maintainer runs the checker against its checkout with the private
+policy. This is a targeted current-source guard, not general secret detection,
+image inspection or a Git-history scrub. GitHub secret scanning remains separate.
+
 ## Reading the result
 
 `ci-required` is the stable aggregate. Scope, policy and all selected jobs must succeed;
