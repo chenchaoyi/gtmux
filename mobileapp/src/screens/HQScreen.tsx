@@ -80,7 +80,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
   // width beneath it, and the two zones the phone puts behind tabs sit in an inspector on
   // the right. Nothing folds — the header is not competing with a phone's height.
   const regular = layout === 'regular';
-  const {client, agents, conn, demo} = useAgents();
+  const {client, agents, conn, demo, isGuest} = useAgents();
   const {pal, lang} = useApp();
   const zh = lang === 'zh';
   const t = (en: string, cn: string) => (zh ? cn : en);
@@ -536,7 +536,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
     }
   };
   const consoleEl = (topPad: number, onEdge?: (gap: number) => void) => (
-    <ChatView
+    <ChatView client={isGuest ? undefined : client}
               agent={live}
               lines={hqPaneLines}
               status={live.status}

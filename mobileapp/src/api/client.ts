@@ -1,3 +1,4 @@
+import type {ParticipantProfile} from './types';
 import type {AccessPage, AccessFilter} from './accessHistory';
 import {parseInputCapabilities, type InputCapabilities, type InputContext, type TerminalKeyEvent} from './terminalKeys';
 // GtmuxClient — every /api/* call sends `Authorization: Bearer <token>`.
@@ -421,6 +422,7 @@ export interface TranscriptSender {
   pane?: string; // the sending pane, when it has one
 }
 export interface TranscriptTurn {
+  session_id?: string; // source conversation, including stitched history
   prompt: string;
   agent?: string; // agent that owned this turn's session, even across HQ handoffs
   from?: TranscriptSender;
@@ -648,6 +650,17 @@ export class GtmuxClient {
     } catch {
       return {addresses: []};
     }
+  }
+
+  async participantProfile(target: {id?: string; session_id?: string; home_id?: string; at?: string}, signal?: AbortSignal): Promise<ParticipantProfile> {
+    const query = Object.entries(target).filter(([, v]) => v).map(([k, v]) => `${k}=${encodeURIComponent(v!)}`).join('&');
+    const r = await tfetch(`${this.base}/api/participant-profile?${query}`, {headers: this.h(), signal});
+    if (!r.ok) throw new ApiError(r.status, 'participant-profile');
+    const value = await r.json();
+    if (typeof value?.agent !== 'string' || typeof value?.name !== 'string' || !Array.isArray(value?.facts)) throw new Error('Invalid participant profile');
+    return {...value, facts: value.facts.slice(0, 32).filter((f: any) => typeof f?.key === 'string' && typeof f?.value === 'string' && typeof f?.source === 'string'),
+      execution_chain: Array.isArray(value.execution_chain) ? value.execution_chain.slice(0, 8).filter((p: any) => typeof p?.name === 'string').map((p: any) => ({name: p.name, path: typeof p.path === 'string' ? p.path : undefined, arguments: Array.isArray(p.arguments) ? p.arguments.filter((a: unknown) => typeof a === 'string').slice(0, 16) : []})) : [],
+    };
   }
 
   async agents(signal?: AbortSignal): Promise<Agent[]> {

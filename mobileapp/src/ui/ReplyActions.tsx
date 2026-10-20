@@ -1,11 +1,11 @@
 // Actions apply to the complete textual reply, including collapsed segments.
 import React, {useEffect, useState} from 'react';
-import {AccessibilityInfo, Alert, Share, StyleSheet, TouchableOpacity, View} from 'react-native';
+import {AccessibilityInfo, Alert, Share, StyleSheet, TouchableOpacity, View, Text} from 'react-native';
 import Clipboard from '@react-native-clipboard/clipboard';
-import {CheckIcon, CopyIcon, ShareIcon} from './Icons';
+import {CheckIcon, CopyIcon, ShareIcon, Chevron} from './Icons';
 import type {Lang} from '../i18n';
 
-export function ReplyActions({text, lang}: {text: string; lang: Lang}) {
+export function ReplyActions({text, lang, open = true, onToggle}: {text: string; lang: Lang; open?: boolean; onToggle?: () => void}) {
   const [copied, setCopied] = useState<string | null>(null);
   const zh = lang === 'zh';
   const done = copied === text;
@@ -33,11 +33,19 @@ export function ReplyActions({text, lang}: {text: string; lang: Lang}) {
         }}>
         <ShareIcon size={17} color={FG} />
       </TouchableOpacity>
+      {onToggle && <TouchableOpacity testID="reply-fold" accessibilityRole="button" accessibilityState={{expanded: open}}
+        accessibilityLabel={open ? (zh ? '收起本轮' : 'Collapse this reply') : (zh ? '展开本轮' : 'Expand this reply')}
+        style={styles.fold} activeOpacity={0.6} onPress={onToggle}>
+        <View style={{transform: [{rotate: open ? '-90deg' : '90deg'}]}}><Chevron size={16} color={FG} /></View>
+        <Text style={styles.foldLabel}>{open ? (zh ? '收起本轮' : 'Collapse reply') : (zh ? '展开本轮' : 'Expand reply')}</Text>
+      </TouchableOpacity>}
     </View>
   );
 }
 const FG = 'rgba(235,235,245,0.6)';
 const styles = StyleSheet.create({
-  row: {flexDirection: 'row', flexWrap: 'wrap', marginLeft: 34, marginTop: -4, gap: 4},
+  row: {flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', marginLeft: 52, marginTop: -6, paddingHorizontal: 4, gap: 2, backgroundColor: '#1C1C1F', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#414147', borderBottomLeftRadius: 13, borderBottomRightRadius: 13},
+  fold: {marginLeft: 'auto', minHeight: 44, paddingHorizontal: 10, flexDirection: 'row', gap: 6, alignItems: 'center'},
+  foldLabel: {fontSize: 12, color: FG},
   button: {minHeight: 44, minWidth: 44, alignItems: 'center', justifyContent: 'center'},
 });

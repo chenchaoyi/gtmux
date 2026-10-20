@@ -394,3 +394,11 @@ export interface HostInfo {
  */
 export type HostAnswer = {ok: true; info: HostInfo} | {ok: false; why: 'old' | 'guest' | 'auth' | 'unreachable'};
 
+
+// Owner-only participant facts. Timestamps are Unix milliseconds; absent facts are unknown.
+export interface ProfileFact {key: string; value: string; source: string; observed_at?: number}
+export interface ParticipantProfile {
+  agent: string; name: string; session_id: string; historical: boolean;
+  facts: ProfileFact[]; execution_chain?: {name: string; path?: string; arguments?: string[]}[];
+  chain_observed_at?: number; partial?: boolean; unavailable?: boolean;
+}

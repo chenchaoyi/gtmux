@@ -451,6 +451,35 @@ Clients preserve loaded history on transient failure and stop/ignore requests af
 closing or changing the selected Mac/conversation. Desktop follow settings remain
 independent. This batch wires Mac CLI and mobile readers; Web stays diagnostic.
 
+### `GET /api/participant-profile` — observed participant facts
+
+Owner/paired-device GET only (`403` for guests; `405` for other methods). Successful
+responses use `Cache-Control: no-store`. Supply `id=%N` for a verified live pane,
+or `session_id` plus optional opaque `home_id` for a verified external conversation.
+For a historical avatar, send the turn's `session_id` and exact RFC3339 `at`; it
+must identify one loaded turn. HQ predecessor sessions must belong to the verified
+HQ chain. An invalid query returns `400`, unavailable reader `503`, and unverified
+or ambiguous identity `422` with no private filesystem details.
+
+```json
+{"agent":"codex","name":"Codex","session_id":"thread-id","historical":true,
+ "facts":[{"key":"model","value":"recorded-model","source":"session_log","observed_at":1792454400000}]}
+```
+
+Facts are agent-specific, optional observations. `subscription` from
+`session_rate_limits` means that session's recorded tier, not a live account check.
+`partial` marks limited/unsupported coverage; `unavailable` marks a source I/O
+failure. Current-only `execution_chain` contains up to eight `{name,path?,arguments?}`
+observations and `chain_observed_at`. Times here are Unix **milliseconds**. No raw
+argv, prompts, credentials or arbitrary configuration are returned. Copyable chain
+text is sanitized observation, not an executable recipe. Historical responses never
+borrow the current runtime chain or current hook snapshot. Reads do not enroll a
+session, grant input, install hooks, or execute version probes/model turns.
+
+Transcript turns additionally carry optional `session_id` identifying their source
+session, including stitched HQ predecessors. Older clients may ignore it; avatars
+without source/time evidence show identity without guessing historical facts.
+
 ### `GET /api/transcript?id=%N` — the pane's parsed chat history (read-only)
 
 Parses the agent's on-disk session log for the pane's cwd/session into an ordered
