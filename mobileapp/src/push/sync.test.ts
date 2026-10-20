@@ -130,3 +130,16 @@ it('does not start a push request while already backgrounded', async () => {
  try {const factory=jest.fn();expect(await syncServerPush(server,'apns',true,[],'production',factory)).toBe(false);expect(factory).not.toHaveBeenCalled();}
  finally {AppState.currentState=original;}
 });
+
+it('a request rejected just before a brief inactive interval cannot start an old alternate attempt', async () => {
+ const original=AppState.currentState;AppState.currentState='active';
+ let changed:(state:AppStateStatus)=>void=()=>{};
+ const listener=jest.spyOn(AppState,'addEventListener').mockImplementation((_event,fn)=>{changed=fn;return {remove:jest.fn()};});
+ const factory=jest.fn(():PushTarget=>({registerPush:async()=>{throw new Error('network');},unregisterPush:async()=>false}));
+ try {
+  const pending=syncServerPush(server,'apns',true,['done'],'production',factory);
+  AppState.currentState='inactive';changed('inactive');
+  AppState.currentState='active';changed('active');
+  expect(await pending).toBe(false);expect(factory).toHaveBeenCalledTimes(1);
+ } finally {listener.mockRestore();AppState.currentState=original;}
+});

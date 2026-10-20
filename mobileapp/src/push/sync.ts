@@ -74,6 +74,7 @@ export async function syncServerPush(
       if (paused || !foreground()) return false;
       if (ok) return true;
     } catch {
+      if (paused || !foreground()) return false;
       // Offline or old route: try the next reported address.
     } finally {
       clearTimeout(timer);
