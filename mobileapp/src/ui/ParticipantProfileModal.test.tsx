@@ -27,7 +27,7 @@ test('human and historical sender never request another runtime profile', async 
   await act(async () => tree.update(<ParticipantProfileModal target={{kind: 'sender', agent, sender: {kind: 'hq', label: 'HQ'}}} client={client} lang="zh" onClose={() => {}} />));
   expect(read).not.toHaveBeenCalled();
   expect(text()).toContain('HQ');
-  expect(text()).toContain('gtmux 参谋长');
+  expect(text()).toContain('gtmux 协调 Agent');
   expect(text()).toContain('审阅回执');
   expect(text()).toContain('暂无已确认的在线实例');
 });

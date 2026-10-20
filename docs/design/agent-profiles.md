@@ -66,7 +66,7 @@ the same two-column layout without leaving empty slots; larger Dynamic Type uses
 Subscription, task mode, permission policy, and reasoning options are distinct.
 `Pro`, `Plan`, `yolo`, and `high` must not become one “Plan” property. Thinking
 enabled, token budget, and model variant are not interchangeable effort levels.
-Preserve raw provider values; presentation uses OpenAI, Anthropic, DeepSeek and Google for those known IDs, leaving custom IDs literal. Use “Reasoning effort” only for an explicit effort field.
+Preserve raw provider values; presentation uses OpenAI, Anthropic, DeepSeek, DeepSeek Account and Google for those known IDs, leaving custom IDs literal. Use “Reasoning effort” only for an explicit effort field.
 
 Opening a message avatar describes **that participant at that message**. Current
 runtime facts may appear separately with that label; today's installed binary,
@@ -271,7 +271,7 @@ does not itself apply new hooks to user configuration.
 
 ## HQ identity
 
-HQ is the gtmux chief-of-staff role, not a separate harness. Its profile explains
+HQ retains its single name, with “gtmux coordinating agent” as the role subtitle. It is not a separate harness. Its profile explains
 coordination, progress follow-up, report review and escalation of user decisions.
 On the HQ conversation itself, the recorded reply/profile identifies the harness;
 its facts retain the ordinary historical/current scope.

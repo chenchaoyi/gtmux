@@ -39,7 +39,7 @@ export function ParticipantProfileModal({target, client, lang, onClose}: {target
             <View style={!human && styles.flex}>
             <Text accessibilityRole="header" style={human ? styles.title : styles.agentTitle}>{name}</Text>
             {human ? <Text style={styles.subtitle}>{zh ? '碳基决策者 · 自封' : 'Carbon-based decision maker · self-appointed'}</Text>
-              : <Text style={styles.subtitle}>{hq ? (zh ? 'gtmux 参谋长' : 'gtmux chief of staff') : target.kind === 'sender' || target.turn ? (zh ? '这条消息的记录' : 'Recorded for this message') : (zh ? '当前会话 · 已记录资料' : 'Current conversation · recorded facts')}</Text>}
+              : <Text style={styles.subtitle}>{hq ? (zh ? 'gtmux 协调 Agent' : 'gtmux coordinating agent') : target.kind === 'sender' || target.turn ? (zh ? '这条消息的记录' : 'Recorded for this message') : (zh ? '当前会话 · 已记录资料' : 'Current conversation · recorded facts')}</Text>}
             </View>
           </View>
           {human ? <View style={styles.quote}>

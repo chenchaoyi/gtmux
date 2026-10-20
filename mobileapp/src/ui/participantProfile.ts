@@ -15,7 +15,7 @@ const labels: Record<string, [string, string]> = {
 };
 export function factLabel(key: string, zh: boolean): string {return labels[key]?.[zh ? 1 : 0] ?? key;}
 // These are display aliases, not provider identity normalization. Custom IDs stay literal.
-const providerBrands = new Map([['openai', 'OpenAI'], ['anthropic', 'Anthropic'], ['deepseek', 'DeepSeek'], ['google', 'Google']]);
+const providerBrands = new Map([['openai', 'OpenAI'], ['anthropic', 'Anthropic'], ['deepseek', 'DeepSeek'], ['deepseek-official', 'DeepSeek'], ['deepseek-account', 'DeepSeek Account'], ['google', 'Google']]);
 export function factValue(fact: ProfileFact): string {
   return fact.key === 'provider' ? providerBrands.get(fact.value.toLowerCase()) ?? fact.value : fact.value;
 }
