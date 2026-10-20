@@ -93,6 +93,8 @@ The mockup’s other variants (Ascension / Conductor / Decider / Captain / Resti
 
 In the workbench, outside a text field: `⌘K` / `Ctrl+K` opens the pane palette; `1–9` maximizes the Nth tile; `f` toggles board maximization of the front tile; `Esc` restores it; `g` toggles snap; `[ ]` cycles saved presets; `/` focuses directory search. In focused Chat, `j/k` moves through turns and `c` collapses steps; in focused Terminal, `j/k` moves between panes. These are page shortcuts, not raw terminal keystroke passthrough.
 
+Page shortcuts apply only outside buttons, links and editable regions, and ignore composition or already-handled events. Browser/OS modifier combinations retain their native behavior; only the workbench’s explicit `⌘K` / `Ctrl+K` palette shortcut is intercepted. A focused button keeps Enter/Space even when the radar has a selected row.
+
 ## 9. State / landing
 
 - The radar uses the shared color/shape/glyph vocabulary. The connection dot changes on polling failures. A failed tile fetch currently retains its previous content; there is no implemented per-tile offline gray overlay, despite the unused CSS class.
