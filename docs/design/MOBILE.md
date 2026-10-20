@@ -1573,3 +1573,7 @@ uses brand-coloured Collapse all / Expand all text. See [profile scope](agent-pr
 ### Usage sources and balances
 
 Usage renders quota windows and monetary balances separately, with each source’s observation time. Stale windows are neutral grey and excluded from the header/tightest-window lead. Native DSH session rows use agent/home/session identity when no pane exists. DeepSeek Account recharge/bonus amounts keep their exact decimal strings and currency, with an explicit unavailable/unsupported note instead of a zero placeholder. Installation and recorded plan tiers never imply current billing status.
+
+### Foreground push reconciliation
+
+Push registration reconciliation runs in the foreground. Leaving it cancels the current request as lifecycle cancellation, stops alternate routes and keeps synchronization pending; returning to the foreground retries through the existing queue. Real foreground deadlines and HTTP failures remain in Diagnostics. Mac-side route health is not phone-network acceptance.
