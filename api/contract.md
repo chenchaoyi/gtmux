@@ -524,14 +524,30 @@ invocation; for other agents no claim is made rather than a wrong one.
 | `session_break` | object? | `{kind, at?}` on the first turn of a later session in a stitched HQ history |
 
 `segment` = `{"text":string?, "steps":[{step}]?}`; `step` =
-`{"kind":"tool", "title":"Edit|Bash|exec_command|…", "detail":"<short arg summary>"?}`.
+`{"kind":"tool", "title":"Edit|Bash|exec|…", "detail":"<short arg summary>"?, "operation":"read|list|search|command|edit|web|code|wait|agent|tool"?, "input":"<selected original input>"?, "input_kind":"command|arguments|code|path|query|url|description|prompt"?, "workdir":"<recorded directory>"?, "details_truncated":true?}`.
 
-`detail` is a bounded plain-text argument summary, not the full tool input or output.
-For Codex, non-empty string `title` then `description` takes precedence over the
-existing command/path fallbacks; whitespace is collapsed and the limit remains
-80 Unicode code points plus an ellipsis. A recorded call alone says nothing about
-success, completion, exit code or duration. Clients must not interpret tool names
-or details as HTML.
+`detail` remains a plain-text summary. For Codex, string `title` then `description`
+takes precedence over command/path fallbacks, with collapsed whitespace and at most
+80 Unicode code points plus an ellipsis. Optional richer fields are supplied by the
+Claude, Codex, Kimi and DSH parsers only when recorded. `operation` describes the
+exact known tool name, with unknown tools retaining their name and generic category.
+
+`input` selects one known command/code/path/query/URL/description/prompt field;
+its whitespace and line breaks are preserved. It is not a dump of arbitrary arguments.
+Command arrays use JSON (`input_kind: arguments`) to preserve argument boundaries;
+they must not be presented as an equivalent executable shell command. Input is capped
+at 8 KiB and `workdir` at 4 KiB, with UTF-8-safe prefixes. Together these fields have
+an additional 128 KiB budget per turn, included in cache retention accounting and the
+existing transcript HTTP byte budget. `details_truncated` reports any exceeded limit,
+including when a later call has no remaining detail budget. Clients must label partial
+details and older summary-only data accurately. Older clients may ignore these fields.
+
+A recorded call alone says nothing about success, completion, exit code or duration.
+No tool output, stdout/stderr or reasoning is ingested. Clients must render names,
+summaries and input as literal text, never HTML or executable markup. Codex Desktop's
+observed `external_codex_apps_open_page` navigation envelope with a single valid
+string/null `page_id` is excluded from user prompts; following real text is retained.
+Malformed envelopes and literal mentions within user prose remain visible.
 
 **Earlier sessions (hq-console-history).** For the HQ pane, `?earlier=N` stitches the N
 sessions before the current one in front of it, oldest first, following the `hq-session`

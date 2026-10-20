@@ -381,7 +381,7 @@ func claudeAssistant(raw json.RawMessage) (string, []Step) {
 				text = append(text, strings.TrimSpace(b.Text))
 			}
 		case "tool_use":
-			steps = append(steps, Step{Kind: "tool", Title: b.Name, Detail: toolDetail(b.Input)})
+			steps = append(steps, toolStep(b.Name, b.Name, b.Input, toolDetail(b.Input)))
 		}
 	}
 	return strings.TrimSpace(strings.Join(text, "\n")), steps

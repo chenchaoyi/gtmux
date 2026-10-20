@@ -622,6 +622,12 @@ Radar SHALL expose the saved per-conversation follow policy only for verified na
 - **WHEN** a terminal Codex or other agent is detected
 - **THEN** its existing grouping and behavior are retained
 
+#### Scenario: Shared Codex backend emits a transient hook ID
+
+- **WHEN** an external Codex record in the configured home has a live shared backend PID but no matching persisted rollout
+- **THEN** it does not appear as an external conversation, and its stored observation is not deleted
+- **AND** a later matching rollout can surface on the next gather; distinct actual thread IDs remain separate even when their PID or directory matches
+
 ### Requirement: Operation-owned Codex path discovery
 
 A complete digest or usage producer SHALL share one lazy Codex transcript path-discovery

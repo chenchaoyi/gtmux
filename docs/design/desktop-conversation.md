@@ -27,6 +27,16 @@ conversation cannot inherit an old response. Transient errors preserve loaded hi
 and offer Retry. No terminal, composer, approval or Move to tmux is offered: continue
 the conversation in the original client.
 
+
+External Codex observations in the configured home need a matching persisted rollout
+before entering the live list: a shared backend PID can also serve transient helper
+calls. Early hooks can appear on the next poll after the rollout exists; this display
+gate deletes no records. IDs are never merged by title, cwd, PID or session-tree root.
+The observed Desktop page-open envelope with exactly one string/null `page_id` is
+not user dialogue. Genuine text after it stays visible; malformed envelopes and
+literal mentions in prose are preserved. Other-home observations remain outside
+this home's rollout evidence.
+
 ## Data and boundaries
 
 Only the Go core resolves files. The exact conversation ID must be verified by the

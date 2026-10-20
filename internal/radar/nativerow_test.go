@@ -56,6 +56,7 @@ func TestNativeCodexPanesCarrySavedSessionTitles(t *testing.T) {
 	}
 	now := time.Now().Unix()
 	for _, id := range []string{"named", "untitled"} {
+		writeNativeCodexRollout(t, codexHome, id)
 		if err := native.Save(native.Record{
 			SessionID: id, Agent: "codex", HomeID: transcript.CodexHomeID(), State: "working", UpdatedAt: now,
 			Cwd: t.TempDir(), PID: os.Getpid(),
@@ -217,6 +218,8 @@ func TestNativeCodexResumedRolloutCompletesAfterHook(t *testing.T) {
 // the committed PNG. nativePanes read `p.Icon` raw and skipped that fallback entirely.
 func TestNativePanesCarryIcon(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
+	t.Setenv("CODEX_HOME", t.TempDir())
+	writeNativeCodexRollout(t, transcript.CodexHome(), "codex-native-1")
 	now := time.Now().Unix()
 	if err := native.Save(native.Record{
 		SessionID: "codex-native-1", Agent: "codex", HomeID: transcript.CodexHomeID(), State: "working", UpdatedAt: now - 30,
@@ -381,6 +384,7 @@ func TestNativeRowEndedOnAnErrorIsErrored(t *testing.T) {
 func TestDefaultHomeScopedObservationShadowsLegacyWithoutDeletion(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("CODEX_HOME", "")
+	writeNativeCodexRollout(t, transcript.CodexHome(), "upgrade")
 	now := time.Now().Unix()
 	legacy := native.Record{SessionID: "upgrade", Agent: "codex", State: "idle", UpdatedAt: now, PID: os.Getpid()}
 	if err := native.Save(legacy); err != nil {
@@ -398,5 +402,47 @@ func TestDefaultHomeScopedObservationShadowsLegacyWithoutDeletion(t *testing.T) 
 	}
 	if _, ok := native.Load(legacy.SessionID, ""); !ok {
 		t.Fatal("view deleted legacy evidence")
+	}
+}
+
+func writeNativeCodexRollout(t *testing.T, home, id string) {
+	t.Helper()
+	dir := filepath.Join(home, "sessions", "2026", "10", "20")
+	if err := os.MkdirAll(dir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	data := `{"type":"session_meta","payload":{"id":"` + id + `","originator":"Codex Desktop"}}` + "\n"
+	if err := os.WriteFile(filepath.Join(dir, "rollout-2026-10-20T00-00-00-"+id+".jsonl"), []byte(data), 0600); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestNativeCodexSharedBackendRequiresMatchingRollout(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("CODEX_HOME", t.TempDir())
+	now := time.Now().Unix()
+	for _, id := range []string{"real-thread", "second-real-thread", "transient-call"} {
+		if err := native.Save(native.Record{SessionID: id, Agent: "codex", HomeID: transcript.CodexHomeID(), State: "working", PID: os.Getpid(), UpdatedAt: now}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	writeNativeCodexRollout(t, transcript.CodexHome(), "real-thread")
+	writeNativeCodexRollout(t, transcript.CodexHome(), "second-real-thread")
+	rows := nativePanes(nil, nil, now)
+	if len(rows) != 2 {
+		t.Fatalf("shared PID produced phantom or merged real threads: %+v", rows)
+	}
+	for _, r := range rows {
+		if r.sessionID == "transient-call" {
+			t.Fatal("helper call shown as a conversation")
+		}
+	}
+	if _, ok := native.Load("transient-call", transcript.CodexHomeID()); !ok {
+		t.Fatal("display gate deleted the observation")
+	}
+	// The first hook can precede persistence. Discovery must recover next poll.
+	writeNativeCodexRollout(t, transcript.CodexHome(), "transient-call")
+	if rows = nativePanes(nil, nil, now); len(rows) != 3 {
+		t.Fatalf("newly persisted thread not discovered: %+v", rows)
 	}
 }

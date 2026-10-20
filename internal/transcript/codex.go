@@ -447,13 +447,34 @@ func codexStep(line string, st *parseState) {
 				st.addText(msg)
 			}
 		} else if p.Type == "function_call" && p.Name != "" {
-			st.addSteps([]Step{{Kind: "tool", Title: codexToolName(p.Name), Detail: codexToolDetail(p.Arguments)}})
+			st.addSteps([]Step{toolStep(p.Name, codexToolName(p.Name), json.RawMessage(p.Arguments), codexToolDetail(p.Arguments))})
 		}
 	}
 }
 
 func codexUserPrompt(raw string) (string, bool) {
 	s := strings.TrimSpace(raw)
+	// Desktop persists page-navigation controls as user-role messages. Remove
+	// only the observed envelope with valid page_id JSON, preserving any real
+	// text after it and literal mentions elsewhere in a user's message.
+	const openPage = "<external_codex_apps_open_page>"
+	const closePage = "</external_codex_apps_open_page>"
+	for strings.HasPrefix(s, openPage) {
+		end := strings.Index(s, closePage)
+		if end < len(openPage) {
+			break
+		}
+		var control map[string]json.RawMessage
+		if json.Unmarshal([]byte(s[len(openPage):end]), &control) != nil || len(control) != 1 {
+			break
+		}
+		page, exists := control["page_id"]
+		var pageID *string
+		if !exists || json.Unmarshal(page, &pageID) != nil {
+			break
+		}
+		s = strings.TrimSpace(s[end+len(closePage):])
+	}
 	// Codex writes the initial repository instructions and environment snapshot as
 	// role=user response_items. They were supplied by the harness, not typed in chat.
 	if strings.HasPrefix(s, "# AGENTS.md instructions") || strings.HasPrefix(s, "<environment_context>") {

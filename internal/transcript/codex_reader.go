@@ -141,6 +141,9 @@ func (l *Loader) loadCodexFile(path string, maxTurns int) ([]Turn, error) {
 				cur.Segments = append([]Segment(nil), cur.Segments...)
 				for i := range cur.Segments {
 					cur.Segments[i].Steps = append([]Step(nil), cur.Segments[i].Steps...)
+					for _, step := range cur.Segments[i].Steps {
+						st.toolDetailBytes += len(step.Input) + len(step.Workdir)
+					}
 				}
 				st.cur, st.curStart = &cur, hit.lastTurn
 			}

@@ -396,6 +396,11 @@ export interface TranscriptStep {
   kind: string; // "tool"
   title: string; // tool name (Edit, Bash, exec…)
   detail?: string; // short arg summary (path / command head)
+  operation?: string;
+  input?: string; // selected original input; preserves whitespace
+  input_kind?: string;
+  workdir?: string;
+  details_truncated?: boolean;
 }
 // One chronological piece of a reply: an assistant text bubble + the tool steps
 // that ran after it. The chat renders each as its own speech bubble so interleaved
