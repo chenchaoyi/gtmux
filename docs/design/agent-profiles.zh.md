@@ -53,7 +53,7 @@ DSH Zstandard 复用帧游标：冷读可能从目标会话文件开头解码，
 不能用今天的安装版本、当前模型或当前 pane 替换过去的事实。关闭弹窗保留阅读位置和草稿。
 人的资料保持“人类”标题、小字“碳基决策者 · 自封”及《沙丘》引文，不增加调侃段落。
 
-资料窗从首帧保留稳定的内容高度，先显示明确的静态加载提示；未完成时不闪出“未记录”，也不残留上一目标的事实。读取失败可重试，成功但没有资料则说明未记录。Agent 身份头部更紧凑，来源与时间按灰色键值行排列。关闭按钮保留独立空间，滚动内容不会从它下面穿过。
+资料窗读取期间保留稳定的占位高度，先显示明确的静态加载提示，返回后按资料多少收紧；未完成时不闪出“未记录”，也不残留上一目标的事实。读取失败可重试，成功但没有资料则说明未记录。Agent 身份头部更紧凑，来源与时间按灰色键值行排列。关闭按钮保留独立空间，滚动内容不会从它下面穿过。
 
 旧消息事实与当前启动链分开展示。只有消息和当前 Agent 的源会话 ID 相同，用户点开执行链后才额外读取一次当前资料，并照常由服务端核验绑定；界面只取这份响应的链和观察时间，不把当前模型、套餐或推理强度填入旧消息。响应的会话与 Agent 也必须匹配消息资料。顶部当前资料复用已有响应；拼接的旧会话或其他发送者不会借用另一运行实例，没有记录时明确说明。启动链是最近一次记录的进程关系，不保证当前控制权，也不冒充消息当时的进程。
 
@@ -217,3 +217,13 @@ Aider、Crush、Amp 当前不增加偷偷操作 TUI 的信息采集：不发送 
 - Cursor：[hook 公共字段](https://cursor.com/docs/hooks#input-all-hooks)；没有将当前在线文档的可选字段冒充本机旧 CLI 已提供的字段。
 - Copilot：[hook 输入契约](https://docs.github.com/en/copilot/reference/hooks-reference#hook-event-input-payloads)；Kiro：[hook](https://kiro.dev/docs/hooks/types/)及[profile 配置](https://kiro.dev/docs/custom-agents/configuration-reference/)。
 - Aider：[聊天模式与多模型](https://aider.chat/docs/usage/modes.html)；Crush：[配置与模型槽位](https://github.com/charmbracelet/crush/blob/main/docs/config/README.md)；Amp：[按模式路由](https://ampcode.com/docs/the-dial#models-behind-the-dial)。这些上游能力没有被计作 gtmux 已接入能力。
+
+## HQ 身份与紧凑展示
+
+弹窗按实际资料高度展开，内容多时在高度上限内滚动；首次读取仍显示固定占位，不闪现“未记录”。已知 Provider 在展示时使用 OpenAI、Anthropic、DeepSeek、DeepSeek Account、Google 的正规写法，原始值和自定义供应商标识不改。缺少历史启动链时只提示“这条消息未记录启动链”。
+
+界面名称仍统一为 HQ，副标题说明“gtmux 协调 Agent”，负责协调 Agent、跟进进度、审阅回执，并把需要用户决定的事带回来。HQ 自身对话的资料沿用回复所属会话的 Agent 身份及历史/当前边界。
+
+在其他会话点开 HQ 来信头像，“发信时的 Agent”只采用来信已记录的身份；旧投递通常只记了 HQ 角色，因此仍显示“未记录”。“当前 HQ”另取同一客户端、在线雷达中唯一的 supervisor 行，并注明不代表发信时的 Agent。离线、多个候选或其他服务器的数据不补入，也不借用收信会话的 Agent。这里不增加接口请求或轮询。
+
+右上角全局折叠恢复品牌色“折叠全部 / 展开全部”文案，保留至少 44pt 点击区；单轮回复和工具的折叠互不影响。

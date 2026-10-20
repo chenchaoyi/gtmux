@@ -20,7 +20,7 @@ export function ProfileExecutionChain({target, client, lang, primary}: {target: 
   const canRead = !!client && (!historical || !!request);
   if (!canRead) return <View style={styles.section}>
     <Text style={styles.heading}>{zh ? '执行链' : 'Execution chain'}</Text>
-    <Text style={styles.note}>{zh ? '这条消息未保存启动链，不能用另一会话的记录补充。' : 'No launch chain was saved with this message. Another conversation’s observations cannot fill it in.'}</Text>
+    <Text style={styles.note}>{zh ? '这条消息未记录启动链。' : 'Launch chain not recorded for this message.'}</Text>
   </View>;
   return <View style={styles.section}>
     <TouchableOpacity testID="profile-chain-toggle" accessibilityRole="button" accessibilityState={{expanded: open}}

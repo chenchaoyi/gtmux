@@ -1560,4 +1560,16 @@ and [research and acceptance boundaries](terminal-keyboard-research.md).
 
 Tool segments use `ToolSteps`: a quiet grey summary on the reading canvas, without a card background or border. Live and historical calls both start folded. Expanding reveals compact icon-led rows; each action keeps its own monochrome icon. A call with no additional recorded input is a plain row, without a chevron or empty inspector. Real input/directory/partial-detail records can be opened one at a time. Long commands preserve line breaks, scroll horizontally, and copy exactly the displayed text; multiline input keeps a bounded vertical viewport. Partial and summary-only input remain explicit. Closing a group unmounts all rows and details. Updates preserve deliberate choices; the commentary and elapsed-time indicator still show live progress. Detail and HQ share this on phone/iPad. Reply actions sit directly after the final text segment, before any trailing tool calls, on the unboxed canvas. Sources and data limits: [research](transcript-activity-research.md).
 
+
+### Compact participant identity
+
+Participant dialogs fit settled content within a 600pt/viewport cap and keep long
+details scrollable. Initial reads retain a labelled static placeholder. Known
+provider brands use canonical display casing without changing raw/custom IDs. HQ
+profiles explain the chief-of-staff role and separate recorded message identity
+from the same connected radar's current supervisor. The global reply-fold action
+uses brand-coloured Collapse all / Expand all text. See [profile scope](agent-profiles.md#hq-identity).
+
+### Usage sources and balances
+
 Usage renders quota windows and monetary balances separately, with each source’s observation time. Stale windows are neutral grey and excluded from the header/tightest-window lead. Native DSH session rows use agent/home/session identity when no pane exists. DeepSeek Account recharge/bonus amounts keep their exact decimal strings and currency, with an explicit unavailable/unsupported note instead of a zero placeholder. Installation and recorded plan tiers never imply current billing status.
