@@ -70,7 +70,7 @@ fi
 ENT="Gtmux.entitlements"
 SIGN_ID="${GTMUX_SIGN_ID:-}"
 if [ -n "$SIGN_ID" ]; then
-  echo "==> code signing (Developer ID, hardened runtime, automation entitlement): $SIGN_ID"
+  echo "==> code signing (Developer ID, hardened runtime, automation entitlement)"
   codesign --force --options runtime --entitlements "$ENT" --timestamp --sign "$SIGN_ID" "$BUNDLE/Contents/MacOS/gtmux"
   codesign --force --options runtime --entitlements "$ENT" --timestamp --sign "$SIGN_ID" "$BUNDLE/Contents/MacOS/${APP_BIN}"
   codesign --force --options runtime --entitlements "$ENT" --timestamp --sign "$SIGN_ID" "$BUNDLE"

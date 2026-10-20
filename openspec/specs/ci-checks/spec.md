@@ -89,3 +89,29 @@ The design gate SHALL require a complete structured verdict from the pinned Open
 
 - **WHEN** a complete report contains a failed specification even with process exit zero
 - **THEN** the gate fails with the actual invalid item
+
+### Requirement: Keep operator privacy policy outside public checker source
+
+Exact personal/operator terms SHALL be read from private CI configuration or a
+private local JSON policy, never embedded in the public checker. The check SHALL
+inspect tracked paths and text, including checker code and fixtures, without
+printing policy values or matched source content. Configured but missing, malformed
+or unreadable policy and source-read failures SHALL fail the check. The wrapper
+SHALL remove policy variables before starting unrelated build/spec helpers.
+
+Repository-owned PR, main-push and manual policy jobs SHALL require the private
+policy. Fork jobs SHALL NOT receive it and SHALL explicitly disclose skipped
+exact-term coverage; maintainers SHALL apply the private check before merging an
+outside contribution. The check SHALL NOT claim image-content, general-secret or
+historical-commit coverage.
+
+#### Scenario: A checker contains a private term
+
+- **WHEN** a tracked checker or fixture reintroduces a configured private identifier
+- **THEN** the check fails without exempting its own source or echoing the identifier
+
+#### Scenario: Private policy is unavailable
+
+- **WHEN** a repository-owned policy job has no usable private policy
+- **THEN** it fails instead of claiming privacy coverage
+- **AND** a fork job without that policy explicitly reports its coverage gap

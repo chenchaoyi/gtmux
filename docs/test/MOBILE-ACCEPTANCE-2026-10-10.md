@@ -27,7 +27,7 @@ Screenshots and XML contain private conversations and are intentionally not comm
 - Follow switches and stable layout during toggle: no desktop work row was
   visible in this fleet; real authorization was not changed for testing.
 - All-folded list state: the last source capture timed out as the phone switched
-  to Daxiang (`com.meituan.message`); screenshot is not a gtmux acceptance result.
+   to another app; screenshot is not a gtmux acceptance result.
   Working/idle sections were collapsed during this attempt; restore them when
   resuming, without changing the user's originally collapsed errored section.
 - Actual VoiceOver speech/focus/custom actions: requested manual verification;

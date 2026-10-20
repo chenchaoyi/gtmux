@@ -204,8 +204,9 @@ jobs:
           # Auto-derive the signing identity from the imported cert (no separate secret).
           IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN" | grep -o '"Developer ID Application:[^"]*"' | head -1 | tr -d '"')
           if [ -z "$IDENTITY" ]; then echo "no 'Developer ID Application' identity in the imported cert" >&2; exit 1; fi
+          echo "::add-mask::$IDENTITY"
           echo "GTMUX_SIGN_ID=$IDENTITY" >> "$GITHUB_ENV"
-          echo "signing identity: $IDENTITY"
+          echo "signing identity configured"
           if [ -n "${MACOS_NOTARY_KEY_P8:-}" ] && [ -n "${MACOS_NOTARY_KEY_ID:-}" ] && [ -n "${MACOS_NOTARY_ISSUER:-}" ]; then
             echo "$MACOS_NOTARY_KEY_P8" | base64 --decode > "$RUNNER_TEMP/notary.p8"
             echo "GTMUX_NOTARY_KEY=$RUNNER_TEMP/notary.p8" >> "$GITHUB_ENV"

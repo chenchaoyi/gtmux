@@ -61,6 +61,9 @@ jobs:
       - name: Validate every workflow (no signing secrets)
         run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 -shellcheck='' .github/workflows/*.yml
       - name: Source design, bilingual docs and strict specs
+        env:
+          GTMUX_PRIVATE_TERMS: ${{ secrets.GTMUX_PRIVATE_TERMS }}
+          GTMUX_PRIVATE_POLICY_REQUIRED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         run: ./scripts/check-design.sh --source-only
       - name: Documentation examples against real builders
         run: go test ./internal/docs
