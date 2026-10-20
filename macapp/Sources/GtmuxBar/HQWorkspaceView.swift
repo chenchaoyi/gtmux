@@ -13,6 +13,8 @@ struct HQWorkspaceView: View {
         NavigationSplitView(columnVisibility: $columns) {
             HQWorkspaceSidebar(l10n: l10n, store: store)
                 .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 340)
+                // Remove the default at its owning column so it does not duplicate the leading control.
+                .toolbar(removing: .sidebarToggle)
         } detail: {
             VStack(spacing: 0) {
                 if let error = store.error, store.selection.resourcePage == nil {
@@ -52,7 +54,6 @@ struct HQWorkspaceView: View {
         .font(HQTypography.body)
         .environment(\.markdownTypography, .workspace)
         .navigationTitle("gtmux HQ")
-        .toolbar(removing: .sidebarToggle)
         .toolbar {
             ToolbarItem(placement: .navigation) {
                 HQWorkspaceToolbar(l10n: l10n, store: store, resources: store.resources, columns: $columns) {

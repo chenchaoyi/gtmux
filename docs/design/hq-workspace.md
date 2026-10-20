@@ -18,7 +18,7 @@ count and accessible expansion value; collapse choices survive navigation and wi
 reopening in the current process. Matter symbols reuse session status: red pause for
 needs-input, brand cyan ring for following, green check for ended, with text labels.
 The sidebar also contains New task, Talk to HQ, HQ activity and Resources (Knowledge,
-Machine, Usage). The authored board is a secondary **Handoff snapshot** from Overview,
+Machine, Usage). Resources appears directly below these primary destinations and above all matter groups, so a growing matter list cannot push it to the bottom. The authored board is a secondary **Handoff snapshot** from Overview,
 not another current to-do list. It retains the full source, author order and saved time;
 sections start collapsed, old asks are not lifted into a red attention block and saved
 pane numbers are not active links. It neither rewrites nor migrates the board. A matter's header shows its name, explicit state
@@ -56,7 +56,7 @@ records a clickable parent link. It does not fabricate a separate past dialogue.
 Nothing groups conversations by title, project directory, process name or pane.
 Native desktop sources are not added to HQ participation by this feature.
 
-The leading toolbar keeps Sidebar, Refresh and Open in Terminal in one stable group, including when the sidebar is hidden. Refresh replaces its existing icon with the compact brand progress mark; it does not insert another item or move neighboring controls. It observes the selected resource's read state as well as workspace reads; resource headers do not duplicate the progress mark. Category children are indented 20 pt beneath their full-row headings, including Resources; selection and independent disclosure state are retained.
+The leading toolbar keeps Sidebar, Refresh and Open in Terminal in one stable group, including when the sidebar is hidden. The sidebar column removes its framework-provided toggle; the outer split does not own that item. Only the shared leading toggle remains. Refresh replaces its existing icon with the compact brand progress mark; it does not insert another item or move neighboring controls. It observes the selected resource's read state as well as workspace reads; resource headers do not duplicate the progress mark. Category children are indented 20 pt beneath their full-row headings, including Resources; selection and independent disclosure state are retained.
 
 ## 3. Modules and protocol
 

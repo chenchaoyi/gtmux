@@ -973,6 +973,9 @@ extension HQWorkspaceTests {
         try await settleLayout()
         let initial = try controls().map { $0.accessibilityFrame() }
         let toolbarIDs = window.toolbar?.items.map(\.itemIdentifier)
+        XCTAssertFalse(toolbarIDs?.contains(NSToolbarItem.Identifier(
+            "com.apple.SwiftUI.navigationSplitView.toggleSidebar")) ?? false,
+            "The framework sidebar toggle duplicates the leading custom control")
         XCTAssertTrue(initial.allSatisfy { $0.width > 0 && $0.height > 0 })
         XCTAssertLessThan(initial.last!.midX - window.frame.minX, 300, "Actions belong at the leading edge")
         for expanded in [false, true] {
@@ -1051,6 +1054,9 @@ extension HQWorkspaceTests {
         XCTAssertGreaterThanOrEqual(child.accessibilityFrame().minX - header.accessibilityFrame().minX, 18)
         let resourceHeader = try XCTUnwrap(NativeUIProbe.find("hq-sidebar-section-resources", in: host))
         let resourceChild = try XCTUnwrap(NativeUIProbe.find("hq-sidebar-resource-knowledge", in: host))
+        let needsInput = try XCTUnwrap(NativeUIProbe.find("hq-sidebar-section-needsInput", in: host))
+        XCTAssertGreaterThan(resourceChild.accessibilityFrame().minY, needsInput.accessibilityFrame().maxY,
+                             "Resources must remain reachable above the growing matter groups")
         XCTAssertGreaterThanOrEqual(resourceChild.accessibilityFrame().minX - resourceHeader.accessibilityFrame().minX, 18)
         XCTAssertTrue(child.accessibilityPerformPress())
         XCTAssertEqual(store.selection, .matter("matter-a"))
