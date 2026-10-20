@@ -152,7 +152,7 @@ struct HQUsageView: View {
             Text(l10n.tr("Balances", "余额")).font(HQTypography.rowTitle).foregroundStyle(p.fg)
             ForEach(balances, id: \.accountID) { balance in
                 VStack(alignment: .leading, spacing: 5) {
-                    Text(balance.agentName + " · DeepSeek Account").font(HQTypography.rowTitle).foregroundStyle(p.fg)
+                    Text("DeepSeek Account").font(HQTypography.rowTitle).foregroundStyle(p.fg)
                     ForEach(Array(balance.wallets.enumerated()), id: \.offset) { _, wallet in
                         HStack {
                             Text(wallet.kind == "bonus" ? l10n.tr("Bonus", "赠送") : l10n.tr("Recharge", "充值"))
@@ -406,18 +406,18 @@ struct HQUsageView: View {
             if aw != bw { return aw > bw }
             if a.rate != b.rate { return a.rate > b.rate }
             if (a.ctx ?? 0) != (b.ctx ?? 0) { return (a.ctx ?? 0) > (b.ctx ?? 0) }
-            return (a.paneID ?? "") < (b.paneID ?? "")
+            return a.identity < b.identity
         }
         let shown = ranked.filter { !($0.usageWarn ?? "").isEmpty || $0.rate > 0 }
         let rest = ranked.filter { ($0.usageWarn ?? "").isEmpty && $0.rate <= 0 }
         if !shown.isEmpty {
             VStack(alignment: .leading, spacing: 0) {
-                ForEach(Array(shown.enumerated()), id: \.offset) { _, s in
+                ForEach(shown, id: \.identity) { s in
                     HStack(spacing: 10) {
                         Text(s.paneID ?? "—").font(HQTypography.code).foregroundStyle(p.fg3).frame(
                             width: 44, alignment: .leading)
                         VStack(alignment: .leading, spacing: 1) {
-                            Text(s.loc ?? "").font(HQTypography.caption).foregroundStyle(p.fg).lineLimit(1)
+                            Text(s.displayLocation).font(HQTypography.caption).foregroundStyle(p.fg).lineLimit(1)
                             if let w = s.usageWarn, !w.isEmpty {
                                 Text(w).font(HQTypography.caption).foregroundStyle(Theme.Status.errored).lineLimit(1)
                             }

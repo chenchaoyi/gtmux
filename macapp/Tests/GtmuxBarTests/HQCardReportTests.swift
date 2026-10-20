@@ -301,3 +301,12 @@ final class DynamicUsageSourceTests: XCTestCase {
         XCTAssertEqual(report.sources?.first?.agent, "dsh")
     }
 }
+
+final class NativeUsageIdentityTests: XCTestCase {
+    func testNativeRowsHaveTitlesAndScopedIdentity() throws {
+        let data = Data(#"{"agent_key":"dsh","agent":"DeepSeek Harness","session_id":"one","home_id":"home","title":"Inspect adapter","tok":20,"rate":0}"#.utf8)
+        let row = try JSONDecoder().decode(HQUsageSession.self, from: data)
+        XCTAssertEqual(row.displayLocation, "Inspect adapter")
+        XCTAssertEqual(row.identity, "dsh:home:one")
+    }
+}

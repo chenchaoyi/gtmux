@@ -98,7 +98,7 @@ export function UsageSheet({
   // The radar's row when we have it (real icon), else just enough for the neutral
   // monogram — never a blank square.
   const agentOf = (paneId: string, label: string): Agent =>
-    byPane.get(paneId) ?? ({agent: label} as Agent);
+    (paneId ? byPane.get(paneId) : undefined) ?? ({agent: label, icon: label} as Agent);
   // An agent with a plan and no live session reaches no radar row, so there is nothing
   // to copy an icon hint from — and that is exactly Codex on a Claude-only day. The
   // fallback now carries BOTH halves the avatar needs: the display name (which the
@@ -216,12 +216,14 @@ export function UsageSheet({
             {usage?.limits?.balances?.map(balance => <View key={balance.account_id} testID="usage-balance">
               <View style={styles.groupHead}>
                 <AgentAvatar agent={avatarFor(balance.agent, balance.agent_name)} size={18} radius={5} bg={pal.surface} fg={pal.fg3} />
-                <Text style={[styles.groupName, {color: pal.fg}]}>{balance.agent_name} · DeepSeek Account</Text>
+                <Text style={[styles.groupName, {color: pal.fg}]}>DeepSeek Account</Text>
               </View>
+              <View style={styles.balanceRows}>
               {balance.wallets.map((wallet,index) => <View key={`${wallet.kind}:${wallet.currency}:${index}`} style={styles.winTop}>
                 <Text style={[styles.rowKey, {color: pal.fg2}]}>{wallet.kind==='bonus' ? t('Bonus', '赠送') : t('Recharge', '充值')}</Text>
-                <Text selectable style={[styles.pct, {color: pal.fg}]}>{wallet.currency} {wallet.amount}</Text>
+                <Text selectable style={[styles.pct, styles.amount, {color: pal.fg}]}>{wallet.currency} {wallet.amount}</Text>
               </View>)}
+              </View>
               <Text style={[styles.note, {color: pal.fg3}]}>{t('Read', '读取于')} {relTime(balance.observed_at, nowSecs)}{t(' ago', '前')}</Text>
             </View>)}
           </>}
@@ -501,7 +503,7 @@ export function UsageSheet({
             </>
           )}
 
-          {v.windows.length === 0 && v.sessions.length === 0 && (
+          {v.windows.length === 0 && v.sessions.length === 0 && !(usage?.limits?.balances?.length) && !tokens && (
             <Text style={[styles.empty, {color: pal.fg3}]}>
               {t('No usage reported yet. It fills in as your agents run.', '还没有用量数据。agent 跑起来就会有。')}
             </Text>
@@ -543,6 +545,8 @@ const styles = StyleSheet.create({
   },
   leadWarnGlyph: {fontSize: 13, fontWeight: '700'},
   leadWarnText: {flex: 1, fontSize: 12.5, lineHeight: 17},
+  balanceRows: {paddingHorizontal: 14, gap: 6},
+  amount: {flexShrink: 1, textAlign: 'right'},
   win: {paddingHorizontal: 14, paddingVertical: 6, gap: 5},
   winTop: {flexDirection: 'row', alignItems: 'baseline', gap: 8},
   track: {height: 6, borderRadius: 3, overflow: 'hidden'},

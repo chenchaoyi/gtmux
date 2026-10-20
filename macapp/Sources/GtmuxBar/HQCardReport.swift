@@ -96,6 +96,11 @@ func hqQuotaTier(_ w: HQUsageWindow) -> HQQuotaTier {
 }
 
 struct HQUsageSession: Decodable {
+    var title: String? = nil
+    var sessionID: String? = nil
+    var homeID: String? = nil
+    var identity: String { (paneID?.isEmpty == false) ? paneID! : agentKey + ":" + (homeID ?? "") + ":" + (sessionID ?? title ?? agent ?? "") }
+    var displayLocation: String { [loc, title, agent, agentKey].compactMap { $0 }.first(where: { !$0.isEmpty }) ?? agentKey }
     var paneID: String?
     var loc: String?
     var agent: String?
@@ -106,7 +111,8 @@ struct HQUsageSession: Decodable {
     var ctx: Double?
     var usageWarn: String?
     enum CodingKeys: String, CodingKey {
-        case loc, agent, status, tok, rate, ctx
+        case loc, agent, status, tok, rate, ctx, title
+        case sessionID = "session_id", homeID = "home_id"
         case paneID = "pane_id", agentKey = "agent_key", usageWarn = "usage_warn"
     }
 }

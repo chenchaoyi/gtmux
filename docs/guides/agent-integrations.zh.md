@@ -390,3 +390,5 @@ DeepSeek Account 余额通过现有 gtmux 插件中的原生 `deepseekAccount` C
 来源列表根据注册表的安装探测和实际会话、历史及账户数据动态生成。安装只表示本机可用，不证明订阅情况；卸载后历史用量仍保留。Claude `/usage` 保留缓存观测时间，Codex 保留原始额度记录时间和当时记录的套餐，后者不是实时账单验证。过期读数灰显，不参与当前额度摘要和告警。CLI、手机/iPad 与菜单栏复用同一份 API；内嵌 Web 当前没有额度页面。
 
 依据：[原生 token 投影](https://github.com/deepseek-ai/deepseek-harness/blob/687f282e8625c6b8d11ff58211a90524be2e4317/packages/llm/token-meter/src/usage-projection.ts)、[原生账户契约](https://github.com/deepseek-ai/deepseek-harness/blob/687f282e8625c6b8d11ff58211a90524be2e4317/packages/credentials/deepseek-account/src/index.ts)。核对版本为本机 DSH 0.2.0-rc.2 和固定的上游提交；合成账户测试不代表已读取真实余额，也不代表账单总额。
+
+当前 DSH token 适配器覆盖已有索引里的根会话结算，单次发现至多取最近修改的 128 份文件；不汇总子 agent 会话，也不校验服务商账单。未观测到或更旧的文件不代表用量为零。

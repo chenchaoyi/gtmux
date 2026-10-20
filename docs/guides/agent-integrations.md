@@ -512,3 +512,5 @@ Sources: [native token projection](https://github.com/deepseek-ai/deepseek-harne
 [native account contract](https://github.com/deepseek-ai/deepseek-harness/blob/687f282e8625c6b8d11ff58211a90524be2e4317/packages/credentials/deepseek-account/src/index.ts).
 Verified against installed DSH 0.2.0-rc.2 and the pinned upstream source; account
 contract tests are synthetic and do not establish a real balance or billing total.
+
+The current DSH token adapter covers root-session settlements in the existing catalog (up to 128 most recently modified artifacts per discovery pass). It does not aggregate child/subagent sessions or attest a provider bill; an unobserved or older artifact is not proof of zero usage.
