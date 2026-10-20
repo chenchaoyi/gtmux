@@ -9,7 +9,9 @@ import (
 )
 
 // Only installation probes a known CLI. Profile reads never spawn executables.
-var profileVersionProbe = func(agent string) string {
+var profileVersionProbe = readProfileVersion
+
+func readProfileVersion(agent string) string {
 	bin := lookTool(agent)
 	if bin == "" {
 		return ""

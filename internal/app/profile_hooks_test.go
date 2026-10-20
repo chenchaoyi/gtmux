@@ -1,9 +1,37 @@
 package app
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 )
+
+// Installer unit tests never probe the developer's installed agents or home.
+// Version-dependent tests provide an explicit version fixture.
+func init() { profileVersionProbe = func(string) string { return "" } }
+
+func TestProfileVersionProbeUsesBoundedKnownCLIOutput(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	dir := t.TempDir()
+	t.Setenv("PATH", dir)
+	path := filepath.Join(dir, "gemini")
+	if err := os.WriteFile(path, []byte("#!/bin/sh\n[ \"$1\" = --version ] || exit 2\nprintf '0.35.3\\n'\n"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if version := readProfileVersion("gemini"); version != "0.35.3\n" {
+		t.Fatalf("known CLI version=%q", version)
+	}
+	if err := os.WriteFile(path, []byte("#!/bin/sh\nexit 2\n"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if version := readProfileVersion("gemini"); version != "" {
+		t.Fatalf("failed probe returned version=%q", version)
+	}
+	var prefix versionPrefix
+	if n, err := prefix.Write(make([]byte, 4096)); err != nil || n != 4096 || len(prefix.b) != 256 {
+		t.Fatal("unbounded version output")
+	}
+}
 
 func TestProfileHookVersionGatesAndDowngrade(t *testing.T) {
 	for _, tc := range []struct {
