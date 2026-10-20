@@ -44,7 +44,7 @@ export function DesktopConversationView({agent, onBack}: {agent: Agent; onBack?:
       <Text style={[styles.message, {color: pal.fg}]}>{message}</Text>
       {!isGuest && <TouchableOpacity onPress={state.retry} accessibilityRole="button"><Text style={{color: pal.fg}}>{zh ? '重试' : 'Retry'}</Text></TouchableOpacity>}
     </View>}
-    {!isGuest && (!failed || state.turns.length > 0) && <ChatView key={`${client.base}:${agent.home_id ?? ""}:${agent.session_id}`} readOnly agent={live} lines={[]} status={live.status} fontSize={13} fontPref={fontPref} pal={pal} lang={lang} turns={state.turns} droppedTurns={state.dropped} loading={state.loading} workingSince={live.since} maxWidth={wide ? READING_WIDTH : undefined} />}
+    {!isGuest && (!failed || state.turns.length > 0) && <ChatView client={client} key={`${client.base}:${agent.home_id ?? ""}:${agent.session_id}`} readOnly agent={live} lines={[]} status={live.status} fontSize={13} fontPref={fontPref} pal={pal} lang={lang} turns={state.turns} droppedTurns={state.dropped} loading={state.loading} workingSince={live.since} maxWidth={wide ? READING_WIDTH : undefined} />}
   </SafeAreaView>;
 }
 const styles = StyleSheet.create({root: {flex: 1}, header: {flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12}, back: {width: 36, height: 44, justifyContent: 'center', alignItems: 'center'}, identity: {flex: 1, gap: 5}, title: {fontSize: 17, fontWeight: '600'}, notice: {fontSize: 12}, error: {padding: 14, flexDirection: 'row', gap: 12, alignItems: 'center'}, message: {flex: 1, fontSize: 13}});

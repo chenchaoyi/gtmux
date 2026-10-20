@@ -201,6 +201,7 @@ const (
 // doing. It is a user ACT with a machine-readable name, not a message.
 func ClassifyUserPrompt(s string) (text, kind string) {
 	s = stripInjected(s)
+	s = unwrapQuestionReplies(s)
 	switch {
 	case s == "":
 		return "", PromptDrop

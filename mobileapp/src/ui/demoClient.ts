@@ -110,6 +110,10 @@ export function makeDemoClient(lang: 'en' | 'zh', onAgents?: (agents: Agent[]) =
   // Everything not named below MUST be implemented, so adding a client method is a
   // compile error here until someone decides what the tour should show.
   const fake: Omit<GtmuxClient, NotInDemo> & {dispose: () => void} = {
+    async participantProfile(target) {
+      const agent = currentAgents().find(a => a.pane_id === target.id);
+      return {agent: agent?.agent ?? 'Agent', name: agent?.agent ?? 'Agent', session_id: target.session_id ?? '', historical: !!target.at, facts: []};
+    },
     async inputCapabilities(id, version, boot) {
       const can = demoPanes(initial).some(p => p.pane_id === id);
       return {version: 1, can_input: can, context: {boot: 'demo', pane_binding: `demo-${id}`, expires_at: serverNowSec() + 120, proof: 'demo'}, actions: [], retry_seconds: 120,

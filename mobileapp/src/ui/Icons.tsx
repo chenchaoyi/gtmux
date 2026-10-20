@@ -214,6 +214,12 @@ export function NewSessionIcon({size = 20, color = '#fff'}: {size?: number; colo
   </Svg>;
 }
 
+export function CheckIcon({size = 20, color = '#fff'}: {size?: number; color?: string}) {
+  return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" accessible={false}>
+    <Path d="m5 12 4 4L19 6" stroke={color} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>;
+}
+
 export function CopyIcon({size = 20, color = '#fff'}: {size?: number; color?: string}) {
   return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" accessible={false} stroke={color} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
     <Rect x={4} y={8} width={12} height={13} rx={3} />

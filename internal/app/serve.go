@@ -400,10 +400,11 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 			// internal/tmux uses for the radar.
 			return []string{tmux.Bin, "-u", "attach-session", "-t", session}, true
 		},
-		Upload:     saveUpload,
-		Icon:       agentIconPNG,
-		Diff:       diffForPane,
-		Transcript: transcriptForPane,
+		Upload:             saveUpload,
+		Icon:               agentIconPNG,
+		Diff:               diffForPane,
+		Transcript:         transcriptForPane,
+		ParticipantProfile: participantProfile,
 		SessionTranscript: func(id, home string) ([]byte, server.TranscriptMeta, error) {
 			return desktopTranscriptRead(id, "", home)
 		},
@@ -868,6 +869,7 @@ func transcriptForPane(id string, earlier int) ([]byte, server.TranscriptMeta, e
 	}
 	for i := range turns {
 		turns[i].Agent = rec.Agent
+		turns[i].SessionID = rec.SessionID
 	}
 	// Earlier sessions (hq-console-history): a `/clear` starts a new session id and a
 	// new log, and the HQ health sensor journals which id replaced which. Walking that
@@ -892,7 +894,7 @@ func transcriptForPane(id string, earlier int) ([]byte, server.TranscriptMeta, e
 	// grows as the agent talks, and the session id changes when a pane rebinds (the
 	// case that had a reader staring at five-hour-old history on 2026-08-18).
 	if revision := transcript.LogRevision(rec.Agent, rec.SessionID); revision != "" {
-		meta.Etag = fmt.Sprintf("W/%q", fmt.Sprintf("%s-%s-%s", rec.SessionID, revision, oldest))
+		meta.Etag = fmt.Sprintf("W/%q", fmt.Sprintf("profile-v1-%s-%s-%s", rec.SessionID, revision, oldest))
 	}
 	// Who put each prompt there, for the ones gtmux delivered on someone else's behalf
 	// (who-sent-this-turn). After the stitch, so an earlier session's turns are attributed
@@ -933,6 +935,7 @@ func stitchEarlier(turns []transcript.Turn, sessionID, reset string, resetAt int
 		}
 		for j := range prev {
 			prev[j].Agent = predAgent
+			prev[j].SessionID = pred
 		}
 		if len(turns) > 0 {
 			t := turns[0]

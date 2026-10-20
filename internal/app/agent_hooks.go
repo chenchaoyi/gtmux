@@ -145,6 +145,8 @@ var agentInstallers = map[string]agentInstaller{
 		bindings: []agentHookBinding{
 			{key: "BeforeAgent", event: "UserPromptSubmit"},
 			{key: "AfterAgent", event: "Stop"},
+			{key: "BeforeModel", event: "Profile", feed: true},
+			{key: "AfterModel", event: "Profile", feed: true},
 			// Gemini names its tool hooks Before/After Tool, NOT Pre/Post — the old
 			// Pre/PostToolUse keys silently never fired. The gtmux TOKEN stays
 			// canonical (Pre/PostToolUse) so the classifier still handles it.
@@ -329,12 +331,22 @@ export const GtmuxHook = async ({ $, client, directory }) => {
         await pipe(token, { session_id: sid, cwd: directory });
       }
     },
-    "chat.message": async (_input, output) => {
+    "chat.params": async (input, output) => {
+      if (!active.has(input.sessionID) || ["title", "compaction"].includes(input.agent) || !(await isRoot(input.sessionID))) return;
+      await pipe("Profile", {session_id: input.sessionID, cwd: directory, gtmux_profile: {
+        model: input.model.id, provider: input.model.providerID, role: input.agent,
+        variant: input.message?.variant || "", effort: typeof output.options?.reasoningEffort === "string" ? output.options.reasoningEffort : "",
+      }});
+    },
+    "chat.message": async (input, output) => {
       const parts = (output && output.parts) || [];
       const text = parts.filter((p) => p && p.type === "text").map((p) => p.text).join("\n").trim();
       const sid = (output && output.message && output.message.sessionID) || "";
       if (text && await isRoot(sid)) {
         active.add(sid); ended.delete(sid);
+        await pipe("Profile", {session_id: sid, cwd: directory, gtmux_profile: {
+          model: input.model?.modelID || "", provider: input.model?.providerID || "", role: input.agent || "", variant: input.variant || "",
+        }});
         await pipe("UserPromptSubmit", { session_id: sid, prompt: text, cwd: directory });
       }
     },
@@ -492,9 +504,13 @@ func updateAgentSettings(inst agentInstaller, path, bin string, install bool) er
 			hooks[event] = list
 		}
 	}
+	profileHooks := true
+	if install && inst.key == "gemini" {
+		profileHooks = supportsProfileHooks("gemini", profileVersionProbe("gemini"))
+	}
 	for _, b := range inst.bindings {
 		list := removeAgentEntries(asArray(hooks[b.key]), inst.format)
-		if install {
+		if install && (b.event != "Profile" || profileHooks) {
 			list = append(list, inst.entry(bin, b))
 		}
 		if len(list) == 0 {

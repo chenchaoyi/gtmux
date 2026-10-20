@@ -49,9 +49,10 @@ import (
 // (internal/app) supplies them from gtmux's existing internals, so this package
 // stays decoupled from app and easy to test with fakes.
 type Deps struct {
-	InputTarget   func(id string) (terminalkeys.Target, error)
-	InputKey      func(id, binding string, event terminalkeys.Event, action *terminalkeys.ActionRequest) error
-	SessionFollow func(string, *sessionpolicy.Settings, string, string) (sessionpolicy.Settings, error)
+	ParticipantProfile func(pane, sessionID, homeID, at string) (any, error)
+	InputTarget        func(id string) (terminalkeys.Target, error)
+	InputKey           func(id, binding string, event terminalkeys.Event, action *terminalkeys.ActionRequest) error
+	SessionFollow      func(string, *sessionpolicy.Settings, string, string) (sessionpolicy.Settings, error)
 	// AgentsJSON returns the marshaled agents array — byte-identical to
 	// `gtmux agents --json` — so app, menu-bar app, and mobile app share one
 	// contract. It should return an empty JSON array (not an error) when no
@@ -383,6 +384,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/diff", s.auth(http.HandlerFunc(s.handleDiff)))
 	mux.Handle("/api/transcript", s.auth(http.HandlerFunc(s.handleTranscript)))
 	mux.Handle("/api/session/transcript", s.auth(http.HandlerFunc(s.handleSessionTranscript)))
+	mux.Handle("/api/participant-profile", s.auth(http.HandlerFunc(s.handleParticipantProfile)))
 	mux.Handle("/api/host", s.auth(http.HandlerFunc(s.handleHost)))
 	mux.Handle("/api/theme", s.auth(http.HandlerFunc(s.handleTheme)))
 	mux.Handle("/api/events", s.auth(http.HandlerFunc(s.handleEvents)))

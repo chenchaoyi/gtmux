@@ -386,7 +386,8 @@ type Step struct {
 // Turn is one user instruction and what the agent ultimately answered, with the
 // intermediate tool calls folded into Steps.
 type Turn struct {
-	Prompt string `json:"prompt"`
+	SessionID string `json:"session_id,omitempty"`
+	Prompt    string `json:"prompt"`
 	// Agent is the owner of THIS turn's session. HQ can stitch Claude and Codex
 	// conversations into one history, so the current pane's agent cannot label
 	// every older reply. Filled at serve time, not by the log parsers.

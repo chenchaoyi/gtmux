@@ -302,7 +302,19 @@ func updateSettings(path, bin string, install bool) error {
 
 	hooks := asObject(m["hooks"])
 	cmd := bin + " hook"
-	for _, h := range hookEvents {
+	events := append([]claudeHook(nil), hookEvents...)
+	// Remove our optional old binding even when a downgraded CLI cannot load it.
+	optional := "PostModelSwitch"
+	optionalList := removeGtmuxEntries(asArray(hooks[optional]))
+	if len(optionalList) == 0 {
+		delete(hooks, optional)
+	} else {
+		hooks[optional] = optionalList
+	}
+	if install && supportsProfileHooks("claude", profileVersionProbe("claude")) {
+		events = append(events, claudeHook{event: optional})
+	}
+	for _, h := range events {
 		list := removeGtmuxEntries(asArray(hooks[h.event]))
 		if install {
 			list = append(list, map[string]any{

@@ -367,6 +367,10 @@ func missingAgentHookEvents(key string) []string {
 	var missing []string
 	seen := map[string]bool{}
 	for _, b := range inst.bindings {
+		// Optional metadata observers are version-gated, not lifecycle requirements.
+		if b.event == "Profile" {
+			continue
+		}
 		if have[b.key] || seen[b.key] {
 			continue
 		}

@@ -12,6 +12,10 @@ several meanings: recognising a process, receiving events, reading a conversatio
 controlling a session are separate capabilities. The 14 entries below include the
 limited integrations, so a registered name is never mistaken for full support.
 
+For the avatar dialog's model, version, subscription, mode, reasoning and execution
+chain, see the [per-agent profile design](../design/agent-profiles.md). That proposal
+separates current collection from future sources; the profile API is not delivered yet.
+
 ## Shared architecture
 
 An **agent key** such as `codex` selects an adapter. A **hook** is a callback the agent

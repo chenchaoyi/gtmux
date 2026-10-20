@@ -1438,9 +1438,16 @@ incidents; records remain local unless explicitly copied or shared.
 
 ### Reply actions, attachment captions and server details
 
-Copy/Share sit immediately below their reply, aligned with its text. Their visible
-icons align to the top of the existing 44-point targets. Selecting or re-editing a
-photo reveals the caption input and focuses it after the markup modal has fully
+Copy/Share sit immediately below their reply, aligned with its text, using only
+outline icons centred in 44pt targets. Copy briefly becomes a checkmark and
+announces completion; localized accessibility labels remain available without
+visible text. Desktop question replies are normalized by the shared Go prompt
+reader: a single reply shows the answer, while multiple answers retain their
+question associations. Transport tags, JSON and input item IDs are omitted only
+for a complete recognized envelope; quoted examples and unknown or partial
+payloads remain readable as source text.
+
+Selecting or re-editing a photo reveals the caption input and focuses it after the markup modal has fully
 closed; cancelling an edit does not trigger new focus. On Android, focus waits for
 the next frame after the modal is hidden. Server Details use a consistent label-above-
 value layout; values wrap naturally and remain selectable, with actions beside the
@@ -1480,6 +1487,7 @@ actual phone/iPad redraw timing and VoiceOver require separate device acceptance
 Phone and iPad share external-only history, source filters and summaries. The API client always requests and verifies external origin, including baseline queries; old servers require an update. Internal tools and unidentified history remain in diagnostics. Recording rules opens an accessible alert explaining coverage, sampling, retention and request acceptance.
 
 ## Connection marks and send receipts
+
 The server list and detail sheet share a fixed 14pt vector connection mark. The filled/hollow dot and optional keep-running ring share one centre, so independent view rounding cannot shift them. Status words remain the accessible description; the mark is decorative.
 
 An accepted text send to a working agent shows a concise terminal-delivery receipt for at most six seconds. A matching prompt in the transcript, a non-working state or a pane/server change clears it earlier. It does not mean the message is queued or still waiting; a late HTTP response cannot restore a transcript-confirmed receipt. Keys do not create it. Failure and uncertain-send recovery remain persistent. Phone and iPad share this behavior.

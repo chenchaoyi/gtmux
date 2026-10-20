@@ -32,7 +32,7 @@ func desktopTranscriptRead(id, etag string, homes ...string) ([]byte, server.Tra
 	// Read the validator before content: an append during parsing must force another
 	// read, not mark older content with a newer revision.
 	if revision := transcript.LogRevision(ref.Agent, id); revision != "" {
-		meta.Etag = fmt.Sprintf("W/%q", ref.HomeID+"-"+id+"-"+revision)
+		meta.Etag = fmt.Sprintf("W/%q", "profile-v1-"+ref.HomeID+"-"+id+"-"+revision)
 	}
 	if etag != "" && meta.Etag == etag {
 		return nil, meta, nil
@@ -50,6 +50,7 @@ func desktopTranscriptRead(id, etag string, homes ...string) ([]byte, server.Tra
 	}
 	for i := range turns {
 		turns[i].Agent = ref.Agent
+		turns[i].SessionID = id
 	}
 	kept, dropped := turnsWithinBudget(turns, transcriptByteBudget)
 	if kept == nil {

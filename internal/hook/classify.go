@@ -405,5 +405,10 @@ func isSideEffectingTool(tool, source string) bool {
 // comparing them, which is how `StopFailure` was registered, branched on in decide,
 // documented as a wake class, and silently discarded for months.
 func EventIsMapped(agent, event string) bool {
+	// These observers retain profile facts before lifecycle classification. They
+	// intentionally produce no active/waiting/completed transition.
+	if event == "Profile" && (agent == "gemini" || agent == "opencode") || event == "PostModelSwitch" && agent == "claude" {
+		return true
+	}
 	return eventSemantic(agent, event) != semUnknown
 }

@@ -834,3 +834,13 @@ describe('multi-server diagnostic attribution through the real client', () => {
     expect(record).toHaveBeenLastCalledWith(expect.objectContaining({event: 'act.push.register', attrs: expect.objectContaining({server: 'https://relay.invalid/p12'})}));
   });
 });
+
+test('participant profile encodes message identity and guards optional chain shape', async () => {
+  fetchMock.mockResolvedValueOnce(okJson({agent: 'codex', name: 'Codex', facts: [{key: 'model', value: 'm', source: 'session_log'}, {key: 1}], execution_chain: {malformed: true}}));
+  const p = await new GtmuxClient(BASE, TOKEN).participantProfile({id: '%4', session_id: 'thread-a', at: '2026-10-20T00:00:00Z'});
+  expect(fetchMock.mock.calls[0][0]).toContain('id=%254&session_id=thread-a&at=2026-10-20T00%3A00%3A00Z');
+  expect(p.facts).toHaveLength(1);
+  expect(p.execution_chain).toEqual([]);
+  fetchMock.mockResolvedValueOnce(okJson({}, false, 403));
+  await expect(new GtmuxClient(BASE, TOKEN).participantProfile({id: '%4'})).rejects.toMatchObject({status: 403});
+});

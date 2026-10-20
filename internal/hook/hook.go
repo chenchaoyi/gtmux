@@ -19,6 +19,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/assets"
 	"github.com/chenchaoyi/gtmux/internal/agentclient"
+	"github.com/chenchaoyi/gtmux/internal/agentprofile"
 	"github.com/chenchaoyi/gtmux/internal/agents"
 	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/dsh"
@@ -610,10 +611,6 @@ func notifyAgentIcon(agentKey string) string {
 func Run(stdin io.Reader, args []string) int {
 	diag.SetProcess("hook", "system")
 	var raw []byte
-	if !stdinIsTerminal(stdin) {
-		raw, _ = io.ReadAll(stdin) // drain the pipe regardless of what we do next
-	}
-
 	agentKey := "claude"
 	rawEvent := ""
 	for i := 0; i < len(args); i++ {
@@ -629,6 +626,14 @@ func Run(stdin io.Reader, args []string) int {
 			}
 		}
 	}
+	if !stdinIsTerminal(stdin) {
+		if agentKey == "gemini" && rawEvent == "Profile" {
+			raw, _ = agentprofile.ReadModelHook(stdin)
+			_, _ = io.Copy(io.Discard, stdin)
+		} else {
+			raw, _ = io.ReadAll(stdin)
+		}
+	}
 	// Capture historical ancestry before setsid/reparenting loses the launch chain.
 	originEvent := rawEvent
 	if originEvent == "" {
@@ -637,6 +642,19 @@ func Run(stdin io.Reader, args []string) int {
 		}
 		_ = json.Unmarshal(raw, &head)
 		originEvent = head.Event
+	}
+	// Capture allowlisted profile facts before a worker loses its parent chain.
+	if !argsHave(args, "--detached") {
+		if sid, _ := extractResumeFields(raw); sid != "" {
+			home := ""
+			if agentKey == "codex" {
+				home = transcript.CodexHomeID()
+			}
+			if agentKey == "dsh" {
+				home = dsh.HomeID()
+			}
+			agentprofile.Observe(agentKey, sid, home, originEvent, raw, true)
+		}
 	}
 	origin := hookLaunchHost(agentKey, originEvent, argsHave(args, "--detached"))
 	process := hookAgentProcess(agentKey, argsHave(args, "--detached"))

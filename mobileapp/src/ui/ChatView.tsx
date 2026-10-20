@@ -14,6 +14,10 @@ import {Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 're
 import {AnsiLine} from './ansi';
 import {AgentAvatar} from './AgentAvatar';
 import {ReplyActions} from './ReplyActions';
+import {ParticipantProfileModal} from './ParticipantProfileModal';
+import {ProfileTarget, turnIdentity} from './participantProfile';
+import {FoldAllIcon} from './Icons';
+import type {GtmuxClient} from '../api/client';
 import {CopyableText, CopyFeedbackContext} from './CopyableText';
 import {JumpToBottom} from './JumpToBottom';
 import {SenderAvatar} from './SenderAvatar';
@@ -37,6 +41,7 @@ import {CHAT_WINDOW, SessionReset, canLoadMore, earlierLabel, nextWindow, window
 import {edgeDistance} from './liveEdge';
 
 interface Props {
+  client?: GtmuxClient;
   agent: Agent;
   lines: AnsiLine[];
   status: StatusName;
@@ -137,7 +142,7 @@ function dotColor(status: StatusName): string {
 
 function agentForTurn(turn: TranscriptTurn, current: Agent): Agent {
   if (!turn.agent) return current; // transcripts from an older server
-  const names: Record<string, string> = {claude: 'Claude Code', codex: 'Codex', kimi: 'Kimi Code', opencode: 'OpenCode'};
+  const names: Record<string, string> = {claude: 'Claude Code', codex: 'Codex', kimi: 'Kimi Code', opencode: 'OpenCode', dsh: 'DeepSeek Harness'};
   const name = names[turn.agent.toLowerCase()] ?? turn.agent;
   return {...current, agent: name, icon: turn.agent};
 }
@@ -171,7 +176,9 @@ export function liveLabel(since: number | undefined, nowSec: number, lang: Lang)
   return el ? `${base} · ${el}` : base;
 }
 
-export function ChatView({readOnly = false, agent, lines, status, fontSize, lang, turns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, pendingPrompt, pendingDelivered = false, fontPref, workingSince, onLiveEdge, topPad = 0, controlsTop, controlsShift, maxWidth}: Props) {
+export function ChatView({client, readOnly = false, agent, lines, status, fontSize, lang, turns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, pendingPrompt, pendingDelivered = false, fontPref, workingSince, onLiveEdge, topPad = 0, controlsTop, controlsShift, maxWidth}: Props) {
+  const [profileTarget, setProfileTarget] = useState<ProfileTarget | null>(null);
+  const avatar = (content: React.ReactNode, target: ProfileTarget) => <TouchableOpacity testID="participant-avatar" accessibilityRole="button" accessibilityLabel={lang === 'zh' ? '查看参与者资料' : 'View participant profile'} style={styles.avatarButton} onPress={() => setProfileTarget(target)}>{content}</TouchableOpacity>;
   const fontFamily = nativeFontFamily(fontPref); // match the terminal font (shared resolver)
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({}); // per step-group
   const scrollRef = React.useRef<ScrollView>(null);
@@ -258,7 +265,7 @@ export function ChatView({readOnly = false, agent, lines, status, fontSize, lang
     const id = setInterval(() => setNowSec(serverNowSec()), 1000);
     return () => clearInterval(id);
   }, [status]);
-  const [turnOpen, setTurnOpen] = React.useState<Record<number, boolean>>({});
+  const [turnOpen, setTurnOpen] = React.useState<Record<string, boolean>>({});
   // A very long USER prompt (e.g. a pasted context dump) is auto-collapsed to a few
   // lines with a tap-to-expand toggle, so it doesn't bury the conversation. A prompt
   // HQ sent is never collapsed.
@@ -290,7 +297,7 @@ export function ChatView({readOnly = false, agent, lines, status, fontSize, lang
     setCollapsedAll(false);
     setTurnOpen({});
   });
-  const toggleTurn = (i: number) => setTurnOpen(o => ({...o, [i]: !o[i]}));
+  const toggleTurn = (key: string, open: boolean) => setTurnOpen(o => ({...o, [key]: !open}));
 
   // Follow the newest turn — but ONLY if you were already at the tail.
   //
@@ -374,12 +381,8 @@ export function ChatView({readOnly = false, agent, lines, status, fontSize, lang
             // stay in the flow at the top of the chat, under the chrome (%6, 2026-10-06).
             controlsShift !== undefined && {transform: [{translateY: controlsShift}]},
           ]}>
-          <TouchableOpacity testID={TestIds.detail.collapseAll} accessibilityLabel={collapsedAll ? (lang === 'zh' ? '展开全部' : 'Expand all') : (lang === 'zh' ? '折叠全部' : 'Collapse all')} onPress={collapsedAll ? expandAll : collapseAll} activeOpacity={0.7} hitSlop={hitSlop}>
-            <Text style={styles.collapseBarText}>
-              {collapsedAll
-                ? lang === 'zh' ? '▾ 展开全部' : '▾ Expand all'
-                : lang === 'zh' ? '▸ 折叠全部' : '▸ Collapse all'}
-            </Text>
+          <TouchableOpacity testID={TestIds.detail.collapseAll} accessibilityLabel={collapsedAll ? (lang === 'zh' ? '展开全部' : 'Expand all') : (lang === 'zh' ? '折叠全部' : 'Collapse all')} onPress={collapsedAll ? expandAll : collapseAll} activeOpacity={0.7} hitSlop={hitSlop} style={styles.globalFold}>
+            <FoldAllIcon size={22} color="#B8B8C2" collapsed={collapsedAll} />
           </TouchableOpacity>
         </Animated.View>
       )}
@@ -410,7 +413,7 @@ export function ChatView({readOnly = false, agent, lines, status, fontSize, lang
       scrollEventThrottle={16}>
       {/* current-state row: avatar + agent + status dot */}
       <View style={styles.stateRow}>
-        <AgentAvatar agent={agent} size={26} radius={7} bg="#1C1C1F" fg="rgba(235,235,245,0.7)" />
+        {avatar(<AgentAvatar agent={agent} size={26} radius={7} bg="#1C1C1F" fg="rgba(235,235,245,0.7)" />, {kind: 'agent', agent})}
         <View style={styles.stateText}>
           <Text style={[styles.agentName, {color: CHAT_FG}]} numberOfLines={1}>
             {agent.agent}
@@ -484,7 +487,8 @@ export function ChatView({readOnly = false, agent, lines, status, fontSize, lang
         const segs: TranscriptSegment[] = t.segments?.length ? t.segments : t.response ? [{text: t.response}] : [];
         const firstText = segs.findIndex(s => !!s.text); // first reply bubble (preview + hasReply)
         const hasReply = firstText !== -1;
-        const open = collapsedAll ? !!turnOpen[i] : true; // collapsed turns hide the reply
+        const turnKey = turnIdentity(t, i);
+        const open = turnOpen[turnKey] ?? !collapsedAll; // collapsed turns hide the reply
         // one-line reply preview, shown next to the toggle while collapsed so a
         // promptless turn is still locatable.
         const preview = !open && hasReply ? (segs[firstText].text || '').replace(/\s*\n+\s*/g, ' ').trim().slice(0, 140) : '';
@@ -507,7 +511,7 @@ export function ChatView({readOnly = false, agent, lines, status, fontSize, lang
             })()
           : '';
         return (
-          <View key={i} style={styles.turn}>
+          <View key={turnKey} style={styles.turn}>
             {actRows(placed.before[w])}
             {!!seam && (
               <View testID="chat-session-seam" style={styles.seamRow}>
@@ -536,7 +540,7 @@ export function ChatView({readOnly = false, agent, lines, status, fontSize, lang
                           fontFamily={fontFamily} lang={lang} selectable selectionColor={SEL_COLOR} />
                       )}
                     </View>
-                    {t.from ? <SenderAvatar from={t.from} size={26} /> : <UserAvatar size={26} />}
+                    {avatar(t.from ? <SenderAvatar from={t.from} size={26} /> : <UserAvatar size={26} />, t.from ? {kind: 'sender', agent, sender: t.from, turn: t} : {kind: 'human', agent})}
                   </View>
                   {/* Whose words these are. Only ever shown when it was NOT the reader,
                       so an ordinary conversation gains no chrome (who-sent-this-turn). */}
@@ -562,18 +566,13 @@ export function ChatView({readOnly = false, agent, lines, status, fontSize, lang
 
             {/* COLLAPSED: keep the agent avatar + a tappable preview bubble, so a
                 collapsed turn still reads as a normal conversation row (just short). */}
-            {collapsedAll && hasReply && !open && (
-              <TouchableOpacity testID={TestIds.detail.collapsedReply} onPress={() => toggleTurn(i)} activeOpacity={0.7}>
-                <View style={styles.agentRow}>
-                  <AgentAvatar agent={agentForTurn(t, agent)} size={26} radius={7} bg="#1C1C1F" fg="rgba(235,235,245,0.7)" />
-                  <View style={[styles.agentBubble, styles.collapsedBubble]}>
-                    <Text style={[styles.collapsedPreview, {fontFamily, fontSize: fontSize - 0.5}]} numberOfLines={2}>
-                      {preview || (lang === 'zh' ? '（无文本回复）' : '(no text reply)')}
-                    </Text>
-                    <Text style={styles.collapsedHint}>{lang === 'zh' ? '展开 ▸' : 'Expand ▸'}</Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
+            {hasReply && !open && (
+              <View style={styles.agentRow}>
+                {avatar(<AgentAvatar agent={agentForTurn(t, agent)} size={26} radius={7} bg="#1C1C1F" fg="rgba(235,235,245,0.7)" />, {kind: 'agent', agent: agentForTurn(t, agent), turn: t})}
+                <TouchableOpacity style={[styles.agentBubble, styles.collapsedBubble]} testID={TestIds.detail.collapsedReply} onPress={() => toggleTurn(turnKey, open)} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={lang === 'zh' ? '展开本轮' : 'Expand this reply'}>
+                  <Text style={[styles.collapsedPreview, {fontFamily, fontSize: fontSize - 0.5}]} numberOfLines={2}>{preview}</Text>
+                </TouchableOpacity>
+              </View>
             )}
 
             {open &&
@@ -586,7 +585,7 @@ export function ChatView({readOnly = false, agent, lines, status, fontSize, lang
                       {/* every agent bubble carries the avatar — a turn can split into
                           many bubbles across tool calls; one-per-turn left the
                           follow-ups looking orphaned. */}
-                      <AgentAvatar agent={agentForTurn(t, agent)} size={26} radius={7} bg="#1C1C1F" fg="rgba(235,235,245,0.7)" />
+                      {avatar(<AgentAvatar agent={agentForTurn(t, agent)} size={26} radius={7} bg="#1C1C1F" fg="rgba(235,235,245,0.7)" />, {kind: 'agent', agent: agentForTurn(t, agent), turn: t})}
                       <View style={styles.agentBubble}>
                         <MarkdownView source={seg.text} colors={MD_COLORS} fontSize={fontSize} fontFamily={fontFamily} lang={lang} selectable selectionColor={SEL_COLOR} />
                       </View>
@@ -606,14 +605,8 @@ export function ChatView({readOnly = false, agent, lines, status, fontSize, lang
               );
             })}
 
-            {hasReply && <ReplyActions text={segs.map(seg => seg.text || '').filter(Boolean).join('\n\n')} lang={lang} />}
+            {hasReply && <ReplyActions text={segs.map(seg => seg.text || '').filter(Boolean).join('\n\n')} lang={lang} open={open} onToggle={() => toggleTurn(turnKey, open)} />}
 
-            {/* re-collapse affordance when this turn was individually expanded */}
-            {collapsedAll && hasReply && open && (
-              <TouchableOpacity onPress={() => toggleTurn(i)} activeOpacity={0.7} style={styles.replyToggle}>
-                <Text style={styles.replyToggleText}>{lang === 'zh' ? '▾ 收起回复' : '▾ Collapse reply'}</Text>
-              </TouchableOpacity>
-            )}
           </View>
         );
       })}
@@ -626,7 +619,7 @@ export function ChatView({readOnly = false, agent, lines, status, fontSize, lang
             <Text style={[styles.userText, {fontFamily, fontSize, lineHeight}]}>{pendingPrompt}</Text>
             <Text style={styles.echoStatus}>{pendingDelivered ? (lang === 'zh' ? '已发送到终端，等待对话记录' : 'Sent to terminal · awaiting transcript') : (lang === 'zh' ? '正在发送…' : 'Sending…')}</Text>
           </View>
-          <UserAvatar size={26} />
+          {avatar(<UserAvatar size={26} />, {kind: 'human', agent})}
         </View>
       )}
 
@@ -638,7 +631,7 @@ export function ChatView({readOnly = false, agent, lines, status, fontSize, lang
           otherwise, and only one of them is worth interrupting. */}
       {status === 'working' && liveShown.length === 0 && (
         <View style={styles.thinkingRow} testID={TestIds.detail.chatThinking}>
-          <AgentAvatar agent={agent} size={26} radius={7} bg="#1C1C1F" fg="rgba(235,235,245,0.7)" />
+          {avatar(<AgentAvatar agent={agent} size={26} radius={7} bg="#1C1C1F" fg="rgba(235,235,245,0.7)" />, {kind: 'agent', agent})}
           <View style={[styles.agentBubble, styles.thinkingBubble]}>
             <BrandLoader size={16} neutral="rgba(255,255,255,0.30)" />
             <Text style={styles.thinkingText}>{thinkingLabel(workingSince, nowSec, lang)}</Text>
@@ -673,6 +666,7 @@ export function ChatView({readOnly = false, agent, lines, status, fontSize, lang
           <BrandLoader size={40} neutral="rgba(255,255,255,0.2)" />
         </View>
       )}
+      {profileTarget && <ParticipantProfileModal key={`${profileTarget.kind}:${profileTarget.turn?.session_id ?? ''}:${profileTarget.turn?.time ?? ''}`} target={profileTarget} client={client} lang={lang} onClose={() => setProfileTarget(null)} />}
       <JumpToBottom visible={!atBottom && turns.length > 0} onPress={jumpToBottom} lang={lang} />
     </View>
     </CopyFeedbackContext.Provider>
@@ -681,6 +675,8 @@ export function ChatView({readOnly = false, agent, lines, status, fontSize, lang
 
 const styles = StyleSheet.create({
   root: {flex: 1, backgroundColor: '#0D0D0F'},
+  avatarButton: {width: 44, height: 44, alignItems: 'center', justifyContent: 'center'},
+  globalFold: {width: 44, height: 44, alignItems: 'center', justifyContent: 'center'},
   body: {flex: 1, backgroundColor: '#0D0D0F'},
   content: {padding: 12, gap: 10},
   center: {paddingVertical: 24, alignItems: 'center'},
