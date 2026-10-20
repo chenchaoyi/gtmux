@@ -1,5 +1,9 @@
 # Troubleshooting & footguns (living checklist)
 
+## Signal-cleanup fixture reports leftover files with no error (2026-10-20)
+
+CI can report `TestMemoryDiagnosticsSignalCleanup: signal left diagnostic listener files: <nil>`. Its readiness file was created before the socket path was written, so a parent could read an empty path and accidentally inspect `.`. The failed run did not log the path, so it cannot establish which directory remained. Publish the fixture's readiness with a same-directory rename after writing, require a nonempty path, and include that synthetic path in future failures. Keep the real signal and directory-removal assertions; do not add a sleep, weaken the cleanup check or infer a production memory leak from this fixture failure.
+
 ## Codex Terminal joins an old git file list to the latest turn (2026-10-12)
 
 **Evidence.** Live %19: `alternate_on=1`, `history_size=34738` did not grow with the current Codex turns. Raw `capture-pane -S -2000` returned 2048 rows: an old 67-file git change list ended at row 1999; the current alternate frame began at row 2000. Screen-only capture returned 48 rows and no old list. The mobile screenshot marked that exact seam. The previously diagnosed 2000/1000 limits were real, but did not explain this stale-buffer boundary.

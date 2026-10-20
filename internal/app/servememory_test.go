@@ -20,7 +20,13 @@ func TestMemoryDiagnosticsSignalCleanup(t *testing.T) {
 			t.Fatal("fixture listener did not start")
 		}
 		stopOnSignal(func() { _ = s.Close() })
-		if err := os.WriteFile(filepath.Join(dir, "ready"), []byte(s.Path), 0o600); err != nil {
+		// Publish readiness only after the path is fully written. A reader can
+		// observe an empty file between WriteFile's create and write operations.
+		ready := filepath.Join(dir, "ready")
+		if err := os.WriteFile(ready+".tmp", []byte(s.Path), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Rename(ready+".tmp", ready); err != nil {
 			t.Fatal(err)
 		}
 		select {}
@@ -47,7 +53,7 @@ func TestMemoryDiagnosticsSignalCleanup(t *testing.T) {
 	var socket []byte
 	for ctx.Err() == nil {
 		socket, err = os.ReadFile(filepath.Join(dir, "ready"))
-		if err == nil {
+		if err == nil && len(socket) > 0 {
 			break
 		}
 		time.Sleep(10 * time.Millisecond)
@@ -67,7 +73,7 @@ func TestMemoryDiagnosticsSignalCleanup(t *testing.T) {
 		t.Fatalf("signal semantics changed: %v", cmd.ProcessState)
 	}
 	if _, err := os.Stat(filepath.Dir(string(socket))); !os.IsNotExist(err) {
-		t.Fatalf("signal left diagnostic listener files: %v", err)
+		t.Fatalf("signal left diagnostic listener files for %q: %v", socket, err)
 	}
 }
 
