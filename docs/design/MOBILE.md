@@ -1533,6 +1533,8 @@ column count with available width and text size. At large text sizes, modifiers 
 categories stack; all controls and feedback scroll below the persistent header so
 they remain reachable in landscape. Printed symbols keep their glyph size, as in the
 frequent-key row; text labels follow system text size.
+The fixed title/target use the shared chrome text cap; changing Dynamic Type rebuilds
+the panel layout so native text cannot retain heights measured at the previous size.
 While the software keyboard is visible in Detail, the session header, neighbours and
 Chat/Terminal controls slide out together using its native animation duration. They
 leave the accessibility tree while hidden. Dismissing the keyboard restores the

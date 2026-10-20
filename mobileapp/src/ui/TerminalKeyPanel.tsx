@@ -13,6 +13,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import type {Palette} from './theme';
 import type {Lang} from '../i18n';
 import {MODAL_ORIENTATIONS} from './modalOrientations';
+import {CHROME_MAX_SCALE} from './textScale';
 import {
   keyEventLabel,
   sortedModifiers,
@@ -159,6 +160,8 @@ export function TerminalKeyPanel({
         onPress={onClose}
       >
         <View
+          // Dynamic Type can otherwise retain native Text heights measured at the old size.
+          key={fontScale}
           accessibilityViewIsModal
           onAccessibilityEscape={onClose}
           onStartShouldSetResponder={() => true}
@@ -179,12 +182,16 @@ export function TerminalKeyPanel({
             <View style={styles.heading}>
               <Text
                 accessibilityRole="header"
+                maxFontSizeMultiplier={CHROME_MAX_SCALE}
                 style={[styles.title, {color: pal.fg}]}
               >
                 {zh ? '终端按键' : 'Terminal keys'}
               </Text>
               {!!pane && (
-                <Text style={[styles.target, {color: pal.fg2}]}>
+                <Text
+                  maxFontSizeMultiplier={CHROME_MAX_SCALE}
+                  style={[styles.target, {color: pal.fg2}]}
+                >
                   {zh ? '窗格' : 'Pane'} {pane}
                 </Text>
               )}
