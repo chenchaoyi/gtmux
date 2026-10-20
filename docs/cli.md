@@ -781,14 +781,18 @@ overrides the detection.
 ## `gtmux hq workspace`: matter workspace
 
 Click the menu-bar HQ card to open Overview, scoped dialogue and the HQ activity record.
-Overview and the collapsible sidebar share one set of explicit matter states; the saved
-board remains available as a dated Handoff snapshot.
+Overview shows a bounded brief of reports and recent matter changes; the collapsible
+sidebar retains the complete directory using the same explicit matter states. The saved
+board remains available as a dated Handoff snapshot. Add `--overview` to `list --json`
+for report excerpts with source clocks and recent unique matter changes; this reads the
+same workspace snapshot and never invokes a model or consumes the HQ event watermark.
 New task creates a durable goal; Talk to HQ is global. Manage conversations associates
 explicit session identities, historical intervals and multiple workers without changing
 agent clients. Read the [workspace guide](design/hq-workspace.md) for delivery and source limits.
 
 ```sh
 gtmux hq workspace list --json
+gtmux hq workspace list --overview --json
 gtmux hq workspace show global --json
 gtmux hq workspace show matter-id --json
 gtmux hq workspace show activity --json
@@ -920,7 +924,7 @@ sitting in the box unsent.
 menu-bar app's board reader uses it). A board that was never written reports
 `exists:false`.
 
-The Mac workspace keeps the authored board under **Overview → View snapshot**.
+The Mac workspace keeps the authored board under **Overview → Handoff snapshot**.
 It shows the saved time, preserves the full source and starts with collapsed sections.
 Current actions come from explicit matters in Overview, not old board asks. Snapshot
 pane numbers are plain references, not jump targets: a pane number may have been reused.

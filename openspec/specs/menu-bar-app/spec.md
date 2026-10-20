@@ -612,8 +612,8 @@ The HQ card SHALL open Overview and knowledge in the same retained HQ workspace
 window, rather than separate readers or content inside the popover. Overview SHALL
 use explicit matters for current work and retain the complete authored board as a
 secondary, dated Handoff snapshot. The report's handoff row SHALL open that snapshot. Knowledge SHALL show what it owes the commander at the top. Both SHALL read
-exclusively through the CLI (`gtmux hq --board --json`,
-`gtmux knowledge list --json`, `gtmux capture --list --json`), so the app stays a pure
+exclusively through the CLI (`gtmux hq workspace list --overview --json`,
+`gtmux hq --board --json`, `gtmux knowledge list --json`, `gtmux capture --list --json`), so the app stays a pure
 consumer and never resolves the HQ home itself; that path is relocatable and symlinked on
 real machines, so it SHALL be asked for (`gtmux hq --home`) rather than rebuilt.
 

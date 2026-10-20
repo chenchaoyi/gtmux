@@ -30,14 +30,15 @@ type workspaceCandidate struct {
 }
 
 type workspaceList struct {
-	ActivityRevision int64                `json:"activity_revision"`
-	Schema           int                  `json:"schema"`
-	SourceRevision   string               `json:"source_revision"`
-	Revision         uint64               `json:"revision"`
-	Matters          []hqworkspace.Matter `json:"matters"`
-	Conversations    []workspaceCandidate `json:"conversations"`
-	References       []workspaceCandidate `json:"references"`
-	Supervisor       *workspaceCandidate  `json:"supervisor,omitempty"`
+	Overview         *hqworkspace.Overview `json:"overview,omitempty"`
+	ActivityRevision int64                 `json:"activity_revision"`
+	Schema           int                   `json:"schema"`
+	SourceRevision   string                `json:"source_revision"`
+	Revision         uint64                `json:"revision"`
+	Matters          []hqworkspace.Matter  `json:"matters"`
+	Conversations    []workspaceCandidate  `json:"conversations"`
+	References       []workspaceCandidate  `json:"references"`
+	Supervisor       *workspaceCandidate   `json:"supervisor,omitempty"`
 }
 
 func workspaceCandidates() []workspaceCandidate {
@@ -56,7 +57,7 @@ func workspaceCandidates() []workspaceCandidate {
 	return rows
 }
 
-func workspaceSnapshot(s *hqworkspace.Store) (workspaceList, error) {
+func workspaceSnapshot(s *hqworkspace.Store, include bool, now int64) (workspaceList, error) {
 	d, err := s.Read()
 	if err != nil {
 		return workspaceList{}, err
@@ -66,6 +67,10 @@ func workspaceSnapshot(s *hqworkspace.Store) (workspaceList, error) {
 		matters[i].Assessment = ""
 	} // Assessment is a selected-detail read, not sidebar payload.
 	out := workspaceList{Schema: hqworkspace.Schema, Revision: d.Revision, Matters: matters, Conversations: []workspaceCandidate{}, References: []workspaceCandidate{}}
+	if include {
+		brief := hqworkspace.BuildOverview(d, now)
+		out.Overview = &brief
+	}
 	for _, c := range workspaceCandidates() {
 		if c.Supervisor {
 			copy := c
