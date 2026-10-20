@@ -164,3 +164,70 @@ func TestCodexAppendedDetailsKeepTurnBudget(t *testing.T) {
 		t.Fatal("DSH retention omits input bytes")
 	}
 }
+
+func TestDelegationAndWaitRetainKnownParameters(t *testing.T) {
+	for _, tc := range []struct {
+		name, raw, operation string
+		keys                 []string
+	}{
+		{"spawn_agent", `{"task_name":"inspect-images","message":"Inspect synthetic images.\nReport only findings.","fork_turns":"none","agent_type":"explorer","model":"example-model","reasoning_effort":"high","token":"unrelated-secret","config":{"password":"unrelated-secret"}}`, "agent", []string{"task_name", "message", "fork_turns", "agent_type", "model", "reasoning_effort"}},
+		{"Agent", `{"description":"Review changes","prompt":"Check the patch","subagent_type":"explore","run_in_background":false,"resume":"example-agent"}`, "agent", []string{"description", "prompt", "subagent_type", "run_in_background", "resume"}},
+		{"functions.wait", `{"cell_id":"example-cell","yield_time_ms":1000,"max_tokens":2000,"terminate":false,"token":"unrelated-secret"}`, "wait", []string{"cell_id", "yield_time_ms", "max_tokens", "terminate"}},
+		{"wait_agent", `{"ids":["example-agent"],"timeout_ms":30000}`, "wait", []string{"ids", "timeout_ms"}},
+		{"clock.sleep", `{"duration_ms":1000}`, "wait", []string{"duration_ms"}},
+		{"TaskOutput", `{"task_id":"example-task","block":true,"timeout":30}`, "wait", []string{"task_id", "block", "timeout"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := toolStep(tc.name, tc.name, json.RawMessage(tc.raw), "")
+			if got.Operation != tc.operation || got.InputKind != "parameters" || got.DetailsTruncated {
+				t.Fatalf("missing parameters: %#v", got)
+			}
+			var original, kept map[string]any
+			if json.Unmarshal([]byte(tc.raw), &original) != nil || json.Unmarshal([]byte(got.Input), &kept) != nil {
+				t.Fatal("invalid parameter JSON")
+			}
+			if len(kept) != len(tc.keys) {
+				t.Fatalf("unexpected fields: %v", kept)
+			}
+			for _, k := range tc.keys {
+				a, _ := json.Marshal(original[k])
+				b, _ := json.Marshal(kept[k])
+				if string(a) != string(b) {
+					t.Fatalf("parameter %s changed", k)
+				}
+			}
+			if strings.Contains(got.Input, "unrelated-secret") || strings.Contains(got.Input, "config") {
+				t.Fatal("unselected input exposed")
+			}
+		})
+	}
+	for _, raw := range []string{`{"token":"unrelated-secret"}`, `{"message":{"password":"unrelated-secret"},"ids":["example",42]}`} {
+		for _, name := range []string{"spawn_agent", "wait"} {
+			if got := toolStep(name, name, json.RawMessage(raw), ""); got.Input != "" {
+				t.Fatalf("unknown or malformed fields exposed: %#v", got)
+			}
+		}
+	}
+}
+
+func TestDelegationParametersShareDetailBounds(t *testing.T) {
+	raw, _ := json.Marshal(map[string]any{"message": strings.Repeat("鲸", 10000), "task_name": "check"})
+	step := toolStep("spawn_agent", "spawn_agent", raw, "")
+	if step.InputKind != "parameters" || !step.DetailsTruncated || !utf8.ValidString(step.Input) || len(step.Input) > maxToolInputBytes {
+		t.Fatal("task details unbounded")
+	}
+	st := &parseState{}
+	for range 40 {
+		st.addSteps([]Step{step})
+	}
+	if st.toolDetailBytes > maxTurnToolDetailBytes || !st.cur.Segments[0].Steps[39].DetailsTruncated || st.cur.Segments[0].Steps[39].Input != "" {
+		t.Fatal("task inputs bypass turn budget")
+	}
+	ids := make([]string, 1000)
+	raw, _ = json.Marshal(map[string]any{"ids": ids})
+	step = toolStep("wait", "wait", raw, "")
+	var kept map[string][]string
+	if json.Unmarshal([]byte(step.Input), &kept) != nil || len(kept["ids"]) != 128 || !step.DetailsTruncated {
+		t.Fatal("wait identifier list unbounded")
+	}
+}

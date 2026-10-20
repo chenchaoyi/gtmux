@@ -87,3 +87,18 @@ test('a wait with recorded input can still be inspected and copied', () => {
   act(() => byID('tool-input-copy').props.onPress());
   expect(Clipboard.setString).toHaveBeenLastCalledWith('{"duration_ms":1000}');
 });
+
+
+test.each(['spawn_agent', 'wait'])('%s exposes recorded parameters without presenting them as shell argv', title => {
+  const input = JSON.stringify(title === 'wait' ? {cell_id: 'example-cell', yield_time_ms: 1000} : {task_name: 'inspect-images', message: 'Review synthetic images', fork_turns: 'none'}, null, 2);
+  act(() => {tree = renderer.create(<ToolSteps {...props(true)} steps={[{kind: 'tool', title, input, input_kind: 'parameters'}]} />);});
+  act(() => byID('tool-step-toggle-0').props.onPress());
+  expect(byID('tool-input-text').props.children).toBe(input);
+  expect(byID('tool-input-horizontal').props.horizontal).toBe(true);
+  expect(JSON.stringify(tree.toJSON())).toContain('Parameters');
+  expect(JSON.stringify(tree.toJSON())).not.toContain('argv (JSON)');
+  act(() => byID('tool-input-copy').props.onPress());
+  expect(Clipboard.setString).toHaveBeenLastCalledWith(input);
+  act(() => byID('tool-step-toggle-0').props.onPress());
+  expect(tree.root.findAllByType(ScrollView)).toHaveLength(0);
+});

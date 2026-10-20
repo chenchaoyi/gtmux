@@ -56,7 +56,79 @@ func toolStep(name, title string, raw json.RawMessage, summary string) Step {
 			break
 		}
 	}
+	if parameters, limited := toolParameters(step.Operation, args); parameters != "" {
+		var cut bool
+		step.Input, cut = boundedToolText(parameters, maxToolInputBytes)
+		step.InputKind = "parameters"
+		step.DetailsTruncated = step.DetailsTruncated || cut || limited
+		if step.Detail == "" {
+			for _, key := range []string{"description", "title", "task_name", "message", "prompt"} {
+				if value, ok := args[key].(string); ok && strings.TrimSpace(value) != "" {
+					prefix, _ := boundedToolText(value, maxToolInputBytes)
+					step.Detail = clip(strings.Join(strings.Fields(prefix), " "), 80)
+					break
+				}
+			}
+		}
+	}
 	return step
+}
+
+// Keep known task/wait inputs inspectable without exposing unrelated credentials,
+// nested configuration or tool results. Every adapter shares the same byte budgets.
+func toolParameters(operation string, args map[string]any) (string, bool) {
+	var keys []string
+	switch operation {
+	case "agent":
+		keys = []string{"task_name", "description", "title", "message", "prompt", "agent_type", "subagent_type", "target", "agent_id", "resume", "model", "reasoning_effort", "fork_turns", "run_in_background"}
+	case "wait":
+		keys = []string{"cell_id", "ids", "agent_id", "task_id", "duration_ms", "timeout_ms", "timeout", "yield_time_ms", "max_tokens", "terminate", "block"}
+	default:
+		return "", false
+	}
+	selected := make(map[string]any)
+	remaining, truncated := maxToolInputBytes, false
+	text := func(value string) string {
+		bounded, cut := boundedToolText(value, remaining)
+		remaining -= len(bounded)
+		truncated = truncated || cut
+		return bounded
+	}
+	for _, key := range keys {
+		value := args[key]
+		switch v := value.(type) {
+		case string:
+			if strings.TrimSpace(v) != "" {
+				selected[key] = text(v)
+			}
+		case bool, float64:
+			selected[key] = v
+		case []any:
+			valid := true
+			for _, item := range v {
+				if _, ok := item.(string); !ok {
+					valid = false
+					break
+				}
+			}
+			if valid {
+				values := make([]string, 0)
+				for i, item := range v {
+					if remaining == 0 || i >= 128 {
+						truncated = true
+						break
+					}
+					values = append(values, text(item.(string)))
+				}
+				selected[key] = values
+			}
+		}
+	}
+	if len(selected) == 0 {
+		return "", false
+	}
+	encoded, _ := json.MarshalIndent(selected, "", "  ")
+	return string(encoded), truncated
 }
 
 func boundedToolText(value string, limit int) (string, bool) {
@@ -94,9 +166,9 @@ func toolOperation(name string) string {
 		return "web"
 	case "js", "python":
 		return "code"
-	case "wait", "wait_for", "waitfor", "sleep":
+	case "wait", "wait_for", "waitfor", "sleep", "wait_agent", "taskoutput":
 		return "wait"
-	case "agent", "task", "spawn_agent":
+	case "agent", "task", "spawn_agent", "delegate", "followup_task", "resume_agent":
 		return "agent"
 	default:
 		return "tool"

@@ -8,8 +8,8 @@ const names: Record<string, ActivityOperation> = {
   bash: 'command', shell: 'command', exec: 'command', exec_command: 'command', local_shell: 'command', run_command: 'command',
   edit: 'edit', write: 'edit', apply_patch: 'edit', patch: 'edit', write_file: 'edit', edit_file: 'edit',
   web_search: 'web', webfetch: 'web', web_fetch: 'web', browse: 'web', open_url: 'web', fetch: 'web',
-  js: 'code', python: 'code', wait: 'wait', wait_for: 'wait', waitfor: 'wait', sleep: 'wait',
-  agent: 'agent', task: 'agent', spawn_agent: 'agent',
+  js: 'code', python: 'code', wait: 'wait', wait_for: 'wait', waitfor: 'wait', sleep: 'wait', wait_agent: 'wait', taskoutput: 'wait',
+  agent: 'agent', task: 'agent', spawn_agent: 'agent', delegate: 'agent', followup_task: 'agent', resume_agent: 'agent',
 };
 const labels: Record<ActivityOperation, [string, string]> = {
   read: ['Read file', '读取文件'], list: ['List files', '浏览目录'], search: ['Search', '搜索'],
