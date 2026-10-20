@@ -58,6 +58,7 @@ import {READING_WIDTH, useSizeClass} from '../ui/layout';
 import {KeyBus} from '../keys/bus';
 import {historyScope} from '../state/history';
 import {CHROME_ANIM_MS, ChromeState, chromeDecision} from '../ui/liveEdge';
+import {useKeyboardChrome} from '../ui/useKeyboardChrome';
 
 // Shared by BOTH the terminal renderer and the chat view (A−/A+ adjusts both, in
 // either mode) so switching modes never jumps the text size. Middle = default.
@@ -249,7 +250,8 @@ function PaneDetailView({
   // for the height animation. Driven by ChatView/NativeTerm's onLiveEdge, which reports a
   // DISTANCE from the tail — the threshold that keeps this stable depends on how tall the
   // chrome is, and only this side knows that. The rule is `ui/liveEdge`.
-  const collapse = useRef(new Animated.Value(0)).current;
+  const scrollCollapse = useRef(new Animated.Value(0)).current;
+  const {collapse, keyboardVisible} = useKeyboardChrome(scrollCollapse);
   const [headerH, setHeaderH] = useState(0);
   // All three blocks fold on one driver, so the height the decision needs is their SUM:
   // that is what the viewport gains and loses, and therefore what the hysteresis has to
@@ -272,7 +274,7 @@ function PaneDetailView({
       }
       if (!d.change) return;
       chrome.current = d;
-      Animated.timing(collapse, {
+      Animated.timing(scrollCollapse, {
         toValue: d.hidden ? 1 : 0,
         duration: CHROME_ANIM_MS,
         // Transform + opacity only, so the fold runs on the UI thread: it can no
@@ -286,7 +288,7 @@ function PaneDetailView({
         if (finished) runEdge(lastGap.current);
       });
     },
-    [collapse, chromeH],
+    [scrollCollapse, chromeH],
   );
   // BOTH mode layers stay mounted (switching must be instant), so both keep reporting —
   // and the hidden one reports its OWN tail. Measured on 2026-09-05: browsing terminal
@@ -383,11 +385,11 @@ function PaneDetailView({
   useEffect(() => {
     if (mode === 'chat') setSeenChat(true);
     else setSeenTerm(true);
-    collapse.setValue(0); // reveal the header when switching Chat↔Terminal
+    scrollCollapse.setValue(0); // keyboard visibility still takes precedence
     chrome.current = {hidden: false, settledAt: 0};
     lastGap.current = 0;
     if (Debug.logNet) Debug.record({event: 'edge-reset', mode});
-  }, [mode, collapse]);
+  }, [mode, scrollCollapse]);
 
   // A plain pane has no chat — force Terminal (the Chat/Terminal segmented is hidden
   // for it below), so opening a shell/dev-server pane lands on its live screen.
@@ -826,7 +828,9 @@ function PaneDetailView({
         </View>
       {!fullscreen && (
         <Animated.View
-          pointerEvents="box-none"
+          pointerEvents={keyboardVisible ? 'none' : 'box-none'}
+          accessibilityElementsHidden={keyboardVisible}
+          importantForAccessibility={keyboardVisible ? 'no-hide-descendants' : 'auto'}
           style={[
             styles.chrome,
             {

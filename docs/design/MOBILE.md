@@ -1525,6 +1525,19 @@ Return or Ctrl+M deliberately sends Return; the Characters panel explains aliase
 
 The phone and iPad use the same component, with a 480pt cap, safe-area/height limits,
 scrolling and at least 44pt buttons. It takes no global hardware shortcuts or IME input.
+The title and secondary pane identifier have separate lines, with a 44pt Close button.
+Neutral segmented categories and inverted modifier toggles distinguish selection
+without status colours. Keycaps use standard keyboard glyphs and PgUp/PgDn; spoken
+labels and sent events retain the full canonical key names. The grid reduces its
+column count with available width and text size. At large text sizes, modifiers and
+categories stack; all controls and feedback scroll below the persistent header so
+they remain reachable in landscape. Printed symbols keep their glyph size, as in the
+frequent-key row; text labels follow system text size.
+While the software keyboard is visible in Detail, the session header, neighbours and
+Chat/Terminal controls slide out together using its native animation duration. They
+leave the accessibility tree while hidden. Dismissing the keyboard restores the
+existing scroll-based chrome state, without resizing the content, changing mode or
+losing a draft. Reduce Motion removes the keyboard-driven animation.
 The browser uses the same catalog and a scoped, keyboard-accessible dialog. There are
 no macros, modifier locking, repeats or offline queues. Old servers retain legacy keys.
 
