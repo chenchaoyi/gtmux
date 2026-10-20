@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.142',
+    en: [
+      '- Tool calls show readable task and wait summaries; the original parameter records remain available to inspect and copy.',
+      '- Participant profiles identify recorded plans without implying an active subscription.',
+      '- Usage shares clearer weekly quota and reset-time wording across the summary and details.',
+    ],
+    zh: [
+      '- 工具调用显示易读的任务和等待摘要，原始参数记录仍可展开检查和复制。',
+      '- 参与者资料明确标注已记录套餐，避免被误认为当前订阅。',
+      '- 用量摘要与明细统一周额度和重置时间文案。',
+    ],
+  },
+  {
     version: '1.0.141',
     en: [
       '- Usage now separates current limits and balances from output tokens, with older readings and source details tucked into History & sources.',

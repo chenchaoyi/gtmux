@@ -1,0 +1,3 @@
+- Tool calls show readable task and wait summaries; the original parameter records remain available to inspect and copy.
+- Participant profiles identify recorded plans without implying an active subscription.
+- Usage shares clearer weekly quota and reset-time wording across the summary and details.
