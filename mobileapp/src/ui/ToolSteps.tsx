@@ -76,7 +76,7 @@ function ToolInput({step, lang, size}: {step: TranscriptStep; lang: 'en' | 'zh';
   const done = copied === input;
   return <View testID="tool-step-details" style={styles.inspector}>
     <View style={styles.inspectorHeader}>
-      <Text selectable style={[styles.tool, {fontSize: size - 2}]}>{step.title || 'tool'}{step.input_kind === 'arguments' ? ' · argv (JSON)' : ''}</Text>
+      <Text selectable style={[styles.tool, {fontSize: size - 2}]}>{step.title || 'tool'}{step.input_kind === 'arguments' ? ' · argv (JSON)' : step.input_kind === 'parameters' ? (lang === 'zh' ? ' · 参数' : ' · Parameters') : ''}</Text>
       {!!input && <TouchableOpacity testID="tool-input-copy" accessibilityRole="button"
         accessibilityLabel={done ? (lang === 'zh' ? '已复制' : 'Copied') : (lang === 'zh' ? '复制显示内容' : 'Copy displayed input')}
         onPress={() => {Clipboard.setString(input); setCopied(input);}} style={styles.copy}>
