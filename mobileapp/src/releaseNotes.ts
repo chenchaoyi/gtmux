@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.139',
+    en: [
+      '- Keep tool activity in a compact folded list; inspect real command details when needed.',
+      '- Open profiles with clear loading and retry states; inspect the same conversation\'s latest recorded launch chain separately from historical facts.',
+      '- Keep reply actions close to the text and the profile Close control clear while scrolling.',
+    ],
+    zh: [
+      '- 工具记录默认收起为紧凑灰色列表，需要时再检查完整命令；无参数调用不再打开空详情。',
+      '- 资料窗明确区分加载、失败与未记录；调用链按需展示同一会话最近记录，不混入历史消息资料。',
+      '- 复制、分享和收起紧贴回复，资料窗滚动时关闭按钮不再与内容重叠。',
+    ],
+  },
+  {
     version: '1.0.138',
     en: [
       'Conversation turns have nearby collapse controls and two-line previews. Copy and share use compact icon buttons, and harness setup frames stay out of user messages.',
