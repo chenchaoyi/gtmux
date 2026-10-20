@@ -74,6 +74,10 @@ model, or pane cannot replace historical facts. Closing preserves reading positi
 and draft. The human profile keeps its human title, small “碳基决策者 · 自封” line,
 and Dune quotation, without the removed humorous paragraph.
 
+The agent dialog reserves its body height before the first request settles. Loading uses a labelled, static placeholder; it never flashes the unrecorded state or a previous target's facts. Failed reads offer Retry; an empty successful result remains unrecorded. The identity header is compact, provenance uses quiet label/value rows, and a reserved close-control band keeps scrolled content clear of Close.
+
+A message's historical facts and its current launch-chain observations are separate views. Opening the chain lazily makes a second current-profile request only when the message and current agent share a source session ID; the normal server binding checks still apply. Only that response's chain and observation time are shown, never its current model, tier or effort. Returned session/agent identity must match the message profile. A header profile reuses its existing current response. Stitched older sessions and other senders do not borrow another runtime; absent observations say so explicitly. A chain describes the latest recorded ancestry, not live ownership or the processes at the message's time.
+
 ## Existing integration boundaries
 
 The radar [`agentJSON`](../../internal/radar/agents.go) still carries identity and

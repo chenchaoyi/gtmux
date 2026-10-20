@@ -486,9 +486,11 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
         // separate speech bubbles. Fall back to the joined response when no segments.
         const segs: TranscriptSegment[] = t.segments?.length ? t.segments : t.response ? [{text: t.response}] : [];
         const firstText = segs.findIndex(s => !!s.text); // first reply bubble (preview + hasReply)
+        const lastText = segs.reduce((last, seg, index) => seg.text ? index : last, -1);
         const hasReply = firstText !== -1;
         const turnKey = turnIdentity(t, i);
         const open = turnOpen[turnKey] ?? !collapsedAll; // collapsed turns hide the reply
+        const replyActions = hasReply ? <ReplyActions text={segs.map(seg => seg.text || '').filter(Boolean).join('\n\n')} lang={lang} open={open} onToggle={() => toggleTurn(turnKey, open)} /> : null;
         // one-line reply preview, shown next to the toggle while collapsed so a
         // promptless turn is still locatable.
         const preview = !open && hasReply ? (segs[firstText].text || '').replace(/\s*\n+\s*/g, ' ').trim().slice(0, 140) : '';
@@ -591,11 +593,9 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
                       </View>
                     </View>
                   )}
+                  {k === lastText && replyActions}
                   {!!seg.steps?.length && (() => {
-                    // The turn IN FLIGHT opens its steps; history stays closed, and a tap
-                    // wins over both (ui/chatSteps).
-                    const stepCtx = {isLatestTurn: i === turns.length - 1, working: status === 'working'};
-                    const stepsShown = stepsOpen(expanded[key], stepCtx);
+                    const stepsShown = stepsOpen(expanded[key]);
                     return (
                     <ToolSteps steps={seg.steps} open={stepsShown} lang={lang} fontSize={fontSize}
                       onToggle={() => setExpanded(e => ({...e, [key]: !stepsShown}))} />
@@ -605,7 +605,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
               );
             })}
 
-            {hasReply && <ReplyActions text={segs.map(seg => seg.text || '').filter(Boolean).join('\n\n')} lang={lang} open={open} onToggle={() => toggleTurn(turnKey, open)} />}
+            {!open && replyActions}
 
           </View>
         );

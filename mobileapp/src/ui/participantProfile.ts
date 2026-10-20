@@ -14,6 +14,14 @@ const labels: Record<string, [string, string]> = {
   thinking: ['Thinking', '思考'], thinking_level: ['Thinking level', '思考等级'], thinking_budget: ['Thinking budget', '思考预算'], context: ['Context option', '上下文选项'],
 };
 export function factLabel(key: string, zh: boolean): string {return labels[key]?.[zh ? 1 : 0] ?? key;}
+export function factSourceLabel(source: string, zh: boolean): string {
+  const sources: Record<string, [string, string]> = {
+    session_log: ['Session log', '本会话日志'], verified_binding: ['Verified client binding', '已核验的客户端绑定'],
+    session_rate_limits: ['Rate limits recorded in this session', '本会话当时的额度记录'],
+    runtime_package: ['Runtime package', '运行实例加载包'], native_hook: ['Native hook', '原生 hook'],
+  };
+  return sources[source]?.[zh ? 1 : 0] ?? (zh ? '已记录来源' : 'Recorded source');
+}
 export function displayFacts(profile?: ParticipantProfile): ProfileFact[] {
   return (profile?.facts ?? []).filter(f => labels[f.key] && f.value).sort((a, b) => Object.keys(labels).indexOf(a.key) - Object.keys(labels).indexOf(b.key));
 }

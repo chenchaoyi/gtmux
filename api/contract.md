@@ -476,6 +476,13 @@ text is sanitized observation, not an executable recipe. Historical responses ne
 borrow the current runtime chain or current hook snapshot. Reads do not enroll a
 session, grant input, install hooks, or execute version probes/model turns.
 
+The mobile dialog may separately request the current profile without `at` when a
+message and its current agent share the same verified source session. It displays
+only the returned chain/time under an explicitly current-observation section;
+those fields are not merged into historical facts. Older stitched sessions and
+other senders cannot use another session's runtime as a fallback. This reuses the
+existing query and response contract; it adds no authority or background polling.
+
 Transcript turns additionally carry optional `session_id` identifying their source
 session, including stitched HQ predecessors. Older clients may ignore it; avatars
 without source/time evidence show identity without guessing historical facts.

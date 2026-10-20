@@ -1,3 +1,62 @@
+# Compact activity and readable profile loading — 2026-10-20
+
+This follow-up compares the two user-supplied phone screenshots with synthetic
+normal-size iPhone simulator captures. This is author verification, not independent
+review. The earlier participant-profile acceptance below is historical evidence,
+not a substitute for this iteration’s coverage.
+
+## Findings and correction
+
+- Removed the bordered activity card and the repeated Wait inspector. Both live
+  and historical groups start as a grey disclosure; a parameter-free Wait is one
+  static icon row. Real command/path input retains inspection, bounded vertical
+  scrolling, horizontal scrolling and literal copy.
+- Moved the unboxed reply footer directly after the final text, before trailing
+  calls. Copy/Share remain icon-only and the reply fold stays with the text.
+- Kept the profile’s body size stable while a labelled static placeholder loads.
+  Unrecorded, failed/Retry, and ready states are distinct. Facts never flash from
+  another target. The compact identity leaves room for facts and chain access.
+- Added explicit same-session current-chain disclosure beside historical facts.
+  The synthetic `tmux → zsh → node → codex` path is visible with observation time
+  and sanitized-command limitations; historical model/tier/effort remain unchanged.
+- P2 found during scrolling: body content passed under Close. Reserving a separate
+  close-control band fixes the overlap; the final chain capture was rechecked.
+
+## Evidence and boundary
+
+Operator-local evidence lives under `ops/secondary-evidence/`, with bundle and
+component hashes in `ops/native-preview-manifest.json`. Source screenshots were
+viewed alongside the revised captures. Accepted tool captures cover the static
+Wait, command input before/after a real horizontal gesture, loading, ready facts
+and all four chain nodes. Captures are the UI tool’s optimized 368 × 800 images,
+not full-resolution device screenshots. The earlier Wait capture uses the same
+unchanged ToolSteps component; profile captures use the captured JS bundle identified in that manifest.
+
+To avoid another multi-gigabyte native build, this preview installs an existing
+Release simulator native shell (1.0.137) with this worktree’s bundled JS. Native
+code did not change. This is not evidence of a new native compilation, a signed
+phone package, or an installed production build. CI is reported separately.
+The fixture used synthetic credentials/logs and executed no real pane commands.
+Profile request observations confirm a separate historical read and same-session
+current read, without automatic polling.
+
+Some UI taps initially did not change the screen, and the working-state timer
+prevented the driver’s generic settle predicate. Fresh snapshots and actual
+screenshots verified accepted interactions; the ineffective taps were not passes.
+Copy and failure/Retry contracts are covered by component tests, not native
+pasteboard or fault-injection acceptance in this iteration.
+
+No remaining actionable P0/P1/P2 visual finding in the inspected normal-size
+phone flow. The captures precede a final error-only correction: an unavailable
+server read with no chain now shows failure/Retry rather than unrecorded. That
+branch is component-tested; the inspected normal flows did not change.
+This iteration has no iPad/large-type, Android, physical-device,
+independent-review or VoiceOver speech/focus acceptance.
+
+final result: passed within the stated normal-size phone scope
+
+---
+
 # Participant profiles — visual acceptance
 
 Compared the approved three-state reference with the native Release app built from
