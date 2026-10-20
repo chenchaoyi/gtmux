@@ -421,7 +421,7 @@ describe('activityView', () => {
   });
   it('carries the three figures and the stats line in both languages', () => {
     const en = activityView(history, false, 20, now)!;
-    expect(en.figs.map(f => `${f.key} ${f.value}`)).toEqual(['today 450000', 'this week 3950000', 'since Aug 1 11550000']);
+    expect(en.figs.map(f => `${f.key} ${f.value}`)).toEqual(['today 450000', 'last 7 days 3950000', 'since Aug 1 11550000']);
     expect(en.stats).toEqual(['peak 4.1M · Aug 12', 'streak 2d · best 2d', '251k a day', '4 of 46 days active']);
     const zh = activityView(history, true, 20, now)!;
     expect(zh.stats[0]).toBe('峰值 4.1M · 8月12日');

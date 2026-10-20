@@ -259,8 +259,8 @@ describe('usageDoorValue with tokens by day', () => {
       {label: 'claude week (fable)', pct: 50, agent: 'claude'},
       {label: 'claude session', pct: 32, agent: 'claude'},
     ];
-    expect(usageDoorValue(week, false, {today_out: 2_802_190, week_out: 16_216_165})).toBe('today 2.8M  ·  week 16.2M');
-    expect(usageDoorValue(week, true, {today_out: 2_802_190, week_out: 16_216_165})).toBe('今天 2.8M  ·  本周 16.2M');
+    expect(usageDoorValue(week, false, {today_out: 2_802_190, week_out: 16_216_165})).toBe('today 2.8M  ·  7d 16.2M');
+    expect(usageDoorValue(week, true, {today_out: 2_802_190, week_out: 16_216_165})).toBe('今天 2.8M  ·  近7天 16.2M');
     // An older serve carries no history: the door reads as before.
     expect(usageDoorValue(week, false, null)).toBe('claude Fable 50%');
     // A week of nothing says nothing about tokens.

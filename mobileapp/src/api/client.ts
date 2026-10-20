@@ -351,6 +351,7 @@ export interface UsageAgentHistory {
   agent_key: string;
   agent_name?: string;
   today_out: number;
+  /** Host-local today and the preceding six dates; legacy wire name. */
   week_out: number;
   today_in?: number;
   week_in?: number;
@@ -382,6 +383,7 @@ export interface UsageHistory {
   /** Absent from a serve older than 1.0.26, and from a ledger that knows no day. */
   activity?: UsageActivity;
   today_out?: number;
+  /** Host-local today and the preceding six dates; legacy wire name. */
   week_out?: number;
   today_in?: number;
   week_in?: number;

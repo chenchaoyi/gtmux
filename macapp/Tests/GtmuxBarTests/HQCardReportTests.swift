@@ -165,11 +165,11 @@ final class HQCardUsageTests: XCTestCase {
         XCTAssertEqual(row.door, .usage)
         // With tokens by day the row leads with today and this week (usage-door-tokens).
         i.history = HQUsageHistory(days: nil, todayOut: 2_802_190, weekOut: 16_216_165, byAgent: nil)
-        XCTAssertEqual(hqReportRows(i, zh: false).first { $0.key == .usage }!.value, "today 2.8M · week 16.2M · claude Fable 49% · codex wk 0%")
-        XCTAssertEqual(hqReportRows(i, zh: true).first { $0.key == .usage }!.value, "今天 2.8M · 本周 16.2M · claude Fable 49% · codex 周 0%")
+        XCTAssertEqual(hqReportRows(i, zh: false).first { $0.key == .usage }!.value, "today 2.8M · 7d 16.2M · claude Fable 49% · codex wk 0%")
+        XCTAssertEqual(hqReportRows(i, zh: true).first { $0.key == .usage }!.value, "今天 2.8M · 近7天 16.2M · claude Fable 49% · codex 周 0%")
         var noPlan = HQReportInput()
         noPlan.history = i.history
-        XCTAssertEqual(hqReportRows(noPlan, zh: false).first { $0.key == .usage }!.value, "today 2.8M · week 16.2M", "tokens alone still earn the row")
+        XCTAssertEqual(hqReportRows(noPlan, zh: false).first { $0.key == .usage }!.value, "today 2.8M · 7d 16.2M", "tokens alone still earn the row")
         XCTAssertTrue(hqReportRows(HQReportInput(), zh: true).isEmpty, "no plan: no row")
     }
 
@@ -270,7 +270,7 @@ final class HQActivityTests: XCTestCase {
         XCTAssertEqual(g.rows[2][19].level, -1)
         XCTAssertEqual(g.rows[1][18].date, "2026-09-08"); XCTAssertEqual(g.rows[1][18].level, 4)
         XCTAssertEqual(g.months.map { $0.1 }, ["May", "Jun", "Jul", "Aug", "Sep"])
-        XCTAssertEqual(g.figs.map { $0.1 }, ["today", "this week", "since Aug 1"])
+        XCTAssertEqual(g.figs.map { $0.1 }, ["today", "last 7 days", "since Aug 1"])
         XCTAssertEqual(g.figs[0].0, "450k"); XCTAssertEqual(g.figs[2].0, "11.6M")
         XCTAssertEqual(g.stats, ["peak 4.1M · Aug 12", "streak 2d · best 2d", "251k a day", "4 of 46 days active"])
     }

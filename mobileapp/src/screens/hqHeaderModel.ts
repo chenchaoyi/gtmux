@@ -339,7 +339,7 @@ export function usageDoorValue(
   // follows as the plan's answer to "how much room is left".
   if (history && ((history.week_out ?? 0) > 0 || (history.today_out ?? 0) > 0)) {
     parts.push(zh ? `今天 ${compactTok(history.today_out ?? 0)}` : `today ${compactTok(history.today_out ?? 0)}`);
-    parts.push(zh ? `本周 ${compactTok(history.week_out ?? 0)}` : `week ${compactTok(history.week_out ?? 0)}`);
+    parts.push(zh ? `近7天 ${compactTok(history.week_out ?? 0)}` : `7d ${compactTok(history.week_out ?? 0)}`);
     // The tile holds two facts (HQHeader.destLines); with tokens present the tightest
     // window moves into the sheet, where every window is drawn with its reset time.
     return parts.join('  ·  ');

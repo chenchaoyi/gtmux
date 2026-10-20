@@ -178,6 +178,25 @@ export function planByAgent(u: UsageReport | null, zh = false): PlanGroup[] {
   return out;
 }
 
+/** Keep historical readings inspectable without presenting them as current capacity. */
+export function quotaGroups(groups: PlanGroup[]) {
+  const withWindows = (stale: boolean) => groups.flatMap(g => {
+    const windows = g.windows.filter(w => (w.stale === true) === stale);
+    return windows.length ? [{...g, windows}] : [];
+  });
+  return {
+    current: withWindows(false),
+    historical: withWindows(true),
+    unavailable: groups.filter(g => g.unreadable),
+  };
+}
+
+/** A lone ordinary reading already has a row; alerts still deserve the lead. */
+export function showQuotaLead(windows: UsageWindow[]): boolean {
+  const current = windows.filter(w => w.stale !== true);
+  return current.length > 1 || current.some(w => w.tier === 'warn' || w.tier === 'full' || w.pct_used >= 100);
+}
+
 /**
  * compactTok is the token count as a reader wants it: 2.9M, 830k, 412.
  *
@@ -639,7 +658,7 @@ export function activityView(h: UsageHistory | null | undefined, zh: boolean, we
   return {
     figs: [
       {value: h?.today_out ?? 0, key: zh ? '今天' : 'today'},
-      {value: h?.week_out ?? 0, key: zh ? '本周' : 'this week'},
+      {value: h?.week_out ?? 0, key: zh ? '近 7 天' : 'last 7 days'},
       {value: a.all_out, key: zh ? `自 ${fmtDate(a.since)}` : `since ${fmtDate(a.since)}`},
     ],
     stats: zh
