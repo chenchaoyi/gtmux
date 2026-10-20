@@ -48,7 +48,7 @@ func cmdUsage(args []string) int {
 		printActivity(rep.History, time.Now())
 		return 0
 	}
-	if len(rep.Sessions) == 0 {
+	if len(rep.Sessions) == 0 && len(rep.Limits.Windows) == 0 && len(rep.Limits.Balances) == 0 && rep.History.WeekOut == 0 {
 		i18n.Say("No conversation has usage data yet.", "还没有哪段对话带上用量数据。")
 		return 0
 	}
@@ -98,6 +98,19 @@ func printUsage(rep radar.UsageReport, now time.Time) {
 		fmt.Println()
 	}
 
+	if len(rep.Limits.Balances) > 0 {
+		fmt.Println(i18n.Bold + i18n.Tr("BALANCES", "余额") + i18n.Reset)
+		for _, b := range rep.Limits.Balances {
+			for _, w := range b.Wallets {
+				kind := i18n.Tr("recharge", "充值")
+				if w.Kind == "bonus" {
+					kind = i18n.Tr("bonus", "赠送")
+				}
+				fmt.Printf("  %s  %s %s  %s · %s\n", b.AgentName, w.Currency, w.Amount, kind, time.Unix(b.ObservedAt, 0).Local().Format(time.RFC3339))
+			}
+		}
+		fmt.Println()
+	}
 	// CONVERSATIONS: the head of the list, then one line for the tail.
 	hdr := i18n.PadLeft(i18n.Tr("out", "输出"), 8) + i18n.PadLeft("ctx", 7) + i18n.PadLeft(i18n.Tr("rate", "速率"), 7)
 	title := i18n.Tr("CONVERSATIONS", "对话") + "  " + fmt.Sprint(len(rep.Sessions))
@@ -204,6 +217,9 @@ func planRow(w limits.Window, now time.Time) string {
 		tone = i18n.Amber
 	}
 	name := i18n.PadRight(limits.Name(w), 26)
+	if w.Stale {
+		return name + i18n.Dim + fmt.Sprintf("%d%%", w.PctUsed) + i18n.Tr(" · stale reading", " · 旧读数") + i18n.Reset
+	}
 	pct := i18n.PadLeft(fmt.Sprintf("%d%%", w.PctUsed), 4)
 	// When it comes back: the relative form first because that is the question, the
 	// clock time the agent reported after it, because that is what you set an alarm by.

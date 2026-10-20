@@ -286,7 +286,7 @@ SessionStart、提示、工具前后和 Stop 事件接入桥接。工具开始�
 `approval/asked` 不能证明正在等用户处理，批准卡片检测尚未实现。队列和子进程有边界，
 stdin 使用管道。终端适配器核对数据目录、前台会话、进程祖先和 tmux 代际，再开放受管 pane；后台挂载本身不授予输入能力。原生命令拿到真实目标 agent，校验一次性请求并返回对应回执，保留草稿、菜单和会话切换保护。各端仍显示 DeepSeek Harness 和官方图标，dst 只是内部客户端适配器。
 
-Doctor 区分文件已安装、实时绑定和输入权限。适配器支持普通 `dst --backend dsh`、终端派发与恢复，以及 HQ 逐条读取公开消息并明确标记审阅。Web 继续外部只读，仍无 Web adopt、用量和一次性执行；较早的 Web 或后台区间不自动纳管。知识写入 `$DSH_HOME/AGENTS.md`。见[终端设计与验证边界](../design/dsh-terminal-clients.zh.md)。
+Doctor 区分文件已安装、实时绑定和输入权限。适配器支持普通 `dst --backend dsh`、终端派发与恢复，以及 HQ 逐条读取公开消息并明确标记审阅。Web 继续外部只读，仍无 Web adopt 和一次性执行；较早的 Web 或后台区间不自动纳管。知识写入 `$DSH_HOME/AGENTS.md`。见[终端设计与验证边界](../design/dsh-terminal-clients.zh.md)。
 
 实现：[安装、上游契约与官方图标](deepseek-harness.zh.md)、
 [插件源码](../../internal/app/dsh_plugin.mjs)、[文件读取器](../../internal/dsh/log.go)。
@@ -377,3 +377,18 @@ agent 需要实际运行新 hook，Codex 可能还需审阅信任，DSH 要显�
 以上能力是对照源码整理的，不表示对每个上游最新版本、终端、桌面客户端和设备都做过实机
 验收。注册表与回归测试核对接线和合成契约，真实 hook 上报与运行验收是另外的证据。
 接入文件、能力或边界变化时，应同时更新本文及英文版。
+
+
+### DSH 用量与账户支持边界
+
+DSH v4 用量读取原生持久化的 `assistant/message`、`assistant/attempt`，包含压缩流中最后一个 usage 样本。同一 turn/step 的修订替换之前的样本；`llm/retry-started` 之后另计一次尝试。输入、缓存读取/写入和输出分别计数，推理 token 已包含在输出中，不再叠加。会话及本地日期统计复用已有的增量索引，支持原始 JSONL 与校验后的 Zstandard；无需插件，也不调用模型。上下文数值仅表示最近一次请求的输入/缓存压力，分母必须有原生 `contextWindow` 记录，不还原压缩后的实时上下文。缺少或不支持的记录表示未知，不表示没有花费。卸载 agent 或移走日志后仍保留历史日统计。
+
+DeepSeek Account 余额通过现有 gtmux 插件中的原生 `deepseekAccount` Cordis 服务读取，不需要额外 npm 插件，也不走 Codex 兼容 hook。`gtmux install` 更新 gtmux 自己拥有的文件；`gtmux doctor` 能发现旧桥接，`gtmux doctor --fix` 可以修复。正在运行的 Web/TUI 需要在下次正常启动时加载更新；读取用量不会替用户重启。观察器只用原生账户标识和 `getBalance`，不调用取凭证的 `resolveToken`、`getPlatformSession`，不登录、不请求模型、不确认领取赠送。离开原生服务的只有账户标识摘要、币种、充值/赠送钱包的原始十进制金额及观测时间。缺少可核对的账户标识或服务不支持时不展示余额。
+
+账户切换后丢弃旧请求；同一 DSH 目录内 Web/TUI 对同一账户的观测合并显示。单次读取有 8 秒展示期限，但原生服务无取消参数，所以超时后仍保留一个在途位置，直到原调用结束，避免堆叠重试。账户变化时重读，平时每个已加载桥接每 5 分钟刷新一次，15 分钟后观测过期。这是钱包金额，不是订阅百分比或已付费套餐。API Key 与自定义 Provider 还没有经过核实的余额适配器，会明确说明暂不支持；不能从 DSH 或模型名猜计费方。
+
+来源列表根据注册表的安装探测和实际会话、历史及账户数据动态生成。安装只表示本机可用，不证明订阅情况；卸载后历史用量仍保留。Claude `/usage` 保留缓存观测时间，Codex 保留原始额度记录时间和当时记录的套餐，后者不是实时账单验证。过期读数灰显，不参与当前额度摘要和告警。CLI、手机/iPad 与菜单栏复用同一份 API；内嵌 Web 当前没有额度页面。
+
+依据：[原生 token 投影](https://github.com/deepseek-ai/deepseek-harness/blob/687f282e8625c6b8d11ff58211a90524be2e4317/packages/llm/token-meter/src/usage-projection.ts)、[原生账户契约](https://github.com/deepseek-ai/deepseek-harness/blob/687f282e8625c6b8d11ff58211a90524be2e4317/packages/credentials/deepseek-account/src/index.ts)。核对版本为本机 DSH 0.2.0-rc.2 和固定的上游提交；合成账户测试不代表已读取真实余额，也不代表账单总额。
+
+当前 DSH token 适配器覆盖已有索引里的根会话结算，单次发现至多取最近修改的 128 份文件；不汇总子 agent 会话，也不校验服务商账单。未观测到或更旧的文件不代表用量为零。

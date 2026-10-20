@@ -259,6 +259,8 @@ export interface HQEvent {
 // UsageReport mirrors internal/radar UsageReport (GET /api/usage); the limits/resource
 // sub-shapes come from internal/limits + internal/resource.
 export interface UsageWindow {
+  observed_at?: number;
+  stale?: boolean;
   label: string;
   pct_used: number;
   reset_at: string;
@@ -318,6 +320,11 @@ export interface ResourceReport {
  * with the wire, and the reason the demo's usage rows could ship with no title at all.
  */
 export interface UsageSession {
+  in?: number;
+  source?: string;
+  session_id?: string;
+  home_id?: string;
+  title?: string;
   agent_key: string;
   tok: number;
   rate: number;
@@ -382,12 +389,21 @@ export interface UsageHistory {
   scanned_at?: number;
 }
 
+export interface UsageBalance {
+  agent: string; agent_name: string; account_id: string; observed_at: number;
+  wallets: {currency: string; amount: string; kind: 'recharge' | 'bonus'}[];
+}
+export interface UsageSource {
+  agent: string; name: string; installed: boolean; tokens: boolean;
+  account: 'quota' | 'balance' | 'unsupported'; status?: string;
+}
 export interface UsageReport {
+  sources?: UsageSource[];
   /** Absent from a serve older than 1.0.23. */
   history?: UsageHistory;
   sessions?: UsageSession[];
   types?: {agent_key: string; sessions: number; tok: number; rate: number; usage_warn?: string}[];
-  limits?: {windows?: UsageWindow[]; warn?: string; at?: number; unknown?: UnknownPlan[]};
+  limits?: {windows?: UsageWindow[]; warn?: string; at?: number; unknown?: UnknownPlan[]; balances?: UsageBalance[]; dsh_account_status?: string};
   resource?: ResourceReport;
 }
 

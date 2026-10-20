@@ -110,6 +110,9 @@ func unknownLine(u limits.UnknownPlan) string {
 func capLine(r limits.Report, now time.Time) string {
 	var full, widest limits.Window
 	for _, w := range r.Windows {
+		if w.Stale {
+			continue
+		}
 		if w.Tier == limits.TierFull && full.Label == "" {
 			full = w
 		}

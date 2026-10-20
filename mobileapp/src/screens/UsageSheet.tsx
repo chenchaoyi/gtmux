@@ -30,12 +30,14 @@ import {
   machineWarn,
   planByAgent,
   quotaTone,
+  recordedPlan,
   sessionCount,
   splitSessions,
   tightestWindow,
   tokensView,
   unreadableReason,
   untilReset,
+  usageSourceNote,
 } from './usageModel';
 import {MachineIcon, machineKind} from '../ui/MachineIcon';
 import {MODAL_ORIENTATIONS} from '../ui/modalOrientations';
@@ -72,7 +74,7 @@ export function UsageSheet({
   const plan = planByAgent(usage, zh);
   const names = agentNames(usage);
   const byPane = new Map(agents.map(a => [a.pane_id, a]));
-  const at = usage?.limits?.at ?? 0;
+
   const nowSecs = Math.floor(Date.now() / 1000);
   const tokens = tokensView(usage?.history, zh);
   // The year at a glance (usage-activity): the calendar heatmap, the weekly bars and the
@@ -93,15 +95,10 @@ export function UsageSheet({
   // Folding the quiet ones is a SUMMARY, not a deletion: they were all on screen before,
   // and a count with no way back would lose them.
   const [restOpen, setRestOpen] = useState(false);
-  const planAge = at
-    ? zh
-      ? `额度 ${relTime(at, nowSecs)}前读取`
-      : `plan read ${relTime(at, nowSecs)} ago`
-    : '';
   // The radar's row when we have it (real icon), else just enough for the neutral
   // monogram — never a blank square.
   const agentOf = (paneId: string, label: string): Agent =>
-    byPane.get(paneId) ?? ({agent: label} as Agent);
+    (paneId ? byPane.get(paneId) : undefined) ?? ({agent: label, icon: label} as Agent);
   // An agent with a plan and no live session reaches no radar row, so there is nothing
   // to copy an icon hint from — and that is exactly Codex on a Claude-only day. The
   // fallback now carries BOTH halves the avatar needs: the display name (which the
@@ -124,14 +121,6 @@ export function UsageSheet({
         <View style={[styles.head, {borderBottomColor: pal.divider}]}>
           <View style={styles.mid}>
             <Text style={[styles.title, {color: pal.fg}]}>{t('Usage', '用量')}</Text>
-            {/* Not a table of contents — the sections are right there. The plan
-                figures are cached for up to 15 minutes, so how old they are is the
-                one thing this line can say that the page below cannot. */}
-            {planAge ? (
-              <Text style={[styles.sub, {color: pal.fg3}]} numberOfLines={1}>
-                {planAge}
-              </Text>
-            ) : null}
           </View>
           <TouchableOpacity
             testID="hq-usage-close"
@@ -195,8 +184,8 @@ export function UsageSheet({
                       tier only (usageModel.quotaTone): blue, amber when warned, red when
                       full. The fill keeps at least a round dot so 2% is still visible. */}
                   {g.windows.map(w => {
-                    const inWords = untilReset(w.resetUnix, nowSecs, zh);
-                    const tone = quotaTone(w.tier, w.pct, dark);
+                    const inWords = w.stale ? t('Stale reading', '旧读数') : untilReset(w.resetUnix, nowSecs, zh);
+                    const tone = w.stale ? {fill: pal.fg3, track: pal.divider, text: pal.fg3, edge: undefined} : quotaTone(w.tier, w.pct, dark);
                     const pct = Math.max(0, Math.min(100, w.pct));
                     return (
                       <View key={w.name} style={styles.win} testID={`usage-window-${g.agent} ${w.name}`}>
@@ -212,7 +201,7 @@ export function UsageSheet({
                           {pct > 0 ? <View style={[styles.fill, {width: `${pct}%`, backgroundColor: tone.fill}]} /> : null}
                         </View>
                         <Text style={[styles.rowSub, {color: pal.fg3}]} numberOfLines={1}>
-                          {inWords ? `${inWords}${w.resetAt ? ` · ${w.resetAt}` : ''}` : w.resetAt}
+                          {w.planType ? `${recordedPlan(w.planType, zh)} · ` : ''}{inWords ? `${inWords}${!w.stale && w.resetAt ? ` · ${w.resetAt}` : ''}` : w.resetAt}{w.observedAt ? ` · ${t('read', '读取于')} ${relTime(w.observedAt, nowSecs)}${t(' ago', '前')}` : ''}
                         </Text>
                       </View>
                     );
@@ -221,6 +210,25 @@ export function UsageSheet({
               ))}
             </>
           )}
+
+          {(usage?.limits?.balances?.length ?? 0)>0 && <>
+            <Section pal={pal} text={t('Balances', '余额')} />
+            {usage?.limits?.balances?.map(balance => <View key={balance.account_id} testID="usage-balance">
+              <View style={styles.groupHead}>
+                <AgentAvatar agent={avatarFor(balance.agent, balance.agent_name)} size={18} radius={5} bg={pal.surface} fg={pal.fg3} />
+                <Text style={[styles.groupName, {color: pal.fg}]}>DeepSeek Account</Text>
+              </View>
+              <View style={styles.balanceRows}>
+              {balance.wallets.map((wallet,index) => <View key={`${wallet.kind}:${wallet.currency}:${index}`} style={styles.winTop}>
+                <Text style={[styles.rowKey, {color: pal.fg2}]}>{wallet.kind==='bonus' ? t('Bonus', '赠送') : t('Recharge', '充值')}</Text>
+                <Text selectable style={[styles.pct, styles.amount, {color: pal.fg}]}>{wallet.currency} {wallet.amount}</Text>
+              </View>)}
+              </View>
+              <Text style={[styles.note, {color: pal.fg3}]}>{t('Read', '读取于')} {relTime(balance.observed_at, nowSecs)}{t(' ago', '前')}</Text>
+            </View>)}
+          </>}
+          {usage?.sources?.some(source => source.agent==='dsh') && !(usage.limits?.balances?.length) &&
+            <Text testID="usage-dsh-account-note" style={[styles.note,{color:pal.fg3}]}>{`DeepSeek Account · ${usageSourceNote(usage.limits?.dsh_account_status, zh)}`}</Text>}
 
           {/* Tokens by day (usage-daily-totals): the sum people ask for — today and this
               week, across every agent — then seven thin bars, one neutral series (colour
@@ -424,7 +432,7 @@ export function UsageSheet({
               <Section pal={pal} text={t('Sessions', '会话')} />
               {(restOpen ? [...shown, ...rest] : shown).map(s => (
                 <View
-                  key={s.paneId || s.loc}
+                  key={s.key || s.paneId || s.loc}
                   style={[styles.session, s.warn ? {backgroundColor: AMBER_WASH} : null]}
                   testID={`usage-session-${s.paneId}`}>
                   <AgentAvatar agent={agentOf(s.paneId, s.agent)} size={20} radius={6} bg={pal.surface} fg={pal.fg3} />
@@ -495,7 +503,7 @@ export function UsageSheet({
             </>
           )}
 
-          {v.windows.length === 0 && v.sessions.length === 0 && (
+          {v.windows.length === 0 && v.sessions.length === 0 && !(usage?.limits?.balances?.length) && !tokens && (
             <Text style={[styles.empty, {color: pal.fg3}]}>
               {t('No usage reported yet. It fills in as your agents run.', '还没有用量数据。agent 跑起来就会有。')}
             </Text>
@@ -537,6 +545,8 @@ const styles = StyleSheet.create({
   },
   leadWarnGlyph: {fontSize: 13, fontWeight: '700'},
   leadWarnText: {flex: 1, fontSize: 12.5, lineHeight: 17},
+  balanceRows: {paddingHorizontal: 14, gap: 6},
+  amount: {flexShrink: 1, textAlign: 'right'},
   win: {paddingHorizontal: 14, paddingVertical: 6, gap: 5},
   winTop: {flexDirection: 'row', alignItems: 'baseline', gap: 8},
   track: {height: 6, borderRadius: 3, overflow: 'hidden'},

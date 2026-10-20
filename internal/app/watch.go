@@ -299,7 +299,7 @@ func quotaStrip() (plain, styled string) {
 	parts := make([]string, 0, 3)
 	styledParts := make([]string, 0, 3)
 	for _, w := range wins {
-		if w.PctUsed <= 0 || len(parts) == 3 {
+		if w.Stale || w.PctUsed <= 0 || len(parts) == 3 {
 			continue
 		}
 		txt := fmt.Sprintf("%s %d%%", limits.Name(w), w.PctUsed)

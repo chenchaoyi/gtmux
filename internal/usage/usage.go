@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/dsh"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
@@ -54,6 +55,18 @@ func ForSession(agent, sessionID string, now time.Time) (Session, bool) {
 
 // ForSessionScoped reuses Codex discovery without caching accounting facts.
 func ForSessionScoped(agent, sessionID string, now time.Time, scope *transcript.CodexPathScope) (Session, bool) {
+	if agent == "dsh" {
+		u, err := dsh.Sessions.Usage(sessionID)
+		if err != nil || !u.Seen {
+			return Session{}, false
+		}
+		s := Session{Agent: agent, SessionID: sessionID, OutTok: u.Total.Output, InTok: u.Total.Input,
+			CtxTok: u.Pressure, Window: u.Window, LastAt: u.LastAt / 1000, RatePerMin: u.Rate(now)}
+		if s.Window > 0 {
+			s.CtxFrac = float64(s.CtxTok) / float64(s.Window)
+		}
+		return s, true
+	}
 	var path string
 	if scope != nil && strings.EqualFold(agent, "codex") {
 		path = scope.LogPath(sessionID)
