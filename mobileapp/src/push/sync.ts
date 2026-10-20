@@ -1,5 +1,6 @@
 // Reconcile one paired Mac's APNs subscription. The registration lives on the
 // Mac, independently of which Mac the phone is currently viewing.
+import {AppState} from 'react-native';
 import {GtmuxClient} from '../api/client';
 import {abortAtDeadline} from '../api/requestAbort';
 import {PairedMac} from '../pairing/qr';
@@ -47,19 +48,37 @@ export async function syncServerPush(
   // A Mac may have moved between Direct routes. Try only addresses it reported
   // for this pairing, with the same owner credential and a short deadline.
   const addresses = [...new Set([server.url, ...(server.alts ?? [])])].filter(u => /^https?:\/\//.test(u));
+  const foreground = () => AppState.currentState !== 'background' && AppState.currentState !== 'inactive';
   for (const url of addresses) {
+    if (!foreground()) return false;
     const controller = new AbortController();
-    const timer = setTimeout(() => abortAtDeadline(controller, 4000), 4000);
+    let paused = false;
+    const subscription = AppState.addEventListener('change', state => {
+      if (state !== 'active') {paused=true;controller.abort();}
+    });
+    const timer = setTimeout(() => {
+      if (foreground()) abortAtDeadline(controller, 4000);
+      else {paused=true;controller.abort();}
+    }, 4000);
+    let onAbort: (() => void) | undefined;
+    const cancelled = new Promise<boolean>(resolve => {
+      onAbort = () => resolve(false);
+      controller.signal.addEventListener('abort', onAbort, {once:true});
+    });
     try {
       const client = makeClient(url, server.token);
-      const ok = enabled
-        ? await client.registerPush(token, kinds, env, controller.signal)
-        : await client.unregisterPush(token, undefined, controller.signal);
+      const request = enabled
+        ? client.registerPush(token, kinds, env, controller.signal)
+        : client.unregisterPush(token, undefined, controller.signal);
+      const ok = await Promise.race([request, cancelled]);
+      if (paused || !foreground()) return false;
       if (ok) return true;
     } catch {
       // Offline or old route: try the next reported address.
     } finally {
       clearTimeout(timer);
+      subscription.remove();
+      if (onAbort) controller.signal.removeEventListener('abort', onAbort);
     }
   }
   return false;

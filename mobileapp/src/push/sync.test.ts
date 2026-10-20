@@ -1,3 +1,4 @@
+import {AppState, AppStateStatus} from 'react-native';
 import {mayNotify, syncServerPush, PushSyncQueue, PushTarget} from './sync';
 import {requestAbortKind} from '../api/requestAbort';
 
@@ -102,4 +103,30 @@ it('a Mac may notify only with the device switch, an alert kind and its own bell
   expect(mayNotify(false, both, {pushEnabled: true})).toBe(false);
   expect(mayNotify(true, {waiting: false, done: false}, {pushEnabled: true})).toBe(false);
   expect(mayNotify(true, {waiting: true, done: false}, {pushEnabled: true})).toBe(true);
+});
+
+it('cancels background work without timeout or alternates, even when fetch ignores abort', async () => {
+ const original=AppState.currentState;AppState.currentState='active';
+ let changed: (state:AppStateStatus)=>void=()=>{};
+ const remove=jest.fn();
+ const listener=jest.spyOn(AppState,'addEventListener').mockImplementation((_event,fn)=>{changed=fn;return {remove};});
+ let signal:AbortSignal|undefined;
+ const factory=jest.fn(():PushTarget=>({
+  registerPush:async (_token,_kinds,_env,s)=>{signal=s;return new Promise(()=>{});},
+  unregisterPush:async()=>false,
+ }));
+ try {
+  const pending=syncServerPush(server,'apns',true,['done'],'production',factory);
+  AppState.currentState='background';changed('background');
+  expect(await pending).toBe(false);
+  expect(requestAbortKind(signal)).toBe('cancelled');
+  expect(factory).toHaveBeenCalledTimes(1);expect(remove).toHaveBeenCalledTimes(1);
+  AppState.currentState='active';
+  expect(await syncServerPush(server,'apns',true,['done'],'production',()=>({registerPush:async()=>true,unregisterPush:async()=>false}))).toBe(true);
+ } finally {listener.mockRestore();AppState.currentState=original;}
+});
+it('does not start a push request while already backgrounded', async () => {
+ const original=AppState.currentState;AppState.currentState='background';
+ try {const factory=jest.fn();expect(await syncServerPush(server,'apns',true,[],'production',factory)).toBe(false);expect(factory).not.toHaveBeenCalled();}
+ finally {AppState.currentState=original;}
 });
