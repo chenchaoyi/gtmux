@@ -1,3 +1,3 @@
-Usage now follows installed and observed agents, with DeepSeek Harness token totals, exact account balances and clear stale-data timestamps.
-Agent and HQ profiles use a compact layout, consistent provider names and a clearer explanation of HQ responsibilities.
-Push registration pauses when the app enters the background and resumes in queue order when you return.
+- Usage now separates current limits and balances from output tokens, with older readings and source details tucked into History & sources.
+- Agent output shares a clear Today / Last 7 days table; Mac reset times and labels are easier to read.
+- Collapse all is a simple accent-colored text action without the dark background block.

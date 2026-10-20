@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.141',
+    en: [
+      '- Usage now separates current limits and balances from output tokens, with older readings and source details tucked into History & sources.',
+      '- Agent output shares a clear Today / Last 7 days table; Mac reset times and labels are easier to read.',
+      '- Collapse all is a simple accent-colored text action without the dark background block.',
+    ],
+    zh: [
+      '- 用量统一分为当前额度与余额、输出量；历史读数和来源说明收进可展开的信息中。',
+      '- 各 Agent 输出统一显示「今天／近7天」，Mac 的重置时间和标签更清楚。',
+      '- 「折叠全部」保留品牌色文字，去掉遮挡对话的大块深色底框。',
+    ],
+  },
+  {
     version: '1.0.140',
     en: [
       'Usage now follows installed and observed agents, with DeepSeek Harness token totals, exact account balances and clear stale-data timestamps.',

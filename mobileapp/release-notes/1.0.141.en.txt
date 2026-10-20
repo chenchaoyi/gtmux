@@ -1,0 +1,3 @@
+- Usage now separates current limits and balances from output tokens, with older readings and source details tucked into History & sources.
+- Agent output shares a clear Today / Last 7 days table; Mac reset times and labels are easier to read.
+- Collapse all is a simple accent-colored text action without the dark background block.

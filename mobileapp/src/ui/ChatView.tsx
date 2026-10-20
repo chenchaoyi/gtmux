@@ -697,7 +697,7 @@ const styles = StyleSheet.create({
   seamText: {fontSize: 11.5, color: 'rgba(235,235,245,0.45)', textAlign: 'center', fontVariant: ['tabular-nums']},
   earlierText: {fontSize: 12, color: 'rgba(235,235,245,0.55)', textAlign: 'center'},
   collapseBar: {flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 14, paddingTop: 8, paddingBottom: 4},
-  collapseBarFloating: {position: 'absolute', right: 14, zIndex: 2, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 8, backgroundColor: '#141416'},
+  collapseBarFloating: {position: 'absolute', right: 14, zIndex: 2, paddingHorizontal: 0, paddingVertical: 0},
   collapseBarText: {fontSize: 12.5, color: '#27C7E6', fontWeight: '600'},
   // per-turn reply toggle shown while collapsed (chevron + preview).
   replyToggle: {alignSelf: 'flex-start', marginLeft: 35, paddingVertical: 3, maxWidth: '88%'},
