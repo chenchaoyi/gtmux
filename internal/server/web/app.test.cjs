@@ -41,11 +41,12 @@ function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
     return nodes.get(id);
   };
   const requests = [];
+  const documentHandlers = new Map();
   const saved = new Map(Object.entries(stored));
   const copied = [];
   const context = {
     document: {documentElement: {}, readyState: 'loading', getElementById: node, createElement: element, createDocumentFragment: () => element("fragment"),
-      createTextNode: text => Object.assign(element("text"), {textContent: text}), addEventListener() {},
+      createTextNode: text => Object.assign(element("text"), {textContent: text}), addEventListener: (name, fn) => documentHandlers.set(name, fn),
       querySelector: sel => node('query:' + sel), querySelectorAll: () => []},
     window: {addEventListener() {}, innerWidth: 1280},
     navigator: {language, clipboard: {writeText: s => { copied.push(s); return Promise.resolve(); }}},
@@ -60,7 +61,7 @@ function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
   assert.ok(source.includes(marker), 'web boot marker changed');
   const script = source.replace(marker, `
     globalThis.__test = {toolStepsEl, updateInputBar, setupFocus, drawChat, renderTileChat, mdRender, labelChrome, setupCodeBox, connStateFor, makeComposer, isHQPane, paneSessionTitle, paneToAgent, renderPanes, renderRadar,
-      openConversation, pollConversation, conversationControls, readableConversation, nativeSourceLabel, nativeEvidenceLabel, launchHost,
+      setupKeyboard, openConversation, pollConversation, conversationControls, readableConversation, nativeSourceLabel, nativeEvidenceLabel, launchHost,
  setExternalSettings: s => {externalSettings=s;}, show, gate, runRead, cancelReads, pollPane, pollChat, pollRadar, renderChat, tilePollChat, renderTree, treeRow, renderCmdk, cyclePane,
       onDraw: fn => {drawChat = fn;},
       setWorkbenchAgents: rows => {WB.agents = rows;},
@@ -87,7 +88,7 @@ function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
 ${marker}`);
   vm.runInNewContext(script, context);
   context.__test.setupCodeBox();
-  return {node, requests, saved, copied, context, api: context.__test};
+  return {node, requests, saved, copied, context, documentHandlers, api: context.__test};
 }
 
 async function submit(h, value) {
@@ -1016,4 +1017,65 @@ test('activity counts repeated tools and renders ordered plain-text details', ()
   assert.equal(detail.textContent, steps[1].detail);
   assert.equal(detail.html, undefined, 'arguments must not become HTML');
   assert.equal(list.children[2].children[0].children.length, 1);
+});
+
+// Page shortcuts must not cancel browser copy, IME, or a focused control's action.
+test('focused radar buttons keep Enter even when a different row is selected', () => {
+  const h = harness({ok: true});
+  h.api.show('radar');
+  const row = h.node('fixture-row');
+  row.scrollIntoView = () => {};
+  h.node('radar').querySelectorAll = () => [row];
+  h.node('cmdk').hidden = true;
+  h.api.setupKeyboard();
+  const keydown = h.documentHandlers.get('keydown');
+  keydown({key: 'ArrowDown', target: {tagName: 'BODY'}, preventDefault() {}});
+  let prevented = false;
+  keydown({key: 'Enter', target: {tagName: 'BUTTON', closest: () => ({})}, preventDefault() {prevented = true;}});
+  assert.equal(prevented, false, 'the focused button owns Enter');
+  assert.equal(row.clicked, undefined, 'do not open the selected radar row');
+});
+
+test('chat shortcuts leave modified keys, composition and interactive targets alone', () => {
+  const h = harness({ok: true});
+  h.api.show('chat');
+  let redraws = 0;
+  h.api.onDraw(() => redraws++);
+  h.node('cmdk').hidden = true;
+  h.api.setupKeyboard();
+  const keydown = h.documentHandlers.get('keydown');
+  const body = {tagName: 'BODY'};
+  for (const extra of [
+    {metaKey: true}, {ctrlKey: true}, {altKey: true}, {isComposing: true}, {defaultPrevented: true},
+    {target: {tagName: 'SPAN', closest: () => ({})}},
+    {target: {tagName: 'TEXTAREA'}},
+  ]) {
+    let prevented = false;
+    keydown({key: 'c', target: body, ...extra, preventDefault() {prevented = true;}});
+    assert.equal(prevented, false, JSON.stringify(extra));
+  }
+  assert.equal(redraws, 0, 'copy and editing must not collapse the conversation');
+  let prevented = false;
+  keydown({key: 'c', target: body, preventDefault() {prevented = true;}});
+  assert.equal(prevented, true);
+  assert.equal(redraws, 1, 'plain c still folds chat steps');
+});
+
+test('the explicit workbench palette shortcut stays available without taking other combinations', () => {
+  const h = harness({ok: true});
+  h.api.show('workbench');
+  h.node('cmdk').hidden = true;
+  h.api.setupKeyboard();
+  const keydown = h.documentHandlers.get('keydown');
+  for (const combo of [{metaKey: true}, {ctrlKey: true}]) {
+    let prevented = false;
+    keydown({key: 'k', target: {tagName: 'BODY'}, ...combo, preventDefault() {prevented = true;}});
+    assert.equal(prevented, true);
+    assert.equal(h.node('cmdk').hidden, false);
+    h.node('cmdk').hidden = true;
+  }
+  let prevented = false;
+  keydown({key: 'k', target: {tagName: 'BODY'}, metaKey: true, shiftKey: true, preventDefault() {prevented = true;}});
+  assert.equal(prevented, false, 'browser shortcuts with extra modifiers stay native');
+  assert.equal(h.node('cmdk').hidden, true);
 });

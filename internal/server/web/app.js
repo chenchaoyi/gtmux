@@ -611,13 +611,21 @@
   }
   function setupKeyboard() {
     document.addEventListener('keydown', function (e) {
+      if (e.defaultPrevented || e.isComposing || e.altKey) return;
       var tag = (e.target && e.target.tagName) || '';
       if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+      // Native controls own their activation keys; editable regions own typing.
+      // Inspect ancestors too: focus can sit on a child inside a custom control.
+      if (e.target && e.target.closest && e.target.closest('button, a[href], [role="button"], [role="textbox"], [contenteditable]:not([contenteditable="false"])')) return;
       if (!$('cmdk').hidden) { return; } // cmdk has its own input handler
+      // Keep browser/OS combinations (especially Copy) out of plain-key navigation.
+      // The workbench palette is the one explicit modified page shortcut.
+      if (e.metaKey || e.ctrlKey) {
+        if (!$('workbench').hidden && !e.shiftKey && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); openCmdk(); }
+        return;
+      }
       if (!$('workbench').hidden) {
-        if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); openCmdk(); }
-        else if (e.metaKey || e.ctrlKey) { return; } // let other ⌘ combos pass
-        else if (e.key === 'Escape' && maxedTile) { e.preventDefault(); restoreBoard(); }
+        if (e.key === 'Escape' && maxedTile) { e.preventDefault(); restoreBoard(); }
         else if (e.key === '/') { e.preventDefault(); $('rail-search').focus(); }
         else if (e.key === 'g') { e.preventDefault(); $('wb-snap').click(); }
         else if (e.key === 'f') { e.preventDefault(); focusTopTile(); }
