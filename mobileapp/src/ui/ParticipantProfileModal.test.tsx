@@ -43,7 +43,7 @@ test('message facts stay historical while a same-session launch chain loads on d
   expect(read.mock.calls[0][0]).toMatchObject({id: '%4', session_id: 'old', at: '2026-10-20T00:00:00Z'});
   expect(read).toHaveBeenCalledTimes(1);
   expect(text()).toContain('模型变体');
-  expect(text()).not.toContain('账户套餐');
+  expect(text()).not.toContain('已记录套餐');
   expect(buttons('profile-copy-0')).toHaveLength(0);
   await act(async () => buttons('profile-chain-toggle')[0].props.onPress());
   expect(read.mock.calls[1][0]).toMatchObject({id: '%4', session_id: 'old'});
@@ -216,4 +216,17 @@ test('provider presentation preserves recorded facts and custom identifiers', as
   await act(async () => tree.update(<ParticipantProfileModal target={{kind: 'agent', agent: {...agent, session_id: 'custom'}}} client={client} lang="en" onClose={() => {}} />));
   expect(text()).toContain('constructor');
   expect(profile.facts[0].value).toBe('openai');
+});
+
+test.each(['en', 'zh'] as const)('recorded subscription facts do not claim a current %s subscription', async lang => {
+  const profile = {agent: 'codex', name: 'Codex', session_id: 's', historical: true,
+    facts: [{key: 'subscription', value: 'plus', source: 'session_rate_limits', observed_at: 1789000000000}]};
+  const read = jest.fn().mockResolvedValue(profile);
+  const client = {participantProfile: read} as unknown as GtmuxClient;
+  await act(async () => {tree = renderer.create(<ParticipantProfileModal target={{kind: 'agent', agent, turn: {session_id: 's', time: '2026-09-10T00:00:00Z', prompt: 'p', response: 'r'}}} client={client} lang={lang} onClose={() => {}} />);});
+  expect(text()).toContain(lang === 'zh' ? '已记录套餐' : 'Recorded plan');
+  expect(text()).toContain('plus');
+  act(() => buttons('profile-sources-toggle')[0].props.onPress());
+  expect(text()).toContain(lang === 'zh' ? '本会话当时的额度记录' : 'Rate limits recorded in this session');
+  expect(profile.facts[0].value).toBe('plus');
 });

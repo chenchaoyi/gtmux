@@ -30,21 +30,21 @@ export function ToolSteps({steps, open, onToggle, lang, fontSize}: {
         onPress={onToggle}
         style={styles.header}>
         <Chevron open={open} size={12} color="#A4A4AD" />
-        <Text style={[styles.heading, {fontSize: size}]} numberOfLines={1}>{open ? (lang === 'zh' ? '工具调用' : 'Tool calls') : heading} · {count}</Text>
+        <Text style={[styles.heading, {fontSize: size}]} numberOfLines={1}>{open ? (lang === 'zh' ? '工具调用' : 'Tool calls') : heading} · {steps.length}</Text>
       </TouchableOpacity>
       {open && <View testID="tool-steps-list" style={styles.list}>
         {steps.map((step, i) => {
           const expanded = selected === i;
           const operation = activityOperation(step);
           const label = activityLabel(operation, lang);
-          const preview = activityPreview(step);
+          const preview = activityPreview(step, lang);
           const showPreview = preview.toLowerCase() !== (step.title || '').toLowerCase() && preview.toLowerCase() !== label.toLowerCase();
           const hasDetails = !!(step.input || step.workdir || step.details_truncated || step.detail && step.detail.trim().toLowerCase() !== (step.title || '').trim().toLowerCase());
           const rowContent = <>
             <ActivityIcon operation={operation} size={16} />
             <Text style={[styles.rowText, {fontSize: size}]} numberOfLines={2}>
               {operation === 'tool' ? step.title || label : label}
-              {showPreview && <Text style={styles.preview}> · {preview}</Text>}
+              {showPreview && <Text style={[styles.preview, operation !== 'agent' && operation !== 'wait' && styles.codePreview]}> · {preview}</Text>}
             </Text>
             {hasDetails && <Chevron open={expanded} size={12} color="#898994" />}
           </>;
@@ -52,7 +52,7 @@ export function ToolSteps({steps, open, onToggle, lang, fontSize}: {
             {hasDetails ? <TouchableOpacity
               testID={`tool-step-toggle-${i}`}
               accessibilityRole="button"
-              accessibilityLabel={`${i + 1}. ${label}: ${activityPreview(step)}`}
+              accessibilityLabel={`${i + 1}. ${label}${showPreview ? `: ${preview}` : ''}`}
               accessibilityState={{expanded}}
               accessibilityHint={lang === 'zh' ? (expanded ? '收起详情' : '查看命令或参数详情') : (expanded ? 'Hide details' : 'Inspect command or input')}
               onPress={() => setSelected(expanded ? null : i)}
@@ -108,7 +108,8 @@ const styles = StyleSheet.create({
   rowButton: {flexDirection: 'row', gap: 8, alignItems: 'center', paddingVertical: 6, minHeight: 44},
   staticRow: {flexDirection: 'row', gap: 8, alignItems: 'center', paddingVertical: 6, minHeight: 32},
   rowText: {color: '#A4A4AD', flex: 1, minWidth: 0},
-  preview: {color: '#A4A4AD', fontFamily: 'Menlo'},
+  preview: {color: '#A4A4AD'},
+  codePreview: {fontFamily: 'Menlo'},
   inspector: {marginLeft: 24, marginBottom: 8, overflow: 'hidden'},
   inspectorHeader: {flexDirection: 'row', alignItems: 'center', gap: 8},
   tool: {color: '#A4A4AD', fontFamily: 'Menlo', flex: 1, paddingVertical: 6},

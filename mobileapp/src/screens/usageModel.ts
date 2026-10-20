@@ -316,6 +316,17 @@ export function untilReset(resetUnix: number | undefined, nowSecs: number, zh: b
   return zh ? `${d} 天 ${hr} 小时后重置` : `resets in ${d}d ${hr}h`;
 }
 
+/** Primary quota labels are shared by the lead and the provider rows. */
+export function quotaWindowLabel(name: string, zh: boolean): string {
+  return name.replace(/^week(?=$|[ (])|^本周(?=$|[（(])/, zh ? '周额度' : 'Weekly limit');
+}
+
+export function quotaResetCaption(resetAt: string, resetUnix: number | undefined, nowSecs: number, zh: boolean): string {
+  const relative = untilReset(resetUnix, nowSecs, zh);
+  if (relative) return [relative, resetAt].filter(Boolean).join(' · ');
+  return resetAt ? (zh ? `重置于 ${resetAt}` : `Resets at ${resetAt}`) : '';
+}
+
 /**
  * splitSessions divides the list into the ones worth a row and the ones worth a count.
  *

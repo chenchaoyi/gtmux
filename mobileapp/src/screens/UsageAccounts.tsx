@@ -5,7 +5,7 @@ import {Agent} from '../api/types';
 import {AgentAvatar} from '../ui/AgentAvatar';
 import {BRAND, Palette} from '../ui/theme';
 import {relTime} from './hqZones';
-import {PlanGroup, planByAgent, quotaGroups, quotaTone, recordedPlan, unreadableReason, untilReset, usageSourceNote} from './usageModel';
+import {PlanGroup, planByAgent, quotaGroups, quotaResetCaption, quotaTone, quotaWindowLabel, recordedPlan, unreadableReason, usageSourceNote} from './usageModel';
 
 /** Platform capacity stays separate from the device-local output history below it. */
 export function UsageAccounts({usage, pal, zh, dark, now, avatarFor}: {
@@ -20,9 +20,6 @@ export function UsageAccounts({usage, pal, zh, dark, now, avatarFor}: {
   const oldCount = groups.historical.reduce((n, g) => n + g.windows.length, 0);
   const hasCurrent = groups.current.length > 0 || balances.length > 0;
   if (!hasCurrent && !oldCount && !groups.unavailable.length && !dshGap) return null;
-  // A provider's weekly window is distinct from the recorded seven-day output.
-  const windowTitle = (name: string) => name.replace(/^week(?=$|[ (])|^本周(?=$|[（(])/, t('Weekly limit', '周额度'));
-
   const windows = (g: PlanGroup) => <View key={g.agent || g.name}>
     <View style={styles.groupHead}>
       <AgentAvatar agent={avatarFor(g.agent, g.name)} size={18} radius={5} bg={pal.surface} fg={pal.fg3} />
@@ -33,7 +30,7 @@ export function UsageAccounts({usage, pal, zh, dark, now, avatarFor}: {
       const pct = Math.max(0, Math.min(100, w.pct));
       return <View key={w.name} style={styles.window} testID={`usage-window-${g.agent} ${w.name}`}>
         <View style={styles.line}>
-          <Text style={[styles.key, {color: pal.fg2}]}>{windowTitle(w.name)}</Text>
+          <Text style={[styles.key, {color: pal.fg2}]}>{quotaWindowLabel(w.name, zh)}</Text>
           <Text style={[styles.value, {color: tone.text ?? pal.fg}]}>{t(`${w.pct}% used`, `已用 ${w.pct}%`)}</Text>
         </View>
         <View testID={`usage-bar-${g.agent} ${w.name}`} style={[styles.track, {backgroundColor: tone.track}, tone.edge ? {borderWidth: StyleSheet.hairlineWidth, borderColor: tone.edge} : null]}>
@@ -42,7 +39,7 @@ export function UsageAccounts({usage, pal, zh, dark, now, avatarFor}: {
         <Text style={[styles.caption, {color: pal.fg3}]}>
           {w.stale
             ? `${t('Historical reading', '旧读数')}${w.observedAt ? ` · ${t('read', '读取于')} ${relTime(w.observedAt, now)}${t(' ago', '前')}` : ''}`
-            : [untilReset(w.resetUnix, now, zh), w.resetAt].filter(Boolean).join(' · ')}
+            : quotaResetCaption(w.resetAt, w.resetUnix, now, zh)}
         </Text>
       </View>;
     })}

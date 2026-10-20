@@ -25,12 +25,13 @@ import {
   dayReadout,
   machineLines,
   machineWarn,
+  quotaResetCaption,
+  quotaWindowLabel,
   sessionCount,
   showQuotaLead,
   splitSessions,
   tightestWindow,
   tokensView,
-  untilReset,
 } from './usageModel';
 import {UsageAccounts} from './UsageAccounts';
 import {MachineIcon, machineKind} from '../ui/MachineIcon';
@@ -83,7 +84,7 @@ export function UsageSheet({
   const readout = dayReadout(usage?.history, picked || todayKey, zh);
   const tight = tightestWindow(usage, zh);
   const quotaLead = tight && showQuotaLead(v.windows);
-  const tightIn = tight ? untilReset(tight.resetUnix, nowSecs, zh) : '';
+  const tightReset = tight ? quotaResetCaption(tight.resetAt, tight.resetUnix, nowSecs, zh) : '';
   const mWarn = machineWarn(v.machine, zh);
   const {shown, rest, restTok} = splitSessions(v.sessions);
   // Folding the quiet ones is a SUMMARY, not a deletion: they were all on screen before,
@@ -140,11 +141,11 @@ export function UsageSheet({
               {quotaLead ? (
                 <View style={styles.leadTop}>
                   <Text style={[styles.leadHead, {color: pal.fg}]}>
-                    {t(`${tight.pct}% of the tightest window used`, `最紧的额度用掉 ${tight.pct}%`)}
+                    {t(`Quota used: ${tight.pct}%`, `额度已用 ${tight.pct}%`)}
                   </Text>
                   <Text style={[styles.leadSub, {color: pal.fg2}]}>
-                    {tight.agentName} {tight.window}
-                    {tightIn ? ` · ${tightIn}` : tight.resetAt ? ` · ${tight.resetAt}` : ''}
+                    {tight.agentName} · {quotaWindowLabel(tight.window, zh)}
+                    {tightReset ? ` · ${tightReset}` : ''}
                   </Text>
                 </View>
               ) : null}
