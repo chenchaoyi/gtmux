@@ -48,6 +48,7 @@ type Session struct {
 
 type catalogEntry struct {
 	cursor Cursor
+	usage  TokenUsage
 	value  Session
 	header bool
 	err    error
@@ -189,7 +190,11 @@ func (x *Catalog) List() ([]Session, error) {
 			e = &catalogEntry{}
 			x.entries[p] = e
 		}
-		e.err = Scan(p, &e.cursor, func() { e.value = Session{Path: p, HomeID: HomeID(), State: "idle"}; e.header = false }, func(line []byte) error { return e.fold(line) })
+		e.err = Scan(p, &e.cursor, func() {
+			e.value = Session{Path: p, HomeID: HomeID(), State: "idle"}
+			e.header = false
+			e.usage = TokenUsage{}
+		}, func(line []byte) error { return e.fold(line) })
 		if e.err != nil || !e.header {
 			delete(x.entries, p)
 			continue
@@ -251,7 +256,11 @@ func (x *Catalog) Resolve(id string) (Session, error) {
 		e = &catalogEntry{}
 		x.entries[p] = e
 	}
-	e.err = Scan(p, &e.cursor, func() { e.value = Session{Path: p, HomeID: HomeID(), State: "idle"}; e.header = false }, e.fold)
+	e.err = Scan(p, &e.cursor, func() {
+		e.value = Session{Path: p, HomeID: HomeID(), State: "idle"}
+		e.header = false
+		e.usage = TokenUsage{}
+	}, e.fold)
 	if e.err != nil {
 		delete(x.entries, p)
 		return Session{}, e.err
@@ -289,6 +298,9 @@ func (e *catalogEntry) fold(line []byte) error {
 	}
 	if event.Type == "session" {
 		return fmt.Errorf("duplicate DSH session header")
+	}
+	if e.value.Origin != "subagent" {
+		e.usage.Fold(event)
 	}
 	if !event.AppendsHistory() {
 		return nil

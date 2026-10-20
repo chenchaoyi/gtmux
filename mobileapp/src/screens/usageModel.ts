@@ -29,6 +29,7 @@ export interface AgentTotal {
 }
 
 export interface SessionRow {
+  key?: string;
   paneId: string;
   loc: string;
   agent: string;
@@ -58,15 +59,16 @@ export function rankSessions(rows: SessionRow[]): SessionRow[] {
     if (w) return w;
     if (b.rate !== a.rate) return b.rate - a.rate;
     if (b.ctx !== a.ctx) return b.ctx - a.ctx;
-    return a.paneId.localeCompare(b.paneId);
+    return (a.key || a.paneId).localeCompare(b.key || b.paneId);
   });
 }
 
 /** buildUsageView turns the endpoint's report into what the sheet renders. */
 export function buildUsageView(u: UsageReport | null): UsageView {
   const sessions: SessionRow[] = (u?.sessions ?? []).map(s => ({
+    key: s.pane_id || `${s.agent_key}:${s.home_id ?? ''}:${s.session_id ?? s.loc ?? ''}`,
     paneId: s.pane_id ?? '',
-    loc: s.loc ?? '',
+    loc: s.loc || s.title || s.agent || s.agent_key,
     agent: s.agent ?? s.agent_key ?? '',
     tok: s.tok ?? 0,
     ctx: s.ctx ?? 0,
@@ -107,7 +109,7 @@ export function agentNames(u: UsageReport | null): Record<string, string> {
 export interface PlanGroup {
   agent: string;
   name: string;
-  windows: {name: string; kind?: string; pct: number; resetAt: string; resetUnix?: number; tier?: 'warn' | 'full'}[];
+  windows: {stale?: boolean; observedAt?: number; planType?: string; name: string; kind?: string; pct: number; resetAt: string; resetUnix?: number; tier?: 'warn' | 'full'}[];
   /**
    * Set when this agent's plan could not be read at all, carrying the Mac's reason key.
    *
@@ -160,7 +162,7 @@ export function planByAgent(u: UsageReport | null, zh = false): PlanGroup[] {
       // and no live session (Codex read "codex" beside "Claude Code", 2026-09-10).
       out.push({agent, name: w.agent_name || names[agent] || agent, windows: []});
     }
-    out[i].windows.push({name, kind: w.kind, pct: w.pct_used, resetAt: resetLabel(w.reset_at, w.reset_unix, zh), resetUnix: w.reset_unix, tier: w.tier});
+    out[i].windows.push({stale: w.stale, observedAt: w.observed_at, planType:w.plan_type, name, kind: w.kind, pct: w.pct_used, resetAt: resetLabel(w.reset_at, w.reset_unix, zh), resetUnix: w.reset_unix, tier: w.tier});
   }
   // Agents the Mac could not read a plan for, appended as their own groups. Never
   // merged into one that has windows: an agent is either readable or it is not.
@@ -254,7 +256,7 @@ export interface Tightest {
  */
 export function tightestWindow(u: UsageReport | null, zh = false): Tightest | null {
   const all = planByAgent(u, zh).flatMap(g =>
-    g.windows.map(w => ({
+    g.windows.filter(w => !w.stale).map(w => ({
       window: w.name,
       kind: w.kind,
       agent: g.agent,
@@ -663,4 +665,20 @@ export function dayReadout(h: UsageHistory | null | undefined, date: string, zh:
   const split = (h?.days ?? []).find(x => x.date === date)?.by_agent;
   const parts = split ? Object.entries(split).sort((x, y) => (y[1].out ?? 0) - (x[1].out ?? 0)).map(([k, c]) => `${k} ${compactTok(c.out ?? 0)}`) : [];
   return [when, compactTok(out), ...parts].join(' · ');
+}
+
+/** A capability gap is not a zero balance or evidence of a paid subscription. */
+export function usageSourceNote(status: string | undefined, zh: boolean): string {
+  switch (status) {
+    case 'signed-out': return zh ? '未登录 DeepSeek Account' : 'Signed out of DeepSeek Account';
+    case 'unverified-account': return zh ? '原生服务未提供可核对的账户标识，暂不展示余额。' : 'The native service supplied no verifiable account identity; balance is unavailable.';
+    case 'unavailable': return zh ? '账户余额暂时无法读取。' : 'Account balance is temporarily unavailable.';
+    default: return zh ? '尚未收到原生账户余额；API Key 和自定义 Provider 暂不支持。' : 'No native account balance received; API-key and custom providers are not supported yet.';
+  }
+}
+
+export function recordedPlan(type: string, zh: boolean): string {
+ const known=new Map([['free','Free'],['plus','Plus'],['pro','Pro'],['team','Team'],['business','Business'],['enterprise','Enterprise'],['max','Max']]);
+ const label=known.get(type.toLowerCase()) || type;
+ return zh ? `记录的套餐：${label}` : `Recorded plan: ${label}`;
 }

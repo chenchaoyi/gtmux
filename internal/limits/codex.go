@@ -144,7 +144,15 @@ func codexWindowsIn(path string, now time.Time) (live []Window, found bool, at t
 		}
 		// Found the newest real reading in this file. Its live windows may be empty —
 		// that is a fact about the plan, not a reason to keep searching.
-		return codexToWindows(l.Payload.Limits.Primary, l.Payload.Limits.Secondary, now, l.Payload.Limits.PlanType), true, fi.ModTime()
+		wins := codexToWindows(l.Payload.Limits.Primary, l.Payload.Limits.Secondary, now, l.Payload.Limits.PlanType)
+		at, err := time.Parse(time.RFC3339Nano, l.Timestamp)
+		if err != nil {
+			at = fi.ModTime()
+		}
+		for i := range wins {
+			wins[i].ObservedAt = at.Unix()
+		}
+		return wins, true, fi.ModTime()
 	}
 	return nil, false, time.Time{}
 }

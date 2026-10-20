@@ -73,7 +73,7 @@ func dshTerminalOwned(path string, data []byte) bool {
 }
 
 func dshPluginJS(bin string) string {
-	return strings.ReplaceAll(dshPluginTemplate, "__GTMUX_BIN__", strconv.Quote(bin))
+	return strings.NewReplacer("__GTMUX_BIN__", strconv.Quote(bin), "__GTMUX_VERSION__", strconv.Quote(Version)).Replace(dshPluginTemplate)
 }
 
 const dshPluginMarker = "// gtmux native DeepSeek Harness plugin;"

@@ -450,3 +450,19 @@ describe('activityView', () => {
     expect(activityView({days: []}, false, 20, now)).toBeNull();
   });
 });
+
+
+test('DSH native rows have scoped stable identities and meaningful external titles', () => {
+ const u: UsageReport={sessions:[
+  {agent_key:'dsh',agent:'DeepSeek Harness',source:'native',session_id:'one',home_id:'home-a',title:'Inspect adapter',tok:20,in:100,ctx:0,rate:0},
+  {agent_key:'dsh',agent:'DeepSeek Harness',source:'native',session_id:'two',home_id:'home-a',tok:40,in:200,ctx:0,rate:0},
+ ]};
+ const v=buildUsageView(u);
+ expect(new Set(v.sessions.map(s=>s.key)).size).toBe(2);
+ expect(v.sessions.map(s=>s.loc)).toEqual(['Inspect adapter','DeepSeek Harness']);
+});
+test('stale windows retain recorded facts without driving the lead', () => {
+ const u: UsageReport={limits:{windows:[{agent:'codex',label:'codex week',pct_used:100,reset_at:'later',stale:true,observed_at:100,plan_type:'pro'}]}};
+ expect(tightestWindow(u)).toBeNull();
+ expect(planByAgent(u)[0].windows[0]).toMatchObject({stale:true,observedAt:100,planType:'pro',pct:100});
+});

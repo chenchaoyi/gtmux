@@ -796,6 +796,31 @@ while draining (`on_ac:false`), never on AC.
 503 {"error":"usage unavailable"}
 ```
 
+Usage additions for native DSH and dynamic sources:
+
+- `sessions[]` may carry `source`, `session_id`, `home_id` and `title`; native rows
+  have no pane ID. Consumers key them by agent/home/session and never invent a pane.
+- `sources[]` contains `{agent,name,installed,tokens,account,status?}` for installed
+  or observed sources. `account` is `quota`, `balance` or `unsupported`; installation
+  never establishes a subscription. Historical totals remain after removal.
+- `limits.windows[]` carries `observed_at` (epoch seconds) and `stale` when expired.
+  Claude freshness follows the configured cache TTL; Codex uses the source record
+  timestamp with a 24-hour maximum and its existing window-reset boundary. Stale
+  windows have no alert tier and must not drive the tightest-window summary.
+  `plan_type` is recorded evidence, not a live billing check. Legacy `limits.at`
+  describes the command cache, not every agent's observation time.
+- `limits.balances[]` is separate: `{agent,agent_name,account_id,observed_at,wallets}`,
+  where `account_id` is a pseudonymous digest, and wallets contain `{currency,amount,kind}`.
+  Preserve decimal strings including precision/sign; `kind` is `recharge` or `bonus`.
+  Do not turn money into quota percent or sum currencies. Native observations are
+  current-home scoped, account-deduplicated and expire after 15 minutes.
+- `limits.dsh_account_status` reports `ready`, `signed-out`, `unavailable`,
+  `unsupported` or `unverified-account`; no observation is `unsupported`.
+  API-key/custom-provider balances remain unsupported, not zero.
+
+These fields keep the existing owner-only permission boundary. The DSH `Usage`
+hook is bounded metadata ingestion only and grants no lifecycle/input authority.
+
 ### `GET /api/hq/board` — the supervisor's situation board (read-only, OWNER only)
 
 The synthesis gtmux HQ maintains by hand (`~/.config/gtmux/hq/notes/board.md`) so its

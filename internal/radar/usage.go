@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/agents"
+	"github.com/chenchaoyi/gtmux/internal/dsh"
 	"github.com/chenchaoyi/gtmux/internal/limits"
 	"github.com/chenchaoyi/gtmux/internal/resource"
 	uwatch "github.com/chenchaoyi/gtmux/internal/usage"
@@ -16,6 +17,10 @@ import (
 
 // UsageRow is one session's usage + identity (the CLI/API shape).
 type UsageRow struct {
+	Source    string  `json:"source,omitempty"`
+	SessionID string  `json:"session_id,omitempty"`
+	HomeID    string  `json:"home_id,omitempty"`
+	Title     string  `json:"title,omitempty"`
 	PaneID    string  `json:"pane_id,omitempty"`
 	Loc       string  `json:"loc,omitempty"`
 	Agent     string  `json:"agent"`     // display name
@@ -40,6 +45,7 @@ type UsageRollup struct {
 type UsageReport struct {
 	Sessions []UsageRow      `json:"sessions"`
 	Types    []UsageRollup   `json:"types"`
+	Sources  []UsageSource   `json:"sources,omitempty"`
 	Limits   limits.Report   `json:"limits"`   // real subscription windows (limits-watch)
 	Resource resource.Report `json:"resource"` // local machine resources (resource-watch)
 	// History (usage-daily-totals): tokens per local day across every agent, the last
@@ -58,7 +64,7 @@ func (c *Collection) Usage() UsageReport {
 	agg := map[string]*UsageRollup{}
 	for _, p := range panes {
 		agentKey, sessionID := sessionRef(p)
-		if sessionID == "" {
+		if sessionID == "" || agentKey == "dsh" && p.homeID != "" && p.homeID != dsh.HomeID() {
 			continue
 		}
 		u, ok := uwatch.ForSessionScoped(agentKey, sessionID, now, c.codexPaths())
@@ -66,6 +72,7 @@ func (c *Collection) Usage() UsageReport {
 			continue
 		}
 		row := UsageRow{
+			Source: p.source, SessionID: sessionID, HomeID: p.homeID, Title: p.Task,
 			PaneID: p.PaneID, Loc: p.Loc, Agent: p.Agent, AgentKey: agentKey,
 			Status: p.Status, Tok: u.OutTok, In: u.InTok, Ctx: u.CtxFrac,
 			Rate: u.RatePerMin, UsageWarn: uwatch.EvaluateSession(u),
@@ -94,6 +101,7 @@ func (c *Collection) Usage() UsageReport {
 	// last seven days. Incremental by byte watermark, so a call costs a stat per log.
 	uwatch.UpdateDaily(now)
 	rep.History = uwatch.DailyHistory(now, agents.DisplayNames())
+	rep.Sources = relevantUsageSources(rep, panes)
 	return rep
 }
 

@@ -182,3 +182,15 @@ test('usage close announces an action rather than its test identifier', () => {
   expect(close.props.accessibilityLabel).toBe('关闭用量');
   act(() => t.unmount());
 });
+
+
+test('native DSH balance keeps exact money strings separate from percentage windows', () => {
+ const tree=render({sources:[{agent:'dsh',name:'DeepSeek Harness',installed:true,tokens:true,account:'balance'}],limits:{balances:[{
+  agent:'dsh',agent_name:'DeepSeek Harness',account_id:'opaque',observed_at:100,
+  wallets:[{currency:'CNY',amount:'12.3400',kind:'recharge'},{currency:'USD',amount:'0',kind:'bonus'}],
+ }]}});
+ expect(tree.root.findAll(n=>typeof n.type==='string' && n.props.testID==='usage-balance')).toHaveLength(1);
+ const text=JSON.stringify(tree.toJSON());
+ expect(text).toContain('12.3400');
+ expect(tree.root.findAllByProps({testID:'usage-lead'})).toHaveLength(0);
+});

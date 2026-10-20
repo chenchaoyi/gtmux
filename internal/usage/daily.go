@@ -25,6 +25,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/dsh"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
@@ -103,10 +104,11 @@ type Activity struct {
 }
 
 type fileMark struct {
-	Offset  int64 `json:"offset"`
-	LastOut int64 `json:"last_out,omitempty"` // cumulative logs: the last total seen
-	LastIn  int64 `json:"last_in,omitempty"`
-	MTime   int64 `json:"mtime"`
+	Offset  int64            `json:"offset"`
+	LastOut int64            `json:"last_out,omitempty"` // cumulative logs: the last total seen
+	LastIn  int64            `json:"last_in,omitempty"`
+	MTime   int64            `json:"mtime"`
+	DSHDays map[string]Count `json:"dsh_days,omitempty"`
 }
 
 type dailyLedger struct {
@@ -169,7 +171,53 @@ func UpdateDaily(now time.Time) {
 
 	l := loadDaily()
 	updateDaily(&l, now, transcript.LogGlobs())
+	updateDSHDaily(&l, now)
 	saveDaily(l)
+}
+
+// Each DSH file contributes a per-day projection. Comparing its previous applied
+// projection handles corrected settlements and process restarts without double counts.
+func updateDSHDaily(l *dailyLedger, now time.Time) {
+	rows, err := dsh.Sessions.UsageRecords()
+	if err != nil {
+		return
+	}
+	keep := now.AddDate(0, 0, -dailyKeepDays).Local().Format("2006-01-02")
+	for path, usage := range rows {
+		mark := l.Files[path]
+		next := map[string]Count{}
+		for day, value := range usage.Days {
+			if day >= keep {
+				next[day] = Count{Out: value.Output, In: value.Input}
+			}
+		}
+		days := map[string]bool{}
+		for day := range mark.DSHDays {
+			if day >= keep {
+				days[day] = true
+			}
+		}
+		for day := range next {
+			days[day] = true
+		}
+		for day := range days {
+			before, after := mark.DSHDays[day], next[day]
+			if before == after {
+				continue
+			}
+			if l.Days[day] == nil {
+				l.Days[day] = map[string]*Count{}
+			}
+			if l.Days[day]["dsh"] == nil {
+				l.Days[day]["dsh"] = &Count{}
+			}
+			c := l.Days[day]["dsh"]
+			c.Out += after.Out - before.Out
+			c.In += after.In - before.In
+		}
+		mark.DSHDays, mark.MTime = next, now.Unix()
+		l.Files[path] = mark
+	}
 }
 
 // updateDaily is UpdateDaily without the lock and the file, for tests.
@@ -244,7 +292,7 @@ func updateDaily(l *dailyLedger, now time.Time, globs map[string][]string) {
 			delete(l.Files, p)
 			continue
 		}
-		if !matched[p] {
+		if !matched[p] && len(m.DSHDays) == 0 {
 			if _, err := os.Stat(p); errors.Is(err, fs.ErrNotExist) {
 				delete(l.Files, p)
 			}

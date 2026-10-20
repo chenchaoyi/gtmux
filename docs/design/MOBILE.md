@@ -1569,3 +1569,7 @@ provider brands use canonical display casing without changing raw/custom IDs. HQ
 profiles explain the chief-of-staff role and separate recorded message identity
 from the same connected radar's current supervisor. The global reply-fold action
 uses brand-coloured Collapse all / Expand all text. See [profile scope](agent-profiles.md#hq-identity).
+
+### Usage sources and balances
+
+Usage renders quota windows and monetary balances separately, with each source’s observation time. Stale windows are neutral grey and excluded from the header/tightest-window lead. Native DSH session rows use agent/home/session identity when no pane exists. DeepSeek Account recharge/bonus amounts keep their exact decimal strings and currency, with an explicit unavailable/unsupported note instead of a zero placeholder. Installation and recorded plan tiers never imply current billing status.

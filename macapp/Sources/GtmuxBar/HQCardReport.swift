@@ -56,6 +56,9 @@ struct HQReportInput {
 
 /// One subscription window as `gtmux usage --json` reports it under `limits.windows`.
 struct HQUsageWindow: Decodable, Equatable {
+    var observedAt: Int64? = nil
+    var stale: Bool? = nil
+    var planType: String? = nil
     var label: String
     var pctUsed: Int
     var resetAt: String?
@@ -71,7 +74,8 @@ struct HQUsageWindow: Decodable, Equatable {
     /// otherwise and from an older CLI.
     var tier: String?
     enum CodingKeys: String, CodingKey {
-        case label, agent, kind, model, tier
+        case label, agent, kind, model, tier, stale
+        case observedAt = "observed_at", planType = "plan_type"
         case pctUsed = "pct_used", resetAt = "reset_at", agentName = "agent_name", resetUnix = "reset_unix"
     }
 }
@@ -85,12 +89,18 @@ enum HQQuotaTier: Equatable {
 }
 
 func hqQuotaTier(_ w: HQUsageWindow) -> HQQuotaTier {
+    if w.stale == true { return .normal }
     if w.tier == "full" || w.pctUsed >= 100 { return .full }
     if w.tier == "warn" { return .warn }
     return .normal
 }
 
 struct HQUsageSession: Decodable {
+    var title: String? = nil
+    var sessionID: String? = nil
+    var homeID: String? = nil
+    var identity: String { (paneID?.isEmpty == false) ? paneID! : agentKey + ":" + (homeID ?? "") + ":" + (sessionID ?? title ?? agent ?? "") }
+    var displayLocation: String { [loc, title, agent, agentKey].compactMap { $0 }.first(where: { !$0.isEmpty }) ?? agentKey }
     var paneID: String?
     var loc: String?
     var agent: String?
@@ -101,7 +111,8 @@ struct HQUsageSession: Decodable {
     var ctx: Double?
     var usageWarn: String?
     enum CodingKeys: String, CodingKey {
-        case loc, agent, status, tok, rate, ctx
+        case loc, agent, status, tok, rate, ctx, title
+        case sessionID = "session_id", homeID = "home_id"
         case paneID = "pane_id", agentKey = "agent_key", usageWarn = "usage_warn"
     }
 }
@@ -322,11 +333,31 @@ func hqDayReadout(_ h: HQUsageHistory, date: String, zh: Bool) -> String {
 }
 
 /// The whole of `gtmux usage --json`, in the fields the reader shows.
+struct HQUsageBalance: Decodable {
+    struct Wallet: Decodable { var currency: String; var amount: String; var kind: String }
+    var agent: String
+    var agentName: String
+    var accountID: String
+    var observedAt: Int64
+    var wallets: [Wallet]
+    enum CodingKeys: String, CodingKey {
+        case agent, wallets
+        case agentName = "agent_name", accountID = "account_id", observedAt = "observed_at"
+    }
+}
+struct HQUsageSource: Decodable { var agent: String; var name: String; var status: String? }
 struct HQUsageReport: Decodable {
     struct Limits: Decodable {
         var windows: [HQUsageWindow]?
         var warn: String?
+        var balances: [HQUsageBalance]? = nil
+        var dshAccountStatus: String? = nil
+        enum CodingKeys: String, CodingKey {
+            case windows, warn, balances
+            case dshAccountStatus = "dsh_account_status"
+        }
     }
+    var sources: [HQUsageSource]? = nil
     var sessions: [HQUsageSession]?
     var types: [HQUsageType]?
     var limits: Limits?
@@ -439,7 +470,7 @@ func hqPlanLabel(_ w: HQUsageWindow, zh: Bool) -> String {
 func hqTightestPerPlan(_ windows: [HQUsageWindow]) -> [HQUsageWindow] {
     var at: [String: Int] = [:]
     var out: [HQUsageWindow] = []
-    for w in windows {
+    for w in windows where w.stale != true {
         let key = (w.agent?.isEmpty == false) ? w.agent! : w.label
         if let i = at[key] {
             if w.pctUsed > out[i].pctUsed { out[i] = w }
