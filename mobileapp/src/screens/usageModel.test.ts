@@ -1,6 +1,6 @@
 import {UsageReport} from '../api/client';
 import {buildUsageView,
-  compactTok,
+  compactTok, quotaResetCaption, quotaWindowLabel,
   machineLines,
   planByAgent,
   rankSessions,
@@ -465,4 +465,13 @@ test('stale windows retain recorded facts without driving the lead', () => {
  const u: UsageReport={limits:{windows:[{agent:'codex',label:'codex week',pct_used:100,reset_at:'later',stale:true,observed_at:100,plan_type:'pro'}]}};
  expect(tightestWindow(u)).toBeNull();
  expect(planByAgent(u)[0].windows[0]).toMatchObject({stale:true,observedAt:100,planType:'pro',pct:100});
+});
+
+test('quota captions identify legacy dates without guessing a timezone or duration', () => {
+  expect(quotaResetCaption('Oct 24 at 1:00pm', undefined, 1000, false)).toBe('Resets at Oct 24 at 1:00pm');
+  expect(quotaResetCaption('10月24日 13:00', undefined, 1000, true)).toBe('重置于 10月24日 13:00');
+  expect(quotaResetCaption('', undefined, 1000, true)).toBe('');
+  expect(quotaResetCaption('later', 4600, 1000, false)).toBe('resets in 1h · later');
+  expect(quotaWindowLabel('week (all models)', false)).toBe('Weekly limit (all models)');
+  expect(quotaWindowLabel('本周（全部模型）', true)).toBe('周额度（全部模型）');
 });

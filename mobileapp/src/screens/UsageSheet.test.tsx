@@ -94,8 +94,8 @@ describe('the lead', () => {
     expect(render({limits: {windows: [window]}}).root.findAllByProps({testID: 'usage-lead'})).toHaveLength(0);
     expect(render({limits: {windows: [{...window, pct_used: 89, tier: 'warn'}]}}).root.findAll(n => typeof n.type === 'string' && n.props.testID === 'usage-lead')).toHaveLength(1);
   });
-  it('says the tightest window before any section', () => {
-    expect(texts(render(codexOnly)).join('|')).toContain('最紧的额度用掉 76%');
+  it('names the selected quota without internal window jargon', () => {
+    expect(texts(render(codexOnly)).join('|')).toContain('额度已用 76%');
   });
 
   it('lifts the machine warning out of the bottom of the page', () => {

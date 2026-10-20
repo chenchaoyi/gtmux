@@ -102,3 +102,17 @@ test.each(['spawn_agent', 'wait'])('%s exposes recorded parameters without prese
   act(() => byID('tool-step-toggle-0').props.onPress());
   expect(tree.root.findAllByType(ScrollView)).toHaveLength(0);
 });
+
+test.each(['en', 'zh'] as const)('parameter rows use readable %s previews while the inspector keeps exact input', lang => {
+  const input = JSON.stringify({cell_id: 'fixture-cell', yield_time_ms: 1000, max_tokens: 2000}, null, 2);
+  act(() => {tree = renderer.create(<ToolSteps {...props(true)} lang={lang} steps={[{kind: 'tool', title: 'wait', input, input_kind: 'parameters'}]} />);});
+  const rendered = JSON.stringify(tree.toJSON());
+  expect(rendered).toContain(lang === 'zh' ? '最多 1 秒' : 'Up to 1s');
+  expect(rendered).not.toContain('fixture-cell');
+  const heading = tree.root.findAllByType(Text).find(n => n.props.numberOfLines === 1)!;
+  expect(heading.props.children.join('')).toBe(lang === 'zh' ? '工具调用 · 1' : 'Tool calls · 1');
+  act(() => byID('tool-step-toggle-0').props.onPress());
+  expect(byID('tool-input-text').props.children).toBe(input);
+  act(() => byID('tool-input-copy').props.onPress());
+  expect(Clipboard.setString).toHaveBeenLastCalledWith(input);
+});
