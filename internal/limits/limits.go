@@ -299,6 +299,11 @@ func named(r Report) Report {
 			r.Windows[i].AgentName = n
 		}
 	}
+	for i := range r.Balances {
+		if n := names[r.Balances[i].Agent]; n != "" {
+			r.Balances[i].AgentName = n
+		}
+	}
 	for i := range r.Unknown {
 		if n := names[r.Unknown[i].Agent]; n != "" {
 			r.Unknown[i].AgentName = n

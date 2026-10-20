@@ -197,7 +197,7 @@ func dshBalances(now time.Time) ([]Balance, string) {
 		if v.Status != "ready" {
 			continue
 		}
-		out = append(out, Balance{Agent: "dsh", AgentName: "DeepSeek Harness", AccountID: v.AccountID, Wallets: v.Wallets, ObservedAt: v.At / 1000})
+		out = append(out, Balance{Agent: "dsh", AccountID: v.AccountID, Wallets: v.Wallets, ObservedAt: v.At / 1000})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].AccountID < out[j].AccountID })
 	return out, reason

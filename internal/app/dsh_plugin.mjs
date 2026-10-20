@@ -39,7 +39,9 @@ export function observeAccountUsage(ctx, emit) {
         // The native service has no cancellation argument. A timed-out request
         // retains this single-flight slot until it settles; no retry pile-up.
         const result = await account.getBalance({version: __GTMUX_VERSION__, locale: 'en-US', timezoneOffsetSeconds: -new Date().getTimezoneOffset()*60});
-        if (expired || controller.signal.aborted || revision !== generation || id !== await identity()) return;
+        if (expired || controller.signal.aborted || revision !== generation) return;
+        const settledID = await identity();
+        if (expired || controller.signal.aborted || revision !== generation || id !== settledID) return;
         if (result?.status !== 'ready') {send(result === null ? 'signed-out' : 'unavailable'); return;}
         const wallets = [];
         for (const [kind, values] of [['recharge', result.value], ['bonus', result.bonusWallets]]) {

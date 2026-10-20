@@ -18,14 +18,14 @@ func TestUsageRestatementsRetriesAndDisjointBuckets(t *testing.T) {
 	data := func(out int) string {
 		return fmt.Sprintf(`{"turn":1,"step":0,"usage":{"inputTokens":100,"outputTokens":%d,"cacheReadTokens":200,"cacheWriteTokens":50,"reasoningTokens":7}}`, out)
 	}
-	u.Fold(usageEvent("assistant/attempt", at, data(10)))
+	u.Fold(usageEvent("assistant/message", at, data(10)))
 	u.Fold(usageEvent("assistant/message", at+1, data(10)))
 	u.Fold(usageEvent("assistant/message", at+2, data(15)))
 	if u.Total != (TokenBuckets{100, 15, 200, 50}) {
 		t.Fatal("restatement counted twice or reasoning added", u.Total)
 	}
 	u.Fold(usageEvent("llm/retry-started", at+3, `{"turn":1,"step":0}`))
-	u.Fold(usageEvent("assistant/attempt", at+4, data(5)))
+	u.Fold(usageEvent("assistant/attempt", at+4, `{"turn":1,"step":0,"stream":[{"type":"chunk","chunk":{"type":"usage","usage":{"inputTokens":100,"outputTokens":5,"cacheReadTokens":200,"cacheWriteTokens":50}}}]}`))
 	if u.Total.Output != 20 || u.Total.Input != 200 {
 		t.Fatal("retry did not contribute independently", u.Total)
 	}
@@ -95,5 +95,17 @@ func TestCatalogUsageIsIncrementalScopedAndDetached(t *testing.T) {
 	u, err = c.Usage("one")
 	if err != nil || u.Seen {
 		t.Fatal("another home borrowed usage", u, err)
+	}
+}
+
+func TestUsageAttemptReadsNativeStreamAndDoesNotTrustMessageOnlyFields(t *testing.T) {
+	var u TokenUsage
+	u.Fold(usageEvent("assistant/attempt", 1000, `{"turn":0,"step":0,"usage":{"inputTokens":999,"outputTokens":999},"stream":[{"type":"chunk","chunk":{"type":"usage","usage":{"inputTokens":5,"outputTokens":6}}}]}`))
+	if u.Total.Input != 5 || u.Total.Output != 6 {
+		t.Fatal("attempt used a message-only field", u.Total)
+	}
+	u.Fold(usageEvent("assistant/message", 2000, `{"turn":0,"step":1,"usage":null,"stream":[{"type":"chunk","chunk":{"type":"usage","usage":{"inputTokens":20,"outputTokens":30}}}]}`))
+	if u.Total.Output != 6 {
+		t.Fatal("malformed explicit message usage fell back to unrelated stream", u.Total)
 	}
 }

@@ -495,7 +495,7 @@ service versions suppress balances. Account switches invalidate late replies;
 Web/TUI observations of the same account are deduplicated within the same DSH home.
 A request has an eight-second display deadline and one in-flight slot until the
 native call settles, since the native service offers no cancellation parameter.
-Refresh is at most every five minutes per loaded bridge; observations expire after
+Periodic refresh is every five minutes per loaded bridge, with immediate refresh after account changes; observations expire after
 fifteen minutes. These are wallets, **not a subscription percentage or paid tier**.
 API-key/custom-provider balances have no verified adapter yet and are stated as
 unsupported; a DSH model name does not prove the billing provider.

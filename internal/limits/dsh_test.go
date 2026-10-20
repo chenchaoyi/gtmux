@@ -26,6 +26,10 @@ func TestDSHBalancesArePrivateScopedFreshAndInvalidateOnAccountSwitch(t *testing
 	if len(b) != 1 || b[0].Wallets[0].Amount != "12.345678" {
 		t.Fatal(b)
 	}
+	r, ok := Get(Config{}, false, now)
+	if !ok || len(r.Balances) != 1 || r.Balances[0].AgentName != "DeepSeek Harness" {
+		t.Fatal("balance-only report lost registry identity", r)
+	}
 	fi, _ := os.Stat(accountPath())
 	if fi.Mode().Perm() != 0600 {
 		t.Fatal(fi.Mode())

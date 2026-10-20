@@ -148,7 +148,8 @@ func (u *TokenUsage) Fold(e Event) {
 		return
 	}
 	raw := d.Usage
-	if len(raw) == 0 || string(raw) == "null" {
+	if e.Type == "assistant/attempt" || len(raw) == 0 {
+		raw = nil
 		for i := len(d.Stream) - 1; i >= 0; i-- {
 			r := d.Stream[i]
 			if r.Type == "chunk" && r.Chunk.Type == "usage" {
