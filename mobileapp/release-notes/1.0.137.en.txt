@@ -1,0 +1,3 @@
+• Read activity with distinct action icons, fold the whole group, and expand a call to inspect and copy its original command and directory. Long command lines scroll sideways.
+• The Keys panel has clearer labels and layout. Opening the keyboard smoothly hides the upper detail controls while keeping your draft.
+• External Codex conversations no longer include transient calls without matching logs, and Desktop page controls are kept out of user messages.

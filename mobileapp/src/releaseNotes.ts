@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.137',
+    en: [
+      'Read activity with distinct action icons, fold the whole group, and expand a call to inspect and copy its original command and directory. Long command lines scroll sideways.',
+      'The Keys panel has clearer labels and layout. Opening the keyboard smoothly hides the upper detail controls while keeping your draft.',
+      'External Codex conversations no longer include transient calls without matching logs, and Desktop page controls are kept out of user messages.',
+    ],
+    zh: [
+      '执行过程按动作显示图标，可整组收起、单条展开，查看和复制原始命令及目录，长命令支持横向滑动。',
+      '按键面板优化标签与布局；键盘弹起时顺滑收起详情顶部区域，保留输入草稿。',
+      '外部 Codex 会话过滤没有匹配日志的临时调用，Desktop 页面控制消息不再当作用户发言。',
+    ],
+  },
+  {
     version: '1.0.136',
     en: [
       'Use the Keys panel on phone, iPad and Web to send F1–F12 and one-shot Ctrl, Alt and Shift combinations.',
