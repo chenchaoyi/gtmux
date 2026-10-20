@@ -1,3 +1,4 @@
+import {AppState, AppStateStatus} from 'react-native';
 import {mayNotify, syncServerPush, PushSyncQueue, PushTarget} from './sync';
 import {requestAbortKind} from '../api/requestAbort';
 
@@ -102,4 +103,64 @@ it('a Mac may notify only with the device switch, an alert kind and its own bell
   expect(mayNotify(false, both, {pushEnabled: true})).toBe(false);
   expect(mayNotify(true, {waiting: false, done: false}, {pushEnabled: true})).toBe(false);
   expect(mayNotify(true, {waiting: true, done: false}, {pushEnabled: true})).toBe(true);
+});
+
+it('cancels background work without timeout or alternate attempts', async () => {
+ const original=AppState.currentState;AppState.currentState='active';
+ let changed: (state:AppStateStatus)=>void=()=>{};
+ const remove=jest.fn();
+ const listener=jest.spyOn(AppState,'addEventListener').mockImplementation((_event,fn)=>{changed=fn;return {remove};});
+ let signal:AbortSignal|undefined;
+ const factory=jest.fn(():PushTarget=>({
+  registerPush:async (_token,_kinds,_env,s)=>{signal=s;return new Promise((_resolve,reject)=>s?.addEventListener('abort',()=>reject(new Error('aborted'))));},
+  unregisterPush:async()=>false,
+ }));
+ try {
+  const pending=syncServerPush(server,'apns',true,['done'],'production',factory);
+  AppState.currentState='background';changed('background');
+  expect(await pending).toBe(false);
+  expect(requestAbortKind(signal)).toBe('cancelled');
+  expect(factory).toHaveBeenCalledTimes(1);expect(remove).toHaveBeenCalledTimes(1);
+  AppState.currentState='active';
+  expect(await syncServerPush(server,'apns',true,['done'],'production',()=>({registerPush:async()=>true,unregisterPush:async()=>false}))).toBe(true);
+ } finally {listener.mockRestore();AppState.currentState=original;}
+});
+it('does not start a push request while already backgrounded', async () => {
+ const original=AppState.currentState;AppState.currentState='background';
+ try {const factory=jest.fn();expect(await syncServerPush(server,'apns',true,[],'production',factory)).toBe(false);expect(factory).not.toHaveBeenCalled();}
+ finally {AppState.currentState=original;}
+});
+
+it('a request rejected just before a brief inactive interval cannot start an old alternate attempt', async () => {
+ const original=AppState.currentState;AppState.currentState='active';
+ let changed:(state:AppStateStatus)=>void=()=>{};
+ const listener=jest.spyOn(AppState,'addEventListener').mockImplementation((_event,fn)=>{changed=fn;return {remove:jest.fn()};});
+ const factory=jest.fn(():PushTarget=>({registerPush:async()=>{throw new Error('network');},unregisterPush:async()=>false}));
+ try {
+  const pending=syncServerPush(server,'apns',true,['done'],'production',factory);
+  AppState.currentState='inactive';changed('inactive');
+  AppState.currentState='active';changed('active');
+  expect(await pending).toBe(false);expect(factory).toHaveBeenCalledTimes(1);
+ } finally {listener.mockRestore();AppState.currentState=original;}
+});
+
+it('retains the write queue barrier until an aborted transport actually settles', async () => {
+ const original=AppState.currentState;AppState.currentState='active';
+ let changed:(state:AppStateStatus)=>void=()=>{},finish: (value:boolean)=>void=()=>{};
+ const listener=jest.spyOn(AppState,'addEventListener').mockImplementation((_event,fn)=>{changed=fn;return {remove:jest.fn()};});
+ let began:()=>void=()=>{};let requestSignal:AbortSignal|undefined;
+ const started=new Promise<void>(resolve=>{began=resolve;});
+ const order:string[]=[];const queue=new PushSyncQueue();
+ const factory=():PushTarget=>({
+  registerPush:async(_token,_kinds,_env,signal)=>{requestSignal=signal;order.push('register');began();return new Promise(resolve=>{finish=resolve;});},
+  unregisterPush:async()=>{order.push('unregister');return true;},
+ });
+ try {
+  const old=queue.schedule(async()=>{await syncServerPush(server,'apns',true,['done'],'production',factory);});
+  await started;AppState.currentState='inactive';changed('inactive');AppState.currentState='active';changed('active');
+  expect(requestAbortKind(requestSignal)).toBe('cancelled');
+  const latest=queue.schedule(async()=>{await syncServerPush(server,'apns',false,[],'production',factory);});
+  await Promise.resolve();expect(order).toEqual(['register']);
+  finish(true);await Promise.all([old,latest]);expect(order).toEqual(['register','unregister']);
+ } finally {listener.mockRestore();AppState.currentState=original;}
 });
