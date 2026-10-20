@@ -16,7 +16,6 @@ import {AgentAvatar} from './AgentAvatar';
 import {ReplyActions} from './ReplyActions';
 import {ParticipantProfileModal} from './ParticipantProfileModal';
 import {ProfileTarget, turnIdentity} from './participantProfile';
-import {FoldAllIcon} from './Icons';
 import type {GtmuxClient} from '../api/client';
 import {CopyableText, CopyFeedbackContext} from './CopyableText';
 import {JumpToBottom} from './JumpToBottom';
@@ -381,8 +380,8 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
             // stay in the flow at the top of the chat, under the chrome (%6, 2026-10-06).
             controlsShift !== undefined && {transform: [{translateY: controlsShift}]},
           ]}>
-          <TouchableOpacity testID={TestIds.detail.collapseAll} accessibilityLabel={collapsedAll ? (lang === 'zh' ? '展开全部' : 'Expand all') : (lang === 'zh' ? '折叠全部' : 'Collapse all')} onPress={collapsedAll ? expandAll : collapseAll} activeOpacity={0.7} hitSlop={hitSlop} style={styles.globalFold}>
-            <FoldAllIcon size={22} color="#B8B8C2" collapsed={collapsedAll} />
+          <TouchableOpacity testID={TestIds.detail.collapseAll} accessibilityRole="button" accessibilityLabel={collapsedAll ? (lang === 'zh' ? '展开全部' : 'Expand all') : (lang === 'zh' ? '折叠全部' : 'Collapse all')} onPress={collapsedAll ? expandAll : collapseAll} activeOpacity={0.7} hitSlop={hitSlop} style={styles.globalFold}>
+            <Text style={styles.collapseBarText}>{collapsedAll ? (lang === 'zh' ? '展开全部' : 'Expand all') : (lang === 'zh' ? '折叠全部' : 'Collapse all')}</Text>
           </TouchableOpacity>
         </Animated.View>
       )}
@@ -676,7 +675,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
 const styles = StyleSheet.create({
   root: {flex: 1, backgroundColor: '#0D0D0F'},
   avatarButton: {width: 44, height: 44, alignItems: 'center', justifyContent: 'center'},
-  globalFold: {width: 44, height: 44, alignItems: 'center', justifyContent: 'center'},
+  globalFold: {minWidth: 44, minHeight: 44, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center'},
   body: {flex: 1, backgroundColor: '#0D0D0F'},
   content: {padding: 12, gap: 10},
   center: {paddingVertical: 24, alignItems: 'center'},
