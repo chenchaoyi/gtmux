@@ -14,6 +14,11 @@ const labels: Record<string, [string, string]> = {
   thinking: ['Thinking', '思考'], thinking_level: ['Thinking level', '思考等级'], thinking_budget: ['Thinking budget', '思考预算'], context: ['Context option', '上下文选项'],
 };
 export function factLabel(key: string, zh: boolean): string {return labels[key]?.[zh ? 1 : 0] ?? key;}
+// These are display aliases, not provider identity normalization. Custom IDs stay literal.
+const providerBrands = new Map([['openai', 'OpenAI'], ['anthropic', 'Anthropic'], ['deepseek', 'DeepSeek'], ['google', 'Google']]);
+export function factValue(fact: ProfileFact): string {
+  return fact.key === 'provider' ? providerBrands.get(fact.value.toLowerCase()) ?? fact.value : fact.value;
+}
 export function factSourceLabel(source: string, zh: boolean): string {
   const sources: Record<string, [string, string]> = {
     session_log: ['Session log', '本会话日志'], verified_binding: ['Verified client binding', '已核验的客户端绑定'],

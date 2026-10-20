@@ -9,6 +9,7 @@ import {ReplyActions} from './ReplyActions';
 import {Agent} from '../api/types';
 import {GtmuxClient, TranscriptTurn} from '../api/client';
 import {paletteFor} from './theme';
+import * as AgentsContext from '../state/AgentsContext';
 
 const agent = {pane_id: '%4', agent: 'Codex', source: 'tmux'} as Agent;
 let tree: renderer.ReactTestRenderer;
@@ -26,6 +27,9 @@ test('human and historical sender never request another runtime profile', async 
   await act(async () => tree.update(<ParticipantProfileModal target={{kind: 'sender', agent, sender: {kind: 'hq', label: 'HQ'}}} client={client} lang="zh" onClose={() => {}} />));
   expect(read).not.toHaveBeenCalled();
   expect(text()).toContain('HQ');
+  expect(text()).toContain('gtmux 参谋长');
+  expect(text()).toContain('审阅回执');
+  expect(text()).toContain('暂无已确认的在线实例');
 });
 
 test('message facts stay historical while a same-session launch chain loads on demand', async () => {
@@ -97,7 +101,7 @@ test('a stitched older session never requests the pane’s different current run
   const client = {participantProfile: read} as unknown as GtmuxClient;
   await act(async () => {tree = renderer.create(<ParticipantProfileModal target={{kind: 'agent', agent: {...agent, session_id: 'new'}, turn: {session_id: 'old', time: '2026-10-20T00:00:00Z', prompt: 'p', response: 'r'}}} client={client} lang="en" onClose={() => {}} />);});
   expect(buttons('profile-chain-toggle')).toHaveLength(0);
-  expect(text()).toContain('Another conversation');
+  expect(text()).toContain('Launch chain not recorded for this message.');
   expect(read).toHaveBeenCalledTimes(1);
 });
 
@@ -174,4 +178,42 @@ test('an unavailable current read does not claim the chain was never recorded', 
   expect(text()).toContain('could not be verified');
   expect(text()).not.toContain('No launch chain has been recorded');
   expect(buttons('profile-chain-retry')).toHaveLength(1);
+});
+
+
+test('HQ distinguishes the connected supervisor from the message sender and recipient', async () => {
+  const read = jest.fn();
+  const client = {participantProfile: read} as unknown as GtmuxClient;
+  const store = {client, conn: 'live', agents: [{...agent, agent: 'Claude Code', role: 'supervisor'}]};
+  const context = jest.spyOn(AgentsContext, 'useAgentsOptional').mockReturnValue(store as unknown as ReturnType<typeof AgentsContext.useAgentsOptional>);
+  const render = () => <ParticipantProfileModal target={{kind: 'sender', agent, sender: {kind: 'hq', label: 'HQ'}}} client={client} lang="en" onClose={() => {}} />;
+  await act(async () => {tree = renderer.create(render());});
+  expect(text()).toContain('Current HQ Claude Code');
+  expect(text()).toContain('Agent at delivery Not recorded');
+  expect(text()).not.toContain('Codex');
+  expect(read).not.toHaveBeenCalled();
+  for (const unavailable of [
+    {...store, conn: 'offline'},
+    {...store, client: {}},
+    {...store, agents: [...store.agents, {...agent, role: 'supervisor'}]},
+  ]) {
+    context.mockReturnValue(unavailable as unknown as ReturnType<typeof AgentsContext.useAgentsOptional>);
+    await act(async () => tree.update(render()));
+    expect(text()).not.toContain('Claude Code');
+    expect(text()).toContain('No confirmed connected instance');
+  }
+});
+
+test('provider presentation preserves recorded facts and custom identifiers', async () => {
+  const profile = {agent: 'codex', name: 'Codex', session_id: 's', historical: false,
+    facts: [{key: 'provider', value: 'openai', source: 'session_log'}]};
+  const read = jest.fn().mockResolvedValue(profile);
+  const client = {participantProfile: read} as unknown as GtmuxClient;
+  await act(async () => {tree = renderer.create(<ParticipantProfileModal target={{kind: 'agent', agent}} client={client} lang="en" onClose={() => {}} />);});
+  expect(text()).toContain('OpenAI');
+  expect(profile.facts[0].value).toBe('openai');
+  read.mockResolvedValue({...profile, session_id: 'custom', facts: [{key: 'provider', value: 'constructor', source: 'session_log'}]});
+  await act(async () => tree.update(<ParticipantProfileModal target={{kind: 'agent', agent: {...agent, session_id: 'custom'}}} client={client} lang="en" onClose={() => {}} />));
+  expect(text()).toContain('constructor');
+  expect(profile.facts[0].value).toBe('openai');
 });

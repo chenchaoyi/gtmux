@@ -1,6 +1,6 @@
 import React from 'react';
 import renderer, {act} from 'react-test-renderer';
-import {StyleSheet} from 'react-native';
+import {StyleSheet, Text} from 'react-native';
 import {ChatView} from './ChatView';
 import {Agent} from '../api/types';
 import {paletteFor} from './theme';
@@ -28,9 +28,11 @@ test.each([undefined, 59, 0])('chat collapse control clears the safe top %s and 
     }
     const control = () => tree.root.findAll(n => n.props.testID === TestIds.detail.collapseAll && typeof n.props.onPress === 'function')[0];
     expect(control().props.accessibilityLabel).toBe('Collapse all');
+    expect(control().findByType(Text).props.children).toBe('Collapse all');
     act(() => control().props.onPress());
     act(() => jest.advanceTimersByTime(100));
     expect(control().props.accessibilityLabel).toBe('Expand all');
+    expect(control().findByType(Text).props.children).toBe('Expand all');
     act(() => control().props.onPress());
     act(() => jest.advanceTimersByTime(100));
     expect(control().props.accessibilityLabel).toBe('Collapse all');

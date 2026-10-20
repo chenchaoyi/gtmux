@@ -66,7 +66,7 @@ the same two-column layout without leaving empty slots; larger Dynamic Type uses
 Subscription, task mode, permission policy, and reasoning options are distinct.
 `Pro`, `Plan`, `yolo`, and `high` must not become one “Plan” property. Thinking
 enabled, token budget, and model variant are not interchangeable effort levels.
-Preserve provider values; use “Reasoning effort” only for an explicit effort field.
+Preserve raw provider values; presentation uses OpenAI, Anthropic, DeepSeek and Google for those known IDs, leaving custom IDs literal. Use “Reasoning effort” only for an explicit effort field.
 
 Opening a message avatar describes **that participant at that message**. Current
 runtime facts may appear separately with that label; today's installed binary,
@@ -74,7 +74,7 @@ model, or pane cannot replace historical facts. Closing preserves reading positi
 and draft. The human profile keeps its human title, small “碳基决策者 · 自封” line,
 and Dune quotation, without the removed humorous paragraph.
 
-The agent dialog reserves its body height before the first request settles. Loading uses a labelled, static placeholder; it never flashes the unrecorded state or a previous target's facts. Failed reads offer Retry; an empty successful result remains unrecorded. The identity header is compact, provenance uses quiet label/value rows, and a reserved close-control band keeps scrolled content clear of Close.
+The dialog fits settled content up to its height limit, with scrolling for longer profiles. It reserves a stable placeholder body while the first request is pending. Loading uses a labelled, static placeholder; it never flashes the unrecorded state or a previous target's facts. Failed reads offer Retry; an empty successful result remains unrecorded. The identity header is compact, provenance uses quiet label/value rows, and a reserved close-control band keeps scrolled content clear of Close.
 
 A message's historical facts and its current launch-chain observations are separate views. Opening the chain lazily makes a second current-profile request only when the message and current agent share a source session ID; the normal server binding checks still apply. Only that response's chain and observation time are shown, never its current model, tier or effort. Returned session/agent identity must match the message profile. A header profile reuses its existing current response. Stitched older sessions and other senders do not borrow another runtime; absent observations say so explicitly. A chain describes the latest recorded ancestry, not live ownership or the processes at the message's time.
 
@@ -268,3 +268,21 @@ does not itself apply new hooks to user configuration.
 - Cursor: [common hook fields](https://cursor.com/docs/hooks#input-all-hooks). Current optional online fields are not claimed to exist in the older installed CLI.
 - Copilot: [hook payloads](https://docs.github.com/en/copilot/reference/hooks-reference#hook-event-input-payloads); Kiro: [hooks](https://kiro.dev/docs/hooks/types/) and [profile configuration](https://kiro.dev/docs/custom-agents/configuration-reference/).
 - Aider: [modes/multiple models](https://aider.chat/docs/usage/modes.html); Crush: [configuration/model slots](https://github.com/charmbracelet/crush/blob/main/docs/config/README.md); Amp: [mode routing](https://ampcode.com/docs/the-dial#models-behind-the-dial). These upstream features are not counted as delivered gtmux integration.
+
+## HQ identity
+
+HQ is the gtmux chief-of-staff role, not a separate harness. Its profile explains
+coordination, progress follow-up, report review and escalation of user decisions.
+On the HQ conversation itself, the recorded reply/profile identifies the harness;
+its facts retain the ordinary historical/current scope.
+
+On an HQ sender avatar in another conversation, **Agent at delivery** uses only
+the sender's recorded agent, if present. Existing HQ deliveries generally recorded
+only the role, so this remains **Not recorded**. **Current HQ** separately uses the
+single supervisor row from the same client's connected radar. Disconnected,
+ambiguous or other-server state does not supply this identity. This adds no request
+or polling, and never uses the receiving pane's agent or presents the current HQ
+as the sender at the message's time.
+
+The global reply-fold action retains visible brand-coloured Collapse all / Expand
+all wording and a minimum 44pt target. Per-reply and tool disclosures stay independent.
