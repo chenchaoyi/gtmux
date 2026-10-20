@@ -30,7 +30,7 @@ viewed alongside the revised captures. Accepted tool captures cover the static
 Wait, command input before/after a real horizontal gesture, loading, ready facts
 and all four chain nodes. Captures are the UI tool’s optimized 368 × 800 images,
 not full-resolution device screenshots. The earlier Wait capture uses the same
-unchanged ToolSteps component; final profile captures use the final JS bundle.
+unchanged ToolSteps component; profile captures use the captured JS bundle identified in that manifest.
 
 To avoid another multi-gigabyte native build, this preview installs an existing
 Release simulator native shell (1.0.137) with this worktree’s bundled JS. Native
@@ -47,7 +47,10 @@ Copy and failure/Retry contracts are covered by component tests, not native
 pasteboard or fault-injection acceptance in this iteration.
 
 No remaining actionable P0/P1/P2 visual finding in the inspected normal-size
-phone flow. This iteration has no iPad/large-type, Android, physical-device,
+phone flow. The captures precede a final error-only correction: an unavailable
+server read with no chain now shows failure/Retry rather than unrecorded. That
+branch is component-tested; the inspected normal flows did not change.
+This iteration has no iPad/large-type, Android, physical-device,
 independent-review or VoiceOver speech/focus acceptance.
 
 final result: passed within the stated normal-size phone scope

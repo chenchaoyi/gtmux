@@ -165,3 +165,13 @@ test('a failed same-session chain can retry without replacing message facts', as
   expect(text()).toContain('recorded-model');
   expect(buttons('profile-copy-0')).toHaveLength(1);
 });
+
+test('an unavailable current read does not claim the chain was never recorded', async () => {
+  const read = jest.fn().mockResolvedValue({agent: 'codex', name: 'Codex', session_id: 's', historical: false, facts: [], unavailable: true});
+  const client = {participantProfile: read} as unknown as GtmuxClient;
+  await act(async () => {tree = renderer.create(<ParticipantProfileModal target={{kind: 'agent', agent: {...agent, session_id: 's'}}} client={client} lang="en" onClose={() => {}} />);});
+  await act(async () => buttons('profile-chain-toggle')[0].props.onPress());
+  expect(text()).toContain('could not be verified');
+  expect(text()).not.toContain('No launch chain has been recorded');
+  expect(buttons('profile-chain-retry')).toHaveLength(1);
+});

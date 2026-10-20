@@ -34,7 +34,7 @@ export function ProfileExecutionChain({target, client, lang, primary}: {target: 
     </TouchableOpacity>
     {open && <View testID="profile-chain-content">
       {read.status === 'loading' ? <Text testID="profile-chain-loading" accessibilityRole="progressbar" style={styles.note}>{zh ? '正在读取启动链…' : 'Reading launch-chain observations…'}</Text>
-        : read.status === 'failed' || read.status === 'ready' && !matches ? <Text testID="profile-chain-failed" style={styles.note}>{zh ? '暂时无法核对启动链，请重试。' : 'Launch-chain observations could not be verified. Try again.'}</Text>
+        : read.status === 'failed' || read.status === 'ready' && (!matches || read.profile?.unavailable && chain.length === 0) ? <Text testID="profile-chain-failed" style={styles.note}>{zh ? '暂时无法核对启动链，请重试。' : 'Launch-chain observations could not be verified. Try again.'}</Text>
           : chain.length === 0 ? <Text testID="profile-chain-unrecorded" style={styles.note}>{zh ? '此会话尚未记录启动链。' : 'No launch chain has been recorded for this conversation.'}</Text> : <>
             <Text style={styles.note}>{historical
               ? (zh ? '当前会话的最近观察，不代表这条消息当时的进程。' : 'Latest observations for this conversation, not the processes at this message’s time.')
