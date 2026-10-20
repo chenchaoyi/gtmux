@@ -64,11 +64,12 @@ func dshStep(line []byte, st *parseState) error {
 			return fmt.Errorf("DSH tool name exceeds read limit")
 		}
 		if data.Name != "" {
-			st.addSteps([]Step{{Kind: "tool", Title: data.Name, Detail: toolDetail(json.RawMessage(data.Arguments))}})
+			st.addSteps([]Step{toolStep(data.Name, data.Name, json.RawMessage(data.Arguments), toolDetail(json.RawMessage(data.Arguments)))})
 		}
 	}
 	if st.cur != nil {
 		size := len(st.cur.Prompt)
+		size += st.toolDetailBytes
 		for _, seg := range st.cur.Segments {
 			size += len(seg.Text) + len(seg.Steps)*200
 		}
@@ -158,6 +159,9 @@ func dshTurnBytes(turns []Turn) int {
 		n += len(t.Prompt) + len(t.Response)
 		for _, s := range t.Segments {
 			n += len(s.Text) + len(s.Steps)*200
+			for _, step := range s.Steps {
+				n += len(step.Input) + len(step.Workdir)
+			}
 		}
 	}
 	return n

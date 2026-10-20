@@ -1,4 +1,5 @@
 import React from 'react';
+import {TouchableOpacity} from 'react-native';
 import renderer, {act} from 'react-test-renderer';
 import {ChatView} from './ChatView';
 import {ToolSteps} from './ToolSteps';
@@ -67,7 +68,8 @@ test('the turn in flight shows its steps, not just a toggle', () => {
 test('history stays collapsed while the newest turn runs', () => {
   const tree = render({turns: [history, live], status: 'working'});
   expect(tree.root.findAllByType(ToolSteps).map(n => n.props.open)).toEqual([false, true]);
-  expect(texts(tree)).toContain('2 calls');
+  const disclosures = tree.root.findAllByType(TouchableOpacity).filter(n => n.props.testID === 'tool-steps-toggle');
+  expect(disclosures.map(n => n.props.accessibilityLabel)).toEqual(['Tool call, 2 calls', 'Tool call, 2 calls']);
 });
 
 test('a finished conversation reads as a conversation, not a log of tool calls', () => {

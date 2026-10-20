@@ -77,7 +77,7 @@ func cachedTurnBytes(turns []Turn) int64 {
 		for _, s := range t.Segments {
 			n += int64(128 + len(s.Text))
 			for _, step := range s.Steps {
-				n += int64(96 + len(step.Kind) + len(step.Title) + len(step.Detail))
+				n += int64(160 + len(step.Kind) + len(step.Title) + len(step.Detail) + len(step.Operation) + len(step.Input) + len(step.InputKind) + len(step.Workdir))
 			}
 		}
 	}

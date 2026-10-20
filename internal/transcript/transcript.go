@@ -373,9 +373,14 @@ func errorSummary(content json.RawMessage) string {
 // Step is one collapsed middle action in a turn (a tool call). The chat view
 // shows turns as prompt → (N steps, collapsed) → final response.
 type Step struct {
-	Kind   string `json:"kind"`             // "tool" for now
-	Title  string `json:"title"`            // tool name (Edit, Bash, exec_command…)
-	Detail string `json:"detail,omitempty"` // a short arg summary (path / command head)
+	Kind             string `json:"kind"`             // "tool" for now
+	Title            string `json:"title"`            // tool name (Edit, Bash, exec_command…)
+	Detail           string `json:"detail,omitempty"` // a short arg summary (path / command head)
+	Operation        string `json:"operation,omitempty"`
+	Input            string `json:"input,omitempty"` // selected original input, with whitespace preserved
+	InputKind        string `json:"input_kind,omitempty"`
+	Workdir          string `json:"workdir,omitempty"`
+	DetailsTruncated bool   `json:"details_truncated,omitempty"`
 }
 
 // Turn is one user instruction and what the agent ultimately answered, with the
@@ -533,12 +538,13 @@ func resolveLog(agent, sessionID string) (string, stepFn) {
 // parseState accumulates turns as a parser walks the log linearly, tracking the
 // byte offset at which each turn began so the cache can restart incrementally.
 type parseState struct {
-	turns      []Turn
-	turnStarts []int64 // turnStarts[i] = byte offset of turns[i]'s first line
-	cur        *Turn
-	curStart   int64
-	turnCap    int   // optional retention limit while streaming
-	off        int64 // start offset of the line currently being fed to a step
+	turns           []Turn
+	turnStarts      []int64 // turnStarts[i] = byte offset of turns[i]'s first line
+	cur             *Turn
+	curStart        int64
+	turnCap         int   // optional retention limit while streaming
+	off             int64 // start offset of the line currently being fed to a step
+	toolDetailBytes int   // additional tool-input bytes retained in the active turn
 }
 
 // flush commits the in-progress turn (if it carries any content) and records
@@ -560,6 +566,7 @@ func (st *parseState) flush() {
 		}
 	}
 	st.cur = nil
+	st.toolDetailBytes = 0
 }
 
 // addText starts a new reply segment (a text bubble).
@@ -585,6 +592,15 @@ func (st *parseState) addSteps(steps []Step) {
 		return
 	}
 	st.ensure()
+	for i := range steps {
+		step := &steps[i]
+		for _, field := range []*string{&step.Input, &step.Workdir} {
+			value, cut := boundedToolText(*field, maxTurnToolDetailBytes-st.toolDetailBytes)
+			*field = value
+			step.DetailsTruncated = step.DetailsTruncated || cut
+			st.toolDetailBytes += len(value)
+		}
+	}
 	if len(st.cur.Segments) == 0 {
 		st.cur.Segments = append(st.cur.Segments, Segment{})
 	}

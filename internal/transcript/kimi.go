@@ -213,7 +213,7 @@ func kimiStep(line string, st *parseState) {
 			if c.Name == "" {
 				continue
 			}
-			steps = append(steps, Step{Kind: "tool", Title: kimiToolName(c.Name), Detail: kimiToolDetail(c.Arguments)})
+			steps = append(steps, toolStep(c.Name, kimiToolName(c.Name), json.RawMessage(c.Arguments), kimiToolDetail(c.Arguments)))
 		}
 		st.addSteps(steps)
 	}

@@ -1590,6 +1590,13 @@ func nativePanesScoped(tmuxPanes []Pane, profiles []agentProfile, now int64, cod
 		if inTmux[r.HomeID+"\x00"+r.SessionID] {
 			continue
 		}
+		// A shared Codex backend PID also serves transient helper calls. A
+		// matching persisted rollout is required before showing an external
+		// conversation in this home; early hooks can surface on the next poll.
+		// Do not merge IDs by title, cwd, backend PID or session-tree ancestry.
+		if r.Agent == "codex" && nativeReadableScope(r) && len(codexScope.Paths(r.SessionID)) == 0 {
+			continue
+		}
 		name, icon := displayForKey(r.Agent, profiles)
 		project, branch := gitInfo(r.Cwd)
 		// The session's own last logged message (tmux-free); 0 when nothing is
