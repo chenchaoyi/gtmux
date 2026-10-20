@@ -1,0 +1,3 @@
+- Keep tool activity in a compact folded list; inspect real command details when needed.
+- Open profiles with clear loading and retry states; inspect the same conversation's latest recorded launch chain separately from historical facts.
+- Keep reply actions close to the text and the profile Close control clear while scrolling.
