@@ -308,7 +308,7 @@ func hqActivity(_ h: HQUsageHistory, weeks: Int, today: Date, zh: Bool) -> HQAct
         ? ["峰值 \(hqCompactTok(a.peakOut))\(peakOn)", "连续 \(a.streak) 天 · 最长 \(a.bestStreak) 天", "日均 \(hqCompactTok(avg))", "活跃 \(a.activeDays) / \(a.daysKnown) 天"]
         : ["peak \(hqCompactTok(a.peakOut))\(peakOn)", "streak \(a.streak)d · best \(a.bestStreak)d", "\(hqCompactTok(avg)) a day", "\(a.activeDays) of \(a.daysKnown) day\(a.daysKnown == 1 ? "" : "s") active"]
     return HQActivityGrid(
-        figs: [(hqCompactTok(h.todayOut ?? 0), zh ? "今天" : "today"), (hqCompactTok(h.weekOut ?? 0), zh ? "本周" : "this week"), (hqCompactTok(a.allOut), (zh ? "自 " : "since ") + fmtDate(a.since))],
+        figs: [(hqCompactTok(h.todayOut ?? 0), zh ? "今天" : "today"), (hqCompactTok(h.weekOut ?? 0), zh ? "近 7 天" : "last 7 days"), (hqCompactTok(a.allOut), (zh ? "自 " : "since ") + fmtDate(a.since))],
         stats: stats, rowLabels: labels, rows: rows, months: months, weeks: weeks, weekBars: weekBars,
         cumulative: cumulative.map { total > 0 ? Double($0) / Double(total) : 0 }, cumulativeLabel: hqCompactTok(total),
         range: zh ? "最近 \(weeks) 周" : "last \(weeks) week\(weeks == 1 ? "" : "s")")
@@ -346,14 +346,21 @@ struct HQUsageBalance: Decodable {
     }
 }
 struct HQUsageSource: Decodable { var agent: String; var name: String; var status: String? }
+struct HQUsageUnknownPlan: Decodable {
+    var agent: String
+    var agentName: String?
+    var reason: String
+    enum CodingKeys: String, CodingKey { case agent, reason; case agentName = "agent_name" }
+}
 struct HQUsageReport: Decodable {
     struct Limits: Decodable {
         var windows: [HQUsageWindow]?
         var warn: String?
+        var unknown: [HQUsageUnknownPlan]? = nil
         var balances: [HQUsageBalance]? = nil
         var dshAccountStatus: String? = nil
         enum CodingKeys: String, CodingKey {
-            case windows, warn, balances
+            case windows, warn, balances, unknown
             case dshAccountStatus = "dsh_account_status"
         }
     }
@@ -489,7 +496,7 @@ private func usageRow(_ i: HQReportInput, zh: Bool) -> HQReportRow? {
     // answer to "how much room is left".
     if let h = i.history, (h.weekOut ?? 0) > 0 || (h.todayOut ?? 0) > 0 {
         parts.append((zh ? "今天 " : "today ") + hqCompactTok(h.todayOut ?? 0))
-        parts.append((zh ? "本周 " : "week ") + hqCompactTok(h.weekOut ?? 0))
+        parts.append((zh ? "近7天 " : "7d ") + hqCompactTok(h.weekOut ?? 0))
     }
     for w in hqTightestPerPlan(i.windows) { parts.append("\(hqPlanLabel(w, zh: zh)) \(w.pctUsed)%") }
     if parts.isEmpty { return nil }

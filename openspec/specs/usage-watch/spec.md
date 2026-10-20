@@ -340,8 +340,8 @@ even when the file is too old to be scanned, so a session that resumes later is 
 from where it was left. `gtmux usage
 --json` and `GET /api/usage` SHALL carry `history`: the last seven local days oldest
 first with per-agent counts, `today_out`/`today_in`, `week_out`/`week_in`, and the
-week's split per agent with the registry's display name. `gtmux usage` SHALL print one
-today/this-week line.
+seven-day split per agent with the registry's display name. `gtmux usage` SHALL print one
+line containing today and this seven-date aggregate.
 
 #### Scenario: Two days of two agents
 
@@ -369,7 +369,7 @@ day with output, oldest first, empty days omitted), `all_out`, `peak_out` with
 `peak_date`, `streak` (consecutive days with output ending today, or yesterday while
 today is still empty), `best_streak`, `active_days` and `days_known`. Every surface
 SHALL draw the same picture from it, the way GitHub draws contributions: three figures
-(today, this week, all since), a stats line (peak, streak, daily average, active days),
+(today, seven-local-day total, all since), a stats line (peak, streak, daily average, active days),
 and a calendar heatmap of weeks across and Monday-to-Sunday down, levelled against the
 window's peak in five steps of GitHub's green ramp (an empty day in the surface's own
 faint ink), months labelled above, today ringed, with a weekly-bars and a cumulative view
@@ -415,3 +415,35 @@ Native account observations SHALL never change lifecycle or receipt state.
 
 - **WHEN** a turn/step usage sample is updated and an explicit retry starts
 - **THEN** the update replaces its earlier sample and the new attempt contributes once
+
+
+### Requirement: Native usage readers distinguish capacity from recorded output
+
+The Mac and mobile readers SHALL group provider-reported quota windows and exact
+monetary balances separately from the host-recorded output-token history. They
+SHALL label the legacy `history.week_out` aggregate as Last 7 days, including
+today and the preceding six host-local dates, in both the detail and its Usage
+entry summary. Per-agent token figures SHALL share the same Today / Last 7 days
+column labels inside the output-history block. Calendar-week chart buckets SHALL
+remain distinct from this seven-date aggregate and from provider reset windows.
+
+Current provider readings SHALL remain primary. Historical quota windows,
+unreadable-source reasons, account capability gaps, recorded plan identifiers
+and observation times SHALL remain inspectable in an adjacent disclosure that
+starts closed. Missing balance or quota data SHALL NOT be shown as a zero.
+Currency and decimal balance strings SHALL retain their exact values without
+combining different currencies. An ordinary single quota SHALL NOT repeat as a
+lead summary; warnings and full windows SHALL remain eligible for that summary.
+
+#### Scenario: One provider has current and historical readings
+
+- **WHEN** a provider reports a current weekly quota and a historical session quota
+- **THEN** only the current quota is initially shown in the capacity section
+- **AND** the historical value and source details remain reachable by expanding the disclosure
+- **AND** expanding or collapsing it does not change output-token totals
+
+#### Scenario: Output is readable without an account balance
+
+- **WHEN** local DSH output is recorded but native account balance is unavailable
+- **THEN** the output breakdown still shows the recorded tokens
+- **AND** the balance limitation is available in the source disclosure without a fabricated zero balance

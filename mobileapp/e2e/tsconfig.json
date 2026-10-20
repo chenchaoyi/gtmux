@@ -6,6 +6,7 @@
     ],
     "module": "commonjs",
     "esModuleInterop": true,
+    "resolveJsonModule": true,
     "skipLibCheck": true,
     "noEmit": true,
     "target": "es2022",

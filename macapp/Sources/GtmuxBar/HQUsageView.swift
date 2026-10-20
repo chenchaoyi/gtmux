@@ -24,10 +24,12 @@ struct HQUsageView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
                     usageLead(u, p)
-                    usagePlans(u, p)
-                    usageBalances(u, p)
+                    HQUsageAccounts(l10n: l10n, report: u)
                     if let h = u.history, let days = h.days, !days.isEmpty {
                         Divider()
+                        Text(l10n.tr("Output tokens", "输出 Token")).font(HQTypography.rowTitle).foregroundStyle(p.fg)
+                        Text(l10n.tr("Recorded conversations · local days", "已记录的对话 · 按当地日期"))
+                            .font(HQTypography.caption).foregroundStyle(p.fg3)
                         usageTokens(h, days, p)
                     }
                     usageBurn(u, p)
@@ -45,7 +47,7 @@ struct HQUsageView: View {
         let all = (u.limits?.windows ?? []).filter { $0.stale != true }
         let weekly = all.filter { ($0.kind ?? hqWindowName($0).lowercased()) != "session" }
         let pool = weekly.isEmpty ? all : weekly
-        if let t = pool.max(by: { $0.pctUsed < $1.pctUsed }) {
+        if hqUsageShowsLead(all), let t = pool.max(by: { $0.pctUsed < $1.pctUsed }) {
             let name = t.agentName ?? t.agent ?? ""
             HStack(spacing: 8) {
                 Text("\(t.pctUsed)%").font(HQTypography.title).foregroundStyle(p.fg)
@@ -72,105 +74,7 @@ struct HQUsageView: View {
         }
     }
 
-    /// The fill, track, edge and figure colours for one window's tier, in this scheme.
-    private func quotaTone(_ w: HQUsageWindow) -> (
-        fill: Color, track: Color, edge: Color?, text: Color?
-    ) {
-        if w.stale == true { return (.secondary, .secondary.opacity(0.15), nil, .secondary) }
-        let dark = scheme == .dark
-        let wash = dark ? 0.24 : 0.22
-        let line = dark ? 0.32 : 0.30
-        switch hqQuotaTier(w) {
-        case .full:
-            return (Theme.Status.waiting, Theme.Status.waiting, nil, Theme.Status.waiting)
-        case .warn:
-            let a = Theme.Status.errored
-            return (a, a.opacity(wash), a.opacity(line), dark ? a : Theme.Quota.amberTextLight)
-        case .normal:
-            let b = dark ? Theme.Quota.blueDark : Theme.Quota.blueLight
-            return (b, b.opacity(wash), b.opacity(line), nil)
-        }
-    }
-
-    /// Quotas grouped by agent, the name said once, each window a bar: its length speaks
-    /// before a number does, and its colour is the core's tier (hqQuotaTier): blue, amber
-    /// when warned, red when full, drawn the way claude.ai draws plan usage. The window
-    /// that is warned needs no separate line of text; its bar and figure already say so.
-    @ViewBuilder private func usagePlans(_ u: HQUsageReport, _ p: Theme.Palette) -> some View {
-        let wins = u.limits?.windows ?? []
-        if wins.isEmpty {
-            Text(
-                l10n.tr("No subscription-window data available.", "暂无订阅额度窗口数据。")
-            )
-            .font(HQTypography.caption).foregroundStyle(p.fg3)
-        } else {
-            let groups = Dictionary(grouping: wins, by: { $0.agent ?? $0.label })
-            let order = wins.map { $0.agent ?? $0.label }.reduce(into: [String]()) {
-                if !$0.contains($1) { $0.append($1) }
-            }
-            ForEach(order, id: \.self) { key in
-                let ws = groups[key] ?? []
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(ws.first?.agentName ?? key).font(HQTypography.rowTitle)
-                        .foregroundStyle(p.fg)
-                    ForEach(Array(ws.enumerated()), id: \.offset) { _, w in
-                        HStack(spacing: 10) {
-                            Text(hqWindowTitle(w, zh: zh)).font(HQTypography.caption).foregroundStyle(p.fg2)
-                                .frame(width: 150, alignment: .leading).lineLimit(1)
-                            let tone = quotaTone(w)
-                            GeometryReader { g in
-                                ZStack(alignment: .leading) {
-                                    Capsule().fill(tone.track)
-                                        .overlay(Capsule().strokeBorder(tone.edge ?? .clear, lineWidth: 0.5))
-                                    if w.pctUsed > 0 {
-                                        Capsule().fill(tone.fill)
-                                            .frame(width: max(6, g.size.width * CGFloat(min(w.pctUsed, 100)) / 100))
-                                    }
-                                }
-                            }
-                            .frame(height: 6)
-                            Text(l10n.tr("\(w.pctUsed)% used", "已用 \(w.pctUsed)%")).font(HQTypography.code)
-                                .foregroundStyle(tone.text ?? p.fg).lineLimit(1).frame(
-                                    width: 72, alignment: .trailing)
-                            Text(w.stale == true ? l10n.tr("Stale reading", "旧读数") : hqResetTitle(w, zh: zh)).font(HQTypography.caption).foregroundStyle(p.fg3).frame(
-                                width: 130, alignment: .leading
-                            ).lineLimit(1)
-                        }
-                        if let at = w.observedAt {
-                            Text((w.planType.map { l10n.tr("Recorded plan: ", "记录的套餐：") + $0 + " · " } ?? "") + l10n.tr("Read ", "读取于 ") + Date(timeIntervalSince1970: TimeInterval(at)).formatted(date: .abbreviated, time: .shortened))
-                                .font(HQTypography.caption).foregroundStyle(p.fg3)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    @ViewBuilder private func usageBalances(_ u: HQUsageReport, _ p: Theme.Palette) -> some View {
-        let balances = u.limits?.balances ?? []
-        if !balances.isEmpty {
-            Text(l10n.tr("Balances", "余额")).font(HQTypography.rowTitle).foregroundStyle(p.fg)
-            ForEach(balances, id: \.accountID) { balance in
-                VStack(alignment: .leading, spacing: 5) {
-                    Text("DeepSeek Account").font(HQTypography.rowTitle).foregroundStyle(p.fg)
-                    ForEach(Array(balance.wallets.enumerated()), id: \.offset) { _, wallet in
-                        HStack {
-                            Text(wallet.kind == "bonus" ? l10n.tr("Bonus", "赠送") : l10n.tr("Recharge", "充值"))
-                            Spacer()
-                            Text(wallet.currency + " " + wallet.amount).textSelection(.enabled)
-                        }.font(HQTypography.caption).foregroundStyle(p.fg2)
-                    }
-                    Text(l10n.tr("Read ", "读取于 ") + Date(timeIntervalSince1970: TimeInterval(balance.observedAt)).formatted(date: .abbreviated, time: .shortened))
-                        .font(HQTypography.caption).foregroundStyle(p.fg3)
-                }
-            }
-        } else if u.sources?.contains(where: { $0.agent == "dsh" }) == true {
-            Text(l10n.tr("DeepSeek Account balance unavailable; API-key and custom providers are not supported yet.", "暂时没有 DeepSeek Account 余额；API Key 和自定义 Provider 暂不支持。"))
-                .font(HQTypography.caption).foregroundStyle(p.fg3)
-        }
-    }
-
-    /// Tokens by day (usage-daily-totals): today and this week across every agent, seven
+    /// Tokens by day (usage-daily-totals): today and the last seven days across every agent, seven
     /// bars — one neutral series, today's in the stronger ink, direct labels on today and
     /// the tallest day, weekday initials beneath — then the week's split per agent.
     @ViewBuilder private func usageTokens(
@@ -230,7 +134,8 @@ struct HQUsageView: View {
                     .frame(height: 13, alignment: .topLeading)
                     ForEach(Array(grid.rows.enumerated()), id: \.offset) { ri, row in
                         HStack(spacing: 3) {
-                            Text(grid.rowLabels[ri]).font(HQTypography.caption).foregroundStyle(p.fg3).frame(
+                            Text(grid.rowLabels[ri]).font(HQTypography.caption).foregroundStyle(p.fg3)
+                                .lineLimit(1).minimumScaleFactor(0.75).frame(
                                 width: 23, alignment: .trailing)
                             ForEach(Array(row.enumerated()), id: \.offset) { _, c in
                                 if c.level < 0 {
@@ -322,22 +227,28 @@ struct HQUsageView: View {
         }
     }
 
-    /// The per-agent split under either picture.
+    /// A table within token history, with one shared reporting period per column.
     @ViewBuilder private func usageAgentSplit(_ h: HQUsageHistory, _ p: Theme.Palette) -> some View {
         if let agents = h.byAgent, !agents.isEmpty {
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 6) {
+                Divider()
+                HStack {
+                    Text(l10n.tr("By agent", "按 Agent 统计"))
+                    Spacer()
+                    Text(l10n.tr("Today", "今天")).frame(width: 100, alignment: .trailing)
+                    Text(l10n.tr("Last 7 days", "近 7 天")).frame(width: 100, alignment: .trailing)
+                }.font(HQTypography.caption).foregroundStyle(p.fg3)
                 ForEach(agents, id: \.agentKey) { a in
-                    HStack(spacing: 10) {
-                        Text(a.agentName ?? a.agentKey).font(HQTypography.caption).foregroundStyle(p.fg)
-                            .frame(width: 150, alignment: .leading)
+                    HStack {
+                        Text(a.agentName ?? a.agentKey).font(HQTypography.caption).foregroundStyle(p.fg2)
                         Spacer()
-                        Text(l10n.tr("today \(hqCompactTok(a.todayOut))", "今天 \(hqCompactTok(a.todayOut))"))
-                            .font(HQTypography.code).foregroundStyle(p.fg2).frame(width: 110, alignment: .trailing)
-                        Text(l10n.tr("week \(hqCompactTok(a.weekOut))", "本周 \(hqCompactTok(a.weekOut))"))
-                            .font(HQTypography.code).foregroundStyle(p.fg).frame(width: 110, alignment: .trailing)
+                        Text(hqCompactTok(a.todayOut)).font(HQTypography.code).foregroundStyle(p.fg2)
+                            .frame(width: 100, alignment: .trailing)
+                        Text(hqCompactTok(a.weekOut)).font(HQTypography.code).foregroundStyle(p.fg)
+                            .frame(width: 100, alignment: .trailing)
                     }
                 }
-            }
+            }.padding(.top, 4)
         }
     }
 
@@ -356,10 +267,10 @@ struct HQUsageView: View {
                 }
                 VStack(alignment: .leading, spacing: 1) {
                     Text(hqCompactTok(week)).font(HQTypography.title).foregroundStyle(p.fg)
-                    Text(l10n.tr("this week", "本周")).font(HQTypography.caption).foregroundStyle(p.fg3)
+                    Text(l10n.tr("last 7 days", "近 7 天")).font(HQTypography.caption).foregroundStyle(p.fg3)
                 }
                 Spacer()
-                Text(l10n.tr("output tokens, every agent, by local day", "输出 token · 全部 agent · 按本地日期"))
+                Text(l10n.tr("Output tokens", "输出 Token"))
                     .font(HQTypography.caption).foregroundStyle(p.fg3)
             }
             HStack(alignment: .bottom, spacing: 8) {
@@ -377,22 +288,7 @@ struct HQUsageView: View {
                 }
             }
             .frame(height: 84)
-            if let agents = h.byAgent, !agents.isEmpty {
-                VStack(alignment: .leading, spacing: 3) {
-                    ForEach(agents, id: \.agentKey) { a in
-                        HStack(spacing: 10) {
-                            Text(a.agentName ?? a.agentKey).font(HQTypography.caption).foregroundStyle(p.fg)
-                                .frame(width: 150, alignment: .leading)
-                            Spacer()
-                            Text(l10n.tr("today \(hqCompactTok(a.todayOut))", "今天 \(hqCompactTok(a.todayOut))"))
-                                .font(HQTypography.code).foregroundStyle(p.fg2).frame(
-                                    width: 110, alignment: .trailing)
-                            Text(l10n.tr("week \(hqCompactTok(a.weekOut))", "本周 \(hqCompactTok(a.weekOut))"))
-                                .font(HQTypography.code).foregroundStyle(p.fg).frame(width: 110, alignment: .trailing)
-                        }
-                    }
-                }
-            }
+            usageAgentSplit(h, p)
         }
     }
 

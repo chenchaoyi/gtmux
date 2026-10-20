@@ -2,6 +2,7 @@ import React from 'react';
 import renderer, {act} from 'react-test-renderer';
 import {UsageSheet} from './UsageSheet';
 import {UsageReport} from '../api/client';
+import {Agent} from '../api/types';
 import {MachineIcon} from '../ui/MachineIcon';
 import {AgentAvatar} from '../ui/AgentAvatar';
 import {paletteFor} from '../ui/theme';
@@ -20,11 +21,11 @@ function texts(tree: renderer.ReactTestRenderer): string[] {
   return out;
 }
 
-const render = (usage: UsageReport | null) => {
+const render = (usage: UsageReport | null, agents: React.ComponentProps<typeof UsageSheet>['agents'] = []) => {
   let t!: renderer.ReactTestRenderer;
   act(() => {
     t = renderer.create(
-      <UsageSheet visible usage={usage} agents={[]} pal={paletteFor('dark')} lang="zh" onClose={() => {}} />,
+      <UsageSheet visible usage={usage} agents={agents} pal={paletteFor('dark')} lang="zh" onClose={() => {}} />,
     );
   });
   return t;
@@ -88,6 +89,11 @@ describe('a session row', () => {
 });
 
 describe('the lead', () => {
+  it('omits a duplicate ordinary quota while retaining a single warned window', () => {
+    const window = {agent: 'codex', label: 'codex week', pct_used: 12, reset_at: 'later'};
+    expect(render({limits: {windows: [window]}}).root.findAllByProps({testID: 'usage-lead'})).toHaveLength(0);
+    expect(render({limits: {windows: [{...window, pct_used: 89, tier: 'warn'}]}}).root.findAll(n => typeof n.type === 'string' && n.props.testID === 'usage-lead')).toHaveLength(1);
+  });
   it('says the tightest window before any section', () => {
     expect(texts(render(codexOnly)).join('|')).toContain('最紧的额度用掉 76%');
   });
@@ -193,4 +199,62 @@ test('native DSH balance keeps exact money strings separate from percentage wind
  const text=JSON.stringify(tree.toJSON());
  expect(text).toContain('12.3400');
  expect(tree.root.findAllByProps({testID:'usage-lead'})).toHaveLength(0);
+});
+
+describe('provider capacity and recorded output', () => {
+  const mixed: UsageReport = {
+    sources: [{agent: 'dsh', name: 'DeepSeek Harness', installed: true, tokens: true, account: 'balance'}],
+    limits: {dsh_account_status: 'signed-out', windows: [
+      {agent: 'claude', agent_name: 'Claude Code', label: 'claude week', pct_used: 100, reset_at: 'old', stale: true, observed_at: 100},
+      {agent: 'codex', agent_name: 'Codex', label: 'codex week', pct_used: 12, reset_at: 'later', plan_type: 'prolite', observed_at: 200},
+      {agent: 'codex', agent_name: 'Codex', label: 'codex session', pct_used: 90, reset_at: 'old', stale: true, observed_at: 100},
+    ]},
+    history: {days: [{date: '2026-10-20', out: 129_000, in: 0}], today_out: 129_000, week_out: 189_000,
+      by_agent: [{agent_key: 'dsh', agent_name: 'DeepSeek Harness', today_out: 29_000, today_in: 0, week_out: 89_000, week_in: 0}]},
+  };
+
+  it('keeps output visible while historical quotas and source gaps start folded', () => {
+    const tree = render(mixed);
+    const seen = texts(tree).join('|');
+    expect(seen).toContain('额度与余额');
+    expect(seen).toContain('输出 Token');
+    expect(seen).toContain('89k');
+    expect(seen).toContain('已用 12%');
+    expect(seen).not.toContain('已用 100%');
+    expect(seen).not.toContain('已用 90%');
+    expect(seen).not.toContain('未登录 DeepSeek Account');
+    expect(seen).not.toContain('prolite');
+    expect(tree.root.findByProps({testID: 'usage-account-details'}).props.accessibilityState).toEqual({expanded: false});
+  });
+
+  it('still requests the built-in icon when a live row has no icon hint', () => {
+    const tree = render(mixed, [{agent: 'Codex', pane_id: '%test', icon: ''} as Agent]);
+    const codex = tree.root.findAllByType(AgentAvatar).find(a => a.props.agent.agent === 'Codex');
+    expect(codex?.props.agent.icon).toBe('codex');
+  });
+
+  it('can inspect and re-fold history and account limitations without changing current figures', () => {
+    const tree = render(mixed);
+    const toggle = () => act(() => tree.root.findByProps({testID: 'usage-account-details'}).props.onPress());
+    toggle();
+    let seen = texts(tree).join('|');
+    expect(seen).toContain('已用 100%');
+    expect(seen).toContain('已用 90%');
+    expect(seen).toContain('未登录 DeepSeek Account');
+    expect(seen).toContain('prolite');
+    expect(seen).toContain('不代表账单');
+    toggle();
+    seen = texts(tree).join('|');
+    expect(seen).not.toContain('已用 100%');
+    expect(seen).toContain('已用 12%');
+    expect(seen).toContain('89k');
+  });
+
+  it('retains an unreadable provider inside the disclosure, without inventing a zero quota', () => {
+    const tree = render({limits: {unknown: [{agent: 'codex', agent_name: 'Codex', reason: 'rolled-over'}]}});
+    expect(texts(tree).join('|')).toContain('暂时没有可用的当前额度或余额');
+    expect(texts(tree).join('|')).not.toContain('0%');
+    act(() => tree.root.findByProps({testID: 'usage-account-details'}).props.onPress());
+    expect(texts(tree).join('|')).toContain('上次报告的窗口已经过去');
+  });
 });

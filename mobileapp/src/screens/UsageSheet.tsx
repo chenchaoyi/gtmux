@@ -4,10 +4,8 @@
 // one line saying where you stand, and it earns that by having somewhere to send
 // you — which, until this existed, it did not.
 //
-// Three sections in the order `gtmux usage` uses, so the CLI and the phone answer
-// the same question the same way round: the plan, then who is burning it, then the
-// machine. Amber is only ever the core's own verdict, never a figure this view
-// decided looked high.
+// Provider capacity, recorded output and session detail use distinct units.
+// Amber remains the core's verdict; this view does not infer billing or freshness.
 
 import React, {useState} from 'react';
 import {ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
@@ -16,7 +14,6 @@ import {Agent} from '../api/types';
 import {AgentAvatar} from '../ui/AgentAvatar';
 import {Lang} from '../i18n';
 import {Palette, ERRORED_COLOR} from '../ui/theme';
-import {relTime} from './hqZones';
 import {SizeClass} from '../ui/layout';
 import {
   ACTIVITY_RAMP,
@@ -28,17 +25,14 @@ import {
   dayReadout,
   machineLines,
   machineWarn,
-  planByAgent,
-  quotaTone,
-  recordedPlan,
   sessionCount,
+  showQuotaLead,
   splitSessions,
   tightestWindow,
   tokensView,
-  unreadableReason,
   untilReset,
-  usageSourceNote,
 } from './usageModel';
+import {UsageAccounts} from './UsageAccounts';
 import {MachineIcon, machineKind} from '../ui/MachineIcon';
 import {MODAL_ORIENTATIONS} from '../ui/modalOrientations';
 
@@ -71,7 +65,6 @@ export function UsageSheet({
   const zh = lang === 'zh';
   const t = (en: string, cn: string) => (zh ? cn : en);
   const v = buildUsageView(usage);
-  const plan = planByAgent(usage, zh);
   const names = agentNames(usage);
   const byPane = new Map(agents.map(a => [a.pane_id, a]));
 
@@ -89,6 +82,7 @@ export function UsageSheet({
   const todayKey = activity?.rows.flatMap(r => r.cells).find(c => c.today)?.date ?? '';
   const readout = dayReadout(usage?.history, picked || todayKey, zh);
   const tight = tightestWindow(usage, zh);
+  const quotaLead = tight && showQuotaLead(v.windows);
   const tightIn = tight ? untilReset(tight.resetUnix, nowSecs, zh) : '';
   const mWarn = machineWarn(v.machine, zh);
   const {shown, rest, restTok} = splitSessions(v.sessions);
@@ -106,7 +100,7 @@ export function UsageSheet({
   // `/api/icon` answers to the key as well as the label, so either spelling resolves.
   const avatarFor = (key: string, display?: string): Agent => {
     const label = display || names[key] || key;
-    for (const a of agents) if ((a.agent ?? '') === label) return a;
+    for (const a of agents) if ((a.agent ?? '') === label) return {...a, icon: a.icon || key};
     return {agent: label, icon: key} as Agent;
   };
 
@@ -141,9 +135,9 @@ export function UsageSheet({
               whether the machine is about to stop all of it — those sat at row 3 and row
               25, and on 2026-09-10 an amber disk warning was 18 session rows below the
               fold. The sections below are unchanged; this only says it first. */}
-          {(tight || mWarn) && (
+          {(quotaLead || mWarn) && (
             <View testID="usage-lead" style={[styles.lead, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
-              {tight ? (
+              {quotaLead ? (
                 <View style={styles.leadTop}>
                   <Text style={[styles.leadHead, {color: pal.fg}]}>
                     {t(`${tight.pct}% of the tightest window used`, `最紧的额度用掉 ${tight.pct}%`)}
@@ -162,73 +156,7 @@ export function UsageSheet({
               ) : null}
             </View>
           )}
-          {/* The plan leads: it is the one number local counting cannot produce.
-              Grouped by agent so the name is said once, in the spelling the rest of
-              the app uses, instead of repeated as a lowercase key on every row. */}
-          {plan.length > 0 && (
-            <>
-              <Section pal={pal} text={t('Plan', '额度')} />
-              {plan.map(g => (
-                <View key={g.agent || g.name}>
-                  <View style={styles.groupHead}>
-                    <AgentAvatar agent={avatarFor(g.agent, g.name)} size={18} radius={5} bg={pal.surface} fg={pal.fg3} />
-                    <Text style={[styles.groupName, {color: pal.fg}]}>{g.name}</Text>
-                  </View>
-                  {g.unreadable ? (
-                    <Text style={[styles.note, {color: pal.fg3}]} testID={`usage-unreadable-${g.agent}`}>
-                      {unreadableReason(g.unreadable, g.name, zh)}
-                    </Text>
-                  ) : null}
-                  {/* A bar, because 9% and 76% read identically as two numbers in a
-                      column. Length carries the magnitude; the colour follows the core's
-                      tier only (usageModel.quotaTone): blue, amber when warned, red when
-                      full. The fill keeps at least a round dot so 2% is still visible. */}
-                  {g.windows.map(w => {
-                    const inWords = w.stale ? t('Stale reading', '旧读数') : untilReset(w.resetUnix, nowSecs, zh);
-                    const tone = w.stale ? {fill: pal.fg3, track: pal.divider, text: pal.fg3, edge: undefined} : quotaTone(w.tier, w.pct, dark);
-                    const pct = Math.max(0, Math.min(100, w.pct));
-                    return (
-                      <View key={w.name} style={styles.win} testID={`usage-window-${g.agent} ${w.name}`}>
-                        <View style={styles.winTop}>
-                          <Text style={[styles.rowKey, {color: pal.fg2}]} numberOfLines={1}>
-                            {w.name}
-                          </Text>
-                          <Text style={[styles.pct, {color: tone.text ?? pal.fg}]}>{t(`${w.pct}% used`, `已用 ${w.pct}%`)}</Text>
-                        </View>
-                        <View
-                          testID={`usage-bar-${g.agent} ${w.name}`}
-                          style={[styles.track, {backgroundColor: tone.track}, tone.edge ? {borderWidth: StyleSheet.hairlineWidth, borderColor: tone.edge} : null]}>
-                          {pct > 0 ? <View style={[styles.fill, {width: `${pct}%`, backgroundColor: tone.fill}]} /> : null}
-                        </View>
-                        <Text style={[styles.rowSub, {color: pal.fg3}]} numberOfLines={1}>
-                          {w.planType ? `${recordedPlan(w.planType, zh)} · ` : ''}{inWords ? `${inWords}${!w.stale && w.resetAt ? ` · ${w.resetAt}` : ''}` : w.resetAt}{w.observedAt ? ` · ${t('read', '读取于')} ${relTime(w.observedAt, nowSecs)}${t(' ago', '前')}` : ''}
-                        </Text>
-                      </View>
-                    );
-                  })}
-                </View>
-              ))}
-            </>
-          )}
-
-          {(usage?.limits?.balances?.length ?? 0)>0 && <>
-            <Section pal={pal} text={t('Balances', '余额')} />
-            {usage?.limits?.balances?.map(balance => <View key={balance.account_id} testID="usage-balance">
-              <View style={styles.groupHead}>
-                <AgentAvatar agent={avatarFor(balance.agent, balance.agent_name)} size={18} radius={5} bg={pal.surface} fg={pal.fg3} />
-                <Text style={[styles.groupName, {color: pal.fg}]}>DeepSeek Account</Text>
-              </View>
-              <View style={styles.balanceRows}>
-              {balance.wallets.map((wallet,index) => <View key={`${wallet.kind}:${wallet.currency}:${index}`} style={styles.winTop}>
-                <Text style={[styles.rowKey, {color: pal.fg2}]}>{wallet.kind==='bonus' ? t('Bonus', '赠送') : t('Recharge', '充值')}</Text>
-                <Text selectable style={[styles.pct, styles.amount, {color: pal.fg}]}>{wallet.currency} {wallet.amount}</Text>
-              </View>)}
-              </View>
-              <Text style={[styles.note, {color: pal.fg3}]}>{t('Read', '读取于')} {relTime(balance.observed_at, nowSecs)}{t(' ago', '前')}</Text>
-            </View>)}
-          </>}
-          {usage?.sources?.some(source => source.agent==='dsh') && !(usage.limits?.balances?.length) &&
-            <Text testID="usage-dsh-account-note" style={[styles.note,{color:pal.fg3}]}>{`DeepSeek Account · ${usageSourceNote(usage.limits?.dsh_account_status, zh)}`}</Text>}
+          <UsageAccounts usage={usage} pal={pal} zh={zh} dark={dark} now={nowSecs} avatarFor={avatarFor} />
 
           {/* Tokens by day (usage-daily-totals): the sum people ask for — today and this
               week, across every agent — then seven thin bars, one neutral series (colour
@@ -238,7 +166,8 @@ export function UsageSheet({
               of zeros. */}
           {tokens && (
             <>
-              <Section pal={pal} text={t('Tokens', 'Token')} />
+              <Section pal={pal} text={t('Output tokens', '输出 Token')} />
+              <Text style={[styles.note, {color: pal.fg3}]}>{t('Recorded conversations · local days', '已记录的对话 · 按当地日期')}</Text>
               {activity ? (
                 <>
                   {/* The year at a glance (usage-activity, 2026-09-15): three figures,
@@ -253,9 +182,6 @@ export function UsageSheet({
                         <Text style={[styles.tokensKey, {color: pal.fg3}]}>{f.key}</Text>
                       </View>
                     ))}
-                    <Text style={[styles.tokensNote, {color: pal.fg3}]}>
-                      {t('output · every agent · by local day', '输出 · 全部 agent · 按本地日期')}
-                    </Text>
                   </View>
                   <View style={styles.statsLine} testID="usage-stats">
                     {activity.stats.map(x => (
@@ -385,11 +311,8 @@ export function UsageSheet({
                     </View>
                     <View>
                       <Text style={[styles.tokensFig, {color: pal.fg}]}>{compactTok(tokens.week)}</Text>
-                      <Text style={[styles.tokensKey, {color: pal.fg3}]}>{t('this week', '本周')}</Text>
+                      <Text style={[styles.tokensKey, {color: pal.fg3}]}>{t('last 7 days', '近 7 天')}</Text>
                     </View>
-                    <Text style={[styles.tokensNote, {color: pal.fg3}]}>
-                      {t('output · every agent · by local day', '输出 · 全部 agent · 按本地日期')}
-                    </Text>
                   </View>
                   <View style={styles.bars}>
                     {tokens.bars.map(b => (
@@ -412,14 +335,21 @@ export function UsageSheet({
                   </View>
                 </>
               )}
-              {tokens.byAgent.map(a => (
-                <View key={a.agent} style={styles.row} testID={`usage-tokens-${a.agent}`}>
-                  <AgentAvatar agent={avatarFor(a.agent)} size={18} radius={5} bg={pal.surface} fg={pal.fg3} />
-                  <Text style={[styles.rowKey, {color: pal.fg2}]}>{a.name}</Text>
-                  <Text style={[styles.rowSub, {color: pal.fg3}]}>{t(`today ${compactTok(a.today)}`, `今天 ${compactTok(a.today)}`)}</Text>
-                  <Text style={[styles.pct, {color: pal.fg}]}>{t(`week ${compactTok(a.week)}`, `本周 ${compactTok(a.week)}`)}</Text>
+              {tokens.byAgent.length > 0 && <View testID="usage-token-breakdown" style={[styles.tokenBreakdown, {borderTopColor: pal.divider}]}>
+                <View style={styles.tokenRow}>
+                  <Text style={[styles.tokenName, styles.tokenCaption, {color: pal.fg3}]}>{t('By agent', '按 Agent 统计')}</Text>
+                  <Text style={[styles.tokenNumber, styles.tokenCaption, {color: pal.fg3}]}>{t('Today', '今天')}</Text>
+                  <Text style={[styles.tokenNumber, styles.tokenCaption, {color: pal.fg3}]}>{t('Last 7 days', '近 7 天')}</Text>
                 </View>
-              ))}
+                {tokens.byAgent.map(a => <View key={a.agent} style={styles.tokenRow} testID={`usage-tokens-${a.agent}`}>
+                  <View style={styles.tokenName}>
+                    <AgentAvatar agent={avatarFor(a.agent, a.name)} size={14} radius={4} bg={pal.surface} fg={pal.fg3} />
+                    <Text style={[styles.tokenLabel, {color: pal.fg2}]}>{a.name}</Text>
+                  </View>
+                  <Text style={[styles.tokenNumber, {color: pal.fg2}]}>{compactTok(a.today)}</Text>
+                  <Text style={[styles.tokenNumber, {color: pal.fg}]}>{compactTok(a.week)}</Text>
+                </View>)}
+              </View>}
             </>
           )}
 
@@ -523,6 +453,12 @@ function Section({pal, text}: {pal: Palette; text: string}) {
 const AMBER_WASH = 'rgba(245,158,11,0.07)';
 
 const styles = StyleSheet.create({
+  tokenBreakdown: {marginHorizontal: 14, marginTop: 10, paddingTop: 8, borderTopWidth: StyleSheet.hairlineWidth, gap: 7},
+  tokenRow: {flexDirection: 'row', alignItems: 'center', gap: 8},
+  tokenName: {flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, minWidth: 0},
+  tokenLabel: {fontSize: 12, flexShrink: 1},
+  tokenNumber: {width: 76, textAlign: 'right', fontSize: 12, fontVariant: ['tabular-nums']},
+  tokenCaption: {fontSize: 11},
   loadState: {flex: 1, padding: 24, alignItems: 'center', justifyContent: 'center', gap: 12},
   root: {flex: 1},
   lead: {
@@ -545,12 +481,6 @@ const styles = StyleSheet.create({
   },
   leadWarnGlyph: {fontSize: 13, fontWeight: '700'},
   leadWarnText: {flex: 1, fontSize: 12.5, lineHeight: 17},
-  balanceRows: {paddingHorizontal: 14, gap: 6},
-  amount: {flexShrink: 1, textAlign: 'right'},
-  win: {paddingHorizontal: 14, paddingVertical: 6, gap: 5},
-  winTop: {flexDirection: 'row', alignItems: 'baseline', gap: 8},
-  track: {height: 6, borderRadius: 3, overflow: 'hidden'},
-  fill: {height: '100%', minWidth: 6, borderRadius: 3},
   sessionMid: {flex: 1, minWidth: 0},
   sessionEnd: {alignItems: 'flex-end'},
   sessionFig: {fontSize: 13, fontWeight: '700', fontVariant: ['tabular-nums']},
@@ -598,15 +528,12 @@ const styles = StyleSheet.create({
   rowSub: {fontSize: 11.5, fontVariant: ['tabular-nums']},
   session: {flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 14, paddingVertical: 8},
   sessionSub: {fontSize: 11.5, marginTop: 2, fontVariant: ['tabular-nums']},
-  groupHead: {flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingTop: 8, paddingBottom: 2},
-  groupName: {fontSize: 13, fontWeight: '700'},
   glyph: {fontSize: 12, width: 13, textAlign: 'center'},
   machine: {flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 8},
   note: {fontSize: 11.5, paddingHorizontal: 14, paddingBottom: 6, lineHeight: 16},
   tokensHead: {flexDirection: 'row', alignItems: 'flex-end', gap: 18, paddingHorizontal: 14, paddingBottom: 6},
   tokensFig: {fontSize: 22, fontWeight: '700', letterSpacing: -0.3, fontVariant: ['tabular-nums']},
   tokensKey: {fontSize: 10.5, marginTop: 1},
-  tokensNote: {flex: 1, fontSize: 10.5, textAlign: 'right', paddingBottom: 3},
   // Capped so seven bars stay bars on an iPad (full width there drew 180pt slabs);
   // on a phone the cap is never reached.
   bars: {flexDirection: 'row', alignItems: 'flex-end', gap: 8, paddingHorizontal: 14, paddingTop: 4, paddingBottom: 6, height: 92, maxWidth: 520},
