@@ -28,6 +28,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/launchhost"
+	"github.com/chenchaoyi/gtmux/internal/limits"
 	"github.com/chenchaoyi/gtmux/internal/native"
 	"github.com/chenchaoyi/gtmux/internal/notify"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
@@ -627,12 +628,18 @@ func Run(stdin io.Reader, args []string) int {
 		}
 	}
 	if !stdinIsTerminal(stdin) {
-		if agentKey == "gemini" && rawEvent == "Profile" {
+		if agentKey == "dsh" && rawEvent == "Usage" {
+			raw, _ = io.ReadAll(io.LimitReader(stdin, (64<<10)+1))
+		} else if agentKey == "gemini" && rawEvent == "Profile" {
 			raw, _ = agentprofile.ReadModelHook(stdin)
 			_, _ = io.Copy(io.Discard, stdin)
 		} else {
 			raw, _ = io.ReadAll(stdin)
 		}
+	}
+	if agentKey == "dsh" && rawEvent == "Usage" {
+		limits.ObserveDSHAccount(raw, time.Now())
+		return 0
 	}
 	// Capture historical ancestry before setsid/reparenting loses the launch chain.
 	originEvent := rawEvent

@@ -234,7 +234,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
       createReadTask(signal => client.usage(signal), u => {
         setDoorsFailed(p => ({...p, usage: false}));
         setUsageFull(u ?? null);
-        setWeek((u?.limits?.windows ?? []).map(x => ({label: x.label, pct: x.pct_used, agent: x.agent})));
+        setWeek((u?.limits?.windows ?? []).filter(x => !x.stale).map(x => ({label: x.label, pct: x.pct_used, agent: x.agent})));
         setTokens(u?.history ? {today_out: u.history.today_out, week_out: u.history.week_out} : null);
         const m = u?.resource?.machine;
         setRes(m ? {warn: machineWarn(m, zh) || m.warn, diskGB: m.disk_free_gb, memTier: m.mem_tier, tier: m.tier} : null);

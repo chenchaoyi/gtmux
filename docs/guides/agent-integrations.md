@@ -378,7 +378,7 @@ The adapter declares this capability; replacing the community client keeps `dsh`
 as the harness identity. Other integrations retain their existing documented fallbacks. A tracked goal still
 blocked in the input box retains the separate undelivered-dispatch waiting guard.
 
-Doctor distinguishes installed configuration from a fresh loaded attachment and input grant. Ordinary `dst --backend dsh`, terminal spawn/resume and explicit HQ public-message review are supported by the adapter. Web remains external/read-only; Web adoption, usage and one-shot are not enabled. Older Web/background intervals are not silently enrolled. Knowledge uses `$DSH_HOME/AGENTS.md`. See the [terminal design and validation boundary](../design/dsh-terminal-clients.md).
+Doctor distinguishes installed configuration from a fresh loaded attachment and input grant. Ordinary `dst --backend dsh`, terminal spawn/resume and explicit HQ public-message review are supported by the adapter. Web remains external/read-only; Web adoption and one-shot are not enabled. Older Web/background intervals are not silently enrolled. Knowledge uses `$DSH_HOME/AGENTS.md`. See the [terminal design and validation boundary](../design/dsh-terminal-clients.md).
 
 Sources: [setup, upstream contracts and official logo](deepseek-harness.md),
 [plugin source](../../internal/app/dsh_plugin.mjs), [artifact reader](../../internal/dsh/log.go).
@@ -467,3 +467,48 @@ upstream release, terminal, desktop client or device was live-tested. Registry a
 regression tests check wiring and synthetic contracts; actual hook traffic and
 runtime acceptance are separate evidence. Update this page and its Chinese twin
 when an integration's files, capabilities or limits change.
+
+
+### DSH usage and account coverage
+
+DSH v4 token usage comes from its native durable `assistant/message` and
+`assistant/attempt` settlements, including the final compact stream usage sample.
+Restating the same turn/step replaces that sample; `llm/retry-started` starts a
+separate charged attempt. Input, cache read/write and output are separate buckets;
+reasoning is already included in output. Session and local-day totals reuse the
+existing scoped incremental catalog (raw JSONL or verified Zstandard), without a
+plugin or inference request. The context figure is the last request's input/cache
+pressure against an explicitly recorded `contextWindow`, not a reconstruction of
+post-compaction context. Missing or unsupported records are unknown, not zero spend.
+Daily history remains after an agent is uninstalled or its log disappears.
+
+DeepSeek Account wallets use the **native `deepseekAccount` Cordis service** in
+gtmux's existing plugin. No extra npm plugin or Codex-compatible hook is needed.
+Normal `gtmux install` updates gtmux-owned files; `gtmux doctor` detects an outdated
+bridge, and `gtmux doctor --fix` repairs it. An already running Web/TUI must load
+the updated bridge on its next normal launch; reading usage does not restart it.
+The observer uses the service's existing device identity and `getBalance`, never
+`resolveToken`, `getPlatformSession`, login, inference or bonus acknowledgement.
+Only a digest of a verified account ID, currency, exact decimal recharge/bonus
+amounts and observation metadata leave the service. Missing identity or unsupported
+service versions suppress balances. Account switches invalidate late replies;
+Web/TUI observations of the same account are deduplicated within the same DSH home.
+A request has an eight-second display deadline and one in-flight slot until the
+native call settles, since the native service offers no cancellation parameter.
+Refresh is at most every five minutes per loaded bridge; observations expire after
+fifteen minutes. These are wallets, **not a subscription percentage or paid tier**.
+API-key/custom-provider balances have no verified adapter yet and are stated as
+unsupported; a DSH model name does not prove the billing provider.
+
+Usage source metadata follows registry executable discovery and actually observed
+sessions/history/account metrics. Installation establishes availability, not a
+subscription. Uninstalled agents' historical totals remain. Claude's sanctioned
+`/usage` result retains its cache time; Codex windows retain their source record
+time and recorded plan tier, which is not a live billing check. Expired readings
+are grey and excluded from current quota summaries and alerts. The additive API is
+shared by CLI, phone/iPad and menu bar; the embedded Web client has no quota page.
+
+Sources: [native token projection](https://github.com/deepseek-ai/deepseek-harness/blob/687f282e8625c6b8d11ff58211a90524be2e4317/packages/llm/token-meter/src/usage-projection.ts),
+[native account contract](https://github.com/deepseek-ai/deepseek-harness/blob/687f282e8625c6b8d11ff58211a90524be2e4317/packages/credentials/deepseek-account/src/index.ts).
+Verified against installed DSH 0.2.0-rc.2 and the pinned upstream source; account
+contract tests are synthetic and do not establish a real balance or billing total.

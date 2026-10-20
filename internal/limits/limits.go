@@ -25,6 +25,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/agentenv"
 	"github.com/chenchaoyi/gtmux/internal/agents"
 	"github.com/chenchaoyi/gtmux/internal/state"
+	"github.com/chenchaoyi/gtmux/internal/toolpath"
 )
 
 // Window is one subscription window (session / weekly / …).
@@ -55,7 +56,9 @@ type Window struct {
 	// threshold (the same rule the `limits·warn` wake and the amber usage modifier use),
 	// TierFull for any window at 100%, empty otherwise. The phone and the menu bar colour
 	// the window's bar from it (usage-bar-tiers, 2026-09-17).
-	Tier string `json:"tier,omitempty"`
+	Tier       string `json:"tier,omitempty"`
+	ObservedAt int64  `json:"observed_at,omitempty"`
+	Stale      bool   `json:"stale,omitempty"`
 }
 
 // The tiers a window can stand at. An ordinary window carries no tier.
@@ -158,8 +161,10 @@ type Report struct {
 	// Unknown is additive: a client that does not know the field simply shows what it
 	// always showed. Never a substitute for a window — an agent appears here only when
 	// it has NO readable window at all.
-	Unknown []UnknownPlan `json:"unknown,omitempty"`
-	Fails   int           `json:"fails,omitempty"`
+	Unknown          []UnknownPlan `json:"unknown,omitempty"`
+	Fails            int           `json:"fails,omitempty"`
+	Balances         []Balance     `json:"balances,omitempty"`
+	DSHAccountStatus string        `json:"dsh_account_status,omitempty"`
 }
 
 // Config controls the command + cadence + thresholds (from usage.json).
@@ -225,7 +230,29 @@ func Fresh(r Report, cfg Config, now time.Time) bool {
 // icon either (2026-09-10).
 func Get(cfg Config, force bool, now time.Time) (Report, bool) {
 	r, ok := get(cfg, force, now)
-	return tiered(named(r), cfg.WarnPct), ok
+	freshness := cfg
+	if freshness.TTLMin <= 0 {
+		freshness.TTLMin = DefaultConfig.TTLMin
+	}
+	if freshness.NearMin <= 0 {
+		freshness.NearMin = DefaultConfig.NearMin
+	}
+	if freshness.NearPct <= 0 {
+		freshness.NearPct = DefaultConfig.NearPct
+	}
+	for i := range r.Windows {
+		w := &r.Windows[i]
+		if w.ObservedAt == 0 && w.Agent != "codex" {
+			w.ObservedAt = r.At
+		}
+		if w.Agent == "claude" {
+			w.Stale = !Fresh(Report{At: w.ObservedAt, Windows: []Window{*w}}, freshness, now)
+		} else if w.ObservedAt > 0 {
+			w.Stale = now.Sub(time.Unix(w.ObservedAt, 0)) > 24*time.Hour || w.ObservedAt > now.Add(5*time.Minute).Unix()
+		}
+	}
+	r.Balances, r.DSHAccountStatus = dshBalances(now)
+	return tiered(named(r), cfg.WarnPct), ok || len(r.Balances) > 0
 }
 
 // tiered stamps each window's Tier, and the report's Warn line, at read time, from the
@@ -244,6 +271,9 @@ func tiered(r Report, warnPct int) Report {
 // tierOf is one window's tier. A full window is full whatever its length: a session at
 // 100% stops the agent as surely as a week does.
 func tierOf(w Window, warnPct int) string {
+	if w.Stale {
+		return ""
+	}
 	switch {
 	case w.PctUsed >= 100:
 		return TierFull
@@ -257,7 +287,7 @@ func tierOf(w Window, warnPct int) string {
 // the two can never disagree about which window is near its cap: a weekly window at or
 // past the threshold.
 func warnsAt(w Window, warnPct int) bool {
-	return strings.Contains(w.Label, "week") && w.PctUsed >= warnPct
+	return !w.Stale && strings.Contains(w.Label, "week") && w.PctUsed >= warnPct
 }
 
 // named fills in each window's and gap's display label from the agent registry, which
@@ -285,7 +315,7 @@ func get(cfg Config, force bool, now time.Time) (Report, bool) {
 	// since ended kept being served until the CLAUDE cache expired, and a Codex reading
 	// that had rolled over could not report itself as unreadable, because the branch
 	// that would have noticed returned before reaching it.
-	if cfg.Command == "" {
+	if cfg.Command == "" || (cfg.Command == DefaultConfig.Command && toolpath.Look("claude") == "") {
 		return withCodex(cached, hasCache, cfg, now)
 	}
 	if hasCache && !force && Fresh(cached, cfg, now) {
@@ -660,6 +690,9 @@ func Summary(wins []Window) []Window {
 	best := map[string]int{} // agent → index into out
 	var out []Window
 	for _, w := range wins {
+		if w.Stale {
+			continue
+		}
 		key := w.Agent
 		if key == "" {
 			key = w.Label // an older serve sent no agent; group by its own label

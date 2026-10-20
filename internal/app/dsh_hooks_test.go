@@ -169,3 +169,18 @@ func TestDSHDoctorPreservesForeignOverlayAndUserProfile(t *testing.T) {
 		t.Fatal("foreign/profile/module files changed on refused repair")
 	}
 }
+
+func TestDSHNativeAccountUsageRejectsLateIdentityAndBoundsRequests(t *testing.T) {
+	node, err := exec.LookPath("node")
+	if err != nil {
+		t.Skip("Node unavailable")
+	}
+	module := filepath.Join(t.TempDir(), "gtmux.mjs")
+	if err := os.WriteFile(module, []byte(dshPluginJS("/opt/gtmux")), 0600); err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.Command(node, "testdata/dsh-account.mjs", module)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("native account contract: %v\n%s", err, out)
+	}
+}

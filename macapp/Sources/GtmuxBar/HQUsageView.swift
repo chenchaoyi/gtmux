@@ -25,6 +25,7 @@ struct HQUsageView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     usageLead(u, p)
                     usagePlans(u, p)
+                    usageBalances(u, p)
                     if let h = u.history, let days = h.days, !days.isEmpty {
                         Divider()
                         usageTokens(h, days, p)
@@ -41,7 +42,7 @@ struct HQUsageView: View {
     /// The tightest non-session window, said in one sentence. Session windows reset in
     /// hours, so a high one is a working day, not news (the phone's rule).
     @ViewBuilder private func usageLead(_ u: HQUsageReport, _ p: Theme.Palette) -> some View {
-        let all = u.limits?.windows ?? []
+        let all = (u.limits?.windows ?? []).filter { $0.stale != true }
         let weekly = all.filter { ($0.kind ?? hqWindowName($0).lowercased()) != "session" }
         let pool = weekly.isEmpty ? all : weekly
         if let t = pool.max(by: { $0.pctUsed < $1.pctUsed }) {
@@ -75,6 +76,7 @@ struct HQUsageView: View {
     private func quotaTone(_ w: HQUsageWindow) -> (
         fill: Color, track: Color, edge: Color?, text: Color?
     ) {
+        if w.stale == true { return (.secondary, .secondary.opacity(0.15), nil, .secondary) }
         let dark = scheme == .dark
         let wash = dark ? 0.24 : 0.22
         let line = dark ? 0.32 : 0.30
@@ -98,7 +100,7 @@ struct HQUsageView: View {
         let wins = u.limits?.windows ?? []
         if wins.isEmpty {
             Text(
-                l10n.tr("No quota data available. Open /usage in the agent to refresh it.", "暂无额度数据，请在 agent 中打开 /usage 刷新。")
+                l10n.tr("No subscription-window data available.", "暂无订阅额度窗口数据。")
             )
             .font(HQTypography.caption).foregroundStyle(p.fg3)
         } else {
@@ -130,13 +132,41 @@ struct HQUsageView: View {
                             Text(l10n.tr("\(w.pctUsed)% used", "已用 \(w.pctUsed)%")).font(HQTypography.code)
                                 .foregroundStyle(tone.text ?? p.fg).lineLimit(1).frame(
                                     width: 72, alignment: .trailing)
-                            Text(hqResetTitle(w, zh: zh)).font(HQTypography.caption).foregroundStyle(p.fg3).frame(
+                            Text(w.stale == true ? l10n.tr("Stale reading", "旧读数") : hqResetTitle(w, zh: zh)).font(HQTypography.caption).foregroundStyle(p.fg3).frame(
                                 width: 130, alignment: .leading
                             ).lineLimit(1)
+                        }
+                        if let at = w.observedAt {
+                            Text((w.planType.map { l10n.tr("Recorded plan: ", "记录的套餐：") + $0 + " · " } ?? "") + l10n.tr("Read ", "读取于 ") + Date(timeIntervalSince1970: TimeInterval(at)).formatted(date: .abbreviated, time: .shortened))
+                                .font(HQTypography.caption).foregroundStyle(p.fg3)
                         }
                     }
                 }
             }
+        }
+    }
+
+    @ViewBuilder private func usageBalances(_ u: HQUsageReport, _ p: Theme.Palette) -> some View {
+        let balances = u.limits?.balances ?? []
+        if !balances.isEmpty {
+            Text(l10n.tr("Balances", "余额")).font(HQTypography.rowTitle).foregroundStyle(p.fg)
+            ForEach(balances, id: \.accountID) { balance in
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(balance.agentName + " · DeepSeek Account").font(HQTypography.rowTitle).foregroundStyle(p.fg)
+                    ForEach(Array(balance.wallets.enumerated()), id: \.offset) { _, wallet in
+                        HStack {
+                            Text(wallet.kind == "bonus" ? l10n.tr("Bonus", "赠送") : l10n.tr("Recharge", "充值"))
+                            Spacer()
+                            Text(wallet.currency + " " + wallet.amount).textSelection(.enabled)
+                        }.font(HQTypography.caption).foregroundStyle(p.fg2)
+                    }
+                    Text(l10n.tr("Read ", "读取于 ") + Date(timeIntervalSince1970: TimeInterval(balance.observedAt)).formatted(date: .abbreviated, time: .shortened))
+                        .font(HQTypography.caption).foregroundStyle(p.fg3)
+                }
+            }
+        } else if u.sources?.contains(where: { $0.agent == "dsh" }) == true {
+            Text(l10n.tr("DeepSeek Account balance unavailable; API-key and custom providers are not supported yet.", "暂时没有 DeepSeek Account 余额；API Key 和自定义 Provider 暂不支持。"))
+                .font(HQTypography.caption).foregroundStyle(p.fg3)
         }
     }
 

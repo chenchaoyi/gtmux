@@ -287,3 +287,17 @@ final class HQActivityTests: XCTestCase {
         XCTAssertNil(hqActivity(HQUsageHistory(days: [], todayOut: 0, weekOut: 0, byAgent: nil, activity: nil), weeks: 20, today: today, zh: true))
     }
 }
+
+final class DynamicUsageSourceTests: XCTestCase {
+    func testStaleQuotaAndNativeBalanceRemainDifferentMetrics() throws {
+        let json = #"{"sources":[{"agent":"dsh","name":"DeepSeek Harness"}],"limits":{"windows":[{"label":"codex week","pct_used":100,"agent":"codex","stale":true,"observed_at":100,"plan_type":"pro"}],"balances":[{"agent":"dsh","agent_name":"DeepSeek Harness","account_id":"opaque","observed_at":200,"wallets":[{"currency":"CNY","amount":"12.3400","kind":"recharge"}]}]}}"#
+        let report = try JSONDecoder().decode(HQUsageReport.self, from: Data(json.utf8))
+        let window = try XCTUnwrap(report.limits?.windows?.first)
+        XCTAssertEqual(window.planType, "pro")
+        XCTAssertEqual(window.observedAt, 100)
+        XCTAssertEqual(hqQuotaTier(window), .normal)
+        XCTAssertTrue(hqTightestPerPlan([window]).isEmpty)
+        XCTAssertEqual(report.limits?.balances?.first?.wallets.first?.amount, "12.3400")
+        XCTAssertEqual(report.sources?.first?.agent, "dsh")
+    }
+}
