@@ -17,14 +17,14 @@ afterEach(() => {if (tree) act(() => tree.unmount()); jest.restoreAllMocks();});
 const buttons = (id: string) => tree.root.findAllByType(TouchableOpacity).filter(n => n.props.testID === id);
 const text = () => tree.root.findAllByType(Text).map(n => n.props.children).flat().join(' ');
 
-test('human and historical sender never request another runtime profile', async () => {
+test('human and historical sender never request another runtime profile', () => {
   const read = jest.fn(); const client = {participantProfile: read} as unknown as GtmuxClient;
-  await act(async () => {tree = renderer.create(<ParticipantProfileModal target={{kind: 'human', agent}} client={client} lang="zh" onClose={() => {}} />);});
+  act(() => {tree = renderer.create(<ParticipantProfileModal target={{kind: 'human', agent}} client={client} lang="zh" onClose={() => {}} />);});
   expect(text()).toContain('碳基决策者 · 自封');
   expect(text()).toContain('Frank Herbert');
   expect(text()).not.toContain('续航');
   expect(read).not.toHaveBeenCalled();
-  await act(async () => tree.update(<ParticipantProfileModal target={{kind: 'sender', agent, sender: {kind: 'hq', label: 'HQ'}}} client={client} lang="zh" onClose={() => {}} />));
+  act(() => tree.update(<ParticipantProfileModal target={{kind: 'sender', agent, sender: {kind: 'hq', label: 'HQ'}}} client={client} lang="zh" onClose={() => {}} />));
   expect(read).not.toHaveBeenCalled();
   expect(text()).toContain('HQ');
   expect(text()).toContain('gtmux 协调 Agent');
