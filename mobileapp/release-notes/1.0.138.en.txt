@@ -1,0 +1,3 @@
+• Conversation turns have nearby collapse controls and two-line previews. Copy and share use compact icon buttons, and harness setup frames stay out of user messages.
+• Tap a participant avatar to inspect its profile: available agent version, model, plan, effort and current command chain, with the source and scope of each fact.
+• Agent profiles use each harness’s own records and leave unavailable facts out. Large text uses a single-column fact layout.
