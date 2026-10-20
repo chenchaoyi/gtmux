@@ -19,6 +19,15 @@ struct HQWorkspaceSidebar: View {
                         navigationRow(l10n.tr("HQ activity", "HQ 运行记录"), symbol: "clock", selection: .activity)
                     }
                     Divider()
+                    category(
+                        l10n.tr("Resources", "资料与用量"), count: HQResourcePage.sidebarPages.count, section: .resources
+                    ) {
+                        ForEach(HQResourcePage.sidebarPages, id: \.self) { page in
+                            navigationRow(page.title(l10n), symbol: page.symbol, selection: .resource(page))
+                                .accessibilityIdentifier("hq-sidebar-resource-\(page.rawValue)")
+                        }
+                    }
+                    Divider()
                     ForEach(HQMatterGroup.allCases) { group in
                         let matters = group.matters(in: store.snapshot)
                         if !matters.isEmpty {
@@ -43,15 +52,6 @@ struct HQWorkspaceSidebar: View {
                                             store.selection == .matter(matter.id) ? .isSelected : [])
                                 }
                             }
-                        }
-                    }
-                    Divider()
-                    category(
-                        l10n.tr("Resources", "资料与用量"), count: HQResourcePage.sidebarPages.count, section: .resources
-                    ) {
-                        ForEach(HQResourcePage.sidebarPages, id: \.self) { page in
-                            navigationRow(page.title(l10n), symbol: page.symbol, selection: .resource(page))
-                                .accessibilityIdentifier("hq-sidebar-resource-\(page.rawValue)")
                         }
                     }
                 }.padding(10)

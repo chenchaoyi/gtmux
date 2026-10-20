@@ -122,6 +122,9 @@ Overview and sidebar SHALL group the same explicit matter records by Needs your 
 Following and Recently ended. Reads SHALL NOT infer state, links or goals from the
 board. Each sidebar category SHALL have an independently operable full-row disclosure,
 a count and accessible expansion state, retained within the workspace lifetime.
+The Resources category SHALL precede all matter groups, below the primary navigation.
+The sidebar column SHALL remove the framework-provided sidebar toggle, leaving only
+the shared leading toolbar control in both expanded and collapsed layouts.
 Matter glyphs SHALL reuse the session status language: waiting red/pause, following
 brand cyan/ring, ended green/check. State labels SHALL remain available without color.
 
