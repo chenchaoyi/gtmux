@@ -190,7 +190,7 @@ for (const width of [320, 1280]) {
       // Go through the narrow radar to enter the same focused Chat on either width.
       await page.setViewportSize({width: 390, height: 850});
     }
-    await page.getByText('Investigate retries', {exact: true}).click();
+    await page.locator('#radar').getByText('Investigate retries', {exact: true}).click();
     await page.getByRole('button', {name: 'Chat', exact: true}).click();
     if (width > 900) await page.setViewportSize({width, height: 850});
     const card = page.locator('#chat .tool-steps');
