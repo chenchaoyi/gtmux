@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.138',
+    en: [
+      'Conversation turns have nearby collapse controls and two-line previews. Copy and share use compact icon buttons, and harness setup frames stay out of user messages.',
+      'Tap a participant avatar to inspect its profile: available agent version, model, plan, effort and current command chain, with the source and scope of each fact.',
+      'Agent profiles use each harness’s own records and leave unavailable facts out. Large text uses a single-column fact layout.',
+    ],
+    zh: [
+      '每轮对话就近展开或收起，收起后保留两行预览；复制和分享改为图标按钮，启动配置等系统内容不再混入用户发言。',
+      '点击说话者头像查看资料：展示该 Agent 实际可取得的版本、模型、套餐、计划模式、推理强度及当前命令链，并注明信息来源与适用范围。',
+      '各 Agent 按自己的记录提供信息，取不到的不补造；大字号下资料改用单列排布。',
+    ],
+  },
+  {
     version: '1.0.137',
     en: [
       'Read activity with distinct action icons, fold the whole group, and expand a call to inspect and copy its original command and directory. Long command lines scroll sideways.',
