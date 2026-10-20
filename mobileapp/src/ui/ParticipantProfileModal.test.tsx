@@ -28,20 +28,30 @@ test('human and historical sender never request another runtime profile', async 
   expect(text()).toContain('HQ');
 });
 
-test('a historical reply uses its source session, with native-specific facts and sanitized copy', async () => {
-  const read = jest.fn().mockResolvedValue({agent: 'opencode', name: 'opencode', session_id: 'old', historical: true,
-    facts: [{key: 'role', value: 'plan', source: 'session_log'}, {key: 'variant', value: 'custom', source: 'native_hook'}],
-    execution_chain: [{name: 'opencode', path: '/tools/opencode'}]});
+test('message facts stay historical while a same-session launch chain loads on demand', async () => {
+  const historical = {agent: 'opencode', name: 'opencode', session_id: 'old', historical: true,
+    facts: [{key: 'model', value: 'old-model', source: 'session_log'}, {key: 'role', value: 'plan', source: 'session_log'}, {key: 'variant', value: 'custom', source: 'native_hook'}]};
+  const read = jest.fn().mockResolvedValueOnce(historical).mockResolvedValue({agent: 'opencode', name: 'opencode', session_id: 'old', historical: false,
+    facts: [{key: 'model', value: 'new-model', source: 'native_hook'}], execution_chain: [{name: 'opencode', path: '/tools/opencode'}]});
   const client = {participantProfile: read} as unknown as GtmuxClient;
   const close = jest.fn();
-  await act(async () => {tree = renderer.create(<ParticipantProfileModal target={{kind: 'agent', agent, turn: {session_id: 'old', time: '2026-10-20T00:00:00Z', prompt: 'p', response: 'r'}}} client={client} lang="zh" onClose={close} />);});
+  await act(async () => {tree = renderer.create(<ParticipantProfileModal target={{kind: 'agent', agent: {...agent, session_id: 'old'}, turn: {session_id: 'old', time: '2026-10-20T00:00:00Z', prompt: 'p', response: 'r'}}} client={client} lang="zh" onClose={close} />);});
   expect(read.mock.calls[0][0]).toMatchObject({id: '%4', session_id: 'old', at: '2026-10-20T00:00:00Z'});
+  expect(read).toHaveBeenCalledTimes(1);
   expect(text()).toContain('模型变体');
   expect(text()).not.toContain('账户套餐');
   expect(buttons('profile-copy-0')).toHaveLength(0);
-  act(() => buttons('profile-chain-toggle')[0].props.onPress());
+  await act(async () => buttons('profile-chain-toggle')[0].props.onPress());
+  expect(read.mock.calls[1][0]).toMatchObject({id: '%4', session_id: 'old'});
+  expect(read.mock.calls[1][0].at).toBeUndefined();
+  expect(text()).toContain('不代表这条消息当时的进程');
+  expect(text()).toContain('old-model');
+  expect(text()).not.toContain('new-model');
   act(() => buttons('profile-copy-0')[0].props.onPress());
   expect(Clipboard.setString).toHaveBeenLastCalledWith('/tools/opencode');
+  act(() => buttons('profile-chain-toggle')[0].props.onPress());
+  await act(async () => buttons('profile-chain-toggle')[0].props.onPress());
+  expect(read).toHaveBeenCalledTimes(2);
   act(() => buttons('profile-close')[0].props.onPress());
   expect(close).toHaveBeenCalledTimes(1);
 });
@@ -64,4 +74,94 @@ test('independent reply folding survives prepended history and avatar inspection
   expect(rendered()).not.toContain('first answer');
   expect(rendered()).toContain('older answer');
   expect(tree.root.findAllByType(ReplyActions)[1].props.text).toBe('first answer');
+});
+
+test('initial loading never claims that facts were not recorded, and failure can retry', async () => {
+  let reject!: (error: Error) => void;
+  const read = jest.fn().mockImplementationOnce(() => new Promise((_, no) => {reject = no;}))
+    .mockResolvedValue({agent: 'codex', name: 'Codex', session_id: 's', historical: false, facts: []});
+  const client = {participantProfile: read} as unknown as GtmuxClient;
+  await act(async () => {tree = renderer.create(<ParticipantProfileModal target={{kind: 'agent', agent}} client={client} lang="en" onClose={() => {}} />);});
+  expect(tree.root.findAll(n => n.props.testID === 'profile-loading').length).toBeGreaterThan(0);
+  expect(text()).not.toContain('were not recorded');
+  await act(async () => reject(new Error('offline')));
+  expect(text()).toContain('Profile unavailable');
+  await act(async () => buttons('profile-retry')[0].props.onPress());
+  expect(read).toHaveBeenCalledTimes(2);
+  expect(text()).toContain('were not recorded');
+  expect(text()).not.toContain('Profile unavailable');
+});
+
+test('a stitched older session never requests the pane’s different current runtime', async () => {
+  const read = jest.fn().mockResolvedValue({agent: 'codex', name: 'Codex', session_id: 'old', historical: true, facts: []});
+  const client = {participantProfile: read} as unknown as GtmuxClient;
+  await act(async () => {tree = renderer.create(<ParticipantProfileModal target={{kind: 'agent', agent: {...agent, session_id: 'new'}, turn: {session_id: 'old', time: '2026-10-20T00:00:00Z', prompt: 'p', response: 'r'}}} client={client} lang="en" onClose={() => {}} />);});
+  expect(buttons('profile-chain-toggle')).toHaveLength(0);
+  expect(text()).toContain('Another conversation');
+  expect(read).toHaveBeenCalledTimes(1);
+});
+
+test('switching targets hides previous facts immediately and rejects late responses', async () => {
+  const pending: ((value: unknown) => void)[] = [];
+  const read = jest.fn(() => new Promise(resolve => pending.push(resolve)));
+  const client = {participantProfile: read} as unknown as GtmuxClient;
+  const target = (sid: string) => ({kind: 'agent' as const, agent: {...agent, session_id: sid}});
+  await act(async () => {tree = renderer.create(<ParticipantProfileModal target={target('one')} client={client} lang="en" onClose={() => {}} />);});
+  await act(async () => tree.update(<ParticipantProfileModal target={target('two')} client={client} lang="en" onClose={() => {}} />));
+  await act(async () => pending[0]({agent: 'codex', name: 'Codex', session_id: 'one', historical: false, facts: [{key: 'model', value: 'wrong-model', source: 'session_log'}]}));
+  expect(text()).not.toContain('wrong-model');
+  expect(text()).toContain('Loading recorded profile');
+  await act(async () => pending[1]({agent: 'codex', name: 'Codex', session_id: 'two', historical: false, facts: [{key: 'model', value: 'right-model', source: 'session_log'}]}));
+  expect(text()).toContain('right-model');
+  expect(text()).not.toContain('wrong-model');
+});
+
+test('a chain returned for another source never appears or becomes copyable', async () => {
+  const read = jest.fn().mockResolvedValueOnce({agent: 'codex', name: 'Codex', session_id: 's', historical: true, facts: []})
+    .mockResolvedValue({agent: 'codex', name: 'Codex', session_id: 'other', historical: false, facts: [], execution_chain: [{name: 'wrong-runtime', path: '/private/wrong-runtime'}]});
+  const client = {participantProfile: read} as unknown as GtmuxClient;
+  await act(async () => {tree = renderer.create(<ParticipantProfileModal target={{kind: 'agent', agent: {...agent, session_id: 's'}, turn: {session_id: 's', time: '2026-10-20T00:00:00Z', prompt: 'p', response: 'r'}}} client={client} lang="en" onClose={() => {}} />);});
+  await act(async () => buttons('profile-chain-toggle')[0].props.onPress());
+  expect(text()).not.toContain('wrong-runtime');
+  expect(text()).toContain('could not be verified');
+  expect(buttons('profile-copy-0')).toHaveLength(0);
+});
+
+test('a current profile reuses its already-read chain and distinguishes an empty record', async () => {
+  const read = jest.fn().mockResolvedValue({agent: 'codex', name: 'Codex', session_id: 's', historical: false, facts: []});
+  const client = {participantProfile: read} as unknown as GtmuxClient;
+  await act(async () => {tree = renderer.create(<ParticipantProfileModal target={{kind: 'agent', agent: {...agent, session_id: 's'}}} client={client} lang="en" onClose={() => {}} />);});
+  await act(async () => buttons('profile-chain-toggle')[0].props.onPress());
+  expect(read).toHaveBeenCalledTimes(1);
+  expect(text()).toContain('No launch chain has been recorded');
+  expect(buttons('profile-chain-retry')).toHaveLength(1);
+});
+
+test('a current header shows recorded ancestry without implying a historical message', async () => {
+  const read = jest.fn().mockResolvedValue({agent: 'codex', name: 'Codex', session_id: 's', historical: false,
+    facts: [], execution_chain: [{name: 'codex', path: '/tools/codex'}]});
+  const client = {participantProfile: read} as unknown as GtmuxClient;
+  await act(async () => {tree = renderer.create(<ParticipantProfileModal target={{kind: 'agent', agent: {...agent, session_id: 's'}}} client={client} lang="en" onClose={() => {}} />);});
+  await act(async () => buttons('profile-chain-toggle')[0].props.onPress());
+  expect(read).toHaveBeenCalledTimes(1);
+  expect(text()).toContain('processes may have changed since');
+  expect(text()).not.toContain('this message’s time');
+  act(() => buttons('profile-copy-0')[0].props.onPress());
+  expect(Clipboard.setString).toHaveBeenLastCalledWith('/tools/codex');
+});
+
+test('a failed same-session chain can retry without replacing message facts', async () => {
+  const read = jest.fn().mockResolvedValueOnce({agent: 'codex', name: 'Codex', session_id: 's', historical: true,
+    facts: [{key: 'model', value: 'recorded-model', source: 'session_log'}]})
+    .mockRejectedValueOnce(new Error('offline'))
+    .mockResolvedValue({agent: 'codex', name: 'Codex', session_id: 's', historical: false, facts: [], execution_chain: [{name: 'codex', path: '/tools/codex'}]});
+  const client = {participantProfile: read} as unknown as GtmuxClient;
+  await act(async () => {tree = renderer.create(<ParticipantProfileModal target={{kind: 'agent', agent: {...agent, session_id: 's'}, turn: {session_id: 's', time: '2026-10-20T00:00:00Z', prompt: 'p', response: 'r'}}} client={client} lang="en" onClose={() => {}} />);});
+  await act(async () => buttons('profile-chain-toggle')[0].props.onPress());
+  expect(text()).toContain('could not be verified');
+  expect(buttons('profile-copy-0')).toHaveLength(0);
+  await act(async () => buttons('profile-chain-retry')[0].props.onPress());
+  expect(read).toHaveBeenCalledTimes(3);
+  expect(text()).toContain('recorded-model');
+  expect(buttons('profile-copy-0')).toHaveLength(1);
 });

@@ -3,6 +3,7 @@ import {TouchableOpacity} from 'react-native';
 import renderer, {act} from 'react-test-renderer';
 import {ChatView} from './ChatView';
 import {ToolSteps} from './ToolSteps';
+import {ReplyActions} from './ReplyActions';
 import {Agent} from '../api/types';
 import {TranscriptTurn} from '../api/client';
 
@@ -56,20 +57,23 @@ function render(props: Partial<React.ComponentProps<typeof ChatView>>) {
 const history = turn('older', ['read events', 'ran digest']);
 const live = turn('newest', ['read the board', 'checked %11']);
 
-// The supervisor can take minutes over one turn. What the phone showed while that
-// happened was an elapsed timer; what it showed afterwards was an 11.5pt toggle reading
-// "2 steps". The process was presented exactly when it could not be watched.
-test('the turn in flight shows its steps, not just a toggle', () => {
-  const out = texts(render({turns: [history, live], status: 'working'}));
-  expect(out).toContain('read the board');
-  expect(out).toContain('checked %11');
+test('even a live turn keeps secondary calls folded until requested', () => {
+  const tree = render({turns: [history, live], status: 'working'});
+  expect(tree.root.findAllByType(ToolSteps).map(n => n.props.open)).toEqual([false, false]);
+  expect(texts(tree)).not.toContain('read the board');
+  const disclosures = tree.root.findAllByType(TouchableOpacity).filter(n => n.props.testID === 'tool-steps-toggle');
+  act(() => disclosures[1].props.onPress());
+  expect(texts(tree)).toContain('read the board');
+  expect(texts(tree)).toContain('checked %11');
+  expect(tree.root.findAllByType(ToolSteps)[0].props.open).toBe(false);
 });
 
-test('history stays collapsed while the newest turn runs', () => {
-  const tree = render({turns: [history, live], status: 'working'});
-  expect(tree.root.findAllByType(ToolSteps).map(n => n.props.open)).toEqual([false, true]);
-  const disclosures = tree.root.findAllByType(TouchableOpacity).filter(n => n.props.testID === 'tool-steps-toggle');
-  expect(disclosures.map(n => n.props.accessibilityLabel)).toEqual(['Tool call, 2 calls', 'Tool call, 2 calls']);
+test('reply actions remain next to the final text, before its trailing tools', () => {
+  const tree = render({turns: [live], status: 'working'});
+  const actions = tree.root.findByType(ReplyActions);
+  const tools = tree.root.findByType(ToolSteps);
+  expect(actions.parent).toBe(tools.parent);
+  expect(actions.parent!.children.indexOf(actions)).toBeLessThan(actions.parent!.children.indexOf(tools));
 });
 
 test('a finished conversation reads as a conversation, not a log of tool calls', () => {

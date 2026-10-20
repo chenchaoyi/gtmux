@@ -44,7 +44,7 @@ export function ReplyActions({text, lang, open = true, onToggle}: {text: string;
 }
 const FG = 'rgba(235,235,245,0.6)';
 const styles = StyleSheet.create({
-  row: {flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', marginLeft: 52, marginTop: -6, paddingHorizontal: 4, gap: 2, backgroundColor: '#1C1C1F', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#414147', borderBottomLeftRadius: 13, borderBottomRightRadius: 13},
+  row: {flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', marginLeft: 52, marginTop: -2, gap: 2},
   fold: {marginLeft: 'auto', minHeight: 44, paddingHorizontal: 10, flexDirection: 'row', gap: 6, alignItems: 'center'},
   foldLabel: {fontSize: 12, color: FG},
   button: {minHeight: 44, minWidth: 44, alignItems: 'center', justifyContent: 'center'},

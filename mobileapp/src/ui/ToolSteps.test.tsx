@@ -73,3 +73,17 @@ test.each([
 ])('tool %s has a semantic icon category %s', (title, operation) => {
   expect(activityOperation({kind: 'tool', title})).toBe(operation);
 });
+
+test('an argument-free wait is a quiet non-interactive row without empty details', () => {
+  act(() => {tree = renderer.create(<ToolSteps {...props(true)} steps={[{kind: 'tool', title: 'wait'}]} />);});
+  expect(byID('tool-step-static-0')).toBeDefined();
+  expect(byID('tool-step-toggle-0')).toBeUndefined();
+  expect(byID('tool-step-details')).toBeUndefined();
+  expect(tree.root.findAllByType(Text).some(n => n.props.children === 'No input details recorded')).toBe(false);
+});
+test('a wait with recorded input can still be inspected and copied', () => {
+  act(() => {tree = renderer.create(<ToolSteps {...props(true)} steps={[{kind: 'tool', title: 'wait', input: '{"duration_ms":1000}', input_kind: 'arguments'}]} />);});
+  act(() => byID('tool-step-toggle-0').props.onPress());
+  act(() => byID('tool-input-copy').props.onPress());
+  expect(Clipboard.setString).toHaveBeenLastCalledWith('{"duration_ms":1000}');
+});

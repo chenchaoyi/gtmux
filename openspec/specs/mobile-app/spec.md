@@ -2470,20 +2470,20 @@ keys, execute macros, replay offline keys or capture global hardware shortcuts.
 
 ### Requirement: Structured transcript activity
 
-Phone, iPad and Web SHALL display each transcript tool-step segment as a neutral disclosure card with an activity heading and total call count. Expanded cards SHALL preserve call order and retain the recorded tool name and bounded argument summary. Phone/iPad SHALL use a compact summary row and distinct neutral semantic icons for known actions, with a generic icon for unknown tools. Individual rows SHALL disclose one selected original input and its recorded directory; long command lines SHALL scroll horizontally without wrapping, multiline content SHALL use a bounded vertical viewport, and whole-group collapse SHALL remove row/detail content. Copy SHALL copy only displayed input. Partial input and summary-only older cores SHALL be labelled. Web MAY retain its existing tool-count summary and wrapping argument previews.
+Phone, iPad and Web SHALL display each transcript tool-step segment as a neutral disclosure with an activity heading and total call count. Expanded groups SHALL preserve call order and bounded argument summaries. Phone/iPad SHALL use an unboxed grey summary and compact rows with distinct neutral semantic icons for known actions, with a generic icon for unknown tools. Only rows with additional recorded input, directory or a partial-detail notice SHALL offer detail expansion; empty inspectors SHALL be omitted. Details SHALL retain the recorded tool name, one selected original input and its recorded directory; long command lines SHALL scroll horizontally without wrapping, multiline content SHALL use a bounded vertical viewport, and whole-group collapse SHALL remove row/detail content. Copy SHALL copy only displayed input. Partial input and summary-only older cores SHALL be labelled. Web MAY retain its existing tool-count summary and wrapping argument previews.
 
-Codex summaries SHALL prefer non-empty string `title`, then `description`, before existing command/path fallbacks, retaining the existing 80-rune limit. Surfaces SHALL render summaries as plain text and SHALL NOT infer per-call success, completion, duration or output from the existence of a call. The phone/iPad running turn SHALL keep its existing open-by-default policy, completed history SHALL stay folded, and explicit reader choices SHALL survive updates and dropped older turns.
+Codex summaries SHALL prefer non-empty string `title`, then `description`, before existing command/path fallbacks, retaining the existing 80-rune limit. Surfaces SHALL render summaries as plain text and SHALL NOT infer per-call success, completion, duration or output from the existence of a call. Phone/iPad live and historical groups SHALL start folded until the reader opens them, and explicit reader choices SHALL survive updates and dropped older turns.
 
 #### Scenario: Repeated browser calls
 
 - **WHEN** a segment records six `js` calls with descriptions and one `wait`
-- **THEN** its card counts seven calls, summarizes the repeated tools, and shows descriptions beside the actual tool names when expanded
+- **THEN** its group counts seven calls, summarizes the repeated tools, and shows the recorded descriptions when expanded
 - **AND** no call is labelled successful from its presence in the log
 
 #### Scenario: An older core provides only tool names
 
 - **WHEN** steps have no argument summaries
-- **THEN** their ordered tool names remain readable and the card can still be folded
+- **THEN** their ordered tool identities remain readable and the group can still be folded
 
 #### Scenario: Inspect a long command on phone or iPad
 
