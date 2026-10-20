@@ -1,8 +1,8 @@
 // Actions apply to the complete textual reply, including collapsed segments.
 import React, {useEffect, useState} from 'react';
-import {AccessibilityInfo, Alert, Share, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {AccessibilityInfo, Alert, Share, StyleSheet, TouchableOpacity, View} from 'react-native';
 import Clipboard from '@react-native-clipboard/clipboard';
-import {CopyIcon, ShareIcon} from './Icons';
+import {CheckIcon, CopyIcon, ShareIcon} from './Icons';
 import type {Lang} from '../i18n';
 
 export function ReplyActions({text, lang}: {text: string; lang: Lang}) {
@@ -16,7 +16,6 @@ export function ReplyActions({text, lang}: {text: string; lang: Lang}) {
   }, [copied]);
   if (!text) return null;
   const copyLabel = done ? zh ? '已复制' : 'Copied' : zh ? '复制全文' : 'Copy reply';
-  const shareLabel = zh ? '分享' : 'Share';
   return (
     <View style={styles.row}>
       <TouchableOpacity accessibilityRole="button" accessibilityLabel={copyLabel}
@@ -25,8 +24,7 @@ export function ReplyActions({text, lang}: {text: string; lang: Lang}) {
           setCopied(text);
           AccessibilityInfo.announceForAccessibility(zh ? '已复制回复全文' : 'Reply copied');
         }}>
-        <CopyIcon size={17} color={done ? '#E6F7FB' : FG} />
-        <Text style={styles.label}>{copyLabel}</Text>
+        {done ? <CheckIcon size={17} color="#E6F7FB" /> : <CopyIcon size={17} color={FG} />}
       </TouchableOpacity>
       <TouchableOpacity accessibilityRole="button" accessibilityLabel={zh ? '分享回复' : 'Share reply'}
         style={styles.button} activeOpacity={0.6} onPress={() => {
@@ -34,7 +32,6 @@ export function ReplyActions({text, lang}: {text: string; lang: Lang}) {
             zh ? '请复制全文后分享。' : 'Copy the reply to share it.'));
         }}>
         <ShareIcon size={17} color={FG} />
-        <Text style={styles.label}>{shareLabel}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -42,6 +39,5 @@ export function ReplyActions({text, lang}: {text: string; lang: Lang}) {
 const FG = 'rgba(235,235,245,0.6)';
 const styles = StyleSheet.create({
   row: {flexDirection: 'row', flexWrap: 'wrap', marginLeft: 34, marginTop: -4, gap: 4},
-  button: {minHeight: 44, minWidth: 44, flexDirection: 'row', alignItems: 'flex-start', gap: 5, paddingHorizontal: 12, paddingTop: 2},
-  label: {color: FG, fontSize: 12.5, lineHeight: 17, flexShrink: 1},
+  button: {minHeight: 44, minWidth: 44, alignItems: 'center', justifyContent: 'center'},
 });

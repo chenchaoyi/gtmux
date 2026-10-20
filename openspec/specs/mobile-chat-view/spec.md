@@ -194,7 +194,7 @@ view SHALL omit it rather than present a fabricated duration.
 
 ### Requirement: Full reply actions
 
-Phone and iPad Chat SHALL provide Copy reply and Share beneath each text-bearing turn, including when folded. Actions SHALL use every textual segment in order as Markdown, falling back to response for older transcripts, and exclude the prompt and tool output. In-progress replies SHALL use only text received so far. Copy SHALL show confirmation, and Share SHALL open the system share sheet without selecting a recipient. Actions SHALL have localized accessibility labels and touch targets at least 44 points high. Tool-only turns SHALL not show these actions.
+Phone and iPad Chat SHALL provide icon-only Copy reply and Share beneath each text-bearing turn, including when folded. Actions SHALL use every textual segment in order as Markdown, falling back to response for older transcripts, and exclude the prompt and tool output. In-progress replies SHALL use only text received so far. Copy SHALL show a temporary checkmark confirmation, and Share SHALL open the system share sheet without selecting a recipient. Actions SHALL retain localized accessibility labels and touch targets at least 44 by 44 points, without visible text labels. Tool-only turns SHALL not show these actions.
 
 #### Scenario: Copy a folded segmented reply
 

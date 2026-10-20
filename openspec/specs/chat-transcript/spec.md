@@ -114,6 +114,17 @@ prompt.
 - **WHEN** a real user prompt has an injected block or `[gtmux]` line appended
 - **THEN** only the real prompt text remains
 
+#### Scenario: A Desktop question reply is readable conversation
+
+- **WHEN** a leading complete `send_user_message_question_reply` envelope contains
+  the known answer/question/questionItemId schema and a valid input-request item ID
+- **THEN** one answer renders as the answer text, without transport tags, JSON or IDs
+- **AND** multiple answered questions retain their question/answer associations in order
+- **AND** trailing user text is retained, and transcript, goal and receipt readers use
+  the same cleaned text
+- **AND** quoted examples, incomplete envelopes and unknown schemas remain visible
+  rather than being discarded
+
 ### Requirement: Incremental tail cache
 
 The system SHALL cache parsed turns per session and, when a log grows, re-parse from
