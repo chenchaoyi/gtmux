@@ -60,17 +60,11 @@ export async function syncServerPush(
       if (foreground()) abortAtDeadline(controller, 4000);
       else {paused=true;controller.abort();}
     }, 4000);
-    let onAbort: (() => void) | undefined;
-    const cancelled = new Promise<boolean>(resolve => {
-      onAbort = () => resolve(false);
-      controller.signal.addEventListener('abort', onAbort, {once:true});
-    });
     try {
       const client = makeClient(url, server.token);
-      const request = enabled
-        ? client.registerPush(token, kinds, env, controller.signal)
-        : client.unregisterPush(token, undefined, controller.signal);
-      const ok = await Promise.race([request, cancelled]);
+      const ok = enabled
+        ? await client.registerPush(token, kinds, env, controller.signal)
+        : await client.unregisterPush(token, undefined, controller.signal);
       if (paused || !foreground()) return false;
       if (ok) return true;
     } catch {
@@ -79,7 +73,6 @@ export async function syncServerPush(
     } finally {
       clearTimeout(timer);
       subscription.remove();
-      if (onAbort) controller.signal.removeEventListener('abort', onAbort);
     }
   }
   return false;

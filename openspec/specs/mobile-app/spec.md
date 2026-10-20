@@ -2493,7 +2493,7 @@ Codex summaries SHALL prefer non-empty string `title`, then `description`, befor
 - **AND** a limited input is labelled partial, an old-core preview is labelled summary-only, and no result or duration is invented
 
 ### Requirement: Push reconciliation follows foreground lifecycle
-Push registration and unregistration reconciliation SHALL cancel its current request when the app becomes inactive or backgrounded, SHALL stop queued alternate-route attempts, and SHALL remain pending for the existing foreground retry. Cancellation SHALL NOT be recorded as a request timeout. The wait SHALL be bounded when the transport ignores abort. Real foreground deadline and HTTP failures SHALL remain observable. This SHALL NOT change notification permission or pairing authority.
+Push registration and unregistration reconciliation SHALL cancel its current request when the app becomes inactive or backgrounded, SHALL stop queued alternate-route attempts, and SHALL remain pending for the existing foreground retry. Cancellation SHALL NOT be recorded as a request timeout. The existing write queue SHALL retain its barrier until the transport settles; cancellation SHALL NOT release a still-pending write and allow an older notification preference to overtake a newer one. Real foreground deadline and HTTP failures SHALL remain observable. This SHALL NOT change notification permission or pairing authority.
 
 #### Scenario: Suspension during push registration
 - **WHEN** the app leaves the foreground while registration is pending

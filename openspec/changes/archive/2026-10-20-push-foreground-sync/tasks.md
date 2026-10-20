@@ -1,5 +1,5 @@
 ## Implementation
-- [x] Cancel push sync across background transitions and bound waiting even for a transport that ignores abort.
+- [x] Cancel push sync across background transitions while retaining the write queue until the transport settles.
 - [x] Verify lifecycle cancellation, pending reconciliation and real deadline/failure boundaries.
 - [x] Update bilingual documentation, specifications and run the mobile gate.
 
