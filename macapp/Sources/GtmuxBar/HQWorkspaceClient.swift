@@ -29,7 +29,7 @@ struct HQWorkspaceClient: HQWorkspaceServing {
         return try d.decode(T.self, from: data)
     }
     func snapshot() throws -> HQWorkspaceSnapshot {
-        let value: HQWorkspaceSnapshot = try decode(call(["list", "--json"]))
+        let value: HQWorkspaceSnapshot = try decode(call(["list", "--overview", "--json"]))
         guard value.schema == 1 else { throw HQWorkspaceError.command("Unsupported HQ workspace version") }
         return value
     }

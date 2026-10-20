@@ -688,6 +688,10 @@ cmux 会把 `TERM_PROGRAM` 设为 `ghostty`，因此 gtmux
 
 ## `gtmux hq workspace`：事项工作台
 
+总览以限量汇报与最近事项变化组成工作简报，侧栏保留完整分类。`list --overview --json`
+额外返回带消息来源和原始时间的节选，以及最近有变化的事项；使用同一份已读快照，
+不调用模型，也不推进 HQ 的事件消费位置。
+
 点击菜单栏 HQ 卡片进入工作台，查看侧栏事项、分事项对话与运行记录。交代任务
 创建持续跟进的目标，与 HQ 对话是全局交流。管理会话可按真实 session 身份关联
 多个执行会话与历史时段，不会停止或重启客户端。送达及来源边界见
@@ -695,6 +699,7 @@ cmux 会把 `TERM_PROGRAM` 设为 `ghostty`，因此 gtmux
 
 ```sh
 gtmux hq workspace list --json
+gtmux hq workspace list --overview --json
 gtmux hq workspace show global --json
 gtmux hq workspace show matter-id --json
 gtmux hq workspace show activity --json
@@ -807,7 +812,7 @@ Codex 当 HQ 时默认带 `--approve-for-me` 启动：日常操作留在工作�
 `gtmux hq --board [--json]` 打印态势板，不打开 HQ（菜单栏 app 的态势板阅读器就用它）。
 从没写过态势板时返回 `exists:false`。
 
-Mac 工作台中，从“总览 → 查看快照”进入原板，保留全文和保存时间，各节默认收起。
+Mac 工作台中，从“总览 → 交接快照”进入原板，保留全文和保存时间，各节默认收起。
 当前待办以总览中的事项台账为准，不从旧板推测。快照中的窗格编号只作参考，不直接跳转，
 避免同号窗格已被复用时找错会话。需要操作时，从事项的关联会话核对当前身份并打开终端。
 终端、手机、iPad 和 Web 的操作方式不变。

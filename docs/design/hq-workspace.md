@@ -11,9 +11,14 @@ features share this one window and retain their existing data sources.
 
 ## 2. Information and interaction
 
-The first opening shows **Overview**. It and the sidebar use the same explicit matter
-records, grouped by Needs your input / Following / Recently ended. No Markdown heading
-or pane activity determines matter state. Each sidebar category has a full-row disclosure,
+The first opening shows **Overview**, a brief over the same explicit matter records.
+It shows at most three Needs your input cards, three Following cards and the latest
+five changed matters in 24 hours. Cards quote the latest recorded HQ report with its
+source time; an assessment without a message has no invented clock. Click a card to
+read and reply in its original scope; View all opens the complete category picker.
+Wide layouts place decisions and progress side by side; narrow layouts stack them.
+The sidebar remains the complete Needs your input / Following / Recently ended directory.
+No Markdown heading or pane activity determines matter state. Each sidebar category has a full-row disclosure,
 count and accessible expansion value; collapse choices survive navigation and window
 reopening in the current process. Matter symbols reuse session status: red pause for
 needs-input, brand cyan ring for following, green check for ended, with text labels.
@@ -267,3 +272,23 @@ Knowledge actions use an intact horizontal row when it fits and a vertical actio
 
 Explicit latest-position requests use at most 24 layout checks at 50 ms intervals for lazy rows to settle, ending after two tail-visible samples. They cancel on navigation and do not run for ordinary historical refresh. If the bound is reached, Latest messages remains available to retry. Known CLI backup observations remain in the archive popover with clearer wording; unknown observations are preserved verbatim.
 User-initiated live scrolling cancels a pending entry request, including legacy mouse events without a tracking pair. Tests wait for the actual request completion and verify a mid-entry live-scroll cancellation.
+
+
+## Overview read projection
+
+`gtmux hq workspace list --overview --json` adds a bounded `overview` field to the
+existing snapshot; ordinary list output still omits assessment bodies. The leaf
+`hqworkspace.BuildOverview` reads the same already-loaded database, not event logs or
+agent transcripts. Each report excerpt is at most 768 Unicode characters with a
+truncation flag and message ID. No new model request or personal-record write occurs.
+The current schema has no structured next-step or wait-start field; the UI does not
+invent either. Live worker status requires the exact agent/home/session identity and
+an ongoing execution association; idle never completes a matter.
+
+Recent changes include explicit state updates, results, decisions, reported problems,
+unconfirmed delivery, registration, merge and split. They exclude instruction receipts,
+ordinary progress chatter and supervisor wake/turn events. Each canonical matter appears
+once; the count is changed matters, not raw events or completed tasks. Time filters use
+recorded clocks, and past-day values retain a date label. The authored board stays a
+compact secondary entry. Research on topic discovery is separate from current task
+identity; see [Clio and HQ topics](hq-topic-research.md).

@@ -40,7 +40,7 @@ type workspaceAction struct {
 func workspaceStore() *hqworkspace.Store { return hqworkspace.New(state.HQHome()) }
 
 func workspaceHelp() int {
-	fmt.Println(`gtmux hq workspace list --json
+	fmt.Println(`gtmux hq workspace list [--overview] --json
 gtmux hq workspace show <matter-id|global|activity> [--before SEQ] [--earlier N] --json
 gtmux hq workspace participant <matter-id> <association-id> --json
 gtmux hq workspace act --stdin --json
@@ -68,10 +68,13 @@ func cmdHQWorkspace(args []string) int {
 	before := uint64(0)
 	earlier := 0
 	stdin := false
+	overview := false
 	rest := []string{}
 	for i := 1; i < len(args); i++ {
 		switch args[i] {
 		case "--json":
+		case "--overview":
+			overview = true
 		case "--stdin":
 			stdin = true
 		case "--before", "--earlier":
@@ -100,6 +103,9 @@ func cmdHQWorkspace(args []string) int {
 		}
 	}
 	var result any
+	if overview && verb != "list" {
+		return 2
+	}
 	var err error
 	s := workspaceStore()
 	switch verb {
@@ -107,7 +113,7 @@ func cmdHQWorkspace(args []string) int {
 		if len(rest) != 0 || stdin {
 			return 2
 		}
-		result, err = workspaceSnapshot(s)
+		result, err = workspaceSnapshot(s, overview, time.Now().Unix())
 	case "show":
 		if len(rest) != 1 || stdin {
 			return 2

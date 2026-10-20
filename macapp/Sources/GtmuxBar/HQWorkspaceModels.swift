@@ -75,6 +75,7 @@ struct HQCandidate: Decodable, Identifiable {
 }
 
 struct HQWorkspaceSnapshot: Decodable {
+    var overview: HQOverviewSnapshot? = nil
     var schema: Int
     var revision: UInt64
     var sourceRevision: String?
