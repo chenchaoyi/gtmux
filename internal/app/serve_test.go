@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/server"
 )
 
@@ -99,8 +100,8 @@ func TestPushCopyTitleIsSessionName(t *testing.T) {
 		t.Errorf("waiting → title=%q body=%q; want the pane id leading the task, body=state", title, body)
 	}
 	done := server.Alert{Kind: "done", Agent: "Codex", Task: "fix build", Loc: "ws:2.0"}
-	if title, _, _ := pushCopy(done, noPane); title != "fix build" {
-		t.Errorf("done title = %q, want the task name", title)
+	if title, body, _ := pushCopy(done, noPane); title != "fix build" || body != i18n.Tr("Turn finished", "本轮结束") {
+		t.Errorf("done notification = title %q body %q, want task name and turn-finished copy", title, body)
 	}
 	// empty task → fall back to the locator, never "<Agent> needs you"
 	if title, _, _ := pushCopy(server.Alert{Kind: "waiting", Agent: "Claude Code", Loc: "ws:3.0"}, noPane); title != "ws:3.0" {

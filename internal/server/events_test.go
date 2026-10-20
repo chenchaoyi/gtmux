@@ -100,9 +100,9 @@ func revOf(t *testing.T, ev sseEvent) int {
 func TestHubDiffAndAlerts(t *testing.T) {
 	snaps := [][]AgentStatus{
 		{{PaneID: "%1", Agent: "Claude Code", Loc: "a:0.0", Task: "t1", Status: "working"}},
-		{{PaneID: "%1", Agent: "Claude Code", Loc: "a:0.0", Task: "t1", Status: "idle"}},    // working→idle = done
-		{{PaneID: "%1", Status: "idle"}, {PaneID: "%2", Status: "waiting", Agent: "Codex"}}, // %2 new waiting
-		{{PaneID: "%1", Status: "idle"}, {PaneID: "%2", Status: "waiting", Agent: "Codex"}}, // unchanged
+		{{PaneID: "%1", Agent: "Claude Code", Loc: "a:0.0", Task: "t1", Status: "idle", Confirmed: true}}, // working→idle = done
+		{{PaneID: "%1", Status: "idle"}, {PaneID: "%2", Status: "waiting", Agent: "Codex"}},               // %2 new waiting
+		{{PaneID: "%1", Status: "idle"}, {PaneID: "%2", Status: "waiting", Agent: "Codex"}},               // unchanged
 	}
 	i := 0
 	statuses := func() []AgentStatus {
@@ -144,6 +144,18 @@ func TestHubDiffAndAlerts(t *testing.T) {
 	}
 	if alerts[1].Kind != "waiting" || alerts[1].Pane != "%2" || alerts[1].Agent != "Codex" {
 		t.Fatalf("alerts[1] = %+v, want waiting %%2 Codex", alerts[1])
+	}
+}
+
+func TestHubDoesNotAlertForScreenOnlyIdle(t *testing.T) {
+	state := AgentStatus{PaneID: "%7", Agent: "Claude Code", Status: "working"}
+	var alerts []Alert
+	h := newHub(func() []AgentStatus { return []AgentStatus{state} }, time.Hour, func(a Alert) { alerts = append(alerts, a) })
+	h.tick()
+	state.Status = "idle"
+	h.tick()
+	if len(alerts) != 0 {
+		t.Fatalf("screen-only idle transition emitted completion alert: %+v", alerts)
 	}
 }
 
@@ -620,7 +632,7 @@ func TestInterruptedAndFailedTurnsDoNotEmitDoneAlerts(t *testing.T) {
 			state.Status, state.EndReason = "working", ""
 			h.tick()
 			drain(ch)
-			state.Status = "idle"
+			state.Status, state.Confirmed = "idle", true
 			h.tick()
 			if len(alerts) != 1 || alerts[0].Kind != "done" {
 				t.Fatalf("next successful turn must alert: %+v", alerts)

@@ -336,6 +336,9 @@ type Pane struct {
 	Bg        bool
 	BgCount   int
 	EndReason string // interrupted | error; retained for the independent alert poller
+	// Confirmed gates completion alerts. An idle state inferred only from
+	// screen/CPU quiet is displayable, but must not be presented as a finished turn.
+	Confirmed bool
 	BgText    string
 	// usage-watch modifier: this session breached (or projects into) a usage
 	// layer — content of the usagewarn marker, e.g. "ctx 86%". Amber, like bg.
@@ -1132,6 +1135,9 @@ func gatherAgentsWithCodexScope(codexScope *transcript.CodexPathScope) ([]Pane, 
 		if len(f) >= 8 {
 			activityAt, _ = strconv.ParseInt(f[7], 10, 64)
 		}
+		// Read this before idleSince, which may create a fallback finished marker for
+		// a screen-only idle pane. That fallback is not completion evidence.
+		completionConfirmed := completionMarkerEvidence(id, activityAt)
 		if !nativeLifecycle {
 			// liveWorking reports whether the pane is DEMONSTRABLY working right now (screen
 			// changing / subtree burning CPU) — the reliable signal, unlike the pane TITLE's
@@ -1204,6 +1210,7 @@ func gatherAgentsWithCodexScope(codexScope *transcript.CodexPathScope) ([]Pane, 
 					if kind == "turn_aborted" {
 						_ = state.WriteMarker(state.TurnOutcomePath(id), "interrupted")
 					} else {
+						completionConfirmed = true
 						state.Remove(state.TurnOutcomePath(id))
 						fp := state.FinishedPath(id)
 						if state.Touch(fp) == nil {
@@ -1244,6 +1251,8 @@ func gatherAgentsWithCodexScope(codexScope *transcript.CodexPathScope) ([]Pane, 
 					if rec, ok := resume.Load(loc); ok && rec.Agent == "codex" && hqpane.SameDir(rec.Cwd, f[9]) {
 						if kind, _ := codexScope.CodexLastTurnBoundary(rec.SessionID); kind == "turn_aborted" {
 							_ = state.WriteMarker(state.TurnOutcomePath(id), "interrupted")
+						} else if kind == "task_complete" {
+							completionConfirmed = true
 						}
 					}
 				}
@@ -1367,6 +1376,7 @@ func gatherAgentsWithCodexScope(codexScope *transcript.CodexPathScope) ([]Pane, 
 			Errored:    errored,
 			EndReason:  endReason,
 			ErrorText:  errorText,
+			Confirmed:  completionConfirmed && status == "idle",
 			Bg:         bg,
 			BgCount:    bgCount,
 			BgText:     bgText,
@@ -1671,7 +1681,7 @@ func nativePanesScoped(tmuxPanes []Pane, profiles []agentProfile, now int64, cod
 			errored, errorText = scopedLastMessageError(r.Agent, r.SessionID)
 		}
 		out = append(out, Pane{
-			Agent: name, Status: status, source: "native",
+			Agent: name, Status: status, Confirmed: status == "idle", source: "native",
 			Errored: errored, ErrorText: errorText,
 			EndReason: failedTurnOutcome(nativeTurnOutcomeScoped(codexScope, r), errored),
 			Task:      nativeTitle(r, titles[r.Agent]),
@@ -1879,6 +1889,22 @@ func waitMarkStale(id string, activityAt int64) bool {
 	}
 	mt := FileMtime(state.WaitingPath(id))
 	return mt > 0 && activityAt > mt+waitStaleGrace
+}
+
+// completionMarkerEvidence checks only markers that existed before this gather.
+// idleSince may write a fallback marker for a screen-only pane, and that fallback
+// is deliberately not completion evidence. A marker far older than the pane's
+// current tmux activity belongs to an earlier turn or a reused pane id.
+func completionMarkerEvidence(id string, activityAt int64) bool {
+	const finishActivityGrace = 30 // hook finish and tmux activity are sampled independently
+	marked := FileMtime(state.FinishedPath(id))
+	if marked == 0 {
+		return false
+	}
+	if activityAt <= 0 {
+		return true
+	}
+	return marked+finishActivityGrace >= activityAt
 }
 
 // resolveWaiting decides a pane's DISPLAYED status from its raw (title/frame) status

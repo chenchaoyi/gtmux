@@ -70,6 +70,10 @@ type AgentStatus struct {
 	StatusOnly     bool
 	Notify         bool
 	EndReason      string // interrupted | error suppress the successful-completion alert
+	// Confirmed is true only when the idle state has lifecycle evidence
+	// (a hook-written finish marker or a native transcript boundary). Screen/CPU
+	// inference is useful for the radar display, but is not enough to push "done".
+	Confirmed bool
 }
 
 func (a AgentStatus) explicitNotifyConsent() bool {
@@ -464,7 +468,7 @@ func (h *hub) tick() {
 			}
 		} else {
 			delete(h.waitAlertAt, a.key()) // no longer waiting → stop tracking
-			if prev != nil && existed && !p.StatusOnly && (!p.explicitNotifyConsent() || p.Notify) && a.Status == "idle" && p.Status == "working" && a.EndReason == "" {
+			if prev != nil && existed && !p.StatusOnly && (!p.explicitNotifyConsent() || p.Notify) && a.Status == "idle" && p.Status == "working" && a.EndReason == "" && a.Confirmed {
 				h.emitAlert(Alert{Pane: a.PaneID, Kind: "done", Agent: a.Agent, Loc: a.Loc, Task: a.Task, SessionID: a.SessionID, HomeID: a.HomeID, Client: a.Client})
 			}
 		}
