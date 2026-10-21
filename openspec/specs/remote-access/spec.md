@@ -206,6 +206,18 @@ can still carry the master token; see the [security model](../../../docs/design/
 - **WHEN** a device POSTs a valid enroll code to `/api/enroll`
 - **THEN** it receives its own `{token, deviceId}`; an expired/unknown code returns 401
 
+#### Scenario: An enrollment body exceeds the public input limit
+
+- **WHEN** an unauthenticated caller posts more than 4096 bytes to `/api/enroll`, including whitespace or unknown fields
+- **THEN** the server bounds reads of the actual body stream and returns `413` before parsing or redeeming, regardless of `Content-Length` or chunked transfer
+- **AND** the code remains usable and the failed-guess allowance is unchanged
+
+#### Scenario: A complete enrollment fits the limit
+
+- **WHEN** a complete JSON enrollment body is at most 4096 bytes, including exactly 4096 bytes
+- **THEN** valid owner and guest codes retain their existing token and scope semantics, subject to the existing failed-guess throttle
+- **AND** malformed, incomplete or multiple JSON values return `400` without spending a code
+
 #### Scenario: Revoke a device
 
 - **WHEN** the master surface POSTs a device id to `/api/devices/revoke`
