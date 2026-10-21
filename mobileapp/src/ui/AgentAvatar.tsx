@@ -81,6 +81,9 @@ export function AgentAvatar({
   };
 
   const source = !gaveUp && !errored ? icon : null;
+  // The icon endpoint serves the built-in whale for these registry names. Its ink
+  // fills 97% of the source canvas; match the Mac's 80% content size on a white tile.
+  const whale = ['dsh', 'deepseek harness'].includes((agent.agent || '').trim().toLowerCase());
   return (
     <View
       style={[
@@ -89,13 +92,13 @@ export function AgentAvatar({
           width: size,
           height: size,
           borderRadius: radius,
-          backgroundColor: bg,
+          backgroundColor: source && whale ? '#FFFFFF' : bg,
           borderWidth: border ? StyleSheet.hairlineWidth : 0,
           borderColor: border,
         },
       ]}>
       {source ? (
-        <Image key={tries} source={source} style={styles.img} resizeMode="contain" onError={onError} />
+        <Image key={tries} source={source} style={[styles.img, whale && styles.whale]} resizeMode="contain" onError={onError} />
       ) : (
         // The mark is drawn to the avatar's own size, like SenderAvatar's: an icon, not
         // text to read, so it does not follow the system text size out of its box.
@@ -110,5 +113,6 @@ export function AgentAvatar({
 const styles = StyleSheet.create({
   wrap: {alignItems: 'center', justifyContent: 'center', overflow: 'hidden'},
   img: {width: '100%', height: '100%'},
+  whale: {width: '80%', height: '80%'},
   mono: {fontWeight: '700'},
 });

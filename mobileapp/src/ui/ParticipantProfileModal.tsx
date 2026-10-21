@@ -5,6 +5,7 @@ import type {Lang} from '../i18n';
 import {AgentAvatar} from './AgentAvatar';
 import {UserAvatar} from './UserAvatar';
 import {SenderAvatar} from './SenderAvatar';
+import {HQAvatar} from './HQAvatar';
 import {Chevron} from './Icons';
 import {MODAL_ORIENTATIONS} from './modalOrientations';
 import {displayFacts, factLabel, factSourceLabel, factValue, ProfileTarget} from './participantProfile';
@@ -35,7 +36,7 @@ export function ParticipantProfileModal({target, client, lang, onClose}: {target
         </TouchableOpacity>
         <ScrollView testID="profile-content" style={styles.scroller} contentContainerStyle={styles.content} showsVerticalScrollIndicator>
           <View style={human ? styles.identity : styles.agentIdentity}>
-            {human ? <UserAvatar size={56} /> : target.sender ? <SenderAvatar from={target.sender} size={40} /> : <AgentAvatar agent={target.agent} size={40} radius={10} bg="#242428" fg="#ECECF1" />}
+            {human ? <UserAvatar size={56} /> : hq ? <HQAvatar size={40} /> : target.sender ? <SenderAvatar from={target.sender} size={40} /> : <AgentAvatar agent={target.agent} size={40} radius={10} bg="#242428" fg="#ECECF1" />}
             <View style={!human && styles.flex}>
             <Text accessibilityRole="header" style={human ? styles.title : styles.agentTitle}>{name}</Text>
             {human ? <Text style={styles.subtitle}>{zh ? '碳基决策者 · 自封' : 'Carbon-based decision maker · self-appointed'}</Text>

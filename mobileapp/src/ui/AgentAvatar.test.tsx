@@ -2,6 +2,7 @@ import React from 'react';
 import renderer, {act} from 'react-test-renderer';
 import {AgentAvatar} from './AgentAvatar';
 import {Agent} from '../api/types';
+import {StyleSheet, View} from 'react-native';
 
 // Regression: AgentAvatar must render OUTSIDE an AgentsProvider — the pre-pairing
 // Demo screen (the App Store reviewer's fallback) reuses the radar row, which
@@ -34,6 +35,29 @@ jest.mock('../state/AgentsContext', () => ({
 }));
 
 const withIcon = {agent: 'Claude Code', icon: '/Applications/Claude.app'} as Agent;
+
+test.each(['DeepSeek Harness', 'dsh'])('the official %s whale has a white margin without shrinking the avatar', name => {
+  const tree = mount({agent: name, icon: 'agent-icons/dsh.png'} as Agent);
+  const frame = StyleSheet.flatten(tree.root.findByType(View).props.style);
+  const image = StyleSheet.flatten(images(tree)[0].props.style);
+  expect(frame).toMatchObject({width: 40, height: 40, backgroundColor: '#FFFFFF'});
+  expect(image).toMatchObject({width: '80%', height: '80%'});
+  act(() => tree.unmount());
+});
+
+test('other agents retain their image size, and an unavailable whale retains the normal fallback', () => {
+  const other = mount(withIcon);
+  expect(StyleSheet.flatten(images(other)[0].props.style)).toMatchObject({width: '100%', height: '100%'});
+  act(() => other.unmount());
+  jest.useFakeTimers();
+  const whale = mount({agent: 'DeepSeek Harness', icon: 'agent-icons/dsh.png'} as Agent);
+  fail(whale);
+  expect(images(whale)).toHaveLength(0);
+  expect(StyleSheet.flatten(whale.root.findByType(View).props.style).backgroundColor).toBe('#fff');
+  expect(monograms(whale).length).toBeGreaterThan(0);
+  act(() => whale.unmount());
+  jest.useRealTimers();
+});
 
 function images(tree: renderer.ReactTestRenderer) {
   return tree.root.findAll(n => typeof n.type !== 'string' && (n.type as {displayName?: string}).displayName === 'Image');

@@ -278,8 +278,11 @@ its facts retain the ordinary historical/current scope.
 
 On an HQ sender avatar in another conversation, **Agent at delivery** uses only
 the sender's recorded agent, if present. Existing HQ deliveries generally recorded
-only the role, so this remains **Not recorded**. **Current HQ** separately uses the
-single supervisor row from the same client's connected radar. Disconnected,
+only the role; a secondary sentence explains the missing message-time agent type
+without an empty primary fact. The avatar uses gtmux's brand mark. **Current HQ**
+is collapsed by default and separately uses the single supervisor row from the
+same client's connected radar. The disclosure remains at least 44pt tall and the
+expanded rows identify current information explicitly. Disconnected,
 ambiguous or other-server state does not supply this identity. This adds no request
 or polling, and never uses the receiving pane's agent or presents the current HQ
 as the sender at the message's time.

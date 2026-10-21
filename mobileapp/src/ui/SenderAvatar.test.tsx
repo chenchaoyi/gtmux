@@ -2,6 +2,7 @@ import React from 'react';
 import renderer, {act} from 'react-test-renderer';
 import {Text} from 'react-native';
 import {SenderAvatar} from './SenderAvatar';
+import {BrandMark} from './BrandMark';
 import {ChatView} from './ChatView';
 import {paletteFor} from './theme';
 import type {TranscriptTurn} from '../api/client';
@@ -30,8 +31,12 @@ const mount = async (el: React.ReactElement): Promise<renderer.ReactTestRenderer
 };
 
 describe('SenderAvatar', () => {
-  test('HQ wears a word, because it is a role and not a tool', async () => {
-    expect(texts(await mount(<SenderAvatar from={{kind: 'hq', label: 'HQ'}} />))).toContain('HQ');
+  test('HQ uses the gtmux brand mark independently of the recorded harness', async () => {
+    for (const agent of [undefined, 'Codex', 'DeepSeek Harness']) {
+      const tree = await mount(<SenderAvatar from={{kind: 'hq', label: 'HQ', agent}} />);
+      expect(tree.root.findAllByType(BrandMark)).toHaveLength(1);
+      expect(texts(tree)).not.toContain('HQ');
+    }
   });
 
   test('another session wears its agent, not the letters HQ', async () => {

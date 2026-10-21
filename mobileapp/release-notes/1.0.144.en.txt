@@ -1,0 +1,2 @@
+- HQ messages and profiles use the gtmux logo, with current HQ details available on expansion.
+- DeepSeek Harness avatars have more balanced white margins.

@@ -1,0 +1,2 @@
+- HQ 来信与资料头像改用 gtmux 标识，当前 HQ 信息可按需展开。
+- DeepSeek Harness 头像增加白色留边，与其他 Agent 的视觉比例更一致。

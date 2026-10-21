@@ -528,3 +528,20 @@ or Expand all text, separate from per-reply and tool disclosures.
 
 - **WHEN** a provider fact identifies a custom gateway rather than a recognized provider
 - **THEN** its identifier is displayed unchanged and its raw fact remains intact
+
+### Requirement: Mobile conversation identity has balanced optical size
+
+Mobile HQ sender and participant-profile avatars SHALL use gtmux's pane-grid brand
+mark while retaining the HQ sender caption. The official DeepSeek whale SHALL use
+80% of the avatar width and height on a full white tile; the avatar frame, other
+agent images and unavailable-image monograms SHALL keep their existing sizing.
+Missing HQ message-time agent identity SHALL appear as a secondary explanation.
+Current HQ details SHALL be collapsed by default behind a minimum 44pt disclosure,
+and preserve same-client, live-connection and unique-supervisor identity guards.
+
+#### Scenario: Inspect an HQ sender without a recorded harness
+
+- **WHEN** the reader opens an HQ sender profile with no message-time agent type
+- **THEN** the gtmux avatar and role description remain visible with a small explanation
+- **AND** current supervisor information appears only after expanding Current HQ
+- **AND** that information does not replace the message's missing historical identity
