@@ -189,4 +189,144 @@ final class WhatsNewTests: XCTestCase {
             }
         }
     }
+
+    @MainActor private func settleLayout(_ window: NSWindow) async {
+        for _ in 0..<15 {
+            window.contentView?.layoutSubtreeIfNeeded()
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
+    }
+
+    @MainActor private func savePreview(_ window: NSWindow, _ name: String) throws {
+        guard let path = ProcessInfo.processInfo.environment["GTMUX_WHATSNEW_PREVIEW_DIR"] else { return }
+        let root = try XCTUnwrap(window.contentView?.superview)
+        window.displayIfNeeded()
+        root.displayIfNeeded()
+        let bitmap = try XCTUnwrap(root.bitmapImageRepForCachingDisplay(in: root.bounds))
+        (window.appearance ?? NSApp.effectiveAppearance).performAsCurrentDrawingAppearance { root.cacheDisplay(in: root.bounds, to: bitmap) }
+        try XCTUnwrap(bitmap.representation(using: .png, properties: [:])).write(to: URL(fileURLWithPath: path).appendingPathComponent(name + ".png"))
+    }
+
+    func testMeasuredHeightFitsProseAndRespectsSmallDisplays() {
+        XCTAssertEqual(WhatsNewWindowLayout.contentHeight(desired: 900, visible: 1200, titleBar: 28), 900)
+        XCTAssertEqual(WhatsNewWindowLayout.contentHeight(desired: 40, visible: 1200, titleBar: 28), 220)
+        let small = WhatsNewWindowLayout.contentHeight(desired: 900, visible: 180, titleBar: 28)
+        XCTAssertLessThanOrEqual(small + 28, 180 * 0.85)
+        XCTAssertGreaterThan(small, 0)
+    }
+
+    @MainActor func testDelayedNotesResizeToActualWrappedContentInBothLanguagesAndThemes() async throws {
+        NativeUIProbe.prepareAccessibility()
+        let previous = L10n.shared.mode
+        defer { L10n.shared.mode = previous }
+        let notes = [MacReleaseNote(version: "4.0.3", en: [
+            "Activity calls show a readable task purpose, while recorded arguments remain available to inspect and copy.",
+            "Provider information keeps recorded account plans distinct from conversation modes.",
+            "Browser copy preserves the original command and returns focus to the control.",
+            "Long commands scroll inside the details without widening the whole conversation.",
+            "Read-only sessions show their input capability before any action is available.",
+            "The last update remains visible when the measured content fits the display."
+        ], zh: [
+            "工具调用显示易读的任务和等待摘要，原始参数记录仍可展开检查和复制。",
+            "参与者资料明确标注已记录套餐，用量摘要与明细统一周额度和重置时间文案。",
+            "浏览器复制保留原始命令，操作后仍可继续使用键盘。",
+            "长命令在详情内滚动，不会把整个对话页面撑宽。",
+            "只读会话先说明输入权限，再显示可用操作。",
+            "最后一条更新也能完整显示，不会被底栏挡住。"
+        ])]
+        let json = receipt(notes)
+        for mode in [LangMode.en, .zh] {
+            L10n.shared.mode = mode
+            for dark in [false, true] {
+                let gate = DispatchSemaphore(value: 0)
+                let model = WhatsNewStore(defaults: defaults(), version: "4.0.3", run: { _ in
+                    _ = gate.wait(timeout: .now() + 3); return (0,json,"")
+                })
+                let controller = WhatsNewController(model: model)
+                let window = controller.show(l10n: .shared)
+                window.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
+                defer { window.close() }
+                await settleLayout(window)
+                let waitingHeight = window.contentRect(forFrameRect: window.frame).height
+                gate.signal(); await settle(model); await settleLayout(window)
+                XCTAssertGreaterThan(window.contentRect(forFrameRect: window.frame).height, waitingHeight + 30)
+                let last = try XCTUnwrap(NativeUIProbe.find("whatsnew-line-4.0.3-5", in: window))
+                let scroll = try XCTUnwrap(NativeUIProbe.find("whatsnew-scroll", in: window))
+                XCTAssertGreaterThan(last.accessibilityFrame().height, 0)
+                XCTAssertGreaterThanOrEqual(last.accessibilityFrame().minY, scroll.accessibilityFrame().minY - 1)
+                XCTAssertLessThanOrEqual(last.accessibilityFrame().maxY, scroll.accessibilityFrame().maxY + 1)
+                XCTAssertNotNil(NativeUIProbe.find("whatsnew-header-version", in: window))
+                XCTAssertNil(NativeUIProbe.find("whatsnew-version-4.0.3", in: window), "a single release must not repeat its version")
+                let visible = window.screen?.visibleFrame ?? NSScreen.main!.visibleFrame
+                XCTAssertTrue(visible.insetBy(dx: -1, dy: -1).contains(window.frame))
+                try savePreview(window, "measured-\(mode.rawValue)-\(dark ? "dark" : "light")")
+            }
+        }
+    }
+
+    @MainActor func testLongHistoryRemainsScrollableAndKeepsOlderDisclosureAcrossRefresh() async throws {
+        NativeUIProbe.prepareAccessibility()
+        let lines = (0..<20).map { "Recorded change \($0 + 1): " + String(repeating: "A long update stays selectable and wraps within its window. ", count: 3) }
+        let json = receipt([MacReleaseNote(version: "4.0.3", en: lines, zh: []), MacReleaseNote(version: "4.0.2", en: ["An older change remains accessible."], zh: [])])
+        let model = WhatsNewStore(defaults: defaults(), version: "4.0.3", run: { _ in (0,json,"") })
+        let controller = WhatsNewController(model: model), window = controller.show(l10n: .shared)
+        defer { window.close() }
+        await settle(model); await settleLayout(window)
+        XCTAssertNil(NativeUIProbe.find("whatsnew-header-version", in: window), "grouped notes only label each version once")
+        XCTAssertNil(NativeUIProbe.find("whatsnew-line-4.0.2-0", in: window))
+        let old = try XCTUnwrap(NativeUIProbe.find("whatsnew-version-4.0.2", in: window))
+        XCTAssertTrue(old.accessibilityPerformPress()); await settleLayout(window)
+        model.retry(); await settle(model); await settleLayout(window)
+        XCTAssertNotNil(NativeUIProbe.find("whatsnew-line-4.0.2-0", in: window), "same-version refresh retains the reader's disclosure")
+        let scroll = try XCTUnwrap(NativeUIProbe.views(NSScrollView.self, in: window.contentView!).first)
+        let document = try XCTUnwrap(scroll.documentView)
+        XCTAssertGreaterThan(document.bounds.height, scroll.contentView.bounds.height)
+        scroll.contentView.scroll(to: NSPoint(x: 0, y: max(0, document.bounds.height - scroll.contentView.bounds.height)))
+        scroll.reflectScrolledClipView(scroll.contentView); await settleLayout(window)
+        let last = try XCTUnwrap(NativeUIProbe.find("whatsnew-line-4.0.2-0", in: window))
+        let clip = try XCTUnwrap(NativeUIProbe.find("whatsnew-scroll", in: window))
+        XCTAssertGreaterThan(last.accessibilityFrame().height, 0)
+        XCTAssertGreaterThan(clip.accessibilityFrame().height, 0)
+        XCTAssertGreaterThanOrEqual(last.accessibilityFrame().minY, clip.accessibilityFrame().minY - 1)
+        XCTAssertLessThanOrEqual(last.accessibilityFrame().maxY, clip.accessibilityFrame().maxY + 1)
+        try savePreview(window, "history-scrolled-to-last")
+    }
+
+    @MainActor func testManualSizeWinsWhenNotesAreRefreshed() async {
+        var calls = 0
+        let short = receipt([MacReleaseNote(version: "4.0.3", en: ["Short note"], zh: [])])
+        let long = receipt([MacReleaseNote(version: "4.0.3", en: Array(repeating: "More recorded updates after refresh.", count: 20), zh: [])])
+        let model = WhatsNewStore(defaults: defaults(), version: "4.0.3", run: { _ in
+            calls += 1; return (0, calls == 1 ? short : long, "")
+        })
+        let controller = WhatsNewController(model: model), window = controller.show(l10n: .shared)
+        defer { window.close() }
+        await settle(model); await settleLayout(window)
+        controller.windowWillStartLiveResize(Notification(name: NSWindow.willStartLiveResizeNotification, object: window))
+        window.setContentSize(NSSize(width: 640, height: 360))
+        model.retry(); await settle(model); await settleLayout(window)
+        XCTAssertEqual(window.contentRect(forFrameRect: window.frame).height, 360, accuracy: 1)
+        XCTAssertEqual(window.contentRect(forFrameRect: window.frame).width, 640, accuracy: 1)
+    }
+
+    @MainActor func testPlainDismissActionRetainsReturnAndEscapeShortcuts() async throws {
+        NativeUIProbe.prepareAccessibility()
+        let json = receipt([MacReleaseNote(version: "4.0.3", en: ["A readable update."], zh: [])])
+        for (characters, keyCode) in [("\r", UInt16(36)), ("\u{1b}", UInt16(53))] {
+            let model = WhatsNewStore(defaults: defaults(), version: "4.0.3", run: { _ in (0,json,"") })
+            let controller = WhatsNewController(model: model), window = controller.show(l10n: .shared)
+            defer { withExtendedLifetime(controller) { window.close() } }
+            await settle(model); await settleLayout(window)
+            window.makeFirstResponder(window.contentView)
+            let event = try XCTUnwrap(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [], timestamp: 0,
+                windowNumber: window.windowNumber, context: nil, characters: characters,
+                charactersIgnoringModifiers: characters, isARepeat: false, keyCode: keyCode))
+            // XCTest does not own a key window. Route through this window's native
+            // key-equivalent and responder dispatch, as AppKit does for its key window.
+            if !window.performKeyEquivalent(with: event) { window.sendEvent(event) }
+            await settleLayout(window)
+            XCTAssertFalse(window.isVisible, "Key code \(keyCode) must dismiss the plain action")
+        }
+    }
+
 }
