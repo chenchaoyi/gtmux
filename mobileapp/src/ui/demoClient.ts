@@ -168,6 +168,9 @@ export function makeDemoClient(lang: 'en' | 'zh', onAgents?: (agents: Agent[]) =
       if (id !== DEMO_DESKTOP_ID || homeID !== DEMO_HOME_ID) throw new Error('Unknown demo conversation');
       return {turns: transcripts.get(id) ?? [], dropped: 0};
     },
+    async interaction(id) {
+      return {text: snap(id).text, options: answered.has(id) ? [] : demoOptions(id), awaiting_reply: currentAgents().some(a => a.pane_id === id && a.status === 'waiting'), truncated: false};
+    },
     async options(id: string): Promise<ReplyOption[]> {
       return answered.has(id) ? [] : demoOptions(id);
     },
@@ -184,7 +187,8 @@ export function makeDemoClient(lang: 'en' | 'zh', onAgents?: (agents: Agent[]) =
       if (!initial.some(a => a.source !== 'native' && a.pane_id === id) && !demoPanes(initial).some(p => p.pane_id === id)) {
         throw new Error('This demo conversation is read only');
       }
-      const t = (payload.text ?? '').trim();
+      const digit = payload.key_event && !payload.key_event.modifiers.length && /^[1-9]$/.test(payload.key_event.key) ? payload.key_event.key : '';
+      const t = (payload.text ?? digit).trim();
       if (id === HERO && (t === '1' || t === '2' || t === '3')) {
         if (!answered.has(id)) {
           answered.add(id); // Commit the permission choice once.

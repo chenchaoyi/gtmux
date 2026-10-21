@@ -59,6 +59,8 @@ async function start() {
         if (p === '/api/icon' && url.searchParams.get('agent') === 'DeepSeek Harness') {
           const image=await fs.readFile(path.resolve(__dirname,'../../assets/agent-icons/dsh.png'));res.writeHead(200,{'Content-Type':'image/png'});return res.end(image);
         }
+        if (p === '/api/input-capabilities') return json(res, 200, {version:1, can_input:state.share.input, context:{boot:'fixture',pane_binding:id,proof:'synthetic',expires_at:Math.floor(Date.now()/1000)+120}, actions:[], retry_seconds:120, ...require('../../mobileapp/src/api/terminalKeysCatalog.json')});
+        if (p === '/api/interaction') return json(res, 200, state.interaction || {text: 'Choose projects\n❯ [ ] Alpha\n  [x] Beta\nSpace to toggle, Enter to submit', options: [], awaiting_reply: id === '%902', truncated: false});
         if (p === '/api/options') return json(res, 200, {options: id === '%902' ? [{n: 1, label: 'Proceed'}, {n: 2, label: 'Cancel'}] : []});
         if (p === '/api/theme') return json(res, 200, {});
         if (p === '/api/diff') return json(res, 200, {diff: 'diff --git a/a b/a\n--- a/a\n+++ b/a\n-old\n+new'});

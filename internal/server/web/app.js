@@ -67,6 +67,8 @@
   var term = null, fit = null, lastText = '', curPane = null, lastSig = '', theme = null;
   var curAgent = null, chatTimer = null, chatSig = '', lastTurns = [], chatExpanded = {};
   var lastAgents = [], optTimer = null; // for focus prev/next + the waiting reply bar
+  var interactionAnsweredAt = 0;
+  var interactionOpen = false, lastInteraction = null, interactionFailed = false, interactionPeek = false, interactionCollapsed = false, interactionRenderSig = '';
   var lastOpts = [], lastOptsSig = ''; // waiting options, shared by reply bar (term) + approval card (chat)
   var userScrolling = false, scrollIdle = null, pendingText = null, resizeIdle = null;
   var iconCache = {}; // agentName -> objectURL | 'none' | Promise
@@ -221,7 +223,7 @@
   }
 
   // ---- helpers ----------------------------------------------------------
-  function show(which) { cancelReads(); viewEpoch++; ['gate', 'radar', 'panes', 'pane', 'chat', 'workbench'].forEach(function (id) { $(id).hidden = id !== which; }); if (which !== 'workbench') WB.on = false; }
+  function show(which) { if (which !== 'chat') { $('chat-input').hidden = true; $('chat-interaction').hidden = true; } cancelReads(); viewEpoch++; ['gate', 'radar', 'panes', 'pane', 'chat', 'workbench'].forEach(function (id) { $(id).hidden = id !== which; }); if (which !== 'workbench') WB.on = false; }
   // GATE states. Each says what the situation IS and the one thing to do about it, in
   // both languages — the old screen was a single English sentence with no subject, and it
   // pointed at a phone-app affordance ("open on computer") that does not exist. The
@@ -1417,8 +1419,15 @@
     var bar = $('pane-input'); if (!bar) return;
     var inPaneTerm = !$('pane').hidden && paneMode === 'term';
     var can = paneCanInput(curPane);
+    var inPaneChat = !!curPane && !$('chat').hidden && paneMode === 'chat';
+    var chatInput = $('chat-input'); chatInput.hidden = !(inPaneChat && can);
     bar.hidden = !(inPaneTerm && can);
-    if (paneComposer && paneComposer.sync) paneComposer.sync(inPaneTerm && can);
+    if (paneComposer) {
+      var mount = inPaneChat ? chatInput : bar;
+      if (paneComposer.el.parentNode !== mount) mount.appendChild(paneComposer.el);
+      if (paneComposer.sync) paneComposer.sync((inPaneTerm || inPaneChat) && can);
+    }
+    renderChatInteraction();
     // read-only panes state WHY there is no input row (one line, no empty textbox)
     var ro = $('pane-ro'); if (ro) ro.hidden = !(inPaneTerm && SHARE.known && !can);
     $('pane').classList.toggle('has-input', inPaneTerm && SHARE.known);
@@ -1620,7 +1629,7 @@
       }).catch(function () { attach.disabled = false; attach.textContent = '＋'; });
     }
 
-    return {el: root, focus: function () { ta.focus(); }, input: ta, sync: function (visible) {if (terminalKeyboard) terminalKeyboard.sync(visible);}, dispose: function () {if (terminalKeyboard) terminalKeyboard.dispose();}};
+    return {keys: terminalKeyboard, el: root, focus: function () { ta.focus(); }, input: ta, sync: function (visible) {if (terminalKeyboard) terminalKeyboard.sync(visible);}, dispose: function () {if (terminalKeyboard) terminalKeyboard.dispose();}};
   }
 
   // openAgent enters the pane view for an agent; the selected tab (terminal mirror
@@ -1926,6 +1935,7 @@
     var dot = document.createElement('span'); dot.className = 'cs-dot'; dot.style.background = COLORS[a.status] || COLORS.running; stl.appendChild(dot);
     var lb = document.createElement('span'); lb.textContent = LABEL[a.status] || a.status || ''; stl.appendChild(lb);
     stx.appendChild(stl); sr.appendChild(stx); col.appendChild(sr);
+    if (curPane && !isNative(a)) { var inspect = el('button', 'chat-interact', T('Interact', '交互')); inspect.type = 'button'; inspect.onclick = function () {interactionOpen = !interactionOpen; interactionCollapsed = false; pollOptions(); renderChatInteraction();}; sr.appendChild(inspect); }
     if (turns.some(function (t) { return (t.segments || []).some(function (s) { return s.steps && s.steps.length; }); })) {
       var collapse = el('button', 'chat-collapse', T('Collapse all', '折叠全部'));
       collapse.type = 'button'; collapse.dataset.chatFocus = 'collapse'; collapse.onclick = collapseAllSteps; sr.appendChild(collapse);
@@ -1973,7 +1983,7 @@
       col.appendChild(ct);
     });
     // waiting → an inline approval card (read-only 1/2/3 from /api/options).
-    if (!isNative(a) && a.status === 'waiting') col.appendChild(approvalCard());
+    renderChatInteraction();
     scroll.appendChild(col); root.appendChild(scroll);
     scroll.scrollTop = atBottom ? scroll.scrollHeight : prevTop;
     if (curTurnIdx >= turns.length) curTurnIdx = Math.max(0, turns.length - 1);
@@ -2115,32 +2125,62 @@
   // When this caller may type into the pane (WEB §11), the rows are LIVE — one
   // click sends the digit (no Enter, like the phone's ApprovalCard). Otherwise
   // view-only with the reply-elsewhere hint. The server gate stays authoritative.
+  function renderChatInteraction() {
+    var root = $('chat-interaction');
+    var visible = !!curPane && !$('chat').hidden && (curAgent && curAgent.status === 'waiting' || interactionOpen);
+    root.hidden = !visible;
+    if (!visible) {root.innerHTML = ''; interactionRenderSig = ''; return;}
+    var sig = JSON.stringify([curPane, curAgent && curAgent.status, lastOpts, lastInteraction, interactionFailed, interactionPeek, interactionCollapsed, paneCanInput(curPane)]);
+    if (sig === interactionRenderSig) return;
+    interactionRenderSig = sig;
+    var previous = root.querySelector('.interaction-screen');
+    var position = previous ? [previous.scrollLeft, previous.scrollTop] : null;
+    root.innerHTML = ''; root.appendChild(approvalCard());
+    var next = root.querySelector('.interaction-screen');
+    if (next && position) {next.scrollLeft = position[0]; next.scrollTop = position[1];}
+  }
   function approvalCard() {
-    var can = paneCanInput(curPane);
-    var card = document.createElement('div'); card.className = can ? 'appr-card appr-live' : 'appr-card';
-    var hd = document.createElement('div'); hd.className = 'appr-head';
-    var d = document.createElement('span'); d.className = 'appr-dot'; hd.appendChild(d);
-    // Waiting is not always an approval: it may be an open question.
-    var ht = document.createElement('span'); ht.textContent = T('waiting for your answer', '在等你回答'); hd.appendChild(ht); card.appendChild(hd);
+    var can = paneCanInput(curPane), pane = curPane;
+    var waiting = !curAgent || curAgent.status === 'waiting';
+    var card = document.createElement('div'); card.className = 'appr-card' + (can ? ' appr-live' : '') + (waiting ? '' : ' appr-manual');
+    var hd = el('div', 'appr-head');
+    var title = el('button', 'interaction-toggle', waiting ? T('Needs your reply', '需要你回应') : T('Terminal interaction', '终端交互'));
+    title.type = 'button'; title.setAttribute('aria-expanded', String(!interactionCollapsed)); title.onclick = function () {interactionCollapsed = !interactionCollapsed; renderChatInteraction();}; hd.appendChild(title);
+    if (!waiting) {var close = el('button', 'interaction-close', T('Close', '关闭')); close.type = 'button';close.onclick = function () {interactionOpen = false; pollOptions();renderChatInteraction();};hd.appendChild(close);}
+    card.appendChild(hd);
+    if (interactionCollapsed) return card;
     var opts = lastOpts || [];
-    if (!opts.length) {
-      var ph = document.createElement('div'); ph.className = 'appr-empty';
-      ph.textContent = can
-      ? T('no numbered choices here · switch to Terminal to answer', '这里没有编号选项 · 切到「终端」回答')
-      : T('no numbered choices here · answer from your phone or server', '这里没有编号选项 · 用手机或服务器回答');
-      card.appendChild(ph);
-    } else {
-      opts.forEach(function (o) {
-        var row = document.createElement('div'); row.className = 'appr-opt';
-        var k = document.createElement('span'); k.className = 'appr-key'; k.textContent = o.n; row.appendChild(k);
-        var lb = document.createElement('span'); lb.className = 'appr-label'; lb.textContent = o.label || ''; row.appendChild(lb);
-        if (can) row.onclick = function () { sendPane({text: String(o.n)}); };
-        card.appendChild(row);
-      });
+    var body = el('div', 'interaction-body');
+    opts.forEach(function (o) {
+      var row = el('button', 'appr-opt');row.type = 'button';row.disabled = !can;
+      row.appendChild(el('span', 'appr-key', String(o.n)));row.appendChild(el('span', 'appr-label', o.label || ''));
+      row.onclick = function () {
+        if (!can || curPane !== pane || !paneCanInput(pane) || Date.now() - interactionAnsweredAt < 1500 || paneComposer && paneComposer.keys && paneComposer.keys.blocked()) return;
+        interactionAnsweredAt = Date.now();
+        if (paneComposer && paneComposer.keys) paneComposer.keys.digit(o.n); else sendPane({text: String(o.n)});
+        lastOpts = []; renderChatInteraction();
+      };body.appendChild(row);
+    });
+    if (opts.length) {var toggle = el('button', 'interaction-peek', interactionPeek ? T('Hide current prompt', '收起当前提示') : T('View current prompt', '查看当前提示'));toggle.type = 'button';toggle.onclick = function () {interactionPeek = !interactionPeek;renderChatInteraction();};body.appendChild(toggle);}
+    if (interactionPeek || !opts.length) {
+      body.appendChild(el('div', 'appr-empty', T('Current terminal screen', '当前终端画面')));
+      if (lastInteraction && !interactionFailed) {
+        if (lastInteraction.text) {var pre = el('pre', 'interaction-screen', lastInteraction.text);pre.tabIndex = 0;pre.setAttribute('aria-label', T('Current terminal screen', '当前终端画面'));body.appendChild(pre);}
+        else body.appendChild(el('p', 'appr-empty', lastInteraction.unavailable ? T('This Mac does not provide the current screen. Keys remain available.', '这台 Mac 暂未提供当前画面，按键仍可使用。') : T('The current screen has no text. Use keys to continue.', '当前画面没有文字，可用按键继续操作。')));
+        if (lastInteraction.truncated) body.appendChild(el('p', 'appr-empty', T('Long screen; only its final portion is shown.', '画面较长，仅显示末尾部分。')));
+      } else {
+        var retry = el('button', 'interaction-peek', interactionFailed ? T('Prompt unavailable. Retry', '暂时无法读取提示，重试') : T('Reading current prompt…', '正在读取当前提示…'));retry.type = 'button';retry.onclick = pollOptions;body.appendChild(retry);
+      }
     }
-    if (!can) {
-      var hint = document.createElement('div'); hint.className = 'appr-hint'; hint.textContent = T('Read-only here. Ask the person who shared it to allow input, or reply from your paired phone or server.', '当前为只读。请分享者允许输入，或从已配对的手机或服务器回复。'); card.appendChild(hint);
-    }
+    card.appendChild(body);
+    var keys = el('div', 'interaction-keys');
+    [['Up', '↑'], ['Down', '↓'], ['Enter', T('Return', '回车')], ['Space', T('Space', '空格')]].forEach(function (k) {
+      var button = el('button', '', k[1]);button.type = 'button';button.disabled = !can;button.setAttribute('aria-label', k[0]);
+      button.onclick = function () {if (curPane !== pane || !paneCanInput(pane)) return;if (paneComposer && paneComposer.keys && paneComposer.keys.legacy(k[0])) return;sendPane({key: k[0]}).then(pollOptions);};keys.appendChild(button);
+    });
+    var more = el('button', '', T('More keys', '更多按键'));more.type = 'button';more.disabled = !can;more.onclick = function () {if (paneComposer && paneComposer.keys) paneComposer.keys.open();};keys.appendChild(more);
+    var type = el('button', '', T('Type reply', '输入文字'));type.type = 'button';type.disabled = !can;type.onclick = function () {if (paneComposer) paneComposer.focus();};keys.appendChild(type);card.appendChild(keys);
+    if (!can) card.appendChild(el('div', 'appr-hint', T('This conversation is read-only.', '此会话为只读。')));
     return card;
   }
 
@@ -2656,8 +2696,9 @@
     var inTerm = !$('pane').hidden && paneMode === 'term';
     var inChat = !$('chat').hidden && paneMode === 'chat';
     if (!inTerm && !inChat) return;
-    if (!curAgent || curAgent.status !== 'waiting') {
+    if ((!curAgent || curAgent.status !== 'waiting') && !(inChat && interactionOpen)) {
       cancelRead('options');
+      lastInteraction = null; interactionFailed = false; renderChatInteraction();
       if (inTerm) hideReply();
       if (lastOpts.length) { lastOpts = []; lastOptsSig = ''; if (inChat) drawChat(lastTurns); }
       return;
@@ -2674,9 +2715,19 @@
         var sig = JSON.stringify(opts); // chat: only redraw the card when options change
         if (sig !== lastOptsSig) { lastOptsSig = sig; lastOpts = opts; drawChat(lastTurns); }
       };
-      return api('/api/options?id=' + encodeURIComponent(asked), {signal: signal}).then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (j) { apply((j && j.options) ? j.options : []); }, function () { apply([]); });
-    }, 15000, function () { setConn(false); hideReply(); lastOpts = []; lastOptsSig = ''; if (paneMode === 'chat') drawChat(lastTurns); });
+      var route = inChat ? '/api/interaction?id=' : '/api/options?id=';
+      return api(route + encodeURIComponent(asked), {signal: signal}).then(function (r) {
+        if (inChat && (r.status === 404 || r.status === 501)) return api('/api/options?id=' + encodeURIComponent(asked), {signal: signal}).then(function (old) {if (!old.ok) throw new Error('prompt');return old.json();}).then(function (j) {return {text: '', options: j.options || [], unavailable: true};});
+        if (!r.ok) throw new Error('prompt');return r.json();
+      }).then(function (j) {
+        if (!current(true) || curPane !== asked) return;
+        if (inChat) {lastInteraction = j;interactionFailed = false;lastOpts = Date.now() - interactionAnsweredAt < 1500 ? [] : j.options || [];renderChatInteraction();}
+        else apply(j.options || []);
+      }, function () {
+        if (!current(true) || curPane !== asked) return;
+        if (inChat) {lastInteraction = null;interactionFailed = true;lastOpts = [];renderChatInteraction();} else apply([]);
+      });
+    }, 15000, function () { setConn(false); hideReply(); lastInteraction = null; interactionFailed = true; lastOpts = []; lastOptsSig = ''; if (paneMode === 'chat') renderChatInteraction(); });
   }
 
   function renderReply(opts) {
@@ -2721,7 +2772,7 @@
     lastOpts = []; lastOptsSig = '';
     pollOptions(); clearInterval(optTimer); optTimer = setInterval(pollOptions, 2000);
   }
-  function hideFocusChrome() { $('focus-nav').hidden = true; $('focus-ctl').hidden = true; hideReply(); $('jump').hidden = true; var cap = $('cap'); if (cap) cap.hidden = true; clearInterval(optTimer); optTimer = null; lastOpts = []; lastOptsSig = ''; }
+  function hideFocusChrome() { interactionOpen = false; lastInteraction = null; interactionFailed = false; interactionPeek = false; interactionCollapsed = false; interactionRenderSig = ''; $('chat-input').hidden = true; $('chat-interaction').hidden = true; $('focus-nav').hidden = true; $('focus-ctl').hidden = true; hideReply(); $('jump').hidden = true; var cap = $('cap'); if (cap) cap.hidden = true; clearInterval(optTimer); optTimer = null; lastOpts = []; lastOptsSig = ''; }
   // placeSettings opens the appearance panel just under the bar its button sits in. A fixed
   // top sat over the bar's own bottom row, and over the controls once a narrow bar wraps.
   function placeSettings(bar) {

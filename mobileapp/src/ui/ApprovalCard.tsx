@@ -8,30 +8,30 @@ import {Palette, StatusColor} from './theme';
 // (MOBILE §10 approval card / cardinal rule: shown ONLY for waiting). Each row is a
 // number chip + the option's own text (o.label) — the HANDOFF red line requires the
 // choice wording to come from the agent's actual prompt, and the parser already gives
-// it (GET /api/options → {n, label}). The first option is the default (Claude's ❯
-// starts on 1), so its chip is accented; the rest are neutral. Tapping a row sends just
-// that digit — Claude's numbered menus commit on the digit alone (see DetailScreen for
-// why no Enter). The card is theme-aware: a translucent red (waiting) tint over the
-// palette background, so it reads correctly in both light and dark.
+// it (GET /api/options → {n, label}). A choice sends only its digit, without Enter.
+// Rows are neutral: the first row is not necessarily the highlighted/default choice.
 export function ApprovalCard({
   options,
   pal,
   lang,
   onSend,
+  embedded = false,
+  enabled = true,
 }: {
   options: ReplyOption[];
   pal: Palette;
   lang: Lang;
   onSend: (n: number) => void;
+  embedded?: boolean;
+  enabled?: boolean;
 }) {
   if (!options.length) return null;
   const red = StatusColor.waiting;
-  const cyan = StatusColor.working;
   const neutralChip = 'rgba(128,128,128,0.18)'; // mid-gray, legible over light OR dark
   return (
-    <View style={[styles.card, {backgroundColor: red + '14', borderColor: red + '4D'}]}>
+    <View style={embedded ? undefined : [styles.card, {backgroundColor: red + '14', borderColor: red + '4D'}]}>
       {/* header tag — the waiting mark (red square + double bars) + a general prompt */}
-      <View style={styles.header}>
+      {!embedded && <View style={styles.header}>
         <View style={[styles.mark, {backgroundColor: red}]}>
           <View style={styles.bar} />
           <View style={styles.bar} />
@@ -39,14 +39,15 @@ export function ApprovalCard({
         <Text style={[styles.tag, {color: red}]}>
           {lang === 'zh' ? '需要你回应' : 'Needs your reply'}
         </Text>
-      </View>
+      </View>}
       <View style={[styles.list, {borderTopColor: pal.divider}]}>
         {options.map((o, i) => {
-          const isDefault = i === 0;
           return (
             <TouchableOpacity
               key={o.n}
-              onPress={() => onSend(o.n)}
+              disabled={!enabled}
+              accessibilityState={{disabled: !enabled}}
+              onPress={() => { if (enabled) onSend(o.n); }}
               testID={`reply-${o.n}`}
               accessibilityRole="button"
               accessibilityLabel={`${o.n}. ${o.label || (lang === 'zh' ? '选择此项' : 'Choose this option')}`}
@@ -57,12 +58,12 @@ export function ApprovalCard({
                   borderBottomColor: pal.divider,
                 },
               ]}>
-              <View style={[styles.chip, {backgroundColor: isDefault ? cyan : neutralChip}]}>
-                <Text style={[styles.chipNum, {color: isDefault ? '#fff' : pal.fg}]}>{o.n}</Text>
+              <View style={[styles.chip, {backgroundColor: neutralChip}]}>
+                <Text style={[styles.chipNum, {color: pal.fg}]}>{o.n}</Text>
               </View>
               <Text
-                style={[styles.optLabel, {color: pal.fg, fontWeight: isDefault ? '600' : '400'}]}
-                numberOfLines={2}>
+                style={[styles.optLabel, {color: pal.fg, fontWeight: '400'}]}
+                >
                 {o.label || String(o.n)}
               </Text>
             </TouchableOpacity>

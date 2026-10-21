@@ -211,6 +211,13 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
           const cursor = world.cursors.get(id);
           return json(res, 200, {id, text, cols: 80, ...(cursor ? {cursor} : {})});
         }
+        case '/api/interaction': {
+          const id = q.get('id') ?? '';
+          if (!mayReach('view', id)) return json(res, 403, {error: 'forbidden: pane not shared'});
+          const text = world.paneText(id);
+          if (text == null) return json(res, 404, {error: 'pane not found'});
+          return json(res, 200, {text, options: world.options(id), awaiting_reply: world.agents.some(a => a.pane_id === id && a.status === 'waiting'), truncated: false});
+        }
         case '/api/options': {
           const id = q.get('id') ?? '';
           if (!mayReach('view', id)) return json(res, 403, {error: 'forbidden: pane not shared'});

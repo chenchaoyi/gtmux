@@ -303,6 +303,14 @@ export interface ReplyOption {
   label: string;
 }
 
+export interface PaneInteraction {
+  text: string;
+  options: ReplyOption[];
+  awaiting_reply: boolean;
+  truncated: boolean;
+  unavailable?: boolean; // older servers: options and legacy keys remain usable
+}
+
 export interface PaneResponse {
   id: string;
   text: string;

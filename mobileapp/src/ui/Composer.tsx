@@ -50,7 +50,7 @@ import {HistoryStore, emptyStore, historyFor, loadHistory, pushHistory, removeHi
 import {demoInputHistory} from './demoData';
 import {Haptics} from '../native/haptics';
 import {MODAL_ORIENTATIONS} from './modalOrientations';
-import {useTerminalKeys, type LoadKeys, type SendKey} from './terminalKeys';
+import {useTerminalKeys, type LoadKeys, type SendKey, type TerminalKeyController} from './terminalKeys';
 import {TerminalKeyPanel, TerminalKeyFeedback} from './TerminalKeyPanel';
 
 // iOS docks the key row on the keyboard via this accessory id (so it replaces the
@@ -225,6 +225,8 @@ export const Composer = React.memo(function Composer({
   keyTarget,
   onLoadKeys,
   onSendKey,
+  keyController,
+  composeRequest,
 }: {
   pal: Palette;
   lang: Lang;
@@ -232,6 +234,8 @@ export const Composer = React.memo(function Composer({
   keyTarget?: string;
   onLoadKeys?: LoadKeys;
   onSendKey?: SendKey;
+  keyController?: TerminalKeyController;
+  composeRequest?: number;
   returnSends?: boolean; // D7: when off (default) Return = newline; send via ↑ only
   // In Demo mode the composer must NOT read or write the real input-history store: it
   // holds the actual messages you typed against your Mac, so showing them in Demo leaks
@@ -272,7 +276,14 @@ export const Composer = React.memo(function Composer({
   // the box is still untouched.
   const typed = useRef(false);
   const inputRef = useRef<TextInput>(null);
-  const terminalKeys = useTerminalKeys(keyTarget, enabled, onLoadKeys, onSendKey);
+  const ownKeys = useTerminalKeys(keyController ? undefined : keyTarget, enabled, keyController ? undefined : onLoadKeys, keyController ? undefined : onSendKey);
+  const terminalKeys = keyController ?? ownKeys;
+  useEffect(() => {
+    if (!composeRequest) return;
+    setComposing(true);
+    const timer = setTimeout(() => inputRef.current?.focus(), 50);
+    return () => clearTimeout(timer);
+  }, [composeRequest]);
   const keyBlocked = terminalKeys.busy || terminalKeys.uncertain;
   const [keysOpen, setKeysOpen] = useState(false);
   const focusAfterKeys = useRef(false);
@@ -393,8 +404,7 @@ export const Composer = React.memo(function Composer({
   };
   const pressControlKey = (key: string) => {
     if (!enabled || !onSend || terminalKeys.isBlocked()) return;
-    const event = terminalKeys.cap?.legacy_events?.[key];
-    if (event) terminalKeys.fire(event); else onSend({key});
+    if (!terminalKeys.legacy(key)) onSend({key});
     Haptics.select();
     setTappedKey(key);
     if (tappedKeyTimer.current !== null) clearTimeout(tappedKeyTimer.current);

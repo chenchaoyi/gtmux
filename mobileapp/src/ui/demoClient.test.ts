@@ -165,3 +165,12 @@ it('seeds only acts the feed actually renders', async () => {
   expect(acts.length).toBeGreaterThan(0);
   expect(toActs(acts, false)).toHaveLength(acts.length);
 });
+
+ test('a typed digit key commits the demo permission without a text submit', async () => {
+  jest.useFakeTimers();
+  const client = makeDemoClient('en');
+  try {
+    await client.sendResult('%7', {key_event: {key: '1', modifiers: []}, send_id: 'demo-digit'});
+    expect((await client.agents()).find(a => a.pane_id === '%7')?.status).toBe('working');
+  } finally {client.dispose();jest.useRealTimers();}
+});

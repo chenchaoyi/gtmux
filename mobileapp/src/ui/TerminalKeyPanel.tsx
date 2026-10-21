@@ -36,14 +36,14 @@ export function TerminalKeyFeedback({
   const words: Record<string, string> = zh
     ? {
         sent: '已发送到终端',
-        uncertain: '结果未确认，请先查看终端',
+        uncertain: '结果未确认，请先核对当前画面',
         stale: '目标或提示已变化，请核对后重新选择',
         forbidden: '此窗格不允许输入',
         failed: '按键未能发送',
       }
     : {
         sent: 'Sent to terminal',
-        uncertain: 'Result unconfirmed. Inspect the terminal first',
+        uncertain: 'Result unconfirmed. Check the current screen first',
         stale: 'Target or prompt changed. Inspect it and select again',
         forbidden: 'Input is not allowed in this pane',
         failed: 'The key could not be sent',

@@ -319,6 +319,10 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 			}
 			return tmux.CapturePaneColor(id), true
 		},
+		PaneScreen: func(id string) (string, bool) {
+			text, err := tmux.CapturePaneChecked(id)
+			return text, err == nil
+		},
 		// The supervisor's fleet view (goal/last/ask per agent) — same bytes as
 		// `gtmux digest --json`; includes native rows even with no tmux server.
 		DigestJSON: radar.DigestJSONBytes,

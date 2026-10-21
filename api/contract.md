@@ -614,19 +614,44 @@ invites one keypress to "answer" with, so this endpoint is deliberately hard to 
    set and are ordinary prose characters.
 
 A hook-less (Tier 0) agent writes no waiting marker at all, so it serves no card and the
-user replies in the terminal — the same degradation as a rich picker, never a hard failure.
+user can inspect the current screen and use explicit keys in Chat or Terminal.
 
 `options` is `[]` when nothing parses — AND when the prompt is a rich picker rather than a
 clean tap-to-reply menu: Claude Code's `AskUserQuestion` renders each option beside a preview
 panel on the same line, so the parsed labels are contaminated (an interior box rule) and
 a bare number-send can't drive that UI. Serving `[]` there means the phone shows no
-broken card; the user replies in the terminal (arrows/enter/free text) instead.
+broken card; the user sees the live prompt through `/api/interaction` and uses explicit keys or text in Chat or Terminal instead.
 
 ```
 200 {"options":[{"n":1,"label":"Yes"},{"n":2,"label":"Yes, and don't ask again"},{"n":3,"label":"No"}]}
 400 {"error":"missing id"}
 404 {"error":"pane not found"}
 ```
+
+### `GET /api/interaction?id=%N` — current terminal input context
+
+Authenticated, read-only and restricted by the same pane view scope as `/api/pane`.
+It returns only the current visible screen, never scrollback; control sequences are
+removed. Text is bounded to its final 80 lines / 16,000 Unicode characters, with
+`truncated:true` when either bound applies. `awaiting_reply` is the existing
+agent-declared ask predicate, not inferred from this text. Safe digit choices require
+that predicate and the canonical live-menu parser; unknown/rich/multi-select menus
+and truncated observations return `options:[]` and remain operable with explicit keys.
+
+```
+200 {"text":"Choose projects…","options":[],"awaiting_reply":true,"truncated":false}
+400 {"error":"missing id"}
+403 {"error":"forbidden: pane not shared"}
+404 {"error":"pane not found"}
+405 {"error":"method not allowed"}
+501 {"error":"current screen unavailable"}
+```
+
+Manual reads need no waiting marker and do not change status or input permission.
+Clients discard choices on failed reads and late results for another pane/server.
+This is a polling snapshot, not an atomic approval token. Input still uses `/api/send`
+and its existing consent, binding and result/retry contract. See
+[conversation interaction](../docs/design/session-interaction.md).
 
 ### `GET /api/theme` — the host terminal's resolved appearance (read-only)
 
