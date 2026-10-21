@@ -89,6 +89,58 @@ finishB(answer);await second;assert.equal(calls.at(-1).token,'Resumed');
 	}
 }
 
+func TestDSHNativeHookRetainsOriginForProfileCollection(t *testing.T) {
+	node, err := exec.LookPath("node")
+	if err != nil {
+		t.Skip("Node unavailable")
+	}
+	dir := t.TempDir()
+	bin := filepath.Join(dir, "hook.mjs")
+	probe := `#!/usr/bin/env node
+import fs from 'node:fs';
+fs.writeFileSync(process.env.GTMUX_TEST_SINK_OUT, JSON.stringify({
+  args: process.argv.slice(2), parent: process.ppid, pane: process.env.TMUX_PANE,
+  payload: JSON.parse(fs.readFileSync(0, 'utf8')),
+}));
+`
+	if err := os.WriteFile(bin, []byte(probe), 0700); err != nil {
+		t.Fatal(err)
+	}
+	module := filepath.Join(dir, "gtmux.mjs")
+	if err := os.WriteFile(module, []byte(dshPluginJS(bin)), 0600); err != nil {
+		t.Fatal(err)
+	}
+	script := `
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {pathToFileURL} from 'node:url';
+import {setTimeout as delay} from 'node:timers/promises';
+const {hookSink} = await import(pathToFileURL(process.argv[2]).href);
+process.env.TMUX_PANE = '%999';
+for (const client of ['', 'dst']) {
+  let dispose;
+  const extra = client ? {terminal_client: client, client_pid: process.pid, client_instance: 'synthetic'} : {};
+  const send = hookSink({on: (name, fn) => {assert.equal(name, 'dispose'); dispose = fn;}}, () => extra);
+  try {
+    send('UserPromptSubmit', {session_id: 'synthetic-session', cwd: '/synthetic', prompt: 'Inspect'});
+    for (let i = 0; i < 100 && !fs.existsSync(process.env.GTMUX_TEST_SINK_OUT); i++) await delay(20);
+    const result = JSON.parse(fs.readFileSync(process.env.GTMUX_TEST_SINK_OUT, 'utf8'));
+    assert.deepEqual(result.args, ['hook', '--agent', 'dsh', 'UserPromptSubmit']);
+    assert.equal(result.parent, process.pid, 'origin must still be the native plugin host');
+    assert.equal(result.pane, '', 'shared Web ancestry must not grant pane ownership');
+    assert.deepEqual(result.payload, {session_id: 'synthetic-session', cwd: '/synthetic', prompt: 'Inspect', ...extra});
+  } finally { dispose(); }
+  fs.unlinkSync(process.env.GTMUX_TEST_SINK_OUT);
+}
+`
+	cmd := exec.Command(node, "--input-type=module", "-", module)
+	cmd.Env = append(os.Environ(), "GTMUX_TEST_SINK_OUT="+filepath.Join(dir, "sink.json"))
+	cmd.Stdin = strings.NewReader(script)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("native ancestry contract: %v\n%s", err, out)
+	}
+}
+
 func TestDSHDoctorRepairsBothFilesWithoutOpenCodeMigration(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("DSH_HOME", filepath.Join(homeDir(), ".dsh"))

@@ -85,6 +85,12 @@ current binding, and the client verifies the response's session and agent. A clo
 pane or changed binding produces a failed read rather than borrowing another runtime.
 Native rows still require an explicit matching source session ID before a request.
 
+The shared DSH Web/dst bridge starts a direct hook child without the `--detached`
+worker flag, so native prompt/resume events can capture the actual parent chain.
+Collection stays bounded and asynchronous to DSH; Web ancestry does not grant pane
+ownership. Updating gtmux-owned plugin files does not reload a running harness.
+Missing earlier observations cannot be reconstructed from a later process tree.
+
 ## Existing integration boundaries
 
 The radar [`agentJSON`](../../internal/radar/agents.go) still carries identity and
