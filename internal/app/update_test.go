@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -317,5 +318,35 @@ func TestExplicitUpdatePinSurvivesUnresolvedLatest(t *testing.T) {
 		}, doctor: func() {}}
 	if rc := performUpdate(false, true, false, ops); rc != 0 || !installed || !notes {
 		t.Fatalf("pin rc=%d installed=%v notes=%v", rc, installed, notes)
+	}
+}
+
+func TestUpdateAppVersionUsesReplacementTarget(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("PlistBuddy is macOS-only")
+	}
+	dir := t.TempDir()
+	makeBundle := func(name, body string) string {
+		t.Helper()
+		app := filepath.Join(dir, name)
+		contents := filepath.Join(app, "Contents")
+		if err := os.MkdirAll(contents, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(contents, "Info.plist"), []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		return app
+	}
+	unknown := makeBundle("preferred", "not a plist")
+	known := makeBundle("other", `<?xml version="1.0"?><plist version="1.0"><dict><key>CFBundleShortVersionString</key><string>v1.0.140</string></dict></plist>`)
+	if got := appVersionForUpdate([]string{unknown, known}); got != "unknown" {
+		t.Fatalf("used another bundle's version: %q", got)
+	}
+	if got := appVersionForUpdate([]string{known, unknown}); got != "1.0.140" {
+		t.Fatalf("preferred bundle version: %q", got)
+	}
+	if got := appVersionForUpdate(nil); got != "" {
+		t.Fatalf("absent bundle: %q", got)
 	}
 }

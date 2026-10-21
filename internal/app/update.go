@@ -60,16 +60,7 @@ func installedAppVersion() string {
 		return ""
 	}
 	for _, app := range installedAppCandidates(state.Home(), "/Applications/Gtmux.app") {
-		plist := filepath.Join(app, "Contents", "Info.plist")
-		out, err := exec.Command("/usr/libexec/PlistBuddy", "-c", "Print :CFBundleShortVersionString", plist).Output()
-		if err != nil {
-			continue
-		}
-		// Normalize a leading "v": the app bundle's CFBundleShortVersionString carries the
-		// git tag verbatim ("v0.44.10") while the CLI's Version is v-stripped, so an
-		// un-normalized compare would read a CURRENT app as "behind" (never matching) and
-		// double-"v" it in doctor. Strip it so both sides speak the same form.
-		if v := strings.TrimPrefix(strings.TrimSpace(string(out)), "v"); v != "" {
+		if v := appBundleVersion(app); v != "" {
 			return v
 		}
 	}
@@ -79,11 +70,31 @@ func installedAppVersion() string {
 // An existing bundle with unreadable metadata is unknown, not an absent app that
 // the updater may install over. Keep doctor's historical version reader unchanged.
 func installedAppUpdateVersion() string {
-	v := installedAppVersion()
-	if v == "" && runtime.GOOS == "darwin" && len(installedAppCandidates(state.Home(), "/Applications/Gtmux.app")) > 0 {
-		return "unknown"
+	if runtime.GOOS != "darwin" {
+		return ""
 	}
-	return v
+	return appVersionForUpdate(installedAppCandidates(state.Home(), "/Applications/Gtmux.app"))
+}
+
+func appVersionForUpdate(candidates []string) string {
+	if len(candidates) == 0 {
+		return ""
+	}
+	// Version lookup must follow the same first-bundle choice as replacement.
+	// Falling back to another bundle could overwrite an unknown/newer first one.
+	if v := appBundleVersion(candidates[0]); v != "" {
+		return v
+	}
+	return "unknown"
+}
+
+func appBundleVersion(app string) string {
+	plist := filepath.Join(app, "Contents", "Info.plist")
+	out, err := exec.Command("/usr/libexec/PlistBuddy", "-c", "Print :CFBundleShortVersionString", plist).Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimPrefix(strings.TrimSpace(string(out)), "v")
 }
 
 // installedAppCandidates is the single install-location check shared by doctor,
