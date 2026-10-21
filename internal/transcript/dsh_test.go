@@ -43,6 +43,10 @@ func TestDSHCurrentPublicTranscriptIsIncrementalAndPrivateFieldsStayPrivate(t *t
 	if first[0].Prompt != "Please inspect the tests" || !strings.Contains(first[0].Response, "Inspecting now") || !strings.Contains(first[0].Response, "Tests pass") || len(first[0].Segments) != 2 || first[0].Segments[0].Steps[0].Title != "bash" {
 		t.Fatalf("public transcript=%+v", first)
 	}
+	if first[0].PromptMessageSeq == nil || *first[0].PromptMessageSeq != 2 {
+		t.Fatal("snapshot lost the native prompt sequence")
+	}
+	*first[0].PromptMessageSeq = 999
 	for _, turn := range first {
 		if strings.Contains(turn.Prompt+turn.Response, "PRIVATE") {
 			t.Fatal("private data became public")
@@ -52,6 +56,9 @@ func TestDSHCurrentPublicTranscriptIsIncrementalAndPrivateFieldsStayPrivate(t *t
 	same, err := l.load("dsh", "visible", 300)
 	if err != nil || l.dsh[file].cursor.Offset != priorOffset || len(same) != 1 {
 		t.Fatal("unchanged lookup failed")
+	}
+	if same[0].PromptMessageSeq == nil || *same[0].PromptMessageSeq != 2 {
+		t.Fatal("a caller mutated cached prompt evidence")
 	}
 	f, err := os.OpenFile(file, os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {

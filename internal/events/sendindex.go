@@ -27,7 +27,10 @@ type SendIndex struct {
 	offset int64       // bytes of it already folded in (always at a line end)
 	byPane map[string]map[string]sendEntry
 	// parsed counts the records decoded, so a test can see a call read only the tail.
-	parsed int
+	parsed       int
+	witnesses    []sendWitness
+	witnessNext  int
+	messageCache map[messageScope]messageAuthors
 }
 
 type sendEntry struct {
@@ -58,11 +61,13 @@ func (x *SendIndex) refreshLocked() {
 	fi, err := os.Stat(Path())
 	if err != nil {
 		x.file, x.offset, x.byPane = nil, 0, nil
+		x.resetWitnesses()
 		return
 	}
-	if x.file == nil || !os.SameFile(x.file, fi) || fi.Size() < x.offset || x.byPane == nil {
+	if x.file == nil || !os.SameFile(x.file, fi) || fi.Size() < x.offset || fi.Size() == x.offset && !fi.ModTime().Equal(x.file.ModTime()) || x.byPane == nil {
 		// Rotated, replaced or truncated: what was folded in no longer describes the file.
 		x.byPane = map[string]map[string]sendEntry{}
+		x.resetWitnesses()
 		x.offset = 0
 		x.foldFile(rotatedPath(), 0) // the older generation first, so newer wins
 	}
@@ -91,7 +96,7 @@ func (x *SendIndex) foldFile(path string, offset int64) int64 {
 			return offset // EOF, possibly mid-line: stop before the partial line
 		}
 		offset += int64(len(line))
-		if !bytes.Contains(line, []byte(AuditEventSend)) {
+		if !bytes.Contains(line, []byte(AuditEventSend)) && !bytes.Contains(line, []byte(`"ConversationMessage"`)) && !bytes.Contains(line, []byte(`"UserPromptSubmit"`)) {
 			continue // not a delivery; skip the decode entirely
 		}
 		var rec Record
@@ -99,6 +104,7 @@ func (x *SendIndex) foldFile(path string, offset int64) int64 {
 			continue
 		}
 		x.parsed++
+		x.keepWitness(rec)
 		if pane, head, actor, ok := landedSend(rec); ok {
 			if x.byPane[pane] == nil {
 				x.byPane[pane] = map[string]sendEntry{}

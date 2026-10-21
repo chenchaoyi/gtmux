@@ -386,6 +386,10 @@ type Step struct {
 // Turn is one user instruction and what the agent ultimately answered, with the
 // intermediate tool calls folded into Steps.
 type Turn struct {
+	// PromptMessageSeq identifies a DSH public append for server-side attribution.
+	// It is parser evidence, never a client-facing field or an input capability.
+	PromptMessageSeq *int64 `json:"-"`
+
 	SessionID string `json:"session_id,omitempty"`
 	Prompt    string `json:"prompt"`
 	// Agent is the owner of THIS turn's session. HQ can stitch Claude and Codex
