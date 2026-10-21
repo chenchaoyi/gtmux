@@ -224,6 +224,7 @@ func TestAutomaticReleaseOrdering(t *testing.T) {
 }
 
 func TestUpdateComponentDecisionsAndOutput(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
 	t.Setenv("GTMUX_VERSION", "")
 	t.Setenv("GTMUX_NO_APP", "")
 	t.Setenv("GTMUX_ACTOR", "")
@@ -301,6 +302,7 @@ func TestResolveLatestReleaseMarksFallbackAndSortsStableVersions(t *testing.T) {
 }
 
 func TestExplicitUpdatePinSurvivesUnresolvedLatest(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
 	t.Setenv("GTMUX_VERSION", "v1.0.130")
 	t.Setenv("GTMUX_NO_APP", "1")
 	installed, notes := false, false
