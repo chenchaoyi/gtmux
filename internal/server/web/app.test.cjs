@@ -60,7 +60,8 @@ function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
   const marker = "  if (document.readyState === 'loading')";
   assert.ok(source.includes(marker), 'web boot marker changed');
   const script = source.replace(marker, `
-    globalThis.__test = {copyText, clipboardAction, toolStepsEl, updateInputBar, setupFocus, drawChat, renderTileChat, mdRender, labelChrome, setupCodeBox, connStateFor, makeComposer, isHQPane, paneSessionTitle, paneToAgent, renderPanes, renderRadar,
+    var realFetchShare = fetchShare;
+    globalThis.__test = {fetchShare, enableShare: () => {fetchShare = realFetchShare;}, share: () => SHARE, pollWB, paneCanInput, copyText, clipboardAction, toolStepsEl, updateInputBar, setupFocus, drawChat, renderTileChat, mdRender, labelChrome, setupCodeBox, connStateFor, makeComposer, isHQPane, paneSessionTitle, paneToAgent, renderPanes, renderRadar,
       setupKeyboard, openConversation, pollConversation, conversationControls, readableConversation, nativeSourceLabel, nativeEvidenceLabel, launchHost,
  setExternalSettings: s => {externalSettings=s;}, show, gate, runRead, cancelReads, pollPane, pollChat, pollRadar, renderChat, tilePollChat, renderTree, treeRow, renderCmdk, cyclePane,
       onDraw: fn => {drawChat = fn;},
@@ -98,6 +99,57 @@ async function submit(h, value) {
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(prevented, true);
 }
+
+test('stale share reaches guest scope and every empty radar, then recovers on a roster poll', async () => {
+  for (const language of ['en-US', 'zh-CN']) {
+    let stale = true;
+    const h = harness(null, language);
+    h.context.fetch = async url => ({ok: true, json: async () => url.endsWith('/api/share')
+      ? {input: true, stale, panes: ['%1'], view_panes: ['%1']}
+      : []});
+    h.api.enableShare();
+    h.api.show('radar');
+    h.api.renderRadar([]); // The roster can arrive before the capability.
+    h.api.fetchShare();
+    await new Promise(resolve => setImmediate(resolve));
+    const message = language === 'zh-CN'
+      ? '分享授权已失效，请联系所有者重新授权。'
+      : 'Share access has expired. Ask the owner to grant access again.';
+    assert.equal(h.api.share().stale, true);
+    assert.equal(h.node('guest-scope').textContent, message);
+    assert.equal(h.node('radar').children[0].textContent, message);
+    h.api.renderTree([]);
+    h.api.renderCmdk('');
+    assert.equal(h.node('tree').children[0].textContent, message);
+    assert.equal(h.node('cmdk-list').children[0].textContent, message);
+    assert.equal(h.api.paneCanInput('%1'), false);
+    assert.equal(h.node('gate').hidden, true);
+    stale = false;
+    h.api.pollRadar();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(h.api.share().stale, false);
+    assert.notEqual(h.node('guest-scope').textContent, message);
+    assert.equal(h.node('radar').children[0].textContent, language === 'zh-CN'
+      ? '还没有可查看的共享 agent。' : 'No shared agents to view yet.');
+    assert.equal(h.api.paneCanInput('%1'), true);
+    stale = true;
+    h.api.pollWB();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(h.node('tree').children[0].textContent, message);
+  }
+});
+
+test('owner and ordinary empty guest scopes do not claim expired access', async () => {
+  for (const all of [true, false]) {
+    const h = harness({ok: true, json: async () => ({all, panes: [], view_panes: [], stale: all})});
+    h.api.fetchShare();
+    await new Promise(resolve => setImmediate(resolve));
+    h.api.renderRadar([]);
+    assert.equal(h.node('guest-scope').hidden, all);
+    assert.doesNotMatch(h.node('radar').children[0].textContent, /expired/);
+    if (!all) assert.doesNotMatch(h.node('radar').children[0].textContent, /start one/);
+  }
+});
 
 test('manual code uses the Mac path prefix, enrolls, and clears the code', async () => {
   const h = harness({ok: true, json: async () => ({token: 'device-token'})});

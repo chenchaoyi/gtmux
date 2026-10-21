@@ -5,6 +5,8 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
+	"io"
 	"net/http"
 	"sort"
 	"strings"
@@ -19,6 +21,10 @@ import (
 // is shown in a QR and is the only thing standing between a scanner and a device
 // token — so a leaked screenshot goes stale fast.
 const enrollCodeTTL = 5 * time.Minute
+
+// enrollBodyLimit leaves room for a code and a 40-rune device label, including
+// JSON escapes, without allowing anonymous callers to allocate unbounded bodies.
+const enrollBodyLimit = 4096
 
 // EnrolledDevice is one paired phone in the roster. It authenticates with its OWN
 // Token (never the shared master token), so a device can be revoked individually
@@ -695,11 +701,24 @@ func (s *Server) handleEnroll(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusServiceUnavailable, errBody("enrollment not configured"))
 		return
 	}
+	// Check the entire body before parsing or redeeming: a decoder can stop at a
+	// valid JSON prefix while an oversized suffix remains unread. Bound the actual
+	// stream, regardless of Content-Length (including chunked requests).
+	payload, err := io.ReadAll(http.MaxBytesReader(w, r.Body, enrollBodyLimit))
+	if err != nil {
+		var tooLarge *http.MaxBytesError
+		if errors.As(err, &tooLarge) {
+			writeJSON(w, http.StatusRequestEntityTooLarge, errBody("request too large"))
+		} else {
+			writeJSON(w, http.StatusBadRequest, errBody("invalid request"))
+		}
+		return
+	}
 	var body struct {
 		EnrollCode string `json:"enrollCode"`
 		Name       string `json:"name"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.EnrollCode == "" {
+	if err := json.Unmarshal(payload, &body); err != nil || body.EnrollCode == "" {
 		writeJSON(w, http.StatusBadRequest, errBody("invalid request"))
 		return
 	}

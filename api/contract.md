@@ -1162,8 +1162,16 @@ body: {"enrollCode":"<code>","name":"<device label>"}
 400 {"error":"invalid request"}                 // missing/garbled body
 401 {"error":"invalid or expired enroll code"}
 405 {"error":"method not allowed"}              // non-POST
+413 {"error":"request too large"}              // body exceeds 4096 bytes
+429 {"error":"too many attempts; wait a minute"}
 503 {"error":"enrollment not configured"}
 ```
+
+The complete body is limited to **4096 bytes**, including JSON escapes and whitespace,
+before parsing or redeeming a code. This limit applies to the actual stream, including
+chunked requests and requests without a reliable `Content-Length`. Oversized bodies
+return `413` without spending a code or counting a failed guess. Malformed or incomplete
+JSON (including a second JSON value) returns `400`; exactly 4096 bytes is allowed.
 
 `scope` says what the token is: `owner` for a pairing code (a new device), `guest` for a
 share link's code (that link's own token, with the panes it was given). Additive: a client
@@ -1268,6 +1276,15 @@ consent switch. All gates are server-side and authoritative.
 A guest's reply resolves from ITS OWN link scope. `input` is true only when the
 caller can actually type somewhere (consent on AND a non-empty input list). UIs
 mirror (never widen) this.
+
+The optional `stale:true` means guest pane grants belong to a previous tmux server.
+The capability request still succeeds (`200`), but the guest radar is empty and pane
+requests remain forbidden (`403`) until the owner re-grants. The lists describe only
+this link's scope, never other links or host management data. Web and mobile clients
+retain the flag and explain “Share access has expired. Ask the owner to grant access
+again.” They refresh it with roster reads so the message clears after re-granting.
+Missing/false `stale` is ordinary access, including an empty roster; `all:true` is
+owner access. Neither is an expired share. Token revocation is separately `401`.
 
 ### `GET/POST /api/share/config` — the host policy (full: master or owner device)
 

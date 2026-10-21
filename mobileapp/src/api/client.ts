@@ -71,6 +71,7 @@ export interface SendPayload {
 export interface ShareCapability {
   input: boolean; // may this caller type at all
   all?: boolean; // owner: any pane (view + input)
+  stale?: boolean; // guest grants need the owner's re-authorization after a tmux restart
   panes: string[]; // guest: input-allowed panes
   view_panes: string[]; // guest: view-allowed panes
 }
@@ -712,6 +713,7 @@ export class GtmuxClient {
     return {
       input: !!j?.input,
       all: !!j?.all,
+      stale: !!j?.stale,
       panes: Array.isArray(j?.panes) ? j.panes : [],
       view_panes: Array.isArray(j?.view_panes) ? j.view_panes : [],
     };

@@ -16,10 +16,12 @@ export const RELEASE_NOTES: ReleaseNote[] = [
     en: [
       '- HQ messages and profiles use the gtmux logo, with current HQ details available on expansion.',
       '- DeepSeek Harness avatars have more balanced white margins.',
+      '- Shared radars explain when access has expired and ask you to contact the owner for new access.',
     ],
     zh: [
       '- HQ 来信与资料头像改用 gtmux 标识，当前 HQ 信息可按需展开。',
       '- DeepSeek Harness 头像增加白色留边，与其他 Agent 的视觉比例更一致。',
+      '- 分享授权失效时，雷达会说明原因，并提示联系所有者重新授权。',
     ],
   },
   {

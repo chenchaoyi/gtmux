@@ -593,7 +593,7 @@
     ORDER.forEach(function (st) { section(LABEL[st], by[st], st === 'errored' ? 'errored' : ''); });
     section(T('Elsewhere', '不在 tmux'), natives);
     section(T('External conversations', '外部会话'), desktops);
-    if (!root.children.length) { var e = document.createElement('div'); e.className = 'group-label'; e.textContent = T('no agents yet · start one in a tmux pane', '还没有 agent · 在 tmux 的 pane 里启动一个'); root.appendChild(e); }
+    if (!root.children.length) { var e = document.createElement('div'); e.className = 'group-label'; e.textContent = emptyAgentsText(); root.appendChild(e); }
     if (selIdx >= 0) { selIdx = Math.min(selIdx, radarRows().length - 1); highlightSel(); }
   }
 
@@ -660,7 +660,7 @@
         if (!current()) return null;
         if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
         if (!r.ok) throw new Error('agents'); return r.json();
-      }).then(function (agents) { if (!agents || !current(true)) return; setConn(true); lastAgents = agents; renderRadar(agents); })
+      }).then(function (agents) { if (!agents || !current(true)) return; setConn(true); lastAgents = agents; renderRadar(agents); fetchShare(); })
         .catch(function () { if (current()) setConn(false); });
     }, 15000, function () { setConn(false); });
   }
@@ -740,7 +740,7 @@
       }).then(function (rows) {
         if (!rows || !current(true)) return;
         if (!Array.isArray(rows)) throw new Error('panes');
-        setConn(true); panesRows = rows; panesFailed = false; renderPanes();
+        setConn(true); panesRows = rows; panesFailed = false; renderPanes(); fetchShare();
       }).catch(function () { if (current()) { setConn(false); panesFailed = true; renderPanes(); } })
       ]);
     }, 15000, function () { setConn(false); panesFailed = true; renderPanes(); });
@@ -1343,19 +1343,33 @@
   // The server gate is authoritative; this only mirrors it. GET /api/share tells us,
   // for THIS caller, whether input is on and which panes are allowed (or all, for the
   // owner). We show the input bar ONLY for an allowed pane; a blocked send still 403s.
-  var SHARE = {input: false, all: false, panes: {}, viewCount: 0, typeCount: 0};
+  var SHARE = {input: false, all: false, stale: false, panes: {}, viewCount: 0, typeCount: 0};
+  function shareStaleText() {
+    return T('Share access has expired. Ask the owner to grant access again.', '分享授权已失效，请联系所有者重新授权。');
+  }
+  function emptyAgentsText() {
+    if (SHARE.known && !SHARE.all) return SHARE.stale ? shareStaleText() : T('No shared agents to view yet.', '还没有可查看的共享 agent。');
+    return T('no agents yet · start one in a tmux pane', '还没有 agent · 在 tmux 的 pane 里启动一个');
+  }
   function fetchShare() {
-    var credential = token;
-    api('/api/share').then(function (r) { return r && r.ok ? r.json() : null; }).then(function (j) {
-      if (!j || credential !== token) return;
-      SHARE = {input: !!j.input, all: !!j.all, panes: {},
-               viewCount: (j.view_panes || []).length, typeCount: (j.panes || []).length};
-      (j.panes || []).forEach(function (p) { SHARE.panes[p] = true; });
-      SHARE.known = true;
-      updateInputBar();
-      updateGuestScopeStrip();
-      updateIdentity();
-    }).catch(function () {});
+    runRead('share', function (signal) {
+      var current = currentRead('share', signal);
+      return api('/api/share', {signal: signal}).then(function (r) { return r && r.ok ? r.json() : null; }).then(function (j) {
+        if (!j || !current(true)) return;
+        var previous = JSON.stringify(SHARE);
+        SHARE = {input: !!j.input, all: !!j.all, stale: !!j.stale, panes: {},
+                 viewCount: (j.view_panes || []).length, typeCount: (j.panes || []).length};
+        (j.panes || []).forEach(function (p) { SHARE.panes[p] = true; });
+        SHARE.known = true;
+        updateInputBar();
+        updateGuestScopeStrip();
+        updateIdentity();
+        if (previous !== JSON.stringify(SHARE)) {
+          lastSig = ''; renderRadar(lastAgents); renderTree(WB.agents);
+          if (!$('cmdk').hidden) renderCmdk($('cmdk-input').value);
+        }
+      }).catch(function () {});
+    });
   }
 
   // Identity chips (WEB §11): owner and guest top bars must read differently —
@@ -1382,13 +1396,14 @@
     }
     if (SHARE.all) { el.hidden = true; return; }
     el.hidden = false;
+    if (SHARE.stale) { el.textContent = shareStaleText(); return; }
     // Both halves spelled out rather than assembled from T() fragments: the counts sit
     // INSIDE the sentence, and the two languages put them in different places.
     el.textContent = ZH
       ? '协作视图 · 访客 · 可查看 ' + SHARE.viewCount + ' 个会话 · 可输入 ' + SHARE.typeCount + ' 个。分享者可随时撤销访问。'
       : 'shared view · guest · ' + SHARE.viewCount + ' visible · ' + SHARE.typeCount + ' open for input. The person who shared the link can revoke access at any time.';
   }
-  function paneCanInput(id) { return !!id && SHARE.input && (SHARE.all || !!SHARE.panes[id]); }
+  function paneCanInput(id) { return !!id && SHARE.input && (SHARE.all || (!SHARE.stale && !!SHARE.panes[id])); }
   // setCapChip paints a ⌨可输入/👁只读 capability chip (WEB §11 — always explicit,
   // color+glyph, never an unexplained missing input box).
   function setCapChip(el, can) {
@@ -2275,7 +2290,7 @@
       }).then(function (agents) {
         if (!agents || !current(true)) return; setWbConn(true); WB.agents = agents; lastAgents = agents;
         if (WB.saved) { restoreTiles(agents); WB.saved = null; }
-        renderTree(agents);
+        renderTree(agents); fetchShare();
         // refresh each tile's header status + waiting border
         WB.tiles.forEach(function (t) { var a = byId(agents, t.id); if (a) { t.agent = a; updateTileHead(t); } });
         if (WB.surface) autoSurface(agents);
@@ -2346,7 +2361,7 @@
       var nh = document.createElement('div'); nh.className = 'tree-group'; nh.textContent = T('Elsewhere', '不在 tmux') + ' ' + natives.length; root.appendChild(nh);
       natives.forEach(function (a) { root.appendChild(treeRow(a, false)); });
     }
-    if (!root.children.length) { var e = document.createElement('div'); e.className = 'tree-group'; e.textContent = q ? T('no match', '没有匹配') : T('no agents yet · start one in tmux', '还没有 agent · 在 tmux 里启动一个'); root.appendChild(e); }
+    if (!root.children.length) { var e = document.createElement('div'); e.className = 'tree-group'; e.textContent = q ? T('no match', '没有匹配') : emptyAgentsText(); root.appendChild(e); }
   }
   function esc(s) { var d = document.createElement('span'); d.textContent = s == null ? '' : s; return d.innerHTML; }
   function treeRow(a, nested) {
@@ -2838,7 +2853,7 @@
       row.onclick = function () { pickCmdk(a); };
       list.appendChild(row);
     });
-    if (!cmdkRows.length) { var e = document.createElement('div'); e.className = 'ck-empty'; e.textContent = q ? T('no pane matches that', '没有匹配的 pane') : T('no agents yet · start one in tmux', '还没有 agent · 在 tmux 里启动一个'); list.appendChild(e); }
+    if (!cmdkRows.length) { var e = document.createElement('div'); e.className = 'ck-empty'; e.textContent = q ? T('no pane matches that', '没有匹配的 pane') : emptyAgentsText(); list.appendChild(e); }
   }
   function markCmdk() { Array.prototype.forEach.call($('cmdk-list').children, function (c, i) { c.classList.toggle('on', i === cmdkSel); }); }
   function pickCmdk(a) { closeCmdk(); var t = addTile(a); flashTile(t); maximizeTile(t); }

@@ -993,6 +993,7 @@ The 2026-09-10 investigation recorded a Mac recomputing every 1.5 seconds, pushi
 | Scenario | Behaviour |
 |---|---|
 | 0 agents | empty-state card "no coding agent running", no error |
+| stale guest grants | guest banner and empty radar explain that access expired and the owner must re-grant; keep the connection and clear the notice after a refreshed capability confirms recovery |
 | 1 waiting | lands in "needs you": red square·double bar + faint red ground + one pulse |
 | 15+ | the list scrolls; the "waiting only" filter narrows it |
 | very long task / CJK | single-line ellipsis truncation, never wraps/overflows |

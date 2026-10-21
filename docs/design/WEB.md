@@ -139,6 +139,8 @@ The Web page sends through `POST /api/send`; it does not use the CLI’s raw `/a
 
 Owners can type into panes their owner credential controls. A guest needs the share link’s input scope (input ⊆ visible), the host’s “allow collaborators to type” switch, and grants that are still current (`GrantsStale` is false). The top bar distinguishes owner and guest. The server checks authorization on requests; after revocation, new requests with that credential are rejected. This HTTP statement is not a claim about the separate CLI attach stream’s scope or shutdown timing.
 
+`GET /api/share` with `stale:true` keeps the guest connected but shows “Share access has expired. Ask the owner to grant access again.” in the scope strip and empty radar/directory. Successful roster polls refresh this capability, including recovery after re-granting. Ordinary empty guest views say there are no shared agents; only owners receive instructions to start an agent in tmux. A stale grant never becomes a token-revocation (`401`) message.
+
 ## Browser entry under a Direct path
 
 A share URL may end at `/p<port>#code=...`, with no trailing slash. The HTML establishes a same-origin document base before loading any stylesheet or script. Static resources and API requests use the same Mac prefix; root and explicit `index.html` entries are supported too. Query strings and credential fragments never enter the asset base. Existing share links do not need replacement, and guest access remains governed by server scope checks.

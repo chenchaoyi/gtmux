@@ -206,6 +206,18 @@ can still carry the master token; see the [security model](../../../docs/design/
 - **WHEN** a device POSTs a valid enroll code to `/api/enroll`
 - **THEN** it receives its own `{token, deviceId}`; an expired/unknown code returns 401
 
+#### Scenario: An enrollment body exceeds the public input limit
+
+- **WHEN** an unauthenticated caller posts more than 4096 bytes to `/api/enroll`, including whitespace or unknown fields
+- **THEN** the server bounds reads of the actual body stream and returns `413` before parsing or redeeming, regardless of `Content-Length` or chunked transfer
+- **AND** the code remains usable and the failed-guess allowance is unchanged
+
+#### Scenario: A complete enrollment fits the limit
+
+- **WHEN** a complete JSON enrollment body is at most 4096 bytes, including exactly 4096 bytes
+- **THEN** valid owner and guest codes retain their existing token and scope semantics, subject to the existing failed-guess throttle
+- **AND** malformed, incomplete or multiple JSON values return `400` without spending a code
+
 #### Scenario: Revoke a device
 
 - **WHEN** the master surface POSTs a device id to `/api/devices/revoke`
@@ -915,6 +927,13 @@ an automatic re-map could grant access to the wrong session.
 
 - **WHEN** grants were made against a different tmux server
 - **THEN** the share status reports the grants as stale and tells the owner to re-grant
+
+#### Scenario: A guest is told why the shared radar is empty
+
+- **WHEN** `GET /api/share` succeeds with `stale:true` for a guest
+- **THEN** Web and the shared phone/iPad radar SHALL retain that state and explain that share access has expired and the guest must ask the owner to grant access again
+- **AND** they SHALL keep the guest connection, distinguish this from a revoked token (`401`), and refresh the capability with roster reads so the message clears after the owner re-grants
+- **AND** owner access and ordinary empty guest rosters SHALL NOT show the expired-access message; a guest empty state SHALL NOT instruct the guest to start an agent in the owner's tmux
 
 ### Requirement: Supervisor knowledge is served to owner clients
 
