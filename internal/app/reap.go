@@ -2,7 +2,9 @@ package app
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -25,7 +27,7 @@ type reapOps struct {
 	// worktree, and once that directory is gone there is nothing left to ask.
 	mainRepo       func(wt string) string
 	killSession    func(session string) error
-	killWindow     func(pane string) error // reclaim a manual window (bare-pane reap)
+	killPane       func(pane string) error // reclaim only a verified bare pane
 	removeWorktree func(wt string, force bool) error
 	deleteBranch   func(repo, branch string, force bool) error
 }
@@ -88,14 +90,15 @@ func planAndReap(t dispatch.Task, abandon, keepBranch bool, ops reapOps) reapRes
 		record(err, "killed session "+t.Session,
 			"could not kill session "+t.Session)
 	case t.Session == "" && t.Pane != "":
-		// Bare-pane reap of a MANUAL window: kill the window, not a whole session
-		// (which could hold sibling windows the user still wants).
-		if ops.killWindow != nil {
-			err := ops.killWindow(t.Pane)
-			res.ResourceClosed = err == nil
-			record(err, "killed window "+t.Pane,
-				"could not kill window "+t.Pane)
+		// A manually created pane can share its window with another live pane.
+		// Missing identity verification is a failure, never a successful no-op.
+		err := errors.New("pane identity was not verified")
+		if ops.killPane != nil {
+			err = ops.killPane(t.Pane)
 		}
+		res.ResourceClosed = err == nil
+		record(err, "killed pane "+t.Pane,
+			"could not kill pane "+t.Pane)
 	}
 	// Never remove a worktree that may still be used by the resource we failed
 	// to close. Preserve its ledger and report the failed step for recovery.
@@ -147,33 +150,98 @@ func liveReapOps() reapOps {
 			_, err := tmux.Run("kill-session", "-t", session)
 			return err
 		},
-		killWindow: func(pane string) error {
-			_, err := tmux.Run("kill-window", "-t", pane)
-			return err
-		},
 		removeWorktree: dispatch.RemoveWorktree,
 		deleteBranch:   dispatch.DeleteBranch,
 	}
 }
 
-// reapTaskFromPane builds a synthetic reap Task for a MANUAL window (no ledger entry)
+// barePaneIdentity binds the bare-pane fallback to the tmux server, pane process,
+// and cwd observed when its worktree/branch context was derived.
+type barePaneIdentity struct {
+	serverPID string
+	pane      string
+	panePID   string
+	cwd       string
+}
+
+func readBarePaneIdentity(pane string) (barePaneIdentity, error) {
+	out, err := tmux.Run("display-message", "-p", "-t", pane,
+		"#{pid}\t#{pane_id}\t#{pane_pid}\t#{pane_current_path}\t#{pane_dead}")
+	if err != nil {
+		return barePaneIdentity{}, fmt.Errorf("target pane is no longer live: %w", err)
+	}
+	parts := strings.Split(out, "\t")
+	if len(parts) != 5 || parts[0] == "" || parts[1] != pane || parts[2] == "" || parts[3] == "" || parts[4] != "0" {
+		return barePaneIdentity{}, fmt.Errorf("target pane %s is missing or has invalid identity", pane)
+	}
+	return barePaneIdentity{parts[0], parts[1], parts[2], parts[3]}, nil
+}
+
+func killVerifiedBarePane(expected barePaneIdentity, task dispatch.Task) error {
+	current, err := readBarePaneIdentity(expected.pane)
+	if err != nil {
+		return err
+	}
+	if current != expected {
+		return fmt.Errorf("target pane %s changed identity or cwd before reap", expected.pane)
+	}
+	// The branch can change while the pane stays in the same directory. Recheck
+	// the context used by the worktree/merge gate before closing anything.
+	wt, branch, linked, ok := dispatch.WorktreeContext(current.cwd)
+	if want := barePaneTask(expected.pane, wt, branch, linked && ok); want.Worktree != task.Worktree || want.Branch != task.Branch {
+		return fmt.Errorf("target pane %s changed worktree or branch before reap", expected.pane)
+	}
+	if task.Worktree != "" {
+		// A linked worktree is a shared filesystem resource. A second pane using
+		// it must not be left running in a directory this reap removes.
+		panes, err := tmux.Run("list-panes", "-a", "-F", "#{pane_id}\t#{pane_current_path}")
+		if err != nil {
+			return fmt.Errorf("cannot verify other panes before removing worktree: %w", err)
+		}
+		for _, line := range strings.Split(panes, "\n") {
+			parts := strings.Split(line, "\t")
+			if len(parts) != 2 {
+				return errors.New("cannot verify other panes before removing worktree")
+			}
+			if parts[0] == expected.pane {
+				continue
+			}
+			rel, err := filepath.Rel(task.Worktree, parts[1])
+			if err != nil {
+				return fmt.Errorf("cannot compare pane %s with worktree: %w", parts[0], err)
+			}
+			if rel == "." || rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) && !filepath.IsAbs(rel) {
+				return fmt.Errorf("worktree is still used by pane %s", parts[0])
+			}
+		}
+	}
+	if current, err = readBarePaneIdentity(expected.pane); err != nil {
+		return err
+	} else if current != expected {
+		return fmt.Errorf("target pane %s changed identity or cwd before reap", expected.pane)
+	}
+	_, err = tmux.Run("kill-pane", "-t", expected.pane)
+	return err
+}
+
+// reapTaskFromPane builds a synthetic reap Task for a MANUAL pane (no ledger entry)
 // from just its live pane: the enclosing linked worktree + branch are reclaimed under
-// the SAME safety gate, and the window (not a session) is killed. ok is false when the
-// pane is not live. A pane not inside a linked worktree yields a window-only reclaim.
-func reapTaskFromPane(pane string) (dispatch.Task, bool) {
-	if tmux.Display(pane, "#{pane_id}") != pane {
-		return dispatch.Task{}, false // not a live pane
+// the SAME safety gate, and only that pane is killed. ok is false when the pane
+// is not live. A pane outside a linked worktree yields a pane-only reclaim.
+func reapTaskFromPane(pane string) (dispatch.Task, barePaneIdentity, bool) {
+	identity, err := readBarePaneIdentity(pane)
+	if err != nil {
+		return dispatch.Task{}, barePaneIdentity{}, false
 	}
-	cwd := tmux.Display(pane, "#{pane_current_path}")
-	wt, branch, isLinked, ok := dispatch.WorktreeContext(cwd)
+	wt, branch, isLinked, ok := dispatch.WorktreeContext(identity.cwd)
 	if !ok {
-		return dispatch.Task{Pane: pane}, true // live pane, not a git repo → window only
+		return dispatch.Task{Pane: pane}, identity, true // not a git repo → pane only
 	}
-	return barePaneTask(pane, wt, branch, isLinked), true
+	return barePaneTask(pane, wt, branch, isLinked), identity, true
 }
 
 // barePaneTask is the pure synthesis: a linked worktree is reclaimed (worktree+branch,
-// gated); otherwise (the main checkout, or a detached HEAD) only the window is killed.
+// gated); otherwise (the main checkout, or a detached HEAD) only the pane is killed.
 func barePaneTask(pane, worktree, branch string, isLinked bool) dispatch.Task {
 	if !isLinked {
 		return dispatch.Task{Pane: pane}
@@ -220,10 +288,10 @@ func cmdReap(args []string) int {
 	}
 
 	t, ok := resolveTask(target)
+	var bareIdentity barePaneIdentity
 	if !ok {
-		// Not in the ledger — if it's a live pane, reclaim a manual window from its
-		// context (M1: closes the "no dispatch" gap for hand-made windows).
-		t, ok = reapTaskFromPane(target)
+		// Not in the ledger — a live pane can be reclaimed without owning its window.
+		t, bareIdentity, ok = reapTaskFromPane(target)
 	}
 	if !ok {
 		i18n.Sae("gtmux reap: no dispatch or live pane for '"+target+"'",
@@ -260,7 +328,11 @@ func cmdReap(args []string) int {
 	}
 
 	identity := verifiedReapIdentity(t)
-	res := planAndReap(t, abandon, keepBranch, liveReapOps())
+	ops := liveReapOps()
+	if bareIdentity.pane != "" {
+		ops.killPane = func(pane string) error { return killVerifiedBarePane(bareIdentity, t) }
+	}
+	res := planAndReap(t, abandon, keepBranch, ops)
 	if res.Reaped {
 		// Journaled BEFORE the ledger entry goes: the task file is about to be the
 		// only other record of this dispatch, and it is deleted on the next line.

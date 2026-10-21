@@ -1418,12 +1418,17 @@ pane 看起来多空闲，都读作 `✗ undelivered`。`queued` 的投递不算
 回执记录任务和结果；精确绑定仍可核实时，才附带对话、绑定和位置 ID。
 
 `gtmux reap <pane|task_id>` 安全地回收一次跑完的派活。先过一道安全闸（worktree 必须
-干净、分支必须已合并），过了才杀会话、删 worktree、删掉已合并的分支；闸没过就精确报告
+干净、分支必须已合并），过了才关闭该派活创建的会话、删 worktree、删掉已合并的分支；闸没过就精确报告
 是什么挡住了，什么都不碰（`--abandon` 强行越过，`--keep-branch` 保留分支）。失败的步骤
 连同 git 自己给的原因列在 `⚠ but these steps failed` 下面，命令以非零退出。
 `--snooze [--for <dur>]` 对一个你要留着的派活消掉回收建议。被跟踪的派活看起来可以回收时，
 活着的 HQ 会收到一条 `» gtmux·reap-suggest … │ gtmux reap <id>` 唤醒。回收永远是
 建议 → 批准 → 执行，不会自动发生。
+
+没有派活记录的活 pane 用 `gtmux reap <pane>` 回收时，只关闭该 pane；同窗其他 pane 不受影响。
+执行前会重查 pane 进程和 cwd；目标消失或变化即失败。关联的 linked worktree 仍须通过干净、
+已合并的安全闸；还有其他 pane 正在使用该 worktree 时不删除它。`--keep-branch` 只保留分支，
+不会扩大关闭范围。
 
 但建议不只看「闲了多久」。台账里只有 HQ 派出去的活，你自己直接驱动的会话从来不进台账，
 它会一直显示当初那条老 task、标着已完成；以前安静半小时就够让它变成候选，gtmux 曾在同一

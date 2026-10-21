@@ -1657,14 +1657,21 @@ prove shared Codex backend exit or conversation deletion. Audit records carry ta
 settlement, plus conversation/binding/locator IDs only with exact retained live evidence.
 
 `gtmux reap <pane|task_id>` safely reclaims a finished dispatch. It runs a safety gate
-first (the worktree must be clean and the branch merged) and only then kills the session,
-removes the worktree, and deletes the merged branch; when the gate fails it reports
-exactly what blocks it and touches nothing (`--abandon` overrides, `--keep-branch` keeps
-the branch). A step that fails is named with git's own reason under `⚠ but these steps
-failed`, and the command exits non-zero. `--snooze [--for <dur>]` silences a reap
+first (the worktree must be clean and the branch merged) and only then closes a session
+created by that dispatch, removes the worktree, and deletes the merged branch. When the
+gate fails it reports exactly what blocks it and touches nothing (`--abandon` overrides,
+`--keep-branch` keeps the branch). A step that fails is named with git's own reason
+under `⚠ but these steps failed`, and the command exits non-zero.
+`--snooze [--for <dur>]` silences a reap
 suggestion for a dispatch you're keeping. When a tracked dispatch looks reclaimable, a
 live HQ gets a `» gtmux·reap-suggest … │ gtmux reap <id>` wake. Reclaim is always
 suggest → approve → execute, never automatic.
+
+For a live pane with no dispatch record, `gtmux reap <pane>` closes only that pane, even
+when another pane shares its window. It rechecks the pane's process and cwd before
+closing; a missing or changed target fails. A linked worktree still uses the clean and
+merged gate, and a second pane using that worktree blocks its removal. `--keep-branch`
+keeps the branch, but does not widen the pane being closed.
 
 A suggestion needs more than an idle pane. The ledger holds only what HQ dispatched, so a
 session you drive yourself never enters it and goes on showing the one old task it was
