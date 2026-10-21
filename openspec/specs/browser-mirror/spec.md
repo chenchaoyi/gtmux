@@ -361,3 +361,38 @@ Browser Chat SHALL render user prompts with the same markdown renderer as replie
 
 - **WHEN** a user prompt contains headings, emphasis, lists or fenced code
 - **THEN** both browser Chat surfaces display its formatting inside the user bubble without executing HTML
+
+### Requirement: Inspectable browser activity
+
+Focused Chat SHALL show activity using the phone's operation names, neutral icons and bounded previews. A delegation preview SHALL prefer its recorded purpose. A wait preview SHALL label only known millisecond settings, without implying elapsed time or completion. The group SHALL show its call count once. Each step SHALL offer a native disclosure for its recorded tool name, optional working directory, original input and source-truncation notice. Input SHALL remain plain text, independently copyable and scrollable in a bounded keyboard-focusable region. Live updates SHALL retain expansion, focus and input scroll. A borderless Collapse all action SHALL be available beside the conversation status. Compact workbench tiles SHALL retain reply-only Chat.
+
+#### Scenario: Inspect a long recorded command
+
+- **WHEN** the reader opens a command row in focused Chat
+- **THEN** its recorded command and working directory are available without expanding page width, and Copy copies the record unchanged
+- **AND** a subsequent transcript update retains the row expansion, input scroll and keyboard focus
+
+#### Scenario: Read a delegate or wait call
+
+- **WHEN** recorded parameters include a delegation purpose or an explicit millisecond wait setting
+- **THEN** the row shows a short purpose or labelled setting, while its inspector preserves the original parameters
+- **AND** unknown, oversized or partial parameters are not interpreted as a successful outcome
+
+### Requirement: Consistent browser clipboard actions
+
+Copy and Copy as quote SHALL be icon-only controls with accessible names. They SHALL remain discoverable by keyboard and touch without covering reply text. Quote SHALL only copy a blockquote. Browser copy paths SHALL share a fallback when the secure Clipboard API is absent, rejects or throws; the fallback SHALL restore focus and selection. Feedback SHALL report success only when a copy operation succeeds.
+
+#### Scenario: Copy on a plain HTTP connection
+
+- **WHEN** the browser has no secure Clipboard API
+- **THEN** Copy attempts the browser's legacy clipboard operation, preserves keyboard focus and selection, and reports its actual result
+- **AND** no message or terminal key is submitted
+
+### Requirement: Readable workbench tile controls
+
+A narrow workbench tile SHALL wrap its header controls as a group while retaining single-line mode labels, the pane identity and input capability. Header controls SHALL stay inside the tile at supported widths in both languages.
+
+#### Scenario: Resize a compact tile
+
+- **WHEN** the reader uses a 280px or 360px tile in English or Chinese
+- **THEN** Chat, Terminal and Diff remain legible without splitting words or characters, and the input-capability chip remains visible

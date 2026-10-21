@@ -616,7 +616,7 @@
       if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
       // Native controls own their activation keys; editable regions own typing.
       // Inspect ancestors too: focus can sit on a child inside a custom control.
-      if (e.target && e.target.closest && e.target.closest('button, a[href], [role="button"], [role="textbox"], [contenteditable]:not([contenteditable="false"])')) return;
+      if (e.target && e.target.closest && e.target.closest('button, summary, .step-input, a[href], [role="button"], [role="textbox"], [contenteditable]:not([contenteditable="false"])')) return;
       if (!$('cmdk').hidden) { return; } // cmdk has its own input handler
       // Keep browser/OS combinations (especially Copy) out of plain-key navigation.
       // The workbench palette is the one explicit modified page shortcut.
@@ -923,18 +923,28 @@
   // https tunnel (fine) but also over a plain `http://<lan-ip>:8765`, where the API is
   // simply absent — so the old execCommand path is the fallback, not a legacy leftover.
   function copyText(s) {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(s).catch(function () { legacyCopy(s); });
-      return;
-    }
-    legacyCopy(s);
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText)
+        return Promise.resolve(navigator.clipboard.writeText(s)).then(function () { return true; }, function () { return legacyCopy(s); });
+    } catch (e) { /* Some browsers throw before returning a promise. */ }
+    return Promise.resolve(legacyCopy(s));
   }
   function legacyCopy(s) {
+    var active = document.activeElement, selection = window.getSelection && window.getSelection();
+    var ranges = [], start = active && active.selectionStart, end = active && active.selectionEnd;
+    if (selection) for (var i = 0; i < selection.rangeCount; i++) ranges.push(selection.getRangeAt(i).cloneRange());
     var ta = document.createElement('textarea');
     ta.value = s; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
     document.body.appendChild(ta); ta.select();
-    try { document.execCommand('copy'); } catch (e) { /* nothing else to try */ }
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { /* Nothing else to try. */ }
     document.body.removeChild(ta);
+    if (active && active.isConnected) {
+      active.focus({preventScroll: true});
+      if (typeof start === 'number' && active.setSelectionRange) active.setSelectionRange(start, end);
+    }
+    if (selection && ranges.length) { selection.removeAllRanges(); ranges.forEach(function (r) { selection.addRange(r); }); }
+    return !!ok;
   }
 
   function paneRowEl(p) {
@@ -972,9 +982,10 @@
     pid.title = T('Copy ', '复制 ') + paneFocusCommand(p.pane_id);
     pid.onclick = function (e) {
       e.stopPropagation();
-      copyText(paneFocusCommand(p.pane_id));
-      pid.textContent = T('✓ copied', '✓ 已复制'); pid.classList.add('ok');
-      setTimeout(function () { pid.textContent = p.pane_id; pid.classList.remove('ok'); }, 1200);
+      copyText(paneFocusCommand(p.pane_id)).then(function (ok) {
+        pid.textContent = ok ? T('✓ copied', '✓ 已复制') : T('Copy failed', '复制失败'); pid.classList.toggle('ok', ok);
+        setTimeout(function () { pid.textContent = p.pane_id; pid.classList.remove('ok'); }, 1200);
+      });
     };
     sub.appendChild(pid);
     // No agent name here — the icon at the head of the row already says it.
@@ -1259,9 +1270,10 @@
     }
     copy.addEventListener('click', function (e) {
       e.stopPropagation();
-      copyText(pinShown);
-      copy.textContent = T('Copied', '已复制');
-      setTimeout(function () { copy.textContent = T('Copy', '复制'); }, 1200);
+      copyText(pinShown).then(function (ok) {
+        copy.textContent = ok ? T('Copied', '已复制') : T('Copy failed', '复制失败');
+        setTimeout(function () { copy.textContent = T('Copy', '复制'); }, 1200);
+      });
     });
   }
   // renderPane takes a fresh capture: the cut row, when recognised, goes to the bar and the
@@ -1877,6 +1889,9 @@
   // hover copy/quote on agent bubbles + a waiting approval card. Narrow: no rail.
   function drawChat(turns) {
     var root = $('chat'), wide = isWide() && turns.length;
+    var focused = document.activeElement && document.activeElement.getAttribute('data-chat-focus');
+    var inputScroll = {};
+    root.querySelectorAll('.step-input').forEach(function (p) { inputScroll[p.dataset.chatFocus] = [p.scrollLeft, p.scrollTop]; });
     var oldScroll = root.querySelector('.conv-scroll');
     var atBottom = !oldScroll || (oldScroll.scrollHeight - oldScroll.scrollTop - oldScroll.clientHeight < 48);
     var prevTop = oldScroll ? oldScroll.scrollTop : 0;
@@ -1896,6 +1911,10 @@
     var dot = document.createElement('span'); dot.className = 'cs-dot'; dot.style.background = COLORS[a.status] || COLORS.running; stl.appendChild(dot);
     var lb = document.createElement('span'); lb.textContent = LABEL[a.status] || a.status || ''; stl.appendChild(lb);
     stx.appendChild(stl); sr.appendChild(stx); col.appendChild(sr);
+    if (turns.some(function (t) { return (t.segments || []).some(function (s) { return s.steps && s.steps.length; }); })) {
+      var collapse = el('button', 'chat-collapse', T('Collapse all', '折叠全部'));
+      collapse.type = 'button'; collapse.dataset.chatFocus = 'collapse'; collapse.onclick = collapseAllSteps; sr.appendChild(collapse);
+    }
 
     if (!turns.length) {
       var e = document.createElement('div'); e.className = 'chat-empty';
@@ -1933,7 +1952,7 @@
           var open = !!chatExpanded[sk];
           ct.appendChild(toolStepsEl(seg.steps, open, (function (key) {
             return function () { chatExpanded[key] = !chatExpanded[key]; drawChat(lastTurns); };
-          })(sk)));
+          })(sk), sk));
         }
       });
       col.appendChild(ct);
@@ -1944,17 +1963,24 @@
     scroll.scrollTop = atBottom ? scroll.scrollHeight : prevTop;
     if (curTurnIdx >= turns.length) curTurnIdx = Math.max(0, turns.length - 1);
     if (wide) syncOutline();
+    root.querySelectorAll('[data-chat-focus]').forEach(function (node) {
+      var key = node.dataset.chatFocus, pos = inputScroll[key];
+      if (pos) { node.scrollLeft = pos[0]; node.scrollTop = pos[1]; }
+      if (key === focused) node.focus({preventScroll: true});
+    });
   }
 
   // Plain text only: tool arguments are untrusted transcript content, never markup.
-  function toolStepsEl(steps, open, onToggle) {
+  function toolStepsEl(steps, open, onToggle, stateKey) {
+    var activity = window.GtmuxActivity, lang = ZH ? 'zh' : 'en';
     var card = el('div', 'tool-steps');
     var toggle = el('button', 'steps-toggle');
     var count = T(steps.length + ' call' + (steps.length === 1 ? '' : 's'), steps.length + ' 次调用');
-    var title = T('Activity', '执行过程');
+    var title = activity.summary(steps, lang);
     toggle.type = 'button';
     toggle.setAttribute('aria-expanded', String(open));
     toggle.setAttribute('aria-label', title + ', ' + count);
+    toggle.dataset.chatFocus = 'group-' + stateKey;
     toggle.onclick = onToggle;
     var head = el('span', 'steps-heading');
     head.appendChild(el('span', 'steps-title', title));
@@ -1963,7 +1989,7 @@
     toggle.appendChild(head);
     if (!open) {
       var counts = new Map();
-      steps.forEach(function (s) { var name = s.title || 'tool'; counts.set(name, (counts.get(name) || 0) + 1); });
+      steps.forEach(function (s) { var name = activity.label(activity.operation(s), lang); counts.set(name, (counts.get(name) || 0) + 1); });
       var tools = Array.from(counts);
       var summary = tools.slice(0, 3).map(function (p) { return p[0] + (p[1] > 1 ? ' ×' + p[1] : ''); }).join(' · ')
         + (tools.length > 3 ? ' · +' + (tools.length - 3) : '');
@@ -1972,16 +1998,64 @@
     card.appendChild(toggle);
     if (open) {
       var list = el('ol', 'steps-list');
-      steps.forEach(function (s) {
+      steps.forEach(function (s, i) {
         var row = el('li', 'step-row');
-        var body = el('div', 'step-body');
-        body.appendChild(el('span', 'step-name', s.title || 'tool'));
-        if (s.detail) body.appendChild(el('span', 'step-detail', s.detail));
-        row.appendChild(body); list.appendChild(row);
+        var op = activity.operation(s), key = 'step-' + stateKey + '-' + i;
+        var details = el('details', 'step-inspect'); details.open = !!chatExpanded[key];
+        details.ontoggle = function () { if (details.isConnected) chatExpanded[key] = details.open; };
+        var summary = el('summary', 'step-toggle'); summary.dataset.chatFocus = key;
+        summary.appendChild(activityIcon(op));
+        var body = el('span', 'step-body');
+        body.appendChild(el('span', 'step-label', activity.label(op, lang)));
+        body.appendChild(el('span', 'step-detail' + (op === 'agent' || op === 'wait' ? ' step-prose' : ''), activity.preview(s, lang)));
+        summary.appendChild(body); details.appendChild(summary);
+        var inspector = el('div', 'step-inspector');
+        var meta = el('dl', 'step-meta');
+        meta.appendChild(el('dt', '', T('Tool', '工具'))); meta.appendChild(el('dd', 'step-name', s.title || 'tool'));
+        if (s.workdir) { meta.appendChild(el('dt', '', T('Working directory', '工作目录'))); meta.appendChild(el('dd', '', s.workdir)); }
+        inspector.appendChild(meta);
+        var input = s.input || s.detail;
+        if (input) {
+          var inputLabel = !s.input ? T('Recorded detail', '已记录详情')
+            : s.input_kind === 'command' ? T('Recorded command', '已记录命令')
+            : s.input_kind === 'code' ? T('Recorded code', '已记录代码')
+            : s.input_kind === 'patch' ? T('Recorded patch', '已记录补丁')
+            : s.input_kind === 'parameters' || s.input_kind === 'arguments' ? T('Recorded parameters', '已记录参数') : T('Recorded input', '已记录输入');
+          var toolbar = el('div', 'step-toolbar'); toolbar.appendChild(el('span', '', inputLabel));
+          toolbar.appendChild(clipboardAction(T('Copy', '复制'), '⧉', input, key + '-copy')); inspector.appendChild(toolbar);
+          var pre = el('pre', 'step-input', input); pre.tabIndex = 0; pre.dataset.chatFocus = key + '-input';
+          pre.setAttribute('role', 'region'); pre.setAttribute('aria-label', inputLabel); inspector.appendChild(pre);
+        }
+        if (s.details_truncated) inspector.appendChild(el('p', 'step-truncated', T('This record was truncated at the source.', '此记录已在来源处截断。')));
+        details.appendChild(inspector); row.appendChild(details); list.appendChild(row);
       });
       card.appendChild(list);
     }
     return card;
+  }
+
+  function activityIcon(operation) {
+    var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('class', 'activity-icon'); svg.setAttribute('aria-hidden', 'true');
+    var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', window.GtmuxActivity.paths[operation]); svg.appendChild(path); return svg;
+  }
+
+  // Keep glyph-only actions discoverable on touch and keyboard, with honest feedback.
+  function clipboardAction(label, glyph, text, focusKey) {
+    var wrap = el('span', 'clipboard-action'), b = el('button', '', glyph), status = el('span', 'copy-status');
+    b.type = 'button'; b.title = label; b.setAttribute('aria-label', label);
+    if (focusKey) b.dataset.chatFocus = focusKey;
+    status.setAttribute('role', 'status');
+    var pending = false;
+    b.onclick = function (e) {
+      e.stopPropagation(); if (pending) return; pending = true; b.setAttribute('aria-busy', 'true'); status.textContent = '';
+      copyText(text).then(function (ok) {
+        pending = false; b.setAttribute('aria-busy', 'false'); status.textContent = ok ? T('Copied', '已复制') : T('Copy failed', '复制失败');
+        setTimeout(function () { status.textContent = ''; }, 1800);
+      });
+    };
+    wrap.appendChild(b); wrap.appendChild(status); return wrap;
   }
 
   // ---- §03 wide-chat helpers --------------------------------------------
@@ -2014,16 +2088,12 @@
     syncOutline();
     if (scrollIt) { var el = $('cturn-' + curTurnIdx); if (el) el.scrollIntoView({block: 'start', behavior: 'smooth'}); }
   }
-  // hover floating 复制 / 引用 on an agent bubble (desktop pointer only).
+  // Quote copies a blockquote; it never submits a message.
   function bubbleActions(text) {
     var bar = document.createElement('div'); bar.className = 'bub-act';
-    var mk = function (label, fn) { var b = document.createElement('button'); b.textContent = label; b.onclick = function (e) { e.stopPropagation(); fn(); }; return b; };
-    bar.appendChild(mk(T('⧉ Copy', '⧉ 复制'), function () { copyText(text); }));
-    bar.appendChild(mk(T('❝ Quote', '❝ 引用'), function () { copyText(String(text).split('\n').map(function (l) { return '> ' + l; }).join('\n')); }));
+    bar.appendChild(clipboardAction(T('Copy', '复制'), '⧉', text));
+    bar.appendChild(clipboardAction(T('Copy as quote', '复制为引用'), '❝', String(text).split('\n').map(function (l) { return '> ' + l; }).join('\n')));
     return bar;
-  }
-  function copyText(s) {
-    try { navigator.clipboard.writeText(s); } catch (e) {}
   }
   function collapseAllSteps() { chatExpanded = {}; drawChat(lastTurns); }
   // waiting approval card — shows the agent's 1/2/3 options (from /api/options).
@@ -2383,7 +2453,7 @@
     var id = document.createElement('span'); id.className = 'tile-id'; id.textContent = t.id; head.appendChild(id);
     // input-capability chip (WEB §11): every tile head states ⌨可输入 / 👁只读
     var cap = document.createElement('span'); cap.className = 'cap-chip'; cap.hidden = true; t.capEl = cap; head.appendChild(cap);
-    var sp = document.createElement('span'); sp.className = 'th-spacer'; head.appendChild(sp);
+    var controls = document.createElement('div'); controls.className = 'tile-controls';
     var modes = document.createElement('span'); modes.className = 'tile-modes';
     // "diff" stays a developer's word in both languages, as git and every review tool use
     // it; its tooltip says what it shows.
@@ -2393,9 +2463,10 @@
       var b = document.createElement('button'); b.textContent = m[1]; b.setAttribute('data-m', m[0]); if (m[2]) b.title = m[2];
       b.onclick = function (e) { e.stopPropagation(); setTileMode(t, m[0]); }; modes.appendChild(b);
     });
-    head.appendChild(modes);
-    var max = document.createElement('button'); max.className = 'tile-btn'; max.textContent = '⤢'; max.title = T('Full screen', '全屏'); max.onclick = function (e) { e.stopPropagation(); openAgent(t.agent); }; head.appendChild(max);
-    var cl = document.createElement('button'); cl.className = 'tile-btn'; cl.textContent = '×'; cl.title = T('Close', '关闭'); cl.onclick = function (e) { e.stopPropagation(); removeTile(t); }; head.appendChild(cl);
+    controls.appendChild(modes);
+    var max = document.createElement('button'); max.className = 'tile-btn'; max.textContent = '⤢'; max.title = T('Full screen', '全屏'); max.onclick = function (e) { e.stopPropagation(); openAgent(t.agent); }; controls.appendChild(max);
+    var cl = document.createElement('button'); cl.className = 'tile-btn'; cl.textContent = '×'; cl.title = T('Close', '关闭'); cl.onclick = function (e) { e.stopPropagation(); removeTile(t); }; controls.appendChild(cl);
+    head.appendChild(controls);
     el.appendChild(head);
     var body = document.createElement('div'); body.className = 'tile-body'; t.body = body; el.appendChild(body);
     // shared-input row (web-shared-input): the SAME composer as the single-pane view,
@@ -2544,8 +2615,11 @@
   function flashBtn(b) { var o = b.textContent; b.textContent = '✓'; setTimeout(function () { b.textContent = o; }, 700); }
   function copyScreen() {
     if (!term) return;
-    var text = term.getSelection() || focusVisibleText(), done = function () { flashBtn($('copy-screen')); };
-    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done).catch(done); else done();
+    var text = term.getSelection() || focusVisibleText(), button = $('copy-screen');
+    copyText(text).then(function (ok) {
+      if (ok) flashBtn(button);
+      else { var old = button.textContent; button.textContent = T('Copy failed', '复制失败'); setTimeout(function () { button.textContent = old; }, 1800); }
+    });
   }
   function cyclePane(d) {
     var panes = lastAgents.filter(hasPane);
