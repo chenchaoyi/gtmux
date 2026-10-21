@@ -316,7 +316,10 @@ First install is silent. Before the environment check replaces its launch marker
 the release-note store migrates that marker as the previous version when there is no
 acknowledgement yet. Closing successfully read notes acknowledges the running app;
 a failed/timed-out/invalid read does not. Downgrading does not lower the acknowledgement.
-Automatic-read failure is silent and can be retried through the permanent entry.
+Automatic-read failure is silent and preserves the unread version. A later menu
+opening retries, at most once per minute and with no overlapping reads or background
+retry timer. A successful read is presented once per process; manual history takes
+precedence over subsequent automatic attempts. The permanent entry also provides Retry.
 A response arriving after the menu closes waits for the next opening; hidden
 background launches never activate this window. Cached
 bilingual notes remain readable offline and react to language changes without fetching.

@@ -1294,6 +1294,10 @@ version before the environment check replaces that marker.
 #### Scenario: Read fails or is superseded
 - **WHEN** the CLI times out, fails or returns invalid version/schema data
 - **THEN** acknowledgement is unchanged and manual reading provides Retry
+- **AND** a later menu opening retries a failed automatic read at most once per minute,
+  without overlapping reads or a background retry timer
+- **AND** a successful automatic read is offered once per process; opening manual history
+  suppresses further automatic attempts
 - **AND** a superseded automatic reply cannot replace a manual history request
 
 #### Scenario: Reopen notes offline

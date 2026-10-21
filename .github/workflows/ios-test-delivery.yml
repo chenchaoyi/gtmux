@@ -34,6 +34,7 @@ jobs:
     outputs:
       commit: ${{ steps.release.outputs.commit }}
       version: ${{ steps.release.outputs.version }}
+      build_required: ${{ steps.scope.outputs.build_required }}
     steps:
       - name: Require reviewed setup and main workflow
         env:
@@ -79,9 +80,26 @@ jobs:
           echo "commit=$sha" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo 'Exact main commit validated; main CI passed.'
+      - name: Skip release packages with unchanged iOS inputs
+        id: scope
+        env:
+          PURPOSE: ${{ inputs.purpose }}
+          TAG: ${{ inputs.release_tag }}
+          COMMIT: ${{ steps.release.outputs.commit }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          releases="$RUNNER_TEMP/delivery-ref/releases.json"
+          if [[ "$PURPOSE" == release-test ]]; then
+            gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" > "$releases"
+          else
+            echo '[]' > "$releases"
+          fi
+          python3 mobileapp/scripts/delivery-scope.py --purpose "$PURPOSE" --tag "$TAG" --commit "$COMMIT" --releases "$releases"
 
   delivery:
     needs: trusted-source
+    if: needs.trusted-source.outputs.build_required == 'true'
     runs-on: macos-latest
     timeout-minutes: 90
     environment: ios-test-delivery

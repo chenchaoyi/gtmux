@@ -10,8 +10,8 @@ does not require the Mac to stay online or the phone to connect through gtmux.
 
 ## 1. Wireless first, installation link as fallback
 
-- CLI/Mac-only changes do not automatically require a new mobile package. Inspect
-  the mobile changes and API compatibility; follow the user's requested scope.
+- CLI/Mac-only changes do not require a new mobile package. A generic release/install
+  request does not ask for a phone rebuild when only version stamps changed.
 - Check for a reachable, previously paired phone on the network. If available,
   install wirelessly and check its installed version. Otherwise publish an Ad Hoc
   IPA and send the installation link. Do not ask the user to choose each time.
@@ -36,6 +36,21 @@ It is **disabled until setup** (`IOS_TEST_DELIVERY_ENABLED=true`). Merging the
 workflow does not migrate credentials, provision devices, publish a package or
 submit an App Store build. Until the hosted path has passed a real run, use the
 local fallback below.
+
+For `release-test`, the trusted-source job compares the exact release commit with
+the nearest earlier published stable release in the official latest-100 release list.
+It checks tracked iOS build inputs, including `App.tsx`, runtime JS, bundled notes,
+dependencies, assets and native iOS files. Generated `src/version.ts` and only the
+`MARKETING_VERSION` values in Xcode projects are ignored, along with Android,
+tests, documentation and delivery tooling. Unknown mobile input paths require a
+build. No relevant change skips the native job before environment approval,
+signing, upload or installation; the summary records the baseline and reason.
+Missing Git history or an invalid baseline stops the workflow. No earlier published
+release in the bounded list conservatively requires a build. This is a source-scope
+comparison, not a record of which version a tester installed or whether an earlier
+phone delivery completed. Check those separately. An explicitly requested UI preview
+can still build the validated main commit without a release delta. Apply the same
+comparison before starting a local fallback build.
 
 ### One-time operator setup (requires review)
 

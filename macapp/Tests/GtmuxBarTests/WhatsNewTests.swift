@@ -94,6 +94,57 @@ final class WhatsNewTests: XCTestCase {
         }
     }
 
+    @MainActor func testAutomaticFailureRecoversOnLaterMenuOpeningWithoutAdvancingSeenOrRepeatingSuccess() async {
+        let json = receipt()
+        for output in [(Int32(1), ""), (Int32(-2), ""), (Int32(0), "{}") ] {
+            let prefs = defaults(); prefs.set("4.0.1", forKey: WhatsNewStore.seenKey)
+            var date = Date(timeIntervalSince1970: 1_000), calls = 0, presentations = 0
+            let model = WhatsNewStore(defaults: prefs, version: "4.0.3", now: { date }, run: { _ in
+                calls += 1
+                return calls == 1 ? (output.0, output.1, "") : (0, json, "")
+            })
+            model.autoCheck { presentations += 1 }; await settle(model)
+            XCTAssertTrue(model.failed)
+            XCTAssertEqual(prefs.string(forKey: WhatsNewStore.seenKey), "4.0.1")
+            date.addTimeInterval(59)
+            model.autoCheck { presentations += 1 }
+            XCTAssertEqual(calls, 1)
+            date.addTimeInterval(1)
+            model.autoCheck { presentations += 1 }; await settle(model)
+            XCTAssertFalse(model.failed)
+            XCTAssertEqual(calls, 2); XCTAssertEqual(presentations, 1)
+            XCTAssertEqual(model.entries.map(\.version), ["4.0.3", "4.0.2"])
+            XCTAssertEqual(prefs.string(forKey: WhatsNewStore.seenKey), "4.0.1")
+            date.addTimeInterval(60)
+            model.autoCheck { presentations += 1 }
+            XCTAssertEqual(calls, 2); XCTAssertEqual(presentations, 1)
+            model.acknowledge()
+            XCTAssertEqual(prefs.string(forKey: WhatsNewStore.seenKey), "4.0.3")
+        }
+    }
+
+    @MainActor func testAutomaticReadsDoNotOverlapAndManualHistoryCancelsFutureAutomaticRetry() async {
+        let prefs = defaults(); prefs.set("4.0.1", forKey: WhatsNewStore.seenKey)
+        let started = expectation(description: "automatic read started")
+        let gate = DispatchSemaphore(value: 0), json = receipt()
+        var date = Date(timeIntervalSince1970: 1_000), calls = 0
+        let model = WhatsNewStore(defaults: prefs, version: "4.0.3", now: { date }, run: { _ in
+            calls += 1
+            if calls == 1 { started.fulfill(); _ = gate.wait(timeout: .now() + 3); return (1, "", "") }
+            return (0, json, "")
+        })
+        model.autoCheck { XCTFail("failed read presented") }
+        await fulfillment(of: [started], timeout: 2)
+        date.addTimeInterval(60)
+        model.autoCheck { XCTFail("overlapping read") }
+        XCTAssertEqual(calls, 1)
+        gate.signal(); await settle(model)
+        model.showHistory(); await settle(model)
+        date.addTimeInterval(60)
+        model.autoCheck { XCTFail("manual history must not be replaced by automatic notes") }
+        XCTAssertEqual(calls, 2); XCTAssertEqual(model.scope, .history)
+    }
+
     @MainActor func testNoUserNotesIsQuietButMissingOlderHistoryIsDisclosed() async {
         let empty = receipt([])
         let prefs = defaults(); prefs.set("4.0.1", forKey: WhatsNewStore.seenKey)
