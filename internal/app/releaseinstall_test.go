@@ -70,13 +70,17 @@ func TestNativeReleaseInstallTrustBoundary(t *testing.T) {
 		name                                                    string
 		badChecksum, tampered, unavailable, app, appUnavailable bool
 		wantErr                                                 bool
+		appTimeout, appReplaceFailed, appActivateFailed         bool
 	}{
 		{name: "verified mirror archive"},
 		{name: "tampered mirror archive", tampered: true, wantErr: true},
 		{name: "malicious script as checksum", badChecksum: true, wantErr: true},
 		{name: "no authoritative checksum", unavailable: true, wantErr: true},
 		{name: "official app", app: true},
-		{name: "app unavailable cannot fall back to mirror", app: true, appUnavailable: true, wantErr: true},
+		{name: "app timeout", app: true, appTimeout: true},
+		{name: "app replace failure", app: true, appReplaceFailed: true},
+		{name: "app activation failure", app: true, appActivateFailed: true},
+		{name: "app unavailable cannot fall back to mirror", app: true, appUnavailable: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.app && runtime.GOOS != "darwin" {
@@ -95,7 +99,13 @@ func TestNativeReleaseInstallTrustBoundary(t *testing.T) {
 			appActivated := false
 			x := releaseInstaller{repo: "chenchaoyi/gtmux", version: "v1.2.3", platform: "darwin", arch: "arm64", binDir: binDir,
 				appDir: filepath.Join(dir, "Applications"), mirror: "ghproxy", cliOnly: !tc.app,
-				activateApp: func(target string) error { appActivated = true; return nil },
+				activateApp: func(target string) error {
+					appActivated = true
+					if tc.appActivateFailed {
+						return fmt.Errorf("injected activation failure")
+					}
+					return nil
+				},
 				client: &http.Client{Transport: releaseRoundTrip(func(r *http.Request) (*http.Response, error) {
 					requested = append(requested, r.URL.String())
 					status, data := 200, []byte(nil)
@@ -117,8 +127,14 @@ func TestNativeReleaseInstallTrustBoundary(t *testing.T) {
 							data = []byte("#!/bin/bash\n# gtmux\necho malicious")
 						}
 					case strings.HasSuffix(r.URL.Path, ".zip"):
+						if data, err := os.ReadFile(binary); err != nil || string(data) != "xxxxx" {
+							t.Fatalf("app attempted before verified CLI replacement: %q %v", data, err)
+						}
 						if r.URL.Host != "github.com" {
 							t.Fatal("app requested from a proxy")
+						}
+						if tc.appTimeout {
+							return nil, context.DeadlineExceeded
 						}
 						if tc.appUnavailable {
 							status = 503
@@ -131,7 +147,11 @@ func TestNativeReleaseInstallTrustBoundary(t *testing.T) {
 					return &http.Response{StatusCode: status, Header: make(http.Header), Body: io.NopCloser(bytes.NewReader(data)), Request: r}, nil
 				})},
 			}
-			err := x.install()
+			if tc.appReplaceFailed {
+				x.replaceApp = func(string, string) error { return fmt.Errorf("injected replacement failure") }
+			}
+
+			result, err := x.install()
 			if (err != nil) != tc.wantErr {
 				t.Fatalf("install=%v wantErr=%v", err, tc.wantErr)
 			}
@@ -140,8 +160,11 @@ func TestNativeReleaseInstallTrustBoundary(t *testing.T) {
 				t.Fatal(err)
 			}
 			want := "xxxxx"
-			if tc.wantErr {
+			if tc.wantErr && !tc.appUnavailable {
 				want = "old"
+			}
+			if (tc.appUnavailable || tc.appTimeout || tc.appReplaceFailed || tc.appActivateFailed) && (!result.CLIInstalled || result.AppInstalled != tc.appActivateFailed || result.AppError == nil) {
+				t.Fatalf("lost partial success: %+v", result)
 			}
 			if string(data) != want {
 				t.Fatalf("installed bytes %q want %q", data, want)
@@ -152,7 +175,7 @@ func TestNativeReleaseInstallTrustBoundary(t *testing.T) {
 					t.Fatalf("binary mode=%v", fi.Mode())
 				}
 			}
-			if appActivated != (tc.app && !tc.wantErr) {
+			if appActivated != (tc.app && !tc.wantErr && !tc.appUnavailable && !tc.appTimeout && !tc.appReplaceFailed) {
 				t.Fatalf("app activated=%v", appActivated)
 			}
 			if (tc.badChecksum || tc.unavailable) && len(requested) != 1 {
@@ -273,5 +296,81 @@ func TestAppLoginPlistHasNoKeepAlive(t *testing.T) {
 	}
 	if got.Label != menubarBundleID || !got.RunAtLoad || got.KeepAlive || len(got.ProgramArguments) != 1 || got.ProgramArguments[0] != filepath.Join(target, "Contents", "MacOS", "GtmuxBar") {
 		t.Fatalf("login contract changed: %+v", got)
+	}
+}
+
+// Exercise selection at the actual filesystem installer, rather than only its JSON.
+func TestReleaseInstallerComponentSelection(t *testing.T) {
+	for _, tc := range []struct {
+		cli, app                 string
+		pinned, wantCLI, wantApp bool
+	}{
+		{"1.0.144", "1.0.144", false, false, false},
+		{"1.0.143", "1.0.143", false, false, false},
+		{"1.0.144", "1.0.140", false, false, true},
+		{"1.0.140", "1.0.144", false, true, false},
+		{"dev", "1.0.140", false, false, true},
+		{"1.0.140", "unknown", false, true, false},
+		{"1.0.140", "", false, true, true},
+		{"1.0.144", "1.0.144", true, true, true},
+	} {
+		t.Run(tc.cli+"/"+tc.app+fmt.Sprint(tc.pinned), func(t *testing.T) {
+			dir := t.TempDir()
+			binDir := filepath.Join(dir, "bin")
+			if err := os.MkdirAll(binDir, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			binary := filepath.Join(binDir, "gtmux")
+			if err := os.WriteFile(binary, []byte("old"), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			archive := releaseTar(t, tar.Header{Name: "gtmux", Mode: 0o755, Size: 5, Typeflag: tar.TypeReg})
+			appRequested := false
+			x := releaseInstaller{version: "v1.0.143", repo: "owner/repo", platform: "darwin", arch: "arm64", binDir: binDir, appDir: filepath.Join(dir, "apps"), mirror: "github",
+				client: &http.Client{Transport: releaseRoundTrip(func(r *http.Request) (*http.Response, error) {
+					status, data := 200, archive
+					switch {
+					case strings.HasSuffix(r.URL.Path, "SHASUMS256.txt"):
+						data = []byte(fmt.Sprintf("%x  gtmux-1.0.143-darwin-arm64.tar.gz\n", sha256.Sum256(archive)))
+					case strings.HasSuffix(r.URL.Path, ".zip"):
+						appRequested = true
+						status = 404
+						data = nil
+					}
+					return &http.Response{StatusCode: status, Header: make(http.Header), Body: io.NopCloser(bytes.NewReader(data)), Request: r}, nil
+				})}}
+			x.selectComponents(tc.cli, tc.app, tc.pinned)
+			result, err := x.install()
+			if err != nil || result.CLIInstalled != tc.wantCLI || appRequested != tc.wantApp || (result.AppError != nil) != tc.wantApp {
+				t.Fatalf("result=%+v err=%v appRequested=%v", result, err, appRequested)
+			}
+			got, err := os.ReadFile(binary)
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := "old"
+			if tc.wantCLI {
+				want = "xxxxx"
+			}
+			if string(got) != want {
+				t.Fatalf("CLI bytes=%q want=%q", got, want)
+			}
+		})
+	}
+}
+
+func TestReportPartialInstallPreservesComponentFacts(t *testing.T) {
+	for _, installed := range []bool{false, true} {
+		var rc int
+		out := captureStderr(t, func() {
+			rc = reportReleaseInstall(releaseInstallResult{CLIInstalled: true, AppInstalled: installed, AppError: fmt.Errorf("injected failure")}, nil)
+		})
+		want := "menu-bar app not installed"
+		if installed {
+			want = "menu-bar app installed, activation failed"
+		}
+		if rc != partialUpdateExit || !strings.Contains(out, "CLI installed") || !strings.Contains(out, want) {
+			t.Fatalf("partial rc=%d output=%s", rc, out)
+		}
 	}
 }

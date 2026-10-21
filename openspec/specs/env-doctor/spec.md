@@ -357,7 +357,7 @@ install already succeeded, and an error about it reads as though the update itse
 A release whose author wrote no user-facing note SHALL contribute nothing rather than
 having one invented for it.
 After a successful install, `gtmux update` SHALL print a localized reminder to run
-`gtmux doctor` to check the local setup. `--check` and failed installs SHALL NOT
+`gtmux doctor` to check the local setup. `--check` and attempts without a successful CLI install SHALL NOT
 print that reminder; update SHALL NOT run the full doctor probe automatically.
 
 #### Scenario: Several versions crossed
@@ -837,3 +837,49 @@ Doctor SHALL check the current owned Cordis module and exact launch overlay, rat
 
 - **WHEN** an overlay contains the plugin id but does not match the generated configuration
 - **THEN** doctor reports repair needed rather than a healthy integration
+
+### Requirement: Self-update selects components without implicit downgrades
+
+Automatic update checks and the local installer SHALL compare CLI and installed app
+versions separately, reusing the shared numeric version ordering. They SHALL select
+only a strictly greater stable numeric version for each existing component. Unknown
+versions SHALL remain untouched; a prerelease or development suffix SHALL keep its
+numeric baseline, so the equal stable triple does not replace it. The existing explicit
+`GTMUX_VERSION` pin SHALL retain its reinstall/downgrade semantics.
+Checks SHALL retain `current`, `latest`, `update` and add `cli_update`, `app_update`
+and source information. A cached fallback SHALL identify possible index lag; absence
+of a newer cached candidate SHALL NOT establish that GitHub's latest is installed.
+
+#### Scenario: Cached index behind installed components
+
+- **WHEN** GitHub lookup fails and the fallback only lists an older release
+- **THEN** neither check nor installation offers to downgrade either component
+- **AND** the result identifies the cached source and possible lag
+
+#### Scenario: CLI ahead while app behind
+
+- **WHEN** the selected release is older than the CLI but newer than the app
+- **THEN** the app remains eligible and the CLI is left untouched
+
+### Requirement: Optional app failure preserves CLI installation facts
+
+The local installer SHALL verify and replace a selected CLI before attempting the
+optional app. It SHALL retain authoritative checksum verification, direct GitHub app
+transport, archive validation and app rollback. App download, replacement or activation
+failure SHALL preserve the CLI result and report both component outcomes. Exit 3 SHALL
+mean the app step is incomplete; exit 1 SHALL mean a required installation step failed.
+Release notes SHALL cover only components that were installed, including CLI success
+before app failure. Only a replaced CLI SHALL trigger service refresh and the CLI's
+post-update check. The menu bar SHALL present exit 3 as an incomplete update with retry,
+retaining the component receipt even when release notes follow it.
+
+#### Scenario: App download or replacement fails after CLI success
+
+- **WHEN** the CLI is installed but the app cannot be downloaded or replaced
+- **THEN** CLI bytes and their success receipt remain, notes remain available and exit is 3
+- **AND** the app is not reported as installed
+
+#### Scenario: App activation fails after replacement
+
+- **WHEN** app replacement succeeds but activation fails
+- **THEN** the receipt distinguishes installed files from failed activation and offers retry

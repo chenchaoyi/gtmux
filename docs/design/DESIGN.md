@@ -298,6 +298,13 @@ The standard macOS settings grid (labels right-aligned, controls left-aligned). 
 - Global hotkey: recordable (default ⌘⌥G).
 - Notifications: toggle (alert when an agent starts waiting on you / finishes).
 
+### Incomplete updates
+
+The updater preserves CLI and app outcomes separately. Exit 3 from the CLI means
+**Update incomplete**, with retry and the component receipt retained even when notes
+follow it. A cached fallback without a newer candidate is inconclusive, not proof
+that the latest release is installed.
+
 ### What's new after an upgrade
 
 The menu-bar app follows the phone's release-note interaction: a compact, resizable

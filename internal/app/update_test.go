@@ -83,11 +83,15 @@ func TestUpdateCheckPayload(t *testing.T) {
 		wantUpdate       bool
 		wantErr          bool
 	}{
-		{"0.12.1", "0.12.1", "0.12.2", true, false},  // both behind → update
-		{"0.12.1", "0.12.1", "0.12.1", false, false}, // both current → no update
-		{"0.12.1", "0.12.1", "", false, true},        // API unreachable → no update, error set
-		{"0.12.2", "0.12.1", "0.12.2", true, false},  // CLI current, APP behind → update (the fix)
-		{"0.12.2", "", "0.12.2", false, false},       // CLI current, no app installed → no update
+		{"1.0.143", "1.0.143", "1.0.135", false, false}, // stale index must not downgrade either component
+		{"1.0.143", "1.0.144", "1.0.143", false, false}, // app ahead of stable must stay ahead
+		{"0.12.1", "0.12.1", "0.12.2", true, false},     // both behind → update
+		{"0.12.1", "0.12.1", "0.12.1", false, false},    // both current → no update
+		{"0.12.1", "0.12.1", "", false, true},           // API unreachable → no update, error set
+		{"0.12.2", "0.12.1", "0.12.2", true, false},     // CLI current, APP behind → update (the fix)
+		{"0.12.3", "0.12.1", "0.12.2", true, false},     // CLI ahead, app still behind
+		{"0.12.1", "0.12.3", "0.12.2", true, false},     // app ahead, CLI still behind
+		{"0.12.2", "", "0.12.2", false, false},          // CLI current, no app installed → no update
 	}
 	for _, c := range cases {
 		got := updateCheckPayload(c.cur, c.app, c.latest)
@@ -196,5 +200,122 @@ func TestUpdateRestartsTheDirectTunnelClientToo(t *testing.T) {
 				t.Fatalf("restarted inactive service: %v", kicked)
 			}
 		})
+	}
+}
+
+func TestAutomaticReleaseOrdering(t *testing.T) {
+	for _, tc := range []struct {
+		target, current string
+		want            bool
+	}{
+		{"1.0.135", "1.0.143", false}, {"1.0.143", "1.0.143", false},
+		{"v1.0.144", "v1.0.143", true}, {"1.1.0", "1.0.999", true},
+		{"1.0.143", "1.0.143-rc.1", false}, {"1.0.144", "1.0.143-2-gabc", true},
+		{"1.0.144-rc.1", "1.0.143", false}, {"1.0.144+build", "1.0.143", true},
+		{"1.0.144", "dev", false}, {"1.0.144", "unknown", false},
+		{"1.0.144", "", false}, {"garbage", "1.0.143", false},
+		{"1.0.144", "1.0", false},
+	} {
+		if got := newerRelease(tc.target, tc.current); got != tc.want {
+			t.Errorf("newerRelease(%q,%q)=%v, want %v", tc.target, tc.current, got, tc.want)
+		}
+	}
+}
+
+func TestUpdateComponentDecisionsAndOutput(t *testing.T) {
+	t.Setenv("GTMUX_VERSION", "")
+	t.Setenv("GTMUX_NO_APP", "")
+	t.Setenv("GTMUX_ACTOR", "")
+	for _, tc := range []struct {
+		name, cli, app, tag, source                          string
+		cliOnly, check, json                                 bool
+		installRC, wantRC                                    int
+		wantCLI, wantApp, wantInstall, wantNotes, wantDoctor bool
+	}{
+		{name: "stale check", cli: "1.0.143", app: "1.0.143", tag: "v1.0.135", source: "jsdelivr", check: true, json: true},
+		{name: "stale install", cli: "1.0.143", app: "1.0.143", tag: "v1.0.135", source: "jsdelivr"},
+		{name: "equal", cli: "1.0.143", app: "1.0.143", tag: "v1.0.143"},
+		{name: "CLI ahead app behind", cli: "1.0.144", app: "1.0.140", tag: "v1.0.143", wantApp: true, wantInstall: true, wantNotes: true},
+		{name: "app ahead CLI behind", cli: "1.0.140", app: "1.0.144", tag: "v1.0.143", wantCLI: true, wantInstall: true, wantNotes: true, wantDoctor: true},
+		{name: "CLI only ignores app", cli: "1.0.143", app: "1.0.140", tag: "v1.0.143", cliOnly: true, check: true, json: true},
+		{name: "both behind", cli: "1.0.140", app: "1.0.140", tag: "v1.0.143", wantCLI: true, wantApp: true, wantInstall: true, wantNotes: true, wantDoctor: true},
+		{name: "CLI installed app failed", cli: "1.0.140", app: "1.0.140", tag: "v1.0.143", installRC: 3, wantRC: 3, wantCLI: true, wantApp: true, wantInstall: true, wantNotes: true, wantDoctor: true},
+		{name: "app-only failed", cli: "1.0.144", app: "1.0.140", tag: "v1.0.143", installRC: 3, wantRC: 3, wantApp: true, wantInstall: true},
+		{name: "CLI failed", cli: "1.0.140", app: "1.0.140", tag: "v1.0.143", installRC: 1, wantRC: 1, wantCLI: true, wantApp: true, wantInstall: true},
+		{name: "unknown CLI known app", cli: "dev", app: "1.0.140", tag: "v1.0.143", wantApp: true, wantInstall: true, wantNotes: true},
+		{name: "unknown both", cli: "dev", app: "unknown", tag: "v1.0.143"},
+		{name: "unresolved", cli: "1.0.140", wantRC: 1},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			installed, notes, doctor := false, false, false
+			ops := updateOperations{current: tc.cli, appVersion: func() string { return tc.app },
+				latest: func() latestRelease { return latestRelease{tc.tag, tc.source} },
+				install: func(cliOnly bool, tag string) (releaseInstallResult, int) {
+					installed = true
+					if cliOnly != tc.cliOnly || tag != tc.tag {
+						t.Fatalf("install args %v %s", cliOnly, tag)
+					}
+					return releaseInstallResult{CLIInstalled: tc.wantCLI && tc.installRC != 1, AppInstalled: tc.wantApp && tc.installRC == 0}, tc.installRC
+				},
+				changes: func(from, to string) { notes = true }, doctor: func() { doctor = true }}
+			var rc int
+			var stderr string
+			stdout := captureStdout(t, func() { stderr = captureStderr(t, func() { rc = performUpdate(tc.check, tc.cliOnly, tc.json, ops) }) })
+			if rc != tc.wantRC || installed != tc.wantInstall || notes != tc.wantNotes || doctor != tc.wantDoctor {
+				t.Fatalf("rc=%d install=%v notes=%v doctor=%v; stdout=%s stderr=%s", rc, installed, notes, doctor, stdout, stderr)
+			}
+			if tc.json {
+				var got updateCheckJSON
+				if err := json.Unmarshal([]byte(stdout), &got); err != nil {
+					t.Fatal(err)
+				}
+				if got.Update != (tc.wantCLI || tc.wantApp) || got.CLIUpdate != tc.wantCLI || got.AppUpdate != tc.wantApp {
+					t.Fatalf("JSON component decision: %+v", got)
+				}
+				if tc.source == "jsdelivr" && (got.Source != "jsdelivr" || got.Warning == "" || got.Error == "") {
+					t.Fatalf("stale index claimed current: %+v", got)
+				}
+			} else if !tc.wantInstall && strings.Contains(stdout, "Updating") {
+				t.Fatalf("false install claim: %s", stdout)
+			}
+			if tc.source == "jsdelivr" && !tc.json && !strings.Contains(stderr, "may be behind") {
+				t.Fatalf("no stale-index warning: %s", stderr)
+			}
+		})
+	}
+}
+
+func TestResolveLatestReleaseMarksFallbackAndSortsStableVersions(t *testing.T) {
+	calls := 0
+	got := resolveLatestRelease(func(url string, _ time.Duration) []byte {
+		calls++
+		if strings.Contains(url, "api.github.com") {
+			return []byte(`{"message":"rate limited"}`)
+		}
+		return []byte(`{"versions":[{"version":"1.0.130"},{"version":"1.0.144-rc.1"},{"version":"1.0.135"},{"version":"bad"}]}`)
+	})
+	if calls != 2 || got.Tag != "v1.0.135" || got.Source != "jsdelivr" {
+		t.Fatalf("fallback=%+v calls=%d", got, calls)
+	}
+}
+
+func TestExplicitUpdatePinSurvivesUnresolvedLatest(t *testing.T) {
+	t.Setenv("GTMUX_VERSION", "v1.0.130")
+	t.Setenv("GTMUX_NO_APP", "1")
+	installed, notes := false, false
+	ops := updateOperations{current: "1.0.143", appVersion: func() string { t.Fatal("NO_APP read app version"); return "" },
+		latest: func() latestRelease { return latestRelease{} },
+		install: func(bool, string) (releaseInstallResult, int) {
+			installed = true
+			return releaseInstallResult{CLIInstalled: true}, 0
+		},
+		changes: func(_, to string) {
+			notes = true
+			if to != "1.0.130" {
+				t.Fatalf("pin target lost: %q", to)
+			}
+		}, doctor: func() {}}
+	if rc := performUpdate(false, true, false, ops); rc != 0 || !installed || !notes {
+		t.Fatalf("pin rc=%d installed=%v notes=%v", rc, installed, notes)
 	}
 }

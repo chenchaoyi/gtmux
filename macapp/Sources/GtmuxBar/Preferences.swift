@@ -601,7 +601,7 @@ struct PreferencesView: View {
             HStack(spacing: 8) {
                 Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Theme.Status.waiting)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(l10n.tr("Update failed", "更新失败")).font(.system(size: 12))
+                    Text(updater.failureTitle).font(.system(size: 12))
                     if let e = updater.lastError, !e.isEmpty {
                         Text(e).font(.system(size: 10)).foregroundStyle(.tertiary)
                             .lineLimit(1).truncationMode(.tail)

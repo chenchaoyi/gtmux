@@ -68,6 +68,13 @@ your own services using [the tunnel design](design/remote-access-tunnel.md) and
 Update later with `gtmux update`; it also attempts to restart the loaded serve and
 Direct tunnel services so they use the new binary.
 
+Automatic updates preserve components already newer than the selected release and
+leave unknown versions alone. Cached version indexes may lag GitHub. The existing
+`GTMUX_VERSION` pin explicitly selects a version, including a downgrade.
+If the optional app fails after CLI installation, the CLI stays installed and exit 3
+reports the remaining app step; retry `gtmux update` for an older app or `gtmux install app` if absent. See the [update contract](cli.md#installation-and-update-commands).
+
+
 For a script-installed app in `~/Applications`, `gtmux uninstall app` removes the
 menu-bar app and its login item. `gtmux uninstall hooks` unregisters the agent
 hooks, and `gtmux uninstall all` does both. These commands leave the CLI binary

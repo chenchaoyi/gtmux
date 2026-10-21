@@ -62,6 +62,11 @@ go install github.com/chenchaoyi/gtmux/cmd/gtmux@latest
 
 之后用 `gtmux update` 升级；它也会尝试重启已加载的 serve 和 Direct 隧道服务，让它们使用新二进制。
 
+自动更新按组件保留更高或未知版本；缓存索引可能落后于 GitHub。现有 `GTMUX_VERSION`
+仍可明确指定版本重装或降级。可选 App 失败后，已装好的 CLI 保留，退出码 3 表示
+App 步骤未完成；旧 App 重试 `gtmux update`，未安装时用 `gtmux install app`。详见[更新规则](cli.zh.md#安装与更新命令)。
+
+
 脚本装在 `~/Applications` 里的 app，用 `gtmux uninstall app` 删除菜单栏 app 及登录项。
 `gtmux uninstall hooks` 摘掉 agent hook，`gtmux uninstall all` 两个都做；这些命令会保留
 CLI 二进制和 gtmux 的已有记录。Homebrew 安装的还需用 `brew uninstall --cask gtmux-app`
