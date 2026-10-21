@@ -237,7 +237,11 @@ The cgo-free CLI/server supports macOS and Linux amd64/arm64; the native menu-ba
   the current conversation and their PR/merge status. Include every authorized change
   in that release; do not silently narrow the scope to the current branch or leave a
   requested UI change in an open PR. Merge and verify those changes before tagging or
-  building the deliverable. When mobile UI changes are included, build and deliver the
+  building the deliverable. CLI/Mac-only releases MUST skip phone rebuilding when
+  iOS inputs are unchanged; version stamps alone are not a mobile change. Use
+  `mobileapp/scripts/delivery-scope.py` before hosted or local release-test delivery;
+  see `mobileapp/DISTRIBUTION.md` for the baseline and explicit-preview boundary.
+  When mobile UI changes are included, build and deliver the
   signed phone package from the final release commit; a CLI/Mac tag alone is incomplete.
   Report the mobile package's version, build and installation/publication status
   separately from the CLI/Mac release, and disclose any actual blocker.

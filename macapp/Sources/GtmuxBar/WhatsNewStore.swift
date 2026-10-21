@@ -69,15 +69,18 @@ final class WhatsNewStore: ObservableObject {
     let version: String
     private let defaults: UserDefaults
     private let run: ([String]) -> (status: Int32, stdout: String, stderr: String)
+    private let now: () -> Date
     private var autoChecked = false
+    private var lastAutomaticAttempt: Date?
     private var request = 0
 
     init(defaults: UserDefaults = .standard,
          version: String = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "",
+         now: @escaping () -> Date = Date.init,
          run: @escaping ([String]) -> (status: Int32, stdout: String, stderr: String) = {
              GtmuxCLI.captureBounded($0, timeout: 15)
          }) {
-        self.defaults = defaults; self.version = ReleaseVersion(version)?.description ?? version; self.run = run
+        self.defaults = defaults; self.version = ReleaseVersion(version)?.description ?? version; self.run = run; self.now = now
         if let current = ReleaseVersion(version), let data = defaults.data(forKey: Self.cacheKey),
            let cached = try? JSONDecoder().decode(MacReleaseNotes.self, from: data), cached.valid(for: current) {
             report = cached
@@ -117,12 +120,21 @@ final class WhatsNewStore: ObservableObject {
     }
 
     func autoCheck(onReady: @escaping () -> Void) {
-        guard !autoChecked else { return }; autoChecked = true
+        guard !autoChecked, !loading else { return }
         prepareLaunch()
         guard let current = ReleaseVersion(version),
-              let seen = defaults.string(forKey: Self.seenKey).flatMap(ReleaseVersion.init), seen < current else { return }
+              let seen = defaults.string(forKey: Self.seenKey).flatMap(ReleaseVersion.init), seen < current else {
+            autoChecked = true
+            return
+        }
+        // A temporary read failure must not suppress the upgrade for this process's
+        // lifetime. Retry only on a later menu opening, at most once per minute.
+        let attempt = now()
+        if let lastAutomaticAttempt, attempt.timeIntervalSince(lastAutomaticAttempt) < 60 { return }
+        lastAutomaticAttempt = attempt
         load(.upgrade(from: seen.description)) { [weak self] in
             guard let self else { return }
+            self.autoChecked = true
             if self.entries.isEmpty && !self.historyLimited { self.acknowledge() }
             else { onReady() }
         }

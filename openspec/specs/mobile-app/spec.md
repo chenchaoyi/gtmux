@@ -1896,6 +1896,28 @@ tint under a pointer. The ⌘-hold overlay SHALL list the commands with their ti
 - **WHEN** ⌘3 is pressed with the regular shell showing
 - **THEN** the third radar row is selected and its detail fills the main pane
 
+### Requirement: Release test delivery skips unchanged iOS inputs
+
+Before signing or starting its native build job, release-test delivery SHALL compare
+the exact release commit with the nearest earlier published stable release in the
+official latest-100 release list. It SHALL include runtime JS, dependencies, bundled
+notes, assets and native iOS inputs, exclude version stamps, Android, tests, docs and
+delivery tooling, and treat unknown mobile inputs as requiring a build. Unavailable
+or invalid Git baselines SHALL stop delivery. With no earlier published release in
+the bounded list it SHALL conservatively build. Explicit UI previews SHALL retain
+their validated-main build path without requiring release changes.
+
+#### Scenario: A CLI or Mac release only stamps the phone version
+
+- **WHEN** only generated phone versions and non-shipping files differ
+- **THEN** the native job is skipped before environment approval, signing and upload
+- **AND** the workflow summary states the compared release and skip reason
+
+#### Scenario: A native setting changes along with the version
+
+- **WHEN** an Xcode project changes a build setting besides MARKETING_VERSION
+- **THEN** release-test delivery requires a phone package
+
 ### Requirement: The iPad ships with its own store screenshots
 
 The App Store listing SHALL carry a 13" iPad screenshot set drawn by the same demo-mode
