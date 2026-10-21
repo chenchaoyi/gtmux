@@ -62,6 +62,51 @@ test('message facts stay historical while a same-session launch chain loads on d
   expect(close).toHaveBeenCalledTimes(1);
 });
 
+test('a tmux message can verify its chain when the radar row has no session id', async () => {
+  const read = jest.fn().mockResolvedValueOnce({agent: 'codex', name: 'Codex', session_id: 's', historical: true,
+    facts: [{key: 'model', value: 'message-model', source: 'session_log'}]})
+    .mockResolvedValue({agent: 'codex', name: 'Codex', session_id: 's', historical: false,
+      facts: [{key: 'model', value: 'current-model', source: 'native_hook'}],
+      execution_chain: [{name: 'codex', path: '/tools/codex'}]});
+  const client = {participantProfile: read} as unknown as GtmuxClient;
+  // Real tmux radar rows expose pane_id but omit session_id.
+  await act(async () => {tree = renderer.create(<ParticipantProfileModal target={{kind: 'agent', agent,
+    turn: {session_id: 's', time: '2026-10-20T00:00:00Z', prompt: 'p', response: 'r'}}} client={client} lang="en" onClose={() => {}} />);});
+  expect(read).toHaveBeenCalledTimes(1);
+  expect(buttons('profile-chain-toggle')).toHaveLength(1);
+  await act(async () => buttons('profile-chain-toggle')[0].props.onPress());
+  expect(read.mock.calls[1][0]).toEqual({id: '%4', session_id: 's'});
+  expect(text()).toContain('message-model');
+  expect(text()).not.toContain('current-model');
+  expect(text()).toContain('Latest observations for this conversation');
+  act(() => buttons('profile-copy-0')[0].props.onPress());
+  expect(Clipboard.setString).toHaveBeenLastCalledWith('/tools/codex');
+});
+
+test('a changed pane binding cannot substitute its new runtime for a tmux message', async () => {
+  const read = jest.fn().mockResolvedValueOnce({agent: 'codex', name: 'Codex', session_id: 'old', historical: true,
+    facts: [{key: 'model', value: 'old-model', source: 'session_log'}]})
+    .mockRejectedValue(new Error('422: session binding changed'));
+  const client = {participantProfile: read} as unknown as GtmuxClient;
+  await act(async () => {tree = renderer.create(<ParticipantProfileModal target={{kind: 'agent', agent,
+    turn: {session_id: 'old', time: '2026-10-20T00:00:00Z', prompt: 'p', response: 'r'}}} client={client} lang="en" onClose={() => {}} />);});
+  await act(async () => buttons('profile-chain-toggle')[0].props.onPress());
+  expect(read.mock.calls[1][0]).toEqual({id: '%4', session_id: 'old'});
+  expect(text()).toContain('old-model');
+  expect(text()).toContain('could not be verified');
+  expect(text()).not.toContain('No launch chain has been recorded');
+  expect(buttons('profile-copy-0')).toHaveLength(0);
+});
+
+test('an external message without a source session cannot borrow a current chain', async () => {
+  const read = jest.fn().mockResolvedValue({agent: 'codex', name: 'Codex', session_id: 's', historical: true, facts: []});
+  const client = {participantProfile: read} as unknown as GtmuxClient;
+  await act(async () => {tree = renderer.create(<ParticipantProfileModal target={{kind: 'agent', agent: {...agent, source: 'native', pane_id: ''},
+    turn: {session_id: 's', time: '2026-10-20T00:00:00Z', prompt: 'p', response: 'r'}}} client={client} lang="en" onClose={() => {}} />);});
+  expect(buttons('profile-chain-toggle')).toHaveLength(0);
+  expect(read).toHaveBeenCalledTimes(1);
+});
+
 test('independent reply folding survives prepended history and avatar inspection', async () => {
   const one: TranscriptTurn = {session_id: 's', time: '2026-10-20T00:00:00Z', prompt: 'one', response: 'first answer'};
   const two: TranscriptTurn = {session_id: 's', time: '2026-10-20T00:01:00Z', prompt: 'two', response: 'second answer'};
@@ -122,9 +167,12 @@ test('switching targets hides previous facts immediately and rejects late respon
   expect(text()).not.toContain('wrong-model');
 });
 
-test('a chain returned for another source never appears or becomes copyable', async () => {
+test.each([
+  {agent: 'codex', session_id: 'other'},
+  {agent: 'claude', session_id: 's'},
+])('a chain returned for another source never appears or becomes copyable: %j', async identity => {
   const read = jest.fn().mockResolvedValueOnce({agent: 'codex', name: 'Codex', session_id: 's', historical: true, facts: []})
-    .mockResolvedValue({agent: 'codex', name: 'Codex', session_id: 'other', historical: false, facts: [], execution_chain: [{name: 'wrong-runtime', path: '/private/wrong-runtime'}]});
+    .mockResolvedValue({...identity, name: 'Codex', historical: false, facts: [], execution_chain: [{name: 'wrong-runtime', path: '/private/wrong-runtime'}]});
   const client = {participantProfile: read} as unknown as GtmuxClient;
   await act(async () => {tree = renderer.create(<ParticipantProfileModal target={{kind: 'agent', agent: {...agent, session_id: 's'}, turn: {session_id: 's', time: '2026-10-20T00:00:00Z', prompt: 'p', response: 'r'}}} client={client} lang="en" onClose={() => {}} />);});
   await act(async () => buttons('profile-chain-toggle')[0].props.onPress());
