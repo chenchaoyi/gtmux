@@ -1162,8 +1162,16 @@ body: {"enrollCode":"<code>","name":"<device label>"}
 400 {"error":"invalid request"}                 // missing/garbled body
 401 {"error":"invalid or expired enroll code"}
 405 {"error":"method not allowed"}              // non-POST
+413 {"error":"request too large"}              // body exceeds 4096 bytes
+429 {"error":"too many attempts; wait a minute"}
 503 {"error":"enrollment not configured"}
 ```
+
+The complete body is limited to **4096 bytes**, including JSON escapes and whitespace,
+before parsing or redeeming a code. This limit applies to the actual stream, including
+chunked requests and requests without a reliable `Content-Length`. Oversized bodies
+return `413` without spending a code or counting a failed guess. Malformed or incomplete
+JSON (including a second JSON value) returns `400`; exactly 4096 bytes is allowed.
 
 `scope` says what the token is: `owner` for a pairing code (a new device), `guest` for a
 share link's code (that link's own token, with the panes it was given). Additive: a client

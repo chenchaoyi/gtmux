@@ -61,6 +61,13 @@ The `…/#c=<code>` in a browser / phone pairing link:
   JS reads it to exchange it for this device's own per-device token.
 - after pairing with it, revoking one device does not affect the others (the master token stays valid).
 
+The unauthenticated `POST /api/enroll` accepts at most 4096 bytes for the complete JSON
+body, including escapes and whitespace. The server bounds the actual stream before
+parsing or exchanging owner/guest codes, even without `Content-Length` or with chunked
+transfer. An oversized body returns `413` without spending the code or counting a failed
+guess. Valid requests retain the failed-code throttle: 10 per caller and 60 in total per
+minute; a successful exchange does not count toward either limit.
+
 ## 4. Practical steps that bring the risk down to acceptable
 
 - Local network mode sends session API traffic directly to the Mac; push forwarding
