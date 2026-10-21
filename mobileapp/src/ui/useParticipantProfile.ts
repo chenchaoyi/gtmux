@@ -14,7 +14,11 @@ export function participantRequest(target: ProfileTarget): Request | undefined {
 
 /** An old message may inspect current observations only for the same source session. */
 export function currentChainRequest(target: ProfileTarget): Request | undefined {
-  if (target.kind !== 'agent' || !target.turn?.session_id || target.turn.session_id !== target.agent.session_id) return;
+  if (target.kind !== 'agent' || !target.turn?.session_id) return;
+  if (target.agent.session_id && target.turn.session_id !== target.agent.session_id) return;
+  // Tmux rows identify a pane, not its session. The profile endpoint verifies
+  // this message's session against the pane's current binding before returning.
+  if (target.agent.source === 'native' ? !target.agent.session_id : !target.agent.pane_id) return;
   return {id: target.agent.source === 'native' ? undefined : target.agent.pane_id || undefined,
     session_id: target.turn.session_id, home_id: target.agent.home_id};
 }

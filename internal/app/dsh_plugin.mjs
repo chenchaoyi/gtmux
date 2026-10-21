@@ -135,7 +135,9 @@ export function hookSink(ctx, extra = () => ({})) {
     if (disposed || child || !queue.length) return;
     const [token, payload] = queue.shift();
     try {
-      child = spawn(BIN, ['hook', '--agent', 'dsh', '--detached', token], {
+      // This child still has the native DSH parent. Only a reparented gtmux
+      // worker uses --detached, which skips the pre-detach ancestry capture.
+      child = spawn(BIN, ['hook', '--agent', 'dsh', token], {
         env: {...process.env, TMUX_PANE: ''}, stdio: ['pipe', 'ignore', 'ignore'],
       });
       const current = child;

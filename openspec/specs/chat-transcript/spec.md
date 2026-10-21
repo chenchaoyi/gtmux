@@ -514,6 +514,18 @@ The participant dialog SHALL show an explicit, stable loading state before a pro
 - **WHEN** historical facts are visible and the reader opens the current-chain disclosure
 - **THEN** only the separately verified same-session chain/time appears, without replacing historical facts with current values
 
+#### Scenario: Tmux radar row has no session ID
+
+- **WHEN** a message has a source session ID but its tmux radar row identifies only a pane
+- **THEN** the reader can request the current chain with that pane and the message's session ID; the server verifies its current binding and the client verifies the returned session and agent before displaying or copying observations
+- **AND** a changed or closed binding offers an explicit failed read without falling back to another session's runtime
+
+#### Scenario: DSH native bridge captures ancestry
+
+- **WHEN** a DSH Web or terminal bridge starts a direct hook child for a native identity event
+- **THEN** it permits bounded ancestry capture before the child loses its parent, without marking it as an already reparented worker or deriving input authority from the Web host
+- **AND** missing past observations are not filled with a later process tree
+
 #### Scenario: Changed target or invalid current binding
 
 - **WHEN** the target changes during a read or a current response identifies another session or agent

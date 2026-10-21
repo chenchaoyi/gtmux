@@ -78,6 +78,19 @@ The dialog fits settled content up to its height limit, with scrolling for longe
 
 A message's historical facts and its current launch-chain observations are separate views. Opening the chain lazily makes a second current-profile request only when the message and current agent share a source session ID; the normal server binding checks still apply. Only that response's chain and observation time are shown, never its current model, tier or effort. Returned session/agent identity must match the message profile. A header profile reuses its existing current response. Stitched older sessions and other senders do not borrow another runtime; absent observations say so explicitly. A chain describes the latest recorded ancestry, not live ownership or the processes at the message's time.
 
+Tmux radar rows identify a pane and intentionally omit `session_id`. That omission
+does not mean ancestry was never collected: a message can request observations with
+its source session ID and pane ID. The server checks that session against the pane's
+current binding, and the client verifies the response's session and agent. A closed
+pane or changed binding produces a failed read rather than borrowing another runtime.
+Native rows still require an explicit matching source session ID before a request.
+
+The shared DSH Web/dst bridge starts a direct hook child without the `--detached`
+worker flag, so native prompt/resume events can capture the actual parent chain.
+Collection stays bounded and asynchronous to DSH; Web ancestry does not grant pane
+ownership. Updating gtmux-owned plugin files does not reload a running harness.
+Missing earlier observations cannot be reconstructed from a later process tree.
+
 ## Existing integration boundaries
 
 The radar [`agentJSON`](../../internal/radar/agents.go) still carries identity and
