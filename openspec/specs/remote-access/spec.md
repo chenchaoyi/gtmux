@@ -916,6 +916,13 @@ an automatic re-map could grant access to the wrong session.
 - **WHEN** grants were made against a different tmux server
 - **THEN** the share status reports the grants as stale and tells the owner to re-grant
 
+#### Scenario: A guest is told why the shared radar is empty
+
+- **WHEN** `GET /api/share` succeeds with `stale:true` for a guest
+- **THEN** Web and the shared phone/iPad radar SHALL retain that state and explain that share access has expired and the guest must ask the owner to grant access again
+- **AND** they SHALL keep the guest connection, distinguish this from a revoked token (`401`), and refresh the capability with roster reads so the message clears after the owner re-grants
+- **AND** owner access and ordinary empty guest rosters SHALL NOT show the expired-access message; a guest empty state SHALL NOT instruct the guest to start an agent in the owner's tmux
+
 ### Requirement: Supervisor knowledge is served to owner clients
 
 The server SHALL expose the supervisor's situation board and the severity-tagged event

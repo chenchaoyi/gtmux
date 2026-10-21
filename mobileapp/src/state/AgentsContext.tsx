@@ -45,6 +45,7 @@ interface AgentsContextValue {
   // set of pane ids this guest may TYPE into (empty for a pane it can only view).
   // An owner (device/master token) has isGuest=false and types anywhere.
   isGuest: boolean;
+  shareStale: boolean;
   inputPanes: string[];
   // Demo tour: true when this store is the fake, no-server Demo client. Screens
   // show a persistent DEMO chip and the composer routes to a scripted responder.
@@ -100,6 +101,7 @@ export function AgentsProvider({
   // Seed from the pairing hint so the UI never flashes owner-only surfaces before
   // GET /api/share resolves; then confirm authoritatively (all:true ⇒ owner).
   const [isGuest, setIsGuest] = useState(scope === 'guest');
+  const [shareStale, setShareStale] = useState(false);
   const [inputPanes, setInputPanes] = useState<string[]>([]);
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
   const [banner, setBanner] = useState<Alert | null>(null);
@@ -443,7 +445,8 @@ export function AgentsProvider({
       .then(cap => {
         if (!alive) return;
         setIsGuest(!cap.all);
-        setInputPanes(cap.panes);
+        setShareStale(!cap.all && !!cap.stale);
+        setInputPanes(!cap.all && cap.stale ? [] : cap.panes);
       })
       .catch(() => {});
     return () => {
@@ -460,6 +463,7 @@ export function AgentsProvider({
     dismissBanner: () => setBanner(null),
     refresh,
     isGuest,
+    shareStale,
     inputPanes,
     serverModeRev,
   };
@@ -505,6 +509,7 @@ export function DemoAgentsProvider({
       dismissBanner: () => {},
       refresh: () => {},
       isGuest: false,
+      shareStale: false,
       inputPanes: agents.map(a => a.pane_id).filter(Boolean) as string[],
       demo: true,
     }),

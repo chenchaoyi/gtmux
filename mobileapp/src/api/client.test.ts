@@ -74,6 +74,17 @@ const client = () => new GtmuxClient(BASE, TOKEN);
 const call = (n = 0): [string, RequestInit | undefined] =>
   fetchMock.mock.calls[n] as any;
 
+describe('share capability', () => {
+  it('preserves stale separately from token rejection and defaults old servers to current', async () => {
+    for (const stale of [true, false, undefined]) {
+      fetchMock.mockResolvedValueOnce(okJson({stale, panes: ['%1'], view_panes: ['%1']}));
+      expect(await client().share()).toEqual({input: false, all: false, stale: !!stale, panes: ['%1'], view_panes: ['%1']});
+    }
+    fetchMock.mockResolvedValueOnce(okJson({}, false, 401));
+    await expect(client().share()).rejects.toMatchObject({status: 401});
+  });
+});
+
 describe('health', () => {
   it('GETs /api/health (no auth header) and returns r.ok', async () => {
     fetchMock.mockResolvedValueOnce(okJson({}, true));
