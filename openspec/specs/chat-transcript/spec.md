@@ -346,6 +346,19 @@ answer available.
 - **WHEN** a turn is older than the audit journal, or no delivery matches it
 - **THEN** it is served unmarked, and renders exactly as it did before this existed
 
+#### Scenario: A closed DSH terminal remains attributable in external history
+
+- **WHEN** a DSH terminal has closed and the reader opens its saved conversation
+- **THEN** retained successful delivery evidence joined to the exact harness, home,
+  session and native public-message sequence SHALL preserve HQ or agent sender identity
+- **AND** repeated text, another home/session, failed/refused sends, reused sequences,
+  stale timestamps and tied evidence SHALL NOT claim a prompt
+- **AND** the same sender rule SHALL apply to a currently managed DSH pane; phone/browser
+  actors SHALL remain unmarked, and internal native sequence evidence SHALL NOT be serialized
+- **AND** incremental bounded journal evidence SHALL be reused; an unchanged request SHALL
+  not decode the entire journal, and late sender evidence SHALL invalidate the validator
+- **AND** historical attribution SHALL NOT restore an expired terminal binding or grant follow/input
+
 ### Requirement: Every served turn carries its source agent identity
 
 Every transcript turn SHALL carry the canonical agent key of the session that produced it.

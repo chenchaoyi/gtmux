@@ -443,7 +443,12 @@ artifact without modifying it. Unknown generations, ambiguous copies/encodings a
 corrupt complete records are unavailable; incomplete tails wait. Public append
 history is retained through model compaction; injected checkpoints, reasoning,
 replay state and raw tool results are excluded. Saved metadata does not prove a
-live Web client. See [DSH support and limits](../docs/guides/deepseek-harness.md).
+live Web client. DSH turns retain the same optional `from` sender as pane histories
+when the journal links the exact home/session/native message sequence to a successful
+delivery. A missing live pane does not erase this historical attribution or grant
+input. Ambiguous/reused sequences and unmatched text/time remain unmarked. The ETag
+includes sender evidence, so a late delivery record can update an unchanged history.
+The internal native sequence is not serialized. See [DSH support and limits](../docs/guides/deepseek-harness.md).
 
 Errors: 400 invalid ID, 405 non-GET (Allow: GET), 422 unknown identity or unavailable/ambiguous home,
 503 missing core capability, 500 failed read. Error bodies do not disclose file paths.

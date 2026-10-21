@@ -76,6 +76,14 @@ acceptance receipt means queued, not executed or completed. Unknown delivery
 outcomes are not automatically re-enqueued. Completed retry metadata lasts 24h;
 unresolved claims eventually stop new sends at the bounded spool cap.
 
+After the terminal closes or its binding expires, saved conversation history may
+appear among read-only external conversations. That label describes the absence
+of a current managed pane; it does not prove that the conversation began in Web.
+Recorded HQ or agent deliveries keep their sender when the retained journal can
+join the exact home, session and native message sequence to a successful delivery.
+Repeated text alone is insufficient. Missing, expired or ambiguous evidence stays
+unattributed, and reading historical sender evidence never restores input rights.
+
 ## HQ public-message review
 
 The reconciler incrementally recovers committed public user and assistant messages

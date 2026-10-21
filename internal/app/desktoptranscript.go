@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/server"
 	"github.com/chenchaoyi/gtmux/internal/sessionpolicy"
@@ -29,10 +30,15 @@ func desktopTranscriptRead(id, etag string, homes ...string) ([]byte, server.Tra
 	if resolveErr != nil {
 		return nil, meta, sessionpolicy.ErrUnverified
 	}
+	var senders map[int64]events.MessageSender
+	senderRevision := ""
+	if ref.Agent == "dsh" {
+		senders, senderRevision = events.Sends.MessageSenders(ref.Agent, ref.HomeID, id)
+	}
 	// Read the validator before content: an append during parsing must force another
 	// read, not mark older content with a newer revision.
 	if revision := transcript.LogRevision(ref.Agent, id); revision != "" {
-		meta.Etag = fmt.Sprintf("W/%q", "profile-v1-"+ref.HomeID+"-"+id+"-"+revision)
+		meta.Etag = fmt.Sprintf("W/%q", "profile-v2-"+ref.HomeID+"-"+id+"-"+revision+"-"+senderRevision)
 	}
 	if etag != "" && meta.Etag == etag {
 		return nil, meta, nil
@@ -52,6 +58,7 @@ func desktopTranscriptRead(id, etag string, homes ...string) ([]byte, server.Tra
 		turns[i].Agent = ref.Agent
 		turns[i].SessionID = id
 	}
+	turns = stampMessageSenders(turns, senders)
 	kept, dropped := turnsWithinBudget(turns, transcriptByteBudget)
 	if kept == nil {
 		kept = []transcript.Turn{}

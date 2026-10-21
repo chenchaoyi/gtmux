@@ -43,6 +43,8 @@ func dshStep(line []byte, st *parseState) error {
 		}
 		if text := dshText(msg.Content); text != "" {
 			st.open(text, dsh.Timestamp(event.Time))
+			seq := event.Seq
+			st.cur.PromptMessageSeq = &seq
 		}
 	case "assistant/message":
 		var data struct{ Message dshMessage }
@@ -151,6 +153,12 @@ func (l *Loader) loadDSH(id string, maxTurns int) ([]Turn, int, error) {
 	}
 	var out []Turn
 	err = json.Unmarshal(encoded, &out)
+	for i := range out {
+		if turns[i].PromptMessageSeq != nil {
+			seq := *turns[i].PromptMessageSeq
+			out[i].PromptMessageSeq = &seq
+		}
+	}
 	return out, dropped, err
 }
 func dshTurnBytes(turns []Turn) int {

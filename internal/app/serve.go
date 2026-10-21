@@ -897,14 +897,21 @@ func transcriptForPane(id string, earlier int) ([]byte, server.TranscriptMeta, e
 	// The validator: WHICH logs, and how far they have grown. Both halves matter — a log
 	// grows as the agent talks, and the session id changes when a pane rebinds (the
 	// case that had a reader staring at five-hour-old history on 2026-08-18).
+	senderRevision := ""
+	if rec.Agent == "dsh" {
+		by, revision := events.Sends.MessageSenders(rec.Agent, rec.HomeID, rec.SessionID)
+		turns, senderRevision = stampMessageSenders(turns, by), revision
+	}
 	if revision := transcript.LogRevision(rec.Agent, rec.SessionID); revision != "" {
-		meta.Etag = fmt.Sprintf("W/%q", fmt.Sprintf("profile-v1-%s-%s-%s", rec.SessionID, revision, oldest))
+		meta.Etag = fmt.Sprintf("W/%q", fmt.Sprintf("profile-v2-%s-%s-%s-%s", rec.SessionID, revision, oldest, senderRevision))
 	}
 	// Who put each prompt there, for the ones gtmux delivered on someone else's behalf
 	// (who-sent-this-turn). After the stitch, so an earlier session's turns are attributed
 	// too; before the budget, so the budget measures turns as they are sent (the sender
 	// adds bytes). A turn the budget then drops has still been looked up.
-	turns = stampSenders(turns, id, now)
+	if rec.Agent != "dsh" {
+		turns = stampSenders(turns, id, now)
+	}
 	// The budget grows with the sessions asked for, else the stitched history would be
 	// cut back to the newest turns and the earlier session never reach the reader.
 	kept, dropped := turnsWithinBudget(turns, transcriptByteBudget*(1+min(earlier, 3)))

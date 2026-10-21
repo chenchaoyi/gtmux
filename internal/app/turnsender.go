@@ -53,9 +53,24 @@ func stampSenders(turns []transcript.Turn, pane string, now int64) []transcript.
 // turn: it runs tmux, and a long conversation with one colleague used to ask it the same
 // question for every message that colleague sent.
 func stampSendersWith(turns []transcript.Turn, by map[string]string, resolve func(string) (string, string)) []transcript.Turn {
-	if len(by) == 0 {
-		return turns
-	}
+	return stampSendersBy(turns, func(t transcript.Turn) string { return events.MatchHead(by, t.Prompt) }, resolve)
+}
+
+func stampMessageSenders(turns []transcript.Turn, by map[int64]events.MessageSender) []transcript.Turn {
+	return stampSendersBy(turns, func(t transcript.Turn) string {
+		if t.PromptMessageSeq == nil {
+			return ""
+		}
+		sender, ok := by[*t.PromptMessageSeq]
+		at, err := time.Parse(time.RFC3339, t.Time)
+		if !ok || err != nil || !sender.Matches(t.Prompt, at.Unix()) {
+			return ""
+		}
+		return sender.Actor
+	}, paneLabel)
+}
+
+func stampSendersBy(turns []transcript.Turn, actor func(transcript.Turn) string, resolve func(string) (string, string)) []transcript.Turn {
 	type named struct{ label, agent string }
 	seen := map[string]named{}
 	once := func(pane string) (string, string) {
@@ -70,7 +85,7 @@ func stampSendersWith(turns []transcript.Turn, by map[string]string, resolve fun
 		if turns[i].From != nil || turns[i].Prompt == "" {
 			continue
 		}
-		if s := senderFor(events.MatchHead(by, turns[i].Prompt), once); s != nil {
+		if s := senderFor(actor(turns[i]), once); s != nil {
 			turns[i].From = s
 		}
 	}
