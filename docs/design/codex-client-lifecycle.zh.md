@@ -76,6 +76,9 @@ writer 空闲也可能存活；已加载线程可能只是缓存；保存的对�
 
 回收成功以自有资源确已关闭为准。共享 daemon 中，前台退出不能证明后台 writer 或回合结束，
 须分别记录，没有证据不声称 writer 释放。
+有派活记录时，资源边界仍是 spawn 创建的会话。没有派活记录的活 pane 则记录 tmux server、
+pane 进程与 cwd，通过 worktree 安全闸后重查，只关闭该 pane。若其他 pane 仍在使用
+linked worktree，就拒绝删除。审计回执中的 Codex binding 取样不能代替关闭前的 tmux 身份核对。
 
 ## 4. 展示与操作设计
 

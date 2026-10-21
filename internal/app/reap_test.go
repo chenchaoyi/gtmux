@@ -15,7 +15,7 @@ type spyOps struct {
 	merged     bool
 	mergedErr  error
 	killed     bool
-	winKilled  bool
+	paneKilled bool
 	removed    bool
 	branchGone bool
 
@@ -43,7 +43,7 @@ func (s *spyOps) ops() reapOps {
 			return "/repo"
 		},
 		killSession: func(string) error { s.killed = true; return nil },
-		killWindow:  func(string) error { s.winKilled = true; return nil },
+		killPane:    func(string) error { s.paneKilled = true; return nil },
 		removeWorktree: func(string, bool) error {
 			s.order = append(s.order, "removeWorktree")
 			s.removed = s.removeErr == nil
@@ -179,7 +179,7 @@ func TestReap_ReusedPane_DoesNotKillSession(t *testing.T) {
 }
 
 // barePaneTask: a linked worktree is reclaimed; the main checkout / detached HEAD is
-// window-only.
+// pane-only.
 func TestBarePaneTask(t *testing.T) {
 	linked := barePaneTask("%9", "/wt/feat-y", "feat/y", true)
 	if linked.Pane != "%9" || linked.Worktree != "/wt/feat-y" || linked.Branch != "feat/y" || linked.Session != "" {
@@ -187,7 +187,7 @@ func TestBarePaneTask(t *testing.T) {
 	}
 	main := barePaneTask("%9", "/repo", "main", false)
 	if main.Worktree != "" || main.Branch != "" || main.Pane != "%9" {
-		t.Fatalf("main-checkout pane should be window-only: %+v", main)
+		t.Fatalf("main-checkout pane should be pane-only: %+v", main)
 	}
 	det := barePaneTask("%9", "/wt/x", "HEAD", true)
 	if det.Branch != "" {
@@ -195,9 +195,9 @@ func TestBarePaneTask(t *testing.T) {
 	}
 }
 
-// A bare-pane reap of a MANUAL window kills the WINDOW (never a session) under the same
+// A bare-pane reap kills only the pane (never its window or session) under the same
 // gate, and reclaims its worktree/branch.
-func TestReap_BarePane_KillsWindowNotSession(t *testing.T) {
+func TestReap_BarePane_KillsPaneNotSession(t *testing.T) {
 	s := &spyOps{dirty: false, merged: true}
 	task := barePaneTask("%28", "/wt/menubar-width", "feat/menubar-width", true)
 	res := planAndReap(task, false, false, s.ops())
@@ -207,8 +207,8 @@ func TestReap_BarePane_KillsWindowNotSession(t *testing.T) {
 	if s.killed {
 		t.Fatalf("bare-pane reap must NOT kill a session")
 	}
-	if !s.winKilled || !s.removed || !s.branchGone {
-		t.Fatalf("bare-pane reap should kill window + remove worktree + delete branch: %+v", s)
+	if !s.paneKilled || !s.removed || !s.branchGone {
+		t.Fatalf("bare-pane reap should kill pane + remove worktree + delete branch: %+v", s)
 	}
 }
 
@@ -216,7 +216,7 @@ func TestReap_BarePane_DirtyReportOnly(t *testing.T) {
 	s := &spyOps{dirty: true, merged: true}
 	task := barePaneTask("%28", "/wt/x", "feat/x", true)
 	res := planAndReap(task, false, false, s.ops())
-	if res.Reaped || s.winKilled || s.removed {
+	if res.Reaped || s.paneKilled || s.removed {
 		t.Fatalf("a dirty bare-pane worktree must be report-only: reaped=%v %+v", res.Reaped, s)
 	}
 }
@@ -280,16 +280,25 @@ func TestReap_FailedStepIsReportedNotSwallowed(t *testing.T) {
 	}
 }
 
-// A live pane not inside a worktree (main checkout) → the window is reclaimed, nothing
+// A live pane not inside a worktree (main checkout) → only the pane is reclaimed, nothing
 // git-side is touched.
-func TestReap_BarePane_WindowOnly(t *testing.T) {
+func TestReap_BarePane_PaneOnly(t *testing.T) {
 	s := &spyOps{}
 	task := barePaneTask("%5", "/repo", "main", false)
 	res := planAndReap(task, false, false, s.ops())
-	if !res.Reaped || !s.winKilled {
-		t.Fatalf("window-only bare pane should reap the window")
+	if !res.Reaped || !s.paneKilled {
+		t.Fatalf("pane-only bare pane should reap the pane")
 	}
 	if s.removed || s.branchGone || s.killed {
-		t.Fatalf("window-only reap must touch no worktree/branch/session: %+v", s)
+		t.Fatalf("pane-only reap must touch no worktree/branch/session: %+v", s)
+	}
+}
+
+func TestReap_BarePane_MissingIdentityCannotClaimSuccess(t *testing.T) {
+	ops := (&spyOps{}).ops()
+	ops.killPane = nil
+	res := planAndReap(dispatch.Task{Pane: "%5"}, false, false, ops)
+	if res.ResourceClosed || len(res.Failed) != 1 || !strings.Contains(res.Failed[0], "identity was not verified") {
+		t.Fatalf("missing bare-pane identity must fail explicitly: %+v", res)
 	}
 }

@@ -87,6 +87,11 @@ client's input ownership. Process checks must distinguish backend/frontend and P
 
 Reap success requires the owned resource to be closed. With a shared daemon, frontend
 exit does not prove backend writer or background turn release. Report these separately.
+For a tracked dispatch, resource ownership remains the session that spawn created. For
+an untracked live pane, reap records the tmux server, pane process and cwd, checks them
+again after the worktree gate, then closes only that pane. Another pane in the linked
+worktree blocks its removal. The Codex binding sampled for the audit receipt is not a
+substitute for this pre-close tmux identity check.
 
 ## 4. Presentation and actions
 

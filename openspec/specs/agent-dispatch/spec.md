@@ -702,7 +702,7 @@ given, the branch is never deleted, so its merge state SHALL NOT gate the reclai
 only the worktree-clean check still applies. When the gate fails, `reap` SHALL report
 exactly what blocks it (uncommitted changes / unmerged commits / an unconfirmable merge
 state) and make NO changes.
-When the gate passes, it SHALL kill the dispatch's tmux session/window, `git worktree
+When the gate passes, it SHALL close a tmux session the dispatch created, `git worktree
 remove` the worktree, and delete the branch only when merged (or `--abandon`) and not
 `--keep-branch`, then clear the ledger entry. `reap` SHALL never run automatically —
 only when invoked.
@@ -863,22 +863,35 @@ entry is reaped.
 
 ### Requirement: Reclaim a bare pane not in the ledger
 
-`gtmux reap` SHALL reclaim a manually-created window that has no ledger entry, given a
+`gtmux reap` SHALL reclaim a manually-created pane that has no ledger entry, given a
 bare pane id: it derives the repo context from the pane's cwd (the enclosing git
 worktree + its branch) and applies the SAME safety gate as a ledgered reap — the
 worktree must be clean and the branch merged unless `--abandon` overrides — then kills
-the window, removes the worktree, and deletes the merged branch. When the gate fails it
-reports exactly what blocks it and changes nothing. This closes the gap where
-`gtmux reap <pane>` reported "no dispatch" for a hand-made window, leaving it
-un-reclaimable.
+only the named pane, removes the worktree, and deletes the merged branch. It SHALL
+recheck the live pane's server, process, cwd and worktree/branch context after the gate;
+if the pane disappeared or changed, it SHALL report failed closure and skip worktree
+cleanup. It SHALL refuse to remove a linked worktree while another live pane uses it.
+When the gate fails it reports exactly what blocks it and changes nothing. This closes
+the gap where `gtmux reap <pane>` reported "no dispatch" for a hand-made pane.
 
-#### Scenario: A manual window is reclaimed under the safety gate
+#### Scenario: A manual pane is reclaimed under the safety gate
 
-- **WHEN** `gtmux reap <pane_id>` targets a window with no ledger entry whose worktree
-  is clean and branch merged
-- **THEN** it reclaims the window/worktree/branch, the same as a ledgered dispatch
+- **WHEN** `gtmux reap <pane_id>` targets a pane with no ledger entry whose worktree
+  is clean and branch merged, with no other pane using that worktree
+- **THEN** it reclaims that pane/worktree/branch, leaving other panes in its window alive
 
-#### Scenario: A dirty manual window is report-only
+#### Scenario: A bare pane shares its linked worktree
+
+- **WHEN** another live pane uses the bare pane's linked worktree
+- **THEN** reap closes neither pane and preserves the worktree and branch
+
+#### Scenario: The bare target disappears or changes identity
+
+- **WHEN** the pane disappears or its process, cwd, or worktree/branch context changes
+  after resolution but before closure
+- **THEN** reap reports refusal or failed closure and does not remove its worktree
+
+#### Scenario: A dirty manual pane is report-only
 
 - **WHEN** the bare pane's worktree has uncommitted changes (and no `--abandon`)
 - **THEN** it reports the changes and reclaims nothing
