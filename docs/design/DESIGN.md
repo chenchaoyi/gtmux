@@ -303,7 +303,12 @@ The standard macOS settings grid (labels right-aligned, controls left-aligned). 
 The menu-bar app follows the phone's release-note interaction: a compact, resizable
 reading window opens once on the first menu opening after an upgrade, with the newest version expanded
 and older versions folded. System typography, neutral chrome, wrapping selectable
-prose, a scrollable body and a native dismissal action keep it a reading surface.
+prose, a scrollable body and a plain dismissal action keep it a reading surface.
+The title and footer stay small, and each release version appears only once.
+The window fits the measured, wrapped content, including after an asynchronous read
+or disclosure change, up to 85% of the display's usable height. Longer notes scroll
+without truncating entries. Once the user resizes or zooms the window, subsequent
+reads respect that size. Refreshing the same newest version preserves disclosures.
 Return acknowledges; Escape and the window close button dismiss identically.
 Preferences → Software update provides the permanent What's new entry. The gear menu keeps Preferences, Pair a device, Check for updates and Quit; upgrade notes and environment checks do not add duplicate menu entries.
 

@@ -1260,10 +1260,26 @@ the menu closes SHALL wait for the next opening.
 It SHALL show only notes up to the installed app version and provide
 a permanent Software update preferences entry. Prose SHALL wrap to the actual
 window width and scroll; Return, Escape and window close SHALL dismiss the reader.
+The header and footer SHALL remain compact with a plain dismissal action and no
+duplicate release-version label. The window SHALL fit measured wrapped content
+after loading or disclosure changes, capped at 85% of usable display height.
+Longer notes SHALL remain fully scrollable. A user resize or zoom SHALL take
+precedence over later automatic sizing, and same-newest-version refreshes SHALL
+preserve disclosure state.
 It SHALL acknowledge successfully read notes on dismissal, not on fetch start.
 First installation SHALL be quiet; downgrade SHALL not lower acknowledgement.
 Missing acknowledgement on an existing install SHALL migrate the prior launch
 version before the environment check replaces that marker.
+
+#### Scenario: Notes arrive after the reader opens
+- **WHEN** an asynchronous read returns notes that wrap across several lines
+- **THEN** the window grows to fit the actual content within the display-height cap
+- **AND** any content beyond that cap remains reachable by scrolling
+
+#### Scenario: Reader chooses a window size
+- **WHEN** the user resizes or zooms the reader and then refreshes the notes
+- **THEN** the chosen window size is retained
+- **AND** expanded older releases remain expanded when the newest version is unchanged
 
 #### Scenario: Skip several releases
 - **WHEN** the installed app is newer than the acknowledged version
