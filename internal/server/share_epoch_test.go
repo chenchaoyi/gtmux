@@ -1,6 +1,11 @@
 package server
 
-import "testing"
+import (
+	"encoding/json"
+	"net/http"
+	"reflect"
+	"testing"
+)
 
 // Pane grants are only meaningful inside ONE tmux server lifetime: after a restart the
 // ids are reassigned, so a stored "%17" can address a completely different pane. These
@@ -69,5 +74,60 @@ func TestGuestRadarIsEmptyWhenGrantsAreStale(t *testing.T) {
 	// and it still works normally when the grants are current
 	if got := string(filterAgentsForGuest(raw, dev, false)); got == "[]" {
 		t.Error("a current grant must still show its allowed pane")
+	}
+}
+
+// Exercise the HTTP contract with synthetic epochs, never a real tmux restart.
+func TestShareCapabilityStaleAndRecovery(t *testing.T) {
+	h, _, _, share := scopeServer(t)
+	epoch := "first-tmux"
+	share.SetEpochSource(func() string { return epoch })
+	share.StampEpoch()
+	minted := post(t, h, "/api/share/new", testToken, `{"label":"test guest","view":["%1"],"input":["%1"]}`)
+	var link struct{ ID, Token string }
+	if minted.Code != http.StatusOK || json.Unmarshal(minted.Body.Bytes(), &link) != nil || link.ID == "" {
+		t.Fatalf("mint guest = %d %s", minted.Code, minted.Body.String())
+	}
+	guest := link.Token
+	for _, stale := range []bool{false, true, false} {
+		if stale {
+			epoch = "next-tmux"
+		} else {
+			// Exercise the existing owner re-grant endpoint without widening the link.
+			rr := post(t, h, "/api/share/set", testToken, `{"id":"`+link.ID+`","view":["%1"],"input":["%1"]}`)
+			if rr.Code != http.StatusOK {
+				t.Fatalf("owner re-grant = %d %s", rr.Code, rr.Body.String())
+			}
+		}
+		rr := do(t, h, http.MethodGet, "/api/share", guest)
+		var cap shareCapability
+		if rr.Code != http.StatusOK || json.Unmarshal(rr.Body.Bytes(), &cap) != nil {
+			t.Fatalf("guest capability = %d %s", rr.Code, rr.Body.String())
+		}
+		if cap.Stale != stale || cap.All || !reflect.DeepEqual(cap.ViewPanes, []string{"%1"}) {
+			t.Fatalf("stale=%v capability=%+v", stale, cap)
+		}
+		var fields map[string]json.RawMessage
+		_ = json.Unmarshal(rr.Body.Bytes(), &fields)
+		for key := range fields {
+			if key != "input" && key != "panes" && key != "view_panes" && key != "stale" {
+				t.Fatalf("unexpected guest field %q", key)
+			}
+		}
+		radar := do(t, h, http.MethodGet, "/api/agents", guest)
+		pane := do(t, h, http.MethodGet, "/api/pane?id=%251", guest)
+		if stale {
+			if radar.Code != http.StatusOK || len(paneIDs(t, radar.Body.Bytes())) != 0 || pane.Code != http.StatusForbidden {
+				t.Fatalf("stale guest radar=%s pane status=%d", radar.Body.String(), pane.Code)
+			}
+		} else if len(paneIDs(t, radar.Body.Bytes())) != 1 || pane.Code != http.StatusOK {
+			t.Fatalf("current guest radar=%s pane status=%d", radar.Body.String(), pane.Code)
+		}
+		owner := do(t, h, http.MethodGet, "/api/share", testToken)
+		var ownerCap shareCapability
+		_ = json.Unmarshal(owner.Body.Bytes(), &ownerCap)
+		if !ownerCap.All || ownerCap.Stale {
+			t.Fatalf("owner capability=%+v", ownerCap)
+		}
 	}
 }

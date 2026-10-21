@@ -1,2 +1,3 @@
 - HQ messages and profiles use the gtmux logo, with current HQ details available on expansion.
 - DeepSeek Harness avatars have more balanced white margins.
+- Shared radars explain when access has expired and ask you to contact the owner for new access.

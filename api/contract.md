@@ -1277,6 +1277,15 @@ A guest's reply resolves from ITS OWN link scope. `input` is true only when the
 caller can actually type somewhere (consent on AND a non-empty input list). UIs
 mirror (never widen) this.
 
+The optional `stale:true` means guest pane grants belong to a previous tmux server.
+The capability request still succeeds (`200`), but the guest radar is empty and pane
+requests remain forbidden (`403`) until the owner re-grants. The lists describe only
+this link's scope, never other links or host management data. Web and mobile clients
+retain the flag and explain “Share access has expired. Ask the owner to grant access
+again.” They refresh it with roster reads so the message clears after re-granting.
+Missing/false `stale` is ordinary access, including an empty roster; `all:true` is
+owner access. Neither is an expired share. Token revocation is separately `401`.
+
 ### `GET/POST /api/share/config` — the host policy (full: master or owner device)
 
 ```

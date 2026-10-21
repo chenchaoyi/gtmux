@@ -76,8 +76,10 @@ export function RadarPanel({
   // cannot linger after a refresh replaces the list.
   const [followAgent, setFollowAgent] = useState<Agent | null>(null);
   const [sheetAgent, setSheetAgent] = useState<Agent | null>(null);
-  const {agents, conn, lastUpdated, banner, dismissBanner, refresh, isGuest, client, serverModeRev = 0} = useAgents();
+  const {agents, conn, lastUpdated, banner, dismissBanner, refresh, isGuest, shareStale, client, serverModeRev = 0} = useAgents();
   const {t, pal, lang, mac} = useApp();
+  const staleShare = isGuest && shareStale;
+  const shareStaleText = lang === 'zh' ? '分享授权已失效，请联系所有者重新授权。' : 'Share access has expired. Ask the owner to grant access again.';
   const [desktopFocus, setDesktopFocus] = useState(true);
   useEffect(() => {
     let alive = true;
@@ -301,9 +303,9 @@ export function RadarPanel({
   const Empty = (
     <View style={styles.empty}>
       <BrandMark size={52} neutral={pal.fg3} />
-      <Text style={[styles.emptyText, {color: pal.fg2}]}>{t('noAgents')}</Text>
+      <Text style={[styles.emptyText, {color: pal.fg2}]}>{staleShare ? (lang === 'zh' ? '分享授权已失效' : 'Share access has expired') : t('noAgents')}</Text>
       <Text style={[styles.emptyHint, {color: pal.fg3}]}>
-        {isGuest ? (lang === 'zh' ? '还没有可查看的共享 agent。' : 'No shared agents to view yet.') : (lang === 'zh' ? '新建会话后，可在终端启动你的 agent。' : 'Create a session, then start your agent in its terminal.')}
+        {staleShare ? shareStaleText : isGuest ? (lang === 'zh' ? '还没有可查看的共享 agent。' : 'No shared agents to view yet.') : (lang === 'zh' ? '新建会话后，可在终端启动你的 agent。' : 'Create a session, then start your agent in its terminal.')}
       </Text>
       {!demoChrome && <NewSessionAction labelled />}
     </View>
@@ -342,6 +344,7 @@ export function RadarPanel({
               ? `以访客身份连到 ${mac?.name || '服务器'} · ${agents.length} 个会话`
               : `Guest on ${mac?.name || 'server'} · ${agents.length} session${agents.length === 1 ? '' : 's'}`}
           </Text>
+          {staleShare && <Text style={[styles.guestBannerText, {color: pal.fg2}]}>{shareStaleText}</Text>}
         </View>
       )}
       <SectionList

@@ -134,6 +134,7 @@ pane/window IDs are searchable.
   device. If it cannot load, check the network path or use a tunnel/VPN.
 - **A used pairing code is refused:** generate a new code; each enrolls one device.
 - **A guest can see but cannot type:** check the link's input panes and `gtmux share on`.
+- **“Share access has expired”:** the pane grants belong to a previous tmux server. Ask the owner to grant access to the intended panes again. Web, phone and iPad keep the guest connection and show this explanation; pairing again does not restore these grants. An ordinary empty shared radar does not mean access has expired.
 - **No notifications:** check the Mac is awake, serve is running, the device is registered
   and iOS allows notifications.
 
