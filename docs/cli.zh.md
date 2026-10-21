@@ -1639,6 +1639,17 @@ on`）能往更短的那份「可输入」清单里打字。owner 设置和 HQ A
 压缩包必须匹配从 GitHub 直取的 SHA256 校验值；取不到官方校验值时停止更新。
 菜单栏 App 仅从 GitHub 直取，可用 `--cli-only` 跳过。
 
+更新按 CLI、App 各自比较版本，保留比目标新或版本未知的组件。开发版／预发布版不会
+被相同数字版本的正式版替换。`--check --json` 保留 `{current,latest,update}`，另有
+`cli_update`、`app_update`、`source` 和可选 `warning`。jsdelivr 给出的是缓存候选，
+可能落后；没有发现更新不代表已确认 GitHub 最新版。现有 `GTMUX_VERSION=vX.Y.Z`
+仍允许明确指定版本重装或降级。
+
+安装器先校验并替换 CLI，再尝试 App。退出码 3 表示 App 步骤未完成，输出会分别说明
+CLI、App 是否安装，以及激活是否失败；已安装组件的更新说明和 CLI 后续检查仍保留。
+旧 App 可重试 `gtmux update`；尚未安装时用 `gtmux install app`，激活失败则在桌面会话运行
+`gtmux app` 并检查登录启动设置。菜单栏显示“更新未完成”。必要安装步骤失败仍返回 1，
+选中步骤全部完成返回 0。
 
 命令行更新成功后，由新版程序运行只读检查 `doctor --no-prompt --progress`，
 最多等待 90 秒。发现环境问题不会把安装成功改报为更新失败。

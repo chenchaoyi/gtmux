@@ -23,10 +23,14 @@ import (
 // updateCheckJSON is the `gtmux update --check --json` payload the menu-bar app
 // reads to decide whether to surface a "new version available" prompt.
 type updateCheckJSON struct {
-	Current string `json:"current"`
-	Latest  string `json:"latest"`
-	Update  bool   `json:"update"`
-	Error   string `json:"error,omitempty"`
+	Current   string `json:"current"`
+	Latest    string `json:"latest"`
+	Update    bool   `json:"update"`
+	Error     string `json:"error,omitempty"`
+	Source    string `json:"source,omitempty"`
+	Warning   string `json:"warning,omitempty"`
+	CLIUpdate bool   `json:"cli_update"`
+	AppUpdate bool   `json:"app_update"`
 }
 
 // updateCheckPayload builds the --json result. `update` is true when `latest` is newer
@@ -36,10 +40,12 @@ type updateCheckJSON struct {
 // behind (the reported version-inconsistency loop). An empty latest means the release API
 // was unreachable (`error` set, `update` stays false so the app never prompts on failure).
 func updateCheckPayload(cur, app, latest string) updateCheckJSON {
-	behind := latest != "" && (latest != cur || (app != "" && latest != app))
-	out := updateCheckJSON{Current: cur, Latest: latest, Update: behind}
+	cliBehind, appBehind := newerRelease(latest, cur), app != "" && newerRelease(latest, app)
+	out := updateCheckJSON{Current: cur, Latest: latest, Update: cliBehind || appBehind, CLIUpdate: cliBehind, AppUpdate: appBehind}
 	if latest == "" {
 		out.Error = "couldn't reach the release API"
+	} else if !out.Update && (!comparableRelease(cur) || (app != "" && !comparableRelease(app))) {
+		out.Error = "installed component version is unknown; automatic replacement skipped"
 	}
 	return out
 }
@@ -54,20 +60,41 @@ func installedAppVersion() string {
 		return ""
 	}
 	for _, app := range installedAppCandidates(state.Home(), "/Applications/Gtmux.app") {
-		plist := filepath.Join(app, "Contents", "Info.plist")
-		out, err := exec.Command("/usr/libexec/PlistBuddy", "-c", "Print :CFBundleShortVersionString", plist).Output()
-		if err != nil {
-			continue
-		}
-		// Normalize a leading "v": the app bundle's CFBundleShortVersionString carries the
-		// git tag verbatim ("v0.44.10") while the CLI's Version is v-stripped, so an
-		// un-normalized compare would read a CURRENT app as "behind" (never matching) and
-		// double-"v" it in doctor. Strip it so both sides speak the same form.
-		if v := strings.TrimPrefix(strings.TrimSpace(string(out)), "v"); v != "" {
+		if v := appBundleVersion(app); v != "" {
 			return v
 		}
 	}
 	return ""
+}
+
+// An existing bundle with unreadable metadata is unknown, not an absent app that
+// the updater may install over. Keep doctor's historical version reader unchanged.
+func installedAppUpdateVersion() string {
+	if runtime.GOOS != "darwin" {
+		return ""
+	}
+	return appVersionForUpdate(installedAppCandidates(state.Home(), "/Applications/Gtmux.app"))
+}
+
+func appVersionForUpdate(candidates []string) string {
+	if len(candidates) == 0 {
+		return ""
+	}
+	// Version lookup must follow the same first-bundle choice as replacement.
+	// Falling back to another bundle could overwrite an unknown/newer first one.
+	if v := appBundleVersion(candidates[0]); v != "" {
+		return v
+	}
+	return "unknown"
+}
+
+func appBundleVersion(app string) string {
+	plist := filepath.Join(app, "Contents", "Info.plist")
+	out, err := exec.Command("/usr/libexec/PlistBuddy", "-c", "Print :CFBundleShortVersionString", plist).Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimPrefix(strings.TrimSpace(string(out)), "v")
 }
 
 // installedAppCandidates is the single install-location check shared by doctor,
@@ -116,67 +143,105 @@ func cmdUpdate(args []string) int {
 		}
 	}
 
-	cur := strings.TrimPrefix(Version, "v")
-	latestTag := fetchLatestTag() // "vX.Y.Z" (with the v), "" if unreachable
-	latest := strings.TrimPrefix(latestTag, "v")
+	return performUpdate(checkOnly, cliOnly, jsonOut, updateOperations{
+		current: Version, appVersion: installedAppUpdateVersion, latest: fetchLatestRelease,
+		install: runReleaseInstaller, changes: printWhatChanged,
+		doctor: func() { postUpdateDoctor(installedCLIPath(), 90*time.Second) },
+	})
+}
 
+// Keep the command's decision/output path testable without network or installation.
+type updateOperations struct {
+	current    string
+	appVersion func() string
+	latest     func() latestRelease
+	install    func(bool, string) (releaseInstallResult, int)
+	changes    func(string, string)
+	doctor     func()
+}
+
+func performUpdate(checkOnly, cliOnly, jsonOut bool, ops updateOperations) int {
+	cur := strings.TrimPrefix(ops.current, "v")
+	release := ops.latest()
+	latest := strings.TrimPrefix(release.Tag, "v")
+	appV := ""
+	if !cliOnly && os.Getenv("GTMUX_NO_APP") == "" {
+		appV = ops.appVersion()
+	}
+	payload := updateCheckPayload(cur, appV, latest)
+	payload.Source = release.Source
+	if release.Source == "jsdelivr" {
+		payload.Warning = "cached release index may be behind GitHub"
+		// Older consumers already treat an error without an update as an
+		// inconclusive check, rather than claiming the installation is current.
+		if !payload.Update {
+			payload.Error = payload.Warning
+		}
+	}
 	if jsonOut {
-		// Machine-readable check for the menu-bar app's "check for updates" — factors in
-		// the app's OWN version so a stale app (CLI already current) still prompts.
-		b, _ := json.Marshal(updateCheckPayload(cur, installedAppVersion(), latest))
+		b, _ := json.Marshal(payload)
 		fmt.Println(string(b))
 		return 0
 	}
-
+	pinned := !checkOnly && os.Getenv("GTMUX_VERSION") != ""
+	if latest == "" && !pinned {
+		i18n.Sae("gtmux update: couldn't resolve a stable release from the release API.",
+			"gtmux update: 无法从发布接口确定稳定版本。")
+		return 1
+	}
+	if payload.Warning != "" {
+		i18n.Sae("GitHub latest is unavailable; the cached release index may be behind.",
+			"无法确认 GitHub 最新版，缓存版本索引可能落后。")
+	}
+	// GTMUX_VERSION is the existing explicit install pin, including downgrades.
+	// Checks always describe the discovered release, never the installation pin.
+	if !payload.Update && !pinned {
+		i18n.Say("No newer comparable release found (CLI "+cur+", release "+latest+").",
+			"未发现可比较的更新版本（CLI "+cur+"，发布版本 "+latest+"）。")
+		return 0
+	}
 	if checkOnly {
-		switch {
-		case latest == "":
-			i18n.Sae("gtmux update: couldn't reach the release API (network?).",
-				"gtmux update: 连不上发布接口（网络问题？）。")
-			return 1
-		case latest == cur:
-			i18n.Say("gtmux is up to date ("+cur+").", "gtmux 已是最新（"+cur+"）。")
-		default:
-			i18n.Say("update available: "+cur+" → "+latest+"  (run `gtmux update`)",
-				"有新版本："+cur+" → "+latest+"  （运行 `gtmux update`）")
-		}
+		i18n.Say("update available: "+latest+"  (run `gtmux update`)",
+			"有可更新版本："+latest+"  （运行 `gtmux update`）")
 		return 0
 	}
-
-	// The menu-bar app updates via THIS command, so "already up to date" must consider
-	// the app too — else a stale app (CLI already current) short-circuits here and the app
-	// can never refresh itself (the reported loop: click update → "already up to date" →
-	// app never swapped → "Update failed"). When the app is behind, fall through and run
-	// the installer's app step. (--cli-only ignores the app by design.)
-	appV := ""
-	if !cliOnly {
-		appV = installedAppVersion()
+	if pinned {
+		latest = strings.TrimPrefix(os.Getenv("GTMUX_VERSION"), "v")
 	}
-	appBehind := appV != "" && latest != "" && appV != latest
-
-	if latest != "" && latest == cur && !appBehind {
-		i18n.Say("gtmux is already up to date ("+cur+").", "gtmux 已是最新（"+cur+"）。")
-		return 0
-	}
-	switch {
-	case latest != "" && latest == cur && appBehind:
-		i18n.Say("Updating the menu-bar app "+appV+" → "+latest+" (CLI already "+cur+") …",
-			"正在更新菜单栏 app "+appV+" → "+latest+"（CLI 已是 "+cur+"）…")
-	case latest != "":
-		i18n.Say("Updating gtmux "+cur+" → "+latest+" …", "正在更新 gtmux "+cur+" → "+latest+" …")
-	default:
-		i18n.Say("Updating gtmux to the latest release…", "正在更新 gtmux 到最新版…")
-	}
-
-	rc := diag.DidRC("act.update", "gtmux", runInstaller(cliOnly, latestTag), "updated gtmux",
+	i18n.Say("Updating selected components to "+latest+" …", "正在将需要更新的组件更新到 "+latest+" …")
+	result, rc := ops.install(cliOnly, release.Tag)
+	diag.DidRC("act.update", "gtmux", rc, "update components",
 		"from", cur, "to", latest, "cliOnly", cliOnly)
-	if rc == 0 {
-		printWhatChanged(cur, latest)
-		if os.Getenv("GTMUX_ACTOR") != "menubar" {
-			postUpdateDoctor(installedCLIPath(), 90*time.Second)
+	if result.CLIInstalled || result.AppInstalled {
+		from := cur
+		if result.AppInstalled && (!result.CLIInstalled || newerRelease(cur, appV)) {
+			from = appV
+		}
+		ops.changes(from, latest)
+		if result.CLIInstalled && os.Getenv("GTMUX_ACTOR") != "menubar" {
+			ops.doctor()
 		}
 	}
 	return rc
+}
+
+// Automatic updates only select stable triples (optional build metadata). Unknown
+// installed versions are left alone. For prerelease/dev builds, compare the numeric
+// baseline conservatively: the same stable triple must not replace a newer local build.
+func newerRelease(target, current string) bool {
+	target = strings.TrimSpace(target)
+	current = strings.TrimSpace(current)
+	if !releaseTagPattern.MatchString(target) || !releaseTagPattern.MatchString(current) || strings.Contains(strings.SplitN(target, "+", 2)[0], "-") {
+		return false
+	}
+	t, tok := parseSemver(target)
+	c, cok := parseSemver(current)
+	return tok && cok && compareSemver(t, c) > 0
+}
+
+func comparableRelease(version string) bool {
+	_, ok := parseSemver(version)
+	return ok && releaseTagPattern.MatchString(strings.TrimSpace(version))
 }
 
 // printWhatChanged summarises the versions just crossed. Best-effort and SILENT on
@@ -204,16 +269,53 @@ func printWhatChanged(from, to string) {
 
 // runInstaller installs release assets using local code. Remote scripts are never
 // fetched or executed. Shared by update, install app, and doctor --fix.
+const partialUpdateExit = 3
+
 func runInstaller(cliOnly bool, version string) int {
+	_, rc := runReleaseInstaller(cliOnly, version)
+	return rc
+}
+
+func runReleaseInstaller(cliOnly bool, version string) (releaseInstallResult, int) {
 	installer, err := newReleaseInstaller(cliOnly, version)
+	var result releaseInstallResult
 	if err == nil {
-		err = installer.install()
+		result, err = installer.install()
 	}
+	if result.CLIInstalled {
+		restartServeAgents()
+	}
+	return result, reportReleaseInstall(result, err)
+}
+
+func reportReleaseInstall(result releaseInstallResult, err error) int {
 	if err != nil {
 		i18n.Sae("gtmux: update failed: "+err.Error(), "gtmux: 更新失败："+err.Error())
 		return 1
 	}
-	restartServeAgents()
+	if result.AppError != nil {
+		cli := "CLI unchanged"
+		cliZH := "CLI 未变更"
+		if result.CLIInstalled {
+			cli = "CLI installed"
+			cliZH = "CLI 已安装"
+		}
+		app := "menu-bar app not installed"
+		appZH := "菜单栏 app 未安装"
+		if result.AppInstalled {
+			app = "menu-bar app installed, activation failed"
+			appZH = "菜单栏 app 已安装，激活失败"
+		}
+		next := "retry `gtmux update` (or `gtmux install app` if absent)"
+		nextZH := "重试 `gtmux update`（未装 App 时用 `gtmux install app`）"
+		if result.AppInstalled {
+			next = "run `gtmux app` from a desktop session; check the app's login setting"
+			nextZH = "请在桌面会话运行 `gtmux app`，并检查 App 登录启动设置"
+		}
+		i18n.Sae("gtmux: "+cli+"; "+app+"; "+next+": "+result.AppError.Error(),
+			"gtmux: "+cliZH+"；"+appZH+"；"+nextZH+"："+result.AppError.Error())
+		return partialUpdateExit
+	}
 	return 0
 }
 
@@ -245,47 +347,44 @@ func runBounded(timeout time.Duration, name string, args ...string) error {
 	return exec.CommandContext(ctx, name, args...).Run()
 }
 
-// fetchLatestTag returns the latest release tag (e.g. "v0.6.0"), or "" on failure.
-// It tries the GitHub API first, then jsdelivr's data API — which stays reachable on
-// corp/CN networks that block api.github.com, so a `gtmux update` there can still
-// resolve the version; installation still requires authoritative GitHub assets.
-func fetchLatestTag() string {
-	if b := httpGetBytes("https://api.github.com/repos/chenchaoyi/gtmux/releases/latest", 10*time.Second); b != nil {
-		if tag := parseTagName(string(b)); tag != "" {
-			return tag
+// Release lookup tries GitHub, then a potentially lagging jsdelivr index. The
+// update command retains the source; legacy installer callers only need the tag.
+type latestRelease struct{ Tag, Source string }
+
+func fetchLatestTag() string { return fetchLatestRelease().Tag }
+
+func fetchLatestRelease() latestRelease { return resolveLatestRelease(httpGetBytes) }
+
+func resolveLatestRelease(get func(string, time.Duration) []byte) latestRelease {
+	if b := get("https://api.github.com/repos/chenchaoyi/gtmux/releases/latest", 10*time.Second); b != nil {
+		if tag := parseTagName(string(b)); newerRelease(tag, "0.0.0") {
+			return latestRelease{tag, "github"}
 		}
 	}
-	if b := httpGetBytes("https://data.jsdelivr.com/v1/packages/gh/chenchaoyi/gtmux", 10*time.Second); b != nil {
+	if b := get("https://data.jsdelivr.com/v1/packages/gh/chenchaoyi/gtmux", 10*time.Second); b != nil {
 		if tag := parseJsdelivrLatest(string(b)); tag != "" {
-			return tag
+			return latestRelease{tag, "jsdelivr"}
 		}
 	}
-	return ""
+	return latestRelease{}
 }
 
 // parseTagName pulls "tag_name":"vX.Y.Z" out of the GitHub releases/latest JSON
-// (a minimal scan — no struct). "" if absent.
+// "" if absent, malformed, draft or prerelease.
 func parseTagName(body string) string {
-	const key = `"tag_name":`
-	i := strings.Index(body, key)
-	if i < 0 {
+	var release struct {
+		Tag        string `json:"tag_name"`
+		Draft      bool   `json:"draft"`
+		Prerelease bool   `json:"prerelease"`
+	}
+	if json.Unmarshal([]byte(body), &release) != nil || release.Draft || release.Prerelease {
 		return ""
 	}
-	rest := body[i+len(key):]
-	q1 := strings.Index(rest, `"`)
-	if q1 < 0 {
-		return ""
-	}
-	rest = rest[q1+1:]
-	q2 := strings.Index(rest, `"`)
-	if q2 < 0 {
-		return ""
-	}
-	return rest[:q2]
+	return release.Tag
 }
 
-// parseJsdelivrLatest reads the newest version from jsdelivr's package data API,
-// whose `versions` list is sorted newest-first. Returns it tag-shaped ("vX.Y.Z").
+// parseJsdelivrLatest selects the highest stable numeric version in the cached
+// index. Returns it tag-shaped ("vX.Y.Z").
 func parseJsdelivrLatest(body string) string {
 	var d struct {
 		Versions []struct {
@@ -295,7 +394,14 @@ func parseJsdelivrLatest(body string) string {
 	if json.Unmarshal([]byte(body), &d) != nil || len(d.Versions) == 0 {
 		return ""
 	}
-	v := strings.TrimSpace(d.Versions[0].Version)
+	// Do not trust list order or select prereleases as stable updates.
+	v := ""
+	for _, entry := range d.Versions {
+		candidate := strings.TrimSpace(entry.Version)
+		if newerRelease(candidate, "0.0.0") && (v == "" || newerRelease(candidate, v)) {
+			v = candidate
+		}
+	}
 	if v == "" {
 		return ""
 	}

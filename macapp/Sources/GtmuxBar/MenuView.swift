@@ -938,7 +938,7 @@ struct MenuView: View {
                 HStack(spacing: 7) {
                     Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 12))
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(l10n.tr("Update failed, click to retry", "更新失败，点此重试"))
+                        Text(updater.failureTitle + l10n.tr(", click to retry", "，点此重试"))
                             .font(.system(size: 11.5, weight: .semibold))
                         if let e = updater.lastError, !e.isEmpty {
                             Text(e).font(.system(size: 10)).foregroundStyle(.white.opacity(0.85))

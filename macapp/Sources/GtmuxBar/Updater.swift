@@ -30,9 +30,20 @@ func postExitZeroAction(
     return .relaunch
 }
 
+/// Preserve the component receipt even when release notes or diagnostics follow it.
+/// Old CLI versions without a receipt retain the last-line fallback.
+func updateFailureReason(log: String) -> String? {
+    let lines = log.split(whereSeparator: \.isNewline)
+        .map { $0.trimmingCharacters(in: .whitespaces) }
+        .filter { !$0.isEmpty }
+    guard let reason = lines.last(where: { $0.hasPrefix("gtmux:") }) ?? lines.last else { return nil }
+    return String(reason.prefix(240))
+}
+
 /// Updater backs the menu-bar "check for updates". It reuses the CLI's OWN updater
 /// so a menu-bar update is the same as the user typing `gtmux update`: fetch +
-/// SHA-verify the CLI tarball AND the menu-bar app (with the CN mirror fallback),
+/// SHA-verify the CLI tarball (mirrors allowed only for verified CLI bytes), then
+/// attempt the optional app directly from GitHub. Partial results preserve both facts.
 /// install the CLI to ~/.local/bin and the app to ~/Applications.
 ///
 /// The install step `pkill`s + relaunches THIS app (to swap the bundle), so the
@@ -61,6 +72,12 @@ final class Updater: ObservableObject {
     @Published private(set) var state: State = .idle
     /// A short human reason for the last install failure, shown next to the retry.
     @Published private(set) var lastError: String?
+    @Published private(set) var partialUpdate = false
+    var failureTitle: String {
+        partialUpdate
+            ? L10n.shared.tr("Update incomplete", "更新未完成")
+            : L10n.shared.tr("Update failed", "更新失败")
+    }
     private var lastCheck: Date?
 
     // Watchdog for a detached install (see the type doc). Nil unless an install is in
@@ -126,6 +143,7 @@ final class Updater: ObservableObject {
     func install() {
         if case .updating = state { return }
         lastError = nil
+        partialUpdate = false
         exitZeroAt = nil // fresh attempt (incl. a retry) restarts the exit:0 grace clock
         // Drop any status from a prior attempt so the watchdog can't read a stale
         // non-zero as this run's result and fail us instantly.
@@ -160,7 +178,7 @@ final class Updater: ObservableObject {
         guard case .updating = state else { stopWatchdog(); return }
         // The installer recorded its exit code → the detached `gtmux update` finished.
         if let code = Self.recordedExit() {
-            if code != 0 { failInstall(Self.failureReason()); return }
+            if code != 0 { failInstall(Self.failureReason(), partial: code == 3); return }
             // exit 0 → it should be pkill'ing + relaunching us. Give the relaunch a
             // short grace; if we're STILL alive past it, the relaunch was missed — a
             // bare-`open` re-activate of the dying old instance, or the app step
@@ -235,7 +253,8 @@ final class Updater: ObservableObject {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
     }
 
-    private func failInstall(_ reason: String?) {
+    private func failInstall(_ reason: String?, partial: Bool = false) {
+        partialUpdate = partial
         DiagLog.warn("update.failed", "an update started from the menu did not install",
                      ["exit": Self.recordedExit() ?? -1])
         lastError = reason
@@ -256,11 +275,7 @@ final class Updater: ObservableObject {
     /// for the retry row. Nil when there's nothing useful to show.
     private static func failureReason() -> String? {
         guard let s = try? String(contentsOfFile: logPath, encoding: .utf8) else { return nil }
-        let last = s.split(whereSeparator: \.isNewline)
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .last(where: { !$0.isEmpty })
-        guard let last = last, !last.isEmpty else { return nil }
-        return last.count > 140 ? String(last.suffix(140)) : last
+        return updateFailureReason(log: s)
     }
 
     // MARK: - CLI plumbing

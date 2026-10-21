@@ -32,9 +32,15 @@ var releaseRepoPattern = regexp.MustCompile(`^[A-Za-z0-9_-][A-Za-z0-9_.-]*/[A-Za
 type releaseInstaller struct {
 	repo, version, platform, arch, binDir, appDir string
 	mirror                                        string
-	cliOnly                                       bool
+	cliOnly, skipCLI                              bool
 	client                                        *http.Client
 	activateApp                                   func(string) error
+	replaceApp                                    func(string, string) error
+}
+
+type releaseInstallResult struct {
+	CLIInstalled, AppInstalled bool
+	AppError                   error
 }
 
 func newReleaseInstaller(cliOnly bool, version string) (*releaseInstaller, error) {
@@ -75,10 +81,22 @@ func newReleaseInstaller(cliOnly bool, version string) (*releaseInstaller, error
 		client:      &http.Client{Timeout: 3 * time.Minute},
 		activateApp: activateReleaseApp,
 	}
+	x.selectComponents(Version, installedAppUpdateVersion(), os.Getenv("GTMUX_VERSION") != "")
 	if (x.platform != "darwin" && x.platform != "linux") || (x.arch != "arm64" && x.arch != "amd64") {
 		return nil, fmt.Errorf("unsupported platform %s/%s", x.platform, x.arch)
 	}
 	return x, nil
+}
+
+// Explicit version pins retain their existing reinstall/downgrade behavior.
+func (x *releaseInstaller) selectComponents(cli, app string, pinned bool) {
+	if pinned {
+		return
+	}
+	x.skipCLI = !newerRelease(x.version, cli)
+	if app != "" && !newerRelease(x.version, app) {
+		x.cliOnly = true
+	}
 }
 
 // officialReleaseURL bounds the checksum/app trust anchor, including redirects.
@@ -179,13 +197,27 @@ func (x *releaseInstaller) archiveURLs(official string) ([]string, error) {
 	return urls, nil
 }
 
-func (x *releaseInstaller) install() error {
+func (x *releaseInstaller) install() (releaseInstallResult, error) {
+	var result releaseInstallResult
 	tmp, err := os.MkdirTemp("", "gtmux-release-*")
 	if err != nil {
-		return err
+		return result, err
 	}
 	defer os.RemoveAll(tmp)
 	base := "https://github.com/" + x.repo + "/releases/download/" + x.version + "/"
+	if !x.skipCLI {
+		if err := x.installCLI(tmp, base); err != nil {
+			return result, err
+		}
+		result.CLIInstalled = true
+	}
+	if !x.cliOnly {
+		result.AppInstalled, result.AppError = x.installApp(tmp, base)
+	}
+	return result, nil
+}
+
+func (x *releaseInstaller) installCLI(tmp, base string) error {
 	name := fmt.Sprintf("gtmux-%s-%s-%s.tar.gz", strings.TrimPrefix(x.version, "v"), x.platform, x.arch)
 	sums := filepath.Join(tmp, "SHASUMS256.txt")
 	// Never fall back to a mirror for the checksum. A proxy able to replace both
@@ -236,48 +268,53 @@ func (x *releaseInstaller) install() error {
 	if err := extractReleaseCLI(archive, binary); err != nil {
 		return err
 	}
-	var stagedApp string
-	if !x.cliOnly {
-		// The app is published by a separate job, outside SHASUMS256.txt. Fetch
-		// it only over GitHub's authenticated transport; proxies cannot supply it.
-		appZip := filepath.Join(tmp, "app.zip")
-		if err := x.download(base+"Gtmux-"+strings.TrimPrefix(x.version, "v")+"-macos.zip", appZip, releaseAssetLimit, true); err != nil {
-			return err
-		}
-		if err := validateReleaseApp(appZip); err != nil {
-			return err
-		}
-		if err := os.MkdirAll(x.appDir, 0o755); err != nil {
-			return err
-		}
-		stagedApp, err = os.MkdirTemp(x.appDir, ".gtmux-app-*")
-		if err != nil {
-			return err
-		}
-		defer os.RemoveAll(stagedApp)
-		// ditto preserves the signed macOS bundle's metadata. This is a fixed
-		// local tool with arguments, never a downloaded script or shell program.
-		if err := exec.Command("/usr/bin/ditto", "-x", "-k", appZip, stagedApp).Run(); err != nil {
-			return err
-		}
-		if _, err := os.Stat(filepath.Join(stagedApp, "Gtmux.app", "Contents", "Info.plist")); err != nil {
-			return fmt.Errorf("incomplete app bundle: %w", err)
-		}
-	}
 	if err := replaceReleaseCLI(binary, x.binDir); err != nil {
 		return err
 	}
-	fmt.Println("Installed " + filepath.Join(x.binDir, "gtmux") + " (" + x.version + ", SHA256 verified)")
-	if stagedApp != "" {
-		target := filepath.Join(x.appDir, "Gtmux.app")
-		if err := replaceReleaseApp(filepath.Join(stagedApp, "Gtmux.app"), target); err != nil {
-			return err
-		}
-		if x.activateApp != nil {
-			return x.activateApp(target)
-		}
-	}
+	i18n.Say("CLI installed: "+filepath.Join(x.binDir, "gtmux")+" ("+x.version+", SHA256 verified)",
+		"CLI 已安装："+filepath.Join(x.binDir, "gtmux")+"（"+x.version+"，SHA256 校验通过）")
 	return nil
+}
+
+func (x *releaseInstaller) installApp(tmp, base string) (bool, error) {
+	// The app is published by a separate job, outside SHASUMS256.txt. Fetch
+	// it only over GitHub's authenticated transport; proxies cannot supply it.
+	appZip := filepath.Join(tmp, "app.zip")
+	if err := x.download(base+"Gtmux-"+strings.TrimPrefix(x.version, "v")+"-macos.zip", appZip, releaseAssetLimit, true); err != nil {
+		return false, err
+	}
+	if err := validateReleaseApp(appZip); err != nil {
+		return false, err
+	}
+	if err := os.MkdirAll(x.appDir, 0o755); err != nil {
+		return false, err
+	}
+	stagedApp, err := os.MkdirTemp(x.appDir, ".gtmux-app-*")
+	if err != nil {
+		return false, err
+	}
+	defer os.RemoveAll(stagedApp)
+	// ditto preserves the signed macOS bundle's metadata. This is a fixed
+	// local tool with arguments, never a downloaded script or shell program.
+	if err := exec.Command("/usr/bin/ditto", "-x", "-k", appZip, stagedApp).Run(); err != nil {
+		return false, err
+	}
+	if _, err := os.Stat(filepath.Join(stagedApp, "Gtmux.app", "Contents", "Info.plist")); err != nil {
+		return false, fmt.Errorf("incomplete app bundle: %w", err)
+	}
+	target := filepath.Join(x.appDir, "Gtmux.app")
+	replace := x.replaceApp
+	if replace == nil {
+		replace = replaceReleaseApp
+	}
+	if err := replace(filepath.Join(stagedApp, "Gtmux.app"), target); err != nil {
+		return false, err
+	}
+	i18n.Say("Menu-bar app installed: "+target+" ("+x.version+")", "菜单栏 app 已安装："+target+"（"+x.version+"）")
+	if x.activateApp != nil {
+		return true, x.activateApp(target)
+	}
+	return true, nil
 }
 
 // Extract ONLY the root regular binary. Archive paths and links never become
@@ -440,11 +477,7 @@ func activateReleaseApp(target string) error {
 			cmd.Env = append(cmd.Env, e)
 		}
 	}
-	if err := cmd.Run(); err != nil {
-		i18n.Sae("Gtmux.app was installed but could not be launched; run `gtmux app` from a desktop session.",
-			"Gtmux.app 已安装，但未能启动；请在桌面会话中运行 `gtmux app`。")
-	}
-	return nil
+	return cmd.Run()
 }
 
 func setAppAutostart(target string) error {

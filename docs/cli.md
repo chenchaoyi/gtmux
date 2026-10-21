@@ -1914,6 +1914,19 @@ installer script. CLI archives from mirrors must match SHA256 checksums fetched 
 from GitHub; if those checksums are unavailable, updating stops. The menu-bar app is
 downloaded directly from GitHub. Use `--cli-only` to skip it.
 
+Updates compare CLI and app versions separately and leave newer or unknown installed
+versions untouched. A development/prerelease build is not replaced by the same stable
+numeric version. `--check --json` keeps `{current,latest,update}` and adds
+`cli_update`, `app_update`, `source` and optional `warning`. A jsdelivr result is a
+cached candidate and may lag GitHub; a negative cached check does not confirm the
+latest release. `GTMUX_VERSION=vX.Y.Z` retains explicit reinstall/downgrade behavior.
+
+The verified CLI is installed before the optional app. Exit 3 means the app step is
+incomplete: output states whether the CLI and app were installed, or app activation
+failed. Successful components keep their release notes and CLI post-update check.
+Retry `gtmux update` for an older app, `gtmux install app` if absent, or `gtmux app`
+from a desktop session if activation failed; the menu bar shows **Update incomplete**.
+Exit 1 still signals a required installation failure, and 0 means selected steps completed.
 
 After a successful CLI update, the newly installed executable runs a read-only
 `doctor --no-prompt --progress` check (90-second limit). Findings do not turn a

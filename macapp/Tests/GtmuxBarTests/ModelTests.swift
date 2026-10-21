@@ -528,3 +528,17 @@ final class RestoreInFlightTests: XCTestCase {
         XCTAssertFalse(store.restoring)
     }
 }
+
+final class UpdateComponentReceiptTests: XCTestCase {
+    func testPartialReceiptSurvivesReleaseNotesAndDoctorOutput() {
+        let receipt = "gtmux: CLI installed; menu-bar app not installed; retry `gtmux update`: HTTP 404"
+        XCTAssertEqual(updateFailureReason(log: "CLI installed: /tmp/test/gtmux\n\(receipt)\nWhat changed\nA release note\nDoctor finished\n"), receipt)
+    }
+
+    func testActivationFailureAndChineseReceiptRemainReadable() {
+        let receipt = "gtmux: CLI 已安装；菜单栏 app 已安装，激活失败；请重试 `gtmux update`：failure"
+        XCTAssertEqual(updateFailureReason(log: "\(receipt)\n后续说明\n"), receipt)
+        XCTAssertNil(updateFailureReason(log: "\n   \n"))
+        XCTAssertEqual(updateFailureReason(log: "old installer\nlast error\n"), "last error")
+    }
+}
