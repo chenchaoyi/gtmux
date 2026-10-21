@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.145',
+    en: [
+      '- Tmux message profiles can now expand recorded execution chains.',
+      '- DeepSeek Web/dst records launch ancestry after loading the updated native bridge.',
+      '- HQ messages keep their identity in read-only DeepSeek conversation history.',
+    ],
+    zh: [
+      '- tmux 消息资料现在能正常展开已有执行链。',
+      '- DeepSeek Web/dst 加载新版原生桥接后，可记录启动来源与执行链。',
+      '- DeepSeek 只读历史对话中的 HQ 消息不再显示为人类发言。',
+    ],
+  },
+  {
     version: '1.0.144',
     en: [
       '- HQ messages and profiles use the gtmux logo, with current HQ details available on expansion.',

@@ -1,0 +1,3 @@
+- Tmux message profiles can now expand recorded execution chains.
+- DeepSeek Web/dst records launch ancestry after loading the updated native bridge.
+- HQ messages keep their identity in read-only DeepSeek conversation history.
