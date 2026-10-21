@@ -28,6 +28,18 @@ test('unsupported combinations are not fabricated', () => {
   assert.equal(supports(cap().keys[0], ['control']), false);
 });
 
+test('legacy fallback stops after an uncertain response and cannot chain a digit or Enter', async () => {
+  dom();const sent = [];
+  const keyboard = create({zh:false,getId:()=>'%1',canInput:()=>true,request:async()=>({ok:false}),send:async(id,body)=>{sent.push({id,body});return {ok:false,status:503,json:async()=>({})};},echo:()=>{}});
+  document.body.appendChild(keyboard.button);
+  try {
+    await keyboard.refresh();keyboard.legacy('Down');await flush();
+    assert.equal(sent.length,1);assert.equal(sent[0].body.key,'Down');
+    keyboard.digit(1);keyboard.legacy('Enter');await flush();
+    assert.equal(sent.length,1);
+  } finally {keyboard.dispose();delete global.document;}
+});
+
 test('real panel handler sends F2/Shift+F2, clears modifiers, serializes taps and preserves a draft outside the panel', async () => {
   dom();const sent = [];const current = cap();
   const keyboard = create({zh:false,getId:()=>'%1',canInput:()=>true,request:async()=>({ok:true,json:async()=>current}),send:async(id,body)=>{sent.push({id,body});return {ok:true,json:async()=>({text:'received'})};},echo:()=>{}});

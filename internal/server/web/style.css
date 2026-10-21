@@ -24,6 +24,7 @@
   --running: #8E8E93;
   --amber: #F59E0B;       /* connection "reconnecting" dot */
   --waiting-tint: rgba(239, 68, 68, 0.08);
+  --chat-rail: 196px;
   --col: 820px;           /* centered content column on wide screens */
 }
 * { box-sizing: border-box; }
@@ -383,7 +384,7 @@ section { flex: 1 1 auto; min-height: 0; overflow: auto; }
 
 /* ── §03 wide chat: turn outline rail + hover actions + approval card ── */
 .turn-rail {
-  flex: 0 0 196px; width: 196px; border-right: 1px solid var(--divider);
+  flex: 0 0 var(--chat-rail); width: var(--chat-rail); border-right: 1px solid var(--divider);
   display: flex; flex-direction: column; min-height: 0; background: var(--bg);
 }
 .to-head { padding: 16px 14px 8px; font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--fg3); }
@@ -776,3 +777,23 @@ svg .spin { transform-origin: 8px 8px; animation: gtmux-ring-spin 2s linear infi
 .cx-keys .tk-entry { min-height:44px; min-width:44px; }
 
 .tk-aliases { grid-column:1/-1; margin:0; color:var(--fg2); font-size:12px; }
+
+/* Current interaction is outside transcript scrolling and shares its composer. */
+#chat {min-height: 0;}
+#chat-input, #chat-interaction {flex: 0 0 auto; width: 100%;}
+#chat-interaction .appr-card {max-width: var(--col); margin: 4px auto; border-color: var(--divider); background: var(--bg);}
+.interaction-toggle, .interaction-close, .interaction-peek, .chat-interact {min-height: 44px; border: 0; background: transparent; color: var(--fg2); cursor: pointer; font: inherit; text-align: left;}
+.interaction-toggle {flex: 1; color: var(--waiting); font-weight: 600;}
+.appr-manual .interaction-toggle {color: var(--fg2);}
+.appr-head {padding: 0 12px;}
+.interaction-body {max-height: min(32vh, 280px); overflow: auto;}
+.interaction-screen {font: 12px/1.6 Menlo, monospace; margin: 0; padding: 0 12px 10px; white-space: pre; overflow: auto; max-height: 180px; color: var(--fg);}
+.interaction-keys {display: flex; overflow-x: auto; padding: 0 5px; gap: 2px;}
+.interaction-keys button {flex: 0 0 auto; min-width: 44px; min-height: 44px; border: 0; background: transparent; color: var(--fg2); cursor: pointer; padding: 0 10px;}
+.interaction-peek {padding: 0 12px; font-size: 12px;}
+button.appr-opt {width: 100%; border: 0; background: transparent; text-align: left; min-height: 44px;}
+.interaction-keys button:disabled, button.appr-opt:disabled {opacity: .45; cursor: default;}
+.chat-interact {margin-left: auto; padding: 0 10px;}
+
+#chat-input .composer {max-width: var(--col); margin: 0 auto;}
+#chat.wide ~ #chat-input, #chat.wide ~ #chat-interaction {padding-left: var(--chat-rail);}

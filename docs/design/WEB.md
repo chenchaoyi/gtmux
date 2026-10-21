@@ -185,3 +185,8 @@ and [research and acceptance boundaries](terminal-keyboard-research.md).
 ### Transcript activity cards (2026-10-19)
 
 Focused Chat uses the same Activity hierarchy, operation labels and neutral action icons as phone/iPad. A heading shows the call count once; folded summaries count action types. Each row offers a short preview, then a native disclosure for the recorded tool name, working directory, input and source-truncation notice when available. Delegation previews show the recorded purpose; wait previews label explicit millisecond settings as settings, never elapsed time or completion. Unknown or partial parameters remain inspectable without guessing. Original input is plain text in a focusable, bounded, horizontally scrollable region with Copy. The group disclosure is a labelled button with `aria-expanded`, at least 44px tall. Group and row expansion, keyboard focus and input scroll survive live updates. Collapse all is a borderless brand-colored action beside the conversation status. `activity.js` holds presentation rules; tests pin its label, alias and icon tables against the mobile source. Compact workbench tiles retain reply-only rendering. [Sources and limits](transcript-activity-research.md).
+
+
+### In-conversation interaction
+
+Waiting keeps the current prompt and keyboard entry visible even without numbered choices. Interact also opens it manually when a wait was not identified. App, iPad and Web share the read-only current-screen endpoint, preserving hook, scope and key-outcome boundaries. See [design and acceptance boundaries](session-interaction.md).

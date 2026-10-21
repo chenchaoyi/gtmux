@@ -6,7 +6,7 @@ import {parseInputCapabilities, type InputCapabilities, type InputContext, type 
 // gated only by the bearer token).
 
 import {Platform} from 'react-native';
-import {Agent, PaneResponse, PaneRow, ReplyOption, ServerMode, TermTheme, toAgent, HostAnswer, HostInfo, SessionFollowSettings} from './types';
+import {Agent, PaneResponse, PaneRow, ReplyOption, PaneInteraction, ServerMode, TermTheme, toAgent, HostAnswer, HostInfo, SessionFollowSettings} from './types';
 import {SessionReset} from '../ui/chatWindow';
 import {Debug} from '../debug';
 import {noteServerDate} from './clock';
@@ -774,6 +774,19 @@ export class GtmuxClient {
     if (!r.ok) return [];
     const j = await r.json().catch(() => null);
     return Array.isArray(j?.options) ? j.options : [];
+  }
+
+  async interaction(id: string, signal?: AbortSignal): Promise<PaneInteraction> {
+    const r = await tfetch(`${this.base}/api/interaction?id=${encodeURIComponent(id)}`, {headers: this.h(), ...(signal ? {signal} : {})});
+    if (r.status === 404 || r.status === 501) {
+      const error = await r.json().catch(() => null);
+      if (error?.error === 'pane not found') throw new Error('Pane not found');
+      return {text: '', options: await this.options(id, signal), awaiting_reply: false, truncated: false, unavailable: true};
+    }
+    if (!r.ok) throw new Error('Current prompt unavailable');
+    const j = await r.json();
+    if (typeof j?.text !== 'string' || !Array.isArray(j.options) || !j.options.every((o: ReplyOption) => Number.isInteger(o?.n) && o.n >= 1 && o.n <= 9 && typeof o.label === 'string') || typeof j.awaiting_reply !== 'boolean' || typeof j.truncated !== 'boolean') throw new Error('Invalid current prompt');
+    return j as PaneInteraction;
   }
 
   // enrollMint mints a short-lived single-use pairing code (for handing this paired

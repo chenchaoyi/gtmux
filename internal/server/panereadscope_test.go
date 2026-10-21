@@ -18,6 +18,7 @@ func readServer(t *testing.T) (http.Handler, string) {
 		Transcript: func(id string, _ int) ([]byte, TranscriptMeta, error) {
 			return []byte(`[{"text":"CONVERSATION-OF-` + id + `"}]`), TranscriptMeta{}, nil
 		},
+		PaneScreen:    func(id string) (string, bool) { return "PROJECT-" + id, true },
 		HasPendingAsk: func(string) bool { return true },
 		PaneText: func(id string) (string, bool) {
 			// The pane id goes in the OPTION LABEL, not just the question: the options
@@ -36,6 +37,7 @@ var paneReads = []struct{ name, path, secret string }{
 	{"diff", "/api/diff?id=", "WORKING-TREE-OF-"},
 	{"transcript", "/api/transcript?id=", "CONVERSATION-OF-"},
 	{"options", "/api/options?id=", "PROJECT-"},
+	{"interaction", "/api/interaction?id=", "PROJECT-"},
 	{"pane screen", "/api/pane?id=", "PROJECT-"},
 }
 

@@ -23,7 +23,7 @@ import {
 } from 'react-native';
 import {Edge, SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {Agent, canReadConversation, nativeReadOnlyNotice, paneLabel, sameAgent, PaneRow, paneRowToAgent, primary, ReplyOption, secondary, TermTheme} from '../api/types';
+import {Agent, canReadConversation, nativeReadOnlyNotice, paneLabel, sameAgent, PaneRow, paneRowToAgent, primary, secondary, TermTheme} from '../api/types';
 import {Debug} from '../debug';
 import {SendPayload, TranscriptTurn} from '../api/client';
 import {useAgents} from '../state/AgentsContext';
@@ -42,7 +42,9 @@ import {SessionReset} from '../ui/chatWindow';
 import {SendFailedBar} from '../ui/SendFailedBar';
 import {busyNote} from '../ui/sendFailure';
 import {BrandLoader} from '../ui/BrandLoader';
-import {ApprovalCard} from '../ui/ApprovalCard';
+import {SessionInteractionCard} from '../ui/SessionInteractionCard';
+import {usePaneInteraction} from '../state/usePaneInteraction';
+import {useTerminalKeys} from '../ui/terminalKeys';
 import {RunningRow} from '../ui/RunningRow';
 import {TasksSheet} from '../ui/TasksSheet';
 import {type BackgroundTask, elapsed, showRow, tally} from '../api/backgroundTasks';
@@ -316,7 +318,8 @@ function PaneDetailView({
   const pendingEcho = useRef<PendingChatEcho | null>(null);
   const echoAttempts = useRef(new Map<string, PendingChatEcho>());
   const [diffOpen, setDiffOpen] = useState(false);
-  const [options, setOptions] = useState<ReplyOption[]>([]);
+  const [manualInteraction, setManualInteraction] = useState(false);
+  const [composeRequest, setComposeRequest] = useState(0);
   // When an approval choice was just tapped (epoch ms). For a short settle window
   // after, the options poll ignores what it parses: the pane is mid-transition, so a
   // capture catches transient/redrawing frames (the just-answered menu lingering, or
@@ -592,6 +595,7 @@ function PaneDetailView({
       if (r.pane.cols) setPaneCols(r.pane.cols);
       if (r.pane.cursor) setCursor(r.pane.cursor);
     }
+    if (r.ok) interactionRefresh.current();
     return r;
   }, [client, agent.pane_id]);
   const onComposerUpload = useCallback(
@@ -599,19 +603,13 @@ function PaneDetailView({
     [client, agent.pane_id],
   );
 
-  // Approval card (B1): only while waiting (cardinal rule), poll the pane's 1/2/3
-  // choices from the shared parser. Cleared the moment it's no longer waiting.
-  useEffect(() => {
-    if (live.status !== 'waiting') {
-      setOptions([]);
-      return;
-    }
-    return startReadPolling(createReadTask(
-      signal => client.options(agent.pane_id, signal), o => {
-        if (Date.now() - answeredAt.current > 1500) setOptions(prev => (sameJSON(prev, o) ? prev : o));
-      }, {onError: () => setOptions([])},
-    ), 2000);
-  }, [client, agent.pane_id, live.status]);
+  const inputEnabled = !isNative && (!isGuest || inputPanes.includes(agent.pane_id));
+  const interaction = usePaneInteraction(client, agent.pane_id, !isNative && (live.status === 'waiting' || manualInteraction), answeredAt);
+  const refreshInteraction = interaction.refresh;
+  const interactionRefresh = useRef(refreshInteraction); interactionRefresh.current = refreshInteraction;
+  const keyControl = useTerminalKeys(isNative ? undefined : `${client.base}|${agent.pane_id}`, inputEnabled, onLoadKeys, onSendKey);
+  useEffect(() => { setManualInteraction(false); }, [client, agent.pane_id]);
+  useEffect(() => { refreshInteraction(); }, [mode, refreshInteraction]);
 
   // Fetch the transcript on mount + when the status flips or a prompt is sent (a turn
   // likely completed) — AND on a slow poll for as long as the chat is on screen.
@@ -1007,6 +1005,7 @@ function PaneDetailView({
               <Ctl pal={pal} label={lang === 'zh' ? '代码改动' : 'Diff'} onPress={() => setDiffOpen(true)} />
             )}
             {/* font size + full-screen both apply to either mode (consistent behavior). */}
+            {mode === 'chat' && !isNative && <Ctl pal={pal} label={lang === 'zh' ? '交互' : 'Interact'} testID="detail-interact" onPress={() => setManualInteraction(v => !v)} />}
             <SessionDisplayMenu pal={pal} lang={lang} mode={mode} layout={terminalLayout} onLayoutChange={setTerminalLayout}
               selectionActive={mode === 'terminal' && terminalSelection} smaller={smaller} bigger={bigger} fontSize={fontSize}
               canShrink={fontIdx > 0} canGrow={fontIdx < FONT_SIZES.length - 1} />
@@ -1027,22 +1026,19 @@ function PaneDetailView({
         <RunningRow tally={taskTally} lang={lang} restColor={pal.fg2} onOpen={() => setTasksOpen(true)} />
       )}
 
-      <ApprovalCard
-        options={options}
-        pal={pal}
-        lang={lang}
-        onSend={n => {
-          // Send JUST the digit, no Enter. Claude's numbered menus commit on the
-          // digit alone; a trailing Enter is harmless for a single choice (it lands
-          // on the now-empty input) but on CONSECUTIVE prompts it leaks onto the
-          // NEXT menu and auto-confirms its default — the "second choice gets
-          // skipped / auto-selected" bug. An Enter-required menu (rare) still has
-          // the ⏎ key in the composer's resting row.
-          answeredAt.current = Date.now(); // open the settle window (see the poll)
-          setOptions([]); // hide the card immediately, don't wait for the next poll
-          sendPane({text: String(n)});
+      {!isNative && (live.status === 'waiting' || manualInteraction) && <SessionInteractionCard
+        scope={`${client.base}|${agent.pane_id}`} waiting={live.status === 'waiting'}
+        snapshot={interaction.snapshot} loading={interaction.loading} failed={interaction.failed}
+        enabled={inputEnabled} control={keyControl} pal={pal} lang={lang} onRetry={interaction.refresh}
+        onLegacyKey={key => {sendPane({key}); interaction.refresh();}}
+        onReply={n => {
+          if (!inputEnabled || keyControl.isBlocked() || Date.now() - answeredAt.current < 1500) return;
+          interaction.answered();
+          keyControl.digit(n);
         }}
-      />
+        onCompose={() => {setFullscreen(false); setComposeRequest(Date.now());}}
+        onClose={() => setManualInteraction(false)}
+      />}
 
       {/* input — types into the pane via POST /api/send (MOBILE §4). A guest may type
           only into a pane on the host's input allowlist; a view-only pane is read-only
@@ -1081,7 +1077,9 @@ function PaneDetailView({
           demo={demo}
           draftKey={live.pane_id || agent.pane_id}
           historyScope={historyScope(live)}
-          enabled={!isGuest || inputPanes.includes(agent.pane_id)}
+          enabled={inputEnabled}
+          keyController={keyControl}
+          composeRequest={composeRequest}
           returnSends={returnSends}
           prefill={refill}
           onSend={onComposerSend}

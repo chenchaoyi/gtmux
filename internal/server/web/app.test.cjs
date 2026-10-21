@@ -587,7 +587,8 @@ test('no parsed choices, no number buttons', () => {
   const card = h.api.approvalCard();
   const text = JSON.stringify(card.children.map(c => c.textContent || (c.children || []).map(x => x.textContent).join(' ')));
   assert.doesNotMatch(text, /approval/, 'waiting is not always an approval');
-  assert.match(text, /no numbered choices here/);
+  assert.match(text, /Current terminal screen/);
+  assert.doesNotMatch(text, /switch to Terminal/);
 });
 
 // Choices that were shown go away when the next options request fails, as they do when it

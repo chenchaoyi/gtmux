@@ -68,6 +68,8 @@ type Deps struct {
 	// PaneText returns a pane's current screen text (read-only capture-pane).
 	// ok is false when the pane no longer exists.
 	PaneText func(id string) (text string, ok bool)
+	// PaneScreen returns only the current visible screen, never scrollback.
+	PaneScreen func(id string) (text string, ok bool)
 	// PaneColumns is the source tmux grid width. Optional: nil or an invalid
 	// result omits cols, so older/non-tmux callers keep the existing response.
 	PaneColumns func(id string) int
@@ -375,6 +377,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/pane", s.auth(http.HandlerFunc(s.handlePane)))
 	mux.Handle("/api/attach", s.auth(http.HandlerFunc(s.handleAttach))) // WS: raw PTY attach, scope-gated
 	mux.Handle("/api/options", s.auth(http.HandlerFunc(s.handleOptions)))
+	mux.Handle("/api/interaction", s.auth(http.HandlerFunc(s.handleInteraction)))
 	mux.Handle("/api/sessions", s.auth(http.HandlerFunc(s.handleCreateSession)))
 	mux.Handle("/api/focus", s.auth(http.HandlerFunc(s.handleFocus)))
 	mux.Handle("/api/send", s.auth(http.HandlerFunc(s.handleSend)))

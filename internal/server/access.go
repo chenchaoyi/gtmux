@@ -56,7 +56,7 @@ var accessRoutes = map[string]string{
 	"/api/push/tokens": "notification_read",
 	"/api/host":        "settings", "/api/addresses": "settings", "/api/share": "settings", "/api/share/config": "settings",
 	"/api/devices": "settings", "/api/awake": "settings", "/api/routes": "settings", "/api/tasks": "settings",
-	"/api/access-history": "history", "/api/options": "terminal", "/api/session-follow": "settings",
+	"/api/access-history": "history", "/api/options": "terminal", "/api/interaction": "terminal", "/api/session-follow": "settings",
 }
 var accessWrites = map[string]string{
 	"/api/send": "send", "/api/focus": "focus", "/api/sessions": "create_session", "/api/upload": "upload",

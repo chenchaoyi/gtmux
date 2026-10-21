@@ -22,6 +22,22 @@ const capabilities = (): InputCapabilities => ({
   keys: [],
   legacy_events: {},
 });
+
+test('legacy fallback and numbered replies share the uncertain-result interlock without appending Enter', async () => {
+  const send = jest.fn().mockResolvedValue({ok: false, status: 0, reason: 'network'});
+  const load = jest.fn(async () => null);
+  function Harness() {control = useTerminalKeys('host|%1', true, load, send);return null;}
+  await act(async () => {tree = renderer.create(<Harness />);});
+  await act(async () => {control.legacy('Down');});
+  expect(send.mock.calls[0][0]).toMatchObject({key: 'Down'});
+  expect(control.uncertain).toBe(true);
+  act(() => {control.legacy('Enter');control.digit(1);});
+  expect(send).toHaveBeenCalledTimes(1);
+  send.mockResolvedValue({ok: true});
+  await act(async () => {control.resume();control.digit(2);});
+  expect(send.mock.calls[1][0]).toMatchObject({text: '2'});
+  expect(send.mock.calls[1][0]).not.toHaveProperty('enter');
+});
 let control: TerminalKeyController;
 let tree: renderer.ReactTestRenderer;
 afterEach(() => {

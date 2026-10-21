@@ -667,8 +667,8 @@ Input has a clear hierarchy, foregrounding agent-management input, with free tex
 - Waiting choices come from `/api/options` and are rendered by `ApprovalCard`, not as fixed Yes/Always/No keys.
   The composer provides control keys, saved quick replies, input history and free text.
 - The control-key row: `Tab ↑ ↓ ⏎ ⌫ Ctrl-C Esc` (horizontally scrollable). `↑/↓` navigate, `⏎` submits, `⌫` backspaces,
-  so interactive TUI pickers (Claude Code's AskUserQuestion, single/multi-select) can be driven in the terminal. Such
-  rich pickers get no one-tap ApprovalCard (bare digits cannot drive them); the terminal key row is their reply channel.
+  so interactive TUI pickers (Claude Code's AskUserQuestion, single/multi-select) can be driven in Chat or Terminal. Such
+  rich pickers get no one-tap ApprovalCard (bare digits cannot drive them); the in-conversation live prompt and shared key controller are their fallback reply channel.
   A key briefly gains an in-place check and light selection tick on a local tap, without moving the row. This confirms
   the tap, not remote delivery; the send-failure bar reports a refused send. The same keys work in the HQ console.
   (The `␣` space key was removed 2026-08-08: never useful, a literal space can be typed from the input box; `⌫` sends tmux `BSpace`
@@ -1590,3 +1590,8 @@ Push registration reconciliation runs in the foreground. Leaving it cancels the 
 Phone and Mac use Limits & balances → Output tokens → Sessions. Current provider capacity remains primary; historical quota bars, source gaps, recorded plan identifiers and observation times move into the adjacent History & sources disclosure, closed by default and still inspectable. The output chart owns a compact agent table with shared Today / Last 7 days columns and states its coverage: conversations recorded by the connected machine, not a bill or provider quota percentage. Monetary amounts retain currency and precision; unavailable never means zero. A lone ordinary quota is not repeated as a lead summary; alerts remain prominent. See [research and limits](usage-presentation-research.md).
 
 Tool-list headings show the count once. Delegation rows prefer a recorded purpose; wait rows summarize only known millisecond request/limit fields, never elapsed time or success. Unknown or partial structured inputs use a neutral “Recorded parameters” preview. Preview and accessibility text are bounded, while the expanded inspector and Copy retain the original input. Agent/wait summaries use the reading font; code previews keep monospace. Profile subscription facts are labelled “Recorded plan”, not a claim about current billing. The quota lead uses “Quota used” and shares weekly/reset captions with provider rows; a legacy reset date is explicitly labelled without parsing its timezone.
+
+
+### In-conversation interaction
+
+Waiting keeps the current prompt and keyboard entry visible even without numbered choices. Interact also opens it manually when a wait was not identified. App, iPad and Web share the read-only current-screen endpoint, preserving hook, scope and key-outcome boundaries. See [design and acceptance boundaries](session-interaction.md).

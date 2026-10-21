@@ -190,8 +190,26 @@ export function useTerminalKeys(
     pending.current.input_context.expires_at > serverNowSec() &&
     pending.current.input_context.boot === cap?.context.boot &&
     pending.current.input_context.pane_binding === cap?.context.pane_binding;
+  // Older servers still have the validated legacy key lane. Keep its unknown
+  // outcomes in the same queue, so another key cannot silently follow a lost reply.
+  const legacy = (key: string) => {
+    if (!send) return false;
+    if (!enabled || blocked.current || flight.current) return true;
+    const c = cache.current;
+    const event = c?.legacy_events?.[key];
+    if (event) fire(event);
+    else if (!c) dispatch({key, send_id: `key-${Date.now()}-${Math.random().toString(36).slice(2)}`}, key);
+    return true;
+  };
+  const digit = (n: number) => {
+    if (!send || !enabled || blocked.current || flight.current || n < 1 || n > 9 || !Number.isInteger(n)) return;
+    if (cache.current) fire({key: String(n), modifiers: []});
+    else dispatch({text: String(n), send_id: `key-${Date.now()}-${Math.random().toString(36).slice(2)}`}, String(n));
+  };
   return {
     cap,
+    legacy,
+    digit,
     busy,
     uncertain,
     message,

@@ -45,10 +45,10 @@
           if (r && r.ok) { uncertain = false; pending = null; if (typeof j.text === 'string') opts.echo(j.text, j.cols); drawNotice(); say(text + ' · ' + (zh ? '已发送到终端' : 'Sent to terminal')); }
           else {
             uncertain = !r || r.status >= 500 || String(j.error || '').indexOf('unconfirmed') >= 0; pending = uncertain ? body : null;
-            drawNotice(); say(uncertain ? (zh ? '结果未确认，请先查看终端' : 'Result unconfirmed. Inspect the terminal first') : (j.error || (zh ? '按键未能发送' : 'The key could not be sent')));
+            drawNotice(); say(uncertain ? (zh ? '结果未确认，请先核对当前画面' : 'Result unconfirmed. Check the current screen first') : (j.error || (zh ? '按键未能发送' : 'The key could not be sent')));
           }
         });
-      }).catch(function () { if (epoch === generation) {uncertain = true; pending = body; drawNotice(); say(zh ? '结果未确认，请先查看终端' : 'Result unconfirmed. Inspect the terminal first');} }).finally(function () {
+      }).catch(function () { if (epoch === generation) {uncertain = true; pending = body; drawNotice(); say(zh ? '结果未确认，请先核对当前画面' : 'Result unconfirmed. Check the current screen first');} }).finally(function () {
         if (epoch !== generation) return;
         busy = false; if (overlay) render(); refresh();
       });
@@ -105,9 +105,10 @@
 
     var timer = setInterval(function () {if (!button.isConnected) {dispose();return;} if (document.hidden) {mods = [];return;} if (getTarget() !== target) clearTarget(); if (!opts.canInput()) close(); if (button.offsetParent !== null) refresh();}, 8000);
     Promise.resolve().then(function () {if (button.isConnected) refresh();});
-    function sync(visible) {if (getTarget() !== target) clearTarget(); if (!visible || !opts.canInput()) {mods = []; close(); drawNotice();}}
-    return {sync: sync, button: button, notice: notice, blocked: blocked, refresh: refresh, dispose: dispose,
-      legacy: function (key) {if (blocked()) return true;var event = cap && cap.legacy_events && cap.legacy_events[key];if (!event) return false;fire(event);return true;}};
+    function sync(visible) {var changed = getTarget() !== target;if (changed) clearTarget();if (visible && opts.canInput() && changed) refresh();if (!visible || !opts.canInput()) {mods = []; close(); drawNotice();}}
+    return {open: open, key: function (event) {if (!usable()) return false;fire(event);return true;}, sync: sync, button: button, notice: notice, blocked: blocked, refresh: refresh, dispose: dispose,
+      legacy: function (key) {if (blocked() || !opts.canInput()) return true;var event = cap && cap.legacy_events && cap.legacy_events[key];if (event) fire(event);else if (!cap) deliver({key: key, send_id: 'key-' + Date.now() + '-' + Math.random().toString(36).slice(2)}, key);return true;},
+      digit: function (n) {if (blocked() || !opts.canInput() || !Number.isInteger(n) || n < 1 || n > 9) return;if (cap) fire({key: String(n), modifiers: []});else deliver({text: String(n), send_id: 'key-' + Date.now() + '-' + Math.random().toString(36).slice(2)}, String(n));}};
   }
   var api = {create: create, supports: supports};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

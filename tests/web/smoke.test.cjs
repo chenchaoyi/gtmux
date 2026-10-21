@@ -307,3 +307,26 @@ for (const locale of ['en-US','zh-CN']) {
     assert.equal(fixture.state.sends.length,0);
   });
 }
+
+scenario('Chat operates an unparsed picker without visiting Terminal', {viewport: {width: 390, height: 844}, locale: 'en-US'}, async (page, fixture) => {
+  fixture.state.interaction = {text: 'Choose projects\n❯ [ ] Alpha '+ 'details '.repeat(40) + '\n  [x] Beta\nSpace to toggle, Enter to submit', options: [], awaiting_reply: true, truncated: false};
+  await page.goto(fixture.url + '/#code=TEST-1234');
+  await page.locator('#radar').getByText('Review notes', {exact: true}).click();
+  await page.locator('#mode [data-mode="chat"]').click();
+  const screen = page.locator('#chat-interaction .interaction-screen');
+  await screen.waitFor();
+  assert.match(await screen.innerText(), /Choose projects/);
+  assert.equal(await screen.evaluate(e => e.scrollWidth > e.clientWidth), true);
+  assert.equal(await page.locator('#chat-input textarea').isVisible(), true);
+  const sent = page.waitForResponse(r => r.url().includes('/api/send') && r.request().method() === 'POST');
+  await page.locator('#chat-interaction .interaction-keys').getByRole('button', {name: 'Space', exact:true}).click();
+  await sent;
+  assert.deepEqual(fixture.state.sends[0].key_event, {key:'Space',modifiers:[]});
+  assert.equal('enter' in fixture.state.sends[0], false);
+  await page.locator('#chat-interaction .interaction-toggle').click();
+  assert.equal(await page.locator('#chat-interaction .interaction-body').count(), 0);
+  await page.locator('#chat-interaction .interaction-toggle').click();
+  await page.locator('#chat-interaction .interaction-keys').getByRole('button', {name:'More keys',exact:true}).click();
+  await page.getByRole('dialog', {name:'Terminal keys'}).waitFor();
+  assert.equal(await page.locator('#mode [data-mode="chat"]').evaluate(e=>e.classList.contains('on')),true);
+});
