@@ -45,10 +45,10 @@ function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
   const saved = new Map(Object.entries(stored));
   const copied = [];
   const context = {
-    document: {documentElement: {}, readyState: 'loading', getElementById: node, createElement: element, createDocumentFragment: () => element("fragment"),
+    document: {documentElement: {}, readyState: 'loading', getElementById: node, createElement: element, createElementNS: (_, name) => element(name), createDocumentFragment: () => element("fragment"),
       createTextNode: text => Object.assign(element("text"), {textContent: text}), addEventListener: (name, fn) => documentHandlers.set(name, fn),
       querySelector: sel => node('query:' + sel), querySelectorAll: () => []},
-    window: {addEventListener() {}, innerWidth: 1280},
+    window: {addEventListener() {}, innerWidth: 1280, GtmuxActivity: require('./activity.js')},
     navigator: {language, clipboard: {writeText: s => { copied.push(s); return Promise.resolve(); }}},
     ResizeObserver: class { constructor(cb) { context.__resized = cb; } observe(el) { context.__observed = el; } },
     setTimeout: (fn, ms) => setTimeout(fn, ms).unref(),
@@ -60,7 +60,7 @@ function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
   const marker = "  if (document.readyState === 'loading')";
   assert.ok(source.includes(marker), 'web boot marker changed');
   const script = source.replace(marker, `
-    globalThis.__test = {toolStepsEl, updateInputBar, setupFocus, drawChat, renderTileChat, mdRender, labelChrome, setupCodeBox, connStateFor, makeComposer, isHQPane, paneSessionTitle, paneToAgent, renderPanes, renderRadar,
+    globalThis.__test = {copyText, clipboardAction, toolStepsEl, updateInputBar, setupFocus, drawChat, renderTileChat, mdRender, labelChrome, setupCodeBox, connStateFor, makeComposer, isHQPane, paneSessionTitle, paneToAgent, renderPanes, renderRadar,
       setupKeyboard, openConversation, pollConversation, conversationControls, readableConversation, nativeSourceLabel, nativeEvidenceLabel, launchHost,
  setExternalSettings: s => {externalSettings=s;}, show, gate, runRead, cancelReads, pollPane, pollChat, pollRadar, renderChat, tilePollChat, renderTree, treeRow, renderCmdk, cyclePane,
       onDraw: fn => {drawChat = fn;},
@@ -594,11 +594,11 @@ for (const [language, chat, terminal] of [['en-US', 'Chat', 'Terminal'], ['zh-CN
     const a = {pane_id: '%7', agent: 'Codex', status: 'idle', session: 'demo'};
     h.api.addTile(a);
     const tile = h.node('board').children[0];
-    const tabs = tile.children[0].children.find(x => x.className === 'tile-modes');
+    const tabs = tile.children[0].children.find(x => x.className === 'tile-controls').children.find(x => x.className === 'tile-modes');
     assert.deepEqual(tabs.children.map(x => x.textContent), [chat, terminal, 'Diff']);
     h.api.addTile({...a, pane_id: '%8', agent: ''});
     const shell = h.node('board').children[1];
-    const shellTabs = shell.children[0].children.find(x => x.className === 'tile-modes');
+    const shellTabs = shell.children[0].children.find(x => x.className === 'tile-controls').children.find(x => x.className === 'tile-modes');
     assert.deepEqual(shellTabs.children.map(x => x.textContent), [terminal, 'Diff']);
   });
 }
@@ -1005,18 +1005,18 @@ test('activity counts repeated tools and renders ordered plain-text details', ()
   const toggle = closed.children[0];
   assert.equal(toggle.attrs['aria-expanded'], 'false');
   assert.equal(toggle.children[0].children[1].textContent, '3 calls');
-  assert.equal(toggle.children[1].textContent, 'js ×2 · wait');
+  assert.equal(toggle.children[1].textContent, 'Run code ×2 · Wait');
   assert.equal(closed.children.length, 1);
   toggle.onclick(); assert.equal(toggled, 1);
   const open = h.api.toolStepsEl(steps, true, () => {});
   assert.equal(open.children[0].attrs['aria-expanded'], 'true');
   const list = open.children[1];
   assert.equal(list.tagName, 'ol');
-  assert.deepEqual(list.children.map(row => row.children[0].children[0].textContent), ['js','js','wait']);
-  const detail = list.children[1].children[0].children[1];
+  assert.deepEqual(list.children.map(row => row.children[0].children[1].children[0].children[1].textContent), ['js','js','wait']);
+  const detail = list.children[1].children[0].children[0].children[1].children[1];
   assert.equal(detail.textContent, steps[1].detail);
   assert.equal(detail.html, undefined, 'arguments must not become HTML');
-  assert.equal(list.children[2].children[0].children.length, 1);
+  assert.equal(list.children[2].children[0].children[0].children[1].children[0].textContent, 'Wait');
 });
 
 // Page shortcuts must not cancel browser copy, IME, or a focused control's action.
@@ -1078,4 +1078,34 @@ test('the explicit workbench palette shortcut stays available without taking oth
   keydown({key: 'k', target: {tagName: 'BODY'}, metaKey: true, shiftKey: true, preventDefault() {prevented = true;}});
   assert.equal(prevented, false, 'browser shortcuts with extra modifiers stay native');
   assert.equal(h.node('cmdk').hidden, true);
+});
+
+
+for (const failure of ['missing', 'reject', 'throw']) {
+  test('copy uses its fallback when the Clipboard API is ' + failure, async () => {
+    const h = harness({ok:true});
+    let selected, removed, restored = 0;
+    const active = {isConnected:true,selectionStart:2,selectionEnd:4,focus:()=>restored++,setSelectionRange:(a,b)=>assert.deepEqual([a,b],[2,4])};
+    h.context.document.activeElement = active;
+    h.context.document.body = {appendChild:n=>{selected=n;},removeChild:n=>{assert.equal(n,selected);removed=true;}};
+    h.context.document.execCommand = cmd => {assert.equal(cmd,'copy');assert.equal(selected.value,'Original\nrecord');assert.equal(selected.selected,true);return true;};
+    h.context.navigator.clipboard = failure === 'missing' ? undefined : {writeText:() => {if(failure==='throw')throw new Error('denied');return Promise.reject(new Error('denied'));}};
+    assert.equal(await h.api.copyText('Original\nrecord'),true);
+    assert.equal(removed,true);assert.equal(restored,1);
+  });
+}
+
+test('clipboard failure never reports copied and repeated pending clicks are coalesced', async () => {
+  const h=harness({ok:true});let resolve;
+  h.context.navigator.clipboard.writeText=()=>new Promise(r=>resolve=r);
+  const action=h.api.clipboardAction('Copy','⧉','record');const [button,status]=action.children;
+  button.onclick({stopPropagation(){}});button.onclick({stopPropagation(){}});
+  assert.equal(button.attrs['aria-busy'],'true');assert.equal(status.textContent,'');
+  resolve();await new Promise(r=>setImmediate(r));assert.equal(status.textContent,'Copied');
+  h.context.navigator.clipboard=undefined;
+  h.context.document.body={appendChild(){},removeChild(){}};
+  h.context.document.execCommand=()=>false;
+  assert.equal(await h.api.copyText('record'),false);
+  button.onclick({stopPropagation(){}});await new Promise(r=>setImmediate(r));
+  assert.equal(status.textContent,'Copy failed');assert.equal(button.attrs['aria-busy'],'false');
 });

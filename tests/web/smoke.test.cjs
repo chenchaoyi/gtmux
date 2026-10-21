@@ -198,7 +198,7 @@ for (const width of [320, 1280]) {
     await toggle.waitFor();
     assert.equal(await toggle.getAttribute('aria-expanded'), 'false');
     assert.equal(await card.locator('.step-row').count(), 0);
-    assert.match(await card.innerText(), /js ×6/);
+    assert.match(await card.innerText(), /Run code ×6/);
     assert.ok((await toggle.boundingBox()).height >= 44);
     await toggle.click();
     assert.equal(await toggle.getAttribute('aria-expanded'), 'true');
@@ -212,5 +212,98 @@ for (const width of [320, 1280]) {
     assert.equal(await card.locator('.step-row').count(), 9, 'reader expansion survives a live update');
     await card.getByRole('button', {name: 'Activity, 9 calls'}).click();
     assert.equal(await card.locator('.step-row').count(), 0);
+  });
+}
+
+for (const options of [
+  {viewport:{width:320,height:850},locale:'en-US'},
+  {viewport:{width:390,height:844},locale:'zh-CN',hasTouch:true,isMobile:true},
+  {viewport:{width:1280,height:850},locale:'en-US'},
+]) {
+  const width=options.viewport.width, zh=options.locale==='zh-CN';
+  scenario(`Activity inspector and clipboard at ${width}px`,options,async(page,fixture)=>{
+    const command='node check.js --message="<img src=x onerror=alert(1)>" --long='+ 'argument'.repeat(50)+'\n'+Array.from({length:35},(_,i)=>'# recorded line '+i).join('\n');
+    const steps=[
+      {title:'exec_command',operation:'command',detail:'node check.js',input:command,input_kind:'command',workdir:'/tmp/synthetic-workspace'},
+      {title:'spawn_agent',input_kind:'parameters',input:'{"message":"Review the layout without edits"}',detail:'{"message":"Review the layout without edits"}'},
+      {title:'wait_agent',input_kind:'parameters',input:'{"timeout_ms":30000}'},
+      {title:'read_file',input_kind:'parameters',input:'{"path":"docs/README.md"}',details_truncated:true},
+    ];
+    fixture.state.turns['%901']=[{prompt:'Inspect the records',segments:[{text:'Ready for inspection.',steps}]}];
+    await page.goto(fixture.url+'/#code=TEST-1234');
+    if(width>=900)await page.setViewportSize({width:390,height:850});
+    await page.locator('#radar').getByText('Investigate retries',{exact:true}).click();
+    await page.locator('#mode [data-mode="chat"]').click();
+    if(width>=900)await page.setViewportSize(options.viewport);
+    const card=page.locator('.tool-steps'),toggle=card.locator('.steps-toggle');
+    await toggle.waitFor();await toggle.focus();await page.keyboard.press('Enter');
+    assert.equal(await toggle.evaluate(e=>e===document.activeElement),true,'group activation retains focus');
+    assert.equal(await card.locator('.activity-icon').count(),4);
+    assert.equal(await card.locator('.step-detail').nth(1).innerText(),'Review the layout without edits');
+    assert.equal(await card.locator('.step-detail').nth(2).innerText(),zh?'超时设置 30 秒':'Timeout setting 30s');
+    const row=card.locator('.step-inspect').first(),summary=row.locator('summary');
+    await summary.focus();await page.keyboard.press('Space');
+    await page.waitForFunction(()=>document.querySelector('.step-inspect').open);
+    assert.equal(await row.locator('.step-meta').innerText(),zh?'工具\nexec_command\n工作目录\n/tmp/synthetic-workspace':'Tool\nexec_command\nWorking directory\n/tmp/synthetic-workspace');
+    const input=row.locator('.step-input');assert.equal(await input.textContent(),command);
+    assert.equal(await row.locator('img,script').count(),0,'recorded markup must not execute');
+    await input.focus();
+    await input.evaluate(e=>{e.dataset.scrollReady='false';e.addEventListener('scrollend',()=>{e.dataset.scrollReady='true';},{once:true});});
+    await page.keyboard.press('ArrowRight');
+    await page.waitForFunction(()=>document.querySelector('.step-input').dataset.scrollReady==='true');
+    assert.ok(await input.evaluate(e=>e.scrollLeft>0),'keyboard scrolls the recorded command');
+    await input.evaluate(e=>{e.scrollLeft=120;e.scrollTop=60;});
+    fixture.state.turns['%901'][0].segments[0].steps[1].input='{"message":"Updated review purpose"}';
+    await card.getByText('Updated review purpose',{exact:true}).waitFor();
+    assert.equal(await row.evaluate(e=>e.open),true,'row expansion survives changed transcript');
+    const retained=await input.evaluate(e=>({focus:e===document.activeElement,x:e.scrollLeft,y:e.scrollTop}));
+    assert.deepEqual(retained,{focus:true,x:120,y:60});
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'no page overflow');
+    await page.evaluate(()=>{
+      window.copyRecords=[];
+      Object.defineProperty(navigator,'clipboard',{configurable:true,value:undefined});
+      document.execCommand=cmd=>{window.copyRecords.push({cmd,text:document.activeElement.value});return true;};
+    });
+    const copy=row.getByRole('button',{name:zh?'复制':'Copy',exact:true});
+    if(options.hasTouch){assert.ok((await copy.boundingBox()).width>=44);assert.equal(await page.locator('.bub-act').first().evaluate(e=>getComputedStyle(e).opacity),'1','touch needs no hover');}
+    await copy.click();
+    assert.equal(await page.evaluate(()=>window.copyRecords[0].text),command,'copy keeps exact recorded bytes');
+    assert.equal(await copy.evaluate(e=>e===document.activeElement),true,'fallback returns focus to the copy control');
+    assert.equal(await row.getByRole('status').innerText(),zh?'已复制':'Copied');
+    // A rejected API also takes the fallback; both failure paths must stay honest.
+    await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:()=>Promise.reject(new Error('denied'))}}));
+    const quote=page.locator('.bub-act').getByRole('button',{name:zh?'复制为引用':'Copy as quote',exact:true});
+    await quote.focus();await page.waitForFunction(()=>getComputedStyle(document.activeElement.closest('.bub-act')).opacity==='1');
+    await quote.click();
+    await page.waitForFunction(()=>window.copyRecords.length===2);
+    assert.equal(await page.evaluate(()=>window.copyRecords[1].text),'> Ready for inspection.');
+    await page.evaluate(()=>{Object.defineProperty(navigator,'clipboard',{configurable:true,value:undefined});document.execCommand=()=>false;});
+    await copy.click();assert.equal(await row.getByRole('status').innerText(),zh?'复制失败':'Copy failed');
+    await card.locator('.step-inspect').nth(3).locator('summary').click();
+    await card.getByText(zh?'此记录已在来源处截断。':'This record was truncated at the source.',{exact:true}).waitFor();
+    const collapse=page.getByRole('button',{name:zh?'折叠全部':'Collapse all',exact:true});
+    assert.equal(await collapse.evaluate(e=>getComputedStyle(e).borderStyle),'none');
+    await collapse.click();assert.equal(await card.locator('.step-row').count(),0);
+    assert.equal(fixture.state.sends.length,0,'reading, copying and folding never send input');
+  });
+}
+
+for (const locale of ['en-US','zh-CN']) {
+  scenario(`Compact tile controls stay readable in ${locale}`,{viewport:{width:1280,height:850},locale},async(page,fixture)=>{
+    await page.goto(fixture.url+'/#code=TEST-1234');
+    await page.locator('#tree').getByText('Investigate retries',{exact:true}).dblclick();
+    const head=page.locator('.tile-head');await head.waitFor();
+    for(const width of [360,280,600]) {
+      await page.locator('.tile').evaluate((e,w)=>{e.style.width=w+'px';},width);
+      const bounds=await head.evaluate(e=>{
+        const r=e.getBoundingClientRect();return{width:e.clientWidth,scroll:e.scrollWidth,height:r.height,buttons:[...e.querySelectorAll('button')].map(b=>{const x=b.getBoundingClientRect();return{x:x.left-r.left,right:x.right-r.left,height:x.height,centerY:(x.top+x.bottom)/2,text:b.textContent};})};
+      });
+      assert.ok(bounds.scroll<=bounds.width+1,JSON.stringify(bounds));
+      assert.ok(bounds.height<=80,JSON.stringify(bounds));
+      for(const b of bounds.buttons){assert.ok(b.x>=0&&b.right<=bounds.width+1,JSON.stringify(b));assert.ok(b.height<=24,'button labels stay on one line: '+JSON.stringify(b));}
+      assert.ok(bounds.buttons.every(b=>Math.abs(b.centerY-bounds.buttons[0].centerY)<=1),'mode/fullscreen/close controls wrap as one group');
+      assert.equal(await head.locator('.cap-chip').isVisible(),true,'input scope stays visible');
+    }
+    assert.equal(fixture.state.sends.length,0);
   });
 }
