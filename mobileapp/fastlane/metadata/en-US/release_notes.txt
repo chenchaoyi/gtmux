@@ -1,3 +1,2 @@
-- Tool calls show readable task and wait summaries; the original parameter records remain available to inspect and copy.
-- Participant profiles identify recorded plans without implying an active subscription.
-- Usage shares clearer weekly quota and reset-time wording across the summary and details.
+- HQ messages and profiles use the gtmux logo, with current HQ details available on expansion.
+- DeepSeek Harness avatars have more balanced white margins.

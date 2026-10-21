@@ -29,6 +29,8 @@ test('human and historical sender never request another runtime profile', () => 
   expect(text()).toContain('HQ');
   expect(text()).toContain('gtmux 协调 Agent');
   expect(text()).toContain('审阅回执');
+  expect(text()).not.toContain('暂无已确认的在线实例');
+  act(() => tree.root.findByProps({testID: 'hq-current-toggle'}).props.onPress());
   expect(text()).toContain('暂无已确认的在线实例');
 });
 
@@ -188,8 +190,11 @@ test('HQ distinguishes the connected supervisor from the message sender and reci
   const context = jest.spyOn(AgentsContext, 'useAgentsOptional').mockReturnValue(store as unknown as ReturnType<typeof AgentsContext.useAgentsOptional>);
   const render = () => <ParticipantProfileModal target={{kind: 'sender', agent, sender: {kind: 'hq', label: 'HQ'}}} client={client} lang="en" onClose={() => {}} />;
   await act(async () => {tree = renderer.create(render());});
-  expect(text()).toContain('Current HQ Claude Code');
-  expect(text()).toContain('Agent at delivery Not recorded');
+  expect(text()).toContain('The agent type was not recorded with this message.');
+  expect(text()).not.toContain('Not recorded');
+  expect(text()).not.toContain('Claude Code');
+  act(() => tree.root.findByProps({testID: 'hq-current-toggle'}).props.onPress());
+  expect(text()).toContain('Agent Claude Code');
   expect(text()).not.toContain('Codex');
   expect(read).not.toHaveBeenCalled();
   for (const unavailable of [
@@ -199,9 +204,23 @@ test('HQ distinguishes the connected supervisor from the message sender and reci
   ]) {
     context.mockReturnValue(unavailable as unknown as ReturnType<typeof AgentsContext.useAgentsOptional>);
     await act(async () => tree.update(render()));
+    act(() => tree.root.findByProps({testID: 'hq-current-toggle'}).props.onPress());
     expect(text()).not.toContain('Claude Code');
     expect(text()).toContain('No confirmed connected instance');
   }
+});
+
+test('recorded HQ delivery identity stays separate from an expanded current supervisor', async () => {
+  const read = jest.fn();
+  const client = {participantProfile: read} as unknown as GtmuxClient;
+  jest.spyOn(AgentsContext, 'useAgentsOptional').mockReturnValue({client, conn: 'live', agents: [{...agent, agent: 'Codex', role: 'supervisor'}]} as unknown as ReturnType<typeof AgentsContext.useAgentsOptional>);
+  await act(async () => {tree = renderer.create(<ParticipantProfileModal target={{kind: 'sender', agent, sender: {kind: 'hq', label: 'HQ', agent: 'DeepSeek Harness'}}} client={client} lang="en" onClose={() => {}} />);});
+  expect(text()).toContain('Agent at delivery DeepSeek Harness');
+  expect(text()).not.toContain('Codex');
+  act(() => tree.root.findByProps({testID: 'hq-current-toggle'}).props.onPress());
+  expect(text()).toContain('Agent Codex');
+  expect(text()).toContain('Agent at delivery DeepSeek Harness');
+  expect(read).not.toHaveBeenCalled();
 });
 
 test('provider presentation preserves recorded facts and custom identifiers', async () => {

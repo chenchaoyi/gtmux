@@ -260,8 +260,8 @@ instructions were his 「对话里应该增加hq的角色，对于hq发的信息
 gtmux performed the delivery, so gtmux can say. A served turn carries `from` when someone
 other than the reader put that prompt there, and the chat draws it:
 
-- **HQ** wears the "HQ" word mark the floating disc already wears. It is a role, not a
-  session, so it gets a word where a tool would get an icon.
+- **HQ** wears gtmux's pane-grid brand mark, also used by its participant profile.
+  The sender caption retains the HQ name independently of the harness.
 - **Another session** wears ITS agent's icon, the same one the radar draws on that row.
 - **Everyone else is the reader.** Typed in the pane, sent from the phone, sent from the
   browser: all three are the person reading, and marking them would say "this was not you"
@@ -1567,7 +1567,12 @@ Participant dialogs fit settled content within a 600pt/viewport cap and keep lon
 details scrollable. Initial reads retain a labelled static placeholder. Known
 provider brands use canonical display casing without changing raw/custom IDs. HQ
 profiles explain the chief-of-staff role and separate recorded message identity
-from the same connected radar's current supervisor. The global reply-fold action
+from the same connected radar's current supervisor. Missing message-time agent
+identity is a secondary sentence, not a large empty fact. Current HQ details are
+collapsed by default behind a 44pt disclosure, retaining the same server/live/unique
+supervisor guards. The built-in DeepSeek whale uses 80% of the avatar width and
+height on a full white tile, matching the Mac's optical inset; other agent images
+and fallback monograms retain their layout. The global reply-fold action
 uses brand-coloured Collapse all / Expand all text. See [profile scope](agent-profiles.md#hq-identity).
 
 ### Usage sources and balances

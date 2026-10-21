@@ -8,8 +8,7 @@
 //
 // The server now says (`from` on a turn), and this draws it:
 //
-//   • HQ wears the same "HQ" mark the floating disc wears. It is a role, not a session,
-//     so it gets a word rather than a tool's icon.
+//   • HQ wears gtmux's pane-grid logo. The role is also named below the message.
 //   • Another session wears ITS agent's icon, the one the radar draws for that row.
 //
 // Nothing else is drawn. A turn with no sender is the reader's own and keeps UserAvatar,
@@ -20,15 +19,13 @@
 // ([[mobile-light-mode-dark-surface-trap]], which cost ChatView once already).
 
 import React from 'react';
-import {StyleSheet, Text, View} from 'react-native';
 import {Agent} from '../api/types';
 import type {TranscriptSender} from '../api/client';
 import {AgentAvatar} from './AgentAvatar';
+import {HQAvatar} from './HQAvatar';
 
 // The chat surface's own colours (ChatView's CHAT_FG / CHAT_FG_DIM neighbourhood).
 const MARK_BG = 'rgba(255,255,255,0.10)';
-const MARK_BORDER = 'rgba(255,255,255,0.18)';
-const MARK_FG = 'rgba(255,255,255,0.92)';
 const ICON_FG = 'rgba(235,235,245,0.7)';
 
 export function SenderAvatar({from, size = 26}: {from: TranscriptSender; size?: number}) {
@@ -39,22 +36,5 @@ export function SenderAvatar({from, size = 26}: {from: TranscriptSender; size?: 
     const as = {agent: from.agent ?? '', session: from.label} as Agent;
     return <AgentAvatar agent={as} size={size} radius={Math.round(size * 0.27)} bg={MARK_BG} fg={ICON_FG} />;
   }
-  return (
-    <View
-      style={[
-        styles.hq,
-        {width: size, height: size, borderRadius: size / 2, backgroundColor: MARK_BG, borderColor: MARK_BORDER},
-      ]}>
-      <Text
-        allowFontScaling={false}
-        style={[styles.mark, {fontSize: Math.round(size * 0.42)}]}>
-        HQ
-      </Text>
-    </View>
-  );
+  return <HQAvatar size={size} />;
 }
-
-const styles = StyleSheet.create({
-  hq: {alignItems: 'center', justifyContent: 'center', borderWidth: StyleSheet.hairlineWidth},
-  mark: {color: MARK_FG, fontWeight: '800', letterSpacing: 0.4},
-});

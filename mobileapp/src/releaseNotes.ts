@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.144',
+    en: [
+      '- HQ messages and profiles use the gtmux logo, with current HQ details available on expansion.',
+      '- DeepSeek Harness avatars have more balanced white margins.',
+    ],
+    zh: [
+      '- HQ 来信与资料头像改用 gtmux 标识，当前 HQ 信息可按需展开。',
+      '- DeepSeek Harness 头像增加白色留边，与其他 Agent 的视觉比例更一致。',
+    ],
+  },
+  {
     version: '1.0.142',
     en: [
       '- Tool calls show readable task and wait summaries; the original parameter records remain available to inspect and copy.',
