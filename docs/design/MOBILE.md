@@ -279,8 +279,16 @@ While a turn is working, Detail asks for its conditional transcript every 2 seco
 idle history stays at 8 seconds. The HQ console polls the same way while it is on screen,
 every 4 seconds while HQ works and every 8 seconds when it is idle or waiting. Current Codex writes its visible progress as
 `response_item` commentary before the final answer. Those messages are conversation
-bubbles as they arrive, with tool calls between them. The Live card remains the raw
-terminal screen; it is not where readable progress has to wait until completion.
+bubbles as they arrive, with tool calls between them. The raw terminal screen is an
+opt-in preview: a compact Thinking / Working row retains elapsed time and has explicit
+Show live view / Hide live view text plus a chevron. It starts collapsed for each working
+turn, pane, source session or server; normal screen/transcript refresh preserves the
+reader’s choice. The expanded preview keeps the last 14 non-trailing-empty screen rows,
+with a 220pt vertical limit and horizontal scrolling for long lines. No output shows an
+explicit empty state. The disclosure has a minimum 44pt target and an accessible expanded
+state. Phone, iPad, Detail and HQ share the component. Waiting choices and the manual
+Interact panel remain independent, so required input is never hidden by this fold.
+Native/read-only conversations without a terminal screen retain the quiet status row without offering an empty screen disclosure.
 
 ### Grouping the long-press menu: the groups were already in the data
 

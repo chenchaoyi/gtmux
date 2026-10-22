@@ -31,14 +31,14 @@ describe('thinkingLabel', () => {
 // to come with it (%12, 2026-10-06): the card used to say only "Live".
 describe('liveLabel', () => {
   test('carries the elapsed time beside the title', () => {
-    expect(liveLabel(1958, 2000, 'en')).toBe('Live · 42s');
-    expect(liveLabel(1958, 2000, 'zh')).toBe('正在进行 · 42s');
-    expect(liveLabel(1000, 1000 + 95, 'en')).toBe('Live · 1m35s');
+    expect(liveLabel(1958, 2000, 'en')).toBe('Working · 42s');
+    expect(liveLabel(1958, 2000, 'zh')).toBe('正在工作 · 42s');
+    expect(liveLabel(1000, 1000 + 95, 'en')).toBe('Working · 1m35s');
   });
 
   test('an unknown or future start is the bare title', () => {
     for (const since of [undefined, 0, 3000]) {
-      expect(liveLabel(since, 2000, 'en')).toBe('Live');
+      expect(liveLabel(since, 2000, 'en')).toBe('Working');
     }
   });
 });

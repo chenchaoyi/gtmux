@@ -58,6 +58,8 @@ export const TestIds = {
     chatEarlier: 'detail-chat-earlier',
     chatEarlierSession: 'detail-chat-earlier-session', // hq-console-history: load the session before the oldest shown
     chatThinking: 'detail-chat-thinking',
+    chatLiveToggle: 'detail-chat-live-toggle',
+    chatLivePreview: 'detail-chat-live-preview',
     timeSeparator: 'detail-chat-time-separator', // the mark where the conversation broke
     jumpBottom: 'detail-jump-bottom',
     termRows: 'detail-term-rows',
