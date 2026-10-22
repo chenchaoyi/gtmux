@@ -68,7 +68,7 @@
   var curAgent = null, chatTimer = null, chatSig = '', lastTurns = [], chatExpanded = {};
   var lastAgents = [], optTimer = null; // for focus prev/next + the waiting reply bar
   var interactionAnsweredAt = 0;
-  var interactionOpen = false, lastInteraction = null, interactionFailed = false, interactionPeek = false, interactionCollapsed = false, interactionRenderSig = '';
+  var lastInteraction = null, interactionQuestion = '', interactionFailed = false, interactionPeek = false, interactionCollapsed = false, interactionRenderSig = '';
   var lastOpts = [], lastOptsSig = ''; // waiting options, shared by reply bar (term) + approval card (chat)
   var userScrolling = false, scrollIdle = null, pendingText = null, resizeIdle = null;
   var iconCache = {}; // agentName -> objectURL | 'none' | Promise
@@ -1763,12 +1763,12 @@
         return r.json();
       }).then(function (rows) {
         if (!current(true) || !Array.isArray(rows)) return;
-        var next = rows.find(function (row) {return row.source === 'native' && row.session_id === a.session_id && row.home_id === a.home_id;});
+        var next = rows.find(function (row) {return isNative(a) ? row.source === 'native' && row.session_id === a.session_id && row.home_id === a.home_id : row.pane_id === a.pane_id;});
         if (!next) return;
         var changed = next.status !== a.status || next.task !== a.task || next.can_read_conversation !== a.can_read_conversation || next.current_client !== a.current_client || JSON.stringify(next.launch_host) !== JSON.stringify(a.launch_host);
         curAgent = next;
-        if (!readableConversation(next)) {lastTurns = []; externalSettings = null;}
-        if (changed) {$('title').textContent = primary(next) || next.agent; $('sub').textContent = nativeSourceLabel(next); drawChat(lastTurns);}
+        if (isNative(next) && !readableConversation(next)) {lastTurns = []; externalSettings = null;}
+        if (changed) {$('title').textContent = primary(next) || next.agent; $('sub').textContent = isNative(next) ? nativeSourceLabel(next) : (next.agent ? next.agent + ' · ' : '') + secondary(next); drawChat(lastTurns);updateInputBar();}
       }).catch(function () {});
     });
   }
@@ -1888,6 +1888,7 @@
   // Renders the parsed transcript (GET /api/transcript) as prompt → collapsed
   // steps → final response, mirroring the phone's ChatView. View-only.
   function pollChat() {
+    pollConversationStatus();
     runRead('chat', function (signal) {
       if (!curPane) return;
       var current = currentRead('chat', signal);
@@ -1935,7 +1936,6 @@
     var dot = document.createElement('span'); dot.className = 'cs-dot'; dot.style.background = COLORS[a.status] || COLORS.running; stl.appendChild(dot);
     var lb = document.createElement('span'); lb.textContent = LABEL[a.status] || a.status || ''; stl.appendChild(lb);
     stx.appendChild(stl); sr.appendChild(stx); col.appendChild(sr);
-    if (curPane && !isNative(a)) { var inspect = el('button', 'chat-interact', T('Interact', '交互')); inspect.type = 'button'; inspect.onclick = function () {interactionOpen = !interactionOpen; interactionCollapsed = false; pollOptions(); renderChatInteraction();}; sr.appendChild(inspect); }
     if (turns.some(function (t) { return (t.segments || []).some(function (s) { return s.steps && s.steps.length; }); })) {
       var collapse = el('button', 'chat-collapse', T('Collapse all', '折叠全部'));
       collapse.type = 'button'; collapse.dataset.chatFocus = 'collapse'; collapse.onclick = collapseAllSteps; sr.appendChild(collapse);
@@ -2127,9 +2127,11 @@
   // view-only with the reply-elsewhere hint. The server gate stays authoritative.
   function renderChatInteraction() {
     var root = $('chat-interaction');
-    var visible = !!curPane && !$('chat').hidden && (curAgent && curAgent.status === 'waiting' || interactionOpen);
+    var visible = !!curPane && !$('chat').hidden && curAgent && curAgent.status === 'waiting';
     root.hidden = !visible;
-    if (!visible) {root.innerHTML = ''; interactionRenderSig = ''; return;}
+    if (!visible) {root.innerHTML = ''; interactionRenderSig = ''; interactionCollapsed = false; interactionQuestion = ''; interactionPeek = false; return;}
+    var question = lastOpts.length ? JSON.stringify(lastOpts) : '';
+    if (question && question !== interactionQuestion) {interactionQuestion = question; interactionCollapsed = false;}
     var sig = JSON.stringify([curPane, curAgent && curAgent.status, lastOpts, lastInteraction, interactionFailed, interactionPeek, interactionCollapsed, paneCanInput(curPane)]);
     if (sig === interactionRenderSig) return;
     interactionRenderSig = sig;
@@ -2141,12 +2143,10 @@
   }
   function approvalCard() {
     var can = paneCanInput(curPane), pane = curPane;
-    var waiting = !curAgent || curAgent.status === 'waiting';
-    var card = document.createElement('div'); card.className = 'appr-card' + (can ? ' appr-live' : '') + (waiting ? '' : ' appr-manual');
+    var card = document.createElement('div'); card.className = 'appr-card' + (can ? ' appr-live' : '');
     var hd = el('div', 'appr-head');
-    var title = el('button', 'interaction-toggle', waiting ? T('Needs your reply', '需要你回应') : T('Terminal interaction', '终端交互'));
+    var title = el('button', 'interaction-toggle', T('Needs your reply', '需要你回应'));
     title.type = 'button'; title.setAttribute('aria-expanded', String(!interactionCollapsed)); title.onclick = function () {interactionCollapsed = !interactionCollapsed; renderChatInteraction();}; hd.appendChild(title);
-    if (!waiting) {var close = el('button', 'interaction-close', T('Close', '关闭')); close.type = 'button';close.onclick = function () {interactionOpen = false; pollOptions();renderChatInteraction();};hd.appendChild(close);}
     card.appendChild(hd);
     if (interactionCollapsed) return card;
     var opts = lastOpts || [];
@@ -2158,7 +2158,7 @@
         if (!can || curPane !== pane || !paneCanInput(pane) || Date.now() - interactionAnsweredAt < 1500 || paneComposer && paneComposer.keys && paneComposer.keys.blocked()) return;
         interactionAnsweredAt = Date.now();
         if (paneComposer && paneComposer.keys) paneComposer.keys.digit(o.n); else sendPane({text: String(o.n)});
-        lastOpts = []; renderChatInteraction();
+        interactionCollapsed = true; lastOpts = []; renderChatInteraction();
       };body.appendChild(row);
     });
     if (opts.length) {var toggle = el('button', 'interaction-peek', interactionPeek ? T('Hide current prompt', '收起当前提示') : T('View current prompt', '查看当前提示'));toggle.type = 'button';toggle.onclick = function () {interactionPeek = !interactionPeek;renderChatInteraction();};body.appendChild(toggle);}
@@ -2173,13 +2173,6 @@
       }
     }
     card.appendChild(body);
-    var keys = el('div', 'interaction-keys');
-    [['Up', '↑'], ['Down', '↓'], ['Enter', T('Return', '回车')], ['Space', T('Space', '空格')]].forEach(function (k) {
-      var button = el('button', '', k[1]);button.type = 'button';button.disabled = !can;button.setAttribute('aria-label', k[0]);
-      button.onclick = function () {if (curPane !== pane || !paneCanInput(pane)) return;if (paneComposer && paneComposer.keys && paneComposer.keys.legacy(k[0])) return;sendPane({key: k[0]}).then(pollOptions);};keys.appendChild(button);
-    });
-    var more = el('button', '', T('More keys', '更多按键'));more.type = 'button';more.disabled = !can;more.onclick = function () {if (paneComposer && paneComposer.keys) paneComposer.keys.open();};keys.appendChild(more);
-    var type = el('button', '', T('Type reply', '输入文字'));type.type = 'button';type.disabled = !can;type.onclick = function () {if (paneComposer) paneComposer.focus();};keys.appendChild(type);card.appendChild(keys);
     if (!can) card.appendChild(el('div', 'appr-hint', T('This conversation is read-only.', '此会话为只读。')));
     return card;
   }
@@ -2696,7 +2689,7 @@
     var inTerm = !$('pane').hidden && paneMode === 'term';
     var inChat = !$('chat').hidden && paneMode === 'chat';
     if (!inTerm && !inChat) return;
-    if ((!curAgent || curAgent.status !== 'waiting') && !(inChat && interactionOpen)) {
+    if (!curAgent || curAgent.status !== 'waiting') {
       cancelRead('options');
       lastInteraction = null; interactionFailed = false; renderChatInteraction();
       if (inTerm) hideReply();
@@ -2772,7 +2765,7 @@
     lastOpts = []; lastOptsSig = '';
     pollOptions(); clearInterval(optTimer); optTimer = setInterval(pollOptions, 2000);
   }
-  function hideFocusChrome() { interactionOpen = false; lastInteraction = null; interactionFailed = false; interactionPeek = false; interactionCollapsed = false; interactionRenderSig = ''; $('chat-input').hidden = true; $('chat-interaction').hidden = true; $('focus-nav').hidden = true; $('focus-ctl').hidden = true; hideReply(); $('jump').hidden = true; var cap = $('cap'); if (cap) cap.hidden = true; clearInterval(optTimer); optTimer = null; lastOpts = []; lastOptsSig = ''; }
+  function hideFocusChrome() { interactionQuestion = ''; lastInteraction = null; interactionFailed = false; interactionPeek = false; interactionCollapsed = false; interactionRenderSig = ''; $('chat-input').hidden = true; $('chat-interaction').hidden = true; $('focus-nav').hidden = true; $('focus-ctl').hidden = true; hideReply(); $('jump').hidden = true; var cap = $('cap'); if (cap) cap.hidden = true; clearInterval(optTimer); optTimer = null; lastOpts = []; lastOptsSig = ''; }
   // placeSettings opens the appearance panel just under the bar its button sits in. A fixed
   // top sat over the bar's own bottom row, and over the controls once a narrow bar wraps.
   function placeSettings(bar) {

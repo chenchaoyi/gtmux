@@ -88,6 +88,29 @@ import XCTest
             }
         }
     }
+    func testHumanPromptKeepsItsBubbleWithoutARedundantSenderHeading() async throws {
+        NativeUIProbe.prepareAccessibility()
+        let old = L10n.shared.mode; defer { L10n.shared.mode = old }
+        for mode in [LangMode.en, .zh] {
+            L10n.shared.mode = mode
+            for dark in [false, true] {
+                let turn = DesktopChatTurn(prompt: "Review this synthetic project.", response: "", segments: nil, time: nil)
+                let model = DesktopConversationModel(agent: Agent(agent: "DeepSeek Harness", source: "native", sessionID: "synthetic-human"),
+                    capture: { _ in XCTFail("fixture must not read live data"); return (1, "", "") })
+                model.loading = false; model.turns = [turn]
+                let host = NSHostingView(rootView: DesktopConversationView(model: model, l10n: .shared)
+                    .environment(\.colorScheme, dark ? .dark : .light))
+                let window = NSWindow(contentRect: NSRect(x: 80, y: 80, width: dark ? 520 : 840, height: 360), styleMask: [.titled], backing: .buffered, defer: false)
+                window.isReleasedWhenClosed = false; window.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
+                window.contentView = host; window.orderBack(nil)
+                defer { window.close(); model.stop() }
+                try await settle(host)
+                XCTAssertNotNil(NativeUIProbe.find("desktop-prompt-body", in: host), "The message remains readable")
+                XCTAssertNil(NativeUIProbe.find("desktop-prompt-sender", in: host), "The human avatar does not need a duplicate You heading")
+                try snapshot(host, "reader-human-\(mode.rawValue)-\(dark ? "dark" : "light")")
+            }
+        }
+    }
     func testRefreshPreservesHistoricalReadingAndExplicitLatestReturnsToTail() async throws {
         NativeUIProbe.prepareAccessibility()
         let model = DesktopConversationModel(agent: Agent(agent: "Codex", source: "native", sessionID: "history"))

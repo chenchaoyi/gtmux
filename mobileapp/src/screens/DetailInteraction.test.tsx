@@ -31,14 +31,27 @@ test('Codex permission choices appear in Chat without visiting Terminal, and a r
   expect(client.sendResult.mock.calls[0]).toEqual(['%12', expect.objectContaining({text: '1'})]);
   expect(client.sendResult.mock.calls[0][1].enter).toBeUndefined();
 });
-test('manual interaction reads an unrecognized prompt without changing the session status and reuses the composer controller', async () => {
-  const client = await mount('idle');
+test('ordinary conversations have no Interact mode or prompt polling; existing Keys remains available', async () => {
+  const client = await mount('working');
   expect(client.interaction).not.toHaveBeenCalled();
-  await act(async () => tree.root.findByProps({testID: 'detail-interact'}).props.onPress());await flush();
-  expect(client.interaction).toHaveBeenCalledTimes(1);
+  expect(tree.root.findAllByProps({testID: 'detail-interact'})).toHaveLength(0);
+  expect(tree.root.findAllByType(SessionInteractionCard)).toHaveLength(0);
+  await act(async () => tree.root.findByProps({testID: 'composer-terminal-keys'}).props.onPress());await flush();
+  expect(client.interaction).not.toHaveBeenCalled();
+});
+test('a waiting card shares the composer controller, folds after a choice, and leaves when work resumes', async () => {
+  const client = await mount();
   const card = tree.root.findByType(SessionInteractionCard);
   const composer = tree.root.findByType((Composer as unknown as {type: React.ComponentType<any>}).type);
-  expect(card.props.waiting).toBe(false);expect(card.props.control).toBe(composer.props.keyController);
+  expect(card.props.control).toBe(composer.props.keyController);
+  expect(tree.root.findAllByProps({testID: 'interaction-more-keys'})).toHaveLength(0);
+  await act(async () => tree.root.findByProps({testID: 'reply-1'}).props.onPress());await flush();
+  expect(tree.root.findByProps({testID: 'interaction-toggle'}).props.accessibilityState.expanded).toBe(false);
+  const agent = tree.root.findByType(DetailView).props.agent;
+  agent.status = 'working';
+  await act(async () => tree.update(<DetailView agent={agent} initialMode="chat" />));await flush();
+  expect(tree.root.findAllByType(SessionInteractionCard)).toHaveLength(0);
+  expect(client.sendResult).toHaveBeenCalledTimes(1);
 });
 test('a view-only guest sees the prompt but cannot choose or type', async () => {
   const client = await mount('waiting', true);

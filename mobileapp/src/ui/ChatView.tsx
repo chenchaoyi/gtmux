@@ -174,6 +174,11 @@ export function liveLabel(since: number | undefined, nowSec: number, lang: Lang)
 }
 
 export function ChatView({client, readOnly = false, agent, lines, status, fontSize, lang, turns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, pendingPrompt, pendingDelivered = false, fontPref, workingSince, onLiveEdge, topPad = 0, controlsTop, controlsShift, maxWidth}: Props) {
+  // Radar timestamps and temporary status changes are observations, not a new reader.
+  const liveScope = JSON.stringify([client?.base, agent.pane_id, agent.home_id, agent.session_id]);
+  const [liveDisclosure, setLiveDisclosure] = useState({scope: liveScope, open: false});
+  const liveOpen = liveDisclosure.scope === liveScope && liveDisclosure.open;
+  React.useEffect(() => {setLiveDisclosure(prev => prev.scope === liveScope ? prev : {scope: liveScope, open: false});}, [liveScope]);
   const [profileTarget, setProfileTarget] = useState<ProfileTarget | null>(null);
   const avatar = (content: React.ReactNode, target: ProfileTarget) => <TouchableOpacity testID="participant-avatar" accessibilityRole="button" accessibilityLabel={lang === 'zh' ? '查看参与者资料' : 'View participant profile'} style={styles.avatarButton} onPress={() => setProfileTarget(target)}>{content}</TouchableOpacity>;
   const fontFamily = nativeFontFamily(fontPref); // match the terminal font (shared resolver)
@@ -620,10 +625,9 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
         </View>
       )}
 
-      {/* One working turn owns its disclosure; ordinary transcript/capture refreshes
-          preserve it. Waiting input remains in the host's independent interaction panel. */}
+      {/* The conversation owns this preference even while the working row is absent. */}
       {status === 'working' && <LiveProgress
-        key={JSON.stringify([client?.base, agent.pane_id, agent.home_id, agent.session_id, workingSince])}
+        open={liveOpen} onToggle={() => setLiveDisclosure({scope: liveScope, open: !liveOpen})}
         avatar={avatar(<AgentAvatar agent={agent} size={26} radius={7} bg="#1C1C1F" fg="rgba(235,235,245,0.7)" />, {kind: 'agent', agent})}
         label={liveShown.length ? liveLabel(workingSince, nowSec, lang) : thinkingLabel(workingSince, nowSec, lang)}
         inspectAvailable={!readOnly && agent.source !== 'native'}

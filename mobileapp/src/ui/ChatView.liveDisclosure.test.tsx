@@ -64,7 +64,6 @@ test('capture and transcript refresh retain expansion, including first output an
 });
 
 test.each([
-  {since: 1999},
   {current: {...agent, pane_id: '%2'}},
   {current: {...agent, session_id: 'session-two'}},
   {current: {...agent, home_id: 'another-home'}},
@@ -76,14 +75,14 @@ test.each([
   expect(toggle(tree).props.accessibilityState.expanded).toBe(false);
 });
 
-test.each(['idle', 'waiting'] as const)('%s unmounts only the working preview and the next turn starts collapsed', status => {
+test.each(['idle', 'waiting'] as const)('%s hides the working preview without losing the reader preference', status => {
   const tree = mount();
   act(() => toggle(tree).props.onPress());
   act(() => {tree.update(view({status}));});
   expect(tree.root.findAll(n => n.props.testID === TestIds.detail.chatLiveToggle)).toHaveLength(0);
   expect(preview(tree)).toHaveLength(0);
   act(() => {tree.update(view());});
-  expect(toggle(tree).props.accessibilityState.expanded).toBe(false);
+  expect(toggle(tree).props.accessibilityState.expanded).toBe(true);
 });
 
 
@@ -93,4 +92,15 @@ test('a native conversation without terminal access keeps the status without an 
   expect(text(tree)).toContain('Thinking… 42s');
   expect(toggle(tree)).toBeUndefined();
   expect(preview(tree)).toHaveLength(0);
+});
+
+test('radar timestamp corrections do not collapse the live view, and explicit folding survives updates', () => {
+  const tree = mount();
+  act(() => toggle(tree).props.onPress());
+  act(() => tree.update(view({since: 1999})));
+  expect(toggle(tree).props.accessibilityState.expanded).toBe(true);
+  expect(text(tree)).toContain('synthetic terminal output');
+  act(() => toggle(tree).props.onPress());
+  act(() => tree.update(view({since: 0})));
+  expect(toggle(tree).props.accessibilityState.expanded).toBe(false);
 });

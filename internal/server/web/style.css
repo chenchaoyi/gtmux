@@ -782,18 +782,14 @@ svg .spin { transform-origin: 8px 8px; animation: gtmux-ring-spin 2s linear infi
 #chat {min-height: 0;}
 #chat-input, #chat-interaction {flex: 0 0 auto; width: 100%;}
 #chat-interaction .appr-card {max-width: var(--col); margin: 4px auto; border-color: var(--divider); background: var(--bg);}
-.interaction-toggle, .interaction-close, .interaction-peek, .chat-interact {min-height: 44px; border: 0; background: transparent; color: var(--fg2); cursor: pointer; font: inherit; text-align: left;}
+.interaction-toggle, .interaction-peek {min-height: 44px; border: 0; background: transparent; color: var(--fg2); cursor: pointer; font: inherit; text-align: left;}
 .interaction-toggle {flex: 1; color: var(--waiting); font-weight: 600;}
-.appr-manual .interaction-toggle {color: var(--fg2);}
 .appr-head {padding: 0 12px;}
 .interaction-body {max-height: min(32vh, 280px); overflow: auto;}
 .interaction-screen {font: 12px/1.6 Menlo, monospace; margin: 0; padding: 0 12px 10px; white-space: pre; overflow: auto; max-height: 180px; color: var(--fg);}
-.interaction-keys {display: flex; overflow-x: auto; padding: 0 5px; gap: 2px;}
-.interaction-keys button {flex: 0 0 auto; min-width: 44px; min-height: 44px; border: 0; background: transparent; color: var(--fg2); cursor: pointer; padding: 0 10px;}
 .interaction-peek {padding: 0 12px; font-size: 12px;}
 button.appr-opt {width: 100%; border: 0; background: transparent; text-align: left; min-height: 44px;}
-.interaction-keys button:disabled, button.appr-opt:disabled {opacity: .45; cursor: default;}
-.chat-interact {margin-left: auto; padding: 0 10px;}
+button.appr-opt:disabled {opacity: .45; cursor: default;}
 
 #chat-input .composer {max-width: var(--col); margin: 0 auto;}
 #chat.wide ~ #chat-input, #chat.wide ~ #chat-interaction {padding-left: var(--chat-rail);}

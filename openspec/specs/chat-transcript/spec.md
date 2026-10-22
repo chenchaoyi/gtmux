@@ -572,7 +572,7 @@ and preserve same-client, live-connection and unique-supervisor identity guards.
 - **AND** that information does not replace the message's missing historical identity
 
 ### Requirement: Conversations expose live terminal interaction
-A managed tmux conversation SHALL expose pending input even when numbered choices cannot be parsed. It SHALL provide a bounded current-screen view and explicit keyboard input without requiring a switch to Terminal. Manual inspection SHALL be available without inferring a wait. Scope and input permissions SHALL remain authoritative. Failed/stale reads SHALL not leave old choices actionable; external read-only conversations SHALL not gain input.
+A managed tmux conversation SHALL expose pending input even when numbered choices cannot be parsed. It SHALL provide a bounded current-screen view and explicit keyboard input without requiring a switch to Terminal. The card SHALL appear only while waiting and SHALL fold after a numbered response and disappear when work resumes. It SHALL NOT add a separate Interact mode or duplicate the composer keyboard. Scope and input permissions SHALL remain authoritative. Failed/stale reads SHALL not leave old choices actionable; external read-only conversations SHALL not gain input.
 
 #### Scenario: Unrecognized picker
 - **WHEN** a waiting tmux conversation has no safe numbered choices
@@ -580,12 +580,13 @@ A managed tmux conversation SHALL expose pending input even when numbered choice
 - **AND** no choice or default is invented
 
 #### Scenario: Missing wait signal
-- **WHEN** the reader manually opens interaction in a managed conversation
-- **THEN** the current screen and permitted input remain available without changing agent status
+- **WHEN** a managed conversation has no identified wait
+- **THEN** the existing composer Keys and Terminal remain available without changing agent status
+- **AND** no separate Interact entry or automatic prompt polling is added
 
 ### Requirement: Native external readers align with conversation interaction semantics
 
-The native external reader SHALL group assistant segments by turn with one participant header, preserve core prompt attribution, render public Markdown and display compact source information. It SHALL offer local reply and global folding, icon-only copy/share with accessible names, and structured tool groups with operation icons and a scrollable recorded-input inspector. Copy/share SHALL include the complete recorded textual reply even when folded. Missing or truncated tool evidence SHALL be explicit and SHALL NOT imply execution success. Native colours SHALL follow light/dark appearance. Initial/latest navigation SHALL be bounded and ordinary refresh SHALL preserve deliberate historical reading. The implementation SHALL reuse existing native reading/avatar/copy/positioning primitives and keep the read-only CLI contract, polling and scope rules.
+The native external reader SHALL group assistant segments by turn with one participant header. Human prompts SHALL use the right-hand avatar and bubble without a redundant You heading; HQ/agent prompts SHALL retain their source label. The reader SHALL preserve core prompt attribution, render public Markdown and display compact source information. It SHALL offer local reply and global folding, icon-only copy/share with accessible names, and structured tool groups with operation icons and a scrollable recorded-input inspector. Copy/share SHALL include the complete recorded textual reply even when folded. Missing or truncated tool evidence SHALL be explicit and SHALL NOT imply execution success. Native colours SHALL follow light/dark appearance. Initial/latest navigation SHALL be bounded and ordinary refresh SHALL preserve deliberate historical reading. The implementation SHALL reuse existing native reading/avatar/copy/positioning primitives and keep the read-only CLI contract, polling and scope rules.
 
 #### Scenario: A prompt was sent by HQ
 
@@ -599,7 +600,7 @@ The native external reader SHALL group assistant segments by turn with one parti
 - **AND** collapsing the reply retains a preview and full textual copy/share actions
 
 ### Requirement: Working-screen previews are opt-in
-Phone and iPad conversations SHALL default to a compact working/thinking row with known elapsed time, an explicit Show live view / Hide live view disclosure and an accessible expanded state. The screen preview SHALL be bounded and scrollable and SHALL mount only while expanded. Ordinary screen/transcript refresh SHALL preserve the reader’s choice. A new working turn, pane or source session SHALL start collapsed. An unknown start SHALL not invent elapsed time. Pending input/choices and manual interaction SHALL remain independently visible and operable. Native/read-only conversations without a terminal screen SHALL retain the status without an empty preview disclosure.
+Phone and iPad conversations SHALL default to a compact working/thinking row with known elapsed time, an explicit Show live view / Hide live view disclosure and an accessible expanded state. The screen preview SHALL be bounded and scrollable and SHALL mount only while expanded. Ordinary screen/transcript refresh SHALL preserve the reader’s choice. The reader’s choice SHALL survive radar timestamp corrections and working/waiting/idle transitions within the same mounted conversation. A different server, pane or source session SHALL start collapsed. An unknown start SHALL not invent elapsed time. Pending input/choices and the existing composer keys SHALL remain independently visible and operable. Native/read-only conversations without a terminal screen SHALL retain the status without an empty preview disclosure.
 
 #### Scenario: Inspect progress without persistent raw output
 - **WHEN** a working conversation receives terminal output
@@ -607,7 +608,11 @@ Phone and iPad conversations SHALL default to a compact working/thinking row wit
 - **AND** tapping its disclosure reveals the screen and tapping again hides it
 - **AND** an ordinary refresh preserves that choice
 
-#### Scenario: A new turn needs attention
-- **WHEN** a working turn ends or another turn/session starts
-- **THEN** the raw working preview does not remain automatically expanded
-- **AND** waiting choices continue through the separate input interaction
+#### Scenario: Status observations change while inspecting progress
+- **WHEN** the radar timestamp changes or the same conversation briefly leaves working and returns
+- **THEN** the working preview retains the reader’s expanded or collapsed choice
+- **AND** while waiting, its prompt and choices remain available independently
+
+#### Scenario: Inspect another conversation
+- **WHEN** the reader switches to a different server, pane or source session
+- **THEN** its working preview starts collapsed

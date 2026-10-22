@@ -157,13 +157,13 @@ struct DesktopConversationTurnView: View {
             if !turn.prompt.isEmpty {
                 HStack(alignment: .top, spacing: 10) {
                     if turn.isHuman { Spacer(minLength: 44) } else { senderAvatar }
-                    VStack(alignment: .leading, spacing: 6) {
-                        HStack {
-                            Text(turn.senderLabel(l10n)).font(HQTypography.caption.weight(.medium)).accessibilityIdentifier("desktop-prompt-sender")
-                            Spacer(minLength: 0)
-
-                        }.foregroundStyle(p.fg2)
+                    VStack(alignment: turn.isHuman ? .trailing : .leading, spacing: 6) {
+                        if !turn.isHuman {
+                            Text(turn.senderLabel(l10n)).font(HQTypography.caption.weight(.medium))
+                                .foregroundStyle(p.fg2).accessibilityIdentifier("desktop-prompt-sender")
+                        }
                         MarkdownBody(markdown: turn.prompt, p: p).textSelection(.enabled)
+                            .accessibilityIdentifier("desktop-prompt-body")
                             .padding(12).frame(maxWidth: .infinity, alignment: .leading)
                             .background(p.rowSelected, in: RoundedRectangle(cornerRadius: 12))
                     }
