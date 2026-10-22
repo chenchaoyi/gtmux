@@ -30,10 +30,11 @@ func processBindingFixture(t *testing.T) (native.Record, codexterminal.Pane, int
 	if err := Save(pane.Loc, Record{Agent: "codex", HomeID: r.HomeID, SessionID: "old-session", Cwd: pane.Cwd, UpdatedAt: now - 100}); err != nil {
 		t.Fatal(err)
 	}
-	oldPanes, oldClients, oldIdentity := codexProcessPanes, codexProcessClients, codexProcessIdentity
+	oldPanes, oldClients, oldIdentity, oldMode := codexProcessPanes, codexProcessClients, codexProcessIdentity, codexProcessInteractive
 	t.Cleanup(func() {
-		codexProcessPanes, codexProcessClients, codexProcessIdentity = oldPanes, oldClients, oldIdentity
+		codexProcessPanes, codexProcessClients, codexProcessIdentity, codexProcessInteractive = oldPanes, oldClients, oldIdentity, oldMode
 	})
+	codexProcessInteractive = func(int) bool { return true }
 	codexProcessPanes = func() []codexterminal.Pane { return []codexterminal.Pane{pane} }
 	codexProcessClients = func([]codexterminal.Pane) map[string]codexterminal.Client {
 		return map[string]codexterminal.Client{pane.ID: {PID: r.PID, Start: "local-birth", RootStart: "root-birth", TTY: "ttys001"}}
@@ -77,7 +78,7 @@ func TestProcessRecoveryReplacesOnlyExactOldBindingAndPreservesHistory(t *testin
 }
 
 func TestProcessRecoveryRefusesUnprovenOrChangedOwnership(t *testing.T) {
-	for _, kind := range []string{"other home", "wrong birth", "unknown process", "headless or piped", "wrong PID", "missing birth", "missing tty", "multiple panes", "wrong cwd", "other pane location", "newer incumbent", "changed incumbent", "changed observation", "changed pane", "desktop creation", "subagent creation", "missing source", "session end", "multiple sessions", "busy lease", "command stub"} {
+	for _, kind := range []string{"other home", "wrong birth", "unknown process", "headless or piped", "wrong PID", "missing birth", "missing tty", "multiple panes", "wrong cwd", "other pane location", "newer incumbent", "changed incumbent", "changed observation", "changed pane", "desktop creation", "subagent creation", "missing source", "session end", "multiple sessions", "busy lease", "command stub", "headless argv"} {
 		t.Run(kind, func(t *testing.T) {
 			r, pane, now := processBindingFixture(t)
 			records := []native.Record{r}
@@ -92,6 +93,8 @@ func TestProcessRecoveryRefusesUnprovenOrChangedOwnership(t *testing.T) {
 				}
 			case "unknown process":
 				codexProcessIdentity = func(int) (launchhost.AgentProcess, bool) { return launchhost.AgentProcess{}, false }
+			case "headless argv":
+				codexProcessInteractive = func(int) bool { return false }
 			case "headless or piped":
 				codexProcessClients = func([]codexterminal.Pane) map[string]codexterminal.Client { return nil }
 			case "wrong PID", "missing birth", "missing tty":

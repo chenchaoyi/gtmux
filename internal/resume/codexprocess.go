@@ -19,6 +19,7 @@ import (
 
 var codexProcessClients = codexterminal.Resolve
 var codexProcessIdentity = launchhost.ReadAgent
+var codexProcessInteractive = codexterminal.InteractiveMode
 var codexProcessPanes = func() []codexterminal.Pane {
 	var panes []codexterminal.Pane
 	for _, line := range tmux.Lines("list-panes", "-a", "-F", "#{pane_id}\t#{pane_current_command}\t#{pane_pid}\t#{pane_tty}\t#{pane_current_path}\t#{session_name}:#{window_index}.#{pane_index}") {
@@ -62,7 +63,7 @@ func processTarget(r native.Record, panes []codexterminal.Pane) (CodexBindingTar
 	// The hook stores UTC process birth. The terminal inspector's own birth
 	// strings may use the host timezone, so compare through the same UTC reader.
 	process, ok := codexProcessIdentity(r.PID)
-	return target, ok && process.PID == r.PID && process.Comm == r.Comm && process.Start == r.ProcessStart
+	return target, ok && process.PID == r.PID && process.Comm == r.Comm && process.Start == r.ProcessStart && codexProcessInteractive(r.PID)
 }
 
 // commitProcessBinding preserves the observation and compares both the incumbent
