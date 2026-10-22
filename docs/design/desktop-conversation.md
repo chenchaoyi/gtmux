@@ -37,6 +37,28 @@ not user dialogue. Genuine text after it stays visible; malformed envelopes and
 literal mentions in prose are preserved. Other-home observations remain outside
 this home's rollout evidence.
 
+## Native reading layout
+
+The Mac reader follows mobile Chat's hierarchy and controls while retaining native
+light/dark colours. Its compact header shows the harness/source and read-only state;
+optional launch evidence is behind an information button. Each turn has one sender
+identity and one assistant header, with the existing official icons and user/HQ
+avatars. Core `from` attribution distinguishes HQ/delegates from the human reader.
+Public Markdown uses the existing native reading renderer and scale. Timestamps use
+the same fifteen-minute/day separators as the HQ reader.
+
+Replies can be folded individually or all at once. A folded reply retains its preview
+and icon-only copy/share actions for all recorded reply text. Tool groups start folded,
+show operation-specific symbols and open a compact list; each recorded call can expose
+its original input, working directory and truncation notice. Long input scrolls both
+ways and remains selectable/copyable; recorded input does not attest successful execution.
+
+The reader reuses native Markdown, avatar, copy-feedback, timeline and bounded tail
+positioning components rather than embedding the React Native app or a second Web
+client. Initial entry and the latest-message action reveal the tail; refresh while
+reading older messages preserves the reader's position. Loading and retry states
+remain explicit, and these controls never grant input or change follow consent.
+
 ## Data and boundaries
 
 Only the Go core resolves files. The exact conversation ID must be verified by the

@@ -4,6 +4,15 @@ import SwiftUI
 struct DesktopChatStep: Decodable, Equatable {
     let title: String
     let detail: String?
+    var operation: String? = nil
+    var input: String? = nil
+    var inputKind: String? = nil
+    var workdir: String? = nil
+    var detailsTruncated: Bool? = nil
+    enum CodingKeys: String, CodingKey {
+        case title, detail, operation, input, workdir
+        case inputKind = "input_kind", detailsTruncated = "details_truncated"
+    }
 }
 struct DesktopChatSegment: Decodable, Equatable {
     let text: String?
@@ -14,6 +23,13 @@ struct DesktopChatTurn: Decodable, Equatable {
     let response: String
     let segments: [DesktopChatSegment]?
     let time: String?
+    var agent: String? = nil
+    var from: DesktopChatSender? = nil
+    var sessionID: String? = nil
+    enum CodingKeys: String, CodingKey {
+        case prompt, response, segments, time, agent, from
+        case sessionID = "session_id"
+    }
 }
 struct DesktopChatSnapshot: Decodable, Equatable {
     let turns: [DesktopChatTurn]?
@@ -87,10 +103,10 @@ final class DesktopConversationController: NSObject, NSWindowDelegate {
     func show(agent: Agent, l10n: L10n) {
         guard agent.readableConversation && !agent.sessionID.isEmpty else { return }
         model?.stop(); window?.close()
-        let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 760, height: 640),
+        let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 840, height: 720),
                          styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
         w.isReleasedWhenClosed = false
-        w.minSize = NSSize(width: 520, height: 360)
+        w.minSize = NSSize(width: 520, height: 420)
         w.title = agent.primary.isEmpty ? l10n.tr("conversation", "会话") : agent.primary
         let model = DesktopConversationModel(agent: agent, active: { [weak w] in w?.isVisible == true && w?.isMiniaturized != true && NSApp.isActive })
         self.model = model
@@ -99,80 +115,4 @@ final class DesktopConversationController: NSObject, NSWindowDelegate {
         NSApp.activate(ignoringOtherApps: true); w.makeKeyAndOrderFront(nil); model.start()
     }
     func windowWillClose(_ notification: Notification) { model?.stop(); model = nil; window = nil }
-}
-
-struct DesktopConversationView: View {
-    @ObservedObject var model: DesktopConversationModel
-    @ObservedObject var l10n: L10n
-    @Environment(\.colorScheme) private var scheme
-    var body: some View {
-        let p = Theme.Palette.of(scheme)
-        VStack(spacing: 0) {
-            HStack {
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(nativeOriginLabel(model.agent, l10n: l10n))
-                    Text(l10n.tr("Read only · Continue in the original client", "只读 · 请在原客户端继续对话"))
-                    let evidence = nativeEvidenceLabel(model.agent, l10n: l10n)
-                    if !evidence.isEmpty { Text(evidence).textSelection(.enabled) }
-                }.font(.caption).foregroundStyle(p.fg2)
-                Spacer()
-                if model.loading { ProgressView().controlSize(.small) }
-            }.padding(16)
-            Divider()
-            if model.failed {
-                HStack {
-                    Text(l10n.tr("Could not update the conversation. Check gtmux on this Mac.", "暂时无法更新对话，请检查本机 gtmux。"))
-                        .font(.callout).frame(maxWidth: .infinity, alignment: .leading)
-                    Button(l10n.tr("Retry", "重试")) { model.refresh() }
-                }.padding(16)
-            }
-            ScrollViewReader { proxy in
-                VStack(spacing: 0) {
-                    ScrollView {
-                        LazyVStack(alignment: .leading, spacing: 18) {
-                            if model.dropped > 0 { Text(l10n.tr("Earlier messages omitted", "已省略部分较早对话")).font(.caption).foregroundStyle(p.fg2) }
-                            if !model.loading && !model.failed && model.turns.isEmpty {
-                                Text(l10n.tr("No messages have been recorded yet.", "尚无已记录的对话。"))
-                                    .foregroundStyle(p.fg2).padding(.top, 30)
-                            }
-                            ForEach(Array(model.turns.enumerated()), id: \.offset) { _, turn in
-                                if !turn.prompt.isEmpty {
-                                    VStack(alignment: .leading, spacing: 6) {
-                                        Text(l10n.tr("You", "你")).font(.caption).foregroundStyle(p.fg2)
-                                        Text(turn.prompt).textSelection(.enabled)
-                                    }.padding(12).frame(maxWidth: .infinity, alignment: .leading)
-                                        .background(p.rowSelected).clipShape(RoundedRectangle(cornerRadius: 8))
-                                }
-                                let segments = turn.segments ?? [DesktopChatSegment(text: turn.response, steps: nil)]
-                                ForEach(Array(segments.enumerated()), id: \.offset) { _, segment in
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        if let text = segment.text, !text.isEmpty {
-                                            Text(model.agent.agent).font(.caption).foregroundStyle(p.fg2)
-                                            Text(.init(text)).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
-                                        }
-                                        if let steps = segment.steps, !steps.isEmpty {
-                                            DisclosureGroup(l10n.tr("\(steps.count) tool steps", "\(steps.count) 个工具步骤")) {
-                                                ForEach(Array(steps.enumerated()), id: \.offset) { _, step in
-                                                    VStack(alignment: .leading) {
-                                                        Text(step.title).font(.callout).fontWeight(.medium)
-                                                        if let detail = step.detail { Text(detail).font(.caption).foregroundStyle(p.fg2).textSelection(.enabled) }
-                                                    }.frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 3)
-                                                }
-                                            }.font(.caption).foregroundStyle(p.fg2)
-                                        }
-                                    }.frame(maxWidth: .infinity, alignment: .leading)
-                                }
-                            }
-                            Color.clear.frame(height: 1).id("latest")
-                        }.padding(20).frame(maxWidth: 720).frame(maxWidth: .infinity)
-                    }
-                    HStack {
-                        Spacer()
-                        Button(l10n.tr("Latest messages ↓", "最新消息 ↓")) { proxy.scrollTo("latest", anchor: .bottom) }
-                            .buttonStyle(.plain).font(.caption).foregroundStyle(p.fg2)
-                    }.padding(.horizontal, 20).padding(.vertical, 10)
-                }
-            }
-        }.frame(maxWidth: .infinity, maxHeight: .infinity).background(p.bg)
-    }
 }
