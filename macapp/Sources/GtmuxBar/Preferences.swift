@@ -619,6 +619,7 @@ struct PreferencesView: View {
                     if let s = checkStatusText {
                         Text("·").foregroundStyle(.tertiary)
                         Text(s).font(.system(size: 11)).foregroundStyle(.tertiary)
+                            .help(updater.lastError ?? s)
                     }
                     if isChecking {
                         ProgressView().controlSize(.small)

@@ -121,6 +121,7 @@ final class Updater: ObservableObject {
         case .checking, .updating: return // already in flight
         default: break
         }
+        lastError = nil
         setState(.checking)
         DispatchQueue.global(qos: .utility).async {
             let r = Self.runCheck()
@@ -131,6 +132,11 @@ final class Updater: ObservableObject {
                 } else if let r = r, r.error.isEmpty {
                     self.state = silent ? .idle : .upToDate(r.current)
                 } else {
+                    self.lastError = r?.error == "cached release index may be behind GitHub"
+                        ? L10n.shared.tr("GitHub could not confirm the latest release. The backup index may be delayed. Try again later.",
+                                         "暂时无法向 GitHub 确认最新版，备用索引可能有延迟，请稍后重试。")
+                        : L10n.shared.tr("Could not complete the version check. Check the connection and try again.",
+                                         "暂时无法完成版本检查，请检查网络后重试。")
                     self.state = silent ? .idle : .failed
                 }
             }

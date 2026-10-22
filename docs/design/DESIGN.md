@@ -305,6 +305,14 @@ The updater preserves CLI and app outcomes separately. Exit 3 from the CLI means
 follow it. A cached fallback without a newer candidate is inconclusive, not proof
 that the latest release is installed.
 
+
+Lookup tries the anonymous release API, then GitHub's documented latest-release
+redirect, then the potentially delayed cached index. The redirect reader accepts
+only a stable tag in this repository on `https://github.com`; it does not follow
+redirects or read page HTML. No GitHub login or token is required. Failed-check
+help text explains that the latest release could not be confirmed. Download and
+checksum trust rules remain unchanged.
+
 ### What's new after an upgrade
 
 The menu-bar app follows the phone's release-note interaction: a compact, resizable

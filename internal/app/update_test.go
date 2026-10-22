@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/chenchaoyi/gtmux/internal/userservice"
+	"net/http"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -295,7 +296,7 @@ func TestResolveLatestReleaseMarksFallbackAndSortsStableVersions(t *testing.T) {
 			return []byte(`{"message":"rate limited"}`)
 		}
 		return []byte(`{"versions":[{"version":"1.0.130"},{"version":"1.0.144-rc.1"},{"version":"1.0.135"},{"version":"bad"}]}`)
-	})
+	}, func() string { return "" })
 	if calls != 2 || got.Tag != "v1.0.135" || got.Source != "jsdelivr" {
 		t.Fatalf("fallback=%+v calls=%d", got, calls)
 	}
@@ -350,5 +351,58 @@ func TestUpdateAppVersionUsesReplacementTarget(t *testing.T) {
 	}
 	if got := appVersionForUpdate(nil); got != "" {
 		t.Fatalf("absent bundle: %q", got)
+	}
+}
+
+func TestLatestOfficialLinkBeforeCachedIndex(t *testing.T) {
+	for _, apiWorks := range []bool{true, false} {
+		linkCalls := 0
+		got := resolveLatestRelease(func(endpoint string, _ time.Duration) []byte {
+			if !strings.Contains(endpoint, "api.github.com") {
+				t.Fatal("cached index should not be reached")
+			}
+			if apiWorks {
+				return []byte(`{"tag_name":"v1.2.3"}`)
+			}
+			return nil // Includes an exhausted unauthenticated API quota.
+		}, func() string { linkCalls++; return "v1.2.4" })
+		wantTag, wantSource, wantCalls := "v1.2.4", "github-latest", 1
+		if apiWorks {
+			wantTag, wantSource, wantCalls = "v1.2.3", "github", 0
+		}
+		if got.Tag != wantTag || got.Source != wantSource || linkCalls != wantCalls {
+			t.Fatalf("lookup: %+v calls=%d", got, linkCalls)
+		}
+	}
+}
+
+func TestReleaseRedirectTrustBoundary(t *testing.T) {
+	for _, tc := range []struct{ location, want string }{
+		{"https://github.com/chenchaoyi/gtmux/releases/tag/v1.2.3", "v1.2.3"},
+		{"/chenchaoyi/gtmux/releases/tag/v1.2.4", "v1.2.4"},
+		{"https://evil.example/chenchaoyi/gtmux/releases/tag/v1.2.3", ""},
+		{"https://github.com.evil.example/chenchaoyi/gtmux/releases/tag/v1.2.3", ""},
+		{"http://github.com/chenchaoyi/gtmux/releases/tag/v1.2.3", ""},
+		{"https://user@github.com/chenchaoyi/gtmux/releases/tag/v1.2.3", ""},
+		{"https://github.com:443/chenchaoyi/gtmux/releases/tag/v1.2.3", ""},
+		{"/other/project/releases/tag/v1.2.3", ""},
+		{"/chenchaoyi/gtmux/releases/tag/v1.2.3?next=evil", ""},
+		{"/chenchaoyi/gtmux/releases/tag/v1.2.3?", ""},
+		{"/chenchaoyi/gtmux/releases/tag/v1.2.3#fragment", ""},
+		{"/chenchaoyi/gtmux/releases/tag/v1.2.3-rc.1", ""},
+		{"/chenchaoyi/gtmux/releases/tag/v1.2.3/extra", ""},
+		{"/chenchaoyi/gtmux/releases/tag/v1.2.%33", ""},
+		{"/chenchaoyi/gtmux/releases/latest", ""}, {"", ""},
+	} {
+		t.Run(tc.location, func(t *testing.T) {
+			resp := &http.Response{StatusCode: http.StatusFound, Header: http.Header{"Location": []string{tc.location}}}
+			if got := releaseTagFromRedirect(resp); got != tc.want {
+				t.Fatalf("got %q want %q", got, tc.want)
+			}
+			resp.StatusCode = http.StatusOK
+			if got := releaseTagFromRedirect(resp); got != "" {
+				t.Fatalf("200 accepted: %q", got)
+			}
+		})
 	}
 }
