@@ -1132,6 +1132,10 @@ func gatherAgentsWithCodexScope(codexScope *transcript.CodexPathScope) ([]Pane, 
 		if len(f) >= 8 {
 			activityAt, _ = strconv.ParseInt(f[7], 10, 64)
 		}
+		codexError := ""
+		if agents.KeyForLabel(agent) == "codex" {
+			codexError = codexTerminalFailureForPane(id, paneCapture(id), now)
+		}
 		if !nativeLifecycle {
 			// liveWorking reports whether the pane is DEMONSTRABLY working right now (screen
 			// changing / subtree burning CPU) — the reliable signal, unlike the pane TITLE's
@@ -1195,7 +1199,7 @@ func gatherAgentsWithCodexScope(codexScope *transcript.CodexPathScope) ([]Pane, 
 			// inherited TMUX_PANE and no session/cwd. Its own rollout still records the
 			// exact task completion. Reconcile only the pane whose active marker and
 			// resume binding name that same session, after both marker timestamps.
-			if (status == "waiting" || status == "working") && len(f) > 9 && agents.KeyForLabel(agent) == "codex" {
+			if codexError == "" && (status == "waiting" || status == "working") && len(f) > 9 && agents.KeyForLabel(agent) == "codex" {
 				loc := fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3])
 				if at, kind, ok := codexTurnEnded(id, loc, f[9], codexScope.CodexLastTurnBoundary); ok {
 					state.Remove(state.WaitingPath(id))
@@ -1256,6 +1260,12 @@ func gatherAgentsWithCodexScope(codexScope *transcript.CodexPathScope) ([]Pane, 
 		since := activityAt
 		var errored bool
 		var errorText string
+		// Codex can end an API-failed turn without a hook or durable error record.
+		// The current terminal cell is display evidence only; never fabricate a Stop
+		// or mutate turn markers from this fallback.
+		if codexError != "" {
+			status, errored, errorText = "idle", true, codexError
+		}
 		// A turn whose log ENDS on an error is over, whatever the markers say.
 		//
 		// The pane's own transcript is the agent's account of what happened, and it is
@@ -1300,7 +1310,9 @@ func gatherAgentsWithCodexScope(codexScope *transcript.CodexPathScope) ([]Pane, 
 				if len(f) > 9 {
 					paneCwd = f[9]
 				}
-				since = idleSince(id, fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3]), paneCwd, agent, activityAt, codexScope)
+				if codexError == "" {
+					since = idleSince(id, fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3]), paneCwd, agent, activityAt, codexScope)
+				}
 				// errored-idle: did this session END on an API/tool error (last transcript
 				// message is isApiErrorMessage)? Mark it so surfaces show ⚠ not ✓.
 				loc := fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3])

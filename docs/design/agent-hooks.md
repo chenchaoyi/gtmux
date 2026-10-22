@@ -23,6 +23,12 @@ Known mismatched turn_id callbacks cannot end a newer turn. Tool, permission and
 
 Codex's tmux fallback accepts the bound rollout's latest task_complete or turn_aborted only after the current active and waiting timestamps. A newer task_started, session mismatch, changed cwd, future timestamp or absent binding prevents reconciliation. The aborted path retains interrupted and does not stamp a successful finish. Native Codex rows also consult their own rollout; no protocol or UI shape changes are required.
 
+### Codex API errors without an end hook
+
+Codex 0.163.0 can end a turn on an API error without Stop, Interrupt or legacy notify ([upstream report](https://github.com/openai/codex/issues/54884)). Its [rollout policy](https://github.com/openai/codex/blob/rust-v0.163.0/codex-rs/rollout/src/policy.rs) excludes Error and StreamError from durable history, so a completion boundary alone cannot prove success. Do not install an undocumented StopFailure hook.
+
+The tmux radar has a narrow display fallback for the observed “Selected model is at capacity. Please try a different model.” error. It requires Codex's native `■` error cell as the final block immediately before a ready composer, with no working/queued-input indicator or choice menu. A real start hook takes precedence for the first two seconds, allowing the previous frame to repaint. It reports existing idle + errored/error_text/end_reason=error across Terminal, Menu bar, Phone, iPad and Web. It does not fabricate a hook, alter turn ownership or persist the screen error. A later working frame clears this inference. Other error wording, a scrolled-away cell, native desktop sessions and exact error text reproduced as a terminal cell are outside this detector's guarantees. Tests use synthetic captures; no live error is induced in user sessions.
+
 ## Doctor and configuration upgrades
 
 Run `gtmux doctor`, then `gtmux doctor --fix` for the proposed repairs. Installed agents get checks for the actual command/token, matcher, disabled handlers, format and plugin template, rather than mere event names. Claude, Codex and Kimi keep their dedicated installers; the other hook-equipped entries are derived from the registry.

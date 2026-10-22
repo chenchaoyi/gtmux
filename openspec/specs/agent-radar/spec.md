@@ -537,6 +537,33 @@ does not reach into the hook's markers.
 - **WHEN** an error appears in the log but the agent has written since
 - **THEN** the pane keeps reporting `working`
 
+### Requirement: Codex capacity failures are not successful completions
+
+For tmux Codex sessions whose upstream API failure emits no end hook or durable
+error record, the radar SHALL recognize the observed native `■ Selected model is
+at capacity. Please try a different model.` cell only as the final block before
+an input-ready composer, with no work/queued-input indicator or choice menu.
+A real start hook SHALL take precedence for the first two seconds while the
+previous terminal frame repaints. It SHALL use the existing idle + errored,
+error_text and end_reason=error fields
+on all consumers. The fallback SHALL NOT fabricate hooks, modify turn ownership
+or persist an inferred screen error. Unknown wording or native desktop sessions
+SHALL remain outside this detector's scope.
+
+#### Scenario: Capacity failure with a stale active hook
+
+- **WHEN** the current Codex frame shows the supported terminal capacity error
+  before its ready composer, even if an active hook marker remains
+- **THEN** the row is idle and errored, rather than completed or working
+- **AND** the display fallback does not stamp a successful completion
+
+#### Scenario: An older error or a continuing retry
+
+- **WHEN** the error is quoted, indented as tool output, followed by later output,
+  or the frame still shows work, queued input or a choice menu
+- **THEN** the fallback does not infer a terminal error
+- **AND** a new working frame does not retain the previous inferred error
+
 ### Requirement: A ready Codex composer clears an obsolete waiting marker
 
 The radar SHALL clear a contradicted waiting marker and report `idle` when a

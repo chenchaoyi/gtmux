@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/ansi"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/resume"
@@ -72,14 +73,66 @@ func codexIdleComposerContradictsFrame(pane, frame string) bool {
 		!prompt.IsComposerReady(frame, "codex") {
 		return false
 	}
-	for _, line := range strings.Split(frame, "\n") {
+	return !codexScreenWorking(frame)
+}
+
+func codexScreenWorking(frame string) bool {
+	for _, line := range strings.Split(ansi.Strip(frame), "\n") {
 		line = strings.TrimSpace(line)
 		if strings.Contains(line, "esc to interrupt") ||
 			strings.HasPrefix(line, "• Working (") ||
 			strings.HasPrefix(line, "• Running ") ||
 			strings.HasPrefix(line, "Messages to be submitted after next tool call") {
-			return false
+			return true
 		}
 	}
-	return true
+	return false
+}
+
+// codexTerminalFailure is a narrow fallback for a terminal API error that Codex
+// 0.163.0 neither hooks nor persists. Accept only the captured capacity error as
+// the final cell immediately before a ready composer. Prose, older errors,
+// approvals and an ongoing retry provide no terminal-failure evidence.
+func codexTerminalFailure(frame string) string {
+	frame = ansi.Strip(frame)
+	if !prompt.IsComposerReady(frame, "codex") || codexScreenWorking(frame) {
+		return ""
+	}
+	lines := strings.Split(frame, "\n")
+	composer := -1
+	for i := len(lines) - 1; i >= 0; i-- {
+		if line := strings.TrimSpace(lines[i]); line == "›" || strings.HasPrefix(line, "› ") {
+			composer = i
+			break
+		}
+	}
+	if composer < 0 {
+		return ""
+	}
+	end := composer
+	for end > 0 && strings.TrimSpace(lines[end-1]) == "" {
+		end--
+	}
+	start := end
+	for start > 0 && strings.TrimSpace(lines[start-1]) != "" {
+		start--
+	}
+	if start == end || !strings.HasPrefix(lines[start], "■ ") {
+		return ""
+	}
+	const capacity = "Selected model is at capacity. Please try a different model."
+	cell := strings.TrimPrefix(strings.Join(strings.Fields(strings.Join(lines[start:end], " ")), " "), "■ ")
+	if cell == capacity {
+		return capacity
+	}
+	return ""
+}
+
+// A newly submitted turn may still show the previous error for one repaint.
+// Let the real start hook win until the terminal has had time to draw its work.
+func codexTerminalFailureForPane(pane, frame string, now int64) string {
+	if at := FileMtime(state.ActivePath(pane)); at > 0 && now-at < 2 {
+		return ""
+	}
+	return codexTerminalFailure(frame)
 }

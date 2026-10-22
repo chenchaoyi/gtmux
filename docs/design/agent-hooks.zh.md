@@ -23,6 +23,12 @@ hook 只观察 agent，不应批准工具、修改提示、阻止回合或重启
 
 Codex 的 tmux 兜底只读取已绑定日志，最新 task_complete 或 turn_aborted 必须晚于当前工作及等待标记。更新的 task_started、会话不匹配、目录变化、未来时间或没有绑定都会阻止补判。中断路径保留 interrupted，不记正常完成。native Codex 同样读取自己的日志；无需改接口或 UI 数据结构。
 
+### Codex API 错误缺少结束 hook
+
+Codex 0.163.0 可能在 API 错误结束一轮时不触发 Stop、Interrupt 或旧 notify（[上游报告](https://github.com/openai/codex/issues/54884)）；其[日志持久化规则](https://github.com/openai/codex/blob/rust-v0.163.0/codex-rs/rollout/src/policy.rs)也不保存 Error、StreamError，因此结束边界不能单独证明成功。不要注册尚未支持的 StopFailure hook。
+
+tmux 雷达为已观察到的“Selected model is at capacity. Please try a different model.”增加严格的显示兜底：必须是可输入框前最后一个原生 `■` 错误块，且没有工作、排队输入提示或选择菜单。真实开始 hook 的前两秒优先，给上一帧留出重绘时间。终端、菜单栏、手机、iPad、Web 共同读取现有 idle + errored/error_text/end_reason=error，不增加状态。此判断不伪造 hook、不修改回合归属标记、不持久化屏幕错误；后续工作画面会清除此推断。其他错误文案、已滚走的错误、原生桌面会话，以及被精确复刻成终端错误块的输出，不在本检测保证内。回归使用合成画面，不向用户活跃会话制造错误。
+
 ## Doctor 与配置升级
 
 先跑 `gtmux doctor`，再用 `gtmux doctor --fix` 执行建议修复。对存在的 agent 检查真实命令／事件参数、matcher、禁用条目、配置格式和插件模板，而非只看事件名称。Claude、Codex、Kimi 使用专用安装器；其余需检查的 agent 从注册表派生。
