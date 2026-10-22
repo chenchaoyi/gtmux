@@ -100,12 +100,18 @@ out.write_bytes(body)
         run={'id':1,'head_branch':'v1.2.3','head_sha':'a'*40,'event':'push','path':'.github/workflows/release.yml'}
         for steps in ([],[{'name':'verify the app is notarized and stapled (tag)','conclusion':'skipped'}]):
             jobs={'jobs':[{'name':'goreleaser','conclusion':'success'},{'name':'menu-bar app (macOS)','conclusion':'success','steps':steps}]}
-            with patch.object(publisher,'gh',side_effect=[run,jobs]),self.assertRaises(ValueError):publisher.require_builds('a'*40,1,'1.2.3')
+            with patch.object(publisher,'gh',side_effect=[{'workflow_runs':[run]},jobs]),self.assertRaises(ValueError):publisher.require_builds('a'*40,1,'1.2.3')
         jobs={'jobs':[{'name':'goreleaser','conclusion':'success'},{'name':'menu-bar app (macOS)','conclusion':'success','steps':[{'name':'verify the app is notarized and stapled (tag)','conclusion':'success'}]}]}
-        with patch.object(publisher,'gh',side_effect=[run,jobs]):self.assertEqual(publisher.require_builds('a'*40,1,'1.2.3'),1)
+        with patch.object(publisher,'gh',side_effect=[{'workflow_runs':[run]},jobs]):self.assertEqual(publisher.require_builds('a'*40,1,'1.2.3'),1)
 
 
 class PublicationRunSelectionTest(unittest.TestCase):
+ def test_explicit_old_run_cannot_bypass_the_latest_failure(self):
+    latest={'id':2,'head_branch':'v1.2.3','head_sha':'a'*40,'event':'push','path':'.github/workflows/release.yml'}
+    with patch.object(publisher,'gh',return_value={'workflow_runs':[latest,{**latest,'id':1}]}) as api:
+        with self.assertRaises(ValueError): publisher.require_builds('a'*40,1,'1.2.3')
+        self.assertEqual(api.call_count,1,'An explicit old run must stop before borrowing its successful jobs')
+
  def test_publication_and_readback_identify_the_client_without_leaking_auth(self):
     class Reply(io.BytesIO):
         status=200

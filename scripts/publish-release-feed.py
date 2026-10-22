@@ -28,9 +28,11 @@ def gh(path):
 
 
 def require_builds(source, run, version):
-    candidates = [gh(f'actions/runs/{run}')] if run else gh(f'actions/workflows/release.yml/runs?head_sha={source}&event=push&per_page=100')['workflow_runs']
+    candidates = gh(f'actions/workflows/release.yml/runs?head_sha={source}&event=push&per_page=100')['workflow_runs']
     candidates = [item for item in candidates if item.get('head_branch') == 'v'+version]
     # Never reuse an older successful run after the latest exact-tag run failed.
+    if run is not None and (not candidates or candidates[0]['id'] != run):
+        raise ValueError('The selected run must be the latest exact-tag release run')
     for item in candidates[:1]:
         if item['head_sha'] != source or item['event'] != 'push' or item['path'] != '.github/workflows/release.yml':
             continue
