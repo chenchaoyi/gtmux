@@ -28,7 +28,7 @@ func TestHubKeepsNativeSessionsApart(t *testing.T) {
 	}
 
 	// b finishes: one done, for b, with no pane to name.
-	b.Status = "idle"
+	b.Status, b.Confirmed = "idle", true
 	cur = []AgentStatus{a, b}
 	h.tick()
 	if len(alerts) != 1 || alerts[0].Kind != "done" || alerts[0].Agent != "Codex" || alerts[0].Pane != "" {

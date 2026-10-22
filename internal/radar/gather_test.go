@@ -95,6 +95,9 @@ func TestGatherAgentsFixture(t *testing.T) {
 		if g.Loc == "" || g.source != "tmux" {
 			t.Errorf("row %d (%s): loc/source not assembled: loc=%q source=%q", i, g.PaneID, g.Loc, g.source)
 		}
+		if g.PaneID == "%1" && g.Confirmed {
+			t.Error("screen-only idle pane must not carry completion evidence")
+		}
 	}
 }
 
