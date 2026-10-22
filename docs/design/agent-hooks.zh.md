@@ -23,6 +23,20 @@ hook 只观察 agent，不应批准工具、修改提示、阻止回合或重启
 
 Codex 的 tmux 兜底只读取已绑定日志，最新 task_complete 或 turn_aborted 必须晚于当前工作及等待标记。更新的 task_started、会话不匹配、目录变化、未来时间或没有绑定都会阻止补判。中断路径保留 interrupted，不记正常完成。native Codex 同样读取自己的日志；无需改接口或 UI 数据结构。
 
+### Codex API 错误缺少结束 hook
+
+Codex 0.163.0 可能在 API 错误结束一轮时不触发 Stop、Interrupt 或旧 notify（[上游报告](https://github.com/openai/codex/issues/54884)）；其[日志持久化规则](https://github.com/openai/codex/blob/rust-v0.163.0/codex-rs/rollout/src/policy.rs)也不保存 Error、StreamError，因此结束边界不能单独证明成功。不要注册尚未支持的 StopFailure hook。
+
+tmux 雷达为已观察到的“Selected model is at capacity. Please try a different model.”增加严格的显示兜底：必须是可输入框前最后一个原生 `■` 错误块，且没有工作、排队输入提示或选择菜单。真实开始 hook 的前两秒优先，给上一帧留出重绘时间。终端、菜单栏、手机、iPad、Web 共同读取现有 idle + errored/error_text/end_reason=error，不增加状态。此判断不伪造 hook、不修改回合归属标记、不持久化屏幕错误；后续工作画面会清除此推断。其他错误文案、已滚走的错误、原生桌面会话，以及被精确复刻成终端错误块的输出，不在本检测保证内。回归使用合成画面，不向用户活跃会话制造错误。
+
+### Codex 真实终端进程归属恢复
+
+HQ 重用 pane 时，如果同目录还有其他会话，hook 归属可能因歧义而未更新，恢复记录便会保留旧 ID。恢复同时要求同一 Codex home 内明确的 CLI 创建记录、hook 记下的准确进程出生时间，以及刚验证的真实前台终端：稳定父链、pane 实例、前台进程组和字符设备 stdin。复用现有终端检查器，不单凭程序名、目录、创建来源或继承的 TMUX_PANE 认领；即使在前台 PTY 启动，也排除已知 app-server、mcp-server、exec 模式；参数仅即时检查，不保存或展示，扁平命令文本有歧义时保守延后。共享／无界面后端和管道不能认领终端。
+
+任务投递 nonce 证明保持优先。新的主会话 SessionStart／UserPromptSubmit hook 可凭自身前台进程绑定；恢复已有观测则要求该客户端只有一个符合条件的会话。写入前再次检查进程、pane、原绑定及观测记录；新身份必须能解析为真实对话；空的启动记录延后，命令桩不能认领客户端，已知辅助提示词也被排除。原生记录和历史保留，由核心现有连接逻辑仅去掉准确绑定会话的外部重复项，终端、菜单栏、手机、iPad、Web 共用结果。输入、同意和跟进规则照旧。
+
+出生时间通过 hook 的 UTC 读取器比较，避免本机时区差异。缺少来源／出生时间／stdin 证据、多个会话争用、记录变化、pane 不可读或已改变时保守放弃。这不证明其他前端已释放 Codex 写锁，也不是 Desktop 接管能力。回归使用合成进程和记录，不重启用户会话或发送诊断指令。
+
 ## Doctor 与配置升级
 
 先跑 `gtmux doctor`，再用 `gtmux doctor --fix` 执行建议修复。对存在的 agent 检查真实命令／事件参数、matcher、禁用条目、配置格式和插件模板，而非只看事件名称。Claude、Codex、Kimi 使用专用安装器；其余需检查的 agent 从注册表派生。

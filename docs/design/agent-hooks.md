@@ -23,6 +23,20 @@ Known mismatched turn_id callbacks cannot end a newer turn. Tool, permission and
 
 Codex's tmux fallback accepts the bound rollout's latest task_complete or turn_aborted only after the current active and waiting timestamps. A newer task_started, session mismatch, changed cwd, future timestamp or absent binding prevents reconciliation. The aborted path retains interrupted and does not stamp a successful finish. Native Codex rows also consult their own rollout; no protocol or UI shape changes are required.
 
+### Codex API errors without an end hook
+
+Codex 0.163.0 can end a turn on an API error without Stop, Interrupt or legacy notify ([upstream report](https://github.com/openai/codex/issues/54884)). Its [rollout policy](https://github.com/openai/codex/blob/rust-v0.163.0/codex-rs/rollout/src/policy.rs) excludes Error and StreamError from durable history, so a completion boundary alone cannot prove success. Do not install an undocumented StopFailure hook.
+
+The tmux radar has a narrow display fallback for the observed “Selected model is at capacity. Please try a different model.” error. It requires Codex's native `■` error cell as the final block immediately before a ready composer, with no working/queued-input indicator or choice menu. A real start hook takes precedence for the first two seconds, allowing the previous frame to repaint. It reports existing idle + errored/error_text/end_reason=error across Terminal, Menu bar, Phone, iPad and Web. It does not fabricate a hook, alter turn ownership or persist the screen error. A later working frame clears this inference. Other error wording, a scrolled-away cell, native desktop sessions and exact error text reproduced as a terminal cell are outside this detector's guarantees. Tests use synthetic captures; no live error is induced in user sessions.
+
+### Verified Codex terminal process recovery
+
+A reused HQ pane can keep an older resume ID when same-directory peers make hook attribution ambiguous. Recovery combines an explicit CLI rollout in the same Codex home with the hook's exact process birth and a freshly verified foreground terminal frontend: stable parent chain, pane incarnation, foreground process group and character-device stdin. It uses the existing terminal inspector, not executable names, cwd, creation source or inherited TMUX_PANE alone. Known app-server, mcp-server and exec modes are excluded even if launched in a foreground PTY. Their arguments are inspected transiently and never saved or exposed; ambiguous flat command text conservatively defers recovery. A shared/headless backend or a pipe cannot claim the terminal.
+
+Submitted-task nonce validation keeps priority. Fresh main SessionStart/UserPromptSubmit hooks can bind their own verified frontend; older observations require exactly one eligible session for that client. Recheck the process, pane, incumbent and stored observation before writing the binding. A new identity must parse as a real conversation; an empty startup defers and a command-only stub cannot claim the client. Known helper prompts are excluded. Native records and history remain intact; the exact bound session's external duplicate is suppressed by the normal core join, so Terminal, Menu bar, Phone, iPad and Web share the result. Existing send, consent and follow rules remain.
+
+Birth comparisons use the hook's UTC reader to avoid host-timezone mismatches. Recovery fails conservatively for missing source/birth/stdin evidence, competing sessions, changed records or an unavailable/changed pane. It does not prove that another frontend has released a Codex writer lock or implement a Desktop handoff. Contract tests use synthetic processes/records; no user session is restarted or sent a diagnostic prompt.
+
 ## Doctor and configuration upgrades
 
 Run `gtmux doctor`, then `gtmux doctor --fix` for the proposed repairs. Installed agents get checks for the actual command/token, matcher, disabled handlers, format and plugin template, rather than mere event names. Claude, Codex and Kimi keep their dedicated installers; the other hook-equipped entries are derived from the registry.
