@@ -26,7 +26,8 @@ GitHub Actions 继续构建不依赖 cgo 的 CLI，并为通用 Mac App 签名�
 2. 设置准确下载主机白名单及单独上传主机；先在 Pages 关联域名，再给子域配置 CNAME。外部 DNS 的子域也可接入，不需要迁移根域。保留网站既有地区／鉴权规则，并禁止用默认 Pages 域名绕过公开下载策略。
 3. 私钥保存在私有存储和恢复材料中，GitHub secret 名为 `GTMUX_RELEASE_SIGNING_KEY`。独立上传 bearer 分别设置为 Pages secret `PUBLISH_TOKEN` 与 GitHub secret `GTMUX_RELEASE_PUBLISH_TOKEN`。Git 只放公钥；换公钥要重建客户端并同步受审静态 bootstrap，不能静默换成老客户端不认识的密钥。
 4. 运行 `make ci-test`、`python3 scripts/sync-release-feed.py --check`、`npm --prefix download-worker test` 和 `npm --prefix download-worker run build` 后，部署精确受审源码。不把凭据、私有恢复文件、运维配置放进 CI 附件。公开脚本、示例、workflow 的 secret 名、清单、公钥适合入库。
-5. 宣传短地址之前，实际核 DNS／TLS、签名清单、两个源的完整文件摘要、短 bootstrap 字节、无鉴权上传拒绝、默认域下载拒绝和网页下载链接。代码或 CI 通过不代表这些入口已经可用。
+5. 在 Pages 路由中将 `/.well-known/acme-challenge/*` 留给平台处理，使 HTTP 域名验证和续期不被只接受 HTTPS 的下载 Worker 拦截。下载和发布路径继续经过 Worker；不要把验证文件或凭据放进静态资源。参见 [Pages 自定义域验证说明](https://developers.cloudflare.com/pages/platform/known-issues/#custom-domains)。
+6. 宣传短地址之前，实际核 DNS／TLS、签名清单、两个源的完整文件摘要、短 bootstrap 字节、无鉴权上传拒绝、默认域下载拒绝和网页下载链接。代码或 CI 通过不代表这些入口已经可用。
 
 当前每个上传文件限制 90 MiB，避免超过 Cloudflare 默认请求体上限；过大的包在切 stable 前失败。原生客户端另有 256 MiB 上限。R2 按官方价格免出站流量费，但存储／操作次数与 Pages Functions 请求分别计量，额度还与账户其他用量共享。按实测包体和实际访问量估算，不能把免费额度当成已核可用余量。这里用 Functions 读 R2，不声称拥有无限静态资源请求额度。
 

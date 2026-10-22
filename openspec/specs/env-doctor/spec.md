@@ -896,6 +896,15 @@ Default release discovery and installation SHALL authenticate bounded RSA/SHA256
 
 Publication SHALL require exact-source official CLI and notarized Mac build success, unchanged GitHub API asset digests and CLI checksums, authenticated writes and immutable version objects. Both public routes SHALL be read back before atomic stable promotion; incomplete, modified, downgraded or concurrent publication SHALL not advance stable. Public downloads SHALL not expose the private phone bucket, credentials, listing or unintended default hostnames. Static website bootstraps SHALL verify and pin the signed installer; the initial HTTPS bootstrap trust SHALL remain explicit.
 
+Pages HTTP certificate validation SHALL bypass the HTTPS-only download worker only
+at `/.well-known/acme-challenge/*`. Download and publication paths SHALL remain
+worker-controlled; no challenge credentials or files SHALL enter static assets.
+
+#### Scenario: An externally managed download domain validates its certificate
+- **WHEN** Pages validates or renews the custom domain over HTTP
+- **THEN** its reserved ACME path reaches Pages rather than the HTTPS-only worker
+- **AND** public artifacts, authenticated publication and other paths retain their existing routing
+
 #### Scenario: A mirror supplies modified metadata
 - **WHEN** a signed manifest fails authentication or scope validation
 - **THEN** the updater and bootstrap stop without trusting an unsigned index
