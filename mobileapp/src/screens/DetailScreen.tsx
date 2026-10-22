@@ -318,8 +318,6 @@ function PaneDetailView({
   const pendingEcho = useRef<PendingChatEcho | null>(null);
   const echoAttempts = useRef(new Map<string, PendingChatEcho>());
   const [diffOpen, setDiffOpen] = useState(false);
-  const [manualInteraction, setManualInteraction] = useState(false);
-  const [composeRequest, setComposeRequest] = useState(0);
   // When an approval choice was just tapped (epoch ms). For a short settle window
   // after, the options poll ignores what it parses: the pane is mid-transition, so a
   // capture catches transient/redrawing frames (the just-answered menu lingering, or
@@ -604,11 +602,10 @@ function PaneDetailView({
   );
 
   const inputEnabled = !isNative && (!isGuest || inputPanes.includes(agent.pane_id));
-  const interaction = usePaneInteraction(client, agent.pane_id, !isNative && (live.status === 'waiting' || manualInteraction), answeredAt);
+  const interaction = usePaneInteraction(client, agent.pane_id, !isNative && live.status === 'waiting', answeredAt);
   const refreshInteraction = interaction.refresh;
   const interactionRefresh = useRef(refreshInteraction); interactionRefresh.current = refreshInteraction;
   const keyControl = useTerminalKeys(isNative ? undefined : `${client.base}|${agent.pane_id}`, inputEnabled, onLoadKeys, onSendKey);
-  useEffect(() => { setManualInteraction(false); }, [client, agent.pane_id]);
   useEffect(() => { refreshInteraction(); }, [mode, refreshInteraction]);
 
   // Fetch the transcript on mount + when the status flips or a prompt is sent (a turn
@@ -1005,7 +1002,6 @@ function PaneDetailView({
               <Ctl pal={pal} label={lang === 'zh' ? '代码改动' : 'Diff'} onPress={() => setDiffOpen(true)} />
             )}
             {/* font size + full-screen both apply to either mode (consistent behavior). */}
-            {mode === 'chat' && !isNative && <Ctl pal={pal} label={lang === 'zh' ? '交互' : 'Interact'} testID="detail-interact" onPress={() => setManualInteraction(v => !v)} />}
             <SessionDisplayMenu pal={pal} lang={lang} mode={mode} layout={terminalLayout} onLayoutChange={setTerminalLayout}
               selectionActive={mode === 'terminal' && terminalSelection} smaller={smaller} bigger={bigger} fontSize={fontSize}
               canShrink={fontIdx > 0} canGrow={fontIdx < FONT_SIZES.length - 1} />
@@ -1026,18 +1022,15 @@ function PaneDetailView({
         <RunningRow tally={taskTally} lang={lang} restColor={pal.fg2} onOpen={() => setTasksOpen(true)} />
       )}
 
-      {!isNative && (live.status === 'waiting' || manualInteraction) && <SessionInteractionCard
-        scope={`${client.base}|${agent.pane_id}`} waiting={live.status === 'waiting'}
+      {!isNative && live.status === 'waiting' && <SessionInteractionCard
+        scope={`${client.base}|${agent.pane_id}`}
         snapshot={interaction.snapshot} loading={interaction.loading} failed={interaction.failed}
         enabled={inputEnabled} control={keyControl} pal={pal} lang={lang} onRetry={interaction.refresh}
-        onLegacyKey={key => {sendPane({key}); interaction.refresh();}}
         onReply={n => {
           if (!inputEnabled || keyControl.isBlocked() || Date.now() - answeredAt.current < 1500) return;
           interaction.answered();
           keyControl.digit(n);
         }}
-        onCompose={() => {setFullscreen(false); setComposeRequest(Date.now());}}
-        onClose={() => setManualInteraction(false)}
       />}
 
       {/* input — types into the pane via POST /api/send (MOBILE §4). A guest may type
@@ -1079,7 +1072,6 @@ function PaneDetailView({
           historyScope={historyScope(live)}
           enabled={inputEnabled}
           keyController={keyControl}
-          composeRequest={composeRequest}
           returnSends={returnSends}
           prefill={refill}
           onSend={onComposerSend}

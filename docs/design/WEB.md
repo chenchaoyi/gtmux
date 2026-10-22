@@ -189,4 +189,4 @@ Focused Chat uses the same Activity hierarchy, operation labels and neutral acti
 
 ### In-conversation interaction
 
-Waiting keeps the current prompt and keyboard entry visible even without numbered choices. Interact also opens it manually when a wait was not identified. App, iPad and Web share the read-only current-screen endpoint, preserving hook, scope and key-outcome boundaries. See [design and acceptance boundaries](session-interaction.md).
+Waiting shows the current prompt and safe numbered choices in context; answering folds the card, and resuming work removes it. There is no separate Interact mode or duplicate keyboard. Unrecognized prompts use the existing composer Keys and Terminal. App, iPad and Web share the read-only current-screen endpoint, preserving hook, scope and key-outcome boundaries. See [design and acceptance boundaries](session-interaction.md).

@@ -88,6 +88,26 @@ import XCTest
             }
         }
     }
+    func testHumanPromptKeepsItsBubbleWithoutARedundantSenderHeading() async throws {
+        NativeUIProbe.prepareAccessibility()
+        let old = L10n.shared.mode; defer { L10n.shared.mode = old }
+        for mode in [LangMode.en, .zh] {
+            L10n.shared.mode = mode
+            for dark in [false, true] {
+                let turn = DesktopChatTurn(prompt: "Review this synthetic project.", response: "", segments: nil, time: nil)
+                let host = NSHostingView(rootView: DesktopConversationTurnView(turn: turn,
+                    agent: Agent(agent: "DeepSeek Harness"), l10n: .shared, expanded: true, toggle: {})
+                    .padding(20).environment(\.colorScheme, dark ? .dark : .light))
+                let window = NSWindow(contentRect: NSRect(x: 80, y: 80, width: dark ? 520 : 840, height: 220), styleMask: [.titled], backing: .buffered, defer: false)
+                window.isReleasedWhenClosed = false; window.contentView = host; window.orderBack(nil)
+                defer { window.close() }
+                try await settle(host)
+                XCTAssertNotNil(NativeUIProbe.find("desktop-prompt-body", in: host), "The message remains readable")
+                XCTAssertNil(NativeUIProbe.find("desktop-prompt-sender", in: host), "The human avatar does not need a duplicate You heading")
+                try snapshot(host, "reader-human-\(mode.rawValue)-\(dark ? "dark" : "light")")
+            }
+        }
+    }
     func testRefreshPreservesHistoricalReadingAndExplicitLatestReturnsToTail() async throws {
         NativeUIProbe.prepareAccessibility()
         let model = DesktopConversationModel(agent: Agent(agent: "Codex", source: "native", sessionID: "history"))

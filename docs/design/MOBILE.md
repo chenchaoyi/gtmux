@@ -281,13 +281,14 @@ every 4 seconds while HQ works and every 8 seconds when it is idle or waiting. C
 `response_item` commentary before the final answer. Those messages are conversation
 bubbles as they arrive, with tool calls between them. The raw terminal screen is an
 opt-in preview: a compact Thinking / Working row retains elapsed time and has explicit
-Show live view / Hide live view text plus a chevron. It starts collapsed for each working
-turn, pane, source session or server; normal screen/transcript refresh preserves the
-reader’s choice. The expanded preview keeps the last 14 non-trailing-empty screen rows,
-with a 220pt vertical limit and horizontal scrolling for long lines. No output shows an
+Show live view / Hide live view text plus a chevron. It starts collapsed in a new conversation, pane, source session or server. The
+reader’s choice survives timestamp corrections and working/waiting/idle transitions
+in that conversation as well as ordinary screen/transcript refresh. The expanded preview keeps the last 14 non-trailing-empty screen rows,
+with a 220pt vertical limit and horizontal scrolling for long lines, inside the
+original full-width, subtly tinted live card rather than a separate dark inset. No output shows an
 explicit empty state. The disclosure has a minimum 44pt target and an accessible expanded
-state. Phone, iPad, Detail and HQ share the component. Waiting choices and the manual
-Interact panel remain independent, so required input is never hidden by this fold.
+state. Phone, iPad, Detail and HQ share the component. Waiting choices and the existing composer
+remain independent, so required input is never hidden by this fold.
 Native/read-only conversations without a terminal screen retain the quiet status row without offering an empty screen disclosure.
 
 ### Grouping the long-press menu: the groups were already in the data
@@ -1602,4 +1603,4 @@ Tool-list headings show the count once. Delegation rows prefer a recorded purpos
 
 ### In-conversation interaction
 
-Waiting keeps the current prompt and keyboard entry visible even without numbered choices. Interact also opens it manually when a wait was not identified. App, iPad and Web share the read-only current-screen endpoint, preserving hook, scope and key-outcome boundaries. See [design and acceptance boundaries](session-interaction.md).
+Waiting shows the current prompt and safe numbered choices in context; answering folds the card, and resuming work removes it. There is no separate Interact mode or duplicate keyboard. Unrecognized prompts use the existing composer Keys and Terminal. App, iPad and Web share the read-only current-screen endpoint, preserving hook, scope and key-outcome boundaries. See [design and acceptance boundaries](session-interaction.md).
