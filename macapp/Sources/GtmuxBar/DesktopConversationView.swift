@@ -4,12 +4,15 @@ import SwiftUI
 struct DesktopConversationView: View {
     @ObservedObject var model: DesktopConversationModel
     @ObservedObject var l10n: L10n
+    /// Native harnesses observe the tail marker, not LazyVStack's estimated document size.
+    var scrollObserver: ((ScrollViewProxy, Bool, Bool) -> Void)? = nil
     @Environment(\.colorScheme) private var scheme
     @State private var collapsed: Set<String> = []
     @State private var showEvidence = false
     @State private var atTail = true
     @State private var tailObserved = false
     @State private var didInitialReveal = false
+    @State private var positioning = true
     @State private var revealSerial: UInt64 = 0
     @StateObject private var scrollIntent = HQConversationScrollIntent()
     private var entries: [DesktopConversationEntry] {
@@ -100,14 +103,20 @@ struct DesktopConversationView: View {
                     .onPreferenceChange(DesktopConversationTail.self) { y in
                         tailObserved = y < .greatestFiniteMagnitude
                         atTail = y <= viewport.size.height + 36
+                        scrollObserver?(proxy, atTail, !positioning)
                     }
                     .task(id: revealSerial) {
                         guard didInitialReveal else { return }
+                        positioning = true
                         let intent = scrollIntent.generation
+                        scrollObserver?(proxy, atTail, false)
                         _ = await HQConversationTailReveal.run(
                             isCurrent: { intent == scrollIntent.generation },
                             reveal: { proxy.scrollTo("latest", anchor: .bottom) },
                             isVisible: { tailObserved && atTail })
+                        guard !Task.isCancelled else { return }
+                        positioning = false
+                        scrollObserver?(proxy, atTail, true)
                     }
                     .onChange(of: model.turns.isEmpty, initial: true) { _, empty in
                         if !empty && !didInitialReveal { didInitialReveal = true; revealSerial &+= 1 }

@@ -94,28 +94,73 @@ import XCTest
         model.turns = (0..<12).map { index in
             DesktopChatTurn(prompt: "Synthetic request \(index)", response: String(repeating: "Recorded public reply stays in this synthetic fixture. ", count: 45), segments: nil, time: "2026-10-22T01:\(String(format: "%02d", index)):00Z")
         }
-        let host = NSHostingView(rootView: DesktopConversationView(model: model, l10n: .shared))
+        var navigation: ScrollViewProxy?
+        var tailIsVisible = false
+        var entrySettled = false
+        let host = NSHostingView(rootView: DesktopConversationView(model: model, l10n: .shared, scrollObserver: { proxy, visible, settled in
+            navigation = proxy; tailIsVisible = visible; entrySettled = settled
+        }))
         let window = NSWindow(contentRect: NSRect(x: 80, y: 80, width: 760, height: 640), styleMask: [.titled], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false; window.contentView = host; window.orderBack(nil)
         defer { window.close(); model.stop() }
-        try await settle(host)
+        for _ in 0..<100 {
+            host.layoutSubtreeIfNeeded()
+            if tailIsVisible && entrySettled { break }
+            try await Task.sleep(nanoseconds: 20_000_000)
+        }
+        XCTAssertTrue(tailIsVisible, "Initial positioning must reveal the actual tail marker")
+        XCTAssertTrue(entrySettled, "Initial navigation must finish before deliberate history reading")
         let scroll = try XCTUnwrap(NativeUIProbe.views(NSScrollView.self, in: host).first)
         NotificationCenter.default.post(name: NSScrollView.willStartLiveScrollNotification, object: scroll)
-        scroll.contentView.scroll(to: NSPoint(x: 0, y: 60)); scroll.reflectScrolledClipView(scroll.contentView)
-        try await settle(host)
-        let old = scroll.contentView.bounds.origin.y
+        // SwiftUI owns a virtual document. Navigate by record identity, as the HQ
+        // harness does, and verify the actual viewport rather than estimated offsets.
+        try XCTUnwrap(navigation).scrollTo(model.turns[0].identity(index: 0), anchor: .top)
+        func viewport() throws -> NSBitmapImageRep {
+            host.layoutSubtreeIfNeeded()
+            let clip = scroll.contentView
+            let rect = NSRect(x: clip.bounds.minX + 20, y: clip.bounds.minY + 20,
+                width: clip.bounds.width - 60, height: min(300, clip.bounds.height - 40))
+            let image = try XCTUnwrap(clip.bitmapImageRepForCachingDisplay(in: rect))
+            clip.cacheDisplay(in: rect, to: image)
+            return image
+        }
+        func png(_ image: NSBitmapImageRep) throws -> Data {
+            try XCTUnwrap(image.representation(using: .png, properties: [:]))
+        }
+        var before: Data?
+        var stable = 0
+        for _ in 0..<100 {
+            let current = try png(viewport())
+            stable = current == before ? stable + 1 : 0
+            before = current
+            if stable >= 5 { break }
+            try await Task.sleep(nanoseconds: 20_000_000)
+        }
+        XCTAssertGreaterThanOrEqual(stable, 5, "Historical content must settle before refresh")
+        XCTAssertFalse(tailIsVisible, "History navigation must actually leave the tail")
+        let bitmap = try viewport()
+        let pixels = try XCTUnwrap(bitmap.bitmapData)
+        XCTAssertGreaterThan(Set(Data(bytes: pixels, count: bitmap.bytesPerRow * bitmap.pixelsHigh)).count, 8,
+            "A blank viewport cannot prove reading-position preservation")
         model.turns.append(DesktopChatTurn(prompt: "A new synthetic request", response: "New public answer", segments: nil, time: "2026-10-22T02:00:00Z"))
         try await settle(host)
-        XCTAssertEqual(scroll.contentView.bounds.origin.y, old, accuracy: 3, "refresh must not pull historical reading to the tail")
+        var after: Data?
+        for _ in 0..<100 {
+            after = try png(viewport())
+            if after == before { break }
+            try await Task.sleep(nanoseconds: 20_000_000)
+        }
+        XCTAssertEqual(after, before, "Refresh must preserve the actual historical viewport")
+        XCTAssertFalse(tailIsVisible, "An appended turn must not pull history to the tail")
         let latest = try XCTUnwrap(NativeUIProbe.find("desktop-latest", in: host))
         XCTAssertTrue(latest.accessibilityPerformPress())
-        for _ in 0..<30 {
-            try await Task.sleep(nanoseconds: 50_000_000)
+        for _ in 0..<100 {
+            try await Task.sleep(nanoseconds: 20_000_000)
             host.layoutSubtreeIfNeeded()
-            if let document = scroll.documentView, document.bounds.height - scroll.contentView.bounds.maxY <= 36 { break }
+            if tailIsVisible && entrySettled { break }
         }
-        let document = try XCTUnwrap(scroll.documentView)
-        XCTAssertLessThanOrEqual(document.bounds.height - scroll.contentView.bounds.maxY, 36)
+        XCTAssertTrue(tailIsVisible, "Explicit latest must reveal the actual tail marker")
+        XCTAssertTrue(entrySettled, "Explicit navigation must finish")
     }
 
 }
