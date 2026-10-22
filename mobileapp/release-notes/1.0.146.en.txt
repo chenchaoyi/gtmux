@@ -1,0 +1,1 @@
+- Working sessions now show a compact progress row. Tap to expand the live terminal preview, then fold it away to keep messages in view.

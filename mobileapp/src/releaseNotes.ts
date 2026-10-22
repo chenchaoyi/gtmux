@@ -12,6 +12,15 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.146',
+    en: [
+      '- Working sessions now show a compact progress row. Tap to expand the live terminal preview, then fold it away to keep messages in view.',
+    ],
+    zh: [
+      '- 工作中的会话默认显示单行进度，点击可展开实时终端预览，再次收起即可继续专注阅读对话。',
+    ],
+  },
+  {
     version: '1.0.145',
     en: [
       '- Tmux message profiles can now expand recorded execution chains.',
