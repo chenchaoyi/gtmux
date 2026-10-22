@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/launchhost"
 	"github.com/chenchaoyi/gtmux/internal/native"
 	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/sessionpolicy"
@@ -33,6 +34,12 @@ func TestCodexSubmitWitnessCorrectsSharedServerPane(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			hermeticEnv(t)
+			previousBinder := bindCodexHookProcess
+			bindCodexHookProcess = func(string, string, string, launchhost.AgentProcess, int64) string {
+				t.Fatal("submitted nonce must not fall through to process recovery")
+				return ""
+			}
+			t.Cleanup(func() { bindCodexHookProcess = previousBinder })
 			t.Setenv("CODEX_HOME", t.TempDir())
 			cwd := t.TempDir()
 			now := time.Now().Unix()
@@ -149,5 +156,32 @@ func TestNativeCodexTurnKeepsConsentBoundaryAfterRecordRemoval(t *testing.T) {
 	}
 	if sessionpolicy.ObserveEvent("", "Codex", "cli-external", "terminal", time.Now().Unix()) {
 		t.Fatal("creation origin bypassed native consent")
+	}
+}
+
+func TestVerifiedProcessHookDoesNotOverwriteItsCommittedBinding(t *testing.T) {
+	hermeticEnv(t)
+	t.Setenv("CODEX_HOME", t.TempDir())
+	oldBin := tmux.Bin
+	tmux.Bin = ""
+	t.Cleanup(func() { tmux.Bin = oldBin })
+	previous := bindCodexHookProcess
+	t.Cleanup(func() { bindCodexHookProcess = previous })
+	const sid = "current-session"
+	const loc = "worker:0.0"
+	want := resume.Record{Agent: "codex", HomeID: transcript.CodexHomeID(), SessionID: sid, Cwd: "/work", UpdatedAt: time.Now().Unix(), Launcher: "verified-wrapper"}
+	bindCodexHookProcess = func(gotSID, cwd, event string, _ launchhost.AgentProcess, _ int64) string {
+		if gotSID != sid || cwd != "/work" || event != "SessionStart" {
+			t.Fatalf("unexpected process claim: %s %s %s", gotSID, cwd, event)
+		}
+		if err := resume.Save(loc, want); err != nil {
+			t.Fatal(err)
+		}
+		return "%7"
+	}
+	Run(strings.NewReader(`{"session_id":"current-session","cwd":"/work"}`), []string{"--agent", "codex", "--detached", "SessionStart"})
+	got, _ := resume.Load(loc)
+	if got != want {
+		t.Fatalf("committed process binding overwritten: %+v", got)
 	}
 }

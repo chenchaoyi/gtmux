@@ -47,13 +47,14 @@ type codexPayload struct {
 		Type string `json:"type"`
 		Text string `json:"text"`
 	} `json:"content"` // response_item message (Codex 0.157+ user input)
-	LastAgentMessage string `json:"last_agent_message"` // event_msg task_complete
-	Name             string `json:"name"`               // response_item function_call
-	Arguments        string `json:"arguments"`          // response_item function_call (JSON string)
-	SessionID        string `json:"session_id"`         // session_meta (first line)
-	ID               string `json:"id"`                 // current session_meta
-	Originator       string `json:"originator"`         // codex-tui | codex_work_desktop | Codex Desktop
-	Cwd              string `json:"cwd"`                // session_meta (first line)
+	LastAgentMessage string          `json:"last_agent_message"` // event_msg task_complete
+	Name             string          `json:"name"`               // response_item function_call
+	Arguments        string          `json:"arguments"`          // response_item function_call (JSON string)
+	SessionID        string          `json:"session_id"`         // session_meta (first line)
+	ID               string          `json:"id"`                 // current session_meta
+	Source           json.RawMessage `json:"source"`             // creation context; not current ownership
+	Originator       string          `json:"originator"`         // codex-tui | codex_work_desktop | Codex Desktop
+	Cwd              string          `json:"cwd"`                // session_meta (first line)
 }
 
 // CodexHome is where Codex keeps its sessions, for the packages that need to

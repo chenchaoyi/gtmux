@@ -3,6 +3,7 @@ package transcript
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"path/filepath"
 
 	"github.com/chenchaoyi/gtmux/internal/state"
@@ -13,6 +14,8 @@ type CodexIdentity struct {
 	ThreadID       string
 	HomeID         string
 	CreationClient string
+	Source         string
+	Cwd            string
 }
 
 func canonicalHome(path string) string {
@@ -64,5 +67,7 @@ func codexIdentityFor(resolver codexPathResolver, id string) (CodexIdentity, boo
 	case "codex_work_desktop", "Codex Desktop":
 		client = "chatgpt_desktop"
 	}
-	return CodexIdentity{ThreadID: thread, HomeID: CodexHomeID(), CreationClient: client}, true
+	var source string
+	_ = json.Unmarshal(meta.Source, &source)
+	return CodexIdentity{ThreadID: thread, HomeID: CodexHomeID(), CreationClient: client, Source: source, Cwd: meta.Cwd}, true
 }

@@ -785,6 +785,7 @@ func Run(stdin io.Reader, args []string) int {
 	envPane := os.Getenv("TMUX_PANE")
 	pane := envPane
 	codexPaneChecked := agentKey == "dsh"
+	codexProcessBound := false
 	if agentKey == "dsh" {
 		pane = ""
 	} // A shared Web server's launcher never owns a pane.
@@ -801,6 +802,12 @@ func Run(stdin io.Reader, args []string) int {
 		// fallback. Leave it pane-less until its exact target can be verified.
 		pane = codexSubmittedBinding(promptText, agentSession, time.Now().Unix())
 		codexPaneChecked = true
+	}
+	if !codexPaneChecked && agentKey == "codex" && !isHelperSession(agentSession) &&
+		!(event == "UserPromptSubmit" && isHelperPrompt(promptText)) {
+		if resolved := bindCodexHookProcess(agentSession, resumeCwd, event, process, time.Now().Unix()); resolved != "" {
+			pane, codexPaneChecked, codexProcessBound = resolved, true, true
+		}
 	}
 	if !codexPaneChecked && agentKey == "codex" && (event == "Stop" || event == "Interrupt" || event == "StopFailure") && resumeCwd == "" {
 		// Some Codex completions arrive without session/cwd and inherit the
@@ -906,7 +913,7 @@ func Run(stdin io.Reader, args []string) int {
 	if agentKey == "dsh" {
 		homeID = dsh.HomeID()
 	}
-	if pane != "" && (resume.Resumable(agentKey) || terminalAttachment.Client != "") {
+	if pane != "" && !codexProcessBound && (resume.Resumable(agentKey) || terminalAttachment.Client != "") {
 		if loc := tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}"); loc != "" {
 			cwd := resumeCwd
 			if cwd == "" {

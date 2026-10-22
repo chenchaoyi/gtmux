@@ -6,6 +6,8 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/resume"
 )
 
+var bindCodexHookProcess = resume.BindCodexHookProcess
+
 func codexSubmittedBinding(prompt, sid string, now int64) string {
 	intent, ok := resume.CodexBindingForPrompt(prompt, now)
 	if !ok {

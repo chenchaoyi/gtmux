@@ -1590,6 +1590,13 @@ func nativePanesScoped(tmuxPanes []Pane, profiles []agentProfile, now int64, cod
 			break
 		}
 	}
+	locations := map[string]string{}
+	for _, p := range tmuxPanes {
+		if agents.KeyForLabel(p.Agent) == "codex" {
+			locations[p.PaneID] = p.Loc
+		}
+	}
+	resume.ReconcileCodexProcesses(codexScope, recs, locations, now)
 	inTmux := map[string]bool{}
 	for _, a := range terminalAttachments() {
 		inTmux[a.HomeID+"\x00"+a.SessionID] = true
