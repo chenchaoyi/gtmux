@@ -113,10 +113,6 @@ import XCTest
         XCTAssertTrue(entrySettled, "Initial navigation must finish before deliberate history reading")
         try snapshot(host, "reader-scroll-initial")
         let scroll = try XCTUnwrap(NativeUIProbe.views(NSScrollView.self, in: host).first)
-        NotificationCenter.default.post(name: NSScrollView.willStartLiveScrollNotification, object: scroll)
-        // SwiftUI owns a virtual document. Navigate by record identity, as the HQ
-        // harness does, and verify the actual viewport rather than estimated offsets.
-        try XCTUnwrap(navigation).scrollTo(model.turns[0].identity(index: 0), anchor: .top)
         func viewport() throws -> NSBitmapImageRep {
             host.layoutSubtreeIfNeeded()
             let clip = scroll.contentView
@@ -129,6 +125,16 @@ import XCTest
         func png(_ image: NSBitmapImageRep) throws -> Data {
             try XCTUnwrap(image.representation(using: .png, properties: [:]))
         }
+        func viewportHasContent() throws -> Bool {
+            let bitmap = try viewport()
+            let pixels = try XCTUnwrap(bitmap.bitmapData)
+            return Set(Data(bytes: pixels, count: bitmap.bytesPerRow * bitmap.pixelsHigh)).count > 8
+        }
+        XCTAssertTrue(try viewportHasContent(), "Cold entry must show recorded content, not a blank viewport")
+        NotificationCenter.default.post(name: NSScrollView.willStartLiveScrollNotification, object: scroll)
+        // SwiftUI owns a virtual document. Navigate by record identity, as the HQ
+        // harness does, and verify the actual viewport rather than estimated offsets.
+        try XCTUnwrap(navigation).scrollTo(model.turns[0].identity(index: 0), anchor: .top)
         var before: Data?
         var stable = 0
         for _ in 0..<100 {
@@ -141,10 +147,7 @@ import XCTest
         XCTAssertGreaterThanOrEqual(stable, 5, "Historical content must settle before refresh")
         XCTAssertFalse(tailIsVisible, "History navigation must actually leave the tail")
         try snapshot(host, "reader-scroll-history")
-        let bitmap = try viewport()
-        let pixels = try XCTUnwrap(bitmap.bitmapData)
-        XCTAssertGreaterThan(Set(Data(bytes: pixels, count: bitmap.bytesPerRow * bitmap.pixelsHigh)).count, 8,
-            "A blank viewport cannot prove reading-position preservation")
+        XCTAssertTrue(try viewportHasContent(), "A blank viewport cannot prove reading-position preservation")
         model.turns.append(DesktopChatTurn(prompt: "A new synthetic request", response: "New public answer", segments: nil, time: "2026-10-22T02:00:00Z"))
         try await settle(host)
         var after: Data?
@@ -165,6 +168,7 @@ import XCTest
         }
         XCTAssertTrue(tailIsVisible, "Explicit latest must reveal the actual tail marker")
         XCTAssertTrue(entrySettled, "Explicit navigation must finish")
+        XCTAssertTrue(try viewportHasContent(), "Explicit latest must show recorded content")
         try snapshot(host, "reader-scroll-latest")
     }
 

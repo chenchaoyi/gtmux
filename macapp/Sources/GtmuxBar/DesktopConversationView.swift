@@ -82,18 +82,21 @@ struct DesktopConversationView: View {
                             }
                             let separators = HQChatTimeline.separators(model.turns.map { HQChatTimeline.timestamp($0.time) })
                             ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
-                                if let date = separators[index] { HQChatTimeSeparator(date: date, l10n: l10n) }
                                 let id = entry.id
                                 let turn = entry.turn
-                                DesktopConversationTurnView(turn: turn, agent: model.agent, l10n: l10n, expanded: !collapsed.contains(id)) {
-                                    if collapsed.contains(id) { collapsed.remove(id) } else { collapsed.insert(id) }
+                                VStack(alignment: .leading, spacing: 28) {
+                                    if let date = separators[index] { HQChatTimeSeparator(date: date, l10n: l10n) }
+                                    DesktopConversationTurnView(turn: turn, agent: model.agent, l10n: l10n, expanded: !collapsed.contains(id)) {
+                                        if collapsed.contains(id) { collapsed.remove(id) } else { collapsed.insert(id) }
+                                    }
                                 }.id(id)
+                                    .background(GeometryReader { geometry in
+                                        if index == entries.count - 1 {
+                                            Color.clear.preference(key: DesktopConversationTail.self,
+                                                value: geometry.frame(in: .named("desktopConversationScroll")).maxY)
+                                        }
+                                    })
                             }
-                            Color.clear.frame(height: 1).id("latest")
-                                .background(GeometryReader { geometry in
-                                    Color.clear.preference(key: DesktopConversationTail.self,
-                                        value: geometry.frame(in: .named("desktopConversationScroll")).maxY)
-                                })
                         }.padding(.horizontal, 24).padding(.vertical, 14)
                             .frame(maxWidth: 780).frame(maxWidth: .infinity)
                     }
@@ -102,7 +105,7 @@ struct DesktopConversationView: View {
                     .coordinateSpace(name: "desktopConversationScroll")
                     .onPreferenceChange(DesktopConversationTail.self) { y in
                         tailObserved = y < .greatestFiniteMagnitude
-                        atTail = y <= viewport.size.height + 36
+                        atTail = tailObserved && y >= 0 && y <= viewport.size.height + 36
                         scrollObserver?(proxy, atTail, !positioning)
                     }
                     .task(id: revealSerial) {
@@ -112,7 +115,7 @@ struct DesktopConversationView: View {
                         scrollObserver?(proxy, atTail, false)
                         _ = await HQConversationTailReveal.run(
                             isCurrent: { intent == scrollIntent.generation },
-                            reveal: { proxy.scrollTo("latest", anchor: .bottom) },
+                            reveal: { if let last = ids.last { proxy.scrollTo(last, anchor: .bottom) } },
                             isVisible: { tailObserved && atTail })
                         guard !Task.isCancelled else { return }
                         positioning = false
@@ -122,7 +125,7 @@ struct DesktopConversationView: View {
                         if !empty && !didInitialReveal { didInitialReveal = true; revealSerial &+= 1 }
                     }
                     .onChange(of: model.turns) { old, _ in
-                        if !old.isEmpty && atTail { proxy.scrollTo("latest", anchor: .bottom) }
+                        if !old.isEmpty && atTail, let last = ids.last { proxy.scrollTo(last, anchor: .bottom) }
                     }
                     }
                     HStack {
@@ -225,5 +228,10 @@ struct DesktopConversationTurnView: View {
 
 private struct DesktopConversationTail: PreferenceKey {
     static var defaultValue: CGFloat = .greatestFiniteMagnitude
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        let next = nextValue()
+        // Unrealized lazy rows must not overwrite a measured tail with the default.
+        guard next < .greatestFiniteMagnitude else { return }
+        value = value == .greatestFiniteMagnitude ? next : max(value, next)
+    }
 }
