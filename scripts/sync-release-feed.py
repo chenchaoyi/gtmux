@@ -54,13 +54,14 @@ if __name__ == '__main__':
     stale=[]
     for path, content in generated().items():
         if args.check:
-            if not path.exists() or path.read_text()!=content: stale.append(str(path.relative_to(ROOT)))
+            if not path.exists() or path.read_text()!=content or (path.name in ('install.sh','bootstrap.sh') and not path.stat().st_mode & 0o111): stale.append(str(path.relative_to(ROOT)))
         else:
             temporary = None
             try:
                 with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', dir=path.parent, delete=False) as output:
                     temporary = Path(output.name)
                     output.write(content)
+                os.chmod(temporary, 0o755 if path.name in ('install.sh', 'bootstrap.sh') else 0o644)
                 os.replace(temporary, path)
             finally:
                 if temporary and temporary.exists(): temporary.unlink()
