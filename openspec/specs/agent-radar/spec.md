@@ -700,3 +700,18 @@ Another registered harness (including a version-named Claude client) SHALL NOT q
 
 - **WHEN** an external record has no verified terminal attachment
 - **THEN** no current pane claims it based only on the launching program's name or shared directory
+
+
+### Requirement: Verified DeepSeek terminal sessions retain conversation titles
+
+An already verified DeepSeek Harness terminal attachment SHALL display the saved title of its exact session/home/root/cwd when present. Otherwise its current pane title MAY supply the display title after removing standalone decorative symbols and generic client/harness placeholders. Titles SHALL NOT grant identity, phase or input capability, borrow another session's metadata, or be inferred from conversation prose. Existing native hook status rules SHALL remain unchanged.
+
+#### Scenario: A community TUI publishes a title before the durable title event
+
+- **WHEN** a verified DeepSeek terminal attachment has no usable saved title but publishes a decorated pane title
+- **THEN** the radar uses the cleaned title and retains the existing session identity and lifecycle status
+
+#### Scenario: Saved metadata belongs to a different session scope
+
+- **WHEN** metadata differs by session, home, root origin or cwd
+- **THEN** the radar does not borrow that saved title

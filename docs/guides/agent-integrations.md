@@ -355,6 +355,13 @@ writes `$DSH_HOME/gtmux/gtmux.mjs` and `gtmux.cordis.yml`; no separate npm packa
 required. On the next intentional launch, select the printed
 `dsh web --patch '…/gtmux/gtmux.cordis.yml'` overlay. It never restarts running work. For an existing dst profile, installation also manages a marked native-component block while preserving other configuration.
 
+
+Verified DeepSeek terminal rows use their exact saved conversation title when available.
+Until DSH persists one, the TUI's pane title is used after removing standalone status
+and whale decorations; generic DeepSeek/dsh/dst placeholders are omitted. A title is
+only a display name. It cannot identify a session, grant input or change hook status,
+and conversation text is never promoted to a title.
+
 The bridge uses DSH's own `session/event` and `user-questions/request`, **not Codex
 compatibility hooks**. It tracks root prompts, turn outcomes and pending questions,
 delegates questions unchanged, and never approves or answers them. `approval/asked`
