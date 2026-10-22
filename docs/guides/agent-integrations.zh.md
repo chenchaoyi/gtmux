@@ -392,3 +392,9 @@ DeepSeek Account 余额通过现有 gtmux 插件中的原生 `deepseekAccount` C
 依据：[原生 token 投影](https://github.com/deepseek-ai/deepseek-harness/blob/687f282e8625c6b8d11ff58211a90524be2e4317/packages/llm/token-meter/src/usage-projection.ts)、[原生账户契约](https://github.com/deepseek-ai/deepseek-harness/blob/687f282e8625c6b8d11ff58211a90524be2e4317/packages/credentials/deepseek-account/src/index.ts)。核对版本为本机 DSH 0.2.0-rc.2 和固定的上游提交；合成账户测试不代表已读取真实余额，也不代表账单总额。
 
 当前 DSH token 适配器覆盖已有索引里的根会话结算，单次发现至多取最近修改的 128 份文件；不汇总子 agent 会话，也不校验服务商账单。未观测到或更旧的文件不代表用量为零。
+
+### DeepSeek 终端会话标题
+
+已核验的 DeepSeek 终端会话优先显示本会话保存的标题；DSH 尚未保存时，使用 TUI 设置的
+pane 标题，并去除独立的状态符号、鲸鱼装饰及通用名称占位。标题只用于展示，不作为
+身份、输入权限或状态证据，也不会把对话正文当成标题。

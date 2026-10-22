@@ -1336,6 +1336,9 @@ func gatherAgentsWithCodexScope(codexScope *transcript.CodexPathScope) ([]Pane, 
 			cwd = f[9]
 			project, branch = gitInfo(cwd)
 		}
+		if attachment, ok := terminal[id]; ok {
+			task = terminalTask(attachment, f[4], task)
+		}
 		usageWarn := state.ReadMarker(state.UsageWarnPath(id))
 		inMode := len(f) >= 11 && f[10] == "1"
 		if len(f) >= 12 && f[11] != "" {
