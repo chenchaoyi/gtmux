@@ -38,7 +38,7 @@ script below.
 ## Install script
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | bash
+curl -fsSL https://ccy.dev/gtmux/install | bash
 ```
 
 Installs the checksum-verified binary to `~/.local/bin/gtmux`, plus the menu-bar
@@ -51,7 +51,7 @@ app on macOS. Options:
 Put these variables on `bash`, which runs the installer, rather than on `curl`:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | GTMUX_NO_APP=1 bash
+curl -fsSL https://ccy.dev/gtmux/install | GTMUX_NO_APP=1 bash
 ```
 
 From source (Go 1.26 or newer; CLI only):
@@ -84,7 +84,7 @@ and gtmux's saved records in place. For Homebrew installations, also use
 
 ## Official mirrors and GitHub fallback
 
-The planned short website entries are `https://ccy.dev/gtmux/install` and `https://ccy.pub/gtmux/install`; they are advertised only after both origins pass complete readback and the website is deployed. Until that activation, use the GitHub command above. Defaults authenticate metadata from the two owned download origins, then verify the installer and every archive. Invalid signatures stop rather than weaken verification. Native `gtmux update` checks the same public key in Go and never executes a remote script. Network unavailability retains the existing GitHub channel; once signed metadata is available, fallback bytes must still match its digest and size.
+Both official website entries are available: `https://ccy.dev/gtmux/install` and `https://ccy.pub/gtmux/install`. The short bootstrap authenticates metadata from the owned download origins, then verifies the installer and every archive. Invalid signatures stop rather than weaken verification. Native updater builds containing this implementation check the same public key in Go and never execute a remote script; existing binaries keep their original update channel until upgraded. Network unavailability retains the existing GitHub channel; once signed metadata is available, fallback bytes must still match its digest and size.
 
 See [release hosting](release-hosting.md) for build, storage, source and operator boundaries. The short bootstrap requires OpenSSL/LibreSSL; macOS includes LibreSSL. Older clients, Homebrew and explicit overrides keep their existing channels. To force GitHub or a third-party proxy, fetch the full installer from GitHub:
 
