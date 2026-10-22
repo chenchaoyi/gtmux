@@ -55,12 +55,12 @@ HTTP = urllib.request.build_opener(NoRedirect)
 
 
 def transfer(url, path, token=None, sha=None):
-    headers = {}
+    headers = {'User-Agent': 'gtmux-release-publisher/1'}
     if token:
         if not url.startswith('https://gtmux-downloads.pages.dev/publish/'):
             raise ValueError('Publication credential host is not allowed')
-        headers = {'Authorization': f'Bearer {token}', 'Content-Length': str(path.stat().st_size),
-                   'X-Artifact-SHA256': sha, 'Content-Type': 'application/octet-stream'}
+        headers.update({'Authorization': f'Bearer {token}', 'Content-Length': str(path.stat().st_size),
+                        'X-Artifact-SHA256': sha, 'Content-Type': 'application/octet-stream'})
         # A file object is streamed; the explicit length avoids chunked proxy ambiguity.
         with path.open('rb') as data:
             request = urllib.request.Request(url, data=data, headers=headers, method='PUT')
@@ -71,7 +71,8 @@ def transfer(url, path, token=None, sha=None):
     else:
         if not any(url.startswith(origin+'/gtmux/') for origin in ORIGINS):
             raise ValueError('Readback host is not allowed')
-        with HTTP.open(url, timeout=120) as response, path.open('wb') as output:
+        request = urllib.request.Request(url, headers=headers)
+        with HTTP.open(request, timeout=120) as response, path.open('wb') as output:
             if response.status != 200:
                 raise ValueError('Readback failed')
             size=0

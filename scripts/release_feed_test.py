@@ -2,6 +2,7 @@
 import base64
 import hashlib
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
@@ -105,6 +106,22 @@ out.write_bytes(body)
 
 
 class PublicationRunSelectionTest(unittest.TestCase):
+ def test_publication_and_readback_identify_the_client_without_leaking_auth(self):
+    class Reply(io.BytesIO):
+        status=200
+    with tempfile.TemporaryDirectory(prefix='gtmux-publisher-http-') as temp:
+        source=Path(temp)/'artifact';source.write_bytes(b'synthetic archive')
+        requests=[]
+        def opened(request,timeout):
+            requests.append(request)
+            return Reply(b'synthetic archive')
+        with patch.object(publisher.HTTP,'open',side_effect=opened):
+            publisher.transfer('https://gtmux-downloads.pages.dev/publish/v1.2.3/install.sh',source,'synthetic-token','a'*64)
+            publisher.transfer('https://downloads.ccy.dev/gtmux/v1.2.3/install.sh',Path(temp)/'readback')
+        self.assertEqual([request.get_header('User-agent') for request in requests],['gtmux-release-publisher/1']*2)
+        self.assertEqual(requests[0].get_header('Authorization'),'Bearer synthetic-token')
+        self.assertFalse(requests[1].has_header('Authorization'))
+
  def test_latest_failed_build_cannot_reuse_an_old_pass(self):
     run={'id':2,'head_branch':'v1.2.3','head_sha':'a'*40,'event':'push','path':'.github/workflows/release.yml'}
     with patch.object(publisher,'gh',side_effect=[{'workflow_runs':[run,{**run,'id':1}]},{'jobs':[]}]) as api:
