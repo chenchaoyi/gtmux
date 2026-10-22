@@ -36,7 +36,7 @@ brew install --cask gtmux-app
 ## 安装脚本
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | bash
+curl -fsSL https://ccy.pub/gtmux/install | bash
 ```
 
 校验过 checksum 的二进制装到 `~/.local/bin/gtmux`，菜单栏 app 一并装上。可选项：
@@ -48,7 +48,7 @@ curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | 
 这些变量要放在执行安装脚本的 `bash` 前面，不能只传给 `curl`：
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | GTMUX_NO_APP=1 bash
+curl -fsSL https://ccy.pub/gtmux/install | GTMUX_NO_APP=1 bash
 ```
 
 从源码装（需要 Go 1.26 或更新版本，只安装 CLI）：
@@ -74,7 +74,7 @@ CLI 二进制和 gtmux 的已有记录。Homebrew 安装的还需用 `brew unins
 
 ## 官方镜像与 GitHub 兜底
 
-短网址计划为 `https://ccy.dev/gtmux/install` 和 `https://ccy.pub/gtmux/install`，须等两个源整文件校验通过、网站部署后才启用宣传；启用前使用上面的 GitHub 命令。默认从两个自有下载域读取签名清单，再校验安装脚本和每个压缩包；签名异常停下，不自动降低验证标准。原生 `gtmux update` 使用同一公钥在 Go 内校验，从不执行远端脚本。官方源网络不可用时保留原有 GitHub 通道；已有签名清单时，兜底下载仍必须匹配其摘要和大小。
+两个官方短网址现已可用：`https://ccy.pub/gtmux/install` 和 `https://ccy.dev/gtmux/install`。短 bootstrap 从自有下载域读取并验证签名清单，再校验安装脚本和每个压缩包；签名异常停下，不自动降低验证标准。包含这项实现的原生更新器使用同一公钥在 Go 内校验，从不执行远端脚本；已有二进制在升级前仍沿用原来的更新通道。官方源网络不可用时保留原有 GitHub 通道；已有签名清单时，兜底下载仍必须匹配其摘要和大小。
 
 构建、存储、来源与运维边界见[托管说明](release-hosting.zh.md)。短入口需要 OpenSSL／LibreSSL，macOS 自带 LibreSSL。旧版安装器、Homebrew 和显式覆盖仍沿原通道运行。需要强制 GitHub 或第三方代理时，从 GitHub 取得完整安装器：
 

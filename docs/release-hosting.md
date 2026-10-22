@@ -4,11 +4,13 @@
 
 ## User paths
 
-Activation is staged: the source and service may be ready before the website entry points. Keep the existing GitHub installation command in user-facing guides until complete public readback and website deployment pass. The paths below describe the activated service, not proof of current availability.
+The website entry points and download service are active. Activation requires complete file readback from both download origins and deployment of both websites before advertising the short commands. Availability and the selected stable version can change; signed metadata remains the release identity.
 
 The short installer is `https://ccy.dev/gtmux/install`, with `https://ccy.pub/gtmux/install` as the other entry. These are static copies of `bootstrap.sh`. They require Bash and OpenSSL/LibreSSL, verify signed metadata using the embedded public key, pin a version, verify the installer’s SHA256 and size, then run that installer. An older/unmirrored explicit pin may use the verified current installer while keeping its requested GitHub artifact version. Fetching the initial bootstrap still trusts the selected website’s HTTPS and deployed code.
 
 The default native updater and installer prefer `downloads.ccy.dev`, then `downloads.ccy.pub`. They use a signed `gtmux/stable.json` index and immutable `gtmux/vX.Y.Z/manifest.json` metadata. Four CLI archives, the notarized Mac app, CLI checksums and the installer are the only permitted files. Metadata records the exact binary source and the installer source separately, which allows an existing release to gain a reviewed installer without rebuilding or relabelling its binaries.
+
+Native updater changes apply to builds containing this implementation. Existing binaries keep their original update channel until upgraded; mirroring a release does not change its executable bytes.
 
 RSA-3072/SHA256 authenticates the original payload bytes; signed SHA256 and byte counts cover every artifact, including the Mac ZIP. A malformed signature stops the operation. Ordinary HTTP/network unavailability can try another official origin and the existing GitHub channel. Once metadata is verified, any fallback bytes must match it. Official mirror requests do not follow redirects. The native updater never executes a remote script. Explicit repository/mirror overrides retain their previous channel behavior; the short bootstrap always authenticates the official channel.
 
