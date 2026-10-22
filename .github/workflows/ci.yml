@@ -65,6 +65,12 @@ jobs:
           GTMUX_PRIVATE_TERMS: ${{ secrets.GTMUX_PRIVATE_TERMS }}
           GTMUX_PRIVATE_POLICY_REQUIRED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         run: ./scripts/check-design.sh --source-only
+      - name: Signed download service and generated trust anchors
+        run: |
+          python3 scripts/sync-release-feed.py --check
+          bash -n bootstrap.sh install.sh
+          npm --prefix download-worker test
+          npm --prefix download-worker run build
       - name: Documentation examples against real builders
         run: go test ./internal/docs
 

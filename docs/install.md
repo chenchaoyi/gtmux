@@ -82,28 +82,11 @@ and gtmux's saved records in place. For Homebrew installations, also use
 `brew uninstall --cask gtmux-app` to remove the app (normally in `/Applications`), and
 `brew uninstall --cask gtmux` to remove the CLI.
 
-## China / unstable GitHub: mirror fallback
+## Official mirrors and GitHub fallback
 
-If even fetching the script fails (`raw.githubusercontent.com` blocked), fetch it
-from a CDN mirror instead. Once the script is running, it switches to mirrors for
-its own downloads on its own:
+The planned short website entries are `https://ccy.dev/gtmux/install` and `https://ccy.pub/gtmux/install`; they are advertised only after both origins pass complete readback and the website is deployed. Until that activation, use the GitHub command above. Defaults authenticate metadata from the two owned download origins, then verify the installer and every archive. Invalid signatures stop rather than weaken verification. Native `gtmux update` checks the same public key in Go and never executes a remote script. Network unavailability retains the existing GitHub channel; once signed metadata is available, fallback bytes must still match its digest and size.
 
-```sh
-curl -fsSL https://cdn.jsdelivr.net/gh/chenchaoyi/gtmux@main/install.sh | bash
-```
-
-`gtmux update` uses the local Go installer; it does not download or execute an
-installation script. CLI checksums come only from official GitHub HTTPS. Mirrors
-may supply archive bytes only when they match that digest; the app uses official
-HTTPS only. Official requests and redirects are restricted to permitted GitHub
-hosts, and installation fails without trusted verification.
-
-The explicit `curl … | bash` bootstrap above is a separate path: its script and
-release assets may still use mirrors, including a checksum mirror. In that case
-verification depends on that mirror. App ZIP integrity is checked separately and
-is outside the CLI checksum list. The script prints the actual source.
-
-Override with `GTMUX_INSTALL_MIRROR`:
+See [release hosting](release-hosting.md) for build, storage, source and operator boundaries. The short bootstrap requires OpenSSL/LibreSSL; macOS includes LibreSSL. Older clients, Homebrew and explicit overrides keep their existing channels. To force GitHub or a third-party proxy, fetch the full installer from GitHub:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | GTMUX_INSTALL_MIRROR=ghproxy bash

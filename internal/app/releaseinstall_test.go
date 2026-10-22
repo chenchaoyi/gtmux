@@ -16,6 +16,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/chenchaoyi/gtmux/internal/releasefeed"
 	"github.com/chenchaoyi/gtmux/internal/userservice"
 	"howett.net/plist"
 )
@@ -372,5 +373,58 @@ func TestReportPartialInstallPreservesComponentFacts(t *testing.T) {
 		if rc != partialUpdateExit || !strings.Contains(out, "CLI installed") || !strings.Contains(out, want) {
 			t.Fatalf("partial rc=%d output=%s", rc, out)
 		}
+	}
+}
+
+func TestSignedMirrorArchivesRequireExactDigestAndSize(t *testing.T) {
+	archive := releaseTar(t, tar.Header{Name: "gtmux", Mode: 0o755, Size: 5, Typeflag: tar.TypeReg})
+	name := "gtmux-1.2.3-linux-arm64.tar.gz"
+	for _, mode := range []string{"valid", "bad digest", "bad size", "GitHub fallback"} {
+		t.Run(mode, func(t *testing.T) {
+			dir := t.TempDir()
+			binary := filepath.Join(dir, "gtmux")
+			if err := os.WriteFile(binary, []byte("old"), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			expectedSize := int64(len(archive))
+			if mode == "bad size" {
+				expectedSize++
+			}
+			manifest := &releasefeed.Manifest{Version: "1.2.3", Assets: map[string]releasefeed.Artifact{name: {SHA256: fmt.Sprintf("%x", sha256.Sum256(archive)), Size: expectedSize}}}
+			var requests []string
+			x := releaseInstaller{feed: manifest, repo: "chenchaoyi/gtmux", version: "v1.2.3", platform: "linux", arch: "arm64", binDir: dir, cliOnly: true, mirror: "github"}
+			x.client = &http.Client{Transport: releaseRoundTrip(func(r *http.Request) (*http.Response, error) {
+				requests = append(requests, r.URL.Host+r.URL.Path)
+				if !strings.HasSuffix(r.URL.Path, name) {
+					t.Fatalf("unsigned checksum or script requested: %s", r.URL)
+				}
+				data := archive
+				status := 200
+				if mode == "bad digest" {
+					data = append([]byte(nil), archive...)
+					data[len(data)-1] ^= 1
+				}
+				if mode == "GitHub fallback" && r.URL.Host != "github.com" {
+					status = 503
+				}
+				return &http.Response{StatusCode: status, Header: make(http.Header), Body: io.NopCloser(bytes.NewReader(data)), Request: r}, nil
+			})}
+			result, err := x.install()
+			bad := mode == "bad digest" || mode == "bad size"
+			if (err != nil) != bad || result.CLIInstalled == bad {
+				t.Fatalf("result=%+v error=%v", result, err)
+			}
+			got, _ := os.ReadFile(binary)
+			want := "xxxxx"
+			if bad {
+				want = "old"
+			}
+			if string(got) != want {
+				t.Fatalf("replaced unverified bytes: %q", got)
+			}
+			if len(requests) == 0 || !strings.HasPrefix(requests[0], "downloads.ccy.dev/") {
+				t.Fatalf("not mirror first: %v", requests)
+			}
+		})
 	}
 }

@@ -1641,8 +1641,9 @@ on`）能往更短的那份「可输入」清单里打字。owner 设置和 HQ A
 `gtmux doctor --progress` 在非交互输出中也显示检查进度；`--bundle` 收集诊断。安装步骤见[安装文档](install.zh.md)。
 
 `gtmux update` 使用本地代码安装发布包，不再执行下载的安装脚本。镜像提供的 CLI
-压缩包必须匹配从 GitHub 直取的 SHA256 校验值；取不到官方校验值时停止更新。
-菜单栏 App 仅从 GitHub 直取，可用 `--cli-only` 跳过。
+压缩包和 App 默认匹配自有下载源签名清单中的 SHA256 与字节数；清单异常立即停止。
+清单网络不可用时才退回 GitHub 直取 CLI 摘要和 App 的原有通道；官方镜像请求不跟随
+重定向。可用 `--cli-only` 跳过 App。来源与信任边界见[托管说明](release-hosting.zh.md)。
 
 更新按 CLI、App 各自比较版本，保留比目标新或版本未知的组件。开发版／预发布版不会
 被相同数字版本的正式版替换。`--check --json` 保留 `{current,latest,update}`，另有

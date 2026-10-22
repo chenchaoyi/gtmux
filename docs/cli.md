@@ -1917,9 +1917,11 @@ code, and open the same access.
 `gtmux doctor --progress` also shows progress in piped output; `--bundle` collects diagnostics. See [installation](install.md) for setup.
 
 `gtmux update` installs release assets using local code and never executes a downloaded
-installer script. CLI archives from mirrors must match SHA256 checksums fetched directly
-from GitHub; if those checksums are unavailable, updating stops. The menu-bar app is
-downloaded directly from GitHub. Use `--cli-only` to skip it.
+installer script. Defaults first authenticate a signed release manifest from the owned
+download origins; CLI and app bytes must match its SHA256 and size. Invalid metadata
+stops. Network-unavailable metadata falls back to GitHub-only CLI checksums and direct
+GitHub app transport. Official mirror requests do not follow redirects. Use `--cli-only`
+to skip the app. See [release hosting](release-hosting.md) for sources and trust limits.
 
 Updates compare CLI and app versions separately and leave newer or unknown installed
 versions untouched. A development/prerelease build is not replaced by the same stable

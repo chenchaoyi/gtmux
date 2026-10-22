@@ -1,0 +1,13 @@
+# Copy to an operator-private config; use a dedicated public-release bucket.
+name = "gtmux-downloads"
+pages_build_output_dir = "./dist"
+compatibility_date = "2026-10-01"
+
+[[r2_buckets]]
+binding = "RELEASES"
+bucket_name = "gtmux-releases"
+
+[vars]
+DOWNLOAD_HOSTS = "downloads.example.com,downloads.example.net"
+PUBLISH_HOSTS = "downloads.example.com"
+# PUBLISH_TOKEN is a Pages secret, never a TOML variable or committed value.

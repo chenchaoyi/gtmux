@@ -16,6 +16,7 @@ Workers, the VPS deploy configs). The rule is simple:
 | Worker data (paired devices, access codes) | Cloudflare **KV** | `wrangler kv key put/delete` |
 | VPS-side (the chisel tunnel auth) | `/etc/gtmux-tunnel/…` `EnvironmentFile` (root, 0600) | edit on the VPS + restart the unit |
 | Release-baked soft gates (reg / relay token) | GitHub Actions secrets **and** `macapp/.release.env` (gitignored) | change both, then re-release |
+| Release manifest private signing key / publication bearer | private operator storage + GitHub Actions secrets; bearer also in Pages encrypted secrets | see [release hosting](docs/release-hosting.md); only the public verification key is committed |
 | macOS signing / notarization | login keychain + `~/.appstoreconnect` (or GitHub secrets in CI) | see `docs/release-signing.md` |
 
 None of these are in the repo. `wrangler.toml` `[vars]` holds only **non-secret**
@@ -28,7 +29,7 @@ identifiers (account/zone/KV IDs) — never put a token there; that file is plai
   gtmux's *custom* secrets (e.g. a `user:pass` chisel auth), so the rule above still matters.
 - **`.gitignore`** blocks secret-bearing filenames (`.dev.vars`, `*.env`, `*.p8/*.p12/
   *.pem/*.key`, `AuthKey_*`, `id_rsa*`). NB: `.gitignore` allows no inline comments —
-  patterns are one-per-line.
+  patterns are one-per-line. The exact `internal/releasefeed/public.pem` verification key is an intentional public exception.
 - **Private source policy:** exact personal/operator identifiers live in the
   `GTMUX_PRIVATE_TERMS` Actions secret or an ignored local JSON file, never in the
   public checker. Its output withholds matched content. Repository-owned CI requires

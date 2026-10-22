@@ -1,0 +1,1 @@
+{"name":"gtmux-download-worker","private":true,"type":"module","scripts":{"test":"node --test test/*.test.mjs","build":"node build.mjs"},"devDependencies":{}}

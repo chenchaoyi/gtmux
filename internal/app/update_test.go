@@ -406,3 +406,16 @@ func TestReleaseRedirectTrustBoundary(t *testing.T) {
 		})
 	}
 }
+
+func TestInvalidSignedReleaseNeverInstallsEvenWithExplicitPin(t *testing.T) {
+	t.Setenv("GTMUX_VERSION", "v1.2.3")
+	called := false
+	ops := updateOperations{current: "1.2.2", appVersion: func() string { return "" }, latest: func() latestRelease { return latestRelease{Source: "invalid-signature"} }, install: func(bool, string) (releaseInstallResult, int) { called = true; return releaseInstallResult{}, 0 }}
+	if rc := performUpdate(false, true, false, ops); rc != 1 || called {
+		t.Fatalf("verification did not stop install: rc=%d called=%t", rc, called)
+	}
+	output := captureStdout(t, func() { performUpdate(true, true, true, ops) })
+	if !strings.Contains(output, "official release signature verification failed") || called {
+		t.Fatalf("lost failure receipt: %s", output)
+	}
+}

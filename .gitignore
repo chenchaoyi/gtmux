@@ -47,3 +47,10 @@ tunnel-worker/issue-direct-code.sh
 # on 2026-09-10 (#1000, updated in #1005).
 NIGHT-SELFTEST-*.md
 .claude/settings.local.json
+
+# Public release hosting build output and operator-private deployment config.
+/download-worker/dist/
+/download-worker/wrangler.toml
+
+# This exact public verification key is intentionally distributed.
+!/internal/releasefeed/public.pem
