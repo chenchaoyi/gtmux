@@ -4,6 +4,8 @@
 
 ## 用户从哪里安装
 
+启用分阶段进行：源码和服务可能先于网站入口就绪。两个源完整回读和网站部署通过前，面向用户的指南保留既有 GitHub 安装命令。下列路径描述启用后的服务，不代表当前可用性证明。
+
 短安装地址是 `https://ccy.dev/gtmux/install`，另一个入口为 `https://ccy.pub/gtmux/install`。两站保存 `bootstrap.sh` 的静态副本。它需要 Bash 与 OpenSSL／LibreSSL，用内置公钥验证签名清单、锁定版本、校验安装脚本的 SHA256 和字节数，再运行脚本。明确锁定较旧／尚未托管的版本时，可以使用已验证的当前安装脚本，保留所选 GitHub 产物版本。最初取得这份 bootstrap，仍信任对应网站的 HTTPS 和部署代码。
 
 默认原生更新器与安装器依次尝试 `downloads.ccy.dev`、`downloads.ccy.pub`，读取带签名的 `gtmux/stable.json` 与不可覆盖的 `gtmux/vX.Y.Z/manifest.json`。只允许四种 CLI 压缩包、公证过的 Mac App、CLI 摘要与安装脚本。清单分别记录二进制源码与安装脚本源码，因此补托管旧版本时，可以换成已审查的新安装脚本，不重打、不冒充旧二进制的来源。
@@ -19,6 +21,9 @@ GitHub Actions 继续构建不依赖 cgo 的 CLI，并为通用 Mac App 签名�
 `release-mirror.yml` 仅能从 main 手动补托管已有正式 tag，核原发布任务，并记录当前受审安装脚本的源码。它不构建二进制、不重写 tag、不替换 GitHub 附件。如果切 stable 后的读回失败，要报告分发结果尚未确认，不能覆盖固定版本做隐式回滚；应按记录的源码排查、恢复服务，再重试。
 
 独立 Pages 服务读取专用 R2 桶，支持 GET／HEAD、ETag 和单段字节范围；没有列目录、CORS、Cookie 或手机私有包路径。带鉴权的上传接口只收固定正式文件名，默认 Pages 域名不能公开下载。发布任务只拿独立上传 bearer，不持有 Cloudflare 账户 API 凭据；示例配置也不含账户标识或密钥。
+
+
+恢复已签清单时，main 分支的 mirror workflow 可指定原版本及冻结的 `installer_source` 精确提交；该提交的 `install.sh` 必须与当前受审 checkout 字节完全相同，避免重标已有安装器来源。不同字节或非法提交立即停止。发布逐文件输出进展，公开回读在 body 片段之间检查 120 秒耗时预算，每次阻塞读取限 15 秒；必须核完整 workflow 成功后再宣传入口。
 
 ## 运维配置与边界
 

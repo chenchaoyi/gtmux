@@ -135,3 +135,23 @@ class PublicationRunSelectionTest(unittest.TestCase):
         except ValueError: pass
         else: raise AssertionError('An older successful build must not be borrowed')
         assert api.call_count==2
+
+
+class RecoveryInstallerIdentityTest(unittest.TestCase):
+ def test_frozen_recovery_source_requires_identical_current_installer_bytes(self):
+    with tempfile.TemporaryDirectory() as temp:
+        installer=Path(temp)/'install.sh';installer.write_bytes(b'current reviewed installer')
+        with patch.object(publisher.subprocess,'check_output',return_value=installer.read_bytes()) as git:
+            self.assertEqual(publisher.installer_identity('a'*40,'b'*40,installer),'b'*40)
+            self.assertIn('b'*40+':install.sh',git.call_args.args[0])
+            self.assertEqual(publisher.installer_identity('a'*40,None,installer),'a'*40)
+        with patch.object(publisher.subprocess,'check_output',return_value=b'older different code'):
+            with self.assertRaises(ValueError):publisher.installer_identity('a'*40,'b'*40,installer)
+        with patch.object(publisher.subprocess,'check_output') as git:
+            with self.assertRaises(ValueError):publisher.installer_identity('a'*40,'main',installer)
+            git.assert_not_called()
+
+ def test_slow_trickling_public_readback_stops_at_total_deadline(self):
+    class Reply(io.BytesIO):status=200
+    with tempfile.TemporaryDirectory() as temp, patch.object(publisher.HTTP,'open',return_value=Reply(b'partial bytes')), patch.object(publisher.time,'monotonic',side_effect=[0,121]):
+        with self.assertRaises(TimeoutError):publisher.transfer('https://downloads.ccy.dev/gtmux/v1.2.3/install.sh',Path(temp)/'readback')

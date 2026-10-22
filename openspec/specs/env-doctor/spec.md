@@ -905,6 +905,12 @@ worker-controlled; no challenge credentials or files SHALL enter static assets.
 - **THEN** its reserved ACME path reaches Pages rather than the HTTPS-only worker
 - **AND** public artifacts, authenticated publication and other paths retain their existing routing
 
+Hosted recovery MAY name the original exact installer source only when its
+installer bytes equal the current reviewed checkout. It SHALL preserve immutable
+metadata, require both complete public readbacks and retain stable-last promotion.
+Public readback SHALL have a total deadline as well as socket timeouts. Short
+website commands SHALL not replace working user instructions before activation.
+
 #### Scenario: A mirror supplies modified metadata
 - **WHEN** a signed manifest fails authentication or scope validation
 - **THEN** the updater and bootstrap stop without trusting an unsigned index

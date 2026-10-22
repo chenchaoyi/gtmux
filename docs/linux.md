@@ -9,7 +9,7 @@ Run gtmux on the Linux host that owns your tmux sessions. The terminal, browser,
 Linux amd64 and arm64 releases are cgo-free. Ubuntu 22.04+/Debian 12+ are the initial target environments. Install `tmux`, `curl`, `tar` and a SHA256 tool with your distribution's package manager, then:
 
 ```sh
-curl -fsSL https://ccy.dev/gtmux/install | bash
+curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | bash
 export PATH="$HOME/.local/bin:$PATH"
 gtmux doctor --no-prompt
 gtmux install hooks --agent codex --yes

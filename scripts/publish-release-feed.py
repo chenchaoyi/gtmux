@@ -9,6 +9,7 @@ from pathlib import Path
 import re
 import subprocess
 import tempfile
+import time
 import urllib.error
 import urllib.request
 
@@ -74,11 +75,14 @@ def transfer(url, path, token=None, sha=None):
         if not any(url.startswith(origin+'/gtmux/') for origin in ORIGINS):
             raise ValueError('Readback host is not allowed')
         request = urllib.request.Request(url, headers=headers)
-        with HTTP.open(request, timeout=120) as response, path.open('wb') as output:
+        deadline = time.monotonic()+120
+        with HTTP.open(request, timeout=15) as response, path.open('wb') as output:
             if response.status != 200:
                 raise ValueError('Readback failed')
             size=0
-            while chunk := response.read(1024*1024):
+            while chunk := response.read1(64*1024):
+                if time.monotonic() > deadline:
+                    raise TimeoutError('Public artifact readback deadline exceeded')
                 size += len(chunk)
                 if size > MAX_UPLOAD:
                     raise ValueError('Readback too large')
@@ -88,6 +92,15 @@ def transfer(url, path, token=None, sha=None):
 def digest(path):
     with path.open('rb') as data:
         return hashlib.file_digest(data, 'sha256').hexdigest()
+
+
+def installer_identity(head, requested, installer):
+    source = requested or head
+    if not re.fullmatch('[0-9a-f]{40}', source):
+        raise ValueError('Installer source must be an exact commit')
+    if installer.read_bytes() != subprocess.check_output(['git', 'show', source+':install.sh'], cwd=ROOT):
+        raise ValueError('Recorded installer source differs from the reviewed installer bytes')
+    return source
 
 
 def prepare(version, source, installer_source, directory, metadata, installer, key):
@@ -135,6 +148,7 @@ def main():
     parser.add_argument('--source',required=True)
     parser.add_argument('--run',type=int)
     parser.add_argument('--prepare-only',action='store_true')
+    parser.add_argument('--installer-source',help='Frozen recovery commit; installer bytes must equal this reviewed checkout')
     args=parser.parse_args()
     version=args.version.removeprefix('v')
     if not VERSION.fullmatch(version): parser.error('a stable X.Y.Z version is required')
@@ -149,6 +163,7 @@ def main():
         parser.error('official tag source differs; stop instead of relabelling assets')
     if (ROOT/'install.sh').read_bytes() != subprocess.check_output(['git','show',head+':install.sh'],cwd=ROOT):
         parser.error('installer differs from its recorded source commit')
+    installer_source = installer_identity(head,args.installer_source,ROOT/'install.sh')
     require_builds(args.source,args.run,version)
     metadata=gh(f'releases/tags/v{version}')
     key=Path(os.environ['GTMUX_RELEASE_SIGNING_KEY_FILE'])
@@ -158,19 +173,23 @@ def main():
         directory=Path(temp)
         subprocess.run(['gh','release','download','v'+version,'--repo',REPO,'--dir',temp,
                         *sum((['--pattern',name] for name in names(version)),[])],check=True)
-        manifest=prepare(version,args.source,head,directory,metadata,ROOT/'install.sh',key)
-        print(f'Prepared signed v{version}; unchanged official assets, installer source {head}')
+        manifest=prepare(version,args.source,installer_source,directory,metadata,ROOT/'install.sh',key)
+        print(f'Prepared signed v{version}; unchanged official assets, installer source {installer_source}',flush=True)
         if args.prepare_only: return
         publisher='https://gtmux-downloads.pages.dev/publish/'
         for name, asset in manifest['assets'].items():
+            print(f'Uploading immutable {name}',flush=True)
             transfer(f'{publisher}v{version}/{name}',directory/name,token,asset['sha256'])
+        print('Uploading immutable manifest',flush=True)
         transfer(f'{publisher}v{version}/manifest.json',directory/'manifest.json',token,digest(directory/'manifest.json'))
         # Both public routes must serve exact bytes before stable moves.
         for origin in ORIGINS:
             for name,asset in manifest['assets'].items():
+                print(f'Verifying {origin} {name}',flush=True)
                 readback=directory/'readback';transfer(f'{origin}/gtmux/v{version}/{name}',readback)
                 if digest(readback)!=asset['sha256'] or readback.stat().st_size!=asset['size']:
                     raise ValueError('Public artifact readback differs')
+        print('Promoting stable after both complete readbacks',flush=True)
         transfer(publisher+'stable.json',directory/'manifest.json',token,digest(directory/'manifest.json'))
         for origin in ORIGINS:
             readback=directory/'readback';transfer(origin+'/gtmux/stable.json',readback)

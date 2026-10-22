@@ -7,6 +7,10 @@ on:
         description: 'Published stable vX.Y.Z tag to mirror without rebuilding binaries'
         required: true
         type: string
+      installer_source:
+        description: 'Optional frozen installer commit for recovery; must have identical reviewed installer bytes'
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -34,6 +38,7 @@ jobs:
           GTMUX_RELEASE_SIGNING_KEY: ${{ secrets.GTMUX_RELEASE_SIGNING_KEY }}
           GTMUX_RELEASE_PUBLISH_TOKEN: ${{ secrets.GTMUX_RELEASE_PUBLISH_TOKEN }}
           RELEASE_TAG: ${{ inputs.version }}
+          INSTALLER_SOURCE: ${{ inputs.installer_source }}
         run: |
           set -euo pipefail
           python3 -c 'import os,re; assert re.fullmatch(r"v(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})", os.environ["RELEASE_TAG"])'
@@ -44,4 +49,8 @@ jobs:
           test -n "$GTMUX_RELEASE_SIGNING_KEY"
           printf '%s\n' "$GTMUX_RELEASE_SIGNING_KEY" > "$GTMUX_RELEASE_SIGNING_KEY_FILE"
           unset GTMUX_RELEASE_SIGNING_KEY
-          python3 scripts/publish-release-feed.py --version "$RELEASE_TAG" --source "$source_commit"
+          source_args=()
+          if [ -n "$INSTALLER_SOURCE" ]; then
+            source_args=(--installer-source "$INSTALLER_SOURCE")
+          fi
+          python3 scripts/publish-release-feed.py --version "$RELEASE_TAG" --source "$source_commit" "${source_args[@]}"
