@@ -1,8 +1,8 @@
 // ChatView — 对话模式 (B1 / mockup §10): a glance-friendly conversation view.
 // It shows the REAL chat history (GET /api/transcript): each turn = your prompt,
 // the agent's collapsed middle steps (tap to expand), and its final response.
-// Below the history, a compact "live" card shows the current screen while the
-// agent is working. Switch to 终端 for the full raw TUI + scrollback.
+// Below the history, a compact working row opens the current screen on demand.
+// Switch to Terminal for the full raw TUI + scrollback.
 //
 // History comes from the agent's on-disk session log (parsed server-side by that
 // agent's transcript reader), so it survives across the visible-screen window that
@@ -27,6 +27,7 @@ import {MarkdownView, MdColors} from './MarkdownView';
 import {separatorLabels} from './time';
 import {nativeFontFamily} from './term';
 import {BrandLoader} from './BrandLoader';
+import {LiveProgress} from './LiveProgress';
 import {segmentKey, stepsOpen} from './chatSteps';
 import {ToolSteps} from './ToolSteps';
 import {Agent, StatusName} from '../api/types';
@@ -165,12 +166,9 @@ export function elapsedText(since: number | undefined, nowSec: number): string |
   return s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s / 60)}m${s % 60}s` : `${Math.floor(s / 3600)}h${Math.floor((s % 3600) / 60)}m`;
 }
 
-// liveLabel titles the Live card. Once the turn prints, the card replaces the thinking
-// marker, and the duration has to come with it: the spec asks for how long a turn has
-// run while it works, output or not, and the card used to say only "Live" (%12,
-// 2026-10-06).
+// Raw screen output indicates work, not a claim that the agent is thinking.
 export function liveLabel(since: number | undefined, nowSec: number, lang: Lang): string {
-  const base = lang === 'zh' ? '正在进行' : 'Live';
+  const base = lang === 'zh' ? '正在工作' : 'Working';
   const el = elapsedText(since, nowSec);
   return el ? `${base} · ${el}` : base;
 }
@@ -359,7 +357,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
         : 'Working…'
       : statusLabel(status, lang);
 
-  // current-screen tail, for the live card while working.
+  // Bound the optional working-screen preview; pending input has its own full reader.
   const plain = lines.map(spans => spans.map(s => s.text).join(''));
   let end = lines.length;
   while (end > 0 && plain[end - 1].trim() === '') end--;
@@ -622,42 +620,14 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
         </View>
       )}
 
-      {/* Working, but nothing to show yet — the case that reads as "the app froze".
-          A turn can spend a long time before it prints anything (thinking, a slow tool),
-          and the status subtitle sits at the TOP of the scroll where the reader has
-          already scrolled past it. So the tail of the conversation always carries a live
-          marker, and it says HOW LONG: a silent wait and a hung one look identical
-          otherwise, and only one of them is worth interrupting. */}
-      {status === 'working' && liveShown.length === 0 && (
-        <View style={styles.thinkingRow} testID={TestIds.detail.chatThinking}>
-          {avatar(<AgentAvatar agent={agent} size={26} radius={7} bg="#1C1C1F" fg="rgba(235,235,245,0.7)" />, {kind: 'agent', agent})}
-          <View style={[styles.agentBubble, styles.thinkingBubble]}>
-            <BrandLoader size={16} neutral="rgba(255,255,255,0.30)" />
-            <Text style={styles.thinkingText}>{thinkingLabel(workingSince, nowSec, lang)}</Text>
-          </View>
-        </View>
-      )}
-
-      {/* live card: the current screen while the agent is working */}
-      {status === 'working' && liveShown.length > 0 && (
-        <View style={styles.liveCard}>
-          <Text style={styles.liveLabel}>{liveLabel(workingSince, nowSec, lang)}</Text>
-          <Text style={[styles.mono, {fontSize, lineHeight}]}>
-            {liveShown.map((spans, i) => (
-              <Text key={i}>
-                {i > 0 ? '\n' : ''}
-                {spans.length === 0
-                  ? ' '
-                  : spans.map((s, j) => (
-                      <Text key={j} style={{color: s.color, fontWeight: s.bold ? '700' : '400'}}>
-                        {s.text}
-                      </Text>
-                    ))}
-              </Text>
-            ))}
-          </Text>
-        </View>
-      )}
+      {/* One working turn owns its disclosure; ordinary transcript/capture refreshes
+          preserve it. Waiting input remains in the host's independent interaction panel. */}
+      {status === 'working' && <LiveProgress
+        key={JSON.stringify([client?.base, agent.pane_id, agent.home_id, agent.session_id, workingSince])}
+        avatar={avatar(<AgentAvatar agent={agent} size={26} radius={7} bg="#1C1C1F" fg="rgba(235,235,245,0.7)" />, {kind: 'agent', agent})}
+        label={liveShown.length ? liveLabel(workingSince, nowSec, lang) : thinkingLabel(workingSince, nowSec, lang)}
+        inspectAvailable={!readOnly && agent.source !== 'native'}
+        lines={liveShown} fontSize={fontSize} fontFamily={fontFamily} lang={lang} />}
     </ScrollView>
       {/* branded loader over the list while collapse/expand-all re-renders. */}
       {busy && (
@@ -682,9 +652,6 @@ const styles = StyleSheet.create({
   empty: {fontSize: 12.5, textAlign: 'center', lineHeight: 19, paddingHorizontal: 16, paddingVertical: 20},
   stateRow: {flexDirection: 'row', alignItems: 'center', gap: 9},
   // fixed collapse/expand-all bar above the scroll — right-aligned, quiet.
-  thinkingRow: {flexDirection: 'row', alignItems: 'center', marginTop: 6},
-  thinkingBubble: {flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8},
-  thinkingText: {fontSize: 12, color: 'rgba(235,235,245,0.6)', fontVariant: ['tabular-nums']},
   earlierRow: {alignItems: 'center', paddingVertical: 10, paddingHorizontal: 14},
   // An act between the bubbles: small, dim, one line — the record, not the speech.
   actRow: {flexDirection: 'row', alignItems: 'baseline', gap: 7, paddingLeft: 30, paddingRight: 8, paddingVertical: 1},
@@ -758,16 +725,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(13,13,15,0.55)',
   },
 
-  liveCard: {
-    backgroundColor: 'rgba(6,182,212,0.06)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(6,182,212,0.25)',
-    borderRadius: 10,
-    padding: 10,
-    marginTop: 4,
-  },
-  liveLabel: {fontSize: 10, fontWeight: '700', color: '#27C7E6', letterSpacing: 0.5, marginBottom: 5},
-  mono: {color: '#D6D6DA', fontFamily: 'Menlo'},
+
 });
 
 /** hhmmOf is a unix second as HH:MM in the reader's clock. */
