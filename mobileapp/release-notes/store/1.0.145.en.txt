@@ -1,0 +1,16 @@
+Conversations and controls
+• Answer permission requests and pickers directly in Chat. Use the key controls to continue when choices cannot be parsed.
+• Send F1 through F12 and Ctrl, Alt or Shift combinations from the new Keys panel.
+• Keep activity in a compact, fully collapsible list. Expand commands, delegated tasks and waits to inspect, scroll and copy their recorded details.
+• Tap a participant avatar to inspect available agent versions, models, recorded plans and execution chains.
+
+DeepSeek Harness and usage
+• Read DeepSeek Harness Web conversations and interact with connected dst terminal sessions.
+• Usage separates current limits and balances from Today and Last 7 days output. Older readings include timestamps.
+
+Connections and interface
+• Filter access history by device, action or result. Connection diagnostics are tracked separately for each server.
+• Expired shares explain why access ended. External conversations filter transient calls and system content, and HQ messages keep their identity.
+• Refined launch screens, conversation folding and layouts while typing, along with many other fixes.
+
+Update gtmux on your server to 1.0.145 or later for the new conversation controls, DeepSeek integration and usage information.

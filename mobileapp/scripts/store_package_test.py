@@ -1,9 +1,12 @@
 import datetime
 import hashlib
+import json
+import os
 from pathlib import Path
 import plistlib
 import tempfile
 import unittest
+from unittest.mock import patch
 import uuid
 import zipfile
 
@@ -27,6 +30,44 @@ def der(fields):
 
 class StorePackageTests(unittest.TestCase):
     team = 'ABCDEFGHIJ'
+
+    def test_cli_saves_verified_receipt_privately_and_replaces_previous_result(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            receipt = root / 'build/store-package.json'
+            receipt.parent.mkdir()
+            receipt.write_text('{"upload_allowed": false}')
+            receipt.chmod(0o644)
+            verified = {'schema': 1, 'version': '1.2.3', 'build': '26', 'upload_allowed': True}
+            args = ['store_package.py', '--ipa', str(root / 'candidate.ipa'), '--baseline', str(root / 'original.ipa'),
+                    '--version', '1.2.3', '--build', '26', '--team', self.team, '--receipt', str(receipt)]
+            old_umask = os.umask(0o022)
+            try:
+                with patch('sys.argv', args), patch.object(store, 'verify', return_value=verified):
+                    store.main()
+            finally:
+                os.umask(old_umask)
+            self.assertEqual(json.loads(receipt.read_text()), verified)
+            self.assertEqual(receipt.stat().st_mode & 0o777, 0o600)
+            self.assertFalse(receipt.with_suffix('.tmp').exists())
+
+    def test_cli_failed_verification_preserves_existing_receipt(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            receipt = root / 'store-package.json'
+            previous = '{"upload_allowed": false}'
+            receipt.write_text(previous)
+            args = ['store_package.py', '--ipa', str(root / 'candidate.ipa'), '--baseline', str(root / 'original.ipa'),
+                    '--version', '1.2.3', '--build', '26', '--team', self.team, '--receipt', str(receipt)]
+            old_umask = os.umask(0o022)
+            try:
+                with patch('sys.argv', args), patch.object(store, 'verify', side_effect=ValueError('Invalid package')):
+                    with self.assertRaisesRegex(ValueError, 'Invalid package'):
+                        store.main()
+            finally:
+                os.umask(old_umask)
+            self.assertEqual(receipt.read_text(), previous)
+            self.assertFalse(receipt.with_suffix('.tmp').exists())
 
     def ent(self, bundle):
         return {'application-identifier': self.team + '.' + bundle, 'com.apple.developer.team-identifier': self.team,

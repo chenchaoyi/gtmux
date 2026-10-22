@@ -2873,3 +2873,28 @@ Never replay original tasks with `create` to fill the sidebar. The enrollment fi
 HQ-only `register` with source/assessment and no delivery, a v56 charter, and draft-safe
 review guidance. An old running HQ must read the upgraded charter and verify/register
 continuing work; no automatic historical grouping or read-time migration is promised.
+
+## Store package validation cannot find its script or save its receipt (2026-10-22)
+
+Fastlane's `sh` executes from the `fastlane/` directory. A relative
+`scripts/store_package.py` therefore fails before validation, and relative package
+or receipt paths can select the wrong location. Resolve the validator, package,
+baseline and receipt from the mobile project root in both upload lanes. Exercise
+the lanes from `fastlane/` and verify the upload receives the same validated IPA.
+
+**Symptom.** Package validation reaches receipt creation, then raises
+`TypeError: Path.open() got an unexpected keyword argument 'opener'`.
+
+**Cause and check.** `opener` belongs to Python's built-in `open`, not `Path.open`.
+Use the built-in function with the existing owner-only creation mode, then verify
+the saved receipt matches the validated package and is mode `0600`. Exercise the
+CLI receipt path as well as the package verifier; failed verification must preserve
+the previous receipt and stop the upload.
+
+Hosted recovery archives deliberately exclude embedded provisioning profiles.
+Strict signature checks on those incomplete archives can report missing sealed
+resources. Restore profiles only on a private archive copy, and only when their
+bytes match the original `CodeResources` hashes, then require the original strict
+signatures to pass. A verified original IPA can supply matching profiles. Do not
+re-sign the baseline or weaken validation to make it pass; preserve the original
+archive and its matching dSYMs.

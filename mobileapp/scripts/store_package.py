@@ -200,7 +200,7 @@ def main():
     result = verify(args.ipa, args.baseline, args.version, args.build, args.team)
     args.receipt.parent.mkdir(parents=True, exist_ok=True)
     temp = args.receipt.with_suffix('.tmp')
-    with temp.open('w', opener=lambda path, flags: os.open(path, flags, 0o600)) as stream:
+    with open(temp, 'w', opener=lambda path, flags: os.open(path, flags, 0o600)) as stream:
         json.dump(result, stream, indent=2)
         stream.write('\n')
     temp.replace(args.receipt)
