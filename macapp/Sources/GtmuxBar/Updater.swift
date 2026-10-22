@@ -132,7 +132,10 @@ final class Updater: ObservableObject {
                 } else if let r = r, r.error.isEmpty {
                     self.state = silent ? .idle : .upToDate(r.current)
                 } else {
-                    self.lastError = r?.error == "cached release index may be behind GitHub"
+                    self.lastError = r?.error == "official release signature verification failed"
+                        ? L10n.shared.tr("The official release signature could not be verified. Updating stopped.",
+                                         "官方发布签名未通过校验，已停止更新。")
+                        : r?.error == "cached release index may be behind GitHub"
                         ? L10n.shared.tr("GitHub could not confirm the latest release. The backup index may be delayed. Try again later.",
                                          "暂时无法向 GitHub 确认最新版，备用索引可能有延迟，请稍后重试。")
                         : L10n.shared.tr("Could not complete the version check. Check the connection and try again.",

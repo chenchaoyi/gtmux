@@ -77,7 +77,7 @@ gtmux agent · 7 agent · 1 等输入 · 2 运行中 · 3 空闲 · 1 只有 she
 安装脚本会同时装好 CLI 和菜单栏 app，桌面通知由 app 负责发。
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | bash
+curl -fsSL https://ccy.pub/gtmux/install | bash
 ```
 
 用 Homebrew 的话，`brew install chenchaoyi/tap/gtmux` 装 CLI，`brew install --cask chenchaoyi/tap/gtmux-app` 装菜单栏 app。

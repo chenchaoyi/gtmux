@@ -15,8 +15,10 @@ import (
 	"strings"
 	"time"
 
+	"errors"
 	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/releasefeed"
 
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
@@ -171,6 +173,9 @@ func performUpdate(checkOnly, cliOnly, jsonOut bool, ops updateOperations) int {
 	}
 	payload := updateCheckPayload(cur, appV, latest)
 	payload.Source = release.Source
+	if release.Source == "invalid-signature" {
+		payload.Error = "official release signature verification failed"
+	}
 	if release.Source == "jsdelivr" {
 		payload.Warning = "cached release index may be behind GitHub"
 		// Older consumers already treat an error without an update as an
@@ -183,6 +188,10 @@ func performUpdate(checkOnly, cliOnly, jsonOut bool, ops updateOperations) int {
 		b, _ := json.Marshal(payload)
 		fmt.Println(string(b))
 		return 0
+	}
+	if release.Source == "invalid-signature" {
+		i18n.Sae("gtmux update: official release signature verification failed; stopped.", "gtmux update: 官方发布签名校验失败，已停止。")
+		return 1
 	}
 	pinned := !checkOnly && os.Getenv("GTMUX_VERSION") != ""
 	if latest == "" && !pinned {
@@ -348,14 +357,25 @@ func runBounded(timeout time.Duration, name string, args ...string) error {
 	return exec.CommandContext(ctx, name, args...).Run()
 }
 
-// Release lookup tries the API, GitHub's documented latest-release redirect, then
-// a potentially lagging jsdelivr index. No credentials are needed or inherited.
+// Release lookup authenticates official mirror metadata first. Network failures
+// retain the API, official latest redirect and cached index; invalid signatures stop.
 type latestRelease struct{ Tag, Source string }
 
 func fetchLatestTag() string { return fetchLatestRelease().Tag }
 
 func fetchLatestRelease() latestRelease {
+	if officialMirrorEnabled(os.Getenv("GTMUX_REPO"), os.Getenv("GTMUX_INSTALL_MIRROR")) {
+		if m, err := releasefeed.Fetch(context.Background(), nil, ""); err == nil {
+			return latestRelease{"v" + m.Version, "official-mirror"}
+		} else if errors.Is(err, releasefeed.ErrInvalid) {
+			return latestRelease{Source: "invalid-signature"}
+		}
+	}
 	return resolveLatestRelease(httpGetBytes, fetchLatestReleaseLink)
+}
+
+func officialMirrorEnabled(repo, mirror string) bool {
+	return (repo == "" || repo == "chenchaoyi/gtmux") && (mirror == "" || mirror == "auto")
 }
 
 func resolveLatestRelease(get func(string, time.Duration) []byte, latestLink func() string) latestRelease {

@@ -1,0 +1,47 @@
+name: mirror an existing official release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Published stable vX.Y.Z tag to mirror without rebuilding binaries'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: official-release-mirror
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate generated verification files
+        run: python3 scripts/sync-release-feed.py --check
+      - name: Mirror the existing official release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GTMUX_RELEASE_SIGNING_KEY: ${{ secrets.GTMUX_RELEASE_SIGNING_KEY }}
+          GTMUX_RELEASE_PUBLISH_TOKEN: ${{ secrets.GTMUX_RELEASE_PUBLISH_TOKEN }}
+          RELEASE_TAG: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          python3 -c 'import os,re; assert re.fullmatch(r"v(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})", os.environ["RELEASE_TAG"])'
+          source_commit="$(git rev-parse "$RELEASE_TAG^{commit}")"
+          umask 077
+          export GTMUX_RELEASE_SIGNING_KEY_FILE="$RUNNER_TEMP/release-signing.pem"
+          trap 'rm -f "$GTMUX_RELEASE_SIGNING_KEY_FILE"' EXIT
+          test -n "$GTMUX_RELEASE_SIGNING_KEY"
+          printf '%s\n' "$GTMUX_RELEASE_SIGNING_KEY" > "$GTMUX_RELEASE_SIGNING_KEY_FILE"
+          unset GTMUX_RELEASE_SIGNING_KEY
+          python3 scripts/publish-release-feed.py --version "$RELEASE_TAG" --source "$source_commit"

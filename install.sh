@@ -2,7 +2,7 @@
 # gtmux one-line installer.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | bash
+#   curl -fsSL https://ccy.dev/gtmux/install | bash
 #
 # Pin a version:
 #   curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | GTMUX_VERSION=vX.Y.Z bash
@@ -38,6 +38,88 @@ set -euo pipefail
 REPO_SLUG="${GTMUX_REPO:-chenchaoyi/gtmux}"
 BIN_DIR="${GTMUX_BIN_DIR:-${HOME}/.local/bin}"
 TMP_DIR=""
+
+# BEGIN GENERATED SIGNED RELEASE FEED
+# Shared by the generated bootstrap and install.sh. Bash 3.2 compatible.
+_feed_origins='https://downloads.ccy.dev
+https://downloads.ccy.pub'
+_feed_fetch() {
+  local version="${1#v}" path origin compact payload signature result
+  FEED_PAYLOAD=""
+  command -v openssl >/dev/null 2>&1 || return 1
+  path=stable.json
+  if [ -n "$version" ]; then
+    printf '%s\n' "$version" | LC_ALL=C grep -Eq '^(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})$' || return 1
+    path="v${version}/manifest.json"
+  fi
+  cat > "$TMP_DIR/release-public.pem" <<'PUBLIC_KEY'
+-----BEGIN PUBLIC KEY-----
+MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEA0cpoBjr42cKxTZtJOnUO
+kIxyDITclBdsN6fxu5Q2h0FcSYw/EQJrbHVnbwsxcP8mq8pLXNgJJmygq0JoHXr+
+KDX9R+7AJ/0ZdArqrcZ/gAe0Hyhdk9d3AuWVFyeePXUUkzUP3DVJ3dNyg/Y5IGnT
+C+oYR0AThX2N5ZcZONNS6KyUPMpMLfmdAW6+dcU8W4Iz7Hx6rtnqT/X0U5udil3/
+xAWEmAKBT4Hnfi4ZvZLut1eLn2awzVPBHrMWHqtGHiAPdPEwy22KYpY5PORw8E8H
+5traGGIeBpCJESX8S65dh58ikAzLMaaNOfD2dcszfkvDm5ZE2XsO+xqQauCKlbO7
+7u251f32T6Yh1zNRh8WDKEJKq5rmy6Xf2cPNt2F2BvM3JupFmIiLnWdisrhaCOcX
+aq/ehII3wXcw0kb8JZU0gzi4CL8uaroWK4p5qsVaojIBLBT06u43+2EsFGUv/4Zr
+uc9kZPR78VpJVleFRyrDptD0Lr6AYz+dVXklIRvIFFfrAgMBAAE=
+-----END PUBLIC KEY-----
+PUBLIC_KEY
+  while IFS= read -r origin; do
+    if curl --proto '=https' --max-time 12 --max-filesize 65536 -fsS "$origin/gtmux/$path" -o "$TMP_DIR/feed.json" 2>/dev/null; then :; else
+      result=$?
+      [ "$result" != 63 ] || return 2
+      continue
+    fi
+    [ "$(wc -c < "$TMP_DIR/feed.json" | tr -d ' ')" -le 65536 ] || return 2
+    compact="$(tr -d '\r\n' < "$TMP_DIR/feed.json")"
+    payload="$(printf '%s' "$compact" | sed -nE 's/^\{"payload":"([A-Za-z0-9+/]+={0,2})","signature":"[A-Za-z0-9+/]+={0,2}"\}$/\1/p')"
+    signature="$(printf '%s' "$compact" | sed -nE 's/^\{"payload":"[A-Za-z0-9+/]+={0,2}","signature":"([A-Za-z0-9+/]+={0,2})"\}$/\1/p')"
+    [ -n "$payload" ] && [ -n "$signature" ] || return 2
+    printf '%s' "$payload" | openssl base64 -d -A > "$TMP_DIR/feed-payload.json" 2>/dev/null || return 2
+    printf '%s' "$signature" | openssl base64 -d -A > "$TMP_DIR/feed-signature" 2>/dev/null || return 2
+    openssl dgst -sha256 -verify "$TMP_DIR/release-public.pem" -signature "$TMP_DIR/feed-signature" "$TMP_DIR/feed-payload.json" >/dev/null 2>&1 || return 2
+    FEED_VERSION="$(awk -F'"' '$2=="version" {print $4;exit}' "$TMP_DIR/feed-payload.json")"
+    printf '%s\n' "$FEED_VERSION" | LC_ALL=C grep -Eq '^(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})$' || return 2
+    [ -z "$version" ] || [ "$FEED_VERSION" = "$version" ] || return 2
+    FEED_PAYLOAD="$TMP_DIR/feed-payload.json"
+    return 0
+  done <<ORIGINS
+$_feed_origins
+ORIGINS
+  return 1
+}
+_feed_meta() {
+  [ -n "${FEED_PAYLOAD:-}" ] || return 1
+  awk -F'"' -v n="$1" '$2==n {found=1;next} found&&$2=="sha256" {sha=$4} found&&$2=="size" {gsub(/[^0-9]/,"",$3);print sha" "$3;exit}' "$FEED_PAYLOAD"
+}
+_feed_check_file() {
+  local file="$1" name="$2" sha size actual
+  read -r sha size <<META
+$(_feed_meta "$name")
+META
+  printf '%s\n' "$sha" | LC_ALL=C grep -Eq '^[0-9a-f]{64}$' || return 1
+  case "$size" in ''|*[!0-9]*) return 1 ;; esac
+  [ "${#size}" -le 9 ] && [ "$size" -gt 0 ] && [ "$size" -le 268435456 ] || return 1
+  [ "$(wc -c < "$file" | tr -d ' ')" = "$size" ] || return 1
+  actual="$(openssl dgst -sha256 -r "$file" | awk '{print $1}')" || return 1
+  [ "$actual" = "$sha" ]
+}
+_feed_download() {
+  local name="$1" dest="$2" origin sha size
+  read -r sha size <<META
+$(_feed_meta "$name")
+META
+  case "$size" in ''|*[!0-9]*) return 1 ;; esac
+  [ "${#size}" -le 9 ] && [ "$size" -gt 0 ] && [ "$size" -le 268435456 ] || return 1
+  while IFS= read -r origin; do
+    if curl --proto '=https' --max-time 30 --max-filesize "$size" -fsS "$origin/gtmux/v$FEED_VERSION/$name" -o "$dest" 2>/dev/null && _feed_check_file "$dest" "$name"; then return 0; fi
+  done <<ORIGINS
+$_feed_origins
+ORIGINS
+  return 1
+}
+# END GENERATED SIGNED RELEASE FEED
 
 # ---- color (TTY only) ----
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ] && [ "${TERM:-}" != "dumb" ]; then
@@ -124,6 +206,13 @@ validate_download() {
 # build_candidates — emit "src url" lines in priority order for the mode.
 build_candidates() {
   local url="$1" force_gh="$2" p
+  if [ -n "${FEED_PAYLOAD:-}" ]; then
+    while IFS= read -r p; do
+      printf '%s %s/gtmux/v%s/%s\n' "$p" "$p" "$FEED_VERSION" "${url##*/}"
+    done <<OFFICIAL
+$_feed_origins
+OFFICIAL
+  fi
   if [ "$MIRROR" = github ] || [ "$MIRROR" = auto ] || [ "$MIRROR" = custom ] || [ "$force_gh" = 1 ]; then
     printf 'github %s\n' "$url"
   fi
@@ -144,7 +233,7 @@ download_with_fallback() {
   while IFS=' ' read -r src curl_url; do
     [ -z "$curl_url" ] && continue
     [ "$src" != github ] && note "$(mirror_fallback_notice "$src")"
-    if curl --max-time 20 -fsSL --output "$dest" "$curl_url" 2>/dev/null && validate_download "$dest" "$kind"; then
+    if curl --max-time 20 -fsSL --output "$dest" "$curl_url" 2>/dev/null && validate_download "$dest" "$kind" && { [ -z "${FEED_PAYLOAD:-}" ] || _feed_check_file "$dest" "${url##*/}"; }; then
       eval "${used_var}=\"\$src\""
       return 0
     fi
@@ -202,6 +291,21 @@ esac
 printf '\n  %sgtmux%s installer\n\n' "$BOLD" "$RESET"
 step 1 "Host" "${PLATFORM}-${ARCH}"
 
+# Resolve authenticated metadata before any version or asset lookup. A bad signature
+# is an error, never a reason to weaken trust through another source.
+TMP_DIR="$(mktemp -d -t gtmux-install.XXXXXX)"
+FEED_PAYLOAD=""
+if [ "$REPO_SLUG" = chenchaoyi/gtmux ] && [ "$MIRROR" = auto ]; then
+  if _feed_fetch "${GTMUX_VERSION:-}"; then
+    GTMUX_VERSION="v$FEED_VERSION"
+    note "release metadata verified with the embedded signing key"
+  else
+    feed_result=$?
+    [ "$feed_result" != 2 ] || die "invalid official release signature or metadata; stopped"
+    note "official mirrors unavailable; trying the existing GitHub channel"
+  fi
+fi
+
 # ---- resolve version ----
 if [ -n "${GTMUX_VERSION:-}" ]; then
   VERSION="$GTMUX_VERSION"
@@ -217,7 +321,6 @@ TARBALL_URL="https://github.com/${REPO_SLUG}/releases/download/${VERSION}/${TARB
 SHASUMS_URL="https://github.com/${REPO_SLUG}/releases/download/${VERSION}/SHASUMS256.txt"
 
 # ---- download + verify ----
-TMP_DIR="$(mktemp -d -t gtmux-install.XXXXXX)"
 TARBALL_MIRROR=""; SHASUMS_MIRROR=""
 download_with_fallback "$TARBALL_URL" "${TMP_DIR}/${TARBALL_NAME}" TARBALL_MIRROR tarball 0 \
   || die "tarball download failed — GitHub and every mirror exhausted: $TARBALL_URL"
@@ -232,7 +335,7 @@ else
 fi
 [ "$ACTUAL_SHA" = "$EXPECTED_SHA" ] || die "sha256 mismatch on $TARBALL_NAME (expected $EXPECTED_SHA, got $ACTUAL_SHA)"
 step 3 "Verify" "sha256 ${ACTUAL_SHA:0:8}…"
-if [ "$TARBALL_MIRROR" != github ] || [ "$SHASUMS_MIRROR" != github ]; then
+if [ -z "${FEED_PAYLOAD:-}" ] && { [ "$TARBALL_MIRROR" != github ] || [ "$SHASUMS_MIRROR" != github ]; }; then
   note "$(mirror_completion_notice "$TARBALL_MIRROR" "$SHASUMS_MIRROR")"
 fi
 
@@ -248,9 +351,9 @@ xattr -d com.apple.quarantine "${BIN_DIR}/gtmux" 2>/dev/null || true
 step 4 "Install" "${BIN_DIR}/gtmux"
 
 # ---- menu-bar app (~/Applications/Gtmux.app) ----
-# A native macOS app (Swift) shipped as a separate universal, ad-hoc-signed
-# bundle. It's NOT in SHASUMS256.txt (a separate CI job uploads it), so we
-# validate the zip structurally rather than by checksum. Opt out with
+# A native macOS app (Swift) shipped as a separate universal, Developer ID-signed and notarized
+# bundle. Signed metadata authenticates its SHA256 and size when available.
+# Legacy releases without signed metadata retain structural ZIP validation. Opt out with
 # GTMUX_NO_APP=1; start it at login with GTMUX_APP_LOGIN=1.
 APP_DIR="${HOME}/Applications"
 # Co-locate with an existing install so the two app channels don't diverge into two

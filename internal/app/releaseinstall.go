@@ -4,8 +4,10 @@ import (
 	"archive/tar"
 	"archive/zip"
 	"compress/gzip"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -20,6 +22,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/releasefeed"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"howett.net/plist"
 )
@@ -30,6 +33,7 @@ var releaseTagPattern = regexp.MustCompile(`^v?[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-
 var releaseRepoPattern = regexp.MustCompile(`^[A-Za-z0-9_-][A-Za-z0-9_.-]*/[A-Za-z0-9_-][A-Za-z0-9_.-]*$`)
 
 type releaseInstaller struct {
+	feed                                          *releasefeed.Manifest
 	repo, version, platform, arch, binDir, appDir string
 	mirror                                        string
 	cliOnly, skipCLI                              bool
@@ -122,6 +126,9 @@ func (x *releaseInstaller) download(raw, dest string, limit int64, official bool
 	}
 	client := *x.client
 	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		if releasefeed.TrustedURL(u) {
+			return http.ErrUseLastResponse
+		}
 		if len(via) >= 10 {
 			return fmt.Errorf("too many release redirects")
 		}
@@ -204,6 +211,13 @@ func (x *releaseInstaller) install() (releaseInstallResult, error) {
 		return result, err
 	}
 	defer os.RemoveAll(tmp)
+	if x.feed == nil && officialMirrorEnabled(x.repo, x.mirror) && releasefeed.IsStableVersion(x.version) {
+		feed, err := releasefeed.Fetch(context.Background(), x.client, x.version)
+		if errors.Is(err, releasefeed.ErrInvalid) {
+			return result, err
+		}
+		x.feed = feed
+	}
 	base := "https://github.com/" + x.repo + "/releases/download/" + x.version + "/"
 	if !x.skipCLI {
 		if err := x.installCLI(tmp, base); err != nil {
@@ -219,23 +233,36 @@ func (x *releaseInstaller) install() (releaseInstallResult, error) {
 
 func (x *releaseInstaller) installCLI(tmp, base string) error {
 	name := fmt.Sprintf("gtmux-%s-%s-%s.tar.gz", strings.TrimPrefix(x.version, "v"), x.platform, x.arch)
-	sums := filepath.Join(tmp, "SHASUMS256.txt")
-	// Never fall back to a mirror for the checksum. A proxy able to replace both
-	// archive and checksum would otherwise still control the installed executable.
-	if err := x.download(base+"SHASUMS256.txt", sums, 1<<20, true); err != nil {
-		return fmt.Errorf("authoritative checksums unavailable: %w", err)
-	}
-	body, err := os.ReadFile(sums)
-	if err != nil {
-		return err
-	}
-	expected, err := releaseChecksum(body, name)
-	if err != nil {
-		return err
+	expected := ""
+	var expectedSize int64
+	if x.feed != nil {
+		asset, ok := x.feed.Assets[name]
+		if !ok {
+			return releasefeed.ErrInvalid
+		}
+		expected, expectedSize = asset.SHA256, asset.Size
+	} else {
+		sums := filepath.Join(tmp, "SHASUMS256.txt")
+		// Legacy releases still require GitHub checksums. An unsigned mirror
+		// cannot replace the manifest's signature or the original trust anchor.
+		if err := x.download(base+"SHASUMS256.txt", sums, 1<<20, true); err != nil {
+			return fmt.Errorf("authoritative checksums unavailable: %w", err)
+		}
+		body, err := os.ReadFile(sums)
+		if err != nil {
+			return err
+		}
+		expected, err = releaseChecksum(body, name)
+		if err != nil {
+			return err
+		}
 	}
 	urls, err := x.archiveURLs(base + name)
 	if err != nil {
 		return err
+	}
+	if x.feed != nil {
+		urls = append(releasefeed.AssetURLs(x.version, name), urls...)
 	}
 	archive := filepath.Join(tmp, "cli.tar.gz")
 	var lastErr error
@@ -254,7 +281,11 @@ func (x *releaseInstaller) installCLI(tmp, base string) error {
 		if err != nil {
 			return err
 		}
-		if hex.EncodeToString(h.Sum(nil)) != expected {
+		info, statErr := os.Stat(archive)
+		if statErr != nil {
+			return statErr
+		}
+		if hex.EncodeToString(h.Sum(nil)) != expected || expectedSize > 0 && info.Size() != expectedSize {
 			lastErr = fmt.Errorf("sha256 mismatch for %s", name)
 			continue
 		}
@@ -277,11 +308,39 @@ func (x *releaseInstaller) installCLI(tmp, base string) error {
 }
 
 func (x *releaseInstaller) installApp(tmp, base string) (bool, error) {
-	// The app is published by a separate job, outside SHASUMS256.txt. Fetch
-	// it only over GitHub's authenticated transport; proxies cannot supply it.
+	name := "Gtmux-" + strings.TrimPrefix(x.version, "v") + "-macos.zip"
 	appZip := filepath.Join(tmp, "app.zip")
-	if err := x.download(base+"Gtmux-"+strings.TrimPrefix(x.version, "v")+"-macos.zip", appZip, releaseAssetLimit, true); err != nil {
-		return false, err
+	if x.feed != nil {
+		expected, ok := x.feed.Assets[name]
+		if !ok {
+			return false, releasefeed.ErrInvalid
+		}
+		urls := append(releasefeed.AssetURLs(x.version, name), base+name)
+		verified := false
+		var last error
+		for _, raw := range urls {
+			if last = x.download(raw, appZip, releaseAssetLimit, raw == base+name); last != nil {
+				continue
+			}
+			file, err := os.Open(appZip)
+			if err != nil {
+				return false, err
+			}
+			last = releasefeed.CheckFile(file, expected)
+			file.Close()
+			if last == nil {
+				verified = true
+				break
+			}
+		}
+		if !verified {
+			return false, fmt.Errorf("app archive unavailable or unverified: %w", last)
+		}
+	} else {
+		// Legacy app releases have no signed mirror digest; keep GitHub-only.
+		if err := x.download(base+name, appZip, releaseAssetLimit, true); err != nil {
+			return false, err
+		}
 	}
 	if err := validateReleaseApp(appZip); err != nil {
 		return false, err

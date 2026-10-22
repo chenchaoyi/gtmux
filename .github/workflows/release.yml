@@ -309,3 +309,36 @@ jobs:
           name: gtmux-app
           path: ${{ env.ZIP }}
           retention-days: 14
+
+  mirror:
+    name: publish signed official downloads
+    needs: [goreleaser, app]
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate generated verification files
+        run: python3 scripts/sync-release-feed.py --check
+      - name: Publish unchanged release files and signed stable pointer
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GTMUX_RELEASE_SIGNING_KEY: ${{ secrets.GTMUX_RELEASE_SIGNING_KEY }}
+          GTMUX_RELEASE_PUBLISH_TOKEN: ${{ secrets.GTMUX_RELEASE_PUBLISH_TOKEN }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          test -n "$GTMUX_RELEASE_SIGNING_KEY"
+          umask 077
+          export GTMUX_RELEASE_SIGNING_KEY_FILE="$RUNNER_TEMP/release-signing.pem"
+          trap 'rm -f "$GTMUX_RELEASE_SIGNING_KEY_FILE"' EXIT
+          printf '%s\n' "$GTMUX_RELEASE_SIGNING_KEY" > "$GTMUX_RELEASE_SIGNING_KEY_FILE"
+          unset GTMUX_RELEASE_SIGNING_KEY
+          source_commit="$(git rev-parse HEAD)"
+          python3 scripts/publish-release-feed.py --version "$RELEASE_TAG" --source "$source_commit" --run "$GITHUB_RUN_ID"

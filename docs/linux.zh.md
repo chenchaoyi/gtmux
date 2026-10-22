@@ -9,7 +9,7 @@ gtmux 运行在 tmux 会话所在的 Linux 主机上，终端、网页、iPhone 
 提供 amd64、arm64 的纯 Go 发行包，首批面向 Ubuntu 22.04+、Debian 12+。先通过系统包管理器安装 `tmux`、`curl`、`tar` 和 SHA256 校验工具，再运行：
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | bash
+curl -fsSL https://ccy.pub/gtmux/install | bash
 export PATH="$HOME/.local/bin:$PATH"
 gtmux doctor --no-prompt
 gtmux install hooks --agent codex --yes

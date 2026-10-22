@@ -10,6 +10,7 @@
 | `relay-worker/` | **DEPLOYED push relay** (Cloudflare Worker, `gtmux-relay.ccy.dev`) — changes need `npx wrangler deploy` |
 | `relay/` | Go **self-host reference impl** of the relay — NEVER deployed; keep payload shape in sync with `relay-worker/` |
 | `tunnel-worker/` | **DEPLOYED tunnel provisioner** (Cloudflare Worker, `api.gtmux.ccy.dev`) |
+| `download-worker/` | isolated Pages + R2 public release downloads; signed metadata and authenticated immutable publication; private operator config is not committed |
 | `deploy/self-tunnel/` | self-host tunnel-server configs/docs (Caddy + chisel) |
 | `api/contract.md` | v0 HTTP/SSE contract (serve ↔ apps) |
 | `docs/design/` | the design authority (DESIGN/MOBILE/HANDOFF + research) |

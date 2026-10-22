@@ -875,7 +875,7 @@ install) and `~/Applications/Gtmux.app` doesn't, it updates the `/Applications` 
 in place instead of making a second copy, so the two channels stay on one app.
 **Unstick a machine now:** `brew uninstall --cask gtmux-app --force` (forgets the broken
 state) then `brew install --cask chenchaoyi/tap/gtmux-app` — or just switch to the curl
-installer: `curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | bash`.
+installer: `curl -fsSL https://ccy.dev/gtmux/install | bash`.
 (The separate deprecation *warning* `depends_on macos: ">= :ventura"` is cosmetic; the
 cask generator now emits `depends_on macos: :ventura`.)
 

@@ -98,7 +98,7 @@ The install script sets up the CLI and the menu-bar app, which delivers the desk
 notifications.
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | bash
+curl -fsSL https://ccy.dev/gtmux/install | bash
 ```
 
 With Homebrew, use `brew install chenchaoyi/tap/gtmux` for the CLI and

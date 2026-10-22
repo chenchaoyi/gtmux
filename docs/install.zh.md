@@ -36,7 +36,7 @@ brew install --cask gtmux-app
 ## 安装脚本
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | bash
+curl -fsSL https://ccy.pub/gtmux/install | bash
 ```
 
 校验过 checksum 的二进制装到 `~/.local/bin/gtmux`，菜单栏 app 一并装上。可选项：
@@ -48,7 +48,7 @@ curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | 
 这些变量要放在执行安装脚本的 `bash` 前面，不能只传给 `curl`：
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | GTMUX_NO_APP=1 bash
+curl -fsSL https://ccy.pub/gtmux/install | GTMUX_NO_APP=1 bash
 ```
 
 从源码装（需要 Go 1.26 或更新版本，只安装 CLI）：
@@ -72,22 +72,11 @@ App 步骤未完成；旧 App 重试 `gtmux update`，未安装时用 `gtmux ins
 CLI 二进制和 gtmux 的已有记录。Homebrew 安装的还需用 `brew uninstall --cask gtmux-app`
 删除 app（通常在 `/Applications`），用 `brew uninstall --cask gtmux` 删除 CLI。
 
-## 中国大陆 / GitHub 不稳：镜像兜底
+## 官方镜像与 GitHub 兜底
 
-连脚本本身都拉不下来（`raw.githubusercontent.com` 被挡）的话，从 CDN 镜像取脚本。
-脚本跑起来之后，自己要下载的东西会自动切镜像：
+短入口也可用 `https://ccy.dev/gtmux/install`。默认从两个自有下载域读取签名清单，再校验安装脚本和每个压缩包；签名异常停下，不自动降低验证标准。原生 `gtmux update` 使用同一公钥在 Go 内校验，从不执行远端脚本。官方源网络不可用时保留原有 GitHub 通道；已有签名清单时，兜底下载仍必须匹配其摘要和大小。
 
-```sh
-curl -fsSL https://cdn.jsdelivr.net/gh/chenchaoyi/gtmux@main/install.sh | bash
-```
-
-`gtmux update` 现在使用本地 Go 安装器，不再下载或执行远端安装脚本。CLI 校验文件
-只从官方 GitHub HTTPS 获取；镜像仅提供压缩包，必须匹配官方摘要。App 只从官方 HTTPS
-获取，不走镜像。官方请求及重定向限制在允许的 GitHub 主机，无法可信校验时更新失败。
-
-上面的显式 `curl … | bash` 属于独立 bootstrap 路径：脚本和发布文件仍可能使用镜像，
-摘要也来自镜像时，验证依赖该镜像；App ZIP 另做完整性检查，不在 CLI 摘要清单中。
-脚本会打印实际来源。用 `GTMUX_INSTALL_MIRROR` 选择镜像：
+构建、存储、来源与运维边界见[托管说明](release-hosting.zh.md)。短入口需要 OpenSSL／LibreSSL，macOS 自带 LibreSSL。旧版安装器、Homebrew 和显式覆盖仍沿原通道运行。需要强制 GitHub 或第三方代理时，从 GitHub 取得完整安装器：
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | GTMUX_INSTALL_MIRROR=ghproxy bash
