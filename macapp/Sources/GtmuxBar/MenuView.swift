@@ -862,7 +862,7 @@ struct MenuView: View {
                         .font(Theme.Font.footer).foregroundStyle(p.fg3)
                         .lineLimit(1).truncationMode(.tail)
                 }.buttonStyle(.plain).layoutPriority(-1)
-                    .help(l10n.tr("Check for updates", "检查更新"))
+                    .help(updater.lastError ?? l10n.tr("Check for updates", "检查更新"))
                 // ⚙ menu — the low-frequency actions fold in here so the bar stays one line.
                 Menu {
                     Button(l10n.tr("Preferences…", "偏好设置…")) { onAction(.preferences) }

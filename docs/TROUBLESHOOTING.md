@@ -2898,3 +2898,22 @@ bytes match the original `CodeResources` hashes, then require the original stric
 signatures to pass. A verified original IPA can supply matching profiles. Do not
 re-sign the baseline or weaken validation to make it pass; preserve the original
 archive and its matching dSYMs.
+
+
+## Menu-bar update checks fail while a release is already installed
+
+**Symptom:** the menu says “check failed”; `gtmux update --check --json` reports
+`source:jsdelivr` and warns that the cached release index may be behind GitHub.
+
+**Cause:** the anonymous GitHub release API can return HTTP 403 with
+`X-RateLimit-Remaining: 0`. Its quota is shared by public source IP; a successful
+check from an authenticated `gh` command does not establish anonymous availability.
+The cached index can confirm a newer candidate, but cannot establish that the
+installed version is latest. Earlier versions collapsed this into a generic failure.
+
+**Check:** compare the read-only JSON result and the anonymous API's status/rate-limit
+headers. Do not print tokens, inject a personal token into the app or keep retrying
+an exhausted quota. The checker now tries GitHub's documented `releases/latest`
+redirect before the cached index, accepting only a stable tag in the same HTTPS
+repository and never following the redirect. Download and checksum verification
+remain separate. The check never installs a component.

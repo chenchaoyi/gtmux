@@ -850,6 +850,13 @@ Checks SHALL retain `current`, `latest`, `update` and add `cli_update`, `app_upd
 and source information. A cached fallback SHALL identify possible index lag; absence
 of a newer cached candidate SHALL NOT establish that GitHub's latest is installed.
 
+#### Scenario: The anonymous release API quota is exhausted
+
+- **WHEN** the release API is unavailable or rate limited
+- **THEN** lookup tries GitHub's official latest-release redirect before the cached index
+- **AND** only a stable tag in the same HTTPS GitHub repository is accepted, without following the redirect
+- **AND** a failed check explains that the latest version could not be confirmed, without claiming an installation failure
+
 #### Scenario: Cached index behind installed components
 
 - **WHEN** GitHub lookup fails and the fallback only lists an older release

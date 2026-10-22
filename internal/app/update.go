@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -347,19 +348,24 @@ func runBounded(timeout time.Duration, name string, args ...string) error {
 	return exec.CommandContext(ctx, name, args...).Run()
 }
 
-// Release lookup tries GitHub, then a potentially lagging jsdelivr index. The
-// update command retains the source; legacy installer callers only need the tag.
+// Release lookup tries the API, GitHub's documented latest-release redirect, then
+// a potentially lagging jsdelivr index. No credentials are needed or inherited.
 type latestRelease struct{ Tag, Source string }
 
 func fetchLatestTag() string { return fetchLatestRelease().Tag }
 
-func fetchLatestRelease() latestRelease { return resolveLatestRelease(httpGetBytes) }
+func fetchLatestRelease() latestRelease {
+	return resolveLatestRelease(httpGetBytes, fetchLatestReleaseLink)
+}
 
-func resolveLatestRelease(get func(string, time.Duration) []byte) latestRelease {
+func resolveLatestRelease(get func(string, time.Duration) []byte, latestLink func() string) latestRelease {
 	if b := get("https://api.github.com/repos/chenchaoyi/gtmux/releases/latest", 10*time.Second); b != nil {
 		if tag := parseTagName(string(b)); newerRelease(tag, "0.0.0") {
 			return latestRelease{tag, "github"}
 		}
+	}
+	if tag := latestLink(); newerRelease(tag, "0.0.0") {
+		return latestRelease{tag, "github-latest"}
 	}
 	if b := get("https://data.jsdelivr.com/v1/packages/gh/chenchaoyi/gtmux", 10*time.Second); b != nil {
 		if tag := parseJsdelivrLatest(string(b)); tag != "" {
@@ -367,6 +373,47 @@ func resolveLatestRelease(get func(string, time.Duration) []byte) latestRelease 
 		}
 	}
 	return latestRelease{}
+}
+
+// Read only the first response from the official endpoint. Never follow a
+// redirect supplied by a response, or infer a release from arbitrary page HTML.
+func fetchLatestReleaseLink() string {
+	client := &http.Client{Timeout: 10 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error {
+		return http.ErrUseLastResponse
+	}}
+	req, err := http.NewRequest(http.MethodHead, "https://github.com/chenchaoyi/gtmux/releases/latest", nil)
+	if err != nil {
+		return ""
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return ""
+	}
+	defer resp.Body.Close()
+	return releaseTagFromRedirect(resp)
+}
+
+func releaseTagFromRedirect(resp *http.Response) string {
+	switch resp.StatusCode {
+	case http.StatusMovedPermanently, http.StatusFound, http.StatusSeeOther, http.StatusTemporaryRedirect, http.StatusPermanentRedirect:
+	default:
+		return ""
+	}
+	base, _ := url.Parse("https://github.com/chenchaoyi/gtmux/releases/latest")
+	location, err := url.Parse(resp.Header.Get("Location"))
+	if err != nil {
+		return ""
+	}
+	u := base.ResolveReference(location)
+	const prefix = "/chenchaoyi/gtmux/releases/tag/"
+	if u.Scheme != "https" || u.Host != "github.com" || u.User != nil || u.RawQuery != "" || u.ForceQuery || u.Fragment != "" || !strings.HasPrefix(u.EscapedPath(), prefix) {
+		return ""
+	}
+	tag := strings.TrimPrefix(u.EscapedPath(), prefix)
+	if !newerRelease(tag, "0.0.0") {
+		return ""
+	}
+	return tag
 }
 
 // parseTagName pulls "tag_name":"vX.Y.Z" out of the GitHub releases/latest JSON
