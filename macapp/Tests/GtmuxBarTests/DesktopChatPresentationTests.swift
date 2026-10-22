@@ -44,7 +44,8 @@ import XCTest
         host.layoutSubtreeIfNeeded()
     }
     private func snapshot(_ host: NSView, _ name: String) throws {
-        guard let dir = ProcessInfo.processInfo.environment["GTMUX_DESKTOP_SNAPSHOT_DIR"] else { return }
+        guard let dir = ProcessInfo.processInfo.environment["GTMUX_DESKTOP_SNAPSHOT_DIR"]
+            ?? ProcessInfo.processInfo.environment["GTMUX_WORKSPACE_PREVIEW_DIR"] else { return }
         let bitmap = try XCTUnwrap(host.bitmapImageRepForCachingDisplay(in: host.bounds))
         host.effectiveAppearance.performAsCurrentDrawingAppearance { host.cacheDisplay(in: host.bounds, to: bitmap) }
         try XCTUnwrap(bitmap.representation(using: .png, properties: [:])).write(to: URL(fileURLWithPath: dir).appendingPathComponent(name + ".png"))
@@ -101,7 +102,7 @@ import XCTest
             navigation = proxy; tailIsVisible = visible; entrySettled = settled
         }))
         let window = NSWindow(contentRect: NSRect(x: 80, y: 80, width: 760, height: 640), styleMask: [.titled], backing: .buffered, defer: false)
-        window.isReleasedWhenClosed = false; window.contentView = host; window.orderBack(nil)
+        window.isReleasedWhenClosed = false; window.contentView = host; window.orderFront(nil)
         defer { window.close(); model.stop() }
         for _ in 0..<100 {
             host.layoutSubtreeIfNeeded()
@@ -110,6 +111,7 @@ import XCTest
         }
         XCTAssertTrue(tailIsVisible, "Initial positioning must reveal the actual tail marker")
         XCTAssertTrue(entrySettled, "Initial navigation must finish before deliberate history reading")
+        try snapshot(host, "reader-scroll-initial")
         let scroll = try XCTUnwrap(NativeUIProbe.views(NSScrollView.self, in: host).first)
         NotificationCenter.default.post(name: NSScrollView.willStartLiveScrollNotification, object: scroll)
         // SwiftUI owns a virtual document. Navigate by record identity, as the HQ
@@ -138,6 +140,7 @@ import XCTest
         }
         XCTAssertGreaterThanOrEqual(stable, 5, "Historical content must settle before refresh")
         XCTAssertFalse(tailIsVisible, "History navigation must actually leave the tail")
+        try snapshot(host, "reader-scroll-history")
         let bitmap = try viewport()
         let pixels = try XCTUnwrap(bitmap.bitmapData)
         XCTAssertGreaterThan(Set(Data(bytes: pixels, count: bitmap.bytesPerRow * bitmap.pixelsHigh)).count, 8,
@@ -152,6 +155,7 @@ import XCTest
         }
         XCTAssertEqual(after, before, "Refresh must preserve the actual historical viewport")
         XCTAssertFalse(tailIsVisible, "An appended turn must not pull history to the tail")
+        try snapshot(host, "reader-scroll-refreshed")
         let latest = try XCTUnwrap(NativeUIProbe.find("desktop-latest", in: host))
         XCTAssertTrue(latest.accessibilityPerformPress())
         for _ in 0..<100 {
@@ -161,6 +165,7 @@ import XCTest
         }
         XCTAssertTrue(tailIsVisible, "Explicit latest must reveal the actual tail marker")
         XCTAssertTrue(entrySettled, "Explicit navigation must finish")
+        try snapshot(host, "reader-scroll-latest")
     }
 
 }
