@@ -1,1 +1,2 @@
-- Working sessions now show a compact progress row. Tap to expand the live terminal preview, then fold it away to keep messages in view.
+- Live previews stay expanded while a session updates, and keep their original terminal presentation. Tap the progress row to fold them away.
+- Conversation input controls are simpler, and human messages use a consistent name and alignment.
