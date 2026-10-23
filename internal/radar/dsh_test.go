@@ -7,10 +7,13 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/agentclient"
+	"github.com/chenchaoyi/gtmux/internal/conversation"
 	"github.com/chenchaoyi/gtmux/internal/dsh"
+	"github.com/chenchaoyi/gtmux/internal/native"
+	"github.com/chenchaoyi/gtmux/internal/sessionpolicy"
 )
 
-func TestDSHSavedConversationUsesExternalContractWithoutClaimingControl(t *testing.T) {
+func TestDSHFollowedHistoryUsesExternalContractWithoutClaimingControl(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("CODEX_HOME", t.TempDir())
 	t.Setenv("DSH_HOME", t.TempDir())
@@ -20,6 +23,9 @@ func TestDSHSavedConversationUsesExternalContractWithoutClaimingControl(t *testi
 	}
 	text := `{"type":"session","version":4,"id":"web","cwd":"/project"}` + "\n" + `{"type":"user/message","time":2000,"data":{"role":"user","source":{"kind":"user"}}}` + "\n" + `{"type":"session/title","time":2000,"data":{"title":"Saved DSH conversation"}}` + "\n" + `{"type":"turn/end","time":3000,"data":{"reason":{"kind":"blocked"}}}` + "\n"
 	if err := os.WriteFile(filepath.Join(dir, "session.v4.jsonl"), []byte(text), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := sessionpolicy.SaveFor("dsh", "web", sessionpolicy.Settings{HQ: true}); err != nil {
 		t.Fatal(err)
 	}
 	rows := nativePanes(nil, nil, time.Now().Unix())
@@ -33,8 +39,8 @@ func TestDSHSavedConversationUsesExternalContractWithoutClaimingControl(t *testi
 	if p.Status != "idle" || p.EndReason != "error" || p.icon == "" {
 		t.Fatal("blocked turn earned a success presentation or lost official icon", p.Status, p.EndReason, p.icon)
 	}
-	if p.PaneID != "" || p.adoptable || p.role != "" || !p.StatusOnlyDesktop() || p.DesktopNotifications() {
-		t.Fatal("saved history claimed control or attention without consent")
+	if p.PaneID != "" || p.adoptable || p.role != "" || p.StatusOnlyDesktop() || p.DesktopNotifications() || p.Follow == nil || !p.Follow.HQ {
+		t.Fatal("followed history changed control or notification consent")
 	}
 }
 
@@ -63,7 +69,118 @@ func TestVerifiedTerminalIdentityAndExternalDedup(t *testing.T) {
 		t.Fatal("managed session duplicated as external")
 	}
 	terminal = map[string]agentclient.Attachment{}
+	if rows := nativePanes(nil, nil, time.Now().Unix()); len(rows) != 0 {
+		t.Fatal("released session reappeared from history alone")
+	}
+	if _, err := conversation.Resolve(a.SessionID, a.HomeID); err != nil {
+		t.Fatal("hiding history lost exact read access", err)
+	}
+	if _, err := sessionpolicy.SaveFor("dsh", a.SessionID, sessionpolicy.Settings{HQ: true}); err != nil {
+		t.Fatal(err)
+	}
+	terminal[a.Pane] = a
+	if rows := nativePanes(nil, nil, time.Now().Unix()); len(rows) != 0 {
+		t.Fatal("explicit follow duplicated a managed session")
+	}
+	delete(terminal, a.Pane)
 	if rows := nativePanes(nil, nil, time.Now().Unix()); len(rows) != 1 || rows[0].adoptable {
-		t.Fatal("released session did not retain external read-only behavior")
+		t.Fatal("explicitly followed history lost read-only behavior")
+	}
+}
+
+func TestDSHExternalHistoryDoesNotReappearWithoutActivityOrFollow(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("CODEX_HOME", t.TempDir())
+	t.Setenv("DSH_HOME", t.TempDir())
+	now := time.Now().Unix()
+	for _, phase := range []string{"complete", "working", "waiting"} {
+		t.Run(phase, func(t *testing.T) {
+			id := "history-" + phase
+			dir := filepath.Join(dsh.Home(), "sessions", "project", id)
+			if err := os.MkdirAll(dir, 0700); err != nil {
+				t.Fatal(err)
+			}
+			body := `{"type":"session","version":4,"id":"` + id + `"}` + "\n" + `{"type":"user/message","seq":1,"time":2000,"data":{"role":"user","source":{"kind":"user"},"content":[{"type":"text","text":"synthetic"}]}}` + "\n"
+			switch phase {
+			case "complete":
+				body += `{"type":"turn/end","time":3000,"data":{"reason":{"kind":"completed"}}}` + "\n"
+			case "working":
+				body += `{"type":"turn/start","time":3000,"data":{}}` + "\n"
+			case "waiting":
+				body += `{"type":"user-questions/request","time":3000,"data":{}}` + "\n"
+			}
+			path := filepath.Join(dir, "session.v4.jsonl")
+			if err := os.WriteFile(path, []byte(body), 0600); err != nil {
+				t.Fatal(err)
+			}
+			check := func(visible bool) Pane {
+				t.Helper()
+				rows := nativePanes(nil, nil, now)
+				for _, row := range rows {
+					if row.sessionID == id {
+						if !visible {
+							t.Fatal("history reappeared", row)
+						}
+						return row
+					}
+				}
+				if visible {
+					t.Fatal("active or followed session missing", rows)
+				}
+				return Pane{}
+			}
+			check(false)
+			// A fresh process observation surfaces the exact session. A dead/reused
+			// process after reboot must not be bootstrapped again by the saved file.
+			rec := native.Record{Agent: "dsh", SessionID: id, HomeID: dsh.HomeID(), State: "working", UpdatedAt: now, PID: os.Getpid()}
+			if err := native.Save(rec); err != nil {
+				t.Fatal(err)
+			}
+			check(true)
+			rec.Comm = "not-the-process-that-recorded-this-session"
+			if err := native.Save(rec); err != nil {
+				t.Fatal(err)
+			}
+			check(false)
+			// New PID-less hooks can report work/wait, but completed observations are
+			// history. Filtering does not remove the observation or conversation.
+			rec.PID, rec.Comm, rec.State = 0, "", "waiting"
+			if err := native.Save(rec); err != nil {
+				t.Fatal(err)
+			}
+			check(true)
+			rec.State = "idle"
+			if err := native.Save(rec); err != nil {
+				t.Fatal(err)
+			}
+			check(false)
+			if _, ok := native.Load(id, dsh.HomeID()); !ok {
+				t.Fatal("presentation removed observation")
+			}
+			if _, err := os.Stat(path); err != nil {
+				t.Fatal("presentation removed history", err)
+			}
+			native.Remove(id, dsh.HomeID())
+			grant, err := sessionpolicy.SaveFor("dsh", id, sessionpolicy.Settings{HQ: true})
+			if err != nil {
+				t.Fatal(err)
+			}
+			row := check(true)
+			if row.Follow == nil || *row.Follow != grant || row.currentClient != "unconfirmed" || row.adoptable || row.PaneID != "" {
+				t.Fatal("history changed consent/control", row)
+			}
+			if row.Status == "working" || row.Status == "waiting" {
+				t.Fatal("unfinished history claimed a live phase", row)
+			}
+			// Revocation removes the history-only row and preserves the source file.
+			grant.HQ = false
+			if _, err := sessionpolicy.SaveFor("dsh", id, grant); err != nil {
+				t.Fatal(err)
+			}
+			check(false)
+			if _, err := conversation.Resolve(id, dsh.HomeID()); err != nil {
+				t.Fatal("history no longer readable", err)
+			}
+		})
 	}
 }

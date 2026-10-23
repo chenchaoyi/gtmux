@@ -1538,8 +1538,15 @@ func nativePanesScoped(tmuxPanes []Pane, profiles []agentProfile, now int64, cod
 					recs[i].EndReason = v.EndReason
 					recs[i].UpdatedAt = v.ActivityAt
 				}
-			} else {
-				recs = append(recs, native.Record{Agent: "dsh", SessionID: v.ID, HomeID: v.HomeID, Cwd: v.Cwd, State: v.State, EndReason: v.EndReason, UpdatedAt: v.ActivityAt})
+			} else if sessionpolicy.GetFor("dsh", v.ID).HQ {
+				// Saved files are history, not evidence of an open Web client. Only
+				// explicit follow keeps history visible after its hook process exits.
+				// An unfinished saved turn cannot prove a current work/question phase.
+				status := v.State
+				if status == "working" || status == "waiting" {
+					status = "running"
+				}
+				recs = append(recs, native.Record{Agent: "dsh", SessionID: v.ID, HomeID: v.HomeID, Cwd: v.Cwd, State: status, EndReason: v.EndReason, UpdatedAt: v.ActivityAt})
 			}
 		}
 	}
@@ -1680,7 +1687,7 @@ func nativePanesScoped(tmuxPanes []Pane, profiles []agentProfile, now int64, cod
 		}
 		// Saved completion is history, not process liveness. Keep the observation
 		// and consent intact so a new turn or explicit follow can surface it again.
-		if r.Agent == "codex" && r.PID <= 0 && status == "idle" && (follow == nil || !follow.HQ) {
+		if (r.Agent == "codex" || r.Agent == "dsh") && r.PID <= 0 && status == "idle" && (follow == nil || !follow.HQ) {
 			continue
 		}
 		// errored-idle, as for a tmux row: when the transcript reader finds the session's
