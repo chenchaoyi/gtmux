@@ -149,8 +149,15 @@ final class EnvironmentHealth: ObservableObject {
     }
     func refreshIfStale(now: Date = Date()) {
         if !version.isEmpty, defaults.string(forKey: key + ".attempt") != version { autoCheck(); return }
+        if repairOpened { check(); return }
         let lastAttempt = defaults.double(forKey: key + ".attemptAt")
         guard lastAttempt <= 0 || now.timeIntervalSince1970 - lastAttempt >= 300 else { return }
+        check()
+    }
+    // Returning from the repair terminal must not reuse even a recent report.
+    // A later return reads again if the user was still repairing on the first one.
+    func refreshForPresentation() {
+        if !version.isEmpty, defaults.string(forKey: key + ".attempt") != version { autoCheck(); return }
         check()
     }
     func check() { performCheck(refreshBridge: false) }

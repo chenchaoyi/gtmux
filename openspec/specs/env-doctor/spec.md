@@ -741,11 +741,20 @@ After a successful CLI update, the system SHALL execute a bounded, no-prompt doc
 - **THEN** the new version performs and presents its environment check instead of depending on the terminated process
 
 ### Requirement: A reviewable repair entry
-The menu bar SHALL present grouped environment findings and offer doctor --fix in an interactive terminal with one explicit action. It SHALL explain that each repair is confirmed in that terminal, SHALL never add --yes and SHALL let the user recheck after repairs. Recommendations without an automatic fix SHALL remain findings, never be described as automatically repairable.
+The menu bar SHALL present grouped environment findings and offer doctor --fix in an interactive terminal with one explicit action. It SHALL explain that each repair is confirmed in that terminal and SHALL never add --yes. Opening or returning focus to the report window SHALL start a read-only check even when the cached report is less than five minutes old. The first menu opening after successfully opening the repair terminal SHALL also bypass that freshness interval. Concurrent checks SHALL coalesce. Returning before repairs finish SHALL NOT prevent another check on a later return. Recommendations without an automatic fix SHALL remain findings, never be described as automatically repairable.
 
 #### Scenario: Review repair actions
 - **WHEN** the user selects Repair environment
 - **THEN** the existing doctor fixer explains and confirms each action; launching the terminal does not mark findings repaired
+
+#### Scenario: Return after terminal repairs
+- **WHEN** the user returns to the report window after reviewing repairs, including within five minutes of the previous check
+- **THEN** a fresh read-only check updates the report and attention count without another button press
+- **AND** a failed check retains the previous report with the existing failure indication rather than declaring findings resolved
+
+#### Scenario: Return while still repairing
+- **WHEN** the user returns to the report before finishing repairs, then returns again after finishing them
+- **THEN** each return starts a fresh read, coalescing any check already in progress without applying repairs
 
 ### Requirement: Readable environment check results
 The structured doctor report SHALL describe the purpose of known checks in the
