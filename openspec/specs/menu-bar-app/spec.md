@@ -89,7 +89,7 @@ reported to the popover itself, because `NSPopover` positions its window from
 The system SHALL consume gtmux-core through the CLI and SHALL NOT duplicate
 agent detection logic; gtmux-core stays the single data source. The agent list
 comes from `gtmux agents --json`; other readers use their corresponding CLI
-commands, including `resource --json`, `restore --plan --json`, `awake --json`,
+commands, including `resource --json`, `restore --plan --pending --json`, `awake --json`,
 and the HQ board, knowledge, capture, usage and event reads specified below.
 Notification delivery uses the core's existing notify queue.
 
@@ -1456,3 +1456,41 @@ Both non-tmux groups SHALL provide a whole-header Show/Hide button with a chevro
 #### Scenario: Reopen and unfold
 - **WHEN** the popover is reopened after folding a non-tmux group
 - **THEN** it stays folded until the user unfolds it
+
+
+### Requirement: Restore availability follows tmux recovery work
+
+The menu bar SHALL use the core's read-only pending restore plan independently
+of radar agent counts. The plan SHALL include saved sessions missing from tmux
+and live sessions with no attached client, including plain shells without a save.
+It SHALL exclude already attached sessions and external conversation histories.
+Live detached entries SHALL use current window/pane counts and SHALL NOT promise
+resumption of conversations from an older save. The complete saved-plan CLI
+preview SHALL retain its existing behavior.
+
+The app SHALL refresh this plan at launch, on its 25-second slow timer, when the
+menu opens, and after restore exits; the fast radar poll SHALL NOT read the plan.
+Overlapping plan reads SHALL be coalesced. A missing tmux server SHALL be known
+empty topology; other query failures SHALL remain unknown and retain a quiet
+restore fallback. A known empty pending plan SHALL hide the row. An active
+restore SHALL keep its progress row visible as sessions reappear.
+
+#### Scenario: External histories survive reboot
+
+- **WHEN** external agent histories exist and saved tmux sessions are missing
+- **THEN** Restore is visible and its preview lists those missing tmux sessions
+
+#### Scenario: Only part of the working set has returned
+
+- **WHEN** one saved session is attached and another is missing or detached
+- **THEN** Restore remains visible and lists only the remaining recovery work
+
+#### Scenario: The entire working set is connected
+
+- **WHEN** every saved session is live and every live session has an attached client
+- **THEN** the restore row is hidden after a successful availability read
+
+#### Scenario: A topology read fails
+
+- **WHEN** tmux returns an unexpected error or malformed response
+- **THEN** the app treats the plan as unknown rather than hiding Restore or claiming all saved sessions are missing

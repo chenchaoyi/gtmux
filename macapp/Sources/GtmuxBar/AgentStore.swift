@@ -104,9 +104,9 @@ enum Status: String, CaseIterable {
 
 /// One agent pane, consuming `gtmux agents --json` (DESIGN §14). Tolerates older
 /// JSON without the source/native fields (decodeIfPresent).
-// RestorePlan mirrors `gtmux restore --plan --json` — the sessions the last
-// resurrect save would bring back, each with the agent conversations under it. The
-// menu-bar restore row expands into this. Read-only; the CLI is the source of truth.
+// RestorePlan mirrors the core's read-only restore preview. The menu bar uses
+// --pending: missing saved sessions plus live detached sessions. The CLI remains
+// the single source of truth, independent of external radar histories.
 struct RestorePlan: Codable, Equatable {
     var savePath = ""
     var sessions: [RestorePlanSession] = []
@@ -119,7 +119,31 @@ struct RestorePlanSession: Codable, Equatable, Identifiable {
     var windows = 0
     var panes = 0
     var agents: [RestorePlanAgent] = []
+    var state: String?
     var id: String { name }
+}
+
+// Go emits null for an empty plan and omits agents for plain-shell sessions.
+// Both are known empty values, not a failed availability read.
+extension RestorePlan {
+    enum CodingKeys: String, CodingKey { case savePath, sessions }
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        savePath = try c.decode(String.self, forKey: .savePath)
+        sessions = try c.decodeIfPresent([RestorePlanSession].self, forKey: .sessions) ?? []
+    }
+}
+
+extension RestorePlanSession {
+    enum CodingKeys: String, CodingKey { case name, windows, panes, agents, state }
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        name = try c.decode(String.self, forKey: .name)
+        windows = try c.decode(Int.self, forKey: .windows)
+        panes = try c.decode(Int.self, forKey: .panes)
+        agents = try c.decodeIfPresent([RestorePlanAgent].self, forKey: .agents) ?? []
+        state = try c.decodeIfPresent(String.self, forKey: .state)
+    }
 }
 
 struct RestorePlanAgent: Codable, Equatable, Identifiable {
@@ -277,6 +301,7 @@ final class AgentStore: ObservableObject {
     // discovery scans rollout files). Never let a slow tick pile up CLI children.
     private let refreshGate = AgentRefreshGate()
     private let resourceGate = AgentRefreshGate()
+    private let restoreGate = AgentRefreshGate()
     private let readPoll: ([String]) -> Data?
 
     init(readPoll: @escaping ([String]) -> Data? = { RadarSnapshotReader.shared.capture($0) }) {
@@ -300,10 +325,27 @@ final class AgentStore: ObservableObject {
     /// is either seen or buried — could only be checked by eye.
     func setAgentsForTesting(_ rows: [Agent]) { agents = rows }
 
-    /// The restore plan — what `gtmux restore` would bring back — populated ONLY when
-    /// nothing is running (the "just rebooted" moment the restore row appears), so the
-    /// footer row can expand into the actual pending sessions. nil the rest of the time.
+    /// Only missing saved sessions or detached live sessions. nil means unknown.
     @Published private(set) var restorePlan: RestorePlan?
+
+    var showsRestore: Bool { restoring || (restorePlan.map { !$0.sessions.isEmpty } ?? true) }
+
+    /// Independent of radar rows: external histories and partial recovery do not
+    /// determine whether tmux has a working set left to restore. Runs on a slow
+    /// timer and when opening the menu, never on the fast agent poll.
+    func refreshRestorePlan() {
+        guard restoreGate.enter() else { return }
+        DispatchQueue.global(qos: .utility).async {
+            let plan = self.readPoll(["restore", "--plan", "--pending", "--json"])
+                .flatMap { try? JSONDecoder().decode(RestorePlan.self, from: $0) }
+            DispatchQueue.main.async {
+                // Release before publication: a subscriber may immediately request
+                // another read, which must not be dropped as still in flight.
+                self.restoreGate.leave()
+                self.restorePlan = plan
+            }
+        }
+    }
 
     /// The machine's resource severity tier ("" | "amber" | "red"), from a slow
     /// `gtmux resource --json` poll. Feeds the HQ medallion's `resource` state — which
@@ -320,22 +362,7 @@ final class AgentStore: ObservableObject {
             defer { self.refreshGate.leave() }
             guard let data = self.readPoll(["agents", "--json"]),
                   let decoded = try? JSONDecoder().decode([Agent].self, from: data) else { return }
-            // Fetch the restore plan on the same tick, but only when the fleet is
-            // empty — that's the only moment the restore row shows, and it keeps the
-            // extra shell-out off the hot path when agents are running.
-            var plan: RestorePlan?
-            var planRead = false
-            if decoded.isEmpty {
-                if let pd = self.readPoll(["restore", "--plan", "--json"]) {
-                    plan = try? JSONDecoder().decode(RestorePlan.self, from: pd)
-                    planRead = plan != nil
-                }
-            }
-            DispatchQueue.main.async {
-                self.agents = decoded
-                if !decoded.isEmpty { self.restorePlan = nil }
-                else if planRead { self.restorePlan = plan }
-            }
+            DispatchQueue.main.async { self.agents = decoded }
         }
     }
 

@@ -505,8 +505,11 @@ gtmux restore --one      # attach the next unattached session in this tab
 gtmux restore <name>     # attach a specific session here
 gtmux restore --dry-run  # print what would happen, change nothing
 gtmux restore --plan     # preview: which sessions + agent conversations would come back (read-only)
-gtmux restore --plan --json   # the same plan as JSON (the menu bar's source for its expandable restore row)
+gtmux restore --plan --json   # the complete saved inventory as JSON
+gtmux restore --plan --pending --json  # only missing saved sessions + live detached sessions (read-only)
 ```
+
+`--pending` 只读检查当前 tmux 现场，不启动 server：排除已连接的会话，也包括没有存档的未连接普通 shell。现场查询失败时返回错误，不当作“没有待恢复会话”。外部 agent 历史不参与判断；菜单栏使用此投影，不依赖雷达数量。
 
 一次只能恢复一次：一次运行会持有一把锁（pid + 启动时间），第二次运行会说明情况然后
 什么都不做。锁的进程没了、或者锁超过 10 分钟，就会被接管。`--plan` 和 `--dry-run`

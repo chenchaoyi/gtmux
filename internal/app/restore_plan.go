@@ -2,19 +2,23 @@ package app
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"os/exec"
+	"strconv"
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/resume"
+	"github.com/chenchaoyi/gtmux/internal/tmux"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
 
 // restorePlan is what `gtmux restore` is about to bring back — the sessions in the
 // last tmux-resurrect save, each annotated with the agent conversations that will be
 // resumed into it. It's the SAME data behind two surfaces: the CLI prints it as a
-// progress + review checklist, and the menu bar consumes `restore --plan --json` to
+// progress + review checklist. The menu bar uses the pending projection to
 // expand its one-line "restore" affordance into the actual session list. Building it
 // is READ-ONLY (no tmux, no side effects), so it's safe to compute before a restore
 // or to poll from the app.
@@ -28,6 +32,7 @@ type restorePlanSession struct {
 	Windows int                `json:"windows"`
 	Panes   int                `json:"panes"`
 	Agents  []restorePlanAgent `json:"agents,omitempty"`
+	State   string             `json:"state,omitempty"` // pending preview only: missing or detached
 }
 
 type restorePlanAgent struct {
@@ -127,6 +132,66 @@ func buildRestorePlanFrom(save string) restorePlan {
 	return plan
 }
 
+// buildPendingRestorePlan is the menu bar's read-only availability projection.
+// External histories never enter this set. A missing server is known empty; an
+// unreadable server is unknown and must not make every saved session look missing.
+func buildPendingRestorePlan() (restorePlan, error) {
+	return pendingRestorePlan(resurrectLastSave(), tmux.Run)
+}
+
+func pendingRestorePlan(save string, query func(...string) (string, error)) (restorePlan, error) {
+	out, err := query("list-panes", "-a", "-F", "#{session_attached}\t#{window_id}\t#{pane_id}\t#{session_name}")
+	if err != nil {
+		var ee *exec.ExitError
+		if !errors.As(err, &ee) || !tmux.NoServer(string(ee.Stderr)) {
+			return restorePlan{}, fmt.Errorf("read restore availability: %w", err)
+		}
+		out = ""
+	}
+	live := map[string]bool{}
+	detached := map[string]int{}
+	windows := map[string]map[string]bool{}
+	panes := map[string]map[string]bool{}
+	plan := restorePlan{SavePath: save}
+	for _, line := range strings.Split(out, "\n") {
+		if line == "" {
+			continue
+		}
+		fields := strings.SplitN(line, "\t", 4)
+		if len(fields) != 4 || fields[1] == "" || fields[2] == "" || fields[3] == "" {
+			return restorePlan{}, fmt.Errorf("invalid restore availability response")
+		}
+		attached, parseErr := strconv.Atoi(fields[0])
+		if parseErr != nil || attached < 0 {
+			return restorePlan{}, fmt.Errorf("invalid restore attachment count")
+		}
+		name := fields[3]
+		live[name] = true
+		if attached != 0 {
+			continue
+		}
+		i, seen := detached[name]
+		if !seen {
+			i = len(plan.Sessions)
+			detached[name] = i
+			plan.Sessions = append(plan.Sessions, restorePlanSession{Name: name, State: "detached"})
+			windows[name], panes[name] = map[string]bool{}, map[string]bool{}
+		}
+		windows[name][fields[1]], panes[name][fields[2]] = true, true
+		plan.Sessions[i].Windows, plan.Sessions[i].Panes = len(windows[name]), len(panes[name])
+	}
+	// Avoid resolving transcripts at all when every saved session is already live.
+	if shouldRecover(savedSessionNames(save), live) {
+		for _, session := range buildRestorePlanFrom(save).Sessions {
+			if !live[session.Name] {
+				session.State = "missing"
+				plan.Sessions = append(plan.Sessions, session)
+			}
+		}
+	}
+	return plan, nil
+}
+
 // locSession returns the session-name part of a locator ("session:window.pane" →
 // "session"). Split on the LAST colon so a session name that itself contains a colon
 // survives (the window.pane tail never does).
@@ -175,7 +240,7 @@ func (p restorePlan) resumableCount() int {
 // disk and can't be resumed. Shown separately so a "17 → 16" never reads as a failure.
 func (p restorePlan) deadCount() int { return p.agentCount() - p.resumableCount() }
 
-// printRestorePlanJSON writes the plan as JSON (the menu bar's source). Always emits
+// printRestorePlanJSON writes the complete saved inventory as JSON. Always emits
 // a well-formed object, `{"savePath":"","sessions":null}` when nothing is saved.
 func printRestorePlanJSON() {
 	b, _ := json.Marshal(buildRestorePlan())

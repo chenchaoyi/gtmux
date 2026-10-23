@@ -566,8 +566,11 @@ gtmux restore --one      # attach the next unattached session in this tab
 gtmux restore <name>     # attach a specific session here
 gtmux restore --dry-run  # print what would happen, change nothing
 gtmux restore --plan     # preview: which sessions + agent conversations would come back (read-only)
-gtmux restore --plan --json   # the same plan as JSON (the menu bar's source for its expandable restore row)
+gtmux restore --plan --json   # the complete saved inventory as JSON
+gtmux restore --plan --pending --json  # only missing saved sessions + live detached sessions (read-only)
 ```
+
+`--pending` checks current tmux topology without starting a server. It excludes attached sessions, includes detached plain-shell sessions even without a save, and returns an error if topology is unknown. External agent histories do not affect it. The menu bar uses this projection independently of its radar count.
 
 One restore at a time: a run holds a lock (pid + start time) and a second run says so
 and does nothing. A lock whose process is gone, or older than 10 minutes, is taken over.
