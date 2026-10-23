@@ -347,3 +347,24 @@ scenario('Chat shows choices only while waiting and folds an answered prompt', {
   assert.equal(await page.locator('.chat-interact').count(), 0);
   assert.equal(await page.locator('#chat-input .tk-entry').isVisible(), true);
 });
+
+
+for (const width of [390, 1280]) {
+ scenario(`View question reveals the picker without submitting a draft at ${width}px`, {viewport:{width:390,height:844},locale:'en-US'}, async(page,fixture)=>{
+  await page.route('**/api/input-capabilities?*',route=>route.fulfill({json:{version:1,can_input:true,context:{boot:'synthetic',pane_binding:'%901',proof:'synthetic',expires_at:Math.floor(Date.now()/1000)+300},keys:[],legacy_events:{},actions:[{id:'codex.view-question',revision:'question-1',count:1,label:'View question',event:{key:'g',modifiers:['control']}}]}}));
+  await page.route('**/api/pane?*',route=>route.fulfill({json:{id:'%901',text:'Question: choose a target\n> Preview\n  Production',cols:80}}));
+  await page.goto(fixture.url+'/#code=TEST-1234');
+  await page.locator('#radar').getByText('Investigate retries',{exact:true}).click();
+  await page.locator('#mode [data-mode="chat"]').click();
+  if(width>900)await page.setViewportSize({width,height:850});
+  const input=page.locator('.cx-input:visible');await input.fill('Unsent synthetic draft');
+  await page.locator('.tk-notice button:visible').getByText('1 question · View',{exact:true}).click();
+  await page.locator('#pane:visible .xterm-rows').waitFor();
+  await page.waitForFunction(()=>document.querySelector('#pane .xterm-rows')?.textContent.includes('choose a target'));
+  assert.equal(await input.inputValue(),'Unsent synthetic draft');
+  assert.equal(await page.evaluate(()=>localStorage.getItem('gtmux.paneMode')),'chat');
+  assert.equal(fixture.state.sends.length,1);
+  assert.deepEqual(fixture.state.sends[0].action,{id:'codex.view-question',revision:'question-1'});
+  assert.equal(fixture.state.sends[0].text,undefined);assert.equal(fixture.state.sends[0].enter,undefined);
+ });
+}

@@ -2542,6 +2542,12 @@ A host-advertised question action SHALL appear as a compact, count-aware card at
 - **THEN** the keyboard is dismissed and the in-app terminal becomes visible without changing the saved mode preference or submitting the draft
 - **AND** a short landscape window keeps a minimum 44-point action with its accessible hint
 
+#### Scenario: Accessibility text size keeps the question action usable
+
+- **WHEN** the system font size reaches an accessibility category
+- **THEN** question-control labels follow the shared chrome text cap and remeasure on font-scale changes
+- **AND** conversation body text remains independent of that cap
+
 ### Requirement: Drafts remain isolated across servers and sessions
 
 Phone and iPad composers SHALL key drafts by server address, pane and agent session when known, without including bearer tokens. Detail and HQ SHALL use the same identity function and remount their composer when it changes. Legacy pane-only entries SHALL NOT be guessed into a server. The terminal key panel SHALL retain a readable pane locator.
@@ -2551,3 +2557,13 @@ Phone and iPad composers SHALL key drafts by server address, pane and agent sess
 - **WHEN** a user leaves an unsent draft on Mac A's %7 and opens Mac B's %7
 - **THEN** neither the stored draft nor mounted composer text/attachments from A appears in B
 - **AND** returning to A restores A's own scoped draft
+
+### Requirement: Global fold controls do not overprint messages
+
+The floating Collapse all control SHALL reserve a plain 44pt conversation-background strip, without a bordered or rounded button region, and initial content SHALL clear its bounds. It SHALL follow chrome translation and full-screen safe-area positioning. Fixed control text SHALL use the shared chrome scale cap independently of conversation text.
+
+#### Scenario: A long reply reaches the top edge
+
+- **WHEN** messages scroll below the global fold action
+- **THEN** message glyphs do not overprint its label
+- **AND** the action remains a minimum 44pt target and still toggles all replies

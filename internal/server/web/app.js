@@ -1496,7 +1496,7 @@
   // crowd the text field. `getId()` yields the target pane; `echo(text)` renders the
   // post-send screen. `small` = the compact workbench-tile variant.
 
-  function makeComposer(getId, echo, small) {
+  function makeComposer(getId, echo, small, onAction) {
     echo = echo || function () {};
     var root = document.createElement('div');
     root.className = 'composer' + (small ? ' composer-sm' : '');
@@ -1530,7 +1530,7 @@
     row.appendChild(attach); row.appendChild(file); row.appendChild(ta); row.appendChild(send);
 
     var keys = document.createElement('div'); keys.className = 'cx-keys';
-    var terminalKeyboard = window.GtmuxTerminalKeys ? window.GtmuxTerminalKeys.create({zh: ZH, getId: getId, canInput: function () {return paneCanInput(getId());}, request: api, send: postSend, echo: echo}) : null;
+    var terminalKeyboard = window.GtmuxTerminalKeys ? window.GtmuxTerminalKeys.create({zh: ZH, getId: getId, canInput: function () {return paneCanInput(getId());}, request: api, send: postSend, echo: echo, onAction: onAction}) : null;
     if (terminalKeyboard) keys.appendChild(terminalKeyboard.button);
     [['Tab', '⇥', 'Tab'], ['Escape', 'esc', 'Esc'], ['C-c', '^C', 'Ctrl-C'], ['Up', '↑', 'Up'], ['Down', '↓', 'Down']].forEach(function (k) {
       var b = document.createElement('button'); b.type = 'button'; b.textContent = k[1]; b.title = k[2];
@@ -2781,7 +2781,9 @@
     // Shared composer (multiline + attach/upload + key strip) → POST /api/send. The
     // server gate (guest consent + allowlist) stays authoritative; this just targets
     // the current pane and echoes the post-send screen.
-    paneComposer = makeComposer(function () { return curPane; }, function (text) { renderPane(text); hidePaneLoader(); }, false);
+    paneComposer = makeComposer(function () { return curPane; }, function (text) { renderPane(text); hidePaneLoader(); }, false, function (action) {
+      if (action.id === 'codex.view-question' && paneMode !== 'term') {paneMode = 'term'; applyMode();}
+    });
     if ($('pane-input')) $('pane-input').appendChild(paneComposer.el);
     $('jump').onclick = function () { if (term) term.scrollToBottom(); updateJump(false); };
   }

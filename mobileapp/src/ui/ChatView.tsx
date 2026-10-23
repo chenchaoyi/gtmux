@@ -27,6 +27,7 @@ import {MarkdownView, MdColors} from './MarkdownView';
 import {separatorLabels} from './time';
 import {nativeFontFamily} from './term';
 import {BrandLoader} from './BrandLoader';
+import {CHROME_MAX_SCALE} from './textScale';
 import {LiveProgress} from './LiveProgress';
 import {segmentKey, stepsOpen} from './chatSteps';
 import {ToolSteps} from './ToolSteps';
@@ -384,7 +385,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
             controlsShift !== undefined && {transform: [{translateY: controlsShift}]},
           ]}>
           <TouchableOpacity testID={TestIds.detail.collapseAll} accessibilityRole="button" accessibilityLabel={collapsedAll ? (lang === 'zh' ? '展开全部' : 'Expand all') : (lang === 'zh' ? '折叠全部' : 'Collapse all')} onPress={collapsedAll ? expandAll : collapseAll} activeOpacity={0.7} hitSlop={hitSlop} style={styles.globalFold}>
-            <Text style={styles.collapseBarText}>{collapsedAll ? (lang === 'zh' ? '展开全部' : 'Expand all') : (lang === 'zh' ? '折叠全部' : 'Collapse all')}</Text>
+            <Text maxFontSizeMultiplier={CHROME_MAX_SCALE} style={styles.collapseBarText}>{collapsedAll ? (lang === 'zh' ? '展开全部' : 'Expand all') : (lang === 'zh' ? '折叠全部' : 'Collapse all')}</Text>
           </TouchableOpacity>
         </Animated.View>
       )}
@@ -392,7 +393,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
       ref={scrollRef}
       testID={TestIds.detail.chat}
       style={styles.body}
-      contentContainerStyle={[styles.content, topPad > 0 && {paddingTop: topPad}, maxWidth ? {maxWidth, width: '100%', alignSelf: 'center'} : null]}
+      contentContainerStyle={[styles.content, (topPad > 0 || controlsTop !== undefined) && {paddingTop: Math.max(topPad, controlsTop ?? 0) + (controlsTop !== undefined && turns.length > 0 ? 44 : 0)}, maxWidth ? {maxWidth, width: '100%', alignSelf: 'center'} : null]}
       onScroll={onScroll}
       onScrollBeginDrag={() => {
         dragging.current = true;
@@ -668,7 +669,7 @@ const styles = StyleSheet.create({
   seamText: {fontSize: 11.5, color: 'rgba(235,235,245,0.45)', textAlign: 'center', fontVariant: ['tabular-nums']},
   earlierText: {fontSize: 12, color: 'rgba(235,235,245,0.55)', textAlign: 'center'},
   collapseBar: {flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 14, paddingTop: 8, paddingBottom: 4},
-  collapseBarFloating: {position: 'absolute', right: 14, zIndex: 2, paddingHorizontal: 0, paddingVertical: 0},
+  collapseBarFloating: {position: 'absolute', left: 0, right: 0, height: 44, zIndex: 2, backgroundColor: '#0D0D0F', paddingHorizontal: 14, paddingVertical: 0},
   collapseBarText: {fontSize: 12.5, color: '#27C7E6', fontWeight: '600'},
   // per-turn reply toggle shown while collapsed (chevron + preview).
   replyToggle: {alignSelf: 'flex-start', marginLeft: 35, paddingVertical: 3, maxWidth: '88%'},
