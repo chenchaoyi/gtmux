@@ -1,6 +1,6 @@
 import React from 'react';
 import renderer, {act} from 'react-test-renderer';
-import {StyleSheet, Text} from 'react-native';
+import {ScrollView, StyleSheet, Text} from 'react-native';
 import {ChatView} from './ChatView';
 import {Agent} from '../api/types';
 import {paletteFor} from './theme';
@@ -24,11 +24,17 @@ test.each([undefined, 59, 0])('chat collapse control clears the safe top %s and 
     } else {
       expect(style.position).toBe('absolute');
       expect(style.top).toBe(controlsTop);
-      expect(style.right).toBeGreaterThan(0);
+      expect(style.left).toBe(0);
+      expect(style.right).toBe(0);
+      expect(style.height).toBe(44);
+      const scroll = tree.root.findByType(ScrollView);
+      expect(StyleSheet.flatten(scroll.props.contentContainerStyle).paddingTop).toBe(controlsTop + 44);
+      expect(style.borderWidth ?? 0).toBe(0);
     }
     const control = () => tree.root.findAll(n => n.props.testID === TestIds.detail.collapseAll && typeof n.props.onPress === 'function')[0];
     expect(control().props.accessibilityLabel).toBe('Collapse all');
     expect(control().findByType(Text).props.children).toBe('Collapse all');
+    expect(control().findByType(Text).props.maxFontSizeMultiplier).toBe(1.35);
     act(() => control().props.onPress());
     act(() => jest.advanceTimersByTime(100));
     expect(control().props.accessibilityLabel).toBe('Expand all');

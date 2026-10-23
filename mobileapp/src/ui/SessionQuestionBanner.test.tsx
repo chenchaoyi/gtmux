@@ -85,3 +85,9 @@ test('short landscape retains a 44-point action and the full accessible hint wit
     expect(root.findAllByType(RN.Text).map(n => n.props.children)).not.toContain('查看问题并回复');
   } finally { act(() => RN.Dimensions.set({window: previous})); }
 });
+
+
+test('question control labels follow the shared chrome text cap, leaving conversation content independent', () => {
+  const root = render(controller());
+  for (const text of root.findAllByType(RN.Text)) expect(text.props.maxFontSizeMultiplier).toBe(1.35);
+});

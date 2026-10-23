@@ -29,7 +29,7 @@
     }
     function drawNotice() {
       notice.innerHTML = ''; notice.hidden = true;
-      if (usable()) (cap.actions || []).forEach(function (a) { notice.hidden = false; var el = b((a.count || 1) + (zh ? ' 个问题 · 查看' : a.count > 1 ? ' questions · View' : ' question · View'), function () { fire(a.event, a); }, notice); el.disabled = blocked(); });
+      if (usable()) (cap.actions || []).forEach(function (a) { notice.hidden = false; var el = b((a.count || 1) + (zh ? ' 个问题 · 查看' : a.count > 1 ? ' questions · View' : ' question · View'), function () { if (fire(a.event, a) && opts.onAction) opts.onAction(a); }, notice); el.disabled = blocked(); });
       if (label) {notice.hidden = false;var p = document.createElement('span');p.textContent = label;p.setAttribute('role', 'status');notice.appendChild(p);}
       if (uncertain) b(zh ? '查看按键结果' : 'View key result', open, notice);
     }

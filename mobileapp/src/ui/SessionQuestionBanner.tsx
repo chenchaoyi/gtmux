@@ -3,6 +3,7 @@ import {StyleSheet, Text, TouchableOpacity, View, useWindowDimensions} from 'rea
 import type {Lang} from '../i18n';
 import type {KeyAction, TerminalKeyController} from './terminalKeys';
 import {BRAND, type Palette} from './theme';
+import {CHROME_MAX_SCALE} from './textScale';
 import {Chevron, QuestionBubbleIcon} from './Icons';
 
 // Attention belongs near the conversation, separate from the keyboard shortcuts.
@@ -11,7 +12,8 @@ import {Chevron, QuestionBubbleIcon} from './Icons';
 export function SessionQuestionBanner({control, enabled, pal, lang, onOpen}: {
   control: TerminalKeyController; enabled: boolean; pal: Palette; lang: Lang; onOpen?: (action: KeyAction) => void;
 }) {
-  const compact = useWindowDimensions().height < 500;
+  const {height, fontScale} = useWindowDimensions();
+  const compact = height < 500;
   const actions = control.cap?.actions ?? [];
   if (!actions.length) return null;
   const disabled = !enabled || !control.cap?.can_input || control.busy || control.uncertain;
@@ -37,11 +39,11 @@ export function SessionQuestionBanner({control, enabled, pal, lang, onOpen}: {
         style={[styles.card, compact && styles.compactCard, {backgroundColor: pal.raised, borderColor: BRAND}, disabled && styles.disabled]}>
         <QuestionBubbleIcon size={compact ? 20 : 24} color={BRAND} />
         <View style={styles.copy}>
-          <Text style={[styles.title, {color: pal.fg}]} numberOfLines={2}>{title}</Text>
-          {!compact && <Text style={[styles.hint, {color: pal.fg2}]} numberOfLines={2}>{hint}</Text>}
+          <Text key={`title-${fontScale}`} maxFontSizeMultiplier={CHROME_MAX_SCALE} style={[styles.title, {color: pal.fg}]} numberOfLines={2}>{title}</Text>
+          {!compact && <Text key={`hint-${fontScale}`} maxFontSizeMultiplier={CHROME_MAX_SCALE} style={[styles.hint, {color: pal.fg2}]} numberOfLines={2}>{hint}</Text>}
         </View>
         <View style={styles.open}>
-          <Text style={[styles.openText, {color: pal.fg}]}>{zh ? '查看' : 'View'}</Text>
+          <Text key={`open-${fontScale}`} maxFontSizeMultiplier={CHROME_MAX_SCALE} style={[styles.openText, {color: pal.fg}]}>{zh ? '查看' : 'View'}</Text>
           <Chevron size={16} color={BRAND} />
         </View>
       </TouchableOpacity>;

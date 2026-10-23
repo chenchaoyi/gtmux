@@ -190,3 +190,7 @@ Focused Chat uses the same Activity hierarchy, operation labels and neutral acti
 ### In-conversation interaction
 
 Waiting shows the current prompt and safe numbered choices in context; answering folds the card, and resuming work removes it. There is no separate Interact mode or duplicate keyboard. Unrecognized prompts use the existing composer Keys and Terminal. App, iPad and Web share the read-only current-screen endpoint, preserving hook, scope and key-outcome boundaries. See [design and acceptance boundaries](session-interaction.md).
+
+### Opening a pending question
+
+A host-advertised View question action opens the focused session's Terminal after the shared input gate accepts its revision-bound action. It does not submit the composer draft, choose an answer or overwrite the saved Chat preference. Unknown, expired, denied and uncertain input remains blocked/recoverable through the existing key controls. Workbench tiles already expose question actions only in Terminal.

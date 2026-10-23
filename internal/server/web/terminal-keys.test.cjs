@@ -83,3 +83,19 @@ test('catalog cache is tied to the server boot and new schema-compatible keys re
   assert.ok(walk(document.body).some(x=>x.dataset.key==='F9'));
  } finally {keyboard.dispose();delete global.document;}
 });
+
+
+test('a question action reveals its view only when dispatch is accepted', async () => {
+ dom();const current=cap(),sent=[],opened=[];
+ current.actions=[{id:'codex.view-question',revision:'rev-1',count:1,event:{key:'g',modifiers:['control']}}];
+ const keyboard=create({zh:false,getId:()=>'%1',canInput:()=>true,request:async()=>({ok:true,json:async()=>current}),send:async(id,body)=>{sent.push(body);return {ok:true,json:async()=>({})};},onAction:a=>opened.push(a),echo:()=>{}});
+ document.body.appendChild(keyboard.notice);
+ try {
+  await keyboard.refresh();keyboard.notice.children[0].click();await flush();
+  assert.equal(opened.length,1);assert.equal(opened[0].id,'codex.view-question');
+  assert.deepEqual(sent[0].action,{id:'codex.view-question',revision:'rev-1'});
+  assert.equal(sent[0].text,undefined);assert.equal(sent[0].enter,undefined);
+  current.context.expires_at=1;await keyboard.refresh();keyboard.notice.children[0].click();await flush();
+  assert.equal(opened.length,1);assert.equal(sent.length,1);
+ }finally{keyboard.dispose();delete global.document;}
+});

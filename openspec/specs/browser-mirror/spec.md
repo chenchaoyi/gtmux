@@ -396,3 +396,13 @@ A narrow workbench tile SHALL wrap its header controls as a group while retainin
 
 - **WHEN** the reader uses a 280px or 360px tile in English or Chinese
 - **THEN** Chat, Terminal and Diff remain legible without splitting words or characters, and the input-capability chip remains visible
+
+### Requirement: Viewing a question reveals the picker
+
+In a focused Web conversation, an accepted revision-bound View question action SHALL open the in-app terminal without submitting the draft, choosing an answer or changing the saved Chat preference. Expired, denied and uncertain controls SHALL retain the shared input lock.
+
+#### Scenario: Working session has a folded question
+
+- **WHEN** the user taps View question in Chat
+- **THEN** only that typed action is sent and the terminal picker becomes visible
+- **AND** the unsent composer text remains intact at both narrow and desktop widths
