@@ -24,7 +24,7 @@ import (
 func splitTarget(args []string) (target string, rest []string, help bool) {
 	for _, a := range args {
 		switch a {
-		case "hooks", "app", "all":
+		case "hooks", "app", "all", "refresh-owned":
 			target = a
 		case "-h", "--help":
 			return "", nil, true
@@ -46,6 +46,12 @@ func cmdInstall(args []string) int {
 		}
 	}
 	switch target {
+	case "refresh-owned":
+		if len(rest) != 2 || rest[0] != "--agent" || rest[1] != "dsh" {
+			i18n.Sae("Use gtmux install refresh-owned --agent dsh", "请使用 gtmux install refresh-owned --agent dsh")
+			return 2
+		}
+		return refreshOwnedDSHBridge()
 	case "hooks":
 		return cmdInstallHooks(rest)
 	case "app":
@@ -73,6 +79,8 @@ func cmdUninstall(args []string) int {
 		}
 	}
 	switch target {
+	case "refresh-owned":
+		return 2
 	case "hooks":
 		return cmdUninstallHooks(rest)
 	case "app":
@@ -157,7 +165,7 @@ func askTarget(install bool) string {
 }
 
 func installUsage() int {
-	i18n.Say("usage: gtmux install [hooks|app|all]", "用法：gtmux install [hooks|app|all]")
+	i18n.Say("usage: gtmux install [hooks|app|all|refresh-owned]", "用法：gtmux install [hooks|app|all|refresh-owned]")
 	i18n.Say("  hooks  install the agent hooks (how the radar sees who's waiting)",
 		"  hooks  安装 agent 钩子（雷达靠它知道谁在等你）")
 	i18n.Say("  app    install the menu-bar app (it delivers desktop notifications)",

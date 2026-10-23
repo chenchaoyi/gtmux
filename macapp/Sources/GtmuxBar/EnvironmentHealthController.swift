@@ -5,6 +5,7 @@ final class EnvironmentHealthController: NSObject, NSWindowDelegate {
     static let shared = EnvironmentHealthController()
     private var window: NSWindow?
     func show(l10n: L10n) {
+        EnvironmentHealth.shared.refreshIfStale()
         if let window { NSApp.activate(ignoringOtherApps: true); window.makeKeyAndOrderFront(nil); return }
         let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 720, height: 600),
                          styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
@@ -56,6 +57,12 @@ struct EnvironmentHealthView: View {
                     Text(l10n.tr("Retry the check; any report below is the last successful result.", "请重试检查；下方如有报告，是上次成功检查的结果。"))
                         .font(Theme.Font.task).foregroundStyle(.secondary).padding(.horizontal, 20).padding(.bottom, 12)
                 }
+                if model.bridgeUpdated {
+                    Text(l10n.tr("Updated the DeepSeek state component. See its check for the Web launch command; existing sessions are not restarted.", "已自动更新 DeepSeek 状态连接组件；Web 启用命令见对应检查项，已有会话不自动重启。"))
+                        .font(Theme.Font.task).foregroundStyle(.secondary)
+                        .accessibilityIdentifier("environment-bridge-updated")
+                        .padding(.horizontal, 20).padding(.bottom, 10)
+                }
                 Divider()
                 ScrollView {
                     if let report = model.report {
@@ -75,7 +82,7 @@ struct EnvironmentHealthView: View {
                 }
                 Divider()
                 HStack(alignment: .center, spacing: 16) {
-                    Text(model.repairFailed ? l10n.tr("Could not open the terminal. Run gtmux doctor --fix manually.", "无法打开终端，请手动运行 gtmux doctor --fix。") : model.repairOpened ? l10n.tr("Complete the steps in the terminal, then check again.", "请在终端完成修复，然后重新检查。") : l10n.tr("Review available repairs in the terminal; some findings need a separate action.", "在终端查看可修复项；部分事项需另行处理。"))
+                    Text(repairGuidance)
                         .font(Theme.Font.task).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 0)
                     if let report = model.report, report.findings > 0 {
@@ -83,11 +90,21 @@ struct EnvironmentHealthView: View {
                             withAnimation { proxy.scrollTo(findingsAnchor, anchor: .top) }
                         }.buttonStyle(.link)
                     }
-                    Button(l10n.tr("Review repairs…", "查看修复方案…")) { model.repair() }
-                        .disabled(model.checking || model.repairOpening || model.report?.findings == 0)
+                    if let report = model.report, report.findings > 0 {
+                        Button(l10n.tr("Review repairs…", "查看修复方案…")) { model.repair() }
+                            .accessibilityIdentifier("environment-review-repairs")
+                            .disabled(model.checking || model.repairOpening)
+                    }
                 }.padding(.horizontal, 16).padding(.vertical, 12).frame(maxWidth: 760)
             }
             .font(Theme.Font.task).frame(maxWidth: .infinity)
         }
     }
+    private var repairGuidance: String {
+        if model.repairFailed { return l10n.tr("Could not open the terminal. Run gtmux doctor --fix manually.", "无法打开终端，请手动运行 gtmux doctor --fix。") }
+        if model.repairOpened { return l10n.tr("Complete the steps in the terminal, then check again.", "请在终端完成修复，然后重新检查。") }
+        if model.report?.findings == 0 { return l10n.tr("No current issues need action. Optional features and operation history remain in the report.", "当前没有需要处理的问题；可选功能与操作历史仍保留在检查结果中。") }
+        return l10n.tr("Review available repairs in the terminal; some findings need a separate action.", "在终端查看可修复项；部分事项需另行处理。")
+    }
+
 }

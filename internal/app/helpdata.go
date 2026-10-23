@@ -354,6 +354,7 @@ var helpCommands = []command{
 		EN: "install agent hooks or the menu-bar app",
 		ZH: "安装 agent hook 或菜单栏 app",
 		Flags: []cmdFlag{
+			{Name: "refresh-owned --agent dsh", EN: " refresh an existing gtmux bridge only; never installs a client or enables a profile", ZH: "仅更新已有 gtmux 连接组件，不安装客户端或启用 profile"},
 			{Name: "hooks [--yes]", EN: "register the agent hooks", ZH: "注册 agent hook"},
 			{Name: "--agent <a>", EN: "the agent to configure", ZH: "要配置的 agent",
 				Values: append([]string{"auto"}, installableHookAgentKeys()...)},

@@ -355,3 +355,27 @@ An existing agent process SHALL NOT be restarted merely to make diagnosis health
 #### Scenario: A bridge is installed but not loaded
 - **WHEN** its owned artifacts are current but no valid runtime attachment exists
 - **THEN** diagnosis reports the loading boundary and does not claim control is ready
+
+
+### Requirement: Owned DSH bridges can be maintained without enabling an integration
+
+`install refresh-owned --agent dsh` SHALL act only on an already installed recognized bridge and emit a structured result. Update completion and a new Mac app version MAY invoke this bounded maintenance before read-only checks. It SHALL preflight all artifacts, refuse foreign files and links, preserve the installed executable, publish complete files atomically and verify the result. It SHALL NOT modify user profiles, install clients, restart sessions or downgrade a newer bridge. Metadata-only gtmux version drift SHALL NOT make executable-identical bridge code stale. First installation SHALL remain explicit.
+
+#### Scenario: A bridge is absent
+
+- **WHEN** automatic maintenance finds no installed module
+- **THEN** it reports not-installed and creates no integration files
+
+#### Scenario: A prior release left an owned stale component
+
+- **WHEN** all target files are recognized or absent inside the owned bridge
+- **THEN** maintenance updates changed artifacts and verifies them, while preserving profiles and running sessions
+
+### Requirement: Saved dst outer launches retain their verified harness identity
+
+A saved direct dst or Node-hosted bin/dst launch MAY provide client liveness evidence only with a verified resumable DSH/home/client/session record. Explicit other backends, idle shells and unavailable conversations SHALL NOT gain restoration. Live input SHALL still require the original native-attachment checks. GUI command discovery SHALL preserve PATH precedence and find installed NVM versions without sourcing shell initialization; dst launch SHALL include its paired Node runtime when present.
+
+#### Scenario: Resurrect saved the outer Node CLI
+
+- **WHEN** the save records node /fixture/bin/dst and the locator has a verified DSH terminal resume record
+- **THEN** the restore plan lists that DSH conversation and the launch targets its exact session through dst

@@ -5,6 +5,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
+	"strconv"
+	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
@@ -40,7 +43,7 @@ func SearchDirs() []string {
 	if home := state.Home(); home != "" {
 		dirs = append(dirs, filepath.Join(home, ".local", "bin"))
 	}
-	return append(dirs, "/usr/bin", "/bin", "/usr/sbin", "/sbin")
+	return append(append(dirs, nodeVersionDirs()...), "/usr/bin", "/bin", "/usr/sbin", "/sbin")
 }
 
 // Look resolves a helper binary: PATH first (so an override wins), then the known
@@ -52,9 +55,75 @@ func Look(name string) string {
 	}
 	for _, d := range SearchDirs() {
 		p := filepath.Join(d, name)
-		if fi, err := os.Stat(p); err == nil && !fi.IsDir() && fi.Mode()&0o111 != 0 {
+		if IsExecutable(p) {
 			return p
 		}
 	}
 	return ""
+}
+
+// GUI processes do not load nvm's shell function. Discover installed versions
+// without executing shell startup files; prefer the configured default alias.
+func nodeVersionDirs() []string {
+	root := os.Getenv("NVM_DIR")
+	if root == "" {
+		root = filepath.Join(state.Home(), ".nvm")
+	}
+	entries, err := os.ReadDir(filepath.Join(root, "versions", "node"))
+	if err != nil {
+		return nil
+	}
+	var versions []string
+	for _, e := range entries {
+		if e.IsDir() && nodeVersion(e.Name()) != [3]int{} {
+			versions = append(versions, e.Name())
+		}
+	}
+	sort.Slice(versions, func(i, j int) bool {
+		a, b := nodeVersion(versions[i]), nodeVersion(versions[j])
+		for k := range a {
+			if a[k] != b[k] {
+				return a[k] > b[k]
+			}
+		}
+		return versions[i] < versions[j]
+	})
+	alias, _ := os.ReadFile(filepath.Join(root, "alias", "default"))
+	prefix := strings.TrimPrefix(strings.TrimSpace(string(alias)), "v")
+	var preferred, rest []string
+	for _, v := range versions {
+		dir := filepath.Join(root, "versions", "node", v, "bin")
+		n := strings.TrimPrefix(v, "v")
+		if prefix != "" && (n == prefix || strings.HasPrefix(n, prefix+".")) {
+			preferred = append(preferred, dir)
+		} else {
+			rest = append(rest, dir)
+		}
+	}
+	return append(preferred, rest...)
+}
+
+func nodeVersion(name string) [3]int {
+	var version [3]int
+	if !strings.HasPrefix(name, "v") {
+		return version
+	}
+	parts := strings.Split(strings.TrimPrefix(name, "v"), ".")
+	if len(parts) != 3 {
+		return version
+	}
+	for i, p := range parts {
+		n, err := strconv.Atoi(p)
+		if err != nil || n < 0 {
+			return [3]int{}
+		}
+		version[i] = n
+	}
+	return version
+}
+
+// IsExecutable checks a resolved file without invoking it.
+func IsExecutable(path string) bool {
+	fi, err := os.Stat(path)
+	return err == nil && fi.Mode().IsRegular() && fi.Mode()&0111 != 0
 }

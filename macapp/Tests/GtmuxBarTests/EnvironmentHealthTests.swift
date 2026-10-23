@@ -10,6 +10,7 @@ final class EnvironmentHealthTests: XCTestCase {
         let prefs = defaults(), called = expectation(description: "check")
         let json = report
         let model = EnvironmentHealth(defaults: prefs, version: "9.0.1", run: { args in
+            if args == EnvironmentHealth.bridgeRefreshArguments { return (0, #"{"schema":1,"agent":"dsh","status":"current"}"#, "") }
             XCTAssertEqual(args, ["doctor", "--json", "--no-prompt"])
             called.fulfill(); return (1, json, "")
         })
@@ -26,7 +27,10 @@ final class EnvironmentHealthTests: XCTestCase {
         prefs.set(report.data(using: .utf8), forKey: "environmentHealth.v1.report")
         let called = expectation(description: "new version")
         called.expectedFulfillmentCount = 2
-        let model = EnvironmentHealth(defaults: prefs, version: "9.0.2", run: { _ in called.fulfill(); return (-2,"", "timeout") })
+        let model = EnvironmentHealth(defaults: prefs, version: "9.0.2", run: { args in
+            if args == EnvironmentHealth.bridgeRefreshArguments { return (0, #"{"schema":1,"agent":"dsh","status":"not-installed"}"#, "") }
+            called.fulfill(); return (-2,"", "timeout")
+        })
         model.autoCheck()
         for _ in 0..<100 { if !model.checking { break }; try? await Task.sleep(nanoseconds: 10_000_000) }
         model.check()
@@ -66,4 +70,37 @@ final class EnvironmentHealthTests: XCTestCase {
         let start = Date(); let timeout = GtmuxCLI.runBounded(sleeper, timeout: 0.03)
         XCTAssertEqual(timeout.status, -2); XCTAssertLessThan(Date().timeIntervalSince(start), 3)
     }
+    @MainActor func testOwnedMaintenanceRunsBeforeFirstVersionCheckAndReportsOnlyVerifiedUpdate() async {
+        let prefs = defaults(), checked = expectation(description: "checked")
+        let json = report
+        let model = EnvironmentHealth(defaults: prefs, version: "9.0.1", run: { args in
+            if args == EnvironmentHealth.bridgeRefreshArguments { return (0, #"{"schema":1,"agent":"dsh","status":"updated"}"#, "") }
+            checked.fulfill(); return (1, json, "")
+        })
+        model.autoCheck()
+        await fulfillment(of: [checked], timeout: 2)
+        for _ in 0..<100 { if !model.checking { break }; try? await Task.sleep(nanoseconds: 10_000_000) }
+        XCTAssertTrue(model.bridgeUpdated)
+        XCTAssertFalse(model.failed)
+        XCTAssertEqual(model.report?.findings, 1, "maintenance does not erase other findings")
+        XCTAssertNotNil(prefs.object(forKey: "environmentHealth.v1.attemptAt"))
+    }
+
+    @MainActor func testStaleReportsRefreshWithoutRepeatedMaintenance() async {
+        let prefs = defaults(), checked = expectation(description: "stale recheck")
+        prefs.set("9.0.1", forKey: "environmentHealth.v1.attempt")
+        prefs.set(100.0, forKey: "environmentHealth.v1.attemptAt")
+        let json = report
+        let model = EnvironmentHealth(defaults: prefs, version: "9.0.1", run: { args in
+            XCTAssertEqual(args, ["doctor", "--json", "--no-prompt"], "freshness checks stay read-only")
+            checked.fulfill(); return (1, json, "")
+        })
+        model.refreshIfStale(now: Date(timeIntervalSince1970: 399))
+        XCTAssertFalse(model.checking)
+        model.refreshIfStale(now: Date(timeIntervalSince1970: 400))
+        await fulfillment(of: [checked], timeout: 2)
+        for _ in 0..<100 { if !model.checking { break }; try? await Task.sleep(nanoseconds: 10_000_000) }
+        XCTAssertFalse(model.bridgeUpdated)
+    }
+
 }

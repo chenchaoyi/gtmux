@@ -3,6 +3,7 @@ package toolpath
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -65,5 +66,46 @@ func TestLookToolIgnoresANonExecutable(t *testing.T) {
 	}
 	if got := Look("faketool"); got != "" {
 		t.Errorf("Look = %q; want \"\" — a non-executable file is not the tool", got)
+	}
+}
+
+func TestNVMDiscoveryUsesDefaultThenNumericVersionOrder(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("NVM_DIR", filepath.Join(home, ".nvm"))
+	t.Setenv("PATH", t.TempDir())
+	root := filepath.Join(home, ".nvm")
+	for _, v := range []string{"v9.1.0", "v22.3.0", "v24.1.0"} {
+		dir := filepath.Join(root, "versions", "node", v, "bin")
+		if err := os.MkdirAll(dir, 0700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, "dst"), []byte("#!/bin/sh\n"), 0700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.MkdirAll(filepath.Join(root, "alias"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	alias := filepath.Join(root, "alias", "default")
+	if err := os.WriteFile(alias, []byte("22\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if got := Look("dst"); !strings.Contains(got, "/v22.3.0/") {
+		t.Fatal("default ignored", got)
+	}
+	if err := os.Remove(alias); err != nil {
+		t.Fatal(err)
+	}
+	if got := Look("dst"); !strings.Contains(got, "/v24.1.0/") {
+		t.Fatal("numeric order ignored", got)
+	}
+	explicit := t.TempDir()
+	if err := os.WriteFile(filepath.Join(explicit, "dst"), []byte("#!/bin/sh\n"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", explicit)
+	if Look("dst") != filepath.Join(explicit, "dst") {
+		t.Fatal("PATH override lost")
 	}
 }

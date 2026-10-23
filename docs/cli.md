@@ -2321,6 +2321,7 @@ gtmux install                       # asks: hooks | app | all
 gtmux install hooks                 # Claude, one-time setup (macOS)
 gtmux install hooks --agent codex    # or cursor|gemini|copilot|kiro|opencode|kimi|dsh
 gtmux install hooks --agent auto     # detect supported agent homes/installations
+gtmux install refresh-owned --agent dsh  # refresh an existing owned bridge only (JSON receipt)
 gtmux uninstall [hooks|app|all]     # reverse it (asks when no target)
 ```
 
