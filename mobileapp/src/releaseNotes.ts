@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.147',
+    en: [
+      '- Live previews stay expanded while a session updates, and keep their original terminal presentation. Tap the progress row to fold them away.',
+      '- Conversation input controls are simpler, and human messages use a consistent name and alignment.',
+    ],
+    zh: [
+      '- Live 预览展开后不再因会话刷新自动收起，保留原有终端样式；点击进度行即可折叠。',
+      '- 简化会话输入操作，统一人类消息的称呼与对齐方式。',
+    ],
+  },
+  {
     version: '1.0.146',
     en: [
       '- Working sessions now show a compact progress row. Tap to expand the live terminal preview, then fold it away to keep messages in view.',
