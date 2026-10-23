@@ -271,10 +271,12 @@ CLI, API, HQ boundaries and learning times: [desktop follow design](desktop-foll
 Both **External sessions** and **Elsewhere** have independent, persisted Show/Hide
 header buttons, with a chevron and count retained when folded. Their rows leave the
 flat list when folded; other groups and per-conversation follow choices are unaffected.
-Completed/idle Codex observations without a recorded process ID or explicit HQ follow
+Completed/idle Codex or DSH observations without a recorded process ID or explicit HQ follow
 stay outside the live overview; the core retains their records/history, and fresh
 working/waiting activity can surface them again. This is absence of live evidence,
-not a claim that a frontend closed. See [agent integrations](../guides/agent-integrations.md#which-external-codex-conversations-remain-visible).
+not a claim that a frontend closed. DSH's saved catalog only seeds explicitly
+HQ-followed history; unfinished saved turns alone use neutral status rather than
+claiming current work or a wait. See [agent integrations](../guides/agent-integrations.md#which-external-conversations-remain-visible).
 
 ### Historical native launch host
 
