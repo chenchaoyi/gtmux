@@ -1942,11 +1942,14 @@ Exit 1 still signals a required installation failure, and 0 means selected steps
 
 After a successful CLI update, the newly installed executable runs a read-only
 `doctor --no-prompt --progress` check (90-second limit). Findings do not turn a
-successful installation into a failed update. Menu-bar updates hand this check to
-the relaunched app: it checks once per version and keeps the last valid report.
+successful installation into a failed update. Menu-bar updates hand this initial
+check to the relaunched app, once per version; it keeps the last valid report.
 Open **Environment check** from Preferences → Diagnostics to
 review results or retry. **Review repairs…** opens `doctor --fix` in a terminal,
-where each action is explained and confirmed. Check again after completing repairs.
+where each action is explained and confirmed. Opening or returning to the report
+window automatically runs a fresh read-only check, including immediately after
+repairs. The first menu opening after launching repairs also refreshes its summary.
+Concurrent checks are combined; opening the terminal alone never clears findings.
 
 `doctor --json` returns schema 1, CLI version, `checked_at` (Unix seconds), grouped
 rows (`status`, `label`, `value`, `note`, optional `description`) and counts.

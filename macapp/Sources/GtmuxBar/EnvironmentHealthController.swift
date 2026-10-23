@@ -4,17 +4,28 @@ import SwiftUI
 final class EnvironmentHealthController: NSObject, NSWindowDelegate {
     static let shared = EnvironmentHealthController()
     private var window: NSWindow?
+    private let model: EnvironmentHealth
+    init(model: EnvironmentHealth = .shared) {
+        self.model = model; super.init()
+        NotificationCenter.default.addObserver(self, selector: #selector(applicationDidBecomeActive),
+                                               name: NSApplication.didBecomeActiveNotification, object: nil)
+    }
+    deinit { NotificationCenter.default.removeObserver(self) }
     func show(l10n: L10n) {
-        EnvironmentHealth.shared.refreshIfStale()
+        model.refreshForPresentation()
         if let window { NSApp.activate(ignoringOtherApps: true); window.makeKeyAndOrderFront(nil); return }
         let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 720, height: 600),
                          styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
         w.isReleasedWhenClosed = false; w.minSize = NSSize(width: 560, height: 420)
         w.title = l10n.tr("Environment check", "运行环境检查")
-        w.contentView = NSHostingView(rootView: EnvironmentHealthView(model: .shared, l10n: l10n))
+        w.contentView = NSHostingView(rootView: EnvironmentHealthView(model: model, l10n: l10n))
         w.delegate = self; window = w; w.center()
         NSApp.activate(ignoringOtherApps: true); w.makeKeyAndOrderFront(nil)
-        if EnvironmentHealth.shared.report == nil && !EnvironmentHealth.shared.failed { EnvironmentHealth.shared.check() }
+    }
+    func windowDidBecomeKey(_ notification: Notification) { model.refreshForPresentation() }
+    @objc private func applicationDidBecomeActive(_ notification: Notification) {
+        guard let window, window.isVisible, !window.isMiniaturized else { return }
+        model.refreshForPresentation()
     }
     func windowWillClose(_ notification: Notification) { window = nil }
 }
@@ -102,7 +113,7 @@ struct EnvironmentHealthView: View {
     }
     private var repairGuidance: String {
         if model.repairFailed { return l10n.tr("Could not open the terminal. Run gtmux doctor --fix manually.", "无法打开终端，请手动运行 gtmux doctor --fix。") }
-        if model.repairOpened { return l10n.tr("Complete the steps in the terminal, then check again.", "请在终端完成修复，然后重新检查。") }
+        if model.repairOpened { return l10n.tr("Complete the steps in the terminal. Returning here automatically checks the results.", "请在终端完成修复，返回此窗口时会自动检查结果。") }
         if model.report?.findings == 0 { return l10n.tr("No current issues need action. Optional features and operation history remain in the report.", "当前没有需要处理的问题；可选功能与操作历史仍保留在检查结果中。") }
         return l10n.tr("Review available repairs in the terminal; some findings need a separate action.", "在终端查看可修复项；部分事项需另行处理。")
     }
