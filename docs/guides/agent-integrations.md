@@ -473,7 +473,7 @@ claim a running session has loaded them. Explicit per-agent setup remains availa
 for intentional preconfiguration; external history reading uses its own rules.
 
 Desktop notifications additionally need the menu-bar app and notification permission;
-phone notifications need pairing, push registration and the relevant consent.
+phone notifications need pairing, push registration and the relevant consent. The Mac notification preferences show system permission and offer a content-free test. A test accepted by macOS does not prove a banner appeared; see [Mac notification behavior](../design/desktop-notifications.md).
 
 | Source | Owns |
 | --- | --- |

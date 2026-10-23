@@ -271,6 +271,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func renderIcon(_ agents: [Agent]) {
+        // Delivery recovery and withdrawal must also run when the status item hides.
+        NotificationManager.shared.reconcile(
+            waitingPanes: Set(agents.filter { $0.state == .waiting }.map { $0.paneID }))
         guard let button = statusItem.button else { return }
         let empty = store.total == 0
         let urgent = store.mostUrgent
@@ -282,10 +285,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             statusItem.isVisible = true
         }
-
-        // Auto-withdraw waiting notifications whose pane is no longer waiting (A2).
-        NotificationManager.shared.reconcile(
-            waitingPanes: Set(agents.filter { $0.state == .waiting }.map { $0.paneID }))
 
         let dark = button.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
         let awake = serverMode.status?.isOn == true
