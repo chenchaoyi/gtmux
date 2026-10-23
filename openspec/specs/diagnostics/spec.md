@@ -257,7 +257,7 @@ only when a shell variable turned them on.
 The menu bar app SHALL write its entries in the store's schema to the day's current file,
 each in one append of at most 4 KB with credentials redacted, and SHALL mirror each to the
 unified log under subsystem `com.gtmux.menubar`. It SHALL record its start and every
-notification it shows or does not show, and a test run SHALL never write to the real store.
+notification submission or refusal, distinguishing system acceptance from visible presentation, and a test run SHALL never write to the real store.
 
 #### Scenario: A notification the app did not show
 

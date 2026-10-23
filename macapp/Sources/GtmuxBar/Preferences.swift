@@ -31,6 +31,7 @@ final class PreferencesController {
 struct PreferencesView: View {
     @ObservedObject var l10n: L10n
     @ObservedObject var settings: AppSettings
+    @ObservedObject private var notifications = NotificationManager.shared
     @ObservedObject var remote = RemoteAccess.shared
     @ObservedObject private var directServers = DirectServerStore.shared
     @ObservedObject var serverMode = ServerModeStore.shared
@@ -76,6 +77,16 @@ struct PreferencesView: View {
         let linkID: String
         let link: SharedLink
         let label: String
+    }
+
+    private var notificationTestFeedback: String? {
+        switch notifications.testState {
+        case .idle: return nil
+        case .sending: return l10n.tr("Submitting test…", "正在提交测试通知…")
+        case .accepted: return l10n.tr("Submitted to macOS. Check for a banner or Notification Center.", "已提交给 macOS，请留意横幅或通知中心。")
+        case .blocked: return l10n.tr("Turn on gtmux and macOS notifications, then try again.", "请开启 gtmux 和系统通知后再试。")
+        case .failed: return l10n.tr("Could not submit the test. Check notification settings and try again.", "测试通知提交失败，请检查系统通知设置后重试。")
+        }
     }
 
     // What a pending revoke points at — carries the display name so the alert message
@@ -192,8 +203,26 @@ struct PreferencesView: View {
 
             Section(l10n.tr("Notifications", "通知")) {
                 Toggle(isOn: $settings.notifications) {
-                    prefLabel("Notify when an agent waits or finishes", "agent 开始等你、或者干完了就提醒", symbol: "bell")
+                    prefLabel("Notify when an agent needs you or a turn ends", "需要你操作或本轮结束时提醒", symbol: "bell")
                 }
+                Text(notifications.authorization.summary(l10n))
+                    .font(.system(size: 11)).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 16) {
+                    Button(l10n.tr("Send test notification", "发送测试通知")) { notifications.sendTest() }
+                        .disabled(!settings.notifications || notifications.testState == .sending)
+                    Button(l10n.tr("macOS notification settings", "系统通知设置")) { notifications.openSystemSettings() }
+                }
+                .buttonStyle(.link)
+                .font(.system(size: 11))
+                if let feedback = notificationTestFeedback {
+                    Text(feedback).font(.system(size: 11)).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Text(l10n.tr("Needs-input alerts request sound; turn-end alerts are silent. Focus and macOS settings still apply.",
+                             "需要操作时请求声音提醒，本轮结束时静音；遵循专注模式和系统设置。"))
+                    .font(.system(size: 10)).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
                 // Terminal-tab marker. NOT backed by UserDefaults like its neighbours:
                 // the truth lives in tmux's own `set-titles-string`, so the CLI is both
                 // the reader and the writer. A defaults-backed mirror would be a second
@@ -288,7 +317,10 @@ struct PreferencesView: View {
         }
         .formStyle(.grouped)
         .frame(width: 460, height: 640)
-        .onAppear { remote.refresh(); share.refresh(); share.loadDetail(); pairStore.refresh(); updater.autoCheck(); serverMode.refresh(); refreshTabAlert(); diag.refreshStats() }
+        .onAppear { remote.refresh(); share.refresh(); share.loadDetail(); pairStore.refresh(); updater.autoCheck(); serverMode.refresh(); refreshTabAlert(); diag.refreshStats(); notifications.refreshAuthorization() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            notifications.refreshAuthorization()
+        }
         .sheet(isPresented: $showPairSheet) {
             PairDeviceSheet(l10n: l10n) { showPairSheet = false; pairStore.refresh() }
         }

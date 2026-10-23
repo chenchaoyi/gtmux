@@ -367,7 +367,7 @@ gtmux uninstall hooks --agent codex
 hook 禁用配置。不传 `--agent` 仍默认 Claude。Doctor 检查配置，`--fix` 调用对应 agent
 自己的安装器，保留其他 hook，归属不清时拒绝覆盖。**配置正确不等于运行中已加载：**
 agent 需要实际运行新 hook，Codex 可能还需审阅信任，DSH 要显式加载覆盖文件，安装不表示
-自动重启 agent。桌面通知还需要菜单栏 app 和系统通知权限；手机通知需要配对、推送注册及相应授权。
+自动重启 agent。桌面通知还需要菜单栏 app 和系统通知权限；手机通知需要配对、推送注册及相应授权。Mac 通知偏好可查看系统权限并发送不含对话内容的测试；系统接受请求不代表横幅已展示。见[桌面通知规则](../design/desktop-notifications.zh.md)。
 
 旧设置和历史不代表 CLI 仍在本机。找不到 CLI 时，doctor 不列出它的 hook／偏好检查，自动安装
 与修复也跳过；已有文件保留。刚安装但还没生成数据目录的 CLI 仍可接入。命令 hook 配置齐全

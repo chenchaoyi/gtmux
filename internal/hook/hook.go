@@ -437,13 +437,13 @@ func nativeStateFor(event string) (st string, remove bool) {
 func waitBody(k Kind) string {
 	switch k {
 	case KindPlan:
-		return i18n.Tr("Plan ready, tap to review", "计划已就绪，点按查看")
+		return i18n.Tr("Plan ready for review.", "计划已就绪，等你确认。")
 	case KindQuestion:
-		return i18n.Tr("A question for you, tap to answer", "有个问题等你，点按回答")
+		return i18n.Tr("Waiting for your answer.", "有个问题需要你回答。")
 	case KindPermission:
-		return i18n.Tr("Needs your approval, tap to jump", "需要你批准，点按跳转")
+		return i18n.Tr("Approval needed to continue.", "需要你确认后才能继续。")
 	default:
-		return i18n.Tr("Needs your input, tap to jump", "需要你的输入，点按跳转")
+		return i18n.Tr("Your input is needed to continue.", "需要你回复后才能继续。")
 	}
 }
 
@@ -1223,6 +1223,10 @@ func Run(stdin io.Reader, args []string) int {
 
 	if client == "unconfirmed" {
 		// Desktop alerts use the polling hub, with identity and owner notification consent.
+		if d.notify {
+			diag.For("hook").Act("act.notify.suppressed", "system", pane, diag.OK,
+				"notification uses the consent-aware server route", "reason", "server_route", "agent", agentKey)
+		}
 		return 0
 	}
 	if !d.notify {
@@ -1230,6 +1234,8 @@ func Run(stdin io.Reader, args []string) int {
 	}
 	if session != "" && terminal.ForSession(session).IsViewing(session) {
 		debugf("suppressed: already viewing session=%q", session)
+		diag.For("hook").Act("act.notify.suppressed", "system", pane, diag.OK,
+			"suppressed a notification for the session being viewed", "reason", "already_viewing", "agent", agentKey)
 		return 0
 	}
 
@@ -1246,7 +1252,7 @@ func Run(stdin io.Reader, args []string) int {
 	// Differentiate copy/sound: "finished" (calm) vs "needs your input" (urgent).
 	// The session name is the bold title; the agent name is the subtitle.
 	kind := "done"
-	body := i18n.Tr("Finished, tap to jump", "已完成，点按跳转")
+	body := i18n.Tr("Turn finished. Open the session to review.", "本轮已结束，打开会话查看。")
 	if event == "Notification" || event == "Waiting" {
 		kind = "input"
 		body = waitBody(waitKind)

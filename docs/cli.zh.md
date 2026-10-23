@@ -394,6 +394,7 @@ act.narrow              serve
 act.new                 new
 act.notify              hook
 act.notify.post         app
+act.notify.test         app
 act.notify.suppressed   hook
 act.device.rename       serve
 act.pair                serve

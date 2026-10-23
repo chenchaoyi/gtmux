@@ -298,7 +298,7 @@ The standard macOS settings grid (labels right-aligned, controls left-aligned). 
 - Launch at login: toggle.
 - Status bar display: `点+数字` / `仅圆点` / `空闲时隐藏` (dot + number / dot only / hide when idle; the three modes of §2).
 - Global hotkey: recordable (default ⌘⌥G).
-- Notifications: toggle (alert when an agent starts waiting on you / finishes).
+- Notifications: one toggle, a compact system-permission summary, test and system-settings text buttons. Input waits request sound with normal priority; successful turn-end alerts are silent and respect Focus. See [desktop notifications](desktop-notifications.md).
 
 ### Incomplete updates
 

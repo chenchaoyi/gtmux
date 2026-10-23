@@ -172,3 +172,31 @@ The hook writer SHALL keep at most 256 timestamped notification requests and exp
 
 - **WHEN** many hooks enqueue requests without a running consumer
 - **THEN** new writes retain only the newest bounded owned backlog without touching logs or other state
+
+### Requirement: Native delivery is per event, with honest system diagnostics
+
+Each distinct queued event SHALL remain eligible even when an earlier event on the same pane had the same kind or its system submission failed. Stable native identifiers SHALL coalesce retained banners without permanently suppressing future turns. The consumer SHALL watch before its first drain, retain requests while reading authorization, recover via normal polling, and withdraw resolved waits even when the status item is hidden. It SHALL log stale, off, permission and malformed-request refusals without conversation contents; successful submission SHALL NOT be described as visible delivery.
+
+Ordinary needs-input alerts SHALL use active priority and MAY request sound while respecting Focus. Successful turn-end alerts SHALL remain silent and SHALL describe the turn rather than the entire task. Existing viewing/HQ/outcome/consent gates and the 30-second expiry SHALL remain unchanged.
+
+#### Scenario: Two successful turns in one pane
+
+- **WHEN** a second independent completion request follows the first in the same pane
+- **THEN** macOS receives both submissions, using the same banner identifier for replacement
+- **AND** failure of either request does not suppress later requests
+
+#### Scenario: Authorization changes while a request arrives
+
+- **WHEN** a settings read is pending and a fresh request arrives
+- **THEN** the request stays in the queue until the current verdict is known
+- **AND** a denied-to-allowed change can resume delivery without restarting the app
+
+### Requirement: Deliberate local notification test
+
+Mac preferences SHALL show current system authorization and banner capability as compact secondary information, with a test button and a system-settings link. Returning from system settings SHALL refresh the status. Tests SHALL have no agent target or reply/jump action, SHALL NOT send terminal input, and SHALL report submission rather than promise a visible banner. This SHALL NOT opt external conversations into notification grants or change APNs or access policy.
+
+#### Scenario: User checks Mac delivery
+
+- **WHEN** the user submits a test and macOS accepts it
+- **THEN** feedback says to check the banner or Notification Center
+- **AND** no agent receives a message
