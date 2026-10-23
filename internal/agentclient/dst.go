@@ -47,12 +47,12 @@ func CandidatePane(pane string) bool {
 // MatchesSavedClient is client liveness evidence only. A saved DSH resume record
 // must independently supply the verified harness/home/session identity.
 func MatchesSavedClient(client, command string) bool {
-	if client != "dst" || !dstProcess(command) {
+	if client != "dst" || !savedDSTProcess(command) {
 		return false
 	}
 	fields := strings.Fields(command)
 	for i, field := range fields {
-		if field == "--backend" && i+1 < len(fields) && fields[i+1] != "dsh" {
+		if field == "--backend" && (i+1 >= len(fields) || fields[i+1] != "dsh") {
 			return false
 		}
 		if backend, ok := strings.CutPrefix(field, "--backend="); ok && backend != "dsh" {
@@ -60,6 +60,23 @@ func MatchesSavedClient(client, command string) bool {
 		}
 	}
 	return true
+}
+
+// The save sees the outer CLI (often `node /.../bin/dst`), not its
+// nested host. This is evidence only when paired with a verified resume record;
+// live attachment verification deliberately keeps the stricter dstProcess gate.
+func savedDSTProcess(command string) bool {
+	if dstProcess(command) {
+		return true
+	}
+	fields := strings.Fields(command)
+	if len(fields) == 0 {
+		return false
+	}
+	if filepath.Base(fields[0]) == "dst" {
+		return true
+	}
+	return len(fields) > 1 && (filepath.Base(fields[0]) == "node" || filepath.Base(fields[0]) == "nodejs") && filepath.Base(fields[1]) == "dst"
 }
 
 func dstProcess(command string) bool {

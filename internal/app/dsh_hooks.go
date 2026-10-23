@@ -72,8 +72,39 @@ func dshTerminalOwned(path string, data []byte) bool {
 	return false
 }
 
-func dshPluginJS(bin string) string {
-	return strings.NewReplacer("__GTMUX_BIN__", strconv.Quote(bin), "__GTMUX_VERSION__", strconv.Quote(Version)).Replace(dshPluginTemplate)
+func dshPluginJS(bin string) string { return dshPluginForVersion(bin, Version) }
+
+func dshPluginForVersion(bin, version string) string {
+	return strings.NewReplacer("__GTMUX_BIN__", strconv.Quote(bin), "__GTMUX_VERSION__", strconv.Quote(version)).Replace(dshPluginTemplate)
+}
+
+// Account-request metadata changing across releases does not make a bridge stale.
+// Every executable statement must still match the current generated template.
+func dshPluginCompatible(module []byte, bin string) bool {
+	version := dshPluginVersion(module)
+	return version != "" && string(module) == dshPluginForVersion(bin, version)
+}
+
+func dshPluginVersion(module []byte) string {
+	_, tail, ok := strings.Cut(string(module), "account.getBalance({version: ")
+	if !ok {
+		return ""
+	}
+	quoted, _, ok := strings.Cut(tail, ", locale:")
+	if !ok {
+		return ""
+	}
+	var version string
+	if json.Unmarshal([]byte(quoted), &version) != nil {
+		return ""
+	}
+	return version
+}
+
+func dshBridgeFromNewerRelease(module []byte) bool {
+	installed := "v" + strings.TrimPrefix(dshPluginVersion(module), "v")
+	current := "v" + strings.TrimPrefix(Version, "v")
+	return comparableRelease(installed) && (!comparableRelease(current) || newerRelease(installed, current))
 }
 
 const dshPluginMarker = "// gtmux native DeepSeek Harness plugin;"
@@ -93,6 +124,7 @@ func updateDSHPlugin(inst agentInstaller, bin string, install bool) error {
 	if err != nil {
 		return err
 	}
+
 	// Preflight every provider-owned artifact before writing any of them.
 	for p := range artifacts {
 		b, err := readDSHArtifact(p)
@@ -170,7 +202,7 @@ func rowDSHHook(inst agentInstaller) dcheck {
 	label := inst.display + " hook"
 	module, moduleErr := os.ReadFile(inst.configPath())
 	overlay, overlayErr := os.ReadFile(dshOverlayPath(inst))
-	repair := i18n.Tr("gtmux doctor --fix installs the native bridges", "gtmux doctor --fix 可安装原生桥接")
+	repair := i18n.Tr("DeepSeek state updates may be incomplete; saved conversations remain readable. Review repairs to install or update the gtmux connection component (gtmux doctor --fix). Load it on the next launch with the gtmux configuration.", "DeepSeek 运行、提问及完成状态的同步可能不完整，已有对话仍可读取。可在“查看修复方案”中安装或更新状态连接组件（gtmux doctor --fix），下次带 gtmux 配置启动时加载。")
 	if moduleErr != nil || overlayErr != nil {
 		return dcheck{stRec, label, i18n.Tr("not fully installed", "尚未装全"), repair}
 	}
@@ -178,19 +210,22 @@ func rowDSHHook(inst agentInstaller) dcheck {
 		return dcheck{stRec, label, i18n.Tr("unrecognized plugin files", "插件文件归属不明"), i18n.Tr("preserve the existing files; doctor will not overwrite them", "请先核对现有文件；doctor 不会覆盖归属不明的文件")}
 	}
 	if !agentPluginCurrent(inst) {
-		return dcheck{stRec, label, i18n.Tr("outdated native plugin", "原生插件需要更新"), repair}
+		if dshBridgeFromNewerRelease(module) {
+			return dcheck{stInfo, label, i18n.Tr("managed by a newer gtmux release", "组件来自更新的 gtmux 版本"), i18n.Tr("Update the CLI and menu-bar app together. Existing bridge files will not be downgraded.", "请将 CLI 和菜单栏更新为同一版本；现有连接组件不会自动降级。")}
+		}
+		return dcheck{stRec, label, i18n.Tr("state connection component needs updating", "状态连接组件需要更新"), repair}
 	}
 	if string(overlay) != dshOverlayYAML(inst) {
-		return dcheck{stRec, label, i18n.Tr("launch overlay needs repair", "启动覆盖文件需要修复"), repair}
+		return dcheck{stRec, label, i18n.Tr("Web launch configuration needs repair", "Web 启动配置需要修复"), repair}
 	}
 	for path, wanted := range dshTerminalArtifacts(inst) {
 		actual, err := os.ReadFile(path)
 		if err != nil || string(actual) != wanted {
-			return dcheck{stRec, label, i18n.Tr("terminal bridge needs installation or repair", "终端桥接需要安装或修复"), repair}
+			return dcheck{stRec, label, i18n.Tr("terminal connection component needs repair", "终端会话接入组件需要修复"), repair}
 		}
 	}
 	if path, old, next, err := prepareDSTProfile(inst, true); err != nil || path != "" && string(old) != string(next) {
-		return dcheck{stRec, label, i18n.Tr("dst profile bridge needs repair", "dst profile 桥接配置需要修复"), repair}
+		return dcheck{stRec, label, i18n.Tr("dst connection configuration needs repair", "dst 会话接入配置需要修复"), repair}
 	}
 	note := i18n.Tr("Loading in running Web is unverified. Next launch: ", "尚未核实运行中的 Web 是否已加载。下次启动：") + "dsh web --patch " + shellQuote(dshOverlayPath(inst))
 	return dcheck{stOK, label, i18n.Tr("installed", "已装"), note}

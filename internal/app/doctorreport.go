@@ -78,6 +78,7 @@ func installedCLIPath() string {
 // A health finding is not an installation failure. The NEW executable owns the
 // checks; no-prompt prevents the interactive doctor's repair offer after update.
 func postUpdateDoctor(binary string, timeout time.Duration) {
+	refreshPostUpdateBridge(binary, 15*time.Second)
 	i18n.Say("Update installed. Checking the environment…", "更新已安装，正在检查运行环境…")
 	err := runPostUpdateDoctor(binary, timeout, os.Stdout, os.Stderr)
 	if err == nil {
@@ -96,4 +97,20 @@ func runPostUpdateDoctor(binary string, timeout time.Duration, stdout, stderr io
 	cmd.Stdout, cmd.Stderr = stdout, stderr
 	cmd.WaitDelay = 2 * time.Second
 	return cmd.Run()
+}
+
+func refreshPostUpdateBridge(binary string, timeout time.Duration) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, binary, "install", "refresh-owned", "--agent", "dsh")
+	cmd.WaitDelay = 2 * time.Second
+	raw, err := cmd.Output()
+	var receipt bridgeRefreshReceipt
+	if err != nil || json.Unmarshal(raw, &receipt) != nil || receipt.Schema != 1 || receipt.Agent != "dsh" || (receipt.Status != "updated" && receipt.Status != "current" && receipt.Status != "not-installed" && receipt.Status != "newer") {
+		i18n.Sae("The update is installed, but the existing DeepSeek state bridge could not be refreshed. Check gtmux doctor for details.", "更新已安装，但未能更新已有的 DeepSeek 状态连接组件；请查看运行环境检查的具体说明。")
+		return
+	}
+	if receipt.Status == "updated" {
+		i18n.Say("Updated the existing DeepSeek state component. See the check below for Web activation; existing sessions are not restarted.", "已更新已有的 DeepSeek 状态连接组件；Web 启用方式见下方检查，已有会话不自动重启。")
+	}
 }

@@ -134,3 +134,10 @@ See the [terminal design](../design/dsh-terminal-clients.md) for trust, retentio
 and validation boundaries. Author fixtures, actual component admission, live TUI
 queue acceptance and model execution are separate evidence; consult the delivery
 report for which were established on the installed version combination.
+
+
+## Restore and GUI discovery
+
+A saved `node /…/bin/dst` or direct dst command is terminal-client liveness evidence only when paired with the existing verified DSH/home/client/session resume record and an available root conversation. An explicit other backend, saved idle shell, missing record or foreign home cannot gain a resume. This outer-command recognition never authorizes live input: current process, pane and native attachment checks stay separate. GUI discovery finds NVM installations without starting a login shell; launches include the paired Node runtime. Read-only Web history remains outside terminal restoration.
+
+Update/startup maintenance refreshes an already installed gtmux-owned bridge, without changing profiles or restarting clients. Missing optional clients and no current terminal connection are informational. See [environment checks](../design/post-update-environment-check.md).

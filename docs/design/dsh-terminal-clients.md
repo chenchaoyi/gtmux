@@ -102,3 +102,10 @@ through repaint until a native resume/end or later explicit turn boundary settle
 The adapter declares this capability; replacing the community client keeps `dsh`
 as the harness identity. Other integrations retain their existing documented fallbacks. A tracked goal still
 blocked in the input box retains the separate undelivered-dispatch waiting guard.
+
+
+## Restore and GUI discovery
+
+A saved `node /…/bin/dst` or direct dst command is terminal-client liveness evidence only when paired with the existing verified DSH/home/client/session resume record and an available root conversation. An explicit other backend, saved idle shell, missing record or foreign home cannot gain a resume. This outer-command recognition never authorizes live input: current process, pane and native attachment checks stay separate. GUI discovery finds NVM installations without starting a login shell; launches include the paired Node runtime. Read-only Web history remains outside terminal restoration.
+
+Update/startup maintenance refreshes an already installed gtmux-owned bridge, without changing profiles or restarting clients. Missing optional clients and no current terminal connection are informational. See [environment checks](post-update-environment-check.md).

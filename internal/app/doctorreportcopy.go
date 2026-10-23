@@ -14,6 +14,8 @@ type doctorPurpose struct {
 // Report copy explains the measured prerequisite. It does not change checks,
 // statuses or repair decisions; the terminal retains its technical labels.
 var doctorPurposes = []doctorPurpose{
+	{"DeepSeek Harness hook", "DeepSeek Harness hook", "DeepSeek Harness state connection", "DeepSeek Harness 状态连接", "Checks gtmux's bundled component for reporting DeepSeek activity, questions and completion. Installed files do not prove an already running process loaded them.", "检查用于同步 DeepSeek 运行、提问和完成状态的 gtmux 自带组件；文件已安装不代表已有进程已加载。"},
+	{"DeepSeek Harness terminal", "DeepSeek Harness terminal", "DeepSeek Harness terminal sessions", "DeepSeek Harness 终端会话", "Checks optional dst client availability and live managed terminal sessions. Web history is independent.", "检查可选的 dst 终端客户端及正在运行的受管会话；Web 对话历史不依赖它。"},
 	{"cli", "命令行", "Command-line tool", "命令行工具", "Reports the version and location of the gtmux command running these checks.", "确认执行本次检查的 gtmux 命令行版本及位置。"},
 	{"app", "app", "Menu-bar version", "菜单栏版本", "Checks whether the installed menu-bar app and command-line tool have the same version.", "检查菜单栏应用与命令行工具的版本是否一致。"},
 	{"config", "配置", "Configuration file", "配置文件", "Checks the JSON syntax of the gtmux configuration file.", "检查 gtmux 配置文件的 JSON 格式是否有效。"},
@@ -50,7 +52,7 @@ var doctorPurposes = []doctorPurpose{
 	{"log store", "日志库", "Log retention", "日志保留", "Checks the diagnostic log store against its age and size retention rules.", "检查诊断日志是否符合按时间和体积保留的规则。"},
 	{"recording", "记录写入", "Log writes", "日志写入", "Checks whether diagnostics, events, sequence counters and the existing knowledge ledger are writable.", "检查诊断日志、事件流、序号计数器及现有知识台账是否可写入。"},
 	{"runaway writer", "刷屏的组件", "Repeated log activity", "重复日志活动", "Checks runaway-log warnings recorded in the last seven days.", "检查最近 7 天是否出现日志异常增长告警。"},
-	{"recent errors", "近期报错", "Recent errors", "近期错误", "Counts diagnostic errors from the last 24 hours and identifies the affected components.", "统计最近 24 小时的诊断错误并指出相关组件。"},
+	{"recent errors", "近期报错", "Recent failure records", "近期失败记录", "Shows failures recorded in the past 24 hours. Failed user operations are history; current feature checks determine what still needs repair.", "显示过去 24 小时的失败记录；操作失败属于历史，当前是否需要修复以对应功能检查为准。"},
 	{"file modes", "文件权限", "Data file permissions", "数据文件权限", "Checks ownership and read/write exposure; flags paths it cannot verify.", "检查所有权及读写权限，单独提示无法核实的路径。"},
 	{"other stores", "其他数据", "Other retained data", "其他保留数据", "Checks retained events and other state files for excessive growth.", "检查保留的事件及其他状态文件是否占用过多空间。"},
 	{"credential backups", "凭证备份", "Old credential backups", "旧凭证备份", "Finds credential copies left by earlier migrations, without deleting them during this check.", "查找早期迁移遗留的凭证副本，本次检查不会删除它们。"},

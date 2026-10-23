@@ -466,6 +466,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         CommandPaletteController.shared.dismiss()
         store.refresh()
         store.refreshRestorePlan()
+        EnvironmentHealth.shared.refreshIfStale()
         // Check for a new release each time the menu is opened (throttled inside
         // Updater) so the "new version" banner is fresh when you actually look —
         // not just once a day.

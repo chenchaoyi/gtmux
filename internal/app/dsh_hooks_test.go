@@ -98,10 +98,12 @@ func TestDSHNativeHookRetainsOriginForProfileCollection(t *testing.T) {
 	bin := filepath.Join(dir, "hook.mjs")
 	probe := `#!/usr/bin/env node
 import fs from 'node:fs';
-fs.writeFileSync(process.env.GTMUX_TEST_SINK_OUT, JSON.stringify({
+const output = process.env.GTMUX_TEST_SINK_OUT;
+fs.writeFileSync(output + '.pending', JSON.stringify({
   args: process.argv.slice(2), parent: process.ppid, pane: process.env.TMUX_PANE,
   payload: JSON.parse(fs.readFileSync(0, 'utf8')),
 }));
+fs.renameSync(output + '.pending', output);
 `
 	if err := os.WriteFile(bin, []byte(probe), 0700); err != nil {
 		t.Fatal(err)
@@ -123,7 +125,11 @@ for (const client of ['', 'dst']) {
   const send = hookSink({on: (name, fn) => {assert.equal(name, 'dispose'); dispose = fn;}}, () => extra);
   try {
     send('UserPromptSubmit', {session_id: 'synthetic-session', cwd: '/synthetic', prompt: 'Inspect'});
-    for (let i = 0; i < 100 && !fs.existsSync(process.env.GTMUX_TEST_SINK_OUT); i++) await delay(20);
+    // Match the existing 5s sink deadline; publishing is atomic so existence
+    // means the entire receipt is readable, including under concurrent race tests.
+    const deadline = Date.now() + 5000;
+    while (Date.now() < deadline && !fs.existsSync(process.env.GTMUX_TEST_SINK_OUT)) await delay(20);
+    assert.ok(fs.existsSync(process.env.GTMUX_TEST_SINK_OUT), 'native sink did not publish before its 5s deadline');
     const result = JSON.parse(fs.readFileSync(process.env.GTMUX_TEST_SINK_OUT, 'utf8'));
     assert.deepEqual(result.args, ['hook', '--agent', 'dsh', 'UserPromptSubmit']);
     assert.equal(result.parent, process.pid, 'origin must still be the native plugin host');

@@ -123,6 +123,8 @@ struct EnvironmentReport: Codable, Equatable {
 final class EnvironmentHealth: ObservableObject {
     static let shared = EnvironmentHealth()
     static let repairArguments = ["doctor", "--fix", "--terminal"]
+    static let bridgeRefreshArguments = ["install", "refresh-owned", "--agent", "dsh"]
+    @Published private(set) var bridgeUpdated = false
     @Published private(set) var report: EnvironmentReport?
     @Published private(set) var checking = false
     @Published private(set) var failed = false
@@ -143,16 +145,38 @@ final class EnvironmentHealth: ObservableObject {
     }
     func autoCheck() {
         guard !version.isEmpty, defaults.string(forKey: key + ".attempt") != version else { return }
+        performCheck(refreshBridge: true)
+    }
+    func refreshIfStale(now: Date = Date()) {
+        if !version.isEmpty, defaults.string(forKey: key + ".attempt") != version { autoCheck(); return }
+        let lastAttempt = defaults.double(forKey: key + ".attemptAt")
+        guard lastAttempt <= 0 || now.timeIntervalSince1970 - lastAttempt >= 300 else { return }
         check()
     }
-    func check() {
+    func check() { performCheck(refreshBridge: false) }
+    private func performCheck(refreshBridge: Bool) {
         guard !checking else { return }
         checking = true; failed = false; repairOpened = false
         defaults.set(version, forKey: key + ".attempt")
+        defaults.set(Date().timeIntervalSince1970, forKey: key + ".attemptAt")
         let run = run
         DispatchQueue.global(qos: .utility).async { [weak self] in
+            var updated = false
+            if refreshBridge {
+                let receipt = run(Self.bridgeRefreshArguments)
+                if receipt.status == 0, let data = receipt.stdout.data(using: .utf8),
+                   let value = try? JSONDecoder().decode(BridgeRefreshReceipt.self, from: data), value.valid {
+                    updated = value.status == "updated"
+                } else {
+                    DiagLog.warn("environment.bridge.refresh.failed", "Could not refresh the existing DeepSeek bridge")
+                }
+            }
             let result = run(["doctor", "--json", "--no-prompt"])
-            DispatchQueue.main.async { self?.finish(result) }
+            let didUpdate = updated
+            DispatchQueue.main.async {
+                if didUpdate { self?.bridgeUpdated = true }
+                self?.finish(result)
+            }
         }
     }
     private func finish(_ result: (status: Int32, stdout: String, stderr: String)) {
@@ -178,4 +202,12 @@ final class EnvironmentHealth: ObservableObject {
             }
         }
     }
+}
+
+
+private struct BridgeRefreshReceipt: Decodable {
+    let schema: Int
+    let agent: String
+    let status: String
+    var valid: Bool { schema == 1 && agent == "dsh" && ["current", "updated", "not-installed", "newer"].contains(status) }
 }

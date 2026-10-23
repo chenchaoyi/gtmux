@@ -1,7 +1,6 @@
 package app
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -172,18 +171,11 @@ func agentPluginCurrent(inst agentInstaller) bool {
 	if err != nil {
 		return false
 	}
-	// Preserve the installed executable location during template comparison.
-	for _, line := range strings.Split(string(b), "\n") {
-		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "const BIN = ") {
-			var bin string
-			quoted := strings.TrimSuffix(strings.TrimPrefix(line, "const BIN = "), ";")
-			if json.Unmarshal([]byte(quoted), &bin) == nil {
-				return string(b) == inst.plugin(bin)
-			}
-		}
+	bin := installedPluginBinary(b)
+	if inst.key == "dsh" {
+		return bin != "" && dshPluginCompatible(b, bin)
 	}
-	return false
+	return bin != "" && string(b) == inst.plugin(bin)
 }
 
 // A user's global off switch is a policy choice, not a missing binding.

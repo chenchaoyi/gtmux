@@ -923,3 +923,20 @@ website commands SHALL not replace working user instructions before activation.
 - **WHEN** official Mac/CLI download hosting changes
 - **THEN** website setup and download links reflect the deployed service
 - **AND** App Store/private phone delivery remains independent, with no hosting-only phone build
+
+
+### Requirement: Refresh stale results and distinguish optional/history information
+
+Opening the menu or health report SHALL refresh a check whose last attempt is at least five minutes old, coalescing concurrent reads. These checks and manual Check again SHALL remain read-only. A failed check SHALL retain the last report with an explicit failure indication; it SHALL NOT trigger an immediate retry loop.
+
+Absent optional dst installation or no currently connected terminal session SHALL be informational. Verified sessions lacking input capability SHALL retain a recommendation describing that sending is unavailable. User-operation failures retained in logs SHALL be informational history with count, last time and readable operation names; non-action diagnostic errors SHALL remain recommendations. Error records SHALL NOT be deleted to clear findings.
+
+#### Scenario: A previously repaired bridge still appears in a cached report
+
+- **WHEN** the user opens the report after its last attempt is five minutes old
+- **THEN** a fresh read replaces the stale result without applying general doctor repairs
+
+#### Scenario: Old HQ commands failed but current checks pass
+
+- **WHEN** the only recent errors are action-history entries
+- **THEN** their count and time remain visible as information and do not inflate current findings

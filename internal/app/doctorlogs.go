@@ -237,8 +237,44 @@ func rowLogErrors(now time.Time) dcheck {
 	for i, k := range keys {
 		parts[i] = fmt.Sprintf("%s ×%d", k, counts[k])
 	}
-	return dcheck{stRec, label, fmt.Sprintf("%d · %s", len(errs), strings.Join(parts, ", ")),
-		i18n.Tr("Run gtmux logs --since 1d --level error to inspect the failed operations and their timestamps. A past error does not establish an ongoing failure.", "请运行 gtmux logs --since 1d --level error，查看失败操作及发生时间。历史错误不代表当前仍有故障。")}
+	status := stInfo
+	for _, e := range errs {
+		if e.Kind != "act" {
+			status = stRec
+			break
+		}
+	}
+	latest := errs[0].Time()
+	for _, e := range errs {
+		if e.Time().After(latest) {
+			latest = e.Time()
+		}
+	}
+	if status == stInfo {
+		return dcheck{stInfo, label,
+			fmt.Sprintf(i18n.Tr("%d failed operations in 24h · last at %s", "24 小时内 %d 次操作未成功 · 最近 %s"), len(errs), latest.In(now.Location()).Format("01-02 15:04")),
+			i18n.Tr("Operation history, not a current health failure. ", "这是操作历史，不代表当前仍有故障。") + recentOperationNames(counts, keys) + " · gtmux logs --since 1d --level error"}
+	}
+	return dcheck{status, label, fmt.Sprintf(i18n.Tr("%d error records · last at %s", "%d 条错误记录 · 最近 %s"), len(errs), latest.In(now.Location()).Format("01-02 15:04")),
+		i18n.Tr("Recorded components: ", "记录涉及：") + strings.Join(parts, ", ") + i18n.Tr(". Run gtmux logs --since 1d --level error for details. Log records alone do not prove an ongoing failure.", "。可运行 gtmux logs --since 1d --level error 查看详情；日志记录本身不能证明故障仍在持续。")}
+}
+
+func recentOperationNames(counts map[string]int, keys []string) string {
+	names := map[string]string{
+		"cli act.hq-workspace": i18n.Tr("HQ workspace", "HQ 工作台操作"),
+		"cli act.knowledge":    i18n.Tr("Knowledge operation", "知识库操作"),
+	}
+	var parts []string
+	for _, key := range keys {
+		count := counts[key]
+		name := names[key]
+		if name == "" {
+			name = key
+		}
+		parts = append(parts, fmt.Sprintf("%s ×%d", name, count))
+	}
+	sort.Strings(parts)
+	return strings.Join(parts, ", ")
 }
 
 func rowFileModes() dcheck {

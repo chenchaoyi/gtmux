@@ -144,3 +144,14 @@ func TestDoctorFileModesDoesNotCertifyUnverifiedLinks(t *testing.T) {
 		t.Fatal("repair followed link")
 	}
 }
+
+func TestPastUserOperationsAreHistoryNotAnOngoingHealthFailure(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	now := time.Now()
+	put(t, filepath.Join(state.LogsDir(), now.Format("2006-01-02")+".jsonl"),
+		`{"ts":"`+now.Add(-time.Hour).Format("2006-01-02T15:04:05.000Z07:00")+`","level":"error","kind":"act","component":"cli","event":"act.hq-workspace"}`+"\n", 0600)
+	row := rowLogErrors(now)
+	if row.status != stInfo || !strings.Contains(row.note, "HQ workspace") || !strings.Contains(row.value, "last at") {
+		t.Fatalf("old operation still alarming or obscure: %+v", row)
+	}
+}

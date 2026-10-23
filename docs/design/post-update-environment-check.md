@@ -2,13 +2,12 @@
 
 ## 1. Flow
 
-A successful CLI update invokes the newly installed executable with `doctor
+A successful CLI update first refreshes an already installed gtmux-owned DSH bridge through the new executable (`install refresh-owned --agent dsh`, bounded to 15 seconds), then invokes it with `doctor
 --no-prompt --progress`, bounded to 90 seconds. Installation and health have separate
 outcomes. A failed or timed-out check advises retrying `gtmux doctor`; it does not
 change the install exit status. `GTMUX_ACTOR=menubar` skips this old-process check.
 
-The relaunched Mac app runs `doctor --json --no-prompt` once per app version after
-startup. It stores the attempted version and the last valid report in UserDefaults.
+The relaunched Mac app runs the same owned-bridge maintenance once per app version, then `doctor --json --no-prompt` after startup. It stores the attempted version and the last valid report in UserDefaults.
 A failure stays visible without an automatic retry loop; manual retry is always
 available. Reports must have schema 1, consistent row counts, the current app's CLI
 version and an exit status consistent with blocking findings. Invalid results never
@@ -26,7 +25,7 @@ Review repairs opens `doctor --fix --terminal`. The CLI opens an interactive ter
 running the same executable with `doctor --fix`, without `--yes`. Each fix retains
 its existing explanation and confirmation. Opening a terminal is not a repair
 receipt; the user checks again after completing it. Some findings have no automatic
-fix. No automatic installation, configuration edit or service restart is added.
+fix. Automatic maintenance is limited to recognized, already installed gtmux bridge artifacts. It preflights ownership, refuses links and foreign files, publishes complete files atomically, and verifies the result. It preserves the existing executable location, never changes user profiles, installs a third-party client, or restarts a process. Version metadata alone does not make executable-identical bridge code stale, and maintenance never downgrades a bridge from a newer release. First installation and profile changes remain explicit repair actions. A verified update shows a small caption directing Web activation to its check and explaining that existing sessions are not restarted.
 
 ## 3. Process boundaries
 
@@ -36,8 +35,7 @@ terminates on timeout and kills the check process if termination takes over two
 seconds. Temporary files are removed. Go uses CommandContext plus WaitDelay.
 
 This adds no HTTP endpoints or phone/web repair controls. Reports remain on the Mac.
-A same-version reinstall does not trigger a second automatic check; use Check again.
-The first launch with this feature also checks once. Manual checks are read-only.
+A same-version reinstall does not repeat automatic bridge maintenance. Opening the menu or report refreshes a check older than five minutes, coalescing concurrent checks; reopening does not loop on a failure. Check again remains available immediately. These freshness/manual checks are read-only. A failed maintenance receipt does not turn installation into failure or replace a later health result; current doctor findings remain visible.
 
 ## 4. Verification
 
@@ -107,3 +105,10 @@ not proof that saving stopped. Continuum's launch timestamp and active agent out
 are not successful-save receipts. Suspected conversation binding mismatches likewise
 remain unconfirmed; a newer unbound conversation in the same directory may belong to
 another session. Doctor neither changes nor infers ownership from that heuristic.
+
+
+## 8. Optional clients and historical failures
+
+A missing optional dst client or absence of a connected terminal session is informational, not a permanent repair recommendation. Current verified sessions with unavailable input retain an actionable recommendation. Tool discovery honors PATH first, then known locations and installed NVM Node versions, preferring a numeric default alias. It never sources shell startup files. A resolved dst launch carries its paired Node runtime directory in that child's PATH.
+
+Failures of past user operations are retained as informational history with a count, last time and readable operation names. Non-action diagnostic errors remain recommendations for inspection. Neither class proves an ongoing outage on its own; the report never deletes error history to appear healthy.
