@@ -232,3 +232,12 @@ export function ShareIcon({size = 20, color = '#fff'}: {size?: number; color?: s
     <Path d="M12 15V3m-4 4 4-4 4 4M7 10H5v11h14V10h-2" />
   </Svg>;
 }
+
+// A question is an actionable conversation item, not another agent status.
+export function QuestionBubbleIcon({size = 24, color = '#fff'}: {size?: number; color?: string}) {
+  return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M6 3.5h12a2.5 2.5 0 0 1 2.5 2.5v10a2.5 2.5 0 0 1-2.5 2.5H9L3.5 22V6A2.5 2.5 0 0 1 6 3.5Z" stroke={color} strokeWidth={1.6} strokeLinejoin="round" />
+    <Path d="M9.5 8a2.5 2.5 0 0 1 5 .5c0 1.5-2.5 1.5-2.5 3" stroke={color} strokeWidth={1.6} strokeLinecap="round" />
+    <Path d="M12 14.5h.01" stroke={color} strokeWidth={2} strokeLinecap="round" />
+  </Svg>;
+}

@@ -12,6 +12,7 @@ import {NavigationContext} from '@react-navigation/native';
 import {
   Alert,
   Animated,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -45,6 +46,7 @@ import {BrandLoader} from '../ui/BrandLoader';
 import {SessionInteractionCard} from '../ui/SessionInteractionCard';
 import {usePaneInteraction} from '../state/usePaneInteraction';
 import {useTerminalKeys} from '../ui/terminalKeys';
+import {SessionQuestionBanner} from '../ui/SessionQuestionBanner';
 import {RunningRow} from '../ui/RunningRow';
 import {TasksSheet} from '../ui/TasksSheet';
 import {type BackgroundTask, elapsed, showRow, tally} from '../api/backgroundTasks';
@@ -255,6 +257,7 @@ function PaneDetailView({
   const scrollCollapse = useRef(new Animated.Value(0)).current;
   const {collapse, keyboardVisible} = useKeyboardChrome(scrollCollapse);
   const [headerH, setHeaderH] = useState(0);
+  const [questionBannerH, setQuestionBannerH] = useState(0);
   // All three blocks fold on one driver, so the height the decision needs is their SUM:
   // that is what the viewport gains and loses, and therefore what the hysteresis has to
   // clear. Measured on a real page it is ~117pt against a 40pt "at the tail" threshold,
@@ -419,9 +422,9 @@ function PaneDetailView({
     return () => offs.forEach(off => off());
   }, []);
   const pickModeRef = useRef<(m: DetailMode) => void>(() => {});
-  const pickMode = (m: DetailMode) => {
+  const pickMode = (m: DetailMode, persist = true) => {
     if (m === mode) return;
-    AsyncStorage.setItem(MODE_KEY(agent.pane_id), m);
+    if (persist) AsyncStorage.setItem(MODE_KEY(agent.pane_id), m);
     // full-screen carries across modes now (both 对话 + 终端 support it)
     // Show the spinner on EVERY switch: the first mount is slow (heavy layout) and
     // even a subsequent opacity swap has a slight composite delay — the spinner
@@ -606,6 +609,8 @@ function PaneDetailView({
   const refreshInteraction = interaction.refresh;
   const interactionRefresh = useRef(refreshInteraction); interactionRefresh.current = refreshInteraction;
   const keyControl = useTerminalKeys(isNative ? undefined : `${client.base}|${agent.pane_id}`, inputEnabled, onLoadKeys, onSendKey);
+  const showQuestionBanner = !fullscreen && !isNative && !!keyControl.cap?.actions.length;
+  const questionInset = showQuestionBanner ? questionBannerH : 0;
   useEffect(() => { refreshInteraction(); }, [mode, refreshInteraction]);
 
   // Fetch the transcript on mount + when the status flips or a prompt is sent (a turn
@@ -656,9 +661,9 @@ function PaneDetailView({
   // trees in JS even when nothing changed — that was the "停顿 on unchanging content".
   const chatEl = useMemo(
     () => (
-      <ChatView client={isGuest ? undefined : client} agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} pendingPrompt={pendingPrompt} pendingDelivered={pendingDelivered} fontPref={fontPref} onLiveEdge={chatEdge} topPad={chromeH} controlsTop={fullscreen ? insets.top : chromeH} controlsShift={fullscreen ? undefined : collapse.interpolate({inputRange: [0, 1], outputRange: [0, -chromeH]})} maxWidth={isWide ? READING_WIDTH : undefined} />
+      <ChatView client={isGuest ? undefined : client} agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} pendingPrompt={pendingPrompt} pendingDelivered={pendingDelivered} fontPref={fontPref} onLiveEdge={chatEdge} topPad={chromeH + questionInset} controlsTop={fullscreen ? insets.top : chromeH + questionInset} controlsShift={fullscreen ? undefined : collapse.interpolate({inputRange: [0, 1], outputRange: [0, -chromeH]})} maxWidth={isWide ? READING_WIDTH : undefined} />
     ),
-    [client, isGuest, live, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, pendingPrompt, pendingDelivered, fontPref, chatEdge, chromeH, fullscreen, insets.top, isWide, collapse],
+    [client, isGuest, live, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, pendingPrompt, pendingDelivered, fontPref, chatEdge, chromeH, questionInset, fullscreen, insets.top, isWide, collapse],
   );
   // Codex pins the prompt of the turn on screen to the top row, cut to the pane's width
   // (ui/codexPinned). When that row is recognised, the full prompt from the conversation
@@ -692,7 +697,7 @@ function PaneDetailView({
   const [pinH, setPinH] = useState(0);
   const onPinHeight = useCallback((h: number) => setPinH(prev => (prev === h ? prev : h)), []);
   const termText = pinned ? pinned.text : text;
-  const termTopPad = chromeH + (pinned ? pinH : 0);
+  const termTopPad = chromeH + questionInset + (pinned ? pinH : 0);
   // The chrome slides out by its whole height, the bar included while it is showing.
   const chromeSlide = chromeH + (pinned && mode === 'terminal' ? pinH : 0);
   const termEl = useMemo(
@@ -821,6 +826,17 @@ function PaneDetailView({
         </View>
       )}
         </View>
+      {showQuestionBanner && <Animated.View testID="session-question-dock"
+        onLayout={e => { const height = e.nativeEvent.layout.height; setQuestionBannerH(h => Math.abs(h - height) > 1 ? height : h); }}
+        style={[styles.questionDock, {transform: [{translateY: collapse.interpolate({inputRange: [0, 1], outputRange: [chromeSlide, 0]})}]}]}>
+        <SessionQuestionBanner control={keyControl} enabled={inputEnabled} pal={pal} lang={lang}
+          onOpen={action => {
+            if (action.id === 'codex.view-question') {
+              Keyboard.dismiss();
+              pickMode('terminal', false);
+            }
+          }} />
+      </Animated.View>}
       {!fullscreen && (
         <Animated.View
           pointerEvents={keyboardVisible ? 'none' : 'box-none'}
@@ -1072,6 +1088,7 @@ function PaneDetailView({
           historyScope={historyScope(live)}
           enabled={inputEnabled}
           keyController={keyControl}
+          showActions={false}
           returnSends={returnSends}
           prefill={refill}
           onSend={onComposerSend}
@@ -1240,6 +1257,7 @@ const styles = StyleSheet.create({
   // The stack is the whole scrolling region; the chrome floats inside it, clipped so a
   // folded band cannot take a tap from the top of the terminal.
   stack: {flex: 1, overflow: 'hidden'},
+  questionDock: {position: 'absolute', top: 0, left: 0, right: 0, zIndex: 11},
   // zIndex is NOT optional here. The body's visible layer carries `zIndex: 1` (it is how
   // the two modes stack), and that was enough to paint the terminal OVER the chrome: the
   // bands were laid out at the right place the whole time — the e2e dump had the back

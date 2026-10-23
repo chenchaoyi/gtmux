@@ -52,6 +52,7 @@ import {Haptics} from '../native/haptics';
 import {MODAL_ORIENTATIONS} from './modalOrientations';
 import {useTerminalKeys, type LoadKeys, type SendKey, type TerminalKeyController} from './terminalKeys';
 import {TerminalKeyPanel, TerminalKeyFeedback} from './TerminalKeyPanel';
+import {SessionQuestionBanner} from './SessionQuestionBanner';
 
 // iOS docks the key row on the keyboard via this accessory id (so it replaces the
 // default assistant bar instead of stacking another sparse row above it).
@@ -226,6 +227,7 @@ export const Composer = React.memo(function Composer({
   onLoadKeys,
   onSendKey,
   keyController,
+  showActions = true,
   composeRequest,
 }: {
   pal: Palette;
@@ -235,6 +237,7 @@ export const Composer = React.memo(function Composer({
   onLoadKeys?: LoadKeys;
   onSendKey?: SendKey;
   keyController?: TerminalKeyController;
+  showActions?: boolean;
   composeRequest?: number;
   returnSends?: boolean; // D7: when off (default) Return = newline; send via ↑ only
   // In Demo mode the composer must NOT read or write the real input-history store: it
@@ -738,9 +741,7 @@ export const Composer = React.memo(function Composer({
         },
         !enabled && styles.disabled,
       ]}>
-      {(terminalKeys.cap?.actions ?? []).map(action => <ComposerKey key={action.id} pal={pal} disabled={!enabled || !terminalKeys.cap?.can_input || keyBlocked} onPress={() => terminalKeys.fire(action.event, action)} testID="composer-view-question">
-        {lang === 'zh' ? `${action.count ?? 1} 个问题 · 查看` : `${action.count ?? 1} question${action.count === 1 ? '' : 's'} · View`}
-      </ComposerKey>)}
+      {showActions && <SessionQuestionBanner control={terminalKeys} enabled={enabled} pal={pal} lang={lang} />}
       <TerminalKeyFeedback control={terminalKeys} pal={pal} lang={lang} />
       {renderKeys()}
       <TerminalKeyPanel visible={keysOpen} onClose={closeKeys} onDismiss={finishKeysDismissal} control={terminalKeys} enabled={enabled} pane={draftKey} pal={pal} lang={lang} />

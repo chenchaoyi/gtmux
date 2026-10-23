@@ -70,6 +70,6 @@ test('the detail screen hands the chat the chrome height and its slide', () => {
   const fs = require('fs') as {readFileSync: (p: string, e: string) => string};
   const req = require as unknown as {resolve: (m: string) => string};
   const src = fs.readFileSync(req.resolve('../screens/DetailScreen.tsx'), 'utf8');
-  expect(src).toContain('controlsTop={fullscreen ? insets.top : chromeH}');
+  expect(src).toContain('controlsTop={fullscreen ? insets.top : chromeH + questionInset}');
   expect(src).toMatch(/controlsShift=\{fullscreen \? undefined : collapse\.interpolate\(\{inputRange: \[0, 1\], outputRange: \[0, -chromeH\]\}\)\}/);
 });

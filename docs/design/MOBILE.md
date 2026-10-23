@@ -1604,3 +1604,11 @@ Tool-list headings show the count once. Delegation rows prefer a recorded purpos
 ### In-conversation interaction
 
 Waiting shows the current prompt and safe numbered choices in context; answering folds the card, and resuming work removes it. There is no separate Interact mode or duplicate keyboard. Unrecognized prompts use the existing composer Keys and Terminal. App, iPad and Web share the read-only current-screen endpoint, preserving hook, scope and key-outcome boundaries. See [design and acceptance boundaries](session-interaction.md).
+
+## Pending session questions
+
+The host's advertised question action belongs at the conversation's upper edge, below the expanded header/mode controls, rather than among bottom keyboard shortcuts. Use a compact raised neutral card, a brand hairline/question icon, a clear count-aware reply title and a View chevron. The host currently supplies count and action metadata, not question text; do not fabricate a question preview or invent a new agent state.
+
+The dock follows the existing header translation down to the upper safe edge when that chrome folds, remaining accessible while composing or reading history. It does not resize the viewport with a height animation; measured height only supplies content/controls padding. Phone and iPad share it. Full-screen reading retains its existing hidden-composer boundary. The composer omits its duplicate action when the session dock owns it. Preserve the same typed action, revision/context proof, permissions and uncertain-input lock; opening a question never auto-selects an answer.
+
+Short landscape windows use a 44-point minimum single-line card, retaining the accessible hint while omitting the visual subtitle. Small action text uses the neutral foreground for light-mode contrast; the brand remains on the icon/hairline. Once the shared input gate accepts **View question**, dismiss the keyboard and open the in-app terminal to reveal the agent's picker. This does not persist a new preferred viewing mode, submit the draft or choose an answer. Failed/uncertain operations keep the existing input recovery controls.
