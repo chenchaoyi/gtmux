@@ -145,6 +145,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         store.refresh()
         store.refreshResource()
+        store.refreshRestorePlan()
         resetTimer()
 
         // The HQ medallion's resource state (menubar-hq-state-parity) polls the machine
@@ -153,6 +154,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // agents refresh.
         resourceTimer = Timer.scheduledTimer(withTimeInterval: 25, repeats: true) { [weak self] _ in
             self?.store.refreshResource()
+            self?.store.refreshRestorePlan()
         }
 
         // Quietly check for a newer release a few seconds after launch (throttled to
@@ -463,6 +465,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // The popover and the center-screen command palette must never coexist.
         CommandPaletteController.shared.dismiss()
         store.refresh()
+        store.refreshRestorePlan()
         // Check for a new release each time the menu is opened (throttled inside
         // Updater) so the "new version" banner is fresh when you actually look —
         // not just once a day.
@@ -627,6 +630,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // gtmux cannot read its own attribution. See startBootServer.
             GtmuxCLI.spawn(["restore", "--from-app"], onExit: { [weak self] in
                 self?.store.endRestore()
+                self?.store.refreshRestorePlan()
                 self?.store.refresh() // the fleet it just brought back
             })
         case .newSession: newSession() // manages its own popover close + prompt

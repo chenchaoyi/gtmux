@@ -1,11 +1,16 @@
 package app
 
 import (
+	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/chenchaoyi/gtmux/internal/resume"
+	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
 // A resurrect save line for one pane that was RUNNING AN AGENT at save time (the
@@ -185,5 +190,103 @@ func TestRestorePlanFallbackOwnership(t *testing.T) {
 				t.Fatalf("plan promises wrong conversation count: %+v", plan)
 			}
 		})
+	}
+}
+
+// These previews never start a server or touch a pane. The query seam is also an
+// assertion that availability is one topology read, independent of agent history.
+func TestPendingRestorePlan(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	save := filepath.Join(t.TempDir(), "last")
+	if err := os.WriteFile(save, []byte(saveShellPane("attached", "0", "0", "/fixture")+"\n"+saveShellPane("missing", "0", "0", "/fixture")+"\n"+saveShellPane("detached shell", "0", "0", "/fixture")), 0600); err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name, output string
+		queryErr     error
+		want         []string
+		wantErr      bool
+	}{
+		{"no server after reboot", "", &exec.ExitError{Stderr: []byte("no server running on /fixture/socket")}, []string{"attached", "missing", "detached shell"}, false},
+		{"partially restored", "1\t@1\t%1\tattached\n0\t@2\t%2\tdetached shell\n0\t@2\t%3\tdetached shell\n0\t@3\t%4\tdetached shell\n0\t@4\t%5\tnew shell", nil, []string{"detached shell", "new shell", "missing"}, false},
+		{"all attached", "1\t@1\t%1\tattached\n2\t@2\t%2\tmissing\n1\t@3\t%3\tdetached shell", nil, nil, false},
+		{"permission failure is unknown", "", &exec.ExitError{Stderr: []byte("error connecting to /fixture/socket (Permission denied)")}, nil, true},
+		{"missing binary is unknown", "", exec.ErrNotFound, nil, true},
+		{"bad output is unknown", "unexpected", nil, nil, true},
+		{"bad attached count is unknown", "x\t@1\t%1\tattached", nil, nil, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			calls := 0
+			plan, err := pendingRestorePlan(save, func(args ...string) (string, error) {
+				calls++
+				if len(args) != 4 || args[0] != "list-panes" || args[1] != "-a" || args[2] != "-F" {
+					t.Fatalf("unexpected command: %v", args)
+				}
+				return tc.output, tc.queryErr
+			})
+			if (err != nil) != tc.wantErr || calls != 1 {
+				t.Fatalf("err=%v calls=%d", err, calls)
+			}
+			var names []string
+			for _, s := range plan.Sessions {
+				names = append(names, s.Name)
+			}
+			if !reflect.DeepEqual(names, tc.want) {
+				t.Fatalf("sessions=%v, want %v", names, tc.want)
+			}
+			if tc.name == "partially restored" {
+				s := plan.Sessions[0]
+				if s.State != "detached" || s.Windows != 2 || s.Panes != 3 || len(s.Agents) != 0 {
+					t.Fatalf("live counts / no stale resume promises: %+v", s)
+				}
+				if plan.Sessions[2].State != "missing" {
+					t.Fatal("missing session loses its state")
+				}
+			}
+		})
+	}
+}
+
+func TestPendingRestorePlanWithoutSave(t *testing.T) {
+	plan, err := pendingRestorePlan("", func(...string) (string, error) { return "0\t@1\t%1\tlive shell", nil })
+	if err != nil || len(plan.Sessions) != 1 || plan.Sessions[0].Name != "live shell" {
+		t.Fatalf("detached unsaved session: %+v %v", plan, err)
+	}
+	_, err = pendingRestorePlan("", func(...string) (string, error) { return "", errors.New("unavailable") })
+	if err == nil {
+		t.Fatal("failed query must not be known empty")
+	}
+}
+
+func TestPendingRestoreCLIIsReadOnlyEvenInsideTmux(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("TMUX", "synthetic")
+	dir := t.TempDir()
+	trace := filepath.Join(dir, "calls")
+	t.Setenv("GTMUX_TEST_RESTORE_TRACE", trace)
+	bin := filepath.Join(dir, "tmux")
+	script := `#!/bin/sh
+[ "$1" = "-u" ] && shift
+printf '%s\n' "$1" >> "$GTMUX_TEST_RESTORE_TRACE"
+[ "$1" = "list-panes" ] || exit 77
+printf '0\t@1\t%%1\tlive shell\n'
+`
+	if err := os.WriteFile(bin, []byte(script), 0700); err != nil {
+		t.Fatal(err)
+	}
+	old := tmux.Bin
+	tmux.Bin = bin
+	t.Cleanup(func() { tmux.Bin = old })
+	var rc int
+	out := captureStdout(t, func() { rc = cmdRestore([]string{"--plan", "--pending", "--json"}) })
+	if rc != 0 || !strings.Contains(out, `"name":"live shell"`) || !strings.Contains(out, `"state":"detached"`) {
+		t.Fatalf("rc=%d out=%s", rc, out)
+	}
+	if cmdRestore([]string{"--pending"}) != 1 {
+		t.Fatal("standalone pending must not trigger restore")
+	}
+	calls, err := os.ReadFile(trace)
+	if err != nil || string(calls) != "list-panes\n" {
+		t.Fatalf("preview issued a mutating command: %q %v", calls, err)
 	}
 }

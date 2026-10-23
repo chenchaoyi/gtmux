@@ -3,6 +3,7 @@ package app
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -625,7 +626,7 @@ func cmdRestore(args []string) int {
 		return 1
 	}
 	mode, target, dryRun := "all", "", false
-	planOnly, asJSON := false, false
+	planOnly, asJSON, pendingOnly := false, false, false
 	restoreFromApp = false // reset per invocation
 	restoreResumeFlag = "" // reset per invocation (the flag below overrides config)
 	for _, a := range args {
@@ -638,6 +639,8 @@ func cmdRestore(args []string) int {
 			mode = "all"
 		case a == "--dry-run":
 			dryRun = true
+		case a == "--pending":
+			pendingOnly = true
 		case a == "--plan":
 			planOnly = true
 		case a == "--json":
@@ -656,8 +659,26 @@ func cmdRestore(args []string) int {
 		}
 	}
 	// --plan (and any --json) is a READ-ONLY preview: what restore would bring back,
-	// no tmux started, no panes touched. It's the menu bar's source for the
-	// expandable "restore" row and a human preview of the review checklist.
+	// no tmux started, no panes touched. The pending projection additionally reads
+	// live topology for the menu bar; the default remains the full saved inventory.
+	if pendingOnly && !planOnly && !asJSON {
+		i18n.Sae("--pending requires --plan or --json", "--pending 需与 --plan 或 --json 一起使用")
+		return 1
+	}
+	if pendingOnly {
+		plan, err := buildPendingRestorePlan()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return 1
+		}
+		if asJSON {
+			b, _ := json.Marshal(plan)
+			fmt.Println(string(b))
+		} else {
+			printRestorePlan(plan, true)
+		}
+		return 0
+	}
 	if planOnly || asJSON {
 		if asJSON {
 			printRestorePlanJSON()
