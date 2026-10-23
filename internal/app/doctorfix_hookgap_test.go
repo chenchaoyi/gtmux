@@ -42,6 +42,7 @@ func readHookEvents(t *testing.T, path string) (map[string]bool, bool) {
 // Measured on a real machine: PreCompact and PostCompact absent for weeks, the row
 // telling the user to go run a command that --fix already knows how to run.
 func TestFixTopsUpAnIncompleteClaudeHook(t *testing.T) {
+	withHookExecutables(t, "claude")
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	if err := os.MkdirAll(filepath.Join(home, ".claude"), 0o755); err != nil {
@@ -91,6 +92,7 @@ func TestFixTopsUpAnIncompleteClaudeHook(t *testing.T) {
 // A complete file is left alone: the step must not rewrite (and back up) a file that has
 // nothing wrong with it, or every --fix run would churn the user's settings.
 func TestFixLeavesACompleteClaudeHookAlone(t *testing.T) {
+	withHookExecutables(t, "claude")
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	if err := os.MkdirAll(filepath.Join(home, ".claude"), 0o755); err != nil {

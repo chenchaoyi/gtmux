@@ -3,7 +3,6 @@ package app
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/agents"
@@ -24,36 +23,18 @@ var additionalHookAgents = func() []string {
 	return keys
 }()
 
-// Inspect existing homes and binaries without creating configuration for absent agents.
-func agentHookPresent(key string) bool {
-	inst, ok := selectedAgentInstaller(key)
-	if !ok {
-		return false
-	}
-	if inst.envDir != "" && os.Getenv(inst.envDir) != "" {
-		return fileExists(os.Getenv(inst.envDir)) || agentHookExecutablePresent(key)
-	}
-	root := filepath.Join(homeDir(), strings.Split(inst.relDir, "/")[0])
-	if key == "opencode" {
-		root = filepath.Join(homeDir(), ".config", "opencode")
-	}
-	if fileExists(root) {
-		return true
-	}
-	if key == "kiro" {
-		return lookTool("kiro-cli") != ""
-	}
-	if key == "copilot" {
-		return lookTool("copilot") != ""
-	}
-	return agentHookExecutablePresent(key)
-}
+// Hook configuration and saved conversations outlive an agent installation. Only
+// a discoverable CLI makes its automatic setup/health checks relevant. The shared
+// tool resolver also covers GUI PATHs, Homebrew, user-local bins and NVM installs.
+var hookExecutableLookup = lookTool
+
+func agentHookPresent(key string) bool { return agentHookExecutablePresent(key) }
 
 func agentHookExecutablePresent(key string) bool {
 	if manifest, ok := agents.For(key); ok {
 		for _, probes := range [][]string{manifest.Detect, manifest.InstallDetect} {
 			for _, bin := range probes {
-				if lookTool(bin) != "" {
+				if hookExecutableLookup(bin) != "" {
 					return true
 				}
 			}
@@ -217,11 +198,11 @@ func rowAgentHook(key string) dcheck {
 	if hookPolicyDisabled(key, inst.configPath()) {
 		return dcheck{stRec, label, i18n.Tr("disabled by settings", "配置已禁用"), i18n.Tr("enable hooks in the agent settings; doctor preserves this choice", "在 agent 设置中启用 hook；doctor 会保留这一选择")}
 	}
-	if _, err := loadJSONObject(inst.configPath()); err != nil && inst.plugin == nil {
+	if _, err := loadJSONObject(inst.configPath()); err != nil && !os.IsNotExist(err) && inst.plugin == nil {
 		return dcheck{stRec, label, i18n.Tr("invalid configuration", "配置无法读取"), i18n.Tr("repair the configuration file before reinstalling hooks", "先修复配置文件，再重新安装 hook")}
 	}
 	if !agentHooksInstalled(inst) {
-		return dcheck{stRec, label, i18n.Tr("not installed", "未装"), i18n.Tr("gtmux doctor --fix installs the state hooks", "gtmux doctor --fix 可安装状态 hook")}
+		return dcheck{stRec, label, i18n.Tr("not configured", "未配置"), i18n.Tr("gtmux doctor --fix installs the state hooks", "gtmux doctor --fix 可安装状态 hook")}
 	}
 	if inst.plugin != nil {
 		if !agentPluginCurrent(inst) {
@@ -234,7 +215,7 @@ func rowAgentHook(key string) dcheck {
 	if key == "kiro" && inst.format == formatKiro {
 		note = i18n.Tr("CLI 2.x profile: run with --agent gtmux", "CLI 2.x 配置：用 --agent gtmux 启动")
 	}
-	return dcheck{stOK, label, i18n.Tr("installed", "已装"), note}
+	return dcheck{stOK, label, i18n.Tr("configured", "已配置"), note}
 }
 
 func (s *fixState) stepAgentHook(key string) int {

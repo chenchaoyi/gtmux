@@ -48,6 +48,7 @@ func TestStepLocaleAppliesPlatformUTF8ToConfigAndServer(t *testing.T) {
 }
 
 func TestDoctorFixDoesNotCreateAbsentClaudeSettings(t *testing.T) {
+	withHookExecutables(t)
 	dir := t.TempDir()
 	t.Setenv("HOME", dir)
 	s := &fixState{yes: true, bin: "/usr/local/bin/gtmux"}

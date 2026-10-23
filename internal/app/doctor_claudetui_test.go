@@ -106,6 +106,7 @@ func TestReadClaudeTUIFactsFromSettingsAndEnv(t *testing.T) {
 // The fix writes one key and keeps the rest of the file — hooks, env, everything — as it
 // was, after a backup.
 func TestFixPinsClassicRendererKeepingEverythingElse(t *testing.T) {
+	withHookExecutables(t, "claude")
 	stubClaudePanes(t, 3, 3)
 	before := map[string]any{
 		"theme":         "auto",
@@ -138,6 +139,7 @@ func TestFixPinsClassicRendererKeepingEverythingElse(t *testing.T) {
 }
 
 func TestFixLeavesTheFileAloneWithoutEvidenceOrAgainstAnExplicitChoice(t *testing.T) {
+	withHookExecutables(t, "claude")
 	for _, c := range []struct {
 		name  string
 		body  map[string]any
@@ -208,6 +210,7 @@ func TestReadClaudeTUIFactsEnvSpellings(t *testing.T) {
 
 // An explicit env value — even an unusual spelling — is never overwritten by --fix (M1).
 func TestFixLeavesAnExplicitEnvChoiceAlone(t *testing.T) {
+	withHookExecutables(t, "claude")
 	stubClaudePanes(t, 2, 2)
 	path := withClaudeSettings(t, map[string]any{"env": map[string]any{"CLAUDE_CODE_NO_FLICKER": "yes"}})
 	orig, _ := os.ReadFile(path)
@@ -238,6 +241,7 @@ func TestClaudeTUIRowEnvOverridesASettingsFullscreen(t *testing.T) {
 // A settings file that cannot be read or parsed is said to be so; nothing is inferred
 // from it and nothing is written (M3).
 func TestClaudeTUIUnreadableSettings(t *testing.T) {
+	withHookExecutables(t, "claude")
 	stubClaudePanes(t, 1, 1)
 	path := withClaudeSettings(t, map[string]any{"tui": "fullscreen"})
 	if err := os.WriteFile(path, []byte("{not json"), 0o600); err != nil {
@@ -290,6 +294,7 @@ func TestClaudeTUIRowUnknownValueAndNothingToCheck(t *testing.T) {
 // A backup that cannot be written stops the change, returns failure and says nothing
 // about pinning (L3).
 func TestFixStopsWhenTheBackupCannotBeWritten(t *testing.T) {
+	withHookExecutables(t, "claude")
 	stubClaudePanes(t, 1, 1)
 	path := withClaudeSettings(t, map[string]any{"theme": "auto"})
 	orig, _ := os.ReadFile(path)
@@ -307,6 +312,7 @@ func TestFixStopsWhenTheBackupCannotBeWritten(t *testing.T) {
 
 // A write that fails is a failure, not "pinned".
 func TestFixReportsAFailedWrite(t *testing.T) {
+	withHookExecutables(t, "claude")
 	if os.Getuid() == 0 {
 		t.Skip("root writes through 0500")
 	}
@@ -326,6 +332,7 @@ func TestFixReportsAFailedWrite(t *testing.T) {
 // In one --fix run the hook step and this step both write settings.json; the file as it
 // was before the run survives in the hook step's backup, and this step keeps its own (L3).
 func TestHookAndRendererStepsKeepTheOriginalBackup(t *testing.T) {
+	withHookExecutables(t, "claude")
 	stubClaudePanes(t, 1, 1)
 	path := withClaudeSettings(t, map[string]any{"theme": "auto"})
 	orig, _ := os.ReadFile(path)
@@ -379,6 +386,7 @@ func TestCountClaudeAltPanes(t *testing.T) {
 // with no error, and the first write into that map crashed `doctor --fix` (review of #1284).
 // Every reader now calls it unreadable, and nothing is written or backed up.
 func TestNullSettingsAreUnreadableNotACrash(t *testing.T) {
+	withHookExecutables(t, "claude")
 	stubClaudePanes(t, 1, 1)
 	path := withClaudeSettings(t, nil)
 	if err := os.WriteFile(path, []byte("null\n"), 0o600); err != nil {

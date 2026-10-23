@@ -360,8 +360,8 @@ var helpCommands = []command{
 				Values: append([]string{"auto"}, installableHookAgentKeys()...)},
 			{Name: "app", EN: "the menu-bar app, which delivers desktop notifications", ZH: "菜单栏 app，桌面通知由它发"},
 		},
-		DetailEN: "No target and it asks. Hooks default to Claude; --agent auto detects supported agent homes/installations. --agent dsh installs the bundled native Cordis module and prints the next Web launch command. `doctor --fix` repairs the same files.",
-		DetailZH: "不给安装对象就询问。hooks 默认 Claude；--agent auto 识别已有的 agent 目录或安装。--agent dsh 安装自带 Cordis 模块并打印下次 Web 启动命令。`doctor --fix` 修复同一组文件。",
+		DetailEN: "No target and it asks. Hooks default to Claude; --agent auto selects supported agent CLIs found in PATH or known install locations; retained configuration alone does not select an agent. --agent dsh installs the bundled native Cordis module and prints the next Web launch command. `doctor --fix` repairs the same files.",
+		DetailZH: "不给安装对象就询问。hooks 默认 Claude；--agent auto 识别 PATH 和常见安装位置里的 agent CLI；仅有旧配置目录不会被选中。--agent dsh 安装自带 Cordis 模块并打印下次 Web 启动命令。`doctor --fix` 修复同一组文件。",
 	},
 	{
 		Name: "uninstall", Args: "[hooks|app]", Group: "setup", Writes: true,

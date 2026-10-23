@@ -286,7 +286,7 @@ Explicit hook installation and doctor repair SHALL use the same provider-declare
 
 ### Requirement: Explicit automatic hook installation selection
 
-Hook installation SHALL retain its existing Claude default when no agent is named. `--agent auto` SHALL select supported detected homes/installations, preserve settings that disable hooks, and run each provider's explicit installer. A failed provider SHALL make the overall operation fail while other selected providers remain independently eligible; no supported detections SHALL create no configuration. Help SHALL list DSH and automatic selection.
+Hook installation SHALL retain its existing Claude default when no agent is named. `--agent auto` SHALL select supported discoverable CLIs through the shared tool resolver, preserve settings that disable hooks, and run each provider's explicit installer. A failed provider SHALL make the overall operation fail while other selected providers remain independently eligible; no supported detections SHALL create no configuration. Retained configuration or history alone SHALL NOT select an agent. Explicitly naming an agent MAY prepare its configuration without a detected CLI. Help SHALL list DSH and automatic selection.
 
 #### Scenario: A detected agent has disabled hooks
 

@@ -652,7 +652,7 @@ func (s *fixState) stepAutoSave() int {
 
 func (s *fixState) stepClaudeHook() int {
 	// Like the Codex and Kimi steps, do not create settings for an unused agent.
-	if !fileExists(filepath.Join(homeDir(), ".claude")) {
+	if !agentHookPresent("claude") {
 		return 0
 	}
 	if hookPolicyDisabled("claude", claudeSettingsPath()) {
@@ -701,7 +701,7 @@ func (s *fixState) stepClaudeHook() int {
 // when Kimi is present, and (like Codex's) also when the block is there but predates
 // events gtmux has since added.
 func (s *fixState) stepKimiHook() int {
-	if !fileExists(kimiDataRoot()) {
+	if !agentHookPresent("kimi") {
 		return 0
 	}
 	missing := missingKimiHookEvents()
@@ -740,14 +740,14 @@ func (s *fixState) stepKimiHook() int {
 // ~/.codex/hooks.json (preserving foreign hooks) and enables features.hooks in
 // config.toml, leaving any existing `notify` (e.g. computer-use) untouched. Since
 // it's additive — no destructive replace — it's a normal [Y/n] step, safe under
-// --yes. Only offered when Codex is present (~/.codex exists) and not already wired.
+// --yes. Only offered for a discoverable Codex CLI that is not already wired.
 func (s *fixState) stepCodexHook() int {
+	if !agentHookPresent("codex") {
+		return 0
+	}
 	if hookPolicyDisabled("codex", agentInstallers["codex"].configPath()) {
 		i18n.Sae("  ⚠ Codex hooks are disabled by settings; enable them in Codex first", "  ⚠ Codex 配置已禁用 hook；请先在 Codex 中启用")
 		s.rc = 1
-		return 0
-	}
-	if !fileExists(codexHome()) {
 		return 0
 	}
 	// A wired hook still marked async (written by an older gtmux) is STALE: Codex 0.146.0

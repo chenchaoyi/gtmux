@@ -121,6 +121,7 @@ func TestOpencodePluginMigrationAndDoctorFreshness(t *testing.T) {
 }
 
 func TestDoctorPreservesGlobalDisablePolicyAndMalformedHookShapes(t *testing.T) {
+	withHookExecutables(t, "gemini")
 	t.Setenv("HOME", t.TempDir())
 	inst := agentInstallers["gemini"]
 	if err := updateAgentSettings(inst, inst.configPath(), "/opt/gtmux", true); err != nil {

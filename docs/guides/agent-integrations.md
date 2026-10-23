@@ -458,12 +458,20 @@ gtmux doctor --fix
 gtmux uninstall hooks --agent codex
 ```
 
-`auto` detects supported homes or executables and skips recognised disabled-hook
+`auto` detects supported CLIs through the shared PATH, Homebrew, user-local and NVM resolver and skips recognised disabled-hook
 settings. It only selects agents that have an installer. Omitting `--agent` retains
 the Claude default. Doctor diagnoses configuration; `--fix` uses the corresponding
 agent's writer, preserving foreign hooks and refusing unclear ownership. Configured
 does not prove loaded: the agent must run the new hooks, Codex trust may need review,
 and DSH must explicitly load its overlay. No automatic agent restart is implied.
+
+Retained settings and histories do not establish a CLI installation. Doctor omits
+hook/preference rows and automatic setup/repair skips an agent when its CLI cannot
+be found; retained files stay intact. A newly installed CLI can be configured even
+before its home exists. Healthy command hooks say **Configured**, which does not
+claim a running session has loaded them. Explicit per-agent setup remains available
+for intentional preconfiguration; external history reading uses its own rules.
+
 Desktop notifications additionally need the menu-bar app and notification permission;
 phone notifications need pairing, push registration and the relevant consent.
 

@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	"path/filepath"
 	"sort"
 
 	"github.com/chenchaoyi/gtmux/internal/agents"
@@ -21,15 +20,7 @@ func installableHookAgentKeys() []string {
 func detectedHookAgents() []string {
 	var keys []string
 	for _, key := range installableHookAgentKeys() {
-		present := false
-		switch key {
-		case "claude":
-			present = fileExists(filepath.Join(homeDir(), ".claude")) || agentHookExecutablePresent(key)
-		case "kimi":
-			present = fileExists(kimiDataRoot()) || agentHookExecutablePresent(key)
-		default:
-			present = agentHookPresent(key)
-		}
+		present := agentHookPresent(key)
 		if present {
 			keys = append(keys, key)
 		}
@@ -48,10 +39,10 @@ func hookSelectionDisabled(key string) bool {
 }
 
 // Resolve selection once. Each provider keeps its explicit installer and policy;
-// discovery never writes absent homes or enables a disabled hook configuration.
+// discovery is read-only and automatic setup preserves disabled hook settings.
 func installDetectedHooks(keys, args []string, disabled func(string) bool, run func([]string) int) int {
 	if len(keys) == 0 {
-		i18n.Say("No supported agent homes or installations detected.", "未发现支持的 agent 目录或安装。")
+		i18n.Say("No supported agent CLIs detected.", "未检测到支持的 agent CLI。")
 		return 0
 	}
 	var common []string
