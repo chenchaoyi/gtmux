@@ -594,8 +594,8 @@ location is no longer present. Ambiguous matches are skipped with a receipt, and
 conversation already bound to a running pane is not resumed into another pane. The
 read-only plan describes the saved workspace; execution additionally checks live owners.
 
-Restore always prints the moment it is putting back, for example "Restoring the layout
-saved at 09:57 (37m ago)". The autosave that writes that file hangs off tmux's status
+Restore names its backup, for example "Using the layout backup saved at 09:57
+(37m ago)", and explains that later changes will not be restored. The autosave that writes that file hangs off tmux's status
 bar, so it only runs while a terminal is attached and redrawing: close the lid and it
 saves nothing. `gtmux serve` backstops it by watching the file: if nothing has written
 the save for about 10 minutes (about 20 when an autosave trigger is present) serve runs
@@ -609,11 +609,23 @@ reloading the file will not add a duplicate. If doctor reports multiple triggers
 review the existing status line: the fixer will not remove custom entries.
 
 After a restore, gtmux compares every saved window's pane count and arrangement against
-the live one. A separate warning names up to five affected windows with short facts
-such as `panes 4 → 2`, plus the remaining count. Complete diagnoses and geometry stay
+the live one. A separate warning names up to five affected windows, spells out backup
+and current counts, says how many panes are extra or missing, and gives a next step.
+For extra panes, open the window with the printed `gtmux focus %ID` command and check
+which are still needed before closing any. Missing windows or panes point to the
+restore log; different sizes/positions can be kept or adjusted in the terminal.
+Complete diagnoses and geometry stay
 in `gtmux logs --component restore --since 1d`, whose command is always printed with
 the warning. A successfully started agent resume command does not imply the layout
 was fully restored. tmux-resurrect discards its own layout errors.
+
+After loading the layout, a pane-ID receipt lists each saved session/window.
+`%44 → %7` means the pane at the same layout position had ID `%44` in the backup
+and has ID `%7` now. Pairs are shown only for matching arrangements, or an unambiguous
+single-pane window. Changed multi-pane layouts list backup and current IDs separately;
+they never guess pairs by numeric ID or pane-index order. Older backups without IDs
+say so. This receipt is for inspection and never authorizes input, pane closure or
+automatic layout changes. The plan JSON is unchanged.
 
 A tmux pane id is a per-server sequence number: restart the server and `%25` is handed
 to a different pane. gtmux keys a lot of state by that number, so restore (and, every

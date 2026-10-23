@@ -36,7 +36,8 @@ type windowShape struct {
 	Session string
 	Index   string
 	Panes   int
-	Layout  string // normalized (see normalizeLayout) — comparable across a restore
+	Layout  string   // normalized (see normalizeLayout) — comparable across a restore
+	PaneIDs []string // layout leaf order, used only for the read-only receipt
 }
 
 // key identifies the window across the save/live boundary.
@@ -48,7 +49,7 @@ var layoutChecksumRe = regexp.MustCompile(`^[0-9a-f]{4},\d+x\d+,\d+,\d+`)
 
 // layoutLeafRe matches a leaf cell's trailing pane number — `WxH,X,Y,<pane>`. A CONTAINER
 // cell is `WxH,X,Y` followed by `{` or `[`, so it never matches and its geometry survives.
-var layoutLeafRe = regexp.MustCompile(`(\d+x\d+,\d+,\d+),\d+`)
+var layoutLeafRe = regexp.MustCompile(`(\d+x\d+,\d+,\d+),(\d+)`)
 
 // normalizeLayout reduces a tmux layout string to the part that means "this is how the
 // window is divided", so a saved layout and a restored one can be compared at all.
@@ -103,6 +104,7 @@ func savedShapes(path string) []windowShape {
 			for _, fld := range fields[3:] {
 				if layoutChecksumRe.MatchString(fld) {
 					w.Layout = normalizeLayout(fld)
+					w.PaneIDs = layoutPaneIDs(fld)
 					break
 				}
 			}
@@ -130,7 +132,7 @@ func liveShapes() []windowShape {
 			continue
 		}
 		n, _ := strconv.Atoi(f[2])
-		out = append(out, windowShape{Session: f[0], Index: f[1], Panes: n, Layout: normalizeLayout(f[3])})
+		out = append(out, windowShape{Session: f[0], Index: f[1], Panes: n, Layout: normalizeLayout(f[3]), PaneIDs: layoutPaneIDs(f[3])})
 	}
 	return out
 }
@@ -148,8 +150,8 @@ func (d layoutDifference) detail() string {
 		return i18n.Tr(fmt.Sprintf("%s: window did not come back", s.key()), fmt.Sprintf("%s: 窗口未恢复", s.key()))
 	case s.Panes != l.Panes:
 		return i18n.Tr(
-			fmt.Sprintf("%s: saved with %d pane(s), came back with %d. tmux refuses to apply a layout to the wrong number of panes, so this window kept the default arrangement", s.key(), s.Panes, l.Panes),
-			fmt.Sprintf("%s: 存档里 %d 个窗格，回来是 %d 个。窗格数对不上时 tmux 不会套用布局，这扇窗停在了默认排布", s.key(), s.Panes, l.Panes))
+			fmt.Sprintf("%s: saved with %d pane(s), now has %d. tmux refuses to apply a layout to a different pane count; inspect the window before changing or closing panes", s.key(), s.Panes, l.Panes),
+			fmt.Sprintf("%s: 备份中有 %d 个窗格，现在有 %d 个。数量不同时无法直接套用备份布局，请先检查窗口，再调整或关闭窗格", s.key(), s.Panes, l.Panes))
 	default:
 		return i18n.Tr(
 			fmt.Sprintf("%s: arrangement differs: saved %s, now %s", s.key(), s.Layout, l.Layout),
@@ -193,6 +195,7 @@ func reportLayoutDrift(save string) {
 		restoreLogf("restore.layout", "layout-check: no live windows to compare against — skipped")
 		return
 	}
+	fmt.Print(renderRestorePaneIDs(saved, live, termWidth()))
 	drift := layoutDrift(saved, live)
 	if len(drift) == 0 {
 		restoreLogf("restore.layout", "layout-check: %d saved window(s) all came back with the same panes and arrangement", len(saved))
@@ -214,27 +217,41 @@ func renderLayoutDrift(total int, drift []layoutDifference, width int) string {
 	width = maxInt(1, min(width, 100))
 	var b strings.Builder
 	line := func(s string) { b.WriteString(i18n.TruncDisp(s, width) + "\n") }
+	paragraph := func(s string) {
+		for _, part := range i18n.WrapDisp(s, maxInt(1, width-4)) {
+			b.WriteString("    " + part + "\n")
+		}
+	}
 	b.WriteByte('\n')
 	// Spell out both totals: a bare "2/21" was mistaken for a date (2026-09-24).
-	line(i18n.Tr(fmt.Sprintf("⚠ Layout: %d of %d saved windows differ", len(drift), total),
-		fmt.Sprintf("⚠ 布局需留意：%d 个存档窗口中，%d 个不一致", total, len(drift))))
+	line(i18n.Tr(fmt.Sprintf("⚠ Layout differs in %d of %d saved windows", len(drift), total),
+		fmt.Sprintf("⚠ %d 个窗口的布局与备份不同（共 %d 个窗口）", len(drift), total)))
 	for i, d := range drift {
 		if i == driftReportMax {
 			line(i18n.Tr(fmt.Sprintf("  … %d more windows", len(drift)-driftReportMax),
 				fmt.Sprintf("  …… 另有 %d 个窗口", len(drift)-driftReportMax)))
 			break
 		}
-		fact := i18n.Tr("window missing", "窗口未恢复")
+		fact := i18n.Tr("Window missing. Check the restore log to find out why it was not created.", "窗口未恢复。请查看恢复日志，确认未能创建的原因。")
 		if !d.missing {
-			fact = i18n.Tr("arrangement changed", "排布不同")
+			fact = i18n.Tr("Pane sizes or positions differ. Keep the current layout if it suits you, or adjust it in the terminal.", "窗格大小或位置不同。现在的布局合适就可保留，也可以在终端手动调整。")
 			if d.saved.Panes != d.live.Panes {
-				fact = i18n.Tr(fmt.Sprintf("panes %d → %d", d.saved.Panes, d.live.Panes),
-					fmt.Sprintf("窗格 %d → %d", d.saved.Panes, d.live.Panes))
+				fact = i18n.Tr(fmt.Sprintf("Panes: saved %d, now %d.", d.saved.Panes, d.live.Panes),
+					fmt.Sprintf("窗格：备份 %d 个，现在 %d 个。", d.saved.Panes, d.live.Panes))
+				if d.live.Panes > d.saved.Panes {
+					fact += i18n.Tr(fmt.Sprintf(" %d extra.\nCheck which panes you still need before closing any.", d.live.Panes-d.saved.Panes),
+						fmt.Sprintf("多了 %d 个。\n请先核对哪些仍在使用，确认不需要后再关闭。", d.live.Panes-d.saved.Panes))
+				} else {
+					fact += i18n.Tr(fmt.Sprintf(" %d missing.\nCheck the restore log before changing the backup.", d.saved.Panes-d.live.Panes),
+						fmt.Sprintf("少了 %d 个。\n请先查看恢复日志，保留这份备份。", d.saved.Panes-d.live.Panes))
+				}
 			}
 		}
-		// Preserve the diagnosis even when the window name is long.
-		key := i18n.TruncDisp(restoreInline(d.saved.key()), maxInt(1, width-i18n.DispWidth(fact)-6))
-		line("  " + key + "  " + fact)
+		line("  " + restoreInline(d.saved.key()))
+		paragraph(fact)
+		if len(d.live.PaneIDs) > 0 {
+			b.WriteString(i18n.Tr("    Open this window: ", "    查看窗口：") + "gtmux focus " + d.live.PaneIDs[0] + "\n")
+		}
 	}
 	// Keep the command intact and copyable even on a narrow terminal.
 	b.WriteString(i18n.Tr("Full details:", "完整明细：") + "\n  " + restoreTraceHint + "\n\n")
@@ -257,8 +274,21 @@ func saveAgeNote(lastPath string, now time.Time) string {
 	}
 	when := now.Add(-age).Format("15:04")
 	return i18n.Tr(
-		fmt.Sprintf("Restoring the layout saved at %s (%s ago); anything you changed after that is not in it.", when, shortAge(age)),
-		fmt.Sprintf("恢复的是 %s 存下的布局（%s 前），那之后的改动不在里面。", when, shortAge(age)))
+		fmt.Sprintf("Using the layout backup saved at %s (%s ago).\nChanges made after that backup will not be restored.", when, shortAge(age)),
+		fmt.Sprintf("本次使用 %s 的布局备份（%s保存）。\n保存之后的改动不会恢复。", when, restoreAgeChinese(age)))
+}
+
+func restoreAgeChinese(age time.Duration) string {
+	switch {
+	case age < time.Minute:
+		return "不到 1 分钟前"
+	case age < time.Hour:
+		return fmt.Sprintf("%d 分钟前", int(age.Minutes()))
+	case age < 24*time.Hour:
+		return fmt.Sprintf("%d 小时前", int(age.Hours()))
+	default:
+		return fmt.Sprintf("%d 天前", int(age.Hours()/24))
+	}
 }
 
 // shortAge renders a restore-scale age as "37m" / "5h" / "3d".
