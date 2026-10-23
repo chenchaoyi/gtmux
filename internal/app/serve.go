@@ -673,11 +673,19 @@ func pushCopy(a server.Alert, paneText func(string) (string, bool)) (string, str
 	if a.Pane != "" {
 		title = a.Pane + " · " + title
 	}
-	if a.Client == "chatgpt_desktop" || a.Client == "unconfirmed" {
+	if a.Client == "chatgpt_desktop" {
 		if a.Kind == "waiting" {
 			return title, i18n.Tr("Needs your attention · continue in ChatGPT desktop", "需要处理，请在 ChatGPT 桌面版继续"), 0
 		}
 		return title, i18n.Tr("Finished in ChatGPT desktop", "ChatGPT 桌面版会话已完成"), 0
+	}
+	if a.Client == "unconfirmed" {
+		// An unconfirmed controller can belong to any supported native agent.
+		// It is read-only here, so never parse a pane or offer reply buttons.
+		if a.Kind == "waiting" {
+			return title, i18n.Tr("Needs your attention · continue in the original app", "需要处理，请在原应用中继续"), 0
+		}
+		return title, i18n.Tr("Turn finished", "本轮已结束"), 0
 	}
 	if a.Kind == "waiting" {
 		// Body = this session's ACTUAL choices, so expanding the notification shows

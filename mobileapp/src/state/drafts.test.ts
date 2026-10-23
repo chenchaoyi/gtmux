@@ -1,4 +1,4 @@
-import {DRAFT_CAP, DRAFT_TTL_MS, DraftMap, getDraft, prune, putDraft} from './drafts';
+import {draftKeyFor, DRAFT_CAP, DRAFT_TTL_MS, DraftMap, getDraft, prune, putDraft} from './drafts';
 
 const NOW = 1_788_700_000_000;
 
@@ -49,5 +49,21 @@ describe('expiry', () => {
   it('survives a malformed stored entry instead of throwing', () => {
     const bad = {'%7': undefined as unknown as {text: string; at: number}, '%8': {text: 'ok', at: NOW}};
     expect(getDraft(prune(bad, NOW), '%8', NOW)).toBe('ok');
+  });
+});
+
+
+describe('server and session identity', () => {
+  it('keeps the same pane number on two Macs and two sessions separate', () => {
+    const first = draftKeyFor('https://mac-a.invalid/p1', '%7', 'session-a')!;
+    const second = draftKeyFor('https://mac-b.invalid/p1', '%7', 'session-a')!;
+    const resumed = draftKeyFor('https://mac-a.invalid/p1', '%7', 'session-b')!;
+    const m = putDraft({'%7': {text: 'unscoped legacy draft', at: NOW}}, first, 'only for Mac A', NOW);
+    expect(getDraft(m, first, NOW)).toBe('only for Mac A');
+    expect(getDraft(m, second, NOW)).toBe('');
+    expect(getDraft(m, resumed, NOW)).toBe('');
+    expect(draftKeyFor('https://mac-a.invalid/p1/', '%7', 'session-a')).toBe(first);
+    expect(draftKeyFor('', '%7')).toBeUndefined();
+    expect(draftKeyFor('https://mac-a.invalid', '')).toBeUndefined();
   });
 });

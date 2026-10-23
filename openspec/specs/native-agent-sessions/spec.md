@@ -319,3 +319,12 @@ Before detaching a Codex hook, the system SHALL capture the nearest recognized a
 #### Scenario: Process identity changes or cannot be read
 - **WHEN** the ancestry changes while sampled, metadata exceeds its bounds, or handoff evidence is stale
 - **THEN** no process identity is claimed
+
+### Requirement: Notification copy preserves source uncertainty
+
+An unconfirmed native controller SHALL be described without assuming ChatGPT Desktop, for Codex and DeepSeek alike. It SHALL NOT offer pane reply buttons or read an unrelated pane to derive options. Explicit ChatGPT Desktop origins MAY retain their source-specific wording.
+
+#### Scenario: DeepSeek native alert
+
+- **WHEN** a followed DeepSeek conversation with an unconfirmed controller needs attention
+- **THEN** the notification directs the user to the original app without labelling it ChatGPT

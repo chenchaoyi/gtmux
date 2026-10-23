@@ -1,4 +1,4 @@
-// Unsent composer drafts, kept per pane.
+// Unsent composer drafts, kept per server and session/pane.
 //
 // A half-typed message used to die the moment you left the pane: the composer
 // holds its text in local state, and going back to the radar unmounts the screen.
@@ -6,7 +6,7 @@
 // sentence — and the phone is where that happens most, because the reason you
 // looked away is usually a notification.
 //
-// Keyed by PANE, never global. A draft is about the session it was being written
+// Keyed by SERVER + SESSION + PANE, never global. A draft is about the session it was being written
 // to, and showing it in another pane's box would be worse than losing it: the
 // composer types into a live terminal, so a stray draft is one Enter away from
 // being sent somewhere it makes no sense. Each pane sees its own or nothing.
@@ -19,6 +19,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const KEY = 'gtmux.drafts';
+
+// Never fall back to the old pane-only key: its server cannot be recovered safely.
+// Keep credentials out of storage keys. A moved server may lose draft continuity;
+// offering nothing is safer than guessing which Mac owns an unscoped draft.
+export function draftKeyFor(server: string, pane: string, session = ''): string | undefined {
+  if (!server || !pane) return undefined;
+  return JSON.stringify(['draft-v2', server.replace(/\/+$/, ''), pane, session]);
+}
+
 
 /** How many panes may hold a draft. Beyond this the oldest are dropped. */
 export const DRAFT_CAP = 20;

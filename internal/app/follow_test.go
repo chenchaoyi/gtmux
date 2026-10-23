@@ -3,6 +3,7 @@ package app
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/chenchaoyi/gtmux/internal/events"
@@ -61,5 +62,22 @@ func TestDesktopPushDoesNotOfferUnusablePaneActions(t *testing.T) {
 		if title != a.Task || body == "" || n != 0 {
 			t.Fatalf("copy=%q/%q/%d", title, body, n)
 		}
+	}
+}
+
+func TestUnconfirmedPushDoesNotInventChatGPTOrigin(t *testing.T) {
+	for _, lang := range []string{"en", "zh"} {
+		t.Run(lang, func(t *testing.T) {
+			t.Setenv("GTMUX_LANG", lang)
+			for _, agent := range []string{"Codex", "DeepSeek Harness"} {
+				for _, kind := range []string{"waiting", "done"} {
+					a := server.Alert{Client: "unconfirmed", SessionID: "synthetic", Agent: agent, Task: "Session", Kind: kind}
+					_, body, n := pushCopy(a, func(string) (string, bool) { t.Fatal("unconfirmed notification read pane"); return "", false })
+					if strings.Contains(body, "ChatGPT") || body == "" || n != 0 {
+						t.Fatalf("%s/%s: copy=%q count=%d", agent, kind, body, n)
+					}
+				}
+			}
+		})
 	}
 }

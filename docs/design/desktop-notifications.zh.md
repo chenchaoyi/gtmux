@@ -23,3 +23,5 @@ Hook 向本机私有队列写入请求，菜单栏应用再提交原生通知给
 测试注入模拟通知中心，使用临时目录，验证连续多轮、失败后恢复、启动和权限切换期间的竞态、撤回已处理的等待，以及过期、关闭、拒绝权限和无会话目标的测试请求。它们不证明真实系统授权、专注模式、横幅外观或 VoiceOver 已验收。
 
 设计依据 Apple 的[简洁且有用的通知建议](https://developer.apple.com/design/human-interface-guidelines/notifications)、[读取当前授权与通知功能设置](https://developer.apple.com/documentation/usernotifications/unusernotificationcenter/getnotificationsettings(completionhandler:))和[本地通知请求 API](https://developer.apple.com/documentation/usernotifications/unusernotificationcenter/add(_:withcompletionhandler:))。
+
+未确认的原生控制端不等于 ChatGPT Desktop。手机通知引导用户回到原应用，不猜来源，也不给不可用的终端回复按钮。只有明确识别为 ChatGPT Desktop 的来源才使用该名称。

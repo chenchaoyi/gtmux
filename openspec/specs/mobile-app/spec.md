@@ -2541,3 +2541,13 @@ A host-advertised question action SHALL appear as a compact, count-aware card at
 - **WHEN** the revision-bound question action passes the shared input gate
 - **THEN** the keyboard is dismissed and the in-app terminal becomes visible without changing the saved mode preference or submitting the draft
 - **AND** a short landscape window keeps a minimum 44-point action with its accessible hint
+
+### Requirement: Drafts remain isolated across servers and sessions
+
+Phone and iPad composers SHALL key drafts by server address, pane and agent session when known, without including bearer tokens. Detail and HQ SHALL use the same identity function and remount their composer when it changes. Legacy pane-only entries SHALL NOT be guessed into a server. The terminal key panel SHALL retain a readable pane locator.
+
+#### Scenario: Two Macs use the same pane number
+
+- **WHEN** a user leaves an unsent draft on Mac A's %7 and opens Mac B's %7
+- **THEN** neither the stored draft nor mounted composer text/attachments from A appears in B
+- **AND** returning to A restores A's own scoped draft

@@ -25,6 +25,7 @@ import {createReadTask, startReadPolling} from '../state/readTask';
 import {useApp} from '../state/AppContext';
 import {ERRORED_COLOR, StatusColor} from '../ui/theme';
 import {Composer} from '../ui/Composer';
+import {draftKeyFor} from '../state/drafts';
 import {historyScope} from '../state/history';
 import {acts, tally} from './hqActsModel';
 import {AnsiLine} from '../ui/ansi';
@@ -604,7 +605,9 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
             pal={pal}
             lang={lang}
             demo={demo}
-            draftKey={hq.pane_id}
+            key={draftKeyFor(client.base, hq.pane_id, hq.session_id)}
+            draftKey={draftKeyFor(client.base, hq.pane_id, hq.session_id)}
+            paneId={hq.pane_id}
             historyScope={historyScope(hq)}
             onSend={sendHQ}
             keyTarget={`${client.base}|${hq.pane_id}`}
