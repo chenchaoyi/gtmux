@@ -758,3 +758,26 @@ A current main-session start or submit hook MAY use its own verified client iden
 
 - **WHEN** stdin is piped, the client is not foreground, its birth/pane changes, the home or rollout is mismatched, or multiple sessions claim it
 - **THEN** recovery does not guess a binding or remove native history
+
+### Requirement: DSH history does not recreate inactive external rows
+
+The DSH catalog SHALL enrich live native observations but SHALL NOT seed unfollowed radar rows solely from saved conversations. An idle PID-less DSH observation without explicit HQ follow SHALL leave the list without deleting its observation, conversation or consent. Explicit HQ follow SHALL keep verified saved history visible after process retirement. An unfinished saved turn without a current observation SHALL use the existing neutral status, not claim live working or waiting. Existing hook grace, exact home/session identity, terminal deduplication and all input gates SHALL remain unchanged.
+
+#### Scenario: Reboot leaves only saved ordinary history
+
+- **WHEN** a DSH observation has been retired because its process exited or was reused, or no observation exists
+- **AND** HQ follow is off
+- **THEN** the catalog does not recreate that row, including saved unfinished turns
+- **AND** exact history reads and stored permissions remain intact
+
+#### Scenario: Explicit follow outlives the frontend
+
+- **WHEN** a verified saved DSH conversation has HQ follow on but no current observation
+- **THEN** it remains readable in the external list without gaining pane input or adoption
+- **AND** an unfinished saved turn cannot claim current work or a human wait
+
+#### Scenario: Later hooks and follow revocation
+
+- **WHEN** a later accepted DSH hook reports work or waiting for the exact session
+- **THEN** normal observation eligibility can surface it again
+- **AND** revoking follow removes a history-only row while preserving its files

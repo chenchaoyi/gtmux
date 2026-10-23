@@ -245,7 +245,7 @@ The system SHALL discover and read root user conversations from the configured D
 
 - **WHEN** a root user conversation exists in the configured DSH home
 - **THEN** it is discoverable and readable without restarting the Web server or installing hooks
-- **AND** its current controlling client remains unconfirmed and it has no pane input controls
+- **AND** discovery alone does not enroll saved history in the live radar; its current controlling client remains unconfirmed and it has no pane input controls
 
 #### Scenario: Scope and public content boundaries
 

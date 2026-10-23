@@ -131,16 +131,23 @@ liveness, or permission to send, follow, adopt or bind a pane. Multiple conversa
 share the same host process. Creation metadata, host evidence and current control remain
 separate. Terminal, menu bar, phone, iPad and Web all consume the same core projection.
 
-## Which external Codex conversations remain visible
+## Which external conversations remain visible
 
 The live overview does not use saved history as proof that a client is still open.
-An idle or completed Codex observation with **no recorded process ID** and **HQ follow
+An idle or completed Codex or DSH observation with **no recorded process ID** and **HQ follow
 off** leaves the radar list. Its observation, conversation files and consent remain
 intact; a later accepted working/waiting hook or explicit HQ follow can surface it
 again under the usual eligibility rules. This does not declare the frontend closed.
 A process-backed idle session keeps the existing liveness checks; unreadable process
-metadata receives the existing twelve-hour grace. DSH Web's saved-session discovery
-is unchanged.
+metadata receives the existing twelve-hour grace.
+
+DSH's saved catalog enriches observed sessions but does not recreate unfollowed rows
+from history alone after a process exits or the Mac restarts. Explicit HQ follow keeps
+a saved conversation visible. An unfinished saved turn without a live observation
+uses the existing neutral status rather than claiming current work or a question.
+The bounded catalog and exact-ID history readers remain available; this list filter
+does not delete conversations, change follow grants or enable input. Web status
+requires DSH's loaded native bridge for current lifecycle observations.
 
 Codex hooks separately capture the original agent process before the worker detaches,
 on each lifecycle hook. This narrow snapshot records PID, executable basename and
