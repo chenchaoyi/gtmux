@@ -652,13 +652,14 @@ rectangle inside the sheet in dark mode; keep the swipe-to-delete layer behind t
 
 ### Half-typed words must survive (drafts, 2026-09-06)
 
-Unsent input is stored per pane and survives leaving the screen. Drafts used to be the composer's local
+Unsent input is stored per server, agent session (when known) and pane, and survives leaving the screen. Drafts used to be the composer's local
 state; going back to the radar unmounted the screen, so "go see what the other one is doing, then come back and finish" cost you
 that sentence. On a phone this is especially common, because what pulls your eyes away is usually a notification.
 
-- Per pane, never global. A draft is written for that session; showing it in another pane's input box is
+- Per server/session/pane, never global. A draft is written for that session; showing it in another pane's input box is
   worse than losing it: this box types straight into a live terminal, and a draft on the wrong line is one Enter away from being sent.
-  Every pane sees its own or nothing.
+  Every pane sees its own or nothing. Detail and HQ share `draftKeyFor`; changing that identity remounts the composer so mounted text/attachments cannot carry across. The readable pane label is separate from the persistence key.
+  Legacy pane-only drafts have no trustworthy server identity and are not automatically imported; they remain subject to the existing expiry/cap. Changing the server address can therefore lose continuity; no address guessing or credential-derived keys.
 - Expiry matters more than waiting for its pane to return. tmux pane ids are per-server sequence numbers; after a restart
   `%7` is another pane. So drafts have a TTL (7 days) and a cap (20 panes), trimmed on write.
 - Empty input means no draft rather than an empty draft; otherwise blanks crowd real drafts out of the cap.

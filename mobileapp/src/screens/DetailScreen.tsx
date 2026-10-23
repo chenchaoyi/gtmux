@@ -60,6 +60,7 @@ import {BRAND, StatusColor} from '../ui/theme';
 import {TestIds} from '../constants/testIds';
 import {READING_WIDTH, useSizeClass} from '../ui/layout';
 import {KeyBus} from '../keys/bus';
+import {draftKeyFor} from '../state/drafts';
 import {historyScope} from '../state/history';
 import {CHROME_ANIM_MS, ChromeState, chromeDecision} from '../ui/liveEdge';
 import {useKeyboardChrome} from '../ui/useKeyboardChrome';
@@ -1084,7 +1085,9 @@ function PaneDetailView({
           pal={pal}
           lang={lang}
           demo={demo}
-          draftKey={live.pane_id || agent.pane_id}
+          key={draftKeyFor(client.base, live.pane_id || agent.pane_id, live.session_id)}
+            draftKey={draftKeyFor(client.base, live.pane_id || agent.pane_id, live.session_id)}
+            paneId={live.pane_id || agent.pane_id}
           historyScope={historyScope(live)}
           enabled={inputEnabled}
           keyController={keyControl}

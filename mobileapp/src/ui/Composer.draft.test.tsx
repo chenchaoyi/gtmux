@@ -4,6 +4,7 @@ import renderer, {act} from 'react-test-renderer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Composer} from './Composer';
 import {paletteFor} from './theme';
+import {draftKeyFor} from '../state/drafts';
 import {TestIds} from '../constants/testIds';
 
 // The store's rules are pinned in state/drafts.test.ts. THIS pins the wiring,
@@ -191,4 +192,28 @@ test('a different scope does not show the first one’s entries at the top', asy
   // project's list is NOT it.
   expect(shown).not.toContain('a gtmux-only phrase');
   act(() => tree!.unmount());
+});
+
+
+test('switching Macs with the same pane discards the mounted box and never imports its draft', async () => {
+  const a = draftKeyFor('https://mac-a.invalid', '%7', 's')!;
+  (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify({[a]: {text: 'only for Mac A', at: Date.now()}, '%7': {text: 'unknown old Mac', at: Date.now()}}));
+  const renderAt = (server: string) => {
+    const key = draftKeyFor(server, '%7', 's');
+    return <Composer key={key} draftKey={key} paneId="%7" pal={paletteFor('dark')} lang="en" onSend={() => {}} />;
+  };
+  let t: renderer.ReactTestRenderer;
+  act(() => { t = renderer.create(renderAt('https://mac-a.invalid')); });
+  await flush();
+  expect(openBox(t!)[0].props.value).toBe('only for Mac A');
+  act(() => { t!.update(renderAt('https://mac-b.invalid')); });
+  await flush();
+  expect(openBox(t!)[0].props.value).toBe('');
+  act(() => { openBox(t!)[0].props.onChangeText('only for Mac B'); });
+  await settleDebounce();
+  const call = (AsyncStorage.setItem as jest.Mock).mock.calls.filter(c => c[0] === 'gtmux.drafts').pop();
+  const saved = JSON.parse(call![1]);
+  expect(saved[a].text).toBe('only for Mac A');
+  expect(saved[draftKeyFor('https://mac-b.invalid', '%7', 's')!].text).toBe('only for Mac B');
+  act(() => t!.unmount());
 });

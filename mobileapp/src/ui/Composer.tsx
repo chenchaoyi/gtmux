@@ -219,6 +219,7 @@ export const Composer = React.memo(function Composer({
   returnSends = false,
   demo = false,
   draftKey,
+  paneId,
   historyScope,
   onSend,
   onUpload,
@@ -245,13 +246,10 @@ export const Composer = React.memo(function Composer({
   // them and violates the demo's "never mix in real data" rule. Demo seeds a canned list
   // and persists nothing.
   demo?: boolean;
-  /**
-   * Which pane this composer types into. When set, a half-typed message survives
-   * leaving the screen and comes back with you; when absent (Demo) nothing is
-   * read or written. It is the PANE id, so a draft can never surface in another
-   * session's box — see state/drafts.
-   */
+  /** Server/session-scoped persistence identity; see state/drafts.draftKeyFor. */
   draftKey?: string;
+  /** Display-only pane locator, separate from the private persistence identity. */
+  paneId?: string;
   /**
    * Which WORK this composer belongs to — the pane's repo, else its tmux session
    * (see state/history.historyScope). Input history is recalled per scope, since
@@ -744,7 +742,7 @@ export const Composer = React.memo(function Composer({
       {showActions && <SessionQuestionBanner control={terminalKeys} enabled={enabled} pal={pal} lang={lang} />}
       <TerminalKeyFeedback control={terminalKeys} pal={pal} lang={lang} />
       {renderKeys()}
-      <TerminalKeyPanel visible={keysOpen} onClose={closeKeys} onDismiss={finishKeysDismissal} control={terminalKeys} enabled={enabled} pane={draftKey} pal={pal} lang={lang} />
+      <TerminalKeyPanel visible={keysOpen} onClose={closeKeys} onDismiss={finishKeysDismissal} control={terminalKeys} enabled={enabled} pane={paneId ?? draftKey} pal={pal} lang={lang} />
       {composing && renderInputRow()}
 
       {/* An empty accessory replaces (and thus suppresses) iOS's sparse

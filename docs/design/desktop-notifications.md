@@ -23,3 +23,5 @@ This controls the Mac queue only. Phone/iPad APNs, external-conversation notific
 An injected notification-center adapter and temporary queues verify repeated turns, failure recovery, startup/permission races, resolved waits, stale/off/denied settings and an explicit test with no session target. These tests do not establish live macOS authorization, Focus behavior, banner appearance or VoiceOver acceptance.
 
 The design follows Apple's guidance for [concise, informative notifications](https://developer.apple.com/design/human-interface-guidelines/notifications), reading [current authorization and feature settings](https://developer.apple.com/documentation/usernotifications/unusernotificationcenter/getnotificationsettings(completionhandler:)), and the [local notification request API](https://developer.apple.com/documentation/usernotifications/unusernotificationcenter/add(_:withcompletionhandler:)).
+
+Unconfirmed native controllers do not imply ChatGPT Desktop. Phone notification copy directs the user to the original app, without inventing an origin or offering terminal reply actions. Only an explicitly confirmed ChatGPT Desktop origin uses its name.
