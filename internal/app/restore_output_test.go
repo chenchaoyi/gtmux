@@ -137,7 +137,7 @@ func TestRestoreOutputLayoutWarning(t *testing.T) {
 	for _, lang := range []string{"en", "zh"} {
 		i18n.SetLang(lang)
 		out := renderLayoutDrift(21, outputDrift(), 80)
-		for _, want := range []string{"21", "8", "example-0:0", "4 → 2", i18n.Tr("arrangement changed", "排布不同"), i18n.Tr("3 more windows", "另有 3 个窗口"), restoreTraceHint} {
+		for _, want := range []string{"21", "8", "example-0:0", i18n.Tr("saved 4, now 2", "备份 4 个，现在 2 个"), i18n.Tr("Pane sizes or positions differ", "窗格大小或位置不同"), i18n.Tr("3 more windows", "另有 3 个窗口"), restoreTraceHint} {
 			if !strings.Contains(out, want) {
 				t.Fatalf("%s: warning lost %q:\n%s", lang, want, out)
 			}
@@ -154,7 +154,7 @@ func TestRestoreOutputLayoutWarning(t *testing.T) {
 			t.Fatal("narrow output truncated the log command")
 		}
 		missing := renderLayoutDrift(1, outputDrift()[7:], 80)
-		if !strings.Contains(missing, i18n.Tr("window missing", "窗口未恢复")) {
+		if !strings.Contains(missing, i18n.Tr("Window missing", "窗口未恢复")) {
 			t.Fatal("missing window must not be described as a count change")
 		}
 		if renderLayoutDrift(21, nil, 80) != "" {

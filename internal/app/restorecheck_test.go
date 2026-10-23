@@ -136,6 +136,9 @@ func TestLayoutDriftReportsAWindowThatNeverCameBack(t *testing.T) {
 // and missing everything done in those 37 minutes, including the layout change the user
 // later reported as "restore broke my layout".
 func TestSaveAgeNoteNamesTheMomentBeingRestored(t *testing.T) {
+	old := i18n.Lang()
+	i18n.SetLang("en")
+	t.Cleanup(func() { i18n.SetLang(old) })
 	save := writeSaveWithAge(t, 37*time.Minute)
 	now := time.Now() // after the file exists, so the age is exactly what was asked for
 	note := saveAgeNote(save, now)

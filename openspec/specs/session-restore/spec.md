@@ -546,8 +546,10 @@ the save are normal, and reporting them would bury the signal).
 
 - **WHEN** a window recorded with 2 panes comes back with 3
 - **THEN** the restore names that window and both pane counts, on the terminal and in the
-  restore log; the terminal uses a short count-change fact and the log explains why
-  the layout could not be applied
+  restore log; the terminal labels backup/current counts, names the extra pane count,
+  provides a command to open the window and advises checking which panes are still
+  needed before closing any. It SHALL NOT claim the extra pane is safe to close or
+  infer which layout was applied from the count alone.
 
 #### Scenario: A faithful restore says nothing
 
@@ -720,3 +722,27 @@ Normal `gtmux restore` output SHALL show a compact session inventory with window
 - **WHEN** pane counts, geometry or missing windows differ from the save
 - **THEN** the warning retains both totals and short per-window facts without repeating the full explanation
 - **AND** the complete diagnosis remains available through the printed restore-log command
+
+### Requirement: Restore displays a read-only pane-ID receipt
+
+After loading a saved layout and reading live windows, restore SHALL list each saved
+session/window with its saved and current pane IDs. It SHALL extract IDs from layout
+leaf positions, never infer their order from numeric IDs or pane indices. Individual
+backup-to-current pairs SHALL require identical normalized arrangements and complete,
+unique ID sets, except that one saved and one current pane in the same window is
+unambiguous even after a resize. Otherwise it SHALL list both sets separately and
+state that individual correspondence is unknown. Missing windows and legacy layouts
+without IDs SHALL be explicit. The receipt SHALL NOT affect input, resume, cleanup or
+layout-changing decisions; the read-only plan JSON remains unchanged.
+
+#### Scenario: Matching layouts with renumbered panes
+- **WHEN** the saved and live layouts have identical geometry and unique pane IDs
+- **THEN** each old ID is paired with the current ID at that same layout position
+
+#### Scenario: A changed window cannot be paired safely
+- **WHEN** a multi-pane window has a different count or normalized arrangement
+- **THEN** both ID sets remain visible without guessed individual pairs
+
+#### Scenario: Old evidence is unavailable
+- **WHEN** an older saved window has no readable pane IDs
+- **THEN** the receipt names the missing evidence and still shows available current IDs
