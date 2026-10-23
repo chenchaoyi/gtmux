@@ -55,7 +55,7 @@ describe('every band folds, and every folding band is counted', () => {
     // The chrome covers the top of the scroll view. Without this the OLDEST line can
     // never be scrolled clear of it. The terminal adds Codex's pinned-prompt bar when
     // it shows (mobile-codex-pinned-prompt); chromeH is in both, and in the slide.
-    expect((src.match(/topPad=\{chromeH\}/g) ?? []).length).toBe(1);
+    expect((src.match(/topPad=\{chromeH \+ questionInset\}/g) ?? []).length).toBe(1);
     expect(src).toContain('topPad={termTopPad}');
     expect(src).toMatch(/const termTopPad = chromeH \+/);
     expect(src).toMatch(/const chromeSlide = chromeH \+/);
@@ -80,8 +80,20 @@ describe('every band folds, and every folding band is counted', () => {
     // It floats over scrollback now. Transparent, the title and the controls read on top
     // of terminal output — legible in neither direction (measured on the simulator,
     // 2026-09-10, before this line existed).
-    const style = src.slice(src.indexOf('styles.chrome,'), src.indexOf('translateY: collapse'));
+    const start = src.indexOf('styles.chrome,');
+    const style = src.slice(start, src.indexOf('translateY: collapse', start));
     expect(style).toContain('backgroundColor: pal.bg');
+  });
+
+  it('keeps the question action above content when chrome folds, with one entry', () => {
+    const start = src.indexOf('{showQuestionBanner && <Animated.View');
+    const dock = src.slice(start, src.indexOf('</Animated.View>', start));
+    expect(start).toBeGreaterThan(0);
+    expect(dock).toContain('outputRange: [chromeSlide, 0]');
+    expect(dock).not.toContain('opacity: collapse');
+    expect(dock).not.toContain('keyboardVisible');
+    expect(src).toContain('showActions={false}');
+    expect(src).toContain('const termTopPad = chromeH + questionInset');
   });
 
   it('keeps the mode toggle and the controls on ONE row', () => {

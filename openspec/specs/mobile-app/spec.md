@@ -2520,3 +2520,24 @@ Push registration and unregistration reconciliation SHALL cancel its current req
 #### Scenario: Suspension during push registration
 - **WHEN** the app leaves the foreground while registration is pending
 - **THEN** the request is cancelled, no alternate route starts, and foreground reconciliation can retry
+
+### Requirement: Pending questions stay near the conversation
+
+A host-advertised question action SHALL appear as a compact, count-aware card at the upper conversation edge instead of a bottom keyboard pill. It SHALL remain visible when normal header chrome folds or the keyboard opens, respect safe areas and preserve the existing full-screen reading boundary. The same phone/iPad component SHALL show one entry, and the composer SHALL omit its duplicate when the session dock owns it. It SHALL use the original typed action/revision/context, preserve permission and uncertain-input gates, and SHALL NOT invent question text or change agent lifecycle status.
+
+#### Scenario: User opens a question while composing
+
+- **WHEN** the header folds for keyboard input and the host still advertises a question
+- **THEN** the upper question card remains available above the conversation
+- **AND** tapping it submits the same revision-bound action as the previous entry, without selecting an answer
+
+#### Scenario: Earlier input has an unknown outcome
+
+- **WHEN** the terminal input controller is busy or uncertain
+- **THEN** the card remains explanatory but cannot submit another action
+
+#### Scenario: Opening a question reveals the terminal picker
+
+- **WHEN** the revision-bound question action passes the shared input gate
+- **THEN** the keyboard is dismissed and the in-app terminal becomes visible without changing the saved mode preference or submitting the draft
+- **AND** a short landscape window keeps a minimum 44-point action with its accessible hint
