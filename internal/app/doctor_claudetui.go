@@ -206,6 +206,9 @@ func rowClaudeTUI() dcheck { return claudeTUIRow(readClaudeTUIFacts()) }
 // gtmux does not type /tui into them, and scrollback a fullscreen session never gave tmux
 // cannot be recovered — the step says both rather than implying either.
 func (s *fixState) stepClaudeTUI() int {
+	if !agentHookPresent("claude") {
+		return 0
+	}
 	f := readClaudeTUIFacts()
 	if !claudeTUIPinnable(f) {
 		return 0

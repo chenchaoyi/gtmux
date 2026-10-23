@@ -113,12 +113,12 @@ var manifests = []Manifest{
 		Instructions: "~/.kimi-code/AGENTS.md", InstructionsEnv: "KIMI_CODE_HOME",
 	},
 	{
-		Key: "copilot", Label: "Copilot",
+		Key: "copilot", Label: "Copilot", InstallDetect: []string{"copilot"},
 		Resume:      []string{"copilot", "--resume"},
 		HookDisplay: true, Hooked: true, Semantics: true,
 	},
 	{
-		Key: "kiro", Label: "Kiro",
+		Key: "kiro", Label: "Kiro", InstallDetect: []string{"kiro-cli"},
 		Resume:      []string{"kiro-cli", "chat", "--resume-id"},
 		HookDisplay: true, Hooked: true, Semantics: true,
 	},

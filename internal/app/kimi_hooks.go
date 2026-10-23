@@ -283,15 +283,6 @@ func installKimiHooks(install bool) int {
 	return 0
 }
 
-// kimiDataRoot is Kimi's data directory — its existence is how doctor decides whether
-// to show a Kimi row at all, so a user who does not run Kimi never sees one.
-func kimiDataRoot() string {
-	if v := os.Getenv("KIMI_CODE_HOME"); v != "" {
-		return v
-	}
-	return filepath.Join(homeDir(), ".kimi-code")
-}
-
 // missingKimiHookEvents reports which bindings are absent from the installed block:
 // nil when gtmux is not installed at all (a different fact, reported in its own
 // words), an empty slice when everything is present.

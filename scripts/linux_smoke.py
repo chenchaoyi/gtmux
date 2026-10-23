@@ -83,6 +83,16 @@ def main():
                 assert error.code == 501, error.code
             cli("install", "hooks", "--agent", "codex", "--yes")
             assert "gtmux" in (home / ".codex" / "hooks.json").read_text()
+            # An explicit hook config is not CLI-installation evidence. Supply a
+            # fixture CLI for the installed-agent doctor case; never run a model.
+            bins = root / "bin"
+            bins.mkdir()
+            codex = bins / "codex"
+            codex.write_text("#!/bin/sh\n"
+                             "if [ \"$#\" -eq 1 ] && [ \"$1\" = --version ]; then\n"
+                             "  printf 'codex-cli 0.146.0\\n'\n  exit 0\nfi\nexit 64\n")
+            codex.chmod(0o755)
+            env["PATH"] = str(bins) + os.pathsep + env.get("PATH", "")
             # Fresh tmux has expected fixable settings; exit 1 is a health finding,
             # not failure to produce a complete report.
             report = json.loads(cli("doctor", "--json", allowed_codes=(0, 1)))

@@ -148,6 +148,7 @@ for (const client of ['', 'dst']) {
 }
 
 func TestDSHDoctorRepairsBothFilesWithoutOpenCodeMigration(t *testing.T) {
+	withHookExecutables(t, "dsh")
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("DSH_HOME", filepath.Join(homeDir(), ".dsh"))
 	if err := os.MkdirAll(os.Getenv("DSH_HOME"), 0700); err != nil {
@@ -182,6 +183,7 @@ func TestDSHDoctorRepairsBothFilesWithoutOpenCodeMigration(t *testing.T) {
 }
 
 func TestDSHDoctorRejectsStaleLaunchOverlay(t *testing.T) {
+	withHookExecutables(t, "dsh")
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("DSH_HOME", t.TempDir())
 	inst := agentInstallers["dsh"]
@@ -201,6 +203,7 @@ func TestDSHDoctorRejectsStaleLaunchOverlay(t *testing.T) {
 }
 
 func TestDSHDoctorPreservesForeignOverlayAndUserProfile(t *testing.T) {
+	withHookExecutables(t, "dsh")
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("DSH_HOME", t.TempDir())
 	inst := agentInstallers["dsh"]

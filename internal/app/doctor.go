@@ -263,6 +263,32 @@ func collectDoctorSections(checks []doctorSectionCheck, progress func(string)) [
 	return secs
 }
 
+// Keep CLI relevance separate from checking the retained hook configuration.
+func doctorAgentHookChecks() []doctorRowCheck {
+	var checks []doctorRowCheck
+	if agentHookPresent("claude") {
+		checks = append(checks,
+			doctorRowCheck{i18n.Tr("Claude Code hook", "Claude Code hook"), rowClaudeHook},
+			doctorRowCheck{i18n.Tr("Claude Code renderer", "Claude Code 渲染器"), rowClaudeTUI})
+	}
+	if agentHookPresent("codex") {
+		checks = append(checks, doctorRowCheck{i18n.Tr("Codex hook", "Codex hook"), rowCodexHook})
+	}
+	if agentHookPresent("kimi") {
+		checks = append(checks, doctorRowCheck{i18n.Tr("Kimi Code hook", "Kimi Code hook"), rowKimiHook})
+	}
+	for _, key := range additionalHookAgents {
+		if agentHookPresent(key) {
+			key := key
+			checks = append(checks, doctorRowCheck{agentInstallers[key].display + " hook", func() dcheck { return rowAgentHook(key) }})
+		}
+	}
+	if agentHookPresent("dsh") {
+		checks = append(checks, doctorRowCheck{"DeepSeek Harness terminal", rowDSHTerminal})
+	}
+	return checks
+}
+
 // doctorSectionsWithProgress runs every check and groups rows by concern.
 func doctorSectionsWithProgress(progress func(string)) []dsection {
 	now := time.Now().Unix()
@@ -276,27 +302,7 @@ func doctorSectionsWithProgress(progress func(string)) []dsection {
 		{i18n.Tr("Restore after reboot", "重启后恢复"), restoreRebootChecks},
 		{i18n.Tr("Terminal", "终端"), terminalChecks},
 		{i18n.Tr("Agents & notifications", "agent 与通知"), func() []dcheck {
-			var checks []doctorRowCheck
-			if fileExists(filepath.Join(homeDir(), ".claude")) {
-				checks = append(checks,
-					doctorRowCheck{i18n.Tr("Claude Code hook", "Claude Code hook"), rowClaudeHook},
-					doctorRowCheck{i18n.Tr("Claude Code renderer", "Claude Code 渲染器"), rowClaudeTUI})
-			}
-			if fileExists(codexHome()) {
-				checks = append(checks, doctorRowCheck{i18n.Tr("Codex hook", "Codex hook"), rowCodexHook})
-			}
-			if fileExists(kimiDataRoot()) {
-				checks = append(checks, doctorRowCheck{i18n.Tr("Kimi Code hook", "Kimi Code hook"), rowKimiHook})
-			}
-			for _, key := range additionalHookAgents {
-				if agentHookPresent(key) {
-					key := key
-					checks = append(checks, doctorRowCheck{agentInstallers[key].display + " hook", func() dcheck { return rowAgentHook(key) }})
-				}
-			}
-			if agentHookPresent("dsh") {
-				checks = append(checks, doctorRowCheck{"DeepSeek Harness terminal", rowDSHTerminal})
-			}
+			checks := doctorAgentHookChecks()
 			checks = append(checks,
 				doctorRowCheck{i18n.Tr("chat binding", "会话绑定"), rowStaleBindings},
 				doctorRowCheck{i18n.Tr("hook traffic", "hook 通路"), rowHookSilence})
@@ -1040,9 +1046,9 @@ func rowClaudeHook() dcheck {
 				i18n.Tr("this hooks file predates events gtmux now uses ("+strings.Join(missing, ", ")+"). `gtmux doctor --fix` adds them (restart the sessions to load it)",
 					"这份 hook 配置早于 gtmux 现在用的事件（"+strings.Join(missing, "、")+"）。`gtmux doctor --fix` 可以补上（补完要重启会话才加载）")}
 		}
-		return dcheck{stOK, label, i18n.Tr("installed", "已装"), i18n.Tr("⏸ needs-input + notifications", "⏸ 需要输入 + 通知")}
+		return dcheck{stOK, label, i18n.Tr("configured", "已配置"), i18n.Tr("⏸ needs-input + notifications", "⏸ 需要输入 + 通知")}
 	}
-	return dcheck{stRec, label, i18n.Tr("not installed", "未装"), i18n.Tr("⏸ needs-input + notifications", "⏸ 需要输入 + 通知")}
+	return dcheck{stRec, label, i18n.Tr("not configured", "未配置"), i18n.Tr("⏸ needs-input + notifications", "⏸ 需要输入 + 通知")}
 }
 
 func rowCodexHook() dcheck {
@@ -1070,16 +1076,16 @@ func rowCodexHook() dcheck {
 				i18n.Tr("this hooks file predates events gtmux now uses ("+strings.Join(missing, ", ")+"). `gtmux doctor --fix` adds them (restart the sessions to load it)",
 					"这份 hook 配置早于 gtmux 现在用的事件（"+strings.Join(missing, "、")+"）。`gtmux doctor --fix` 可以补上（补完要重启会话才加载）")}
 		}
-		return dcheck{stOK, label, i18n.Tr("installed", "已装"), i18n.Tr("precise state + notifications", "状态精准 + 通知")}
+		return dcheck{stOK, label, i18n.Tr("configured", "已配置"), i18n.Tr("precise state + notifications", "状态精准 + 通知")}
 	}
 	if codexNotifyIsGtmux() {
-		return dcheck{stOK, label, i18n.Tr("installed (notify)", "已装（notify）"), i18n.Tr("turn-done notifications", "turn 结束通知")}
+		return dcheck{stOK, label, i18n.Tr("configured (notify)", "已配置（notify）"), i18n.Tr("turn-done notifications", "turn 结束通知")}
 	}
-	// Only reached when ~/.codex EXISTS (this row isn't added otherwise), so Codex is
-	// in use — an un-wired hook is a real improvement (`--fix` offers it), not a
-	// neutral note. Detection still works without it, but you miss precise per-event
+	// Only reached for a discoverable Codex CLI, so an un-wired hook is a real
+	// improvement (`--fix` offers it), not a neutral note. Detection still works
+	// without it, but you miss precise per-event
 	// state + notifications.
-	return dcheck{stRec, label, i18n.Tr("not installed", "未装"), i18n.Tr("install for precise state + notifications", "接入以获精准状态 + 通知")}
+	return dcheck{stRec, label, i18n.Tr("not configured", "未配置"), i18n.Tr("install for precise state + notifications", "接入以获精准状态 + 通知")}
 }
 
 // rowKimiHook reports whether gtmux's managed block is in Kimi's config.toml.
@@ -1091,7 +1097,7 @@ func rowKimiHook() dcheck {
 	label := i18n.Tr("Kimi Code hook", "Kimi Code hook")
 	if missing := missingKimiHookEvents(); missing != nil {
 		if len(missing) == 0 {
-			return dcheck{stOK, label, i18n.Tr("installed", "已装"),
+			return dcheck{stOK, label, i18n.Tr("configured", "已配置"),
 				i18n.Tr("precise state + notifications", "状态精准 + 通知")}
 		}
 		return dcheck{stRec, label,
@@ -1099,7 +1105,7 @@ func rowKimiHook() dcheck {
 			i18n.Tr("this block predates events gtmux now uses ("+strings.Join(missing, ", ")+"). `gtmux doctor --fix` adds them (restart the sessions to load it)",
 				"这块配置早于 gtmux 现在用的事件（"+strings.Join(missing, "、")+"）。`gtmux doctor --fix` 可以补上（补完要重启会话才加载）")}
 	}
-	return dcheck{stRec, label, i18n.Tr("not installed", "未装"),
+	return dcheck{stRec, label, i18n.Tr("not configured", "未配置"),
 		i18n.Tr("install for precise state + notifications", "接入以获精准状态 + 通知")}
 }
 

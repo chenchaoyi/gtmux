@@ -2335,12 +2335,12 @@ files under `~/.local/share/gtmux/`. gtmux ships that hook built in:
 gtmux install                       # asks: hooks | app | all
 gtmux install hooks                 # Claude, one-time setup (macOS)
 gtmux install hooks --agent codex    # or cursor|gemini|copilot|kiro|opencode|kimi|dsh
-gtmux install hooks --agent auto     # detect supported agent homes/installations
+gtmux install hooks --agent auto     # detect installed supported agent CLIs
 gtmux install refresh-owned --agent dsh  # refresh an existing owned bridge only (JSON receipt)
 gtmux uninstall [hooks|app|all]     # reverse it (asks when no target)
 ```
 
-Without `--agent`, hooks still default to Claude. `--agent auto` detects supported homes/installations and skips agents whose settings disable hooks.
+Without `--agent`, hooks still default to Claude. `--agent auto` selects supported CLIs found in PATH or known install locations and skips agents whose settings disable hooks. Retained homes, histories and hook files alone do not select an agent. Explicit `--agent <key>` can still prepare its configuration before installation.
 The DSH Cordis plugin is bundled; no npm package is needed. Doctor can install/repair its modules, component manifest, owned dst profile block and Web launch overlay, and prints the next `dsh web --patch …` command without claiming the running process loaded it. See the [DSH guide](guides/deepseek-harness.md).
 
 `gtmux install hooks` registers `gtmux hook` in `~/.claude/settings.json` for turn,

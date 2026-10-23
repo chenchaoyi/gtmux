@@ -707,7 +707,7 @@ tmux cannot be recovered.
 
 ### Requirement: Doctor validates and repairs every existing hook integration
 
-Doctor SHALL check configuration for all eight existing hook-equipped agents found on the machine. Checks SHALL validate the executable command's agent/event binding, expected matcher, enabled state, required format and plugin template rather than merely an event name. Retired gtmux registrations SHALL require upgrade. Doctor --fix SHALL offer the corresponding existing installer, back up files, preserve foreign hooks and Kimi bytes outside the managed block, and verify the resulting configuration before reporting success. Invalid JSON and unclear managed-block boundaries SHALL refuse mutation. Global disable settings SHALL be reported and preserved. Configured hooks SHALL NOT be claimed to be loaded or trusted in existing sessions, and doctor SHALL NOT restart them.
+Doctor SHALL offer hook and CLI preference checks only for registered agents whose CLI is discoverable through the shared PATH and known-installation resolver. Automatic repair SHALL use the same gate and SHALL NOT modify retained configuration solely because a data directory exists. Healthy command-hook rows SHALL say configured rather than imply CLI installation. Checks SHALL validate the executable command's agent/event binding, expected matcher, enabled state, required format and plugin template rather than merely an event name. Retired gtmux registrations SHALL require upgrade. Doctor --fix SHALL offer the corresponding existing installer, back up files, preserve foreign hooks and Kimi bytes outside the managed block, and verify the resulting configuration before reporting success. Invalid JSON and unclear managed-block boundaries SHALL refuse mutation. Global disable settings SHALL be reported and preserved. Configured hooks SHALL NOT be claimed to be loaded or trusted in existing sessions, and doctor SHALL NOT restart them.
 
 #### Scenario: Wrong or disabled handler with the right event name
 
@@ -949,3 +949,18 @@ Absent optional dst installation or no currently connected terminal session SHAL
 
 - **WHEN** the only recent errors are action-history entries
 - **THEN** their count and time remain visible as information and do not inflate current findings
+
+### Requirement: Retained agent configuration does not imply an installed CLI
+
+Saved homes, histories and hook files SHALL NOT establish CLI presence for doctor or automatic hook installation. CLI-only installation probes SHALL be declared in the agent registry without enabling radar detection. Checks SHALL NOT run agent models or delete retained configuration. Explicit per-agent installation SHALL remain available for intentional preconfiguration. External history readers SHALL retain their separate eligibility rules.
+
+#### Scenario: Kiro was removed but its hooks remain
+
+- **WHEN** retained Kiro configuration exists but no supported Kiro CLI is discoverable
+- **THEN** doctor omits its hook row and automatic setup/repair leaves those files untouched
+
+#### Scenario: Gemini is installed before its settings exist
+
+- **WHEN** the shared resolver finds the Gemini CLI but no settings file exists
+- **THEN** doctor offers hook configuration rather than claiming corrupt settings
+- **AND** a completed configuration is labelled configured, without claiming a live session has loaded it
