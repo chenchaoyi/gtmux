@@ -210,12 +210,15 @@ func knowledgeTopics(_ entries: [KBEntry]) -> [KBTopic] {
 /// HQ names an entry in a dispatch, so it is a thing people actually paste. Whitespace
 /// splits the query into terms that must ALL match, so two words narrow instead of widen
 /// — the same rule as the phone's `matchEntries`, so one query behaves the same on both.
-func matchKB(_ entries: [KBEntry], _ query: String) -> [KBEntry] {
+func matchKB(_ entries: [KBEntry], _ query: String, l10n: L10n = .shared) -> [KBEntry] {
     let terms = query.lowercased().split(whereSeparator: { $0.isWhitespace }).map(String.init)
     if terms.isEmpty { return [] }
     return entries.filter { e in
         // Both halves (kb-bilingual): a duplicate written in the other language is still it.
-        let hay = "\(e.title) \(e.alt?.title ?? "") \(e.id) \(e.topic)".lowercased()
+        let words = [e.title, e.alt?.title ?? "", e.id, e.topic, knowledgeTopic(e.topic, l10n),
+                     e.kind ?? "", knowledgeKind(e.kind ?? "", l10n), e.provenance ?? "",
+                     knowledgeProvenance(e.provenance ?? "", l10n), e.usage(l10n).line]
+        let hay = words.joined(separator: " ").lowercased()
         return terms.allSatisfy { hay.contains($0) }
     }
 }

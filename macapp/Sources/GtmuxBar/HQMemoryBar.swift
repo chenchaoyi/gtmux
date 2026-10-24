@@ -31,8 +31,8 @@ struct HQMemoryBar: View {
         if !mem.exists, store.failedPages.contains(.knowledge) {
             return l10n.tr("Archive information could not be read. Refresh to try again.", "暂时无法读取档案信息，请刷新重试。")
         }
-        guard mem.exists else { return l10n.tr("No HQ records on this Mac", "此 Mac 尚无 HQ 档案") }
-        var lines = [
+        guard mem.exists else { return l10n.tr("No HQ data to back up on this computer", "这台电脑尚无可备份的 HQ 资料") }
+        var lines = [l10n.tr("Backs up HQ instructions, task records and knowledge together.", "一起备份 HQ 指令、任务记录和知识库。"),
             "\(mem.sizeText) · \(mem.snapshots) " + l10n.tr("local snapshots", "份本地快照"), l10n.tr("Stored on this computer. Export a copy to keep it elsewhere.", "档案保存在此电脑，可导出副本另行保存。"),
         ]
         if let backup = hqArchiveBackupHint(mem.offMachine, l10n) { lines.append(backup) }
@@ -48,7 +48,7 @@ struct HQMemoryBar: View {
     @ViewBuilder private func memoryBar(_ p: Theme.Palette) -> some View {
         HStack(spacing: 8) {
             HQWorkspaceInfo(
-                title: l10n.tr("HQ archives", "HQ 档案"), text: archiveHelp,
+                title: l10n.tr("Backup and migration", "备份与迁移"), text: archiveHelp,
                 symbol: "archivebox", done: l10n.tr("Done", "完成"))
                 .foregroundStyle(p.fg2)
             Spacer(minLength: 8)

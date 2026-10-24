@@ -22,6 +22,7 @@
 // Placement rules live in knowledgeModel.ts and are tested there; this file draws.
 
 import React from 'react';
+import {knowledgeTopic, knowledgeUsage} from './knowledgePresentation';
 import {
   ActivityIndicator,
   Keyboard,
@@ -39,14 +40,14 @@ import {MarkdownView, MdColors} from '../ui/MarkdownView';
 import {ERRORED_COLOR, Palette, StatusColor} from '../ui/theme';
 import {relTime} from './hqZones';
 import {SizeClass} from '../ui/layout';
-import {KnowledgeView, buildKnowledgeView, entriesOfTopic, landPrompt, withdrawPrompt, carryPrompt, actsFor, actButtonLabel, axesLine, audienceWord, matchEntries, provenanceOf, retirePrompt, splitTitleKey, resolveEntry, displayTitle} from './knowledgeModel';
+import {KnowledgeView, buildKnowledgeView, entriesOfTopic, landPrompt, withdrawPrompt, carryPrompt, actsFor, actButtonLabel, axesLine, matchEntries, provenanceOf, retirePrompt, splitTitleKey, resolveEntry, displayTitle} from './knowledgeModel';
 import {MODAL_ORIENTATIONS} from '../ui/modalOrientations';
 
 /**
  * EntryTitle draws HQ's "key + prose" title as what it is: an identifier and a sentence.
  * A title with no key renders as one run, unchanged.
  */
-function EntryTitle({title, id, pal, style, keyStyle, lines, wrapStyle}: {
+function EntryTitle({title, id, style, lines, wrapStyle}: {
   title: string;
   id: string;
   pal: Palette;
@@ -55,27 +56,8 @@ function EntryTitle({title, id, pal, style, keyStyle, lines, wrapStyle}: {
   lines?: number;
   wrapStyle?: object;
 }) {
-  const {key, rest} = splitTitleKey(title, id);
-  // The key goes on its OWN line. Inline it reads as the first words of the sentence and
-  // pushes the prose into an odd wrap ("…-model-and-agent 派活前先 / 选 agent 和 model"),
-  // which costs more than the line it saves.
-  if (!key) {
-    return (
-      <Text style={[style, wrapStyle]} numberOfLines={lines}>
-        {title}
-      </Text>
-    );
-  }
-  return (
-    <View style={wrapStyle}>
-      <Text style={[keyStyle, {color: pal.fg3}]} numberOfLines={1}>
-        {key}
-      </Text>
-      <Text style={style} numberOfLines={lines}>
-        {rest}
-      </Text>
-    </View>
-  );
+  const {rest} = splitTitleKey(title, id);
+  return <Text style={[style, wrapStyle]} numberOfLines={lines}>{rest}</Text>;
 }
 
 // An entry pane REMEMBERS where it was opened from. Back used to always land on the
@@ -130,6 +112,8 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
   const [draft, setDraft] = React.useState('');
   const [error, setError] = React.useState<string | null>(null);
   const [done, setDone] = React.useState<string | null>(null);
+  const [busy, setBusy] = React.useState(false);
+  const submitting = React.useRef(false);
 
   // The act bar is the one thing here you type into, and it sits at the bottom. A
   // KeyboardAvoidingView is the usual answer and it is WRONG inside a pageSheet: it
@@ -215,7 +199,7 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
   }, [openAt?.at, visible]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const submit = React.useCallback(async () => {
-    if (!pending) return;
+    if (!pending || submitting.current) return;
     // carry needs no text: the promotion already decided; the bar only asks "now?".
     if (pending.kind !== 'carry' && draft.trim() === '') return;
     const a: KnowledgeAct =
@@ -226,6 +210,10 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
           : pending.kind === 'withdraw'
             ? {op: 'withdraw', id: pending.id, why: draft.trim()}
             : {op: 'carry', id: pending.id};
+    submitting.current = true;
+    setBusy(true);
+    let applied = false;
+    try {
     const r = await act(a);
     if (!r.ok) {
       // The server's own words. "has no pending promotion to land" tells the reader what
@@ -233,19 +221,33 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
       setError(r.error);
       return;
     }
+    applied = true;
     setPending(null);
     setDraft('');
     setError(null);
     setDone(
       pending.kind === 'land' || pending.kind === 'carry'
-        ? zh ? '已标记落地' : 'marked landed'
+        ? zh ? '已记录应用结果' : 'Application recorded'
         : pending.kind === 'withdraw'
-          ? zh ? '已撤回晋升' : 'promotion withdrawn'
+          ? zh ? '已取消本次安排' : 'Plan cancelled'
           : zh ? '已标记为不再适用' : 'Marked as no longer applicable',
     );
     // A retired entry is gone from the live set, so there is nothing left to look at.
-    setPane({kind: 'index'});
-  }, [act, draft, pending, zh]);
+    if (pending.kind === 'retire') setPane({kind: 'index'});
+    else {
+      setLoading(true);
+      setEntry(await loadEntry(pending.id));
+      setLoading(false);
+    }
+    } catch {
+      if (applied) setDone(zh ? '应用记录已保存，内容暂未刷新，请重新打开条目。' : 'Application saved. Reopen the entry to refresh its content.');
+      else setError(zh ? '请求未完成，请先刷新核对记录，再决定是否重试。' : 'The request did not complete. Refresh and check the record before retrying.');
+    } finally {
+      submitting.current = false;
+      setLoading(false);
+      setBusy(false);
+    }
+  }, [act, draft, loadEntry, pending, zh]);
 
   const ageOf = (secs?: number) => (secs ? relTime(secs, nowSecs) + (zh ? '前' : ' ago') : '');
 
@@ -260,7 +262,7 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
           ) : null}
           <View style={styles.headText}>
             <Text style={[styles.title, {color: pal.fg}]} numberOfLines={1}>
-              {pane.kind === 'topic' ? pane.name : t('Knowledge', '知识库')}
+              {pane.kind === 'topic' ? knowledgeTopic(pane.name, zh) : t('Knowledge', '知识库')}
             </Text>
             <Text style={[styles.sub, {color: pal.fg3}]} numberOfLines={1}>
               {indexLoading || indexError ? '' : pane.kind === 'index'
@@ -430,6 +432,7 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
           <ActBar
             bottom={kbHeight}
             kind={pending.kind}
+            busy={busy}
             pal={pal}
             zh={zh}
             t={t}
@@ -481,7 +484,7 @@ function IndexPane({
     <>
       {view.promotions.length > 0 && (
         <View testID="knowledge-promotions">
-          <SectionLabel pal={pal} text={t('waiting on you', '待你带走')} count={view.promotions.length} accent />
+          <SectionLabel pal={pal} text={t('Plans to complete', '待完成的使用安排')} count={view.promotions.length} accent={view.promotions.some(p => p.overdue)} />
           {/* What a promotion IS, said where it matters. This base is one of THREE places
               a rule can live — the shipped charter, the operator's own LOCAL.md, and this
               machine's ledger — and a reader who takes it for all three files a lesson
@@ -497,13 +500,13 @@ function IndexPane({
                   onPress={() => onToggleWhy()}
                   hitSlop={hit}>
                   <Text style={[styles.whyLink, {color: pal.fg2}]}>
-                    {whyOpen ? (zh ? '这是什么 ⌃' : 'What this is ⌃') : (zh ? '这是什么 ⌄' : 'What this is ⌄')}
+                    {whyOpen ? (zh ? '需要做什么 ⌃' : 'What needs doing ⌃') : (zh ? '需要做什么 ⌄' : 'What needs doing ⌄')}
                   </Text>
                 </TouchableOpacity>
                 {whyOpen && <Text style={[styles.sectionNote, {color: pal.fg3}]}>
             {zh
-              ? '这些知识需要在本机以外使用。请将它们写入对应的 LOCAL.md、项目指令、团队手册或 gtmux 仓库，再记录实际位置。'
-              : 'These entries need to be available beyond this machine. Add them to the appropriate LOCAL.md, project instructions, team guide or gtmux repository, then record where they were added.'}
+              ? '这些条目已有使用方案。打开条目后，完成指令写入，或提交产品反馈并记录结果。'
+              : 'These entries have a saved use plan. Open one to write the instructions or submit and record product feedback.'}
           </Text>}
               </>
           {view.promotions.map(p => (
@@ -528,6 +531,7 @@ function IndexPane({
                   {ageOf(p.entry.promoted_at)}
                 </Text>
               </View>
+              <Text style={[styles.cardTarget, {color: pal.fg2}]}>{knowledgeUsage(p.entry, zh).line}</Text>
               {!!p.entry.promote_why && (
                 <Text style={[styles.cardWhy, {color: pal.fg2}]} numberOfLines={2}>
                   {p.entry.promote_why}
@@ -565,12 +569,12 @@ function IndexPane({
           <View key={tp.name}>
             <TouchableOpacity
               testID={`knowledge-topic-${tp.name}`}
-              accessibilityLabel={zh ? `主题：${tp.name}` : `Topic: ${tp.name}`}
+              accessibilityLabel={zh ? `主题：${knowledgeTopic(tp.name, zh)}` : `Topic: ${knowledgeTopic(tp.name, zh)}`}
               activeOpacity={0.6}
               onPress={() => onToggleTopic(tp.name)}
               style={[styles.row, {borderBottomColor: pal.divider}]}>
               <Text style={[styles.rowTitle, {color: pal.fg}]} numberOfLines={1}>
-                {tp.name}
+                {knowledgeTopic(tp.name, zh)}
               </Text>
               <Text style={[styles.rowMeta, {color: pal.fg3}]}>{tp.count}</Text>
               <Text style={[styles.chev, {color: pal.fg3}]}>{open ? '⌄' : '›'}</Text>
@@ -581,7 +585,7 @@ function IndexPane({
                 {tp.count > peek.length && (
                   <TouchableOpacity
                     testID={`knowledge-topic-all-${tp.name}`}
-                    accessibilityLabel={zh ? `查看 ${tp.name} 的全部条目` : `View all in ${tp.name}`}
+                    accessibilityLabel={zh ? `查看 ${knowledgeTopic(tp.name, zh)} 的全部条目` : `View all in ${knowledgeTopic(tp.name, zh)}`}
                     activeOpacity={0.6}
                     onPress={() => onTopic(tp.name)}
                     style={[styles.row, {borderBottomColor: pal.divider}]}>
@@ -638,8 +642,8 @@ function EntryList({
             />
             <Text style={[styles.rowMeta, {color: pal.fg3}]} numberOfLines={1}>
               {e.sensitive ? (zh ? '敏感 · ' : 'sensitive · ') : ''}
-              {e.topic} · {ageOf(e.at)}
-              {e.landed_ref ? (zh ? ` · 已落地 ${e.landed_ref}` : ` · landed ${e.landed_ref}`) : ''}
+              {knowledgeTopic(e.topic, zh)} · {ageOf(e.at)}
+              {' · '}{knowledgeUsage(e, zh).line}
             </Text>
           </View>
           <Text style={[styles.chev, {color: pal.fg3}]}>›</Text>
@@ -661,16 +665,18 @@ function EntryPane({
   ageOf: (s?: number) => string;
   onAct: (kind: PendingKind, id: string) => void;
 }) {
+  const [detailsOpen, setDetailsOpen] = React.useState(false);
+  React.useEffect(() => setDetailsOpen(false), [entry?.id]);
   if (loading) return <ActivityIndicator style={styles.spinner} color={pal.fg3} />;
   if (!entry) {
     return (
       <View style={styles.emptyBox}>
-        <Text style={[styles.empty, {color: pal.fg3}]}>{t('This entry is gone.', '这条已经不在了。')}</Text>
+        <Text style={[styles.empty, {color: pal.fg3}]}>{t('This entry could not be read. Go back and try again.', '暂时无法读取这条知识，请返回列表后重试。')}</Text>
       </View>
     );
   }
   const prov = provenanceOf(entry, zh);
-  const pendingPromotion = !!entry.promoted_at && !entry.landed_at;
+  const use = knowledgeUsage(entry, zh);
   return (
     <View style={styles.entry}>
       <EntryTitle
@@ -681,8 +687,7 @@ function EntryPane({
         keyStyle={styles.titleKeyBig}
       />
       <Text style={[styles.entryMeta, {color: pal.fg3}]}>
-        {entry.topic} · {ageOf(entry.at)}
-        {prov ? ` · ${prov}` : ''}
+        {knowledgeTopic(entry.topic, zh)} · {ageOf(entry.at)}
       </Text>
       {!!axesLine(entry, zh) && (
         <Text testID="knowledge-axes" style={[styles.entryMeta, {color: pal.fg2}]}>
@@ -690,39 +695,29 @@ function EntryPane({
         </Text>
       )}
 
-      {pendingPromotion && (
-        <View style={[styles.promoBox, {borderColor: pal.divider, backgroundColor: pal.surface}]}>
-          <Text style={[styles.promoLabel, {color: ERRORED_COLOR}]}>
-            ⚑ {t('promoted, waiting to be carried', '已提升，待带走')} · {ageOf(entry.promoted_at)}
-          </Text>
-          {!!entry.promote_why && <Text style={[styles.promoText, {color: pal.fg2}]}>{entry.promote_why}</Text>}
-          {audienceWord(entry.audience, zh) ? (
-            <Text style={[styles.promoText, {color: pal.fg3}]}>
-              {t('for: ', '给：')}
-              {audienceWord(entry.audience, zh)}
-              {entry.audience_repo ? ` · ${entry.audience_repo}` : ''}
-            </Text>
-          ) : entry.promote_target ? (
-            <Text style={[styles.promoText, {color: pal.fg3}]}>→ {entry.promote_target}</Text>
-          ) : (
-            <Text style={[styles.promoText, {color: pal.fg3}]}>
-              {t('no audience chosen. Withdraw, then promote again saying who must know it', '没选读者，撤回后重新晋升，说清给谁看')}
-            </Text>
-          )}
-        </View>
-      )}
-      {!!entry.landed_ref && (
-        <Text style={[styles.landed, {color: StatusColor.idle}]}>
-          ✓ {t('landed', '已落地')} {entry.landed_ref}
-        </Text>
-      )}
-
+      <View testID="knowledge-use-summary" style={{gap: 5, marginBottom: 12}}>
+        <Text style={[styles.promoText, {color: pal.fg}]}>{t('Use: ', '使用方式：')}{use.line}</Text>
+        <Text style={[styles.entryMeta, {color: pal.fg2}]}>{use.explanation}</Text>
+        {!!entry.audience_repo && <Text style={[styles.entryMeta, {color: pal.fg3}]}>{entry.audience_repo}</Text>}
+      </View>
       {!!resolveEntry(entry, zh).body && (
         <View style={styles.entryBody}>
           <MarkdownView source={resolveEntry(entry, zh).body!} colors={mdColors(pal)} fontSize={13.5} selectable calmEmphasis />
         </View>
       )}
 
+      <TouchableOpacity testID="knowledge-record-details" accessibilityRole="button"
+        accessibilityState={{expanded: detailsOpen}} onPress={() => setDetailsOpen(o => !o)}
+        style={{minHeight: 44, justifyContent: 'center'}}>
+        <Text style={[styles.entryMeta, {color: pal.fg2}]}>{detailsOpen ? '⌃ ' : '⌄ '}{t('Record details', '记录详情')}</Text>
+      </TouchableOpacity>
+      {detailsOpen && <View style={{gap: 5, paddingBottom: 12}}>
+        <Text selectable style={[styles.entryMeta, {color: pal.fg3}]}>{entry.id}</Text>
+        {!!prov && <Text style={[styles.entryMeta, {color: pal.fg3}]}>{prov}</Text>}
+        {!!entry.promote_why && <Text style={[styles.entryMeta, {color: pal.fg3}]}>{t('Reason: ', '使用原因：')}{entry.promote_why}</Text>}
+        {!!entry.landed_ref && <Text selectable style={[styles.entryMeta, {color: pal.fg3}]}>{t('Recorded destination: ', '应用记录：')}{entry.landed_ref}</Text>}
+        {!!entry.promote_target && <Text style={[styles.entryMeta, {color: pal.fg3}]}>{t('Earlier destination: ', '原计划位置：')}{entry.promote_target}</Text>}
+      </View>}
       <View style={[styles.actions, {borderTopColor: pal.divider}]}>
         {/* The exit its AUDIENCE has (actsFor): gtmux carries hq / machine / repo, a person
             opens the issue for everyone, and "It no longer holds…" names what retiring
@@ -746,9 +741,10 @@ function EntryPane({
 
 /** The one line of text an action needs, asked for where the action was tapped. */
 function ActBar({
-  kind, pal, zh, t, draft, error, bottom, onDraft, onCancel, onSubmit,
+  kind, pal, zh, t, draft, error, bottom, busy, onDraft, onCancel, onSubmit,
 }: {
   kind: PendingKind;
+  busy: boolean;
   /** Keyboard height, so the bar clears it. */
   bottom: number;
   pal: Palette;
@@ -763,7 +759,7 @@ function ActBar({
   const p =
     kind === 'land' ? landPrompt(zh) : kind === 'retire' ? retirePrompt(zh) : kind === 'withdraw' ? withdrawPrompt(zh) : carryPrompt(zh);
   // carry asks nothing but "now?"; every other act needs its line of text.
-  const ready = kind === 'carry' || draft.trim() !== '';
+  const ready = !busy && (kind === 'carry' || draft.trim() !== '');
   return (
     <View
       testID="knowledge-act-bar"
@@ -776,7 +772,7 @@ function ActBar({
         <Text style={[styles.actTitle, {color: pal.fg}]} numberOfLines={1}>
           {p.title}
         </Text>
-        <TouchableOpacity testID="knowledge-act-cancel" onPress={onCancel} hitSlop={hit} style={styles.actBtn}>
+        <TouchableOpacity testID="knowledge-act-cancel" disabled={busy} onPress={onCancel} hitSlop={hit} style={styles.actBtn}>
           <Text style={[styles.actBtnText, {color: pal.fg3}]}>{t('Cancel', '取消')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -785,7 +781,7 @@ function ActBar({
           disabled={!ready}
           hitSlop={hit}
           style={[styles.actBtn, !ready && styles.actBtnOff]}>
-          <Text style={[styles.actBtnText, {color: StatusColor.working}]}>{t('Confirm', '确认')}</Text>
+          <Text style={[styles.actBtnText, {color: StatusColor.working}]}>{busy ? t('Working…', '处理中…') : kind === 'carry' ? t('Write instructions', '写入指令') : t('Save record', '保存记录')}</Text>
         </TouchableOpacity>
       </View>
       <Text style={[styles.actHint, {color: pal.fg3}]}>{p.hint}</Text>
@@ -794,6 +790,7 @@ function ActBar({
       <TextInput
         testID="knowledge-act-input"
         value={draft}
+        editable={!busy}
         onChangeText={onDraft}
         placeholder={p.placeholder}
         placeholderTextColor={pal.fg3}

@@ -101,9 +101,10 @@ final class HQKnowledgeActionsTests: XCTestCase {
         let l10n = L10n.shared
         let e = entry("a", audience: "machine", kind: "pitfalls", assumed: true, provenance: "mined", hits: 6)
         let line = e.axesLine(l10n)
-        XCTAssertTrue(line.hasPrefix("pitfalls?"), line)
-        XCTAssertTrue(line.contains("mined ×6"), line)
-        XCTAssertTrue(line.contains(audienceShort("machine", l10n)), line)
+        XCTAssertTrue(line.hasPrefix(knowledgeKind("pitfalls", l10n)), line)
+        XCTAssertTrue(line.contains(l10n.tr("unconfirmed category", "类别待确认")), line)
+        XCTAssertTrue(line.contains(knowledgeProvenance("mined", l10n) + " ×6"), line)
+        XCTAssertTrue(e.usage(l10n).line.contains(audienceShort("machine", l10n)))
         XCTAssertEqual(entry("b").axesLine(l10n), "", "a legacy row with no axes says nothing")
     }
 
@@ -127,6 +128,26 @@ final class HQKnowledgeActionsTests: XCTestCase {
             XCTAssertFalse(a.word(l10n).isEmpty)
         }
     }
+    func testLookupStandingInstructionsAndUnknownLegacyRecordsStayDistinct() {
+        let l = L10n.shared
+        let lookup = entry("lookup").usage(l)
+        XCTAssertEqual(lookup.title, l.tr("HQ reference", "HQ 按需查阅"))
+        XCTAssertTrue(lookup.state.isEmpty)
+        let planned = entry("planned", promoted: 100, audience: "hq").usage(l)
+        XCTAssertNotEqual(planned.title, lookup.title)
+        XCTAssertEqual(planned.state, l.tr("Write pending", "待完成写入"))
+        let recorded = entry("recorded", promoted: 100, landed: 200, audience: "hq").usage(l)
+        XCTAssertNotEqual(recorded.state, planned.state)
+        XCTAssertEqual(recorded.state, l.tr("Application recorded", "已记录应用"))
+        let legacy = entry("legacy", promoted: 100).usage(l)
+        XCTAssertEqual(legacy.title, l.tr("Use not recorded", "用途待确认"))
+        XCTAssertNotEqual(legacy.title, lookup.title)
+        XCTAssertEqual(entry("future", audience: "future").usage(l).title, legacy.title)
+        XCTAssertEqual(entry("feedback", promoted: 100, audience: "everyone").usage(l).state,
+                       l.tr("Feedback to complete", "待完成反馈"))
+        XCTAssertEqual(knowledgeTopic("custom-topic", l), "custom-topic")
+    }
+
 }
 
 /// kb-bilingual: the reader gets their language by one rule, the same one the phone and
@@ -154,4 +175,5 @@ final class HQKnowledgeLanguageTests: XCTestCase {
         let old = decode(#"{"id":"pitfalls/z","topic":"pitfalls","title":"t","at":1}"#)
         XCTAssertEqual(old.displayTitle("zh"), "t")
     }
+
 }

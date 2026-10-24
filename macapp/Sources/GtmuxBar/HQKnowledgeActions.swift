@@ -83,23 +83,18 @@ enum KnowledgeAudience: String, CaseIterable {
 
     func word(_ l10n: L10n) -> String {
         switch self {
-        case .hq: return l10n.tr("HQ only", "仅 HQ")
-        case .machine: return l10n.tr("This computer · all local agents", "本机 · 所有本地 agent")
-        case .repo: return l10n.tr("A repository · its agents", "项目仓库 · 仓库内的 agent")
-        case .everyone: return l10n.tr("Everyone · the product", "全体 · gtmux 产品")
+        case .hq: return l10n.tr("HQ standing rules", "HQ 固定规则")
+        case .machine: return l10n.tr("Agents on this computer", "本机 Agent")
+        case .repo: return l10n.tr("Agents in one project", "指定项目的 Agent")
+        case .everyone: return l10n.tr("gtmux product feedback", "gtmux 产品改进建议")
         }
     }
 }
 
 /// The short word an entry's audience wears in a line of metadata.
 func audienceShort(_ audience: String?, _ l10n: L10n) -> String {
-    switch audience ?? "" {
-    case "hq": return "HQ"
-    case "machine": return l10n.tr("this machine", "本机")
-    case "repo": return l10n.tr("a repository", "仓库")
-    case "everyone": return l10n.tr("everyone", "全体")
-    default: return ""
-    }
+    guard let value = KnowledgeAudience(rawValue: audience ?? "") else { return "" }
+    return value.word(l10n)
 }
 
 /// The words one act wears: the row's button, and the confirm sheet's title, hint and
@@ -121,8 +116,8 @@ extension KnowledgeAct {
         switch self {
         case .land:
             return KnowledgeActCopy(
-                button: l10n.tr("Record destination…", "记录分发位置…"),
-                title: l10n.tr("Record where this knowledge was shared", "记录知识分发位置"),
+                button: l10n.tr("Record result…", "记录应用结果…"),
+                title: l10n.tr("Record the application result", "记录知识应用结果"),
                 hint: l10n.tr(
                     "Enter where you recorded it, such as a PR, spec, runbook or issue. The ledger keeps this reference.",
                     "填写实际记录位置，例如 PR、规范、操作手册或 issue。台账会保存这项信息。"),
@@ -130,20 +125,20 @@ extension KnowledgeAct {
                 field: "--ref")
         case .carry:
             return KnowledgeActCopy(
-                button: l10n.tr("Apply knowledge", "写入所选范围"),
-                title: l10n.tr("Apply knowledge to the selected audience", "将知识写入所选范围"),
+                button: l10n.tr("Write instructions…", "写入指令…"),
+                title: l10n.tr("Write knowledge into instructions", "将知识写入指令"),
                 hint: l10n.tr(
-                    "gtmux writes it to LOCAL.md, the machine knowledge block or the repository instructions, then marks it landed. Repository files are not committed automatically.",
-                    "gtmux 会按所选范围写入 LOCAL.md、本机知识块或仓库指令文件，并标记为已落地。仓库文件不会自动提交。"),
+                    "gtmux writes HQ, local-agent or project instructions and records the result. Project files are not committed automatically; running sessions may need to reload.",
+                    "gtmux 会写入 HQ 固定规则、本机 Agent 指令或项目指令，并记录结果。项目文件不会自动提交；运行中的会话可能需要重新加载。"),
                 placeholder: "",
                 field: "")
         case .withdraw:
             return KnowledgeActCopy(
-                button: l10n.tr("Cancel sharing…", "取消分发…"),
-                title: l10n.tr("Cancel knowledge sharing", "取消知识分发"),
+                button: l10n.tr("Cancel this plan…", "取消本次安排…"),
+                title: l10n.tr("Cancel this use plan", "取消本次使用安排"),
                 hint: l10n.tr(
-                    "The knowledge entry stays. Cancel its pending sharing request and record the reason.",
-                    "保留知识条目，取消尚未完成的分发，并记录原因。"),
+                    "The entry stays. Cancel the pending plan and record why. Instruction files already written are not rolled back.",
+                    "保留知识条目，取消尚未完成的使用安排，并记录原因。不会回滚已写入的指令文件。"),
                 placeholder: l10n.tr("e.g. only true on this machine", "例如 只在这台机器上成立"),
                 field: "--why")
         case .retire:
@@ -158,13 +153,13 @@ extension KnowledgeAct {
                 field: "--why")
         case .promote:
             return KnowledgeActCopy(
-                button: l10n.tr("Choose audience…", "设置分发范围…"),
-                title: l10n.tr("Choose who needs this knowledge", "设置知识分发范围"),
+                button: l10n.tr("Choose how to use…", "设置使用方式…"),
+                title: l10n.tr("Choose how to use this knowledge", "选择知识的使用方式"),
                 hint: l10n.tr(
-                    "Choose an audience and explain why. This prepares a sharing brief; it does not apply the knowledge yet.",
-                    "选择需要使用这条知识的范围，并说明原因。此步生成分发简报，尚不写入目标位置。"),
+                    "Save a use plan and a reason. Then write the instructions or review and submit product feedback from the entry.",
+                    "选择用途并保存原因。保存后可在详情中写入指令，或审阅并提交产品反馈。"),
                 placeholder: l10n.tr("e.g. every dispatch repeats this mistake",
-                                     "例如 多个 agent 反复遇到同一问题"),
+                                     "例如 派活时总要说明完成标准"),
                 field: "--why")
         case .dismiss:
             return KnowledgeActCopy(
@@ -181,8 +176,8 @@ extension KnowledgeAct {
                 button: l10n.tr("Feedback to gtmux ↗", "反馈给 gtmux ↗"),
                 title: l10n.tr("feedback to gtmux", "反馈给 gtmux"),
                 hint: l10n.tr(
-                    "Opens an issue filled from the brief. After submitting it, mark this entry landed with the issue URL.",
-                    "会打开预填简报内容的 issue。提交后，用 issue 链接将这条知识标记为已落地。"),
+                    "Opens prefilled feedback for you to review. After submitting, record the issue URL.",
+                    "打开预填的改进反馈，由你审阅提交。提交后，用 issue 链接记录结果。"),
                 placeholder: "",
                 field: "")
         }

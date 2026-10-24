@@ -112,16 +112,14 @@ struct KBEntry: Decodable, Identifiable {
     /// The axes as one metadata line: `pitfalls? · from mined ×6 · for this machine`.
     func axesLine(_ l10n: L10n) -> String {
         var parts: [String] = []
-        if let k = kind, !k.isEmpty { parts.append(k + ((kindAssumed ?? false) ? "?" : "")) }
+        if let k = kind, !k.isEmpty { parts.append(knowledgeKind(k, l10n) + ((kindAssumed ?? false) ? l10n.tr(" (unconfirmed category)", "（类别待确认）") : "")) }
         if let pv = provenance, !pv.isEmpty {
-            var s = l10n.tr("from ", "来自 ") + pv
+            var s = l10n.tr("Source: ", "来源：") + knowledgeProvenance(pv, l10n)
             if let h = hits, h > 1 { s += " ×\(h)" }
             parts.append(s)
         }
-        let aud = audienceShort(audience, l10n)
-        if !aud.isEmpty { parts.append(l10n.tr("for ", "给 ") + aud) }
         if status == "hypothesis" { parts.append(l10n.tr("hypothesis", "待验证")) }
-        if sensitive ?? false { parts.append(l10n.tr("sensitive · this Mac only", "敏感 · 只留本机")) }
+        if sensitive ?? false { parts.append(l10n.tr("Personal details", "个人资料")) }
         return parts.joined(separator: " · ")
     }
 
