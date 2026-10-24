@@ -1,0 +1,4 @@
+- Questions that need a reply stay near the top of the conversation, including while the keyboard is open. View opens the agent’s picker without sending your draft or choosing an answer.
+- Unsent drafts stay with the correct Mac and session when you switch between them.
+- Question and fold controls remain readable at larger text sizes, and Collapse all no longer covers messages.
+- Notifications from an unconfirmed external app no longer label every conversation as ChatGPT Desktop.
