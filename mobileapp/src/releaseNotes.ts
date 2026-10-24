@@ -12,6 +12,23 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.149',
+    en: [
+      'Knowledge and settings',
+      '- Knowledge lists and details show each entry\'s use and processing state, with clearer category and source names.',
+      '- Compact record details and keeping the entry open after recording an application reduce navigation.',
+      '- Consistent labels across settings, sharing, diagnostics and HQ activity make permissions and actions easier to identify.',
+      '- Send feedback distinguishes unsent drafts, access refusals and unconfirmed delivery, with the appropriate next step.',
+    ],
+    zh: [
+      '知识与设置',
+      '- 知识列表与详情直接显示用途和处理进度，分类和来源使用清晰名称。',
+      '- 记录详情集中收起；记录应用结果后保留当前条目，减少来回切换。',
+      '- 统一设置、分享、诊断和 HQ 操作记录的用语，权限与操作提示更明确。',
+      '- 发送异常提示区分未提交草稿、权限拒绝和结果未确认，并保留对应处理入口。',
+    ],
+  },
+  {
     version: '1.0.148',
     en: [
       '- Questions that need a reply stay near the top of the conversation, including while the keyboard is open. View opens the agent’s picker without sending your draft or choosing an answer.',
