@@ -32,10 +32,10 @@ export function knowledgeUsage(e: KnowledgeEntry, zh: boolean): {title: string; 
     title = unknown ? (zh ? '用途待确认' : 'Use not recorded') : (zh ? 'HQ 按需查阅' : 'HQ reference');
     explanation = unknown
       ? (zh ? '这条旧记录没有注明可识别的用途。请先核对应用记录，再选择新的使用方案。' : 'This older record has no recognized use. Review its destination before choosing a new plan.')
-      : (zh ? '供 HQ 查找、派活时参考，尚未设为固定指令。' : 'HQ can look this up and refer to it when assigning work. It has not been set as a standing instruction.');
+      : (zh ? '供 HQ 查找、派活时参考；当前记录未注明固定指令用途。' : 'Available for HQ lookup and delegation. No standing-instruction use is recorded for this entry.');
   } else {
     title = knowledgeUse(e.audience, zh);
-    state = pending ? (e.audience === 'everyone' ? (zh ? '待提交反馈' : 'Feedback pending') : (zh ? '待完成写入' : 'Write pending'))
+    state = pending ? (e.audience === 'everyone' ? (zh ? '待完成反馈' : 'Feedback to complete') : (zh ? '待完成写入' : 'Write pending'))
       : e.landed_at ? (zh ? '已记录应用' : 'Application recorded') : (zh ? '已指定用途' : 'Use selected');
     explanation = pending
       ? e.audience === 'everyone'

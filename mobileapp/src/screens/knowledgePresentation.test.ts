@@ -7,6 +7,7 @@ test('default HQ lookup is visible and is different from a standing HQ instructi
   const base = knowledgeUsage(e, true);
   expect(base.title).toBe('HQ 按需查阅');
   expect(base.state).toBe('');
+  expect(base.explanation).toContain('当前记录');
   const plan = knowledgeUsage({...e, promoted_at: 2, audience: 'hq'}, true);
   expect(plan.title).toBe('HQ 固定规则');
   expect(plan.state).toBe('待完成写入');
@@ -20,7 +21,7 @@ test('planning, recorded application and product feedback do not promise agent l
     expect(recorded.state).toBe('Application recorded');
     expect(recorded.explanation).toContain('does not confirm');
   }
-  expect(knowledgeUsage({...e, audience: 'everyone', promoted_at: 2}, true).state).toBe('待提交反馈');
+  expect(knowledgeUsage({...e, audience: 'everyone', promoted_at: 2}, true).state).toBe('待完成反馈');
 });
 test('legacy and future scopes remain unknown rather than being guessed as HQ-only or already applied', () => {
   for (const old of [{promoted_at: 2}, {landed_at: 3}, {audience: 'future-scope'}]) {

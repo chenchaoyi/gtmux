@@ -144,7 +144,7 @@ final class HQKnowledgeActionsTests: XCTestCase {
         XCTAssertNotEqual(legacy.title, lookup.title)
         XCTAssertEqual(entry("future", audience: "future").usage(l).title, legacy.title)
         XCTAssertEqual(entry("feedback", promoted: 100, audience: "everyone").usage(l).state,
-                       l.tr("Feedback pending", "待提交反馈"))
+                       l.tr("Feedback to complete", "待完成反馈"))
         XCTAssertEqual(knowledgeTopic("custom-topic", l), "custom-topic")
     }
 

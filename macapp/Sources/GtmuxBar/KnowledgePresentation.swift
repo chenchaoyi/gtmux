@@ -52,11 +52,11 @@ extension KBEntry {
                         "这条旧记录没有注明可识别的用途。请先核对应用记录，再选择新的使用方案。"))
             }
             return KnowledgeUsage(title: l10n.tr("HQ reference", "HQ 按需查阅"), state: "",
-                explanation: l10n.tr("HQ can look this up and refer to it when assigning work. It has not been set as a standing instruction.",
-                    "供 HQ 查找、派活时参考，尚未设为固定指令。"))
+                explanation: l10n.tr("Available for HQ lookup and delegation. No standing-instruction use is recorded for this entry.",
+                    "供 HQ 查找、派活时参考；当前记录未注明固定指令用途。"))
         }
         let state = pending
-            ? (scope == .everyone ? l10n.tr("Feedback pending", "待提交反馈") : l10n.tr("Write pending", "待完成写入"))
+            ? (scope == .everyone ? l10n.tr("Feedback to complete", "待完成反馈") : l10n.tr("Write pending", "待完成写入"))
             : ((landedAt ?? 0) > 0 ? l10n.tr("Application recorded", "已记录应用") : l10n.tr("Use selected", "已指定用途"))
         return KnowledgeUsage(title: scope.word(l10n), state: state,
             explanation: pending ? scope.explanation(l10n) : l10n.tr(

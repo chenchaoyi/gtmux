@@ -14,7 +14,7 @@ your machine unless you send it somewhere.
 
 ## Read and use knowledge in the interface
 
-Every ordinary entry shows **HQ reference** by default: HQ can look it up and refer to it when assigning work. It is not yet a standing instruction.
+Every ordinary entry shows **HQ reference** by default: HQ can look it up and refer to it when assigning work. The entry has no recorded standing-instruction use.
 Keep occasional background information here. Use **HQ standing rules** for recurring delegation, review and escalation agreements.
 
 Mac and phone lists and details show the recorded use and processing state without opening a dialog:
@@ -31,7 +31,7 @@ On Mac, **Choose how to use** saves a plan and reason. Complete **Write instruct
 **Write pending** and **Application recorded** describe ledger progress, not proof that agents loaded the content; running sessions may need to reload.
 The machine master text is rendered from the ledger and may already be reachable through existing entries, so pending is not a filesystem access guarantee.
 Older processed records without a recognized use show **Use not recorded** instead of guessing that all agents received them.
-Cancelling a plan retains the knowledge and does not roll back instruction files already written.
+Cancelling a plan retains the knowledge and does not roll back instruction files already written. A missing audience record does not prove that an instruction file never received a copy.
 
 Categories, provenance and built-in topics use reader-facing names; inferred categories say **unconfirmed category**. Custom topics retain their names.
 Identifiers, reasons and recorded destinations are in **Record details**. **Backup and migration** covers HQ instructions, task records and knowledge together; it is not an entry's scope.
