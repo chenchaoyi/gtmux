@@ -43,7 +43,7 @@ struct GuestLink: Identifiable, Equatable {
     /// The same three parts, in the same order, as a paired device's row.
     func usage(now: Int, tr: (String, String) -> String) -> String {
         guard lastSeen > 0 || !platform.isEmpty else {
-            return tr("not used yet", "还没有人用过")
+            return tr("No access recorded", "暂无访问记录")
         }
         var parts: [String] = []
         if !platform.isEmpty { parts.append(platform) }

@@ -14,7 +14,7 @@ Each distinct queue file is an event, including repeated successful turns on the
 
 ## Compact diagnostics
 
-Preferences keeps one notification switch. Below it, show a small secondary-text permission summary and text buttons for **Send test notification** and **macOS notification settings**. Refresh on opening/returning to preferences and during the existing poll. Do not change system settings automatically or claim that Focus is off. A test result reports system acceptance, not proof of a banner; the person checks the banner or Notification Center.
+Preferences groups **Desktop notifications** with its explanation, then a compact system-permission row and **Test notification** action. Test feedback stays beside that action; **System settings…** sits beside permission status. The **Tab marker** setting is in a separate **Terminal alerts** group. Sound and Focus guidance is a section footer, not another settings row. Refresh on opening/returning to preferences and during the existing poll. Do not change system settings automatically or claim that Focus is off. A test result reports system acceptance, not proof of a banner; the person checks the banner or Notification Center.
 
 This controls the Mac queue only. Phone/iPad APNs, external-conversation notification grants, and browser behavior retain their existing rules. Native Codex/DSH conversations that route through the consent-aware server poller are not silently opted into this hook queue by this fix.
 

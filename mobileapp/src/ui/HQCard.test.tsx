@@ -30,17 +30,17 @@ test('fleetHeadline synthesizes a chief-of-staff conclusion', () => {
     mk({session: 'docs', status: 'idle'}),
   ];
   // one waiter → names it + how many others are normal
-  expect(fleetHeadline(mk({status: 'working'}), workers, false)).toBe('api needs you · 2 others normal');
-  expect(fleetHeadline(mk({status: 'working'}), workers, true)).toBe('api 在等你拍板 · 其余 2 个正常');
+  expect(fleetHeadline(mk({status: 'working'}), workers, false)).toBe('api needs attention · 2 others normal');
+  expect(fleetHeadline(mk({status: 'working'}), workers, true)).toBe('api 待处理 · 其余 2 个正常');
   // quiet fleet
   expect(fleetHeadline(mk({status: 'working'}), [mk({status: 'idle'})], false)).toMatch(/all normal/);
   // HQ itself waiting supersedes the fleet line
-  expect(fleetHeadline(mk({status: 'waiting'}), workers, false)).toBe('needs your call');
+  expect(fleetHeadline(mk({status: 'waiting'}), workers, false)).toBe('needs confirmation');
 });
 
 test('one other session reads in the singular', () => {
   const two = [mk({session: 'api', status: 'waiting'}), mk({session: 'web', status: 'working'})];
-  expect(fleetHeadline(mk({status: 'working'}), two, false)).toBe('api needs you · 1 other normal');
+  expect(fleetHeadline(mk({status: 'working'}), two, false)).toBe('api needs attention · 1 other normal');
 });
 
 test('no fleet pips are rendered anymore', () => {
@@ -56,7 +56,7 @@ test('HQ itself waiting → amber card border + red subtitle (整卡琥珀)', ()
   const card = tree.root.findByProps({testID: 'radar-hq-card'});
   expect(flatStyle(card).borderColor).toBe(ERRORED_COLOR);
   const sub = tree.root.findAllByType(require('react-native').Text as any)
-    .find(t => t.props.children === 'needs your call');
+    .find(t => t.props.children === 'needs confirmation');
   expect(flatStyle(sub)).toMatchObject({color: StatusColor.waiting});
 });
 
@@ -75,7 +75,7 @@ test('a waiting worker turns the subtitle amber (attention-worthy)', () => {
   const hq = mk({role: 'supervisor', status: 'working'});
   const tree = render(hq, [hq, mk({session: 'api', status: 'waiting'})]);
   const sub = tree.root.findAllByType(require('react-native').Text as any)
-    .find(t => typeof t.props.children === 'string' && t.props.children.includes('needs you'));
+    .find(t => typeof t.props.children === 'string' && t.props.children.includes('needs attention'));
   expect(flatStyle(sub)).toMatchObject({color: ERRORED_COLOR});
 });
 
@@ -85,7 +85,7 @@ test('a waiting worker turns the subtitle amber (attention-worthy)', () => {
 test('a critical machine outranks "all normal", and HQ waiting outranks both', () => {
   expect(fleetHeadline(mk({status: 'working'}), [mk({status: 'idle'})], false, true)).toBe('machine under pressure');
   expect(fleetHeadline(mk({status: 'working'}), [mk({status: 'idle'})], true, true)).toBe('机器资源紧张');
-  expect(fleetHeadline(mk({status: 'waiting'}), [mk({status: 'idle'})], false, true)).toBe('needs your call');
+  expect(fleetHeadline(mk({status: 'waiting'}), [mk({status: 'idle'})], false, true)).toBe('needs confirmation');
 });
 
 test.each(['en', 'zh'])('HQ card speaks its action and fleet state, retaining its automation identifier (%s)', lang => {

@@ -3,9 +3,9 @@
 // a META session — it never renders as one-more-agent-row, so the card carries NO
 // status badge on the brand avatar. Its subtitle is an INTELLIGENCE HEADLINE
 // (hq-meta-layer): a deterministic chief-of-staff conclusion synthesized from the
-// worker fleet — who needs you + how many others are normal, or "all normal" when quiet
+// worker fleet — who needs attention + how many others are normal, or "all normal" when quiet
 // — REPLACING the old fleet pips (anonymous, redundant with the list below) and the
-// unreliable pane-title. When HQ ITSELF needs you the whole card goes amber. Tap → HQScreen.
+// unreliable pane-title. When HQ ITSELF needs attention the whole card goes amber. Tap → HQScreen.
 import React from 'react';
 import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {Agent} from '../api/types';
@@ -16,21 +16,21 @@ import {ERRORED_COLOR, Palette, StatusColor} from './theme';
 // fleetHeadline(): HQ itself waiting → "your call"; else name the one worker that needs
 // you + how many others are normal, or "all normal" when the fleet is quiet.
 export function fleetHeadline(hq: Agent, workers: Agent[], zh: boolean, resourceCritical = false): string {
-  if (hq.status === 'waiting') return zh ? '请你拍板' : 'needs your call';
+  if (hq.status === 'waiting') return zh ? '需要确认' : 'needs confirmation';
   // The same verdict the HQ page's header gives (hqHeaderModel): on the iPad the card
   // and the header sit side by side, and "all normal" beside "machine under pressure"
   // about the same Mac at the same moment is the disagreement hq-meta-layer retired.
   if (resourceCritical) return zh ? '机器资源紧张' : 'machine under pressure';
   const waiting = workers.filter(a => a.status === 'waiting');
-  if (waiting.length === 0) return zh ? '都正常 · 无需你介入' : 'all normal · nothing needs you';
+  if (waiting.length === 0) return zh ? '运行正常 · 无需处理' : 'all normal · no action needed';
   const first = waiting[0];
   const name = first.session || first.agent || first.pane_id;
   if (waiting.length === 1) {
     const rest = workers.length - 1;
-    if (rest > 0) return zh ? `${name} 在等你拍板 · 其余 ${rest} 个正常` : `${name} needs you · ${rest} other${rest === 1 ? '' : 's'} normal`;
-    return zh ? `${name} 在等你拍板` : `${name} needs you`;
+    if (rest > 0) return zh ? `${name} 待处理 · 其余 ${rest} 个正常` : `${name} needs attention · ${rest} other${rest === 1 ? '' : 's'} normal`;
+    return zh ? `${name} 待处理` : `${name} needs attention`;
   }
-  return zh ? `${waiting.length} 个会话在等你拍板` : `${waiting.length} sessions need you`;
+  return zh ? `${waiting.length} 个会话待处理` : `${waiting.length} sessions need attention`;
 }
 
 export function HQCard({
@@ -53,7 +53,7 @@ export function HQCard({
   const workers = agents.filter(a => a.role !== 'supervisor' && a.source !== 'native');
   const fleetWaiting = workers.some(a => a.status === 'waiting');
   const hqWaiting = hq.status === 'waiting';
-  // Subtitle color: red when HQ itself needs you; amber when a worker needs you;
+  // Subtitle color: red when HQ itself needs attention; amber when a worker needs attention;
   // quiet otherwise.
   const subColor = hqWaiting ? StatusColor.waiting : fleetWaiting || resourceCritical ? ERRORED_COLOR : pal.fg2;
   return (

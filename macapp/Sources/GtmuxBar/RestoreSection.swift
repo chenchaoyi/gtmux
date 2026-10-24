@@ -79,7 +79,7 @@ struct RestoreSection: View {
                         .frame(width: 22, height: 22)
                         .contentShape(Rectangle())
                 }.buttonStyle(.plain)
-                .help(l10n.tr("Show which sessions would be restored", "看看会恢复哪些会话"))
+                .help(l10n.tr("Preview sessions to restore", "预览待恢复的会话"))
                 .accessibilityIdentifier("restore-expand")
             }
             .padding(.horizontal, 12).padding(.vertical, 8)

@@ -25,7 +25,7 @@ describe('what the reader is offered', () => {
     const c = failureCopy('draft', false);
     expect(c.show).toBe(true);
     expect(c.action).not.toBe('send-anyway');
-    expect(c.title).toMatch(/someone is typing/i);
+    expect(c.title).toMatch(/unsent draft/i);
     expect(c.title).toMatch(/Mac|again/);
   });
 
@@ -96,7 +96,7 @@ describe('a Mac that refuses this phone', () => {
       expect(c.action).toBe('pair-again');
       expect(c.show).toBe(true);
       expect(c.title).toMatch(zh ? /重新配对/ : /pair again/);
-      expect(c.title).toMatch(zh ? /输入框/ : /back in the box/);
+      expect(c.title).toMatch(zh ? /输入框/ : /back in the input box/);
     }
   });
 });
@@ -107,7 +107,7 @@ describe('a pane not open to this connection for typing (403)', () => {
       const c = failureCopy('not-shared', zh);
       expect(c.action).toBe('none');
       expect(c.show).toBe(true);
-      expect(c.title).toMatch(zh ? /没有对这个连接开放输入/ : /not shared with this connection/);
+      expect(c.title).toMatch(zh ? /没有此窗格的输入权限/ : /no input access/);
       expect(c.title).not.toMatch(zh ? /配对/ : /pair again/);
     }
   });

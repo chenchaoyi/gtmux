@@ -87,11 +87,11 @@ final class HQCardReportTests: XCTestCase {
         i.owed = 7
         i.owedOldestSecs = 6 * 86400
         var row = hqReportRows(i, zh: true).first { $0.key == .knowledge }!
-        XCTAssertEqual(row.value, "478 条 · 7 条待你带走 · 最久 6 天")
+        XCTAssertEqual(row.value, "478 条 · 7 条待处理 · 最久 6 天")
         XCTAssertEqual(row.tone, .plain, "work in the queue is normal")
         i.owedOldestSecs = 16 * 86400
         row = hqReportRows(i, zh: false).first { $0.key == .knowledge }!
-        XCTAssertEqual(row.value, "478 entries · 7 waiting on you · oldest 16d")
+        XCTAssertEqual(row.value, "478 entries · 7 pending · oldest 16d")
         XCTAssertEqual(row.tone, .amber, "past doctor's line the debt is rotting")
         XCTAssertEqual(row.door, .knowledge)
     }
@@ -126,7 +126,7 @@ final class HQCardReportTests: XCTestCase {
                                HQActTally(kind: "gtmux:audit:knowledge", n: 3),
                                HQActTally(kind: "gtmux:self-check", n: 1)])
         let i = HQReportInput(acts: tally)
-        XCTAssertEqual(hqReportRows(i, zh: true).first?.value, "24 小时：派活 1 · 记账 3 · 自审 1")
+        XCTAssertEqual(hqReportRows(i, zh: true).first?.value, "24 小时：任务分派 1 · 知识变更 3 · 自检 1")
         XCTAssertEqual(hqReportRows(i, zh: false).first?.value, "24h: dispatched 1 · recorded 3 · self-audit 1")
         XCTAssertNil(hqReportRows(i, zh: false).first?.door, "the tally is a reading, not a door")
         XCTAssertEqual(hqActVerb("gtmux:audit:some-new-thing", zh: false), "some new thing")

@@ -1,3 +1,4 @@
+import {knowledgeKind, knowledgeUse} from './knowledgePresentation';
 // hqActsModel — the supervisor's own work, read out of the journal (hq-page-shows-its-work).
 //
 // The page used to give its middle zone to the FLEET's lifecycle: sessions starting,
@@ -52,14 +53,14 @@ export function isSupervisorAct(e: HQEvent): boolean {
 // derivation rather than a raw token: a journal kind added later must degrade, not leak
 // an identifier at the user.
 const verbs: Record<string, {en: string; zh: string; alarm?: boolean}> = {
-  'gtmux:audit:send': {en: 'dispatched', zh: '派活'},
+  'gtmux:audit:send': {en: 'dispatched', zh: '任务分派'},
   'gtmux:audit:reap': {en: 'reclaimed', zh: '回收'},
-  'gtmux:audit:knowledge': {en: 'recorded', zh: '记账'},
+  'gtmux:audit:knowledge': {en: 'recorded', zh: '知识变更'},
   'gtmux:audit:rotate': {en: 'rotated', zh: '轮换'},
-  'gtmux:audit:hq-session': {en: 'handed over', zh: '换班'},
-  'gtmux:self-check': {en: 'self-audit', zh: '自审'},
-  'gtmux:distill': {en: 'distilled', zh: '沉淀'},
-  'gtmux:wake-degraded': {en: 'could not reach HQ', zh: '叫不动 HQ', alarm: true},
+  'gtmux:audit:hq-session': {en: 'handed over', zh: '会话交接'},
+  'gtmux:self-check': {en: 'self-audit', zh: '自检'},
+  'gtmux:distill': {en: 'distilled', zh: '知识整理'},
+  'gtmux:wake-degraded': {en: 'could not reach HQ', zh: 'HQ 唤醒异常', alarm: true},
 };
 
 /**
@@ -133,7 +134,7 @@ export function knowledgeAct(summary: string, zh: boolean): {detail: string; id?
   const slug = (x: string) => x.split('/').pop() ?? x;
   switch (verb) {
     case 'add':
-      return {detail: zh ? `记下一条：${slug(id)}` : `wrote down: ${slug(id)}`, id};
+      return {detail: zh ? `新增知识：${slug(id)}` : `knowledge added: ${slug(id)}`, id};
     case 'supersede': {
       const to = /→\s*(\S+)/.exec(r)?.[1];
       // A rewrite that keeps its id reads as one name, not "x → x" (the feed showed
@@ -144,26 +145,26 @@ export function knowledgeAct(summary: string, zh: boolean): {detail: string; id?
     }
     case 'hit': {
       const n = /×(\d+)/.exec(r)?.[1];
-      return {detail: zh ? `又踩到：${slug(id)}${n ? `（第 ${n} 次）` : ''}` : `hit again: ${slug(id)}${n ? ` (×${n})` : ''}`, id};
+      return {detail: zh ? `重复出现：${slug(id)}${n ? `（第 ${n} 次）` : ''}` : `observed again: ${slug(id)}${n ? ` (×${n})` : ''}`, id};
     }
     case 'retire':
       return {detail: zh ? `不再适用：${slug(id)}` : `no longer applicable: ${slug(id)}`, id};
     case 'promote': {
       const aud = /--for\s+(\S+)/.exec(r)?.[1];
-      return {detail: zh ? `晋升给${aud ? ` ${aud}` : ''}：${slug(id)}` : `promoted${aud ? ` for ${aud}` : ''}: ${slug(id)}`, id};
+      return {detail: zh ? `设置用途：${aud ? `${knowledgeUse(aud, true)} · ` : ''}${slug(id)}` : `Use selected: ${aud ? `${knowledgeUse(aud, false)} · ` : ''}${slug(id)}`, id};
     }
     case 'land':
-      return {detail: zh ? `落地：${slug(id)}` : `landed: ${slug(id)}`, id};
+      return {detail: zh ? `记录应用：${slug(id)}` : `Application recorded: ${slug(id)}`, id};
     case 'withdraw':
-      return {detail: zh ? `撤回晋升：${slug(id)}` : `withdrew: ${slug(id)}`, id};
+      return {detail: zh ? `取消用途设置：${slug(id)}` : `Use plan cancelled: ${slug(id)}`, id};
     case 'dismiss':
-      return {detail: zh ? `丢弃候选：${id}` : `dismissed: ${id}`};
+      return {detail: zh ? `驳回线索：${id}` : `dismissed: ${id}`};
     case 'kind':
-      return {detail: zh ? `定种类：${slug(id)}${r ? ` = ${r}` : ''}` : `kind: ${slug(id)}${r ? ` = ${r}` : ''}`, id};
+      return {detail: zh ? `设置类别：${slug(id)}${r ? ` · ${knowledgeKind(r, true)}` : ''}` : `Category selected: ${slug(id)}${r ? ` · ${knowledgeKind(r, false)}` : ''}`, id};
     case 'alt':
-      return {detail: zh ? `补另一种语言：${slug(id)}` : `other half: ${slug(id)}`, id};
+      return {detail: zh ? `补充语言版本：${slug(id)}` : `Language version added: ${slug(id)}`, id};
     case 'confirm':
-      return {detail: zh ? `猜想转正：${slug(id)}` : `confirmed: ${slug(id)}`, id};
+      return {detail: zh ? `确认条目：${slug(id)}` : `confirmed: ${slug(id)}`, id};
     case 'sensitive':
       return {detail: zh ? `标为敏感：${slug(id)}` : `marked sensitive: ${slug(id)}`, id};
   }
@@ -175,7 +176,7 @@ export function outcomeWord(outcome: string | undefined, zh: boolean): string | 
   if (!outcome) return undefined;
   const w: Record<string, [string, string]> = {
     landed: ['landed', '已送达'],
-    'refused-draft': ['refused: a draft was in the box', '被草稿挡住'],
+    'refused-draft': ['refused: a draft was in the box', '存在未提交草稿'],
     failed: ['not delivered', '没送到'],
     delivered: ['delivered', '已送达'],
   };
@@ -215,8 +216,8 @@ export function actOf(e: HQEvent, zh: boolean): Act {
  */
 export function purposeLine(zh: boolean): string {
   return zh
-    ? 'HQ 替你做过的事，供你核对，不需要处理。派活和回收可以点进那个会话，记下的教训可以点进知识库。'
-    : 'What HQ did on your behalf, listed so you can check it. Nothing here needs handling. A dispatch or a reclaim opens that session; a lesson opens the knowledge base.';
+    ? 'HQ 操作记录，仅供核对。可打开对应会话或知识条目查看详情。'
+    : 'HQ activity for reference. Open the associated session or knowledge entry for details.';
 }
 
 /** acts is the supervisor's own work out of a mixed journal feed, newest first. */

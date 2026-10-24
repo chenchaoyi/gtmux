@@ -290,6 +290,8 @@ for extraction and privacy limits. The observation can be old; it is not current
 
 ## 8. Preferences window
 
+Settings and management labels follow [interface language](interface-language.md).
+
 The standard macOS settings grid (labels right-aligned, controls left-aligned). Fields:
 
 - Language: `跟随系统` (follow system, default) / `English` / `中文`. Reads `GTMUX_LANG`; once locked it is written to preferences and overrides.
@@ -298,7 +300,7 @@ The standard macOS settings grid (labels right-aligned, controls left-aligned). 
 - Launch at login: toggle.
 - Status bar display: `点+数字` / `仅圆点` / `空闲时隐藏` (dot + number / dot only / hide when idle; the three modes of §2).
 - Global hotkey: recordable (default ⌘⌥G).
-- Notifications: one toggle, a compact system-permission summary, test and system-settings text buttons. Input waits request sound with normal priority; successful turn-end alerts are silent and respect Focus. See [desktop notifications](desktop-notifications.md).
+- Notifications: a desktop-notification row with its explanation, followed by compact system permission and test controls within the same group. Terminal-tab markers have a separate group. Input waits request sound with normal priority; successful turn-end alerts are silent and respect Focus. See [desktop notifications](desktop-notifications.md).
 
 ### Incomplete updates
 

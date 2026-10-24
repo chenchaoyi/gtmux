@@ -2917,3 +2917,6 @@ an exhausted quota. The checker now tries GitHub's documented `releases/latest`
 redirect before the cached index, accepting only a stable tag in the same HTTPS
 repository and never following the redirect. Download and checksum verification
 remain separate. The check never installs a component.
+# Native grouped-Form snapshots are blank
+
+SwiftUI `ImageRenderer` can return a nonempty image containing only the background for an AppKit-backed grouped `Form`. That is not visual acceptance. Render the isolated component in an `NSHostingView` and use its bitmap cache instead; `NotificationPreferencesLayoutTests` demonstrates this with synthetic state and callbacks that fail if invoked. Inspect the image, and compare distinct feedback states to catch blank output. An offscreen component snapshot still does not verify the installed window, keyboard interaction, VoiceOver or real notification delivery.

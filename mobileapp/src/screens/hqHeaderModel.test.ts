@@ -70,12 +70,12 @@ describe('supervisorSignal', () => {
 
   test('a brief drops the word and the clock the byline already carries, and keeps its items', () => {
     const got = supervisorSignal(
-      [turn('a', '⟣ ◈ brief 14:30 │ 0 need you · 2 working │ top: the release\n· %19 is tagging\n· %7 idle', at(180))],
+      [turn('a', '⟣ ◈ brief 14:30 │ 0 need attention · 2 working │ top: the release\n· %19 is tagging\n· %7 idle', at(180))],
       NOW,
       false,
     );
     expect(got!.grade).toBe('brief');
-    expect(text(got!.segments)).toBe('0 need you · 2 working │ top: the release');
+    expect(text(got!.segments)).toBe('0 need attention · 2 working │ top: the release');
     expect(got!.bullets.map(text)).toEqual(['%19 is tagging', '%7 idle']);
   });
 
@@ -152,7 +152,7 @@ describe('the report rows', () => {
     // phone. That ranking is what made the card read as an instrument panel.
     const r = owedRow({pending: 8, oldestLabel: '12d', overdue: true}, false)!;
     expect(r.key).toBe('owed');
-    expect(r.value).toBe('8 to carry · oldest 12d');
+    expect(r.value).toBe('8 pending · oldest 12d');
     expect(r.tone).toBe('warn');
     // A queue with work in it is normal; only past the floor doctor uses is it amber.
     expect(owedRow({pending: 8, oldestLabel: '2d'}, false)!.tone).toBeUndefined();
@@ -175,7 +175,7 @@ describe('the report rows', () => {
   });
 
   test('context omits the fleet when nothing is moving', () => {
-    // "0 need you · 0 working · 17 idle" is three numbers to say nothing is
+    // "0 need attention · 0 working · 17 idle" is three numbers to say nothing is
     // happening, directly under a verdict that just said so — and the radar one
     // swipe away prints the same line.
     expect(contextRow([row({status: 'idle'}), row({status: 'idle'})], null, false)).toBeNull();
@@ -215,7 +215,7 @@ describe('isCritical', () => {
 
 describe('headerModel', () => {
   const base = {
-    verdict: 'all normal · nothing needs you',
+    verdict: 'all normal · nothing needs attention',
     urgent: false,
     digest: [row({status: 'idle'})],
     turns: [turn('a', '⟣ ✅ 都正常', at(120))],

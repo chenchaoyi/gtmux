@@ -494,8 +494,8 @@ serve's sweep caps.
 
 The menu bar has the same three things without a terminal. Preferences › Diagnostics says
 how much the store holds and how many of today's entries went wrong; **Open** shows the
-last three days as a list, newest first, switchable to problems only; **Pack…** runs the
-bundle below and says where the file landed; and **Record extra detail** is `gtmux config
+last three days as a list, newest first, switchable to problems only; **Export…** runs the
+bundle below and says where the file landed; and **Debug logging** is `gtmux config
 debug` (CLI processes pick it up when they next start; the app refreshes its own switch
 when you change it or it reads log stats, so turn it off when you are done).
 
@@ -2191,7 +2191,7 @@ It lives in `config.json` rather than in a shell variable because the processes 
 turning up are the ones no shell reaches: the launchd serve, the tunnel client, the hook.
 CLI processes pick it up when they next start. The menu-bar app refreshes its own switch
 when you change it or it reads log stats. `gtmux logs --stats` says whether it is on, and the
-menu bar's **Record extra detail** is the same setting.
+menu bar's **Debug logging** is the same setting.
 
 ### `hqWake`: tuning HQ's wake channel
 

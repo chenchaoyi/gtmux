@@ -295,7 +295,7 @@ export function owedRow(k: OwedKnowledge | null, zh: boolean): Row | null {
   return {
     key: 'owed',
     label: zh ? '待你' : 'owed',
-    value: (zh ? `${pending} 条待带走` : `${pending} to carry`) + age,
+    value: (zh ? `${pending} 条待处理` : `${pending} pending`) + age,
     tone: k?.overdue ? 'warn' : undefined,
   };
 }
@@ -313,7 +313,7 @@ export function didRow(tally: {verb: string; n: number}[], zh: boolean): Row | n
   if (top.length === 0) return null;
   return {
     key: 'did',
-    label: zh ? '它做了' : 'HQ did',
+    label: zh ? 'HQ 操作' : 'HQ activity',
     // The row draws its own chevron, and it opens the list of acts, not the console.
     value: top.map(t => `${t.verb} ${t.n}`).join(' · '),
   };

@@ -298,13 +298,13 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
               onPress={onDemo}
               style={[styles.demoCard, {borderColor: pal.divider, backgroundColor: pal.surface}]}
               accessibilityRole="button"
-              accessibilityLabel={lang === 'zh' ? '尚未连接？看看演示' : 'Not connected? See a demo'}>
+              accessibilityLabel={lang === 'zh' ? '查看演示' : 'View demo'}>
               <View style={[styles.demoBadge, {borderColor: StatusColor.working}]}>
                 <Text style={[styles.demoBadgeText, {color: StatusColor.working}]}>DEMO</Text>
               </View>
               <View style={styles.demoBody}>
                 <Text style={[styles.demoTitle, {color: pal.fg}]}>
-                  {lang === 'zh' ? '尚未连接？看看演示' : 'No server handy? See a demo'}
+                  {lang === 'zh' ? '查看演示' : 'View demo'}
                 </Text>
                 <Text style={[styles.demoSub, {color: pal.fg3}]}>
                   {lang === 'zh' ? '样例数据 · 无需任何服务器' : 'Sample data · no server needed'}

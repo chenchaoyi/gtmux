@@ -288,11 +288,11 @@ export function HQDisc({
             </View>
             <Text style={[styles.sheetBody, {color: pal.fg2}]}>
               {zh
-                ? 'HQ 是替你盯着其它所有 agent 的那个会话。该你知道的它会说给你听；在你划定的范围内，它不用事事请示就能处置。现在它还没启动。'
-                : 'HQ is the session that watches every other agent for you. It tells you what you need to know, and inside the scope you allow it acts without asking first. It is not running yet.'}
+                ? 'HQ 负责协调 Agent 会话、汇总进度，并在授权范围内分派任务和审阅结果。当前未运行。'
+                : 'HQ coordinates agent sessions, summarizes progress, and dispatches and reviews work within your authorization. It is not running.'}
             </Text>
             <Text style={[styles.sheetHow, {color: pal.fg3}]}>
-              {zh ? '在你的服务器上启动：菜单栏 gtmux → 启动 HQ，或在终端里跑 ' : 'Start it on your server: menu bar → Start HQ, or run '}
+              {zh ? '启动方式：服务器菜单栏 gtmux → 启动 HQ，或在终端运行 ' : 'Start it on your server: menu bar → Start HQ, or run '}
               <Text style={[styles.mono, {color: pal.fg2}]}>gtmux hq</Text>
               {zh ? '。' : '.'}
             </Text>

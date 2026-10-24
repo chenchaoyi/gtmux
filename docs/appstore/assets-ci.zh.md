@@ -57,9 +57,9 @@ App 从已发布的 tag 构建。已审核的 workflow 只提供两份采集用�
 结构化进度标明设备和语言阶段；失败产物显式包含白名单内隐藏的
 `.e2e-artifacts` Appium 日志和演示 PNG。
 
-当前可见的演示入口英文为 **No server handy? See a demo**，中文为
-**尚未连接？看看演示**；英文读屏名称以 **Not connected?** 开头。
-审核说明应引用可见卡片文字；测试匹配本地化的 **See a demo / 看看演示** 动作。
+当前可见的演示入口英文为 **View demo**，中文为
+**查看演示**；读屏名称与可见操作一致。
+审核说明应引用可见卡片文字；测试匹配本地化的 **View demo / 查看演示** 动作。
 额外采集的 `00-demo-entry.png` 用于核实审核入口，只作为证据，不增加商店截图数量。
 
 云端先在独立进程中编译 WebDriverAgent，再启动 Appium，使用 `usePrebuiltWDA` 复用成品。

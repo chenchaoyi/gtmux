@@ -68,7 +68,7 @@ test('the promotion queue leads, and an overdue one is marked', () => {
   );
   expect(t.root.findAllByProps({testID: 'knowledge-promotions'}).length).toBeGreaterThan(0);
   const said = strings(t.root as unknown as Node).join(' ');
-  expect(said).toContain('Plans to complete');
+  expect(said).toContain('Pending actions');
   expect(said).toContain('governs every release'); // the case, not just the title
   expect(said).toContain('AGENTS.md'); // where HQ suggests it goes
   expect(said).toContain('overdue');
@@ -168,7 +168,7 @@ describe('newest is a view, not a bucket', () => {
     // The topic counts add up to the header's total, so nothing is outside a topic — the
     // screen just never said it, and "are these in a topic at all?" was a fair question.
     const said = strings(render(bigIndex()).root as unknown as Node).join(' ');
-    expect(said).toContain('also sits under its topic');
+    expect(said).toContain('also available under their topics');
   });
 });
 
@@ -211,7 +211,7 @@ describe('coming back', () => {
     tapByLabel(t, 'knowledge-back');
     const said = strings(t.root as unknown as Node).join(' ');
     expect(said).toContain('pitfalls 11'); // the full topic list, not the index
-    expect(said).not.toContain('also sits under its topic'); // that line lives on the index
+    expect(said).not.toContain('also available under their topics'); // that line lives on the index
   });
 });
 
@@ -269,7 +269,7 @@ describe('the explainer under "waiting on you"', () => {
   it('is closed by default — it is read once, then it is just height', () => {
     const said = strings(render(withPending()).root as unknown as Node).join(' ');
     expect(said).not.toContain('These entries have a saved use plan');
-    expect(said).toContain('What needs doing');
+    expect(said).toContain('Usage guide');
   });
 
   it('opens on tap', () => {

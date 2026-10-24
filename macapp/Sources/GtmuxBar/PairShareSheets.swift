@@ -371,24 +371,24 @@ struct NewShareSheet: View {
 
     // Phase 1 — name + per-session scope.
     @ViewBuilder private var scopePage: some View {
-        Text(l10n.tr("New share link", "新建分享"))
+        Text(l10n.tr("New share link", "新建分享链接"))
             .font(.system(size: 14, weight: .semibold))
-        Text(l10n.tr("A collaborator sees and types only what you tick here, and you can revoke it any time.",
-                     "协作者只能看、只能输入你在这里勾选的，随时可以吊销。"))
+        Text(l10n.tr("Grant view and input access only to the selected panes. Access can be revoked at any time.",
+                     "仅授予所选窗格的查看、输入权限。可随时撤销访问。"))
             .font(.system(size: 11)).foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
 
-        TextField(l10n.tr("Who is it for? e.g. Alex", "给谁的？例如 张三"), text: $label)
+        TextField(l10n.tr("Link name (optional)", "链接名称（可选）"), text: $label)
             .textFieldStyle(.roundedBorder)
 
         if store.shareablePanes.isEmpty {
-            Text(l10n.tr("No tmux panes to share right now.", "当前没有可分享的 tmux pane。"))
+            Text(l10n.tr("No shareable tmux panes.", "暂无可分享的 tmux 窗格。"))
                 .font(.system(size: 11)).foregroundStyle(.secondary)
         } else {
             // Column headers — the unified 可见/输入 wording, over the scope cells.
             HStack(spacing: 8) {
                 Spacer(minLength: 0)
-                Text(l10n.tr("See", "可见")).frame(width: 44)
+                Text(l10n.tr("View", "查看")).frame(width: 44)
                 Text(l10n.tr("Type", "输入")).frame(width: 44)
             }
             .font(.system(size: 10, weight: .medium)).foregroundStyle(.tertiary)

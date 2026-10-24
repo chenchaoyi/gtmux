@@ -86,7 +86,7 @@ export function HQActsSheet({
               style={[styles.close, {backgroundColor: pal.raised}]}>
               <Text style={[styles.closeMark, {color: pal.fg}]}>✕</Text>
             </TouchableOpacity>
-            <Text style={[styles.title, {color: pal.fg}]}>{zh ? 'HQ 做了什么' : 'What HQ did'}</Text>
+            <Text style={[styles.title, {color: pal.fg}]}>{zh ? 'HQ 操作记录' : 'HQ activity'}</Text>
             <View style={styles.close} />
           </View>
           <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>

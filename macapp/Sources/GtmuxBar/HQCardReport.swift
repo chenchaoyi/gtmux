@@ -563,7 +563,7 @@ private func knowledgeRow(_ i: HQReportInput, zh: Bool) -> HQReportRow? {
     var value = zh ? "\(n) 条" : "\(n) entr\(n == 1 ? "y" : "ies")"
     var tone = HQRowTone.plain
     if i.owed > 0 {
-        value += zh ? " · \(i.owed) 条待你带走" : " · \(i.owed) waiting on you"
+        value += zh ? " · \(i.owed) 条待处理" : " · \(i.owed) pending"
         if let old = i.owedOldestSecs, old > 0 {
             value += zh ? " · 最久 \(hqAgeWord(old, zh: true))" : " · oldest \(hqAgeWord(old, zh: false))"
             if old >= hqOwedStaleSecs { tone = .amber }
@@ -584,7 +584,7 @@ private func didRow(_ i: HQReportInput, zh: Bool) -> HQReportRow? {
     let top = i.acts.filter { $0.n > 0 }.prefix(3)
     if top.isEmpty { return nil }
     let body = top.map { "\(hqActVerb($0.kind, zh: zh)) \($0.n)" }.joined(separator: " · ")
-    return HQReportRow(key: .did, label: zh ? "它做了" : "HQ did", value: (zh ? "24 小时：" : "24h: ") + body,
+    return HQReportRow(key: .did, label: zh ? "HQ 操作" : "HQ activity", value: (zh ? "24 小时：" : "24h: ") + body,
                        tone: .plain, door: nil, wraps: false)
 }
 
@@ -601,14 +601,14 @@ func hqAgeWord(_ secs: Int64, zh: Bool) -> String {
 /// screens. A kind gtmux has not named yet falls back to its last segment, hyphens opened.
 func hqActVerb(_ kind: String, zh: Bool) -> String {
     switch kind {
-    case "gtmux:audit:send": return zh ? "派活" : "dispatched"
+    case "gtmux:audit:send": return zh ? "任务分派" : "dispatched"
     case "gtmux:audit:reap": return zh ? "回收" : "reclaimed"
-    case "gtmux:audit:knowledge": return zh ? "记账" : "recorded"
+    case "gtmux:audit:knowledge": return zh ? "知识变更" : "recorded"
     case "gtmux:audit:rotate": return zh ? "轮换" : "rotated"
-    case "gtmux:audit:hq-session": return zh ? "换班" : "handed over"
-    case "gtmux:self-check": return zh ? "自审" : "self-audit"
-    case "gtmux:distill": return zh ? "沉淀" : "distilled"
-    case "gtmux:wake-degraded": return zh ? "叫不醒 HQ" : "couldn't wake HQ"
+    case "gtmux:audit:hq-session": return zh ? "会话交接" : "handed over"
+    case "gtmux:self-check": return zh ? "自检" : "self-audit"
+    case "gtmux:distill": return zh ? "知识整理" : "distilled"
+    case "gtmux:wake-degraded": return zh ? "HQ 唤醒异常" : "couldn't wake HQ"
     default:
         let tail = kind.split(separator: ":").last.map(String.init) ?? kind
         return tail.replacingOccurrences(of: "-", with: " ")

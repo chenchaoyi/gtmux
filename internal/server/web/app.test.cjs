@@ -353,7 +353,7 @@ test('a failed refresh keeps the rows and says they were not refreshed; an empty
 });
 
 test('agent rows carry their real radar status, and the header rolls it up', () => {
-  for (const [lang, agents, needYou] of [['en-US', '2 agents', '1 need you'], ['zh-CN', '2 个 agent', '1 个等你']]) {
+  for (const [lang, agents, needYou] of [['en-US', '2 agents', '1 need attention'], ['zh-CN', '2 个 agent', '1 个待处理']]) {
     const h = harness({ok: true}, lang);
     h.api.setAgents(radarRows);
     h.api.setPanes(fleet);
@@ -553,7 +553,7 @@ test('a refused or unanswered send keeps the text and says why, without resendin
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(c.input.value, 'synthetic draft', what + ': the text is back in the box');
     assert.equal(c.el.children[2].hidden, false, what + ': a note says why');
-    assert.match(c.el.children[2].textContent, what === '403' ? /Not sent/ : /Not confirmed/);
+    assert.match(c.el.children[2].textContent, what === '403' ? /Not sent/ : /Delivery not confirmed/);
     assert.equal(h.requests.filter(r => String(r.url).endsWith('/api/send')).length, 1, what + ': sent once, never again by itself');
   }
   // A newer draft is not overwritten.
@@ -682,7 +682,7 @@ test('focus HTML preserves Chat before Terminal alongside the real tile controls
   assert.deepEqual([...controls.matchAll(/data-mode="([^"]+)"/g)].map(m => m[1]), ['chat', 'term']);
 });
 
-for (const [language, names] of [['en-US', ['needs you', 'working', 'idle', 'idle']], ['zh-CN', ['需要你', '运行中', '空闲', '空闲']]]) {
+for (const [language, names] of [['en-US', ['needs attention', 'working', 'idle', 'idle']], ['zh-CN', ['待处理', '运行中', '空闲', '空闲']]]) {
   test(`pane status accessible names match shared labels in ${language}`, () => {
     const h = harness({}, language);
     const statuses = ['waiting', 'working', 'idle', 'running'];

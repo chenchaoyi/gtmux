@@ -398,19 +398,19 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
   // Quick-command chips: per-selected-target when a decision card is picked, else fleet-wide.
   const chips: {label: string; cmd: string}[] = selected
     ? [
-        {label: t('Reply for me', '帮我回复'), cmd: t(`${selected.loc} is waiting. Recommend a reply.`, `${selected.loc} 在等你，给我一个回复建议。`)},
+        {label: t('Suggest reply', '回复建议'), cmd: t(`${selected.loc} is waiting. Recommend a reply.`, `${selected.loc} 在等你，给我一个回复建议。`)},
         {label: t('Inspect', '看它在干嘛'), cmd: t(`What is ${selected.loc} doing right now?`, `${selected.loc} 现在在干什么？`)},
         {label: t('Continue it', '让它继续'), cmd: t(`Tell ${selected.loc} to continue.`, `让 ${selected.loc} 继续。`)},
       ]
     : [
         {label: t('Brief', '简报'), cmd: t('Give me a one-line brief of every session, the ones needing me first.', '用一句话说说所有会话，先说需要我的。')},
-        {label: t("Who's waiting", '谁在等我'), cmd: t('Which agents are waiting on me, and what for?', '哪些 agent 在等我？分别在等什么？')},
+        {label: t('Pending sessions', '待处理会话'), cmd: t('Which agents are waiting on me, and what for?', '哪些 agent 在等我？分别在等什么？')},
         {label: t("What's important", '要事'), cmd: t('What are the important events I should know about?', '有哪些我该知道的要紧事？')},
-        {label: t('My call', '该我拍板'), cmd: t('What needs my decision right now?', '现在有什么需要我拍板的？')},
+        {label: t('Pending decisions', '待确认事项'), cmd: t('What needs my decision right now?', '现在有什么需要我拍板的？')},
       ];
 
   const tabs: {key: Zone; label: string; badge?: string; dot?: boolean}[] = [
-    {key: 'calls', label: t('Your call', '该你拍板'), badge: calls.length > 0 ? String(calls.length) : undefined},
+    {key: 'calls', label: t('Needs attention', '待处理'), badge: calls.length > 0 ? String(calls.length) : undefined},
     ...(regular ? [] : [{key: 'console' as Zone, label: t('Console', '对话')}]),
   ];
 
@@ -426,14 +426,14 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
                  are where the money is going. */
               <View testID="hq-calls-quiet" style={styles.quiet}>
                 <Text style={[styles.quietTitle, {color: pal.fg}]}>
-                  {t('Nobody is waiting on you', '没有人在等你')}
+                  {t('No sessions need attention', '暂无待处理会话')}
                 </Text>
                 {working.length > 0 ? (
                   <>
                     <Text style={[styles.quietSub, {color: pal.fg2}]}>
                       {zh
-                        ? `下面这 ${working.length} 条线正在跑。它们不需要你，列在这里是让你知道时间花在哪。`
-                        : `These ${working.length} are running right now. They do not need you. This is where the time is going.`}
+                        ? `当前有 ${working.length} 个会话正在运行。`
+                        : `${working.length} sessions are currently running.`}
                     </Text>
                     <View style={[styles.quietList, {backgroundColor: pal.surface}]}>
                       {working.slice(0, 5).map((r, i) => (

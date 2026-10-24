@@ -1,6 +1,6 @@
 export function demoEntrySuffix(lang: string): string {
-  if (lang === 'en') return 'See a demo';
-  if (lang === 'zh') return '看看演示';
+  if (lang === 'en') return 'View demo';
+  if (lang === 'zh') return '查看演示';
   throw new Error(`Unsupported demo language: ${lang}`);
 }
 

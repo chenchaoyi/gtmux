@@ -56,7 +56,7 @@ describe('unknown kinds still read as words', () => {
 describe('actOf', () => {
   test('a dispatch shows its outcome beside the act, not buried in the text', () => {
     const a = actOf(real.send, true);
-    expect(a.verb).toBe('派活');
+    expect(a.verb).toBe('任务分派');
     expect(a.target).toBe('%11');
     expect(a.outcome).toBe('已送达'); // worded (hq-acts-readable)
     expect(a.detail.startsWith('已补上')).toBe(true);
@@ -285,13 +285,13 @@ describe('detailTruncated', () => {
 
 describe('an act reads as a sentence and leads somewhere (hq-acts-readable)', () => {
   it('turns ledger verbs into words and points at the entry', () => {
-    expect(knowledgeAct('add workflows/knowledge-tools-sys-voucher-leak-sample', true)).toEqual({detail: '记下一条：knowledge-tools-sys-voucher-leak-sample', id: 'workflows/knowledge-tools-sys-voucher-leak-sample'});
+    expect(knowledgeAct('add workflows/knowledge-tools-sys-voucher-leak-sample', true)).toEqual({detail: '新增知识：knowledge-tools-sys-voucher-leak-sample', id: 'workflows/knowledge-tools-sys-voucher-leak-sample'});
     expect(knowledgeAct('supersede best-practices/hq-tools-scratchpad → best-practices/hq-scripts-go-in-knowledge-tools', false)).toEqual({detail: 'rewrote: hq-tools-scratchpad → hq-scripts-go-in-knowledge-tools', id: 'best-practices/hq-scripts-go-in-knowledge-tools'});
     // An in-place rewrite keeps one name: "x → x" said nothing.
     expect(knowledgeAct('supersede pitfalls/resource-orphan-hint-is-a-snapshot → pitfalls/resource-orphan-hint-is-a-snapshot', false)).toEqual({detail: 'rewrote: resource-orphan-hint-is-a-snapshot', id: 'pitfalls/resource-orphan-hint-is-a-snapshot'});
     expect(knowledgeAct('supersede pitfalls/a → pitfalls/a', true)).toEqual({detail: '改写：a', id: 'pitfalls/a'});
-    expect(knowledgeAct('hit pitfalls/capture-pane-e-at-the-moment ×2', true)).toEqual({detail: '又踩到：capture-pane-e-at-the-moment（第 2 次）', id: 'pitfalls/capture-pane-e-at-the-moment'});
-    expect(knowledgeAct('promote pitfalls/x --why "y" --for machine', false)!.detail).toBe('promoted for machine: x');
+    expect(knowledgeAct('hit pitfalls/capture-pane-e-at-the-moment ×2', true)).toEqual({detail: '重复出现：capture-pane-e-at-the-moment（第 2 次）', id: 'pitfalls/capture-pane-e-at-the-moment'});
+    expect(knowledgeAct('promote pitfalls/x --why "y" --for machine', false)!.detail).toBe('Use selected: Agents on this computer · x');
     expect(knowledgeAct('something the model does not know', true)).toBeNull();
   });
   it('words a dispatch outcome and links the pane', () => {
@@ -300,10 +300,10 @@ describe('an act reads as a sentence and leads somewhere (hq-acts-readable)', ()
     expect(send.link).toEqual({kind: 'pane', id: '%20'});
     expect(send.detail).toBe('cut v1.0.23 装本机');
     const k = actOf({ts: 1, event: 'gtmux:audit:knowledge', state: 'control', summary: 'hit pitfalls/a ×2'} as HQEvent, false);
-    expect(k.detail).toBe('hit again: a (×2)');
+    expect(k.detail).toBe('observed again: a (×2)');
     expect(k.link).toEqual({kind: 'entry', id: 'pitfalls/a'});
-    expect(outcomeWord('refused-draft', true)).toBe('被草稿挡住');
+    expect(outcomeWord('refused-draft', true)).toBe('存在未提交草稿');
     expect(outcomeWord('odd-state', false)).toBe('odd-state');
-    expect(purposeLine(true)).toContain('不需要处理');
+    expect(purposeLine(true)).toContain('仅供核对');
   });
 });
