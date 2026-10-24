@@ -11,12 +11,12 @@ struct DesktopNotificationAuthorization: Equatable {
 
     func summary(_ l10n: L10n) -> String {
         switch permission {
-        case .checking: return l10n.tr("Checking macOS permission…", "正在检查系统通知权限…")
-        case .notRequested: return l10n.tr("Send a test to allow notifications.", "发送测试通知以申请系统权限。")
-        case .denied: return l10n.tr("Notifications are off in macOS Settings.", "macOS 已关闭 gtmux 通知。")
+        case .checking: return l10n.tr("Checking system permission…", "正在检查系统通知权限…")
+        case .notRequested: return l10n.tr("System permission not requested", "尚未申请系统通知权限")
+        case .denied: return l10n.tr("System notifications off", "系统通知已关闭")
         case .allowed:
-            return banners ? l10n.tr("Allowed by macOS. Focus may silence alerts.", "系统已允许通知；专注模式可能静音。")
-                : l10n.tr("Allowed, but banners are off in macOS Settings.", "系统已允许通知，但横幅未开启。")
+            return banners ? l10n.tr("System notifications allowed", "系统通知已允许")
+                : l10n.tr("System notifications allowed · banners off", "系统通知已允许 · 横幅已关闭")
         }
     }
 }

@@ -67,10 +67,9 @@ they explicitly opt in. The capture helper refuses to run on a shared local Mac.
 Structured progress names each device/language phase. Failure artifacts explicitly
 include the allowlisted hidden `.e2e-artifacts` Appium logs and demo PNGs.
 
-The current visible demo entry is **No server handy? See a demo** in English and
-**尚未连接？看看演示** in Chinese. Its English accessibility name starts with
-**Not connected?**. Review Notes must describe the visible card; the tests match
-the localized **See a demo / 看看演示** action. The extra `00-demo-entry.png` captures
+The current visible demo entry is **View demo** in English and
+**查看演示** in Chinese. Its accessibility name matches the visible action. Review Notes must describe the visible card; the tests match
+the localized **View demo / 查看演示** action. The extra `00-demo-entry.png` captures
 verify the reviewer entry and are evidence, not additional store screenshots.
 
 Hosted capture compiles WebDriverAgent in a separate process before Appium starts,

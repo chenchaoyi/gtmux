@@ -96,12 +96,12 @@ const S: Dict = {
   // lasts, a guest cannot refresh it, and a refusal does not mean it was used up (%12,
   // 2026-10-06).
   shareRefused: {
-    en: 'This share link was not accepted. Check the code, or ask the person who shared it for a link that works.',
-    zh: '这个分享链接没有被接受。检查一下分享码，或者请分享者给你一个有效的链接。',
+    en: 'Share link unavailable. Check the code or request a valid link from its owner.',
+    zh: '分享链接无法使用。请核对分享码，或联系分享者获取有效链接。',
   },
   shareTooMany: {
-    en: 'Too many tries just now. Wait a minute, then try again.',
-    zh: '刚才尝试次数太多。等一分钟再试。',
+    en: 'Too many attempts. Try again later.',
+    zh: '尝试次数过多，请稍后重试。',
   },
   shareMacDown: {
     en: 'The server behind this link did not answer. Try again later, or ask the person who shared it whether gtmux and remote access are on.',
@@ -199,7 +199,7 @@ const S: Dict = {
   disconnect: {en: 'Disconnect', zh: '断开连接'},
   removeServerQ: {en: 'Remove this server?', zh: '移除这台服务器？'},
   // radar
-  noAgents: {en: 'No coding agents running.', zh: '没有在跑的 coding agent。'},
+  noAgents: {en: 'No coding agents running.', zh: '暂无运行中的 Agent。'},
   reconnecting: {en: 'reconnecting…', zh: '重连中…'},
   offline: {en: 'offline', zh: '离线'},
   live: {en: 'live', zh: '实时'},
@@ -211,10 +211,10 @@ const S: Dict = {
   pairedMac: {en: 'Server', zh: '服务器'},
   removeMac: {en: 'Remove this server', zh: '移除这台服务器'},
   push: {en: 'Push notifications', zh: '推送通知'},
-  pushDevice: {en: 'Works on an iPhone, coming later.', zh: '需要真机，稍后接入。'},
+  pushDevice: {en: 'Available on physical devices.', zh: '仅支持真机。'},
   pushHint: {
-    en: 'Lock-screen alerts when an agent needs you or finishes (real device only).',
-    zh: 'agent 需要你或跑完时推送到锁屏（仅真机）。',
+    en: 'Notifications for input requests and turn completion (physical device only).',
+    zh: '会话需要处理或本轮结束时发送通知（仅真机）。',
   },
   version: {en: 'Version', zh: '版本'},
   // alerts

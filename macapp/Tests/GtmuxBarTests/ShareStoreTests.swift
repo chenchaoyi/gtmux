@@ -92,7 +92,7 @@ final class GuestLinkUsageTests: XCTestCase {
 
     func testAnUnusedLinkSaysSoRatherThanGoingBlank() {
         let g = GuestLink(id: "1", label: "review", enrolledAt: 100)
-        XCTAssertEqual(g.usage(now: 200, tr: tr), "not used yet")
+        XCTAssertEqual(g.usage(now: 200, tr: tr), "No access recorded")
     }
 
     func testAUsedLinkNamesTheDeviceAndTheAddress() {

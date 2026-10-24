@@ -34,8 +34,8 @@ function render(list: Act[]) {
 
 test('lists what HQ did: what the list is for, the 24-hour tally, and every act', () => {
   const {texts, rows} = render(acts);
-  expect(texts()).toContain('What HQ did');
-  expect(texts()).toMatch(/listed so you can check it/);
+  expect(texts()).toContain('HQ activity');
+  expect(texts()).toMatch(/for reference/);
   expect(texts()).toContain('dispatched 1  ·  recorded 1  ·  self-audited 1');
   expect(rows()).toHaveLength(3);
 });

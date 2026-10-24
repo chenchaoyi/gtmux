@@ -58,8 +58,8 @@ export function failureCopy(kind: FailureKind, zh: boolean): FailureCopy {
       // line, and a moment later it may not be.
       return {
         title: zh
-          ? '没发出去。那个窗格里有人正在打字，等一下再试，或去服务器上发'
-          : 'Not sent. Someone is typing in that pane, so try again in a moment, or send from the server',
+          ? '未发送：窗格内有未提交内容，请先处理草稿后重试。'
+          : 'Not sent: the pane contains an unsent draft. Resolve the draft and try again.',
         action: 'retry',
         actionLabel: zh ? '重试' : 'Retry',
         show: true,
@@ -69,17 +69,17 @@ export function failureCopy(kind: FailureKind, zh: boolean): FailureCopy {
       // used to read as someone typing, and a retry cannot get past it: answering it can.
       return {
         title: zh
-          ? '没发出去：它正在问你问题（权限提示或提问），先回答它'
-          : 'Not sent: it is asking you something (a permission prompt or a question). Answer it first',
+          ? '未发送：会话正在等待输入或确认，请先处理。'
+          : 'Not sent: the session is asking for input or approval. Resolve the request first.',
         action: 'none',
         actionLabel: '',
         show: true,
       };
     case 'gone':
       return {
-        title: zh ? '没发出去。这个会话已经不在了' : 'Not sent. That session is gone',
+        title: zh ? '未发送：目标窗格不存在。' : 'Not sent: the target pane no longer exists.',
         action: 'back-to-radar',
-        actionLabel: zh ? '回雷达' : 'Back to radar',
+        actionLabel: zh ? '返回会话列表' : 'Back to sessions',
         show: true,
       };
     case 'refused':
@@ -88,10 +88,10 @@ export function failureCopy(kind: FailureKind, zh: boolean): FailureCopy {
       // pairing again (simulator, 2026-10-05).
       return {
         title: zh
-          ? '没发出去：这台服务器拒绝了这部手机。文字已放回输入框，重新配对后再发'
-          : 'Not sent: this server refused this phone. Your text is back in the box; pair again to send it',
+          ? '未发送：服务器拒绝访问。内容已恢复到输入框，请重新配对。'
+          : 'Not sent: the server denied access. Your text is back in the input box; pair again to send it.',
         action: 'pair-again',
-        actionLabel: zh ? '去配对' : 'Pair again',
+        actionLabel: zh ? '重新配对' : 'Pair again',
         show: true,
       };
     case 'not-shared':
@@ -100,8 +100,8 @@ export function failureCopy(kind: FailureKind, zh: boolean): FailureCopy {
       // back into the box, as for a refusal.
       return {
         title: zh
-          ? '没发出去：这个窗格没有对这个连接开放输入。文字已放回输入框'
-          : 'Not sent: typing into this pane is not shared with this connection. Your text is back in the box',
+          ? '未发送：当前连接没有此窗格的输入权限。内容已恢复到输入框。'
+          : 'Not sent: this connection has no input access to the pane. Your text is back in the input box.',
         action: 'none',
         actionLabel: '',
         show: true,
@@ -113,17 +113,17 @@ export function failureCopy(kind: FailureKind, zh: boolean): FailureCopy {
     case 'unconfirmed':
       return {
         title: zh
-          ? '没发出去。输入框没有确认收到完整内容'
-          : "Not sent. The input box didn't confirm the full message",
+          ? '发送结果未确认，请检查窗格后重试。'
+          : "The full message was not confirmed. Check the pane before retrying.",
         action: 'retry',
-        actionLabel: zh ? '重发' : 'Retry',
+        actionLabel: zh ? '重试' : 'Retry',
         show: true,
       };
     default:
       return {
-        title: zh ? '没发出去' : 'Not sent',
+        title: zh ? '发送失败' : 'Send failed',
         action: 'retry',
-        actionLabel: zh ? '重发' : 'Retry',
+        actionLabel: zh ? '重试' : 'Retry',
         show: true,
       };
   }

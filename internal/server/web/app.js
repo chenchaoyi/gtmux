@@ -157,7 +157,7 @@
   // The radar's section headers, the rail's groups and the ⌘K rows. These were English on
   // a Chinese page (%12, 2026-10-06, after #1441's first round); the words are the phone's.
   // Set here, not where the other constants are, because T reads ZH, which is set above.
-  LABEL = {waiting: T('needs you', '需要你'), errored: T('errored', '出错'), working: T('working', '运行中'), idle: T('idle', '空闲'), running: T('idle', '空闲')};
+  LABEL = {waiting: T('needs attention', '待处理'), errored: T('errored', '出错'), working: T('working', '运行中'), idle: T('idle', '空闲'), running: T('idle', '空闲')};
 
   // Chrome that lives in index.html, labelled once at boot. Keeping the markup's text as
   // the CHINESE half and translating in one place beats sprinkling data-en attributes
@@ -807,7 +807,7 @@
     count.appendChild(ct);
     if (needYou) {
       var ny = document.createElement('span'); ny.className = 'pb-needyou';
-      ny.textContent = T(' · ' + needYou + ' need you', ' · ' + needYou + ' 个等你');
+      ny.textContent = T(' · ' + needYou + ' need attention', ' · ' + needYou + ' 个待处理');
       count.appendChild(ny);
     }
     var allFolded = order.length > 0 && order.every(function (s) { return panesFolded.indexOf(s) >= 0; });
@@ -1612,7 +1612,7 @@
       // A request that never got an answer may or may not have reached the Mac: the text
       // comes back with a note saying so, and nothing is sent again by itself.
       postSend(getId(), {text: v, enter: true}).then(function (r) { then(r, v); }, function () {
-        var unsure = T('Not confirmed: the server did not answer, so this may or may not have been sent. Check the pane before sending it again.', '无法确认：服务器没有回应，这条可能发出了，也可能没有。再次发送前先看一眼 pane。');
+        var unsure = T('Delivery not confirmed: the server did not respond. The message may have arrived; check the pane before retrying.', '无法确认发送结果：服务器未响应。消息可能已送达，重试前请检查窗格。');
         giveBack(v, unsure);
       });
     }

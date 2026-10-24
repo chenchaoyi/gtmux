@@ -484,7 +484,7 @@ function IndexPane({
     <>
       {view.promotions.length > 0 && (
         <View testID="knowledge-promotions">
-          <SectionLabel pal={pal} text={t('Plans to complete', '待完成的使用安排')} count={view.promotions.length} accent={view.promotions.some(p => p.overdue)} />
+          <SectionLabel pal={pal} text={t('Pending actions', '待处理')} count={view.promotions.length} accent={view.promotions.some(p => p.overdue)} />
           {/* What a promotion IS, said where it matters. This base is one of THREE places
               a rule can live — the shipped charter, the operator's own LOCAL.md, and this
               machine's ledger — and a reader who takes it for all three files a lesson
@@ -500,7 +500,7 @@ function IndexPane({
                   onPress={() => onToggleWhy()}
                   hitSlop={hit}>
                   <Text style={[styles.whyLink, {color: pal.fg2}]}>
-                    {whyOpen ? (zh ? '需要做什么 ⌃' : 'What needs doing ⌃') : (zh ? '需要做什么 ⌄' : 'What needs doing ⌄')}
+                    {whyOpen ? (zh ? '使用说明 ⌃' : 'Usage guide ⌃') : (zh ? '使用说明 ⌄' : 'Usage guide ⌄')}
                   </Text>
                 </TouchableOpacity>
                 {whyOpen && <Text style={[styles.sectionNote, {color: pal.fg3}]}>
@@ -553,8 +553,8 @@ function IndexPane({
           the screen never said, so the reader's honest question was "are these in a topic
           at all?" (2026-09-07). One line answers it. */}
       <Text style={[styles.sectionNote, {color: pal.fg3}]}>
-        {t('across every topic · each one also sits under its topic below',
-          '跨全部主题 · 这几条同时也在下面各自的主题里')}
+        {t('Recent entries across all topics; also available under their topics.',
+          '显示全部主题的最新条目，也可按下方主题浏览。')}
       </Text>
       <EntryList entries={view.recent} pal={pal} zh={zh} ageOf={ageOf} onOpen={onOpen} />
 

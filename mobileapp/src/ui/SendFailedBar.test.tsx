@@ -36,14 +36,14 @@ const words = (t: renderer.ReactTestRenderer): string =>
 
 test('a pane someone is typing in says so, and does not pretend an override exists', () => {
   const t = render('send failed: not sent: that pane has unsent text in its input box');
-  expect(words(t)).toMatch(/someone is typing/i);
+  expect(words(t)).toMatch(/unsent draft/i);
   expect(t.root.findAllByProps({testID: 'send-failed-send-anyway'})).toHaveLength(0);
 });
 
 test('a session that is gone offers the way out rather than a retry that cannot work', () => {
   let back = 0;
   const t = render('send failed: pane not found', {onBackToRadar: () => (back += 1)});
-  expect(words(t)).toMatch(/that session is gone/i);
+  expect(words(t)).toMatch(/target pane no longer exists/i);
   const btn = t.root.findByProps({testID: 'send-failed-back-to-radar'});
   act(() => {
     btn.props.onPress();
@@ -85,7 +85,7 @@ test('a Mac that refused this phone sends the reader to pair again, with no retr
 
 test('a pane not shared for typing (403) is said as that, with no pairing and no retry', () => {
   const t = render('input not shared for this pane', {onPairAgain: () => { throw new Error('no pairing'); }}, 403);
-  expect(words(t)).toMatch(/not shared with this connection/i);
+  expect(words(t)).toMatch(/no input access/i);
   expect(t.root.findAllByProps({testID: 'send-failed-pair-again'})).toHaveLength(0);
   expect(t.root.findAllByProps({testID: 'send-failed-retry'})).toHaveLength(0);
 });

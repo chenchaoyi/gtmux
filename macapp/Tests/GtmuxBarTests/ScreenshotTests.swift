@@ -234,7 +234,7 @@ final class ScreenshotTests: XCTestCase {
             let box = l.tr("input box", "输入框")
             XCTAssertFalse(before.contains(box), "nothing was pasted: \(before)")
             XCTAssertTrue(after.contains(box), "the text may be waiting there: \(after)")
-            XCTAssertTrue(after.contains(l.tr("Check it before sending again", "再发之前先看一眼")))
+            XCTAssertTrue(after.contains(l.tr("Check the draft before retrying", "重试前请检查草稿")))
         }
         // Neither is a retry: the user decides, after looking.
         let doc = ScreenshotDocument(image: blankImage(width: 10, height: 10), pointSize: CGSize(width: 10, height: 10))
@@ -321,9 +321,9 @@ final class ScreenshotTests: XCTestCase {
         // L10n's language is the app's (not settable from a test); expect whichever is active.
         let l = L10n.shared
         XCTAssertTrue(ScreenshotStatusText.text(.result(.refusedWaiting), target: "Codex", l10n: l)
-            .contains(l.tr("waiting for your decision", "正在等你做决定")))
+            .contains(l.tr("needs input or confirmation", "有待处理请求")))
         XCTAssertTrue(ScreenshotStatusText.text(.result(.notConfirmed("")), target: "Codex", l10n: l)
-            .contains(l.tr("Look at the pane", "先看一眼 pane")))
+            .contains(l.tr("check the pane", "重试前请检查窗格")))
         XCTAssertTrue(ScreenshotStatusText.text(.result(.refusedDraft("")), target: "Codex", l10n: l)
             .contains(l.tr("input box", "输入框")))
         XCTAssertEqual(ScreenshotStatusText.text(.idle, target: "Codex", l10n: l), "")
@@ -348,7 +348,7 @@ final class ScreenshotTests: XCTestCase {
             XCTAssertNotNil(zh.range(of: "\\p{Han}", options: .regularExpression), "\(r): \(zh)")
         }
         XCTAssertEqual(ScreenshotStatusText.text(.result(.agentsUnreadable), target: "", l10n: l),
-                       "没有发送：读不到 agent 列表，没法核对目标。再试一次。")
+                       "未发送：无法读取 Agent 列表，请重试。")
         l.mode = .en
         XCTAssertTrue(ScreenshotStatusText.text(.result(.agentsUnreadable), target: "", l10n: l)
             .hasPrefix("Not sent: could not read the agent list"))

@@ -685,7 +685,7 @@ struct ScreenshotEditorView: View {
 
     private func targetLabel(_ a: Agent) -> String {
         let who = a.agent.isEmpty ? a.primary : a.agent
-        let waiting = a.state == .waiting ? l10n.tr(" · waiting on you", " · 正在等你") : ""
+        let waiting = a.state == .waiting ? l10n.tr(" · waiting on you", " · 待处理") : ""
         return "\(who) · \(a.session) \(a.paneID)\(waiting)"
     }
 
@@ -904,9 +904,9 @@ struct ScreenshotTargetList: View {
             Text(a.secondary).font(.system(size: 12.5)).foregroundStyle(.secondary).lineLimit(1)
             Spacer(minLength: 8)
             if a.state == .waiting {
-                Text(l10n.tr("waiting on you", "正在等你")).font(.system(size: 11.5)).foregroundStyle(Theme.Status.waiting)
+                Text(l10n.tr("waiting on you", "待处理")).font(.system(size: 11.5)).foregroundStyle(Theme.Status.waiting)
             } else if a.paneID == recent {
-                Text(l10n.tr("last typed in", "刚才在这里打字")).font(.system(size: 11.5)).foregroundStyle(.secondary)
+                Text(l10n.tr("Recent input", "最近输入")).font(.system(size: 11.5)).foregroundStyle(.secondary)
             }
             StatusBadge(status: a.state, size: 13, errored: a.errored)
         }
@@ -925,36 +925,36 @@ enum ScreenshotStatusText {
         switch s {
         case .idle: return ""
         case .copied: return l10n.tr("Copied to the clipboard.", "已拷贝到剪贴板。")
-        case .saved(let path): return l10n.tr("Saved to \(path)", "已存到 \(path)")
+        case .saved(let path): return l10n.tr("Saved to \(path)", "已保存至 \(path)")
         case .sending: return l10n.tr("Sending…", "正在发送…")
-        case .error(let m): return l10n.tr("Something went wrong: \(m)", "出错了：\(m)")
+        case .error(let m): return l10n.tr("Operation failed: \(m)", "操作失败：\(m)")
         case .result(let r):
             switch r {
-            case .delivered(queued: false): return l10n.tr("Sent to \(who).", "已发给 \(who)。")
+            case .delivered(queued: false): return l10n.tr("Sent to \(who).", "已发送至 \(who)。")
             case .delivered(queued: true):
-                return l10n.tr("Queued: \(who) reads it after its current turn.", "已排队：\(who) 当前这轮结束后会读到。")
+                return l10n.tr("Queued for \(who).", "已加入 \(who) 的输入队列。")
             case .refusedWaiting:
-                return l10n.tr("Not sent: \(who) is waiting for your decision. Answer it first.",
-                               "没有发送：\(who) 正在等你做决定，先去回应它。")
+                return l10n.tr("Not sent: \(who) needs input or confirmation. Resolve the request first.",
+                               "未发送：\(who) 有待处理请求，请先完成处理。")
             case .heldAfterPaste:
-                return l10n.tr("Not submitted: \(who) started waiting for your decision. The note and image path may already be in its input box. Check it before sending again, or they go twice.",
-                               "没有提交：\(who) 开始等你做决定了。说明和图片路径可能已经在它的输入框里，再发之前先看一眼，免得发两遍。")
+                return l10n.tr("Not submitted: \(who) needs input. The note and image path may already be in its input box. Check the draft before retrying to avoid duplicates.",
+                               "未提交：\(who) 出现待处理请求。说明和图片路径可能已写入输入框，重试前请检查草稿，避免重复发送。")
             case .paneGone:
-                return l10n.tr("Not sent: that pane is gone. Pick another.", "没有发送：那个 pane 已经不在了，换一个。")
+                return l10n.tr("Not sent: the target pane no longer exists. Select another pane.", "未发送：目标窗格不存在，请选择其他窗格。")
             case .agentsUnreadable:
                 return l10n.tr("Not sent: could not read the agent list, so the target was not checked. Try again.",
-                               "没有发送：读不到 agent 列表，没法核对目标。再试一次。")
+                               "未发送：无法读取 Agent 列表，请重试。")
             case .refusedDraft:
-                return l10n.tr("Not sent: \(who)'s input box has unsent text. Clear it, then send.",
-                               "没有发送：\(who) 的输入框里有没提交的内容，清空后再发。")
+                return l10n.tr("Not sent: \(who)'s input box contains an unsent draft. Resolve it before retrying.",
+                               "未发送：\(who) 的输入框中有未提交草稿，请处理后重试。")
             case .duplicate:
-                return l10n.tr("Already sent: this screenshot and note reached \(who).",
-                               "已经发过了：同样的截图和说明 \(who) 已收到。")
+                return l10n.tr("This screenshot and note were already sent to \(who).",
+                               "该截图和说明已发送至 \(who)，请勿重复发送。")
             case .notConfirmed(let e):
-                return l10n.tr("Not confirmed. Look at the pane before sending again; it may have arrived. \(e)",
-                               "未能确认送达。再发之前先看一眼 pane，可能已经到了。\(e)")
+                return l10n.tr("Delivery not confirmed. The message may have arrived; check the pane before retrying. \(e)",
+                               "无法确认发送结果。消息可能已送达，重试前请检查窗格。\(e)")
             case .failed(let m):
-                return l10n.tr("Not sent: \(m)", "没有发送：\(m)")
+                return l10n.tr("Send failed: \(m)", "发送失败：\(m)")
             }
         }
     }

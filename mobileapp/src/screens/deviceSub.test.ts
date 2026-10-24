@@ -28,8 +28,8 @@ import {linkUsage} from './ManageMacScreen';
 // PERMITS; this line says whether anyone walked through it.
 describe('linkUsage', () => {
   it('says plainly when nobody has used a link', () => {
-    expect(linkUsage({}, false)).toBe('not used yet');
-    expect(linkUsage({}, true)).toBe('还没有人用过');
+    expect(linkUsage({}, false)).toBe('No access recorded');
+    expect(linkUsage({}, true)).toBe('暂无访问记录');
   });
 
   it('names the device and the address once someone has', () => {
@@ -50,21 +50,21 @@ describe('grantSummary', () => {
 
   it('counts what the link can actually reach', () => {
     expect(grantSummary({viewPanes: ['%1', '%2'], inputPanes: ['%1']}, live, false))
-      .toBe('sees 2 · types 1');
+      .toBe('view 2 · input 1');
   });
 
   it('names the grants that no longer exist instead of quietly inflating the count', () => {
     const s = grantSummary({viewPanes: ['%1', '%9', '%8'], inputPanes: ['%1']}, live, false);
-    expect(s).toContain('sees 1');
+    expect(s).toContain('view 1');
     expect(s).toContain('2 gone');
   });
 
   it('says so when every grant has expired', () => {
-    expect(grantSummary({viewPanes: ['%9'], inputPanes: []}, live, true)).toBe('看不到任何 pane · 1 项已失效');
+    expect(grantSummary({viewPanes: ['%9'], inputPanes: []}, live, true)).toBe('无查看权限 · 1 项已失效');
   });
 
   it('reads as before when a link grants nothing at all', () => {
-    expect(grantSummary({viewPanes: [], inputPanes: []}, live, false)).toBe('sees nothing');
+    expect(grantSummary({viewPanes: [], inputPanes: []}, live, false)).toBe('No view access');
   });
 });
 

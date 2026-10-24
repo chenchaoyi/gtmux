@@ -25,7 +25,7 @@ export function workerRows(digest: DigestRow[]): DigestRow[] {
  * running are the sessions mid-turn, newest first.
  *
  * For the quiet state: when nothing needs the user, what IS happening is the honest
- * answer, and "nothing needs you" alone leaves the zone saying nothing at the moment it
+ * answer, and "nothing needs attention" alone leaves the zone saying nothing at the moment it
  * is most often read.
  */
 export function running(digest: DigestRow[]): DigestRow[] {
@@ -82,13 +82,13 @@ export function assessment(digest: DigestRow[], zh: boolean): string {
 export function verdictSentence(v: NonNullable<DigestRow['verdict']>, zh: boolean): string {
   switch (v.state) {
     case 'hq_call':
-      return zh ? '请你拍板' : 'needs your call';
+      return zh ? '需要确认' : 'needs confirmation';
     case 'needs_you': {
       const name = v.first ?? '';
-      if (v.waiting > 1) return zh ? `${v.waiting} 个会话在等你拍板` : `${v.waiting} sessions need you`;
+      if (v.waiting > 1) return zh ? `${v.waiting} 个会话待处理` : `${v.waiting} sessions need attention`;
       const rest = Math.max(0, v.workers - 1);
-      if (rest > 0) return zh ? `${name} 在等你拍板 · 其余 ${rest} 个正常` : `${name} needs you · ${rest} other${rest === 1 ? '' : 's'} normal`;
-      return zh ? `${name} 在等你拍板` : `${name} needs you`;
+      if (rest > 0) return zh ? `${name} 待处理 · 其余 ${rest} 个正常` : `${name} needs attention · ${rest} other${rest === 1 ? '' : 's'} normal`;
+      return zh ? `${name} 待处理` : `${name} needs attention`;
     }
     case 'resource':
       // Cause-agnostic: the red tier can be disk, memory, load or a draining battery.
@@ -97,7 +97,7 @@ export function verdictSentence(v: NonNullable<DigestRow['verdict']>, zh: boolea
     case 'normal':
     default:
       if (v.workers === 0) return zh ? '暂无其它 agent 会话' : 'no other agent sessions';
-      return zh ? '都正常 · 无需你介入' : 'all normal · nothing needs you';
+      return zh ? '运行正常 · 无需处理' : 'all normal · no action needed';
   }
 }
 
@@ -107,16 +107,16 @@ function localAssessment(digest: DigestRow[], zh: boolean): string {
   const workers = workerRows(digest);
   const waiting = decisions(digest);
   if (workers.length === 0) return zh ? '暂无其它 agent 会话' : 'no other agent sessions';
-  if (waiting.length === 0) return zh ? '都正常 · 无需你介入' : 'all normal · nothing needs you';
+  if (waiting.length === 0) return zh ? '运行正常 · 无需处理' : 'all normal · no action needed';
   const name = sessionName(waiting[0]);
   if (waiting.length === 1) {
     const rest = workers.length - 1;
     if (rest > 0) {
-      return zh ? `${name} 在等你拍板 · 其余 ${rest} 个正常` : `${name} needs you · ${rest} other${rest === 1 ? '' : 's'} normal`;
+      return zh ? `${name} 待处理 · 其余 ${rest} 个正常` : `${name} needs attention · ${rest} other${rest === 1 ? '' : 's'} normal`;
     }
-    return zh ? `${name} 在等你拍板` : `${name} needs you`;
+    return zh ? `${name} 待处理` : `${name} needs attention`;
   }
-  return zh ? `${waiting.length} 个会话在等你拍板` : `${waiting.length} sessions need you`;
+  return zh ? `${waiting.length} 个会话待处理` : `${waiting.length} sessions need attention`;
 }
 
 // askOf is what a decision card puts in its body: the pending question when the hook
@@ -125,7 +125,7 @@ function localAssessment(digest: DigestRow[], zh: boolean): string {
 export function askOf(row: DigestRow, zh: boolean): string {
   if (row.ask) return row.ask;
   if (row.goal) return row.goal;
-  return zh ? '（没抓到具体问题，打开会话看看）' : '(no question captured, open the session)';
+  return zh ? '未获取具体问题，请打开会话查看' : 'No question captured. Open the session for details.';
 }
 
 // eventPhrase renders one ledger record as a human clause. The ledger's own `Format` is
@@ -136,17 +136,17 @@ export function eventPhrase(e: HQEvent, zh: boolean): string {
     case 'Waiting':
       if (e.kind) {
         const k = zh
-          ? {permission: '要授权', plan: '要你看方案', question: '有问题问你'}[e.kind] ?? '在等你'
-          : {permission: 'wants permission', plan: 'wants a plan reviewed', question: 'has a question'}[e.kind] ??
-            'is waiting';
+          ? {permission: '待授权', plan: '待审阅计划', question: '待回答'}[e.kind] ?? '待处理'
+          : {permission: 'awaiting permission', plan: 'awaiting plan review', question: 'awaiting an answer'}[e.kind] ??
+            'needs attention';
         return k;
       }
-      return zh ? '在等你' : 'is waiting';
+      return zh ? '待处理' : 'needs attention';
     case 'Stop':
-      if (e.class === 'asking') return zh ? '问了你一个问题' : 'ended on a question';
-      return zh ? '跑完一轮' : 'finished a turn';
+      if (e.class === 'asking') return zh ? '本轮以提问结束' : 'ended on a question';
+      return zh ? '本轮结束' : 'finished a turn';
     case 'StopFailure':
-      return zh ? '这一轮崩了' : 'a turn crashed';
+      return zh ? '本轮异常终止' : 'a turn crashed';
     case 'UserPromptSubmit':
       return e.origin === 'instruction' ? (zh ? '收到指令' : 'got an instruction') : zh ? '收到输入' : 'got input';
     case 'SessionStart':

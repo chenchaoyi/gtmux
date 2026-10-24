@@ -37,19 +37,19 @@ test('decisions are the blocked sessions, longest-stuck first', () => {
   expect(decisions(FLEET).map(r => r.loc)).toEqual(['web:1.0', 'api:0.0']);
 });
 
-describe('assessment names who needs you', () => {
+describe('assessment names who needs attention', () => {
   test('one waiting, others normal', () => {
     const one = [FLEET[0], FLEET[1], FLEET[3]];
-    expect(assessment(one, false)).toBe('api needs you · 1 other normal');
-    expect(assessment(one, true)).toBe('api 在等你拍板 · 其余 1 个正常');
+    expect(assessment(one, false)).toBe('api needs attention · 1 other normal');
+    expect(assessment(one, true)).toBe('api 待处理 · 其余 1 个正常');
   });
 
   test('several waiting collapses to a count', () => {
-    expect(assessment(FLEET, false)).toBe('2 sessions need you');
+    expect(assessment(FLEET, false)).toBe('2 sessions need attention');
   });
 
   test('a quiet fleet says so — never an empty line', () => {
-    expect(assessment([FLEET[0], FLEET[3]], true)).toBe('都正常 · 无需你介入');
+    expect(assessment([FLEET[0], FLEET[3]], true)).toBe('运行正常 · 无需处理');
   });
 
   test('no workers at all is still a sentence', () => {
@@ -77,8 +77,8 @@ test('opening HQ lands on the block when there is one', () => {
 
 describe('event feed reads as prose, not a log line', () => {
   test('a waiting kind says what kind', () => {
-    expect(eventPhrase(ev({event: 'Waiting', kind: 'permission'}), false)).toBe('wants permission');
-    expect(eventPhrase(ev({event: 'Waiting', kind: 'question'}), true)).toBe('有问题问你');
+    expect(eventPhrase(ev({event: 'Waiting', kind: 'permission'}), false)).toBe('awaiting permission');
+    expect(eventPhrase(ev({event: 'Waiting', kind: 'question'}), true)).toBe('待回答');
   });
 
   test('a turn that ended on a question is not "finished"', () => {
@@ -142,29 +142,29 @@ describe('assessment renders the served verdict', () => {
 
   it("speaks on the supervisor's own call (was: \"all normal\")", () => {
     const rows = [hq({state: 'hq_call', waiting: 0, workers: 2}), worker('api'), worker('web')];
-    expect(assessment(rows, false)).toBe('needs your call');
-    expect(assessment(rows, true)).toBe('请你拍板');
+    expect(assessment(rows, false)).toBe('needs confirmation');
+    expect(assessment(rows, true)).toBe('需要确认');
   });
 
   it('names the longest-waiting worker the core picked, not one it re-derives', () => {
     const rows = [hq({state: 'needs_you', waiting: 1, first: 'oldest', workers: 3}), worker('recent', 'waiting')];
-    expect(assessment(rows, false)).toBe('oldest needs you · 2 others normal');
+    expect(assessment(rows, false)).toBe('oldest needs attention · 2 others normal');
   });
 
   it('falls back to the local derivation when an older core sends no verdict', () => {
     const rows = [hq(undefined), worker('api', 'waiting'), worker('web')];
-    expect(assessment(rows, false)).toBe('api needs you · 1 other normal');
+    expect(assessment(rows, false)).toBe('api needs attention · 1 other normal');
   });
 
   it('a quiet fleet still reads as quiet', () => {
     const rows = [hq({state: 'normal', waiting: 0, workers: 2}), worker('api'), worker('web')];
-    expect(assessment(rows, true)).toBe('都正常 · 无需你介入');
+    expect(assessment(rows, true)).toBe('运行正常 · 无需处理');
   });
 });
 
 // The quiet state needs something true to say.
 //
-// "Nothing needs your decision right now." over an empty screen is this zone at its most
+// "No decisions require attention." over an empty screen is this zone at its most
 // common, saying nothing (user report, 2026-09-09). What IS happening is the honest
 // answer, and `running` is where it comes from.
 describe('running', () => {

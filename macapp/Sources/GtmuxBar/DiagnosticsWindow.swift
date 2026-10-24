@@ -24,7 +24,7 @@ final class DiagnosticsController {
             w.center()
             window = w
         }
-        window?.title = l10n.tr("What gtmux recorded", "gtmux 记下了什么")
+        window?.title = l10n.tr("Activity logs", "运行日志")
         window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
@@ -115,11 +115,11 @@ struct DiagnosticsView: View {
         VStack(spacing: 6) {
             Spacer()
             Text(problemsOnly
-                 ? l10n.tr("Nothing went wrong in the last three days.", "最近三天没出什么问题。")
-                 : l10n.tr("Nothing recorded in the last three days.", "最近三天没有记录。"))
+                 ? l10n.tr("No warnings or errors in the last three days.", "最近三天没有警告或错误记录。")
+                 : l10n.tr("No logs in the last three days.", "最近三天没有日志。"))
                 .font(.system(size: 12)).foregroundStyle(.secondary)
             if problemsOnly {
-                Button(l10n.tr("Show everything", "看全部")) { problemsOnly = false }
+                Button(l10n.tr("All logs", "全部日志")) { problemsOnly = false }
                     .buttonStyle(.link).font(.system(size: 11))
             }
             Spacer()

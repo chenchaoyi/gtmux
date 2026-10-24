@@ -355,7 +355,7 @@ export function PaneBrowserView({onBack, layout = 'compact'}: {onBack?: () => vo
                 (readFailed ? (lang === 'zh' ? ' · 刷新失败' : ' · not refreshed') : '')}
             {loaded && needsYou > 0 && (
               <Text style={{color: StatusColor.waiting}}>
-                {lang === 'zh' ? ` · ${needsYou} 个等你` : ` · ${needsYou} need you`}
+                {lang === 'zh' ? ` · ${needsYou} 个待处理` : ` · ${needsYou} need attention`}
               </Text>
             )}
           </Text>

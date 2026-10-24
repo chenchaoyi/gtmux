@@ -215,19 +215,19 @@ export function SettingsScreen({navigation}: any) {
             infoLabel={lang === 'zh' ? '备份与迁移说明' : 'About backup and migration'}>
             <SettingsRow
               icon="copy"
-              label={lang === 'zh' ? '这台设备上的副本' : 'Copy on this device'}
+              label={lang === 'zh' ? '本地副本' : 'Local copy'}
               sub={
                 memBusy
                   ? lang === 'zh'
-                    ? '正在取…'
-                    : 'Fetching…'
+                    ? '正在下载…'
+                    : 'Downloading…'
                   : memCopy
                   ? lang === 'zh'
-                    ? '点一下取一份新的'
-                    : 'Tap to fetch a fresh one'
+                    ? '更新本地副本'
+                    : 'Update the local copy'
                   : lang === 'zh'
-                  ? '点一下从服务器取一份'
-                  : 'Tap to fetch one from the server'
+                  ? '从服务器下载副本'
+                  : 'Download a copy from the server'
               }
               value={copyValue}
               pal={pal}
@@ -239,7 +239,7 @@ export function SettingsScreen({navigation}: any) {
                 backup ran. Sharing it somewhere yourself is the version you can check. */}
             <SettingsRow
               icon="share"
-              label={lang === 'zh' ? '导出这份副本' : 'Export the copy'}
+              label={lang === 'zh' ? '导出副本' : 'Export copy'}
               sub={
                 lang === 'zh'
                   ? '导出的文件未加密，请妥善保存'
@@ -256,7 +256,7 @@ export function SettingsScreen({navigation}: any) {
         <SettingsGroup title={lang === 'zh' ? '终端' : 'Terminal'} pal={pal}>
           <SettingsRow icon="palette" label={lang === 'zh' ? '外观' : 'Appearance'} value={labelOf(themes, themePref)} pal={pal} chevron divider onPress={() => setPicker('theme')} />
           <SettingsRow icon="layout" label={lang === 'zh' ? '默认模式' : 'Default mode'} value={labelOf(detailModes, defaultDetailMode)} pal={pal} chevron divider onPress={() => setPicker('mode')} />
-          <SettingsRow icon="return" label={lang === 'zh' ? '回车直接发送' : 'Return sends'} sub={lang === 'zh' ? '关闭时回车是换行，用 ↑ 发送' : 'Off: Return makes a newline, send with ↑'} pal={pal} toggle={returnSends} onToggle={setReturnSends} />
+          <SettingsRow icon="return" label={lang === 'zh' ? '回车发送' : 'Send on Return'} sub={lang === 'zh' ? '关闭后回车换行，使用发送按钮提交' : 'Off: Return inserts a newline; use the Send button'} pal={pal} toggle={returnSends} onToggle={setReturnSends} />
         </SettingsGroup>
 
         {/* NOTIFICATIONS — owner-only: a guest doesn't receive the host's alerts. The
@@ -269,8 +269,8 @@ export function SettingsScreen({navigation}: any) {
             pal={pal} toggle={pushEnabled} onToggle={setPushEnabled} divider />
           <SettingsRow
             inset
-            label={lang === 'zh' ? '等你回应' : 'Needs you'}
-            sub={lang === 'zh' ? '有 agent 在等你输入' : 'An agent is waiting for your input'}
+            label={lang === 'zh' ? '待处理提醒' : 'Input requests'}
+            sub={lang === 'zh' ? '会话需要输入或确认时通知' : 'Notify when a session needs input or confirmation'}
             pal={pal}
             toggle={pushEnabled && pushKinds.waiting}
             toggleDisabled={!pushEnabled}
@@ -279,8 +279,8 @@ export function SettingsScreen({navigation}: any) {
           />
           <SettingsRow
             inset
-            label={lang === 'zh' ? '已完成' : 'Finished'}
-            sub={lang === 'zh' ? 'agent 完成了一轮' : 'An agent finished a turn'}
+            label={lang === 'zh' ? '本轮结束' : 'Turn completion'}
+            sub={lang === 'zh' ? '会话本轮成功结束时通知' : 'Notify when a session completes a turn successfully'}
             pal={pal}
             toggle={pushEnabled && pushKinds.done}
             toggleDisabled={!pushEnabled}
@@ -352,7 +352,7 @@ export function SettingsScreen({navigation}: any) {
           lang === 'zh'
             ? [
                 {label: '当前进展', body: 'HQ 汇总这台服务器的会话和待办，随进展更新。'},
-                {label: '积累的知识', body: 'HQ 记下的事实和经验，保留每条内容的来源。'},
+                {label: '知识库', body: 'HQ 保存的事实、经验及其来源。'},
                 {label: '你的要求', body: '你给 HQ 的长期偏好和边界，保存在 LOCAL.md；升级不会覆盖。'},
                 {label: 'gtmux 的规则', body: 'HQ 默认的工作方式，保存在 AGENTS.md，随 gtmux 更新；你的要求优先。'},
               ]

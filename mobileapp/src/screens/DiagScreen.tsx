@@ -64,10 +64,10 @@ export function DiagScreen({navigation}: any) {
 
   const confirmClear = () =>
     Alert.alert(
-      zh ? '清空诊断记录？' : 'Clear the record?',
+      zh ? '清空诊断记录？' : 'Clear logs?',
       zh
-        ? '这台设备上的记录会被删掉。出问题时会重新开始记。'
-        : 'What this phone recorded is deleted. It starts recording again the next time something happens.',
+        ? '将删除本设备的全部诊断记录。后续事件仍会正常记录。'
+        : 'Delete all diagnostic logs on this device. Future events will continue to be recorded.',
       [
         {text: t('cancel'), style: 'cancel'},
         {
@@ -172,7 +172,7 @@ export function DiagScreen({navigation}: any) {
                 />
                 <Action label={zh ? '分享' : 'Share'} pal={pal} onPress={shareAll} />
               </View>
-              <Action label={zh ? '清空记录' : 'Clear the record'} pal={pal} danger onPress={confirmClear} />
+              <Action label={zh ? '清空记录' : 'Clear logs'} pal={pal} danger onPress={confirmClear} />
             </View>
           )}
         </ContentColumn>
@@ -181,7 +181,7 @@ export function DiagScreen({navigation}: any) {
   );
 }
 
-// What shows up here, for someone looking at an empty page. It says what the record is
+// Log contents, for someone looking at an empty page. It says what the record is
 // for BEFORE anything has gone wrong, which is the only time this page is calm.
 function EmptyRecord({
   zh, pal, problemsOnly, onShowAll,
@@ -194,27 +194,27 @@ function EmptyRecord({
   if (problemsOnly) {
     return (
       <View style={[styles.card, {backgroundColor: pal.surface, borderColor: pal.divider, padding: 16}]}>
-        <Text style={[styles.lineTitle, {color: pal.fg}]}>{zh ? '没有出过问题' : 'Nothing has gone wrong'}</Text>
+        <Text style={[styles.lineTitle, {color: pal.fg}]}>{zh ? '暂无警告或错误' : 'No warnings or errors recorded'}</Text>
         <TouchableOpacity onPress={onShowAll} hitSlop={hit}>
-          <Text style={[styles.link, {color: '#06B6D4'}]}>{zh ? '看全部' : 'Show everything'}</Text>
+          <Text style={[styles.link, {color: '#06B6D4'}]}>{zh ? '全部日志' : 'All logs'}</Text>
         </TouchableOpacity>
       </View>
     );
   }
   const items = zh
     ? [
-        '发给服务器的请求失败了，记下是哪个接口、回了什么',
-        '配对没成功，记下被拒的原因',
-        '实时连接断了，以及断了多久',
+        '请求失败：接口与响应信息',
+        '配对失败：拒绝原因',
+        '连接中断：持续时间',
       ]
     : [
-        'A request to the server that failed, with the route and what came back',
-        'A pairing that did not go through, and the reason it was refused',
-        'The live connection dropping, and how long it was gone',
+        'Failed requests: endpoint and response details',
+        'Failed pairing: rejection reason',
+        'Connection interruptions: duration',
       ];
   return (
     <View style={[styles.card, {backgroundColor: pal.surface, borderColor: pal.divider, padding: 16}]}>
-      <Text style={[styles.emptyTitle, {color: pal.fg}]}>{zh ? '这里会出现什么' : 'What shows up here'}</Text>
+      <Text style={[styles.emptyTitle, {color: pal.fg}]}>{zh ? '记录内容' : 'Log contents'}</Text>
       {items.map(s => (
         <View key={s} style={styles.bullet}>
           <Text style={[styles.bulletDot, {color: pal.fg3}]}>·</Text>

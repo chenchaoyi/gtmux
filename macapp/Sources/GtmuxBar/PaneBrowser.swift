@@ -433,7 +433,7 @@ struct PaneBrowserView: View {
                 HStack(spacing: 0) {
                     Text(countLine).font(.system(size: 10)).foregroundStyle(p.fg2)
                     if needsYou > 0 {
-                        Text(l10n.tr(" · \(needsYou) need you", " · \(needsYou) 个等你"))
+                        Text(l10n.tr(" · \(needsYou) need attention", " · \(needsYou) 个待处理"))
                             .font(.system(size: 10)).foregroundStyle(Theme.Status.waiting)
                     }
                 }

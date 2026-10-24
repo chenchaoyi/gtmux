@@ -62,7 +62,7 @@ export function linkUsage(
   g: {platform?: string; lastIP?: string; lastSeen?: number},
   zh: boolean,
 ): string {
-  if (!g.lastSeen && !g.platform) return zh ? '还没有人用过' : 'not used yet';
+  if (!g.lastSeen && !g.platform) return zh ? '暂无访问记录' : 'No access recorded';
   const parts: string[] = [];
   if (g.platform) parts.push(g.platform);
   if (g.lastIP) parts.push(g.lastIP);
@@ -85,10 +85,10 @@ export function grantSummary(
   const v = g.viewPanes.filter(p => live.has(p)).length;
   const i = g.inputPanes.filter(p => live.has(p)).length;
   const gone = g.viewPanes.length - v;
-  if (v === 0 && gone === 0) return zh ? '看不到任何 pane' : 'sees nothing';
+  if (v === 0 && gone === 0) return zh ? '无查看权限' : 'No view access';
   const head = v === 0
-    ? (zh ? '看不到任何 pane' : 'sees nothing')
-    : (zh ? `可见 ${v} · 可输入 ${i}` : `sees ${v} · types ${i}`);
+    ? (zh ? '无查看权限' : 'No view access')
+    : (zh ? `可查看 ${v} · 可输入 ${i}` : `view ${v} · input ${i}`);
   return gone > 0 ? head + (zh ? ` · ${gone} 项已失效` : ` · ${gone} gone`) : head;
 }
 
@@ -233,7 +233,7 @@ export function ManageMacScreen({navigation}: any) {
   const newLink = () => {
     Alert.prompt?.(
       zh ? '新建分享链接' : 'New share link',
-      zh ? '给协作者起个名（可留空）' : 'Name this collaborator (optional)',
+      zh ? '链接名称（可选）' : 'Link name (optional)',
       [
         {text: zh ? '取消' : 'Cancel', style: 'cancel'},
         {
@@ -265,10 +265,10 @@ export function ManageMacScreen({navigation}: any) {
   const revoke = (g: GuestLink) =>
     Alert.alert(
       g.label || (zh ? '分享链接' : 'Share link'),
-      zh ? '吊销后此链接立即失效。' : 'Revoking disables this link immediately.',
+      zh ? '撤销后此链接立即失效。' : 'Revoking disables this link immediately.',
       [
         {text: zh ? '取消' : 'Cancel', style: 'cancel'},
-        {text: zh ? '吊销' : 'Revoke', style: 'destructive', onPress: () => run(() => client.revokeShare(g.id))},
+        {text: zh ? '撤销' : 'Revoke', style: 'destructive', onPress: () => run(() => client.revokeShare(g.id))},
       ],
     );
 
@@ -318,10 +318,10 @@ export function ManageMacScreen({navigation}: any) {
                 icon="server"
                 label={
                   srv.state === 'lapsed'
-                    ? zh ? '已失效，合盖会让它休眠' : 'Lapsed, the lid will sleep it'
+                    ? zh ? '已失效，合盖将休眠' : 'Lapsed · sleep enabled'
                     : serverModeUnreadable(srv)
-                    ? zh ? '读不到睡眠设置，不知道是否还开着' : "Can't read the sleep setting, so it may still be on"
-                    : zh ? '开启中，合盖不会休眠' : 'On, the lid may stay closed'
+                    ? zh ? '无法读取睡眠设置，状态未知' : "Sleep setting unavailable · status unknown"
+                    : zh ? '已开启，合盖保持运行' : 'On · lid-closed operation'
                 }
                 sub={serverModeSub(srv, zh)}
                 pal={pal}
@@ -335,8 +335,8 @@ export function ManageMacScreen({navigation}: any) {
           <SettingsGroup title={zh ? '分享' : 'Sharing'} pal={pal}>
             <SettingsRow
               icon="share"
-              label={zh ? '允许协作者向终端输入' : 'Let a collaborator type into the terminal'}
-              sub={zh ? '关闭后链接仍可查看（若已授予可见），但无法输入' : 'Off: links can still view (if allowed) but never type'}
+              label={zh ? '协作输入' : 'Collaborator input'}
+              sub={zh ? '关闭后仅保留已授予的查看权限' : 'Off: existing view permissions remain; input is disabled'}
               pal={pal}
               toggle={!!cfg?.enabled}
               onToggle={setEnabled}
@@ -368,7 +368,7 @@ export function ManageMacScreen({navigation}: any) {
             />
             {guests.length === 0 ? (
               <Text style={[styles.empty, {color: pal.fg3}]}>
-                {zh ? '还没有链接。新建一个邀请协作者。' : 'No links yet. Create one to invite a collaborator.'}
+                {zh ? '暂无分享链接。创建链接以授予访问权限。' : 'No share links. Create a link to grant access.'}
               </Text>
             ) : (
               guests.map((g, idx) => (
@@ -420,7 +420,7 @@ export function ManageMacScreen({navigation}: any) {
                                 {primary(a)}
                               </Text>
                               <View style={styles.facet}>
-                                <Text style={[styles.facetLabel, {color: pal.fg3}]}>{zh ? '可见' : 'See'}</Text>
+                                <Text style={[styles.facetLabel, {color: pal.fg3}]}>{zh ? '查看' : 'View'}</Text>
                                 <Switch value={see} onValueChange={v => toggleScope(g, a.pane_id, 'see', v)} disabled={busy} />
                               </View>
                               <View style={styles.facet}>
@@ -439,7 +439,7 @@ export function ManageMacScreen({navigation}: any) {
                           <Text style={[styles.actionLink, {color: pal.fg}]}>{zh ? '交付…' : 'Hand it over…'}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => revoke(g)} hitSlop={hit}>
-                          <Text style={[styles.actionLink, styles.actionDanger]}>{zh ? '吊销' : 'Revoke'}</Text>
+                          <Text style={[styles.actionLink, styles.actionDanger]}>{zh ? '撤销' : 'Revoke'}</Text>
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -473,8 +473,8 @@ export function ManageMacScreen({navigation}: any) {
             )}
             <Text style={[styles.note, {color: pal.fg3}]}>
               {zh
-                ? '吊销配对设备、开关远程访问都要在服务器上做，所以手机丢了也改不了谁能进这台机器。'
-                : 'Revoking a paired device and toggling remote access are done on the server, so a lost phone cannot change who gets in.'}
+                ? '配对撤销和远程访问设置仅可在服务器上管理。'
+                : 'Manage device revocation and remote access on the server.'}
             </Text>
           </SettingsGroup>
         </ContentColumn>

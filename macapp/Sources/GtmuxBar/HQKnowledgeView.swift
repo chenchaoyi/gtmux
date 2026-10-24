@@ -159,7 +159,7 @@ struct HQKnowledgeView: View {
                         // What the commander owes leads, exactly as it does on the phone:
                         // carrying a promoted lesson somewhere durable is the only step of
                         // this lifecycle that waits on a person.
-                        sectionHead(l10n.tr("Plans to complete", "待完成的使用安排"), store.pending.count, p, accent: store.pending.contains {
+                        sectionHead(l10n.tr("Pending actions", "待处理"), store.pending.count, p, accent: store.pending.contains {
                             Int64(Date().timeIntervalSince1970) - ($0.promotedAt ?? 0) >= 14 * 24 * 3600
                         })
                         // What a promotion IS, said where it matters. This base is one of
@@ -171,7 +171,7 @@ struct HQKnowledgeView: View {
                         Button {
                             whyOpen.toggle()
                         } label: {
-                            Label(l10n.tr("What needs doing", "需要做什么"), systemImage: whyOpen ? "chevron.down" : "chevron.right")
+                            Label(l10n.tr("Usage guide", "使用说明"), systemImage: whyOpen ? "chevron.down" : "chevron.right")
                                 .font(HQTypography.navigation)
                                 .foregroundStyle(p.fg2)
                         }

@@ -79,7 +79,7 @@ test('Needs you and Finished are inset under Push notifications', () => {
   // tsconfig has no Node types, so `__dirname` failed CI's typecheck.
   const fs = require('fs') as {readFileSync: (p: string, e: string) => string};
   const src = fs.readFileSync('src/screens/SettingsScreen.tsx', 'utf8');
-  for (const zh of ['等你回应', '已完成']) {
+  for (const zh of ['待处理提醒', '本轮结束']) {
     expect(src).toMatch(new RegExp(`<SettingsRow\\s+inset\\s+label=\\{lang === 'zh' \\? '${zh}'`));
   }
 });

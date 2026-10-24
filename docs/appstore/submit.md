@@ -160,8 +160,8 @@ and separately record the Store preview. These helpers never publish labels or s
 
 ## 6. Reviewer experience: built-in demo only
 
-No demo server or guest link. On first pairing, tap **No server handy? See a demo**
-(Chinese: **尚未连接？看看演示**; verify the current `PairingScreen.tsx` label).
+No demo server or guest link. On first pairing, tap **View demo**
+(Chinese: **查看演示**; verify the current `PairingScreen.tsx` label).
 The offline synthetic demo covers radar, terminal/replies, HQ, knowledge, usage and iPad
 layout. Review contact and Sign-in required = No may carry over; check them each time.
 
@@ -221,6 +221,6 @@ pairing/demo entry, camera or push behavior; capture notes are in [assets-ci.md]
 ```
 gtmux is a companion app for a server that users run on their own Mac (`gtmux serve`). It shows the user's tmux and coding-agent sessions and lets them reply from their phone. There is no account or login. Users pair with a QR code or code shown on their Mac. Terminal input goes only to the Mac they paired. The app does not offer a VPN, and it collects no data: push notifications are sent by the user's own Mac through a relay that forwards them to Apple's push service without storing them.
 REVIEW WITHOUT A SERVER
-On the first pairing screen, tap "No server handy? See a demo" ("尚未连接？看看演示" in Simplified Chinese). The self-contained demo uses sample data and needs no credentials or network. It shows the agent radar, terminal and reply controls, HQ, knowledge, usage, and the iPad layout. You can navigate the whole demo without connecting to a server.
+On the first pairing screen, tap "View demo" ("查看演示" in Simplified Chinese). The self-contained demo uses sample data and needs no credentials or network. It shows the agent radar, terminal and reply controls, HQ, knowledge, usage, and the iPad layout. You can navigate the whole demo without connecting to a server.
 Camera access scans the pairing QR code, or takes a photo to send to the user's own Mac. Photo Library access attaches an image to an agent message. Push notifications report agent status.
 ```

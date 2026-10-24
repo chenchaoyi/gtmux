@@ -79,16 +79,6 @@ struct PreferencesView: View {
         let label: String
     }
 
-    private var notificationTestFeedback: String? {
-        switch notifications.testState {
-        case .idle: return nil
-        case .sending: return l10n.tr("Submitting test…", "正在提交测试通知…")
-        case .accepted: return l10n.tr("Submitted to macOS. Check for a banner or Notification Center.", "已提交给 macOS，请留意横幅或通知中心。")
-        case .blocked: return l10n.tr("Turn on gtmux and macOS notifications, then try again.", "请开启 gtmux 和系统通知后再试。")
-        case .failed: return l10n.tr("Could not submit the test. Check notification settings and try again.", "测试通知提交失败，请检查系统通知设置后重试。")
-        }
-    }
-
     // What a pending revoke points at — carries the display name so the alert message
     // can say exactly what's about to be cut off.
     private enum RevokeTarget: Identifiable {
@@ -173,7 +163,7 @@ struct PreferencesView: View {
             // YOUR DEVICES (PAIR) — your own phone / browser / terminal, full control.
             // They reach the Mac through the door above.
 
-            Section(l10n.tr("Your devices · Pair", "我的设备 · 配对")) {
+            Section(l10n.tr("Paired devices", "已配对设备")) {
                 pairSection
             }
 
@@ -191,8 +181,8 @@ struct PreferencesView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 Toggle(isOn: shareEnabledBinding) {
-                    prefLabel("Let a collaborator type into the terminal",
-                              "允许协作者向终端输入", symbol: "keyboard")
+                    prefLabel("Collaborator input",
+                              "协作输入", symbol: "keyboard")
                 }.disabled(share.busy)
                 Text(shareSubtitle)
                     .font(.system(size: 11)).foregroundStyle(.secondary)
@@ -201,44 +191,13 @@ struct PreferencesView: View {
                 shareGuestLinks
             }
 
-            Section(l10n.tr("Notifications", "通知")) {
-                Toggle(isOn: $settings.notifications) {
-                    prefLabel("Notify when an agent needs you or a turn ends", "需要你操作或本轮结束时提醒", symbol: "bell")
-                }
-                Text(notifications.authorization.summary(l10n))
-                    .font(.system(size: 11)).foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                HStack(spacing: 16) {
-                    Button(l10n.tr("Send test notification", "发送测试通知")) { notifications.sendTest() }
-                        .disabled(!settings.notifications || notifications.testState == .sending)
-                    Button(l10n.tr("macOS notification settings", "系统通知设置")) { notifications.openSystemSettings() }
-                }
-                .buttonStyle(.link)
-                .font(.system(size: 11))
-                if let feedback = notificationTestFeedback {
-                    Text(feedback).font(.system(size: 11)).foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                Text(l10n.tr("Needs-input alerts request sound; turn-end alerts are silent. Focus and macOS settings still apply.",
-                             "需要操作时请求声音提醒，本轮结束时静音；遵循专注模式和系统设置。"))
-                    .font(.system(size: 10)).foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                // Terminal-tab marker. NOT backed by UserDefaults like its neighbours:
-                // the truth lives in tmux's own `set-titles-string`, so the CLI is both
-                // the reader and the writer. A defaults-backed mirror would be a second
-                // opinion about the same fact, and the two would drift the moment the
-                // user ran `gtmux config tab-alert` in a shell.
-                Toggle(isOn: Binding(
-                    get: { tabAlertOn },
-                    set: { setTabAlert($0) })) {
-                    prefLabel("Mark the terminal tab when an agent waits",
-                              "有 agent 在等你时，标记其终端标签", symbol: "macwindow.badge.plus")
-                }
-                .disabled(tabAlertBusy)
-                Text(l10n.tr("Adds a ● in front of that session's tab title. Your own title format is kept, and turning this off restores it.",
-                             "在该 session 的标签标题前加一个 ●。你原来的标题格式会保留，关闭即还原。"))
-                    .font(.system(size: 10)).foregroundStyle(.secondary)
-            }
+            NotificationPreferences(
+                l10n: l10n, enabled: $settings.notifications,
+                authorization: notifications.authorization, testState: notifications.testState,
+                tabAlert: Binding(get: { tabAlertOn }, set: { setTabAlert($0) }),
+                tabAlertBusy: tabAlertBusy,
+                sendTest: { notifications.sendTest() },
+                openSystemSettings: { notifications.openSystemSettings() })
 
             // THIS MAC — what the machine itself does: does it stay awake, and what it
             // puts in the menu bar. Server mode used to be a titled section of its own
@@ -342,12 +301,12 @@ struct PreferencesView: View {
             DirectCodeSheet(l10n: l10n, remote: remote, isPresented: $showDirectCode)
         }
         .alert(
-            l10n.tr("Revoke access?", "吊销访问？"),
+            l10n.tr("Revoke access?", "撤销访问？"),
             isPresented: Binding(get: { revokeTarget != nil },
                                  set: { if !$0 { revokeTarget = nil } }),
             presenting: revokeTarget
         ) { target in
-            Button(l10n.tr("Revoke", "吊销"), role: .destructive) {
+            Button(l10n.tr("Revoke", "撤销"), role: .destructive) {
                 switch target {
                 case .share(let id, _): share.revoke(id)
                 case .pair(let id, _, _): pairStore.revoke(id)
@@ -387,7 +346,7 @@ struct PreferencesView: View {
                         Text(c.title(l10n.tr)).font(.system(size: 12))
                         let sub = c.subtitle(l10n.tr)
                         if !sub.isEmpty {
-                            Text(sub).font(.system(size: 10)).foregroundStyle(.tertiary)
+                            Text(sub).font(.system(size: 11)).foregroundStyle(.secondary)
                         }
                         Spacer(minLength: 0)
                     }
@@ -450,7 +409,7 @@ struct PreferencesView: View {
                                       "未启用 - 合盖后当前 Mac 会睡眠"))
                         .font(.system(size: 11)).foregroundStyle(.secondary)
                     if let sub = serverModeDetail(st) {
-                        Text(sub).font(.system(size: 10)).foregroundStyle(.tertiary)
+                        Text(sub).font(.system(size: 11)).foregroundStyle(.secondary)
                     }
                 }
                 Spacer()
@@ -487,7 +446,7 @@ struct PreferencesView: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text(l10n.tr("Environment check", "运行环境检查")).font(.system(size: 12))
                 Text(l10n.tr("Review setup and repair guidance.", "检查本机配置，查看修复方案。"))
-                    .font(.system(size: 10)).foregroundStyle(.tertiary)
+                    .font(.system(size: 11)).foregroundStyle(.secondary)
             }
             Spacer()
             Button(l10n.tr("Open", "打开")) { EnvironmentHealthController.shared.show(l10n: l10n) }
@@ -499,8 +458,8 @@ struct PreferencesView: View {
                 .foregroundStyle(st.problems > 0 ? Theme.Status.errored : Color.secondary)
                 .frame(width: 20)
             VStack(alignment: .leading, spacing: 1) {
-                Text(l10n.tr("What gtmux recorded", "gtmux 记下了什么")).font(.system(size: 12))
-                Text(recordedSubtitle(st)).font(.system(size: 10)).foregroundStyle(.tertiary)
+                Text(l10n.tr("Activity logs", "运行日志")).font(.system(size: 12))
+                Text(recordedSubtitle(st)).font(.system(size: 11)).foregroundStyle(.secondary)
             }
             Spacer()
             Button(l10n.tr("Open", "打开")) { DiagnosticsController.shared.show(l10n: l10n) }
@@ -510,17 +469,17 @@ struct PreferencesView: View {
             Image(systemName: "shippingbox")
                 .font(.system(size: 13)).foregroundStyle(.secondary).frame(width: 20)
             VStack(alignment: .leading, spacing: 1) {
-                Text(l10n.tr("Report a problem", "报告一个问题")).font(.system(size: 12))
-                Text(l10n.tr("Packages logs, status and version details into a local file. Credentials are hidden; nothing is sent automatically.",
-                             "将日志、状态和版本信息打包到本地文件。访问凭证会被隐藏，不会自动发送。"))
-                    .font(.system(size: 10)).foregroundStyle(.tertiary)
+                Text(l10n.tr("Diagnostic report", "诊断报告")).font(.system(size: 12))
+                Text(l10n.tr("Export logs, status and version details locally. Recognized credentials are redacted; nothing is uploaded automatically.",
+                             "导出日志、状态和版本信息到本机。已识别的访问凭证会脱敏，不会自动上传。"))
+                    .font(.system(size: 11)).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer()
             if diag.packing {
                 ProgressView().controlSize(.small)
             } else {
-                Button(l10n.tr("Pack…", "打包…")) { diag.pack() }
+                Button(l10n.tr("Export…", "导出…")) { diag.pack() }
             }
         }
         if let path = diag.packed {
@@ -545,20 +504,19 @@ struct PreferencesView: View {
                 .textSelection(.enabled)
         }
 
-        Toggle(isOn: Binding(get: { diag.debugOn }, set: { diag.setDebug($0) })) {
-            prefLabel("Record extra detail", "多记一些细节", symbol: "waveform")
-        }
-        Text(l10n.tr("Writes more detailed logs while you track down a problem. Turn it off when you're done.",
-                     "排查问题时打开，会记下更详细的日志。查完记得关掉。"))
-            .font(.system(size: 10)).foregroundStyle(.secondary)
-            .fixedSize(horizontal: false, vertical: true)
+        PreferenceToggleRow(
+            title: l10n.tr("Debug logging", "调试日志"),
+            detail: l10n.tr("Record detailed logs for troubleshooting. Disable after diagnosis.",
+                           "记录详细日志用于故障排查，排查完成后可关闭。"),
+            symbol: "waveform",
+            isOn: Binding(get: { diag.debugOn }, set: { diag.setDebug($0) }))
     }
 
     // What the record row says about itself. Problems lead when there are any: the
     // reason someone is reading this row is that they suspect one.
     private func recordedSubtitle(_ st: LogStats) -> String {
         if st.files == 0 {
-            return l10n.tr("Nothing recorded yet", "还没有记录")
+            return l10n.tr("No logs recorded", "暂无日志")
         }
         let size = ByteCountFormatter.string(fromByteCount: st.bytes, countStyle: .file)
         let kept = l10n.tr("\(size), kept \(st.retainDays) day\(st.retainDays == 1 ? "" : "s")", "\(size)，保留 \(st.retainDays) 天")
@@ -605,7 +563,7 @@ struct PreferencesView: View {
         let f = NSAlert()
         f.alertStyle = .warning
         f.messageText = l10n.tr("Server mode could not be turned on", "服务器模式未能开启")
-        f.informativeText = err.isEmpty ? l10n.tr("Nothing was changed.", "什么都没有改动。") : err
+        f.informativeText = err.isEmpty ? l10n.tr("No changes were applied.", "未应用任何更改。") : err
         f.runModal()
     }
 
@@ -635,7 +593,7 @@ struct PreferencesView: View {
                 VStack(alignment: .leading, spacing: 1) {
                     Text(updater.failureTitle).font(.system(size: 12))
                     if let e = updater.lastError, !e.isEmpty {
-                        Text(e).font(.system(size: 10)).foregroundStyle(.tertiary)
+                        Text(e).font(.system(size: 11)).foregroundStyle(.secondary)
                             .lineLimit(1).truncationMode(.tail)
                     }
                 }
@@ -716,15 +674,15 @@ struct PreferencesView: View {
 
     private var shareSubtitle: String {
         if !share.enabled {
-            return l10n.tr("Off: anyone with a share link can look but not type.",
+            return l10n.tr("Off · share links retain view access only.",
                            "已关闭：持分享链接的人只能看，不能输入。")
         }
         if share.allowedPanes.isEmpty {
-            return l10n.tr("On, but no panes are allowed yet. Tick a pane below.",
+            return l10n.tr("On · no input permissions assigned. Select panes below.",
                            "已开启，但还没允许任何 pane，请在下方勾选。")
         }
-        return l10n.tr("On: a guest with a share link can type into the ticked panes.",
-                       "已开启：持分享链接的访客可向勾选的 pane 输入。")
+        return l10n.tr("On · guests can input only in authorized panes.",
+                       "已开启，访客仅可向已授权的窗格输入。")
     }
 
     // The allowlist, rendered from the LIVE agent list (tmux panes only — a guest
@@ -760,7 +718,7 @@ struct PreferencesView: View {
                     .font(.system(size: 12, weight: .semibold)).foregroundStyle(.secondary)
                     .frame(width: 10)
                 Text(title).font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
-                Text("\(count)").font(.system(size: 10)).foregroundStyle(.tertiary)
+                Text("\(count)").font(.system(size: 11)).foregroundStyle(.secondary)
                     .padding(.horizontal, 5).padding(.vertical, 1)
                     .background(Capsule().fill(Color.secondary.opacity(0.12)))
                 Spacer(minLength: 0)
@@ -789,8 +747,8 @@ struct PreferencesView: View {
                     .disabled(share.busy)
             }
             if share.guests.isEmpty {
-                Text(l10n.tr("No links yet. Create one to invite a collaborator.",
-                             "还没有链接。新建一个邀请协作者。"))
+                Text(l10n.tr("No share links. Create a link to grant access.",
+                             "暂无分享链接。创建链接以授予访问权限。"))
                     .font(.system(size: 11)).foregroundStyle(.tertiary)
             } else if linksExpanded {
                 ForEach(share.guests) { g in
@@ -809,12 +767,12 @@ struct PreferencesView: View {
                                 Text(g.label.isEmpty ? l10n.tr("Share link", "分享链接") : g.label)
                                     .font(.system(size: 12))
                                 Text(shareLinkAge(g.enrolledAt) + "  ·  " + linkScopeSummary(g))
-                                    .font(.system(size: 10)).foregroundStyle(.tertiary)
+                                    .font(.system(size: 11)).foregroundStyle(.secondary)
                                 // WHO used it. The rows above say what the link PERMITS;
                                 // a link handed to someone else is only really answered by
                                 // whether anyone walked through it, and from where.
                                 Text(g.usage(now: Int(Date().timeIntervalSince1970), tr: l10n.tr))
-                                    .font(.system(size: 10)).foregroundStyle(.tertiary)
+                                    .font(.system(size: 11)).foregroundStyle(.secondary)
                             }
                             Spacer(minLength: 8)
                             // Show + Revoke as ONE tidy trailing group with matching
@@ -835,7 +793,7 @@ struct PreferencesView: View {
                                 .buttonStyle(.bordered)
                                 .disabled(share.busy)
                                 .help(l10n.tr("Show the link: QR, browser, terminal", "展示链接：二维码 / 浏览器 / 终端"))
-                                Button(l10n.tr("Revoke", "吊销")) {
+                                Button(l10n.tr("Revoke", "撤销")) {
                                     revokeTarget = .share(id: g.id,
                                                           label: g.label.isEmpty ? l10n.tr("Share link", "分享链接") : g.label)
                                 }
@@ -879,7 +837,7 @@ struct PreferencesView: View {
                         Text(d.displayName).font(.system(size: 12))
                             .help(d.platform.isEmpty ? l10n.tr("Reconnect this device to update its client details.", "重新连接此设备后，可更新客户端信息。") : d.platform)
                         Text(pairLastSeen(d))
-                            .font(.system(size: 10)).foregroundStyle(.tertiary)
+                            .font(.system(size: 11)).foregroundStyle(.secondary)
                     }
                     Spacer(minLength: 0)
                     Button { renameDevice = d } label: {
@@ -888,7 +846,7 @@ struct PreferencesView: View {
                     .accessibilityLabel(l10n.tr("Edit name", "编辑名称"))
                     .help(l10n.tr("Edit the name shown in your paired devices", "修改已配对设备中的显示名称"))
                     .disabled(pairStore.busy)
-                    Button(l10n.tr("Revoke", "吊销")) {
+                    Button(l10n.tr("Revoke", "撤销")) {
                         revokeTarget = .pair(id: d.id, name: d.displayName, detail: pairLastSeen(d))
                     }
                         .disabled(pairStore.busy)
@@ -928,7 +886,7 @@ struct PreferencesView: View {
     @ViewBuilder private func linkScopeEditor(_ g: GuestLink) -> some View {
         let panes = store.shareablePanes
         if panes.isEmpty {
-            Text(l10n.tr("No tmux panes to share right now.", "当前没有可分享的 tmux pane。"))
+            Text(l10n.tr("No shareable tmux panes.", "暂无可分享的 tmux 窗格。"))
                 .font(.system(size: 11)).foregroundStyle(.secondary)
         } else {
             VStack(alignment: .leading, spacing: 4) {
@@ -943,14 +901,14 @@ struct PreferencesView: View {
                                 .lineLimit(1).truncationMode(.tail)
                         }
                         Spacer(minLength: 10)
-                        permissionCell(icon: "eye", label: l10n.tr("See", "可见"),
+                        permissionCell(icon: "eye", label: l10n.tr("View", "查看"),
                                        isOn: linkViewBinding(g, a.paneID), disabled: false,
-                                       help: l10n.tr("Let this link see the pane", "让这条链接看到此 pane"))
+                                       help: l10n.tr("Grant this link view access", "授予此链接查看权限"))
                         Divider().frame(height: 16)
                         permissionCell(icon: "keyboard", label: l10n.tr("Type", "输入"),
                                        isOn: linkTypeBinding(g, a.paneID),
                                        disabled: !g.viewPanes.contains(a.paneID),
-                                       help: l10n.tr("Let this link type into the pane", "让这条链接向此 pane 输入"))
+                                       help: l10n.tr("Grant this link input access", "授予此链接输入权限"))
                     }
                     .disabled(share.busy)
                 }

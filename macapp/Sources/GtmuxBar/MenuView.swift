@@ -265,7 +265,7 @@ struct MenuView: View {
                                         Text("gtmux HQ")
                                             .font(.system(size: 12.5, weight: .semibold)).foregroundStyle(p.fg)
                                         // The INTELLIGENCE HEADLINE (hq-meta-layer): a synthesized
-                                        // chief-of-staff conclusion — names who needs you + how many
+                                        // chief-of-staff conclusion — names who needs attention + how many
                                         // others are normal — REPLACING the anonymous fleet pips (pure
                                         // redundancy with the list) and the unreliable pane-title.
                                         Text(fleetHeadlineText(state))
@@ -427,25 +427,25 @@ struct MenuView: View {
     // HQ card subtitle (hq-meta-layer). The KIND decision lives in AgentStore.fleetHeadline
     // (pure + unit-tested) so it stays consistent with the medallion color — crucially a
     // red .resource tier now SPEAKS ("machine under pressure") instead of falsely reading
-    // "all normal — nothing needs you" while the row is red. Zero LLM, single-source with
+    // "all normal — nothing needs attention" while the row is red. Zero LLM, single-source with
     // the mobile card.
     private func fleetHeadlineText(_ state: HQState) -> String {
         switch AgentStore.fleetHeadline(state: state, agents: store.agents) {
         case .call:
-            return l10n.tr("needs your call", "请你拍板")
+            return l10n.tr("needs confirmation", "需要确认")
         case .worker(let name, let others):
             return others > 0
-                ? l10n.tr("\(name) needs you · \(others) other\(others == 1 ? "" : "s") normal", "\(name) 在等你拍板 · 其余 \(others) 个正常")
-                : l10n.tr("\(name) needs you", "\(name) 在等你拍板")
+                ? l10n.tr("\(name) needs attention · \(others) other\(others == 1 ? "" : "s") normal", "\(name) 待处理 · 其余 \(others) 个正常")
+                : l10n.tr("\(name) needs attention", "\(name) 待处理")
         case .workers(let n):
-            return l10n.tr("\(n) sessions need you", "\(n) 个会话在等你拍板")
+            return l10n.tr("\(n) sessions need attention", "\(n) 个会话待处理")
         case .resource:
             // Cause-agnostic on purpose: the red resource tier can now be disk, memory,
             // load, OR a draining low battery (resource-watch battery). Tapping through
             // to `gtmux resource` shows the specific reason.
             return l10n.tr("machine under pressure", "机器资源紧张")
         case .allNormal:
-            return l10n.tr("all normal, nothing needs you", "都正常，不用你介入")
+            return l10n.tr("all normal, nothing needs attention", "都正常，不用你介入")
         }
     }
 
