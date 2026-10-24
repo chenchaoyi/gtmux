@@ -1,0 +1,6 @@
+Knowledge and settings
+
+- Knowledge lists and details show each entry's use and processing state, with clearer category and source names.
+- Compact record details and keeping the entry open after recording an application reduce navigation.
+- Consistent labels across settings, sharing, diagnostics and HQ activity make permissions and actions easier to identify.
+- Send feedback distinguishes unsent drafts, access refusals and unconfirmed delivery, with the appropriate next step.
