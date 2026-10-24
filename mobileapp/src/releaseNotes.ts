@@ -12,6 +12,21 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.148',
+    en: [
+      '- Questions that need a reply stay near the top of the conversation, including while the keyboard is open. View opens the agent’s picker without sending your draft or choosing an answer.',
+      '- Unsent drafts stay with the correct Mac and session when you switch between them.',
+      '- Question and fold controls remain readable at larger text sizes, and Collapse all no longer covers messages.',
+      '- Notifications from an unconfirmed external app no longer label every conversation as ChatGPT Desktop.',
+    ],
+    zh: [
+      '- 待回答的问题移到对话上方，打开键盘后仍可见。点“查看”即可打开 Agent 的选择界面，不会发送草稿或替你作答。',
+      '- 切换 Mac 和会话时，未发送的草稿各自保存，避免出现在别的输入框里。',
+      '- 优化大字号下的问题提示和折叠操作，“折叠全部”不再压住消息文字。',
+      '- 未确认来源的外部会话通知不再一律标为 ChatGPT 桌面版。',
+    ],
+  },
+  {
     version: '1.0.147',
     en: [
       '- Live previews stay expanded while a session updates, and keep their original terminal presentation. Tap the progress row to fold them away.',
