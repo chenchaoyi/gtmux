@@ -99,7 +99,7 @@ describe('provenance', () => {
   test('says only what was actually recorded', () => {
     // "from —" is worse than no line at all.
     expect(provenanceOf(e({}), false)).toBeNull();
-    expect(provenanceOf(e({pane: '%14', capture: 'pitfalls/k'}), false)).toBe('%14 · from a capture');
+    expect(provenanceOf(e({pane: '%14', capture: 'pitfalls/k'}), false)).toBe('%14 · from an agent note');
     expect(provenanceOf(e({legacy: true}), true)).toBe('迁移自旧文件');
   });
 });
@@ -169,7 +169,7 @@ describe('splitTitleKey', () => {
 });
 
 // The header row carries its name in a key column, so this is the VALUE alone. It used to
-// be the whole line, "knowledge · 352 · 6 waiting on you", which printed the noun twice
+// be the whole line, "knowledge · 352 · 6 plans pending", which printed the noun twice
 // once the row grew a key.
 describe('knowledgeValue', () => {
   const idx = (entries: number, pending: number): KnowledgeIndex =>
@@ -180,8 +180,8 @@ describe('knowledgeValue', () => {
 
   test('says the size, and the debt when there is one', () => {
     expect(knowledgeValue(idx(352, 0), false)).toBe('352 entries');
-    expect(knowledgeValue(idx(352, 6), false)).toBe('352 entries · 6 waiting on you');
-    expect(knowledgeValue(idx(352, 6), true)).toBe('352 条 · 6 待带走');
+    expect(knowledgeValue(idx(352, 6), false)).toBe('352 entries · 6 plans pending');
+    expect(knowledgeValue(idx(352, 6), true)).toBe('352 条 · 6 待处理');
   });
 
   test('a base of one entry says "entry"', () => {
@@ -237,8 +237,8 @@ describe('the three axes and the exit an audience has', () => {
   const base = {id: 'pitfalls/x', topic: 'pitfalls', title: 't', at: 1};
   it('reads the axes as one line, with a ? while the kind is a guess', () => {
     expect(axesLine({...base, kind: 'pitfalls', kind_assumed: true, provenance: 'mined', hits: 6, audience: 'machine'}, false))
-      .toBe('pitfalls? · from mined ×6 · for this machine');
-    expect(axesLine({...base, kind: 'howto', provenance: 'self', status: 'hypothesis'}, true)).toBe('howto · 来自 self · 待验证');
+      .toBe('Pitfalls (unconfirmed category) · Source: Conversation review ×6');
+    expect(axesLine({...base, kind: 'howto', provenance: 'self', status: 'hypothesis'}, true)).toBe('操作方法 · 来源：HQ 观察 · 待验证');
     expect(axesLine(base, false)).toBe('');
   });
   it('offers gtmux carrying for hq / machine / repo, the issue for everyone, by-hand for none', () => {
@@ -255,8 +255,8 @@ describe('the three axes and the exit an audience has', () => {
     expect(actsFor({...base, promoted_at: 1, landed_at: 2, audience: 'machine'}).map(x => x.kind)).toEqual(['retire']);
   });
   it('names the audience in one word, both languages', () => {
-    expect(audienceWord('machine', false)).toBe('this machine');
-    expect(audienceWord('everyone', true)).toBe('全体');
+    expect(audienceWord('machine', false)).toBe('Agents on this computer');
+    expect(audienceWord('everyone', true)).toBe('gtmux 产品改进建议');
     expect(audienceWord(undefined, true)).toBe('');
   });
 });

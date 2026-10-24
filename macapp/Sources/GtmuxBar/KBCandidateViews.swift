@@ -7,6 +7,7 @@ struct KBCandidateRow: View {
     let selected: Bool
     let p: Theme.Palette
     let select: () -> Void
+    @ObservedObject var l10n = L10n.shared
 
     var body: some View {
         Button(action: select) {
@@ -19,7 +20,7 @@ struct KBCandidateRow: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 HStack(spacing: 6) {
-                    Text(candidate.topic).font(.system(size: 10)).foregroundStyle(p.fg3)
+                    Text(knowledgeTopic(candidate.topic, l10n)).font(.system(size: 10)).foregroundStyle(p.fg3)
                     Spacer(minLength: 4)
                     Text("›").font(.system(size: 12)).foregroundStyle(p.fg3)
                 }
@@ -77,7 +78,7 @@ struct KBCandidateDetail<Actions: View>: View {
                 .textSelection(.enabled)
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 8) {
-                Text(candidate.topic)
+                Text(knowledgeTopic(candidate.topic, l10n))
                 if candidate.count > 1 {
                     Text(l10n.tr("\(candidate.count) captures", "\(candidate.count) 条记录"))
                 }

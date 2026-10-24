@@ -602,6 +602,8 @@ files itself.
 
 ### Requirement: The commander's own detail is recorded only after they confirm, and stays on the machine
 
+Marking an entry sensitive or removing its sensitive mark SHALL require explicit confirmation.
+
 An entry MAY be marked sensitive (`add`/`supersede --sensitive`, or `sensitive <id>`); every
 such write and every unmark (`--off`) SHALL require `--confirmed "<the commander's own words>"`,
 stored on the entry. A superseded sensitive entry SHALL pass the mark and the words to its
@@ -792,3 +794,23 @@ Mining SHALL require HQ and independent knowledge consent before reading a verif
 #### Scenario: Revocation
 - **WHEN** the owner stops follow or knowledge capture
 - **THEN** subsequent passes do not mine the conversation and existing records remain
+
+### Requirement: Knowledge management explains recorded use without internal terminology
+
+Mac and mobile SHALL show recorded use and processing state without opening settings. Ordinary entries SHALL show HQ reference, distinct from standing HQ rules. Unknown legacy audiences SHALL remain unknown. Application records SHALL NOT imply agent loading or product releases. Metadata SHALL be localized, retaining custom keys. IDs and destinations SHALL be available in a compact disclosure. Pending actions SHALL refuse duplicate submission.
+
+#### Scenario: An ordinary entry is read without opening settings
+- **WHEN** the reader opens an entry with no audience or application history
+- **THEN** HQ reference and its on-demand meaning are visible, without opening an audience dialog
+
+#### Scenario: A plan is not evidence of loading
+- **WHEN** a local-agent plan is pending or its application was recorded
+- **THEN** the interface distinguishes these states and does not claim running agents loaded the content
+
+#### Scenario: A reader completes a non-removal action
+- **WHEN** a plan, instruction write or result record succeeds
+- **THEN** the entry remains open for its next step or updated record, while retirement returns to the index
+
+#### Scenario: A phone write is already in progress
+- **WHEN** the submit action is triggered again before its first request completes
+- **THEN** only one mutation is sent and the interface shows processing until completion or failure

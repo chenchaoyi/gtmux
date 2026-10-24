@@ -12,6 +12,31 @@ This page covers where that base sits, how a lesson gets from "HQ noticed it" to
 agent on this machine reads it", and what you can change yourself. Nothing here leaves
 your machine unless you send it somewhere.
 
+## Read and use knowledge in the interface
+
+Every ordinary entry shows **HQ reference** by default: HQ can look it up and refer to it when assigning work. It is not yet a standing instruction.
+Keep occasional background information here. Use **HQ standing rules** for recurring delegation, review and escalation agreements.
+
+Mac and phone lists and details show the recorded use and processing state without opening a dialog:
+
+| Use | Suitable knowledge | Next step |
+|---|---|---|
+| HQ reference | Background and occasional reference | None |
+| HQ standing rules | Delegation, review and when HQ should ask you to decide | Write to HQ instructions (`LOCAL.md`) |
+| Agents on this computer | Shared environment facts and precautions | Sync local agents' instruction entries |
+| Agents in one project | Project build, test and coding conventions | Write project instructions; files are not committed automatically |
+| gtmux product feedback | A broadly useful product improvement | Review and submit the prefilled issue, then record its URL |
+
+On Mac, **Choose how to use** saves a plan and reason. Complete **Write instructions** or product feedback from the same entry.
+**Write pending** and **Application recorded** describe ledger progress, not proof that agents loaded the content; running sessions may need to reload.
+The machine master text is rendered from the ledger and may already be reachable through existing entries, so pending is not a filesystem access guarantee.
+Older processed records without a recognized use show **Use not recorded** instead of guessing that all agents received them.
+Cancelling a plan retains the knowledge and does not roll back instruction files already written.
+
+Categories, provenance and built-in topics use reader-facing names; inferred categories say **unconfirmed category**. Custom topics retain their names.
+Identifiers, reasons and recorded destinations are in **Record details**. **Backup and migration** covers HQ instructions, task records and knowledge together; it is not an entry's scope.
+Use describes context-loading intent rather than file permissions between processes running as the same user.
+
 ## Where it lives
 
 Everything HQ owns is under `~/.config/gtmux/hq/`, and one generated file sits outside it:
@@ -80,10 +105,10 @@ itself, and HQ promotes it, saying who must know:
 
 | Audience | Who reads it | Where it lands |
 |---|---|---|
-| HQ | HQ only | a section appended to your `LOCAL.md` |
+| HQ standing rules | HQ instructions | a section appended to your `LOCAL.md` |
 | this machine | every agent on this Mac | `knowledge/machine.md`, plus a short block in each agent's global instruction file |
 | a repository | agents working in that repo | a block in that repo's `AGENTS.md` (or existing `CLAUDE.md` when no `AGENTS.md` exists), written but never committed |
-| everyone | all gtmux users | a pre-filled GitHub issue for you to open |
+| product feedback | feedback you review and submit to gtmux | a pre-filled GitHub issue for you to open |
 
 Promotion writes a brief. `land` without `--ref` carries it to the selected local
 audience; `land --ref` records where you have already carried it. The common case is

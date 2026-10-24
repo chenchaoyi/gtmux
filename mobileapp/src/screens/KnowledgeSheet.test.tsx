@@ -32,7 +32,7 @@ const strings = (n: Node): string[] =>
     ([] as unknown[]).concat(x.props.children as unknown[]).filter(c => typeof c === 'string'),
   ) as string[];
 
-function render(idx: KnowledgeIndex, acts: KnowledgeAct[] = [], result: {ok: true} | {ok: false; error: string} = {ok: true}) {
+function render(idx: KnowledgeIndex, acts: KnowledgeAct[] = [], result: {ok: true} | {ok: false; error: string} | Promise<{ok: true} | {ok: false; error: string}> = {ok: true}) {
   let tree: renderer.ReactTestRenderer | undefined;
   act(() => {
     tree = renderer.create(
@@ -68,7 +68,7 @@ test('the promotion queue leads, and an overdue one is marked', () => {
   );
   expect(t.root.findAllByProps({testID: 'knowledge-promotions'}).length).toBeGreaterThan(0);
   const said = strings(t.root as unknown as Node).join(' ');
-  expect(said).toContain('waiting on you');
+  expect(said).toContain('Plans to complete');
   expect(said).toContain('governs every release'); // the case, not just the title
   expect(said).toContain('AGENTS.md'); // where HQ suggests it goes
   expect(said).toContain('overdue');
@@ -268,8 +268,8 @@ describe('the explainer under "waiting on you"', () => {
 
   it('is closed by default — it is read once, then it is just height', () => {
     const said = strings(render(withPending()).root as unknown as Node).join(' ');
-    expect(said).not.toContain('These entries need to be available beyond this machine');
-    expect(said).toContain('What this is');
+    expect(said).not.toContain('These entries have a saved use plan');
+    expect(said).toContain('What needs doing');
   });
 
   it('opens on tap', () => {
@@ -277,7 +277,7 @@ describe('the explainer under "waiting on you"', () => {
     act(() => {
       t.root.findAll(n => n.props?.accessibilityLabel === 'knowledge-why' && typeof n.props.onPress === 'function')[0].props.onPress();
     });
-    expect(strings(t.root as unknown as Node).join(' ')).toContain('These entries need to be available beyond this machine');
+    expect(strings(t.root as unknown as Node).join(' ')).toContain('These entries have a saved use plan');
   });
 });
 
@@ -302,7 +302,7 @@ test('write-it-in sends carry with no text, after one confirmation', async () =>
     t.root.findByProps({testID: 'knowledge-entry-pitfalls/x'}).props.onPress();
   });
   // The entry shows who must know it.
-  expect(strings(t.root as unknown as Node).join(' ')).toContain('this machine');
+  expect(strings(t.root as unknown as Node).join(' ')).toContain('Agents on this computer');
   await act(async () => {
     t.root.findByProps({testID: 'knowledge-act-carry'}).props.onPress();
   });
@@ -352,4 +352,27 @@ test('knowledge navigation and search expose readable actions', () => {
   expect(find.props.accessibilityLabel).toBe('Search knowledge base');
   act(() => find.props.onChangeText('test'));
   expect(t.root.findByProps({testID: 'knowledge-find-clear'}).props.accessibilityLabel).toBe('Clear search');
+});
+
+
+test('an in-flight write cannot be submitted twice, and completion keeps the entry open', async () => {
+  let finish!: (value: {ok: true}) => void;
+  const result = new Promise<{ok: true}>(resolve => { finish = resolve; });
+  const acts: KnowledgeAct[] = [];
+  const idx = index({entries: [entry({promoted_at: NOW - 60, audience: 'machine'})], promotions: {pending: 1}});
+  const t = render(idx, acts, result);
+  await act(async () => { t.root.findByProps({testID: 'knowledge-entry-pitfalls/x'}).props.onPress(); });
+  act(() => { t.root.findByProps({testID: 'knowledge-act-carry'}).props.onPress(); });
+  const submit = t.root.findByProps({testID: 'knowledge-act-submit'}).props.onPress;
+  let first!: Promise<void>;
+  act(() => { first = submit(); void submit(); });
+  expect(acts).toEqual([{op: 'carry', id: 'pitfalls/x'}]);
+  expect(t.root.findByProps({testID: 'knowledge-act-submit'}).props.disabled).toBe(true);
+  expect(strings(t.root as unknown as Node).join(' ')).toContain('Working…');
+  await act(async () => {
+    idx.entries[0] = {...idx.entries[0], landed_at: NOW, landed_ref: 'fixture/instructions.md'};
+    finish({ok: true}); await first;
+  });
+  expect(t.root.findAll(n => typeof n.type === 'string' && n.props.testID === 'knowledge-use-summary')).toHaveLength(1);
+  expect(strings(t.root as unknown as Node).join(' ')).toContain('Application recorded');
 });

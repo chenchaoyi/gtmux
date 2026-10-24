@@ -16,6 +16,7 @@
 // The rules below are judgments (what leads, what counts as overdue, what a topic with no
 // entries means), which is why they live here and are tested, rather than in the view.
 
+import {knowledgeTopic, knowledgeKind, knowledgeProvenance, knowledgeUse} from './knowledgePresentation';
 import {KnowledgeEntry, KnowledgeIndex, KnowledgeTopic} from '../api/client';
 
 /**
@@ -97,7 +98,7 @@ export function provenanceOf(e: KnowledgeEntry, zh: boolean): string | null {
   const parts: string[] = [];
   if (e.pane) parts.push(e.pane);
   if (e.task) parts.push(zh ? `任务 ${e.task}` : `task ${e.task}`);
-  if (e.capture) parts.push(zh ? '来自一次 capture' : 'from a capture');
+  if (e.capture) parts.push(zh ? '来自 Agent 记录' : 'from an agent note');
   if (e.legacy) parts.push(zh ? '迁移自旧文件' : 'migrated from a legacy file');
   return parts.length > 0 ? parts.join(' · ') : null;
 }
@@ -111,8 +112,8 @@ export function provenanceOf(e: KnowledgeEntry, zh: boolean): string | null {
  */
 export function landPrompt(zh: boolean): {title: string; hint: string; placeholder: string} {
   return zh
-    ? {title: '标记为已落地', hint: '填写实际记录位置，例如 PR、规范、操作手册或 issue。台账会保存这项信息。', placeholder: '例如 AGENTS.md / PR #888'}
-    : {title: 'mark it landed', hint: 'Enter where this knowledge was recorded, such as a PR, spec, runbook or issue. The ledger keeps the reference.', placeholder: 'e.g. AGENTS.md / PR #888'};
+    ? {title: '记录应用结果', hint: '填写实际记录位置，例如 PR、规范、操作手册或 issue。台账会保存这项信息。', placeholder: '例如 AGENTS.md / PR #888'}
+    : {title: 'record the application result', hint: 'Enter where this knowledge was recorded, such as a PR, spec, runbook or issue. The ledger keeps the reference.', placeholder: 'e.g. AGENTS.md / PR #888'};
 }
 
 export function retirePrompt(zh: boolean): {title: string; hint: string; placeholder: string} {
@@ -181,7 +182,7 @@ export function knowledgeValue(idx: KnowledgeIndex, zh: boolean): string | null 
   if (n === 0 && owed === 0) return null; // no base: no row, rather than a row saying zero
   const head = zh ? `${n} 条` : `${n} entr${n === 1 ? 'y' : 'ies'}`;
   if (owed === 0) return head;
-  return head + (zh ? ` · ${owed} 待带走` : ` · ${owed} waiting on you`);
+  return head + (zh ? ` · ${owed} 待处理` : ` · ${owed} plans pending`);
 }
 
 /**
@@ -201,7 +202,7 @@ export function matchEntries(entries: KnowledgeEntry[], query: string): Knowledg
   if (terms.length === 0) return [];
   return entries.filter(e => {
     // Both halves: a duplicate written in the other language is still the entry you want.
-    const hay = `${e.title} ${e.alt_title ?? ''} ${e.id} ${e.topic}`.toLowerCase();
+    const hay = `${e.title} ${e.alt_title ?? ''} ${e.id} ${e.topic} ${knowledgeTopic(e.topic, true)} ${knowledgeTopic(e.topic, false)} ${knowledgeKind(e.kind ?? '', true)} ${knowledgeKind(e.kind ?? '', false)} ${knowledgeProvenance(e.provenance ?? '', true)} ${knowledgeProvenance(e.provenance ?? '', false)}`.toLowerCase();
     return terms.every(t => hay.includes(t));
   });
 }
@@ -228,18 +229,7 @@ export function displayTitle(e: KnowledgeEntry, zh: boolean): string {
 
 /** The one word an audience wears on every screen. */
 export function audienceWord(audience: string | undefined, zh: boolean): string {
-  switch (audience ?? '') {
-    case 'hq':
-      return 'HQ';
-    case 'machine':
-      return zh ? '本机' : 'this machine';
-    case 'repo':
-      return zh ? '仓库' : 'a repository';
-    case 'everyone':
-      return zh ? '全体' : 'everyone';
-    default:
-      return '';
-  }
+  return audience ? knowledgeUse(audience, zh) : '';
 }
 
 /**
@@ -249,12 +239,10 @@ export function audienceWord(audience: string | undefined, zh: boolean): string 
  */
 export function axesLine(e: KnowledgeEntry, zh: boolean): string {
   const parts: string[] = [];
-  if (e.kind) parts.push(e.kind + (e.kind_assumed ? '?' : ''));
-  if (e.provenance) parts.push((zh ? '来自 ' : 'from ') + e.provenance + (e.hits && e.hits > 1 ? ` ×${e.hits}` : ''));
-  const aud = audienceWord(e.audience, zh);
-  if (aud) parts.push((zh ? '给 ' : 'for ') + aud);
+  if (e.kind) parts.push(knowledgeKind(e.kind, zh) + (e.kind_assumed ? (zh ? '（类别待确认）' : ' (unconfirmed category)') : ''));
+  if (e.provenance) parts.push((zh ? '来源：' : 'Source: ') + knowledgeProvenance(e.provenance, zh) + (e.hits && e.hits > 1 ? ` ×${e.hits}` : ''));
   if (e.status === 'hypothesis') parts.push(zh ? '待验证' : 'hypothesis');
-  if (e.sensitive) parts.push(zh ? '敏感 · 只留 server' : 'sensitive · server only');
+  if (e.sensitive) parts.push(zh ? '个人资料' : 'Personal details');
   return parts.join(' · ');
 }
 
@@ -294,13 +282,13 @@ export function actsFor(e: KnowledgeEntry): EntryAct[] {
 export function actButtonLabel(a: EntryAct, zh: boolean): string {
   switch (a.kind) {
     case 'carry':
-      return zh ? '写进去' : 'Write it in';
+      return zh ? '写入指令…' : 'Write instructions…';
     case 'feedback':
       return zh ? '反馈给 gtmux ↗' : 'Feedback to gtmux ↗';
     case 'land':
-      return zh ? '标记为已落地…' : 'Mark it landed…';
+      return zh ? '记录应用结果…' : 'Record result…';
     case 'withdraw':
-      return zh ? '撤回晋升…' : 'Withdraw the promotion…';
+      return zh ? '取消本次安排…' : 'Cancel this plan…';
     case 'retire':
       return zh ? '标记为不再适用…' : 'Mark as no longer applicable…';
   }
@@ -308,12 +296,12 @@ export function actButtonLabel(a: EntryAct, zh: boolean): string {
 
 export function withdrawPrompt(zh: boolean): {title: string; hint: string; placeholder: string} {
   return zh
-    ? {title: '撤回这次晋升', hint: '原条目会保留，只撤销晋升。请填写原因，供日后查阅。', placeholder: '例如 只在这台机器上成立'}
-    : {title: 'withdraw this promotion', hint: 'The entry stays; only its promotion is withdrawn. Enter a reason for the activity log.', placeholder: 'e.g. only true on this machine'};
+    ? {title: '取消本次使用安排', hint: '保留知识条目，取消尚未完成的使用安排，并记录原因。不会回滚已写入的指令文件。', placeholder: '例如 只在这台机器上成立'}
+    : {title: 'Cancel this use plan', hint: 'The entry stays. Cancel the pending plan and record why. Instruction files already written are not rolled back.', placeholder: 'e.g. only true on this machine'};
 }
 
 export function carryPrompt(zh: boolean): {title: string; hint: string; placeholder: string} {
   return zh
-    ? {title: '由 gtmux 写入', hint: 'gtmux 会按所选范围写入 LOCAL.md、本机知识块或仓库指令文件，并标记为已落地。仓库文件不会自动提交。', placeholder: ''}
-    : {title: 'Let gtmux write it', hint: 'gtmux writes it to LOCAL.md, the machine knowledge block or the repository instructions, then marks it landed. Repository files are not committed automatically.', placeholder: ''};
+    ? {title: '将知识写入指令', hint: 'gtmux 会按所选范围写入 LOCAL.md、本机知识块或仓库指令文件，并记录应用结果。仓库文件不会自动提交。', placeholder: ''}
+    : {title: 'Write knowledge into instructions', hint: 'gtmux writes it to LOCAL.md, the machine knowledge block or the repository instructions, then marks it landed. Repository files are not committed automatically.', placeholder: ''};
 }

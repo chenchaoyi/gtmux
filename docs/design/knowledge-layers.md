@@ -223,3 +223,7 @@ dismissed IDs in the ledger, rather than truncation of the archive. Selection an
 share a process lock; a failed write preserves the prior ledger and pending work, while
 a post-commit render failure reports how to repair views. Detail and `knowledge receipts`
 expose sources; distribution still uses curated knowledge alone.
+
+## Reader presentation
+
+Mac and mobile use reader-facing names from their feature presentation modules. The default is HQ reference, distinct from standing HQ instructions. The recorded audience and pending/application state are always visible, while raw identifiers and destinations are disclosed on request. See [the reader guide](../knowledge.md#read-and-use-knowledge-in-the-interface). Display vocabulary never changes wire keys, permissions, machine rendering or the carry protocol. A recorded application does not prove that a running agent loaded content or that an issue shipped.

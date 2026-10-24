@@ -209,10 +209,10 @@ export function SettingsScreen({navigation}: any) {
             the operator's LOCAL.md in one file; a guest link is for watching a pane. */}
         {!isGuest && mac && (
           <SettingsGroup
-            title={lang === 'zh' ? 'HQ 档案' : 'HQ records'}
+            title={lang === 'zh' ? '备份与迁移' : 'Backup and migration'}
             pal={pal}
             onInfo={() => setHqInfo(true)}
-            infoLabel={lang === 'zh' ? 'HQ 档案是什么' : 'What HQ records are'}>
+            infoLabel={lang === 'zh' ? '备份与迁移说明' : 'About backup and migration'}>
             <SettingsRow
               icon="copy"
               label={lang === 'zh' ? '这台设备上的副本' : 'Copy on this device'}
