@@ -12,6 +12,29 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.150',
+    en: [
+      'Conversation files and text',
+      'Open shared HTML reports, PDFs, images and text from a conversation, with progress, retry and system sharing.',
+      'HTML opens without scripts. Enable interaction for a trusted file when needed; scripts may access the network.',
+      'Drag the selection handles to copy part of a reply. iPad previews support rotation, larger text and anchored sharing.',
+      'Pairing and HQ',
+      'Scanning the same server again keeps one entry and repairs the saved connection instead of adding a duplicate.',
+      'Send images and files to HQ from its conversation.',
+      'Update gtmux on your server to 1.0.150 or later to use all new features.',
+    ],
+    zh: [
+      '会话文件与文字',
+      '在对话中打开已提供的 HTML 报告、PDF、图片和文本，支持读取进度、重试与系统分享。',
+      'HTML 默认不运行脚本；需要时可为信任的文件开启交互，开启前会提示可能联网。',
+      '拖动选字手柄即可复制部分回复；iPad 预览适配横屏、大字号和分享面板。',
+      '配对与 HQ',
+      '再次扫描同一服务器时保留一个条目，并修复已保存的连接，避免重复添加。',
+      '可在 HQ 对话中发送图片与文件。',
+      '完整使用新功能，请将服务器上的 gtmux 更新至 1.0.150 或更新版本。',
+    ],
+  },
+  {
     version: '1.0.149',
     en: [
       'Knowledge and settings',

@@ -1,11 +1,10 @@
-Conversations
-• Working sessions use a single progress line. Expanded Live previews stay open through refreshes.
-• Pending questions appear above the conversation and remain accessible with the keyboard open.
-• Unsent drafts stay with their server and session. Large-text prompts and collapse controls have improved layouts.
+Conversation files and text
+• Open shared HTML reports, PDFs, images and text from a conversation, with progress, retry and system sharing.
+• HTML opens without scripts. Enable interaction for a trusted file when needed; scripts may access the network.
+• Drag the selection handles to copy part of a reply. iPad previews support rotation, larger text and anchored sharing.
 
-Knowledge and settings
-• Knowledge entries show their intended use and progress, with clearer categories, sources and record details.
-• Keep an entry open after changing its intended use or recording where it was applied.
-• Settings, sharing, diagnostics and HQ use consistent labels. Send failures explain what happened and how to continue.
+Pairing and HQ
+• Scanning the same server again keeps one entry and repairs the saved connection instead of adding a duplicate.
+• Send images and files to HQ from its conversation.
 
-Update gtmux on your server to 1.0.149 or later to use all new features.
+Update gtmux on your server to 1.0.150 or later to use all new features.
