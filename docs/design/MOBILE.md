@@ -1617,3 +1617,27 @@ Short landscape windows use a 44-point minimum single-line card, retaining the a
 Pending-question control labels use the existing `CHROME_MAX_SCALE` limit, retaining full spoken labels and separate unrestricted conversation text. Recreate only these native text nodes when font scale changes so their measured bounds follow the new glyph size.
 
 Floating Collapse all occupies a plain 44pt strip matching the conversation background, with no border, rounded box or button fill. Reserve that strip above the first message, and cap its fixed control text with `CHROME_MAX_SCALE`; scrolling messages pass behind the strip rather than overprinting the action. It still follows header translation and clears the full-screen safe top.
+
+### Repeated pairing (2026-10-25)
+
+Pairing is admitted once per operation, including callbacks in the same frame. A new
+valid owner code refreshes the saved endpoint in place and preserves its local name,
+notification setting, order, alternate addresses and route. Identity is the canonical
+URL or a previously authenticated alternate from `/api/addresses`; there is no global
+server UUID. A display name or Direct location is never identity, and unknown DNS/IP
+aliases stay separate. Bare hosts default to HTTP port 8765; pasted full URLs retain
+their scheme, standard port and Direct path.
+
+The complete list and selection are serialized into one Keychain blob before applying
+state. A failed native write leaves the previous connection usable and offers **Retry
+saving**, keeping the redeemed credential only in the open sheet's memory. Leaving or
+losing the reply requires a fresh code; used, expired and pre-restart codes remain
+refused. The 15-second enrollment deadline includes the body. Canceled or obsolete
+operations cannot save or switch the target, and old-credential HTTP/SSE callbacks
+cannot alter the replacement connection. Scope and pane-grant snapshots belong to
+the credential too; a new guest's failed scope query never keeps old owner controls,
+and the previous credential's rows and connection verdict are cleared. Cancel is disabled while a native write is
+committing. Success dismisses the add sheet, including re-pairing the current URL.
+The camera window shrinks in short landscape windows so the title and Cancel remain
+reachable. Validation levels and remaining device checks are recorded in
+[the pairing audit](../testing/repeat-pairing.md).

@@ -422,7 +422,7 @@ export function ServersScreen({navigation}: {navigation?: any}) {
         {/* Fresh provider: inside a RN Modal, safe-area insets are otherwise zero,
             so PairingScreen's Cancel collided with the status-bar clock (REVIEW P0). */}
         <SafeAreaProvider>
-          <PairingScreen onCancel={() => setAdding(false)} onDemo={() => { setAdding(false); setDemo(true); }} />
+          {adding && <PairingScreen onCancel={() => setAdding(false)} onPaired={() => setAdding(false)} onDemo={() => { setAdding(false); setDemo(true); }} />}
         </SafeAreaProvider>
       </Modal>
 

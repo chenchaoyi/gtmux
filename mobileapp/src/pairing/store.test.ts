@@ -188,3 +188,60 @@ describe('reorderServers', () => {
     expect(names(ordered.filter(s => s.url !== a.url))).toBe('C B');
   });
 });
+
+// Re-scanning changes credentials, not the user's saved connection configuration.
+describe('repeat pairing identity', () => {
+  it('collapses equivalent URL spellings and heals pre-existing duplicates', () => {
+    const old = {...a, url: 'http://HOST:80/', pushEnabled: false};
+    const fresh = {...a, url: 'http://host', token: 'fresh'};
+    expect(upsertServer([old, {...old, url: 'http://host/'}], fresh)).toEqual([
+      {...fresh, pushEnabled: false},
+    ]);
+  });
+  it('keeps authenticated alternate addresses, route and local settings on re-pair', () => {
+    const old = {...a, alts: ['https://direct.test/p1', 'https://other.test/p1'],
+      route: {id: 'east'}, pushEnabled: false, name: 'My work', macName: 'A'};
+    const next = upsertServer([old, b], {...a, token: 'fresh', name: 'A2'});
+    expect(next).toEqual([{...old, token: 'fresh', macName: 'A2'}, b]);
+  });
+  it('uses only previously authenticated alternate addresses, never a display name or place', () => {
+    const old = {...a, url: 'https://direct.test/p1', alts: ['https://other.test/p1'], route: {id: 'east'}};
+    expect(upsertServer([old], {...a, url: 'https://other.test/p1', token: 'fresh'})).toHaveLength(1);
+    expect(upsertServer([old], {...a, url: 'https://unknown.test/p1', route: {id: 'east'}})).toHaveLength(2);
+    expect(upsertServer([old], {...a, url: 'https://direct.test/p2'})).toHaveLength(2);
+  });
+  it('normalizes and heals duplicate persisted URLs and selection together', () => {
+    expect(sanitize({servers: [{...a, url: 'http://HOST:80/'}, {...a, url: 'http://host', token: 'fresh'}], activeUrl: 'http://HOST:80/'}))
+      .toEqual({servers: [{...a, url: 'http://host', token: a.token}], activeUrl: 'http://host'});
+  });
+});
+
+it('a reload of known alternate duplicates retains the selected server and actual host name', () => {
+  const first = {...a, url: 'https://east.invalid/p1', name: 'Desk', macName: 'Mac', alts: ['https://west.invalid/p1']};
+  const second = {...first, url: 'https://west.invalid/p1', token: 'fresh'};
+  const restored = sanitize({servers: [first, second], activeUrl: first.url});
+  expect(restored.servers).toHaveLength(1);
+  expect(restored.activeUrl).toBe(first.url);
+  expect(restored.servers[0]).toMatchObject({name:'Desk',macName:'Mac',token:first.token});
+  expect(restored.servers[0].alts).toContain(first.url);
+});
+
+it('keeps non-default ports, schemes, unknown host aliases and guest aliases separate', () => {
+  for (const url of ['http://a:9000', 'https://a:8765', 'http://127.0.0.1:8765']) {
+    expect(upsertServer([a], {...a,url})).toHaveLength(2);
+  }
+  const owner = {...a, url:'https://east.invalid/p1', alts:['https://west.invalid/p1']};
+  expect(upsertServer([owner], {...a,url:'https://west.invalid/p1',scope:'guest'})).toHaveLength(2);
+});
+
+it('duplicate healing preserves the selected credential and settings regardless of row order', () => {
+  const current = {...a, url:'https://east.invalid/p1', name:'Desk', macName:'Mac', token:'usable', pushEnabled:false,
+    alts:['https://west.invalid/p1']};
+  const stale = {...current,url:'https://west.invalid/p1',token:'revoked',name:'Other nickname',pushEnabled:true};
+  for (const servers of [[current,stale],[stale,current]]) {
+    const restored = sanitize({servers,activeUrl:current.url});
+    expect(restored.servers).toHaveLength(1);
+    expect(restored.activeUrl).toBe(current.url);
+    expect(restored.servers[0]).toMatchObject({token:'usable',name:'Desk',pushEnabled:false,macName:'Mac'});
+  }
+});

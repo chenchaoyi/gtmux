@@ -23,7 +23,7 @@ test.each(['en', 'zh'] as const)('capture selector matches the real %s demo butt
   let tree!: renderer.ReactTestRenderer;
   await act(async () => {tree = renderer.create(<PairingScreen onDemo={onDemo} />);});
   try {
-    const button = tree.root.findAllByType(TouchableOpacity).find(n => n.props.onPress === onDemo)!;
+    const button = tree.root.findAllByType(TouchableOpacity).find(n => n.props.accessibilityLabel === (lang === 'zh' ? '查看演示' : 'View demo'))!;
     expect(button.props.accessibilityRole).toBe('button');
     expect(button.props.accessibilityLabel.endsWith(demoEntrySuffix(lang))).toBe(true);
     const visible = button.findAllByType(Text).find(n => typeof n.props.children === 'string' && n.props.children.endsWith(demoEntrySuffix(lang)))!.props.children;

@@ -2,7 +2,7 @@
 // Scan, which opens ScanScreen (react-native-camera-kit, a real device's camera) for the
 // pairing QR that `gtmux pair` / `gtmux tunnel` print.
 
-import React, {useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -18,7 +18,7 @@ import {
 import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import {GtmuxClient} from '../api/client';
 import {useApp} from '../state/AppContext';
-import {EnrollError, enrollAndSave, normalizeHost, parsePairingQR, parseShareLink, redeemShareCodeAndSave} from '../pairing/qr';
+import {EnrollError, PairedMac, enrollAndSave, normalizeHost, parsePairingQR, parseShareLink, redeemShareCodeAndSave} from '../pairing/qr';
 import {checkServer} from '../pairing/deadline';
 import {deviceLabel} from '../pairing/deviceName';
 import {BrandMark} from '../ui/BrandMark';
@@ -43,170 +43,142 @@ function thisDeviceLabel(): string {
 
 // onCancel, when provided, renders a Cancel control — set when PairingScreen is
 // presented as the "Add a Mac" sheet from ServersScreen (vs. the bare first run).
-export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo?: () => void} = {}) {
-  const {t, pal, pair, lang} = useApp();
+export function PairingScreen({onCancel, onDemo, onPaired}: {onCancel?: () => void; onDemo?: () => void; onPaired?: () => void} = {}) {
+  const {t, pal, pair, lang, activeUrl} = useApp();
   const [host, setHost] = useState('');
   const [token, setToken] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [scanning, setScanning] = useState(false);
 
-  // connectWith validates reachability + token, then pairs. Shared by manual
-  // entry and the QR scanner.
-  const connectWith = async (
-    base: string,
-    tok: string,
-    name: string,
-    scope: 'owner' | 'guest' = 'owner',
-  ) => {
-    if (!base || !tok) {
-      setError(t('cantReach'));
-      return;
-    }
+  const scanEpoch = useRef(0);
+  const scanSession = scanEpoch.current;
+  const operation = useRef(0);
+  const running = useRef(false);
+  const alive = useRef(true);
+  const active = useRef(activeUrl);
+  active.current = activeUrl;
+  const pendingSave = useRef<PairedMac | null>(null);
+  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    alive.current = true;
+    return () => { alive.current = false; };
+  }, []);
+
+  useEffect(() => {
+    // Even switching away and back cancels the original target's pending response.
+    operation.current++;
+    running.current = false;
+    pendingSave.current = null;
+    setBusy(false);
+    setSaving(false);
+  }, [activeUrl]);
+
+  const cancel = () => {
+    scanEpoch.current++;
+    operation.current++;
+    running.current = false;
+    pendingSave.current = null;
+    onCancel?.();
+  };
+
+  // One admission gate for camera callbacks, manual taps and retries. React state
+  // alone cannot lock two callbacks delivered before the next render.
+  const run = async (work: (save: (m: PairedMac) => Promise<void>, current: () => boolean) => Promise<void>, share = false) => {
+    if (running.current || !alive.current) return;
+    running.current = true;
+    const id = ++operation.current;
+    const origin = active.current;
+    const current = () => alive.current && operation.current === id && active.current === origin;
     setBusy(true);
     setError('');
-    try {
-      // Reachable, then the token taken by a real authed call (a guest token is accepted
-      // too); each step bounded (checkServer).
-      const found = await checkServer(new GtmuxClient(base, tok));
-      if (found !== 'ok') {
-        setError(t(found === 'unreachable' ? 'cantReach' : 'badToken'));
-        return;
+    const save = async (m: PairedMac) => {
+      if (!current()) return;
+      pendingSave.current = m;
+      setSaving(true);
+      try {
+        // Check again when the serialized Keychain transaction starts. A previous
+        // write may still be finishing when the user changes their target.
+        await pair(m, current);
+        pendingSave.current = null;
+        if (alive.current && operation.current === id) onPaired?.();
+      } catch {
+        throw new Error('pairSaveFailed');
+      } finally {
+        if (alive.current && operation.current === id) setSaving(false);
       }
-      await pair({url: base, token: tok, name, scope});
-    } catch {
-      setError(t('badToken'));
+    };
+    try {
+      await work(save, current);
+    } catch (e: any) {
+      if (!current()) return;
+      if (e?.message === 'pairSaveFailed') {
+        setError(t('pairSaveFailed'));
+      } else if (e instanceof EnrollError) {
+        setError(t(e.kind === 'unreachable' ? 'enrollUnreachable'
+          : e.kind === 'tunnelDown' ? (share ? 'shareMacDown' : 'enrollTunnelDown')
+          : e.kind === 'noToken' ? (share ? 'shareNoToken' : 'enrollNoToken')
+          : share ? (e.status === 429 ? 'shareTooMany' : 'shareRefused') : 'enrollCodeInvalid'));
+      } else {
+        setError(t('badToken'));
+      }
     } finally {
-      setBusy(false);
+      if (operation.current === id) {
+        running.current = false;
+        if (alive.current) setBusy(false);
+      }
     }
   };
 
+  const connectWith = (base: string, tok: string, name: string, scope: 'owner' | 'guest' = 'owner', maybeCode = false) =>
+    run(async (save, current) => {
+      const found = await checkServer(new GtmuxClient(base, tok));
+      if (!current()) return;
+      if (found === 'ok') {
+        await save({url: base, token: tok, name, scope});
+      } else if (found === 'rejected' && maybeCode) {
+        await redeemShareCodeAndSave({kind: 'guestCode', url: base, code: tok, name}, thisDeviceLabel(), save);
+      } else {
+        setError(t(found === 'unreachable' ? 'cantReach' : 'badToken'));
+      }
+    }, maybeCode);
+
   const connect = () => {
-    // A pasted share link: `<base>#code=<code>` is redeemed for the link's token; the
-    // older `<base>/#g=<token>` (legacy `#t=`) carries the token itself.
+    if (running.current) return;
+    // A code already redeemed must never be submitted again merely because the
+    // Keychain was locked. Retry saving the issued credential in this sheet.
+    const pending = pendingSave.current;
+    if (pending) { void run(save => save(pending)); return; }
     const guest = parseShareLink(host.trim());
     if (guest?.kind === 'guestCode') {
-      redeem(() => redeemShareCodeAndSave(guest, thisDeviceLabel(), pair), true);
+      void run(save => redeemShareCodeAndSave(guest, thisDeviceLabel(), save), true);
       return;
     }
-    if (guest) {
-      connectWith(guest.url, guest.token, guest.name, 'guest');
-      return;
-    }
+    if (guest) { void connectWith(guest.url, guest.token, guest.name, 'guest'); return; }
     const base = normalizeHost(host);
-    // An empty field is not a connection that failed: say which one to fill rather than
-    // "can't reach this server … turn off your VPN", which is what it used to say (%6, F13).
     if (!base || !token.trim()) {
       setError(t(!base ? 'pairNeedAddress' : 'pairNeedToken'));
       return;
     }
-    // A share link said as two lines puts its eight-character code where a token goes.
-    // But `serve --token` may be any text, eight letters and digits included, so the
-    // shape alone decides nothing: it is tried as a token first, and only a Mac that
-    // refuses it as a token is asked to redeem it as a share code (%12, 2026-10-06).
-    if (SHARE_CODE.test(token.trim())) {
-      tokenOrShareCode(base, token.trim(), base.replace(/^https?:\/\//, ''));
-      return;
-    }
-    connectWith(base, token.trim(), base.replace(/^https?:\/\//, ''));
+    void connectWith(base, token.trim(), base.replace(/^https?:\/\//, ''), 'owner', SHARE_CODE.test(token.trim()));
   };
 
-  const tokenOrShareCode = async (base: string, tok: string, name: string) => {
-    setBusy(true);
-    setError('');
-    let found: Awaited<ReturnType<typeof checkServer>>;
-    try {
-      found = await checkServer(new GtmuxClient(base, tok));
-    } catch {
-      found = 'unreachable';
-    }
-    if (found === 'ok') {
-      try {
-        await pair({url: base, token: tok, name, scope: 'owner'});
-      } catch {
-        setError(t('badToken'));
-      } finally {
-        setBusy(false);
-      }
-      return;
-    }
-    if (found === 'unreachable') {
-      setBusy(false);
-      setError(t('cantReach'));
-      return;
-    }
-    redeem(() => redeemShareCodeAndSave({kind: 'guestCode', url: base, code: tok, name}, thisDeviceLabel(), pair), true);
-  };
-
-  const onScanned = async (raw: string) => {
+  const onScanned = (raw: string) => {
+    if (running.current || !alive.current) return;
     setScanning(false);
     let res;
-    try {
-      res = parsePairingQR(raw);
-    } catch (e: any) {
-      setError(e?.message || t('badToken'));
-      return;
-    }
-    if (res.kind === 'paired') {
-      connectWith(res.url, res.token, res.name); // v1: token in the QR
-      return;
-    }
-    if (res.kind === 'guest') {
-      // A `gtmux share` guest link/QR → connect as a scope-restricted guest (no enroll).
-      connectWith(res.url, res.token, res.name, 'guest');
-      return;
-    }
-    if (res.kind === 'guestCode') {
-      // A share link's code: redeemed for the link's token, kept as the scope the server reports.
+    try { res = parsePairingQR(raw); }
+    catch { setError(t('pairInvalidQR')); return; }
+    // A deliberate new scan replaces a failed save's retry target.
+    pendingSave.current = null;
+    if (res.kind === 'paired' || res.kind === 'guest') {
+      void connectWith(res.url, res.token, res.name, res.kind === 'guest' ? 'guest' : 'owner');
+    } else if (res.kind === 'guestCode') {
       const shared = res;
-      redeem(() => redeemShareCodeAndSave(shared, thisDeviceLabel(), pair), true);
-      return;
-    }
-    // v2: redeem the one-time code for this device's own token, then connect.
-    const owner = res;
-    redeem(() => enrollAndSave(owner, thisDeviceLabel(), pair));
-  };
-
-  // redeem runs a code redemption (a pairing code, or with `share` a share link's code)
-  // and says what went wrong in the words for each failure and each kind of code.
-  const redeem = async (run: () => Promise<void>, share = false) => {
-    setBusy(true);
-    setError('');
-    try {
-      await run();
-    } catch (e: any) {
-      setBusy(false);
-      // Map the classified enroll failure to a precise, actionable message — a dead
-      // link/tunnel is NOT an expired code, so point at the right thing to check.
-      if (e instanceof EnrollError && share) {
-        setError(
-          t(
-            e.kind === 'unreachable'
-              ? 'enrollUnreachable' // nothing answered at the address: the same advice
-              : e.kind === 'tunnelDown'
-                ? 'shareMacDown'
-                : e.kind === 'noToken'
-                  ? 'shareNoToken'
-                  : e.status === 429
-                    ? 'shareTooMany'
-                    : 'shareRefused',
-          ),
-        );
-      } else if (e instanceof EnrollError) {
-        setError(
-          t(
-            e.kind === 'unreachable'
-              ? 'enrollUnreachable'
-              : e.kind === 'tunnelDown'
-                ? 'enrollTunnelDown'
-                : e.kind === 'noToken'
-                  ? 'enrollNoToken'
-                  : 'enrollCodeInvalid',
-          ),
-        );
-      } else {
-        setError(e?.message || t('badToken'));
-      }
+      void run(save => redeemShareCodeAndSave(shared, thisDeviceLabel(), save), true);
+    } else {
+      const owner = res;
+      void run(save => enrollAndSave(owner, thisDeviceLabel(), save));
     }
   };
 
@@ -216,7 +188,7 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.flex}>
         {onCancel && (
-          <TouchableOpacity onPress={onCancel} hitSlop={hitC} style={styles.cancel}>
+          <TouchableOpacity onPress={cancel} disabled={saving} hitSlop={hitC} style={styles.cancel}>
             <Text style={[styles.cancelText, {color: pal.fg2}]}>‹ {t('cancel')}</Text>
           </TouchableOpacity>
         )}
@@ -235,8 +207,11 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
             accessibilityLabel={t('scanQR')}
             activeOpacity={0.85}
             style={styles.qrBtn}
+            disabled={busy}
             onPress={() => {
+              if (running.current) return;
               setError('');
+              scanEpoch.current++;
               setScanning(true);
             }}>
             <Text style={styles.qrText}>◉  {t('scanQR')}</Text>
@@ -247,6 +222,7 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
           <Text style={[styles.label, {color: pal.fg2}]}>{t('host')}</Text>
           <TextInput
             testID={TestIds.pairing.host}
+            editable={!busy && !pendingSave.current}
             value={host}
             onChangeText={setHost}
             placeholder="192.168.1.20:8765"
@@ -260,6 +236,7 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
           <Text style={[styles.label, {color: pal.fg2}]}>{t('token')}</Text>
           <TextInput
             testID={TestIds.pairing.token}
+            editable={!busy && !pendingSave.current}
             value={token}
             onChangeText={setToken}
             placeholder="serve-token"
@@ -285,7 +262,7 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
             {busy ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.connectText}>{t('connect')}</Text>
+              <Text style={styles.connectText}>{t(pendingSave.current ? 'pairSaveRetry' : 'connect')}</Text>
             )}
           </TouchableOpacity>
 
@@ -295,7 +272,8 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
               the two real pairing paths above. */}
           {onDemo && (
             <TouchableOpacity
-              onPress={onDemo}
+              disabled={busy}
+              onPress={() => { cancel(); onDemo(); }}
               style={[styles.demoCard, {borderColor: pal.divider, backgroundColor: pal.surface}]}
               accessibilityRole="button"
               accessibilityLabel={lang === 'zh' ? '查看演示' : 'View demo'}>
@@ -318,9 +296,16 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
       {/* A Modal renders OUTSIDE the app's SafeAreaProvider, so the scanner's own
           SafeAreaView would see 0 insets and its title would sit under the Dynamic
           Island. Re-establish the provider inside the modal so the top inset is real. */}
-      <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={scanning} animationType="slide" onRequestClose={() => setScanning(false)}>
+      <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={scanning} animationType="slide" onRequestClose={() => { scanEpoch.current++; setScanning(false); }}>
         <SafeAreaProvider>
-          <ScanScreen onClose={() => setScanning(false)} onScanned={onScanned} />
+          {scanning && <ScanScreen
+            onClose={() => { scanEpoch.current++; setScanning(false); }}
+            onScanned={raw => {
+              if (scanEpoch.current !== scanSession) return;
+              scanEpoch.current++;
+              onScanned(raw);
+            }}
+          />}
         </SafeAreaProvider>
       </Modal>
     </SafeAreaView>
