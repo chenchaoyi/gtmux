@@ -17,8 +17,7 @@ xcrun simctl launch SIMULATOR_ID com.gtmux.conversation-fixture \
 
 The fixture only uses the synthetic `fixture-only` header. It tests partial Unicode
 copy, streaming pin/resume, HTML inline rendering and absence of an app bridge.
-`--transport-checks` also checks denied, unpublished, old-route, redirect and digest
-failures. Read its own `Documents/fixture-results.json` in the simulator data container.
+`--transport-checks` also checks denied, unpublished, old-route, redirect, digest, server-500 and size-limit failures. Read its own `Documents/fixture-results.json` in the simulator data container.
 `GET /stats` on the fake server should show only metadata/content requests and **no
 `/beacon/` requests**. This checks actual WebKit/network behavior, not just policy strings.
 
@@ -33,6 +32,28 @@ consent and must not be called a network sandbox. Request flags cannot authorize
 Native controls remain outside the document. The share
 popover must anchor to Share on iPad. Quick Look and text formats require separate cases;
 HTML success does not establish PDF or image acceptance.
+
+## Preview states
+
+Use `--preview --skip-selection-checks --state-checks` to exercise preview states without
+running the separate selection/clipboard checks. Add `--lang en` or `--lang zh`,
+`--name LONG_FILENAME` and optionally `--landscape`. `--reference /fixture/unpublished`,
+`/fixture/denied`, `/fixture/old`, `/fixture/network` and `/fixture/large` cover distinct
+error actions. `/fixture/recover` fails its first lookup and succeeds on Retry;
+`/fixture/slow` holds loading for eight seconds. `/fixture/badimage` downloads a verified
+but unrenderable original for the Share fallback. The synthetic server is fresh per run;
+restart it to reset the recover counter.
+
+The state check measures the production labels against an independent unbounded text
+measurement. Read `state-layout` from `fixture-results.json` and fail the acceptance run
+if it starts with `FAIL`; a one-line-label mutation must fail the check. At the largest
+accessibility size, scroll to reach the last action. Test the same cases on the authorized
+phone and iPad, both orientations and appearances. Tapping Copy checks only the
+fixture's just-written synthetic reference; it never reads or preserves a prior clipboard.
+On iPad, tapping the unsupported-format Share action (or `--share-format-check` for a
+window the automation cannot inspect) checks `share-anchor` against the
+actual popover source view. These fixture checks do not replace visual inspection,
+VoiceOver, Quick Look or a full React Native app build.
 
 Stop only the fixture server/automation and apps started for this run. Restore any
 appearance, orientation or text-size settings changed on the dedicated simulators.

@@ -44,6 +44,7 @@
 		E190B585A37BBB5CBBB56670 /* Haptics.m in Sources */ = {isa = PBXBuildFile; fileRef = CD1AC6D8B3BC135CA56C5653 /* Haptics.m */; };
 		E25AA8FA4D868F3163B0419D /* HQMemory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D3A1A7B6F2AD4E90DF12E33 /* HQMemory.swift */; };
 		F0ECE9F715E0351FE5619846 /* ConversationTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D63D39FD6CE1D201A21F8F0C /* ConversationTextView.swift */; };
+		FD4F3E492F1B10AEEA7F3873 /* DocumentStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC4C83C073F7BD1C59E30FB5 /* DocumentStatusView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -111,6 +112,7 @@
 		AE9A810E4413FBDAACA7916E /* LiveActivityModule.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = LiveActivityModule.swift; path = GtmuxMobile/LiveActivityModule.swift; sourceTree = "<group>"; };
 		C754CD8C96EE1CEA9E247527 /* ConversationText.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = ConversationText.m; sourceTree = "<group>"; };
 		CC356C44C721110E87B71238 /* GtmuxWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GtmuxWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		CC4C83C073F7BD1C59E30FB5 /* DocumentStatusView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DocumentStatusView.swift; sourceTree = "<group>"; };
 		CD1AC6D8B3BC135CA56C5653 /* Haptics.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = Haptics.m; path = GtmuxMobile/Haptics.m; sourceTree = "<group>"; };
 		D1819D8849B51096E179E069 /* GtmuxActivityAttributes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GtmuxActivityAttributes.swift; sourceTree = "<group>"; };
 		D63D39FD6CE1D201A21F8F0C /* ConversationTextView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ConversationTextView.swift; sourceTree = "<group>"; };
@@ -191,6 +193,7 @@
 				3A987514AB2EB77A65A3204C /* DocumentPreviewController.swift */,
 				310F828FDD6A5D78EF0BD51D /* GtmuxDocuments.swift */,
 				FBF358E511BE2CA9AC18615D /* GtmuxDocuments.m */,
+				CC4C83C073F7BD1C59E30FB5 /* DocumentStatusView.swift */,
 			);
 			name = Documents;
 			path = Documents;
@@ -531,6 +534,7 @@
 				34F5DA65A7852F93CDBC3AC7 /* DocumentPreviewController.swift in Sources */,
 				17E383E65A990DA6E5832AFE /* GtmuxDocuments.swift in Sources */,
 				2153ADCBDCBC5F1A71290418 /* GtmuxDocuments.m in Sources */,
+				FD4F3E492F1B10AEEA7F3873 /* DocumentStatusView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

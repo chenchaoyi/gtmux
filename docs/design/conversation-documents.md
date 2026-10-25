@@ -6,8 +6,12 @@ status, then the document. HTML opens as a static preview. A compact Enable inte
 asks for native confirmation before running scripts in this file; Use static preview
 turns them off again. Info shows the original path and snapshot date. Share exports
 the original through the system share sheet. iPhone uses the full screen; iPad uses a
-resizable system form sheet with anchored share controls. Errors keep Retry and Copy path
-available. No separate document dashboard is added.
+resizable system form sheet with anchored share controls. Loading and failures use a centered, scrollable status view with a complete localized
+explanation and visible actions. Retry is offered for recoverable failures; denied access
+returns to the conversation, while an unsupported format can share the verified original.
+Unpublished files keep Copy path (or Copy file link). Share appears in the toolbar only
+after verification. Status text and buttons wrap at large text sizes; the ready header
+puts its controls on separate lines at accessibility sizes. No separate document dashboard is added.
 
 ## Providing a file
 
@@ -27,7 +31,9 @@ gtmux artifact add /absolute/path/report.html --session-id SESSION_ID --home-id 
 Return the printed Markdown link in the reply. An existing absolute-path Markdown link
 also resolves if that exact source path was published for that conversation. Relative
 paths remain visible but cannot be resolved without an absolute registered source.
-Old file links are not automatically made available. Do not publish credentials,
+Old file links are not automatically made available. Generating a report and posting
+its path alone does not publish it: register it first, use the returned file link, and
+verify resolution for the owning turn identity before calling it available in the app. Do not publish credentials,
 personal data or files the user did not intend to share with their paired devices.
 
 `gtmux artifact list` prints registered-copy metadata as JSON. `gtmux artifact remove ID`

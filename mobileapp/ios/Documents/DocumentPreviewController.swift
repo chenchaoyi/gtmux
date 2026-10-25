@@ -13,13 +13,17 @@ final class DocumentPreviewController: UIViewController, QLPreviewControllerData
   private var webView: WKWebView?
   private let content = UIView()
   private let status = UILabel()
-  private let progress = UIProgressView(progressViewStyle: .default)
-  private let retry = UIButton(type: .system)
+  private lazy var state = DocumentStatusView(zh: zh)
+  private let readyHeader = UIView()
+  private let controls = UIStackView()
+  private var shareButton: UIBarButtonItem!
+  private var infoButton: UIBarButtonItem!
+  private let filename = UILabel()
   private let interaction = UIButton(type: .system)
   private var authorizedScriptHash: String?
   private var renderID = UUID()
-  private let spinner = UIActivityIndicatorView(style: .medium)
   private var closing = false
+  private var downloadFinished = false
   private var zh: Bool { request["lang"] as? String == "zh" }
   private func tr(_ en: String, _ cn: String) -> String { zh ? cn : en }
 
@@ -29,70 +33,93 @@ final class DocumentPreviewController: UIViewController, QLPreviewControllerData
   override func viewDidLoad() {
     super.viewDidLoad()
     view.backgroundColor = .systemBackground
-    title = (request["name"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? tr("File preview", "文件预览")
+    filename.font = .preferredFont(forTextStyle: .headline)
+    filename.adjustsFontForContentSizeCategory = true
+    filename.lineBreakMode = .byTruncatingMiddle
+    filename.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+    filename.accessibilityIdentifier = "document-preview-filename"
+    navigationItem.titleView = filename
+    setFilename((request["name"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? tr("File preview", "文件预览"))
     navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .close, target: self, action: #selector(closePreview))
-    navigationItem.rightBarButtonItems = [UIBarButtonItem(barButtonSystemItem: .action, target: self, action: #selector(shareFile)), UIBarButtonItem(image: UIImage(systemName: "info.circle"), style: .plain, target: self, action: #selector(showInfo))]
+    shareButton = UIBarButtonItem(barButtonSystemItem: .action, target: self, action: #selector(shareFile))
+    infoButton = UIBarButtonItem(image: UIImage(systemName: "info.circle"), style: .plain, target: self, action: #selector(showInfo))
+    navigationItem.rightBarButtonItems = [infoButton]
     navigationItem.leftBarButtonItem?.accessibilityIdentifier = "document-preview-close"
     navigationItem.leftBarButtonItem?.accessibilityLabel = tr("Close preview", "关闭预览")
-    navigationItem.rightBarButtonItems?.first?.accessibilityIdentifier = "document-preview-share"
-    navigationItem.rightBarButtonItems?.first?.accessibilityLabel = tr("Share file", "分享文件")
-    navigationItem.rightBarButtonItems?.last?.accessibilityIdentifier = "document-preview-info"
-    navigationItem.rightBarButtonItems?.last?.accessibilityLabel = tr("File information", "文件信息")
-    navigationItem.rightBarButtonItems?.first?.isEnabled = false
+    shareButton.accessibilityIdentifier = "document-preview-share"
+    shareButton.accessibilityLabel = tr("Share file", "分享文件")
+    infoButton.accessibilityIdentifier = "document-preview-info"
+    infoButton.accessibilityLabel = tr("File information", "文件信息")
     status.numberOfLines = 0
-    status.font = .preferredFont(forTextStyle: .subheadline)
+    status.font = .preferredFont(forTextStyle: .caption1)
     status.textColor = .secondaryLabel
     status.adjustsFontForContentSizeCategory = true
-    retry.setTitle(tr("Retry", "重试"), for: .normal)
-    retry.addTarget(self, action: #selector(start), for: .touchUpInside)
     interaction.setTitle(tr("Enable interaction", "开启交互"), for: .normal)
     interaction.accessibilityIdentifier = "document-preview-interaction"
     interaction.titleLabel?.font = .preferredFont(forTextStyle: .subheadline)
     interaction.titleLabel?.adjustsFontForContentSizeCategory = true
-    interaction.titleLabel?.numberOfLines = 2
+    interaction.titleLabel?.numberOfLines = 0
     interaction.titleLabel?.textAlignment = .center
-    interaction.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
     interaction.addTarget(self, action: #selector(toggleInteraction), for: .touchUpInside)
-    interaction.isHidden = true
-    let controls = UIStackView(arrangedSubviews: [spinner, status, interaction, retry])
-    controls.axis = .horizontal; controls.alignment = .fill; controls.spacing = 12
-    controls.setContentHuggingPriority(.required, for: .vertical)
-    controls.setContentCompressionResistancePriority(.required, for: .vertical)
-    content.setContentHuggingPriority(UILayoutPriority(1), for: .vertical)
-    let stack = UIStackView(arrangedSubviews: [controls, progress, content])
-    stack.axis = .vertical; stack.spacing = 12; stack.translatesAutoresizingMaskIntoConstraints = false
-    view.addSubview(stack)
-    let retryWidth = retry.widthAnchor.constraint(greaterThanOrEqualToConstant: 44)
-    retryWidth.priority = UILayoutPriority(999)
-    let interactionWidth = interaction.widthAnchor.constraint(greaterThanOrEqualToConstant: 88)
-    interactionWidth.priority = UILayoutPriority(999)
+    controls.addArrangedSubview(status); controls.addArrangedSubview(interaction)
+    controls.alignment = .center; controls.spacing = 12
+    let line = UIView(); line.backgroundColor = .separator
+    readyHeader.addSubview(controls); readyHeader.addSubview(line)
+    for child in [controls, line] { child.translatesAutoresizingMaskIntoConstraints = false }
+    let interactionHeight = interaction.heightAnchor.constraint(greaterThanOrEqualToConstant: 44)
+    interactionHeight.priority = UILayoutPriority(999)
+    let headerTop = controls.topAnchor.constraint(equalTo: readyHeader.topAnchor, constant: 4)
+    let headerBottom = controls.bottomAnchor.constraint(equalTo: readyHeader.bottomAnchor, constant: -8)
+    headerTop.priority = UILayoutPriority(999); headerBottom.priority = UILayoutPriority(999)
     NSLayoutConstraint.activate([
-      stack.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
-      stack.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
-      stack.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 12),
-      stack.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -12),
-      content.heightAnchor.constraint(greaterThanOrEqualToConstant: 1),
-      interactionWidth, interaction.heightAnchor.constraint(greaterThanOrEqualToConstant: 44),
-      retryWidth, retry.heightAnchor.constraint(greaterThanOrEqualToConstant: 44),
+      controls.leadingAnchor.constraint(equalTo: readyHeader.leadingAnchor, constant: 16),
+      controls.trailingAnchor.constraint(equalTo: readyHeader.trailingAnchor, constant: -16),
+      headerTop, headerBottom,
+      line.leadingAnchor.constraint(equalTo: readyHeader.leadingAnchor), line.trailingAnchor.constraint(equalTo: readyHeader.trailingAnchor),
+      line.bottomAnchor.constraint(equalTo: readyHeader.bottomAnchor), line.heightAnchor.constraint(equalToConstant: 0.5), interactionHeight,
     ])
+    content.setContentHuggingPriority(UILayoutPriority(1), for: .vertical)
+    let stack = UIStackView(arrangedSubviews: [readyHeader, content])
+    stack.axis = .vertical; stack.translatesAutoresizingMaskIntoConstraints = false
+    view.addSubview(stack)
+    NSLayoutConstraint.activate([
+      stack.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+      stack.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+      stack.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+      stack.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+      content.heightAnchor.constraint(greaterThanOrEqualToConstant: 1),
+    ])
+    content.addSubview(state); state.translatesAutoresizingMaskIntoConstraints = false
+    NSLayoutConstraint.activate([state.leadingAnchor.constraint(equalTo: content.leadingAnchor), state.trailingAnchor.constraint(equalTo: content.trailingAnchor), state.topAnchor.constraint(equalTo: content.topAnchor), state.bottomAnchor.constraint(equalTo: content.bottomAnchor)])
+    state.onAction = { [weak self] action, button in
+      guard let self, !self.closing else { return }
+      switch action {
+      case .retry: self.start()
+      case .copy:
+        guard let reference = self.copyReference else { return }
+        UIPasteboard.general.string = reference
+        self.state.copied(button)
+      case .share: self.presentShare(from: button)
+      case .close: self.closePreview()
+      }
+    }
+    updateHeaderLayout()
     start()
   }
 
   @objc private func start() {
-    transport?.cleanup()
+    guard !closing else { return }
+    transport?.cleanup(); downloadFinished = false
     authorizedScriptHash = nil; renderID = UUID(); interaction.isHidden = true
-    navigationItem.rightBarButtonItems?.first?.isEnabled = false
-    content.subviews.forEach { $0.removeFromSuperview() }
-    for child in children { child.willMove(toParent: nil); child.removeFromParent() }
-    webView = nil; originalURL = nil; file = nil; htmlURL = nil
-    retry.isHidden = true; progress.isHidden = false; progress.progress = 0
-    status.text = tr("Reading file…", "正在读取文件…")
-    spinner.startAnimating()
+    navigationItem.rightBarButtonItems = [infoButton]
+    clearContent()
+    originalURL = nil; file = nil; htmlURL = nil
+    readyHeader.isHidden = true; state.loading()
     guard let next = DocumentTransport(request: request) else { showFailure(.invalid); return }
     transport = next
     next.onProgress = { [weak self, weak next] value in
-      guard let self, !self.closing, self.transport === next else { return }; self.progress.progress = Float(value)
-      self.status.text = self.tr("Downloading · \(Int(value * 100))%", "正在下载 · \(Int(value * 100))%")
+      guard let self, !self.closing, !self.downloadFinished, self.transport === next else { return }
+      self.state.loading(progress: value)
     }
     next.onFailure = { [weak self, weak next] reason in
       guard let self, !self.closing, self.transport === next else { return }; self.showFailure(reason)
@@ -103,24 +130,44 @@ final class DocumentPreviewController: UIViewController, QLPreviewControllerData
     next.start()
   }
 
+  private var copyReference: String? {
+    let reference = file?.source ?? request["reference"] as? String ?? ""
+    return reference.isEmpty ? nil : reference
+  }
+  private var copyTitle: String? {
+    copyReference.map { $0.hasPrefix("gtmux-file:") ? tr("Copy file link", "复制文件链接") : tr("Copy path", "复制路径") }
+  }
+  private func setFilename(_ value: String) {
+    title = value; filename.text = value; filename.accessibilityLabel = value
+  }
+  private func clearContent() {
+    renderID = UUID()
+    let old = webView; webView = nil
+    old?.stopLoading(); old?.navigationDelegate = nil; old?.uiDelegate = nil
+    for child in children { child.willMove(toParent: nil); child.view.removeFromSuperview(); child.removeFromParent() }
+    content.subviews.filter { $0 !== state }.forEach { $0.removeFromSuperview() }
+  }
   private func showFailure(_ reason: DocumentFailure) {
-    spinner.stopAnimating(); progress.isHidden = true; retry.isHidden = false
-    switch reason {
-    case .permission: status.text = tr("This connection cannot view this file.", "此连接没有文件查看权限。")
-    case .unavailable: status.text = tr("This file has not been made available, or was removed. Ask the agent to provide it, or copy its path from File information.", "此文件尚未提供预览，或已被移除。可让 Agent 重新提供，也可在文件信息中复制路径。")
-    case .unsupported: status.text = tr("Update the server to preview conversation files.", "请更新服务器以预览会话文件。")
-    case .tooLarge: status.text = tr("This file exceeds the 30 MiB preview limit.", "文件超过 30 MiB 预览上限。")
-    case .invalid: status.text = tr("File verification failed. Nothing was opened.", "文件校验失败，未打开内容。")
-    case .format: status.text = tr("Preview is unavailable for this format. You can save the file.", "此格式暂时无法预览，可以保存原文件。")
-    case .network: status.text = tr("Could not read the file. Check the connection and retry.", "暂时无法读取文件，请检查连接后重试。")
-    }
+    guard !closing else { return }
+    downloadFinished = true; clearContent(); authorizedScriptHash = nil
+    readyHeader.isHidden = true; interaction.isHidden = true
+    state.failure(.make(reason, zh: zh, copyTitle: copyTitle, hasFile: originalURL != nil))
+  }
+  private func updateHeaderLayout() {
+    controls.axis = traitCollection.preferredContentSizeCategory.isAccessibilityCategory ? .vertical : .horizontal
+    controls.alignment = controls.axis == .vertical ? .leading : .center
+  }
+  override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+    super.traitCollectionDidChange(previousTraitCollection)
+    if isViewLoaded { updateHeaderLayout() }
   }
 
   private func show(_ file: ConversationDocument, url: URL) {
     guard !closing else { return }
-    self.file = file; originalURL = url; title = file.name
-    navigationItem.rightBarButtonItems?.forEach { $0.isEnabled = true }
-    spinner.stopAnimating(); progress.isHidden = true
+    downloadFinished = true
+    self.file = file; originalURL = url; setFilename(file.name)
+    navigationItem.rightBarButtonItems = [shareButton, infoButton]
+    readyHeader.isHidden = false
     updateFileStatus()
     switch file.kind {
     case "html": interaction.isHidden = false; showHTML(url)
@@ -131,6 +178,7 @@ final class DocumentPreviewController: UIViewController, QLPreviewControllerData
         let text = UITextView(); text.isEditable = false; text.isSelectable = true
         text.font = UIFontMetrics(forTextStyle: .body).scaledFont(for: .monospacedSystemFont(ofSize: 15, weight: .regular))
         text.adjustsFontForContentSizeCategory = true; text.backgroundColor = .clear
+        text.textContainerInset = UIEdgeInsets(top: 16, left: 12, bottom: 16, right: 12)
         text.text = String(decoding: bytes, as: UTF8.self)
         if file.bytes > bytes.count { status.text = tr("Previewing the first 512 KiB · Share saves the complete file", "仅预览前 512 KiB · 分享可保存完整文件") }
         mount(text)
@@ -148,9 +196,10 @@ final class DocumentPreviewController: UIViewController, QLPreviewControllerData
     }
   }
 
-  private func mount(_ child: UIView) {
-    child.translatesAutoresizingMaskIntoConstraints = false; content.addSubview(child)
+  private func mount(_ child: UIView, ready: Bool = true) {
+    child.translatesAutoresizingMaskIntoConstraints = false; content.insertSubview(child, belowSubview: state)
     NSLayoutConstraint.activate([child.leadingAnchor.constraint(equalTo: content.leadingAnchor), child.trailingAnchor.constraint(equalTo: content.trailingAnchor), child.topAnchor.constraint(equalTo: content.topAnchor), child.bottomAnchor.constraint(equalTo: content.bottomAnchor)])
+    if ready { state.isHidden = true }
   }
 
   private var scriptsAllowed: Bool { file != nil && authorizedScriptHash == file?.sha256 }
@@ -185,6 +234,7 @@ final class DocumentPreviewController: UIViewController, QLPreviewControllerData
   }
 
   private func showHTML(_ source: URL) {
+    interaction.isEnabled = false; state.loading(opening: true)
     do {
       let generation = UUID(); renderID = generation
       let allowScripts = scriptsAllowed
@@ -213,13 +263,17 @@ final class DocumentPreviewController: UIViewController, QLPreviewControllerData
           // No WKScriptMessageHandler, user credentials or business API bridge.
           let web = WKWebView(frame: .zero, configuration: configuration)
           web.navigationDelegate = self; web.uiDelegate = self; web.allowsLinkPreview = false
-          self.webView = web; self.mount(web)
+          self.webView = web; self.mount(web, ready: false)
           web.loadFileURL(target, allowingReadAccessTo: target.deletingLastPathComponent())
         }
       }
     } catch { showFailure(.format) }
   }
 
+  func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+    guard !closing, self.webView === webView else { return }
+    state.isHidden = true; interaction.isEnabled = true
+  }
   func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction,
                decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
     guard !closing, self.webView === webView else { decisionHandler(.cancel); return }
@@ -262,7 +316,7 @@ final class DocumentPreviewController: UIViewController, QLPreviewControllerData
     guard let file else {
       let path = request["reference"] as? String ?? ""
       let alert = UIAlertController(title: tr("File reference", "文件位置"), message: path, preferredStyle: .alert)
-      alert.addAction(UIAlertAction(title: tr("Copy path", "复制路径"), style: .default) { _ in UIPasteboard.general.string = path })
+      if let copyTitle { alert.addAction(UIAlertAction(title: copyTitle, style: .default) { _ in UIPasteboard.general.string = path }) }
       alert.addAction(UIAlertAction(title: tr("Close", "关闭"), style: .cancel)); present(alert, animated: true); return
     }
     let time = DateFormatter.localizedString(from: Date(timeIntervalSince1970: Double(file.created_at)), dateStyle: .medium, timeStyle: .short)
@@ -271,10 +325,14 @@ final class DocumentPreviewController: UIViewController, QLPreviewControllerData
     alert.addAction(UIAlertAction(title: tr("Close", "关闭"), style: .cancel))
     present(alert, animated: true)
   }
-  @objc private func shareFile() {
-    guard let originalURL else { return }
+  @objc private func shareFile() { presentShare() }
+  private func presentShare(from source: UIView? = nil) {
+    guard !closing, let originalURL else { return }
     let share = UIActivityViewController(activityItems: [originalURL], applicationActivities: nil)
-    share.popoverPresentationController?.barButtonItem = navigationItem.rightBarButtonItems?.first
+    if let source {
+      share.popoverPresentationController?.sourceView = source
+      share.popoverPresentationController?.sourceRect = source.bounds
+    } else { share.popoverPresentationController?.barButtonItem = shareButton }
     present(share, animated: true)
   }
   @objc private func closePreview() { closing = true; webView?.stopLoading(); transport?.cancel(); dismiss(animated: true) }

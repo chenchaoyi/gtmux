@@ -1,1 +1,1 @@
-在 iPhone 和 iPad 上查看 tmux 会话、回复 Agent，由 HQ 跟进任务。连接你自己的 Mac 或 Linux 服务器即可使用。
+在 iPhone 和 iPad 上查看 tmux 会话、回复 Agent，由 HQ 跟进任务。HQ 持续整理经验与反馈，更新本机知识库，逐渐熟悉你的项目和工作习惯。需连接自己的 Mac 或 Linux 服务器。

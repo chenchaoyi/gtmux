@@ -5,7 +5,7 @@ app = project.targets.find { |target| target.name == 'GtmuxMobile' }
 raise 'GtmuxMobile target not found' unless app
 {
   'ConversationText' => %w[ConversationTextView.swift ConversationTextManager.swift ConversationText.m],
-  'Documents' => %w[DocumentTransport.swift DocumentPreviewController.swift GtmuxDocuments.swift GtmuxDocuments.m]
+  'Documents' => %w[DocumentTransport.swift DocumentStatusView.swift DocumentPreviewController.swift GtmuxDocuments.swift GtmuxDocuments.m]
 }.each do |directory, names|
   group = project.main_group[directory] || project.main_group.new_group(directory, directory)
   names.each do |name|

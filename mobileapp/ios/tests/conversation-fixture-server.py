@@ -5,6 +5,7 @@ import hashlib
 import json
 import http.server
 import pathlib
+import time
 parser = argparse.ArgumentParser(description="Synthetic loopback document acceptance server")
 parser.add_argument("--output", required=True, type=pathlib.Path)
 parser.add_argument("--rtc-probe-port", type=int, default=0)
@@ -15,6 +16,7 @@ root = args.output
 root.mkdir(parents=True, exist_ok=True)
 hits=[]
 contents = {}
+attempts = {}
 class Handler(http.server.BaseHTTPRequestHandler):
  def log_message(self,*args): pass
  def reply(self,status,body,mime='application/json',extra={}):
@@ -24,10 +26,15 @@ class Handler(http.server.BaseHTTPRequestHandler):
  def do_POST(self):
   hits.append({'method':'POST','path':self.path,'auth':self.headers.get('Authorization')=='Bearer fixture-only'})
   req=json.loads(self.rfile.read(int(self.headers.get('Content-Length','0')))); ref=req['reference']
+  attempts[ref]=attempts.get(ref,0)+1
+  if ref.endswith('recover') and attempts[ref]==1:self.reply(404,b'{"code":"document_unpublished"}');return
   if ref.endswith('redirect'):self.reply(302,b'',extra={'Location':'/beacon/redirect'});return
   if ref.endswith('unpublished'):self.reply(404,b'{"code":"document_unpublished"}');return
   if ref.endswith('old'):self.reply(404,b'Not found','text/plain');return
   if ref.endswith('denied'):self.reply(403,b'{}');return
+  if ref.endswith('network'):self.reply(500,b'{}');return
+  if ref.endswith('large'):self.reply(413,b'{}');return
+  if ref.endswith('slow'):time.sleep(8)
   payload=html.encode();kind='html';mime='text/html';name='Report.html'
   if ref.endswith('.txt'):
    payload=('中文 selection 😀 — complete original file.\n' * 16000).encode();kind='text';mime='text/plain';name='Report.txt'
@@ -35,6 +42,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
    payload=base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j6XcAAAAASUVORK5CYII=');kind='image';mime='image/png';name='Report.png'
   elif ref.endswith('.pdf'):
    payload=pdf;kind='pdf';mime='application/pdf';name='Report.pdf'
+  if ref.endswith('badimage'):payload=b'not an image';kind='image';mime='image/png';name='Report.png'
   sha=hashlib.sha256(payload).hexdigest()
   identifier=hashlib.sha256(ref.encode()).hexdigest()[:32]
   contents[identifier]=payload
