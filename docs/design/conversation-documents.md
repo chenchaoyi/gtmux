@@ -2,7 +2,9 @@
 
 A document link stays beside the reply that introduced it. Tapping opens a system-style
 viewer immediately: filename and Close in the navigation bar, short loading/progress
-status, then the document. Info shows the original path and snapshot date. Share exports
+status, then the document. HTML opens as a static preview. A compact Enable interaction action
+asks for native confirmation before running scripts in this file; Use static preview
+turns them off again. Info shows the original path and snapshot date. Share exports
 the original through the system share sheet. iPhone uses the full screen; iPad uses a
 resizable system form sheet with anchored share controls. Errors keep Retry and Copy path
 available. No separate document dashboard is added.
@@ -44,15 +46,25 @@ bearers only in headers. The native transport rejects every redirect. Content is
 attachment with `nosniff`, `no-store` and a sandbox CSP, including HTML. The iOS viewer
 verifies full byte count and SHA-256 before opening a private temporary copy.
 
-Self-contained UTF-8 HTML supports inline scripts/styles and embedded images; external
-resources, frames, workers, forms, network connections, new windows and external
-navigation are blocked. WebKit is ephemeral, has no native message handlers and never
-receives pairing headers. Scripts remain untrusted and can consume resources or imitate
-content inside their document: the system Close/Info/Share controls stay outside it.
-Media capture and motion permission requests are denied; element fullscreen is disabled.
-The public geolocation delegate is denied on iOS 27+, where available. Older iOS uses
-platform location authorization; gtmux does not request location permission. Remote-resource
-reports may be incomplete. PDF/images use Quick Look with editing and
+HTML defaults to script-disabled static rendering, with external resources, frames,
+workers, forms, normal network requests, new windows and external navigation blocked.
+WebKit is ephemeral, has no application bridge and never receives pairing headers.
+Only an explicit native confirmation enables scripts for the verified SHA-256 in the
+current viewer; request flags cannot enable them. Retry resets consent, a changed file
+requires new confirmation, and closing forgets it. Inline charts/buttons and embedded
+images that depend on scripts need this interactive mode.
+
+**Interactive mode is trusted content, not a network sandbox.** CSP and WebKit request
+rules do not cover every script networking API: a synthetic loopback test confirmed
+WebRTC/STUN UDP bypasses these rules. The consent explains that scripts may attempt
+network connections. Normal HTTP subresources, external navigation and application
+credentials remain blocked, and native Close/Info/Share stay outside the document.
+Scripts may consume resources or imitate content inside their preview. Static mode
+never runs file scripts, including this WebRTC probe. External-resource reports may be
+incomplete in either mode. Camera/microphone/motion permission requests are denied;
+element fullscreen is disabled. The public geolocation delegate is denied on iOS 27+;
+older iOS uses platform location authorization, which gtmux does not request.
+PDF/images use Quick Look with editing and
 external links disabled. Text/Markdown uses selectable plain text, limited to its first
 512 KiB; sharing preserves the full original. Images have pixel limits before decoding.
 Closing cancels work and removes this viewer's UUID cache. A process crash can leave a

@@ -15,6 +15,9 @@ final class DocumentPreviewController: UIViewController, QLPreviewControllerData
   private let status = UILabel()
   private let progress = UIProgressView(progressViewStyle: .default)
   private let retry = UIButton(type: .system)
+  private let interaction = UIButton(type: .system)
+  private var authorizedScriptHash: String?
+  private var renderID = UUID()
   private let spinner = UIActivityIndicatorView(style: .medium)
   private var closing = false
   private var zh: Bool { request["lang"] as? String == "zh" }
@@ -42,7 +45,16 @@ final class DocumentPreviewController: UIViewController, QLPreviewControllerData
     status.adjustsFontForContentSizeCategory = true
     retry.setTitle(tr("Retry", "重试"), for: .normal)
     retry.addTarget(self, action: #selector(start), for: .touchUpInside)
-    let controls = UIStackView(arrangedSubviews: [spinner, status, retry])
+    interaction.setTitle(tr("Enable interaction", "开启交互"), for: .normal)
+    interaction.accessibilityIdentifier = "document-preview-interaction"
+    interaction.titleLabel?.font = .preferredFont(forTextStyle: .subheadline)
+    interaction.titleLabel?.adjustsFontForContentSizeCategory = true
+    interaction.titleLabel?.numberOfLines = 2
+    interaction.titleLabel?.textAlignment = .center
+    interaction.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+    interaction.addTarget(self, action: #selector(toggleInteraction), for: .touchUpInside)
+    interaction.isHidden = true
+    let controls = UIStackView(arrangedSubviews: [spinner, status, interaction, retry])
     controls.axis = .horizontal; controls.alignment = .fill; controls.spacing = 12
     controls.setContentHuggingPriority(.required, for: .vertical)
     controls.setContentCompressionResistancePriority(.required, for: .vertical)
@@ -50,19 +62,25 @@ final class DocumentPreviewController: UIViewController, QLPreviewControllerData
     let stack = UIStackView(arrangedSubviews: [controls, progress, content])
     stack.axis = .vertical; stack.spacing = 12; stack.translatesAutoresizingMaskIntoConstraints = false
     view.addSubview(stack)
+    let retryWidth = retry.widthAnchor.constraint(greaterThanOrEqualToConstant: 44)
+    retryWidth.priority = UILayoutPriority(999)
+    let interactionWidth = interaction.widthAnchor.constraint(greaterThanOrEqualToConstant: 88)
+    interactionWidth.priority = UILayoutPriority(999)
     NSLayoutConstraint.activate([
       stack.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
       stack.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
       stack.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 12),
       stack.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -12),
       content.heightAnchor.constraint(greaterThanOrEqualToConstant: 1),
-      retry.widthAnchor.constraint(greaterThanOrEqualToConstant: 44), retry.heightAnchor.constraint(greaterThanOrEqualToConstant: 44),
+      interactionWidth, interaction.heightAnchor.constraint(greaterThanOrEqualToConstant: 44),
+      retryWidth, retry.heightAnchor.constraint(greaterThanOrEqualToConstant: 44),
     ])
     start()
   }
 
   @objc private func start() {
     transport?.cleanup()
+    authorizedScriptHash = nil; renderID = UUID(); interaction.isHidden = true
     navigationItem.rightBarButtonItems?.first?.isEnabled = false
     content.subviews.forEach { $0.removeFromSuperview() }
     for child in children { child.willMove(toParent: nil); child.removeFromParent() }
@@ -103,9 +121,9 @@ final class DocumentPreviewController: UIViewController, QLPreviewControllerData
     self.file = file; originalURL = url; title = file.name
     navigationItem.rightBarButtonItems?.forEach { $0.isEnabled = true }
     spinner.stopAnimating(); progress.isHidden = true
-    status.text = "\(file.kind.uppercased()) · \(ByteCountFormatter.string(fromByteCount: file.bytes, countStyle: .file))"
+    updateFileStatus()
     switch file.kind {
-    case "html": showHTML(url)
+    case "html": interaction.isHidden = false; showHTML(url)
     case "text", "markdown":
       do {
         let handle = try FileHandle(forReadingFrom: url); defer { try? handle.close() }
@@ -135,19 +153,53 @@ final class DocumentPreviewController: UIViewController, QLPreviewControllerData
     NSLayoutConstraint.activate([child.leadingAnchor.constraint(equalTo: content.leadingAnchor), child.trailingAnchor.constraint(equalTo: content.trailingAnchor), child.topAnchor.constraint(equalTo: content.topAnchor), child.bottomAnchor.constraint(equalTo: content.bottomAnchor)])
   }
 
+  private var scriptsAllowed: Bool { file != nil && authorizedScriptHash == file?.sha256 }
+
+  private func updateFileStatus() {
+    guard let file else { return }
+    let kind = ["html": "HTML", "pdf": "PDF", "markdown": "Markdown", "text": tr("Text", "文本"), "image": tr("Image", "图片")][file.kind] ?? file.kind
+    let mode = file.kind == "html" ? (scriptsAllowed ? tr(" · Interactive", " · 已开启交互") : tr(" · Static preview", " · 静态预览")) : ""
+    status.text = "\(kind) · \(ByteCountFormatter.string(fromByteCount: file.bytes, countStyle: .file))\(mode)"
+    interaction.setTitle(scriptsAllowed ? tr("Use static preview", "关闭交互") : tr("Enable interaction", "开启交互"), for: .normal)
+  }
+
+  @objc private func toggleInteraction() {
+    guard let file, file.kind == "html", let source = originalURL else { return }
+    if scriptsAllowed { reloadHTML(allowing: nil); return }
+    let alert = UIAlertController(title: tr("Trust this file?", "信任此文件？"),
+      message: tr("Interactive mode runs scripts from this file. They may attempt network connections. Enable it only for a file you trust.", "交互模式会运行文件中的脚本，脚本可能尝试联网。仅对信任的文件开启。"), preferredStyle: .alert)
+    alert.addAction(UIAlertAction(title: tr("Cancel", "取消"), style: .cancel))
+    let enable = UIAlertAction(title: tr("Enable", "开启"), style: .default) { [weak self] _ in
+      guard let self, !self.closing, self.file?.sha256 == file.sha256, self.originalURL == source else { return }
+      self.reloadHTML(allowing: file.sha256)
+    }
+    enable.accessibilityIdentifier = "document-preview-enable-scripts"
+    alert.addAction(enable); present(alert, animated: true)
+  }
+
+  private func reloadHTML(allowing hash: String?) {
+    guard let source = originalURL, file?.kind == "html" else { return }
+    authorizedScriptHash = hash; renderID = UUID()
+    webView?.stopLoading(); webView?.removeFromSuperview(); webView = nil
+    updateFileStatus(); showHTML(source)
+  }
+
   private func showHTML(_ source: URL) {
     do {
+      let generation = UUID(); renderID = generation
+      let allowScripts = scriptsAllowed
       let html = try String(contentsOf: source, encoding: .utf8)
-      let policy = "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; media-src 'none'; base-uri 'none'; form-action 'none'"
+      let policy = "default-src 'none'; script-src \(allowScripts ? "'unsafe-inline'" : "'none'"); style-src 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; media-src 'none'; base-uri 'none'; form-action 'none'"
       let secured = "<!doctype html><meta charset=\"utf-8\"><meta http-equiv=\"Content-Security-Policy\" content=\"\(policy)\">" + html
       let rendered = source.deletingLastPathComponent().appendingPathComponent("Rendered", isDirectory: true)
-      try FileManager.default.createDirectory(at: rendered, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+      try FileManager.default.createDirectory(at: rendered, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
       let target = rendered.appendingPathComponent("preview.html")
       try secured.write(to: target, atomically: true, encoding: .utf8)
       try FileManager.default.setAttributes([.posixPermissions: 0o600, .protectionKey: FileProtectionType.complete], ofItemAtPath: target.path)
       htmlURL = target
       let configuration = WKWebViewConfiguration()
       configuration.websiteDataStore = .nonPersistent()
+      configuration.defaultWebpagePreferences.allowsContentJavaScript = allowScripts
       configuration.preferences.javaScriptCanOpenWindowsAutomatically = false
       if #available(iOS 15.4, *) { configuration.preferences.isElementFullscreenEnabled = false }
       let rules = "[" + ["http", "https", "ws", "wss", "ftp"].map {
@@ -155,7 +207,7 @@ final class DocumentPreviewController: UIViewController, QLPreviewControllerData
       }.joined(separator: ",") + "]"
       WKContentRuleListStore.default().compileContentRuleList(forIdentifier: "gtmux-document-offline-v1", encodedContentRuleList: rules) { [weak self] list, error in
         DispatchQueue.main.async {
-          guard let self, !self.closing, self.htmlURL == target, self.originalURL == source else { return }
+          guard let self, !self.closing, self.htmlURL == target, self.originalURL == source, self.renderID == generation else { return }
           guard let list, error == nil else { self.showFailure(.format); return }
           configuration.userContentController.add(list)
           // No WKScriptMessageHandler, user credentials or business API bridge.
@@ -170,6 +222,7 @@ final class DocumentPreviewController: UIViewController, QLPreviewControllerData
 
   func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction,
                decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+    guard !closing, self.webView === webView else { decisionHandler(.cancel); return }
     let url = navigationAction.request.url
     let ownDocument = url?.isFileURL == true && url?.standardizedFileURL.path == htmlURL?.standardizedFileURL.path
     decisionHandler(ownDocument && navigationAction.targetFrame?.isMainFrame == true && !navigationAction.shouldPerformDownload ? .allow : .cancel)
