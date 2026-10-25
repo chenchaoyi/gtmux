@@ -295,6 +295,7 @@ private func isStale(_ context: ActivityViewContext<GtmuxActivityAttributes>) ->
 @main
 struct GtmuxWidgetBundle: WidgetBundle {
   var body: some Widget {
+    if #available(iOS 17.0, *) { GtmuxUsageWidget() }
     if #available(iOS 16.1, *) { GtmuxLiveActivity() }
   }
 }

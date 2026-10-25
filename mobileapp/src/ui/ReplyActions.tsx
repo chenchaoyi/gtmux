@@ -1,6 +1,7 @@
 // Actions apply to the complete textual reply, including collapsed segments.
 import React, {useEffect, useState} from 'react';
-import {AccessibilityInfo, Alert, Share, StyleSheet, TouchableOpacity, View, Text} from 'react-native';
+import {AccessibilityInfo, Alert, Share, StyleSheet, TouchableOpacity, View} from 'react-native';
+import {ChromeText as Text} from './ChromeText';
 import Clipboard from '@react-native-clipboard/clipboard';
 import {CheckIcon, CopyIcon, ShareIcon, Chevron} from './Icons';
 import type {Lang} from '../i18n';

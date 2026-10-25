@@ -24,6 +24,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
 
     // Route notification taps/presentation through the push module → JS.
     UNUserNotificationCenter.current().delegate = self
+    UsageWidgetRefresh.shared.register()
 
     window = UIWindow(frame: UIScreen.main.bounds)
 
@@ -37,6 +38,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
   }
 
   // MARK: hardware keyboard (iPad) — the keymap JS registered, as main-menu commands.
+
+  func application(_ app: UIApplication, open url: URL,
+                   options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+    RCTLinkingManager.application(app, open: url, options: options)
+  }
   // The responder chain ends here, so a command from any first responder reaches it.
 
   override func buildMenu(with builder: UIMenuBuilder) {

@@ -7,7 +7,8 @@
 // a plainer product than the one being reviewed.
 
 import React from 'react';
-import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {StyleSheet, TouchableOpacity, View} from 'react-native';
+import {ChromeText as Text} from './ChromeText';
 import {Palette, StatusColor, counts} from './theme';
 import {statusLabel, Lang} from '../i18n';
 import {TestIds} from '../constants/testIds';

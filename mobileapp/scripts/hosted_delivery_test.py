@@ -28,7 +28,10 @@ def der_item(tag, value):
 def der_dictionary(fields):
     pairs = []
     for key, value in fields.items():
-        encoded = der_item(0x01, b"\xff" if value else b"\x00") if isinstance(value, bool) else der_item(0x0C, value.encode())
+        if isinstance(value, list):
+            encoded = der_item(0x30, b"".join(der_item(0x0C, item.encode()) for item in value))
+        else:
+            encoded = der_item(0x01, b"\xff" if value else b"\x00") if isinstance(value, bool) else der_item(0x0C, value.encode())
         pairs.append(der_item(0x30, der_item(0x0C, key.encode()) + encoded))
     return der_item(0x70, b"\x02\x01\x01" + der_item(0xB0, b"".join(pairs)))
 
@@ -97,8 +100,22 @@ class HostedDeliveryTests(unittest.TestCase):
                 delivery.der_entitlements(data)
             self.assertNotIn("synthetic-sensitive-payload", str(error.exception))
 
+    def test_exported_app_groups_require_profile_authorization(self):
+        key = "com.apple.security.application-groups"
+        fields = {key: ["group.example.usage"]}
+        signed = delivery.der_entitlements(der_dictionary(fields))
+        self.assertEqual(signed, fields)
+        delivery.check_app_groups(signed, fields)
+        delivery.check_app_groups({}, {})  # Older release sources have no group.
+        for profile in ({}, {key: ["group.other"]}, {key: "group.example.usage"}):
+            with self.subTest(profile=profile), self.assertRaises(delivery.DeliveryError):
+                delivery.check_app_groups(signed, profile)
+        for invalid in ("group.example.usage", [""], ["group.example.usage"] * 2):
+            with self.subTest(invalid=invalid), self.assertRaises(delivery.DeliveryError):
+                delivery.check_app_groups({key: invalid}, fields)
+
     def test_export_reads_der_and_rejects_debuggable_signed_extensions(self):
-        for unsafe in (None, True, "false"):
+        for unsafe in (None, True, "false", "unapproved-group"):
             with self.subTest(unsafe=unsafe), tempfile.TemporaryDirectory() as tmp:
                 root = Path(tmp)
                 for name in ("logs", "signing", "export"):
@@ -116,12 +133,19 @@ class HostedDeliveryTests(unittest.TestCase):
                     bundle = plistlib.loads((package / "Info.plist").read_bytes())["CFBundleIdentifier"]
                     if command[0] == "security":
                         profile = self.profile(bundle)
+                        if bundle != "com.gtmux.app.notificationservice":
+                            profile["Entitlements"]["com.apple.security.application-groups"] = ["group.example.usage"]
                         profile["ExpirationDate"] = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=1)
                         stdout.write(plistlib.dumps(profile))
                     else:
                         fields = {"application-identifier": "ABCDEFGHIJ." + bundle, "get-task-allow": False, "aps-environment": "production"}
+                        if bundle != "com.gtmux.app.notificationservice":
+                            fields["com.apple.security.application-groups"] = ["group.example.usage"]
                         if unsafe is not None and bundle == "com.gtmux.app.widget":
-                            fields["get-task-allow"] = unsafe
+                            if unsafe == "unapproved-group":
+                                fields["com.apple.security.application-groups"] = ["group.unapproved"]
+                            else:
+                                fields["get-task-allow"] = unsafe
                         stdout.write(der_dictionary(fields) if "--der" in command else b"[Dict] human display")
                     return subprocess.CompletedProcess(command, 0)
 
@@ -131,7 +155,7 @@ class HostedDeliveryTests(unittest.TestCase):
                         strict = [call.args[0] for call in run.call_args_list if call.args[0][0] == "codesign"]
                         self.assertCountEqual(strict, [["codesign", "--verify", "--strict", str(package)] for package in packages])
                     else:
-                        with self.assertRaisesRegex(delivery.DeliveryError, "signed entitlements"):
+                        with self.assertRaisesRegex(delivery.DeliveryError, "signed entitlements|App Groups"):
                             delivery.verify_export(root, "1.2.3", "4.1", "ABCDEFGHIJ")
 
     def test_wrong_team_bundle_or_expired_profile_rejected(self):

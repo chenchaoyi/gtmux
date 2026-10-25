@@ -14,6 +14,7 @@ delete `<key>.png`; a missing icon simply falls back to the neutral monogram.
 |---|---|---|
 | `opencode.png` | opencode | SST / opencode |
 | `codex.png` | Codex | OpenAI |
+| `claude.png` | Claude Code | Anthropic |
 | `gemini.png` | Gemini CLI | Google |
 | `grok.png` | Grok | xAI |
 | `glm.png` | GLM | Zhipu AI |
@@ -33,3 +34,9 @@ Notes:
 `9e983b4f649c25c6ca0623a50be1a6e705fd8f49f756638b980fa13b40575ab6`.
 The paths are unchanged; a white canvas keeps the official black mark legible in
 both UI themes. This identifies compatibility and implies no endorsement.
+
+`claude.png` is the official Claude Desktop icon, format-converted from the
+installed `com.anthropic.claudefordesktop` 2.9939.4 application icon (`electron.icns`).
+It identifies Claude across gtmux, including usage widgets. The icon paths and colors
+are unchanged. PNG SHA-256: `8d8d51ac7dff1060c5f787d5aab984950650ba4f29d73a24d5de642778345a35`.
+Widget `UsageAgent-*` copies preserve the canonical PNG bytes in this directory.

@@ -591,7 +591,7 @@ func payloadFile(payload []byte) (*os.File, error) {
 
 // notifyAgentIcon returns a PNG path for agentKey's committed built-in icon (embedded
 // assets/agent-icons/<key>.png), cached under the state dir, or "" when the agent has no
-// built-in icon (Claude/Cursor use their .app icon, cached separately as state.IconPath).
+// built-in icon (the installed-app fallback is cached separately as state.IconPath).
 // Written fresh each call so a gtmux update's new icon takes effect.
 func notifyAgentIcon(agentKey string) string {
 	b := assets.AgentIcon(agentKey)

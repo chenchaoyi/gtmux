@@ -31,7 +31,7 @@ import {MarkdownView, MdColors} from './MarkdownView';
 import {separatorLabels} from './time';
 import {nativeFontFamily} from './term';
 import {BrandLoader} from './BrandLoader';
-import {CHROME_MAX_SCALE} from './textScale';
+import {ChromeText} from './ChromeText';
 import {LiveProgress} from './LiveProgress';
 import {segmentKey, stepsOpen} from './chatSteps';
 import {ToolSteps} from './ToolSteps';
@@ -409,7 +409,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
             controlsShift !== undefined && {transform: [{translateY: controlsShift}]},
           ]}>
           <TouchableOpacity testID={TestIds.detail.collapseAll} accessibilityRole="button" accessibilityLabel={collapsedAll ? (lang === 'zh' ? '展开全部' : 'Expand all') : (lang === 'zh' ? '折叠全部' : 'Collapse all')} onPress={collapsedAll ? expandAll : collapseAll} activeOpacity={0.7} hitSlop={hitSlop} style={styles.globalFold}>
-            <Text maxFontSizeMultiplier={CHROME_MAX_SCALE} style={styles.collapseBarText}>{collapsedAll ? (lang === 'zh' ? '展开全部' : 'Expand all') : (lang === 'zh' ? '折叠全部' : 'Collapse all')}</Text>
+            <ChromeText style={styles.collapseBarText}>{collapsedAll ? (lang === 'zh' ? '展开全部' : 'Expand all') : (lang === 'zh' ? '折叠全部' : 'Collapse all')}</ChromeText>
           </TouchableOpacity>
         </Animated.View>
       )}

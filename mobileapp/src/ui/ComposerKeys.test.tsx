@@ -139,3 +139,15 @@ test('a terminal key blocks even a text-send callback captured before the next r
  expect(tree.root.findAllByType(TextInput)[0].props.value).toBe('Keep this draft');
  await act(async () => finish({ok:true}));
 });
+
+
+test('draft send and expand controls expose actionable native semantics', async () => {
+  const tree = await render(jest.fn());
+  await act(async () => tree.root.findAllByProps({testID: TestIds.composer.keyboard})[0].props.onPress());
+  const control = () => tree.root.findByProps({testID: TestIds.composer.send});
+  expect(control().props.accessibilityRole).toBe('button');
+  expect(control().props.accessibilityState).toEqual({disabled: true});
+  expect(tree.root.findByProps({testID: TestIds.composer.expand}).props.accessibilityRole).toBe('button');
+  await act(async () => tree.root.findByProps({testID: TestIds.composer.input}).props.onChangeText('A synthetic draft'));
+  expect(control().props.accessibilityState).toEqual({disabled: false});
+});

@@ -28,7 +28,7 @@ const flush = async () => {
   for (let i = 0; i < 6; i++) await act(async () => { await Promise.resolve(); });
 };
 
-async function mount(sendResult: jest.Mock, navigate?: jest.Mock, transcript?: jest.Mock, status = 'idle') {
+async function mount(sendResult: jest.Mock, navigate?: jest.Mock, transcript?: jest.Mock, status = 'idle', onBack?: jest.Mock) {
   const agent: any = {pane_id: '%12', session: 'dev', window: '0', pane: '0', loc: 'dev:0.0', agent: 'Claude Code',
     status, task: '', latest: false, activity: false, source: 'tmux'};
   const client = {
@@ -45,7 +45,7 @@ async function mount(sendResult: jest.Mock, navigate?: jest.Mock, transcript?: j
   (useApp as jest.Mock).mockReturnValue({
     pal: paletteFor('dark'), lang: 'en', fontPref: 'auto', mac: {name: 'Mac'}, returnSends: false, defaultDetailMode: 'terminal',
   });
-  const view = <DetailView agent={agent} initialMode={transcript ? 'chat' : 'terminal'} />;
+  const view = <DetailView agent={agent} initialMode={transcript ? 'chat' : 'terminal'} onBack={onBack} />;
   await act(async () => {
     tree = renderer.create(navigate ? <NavigationContext.Provider value={{navigate} as any}>{view}</NavigationContext.Provider> : view);
   });
@@ -58,6 +58,21 @@ const send = async (t: renderer.ReactTestRenderer, text: string) => {
   });
   await flush();
 };
+
+test('conversation navigation exposes its action and selected mode to accessibility', async () => {
+  const back = jest.fn();
+  const t = await mount(jest.fn(), undefined, undefined, 'idle', back);
+  const get = (testID: string) => t.root.findByProps({testID});
+  const semantic = (testID: string) => t.root.findAllByProps({testID}).find(node => node.props.accessibilityRole)?.props;
+  expect(get('detail-back').props.accessibilityRole).toBe('button');
+  expect(semantic('detail-mode-terminal')?.accessibilityState).toEqual({selected: true});
+  expect(semantic('detail-mode-chat')?.accessibilityRole).toBe('button');
+  await act(async () => get('detail-mode-chat').props.onPress());
+  expect(semantic('detail-mode-chat')?.accessibilityState).toEqual({selected: true});
+  expect(semantic('detail-mode-terminal')?.accessibilityState).toEqual({selected: false});
+  await act(async () => get('detail-back').props.onPress());
+  expect(back).toHaveBeenCalledTimes(1);
+});
 
 test('refused: pair again, no retry, and the text is back in the box', async () => {
   const navigate = jest.fn();

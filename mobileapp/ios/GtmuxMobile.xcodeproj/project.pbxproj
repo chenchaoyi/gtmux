@@ -7,15 +7,19 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		00A756D35516E95123103665 /* UsageWidgetViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB4EB65DA8FE5A7514B63165 /* UsageWidgetViews.swift */; };
 		079DDB2F5521E6812FA0D02F /* GtmuxActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1819D8849B51096E179E069 /* GtmuxActivityAttributes.swift */; };
 		093C8A7BF3C604829E356F61 /* CopyText.m in Sources */ = {isa = PBXBuildFile; fileRef = AE647AA99846EFD4CD81447D /* CopyText.m */; };
 		0C80B921A6F3F58F76C31292 /* libPods-GtmuxMobile.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DCACB8F33CDC322A6C60F78 /* libPods-GtmuxMobile.a */; };
 		11CF7E4DEBC3064007292C65 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		17E383E65A990DA6E5832AFE /* GtmuxDocuments.swift in Sources */ = {isa = PBXBuildFile; fileRef = 310F828FDD6A5D78EF0BD51D /* GtmuxDocuments.swift */; };
+		1D7B7A4847F4154B23652157 /* UsageSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FE194282D4681BF8D1C6866 /* UsageSnapshot.swift */; };
 		1E8B7D833636D41EE5F3645B /* DebugSettings.m in Sources */ = {isa = PBXBuildFile; fileRef = 41E53ADB1CC55C63E0F70B7C /* DebugSettings.m */; };
 		2153ADCBDCBC5F1A71290418 /* GtmuxDocuments.m in Sources */ = {isa = PBXBuildFile; fileRef = FBF358E511BE2CA9AC18615D /* GtmuxDocuments.m */; };
 		227FD57BE2327862D4B7D365 /* DocumentTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8038A10BB248C45F0E582477 /* DocumentTransport.swift */; };
+		26F9C9B3C846900A759E12EF /* UsageWidgetsModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = A42EBB17DE003420822BE14F /* UsageWidgetsModule.swift */; };
+		2B3A22CA8CA1C3726FA0FA54 /* WidgetOwnerConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BA3645D2A377E826FFF1198 /* WidgetOwnerConnection.swift */; };
 		31E3E4F233B77A8152F6210D /* LiveActivityModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE9A810E4413FBDAACA7916E /* LiveActivityModule.swift */; };
 		34F5DA65A7852F93CDBC3AC7 /* DocumentPreviewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A987514AB2EB77A65A3204C /* DocumentPreviewController.swift */; };
 		3545525E293EB9EBC669898D /* GtmuxActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1819D8849B51096E179E069 /* GtmuxActivityAttributes.swift */; };
@@ -25,25 +29,35 @@
 		488CA07828C353055FC40FE3 /* KeyCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = F614C1FAF7A8DE3E89DABBDB /* KeyCommands.swift */; };
 		4C4E22343DFB2E044AD8F4C3 /* KeyCommands.m in Sources */ = {isa = PBXBuildFile; fileRef = DDC63FD2A3416F739D0A1839 /* KeyCommands.m */; };
 		4CA2546E602365F6B5CE344E /* CopyTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B2317FBEDEE60A62CEA4AB6 /* CopyTextView.swift */; };
+		4EE2FD64D6F45FF0E137F26C /* UsageWidgetRefresh.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EDEF18007E30E77216ABB2B /* UsageWidgetRefresh.swift */; };
+		4F39CAED87BC78C87FF681A0 /* UsageWidgetsModule.m in Sources */ = {isa = PBXBuildFile; fileRef = CD7270A84567FBC29F5ED5FF /* UsageWidgetsModule.m */; };
 		50B8E5CA296B6F03F6B84ECB /* TermSelectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 471385D5B115EF46A41392AC /* TermSelectionManager.swift */; };
 		5167744A528038764DAF9BD8 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 093EDA5FAEFE3016E1CC45F3 /* Haptics.swift */; };
+		57F653510DE6FF7F4FE6492F /* UsageSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FE194282D4681BF8D1C6866 /* UsageSnapshot.swift */; };
+		63EBCD9A1929C93834020707 /* WidgetUsageRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22AEE59ECB1BEE185D99CD10 /* WidgetUsageRequest.swift */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		796520A51FA5C1C9E776A832 /* TermSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F72C64B2FB140D5F0520CA0D /* TermSelectionView.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		83BC7F134D226E8CB6317C68 /* HQMemory.m in Sources */ = {isa = PBXBuildFile; fileRef = 03497385A8CDE336A262AE97 /* HQMemory.m */; };
 		90337D0D47584D8ED7702B27 /* CopyTextManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2C35001BD69F212C27C0E37 /* CopyTextManager.swift */; };
+		92C19EADEC5F19552BD6F53E /* UsageWidgetDefinition.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FD4A7003728E1AD84D94571 /* UsageWidgetDefinition.swift */; };
 		9362A88EBB6225D84FBAA822 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6450CBE20B8C88B43F242B3C /* Foundation.framework */; };
+		9615E8B864C87D09B4B68A34 /* UsageSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 911375926AB54183E98E4F1D /* UsageSnapshotStore.swift */; };
+		9A059F06B22E950ACF30FF35 /* UsageSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 911375926AB54183E98E4F1D /* UsageSnapshotStore.swift */; };
 		9B1C87A523DBCCFF3901E6DB /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6534B8BD6B0B1AC648A6992 /* NotificationService.swift */; };
 		9CB616CCA2E1A0787F5AB6E3 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6450CBE20B8C88B43F242B3C /* Foundation.framework */; };
 		A583F29FA5633DC72EEFA30E /* GtmuxWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CC356C44C721110E87B71238 /* GtmuxWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A871636895EC61F9183130BE /* LiveActivityModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 2608DA1E53D84193347DD36A /* LiveActivityModule.m */; };
 		AC3D7DC67DBD368B6E0BE2B8 /* GtmuxWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91D5E11FEF927BEFA4B1338A /* GtmuxWidget.swift */; };
 		B67B43A4AABD1CBA3AF68F95 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 20D906467D450616BB69C208 /* Assets.xcassets */; };
+		C0FFD988D365D07B0E1FB0C7 /* UsageWidgetPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E12A79CBA12602B4815E81A /* UsageWidgetPresentation.swift */; };
 		C905FC3DD655271F2CDBBA9A /* ConversationText.m in Sources */ = {isa = PBXBuildFile; fileRef = C754CD8C96EE1CEA9E247527 /* ConversationText.m */; };
 		D146AEE5CD3CADCF570FDE12 /* TermSelection.m in Sources */ = {isa = PBXBuildFile; fileRef = 0DE4F217AE1C55AC5BC16A0B /* TermSelection.m */; };
+		D23582A8764B6A4F9D8F966D /* UsageWidgetSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25E815F229EF6E539720EC3A /* UsageWidgetSelection.swift */; };
 		E190B585A37BBB5CBBB56670 /* Haptics.m in Sources */ = {isa = PBXBuildFile; fileRef = CD1AC6D8B3BC135CA56C5653 /* Haptics.m */; };
 		E25AA8FA4D868F3163B0419D /* HQMemory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D3A1A7B6F2AD4E90DF12E33 /* HQMemory.swift */; };
 		F0ECE9F715E0351FE5619846 /* ConversationTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D63D39FD6CE1D201A21F8F0C /* ConversationTextView.swift */; };
+		F1E1182EA981A547C85A1095 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = F602BC5F68D10C3077EE7820 /* Localizable.xcstrings */; };
 		FD4F3E492F1B10AEEA7F3873 /* DocumentStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC4C83C073F7BD1C59E30FB5 /* DocumentStatusView.swift */; };
 /* End PBXBuildFile section */
 
@@ -84,42 +98,71 @@
 		093EDA5FAEFE3016E1CC45F3 /* Haptics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = Haptics.swift; path = GtmuxMobile/Haptics.swift; sourceTree = "<group>"; };
 		0B2317FBEDEE60A62CEA4AB6 /* CopyTextView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CopyTextView.swift; sourceTree = "<group>"; };
 		0DE4F217AE1C55AC5BC16A0B /* TermSelection.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = TermSelection.m; sourceTree = "<group>"; };
+		0FD4A7003728E1AD84D94571 /* UsageWidgetDefinition.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UsageWidgetDefinition.swift; sourceTree = "<group>"; };
 		12685C65B3B24D76DCD8E1FC /* DebugSettings.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = DebugSettings.swift; path = GtmuxMobile/DebugSettings.swift; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* GtmuxMobile.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GtmuxMobile.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = GtmuxMobile/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = GtmuxMobile/Info.plist; sourceTree = "<group>"; };
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = GtmuxMobile/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		1D3A1A7B6F2AD4E90DF12E33 /* HQMemory.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HQMemory.swift; path = GtmuxMobile/HQMemory.swift; sourceTree = "<group>"; };
+		1E66782A2E5FD0767FC538D3 /* UsageSnapshotStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UsageSnapshotStore.swift; sourceTree = "<group>"; };
 		20D906467D450616BB69C208 /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		22AEE59ECB1BEE185D99CD10 /* WidgetUsageRequest.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetUsageRequest.swift; sourceTree = "<group>"; };
+		25E815F229EF6E539720EC3A /* UsageWidgetSelection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UsageWidgetSelection.swift; sourceTree = "<group>"; };
 		2608DA1E53D84193347DD36A /* LiveActivityModule.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = LiveActivityModule.m; path = GtmuxMobile/LiveActivityModule.m; sourceTree = "<group>"; };
 		310F828FDD6A5D78EF0BD51D /* GtmuxDocuments.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GtmuxDocuments.swift; sourceTree = "<group>"; };
 		3A987514AB2EB77A65A3204C /* DocumentPreviewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DocumentPreviewController.swift; sourceTree = "<group>"; };
 		3B4392A12AC88292D35C810B /* Pods-GtmuxMobile.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GtmuxMobile.debug.xcconfig"; path = "Target Support Files/Pods-GtmuxMobile/Pods-GtmuxMobile.debug.xcconfig"; sourceTree = "<group>"; };
 		41E53ADB1CC55C63E0F70B7C /* DebugSettings.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = DebugSettings.m; path = GtmuxMobile/DebugSettings.m; sourceTree = "<group>"; };
+		43FE82304398401A6CBD85B8 /* WidgetUsageRequest.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetUsageRequest.swift; sourceTree = "<group>"; };
 		471385D5B115EF46A41392AC /* TermSelectionManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TermSelectionManager.swift; sourceTree = "<group>"; };
 		4ECA7D8A49AE1F83D34BAA70 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		5709B34CF0A7D63546082F79 /* Pods-GtmuxMobile.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GtmuxMobile.release.xcconfig"; path = "Target Support Files/Pods-GtmuxMobile/Pods-GtmuxMobile.release.xcconfig"; sourceTree = "<group>"; };
 		5DCACB8F33CDC322A6C60F78 /* libPods-GtmuxMobile.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-GtmuxMobile.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		5EDEF18007E30E77216ABB2B /* UsageWidgetRefresh.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UsageWidgetRefresh.swift; sourceTree = "<group>"; };
 		6450CBE20B8C88B43F242B3C /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		6CD68DAF2D8832BE77BB4E16 /* UsageSnapshotStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UsageSnapshotStore.swift; sourceTree = "<group>"; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = GtmuxMobile/AppDelegate.swift; sourceTree = "<group>"; };
+		763782373ACF78BF063EC6D7 /* UsageWidgetPresentation.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UsageWidgetPresentation.swift; sourceTree = "<group>"; };
+		777277D2A05C4A58D428B08B /* WidgetUsageRequest.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetUsageRequest.swift; sourceTree = "<group>"; };
+		7873E9376ED7C36255EB83AD /* UsageWidgetViews.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UsageWidgetViews.swift; sourceTree = "<group>"; };
 		8038A10BB248C45F0E582477 /* DocumentTransport.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DocumentTransport.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = GtmuxMobile/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		8736F26236CCA1F3ACBA24D1 /* WidgetOwnerConnection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetOwnerConnection.swift; sourceTree = "<group>"; };
 		8C33A1DEFD37FCD54FCBB330 /* GtmuxNotificationService.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GtmuxNotificationService.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		8FE194282D4681BF8D1C6866 /* UsageSnapshot.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UsageSnapshot.swift; sourceTree = "<group>"; };
+		911375926AB54183E98E4F1D /* UsageSnapshotStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UsageSnapshotStore.swift; sourceTree = "<group>"; };
 		91D5E11FEF927BEFA4B1338A /* GtmuxWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GtmuxWidget.swift; sourceTree = "<group>"; };
+		9914859C4DCB50F696ED6CCE /* UsageWidgetViews.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UsageWidgetViews.swift; sourceTree = "<group>"; };
+		9BA3645D2A377E826FFF1198 /* WidgetOwnerConnection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetOwnerConnection.swift; sourceTree = "<group>"; };
+		9E12A79CBA12602B4815E81A /* UsageWidgetPresentation.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UsageWidgetPresentation.swift; sourceTree = "<group>"; };
 		A2C35001BD69F212C27C0E37 /* CopyTextManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CopyTextManager.swift; sourceTree = "<group>"; };
+		A42EBB17DE003420822BE14F /* UsageWidgetsModule.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UsageWidgetsModule.swift; sourceTree = "<group>"; };
+		A5EEF4AA01558F9C55831056 /* WidgetOwnerConnection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetOwnerConnection.swift; sourceTree = "<group>"; };
 		A660F7F131237D343EC00CAE /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AE647AA99846EFD4CD81447D /* CopyText.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = CopyText.m; sourceTree = "<group>"; };
 		AE9A810E4413FBDAACA7916E /* LiveActivityModule.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = LiveActivityModule.swift; path = GtmuxMobile/LiveActivityModule.swift; sourceTree = "<group>"; };
+		AED18ABDF8CC715F1F04E100 /* UsageSnapshot.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UsageSnapshot.swift; sourceTree = "<group>"; };
+		BB154637AC059F705CB4AE24 /* UsageSnapshot.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UsageSnapshot.swift; sourceTree = "<group>"; };
+		BF0718A21DF33D41D7A85017 /* UsageSnapshotStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UsageSnapshotStore.swift; sourceTree = "<group>"; };
 		C754CD8C96EE1CEA9E247527 /* ConversationText.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = ConversationText.m; sourceTree = "<group>"; };
+		C941E694C35314041877824E /* UsageWidgetSelection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UsageWidgetSelection.swift; sourceTree = "<group>"; };
+		CB4EB65DA8FE5A7514B63165 /* UsageWidgetViews.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UsageWidgetViews.swift; sourceTree = "<group>"; };
 		CC356C44C721110E87B71238 /* GtmuxWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GtmuxWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		CC4C83C073F7BD1C59E30FB5 /* DocumentStatusView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DocumentStatusView.swift; sourceTree = "<group>"; };
 		CD1AC6D8B3BC135CA56C5653 /* Haptics.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = Haptics.m; path = GtmuxMobile/Haptics.m; sourceTree = "<group>"; };
+		CD7270A84567FBC29F5ED5FF /* UsageWidgetsModule.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = UsageWidgetsModule.m; sourceTree = "<group>"; };
+		CDB23231DF150A974D85DEB5 /* UsageSnapshot.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UsageSnapshot.swift; sourceTree = "<group>"; };
 		D1819D8849B51096E179E069 /* GtmuxActivityAttributes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GtmuxActivityAttributes.swift; sourceTree = "<group>"; };
 		D63D39FD6CE1D201A21F8F0C /* ConversationTextView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ConversationTextView.swift; sourceTree = "<group>"; };
 		D6534B8BD6B0B1AC648A6992 /* NotificationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		DC1682DCCB791CCA878639BD /* UsageWidgetPresentation.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UsageWidgetPresentation.swift; sourceTree = "<group>"; };
 		DDC63FD2A3416F739D0A1839 /* KeyCommands.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = KeyCommands.m; path = GtmuxMobile/KeyCommands.m; sourceTree = "<group>"; };
+		E2AF3C32B5C67557C6714CB9 /* UsageWidgetViews.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UsageWidgetViews.swift; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		EE42CD0E5372A89A937EB43B /* ConversationTextManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ConversationTextManager.swift; sourceTree = "<group>"; };
+		F5E1C7D2A0EACDDB42D0917E /* UsageWidgetPresentation.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UsageWidgetPresentation.swift; sourceTree = "<group>"; };
+		F602BC5F68D10C3077EE7820 /* Localizable.xcstrings */ = {isa = PBXFileReference; includeInIndex = 1; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		F614C1FAF7A8DE3E89DABBDB /* KeyCommands.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = KeyCommands.swift; path = GtmuxMobile/KeyCommands.swift; sourceTree = "<group>"; };
 		F72C64B2FB140D5F0520CA0D /* TermSelectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TermSelectionView.swift; sourceTree = "<group>"; };
 		FBF358E511BE2CA9AC18615D /* GtmuxDocuments.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = GtmuxDocuments.m; sourceTree = "<group>"; };
@@ -175,6 +218,18 @@
 			name = GtmuxMobile;
 			sourceTree = "<group>";
 		};
+		1582C27090D18A892EE2441E /* UsageWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				5EDEF18007E30E77216ABB2B /* UsageWidgetRefresh.swift */,
+				A42EBB17DE003420822BE14F /* UsageWidgetsModule.swift */,
+				CD7270A84567FBC29F5ED5FF /* UsageWidgetsModule.m */,
+				0FD4A7003728E1AD84D94571 /* UsageWidgetDefinition.swift */,
+			);
+			name = UsageWidgets;
+			path = UsageWidgets;
+			sourceTree = "<group>";
+		};
 		2894C57B689AF715A87AC7F9 /* TermSelection */ = {
 			isa = PBXGroup;
 			children = (
@@ -220,6 +275,37 @@
 			path = ConversationText;
 			sourceTree = "<group>";
 		};
+		45356FA28D46FA54ABB6BB78 /* ../../shared/UsageWidgets/Sources/GtmuxUsageWidgetHost */ = {
+			isa = PBXGroup;
+			children = (
+				9BA3645D2A377E826FFF1198 /* WidgetOwnerConnection.swift */,
+				22AEE59ECB1BEE185D99CD10 /* WidgetUsageRequest.swift */,
+			);
+			name = ../../shared/UsageWidgets/Sources/GtmuxUsageWidgetHost;
+			path = ../../shared/UsageWidgets/Sources/GtmuxUsageWidgetHost;
+			sourceTree = "<group>";
+		};
+		523E476EF1A8D982F158C2ED /* ../../shared/UsageWidgets/Sources/GtmuxUsageWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				BB154637AC059F705CB4AE24 /* UsageSnapshot.swift */,
+				1E66782A2E5FD0767FC538D3 /* UsageSnapshotStore.swift */,
+			);
+			name = ../../shared/UsageWidgets/Sources/GtmuxUsageWidgets;
+			path = ../../shared/UsageWidgets/Sources/GtmuxUsageWidgets;
+			sourceTree = "<group>";
+		};
+		56553EE2DEAC8877850C728E /* ../../shared/UsageWidgets/Sources/GtmuxUsageWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				763782373ACF78BF063EC6D7 /* UsageWidgetPresentation.swift */,
+				E2AF3C32B5C67557C6714CB9 /* UsageWidgetViews.swift */,
+				C941E694C35314041877824E /* UsageWidgetSelection.swift */,
+			);
+			name = ../../shared/UsageWidgets/Sources/GtmuxUsageWidgets;
+			path = ../../shared/UsageWidgets/Sources/GtmuxUsageWidgets;
+			sourceTree = "<group>";
+		};
 		5C84F1475037DF8166F36D53 /* CopyText */ = {
 			isa = PBXGroup;
 			children = (
@@ -229,6 +315,16 @@
 			);
 			name = CopyText;
 			path = CopyText;
+			sourceTree = "<group>";
+		};
+		62365AD4D710288ED364F44C /* ../../shared/UsageWidgets/Sources/GtmuxUsageWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				DC1682DCCB791CCA878639BD /* UsageWidgetPresentation.swift */,
+				7873E9376ED7C36255EB83AD /* UsageWidgetViews.swift */,
+			);
+			name = ../../shared/UsageWidgets/Sources/GtmuxUsageWidgets;
+			path = ../../shared/UsageWidgets/Sources/GtmuxUsageWidgets;
 			sourceTree = "<group>";
 		};
 		7AD476B68475D8875A33F26E /* iOS */ = {
@@ -246,6 +342,16 @@
 			name = Libraries;
 			sourceTree = "<group>";
 		};
+		836DAC3D9A811E0D86AFB598 /* ../../shared/UsageWidgets/Sources/GtmuxUsageWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				CDB23231DF150A974D85DEB5 /* UsageSnapshot.swift */,
+				6CD68DAF2D8832BE77BB4E16 /* UsageSnapshotStore.swift */,
+			);
+			name = ../../shared/UsageWidgets/Sources/GtmuxUsageWidgets;
+			path = ../../shared/UsageWidgets/Sources/GtmuxUsageWidgets;
+			sourceTree = "<group>";
+		};
 		83CBB9F61A601CBA00E9B192 = {
 			isa = PBXGroup;
 			children = (
@@ -260,6 +366,18 @@
 				5C84F1475037DF8166F36D53 /* CopyText */,
 				3CAC1153AACF8A7C8109078A /* ConversationText */,
 				2987BF941E9DBFB141869B78 /* Documents */,
+				E51B5289FE6CEFAF2E14427C /* ../../shared/UsageWidgets/Sources/GtmuxUsageWidgets */,
+				B1D745D0749FAA97ED1C1B1D /* ../../shared/UsageWidgets/Sources/GtmuxUsageWidgets */,
+				1582C27090D18A892EE2441E /* UsageWidgets */,
+				CBB1263855A439A3A628DF9A /* ../../shared/UsageWidgets/Sources/GtmuxUsageWidgets */,
+				62365AD4D710288ED364F44C /* ../../shared/UsageWidgets/Sources/GtmuxUsageWidgets */,
+				45356FA28D46FA54ABB6BB78 /* ../../shared/UsageWidgets/Sources/GtmuxUsageWidgetHost */,
+				836DAC3D9A811E0D86AFB598 /* ../../shared/UsageWidgets/Sources/GtmuxUsageWidgets */,
+				91D9861BDC288573B913D7E8 /* ../../shared/UsageWidgets/Sources/GtmuxUsageWidgets */,
+				AA00308919F35EDFEBD6A028 /* ../../shared/UsageWidgets/Sources/GtmuxUsageWidgetHost */,
+				523E476EF1A8D982F158C2ED /* ../../shared/UsageWidgets/Sources/GtmuxUsageWidgets */,
+				56553EE2DEAC8877850C728E /* ../../shared/UsageWidgets/Sources/GtmuxUsageWidgets */,
+				93D94A3BC463707BB65E9BF5 /* ../../shared/UsageWidgets/Sources/GtmuxUsageWidgetHost */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -276,6 +394,37 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		91D9861BDC288573B913D7E8 /* ../../shared/UsageWidgets/Sources/GtmuxUsageWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				F5E1C7D2A0EACDDB42D0917E /* UsageWidgetPresentation.swift */,
+				9914859C4DCB50F696ED6CCE /* UsageWidgetViews.swift */,
+				25E815F229EF6E539720EC3A /* UsageWidgetSelection.swift */,
+			);
+			name = ../../shared/UsageWidgets/Sources/GtmuxUsageWidgets;
+			path = ../../shared/UsageWidgets/Sources/GtmuxUsageWidgets;
+			sourceTree = "<group>";
+		};
+		93D94A3BC463707BB65E9BF5 /* ../../shared/UsageWidgets/Sources/GtmuxUsageWidgetHost */ = {
+			isa = PBXGroup;
+			children = (
+				8736F26236CCA1F3ACBA24D1 /* WidgetOwnerConnection.swift */,
+				777277D2A05C4A58D428B08B /* WidgetUsageRequest.swift */,
+			);
+			name = ../../shared/UsageWidgets/Sources/GtmuxUsageWidgetHost;
+			path = ../../shared/UsageWidgets/Sources/GtmuxUsageWidgetHost;
+			sourceTree = "<group>";
+		};
+		AA00308919F35EDFEBD6A028 /* ../../shared/UsageWidgets/Sources/GtmuxUsageWidgetHost */ = {
+			isa = PBXGroup;
+			children = (
+				A5EEF4AA01558F9C55831056 /* WidgetOwnerConnection.swift */,
+				43FE82304398401A6CBD85B8 /* WidgetUsageRequest.swift */,
+			);
+			name = ../../shared/UsageWidgets/Sources/GtmuxUsageWidgetHost;
+			path = ../../shared/UsageWidgets/Sources/GtmuxUsageWidgetHost;
+			sourceTree = "<group>";
+		};
 		AA2A85A60DAF96D974DC690A /* GtmuxNotificationService */ = {
 			isa = PBXGroup;
 			children = (
@@ -285,6 +434,16 @@
 			name = GtmuxNotificationService;
 			path = GtmuxNotificationService;
 			sourceTree = SOURCE_ROOT;
+		};
+		B1D745D0749FAA97ED1C1B1D /* ../../shared/UsageWidgets/Sources/GtmuxUsageWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				9E12A79CBA12602B4815E81A /* UsageWidgetPresentation.swift */,
+				CB4EB65DA8FE5A7514B63165 /* UsageWidgetViews.swift */,
+			);
+			name = ../../shared/UsageWidgets/Sources/GtmuxUsageWidgets;
+			path = ../../shared/UsageWidgets/Sources/GtmuxUsageWidgets;
+			sourceTree = "<group>";
 		};
 		BBD78D7AC51CEA395F1C20DB /* Pods */ = {
 			isa = PBXGroup;
@@ -302,10 +461,31 @@
 				D1819D8849B51096E179E069 /* GtmuxActivityAttributes.swift */,
 				A660F7F131237D343EC00CAE /* Info.plist */,
 				20D906467D450616BB69C208 /* Assets.xcassets */,
+				F602BC5F68D10C3077EE7820 /* Localizable.xcstrings */,
 			);
 			name = GtmuxWidget;
 			path = GtmuxWidget;
 			sourceTree = SOURCE_ROOT;
+		};
+		CBB1263855A439A3A628DF9A /* ../../shared/UsageWidgets/Sources/GtmuxUsageWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				AED18ABDF8CC715F1F04E100 /* UsageSnapshot.swift */,
+				BF0718A21DF33D41D7A85017 /* UsageSnapshotStore.swift */,
+			);
+			name = ../../shared/UsageWidgets/Sources/GtmuxUsageWidgets;
+			path = ../../shared/UsageWidgets/Sources/GtmuxUsageWidgets;
+			sourceTree = "<group>";
+		};
+		E51B5289FE6CEFAF2E14427C /* ../../shared/UsageWidgets/Sources/GtmuxUsageWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				8FE194282D4681BF8D1C6866 /* UsageSnapshot.swift */,
+				911375926AB54183E98E4F1D /* UsageSnapshotStore.swift */,
+			);
+			name = ../../shared/UsageWidgets/Sources/GtmuxUsageWidgets;
+			path = ../../shared/UsageWidgets/Sources/GtmuxUsageWidgets;
+			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
@@ -417,6 +597,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B67B43A4AABD1CBA3AF68F95 /* Assets.xcassets in Resources */,
+				F1E1182EA981A547C85A1095 /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -535,6 +716,13 @@
 				17E383E65A990DA6E5832AFE /* GtmuxDocuments.swift in Sources */,
 				2153ADCBDCBC5F1A71290418 /* GtmuxDocuments.m in Sources */,
 				FD4F3E492F1B10AEEA7F3873 /* DocumentStatusView.swift in Sources */,
+				1D7B7A4847F4154B23652157 /* UsageSnapshot.swift in Sources */,
+				9615E8B864C87D09B4B68A34 /* UsageSnapshotStore.swift in Sources */,
+				4EE2FD64D6F45FF0E137F26C /* UsageWidgetRefresh.swift in Sources */,
+				26F9C9B3C846900A759E12EF /* UsageWidgetsModule.swift in Sources */,
+				4F39CAED87BC78C87FF681A0 /* UsageWidgetsModule.m in Sources */,
+				2B3A22CA8CA1C3726FA0FA54 /* WidgetOwnerConnection.swift in Sources */,
+				63EBCD9A1929C93834020707 /* WidgetUsageRequest.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -544,6 +732,12 @@
 			files = (
 				AC3D7DC67DBD368B6E0BE2B8 /* GtmuxWidget.swift in Sources */,
 				3545525E293EB9EBC669898D /* GtmuxActivityAttributes.swift in Sources */,
+				57F653510DE6FF7F4FE6492F /* UsageSnapshot.swift in Sources */,
+				9A059F06B22E950ACF30FF35 /* UsageSnapshotStore.swift in Sources */,
+				C0FFD988D365D07B0E1FB0C7 /* UsageWidgetPresentation.swift in Sources */,
+				00A756D35516E95123103665 /* UsageWidgetViews.swift in Sources */,
+				92C19EADEC5F19552BD6F53E /* UsageWidgetDefinition.swift in Sources */,
+				D23582A8764B6A4F9D8F966D /* UsageWidgetSelection.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -642,6 +836,7 @@
 			buildSettings = {
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = GtmuxWidget/GtmuxWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -825,6 +1020,7 @@
 			buildSettings = {
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = GtmuxWidget/GtmuxWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = NO;

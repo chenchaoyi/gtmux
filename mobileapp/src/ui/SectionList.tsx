@@ -12,9 +12,9 @@ import {
   RefreshControl,
   SectionList as RNSectionList,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
+import {ChromeText as Text} from './ChromeText';
 import {Agent, SectionKey, agentId} from '../api/types';
 import {Lang, statusLabel} from '../i18n';
 import {AgentRow} from './AgentRow';

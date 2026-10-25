@@ -123,11 +123,11 @@ def setup_signing(root, environ):
 
 
 def der_entitlements(data):
-    """Read scalar fields from codesign's version-1 DER dictionary, fail closed.
+    """Read scalars and string arrays from codesign's version-1 DER dictionary.
 
     XML is absent in some recent iOS exports. Do not parse the default human
-    display: use --der, after codesign --verify. Non-scalar fields are retained
-    as bytes; they cannot satisfy a required string or boolean entitlement.
+    display: use --der, after codesign --verify. Other compound fields remain
+    bytes; they cannot satisfy a required scalar or App Group entitlement.
     """
     def invalid():
         raise DeliveryError("Unsupported or malformed signed DER entitlements.")
@@ -186,10 +186,33 @@ def der_entitlements(data):
                 if value not in (b"\x00", b"\xff"):
                     invalid()
                 value = value == b"\xff"
+            elif tag == 0x30:
+                array, position = [], 0
+                while position < len(value):
+                    element_tag, element, position = item(value, position)
+                    if element_tag != 0x0C or len(array) >= 64:
+                        invalid()
+                    array.append(element.decode("utf-8"))
+                value = array
         except UnicodeDecodeError:
             invalid()
         result[key] = value
     return result
+
+
+def check_app_groups(signed, profile):
+    """Check the exported shared-container permission against its own profile.
+
+    Older source versions without widgets remain valid. Xcode's target
+    entitlements request the group; this check also rejects an exported grant
+    that its embedded profile does not authorize.
+    """
+    groups = signed.get("com.apple.security.application-groups", [])
+    allowed = profile.get("com.apple.security.application-groups", [])
+    if (not isinstance(groups, list) or not isinstance(allowed, list) or
+            any(not isinstance(group, str) or not group for group in groups + allowed) or
+            len(groups) != len(set(groups)) or not set(groups).issubset(allowed)):
+        raise DeliveryError("Exported App Groups are not authorized by the profile.")
 
 
 def signed_entitlements(root, package):
@@ -226,9 +249,11 @@ def verify_export(root, version, build, team):
             result = subprocess.run(["security", "cms", "-D", "-i", str(package / "embedded.mobileprovision")], stdout=out, stderr=err)
         if result.returncode:
             raise DeliveryError("Could not verify exported provisioning profile.")
-        devices, _ = profile_check(plistlib.loads((root / "signing/export-profile.plist").read_bytes()), bundle, team)
+        profile = plistlib.loads((root / "signing/export-profile.plist").read_bytes())
+        devices, _ = profile_check(profile, bundle, team)
         common_devices = devices if common_devices is None else common_devices & devices
         ent = signed_entitlements(root, package)
+        check_app_groups(ent, profile.get("Entitlements", {}))
         if ent.get("get-task-allow") is not False or ent.get("application-identifier") != f"{team}.{bundle}" or (bundle == "com.gtmux.app" and ent.get("aps-environment") != "production"):
             raise DeliveryError("Exported signed entitlements are not the expected distribution entitlements.")
     if bundles != set(BUNDLES) or not common_devices:

@@ -4,6 +4,7 @@ import {AnsiLine} from './ansi';
 import {BrandLoader} from './BrandLoader';
 import {Chevron} from './Icons';
 import {TestIds} from '../constants/testIds';
+import {ChromeText} from './ChromeText';
 import {Lang} from '../i18n';
 
 /** The conversation owns disclosure state; this row can disappear between observations. */
@@ -21,7 +22,7 @@ export function LiveProgress({avatar, label, lines, fontSize, fontFamily, lang, 
   const action = lang === 'zh' ? (open ? '收起实时画面' : '展开实时画面') : (open ? 'Hide live view' : 'Show live view');
   const marker = <>
     <BrandLoader size={14} neutral="rgba(255,255,255,0.30)" />
-    <Text style={styles.label} numberOfLines={1}>{label}</Text>
+    <ChromeText style={styles.label} numberOfLines={1}>{label}</ChromeText>
   </>;
   return <View testID={TestIds.detail.chatThinking} style={[styles.root, open && inspectAvailable && styles.expanded]}>
     <View style={styles.row}>
@@ -32,7 +33,7 @@ export function LiveProgress({avatar, label, lines, fontSize, fontFamily, lang, 
         onPress={onToggle} activeOpacity={0.7} style={[styles.disclosure, open && styles.openDisclosure]}>
         {marker}
         <View style={styles.action}>
-          <Text style={styles.actionText}>{action}</Text>
+          <ChromeText style={styles.actionText}>{action}</ChromeText>
           <Chevron open={open} size={12} color="#27C7E6" />
         </View>
       </TouchableOpacity> : <View style={styles.disclosure}>{marker}</View>}
