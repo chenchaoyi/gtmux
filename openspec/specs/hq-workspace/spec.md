@@ -229,3 +229,26 @@ Recent changes SHALL use explicit state transitions, results, decisions, errors,
 #### Scenario: No report clock exists
 - **WHEN** a matter has only an assessment without its source message
 - **THEN** the note is labelled as a saved assessment with no invented clock or wait duration
+
+### Requirement: Conversation management starts with identifiable work
+The native matter header SHALL open Conversations & records. Its default sheet SHALL name the current matter and list its included agent conversations, showing task title, agent, current terminal state only on exact identity match, and continuous or bounded record scope. A missing current terminal SHALL NOT be labelled proof of process termination. Status-since clocks SHALL NOT be presented as last-message times. Default content SHALL NOT expose split-selection checkboxes, time editors or destination pickers.
+
+#### Scenario: A past record and an idle terminal are included together
+- **WHEN** one included conversation has an exact current idle terminal and another has only saved records
+- **THEN** their live availability is visibly distinct from their collection roles and time ranges
+- **AND** neither an idle state nor the end of a collection range completes the matter or stops an agent
+
+### Requirement: Record management is organized by intended action
+Adding SHALL first offer identifiable current conversations and saved records with their existing matter relationships. A saved-only source SHALL be added as a bounded historical reference. Ongoing collection SHALL explicitly default to now with an editable start; future or inverted intervals SHALL be rejected locally. Individual record range and move editors SHALL be separate from whole-matter organization. Moving one conversation SHALL NOT preselect the destination of a later whole-matter merge.
+
+Removal, individual move, split and merge SHALL require confirmation naming the affected scope and destination where applicable. Removal SHALL retain original messages and HQ discussion. A split SHALL move only selected associations and retain prior HQ discussion in the source. A merge SHALL explicitly say it collects all conversations and HQ discussion and closes the source matter. Editors and confirmations SHALL retain their captured revision and immutable identity; a failed save SHALL preserve the draft and display the error. Management SHALL NOT send instructions or drain the delivery queue.
+
+#### Scenario: Review a move, then organize the whole matter
+- **WHEN** a user chooses a destination for one conversation and returns to organize the matter
+- **THEN** the whole-matter destination starts unselected
+- **AND** confirming an individual move affects only that association and its existing range
+
+#### Scenario: A historical source is added and the save fails
+- **WHEN** a user selects a saved-only conversation and the metadata save fails
+- **THEN** the chosen identity and valid bounded reference draft remain available with the error
+- **AND** no instruction is sent to the agent or HQ

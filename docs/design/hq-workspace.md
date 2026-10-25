@@ -51,15 +51,33 @@ turn's public prompt/reply. Tool steps and journal-confirmed
 wake batches fold by default. Merely resembling a wake line never hides user prose.
 Reading never acknowledges HQ's unread watermark.
 
-Manage conversations adds current or previously recorded tmux conversations,
-chooses execution or historical-reference role and edits an explicit time interval.
-An ongoing association defaults to now; a historical reference needs an end time.
-Transfer/unlink/merge/split change metadata only. Unlinked source records survive;
-a merge preserves original message scopes and resolves through explicit edges.
-A split moves chosen associations, retains prior discussion in the source and
-records a clickable parent link. It does not fabricate a separate past dialogue.
-Nothing groups conversations by title, project directory, process name or pane.
-Native desktop sources are not added to HQ participation by this feature.
+**Conversations & records** opens a list for the named matter, rather than a metadata form.
+Each item leads with its task title, agent, exact current terminal state and state-since
+clock, then continuous collection or a fixed historical range. A missing terminal means
+only that no current exact match was found, not proof the agent ended. A fixed collection
+end is independent of process status. Source messages open with Read conversation;
+Adjust exposes range, individual move and removal on demand. Removal and moves name
+the affected conversation and matter in a confirmation, keeping original records and
+prior HQ discussion. The source reader disables Terminal when no current identity exists.
+
+Add conversation first browses current terminals and saved conversations, with their
+existing matter relationships and honest source clocks. Already included identities are
+omitted; their ranges can be adjusted from the list. Current conversations default to
+collecting from now, with editable start and optional bounded background reference.
+Saved-only sources require a bounded historical range. Only the chosen source's editor
+shows dates. Future and inverted intervals cannot be saved. These edits do not send
+instructions, restart agents or alter where matter replies are delivered.
+
+Split or merge this matter opens a separate organization step. Only there do split
+checkboxes and a whole-matter destination appear. Split moves chosen associations and
+preserves prior HQ discussion in the source with provenance. Merge collects all linked
+conversations and HQ discussion in the destination, closes the source and retains original
+records. Each action is reviewed with its named scope. Editor entry captures the matter
+revision; confirmation captures the exact action, and failed writes retain the draft.
+The individual move destination cannot leak into a whole-matter merge. Names, paths and
+pane numbers remain presentation metadata, never identity. No native desktop source is
+automatically added. Phone/iPad/Web do not have this management route; narrow native
+layout checks are not mobile-device acceptance.
 
 The leading toolbar keeps Sidebar, Refresh and Open in Terminal in one stable group, including when the sidebar is hidden. The sidebar column removes its framework-provided toggle; the outer split does not own that item. Only the shared leading toggle remains. Refresh replaces its existing icon with the compact brand progress mark; it does not insert another item or move neighboring controls. It observes the selected resource's read state as well as workspace reads; resource headers do not duplicate the progress mark. Category children are indented 20 pt beneath their full-row headings, including Resources; selection and independent disclosure state are retained.
 
