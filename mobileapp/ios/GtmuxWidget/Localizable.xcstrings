@@ -1,0 +1,18 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "Agent": {
+      "extractionState": "manual",
+      "localizations": {"zh-Hans": {"stringUnit": {"state": "translated", "value": "Agent"}}}
+    },
+    "Agent usage": {
+      "extractionState": "manual",
+      "localizations": {"zh-Hans": {"stringUnit": {"state": "translated", "value": "Agent 用量"}}}
+    },
+    "Choose an agent from the current server.": {
+      "extractionState": "manual",
+      "localizations": {"zh-Hans": {"stringUnit": {"state": "translated", "value": "选择当前服务器上的 Agent。"}}}
+    }
+  },
+  "version": "1.0"
+}

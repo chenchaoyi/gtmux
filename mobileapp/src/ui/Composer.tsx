@@ -29,6 +29,7 @@ import {
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {getDraft, loadDrafts, putDraft, saveDrafts} from '../state/drafts';
+import {ChromeText} from './ChromeText';
 import Clipboard from '@react-native-clipboard/clipboard';
 import {ErrorCode, launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import {pick} from '@react-native-documents/picker';
@@ -201,9 +202,9 @@ function ComposerKey({
       {icon ? (
         children
       ) : (
-        <Text allowFontScaling={!glyph} style={[glyph ? styles.keyGlyph : styles.keyText, {color: activeBg ? '#fff' : fg || pal.fg2}]} numberOfLines={1}>
+        <ChromeText allowFontScaling={!glyph} style={[glyph ? styles.keyGlyph : styles.keyText, {color: activeBg ? '#fff' : fg || pal.fg2}]} numberOfLines={1}>
           {children}
-        </Text>
+        </ChromeText>
       )}
       {acknowledged && <Text testID={`${testID}-ack`} style={[styles.keyAck, {color: ACCENT}]}>✓</Text>}
     </TouchableOpacity>
@@ -655,7 +656,7 @@ export const Composer = React.memo(function Composer({
           onPress={() => setAttachOpen(true)}
           disabled={!enabled || sending || !onUpload}
           style={[styles.attach, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
-          <Text style={[styles.attachText, {color: pal.fg2}]}>+</Text>
+          <Text allowFontScaling={false} style={[styles.attachText, {color: pal.fg2}]}>+</Text>
         </TouchableOpacity>
         <TextInput
         ref={inputRef}
@@ -706,12 +707,15 @@ export const Composer = React.memo(function Composer({
       <TouchableOpacity
         onPress={() => setFullCompose(true)}
         testID={TestIds.composer.expand}
+        accessibilityRole="button"
         accessibilityLabel={lang === 'zh' ? '展开编辑' : 'Expand editor'}
         style={[styles.expand, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
         <ExpandIcon size={20} color={pal.fg2} />
       </TouchableOpacity>
       <TouchableOpacity
         testID={TestIds.composer.send}
+        accessibilityRole="button"
+        accessibilityState={{disabled: !enabled || sending || !canSend}}
         accessibilityLabel={lang === 'zh' ? '发送' : 'Send'}
         onPress={() => sendText(false)}
         disabled={!enabled || sending || !canSend}
@@ -719,7 +723,7 @@ export const Composer = React.memo(function Composer({
         {sending ? (
           <ActivityIndicator size="small" color="#fff" />
         ) : (
-          <Text style={[styles.sendText, {color: canSend ? '#fff' : pal.fg3}]}>↑</Text>
+          <Text allowFontScaling={false} style={[styles.sendText, {color: canSend ? '#fff' : pal.fg3}]}>↑</Text>
         )}
       </TouchableOpacity>
       </View>
@@ -831,16 +835,17 @@ export const Composer = React.memo(function Composer({
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={[styles.fcWrap, {backgroundColor: pal.bg}]}>
           <View style={[styles.fcBar, {borderBottomColor: pal.divider}]}>
-            <TouchableOpacity onPress={() => setFullCompose(false)} hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
-              <Text style={[styles.fcAction, {color: pal.fg2}]}>{lang === 'zh' ? '收起' : 'Done'}</Text>
+            <TouchableOpacity accessibilityRole="button" onPress={() => setFullCompose(false)} hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
+              <ChromeText style={[styles.fcAction, {color: pal.fg2}]}>{lang === 'zh' ? '收起' : 'Done'}</ChromeText>
             </TouchableOpacity>
-            <Text style={[styles.fcTitle, {color: pal.fg3}]}>{lang === 'zh' ? '撰写' : 'Compose'}</Text>
+            <ChromeText style={[styles.fcTitle, {color: pal.fg3}]}>{lang === 'zh' ? '撰写' : 'Compose'}</ChromeText>
             <TouchableOpacity
+              accessibilityRole="button"
               disabled={!enabled || !text}
               onPress={() => { sendText(); setFullCompose(false); }}>
-              <Text style={[styles.fcAction, {color: text ? ACCENT : pal.fg3, fontWeight: '700'}]}>
+              <ChromeText style={[styles.fcAction, {color: text ? ACCENT : pal.fg3, fontWeight: '700'}]}>
                 {lang === 'zh' ? '发送' : 'Send'}
-              </Text>
+              </ChromeText>
             </TouchableOpacity>
           </View>
           <TextInput

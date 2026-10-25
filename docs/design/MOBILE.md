@@ -936,6 +936,16 @@ scroll together); C keeps the phone's tabs, just wider (no new layout to maintai
   user meets it is when NOTHING answers — then it is the plain "can't reach this Mac" it has always been,
   and the fix is to scan the pairing code again, which is exactly the case of a device that paired and never
   connected before the move.
+### Usage widgets
+
+On iOS/iPadOS 17+, the existing extension also offers configurable small/medium
+Home Screen usage widgets and circular/rectangular/inline Lock Screen families.
+They show provider capacity, source and reading time; expired data never implies
+zero usage or a replenished allowance. The parent refreshes through the selected
+owner's existing private pairing; the extension reads only a bounded, credential-free
+App Group snapshot. Tapping opens Usage even without HQ. See [usage widgets](../widgets.md)
+for freshness, system scheduling, shared macOS views and signing prerequisites.
+
 ### The lock-screen card and Dynamic Island (Live Activity) · redone 2026-09-10
 
 It answers exactly one question: is anything waiting on me, which one, what did it ask, and for how long. The card's top line used to be
@@ -1641,3 +1651,13 @@ committing. Success dismisses the add sheet, including re-pairing the current UR
 The camera window shrinks in short landscape windows so the title and Cancel remain
 reachable. Validation levels and remaining device checks are recorded in
 [the pairing audit](../testing/repeat-pairing.md).
+
+
+### Fixed controls and system text-size changes
+
+Radar rows/section headers, live disclosure, reply folding and composer key labels
+use the existing chrome text limit through `ChromeText`. Its native text node is
+recreated when the system font scale changes so cached line measurements cannot
+clip new glyphs. Parent state, drafts and disclosure stay mounted. Conversation
+content and editable text retain their independent full text scaling; glyph keys
+continue to behave like adjacent vector icons.

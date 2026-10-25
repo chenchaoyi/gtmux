@@ -6,7 +6,8 @@
 // NOT bundle third-party logos (DESIGN §6); color is never used for identity.
 
 import React from 'react';
-import {Animated, Pressable, StyleSheet, Text, View} from 'react-native';
+import {Animated, Pressable, StyleSheet, View} from 'react-native';
+import {ChromeText as Text} from './ChromeText';
 import {Agent, primary, secondary} from '../api/types';
 import {Lang, statusLabel} from '../i18n';
 import {AgentAvatar} from './AgentAvatar';

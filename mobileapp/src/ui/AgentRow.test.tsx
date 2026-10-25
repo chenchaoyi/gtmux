@@ -90,8 +90,10 @@ test('the second line yields before the chip does', () => {
     .find(n => flat(n.props.style).some(s => s?.fontSize === 12.5))!;
   expect(flat(secondary.props.style).some(s => s?.flexShrink === 1)).toBe(true);
   // The chip's own wrapper must not be shrinkable.
-  const wrapper = chip.parent!;
-  expect(flat(wrapper.props.style).some(s => s?.flexShrink === 0)).toBe(true);
+  let wrapper = chip.parent;
+  while (wrapper && !flat(wrapper.props.style).some(s => s?.maxWidth === '50%')) wrapper = wrapper.parent;
+  expect(wrapper).not.toBeNull();
+  expect(flat(wrapper!.props.style).some(s => s?.flexShrink === 0)).toBe(true);
 });
 
 // The long press had no feedback at all: the row dimmed to 0.6 and 350ms later a sheet

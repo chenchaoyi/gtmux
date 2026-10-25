@@ -13,20 +13,22 @@ import (
 func TestNotifyAgentIcon(t *testing.T) {
 	t.Setenv("HOME", t.TempDir()) // isolate state.Dir() from the real machine
 
-	p := notifyAgentIcon("codex")
-	if p == "" {
-		t.Fatal("codex has a committed built-in icon; notifyAgentIcon must return a path")
+	for _, key := range assets.AgentIconKeys() {
+		t.Run(key, func(t *testing.T) {
+			p := notifyAgentIcon(key)
+			if p == "" {
+				t.Fatal("embedded agent icon must have a notification cache path")
+			}
+			got, err := os.ReadFile(p)
+			if err != nil || len(got) == 0 {
+				t.Fatalf("icon file not written: %v", err)
+			}
+			if !bytes.Equal(got, assets.AgentIcon(key)) {
+				t.Error("notification cache must contain this agent's canonical icon")
+			}
+		})
 	}
-	got, err := os.ReadFile(p)
-	if err != nil || len(got) == 0 {
-		t.Fatalf("icon file not written: %v", err)
-	}
-	if !bytes.Equal(got, assets.AgentIcon("codex")) {
-		t.Error("the cached notification icon must be the embedded codex icon, not Claude's")
-	}
-	// Claude has NO built-in icon (it uses its .app icon) → "" so the caller falls back to
-	// the cached notify-icon.png (the Claude .app icon). That keeps Claude banners correct.
-	if notifyAgentIcon("claude") != "" {
-		t.Error("claude has no built-in icon; notifyAgentIcon must return empty (fall back)")
+	if notifyAgentIcon("no-such-agent") != "" {
+		t.Error("an unknown agent must retain the app-icon fallback")
 	}
 }

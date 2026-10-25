@@ -280,6 +280,10 @@ jobs:
       - name: Dependencies (no signing setup)
         working-directory: mobileapp
         run: npm ci && (cd ios && bundle exec pod install)
+      - name: Widget target and shared-data boundaries
+        working-directory: mobileapp
+        run: bundle exec ruby ios/tests/usage_widget_targets_test.rb
+
       - name: Compile app, Live Activity and notification extension
         working-directory: mobileapp
         run: |
@@ -364,6 +368,9 @@ jobs:
       # a PR can't break it unnoticed. (Linux jobs above can't build Swift/AppKit.)
       - name: swift build (release)
         run: cd macapp && swift build -c release
+
+      - name: Usage widget snapshot and bounded native transport
+        run: swift test --package-path shared/UsageWidgets
 
       - name: swift test (model + design conformance)
         env:

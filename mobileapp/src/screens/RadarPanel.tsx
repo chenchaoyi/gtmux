@@ -23,6 +23,7 @@ import {useAgents} from '../state/AgentsContext';
 import {Agent} from '../api/types';
 import {useApp} from '../state/AppContext';
 import {Debug} from '../debug';
+import {ChromeText} from '../ui/ChromeText';
 import {BrandMark} from '../ui/BrandMark';
 import {PanesIcon} from '../ui/Icons';
 import {DISC_CLEARANCE, HQDisc} from '../ui/HQDisc';
@@ -220,9 +221,9 @@ export function RadarPanel({
             hitSlop={titleHit}>
             {/* A sidebar title is a size down from a screen title, and the smaller size
                 also carries a few more characters of a long machine name. */}
-            <Text style={[styles.brand, sidebar && styles.brandNarrow, {color: pal.fg}]} numberOfLines={1}>
+            <ChromeText style={[styles.brand, sidebar && styles.brandNarrow, {color: pal.fg}]} numberOfLines={1}>
               {demoChrome && !Debug.shotMode ? (lang === 'zh' ? '演示' : 'Demo') : mac?.name || 'gtmux'}
-            </Text>
+            </ChromeText>
             {!demoChrome && (
               <View style={styles.chevron} testID="radar-switch-chevron">
                 <SIcon name="chevronDown" size={sidebar ? 16 : 18} color={BRAND} />
@@ -262,7 +263,7 @@ export function RadarPanel({
               style={styles.headBtn}
               accessibilityRole="button"
               accessibilityLabel={lang === 'zh' ? '关闭演示' : 'Close demo'}>
-              <Text style={[styles.closeDemo, {color: pal.fg3}]}>✕</Text>
+              <ChromeText style={[styles.closeDemo, {color: pal.fg3}]}>✕</ChromeText>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
@@ -286,7 +287,7 @@ export function RadarPanel({
           it), hidden in SHOT_MODE for clean store captures. */}
       {demoChrome && !Debug.shotMode && (
         <View style={styles.demoBanner}>
-          <Text style={[styles.demoChip, {color: StatusColor.working, borderColor: StatusColor.working}]}>DEMO</Text>
+          <ChromeText style={[styles.demoChip, {color: StatusColor.working, borderColor: StatusColor.working}]}>DEMO</ChromeText>
           <Text style={[styles.demoBannerText, {color: pal.fg3}]} numberOfLines={2}>
             {lang === 'zh' ? '演示数据。每一屏都能点，配对你的服务器就能看到你自己的。' : 'Sample data. Every screen works; pair your server to see your own.'}
           </Text>
@@ -401,7 +402,7 @@ export function RadarPanel({
           onPress={demoChrome.onPair}
           accessibilityRole="button"
           accessibilityLabel={lang === 'zh' ? '配对你的服务器' : 'Pair your server'}>
-          <Text style={styles.ctaText}>{lang === 'zh' ? '配对你的服务器' : 'Pair your server'}</Text>
+          <ChromeText style={styles.ctaText}>{lang === 'zh' ? '配对你的服务器' : 'Pair your server'}</ChromeText>
         </TouchableOpacity>
       )}
       {showDisc && (
@@ -462,7 +463,7 @@ function ConnDot({conn, t, lang, awake}: any) {
       {/* The word is shown only for an abnormal state (reconnecting/offline/rejected);
           color it with the STATE color (amber/red, same as the dot) so it is actually
           READABLE and severity-coded — pal.fg3 (34% opacity) rendered it nearly invisible. */}
-      {label ? <Text style={[styles.connText, {color}]}>{label}</Text> : null}
+      {label ? <ChromeText style={[styles.connText, {color}]}>{label}</ChromeText> : null}
     </View>
   );
 }
@@ -476,10 +477,10 @@ function Banner({alert, t, onClose}: {alert: AlertType; t: any; onClose: () => v
       onPress={onClose}
       activeOpacity={0.9}
       style={[styles.banner, {backgroundColor: isWaiting ? StatusColor.waiting : StatusColor.idle}]}>
-      <Text style={styles.bannerText} numberOfLines={1}>
+      <ChromeText style={styles.bannerText} numberOfLines={1}>
         {name} {verb}
         {alert.task ? ` · ${alert.task}` : ''}
-      </Text>
+      </ChromeText>
     </TouchableOpacity>
   );
 }

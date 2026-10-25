@@ -175,6 +175,7 @@ def verify(ipa, baseline, version, build, team, run=command):
             check_entitlements(original_ent, candidate_ent, bundle, team, archive=bool(archive))
             profile = plistlib.loads(run(['security', 'cms', '-D', '-i', str(path / 'embedded.mobileprovision')]))
             check_profile(profile, bundle, team)
+            _delivery.check_app_groups(candidate_ent, profile.get('Entitlements', {}))
             native = uuids(path / info['CFBundleExecutable'], run)
             if native != uuids(original_path / original_info['CFBundleExecutable'], run):
                 raise ValueError('Original native UUIDs changed')

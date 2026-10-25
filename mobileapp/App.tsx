@@ -39,6 +39,7 @@ import {sourceForPush} from './src/pairing/store';
 import {mayNotify} from './src/push/sync';
 import {markSeen, notesSince, readSeen} from './src/state/whatsnew';
 import {APP_VERSION} from './src/version';
+import {UsageWidgetBridge, useUsageWidgetContext} from './src/usage/UsageWidgetBridge';
 
 const Stack = createNativeStackNavigator();
 
@@ -217,6 +218,7 @@ function Root() {
   const {ready, mac, pal, lang, scheme, rememberAddresses, followMove, removeServer, t, pushEnabled, pushKinds} = useApp();
   const navRef = useNavigationContainerRef();
   const sizeClass = useSizeClass();
+  useUsageWidgetContext();
   // The compact shell opens a selection by navigating; the navigator ref is the one
   // handle that outlives any screen.
   const navigateSel = React.useCallback((route: string, params?: Record<string, unknown>) => {
@@ -262,6 +264,7 @@ function Root() {
       <WorkspaceProvider mode={sizeClass} navigate={navigateSel}>
       <PushBridge navRef={navRef} />
       <KeyCommandBridge />
+      <UsageWidgetBridge />
       <WhatsNew />
       <NavigationContainer ref={navRef} theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Stack.Navigator screenOptions={{headerShown: false}}>

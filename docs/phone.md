@@ -93,6 +93,12 @@ The live radar and replies still need a connection to the Mac.
 
 Agents outside tmux are read-only: without a pane, there is nowhere to send input.
 
+## Usage widgets
+
+iOS/iPadOS 17+ supports Home Screen and Lock Screen usage widgets. They follow the
+current owner server and show provider quota or balances with reading times. See
+[usage widgets](widgets.md) for setup, refresh limits, privacy and macOS scope.
+
 ## HQ shortcuts
 
 On the phone radar, hold the floating HQ button and choose **Usage** or **Knowledge base**.

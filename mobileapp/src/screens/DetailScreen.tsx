@@ -6,6 +6,7 @@
 // action was removed in #85 — little value when you're remote.)
 
 import {DesktopConversationView} from './DesktopConversationView';
+import {ChromeText} from '../ui/ChromeText';
 import {CHROME_MAX_SCALE} from '../ui/textScale';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {NavigationContext} from '@react-navigation/native';
@@ -868,11 +869,12 @@ function PaneDetailView({
           {onBack && (
             <TouchableOpacity
               testID={TestIds.detail.back}
+              accessibilityRole="button"
               accessibilityLabel={lang === 'zh' ? '返回' : 'Back'}
               onPress={onBack}
               hitSlop={hit}
               style={styles.back}>
-              <Text style={[styles.backText, {color: pal.fg2}]}>‹</Text>
+              <ChromeText allowFontScaling={false} style={[styles.backText, {color: pal.fg2}]}>‹</ChromeText>
             </TouchableOpacity>
           )}
           <View style={styles.avatarWrap}>
@@ -885,6 +887,8 @@ function PaneDetailView({
               in an alert — the row/header stay compact but nothing is unreachable. */}
           <TouchableOpacity
             activeOpacity={0.6}
+            accessibilityRole="button"
+            accessibilityLabel={`${lang === 'zh' ? '查看完整标题' : 'Show full title'}, ${primary(live)}`}
             style={styles.headerText}
             onPress={() => {
               const body = live.error && live.error_text
@@ -892,19 +896,19 @@ function PaneDetailView({
                 : primary(live);
               Alert.alert(live.agent || 'Agent', body, [{text: lang === 'zh' ? '关闭' : 'Close'}]);
             }}>
-            <Text style={[styles.title, {color: pal.fg}]} numberOfLines={1}>
+            <ChromeText style={[styles.title, {color: pal.fg}]} numberOfLines={1}>
               {primary(live)}
-            </Text>
+            </ChromeText>
             {/* The connection lives HERE now, as a dot in front of the line that already
                 describes this pane. It used to own the left half of a band of its own —
                 a whole row's height for a state that is green almost always. The word
                 only appears when the state is abnormal, exactly as before (D9). */}
             <View style={styles.subRow}>
               {connDot !== null && <View style={[styles.liveDot, {backgroundColor: connDot}]} />}
-              <Text style={[styles.sub, {color: pal.fg3}]} numberOfLines={1}>
+              <ChromeText style={[styles.sub, {color: pal.fg3}]} numberOfLines={1}>
                 {connWord}
                 {[live.agent, statusLabel(live.status, lang), secondary(live, lang)].filter(Boolean).join(' · ')}
-              </Text>
+              </ChromeText>
             </View>
           </TouchableOpacity>
         </View>
@@ -1004,9 +1008,9 @@ function PaneDetailView({
               <View style={[styles.demoPill, {borderColor: StatusColor.working}]}>
                 <Text style={[styles.demoPillText, {color: StatusColor.working}]} maxFontSizeMultiplier={CHROME_MAX_SCALE}>DEMO</Text>
               </View>
-              <Text style={[styles.ctlText, {color: pal.fg3}]} numberOfLines={1} maxFontSizeMultiplier={CHROME_MAX_SCALE}>
+              <ChromeText style={[styles.ctlText, {color: pal.fg3}]} numberOfLines={1} maxFontSizeMultiplier={CHROME_MAX_SCALE}>
                 {lang === 'zh' ? ' 样例数据' : ' sample data'}
-              </Text>
+              </ChromeText>
             </View>
           )}
           <View style={styles.ctlRight}>
@@ -1153,25 +1157,27 @@ function Seg({
     <TouchableOpacity
       testID={testID}
       accessibilityLabel={label}
+      accessibilityRole="button"
+      accessibilityState={{selected: active}}
       onPress={onPress}
       activeOpacity={0.8}
       style={[styles.segBtn, active && {backgroundColor: pal.bg}]}>
-      <Text style={[styles.segText, {color: active ? pal.fg : pal.fg3}]} numberOfLines={1} maxFontSizeMultiplier={CHROME_MAX_SCALE}>
+      <ChromeText style={[styles.segText, {color: active ? pal.fg : pal.fg3}]} numberOfLines={1} maxFontSizeMultiplier={CHROME_MAX_SCALE}>
         {label}
-      </Text>
+      </ChromeText>
     </TouchableOpacity>
   );
 }
 
 function Ctl({pal, label, onPress, testID, glyph}: {pal: any; label: string; onPress: () => void; testID?: string; glyph?: boolean}) {
   return (
-    <TouchableOpacity testID={testID} accessibilityLabel={label} onPress={onPress} style={[styles.ctl, glyph && styles.ctlGlyphBtn, {borderColor: pal.divider}]}>
-      <Text
+    <TouchableOpacity testID={testID} accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={[styles.ctl, glyph && styles.ctlGlyphBtn, {borderColor: pal.divider}]}>
+      <ChromeText
         style={[glyph ? styles.ctlGlyphText : styles.ctlText, {color: pal.fg2}]}
         numberOfLines={1}
         maxFontSizeMultiplier={CHROME_MAX_SCALE}>
         {label}
-      </Text>
+      </ChromeText>
     </TouchableOpacity>
   );
 }
