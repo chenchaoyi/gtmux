@@ -107,9 +107,11 @@ export function AgentsProvider({
   const [conn, setConn] = useState<ConnState>('connecting');
   // Seed from the pairing hint so the UI never flashes owner-only surfaces before
   // GET /api/share resolves; then confirm authoritatively (all:true ⇒ owner).
-  const [isGuest, setIsGuest] = useState(scope === 'guest');
-  const [shareStale, setShareStale] = useState(false);
-  const [inputPanes, setInputPanes] = useState<string[]>([]);
+  const [access, setAccess] = useState({client, isGuest: scope === 'guest', shareStale: false, inputPanes: [] as string[]});
+  // A new credential must use its own hint immediately, never the previous
+  // credential's owner controls or pane grants while its scope read is pending.
+  const {isGuest, shareStale, inputPanes} = access.client === client ? access
+    : {isGuest: scope === 'guest', shareStale: false, inputPanes: [] as string[]};
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
   const [banner, setBanner] = useState<Alert | null>(null);
   const [serverModeRev, setServerModeRev] = useState(0);
@@ -208,6 +210,10 @@ export function AgentsProvider({
   );
   refreshRef.current = refresh;
   useEffect(() => {
+    setAgents([]);
+    setConn('connecting');
+    setLastUpdated(null);
+    setBanner(null);
     refusals.current = 0;
     revokeReported.current = false;
     if (confirmTimer.current) clearTimeout(confirmTimer.current);
@@ -462,9 +468,8 @@ export function AgentsProvider({
       .share()
       .then(cap => {
         if (!alive) return;
-        setIsGuest(!cap.all);
-        setShareStale(!cap.all && !!cap.stale);
-        setInputPanes(!cap.all && cap.stale ? [] : cap.panes);
+        setAccess({client, isGuest: !cap.all, shareStale: !cap.all && !!cap.stale,
+          inputPanes: !cap.all && cap.stale ? [] : cap.panes});
       })
       .catch(() => {});
     return () => {

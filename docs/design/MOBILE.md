@@ -1634,7 +1634,9 @@ saving**, keeping the redeemed credential only in the open sheet's memory. Leavi
 losing the reply requires a fresh code; used, expired and pre-restart codes remain
 refused. The 15-second enrollment deadline includes the body. Canceled or obsolete
 operations cannot save or switch the target, and old-credential HTTP/SSE callbacks
-cannot alter the replacement connection. Cancel is disabled while a native write is
+cannot alter the replacement connection. Scope and pane-grant snapshots belong to
+the credential too; a new guest's failed scope query never keeps old owner controls,
+and the previous credential's rows and connection verdict are cleared. Cancel is disabled while a native write is
 committing. Success dismisses the add sheet, including re-pairing the current URL.
 The camera window shrinks in short landscape windows so the title and Cancel remain
 reachable. Validation levels and remaining device checks are recorded in

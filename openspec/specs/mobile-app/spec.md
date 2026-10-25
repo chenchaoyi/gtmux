@@ -125,7 +125,9 @@ scope — `all:true` ⇒ owner (full); otherwise a **guest** scoped to the retur
 - **AND** a successful repeat pair dismisses the add sheet, while rejected/expired
   codes and unreachable routes show actionable English and Chinese feedback
 - **AND** after credential replacement the old SSE subscription is closed, and old
-  HTTP or SSE callbacks cannot overwrite the new credential's connection state
+  HTTP or SSE callbacks cannot overwrite the new credential's connection state;
+  its scope snapshot also belongs to that credential, so a new guest's failed scope
+  query cannot inherit the previous owner's controls or grants
 
 #### Scenario: Scan in phone or tablet landscape
 

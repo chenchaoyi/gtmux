@@ -20,6 +20,10 @@ Unknown aliases may still produce separate entries. Existing tokens are never se
 to an unfamiliar scanned endpoint to guess identity. Owner alternatives do not merge
 a guest connection.
 
+Scope snapshots are also tied to their client: a new guest credential never inherits
+the old owner controls when its scope query fails. That additional regression failed
+on the previous implementation.
+
 The first baseline regression run failed seven assertions (75 passed): lost address
 metadata, duplicate entries, credential replacement after failed writes, lost
 concurrent updates and an unbounded response body. Two independent connection tests
@@ -58,7 +62,7 @@ passed format/vet/staticcheck but three existing internal/app strict timing test
 failed (brew 5s, native hook 5s, version probe 2s); the complete gate is repeated with
 limited package concurrency, without changing deadlines. The complete `GOFLAGS=-p=2 make check` passed,
 including fmt/vet/staticcheck, all race tests, 75 publisher tests and 44 CI/policy
-tests. The final mobile gate passed 189 suites / 1927 tests, with 15 externally gated
+tests. The final mobile gate passed 189 suites / 1928 tests, with 15 externally gated
 skips, TypeScript passing and ESLint reporting no errors. The final source gate
 passed.
 The source gate reports its private exact-term policy unavailable; that portion
