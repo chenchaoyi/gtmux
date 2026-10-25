@@ -3,12 +3,11 @@
 // camera; reads a gtmux pairing QR and hands the raw string to the pairing flow.
 
 import React, {useEffect, useRef} from 'react';
-import {Animated, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import {Animated, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View} from 'react-native';
+import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import {Camera, CameraType} from 'react-native-camera-kit';
 import {useApp} from '../state/AppContext';
 
-const WIN = 256;
 const CYAN = '#06B6D4';
 
 export function ScanScreen({
@@ -19,6 +18,12 @@ export function ScanScreen({
   onScanned: (raw: string) => void;
 }) {
   const {lang} = useApp();
+  const {width, height} = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const compact = height < 500;
+  // Leave the title, cancel action and safe areas visible on a landscape phone.
+  const win = Math.max(100, Math.min(256, width - insets.left - insets.right - 48,
+    height - insets.top - insets.bottom - 136));
   const done = useRef(false);
   const scan = useRef(new Animated.Value(0)).current;
 
@@ -30,10 +35,10 @@ export function ScanScreen({
       ]),
     );
     anim.start();
-    return () => anim.stop();
+    return () => { done.current = true; anim.stop(); };
   }, [scan]);
 
-  const translateY = scan.interpolate({inputRange: [0, 1], outputRange: [10, WIN - 10]});
+  const translateY = scan.interpolate({inputRange: [0, 1], outputRange: [10, win - 10]});
 
   return (
     <View style={styles.root}>
@@ -55,18 +60,18 @@ export function ScanScreen({
       <View style={styles.dimTop}>
         <SafeAreaView edges={['top']}>
           <Text style={styles.title}>{lang === 'zh' ? '扫描配对码' : 'Scan pairing code'}</Text>
-          <Text style={styles.subtitle}>
+          {!compact && <Text style={styles.subtitle}>
             {lang === 'zh'
               ? '对准服务器上「配对设备」或 gtmux pair 的二维码'
               : 'Point at the QR from “Pair a device” or gtmux pair'}
-          </Text>
+          </Text>}
         </SafeAreaView>
       </View>
 
       {/* middle: dim sides + clear window */}
-      <View style={styles.middle}>
+      <View style={[styles.middle, {height: win}]}>
         <View style={styles.dimSide} />
-        <View style={styles.window}>
+        <View style={[styles.window, {width: win, height: win}]}>
           <View style={[styles.corner, styles.tl]} />
           <View style={[styles.corner, styles.tr]} />
           <View style={[styles.corner, styles.bl]} />
@@ -77,8 +82,8 @@ export function ScanScreen({
       </View>
 
       {/* dim bottom + cancel */}
-      <View style={styles.dimBottom}>
-        <TouchableOpacity style={styles.cancel} onPress={onClose}>
+      <View style={[styles.dimBottom, {paddingTop: compact ? 12 : 28, paddingBottom: insets.bottom}]}>
+        <TouchableOpacity style={styles.cancel} onPress={() => { done.current = true; onClose(); }}>
           <Text style={styles.cancelText}>{lang === 'zh' ? '取消' : 'Cancel'}</Text>
         </TouchableOpacity>
       </View>
@@ -93,9 +98,9 @@ const styles = StyleSheet.create({
   dimTop: {flex: 1, backgroundColor: DIM, paddingHorizontal: 28},
   title: {color: '#fff', fontSize: 20, fontWeight: '700', marginTop: 8, textAlign: 'center'},
   subtitle: {color: 'rgba(255,255,255,0.75)', fontSize: 13, marginTop: 8, textAlign: 'center', lineHeight: 18},
-  middle: {flexDirection: 'row', height: WIN},
+  middle: {flexDirection: 'row'},
   dimSide: {flex: 1, backgroundColor: DIM},
-  window: {width: WIN, height: WIN},
+  window: {},
   corner: {position: 'absolute', width: 30, height: 30, borderColor: CYAN},
   tl: {top: -2, left: -2, borderTopWidth: 3, borderLeftWidth: 3, borderTopLeftRadius: 10},
   tr: {top: -2, right: -2, borderTopWidth: 3, borderRightWidth: 3, borderTopRightRadius: 10},

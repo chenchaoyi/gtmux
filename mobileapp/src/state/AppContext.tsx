@@ -4,12 +4,13 @@
 // active one (null = on the connection page). Kept tiny on purpose.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, {createContext, useContext, useEffect, useMemo, useRef, useState} from 'react';
+import React, {createContext, useCallback, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {AppState, Platform, useColorScheme} from 'react-native';
 import {Lang, LangPref, makeT, resolveLang} from '../i18n';
 import {PairedMac} from '../pairing/qr';
-import {loadServers, renameServer as renameSaved, reorderServers, saveServers, upsertServer} from '../pairing/store';
+import {loadServers, renameServer as renameSaved, reorderServers, saveServers, ServerStore, upsertServer} from '../pairing/store';
 import {Diag, diagBuffer} from '../diag';
+import {normalizeServerUrl} from '../pairing/identity';
 import {mergeAddresses} from '../pairing/follow';
 import {APP_VERSION} from '../version';
 import {applyUiReset} from './uiState';
@@ -25,7 +26,7 @@ interface AppContextValue {
   servers: PairedMac[];
   activeUrl: string | null;
   mac: PairedMac | null; // the active server (derived), or null when disconnected
-  pair: (m: PairedMac) => Promise<void>; // add/refresh a server and connect to it
+  pair: (m: PairedMac, current?: () => boolean) => Promise<void>; // add/refresh a server and connect to it
   // Remember every address a Mac says it answers at, so this phone can find it again
   // after it moves to another Direct server (openspec/changes/direct-server-choice).
   rememberAddresses: (url: string, addresses: string[], route?: MacRoute) => Promise<void>;
@@ -105,6 +106,13 @@ export function AppProvider({children}: {children: React.ReactNode}) {
   const [ready, setReady] = useState(false);
   const [servers, setServers] = useState<PairedMac[]>([]);
   const [activeUrl, setActiveUrl] = useState<string | null>(null);
+  const storeRef = useRef<ServerStore>({servers: [], activeUrl: null});
+  const writes = useRef<Promise<void>>(Promise.resolve());
+  const serialize = useCallback((run: (current: PairedMac[], active: string | null) => Promise<void>) => {
+    const work = writes.current.then(() => run(storeRef.current.servers, storeRef.current.activeUrl));
+    writes.current = work.catch(() => {}); // a failed write must not poison later retries
+    return work;
+  }, []);
   const [pendingPane, setPendingPane] = useState<string | null>(null);
   const [langPref, setLangPrefState] = useState<LangPref>('system');
   const [pushEnabled, setPushEnabledState] = useState(true);
@@ -177,6 +185,7 @@ export function AppProvider({children}: {children: React.ReactNode}) {
       for (const sv of svs) Diag.secret(sv.token);
       diagBuffer.load();
       Diag.info('phone.start', 'the app started', {version: APP_VERSION, macs: svs.length});
+      storeRef.current = {servers: svs, activeUrl: act};
       setServers(svs);
       setActiveUrl(act);
       if (lp === 'en' || lp === 'zh' || lp === 'system') setLangPrefState(lp);
@@ -253,19 +262,23 @@ export function AppProvider({children}: {children: React.ReactNode}) {
 
   const value: AppContextValue = useMemo(() => {
     // persist mirrors state into the Keychain. State + storage stay in lockstep.
-    const persist = (next: PairedMac[], active: string | null) => {
+    const persist = async (next: PairedMac[], active: string | null) => {
       for (const sv of next) Diag.secret(sv.token);
+      const saved = {servers: next, activeUrl: active};
+      await saveServers(saved);
+      storeRef.current = saved;
       setServers(next);
       setActiveUrl(active);
-      return saveServers({servers: next, activeUrl: active});
     };
     return {
       ready,
       servers,
       activeUrl,
       mac,
-      pair: m => persist(upsertServer(servers, m), m.url),
-      rememberAddresses: async (url, addresses, route) => {
+      pair: (m, current = () => true) => serialize(async servers => {
+        if (current()) await persist(upsertServer(servers, m), normalizeServerUrl(m.url));
+      }),
+      rememberAddresses: (url, addresses, route) => serialize(async (servers, activeUrl) => {
         const target = servers.find(s => s.url === url);
         if (!target) return;
         const alts = mergeAddresses(url, addresses);
@@ -276,8 +289,9 @@ export function AppProvider({children}: {children: React.ReactNode}) {
           servers.map(s => (s.url === url ? {...s, alts, ...(route ? {route} : {})} : s)),
           activeUrl,
         );
-      },
-      followMove: async (fromUrl, toUrl) => {
+      }),
+      followMove: (fromUrl, toUrl) => serialize(async (servers, activeUrl) => {
+        toUrl = normalizeServerUrl(toUrl);
         const target = servers.find(s => s.url === fromUrl);
         if (!target || fromUrl === toUrl) return;
         const hostOf = (u: string) => u.replace(/^https?:\/\//, '').split('/')[0];
@@ -285,18 +299,18 @@ export function AppProvider({children}: {children: React.ReactNode}) {
           from: hostOf(fromUrl),
           to: hostOf(toUrl),
         });
-        const moved: PairedMac = {...target, url: toUrl, alts: mergeAddresses(toUrl, target.alts ?? [])};
+        const moved: PairedMac = {...target, url: toUrl, alts: mergeAddresses(toUrl, [fromUrl, ...(target.alts ?? [])])};
         // In its own place: an address change is not the reader moving it up the list.
         await persist(
-          servers.map(s => (s.url === fromUrl ? moved : s)),
+          servers.flatMap(s => s.url === fromUrl ? [moved] : normalizeServerUrl(s.url) === toUrl ? [] : [s]),
           activeUrl === fromUrl ? toUrl : activeUrl,
         );
-      },
-      selectServer: async url => {
+      }),
+      selectServer: (url) => serialize(async (servers) => {
         if (servers.some(s => s.url === url)) await persist(servers, url);
-      },
-      disconnect: () => persist(servers, null),
-      removeServer: async url => {
+      }),
+      disconnect: () => serialize(servers => persist(servers, null)),
+      removeServer: (url) => serialize(async (servers, activeUrl) => {
         // Written first, shown after (as moveServer): a removal that looks done but comes
         // back on the next launch is the failure, and a removal that was not saved must not
         // have unregistered the Mac's push either. A failed write rejects and nothing
@@ -304,7 +318,7 @@ export function AppProvider({children}: {children: React.ReactNode}) {
         const next = servers.filter(s => s.url !== url);
         const wasActive = activeUrl === url;
         const nextActive = wasActive ? null : activeUrl;
-        await saveServers({servers: next, activeUrl: nextActive});
+        await persist(next, nextActive);
         // Tell the removed Mac to drop this device's tokens, so it stops pushing to
         // a phone that has unpaired it — the APNs token (alerts + silent badge) AND
         // the Live Activity token (lock-screen updates), so the deleted server also
@@ -327,25 +341,21 @@ export function AppProvider({children}: {children: React.ReactNode}) {
         // End the local lock-screen card at once if it was tracking the removed
         // server (the provider unmount does this too, but don't wait on it).
         if (wasActive) LiveActivity.stop();
-        setServers(next);
-        setActiveUrl(nextActive);
-      },
-      renameServer: async (url, name) => {
+      }),
+      renameServer: (url, name) => serialize(async (servers, activeUrl) => {
         if (!servers.some(s => s.url === url)) return;
         // Written first, shown after: the list used to show the new name although the
         // write had failed, and the old one came back on the next launch (F12).
         const next = renameSaved(servers, url, name);
-        await saveServers({servers: next, activeUrl});
-        setServers(next);
-      },
-      moveServer: async (url, to) => {
+        await persist(next, activeUrl);
+      }),
+      moveServer: (url, to) => serialize(async (servers, activeUrl) => {
         const next = reorderServers(servers, url, to);
         if (next === servers) return;
         // Written first, shown after, as for a Mac's notification switch: an order that
         // looks saved but comes back the old way on the next launch is the failure.
-        await saveServers({servers: next, activeUrl});
-        setServers(next);
-      },
+        await persist(next, activeUrl);
+      }),
       pendingPane,
       setPendingPane,
       langPref,
@@ -363,14 +373,13 @@ export function AppProvider({children}: {children: React.ReactNode}) {
         setPushKindsState(v);
         AsyncStorage.setItem(PUSH_KINDS_KEY, JSON.stringify(v));
       },
-      setServerPushEnabled: async (url, enabled) => {
+      setServerPushEnabled: (url, enabled) => serialize(async (servers, activeUrl) => {
         if (!servers.some(s => s.url === url && s.scope !== 'guest')) return;
         const next = servers.map(s => s.url === url ? {...s, pushEnabled: enabled} : s);
         // Persist before showing the new choice. A Keychain write failure must
         // not leave a switch that looks saved but reverts on the next launch.
-        await saveServers({servers: next, activeUrl});
-        setServers(next);
-      },
+        await persist(next, activeUrl);
+      }),
       pushSync,
       retryPushSync: () => setPushRetry(n => n + 1),
       setPushToken: setPushTokenState,
@@ -399,7 +408,7 @@ export function AppProvider({children}: {children: React.ReactNode}) {
       t: makeT(lang),
       pal: paletteFor(scheme),
     };
-  }, [ready, servers, activeUrl, pendingPane, mac, langPref, pushEnabled, pushKinds, pushSync, fontPref, returnSends, defaultDetailMode, themePref, scheme, lang]);
+  }, [serialize, ready, servers, activeUrl, pendingPane, mac, langPref, pushEnabled, pushKinds, pushSync, fontPref, returnSends, defaultDetailMode, themePref, scheme, lang]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

@@ -7,6 +7,7 @@
 
 import {Diag} from '../diag';
 import {PAIR_STEP_MS} from './deadline';
+import {normalizeServerUrl} from './identity';
 
 export interface PairedMac {
   url: string; // reachable base (scheme+host+port)
@@ -147,7 +148,7 @@ export function parsePairingQR(raw: string): PairResult {
   } catch {
     throw new Error('Not a gtmux pairing code.');
   }
-  const url = String(obj?.url || '').replace(/\/+$/, '');
+  const url = normalizeServerUrl(String(obj?.url || ''));
   if (!/^https?:\/\/.+/.test(url)) throw new Error('Pairing code has no valid url.');
   // v2 QRs omit `name` to stay small; derive a label from the URL host instead
   // (`gtmux-7a3f.ccy.dev` → `gtmux-7a3f`, `1.2.3.4:8765` → `1.2.3.4`).
@@ -170,8 +171,8 @@ export function parsePairingQR(raw: string): PairResult {
 //   unreachable — the request never reached an HTTP responder (DNS/TLS/offline/
 //                 wrong address). Nothing answered.
 //   tunnelDown  — an edge/proxy answered 5xx (Cloudflare 530/1033 "tunnel error",
-//                 or 502/503/504): we reached Cloudflare but NOT the gtmux serve
-//                 behind it — the Mac's serve or tunnel is offline, code is fine.
+//                 or 502/503/504): the route failed; the code may already have been consumed
+//                 if the upstream reply was lost.
 //   codeInvalid — the gtmux serve itself rejected the code (4xx): expired/used/typo.
 //   noToken     — serve accepted the code but the response carried no token.
 export type EnrollFailure = 'unreachable' | 'tunnelDown' | 'codeInvalid' | 'noToken';
@@ -227,40 +228,53 @@ export async function enrollRedeem(
   // Bounded, and actually cancelled: a request nothing answers (a phone VPN swallowed it,
   // 2026-09-22) otherwise waits out iOS's own idle timeout while the scan spins.
   const ctl = new AbortController();
-  const timer = setTimeout(() => ctl.abort(), timeoutMs);
-  let r: Response;
+  let timer: ReturnType<typeof setTimeout>;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      reject(new EnrollError('unreachable', 'Enrollment timed out.'));
+      ctl.abort();
+    }, timeoutMs);
+  });
   try {
-    r = await fetch(`${base}/api/enroll`, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({enrollCode, name}),
-      signal: ctl.signal,
-    });
-  } catch (e: any) {
-    // fetch rejects only when NOTHING answered — DNS/TLS failure, no route, offline,
-    // or the address/port is wrong. Never an expired code.
-    return refuse('unreachable', undefined,
-      ctl.signal.aborted ? `no answer within ${Math.round(timeoutMs / 1000)}s` : String(e?.message || e));
+    return await Promise.race([(async () => {
+      let r: Response;
+      try {
+        r = await fetch(`${base}/api/enroll`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({enrollCode, name}),
+          signal: ctl.signal,
+        });
+      } catch (e: any) {
+        // DNS/TLS/offline and a lost reply are all transport failures. The
+        // server may already have consumed the code; do not retry redemption.
+        return refuse('unreachable', undefined,
+          ctl.signal.aborted ? `no answer within ${Math.round(timeoutMs / 1000)}s` : String(e?.message || e));
+      }
+      if (!r.ok) {
+        // A 5xx cannot prove whether enrollment committed before its reply
+        // was lost. A 4xx refuses the code.
+        return refuse(r.status >= 500 ? 'tunnelDown' : 'codeInvalid', r.status);
+      }
+      let j: any;
+      try {
+        j = await r.json();
+      } catch {
+        return refuse('noToken', r.status);
+      }
+      if (!j?.token) return refuse('noToken', r.status);
+      if (ctl.signal.aborted) throw new EnrollError('unreachable', 'Enrollment timed out.');
+      Diag.secret(String(j.token));
+      const scope = j.scope === 'owner' || j.scope === 'guest' ? (j.scope as 'owner' | 'guest') : undefined;
+      Diag.act('act.pair', host, 'ok', 'paired with a server', {status: r.status, scope});
+      return {token: String(j.token), scope};
+    })(), deadline]);
+  } catch (e) {
+    if (ctl.signal.aborted) return refuse('unreachable', undefined, 'response deadline exceeded');
+    throw e;
   } finally {
-    clearTimeout(timer);
+    clearTimeout(timer!);
   }
-  if (!r.ok) {
-    // 5xx means a proxy/edge answered but the gtmux serve behind it did not — the
-    // Mac's serve or tunnel is down (Cloudflare surfaces a dead tunnel as HTTP 530 /
-    // error 1033, gateways as 502/503/504). 4xx is the serve rejecting the code.
-    return refuse(r.status >= 500 ? 'tunnelDown' : 'codeInvalid', r.status);
-  }
-  let j: any;
-  try {
-    j = await r.json();
-  } catch {
-    return refuse('noToken', r.status);
-  }
-  if (!j?.token) return refuse('noToken', r.status);
-  Diag.secret(String(j.token));
-  const scope = j.scope === 'owner' || j.scope === 'guest' ? (j.scope as 'owner' | 'guest') : undefined;
-  Diag.act('act.pair', host, 'ok', 'paired with a server', {status: r.status, scope});
-  return {token: String(j.token), scope};
 }
 
 // enrollMessage is the EnrollError text for each way a pairing fails.
@@ -277,11 +291,12 @@ function enrollMessage(kind: EnrollFailure, status?: number): string {
   }
 }
 
-// Normalize a manually-typed host into a base URL (defaults http:// and port 8765).
+// Bare hosts default to http:// and port 8765; full URLs keep their routing.
 export function normalizeHost(input: string): string {
-  let h = input.trim().replace(/\/+$/, '');
+  const h = input.trim().replace(/\/+$/, '');
   if (!h) return '';
-  if (!/^https?:\/\//.test(h)) h = `http://${h}`;
-  if (!/:\d+$/.test(h.replace(/^https?:\/\//, ''))) h = `${h}:8765`;
-  return h;
+  // A pasted full URL already specifies its routing, including standard 80/443.
+  // Appending :8765 after a Direct path corrupts the address.
+  if (/^https?:\/\//i.test(h)) return normalizeServerUrl(h);
+  return normalizeServerUrl(`http://${h}${/:\d+$/.test(h) ? '' : ':8765'}`);
 }

@@ -96,6 +96,13 @@ export function AgentsProvider({
   children: React.ReactNode;
 }) {
   const client = useMemo(() => new GtmuxClient(base, token), [base, token]);
+  const clientRef = useRef(client);
+  clientRef.current = client;
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [conn, setConn] = useState<ConnState>('connecting');
   // Seed from the pairing hint so the UI never flashes owner-only surfaces before
@@ -131,6 +138,7 @@ export function AgentsProvider({
       client
         .agents()
         .then(a => {
+          if (!mounted.current || clientRef.current !== client) return;
           lastOk.current = Date.now();
           refusals.current = 0;
           setAgents(a);
@@ -163,6 +171,7 @@ export function AgentsProvider({
         // wrong) is NOT "offline": the network is fine, this server refused us. Surface
         // it distinctly so the user re-pairs instead of chasing a network ghost.
         .catch(e => {
+          if (!mounted.current || clientRef.current !== client) return;
           if (!isAuthError(e)) {
             // Nothing answered: never evidence of a revoke, and it breaks a run of refusals.
             refusals.current = 0;
@@ -198,6 +207,12 @@ export function AgentsProvider({
     [client, name, scope],
   );
   refreshRef.current = refresh;
+  useEffect(() => {
+    refusals.current = 0;
+    revokeReported.current = false;
+    if (confirmTimer.current) clearTimeout(confirmTimer.current);
+    confirmTimer.current = null;
+  }, [client]);
   useEffect(
     () => () => {
       if (confirmTimer.current) clearTimeout(confirmTimer.current);
@@ -257,14 +272,16 @@ export function AgentsProvider({
     const open = () => {
       if (!live || !foreground) return;
       unsub = subscribe(base, token, {
-        onAgents: refresh,
+        onAgents: () => { if (live && clientRef.current === client) refresh(); },
         onAlert: a => {
+          if (!live || clientRef.current !== client) return;
           setBanner(a);
           if (bannerTimer.current) clearTimeout(bannerTimer.current);
           bannerTimer.current = setTimeout(() => setBanner(null), 5000);
         },
-        onServerMode: () => setServerModeRev(n => n + 1),
+        onServerMode: () => { if (live && clientRef.current === client) setServerModeRev(n => n + 1); },
         onOpen: () => {
+          if (!live || clientRef.current !== client) return;
           attempt = 0;
           setConn('live');
           // A stream that just came back may have missed changes while it was gone —
@@ -279,6 +296,7 @@ export function AgentsProvider({
         // while it was closed opened on "Can't reach" and sent its owner after the network
         // (simulator, 2026-10-05).
         onError: status => {
+          if (!live || clientRef.current !== client) return;
           setConn(status === 401 || status === 403 ? 'unauthorized' : 'offline');
           retry();
         },
@@ -333,7 +351,7 @@ export function AgentsProvider({
       unsub?.();
       if (bannerTimer.current) clearTimeout(bannerTimer.current);
     };
-  }, [base, token, refresh]);
+  }, [base, token, client, refresh]);
 
   // Refetch the moment the app returns to the foreground. iOS suspends the SSE
   // stream while backgrounded, and on reconnect the server only re-pushes on the

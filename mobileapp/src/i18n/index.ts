@@ -66,6 +66,9 @@ const S: Dict = {
     zh: '连不上这台服务器。检查地址和网络，再试一次；如果开着 VPN 或代理，关掉再试。',
   },
   // Connect with a field left empty: nothing was tried, so nothing about the network (F13).
+  pairInvalidQR: {en: 'Not a valid gtmux pairing code. Scan a new code from your server.', zh: '这不是有效的 gtmux 配对码。请扫描服务器上的新码。'},
+  pairSaveFailed: {en: 'Access was received, but could not be saved. Tap Retry saving. Your saved connections are unchanged. If you leave, get a new pairing code.', zh: '已取得访问凭据，但保存失败。请点「重试保存」。原有连接没有改变；若离开此页，请获取新的配对码。'},
+  pairSaveRetry: {en: 'Retry saving', zh: '重试保存'},
   pairNeedAddress: {en: "Enter the server's address.", zh: '先填这台服务器的地址。'},
   pairNeedToken: {en: 'Enter the token too (gtmux pair on the server shows it).', zh: '还要填 token（在服务器上运行 gtmux pair 可以看到）。'},
   badToken: {en: 'Access was refused. Pair again or get a new share link.', zh: '访问被拒绝。请重新配对或获取新的分享链接。'},
@@ -77,12 +80,12 @@ const S: Dict = {
   },
   // enrollment failures — distinct causes, each with a fix direction (not a blanket "expired")
   enrollUnreachable: {
-    en: "Nothing answered at that address. Check the address and the server's remote access. For a local address, keep both devices on the same network. If a VPN or proxy is on, turn it off and retry.",
-    zh: '这个地址没有回应。检查地址和服务器的远程访问；如果用局域网地址，让手机和服务器连同一个网络；如果开着 VPN 或代理，关掉再试。',
+    en: "Nothing answered at that address. Check the address and the server's remote access. For a local address, keep both devices on the same network. If a VPN or proxy is on, turn it off and retry. If this code was already accepted, get a new code.",
+    zh: '这个地址没有回应。检查地址和服务器的远程访问；如果用局域网地址，让手机和服务器连同一个网络；如果开着 VPN 或代理，关掉再试。若配对码已被接受，请获取新码。',
   },
   enrollTunnelDown: {
-    en: "The server did not answer. Check that gtmux is running and remote access is on, then retry. The pairing code is still valid.",
-    zh: '服务器没有回应。确认 gtmux 还在运行、远程访问已开启，再试一次。配对码仍有效。',
+    en: "The server did not answer. Check that gtmux is running and remote access is on, then retry. If the code was already accepted, get a new code before scanning again.",
+    zh: '服务器没有回应。确认 gtmux 还在运行、远程访问已开启，再试一次。若配对码已被接受，请获取新码后重新扫描。',
   },
   enrollCodeInvalid: {
     en: 'This pairing code expired or was already used. Run gtmux pair on the server for a new code.',

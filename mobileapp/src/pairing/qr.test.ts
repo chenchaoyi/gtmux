@@ -217,8 +217,10 @@ describe('normalizeHost', () => {
     expect(normalizeHost('https://host:9000')).toBe('https://host:9000');
   });
 
-  it('adds the default port when only a scheme is given', () => {
-    expect(normalizeHost('http://host')).toBe('http://host:8765');
+  it('keeps a full URL at its standard port', () => {
+    expect(normalizeHost('http://host')).toBe('http://host');
+    expect(normalizeHost('https://HOST/p123/')).toBe('https://host/p123');
+    expect(normalizeHost('https://host')).toBe('https://host');
   });
 
   it('trims whitespace and trailing slashes', () => {
@@ -281,3 +283,17 @@ describe('a share link with a code', () => {
   });
 });
 
+
+describe('enroll whole-response deadline', () => {
+  const original = globalThis.fetch;
+  afterEach(() => { globalThis.fetch = original; jest.useRealTimers(); });
+  it('does not spin forever when headers arrive but the response body stalls', async () => {
+    jest.useFakeTimers();
+    globalThis.fetch = jest.fn().mockResolvedValue({ok: true, status: 200, json: () => new Promise(() => {})});
+    const result = enrollDevice('https://synthetic.invalid', 'synthetic-code', 'phone', 100);
+    const caught = result.catch(e => e.kind);
+    await jest.advanceTimersByTimeAsync(101);
+    // Race makes the baseline fail promptly rather than leave Jest waiting forever.
+    expect(await Promise.race([caught, Promise.resolve('still waiting')])).toBe('unreachable');
+  });
+});

@@ -56,13 +56,13 @@ async function connect(host: string, token: string): Promise<string> {
 test('a pasted link with a code is redeemed and kept as a guest', async () => {
   await connect('https://audit.invalid/p99#code=4F7K-Q9X2', '');
   expect(asked).toEqual(['https://audit.invalid/p99/api/enroll']);
-  expect(mockPair).toHaveBeenCalledWith(expect.objectContaining({url: 'https://audit.invalid/p99', token: 'link-tok', scope: 'guest'}));
+  expect(mockPair).toHaveBeenCalledWith(expect.objectContaining({url: 'https://audit.invalid/p99', token: 'link-tok', scope: 'guest'}), expect.any(Function));
 });
 
 test('an address and a code said as two lines are redeemed the same way', async () => {
   await connect('studio.local', '4F7K-Q9X2');
   expect(asked).toEqual(['http://studio.local:8765/api/enroll']);
-  expect(mockPair).toHaveBeenCalledWith(expect.objectContaining({token: 'link-tok', scope: 'guest'}));
+  expect(mockPair).toHaveBeenCalledWith(expect.objectContaining({token: 'link-tok', scope: 'guest'}), expect.any(Function));
 });
 
 // `serve --token` takes any text, so eight letters and digits may be a real token: tried
@@ -71,7 +71,7 @@ test('an eight-character token the Mac accepts connects as a token', async () =>
   (checkServer as jest.Mock).mockResolvedValue('ok');
   await connect('studio.local', 'ABCD1234');
   expect(asked).toEqual([]);
-  expect(mockPair).toHaveBeenCalledWith(expect.objectContaining({url: 'http://studio.local:8765', token: 'ABCD1234', scope: 'owner'}));
+  expect(mockPair).toHaveBeenCalledWith(expect.objectContaining({url: 'http://studio.local:8765', token: 'ABCD1234', scope: 'owner'}), expect.any(Function));
 });
 
 test('a Mac that cannot be reached is not asked to redeem anything', async () => {

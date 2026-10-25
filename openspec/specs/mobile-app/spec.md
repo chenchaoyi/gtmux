@@ -89,6 +89,50 @@ scope — `all:true` ⇒ owner (full); otherwise a **guest** scoped to the retur
   `GET /api/share`, sees `all:false`, and enters guest mode scoped to the returned
   `view_panes`/`panes`
 
+#### Scenario: Repeat pairing preserves a single saved connection
+
+- **WHEN** an owner scans a new valid code for a saved endpoint or one of its previously
+  authenticated alternate addresses
+- **THEN** the app replaces its credential in place, preserving local name, order,
+  notification choice, alternate addresses and route; equivalent URL spellings and
+  pre-existing duplicates collapse with the selected URL kept consistent
+- **AND** names and Direct place IDs never identify a server; unknown DNS/IP aliases,
+  schemes, non-default ports and routing paths remain distinct without identity proof
+
+#### Scenario: Concurrent or abandoned pairing does not change another connection
+
+- **WHEN** camera frames or taps arrive together, or a response arrives after cancel,
+  sheet dismissal or a target switch
+- **THEN** only one operation is admitted and an abandoned operation cannot save or
+  select its target; the scanner can be opened again with a fresh admission latch
+- **AND** saved-list mutations serialize against the latest committed snapshot, so
+  delayed callbacks cannot discard another mutation
+
+#### Scenario: Credential persistence fails after a one-time code was redeemed
+
+- **WHEN** the Keychain rejects or returns false for the credential write
+- **THEN** the previous list and connection remain applied; the sheet explains the
+  save failure and offers Retry saving without redeeming the spent code again
+- **AND** cancel is disabled while a native write is committing; leaving before a
+  successful save or losing the redemption reply requires a new code, without
+  relaxing the server's single-use, five-minute or restart-invalidated code rules
+
+#### Scenario: Response bodies and old connections cannot keep pairing stuck
+
+- **WHEN** enrollment headers arrive but its response body stalls
+- **THEN** the same 15-second deadline stops waiting and cancels the request; a late
+  body cannot report success or save credentials
+- **AND** a successful repeat pair dismisses the add sheet, while rejected/expired
+  codes and unreachable routes show actionable English and Chinese feedback
+- **AND** after credential replacement the old SSE subscription is closed, and old
+  HTTP or SSE callbacks cannot overwrite the new credential's connection state
+
+#### Scenario: Scan in phone or tablet landscape
+
+- **WHEN** the camera sheet is opened on a supported phone or iPad orientation
+- **THEN** its scan square adapts to the available window and safe areas, retaining
+  the title and Cancel action; compact landscape hides the secondary instructions
+
 ### Requirement: Mirror the status language
 
 The system SHALL render agents with the status language identical to the menu-bar

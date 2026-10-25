@@ -5,6 +5,8 @@
 
 import * as Keychain from 'react-native-keychain';
 import {PairedMac} from './qr';
+import {mergeAddresses} from './follow';
+import {normalizeServerUrl} from './identity';
 
 const SERVICE = 'com.gtmux.app.servers';
 const LEGACY_SERVICE = 'com.gtmux.app.paired-mac'; // single-Mac store, pre-multi
@@ -18,7 +20,8 @@ const EMPTY: ServerStore = {servers: [], activeUrl: null};
 
 export async function saveServers(store: ServerStore): Promise<void> {
   // password = the full JSON (tokens included → must stay in the Keychain).
-  await Keychain.setGenericPassword('servers', JSON.stringify(store), {service: SERVICE});
+  const saved = await Keychain.setGenericPassword('servers', JSON.stringify(store), {service: SERVICE});
+  if (saved === false) throw new Error('Server credentials could not be saved.');
 }
 
 export async function loadServers(): Promise<ServerStore> {
@@ -41,11 +44,10 @@ export async function loadServers(): Promise<ServerStore> {
 
 // sanitize defends against a malformed/old blob and drops a stale activeUrl.
 export function sanitize(raw: any): ServerStore {
-  const servers: PairedMac[] = Array.isArray(raw?.servers)
-    ? raw.servers
-        .filter((s: any) => s && typeof s.url === 'string' && typeof s.token === 'string')
-        .map((s: any) => ({
-          url: s.url,
+  const valid: any[] = Array.isArray(raw?.servers)
+    ? raw.servers.filter((s: any) => s && typeof s.url === 'string' && typeof s.token === 'string') : [];
+  const entries: PairedMac[] = valid.map((s: any) => ({
+          url: normalizeServerUrl(s.url),
           token: s.token,
           name: typeof s.name === 'string' ? s.name : '',
           ...(typeof s.macName === 'string' && s.macName ? {macName: s.macName} : {}),
@@ -67,12 +69,19 @@ export function sanitize(raw: any): ServerStore {
                 },
               }
             : {}),
-        }))
-    : [];
+        }));
+  let servers = entries.reduce((list, entry) => upsertServer(list, entry), [] as PairedMac[]);
+  // List order is user-controlled, not credential age. Healing duplicates must
+  // preserve the selected entry's credential/settings rather than pick an arbitrary
+  // later entry that could have been revoked. Fresh re-pair still wins explicitly.
+  const selected = entries[valid.findIndex(s => s.url === raw?.activeUrl)];
+  if (selected) {
+    servers = upsertServer(servers, selected).map(s => s.url === selected.url
+      ? {...s, ...selected, ...(s.alts ? {alts: s.alts} : {})} : s);
+  }
+  const requested = typeof raw?.activeUrl === 'string' ? normalizeServerUrl(raw.activeUrl) : null;
   const activeUrl: string | null =
-    typeof raw?.activeUrl === 'string' && servers.some(s => s.url === raw.activeUrl)
-      ? raw.activeUrl
-      : null;
+    requested ? servers.find(s => s.url === requested || s.alts?.some(a => normalizeServerUrl(a) === requested))?.url ?? null : null;
   return {servers, activeUrl};
 }
 
@@ -94,11 +103,26 @@ export function splitServers(servers: PairedMac[]): {mine: PairedMac[]; guests: 
 // had set. A re-pair brings the Mac's current name; a name the user gave it on this
 // phone survives that. Pure — unit-tested.
 export function upsertServer(servers: PairedMac[], m: PairedMac): PairedMac[] {
-  const prior = servers.find(s => s.url === m.url);
-  const next: PairedMac = {...m,
+  const incoming = {...m, url: normalizeServerUrl(m.url)};
+  // Alternate URLs are learned from the authenticated /api/addresses response, never
+  // from a QR's name or its Direct location. Unknown aliases remain separate.
+  const matches = (s: PairedMac) => normalizeServerUrl(s.url) === incoming.url ||
+    (s.scope !== 'guest' && incoming.scope !== 'guest' &&
+      ((s.alts ?? []).some(a => normalizeServerUrl(a) === incoming.url) ||
+        (incoming.alts ?? []).some(a => normalizeServerUrl(a) === normalizeServerUrl(s.url))));
+  const prior = servers.find(matches);
+  const next: PairedMac = {...prior, ...incoming,
+    ...(prior?.alts || m.alts ? {alts: mergeAddresses(incoming.url, [prior?.url ?? '', ...(prior?.alts ?? []), ...(m.alts ?? [])])} : {}),
     ...(prior?.pushEnabled !== undefined ? {pushEnabled: prior.pushEnabled} : {}),
-    ...(prior?.macName !== undefined ? {name: prior.name, macName: m.name} : {})};
-  return prior ? servers.map(s => (s.url === m.url ? next : s)) : [...servers, next];
+    ...(prior?.macName !== undefined ? {name: prior.name, macName: m.macName ?? m.name} : {})};
+  if (!prior) return [...servers, next];
+  let added = false;
+  return servers.flatMap(s => {
+    if (!matches(s)) return [s];
+    if (added) return [];
+    added = true;
+    return [next];
+  });
 }
 
 // reorderServers moves one Mac to position `to` among the Macs of its own section (paired
