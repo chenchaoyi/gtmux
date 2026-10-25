@@ -139,6 +139,8 @@ final class DocumentTransport: NSObject, URLSessionDataDelegate, URLSessionDownl
     guard task is URLSessionDataTask else { return }
     if metadataStatus == 401 || metadataStatus == 403 { fail(.permission); return }
     if metadataStatus == 503 { fail(.unsupported); return }
+    if metadataStatus == 413 { fail(.tooLarge); return }
+    if metadataStatus >= 500 { fail(.network); return }
     if metadataStatus == 404 {
       let json = (try? JSONSerialization.jsonObject(with: metadataBytes)) as? [String: Any]
       fail(json?["code"] as? String == "document_unpublished" ? .unavailable : .unsupported)
@@ -157,6 +159,7 @@ final class DocumentTransport: NSObject, URLSessionDataDelegate, URLSessionDownl
 
   func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64,
                   totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
+    guard !failed && !cancelled else { return }
     guard let file = metadata, totalBytesWritten <= file.bytes, totalBytesWritten <= Self.maximumBytes else { fail(.tooLarge); return }
     let progress = Double(totalBytesWritten) / Double(file.bytes)
     let callback = onProgress

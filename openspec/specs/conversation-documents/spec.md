@@ -47,6 +47,9 @@ SHALL cancel the request and remove only that viewer's temporary copy.
 
 - **WHEN** the file is unpublished, permission is denied, or an old server lacks the endpoint
 - **THEN** an appropriate localized explanation and original reference remain available
+- **AND** the explanation wraps without truncation and can scroll at accessibility text sizes
+- **AND** recoverable failures offer Retry, denied access offers return to the conversation, and a verified unsupported format offers sharing the original
+- **AND** the toolbar does not offer Share before a verified original is available
 
 ### Requirement: Adjustable rich-text selection
 

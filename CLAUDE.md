@@ -19,6 +19,14 @@
 | `scripts/check-design.sh` | CI design/architecture conformance gate |
 | `ops/` | untracked, operator-private (secrets/runbooks) — never commit |
 
+When delivering a server-local report for conversation preview, publish its snapshot
+with `gtmux artifact add FILE --session-id SESSION_ID [--home-id HOME_ID]` before
+posting the returned `gtmux-file:` link. Obtain the owning turn identity from the
+current authenticated transcript; a pane ID is not a conversation ID. Merely writing
+an HTML file and posting its absolute path does not publish it. Verify resolution
+before describing a report as available in the app. See
+[conversation documents](docs/design/conversation-documents.md).
+
 **gtmux** is a command center for tmux sessions and the agents in them. Two surfaces
 over one Go core (gtmux-core is the single data source):
 
