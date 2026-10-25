@@ -31,7 +31,9 @@ const (
 )
 
 // PrivateUmask sets the process umask so every file and directory gtmux creates is
-// private, whatever mode the call site asked for. It returns the previous umask.
+// private at creation, whatever mode the call site asked for. It does not constrain
+// later chmod, mode-preserving copies/renames, or existing inodes. Managed atomic
+// publishers should use WritePrivateFile. It returns the previous umask.
 func PrivateUmask() int { return syscall.Umask(0o077) }
 
 // ConfigDir is ~/.config/gtmux: what a person set, or would carry to a new machine —

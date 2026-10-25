@@ -146,6 +146,28 @@ narrow `~/.local/share/gtmux/` and `~/.config/gtmux/` on start and on every hygi
 removing group and other permissions and keeping the owner's, and skipping what it cannot
 change; the changes are logged as `act.narrow`.
 
+Upload writers (CLI `send --attach`, including menu-bar screenshots, and HTTP
+`/api/upload`) SHALL publish through the managed private atomic writer: temporary
+files start at 0600, directories at 0700, regardless of a permissive caller umask.
+Existing owned directories on the destination chain lose only group/other bits.
+Retries SHALL retain content-addressed attachment paths but atomically replace the
+leaf with fresh private bytes and a fresh age, including identical older wide-mode
+copies. Source modes SHALL NOT be copied. Symlinked managed roots, intermediate
+parents, leaf links, special targets and foreign ownership SHALL be refused without
+following them or changing external targets. Unrelated files SHALL NOT be migrated
+by an upload. This enforces POSIX modes; it does not attest or remove inherited ACLs.
+
+#### Scenario: A screenshot attachment bypassed the private umask
+
+- **WHEN** an attachment is saved with umask 000, 022 or 077, or retried over an owned 0644 copy
+- **THEN** its published bytes have mode 0600 and its managed directories have no group/other permissions
+- **AND** a retry keeps the same path and refreshes the age without changing source or unrelated files
+
+#### Scenario: An upload destination is a symbolic link
+
+- **WHEN** an upload reaches a link at its managed root, intermediate parent or final path
+- **THEN** it fails without following the link or changing the external target's bytes or mode
+
 #### Scenario: An existing world-readable journal
 
 - **WHEN** serve starts and `events.jsonl` is 0644

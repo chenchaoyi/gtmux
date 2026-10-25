@@ -1136,18 +1136,14 @@ func sendCacheRecord(id string) {
 
 // saveUpload writes an uploaded file under ~/.local/share/gtmux/uploads with a
 // random prefix (no collisions / overwrites) and returns its path, so the phone
-// can hand a photo/file to an agent by path. Read by whoever the agent can read.
+// can hand a photo/file to an agent running as the same OS user.
 func saveUpload(name string, data []byte) (string, error) {
-	dir := uploadsDir()
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return "", err
-	}
 	safe := sanitizeFilename(name)
 	if safe == "" {
 		safe = "upload"
 	}
-	path := filepath.Join(dir, randToken()[:8]+"-"+safe)
-	if err := os.WriteFile(path, data, 0o644); err != nil {
+	path := filepath.Join(uploadsDir(), randToken()[:8]+"-"+safe)
+	if err := state.WritePrivateFile(path, data); err != nil {
 		return "", err
 	}
 	return path, nil

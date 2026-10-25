@@ -60,20 +60,24 @@ func privateDirectory(path string, narrow bool) (int, error) {
 	if err != nil {
 		return -1, err
 	}
-	var info unix.Stat_t
-	err = unix.Fstat(fd, &info)
-	if err == nil && int(info.Uid) != os.Geteuid() {
-		err = fmt.Errorf("directory ownership requires review: %s", path)
-	}
-	if err == nil && narrow && uint32(info.Mode)&0o077 != 0 {
-		err = unix.Fchmod(fd, uint32(info.Mode)&0o700)
-	}
-	if err != nil {
+	if err := checkPrivateDirectory(fd, narrow); err != nil {
 		_ = unix.Close(fd)
 		return -1, err
 	}
 	return fd, nil
 }
+func checkPrivateDirectory(fd int, narrow bool) error {
+	var info unix.Stat_t
+	err := unix.Fstat(fd, &info)
+	if err == nil && int(info.Uid) != os.Geteuid() {
+		err = fmt.Errorf("directory ownership requires review")
+	}
+	if err == nil && narrow && uint32(info.Mode)&0o077 != 0 {
+		err = unix.Fchmod(fd, uint32(info.Mode)&0o700)
+	}
+	return err
+}
+
 func checkOwnedRegular(info fs.FileInfo) error {
 	if !info.Mode().IsRegular() {
 		return fmt.Errorf("not a regular private file")
