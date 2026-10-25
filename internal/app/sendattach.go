@@ -1,17 +1,16 @@
 package app
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/radar"
+	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
@@ -52,66 +51,20 @@ func attachFiles(paths []string) ([]string, error) {
 	return out, nil
 }
 
-// saveAttachment writes data under the uploads dir as <hash>-<safe name>. The same bytes
-// under the same name land on the same path, and an existing identical file is reused.
+// saveAttachment writes data under the uploads dir as <hash>-<safe name>. Retries
+// keep the same path but atomically republish private bytes: older public copies
+// and stale mtimes are replaced without following links or importing source modes.
 func saveAttachment(name string, data []byte) (string, error) {
-	dir := uploadsDir()
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return "", err
-	}
 	safe := sanitizeFilename(name)
 	if safe == "" {
 		safe = "attachment"
 	}
 	sum := sha256.Sum256(data)
-	path := filepath.Join(dir, hex.EncodeToString(sum[:])[:12]+"-"+safe)
-	if have, err := os.ReadFile(path); err == nil && bytes.Equal(have, data) {
-		// Reused, so it counts as new: the uploads dir is pruned by age, and a copy first
-		// made a week ago must not vanish right after this send. Only once the refresh has
-		// TAKEN: a copy that keeps its old age is pruned within days, and one the pruner
-		// removed between the read and the refresh is gone. Either way it is written anew
-		// below, and if that fails too the send fails rather than naming a dead path.
-		if reusable(path, len(data)) {
-			return path, nil
-		}
-	}
-	tmp, err := os.CreateTemp(dir, ".attach-*")
-	if err != nil {
-		return "", err
-	}
-	if _, err := tmp.Write(data); err != nil {
-		tmp.Close()
-		os.Remove(tmp.Name())
-		return "", err
-	}
-	if err := tmp.Close(); err != nil {
-		os.Remove(tmp.Name())
-		return "", err
-	}
-	if err := os.Chmod(tmp.Name(), 0o644); err != nil {
-		os.Remove(tmp.Name())
-		return "", err
-	}
-	if err := os.Rename(tmp.Name(), path); err != nil {
-		os.Remove(tmp.Name())
+	path := filepath.Join(uploadsDir(), hex.EncodeToString(sum[:])[:12]+"-"+safe)
+	if err := state.WritePrivateFile(path, data); err != nil {
 		return "", err
 	}
 	return path, nil
-}
-
-// attachChtimes is os.Chtimes, swappable so a test can make the refresh fail.
-var attachChtimes = os.Chtimes
-
-// reusable refreshes an existing copy's age and confirms the result: still a regular file
-// of the right size, modified just now.
-func reusable(path string, size int) bool {
-	now := time.Now()
-	if attachChtimes(path, now, now) != nil {
-		return false
-	}
-	fi, err := os.Stat(path)
-	return err == nil && fi.Mode().IsRegular() && fi.Size() == int64(size) &&
-		!fi.ModTime().Before(now.Add(-time.Second))
 }
 
 // withAttachments appends one path per line after the message, as the phone's composer

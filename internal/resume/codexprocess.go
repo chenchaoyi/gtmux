@@ -13,6 +13,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/launchhost"
 	"github.com/chenchaoyi/gtmux/internal/native"
+	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
@@ -82,14 +83,14 @@ func commitProcessBinding(r native.Record, target CodexBindingTarget, incumbent 
 			return errors.New("process observation is not a conversation")
 		}
 	}
-	if err := os.MkdirAll(Dir(), 0700); err != nil {
+	if err := state.MkdirAll(Dir(), 0700); err != nil {
 		return err
 	}
 	lockPath := fileFor(target.Loc) + ".binding-lock"
 	if info, err := os.Stat(lockPath); err == nil && time.Since(info.ModTime()) > time.Minute {
 		_ = os.Remove(lockPath)
 	}
-	lock, err := os.OpenFile(lockPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
+	lock, err := state.OpenFile(lockPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
 	if err != nil {
 		return err
 	}

@@ -114,7 +114,7 @@ export function apply(ctx) {
   const stateRoot = join(homedir(), '.local', 'share', 'gtmux');
   const bridgeDir = join(stateRoot, 'terminal-clients');
   const requestDir = join(stateRoot, 'terminal-input');
-  try { directory(bridgeDir); directory(requestDir); } catch { return; }
+  try { directory(stateRoot); directory(bridgeDir); directory(requestDir); } catch { return; }
   let serverEpoch;
   try { serverEpoch = execFileSync('tmux', ['display-message', '-p', '-t', pane, '#{start_time}'], {encoding: 'utf8', timeout: 1000, maxBuffer: 1024}).trim(); } catch { return; }
   if (!/^[0-9]+$/.test(serverEpoch)) return;

@@ -90,11 +90,11 @@ func markHelperSession(sessionID string) {
 	if sessionID == "" {
 		return
 	}
-	if os.MkdirAll(helperDir(), 0o755) != nil {
+	if state.MkdirAll(helperDir(), 0o755) != nil {
 		return
 	}
 	pruneHelperMarkers(time.Now())
-	if f, err := os.Create(helperMarkerFor(sessionID)); err == nil {
+	if f, err := state.OpenFile(helperMarkerFor(sessionID), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600); err == nil {
 		f.Close()
 	}
 }

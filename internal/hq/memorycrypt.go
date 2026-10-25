@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"filippo.io/age"
-
 	"github.com/chenchaoyi/gtmux/internal/knowledge"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
@@ -82,7 +81,7 @@ func ExportMemoryEncrypted(dst, passphrase string) (path string, n int64, err er
 	if !strings.HasSuffix(dst, ExportSuffix) {
 		dst += ExportSuffix
 	}
-	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+	if err := state.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
 		return "", 0, err
 	}
 	recipient, err := age.NewScryptRecipient(passphrase)
@@ -91,7 +90,7 @@ func ExportMemoryEncrypted(dst, passphrase string) (path string, n int64, err er
 	}
 	// Same discipline as the plain export: a temp beside the target, renamed only once
 	// it is whole — nobody must pick up a half-written file and call it a backup.
-	f, err := os.CreateTemp(filepath.Dir(dst), ".hq-export-*")
+	f, err := state.CreateTemp(filepath.Dir(dst), ".hq-export-*")
 	if err != nil {
 		return "", 0, err
 	}
@@ -156,8 +155,8 @@ func recordExport(encrypted bool) {
 	if err != nil {
 		return
 	}
-	_ = os.MkdirAll(filepath.Dir(exportRecordPath()), 0o755)
-	_ = os.WriteFile(exportRecordPath(), b, 0o644)
+	_ = state.MkdirAll(filepath.Dir(exportRecordPath()), 0o755)
+	_ = state.WriteFile(exportRecordPath(), b, 0o644)
 }
 
 // LastExport is the most recent export on this machine, if any.

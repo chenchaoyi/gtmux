@@ -705,8 +705,8 @@ func readTunnelURL() string {
 func writeTunnelURL(u string) {
 	// Create the data root first: without it this write fails silently, and every surface
 	// that reads the pairing address back simply finds none, with nothing said.
-	_ = os.MkdirAll(filepath.Dir(tunnelURLPath()), 0o700)
-	_ = os.WriteFile(tunnelURLPath(), []byte(u+"\n"), 0o600)
+	_ = state.MkdirAll(filepath.Dir(tunnelURLPath()), 0o700)
+	_ = state.WriteFile(tunnelURLPath(), []byte(u+"\n"), 0o600)
 	_ = os.Remove(state.LegacyTunnelURLPath())
 }
 

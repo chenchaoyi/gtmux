@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/events"
+	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/usercfg"
 )
 
@@ -174,7 +175,7 @@ func ledgerBackupOnce() error {
 	if _, err := os.Stat(dst); err == nil {
 		return nil
 	}
-	return os.WriteFile(dst, b, 0o600)
+	return state.WriteFile(dst, b, 0o600)
 }
 
 // MachinePath is the canonical file for audience `machine`: what every agent on this

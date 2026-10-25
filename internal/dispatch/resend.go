@@ -54,14 +54,14 @@ func RecentSend(pane string) (hash string, ts int64) {
 // RecordSend persists the last payload hash + time for a pane (best-effort — a
 // telemetry write must never fail a delivery).
 func RecordSend(pane, hash string, ts int64) {
-	if err := os.MkdirAll(sendsDir(), 0o755); err != nil {
+	if err := state.MkdirAll(sendsDir(), 0o755); err != nil {
 		return
 	}
 	b, err := json.Marshal(sendRecord{Hash: hash, Ts: ts})
 	if err != nil {
 		return
 	}
-	_ = os.WriteFile(filepath.Join(sendsDir(), sanitizePane(pane)+".json"), b, 0o644)
+	_ = state.WriteFile(filepath.Join(sendsDir(), sanitizePane(pane)+".json"), b, 0o644)
 }
 
 // ForgetSend drops a pane's recent-send record, so the interlock stops recognizing the

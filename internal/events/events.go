@@ -230,7 +230,7 @@ func appendChecked(r Record) error {
 	if cap <= 0 {
 		return nil // explicitly disabled
 	}
-	if err := os.MkdirAll(state.Dir(), 0o755); err != nil {
+	if err := state.MkdirAll(state.Dir(), 0o755); err != nil {
 		return err
 	}
 	// Stamp the attention tier at the source so it is persisted and queryable
@@ -255,7 +255,7 @@ func appendChecked(r Record) error {
 	if err != nil {
 		return err
 	}
-	f, err := os.OpenFile(Path(), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	f, err := state.OpenFile(Path(), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
 	if err != nil {
 		return err
 	}

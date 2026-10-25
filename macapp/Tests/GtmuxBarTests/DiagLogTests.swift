@@ -1,4 +1,5 @@
 import XCTest
+import Darwin
 @testable import GtmuxBar
 
 /// The menu bar writes the same entries as the CLI into the same store, so `gtmux logs`
@@ -24,6 +25,36 @@ final class DiagLogTests: XCTestCase {
         return text.split(separator: "\n").compactMap {
             try? JSONSerialization.jsonObject(with: Data($0.utf8)) as? [String: Any]
         }
+    }
+
+    func testAppendNarrowsExistingModesAndRefusesLinks() throws {
+        let fm = FileManager.default
+        let path = DiagLog.currentSegment(dir: dir, day: DiagLog.dayString(Date()))
+        for mask: mode_t in [0, 0o022, 0o077] {
+            let previous = umask(mask)
+            defer { umask(previous) }
+            try fm.createDirectory(atPath: dir, withIntermediateDirectories: true)
+            try fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: dir)
+            try Data("seed\n".utf8).write(to: URL(fileURLWithPath: path))
+            try fm.setAttributes([.posixPermissions: 0o644], ofItemAtPath: path)
+            DiagLog.info("menubar.private", "append")
+            DiagLog.flush()
+            for (p, want) in [(dir, 0o700), (path, 0o600)] {
+                let attrs = try fm.attributesOfItem(atPath: p)
+                XCTAssertEqual((attrs[.posixPermissions] as? NSNumber)?.intValue, want, p)
+            }
+            XCTAssertTrue(try String(contentsOfFile: path, encoding: .utf8).hasPrefix("seed\n"))
+        }
+        let outside = NSTemporaryDirectory() + "private-log-outside-" + UUID().uuidString
+        defer { try? fm.removeItem(atPath: outside) }
+        try Data("untouched".utf8).write(to: URL(fileURLWithPath: outside))
+        try fm.setAttributes([.posixPermissions: 0o644], ofItemAtPath: outside)
+        try fm.removeItem(atPath: path)
+        try fm.createSymbolicLink(atPath: path, withDestinationPath: outside)
+        DiagLog.info("menubar.private", "must not follow")
+        DiagLog.flush()
+        XCTAssertEqual(try String(contentsOfFile: outside, encoding: .utf8), "untouched")
+        XCTAssertEqual((try fm.attributesOfItem(atPath: outside)[.posixPermissions] as? NSNumber)?.intValue, 0o644)
     }
 
     func testAnActLandsInTheSharedSchema() {

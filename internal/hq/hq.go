@@ -17,8 +17,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/chenchaoyi/gtmux/internal/diag"
-	"github.com/chenchaoyi/gtmux/internal/knowledge"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -28,12 +26,14 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/agentenv"
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
 	"github.com/chenchaoyi/gtmux/internal/hook"
 	"github.com/chenchaoyi/gtmux/internal/hostplatform"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/knowledge"
 	"github.com/chenchaoyi/gtmux/internal/panefocus"
 	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/state"
@@ -356,7 +356,7 @@ const hqClaudePointer = `@AGENTS.md
 func seedHQHome(wantLang string) (seedResult, error) {
 	var r seedResult
 	home := state.HQHome()
-	if err := os.MkdirAll(home, 0o755); err != nil {
+	if err := state.MkdirAll(home, 0o755); err != nil {
 		return r, err
 	}
 	hasAgents := fileExists(hqInstructionsPath())
@@ -369,10 +369,10 @@ func seedHQHome(wantLang string) (seedResult, error) {
 		if wantLang != "" {
 			seedLang = wantLang
 		}
-		if err := os.WriteFile(hqInstructionsPath(), []byte(playbookIn(seedLang)), 0o644); err != nil {
+		if err := state.WriteFile(hqInstructionsPath(), []byte(playbookIn(seedLang)), 0o644); err != nil {
 			return r, err
 		}
-		if err := os.WriteFile(hqClaudePointerPath(), []byte(hqClaudePointer), 0o644); err != nil {
+		if err := state.WriteFile(hqClaudePointerPath(), []byte(hqClaudePointer), 0o644); err != nil {
 			return r, err
 		}
 		r.Seeded, r.ToVersion = true, hqPlaybookVersion
@@ -383,7 +383,7 @@ func seedHQHome(wantLang string) (seedResult, error) {
 			return r, err
 		}
 		if !hasClaude {
-			if err := os.WriteFile(hqClaudePointerPath(), []byte(hqClaudePointer), 0o644); err != nil {
+			if err := state.WriteFile(hqClaudePointerPath(), []byte(hqClaudePointer), 0o644); err != nil {
 				return r, err
 			}
 			r.Seeded = true
@@ -403,10 +403,10 @@ func seedHQHome(wantLang string) (seedResult, error) {
 		if err != nil {
 			return r, err // nothing else touched: no backup, no migration
 		}
-		if err := os.WriteFile(hqInstructionsPath(), []byte(generatedPlaybook()), 0o644); err != nil {
+		if err := state.WriteFile(hqInstructionsPath(), []byte(generatedPlaybook()), 0o644); err != nil {
 			return r, err
 		}
-		if err := os.WriteFile(hqClaudePointerPath(), []byte(hqClaudePointer), 0o644); err != nil {
+		if err := state.WriteFile(hqClaudePointerPath(), []byte(hqClaudePointer), 0o644); err != nil {
 			return r, err
 		}
 		r.Seeded, r.Migrated = true, true
@@ -446,7 +446,7 @@ func writeLegacyBackup(path string, body []byte) (string, error) {
 		if i > 1 {
 			bak = fmt.Sprintf("%s-%d", stem, i)
 		}
-		f, err := os.OpenFile(bak, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+		f, err := state.OpenFile(bak, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
 		if errors.Is(err, os.ErrExist) {
 			continue
 		}
@@ -529,11 +529,11 @@ func upgradePlaybookIfNewer(r *seedResult, wantLang string) error {
 		bakLang = "legacy"
 	}
 	bak := hqInstructionsPath() + fmt.Sprintf(".bak-v%d-%s", installed, bakLang)
-	if err := os.WriteFile(bak, body, 0o644); err != nil {
+	if err := state.WriteFile(bak, body, 0o644); err != nil {
 		return err
 	}
 	prunePlaybookBackups()
-	if err := os.WriteFile(hqInstructionsPath(), []byte(playbookIn(writeLang)), 0o644); err != nil {
+	if err := state.WriteFile(hqInstructionsPath(), []byte(playbookIn(writeLang)), 0o644); err != nil {
 		return err
 	}
 	r.Upgraded = true
@@ -552,7 +552,7 @@ func seedHQLocal() bool {
 	if fileExists(hqLocalPath()) {
 		return false
 	}
-	return os.WriteFile(hqLocalPath(), []byte(hqLocalTemplate()), 0o644) == nil
+	return state.WriteFile(hqLocalPath(), []byte(hqLocalTemplate()), 0o644) == nil
 }
 
 // printSeedNotice reports the outcome of seedHQHome (versioned-hq-playbook): a
@@ -606,13 +606,13 @@ func hqNotesDir() string { return filepath.Join(state.HQHome(), "notes") }
 // board is never overwritten. Returns whether it created anything.
 func seedHQNotes() (created bool) {
 	dir := hqNotesDir()
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := state.MkdirAll(dir, 0o755); err != nil {
 		return false
 	}
 	for name, body := range hqNotesSeeds() {
 		p := filepath.Join(dir, name)
 		if _, err := os.Stat(p); err != nil {
-			if os.WriteFile(p, []byte(body), 0o644) == nil {
+			if state.WriteFile(p, []byte(body), 0o644) == nil {
 				created = true
 			}
 		}
@@ -743,13 +743,13 @@ func hqKnowledgeDir() string { return filepath.Join(state.HQHome(), "knowledge")
 // content is never overwritten. Returns whether it created anything.
 func seedHQKnowledge() (created bool) {
 	dir := hqKnowledgeDir()
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := state.MkdirAll(dir, 0o755); err != nil {
 		return false
 	}
 	for name, body := range knowledge.TopicSeeds {
 		p := filepath.Join(dir, name)
 		if _, err := os.Stat(p); err != nil {
-			if os.WriteFile(p, []byte(body), 0o644) == nil {
+			if state.WriteFile(p, []byte(body), 0o644) == nil {
 				created = true
 			}
 		}

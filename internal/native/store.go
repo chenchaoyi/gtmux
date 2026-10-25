@@ -10,15 +10,16 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/diag"
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // One stable lock inode avoids both unlink/waiter races and unbounded per-ID locks.
 // All native writers, retirement and liveness pruning use this short bounded lock.
 func withStoreLock(fn func() error) error {
-	if err := os.MkdirAll(Dir(), 0700); err != nil {
+	if err := state.MkdirAll(Dir(), 0700); err != nil {
 		return err
 	}
-	f, err := os.OpenFile(filepath.Join(Dir(), ".lock"), os.O_CREATE|os.O_RDWR, 0600)
+	f, err := state.OpenFile(filepath.Join(Dir(), ".lock"), os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
 		return err
 	}
@@ -46,7 +47,7 @@ func atomicJSON(path string, value any) error {
 	if err != nil {
 		return err
 	}
-	f, err := os.CreateTemp(filepath.Dir(path), ".native-*")
+	f, err := state.CreateTemp(filepath.Dir(path), ".native-*")
 	if err != nil {
 		return err
 	}

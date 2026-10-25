@@ -35,10 +35,10 @@ func AddOutcome(kind string) {
 	if kind == "" {
 		return
 	}
-	if err := os.MkdirAll(dir(), 0o755); err != nil {
+	if err := state.MkdirAll(dir(), 0o755); err != nil {
 		return
 	}
-	f, err := os.OpenFile(tallyPath(), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	f, err := state.OpenFile(tallyPath(), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
 	if err != nil {
 		return
 	}
@@ -92,7 +92,7 @@ func ConsumeTick(now, latestSeq int64) string {
 	}
 	fromSeq := readSeqMarker()
 	_ = state.WriteInt64Marker(tickSeqPath(), latestSeq)
-	_ = os.WriteFile(tickTimePath(), nil, 0o644)
+	_ = state.WriteFile(tickTimePath(), nil, 0o644)
 	t := time.Unix(now, 0)
 	_ = os.Chtimes(tickTimePath(), t, t)
 

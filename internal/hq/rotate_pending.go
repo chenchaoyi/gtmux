@@ -61,10 +61,10 @@ func readRotationRequest() (rotationRequest, bool, error) {
 // uses an atomic hard link so two CLI processes cannot both create it.
 func writeRotationFile(r rotationRequest, create bool) error {
 	path := rotationPendingPath()
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+	if err := state.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return err
 	}
-	f, err := os.CreateTemp(filepath.Dir(path), "rotate-*.tmp")
+	f, err := state.CreateTemp(filepath.Dir(path), "rotate-*.tmp")
 	if err != nil {
 		return err
 	}

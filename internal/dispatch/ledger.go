@@ -182,7 +182,7 @@ func NewID(nowNano int64) string {
 
 // AddTask writes a ledger entry (creating the dir).
 func AddTask(t Task) error {
-	if err := os.MkdirAll(tasksDir(), 0o755); err != nil {
+	if err := state.MkdirAll(tasksDir(), 0o755); err != nil {
 		return err
 	}
 	// Attention-ledger: default FirstSeen once (preserved across later re-saves).
@@ -193,7 +193,7 @@ func AddTask(t Task) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(taskPath(t.ID), b, 0o644)
+	return state.WriteFile(taskPath(t.ID), b, 0o644)
 }
 
 // LoadTask returns a ledger entry by id.

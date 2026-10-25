@@ -54,6 +54,9 @@ func (m Launchd) Write(path, label string, args []string, log string) error {
   <key>StandardErrorPath</key><string>` + xmlEscape(log) + `</string>
 </dict></plist>
 `
+	if err := prepareCapture(log); err != nil {
+		return err
+	}
 	return write(path, []byte(b))
 }
 func (m Launchd) Connector(data []byte) (string, error) {

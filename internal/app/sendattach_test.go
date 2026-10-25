@@ -24,7 +24,7 @@ func TestSaveAttachmentIsNamedByContent(t *testing.T) {
 		t.Fatalf("path = %s, want <uploads>/<hash>-shot.png", a)
 	}
 	// The same bytes come back to the same path — what lets the send interlock see a
-	// retry as the same message — and the file is reused, not rewritten.
+	// retry as the same message, even though private bytes are published anew.
 	old := time.Now().Add(-time.Hour)
 	if err := os.Chtimes(a, old, old); err != nil {
 		t.Fatal(err)
@@ -33,7 +33,7 @@ func TestSaveAttachmentIsNamedByContent(t *testing.T) {
 	if err != nil || b != a {
 		t.Fatalf("second save = %s, %v; want %s", b, err, a)
 	}
-	// Reused, and its age reset: the uploads dir is pruned by age, and an old copy must not
+	// Republished, and its age reset: the uploads dir is pruned by age, and an old copy must not
 	// vanish right after a new send names it.
 	if fi, _ := os.Stat(a); !fi.ModTime().After(old.Add(30 * time.Minute)) {
 		t.Fatalf("reused copy kept its old mtime %v", fi.ModTime())
@@ -43,8 +43,8 @@ func TestSaveAttachmentIsNamedByContent(t *testing.T) {
 	if err != nil || c == a {
 		t.Fatalf("different content got %s (err %v), same as %s", c, err, a)
 	}
-	if fi, err := os.Stat(c); err != nil || fi.Mode().Perm() != 0o644 {
-		t.Fatalf("mode = %v, err %v; want 0644", fi.Mode().Perm(), err)
+	if fi, err := os.Stat(c); err != nil || fi.Mode().Perm() != 0o600 {
+		t.Fatalf("mode = %v, err %v; want 0600", fi.Mode().Perm(), err)
 	}
 }
 
@@ -222,8 +222,8 @@ func TestAttachHoldFollowsTheRadarAndTheScreen(t *testing.T) {
 	}
 }
 
-// A reused copy is only named when its refresh took. Otherwise it is written anew, and a
-// copy that cannot be written fails the send instead of naming a path that will vanish.
+// A retry must fail if it cannot publish a fresh private copy, rather than naming
+// an old file that the age-based pruner may immediately remove.
 func TestSaveAttachmentNeverNamesACopyItCouldNotKeep(t *testing.T) {
 	setup := func(t *testing.T) string {
 		t.Setenv("HOME", t.TempDir())
@@ -237,63 +237,17 @@ func TestSaveAttachmentNeverNamesACopyItCouldNotKeep(t *testing.T) {
 		}
 		return p
 	}
-	fresh := func(t *testing.T, p string) {
-		t.Helper()
-		fi, err := os.Stat(p)
-		if err != nil {
-			t.Fatalf("named %s, which does not exist: %v", p, err)
-		}
-		if time.Since(fi.ModTime()) > time.Minute {
-			t.Fatalf("named %s, still %s old: the pruner takes it", p, time.Since(fi.ModTime()).Round(time.Hour))
-		}
-		if b, _ := os.ReadFile(p); string(b) != "one image" {
-			t.Fatalf("content = %q", b)
-		}
-	}
-	swapChtimes := func(t *testing.T, f func(string, time.Time, time.Time) error) {
-		prev := attachChtimes
-		attachChtimes = f
-		t.Cleanup(func() { attachChtimes = prev })
-	}
-
-	t.Run("the refresh fails: written anew", func(t *testing.T) {
+	t.Run("cannot rewrite: an error, not a path", func(t *testing.T) {
 		p := setup(t)
-		swapChtimes(t, func(string, time.Time, time.Time) error { return os.ErrPermission })
-		got, err := saveAttachment("shot.png", []byte("one image"))
-		if err != nil || got != p {
-			t.Fatalf("= %s, %v; want %s", got, err, p)
-		}
-		fresh(t, got)
-	})
-
-	t.Run("pruned between the read and the refresh: written anew", func(t *testing.T) {
-		p := setup(t)
-		swapChtimes(t, func(name string, a, m time.Time) error {
-			_ = os.Remove(name) // the pruner gets there first
-			return os.Chtimes(name, a, m)
-		})
-		got, err := saveAttachment("shot.png", []byte("one image"))
-		if err != nil || got != p {
-			t.Fatalf("= %s, %v; want %s", got, err, p)
-		}
-		fresh(t, got)
-	})
-
-	t.Run("cannot refresh and cannot rewrite: an error, not a path", func(t *testing.T) {
-		p := setup(t)
-		swapChtimes(t, func(string, time.Time, time.Time) error { return os.ErrPermission })
 		dir := filepath.Dir(p)
-		if err := os.Chmod(dir, 0o555); err != nil {
+		if err := os.Chmod(dir, 0o500); err != nil {
 			t.Fatal(err)
 		}
-		t.Cleanup(func() { _ = os.Chmod(dir, 0o755) })
-		if got, err := saveAttachment("shot.png", []byte("one image")); err == nil {
-			t.Fatalf("= %s with no error; the send would name a copy about to be pruned", got)
+		t.Cleanup(func() { _ = os.Chmod(dir, 0o700) })
+		if got, err := saveAttachment("shot.png", []byte("one image")); err == nil || got != "" {
+			t.Fatalf("= %s, %v; must refuse an unpublished copy", got, err)
 		}
 	})
-
-	// The reviewer's case, on a real file: an immutable old copy (chflags uchg) can be
-	// neither refreshed nor replaced.
 	t.Run("an immutable old copy: an error", func(t *testing.T) {
 		if runtime.GOOS != "darwin" {
 			t.Skip("chflags is macOS")
@@ -303,8 +257,12 @@ func TestSaveAttachmentNeverNamesACopyItCouldNotKeep(t *testing.T) {
 			t.Skip("chflags:", err)
 		}
 		t.Cleanup(func() { _ = exec.Command("chflags", "nouchg", p).Run() })
-		if got, err := saveAttachment("shot.png", []byte("one image")); err == nil {
-			t.Fatalf("= %s with no error", got)
+		if got, err := saveAttachment("shot.png", []byte("one image")); err == nil || got != "" {
+			t.Fatalf("= %s, %v", got, err)
+		}
+		entries, err := os.ReadDir(uploadsDir())
+		if err != nil || len(entries) != 1 {
+			t.Fatalf("failed publish left temporary files: %v %v", entries, err)
 		}
 	})
 }

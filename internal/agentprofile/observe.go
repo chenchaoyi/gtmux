@@ -112,14 +112,14 @@ func Observe(agent, session, home, event string, raw []byte, ancestry bool) {
 	}
 	v.Agent, v.Session, v.Home, v.Facts = agent, session, home, p.Facts
 	path := observationPath(agent, session, home)
-	if os.MkdirAll(filepath.Dir(path), 0700) != nil {
+	if state.MkdirAll(filepath.Dir(path), 0700) != nil {
 		return
 	}
 	b, err := json.Marshal(v)
 	if err != nil || len(b) > 64<<10 {
 		return
 	}
-	f, err := os.CreateTemp(filepath.Dir(path), ".profile-*")
+	f, err := state.CreateTemp(filepath.Dir(path), ".profile-*")
 	if err != nil {
 		return
 	}

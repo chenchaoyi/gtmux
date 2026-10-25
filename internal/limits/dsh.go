@@ -150,14 +150,14 @@ func ObserveDSHAccount(raw []byte, now time.Time) {
 		return
 	}
 	dir := filepath.Dir(accountPath())
-	if os.MkdirAll(dir, 0700) != nil {
+	if state.MkdirAll(dir, 0700) != nil {
 		return
 	}
 	fi, err := os.Lstat(dir)
 	if err != nil || !fi.IsDir() || fi.Mode().Perm()&0077 != 0 {
 		return
 	}
-	f, err := os.CreateTemp(dir, ".dsh-usage-*")
+	f, err := state.CreateTemp(dir, ".dsh-usage-*")
 	if err != nil {
 		return
 	}

@@ -182,8 +182,8 @@ func tunnelServiceInstall(port int, name string, yes, force, recover bool) int {
 	}
 	token := resolveServeToken("")
 
-	_ = os.MkdirAll(state.LogsDir(), 0o700) // launchd will not create the capture's directory
-	if err := os.MkdirAll(userServicesDir(), 0o755); err != nil {
+	_ = state.MkdirAll(state.LogsDir(), 0o700) // launchd will not create the capture's directory
+	if err := state.MkdirAll(userServicesDir(), 0o755); err != nil {
 		i18n.Sae("gtmux tunnel: "+err.Error(), "gtmux tunnel: "+err.Error())
 		return 1
 	}
@@ -258,8 +258,8 @@ func serveServiceInstall(port int) int {
 	}
 	removeTunnelURL()
 
-	_ = os.MkdirAll(state.LogsDir(), 0o700) // launchd will not create the capture's directory
-	if err := os.MkdirAll(userServicesDir(), 0o755); err != nil {
+	_ = state.MkdirAll(state.LogsDir(), 0o700) // launchd will not create the capture's directory
+	if err := state.MkdirAll(userServicesDir(), 0o755); err != nil {
 		i18n.Sae("gtmux serve: "+err.Error(), "gtmux serve: "+err.Error())
 		return 1
 	}

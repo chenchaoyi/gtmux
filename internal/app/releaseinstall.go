@@ -549,10 +549,10 @@ func setAppAutostart(target string) error {
 		return err
 	}
 	file := launchAgentPath()
-	if err := os.MkdirAll(filepath.Dir(file), 0o700); err != nil {
+	if err := state.MkdirAll(filepath.Dir(file), 0o700); err != nil {
 		return err
 	}
-	if err := os.WriteFile(file, body, 0o600); err != nil {
+	if err := state.WriteFile(file, body, 0o600); err != nil {
 		return err
 	}
 	manager := serviceManager()

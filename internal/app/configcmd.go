@@ -9,6 +9,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/agentenv"
 	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tabalert"
 	"github.com/chenchaoyi/gtmux/internal/usercfg"
 )
@@ -156,14 +157,14 @@ func setConfigKey(key string, value any) error {
 }
 
 func writeConfigMap(m map[string]any) error {
-	if err := os.MkdirAll(filepath.Dir(configPath()), 0o755); err != nil {
+	if err := state.MkdirAll(filepath.Dir(configPath()), 0o755); err != nil {
 		return err
 	}
 	b, err := json.MarshalIndent(m, "", "  ")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(configPath(), append(b, '\n'), 0o644)
+	return state.WriteFile(configPath(), append(b, '\n'), 0o644)
 }
 
 func configUsage() int {

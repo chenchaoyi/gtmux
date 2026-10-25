@@ -22,7 +22,6 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
-
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
@@ -437,8 +436,8 @@ func resolveDeviceID() string {
 		}
 	}
 	id := randToken() + randToken() // 64 hex chars
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err == nil {
-		_ = os.WriteFile(path, []byte(id+"\n"), 0o600)
+	if err := state.MkdirAll(filepath.Dir(path), 0o700); err == nil {
+		_ = state.WriteFile(path, []byte(id+"\n"), 0o600)
 	}
 	return id
 }

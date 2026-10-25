@@ -77,8 +77,8 @@ func PaneFrameWorking(pane, content string, now int64) bool {
 	curHash := frameHash(content)
 	newChange, working := frameWorking(now, prevPoll, prevChange, prevHash, curHash)
 
-	if err := os.MkdirAll(FrameDir(), 0o755); err == nil {
-		_ = os.WriteFile(framePath(pane), []byte(fmt.Sprintf("%d %d %s\n", now, newChange, curHash)), 0o644)
+	if err := MkdirAll(FrameDir(), 0o755); err == nil {
+		_ = WriteFile(framePath(pane), []byte(fmt.Sprintf("%d %d %s\n", now, newChange, curHash)), 0o644)
 	}
 	return working
 }

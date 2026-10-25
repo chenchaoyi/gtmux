@@ -21,7 +21,6 @@ package hqwake
 // unadvanced watermark is a debt gtmux keeps collecting on.
 
 import (
-	"os"
 	"path/filepath"
 
 	"github.com/chenchaoyi/gtmux/internal/state"
@@ -55,7 +54,7 @@ func Consume(seq int64) bool {
 	if cur := Consumed(); cur >= seq {
 		return false
 	}
-	if err := os.MkdirAll(dir(), 0o755); err != nil {
+	if err := state.MkdirAll(dir(), 0o755); err != nil {
 		return false
 	}
 	return state.WriteInt64Marker(watermarkPath(), seq) == nil

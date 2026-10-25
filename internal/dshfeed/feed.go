@@ -48,10 +48,10 @@ func readProgress(home, id string) (progress, error) {
 }
 func saveProgress(home, id string, p progress) error {
 	path := progressPath(home, id)
-	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+	if err := state.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return err
 	}
-	f, err := os.CreateTemp(filepath.Dir(path), ".progress-*")
+	f, err := state.CreateTemp(filepath.Dir(path), ".progress-*")
 	if err != nil {
 		return err
 	}

@@ -104,7 +104,7 @@ func ensureCodexFeaturesHooks(cfgPath string) {
 	} else {
 		updated = insertTomlTopLevel(content, "features.hooks = true")
 	}
-	if err := os.MkdirAll(filepath.Dir(cfgPath), 0o755); err != nil {
+	if err := state.MkdirAll(filepath.Dir(cfgPath), 0o755); err != nil {
 		i18n.Sae("• could not enable features.hooks: "+err.Error(), "• 启用 features.hooks 失败："+err.Error())
 		return
 	}

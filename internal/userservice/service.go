@@ -9,6 +9,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"time"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 type Manager interface {
@@ -42,10 +44,10 @@ func bounded(run Runner, name string, args ...string) error {
 }
 
 func write(path string, data []byte) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+	if err := state.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return err
 	}
-	f, err := os.CreateTemp(filepath.Dir(path), ".gtmux-service-*")
+	f, err := state.CreateTemp(filepath.Dir(path), ".gtmux-service-*")
 	if err != nil {
 		return err
 	}
@@ -64,4 +66,17 @@ func write(path string, data []byte) error {
 		return err
 	}
 	return os.Rename(f.Name(), path)
+}
+
+// Service managers open their output before the child can set a umask. Prepare
+// only managed captures here; foreign descriptor paths retain their old behavior.
+func prepareCapture(path string) error {
+	if !state.IsManagedPath(path) {
+		return nil
+	}
+	f, err := state.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+	if err != nil {
+		return err
+	}
+	return f.Close()
 }

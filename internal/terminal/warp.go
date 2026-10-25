@@ -2,7 +2,6 @@ package terminal
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -180,7 +179,7 @@ exec ` + "%s" + ` attach -t "$s" \; set-environment -t "$s" WARP_TERMINAL_SESSIO
 // needed) and returns the config name to open.
 func writeLaunchConfig(name, yaml string) error {
 	dir := launchConfigDir()
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := state.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
 	return state.WriteForeign(filepath.Join(dir, name+".yaml"), []byte(yaml), 0o644)
@@ -206,7 +205,7 @@ func (warp) SpawnTabs(sessions []string, dryRun bool) (string, error) {
 	if dryRun {
 		return yaml, nil
 	}
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := state.MkdirAll(dir, 0o755); err != nil {
 		return yaml, err
 	}
 	if err := state.WriteForeign(scriptPath, []byte(script), 0o755); err != nil {

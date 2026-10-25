@@ -125,20 +125,20 @@ func stageMigration(a memoryArchive, opts migrationOptions) (migrationManifest, 
 	if len(selected) == 0 {
 		return m, errors.New("archive has no selected content")
 	}
-	if err := os.MkdirAll(migrationDir(), 0700); err != nil {
+	if err := state.MkdirAll(migrationDir(), 0700); err != nil {
 		return m, err
 	}
-	root, err := os.MkdirTemp(migrationDir(), ".prepare-*")
+	root, err := state.MkdirTemp(migrationDir(), ".prepare-*")
 	if err != nil {
 		return m, err
 	}
 	defer os.RemoveAll(root)
 	for name, data := range selected {
 		dst := filepath.Join(root, filepath.FromSlash(name))
-		if err := os.MkdirAll(filepath.Dir(dst), 0700); err != nil {
+		if err := state.MkdirAll(filepath.Dir(dst), 0700); err != nil {
 			return m, err
 		}
-		if err := os.WriteFile(dst, data, 0600); err != nil {
+		if err := state.WriteFile(dst, data, 0600); err != nil {
 			return m, err
 		}
 		m.Files[name] = contentDigest(data)
@@ -147,7 +147,7 @@ func stageMigration(a memoryArchive, opts migrationOptions) (migrationManifest, 
 	if err != nil {
 		return m, err
 	}
-	if err := os.WriteFile(filepath.Join(root, "manifest.json"), b, 0600); err != nil {
+	if err := state.WriteFile(filepath.Join(root, "manifest.json"), b, 0600); err != nil {
 		return m, err
 	}
 	if err := os.Rename(root, filepath.Join(migrationDir(), m.ID)); err != nil {
@@ -269,12 +269,12 @@ func applyMigrationLocalLocked(id string, a memoryArchive, expected string) (mig
 	if expected == "" || contentDigest(current) != expected {
 		return r, errors.New("personal requirements changed since preview; review the current text again")
 	}
-	if err := os.MkdirAll(MemoryRoot(), 0700); err != nil {
+	if err := state.MkdirAll(MemoryRoot(), 0700); err != nil {
 		return r, err
 	}
 	if exists {
 		r.Backup = dst + ".pre-migrate-" + r.OperationID
-		backup, err := os.OpenFile(r.Backup, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
+		backup, err := state.OpenFile(r.Backup, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
 		if err != nil {
 			return r, err
 		}
@@ -297,7 +297,7 @@ func applyMigrationLocalLocked(id string, a memoryArchive, expected string) (mig
 	return r, err
 }
 func publishMigrationFile(dst string, data []byte) (bool, error) {
-	f, err := os.CreateTemp(filepath.Dir(dst), ".migration-write-*")
+	f, err := state.CreateTemp(filepath.Dir(dst), ".migration-write-*")
 	if err != nil {
 		return false, err
 	}
@@ -326,10 +326,10 @@ func publishMigrationFile(dst string, data []byte) (bool, error) {
 // The lock is outside the replaceable HQ home. Startup and all live imports use it.
 // Refuse contention instead of leaving a menu-bar operation waiting indefinitely.
 func acquireMigrationApplyLock() (func(), error) {
-	if err := os.MkdirAll(state.Dir(), 0700); err != nil {
+	if err := state.MkdirAll(state.Dir(), 0700); err != nil {
 		return nil, err
 	}
-	f, err := os.OpenFile(filepath.Join(state.Dir(), ".hq-migration-apply.lock"), os.O_CREATE|os.O_RDWR, 0600)
+	f, err := state.OpenFile(filepath.Join(state.Dir(), ".hq-migration-apply.lock"), os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
 		return nil, err
 	}

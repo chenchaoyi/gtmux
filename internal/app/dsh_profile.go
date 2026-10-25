@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/dsh"
+	"github.com/chenchaoyi/gtmux/internal/state"
 	"gopkg.in/yaml.v3"
 )
 
@@ -111,7 +112,7 @@ func writeDSTProfile(path string, original, next []byte) error {
 		sum := sha256.Sum256(original)
 		backup := path + ".gtmux-backup-" + hex.EncodeToString(sum[:8])
 		if _, err := os.Lstat(backup); os.IsNotExist(err) {
-			f, err := os.OpenFile(backup, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+			f, err := state.OpenFile(backup, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
 			if err != nil {
 				return err
 			}
@@ -132,7 +133,7 @@ func writeDSTProfile(path string, original, next []byte) error {
 	if !bytes.Equal(current, original) {
 		return fmt.Errorf("dst profile changed during installation")
 	}
-	f, err := os.CreateTemp(filepath.Dir(path), ".gtmux-profile-*")
+	f, err := state.CreateTemp(filepath.Dir(path), ".gtmux-profile-*")
 	if err != nil {
 		return err
 	}

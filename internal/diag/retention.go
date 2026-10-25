@@ -226,7 +226,7 @@ func appendLine(path string, e Entry) {
 
 // markOnce runs fn only for the first process to claim name for day.
 func markOnce(dir, day, name string, fn func()) {
-	f, err := os.OpenFile(filepath.Join(dir, "."+name+"-"+day), os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+	f, err := state.OpenFile(filepath.Join(dir, "."+name+"-"+day), os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
 	if err != nil {
 		return
 	}

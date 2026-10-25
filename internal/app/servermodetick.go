@@ -15,6 +15,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/notify"
 	"github.com/chenchaoyi/gtmux/internal/servermode"
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // batteryWarnPct is the charge at which the user is told, while there is still time
@@ -115,8 +116,8 @@ func markServerModeOnce(name string) bool {
 	if _, err := os.Stat(p); err == nil {
 		return false
 	}
-	_ = os.MkdirAll(servermode.StateDir(), 0o755)
-	return os.WriteFile(p, []byte(time.Now().Format(time.RFC3339)), 0o644) == nil
+	_ = state.MkdirAll(servermode.StateDir(), 0o755)
+	return state.WriteFile(p, []byte(time.Now().Format(time.RFC3339)), 0o644) == nil
 }
 
 func clearServerModeMarks() {
@@ -164,8 +165,8 @@ func readUnixFile(name string) (int64, bool) {
 }
 
 func writeUnixFile(name string, v int64) {
-	_ = os.MkdirAll(servermode.StateDir(), 0o755)
-	_ = os.WriteFile(serverModeStatePath(name), []byte(strconv.FormatInt(v, 10)+"\n"), 0o644)
+	_ = state.MkdirAll(servermode.StateDir(), 0o755)
+	_ = state.WriteFile(serverModeStatePath(name), []byte(strconv.FormatInt(v, 10)+"\n"), 0o644)
 }
 
 // markLocalServerModeOff records that the user turned server mode off at this Mac.

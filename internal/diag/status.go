@@ -59,10 +59,10 @@ func Publish(component, st string, staleAfter time.Duration, detail map[string]a
 		return
 	}
 	dir := state.StatusDir()
-	if os.MkdirAll(dir, state.PrivateDir) != nil {
+	if state.MkdirAll(dir, state.PrivateDir) != nil {
 		return
 	}
-	tmp, err := os.CreateTemp(dir, "."+component+"-*")
+	tmp, err := state.CreateTemp(dir, "."+component+"-*")
 	if err != nil {
 		return
 	}

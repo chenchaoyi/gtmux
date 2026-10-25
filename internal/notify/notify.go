@@ -61,7 +61,7 @@ func Send(o Options) {
 	} // bounded contention; a hook never waits for the app
 	defer lease.Close()
 	dir := state.NotifyDir()
-	if err := os.MkdirAll(dir, 0700); err != nil {
+	if err := state.MkdirAll(dir, 0700); err != nil {
 		return
 	}
 	if !pruneQueue(dir, time.Now()) {
@@ -83,7 +83,7 @@ func Send(o Options) {
 	name := fmt.Sprintf("%d-%s.json", time.Now().UnixNano(), sanitize(o.Pane))
 	final := filepath.Join(dir, name)
 	tmp := filepath.Join(dir, "."+name+".tmp")
-	if err := os.WriteFile(tmp, data, 0o600); err != nil {
+	if err := state.WriteFile(tmp, data, 0o600); err != nil {
 		return
 	}
 	if err := os.Rename(tmp, final); err != nil { // atomic publish into the watched dir

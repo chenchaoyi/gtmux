@@ -592,11 +592,11 @@ func loadPushTokens() []server.DeviceToken {
 
 func savePushTokens(toks []server.DeviceToken) {
 	path := pushTokensPath()
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+	if err := state.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return
 	}
 	if b, err := json.Marshal(toks); err == nil {
-		_ = os.WriteFile(path, b, 0o600)
+		_ = state.WriteFile(path, b, 0o600)
 	}
 }
 
@@ -619,11 +619,11 @@ func loadShareState() server.ShareState {
 
 func saveShareState(st server.ShareState) {
 	path := sharePath()
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+	if err := state.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return
 	}
 	if b, err := json.Marshal(st); err == nil {
-		_ = os.WriteFile(path, b, 0o600)
+		_ = state.WriteFile(path, b, 0o600)
 	}
 }
 
@@ -639,11 +639,11 @@ func loadDevices() []server.EnrolledDevice {
 
 func saveDevices(d []server.EnrolledDevice) {
 	path := devicesPath()
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+	if err := state.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return
 	}
 	if b, err := json.Marshal(d); err == nil {
-		_ = os.WriteFile(path, b, 0o600)
+		_ = state.WriteFile(path, b, 0o600)
 	}
 }
 
@@ -751,8 +751,8 @@ func resolveServeToken(flagToken string) string {
 		}
 	}
 	tok := randToken()
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err == nil {
-		_ = os.WriteFile(path, []byte(tok+"\n"), 0o600)
+	if err := state.MkdirAll(filepath.Dir(path), 0o700); err == nil {
+		_ = state.WriteFile(path, []byte(tok+"\n"), 0o600)
 	}
 	return tok
 }
@@ -814,7 +814,7 @@ func serverDisplayName() string {
 // and heartbeated while clients are connected, so a dead serve's file goes stale and
 // the app treats it as disconnected. `count` is kept for older readers. Best-effort.
 func writeRemoteClients(clients []server.ClientInfo) {
-	if err := os.MkdirAll(state.Dir(), 0o755); err != nil {
+	if err := state.MkdirAll(state.Dir(), 0o755); err != nil {
 		return
 	}
 	if clients == nil {
@@ -828,7 +828,7 @@ func writeRemoteClients(clients []server.ClientInfo) {
 	if err != nil {
 		return
 	}
-	_ = os.WriteFile(state.RemoteClientsPath(), b, 0o644)
+	_ = state.WriteFile(state.RemoteClientsPath(), b, 0o644)
 }
 
 // maxTranscriptTurns is the FIRST bound on the chat-history payload — how many turns
@@ -1136,18 +1136,14 @@ func sendCacheRecord(id string) {
 
 // saveUpload writes an uploaded file under ~/.local/share/gtmux/uploads with a
 // random prefix (no collisions / overwrites) and returns its path, so the phone
-// can hand a photo/file to an agent by path. Read by whoever the agent can read.
+// can hand a photo/file to an agent running as the same OS user.
 func saveUpload(name string, data []byte) (string, error) {
-	dir := uploadsDir()
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return "", err
-	}
 	safe := sanitizeFilename(name)
 	if safe == "" {
 		safe = "upload"
 	}
-	path := filepath.Join(dir, randToken()[:8]+"-"+safe)
-	if err := os.WriteFile(path, data, 0o644); err != nil {
+	path := filepath.Join(uploadsDir(), randToken()[:8]+"-"+safe)
+	if err := state.WritePrivateFile(path, data); err != nil {
 		return "", err
 	}
 	return path, nil
@@ -1202,7 +1198,7 @@ func agentIconPNG(name string) []byte {
 		return b
 	}
 	cacheDir := filepath.Join(state.CacheDir(), "icon-cache")
-	_ = os.MkdirAll(cacheDir, 0o755)
+	_ = state.MkdirAll(cacheDir, 0o755)
 	cache := filepath.Join(cacheDir, sanitizeFilename(name)+"-"+strconv.FormatInt(radar.FileMtime(hint), 10)+".png")
 	if b, err := os.ReadFile(cache); err == nil {
 		return b

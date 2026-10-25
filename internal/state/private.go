@@ -31,12 +31,14 @@ const (
 )
 
 // PrivateUmask sets the process umask so every file and directory gtmux creates is
-// private, whatever mode the call site asked for. It returns the previous umask.
+// private at creation, whatever mode the call site asked for. It does not constrain
+// later chmod, mode-preserving copies/renames, or existing inodes. Managed atomic
+// publishers should use WritePrivateFile. It returns the previous umask.
 func PrivateUmask() int { return syscall.Umask(0o077) }
 
 // ConfigDir is ~/.config/gtmux: what a person set, or would carry to a new machine —
 // settings, credentials, HQ's home. Everything gtmux generates lives under Dir().
-func ConfigDir() string { return filepath.Join(home(), ".config", "gtmux") }
+func ConfigDir() string { return configDir(home()) }
 
 // LogsDir holds the local log store: one JSON Lines file per local day.
 func LogsDir() string { return filepath.Join(Dir(), "logs") }
@@ -74,6 +76,9 @@ func TunnelAddressesPath() string { return filepath.Join(Dir(), "tunnel-addresse
 // its mode (os.WriteFile rewrites in place). A new one gets perm explicitly, so the
 // private umask does not make a file other tools expect to read 0600.
 func WriteForeign(path string, data []byte, perm fs.FileMode) error {
+	if managedRoot(path) != "" {
+		return WriteFile(path, data, perm)
+	}
 	_, statErr := os.Stat(path)
 	if err := os.WriteFile(path, data, perm); err != nil {
 		return err

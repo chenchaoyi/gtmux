@@ -144,22 +144,16 @@ func saveDaily(l dailyLedger) {
 	if err != nil {
 		return
 	}
-	if os.MkdirAll(filepath.Dir(dailyPath()), 0o755) != nil {
-		return
-	}
-	tmp := dailyPath() + ".tmp"
-	if os.WriteFile(tmp, b, 0o644) == nil {
-		_ = os.Rename(tmp, dailyPath())
-	}
+	_ = state.WritePrivateFile(dailyPath(), b)
 }
 
 // UpdateDaily reads what the logs appended since the last call and attributes it to
 // days. Safe to call from any process; a second caller waits on the lock.
 func UpdateDaily(now time.Time) {
-	if os.MkdirAll(state.Dir(), 0o755) != nil {
+	if state.MkdirAll(state.Dir(), 0o755) != nil {
 		return
 	}
-	lock, err := os.OpenFile(dailyPath()+".lock", os.O_CREATE|os.O_RDWR, 0o644)
+	lock, err := state.OpenFile(dailyPath()+".lock", os.O_CREATE|os.O_RDWR, 0o644)
 	if err != nil {
 		return
 	}

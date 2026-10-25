@@ -65,7 +65,7 @@ func AppendOpencode(sessionID, role, text string) {
 	if role != "user" && role != "assistant" {
 		return
 	}
-	if err := os.MkdirAll(opencodeDir(), 0o755); err != nil {
+	if err := state.MkdirAll(opencodeDir(), 0o755); err != nil {
 		return
 	}
 	rec := opencodeLine{Timestamp: time.Now().UTC().Format(time.RFC3339Nano), Role: role, Text: text}
@@ -73,7 +73,7 @@ func AppendOpencode(sessionID, role, text string) {
 	if err != nil {
 		return
 	}
-	f, err := os.OpenFile(opencodeSessionFile(sessionID), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	f, err := state.OpenFile(opencodeSessionFile(sessionID), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
 		return
 	}

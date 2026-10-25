@@ -269,19 +269,15 @@ func BuiltinIconPath(key string) string {
 	}
 	p := builtinIconCachePath(key)
 	dir := filepath.Dir(p)
-	if cur, err := os.ReadFile(p); err == nil && bytes.Equal(cur, b) {
-		return p
-	}
-	if os.MkdirAll(dir, 0o755) != nil {
+	if state.MkdirAll(dir, state.PrivateDir) != nil {
 		return ""
 	}
-	// Write-then-rename: a surface polling this path must never open a half-written PNG.
-	tmp := p + ".tmp"
-	if os.WriteFile(tmp, b, 0o644) != nil {
-		return ""
+	if info, err := os.Lstat(p); err == nil && info.Mode().IsRegular() && info.Mode().Perm()&0077 == 0 {
+		if cur, err := os.ReadFile(p); err == nil && bytes.Equal(cur, b) {
+			return p
+		}
 	}
-	if os.Rename(tmp, p) != nil {
-		_ = os.Remove(tmp)
+	if state.WritePrivateFile(p, b) != nil {
 		return ""
 	}
 	return p

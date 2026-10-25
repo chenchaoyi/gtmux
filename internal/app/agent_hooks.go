@@ -472,7 +472,7 @@ func uninstallAgentHooks(inst agentInstaller) int {
 // writeAgentPlugin writes a plugin file (creating its directory), for the plugin
 // install model. The file is dedicated to gtmux, so a plain overwrite is correct.
 func writeAgentPlugin(path, contents string) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if err := state.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
 	return state.WriteForeign(path, []byte(contents), 0o644)

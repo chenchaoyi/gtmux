@@ -132,10 +132,10 @@ func normalize(p string) string {
 
 // stampSeen records that an HQ pane resolved just now.
 func stampSeen() {
-	if err := os.MkdirAll(filepath.Dir(seenStampPath()), 0o755); err != nil {
+	if err := state.MkdirAll(filepath.Dir(seenStampPath()), 0o755); err != nil {
 		return
 	}
-	if err := os.WriteFile(seenStampPath(), nil, 0o644); err != nil {
+	if err := state.WriteFile(seenStampPath(), nil, 0o644); err != nil {
 		return
 	}
 	now := time.Now()

@@ -462,7 +462,7 @@ func writeTunnelAddresses(addrs []string, srv *tunnelServer) {
 	if err != nil {
 		return
 	}
-	_ = os.WriteFile(state.TunnelAddressesPath(), append(b, '\n'), 0o600)
+	_ = state.WriteFile(state.TunnelAddressesPath(), append(b, '\n'), 0o600)
 }
 
 func removeTunnelAddresses() { _ = os.Remove(state.TunnelAddressesPath()) }

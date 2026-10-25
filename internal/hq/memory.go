@@ -71,12 +71,12 @@ func ExportMemory(dst string) (int64, error) {
 	if st, err := os.Stat(root); err != nil || !st.IsDir() {
 		return 0, fmt.Errorf("no HQ records at %s", root)
 	}
-	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+	if err := state.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
 		return 0, err
 	}
 	// Write to a temp beside the target and rename: a reader must never open a
 	// half-written archive and believe it is a backup.
-	f, err := os.CreateTemp(filepath.Dir(dst), ".hq-export-*")
+	f, err := state.CreateTemp(filepath.Dir(dst), ".hq-export-*")
 	if err != nil {
 		return 0, err
 	}
@@ -174,20 +174,20 @@ func ImportMemory(src string) (string, error) {
 
 func restoreMemoryArchive(archive memoryArchive) (moved string, err error) {
 	root := MemoryRoot()
-	if err := os.MkdirAll(filepath.Dir(root), 0700); err != nil {
+	if err := state.MkdirAll(filepath.Dir(root), 0700); err != nil {
 		return "", err
 	}
-	prepared, err := os.MkdirTemp(filepath.Dir(root), ".hq-restore-*")
+	prepared, err := state.MkdirTemp(filepath.Dir(root), ".hq-restore-*")
 	if err != nil {
 		return "", err
 	}
 	defer os.RemoveAll(prepared)
 	for name, file := range archive.files {
 		dst := filepath.Join(prepared, filepath.FromSlash(name))
-		if err := os.MkdirAll(filepath.Dir(dst), 0700); err != nil {
+		if err := state.MkdirAll(filepath.Dir(dst), 0700); err != nil {
 			return "", err
 		}
-		if err := os.WriteFile(dst, file.data, file.mode|0600); err != nil {
+		if err := state.WriteFile(dst, file.data, file.mode|0600); err != nil {
 			return "", err
 		}
 	}

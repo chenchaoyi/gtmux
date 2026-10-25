@@ -358,9 +358,9 @@ func crashBurstCount(pane, errHead string, now int64) (n int, first bool) {
 	} else {
 		st.N++
 	}
-	if os.MkdirAll(filepath.Dir(p), 0o755) == nil {
+	if state.MkdirAll(filepath.Dir(p), 0o755) == nil {
 		if b, err := json.Marshal(st); err == nil {
-			_ = os.WriteFile(p, b, 0o644)
+			_ = state.WriteFile(p, b, 0o644)
 		}
 	}
 	return st.N, first

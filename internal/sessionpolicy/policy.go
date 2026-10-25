@@ -108,10 +108,10 @@ func saveAtFor(agent, id string, next Settings, now int64) (Settings, error) {
 		return Settings{}, ErrUnverified
 	}
 	file := pathFor(agent, id)
-	if err := os.MkdirAll(filepath.Dir(file), 0700); err != nil {
+	if err := state.MkdirAll(filepath.Dir(file), 0700); err != nil {
 		return Settings{}, err
 	}
-	lock, err := os.OpenFile(file+".lock", os.O_CREATE|os.O_RDWR, 0600)
+	lock, err := state.OpenFile(file+".lock", os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
 		return Settings{}, err
 	}
@@ -151,7 +151,7 @@ func saveAtFor(agent, id string, next Settings, now int64) (Settings, error) {
 	if err != nil {
 		return Settings{}, err
 	}
-	temp, err := os.CreateTemp(filepath.Dir(file), ".policy-*")
+	temp, err := state.CreateTemp(filepath.Dir(file), ".policy-*")
 	if err != nil {
 		return Settings{}, err
 	}

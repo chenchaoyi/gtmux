@@ -217,9 +217,9 @@ func loadCounter(agent, sessionID string) counter {
 }
 
 func saveCounter(agent, sessionID string, c counter) {
-	if err := os.MkdirAll(Dir(), 0o755); err != nil {
+	if err := state.MkdirAll(Dir(), 0o755); err != nil {
 		return
 	}
 	b, _ := json.Marshal(c)
-	_ = os.WriteFile(counterPath(agent, sessionID), b, 0o644)
+	_ = state.WriteFile(counterPath(agent, sessionID), b, 0o644)
 }

@@ -10,11 +10,10 @@ import (
 	"strconv"
 	"strings"
 
-	"golang.org/x/term"
-
 	"github.com/chenchaoyi/gtmux/internal/agents"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/state"
+	"golang.org/x/term"
 )
 
 // Choosing which agent runs HQ.
@@ -43,7 +42,7 @@ func writeHQAgentChoice(cmd string) error {
 	if c == "" {
 		return nil
 	}
-	return os.WriteFile(hqAgentChoicePath(), []byte(c+"\n"), 0o644)
+	return state.WriteFile(hqAgentChoicePath(), []byte(c+"\n"), 0o644)
 }
 
 // resolveHQLaunchAgent decides which agent command to launch (or relaunch) HQ with.

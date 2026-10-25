@@ -54,14 +54,14 @@ func fileFor(key string) string {
 
 // Save writes (overwriting) the record for a location key.
 func Save(key string, r Record) error {
-	if err := os.MkdirAll(Dir(), 0o755); err != nil {
+	if err := state.MkdirAll(Dir(), 0o755); err != nil {
 		return err
 	}
 	b, err := json.Marshal(r)
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(fileFor(key), b, 0o644)
+	return state.WriteFile(fileFor(key), b, 0o644)
 }
 
 // Load returns the record for a location key, ok=false if none/unreadable.

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/chenchaoyi/gtmux/internal/diag"
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // Unknown native control is not a grant. The durable metadata fence outlives
@@ -43,7 +44,7 @@ func MarkExternal(id string, now int64) error {
 		return ErrUnverified
 	}
 	file := fencePath(id)
-	if err := os.MkdirAll(filepath.Dir(file), 0700); err != nil {
+	if err := state.MkdirAll(filepath.Dir(file), 0700); err != nil {
 		return err
 	}
 	b, err := os.ReadFile(file)
@@ -59,7 +60,7 @@ func MarkExternal(id string, now int64) error {
 	}
 	b, _ = json.Marshal(externalFence{ID: id, Since: now})
 	// O_EXCL selects the first observation; subsequent writers never reset consent.
-	f, err := os.OpenFile(file, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
+	f, err := state.OpenFile(file, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
 	if os.IsExist(err) {
 		return nil
 	}

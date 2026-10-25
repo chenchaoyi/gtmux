@@ -51,6 +51,13 @@ The Standard Cloudflare tunnel runs over this path:
   an offline Mac can leave the app's change pending.
 - This is the deliberate trade-off of D1=(a). Removing "the edge sees plaintext" requires the E2E of §5 (not built).
 
+Uploads from the phone/Web and CLI `send --attach` (also used by menu-bar screenshots)
+are staged as owner-only files: private temporary bytes are atomically published with
+mode 0600 under managed directories with no group/other bits. Retries replace only the
+current attachment, preserving its content-addressed path. Managed symlinks and foreign
+ownership require review. This is a POSIX-mode guarantee, not an inherited-ACL audit;
+it does not grant an agent sandbox access to paths outside its authorized directories.
+
 ## 3. A one-time pairing code is not a token
 
 The `…/#c=<code>` in a browser / phone pairing link:

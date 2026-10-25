@@ -416,12 +416,12 @@ func boxEmpty(x io, pane string) bool {
 // so a lexical sort on drain is oldest-first; the pid suffix avoids collisions between
 // concurrent hook processes, and the `.p<n>` field carries the wake class's priority.
 func enqueue(x io, msg string) {
-	if err := os.MkdirAll(queueDir(), 0o755); err != nil {
+	if err := state.MkdirAll(queueDir(), 0o755); err != nil {
 		return
 	}
 	evictOverflow()
 	name := fmt.Sprintf("%019d-%d.p%d.txt", x.nowNano(), os.Getpid(), hqwake.PriorityOf(msg))
-	_ = os.WriteFile(filepath.Join(queueDir(), name), []byte(msg), 0o644)
+	_ = state.WriteFile(filepath.Join(queueDir(), name), []byte(msg), 0o644)
 }
 
 // enqueueKeyed writes/REPLACES the pending entry for key. The name embeds the due
@@ -429,7 +429,7 @@ func enqueue(x io, msg string) {
 // drain's due check can read it back); a replacement keeps the ORIGINAL due (window
 // position) and only swaps the payload for the newest one.
 func enqueueKeyed(x io, key, msg string, dueNano int64) {
-	if err := os.MkdirAll(queueDir(), 0o755); err != nil {
+	if err := state.MkdirAll(queueDir(), 0o755); err != nil {
 		return
 	}
 	// The field is matched with its trailing dot rather than `.txt`, so an entry that
@@ -438,13 +438,13 @@ func enqueueKeyed(x io, key, msg string, dueNano int64) {
 	for _, e := range readQueue() {
 		if strings.Contains(e.Name(), field) && strings.HasSuffix(e.Name(), ".txt") {
 			// Replace in place: newest payload, original due position.
-			_ = os.WriteFile(filepath.Join(queueDir(), e.Name()), []byte(msg), 0o644)
+			_ = state.WriteFile(filepath.Join(queueDir(), e.Name()), []byte(msg), 0o644)
 			return
 		}
 	}
 	evictOverflow()
 	name := fmt.Sprintf("%019d-0.p%d%s.txt", dueNano, hqwake.PriorityOf(msg), keyField(key))
-	_ = os.WriteFile(filepath.Join(queueDir(), name), []byte(msg), 0o644)
+	_ = state.WriteFile(filepath.Join(queueDir(), name), []byte(msg), 0o644)
 }
 
 // evictOverflow keeps the queue under maxQueueEntries by dropping the LOWEST-priority
@@ -680,8 +680,8 @@ func recordAttempt(claimed []string, payload, id string, since int64) {
 		r.Entries = append(r.Entries, identityOf(claimBase(filepath.Base(c))))
 	}
 	b, _ := json.Marshal(r)
-	if os.MkdirAll(attemptsDir(), 0o755) == nil {
-		_ = os.WriteFile(filepath.Join(attemptsDir(), strings.TrimPrefix(id, "#")+".json"), b, 0o644)
+	if state.MkdirAll(attemptsDir(), 0o755) == nil {
+		_ = state.WriteFile(filepath.Join(attemptsDir(), strings.TrimPrefix(id, "#")+".json"), b, 0o644)
 	}
 }
 
@@ -915,7 +915,7 @@ func readRepair() (repairState, bool) {
 
 func writeRepair(m repairState) {
 	b, _ := json.Marshal(m)
-	_ = os.WriteFile(repairPath(), b, 0o644)
+	_ = state.WriteFile(repairPath(), b, 0o644)
 }
 
 // markStuck parks a batch's claims for the Enter-only repair and records the
