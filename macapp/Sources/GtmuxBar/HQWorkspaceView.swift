@@ -133,9 +133,9 @@ struct HQWorkspaceView: View {
                         .accessibilityLabel(l10n.tr("Matter actions", "事项操作"))
                 }
                 HStack {
-                    Text(l10n.tr("Conversations", "关联会话")).font(HQTypography.rowTitle)
+                    Text(l10n.tr("Agent conversations", "Agent 对话")).font(HQTypography.rowTitle)
                     Spacer()
-                    Button(l10n.tr("Manage…", "管理会话…")) { manage = true }
+                    Button(l10n.tr("Conversations & records…", "对话与记录…")) { manage = true }
                 }
                 HQParticipantSummary(l10n: l10n, store: store, matter: matter)
                 if let parent = matter.parent,
