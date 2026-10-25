@@ -1,0 +1,613 @@
+{
+  "app_sha256": "79f087b74a5f82a3e446ddf1ee99fb9c2c681df6b9d1dd8f660c87f4d3b48260",
+  "capture_attempts": [
+    {
+      "app_sha256": "79f087b74a5f82a3e446ddf1ee99fb9c2c681df6b9d1dd8f660c87f4d3b48260",
+      "capture_harness_commit": "cfab63fcb0cd9ebdc2bf7905576c417043e76437",
+      "capture_harness_files": {
+        "__tests__/appstore-shots-ipad.test.ts": "7df486a89b4f3aadd73d453a8f13491207eabd3f4771a5ae0e58e6e6149bf3fc",
+        "__tests__/appstore-shots.test.ts": "39ba1925fe555b5e0b1836da493ef1a6d51049c99b3577d7f9eeb03f31fff6a5",
+        "setup/capabilities.ts": "de4150af2c466890fd509f274e72c018e6a154a7dd7f7fe037ed398d95be2eab",
+        "setup/demoEntry.ts": "d6fad6f6d3834f6e4dcb89e0bddc8ddb674ad67ea2f006cc9d9ecdbe8ce316b1",
+        "setup/global-setup.ts": "3aa72d1b9912cb06951f95a2ab7aafbaafc76f0695d1ee0f708dd1f462f6a49d"
+      },
+      "capture_tool_files": {
+        "capture-store-assets.py": "9ac1a60b7c14ad4adfdc116c0658b2e2098f2b95f38be52b126786bddda3d651",
+        "store_artifacts.py": "f9126e29315ee4574d69769e57b9906c28cf1466616715645d35005f380e4a4c"
+      },
+      "devices": {
+        "ipad": "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M5-12GB",
+        "phone": "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max"
+      },
+      "release_tag": "v1.0.149",
+      "review_capture": true,
+      "run_id": "40158201748",
+      "runtime": "26.5",
+      "runtime_identity": {
+        "buildversion": "23F77",
+        "identifier": "com.apple.CoreSimulator.SimRuntime.iOS-26-5",
+        "version": "26.5"
+      },
+      "source_commit": "3fcfc803c4dd32c8935e35f312fd94f8877d37ce",
+      "submitted": false,
+      "synthetic_demo_only": true,
+      "workflow_commit": "cfab63fcb0cd9ebdc2bf7905576c417043e76437",
+      "xcode": "Xcode 26.6\nBuild version 17F113"
+    }
+  ],
+  "capture_checkpoint_sha256": "08ed58354aa95f11840db560a8ec277afa23b5d77ed7942275d4321cb4d75530",
+  "capture_harness_files": {
+    "__tests__/appstore-shots-ipad.test.ts": "7df486a89b4f3aadd73d453a8f13491207eabd3f4771a5ae0e58e6e6149bf3fc",
+    "__tests__/appstore-shots.test.ts": "39ba1925fe555b5e0b1836da493ef1a6d51049c99b3577d7f9eeb03f31fff6a5",
+    "setup/capabilities.ts": "de4150af2c466890fd509f274e72c018e6a154a7dd7f7fe037ed398d95be2eab",
+    "setup/demoEntry.ts": "d6fad6f6d3834f6e4dcb89e0bddc8ddb674ad67ea2f006cc9d9ecdbe8ce316b1",
+    "setup/global-setup.ts": "3aa72d1b9912cb06951f95a2ab7aafbaafc76f0695d1ee0f708dd1f462f6a49d"
+  },
+  "capture_origins": {
+    "ipad-en": {
+      "run_id": "40158201748",
+      "workflow_commit": "cfab63fcb0cd9ebdc2bf7905576c417043e76437"
+    },
+    "ipad-zh": {
+      "run_id": "40158201748",
+      "workflow_commit": "cfab63fcb0cd9ebdc2bf7905576c417043e76437"
+    },
+    "phone-en": {
+      "run_id": "40158201748",
+      "workflow_commit": "cfab63fcb0cd9ebdc2bf7905576c417043e76437"
+    },
+    "phone-zh": {
+      "run_id": "40158201748",
+      "workflow_commit": "cfab63fcb0cd9ebdc2bf7905576c417043e76437"
+    }
+  },
+  "capture_tool_files": {
+    "capture-store-assets.py": "9ac1a60b7c14ad4adfdc116c0658b2e2098f2b95f38be52b126786bddda3d651",
+    "store_artifacts.py": "f9126e29315ee4574d69769e57b9906c28cf1466616715645d35005f380e4a4c"
+  },
+  "devices": {
+    "ipad": "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M5-12GB",
+    "phone": "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max"
+  },
+  "images": [
+    {
+      "bytes": 260155,
+      "file": "creative/en-US/header-21x9.png",
+      "sha256": "9a3fcd4fc6df6665d05c5fcc73416a809ac55e08f8c404786b6d62b7354a4d35",
+      "size": [
+        3840,
+        1646
+      ]
+    },
+    {
+      "bytes": 361815,
+      "file": "creative/en-US/search-3x2.png",
+      "sha256": "7cb17523798ba395546f604a880325899525f4f737ef054184d33f271345c0ae",
+      "size": [
+        3840,
+        2560
+      ]
+    },
+    {
+      "bytes": 255942,
+      "file": "creative/zh-Hans/header-21x9.png",
+      "sha256": "f68275f6008951366caff4a237cc0c4aaaabab8afdc8690271d642f9f9dc9446",
+      "size": [
+        3840,
+        1646
+      ]
+    },
+    {
+      "bytes": 338000,
+      "file": "creative/zh-Hans/search-3x2.png",
+      "sha256": "24cf4c5f607cfd5ecd8773c6fbbcd1f030187e6826098fd33fa8159fb736d150",
+      "size": [
+        3840,
+        2560
+      ]
+    },
+    {
+      "bytes": 383625,
+      "file": "screenshots/en-US/01.png",
+      "sha256": "306905aa93282cfd7f44cebaf0c799589c9efb05d6ea5fa649ab1aa0363bbb28",
+      "size": [
+        1320,
+        2868
+      ]
+    },
+    {
+      "bytes": 333036,
+      "file": "screenshots/en-US/02.png",
+      "sha256": "fd62788a8fd7bbdc6a77977f3680f2a5246cd2be2f17444d0690bc38de47c4ad",
+      "size": [
+        1320,
+        2868
+      ]
+    },
+    {
+      "bytes": 406871,
+      "file": "screenshots/en-US/03.png",
+      "sha256": "e79800db5daccc7ad7ceb552165c87616ac175e0bbaf8a8d89d5b9402accc153",
+      "size": [
+        1320,
+        2868
+      ]
+    },
+    {
+      "bytes": 687384,
+      "file": "screenshots/en-US/04.png",
+      "sha256": "0b5956b6d1355f99e1f3ee0fbf9c708be6ecd10794c6bbdbd8dc963df3ce0b03",
+      "size": [
+        1320,
+        2868
+      ]
+    },
+    {
+      "bytes": 397199,
+      "file": "screenshots/en-US/05.png",
+      "sha256": "f687ddf630650775459147ba4e7a5912d4cab4bd67b752cb01d31bf029cf82cb",
+      "size": [
+        1320,
+        2868
+      ]
+    },
+    {
+      "bytes": 259558,
+      "file": "screenshots/en-US/06.png",
+      "sha256": "736361564ce6c94ede5061a3a1c3954faa91435581d78a52da16089aeba68d6a",
+      "size": [
+        1320,
+        2868
+      ]
+    },
+    {
+      "bytes": 253238,
+      "file": "screenshots/en-US/07.png",
+      "sha256": "2a57a60ca1db6594997e3f7b61c2829eb201e128f2b6cb7bca8c203b51cfed24",
+      "size": [
+        1320,
+        2868
+      ]
+    },
+    {
+      "bytes": 451553,
+      "file": "screenshots/en-US/ipad-01.png",
+      "sha256": "b0cc58a58e4d87d5c17d341ae66dea2d4156a9c25bb6db2938aa6fff96e51a87",
+      "size": [
+        2752,
+        2064
+      ]
+    },
+    {
+      "bytes": 522275,
+      "file": "screenshots/en-US/ipad-02.png",
+      "sha256": "b95049b4b66eeb332839662eb4175d21ab97fc056bae2cb7cc1fff52fded8c8b",
+      "size": [
+        2752,
+        2064
+      ]
+    },
+    {
+      "bytes": 469811,
+      "file": "screenshots/en-US/ipad-03.png",
+      "sha256": "11840f7fd97fa858c1a91c924ecc326c9d0a45d1ea00b5030c2b0a0685da28d0",
+      "size": [
+        2752,
+        2064
+      ]
+    },
+    {
+      "bytes": 672249,
+      "file": "screenshots/en-US/ipad-04.png",
+      "sha256": "96476dfb3b332ca3920361ca46591347cf62636699e7cfe9ca66376f06b9a2b9",
+      "size": [
+        2752,
+        2064
+      ]
+    },
+    {
+      "bytes": 373719,
+      "file": "screenshots/zh-Hans/01.png",
+      "sha256": "f2ff805a7c9826fa111ddca194ea2abdc7962c66e7c7a3fccd60d9ea457285a7",
+      "size": [
+        1320,
+        2868
+      ]
+    },
+    {
+      "bytes": 321610,
+      "file": "screenshots/zh-Hans/02.png",
+      "sha256": "fe5d32bb647b27ce816c91bbaf491d5e4c94e0a967ca548bb34f4e851477c207",
+      "size": [
+        1320,
+        2868
+      ]
+    },
+    {
+      "bytes": 390946,
+      "file": "screenshots/zh-Hans/03.png",
+      "sha256": "c02107f4c80801300c9dfaad657c6ab1028bf527e5214ebbb04b3f415839eba2",
+      "size": [
+        1320,
+        2868
+      ]
+    },
+    {
+      "bytes": 681700,
+      "file": "screenshots/zh-Hans/04.png",
+      "sha256": "8cd9a89ce990b981239139f621df5363c9a29c336b862a313d819e04d0abf02d",
+      "size": [
+        1320,
+        2868
+      ]
+    },
+    {
+      "bytes": 374136,
+      "file": "screenshots/zh-Hans/05.png",
+      "sha256": "95513cfa0ce40df0770015c7b7fabff09ef7af9951c90dc02d4045174272b522",
+      "size": [
+        1320,
+        2868
+      ]
+    },
+    {
+      "bytes": 266088,
+      "file": "screenshots/zh-Hans/06.png",
+      "sha256": "23decc577e95e7069fc606bd0fee167c2aaf582d4680913d875d223d5f80c883",
+      "size": [
+        1320,
+        2868
+      ]
+    },
+    {
+      "bytes": 249528,
+      "file": "screenshots/zh-Hans/07.png",
+      "sha256": "1c6335490e607f8a84f72b13d94c69798231b8cb9d40f210d77ab7699d00eab3",
+      "size": [
+        1320,
+        2868
+      ]
+    },
+    {
+      "bytes": 445198,
+      "file": "screenshots/zh-Hans/ipad-01.png",
+      "sha256": "2a29e367564e68445e5a8064e1f230daa81d89369243373e84081d8d4b013ac0",
+      "size": [
+        2752,
+        2064
+      ]
+    },
+    {
+      "bytes": 506879,
+      "file": "screenshots/zh-Hans/ipad-02.png",
+      "sha256": "1df3872468b6e745609b5bd64bb9bf9720c5a36bdc4e39f3dae6dac0e68367f7",
+      "size": [
+        2752,
+        2064
+      ]
+    },
+    {
+      "bytes": 466576,
+      "file": "screenshots/zh-Hans/ipad-03.png",
+      "sha256": "6971dbd7df492ee1effe85e821ec82fb7a10b06b6d1438817c9323140acf0709",
+      "size": [
+        2752,
+        2064
+      ]
+    },
+    {
+      "bytes": 623851,
+      "file": "screenshots/zh-Hans/ipad-04.png",
+      "sha256": "4574770847467ff4b5f826a6bdc910a9e093ad416db7cde519c9ac979e909247",
+      "size": [
+        2752,
+        2064
+      ]
+    }
+  ],
+  "release_tag": "v1.0.149",
+  "render_commit": "34f3f820e56aaecb365fc3bba5b065232de8c93f",
+  "render_files": {
+    "creative-captions.json": "0b29303b3dd573226737fd4e1500a16014e41ae31596b2b64a44cf839718407b",
+    "creative-layout.mjs": "688d1a806918b0f816f1e27a8629f410baabd417db694cf9de19ba6a3ac94ad4",
+    "frame-creative.mjs": "57ce49c5093700ef15cfd771eefd5752a82376ca4ecda1719a2bd07809cc68b0",
+    "frame-shots.mjs": "7278470dd5b24c75dd5212499520e3610c7e35d1f166184976811d8565521132",
+    "render-store-creative.mjs": "d92b9f6fec16ea8171be51cc8bb5d8763ee63a476469f204a6fc1f8c09bddfa0",
+    "shot-captions.json": "de7ad7f544e6820ab6203faf1908773422e4aac7ae49792b719da5f257e62678"
+  },
+  "review_capture": true,
+  "runtime": "26.5",
+  "runtime_identity": {
+    "buildversion": "23F77",
+    "identifier": "com.apple.CoreSimulator.SimRuntime.iOS-26-5",
+    "version": "26.5"
+  },
+  "schema": 1,
+  "source_commit": "3fcfc803c4dd32c8935e35f312fd94f8877d37ce",
+  "submitted": false,
+  "synthetic_demo_only": true,
+  "visual_review_required": true,
+  "xcode": "Xcode 26.6\nBuild version 17F113",
+  "render_environment": {
+    "method": "local recovery from verified Actions captures",
+    "macos": "26.6.2",
+    "node": "v24.21.0",
+    "chrome": "Google Chrome 156.0.8078.48"
+  },
+  "capture_run": 40158201748,
+  "released_widget_inputs": {
+    "commit": "3fcfc803c4dd32c8935e35f312fd94f8877d37ce",
+    "files": [
+      {
+        "file": "scripts/render-lockscreen.mjs",
+        "sha256": "ba6d8a420686e04d41a40f2fcbe0ff040ab713be68ce8973dd71565ff58f9720"
+      },
+      {
+        "file": "scripts/widget-tokens.mjs",
+        "sha256": "42b2e28ab3ec4d1f61f767229f3692796fa306d486ffe8fe83949730f24c235b"
+      },
+      {
+        "file": "ios/GtmuxWidget/GtmuxWidget.swift",
+        "sha256": "f964a1c44ad6e48361faa90227d6b5c392f811cdab66194d679920b801957fa6"
+      },
+      {
+        "file": "ios/GtmuxWidget/Assets.xcassets/BrandIcon.imageset/brand-192.png",
+        "sha256": "0b8e0397effdc7b4f0553fbe3da0142b3ada5c2608fa21e0ad63f23e5e0a1f09"
+      }
+    ]
+  },
+  "apple_templates": [
+    {
+      "placement": "header",
+      "url": "https://devimages-cdn.apple.com/design/resources/download/app-store/creative_assets-product_page_header_template-static.psd",
+      "sha256": "4200f416adcf3affb70d5847c1d0554fc39b7405110ec527bdea92bfb82f93b0"
+    },
+    {
+      "placement": "search",
+      "url": "https://devimages-cdn.apple.com/design/resources/download/app-store/creative_assets-search_results_template-static.psd",
+      "sha256": "7bb57a3c33cc4402d1c82e85a0211cf0f2f2b1c05cf7f36e4710092226dea056"
+    }
+  ],
+  "geometry": {
+    "en-US": {
+      "search-geometry": {
+        "canvas": {
+          "file": "search-3x2.png",
+          "width": 3840,
+          "height": 2560,
+          "safe": {
+            "x": 836,
+            "y": 765,
+            "width": 2168,
+            "height": 1030
+          },
+          "brand": {
+            "x": 884,
+            "y": 965,
+            "width": 700,
+            "height": 650
+          },
+          "stage": {
+            "x": 1700,
+            "y": 805,
+            "width": 1240,
+            "height": 940
+          },
+          "phone": 358,
+          "tablet": 870,
+          "tabletLeft": 300,
+          "tabletTop": 88
+        },
+        "rectangles": {
+          "name": {
+            "x": 884,
+            "y": 965,
+            "width": 700,
+            "height": 70.390625
+          },
+          "title": {
+            "x": 884,
+            "y": 1063.390625,
+            "width": 700,
+            "height": 203.375
+          },
+          "sub": {
+            "x": 884,
+            "y": 1298.765625,
+            "width": 700,
+            "height": 123.1875
+          },
+          "tablet": {
+            "x": 2000,
+            "y": 893,
+            "width": 902,
+            "height": 684.5
+          },
+          "phone": {
+            "x": 1700,
+            "y": 947.171875,
+            "width": 378,
+            "height": 797.828125
+          }
+        },
+        "overflow": false
+      },
+      "header-geometry": {
+        "canvas": {
+          "file": "header-21x9.png",
+          "width": 3840,
+          "height": 1646,
+          "safe": {
+            "x": 1097,
+            "y": 493,
+            "width": 1646,
+            "height": 661
+          },
+          "brand": {
+            "x": 1125,
+            "y": 695,
+            "width": 520,
+            "height": 300
+          },
+          "stage": {
+            "x": 1715,
+            "y": 512,
+            "width": 1000,
+            "height": 620
+          },
+          "phone": 266,
+          "tablet": 672,
+          "tabletLeft": 296,
+          "tabletTop": 42
+        },
+        "rectangles": {
+          "name": {
+            "x": 1125,
+            "y": 695,
+            "width": 520,
+            "height": 162.796875
+          },
+          "label": {
+            "x": 1125,
+            "y": 889.796875,
+            "width": 520,
+            "height": 59.796875
+          },
+          "tablet": {
+            "x": 2011,
+            "y": 554,
+            "width": 704,
+            "height": 536
+          },
+          "phone": {
+            "x": 1715,
+            "y": 534.0625,
+            "width": 286,
+            "height": 597.9375
+          }
+        },
+        "overflow": false
+      }
+    },
+    "zh-Hans": {
+      "search-geometry": {
+        "canvas": {
+          "file": "search-3x2.png",
+          "width": 3840,
+          "height": 2560,
+          "safe": {
+            "x": 836,
+            "y": 765,
+            "width": 2168,
+            "height": 1030
+          },
+          "brand": {
+            "x": 884,
+            "y": 965,
+            "width": 700,
+            "height": 650
+          },
+          "stage": {
+            "x": 1700,
+            "y": 805,
+            "width": 1240,
+            "height": 940
+          },
+          "phone": 358,
+          "tablet": 870,
+          "tabletLeft": 300,
+          "tabletTop": 88
+        },
+        "rectangles": {
+          "name": {
+            "x": 884,
+            "y": 965,
+            "width": 700,
+            "height": 70.390625
+          },
+          "title": {
+            "x": 884,
+            "y": 1063.390625,
+            "width": 700,
+            "height": 203.375
+          },
+          "sub": {
+            "x": 884,
+            "y": 1298.765625,
+            "width": 700,
+            "height": 61.59375
+          },
+          "tablet": {
+            "x": 2000,
+            "y": 893,
+            "width": 902,
+            "height": 684.5
+          },
+          "phone": {
+            "x": 1700,
+            "y": 947.171875,
+            "width": 378,
+            "height": 797.828125
+          }
+        },
+        "overflow": false
+      },
+      "header-geometry": {
+        "canvas": {
+          "file": "header-21x9.png",
+          "width": 3840,
+          "height": 1646,
+          "safe": {
+            "x": 1097,
+            "y": 493,
+            "width": 1646,
+            "height": 661
+          },
+          "brand": {
+            "x": 1125,
+            "y": 695,
+            "width": 520,
+            "height": 300
+          },
+          "stage": {
+            "x": 1715,
+            "y": 512,
+            "width": 1000,
+            "height": 620
+          },
+          "phone": 266,
+          "tablet": 672,
+          "tabletLeft": 296,
+          "tabletTop": 42
+        },
+        "rectangles": {
+          "name": {
+            "x": 1125,
+            "y": 695,
+            "width": 520,
+            "height": 162.796875
+          },
+          "label": {
+            "x": 1125,
+            "y": 889.796875,
+            "width": 520,
+            "height": 59.796875
+          },
+          "tablet": {
+            "x": 2011,
+            "y": 554,
+            "width": 704,
+            "height": 536
+          },
+          "phone": {
+            "x": 1715,
+            "y": 534.0625,
+            "width": 286,
+            "height": 597.9375
+          }
+        },
+        "overflow": false
+      }
+    }
+  }
+}

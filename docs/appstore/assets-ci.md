@@ -64,6 +64,11 @@ Appearance is selected before each separate cold launch, as in the existing usag
 tests. A dark first-launch image identical to the light one stops capture; timers
 changing elsewhere do not count as appearance evidence.
 
+Keep the selected images and `fastlane/asset-source.json` together in Git. The
+manifest records the exact released app, capture and renderer identities and
+delivered image hashes. Raw captures, Apple PSD templates and private review
+checklists stay outside Git; signing material and real session data are never public.
+
 The app is built from the published tag. The reviewed workflow supplies only the
 two capture tests, their demo selector, simulator capabilities and session setup; it never
 overlays production sources. The manifest records both commits and the harness
