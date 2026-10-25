@@ -1537,5 +1537,8 @@ copy (`code:document_unpublished` on resolve), 503 capability unavailable. Old s
 may have a generic route 404. No response exposes whether another conversation has the
 file. Removal cannot recall a copy already downloaded. Clients must not forward bearer
 headers across redirects or into document content, must validate metadata/size/digest,
-and must isolate HTML from app credentials, bridges, network and external navigation.
+and must isolate HTML from app credentials, bridges and external navigation. HTML must
+open with file scripts disabled and external resource loads blocked. Running scripts
+requires explicit per-file native consent; interactive scripts must not be represented
+as universally network-isolated (for example, WebRTC may use non-HTTP networking).
 See [native preview design](../docs/design/conversation-documents.md).

@@ -7,7 +7,10 @@ import http.server
 import pathlib
 parser = argparse.ArgumentParser(description="Synthetic loopback document acceptance server")
 parser.add_argument("--output", required=True, type=pathlib.Path)
+parser.add_argument("--rtc-probe-port", type=int, default=0)
 args = parser.parse_args()
+if not 0 <= args.rtc_probe_port <= 65535:
+ parser.error("rtc-probe-port must be 0..65535")
 root = args.output
 root.mkdir(parents=True, exist_ok=True)
 hits=[]
@@ -57,6 +60,6 @@ for offset in offsets[1:]:pdf+=f'{offset:010d} 00000 n \n'.encode()
 pdf+=f'trailer\n<< /Root 1 0 R /Size 6 >>\nstartxref\n{xref}\n%%EOF'.encode()
 server=http.server.ThreadingHTTPServer(('127.0.0.1',0),Handler)
 port=server.server_address[1]
-html='''<!doctype html><html><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font:16px -apple-system;padding:20px;color:#202124;background:#f6f7f9} h1{font-size:28px}table{border-collapse:collapse;background:white;width:100%}td,th{padding:14px;border-bottom:1px solid #ddd;text-align:left}button{font:inherit;padding:12px;border:0;border-radius:10px;color:white;background:#3158cd}</style><h1>本次更新 · Review</h1><p id="inline">LOADING</p><p>这是隔离数据。报告可滚动、选择文字，内联交互可正常使用。</p><button onclick="this.textContent='已展开';document.getElementById('more').hidden=false">展开详情</button><p id="more" hidden>详细修改内容：文件预览与选字体验。</p><table><tr><th>功能</th><th>结果</th></tr><tr><td>HTML 内联脚本</td><td>可用</td></tr><tr><td>外部网络</td><td>已隔离</td></tr><tr><td>配对凭据</td><td>不进入文档</td></tr></table><div style="height:600px"></div><p>报告结束</p><script>document.getElementById('inline').textContent='INLINE_OK';let b='http://127.0.0.1:PORT/beacon/';fetch(b+'fetch').catch(()=>{});new Image().src=b+'image';try{new WebSocket('ws://127.0.0.1:PORT/beacon/socket')}catch(e){};window.open(b+'popup');let f=document.createElement('iframe');f.src=b+'frame';document.body.appendChild(f);</script></html>'''.replace('PORT',str(port))
+html='''<!doctype html><html><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font:16px -apple-system;padding:20px;color:#202124;background:#f6f7f9} h1{font-size:28px}table{border-collapse:collapse;background:white;width:100%}td,th{padding:14px;border-bottom:1px solid #ddd;text-align:left}button{font:inherit;padding:12px;border:0;border-radius:10px;color:white;background:#3158cd}</style><h1>本次更新 · Review</h1><p id="inline">LOADING</p><p>这是隔离数据。报告可滚动、选择文字，开启交互后可展开详情。</p><button onclick="this.textContent='已展开';document.getElementById('more').hidden=false">展开详情</button><p id="more" hidden>详细修改内容：文件预览与选字体验。</p><table><tr><th>功能</th><th>结果</th></tr><tr><td>交互内容</td><td>开启交互后可用</td></tr><tr><td>外部 HTTP 请求</td><td>已阻止</td></tr><tr><td>配对凭据</td><td>不进入文档</td></tr></table><div style="height:600px"></div><p>报告结束</p><script>document.getElementById('inline').textContent='INLINE_OK';if(UDPPORT>0){try{let p=new RTCPeerConnection({iceServers:[{urls:'stun:127.0.0.1:UDPPORT'}]});p.createDataChannel('synthetic');p.createOffer().then(o=>p.setLocalDescription(o));setTimeout(()=>p.close(),60000)}catch(e){}};let b='http://127.0.0.1:PORT/beacon/';fetch(b+'fetch').catch(()=>{});new Image().src=b+'image';try{new WebSocket('ws://127.0.0.1:PORT/beacon/socket')}catch(e){};window.open(b+'popup');let f=document.createElement('iframe');f.src=b+'frame';document.body.appendChild(f);</script></html>'''.replace('UDPPORT',str(args.rtc_probe_port)).replace('PORT',str(port))
 (root/'fixture-server-port.txt').write_text(str(port))
 server.serve_forever()

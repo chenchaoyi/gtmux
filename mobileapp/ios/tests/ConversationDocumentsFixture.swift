@@ -65,7 +65,7 @@ final class FixtureController: UIViewController {
     }
   }
   @objc func openReport() {
-    let request: [String: Any] = ["resolveURL": base + "/api/artifacts/resolve", "headers": ["Authorization": "Bearer fixture-only"], "reference": reference, "session_id": "fixture", "home_id": "", "lang": "zh", "name": "Report.html"]
+    let request: [String: Any] = ["resolveURL": base + "/api/artifacts/resolve", "headers": ["Authorization": "Bearer fixture-only"], "reference": reference, "session_id": "fixture", "home_id": "", "lang": "zh", "name": "Report.html", "allowScripts": true]
     let preview = DocumentPreviewController(request: request)
     let navigation = UINavigationController(rootViewController: preview)
     navigation.modalPresentationStyle = traitCollection.userInterfaceIdiom == .pad ? .formSheet : .fullScreen
@@ -78,7 +78,12 @@ final class FixtureController: UIViewController {
       func descendants(_ view: UIView) -> [UIView] { [view] + view.subviews.flatMap(descendants) }
       if let web = descendants(preview.view).compactMap({ $0 as? WKWebView }).first {
         web.evaluateJavaScript("JSON.stringify({inline:document.getElementById('inline')?.textContent, bridge:!!window.webkit?.messageHandlers, rows:document.querySelectorAll('tr').length})") { value, error in
-          if let value = value as? String, value.contains("INLINE_OK") { self.record("html", value) }
+          if let value = value as? String, value.contains("INLINE_OK") {
+            self.record("html-interactive", value)
+          } else if let value = value as? String, !web.configuration.defaultWebpagePreferences.allowsContentJavaScript, value.contains("LOADING") {
+            self.record("html-static", value)
+            if attempts > 0 { self.poll(preview, attempts: attempts - 1) }
+          }
           else if attempts > 0 { self.poll(preview, attempts: attempts - 1) }
           else { self.record("html", "FAIL \(error?.localizedDescription ?? "not loaded")") }
         }

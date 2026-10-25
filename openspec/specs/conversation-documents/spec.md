@@ -27,14 +27,20 @@ only this registry. Local list/remove SHALL affect registered copies, never orig
 
 The iOS app SHALL immediately present loading/progress/error UI, download through the
 paired connection without redirects, verify size and SHA-256, and preview the verified
-copy. HTML SHALL have no network access, application bridge or pairing credentials.
+copy. HTML SHALL default to script-disabled static rendering, block external resource
+loads/navigation, and have no application bridge or pairing credentials. Enabling scripts
+SHALL require native user confirmation for the verified hash in this viewer. Interactive
+mode SHALL disclose that scripts may attempt networking and SHALL NOT promise universal
+network isolation. Retry, changed content or a new viewer SHALL require fresh consent.
 PDF/images SHALL use read-only native preview; text preview SHALL be bounded. Close
 SHALL cancel the request and remove only that viewer's temporary copy.
 
 #### Scenario: HTML report has inline charts and remote requests
 
 - **WHEN** a verified self-contained HTML report is opened
-- **THEN** inline rendering works while remote subresources, new windows and navigations are blocked
+- **THEN** static content renders without executing file scripts, including WebRTC probes
+- **AND** inline script rendering begins only after native confirmation, while normal remote subresources, new windows and navigations remain blocked
+- **AND** disabling interaction or reopening the file restores static mode
 - **AND** sharing explicitly exports the original file through the system share sheet
 
 #### Scenario: File or capability unavailable
