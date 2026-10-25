@@ -39,7 +39,8 @@ SHA-256 后才打开私有临时副本。
 自包含的 UTF-8 HTML 支持内联脚本、样式和嵌入图片；禁止外部资源、框架、后台线程、表单、
 网络连接、新窗口及外部跳转。WebKit 不共享登录数据、没有应用桥接接口，也没有配对凭据。
 脚本仍是不可信内容，可能占用资源或在文档内伪造界面，关闭、信息和分享始终由原生界面提供。
-依赖网络资源的报告可能显示不完整。PDF 和图片通过只读 Quick Look 预览，禁用编辑和外链；
+拒绝摄像头、麦克风和运动传感器权限请求，禁用元素全屏。iOS 27 起可通过公开的位置权限
+回调明确拒绝定位；旧版 iOS 沿用系统定位权限，gtmux 本身不申请定位权限。依赖网络资源的报告可能显示不完整。PDF 和图片通过只读 Quick Look 预览，禁用编辑和外链；
 图片解码前有像素上限。文本和 Markdown 暂按可选中的纯文本显示前 512 KiB，分享仍导出完整
 原文件。关闭后取消请求并移除该窗口创建的 UUID 缓存；进程异常退出可能留下私有缓存，
 不会因此在下次启动时执行大范围清理。
@@ -66,3 +67,8 @@ Go 测试覆盖发布身份、篡改、配额、撤回与权限；Jest 覆盖链
 `mobileapp/ios/tests/` 提供不接入真实服务器的原生验收程序，运行
 `build-conversation-fixture.sh 私有输出目录` 编译。原生视觉与手势验收、完整 React Native
 构建应分别记录，不能相互代替。
+
+原生权限与全屏策略依据 Apple 公开的
+[WKUIDelegate](https://developer.apple.com/documentation/webkit/wkuidelegate) 和
+[WKPreferences](https://developer.apple.com/documentation/webkit/wkpreferences/iselementfullscreenenabled)，
+未使用 WebKit 私有配置。

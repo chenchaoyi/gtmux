@@ -148,6 +148,8 @@ final class DocumentPreviewController: UIViewController, QLPreviewControllerData
       htmlURL = target
       let configuration = WKWebViewConfiguration()
       configuration.websiteDataStore = .nonPersistent()
+      configuration.preferences.javaScriptCanOpenWindowsAutomatically = false
+      if #available(iOS 15.4, *) { configuration.preferences.isElementFullscreenEnabled = false }
       let rules = "[" + ["http", "https", "ws", "wss", "ftp"].map {
         "{\"trigger\":{\"url-filter\":\"^\($0):\"},\"action\":{\"type\":\"block\"}}"
       }.joined(separator: ",") + "]"
@@ -174,6 +176,19 @@ final class DocumentPreviewController: UIViewController, QLPreviewControllerData
   }
   func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration,
                for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? { nil }
+  // Reports never need the camera, microphone, motion sensors or device location.
+  func webView(_ webView: WKWebView, requestMediaCapturePermissionFor origin: WKSecurityOrigin,
+               initiatedByFrame frame: WKFrameInfo, type: WKMediaCaptureType,
+               decisionHandler: @escaping (WKPermissionDecision) -> Void) { decisionHandler(.deny) }
+  func webView(_ webView: WKWebView, requestDeviceOrientationAndMotionPermissionFor origin: WKSecurityOrigin,
+               initiatedByFrame frame: WKFrameInfo,
+               decisionHandler: @escaping (WKPermissionDecision) -> Void) { decisionHandler(.deny) }
+  @available(iOS 27.0, *)
+  @objc(webView:requestGeolocationPermissionForOrigin:initiatedByFrame:decisionHandler:)
+  func webView(_ webView: WKWebView, requestGeolocationPermissionFor origin: WKSecurityOrigin,
+               initiatedByFrame frame: WKFrameInfo,
+               decisionHandler: @escaping (WKPermissionDecision) -> Void) { decisionHandler(.deny) }
+
   func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
     if !closing && self.webView === webView { showFailure(.format) }
   }

@@ -49,7 +49,10 @@ resources, frames, workers, forms, network connections, new windows and external
 navigation are blocked. WebKit is ephemeral, has no native message handlers and never
 receives pairing headers. Scripts remain untrusted and can consume resources or imitate
 content inside their document: the system Close/Info/Share controls stay outside it.
-Remote-resource reports may be incomplete. PDF/images use Quick Look with editing and
+Media capture and motion permission requests are denied; element fullscreen is disabled.
+The public geolocation delegate is denied on iOS 27+, where available. Older iOS uses
+platform location authorization; gtmux does not request location permission. Remote-resource
+reports may be incomplete. PDF/images use Quick Look with editing and
 external links disabled. Text/Markdown uses selectable plain text, limited to its first
 512 KiB; sharing preserves the full original. Images have pixel limits before decoding.
 Closing cancels work and removes this viewer's UUID cache. A process crash can leave a
@@ -82,3 +85,8 @@ Jest covers link preservation, rich text/callbacks and selection during streamin
 standalone fixture in `mobileapp/ios/tests/` compiles the production UIKit components
 without real server data; build with `build-conversation-fixture.sh PRIVATE_OUTPUT_DIR`.
 Native visual/gesture acceptance and the full React Native build are separate checks.
+
+The native permission/fullscreen policy follows Apple's public
+[WKUIDelegate](https://developer.apple.com/documentation/webkit/wkuidelegate) and
+[WKPreferences](https://developer.apple.com/documentation/webkit/wkpreferences/iselementfullscreenenabled)
+interfaces; no private WebKit preferences are used.
