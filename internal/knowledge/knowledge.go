@@ -270,7 +270,7 @@ func appendKnowledgeOpLocked(op knowledgeOp) (bool, error) {
 	if err := validateAxes(op); err != nil {
 		return false, err
 	}
-	if err := os.MkdirAll(Dir(), 0o755); err != nil {
+	if err := state.MkdirAll(Dir(), 0o755); err != nil {
 		return false, err
 	}
 	if op.V >= 2 {

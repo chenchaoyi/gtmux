@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // The de-escalation-only guard. This is the load-bearing safety component of server
@@ -193,10 +195,10 @@ func GuardInstalled() bool {
 
 // Revoke asks the guard to stand down. Unprivileged by design.
 func Revoke() error {
-	if err := os.MkdirAll(StateDir(), 0o755); err != nil {
+	if err := state.MkdirAll(StateDir(), 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(RevokePath(), []byte("1\n"), 0o644)
+	return state.WriteFile(RevokePath(), []byte("1\n"), 0o644)
 }
 
 // ClearRevoke removes a stale stand-down marker so a later enable is not undone by

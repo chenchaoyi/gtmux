@@ -5,7 +5,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"strings"
 	"syscall"
 
 	"golang.org/x/sys/unix"
@@ -14,21 +13,24 @@ import (
 // OpenPrivateAppend holds the parent directory fd while opening a regular,
 // owned leaf. A symlink swap cannot redirect the append into another file.
 func OpenPrivateAppend(path string) (*os.File, error) {
-	dir := filepath.Dir(path)
-	// Protect the data root as well as the log directory against replacement by
-	// other local users. Do not broaden owner permissions or change foreign files.
-	for _, root := range []string{Dir(), ConfigDir()} {
-		if dir == root || strings.HasPrefix(dir, root+string(filepath.Separator)) {
-			if err := os.MkdirAll(root, PrivateDir); err != nil {
-				return nil, err
-			}
-			fd, err := privateDirectory(root, true)
-			if err != nil {
-				return nil, err
-			}
-			_ = unix.Close(fd)
+	if managedRoot(path) != "" {
+		f, err := OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, PrivateFile)
+		if err != nil {
+			return nil, err
 		}
+		// Diagnostic append has always capped owner execution too; generic
+		// policy IO preserves owner bits for executable tools.
+		info, err := f.Stat()
+		if err == nil && info.Mode().Perm()&0100 != 0 {
+			err = f.Chmod(info.Mode().Perm() & PrivateFile)
+		}
+		if err != nil {
+			f.Close()
+			return nil, err
+		}
+		return f, nil
 	}
+	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, PrivateDir); err != nil {
 		return nil, err
 	}

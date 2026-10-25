@@ -25,10 +25,11 @@ func TestDSHTerminalNativeRequestContract(t *testing.T) {
 	script := `
 import assert from 'node:assert/strict';
 import {pathToFileURL} from 'node:url';
-import {mkdirSync,writeFileSync,readFileSync,existsSync,symlinkSync} from 'node:fs';
+import {mkdirSync,writeFileSync,readFileSync,existsSync,symlinkSync,chmodSync,statSync} from 'node:fs';
 import {join} from 'node:path';
-const {receive,foreground}=await import(pathToFileURL(process.argv[2]));
+const {receive,foreground,apply}=await import(pathToFileURL(process.argv[2]));
 const root=process.argv[3];
+process.umask(0);
 const dir=join(root,'requests');mkdirSync(dir,{mode:0o700});
 const now=1900000000000;
 const target={instance:'a'.repeat(32),pid:100,home_id:'home',session_id:'expected',binding_epoch:7,server_epoch:'9',pane:'%44'};
@@ -44,6 +45,7 @@ assert.equal(invoke(wrong,'different').kind,'error');assert.equal(queued.length,
 assert.equal(existsSync(join(dir,wrong+'.claimed.json')),false);
 const good='2'.repeat(32);make(good);
 assert.equal(invoke(good).kind,'success');assert.equal(queued.length,1);
+for (const suffix of ['.claimed.json','.receipt.json']) assert.equal(statSync(join(dir,good+suffix)).mode & 0o777,0o600);
 assert.equal(queued[0].id,'expected');assert.equal(queued[0].message.id,good);
 assert.deepEqual(queued[0].message.source,{kind:'user'});
 assert.equal(queued[0].message.content[0].text,'Inspect the synthetic fixture');
@@ -66,6 +68,15 @@ put(join(meta,'session-mounts.json'),{version:1,owners:[{pid:100,sessionIds:['ex
 assert.equal(foreground(meta,100).session_id,'expected');
 put(join(meta,'session-mounts.json'),{version:1,owners:[{pid:100,sessionIds:['expected','codex:expected']}]});
 assert.equal(foreground(meta,100),undefined,'backend collision must not borrow DSH identity');
+// A shipped plugin is a gtmux writer even though an agent hosts its process.
+// Refuse a wide managed root before making bridge directories or running tmux.
+const home=join(root,'plugin-home'), managed=join(home,'.local','share','gtmux');
+mkdirSync(managed,{recursive:true,mode:0o700});chmodSync(managed,0o755);
+process.env.HOME=home;process.env.TMUX_PANE='%44';process.env.PATH='/no-fixture-executables';
+apply({});
+assert.equal(existsSync(join(managed,'terminal-clients')),false,'wide root must refuse publication');
+assert.equal(existsSync(join(managed,'terminal-input')),false);
+
 `
 	cmd := exec.Command(node, "--input-type=module", "-", module, root)
 	cmd.Stdin = strings.NewReader(script)

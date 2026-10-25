@@ -17,7 +17,7 @@ func TestPrivateAppendNarrowsOwnedFilesAndRejectsSymlinks(t *testing.T) {
 	if err := os.WriteFile(path, []byte("old"), 0666); err != nil {
 		t.Fatal(err)
 	}
-	_ = os.Chmod(path, 0666)
+	_ = os.Chmod(path, 0766)
 	f, err := OpenPrivateAppend(path)
 	if err != nil {
 		t.Fatal(err)

@@ -24,7 +24,7 @@ func seqPath() string { return filepath.Join(state.Dir(), "events.seq") }
 // an uncontended local file.
 func nextSeq() (seq int64) {
 	// The counter file doubles as the lock target.
-	f, err := os.OpenFile(seqPath(), os.O_RDWR|os.O_CREATE, 0o644)
+	f, err := state.OpenFile(seqPath(), os.O_RDWR|os.O_CREATE, 0o644)
 	if err != nil {
 		return 0
 	}

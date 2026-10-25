@@ -209,7 +209,7 @@ func (s *fixState) applyConf(lines []string, live [][]string) int {
 	if b, err := os.ReadFile(s.confPath); err == nil {
 		conf = string(b)
 	}
-	if err := os.MkdirAll(filepath.Dir(s.confPath), 0o755); err != nil {
+	if err := state.MkdirAll(filepath.Dir(s.confPath), 0o755); err != nil {
 		i18n.Sae("  ✗ "+err.Error(), "  ✗ "+err.Error())
 		s.rc = 1
 		return 0
@@ -480,7 +480,7 @@ func (s *fixState) stepPaneTitles() int {
 	if b, err := os.ReadFile(rc); err == nil {
 		old = string(b)
 	}
-	if err := os.MkdirAll(filepath.Dir(rc), 0o755); err != nil {
+	if err := state.MkdirAll(filepath.Dir(rc), 0o755); err != nil {
 		i18n.Sae("  ✗ "+err.Error(), "  ✗ "+err.Error())
 		s.rc = 1
 		return 0
@@ -590,7 +590,7 @@ func (s *fixState) stepPlugins() int {
 		return 0
 	}
 	base := pluginBaseDir()
-	if err := os.MkdirAll(base, 0o755); err != nil {
+	if err := state.MkdirAll(base, 0o755); err != nil {
 		i18n.Sae("  ✗ "+err.Error(), "  ✗ "+err.Error())
 		s.rc = 1
 		return 0

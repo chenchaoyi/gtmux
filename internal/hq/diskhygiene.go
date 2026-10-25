@@ -134,7 +134,7 @@ func trimFileTail(path string, maxBytes, keepBytes int64) error {
 	if i := bytes.IndexByte(tail, '\n'); i >= 0 && i+1 <= len(tail) {
 		tail = tail[i+1:]
 	}
-	return os.WriteFile(path, tail, 0o600)
+	return state.WriteFile(path, tail, 0o600)
 }
 
 // livePanes is the set of panes tmux has, and whether that is known (tmux.PaneIDs). A

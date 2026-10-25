@@ -20,10 +20,10 @@ func TryLease(name string) (*Lease, error) {
 	if name == "" || filepath.Base(name) != name || strings.Contains(name, "..") {
 		return nil, fmt.Errorf("invalid lease name")
 	}
-	if err := os.MkdirAll(Dir(), 0700); err != nil {
+	if err := MkdirAll(Dir(), 0700); err != nil {
 		return nil, err
 	}
-	f, err := os.OpenFile(filepath.Join(Dir(), "lease-"+name+".lock"), os.O_CREATE|os.O_RDWR, 0600)
+	f, err := OpenFile(filepath.Join(Dir(), "lease-"+name+".lock"), os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
 		return nil, err
 	}

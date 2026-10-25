@@ -17,11 +17,10 @@ import (
 	"syscall"
 	"time"
 
-	chclient "github.com/jpillora/chisel/client"
-
 	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/state"
+	chclient "github.com/jpillora/chisel/client"
 )
 
 // Self-hosted tunnel backend (`gtmux tunnel --backend self`). Instead of Cloudflare,
@@ -141,7 +140,7 @@ func selfTunnelConfig() (url, secret string, ok bool) {
 // this host is on ("" = the one server a deployment has when it lists none).
 func writeSelfTunnelConf(url, secret string, port int, server string) error {
 	p := selfTunnelConfPath()
-	if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
+	if err := state.MkdirAll(filepath.Dir(p), 0o700); err != nil {
 		return err
 	}
 	body := "url=" + url + "\nsecret=" + secret + "\n"
@@ -151,7 +150,7 @@ func writeSelfTunnelConf(url, secret string, port int, server string) error {
 	if server != "" {
 		body += "server=" + server + "\n"
 	}
-	return os.WriteFile(p, []byte(body), 0o600)
+	return state.WriteFile(p, []byte(body), 0o600)
 }
 
 // readSelfTunnelServer is the server= line: which Direct server this host was last put on.
@@ -371,7 +370,7 @@ func tunnelSelfServiceInstall(port int, name string, yes bool) int {
 		return 1
 	}
 	defer unlock()
-	_ = os.MkdirAll(state.LogsDir(), 0o700) // launchd will not create the capture's directory
+	_ = state.MkdirAll(state.LogsDir(), 0o700) // launchd will not create the capture's directory
 	// serve on loopback (the tunnel reaches it locally).
 	if err := writeUserService(serveAgentPath(), serveAgentLabel,
 		[]string{selfPath(), "serve", "--bind", "127.0.0.1", "--port", strconv.Itoa(port)},

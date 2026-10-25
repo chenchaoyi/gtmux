@@ -288,7 +288,7 @@ func installBlock(path, body string, force bool) (changed, refused bool, err err
 		if !os.IsNotExist(err) {
 			return false, false, err
 		}
-		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		if err := state.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 			return false, false, err
 		}
 		return true, false, state.WriteForeign(path, []byte(wrapBlock(body)), 0o644)
@@ -406,10 +406,10 @@ func carryIntoLocal(op knowledgeOp) (string, error) {
 		s.WriteString(body + "\n\n")
 	}
 	s.WriteString(marker + "\n")
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if err := state.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return path, err
 	}
-	return path, os.WriteFile(path, []byte(content+s.String()), 0o644)
+	return path, state.WriteFile(path, []byte(content+s.String()), 0o644)
 }
 
 // IssueURL is the everyone audience's exit for a person who never opens a pull request:

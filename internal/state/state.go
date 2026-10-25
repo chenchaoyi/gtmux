@@ -24,7 +24,10 @@ import (
 )
 
 // Dir is ~/.local/share/gtmux (the root of the state contract).
-func Dir() string { return filepath.Join(home(), ".local", "share", "gtmux") }
+func Dir() string { return dataDir(home()) }
+
+func dataDir(h string) string   { return filepath.Join(h, ".local", "share", "gtmux") }
+func configDir(h string) string { return filepath.Join(h, ".config", "gtmux") }
 
 // home is the directory every gtmux path hangs off, and under `go test` it REFUSES to be
 // the real one.
@@ -420,10 +423,10 @@ func Exists(path string) bool { _, err := os.Stat(path); return err == nil }
 // Touch creates path as an empty marker file (its parent dir is created as
 // needed). An existing marker is left as-is — only presence matters.
 func Touch(path string) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if err := MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0o644)
+	f, err := OpenFile(path, os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
 		return err
 	}
@@ -437,10 +440,10 @@ func Remove(path string) { _ = os.Remove(path) }
 // Touch, the marker carries a small payload — e.g. the active turn's agent
 // session id, so a late hook from a superseded session can be told apart.
 func WriteMarker(path, content string) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if err := MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(path, []byte(content), 0o644)
+	return WriteFile(path, []byte(content), 0o644)
 }
 
 // ReadMarker returns a marker file's trimmed content ("" if missing/empty). An
@@ -470,10 +473,10 @@ func WriteInt64Marker(path string, n int64) error {
 
 // WriteLastFinished records pane as the most-recently-finished turn.
 func WriteLastFinished(pane string) error {
-	if err := os.MkdirAll(Dir(), 0o755); err != nil {
+	if err := MkdirAll(Dir(), 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(LastFinishedPath(), []byte(pane+"\n"), 0o644)
+	return WriteFile(LastFinishedPath(), []byte(pane+"\n"), 0o644)
 }
 
 // ReadLastFinished returns the trimmed pane id from last-finished ("" if none).
@@ -495,4 +498,28 @@ func WaitingSet() map[string]bool {
 		}
 	}
 	return m
+}
+
+// managedRoot matches a supplied path before resolving Home: libraries also write
+// caller-selected export/fixture paths, which must not resolve the operator's home
+// under test. A match still goes through home() and its real-home write guard.
+func managedRoot(path string) string {
+	if path == "" {
+		return ""
+	}
+	h := os.Getenv("HOME")
+	if h == "" {
+		return ""
+	}
+	path, err := filepath.Abs(path)
+	if err != nil {
+		return ""
+	}
+	for _, root := range []string{dataDir(h), configDir(h)} {
+		if path == root || strings.HasPrefix(path, root+string(filepath.Separator)) {
+			_ = home()
+			return root
+		}
+	}
+	return ""
 }

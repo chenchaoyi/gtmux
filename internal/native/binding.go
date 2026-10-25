@@ -9,6 +9,7 @@ import (
 	"sort"
 
 	"github.com/chenchaoyi/gtmux/internal/diag"
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // Binding is a receipt from the exact submitted-task binding path, not a guess
@@ -91,7 +92,7 @@ func ConfirmBinding(b Binding, expected Record) error {
 		return errors.New("incomplete verified binding receipt")
 	}
 	return withStoreLock(func() error {
-		if err := os.MkdirAll(filepath.Dir(bindingPath(b.SessionID, b.HomeID)), 0700); err != nil {
+		if err := state.MkdirAll(filepath.Dir(bindingPath(b.SessionID, b.HomeID)), 0700); err != nil {
 			return err
 		}
 		// A later binding cannot be overwritten by a delayed consumer.

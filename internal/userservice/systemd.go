@@ -93,6 +93,9 @@ func (m Systemd) Write(path, label string, args []string, log string) error {
 	if socket != "" {
 		socket = strings.SplitN(socket, ",", 2)[0] + ",0,0"
 	}
+	if err := prepareCapture(log); err != nil {
+		return err
+	}
 	return write(path, renderUnit(unitSpec{label, args, log, m.Home, search, socket}))
 }
 func readUnit(data []byte) (unitSpec, error) {

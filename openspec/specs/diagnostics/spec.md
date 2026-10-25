@@ -168,6 +168,31 @@ by an upload. This enforces POSIX modes; it does not attest or remove inherited 
 - **WHEN** an upload reaches a link at its managed root, intermediate parent or final path
 - **THEN** it fails without following the link or changing the external target's bytes or mode
 
+All gtmux-owned Go writers into the managed roots SHALL use the shared policy IO
+at their create/open boundary. It SHALL apply owner-only modes independently of
+process umask, narrow owned wide inodes before truncation/append, validate the
+managed directory chain, and preserve inode, append, exclusive-create and locking
+semantics where the existing writer uses them. Atomic publishers SHALL use private
+staging; cache hits SHALL NOT return a wide generated icon. Swift diagnostic append
+SHALL validate its managed directory chain and narrow its owned leaf before writing.
+Service descriptor generation SHALL prepare managed service capture files privately
+without starting the service or truncating existing output. Hosted gtmux plugins
+SHALL validate their managed root before publishing private bridge artifacts.
+Caller-selected foreign paths SHALL retain their existing policy. Raw OS writer
+exceptions SHALL have an explicit source inventory and a verification boundary.
+
+#### Scenario: A writer runs without the CLI entry-point umask
+
+- **WHEN** a managed marker, daily ledger, icon, config or journal is created with a permissive umask, or rewritten over a wide owned inode
+- **THEN** newly written data has no group/other permissions and its managed parent chain is private
+- **AND** journals retain append and sequence/lock behavior, caches retain their format, and unrelated paths are unchanged
+
+#### Scenario: A concurrent private create meets a missing parent or permission failure
+
+- **WHEN** creation's ENOENT is retried against its held parent fd
+- **THEN** retry is bounded to eight attempts, and a deleted parent or other persistent failure remains an error
+- **AND** non-creation ENOENT, symlink refusal and permission failures do not become success
+
 #### Scenario: An existing world-readable journal
 
 - **WHEN** serve starts and `events.jsonl` is 0644

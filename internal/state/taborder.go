@@ -20,10 +20,10 @@ func SaveTabOrder(sessions []string) error {
 	if len(sessions) == 0 {
 		return nil
 	}
-	if err := os.MkdirAll(Dir(), 0o755); err != nil {
+	if err := MkdirAll(Dir(), 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(TabOrderPath(), []byte(strings.Join(sessions, "\n")+"\n"), 0o644)
+	return WriteFile(TabOrderPath(), []byte(strings.Join(sessions, "\n")+"\n"), 0o644)
 }
 
 // LoadTabOrder returns the recorded session order ("" entries dropped), or nil.

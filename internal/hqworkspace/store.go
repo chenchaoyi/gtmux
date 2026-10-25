@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"syscall"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // Store is local to one HQ home. Tests always supply an isolated directory.
@@ -46,10 +48,10 @@ func (s *Store) Read() (Database, error) {
 }
 
 func (s *Store) transaction(fn func(*Database) error) error {
-	if err := os.MkdirAll(s.dir, 0700); err != nil {
+	if err := state.MkdirAll(s.dir, 0700); err != nil {
 		return err
 	}
-	f, err := os.OpenFile(filepath.Join(s.dir, ".lock"), os.O_CREATE|os.O_RDWR, 0600)
+	f, err := state.OpenFile(filepath.Join(s.dir, ".lock"), os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
 		return err
 	}
@@ -80,7 +82,7 @@ func (s *Store) write(d Database) error {
 	if len(b) > 32<<20 {
 		return errors.New("workspace snapshot exceeds 32MiB; write refused without changing saved records")
 	}
-	f, err := os.CreateTemp(s.dir, ".records-")
+	f, err := state.CreateTemp(s.dir, ".records-")
 	if err != nil {
 		return err
 	}

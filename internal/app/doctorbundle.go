@@ -234,7 +234,7 @@ func orUnknown(s string) string {
 func writeBundle(path string, files []bundleFile) error {
 	sort.SliceStable(files, func(i, j int) bool { return files[i].name < files[j].name })
 	dir := filepath.Dir(path)
-	tmp, err := os.CreateTemp(dir, ".gtmux-bundle-*")
+	tmp, err := state.CreateTemp(dir, ".gtmux-bundle-*")
 	if err != nil {
 		return err
 	}

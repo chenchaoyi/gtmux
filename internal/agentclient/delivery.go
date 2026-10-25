@@ -61,7 +61,7 @@ func Prepare(a Attachment, text, deliveryID string, force bool, now time.Time) (
 	}
 	defer lease.Close()
 	dir := InputDir()
-	if err := os.MkdirAll(dir, 0700); err != nil {
+	if err := state.MkdirAll(dir, 0700); err != nil {
 		return Request{}, err
 	}
 	fi, err := os.Lstat(dir)
@@ -144,7 +144,7 @@ func Prepare(a Attachment, text, deliveryID string, force bool, now time.Time) (
 }
 
 func writeExclusive(path string, data []byte) error {
-	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+	f, err := state.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
 	if err != nil {
 		return err
 	}
@@ -157,7 +157,7 @@ func writeExclusive(path string, data []byte) error {
 }
 
 func atomicPrivate(path string, data []byte) error {
-	f, err := os.CreateTemp(filepath.Dir(path), ".gtmux-*")
+	f, err := state.CreateTemp(filepath.Dir(path), ".gtmux-*")
 	if err != nil {
 		return err
 	}

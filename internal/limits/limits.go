@@ -14,7 +14,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -24,6 +23,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/agentenv"
 	"github.com/chenchaoyi/gtmux/internal/agents"
+	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/toolpath"
 )
@@ -520,11 +520,11 @@ func warnOf(wins []Window, warnPct int) string {
 }
 
 func save(r Report) {
-	if err := os.MkdirAll(state.Dir(), 0o755); err != nil {
+	if err := state.MkdirAll(state.Dir(), 0o755); err != nil {
 		return
 	}
 	b, _ := json.Marshal(r)
-	_ = os.WriteFile(cachePath(), b, 0o644)
+	_ = state.WriteFile(cachePath(), b, 0o644)
 }
 
 // runAndParse executes the command (via the login shell so an env-prefixed
@@ -569,7 +569,7 @@ func runAndParse(command string, cfg Config, now time.Time) ([]Window, error) {
 // very thing this exists to avoid, and it used to be the fallback (%12, 2026-10-06).
 func probeDir() (string, error) {
 	d := filepath.Join(state.Dir(), "probe")
-	if err := os.MkdirAll(d, 0o700); err != nil {
+	if err := state.MkdirAll(d, 0o700); err != nil {
 		return "", err
 	}
 	return d, nil
@@ -588,10 +588,10 @@ func refreshLockPath() string { return filepath.Join(state.Dir(), "limits.lock")
 // lockRefresh tries the refresh lock without waiting. lockBusy means another caller is
 // refreshing; lockUnavailable means there is no lock to take at all.
 func lockRefresh() (unlock func(), st lockState) {
-	if err := os.MkdirAll(state.Dir(), 0o755); err != nil {
+	if err := state.MkdirAll(state.Dir(), 0o755); err != nil {
 		return nil, lockUnavailable
 	}
-	f, err := os.OpenFile(refreshLockPath(), os.O_CREATE|os.O_RDWR, 0o644)
+	f, err := state.OpenFile(refreshLockPath(), os.O_CREATE|os.O_RDWR, 0o644)
 	if err != nil {
 		return nil, lockUnavailable
 	}
@@ -607,7 +607,7 @@ func lockRefresh() (unlock func(), st lockState) {
 
 // waitForRefresh returns once the refresh that holds the lock has ended.
 func waitForRefresh() {
-	f, err := os.OpenFile(refreshLockPath(), os.O_RDWR, 0o644)
+	f, err := state.OpenFile(refreshLockPath(), os.O_RDWR, 0o644)
 	if err != nil {
 		return
 	}

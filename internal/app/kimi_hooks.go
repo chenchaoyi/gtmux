@@ -251,7 +251,7 @@ func updateKimiHooks(path, bin string, install bool) error {
 }
 
 func writeKimiConfig(path, text string) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if err := state.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
 	return state.WriteForeign(path, []byte(text), 0o644)

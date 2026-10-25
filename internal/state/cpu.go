@@ -75,8 +75,8 @@ func PaneCPUWorking(pane string, curCPU float64, now int64) bool {
 	}
 	newActive, working := cpuWorking(now, prevPoll, prevActive, prevCPU, curCPU)
 
-	if err := os.MkdirAll(CPUDir(), 0o755); err == nil {
-		_ = os.WriteFile(cpuPath(pane), []byte(fmt.Sprintf("%d %d %.2f\n", now, newActive, curCPU)), 0o644)
+	if err := MkdirAll(CPUDir(), 0o755); err == nil {
+		_ = WriteFile(cpuPath(pane), []byte(fmt.Sprintf("%d %d %.2f\n", now, newActive, curCPU)), 0o644)
 	}
 	return working
 }

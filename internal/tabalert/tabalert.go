@@ -69,10 +69,10 @@ func Enable() error {
 	if strings.HasPrefix(cur, ownedPrefix) {
 		return nil // already ours — idempotent
 	}
-	if err := os.MkdirAll(state.Dir(), 0o755); err != nil {
+	if err := state.MkdirAll(state.Dir(), 0o755); err != nil {
 		return err
 	}
-	if err := os.WriteFile(savedPath(), []byte(cur), 0o644); err != nil {
+	if err := state.WriteFile(savedPath(), []byte(cur), 0o644); err != nil {
 		return err
 	}
 	return tmux.SetGlobalOption(titlesOption, ownedPrefix+cur)

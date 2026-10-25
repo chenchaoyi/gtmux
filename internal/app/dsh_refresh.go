@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/diag"
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 type bridgeRefreshReceipt struct {
@@ -132,7 +133,7 @@ func installedPluginBinary(module []byte) string {
 // Publish complete files and refuse a concurrently changed target. Replacing an
 // inode also avoids writing through a symlink or hard link at the target itself.
 func refreshDSHArtifact(path string, original, next []byte) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+	if err := state.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return err
 	}
 	check := func() error {
@@ -148,7 +149,7 @@ func refreshDSHArtifact(path string, original, next []byte) error {
 	if err := check(); err != nil {
 		return err
 	}
-	f, err := os.CreateTemp(filepath.Dir(path), ".gtmux-refresh-*")
+	f, err := state.CreateTemp(filepath.Dir(path), ".gtmux-refresh-*")
 	if err != nil {
 		return err
 	}

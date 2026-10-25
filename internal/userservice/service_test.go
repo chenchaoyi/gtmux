@@ -8,7 +8,10 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"syscall"
 	"testing"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 func TestSystemdLifecycleUsesUserManagerAndChecksReadback(t *testing.T) {
@@ -128,5 +131,47 @@ func TestSystemdUnitPassesNativeVerifier(t *testing.T) {
 	out, err := exec.Command(analyzer, "verify", path).CombinedOutput()
 	if err != nil {
 		t.Fatalf("systemd rejected generated unit: %v\n%s", err, out)
+	}
+}
+
+func TestServiceDescriptorsPrepareManagedCapturePrivately(t *testing.T) {
+	for _, platform := range []string{"launchd", "systemd"} {
+		t.Run(platform, func(t *testing.T) {
+			t.Setenv("HOME", t.TempDir())
+			previous := syscall.Umask(0)
+			defer syscall.Umask(previous)
+			var manager Manager = Launchd{Home: state.Home()}
+			if platform == "systemd" {
+				manager = Systemd{Home: state.Home()}
+			}
+			path := manager.Path("com.gtmux.fixture")
+			log := state.CapturePath("serve")
+			for _, stale := range []bool{false, true} {
+				if stale {
+					if err := os.Chmod(log, 0644); err != nil {
+						t.Fatal(err)
+					}
+				}
+				if err := manager.Write(path, "com.gtmux.fixture", []string{"/fixture/gtmux", "serve"}, log); err != nil {
+					t.Fatal(err)
+				}
+				info, err := os.Stat(log)
+				if err != nil || info.Mode().Perm() != 0600 {
+					t.Fatalf("capture stale=%v: %v %v", stale, info, err)
+				}
+				// Preparing a descriptor never starts/restarts a daemon, and existing output survives.
+				if !stale {
+					if err := os.WriteFile(log, []byte("previous output"), 0600); err != nil {
+						t.Fatal(err)
+					}
+				} else {
+					data, err := os.ReadFile(log)
+					if err != nil || string(data) != "previous output" {
+						t.Fatalf("truncated capture: %q %v", data, err)
+					}
+				}
+			}
+
+		})
 	}
 }

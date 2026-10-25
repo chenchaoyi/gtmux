@@ -18,6 +18,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/codexterminal"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/native"
+	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
@@ -148,7 +149,7 @@ func PrepareCodexBinding(target CodexBindingTarget, prompt string, now int64) (s
 	wire := prompt + "\n\n" + transcript.SessionBindingPrefix + token
 	previous, _ := Load(target.Loc)
 	intent := CodexBindingIntent{target, transcript.CodexHomeID(), token, bindingSHA(wire), now, previous}
-	if err := os.MkdirAll(codexBindingDir(), 0o700); err != nil {
+	if err := state.MkdirAll(codexBindingDir(), 0o700); err != nil {
 		return "", err
 	}
 	if err := writeBindingJSON(codexBindingPath(token), intent); err != nil {
@@ -164,7 +165,7 @@ func writeBindingJSON(path string, value any) error {
 	if err != nil {
 		return err
 	}
-	tmp, err := os.CreateTemp(filepath.Dir(path), ".binding-")
+	tmp, err := state.CreateTemp(filepath.Dir(path), ".binding-")
 	if err != nil {
 		return err
 	}
@@ -283,7 +284,7 @@ func completeCodexBinding(scope *transcript.CodexPathScope, intent CodexBindingI
 	if info, err := os.Stat(lockPath); err == nil && time.Since(info.ModTime()) > time.Minute {
 		_ = os.Remove(lockPath)
 	}
-	lock, err := os.OpenFile(lockPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	lock, err := state.OpenFile(lockPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
 	if err != nil {
 		return err
 	}

@@ -13,6 +13,7 @@ import (
 	"syscall"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 //go:embed dsh_plugin.mjs
@@ -242,7 +243,7 @@ func readDSHArtifact(path string) ([]byte, error) {
 	if !fi.Mode().IsRegular() || fi.Size() > 1<<20 || !owned || int(st.Uid) != os.Getuid() || fi.Mode().Perm()&0022 != 0 {
 		return nil, fmt.Errorf("untrusted DSH artifact")
 	}
-	f, err := os.OpenFile(path, os.O_RDONLY|syscall.O_NOFOLLOW, 0)
+	f, err := state.OpenFile(path, os.O_RDONLY|syscall.O_NOFOLLOW, 0)
 	if err != nil {
 		return nil, err
 	}

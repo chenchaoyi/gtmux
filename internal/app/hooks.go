@@ -248,7 +248,7 @@ func cacheClaudeIcon() bool {
 	if _, err := os.Stat(icns); err != nil {
 		return false
 	}
-	if err := os.MkdirAll(state.Dir(), 0o755); err != nil {
+	if err := state.MkdirAll(state.Dir(), 0o755); err != nil {
 		return false
 	}
 	return runQuiet("sips", "-s", "format", "png", "-Z", "256", icns, "--out", state.IconPath()) == nil
@@ -406,7 +406,7 @@ func loadJSONObject(path string) (map[string]any, error) {
 var errNotJSONObject = errors.New("not a JSON object")
 
 func writeJSONObject(path string, m map[string]any) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if err := state.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
 	b, err := json.MarshalIndent(m, "", "  ")

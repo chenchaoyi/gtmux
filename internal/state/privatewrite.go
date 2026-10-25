@@ -53,14 +53,8 @@ func WritePrivateFile(path string, data []byte) error {
 // Walk using directory fds so symlinked intermediate directories are rejected too.
 func privateWriteParent(path string) (int, error) {
 	path = filepath.Clean(path)
-	root := ""
-	for _, candidate := range []string{Dir(), ConfigDir()} {
-		if strings.HasPrefix(path, candidate+string(filepath.Separator)) {
-			root = candidate
-			break
-		}
-	}
-	if root == "" {
+	root := managedRoot(path)
+	if root == "" || filepath.Clean(path) == root {
 		return -1, fmt.Errorf("not a gtmux private path: %s", path)
 	}
 	if err := os.MkdirAll(filepath.Dir(root), PrivateDir); err != nil {

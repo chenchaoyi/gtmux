@@ -55,14 +55,14 @@ func loadRemotes() map[string]Remote {
 }
 
 func saveRemotes(m map[string]Remote) error {
-	if err := os.MkdirAll(filepath.Dir(remotesPath()), 0o755); err != nil {
+	if err := state.MkdirAll(filepath.Dir(remotesPath()), 0o755); err != nil {
 		return err
 	}
 	b, err := json.MarshalIndent(m, "", "  ")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(remotesPath(), b, 0o600)
+	return state.WriteFile(remotesPath(), b, 0o600)
 }
 
 // LoadRemote returns everything known about base.

@@ -15,7 +15,7 @@ import (
 // processes. The lock file is never renamed with either data file.
 func withKnowledgeLock(run func() error) error {
 	return WithStorageLock(func() error {
-		if err := os.MkdirAll(Dir(), 0700); err != nil {
+		if err := state.MkdirAll(Dir(), 0700); err != nil {
 			return err
 		}
 		return run()
@@ -24,7 +24,7 @@ func withKnowledgeLock(run func() error) error {
 
 func knowledgeStorageLock(run func() error) error {
 	lockDir := filepath.Join(state.Dir(), "locks")
-	if err := os.MkdirAll(lockDir, 0700); err != nil {
+	if err := state.MkdirAll(lockDir, 0700); err != nil {
 		return err
 	}
 	home := state.HQHome()
@@ -32,7 +32,7 @@ func knowledgeStorageLock(run func() error) error {
 		home = filepath.Join(resolved, filepath.Base(home))
 	}
 	lockName := fmt.Sprintf("knowledge-%x.lock", sha256.Sum256([]byte(home)))
-	f, err := os.OpenFile(filepath.Join(lockDir, lockName), os.O_CREATE|os.O_RDWR, 0o600)
+	f, err := state.OpenFile(filepath.Join(lockDir, lockName), os.O_CREATE|os.O_RDWR, 0o600)
 	if err != nil {
 		return err
 	}
@@ -66,7 +66,7 @@ func atomicAppendLines(path string, lines [][]byte) (committed bool, err error) 
 	} else if !os.IsNotExist(e) {
 		return false, e
 	}
-	tmp, err := os.CreateTemp(filepath.Dir(path), ".knowledge-write-*")
+	tmp, err := state.CreateTemp(filepath.Dir(path), ".knowledge-write-*")
 	if err != nil {
 		return false, err
 	}

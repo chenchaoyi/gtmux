@@ -132,10 +132,10 @@ func read() ([]record, error) {
 
 // append writes one record.
 func appendRecord(r record) error {
-	if err := os.MkdirAll(Dir(), 0o755); err != nil {
+	if err := state.MkdirAll(Dir(), 0o755); err != nil {
 		return err
 	}
-	f, err := os.OpenFile(Path(), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	f, err := state.OpenFile(Path(), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
 		return err
 	}

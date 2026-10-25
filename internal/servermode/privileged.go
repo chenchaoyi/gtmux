@@ -9,6 +9,8 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // The privileged half. Everything here is written so that the FAILURE modes are
@@ -107,7 +109,7 @@ func Enable() error {
 	// A stale stand-down marker would make the guard undo this a moment after it
 	// lands, which would look like "it just doesn't work".
 	ClearRevoke()
-	if err := os.MkdirAll(StateDir(), 0o755); err != nil {
+	if err := state.MkdirAll(StateDir(), 0o755); err != nil {
 		return err
 	}
 
@@ -256,7 +258,7 @@ func writeStamp(tier string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(StatePath(), b, 0o644)
+	return state.WriteFile(StatePath(), b, 0o644)
 }
 
 // Heartbeat refreshes liveness. It is what tells the guard gtmux is still here to
@@ -271,7 +273,7 @@ func Heartbeat() error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(StatePath(), b, 0o644)
+	return state.WriteFile(StatePath(), b, 0o644)
 }
 
 func clearStamp() { _ = os.Remove(StatePath()) }

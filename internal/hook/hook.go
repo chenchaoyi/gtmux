@@ -573,7 +573,7 @@ func spawnDetached(exe string, argv []string, payload []byte, extraEnv ...string
 // payloadFile is payload in an already-unlinked temporary file, rewound: nothing is left on
 // disk once the last descriptor closes.
 func payloadFile(payload []byte) (*os.File, error) {
-	f, err := os.CreateTemp("", "gtmux-hook-*")
+	f, err := state.CreateTemp("", "gtmux-hook-*")
 	if err != nil {
 		return nil, err
 	}
@@ -599,11 +599,11 @@ func notifyAgentIcon(agentKey string) string {
 		return ""
 	}
 	dir := filepath.Join(state.CacheDir(), "notify-icons")
-	if os.MkdirAll(dir, 0o755) != nil {
+	if state.MkdirAll(dir, 0o755) != nil {
 		return ""
 	}
 	p := filepath.Join(dir, agentKey+".png")
-	if os.WriteFile(p, b, 0o644) != nil {
+	if state.WriteFile(p, b, 0o644) != nil {
 		return ""
 	}
 	return p

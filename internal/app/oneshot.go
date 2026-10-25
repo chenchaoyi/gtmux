@@ -258,10 +258,10 @@ func stageGoalFile(goal string) (string, error) {
 		return "", errInlineGoal
 	}
 	dir := filepath.Join(state.Dir(), "dispatch", "goals")
-	if err := os.MkdirAll(dir, 0o700); err != nil {
+	if err := state.MkdirAll(dir, 0o700); err != nil {
 		return "", err
 	}
-	f, err := os.CreateTemp(dir, "goal-*.txt")
+	f, err := state.CreateTemp(dir, "goal-*.txt")
 	if err != nil {
 		return "", err
 	}

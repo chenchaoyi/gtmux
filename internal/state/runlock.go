@@ -46,11 +46,11 @@ func (l *RunLock) Acquire(maxAge time.Duration) (held bool, heldFor time.Duratio
 		// over is the only behaviour that cannot wedge: a crashed restore must not make
 		// the feature refuse forever.
 	}
-	if err := os.MkdirAll(filepath.Dir(l.path), 0o755); err != nil {
+	if err := MkdirAll(filepath.Dir(l.path), 0o755); err != nil {
 		return true, 0 // cannot lock → do NOT block the job; the guard is a courtesy
 	}
 	body := fmt.Sprintf("%d\n%d\n", os.Getpid(), time.Now().Unix())
-	if err := os.WriteFile(l.path, []byte(body), 0o644); err != nil {
+	if err := WriteFile(l.path, []byte(body), 0o644); err != nil {
 		return true, 0
 	}
 	return true, 0

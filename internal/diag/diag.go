@@ -19,7 +19,6 @@ package diag
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -202,7 +201,7 @@ func write(e Entry) {
 	writeMu.Lock()
 	defer writeMu.Unlock()
 	dir := state.LogsDir()
-	if err := os.MkdirAll(dir, state.PrivateDir); err != nil {
+	if err := state.MkdirAll(dir, state.PrivateDir); err != nil {
 		ReportStoreFailure("diagnostics", err)
 		return
 	}

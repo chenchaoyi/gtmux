@@ -15,6 +15,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/events"
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // MigrationLedgerFile is the knowledge-owned path inside an HQ archive.
@@ -372,7 +373,7 @@ func backupMigrationLedger(path string) error {
 		return err
 	}
 	defer src.Close()
-	dst, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
+	dst, err := state.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
 	if err != nil {
 		return err
 	}

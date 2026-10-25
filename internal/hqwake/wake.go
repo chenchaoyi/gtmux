@@ -230,11 +230,11 @@ func DoneDue(pane string, now, gapSec int64) (due bool, dueAt int64) {
 
 // StampDone records a delivered immediate done wake for the merge window.
 func StampDone(pane string, now int64) {
-	if err := os.MkdirAll(dir(), 0o755); err != nil {
+	if err := state.MkdirAll(dir(), 0o755); err != nil {
 		return
 	}
 	p := doneLastPath(pane)
-	_ = os.WriteFile(p, nil, 0o644)
+	_ = state.WriteFile(p, nil, 0o644)
 	t := time.Unix(now, 0)
 	_ = os.Chtimes(p, t, t)
 }
@@ -259,7 +259,7 @@ const ResolvedClaimTTL = 30
 // channel (hook or slow-tick) observes the clear first. Best-effort on I/O error: it
 // returns true (a possible duplicate resolved is harmless; a dropped one is not).
 func ClaimResolved(pane string, now int64) bool {
-	if err := os.MkdirAll(dir(), 0o755); err != nil {
+	if err := state.MkdirAll(dir(), 0o755); err != nil {
 		return true
 	}
 	p := resolvedClaimPath(pane)
@@ -279,10 +279,10 @@ func pullStampPath() string { return filepath.Join(dir(), "last-pull") }
 // StampPull records an HQ-side pull now. Called by the CLI when a delta-read runs
 // with the HQ home as cwd (the same cwd-keyed role rule the radar uses).
 func StampPull() {
-	if err := os.MkdirAll(dir(), 0o755); err != nil {
+	if err := state.MkdirAll(dir(), 0o755); err != nil {
 		return
 	}
-	_ = os.WriteFile(pullStampPath(), nil, 0o644)
+	_ = state.WriteFile(pullStampPath(), nil, 0o644)
 	now := time.Now()
 	_ = os.Chtimes(pullStampPath(), now, now)
 }

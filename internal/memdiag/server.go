@@ -65,7 +65,7 @@ func Start(dir, version string) (*Server, error) {
 			break
 		}
 	}
-	run, err := os.MkdirTemp(dir, fmt.Sprintf("mem-%d-", os.Getpid()))
+	run, err := state.MkdirTemp(dir, fmt.Sprintf("mem-%d-", os.Getpid()))
 	if err != nil {
 		return nil, err
 	}

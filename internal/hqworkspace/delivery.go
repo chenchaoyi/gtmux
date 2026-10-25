@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"sort"
 	"syscall"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // Delivery is the adapter's verified verdict. SafeHold means NOTHING was typed;
@@ -35,10 +37,10 @@ func Payload(m Message, title string) string {
 func (s *Store) Pump(io DeliveryIO, at int64) (bool, error) {
 	// A process lease spans the actual input attempt, not just the claim write.
 	// A slow surviving sender cannot be displaced by a timeout in another process.
-	if err := os.MkdirAll(s.dir, 0700); err != nil {
+	if err := state.MkdirAll(s.dir, 0700); err != nil {
 		return false, err
 	}
-	lease, err := os.OpenFile(filepath.Join(s.dir, ".delivery-lock"), os.O_CREATE|os.O_RDWR, 0600)
+	lease, err := state.OpenFile(filepath.Join(s.dir, ".delivery-lock"), os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
 		return false, err
 	}

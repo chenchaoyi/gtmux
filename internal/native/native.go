@@ -78,7 +78,7 @@ func Save(r Record) error {
 			return errors.New("invalid native home identity")
 		}
 		path := recordPath(r)
-		if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+		if err := state.MkdirAll(filepath.Dir(path), 0700); err != nil {
 			return err
 		}
 		return atomicJSON(path, r)

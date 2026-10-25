@@ -57,10 +57,10 @@ func NewID() string {
 }
 func path(id string) string { return filepath.Join(dir(), id+".json") }
 func transaction(fn func() error) error {
-	if err := os.MkdirAll(dir(), 0700); err != nil {
+	if err := state.MkdirAll(dir(), 0700); err != nil {
 		return err
 	}
-	f, err := os.OpenFile(filepath.Join(dir(), ".lock"), os.O_CREATE|os.O_RDWR, 0600)
+	f, err := state.OpenFile(filepath.Join(dir(), ".lock"), os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
 		return err
 	}
@@ -91,7 +91,7 @@ func write(r Request) error {
 	if err != nil {
 		return err
 	}
-	f, err := os.CreateTemp(dir(), ".request-")
+	f, err := state.CreateTemp(dir(), ".request-")
 	if err != nil {
 		return err
 	}

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/diag"
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // The ledger is what makes a daily pass safe: nothing is read twice, nothing is emitted
@@ -74,7 +75,7 @@ func loadLedger(dir string) (*ledger, error) {
 }
 
 func (l *ledger) save(dir string) error {
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := state.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
 	ids := make([]string, 0, len(l.Emitted))
@@ -90,7 +91,7 @@ func (l *ledger) save(dir string) error {
 	if err := writeJSON(filepath.Join(dir, "errors.json"), l.Errors); err != nil {
 		return err
 	}
-	f, err := os.OpenFile(filepath.Join(dir, "passes.jsonl"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	f, err := state.OpenFile(filepath.Join(dir, "passes.jsonl"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
 		return err
 	}
@@ -159,7 +160,7 @@ func rotatePasses(path string) error {
 	}
 	kept := bytes.Join(lines[len(lines)-passesKeep:], nil)
 	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, kept, 0o600); err != nil {
+	if err := state.WriteFile(tmp, kept, 0o600); err != nil {
 		return err
 	}
 	return os.Rename(tmp, path)
@@ -236,7 +237,7 @@ func writeJSON(path string, v any) error {
 		return err
 	}
 	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, b, 0o644); err != nil {
+	if err := state.WriteFile(tmp, b, 0o644); err != nil {
 		return err
 	}
 	return os.Rename(tmp, path)

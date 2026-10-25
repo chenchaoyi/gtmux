@@ -154,10 +154,8 @@ enum DiagLog {
         // stray test entry in someone's log is the same defect from this side.
         if dirOverride == nil, underTest { return }
         let dir = dirOverride ?? Paths.logsDir
-        try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true,
-                                                 attributes: [.posixPermissions: 0o700])
         let path = currentSegment(dir: dir, day: dayString(day))
-        let fd = open(path, O_WRONLY | O_APPEND | O_CREAT, 0o600)
+        let fd = PrivateLogFile.openAppend(path: path, root: dirOverride ?? Paths.dataDir)
         guard fd >= 0 else { return }
         defer { close(fd) }
         _ = line.withUnsafeBytes { Darwin.write(fd, $0.baseAddress, line.count) }

@@ -22,10 +22,10 @@ import (
 // Mode changes never hold this lock while asking the network or the user. Recovery
 // takes it only to recheck user intent and apply the cloudflared token.
 func lockRemoteServices() (func(), error) {
-	if err := os.MkdirAll(state.ConfigDir(), 0700); err != nil {
+	if err := state.MkdirAll(state.ConfigDir(), 0700); err != nil {
 		return nil, err
 	}
-	f, err := os.OpenFile(filepath.Join(state.ConfigDir(), "remote-services.lock"), os.O_CREATE|os.O_RDWR, 0600)
+	f, err := state.OpenFile(filepath.Join(state.ConfigDir(), "remote-services.lock"), os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +162,7 @@ func recoverStandard(ctx context.Context, api, reg string) error {
 }
 
 func writeRecoveryAgent(path string, data []byte) error {
-	f, err := os.CreateTemp(filepath.Dir(path), ".gtmux-recovery-*")
+	f, err := state.CreateTemp(filepath.Dir(path), ".gtmux-recovery-*")
 	if err != nil {
 		return err
 	}

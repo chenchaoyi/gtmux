@@ -83,11 +83,11 @@ func noteWindowEvidence(agent, model string, tokens int64) {
 		return
 	}
 	seen[key] = tokens
-	if os.MkdirAll(state.Dir(), 0o755) != nil {
+	if state.MkdirAll(state.Dir(), 0o755) != nil {
 		return
 	}
 	if b, err := json.Marshal(seen); err == nil {
-		_ = os.WriteFile(windowSeenPath(), b, 0o644)
+		_ = state.WriteFile(windowSeenPath(), b, 0o644)
 	}
 }
 
@@ -138,8 +138,8 @@ func BackfillWindows() {
 			}
 		}
 	}
-	if os.MkdirAll(state.Dir(), 0o755) == nil {
-		_ = os.WriteFile(backfillMarker(), []byte("1"), 0o644)
+	if state.MkdirAll(state.Dir(), 0o755) == nil {
+		_ = state.WriteFile(backfillMarker(), []byte("1"), 0o644)
 	}
 }
 

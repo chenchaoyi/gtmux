@@ -16,6 +16,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // knowledgeRenderMarker heads every rendered topic file. The version is the
@@ -121,14 +123,14 @@ func renderPromotionExit(b *strings.Builder, op knowledgeOp) {
 // (.md), so a stray user file is left alone.
 func renderPromotions(live []knowledgeOp) error {
 	pending, _ := pendingPromotions(live)
-	if err := os.MkdirAll(knowledgePromotionsDir(), 0o755); err != nil {
+	if err := state.MkdirAll(knowledgePromotionsDir(), 0o755); err != nil {
 		return err
 	}
 	expected := map[string]bool{}
 	for _, op := range pending {
 		path := promotionBriefPath(op)
 		expected[filepath.Base(path)] = true
-		if err := os.WriteFile(path, []byte(renderPromotionBrief(op)), 0o644); err != nil {
+		if err := state.WriteFile(path, []byte(renderPromotionBrief(op)), 0o644); err != nil {
 			return err
 		}
 	}
@@ -292,7 +294,7 @@ func migrateTopicFile(topic string, now int64) error {
 	if seed, ok := TopicSeeds[topic+".md"]; ok && string(b) == seed {
 		return os.Remove(path) // an untouched placeholder holds nothing to preserve
 	}
-	if err := os.MkdirAll(knowledgeLegacyDir(), 0o755); err != nil {
+	if err := state.MkdirAll(knowledgeLegacyDir(), 0o755); err != nil {
 		return err
 	}
 	dst := filepath.Join(knowledgeLegacyDir(), topic+".md")
@@ -305,13 +307,13 @@ func migrateTopicFile(topic string, now int64) error {
 
 // writeTopicRender migrates (first touch) then writes the topic's render.
 func writeTopicRender(topic, desc string, live []knowledgeOp, now int64) error {
-	if err := os.MkdirAll(Dir(), 0o755); err != nil {
+	if err := state.MkdirAll(Dir(), 0o755); err != nil {
 		return err
 	}
 	if err := migrateTopicFile(topic, now); err != nil {
 		return err
 	}
-	return os.WriteFile(topicPath(topic), []byte(renderTopic(topic, desc, live)), 0o644)
+	return state.WriteFile(topicPath(topic), []byte(renderTopic(topic, desc, live)), 0o644)
 }
 
 // renderAllTopics re-renders every BUILT-IN topic that has live entries OR
@@ -360,10 +362,10 @@ func renderMachine(live []knowledgeOp) string {
 
 func writeMachineRender(live []knowledgeOp) error {
 	p := MachinePath()
-	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+	if err := state.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(p, []byte(renderMachine(live)), 0o644)
+	return state.WriteFile(p, []byte(renderMachine(live)), 0o644)
 }
 
 func topicHasEntries(live []knowledgeOp, topic string) bool {

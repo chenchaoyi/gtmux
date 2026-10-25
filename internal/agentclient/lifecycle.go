@@ -3,7 +3,6 @@ package agentclient
 import (
 	"encoding/json"
 	"errors"
-	"os"
 	"strings"
 	"time"
 
@@ -124,7 +123,7 @@ func ObserveLifecycle(a Attachment, event, turnID string, now time.Time) error {
 			}
 		}
 	}
-	if err := os.MkdirAll(state.TerminalLifecycleDir(), 0700); err != nil {
+	if err := state.MkdirAll(state.TerminalLifecycleDir(), 0700); err != nil {
 		return err
 	}
 	b, err := json.Marshal(v)
