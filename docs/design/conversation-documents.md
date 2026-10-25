@@ -11,8 +11,12 @@ available. No separate document dashboard is added.
 
 ## Providing a file
 
-The agent or user runs this on the server after saving a report (use the real transcript
-session ID and its home ID, if present, from `gtmux agents --json`):
+The agent or user runs this on the server after saving a report. Use the owning turn's
+`session_id` from the authenticated `GET /api/transcript?id=%PANE` response for a tmux
+pane. `gtmux agents --json` includes `session_id` for external conversation rows; tmux
+rows omit it. Its `session` field is the tmux session name, not the agent's session ID.
+Supply the row's `home_id` when present; otherwise omit `--home-id`. Do not substitute
+pane IDs or infer an identity from inherited launch markers:
 
 ```sh
 gtmux artifact add /absolute/path/report.html --session-id SESSION_ID

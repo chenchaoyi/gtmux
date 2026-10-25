@@ -8,8 +8,11 @@
 
 ## 提供文件
 
-报告保存后，由 Agent 或用户在服务器运行下面的命令。会话 ID 必须使用真实的对话 ID，
-不是窗格 ID；可从 `gtmux agents --json` 核对。会话带有 `home_id` 时也要指定：
+报告保存后，由 Agent 或用户在服务器运行下面的命令。对于 tmux 窗格，使用已鉴权的
+`GET /api/transcript?id=%PANE` 响应中所属轮次的 `session_id`。`gtmux agents --json`
+只在外部会话行提供 `session_id`，tmux 行不提供；其中的 `session` 是 tmux 会话名，
+不能当作 Agent 的对话 ID。行中有 `home_id` 时也要指定，没有则省略 `--home-id`。
+不要使用窗格 ID，也不要根据继承的启动标记猜测对话身份：
 
 ```sh
 gtmux artifact add /absolute/path/report.html --session-id SESSION_ID
