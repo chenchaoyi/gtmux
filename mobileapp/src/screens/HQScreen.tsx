@@ -355,6 +355,10 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
     },
     [client, hq.pane_id],
   );
+  const onComposerUpload = useCallback(
+    (uri: string, name: string, type: string, onProgress?: (fraction: number) => void) => client.upload(uri, name, type, onProgress, hq.pane_id),
+    [client, hq.pane_id],
+  );
   const keyRoute = useRef('');
   keyRoute.current = `${client.base}|${hq.pane_id}`;
   const onLoadKeys = useCallback((version?: number, boot?: string) => client.inputCapabilities(hq.pane_id, version, boot), [client, hq.pane_id]);
@@ -610,6 +614,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
             paneId={hq.pane_id}
             historyScope={historyScope(hq)}
             onSend={sendHQ}
+            onUpload={onComposerUpload}
             keyTarget={`${client.base}|${hq.pane_id}`}
             onLoadKeys={onLoadKeys}
             onSendKey={onSendKey}

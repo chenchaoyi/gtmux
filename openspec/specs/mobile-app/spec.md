@@ -1424,6 +1424,27 @@ the editor and its marks if they do not.
 - **THEN** the export is 8064 × 6048; only if the device cannot make it does the editor
   say so, with that size, and offer 4096 × 3072, which happens only if the reader picks it
 
+### Requirement: HQ's composer supports staged attachments
+
+The HQ page SHALL use the shared composer's attachment flow in both compact and
+regular layouts. The plus beside the input SHALL open the attachment menu. Picking
+a file or finishing a photo edit SHALL stage the attachment locally; cancelling the
+menu or picker SHALL send nothing. Only Send SHALL upload staged attachments through
+the current client's upload API, scoped to HQ's pane, then send the saved paths to
+that same HQ pane. An upload failure SHALL retain the staged attachment for retry.
+
+#### Scenario: Attaching a file to HQ
+
+- **WHEN** the commander opens HQ's composer, taps plus and selects a file
+- **THEN** the file is staged without uploading or sending; Send uploads it for HQ's
+  current pane and includes the saved path in the message to that pane
+
+#### Scenario: Cancelling an attachment
+
+- **WHEN** the commander cancels the attachment menu or photo picker on HQ
+- **THEN** no attachment is added or uploaded and no message is sent; plus can open
+  the menu again
+
 ### Requirement: The HQ page's composer rises above the keyboard
 
 Opening the composer's field on the HQ page SHALL leave the field fully visible above the
