@@ -1,6 +1,6 @@
 import React from 'react';
 import renderer, {act} from 'react-test-renderer';
-import {Text, TouchableOpacity, StyleSheet, Linking, Share} from 'react-native';
+import {Text, TouchableOpacity, StyleSheet, Linking, Share, Alert} from 'react-native';
 import Clipboard from '@react-native-clipboard/clipboard';
 import {ChatView} from './ChatView';
 import {MarkdownView} from './MarkdownView';
@@ -50,11 +50,15 @@ test('share opens the system sheet with full reply; tool-only turns have no acti
   mount('p', {response: '', segments: [{steps: [{kind: 'tool', title: 'tool'}]}]});
   expect(tree.root.findAllByType(ReplyActions)).toHaveLength(0);
 });
-test('links cannot execute scripts or open local files', () => {
+test('local references use the preview adapter, never an OS file URL or script', async () => {
+  const alert = jest.spyOn(Alert, 'alert');
   const open = jest.spyOn(Linking, 'openURL');
   mount('[bad](javascript:alert) [local](file:///tmp/file) [ok](https://example.org)');
   const md = tree.root.findAllByType(MarkdownView)[0];
   const links = md.findAllByType(Text).filter(n => n.props.onPress);
-  expect(links).toHaveLength(1);
+  expect(links).toHaveLength(2);
+  const local = links.find(n => n.props.accessibilityHint?.includes('/tmp/file'))!;
+  await act(async () => { local.props.onPress(); });
+  expect(alert).toHaveBeenCalled();
   expect(open).not.toHaveBeenCalled();
 });

@@ -366,6 +366,7 @@ gtmux logs --since 1d --stats                # 存了多少，今天出了多少
 ```
 act.adopt               adopt
 act.app.launch          app
+act.artifact            artifact
 act.attach              attach, serve
 act.awake.off           awake
 act.awake.on            awake
@@ -2161,3 +2162,19 @@ HQ 目录以外的读取同样显示原始视图，但不算消费。
 每次最多扫描 4 MiB。日志视图按条数限制；汇总按不同来源数限制，默认 100、最多 200。存在 `next` 就可以继续，并按 group key 累加不同页的计数。部分汇总不代表整个保留期，采样后的记录数也不是完整请求量。命令行给出的续页命令会保留筛选和绝对 `--since` 时间。游标绑定设备/actor、操作、结果及视图，更改这些条件后应从头查询。
 
 默认范围为 `--origin external`。本机工具及来源不明的旧记录保留在诊断中，可结合 `--access` 使用 `--origin local`、`--origin unknown` 或 `--origin all`。先限定来源，再筛选、分页和汇总，续页游标也绑定来源。已验证客户端经回环隧道或代理进入仍属于外部访问；master 权限或回环地址本身不能确定设备。
+
+## gtmux artifact
+
+明确提供一个服务器本地文件，供本人已配对设备预览。访客无法读取；对话里出现一个路径
+本身不会发布该文件。
+
+```sh
+gtmux artifact add /absolute/path/report.html --session-id SESSION_ID [--home-id HOME_ID] [--json]
+gtmux artifact list
+gtmux artifact remove ID
+```
+
+`add` 保存本人拥有的普通文件快照，单份不超过 30 MiB，输出 Markdown 引用；`--json`
+改为输出元数据。需指定真实的对话及目录身份。`list` 以 JSON 列出副本；`remove` 只移除
+已登记副本并停止后续下载，不触碰原文件，不能撤回设备已下载的文件。总上限为 256 份、
+240 MiB。支持格式及限制见[会话文件预览](design/conversation-documents.zh.md)。

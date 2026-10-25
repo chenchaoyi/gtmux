@@ -21,6 +21,7 @@ import (
 	"github.com/chenchaoyi/gtmux/assets"
 	"github.com/chenchaoyi/gtmux/internal/agentclient"
 	"github.com/chenchaoyi/gtmux/internal/agents"
+	"github.com/chenchaoyi/gtmux/internal/artifact"
 	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
@@ -404,10 +405,18 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 			// internal/tmux uses for the radar.
 			return []string{tmux.Bin, "-u", "attach-session", "-t", session}, true
 		},
-		Upload:             saveUpload,
-		Icon:               agentIconPNG,
-		Diff:               diffForPane,
-		Transcript:         transcriptForPane,
+		Upload:          saveUpload,
+		Icon:            agentIconPNG,
+		Diff:            diffForPane,
+		Transcript:      transcriptForPane,
+		ArtifactResolve: artifact.Resolve,
+		ArtifactContent: func(id, sid, home string) (artifact.File, io.ReadSeekCloser, error) {
+			f, err := artifact.Resolve("gtmux-file:"+id, sid, home)
+			if err != nil {
+				return artifact.File{}, nil, err
+			}
+			return artifact.Open(f.ID)
+		},
 		ParticipantProfile: participantProfile,
 		SessionTranscript: func(id, home string) ([]byte, server.TranscriptMeta, error) {
 			return desktopTranscriptRead(id, "", home)

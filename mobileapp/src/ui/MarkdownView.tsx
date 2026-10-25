@@ -7,7 +7,9 @@ import React from 'react';
 import {Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {Block, Inline, parseBlocks} from './markdown';
 import {DisclosureChevron} from './DisclosureChevron';
-import {CopyableText} from './CopyableText';
+import {CopyableText, CopyFeedbackContext} from './CopyableText';
+import {RangeSourceContext, nativeRangeAvailable} from './RangeText';
+import {documentReference} from '../documents/references';
 import {Lang} from '../i18n';
 
 export interface MdColors {
@@ -21,11 +23,12 @@ export interface MdColors {
 
 interface Props {
   lang?: Lang;
+  openFile?: (reference: string) => void;
   source: string;
   colors: MdColors;
   fontSize?: number;
   selectable?: boolean; // long-press to select + Copy (per block; chat uses this)
-  // Android range-selection tint. iOS highlights the whole block during Copy.
+  // Native RN selection tint; the iOS TextKit renderer uses system selection colors.
   selectionColor?: string;
   // Optional font family for PROSE blocks (headings/paragraphs/lists/quotes/tables);
   // chat passes the terminal's font so the two surfaces match. Code stays monospace.
@@ -59,7 +62,7 @@ interface Props {
 // Inline code's size in calm prose, as a share of the text around it (see 'code' below).
 const CODE_IN_PROSE = 0.85;
 
-function renderSpans(nodes: Inline[], c: MdColors, fs: number, calm = false): React.ReactNode[] {
+function renderSpans(nodes: Inline[], c: MdColors, fs: number, calm = false, openFile?: (reference: string) => void): React.ReactNode[] {
   return nodes.map((n, i) => {
     switch (n.t) {
       case 'b':
@@ -112,13 +115,21 @@ function renderSpans(nodes: Inline[], c: MdColors, fs: number, calm = false): Re
       case 'br':
         // A real newline inside the Text: what the author asked for, and never the tag.
         return <Text key={i}>{'\n'}</Text>;
-      case 'link':
+      case 'link': {
+        const file = documentReference(n.href);
+        if (file) return <Text key={i} style={{color: c.link, textDecorationLine: 'underline'}}
+          accessibilityRole={openFile ? 'link' : undefined}
+          accessibilityHint={file.path || undefined}
+          onPress={openFile ? () => openFile(file.reference) : undefined}>
+          {'▤ '}{n.s}{!openFile && file.path ? ` (${file.path})` : ''}
+        </Text>;
         if (!/^(https?:\/\/|mailto:)/i.test(n.href)) return <Text key={i}>{n.s}</Text>;
         return (
           <Text key={i} style={{color: c.link, textDecorationLine: 'underline'}} onPress={() => Linking.openURL(n.href).catch(() => {})}>
             {n.s}
           </Text>
         );
+      }
       default:
         return <Text key={i}>{n.s}</Text>;
     }
@@ -141,6 +152,7 @@ function TableRow({
   ff,
   calm,
   lang,
+  openFile,
 }: {
   cells: Inline[][];
   align: import('./markdown').Align[];
@@ -152,6 +164,7 @@ function TableRow({
   ff?: string;
   calm?: boolean;
   lang?: Lang;
+  openFile?: (reference: string) => void;
 }) {
   return (
     <View style={styles.tr}>
@@ -168,7 +181,7 @@ function TableRow({
               fontWeight: header ? '700' : '400',
               textAlign: align[i] ?? 'left',
             }}>
-            {renderSpans(cell, c, fs, calm)}
+            {renderSpans(cell, c, fs, calm, openFile)}
           </CopyableText>
         </View>
       ))}
@@ -188,7 +201,7 @@ export const PROSE_CLAMP_CHARS = 220;
 const PROSE_CLAMP_LINES = 4;
 
 function Paragraph({
-  b, c, fs, sel, sc, ff, calm, clamp, lang = 'en',
+  b, c, fs, sel, sc, ff, calm, clamp, lang = 'en', openFile,
 }: {
   b: Extract<Block, {t: 'p'}>;
   c: MdColors;
@@ -199,6 +212,7 @@ function Paragraph({
   calm?: boolean;
   clamp?: boolean;
   lang?: Lang;
+  openFile?: (reference: string) => void;
 }) {
   const long = clamp === true && plainLength(b.spans) > PROSE_CLAMP_CHARS;
   const [open, setOpen] = React.useState(false);
@@ -208,7 +222,7 @@ function Paragraph({
       selectionColor={sc}
       numberOfLines={long && !open ? PROSE_CLAMP_LINES : undefined}
       style={[styles.block, {color: c.text, fontFamily: ff, fontSize: fs, lineHeight: fs * 1.45}]}>
-      {renderSpans(b.spans, c, fs, calm)}
+      {renderSpans(b.spans, c, fs, calm, openFile)}
     </CopyableText>
   );
   if (!long) return body;
@@ -298,7 +312,7 @@ function fieldLabel(label: string, lang: Lang): string {
   return pair ? pair[lang === 'zh' ? 1 : 0] : label;
 }
 
-function StackedTable({b, c, fs, sel, sc, ff, calm, fold, lang = 'en'}: {b: Extract<Block, {t: 'table'}>; c: MdColors; fs: number; sel?: boolean; sc?: string; ff?: string; calm?: boolean; fold?: boolean; lang?: Lang}) {
+function StackedTable({b, c, fs, sel, sc, ff, calm, fold, lang = 'en', openFile}: {b: Extract<Block, {t: 'table'}>; c: MdColors; fs: number; sel?: boolean; sc?: string; ff?: string; calm?: boolean; fold?: boolean; lang?: Lang; openFile?: (reference: string) => void}) {
   const rows = stackRows(b.header, b.rows);
   // Keys identify rows, not positions: inserting a new pane during a poll must not
   // move the reader's open state onto a different pane.
@@ -334,7 +348,7 @@ function StackedTable({b, c, fs, sel, sc, ff, calm, fold, lang = 'en'}: {b: Extr
                 activeOpacity={0.6} onPress={() => toggle(keys[i])} style={styles.stackHead}>
                 <View style={styles.stackIdentity}>
                   <Text numberOfLines={2} style={{color: c.text, fontSize: fs, fontWeight: '600', lineHeight: fs * 1.4}}>
-                    {summary || renderSpans(r.head, c, fs, calm)}
+                    {summary || renderSpans(r.head, c, fs, calm, openFile)}
                   </Text>
                   {(summary || subtitle) && (
                     <Text numberOfLines={2} style={[styles.stackSub, {color: c.dim, fontSize: fs - 1, lineHeight: fs * 1.4}]}>
@@ -346,7 +360,7 @@ function StackedTable({b, c, fs, sel, sc, ff, calm, fold, lang = 'en'}: {b: Extr
               </TouchableOpacity>
             ) : (
               <CopyableText lang={lang} selectable={sel} selectionColor={sc} style={{color: c.text, fontFamily: ff, fontSize: fs, fontWeight: '600', lineHeight: fs * 1.4, marginBottom: 3}}>
-                {renderSpans(r.head, c, fs, calm)}
+                {renderSpans(r.head, c, fs, calm, openFile)}
               </CopyableText>
             )}
             {!shut && r.fields.map((f, j) => (
@@ -355,10 +369,10 @@ function StackedTable({b, c, fs, sel, sc, ff, calm, fold, lang = 'en'}: {b: Extr
                   {fold ? fieldLabel(f.label, lang) : f.label}
                 </Text>
                 {fold ? (
-                  <Paragraph b={{t: 'p', spans: f.value}} c={c} fs={fs} sel={sel} sc={sc} ff={ff} calm={calm} clamp lang={lang} />
+                  <Paragraph b={{t: 'p', spans: f.value}} c={c} fs={fs} sel={sel} sc={sc} ff={ff} calm={calm} clamp lang={lang} openFile={openFile} />
                 ) : (
                   <CopyableText lang={lang} selectable={sel} selectionColor={sc} style={{flex: 1, color: c.text, fontFamily: ff, fontSize: fs - 1, lineHeight: (fs - 1) * 1.4}}>
-                    {renderSpans(f.value, c, fs - 1, calm)}
+                    {renderSpans(f.value, c, fs - 1, calm, openFile)}
                   </CopyableText>
                 )}
               </View>
@@ -370,16 +384,16 @@ function StackedTable({b, c, fs, sel, sc, ff, calm, fold, lang = 'en'}: {b: Extr
   );
 }
 
-function BlockView({b, c, fs, sel, sc, ff, calm, fold, clampProse, lang}: {b: Block; c: MdColors; fs: number; sel?: boolean; sc?: string; ff?: string; calm?: boolean; fold?: boolean; clampProse?: boolean; lang?: Lang}) {
+function BlockView({b, c, fs, sel, sc, ff, calm, fold, clampProse, lang, openFile}: {b: Block; c: MdColors; fs: number; sel?: boolean; sc?: string; ff?: string; calm?: boolean; fold?: boolean; clampProse?: boolean; lang?: Lang; openFile?: (reference: string) => void}) {
   switch (b.t) {
     case 'h':
       return (
         <CopyableText lang={lang} selectable={sel} selectionColor={sc} style={[styles.block, {color: c.text, fontFamily: ff, fontSize: fs + ((calm ? HEADING_SIZE_CALM : HEADING_SIZE)[b.level] ?? 0), fontWeight: '700', lineHeight: (fs + 6) * 1.3, marginTop: calm ? 10 : 0}]}>
-          {renderSpans(b.spans, c, fs, calm)}
+          {renderSpans(b.spans, c, fs, calm, openFile)}
         </CopyableText>
       );
     case 'p':
-      return <Paragraph b={b} c={c} fs={fs} sel={sel} sc={sc} ff={ff} calm={calm} clamp={clampProse} lang={lang} />;
+      return <Paragraph b={b} c={c} fs={fs} sel={sel} sc={sc} ff={ff} calm={calm} clamp={clampProse} lang={lang} openFile={openFile} />;
     case 'code':
       return (
         <ScrollView
@@ -387,7 +401,7 @@ function BlockView({b, c, fs, sel, sc, ff, calm, fold, clampProse, lang}: {b: Bl
           showsHorizontalScrollIndicator={false}
           style={[styles.codeBlock, {backgroundColor: c.codeBg, borderColor: c.border}]}
           contentContainerStyle={styles.codeBlockContent}>
-          <CopyableText lang={lang} selectable={sel} selectionColor={sc} style={[styles.codeBlockText, {color: c.code, fontSize: fs - 1, lineHeight: (fs - 1) * 1.4}]}>{b.text}</CopyableText>
+          <CopyableText rangeUnbounded lang={lang} selectable={sel} selectionColor={sc} style={[styles.codeBlockText, {color: c.code, fontSize: fs - 1, lineHeight: (fs - 1) * 1.4}]}>{b.text}</CopyableText>
         </ScrollView>
       );
     case 'ul':
@@ -397,7 +411,7 @@ function BlockView({b, c, fs, sel, sc, ff, calm, fold, clampProse, lang}: {b: Bl
           {b.items.map((item, i) => (
             <View key={i} style={styles.li}>
               <Text style={[styles.bullet, {color: c.dim, fontFamily: ff, fontSize: fs, lineHeight: fs * 1.45}]}>{b.t === 'ol' ? `${b.start + i}. ` : '• '}</Text>
-              <CopyableText lang={lang} selectable={sel} selectionColor={sc} style={[styles.liText, {color: c.text, fontFamily: ff, fontSize: fs, lineHeight: fs * 1.45}]}>{renderSpans(item, c, fs, calm)}</CopyableText>
+              <CopyableText lang={lang} selectable={sel} selectionColor={sc} style={[styles.liText, {color: c.text, fontFamily: ff, fontSize: fs, lineHeight: fs * 1.45}]}>{renderSpans(item, c, fs, calm, openFile)}</CopyableText>
             </View>
           ))}
         </View>
@@ -405,21 +419,21 @@ function BlockView({b, c, fs, sel, sc, ff, calm, fold, clampProse, lang}: {b: Bl
     case 'quote':
       return (
         <View style={[styles.quote, {borderLeftColor: c.border}]}>
-          <CopyableText lang={lang} selectable={sel} selectionColor={sc} style={{color: c.dim, fontFamily: ff, fontSize: fs, lineHeight: fs * 1.45, fontStyle: 'italic'}}>{renderSpans(b.spans, c, fs, calm)}</CopyableText>
+          <CopyableText lang={lang} selectable={sel} selectionColor={sc} style={{color: c.dim, fontFamily: ff, fontSize: fs, lineHeight: fs * 1.45, fontStyle: 'italic'}}>{renderSpans(b.spans, c, fs, calm, openFile)}</CopyableText>
         </View>
       );
     case 'table':
       // Wide tables stack on a phone (see stackRows). A table narrow enough to fit still
       // renders as a table — a two-column key/value grid reads better as one.
       if (calm && b.header.length > 3) {
-        return <StackedTable b={b} c={c} fs={fs} sel={sel} sc={sc} ff={ff} calm={calm} fold={fold} lang={lang} />;
+        return <StackedTable b={b} c={c} fs={fs} sel={sel} sc={sc} ff={ff} calm={calm} fold={fold} lang={lang} openFile={openFile} />;
       }
       return (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.block}>
           <View>
-            <TableRow cells={b.header} align={b.align} c={c} fs={fs} header sel={sel} sc={sc} ff={ff} calm={calm} lang={lang} />
+            <TableRow cells={b.header} align={b.align} c={c} fs={fs} header sel={sel} sc={sc} ff={ff} calm={calm} lang={lang} openFile={openFile} />
             {b.rows.map((row, i) => (
-              <TableRow key={i} cells={row} align={b.align} c={c} fs={fs} sel={sel} sc={sc} ff={ff} calm={calm} lang={lang} />
+              <TableRow key={i} cells={row} align={b.align} c={c} fs={fs} sel={sel} sc={sc} ff={ff} calm={calm} lang={lang} openFile={openFile} />
             ))}
           </View>
         </ScrollView>
@@ -431,14 +445,26 @@ function BlockView({b, c, fs, sel, sc, ff, calm, fold, clampProse, lang}: {b: Bl
   }
 }
 
-export function MarkdownView({source, colors, fontSize = 14, selectable, selectionColor, fontFamily, calmEmphasis, foldRows, clampProse, lang}: Props) {
+export function MarkdownView({source, colors, fontSize = 14, selectable, selectionColor, fontFamily, calmEmphasis, foldRows, clampProse, lang, openFile}: Props) {
   const blocks = React.useMemo(() => parseBlocks(source), [source]);
+  const feedback = React.useContext(CopyFeedbackContext);
+  const continuous = feedback && selectable && nativeRangeAvailable && !clampProse;
+  const groups: Block[][] = [];
+  for (const block of blocks) {
+    if (continuous && block.t === 'p' && groups.length && groups[groups.length - 1].every(b => b.t === 'p')) groups[groups.length - 1].push(block);
+    else groups.push([block]);
+  }
   return (
+    <RangeSourceContext.Provider value={source}>
     <View>
-      {blocks.map((b, i) => (
-        <BlockView key={i} b={b} c={colors} fs={fontSize} sel={selectable} sc={selectionColor} ff={fontFamily} calm={calmEmphasis} fold={foldRows} clampProse={clampProse} lang={lang} />
-      ))}
+      {groups.map((group, i) => continuous && group[0].t === 'p' ? (
+        <CopyableText key={i} lang={lang} selectable={selectable} selectionColor={selectionColor}
+          style={[styles.block, {color: colors.text, fontFamily, fontSize, lineHeight: fontSize * 1.45}]}>
+          {group.map((b, n) => b.t === 'p' ? <Text key={n}>{n ? '\n\n' : ''}{renderSpans(b.spans, colors, fontSize, calmEmphasis, openFile)}</Text> : null)}
+        </CopyableText>
+      ) : <BlockView key={i} b={group[0]} c={colors} fs={fontSize} sel={selectable} sc={selectionColor} ff={fontFamily} calm={calmEmphasis} fold={foldRows} clampProse={clampProse} lang={lang} openFile={openFile} />)}
     </View>
+    </RangeSourceContext.Provider>
   );
 }
 

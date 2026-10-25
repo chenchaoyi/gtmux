@@ -162,6 +162,8 @@ func Run(argv []string) int {
 		return cmdOptions(args)
 	case "new", "n":
 		return cmdNew(args)
+	case "artifact":
+		return cmdArtifact(args)
 	case "transcript":
 		return cmdTranscript(args)
 	case "follow":

@@ -64,6 +64,11 @@ var helpGroups = []cmdGroup{
 }
 
 var helpCommands = []command{
+	{Name: "artifact", Args: "add FILE --session-id ID | list | remove ID", Group: "more", Writes: true, OwnHelp: true, EN: "publish a document for your paired devices", ZH: "提供会话文件供本人设备预览", Flags: []cmdFlag{
+		{Name: "--session-id ID", EN: "exact transcript session identity; required for add", ZH: "所属对话的真实 ID；add 必填"},
+		{Name: "--home-id ID", EN: "conversation home identity when present", ZH: "对话带有目录身份时指定"},
+		{Name: "--json", EN: "print metadata instead of a Markdown link", ZH: "输出元数据，替代 Markdown 链接"},
+	}},
 	{
 		Name: "agents", Args: "[--watch|--json]", Group: "look",
 		EN: "who is waiting, working, idle, and where",

@@ -15,6 +15,7 @@ package diag
 var Catalog = []CatalogEntry{
 	{"act.adopt", []string{"adopt"}},
 	{"act.app.launch", []string{"app"}},
+	{"act.artifact", []string{"artifact"}},
 	{"act.attach", []string{"attach", "serve"}},
 	{"act.awake.off", []string{"awake"}},
 	{"act.awake.on", []string{"awake"}},

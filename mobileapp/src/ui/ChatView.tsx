@@ -10,7 +10,7 @@
 // resume record (the gtmux hooks capture the agent + session id).
 
 import React, {useMemo, useState} from 'react';
-import {Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {Alert, Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {AnsiLine} from './ansi';
 import {AgentAvatar} from './AgentAvatar';
 import {ReplyActions} from './ReplyActions';
@@ -18,6 +18,10 @@ import {ParticipantProfileModal} from './ParticipantProfileModal';
 import {ProfileTarget, turnIdentity} from './participantProfile';
 import type {GtmuxClient} from '../api/client';
 import {CopyableText, CopyFeedbackContext} from './CopyableText';
+import {TextSelectionContext} from './RangeText';
+import Clipboard from '@react-native-clipboard/clipboard';
+import {nativeDocumentPreview} from '../documents/nativePreview';
+import {DocumentError, documentErrorMessage} from '../documents/references';
 import {JumpToBottom} from './JumpToBottom';
 import {SenderAvatar} from './SenderAvatar';
 import {TimeSeparator} from './TimeSeparator';
@@ -201,6 +205,25 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
     if (busyTimer.current !== null) clearTimeout(busyTimer.current);
   }, []);
 
+  const selectedText = React.useRef(new Set<string>());
+  const trackSelection = React.useCallback((id: string, active: boolean) => {
+    if (active) selectedText.current.add(id); else selectedText.current.delete(id);
+  }, []);
+  const openFile = (reference: string, session: string) => {
+    const zh = lang === 'zh';
+    const showFailure = (error: unknown) => {
+      const reason = error instanceof DocumentError ? error.reason : 'failed';
+      Alert.alert(zh ? '文件预览' : 'File preview', documentErrorMessage(reason, zh), [
+        {text: zh ? '复制路径' : 'Copy path', onPress: () => Clipboard.setString(reference)},
+        {text: zh ? '关闭' : 'Close', style: 'cancel'},
+      ]);
+    };
+    try {
+      if (!client) throw new DocumentError('unsupported');
+      nativeDocumentPreview.open(client.documentRequest(reference, session, agent.home_id ?? '', lang)).catch(showFailure);
+    } catch (error) { showFailure(error); }
+  };
+
   // Show the jump-to-bottom FAB once you've scrolled up away from the live tail.
   const [atBottom, setAtBottom] = React.useState(true);
   // Following the live tail is the USER's intent, so only the user may withdraw it —
@@ -236,7 +259,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   // header hid, the viewport grew back… an endless loop. Pinning keeps atBottom true so
   // the header stays put at the live tail.
   const onBodyLayout = () => {
-    if (stick.current) scheduleFrame(() => scrollRef.current?.scrollToEnd({animated: false}));
+    if (stick.current && !selectedText.current.size) scheduleFrame(() => { if (!selectedText.current.size) scrollRef.current?.scrollToEnd({animated: false}); });
   };
   // No `onLiveEdge(0)` here. Announcing arrival before arriving is a lie the host acts
   // on: it unfolds the chrome, and the fold's own scroll writes used to cancel the
@@ -312,8 +335,8 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   // two then disagreed until the next scroll frame flipped one of them. Following the tail
   // is for a reader who is AT the tail; for anyone else it is an interruption.
   React.useEffect(() => {
-    if (!stick.current) return;
-    scheduleFrame(() => scrollRef.current?.scrollToEnd({animated: false}));
+    if (!stick.current || selectedText.current.size) return;
+    scheduleFrame(() => { if (!selectedText.current.size) scrollRef.current?.scrollToEnd({animated: false}); });
     gapRef.current = 0;
     onLiveEdge?.(0);
   }, [turns.length, onLiveEdge]);
@@ -371,6 +394,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
 
   return (
     <CopyFeedbackContext.Provider value>
+    <TextSelectionContext.Provider value={trackSelection}>
     <View style={styles.root}>
       {/* FIXED one-tap collapse / expand-all bar (outside the scroll, so it's always
           reachable even after the chat auto-scrolls to the latest turn). */}
@@ -541,7 +565,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
                           {t.prompt}
                         </CopyableText>
                       ) : (
-                        <MarkdownView source={t.prompt} colors={USER_MD_COLORS} fontSize={fontSize}
+                        <MarkdownView openFile={ref => openFile(ref, t.session_id || agent.session_id || '')} source={t.prompt} colors={USER_MD_COLORS} fontSize={fontSize}
                           fontFamily={fontFamily} lang={lang} selectable selectionColor={SEL_COLOR} />
                       )}
                     </View>
@@ -592,7 +616,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
                           follow-ups looking orphaned. */}
                       {avatar(<AgentAvatar agent={agentForTurn(t, agent)} size={26} radius={7} bg="#1C1C1F" fg="rgba(235,235,245,0.7)" />, {kind: 'agent', agent: agentForTurn(t, agent), turn: t})}
                       <View style={styles.agentBubble}>
-                        <MarkdownView source={seg.text} colors={MD_COLORS} fontSize={fontSize} fontFamily={fontFamily} lang={lang} selectable selectionColor={SEL_COLOR} />
+                        <MarkdownView openFile={ref => openFile(ref, t.session_id || agent.session_id || '')} source={seg.text} colors={MD_COLORS} fontSize={fontSize} fontFamily={fontFamily} lang={lang} selectable selectionColor={SEL_COLOR} />
                       </View>
                     </View>
                   )}
@@ -643,6 +667,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
       {profileTarget && <ParticipantProfileModal key={`${profileTarget.kind}:${profileTarget.turn?.session_id ?? ''}:${profileTarget.turn?.time ?? ''}`} target={profileTarget} client={client} lang={lang} onClose={() => setProfileTarget(null)} />}
       <JumpToBottom visible={!atBottom && turns.length > 0} onPress={jumpToBottom} lang={lang} />
     </View>
+    </TextSelectionContext.Provider>
     </CopyFeedbackContext.Provider>
   );
 }
