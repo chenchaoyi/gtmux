@@ -176,3 +176,15 @@ test('long prose uses a labelled 44-point button with expanded state in both lan
     act(() => tree.unmount());
   }
 });
+
+test('local document links retain their destination and use the file callback', () => {
+  const open = jest.fn();
+  let tree!: renderer.ReactTestRenderer;
+  act(() => { tree = renderer.create(<MarkdownView source="[报告](/private/tmp/report.html)" colors={colors} openFile={open} />); });
+  const link = tree.root.findAllByType(Text).find(n => n.props.accessibilityRole === 'link');
+  expect(link?.props.accessibilityHint).toContain('/private/tmp/report.html');
+  act(() => link!.props.onPress());
+  expect(open).toHaveBeenCalledWith('/private/tmp/report.html');
+  expect(texts(render('[报告](/private/tmp/report.html)')).join('')).toContain('/private/tmp/report.html');
+  act(() => tree.unmount());
+});

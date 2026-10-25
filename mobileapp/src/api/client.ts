@@ -1,3 +1,5 @@
+import {DocumentError, documentReference} from '../documents/references';
+import type {DocumentRequest} from '../documents/nativePreview';
 import type {ParticipantProfile} from './types';
 import type {AccessPage, AccessFilter} from './accessHistory';
 import {parseInputCapabilities, type InputCapabilities, type InputContext, type TerminalKeyEvent} from './terminalKeys';
@@ -566,6 +568,13 @@ export class GtmuxClient {
 
   private h(): Record<string, string> {
     return {Authorization: `Bearer ${this.token}`, 'X-Gtmux-Client': clientTag()};
+  }
+
+  documentRequest(reference: string, session: string, home: string, lang: string): DocumentRequest {
+    const target = documentReference(reference);
+    if (!target || !session) throw new DocumentError('unpublished');
+    return {resolveURL: `${this.base}/api/artifacts/resolve`, headers: this.h(), reference: target.reference,
+      session_id: session, home_id: home, name: target.name, lang};
   }
 
   // Unauthenticated reachability check.

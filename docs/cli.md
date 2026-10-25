@@ -414,6 +414,7 @@ browser, a share link or the CLI; `hook` is the agent hook; `app` is the menu ba
 ```
 act.adopt               adopt
 act.app.launch          app
+act.artifact            artifact
 act.attach              attach, serve
 act.awake.off           awake
 act.awake.on            awake
@@ -2521,3 +2522,21 @@ Use `gtmux logs --access --device-id '<full-id>' --operation send --outcome fail
 Each read scans at most 4 MiB. Log mode returns up to the chosen record limit; grouping returns up to that many distinct identities (default 100, max 200). Continue while `next` exists and sum disjoint-page counters by group key. A partial summary is not the full retained history, and successful reads are sampled rather than complete request totals. The printed continuation command retains filters and the absolute `--since` cutoff. Cursors bind device/actor, operation, outcome and view; restart after changing them.
 
 The default range is `--origin external`. Local tools and ambiguous historical sources remain in diagnostics: use `--origin local`, `--origin unknown`, or `--origin all` with `--access`. Origin applies before filtering, pagination and summaries, and is bound to the continuation cursor. Verified clients remain external through loopback tunnels/proxies; master scope or loopback alone never proves a device.
+
+## gtmux artifact
+
+Explicitly provide one server-local document for paired devices. Guest links cannot
+read it. No file is made available merely by appearing in a conversation.
+
+```sh
+gtmux artifact add /absolute/path/report.html --session-id SESSION_ID [--home-id HOME_ID] [--json]
+gtmux artifact list
+gtmux artifact remove ID
+```
+
+`add` snapshots an owned regular document, at most 30 MiB, and prints a Markdown
+reference (or metadata with `--json`). Supply the exact transcript session/home
+identity. `list` prints JSON; `remove` revokes future downloads and removes only
+the registered copy. Total storage is bounded to 256 copies / 240 MiB. Originals
+and copies already downloaded by devices remain. See
+[document preview](design/conversation-documents.md) for supported formats and limits.

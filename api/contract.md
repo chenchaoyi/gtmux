@@ -1515,3 +1515,27 @@ summary for verified foreground intervals; `ConversationGap` reports unavailable
 changed source coverage. No HTTP route marks messages reviewed. Local
 `transcript --messages --review-through` is an explicit declaration, independent of
 HQ event-stream consumption. Existing transcript HTTP response shapes are unchanged.
+
+## Conversation documents
+
+Owner/full-scope only; both endpoints require bearer authentication and reject guests
+before lookup. No endpoint publishes a file or opens an arbitrary supplied path.
+
+- `POST /api/artifacts/resolve`: JSON `{reference,session_id,home_id?}`, bounded
+  to 8192 bytes, one object and no unknown fields. Reference is a `gtmux-file:` +
+  32 lowercase hex ID or an exact registered absolute source path. Session/home
+  identity must match. Returns `{id,name,kind,media_type,bytes,sha256,created_at,
+  session_id,home_id?,source,sequence}`. `created_at` is Unix seconds; `sequence`
+  orders registry revisions. Kinds: html, markdown, text, pdf, image.
+- `GET /api/artifacts/content?id=ID&session_id=SESSION&home_id=HOME`: verified
+  immutable bytes, HTTP range support, always `application/octet-stream` plus
+  attachment, `nosniff`, `no-store`, sandbox CSP, SHA-256 header and ETag. Limits:
+  30 MiB each, 256 copies / 240 MiB server total.
+
+Errors: 400 invalid request, 401/403 no permission, 404 absent/wrong-identity/revoked
+copy (`code:document_unpublished` on resolve), 503 capability unavailable. Old servers
+may have a generic route 404. No response exposes whether another conversation has the
+file. Removal cannot recall a copy already downloaded. Clients must not forward bearer
+headers across redirects or into document content, must validate metadata/size/digest,
+and must isolate HTML from app credentials, bridges, network and external navigation.
+See [native preview design](../docs/design/conversation-documents.md).

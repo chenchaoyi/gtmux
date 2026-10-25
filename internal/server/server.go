@@ -30,6 +30,7 @@ import (
 	"crypto/subtle"
 	"encoding/json"
 	"errors"
+	"github.com/chenchaoyi/gtmux/internal/artifact"
 	"io"
 	"net"
 	"net/http"
@@ -157,6 +158,9 @@ type Deps struct {
 	Transcript func(id string, earlier int) (turns []byte, meta TranscriptMeta, err error)
 	// SessionTranscript reads verified desktop sessions, never arbitrary file paths.
 	SessionTranscript func(id, homeID string) (turns []byte, meta TranscriptMeta, err error)
+	// Artifacts are explicitly published local snapshots; no remote path reads.
+	ArtifactResolve func(reference, sessionID, homeID string) (artifact.File, error)
+	ArtifactContent func(id, sessionID, homeID string) (artifact.File, io.ReadSeekCloser, error)
 
 	// HQBoard returns the supervisor's situation board — the synthesis it maintains by
 	// hand so its picture of the fleet survives a context reset — plus when it was last
@@ -386,6 +390,8 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/icon", s.auth(http.HandlerFunc(s.handleIcon)))
 	mux.Handle("/api/diff", s.auth(http.HandlerFunc(s.handleDiff)))
 	mux.Handle("/api/transcript", s.auth(http.HandlerFunc(s.handleTranscript)))
+	mux.Handle("/api/artifacts/resolve", s.auth(http.HandlerFunc(s.handleArtifactResolve)))
+	mux.Handle("/api/artifacts/content", s.auth(http.HandlerFunc(s.handleArtifactContent)))
 	mux.Handle("/api/session/transcript", s.auth(http.HandlerFunc(s.handleSessionTranscript)))
 	mux.Handle("/api/participant-profile", s.auth(http.HandlerFunc(s.handleParticipantProfile)))
 	mux.Handle("/api/host", s.auth(http.HandlerFunc(s.handleHost)))

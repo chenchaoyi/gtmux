@@ -48,6 +48,7 @@ func (a *accessReads) keep(key string, now time.Time) bool {
 }
 
 var accessRoutes = map[string]string{
+	"/api/artifacts/resolve": "document", "/api/artifacts/content": "document",
 	"/api/participant-profile": "conversation",
 	"/api/agents":              "sessions", "/api/panes": "sessions", "/api/digest": "hq",
 	"/api/pane": "terminal", "/api/input-capabilities": "terminal", "/api/transcript": "conversation", "/api/session/transcript": "conversation",

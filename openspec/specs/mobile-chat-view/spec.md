@@ -31,7 +31,7 @@ loading state when there is no history yet.
 #### Scenario: Untrusted message content
 
 - **WHEN** a prompt contains HTML or a link using an executable or local protocol
-- **THEN** it cannot execute HTML or open that protocol; only HTTP(S) and mailto links are actionable
+- **THEN** it cannot execute HTML or open that protocol; HTTP(S) and mailto links may open externally; local document references use only the authenticated registered-document adapter, never an OS file URL
 
 ### Requirement: Multi-segment replies as separate speech bubbles
 
