@@ -30,8 +30,7 @@ function simctl(args: string[]): void {
 // Deleted before the run, so a run that stops early cannot leave last run's pictures
 // for frame-shots.mjs to frame (as appstore-shots.test.ts).
 const SHOTS = ['00-demo-entry', '01-split', '02-hq', '03-panes', '04-knowledge'];
-function shot(name: string): void {
-  const file = join(OUT, `${name}.png`);
+function capture(file: string): void {
   simctl(['io', UDID, 'screenshot', file]);
   // simctl used to capture the panel's native PORTRAIT buffer even in landscape, so this
   // step turned the image upright. On iOS 26.5 it hands back an image that is already
@@ -42,6 +41,20 @@ function shot(name: string): void {
   const h = Number(/pixelHeight:\s*(\d+)/.exec(dims)?.[1] ?? 0);
   if (h > w) {
     execFileSync('sips', ['-r', '270', file], {stdio: 'ignore'});
+  }
+}
+async function shot(name: string): Promise<void> {
+  capture(join(OUT, `${name}.png`));
+  if (process.env.GTMUX_STORE_REVIEW === '1') {
+    mkdirSync(join(OUT, 'review'), {recursive: true});
+    try {
+      simctl(['ui', UDID, 'appearance', 'dark']);
+      await settle(800);
+      capture(join(OUT, 'review', `${name}.png`));
+    } finally {
+      simctl(['ui', UDID, 'appearance', 'light']);
+      await settle(400);
+    }
   }
   console.log(`[store capture ipad-${LANG}] ${new Date().toISOString()} wrote ${name}`);
 }
@@ -57,7 +70,7 @@ gated('app store demo shots (iPad)', () => {
     await launchWithFlags({GTMUX_DEBUG_NO_PUSH: '1', GTMUX_DEBUG_SHOT_MODE: '1', GTMUX_DEBUG_RESET_SERVERS: '1', GTMUX_DEBUG_LANG: LANG});
     const demo = driver.$(demoEntrySelector(LANG));
     await demo.waitForDisplayed({timeout: 25_000});
-    shot('00-demo-entry');
+    await shot('00-demo-entry');
     await demo.click();
     await driver.$(`~${TestIds.radar.split}`).waitForDisplayed({timeout: 20_000});
     // The hero (waiting on a permission) in the main pane, terminal mode.
@@ -66,18 +79,18 @@ gated('app store demo shots (iPad)', () => {
     await hero.click();
     await driver.$(`~${TestIds.detail.modeTerminal}`).click().catch(() => {});
     await settle(1800);
-    shot('01-split');
+    await shot('01-split');
 
     await driver.$('~radar-hq-card').click();
     await driver.$('~hq-inspector').waitForDisplayed({timeout: 10_000});
     await driver.$('~hq-verdict').waitForDisplayed({timeout: 15_000});
     await driver.$('~hq-call-api:0.0').waitForDisplayed({timeout: 20_000});
-    shot('02-hq');
+    await shot('02-hq');
 
     await driver.$(`~${TestIds.radar.panes}`).click();
     await driver.$(`~${TestIds.panes.search}`).waitForDisplayed({timeout: 10_000});
     await settle(1400);
-    shot('03-panes');
+    await shot('03-panes');
 
     await driver.$('~radar-hq-card').click();
     await driver.$('~hq-knowledge-open').waitForDisplayed({timeout: 10_000});
@@ -90,7 +103,7 @@ gated('app store demo shots (iPad)', () => {
     await entry.click();
     await driver.$('~knowledge-act-carry').waitForDisplayed({timeout: 10_000});
     await settle(1400);
-    shot('04-knowledge');
+    await shot('04-knowledge');
     await driver.$('~knowledge-close').click().catch(() => {});
     // eslint-disable-next-line no-console
     console.log(`[appstore-shots-ipad] wrote 01-split / 02-hq / 03-panes / 04-knowledge to ${OUT}`);

@@ -76,7 +76,8 @@
 
 | 内容 | 位置 |
 |---|---|
-| 成图：16:9、5244×2950 的 PNG，没有 alpha；一张同时用于页头和搜索结果（Apple 的「universal」规格） | `fastlane/creative/<locale>/creative-16x9.png`，en-US、zh-Hans 各一张 |
+| 页头：21:9、3840×1646 RGB PNG，无 alpha | `fastlane/creative/<locale>/header-21x9.png` |
+| 搜索：3:2、3840×2560 RGB PNG，无 alpha | `fastlane/creative/<locale>/search-3x2.png` |
 | 生成 | `scripts/frame-creative.mjs`，读 §2 那批演示截图的原图（iPad「所有 pane」+ 手机 HQ 对话） |
 | 文案 | `scripts/creative-captions.json` |
 | 上传、放置、检查 | `scripts/asc-asset-library.rb`（App Asset Library API） |
@@ -100,7 +101,16 @@
    ```
 
    **按原尺寸打开看过**再提交，看缩小的预览会误以为糊。内容要求：4+；不放价格、网址、版权符号、
-   其他平台的 logo 或 Apple 奖项；页头在部分设备上裁成 21:9，上下各去掉约 350px，要紧的东西别放在那里。
+   其他平台的 logo 或 Apple 奖项。`creative-layout.mjs` 采用 Apple 官方 PSD 的 Art Safe Area：
+   页头 `(1097,493,1646,661)`、搜索 `(836,765,2168,1030)`，依次是 x、y、宽、高。
+   排版器测量实际文字和完整设备画面，越界或文字溢出即停止。裁切检查仍需结合 Apple 网页预览；
+   不能把几何检查当成所有设备、方向和外观已验收。通用 5244×2950 PNG 仍符合 Apple 规格，
+   但只保护上下约350px不能避免左右裁切，不作为缺图时的静默备用。
+   规格与模板见 [Apple 创意素材规范](https://developer.apple.com/help/app-store-connect/reference/app-information/creative-assets-specifications/)
+   和[设计指引](https://developer.apple.com/app-store/asset-best-practices/)。
+
+   这些是按展示位置制作的图，不是每款 iPhone 一份 App 包。界面一致时，iPhone、iPad 各提供
+   所需最高分辨率截图，Apple 可自动缩放到较小屏幕；布局确实不同或缩小后难读时再增加专用截图。
    界面和文案都没变就不用重出：图片字节不变，库里那张素材继续用。
 2. **放到这个版本上**：§4 上传文字、关联 build 后，按 §4b 完成辅助功能复评，
    再运行 `asc-preparation.rb assets`。它按内容哈希复用库里的素材，为中英文放置页头与搜索结果图。

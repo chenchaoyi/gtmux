@@ -33,11 +33,10 @@
 # the file's exact size, never from a list in this file, and are resolved before any
 # placement is removed, so an unknown size stops the run with nothing changed.
 #
-# The creative asset (fastlane/creative/<locale>/creative-16x9.png, from frame-creative.mjs)
-# is part of every submission (the user, 2026-10-08), so it is named by its content:
-# "gtmux creative 16:9 <locale> <sha256[0,8]>". `creative-status` answers, read-only and per
-# locale, whether the current file is in the library and whether the version shows it as
-# both its product page header and its search results asset. `place-creative` uploads what
+# Header and search assets (from frame-creative.mjs) are part of every submission.
+# Each uses its own Apple canvas and safe area and is named by placement and content.
+# `creative-status` answers, read-only and per locale, whether each current file is in
+# the library and whether its version placement shows it. `place-creative` uploads what
 # is missing and replaces any placement that shows another asset; it needs the version to
 # be editable, because placements are reviewed with it. See docs/appstore/submit.md.
 #
@@ -243,13 +242,17 @@ def ref_data
 end
 
 # The one placement group the reference data gives this placement type for an image of
-# exactly this size. Nothing is placed when there is none, or more than one.
+# this size and ratio, including Apple's ranged search-result specification.
+# Nothing is placed when there is none, or more than one.
 def group_for(type, width, height)
   pt = ref_data['placementTypes'].find { |t| t['placementTypeId'] == type } or abort "no placement type #{type} in the reference data"
   specs = ref_data['imageSpecs'].select do |sp|
     d = sp['dimensions']
-    (sp['compatiblePlacementTypes'] || []).include?(type) &&
-      [d['minWidth'], d['maxWidth']].uniq == [width] && [d['minHeight'], d['maxHeight']].uniq == [height]
+    within = width.between?(d['minWidth'], d['maxWidth']) && height.between?(d['minHeight'], d['maxHeight'])
+    fixed = d['minWidth'] == d['maxWidth'] && d['minHeight'] == d['maxHeight']
+    ratio = sp['aspectRatio'].to_s.match(/\A([1-9]\d*):([1-9]\d*)\z/)
+    shape = fixed || (ratio && (height * ratio[1].to_i - width * ratio[2].to_i).abs <= ratio[1].to_i)
+    (sp['compatiblePlacementTypes'] || []).include?(type) && within && shape
   end.map { |sp| sp['specId'] }
   groups = pt['specMappings'].select { |m| (m['specs'] & specs).any? }.map { |m| m['placementGroupId'] }.uniq
   return groups.first if groups.length == 1
@@ -257,11 +260,13 @@ def group_for(type, width, height)
   abort "#{width}x#{height} #{type}: the reference data gives #{groups.empty? ? 'no placement group' : groups.join(', ')}; expected exactly one"
 end
 
-CREATIVE_LOCALES = {'en-US' => 'fastlane/creative/en-US/creative-16x9.png', 'zh-Hans' => 'fastlane/creative/zh-Hans/creative-16x9.png'}.freeze
+CREATIVE_LOCALES = %w[en-US zh-Hans].freeze
 CREATIVE_TYPES = %w[PRODUCT_PAGE_HEADER_ASSET APP_STORE_SEARCH_RESULTS_ASSET].freeze
+CREATIVE_FILES = {'PRODUCT_PAGE_HEADER_ASSET' => ['header-21x9.png', [3840, 1646]],
+                  'APP_STORE_SEARCH_RESULTS_ASSET' => ['search-3x2.png', [3840, 2560]]}.freeze
 
 def creative_name(locale, file)
-  "gtmux creative 16:9 #{locale} #{Digest::SHA256.file(file).hexdigest[0, 8]}"
+  "gtmux creative #{File.basename(file, '.png')} #{locale} #{Digest::SHA256.file(file).hexdigest[0, 8]}"
 end
 
 def version_localizations(version)
@@ -281,12 +286,15 @@ end
 def creative_rows(lib, version)
   v, locs = version_localizations(version)
   pool = images(lib, 'CREATIVE_ASSETS')
-  rows = CREATIVE_LOCALES.flat_map do |locale, file|
-    abort "missing #{file}: render it with scripts/frame-creative.mjs" unless File.file?(file)
-    name = creative_name(locale, file)
-    asset = usable(pool, name)
-    others = named(pool, name).reject { |i| i.equal?(asset) }.map { |i| i.dig('attributes', 'state') }
+  rows = CREATIVE_LOCALES.flat_map do |locale|
     CREATIVE_TYPES.map do |type|
+      filename, size = CREATIVE_FILES.fetch(type)
+      file = File.join('fastlane/creative', locale, filename)
+      abort "missing #{file}: render it with scripts/frame-creative.mjs" unless File.file?(file)
+      abort "#{file} has the wrong dimensions for #{type}" unless png_size(file) == size
+      name = creative_name(locale, file)
+      asset = usable(pool, name)
+      others = named(pool, name).reject { |i| i.equal?(asset) }.map { |i| i.dig('attributes', 'state') }
       placed = locs[locale] && placement_on(locs[locale], type)
       {locale: locale, file: file, name: name, asset: asset, others: others, type: type, loc: locs[locale], placed: placed,
        group: group_for(type, *png_size(file)),

@@ -16,7 +16,9 @@ GROUPS = {slot + '-' + lang: names for slot, names in {
     'phone': ('00-demo-entry', '01-radar', '02-terminal-approval', '03-hq', '04-console', '05-usage', '06-servers'),
     'ipad': ('00-demo-entry', '01-split', '02-hq', '03-panes', '04-knowledge'),
 }.items() for lang in ('en', 'zh')}
-RENDER_FILES = ('frame-shots.mjs', 'frame-creative.mjs', 'shot-captions.json', 'creative-captions.json')
+RENDER_FILES = ('frame-shots.mjs', 'frame-creative.mjs', 'render-store-creative.mjs', 'creative-layout.mjs',
+                'shot-captions.json', 'creative-captions.json')
+CREATIVE_SIZES = {'header-21x9.png': [3840, 1646], 'search-3x2.png': [3840, 2560]}
 
 
 def digest(path):
@@ -166,12 +168,13 @@ def render(source, renderer, captures, output, tag, commit, render_commit):
         subprocess.run(['node', str(renderer / 'frame-creative.mjs'), '--lang', language, '--ipad', str(ipad),
                         '--phone', str(phone), '--out', str(output / 'creative' / locale)], check=True, timeout=180)
     images = [png_record(path, output) for path in sorted(output.rglob('*.png'))]
-    for prefix, count, size in [('screenshots/', 22, None), ('creative/', 2, [5244, 2950])]:
+    for prefix, count, size in [('screenshots/', 22, None), ('creative/', 4, None)]:
         group = [r for r in images if r['file'].startswith(prefix)]
         if len(group) != count:
             raise ValueError('Incomplete rendered ' + prefix)
         for record in group:
-            expected = size or ([2752, 2064] if Path(record['file']).name.startswith('ipad-') else [1320, 2868])
+            expected = CREATIVE_SIZES.get(Path(record['file']).name) if prefix == 'creative/' else (
+                [2752, 2064] if Path(record['file']).name.startswith('ipad-') else [1320, 2868])
             if record['size'] != expected:
                 raise ValueError('Wrong rendered dimensions')
     save(output / 'manifest.json', {**data['context'], 'schema': SCHEMA, 'render_commit': render_commit,

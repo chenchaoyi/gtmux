@@ -1,31 +1,23 @@
-Manage coding agents and tmux sessions on your Mac or Linux server from your phone.
+View and control tmux sessions on your Mac or Linux server from iPhone and iPad.
 
-Install gtmux on your Mac or Linux server and pair your phone. Claude Code, Codex, DeepSeek Harness, other coding agents, and ordinary terminal panes will appear on your phone, so you can follow their progress and respond while you're away from your desk.
+Follow Claude Code, Codex, DeepSeek Harness and other supported coding agents alongside ordinary terminal panes. Read their progress, reply to questions and continue work while away from your desk.
 
-HQ (Headquarter)
-HQ is the command center for your agents. It follows their sessions, works out what needs your decision and what can continue, then catches you up on what changed. It acts on your behalf only within the scope you authorize, with a record of every action.
+Sessions and replies
+• Check agent status and requests that need your attention.
+• Read conversations and terminal output, send messages, and answer recognized permission requests or choices.
+• Use function keys and modifier combinations when a session needs keyboard input. Input access is controlled separately from viewing.
 
-As work progresses, HQ adds reusable lessons to your local knowledge base. It draws on what worked before when a similar task comes up. Your corrections and new evidence help it revise old lessons and its own approach, so it gets to know your projects and preferences over time.
+HQ and knowledge
+HQ follows multiple agent sessions, summarizes progress and shows pending decisions and recorded actions. Within your authorization, it can dispatch work and keep reusable lessons in your local knowledge base.
 
-Session status
-The radar lists your panes and agents, with text, icons and colors for their status. For agents without a direct integration, gtmux can read the terminal screen to identify their state.
+Usage and notifications
+Check the limits, reset times and usage records available from supported agents. Receive notifications when your attention is needed or a task finishes, and follow session state through Live Activities.
 
-Replies and commands
-Answer an agent or send a command to a terminal from your phone. Permission requests and recognized choices appear in the conversation. A Keys panel supports function keys and modifier combinations. You can also bring a session to the front on your Mac. Pairing permissions control terminal input; read-only access cannot type into a pane.
+Connections
+Pair with multiple servers, or open a limited session-sharing link. Sharing can be revoked, and terminal input must be enabled separately. iPad supports a sidebar layout and hardware keyboard shortcuts. English and Simplified Chinese are included.
 
-Other features
-• Get notified when an agent needs you or finishes.
-• Start a new tmux session on your server from your phone.
-• Check available quota, reset times, account balances and recorded token usage.
-• See the current agent's state on the Lock Screen and Dynamic Island.
-• Share a link limited to the sessions you choose. Revoke it at any time; input access must be enabled separately.
-• On iPad, the radar sits in the sidebar beside the open session, with room for HQ and pending decisions. Hardware keyboard shortcuts are supported.
-• Available in English and Simplified Chinese.
-
-Connecting
-gtmux is free and open source, and runs on Mac and Linux. Connect from the phone app, terminal, browser, or gtmux attach on another computer. A menu bar app is also available on Mac. Install the server first, then pair your phone. Setup guide: ccy.dev/projects/gtmux.
-
-Anywhere access can use a gtmux tunnel without a VPN. You can also connect over your own network. Agents continue running on your server.
+Getting started
+Install the free, open-source gtmux server on your Mac or Linux machine, then scan its pairing code. The built-in demo works without a server. Connect over your own network or a gtmux tunnel; sessions keep running on your server. Setup: ccy.dev/projects/gtmux.
 
 Privacy
-gtmux collects no data. There is no account. Your sessions and your token stay on your device and your server. Notifications are sent by your server through a relay, which forwards them to Apple's push service without storing them.
+gtmux collects no data and requires no account. Your sessions and pairing credentials stay on your devices and server. Notifications pass through a relay to Apple's push service without being stored by the relay.

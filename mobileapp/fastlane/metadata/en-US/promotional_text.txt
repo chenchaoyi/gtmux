@@ -1,1 +1,1 @@
-Manage coding agents on Mac or Linux from your phone. Reply when needed. HQ is their command center: it tracks sessions, keeps lessons, and acts with your permission.
+View tmux sessions, reply to agents and follow progress with HQ from iPhone or iPad. Connect to your own Mac or Linux server.

@@ -190,6 +190,16 @@ jobs:
             ${{ runner.temp }}/capture/capture-context.json
           if-no-files-found: warn
           retention-days: 7
+      - name: Preserve visual-review evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: store-review-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/capture/review.json
+            ${{ runner.temp }}/capture/review
+          if-no-files-found: warn
+          retention-days: 7
       - name: Capture diagnostics
         if: failure()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6

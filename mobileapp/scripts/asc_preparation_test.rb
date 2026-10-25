@@ -24,6 +24,34 @@ class PreparationTest
     $stdout = original
   end
 
+  def test_ranged_search_spec_requires_its_ratio_and_refuses_ambiguous_groups
+    original = method(:ref_data)
+    spec = {'specId' => 'search-spec', 'dimensions' => {'minWidth' => 1920, 'maxWidth' => 3840, 'minHeight' => 1280, 'maxHeight' => 2560},
+            'aspectRatio' => '3:2', 'compatiblePlacementTypes' => ['APP_STORE_SEARCH_RESULTS_ASSET']}
+    mappings = [{'specs' => ['search-spec'], 'placementGroupId' => 'search-group'}]
+    reference = {'placementTypes' => [{'placementTypeId' => 'APP_STORE_SEARCH_RESULTS_ASSET', 'specMappings' => mappings}], 'imageSpecs' => [spec]}
+    define_singleton_method(:ref_data) { reference }
+    assert_equal 'search-group', group_for('APP_STORE_SEARCH_RESULTS_ASSET', 3840, 2560)
+    assert_raises(SystemExit) { group_for('APP_STORE_SEARCH_RESULTS_ASSET', 3000, 1500) }
+    mappings << {'specs' => ['search-spec'], 'placementGroupId' => 'ambiguous-group'}
+    assert_raises(SystemExit) { group_for('APP_STORE_SEARCH_RESULTS_ASSET', 3840, 2560) }
+  ensure
+    define_singleton_method(:ref_data, original) if original
+  end
+
+  def test_header_and_search_resolve_different_files_and_content_names
+    assert_equal ['header-21x9.png', [3840, 1646]], CREATIVE_FILES.fetch('PRODUCT_PAGE_HEADER_ASSET')
+    assert_equal ['search-3x2.png', [3840, 2560]], CREATIVE_FILES.fetch('APP_STORE_SEARCH_RESULTS_ASSET')
+    Dir.mktmpdir do |dir|
+      header, search = %w[header-21x9.png search-3x2.png].map { |name| File.join(dir, name) }
+      File.write(header, 'header bytes')
+      File.write(search, 'search bytes')
+      raise 'Placement identity collapsed' if creative_name('en-US', header) == creative_name('en-US', search)
+      raise 'Header identity missing' unless creative_name('en-US', header).include?('header-21x9')
+      raise 'Search identity missing' unless creative_name('en-US', search).include?('search-3x2')
+    end
+  end
+
   def test_long_processing_refreshes_auth_before_expiry_without_creating_a_key
     @token = Struct.new(:expiration, :refreshes) do
       def refresh!

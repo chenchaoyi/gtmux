@@ -71,9 +71,22 @@ The script checks actual image dimensions. See [troubleshooting](../TROUBLESHOOT
 
 ## 2b. Header and Search Results assets
 
-Each locale needs one 3840×2160 creative image, placed in both Header and Search Results.
+Each locale has two RGB PNGs: `header-21x9.png` (3840×1646) for Header, and
+`search-3x2.png` (3840×2560) for Search Results. These are placement variants, not
+per-device app packages. Apple can scale the highest required phone/iPad screenshot
+sizes when the UI is the same; add smaller screenshot sets only when they need a different composition.
+
+`creative-layout.mjs` records the Art Safe Area bounds from Apple's official PSDs:
+Header `(1097,493,1646,661)`, Search `(836,765,2168,1030)` (x, y, width, height).
+`frame-creative.mjs` measures text and complete device bounds in the renderer and
+rejects content outside those rectangles. This supplements visual review and does not
+replace the actual Apple preview across devices, orientations and appearances.
+Apple's universal 5244×2950 PNG is valid, but a vertical crop band alone does not protect
+it from clipping. Do not reintroduce the old universal file as a silent fallback.
+
 Content is 4+; avoid price, URLs, copyright marks, other platforms' logos or Apple awards.
-Headers may crop to 21:9, so keep essential content away from the top/bottom ~350px.
+See [Apple's creative specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/creative-assets-specifications/)
+and [templates and composition guidance](https://developer.apple.com/app-store/asset-best-practices/).
 
 Reuse unchanged bytes. If screens or captions change, render and visually inspect:
 
