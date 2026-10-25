@@ -60,6 +60,9 @@ harness and runtime. These are review evidence, not extra Store screenshots or a
 automatic accessibility pass. Review the actual images before completing the
 candidate's accessibility checklist. A missing review group is captured again even
 when the light Store images are already complete.
+Appearance is selected before each separate cold launch, as in the existing usage
+tests. A dark first-launch image identical to the light one stops capture; timers
+changing elsewhere do not count as appearance evidence.
 
 The app is built from the published tag. The reviewed workflow supplies only the
 two capture tests, their demo selector, simulator capabilities and session setup; it never

@@ -10,7 +10,7 @@
   },
   "zh": {
     "title": "远程管理\ntmux 会话",
-    "sub": "查看会话、回复 Agent，由 HQ 跟进任务。",
+    "sub": "查看进度，回复 Agent。",
     "dot": "#06B6D4",
     "ipad": "03-panes",
     "phone": "04-console",

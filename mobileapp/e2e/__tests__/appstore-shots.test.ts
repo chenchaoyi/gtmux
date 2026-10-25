@@ -23,7 +23,7 @@ const gated = on ? describe : describe.skip;
 
 const UDID = process.env.GTMUX_E2E_UDID || 'booted';
 const LANG = process.env.GTMUX_SHOTS_LANG || 'en';
-const OUT = resolve(__dirname, `../../.e2e-artifacts/appstore/${LANG}`);
+const OUT = resolve(__dirname, `../../.e2e-artifacts/appstore/${LANG}`, process.env.GTMUX_STORE_APPEARANCE === 'dark' ? 'review' : '.');
 
 function simctl(args: string[]): void {
   execFileSync('xcrun', ['simctl', ...args], {stdio: 'ignore'});
@@ -34,19 +34,9 @@ function simctl(args: string[]): void {
 // PNG (which frame-shots.mjs then framed) and still log all six as written (%12, 2026-10-06).
 const SHOTS = ['00-demo-entry', '01-radar', '02-terminal-approval', '03-hq', '04-console', '05-usage', '06-servers'];
 const written: string[] = [];
-async function shot(name: string): Promise<void> {
+function shot(name: string): void {
   simctl(['io', UDID, 'screenshot', join(OUT, `${name}.png`)]);
-  if (process.env.GTMUX_STORE_REVIEW === '1') {
-    mkdirSync(join(OUT, 'review'), {recursive: true});
-    try {
-      simctl(['ui', UDID, 'appearance', 'dark']);
-      await settle(800);
-      simctl(['io', UDID, 'screenshot', join(OUT, 'review', `${name}.png`)]);
-    } finally {
-      simctl(['ui', UDID, 'appearance', 'light']);
-      await settle(400);
-    }
-  }
+
   written.push(name);
   console.log(`[store capture ${LANG}] ${new Date().toISOString()} wrote ${name}`);
 }
@@ -66,7 +56,7 @@ gated('app store demo shots', () => {
 
     const demo = driver.$(demoEntrySelector(LANG));
     await demo.waitForDisplayed({timeout: 25_000});
-    await shot('00-demo-entry');
+    shot('00-demo-entry');
     await demo.click();
 
     // 1) Demo radar — the fleet in the status language + the floating HQ DISC (SHOT_MODE
@@ -74,7 +64,7 @@ gated('app store demo shots', () => {
     const hqDisc = driver.$('~radar-hq-disc');
     await hqDisc.waitForDisplayed({timeout: 20_000});
     await settle(1400); // let icons + rows settle
-    await shot('01-radar');
+    shot('01-radar');
 
     // 2) Detail — the flagship colored terminal + the approval card (%7 is waiting on
     //    a 1/2/3 permission). Switch to the Terminal tab so the colored mirror shows.
@@ -88,7 +78,7 @@ gated('app store demo shots', () => {
     await driver.$(`~${TestIds.detail.back}`).waitForDisplayed({timeout: 10_000});
     await driver.$(`~${TestIds.detail.modeTerminal}`).click().catch(() => {});
     await settle(1800); // let the pane content + approval card render
-    await shot('02-terminal-approval');
+    shot('02-terminal-approval');
 
     await driver.$(`~${TestIds.detail.back}`).click();
     await hqDisc.waitForDisplayed({timeout: 10_000});
@@ -101,7 +91,7 @@ gated('app store demo shots', () => {
     // demo's actual pending item before recording HQ.
     await driver.$('~hq-verdict').waitForDisplayed({timeout: 15_000});
     await driver.$('~hq-call-api:0.0').waitForDisplayed({timeout: 20_000});
-    await shot('03-hq');
+    shot('03-hq');
 
     // 4) The console — HQ's words with the acts it recorded threaded in. The page's whole
     //    argument is that a supervisor which does not show what it did is a dashboard.
@@ -111,7 +101,7 @@ gated('app store demo shots', () => {
     //    stops existing must fail the capture, not pass it quietly.
     await driver.$('~hq-tab-console').click();
     await settle(1800);
-    await shot('04-console');
+    shot('04-console');
 
     // 5) Usage — the plan windows, which is the one number local counting cannot produce.
     //    Reached from the header's usage door, beside the board and the knowledge base.
@@ -127,7 +117,7 @@ gated('app store demo shots', () => {
     // quota content, so a slow locale transition cannot photograph HQ again.
     await driver.$('~usage-lead').waitForDisplayed({timeout: 15_000});
     await settle(400);
-    await shot('05-usage');
+    shot('05-usage');
     await usageClose.click();
     await settle(600);
 
@@ -154,7 +144,7 @@ gated('app store demo shots', () => {
     await chip.click();
     await driver.$(`~${TestIds.servers.screen}`).waitForDisplayed({timeout: 15_000});
     await settle(900);
-    await shot('06-servers');
+    shot('06-servers');
 
     expect(written).toEqual(SHOTS);
     // eslint-disable-next-line no-console
