@@ -185,6 +185,9 @@ class CaptureTests(unittest.TestCase):
             raw, output = root / "raw", root / "output"
             for name in GROUPS["phone-en"]:
                 png(raw / (name + ".png"), [1320, 2868], name)
+            checkpoint_group(output, context, "phone-en", raw)
+            for name in GROUPS["phone-en"]:
+                png(raw / (name + ".png"), [1320, 2868], "dark:" + name)
             capture.checkpoint_review(output, context, "phone-en", raw)
             self.assertEqual(set(capture.load_review(output, context)["groups"]), {"phone-en"})
             self.assertEqual(capture.load_review(output, {**context, "source_commit": "other"})["groups"], {})
@@ -206,6 +209,8 @@ class CaptureTests(unittest.TestCase):
                     png(raw / (name + ".png"), [1320, 2868], name)
                 checkpoint_group(output, context, "phone-" + language, raw)
                 if language == "zh":
+                    for name in GROUPS["phone-zh"]:
+                        png(raw / (name + ".png"), [1320, 2868], "dark:" + name)
                     capture.checkpoint_review(output, context, "phone-zh", raw)
             calls = []
 
@@ -220,8 +225,53 @@ class CaptureTests(unittest.TestCase):
                     capture.capture_device(root, root / "app", output, "phone", {"identifier": "type", "name": "phone"},
                                            {"identifier": "runtime", "version": "26.5"}, run, context)
             self.assertEqual(npm.call_args.kwargs["env"]["GTMUX_SHOTS_LANG"], "en")
-            self.assertEqual(npm.call_args.kwargs["env"]["GTMUX_STORE_REVIEW"], "1")
-            self.assertIn(["xcrun", "simctl", "ui", "owned-device-id", "appearance", "light"], calls)
+            self.assertEqual(npm.call_args.kwargs["env"]["GTMUX_STORE_APPEARANCE"], "dark")
+            self.assertIn(["xcrun", "simctl", "ui", "owned-device-id", "appearance", "dark"], calls)
+
+    def test_review_rejects_stale_first_launch_even_when_other_images_differ(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            output, raw = root / "output", root / "raw"
+            context = {"review_capture": True}
+            for name in GROUPS["phone-en"]:
+                png(raw / (name + ".png"), [1320, 2868], name)
+            checkpoint_group(output, context, "phone-en", raw)
+            for name in GROUPS["phone-en"][1:]:
+                png(raw / (name + ".png"), [1320, 2868], "timer changed:" + name)
+            with self.assertRaisesRegex(ValueError, "first-launch appearance"):
+                capture.checkpoint_review(output, context, "phone-en", raw)
+            self.assertFalse((output / "review.json").exists())
+
+    def test_each_appearance_is_selected_before_a_separate_cold_launch(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            output = root / "output"
+            context = {"review_capture": True}
+            order = []
+
+            def run(args):
+                if "appearance" in args:
+                    order.append(("select", args[-1]))
+                return "owned-device-id" if "create" in args else ""
+
+            def launch(*args, **kwargs):
+                env = kwargs["env"]
+                language, appearance = env["GTMUX_SHOTS_LANG"], env["GTMUX_STORE_APPEARANCE"]
+                order.append(("launch", appearance))
+                raw = root / ".e2e-artifacts/appstore" / language
+                if appearance == "dark":
+                    raw /= "review"
+                for name in GROUPS["phone-" + language]:
+                    png(raw / (name + ".png"), [1320, 2868], language + appearance + name)
+
+            with patch.dict(capture.os.environ, {"APPIUM_HOME": "/ci/appium"}), \
+                    patch.object(capture, "prebuild_wda"), \
+                    patch.object(capture.subprocess, "run", side_effect=launch):
+                capture.capture_device(root, root / "app", output, "phone", {"identifier": "type", "name": "phone"},
+                                       {"identifier": "runtime", "version": "26.5"}, run, context)
+            self.assertEqual(order, [(event, appearance) for _ in ("en", "zh")
+                                     for appearance in ("light", "dark") for event in ("select", "launch")])
+            self.assertEqual(set(capture.load_review(output, context)["groups"]), {"phone-en", "phone-zh"})
 
     def types(self):
         return [{"identifier": "com.apple.CoreSimulator.SimDeviceType." + name, "name": name}

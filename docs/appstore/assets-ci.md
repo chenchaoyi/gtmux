@@ -60,6 +60,14 @@ harness and runtime. These are review evidence, not extra Store screenshots or a
 automatic accessibility pass. Review the actual images before completing the
 candidate's accessibility checklist. A missing review group is captured again even
 when the light Store images are already complete.
+Appearance is selected before each separate cold launch, as in the existing usage
+tests. A dark first-launch image identical to the light one stops capture; timers
+changing elsewhere do not count as appearance evidence.
+
+Keep the selected images and `fastlane/asset-source.json` together in Git. The
+manifest records the exact released app, capture and renderer identities and
+delivered image hashes. Raw captures, Apple PSD templates and private review
+checklists stay outside Git; signing material and real session data are never public.
 
 The app is built from the published tag. The reviewed workflow supplies only the
 two capture tests, their demo selector, simulator capabilities and session setup; it never

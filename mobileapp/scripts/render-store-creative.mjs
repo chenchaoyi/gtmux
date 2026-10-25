@@ -27,6 +27,8 @@ const escape = text => text.replace(/[&<>"']/g, ch => ({'&': '&amp;', '<': '&lt;
 const box = r => `left:${r.x}px;top:${r.y}px;width:${r.width}px;height:${r.height}px`;
 
 function page(type, layout) {
+  // Chrome's DOM dump can leave image.decode() pending after load. Measure
+  // intrinsic image sizes on load; all fonts here are local system fonts.
   const text = type === 'header'
     ? `<div class="name" data-key="name">gtmux</div><div class="label" data-key="label">${escape(caption.header)}</div>`
     : `<div class="name" data-key="name">gtmux</div><div class="title" data-key="title">${escape(caption.title).replaceAll('\n', '<br>')}</div><div class="sub" data-key="sub">${escape(caption.sub)}</div>`;
@@ -45,11 +47,12 @@ body{font-family:-apple-system,"SF Pro Display","PingFang SC",system-ui,sans-ser
 </style><body class="${type}"><div class="brand">${text}</div><div class="stage">
 <div class="device tablet" data-key="tablet"><img src="${tablet}"></div>
 <div class="device phone" data-key="phone"><img src="${phone}"></div></div>
-<script>Promise.all([document.fonts.ready,...[...document.images].map(i=>i.decode())]).then(()=>{
+<script>window.addEventListener('load',()=>{
+ if([...document.images].some(i=>!i.complete||!i.naturalWidth))throw new Error('Creative image did not load');
  const rectangles={};let overflow=false;
  for(const el of document.querySelectorAll('[data-key]')){const r=el.getBoundingClientRect();rectangles[el.dataset.key]={x:r.x,y:r.y,width:r.width,height:r.height};overflow ||= el.scrollWidth>el.clientWidth+1;}
  const data=document.createElement('script');data.type='application/json';data.id='geometry';data.textContent=JSON.stringify({rectangles,overflow});document.body.append(data);
-});</script></body></html>`;
+},{once:true});</script></body></html>`;
 }
 
 mkdirSync(out, {recursive: true});

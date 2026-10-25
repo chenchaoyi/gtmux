@@ -62,6 +62,10 @@ def checkpoint_review(output, context, key, raw):
     size = [2752, 2064] if key.startswith("ipad-") else [1320, 2868]
     if any(r["size"] != size for r in records):
         raise ValueError("Wrong visual-review dimensions")
+    light = load_checkpoint(output, context)["groups"].get(key, [])
+    first = next((r for r in light if Path(r["file"]).stem == "00-demo-entry"), None)
+    if not first or first["sha256"] == records[0]["sha256"]:
+        raise ValueError("Dark review did not change the first-launch appearance")
     for name in GROUPS[key]:
         target = output / "review" / key / (name + ".png")
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -133,29 +137,37 @@ def capture_device(source, app, output, slot, device_type, runtime, run=command,
         run(["xcrun", "simctl", "boot", udid])
         run(["xcrun", "simctl", "bootstatus", udid, "-b"])
         run(["xcrun", "simctl", "install", udid, str(app)])
-        if review is not None:
-            run(["xcrun", "simctl", "ui", udid, "appearance", "light"])
         prebuild_wda(Path(os.environ["APPIUM_HOME"]), udid, output, slot, runtime["version"])
         env = dict(os.environ, GTMUX_E2E_UDID=udid, GTMUX_E2E_DEVICE=device_type["name"],
                    GTMUX_E2E_OS=runtime["version"], GTMUX_DEMO_SHOTS="1",
                    GTMUX_E2E_HEADLESS="1",
                    GTMUX_E2E_CAPTURE_CI="1",
                    GTMUX_E2E_WDA_DERIVED=str(output / "wda"))
-        if review is not None:
-            env["GTMUX_STORE_REVIEW"] = "1"
         test = "appstore-shots-ipad.test.ts" if slot == "ipad" else "appstore-shots.test.ts"
         for language in languages:
-            progress(output, "capture", slot=slot, language=language)
-            env["GTMUX_SHOTS_LANG"] = language
-            subprocess.run(["npm", "run", "test:e2e", "--", test], cwd=source, env=env, check=True, timeout=1200)
-            if context:
-                folder = ("ipad-" if slot == "ipad" else "") + language
-                checkpoint_group(output, context, slot + "-" + language, source / ".e2e-artifacts/appstore" / folder,
-                                 origin={"run_id": os.environ.get("GITHUB_RUN_ID"), "workflow_commit": os.environ.get("WORKFLOW_COMMIT")})
+            key = slot + "-" + language
+            for appearance in (("light", "dark") if review is not None else ("light",)):
+                saved = review if appearance == "dark" else checkpoint
+                if context and key in saved["groups"]:
+                    continue
+                # Select appearance before the harness cold-launches the app,
+                # matching the existing usage-clarity test. Mid-page simctl
+                # changes did not refresh React Native's current color scheme.
                 if review is not None:
-                    checkpoint_review(output, context, slot + "-" + language,
-                                      source / ".e2e-artifacts/appstore" / folder / "review")
-                progress(output, "checkpoint", slot=slot, language=language)
+                    run(["xcrun", "simctl", "ui", udid, "appearance", appearance])
+                progress(output, "capture", slot=slot, language=language, appearance=appearance)
+                env["GTMUX_SHOTS_LANG"] = language
+                env["GTMUX_STORE_APPEARANCE"] = appearance
+                subprocess.run(["npm", "run", "test:e2e", "--", test], cwd=source, env=env, check=True, timeout=1200)
+                if context:
+                    folder = ("ipad-" if slot == "ipad" else "") + language
+                    raw = source / ".e2e-artifacts/appstore" / folder
+                    if appearance == "dark":
+                        checkpoint_review(output, context, key, raw / "review")
+                    else:
+                        checkpoint_group(output, context, key, raw,
+                                         origin={"run_id": os.environ.get("GITHUB_RUN_ID"), "workflow_commit": os.environ.get("WORKFLOW_COMMIT")})
+                    progress(output, "checkpoint", slot=slot, language=language, appearance=appearance)
     finally:
         for action in ("shutdown", "delete"):
             try:
