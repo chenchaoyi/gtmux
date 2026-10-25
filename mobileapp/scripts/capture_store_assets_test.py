@@ -178,6 +178,51 @@ class CaptureTests(unittest.TestCase):
             run.assert_not_called()
             compiler.assert_not_called()
 
+    def test_review_checkpoint_requires_complete_untampered_images_and_matching_context(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            context = {"source_commit": "released", "review_capture": True}
+            raw, output = root / "raw", root / "output"
+            for name in GROUPS["phone-en"]:
+                png(raw / (name + ".png"), [1320, 2868], name)
+            capture.checkpoint_review(output, context, "phone-en", raw)
+            self.assertEqual(set(capture.load_review(output, context)["groups"]), {"phone-en"})
+            self.assertEqual(capture.load_review(output, {**context, "source_commit": "other"})["groups"], {})
+            (output / "review/phone-en/01-radar.png").write_bytes(b"changed")
+            with self.assertRaises(ValueError):
+                capture.load_review(output, context)
+            (raw / "01-radar.png").unlink()
+            with self.assertRaises((ValueError, FileNotFoundError)):
+                capture.checkpoint_review(root / "incomplete", context, "phone-en", raw)
+
+    def test_missing_review_is_recaptured_even_when_store_images_are_complete(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            output = root / "output"
+            context = {"review_capture": True}
+            for language in ("en", "zh"):
+                raw = root / language
+                for name in GROUPS["phone-" + language]:
+                    png(raw / (name + ".png"), [1320, 2868], name)
+                checkpoint_group(output, context, "phone-" + language, raw)
+                if language == "zh":
+                    capture.checkpoint_review(output, context, "phone-zh", raw)
+            calls = []
+
+            def run(args):
+                calls.append(args)
+                return "owned-device-id" if "create" in args else ""
+
+            with patch.dict(capture.os.environ, {"APPIUM_HOME": "/ci/appium"}), \
+                    patch.object(capture, "prebuild_wda"), \
+                    patch.object(capture.subprocess, "run", side_effect=subprocess.CalledProcessError(1, "capture")) as npm:
+                with self.assertRaises(subprocess.CalledProcessError):
+                    capture.capture_device(root, root / "app", output, "phone", {"identifier": "type", "name": "phone"},
+                                           {"identifier": "runtime", "version": "26.5"}, run, context)
+            self.assertEqual(npm.call_args.kwargs["env"]["GTMUX_SHOTS_LANG"], "en")
+            self.assertEqual(npm.call_args.kwargs["env"]["GTMUX_STORE_REVIEW"], "1")
+            self.assertIn(["xcrun", "simctl", "ui", "owned-device-id", "appearance", "light"], calls)
+
     def types(self):
         return [{"identifier": "com.apple.CoreSimulator.SimDeviceType." + name, "name": name}
                 for name in ["iPhone-17-Pro-Max", "iPad-Pro-13-inch-M5-12GB"]]

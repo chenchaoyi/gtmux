@@ -1,6 +1,11 @@
-Knowledge and settings
+Conversations
+• Working sessions use a single progress line. Expanded Live previews stay open through refreshes.
+• Pending questions appear above the conversation and remain accessible with the keyboard open.
+• Unsent drafts stay with their server and session. Large-text prompts and collapse controls have improved layouts.
 
-- Knowledge lists and details show each entry's use and processing state, with clearer category and source names.
-- Compact record details and keeping the entry open after recording an application reduce navigation.
-- Consistent labels across settings, sharing, diagnostics and HQ activity make permissions and actions easier to identify.
-- Send feedback distinguishes unsent drafts, access refusals and unconfirmed delivery, with the appropriate next step.
+Knowledge and settings
+• Knowledge entries show their intended use and progress, with clearer categories, sources and record details.
+• Keep an entry open after changing its intended use or recording where it was applied.
+• Settings, sharing, diagnostics and HQ use consistent labels. Send failures explain what happened and how to continue.
+
+Update gtmux on your server to 1.0.149 or later to use all new features.

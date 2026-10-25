@@ -1,143 +1,143 @@
 {
- "_note": "App Store captions, one entry per shot, in order. `file` is the raw capture's stem from the demo harness (.e2e-artifacts/appstore/<lang>/). Keep them short and specific: this is the product's voice, not a campaign. `dot` is a status colour (DESIGN §9) — the same language the app uses, carried onto the store page.",
- "en": [
-  {
-   "file": "01-radar",
-   "title": "See which agent needs you",
-   "sub": "Colors show each session’s status.",
-   "dot": "#EF4444"
-  },
-  {
-   "file": "02-lockscreen",
-   "title": "Alerts on your Lock Screen",
-   "sub": "Get a notification when an agent needs you. Live Activities show its state.",
-   "dot": "#EF4444"
-  },
-  {
-   "file": "02-terminal-approval",
-   "title": "Reply from your phone",
-   "sub": "Read the terminal and answer its question with buttons.",
-   "dot": "#EF4444"
-  },
-  {
-   "file": "04-console",
-   "title": "Ask HQ for an update",
-   "sub": "Its replies and recorded actions share one conversation.",
-   "dot": "#06B6D4"
-  },
-  {
-   "file": "05-usage",
-   "title": "See your usage",
-   "sub": "Check each plan window and when it resets.",
-   "dot": "#06B6D4"
-  },
-  {
-   "file": "06-servers",
-   "title": "Manage multiple servers",
-   "sub": "Switch between your own servers and sessions shared by teammates.",
-   "dot": "#22C55E"
-  },
-  {
-   "file": "00-demo-entry",
-   "title": "Connect to your server",
-   "sub": "Scan a pairing code to connect. Explore the built-in demo before pairing.",
-   "dot": "#06B6D4"
-  }
- ],
- "zh": [
-  {
-   "file": "01-radar",
-   "title": "谁在等你",
-   "sub": "不同颜色代表不同状态。",
-   "dot": "#EF4444"
-  },
-  {
-   "file": "02-lockscreen",
-   "title": "锁屏提醒",
-   "sub": "agent 需要你时收到通知，实时活动显示当前状态。",
-   "dot": "#EF4444"
-  },
-  {
-   "file": "02-terminal-approval",
-   "title": "在手机上回复",
-   "sub": "查看终端内容，用按钮回答 agent 的问题。",
-   "dot": "#EF4444"
-  },
-  {
-   "file": "04-console",
-   "title": "向 HQ 问进度",
-   "sub": "它的回复和已执行的操作在同一段对话里。",
-   "dot": "#06B6D4"
-  },
-  {
-   "file": "05-usage",
-   "title": "查看用量",
-   "sub": "各个额度窗口的用量和重置时间都在这里。",
-   "dot": "#06B6D4"
-  },
-  {
-   "file": "06-servers",
-   "title": "管理多台服务器",
-   "sub": "在自己的服务器和他人分享的会话之间切换。",
-   "dot": "#22C55E"
-  },
-  {
-   "file": "00-demo-entry",
-   "title": "扫码连接服务器",
-   "sub": "扫描配对码即可连接，也可以先体验内置演示。",
-   "dot": "#06B6D4"
-  }
- ],
- "ipad-en": [
-  {
-   "file": "01-split",
-   "title": "Sessions and agents side by side",
-   "sub": "Your agent list stays visible beside the current session.",
-   "dot": "#EF4444"
-  },
-  {
-   "file": "02-hq",
-   "title": "HQ and pending requests",
-   "sub": "Read the HQ conversation alongside requests that need your reply.",
-   "dot": "#EF4444"
-  },
-  {
-   "file": "03-panes",
-   "title": "Every pane, in one view",
-   "sub": "Browse and search tmux panes, including agents and ordinary shells.",
-   "dot": "#06B6D4"
-  },
-  {
-   "file": "04-knowledge",
-   "title": "Browse HQ's knowledge",
-   "sub": "Choose an entry on the left; read it and manage it on the right.",
-   "dot": "#22C55E"
-  }
- ],
- "ipad-zh": [
-  {
-   "file": "01-split",
-   "title": "会话与列表并排显示",
-   "sub": "侧栏显示所有 agent，右侧查看和操作当前会话。",
-   "dot": "#EF4444"
-  },
-  {
-   "file": "02-hq",
-   "title": "对话与待办并排显示",
-   "sub": "与 HQ 沟通时，同时查看等待你处理的事项。",
-   "dot": "#EF4444"
-  },
-  {
-   "file": "03-panes",
-   "title": "所有窗格，一屏看完",
-   "sub": "集中查看 agent 和普通终端，支持搜索。",
-   "dot": "#06B6D4"
-  },
-  {
-   "file": "04-knowledge",
-   "title": "并排查看知识库",
-   "sub": "从左侧选条目，在右侧查看内容和操作。",
-   "dot": "#22C55E"
-  }
- ]
+  "_note": "App Store captions, one entry per shot, in order. `file` is the raw capture's stem from the demo harness (.e2e-artifacts/appstore/<lang>/). Keep them short and specific: this is the product's voice, not a campaign. `dot` is a status colour (DESIGN §9) — the same language the app uses, carried onto the store page.",
+  "en": [
+    {
+      "file": "01-radar",
+      "title": "See which agents need you",
+      "sub": "Check session status and requests waiting for your reply.",
+      "dot": "#EF4444"
+    },
+    {
+      "file": "02-terminal-approval",
+      "title": "Reply from your phone",
+      "sub": "Answer permission requests and recognized choices.",
+      "dot": "#EF4444"
+    },
+    {
+      "file": "04-console",
+      "title": "Follow progress with HQ",
+      "sub": "Read updates, pending decisions and recorded actions.",
+      "dot": "#06B6D4"
+    },
+    {
+      "file": "02-lockscreen",
+      "title": "Get status notifications",
+      "sub": "Know when a reply is needed. Follow a Live Activity on your Lock Screen.",
+      "dot": "#EF4444"
+    },
+    {
+      "file": "05-usage",
+      "title": "Check limits and usage",
+      "sub": "See supported limits, reset times and recorded usage.",
+      "dot": "#06B6D4"
+    },
+    {
+      "file": "06-servers",
+      "title": "Connect multiple servers",
+      "sub": "Switch between your servers and shared sessions.",
+      "dot": "#22C55E"
+    },
+    {
+      "file": "00-demo-entry",
+      "title": "Pair with your server",
+      "sub": "Scan a pairing code, or explore the built-in demo.",
+      "dot": "#06B6D4"
+    }
+  ],
+  "zh": [
+    {
+      "file": "01-radar",
+      "title": "查看会话状态",
+      "sub": "集中查看 Agent 的状态与待处理事项。",
+      "dot": "#EF4444"
+    },
+    {
+      "file": "02-terminal-approval",
+      "title": "在手机上回复",
+      "sub": "处理授权请求和已识别的选项。",
+      "dot": "#EF4444"
+    },
+    {
+      "file": "04-console",
+      "title": "跟进任务进度",
+      "sub": "查看 HQ 的回复、待处理事项和操作记录。",
+      "dot": "#06B6D4"
+    },
+    {
+      "file": "02-lockscreen",
+      "title": "接收状态提醒",
+      "sub": "需要回复时收到通知，锁屏查看实时活动。",
+      "dot": "#EF4444"
+    },
+    {
+      "file": "05-usage",
+      "title": "查看额度与用量",
+      "sub": "查看可取得的额度、重置时间和用量记录。",
+      "dot": "#06B6D4"
+    },
+    {
+      "file": "06-servers",
+      "title": "连接多台服务器",
+      "sub": "切换自己的服务器和获准访问的分享会话。",
+      "dot": "#22C55E"
+    },
+    {
+      "file": "00-demo-entry",
+      "title": "连接服务器",
+      "sub": "扫描配对码，或先体验内置演示。",
+      "dot": "#06B6D4"
+    }
+  ],
+  "ipad-en": [
+    {
+      "file": "01-split",
+      "title": "Sessions and agents side by side",
+      "sub": "Your agent list stays visible beside the current session.",
+      "dot": "#EF4444"
+    },
+    {
+      "file": "02-hq",
+      "title": "HQ and pending requests",
+      "sub": "Read the HQ conversation alongside requests that need your reply.",
+      "dot": "#EF4444"
+    },
+    {
+      "file": "03-panes",
+      "title": "Every pane, in one view",
+      "sub": "Browse and search tmux panes, including agents and ordinary shells.",
+      "dot": "#06B6D4"
+    },
+    {
+      "file": "04-knowledge",
+      "title": "Manage local knowledge",
+      "sub": "See how each entry is used, with its status and source.",
+      "dot": "#22C55E"
+    }
+  ],
+  "ipad-zh": [
+    {
+      "file": "01-split",
+      "title": "会话与列表并排显示",
+      "sub": "侧栏显示所有 agent，右侧查看和操作当前会话。",
+      "dot": "#EF4444"
+    },
+    {
+      "file": "02-hq",
+      "title": "对话与待办并排显示",
+      "sub": "与 HQ 沟通时，同时查看等待你处理的事项。",
+      "dot": "#EF4444"
+    },
+    {
+      "file": "03-panes",
+      "title": "所有窗格，一屏看完",
+      "sub": "集中查看 agent 和普通终端，支持搜索。",
+      "dot": "#06B6D4"
+    },
+    {
+      "file": "04-knowledge",
+      "title": "查看与管理知识",
+      "sub": "了解条目的用途、处理进度和来源。",
+      "dot": "#22C55E"
+    }
+  ]
 }

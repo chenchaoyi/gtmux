@@ -10,7 +10,7 @@ import plistlib
 import shutil
 import subprocess
 
-from store_artifacts import checkpoint_group, load_checkpoint, save, tree_hash
+from store_artifacts import GROUPS, checkpoint_group, load_checkpoint, png_record, save, tree_hash, verify_records
 
 
 def command(args, **kwargs):
@@ -40,6 +40,34 @@ def progress(output, phase, **fields):
         print(line, flush=True)
         with (output / "progress.jsonl").open("a") as stream:
             stream.write(line + "\n")
+
+
+def load_review(output, context):
+    path = output / "review.json"
+    if not path.exists():
+        return {"schema": 1, "context": context, "groups": {}}
+    data = json.loads(path.read_text())
+    if data.get("schema") != 1 or not isinstance(data.get("groups"), dict):
+        raise ValueError("Invalid visual-review checkpoint")
+    for key, records in data["groups"].items():
+        if key not in GROUPS or {r["file"] for r in records} != {f"review/{key}/{n}.png" for n in GROUPS[key]}:
+            raise ValueError("Incomplete visual-review group")
+        verify_records(output, records)
+    return data if data.get("context") == context else {"schema": 1, "context": context, "groups": {}}
+
+
+def checkpoint_review(output, context, key, raw):
+    data = load_review(output, context)
+    records = [png_record(raw / (name + ".png"), raw) for name in GROUPS[key]]
+    size = [2752, 2064] if key.startswith("ipad-") else [1320, 2868]
+    if any(r["size"] != size for r in records):
+        raise ValueError("Wrong visual-review dimensions")
+    for name in GROUPS[key]:
+        target = output / "review" / key / (name + ".png")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(raw / (name + ".png"), target)
+    data["groups"][key] = [png_record(output / "review" / key / (name + ".png"), output) for name in GROUPS[key]]
+    save(output / "review.json", data)
 
 
 def simulator_plan(runtimes, device_types):
@@ -91,7 +119,9 @@ def prebuild_wda(appium_home, udid, output, slot, platform_version, run=command)
 
 def capture_device(source, app, output, slot, device_type, runtime, run=command, context=None):
     checkpoint = load_checkpoint(output, context) if context else {"groups": {}}
-    languages = [lang for lang in ("en", "zh") if slot + "-" + lang not in checkpoint["groups"]]
+    review = load_review(output, context) if context and context.get("review_capture") else None
+    languages = [lang for lang in ("en", "zh") if slot + "-" + lang not in checkpoint["groups"] or
+                 (review is not None and slot + "-" + lang not in review["groups"])]
     if not languages:
         progress(output, "reused", slot=slot)
         return
@@ -103,12 +133,16 @@ def capture_device(source, app, output, slot, device_type, runtime, run=command,
         run(["xcrun", "simctl", "boot", udid])
         run(["xcrun", "simctl", "bootstatus", udid, "-b"])
         run(["xcrun", "simctl", "install", udid, str(app)])
+        if review is not None:
+            run(["xcrun", "simctl", "ui", udid, "appearance", "light"])
         prebuild_wda(Path(os.environ["APPIUM_HOME"]), udid, output, slot, runtime["version"])
         env = dict(os.environ, GTMUX_E2E_UDID=udid, GTMUX_E2E_DEVICE=device_type["name"],
                    GTMUX_E2E_OS=runtime["version"], GTMUX_DEMO_SHOTS="1",
                    GTMUX_E2E_HEADLESS="1",
                    GTMUX_E2E_CAPTURE_CI="1",
                    GTMUX_E2E_WDA_DERIVED=str(output / "wda"))
+        if review is not None:
+            env["GTMUX_STORE_REVIEW"] = "1"
         test = "appstore-shots-ipad.test.ts" if slot == "ipad" else "appstore-shots.test.ts"
         for language in languages:
             progress(output, "capture", slot=slot, language=language)
@@ -118,6 +152,9 @@ def capture_device(source, app, output, slot, device_type, runtime, run=command,
                 folder = ("ipad-" if slot == "ipad" else "") + language
                 checkpoint_group(output, context, slot + "-" + language, source / ".e2e-artifacts/appstore" / folder,
                                  origin={"run_id": os.environ.get("GITHUB_RUN_ID"), "workflow_commit": os.environ.get("WORKFLOW_COMMIT")})
+                if review is not None:
+                    checkpoint_review(output, context, slot + "-" + language,
+                                      source / ".e2e-artifacts/appstore" / folder / "review")
                 progress(output, "checkpoint", slot=slot, language=language)
     finally:
         for action in ("shutdown", "delete"):
@@ -156,7 +193,7 @@ def main():
                "devices": {slot: device["identifier"] for slot, device in devices},
                "capture_tool_files": {path.name: hashlib.sha256(path.read_bytes()).hexdigest()
                                       for path in (Path(__file__), Path(__file__).with_name("store_artifacts.py"))},
-               "synthetic_demo_only": True, "submitted": False}
+               "synthetic_demo_only": True, "review_capture": True, "submitted": False}
     # Run/workflow identity is evidence, not a capture input. Only matching app,
     # harness, runtime and Xcode can reuse completed groups.
     identity = {key: value for key, value in context.items() if key not in ("workflow_commit", "capture_harness_commit")}

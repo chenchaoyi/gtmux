@@ -12,7 +12,7 @@ The workflow separates three jobs:
    17 Pro Max and iPad Pro 13-inch simulators capture English/Chinese. Each completed
    group is hashed and saved in `store-checkpoint-<run>-<attempt>`, including on failure.
    Only newly created simulator IDs are shut down/deleted.
-3. **render** validates all four groups and generates 22 screenshots plus two creative
+3. **render** validates all four groups and generates 22 screenshots plus four placement-specific creative
    images with current reviewed scripts/captions. Widget rendering uses released source.
    `appstore-assets-<tag>-<run>-<attempt>` includes raw images and separate capture/render provenance.
 
@@ -53,6 +53,13 @@ Binary preparation is separate. See [reusing a verified release IPA](reuse-ipa.m
 for the additional signing and validation required when local disk space is limited.
 
 ## Capture harness and diagnostics
+
+The capture also saves the same screens in dark appearance in a separate
+`store-review-<run>-<attempt>` artifact. Its manifest binds image hashes to the app,
+harness and runtime. These are review evidence, not extra Store screenshots or an
+automatic accessibility pass. Review the actual images before completing the
+candidate's accessibility checklist. A missing review group is captured again even
+when the light Store images are already complete.
 
 The app is built from the published tag. The reviewed workflow supplies only the
 two capture tests, their demo selector, simulator capabilities and session setup; it never

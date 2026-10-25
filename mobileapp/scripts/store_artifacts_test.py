@@ -141,7 +141,8 @@ class ArtifactTests(unittest.TestCase):
                     for i in range(4 if ipad else 7):
                         png(folder / (('ipad-' if ipad else '') + f'{i+1:02}.png'), [2752, 2064] if ipad else [1320, 2868], str(i))
                 elif 'frame-creative.mjs' in args[1]:
-                    png(Path(args[args.index('--out') + 1]) / 'creative-16x9.png', [5244, 2950], 'creative')
+                    for name, size in store.CREATIVE_SIZES.items():
+                        png(Path(args[args.index('--out') + 1]) / name, size, name)
             with patch.object(store.subprocess, 'run', side_effect=render):
                 store.render(source, renderer, captures, output, 'v1.2.3', 'a' * 40, 'b' * 40)
             manifest = json.loads((output / 'manifest.json').read_text())
