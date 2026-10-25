@@ -1,0 +1,10 @@
+Conversation files and text
+• Open shared HTML reports, PDFs, images and text from a conversation, with progress, retry and system sharing.
+• HTML opens without scripts. Enable interaction for a trusted file when needed; scripts may access the network.
+• Drag the selection handles to copy part of a reply. iPad previews support rotation, larger text and anchored sharing.
+
+Pairing and HQ
+• Scanning the same server again keeps one entry and repairs the saved connection instead of adding a duplicate.
+• Send images and files to HQ from its conversation.
+
+Update gtmux on your server to 1.0.150 or later to use all new features.
