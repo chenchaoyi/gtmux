@@ -1,0 +1,7 @@
+Usage widgets
+• Add Agent usage to the iPhone or iPad Home Screen or Lock Screen. Choose an Agent and tap the widget to open its usage details.
+• See available quota or locally recorded output for today and the last 7 days. Missing readings stay unavailable; older records show their time and date. Output tokens are not a balance or bill.
+
+Reading and controls
+• Improve document preview loading and error states, large-text controls, keyboard layouts and button accessibility.
+• Keep usage results tied to the selected server when switching connections.
