@@ -29,6 +29,9 @@ public struct UsageWidgetSnapshot: Codable, Equatable {
         var seconds: [TimeInterval] = [capturedAt + Self.staleInterval]
         for account in accounts {
             if let observed = account.observedAt { seconds.append(observed + Self.staleInterval) }
+            if account.output != nil, let midnight = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: date)) {
+                seconds.append(midnight.timeIntervalSince1970)
+            }
             for window in account.windows {
                 if let reset = window.resetAt { seconds.append(reset) }
                 seconds.append((window.observedAt ?? capturedAt) + Self.staleInterval)
@@ -38,8 +41,8 @@ public struct UsageWidgetSnapshot: Codable, Equatable {
             .sorted().prefix(12).map { Date(timeIntervalSince1970: $0) }
     }
 
-    /// Consume the same core response as the app's usage sheet, not local token
-    /// estimates. Malformed/oversized reports fail without replacing old data.
+    /// Consume the same core response as the app's usage sheet. Recorded output
+    /// remains separate from provider capacity, with no inferred billing amounts.
     public static func project(report: Data, server: String, at date: Date) throws -> Self {
         guard report.count <= 2 * 1024 * 1024 else { throw SnapshotError.tooLarge }
         let raw = try JSONDecoder().decode(RawUsage.self, from: report)
@@ -83,6 +86,27 @@ public struct UsageWidgetSnapshot: Codable, Equatable {
                 name: clean(balance.agentName ?? agent, limit: 60), windows: [], wallets: wallets,
                 observedAt: TimeInterval(balance.observedAt)))
         }
+        if let history = raw.history {
+            let rows = history.byAgent ?? []
+            guard rows.count <= 64, (history.days?.count ?? 0) <= 7 else { throw SnapshotError.tooLarge }
+            if let scanned = history.scannedAt, scanned > 0, TimeInterval(scanned) <= now + 300,
+               let day = history.days?.last?.date {
+                var seen = Set<String>()
+                for row in rows {
+                    guard let agent = providerKey(row.agentKey), seen.insert(agent).inserted,
+                          !accounts.contains(where: { $0.agent == agent }),
+                          let today = row.todayOut, let week = row.weekOut else { continue }
+                    let output = UsageWidgetOutput(day: day, today: today, week: week)
+                    guard output.isValid else { continue }
+                    // Provider keys cannot contain ':', so this generated ID
+                    // cannot collide with a custom provider's capacity card.
+                    accounts.append(UsageWidgetAccount(id: "output:" + agent, agent: agent,
+                        name: clean(row.agentName ?? agent, limit: 60), windows: [], wallets: [],
+                        observedAt: TimeInterval(scanned), output: output))
+                }
+            }
+        }
+        guard accounts.count <= 80 else { throw SnapshotError.tooLarge }
         for index in accounts.indices {
             accounts[index].windows.sort { $0.percent == $1.percent ? $0.label < $1.label : $0.percent > $1.percent }
         }
@@ -105,9 +129,10 @@ public struct UsageWidgetSnapshot: Codable, Equatable {
         guard schema == 1, capturedAt.isFinite, capturedAt >= 0, accounts.count <= 80,
               server == Self.clean(server, limit: 80), Set(accounts.map(\.id)).count == accounts.count else { return nil }
         for account in accounts {
-            guard Self.providerKey(account.agent) != nil, account.id.range(of: #"^[a-z0-9_-]{1,80}$"#, options: .regularExpression) != nil,
+            guard Self.providerKey(account.agent) != nil, account.id.range(of: #"^[a-z0-9_:-]{1,80}$"#, options: .regularExpression) != nil,
                   account.name == Self.clean(account.name, limit: 60), account.windows.count <= 64,
-                  account.wallets.count <= 8, account.observedAt.map({ $0.isFinite && $0 > 0 }) ?? true else { return nil }
+                  account.wallets.count <= 8, account.observedAt.map({ $0.isFinite && $0 > 0 }) ?? true,
+                  account.output.map({ $0.isValid && account.observedAt != nil }) ?? true else { return nil }
             for window in account.windows {
                 guard window.percent.isFinite, window.percent >= 0, window.percent <= 1000,
                       window.label == Self.clean(window.label, limit: 100),
@@ -145,8 +170,29 @@ public struct UsageWidgetAccount: Codable, Equatable, Identifiable {
     public var windows: [UsageWidgetWindow]
     public var wallets: [UsageWidgetWallet]
     public var observedAt: TimeInterval?
-    public init(id: String, agent: String, name: String, windows: [UsageWidgetWindow], wallets: [UsageWidgetWallet], observedAt: TimeInterval? = nil) {
+    public var output: UsageWidgetOutput?
+    public init(id: String, agent: String, name: String, windows: [UsageWidgetWindow], wallets: [UsageWidgetWallet], observedAt: TimeInterval? = nil, output: UsageWidgetOutput? = nil) {
         self.id = id; self.agent = agent; self.name = name; self.windows = windows; self.wallets = wallets; self.observedAt = observedAt
+        self.output = output
+    }
+}
+
+public struct UsageWidgetOutput: Codable, Equatable {
+    public var day: String
+    public var today: Int64
+    public var week: Int64
+    public init(day: String, today: Int64, week: Int64) {
+        self.day = day; self.today = today; self.week = week
+    }
+    public var isValid: Bool {
+        guard today >= 0, week >= today,
+              day.range(of: #"^[0-9]{4}-[0-9]{2}-[0-9]{2}$"#, options: .regularExpression) != nil else { return false }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.date(from: day).map { formatter.string(from: $0) == day } ?? false
     }
 }
 
@@ -175,7 +221,18 @@ public struct UsageWidgetWallet: Codable, Equatable {
     public init(kind: String, currency: String, amount: String) { self.kind = kind; self.currency = currency; self.amount = amount }
 }
 
-private struct RawUsage: Decodable { var limits: RawLimits? }
+private struct RawUsage: Decodable { var limits: RawLimits?; var history: RawHistory? }
+private struct RawHistory: Decodable {
+    var days: [RawDay]?; var byAgent: [RawOutput]?; var scannedAt: Int64?
+    enum CodingKeys: String, CodingKey { case days; case byAgent = "by_agent", scannedAt = "scanned_at" }
+}
+private struct RawDay: Decodable { var date: String }
+private struct RawOutput: Decodable {
+    var agentKey: String?; var agentName: String?; var todayOut: Int64?; var weekOut: Int64?
+    enum CodingKeys: String, CodingKey {
+        case agentKey = "agent_key", agentName = "agent_name", todayOut = "today_out", weekOut = "week_out"
+    }
+}
 private struct RawLimits: Decodable { var windows: [RawWindow]?; var balances: [RawBalance]? }
 private struct RawWindow: Decodable {
     var agent: String?; var agentName: String?; var label: String; var kind: String?; var model: String?

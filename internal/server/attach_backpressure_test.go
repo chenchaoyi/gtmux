@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/connect"
 	"github.com/gorilla/websocket"
 )
 
@@ -69,10 +70,6 @@ func (l *stallListener) closeAll() {
 // notice first, so it waited behind that write for as long as the client stalled (%12's
 // reproduction, 2026-10-06). The notice is now bounded and best effort; the end is not.
 func TestAttach_RevokeEndsASessionStuckInAWrite(t *testing.T) {
-	savedRecheck, savedNotice := attachRecheckInterval, attachNoticeWait
-	attachRecheckInterval, attachNoticeWait = 20*time.Millisecond, 100*time.Millisecond
-	t.Cleanup(func() { attachRecheckInterval, attachNoticeWait = savedRecheck, savedNotice })
-
 	enroll := NewEnrollManager(nil, nil)
 	dev, ok := enroll.Redeem(enroll.Mint(), "probe")
 	if !ok {
@@ -81,7 +78,9 @@ func TestAttach_RevokeEndsASessionStuckInAWrite(t *testing.T) {
 	s := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{
 		Enroll: enroll,
 		AttachCommand: func(string) ([]string, bool) {
-			return []string{"/bin/sh", "-c", "exec yes stalled-output"}, true
+			// Wait for the test's input before flooding output. Otherwise a write
+			// can block in the real socket before the controlled stall is armed.
+			return []string{"/bin/sh", "-c", "printf ready; read trigger; exec yes stalled-output"}, true
 		},
 	})
 	handlerDone := make(chan struct{})
@@ -110,6 +109,9 @@ func TestAttach_RevokeEndsASessionStuckInAWrite(t *testing.T) {
 		t.Fatalf("first frame: %v", err)
 	}
 	sl.stall.Store(true)
+	if err := c.WriteMessage(websocket.BinaryMessage, connect.Encode(connect.OpInput, []byte("\n"))); err != nil {
+		t.Fatalf("release output: %v", err)
+	}
 	for deadline := time.Now().Add(3 * time.Second); sl.blocked.Load() == 0; time.Sleep(5 * time.Millisecond) {
 		if time.Now().After(deadline) {
 			t.Fatal("the output pump never reached a stalled write")
@@ -120,7 +122,7 @@ func TestAttach_RevokeEndsASessionStuckInAWrite(t *testing.T) {
 	}
 	select {
 	case <-handlerDone:
-	case <-time.After(2 * time.Second):
+	case <-time.After(attachRecheckInterval + attachNoticeWait + time.Second):
 		t.Fatal("a revoked session stayed open behind a write its client was not draining")
 	}
 }

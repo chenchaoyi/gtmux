@@ -940,7 +940,9 @@ scroll together); C keeps the phone's tabs, just wider (no new layout to maintai
 
 On iOS/iPadOS 17+, the existing extension also offers configurable small/medium
 Home Screen usage widgets and circular/rectangular/inline Lock Screen families.
-They show provider capacity, source and reading time; expired data never implies
+They show provider capacity or locally recorded daily/seven-day output when capacity
+is unavailable, with source and reading time. Output is not billing or remaining
+quota; a cached day keeps its date after midnight. Expired data never implies
 zero usage or a replenished allowance. The parent refreshes through the selected
 owner's existing private pairing; the extension reads only a bounded, credential-free
 App Group snapshot. Tapping opens Usage even without HQ. See [usage widgets](../widgets.md)
