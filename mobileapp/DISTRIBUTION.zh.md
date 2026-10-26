@@ -55,6 +55,13 @@ CLI 与公证后的 Mac App 两项 release job 都完成后再运行 `gtmux upda
 | Variable `IOS_TEAM_ID` | 签名团队的十位标识 |
 | Variable `IOS_RESULT_RECIPIENT` | 维护者的 age **公钥**；解密私钥不上传 GitHub |
 
+用量小组件需要注册 `group.com.gtmux.app.usage`，仅关联 `com.gtmux.app` 与
+`com.gtmux.app.widget`。两份 Ad Hoc 描述文件都必须授权这一共享容器，通知扩展
+不加入。修改 App ID 能力会使原描述文件失效，需要重新生成受影响的描述文件，
+并在交付前核验导出包的签名和共享容器授权。证书与登记设备保持原有范围，
+除非另有明确授权。容器只保存用于显示的用量快照，不保存配对凭据或对话，
+详见[用量小组件](../docs/widgets.zh.md)。
+
 上传 `IOS_CERT_P12` 前，先用预期密码在 macOS 的独立临时钥匙串中验证导入。仅通过
 OpenSSL 校验还不够：已复现 OpenSSL 3 默认导出的 PBES2/AES、SHA-256 MAC 格式
 在密码正确时仍被 macOS 拒绝，提示 `MAC verification failed`；同一套证书与私钥
@@ -358,6 +365,10 @@ Worker 配置已关闭 observability，应用代码不记录安装链接。
 签名、描述文件、上传凭据、deploy key、结果公钥或工作流参数变更时，同步更新本中英文
 文档、私有台账、恢复 README、校验清单、提醒和加密备份。回执中区分“已导出提醒”与
 “已设置提醒”；当前流程不会自动续证。GitHub Secrets 无法读回，不能替代备份。
+
+只更新描述文件时，可以保留原恢复包，另做加密增量包。记录原包哈希和准确替换的
+文件，解密并逐文件核对增量包，再将两者一起异地保存。恢复说明必须避免把旧描述
+文件覆盖回已更新的共享容器授权。
 
 ### 归档恢复附件留存
 
