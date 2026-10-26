@@ -72,7 +72,7 @@ struct GtmuxUsageWidget: Widget {
   var body: some WidgetConfiguration {
     AppIntentConfiguration(kind: usageKind, intent: UsageConfiguration.self, provider: ConfigurableUsageProvider()) { UsageEntryView(entry: $0) }
       .configurationDisplayName(usageChinese ? "Agent 用量" : "Agent usage")
-      .description(usageChinese ? "额度与余额。" : "Quota & balance.")
+      .description(usageChinese ? "额度或已记录的输出用量。" : "Quota or recorded output usage.")
       .supportedFamilies([.systemSmall, .systemMedium, .accessoryCircular, .accessoryRectangular, .accessoryInline])
   }
 }

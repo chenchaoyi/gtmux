@@ -24,10 +24,10 @@ const GuestAttachRefused = "forbidden: a share link cannot open a terminal: it w
 
 // attachRecheckInterval is how often an open terminal re-checks the caller's token, so a
 // revoked caller's session ends within it rather than whenever the caller detaches.
-var attachRecheckInterval = 2 * time.Second // a test shortens it
+var attachRecheckInterval = 2 * time.Second
 
 // attachNoticeWait bounds the "access revoked" notice: how long it may wait for the
-// output pump's write lock, and then how long its own write may take. A test shortens it.
+// output pump's write lock, and then how long its own write may take.
 var attachNoticeWait = 500 * time.Millisecond
 
 // attachUpgrader upgrades /api/attach to a WebSocket. The bearer token (checked by

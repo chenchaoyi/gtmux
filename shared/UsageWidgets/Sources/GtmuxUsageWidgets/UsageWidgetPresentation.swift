@@ -21,6 +21,21 @@ public enum UsageWidgetWords {
         value.formatted(.number.precision(.fractionLength(0...1))) + "%"
     }
 
+    public static func outputDay(_ output: UsageWidgetOutput, at date: Date, chinese: Bool, calendar: Calendar = .current) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.timeZone = calendar.timeZone
+        formatter.dateFormat = "yyyy-MM-dd"
+        return output.day == formatter.string(from: date) ? text("Today", "今日", chinese: chinese) : output.day
+    }
+
+    public static func count(_ value: Int64) -> String {
+        let number = Double(value)
+        let pair: (Double, String) = value >= 1_000_000 ? (1_000_000, "M") : value >= 1_000 ? (1_000, "K") : (1, "")
+        return (number / pair.0).formatted(.number.locale(Locale(identifier: "en_US_POSIX")).precision(.fractionLength(0...1))) + pair.1
+    }
+
     public static func wallet(_ value: UsageWidgetWallet, chinese: Bool) -> String {
         switch value.kind {
         case "bonus": return text("Bonus", "赠送", chinese: chinese)

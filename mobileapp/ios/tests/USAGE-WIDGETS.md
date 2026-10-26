@@ -13,11 +13,15 @@ It does not install itself, alter an existing App, read real pairings, or contac
 server. Install it only on an authorized dedicated simulator. Keep fixture output
 outside the checkout. Existing output can be reused for incremental builds.
 
-Use Agent and Reading to exercise current, old, expired, empty and long content.
+Use Agent and Reading to exercise current, zero-output, previous-day, missing-history,
+old, expired, empty and long content.
+For repeatable launches, pass `--provider dsh --scenario "Previous day"`; `--english`
+renders the English labels. These arguments affect only this synthetic fixture.
 The native previews include small/medium and all three Lock Screen families. Seed
 widget gallery writes only the synthetic display snapshot to the fixture's container.
 Add its widget through the system gallery; select DeepSeek in Edit Widget and verify
-the Home Screen actually shows its CNY balance. A selected row in the editor alone
+the Home Screen actually shows recorded output tokens and Local records, not currency
+or a quota gauge. A selected row in the editor alone
 is not proof that WidgetKit saved the choice. Check light/dark appearance and the
 largest accessibility size. Fixed widget bounds must retain the agent, main reading
 and source/read time; stale information must be identified and expired capacity must

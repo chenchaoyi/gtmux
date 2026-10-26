@@ -1,7 +1,7 @@
 # Usage widgets
 
 On iOS/iPadOS 17 or later, add **Agent usage** from the system widget gallery. Small
-and medium Home Screen widgets show provider quota or wallet balances. Lock Screen
+and medium Home Screen widgets show quota, balances or recorded output. Lock Screen
 widgets support circular, rectangular and inline layouts. Live Activities remain a
 separate feature and keep their existing OS support.
 
@@ -16,11 +16,21 @@ selected provider disappears, the widget shows unavailable data rather than sile
 switching to a different provider. Switching servers follows the app's current
 selection; widgets do not save a second connection.
 
-Quota percentages mean **used**, not remaining. DeepSeek balances keep the source
-currency and wallet type; separate accounts and currencies are not added together.
-Missing readings are not zero. Historical quota and windows whose reset has already
-passed are excluded from newly projected data. If a cached window reaches its reset
-time, it asks for an update instead of inventing replenished capacity.
+Quota percentages mean **used**, not remaining. Actual quota and balance readings
+retain their units; separate accounts, currencies and wallets are never added
+together. Without those readings, each agent can show today's and the last seven
+days' output tokens, labelled **Local records**. This covers conversations recorded
+by the connected machine, not account-wide usage, a bill or remaining quota. Tokens
+are never converted into money. DSH output history can supply this view; a balance
+appears only when the server actually obtains it. Balance formatting support does
+not establish a working DSH balance integration.
+
+Absent history remains unavailable; an explicitly recorded zero remains zero.
+Output keeps the server's recorded day and scan time. After the display's day
+changes, cached output is labelled with its source date rather than called today's
+output. Historical quota and already-reset windows are excluded from newly
+projected data. A cached window reaching reset asks for an update instead of
+inventing replenished capacity.
 
 The widget shows the reading time. After 15 minutes it marks the cached information
 as an older reading; compact Lock Screen layouts also identify old data. Small widgets
@@ -37,7 +47,7 @@ sleep, low power, force quit, unavailable credentials or an unreachable server c
 delay them. This is a dated reading, not a live connection or a billing forecast.
 
 The widget extension reads a bounded display snapshot from
-`group.com.gtmux.app.usage`. It contains provider labels, usage windows, wallet
+`group.com.gtmux.app.usage`. It contains provider labels, usage windows, recorded output totals/dates, wallet
 amounts, a server display name and timestamps. It contains no pairing bearer, server
 address, provider account identifier, conversation or session history. The extension
 does not include the parent's Keychain reader or network client.

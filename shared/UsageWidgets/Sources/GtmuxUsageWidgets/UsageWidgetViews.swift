@@ -107,7 +107,7 @@ public struct UsageWidgetContent: View {
             Spacer(minLength: 0)
             if let window = account.windows.first {
                 quota(window, account: account, large: true)
-            } else { balance(account, large: true) }
+            } else { nonQuota(account, large: true) }
             Spacer(minLength: 0)
             updated(account)
         }
@@ -124,7 +124,7 @@ public struct UsageWidgetContent: View {
                 Text(window.expired(at: date) ? tr("Update needed", "等待更新") : UsageWidgetWords.percent(window.percent))
                     .font(.system(size: window.expired(at: date) ? 20 : 36, weight: .semibold, design: .rounded))
                     .monospacedDigit().foregroundStyle(tint(window, account: account)).lineLimit(1).minimumScaleFactor(0.8)
-            } else { balance(account, large: true) }
+            } else { nonQuota(account, large: true) }
             Spacer(minLength: 0)
             updated(account)
         }
@@ -143,7 +143,7 @@ public struct UsageWidgetContent: View {
                         VStack(alignment: .leading, spacing: 7) {
                             heading(item)
                             if let window = item.windows.first { quota(window, account: item, large: true) }
-                            else { balance(item, large: true) }
+                            else { nonQuota(item, large: true) }
                         }.frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
@@ -152,7 +152,7 @@ public struct UsageWidgetContent: View {
                     VStack(alignment: .leading, spacing: 8) {
                         heading(account)
                         if let window = account.windows.first { quota(window, account: account, large: true) }
-                        else { balance(account, large: true) }
+                        else { nonQuota(account, large: true) }
                     }.frame(maxWidth: .infinity, alignment: .leading)
                     if account.windows.count > 1 {
                         VStack(alignment: .leading, spacing: 5) {
@@ -220,6 +220,32 @@ public struct UsageWidgetContent: View {
         }
     }
 
+    @ViewBuilder private func nonQuota(_ account: UsageWidgetAccount, large: Bool) -> some View {
+        if !account.wallets.isEmpty { balance(account, large: large) }
+        else if let output = account.output { recorded(output, account: account, large: large) }
+    }
+
+    private func recorded(_ output: UsageWidgetOutput, account: UsageWidgetAccount, large: Bool) -> some View {
+        let day = UsageWidgetWords.outputDay(output, at: date, chinese: chinese)
+        return VStack(alignment: .leading, spacing: 4) {
+            Text(day + tr(" output", "输出")).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+            HStack(alignment: .bottom, spacing: 4) {
+                Text(UsageWidgetWords.count(output.today))
+                    .font(large ? .system(size: 30, weight: .semibold, design: .rounded) : .headline)
+                    .monospacedDigit().lineLimit(1).minimumScaleFactor(0.8)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Token")
+                    Text(tr("Local records", "本机记录"))
+                }.font(.caption2).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.8)
+            }
+            Text(tr("7 days ", "近 7 天 ") + UsageWidgetWords.count(output.week) + " Token")
+                .font(.caption2).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.8)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(account.name + ", " + day + tr(" output ", "输出 ") + String(output.today) +
+            tr(" tokens. Past 7 days ", " Token，近 7 天 ") + String(output.week) + tr(" tokens. Local records.", " Token。本机记录。"))
+    }
+
     private func balance(_ account: UsageWidgetAccount, large: Bool) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             if let wallet = account.wallets.first {
@@ -258,6 +284,11 @@ public struct UsageWidgetContent: View {
                     Text(account.name).lineLimit(1).minimumScaleFactor(0.7)
                 } currentValueLabel: { Text(UsageWidgetWords.percent(window.percent)).font(.caption.weight(.semibold)) }
                 .gaugeStyle(.accessoryCircular).tint(tint(window, account: account))
+            } else if let output = account.output, !old(account) {
+                VStack(spacing: 2) {
+                    Text(UsageWidgetWords.count(output.today)).font(.headline).monospacedDigit()
+                    Text(tr("Local output", "本机输出")).font(.caption2).lineLimit(1).minimumScaleFactor(0.8)
+                }
             } else {
                 VStack(spacing: 3) {
                     Image(systemName: account.windows.isEmpty && !old(account) ? "creditcard" : "clock.arrow.circlepath")
@@ -284,8 +315,15 @@ public struct UsageWidgetContent: View {
             return window.expired(at: date) ? tr("Update needed", "等待更新") :
                 (old(account) || window.stale(at: date) ? tr("Last reading ", "上次读数 ") : UsageWidgetWords.window(window, agent: account.agent, chinese: chinese) + " ") + UsageWidgetWords.percent(window.percent)
         }
-        guard let wallet = account.wallets.first else { return tr("No reading", "暂无读数") }
-        return (old(account) ? tr("Last reading ", "上次读数 ") : "") + wallet.currency + " " + wallet.amount
+        if let wallet = account.wallets.first {
+            return (old(account) ? tr("Last reading ", "上次读数 ") : "") + wallet.currency + " " + wallet.amount
+        }
+        if let output = account.output {
+            return (old(account) ? tr("Last reading · ", "上次读数 · ") : "") + tr("Local output · ", "本机输出 · ") +
+                UsageWidgetWords.outputDay(output, at: date, chinese: chinese) + " " +
+                UsageWidgetWords.count(output.today) + tr(" tokens", " Token")
+        }
+        return tr("No reading", "暂无读数")
     }
     #endif
 }
