@@ -72,6 +72,15 @@ unreviewed feature branches or fork commits is outside this workflow.
 | Variable `IOS_TEAM_ID` | Signing team's ten-character identifier |
 | Variable `IOS_RESULT_RECIPIENT` | Maintainer's **public** native age recipient; private identity stays outside GitHub |
 
+For usage widgets, register `group.com.gtmux.app.usage` and associate it only with
+`com.gtmux.app` and `com.gtmux.app.widget`. Both Ad Hoc profiles must authorize that
+exact group; the notification extension does not join it. Changing App ID
+capabilities invalidates its existing profiles, so regenerate the affected profiles
+and verify the exported signatures and group grants before delivery. Preserve the
+existing certificate and device set unless their change is separately authorized.
+The group holds a display snapshot, never pairing credentials or conversation data;
+see [usage widgets](../docs/widgets.md).
+
 Before uploading `IOS_CERT_P12`, verify that macOS can import it into a disposable
 keychain with the intended password. Successful OpenSSL parsing alone is not enough:
 an OpenSSL 3 default export using PBES2/AES and a SHA-256 MAC was reproduced failing
@@ -438,6 +447,11 @@ Any change to signing, profiles, publisher credentials, deploy keys, recipients 
 inputs must update this bilingual guide, the private ledger, recovery README, manifests,
 reminders and encrypted backup. Record whether reminders were merely exported or actually
 scheduled; no automatic renewal is provided. GitHub Secrets cannot be read back as a backup.
+
+A profile-only recovery update may be an encrypted supplement to the retained base
+backup. Record the base archive hash and the exact replacements, verify the
+supplement by decryption and member hashes, and retain both off-machine. Recovery
+instructions must prevent the older profiles from overwriting the current grants.
 
 ### Archive recovery retention
 
