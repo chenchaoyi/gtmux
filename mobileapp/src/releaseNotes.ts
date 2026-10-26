@@ -12,6 +12,25 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.151',
+    en: [
+      'Usage widgets',
+      'Add Agent usage to the iPhone or iPad Home Screen or Lock Screen. Choose an Agent and tap the widget to open its usage details.',
+      'See available quota or locally recorded output for today and the last 7 days. Missing readings stay unavailable; older records show their time and date. Output tokens are not a balance or bill.',
+      'Reading and controls',
+      'Improve document preview loading and error states, large-text controls, keyboard layouts and button accessibility.',
+      'Keep usage results tied to the selected server when switching connections.',
+    ],
+    zh: [
+      '用量小组件',
+      '在 iPhone、iPad 主屏幕或锁屏添加“Agent 用量”，可指定 Agent，点按进入用量详情。',
+      '显示实际取得的额度，或本机已记录的今日、近 7 天输出。没有数据时不填零，旧记录保留时间和日期；输出 Token 不代表余额或账单。',
+      '阅读与操作',
+      '优化文件预览的加载和错误提示、大字号控件、键盘布局与按钮辅助功能。',
+      '切换服务器后，用量页面不再混入原连接的结果。',
+    ],
+  },
+  {
     version: '1.0.150',
     en: [
       'Conversation files and text',
