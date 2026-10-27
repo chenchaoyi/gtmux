@@ -274,9 +274,13 @@ describe('the explainer under "waiting on you"', () => {
 
   it('opens on tap', () => {
     const t = render(withPending());
+    const guide = () => t.root.findAll(n => n.props?.testID === 'knowledge-why' && typeof n.props.onPress === 'function')[0];
+    expect(guide().props.accessibilityLabel).toBe('Usage guide');
+    expect(guide().props.accessibilityState).toEqual({expanded: false});
     act(() => {
-      t.root.findAll(n => n.props?.accessibilityLabel === 'knowledge-why' && typeof n.props.onPress === 'function')[0].props.onPress();
+      guide().props.onPress();
     });
+    expect(guide().props.accessibilityState).toEqual({expanded: true});
     expect(strings(t.root as unknown as Node).join(' ')).toContain('These entries have a saved use plan');
   });
 });

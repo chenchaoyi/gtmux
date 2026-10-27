@@ -443,7 +443,9 @@ The quiet state must tell the truth. "Nothing needs your call right now." plus a
 
 ### The HQ page's top is an overlay too (2026-09-12)
 
-(Compact shell. In the regular shell the header is static and does not fold; the sections sit in the right-hand inspector, see §5.)
+(Compact shell and narrow regular main panes. With enough room for the inspector, the header is static and does not fold; see §5.)
+The software keyboard takes precedence over scroll position through the same `useKeyboardChrome` hook as Detail. While it is visible, the floating header is hidden from drawing, hit testing and accessibility; secondary quick-command and task-summary rows are temporarily removed to leave room for input. The composer stays mounted, preserving drafts. Closing the keyboard restores the controls according to the current scroll position. Wide HQ panes retain their static header.
+
 The HQ page's header (the verdict sentence, fleet counts, the three doors) and its section-tab row use the same mechanism as Detail's top chrome
 (see "chrome is an overlay" above): one driver, both bands fold together, sliding out with `translateY`,
 the scroll view's frame below unchanged, each of the three sections carrying a constant top inset (`chromeH` = header height + tab-row height).
@@ -856,8 +858,9 @@ the regular shell renders it into the main area. Push deep links, the HQ page's 
 
 ### The HQ page (regular)
 
-The report header (verdict sentence, standing line, three doors) spans the main area; below it the conversation area on the left (capped at 760) and a 360pt inspector on the right holding the two sections
-the phone hides behind tabs: "Your call" (decision cards, then what is running) and "HQ's work". The quick chips and the input box stay at the bottom of the conversation area.
+Columns require at least 800pt in the main area after accounting for the visible sidebar: 440pt for the conversation and 360pt for the inspector (`ui/layout.ts`). A narrower main area uses the same zone tabs as the phone, while retaining the workspace sidebar and regular resource sheets. Rotation and hiding or showing the sidebar reevaluate this rule. The outer iPad size class alone must not force three columns onto a portrait window.
+
+The report header (verdict sentence, standing line, three doors) spans the main area. With enough width, the conversation is on the left (capped at 760pt), and the 360pt inspector on the right shows decisions and running sessions. HQ's recorded actions appear alongside the conversation; the header's action count opens their detailed list. Quick chips and the input box stay below the conversation.
 The canvas's second page records the two other directions and their cost: B stacks both sections above the conversation (everything visible at once, but the conversation loses 150pt per screen and the two sections
 scroll together); C keeps the phone's tabs, just wider (no new layout to maintain, but a 1194pt screen shows one section, and the things needing your call stay hidden behind a tab).
 

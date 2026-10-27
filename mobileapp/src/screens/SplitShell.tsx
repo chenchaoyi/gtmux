@@ -20,7 +20,7 @@ import {useApp} from '../state/AppContext';
 import {initialSelection, useWorkspace} from '../state/WorkspaceContext';
 import {BrandMark} from '../ui/BrandMark';
 import {SidebarIcon} from '../ui/Icons';
-import {sidebarWidth} from '../ui/layout';
+import {hqInspectorFits, sidebarWidth} from '../ui/layout';
 import {TestIds} from '../constants/testIds';
 import {KeyBus} from '../keys/bus';
 import {DetailView} from './DetailScreen';
@@ -74,7 +74,7 @@ export function SplitShell({demo}: {demo?: DemoChrome} = {}) {
       />
     );
   } else if (selection?.kind === 'hq') {
-    main = <HQView key="hq" agent={selection.agent} prefill={selection.prefill} openResource={selection.openResource} layout="regular" />;
+    main = <HQView key="hq" agent={selection.agent} prefill={selection.prefill} openResource={selection.openResource} layout="regular" showInspector={hqInspectorFits(width, hidden)} />;
   } else if (selection?.kind === 'panes') {
     main = <PaneBrowserView key="panes" layout="regular" />;
   } else {

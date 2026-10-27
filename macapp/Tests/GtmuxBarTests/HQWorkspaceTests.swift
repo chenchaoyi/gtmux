@@ -204,6 +204,64 @@ private final class WorkspaceFake: HQWorkspaceServing, @unchecked Sendable {
         XCTAssertEqual(store.detail?.messages.first?.body, "matter-b")
         store.stop()
     }
+    func testSwitchingDuringEarlierReadImmediatelyLoadsTheNewMatter() async throws {
+        let fake = WorkspaceFake()
+        let entered = DispatchSemaphore(value: 0)
+        let release = DispatchSemaphore(value: 0)
+        let matters = fake.snapshotValue.matters
+        fake.page = { scope, before, _ in
+            if before != nil {
+                entered.signal()
+                _ = release.wait(timeout: .now() + 2)
+            }
+            var value: HQWorkspaceDetail = decodeWorkspace(detailFixture)
+            value.messages[0].body = scope
+            value.matter = matters.first { $0.id == scope }
+            value.messageEarlierAvailable = scope == "matter-a" && before == nil
+            value.earlierBefore = value.messageEarlierAvailable == true ? 2 : nil
+            return value
+        }
+        let store = HQWorkspaceStore(client: fake, resources: HQResourceStore(read: { _ in nil }))
+        defer { release.signal(); store.stop() }
+        store.start()
+        try await settled(store)
+        store.select(.matter("matter-a"))
+        try await settled(store)
+        store.loadEarlier()
+        var historyStarted = false
+        for _ in 0..<200 {
+            if entered.wait(timeout: .now()) == .success { historyStarted = true; break }
+            try await Task.sleep(nanoseconds: 5_000_000)
+        }
+        guard historyStarted else { XCTFail("History fixture did not start"); return }
+        store.select(.matter("matter-b"))
+        release.signal()
+        try await settled(store)
+
+        if let path = ProcessInfo.processInfo.environment["GTMUX_WORKSPACE_PREVIEW_DIR"] {
+            NativeUIProbe.prepareAccessibility()
+            let host = NSHostingView(rootView: HQWorkspaceView(l10n: .shared, store: store)
+                .environment(\.colorScheme, .light)
+                .background(Color(nsColor: .windowBackgroundColor)))
+            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 980, height: 740),
+                                  styleMask: [.borderless], backing: .buffered, defer: false)
+            window.isReleasedWhenClosed = false
+            window.appearance = NSAppearance(named: .aqua)
+            window.contentView = host
+            window.orderFront(nil)
+            window.displayIfNeeded()
+            try await Task.sleep(nanoseconds: 250_000_000)
+            host.layoutSubtreeIfNeeded()
+            let bitmap = try XCTUnwrap(host.bitmapImageRepForCachingDisplay(in: host.bounds))
+            host.cacheDisplay(in: host.bounds, to: bitmap)
+            try XCTUnwrap(bitmap.representation(using: .png, properties: [:])).write(
+                to: URL(fileURLWithPath: path).appendingPathComponent("hq-switch-during-history.png"))
+            window.close()
+        }
+        XCTAssertEqual(store.selection, .matter("matter-b"))
+        XCTAssertEqual(store.detail?.messages.first?.body, "matter-b")
+        XCTAssertTrue(fake.actions.isEmpty)
+    }
     func testFailedSubmissionRetainsDraftAndRetryIDAndScope() async throws {
         let fake = WorkspaceFake()
         fake.failOnce()

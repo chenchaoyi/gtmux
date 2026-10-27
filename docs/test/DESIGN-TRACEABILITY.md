@@ -39,6 +39,17 @@ Web 的 `tests/web/` 验证实际渲染与窄屏控件，iOS 无签名构建验�
 - 两个 §16：Pane browser、Icon sizes。
 - §17 Server mode、§18 Screenshot to an agent。
 
+### HQ 导航与可操作性
+
+| 设计要求 | 实现 / 回归入口 | 验收边界 |
+| --- | --- | --- |
+| 旧记录读取期间切换事项不等待轮询、不显示旧事项 | `HQWorkspaceStore.loadEarlier`；`HQWorkspaceTests.testSwitchingDuringEarlierReadImmediatelyLoadsTheNewMatter` | 合成客户端的并发回归；实际窗口与真实 HQ 另验 |
+| HQ 复制按钮只显示图标，保留完整复制与失败反馈 | `HQChatBubble`；`HQChatPresentationTests.testCopyPreservesFullMarkdownAndFeedbackResetsAndReportsFailure` | 剪贴板回归使用注入写入器；实体桌面剪贴板另验 |
+| 资源入口、页签、卡片选择和子操作可独立识别 | `HQHeader`、`HQScreen`、`KnowledgeSheet`；`HQHeader.test.tsx`、`HQScreen.poll.test.tsx` | 角色与状态检查不代表 VoiceOver/TalkBack 播报已验收 |
+| 搜索结果第一次点击不被软件键盘吞掉 | `KnowledgeSheet` 单列与分栏滚动容器；`e2e/__tests__/knowledge-search.test.ts` | 需带软件键盘运行 iPhone/iPad UI 测试；不是仅组件渲染断言 |
+| iPad 主区保留对话阅读宽度 | `ui/layout.hqInspectorFits`、`SplitShell`、`HQView.showInspector`；`layout.test.ts`、`HQScreen.poll.test.tsx` | 转屏、侧栏切换和草稿保留另做运行验收 |
+| HQ 键盘不被浮动头部遮挡 | 复用 `useKeyboardChrome`，暂收次要输入行；`HQScreen.poll.test.tsx`、`hq-keyboard.test.ts` | 软件键盘、手机横屏和大字号运行验收；Android 与实体硬件键盘另验 |
+
 ## 范围决定 & 本期已知缺口
 
 0. **范围**：tmux pane 可查看、跳转和输入；非 tmux agent 通过 hook 做感知，显示为 native 行，

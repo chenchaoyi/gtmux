@@ -12,6 +12,23 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.152',
+    en: [
+      'HQ and knowledge',
+      'Keep the HQ conversation readable on iPad: use tabs when space is limited and side-by-side panels when there is room.',
+      'Open a knowledge search result with one tap while the keyboard is visible.',
+      'Keep the HQ input visible when the software keyboard opens, including landscape and larger text.',
+      'Improve button labels, selected tabs and expanded states for assistive technologies.',
+    ],
+    zh: [
+      'HQ 与知识库',
+      'iPad 根据可用宽度调整 HQ 布局：空间不足时使用页签，宽屏时并排显示，保证对话阅读空间。',
+      '搜索知识条目时，无需先收起键盘，点一次即可打开结果。',
+      '打开软件键盘时收起 HQ 顶部内容和次要快捷行，改善横屏和大字号下的输入。',
+      '完善按钮名称、页签选中状态与展开状态，方便使用辅助功能。',
+    ],
+  },
+  {
     version: '1.0.151',
     en: [
       'Usage widgets',

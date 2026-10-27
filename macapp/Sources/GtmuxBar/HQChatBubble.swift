@@ -88,11 +88,15 @@ struct HQChatBubble: View {
                     feedback.copy(bodyText)
                 } label: {
                     Label(copyLabel, systemImage: feedback.state == .copied ? "checkmark" : "doc.on.doc")
-                        .font(HQTypography.caption).padding(.vertical, 3)
+                        .labelStyle(.iconOnly)
+                        .font(HQTypography.caption).frame(width: 28, height: 28)
                 }.buttonStyle(.borderless).foregroundStyle(.secondary)
-                    .help(l10n.tr("Copy full text", "复制全文"))
+                    .help(feedback.state == .failed ? copyLabel : l10n.tr("Copy full text", "复制全文"))
                     .accessibilityLabel(l10n.tr("Copy full text from \(label)", "复制\(label)的全文"))
                     .accessibilityValue(copyLabel)
+                if feedback.state == .failed {
+                    Text(copyLabel).font(HQTypography.caption).foregroundStyle(Theme.Status.errored)
+                }
             }
             if user { avatar } else { Spacer(minLength: 45) }
         }.onChange(of: bodyText) { _, _ in feedback.clear() }

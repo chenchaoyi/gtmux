@@ -33,7 +33,8 @@ import {paneLines} from '../ui/term';
 import {SessionReset} from '../ui/chatWindow';
 import {ChatView} from '../ui/ChatView';
 import {CHROME_ANIM_MS, ChromeState, chromeDecision} from '../ui/liveEdge';
-import {READING_WIDTH, SizeClass} from '../ui/layout';
+import {useKeyboardChrome} from '../ui/useKeyboardChrome';
+import {HQ_INSPECTOR_WIDTH, READING_WIDTH, SizeClass} from '../ui/layout';
 import {KeyBus} from '../keys/bus';
 import {BoardSheet} from './BoardSheet';
 import {KnowledgeSheet} from './KnowledgeSheet';
@@ -75,12 +76,13 @@ export function HQScreen({route, navigation}: any) {
 const HQ_ACTIVE_POLL_MS = 4000;
 const HQ_IDLE_POLL_MS = 8000;
 
-export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compact', openResource}: {agent: Agent; prefill?: string; onBack?: () => void; layout?: SizeClass; openResource?: HQResourceRequest}) {
+export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compact', showInspector = true, openResource}: {agent: Agent; prefill?: string; onBack?: () => void; layout?: SizeClass; showInspector?: boolean; openResource?: HQResourceRequest}) {
   const {select} = useWorkspace();
-  // The regular shell (D5): the report header spans the main pane, the console takes the
+  // A wide main pane (D5): the report header spans the main pane, the console takes the
   // width beneath it, and the two zones the phone puts behind tabs sit in an inspector on
   // the right. Nothing folds — the header is not competing with a phone's height.
-  const regular = layout === 'regular';
+  // Resource sheets retain the shell's layout even when this pane uses zone tabs.
+  const regular = layout === 'regular' && showInspector;
   const {client, agents, conn, demo, isGuest} = useAgents();
   const {pal, lang} = useApp();
   const zh = lang === 'zh';
@@ -166,7 +168,8 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
   //
   // The content underneath carries a constant top padding of `chromeH`, so the oldest
   // line can still be scrolled clear of the chrome.
-  const collapse = useRef(new Animated.Value(0)).current;
+  const scrollCollapse = useRef(new Animated.Value(0)).current;
+  const {collapse, keyboardVisible} = useKeyboardChrome(scrollCollapse);
   const [headerH, setHeaderH] = useState(0);
   const [tabsH, setTabsH] = useState(0);
   // Both bands fold on one driver, so the distance the chrome slides out — and the padding
@@ -182,7 +185,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
       const d = chromeDecision(chrome.current, {gap, now: Date.now()});
       if (!d.change) return;
       chrome.current = d;
-      Animated.timing(collapse, {
+      Animated.timing(scrollCollapse, {
         toValue: d.hidden ? 1 : 0,
         duration: CHROME_ANIM_MS,
         // Transform + opacity only, so the fold runs on the UI thread.
@@ -191,7 +194,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
         if (finished) runEdge(lastGap.current); // answer whatever arrived mid-flight
       });
     },
-    [collapse],
+    [scrollCollapse],
   );
   const onLiveEdge = useCallback(
     (gap: number) => {
@@ -316,11 +319,11 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
   // stale collapsed state from the previous zone would hide the header with nothing
   // scrolled.
   useEffect(() => {
-    collapse.setValue(0);
+    scrollCollapse.setValue(0);
     zoneOffset.setValue(0); // the new zone's scroll view mounts at 0
     chrome.current = {hidden: false, settledAt: 0}; // don't carry a fold across a zone switch
     lastGap.current = 0;
-  }, [activeZone, collapse, zoneOffset]);
+  }, [activeZone, scrollCollapse, zoneOffset]);
 
 
   // The shared Composer has both text and terminal control keys. Dropping key-only
@@ -444,6 +447,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
                         <TouchableOpacity
                           key={r.pane_id || r.loc}
                           testID={`hq-quiet-${r.loc}`}
+                          accessibilityRole="button"
                           activeOpacity={0.6}
                           onPress={() => openWorker(r)}
                           style={[styles.quietRow, i > 0 && {borderTopColor: pal.divider, borderTopWidth: StyleSheet.hairlineWidth}]}>
@@ -458,11 +462,12 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
                   </>
                 ) : (
                   <Text style={[styles.quietSub, {color: pal.fg2}]}>
-                    {t('Nothing is running either. Every session is idle.', '也没有在跑的线，所有会话都空着。')}
+                    {t('All sessions are idle.', '当前所有会话均为空闲。')}
                   </Text>
                 )}
                 <TouchableOpacity
                   testID="hq-quiet-ask"
+                  accessibilityRole="button"
                   activeOpacity={0.8}
                   onPress={() => command(t('What is the situation right now?', '现在什么情况？'))}
                   style={[styles.quietAsk, {borderColor: StatusColor.working}]}>
@@ -476,33 +481,39 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
                 const sel = selected?.pane_id === row.pane_id;
                 const win = windowNo(row);
                 return (
-                  <TouchableOpacity
+                  <View
                     key={row.pane_id || row.loc}
                     testID={`hq-call-${row.loc}`}
-                    activeOpacity={0.8}
-                    onPress={() => setSelected(sel ? null : row)}
                     style={[
                       styles.card,
                       {backgroundColor: pal.surface, borderColor: sel ? ERRORED_COLOR : pal.divider, borderWidth: sel ? 1.5 : StyleSheet.hairlineWidth},
                     ]}>
-                    <View style={styles.cardHead}>
-                      <View style={[styles.rowDot, {backgroundColor: StatusColor.waiting}]} />
-                      {win !== '' && <Text style={[styles.win, {color: pal.fg3, borderColor: pal.divider}]}>w{win}</Text>}
-                      <Text style={[styles.cardTitle, {color: pal.fg}]} numberOfLines={1}>
-                        {sessionName(row)} <Text style={{color: pal.fg3, fontWeight: '400'}}>{row.agent}</Text>
-                      </Text>
-                      <Text style={[styles.cardSince, {color: pal.fg3}]}>{relTime(row.since, now)}</Text>
-                    </View>
-                    {/* The ask IS the decision — the body of the card, not a footnote. */}
-                    <Text style={[styles.ask, {color: pal.fg}]}>{askOf(row, zh)}</Text>
-                    {row.goal && row.ask ? (
-                      <Text style={[styles.cardGoal, {color: pal.fg3}]} numberOfLines={1}>
-                        ↳ {row.goal}
-                      </Text>
-                    ) : null}
+                    <TouchableOpacity
+                      testID={`hq-call-select-${row.loc}`}
+                      accessibilityRole="button"
+                      accessibilityState={{selected: sel}}
+                      activeOpacity={0.8}
+                      onPress={() => setSelected(sel ? null : row)}>
+                      <View style={styles.cardHead}>
+                        <View style={[styles.rowDot, {backgroundColor: StatusColor.waiting}]} />
+                        {win !== '' && <Text style={[styles.win, {color: pal.fg3, borderColor: pal.divider}]}>w{win}</Text>}
+                        <Text style={[styles.cardTitle, {color: pal.fg}]} numberOfLines={1}>
+                          {sessionName(row)} <Text style={{color: pal.fg3, fontWeight: '400'}}>{row.agent}</Text>
+                        </Text>
+                        <Text style={[styles.cardSince, {color: pal.fg3}]}>{relTime(row.since, now)}</Text>
+                      </View>
+                      {/* The ask IS the decision — the body of the card, not a footnote. */}
+                      <Text style={[styles.ask, {color: pal.fg}]}>{askOf(row, zh)}</Text>
+                      {row.goal && row.ask ? (
+                        <Text style={[styles.cardGoal, {color: pal.fg3}]} numberOfLines={1}>
+                          ↳ {row.goal}
+                        </Text>
+                      ) : null}
+                    </TouchableOpacity>
                     <View style={styles.actions}>
                       <TouchableOpacity
                         testID={`hq-call-open-${row.loc}`}
+                        accessibilityRole="button"
                         style={[styles.action, styles.actionPrimary, {borderColor: StatusColor.working}]}
                         onPress={() => openWorker(row)}>
                         <Text style={[styles.actionText, {color: StatusColor.working, fontWeight: '600'}]}>
@@ -511,6 +522,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
                       </TouchableOpacity>
                       <TouchableOpacity
                         testID={`hq-call-ask-${row.loc}`}
+                        accessibilityRole="button"
                         style={[styles.action, {borderColor: pal.divider}]}
                         onPress={() =>
                           command(
@@ -523,7 +535,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
                         <Text style={[styles.actionText, {color: pal.fg}]}>{t('Ask HQ', '问 HQ')}</Text>
                       </TouchableOpacity>
                     </View>
-                  </TouchableOpacity>
+                  </View>
                 );
               })
             )}
@@ -570,16 +582,16 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
   );
   const composerEl = (
     <>
-        {showRow(runningTasks) && (
+        {!keyboardVisible && showRow(runningTasks) && (
           <RunningRow tally={runningTasks} lang={lang} restColor={pal.fg2} onOpen={() => setTasksOpen(true)} />
         )}
-        <View style={styles.chips}>
+        {!keyboardVisible && <View style={styles.chips}>
           {selected && (
             <View style={[styles.selPill, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
               <Text style={[styles.selText, {color: pal.fg2}]} numberOfLines={1}>
                 ▸ {selected.loc}
               </Text>
-              <TouchableOpacity onPress={() => setSelected(null)} hitSlop={hit}>
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('Clear selected session', '取消选择会话')} onPress={() => setSelected(null)} hitSlop={hit}>
                 <Text style={{color: pal.fg3}}>×</Text>
               </TouchableOpacity>
             </View>
@@ -589,13 +601,14 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
               <TouchableOpacity
                 key={c.label}
                 testID={`hq-chip-${c.label}`}
+                accessibilityRole="button"
                 style={[styles.chip, {backgroundColor: pal.surface, borderColor: pal.divider}]}
                 onPress={() => command(c.cmd)}>
                 <Text style={[styles.chipText, {color: pal.fg}]}>{c.label}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
-        </View>
+        </View>}
         {failedSend && (
           <SendFailedBar
             text={failedSend.text ?? failedSend.key ?? ''}
@@ -674,6 +687,8 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
               <TouchableOpacity
                 key={tab.key}
                 testID={`hq-tab-${tab.key}`}
+                accessibilityRole="tab"
+                accessibilityState={{selected: on}}
                 style={[
                   styles.tab,
                   {backgroundColor: pal.surface, borderColor: 'transparent'},
@@ -832,7 +847,10 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
       </View>
 
       <Animated.View
-        pointerEvents="box-none"
+        testID="hq-chrome"
+        pointerEvents={keyboardVisible ? 'none' : 'box-none'}
+        accessibilityElementsHidden={keyboardVisible}
+        importantForAccessibility={keyboardVisible ? 'no-hide-descendants' : 'auto'}
         style={[
           styles.chrome,
           {
@@ -883,7 +901,7 @@ const styles = StyleSheet.create({
   stack: {flex: 1, overflow: 'hidden'},
   // The regular shell: console column + inspector (D5).
   wide: {flex: 1, flexDirection: 'row', minHeight: 0},
-  inspector: {width: 360, borderLeftWidth: StyleSheet.hairlineWidth},
+  inspector: {width: HQ_INSPECTOR_WIDTH, borderLeftWidth: StyleSheet.hairlineWidth},
   chrome: {position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10},
   pad: {paddingHorizontal: 14, paddingVertical: 10},
   strip: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth},

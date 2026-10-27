@@ -1,4 +1,14 @@
-import {isSplitCanvas} from './layout';
+import {hqInspectorFits, isSplitCanvas} from './layout';
+
+test.each([
+  ['iPad portrait with sidebar', 834, false, false],
+  ['iPad portrait without sidebar', 834, true, true],
+  ['iPad landscape with sidebar', 1194, false, true],
+  ['narrow regular window', 768, false, false],
+  ['narrow main pane in landscape', 1024, false, false],
+])('%s keeps a readable HQ console', (_name, width, hidden, expected) => {
+  expect(hqInspectorFits(width as number, hidden as boolean)).toBe(expected);
+});
 
 // Real device canvases, in points. The bug this pins: width alone put the iPad's
 // two-column layout on a phone in landscape — wide enough at 852-932pt, and ~400pt tall.

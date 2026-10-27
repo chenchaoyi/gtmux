@@ -256,7 +256,7 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
       <View style={[styles.root, {backgroundColor: pal.bg}]}>
         <View style={[styles.head, {borderBottomColor: pal.divider}]}>
           {pane.kind !== 'index' && !(regular && pane.kind === 'entry') ? (
-            <TouchableOpacity testID="knowledge-back" accessibilityLabel={zh ? '返回' : 'Back'} onPress={goBack} hitSlop={hit}>
+            <TouchableOpacity accessibilityRole="button" testID="knowledge-back" accessibilityLabel={zh ? '返回' : 'Back'} onPress={goBack} hitSlop={hit}>
               <Text style={[styles.back, {color: pal.fg2}]}>‹</Text>
             </TouchableOpacity>
           ) : null}
@@ -319,6 +319,7 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
             <View style={[styles.listCol, {borderRightColor: pal.divLoud}]}>
         <ScrollView
           ref={scroller}
+          keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.body}
           scrollEventThrottle={64}
           onScroll={e => {
@@ -353,7 +354,7 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
           )}
         </ScrollView>
             </View>
-            <ScrollView style={styles.entryCol} contentContainerStyle={styles.body}>
+            <ScrollView keyboardShouldPersistTaps="handled" style={styles.entryCol} contentContainerStyle={styles.body}>
               {pane.kind === 'entry' ? (
                 <EntryPane
               entry={entry}
@@ -378,6 +379,7 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
         ) : (
         <ScrollView
           ref={scroller}
+          keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.body}
           scrollEventThrottle={64}
           onScroll={e => {
@@ -493,9 +495,10 @@ function IndexPane({
               and this looks like a general improvement".
               docs/design/knowledge-layers.md is the long form. */}
           <>
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   testID="knowledge-why"
-                  accessibilityLabel="knowledge-why"
+                  accessibilityLabel={t('Usage guide', '使用说明')}
+                  accessibilityState={{expanded: whyOpen}}
                   activeOpacity={0.6}
                   onPress={() => onToggleWhy()}
                   hitSlop={hit}>
@@ -510,7 +513,7 @@ function IndexPane({
           </Text>}
               </>
           {view.promotions.map(p => (
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               key={p.entry.id}
               testID={`knowledge-promotion-${p.entry.id}`}
               activeOpacity={0.6}
@@ -567,9 +570,10 @@ function IndexPane({
         const peek = entriesOfTopic(view, tp.name).slice(0, TOPIC_PEEK);
         return (
           <View key={tp.name}>
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               testID={`knowledge-topic-${tp.name}`}
               accessibilityLabel={zh ? `主题：${knowledgeTopic(tp.name, zh)}` : `Topic: ${knowledgeTopic(tp.name, zh)}`}
+              accessibilityState={{expanded: open}}
               activeOpacity={0.6}
               onPress={() => onToggleTopic(tp.name)}
               style={[styles.row, {borderBottomColor: pal.divider}]}>
@@ -583,7 +587,7 @@ function IndexPane({
               <View style={styles.peek}>
                 <EntryList entries={peek} pal={pal} zh={zh} ageOf={ageOf} onOpen={onOpen} />
                 {tp.count > peek.length && (
-                  <TouchableOpacity
+                  <TouchableOpacity accessibilityRole="button"
                     testID={`knowledge-topic-all-${tp.name}`}
                     accessibilityLabel={zh ? `查看 ${knowledgeTopic(tp.name, zh)} 的全部条目` : `View all in ${knowledgeTopic(tp.name, zh)}`}
                     activeOpacity={0.6}
@@ -624,7 +628,7 @@ function EntryList({
   return (
     <>
       {entries.map(e => (
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           key={e.id}
           testID={`knowledge-entry-${e.id}`}
           accessibilityLabel={displayTitle(e, zh)}
@@ -723,7 +727,7 @@ function EntryPane({
             opens the issue for everyone, and "It no longer holds…" names what retiring
             means — the lesson stopped being true, which is what the bar then asks about. */}
         {actsFor(entry).map(a => (
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             key={a.kind}
             testID={`knowledge-act-${a.kind}`}
             activeOpacity={0.6}
@@ -772,10 +776,10 @@ function ActBar({
         <Text style={[styles.actTitle, {color: pal.fg}]} numberOfLines={1}>
           {p.title}
         </Text>
-        <TouchableOpacity testID="knowledge-act-cancel" disabled={busy} onPress={onCancel} hitSlop={hit} style={styles.actBtn}>
+        <TouchableOpacity accessibilityRole="button" testID="knowledge-act-cancel" disabled={busy} onPress={onCancel} hitSlop={hit} style={styles.actBtn}>
           <Text style={[styles.actBtnText, {color: pal.fg3}]}>{t('Cancel', '取消')}</Text>
         </TouchableOpacity>
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           testID="knowledge-act-submit"
           onPress={onSubmit}
           disabled={!ready}
