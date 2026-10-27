@@ -64,8 +64,9 @@ privacy and Lock Screen settings determine when it is concealed.
 
 On macOS 14 or later, the menu-bar app embeds a native WidgetKit extension. Choose
 **gtmux → Agent usage** in the Mac widget gallery, then keep the menu-bar app running.
-The native Mac extension is in current source; existing 1.0.151 binaries do not
-include it. Release packaging and installation are separate from source validation.
+The native Mac widget is included in gtmux 1.0.152 or later. Update gtmux and
+restart the menu-bar app before adding it; 1.0.151 binaries do not include the
+extension.
 Small and medium widgets use the same display models and views as iPhone/iPad.
 They show this Mac's readings; they do not use an iPhone connection or require HQ.
 Edit the widget to select Automatic or a provider with available readings.
