@@ -18,8 +18,19 @@
 	<string>6.0</string>
 	<key>CFBundleShortVersionString</key>
 	<string>__VERSION__</string>
+	<key>CFBundleVersion</key>
+	<string>__BUILD_VERSION__</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>GtmuxSigningTeam</key>
+	<string>__SIGNING_TEAM__</string>
+	<key>GtmuxUsageGroup</key>
+	<string>__USAGE_GROUP__</string>
+	<key>CFBundleURLTypes</key>
+	<array><dict>
+		<key>CFBundleURLName</key><string>com.gtmux.menubar.usage</string>
+		<key>CFBundleURLSchemes</key><array><string>gtmux</string></array>
+	</dict></array>
 	<key>LSMinimumSystemVersion</key>
 	<string>14.0</string>
 	<key>NSAppleEventsUsageDescription</key>

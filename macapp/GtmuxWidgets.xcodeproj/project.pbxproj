@@ -1,0 +1,553 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0AA77D646AE3EFA73C0DFDDA01C6C0BE /* GtmuxUsageWidgets in Frameworks */ = {isa = PBXBuildFile; productRef = 6887CA760FE8C7959571215B580B2AC1 /* GtmuxUsageWidgets */; };
+		1CA58A64C0FFA083604E56C33E9F31F4 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 334FA1DFD3DCD13B7BF475AE551AE458 /* Localizable.xcstrings */; };
+		1E760DD43ECE226C43D4AE4463176BB8 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D2C54B05043DA1E5C0E8F46666B1A65C /* Cocoa.framework */; };
+		1F97EB8872884089FF5CB86726D23B21 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 334FA1DFD3DCD13B7BF475AE551AE458 /* Localizable.xcstrings */; };
+		40744BF258F1E76C618E372C48EC823B /* MacUsageConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36EC19B3B2F87CCA54326A9707CDD4DC /* MacUsageConfiguration.swift */; };
+		42E0DF7A804842A1FBB41DC2381A6CF2 /* MacUsageConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36EC19B3B2F87CCA54326A9707CDD4DC /* MacUsageConfiguration.swift */; };
+		8C4F002DD92B303ACE2330DF0167868B /* UsageWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6E173DAB21409FDC1C0392FEFB2E642 /* UsageWidget.swift */; };
+		9D1BCB1955E066AE5E782C140BC770CD /* GtmuxUsageWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 8D9DBA7CFA35E43886B8ECD4368155BF /* GtmuxUsageWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		AA8D8810F29D1DA9C38C863B54FCCAC0 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = C827D3825615A0601D04800C30CA94F4 /* main.swift */; };
+		AACC4FD1D570300601570C84CCF25508 /* MacUsageWidgetSupport in Frameworks */ = {isa = PBXBuildFile; productRef = A63EFCF7FCD2FE0C94E1EBA277016403 /* MacUsageWidgetSupport */; };
+		BA72B799DFB0E6CD28E30D66C1745C47 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D2C54B05043DA1E5C0E8F46666B1A65C /* Cocoa.framework */; };
+		D818698391D19873D4F77A4E8EDDDF00 /* GtmuxBarCore in Frameworks */ = {isa = PBXBuildFile; productRef = 935DE1076B7B43D68E4E076F780075F1 /* GtmuxBarCore */; };
+		DDEF89892066BDB46F8F4F3B6A6F4CC5 /* MacUsageWidgetSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 1911069F7F1DCF2F2D9216C9C5291A0E /* MacUsageWidgetSupport */; };
+		F515BECADFF29F828EF207188ADA2A6A /* GtmuxUsageWidgets in Frameworks */ = {isa = PBXBuildFile; productRef = 80DDFF505C9FFC2785F89F950C7AEB35 /* GtmuxUsageWidgets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		E5038E52989C4285A4F78C7BBCE4F996 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3C33F99B480B109314B37308AE1764B7 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A30465E65BB850B378D35120A7E9DD0E;
+			remoteInfo = GtmuxUsageWidget;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		7D85C483F67BEE4CD9975F9E8A3CC87D /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				9D1BCB1955E066AE5E782C140BC770CD /* GtmuxUsageWidget.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		1B79393B9ACFDC2E20E10A88A1980859 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		1E09842EB526C09A4445F7F948A65E22 /* Gtmux.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Gtmux.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		334FA1DFD3DCD13B7BF475AE551AE458 /* Localizable.xcstrings */ = {isa = PBXFileReference; includeInIndex = 1; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		36EC19B3B2F87CCA54326A9707CDD4DC /* MacUsageConfiguration.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MacUsageConfiguration.swift; sourceTree = "<group>"; };
+		8D9DBA7CFA35E43886B8ECD4368155BF /* GtmuxUsageWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GtmuxUsageWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		C827D3825615A0601D04800C30CA94F4 /* main.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		D2C54B05043DA1E5C0E8F46666B1A65C /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk/System/Library/Frameworks/Cocoa.framework; sourceTree = DEVELOPER_DIR; };
+		D6E173DAB21409FDC1C0392FEFB2E642 /* UsageWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UsageWidget.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		9750850D4436199379BB57365D40BD79 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1E760DD43ECE226C43D4AE4463176BB8 /* Cocoa.framework in Frameworks */,
+				AACC4FD1D570300601570C84CCF25508 /* MacUsageWidgetSupport in Frameworks */,
+				D818698391D19873D4F77A4E8EDDDF00 /* GtmuxBarCore in Frameworks */,
+				0AA77D646AE3EFA73C0DFDDA01C6C0BE /* GtmuxUsageWidgets in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D6D25DB6DAE350EE446BD2A837C94FC7 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BA72B799DFB0E6CD28E30D66C1745C47 /* Cocoa.framework in Frameworks */,
+				DDEF89892066BDB46F8F4F3B6A6F4CC5 /* MacUsageWidgetSupport in Frameworks */,
+				F515BECADFF29F828EF207188ADA2A6A /* GtmuxUsageWidgets in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		118AA375CE6957D1246C6C52FF64B9F2 /* Widget */ = {
+			isa = PBXGroup;
+			children = (
+				36EC19B3B2F87CCA54326A9707CDD4DC /* MacUsageConfiguration.swift */,
+				D6E173DAB21409FDC1C0392FEFB2E642 /* UsageWidget.swift */,
+				1B79393B9ACFDC2E20E10A88A1980859 /* Info.plist */,
+				334FA1DFD3DCD13B7BF475AE551AE458 /* Localizable.xcstrings */,
+			);
+			name = Widget;
+			path = Widget;
+			sourceTree = "<group>";
+		};
+		4EFD1830D60A5B4B368B5D62EEAC0512 /* WidgetHost */ = {
+			isa = PBXGroup;
+			children = (
+				C827D3825615A0601D04800C30CA94F4 /* main.swift */,
+			);
+			name = WidgetHost;
+			path = WidgetHost;
+			sourceTree = "<group>";
+		};
+		9186726AB88C87F79F148367AFB01A9A /* OS X */ = {
+			isa = PBXGroup;
+			children = (
+				D2C54B05043DA1E5C0E8F46666B1A65C /* Cocoa.framework */,
+			);
+			name = "OS X";
+			sourceTree = "<group>";
+		};
+		A0C82ECF6266CA2D3D3B42E1BEBC431A = {
+			isa = PBXGroup;
+			children = (
+				FA71B9FE1072E9F720558FC045168754 /* Products */,
+				EF8458E4EF149A3B2D69CE451897773A /* Frameworks */,
+				118AA375CE6957D1246C6C52FF64B9F2 /* Widget */,
+				4EFD1830D60A5B4B368B5D62EEAC0512 /* WidgetHost */,
+			);
+			sourceTree = "<group>";
+		};
+		EF8458E4EF149A3B2D69CE451897773A /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				9186726AB88C87F79F148367AFB01A9A /* OS X */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		FA71B9FE1072E9F720558FC045168754 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				8D9DBA7CFA35E43886B8ECD4368155BF /* GtmuxUsageWidget.appex */,
+				1E09842EB526C09A4445F7F948A65E22 /* Gtmux.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		67243BEAADFB3130C5188B3B0E0648A0 /* Gtmux */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3049BB2E1CE1DD528607309C95A9165F /* Build configuration list for PBXNativeTarget "Gtmux" */;
+			buildPhases = (
+				0EE26A07CD7D3BEE4D4457F715B7CB97 /* Sources */,
+				9750850D4436199379BB57365D40BD79 /* Frameworks */,
+				E504F60A372B606D19E83594ACB0F7D4 /* Resources */,
+				7D85C483F67BEE4CD9975F9E8A3CC87D /* Embed App Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				EB66D4DCA85B9EC93EFBFF4C3AC847E5 /* PBXTargetDependency */,
+			);
+			name = Gtmux;
+			packageProductDependencies = (
+				A63EFCF7FCD2FE0C94E1EBA277016403 /* MacUsageWidgetSupport */,
+				935DE1076B7B43D68E4E076F780075F1 /* GtmuxBarCore */,
+				6887CA760FE8C7959571215B580B2AC1 /* GtmuxUsageWidgets */,
+			);
+			productName = Gtmux;
+			productReference = 1E09842EB526C09A4445F7F948A65E22 /* Gtmux.app */;
+			productType = "com.apple.product-type.application";
+		};
+		A30465E65BB850B378D35120A7E9DD0E /* GtmuxUsageWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8FB611A2B186E9895A707C2536D86311 /* Build configuration list for PBXNativeTarget "GtmuxUsageWidget" */;
+			buildPhases = (
+				B4B27A31DC8A4AE95F0E257135F307CE /* Sources */,
+				D6D25DB6DAE350EE446BD2A837C94FC7 /* Frameworks */,
+				E1868AE64E34B42D136C1892C35FA02E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = GtmuxUsageWidget;
+			packageProductDependencies = (
+				1911069F7F1DCF2F2D9216C9C5291A0E /* MacUsageWidgetSupport */,
+				80DDFF505C9FFC2785F89F950C7AEB35 /* GtmuxUsageWidgets */,
+			);
+			productName = GtmuxUsageWidget;
+			productReference = 8D9DBA7CFA35E43886B8ECD4368155BF /* GtmuxUsageWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		3C33F99B480B109314B37308AE1764B7 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 2600;
+			};
+			buildConfigurationList = 2CA61F30B0463A96A97A5CB1476266EC /* Build configuration list for PBXProject "GtmuxWidgets" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = A0C82ECF6266CA2D3D3B42E1BEBC431A;
+			minimizedProjectReferenceProxies = 0;
+			packageReferences = (
+				C31DDAD5BEFCC38B18014158867E61F7 /* XCLocalSwiftPackageReference "." */,
+				16902ECE54E0DA41D45D1B7930E3D630 /* XCLocalSwiftPackageReference "UsageWidgets" */,
+			);
+			preferredProjectObjectVersion = 100;
+			productRefGroup = FA71B9FE1072E9F720558FC045168754 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A30465E65BB850B378D35120A7E9DD0E /* GtmuxUsageWidget */,
+				67243BEAADFB3130C5188B3B0E0648A0 /* Gtmux */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		E1868AE64E34B42D136C1892C35FA02E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1F97EB8872884089FF5CB86726D23B21 /* Localizable.xcstrings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E504F60A372B606D19E83594ACB0F7D4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1CA58A64C0FFA083604E56C33E9F31F4 /* Localizable.xcstrings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		0EE26A07CD7D3BEE4D4457F715B7CB97 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA8D8810F29D1DA9C38C863B54FCCAC0 /* main.swift in Sources */,
+				40744BF258F1E76C618E372C48EC823B /* MacUsageConfiguration.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B4B27A31DC8A4AE95F0E257135F307CE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8C4F002DD92B303ACE2330DF0167868B /* UsageWidget.swift in Sources */,
+				42E0DF7A804842A1FBB41DC2381A6CF2 /* MacUsageConfiguration.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		EB66D4DCA85B9EC93EFBFF4C3AC847E5 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = GtmuxUsageWidget;
+			target = A30465E65BB850B378D35120A7E9DD0E /* GtmuxUsageWidget */;
+			targetProxy = E5038E52989C4285A4F78C7BBCE4F996 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		376125FF5C020AC5213AA3E5BBEB1DE8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		3FAA6F92ED660285A2C60AF2A21CB02B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGNING_ALLOWED = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				GTMUX_WIDGET_BUNDLE_IDENTIFIER = com.gtmux.menubar.usage;
+				INFOPLIST_FILE = Widget/Info.plist;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(GTMUX_WIDGET_BUNDLE_IDENTIFIER)";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		52E16112DBEABDD284E4D5774883EDB4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGNING_ALLOWED = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = NO;
+				EXECUTABLE_NAME = GtmuxBar;
+				GENERATE_INFOPLIST_FILE = NO;
+				GTMUX_HOST_BUNDLE_IDENTIFIER = com.gtmux.menubar;
+				GTMUX_HOST_INFO_FILE = "build/Parent-Info.plist";
+				GTMUX_HOST_PREVIEW_CONDITIONS = "";
+				INFOPLIST_FILE = "$(GTMUX_HOST_INFO_FILE)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(GTMUX_HOST_BUNDLE_IDENTIFIER)";
+				PRODUCT_MODULE_NAME = GtmuxWidgetHost;
+				SDKROOT = macosx;
+				SKIP_INSTALL = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) $(GTMUX_HOST_PREVIEW_CONDITIONS)";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		B142815E459BD018D5EE603656F78628 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGNING_ALLOWED = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = NO;
+				EXECUTABLE_NAME = GtmuxBar;
+				GENERATE_INFOPLIST_FILE = NO;
+				GTMUX_HOST_BUNDLE_IDENTIFIER = com.gtmux.menubar;
+				GTMUX_HOST_INFO_FILE = "build/Parent-Info.plist";
+				GTMUX_HOST_PREVIEW_CONDITIONS = "";
+				INFOPLIST_FILE = "$(GTMUX_HOST_INFO_FILE)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(GTMUX_HOST_BUNDLE_IDENTIFIER)";
+				PRODUCT_MODULE_NAME = GtmuxWidgetHost;
+				SDKROOT = macosx;
+				SKIP_INSTALL = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) $(GTMUX_HOST_PREVIEW_CONDITIONS)";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		BAD68BDCE04139354A4C6C723775803C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGNING_ALLOWED = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				GTMUX_WIDGET_BUNDLE_IDENTIFIER = com.gtmux.menubar.usage;
+				INFOPLIST_FILE = Widget/Info.plist;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(GTMUX_WIDGET_BUNDLE_IDENTIFIER)";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		DA4688A8226490816A31F06CFF4BB44A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		2CA61F30B0463A96A97A5CB1476266EC /* Build configuration list for PBXProject "GtmuxWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DA4688A8226490816A31F06CFF4BB44A /* Debug */,
+				376125FF5C020AC5213AA3E5BBEB1DE8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3049BB2E1CE1DD528607309C95A9165F /* Build configuration list for PBXNativeTarget "Gtmux" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				52E16112DBEABDD284E4D5774883EDB4 /* Release */,
+				B142815E459BD018D5EE603656F78628 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		8FB611A2B186E9895A707C2536D86311 /* Build configuration list for PBXNativeTarget "GtmuxUsageWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3FAA6F92ED660285A2C60AF2A21CB02B /* Release */,
+				BAD68BDCE04139354A4C6C723775803C /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		16902ECE54E0DA41D45D1B7930E3D630 /* XCLocalSwiftPackageReference "UsageWidgets" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../shared/UsageWidgets;
+		};
+		C31DDAD5BEFCC38B18014158867E61F7 /* XCLocalSwiftPackageReference "." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = .;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		1911069F7F1DCF2F2D9216C9C5291A0E /* MacUsageWidgetSupport */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C31DDAD5BEFCC38B18014158867E61F7 /* XCLocalSwiftPackageReference "." */;
+			productName = MacUsageWidgetSupport;
+		};
+		6887CA760FE8C7959571215B580B2AC1 /* GtmuxUsageWidgets */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 16902ECE54E0DA41D45D1B7930E3D630 /* XCLocalSwiftPackageReference "UsageWidgets" */;
+			productName = GtmuxUsageWidgets;
+		};
+		80DDFF505C9FFC2785F89F950C7AEB35 /* GtmuxUsageWidgets */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 16902ECE54E0DA41D45D1B7930E3D630 /* XCLocalSwiftPackageReference "UsageWidgets" */;
+			productName = GtmuxUsageWidgets;
+		};
+		935DE1076B7B43D68E4E076F780075F1 /* GtmuxBarCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C31DDAD5BEFCC38B18014158867E61F7 /* XCLocalSwiftPackageReference "." */;
+			productName = GtmuxBarCore;
+		};
+		A63EFCF7FCD2FE0C94E1EBA277016403 /* MacUsageWidgetSupport */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C31DDAD5BEFCC38B18014158867E61F7 /* XCLocalSwiftPackageReference "." */;
+			productName = MacUsageWidgetSupport;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 3C33F99B480B109314B37308AE1764B7 /* Project object */;
+}
