@@ -10,6 +10,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 REPO_ROOT="$(cd .. && pwd)"
+python3 "$REPO_ROOT/scripts/check_go_security.py"
 
 BUNDLE="build/Gtmux.app"
 APP_BIN="GtmuxBar"

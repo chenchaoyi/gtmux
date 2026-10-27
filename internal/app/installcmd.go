@@ -24,7 +24,7 @@ import (
 func splitTarget(args []string) (target string, rest []string, help bool) {
 	for _, a := range args {
 		switch a {
-		case "hooks", "app", "all", "refresh-owned":
+		case "hooks", "app", "all", "cloudflared", "refresh-owned":
 			target = a
 		case "-h", "--help":
 			return "", nil, true
@@ -46,6 +46,18 @@ func cmdInstall(args []string) int {
 		}
 	}
 	switch target {
+	case "cloudflared":
+		yes := false
+		for _, arg := range rest {
+			if arg != "-y" && arg != "--yes" {
+				return 2
+			}
+			yes = true
+		}
+		if requireCloudflared(yes) == "" {
+			return 1
+		}
+		return checkRunningCloudflaredUpdate()
 	case "refresh-owned":
 		if len(rest) != 2 || rest[0] != "--agent" || rest[1] != "dsh" {
 			i18n.Sae("Use gtmux install refresh-owned --agent dsh", "请使用 gtmux install refresh-owned --agent dsh")
@@ -58,6 +70,9 @@ func cmdInstall(args []string) int {
 		return installAppAct()
 	case "all":
 		if rc := cmdInstallHooks(rest); rc != 0 {
+			return rc
+		}
+		if rc := updateInstalledCloudflared(); rc != 0 {
 			return rc
 		}
 		if !hostplatform.Current().MenuBar {
@@ -165,7 +180,9 @@ func askTarget(install bool) string {
 }
 
 func installUsage() int {
-	i18n.Say("usage: gtmux install [hooks|app|all|refresh-owned]", "用法：gtmux install [hooks|app|all|refresh-owned]")
+	i18n.Say("usage: gtmux install [hooks|app|all|cloudflared|refresh-owned]", "用法：gtmux install [hooks|app|all|cloudflared|refresh-owned]")
+	i18n.Say("  cloudflared [--yes]  install/update the Standard tunnel client through its original channel",
+		"  cloudflared [--yes]  通过原渠道安装或更新 Standard 隧道客户端")
 	i18n.Say("  hooks  install the agent hooks (how the radar sees who's waiting)",
 		"  hooks  安装 agent 钩子（雷达靠它知道谁在等你）")
 	i18n.Say("  app    install the menu-bar app (it delivers desktop notifications)",

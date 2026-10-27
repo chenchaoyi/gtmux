@@ -1926,10 +1926,12 @@ code, and open the same access.
 | Command | Purpose |
 |---|---|
 | `gtmux doctor [--fix [--yes] \| --bundle]` | check this Mac, then set up what is missing |
-| `gtmux install [hooks\|app]` | install agent hooks or the menu-bar app |
+| `gtmux install [hooks\|app\|cloudflared]` | install agent hooks or the menu-bar app |
 | `gtmux uninstall [hooks\|app]` | take back out what gtmux installed |
 | `gtmux update [--check]` | update gtmux, the CLI and the menu-bar app |
 | `gtmux app` | open the menu-bar app |
+
+`gtmux install cloudflared [--yes]` maintains the optional Standard client. Normal updates also check an existing client; `--cli-only` skips it. Dependency or running-connector verification failure returns 1 without undoing installed components. See [security updates](install.md#standard-tunnel-security-updates).
 
 `gtmux doctor --progress` also shows progress in piped output; `--bundle` collects diagnostics. See [installation](install.md) for setup.
 

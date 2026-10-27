@@ -9,6 +9,7 @@ project_name: gtmux
 
 before:
   hooks:
+    - python3 scripts/check_go_security.py
     - go mod tidy
 
 builds:

@@ -1647,10 +1647,12 @@ on`）能往更短的那份「可输入」清单里打字。owner 设置和 HQ A
 | 命令 | 用途 |
 |---|---|
 | `gtmux doctor [--fix [--yes] \| --bundle]` | 体检这台 Mac，然后把缺的配上 |
-| `gtmux install [hooks\|app]` | 安装 agent hook 或菜单栏 app |
+| `gtmux install [hooks\|app\|cloudflared]` | 安装 agent hook 或菜单栏 app |
 | `gtmux uninstall [hooks\|app]` | 把 gtmux 装过的东西撤掉 |
 | `gtmux update [--check]` | 更新 gtmux，CLI 和菜单栏 app 一起 |
 | `gtmux app` | 打开菜单栏 app |
+
+`gtmux install cloudflared [--yes]` 安装或更新可选的 Standard 客户端。普通更新也会检查已有客户端，`--cli-only` 跳过。依赖更新或运行版本确认未完成时返回 1，已安装组件保留。详见[安全更新](install.zh.md#standard-隧道安全更新)。
 
 `gtmux doctor --progress` 在非交互输出中也显示检查进度；`--bundle` 收集诊断。安装步骤见[安装文档](install.zh.md)。
 

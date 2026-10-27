@@ -267,11 +267,9 @@ func tunnelHosted(port int, name string, yes bool) int {
 			"gtmux tunnel: 此构建未启用托管模式。用 `gtmux tunnel --quick` 走临时隧道，或设置 GTMUX_TUNNEL_REG。")
 		return 2
 	}
-	bin := lookTool("cloudflared")
+	bin := requireCloudflared(yes)
 	if bin == "" {
-		if bin = ensureCloudflared(yes); bin == "" {
-			return 1
-		}
+		return 1
 	}
 
 	i18n.Say("Requesting your stable tunnel address…", "正在申请你的固定隧道地址…")
@@ -448,11 +446,9 @@ func resolveDeviceID() string {
 var tryCloudflareRe = regexp.MustCompile(`https://[a-z0-9-]+\.trycloudflare\.com`)
 
 func tunnelQuick(port int, name string, yes bool) int {
-	bin := lookTool("cloudflared")
+	bin := requireCloudflared(yes)
 	if bin == "" {
-		if bin = ensureCloudflared(yes); bin == "" {
-			return 1
-		}
+		return 1
 	}
 	token, err := startLocalRadar(port)
 	if err != nil {
@@ -518,6 +514,10 @@ func startLocalRadar(port int) (string, error) {
 // runCloudflared runs cloudflared, echoes its log dimmed, calls onReady once on
 // the first line matching readyRe, and relays Ctrl-C for a clean shutdown.
 func runCloudflared(bin string, args []string, readyRe *regexp.Regexp, onReady func(line string)) int {
+	if _, err := checkCloudflared(bin); err != nil {
+		cloudflaredSecurityError(err)
+		return 1
+	}
 	cmd := exec.Command(bin, args...)
 	stderr, err := cmd.StderrPipe()
 	if err != nil {

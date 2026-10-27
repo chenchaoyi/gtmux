@@ -964,3 +964,21 @@ Saved homes, histories and hook files SHALL NOT establish CLI presence for docto
 - **WHEN** the shared resolver finds the Gemini CLI but no settings file exists
 - **THEN** doctor offers hook configuration rather than claiming corrupt settings
 - **AND** a completed configuration is labelled configured, without claiming a live session has loaded it
+
+### Requirement: Tunnel client security diagnosis
+
+Doctor SHALL probe installed cloudflared with bounded time/output, even when Direct
+is selected. Old or unknown releases SHALL be recommended findings. A missing optional
+client SHALL remain informational. Read-only checks SHALL NOT install or restart it.
+
+#### Scenario: Updated file with an old running connector
+
+- **WHEN** a managed Standard service is active with old or unverified build metrics
+- **THEN** doctor SHALL distinguish installed and running versions and show the recovery
+  command, explaining that a restart reconnects long-lived connections
+
+#### Scenario: Direct is already in use
+
+- **WHEN** Direct is selected and cloudflared meets its security floor
+- **THEN** doctor SHALL explain that Direct does not use this executable
+- **AND** SHALL NOT suggest a cloudflared restart for Direct

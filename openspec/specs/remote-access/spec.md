@@ -1507,3 +1507,32 @@ The shared Codex parser SHALL exclude a leading observed `external_codex_apps_op
 
 - **WHEN** Desktop writes a page-open control and then a genuine user message
 - **THEN** only the genuine message opens a user turn on every consumer of the shared transcript
+
+### Requirement: Standard client certificate security floor
+
+Every gtmux-managed Standard foreground, quick and service installation path SHALL
+verify cloudflared before provision or launch. It SHALL reject versions below
+2026.10.2, unknown releases and prereleases; non-Homebrew macOS requires 2026.10.3.
+The shared process runner SHALL recheck before execution. Direct SHALL NOT require
+cloudflared. Updates SHALL preserve installation channel and TLS verification.
+
+#### Scenario: Unsafe client cannot launch
+
+- **WHEN** the selected client reports an old or unverifiable version
+- **THEN** gtmux SHALL require a successful original-channel update before launch
+- **AND** a failed update SHALL leave the tunnel unstarted and explain the next action
+
+#### Scenario: Dependency maintenance does not enroll remote access
+
+- **WHEN** a normal install/update finds cloudflared already present
+- **THEN** it SHALL maintain the security floor without enabling a tunnel
+- **AND** read-only update checks and CLI-only updates SHALL NOT update the dependency
+- **AND** an absent optional client SHALL NOT be added by routine dependency maintenance
+
+#### Scenario: Running connector differs from installed client
+
+- **WHEN** a managed Standard service is active after dependency maintenance
+- **THEN** its dedicated loopback metrics SHALL verify the running release
+- **AND** old or unverified runtime SHALL return an incomplete result with an explicit
+  recovery action and long-lived connection warning, without silently restarting it
+- **AND** legacy login services and other hosts remain outside this runtime assertion
