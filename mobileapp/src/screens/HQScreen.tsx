@@ -33,6 +33,7 @@ import {paneLines} from '../ui/term';
 import {SessionReset} from '../ui/chatWindow';
 import {ChatView} from '../ui/ChatView';
 import {CHROME_ANIM_MS, ChromeState, chromeDecision} from '../ui/liveEdge';
+import {useKeyboardChrome} from '../ui/useKeyboardChrome';
 import {HQ_INSPECTOR_WIDTH, READING_WIDTH, SizeClass} from '../ui/layout';
 import {KeyBus} from '../keys/bus';
 import {BoardSheet} from './BoardSheet';
@@ -167,7 +168,8 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
   //
   // The content underneath carries a constant top padding of `chromeH`, so the oldest
   // line can still be scrolled clear of the chrome.
-  const collapse = useRef(new Animated.Value(0)).current;
+  const scrollCollapse = useRef(new Animated.Value(0)).current;
+  const {collapse, keyboardVisible} = useKeyboardChrome(scrollCollapse);
   const [headerH, setHeaderH] = useState(0);
   const [tabsH, setTabsH] = useState(0);
   // Both bands fold on one driver, so the distance the chrome slides out — and the padding
@@ -183,7 +185,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
       const d = chromeDecision(chrome.current, {gap, now: Date.now()});
       if (!d.change) return;
       chrome.current = d;
-      Animated.timing(collapse, {
+      Animated.timing(scrollCollapse, {
         toValue: d.hidden ? 1 : 0,
         duration: CHROME_ANIM_MS,
         // Transform + opacity only, so the fold runs on the UI thread.
@@ -192,7 +194,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
         if (finished) runEdge(lastGap.current); // answer whatever arrived mid-flight
       });
     },
-    [collapse],
+    [scrollCollapse],
   );
   const onLiveEdge = useCallback(
     (gap: number) => {
@@ -317,11 +319,11 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
   // stale collapsed state from the previous zone would hide the header with nothing
   // scrolled.
   useEffect(() => {
-    collapse.setValue(0);
+    scrollCollapse.setValue(0);
     zoneOffset.setValue(0); // the new zone's scroll view mounts at 0
     chrome.current = {hidden: false, settledAt: 0}; // don't carry a fold across a zone switch
     lastGap.current = 0;
-  }, [activeZone, collapse, zoneOffset]);
+  }, [activeZone, scrollCollapse, zoneOffset]);
 
 
   // The shared Composer has both text and terminal control keys. Dropping key-only
@@ -580,10 +582,10 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
   );
   const composerEl = (
     <>
-        {showRow(runningTasks) && (
+        {!keyboardVisible && showRow(runningTasks) && (
           <RunningRow tally={runningTasks} lang={lang} restColor={pal.fg2} onOpen={() => setTasksOpen(true)} />
         )}
-        <View style={styles.chips}>
+        {!keyboardVisible && <View style={styles.chips}>
           {selected && (
             <View style={[styles.selPill, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
               <Text style={[styles.selText, {color: pal.fg2}]} numberOfLines={1}>
@@ -606,7 +608,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
               </TouchableOpacity>
             ))}
           </ScrollView>
-        </View>
+        </View>}
         {failedSend && (
           <SendFailedBar
             text={failedSend.text ?? failedSend.key ?? ''}
@@ -845,7 +847,10 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
       </View>
 
       <Animated.View
-        pointerEvents="box-none"
+        testID="hq-chrome"
+        pointerEvents={keyboardVisible ? 'none' : 'box-none'}
+        accessibilityElementsHidden={keyboardVisible}
+        importantForAccessibility={keyboardVisible ? 'no-hide-descendants' : 'auto'}
         style={[
           styles.chrome,
           {

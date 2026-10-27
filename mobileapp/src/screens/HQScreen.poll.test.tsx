@@ -1,5 +1,6 @@
 import React from 'react';
 import renderer, {act} from 'react-test-renderer';
+import {Keyboard, type KeyboardEvent} from 'react-native';
 import {UsageSheet} from './UsageSheet';
 import {KnowledgeSheet} from './KnowledgeSheet';
 import {HQResourceRequest} from '../state/WorkspaceContext';
@@ -64,6 +65,28 @@ afterEach(() => {
   if (tree) act(() => tree!.unmount());
   tree = undefined;
   jest.useRealTimers();
+  jest.restoreAllMocks();
+});
+
+test('the software keyboard hides HQ chrome and secondary composer rows, then restores them', async () => {
+  const listeners = new Map<string, (event: KeyboardEvent) => void>();
+  jest.spyOn(Keyboard, 'isVisible').mockReturnValue(false);
+  jest.spyOn(Keyboard, 'addListener').mockImplementation((name, listener) => {
+    listeners.set(name, listener);
+    return {remove: () => { listeners.delete(name); }} as ReturnType<typeof Keyboard.addListener>;
+  });
+  mockClient.transcript.mockResolvedValue({turns: []});
+  await mount('idle', 'compact');
+  const chrome = () => tree!.root.findAllByProps({testID: 'hq-chrome'})[0];
+  const chips = () => tree!.root.findAllByProps({testID: 'hq-chip-Brief'});
+  expect(chips().length).toBeGreaterThan(0);
+  await act(async () => listeners.get('keyboardWillShow')!({duration: 0, endCoordinates: {height: 200}} as KeyboardEvent));
+  expect(chrome().props.pointerEvents).toBe('none');
+  expect(chrome().props.accessibilityElementsHidden).toBe(true);
+  expect(chips()).toHaveLength(0);
+  await act(async () => listeners.get('keyboardWillHide')!({duration: 0, endCoordinates: {height: 0}} as KeyboardEvent));
+  expect(chrome().props.accessibilityElementsHidden).toBe(false);
+  expect(chips().length).toBeGreaterThan(0);
 });
 
 test('HQ zone tabs expose their selected state and change the active zone', async () => {

@@ -444,6 +444,8 @@ The quiet state must tell the truth. "Nothing needs your call right now." plus a
 ### The HQ page's top is an overlay too (2026-09-12)
 
 (Compact shell and narrow regular main panes. With enough room for the inspector, the header is static and does not fold; see §5.)
+The software keyboard takes precedence over scroll position through the same `useKeyboardChrome` hook as Detail. While it is visible, the floating header is hidden from drawing, hit testing and accessibility; secondary quick-command and task-summary rows are temporarily removed to leave room for input. The composer stays mounted, preserving drafts. Closing the keyboard restores the controls according to the current scroll position. Wide HQ panes retain their static header.
+
 The HQ page's header (the verdict sentence, fleet counts, the three doors) and its section-tab row use the same mechanism as Detail's top chrome
 (see "chrome is an overlay" above): one driver, both bands fold together, sliding out with `translateY`,
 the scroll view's frame below unchanged, each of the three sections carrying a constant top inset (`chromeH` = header height + tab-row height).
