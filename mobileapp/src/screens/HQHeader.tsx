@@ -143,7 +143,9 @@ function Dest({
   return (
     <TouchableOpacity
       testID={testID}
+      accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityValue={{text: value}}
       activeOpacity={0.6}
       onPress={onPress}
       style={[styles.dest, {borderColor: pal.divider}]}>
@@ -196,7 +198,7 @@ function GridRow({
     );
   }
   return (
-    <TouchableOpacity testID={testID} onPress={onPress} hitSlop={hit} activeOpacity={0.6} style={styles.row}>
+    <TouchableOpacity testID={testID} accessibilityRole="button" onPress={onPress} hitSlop={hit} activeOpacity={0.6} style={styles.row}>
       {body}
     </TouchableOpacity>
   );
@@ -213,7 +215,7 @@ export function HQHeader({
     <View>
       <View style={styles.strip}>
         {onBack && (
-          <TouchableOpacity onPress={onBack} hitSlop={hit}>
+          <TouchableOpacity testID="hq-back" accessibilityRole="button" accessibilityLabel={zh ? '返回' : 'Back'} onPress={onBack} hitSlop={hit}>
             <Text style={[styles.back, {color: pal.fg2}]}>‹</Text>
           </TouchableOpacity>
         )}
@@ -234,6 +236,8 @@ export function HQHeader({
       <View style={[styles.card, {backgroundColor: pal.surface}]}>
         <TouchableOpacity
           testID="hq-verdict"
+          accessibilityRole="button"
+          accessibilityState={{expanded: open}}
           activeOpacity={0.6}
           onPress={onToggle}
           style={styles.verdictRow}>

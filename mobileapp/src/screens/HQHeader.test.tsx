@@ -1,5 +1,5 @@
 import React from 'react';
-import {Text} from 'react-native';
+import {Text, TouchableOpacity} from 'react-native';
 import renderer, {act} from 'react-test-renderer';
 import {destLines, HQHeader} from './HQHeader';
 import {HeaderModel} from './hqHeaderModel';
@@ -35,7 +35,9 @@ function render(m: HeaderModel, open = true) {
         conn="live"
         boardValue="updated 1s ago"
         knowledgeValue="352 entries"
+        usageValue="today 3.3M · week 16.7M"
         onOpenKnowledge={() => {}}
+        onOpenUsage={() => {}}
         open={open}
         onToggle={() => {}}
         onBack={() => {}}
@@ -47,6 +49,24 @@ function render(m: HeaderModel, open = true) {
   });
   return tree!;
 }
+
+test('HQ destinations and disclosure expose actionable roles, readings and expanded state', () => {
+  const tree = render(model(), false);
+  for (const [id, value] of [
+    ['hq-board-open', 'updated 1s ago'],
+    ['hq-knowledge-open', '352 entries'],
+    ['hq-usage-open', 'today 3.3M · week 16.7M'],
+  ]) {
+    const button = tree.root.findAllByType(TouchableOpacity).find(n => n.props.testID === id)!;
+    expect(button.props.accessibilityRole).toBe('button');
+    expect(button.props.accessibilityValue).toEqual({text: value});
+  }
+  expect(tree.root.findByProps({testID: 'hq-verdict'}).props.accessibilityState).toEqual({expanded: false});
+  act(() => tree.unmount());
+  const expanded = render(model(), true);
+  expect(expanded.root.findByProps({testID: 'hq-verdict'}).props.accessibilityState).toEqual({expanded: true});
+  act(() => expanded.unmount());
+});
 
 /** Every string rendered under one node, in order. */
 type Node = {findAllByType: (t: unknown) => Array<{props: {children?: unknown}}>};

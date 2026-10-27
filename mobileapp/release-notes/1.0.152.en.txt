@@ -1,0 +1,4 @@
+HQ and knowledge
+• Keep the HQ conversation readable on iPad: use tabs when space is limited and side-by-side panels when there is room.
+• Open a knowledge search result with one tap while the keyboard is visible.
+• Improve button labels, selected tabs and expanded states for assistive technologies.

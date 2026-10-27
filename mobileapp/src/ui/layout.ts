@@ -42,6 +42,15 @@ export function useSizeClass(): SizeClass {
 /** The sidebar's width on the regular shell: 300 on a wide window, 280 under 1000. */
 export const sidebarWidth = (windowWidth: number): number => (windowWidth >= 1000 ? 300 : 280);
 
+export const HQ_INSPECTOR_WIDTH = 360;
+const HQ_CONSOLE_MIN_WIDTH = 440;
+
+/** A regular shell can still have a narrow main pane, especially in portrait. */
+export function hqInspectorFits(windowWidth: number, sidebarHidden = false): boolean {
+  const mainWidth = windowWidth - (sidebarHidden ? 0 : sidebarWidth(windowWidth));
+  return mainWidth >= HQ_CONSOLE_MIN_WIDTH + HQ_INSPECTOR_WIDTH;
+}
+
 /**
  * The reading width for chat, the HQ console and settings on the regular shell: text
  * wider than this is harder to read, not easier. The terminal never caps (more columns

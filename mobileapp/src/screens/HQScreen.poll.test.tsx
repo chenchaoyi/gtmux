@@ -6,6 +6,7 @@ import {HQResourceRequest} from '../state/WorkspaceContext';
 import {HQView} from './HQScreen';
 import {ChatView} from '../ui/ChatView';
 import {Agent} from '../api/types';
+import type {DigestRow} from '../api/client';
 
 // The visible HQ console re-reads its transcript whatever the status. It used to poll
 // only while working, so an idle or waiting HQ whose conversation moved without a
@@ -19,7 +20,7 @@ jest.mock('./HQHeader', () => ({HQHeader: () => null}));
 
 const mockClient = {
   tasks: jest.fn(async () => []),
-  digest: jest.fn(async () => []),
+  digest: jest.fn(async (): Promise<DigestRow[]> => []),
   usage: jest.fn(async () => null),
   hqBoard: jest.fn(async () => ({exists: false})),
   hqKnowledge: jest.fn(async () => ({entries: [], topics: [], promotions: {pending: 0}, candidates: {pending: 0}})),
@@ -35,11 +36,11 @@ let tree: renderer.ReactTestRenderer | undefined;
 const shown = () => tree!.root.findByType(ChatView).props.turns[0]?.response;
 const calls = () => mockClient.transcript.mock.calls.length;
 
-async function mount(status: string, layout: 'regular' | 'compact', openResource?: HQResourceRequest) {
+async function mount(status: string, layout: 'regular' | 'compact', openResource?: HQResourceRequest, showInspector = true) {
   const hq = {pane_id: '%hq', agent: 'Claude Code', status, role: 'supervisor'} as Agent;
   mockContext.agents = [hq];
   await act(async () => {
-    tree = renderer.create(<HQView agent={hq} layout={layout} openResource={openResource} />);
+    tree = renderer.create(<HQView agent={hq} layout={layout} openResource={openResource} showInspector={showInspector} />);
   });
 }
 
@@ -50,10 +51,47 @@ beforeEach(() => {
   }) as unknown as typeof fetch;
   mockClient.transcript.mockReset();
 });
+
+test('a narrow iPad HQ uses zone tabs while keeping its resource sheets regular', async () => {
+  mockClient.transcript.mockResolvedValue({turns: []});
+  await mount('idle', 'regular', undefined, false);
+  expect(tree!.root.findAllByProps({testID: 'hq-inspector'})).toHaveLength(0);
+  expect(tree!.root.findAllByProps({testID: 'hq-tab-console'}).length).toBeGreaterThan(0);
+  expect(tree!.root.findByType(KnowledgeSheet).props.layout).toBe('regular');
+  expect(tree!.root.findByType(UsageSheet).props.layout).toBe('regular');
+});
 afterEach(() => {
   if (tree) act(() => tree!.unmount());
   tree = undefined;
   jest.useRealTimers();
+});
+
+test('HQ zone tabs expose their selected state and change the active zone', async () => {
+  mockClient.transcript.mockResolvedValue({turns: []});
+  await mount('idle', 'compact');
+  const tab = (zone: string) => tree!.root.findAllByProps({testID: `hq-tab-${zone}`})[0];
+  expect(tab('console').props.accessibilityRole).toBe('tab');
+  expect(tab('console').props.accessibilityState).toEqual({selected: true});
+  await act(async () => tab('calls').props.onPress());
+  expect(tab('calls').props.accessibilityState).toEqual({selected: true});
+  expect(tab('console').props.accessibilityState).toEqual({selected: false});
+});
+
+test('a waiting card keeps its selection and two actions as separate buttons', async () => {
+  mockClient.transcript.mockResolvedValue({turns: []});
+  mockClient.digest.mockResolvedValueOnce([
+    {pane_id: '%worker', loc: 'api', source: 'tmux', agent: 'Codex', status: 'waiting', ask: 'Run tests?'},
+  ]);
+  await mount('idle', 'compact');
+  const button = (id: string) => tree!.root.findAllByProps({testID: id})[0];
+  expect(button('hq-call-api').props.onPress).toBeUndefined();
+  for (const id of ['hq-call-select-api', 'hq-call-open-api', 'hq-call-ask-api']) {
+    expect(button(id).props.accessibilityRole).toBe('button');
+  }
+  await act(async () => button('hq-call-select-api').props.onPress());
+  expect(button('hq-call-select-api').props.accessibilityState).toEqual({selected: true});
+  await act(async () => button('hq-call-select-api').props.onPress());
+  expect(button('hq-call-select-api').props.accessibilityState).toEqual({selected: false});
 });
 
 describe.each(['regular', 'compact'] as const)('%s layout', layout => {

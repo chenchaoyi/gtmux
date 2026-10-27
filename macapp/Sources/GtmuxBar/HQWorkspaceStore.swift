@@ -189,7 +189,10 @@ final class HQWorkspaceStore: ObservableObject {
             DispatchQueue.main.async {
                 guard let self else { return }
                 self.loading = false
-                guard self.selection == expected, self.generation == token else { return }
+                guard self.selection == expected, self.generation == token else {
+                    if self.visible { self.refresh() }
+                    return
+                }
                 switch result {
                 case .success(let page):
                     let known = Set(self.oldMessages.map(\.id))
