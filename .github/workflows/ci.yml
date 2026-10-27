@@ -372,12 +372,18 @@ jobs:
       - name: Usage widget snapshot and bounded native transport
         run: swift test --package-path shared/UsageWidgets
 
+      - name: Native Mac host, WidgetKit metadata and bundled resources (unsigned)
+        run: bash macapp/Widget/build-extension.sh
+
       - name: swift test (model + design conformance)
         env:
           GTMUX_WORKSPACE_PREVIEW_DIR: ${{ runner.temp }}/hq-workspace-previews
+          GTMUX_WIDGET_RENDER_DIR: ${{ runner.temp }}/mac-widget-previews
         run: |
           mkdir -p "$GTMUX_WORKSPACE_PREVIEW_DIR"
-          cd macapp && swift test
+          # Release AppKit window/animation resources between test cases.
+          # One worker keeps desktop fixtures serial.
+          cd macapp && swift test --parallel --num-workers 1
 
       # These fixtures contain synthetic records only; never capture the installed app.
       - name: HQ synthetic UI previews
@@ -386,6 +392,15 @@ jobs:
         with:
           name: hq-workspace-previews
           path: ${{ runner.temp }}/hq-workspace-previews/*.png
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Native Mac widget synthetic previews
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: mac-widget-previews
+          path: ${{ runner.temp }}/mac-widget-previews/*.png
           retention-days: 7
           if-no-files-found: ignore
 

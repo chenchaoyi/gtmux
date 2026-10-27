@@ -6,7 +6,7 @@
 #   GTMUX_UNIVERSAL=1 ./build.sh   # universal (arm64 + x86_64) — used by CI
 #   GTMUX_VERSION=v1.2.3 ./build.sh
 #
-# Requires: Swift 5.9+ (Xcode CLT) and the Go toolchain (for the bundled CLI).
+# Requires: Xcode 15+ and the Go toolchain (for the bundled CLI).
 set -euo pipefail
 cd "$(dirname "$0")"
 REPO_ROOT="$(cd .. && pwd)"
@@ -22,16 +22,6 @@ VERSION="${GTMUX_VERSION:-$(cd "$REPO_ROOT" && git describe --tags --always --di
 P=github.com/chenchaoyi/gtmux/internal/app
 LDFLAGS="-s -w -X ${P}.Version=${VERSION} -X ${P}.TunnelRegSecret=${GTMUX_TUNNEL_REG:-} -X ${P}.RelayToken=${GTMUX_RELAY_TOKEN:-}"
 
-echo "==> swift build (release) — version ${VERSION}"
-if [ "${GTMUX_UNIVERSAL:-}" = "1" ]; then
-  swift build -c release --arch arm64 --arch x86_64
-  SWIFT_BIN=".build/apple/Products/Release/${APP_BIN}"
-else
-  swift build -c release
-  SWIFT_BIN=".build/release/${APP_BIN}"
-fi
-[ -f "$SWIFT_BIN" ] || { echo "swift build failed: missing $SWIFT_BIN" >&2; exit 1; }
-
 echo "==> go build gtmux CLI (cgo-free) to bundle"
 mkdir -p build
 if [ "${GTMUX_UNIVERSAL:-}" = "1" ]; then
@@ -44,14 +34,27 @@ else
   ( cd "$REPO_ROOT" && CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o "macapp/build/gtmux" ./cmd/gtmux )
 fi
 
+# Derive the Mac-only group from a real signature, never a personal team constant.
+WIDGET_TEAM=""
+WIDGET_GROUP=""
+if [ -n "${GTMUX_SIGN_ID:-}" ]; then
+  codesign --force --options runtime --entitlements Gtmux.entitlements --timestamp --sign "$GTMUX_SIGN_ID" build/gtmux
+  WIDGET_TEAM="$(codesign -dv --verbose=4 build/gtmux 2>&1 | awk -F= '/^TeamIdentifier=/{print $2}')"
+  [[ "$WIDGET_TEAM" =~ ^[A-Z0-9]{10}$ ]] || { echo "Cannot derive widget signing team" >&2; exit 1; }
+  WIDGET_GROUP="${WIDGET_TEAM}.com.gtmux.menubar.usage"
+fi
+WIDGET_VERSION="${VERSION#v}"
+[[ "$WIDGET_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || WIDGET_VERSION="0.0.0"
+python3 Widget/prepare_signing.py --team "$WIDGET_TEAM" --output build/widget-signing
+GTMUX_VERSION="$VERSION" GTMUX_WIDGET_VERSION="$WIDGET_VERSION" GTMUX_WIDGET_TEAM="$WIDGET_TEAM" GTMUX_WIDGET_GROUP="$WIDGET_GROUP" bash Widget/build-extension.sh
+
 echo "==> assembling $BUNDLE"
 rm -rf "$BUNDLE"
-mkdir -p "$BUNDLE/Contents/MacOS"
-# `|` delimiter: VERSION may be a branch name with '/' (workflow_dispatch builds).
-sed "s|__VERSION__|${VERSION}|g" Info.plist > "$BUNDLE/Contents/Info.plist"
-cp "$SWIFT_BIN" "$BUNDLE/Contents/MacOS/${APP_BIN}"
+ditto build/widget/Build/Products/Release/Gtmux.app "$BUNDLE"
 cp build/gtmux "$BUNDLE/Contents/MacOS/gtmux"
 chmod +x "$BUNDLE/Contents/MacOS/"*
+# Xcode embeds the extension, shared resource bundle and App Intents metadata.
+# Keep the resources in Contents/Resources/GtmuxUsageWidgets_GtmuxUsageWidgets.bundle.
 # App icon (the gtmux pane-grid logo) — Info.plist points CFBundleIconFile at it.
 if [ -f AppIcon.icns ]; then
   mkdir -p "$BUNDLE/Contents/Resources"
@@ -70,11 +73,15 @@ fi
 # macapp/, so the path is relative.
 ENT="Gtmux.entitlements"
 SIGN_ID="${GTMUX_SIGN_ID:-}"
+PARENT_ENT="build/widget-signing/parent.entitlements"
+WIDGET_ENT="build/widget-signing/widget.entitlements"
 if [ -n "$SIGN_ID" ]; then
   echo "==> code signing (Developer ID, hardened runtime, automation entitlement)"
   codesign --force --options runtime --entitlements "$ENT" --timestamp --sign "$SIGN_ID" "$BUNDLE/Contents/MacOS/gtmux"
-  codesign --force --options runtime --entitlements "$ENT" --timestamp --sign "$SIGN_ID" "$BUNDLE/Contents/MacOS/${APP_BIN}"
-  codesign --force --options runtime --entitlements "$ENT" --timestamp --sign "$SIGN_ID" "$BUNDLE"
+  codesign --force --options runtime --entitlements "$WIDGET_ENT" --timestamp --sign "$SIGN_ID" "$BUNDLE/Contents/PlugIns/GtmuxUsageWidget.appex"
+  codesign --force --options runtime --entitlements "$PARENT_ENT" --timestamp --sign "$SIGN_ID" "$BUNDLE/Contents/MacOS/${APP_BIN}"
+  codesign --force --options runtime --entitlements "$PARENT_ENT" --timestamp --sign "$SIGN_ID" "$BUNDLE"
+  codesign --verify --strict "$BUNDLE/Contents/PlugIns/GtmuxUsageWidget.appex"
   codesign --verify --strict --verbose=2 "$BUNDLE" || { echo "codesign verify failed" >&2; exit 1; }
   echo "   signed."
   # Notarize + staple when notary credentials are present, so the app opens on OTHER
@@ -110,7 +117,11 @@ else
   echo "==> ad-hoc code signing (set GTMUX_SIGN_ID='Developer ID Application: …' for a stable signature)"
   # Ad-hoc isn't hardened, so Apple Events aren't blocked — but carry the same
   # entitlement so a local `make app` behaves identically to the shipped build.
-  codesign --force --deep --entitlements "$ENT" --sign - "$BUNDLE"
+  codesign --force --entitlements "$ENT" --sign - "$BUNDLE/Contents/MacOS/gtmux"
+  codesign --force --entitlements "$WIDGET_ENT" --sign - "$BUNDLE/Contents/PlugIns/GtmuxUsageWidget.appex"
+  codesign --force --entitlements "$PARENT_ENT" --sign - "$BUNDLE"
+  codesign --verify --strict "$BUNDLE/Contents/PlugIns/GtmuxUsageWidget.appex"
+  codesign --verify --strict "$BUNDLE"
 fi
 
 echo

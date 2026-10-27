@@ -1,0 +1,3 @@
+import GtmuxBar
+
+GtmuxBarRuntime.run()

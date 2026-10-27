@@ -1,0 +1,26 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "Agent usage": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agent 用量"
+          }
+        }
+      }
+    },
+    "Choose an agent on this Mac.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择这台 Mac 上的 Agent。"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

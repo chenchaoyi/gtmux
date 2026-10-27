@@ -2,6 +2,7 @@ import AppKit
 import Carbon.HIToolbox
 import Combine
 import SwiftUI
+import MacUsageWidgetSupport
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
@@ -36,6 +37,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // reopen focus; reopen skips when a jump just happened, else defers as a fallback.
     private var pendingReopenFocus: DispatchWorkItem?
     private var lastNotificationJumpAt: Date?
+    private var lastWidgetOpenAt: Date?
+    private let usageWidgetPublisher = UsageWidgetPublisher()
 
     private var displayMode: DisplayMode { settings.displayMode }
 
@@ -72,6 +75,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Server mode: poll slowly and mirror it into a dedicated indicator.
         serverMode.start()
+        usageWidgetPublisher.start()
         // A server-mode change only needs the mark redrawn — the ring is part of it.
         serverMode.$status
             .receive(on: RunLoop.main)
@@ -701,7 +705,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    func applicationWillTerminate(_ notification: Notification) {
+        usageWidgetPublisher.stop()
+    }
+
+    func application(_ application: NSApplication, open urls: [URL]) {
+        guard urls.contains(where: MacUsageWidgetContainer.opensUsage) else { return }
+        lastWidgetOpenAt = Date()
+        pendingReopenFocus?.cancel()
+        pendingReopenFocus = nil
+        HQWorkspaceController.shared.show(l10n: l10n, selection: .resource(.usage))
+    }
+
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if let t = lastWidgetOpenAt, Date().timeIntervalSince(t) < 1.0 { return true }
         // Accessory app (no Dock icon) → reopen only fires from a notification click,
         // which also calls didReceive with the specific pane. If that jump just ran,
         // do nothing. Otherwise (reopen arrived first) defer `focus --last` briefly as

@@ -60,19 +60,42 @@ clears the shared snapshot. Temporary inability to read protected credentials le
 an explicitly dated reading. Widget content is marked privacy-sensitive; system
 privacy and Lock Screen settings determine when it is concealed.
 
-## macOS and delivery
+## Native Mac widget
 
-The snapshot model, formatting and SwiftUI views compile on macOS 14 or later and
-are shared for a future native Mac extension. **This change does not install a native
-macOS widget.** Apple's iPhone-widget Continuity is a separate system feature and
-does not count as a native gtmux Mac extension.
+On macOS 14 or later, the menu-bar app embeds a native WidgetKit extension. Choose
+**gtmux → Agent usage** in the Mac widget gallery, then keep the menu-bar app running.
+The native Mac extension is in current source; existing 1.0.151 binaries do not
+include it. Release packaging and installation are separate from source validation.
+Small and medium widgets use the same display models and views as iPhone/iPad.
+They show this Mac's readings; they do not use an iPhone connection or require HQ.
+Edit the widget to select Automatic or a provider with available readings.
+A tap opens the existing usage page in gtmux.
 
-The current Mac app is a directly distributed Developer ID SwiftPM bundle. A native
-extension needs its own sandboxed target, embedding/signing/notarization checks and
-a supported shared container. Apple's recommended `group.` container arrangement on
-macOS requires a provisioning profile. Those changes must be verified against the
-Mac packaging workflow before enabling a native extension; installing an unsigned
-extension or copying pairing credentials into a shared container is not a substitute.
+The parent app checks for a configured native widget before polling the existing
+`gtmux usage --json` report. Polls are bounded and at least a minute apart, never
+overlap, and explicit timeline reloads are at least five minutes apart. WidgetKit
+can defer rendering. When the parent quits or the Mac sleeps, the dated cache remains
+and becomes stale; the extension cannot refresh it over the network.
+
+The sandboxed extension receives only a typed display snapshot in the separately
+entitled `<signing-team>.com.gtmux.menubar.usage` Mac container. The identifier is
+derived from the actual Developer ID signature, not hardcoded or shared with iOS.
+Apple supports this team-prefixed macOS group without a provisioning profile.
+The CLI has no group entitlement, and the extension has no network or automation
+entitlement. The parent keeps its existing nonsandboxed terminal integration.
+
+The normal Mac release workflow uses Xcode to build a thin host around the same
+SwiftPM menu-bar library and compile the configuration intent into both app and
+extension. This produces App Intents metadata in both bundles; copying an
+extension into a manually assembled SwiftPM executable is insufficient. It builds
+both architectures, embeds resources and
+signs the extension before its parent, and notarizes/staples the complete app.
+Ad-hoc builds compile the extension but have no team container; they cannot verify
+real sharing. A source build or unsigned CI compilation alone does not prove system
+registration, gallery rendering, click routing or notarization. Apple's iPhone-widget
+Continuity is a separate system feature and does not count as this native extension.
+
+## iOS delivery
 
 For the next signed iOS delivery, the app and `GtmuxWidget` identifiers must both
 enable the same App Group and use matching provisioning profiles. Export verification also checks that signed App
@@ -84,6 +107,7 @@ device installation. Existing submitted builds are not changed by this source wo
 
 ## Implementation and references
 
+- `macapp/Widget`, `WidgetShared`, `UsageWidgetPublisher`: native extension, signer-scoped storage and bounded parent refresh; the committed Xcode project is rebuilt by `Widget/generate-project.rb`.
 - `shared/UsageWidgets`: display-only model/store/views and a separate parent-only
   host target. Swift tests exercise real loopback HTTP and typed snapshot boundaries.
 - `mobileapp/ios/UsageWidgets`: parent refresh coordinator, thin React Native bridge
