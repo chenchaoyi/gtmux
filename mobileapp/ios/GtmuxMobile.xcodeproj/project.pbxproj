@@ -783,7 +783,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.151;
+				MARKETING_VERSION = 1.0.152;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -815,7 +815,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.151;
+				MARKETING_VERSION = 1.0.152;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -847,7 +847,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.151;
+				MARKETING_VERSION = 1.0.152;
 				PRODUCT_BUNDLE_IDENTIFIER = com.gtmux.app.widget;
 				PRODUCT_NAME = GtmuxWidget;
 				SDKROOT = iphoneos;
@@ -1031,7 +1031,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.151;
+				MARKETING_VERSION = 1.0.152;
 				PRODUCT_BUNDLE_IDENTIFIER = com.gtmux.app.widget;
 				PRODUCT_NAME = GtmuxWidget;
 				SDKROOT = iphoneos;
@@ -1055,7 +1055,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.151;
+				MARKETING_VERSION = 1.0.152;
 				PRODUCT_BUNDLE_IDENTIFIER = com.gtmux.app.notificationservice;
 				PRODUCT_NAME = GtmuxNotificationService;
 				SDKROOT = iphoneos;
@@ -1079,7 +1079,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.151;
+				MARKETING_VERSION = 1.0.152;
 				PRODUCT_BUNDLE_IDENTIFIER = com.gtmux.app.notificationservice;
 				PRODUCT_NAME = GtmuxNotificationService;
 				SDKROOT = iphoneos;
