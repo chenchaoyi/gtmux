@@ -112,11 +112,9 @@ func tunnelServiceInstall(port int, name string, yes, force, recover bool) int {
 	// lookTool, not exec.LookPath: the menu-bar app shells out with launchd's PATH,
 	// where /usr/local/bin isn't listed — cloudflared read as "not installed" on a Mac
 	// that had it, and Anywhere could never be switched on from the menu bar.
-	bin := lookTool("cloudflared")
+	bin := requireCloudflared(yes)
 	if bin == "" {
-		if bin = ensureCloudflared(yes); bin == "" {
-			return 1
-		}
+		return 1
 	}
 
 	// --yes bypasses the prompt (the menu-bar toggle shows its own confirmation).

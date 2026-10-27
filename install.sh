@@ -350,6 +350,16 @@ mv -f "${BIN_DIR}/gtmux.new" "${BIN_DIR}/gtmux"
 xattr -d com.apple.quarantine "${BIN_DIR}/gtmux" 2>/dev/null || true
 step 4 "Install" "${BIN_DIR}/gtmux"
 
+# Upgrade an existing optional client through the newly installed CLI's policy.
+# Old pinned gtmux releases lack this target; do not reinterpret their commands.
+if command -v cloudflared >/dev/null 2>&1; then
+  if "${BIN_DIR}/gtmux" install --help 2>/dev/null | grep -q 'cloudflared \[--yes\]'; then
+    "${BIN_DIR}/gtmux" install cloudflared --yes || die "gtmux is installed, but the existing cloudflared security update did not complete; follow the error above"
+  else
+    note "this pinned gtmux cannot update cloudflared; check its security version through the original installation channel"
+  fi
+fi
+
 # ---- menu-bar app (~/Applications/Gtmux.app) ----
 # A native macOS app (Swift) shipped as a separate universal, Developer ID-signed and notarized
 # bundle. Signed metadata authenticates its SHA256 and size when available.

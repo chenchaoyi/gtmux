@@ -55,7 +55,7 @@ Put these variables on `bash`, which runs the installer, rather than on `curl`:
 curl -fsSL https://ccy.dev/gtmux/install | GTMUX_NO_APP=1 bash
 ```
 
-From source (Go 1.26 or newer; CLI only):
+From source (patched stable Go 1.26.10 / 1.27.3 or newer; CLI only):
 
 ```sh
 go install github.com/chenchaoyi/gtmux/cmd/gtmux@latest
@@ -140,3 +140,39 @@ survive updates. A build you make yourself with `make app` is ad-hoc signed; its
 identity changes with every rebuild, so macOS forgets the grants and asks again.
 To sign your own build with a Developer ID, set `GTMUX_SIGN_ID` when building
 (see `macapp/build.sh`).
+
+## Standard tunnel security updates
+
+The optional `cloudflared` client must meet Cloudflare's certificate security minimum:
+2026.10.2 or later, or 2026.10.3 or later for non-Homebrew macOS installations.
+Unknown and prerelease versions cannot start a new Standard or quick tunnel.
+Direct uses gtmux's own transport and does not use this executable.
+
+`gtmux install cloudflared --yes` installs or updates this client explicitly.
+On macOS, gtmux upgrades an existing Homebrew client through the Homebrew prefix
+that owns it. Other installation channels and Linux package managers require their
+own update command; gtmux explains the remaining action and returns failure.
+It never disables TLS verification or switches installation channels automatically.
+
+The install script, `gtmux install all`, and normal `gtmux update` maintain an
+already-installed client. They do not install an absent optional client.
+`update --check` / `--json` stay read-only; `--cli-only` skips dependency updates.
+Older gtmux updaters cannot acquire this behavior retroactively: after upgrading
+from a release without this integration, run `gtmux install cloudflared --yes` once.
+Homebrew's gtmux cask update alone does not run this dependency repair.
+
+Replacing the executable does not update an existing process. `doctor` distinguishes
+installed and running versions using the managed connector's loopback metrics.
+An old or unverifiable running Standard connector keeps the update incomplete;
+run `gtmux tunnel --service --recover`, then check the connection. Restarting drops
+existing long-lived connections. When its installation channel is unknown, the
+running Mac check uses the stricter 2026.10.3 minimum. Legacy login services and
+connectors on other hosts still need checking; this is not an account-wide audit.
+
+Official gtmux CLI and bundled-CLI builds require a stable Go toolchain containing
+the GO-2026-6809 fix (Go 1.27.3 / 1.26.10 or newer). Use one for custom source builds
+too. Keep OS trust stores current and replace affected HTTPS origin certificates;
+do not use `noTLSVerify` to bypass errors. See the
+[Cloudflare incident](https://blog.cloudflare.com/emudhra-certificate-compromise/),
+[update guide](https://developers.cloudflare.com/tunnel/guides/update-cloudflared/)
+and [Go advisory](https://pkg.go.dev/vuln/GO-2026-6809).

@@ -1114,14 +1114,34 @@ func rowKimiHook() dcheck {
 // problem — `doctor --fix` offers to install it.
 func rowCloudflared() dcheck {
 	label := i18n.Tr("cloudflared", "cloudflared")
+	if bin := lookTool("cloudflared"); bin != "" {
+		version, err := checkCloudflared(bin)
+		if err != nil {
+			if version == "" {
+				version = i18n.Tr("version unknown", "版本未知")
+			}
+			note := i18n.Tr("Update through the original installation channel. Standard requires a fixed version; Direct does not use this executable.", "请通过原安装渠道更新。Standard 需要安全版本；Direct 不使用这个程序。")
+			return dcheck{stRec, label, version + i18n.Tr(" · security update required", " · 需要安全更新"), note}
+		}
+		if tunnelBackend() == "direct" {
+			return dcheck{stInfo, label, version + i18n.Tr(" · not used by Direct", " · Direct 未使用"), i18n.Tr("Installed for Standard; no cloudflared restart is needed for Direct.", "已为 Standard 安装；Direct 不需要重启 cloudflared。")}
+		}
+		if tunnelBackend() == "standard" && serviceLoaded(tunnelAgentLabel) {
+			running := runningCloudflaredVersion()
+			if _, err := cloudflaredVersionSafe("cloudflared version "+running, runtime.GOOS, false); err != nil {
+				if running == "" {
+					running = i18n.Tr("unverified", "未确认")
+				}
+				return dcheck{stRec, label, i18n.Tr("installed ", "已安装 ") + version + i18n.Tr(" · running ", " · 运行 ") + running,
+					i18n.Tr("Run gtmux tunnel --service --recover, then check the connection. Restarting drops existing long-lived connections; a new file alone does not update the running process.", "运行 gtmux tunnel --service --recover 后检查连接。重启会断开已有长连接；只更新文件不会更新运行中的进程。")}
+			}
+		}
+		return dcheck{stOK, label, version, i18n.Tr("Meets the known security minimum. Restart an older running connector after upgrading.", "满足已知安全版本要求。升级后，仍运行旧版本的连接进程需要重启。")}
+	}
 	if tunnelBackend() == "direct" {
 		return dcheck{stInfo, label, i18n.Tr("not used", "用不到"),
 			i18n.Tr("remote access runs over Direct; cloudflared serves only the Standard tunnel",
 				"远程访问走的是 Direct；cloudflared 只给 Standard 隧道用")}
-	}
-	if lookTool("cloudflared") != "" {
-		return dcheck{stOK, label, i18n.Tr("installed", "已装"),
-			i18n.Tr("remote access via `gtmux tunnel`", "`gtmux tunnel` 远程访问")}
 	}
 	return dcheck{stInfo, label, i18n.Tr("not installed", "未装"),
 		i18n.Tr("optional, only for `gtmux tunnel`", "可选，仅 `gtmux tunnel` 需要")}

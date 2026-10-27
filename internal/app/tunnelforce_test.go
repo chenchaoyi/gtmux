@@ -73,7 +73,7 @@ func testFailedTunnelRecovery(t *testing.T, mode string) {
 	setDeviceID(t, "unchanged-device-0001")
 	home := os.Getenv("HOME")
 	bin := t.TempDir()
-	if err := os.WriteFile(filepath.Join(bin, "cloudflared"), []byte("#!/bin/sh\nexit 0\n"), 0o700); err != nil {
+	if err := os.WriteFile(filepath.Join(bin, "cloudflared"), []byte("#!/bin/sh\nif [ \"$1\" = --version ]; then echo 'cloudflared version 2026.10.3'; fi\nexit 0\n"), 0o700); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", bin+":"+os.Getenv("PATH"))

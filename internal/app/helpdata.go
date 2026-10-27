@@ -355,10 +355,11 @@ var helpCommands = []command{
 		DetailZH: "按影响分组：tmux、恢复、终端、agent 和通知。这就是入口：第一次先跑它，之后哪儿不对了再跑一次。",
 	},
 	{
-		Name: "install", Args: "[hooks|app]", Group: "setup", Writes: true,
+		Name: "install", Args: "[hooks|app|cloudflared]", Group: "setup", Writes: true,
 		EN: "install agent hooks or the menu-bar app",
 		ZH: "安装 agent hook 或菜单栏 app",
 		Flags: []cmdFlag{
+			{Name: "cloudflared [--yes]", EN: "install or update the Standard tunnel client through its original channel", ZH: "通过原渠道安装或更新 Standard 隧道客户端"},
 			{Name: "refresh-owned --agent dsh", EN: " refresh an existing gtmux bridge only; never installs a client or enables a profile", ZH: "仅更新已有 gtmux 连接组件，不安装客户端或启用 profile"},
 			{Name: "hooks [--yes]", EN: "register the agent hooks", ZH: "注册 agent hook"},
 			{Name: "--agent <a>", EN: "the agent to configure", ZH: "要配置的 agent",

@@ -149,18 +149,20 @@ func cmdUpdate(args []string) int {
 	return performUpdate(checkOnly, cliOnly, jsonOut, updateOperations{
 		current: Version, appVersion: installedAppUpdateVersion, latest: fetchLatestRelease,
 		install: runReleaseInstaller, changes: printWhatChanged,
-		doctor: func() { postUpdateDoctor(installedCLIPath(), 90*time.Second) },
+		doctor:       func() { postUpdateDoctor(installedCLIPath(), 90*time.Second) },
+		dependencies: updateInstalledCloudflared,
 	})
 }
 
 // Keep the command's decision/output path testable without network or installation.
 type updateOperations struct {
-	current    string
-	appVersion func() string
-	latest     func() latestRelease
-	install    func(bool, string) (releaseInstallResult, int)
-	changes    func(string, string)
-	doctor     func()
+	current      string
+	appVersion   func() string
+	latest       func() latestRelease
+	install      func(bool, string) (releaseInstallResult, int)
+	changes      func(string, string)
+	doctor       func()
+	dependencies func() int
 }
 
 func performUpdate(checkOnly, cliOnly, jsonOut bool, ops updateOperations) int {
@@ -208,6 +210,9 @@ func performUpdate(checkOnly, cliOnly, jsonOut bool, ops updateOperations) int {
 	if !payload.Update && !pinned {
 		i18n.Say("No newer comparable release found (CLI "+cur+", release "+latest+").",
 			"未发现可比较的更新版本（CLI "+cur+"，发布版本 "+latest+"）。")
+		if !checkOnly && !cliOnly && ops.dependencies != nil {
+			return ops.dependencies()
+		}
 		return 0
 	}
 	if checkOnly {
@@ -220,6 +225,9 @@ func performUpdate(checkOnly, cliOnly, jsonOut bool, ops updateOperations) int {
 	}
 	i18n.Say("Updating selected components to "+latest+" …", "正在将需要更新的组件更新到 "+latest+" …")
 	result, rc := ops.install(cliOnly, release.Tag)
+	if rc == 0 && !cliOnly && ops.dependencies != nil {
+		rc = ops.dependencies()
+	}
 	diag.DidRC("act.update", "gtmux", rc, "update components",
 		"from", cur, "to", latest, "cliOnly", cliOnly)
 	if result.CLIInstalled || result.AppInstalled {

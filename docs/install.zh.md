@@ -51,7 +51,7 @@ curl -fsSL https://ccy.pub/gtmux/install | bash
 curl -fsSL https://ccy.pub/gtmux/install | GTMUX_NO_APP=1 bash
 ```
 
-从源码装（需要 Go 1.26 或更新版本，只安装 CLI）：
+从源码安装（需含安全修复的稳定版 Go 1.26.10／1.27.3 或更新版本，只安装 CLI）：
 
 ```sh
 go install github.com/chenchaoyi/gtmux/cmd/gtmux@latest
@@ -120,3 +120,32 @@ macOS 把你授予的权限绑在 app 的代码签名上。正式发布版在 CI
 所以更新后权限还在。自己用 `make app` 构建的是 ad-hoc 签名，每次重新构建身份都变，
 macOS 会忘掉授权、再问一次。想给自己的构建签 Developer ID，构建时设 `GTMUX_SIGN_ID`
 （见 `macapp/build.sh`）。
+
+## Standard 隧道安全更新
+
+可选组件 `cloudflared` 必须满足 Cloudflare 的证书安全版本要求：2026.10.2 或更新版本；
+macOS 非 Homebrew 安装需 2026.10.3 或更新版本。版本未知或预发布版本不能启动新的
+Standard 或临时隧道。Direct 使用 gtmux 自身的传输实现，不使用这个程序。
+
+`gtmux install cloudflared --yes` 可单独安装或更新这个组件。
+macOS 上已有的 Homebrew 安装会通过其所属的 Homebrew 更新，避免 Intel 和 Apple Silicon
+两套安装互相覆盖。其他安装渠道和 Linux 包管理器需用原渠道更新；未完成时命令会说明
+原因并返回失败，不会自动更换安装渠道，也不会关闭 TLS 校验。
+
+安装脚本、`gtmux install all` 和普通 `gtmux update` 会检查并更新已安装的客户端；
+没有安装时不会强行添加。`update --check` / `--json` 仍然只读，`--cli-only` 跳过依赖更新。
+旧版更新器无法提前拥有这个能力：从尚未接入此流程的旧版升级后，请额外运行一次
+`gtmux install cloudflared --yes`。只用 Homebrew 更新 gtmux cask 也不会执行这项修复。
+
+更新文件不代表运行中的进程已更新。`doctor` 会通过 gtmux 所管理连接的本机指标区分
+安装版本与运行版本。Standard 仍运行旧版或无法确认运行版本时，不会报告更新全部完成；
+请运行 `gtmux tunnel --service --recover`，随后检查连接。重启会断开已有长连接。
+Mac 运行进程的安装渠道无法确认时，按更严格的 2026.10.3 判断。
+旧的登录启动服务、其他主机上的连接仍需分别检查，这不是整个 Cloudflare 账号的审计。
+
+正式 CLI 和 Mac 包内 CLI 的构建必须使用含 GO-2026-6809 修复的稳定版 Go
+（1.27.3／1.26.10 或更新版本）；自行编译也应使用这些版本。操作系统信任库仍需保持更新，
+受影响的 HTTPS 源站证书应更换，不要用 `noTLSVerify` 绕过报错。依据：
+[Cloudflare 事件说明](https://blog.cloudflare.com/emudhra-certificate-compromise/)、
+[更新方法](https://developers.cloudflare.com/tunnel/guides/update-cloudflared/)和
+[Go 安全公告](https://pkg.go.dev/vuln/GO-2026-6809)。
