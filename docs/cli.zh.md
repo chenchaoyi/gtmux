@@ -2167,8 +2167,8 @@ HQ 目录以外的读取同样显示原始视图，但不算消费。
 
 ## gtmux artifact
 
-明确提供一个服务器本地文件，供本人已配对设备预览。访客无法读取；对话里出现一个路径
-本身不会发布该文件。
+明确提供服务器本地文件的固定版本，供本人已配对设备预览，访客不能读取。已核实会话中的
+受支持文件链接可直接打开，无需此命令；该命令用于固定版本或会话链接以外的文件。
 
 ```sh
 gtmux artifact add /absolute/path/report.html --session-id SESSION_ID [--home-id HOME_ID] [--json]

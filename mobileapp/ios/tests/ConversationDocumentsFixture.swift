@@ -6,6 +6,10 @@ import WebKit
   var window: UIWindow?
   func application(_ application: UIApplication, didFinishLaunchingWithOptions options: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
     window = UIWindow(frame: UIScreen.main.bounds)
+    let arguments = ProcessInfo.processInfo.arguments
+    if arguments.contains("--light") { window?.overrideUserInterfaceStyle = .light }
+    if arguments.contains("--dark") { window?.overrideUserInterfaceStyle = .dark }
+    if #available(iOS 17.0, *), arguments.contains("--large-text") { window?.traitOverrides.preferredContentSizeCategory = .accessibilityExtraExtraExtraLarge }
     window?.rootViewController = UINavigationController(rootViewController: FixtureController())
     window?.makeKeyAndVisible(); return true
   }
@@ -118,6 +122,14 @@ final class FixtureController: UIViewController {
     }
     poll(preview, attempts: 30)
   }
+  func checkMarkdownShare(_ preview: UIViewController, attempts: Int = 10) {
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+      if let share = preview.presentedViewController as? UIActivityViewController {
+        self.record("markdown-share", share.popoverPresentationController?.barButtonItem === preview.navigationItem.rightBarButtonItems?.first ? "pass" : "FAIL anchor")
+      } else if attempts > 0 { self.checkMarkdownShare(preview, attempts: attempts - 1) }
+      else { self.record("markdown-share", "FAIL no controller") }
+    }
+  }
   func auditStateLayout(_ preview: UIViewController) {
     func descendants(_ view: UIView) -> [UIView] { [view] + view.subviews.flatMap(descendants) }
     let elements = descendants(preview.view)
@@ -137,6 +149,26 @@ final class FixtureController: UIViewController {
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
       func descendants(_ view: UIView) -> [UIView] { [view] + view.subviews.flatMap(descendants) }
       if let web = descendants(preview.view).compactMap({ $0 as? WKWebView }).first {
+        if self.args.contains("--markdown-checks") {
+          web.evaluateJavaScript("JSON.stringify({headings:document.querySelectorAll('h1,h2').length, tables:document.querySelectorAll('table').length, strong:document.querySelectorAll('strong').length, code:document.querySelectorAll('pre code').length, images:[...document.images].filter(i=>i.complete&&i.naturalWidth>0).length, bridge:!!window.webkit?.messageHandlers, overflow:document.documentElement.scrollWidth>innerWidth})") { value, error in
+            if let value = value as? String, let data = value.data(using: .utf8), let result = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               (result["headings"] as? Int ?? 0) >= 3, (result["tables"] as? Int ?? 0) == 1, (result["images"] as? Int ?? 0) == 2 {
+              self.record("markdown", value); self.record("markdown-scripts-disabled", web.configuration.defaultWebpagePreferences.allowsContentJavaScript ? "FAIL" : "pass")
+              web.scrollView.setContentOffset(.zero, animated: false)
+              if self.args.contains("--markdown-share-check") {
+                preview.perform(NSSelectorFromString("shareFile")); self.checkMarkdownShare(preview)
+              }
+            } else if attempts > 0 {
+              // Bring lazy images into view at accessibility text sizes before asserting.
+              if web.scrollView.contentSize.height > web.scrollView.bounds.height {
+                web.scrollView.setContentOffset(CGPoint(x: 0, y: web.scrollView.contentSize.height - web.scrollView.bounds.height), animated: false)
+              }
+              self.poll(preview, attempts: attempts - 1)
+            }
+            else { self.record("markdown", "FAIL \(error?.localizedDescription ?? value as? String ?? "not loaded")") }
+          }
+          return
+        }
         web.evaluateJavaScript("JSON.stringify({inline:document.getElementById('inline')?.textContent, bridge:!!window.webkit?.messageHandlers, rows:document.querySelectorAll('tr').length})") { value, error in
           if let value = value as? String, value.contains("INLINE_OK") {
             self.record("html-interactive", value)

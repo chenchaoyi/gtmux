@@ -1519,12 +1519,18 @@ HQ event-stream consumption. Existing transcript HTTP response shapes are unchan
 ## Conversation documents
 
 Owner/full-scope only; both endpoints require bearer authentication and reject guests
-before lookup. No endpoint publishes a file or opens an arbitrary supplied path.
+before lookup. Resolve snapshots only verified public conversation links on an explicit owner/full-scope
+click; unknown paths never grant arbitrary file access. Explicitly published copies remain supported.
 
-- `POST /api/artifacts/resolve`: JSON `{reference,session_id,home_id?}`, bounded
+- `POST /api/artifacts/resolve`: JSON `{reference,session_id,home_id?,parent_id?}`, bounded
   to 8192 bytes, one object and no unknown fields. Reference is a `gtmux-file:` +
-  32 lowercase hex ID or an exact registered absolute source path. Session/home
-  identity must match. Returns `{id,name,kind,media_type,bytes,sha256,created_at,
+  32 lowercase hex ID, a registered source path, or a local destination verified against
+  public Markdown links in the requested conversation. Session/home identity must match.
+  With `parent_id` (32 lowercase hex), resolve only destinations declared by the verified
+  Markdown parent and contained in its directory tree; no transcript inference or root
+  request can substitute for that parent. Relative chat links need a verified cwd.
+  The server snapshots a verified source internally; fixed IDs remain immutable and
+  source-path opens refresh current bytes. Removed versions are not automatically recreated. Returns `{id,name,kind,media_type,bytes,sha256,created_at,
   session_id,home_id?,source,sequence}`. `created_at` is Unix seconds; `sequence`
   orders registry revisions. Kinds: html, markdown, text, pdf, image.
 - `GET /api/artifacts/content?id=ID&session_id=SESSION&home_id=HOME`: verified

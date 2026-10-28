@@ -33,6 +33,8 @@ final class DocumentTransport: NSObject, URLSessionDataDelegate, URLSessionDownl
   private let reference: String
   private let sessionID: String
   private let homeID: String
+  private let parentID: String?
+  private let byteLimit: Int64
   private var metadataBytes = Data()
   private var metadataStatus = 0
   private var metadata: ConversationDocument?
@@ -68,6 +70,8 @@ final class DocumentTransport: NSObject, URLSessionDataDelegate, URLSessionDownl
     self.reference = reference
     self.sessionID = sid
     self.homeID = request["home_id"] as? String ?? ""
+    self.parentID = request["parent_id"] as? String
+    self.byteLimit = min(Self.maximumBytes, max(1, request["maximumBytes"] as? Int64 ?? Self.maximumBytes))
     let supplied = request["headers"] as? [String: String] ?? [:]
     self.headers = supplied.filter { ["authorization", "x-gtmux-client"].contains($0.key.lowercased()) && $0.value.rangeOfCharacter(from: .newlines) == nil }
     super.init()
@@ -77,7 +81,9 @@ final class DocumentTransport: NSObject, URLSessionDataDelegate, URLSessionDownl
     var req = authorized(resolveURL)
     req.httpMethod = "POST"
     req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    req.httpBody = try? JSONSerialization.data(withJSONObject: ["reference": reference, "session_id": sessionID, "home_id": homeID])
+    var body = ["reference": reference, "session_id": sessionID, "home_id": homeID]
+    if let parentID { body["parent_id"] = parentID }
+    req.httpBody = try? JSONSerialization.data(withJSONObject: body)
     delegateQueue.addOperation { [self] in
       guard !cancelled else { return }; session.dataTask(with: req).resume()
     }
@@ -150,6 +156,7 @@ final class DocumentTransport: NSObject, URLSessionDataDelegate, URLSessionDownl
           let file = try? JSONDecoder().decode(ConversationDocument.self, from: metadataBytes),
           file.valid(session: sessionID, home: homeID),
           var parts = URLComponents(url: resolveURL, resolvingAgainstBaseURL: false) else { fail(.invalid); return }
+    guard file.bytes <= byteLimit else { fail(.tooLarge); return }
     metadata = file
     parts.path = String(parts.path.dropLast("resolve".count)) + "content"
     parts.queryItems = [URLQueryItem(name: "id", value: file.id), URLQueryItem(name: "session_id", value: sessionID), URLQueryItem(name: "home_id", value: homeID)]

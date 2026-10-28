@@ -9,44 +9,64 @@ the original through the system share sheet. iPhone uses the full screen; iPad u
 resizable system form sheet with anchored share controls. Loading and failures use a centered, scrollable status view with a complete localized
 explanation and visible actions. Retry is offered for recoverable failures; denied access
 returns to the conversation, while an unsupported format can share the verified original.
-Unpublished files keep Copy path (or Copy file link). Share appears in the toolbar only
+Unavailable files keep Copy path (or Copy file link). Share appears in the toolbar only
 after verification. Status text and buttons wrap at large text sizes; the ready header
 puts its controls on separate lines at accessibility sizes. No separate document dashboard is added.
 
 ## Providing a file
 
-The agent or user runs this on the server after saving a report. Use the owning turn's
-`session_id` from the authenticated `GET /api/transcript?id=%PANE` response for a tmux
-pane. `gtmux agents --json` includes `session_id` for external conversation rows; tmux
-rows omit it. Its `session` field is the tmux session name, not the agent's session ID.
-Supply the row's `home_id` when present; otherwise omit `--home-id`. Do not substitute
-pane IDs or infer an identity from inherited launch markers:
+A local file link in the conversation opens on a paired phone as it does in a local
+client: the user clicks once. The server verifies the exact Markdown destination in the
+public prompt/reply of that conversation and its home, then snapshots the supported
+owned file internally. This includes links in existing conversation history. Code blocks,
+inline code, tool arguments and raw HTML do not grant file access. A path request cannot
+substitute another file or conversation. Absolute paths and local file URLs work; relative
+chat destinations require a verified conversation working directory.
+
+Opening a verified source path reads its current revision. A fixed `gtmux-file:` link
+continues to identify immutable bytes. If a temporary source is gone, an existing authorized
+snapshot can still be read. Removal records a private version tombstone, so another remote
+click cannot silently recreate that removed copy. An explicit local add may provide it again.
+
+The optional command supplies a fixed version, an unlinked file, or compatibility with an
+older server:
 
 ```sh
-gtmux artifact add /absolute/path/report.html --session-id SESSION_ID
-# For a conversation with a home identity:
-gtmux artifact add /absolute/path/report.html --session-id SESSION_ID --home-id HOME_ID
+gtmux artifact add /absolute/path/report.html --session-id SESSION_ID [--home-id HOME_ID]
 ```
 
-Return the printed Markdown link in the reply. An existing absolute-path Markdown link
-also resolves if that exact source path was published for that conversation. Relative
-paths remain visible but cannot be resolved without an absolute registered source.
-Old file links are not automatically made available. Generating a report and posting
-its path alone does not publish it: register it first, use the returned file link, and
-verify resolution for the owning turn identity before calling it available in the app. Do not publish credentials,
-personal data or files the user did not intend to share with their paired devices.
+For tmux use the owning turn's `session_id` from authenticated `/api/transcript`, not the
+pane ID or tmux session name. External rows provide `session_id` and, when present, `home_id`.
+Return the printed fixed file link when the specific revision matters. Do not include
+credentials, personal data or files the user did not intend to provide to paired devices.
 
-`gtmux artifact list` prints registered-copy metadata as JSON. `gtmux artifact remove ID`
-revokes future downloads and removes only that copy; the source and saved device copies
-remain. There is no automatic historical-file scan or global cache cleanup. Copies are
-stored in the private state `artifacts/` directory, limited to 256 files / 240 MiB and
-30 MiB each. Reaching the limit fails; choose explicit copies to remove.
+`gtmux artifact list` prints private-copy metadata. `gtmux artifact remove ID` removes only
+that snapshot and stops future downloads; originals and already downloaded device copies
+remain. Storage is bounded to 256 copies / 240 MiB, 30 MiB each; limits do not trigger a
+historical scan or deletion of other files.
+
+## Markdown reading
+
+Markdown defaults to formatted, selectable reading: headings, emphasis, lists, block quotes,
+fenced code and tables. Tables scroll within the reading column, styles follow system
+appearance, and the reading width is capped on iPad. Show source / Show preview switches
+views; Share always exports the original Markdown. Text and Markdown read at most the first
+512 KiB for display, with the full original retained for sharing.
+
+A Markdown report can display local images and open related files within its directory tree.
+The server reads the verified parent snapshot, checks that the requested destination is an
+actual Markdown link/image, and binds the result to the same session/home. Declared paths
+outside that tree, symlink escapes and foreign or revoked parents fail. The native image
+loader uses opaque resource IDs; document content receives no credentials or API bridge.
+External images do not load. At most 32 image references, two concurrent downloads, 8 MiB
+per image and 20 MiB combined are allowed; dimensions are checked before decoding. Closing,
+retrying or switching source cancels only that viewer's resource work and private caches.
 
 ## Boundaries
 
 Owner/full-scope connections only; guest sharing never inherits document access. The
-server only resolves registered identifiers or exact registered source paths in a
-session/home identity. It does not expose arbitrary file reads. Sources must be owned,
+server resolves registered copies and verified public conversation links within the exact
+session/home identity. Unknown or unlinked paths never expose arbitrary file reads. Sources must be owned,
 nonempty regular files; leaf symlinks, hard links, common credential locations and
 unsupported extensions are refused. This is defense in depth, not content classification:
 the publisher remains responsible for choosing a document safe to provide.
@@ -75,8 +95,8 @@ incomplete in either mode. Camera/microphone/motion permission requests are deni
 element fullscreen is disabled. The public geolocation delegate is denied on iOS 27+;
 older iOS uses platform location authorization, which gtmux does not request.
 PDF/images use Quick Look with editing and
-external links disabled. Text/Markdown uses selectable plain text, limited to its first
-512 KiB; sharing preserves the full original. Images have pixel limits before decoding.
+external links disabled. Plain text remains selectable; Markdown uses the formatted preview described above. Display
+is limited to the first 512 KiB; sharing preserves the full original. Images have pixel limits before decoding.
 Closing cancels work and removes this viewer's UUID cache. A process crash can leave a
 private cache directory; no broad deletion is attempted on next launch.
 

@@ -409,7 +409,8 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		Icon:            agentIconPNG,
 		Diff:            diffForPane,
 		Transcript:      transcriptForPane,
-		ArtifactResolve: artifact.Resolve,
+		ArtifactResolve: resolveConversationDocument,
+		ArtifactRelated: artifact.Related,
 		ArtifactContent: func(id, sid, home string) (artifact.File, io.ReadSeekCloser, error) {
 			f, err := artifact.Resolve("gtmux-file:"+id, sid, home)
 			if err != nil {

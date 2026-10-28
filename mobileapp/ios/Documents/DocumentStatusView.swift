@@ -23,7 +23,7 @@ struct DocumentFailurePresentation {
         message: tr("This connection does not have permission to view this file.", "当前连接没有此文件的查看权限。"), actions: [close])
     case .unavailable:
       return Self(title: tr("File unavailable", "文件暂不可用"),
-        message: tr("This file has not been provided, or was removed. Ask the agent to provide it again.", "文件尚未提供，或已被移除。请让 Agent 重新提供后再试。"), actions: copy.map { [$0, retry] } ?? [retry])
+        message: tr("The file is missing, was removed, or cannot be viewed from this conversation.", "文件不存在、已被移除，或不在当前会话的可查看范围内。"), actions: copy.map { [$0, retry] } ?? [retry])
     case .unsupported:
       return Self(title: tr("Server update required", "服务器需要更新"),
         message: tr("This server does not support file previews yet. Update gtmux on the server, then retry.", "此服务器还不支持文件预览。请更新服务器上的 gtmux 后重试。"), actions: [retry] + (copy.map { [$0] } ?? []))

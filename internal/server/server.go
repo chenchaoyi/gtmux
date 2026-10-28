@@ -158,8 +158,9 @@ type Deps struct {
 	Transcript func(id string, earlier int) (turns []byte, meta TranscriptMeta, err error)
 	// SessionTranscript reads verified desktop sessions, never arbitrary file paths.
 	SessionTranscript func(id, homeID string) (turns []byte, meta TranscriptMeta, err error)
-	// Artifacts are explicitly published local snapshots; no remote path reads.
+	// Documents are snapshots of explicit publications or verified conversation links.
 	ArtifactResolve func(reference, sessionID, homeID string) (artifact.File, error)
+	ArtifactRelated func(reference, parentID, sessionID, homeID string) (artifact.File, error)
 	ArtifactContent func(id, sessionID, homeID string) (artifact.File, io.ReadSeekCloser, error)
 
 	// HQBoard returns the supervisor's situation board — the synthesis it maintains by

@@ -2,6 +2,7 @@ import UIKit
 import QuickLook
 import WebKit
 import ImageIO
+import SafariServices
 
 /// Preview UI has no pairing credentials, application bridge or shared web login.
 final class DocumentPreviewController: UIViewController, QLPreviewControllerDataSource, QLPreviewControllerDelegate, WKNavigationDelegate, WKUIDelegate {
@@ -11,6 +12,9 @@ final class DocumentPreviewController: UIViewController, QLPreviewControllerData
   private var originalURL: URL?
   private var htmlURL: URL?
   private var webView: WKWebView?
+  private var markdownResources: DocumentResources?
+  private var markdownLinks: [String: String] = [:]
+  private var markdownSource = false
   private let content = UIView()
   private let status = UILabel()
   private lazy var state = DocumentStatusView(zh: zh)
@@ -110,7 +114,7 @@ final class DocumentPreviewController: UIViewController, QLPreviewControllerData
   @objc private func start() {
     guard !closing else { return }
     transport?.cleanup(); downloadFinished = false
-    authorizedScriptHash = nil; renderID = UUID(); interaction.isHidden = true
+    authorizedScriptHash = nil; renderID = UUID(); interaction.isHidden = true; markdownSource = false
     navigationItem.rightBarButtonItems = [infoButton]
     clearContent()
     originalURL = nil; file = nil; htmlURL = nil
@@ -142,6 +146,7 @@ final class DocumentPreviewController: UIViewController, QLPreviewControllerData
   }
   private func clearContent() {
     renderID = UUID()
+    markdownResources?.cleanup(); markdownResources = nil; markdownLinks = [:]
     let old = webView; webView = nil
     old?.stopLoading(); old?.navigationDelegate = nil; old?.uiDelegate = nil
     for child in children { child.willMove(toParent: nil); child.view.removeFromSuperview(); child.removeFromParent() }
@@ -171,18 +176,8 @@ final class DocumentPreviewController: UIViewController, QLPreviewControllerData
     updateFileStatus()
     switch file.kind {
     case "html": interaction.isHidden = false; showHTML(url)
-    case "text", "markdown":
-      do {
-        let handle = try FileHandle(forReadingFrom: url); defer { try? handle.close() }
-        let bytes = try handle.read(upToCount: 512 * 1024) ?? Data()
-        let text = UITextView(); text.isEditable = false; text.isSelectable = true
-        text.font = UIFontMetrics(forTextStyle: .body).scaledFont(for: .monospacedSystemFont(ofSize: 15, weight: .regular))
-        text.adjustsFontForContentSizeCategory = true; text.backgroundColor = .clear
-        text.textContainerInset = UIEdgeInsets(top: 16, left: 12, bottom: 16, right: 12)
-        text.text = String(decoding: bytes, as: UTF8.self)
-        if file.bytes > bytes.count { status.text = tr("Previewing the first 512 KiB · Share saves the complete file", "仅预览前 512 KiB · 分享可保存完整文件") }
-        mount(text)
-      } catch { showFailure(.format) }
+    case "markdown": interaction.isHidden = false; showMarkdown(url)
+    case "text": showText(url)
     default:
       if file.kind == "image" {
         guard let image = CGImageSourceCreateWithURL(url as CFURL, nil),
@@ -196,6 +191,33 @@ final class DocumentPreviewController: UIViewController, QLPreviewControllerData
     }
   }
 
+  private func previewText(_ source: URL) throws -> String {
+    let handle = try FileHandle(forReadingFrom: source); defer { try? handle.close() }
+    let bytes = try handle.read(upToCount: 512 * 1024) ?? Data()
+    if let file, file.bytes > bytes.count { status.text = tr("Previewing the first 512 KiB · Share saves the complete file", "仅预览前 512 KiB · 分享可保存完整文件") }
+    return String(decoding: bytes, as: UTF8.self)
+  }
+  private func showText(_ source: URL) {
+    do {
+      let text = UITextView(); text.isEditable = false; text.isSelectable = true
+      text.font = UIFontMetrics(forTextStyle: .body).scaledFont(for: .monospacedSystemFont(ofSize: 15, weight: .regular))
+      text.adjustsFontForContentSizeCategory = true; text.backgroundColor = .clear
+      text.textContainerInset = UIEdgeInsets(top: 16, left: 16, bottom: 24, right: 16)
+      text.accessibilityIdentifier = "document-preview-source-text"
+      text.text = try previewText(source); mount(text)
+    } catch { showFailure(.format) }
+  }
+  private func showMarkdown(_ source: URL) {
+    guard let file else { return }
+    do {
+      let result = try DocumentMarkdown.render(previewText(source), fontSize: Double(UIFont.preferredFont(forTextStyle: .body, compatibleWith: traitCollection).pointSize))
+      markdownLinks = result.links
+      let resources = DocumentResources(references: result.images, request: request, parentID: file.id)
+      markdownResources = resources
+      showHTML(source, renderedHTML: result.html, resources: resources)
+    } catch { showFailure(.format) }
+  }
+
   private func mount(_ child: UIView, ready: Bool = true) {
     child.translatesAutoresizingMaskIntoConstraints = false; content.insertSubview(child, belowSubview: state)
     NSLayoutConstraint.activate([child.leadingAnchor.constraint(equalTo: content.leadingAnchor), child.trailingAnchor.constraint(equalTo: content.trailingAnchor), child.topAnchor.constraint(equalTo: content.topAnchor), child.bottomAnchor.constraint(equalTo: content.bottomAnchor)])
@@ -207,12 +229,18 @@ final class DocumentPreviewController: UIViewController, QLPreviewControllerData
   private func updateFileStatus() {
     guard let file else { return }
     let kind = ["html": "HTML", "pdf": "PDF", "markdown": "Markdown", "text": tr("Text", "文本"), "image": tr("Image", "图片")][file.kind] ?? file.kind
-    let mode = file.kind == "html" ? (scriptsAllowed ? tr(" · Interactive", " · 已开启交互") : tr(" · Static preview", " · 静态预览")) : ""
+    let mode = file.kind == "markdown" ? (markdownSource ? tr(" · Source", " · 原文") : tr(" · Preview", " · 预览")) : file.kind == "html" ? (scriptsAllowed ? tr(" · Interactive", " · 已开启交互") : tr(" · Static preview", " · 静态预览")) : ""
     status.text = "\(kind) · \(ByteCountFormatter.string(fromByteCount: file.bytes, countStyle: .file))\(mode)"
-    interaction.setTitle(scriptsAllowed ? tr("Use static preview", "关闭交互") : tr("Enable interaction", "开启交互"), for: .normal)
+    interaction.setTitle(file.kind == "markdown" ? (markdownSource ? tr("Show preview", "查看预览") : tr("Show source", "查看原文")) : scriptsAllowed ? tr("Use static preview", "关闭交互") : tr("Enable interaction", "开启交互"), for: .normal)
+    interaction.accessibilityIdentifier = file.kind == "markdown" ? "document-preview-source" : "document-preview-interaction"
   }
 
   @objc private func toggleInteraction() {
+    if file?.kind == "markdown", let source = originalURL {
+      markdownSource.toggle(); clearContent(); updateFileStatus()
+      if markdownSource { interaction.isEnabled = true; showText(source) } else { showMarkdown(source) }
+      return
+    }
     guard let file, file.kind == "html", let source = originalURL else { return }
     if scriptsAllowed { reloadHTML(allowing: nil); return }
     let alert = UIAlertController(title: tr("Trust this file?", "信任此文件？"),
@@ -233,13 +261,13 @@ final class DocumentPreviewController: UIViewController, QLPreviewControllerData
     updateFileStatus(); showHTML(source)
   }
 
-  private func showHTML(_ source: URL) {
+  private func showHTML(_ source: URL, renderedHTML: String? = nil, resources: DocumentResources? = nil) {
     interaction.isEnabled = false; state.loading(opening: true)
     do {
       let generation = UUID(); renderID = generation
-      let allowScripts = scriptsAllowed
-      let html = try String(contentsOf: source, encoding: .utf8)
-      let policy = "default-src 'none'; script-src \(allowScripts ? "'unsafe-inline'" : "'none'"); style-src 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; media-src 'none'; base-uri 'none'; form-action 'none'"
+      let allowScripts = file?.kind == "html" && scriptsAllowed
+      let html = try renderedHTML ?? String(contentsOf: source, encoding: .utf8)
+      let policy = "default-src 'none'; script-src \(allowScripts ? "'unsafe-inline'" : "'none'"); style-src 'unsafe-inline'; img-src data: blob: gtmux-document:; font-src data:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; media-src 'none'; base-uri 'none'; form-action 'none'"
       let secured = "<!doctype html><meta charset=\"utf-8\"><meta http-equiv=\"Content-Security-Policy\" content=\"\(policy)\">" + html
       let rendered = source.deletingLastPathComponent().appendingPathComponent("Rendered", isDirectory: true)
       try FileManager.default.createDirectory(at: rendered, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
@@ -249,6 +277,7 @@ final class DocumentPreviewController: UIViewController, QLPreviewControllerData
       htmlURL = target
       let configuration = WKWebViewConfiguration()
       configuration.websiteDataStore = .nonPersistent()
+      if let resources { configuration.setURLSchemeHandler(resources, forURLScheme: "gtmux-document") }
       configuration.defaultWebpagePreferences.allowsContentJavaScript = allowScripts
       configuration.preferences.javaScriptCanOpenWindowsAutomatically = false
       if #available(iOS 15.4, *) { configuration.preferences.isElementFullscreenEnabled = false }
@@ -263,6 +292,7 @@ final class DocumentPreviewController: UIViewController, QLPreviewControllerData
           // No WKScriptMessageHandler, user credentials or business API bridge.
           let web = WKWebView(frame: .zero, configuration: configuration)
           web.navigationDelegate = self; web.uiDelegate = self; web.allowsLinkPreview = false
+          web.accessibilityIdentifier = self.file?.kind == "markdown" ? "document-preview-markdown" : "document-preview-html"
           self.webView = web; self.mount(web, ready: false)
           web.loadFileURL(target, allowingReadAccessTo: target.deletingLastPathComponent())
         }
@@ -278,8 +308,22 @@ final class DocumentPreviewController: UIViewController, QLPreviewControllerData
                decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
     guard !closing, self.webView === webView else { decisionHandler(.cancel); return }
     let url = navigationAction.request.url
+    if file?.kind == "markdown", navigationAction.navigationType == .linkActivated,
+       let url, let target = markdownLinks[url.absoluteString] {
+      decisionHandler(.cancel); openMarkdownLink(target); return
+    }
     let ownDocument = url?.isFileURL == true && url?.standardizedFileURL.path == htmlURL?.standardizedFileURL.path
     decisionHandler(ownDocument && navigationAction.targetFrame?.isMainFrame == true && !navigationAction.shouldPerformDownload ? .allow : .cancel)
+  }
+  private func openMarkdownLink(_ target: String) {
+    guard let file, let url = URL(string: target) else { return }
+    if ["http", "https"].contains(url.scheme?.lowercased() ?? "") {
+      present(SFSafariViewController(url: url), animated: true); return
+    }
+    if url.scheme?.lowercased() == "mailto" { UIApplication.shared.open(url); return }
+    var related = request; related["reference"] = target; related["name"] = url.lastPathComponent
+    related["parent_id"] = target.hasPrefix("gtmux-file:") ? nil : file.id
+    navigationController?.pushViewController(DocumentPreviewController(request: related), animated: true)
   }
   func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration,
                for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? { nil }
@@ -320,7 +364,7 @@ final class DocumentPreviewController: UIViewController, QLPreviewControllerData
       alert.addAction(UIAlertAction(title: tr("Close", "关闭"), style: .cancel)); present(alert, animated: true); return
     }
     let time = DateFormatter.localizedString(from: Date(timeIntervalSince1970: Double(file.created_at)), dateStyle: .medium, timeStyle: .short)
-    let alert = UIAlertController(title: file.name, message: "\(file.source)\n\n\(time)\n\(tr("Registered snapshot", "已提供的文件快照"))", preferredStyle: .alert)
+    let alert = UIAlertController(title: file.name, message: "\(file.source)\n\n\(time)\n\(tr("Preview copy", "本次预览的文件副本"))", preferredStyle: .alert)
     alert.addAction(UIAlertAction(title: tr("Copy path", "复制路径"), style: .default) { _ in UIPasteboard.general.string = file.source })
     alert.addAction(UIAlertAction(title: tr("Close", "关闭"), style: .cancel))
     present(alert, animated: true)
@@ -335,10 +379,10 @@ final class DocumentPreviewController: UIViewController, QLPreviewControllerData
     } else { share.popoverPresentationController?.barButtonItem = shareButton }
     present(share, animated: true)
   }
-  @objc private func closePreview() { closing = true; webView?.stopLoading(); transport?.cancel(); dismiss(animated: true) }
+  @objc private func closePreview() { closing = true; markdownResources?.cleanup(); webView?.stopLoading(); transport?.cancel(); if let navigationController, navigationController.viewControllers.first !== self { navigationController.popViewController(animated: true) } else { dismiss(animated: true) } }
   override func viewDidDisappear(_ animated: Bool) {
     super.viewDidDisappear(animated)
-    if isBeingDismissed || navigationController?.isBeingDismissed == true { closing = true; transport?.cleanup() }
+    if isBeingDismissed || isMovingFromParent || navigationController?.isBeingDismissed == true { closing = true; markdownResources?.cleanup(); transport?.cleanup() }
   }
-  deinit { transport?.cleanup() }
+  deinit { markdownResources?.cleanup(); transport?.cleanup() }
 }

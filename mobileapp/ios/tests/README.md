@@ -78,3 +78,18 @@ static rendering/zero UDP before consent and after Cancel, script/UDP execution 
 after native confirmation, shutdown after disabling interaction, and static mode in a
 new viewer despite a caller-supplied script flag. The counter records packet lengths,
 never private document contents. Inspect the saved screenshots and result JSON.
+
+## Markdown and local images
+
+Use `--preview --reference /fixture/report.md --name Review.md --markdown-checks
+--skip-selection-checks`. The synthetic parent and local image pass through the production
+transport, SHA-256 verification and native URL-scheme loader. `markdown` in the result
+file must show semantic headings/table/code, two decoded images (parent-relative and
+published ID), no app bridge and no
+page overflow; `markdown-scripts-disabled` must pass. Verify Show source / Show preview
+visually. Add `--light`, `--dark` or `--large-text` for fixture-only traits, leaving system
+settings unchanged. `--markdown-share-check` invokes the native Share action and verifies
+the original toolbar anchor when simulator window offsets prevent reliable UI tapping.
+The Markdown check scrolls lazy images into view before asserting and returns to the top;
+the share check waits for rendering and the system presentation to finish.
+These checks do not replace manual share selection, VoiceOver or a full RN app build.

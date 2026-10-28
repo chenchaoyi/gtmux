@@ -4,6 +4,8 @@ test('local report destinations remain data instead of launchable OS URLs', () =
   expect(documentReference('/private/tmp/report.html')).toEqual({reference: '/private/tmp/report.html', name: 'report.html', path: '/private/tmp/report.html'});
   expect(documentReference('file:///tmp/my%20report.html')?.reference).toBe('/tmp/my report.html');
   expect(documentReference('./report.md')?.name).toBe('report.md');
+  expect(documentReference('reports/review.md')?.reference).toBe('reports/review.md');
+  expect(documentReference('report.md')?.name).toBe('report.md');
   expect(documentReference('gtmux-file:' + 'a'.repeat(32))?.reference).toBe('gtmux-file:' + 'a'.repeat(32));
   for (const value of ['javascript:alert(1)', 'data:text/html,hello', '//host/file', 'file://other/tmp/a', 'file:///tmp/a%00.txt', '/tmp/a\n.txt']) expect(documentReference(value)).toBeNull();
 });

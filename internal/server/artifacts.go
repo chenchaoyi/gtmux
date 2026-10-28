@@ -29,10 +29,11 @@ func (s *Server) handleArtifactResolve(w http.ResponseWriter, r *http.Request) {
 		Reference string `json:"reference"`
 		SessionID string `json:"session_id"`
 		HomeID    string `json:"home_id"`
+		ParentID  string `json:"parent_id,omitempty"`
 	}
 	d := json.NewDecoder(http.MaxBytesReader(w, r.Body, 8192))
 	d.DisallowUnknownFields()
-	if d.Decode(&req) != nil || !artifactIdentity(req.SessionID, req.HomeID) || len(req.Reference) > 4096 || strings.ContainsAny(req.Reference, "\x00\r\n") {
+	if d.Decode(&req) != nil || !artifactIdentity(req.SessionID, req.HomeID) || req.ParentID != "" && (len(req.ParentID) != 32 || strings.Trim(req.ParentID, "0123456789abcdef") != "") || len(req.Reference) > 4096 || strings.ContainsAny(req.Reference, "\x00\r\n") {
 		writeJSON(w, 400, errBody("valid document reference required"))
 		return
 	}
@@ -41,14 +42,20 @@ func (s *Server) handleArtifactResolve(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 400, errBody("one request required"))
 		return
 	}
-	if s.deps.ArtifactResolve == nil {
+	if req.ParentID == "" && s.deps.ArtifactResolve == nil || req.ParentID != "" && s.deps.ArtifactRelated == nil {
 		writeJSON(w, 503, errBody("document previews unavailable"))
 		return
 	}
 	setAccessSession(r, req.SessionID)
-	f, err := s.deps.ArtifactResolve(req.Reference, req.SessionID, req.HomeID)
+	var f artifact.File
+	var err error
+	if req.ParentID != "" {
+		f, err = s.deps.ArtifactRelated(req.Reference, req.ParentID, req.SessionID, req.HomeID)
+	} else {
+		f, err = s.deps.ArtifactResolve(req.Reference, req.SessionID, req.HomeID)
+	}
 	if err != nil {
-		writeJSON(w, 404, map[string]string{"error": "document is not published for this conversation", "code": "document_unpublished"})
+		writeJSON(w, 404, map[string]string{"error": "file is unavailable for this conversation", "code": "document_unpublished"})
 		return
 	}
 	w.Header().Set("Cache-Control", "no-store")
