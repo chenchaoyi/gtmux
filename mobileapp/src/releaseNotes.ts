@@ -12,7 +12,7 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
-    version: '1.0.152',
+    version: '1.0.153',
     en: [
       'HQ and knowledge',
       'Keep the HQ conversation readable on iPad: use tabs when space is limited and side-by-side panels when there is room.',
