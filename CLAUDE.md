@@ -208,6 +208,8 @@ The cgo-free CLI/server supports macOS and Linux amd64/arm64; the native menu-ba
 
 ## Build & verify
 
+- Native/iOS verification and release tasks follow `docs/development-storage.md` (Chinese twin available): register paths/owners and space budgets, reuse compatible caches, and close authorized task-local storage after preserving evidence. Keep large build/dependency trees out of HQ knowledge/notes. Final handoff names every retained path, reason and next owner/review.
+
 - CLI: `make build`. App: `make app` (Swift app + bundled CLI → `Gtmux.app`).
 - **Run the gate before every commit** (same as CI): `make check`
   (= gofmt + `go vet` + staticcheck + `go test -race`). For the app:

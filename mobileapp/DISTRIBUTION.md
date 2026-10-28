@@ -181,6 +181,8 @@ from Safari installation, retained pairing, APNs/Live Activity, iPad layout and 
 
 ## 2. Local fallback: reuse the setup; check space before building
 
+Follow the [local build storage workflow](../docs/development-storage.md) for cache compatibility, task budgets and end-of-task cleanup. Keep build intermediates separate from the signed package and evidence.
+
 First check available disk space. Reuse dependencies and a matching validated IPA
 where possible; uploading an existing IPA needs no native rebuild. Keep archive,
 export and DerivedData paths specific to this task. Remove only this task's confirmed
