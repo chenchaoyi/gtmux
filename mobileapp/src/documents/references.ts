@@ -17,7 +17,8 @@ export function documentReference(href: string): DocumentReference | null {
     } catch { return null; }
   }
   if (/^[a-z][a-z\d+.-]*:/i.test(path) || path.startsWith('//')) return null;
-  if (!(path.startsWith('/') || path.startsWith('./') || path.startsWith('../') || path.startsWith('~/'))) return null;
+  const relativeFile = /\.(?:html?|md|markdown|pdf|png|jpe?g|txt|log|json|csv|go|rs|py|tsx?|js|css|sh|ya?ml)$/i.test(path);
+  if (!(path.startsWith('/') || path.startsWith('./') || path.startsWith('../') || path.startsWith('~/') || relativeFile)) return null;
   if (/[\u0000-\u001f\u007f]/.test(path)) return null;
   const name = path.split('/').filter(Boolean).pop() ?? path;
   return {reference: path, name, path};
@@ -56,7 +57,7 @@ export class DocumentError extends Error {
 
 export function documentErrorMessage(reason: DocumentError['reason'], zh: boolean): string {
   if (reason === 'unsupported') return zh ? '当前 App 暂不支持文件预览，可以复制路径。' : 'File preview is unavailable in this app version. You can copy the path.';
-  if (reason === 'unpublished') return zh ? '此文件尚未提供预览，或已被移除。原始路径仍可复制。' : 'This file has not been made available, or was removed. You can still copy its original path.';
+  if (reason === 'unpublished') return zh ? '文件不存在、已被移除，或不在当前会话的可查看范围内。' : 'The file is missing, was removed, or cannot be viewed from this conversation.';
   if (reason === 'forbidden') return zh ? '此连接没有文件查看权限。' : 'This connection cannot view files.';
   return zh ? '暂时无法读取文件。请检查连接后重试。' : 'Could not read the file. Check the connection and retry.';
 }

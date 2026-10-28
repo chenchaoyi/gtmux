@@ -35,8 +35,10 @@
 		5167744A528038764DAF9BD8 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 093EDA5FAEFE3016E1CC45F3 /* Haptics.swift */; };
 		57F653510DE6FF7F4FE6492F /* UsageSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FE194282D4681BF8D1C6866 /* UsageSnapshot.swift */; };
 		63EBCD9A1929C93834020707 /* WidgetUsageRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22AEE59ECB1BEE185D99CD10 /* WidgetUsageRequest.swift */; };
+		6F7320AC949ADE81205B6250 /* DocumentMarkdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15C33555DD5A8D7C9298D672 /* DocumentMarkdown.swift */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		796520A51FA5C1C9E776A832 /* TermSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F72C64B2FB140D5F0520CA0D /* TermSelectionView.swift */; };
+		8132E44D826407E8D690EA28 /* DocumentResources.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E50E47647F4BB2D4964B8FD /* DocumentResources.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		83BC7F134D226E8CB6317C68 /* HQMemory.m in Sources */ = {isa = PBXBuildFile; fileRef = 03497385A8CDE336A262AE97 /* HQMemory.m */; };
 		90337D0D47584D8ED7702B27 /* CopyTextManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2C35001BD69F212C27C0E37 /* CopyTextManager.swift */; };
@@ -104,6 +106,7 @@
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = GtmuxMobile/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = GtmuxMobile/Info.plist; sourceTree = "<group>"; };
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = GtmuxMobile/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		15C33555DD5A8D7C9298D672 /* DocumentMarkdown.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DocumentMarkdown.swift; sourceTree = "<group>"; };
 		1D3A1A7B6F2AD4E90DF12E33 /* HQMemory.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HQMemory.swift; path = GtmuxMobile/HQMemory.swift; sourceTree = "<group>"; };
 		1E66782A2E5FD0767FC538D3 /* UsageSnapshotStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UsageSnapshotStore.swift; sourceTree = "<group>"; };
 		20D906467D450616BB69C208 /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -122,6 +125,7 @@
 		5EDEF18007E30E77216ABB2B /* UsageWidgetRefresh.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UsageWidgetRefresh.swift; sourceTree = "<group>"; };
 		6450CBE20B8C88B43F242B3C /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		6CD68DAF2D8832BE77BB4E16 /* UsageSnapshotStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UsageSnapshotStore.swift; sourceTree = "<group>"; };
+		6E50E47647F4BB2D4964B8FD /* DocumentResources.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DocumentResources.swift; sourceTree = "<group>"; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = GtmuxMobile/AppDelegate.swift; sourceTree = "<group>"; };
 		763782373ACF78BF063EC6D7 /* UsageWidgetPresentation.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UsageWidgetPresentation.swift; sourceTree = "<group>"; };
 		777277D2A05C4A58D428B08B /* WidgetUsageRequest.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetUsageRequest.swift; sourceTree = "<group>"; };
@@ -249,6 +253,8 @@
 				310F828FDD6A5D78EF0BD51D /* GtmuxDocuments.swift */,
 				FBF358E511BE2CA9AC18615D /* GtmuxDocuments.m */,
 				CC4C83C073F7BD1C59E30FB5 /* DocumentStatusView.swift */,
+				15C33555DD5A8D7C9298D672 /* DocumentMarkdown.swift */,
+				6E50E47647F4BB2D4964B8FD /* DocumentResources.swift */,
 			);
 			name = Documents;
 			path = Documents;
@@ -723,6 +729,8 @@
 				4F39CAED87BC78C87FF681A0 /* UsageWidgetsModule.m in Sources */,
 				2B3A22CA8CA1C3726FA0FA54 /* WidgetOwnerConnection.swift in Sources */,
 				63EBCD9A1929C93834020707 /* WidgetUsageRequest.swift in Sources */,
+				6F7320AC949ADE81205B6250 /* DocumentMarkdown.swift in Sources */,
+				8132E44D826407E8D690EA28 /* DocumentResources.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

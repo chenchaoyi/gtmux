@@ -2527,8 +2527,9 @@ The default range is `--origin external`. Local tools and ambiguous historical s
 
 ## gtmux artifact
 
-Explicitly provide one server-local document for paired devices. Guest links cannot
-read it. No file is made available merely by appearing in a conversation.
+Explicitly provide a fixed server-local document revision for paired devices. Guest links
+cannot read it. Supported file links in verified conversations open directly without this
+command; use it for an immutable revision or a document outside those links.
 
 ```sh
 gtmux artifact add /absolute/path/report.html --session-id SESSION_ID [--home-id HOME_ID] [--json]

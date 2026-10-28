@@ -1,5 +1,5 @@
-// Package artifact publishes explicit, immutable conversation documents. Remote
-// readers resolve registered references, never arbitrary filesystem paths.
+// Package artifact snapshots immutable conversation documents, supplied explicitly
+// or through verified conversation links, never arbitrary remote filesystem reads.
 package artifact
 
 import (
@@ -26,6 +26,7 @@ const MaxFiles = 256
 
 var ErrUnavailable = errors.New("document unavailable")
 var ErrLimit = errors.New("document storage limit reached")
+var ErrRevoked = errors.New("document was removed")
 var digestPattern = regexp.MustCompile(`^[a-f0-9]{64}$`)
 var idPattern = regexp.MustCompile(`^[a-f0-9]{32}$`)
 
@@ -71,6 +72,15 @@ func validSession(id string) bool {
 // Add is a local, explicit publication. It snapshots a single owned regular file;
 // symlinks, hard links, special files and common credential locations are refused.
 func Add(source, session, home string) (File, error) {
+	return add(source, session, home, false, nil, "")
+}
+
+// Linked snapshots an already verified conversation link on the owner's explicit click.
+func Linked(source, session, home string) (File, error) {
+	return add(source, session, home, true, nil, "")
+}
+
+func add(source, session, home string, automatic bool, root *os.Root, relative string) (File, error) {
 	var out File
 	if !validSession(session) || len(home) > 128 || strings.ContainsAny(home, "\x00\r\n/\\") {
 		return out, fmt.Errorf("valid conversation identity required")
@@ -81,17 +91,30 @@ func Add(source, session, home string) (File, error) {
 	}
 	name := filepath.Base(abs)
 	k, mime := kind(name)
-	lower := strings.ToLower(filepath.ToSlash(abs))
+	canonical, err := filepath.EvalSymlinks(abs)
+	if err != nil {
+		return out, fmt.Errorf("cannot access document: %w", err)
+	}
+	lower := strings.ToLower(filepath.ToSlash(canonical))
 	if k == "" || strings.HasPrefix(name, ".") || strings.ContainsAny(name, "\x00\r\n") || strings.Contains(lower, "/.ssh/") || strings.Contains(lower, "/.aws/") || strings.Contains(lower, "/.git/") || strings.Contains(lower, "/keychains/") || strings.Contains(lower, "/.config/gtmux/") {
 		return out, fmt.Errorf("unsupported document format or protected location")
 	}
 	// The nonblocking/no-follow open cannot hang on a replaced FIFO or follow a
 	// substituted leaf. The descriptor is the only source used after this point.
-	fd, err := unix.Open(abs, unix.O_RDONLY|unix.O_NOFOLLOW|unix.O_NONBLOCK|unix.O_CLOEXEC, 0)
+	var src *os.File
+	if root != nil {
+		src, err = root.OpenFile(relative, os.O_RDONLY|unix.O_NOFOLLOW|unix.O_NONBLOCK, 0)
+	} else {
+		var handle int
+		handle, err = unix.Open(abs, unix.O_RDONLY|unix.O_NOFOLLOW|unix.O_NONBLOCK|unix.O_CLOEXEC, 0)
+		if err == nil {
+			src = os.NewFile(uintptr(handle), abs)
+		}
+	}
 	if err != nil {
 		return out, fmt.Errorf("cannot open document")
 	}
-	src := os.NewFile(uintptr(fd), abs)
+	fd := int(src.Fd())
 	defer src.Close()
 	beforeInfo, statErr := src.Stat()
 	var st unix.Stat_t
@@ -122,8 +145,25 @@ func Add(source, session, home string) (File, error) {
 		return File{}, err
 	}
 	defer unix.Flock(int(lock.Fd()), unix.LOCK_UN)
+	revoked, err := readRevocations()
+	if err != nil {
+		return File{}, err
+	}
+	if automatic && revoked[out.ID] {
+		return File{}, ErrRevoked
+	}
+	clearRevocation := func() error {
+		if revoked[out.ID] {
+			delete(revoked, out.ID)
+			return writeRevocations(revoked)
+		}
+		return nil
+	}
 	if previous, content, err := Open(out.ID); err == nil {
 		content.Close()
+		if err := clearRevocation(); err != nil {
+			return File{}, err
+		}
 		return previous, nil
 	}
 	rows, err := entries()
@@ -166,6 +206,9 @@ func Add(source, session, home string) (File, error) {
 	if err != nil {
 		// Only this unpublished, newly created content is eligible for rollback.
 		_ = os.Remove(filepath.Join(directory(), out.ID+".data"))
+		return File{}, err
+	}
+	if err := clearRevocation(); err != nil {
 		return File{}, err
 	}
 	return out, nil
@@ -279,8 +322,8 @@ func entries() ([]os.DirEntry, error) {
 		return nil, ErrUnavailable
 	}
 	defer dir.Close()
-	rows, err := dir.ReadDir(MaxFiles*2 + 3)
-	if err != nil && err != io.EOF || len(rows) > MaxFiles*2+1 {
+	rows, err := dir.ReadDir(MaxFiles*2 + 4)
+	if err != nil && err != io.EOF || len(rows) > MaxFiles*2+2 {
 		return nil, ErrUnavailable
 	}
 	return rows, nil
@@ -338,8 +381,57 @@ func Remove(id string) error {
 	if _, err = Get(id); err != nil {
 		return err
 	}
+	revoked, err := readRevocations()
+	if err != nil {
+		return err
+	}
+	if len(revoked) >= 4096 && !revoked[id] {
+		return ErrLimit
+	}
+	revoked[id] = true
+	if err = writeRevocations(revoked); err != nil {
+		return err
+	}
 	if err = root.Remove(id + ".json"); err != nil {
 		return err
 	}
 	return root.Remove(id + ".data")
+}
+
+// Removed snapshots cannot be silently recreated by a later remote click.
+func readRevocations() (map[string]bool, error) {
+	out := map[string]bool{}
+	root, err := os.OpenRoot(directory())
+	if err != nil {
+		return nil, err
+	}
+	defer root.Close()
+	file, err := root.OpenFile(".revocations", os.O_RDONLY|unix.O_NONBLOCK|unix.O_NOFOLLOW, 0)
+	if os.IsNotExist(err) {
+		return out, nil
+	}
+	if err != nil {
+		return nil, ErrUnavailable
+	}
+	defer file.Close()
+	if !ownedRegular(file) {
+		return nil, ErrUnavailable
+	}
+	data, err := io.ReadAll(io.LimitReader(file, 512<<10+1))
+	if err != nil || len(data) > 512<<10 || json.Unmarshal(data, &out) != nil || out == nil || len(out) > 4096 {
+		return nil, ErrUnavailable
+	}
+	for id, removed := range out {
+		if !idPattern.MatchString(id) || !removed {
+			return nil, ErrUnavailable
+		}
+	}
+	return out, nil
+}
+func writeRevocations(values map[string]bool) error {
+	data, err := json.Marshal(values)
+	if err != nil {
+		return err
+	}
+	return state.WritePrivateFile(filepath.Join(directory(), ".revocations"), data)
 }

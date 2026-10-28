@@ -19,12 +19,13 @@
 | `scripts/check-design.sh` | CI design/architecture conformance gate |
 | `ops/` | untracked, operator-private (secrets/runbooks) — never commit |
 
-When delivering a server-local report for conversation preview, publish its snapshot
-with `gtmux artifact add FILE --session-id SESSION_ID [--home-id HOME_ID]` before
-posting the returned `gtmux-file:` link. Obtain the owning turn identity from the
-current authenticated transcript; a pane ID is not a conversation ID. Merely writing
-an HTML file and posting its absolute path does not publish it. Verify resolution
-before describing a report as available in the app. See
+Deliver server-local files with ordinary Markdown links to their real absolute paths.
+An owner/full-scope paired viewer can open a verified public conversation link directly;
+the server checks its exact session/home and snapshots the source on click. Code examples
+and unlinked paths do not grant access. `gtmux artifact add FILE --session-id SESSION_ID
+[--home-id HOME_ID]` remains available for fixed revisions or files outside transcript links,
+and for compatibility with older servers. Verify resolution before claiming delivery works;
+users should not need to register an attachment. See
 [conversation documents](docs/design/conversation-documents.md).
 
 **gtmux** is a command center for tmux sessions and the agents in them. Two surfaces

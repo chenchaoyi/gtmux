@@ -16,6 +16,7 @@ root = args.output
 root.mkdir(parents=True, exist_ok=True)
 hits=[]
 contents = {}
+parents = set()
 attempts = {}
 class Handler(http.server.BaseHTTPRequestHandler):
  def log_message(self,*args): pass
@@ -26,6 +27,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
  def do_POST(self):
   hits.append({'method':'POST','path':self.path,'auth':self.headers.get('Authorization')=='Bearer fixture-only'})
   req=json.loads(self.rfile.read(int(self.headers.get('Content-Length','0')))); ref=req['reference']
+  hits[-1].update({'reference':ref,'parent_id':req.get('parent_id','')})
+  if req.get('parent_id') and (req['parent_id'] not in parents or ref not in ['images/preview.png','related.md']):self.reply(403,b'{}');return
   attempts[ref]=attempts.get(ref,0)+1
   if ref.endswith('recover') and attempts[ref]==1:self.reply(404,b'{"code":"document_unpublished"}');return
   if ref.endswith('redirect'):self.reply(302,b'',extra={'Location':'/beacon/redirect'});return
@@ -36,18 +39,21 @@ class Handler(http.server.BaseHTTPRequestHandler):
   if ref.endswith('large'):self.reply(413,b'{}');return
   if ref.endswith('slow'):time.sleep(8)
   payload=html.encode();kind='html';mime='text/html';name='Report.html'
-  if ref.endswith('.txt'):
+  if ref.endswith('.md'):
+   payload=markdown.encode();kind='markdown';mime='text/markdown';name='Review.md'
+  elif ref.endswith('.txt'):
    payload=('中文 selection 😀 — complete original file.\n' * 16000).encode();kind='text';mime='text/plain';name='Report.txt'
-  elif ref.endswith('.png'):
-   payload=base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j6XcAAAAASUVORK5CYII=');kind='image';mime='image/png';name='Report.png'
+  elif ref.endswith('.png') or ref=='gtmux-file:22222222222222222222222222222222':
+   payload=(pathlib.Path(__file__).resolve().parents[3]/'assets/agent-icons/codex.png').read_bytes();kind='image';mime='image/png';name='Report.png'
   elif ref.endswith('.pdf'):
    payload=pdf;kind='pdf';mime='application/pdf';name='Report.pdf'
   if ref.endswith('badimage'):payload=b'not an image';kind='image';mime='image/png';name='Report.png'
   sha=hashlib.sha256(payload).hexdigest()
   identifier=hashlib.sha256(ref.encode()).hexdigest()[:32]
   contents[identifier]=payload
+  if kind=='markdown':parents.add(identifier)
   if ref.endswith('checksum'):sha='0'*64
-  meta={'id':identifier,'name':name,'kind':kind,'media_type':mime,'bytes':len(payload),'sha256':sha,'session_id':'fixture','source':'/fixture/report.html','created_at':1792915200}
+  meta={'id':identifier,'name':name,'kind':kind,'media_type':mime,'bytes':len(payload),'sha256':sha,'session_id':'fixture','source':'/fixture/report.md' if kind=='markdown' else '/fixture/images/preview.png' if kind=='image' else '/fixture/report.html','created_at':1792915200}
   self.reply(200,json.dumps(meta).encode())
  def do_GET(self):
   if self.path=='/stats':self.reply(200,json.dumps(hits).encode());return
@@ -66,6 +72,7 @@ for i,obj in enumerate(objects,1):
 xref=len(pdf);pdf+=b'xref\n0 6\n0000000000 65535 f \n'
 for offset in offsets[1:]:pdf+=f'{offset:010d} 00000 n \n'.encode()
 pdf+=f'trailer\n<< /Root 1 0 R /Size 6 >>\nstartxref\n{xref}\n%%EOF'.encode()
+markdown = pathlib.Path(__file__).with_name('conversation-fixture.md').read_text()
 server=http.server.ThreadingHTTPServer(('127.0.0.1',0),Handler)
 port=server.server_address[1]
 html='''<!doctype html><html><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font:16px -apple-system;padding:20px;color:#202124;background:#f6f7f9} h1{font-size:28px}table{border-collapse:collapse;background:white;width:100%}td,th{padding:14px;border-bottom:1px solid #ddd;text-align:left}button{font:inherit;padding:12px;border:0;border-radius:10px;color:white;background:#3158cd}</style><h1>本次更新 · Review</h1><p id="inline">LOADING</p><p>这是隔离数据。报告可滚动、选择文字，开启交互后可展开详情。</p><button onclick="this.textContent='已展开';document.getElementById('more').hidden=false">展开详情</button><p id="more" hidden>详细修改内容：文件预览与选字体验。</p><table><tr><th>功能</th><th>结果</th></tr><tr><td>交互内容</td><td>开启交互后可用</td></tr><tr><td>外部 HTTP 请求</td><td>已阻止</td></tr><tr><td>配对凭据</td><td>不进入文档</td></tr></table><div style="height:600px"></div><p>报告结束</p><script>document.getElementById('inline').textContent='INLINE_OK';if(UDPPORT>0){try{let p=new RTCPeerConnection({iceServers:[{urls:'stun:127.0.0.1:UDPPORT'}]});p.createDataChannel('synthetic');p.createOffer().then(o=>p.setLocalDescription(o));setTimeout(()=>p.close(),60000)}catch(e){}};let b='http://127.0.0.1:PORT/beacon/';fetch(b+'fetch').catch(()=>{});new Image().src=b+'image';try{new WebSocket('ws://127.0.0.1:PORT/beacon/socket')}catch(e){};window.open(b+'popup');let f=document.createElement('iframe');f.src=b+'frame';document.body.appendChild(f);</script></html>'''.replace('UDPPORT',str(args.rtc_probe_port)).replace('PORT',str(port))
