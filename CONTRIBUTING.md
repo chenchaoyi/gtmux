@@ -23,6 +23,8 @@ This file is a maintainer document and stays in English, like
 `docs/TROUBLESHOOTING.md` and `docs/release-signing.md`. The bilingual rule covers user
 docs; see CLAUDE.md.
 
+For native development and verification, follow the [local build storage workflow](docs/development-storage.md) ([中文](docs/development-storage.zh.md)): register output ownership and budgets, reuse compatible caches, preserve evidence, and complete authorized task cleanup before handoff.
+
 ## Repo map
 
 | Path | What it is |
