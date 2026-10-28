@@ -65,7 +65,9 @@
     });
   }
   var term = null, fit = null, lastText = '', curPane = null, lastSig = '', theme = null;
-  var curAgent = null, chatTimer = null, chatSig = '', lastTurns = [], chatExpanded = {};
+  var curAgent = null, chatTimer = null, chatSig = '', lastTurns = [], chatExpanded = {}, traceState = resetTrace(traceState);
+  var chatLive = {}, serverClock = 0, serverClockAt = 0;
+  var pendingPrompts = {};
   var lastAgents = [], optTimer = null; // for focus prev/next + the waiting reply bar
   var interactionAnsweredAt = 0;
   var lastInteraction = null, interactionQuestion = '', interactionFailed = false, interactionPeek = false, interactionCollapsed = false, interactionRenderSig = '';
@@ -75,6 +77,9 @@
   var BUNDLED = ['Hack', 'JetBrains Mono', 'Fira Code', 'IBM Plex Mono'];
   function lsGet(k, d) { try { return localStorage.getItem(k) || d; } catch (e) { return d; } }
   var fontPref = lsGet('gtmux.fontPref', 'auto');          // 'auto' | 'system' | a bundled family
+  var appearancePref = lsGet('gtmux.appearance', 'system');
+  if (!['system', 'light', 'dark'].includes(appearancePref)) appearancePref = 'system';
+  var systemAppearance = null;
   var sizePref = parseInt(lsGet('gtmux.fontSize', '0'), 10) || 0;  // 0 = follow terminal/default
   var preferredPaneMode = lsGet('gtmux.paneMode', 'term');
   var paneMode = preferredPaneMode;          // pane view tab: 'term' | 'chat'
@@ -163,35 +168,44 @@
   // the CHINESE half and translating in one place beats sprinkling data-en attributes
   // through the HTML, and it puts every string a reader sees in one list.
   var CHROME = [
-    ['panes-btn', {title: T('All panes', '所有 pane'), label: T('All panes', '所有 pane')}],
-    ['panes-title', {text: T('All panes', '所有 pane')}],
-    ['panes-search', {placeholder: T('⌕ session / command / directory', '⌕ 会话 / 命令 / 目录')}],
-    ['cmdk-input', {placeholder: T('⌘K · jump to a pane (name / agent / %id)', '⌘K · 跳到 pane（输入名称 / agent / %id）')}],
-    ['jump', {html: T('↓ Latest', '↓ 最新') + '<span class="jdot" hidden></span>'}],
-    ['pane-ro', {text: T('🔒 Input is not allowed in this pane', '🔒 此 pane 不允许输入')}],
-    ['wb-snap', {html: '<span class="wb-sw"></span>' + T('Snap to grid', '贴齐网格'), title: T('Snap to grid', '贴齐网格')}],
-    ['wb-surface', {text: T('⤢ Show waiting panes', '⤢ 自动显示等待中的 pane'), title: T('Show waiting panes', '自动显示等待中的 pane')}],
-    ['wb-preset', {html: '▦ ' + T('Layout', '布局') + '<span id="wb-preset-cur"></span> ▾', title: T('Layout presets', '布局预设')}],
+    ['back', {html: uiIcon('back'), title: T('Back to workspace', '返回工作区'), label: T('Back to workspace', '返回工作区')}],
+    ['panes-btn', {html: uiIcon('layout'), title: T('All panes', '所有窗格'), label: T('All panes', '所有窗格')}],
+    ['panes-title', {text: T('All panes', '所有窗格')}],
+    ['panes-search', {placeholder: T('Session, command or directory', '搜索会话、命令或目录')}],
+    ['cmdk-input', {placeholder: T('Search by name, agent or %id', '搜索名称、Agent 或 %id'), label: T('Find a session', '查找会话')}],
+    ['jump', {html: uiIcon('down') + T('Latest messages', '最新消息') + '<span class="jdot" hidden></span>'}],
+    ['chat-ro', {text: T('Read-only · ask the owner to enable input for this pane.', '只读 · 可请分享者开启此窗格的输入。')}],
+    ['pane-ro', {text: T('🔒 Input is not allowed in this pane', '🔒 此窗格不允许输入')}],
+    ['wb-snap', {html: '<span class="wb-sw"></span>' + T('Snap to grid', '对齐网格'), title: T('Snap to grid', '对齐网格')}],
+    ['wb-surface', {html: uiIcon('surface') + T('Auto-open waiting sessions', '自动打开待处理会话'), title: T('Add sessions to the workspace when they need a reply', '会话需要回复时，自动加入工作区')}],
+    ['wb-preset', {html: uiIcon('layout') + T('Layout', '布局') + '<span id="wb-preset-cur"></span>' + uiIcon('chevron'), title: T('Layout presets', '布局预设')}],
     // The focus bar, the appearance panel and the workbench rail (%12, 2026-10-06: these
     // stayed English on a Chinese page; the test above only caught the other direction).
-    ['pane-prev', {title: T('Previous pane', '上一个 pane')}],
-    ['pane-next', {title: T('Next pane', '下一个 pane')}],
+    ['pane-prev', {html: uiIcon('left'), title: T('Previous pane', '上一个窗格'), label: T('Previous pane', '上一个窗格')}],
+    ['pane-next', {html: uiIcon('right'), title: T('Next pane', '下一个窗格'), label: T('Next pane', '下一个窗格')}],
     ['font-dn', {title: T('Smaller', '缩小')}],
     ['font-up', {title: T('Larger', '放大')}],
-    ['copy-screen', {title: T('Copy visible screen', '复制当前屏幕')}],
-    ['gear', {title: T('Appearance', '外观')}],
-    ['wb-gear', {title: T('Appearance', '外观')}],
+    ['copy-screen', {html: uiIcon('copy'), title: T('Copy visible screen', '复制屏幕内容'), label: T('Copy visible screen', '复制屏幕内容')}],
+    ['gear', {html: uiIcon('settings'), title: T('Settings', '设置'), label: T('Settings', '设置')}],
+    ['wb-gear', {html: uiIcon('settings'), title: T('Settings', '设置'), label: T('Settings', '设置')}],
     ['wb-conn', {title: T('Connection', '连接')}],
-    ['font-lbl', {text: T('Font', '字体')}],
+    ['font-lbl', {text: T('Terminal font', '终端字体')}],
     ['font-auto', {text: T('Match terminal', '跟随终端')}],
     ['font-system', {text: T('System', '系统')}],
-    ['size-lbl', {text: T('Size', '字号')}],
+    ['appearance-lbl', {text: T('Appearance', '外观')}],
+    ['appearance-system', {text: T('System', '跟随系统')}],
+    ['appearance-light', {text: T('Light', '浅色')}],
+    ['appearance-dark', {text: T('Dark', '深色')}],
+    ['appearance-sel', {label: T('Appearance', '外观')}],
+    ['return-send-lbl', {text: T('Return sends', '回车发送')}],
+    ['return-send-hint', {text: T('Enter adds a line by default. ⌘/Ctrl+Enter sends.', '默认 Enter 换行，⌘/Ctrl+Enter 发送。')}],
+    ['size-lbl', {text: T('Terminal text size', '终端字号')}],
     ['rail-title', {text: T('Sessions', '会话')}],
-    ['rail-search', {placeholder: T('⌕ search', '⌕ 搜索')}],
-    ['rail-collapse', {title: T('Collapse sidebar', '收起侧栏')}],
+    ['rail-search', {placeholder: T('Search sessions', '搜索会话')}],
+    ['rail-collapse', {html: uiIcon('sidebarClose'), title: T('Collapse sidebar', '收起侧栏'), label: T('Collapse sidebar', '收起侧栏')}],
     ['rail-resize', {title: T('Drag to resize', '拖动调整宽度')}],
-    ['rail-tab', {title: T('Show sidebar', '显示侧栏')}],
-    ['panes-back', {title: T('Back', '返回')}],
+    ['rail-tab', {html: uiIcon('sidebarOpen') + '<span id="rail-tab-n"></span>', title: T('Show sidebar', '显示侧栏'), label: T('Show sidebar', '显示侧栏')}],
+    ['panes-back', {html: uiIcon('back'), title: T('Back', '返回'), label: T('Back', '返回')}],
   ];
   function labelChrome() {
     // The page's language is the reader's, so screen readers, hyphenation and fonts pick
@@ -207,23 +221,37 @@
       if (v.label != null) e.setAttribute('aria-label', v.label);
     });
     document.querySelectorAll('#mode button').forEach(function (b) {
-      b.textContent = b.dataset.mode === 'term' ? T('Terminal', '终端') : T('Chat', '对话');
+      b.textContent = b.dataset.mode === 'term' ? T('Terminal', '终端') : b.dataset.mode === 'trace' ? T('Trace', '轨迹') : T('Chat', '对话');
     });
     var hint = document.querySelector('.rail-hint');
     // A double-click on a row ADDS it to the board (treeRow.ondblclick → addTile); it never
     // opened full screen, which is the tile's ⤢ (%12, 2026-10-06).
-    if (hint) hint.textContent = T('Drag a pane onto the board · double-click to add it', '拖 pane 到画板 · 双击加入画板');
+    if (hint) hint.textContent = T('Double-click a session to open it, or drag it into the workspace', '双击打开会话，或拖入工作区');
+    $('rail-search').setAttribute('aria-label', T('Search sessions', '搜索会话'));
+    $('panes-search').setAttribute('aria-label', T('Search panes', '搜索窗格'));
     var lead = document.querySelector('.rb-lead');
-    if (lead) lead.textContent = T('read-only · reply in this pane:', '只读 · 在此 pane 回应：');
+    if (lead) lead.textContent = T('Read-only · awaiting reply:', '只读 · 等待回复：');
     var rhint = document.querySelector('.rb-hint');
     // Only shown where this page may not type. It used to say "or scan to take over":
     // there is no scan here, and the same link on a phone is still view-only (%12,
     // 2026-10-06). What does work is the sharer allowing input, or another device.
-    if (rhint) rhint.textContent = T('→ view only here: ask the person who shared it to allow input on this pane, or answer where you can type', '→ 这里只能查看：请分享者开启这个 pane 的输入，或在能输入的地方回应');
+    if (rhint) rhint.textContent = T('Read-only. Ask the owner to enable input, or reply from a device with access.', '当前为只读。请联系分享者开启输入，或在已授权的设备上回复。');
+    $('cmdk').setAttribute('aria-label', T('Find a session', '查找会话'));
+    $('cmdk-list').setAttribute('aria-label', T('Sessions', '会话'));
   }
 
   // ---- helpers ----------------------------------------------------------
-  function show(which) { if (which !== 'chat') { $('chat-input').hidden = true; $('chat-interaction').hidden = true; } cancelReads(); viewEpoch++; ['gate', 'radar', 'panes', 'pane', 'chat', 'workbench'].forEach(function (id) { $(id).hidden = id !== which; }); if (which !== 'workbench') WB.on = false; }
+  function show(which) { if (which !== 'chat') $('chat-interaction').hidden = true; cancelReads(); viewEpoch++; ['gate', 'radar', 'panes', 'pane', 'chat', 'workbench'].forEach(function (id) { $(id).hidden = id !== which; }); if ($('chat-input')) $('chat-input').hidden = true; if (which !== 'workbench') WB.on = false; updatePageTitle(which); }
+  function updatePageTitle(view) {
+    var title = T('Agent workspace', 'Agent 工作台');
+    if (view === 'gate') title = T('Connect', '连接');
+    else if (view === 'panes') title = T('All panes', '所有窗格');
+    else if ((view === 'chat' || view === 'pane') && curAgent) {
+      var mode = paneMode === 'trace' ? T('Trace', '轨迹') : paneMode === 'chat' ? T('Chat', '对话') : T('Terminal', '终端');
+      title = primary(curAgent) + ' · ' + mode;
+    }
+    document.title = title + ' · gtmux';
+  }
   // GATE states. Each says what the situation IS and the one thing to do about it, in
   // both languages — the old screen was a single English sentence with no subject, and it
   // pointed at a phone-app affordance ("open on computer") that does not exist. The
@@ -268,6 +296,8 @@
   // a command — the old copy carried markdown backticks into a rendered page, where they
   // showed up as literal ` characters.
   function gate(which) {
+    clearComposeData();
+    document.querySelectorAll('.browser-dialog').forEach(function (dialog) { if (dialog.retire) dialog.retire(); else { dialog.close(); dialog.remove(); } });
     var g = GATE[which] || GATE.unpaired;
     var state = $('gate-state'), steps = $('gate-steps');
     state.textContent = g.zh;
@@ -287,11 +317,14 @@
     $('gate-code').hidden = false;
     show('gate');
     $('bar').hidden = false; $('title').textContent = 'gtmux'; $('sub').textContent = '';
-    $('mode').hidden = true; $('back').hidden = true; $('gear').hidden = true; $('panes-btn').hidden = true;
+    $('conn').hidden = true;
+    $('mode').hidden = true; $('back').hidden = true; $('gear').hidden = false; $('panes-btn').hidden = true;
     $('settings').hidden = true; hidePresetMenu(); closeCmdk(); $('cmdk-list').textContent = ''; hideFocusChrome();
     ['identity', 'wb-identity', 'guest-scope'].forEach(function (id) { var n = $(id); if (n) n.hidden = true; });
     SHARE = {known: false, input: false, all: false, panes: {}};
     curPane = null; curAgent = null; lastAgents = [];
+    lastTurns = []; chatSig = ''; traceState = resetTrace(traceState); chatExpanded = {}; chatLive = {}; pendingPrompts = {}; $('chat').innerHTML = '';
+    if (paneComposer) paneComposer.reset();
     WB.agents = []; WB.prevStatus = null;
     clearInterval(radarTimer); clearInterval(paneTimer); clearInterval(chatTimer); clearInterval(panesTimer);
     radarTimer = paneTimer = chatTimer = panesTimer = null;
@@ -299,7 +332,7 @@
     // The next successful pairing restores only panes in its authorized roster.
     if (WB.tiles.length) {
       WB.saved = WB.tiles.map(function (t) { return {id: t.id, x: t.x, y: t.y, w: t.w, h: t.h, mode: t.mode}; });
-      WB.tiles.forEach(function (t) { clearInterval(t.timer); t.removed = true; if (t.inputDispose) t.inputDispose(); if (t.term) t.term.dispose(); t.el.remove(); });
+      WB.tiles.forEach(function (t) { clearInterval(t.timer); t.removed = true; resetTrace(t.traceState); if (t.inputDispose) t.inputDispose(); if (t.term) t.term.dispose(); t.el.remove(); });
       WB.tiles = []; maxedTile = null; $('board').classList.remove('maximized');
       var exit = $('board').querySelector('.max-exit'); if (exit) exit.remove();
     }
@@ -323,7 +356,7 @@
   var connFails = 0;
   function connStateFor(ok) { if (ok) { connFails = 0; return 'live'; } connFails++; return connFails === 1 ? 'retry' : 'off'; }
   var CONN_TITLE = {live: T('connected', '已连接'), retry: T('reconnecting…', '重连中'), off: T('offline', '离线')};
-  function renderConn(el, st) { el.className = 'conn ' + st; el.textContent = serverLabel(); el.title = CONN_TITLE[st] || ''; }
+  function renderConn(el, st) { el.hidden = false; el.className = 'conn ' + st; el.textContent = serverLabel(); el.title = CONN_TITLE[st] || ''; }
   function setConn(ok) { renderConn($('conn'), connStateFor(ok)); }
   function isNative(a) { return a.source === 'native'; }
   function readableConversation(a) { return !!a && isNative(a) && a.can_read_conversation === true && !!a.session_id; }
@@ -411,7 +444,8 @@
     var mono = document.createElement('span'); mono.className = 'mono'; mono.textContent = agentMark(a.agent);
     av.appendChild(img); av.appendChild(mono);
     if (withBadge) { var bdg = document.createElement('span'); bdg.className = 'badge'; bdg.innerHTML = badgeSVG(COLORS[a.status] ? a.status : 'running'); av.appendChild(bdg); }
-    if (a.icon) loadIcon(a.agent, img, mono);
+    if (a.role === 'supervisor') { av.classList.add('avatar-hq'); mono.textContent = 'HQ'; av.title = 'Gtmux HQ'; }
+    else if (a.agent) loadIcon(a.agent, img, mono);
     return av;
   }
 
@@ -513,8 +547,8 @@
     var p = document.createElement('div');
     p.className = 'sender-note';
     p.textContent = from.kind === 'hq'
-      ? T('from HQ', 'HQ 发来的')
-      : T('from ' + (from.label || 'another session'), (from.label || '另一个会话') + ' 派来的');
+      ? T('from HQ', '来自 HQ')
+      : T('from ' + (from.label || 'another session'), '来自 ' + (from.label || '其他会话'));
     return p;
   }
 
@@ -547,20 +581,20 @@
     text.appendChild(p); text.appendChild(s);
 
     var right = document.createElement('div'); right.className = 'right';
-    if (isNative(a) && (a.current_client === 'unconfirmed' || launchHost(a))) { var origin = document.createElement('span'); origin.className = 'task'; origin.textContent = nativeSourceLabel(a); s.appendChild(origin); }
     // An unknown completion must not be dated by a window repaint.
     var t = relTime(a.since || (a.status !== 'idle' ? a.activity_at : 0));
     if (t) { var tm = document.createElement('span'); tm.className = 'time'; tm.textContent = t; right.appendChild(tm); }
-    var ag = document.createElement('span'); ag.className = 'agent'; ag.textContent = a.agent || ''; right.appendChild(ag);
+    var ag = document.createElement('span'); ag.className = 'agent'; ag.textContent = a.agent || ''; ag.hidden = isNative(a); right.appendChild(ag);
     // Native (non-tmux) agents are SENSED read-only: no pane to open → a "native" tag
     // instead of the chevron, and no click target (mirrors the app/menu-bar).
     if (isNative(a)) {
-      var nt = document.createElement('span'); nt.className = 'native-tag'; nt.textContent = (a.current_client === 'unconfirmed' || a.client === 'chatgpt_desktop') ? (a.follow && a.follow.hq ? T('HQ following', 'HQ 跟进中') : T('Status only', '仅显示状态')) : 'native'; right.appendChild(nt);
+      var nt = document.createElement('span'); nt.className = 'native-tag'; nt.textContent = readableConversation(a) ? T('Read only', '只读') : (a.current_client === 'unconfirmed' || a.client === 'chatgpt_desktop') ? (a.follow && a.follow.hq ? T('HQ following', 'HQ 跟进中') : T('Status only', '仅显示状态')) : 'native'; right.appendChild(nt);
       row.classList.add('native');
       if (readableConversation(a)) { row.onclick = function () { openConversation(a); }; row.tabIndex=0; row.setAttribute('role','button'); row.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();openConversation(a);}}; }
     } else {
-      var ch = document.createElement('span'); ch.className = 'chev'; ch.textContent = '›'; right.appendChild(ch);
+      var ch = document.createElement('span'); ch.className = 'chev'; ch.innerHTML = uiIcon('right'); right.appendChild(ch);
       row.onclick = function () { openAgent(a); };
+      keyboardLink(row, row.onclick);
     }
 
     row.appendChild(av); row.appendChild(text); row.appendChild(right);
@@ -616,6 +650,7 @@
       if (e.defaultPrevented || e.isComposing || e.altKey) return;
       var tag = (e.target && e.target.tagName) || '';
       if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+      if (!$('workbench').hidden && (e.metaKey || e.ctrlKey) && !e.shiftKey && (e.key === 'k' || e.key === 'K') && !(e.target && e.target.closest && e.target.closest('[contenteditable]:not([contenteditable="false"]), [role="textbox"]'))) { e.preventDefault(); openCmdk(); return; }
       // Native controls own their activation keys; editable regions own typing.
       // Inspect ancestors too: focus can sit on a child inside a custom control.
       if (e.target && e.target.closest && e.target.closest('button, summary, .step-input, a[href], [role="button"], [role="textbox"], [contenteditable]:not([contenteditable="false"])')) return;
@@ -661,7 +696,7 @@
       return api('/api/agents', {signal: signal}).then(function (r) {
         if (!current()) return null;
         if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
-        if (!r.ok) throw new Error('agents'); return r.json();
+        if (!r.ok) throw new Error('agents'); rememberServerClock(r); return r.json();
       }).then(function (agents) { if (!agents || !current(true)) return; setConn(true); lastAgents = agents; renderRadar(agents); fetchShare(); })
         .catch(function () { if (current()) setConn(false); });
     }, 15000, function () { setConn(false); });
@@ -669,6 +704,7 @@
 
   function startRadar() {
     show('radar'); $('bar').hidden = false; $('back').hidden = true; $('mode').hidden = true; hideFocusChrome(); $('title').textContent = 'gtmux'; $('sub').textContent = '';
+    $('gear').hidden = false;
     $('panes-btn').hidden = false; // the Browse-all-panes entry lives on the radar only
     curPane = null; curAgent = null; lastSig = '';
     clearInterval(paneTimer); paneTimer = null; clearInterval(chatTimer); chatTimer = null;
@@ -697,8 +733,9 @@
   // Adapt a PaneRow → the shape openAgent/pollPane consume. A plain pane invents no
   // agent status (status 'running' = the neutral bucket); its label follows the same plainLabel chain as the roster.
   function isHQPane(p) {
-    var live = byId(lastAgents, p.pane_id);
-    return p.tier === 'agent' && (p.role == null ? (live && live.role) : p.role) === 'supervisor';
+    if (!p || p.tier && p.tier !== 'agent') return false;
+    var live = p.pane_id && byId(lastAgents, p.pane_id);
+    return (p.role == null ? (live && live.role) : p.role) === 'supervisor';
   }
   function paneSessionTitle(session, hq) {
     return hq && session.trim().toLowerCase() === 'hq' ? 'Gtmux HQ' : session;
@@ -763,16 +800,16 @@
       var pending = 'pending|' + panesFailed;
       if (panesSig === pending) return;
       panesSig = pending;
-      $('panes-count').textContent = panesFailed ? T('could not read', '读不到') : T('reading…', '正在读取…');
+      $('panes-count').textContent = panesFailed ? T('Unable to load', '加载失败') : T('reading…', '正在读取…');
       $('panes-fold-all').hidden = true;
       root.innerHTML = '';
       if (panesFailed) {
         var f = document.createElement('div'); f.className = 'pb-empty pb-failed';
-        var f1 = document.createElement('div'); f1.textContent = T('Could not read the panes on this server', '读不到这台服务器上的 pane');
-        var f2 = document.createElement('div'); f2.className = 'pb-hint'; f2.textContent = T('Trying again every few seconds', '每隔几秒会再试一次');
+        var f1 = document.createElement('div'); f1.textContent = T('Unable to load panes', '无法加载窗格列表');
+        var f2 = document.createElement('div'); f2.className = 'pb-hint'; f2.textContent = T('Reconnecting automatically…', '正在自动重试…');
         f.appendChild(f1); f.appendChild(f2); root.appendChild(f);
       } else {
-        root.appendChild(brandLoaderEl(T('Reading the panes on this server…', '正在读取这台服务器上的 pane…')));
+        root.appendChild(brandLoaderEl(T('Reading the panes on this server…', '正在读取这台服务器上的窗格…')));
       }
       return;
     }
@@ -802,7 +839,7 @@
     var count = $('panes-count'); count.innerHTML = '';
     var ct = document.createElement('span');
     ct.textContent = (q ? shown + '/' + panesRows.length : String(panesRows.length)) +
-      T(' panes · ', ' 个 pane · ') + order.length + T(' sessions', ' 个会话') +
+      T(' panes · ', ' 个窗格 · ') + order.length + T(' sessions', ' 个会话') +
       (panesFailed ? T(' · not refreshed', ' · 刷新失败') : '');
     count.appendChild(ct);
     if (needYou) {
@@ -821,8 +858,8 @@
     root.innerHTML = '';
     if (!order.length) {
       var e = document.createElement('div'); e.className = 'pb-empty';
-      e.textContent = q ? T('No pane matches that search.', '没有匹配的 pane。')
-        : T('No tmux panes yet. Open one on your server and it shows up here.', '还没有 tmux pane。在服务器上开一个，这里就会出现。');
+      e.textContent = q ? T('No matching panes', '未找到匹配的窗格')
+        : T('No panes. Open a tmux pane on the server to begin.', '暂无窗格。在服务器上新建 tmux 窗格后即可查看。');
       root.appendChild(e); return;
     }
     order.forEach(function (sess) {
@@ -980,13 +1017,14 @@
     // The id is its own element, not part of the joined text, because it is CLICKABLE:
     // it copies `gtmux focus %N`, turning a token you can read into one you can run.
     // The click stops there — the row itself still opens the pane.
-    var pid = document.createElement('span'); pid.className = 'pb-pid'; pid.textContent = p.pane_id;
+    var pid = document.createElement('button'); pid.type = 'button'; pid.className = 'pb-pid'; pid.textContent = p.pane_id;
     pid.title = T('Copy ', '复制 ') + paneFocusCommand(p.pane_id);
+    pid.setAttribute('aria-label', pid.title);
     pid.onclick = function (e) {
       e.stopPropagation();
       copyText(paneFocusCommand(p.pane_id)).then(function (ok) {
-        pid.textContent = ok ? T('✓ copied', '✓ 已复制') : T('Copy failed', '复制失败'); pid.classList.toggle('ok', ok);
-        setTimeout(function () { pid.textContent = p.pane_id; pid.classList.remove('ok'); }, 1200);
+        pid.textContent = ok ? T('Copied', '已复制') : T('Copy failed', '复制失败'); pid.classList.toggle('ok', ok);
+        setTimeout(function () { pid.textContent = p.pane_id; pid.classList.remove('ok'); }, 1600);
       });
     };
     sub.appendChild(pid);
@@ -996,8 +1034,9 @@
     if (!isAgent && p.command && p.command !== label) bits.push(p.command);
     if (bits.length) sub.appendChild(document.createTextNode('  ·  ' + bits.join('  ·  ')));
     tx.appendChild(nm); tx.appendChild(sub); row.appendChild(tx);
-    var ch = document.createElement('span'); ch.className = 'pb-chev'; ch.textContent = '›'; row.appendChild(ch);
+    var ch = document.createElement('span'); ch.className = 'pb-chev'; ch.innerHTML = uiIcon('right'); row.appendChild(ch);
     row.onclick = function () { var live = byId(lastAgents, p.pane_id); openAgent(live || a); };
+    keyboardLink(row, row.onclick);
     return row;
   }
 
@@ -1031,7 +1070,7 @@
   }
   function termSize() { return sizePref || (theme && theme.fontSize) || 14; }
   function applyAppearance() {
-    document.body.style.background = (theme && theme.background) || GHOSTTY.bg;
+    document.documentElement.style.setProperty('--terminal-bg', (theme && theme.background) || GHOSTTY.bg);
     if (term) {
       term.options.theme = xtermTheme();
       term.options.fontFamily = resolveFont();
@@ -1046,6 +1085,22 @@
       t.term.options.fontSize = Math.max(10, termSize() - 3);
       try { t.fit.fit(); } catch (e) {}
     });
+  }
+  // Browser chrome follows its own appearance; terminal colors remain authentic.
+  function applyWebAppearance() {
+    var dark = appearancePref === 'dark' || (appearancePref === 'system' && systemAppearance && systemAppearance.matches);
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+    var sel = $('appearance-sel'); if (sel) sel.value = appearancePref;
+  }
+  function setupWebAppearance() {
+    systemAppearance = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+    applyWebAppearance();
+    if (systemAppearance) {
+      var changed = function () { if (appearancePref === 'system') applyWebAppearance(); };
+      if (systemAppearance.addEventListener) systemAppearance.addEventListener('change', changed);
+      else if (systemAppearance.addListener) systemAppearance.addListener(changed);
+    }
   }
   function fetchTheme() {
     return api('/api/theme').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
@@ -1255,7 +1310,8 @@
     if (!bar) return;
     var copy = bar.querySelector('.pin-copy');
     var toggleBtn = bar.querySelector('.pin-toggle');
-    copy.textContent = T('Copy', '复制');
+    copy.innerHTML = uiIcon('copy'); copy.title = T('Copy prompt', '复制本轮消息'); copy.setAttribute('aria-label', copy.title);
+    toggleBtn.innerHTML = uiIcon('chevron');
     // Keyboard and screen readers use the two buttons, each with its own native Enter and
     // Space; no key handler sits on the bar to swallow theirs (#1290 W1).
     var toggle = function () {
@@ -1272,10 +1328,7 @@
     }
     copy.addEventListener('click', function (e) {
       e.stopPropagation();
-      copyText(pinShown).then(function (ok) {
-        copy.textContent = ok ? T('Copied', '已复制') : T('Copy failed', '复制失败');
-        setTimeout(function () { copy.textContent = T('Copy', '复制'); }, 1200);
-      });
+      copyWithFeedback(copy, pinShown, T('Copy prompt', '复制本轮消息'), 'copy', bar.querySelector('.pin-status'));
     });
   }
   // renderPane takes a fresh capture: the cut row, when recognised, goes to the bar and the
@@ -1382,7 +1435,7 @@
       el.hidden = !SHARE.known;
       if (!SHARE.known) return;
       el.classList.toggle('id-owner', !!SHARE.all);
-      el.textContent = SHARE.all ? T('full access · ', '全权 · ') + (location.hostname || 'local') : T('shared view · guest', '协作视图 · 访客');
+      el.textContent = SHARE.all ? ((location.hostname === '127.0.0.1' || location.hostname === 'localhost') ? T('local workspace', '本机工作台') : T('full access · ', '全权 · ') + (location.hostname || 'local')) : T('shared view · guest', '协作视图 · 访客');
     });
   }
 
@@ -1406,36 +1459,42 @@
       : 'shared view · guest · ' + SHARE.viewCount + ' visible · ' + SHARE.typeCount + ' open for input. The person who shared the link can revoke access at any time.';
   }
   function paneCanInput(id) { return !!id && SHARE.input && (SHARE.all || (!SHARE.stale && !!SHARE.panes[id])); }
-  // setCapChip paints a ⌨可输入/👁只读 capability chip (WEB §11 — always explicit,
-  // color+glyph, never an unexplained missing input box).
+  // The composer makes input capability visible. Only read-only needs a label.
   function setCapChip(el, can) {
     if (!el) return;
     el.classList.toggle('cap-in', can);
     el.classList.toggle('cap-ro', !can);
-    el.textContent = can ? T('⌨ can type', '⌨ 可输入') : T('👁 read-only', '👁 只读');
+    el.innerHTML = can ? '' : uiIcon('eye') + T('Read-only', '只读');
   }
   var paneComposer = null;
   function updateInputBar() {
     var bar = $('pane-input'); if (!bar) return;
     var inPaneTerm = !$('pane').hidden && paneMode === 'term';
+    var inChat = !$('chat').hidden;
     var can = paneCanInput(curPane);
-    var inPaneChat = !!curPane && !$('chat').hidden && paneMode === 'chat';
-    var chatInput = $('chat-input'); chatInput.hidden = !(inPaneChat && can);
+    var inPaneChat = !!curPane && inChat && paneMode === 'chat';
+    var chatInput = $('chat-input');
+    if (chatInput) {
+      chatInput.hidden = !(inChat && paneMode === 'chat' && SHARE.known);
+      var note = $('chat-ro');
+      if (note) note.hidden = can || !SHARE.known;
+    }
     bar.hidden = !(inPaneTerm && can);
     if (paneComposer) {
       var mount = inPaneChat ? chatInput : bar;
       if (paneComposer.el.parentNode !== mount) mount.appendChild(paneComposer.el);
       if (paneComposer.sync) paneComposer.sync((inPaneTerm || inPaneChat) && can);
+      paneComposer.el.hidden = !can;
     }
     renderChatInteraction();
     // read-only panes state WHY there is no input row (one line, no empty textbox)
     var ro = $('pane-ro'); if (ro) ro.hidden = !(inPaneTerm && SHARE.known && !can);
     $('pane').classList.toggle('has-input', inPaneTerm && SHARE.known);
-    // the single-pane top-bar capability chip (term + chat share the pane focus)
+    // Read-only is explicit; the composer itself identifies writable panes.
     var cap = $('cap');
     if (cap) {
       var focused = !!curPane && (!$('pane').hidden || !$('chat').hidden);
-      cap.hidden = !(focused && SHARE.known);
+      cap.hidden = !(focused && SHARE.known && !can);
       setCapChip(cap, can);
     }
     if (WB && WB.tiles) WB.tiles.forEach(tileInputSync); // the workbench tiles too
@@ -1444,13 +1503,15 @@
   // workbench tiles. The server gate (guest consent + allowlist) is authoritative.
   function postSend(id, body) {
     body.id = id;
+    if (!body.send_id) body.send_id = newSendId();
     return api('/api/send', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
   }
+  function newSendId() { return window.crypto && window.crypto.randomUUID ? window.crypto.randomUUID() : Date.now().toString(36) + '-' + Math.random().toString(36).slice(2); }
   function sendPane(body) {
     var pin = $('pin');
     return postSend(curPane, body).then(function (r) {
       if (!r) return;
-      if (r.status === 403) { if (pin) { pin.value = ''; pin.placeholder = T('Input is not allowed in this pane', '此 pane 不允许输入'); } return; }
+      if (r.status === 403) { if (pin) { pin.value = ''; pin.placeholder = T('Input is not allowed in this pane', '此窗格不允许输入'); } return; }
       if (r.status === 401) { token = null; try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} gate('expired'); return; }
       if (!r.ok) return;
       return r.json();
@@ -1462,10 +1523,10 @@
   function tileInputSync(t) {
     if (!t) return;
     var can = paneCanInput(t.id);
-    if (t.inputEl) t.inputEl.hidden = !(t.mode === 'term' && can);
-    if (t.inputSync) t.inputSync(t.mode === 'term' && can);
-    if (t.roEl) t.roEl.hidden = !(t.mode === 'term' && SHARE.known && !can);
-    if (t.capEl) { t.capEl.hidden = !SHARE.known; setCapChip(t.capEl, can); }
+    if (t.inputEl) t.inputEl.hidden = !((t.mode === 'chat' || t.mode === 'term') && can);
+    if (t.composer && !t.inputEl.hidden) t.composer.sync();
+    if (t.roEl) t.roEl.hidden = !((t.mode === 'chat' || t.mode === 'term') && SHARE.known && !can);
+    if (t.capEl) { t.capEl.hidden = !SHARE.known || can; setCapChip(t.capEl, can); }
   }
   function tileSendThen(t, pin) {
     return function (r) {
@@ -1496,140 +1557,312 @@
   // crowd the text field. `getId()` yields the target pane; `echo(text)` renders the
   // post-send screen. `small` = the compact workbench-tile variant.
 
+  function annotateImage(attachment, context, onChange) {
+    if (context.revoked) return;
+    var sheet = browserDialog(T('Annotate image', '标注图片')); sheet.el.classList.add('image-editor');
+    var toolbar = document.createElement('div'); toolbar.className = 'markup-tools'; sheet.body.appendChild(toolbar);
+    var canvas = document.createElement('canvas'); canvas.className = 'markup-canvas'; canvas.setAttribute('aria-label', T('Image annotation canvas', '图片标注画布')); sheet.body.appendChild(canvas);
+    var message = document.createElement('p'); message.className = 'markup-note'; message.setAttribute('role', 'status'); message.textContent = T('Draw on the image, then choose Done.', '在图片上拖动画出标记，完成后保存。'); sheet.body.appendChild(message);
+    var image = new Image(), strokes = [], current = null, tool = 'pen', color = '#ef4444', loaded = false;
+    function button(icon, label, action) { var b = document.createElement('button'); b.type = 'button'; b.className = 'markup-tool'; b.innerHTML = uiIcon(icon); b.title = label; b.setAttribute('aria-label', label); b.onclick = action; toolbar.appendChild(b); return b; }
+    var tools = [];
+    [['pen', T('Draw', '画笔')], ['arrow', T('Arrow', '箭头')], ['square', T('Box', '方框')], ['redact', T('Redact', '打码')]].forEach(function (item) { var b = button(item[0], item[1], function () { tool = item[0]; tools.forEach(function (entry) { entry.button.setAttribute('aria-pressed', String(entry.tool === tool)); }); }); tools.push({button: b, tool: item[0]}); b.setAttribute('aria-pressed', String(item[0] === tool)); });
+    var colors = document.createElement('input'); colors.type = 'color'; colors.value = color; colors.setAttribute('aria-label', T('Annotation color', '标注颜色')); colors.oninput = function () { color = colors.value; }; toolbar.appendChild(colors);
+    button('undo', T('Undo', '撤销'), function () { strokes.pop(); draw(); });
+    button('clear', T('Clear marks', '清除标注'), function () { strokes = []; current = null; draw(); });
+    function line(ctx, stroke) {
+      var from = stroke.points[0], to = stroke.points[stroke.points.length - 1]; ctx.strokeStyle = stroke.color; ctx.lineWidth = Math.max(3, Math.max(canvas.width, canvas.height) / 250); ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath();
+      if (stroke.tool === 'redact') { ctx.fillStyle = '#000000'; ctx.fillRect(Math.min(from.x, to.x), Math.min(from.y, to.y), Math.abs(to.x - from.x), Math.abs(to.y - from.y)); return; }
+      if (stroke.tool === 'square') ctx.rect(from.x, from.y, to.x - from.x, to.y - from.y);
+      else { ctx.moveTo(from.x, from.y); stroke.points.slice(1).forEach(function (p) { ctx.lineTo(p.x, p.y); }); }
+      ctx.stroke();
+      if (stroke.tool === 'arrow') { var angle = Math.atan2(to.y - from.y, to.x - from.x), size = ctx.lineWidth * 5; ctx.beginPath(); ctx.moveTo(to.x - size * Math.cos(angle - Math.PI / 6), to.y - size * Math.sin(angle - Math.PI / 6)); ctx.lineTo(to.x, to.y); ctx.lineTo(to.x - size * Math.cos(angle + Math.PI / 6), to.y - size * Math.sin(angle + Math.PI / 6)); ctx.stroke(); }
+    }
+    function draw() { if (!loaded) return; var ctx = canvas.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.drawImage(image, 0, 0, canvas.width, canvas.height); strokes.forEach(function (s) { line(ctx, s); }); if (current) line(ctx, current); }
+    function point(e) { var r = canvas.getBoundingClientRect(); return {x: (e.clientX - r.left) * canvas.width / r.width, y: (e.clientY - r.top) * canvas.height / r.height}; }
+    canvas.onpointerdown = function (e) { if (!loaded) return; e.preventDefault(); canvas.setPointerCapture(e.pointerId); current = {tool: tool, color: color, points: [point(e)]}; };
+    canvas.onpointermove = function (e) { if (!current) return; var p = point(e); if (current.tool === 'pen') current.points.push(p); else current.points = [current.points[0], p]; draw(); };
+    canvas.onpointerup = function () { if (current) { strokes.push(current); current = null; draw(); } }; canvas.onpointercancel = function () { current = null; draw(); };
+    sheet.foot.hidden = false; var original = document.createElement('button'); original.type = 'button'; original.className = 'dialog-secondary'; original.textContent = T('Use original', '使用原图'); original.onclick = sheet.close; sheet.foot.appendChild(original);
+    var scale = document.createElement('button'); scale.type = 'button'; scale.className = 'dialog-secondary'; scale.textContent = T('Scale to 4096 px', '缩小至 4096 像素'); scale.hidden = true; sheet.foot.appendChild(scale);
+    scale.onclick = function () { var ratio = 4096 / Math.max(canvas.width, canvas.height); if (ratio >= 1) return; strokes.forEach(function (stroke) { stroke.points.forEach(function (point) { point.x *= ratio; point.y *= ratio; }); }); canvas.width = Math.round(canvas.width * ratio); canvas.height = Math.round(canvas.height * ratio); loaded = true; done.disabled = false; scale.hidden = true; message.textContent = T('Export size: ', '导出尺寸：') + canvas.width + ' × ' + canvas.height; draw(); };
+    function exportFailure() { message.textContent = T('Export failed. Your marks are preserved. Retry, use the original, or choose a smaller export.', '导出失败，标注已保留。可重试、使用原图，或选择缩小尺寸。'); scale.hidden = Math.max(canvas.width, canvas.height) <= 4096; done.disabled = false; }
+    var done = document.createElement('button'); done.type = 'button'; done.className = 'dialog-primary'; done.textContent = T('Done', '完成'); done.disabled = true; sheet.foot.appendChild(done);
+    done.onclick = function () {
+      if (!strokes.length) { sheet.close(); return; } done.disabled = true;
+      try { canvas.toBlob(function (blob) {
+        if (context.revoked) return;
+        if (!blob || blob.size > 30 * 1024 * 1024) { exportFailure(); return; }
+        var name = attachment.name.replace(/(-marked)?\.[^.]+$/, '') + '-marked.jpg';
+        if (attachment.url) { URL.revokeObjectURL(attachment.url); context.urls.delete(attachment.url); }
+        attachment.file = new File([blob], name, {type: 'image/jpeg'}); attachment.name = name; attachment.url = URL.createObjectURL(attachment.file); context.urls.add(attachment.url); delete attachment.path; attachment.progress = null; onChange(); sheet.close();
+      }, 'image/jpeg', .92); } catch (e) { exportFailure(); }
+    };
+    image.onload = function () { if (context.revoked) return; canvas.width = image.naturalWidth; canvas.height = image.naturalHeight; loaded = true; done.disabled = false; try { draw(); message.textContent = T('Original size: ', '原始尺寸：') + canvas.width + ' × ' + canvas.height + T(' · JPEG export', ' · JPEG 导出'); } catch (e) { exportFailure(); } };
+    image.onerror = function () { message.textContent = T('This image cannot be previewed here. You can still send the original file.', '此图片无法预览，仍可发送原文件。'); }; image.src = attachment.url;
+  }
+
+  var composeCache = null, composeAttachmentSeq = 0;
+  function composeNamespace() {
+    var one = 2166136261, two = 5381, value = token || 'anonymous';
+    for (var i = 0; i < value.length; i++) { one = Math.imul(one ^ value.charCodeAt(i), 16777619); two = Math.imul(two, 33) ^ value.charCodeAt(i); }
+    return 'gtmux.compose:' + BASE + ':' + (one >>> 0).toString(36) + (two >>> 0).toString(36);
+  }
+  function composeData() {
+    var key = composeNamespace();
+    if (composeCache && composeCache.key === key && !composeCache.revoked) return composeCache;
+    var saved = {}; try { saved = JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) {}
+    if (!saved || typeof saved !== 'object' || Array.isArray(saved)) saved = {};
+    var data = {key: key, credential: token, drafts: Object.create(null), history: Object.create(null), recent: [], snippets: [], urls: new Set(), requests: new Set(), timer: null, revoked: false};
+    Object.keys(saved.drafts || {}).forEach(function (id) { var d = saved.drafts[id]; if (d && typeof d.text === 'string') data.drafts[id] = {text: d.text, files: [], version: 0, lastAttempt: d.attempt && typeof d.attempt.id === 'string' && typeof d.attempt.payload === 'string' ? d.attempt : null, error: [typeof d.error === 'string' ? d.error : '', d.fileCount ? T('Attachments need to be selected again after reloading.', '页面已重新加载，请重新选择附件。') : ''].filter(Boolean).join(' ')}; });
+    Object.keys(saved.history || {}).forEach(function (scope) { if (Array.isArray(saved.history[scope])) data.history[scope] = saved.history[scope].filter(function (s) { return typeof s === 'string'; }).slice(0, 50); });
+    data.recent = Array.isArray(saved.recent) ? saved.recent.filter(function (s) { return typeof s === 'string'; }).slice(0, 30) : [];
+    data.snippets = Array.isArray(saved.snippets) ? saved.snippets.filter(function (s) { return typeof s === 'string'; }).slice(0, 30) : [];
+    composeCache = data; return data;
+  }
+  function saveCompose(data, immediate) {
+    if (!data || data.revoked) return; clearTimeout(data.timer);
+    function write() {
+      if (data.revoked) return;
+      var drafts = Object.create(null); Object.keys(data.drafts).slice(-50).forEach(function (id) { var d = data.drafts[id]; if (d.text || d.files.length) drafts[id] = {text: d.text, fileCount: d.files.length, attempt: d.lastAttempt, error: d.error}; });
+      try { localStorage.setItem(data.key, JSON.stringify({drafts: drafts, history: data.history, recent: data.recent, snippets: data.snippets})); } catch (e) {}
+    }
+    if (immediate) write(); else data.timer = setTimeout(write, 400);
+  }
+  function clearComposeData() {
+    var data = composeCache;
+    if (data) {
+      data.revoked = true; clearTimeout(data.timer); data.requests.forEach(function (r) { r.abort(); }); data.urls.forEach(function (url) { URL.revokeObjectURL(url); }); data.urls.clear();
+      Object.keys(data.drafts).forEach(function (id) { var draft = data.drafts[id]; draft.text = ''; draft.files = []; draft.recovery = null; });
+    }
+    try { var prefix = 'gtmux.compose:' + BASE + ':'; for (var i = localStorage.length - 1; i >= 0; i--) { var key = localStorage.key(i); if (key && key.indexOf(prefix) === 0) localStorage.removeItem(key); } } catch (e) {}
+    composeCache = null;
+  }
+
+  function composeScope(id) { var a = byId(lastAgents, id) || (curAgent && curAgent.pane_id === id ? curAgent : {}); return a.project || a.session || (a.loc || '').split(':')[0] || id || 'default'; }
+  function composeDraft(data, id) { return data.drafts[id] || (data.drafts[id] = {text: '', files: [], version: 0, error: ''}); }
+
   function makeComposer(getId, echo, small, onAction) {
     echo = echo || function () {};
-    var root = document.createElement('div');
-    root.className = 'composer' + (small ? ' composer-sm' : '');
-
-    var file = document.createElement('input');
-    file.type = 'file'; file.accept = 'image/*'; file.hidden = true;
-
-    var attach = document.createElement('button');
-    attach.type = 'button'; attach.className = 'cx-attach'; attach.textContent = '＋';
-    attach.title = T('Upload an image', '上传图片'); // the picker takes images only (accept above)
-    attach.onclick = function (e) { e.stopPropagation(); file.click(); };
-    file.onchange = function () { var f = file.files && file.files[0]; if (f) uploadInto(f); file.value = ''; };
-
-    var ta = document.createElement('textarea');
-    ta.className = 'cx-input'; ta.rows = 1; ta.placeholder = T('Type…', '输入…');
-    ta.autocomplete = 'off'; ta.spellcheck = false;
-    function grow() { ta.style.height = 'auto'; ta.style.height = Math.min(small ? 92 : 128, Math.max(small ? 30 : 38, ta.scrollHeight)) + 'px'; }
-    ta.addEventListener('input', grow);
+    var generation = 0, target = null, data = null, draft = null, localVersion = -1, appliedText = '', noteSignature = '', editor = null;
+    var compact = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches), expanded = !compact;
+    var root = document.createElement('div'); root.className = 'composer' + (small ? ' composer-sm' : '');
+    var keys = document.createElement('div'); keys.className = 'cx-keys'; keys.setAttribute('aria-label', T('Terminal keys and input tools', '终端按键与输入工具'));
+    var terminalKeyboard = window.GtmuxTerminalKeys ? window.GtmuxTerminalKeys.create({zh: ZH, getId: getId, canInput: function () { return paneCanInput(getId()); }, request: api, send: postSend, echo: echo, onAction: onAction}) : null;
+    if (terminalKeyboard) { keys.appendChild(terminalKeyboard.button); root.appendChild(terminalKeyboard.notice); }
+    var attachments = document.createElement('div'); attachments.className = 'cx-attachments'; attachments.hidden = true;
+    var row = document.createElement('div'); row.className = 'cx-row';
+    var file = document.createElement('input'), pickerContext = null; file.type = 'file'; file.multiple = true; file.hidden = true;
+    var attach = iconButton('plus', T('Add attachment', '添加附件'), 'cx-attach');
+    var ta = document.createElement('textarea'); ta.className = 'cx-input'; ta.rows = 1; ta.placeholder = T('Message or command…', '输入消息或命令…'); ta.setAttribute('aria-label', T('Message or command', '消息或命令')); ta.autocomplete = 'off'; ta.spellcheck = false;
+    var expand = iconButton('expand', T('Expand editor', '展开编辑'), 'cx-expand');
+    var send = iconButton('send', T('Send', '发送'), 'cx-send'); send.title = T('Send · ⌘/Ctrl+Enter', '发送 · ⌘/Ctrl+Enter');
+    var keyboard = iconButton('keyboard', T('Show input', '展开输入框'), 'cx-keyboard'); keys.appendChild(keyboard);
+    var remoteKeys = [];
+    [['Tab', 'Tab', 'Tab'], ['Up', null, T('Up arrow', '方向键上'), 'up'], ['Down', null, T('Down arrow', '方向键下'), 'down'], ['Enter', null, T('Return key', '回车键'), 'return'], ['BSpace', null, T('Backspace', '退格键'), 'backspace'], ['C-c', 'Ctrl C', 'Ctrl-C'], ['Escape', 'Esc', 'Esc']].forEach(function (k) {
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'cx-control' + (k[3] ? ' cx-symbol' : ''); b.dataset.key = k[0];
+      if (k[3]) b.innerHTML = uiIcon(k[3]); else b.textContent = k[1]; b.title = k[2]; b.setAttribute('aria-label', k[2]);
+      b.onclick = function (e) {
+        e.stopPropagation(); sync(); if (!draft || draft.busy || terminalKeyboard && terminalKeyboard.blocked()) return; if (terminalKeyboard && ['Tab', 'Escape', 'C-c', 'Up', 'Down'].includes(k[0]) && terminalKeyboard.legacy(k[0])) return;
+        var recipient = target, currentData = data, currentGeneration = generation;
+        postSend(recipient, {key: k[0]}).then(function (r) {
+          if (!valid(currentData, currentGeneration)) return;
+          if (r.status === 401) { token = null; gate('expired'); return; }
+          if (!r.ok) { failure(recipient, currentData, T('Key could not be sent.', '按键未能发送。')); return; }
+          b.dataset.state = 'done'; clearTimeout(b.ackTimer); b.ackTimer = setTimeout(function () { delete b.dataset.state; }, 750);
+        }, function () { if (valid(currentData, currentGeneration)) failure(recipient, currentData, T('Key could not be sent.', '按键未能发送。')); });
+      }; keys.appendChild(b); remoteKeys.push(b);
+    });
+    var snippets = iconButton('snippets', T('Quick replies', '常用语'), 'cx-snippets'); var snippetsLabel = document.createElement('span'); snippetsLabel.textContent = T('Quick replies', '常用语'); snippets.appendChild(snippetsLabel); keys.appendChild(snippets);
+    var history = iconButton('history', T('Input history', '输入历史'), 'cx-history'); keys.appendChild(history);
+    var note = document.createElement('div'); note.className = 'cx-note'; note.hidden = true; note.setAttribute('role', 'status'); note.setAttribute('aria-live', 'polite');
+    row.appendChild(attach); row.appendChild(file); row.appendChild(ta); row.appendChild(expand); row.appendChild(send);
+    root.appendChild(keys); root.appendChild(attachments); root.appendChild(row); root.appendChild(note);
+    function iconButton(icon, label, cls) { var b = document.createElement('button'); b.type = 'button'; b.className = cls; b.innerHTML = uiIcon(icon); b.title = label; b.setAttribute('aria-label', label); return b; }
+    function valid(context, version) { return !context.revoked && context.credential === token && generation === version; }
+    function changed(d, context) { d.version++; saveCompose(context || data); }
+    function remember() { if (!draft || data.revoked) return; if (draft.text !== ta.value) draft.lastAttempt = null; draft.text = ta.value; appliedText = ta.value; changed(draft); localVersion = draft.version; }
+    function sync(visible) {
+      if (terminalKeyboard) terminalKeyboard.sync(!!(visible !== false && root.isConnected && paneCanInput(getId())));
+      var next = getId(), context = composeData();
+      if (data && draft && !data.revoked && ta.value !== appliedText) remember();
+      if (next !== target || context !== data) { data = context; target = next; draft = composeDraft(data, next || 'default'); localVersion = -1; noteSignature = ''; }
+      if (draft.version !== localVersion) { ta.value = draft.text; appliedText = ta.value; localVersion = draft.version; renderAttachments(); }
+      update(); grow();
+    }
+    function grow() { if (editor) return; ta.style.height = 'auto'; ta.style.height = Math.min(132, Math.max(40, ta.scrollHeight)) + 'px'; }
+    function update() {
+      var busy = !!(draft && draft.busy), canSend = !!(draft && (ta.value.trim() || draft.files.length));
+      row.hidden = !expanded && !editor; keyboard.setAttribute('aria-expanded', String(expanded)); keyboard.title = expanded ? T('Hide input', '收起输入框') : T('Show input', '展开输入框'); keyboard.setAttribute('aria-label', keyboard.title);
+      attach.disabled = expand.disabled = busy; ta.readOnly = busy; send.disabled = busy || !canSend; snippets.disabled = history.disabled = busy; remoteKeys.forEach(function (b) { b.disabled = busy; });
+      send.innerHTML = uiIcon(busy ? 'loading' : 'send'); send.classList.toggle('sending', busy); send.classList.toggle('ready', canSend && !busy);
+      ta.setAttribute('enterkeyhint', lsGet('gtmux.returnSends', '0') === '1' ? 'send' : 'enter');
+      var message = draft && (draft.error || draft.info) || '', signature = message + (draft && draft.recovery ? ':recover' : '');
+      if (signature !== noteSignature) {
+        noteSignature = signature; note.textContent = message; note.hidden = !message; note.className = 'cx-note' + (draft && !draft.error ? ' info' : '');
+        if (draft && draft.recovery) { var restore = document.createElement('button'); restore.type = 'button'; restore.className = 'cx-recover'; restore.textContent = T('Recover previous input', '恢复上次输入'); restore.onclick = function () { var recovery = draft.recovery; draft.text = [ta.value, recovery.text].filter(Boolean).join('\n'); draft.files = draft.files.concat(recovery.files); draft.recovery = null; changed(draft); sync(); }; note.appendChild(restore); }
+      }
+      if (editor && editor.sendButton) editor.sendButton.disabled = send.disabled;
+    }
+    function focusInput() { expanded = true; update(); ta.focus(); }
+    keyboard.onclick = function () { expanded = !expanded; update(); if (expanded) ta.focus(); else ta.blur(); };
+    ta.addEventListener('input', function () { remember(); if (draft) { draft.error = ''; draft.info = ''; } grow(); update(); });
     ta.addEventListener('keydown', function (e) {
-      // ⏎ sends; ⇧⏎ / ⌥⏎ = newline (WEB §11). e.stopPropagation so a maximized-tile
-      // Escape/global key handler doesn't hijack typing.
-      if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229 && !e.shiftKey && !e.altKey) { e.preventDefault(); submit(); }
+      if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229 && !e.repeat && ((e.metaKey || e.ctrlKey) || (!editor && lsGet('gtmux.returnSends', '0') === '1' && !e.shiftKey && !e.altKey))) { e.preventDefault(); submit(); }
       e.stopPropagation();
     });
-
-    var send = document.createElement('button');
-    send.type = 'button'; send.className = 'cx-send'; send.textContent = '↵'; send.title = T('Send ⏎', '发送 ⏎');
+    ta.addEventListener('paste', function (e) { var files = e.clipboardData && Array.from(e.clipboardData.files || []); if (files && files.length) { e.preventDefault(); stage(files, true); } });
+    root.addEventListener('dragover', function (e) { if (e.dataTransfer && Array.from(e.dataTransfer.types).indexOf('Files') !== -1) { e.preventDefault(); root.classList.add('dragging-file'); } });
+    root.addEventListener('dragleave', function () { root.classList.remove('dragging-file'); });
+    root.addEventListener('drop', function (e) { root.classList.remove('dragging-file'); if (e.dataTransfer && e.dataTransfer.files.length) { e.preventDefault(); stage(Array.from(e.dataTransfer.files), true); } });
     send.onclick = function (e) { e.stopPropagation(); submit(); };
-
-    var row = document.createElement('div'); row.className = 'cx-row';
-    row.appendChild(attach); row.appendChild(file); row.appendChild(ta); row.appendChild(send);
-
-    var keys = document.createElement('div'); keys.className = 'cx-keys';
-    var terminalKeyboard = window.GtmuxTerminalKeys ? window.GtmuxTerminalKeys.create({zh: ZH, getId: getId, canInput: function () {return paneCanInput(getId());}, request: api, send: postSend, echo: echo, onAction: onAction}) : null;
-    if (terminalKeyboard) keys.appendChild(terminalKeyboard.button);
-    [['Tab', '⇥', 'Tab'], ['Escape', 'esc', 'Esc'], ['C-c', '^C', 'Ctrl-C'], ['Up', '↑', 'Up'], ['Down', '↓', 'Down']].forEach(function (k) {
-      var b = document.createElement('button'); b.type = 'button'; b.textContent = k[1]; b.title = k[2];
-      b.onclick = function (e) { e.stopPropagation(); if (terminalKeyboard && terminalKeyboard.legacy(k[0])) return; postSend(getId(), {key: k[0]}).then(function (r) { then(r); }); ta.focus(); };
-      keys.appendChild(b);
-    });
-
-    // Where a refused send says so. The core's refusals are specific and actionable —
-    // someone is typing in that pane, the pane is gone, the box did not confirm — and
-    // this surface used to drop all of them on the floor (`if (!r.ok) return`), having
-    // already emptied the box. A message gone with nothing said is the one failure a
-    // reader cannot recover from. The phone keeps the text and names the reason; so does
-    // this now.
-    var note = document.createElement('div');
-    note.className = 'cx-note'; note.hidden = true;
-
-    if (terminalKeyboard) root.appendChild(terminalKeyboard.notice);
-    root.appendChild(row); root.appendChild(keys); root.appendChild(note);
-
-    var noteTimer = null;
-    function clearNote() { clearTimeout(noteTimer); noteTimer = null; note.hidden = true; note.textContent = ''; }
-    function sayRefusal(r, restore) {
-      if (!r) return;
-      r.json().then(function (j) {
-        var why = (j && j.error) || (ZH ? '发送失败（' + r.status + '）' : 'send failed (' + r.status + ')');
-        clearNote();
-        note.textContent = why;
-        note.className = 'cx-note';
-        note.hidden = false;
-        // Put the text back, but only if the box is still empty: the reader may already
-        // be typing the next thing, and overwriting that would be its own small theft.
-        if (restore && !ta.value) { ta.value = restore; grow(); }
-      }).catch(function () {
-        clearNote();
-        note.textContent = ZH ? '发送失败（' + r.status + '）' : 'send failed (' + r.status + ')';
-        note.className = 'cx-note';
-        note.hidden = false;
-        if (restore && !ta.value) { ta.value = restore; grow(); }
-      });
-    }
-
-    // A message the page could not send goes back into the box, and the reader is told why.
-    // Only into an empty box: the reader may already be typing the next thing.
-    function giveBack(restore, why) {
-      clearNote();
-      note.textContent = why;
-      note.className = 'cx-note';
-      note.hidden = false;
-      if (restore && !ta.value) { ta.value = restore; grow(); }
-    }
-    function then(r, restore) {
-      if (!r) return;
-      // Refused here: the text used to vanish with only the placeholder changing (%12,
-      // 2026-10-06), so the reader lost what they wrote and was not told it was not sent.
-      if (r.status === 403) {
-        ta.placeholder = T('Input is not allowed in this pane', '此 pane 不允许输入');
-        giveBack(restore, T('Not sent: this link may not type into this pane.', '没有发出：这条链接不能往这个 pane 输入。'));
-        return;
+    function failure(id, context, message, snapshot) {
+      if (context.revoked) return; var d = composeDraft(context, id); d.busy = false; d.error = message; d.info = '';
+      clearTimeout(d.infoTimer);
+      if (id === target && ta.value !== appliedText) { d.text = ta.value; appliedText = ta.value; }
+      if (snapshot) {
+        if (!d.text && !d.files.length) { d.text = snapshot.text; d.files = snapshot.files; }
+        else d.recovery = snapshot;
       }
-      if (r.status === 401) { token = null; try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} gate('expired'); return; }
-      if (!r.ok) { sayRefusal(r, restore); return; }
-      // This is a brief delivery receipt, not evidence of a pending queue. A busy
-      // agent can consume the message without becoming idle. Errors stay persistent.
-      clearNote();
-      var live = byId(lastAgents, getId());
-      if (restore && live && live.status === 'working') {
-        note.textContent = T('Sent to terminal. The agent is working.', '已发送到终端，当前会话正在工作。');
-        note.className = 'cx-note info';
-        note.hidden = false;
-        noteTimer = setTimeout(clearNote, 6000);
-      }
-      r.json().then(function (j) { if (j && typeof j.text === 'string') echo(j.text); });
+      changed(d, context); if (context === data && id === target) sync();
     }
-    function submit() {
+    async function submit() {
       if (terminalKeyboard && terminalKeyboard.blocked()) return;
-      var v = ta.value;
-      if (!v.trim()) return;
-      ta.value = ''; grow(); clearNote();
-      // A request that never got an answer may or may not have reached the Mac: the text
-      // comes back with a note saying so, and nothing is sent again by itself.
-      postSend(getId(), {text: v, enter: true}).then(function (r) { then(r, v); }, function () {
-        var unsure = T('Delivery not confirmed: the server did not respond. The message may have arrived; check the pane before retrying.', '无法确认发送结果：服务器未响应。消息可能已送达，重试前请检查窗格。');
-        giveBack(v, unsure);
+      sync(); if (!draft || draft.busy || (!ta.value.trim() && !draft.files.length)) return;
+      var recipient = target, context = data, currentGeneration = generation, d = draft, body = ta.value, staged = draft.files.slice(), scope = composeScope(recipient);
+      clearTimeout(d.infoTimer); d.text = body; d.busy = true; d.error = ''; d.info = ''; update();
+      try {
+        for (var i = 0; i < staged.length; i++) {
+          if (!valid(context, currentGeneration)) return;
+          if (!staged[i].path) { staged[i].path = await upload(staged[i], context, function () { if (recipient === target && context === data) renderAttachments(); }, recipient); }
+        }
+      } catch (error) { if (valid(context, currentGeneration)) failure(recipient, context, error.message || T('Upload failed. Send again to retry.', '上传失败，可再次发送重试。')); return; }
+      if (!valid(context, currentGeneration)) return;
+      var payload = [body.trim() ? body : '', staged.map(function (a) { return a.path; }).join('\n')].filter(Boolean).join('\n');
+      var attempt = d.lastAttempt && d.lastAttempt.payload === payload ? d.lastAttempt : {payload: payload, id: newSendId()}; d.lastAttempt = attempt;
+      var pending = beginPendingPrompt(recipient, payload, attempt.id);
+      d.text = ''; d.files = []; changed(d, context); if (recipient === target && context === data) { ta.value = ''; appliedText = ''; localVersion = -1; sync(); }
+      try {
+        var r = await postSend(recipient, {text: payload, enter: true, send_id: attempt.id});
+        if (!valid(context, currentGeneration)) return;
+        if (r.status === 401) { token = null; gate('expired'); return; }
+        if (!r.ok) {
+          finishPendingPrompt(recipient, pending, false);
+          var message = r.status === 403 ? T('Not sent: input is not allowed in this pane.', '未发送：当前窗格未开放输入。') : T('Send failed.', '发送失败。');
+          try { var refusal = await r.json(); if (refusal.error && r.status !== 403) message = refusal.error; } catch (e) {}
+          failure(recipient, context, message, {text: body, files: staged}); if (r.status === 403) fetchShare(); return;
+        }
+        d.busy = false;
+        d.lastAttempt = null; finishPendingPrompt(recipient, pending, true);
+        if (body.trim()) { context.history[scope] = [body].concat((context.history[scope] || []).filter(function (s) { return s !== body; })).slice(0, 50); context.recent = [body].concat(context.recent.filter(function (s) { return s !== body; })).slice(0, 30); }
+        staged.forEach(function (a) { release(a, context); });
+        var live = byId(lastAgents, recipient);
+        d.info = live && live.status === 'working' ? T('Sent to terminal. The agent is working.', '已发送到终端，当前会话正在工作。') : T('Sent', '已发送'); changed(d, context);
+        d.infoTimer = setTimeout(function () { if (context.revoked) return; d.info = ''; changed(d, context); if (recipient === target && context === data) sync(); }, 6000);
+        if (recipient === target && context === data) { if (editor) editor.close(); if (compact) { expanded = false; ta.blur(); } sync(); }
+        try { var response = await r.json(); if (valid(context, currentGeneration) && recipient === getId() && response && typeof response.text === 'string') echo(response.text); } catch (e) {}
+      } catch (e) { if (valid(context, currentGeneration)) { finishPendingPrompt(recipient, pending, false); failure(recipient, context, T('Delivery unconfirmed. Check the conversation before sending again.', '服务器未确认送达。请先检查会话，再决定是否重发。'), {text: body, files: staged}); } }
+    }
+    function release(a, context) { if (a.url) { URL.revokeObjectURL(a.url); context.urls.delete(a.url); } }
+    function renderAttachments() {
+      attachments.textContent = ''; attachments.hidden = !draft || !draft.files.length;
+      if (!draft) return;
+      draft.files.forEach(function (a) {
+        var item = document.createElement('div'); item.className = 'cx-attachment';
+        var preview = document.createElement('button'); preview.type = 'button'; preview.className = 'cx-preview'; preview.disabled = !!draft.busy;
+        if (a.image) { var img = document.createElement('img'); img.src = a.url; img.alt = a.name; img.loading = 'lazy'; preview.appendChild(img); preview.title = T('Annotate image', '标注图片'); preview.onclick = function () { annotateImage(a, data, function () { changed(draft); renderAttachments(); }); }; }
+        else { preview.innerHTML = uiIcon('file'); preview.disabled = true; }
+        item.appendChild(preview);
+        var name = document.createElement('span'); name.className = 'cx-file-name'; name.textContent = a.name; name.title = a.name; item.appendChild(name);
+        var progress = document.createElement('span'); progress.className = 'cx-file-progress'; progress.textContent = draft.busy ? a.path ? T('Uploaded', '已上传') : a.progress == null ? T('Uploading…', '上传中…') : Math.round(a.progress * 100) + '%' : a.path ? T('Ready', '已就绪') : Math.ceil(a.file.size / 1024) + ' KB'; item.appendChild(progress);
+        var remove = iconButton('close', T('Remove attachment: ', '移除附件：') + a.name, 'cx-remove-file'); remove.disabled = !!draft.busy;
+        remove.onclick = function () { draft.files = draft.files.filter(function (x) { return x !== a; }); release(a, data); changed(draft); renderAttachments(); update(); }; item.appendChild(remove); attachments.appendChild(item);
       });
     }
-    function uploadInto(f) {
-      attach.disabled = true; attach.textContent = '…';
-      var form = new FormData(); form.append('file', f);
-      api('/api/upload?id=' + encodeURIComponent(getId()), {method: 'POST', body: form}).then(function (r) {
-        attach.disabled = false; attach.textContent = '＋';
-        if (r && r.status === 403) { ta.placeholder = T('Input is not allowed in this pane', '此 pane 不允许输入'); return null; }
-        if (!r || !r.ok) { ta.placeholder = T('upload failed, try again', '上传失败，请重试'); return null; }
-        return r.json();
-      }).then(function (j) {
-        if (j && j.path) { ta.value = (ta.value && !/\s$/.test(ta.value) ? ta.value + ' ' : ta.value) + j.path + ' '; grow(); ta.focus(); }
-      }).catch(function () { attach.disabled = false; attach.textContent = '＋'; });
+    function stage(files, edit) {
+      sync(); if (draft.busy) return; draft.error = ''; draft.info = ''; var firstImage = null;
+      files.forEach(function (f) {
+        if (draft.files.length >= 20) { draft.error = T('Attach up to 20 files per message.', '每条消息最多可添加 20 个附件。'); return; }
+        if (f.size > 30 * 1024 * 1024) { draft.error = T('File exceeds the 30 MB limit: ', '文件超过 30 MB：') + f.name; return; }
+        var a = {id: ++composeAttachmentSeq, file: f, name: f.name || 'attachment', image: /^image\//.test(f.type), url: null, progress: null};
+        if (a.image) { a.url = URL.createObjectURL(f); data.urls.add(a.url); if (!firstImage) firstImage = a; }
+        draft.files.push(a);
+      });
+      expanded = true; changed(draft); renderAttachments(); update(); if (edit && firstImage) annotateImage(firstImage, data, function () { changed(draft); renderAttachments(); });
     }
-
-    return {keys: terminalKeyboard, el: root, focus: function () { ta.focus(); }, input: ta, sync: function (visible) {if (terminalKeyboard) terminalKeyboard.sync(visible);}, dispose: function () {if (terminalKeyboard) terminalKeyboard.dispose();}};
+    file.onchange = function () { if (!pickerContext || (valid(pickerContext.data, pickerContext.generation) && getId() === pickerContext.id)) stage(Array.from(file.files || []), file.accept === 'image/*'); file.value = ''; };
+    attach.onclick = function () {
+      sync(); if (draft.busy) return;
+      var sheet = browserDialog(T('Add attachment', '添加附件')); sheet.body.classList.add('attachment-actions');
+      [[T('Photos', '图片'), 'image', 'image/*'], [T('Files', '文件'), 'file', ''], [T('Camera', '拍照'), 'camera', 'image/*', true]].forEach(function (entry) {
+        if (entry[3] && !compact) return;
+        var b = iconButton(entry[1], entry[0], 'attachment-action'); var label = document.createElement('span'); label.textContent = entry[0]; b.appendChild(label);
+        b.onclick = function () { pickerContext = {data: data, id: target, generation: generation}; sheet.close(); file.accept = entry[2]; if (entry[3]) file.setAttribute('capture', 'environment'); else file.removeAttribute('capture'); file.click(); }; sheet.body.appendChild(b);
+      });
+      var paste = iconButton('paste', T('Paste from clipboard', '从剪贴板粘贴'), 'attachment-action'); var label = document.createElement('span'); label.textContent = T('Paste', '粘贴'); paste.appendChild(label);
+      paste.onclick = async function () {
+        var pasteContext = data, pasteRecipient = target, pasteGeneration = generation;
+        sheet.close();
+        try {
+          if (navigator.clipboard && navigator.clipboard.read) {
+            var items = await navigator.clipboard.read(), picked = [];
+            for (var item of items) { var type = item.types.find(function (t) { return /^image\//.test(t); }); if (type) picked.push(new File([await item.getType(type)], 'clipboard-' + Date.now() + '.png', {type: type})); }
+            if (!valid(pasteContext, pasteGeneration) || getId() !== pasteRecipient) return;
+            if (picked.length) { stage(picked, true); return; }
+          }
+          var text = navigator.clipboard && navigator.clipboard.readText ? await navigator.clipboard.readText() : '';
+          if (!valid(pasteContext, pasteGeneration) || getId() !== pasteRecipient) return;
+          if (!text) throw new Error('empty clipboard'); ta.value += text; remember(); grow(); focusInput();
+        } catch (e) { if (valid(pasteContext, pasteGeneration) && getId() === pasteRecipient) { draft.error = T('Clipboard unavailable. Paste into the input or choose a file.', '无法读取剪贴板。请直接粘贴到输入框，或选择文件。'); update(); } }
+      }; sheet.body.appendChild(paste);
+    };
+    expand.onclick = function () {
+      if (editor || draft.busy) return; expanded = true; editor = browserDialog(T('Compose', '撰写')); editor.el.classList.add('compose-editor'); editor.body.appendChild(ta); editor.foot.hidden = false;
+      var done = document.createElement('button'); done.type = 'button'; done.className = 'dialog-secondary'; done.textContent = T('Done', '收起'); done.onclick = function () { editor.close(); }; editor.foot.appendChild(done);
+      var submitButton = document.createElement('button'); submitButton.type = 'button'; submitButton.className = 'dialog-primary'; submitButton.innerHTML = uiIcon('send') + T('Send', '发送'); submitButton.onclick = submit; editor.sendButton = submitButton; editor.foot.appendChild(submitButton);
+      editor.onClose = function () { row.insertBefore(ta, expand); editor = null; update(); grow(); }; update(); ta.focus();
+    };
+    history.onclick = function () { recall(false); }; snippets.onclick = function () { recall(true); };
+    function recall(savedPhrases) {
+      sync(); var context = data, id = target, sheet = browserDialog(savedPhrases ? T('Quick replies', '常用语') : T('Input history', '输入历史'));
+      function insert(value) { if (context.revoked || getId() !== id) { sheet.close(); return; } ta.value = ta.value ? ta.value + '\n' + value : value; remember(); grow(); sheet.restoreFocus = false; sheet.close(); focusInput(); }
+      function draw() {
+        sheet.body.textContent = '';
+        var scope = composeScope(id), values = savedPhrases ? context.snippets : Array.from(new Set((context.history[scope] || []).concat(context.recent))).slice(0, 50);
+        if (!values.length) { var empty = document.createElement('p'); empty.className = 'dialog-empty'; empty.textContent = savedPhrases ? T('No saved replies', '暂无常用语') : T('No input history', '暂无输入历史'); sheet.body.appendChild(empty); }
+        values.forEach(function (value, index) {
+          var row = document.createElement('div'); row.className = 'recall-row'; var pick = document.createElement('button'); pick.type = 'button'; pick.className = 'recall-text'; pick.textContent = value; pick.title = T('Insert into input', '插入输入框'); pick.onclick = function () { insert(value); }; row.appendChild(pick);
+          if (savedPhrases) { var edit = iconButton('pen', T('Edit reply', '编辑常用语'), 'recall-action'); edit.onclick = function () { editPhrase(index); }; row.appendChild(edit); }
+          var remove = iconButton('close', savedPhrases ? T('Delete reply', '删除常用语') : T('Delete history entry', '删除历史记录'), 'recall-action');
+          remove.onclick = function () { if (savedPhrases) context.snippets.splice(index, 1); else { Object.keys(context.history).forEach(function (key) { context.history[key] = context.history[key].filter(function (s) { return s !== value; }); }); context.recent = context.recent.filter(function (s) { return s !== value; }); } saveCompose(context, true); draw(); }; row.appendChild(remove); sheet.body.appendChild(row);
+        });
+      }
+      function editPhrase(index) {
+        sheet.body.textContent = ''; var input = document.createElement('textarea'); input.className = 'phrase-input'; input.setAttribute('aria-label', T('Reply text', '常用语内容')); input.value = index == null ? '' : context.snippets[index]; sheet.body.appendChild(input);
+        var save = document.createElement('button'); save.type = 'button'; save.className = 'dialog-primary'; save.textContent = T('Save reply', '保存常用语'); save.onclick = function () { if (!input.value.trim()) return; if (index == null) context.snippets.push(input.value.trim()); else context.snippets[index] = input.value.trim(); context.snippets = context.snippets.slice(-30); saveCompose(context, true); draw(); }; sheet.body.appendChild(save); input.focus();
+      }
+      sheet.foot.hidden = false; var action = document.createElement('button'); action.type = 'button'; action.className = 'dialog-secondary'; action.textContent = savedPhrases ? T('New reply', '新增常用语') : T('Clear history', '清空历史');
+      action.onclick = function () { if (savedPhrases) editPhrase(null); else { var oldHistory = context.history, oldRecent = context.recent; context.history = Object.create(null); context.recent = []; saveCompose(context, true); draw(); action.textContent = T('Undo clear', '撤销清空'); action.onclick = function () { context.history = oldHistory; context.recent = oldRecent; saveCompose(context, true); sheet.close(); }; } }; sheet.foot.appendChild(action); draw();
+    }
+    function upload(a, context, progress, recipient) {
+      return new Promise(function (resolve, reject) {
+        var request = new XMLHttpRequest(), form = new FormData(); form.append('file', a.file, a.name); request.open('POST', BASE + '/api/upload?id=' + encodeURIComponent(recipient)); request.timeout = 60000;
+        if (context.credential) request.setRequestHeader('Authorization', 'Bearer ' + context.credential); request.responseType = 'json'; context.requests.add(request);
+        request.upload.onprogress = function (e) { if (context.revoked) return; a.progress = e.lengthComputable ? e.loaded / e.total : null; progress(); };
+        function fail(message) { context.requests.delete(request); reject(new Error(message)); }
+        request.onload = function () {
+          context.requests.delete(request); if (context.revoked) { reject(new Error('retired')); return; }
+          if (request.status === 401) { token = null; gate('expired'); reject(new Error('retired')); return; }
+          if (request.status === 413) { fail(T('File exceeds the server size limit. Choose a smaller file.', '文件超过服务端大小限制，请选择更小的文件。')); return; }
+          if (request.status === 403) { fail(T('Upload is not allowed in this session.', '当前会话未开放上传权限。')); return; }
+          if (request.status < 200 || request.status >= 300 || !request.response || typeof request.response.path !== 'string') { fail(T('Upload failed. Send again to retry.', '上传失败，可再次发送重试。')); return; }
+          a.progress = 1; resolve(request.response.path);
+        };
+        request.onerror = request.ontimeout = function () { fail(T('Upload failed. Check the connection and send again.', '上传失败，请检查连接后重试。')); }; request.onabort = function () { fail(T('Upload cancelled.', '上传已取消。')); }; request.send(form);
+      });
+    }
+    sync();
+    return {keys: terminalKeyboard, dispose: function () { if (terminalKeyboard) terminalKeyboard.dispose(); }, el: root, sync: sync, input: ta, focus: focusInput, reset: function () { generation++; if (data && !data.revoked) { Object.keys(data.drafts).forEach(function (id) { var d = data.drafts[id]; d.files.forEach(function (a) { release(a, data); }); d.text = ''; d.files = []; d.version++; d.busy = false; d.recovery = null; d.error = ''; d.info = ''; }); saveCompose(data, true); } target = null; draft = null; data = null; localVersion = -1; ta.value = ''; appliedText = ''; note.textContent = ''; note.hidden = true; attachments.textContent = ''; attachments.hidden = true; }};
   }
 
   // openAgent enters the pane view for an agent; the selected tab (terminal mirror
@@ -1660,7 +1893,8 @@
     hideFocusChrome();
     $('bar').hidden = false;
     $('back').hidden = false;
-    $('mode').hidden = true;
+    $('mode').hidden = false;
+    syncModeButtons();
     $('panes-btn').hidden = true;
     $('title').textContent = primary(a) || a.agent;
     $('sub').textContent = nativeSourceLabel(a);
@@ -1672,6 +1906,7 @@
     chatSig = '';
     lastTurns = [];
     chatExpanded = {};
+    traceState = resetTrace(traceState);
     showChatLoader();
     updateInputBar();
     pollConversation();
@@ -1769,6 +2004,8 @@
         curAgent = next;
         if (isNative(next) && !readableConversation(next)) {lastTurns = []; externalSettings = null;}
         if (changed) {$('title').textContent = primary(next) || next.agent; $('sub').textContent = isNative(next) ? nativeSourceLabel(next) : (next.agent ? next.agent + ' · ' : '') + secondary(next); drawChat(lastTurns);updateInputBar();}
+        var main = $('chat').querySelector('.conversation-main');
+        if (curPane && paneMode === 'chat' && main) syncChatLive(main, next, function () { return !$('chat').hidden && paneMode === 'chat' && curPane === next.pane_id && curAgent && curAgent.status === 'working'; });
       }).catch(function () {});
     });
   }
@@ -1843,12 +2080,12 @@
     return box;
   }
 
-  function openAgent(a) {
+  function openAgent(a, initialMode) {
     if (readableConversation(a)) {openConversation(a);return;}
     if (!hasPane(a)) return;
     // Previous/next changes the pane, not the top-level view it was opened from.
     if ($('pane').hidden && $('chat').hidden) focusFromWB = !$('workbench').hidden;
-    curPane = a.pane_id; curAgent = a; paneMode = a.agent ? preferredPaneMode : 'term'; $('bar').hidden = false; $('back').hidden = false; $('mode').hidden = !a.agent; $('gear').hidden = false; $('panes-btn').hidden = true;
+    curPane = a.pane_id; curAgent = a; paneMode = a.agent ? (initialMode || preferredPaneMode) : 'term'; $('bar').hidden = false; $('back').hidden = false; $('mode').hidden = !a.agent; $('gear').hidden = false; $('panes-btn').hidden = true;
     $('title').textContent = primary(a); $('sub').textContent = (a.agent ? a.agent + ' · ' : '') + secondary(a);
     clearInterval(radarTimer); radarTimer = null;
     applyMode();
@@ -1856,9 +2093,9 @@
   // applyMode shows the active pane tab and (re)starts ONLY that tab's poll loop.
   function applyMode() {
     syncModeButtons();
-    if (paneMode === 'chat') {
+    if (paneMode !== 'term') {
       clearInterval(paneTimer); paneTimer = null;
-      show('chat'); chatSig = ''; lastTurns = []; chatExpanded = {}; curTurnIdx = 1e9;
+      show('chat'); chatSig = ''; lastTurns = []; chatExpanded = {}; traceState = resetTrace(traceState); curTurnIdx = 1e9;
       showChatLoader();
       showFocusChrome(false);
       pollChat(); clearInterval(chatTimer); chatTimer = setInterval(pollChat, 2500);
@@ -1874,19 +2111,23 @@
     }
   }
   function setMode(m) {
-    if (m === paneMode || !curPane || (m === 'chat' && !(curAgent && curAgent.agent))) return;
+    if (!curPane && readableConversation(curAgent)) {
+      if ((m !== 'chat' && m !== 'trace') || m === paneMode) return;
+      paneMode = m; syncModeButtons(); updatePageTitle('chat'); drawChat(lastTurns); updateInputBar(); return;
+    }
+    if (!['chat', 'trace', 'term'].includes(m) || m === paneMode || !curPane || (m !== 'term' && !(curAgent && curAgent.agent))) return;
     paneMode = m; preferredPaneMode = m;
     try { localStorage.setItem('gtmux.paneMode', m); } catch (e) {}
     applyMode();
   }
   function syncModeButtons() {
     var bs = $('mode').querySelectorAll('button');
-    Array.prototype.forEach.call(bs, function (b) { b.classList.toggle('on', b.getAttribute('data-mode') === paneMode); });
+    Array.prototype.forEach.call(bs, function (b) { var mode = b.getAttribute('data-mode'), selected = mode === paneMode; b.hidden = !curPane && readableConversation(curAgent) && mode === 'term'; b.classList.toggle('on', selected); b.setAttribute('aria-pressed', String(selected)); });
   }
 
   // ---- chat (对话 mode) -------------------------------------------------
   // Renders the parsed transcript (GET /api/transcript) as prompt → collapsed
-  // steps → final response, mirroring the phone's ChatView. View-only.
+  // steps → final response, mirroring the phone's ChatView. Input uses the shared composer.
   function pollChat() {
     pollConversationStatus();
     runRead('chat', function (signal) {
@@ -1903,6 +2144,7 @@
   }
 
   function renderChat(turns) {
+    reconcilePendingPrompts(curPane, turns);
     lastTurns = turns;
     // only repaint when content changed (keeps scroll position + expanded steps)
     var sig = JSON.stringify(turns);
@@ -1914,14 +2156,14 @@
   // hover copy/quote on agent bubbles + a waiting approval card. Narrow: no rail.
   function drawChat(turns) {
     var root = $('chat'), wide = isWide() && turns.length;
-    var focused = document.activeElement && document.activeElement.getAttribute('data-chat-focus');
-    var inputScroll = {};
-    root.querySelectorAll('.step-input').forEach(function (p) { inputScroll[p.dataset.chatFocus] = [p.scrollLeft, p.scrollTop]; });
+    if (paneMode === 'trace' && traceState.el && root.firstChild === traceState.el) { traceView(turns, traceState, Object.assign({width: root.clientWidth, dropped: externalDropped}, curAgent || {})); return; }
+    var preserved = snapshotToolState(root), focused = preserved.focused, inputScroll = preserved.scroll;
     var oldScroll = root.querySelector('.conv-scroll');
     var atBottom = !oldScroll || (oldScroll.scrollHeight - oldScroll.scrollTop - oldScroll.clientHeight < 48);
     var prevTop = oldScroll ? oldScroll.scrollTop : 0;
-    root.innerHTML = ''; root.classList.toggle('wide', !!wide);
+    root.innerHTML = ''; root.classList.toggle('wide', !!wide && paneMode !== 'trace');
     var a = curAgent || {};
+    if (paneMode === 'trace') { root.appendChild(traceView(turns, traceState, Object.assign({width: root.clientWidth, dropped: externalDropped}, curAgent || {}))); return; }
 
     if (wide) root.appendChild(buildOutline(turns));
     var scroll = document.createElement('div'); scroll.className = 'conv-scroll';
@@ -1929,7 +2171,7 @@
     if(readableConversation(a)) col.appendChild(conversationControls());
 
     var sr = document.createElement('div'); sr.className = 'chat-state';
-    sr.appendChild(avatarEl(a, 30, false));
+    sr.appendChild(speakerAvatar('agent', a, avatarEl(a, 30, false)));
     var stx = document.createElement('div'); stx.className = 'cs-text';
     var nm = document.createElement('div'); nm.className = 'cs-name'; nm.textContent = a.agent || ''; stx.appendChild(nm);
     var stl = document.createElement('div'); stl.className = 'cs-status';
@@ -1941,50 +2183,20 @@
       collapse.type = 'button'; collapse.dataset.chatFocus = 'collapse'; collapse.onclick = collapseAllSteps; sr.appendChild(collapse);
     }
 
-    if (!turns.length) {
+    if (!turns.length && !(pendingPrompts[curPane] || []).length) {
       var e = document.createElement('div'); e.className = 'chat-empty';
       e.textContent = readableConversation(a) ? T('No recorded conversation yet.','尚无已记录的对话。') : T('No conversation yet. Switch to Terminal to see the current screen.',
         '暂无对话记录。可切换到「终端」查看当前屏幕。');
       col.appendChild(e);
     }
     var seps = sepLabels(turns);
-    turns.forEach(function (t, idx) {
-      var ct = document.createElement('div'); ct.className = 'cturn'; ct.id = 'cturn-' + idx;
-      if (seps[idx]) ct.appendChild(sepEl(seps[idx]));
-      if (t.prompt) {
-        var ur = document.createElement('div'); ur.className = 'urow';
-        var ub = document.createElement('div'); ub.className = 'ububble'; ub.appendChild(mdRender(t.prompt));
-        ur.appendChild(ub);
-        ur.appendChild(t.from ? senderAvatarEl(t.from, 26) : userAvatarEl(26));
-        ct.appendChild(ur);
-        if (t.from) ct.appendChild(senderNoteEl(t.from));
-      }
-      // each segment = an assistant text bubble + the tool steps that followed it;
-      // render in order so intermediate process sits BETWEEN separate bubbles. Every
-      // agent bubble carries the avatar (a turn can split into many bubbles across
-      // tool calls; one-per-turn left the follow-ups looking orphaned).
-      var segs = (t.segments && t.segments.length) ? t.segments : (t.response ? [{text: t.response}] : []);
-      segs.forEach(function (seg, k) {
-        if (seg.text) {
-          var ar = document.createElement('div'); ar.className = 'arow';
-          ar.appendChild(avatarEl(a, 26, false));
-          var ab = document.createElement('div'); ab.className = 'abubble'; ab.appendChild(mdRender(seg.text));
-          ab.appendChild(bubbleActions(seg.text)); // hover: 复制 / 引用 (desktop)
-          ar.appendChild(ab); ct.appendChild(ar);
-        }
-        if (seg.steps && seg.steps.length) {
-          var sk = idx + '-' + k;
-          var open = !!chatExpanded[sk];
-          ct.appendChild(toolStepsEl(seg.steps, open, (function (key) {
-            return function () { chatExpanded[key] = !chatExpanded[key]; drawChat(lastTurns); };
-          })(sk), sk));
-        }
-      });
-      col.appendChild(ct);
-    });
+    turns.forEach(function (t, idx) { col.appendChild(conversationTurn(t, a, idx, chatExpanded, seps[idx], true)); });
+    appendPendingPrompts(col, curPane, a);
     // waiting → an inline approval card (read-only 1/2/3 from /api/options).
+    var main = document.createElement('div'); main.className = 'conversation-main';
+    scroll.appendChild(col); main.appendChild(scroll); root.appendChild(main);
     renderChatInteraction();
-    scroll.appendChild(col); root.appendChild(scroll);
+    syncChatLive(main, a, function () { return !$('chat').hidden && paneMode === 'chat' && curPane === a.pane_id && curAgent && curAgent.status === 'working'; });
     scroll.scrollTop = atBottom ? scroll.scrollHeight : prevTop;
     if (curTurnIdx >= turns.length) curTurnIdx = Math.max(0, turns.length - 1);
     if (wide) syncOutline();
@@ -1995,8 +2207,22 @@
     });
   }
 
+  function snapshotToolState(root) {
+    var active = document.activeElement, scroll = {};
+    root.querySelectorAll('.step-inspect').forEach(function (node) { if (node.saveOpenState) node.saveOpenState(); });
+    root.querySelectorAll('.step-input').forEach(function (node) { scroll[node.dataset.chatFocus] = [node.scrollLeft, node.scrollTop]; });
+    return {focused: active && root.contains && root.contains(active) ? active.getAttribute('data-chat-focus') : null, scroll: scroll};
+  }
+  function restoreToolState(root, preserved) {
+    root.querySelectorAll('[data-chat-focus]').forEach(function (node) {
+      var key = node.dataset.chatFocus, scroll = preserved.scroll[key];
+      if (scroll) { node.scrollLeft = scroll[0]; node.scrollTop = scroll[1]; }
+      if (key === preserved.focused) node.focus({preventScroll: true});
+    });
+  }
   // Plain text only: tool arguments are untrusted transcript content, never markup.
-  function toolStepsEl(steps, open, onToggle, stateKey) {
+  function toolStepsEl(steps, open, onToggle, stateKey, expansion) {
+    var detailState = expansion || chatExpanded;
     var activity = window.GtmuxActivity, lang = ZH ? 'zh' : 'en';
     var card = el('div', 'tool-steps');
     var toggle = el('button', 'steps-toggle');
@@ -2010,7 +2236,7 @@
     var head = el('span', 'steps-heading');
     head.appendChild(el('span', 'steps-title', title));
     head.appendChild(el('span', 'steps-count', count));
-    head.appendChild(el('span', 'steps-chevron', open ? '⌃' : '⌄'));
+    var chevron = el('span', 'steps-chevron'); chevron.innerHTML = uiIcon(open ? 'up' : 'down'); head.appendChild(chevron);
     toggle.appendChild(head);
     if (!open) {
       var counts = new Map();
@@ -2018,7 +2244,7 @@
       var tools = Array.from(counts);
       var summary = tools.slice(0, 3).map(function (p) { return p[0] + (p[1] > 1 ? ' ×' + p[1] : ''); }).join(' · ')
         + (tools.length > 3 ? ' · +' + (tools.length - 3) : '');
-      toggle.appendChild(el('span', 'steps-summary', summary));
+      if (summary !== title) toggle.appendChild(el('span', 'steps-summary', summary));
     }
     card.appendChild(toggle);
     if (open) {
@@ -2026,8 +2252,9 @@
       steps.forEach(function (s, i) {
         var row = el('li', 'step-row');
         var op = activity.operation(s), key = 'step-' + stateKey + '-' + i;
-        var details = el('details', 'step-inspect'); details.open = !!chatExpanded[key];
-        details.ontoggle = function () { if (details.isConnected) chatExpanded[key] = details.open; };
+        var details = el('details', 'step-inspect'); details.open = !!detailState[key];
+        details.saveOpenState = function () { detailState[key] = details.open; };
+        details.ontoggle = function () { if (details.isConnected) detailState[key] = details.open; };
         var summary = el('summary', 'step-toggle'); summary.dataset.chatFocus = key;
         summary.appendChild(activityIcon(op));
         var body = el('span', 'step-body');
@@ -2068,19 +2295,148 @@
 
   // Keep glyph-only actions discoverable on touch and keyboard, with honest feedback.
   function clipboardAction(label, glyph, text, focusKey) {
-    var wrap = el('span', 'clipboard-action'), b = el('button', '', glyph), status = el('span', 'copy-status');
-    b.type = 'button'; b.title = label; b.setAttribute('aria-label', label);
+    var wrap = el('span', 'clipboard-action'), b = el('button', '', ''), status = el('span', 'copy-status');
+    b.type = 'button'; b.innerHTML = uiIcon('copy'); b.title = label; b.setAttribute('aria-label', label);
     if (focusKey) b.dataset.chatFocus = focusKey;
     status.setAttribute('role', 'status');
     var pending = false;
     b.onclick = function (e) {
       e.stopPropagation(); if (pending) return; pending = true; b.setAttribute('aria-busy', 'true'); status.textContent = '';
-      copyText(text).then(function (ok) {
-        pending = false; b.setAttribute('aria-busy', 'false'); status.textContent = ok ? T('Copied', '已复制') : T('Copy failed', '复制失败');
-        setTimeout(function () { status.textContent = ''; }, 1800);
-      });
+      copyWithFeedback(b, text, label, 'copy', status).then(function () { pending = false; b.setAttribute('aria-busy', 'false'); });
     };
     wrap.appendChild(b); wrap.appendChild(status); return wrap;
+  }
+
+  function promptText(value) { return String(value || '').replace(/\r\n/g, '\n').trim(); }
+  function promptObservations(text, turns) {
+    var counts = new Map(); turns.forEach(function (turn) { if (promptText(turn.prompt) === promptText(text)) { var key = turn.time || ''; counts.set(key, (counts.get(key) || 0) + 1); } }); return counts;
+  }
+  function pendingPromptRecorded(echo, turns) {
+    var additions = 0; promptObservations(echo.text, turns).forEach(function (count, time) { additions += Math.max(0, count - (echo.observed.get(time) || 0)); }); return additions > echo.priorPending;
+  }
+  function reconcilePendingPrompts(id, turns) { if (id && pendingPrompts[id]) pendingPrompts[id] = pendingPrompts[id].filter(function (echo) { return !pendingPromptRecorded(echo, turns); }); }
+  function refreshPendingConversation(id, follow) {
+    if (curPane === id && !$('chat').hidden && paneMode === 'chat') { drawChat(lastTurns); var scroll = $('chat').querySelector('.conv-scroll'); if (follow && scroll) scroll.scrollTop = scroll.scrollHeight; }
+    else if (WB.on) WB.tiles.forEach(function (tile) { if (tile.id === id && tile.mode === 'chat') { renderTileChat(tile, tile.lastTurns || []); var scroll = tile.body.querySelector('.tile-chat'); if (follow && scroll) scroll.scrollTop = scroll.scrollHeight; } });
+  }
+  function beginPendingPrompt(id, text, sendId) {
+    var tile = WB.tiles.find(function (t) { return t.id === id; }), turns = curPane === id ? lastTurns : tile && tile.lastTurns || [];
+    reconcilePendingPrompts(id, turns); var list = pendingPrompts[id] || (pendingPrompts[id] = []);
+    var echo = {id: sendId, text: text, delivered: false, observed: promptObservations(text, turns), priorPending: list.filter(function (e) { return promptText(e.text) === promptText(text); }).length};
+    list.push(echo); if (list.length > 20) list.shift(); refreshPendingConversation(id, true); return echo;
+  }
+  function finishPendingPrompt(id, echo, delivered) {
+    if (!delivered) pendingPrompts[id] = (pendingPrompts[id] || []).filter(function (e) { return e !== echo; });
+    else echo.delivered = true;
+    refreshPendingConversation(id);
+  }
+  function appendPendingPrompts(host, id, agent) {
+    (pendingPrompts[id] || []).forEach(function (echo) {
+      var turn = conversationTurn({prompt: echo.text}, agent, -1, {}, '', false); turn.classList.add('pending-prompt');
+      var status = document.createElement('span'); status.className = 'pending-prompt-note'; status.textContent = echo.delivered ? T('Sent · awaiting conversation record', '已发送，等待对话记录') : T('Sending…', '正在发送…');
+      var footer = turn.querySelector('.message-meta'); footer.insertBefore(status, footer.firstChild); host.appendChild(turn);
+    });
+  }
+
+  // Like the app, Live reads the current screen, never a previous transcript reply.
+  function rememberServerClock(response) {
+    var value = response.headers && response.headers.get && Date.parse(response.headers.get('Date'));
+    if (value) { serverClock = value; serverClockAt = Date.now(); }
+  }
+  function liveDuration(agent) {
+    if (!serverClock || !(agent.since > 0)) return '';
+    var seconds = Math.floor((serverClock + Date.now() - serverClockAt) / 1000 - agent.since);
+    if (seconds < 0) return '';
+    if (seconds < 60) return seconds + T('s', '秒');
+    var minutes = Math.floor(seconds / 60);
+    return minutes < 60 ? minutes + T('m ', '分') + seconds % 60 + T('s', '秒') : Math.floor(minutes / 60) + T('h ', '小时') + minutes % 60 + T('m', '分');
+  }
+  function liveTail(value) {
+    var lines = String(value || '').split('\n').map(function (line) { return plainRow(line).replace(/[\x00-\x08\x0b-\x1f\x7f]/g, ''); });
+    while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
+    return lines.slice(-14).join('\n');
+  }
+  function syncChatLive(host, agent, valid) {
+    var id = agent && agent.pane_id; if (!id) return;
+    var state = chatLive[id] || (chatLive[id] = {open: false, revision: 0});
+    var panel = host.querySelector('.chat-live'), working = agent.status === 'working';
+    if (state.working !== working || state.since !== agent.since) {
+      state.revision++; state.text = ''; state.error = false; state.loading = false;
+      cancelRead('live:' + id);
+    }
+    state.working = working; state.since = agent.since; state.agent = agent; state.valid = valid;
+    if (!working) { if (panel) panel.remove(); return; }
+    if (!panel) {
+      panel = document.createElement('details'); panel.className = 'chat-live'; panel.dataset.pane = id;
+      var summary = document.createElement('summary'); summary.className = 'live-summary';
+      var dot = document.createElement('span'); dot.className = 'live-dot'; dot.setAttribute('aria-hidden', 'true'); summary.appendChild(dot);
+      var title = document.createElement('strong'); title.textContent = T('Working', '正在处理'); summary.appendChild(title);
+      panel.clock = document.createElement('span'); panel.clock.className = 'live-clock'; summary.appendChild(panel.clock);
+      panel.action = document.createElement('span'); panel.action.className = 'live-action'; summary.appendChild(panel.action);
+      var chevron = document.createElement('span'); chevron.className = 'live-chevron'; chevron.innerHTML = uiIcon('chevron'); summary.appendChild(chevron); panel.appendChild(summary);
+      panel.output = document.createElement('pre'); panel.output.className = 'live-output'; panel.output.setAttribute('aria-label', T('Live terminal output', '实时终端输出')); panel.appendChild(panel.output);
+      panel.note = document.createElement('p'); panel.note.className = 'live-note'; panel.note.setAttribute('role', 'status'); panel.appendChild(panel.note);
+      panel.viewport = host.querySelector('.conv-scroll, .tile-chat');
+      summary.addEventListener('click', function () { var view = panel.viewport; panel.followOnToggle = view && view.clientHeight > 0 && view.scrollHeight - view.scrollTop - view.clientHeight < 48; });
+      panel.open = !!state.open;
+      panel.ontoggle = function () { state.open = panel.open; paintLive(panel, state); if (panel.followOnToggle && panel.viewport) panel.viewport.scrollTop = panel.viewport.scrollHeight; panel.followOnToggle = false; if (state.open) pollChatLive(id); else cancelRead('live:' + id); };
+      host.appendChild(panel);
+    }
+    if (panel.open !== !!state.open) panel.open = !!state.open;
+    paintLive(panel, state);
+    if (state.open) pollChatLive(id);
+  }
+  function paintLive(panel, state) {
+    var viewport = panel.viewport, following = viewport && viewport.clientHeight > 0 && viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < 48;
+    panel.clock.textContent = liveDuration(state.agent);
+    panel.action.textContent = state.open ? T('Collapse', '收起') : T('Live output', '展开实时输出');
+    var text = state.text || (state.error ? T('Live output is unavailable.', '暂时无法读取实时输出。') : state.loading ? T('Loading live output…', '正在加载实时输出…') : T('Waiting for output…', '等待实时输出…'));
+    if (panel.output.textContent !== text) { var atBottom = panel.output.scrollHeight - panel.output.scrollTop - panel.output.clientHeight < 32; panel.output.textContent = text; if (atBottom) panel.output.scrollTop = panel.output.scrollHeight; }
+    panel.note.hidden = !state.error; panel.note.textContent = state.error ? (state.text ? T('Update failed. Showing the last capture; retrying…', '更新失败，显示上次内容，正在重试…') : T('Retrying automatically…', '正在自动重试…')) : '';
+    if (following) viewport.scrollTop = viewport.scrollHeight;
+  }
+  function paintLivePanels(id, state) {
+    document.querySelectorAll('.chat-live').forEach(function (panel) { if (panel.dataset.pane === id) paintLive(panel, state); });
+  }
+  function pollChatLive(id) {
+    var state = chatLive[id]; if (!state || !state.open || !state.working || !state.valid()) return;
+    runRead('live:' + id, function (signal) {
+      var revision = state.revision, current = currentRead('live:' + id, signal);
+      function active() { return current() && state.revision === revision && state.open && state.working && state.valid(); }
+      state.loading = true; paintLivePanels(id, state);
+      return api('/api/pane?id=' + encodeURIComponent(id), {signal: signal}).then(function (r) {
+        if (!active()) return null;
+        if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
+        if (!r.ok) throw new Error('live capture'); return r.json();
+      }).then(function (capture) {
+        if (!capture || !active()) return;
+        state.text = liveTail(capture.text); state.error = false;
+      }).catch(function () { if (active()) state.error = true; }).finally(function () {
+        if (state.revision === revision) state.loading = false;
+        if (active()) paintLivePanels(id, state);
+      });
+    }, 15000, function () {
+      if (state.open && state.working && state.valid()) { state.loading = false; state.error = true; paintLivePanels(id, state); }
+    });
+  }
+  function pollChatStatus() {
+    if ($('chat').hidden || !curPane || !curAgent) return;
+    runRead('chat-status', function (signal) {
+      var asked = curPane, current = currentRead('chat-status', signal);
+      return api('/api/agents', {signal: signal}).then(function (r) {
+        if (!current()) return null;
+        if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
+        if (!r.ok) throw new Error('chat status'); rememberServerClock(r); return r.json();
+      }).then(function (agents) {
+        if (!Array.isArray(agents) || !current(true) || asked !== curPane) return;
+        var next = byId(agents, asked), changed = !next || next.status !== curAgent.status || next.since !== curAgent.since;
+        lastAgents = agents; curAgent = next || Object.assign({}, curAgent, {status: ''});
+        if (paneMode === 'chat') {
+          if (changed && $('chat').querySelector('.conversation-main')) drawChat(lastTurns);
+          else { var host = $('chat').querySelector('.conversation-main'); if (host) syncChatLive(host, curAgent, function () { return !$('chat').hidden && paneMode === 'chat' && curPane === asked && curAgent.status === 'working'; }); }
+        }
+      }).catch(function () { if (current()) setConn(false); });
+    });
   }
 
   // ---- §03 wide-chat helpers --------------------------------------------
@@ -2113,12 +2469,235 @@
     syncOutline();
     if (scrollIt) { var el = $('cturn-' + curTurnIdx); if (el) el.scrollIntoView({block: 'start', behavior: 'smooth'}); }
   }
-  // Quote copies a blockquote; it never submits a message.
-  function bubbleActions(text) {
+  // Shared by focused chat and board tiles: one transcript, one set of affordances.
+  function turnSegments(t) {
+    return t.segments && t.segments.length ? t.segments : [{text: t.response || '', steps: t.steps || []}];
+  }
+  function conversationTurn(t, currentAgent, idx, expanded, separator, focused, onUpdate) {
+    var ct = document.createElement('article'); ct.className = 'cturn'; if (focused) ct.id = 'cturn-' + idx;
+    if (separator) ct.appendChild(sepEl(separator));
+    if (t.prompt) {
+      var ur = document.createElement('div'); ur.className = 'urow';
+      var us = document.createElement('div'); us.className = 'message-stack user-message';
+      var ub = document.createElement('div'); ub.className = 'ububble'; ub.appendChild(mdRender(t.prompt)); us.appendChild(ub);
+      us.appendChild(messageMeta(t.prompt, t.time, t.from));
+      ur.appendChild(us); ur.appendChild(speakerAvatar(t.from ? t.from.kind : 'user', t.from || {}, t.from ? senderAvatarEl(t.from, 26) : userAvatarEl(26))); ct.appendChild(ur);
+    }
+    // A stitched HQ history may contain several different agent sessions.
+    var a = Object.assign({}, currentAgent, {agent: t.agent || currentAgent.agent, profileTurn: {session_id: t.session_id, time: t.time}});
+    turnSegments(t).forEach(function (seg, k) {
+      if (seg.text) {
+        var ar = document.createElement('div'); ar.className = 'arow'; ar.appendChild(speakerAvatar('agent', a, avatarEl(a, 28, false)));
+        var as = document.createElement('div'); as.className = 'message-stack assistant-message';
+        var ab = document.createElement('div'); ab.className = 'abubble'; ab.appendChild(mdRender(seg.text)); as.appendChild(ab);
+        as.appendChild(messageMeta(seg.text)); ar.appendChild(as); ct.appendChild(ar);
+      }
+      if (seg.steps && seg.steps.length) {
+        var key = idx + '-' + k;
+        ct.appendChild(toolStepsEl(seg.steps, !!expanded[key], function () {
+          expanded[key] = !expanded[key];
+          if (onUpdate) onUpdate(); else if (focused) drawChat(lastTurns);
+        }, key, expanded));
+      }
+    });
+    return ct;
+  }
+  function messageMeta(value, timestamp, from) {
+    var meta = document.createElement('div'); meta.className = 'message-meta';
+    if (from) meta.appendChild(senderNoteEl(from));
+    var date = timestamp && new Date(timestamp);
+    if (date && !isNaN(date.getTime())) {
+      var time = document.createElement('time'); time.setAttribute('datetime', date.toISOString()); time.textContent = sepTime(date); meta.appendChild(time);
+    }
+    meta.appendChild(bubbleActions(value)); return meta;
+  }
+  var dialogSequence = 0;
+  function browserDialog(title) {
+    var previousFocus = document.activeElement, dialog = document.createElement('dialog'); dialog.className = 'browser-dialog';
+    var head = document.createElement('header'); head.className = 'dialog-head';
+    var heading = document.createElement('h2'); heading.id = 'dialog-title-' + (++dialogSequence); heading.textContent = title; head.appendChild(heading); dialog.setAttribute('aria-labelledby', heading.id);
+    var close = document.createElement('button'); close.type = 'button'; close.className = 'dialog-close'; close.innerHTML = uiIcon('close'); close.title = T('Close', '关闭'); close.setAttribute('aria-label', close.title); head.appendChild(close);
+    var body = document.createElement('div'); body.className = 'dialog-body';
+    var foot = document.createElement('footer'); foot.className = 'dialog-foot'; foot.hidden = true;
+    dialog.appendChild(head); dialog.appendChild(body); dialog.appendChild(foot); document.body.appendChild(dialog);
+    close.onclick = function () { dialog.close(); };
+    dialog.addEventListener('keydown', function (e) { e.stopPropagation(); });
+    var result = {el: dialog, body: body, foot: foot, restoreFocus: true, close: function () { dialog.close(); }, onClose: null};
+    var cleaned = false;
+    function cleanup() { if (cleaned) return; cleaned = true; if (result.onClose) result.onClose(); dialog.remove(); if (result.restoreFocus && previousFocus && previousFocus.isConnected && previousFocus.focus) previousFocus.focus(); }
+    // Revocation must discard content and cancel reads before the gate is visible.
+    dialog.retire = function () { result.restoreFocus = false; dialog.close(); cleanup(); };
+    dialog.addEventListener('close', cleanup);
+    dialog.addEventListener('click', function (e) { var rect = dialog.getBoundingClientRect(); if (e.target === dialog && (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom)) dialog.close(); });
+    dialog.showModal(); return result;
+  }
+  function speakerAvatar(kind, source, avatar) {
+    var button = document.createElement('button'); button.type = 'button'; button.className = 'speaker-avatar';
+    var name = kind === 'user' ? T('User', '用户') : source.label || (isHQPane(source) ? 'HQ' : source.agent) || T('Agent', 'Agent');
+    button.title = T('View profile: ', '查看资料：') + name; button.setAttribute('aria-label', button.title); button.appendChild(avatar);
+    button.onclick = function (e) { e.stopPropagation(); showSpeakerProfile(kind, source); };
+    return button;
+  }
+  function showSpeakerProfile(kind, source) {
+    var hq = kind === 'hq' || source.kind === 'hq' || isHQPane(source), pane = source.pane || source.pane_id;
+    var live = pane ? byId(lastAgents, pane) : source.session_id && lastAgents.find(function (a) { return a.session_id === source.session_id && (a.home_id || '') === (source.home_id || ''); });
+    // An old stitched turn identifies its own agent; never assign another tool's live state.
+    if (source.profileTurn || source.kind === 'agent' || source.kind === 'hq' || live && source.agent && live.agent && source.agent.toLowerCase() !== live.agent.toLowerCase()) live = null;
+    var agent = live || {agent: source.agent}, name = kind === 'user' ? T('User', '用户') : source.label || (hq ? 'gtmux HQ' : source.agent || agent.agent || 'Agent');
+    var sheet = browserDialog(T('Profile', '资料')), hero = document.createElement('div'); hero.className = 'profile-hero';
+    hero.appendChild(kind === 'user' ? userAvatarEl(64) : avatarEl(Object.assign({}, agent, hq ? {role: 'supervisor'} : {}), 64, false));
+    var heading = document.createElement('h3'); heading.textContent = name; hero.appendChild(heading);
+    var role = document.createElement('p'); role.textContent = kind === 'user' ? T('User', '用户') : hq ? T('HQ · supervisor', 'HQ · 中控') : (source.agent || agent.agent || 'Agent'); if (kind !== 'user') hero.appendChild(role); sheet.body.appendChild(hero);
+    var facts = document.createElement('dl'); facts.className = 'profile-facts'; sheet.body.appendChild(facts);
+    function fact(label, value) { if (!value) return; var dt = document.createElement('dt'); dt.textContent = label; var dd = document.createElement('dd'); dd.textContent = value; facts.appendChild(dt); facts.appendChild(dd); }
+    if (kind === 'user') {
+      fact(T('Message source', '消息来源'), T('User input', '用户输入'));
+      fact(T('Browser access', '当前浏览器权限'), !SHARE.known ? T('Loading…', '正在读取…') : SHARE.all ? T('Owner', '所有者') : T('Guest', '访客'));
+      var note = document.createElement('p'); note.className = 'profile-note'; note.textContent = T('The conversation does not record the sender’s personal profile or device.', '对话记录未提供发送者的个人资料或具体设备。'); sheet.body.appendChild(note);
+    } else {
+      if (live) fact(T('Status', '状态'), LABEL[live.status]);
+      else fact(T('Profile scope', '资料范围'), T('At message time', '消息发送时'));
+      fact(T('Agent', 'Agent'), agent.agent || source.agent);
+      fact(T('Session', '会话'), agent.session || source.label);
+      fact(T('Project', '项目'), agent.project);
+      fact(T('Directory', '目录'), agent.cwd);
+      fact(T('Pane', '窗格'), pane || (live && live.pane_id));
+      fact(T('Source', '来源'), isNative(agent) ? T('Desktop session', '桌面会话') : live ? 'tmux' : '');
+      if (live && live.pane_id && live.pane_id !== curPane) {
+        var open = document.createElement('button'); open.type = 'button'; open.className = 'dialog-primary'; open.textContent = T('Open conversation', '打开会话');
+        open.onclick = function () { sheet.close(); openAgent(live); }; sheet.foot.hidden = false; sheet.foot.appendChild(open);
+      }
+      if (kind === 'agent') loadSpeakerFacts(sheet, source, heading);
+    }
+  }
+  function loadSpeakerFacts(sheet, source, heading) {
+    var turn = source.profileTurn, pane = source.pane_id, session = turn ? turn.session_id : source.session_id;
+    var note = el('p', 'profile-note'); note.setAttribute('role','status'); sheet.body.appendChild(note);
+    if (!SHARE.all) { note.textContent = T('Recorded profiles are unavailable for this connection.', '此连接无法查看已记录资料。'); return; }
+    if (!source.agent || turn && (!turn.session_id || !turn.time) || !pane && !session) { note.textContent = T('No recorded profile is available for this message.', '未记录这条消息当时的资料。'); return; }
+    var request = {id: isNative(source) ? '' : pane, session_id: session, home_id: source.home_id, at: turn && turn.time};
+    var query = Object.keys(request).filter(function (key) { return request[key]; }).map(function (key) { return key + '=' + encodeURIComponent(request[key]); }).join('&');
+    var credential = token, controller = new AbortController(), closed = false, timer, attempt = 0;
+    sheet.onClose = function () { closed = true; attempt++; clearTimeout(timer); controller.abort(); };
+    var labels = {model:T('Model','模型'),version:T('Session version','会话版本'),cursor_version:T('Cursor version','Cursor 版本'),provider:T('Provider','供应商'),effort:T('Reasoning effort','推理强度'),mode:T('Task mode','任务模式'),permission:T('Permissions','权限策略'),sandbox:T('Sandbox','沙箱'),role:T('Agent role','Agent 角色'),variant:T('Model variant','模型变体'),model_alias:T('Model alias','模型别名'),client:T('Terminal client','终端客户端'),client_version:T('Client version','客户端版本'),subscription:T('Recorded plan','已记录套餐'),thinking:T('Thinking','思考'),thinking_level:T('Thinking level','思考等级'),thinking_budget:T('Thinking budget','思考预算'),context:T('Context option','上下文选项')};
+    var sources = {session_log:T('Session log','本会话日志'),verified_binding:T('Verified client binding','已核验的客户端绑定'),session_rate_limits:T('Rate limits recorded in this session','本会话当时的额度记录'),runtime_package:T('Runtime package','运行实例加载包'),native_hook:T('Native hook','原生 hook')};
+    function current(generation) { return !closed && sheet.el.open && credential === token && (generation === undefined || generation === attempt); }
+    function failed(generation) {
+      if (!current(generation)) return;
+      note.textContent = T('Recorded profile unavailable. You can retry.', '暂时无法读取已记录资料，可重试。');
+      var retry = el('button', 'dialog-secondary', T('Retry', '重试')); retry.type = 'button'; retry.onclick = read; note.appendChild(retry);
+    }
+    function read() {
+      if (!current()) return;
+      var generation = ++attempt;
+      controller.abort(); controller = new AbortController(); var requestController = controller;
+      note.textContent = T('Loading recorded profile…', '正在读取已记录资料…');
+      clearTimeout(timer); var ownTimer = setTimeout(function () { requestController.abort(); failed(generation); }, 15000); timer = ownTimer;
+      api('/api/participant-profile?' + query, {signal: requestController.signal}).then(function (response) {
+        if (!current(generation)) return null;
+        if (response.status === 401) { token = null; gate('expired'); return null; }
+        if (!response.ok) throw new Error('profile'); return response.json();
+      }).then(function (profile) {
+        if (!profile || !current(generation)) return;
+        clearTimeout(ownTimer);
+        if (typeof profile.agent !== 'string' || typeof profile.name !== 'string' || !Array.isArray(profile.facts) || session && profile.session_id !== session) throw new Error('identity');
+        heading.textContent = isHQPane(source) ? 'gtmux HQ' : profile.name || source.agent;
+        var values = profile.facts.slice(0, 32).filter(function (value) { return value && typeof value.key === 'string' && Object.prototype.hasOwnProperty.call(labels,value.key) && typeof value.value === 'string' && value.value && typeof value.source === 'string'; });
+        values.sort(function (a,b) { return Object.keys(labels).indexOf(a.key) - Object.keys(labels).indexOf(b.key); });
+        note.textContent = profile.historical ? T('Recorded for this message', '这条消息的记录') : T('Current conversation · recorded facts', '当前会话 · 已记录资料');
+        if (!values.length) { note.textContent = T('No profile facts were recorded for this conversation.', '此会话未记录可显示的资料。'); return; }
+        var facts = el('dl','profile-facts profile-recorded'), provenance = el('details','profile-provenance');
+        provenance.appendChild(el('summary','',T('Sources and observation times','来源与记录时间')));
+        values.forEach(function (value) {
+          var brands = {openai:'OpenAI',anthropic:'Anthropic',deepseek:'DeepSeek','deepseek-official':'DeepSeek','deepseek-account':'DeepSeek Account',google:'Google'};
+          facts.appendChild(el('dt','',labels[value.key])); facts.appendChild(el('dd','',value.key === 'provider' ? brands[value.value.toLowerCase()] || value.value : value.value));
+          var line = el('p','',labels[value.key] + ' · ' + (sources[value.source] || T('Recorded source','已记录来源')));
+          if (Number.isFinite(value.observed_at) && value.observed_at > 0) line.appendChild(el('time','', ' · ' + new Date(value.observed_at).toLocaleString()));
+          provenance.appendChild(line);
+        });
+        sheet.body.appendChild(facts); sheet.body.appendChild(provenance);
+      }).catch(function () { clearTimeout(ownTimer); failed(generation); });
+    }
+    read();
+  }
+  // One optical grid and stroke weight for navigation, composer and message actions.
+  function uiIcon(kind) {
+    // Lucide 0.468.0 (ISC); attribution: vendor/lucide.LICENSE.
+    var paths = {
+      "copy": "<rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\" /> <path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\" />",
+      "done": "<path d=\"M20 6 9 17l-5-5\" />",
+      "error": "<circle cx=\"12\" cy=\"12\" r=\"10\" /> <line x1=\"12\" x2=\"12\" y1=\"8\" y2=\"12\" /> <line x1=\"12\" x2=\"12.01\" y1=\"16\" y2=\"16\" />",
+      "focus": "<path d=\"M8 3H5a2 2 0 0 0-2 2v3\" /> <path d=\"M21 8V5a2 2 0 0 0-2-2h-3\" /> <path d=\"M3 16v3a2 2 0 0 0 2 2h3\" /> <path d=\"M16 21h3a2 2 0 0 0 2-2v-3\" />",
+      "close": "<path d=\"M18 6 6 18\" /> <path d=\"m6 6 12 12\" />",
+      "sidebarClose": "<rect width=\"18\" height=\"18\" x=\"3\" y=\"3\" rx=\"2\" /> <path d=\"M9 3v18\" /> <path d=\"m16 15-3-3 3-3\" />",
+      "sidebarOpen": "<rect width=\"18\" height=\"18\" x=\"3\" y=\"3\" rx=\"2\" /> <path d=\"M9 3v18\" /> <path d=\"m14 9 3 3-3 3\" />",
+      "surface": "<path d=\"M15 3h6v6\" /> <path d=\"M10 14 21 3\" /> <path d=\"M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6\" />",
+      "layout": "<rect width=\"18\" height=\"18\" x=\"3\" y=\"3\" rx=\"2\" /> <path d=\"M3 9h18\" /> <path d=\"M9 21V9\" />",
+      "chevron": "<path d=\"m6 9 6 6 6-6\" />",
+      "plus": "<path d=\"M5 12h14\" /> <path d=\"M12 5v14\" />",
+      "send": "<path d=\"m5 12 7-7 7 7\" /> <path d=\"M12 19V5\" />",
+      "left": "<path d=\"m15 18-6-6 6-6\" />",
+      "right": "<path d=\"m9 18 6-6-6-6\" />",
+      "up": "<path d=\"m5 12 7-7 7 7\" /> <path d=\"M12 19V5\" />",
+      "down": "<path d=\"M12 5v14\" /> <path d=\"m19 12-7 7-7-7\" />",
+      "keyboard": "<path d=\"M10 8h.01\" /> <path d=\"M12 12h.01\" /> <path d=\"M14 8h.01\" /> <path d=\"M16 12h.01\" /> <path d=\"M18 8h.01\" /> <path d=\"M6 8h.01\" /> <path d=\"M7 16h10\" /> <path d=\"M8 12h.01\" /> <rect width=\"20\" height=\"16\" x=\"2\" y=\"4\" rx=\"2\" />",
+      "eye": "<path d=\"M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0\" /> <circle cx=\"12\" cy=\"12\" r=\"3\" />",
+      "search": "<circle cx=\"11\" cy=\"11\" r=\"8\" /> <path d=\"m21 21-4.3-4.3\" />",
+      "grip": "<circle cx=\"9\" cy=\"12\" r=\"1\" /> <circle cx=\"9\" cy=\"5\" r=\"1\" /> <circle cx=\"9\" cy=\"19\" r=\"1\" /> <circle cx=\"15\" cy=\"12\" r=\"1\" /> <circle cx=\"15\" cy=\"5\" r=\"1\" /> <circle cx=\"15\" cy=\"19\" r=\"1\" />",
+      "back": "<path d=\"m12 19-7-7 7-7\" /> <path d=\"M19 12H5\" />",
+      "settings": "<path d=\"M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z\" /> <circle cx=\"12\" cy=\"12\" r=\"3\" />",
+      "return": "<polyline points=\"9 10 4 15 9 20\" /> <path d=\"M20 4v7a4 4 0 0 1-4 4H4\" />",
+      "backspace": "<path d=\"M10 5a2 2 0 0 0-1.344.519l-6.328 5.74a1 1 0 0 0 0 1.481l6.328 5.741A2 2 0 0 0 10 19h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z\" /> <path d=\"m12 9 6 6\" /> <path d=\"m18 9-6 6\" />",
+      "expand": "<path d=\"m21 21-6-6m6 6v-4.8m0 4.8h-4.8\" /> <path d=\"M3 16.2V21m0 0h4.8M3 21l6-6\" /> <path d=\"M21 7.8V3m0 0h-4.8M21 3l-6 6\" /> <path d=\"M3 7.8V3m0 0h4.8M3 3l6 6\" />",
+      "history": "<path d=\"M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8\" /> <path d=\"M3 3v5h5\" /> <path d=\"M12 7v5l4 2\" />",
+      "snippets": "<path d=\"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\" /> <path d=\"M13 8H7\" /> <path d=\"M17 12H7\" />",
+      "camera": "<path d=\"M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z\" /> <circle cx=\"12\" cy=\"13\" r=\"3\" />",
+      "file": "<path d=\"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z\" /> <path d=\"M14 2v4a2 2 0 0 0 2 2h4\" />",
+      "image": "<rect width=\"18\" height=\"18\" x=\"3\" y=\"3\" rx=\"2\" ry=\"2\" /> <circle cx=\"9\" cy=\"9\" r=\"2\" /> <path d=\"m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21\" />",
+      "paste": "<path d=\"M15 2H9a1 1 0 0 0-1 1v2c0 .6.4 1 1 1h6c.6 0 1-.4 1-1V3c0-.6-.4-1-1-1Z\" /> <path d=\"M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2M16 4h2a2 2 0 0 1 2 2v2M11 14h10\" /> <path d=\"m17 10 4 4-4 4\" />",
+      "pen": "<path d=\"M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z\" /> <path d=\"m15 5 4 4\" />",
+      "undo": "<path d=\"M9 14 4 9l5-5\" /> <path d=\"M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11\" />",
+      "square": "<rect width=\"18\" height=\"18\" x=\"3\" y=\"3\" rx=\"2\" />",
+      "arrow": "<path d=\"M13 5H19V11\" /> <path d=\"M19 5L5 19\" />",
+      "loading": "<path d=\"M21 12a9 9 0 1 1-6.219-8.56\" />",
+      "redact": "<path d=\"M12 3v18\" /> <path d=\"M3 12h18\" /> <rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\" />",
+      "clear": "<path d=\"M3 6h18\" /> <path d=\"M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6\" /> <path d=\"M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2\" /> <line x1=\"10\" x2=\"10\" y1=\"11\" y2=\"17\" /> <line x1=\"14\" x2=\"14\" y1=\"11\" y2=\"17\" />"
+    };
+    return '<svg class="ui-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + paths[kind] + '</svg>';
+  }
+  function bubbleActions(value) {
     var bar = document.createElement('div'); bar.className = 'bub-act';
-    bar.appendChild(clipboardAction(T('Copy', '复制'), '⧉', text));
-    bar.appendChild(clipboardAction(T('Copy as quote', '复制为引用'), '❝', String(text).split('\n').map(function (l) { return '> ' + l; }).join('\n')));
+    var status = document.createElement('span'); status.className = 'action-status'; status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
+    function add(kind, label, text) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.innerHTML = uiIcon(kind); b.title = label; b.setAttribute('aria-label', label);
+      b.onclick = function (e) {
+        e.stopPropagation(); copyWithFeedback(b, text, label, kind, status);
+      }; bar.appendChild(b);
+    }
+    add('copy', T('Copy', '复制'), value);
+    bar.appendChild(status);
     return bar;
+  }
+  function copyWithFeedback(button, value, label, kind, status) {
+    var attempt = (button.copyAttempt || 0) + 1; button.copyAttempt = attempt; clearTimeout(button.copyReset);
+    return copyText(value).then(function (ok) {
+      if (button.copyAttempt !== attempt) return;
+      var feedback = ok ? T('Copied', '已复制') : T('Copy failed', '复制失败');
+      button.innerHTML = uiIcon(ok ? 'done' : 'error'); button.title = feedback; button.dataset.state = ok ? 'done' : 'error';
+      if (status) status.textContent = feedback;
+      button.copyReset = setTimeout(function () { button.innerHTML = uiIcon(kind); button.title = label; delete button.dataset.state; if (status) status.textContent = ''; }, 1600);
+      return ok;
+    });
+  }
+  function resetTrace(state) { if (state && state.view) state.view.dispose(); return {}; }
+  function traceEvents(turns, context) { return window.GtmuxTrace.build(turns, context || curAgent || {}).events; }
+  function traceView(turns, state, context) {
+    if (!state.view) {
+      state.view = window.GtmuxTraceView.create({T: T, markdown: mdRender, actions: bubbleActions, icon: uiIcon, formatTime: sepTime, status: function (agent) { return LABEL[agent.status] ? {text: agent.error ? LABEL.errored : LABEL[agent.status], color: agent.error ? '#F59E0B' : COLORS[agent.status]} : null; }});
+      state.el = state.view.el;
+    }
+    state.view.update(turns, context || curAgent || {}); return state.el;
   }
   function collapseAllSteps() { chatExpanded = {}; drawChat(lastTurns); }
   // waiting approval card — shows the agent's 1/2/3 options (from /api/options).
@@ -2271,7 +2850,7 @@
   // ======================================================================
   // Desktop workbench (WEB.md §1–§3): a session tree rail + a freeform board of
   // CONCURRENT pane mirrors. Wide screens only; <900px keeps the single column.
-  // View-only, no new backend — each tile is another /api/pane|transcript|diff.
+  // Tiles share the existing pane/transcript/diff APIs and scope-gated composer.
   // ======================================================================
   var WB = {on: false, agents: [], tiles: [], railW: 232, railCollapsed: false, snap: false, surface: false, presetCur: '', prevStatus: null};
   var WB_KEY = 'gtmux.board';
@@ -2295,8 +2874,8 @@
 
   function startWorkbench() {
     cancelReads(); viewEpoch++;
-    WB.on = true;
-    ['gate', 'radar', 'panes', 'pane', 'chat'].forEach(function (id) { $(id).hidden = true; });
+    WB.on = true; updatePageTitle('workbench');
+    ['gate', 'radar', 'panes', 'pane', 'chat', 'chat-input'].forEach(function (id) { $(id).hidden = true; });
     clearInterval(panesTimer); panesTimer = null;
     $('workbench').hidden = false;
     $('bar').hidden = true; // the workbench has its own #wb-bar
@@ -2306,11 +2885,12 @@
     $('board').classList.toggle('snap', WB.snap);
     setToggle($('wb-snap'), WB.snap); setToggle($('wb-surface'), WB.surface);
     updatePresetLabel();
+    WB.tiles.forEach(tileInputSync);
     updateEmpty();
     // restore saved tiles once agents arrive (need their status/agent); poll now.
     pollWB(); clearInterval(radarTimer); radarTimer = setInterval(pollWB, 2000);
   }
-  function setToggle(btn, on) { btn.classList.toggle('on', !!on); }
+  function setToggle(btn, on) { btn.classList.toggle('on', !!on); btn.setAttribute('aria-pressed', String(!!on)); }
   function setWbConn(ok) { renderConn($('wb-conn'), connStateFor(ok)); }
 
   function pollWB() {
@@ -2319,7 +2899,7 @@
       return api('/api/agents', {signal: signal}).then(function (r) {
         if (!current()) return null;
         if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
-        if (!r.ok) throw new Error('agents'); return r.json();
+        if (!r.ok) throw new Error('agents'); rememberServerClock(r); return r.json();
       }).then(function (agents) {
         if (!agents || !current(true)) return; setWbConn(true); WB.agents = agents; lastAgents = agents;
         if (WB.saved) { restoreTiles(agents); WB.saved = null; }
@@ -2357,6 +2937,7 @@
 
   // ---- tree -------------------------------------------------------------
   function renderTree(agents) {
+    var focused = document.activeElement, focusedPane = focused && focused.dataset && focused.dataset.treePane;
     var q = ($('rail-search').value || '').trim().toLowerCase();
     var match = function (a) { return !q || (primary(a) + ' ' + (a.agent || '') + ' ' + (a.session || '') + ' ' + (a.pane_id || '')).toLowerCase().indexOf(q) !== -1; };
     // Every section in ORDER needs its own bucket. `errored` had none, so the loop
@@ -2391,10 +2972,11 @@
       });
     });
     if (natives.length) {
-      var nh = document.createElement('div'); nh.className = 'tree-group'; nh.textContent = T('Elsewhere', '不在 tmux') + ' ' + natives.length; root.appendChild(nh);
+      var nh = document.createElement('div'); nh.className = 'tree-group'; nh.textContent = T('Other agents', '其他 Agent') + ' ' + natives.length; root.appendChild(nh);
       natives.forEach(function (a) { root.appendChild(treeRow(a, false)); });
     }
-    if (!root.children.length) { var e = document.createElement('div'); e.className = 'tree-group'; e.textContent = q ? T('no match', '没有匹配') : emptyAgentsText(); root.appendChild(e); }
+    if (!root.children.length) { var e = document.createElement('div'); e.className = 'tree-group'; e.textContent = q ? T('No matching sessions', '未找到匹配的会话') : emptyAgentsText(); root.appendChild(e); }
+    if (focusedPane) root.querySelectorAll('.tree-row').forEach(function (row) { if (row.dataset.treePane === focusedPane) row.focus(); });
   }
   function esc(s) { var d = document.createElement('span'); d.textContent = s == null ? '' : s; return d.innerHTML; }
   function treeRow(a, nested) {
@@ -2404,13 +2986,21 @@
     row.appendChild(avatarEl(a, 24, true));
     var tx = document.createElement('div'); tx.className = 'tr-text';
     var nm = document.createElement('div'); nm.className = 'tr-name'; nm.textContent = primary(a);
-    var sb = document.createElement('div'); sb.className = 'tr-sub'; sb.textContent = hasPane(a) ? a.pane_id + (a.agent ? ' · ' + shortAgent(a.agent) : '') : [nativeSourceLabel(a), T('Status only', '仅显示状态')].filter(Boolean).join(' · ');
+    var sb = document.createElement('div'); sb.className = 'tr-sub'; sb.textContent = hasPane(a) ? a.pane_id + (a.agent ? ' · ' + shortAgent(a.agent) : '') : [nativeSourceLabel(a), readableConversation(a) ? T('Read-only conversation', '只读会话') : T('Status only', '仅显示状态')].filter(Boolean).join(' · ');
     tx.appendChild(nm); tx.appendChild(sb); row.appendChild(tx);
     if (!hasPane(a)) { row.classList.add('native'); if(readableConversation(a)){row.onclick=function(){openConversation(a);};row.tabIndex=0;row.setAttribute('role','button');row.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();openConversation(a);}};} return row; }
-    var g = document.createElement('span'); g.className = 'tr-grip'; g.textContent = '⠿'; row.appendChild(g);
+    var g = document.createElement('span'); g.className = 'tr-grip'; g.innerHTML = uiIcon('grip'); row.appendChild(g);
     row.addEventListener('dragstart', function (e) { e.dataTransfer.setData('text/pane', a.pane_id); e.dataTransfer.effectAllowed = 'copy'; });
     row.ondblclick = function () { addTile(a); };
+    row.dataset.treePane = a.pane_id;
+    keyboardLink(row, function () { var tile = addTile(a); if (tile) tile.el.querySelector('[data-action="focus"]').focus(); });
     return row;
+  }
+  function keyboardLink(element, activate) {
+    element.tabIndex = 0; element.setAttribute('role', 'link');
+    element.addEventListener('keydown', function (e) {
+      if (e.target === element && e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); activate(); }
+    });
   }
   function shortAgent(s) { var w = String(s).split(' ')[0]; return w.length > 8 ? w.slice(0, 8) : w; }
 
@@ -2421,8 +3011,8 @@
     if (!WB.railCollapsed) $('rail').style.width = WB.railW + 'px';
   }
   function setupRail() {
-    $('rail-collapse').onclick = function () { WB.railCollapsed = true; applyRail(); wbSave(); };
-    $('rail-tab').onclick = function () { WB.railCollapsed = false; applyRail(); wbSave(); };
+    $('rail-collapse').onclick = function () { WB.railCollapsed = true; applyRail(); wbSave(); $('rail-tab').focus(); };
+    $('rail-tab').onclick = function () { WB.railCollapsed = false; applyRail(); wbSave(); $('rail-collapse').focus(); };
     $('rail-search').oninput = function () { renderTree(WB.agents); };
     var rz = $('rail-resize'), dragging = false;
     rz.addEventListener('mousedown', function (e) { e.preventDefault(); dragging = true; document.body.style.cursor = 'col-resize'; });
@@ -2437,11 +3027,13 @@
     // layout presets dropdown
     $('wb-preset').onclick = function (e) { e.stopPropagation(); var m = $('wb-preset-menu'); if (m.hidden) showPresetMenu(); else hidePresetMenu(); };
     document.addEventListener('click', function (e) { if (!$('wb-preset-menu').hidden && !$('wb-preset-wrap').contains(e.target)) hidePresetMenu(); });
+    $('wb-preset-wrap').addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); hidePresetMenu(); $('wb-preset').focus(); } });
     // ⌘K command palette input: ↑/↓ select, Enter pick, Esc close
     var ci = $('cmdk-input');
     ci.addEventListener('input', function () { renderCmdk(ci.value); });
     ci.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') { e.preventDefault(); closeCmdk(); }
+      else if (e.key === 'Tab') { e.preventDefault(); ci.focus(); }
       else if (e.key === 'ArrowDown') { e.preventDefault(); if (cmdkSel < cmdkRows.length - 1) { cmdkSel++; markCmdk(); } }
       else if (e.key === 'ArrowUp') { e.preventDefault(); if (cmdkSel > 0) { cmdkSel--; markCmdk(); } }
       else if (e.key === 'Enter') { e.preventDefault(); if (cmdkRows[cmdkSel]) pickCmdk(cmdkRows[cmdkSel]); }
@@ -2471,7 +3063,7 @@
       id: a.pane_id, agent: a, mode: pos.mode || 'term',
       x: pos.x != null ? Math.max(0, pos.x) : 14 + (WB.tiles.length % 4) * 28,
       y: pos.y != null ? Math.max(0, pos.y) : 14 + (WB.tiles.length % 4) * 28,
-      w: pos.w || 360, h: pos.h || 240,
+      w: pos.w || 560, h: pos.h || 480,
       term: null, fit: null, lastText: '', pending: null, scrolling: false, scrollIdle: null, timer: null, chatSig: '', expanded: {},
     };
     buildTile(t); WB.tiles.push(t); board.classList.remove('has-empty'); updateEmpty();
@@ -2481,50 +3073,52 @@
   var zTop = 10;
   function removeTile(t) {
     cancelRead('tile:' + t.id);
+    cancelRead('live:' + t.id);
     t.removed = true;
-    clearInterval(t.timer); if (t.term) { try { t.term.dispose(); } catch (e) {} }
-    if (t.inputDispose) t.inputDispose();
+    clearInterval(t.timer); resetTrace(t.traceState); if (t.inputDispose) t.inputDispose(); if (t.term) { try { t.term.dispose(); } catch (e) {} }
     t.el.remove(); WB.tiles = WB.tiles.filter(function (x) { return x !== t; });
     updateEmpty(); wbSave();
   }
   function updateEmpty() {
     var board = $('board'), ex = board.querySelector('.board-empty');
-    if (!WB.tiles.length) { if (!ex) { var e = document.createElement('div'); e.className = 'board-empty'; e.textContent = T('drag a pane here from the left · or double-click one in the list', '从左侧拖一个 pane 到这里 · 或者双击列表里的 pane'); board.appendChild(e); } }
+    if (!WB.tiles.length) { if (!ex) { var e = document.createElement('div'); e.className = 'board-empty'; e.textContent = T('Double-click a session on the left, or drag it here', '双击左侧会话，或拖入此处'); board.appendChild(e); } }
     else if (ex) ex.remove();
   }
   function buildTile(t) {
     var el = document.createElement('div'); el.className = 'tile'; t.el = el;
     el.style.left = t.x + 'px'; el.style.top = t.y + 'px'; el.style.width = t.w + 'px'; el.style.height = t.h + 'px'; el.style.zIndex = ++zTop;
     var head = document.createElement('div'); head.className = 'tile-head';
-    head.appendChild(avatarEl(t.agent, 20, true));
-    var nm = document.createElement('span'); nm.className = 'tile-name'; nm.textContent = primary(t.agent); head.appendChild(nm);
-    var id = document.createElement('span'); id.className = 'tile-id'; id.textContent = t.id; head.appendChild(id);
-    // input-capability chip (WEB §11): every tile head states ⌨可输入 / 👁只读
-    var cap = document.createElement('span'); cap.className = 'cap-chip'; cap.hidden = true; t.capEl = cap; head.appendChild(cap);
+    head.appendChild(t.agent.agent ? speakerAvatar('agent', t.agent, avatarEl(t.agent, 24, true)) : avatarEl(t.agent, 24, false));
+    var identity = document.createElement('div'); identity.className = 'tile-identity'; head.appendChild(identity);
+    var nm = document.createElement('span'); nm.className = 'tile-name'; nm.textContent = primary(t.agent); identity.appendChild(nm);
+    var meta = document.createElement('div'); meta.className = 'tile-meta'; identity.appendChild(meta);
+    var id = document.createElement('span'); id.className = 'tile-id'; id.textContent = t.id; meta.appendChild(id);
+    // Read-only capabilities remain visible when there is no composer.
+    var cap = document.createElement('span'); cap.className = 'cap-chip'; cap.hidden = true; t.capEl = cap; meta.appendChild(cap);
     var controls = document.createElement('div'); controls.className = 'tile-controls';
     var modes = document.createElement('span'); modes.className = 'tile-modes';
     // "diff" stays a developer's word in both languages, as git and every review tool use
     // it; its tooltip says what it shows.
-    var choices = [['term', T('Terminal', '终端')], ['diff', 'Diff', T('Changes in this pane\'s repository', '这个 pane 所在仓库的改动')]];
-    if (t.agent.agent) choices.unshift(['chat', T('Chat', '对话')]);
+    var choices = [['term', T('Terminal', '终端')], ['diff', 'Diff', T('Changes in this pane\'s repository', '这个窗格所在仓库的改动')]];
+    if (t.agent.agent) choices.unshift(['chat', T('Chat', '对话')], ['trace', T('Trace', '轨迹')]);
     choices.forEach(function (m) {
       var b = document.createElement('button'); b.textContent = m[1]; b.setAttribute('data-m', m[0]); if (m[2]) b.title = m[2];
       b.onclick = function (e) { e.stopPropagation(); setTileMode(t, m[0]); }; modes.appendChild(b);
     });
     controls.appendChild(modes);
-    var max = document.createElement('button'); max.className = 'tile-btn'; max.textContent = '⤢'; max.title = T('Full screen', '全屏'); max.onclick = function (e) { e.stopPropagation(); openAgent(t.agent); }; controls.appendChild(max);
-    var cl = document.createElement('button'); cl.className = 'tile-btn'; cl.textContent = '×'; cl.title = T('Close', '关闭'); cl.onclick = function (e) { e.stopPropagation(); removeTile(t); }; controls.appendChild(cl);
+    var max = document.createElement('button'); max.type = 'button'; max.className = 'tile-btn'; max.dataset.action = 'focus'; max.innerHTML = uiIcon('focus'); max.title = T('Open conversation', '打开会话'); max.setAttribute('aria-label', max.title); max.onclick = function (e) { e.stopPropagation(); openAgent(t.agent, t.mode === 'diff' ? undefined : t.mode); }; controls.appendChild(max);
+    var cl = document.createElement('button'); cl.type = 'button'; cl.className = 'tile-btn'; cl.innerHTML = uiIcon('close'); cl.title = T('Close panel', '关闭面板'); cl.setAttribute('aria-label', cl.title); cl.onclick = function (e) { e.stopPropagation(); removeTile(t); }; controls.appendChild(cl);
     head.appendChild(controls);
     el.appendChild(head);
     var body = document.createElement('div'); body.className = 'tile-body'; t.body = body; el.appendChild(body);
     // shared-input row (web-shared-input): the SAME composer as the single-pane view,
     // in its compact variant — shown for a term-mode tile the host allowed.
     var tc = makeComposer((function (tid) { return function () { return tid; }; })(t.id), function (text) { if (t.term) tileWrite(t, text); }, true);
-    tc.el.hidden = true; t.inputEl = tc.el; t.inputSync = tc.sync; t.inputDispose = tc.dispose;
+    tc.el.hidden = true; t.inputEl = tc.el; t.composer = tc; t.inputSync = tc.sync; t.inputDispose = tc.dispose;
     el.appendChild(tc.el);
     // read-only note — states WHY there's no input row instead of leaving a gap
     var ro = document.createElement('div'); ro.className = 'tile-ro'; ro.hidden = true;
-    ro.textContent = T('🔒 Input is not allowed in this pane', '🔒 此 pane 不允许输入'); t.roEl = ro; el.appendChild(ro);
+    ro.textContent = T('🔒 Input is not allowed in this pane', '🔒 此窗格不允许输入'); t.roEl = ro; el.appendChild(ro);
     var rz = document.createElement('div'); rz.className = 'tile-resize'; rz.textContent = '⌟'; el.appendChild(rz);
     el.addEventListener('mousedown', function () { el.style.zIndex = ++zTop; });
     dragMove(t, head); dragResize(t, rz);
@@ -2536,20 +3130,27 @@
     var st = COLORS[t.agent.status] ? t.agent.status : 'running';
     t.el.classList.toggle('waiting', st === 'waiting');
     if (t.headNm) t.headNm.textContent = primary(t.agent);
+    if (t.composer && !t.inputEl.hidden) t.composer.sync();
     var bdg = t.headAv && t.headAv.querySelector('.badge');
     if (bdg) bdg.innerHTML = badgeSVG(st);
+    var host = t.body && t.body.querySelector('.conversation-main');
+    if (t.mode === 'chat' && host) syncChatLive(host, t.agent, function () { return WB.on && !t.removed && t.mode === 'chat' && t.agent.status === 'working'; });
+    if (t.mode === 'trace' && t.traceState && t.traceState.view) t.traceState.view.update(t.lastTurns || [], Object.assign({width: t.body.clientWidth}, t.agent));
   }
   function setTileMode(t, m) {
-    if (m === 'chat' && !t.agent.agent) m = 'term';
+    if ((m === 'chat' || m === 'trace') && !t.agent.agent) m = 'term';
     t.mode = m;
+    if (t.el) t.el.classList.toggle('tile-trace', m === 'trace');
+    if (t.traceState && t.traceState.view) t.traceState.view.dispose();
     cancelRead('tile:' + t.id);
+    cancelRead('live:' + t.id);
     t.readEpoch = (t.readEpoch || 0) + 1;
-    Array.prototype.forEach.call(t.el.querySelectorAll('.tile-modes button'), function (b) { b.classList.toggle('on', b.getAttribute('data-m') === m); });
+    Array.prototype.forEach.call(t.el.querySelectorAll('.tile-modes button'), function (b) { var selected = b.getAttribute('data-m') === m; b.classList.toggle('on', selected); b.setAttribute('aria-pressed', String(selected)); });
     clearInterval(t.timer); t.timer = null; t.body.innerHTML = '';
     if (t.term) { try { t.term.dispose(); } catch (e) {} t.term = null; }
     t.body.appendChild(brandLoaderEl(null)); // cleared on first frame (or by a chat/diff re-render)
     if (m === 'term') { tileTermStart(t); }
-    else if (m === 'chat') { t.chatSig = ''; tilePollChat(t); t.timer = setInterval(function () { tilePollChat(t); }, 2500); }
+    else if (m === 'chat' || m === 'trace') { t.chatSig = ''; t.traceState = resetTrace(t.traceState); tilePollChat(t); t.timer = setInterval(function () { tilePollChat(t); }, 2500); }
     else { tilePollDiff(t); t.timer = setInterval(function () { tilePollDiff(t); }, 3000); }
     tileInputSync(t); // show the input row only in term mode for an allowed pane
     wbSave();
@@ -2591,25 +3192,33 @@
   }
 
   function tilePollChat(t) {
+    if (t.mode === 'chat') { var host = t.body.querySelector('.conversation-main'); if (host) syncChatLive(host, t.agent, function () { return WB.on && !t.removed && t.mode === 'chat' && t.agent.status === 'working'; }); }
     runRead('tile:' + t.id, function (signal) {
       var epoch = t.readEpoch;
       return api('/api/transcript?id=' + encodeURIComponent(t.id), {signal: signal}).then(function (r) { return (r.status === 404) ? [] : (r.ok ? r.json() : null); })
-        .then(function (turns) { if (signal.aborted || turns === null || t.removed || epoch !== t.readEpoch || t.mode !== 'chat') return; var sig = JSON.stringify(turns || []); if (sig === t.chatSig) return; t.chatSig = sig; renderTileChat(t, turns || []); })
+        .then(function (turns) { if (signal.aborted || turns === null || t.removed || epoch !== t.readEpoch || (t.mode !== 'chat' && t.mode !== 'trace')) return; var sig = JSON.stringify(turns || []); if (sig === t.chatSig) return; t.chatSig = sig; renderTileChat(t, turns || []); })
         .catch(function () {});
     });
   }
 
   function renderTileChat(t, turns) {
+    t.lastTurns = turns; reconcilePendingPrompts(t.id, turns);
+    if (t.el) t.el.classList.toggle('tile-trace', t.mode === 'trace');
+    if (t.mode === 'trace') { var trace = traceView(turns, t.traceState || (t.traceState = {}), Object.assign({width: t.body.clientWidth}, t.agent)); if (t.body.firstChild !== trace) { t.body.innerHTML = ''; t.body.appendChild(trace); } return; }
+    var preserved = snapshotToolState(t.body);
+    var old = t.body.querySelector('.tile-chat');
+    var atBottom = !old || old.scrollHeight - old.scrollTop - old.clientHeight < 48;
+    var top = old ? old.scrollTop : 0;
     var wrap = document.createElement('div'); wrap.className = 'tile-chat';
-    if (!turns.length) { var e = document.createElement('div'); e.className = 'chat-empty'; e.textContent = T('No conversation yet.', '还没有对话。'); wrap.appendChild(e); }
-    turns.forEach(function (tn) {
-      var ct = document.createElement('div'); ct.className = 'cturn';
-      if (tn.prompt) { var ur = document.createElement('div'); ur.className = 'urow'; var ub = document.createElement('div'); ub.className = 'ububble'; ub.appendChild(mdRender(tn.prompt)); ur.appendChild(ub); ur.appendChild(tn.from ? senderAvatarEl(tn.from, 22) : userAvatarEl(22)); ct.appendChild(ur); }
-      var segs = (tn.segments && tn.segments.length) ? tn.segments : (tn.response ? [{text: tn.response}] : []);
-      segs.forEach(function (s) { if (s.text) { var ar = document.createElement('div'); ar.className = 'arow'; var ab = document.createElement('div'); ab.className = 'abubble'; ab.appendChild(mdRender(s.text)); ar.appendChild(ab); ct.appendChild(ar); } });
-      wrap.appendChild(ct);
-    });
-    t.body.innerHTML = ''; t.body.appendChild(wrap); wrap.scrollTop = wrap.scrollHeight;
+    if (!turns.length && !(pendingPrompts[t.id] || []).length) { var e = document.createElement('div'); e.className = 'chat-empty'; e.textContent = T('No conversation yet.', '还没有对话。'); wrap.appendChild(e); }
+    var seps = sepLabels(turns);
+    turns.forEach(function (tn, idx) { wrap.appendChild(conversationTurn(tn, t.agent || {}, idx, t.expanded || (t.expanded = {}), seps[idx], false, function () { renderTileChat(t, t.lastTurns || []); })); });
+    appendPendingPrompts(wrap, t.id, t.agent || {});
+    var main = document.createElement('div'); main.className = 'conversation-main'; main.appendChild(wrap);
+    t.body.innerHTML = ''; t.body.appendChild(main);
+    syncChatLive(main, t.agent || {}, function () { return WB.on && !t.removed && t.mode === 'chat' && t.agent.status === 'working'; });
+    wrap.scrollTop = atBottom ? wrap.scrollHeight : top;
+    restoreToolState(t.body, preserved);
   }
   function tilePollDiff(t) {
     runRead('tile:' + t.id, function (signal) {
@@ -2622,7 +3231,7 @@
 
   function renderTileDiff(t, diff) {
     var pre = document.createElement('pre'); pre.className = 'tile-diff';
-    if (!diff) { pre.textContent = T('(nothing changed, or this pane is not in a git repo)', '（没有改动，或者这个 pane 不在 git 仓库里）'); t.body.innerHTML = ''; t.body.appendChild(pre); return; }
+    if (!diff) { pre.textContent = T('(nothing changed, or this pane is not in a git repo)', '（没有改动，或者这个窗格不在 git 仓库里）'); t.body.innerHTML = ''; t.body.appendChild(pre); return; }
     diff.split('\n').forEach(function (ln) {
       var span = document.createElement('span');
       if (ln.charAt(0) === '+' && ln.indexOf('+++') !== 0) span.className = 'add';
@@ -2660,20 +3269,15 @@
     for (var i = 0; i < term.rows; i++) { var ln = b.getLine(b.viewportY + i); if (ln) out.push(ln.translateToString(true).replace(/\s+$/, '')); }
     return out.join('\n').replace(/\n+$/, '');
   }
-  function flashBtn(b) { var o = b.textContent; b.textContent = '✓'; setTimeout(function () { b.textContent = o; }, 700); }
   function copyScreen() {
     if (!term) return;
-    var text = term.getSelection() || focusVisibleText(), button = $('copy-screen');
-    copyText(text).then(function (ok) {
-      if (ok) flashBtn(button);
-      else { var old = button.textContent; button.textContent = T('Copy failed', '复制失败'); setTimeout(function () { button.textContent = old; }, 1800); }
-    });
+    copyWithFeedback($('copy-screen'), term.getSelection() || focusVisibleText(), T('Copy visible screen', '复制屏幕内容'), 'copy', $('screen-copy-status'));
   }
   function cyclePane(d) {
     var panes = lastAgents.filter(hasPane);
     if (!curAgent || !panes.length) return;
     var i = -1; for (var k = 0; k < panes.length; k++) if (panes[k].pane_id === curAgent.pane_id) { i = k; break; }
-    if (i < 0) return; openAgent(panes[(i + d + panes.length) % panes.length]);
+    if (i < 0) return; openAgent(panes[(i + d + panes.length) % panes.length], paneMode);
   }
   // jump pill — shown when scrolled up; a dot marks new content while away from bottom.
   function updateJump(newContent) {
@@ -2687,7 +3291,7 @@
 
     if (!curPane) return;
     var inTerm = !$('pane').hidden && paneMode === 'term';
-    var inChat = !$('chat').hidden && paneMode === 'chat';
+    var inChat = !$('chat').hidden && paneMode !== 'term';
     if (!inTerm && !inChat) return;
     if (!curAgent || curAgent.status !== 'waiting') {
       cancelRead('options');
@@ -2732,8 +3336,8 @@
     var can = paneCanInput(curPane);
     var lead = document.querySelector('#reply-bar .rb-lead');
     if (lead) lead.textContent = can
-      ? T('reply in this pane:', '在此 pane 回应：')
-      : T('read-only · reply in this pane:', '只读 · 在此 pane 回应：');
+      ? T('Reply:', '回复：')
+      : T('Read-only · awaiting reply:', '只读 · 等待回复：');
     var hint = document.querySelector('#reply-bar .rb-hint');
     if (hint) hint.hidden = can;
     var box = $('reply-opts'); box.innerHTML = '';
@@ -2744,12 +3348,12 @@
     if (!opts.length) {
       var none = document.createElement('span'); none.className = 'rb-none';
       none.textContent = can
-        ? T('no numbered choices · answer in the box below', '没有编号选项 · 在下面的输入框里回答')
-        : T('no numbered choices to pick here', '这里没有可选的编号');
+        ? T('Enter your reply below', '请在下方输入回复')
+        : T('No reply options', '暂无回复选项');
       box.appendChild(none);
     }
     opts.forEach(function (o) {
-      var s = document.createElement('span'); s.className = can ? 'rb-opt live' : 'rb-opt'; s.textContent = o.n + ' ' + (o.label || '');
+      var s = document.createElement(can ? 'button' : 'span'); if (can) s.type = 'button'; s.className = can ? 'rb-opt live' : 'rb-opt'; s.textContent = o.n + ' ' + (o.label || '');
       if (can) s.onclick = function () { sendPane({text: String(o.n)}); };
       box.appendChild(s);
     });
@@ -2781,7 +3385,7 @@
     // Shared composer (multiline + attach/upload + key strip) → POST /api/send. The
     // server gate (guest consent + allowlist) stays authoritative; this just targets
     // the current pane and echoes the post-send screen.
-    paneComposer = makeComposer(function () { return curPane; }, function (text) { renderPane(text); hidePaneLoader(); }, false, function (action) {
+    paneComposer = makeComposer(function () { return curPane; }, function (text) { if (paneMode === 'term') { renderPane(text); hidePaneLoader(); } else { pollChat(); } }, false, function (action) {
       if (action.id === 'codex.view-question' && paneMode !== 'term') {paneMode = 'term'; applyMode();}
     });
     if ($('pane-input')) $('pane-input').appendChild(paneComposer.el);
@@ -2806,7 +3410,7 @@
     board.classList.add('maximized'); t.el.classList.add('max'); t.el.style.zIndex = ++zTop;
     t.el.style.width = (br.width - 16) + 'px'; t.el.style.height = (br.height - 16) + 'px';
     refitTile(t);
-    var ex = document.createElement('div'); ex.className = 'max-exit'; ex.id = 'max-exit'; ex.textContent = T('‹ Restore', '‹ 还原'); ex.onclick = restoreBoard; board.appendChild(ex);
+    var ex = document.createElement('button'); ex.type = 'button'; ex.className = 'max-exit'; ex.id = 'max-exit'; ex.innerHTML = uiIcon('back') + T('Restore layout', '恢复布局'); ex.onclick = restoreBoard; board.appendChild(ex);
   }
   function restoreBoard() {
     if (!maxedTile) return; var t = maxedTile; maxedTile = null;
@@ -2850,18 +3454,18 @@
   function renderPresetMenu() {
     var menu = $('wb-preset-menu'); menu.innerHTML = '';
     var ps = loadPresets();
-    if (!ps.length) { var em = document.createElement('div'); em.className = 'pm-empty'; em.textContent = T('no saved layouts yet · save the current one below', '还没有保存过布局 · 可以在下面存一个'); menu.appendChild(em); }
+    if (!ps.length) { var em = document.createElement('div'); em.className = 'pm-empty'; em.textContent = T('No saved layouts', '暂无已保存的布局'); menu.appendChild(em); }
     ps.forEach(function (p) {
       var row = document.createElement('div'); row.className = 'pm-row' + (p.name === WB.presetCur ? ' on' : '');
-      var nm = document.createElement('span'); nm.className = 'pm-name'; nm.textContent = p.name;
+      var nm = document.createElement('button'); nm.type = 'button'; nm.className = 'pm-name'; nm.textContent = p.name;
       nm.onclick = function () { applyPreset(p); hidePresetMenu(); }; row.appendChild(nm);
-      var del = document.createElement('button'); del.className = 'pm-del'; del.textContent = '×'; del.title = T('Delete', '删除');
+      var del = document.createElement('button'); del.type = 'button'; del.className = 'pm-del'; del.innerHTML = uiIcon('close'); del.title = T('Delete layout: ', '删除布局：') + p.name; del.setAttribute('aria-label', del.title);
       del.onclick = function (e) { e.stopPropagation(); var rest = loadPresets().filter(function (x) { return x.name !== p.name; }); savePresets(rest); if (WB.presetCur === p.name) { WB.presetCur = ''; updatePresetLabel(); } renderPresetMenu(); };
       row.appendChild(del); menu.appendChild(row);
     });
-    var save = document.createElement('div'); save.className = 'pm-save'; save.textContent = T('＋ Save the current layout…', '＋ 保存当前布局…');
+    var save = document.createElement('button'); save.type = 'button'; save.className = 'pm-save'; save.innerHTML = uiIcon('plus') + T('Save current layout…', '保存当前布局…');
     save.onclick = function () {
-      var name = (window.prompt(T('Preset name', '预设名称'), WB.presetCur || (T('Layout ', '布局 ') + (ps.length + 1))) || '').trim();
+      var name = (window.prompt(T('Layout name', '布局名称'), WB.presetCur || (T('Layout ', '布局 ') + (ps.length + 1))) || '').trim();
       if (!name) return;
       var arr = loadPresets().filter(function (x) { return x.name !== name; });
       var lay = captureLayout(); lay.name = name; arr.push(lay); savePresets(arr);
@@ -2869,17 +3473,18 @@
     };
     menu.appendChild(save);
   }
-  function showPresetMenu() { renderPresetMenu(); $('wb-preset-menu').hidden = false; }
-  function hidePresetMenu() { $('wb-preset-menu').hidden = true; }
+  function showPresetMenu() { renderPresetMenu(); $('wb-preset-menu').hidden = false; $('wb-preset').setAttribute('aria-expanded', 'true'); }
+  function hidePresetMenu() { $('wb-preset-menu').hidden = true; $('wb-preset').setAttribute('aria-expanded', 'false'); }
 
   // ---- ⌘K command palette (WEB.md §8) -----------------------------------
-  var cmdkSel = 0, cmdkRows = [];
+  var cmdkSel = 0, cmdkRows = [], cmdkTrigger = null;
   function openCmdk() {
     if ($('workbench').hidden) return; // workbench-only
-    $('cmdk').hidden = false; var inp = $('cmdk-input'); inp.value = ''; cmdkSel = 0;
+    cmdkTrigger = document.activeElement;
+    $('cmdk').hidden = false; var inp = $('cmdk-input'); inp.setAttribute('aria-expanded', 'true'); inp.value = ''; cmdkSel = 0;
     renderCmdk(''); setTimeout(function () { inp.focus(); }, 0);
   }
-  function closeCmdk() { $('cmdk').hidden = true; }
+  function closeCmdk() { var wasOpen = !$('cmdk').hidden; $('cmdk').hidden = true; $('cmdk-input').setAttribute('aria-expanded', 'false'); $('cmdk-input').setAttribute('aria-activedescendant', ''); if (wasOpen && cmdkTrigger && cmdkTrigger.focus) cmdkTrigger.focus(); }
   function renderCmdk(q) {
     q = (q || '').trim().toLowerCase();
     var list = $('cmdk-list'); list.innerHTML = '';
@@ -2889,6 +3494,7 @@
     if (cmdkSel >= cmdkRows.length) cmdkSel = Math.max(0, cmdkRows.length - 1);
     cmdkRows.forEach(function (a, i) {
       var row = document.createElement('div'); row.className = 'ck-row' + (i === cmdkSel ? ' on' : '');
+      row.id = 'cmdk-result-' + i; row.setAttribute('role', 'option'); row.setAttribute('aria-selected', String(i === cmdkSel));
       row.appendChild(avatarEl(a, 22, true));
       var tx = document.createElement('div'); tx.className = 'ck-tx';
       var nm = document.createElement('div'); nm.className = 'ck-nm'; nm.textContent = primary(a); tx.appendChild(nm);
@@ -2899,23 +3505,39 @@
       row.onclick = function () { pickCmdk(a); };
       list.appendChild(row);
     });
-    if (!cmdkRows.length) { var e = document.createElement('div'); e.className = 'ck-empty'; e.textContent = q ? T('no pane matches that', '没有匹配的 pane') : emptyAgentsText(); list.appendChild(e); }
+    $('cmdk-input').setAttribute('aria-activedescendant', cmdkRows.length ? 'cmdk-result-' + cmdkSel : '');
+    $('cmdk-status').textContent = cmdkRows.length + T(cmdkRows.length === 1 ? ' session found' : ' sessions found', ' 个匹配会话');
+    if (!cmdkRows.length) { var e = document.createElement('div'); e.className = 'ck-empty'; e.textContent = q ? T('no pane matches that', '没有匹配的窗格') : emptyAgentsText(); list.appendChild(e); }
   }
-  function markCmdk() { Array.prototype.forEach.call($('cmdk-list').children, function (c, i) { c.classList.toggle('on', i === cmdkSel); }); }
+  function markCmdk() { Array.prototype.forEach.call($('cmdk-list').children, function (c, i) { c.classList.toggle('on', i === cmdkSel); c.setAttribute('aria-selected', String(i === cmdkSel)); }); $('cmdk-input').setAttribute('aria-activedescendant', cmdkRows.length ? 'cmdk-result-' + cmdkSel : ''); }
   function pickCmdk(a) { closeCmdk(); var t = addTile(a); flashTile(t); maximizeTile(t); }
 
   // ---- boot -------------------------------------------------------------
   // setupSettings wires the appearance panel (font + size), persisted locally.
+  var settingsTrigger = null;
+  function setSettingsOpen(open, trigger) {
+    $('settings').hidden = !open;
+    if (trigger) settingsTrigger = trigger;
+    ['gear', 'wb-gear'].forEach(function (id) { $(id).setAttribute('aria-expanded', String(open && $(id) === settingsTrigger)); });
+  }
+  function toggleSettings(anchor, trigger) { placeSettings(anchor); setSettingsOpen($('settings').hidden, trigger); if (!$('settings').hidden) $('appearance-sel').focus(); }
   function setupSettings() {
     var gear = $('gear'), panel = $('settings'), sel = $('font-sel'), rng = $('size-rng'), sz = $('size-val');
     gear.hidden = false;
+    var appearance = $('appearance-sel'); appearance.value = appearancePref;
+    appearance.onchange = function () { appearancePref = appearance.value; try { localStorage.setItem('gtmux.appearance', appearancePref); } catch (e) {} applyWebAppearance(); };
     sel.value = fontPref;
     function syncSize() { rng.value = String(termSize()); sz.textContent = termSize(); }
     syncSize();
-    gear.onclick = function (e) { e.stopPropagation(); placeSettings($('bar')); panel.hidden = !panel.hidden; syncSize(); };
+    panel.setAttribute('aria-label', T('Settings', '设置'));
+    var returnSend = $('return-sends'); returnSend.checked = lsGet('gtmux.returnSends', '0') === '1';
+    returnSend.onchange = function () { try { localStorage.setItem('gtmux.returnSends', returnSend.checked ? '1' : '0'); } catch (e) {} document.querySelectorAll('.cx-input').forEach(function (input) { input.setAttribute('enterkeyhint', returnSend.checked ? 'send' : 'enter'); }); };
+    if (panel.dataset.ready) return; panel.dataset.ready = '1';
+    gear.onclick = function (e) { e.stopPropagation(); toggleSettings($('bar'), gear); syncSize(); };
     document.addEventListener('click', function (e) {
-      if (!panel.hidden && !panel.contains(e.target) && e.target !== gear) panel.hidden = true;
+      if (!panel.hidden && !panel.contains(e.target) && e.target !== gear) setSettingsOpen(false);
     });
+    panel.addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setSettingsOpen(false); if (settingsTrigger) settingsTrigger.focus(); } });
     sel.onchange = function () {
       fontPref = sel.value;
       try { localStorage.setItem('gtmux.fontPref', fontPref); } catch (e) {}
@@ -2940,7 +3562,15 @@
   function home() { if (isWide()) startWorkbench(); else startRadar(); }
 
   function boot() {
+    window.addEventListener('pagehide', function () { saveCompose(composeCache, true); });
+    if (window.visualViewport) {
+      var viewport = window.visualViewport;
+      var resizeComposerViewport = function () { if (viewport.scale === 1) { document.documentElement.style.setProperty('--viewport-height', Math.round(viewport.height) + 'px'); document.documentElement.style.setProperty('--visual-bottom', Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop) + 'px'); } document.documentElement.classList.toggle('keyboard-open', window.innerHeight - viewport.height > 120); };
+      viewport.addEventListener('resize', resizeComposerViewport); resizeComposerViewport();
+    }
+    setupWebAppearance();
     labelChrome(); // before anything renders, so no frame shows the untranslated markup
+    setupSettings();
     $('back').onclick = function () { if (focusFromWB && isWide()) startWorkbench(); else startRadar(); };
     $('panes-btn').onclick = function () { openPanes(); };
     $('panes-back').onclick = function () { startRadar(); };
@@ -2951,7 +3581,7 @@
     setupFocus();
     wbLoad();
     setupRail();
-    $('wb-gear').onclick = function (e) { e.stopPropagation(); placeSettings($('wb-bar')); var p = $('settings'); p.hidden = !p.hidden; };
+    $('wb-gear').onclick = function (e) { e.stopPropagation(); toggleSettings($('wb-bar'), $('wb-gear')); };
     // responsive: cross the 900px threshold → switch top-level layout (only when
     // at a top-level view, not inside a focused pane/chat).
     var lastWide = isWide();
@@ -2981,7 +3611,6 @@
       if (!token) return gate('unpaired');
       fetchTheme(); // match the user's real terminal (async; the pane picks it up)
       fetchShare(); // learn which panes (if any) this caller may type into
-      setupSettings();
       home();
     });
   }

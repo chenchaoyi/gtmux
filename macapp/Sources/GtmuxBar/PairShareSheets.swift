@@ -42,6 +42,7 @@ struct CodeDeliveryBlock: View {
     /// the command would hand the guest a door that always fails. Pairing passes it.
     var terminalValue: String? = nil
     var note: String? = nil
+    var appHint: String? = nil
 
     /// Whether the Terminal door is drawn: only when there is a command that can work.
     var showsTerminal: Bool { terminalValue != nil }
@@ -66,6 +67,9 @@ struct CodeDeliveryBlock: View {
                             .resizable().frame(width: 132, height: 132)
                     } else {
                         Color.clear.frame(width: 132, height: 132) // during the one-time encode
+                    }
+                    if let appHint {
+                        Text(appHint).font(.system(size: 10)).foregroundStyle(.secondary)
                     }
                 }
                 .frame(width: 164)
@@ -183,13 +187,7 @@ struct PairDeviceSheet: View {
         VStack(alignment: .leading, spacing: 12) {
             Text(l10n.tr("Pair one of your own devices", "配对你自己的设备"))
                 .font(.system(size: 14, weight: .semibold))
-            // Say what pairing DOES before naming the mechanics: the old copy opened on
-            // "Full control — this is you", a fragment that reads as a riddle, and then
-            // referred to "the three" before the reader had seen any of them.
-            Text(l10n.tr("A paired device has full access to this Mac. Pair only your own devices. Each code works once and renews before it expires while this window is open.",
-                         "配对设备可完整访问这台 Mac，请只配对自己的设备。配对码仅可使用一次，窗口打开时会在到期前自动更新。"))
-                .font(.system(size: 11)).foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+            PairingNotice(l10n: l10n)
 
             accessStatusBar
 
@@ -205,7 +203,7 @@ struct PairDeviceSheet: View {
             }
         }
         .padding(18)
-        .frame(width: 560)
+        .frame(width: 600)
         // Hold a code only once the door is open; let go on close so a reopen starts fresh.
         .onAppear { remote.refresh(); if remote.mode != .off { holdCode() } }
         .onChange(of: remote.mode) { _, m in if m != .off { holdCode() } }
@@ -304,19 +302,10 @@ struct PairDeviceSheet: View {
 
     // The code step: one code, three doors (shown once the door is open).
     @ViewBuilder private var codeStep: some View {
-        if let info = pairStore.pairInfo, let code = pairStore.pairCode {
-            CodeDeliveryBlock(
-                l10n: l10n,
-                qrText: Pairing.payload(info, enrollCode: code),
-                linkValue: "\(info.url)/#c=\(code)",
-                terminalValue: "gtmux attach '\(info.url)/#c=\(code)'",
-                note: info.anywhere ? nil : l10n.tr(
-                    "(a local-network address; switch to Anywhere to pair from outside)",
-                    "（局域网地址，想在外网配对请切到「任意网络」）"))
-        } else if pairStore.pairFailed {
-            Text(l10n.tr("Could not create a pairing code yet. Retrying…",
-                         "暂时无法生成配对码，正在重试…"))
-                .font(.system(size: 11)).foregroundStyle(.secondary)
+        if let info = pairStore.pairInfo {
+            PairingCodeContent(l10n: l10n, info: info, onRefresh: { pairStore.renewPairCode() }) {
+                PairingConnectionView(l10n: l10n, info: info)
+            }
         } else {
             ProgressView().controlSize(.small)
         }

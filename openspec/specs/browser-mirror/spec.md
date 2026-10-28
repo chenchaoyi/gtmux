@@ -126,11 +126,11 @@ tmux pane.
 
 ### Requirement: Chat (对话) mode mirrors the transcript
 
-The pane view SHALL offer a 对话/终端 (chat/terminal) switch; the chat mode SHALL
+The pane view SHALL offer a 对话/轨迹/终端 (chat/trace/terminal) switch; the chat mode SHALL
 render the pane's parsed transcript (see `chat-transcript`) by polling
 `GET /api/transcript` — a user-prompt bubble followed by the reply's `segments` as
 separate speech bubbles with the interleaved tool steps as collapsible groups,
-mirroring the phone's chat view. Chat SHALL have no free-text composer. Its
+mirroring the phone's chat view. Chat SHALL use the same authorized free-text composer as Terminal. Its
 waiting card MAY send a parsed option's number when the caller is authorized, as
 defined by the input-capability requirement below.
 
@@ -141,11 +141,10 @@ defined by the input-capability requirement below.
   bubble, segmented reply bubbles, collapsible steps) and keeps it fresh by polling
   `/api/transcript`
 
-#### Scenario: Free-text entry remains in Terminal
+#### Scenario: Free-text entry in Chat
 
 - **WHEN** the chat mode is displayed
-- **THEN** there is no free-text input box in Chat; the caller switches to Terminal
-  to type a message, while authorized structured-choice replies remain available in Chat
+- **THEN** an authorized caller can type and send a message without leaving Chat; a read-only caller sees an explanation instead, while authorized structured-choice replies remain available
 
 ### Requirement: Reachable over LAN and tunnel
 
@@ -205,11 +204,7 @@ NEVER assume: no input control is shown for a pane the server does not authorize
 any typing goes through `POST /api/send`, whose server-side gate is authoritative. A
 guest whose host has not consented, or a disallowed pane, shows no input control.
 
-The capability SHALL also be TRANSPARENT (design-round-2026-07, WEB §11): every
-focused pane / workbench tile head states its input capability explicitly — a cyan
-`⌨ 可输入` chip when the caller may type, a grey `👁 只读` chip when not — and a
-read-only pane explains that input is not allowed instead
-of an empty or missing input box. The top bar SHALL name the caller's identity
+The input affordance SHALL communicate capability: authorized panes show the composer without a redundant writable badge. Read-only panes show a read-only label and explain why input is unavailable. The top bar SHALL name the caller's identity
 (owner = 全权, guest = 协作视图), resolved from `GET /api/share` (`all:true` ⇒
 owner). On a typable waiting pane the parsed numbered options SHALL be live —
 one click sends the bare digit (no Enter) via `POST /api/send`, matching the phone's
@@ -242,9 +237,7 @@ buttons, and SHALL say there are no numbered choices and where to answer instead
 #### Scenario: Capability is stated, not implied
 
 - **WHEN** a caller focuses a pane (or has it on the workbench board)
-- **THEN** its head shows `⌨ 可输入` (cyan) or `👁 只读` (grey) per the caller's
-  `/api/share` capability, and a read-only term view carries the one-line
-  input-not-allowed explanation rather than a blank where the input box would be
+- **THEN** writable panes show their authorized composer without a writable label, while read-only panes show a read-only label and an input-not-allowed explanation
 
 #### Scenario: Live parsed choices on a typable waiting pane
 
@@ -340,7 +333,17 @@ The browser mirror SHALL load its scripts, styles, fonts and API calls inside th
 
 ### Requirement: Corresponding conversation controls use consistent semantics
 
-The browser focus and tile views SHALL order Chat before Terminal for agents, matching the phone and iPad. Plain panes SHALL NOT offer Chat and opening them SHALL NOT replace the saved agent mode. The initial default SHALL remain Terminal. Plain-pane titles SHALL remain consistent between the roster and focus. Workbench-only Diff SHALL remain available. Visible status and accessible status names SHALL use the same mapping. All-panes fold controls SHALL use Collapse all and Expand all in English and 折叠全部 and 展开全部 in Chinese.
+The browser focus and tile views SHALL order Chat, Trace, then Terminal for pane
+agents. Chat and Terminal SHALL retain their relative order with the native App; this
+requirement SHALL NOT imply that native App Trace has been implemented. Readable
+external sessions SHALL offer read-only Chat and Trace and SHALL NOT offer Terminal
+or a composer. Unreadable native sessions SHALL remain status-only. Plain panes SHALL
+NOT offer Chat or Trace and opening them SHALL NOT replace the saved agent mode.
+The initial pane-agent default SHALL remain Terminal. Expanding a tile or moving to
+an adjacent agent SHALL preserve the current supported mode. Plain-pane titles SHALL
+remain consistent between roster and focus. Workbench-only Diff SHALL remain available.
+Visible status and accessible status names SHALL use the same mapping. All-panes fold
+controls SHALL use Collapse all and Expand all in English and 折叠全部 and 展开全部 in Chinese.
 
 #### Scenario: Switch from a conversation to a shell
 
@@ -352,6 +355,18 @@ The browser focus and tile views SHALL order Chat before Terminal for agents, ma
 
 - **WHEN** the user opens an agent in focus or a workbench tile
 - **THEN** Chat appears before Terminal in either language
+
+#### Scenario: Read an external conversation trace
+
+- **WHEN** an external session is declared readable by the server
+- **THEN** its entry identifies the read-only conversation and offers Chat and Trace through its exact session/home scope
+- **AND** changing session, home or credential retires previous reads before they can repaint the new reader
+- **AND** reading, filtering and copying never sends input to a real pane
+
+#### Scenario: Expand a trace or move to the next pane
+
+- **WHEN** Trace is selected and the reader expands a tile or moves to the next agent
+- **THEN** the new focus remains in Trace instead of silently switching to Terminal
 
 ### Requirement: User prompt markdown
 
@@ -406,3 +421,194 @@ In a focused Web conversation, an accepted revision-bound View question action S
 - **WHEN** the user taps View question in Chat
 - **THEN** only that typed action is sent and the terminal picker becomes visible
 - **AND** the unsent composer text remains intact at both narrow and desktop widths
+
+### Requirement: Browser conversation workspace
+The browser SHALL present prompts, chronological assistant segments, and expandable tool summaries consistently in focused and workbench chat. Replies SHALL show the turn's agent identity, supervisor sessions SHALL carry the HQ role mark, and text SHALL be copyable on pointer and touch devices. Conversation input SHALL use the existing scope-gated send path and remain intact during transcript refreshes.
+
+#### Scenario: Continue a conversation
+- **WHEN** an owner opens a conversation and sends a follow-up
+- **THEN** the browser submits to that pane, preserves an unsent draft during polling, and retains readable spacing between messages
+
+### Requirement: Transcript trace
+
+The browser SHALL provide an ordered, searchable index of public prompts, assistant
+segments and recorded tool input, falling back to recorded summaries when input is
+absent. It SHALL preserve input whitespace and show recorded working directory and
+truncation. Agent, loaded turn and session boundaries SHALL remain distinguishable,
+including mixed-agent HQ history. Search SHALL cover all loaded records, including
+recorded input, directory, agent and session; type and history-session filters SHALL
+compose. It SHALL NOT invent request timing, token usage, private reasoning, tool
+output or tool completion. Session status SHALL come from roster evidence and a
+historical-session filter SHALL NOT imply that the historical session is working.
+
+#### Scenario: Inspect a call
+
+- **WHEN** the reader selects a tool event in the trace
+- **THEN** its recorded input, or its summary if no input was recorded, is readable and copyable without altering whitespace
+- **AND** a recorded directory or truncation flag is visible without claiming the complete raw request is available
+
+#### Scenario: Inspect mixed-agent conversation history
+
+- **WHEN** the transcript contains several sessions or agent providers
+- **THEN** the list identifies each record's agent and loaded turn, exposes session boundaries and allows a history-session filter
+- **AND** no prompt timestamp is presented as the timestamp of an individual tool invocation
+
+#### Scenario: Read a long or incomplete transcript
+
+- **WHEN** thousands of records, missing timestamps, duplicate prompts, tools-only turns or legacy responses arrive
+- **THEN** the index preserves recorded ordering, keeps distinct entries and renders at most 200 record rows per page with explicit pagination
+- **AND** search and the bounded overview cover the complete loaded index, including its final record
+- **AND** empty data and empty filter results have distinct localized states
+
+#### Scenario: Navigate the overview without tiny targets
+
+- **WHEN** a reader locates an event from the overview
+- **THEN** a native range control supports touch and keyboard positioning and decorative bars do not become tiny focusable buttons
+
+### Requirement: Local browser entry
+The menu bar SHALL offer a local browser workspace at 127.0.0.1, authenticated through a short-lived one-time code. If no serve is available it SHALL start only a loopback listener. It SHALL not enable a tunnel or rewrite an existing remote service.
+
+#### Scenario: Open without remote access
+- **WHEN** the user opens the local workspace with remote access off
+- **THEN** a loopback-only serve starts and the browser redeems a one-time code for its own authenticated credential
+
+### Requirement: Browser appearance preference
+The browser SHALL offer System, Light and Dark appearance modes, default to System, persist an explicit choice per browser origin, apply the resolved mode before first paint, and react to system appearance changes only while System is selected. The workspace, conversation, trace, controls and overlays SHALL adapt; terminal captures SHALL retain their recorded terminal palette.
+
+#### Scenario: System appearance changes
+- **WHEN** System is selected and the operating system changes to dark appearance
+- **THEN** browser chrome updates without reloading or losing drafts
+
+### Requirement: Closeable trace details
+
+The trace inspector SHALL be closeable. Closing it SHALL give the event list the full
+available width and allow longer previews. Closing SHALL survive polling and filtering;
+selecting an event or choosing Show details SHALL reopen it. Width-appropriate compact
+views SHALL drill into details and return to the same selected row and focus, rather
+than dividing an already narrow reading area. Identifiable records SHALL retain their
+selection across history additions. Selected text and focused detail controls SHALL
+hold their displayed revision during updates and resume after release. Inspecting or
+manually scrolling SHALL stop automatic following. Viewer-owned observers and timers
+SHALL be disposed when the trace is retired.
+
+#### Scenario: Read with the inspector closed
+
+- **WHEN** the user closes event details and a transcript update arrives
+- **THEN** the event list remains full width and the inspector remains closed
+
+#### Scenario: Read a call on a phone or compact tile
+
+- **WHEN** a reader selects a record in a narrow content pane
+- **THEN** details use the reading area and the underlying list is not an interactive accessibility target
+- **AND** closing details restores the list and focuses the original row
+
+#### Scenario: Preserve reading while history changes
+
+- **WHEN** older or newer identifiable history is inserted while a record is selected
+- **THEN** the same record remains selected, without substituting another record at its previous array index
+- **AND** a selected text range remains intact until the reader releases it
+
+### Requirement: Recognizable browser identity
+The browser SHALL provide a bundled gtmux favicon and a localized contextual tab title for the workspace, access page and focused conversation modes. Workspace branding and navigation SHALL provide readable size and spacing on desktop and narrow screens.
+
+#### Scenario: Identify a conversation tab
+- **WHEN** a user opens Trace for an agent
+- **THEN** the tab title identifies that conversation, Trace and gtmux, and shows the bundled favicon
+
+### Requirement: Compact message actions
+Conversation messages, tool summaries and trace details SHALL offer a Copy icon with a localized tooltip, accessible name and brief success/failure feedback. They SHALL not offer Quote. Touch targets SHALL remain usable and icons SHALL adapt to appearance.
+
+#### Scenario: Copy a message using its icon
+- **WHEN** the reader activates Copy by pointer, touch or keyboard
+- **THEN** text reaches the clipboard and the icon reports the actual result without changing to a text button
+
+### Requirement: Consistent browser controls
+The browser SHALL use a shared icon system for action controls, with 20px action glyphs, at least 36×36 CSS-pixel desktop targets and 44×44 coarse-pointer targets. Compact tiles SHALL preserve the same target metrics. Action controls SHALL have localized accessible names, visible focus and hover feedback. Layout and appearance disclosures SHALL expose expanded state, support Escape dismissal and return focus. Session rows and authorized reply choices SHALL support keyboard activation.
+
+#### Scenario: Use compact controls by keyboard or touch
+- **WHEN** the reader uses a tile's navigation, message actions or composer keys
+- **THEN** controls remain legible, touch targets retain their size and authorized actions can be reached by keyboard
+
+### Requirement: Message footer and truthful clipboard feedback
+Conversation actions SHALL appear outside the message background in a separate footer. Recorded prompt timestamps and sender attribution SHALL appear in that footer; absent or invalid times SHALL be omitted. Clipboard actions for messages, pinned prompts, pane commands and terminal captures SHALL indicate the actual copy result, including failure of the fallback copy path.
+
+#### Scenario: Clipboard access fails
+- **WHEN** both the clipboard API and fallback copy fail
+- **THEN** the interface reports failure rather than success and preserves keyboard focus
+
+### Requirement: Consistent browser interface language
+Browser routes and overlays SHALL use concise localized action labels, factual empty states and explicit recovery messages. Chinese copy SHALL distinguish the workspace, panels, agent conversations and tmux panes consistently. Agent transcripts and literal commands SHALL remain unchanged. Appearance settings SHALL state that font controls affect terminal rendering.
+
+#### Scenario: Read an empty layout menu
+- **WHEN** no layout has been saved
+- **THEN** the menu states that no saved layouts exist and offers a clearly named Save current layout action
+
+### Requirement: Collapsible working conversation preview
+Chat SHALL show a collapsed-by-default Live strip while the current agent is working, shared by focused conversations and workspace panels. Expanding SHALL show the latest 14 non-trailing-blank rows from the current screen capture, not an earlier transcript reply. The strip SHALL retain its disclosure preference per pane across polling and mode switches, preserve drafts and reading position, and disappear when work stops. Runtime SHALL use the recorded current-state start and server clock when available, and be omitted when unknown. Capture errors SHALL identify unavailable or stale output and retry. Late responses SHALL not appear in a different pane, mode, turn or credential scope, and revoked access SHALL clear cached Live content.
+
+#### Scenario: Watch an active turn
+- **WHEN** the reader expands Live during a working conversation
+- **THEN** current output updates without replacing transcript history or changing the draft, and the strip closes only when the reader chooses or work stops
+
+#### Scenario: Switch sessions during a slow capture
+- **WHEN** a capture response arrives after the reader switches to another session
+- **THEN** that response cannot populate the new session's Live content
+
+### Requirement: Shared browser composer parity
+Focused conversations and workspace panels SHALL share app-style composition: an upward-arrow Send control, terminal keys ordered Tab, Up, Down, Enter, Backspace, Ctrl-C and Esc, and expandable text entry on touch screens. Enter SHALL insert a newline by default; a persisted Return sends preference MAY enable sending. Modified Enter SHALL send, while IME confirmation and key repeats SHALL not submit accidentally. A full-size editor SHALL preserve the same draft. Controls SHALL remain reachable at narrow/short viewports and adapt to visual viewport and safe-area insets.
+
+#### Scenario: Compose on mobile
+- **WHEN** the reader opens the input field or expanded editor on a touch screen
+- **THEN** it has 44px controls, multiline text, a separate Send action and reachable controls above the reduced viewport
+
+### Requirement: Staged browser attachments
+The composer SHALL support images, files, clipboard images/text, drag-and-drop and mobile camera selection through browser capabilities. Selection SHALL stage attachments without uploading or sending. Photos SHALL offer annotation with draw, arrow, box, opaque redaction, colors, undo and clear. Export SHALL retain original dimensions; a smaller export SHALL require an explicit choice after failure. Send SHALL upload staged files with progress and submit one combined message only after every upload succeeds. Upload failures SHALL keep text and attachments, identify size-limit refusals and allow explicit retry. Selection and asynchronous clipboard results SHALL remain bound to their pane and credential.
+
+#### Scenario: Upload fails before send
+- **WHEN** a staged file upload is refused or interrupted
+- **THEN** no partial message is sent, the draft and files remain available and the error offers an appropriate recovery
+
+### Requirement: Browser draft and recall state
+Text drafts SHALL persist per pane in credential- and server-scoped browser storage. Input history SHALL group by project/session and saved phrases SHALL be editable. Recall SHALL insert text for review without sending. Credential revocation SHALL clear private composition state and close related dialogs. File bytes MAY remain in memory only; after a reload the interface SHALL identify attachments that need reselection and retain any unconfirmed-delivery warning.
+
+#### Scenario: Recall a prior message
+- **WHEN** the reader selects history or a saved phrase
+- **THEN** the text enters the draft without dispatching and another pane or credential cannot inherit that draft implicitly
+
+### Requirement: Pending prompt feedback and retry identity
+After Send, Chat SHALL show a temporary prompt with sending/delivered state until a newly recorded matching occurrence arrives. A pre-existing identical prompt SHALL not confirm a new send. Pending prompts SHALL remain scoped to the pane and credential. An unchanged retry SHALL reuse its send identifier; a new message after acknowledgement SHALL receive a new identifier.
+
+#### Scenario: Acknowledged prompt reaches the transcript
+- **WHEN** a newly recorded occurrence matches the pending prompt
+- **THEN** the temporary row merges into the recorded conversation without duplication
+
+### Requirement: Speaker identity sheets
+
+User, sender and agent avatars in conversations SHALL be keyboard/touch-activatable
+and open an adaptive identity sheet using the app's avatar and information hierarchy.
+Sheets SHALL distinguish users, HQ and agents, show available role/session/status/source
+information and offer navigation only to a currently authorized matching session.
+Owner agent sheets SHALL read recorded facts from the existing participant-profile
+endpoint, with known model/version/provider/permission fields and source/time disclosure.
+Historical message profiles SHALL use recorded session and time, including older sessions
+of the same agent provider. Missing message identity and guest connections SHALL NOT
+request current facts as a substitute. Closing or changing credentials SHALL retire
+pending reads. Missing personal/device information and historical identities SHALL NOT
+be replaced with inferred current data. Settings SHALL use an icon with a localized
+accessible name.
+
+#### Scenario: Inspect a historical speaker
+
+- **WHEN** an older message belongs to the same provider as the currently working session
+- **THEN** the sheet requests facts for the message's recorded session and time
+- **AND** it does not assign the current session's status or navigation to that message
+
+#### Scenario: Retire profile reads
+
+- **WHEN** a profile closes, another profile opens or access is revoked
+- **THEN** a delayed response cannot repaint a different profile or remain visible after revocation
+
+#### Scenario: Missing identity or guest access
+
+- **WHEN** a message lacks recorded identity or the reader is a guest
+- **THEN** the sheet explains the unavailable recorded facts without querying a current profile

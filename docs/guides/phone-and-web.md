@@ -132,7 +132,17 @@ On iPhone and iPad, **Copy reply** below a reply copies the whole turn's text, i
 
 On a wide screen, drag a tmux pane from the sidebar onto the board, or double-click to add it. Sessions outside tmux are marked **Status only** and cannot be opened as terminal panes. On a narrow screen, the toolbar wraps to keep its controls visible, including for ordinary shells.
 
-In the terminal composer, Enter sends and Shift/Option+Enter starts a new line. When an input method is composing text, Enter confirms the word without sending. Chat refreshes intermediate reply text and tool details as they arrive.
+In the Chat and Terminal composers, Enter starts a new line and Ctrl/Cmd+Enter sends. You can enable Return-to-send in Settings. When an input method is composing text, Enter confirms the word without sending. Chat refreshes intermediate reply text and tool details as they arrive.
+
+Chat shows agent avatars and the HQ role mark, with Copy icons on messages (hover for labels; a checkmark confirms copying) and expandable tool call summaries. Board tiles and focused conversations use the same presentation. Unsent drafts survive transcript refreshes and switching between Chat and Terminal; text drafts are saved separately for each pane in this browser, scoped to the server and access identity.
+
+Copy icons sit below the message background with recorded prompt time and sender attribution. Desktop controls use 36px targets and touch controls use 44px targets. Layout actions and session rows support keyboard access; Escape closes layout and settings panels.
+
+While an agent is working, Chat shows a **Working** strip above the composer. Expand **Live output** to see the latest screen content, or collapse it to keep reading. It remembers your choice per pane and disappears when work stops. Runtime is shown when the server provides a known start time. Live updates preserve your draft and reading position; unavailable captures show a retry message.
+
+Choose **Trace** to inspect the recorded sequence of user prompts, agent replies and tool calls. Search the contents, filter by event type, then select an event to read or copy its detail. The overview marks follow event order. Tool details are recorded argument summaries; this view does not contain model request timing, token counts, raw arguments or tool output.
+
+On macOS, choose **Open local workspace** at the bottom of the menu bar panel. It opens `http://127.0.0.1:8765` directly, using a one-time pairing code. No tunnel is needed. If serve is not running, the app starts a loopback-only child that stops when the app quits; an existing remote service is reused without changing its settings. Switching remote access in the app releases that child before starting the managed service. Non-tmux sessions remain visible as status-only entries.
 
 If access is revoked, the browser returns to the access page and stops polling the old sessions. Enter a new pairing or share code to reconnect; only panes authorized by that credential are restored.
 
@@ -141,3 +151,13 @@ If access is revoked, the browser returns to the access page and stops polling t
 For a manually launched Codex, start the next session with `codex --no-alt-screen` (two leading hyphens). To resume an existing conversation, first exit its old client, then run `codex --no-alt-screen resume <SESSION_ID>` with the same model, effort and permission options. This preserves future terminal scrollback; it cannot recover old overwritten frames. `/raw` changes presentation and does not by itself disable alternate-screen mode. See [Codex handling](../design/CODEX.md) and the [official CLI reference](https://learn.chatgpt.com/docs/developer-commands?surface=cli).
 
 A tmux session's displayed title comes from its terminal title. If Codex includes a project or directory (for example `Review changes | project`), gtmux preserves it. The app does not append that suffix. Codex's `tui.terminal_title` controls title components; native sessions use their recorded conversation title when available. A `|` in a title is not sufficient evidence to strip text. See the [official configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference).
+
+The composer supports a larger writing area, terminal control keys, input history and snippets. Photos, files, pasted images and dropped files are staged before sending; images can be annotated. Send uploads the staged files and shows progress. A failed send keeps the draft and attachments. Reloading keeps text, but files must be selected again. History and snippets insert text for review without sending it.
+
+Click a message's user, Agent or HQ avatar to inspect its identity and available session information. Historical messages show recorded identity; unavailable personal details are not inferred. Writable conversations show the input field without a separate writable badge.
+
+### Appearance and trace details
+
+Open the **Settings** gear in the browser's top-right corner, then **Appearance**, to select **System**, **Light** or **Dark**. System is the default and updates live; your choice is saved in this browser. Terminal captures retain the server terminal's colors. Close the trace inspector to give the event list its full width and longer previews. Selecting an event or **Show details** reopens it; polling does not reopen a closed inspector.
+
+Both macOS pairing entries now show the same reachability, app scan guidance, full browser link, terminal command and code renewal/refresh controls.

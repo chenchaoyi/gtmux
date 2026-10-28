@@ -18,17 +18,17 @@ final class GuestDeliveryTests: XCTestCase {
         XCTAssertTrue(pair.showsTerminal, "pairing lost its terminal door")
     }
 
-    /// The sheets build the card themselves, from a store and a live roster; this reads
-    /// their source instead, so a share sheet that starts passing a command again fails
-    /// here. The one `gtmux attach` built in the file is the pairing link's.
-    func testOnlyThePairingSheetBuildsAnAttachCommand() throws {
+    /// Guest views must not call the owner-only pairing builder or pass a terminal
+    /// command to their delivery card. Pairing credentials are tested separately.
+    func testGuestSheetsDoNotOfferAnAttachCommand() throws {
         let src = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
             .appendingPathComponent("Sources/GtmuxBar/PairShareSheets.swift")
         let text = try String(contentsOf: src, encoding: .utf8)
-        let built = text.components(separatedBy: "\n")
-            .filter { $0.contains("terminalValue: \"gtmux attach") }
-        XCTAssertEqual(built.count, 1, "attach commands built: \(built)")
-        XCTAssertTrue(built.first?.contains("#c=") ?? false, "the one command is not the pair link's: \(built)")
+        let guestStart = try XCTUnwrap(text.range(of: "struct NewShareSheet"))
+        let guestViews = String(text[guestStart.lowerBound...])
+        XCTAssertFalse(guestViews.contains("terminalValue:"))
+        XCTAssertFalse(guestViews.contains("PairingCodeContent("))
+        XCTAssertFalse(guestViews.contains("PairingDeliveryValues("))
     }
 }
