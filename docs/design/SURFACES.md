@@ -68,7 +68,7 @@ every screen. Native layouts and available permissions remain surface-specific.
 
 | Interaction | Common meaning and order | Evidence / result |
 |---|---|---|
-| Agent detail modes | Chat → Terminal; default Terminal; plain panes have no Chat | `web/index.html`, `web/app.js` focus/tile, `mobileapp/src/screens/DetailScreen.tsx`; Web order and plain-pane preference fixed |
+| Agent detail modes | Chat → Terminal; Web adds Trace between them; default Terminal; plain panes have no Chat or Trace | `web/index.html`, `web/app.js` focus/tile, `mobileapp/src/screens/DetailScreen.tsx`; Web order and plain-pane preference fixed |
 | Waiting / working / idle / plain process | Needs you / Working / Idle / Running, same core states and status palette | `MenuView.swift`, `CommandPalette.swift`, mobile i18n, Web LABEL; Mac waiting heading and Web status accessible name fixed |
 | Group folding | Collapse all / Expand all | `web/app.js`, mobile `PaneBrowserView` and `ChatView`; Web terminology fixed |
 | Knowledge and route destinations | Book for knowledge, globe for route | `HQResourcePage.symbol`, mobile `SIcon`, `HQDisc`; already aligned, no icon change |

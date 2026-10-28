@@ -1,7 +1,7 @@
 {
   "name": "gtmux-web-tests",
   "private": true,
-  "scripts": {"test": "node --test smoke.test.cjs"},
+  "scripts": {"test": "node --test *.test.cjs"},
   "devDependencies": {"playwright": "1.64.1"},
   "engines": {"node": ">=22"}
 }

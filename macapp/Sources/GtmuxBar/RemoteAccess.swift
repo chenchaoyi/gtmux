@@ -241,20 +241,28 @@ final class RemoteAccess: ObservableObject {
         guard !busy else { return }
         busy = true
         lastError = nil
-        DispatchQueue.global().async {
-            let res = self.command(args)
-            let (m, b) = self.groundTruth()
-            DispatchQueue.main.async {
-                self.mode = m
-                self.backend = b
+        LocalWorkspace.shared.relinquish { released in
+            guard released else {
                 self.busy = false
-                let success = res.status == 0 && m == expect
-                if !success {
-                    self.lastError = res.stderr.isEmpty
-                        ? self.genericFailure(expect)
-                        : res.stderr
+                self.lastError = "Could not release the local workspace port. Try again. / 本机工作台端口未能释放，请重试。"
+                completion?(false)
+                return
+            }
+            DispatchQueue.global().async {
+                let res = self.command(args)
+                let (m, b) = self.groundTruth()
+                DispatchQueue.main.async {
+                    self.mode = m
+                    self.backend = b
+                    self.busy = false
+                    let success = res.status == 0 && m == expect
+                    if !success {
+                        self.lastError = res.stderr.isEmpty
+                            ? self.genericFailure(expect)
+                            : res.stderr
+                    }
+                    completion?(success)
                 }
-                completion?(success)
             }
         }
     }

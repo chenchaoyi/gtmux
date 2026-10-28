@@ -10,7 +10,7 @@ import (
 	"sort"
 )
 
-// The browser-mirror web UI (view-only) is embedded so a single binary serves it
+// The browser workspace UI is embedded so a single binary serves it
 // with no build-time node_modules dependency. The vendored xterm.js files are
 // refreshed by mobileapp/scripts/gen-web-assets.mjs.
 //
@@ -45,10 +45,10 @@ func hashWeb() string {
 	return hex.EncodeToString(h.Sum(nil))[:12]
 }
 
-// assetRefRe matches relative href=/src= asset URLs in index.html (no scheme — the
+// assetRefRe matches relative href=/src= CSS, JS and SVG asset URLs in index.html (no scheme — the
 // `[^":]` excludes absolute https:// URLs). This also matches data-href/data-src,
 // which the entry bootstrap activates after setting the tenant base.
-var assetRefRe = regexp.MustCompile(`(href|src)="([^":]+\.(?:css|js))"`)
+var assetRefRe = regexp.MustCompile(`(href|src)="([^":]+\.(?:css|js|svg))"`)
 
 // webHandler serves the embedded browser-mirror UI at "/" (and its static assets).
 // It is UNAUTHENTICATED on purpose: the page itself must load before it can pair

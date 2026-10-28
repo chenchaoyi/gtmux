@@ -619,6 +619,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // behind it, and dismissing the popover later leaves the window orphaned. One
         // surface at a time: the popover gives way to the window (like newSession does).
         switch action {
+        case .localWorkspace:
+            popover.performClose(nil)
+            LocalWorkspace.shared.open(l10n: l10n)
         case .restore:
             // A second click while one is in flight does nothing here, and would be
             // refused by the CLI anyway — two guards, because the trigger can also come
@@ -706,6 +709,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        LocalWorkspace.shared.stop()
         usageWidgetPublisher.stop()
     }
 

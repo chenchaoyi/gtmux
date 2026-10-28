@@ -1494,3 +1494,18 @@ restore SHALL keep its progress row visible as sessions reappear.
 
 - **WHEN** tmux returns an unexpected error or malformed response
 - **THEN** the app treats the plan as unknown rather than hiding Restore or claiming all saved sessions are missing
+
+### Requirement: Local browser workspace action
+The menu bar SHALL expose a localized local workspace action at the bottom of the panel. It SHALL open the browser on 127.0.0.1 using a single-use enrollment code, reuse an existing serve, or start a loopback-only app-owned child. App termination SHALL stop only that child. A remote access change from the app SHALL release that child before starting a managed service.
+
+#### Scenario: Manage agents without a tunnel
+- **WHEN** the user chooses Open local workspace
+- **THEN** the browser opens an authenticated local agent workspace without enabling a tunnel or changing existing remote service settings
+
+
+### Requirement: Consistent native pairing delivery
+Both native pairing entry points SHALL use shared components for the owner access explanation, measured reachability, the app QR with scan guidance, full selectable browser link and terminal command, and code renewal countdown and refresh. Both SHALL use one-time enrollment codes from PairStore, preserve route controls and existing renewal behavior, and SHALL NOT add a terminal command to guest share delivery.
+
+#### Scenario: Pair from either native entry
+- **WHEN** the user opens the standalone pairing window or the pairing sheet
+- **THEN** the same pairing code can be used through the app, browser or terminal, with the same explanatory and renewal controls

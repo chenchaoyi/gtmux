@@ -267,14 +267,14 @@ final class PairingController {
     func show(l10n: L10n) {
         if window == nil {
             let w = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 340, height: 500),
+                contentRect: NSRect(x: 0, y: 0, width: 600, height: 680),
                 styleMask: [.titled, .closable], backing: .buffered, defer: false)
             w.contentViewController = NSHostingController(rootView: PairingView(l10n: l10n))
             w.isReleasedWhenClosed = false
             w.center()
             window = w
         }
-        window?.title = l10n.tr("Pair your phone", "配对手机")
+        window?.title = l10n.tr("Pair your devices", "配对设备")
         DirectServerStore.shared.windowOpened(
             direct: RemoteAccess.shared.mode == .anywhere && RemoteAccess.shared.backend == .selfHosted,
             l10n: l10n)
@@ -286,9 +286,8 @@ final class PairingController {
 /// PairingView — the QR + reachable address. When only the LAN is reachable, a
 /// one-tap "Turn on remote access" enables the always-on tunnel right here (no
 /// terminal needed), and the QR updates to the anywhere-reachable address.
-// The window is a fixed 340 wide, so its blocks have exact widths rather than a maxWidth
-// a segmented control then centres itself inside.
-private let panelWidth: CGFloat = 340
+// Both pairing entries give the QR and selectable browser/terminal values the same width.
+private let panelWidth: CGFloat = 600
 private let panelPad: CGFloat = 16
 private let panelContent: CGFloat = panelWidth - panelPad * 2
 private let cardInset: CGFloat = 8
@@ -298,17 +297,7 @@ struct PairingView: View {
     @ObservedObject private var remote = RemoteAccess.shared
     @ObservedObject private var ent = Entitlements.shared
     @State private var info: PairingInfo?
-    @State private var reachable: Bool? // nil = checking, true = reachable, false = couldn't verify
-    // What the tunnel reports about itself (status/tunnel.json), read with each probe:
-    // the only evidence for why an unreachable address is unreachable.
-    @State private var tunnelStatus: TunnelStatus?
-    @State private var probing = false // a reachability probe is in flight
     @State private var recoveredNewAddress: String?
-    @State private var probeGeneration = 0
-    @State private var reachTicks = 0
-    // Held in @State so it is created once per window: a publisher built in `body` would
-    // be replaced, and its countdown restarted, on every re-render.
-    @State private var reachTimer = Timer.publish(every: Pairing.reachEvery, on: .main, in: .common).autoconnect()
     // The code itself lives in PairStore, which keeps it redeemable while this window
     // is open; holdingCode balances this window's start with exactly one stop.
     @ObservedObject private var pairStore = PairStore.shared
@@ -322,19 +311,11 @@ struct PairingView: View {
     // reach it yet" is the wrong sentence: it is reconnecting, and every phone that has
     // connected before will follow on its own.
     @State private var movedAt: Date?
-    // A clock the countdown reads. A published Date, so the line re-renders every second
-    // without anything else in the window depending on a timer.
-    @State private var tick = Date()
-    @State private var secondTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
-    private var justMoved: Bool {
-        guard let m = movedAt else { return false }
-        return Date().timeIntervalSince(m) < 45 && ReachVerdict.of(probeOK: reachable, status: tunnelStatus).isNotReachable
-    }
-
     var body: some View {
         // The same access and route controls as Preferences, then the Direct servers
         // (when relevant), then the code to scan. See docs/design/DESIGN.md §13.
         VStack(alignment: .leading, spacing: 16) {
+            PairingNotice(l10n: l10n)
             section(l10n.tr("Remote access", "远程访问")) {
                 accessCard
             }
@@ -343,9 +324,11 @@ struct PairingView: View {
 
             if remote.busy {
                 switchingLine
-            } else if let p = info, pairStore.pairCode != nil || pairStore.pairFailed,
-                      let qr = Pairing.qrImage(Pairing.payload(p, enrollCode: pairStore.pairCode)) {
-                codeCard(qr: qr, url: p.url, anywhere: p.anywhere)
+            } else if let p = info, remote.mode != .off {
+                PairingCodeContent(l10n: l10n, info: p, onRefresh: { reload() }) {
+                    PairingConnectionView(l10n: l10n, info: p, movedAt: movedAt,
+                                          recoveredNewAddress: recoveredNewAddress)
+                }
             } else if remote.mode == .off {
                 offExplainer
             } else {
@@ -357,7 +340,6 @@ struct PairingView: View {
                 .frame(maxWidth: .infinity)
             }
             Spacer(minLength: 0)
-            footer
         }
         .padding(panelPad)
         .frame(width: panelWidth)
@@ -369,8 +351,6 @@ struct PairingView: View {
         .onDisappear {
             if holdingCode { pairStore.stopPairCode(); holdingCode = false }
         }
-        .onReceive(reachTimer) { _ in recheckReach() }
-        .onReceive(secondTimer) { t in tick = t }
         .onChange(of: remote.mode) { _, _ in reload() }
         // Switching the tunnel BACKEND (self↔hosted) keeps mode == .anywhere but
         // changes the URL — reload so the QR/URL/reachability follow the new backend.
@@ -445,101 +425,6 @@ struct PairingView: View {
         .background(cardBackground)
     }
 
-    // codeCard — the code, one line saying what to do with it, then the state of this
-    // address and the address itself. The state comes first: it is the answer someone
-    // opens this window for, and the address is what they use once it is good.
-    @ViewBuilder private func codeCard(qr: NSImage, url: String, anywhere: Bool) -> some View {
-        VStack(spacing: 10) {
-            Image(nsImage: qr)
-                .interpolation(.none).resizable()
-                .frame(width: 148, height: 148)
-                .background(Color.white).cornerRadius(8)
-            Text(l10n.tr("In the gtmux app: Pair → Scan", "在 gtmux 手机 App 里：配对 → 扫一扫"))
-                .font(.system(size: 11)).foregroundStyle(.secondary)
-            Divider()
-            stateAndAddress(url: url, anywhere: anywhere)
-        }
-        .padding(12)
-        .frame(maxWidth: .infinity)
-        .background(cardBackground)
-    }
-
-    @ViewBuilder private func stateAndAddress(url: String, anywhere: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
-            reachLine
-            if let sub = reachSub(anywhere: anywhere) {
-                Text(sub).font(.system(size: 10)).foregroundStyle(.tertiary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.leading, 12)
-            }
-            HStack(spacing: 8) {
-                Text(url)
-                    .font(.system(size: 10, design: .monospaced)).foregroundStyle(.secondary)
-                    .textSelection(.enabled).lineLimit(1).truncationMode(.middle)
-                Spacer(minLength: 0)
-                Button(l10n.tr("Copy", "复制")) {
-                    NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(url, forType: .string)
-                }
-                .buttonStyle(.bordered).controlSize(.mini)
-            }
-            .padding(.leading, 12)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    // The second line under the state: what this address means, or what to do about it.
-    private func reachSub(anywhere: Bool) -> String? {
-        if let recoveredNewAddress, recoveredNewAddress == info?.url {
-            return l10n.tr("Your address changed. Scan this new code on your phone.",
-                           "连接地址已更新，请用手机扫描这个新二维码。")
-        }
-        if justMoved {
-            return l10n.tr("A phone that has connected before follows on its own, with nothing to scan.",
-                           "已经连过的手机会自己跟过来，不用重新扫码。")
-        }
-        switch ReachVerdict.of(probeOK: reachable, status: tunnelStatus) {
-        case .reachable:
-            return anywhere
-                ? l10n.tr("Reachable from any network.", "任意网络都能连。")
-                : l10n.tr("Only on this Wi-Fi.", "只在这个 Wi-Fi 下可达。")
-        case .tunnelDown:
-            return remote.backend == .cloudflare
-                ? l10n.tr("Use Restore connection above. If it still fails, check your network or proxy.",
-                          "点击上方“恢复连接”；仍失败时，检查网络或代理线路。")
-                : l10n.tr("Pick another server above to recover; phones that have connected follow.",
-                          "点上面换一台服务器就能恢复；已经连过的手机会自己跟过来。")
-        default:
-            return nil
-        }
-    }
-
-    // footer — how long THIS code has left, and the way to mint another.
-    //
-    // It used to read "the code expires in 5 minutes", which is the same sentence one
-    // second before it dies. A countdown is the only honest version of that line.
-    @ViewBuilder private var footer: some View {
-        HStack(spacing: 8) {
-            if let left = codeCountdown {
-                Text(left)
-                    .font(.system(size: 10).monospacedDigit()).foregroundStyle(.tertiary)
-            }
-            Spacer(minLength: 0)
-            if remote.mode != .off { refreshButton }
-        }
-    }
-
-    /// How long the displayed code has, counted down each second. nil when no code is on
-    /// screen. The code renews itself a minute before expiry, so the sentence says
-    /// "renews", which is what actually happens while this window is open.
-    private var codeCountdown: String? {
-        guard info != nil, let minted = pairStore.pairMinted else { return nil }
-        guard let mmss = codeLeft(minted.expiresAt, now: tick) else {
-            return l10n.tr("Renewing the code…", "正在换新的配对码…")
-        }
-        return l10n.tr("This code renews itself in \(mmss)", "配对码 \(mmss) 后自动换新")
-    }
-
     // The window with nothing turned on yet: its only job is to help pick, so it explains
     // the two ways rather than drawing a placeholder.
     @ViewBuilder private var offExplainer: some View {
@@ -592,21 +477,6 @@ struct PairingView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    // A manual "mint a fresh code" control — the pairing code times out, so let the
-    // user regenerate it (and re-probe reachability) without reopening the window.
-    private var refreshButton: some View {
-        Button(action: { reload() }) {
-            HStack(spacing: 4) {
-                Image(systemName: "arrow.clockwise").font(.system(size: 12, weight: .semibold))
-                Text(l10n.tr("Refresh code", "刷新配对码")).font(.system(size: 11, weight: .medium))
-            }
-            .foregroundStyle(Color.accentColor)
-        }
-        .buttonStyle(.plain)
-        .help(l10n.tr("Get a new pairing code now and check the address again. The code also renews on its own while this window is open.",
-                      "立刻换一个新的配对码，并重新检查地址能不能连上。窗口开着时配对码也会自己续期。"))
-    }
-
     private var proHint: some View {
         HStack(spacing: 4) {
             Image(systemName: "lock.fill").font(.system(size: 12))
@@ -639,51 +509,6 @@ struct PairingView: View {
         }
     }
 
-    @ViewBuilder private var reachLine: some View {
-        if justMoved {
-            // Moving takes a few seconds, and during them the address is genuinely not
-            // answering. Saying "can't reach it yet" there sends the reader looking for a
-            // fault that is not happening.
-            let place = serverStore.currentName(l10n)
-            label("arrow.triangle.2.circlepath", .cyan,
-                  place.isEmpty
-                    ? l10n.tr("Just moved, reconnecting", "刚换了服务器，正在重新连接")
-                    : l10n.tr("Just moved to \(place), reconnecting", "刚换到\(place)，正在重新连接"))
-        } else {
-            verdictLine
-        }
-    }
-
-    @ViewBuilder private var verdictLine: some View {
-        switch ReachVerdict.of(probeOK: reachable, status: tunnelStatus) {
-        case .reachable:
-            label("checkmark.circle.fill", .green, l10n.tr("Reachable now", "现在可达"))
-        case .tunnelDown(let err):
-            label("exclamationmark.triangle.fill", .orange,
-                  l10n.tr("The tunnel connection could not be verified.", "暂时无法确认隧道连接。")
-                  + (err.isEmpty ? "" : " (" + err + ")"))
-        case .tunnelConnectedAddressUnverified:
-            label("wifi.exclamationmark", .orange,
-                  l10n.tr("The tunnel reports a connection, but this address could not be verified. Check your network or proxy.",
-                          "隧道报告已连接，但此地址尚未验证可达。请检查网络或代理线路。"))
-        case .cannotReachYet:
-            label("exclamationmark.triangle.fill", .orange,
-                  l10n.tr("Can't reach it yet", "暂时连不上"))
-        case .checking:
-            label("clock", .secondary, l10n.tr("Checking…", "检查中…"))
-        }
-    }
-
-    private func label(_ symbol: String, _ color: Color, _ text: String) -> some View {
-        HStack(alignment: .top, spacing: 5) {
-            Image(systemName: symbol).font(.system(size: 12)).foregroundStyle(color)
-            Text(text).font(.system(size: 11)).foregroundStyle(.secondary)
-                .multilineTextAlignment(.leading)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: 220)
-    }
-
     // wrap — a centered, wrapping text (fixedSize vertical so long lines never get
     // truncated to "…").
     private func wrap(_ text: String, size: CGFloat, color: HierarchicalShapeStyle) -> some View {
@@ -697,12 +522,7 @@ struct PairingView: View {
     private func reload(renewCode: Bool = true) {
         let i = Pairing.current()
         info = i
-        reachable = nil
-        tunnelStatus = nil
-        probeGeneration += 1
-        probing = false
-        if let i = i {
-            probe(i.url)
+        if i != nil {
             if renewCode { pairStore.renewPairCode() }
         }
     }
@@ -750,31 +570,5 @@ struct PairingView: View {
     // The "Unlock Direct" access-code sheet is now the shared DirectCodeSheet (also used
     // by Preferences), presented from the .sheet(isPresented: $showDirectCode) above.
 
-    /// recheckReach is the timer's tick. It keeps the last answer on screen while it
-    /// asks again, so the line never blinks back to "Checking…".
-    private func recheckReach() {
-        guard let url = info?.url, !probing, !remote.busy else { return }
-        reachTicks += 1
-        if Pairing.shouldReprobe(reachable: reachable, tick: reachTicks) { probe(url) }
-    }
-
-    private func probe(_ url: String) {
-        guard let u = URL(string: url + "/api/health") else { reachable = false; return }
-        var req = URLRequest(url: u)
-        req.timeoutInterval = 6
-        probeGeneration += 1
-        let generation = probeGeneration
-        probing = true
-        URLSession.shared.dataTask(with: req) { data, resp, err in
-            let code = (resp as? HTTPURLResponse)?.statusCode
-            let ok = Pairing.healthOK(data, httpStatus: code)
-            let st = ok ? nil : TunnelStatus.read()
-            Pairing.logReach(ReachVerdict.of(probeOK: ok, status: st), httpStatus: code, error: err)
-            DispatchQueue.main.async {
-                guard probeGeneration == generation, info?.url == url else { return }
-                reachable = ok; tunnelStatus = st; probing = false
-            }
-        }.resume()
-    }
 
 }

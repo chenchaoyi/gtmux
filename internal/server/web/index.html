@@ -2,8 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
   <title>gtmux</title>
+  <script id="web-appearance">
+    // Resolve appearance before loading styles to avoid a flash of the other theme.
+    (function () {
+      var mode = 'system';
+      try { mode = localStorage.getItem('gtmux.appearance') || mode; } catch (e) {}
+      if (['system', 'light', 'dark'].indexOf(mode) < 0) mode = 'system';
+      var dark = mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+    })();
+  </script>
   <script id="web-base">
     // A Direct URL can end at /p<port> without a slash. Resolve assets inside
     // that Mac's path, before the browser encounters any stylesheet or script.
@@ -15,6 +26,7 @@
       document.head.appendChild(base);
     })();
   </script>
+  <link rel="icon" type="image/svg+xml" data-href="favicon.svg" />
   <link rel="stylesheet" data-href="vendor/xterm.css" />
   <link rel="stylesheet" data-href="style.css" />
   <script>
@@ -33,7 +45,7 @@
       <!-- identity chip (WEB §11): owner = 全权, guest = 协作视图 — set from GET /api/share -->
       <span id="identity" class="id-chip" hidden></span>
       <span id="sub"></span>
-      <!-- per-pane input capability (WEB §11): ⌨ 可输入 (cyan) / 👁 只读 (grey) -->
+      <!-- Read-only capability; writable panes show the composer instead. -->
       <span id="cap" class="cap-chip" hidden></span>
       <span id="conn" class="conn"></span>
       <!-- Browse ALL panes (tiered-pane-control): the opt-in secondary surface — reach
@@ -51,21 +63,36 @@
       </span>
       <div id="mode" hidden>
         <button data-mode="chat">对话</button>
+        <button data-mode="trace">轨迹</button>
         <button data-mode="term">终端</button>
       </div>
       <span id="focus-ctl" hidden>
         <button id="font-dn" title="缩小">A−</button>
         <button id="font-up" title="放大">A+</button>
         <button id="copy-screen" title="复制当前屏幕">⧉</button>
+        <span id="screen-copy-status" class="action-status" role="status" aria-live="polite"></span>
       </span>
-      <button id="gear" hidden title="外观">Aa</button>
+      <button id="gear" hidden title="外观" aria-controls="settings" aria-expanded="false">外观</button>
     </div>
   </header>
 
-  <!-- appearance: font + size -->
-  <div id="settings" hidden>
+  <!-- appearance: color mode, terminal font and size -->
+  <div id="settings" role="region" hidden>
     <div class="srow">
-      <label id="font-lbl">字体</label>
+      <label id="appearance-lbl" for="appearance-sel">外观</label>
+      <select id="appearance-sel">
+        <option id="appearance-system" value="system">跟随系统</option>
+        <option id="appearance-light" value="light">浅色</option>
+        <option id="appearance-dark" value="dark">深色</option>
+      </select>
+    </div>
+    <div class="srow">
+      <label id="return-send-lbl" for="return-sends">回车发送</label>
+      <input id="return-sends" type="checkbox" />
+    </div>
+    <p id="return-send-hint" class="settings-hint">默认 Enter 换行，⌘/Ctrl+Enter 发送。</p>
+    <div class="srow">
+      <label id="font-lbl" for="font-sel">字体</label>
       <select id="font-sel">
         <option id="font-auto" value="auto">跟随终端</option>
         <option id="font-system" value="system">系统</option>
@@ -76,7 +103,7 @@
       </select>
     </div>
     <div class="srow">
-      <label id="size-lbl">字号</label>
+      <label id="size-lbl" for="size-rng">字号</label>
       <input id="size-rng" type="range" min="10" max="22" step="1" />
       <span class="sz" id="size-val"></span>
     </div>
@@ -100,7 +127,7 @@
                  autocorrect="off" spellcheck="false" inputmode="latin" maxlength="16" />
           <button id="gate-code-go" type="submit"></button>
         </div>
-        <p id="gate-code-why" class="gate-code-why" hidden></p>
+        <p id="gate-code-why" class="gate-code-why" role="alert" hidden></p>
       </form>
     </div>
   </section>
@@ -109,31 +136,31 @@
        (wide screens only; <900px falls back to the single-column radar→pane). -->
   <section id="workbench" hidden>
     <header id="wb-bar">
-      <span class="wb-brand"><span class="wb-mark"><i></i><i class="lit"></i><i class="wide"></i></span>gtmux</span>
+      <span class="wb-brand"><span class="wb-mark"><i></i><i class="lit"></i><i class="wide"></i></span><span>gtmux</span></span>
       <span id="wb-identity" class="id-chip" hidden></span>
       <span id="wb-preset-wrap">
-        <button id="wb-preset" class="wb-toggle" title="布局预设">▦ 布局<span id="wb-preset-cur"></span> ▾</button>
+        <button id="wb-preset" class="wb-toggle" title="布局预设" aria-controls="wb-preset-menu" aria-expanded="false">布局<span id="wb-preset-cur"></span></button>
         <div id="wb-preset-menu" hidden></div>
       </span>
-      <button id="wb-snap" class="wb-toggle" title="贴齐网格"><span class="wb-sw"></span>贴齐网格</button>
-      <button id="wb-surface" class="wb-toggle" title="自动显示等待中的 pane">⤢ 自动显示等待中的 pane</button>
+      <button id="wb-snap" class="wb-toggle" title="对齐网格"><span class="wb-sw"></span>对齐网格</button>
+      <button id="wb-surface" class="wb-toggle" title="自动打开待处理会话">自动打开待处理会话</button>
       <span class="wb-spacer"></span>
       <span id="wb-conn" class="conn" title="连接"></span>
-      <button id="wb-gear" title="外观">Aa</button>
+      <button id="wb-gear" title="外观" aria-controls="settings" aria-expanded="false">外观</button>
     </header>
     <div id="wb-body">
       <aside id="rail">
         <div id="rail-head">
           <span class="rail-title" id="rail-title">会话</span>
           <span class="rail-spacer"></span>
-          <input id="rail-search" placeholder="⌕ 搜索" />
-          <button id="rail-collapse" title="收起侧栏">⇤</button>
+          <input id="rail-search" placeholder="搜索会话" />
+          <button id="rail-collapse" title="收起侧栏" aria-controls="rail"></button>
         </div>
         <div id="tree"></div>
-        <div class="rail-hint">拖 pane 到画板 · 双击加入画板</div>
+        <div class="rail-hint">双击打开会话，或拖入工作区</div>
         <div id="rail-resize" title="拖动调整宽度"><span></span></div>
       </aside>
-      <button id="rail-tab" hidden title="显示侧栏">⇥<span id="rail-tab-n"></span></button>
+      <button id="rail-tab" hidden title="显示侧栏" aria-controls="rail"><span id="rail-tab-n"></span></button>
       <div id="board"></div>
     </div>
   </section>
@@ -166,6 +193,7 @@
       <div class="pin-body"></div>
       <button class="pin-toggle" type="button" aria-expanded="false"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
       <button class="pin-copy" type="button"></button>
+      <span class="pin-status action-status" role="status" aria-live="polite"></span>
     </div>
     <div id="term"></div>
     <button id="jump" hidden>↓ 最新<span class="jdot" hidden></span></button>
@@ -190,13 +218,14 @@
   <!-- chat history (对话 mode) -->
   <section id="chat" hidden></section>
   <div id="chat-interaction" hidden></div>
-  <div id="chat-input" hidden></div>
+  <div id="chat-input" hidden><div id="chat-ro" class="chat-readonly">Read-only · 只读</div></div>
 
   <!-- ⌘K command palette: jump to / surface any pane (workbench) -->
-  <div id="cmdk" hidden>
+  <div id="cmdk" role="dialog" aria-modal="true" hidden>
     <div id="cmdk-box">
-      <input id="cmdk-input" placeholder="⌘K · 跳到 pane（输入名称 / agent / %id）" autocomplete="off" spellcheck="false" />
-      <div id="cmdk-list"></div>
+      <input id="cmdk-input" role="combobox" aria-autocomplete="list" aria-controls="cmdk-list" aria-expanded="false" placeholder="搜索名称、Agent 或 %id" autocomplete="off" spellcheck="false" />
+      <div id="cmdk-list" role="listbox"></div>
+      <span id="cmdk-status" class="action-status" role="status" aria-live="polite"></span>
     </div>
   </div>
 
@@ -205,6 +234,8 @@
   <script data-src="vendor/addon-unicode11.js"></script>
   <script data-src="terminal-keys.js"></script>
   <script data-src="activity.js"></script>
+  <script data-src="trace-model.js"></script>
+  <script data-src="trace-view.js"></script>
   <script data-src="app.js"></script>
   <script>
     Array.prototype.forEach.call(document.querySelectorAll('script[data-src]'), function (slot) {

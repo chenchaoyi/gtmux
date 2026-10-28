@@ -70,6 +70,16 @@ enum GtmuxCLI {
         return env
     }
 
+    /// A foreground loopback-only serve owned by LocalWorkspace. No launch agent
+    /// or tunnel configuration is changed. Keep its output private and nonblocking.
+    static func startLocalWorkspace() -> Process? {
+        let proc = makeProcess(LocalWorkspace.serveArguments)
+        proc.standardOutput = FileHandle.nullDevice
+        proc.standardError = FileHandle.nullDevice
+        proc.standardInput = FileHandle.nullDevice
+        do { try proc.run(); return proc } catch { return nil }
+    }
+
     /// Run gtmux and return its stdout (nil on failure). Blocking — call off-main.
     static func capture(_ args: [String]) -> Data? {
         let proc = makeProcess(args)

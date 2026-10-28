@@ -71,6 +71,9 @@ func TestWebHandlerCacheBusting(t *testing.T) {
 	if !strings.Contains(body, "style.css?v="+assetTag) {
 		t.Errorf("index.html style.css not cache-busted with assetTag")
 	}
+	if !strings.Contains(body, "favicon.svg?v="+assetTag) {
+		t.Errorf("favicon is not versioned with the other assets")
+	}
 	if cc := rr.Header().Get("Cache-Control"); !strings.Contains(cc, "no-cache") {
 		t.Errorf("index.html Cache-Control missing no-cache: %q", cc)
 	}

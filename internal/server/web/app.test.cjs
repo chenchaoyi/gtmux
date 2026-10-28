@@ -53,17 +53,18 @@ function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
     ResizeObserver: class { constructor(cb) { context.__resized = cb; } observe(el) { context.__observed = el; } },
     setTimeout: (fn, ms) => setTimeout(fn, ms).unref(),
     location: {pathname, hash: ''},
-    localStorage: {getItem: k => saved.get(k), setItem: (k, v) => saved.set(k, v)},
+    localStorage: {getItem: k => saved.get(k), setItem: (k, v) => saved.set(k, v), removeItem: k => saved.delete(k), key: i => Array.from(saved.keys())[i], get length() {return saved.size;}},
     fetch: async (url, options) => { requests.push({url, options}); return reply; },
-    console, AbortController, clearTimeout,
+    console, AbortController, clearTimeout, setInterval, clearInterval,
   };
   const marker = "  if (document.readyState === 'loading')";
   assert.ok(source.includes(marker), 'web boot marker changed');
   const script = source.replace(marker, `
     var realFetchShare = fetchShare;
-    globalThis.__test = {fetchShare, enableShare: () => {fetchShare = realFetchShare;}, share: () => SHARE, pollWB, paneCanInput, copyText, clipboardAction, toolStepsEl, updateInputBar, setupFocus, drawChat, renderTileChat, mdRender, labelChrome, setupCodeBox, connStateFor, makeComposer, isHQPane, paneSessionTitle, paneToAgent, renderPanes, renderRadar,
-      setupKeyboard, openConversation, pollConversation, conversationControls, readableConversation, nativeSourceLabel, nativeEvidenceLabel, launchHost,
- setExternalSettings: s => {externalSettings=s;}, show, gate, runRead, cancelReads, pollPane, pollChat, pollRadar, renderChat, tilePollChat, renderTree, treeRow, renderCmdk, cyclePane,
+    globalThis.__test = {fetchShare, enableShare: () => {fetchShare = realFetchShare;}, share: () => SHARE, pollWB, paneCanInput, copyText, clipboardAction, toolStepsEl, updateInputBar, setupFocus,
+      setupKeyboard, openConversation, pollConversation, conversationControls, readableConversation, nativeSourceLabel, nativeEvidenceLabel, launchHost, setExternalSettings: s => {externalSettings=s;},
+      promptObservations, pendingPromptRecorded, setCredential: value => {token = value;}, flushComposer: () => saveCompose(composeCache, true), drawChat, renderTileChat, liveTail, mdRender, labelChrome, setupCodeBox, connStateFor, makeComposer, isHQPane, paneSessionTitle, paneToAgent, renderPanes, renderRadar,
+      show, gate, runRead, cancelReads, pollPane, pollChat, pollRadar, renderChat, tilePollChat, renderTree, treeRow, renderCmdk, cyclePane,
       onDraw: fn => {drawChat = fn;},
       setWorkbenchAgents: rows => {WB.agents = rows;},
       setTiles: tiles => {WB.tiles = tiles;},
@@ -224,35 +225,49 @@ test('connection badge distinguishes one retry from offline', () => {
   assert.equal(h.api.connStateFor(true), 'live');
 });
 
+function composerNode(c, name) { return allNodes(c.el).find(n => (n.className || '').split(' ').includes(name)); }
+
 test('composer restores a refused message and shows the server reason', async () => {
   const h = harness({ok: false, status: 409, json: async () => ({error: 'pane has a draft'})});
   const c = h.api.makeComposer(() => '%21', () => {}, false);
   c.input.value = 'Please check the build';
-  const send = c.el.children[0].children[3];
+  const send = composerNode(c, 'cx-send');
   send.onclick({stopPropagation() {}});
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(h.requests[0].url, '/p8765/api/send');
-  assert.deepEqual(JSON.parse(h.requests[0].options.body), {text: 'Please check the build', enter: true, id: '%21'});
+  const {send_id, ...payload} = JSON.parse(h.requests[0].options.body);
+  assert.ok(send_id);
+  assert.deepEqual(payload, {text: 'Please check the build', enter: true, id: '%21'});
   assert.equal(c.input.value, 'Please check the build');
-  assert.equal(c.el.children[2].textContent, 'pane has a draft');
-  assert.equal(c.el.children[2].hidden, false);
+  assert.equal(composerNode(c, 'cx-note').textContent, 'pane has a draft');
+  assert.equal(composerNode(c, 'cx-note').hidden, false);
 });
 
 test('attachments name the pane and preserve the input refusal', async () => {
   for (const status of [200, 403]) {
-    const h = harness({ok: status === 200, status, json: async () => ({path: '/uploads/image.png'})});
+    const h = harness({ok: true, status: 200, json: async () => ({})});
     h.context.FormData = class { append() {} };
+    const uploads = [];
+    h.context.XMLHttpRequest = class {
+      upload = {};
+      open(method, url) { uploads.push(url); }
+      setRequestHeader() {}
+      send() { this.status = status; this.response = {path: '/uploads/report.txt'}; queueMicrotask(() => this.onload()); }
+    };
     const c = h.api.makeComposer(() => '%21', () => {}, false);
-    const picker = c.el.children[0].children[1];
-    picker.files = [{name: 'image.png'}];
+    const picker = allNodes(c.el).find(n => n.type === 'file');
+    picker.files = [{name: 'report.txt', size: 10, type: 'text/plain'}];
     picker.onchange();
+    assert.equal(uploads.length, 0, 'attachments stay local until Send');
+    composerNode(c, 'cx-send').onclick({stopPropagation() {}});
     await new Promise(resolve => setImmediate(resolve));
-    assert.equal(h.requests[0].url, '/p8765/api/upload?id=%2521');
+    assert.equal(uploads[0], '/p8765/api/upload?id=%2521');
     if (status === 403) {
-      assert.equal(c.input.value, '');
-      assert.equal(c.input.placeholder, 'Input is not allowed in this pane');
+      assert.match(composerNode(c, 'cx-note').textContent, /Upload is not allowed/);
+      assert.equal(h.requests.length, 0);
+      assert.equal(composerNode(c, 'cx-attachments').hidden, false);
     } else {
-      assert.equal(c.input.value, '/uploads/image.png ');
+      assert.equal(JSON.parse(h.requests[0].options.body).text, '/uploads/report.txt');
     }
   }
 });
@@ -321,8 +336,8 @@ test('the header counts every non-zero agent state, running included', () => {
 });
 
 test('before the first read the browser says it is reading, and a failed read is not an empty Mac', () => {
-  for (const [lang, reading, failed, retry] of [['en-US', 'reading…', 'Could not read the panes on this server', 'Trying again every few seconds'],
-    ['zh-CN', '正在读取…', '读不到这台服务器上的 pane', '每隔几秒会再试一次']]) {
+  for (const [lang, reading, failed, retry] of [['en-US', 'reading…', 'Unable to load panes', 'Reconnecting automatically…'],
+    ['zh-CN', '正在读取…', '无法加载窗格列表', '正在自动重试…']]) {
     const h = harness({ok: true}, lang);
     h.api.setPanes(null);
     h.api.renderPanes();
@@ -335,7 +350,7 @@ test('before the first read the browser says it is reading, and a failed read is
     assert.match(textOf(root), new RegExp(failed));
     assert.match(textOf(root), new RegExp(retry));
     assert.doesNotMatch(textOf(root), /No tmux panes|没有 tmux pane|brandload/);
-    assert.ok(h.node('panes-count').textContent === 'could not read' || h.node('panes-count').textContent === '读不到');
+    assert.ok(h.node('panes-count').textContent === 'Unable to load' || h.node('panes-count').textContent === '加载失败');
   }
 });
 
@@ -349,7 +364,7 @@ test('a failed refresh keeps the rows and says they were not refreshed; an empty
   const e = harness({ok: true});
   e.api.setPanes([]);
   e.api.renderPanes();
-  assert.match(textOf(e.node('panes-list')), /No tmux panes yet/);
+  assert.match(textOf(e.node('panes-list')), /No panes\. Open a tmux pane/);
 });
 
 test('agent rows carry their real radar status, and the header rolls it up', () => {
@@ -548,12 +563,12 @@ test('a refused or unanswered send keeps the text and says why, without resendin
     if (!reply) h.context.fetch = async (url, options) => { h.requests.push({url, options}); throw new TypeError('Failed to fetch'); };
     const c = h.api.makeComposer(() => '%21', () => {}, false);
     c.input.value = 'synthetic draft';
-    c.el.children[0].children[3].onclick({stopPropagation() {}});
+    composerNode(c, 'cx-send').onclick({stopPropagation() {}});
     await new Promise(resolve => setImmediate(resolve));
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(c.input.value, 'synthetic draft', what + ': the text is back in the box');
-    assert.equal(c.el.children[2].hidden, false, what + ': a note says why');
-    assert.match(c.el.children[2].textContent, what === '403' ? /Not sent/ : /Delivery not confirmed/);
+    assert.equal(composerNode(c, 'cx-note').hidden, false, what + ': a note says why');
+    assert.match(composerNode(c, 'cx-note').textContent, what === '403' ? /Not sent/ : /Delivery unconfirmed/);
     assert.equal(h.requests.filter(r => String(r.url).endsWith('/api/send')).length, 1, what + ': sent once, never again by itself');
   }
   // A newer draft is not overwritten.
@@ -561,7 +576,7 @@ test('a refused or unanswered send keeps the text and says why, without resendin
   h.context.fetch = async () => { throw new TypeError('Failed to fetch'); };
   const c = h.api.makeComposer(() => '%21', () => {}, false);
   c.input.value = 'first';
-  c.el.children[0].children[3].onclick({stopPropagation() {}});
+  composerNode(c, 'cx-send').onclick({stopPropagation() {}});
   c.input.value = 'typed meanwhile';
   await new Promise(resolve => setImmediate(resolve));
   await new Promise(resolve => setImmediate(resolve));
@@ -577,7 +592,7 @@ test('no parsed choices, no number buttons', () => {
   h.api.renderReply([]);
   const box = h.node('reply-opts');
   assert.equal(box.children.filter(c => typeof c.onclick === 'function').length, 0, 'nothing to click');
-  assert.match(box.children.map(c => c.textContent).join(' '), /no numbered choices/);
+  assert.match(box.children.map(c => c.textContent).join(' '), /No reply options/);
   assert.doesNotMatch(box.children.map(c => c.textContent).join(' '), /Yes|Always/);
 
   h.api.renderReply([{n: 1, label: 'Use a.txt'}, {n: 2, label: 'Use b.txt'}]);
@@ -613,7 +628,7 @@ test('a failed options request clears the choices it had shown', async () => {
   await new Promise(resolve => setImmediate(resolve));
   await new Promise(resolve => setImmediate(resolve));
   assert.doesNotMatch(box.children.map(c => c.textContent).join(' '), /Four|Seven/, 'the old choices are gone');
-  assert.match(box.children.map(c => c.textContent).join(' '), /no numbered choices/);
+  assert.match(box.children.map(c => c.textContent).join(' '), /No reply options/);
 });
 
 
@@ -629,7 +644,7 @@ test('desktop work conversations have a distinct group and saved follow badge', 
  }
 });
 
-for (const [language, name] of [['en-US', 'All panes'], ['zh-CN', '所有 pane']]) {
+for (const [language, name] of [['en-US', 'All panes'], ['zh-CN', '所有窗格']]) {
   test(`pane browser icon retains its accessible name and SVG in ${language}`, () => {
     const h = harness({}, language);
     h.node('panes-btn').innerHTML = '<svg aria-hidden="true"></svg>';
@@ -648,7 +663,7 @@ for (const [language, chat, terminal] of [['en-US', 'Chat', 'Terminal'], ['zh-CN
     h.api.addTile(a);
     const tile = h.node('board').children[0];
     const tabs = tile.children[0].children.find(x => x.className === 'tile-controls').children.find(x => x.className === 'tile-modes');
-    assert.deepEqual(tabs.children.map(x => x.textContent), [chat, terminal, 'Diff']);
+    assert.deepEqual(tabs.children.map(x => x.textContent), [chat, language === 'zh-CN' ? '轨迹' : 'Trace', terminal, 'Diff']);
     h.api.addTile({...a, pane_id: '%8', agent: ''});
     const shell = h.node('board').children[1];
     const shellTabs = shell.children[0].children.find(x => x.className === 'tile-controls').children.find(x => x.className === 'tile-modes');
@@ -679,7 +694,7 @@ test('a plain pane keeps its roster label when opened in focus', () => {
 test('focus HTML preserves Chat before Terminal alongside the real tile controls', () => {
   const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
   const controls = html.match(/<div id="mode"[^>]*>([\s\S]*?)<\/div>/)[1];
-  assert.deepEqual([...controls.matchAll(/data-mode="([^"]+)"/g)].map(m => m[1]), ['chat', 'term']);
+  assert.deepEqual([...controls.matchAll(/data-mode="([^"]+)"/g)].map(m => m[1]), ['chat', 'trace', 'term']);
 });
 
 for (const [language, names] of [['en-US', ['needs attention', 'working', 'idle', 'idle']], ['zh-CN', ['待处理', '运行中', '空闲', '空闲']]]) {
@@ -737,7 +752,7 @@ test('native rows are status-only on the workbench and cannot create a tile or f
   h.api.renderCmdk('Desktop');
   assert.equal(h.node('cmdk-list').children.length, 1);
   assert.match(h.node('cmdk-list').children[0].textContent, /no pane matches/);
-  assert.equal(h.requests.length, 0);
+  assert.equal(h.requests.filter(r => !r.url.includes('/api/icon')).length, 0);
 });
 
 test('previous and next pane navigation skips native sessions', () => {
@@ -764,18 +779,18 @@ test('cycling focused panes preserves the workbench return destination', () => {
   assert.equal(h.api.focusOrigin(), false);
 });
 
-test('IME confirmation and modified Enter preserve the draft; plain Enter sends once', async () => {
+test('IME confirmation and Return preserve the draft; modified Enter sends once', async () => {
   const h = harness({ok: true, json: async () => ({})});
   const c = h.api.makeComposer(() => '%21', () => {}, false);
   c.input.value = '中文候选词';
-  for (const key of [{isComposing: true}, {keyCode: 229}, {shiftKey: true}, {altKey: true}]) {
+  for (const key of [{}, {isComposing: true}, {keyCode: 229}, {shiftKey: true}, {altKey: true}]) {
     let prevented = false;
     c.input.keydown({key: 'Enter', ...key, preventDefault() {prevented = true;}, stopPropagation() {}});
     assert.equal(prevented, false);
     assert.equal(c.input.value, '中文候选词');
     assert.equal(h.requests.length, 0);
   }
-  c.input.keydown({key: 'Enter', preventDefault() {}, stopPropagation() {}});
+  c.input.keydown({key: 'Enter', ctrlKey: true, preventDefault() {}, stopPropagation() {}});
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(h.requests.length, 1);
   assert.equal(JSON.parse(h.requests[0].options.body).text, '中文候选词');
@@ -950,10 +965,10 @@ test('busy delivery feedback expires without an idle transition and never dismis
     h.context.clearTimeout = id => timers.delete(id);
     h.api.setAgents([{pane_id: '%21', status: 'working'}]);
     const c = h.api.makeComposer(() => '%21', () => {}, false);
-    const send = () => c.el.children[0].children[3].onclick({stopPropagation() {}});
+    const send = () => composerNode(c, 'cx-send').onclick({stopPropagation() {}});
     c.input.value = 'Please check'; send();
     await new Promise(resolve => setImmediate(resolve));
-    const note = c.el.children[2];
+    const note = composerNode(c, 'cx-note');
     assert.equal(note.hidden, false);
     assert.match(note.textContent, language === 'zh-CN' ? /已发送到终端/ : /Sent to terminal/);
     const expiry = [...timers.values()].find(t => t.ms === 6000);
@@ -967,7 +982,7 @@ test('busy delivery feedback expires without an idle transition and never dismis
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(note.textContent, 'pane has a draft');
     assert.equal(note.hidden, false);
-    assert.equal(timers.size, 0);
+    assert.equal([...timers.values()].some(t => t.ms === 6000), false);
     assert.equal(c.input.value, 'Do not lose this');
   }
 });
@@ -980,7 +995,11 @@ test('DSH external history has scoped requests, read-only chrome and independent
  h.api.openConversation(a);await new Promise(r=>setImmediate(r));
  assert.ok(h.requests.some(r=>r.url.endsWith('/api/session/transcript?session_id=dsh-one&home_id=dsh-home')));
  assert.ok(h.requests.every(r=>!r.url.includes('/api/pane?')&&!r.url.includes('/api/send')));
- assert.equal(h.node('mode').hidden,true);assert.equal(h.api.turns()[0].response,'Public reply');
+ assert.equal(h.node('mode').hidden,false);assert.equal(h.api.turns()[0].response,'Public reply');
+ let traceTurns;
+ h.context.window.GtmuxTraceView={create:()=>({el:h.node('synthetic-trace'),update:turns=>{traceTurns=turns;}})};
+ h.api.setMode('trace');assert.equal(h.api.modes().selected,'trace');assert.equal(traceTurns[0].response,'Public reply');
+ h.api.setMode('term');assert.equal(h.api.modes().selected,'trace');
  h.api.setExternalSettings({hq:false,notify:false,knowledge:false,revision:0});
  const inputs=h.api.conversationControls().children.filter(c=>c.tagName==='label').map(c=>c.children[0]);
  assert.deepEqual(inputs.map(i=>i.disabled),[false,true,true]);
@@ -1047,7 +1066,7 @@ test('single-pane input sync uses the composer created during focus setup', () =
   h.context.window.GtmuxTerminalKeys = {create: () => ({button: {}, notice: {}, sync: visible => visibility.push(visible)})};
   h.api.setupFocus();
   assert.doesNotThrow(() => h.api.updateInputBar());
-  assert.deepEqual(visibility, [false]);
+  assert.ok(visibility.length > 0 && visibility.every(v => v === false));
 });
 
 test('activity counts repeated tools and renders ordered plain-text details', () => {
@@ -1161,4 +1180,99 @@ test('clipboard failure never reports copied and repeated pending clicks are coa
   assert.equal(await h.api.copyText('record'),false);
   button.onclick({stopPropagation(){}});await new Promise(r=>setImmediate(r));
   assert.equal(status.textContent,'Copy failed');assert.equal(button.attrs['aria-busy'],'false');
+});
+
+test('a focused composer keeps a separate draft per pane and restores failures to their original pane', async () => {
+  const h = harness({ok: true});
+  let target = '%7', reject;
+  h.context.fetch = () => new Promise((_, fail) => { reject = fail; });
+  const c = h.api.makeComposer(() => target, () => {}, false);
+  c.input.value = 'draft for seven';
+  target = '%8'; c.sync();
+  assert.equal(c.input.value, '');
+  c.input.value = 'draft for eight';
+  target = '%7'; c.sync();
+  assert.equal(c.input.value, 'draft for seven');
+  composerNode(c, 'cx-send').onclick({stopPropagation() {}});
+  target = '%8'; c.sync();
+  reject(new TypeError('Failed to fetch'));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(c.input.value, 'draft for eight');
+  target = '%7'; c.sync();
+  assert.equal(c.input.value, 'draft for seven');
+});
+
+test('resetting a composer clears every pane draft and ignores a late send failure', async () => {
+  const h = harness({ok: true});
+  let target = '%7', fail;
+  h.context.fetch = () => new Promise((_, reject) => { fail = reject; });
+  const c = h.api.makeComposer(() => target, () => {}, false);
+  c.input.value = 'private previous draft';
+  target = '%8'; c.sync();
+  c.input.value = 'private send';
+  composerNode(c, 'cx-send').onclick({stopPropagation() {}});
+  c.reset();
+  fail(new TypeError('late failure'));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(c.input.value, '');
+  target = '%7'; c.sync();
+  assert.equal(c.input.value, '');
+});
+
+test('live preview uses the last fourteen captured rows and removes terminal control sequences', () => {
+  const h = harness({});
+  const rows = Array.from({length: 20}, (_, i) => 'line ' + i);
+  assert.equal(h.api.liveTail(rows.join('\n') + '\n\n'), rows.slice(-14).join('\n'));
+  assert.equal(h.api.liveTail('\u001b[32mCurrent output\u001b[0m\n\u001b]8;;https://example.com\u0007Link\u001b]8;;\u0007\n'), 'Current output\nLink');
+  assert.equal(h.api.liveTail('\n \n'), '');
+});
+
+test('composer persists a scoped draft and isolates another credential on the same pane', () => {
+  const h = harness({}); h.api.setCredential('first-owner');
+  const c = h.api.makeComposer(() => '%21', () => {}, false);
+  c.input.value = 'Private saved draft'; c.input.input(); h.api.flushComposer();
+  const restored = harness({}, 'en-US', Object.fromEntries(h.saved)); restored.api.setCredential('first-owner');
+  const next = restored.api.makeComposer(() => '%21', () => {}, false);
+  assert.equal(next.input.value, 'Private saved draft');
+  restored.api.setCredential('another-guest'); next.sync();
+  assert.equal(next.input.value, '');
+  next.input.value = 'Separate guest draft'; next.input.input(); restored.api.flushComposer();
+  restored.api.gate('expired');
+  assert.equal(Array.from(restored.saved.keys()).filter(k => k.startsWith('gtmux.compose:')).length, 0);
+});
+
+test('Return sends only after opting in; composition and repeated keys cannot double-submit', async () => {
+  const h = harness({ok: true, json: async () => ({})}, 'en-US', {'gtmux.returnSends': '1'});
+  const c = h.api.makeComposer(() => '%21', () => {}, false);
+  c.input.value = 'One confirmed message';
+  for (const key of [{isComposing: true}, {keyCode: 229}, {repeat: true}]) c.input.keydown({key: 'Enter', ...key, preventDefault() {}, stopPropagation() {}});
+  assert.equal(h.requests.length, 0);
+  c.input.keydown({key: 'Enter', preventDefault() {}, stopPropagation() {}});
+  c.input.keydown({key: 'Enter', preventDefault() {}, stopPropagation() {}});
+  await flush();
+  assert.equal(h.requests.length, 1);
+  assert.equal(JSON.parse(h.requests[0].options.body).text, 'One confirmed message');
+});
+
+test('pending prompts require a newly recorded occurrence, including identical messages without clocks', () => {
+  const h = harness({}), original = [{prompt: 'same message', time: 'first'}];
+  const echo = {text: 'same message', observed: h.api.promptObservations('same message', original), priorPending: 0};
+  assert.equal(h.api.pendingPromptRecorded(echo, original), false);
+  assert.equal(h.api.pendingPromptRecorded(echo, [...original, {prompt: 'same message', time: 'second'}]), true);
+  const noClock = {text: ' same message\r\n', observed: h.api.promptObservations('same message', [{prompt: 'same message'}]), priorPending: 1};
+  assert.equal(h.api.pendingPromptRecorded(noClock, [{prompt: 'same message'}, {prompt: 'same message'}]), false);
+  assert.equal(h.api.pendingPromptRecorded(noClock, [{prompt: 'same message'}, {prompt: 'same message'}, {prompt: 'same message'}]), true);
+});
+
+test('an unchanged retry keeps its send id while a new acknowledged message gets a new id', async () => {
+  const reply = {ok: false, status: 409, json: async () => ({error: 'pane has a draft'})};
+  const h = harness(reply), c = h.api.makeComposer(() => '%21', () => {}, false);
+  c.input.value = 'Same message'; composerNode(c, 'cx-send').onclick({stopPropagation() {}}); await flush();
+  const first = JSON.parse(h.requests[0].options.body).send_id;
+  composerNode(c, 'cx-send').onclick({stopPropagation() {}}); await flush();
+  assert.equal(JSON.parse(h.requests[1].options.body).send_id, first);
+  reply.ok = true; reply.status = 200;
+  composerNode(c, 'cx-send').onclick({stopPropagation() {}}); await flush();
+  c.input.value = 'Same message'; composerNode(c, 'cx-send').onclick({stopPropagation() {}}); await flush();
+  assert.notEqual(JSON.parse(h.requests[3].options.body).send_id, first);
 });

@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 enum MenuAction {
-    case restore, newSession, environmentHealth, whatsNew, preferences, pairPhone, quit, startHQ, browsePanes, screenshot
+    case localWorkspace, restore, newSession, environmentHealth, whatsNew, preferences, pairPhone, quit, startHQ, browsePanes, screenshot
 }
 
 /// MenuView is the popover (DESIGN §3): a header (logo + search + summary), the
@@ -14,6 +14,7 @@ struct MenuView: View {
     @ObservedObject var serverMode = ServerModeStore.shared
     @ObservedObject var l10n: L10n
     @ObservedObject var remote = RemoteAccess.shared
+    @ObservedObject var localWorkspace = LocalWorkspace.shared
     @ObservedObject var share = ShareStore.shared
     @ObservedObject private var updater = Updater.shared
     @ObservedObject private var health = EnvironmentHealth.shared
@@ -75,7 +76,7 @@ struct MenuView: View {
             // panel is a visible flicker away from being a bug. Measure the thing.
             VStack(spacing: 0) {
                 header(p)
-                Divider().overlay(p.divider)
+                Divider()
                 hqCard(p)
             }
             .background(GeometryReader { g in
@@ -83,7 +84,7 @@ struct MenuView: View {
             })
             content(p)
             VStack(spacing: 0) {
-                Divider().overlay(p.divider)
+                Divider()
                 footer(p)
             }
             .background(GeometryReader { g in
@@ -284,7 +285,7 @@ struct MenuView: View {
                         }
                         .padding(.horizontal, 11).padding(.vertical, 9)
                         if hqExpanded {
-                            Divider().overlay(p.divider).padding(.horizontal, 11)
+                            Divider().padding(.horizontal, 11)
                             hqReportTable(p)
                         }
                     }
@@ -636,6 +637,18 @@ struct MenuView: View {
             // read them as one run-on string of stuff. Proximity does that work now:
             // controls at the two ends, statuses as a cluster, the version standing on its
             // own as the ambient thing it is.
+            Button { onAction(.localWorkspace) } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "globe").font(.system(size: 12))
+                    Text(localWorkspace.opening ? l10n.tr("Opening workspace…", "正在打开工作台…") : l10n.tr("Open local workspace", "打开本机工作台"))
+                        .font(.system(size: 12, weight: .medium))
+                    Spacer()
+                    Image(systemName: "arrow.up.right").font(.system(size: 10))
+                }.foregroundStyle(p.fg2)
+                    .padding(.horizontal, 14).padding(.vertical, 10)
+            }.buttonStyle(.plain).disabled(localWorkspace.opening)
+                .help(l10n.tr("Manage agents in your browser via 127.0.0.1 · no tunnel", "通过 127.0.0.1 在浏览器管理 Agent · 无需隧道"))
+            Divider()
             HStack(spacing: 12) {
                 Button { onAction(.newSession) } label: {
                     HStack(spacing: 4) {
@@ -1002,7 +1015,7 @@ private struct WatchedHeader: View {
     var body: some View {
         let p = Theme.Palette.of(scheme)
         VStack(spacing: 0) {
-            Divider().overlay(p.divider).padding(.horizontal, 12).padding(.top, 6)
+            Divider().padding(.horizontal, 12).padding(.top, 6)
             HStack(spacing: 6) {
                 Image(systemName: "eye").font(.system(size: 12)).foregroundStyle(p.fg3)
                 Text(l10n.tr("WATCHED", "关注")).font(Theme.Font.section).kerning(0.5).foregroundStyle(p.fg3)
