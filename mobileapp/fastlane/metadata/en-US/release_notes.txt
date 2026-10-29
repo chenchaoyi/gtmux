@@ -1,4 +1,5 @@
-Conversation files
-• Open local file links directly from a conversation without registering them first.
-• Read formatted Markdown headings, lists, tables and code, with a source view when needed.
-• View local images inside Markdown and see clearer messages when a file cannot be opened.
+Session tools
+• Browse conversation text and recorded calls in Trace, with search and session filters.
+• Read call parameters and working directories without losing your place in the conversation.
+• Open historical speaker profiles and files from the selected session.
+• Use full-width details on iPhone and adaptive split views on iPad, with improved large-text layout.
