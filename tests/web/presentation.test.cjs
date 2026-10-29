@@ -19,6 +19,8 @@ scenario('Only the actual supervisor is pinned above status groups',{viewport:{w
   await page.goto(fixture.url+'/#code=TEST-1234');
   assert.equal(await page.locator('.tree-hq .tr-name').innerText(),'Coordinate release');
   assert.equal(await page.locator('.tree-hq .tree-row').count(),1);
+  assert.equal(await page.locator('.tree-hq .hq-brand-mark rect').count(),3);
+  assert.equal(await page.locator('#wb-surface').count(),0);
   assert.equal(await page.locator('#tree > :first-child').getAttribute('class'),'tree-hq');
 });
 
@@ -29,6 +31,17 @@ for(const width of [320,390,768,1440]) scenario(`Focused Chat is a conversation 
   else await page.locator('#radar').getByText('Investigate retries',{exact:true}).click();
   await page.locator('#mode [data-mode="chat"]').click();
   await page.locator('#chat .assistant-message').first().waitFor();
+  const toolbar = await page.locator('#session-toolbar').boundingBox();
+  const title = await page.locator('#title').boundingBox();
+  const modeBox = await page.locator('#mode').boundingBox();
+  const toolsBox = await page.locator('#session-actions').boundingBox();
+  assert.ok(toolbar.y >= title.y + title.height, 'mode and tools stay below identity');
+  assert.ok(modeBox.x < 60, 'modes stay at the left edge in focus');
+  assert.ok(toolsBox.x >= modeBox.x + modeBox.width + 8, 'tool actions are separate from presentation modes');
+  assert.ok(Math.abs(toolsBox.y-modeBox.y) < 3);
+  assert.equal(await page.locator('#session-tools, #font-dn, #font-up').count(), 0);
+  for (const button of await page.locator('#session-actions button').all()) assert.ok((await button.boundingBox()).height >= 44);
+
   assert.equal(await page.locator('#chat .turn-rail').count(),0);
   assert.deepEqual(await page.locator('#mode button').allTextContents(),['Chat','Terminal']);
   const box=await page.locator('#chat .conversation-main').boundingBox();assert.ok(box.width>=Math.min(width-24,850));
@@ -70,4 +83,14 @@ scenario('Conversation images reuse authenticated App document metadata and veri
   fixture.state.corruptDocument=true;await attachment.click();await page.getByText('Could not read the file. Check the connection and retry.',{exact:true}).waitFor();assert.equal(await page.locator('.document-image').count(),0);
   fixture.state.deny=true;await page.locator('#gate').waitFor();assert.equal(await page.locator('.conversation-document').count(),0);
   assert.equal(fixture.state.sends.length,0);
+});
+
+scenario('Legacy auto-open settings do not open panels when a session needs input',{viewport:{width:1440,height:900},locale:'en-US'},async(page,fixture)=>{
+  await page.addInitScript(()=>localStorage.setItem('gtmux.board',JSON.stringify({surface:true,tiles:[]})));
+  await page.goto(fixture.url+'/#code=TEST-1234');
+  await page.locator('#tree .tree-row').first().waitFor();
+  fixture.state.agents[0].status='waiting';
+  await page.waitForTimeout(2300);
+  assert.equal(await page.locator('.tile').count(),0);
+  assert.equal(await page.locator('#wb-surface').count(),0);
 });

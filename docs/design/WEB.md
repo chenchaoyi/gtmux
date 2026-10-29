@@ -21,7 +21,7 @@ Enter confirms an active input-method composition without sending it. Plain Ente
 
 ## 1. Top bar
 
-gtmux logo · layout preset dropdown (Frontend trio…) · snap to grid toggle · Show waiting panes toggle ·
+gtmux logo · layout preset dropdown (Frontend trio…) · snap to grid toggle ·
 connection indicator (server name + status dot, never the word "live") · a Settings icon (System / Light / Dark, terminal font and size, and Return-to-send preference).
 
 ## 2. Left directory (session/window/pane tree)
@@ -53,7 +53,7 @@ for extraction and privacy limits. The observation can be old; it is not current
 
 - Each tile = a live xterm mirror of one pane (reusing the existing xterm write + scroll lock in `app.js`).
 - Tile: drag the title to move, drag the bottom-right corner to resize, stack or tile freely; optional snap to grid alignment.
-- Tile header: avatar + corner status badge · name · `Chat / Terminal` presentation switch · separate session-tools icon (Trace / Diff) · ⤢ full screen · × close.
+- Tile header: avatar + corner status badge · name · `Chat / Terminal` presentation switch · direct Trace / Diff actions separated from the mode switch by spacing · ⤢ full screen · × close.
 - A waiting tile gets a red border + a light pulse.
 - Multiple panes = multiple concurrent `/api/pane?id` mounts; `diff` uses `/api/diff?id`; `chat` uses `/api/transcript?id`.
 - Tiles use absolute positions: resizing one does not reflow the others. Clicking anywhere in its header except a button, without dragging, maximizes it within the board; `f` and `1–9` also maximize tiles. The workbench-only command palette adds or finds a tile, flashes it, and maximizes it in the board. Use Restore or Esc to return. This board maximization is distinct from the ⤢ focus view.
@@ -62,7 +62,7 @@ Tile headers keep mode labels on one line and wrap the control group when the ti
 
 ## 4. Full-screen focus (single-pane close reading, mockup §02)
 
-A tile’s ⤢ button or a narrow-screen radar row opens the single-pane focus view. For agents it offers Chat and Terminal, a separate session-tools entry for Trace and Diff, previous/next pane, and terminal controls for font size, appearance, copying the selection or visible screen, and jumping to the latest output. Tools open above the base view on both entry points; closing restores the mounted conversation or terminal, draft and reading position. Focus has no terminal wrap toggle. Esc returns to the previous top-level view.
+A tile’s ⤢ button or a narrow-screen radar row opens the single-pane focus view. For agents it offers Chat and Terminal, direct Trace and Diff actions beside the mode switch, previous/next pane, and Settings for terminal font and size, plus controls for copying the selection or visible screen, and jumping to the latest output. Tools open above the base view on both entry points; closing restores the mounted conversation or terminal, draft and reading position. Focus has no terminal wrap toggle. Esc returns to the previous top-level view.
 
 **Below 800px (a phone).** The focus bar groups Back, title, connection and Settings above one row of modes. Identity metadata stays under the title; previous/next pane buttons are omitted at this width. The title truncates before pushing controls offscreen. Read-only explanations remain visible where input would otherwise appear. The appearance panel opens under the bar.
 This also applies to plain shell panes, whose Chat/Terminal tabs are hidden.
@@ -88,7 +88,7 @@ The mockup’s other variants (Ascension / Conductor / Decider / Captain / Resti
 ## 7. Delivered layout capabilities
 
 - Named presets store pane IDs, positions, sizes, modes, rail state and snap preference in localStorage; the top bar saves/applies/deletes them. The current board is also saved. Restoration includes only panes found in the current agent response; browser storage and origin determine which saved layouts are available.
-- Show waiting panes (optional): the two-second agent poll detects a transition into waiting and adds a missing tile with a pulse. The first poll is skipped, and existing tiles are not added again. This browser behavior is polling-based, not an SSE alert handler.
+- Waiting status remains in the session list; polling never opens a new panel without a user action. Old saved auto-open preferences are ignored.
 - Board maximization and the separate single-pane focus view are both implemented; see §§3–4 for their different entry points and modes.
 
 ## 8. Keyboard (desktop first)
@@ -100,7 +100,7 @@ Page shortcuts apply only outside buttons, links and editable regions, and ignor
 ## 9. State / landing
 
 - The radar uses the shared color/shape/glyph vocabulary. The connection dot changes on polling failures. A failed tile fetch currently retains its previous content; there is no implemented per-tile offline gray overlay, despite the unused CSS class.
-- `web/app.js` already contains the board layout engine (absolute positioning, drag/resize, localStorage), presets, waiting-pane surfacing and focus views. Below 900px, the top-level view becomes radar→pane.
+- `web/app.js` already contains the board layout engine (absolute positioning, drag/resize, localStorage), presets and focus views. Below 900px, the top-level view becomes radar→pane.
 - The original staged rollout is complete for these layout features. It does not include the avatar picker proposed in §6 or the HQ command deck proposed in §10.
 - Focus and roster reads belong to the view and credential that requested them. Switching pane or mode, going home or losing access invalidates earlier replies, including replies whose headers arrived before the switch. A newer completed read supersedes an older one; merely starting another poll does not discard a slow valid response.
 - On an authentication failure, the access page clears the old title, identity and permission labels and stops focus, roster, options and tile polling. Tile contents are discarded while their local layout is retained; re-pairing restores only panes in the new authorized roster. The code field can be used again.
@@ -147,8 +147,8 @@ A share URL may end at `/p<port>#code=...`, with no trailing slash. The HTML est
 
 ### Shared mode semantics (2026-10-10)
 
-Focus and workbench offer Chat / Terminal as presentation modes, matching the native App. Trace and Diff open from the separate session-tools entry; the native App uses the same tools structure.
-Plain panes offer Terminal with Diff in session tools. Opening a plain pane
+Focus and workbench offer Chat / Terminal as presentation modes, matching the native App. Trace and Diff are direct actions beside, and visually separate from, the mode switch. The native App retains its session-tools menu.
+Plain panes offer Terminal and a direct Diff action. Opening a plain pane
 neither exposes an empty Chat view nor overwrites the user's saved agent mode. The
 initial default remains Terminal. Visible status and its accessible name use the
 same LABEL mapping; working is not announced as a generic running process. Generic
@@ -242,7 +242,7 @@ User, sender, Agent and HQ avatars open an identity sheet, using iPhone/iPad's h
 ## Session tools and workspace hierarchy (2026-10-29)
 
 Chat and Terminal describe how the session is presented. Trace and Diff are tools,
-opened from the separate wrench control in either a panel or focus. The tool owns
+opened directly beside the mode switch, separated by spacing, in either a panel or focus. The tool owns
 a modal reading surface; it does not replace the base mode or composer. Chat shares
 its current transcript with Trace; Terminal fetches records only while Trace is open.
 Closing retires tool reads. Credential/view changes discard private tool content.
@@ -265,3 +265,5 @@ and generated App reference/metadata validator. Loading starts on a click, verif
 size and digest, bounds image dimensions before decoding, and retires bytes/URLs on
 close or access changes. Missing files retain Copy path; there is no arbitrary-path
 or external-image fallback.
+
+The presentation switch and tool actions stay below the session identity in both panels and focus, including phones. Font size is configured only in Settings. The supervisor avatar uses the same three-cell gtmux brand mark as the native HQ identity, with a separate status badge.

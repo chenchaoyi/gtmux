@@ -16,3 +16,16 @@ export function diffLineColor(line: string): string {
   if (line.startsWith('-')) return '#EF4444'; // deletion
   return DIFF_CONTEXT; // context
 }
+
+// Bound native line measurement, independently of the server's byte cap. A single
+// minified line must not allocate a text surface hundreds of thousands of points wide.
+export function diffRows(text: string): {lines: string[]; columns: number; shortened: boolean} {
+  let columns = 0, shortened = false;
+  const lines = text.replace(/\n$/, '').split('\n').map(line => {
+    line = line.replace(/\t/g, '    ');
+    if (line.length > 2048) { line = line.slice(0, 2048).replace(/[\uD800-\uDBFF]$/, '') + ' …'; shortened = true; }
+    columns = Math.max(columns, Array.from(line).reduce((count, char) => count + (char.codePointAt(0)! >= 0x1100 ? 2 : 1), 0));
+    return line;
+  });
+  return {lines, columns, shortened};
+}

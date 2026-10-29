@@ -61,14 +61,17 @@
         <button id="pane-prev" title="上一个 pane">‹</button>
         <button id="pane-next" title="下一个 pane">›</button>
       </span>
-      <div id="mode" hidden>
-        <button data-mode="chat">对话</button>
-        <button data-mode="term">终端</button>
+      <div id="session-toolbar" hidden>
+        <div id="mode" hidden>
+          <button data-mode="chat">对话</button>
+          <button data-mode="term">终端</button>
+        </div>
+        <div id="session-actions" class="session-actions">
+          <button id="session-trace" data-tool="trace" type="button"></button>
+          <button id="session-diff" data-tool="diff" type="button"></button>
+        </div>
       </div>
-      <button id="session-tools" hidden aria-label="Session tools"></button>
       <span id="focus-ctl" hidden>
-        <button id="font-dn" title="缩小">A−</button>
-        <button id="font-up" title="放大">A+</button>
         <button id="copy-screen" title="复制当前屏幕">⧉</button>
         <span id="screen-copy-status" class="action-status" role="status" aria-live="polite"></span>
       </span>
@@ -143,7 +146,6 @@
         <div id="wb-preset-menu" hidden></div>
       </span>
       <button id="wb-snap" class="wb-toggle" title="对齐网格"><span class="wb-sw"></span>对齐网格</button>
-      <button id="wb-surface" class="wb-toggle" title="自动打开待处理会话">自动打开待处理会话</button>
       <span class="wb-spacer"></span>
       <span id="wb-conn" class="conn" title="连接"></span>
       <button id="wb-gear" title="外观" aria-controls="settings" aria-expanded="false">外观</button>

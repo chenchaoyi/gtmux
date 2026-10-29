@@ -146,10 +146,6 @@ gtmux agent · 7 agent · 1 等输入 · 2 运行中 · 3 空闲 · 1 只有 she
 
 仓库结构和贡献说明在 [CONTRIBUTING.md](CONTRIBUTING.md)（英文）。
 
-## 和同类工具的区别
-
-claude-squad、uzi、dmux 这类工具负责启动 agent 并放进 git worktree，也只看得到自己起的那些。gtmux 读你现有的 tmux，手动起的、别的工具起的都看得见，需要时也能用 `gtmux spawn` 派活。它是一个零 cgo 的 Go 二进制，各个 app 读的都是同一份 `gtmux agents --json`。
-
 ## 许可
 
 [MIT](LICENSE) © ccy

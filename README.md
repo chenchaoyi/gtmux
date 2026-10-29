@@ -179,13 +179,6 @@ Walkthroughs with screenshots, one task each:
 
 The repo map and contributor notes are in [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## How it's different
-
-Tools like claude-squad, uzi and dmux start agents in git worktrees and show you the ones
-they started. gtmux reads the tmux you already have, so it also sees agents you started by
-hand or with another tool, and it can still dispatch work with `gtmux spawn`.
-It's a single cgo-free Go binary, and the apps read the same `gtmux agents --json`.
-
 ## License
 
 [MIT](LICENSE) © ccy
