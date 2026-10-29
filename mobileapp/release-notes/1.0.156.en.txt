@@ -1,0 +1,4 @@
+Diff stability
+• Open large changes without rendering the entire patch at once.
+• Read long lines safely and keep Diff responsive while scrolling.
+• Retry a failed read without closing the conversation.

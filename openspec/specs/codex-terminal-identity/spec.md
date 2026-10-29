@@ -24,6 +24,12 @@ The system SHALL use capability admission rather than a version threshold. Manag
 - **WHEN** the user has a Codex alias/function or a launch lacks bridge capabilities
 - **THEN** the custom launch remains unchanged or executes the original Codex command without adding remote flags
 
+#### Scenario: Installed Codex introduces another management command
+- **WHEN** the installed CLI advertises a native management command or alias unknown when the adapter was built
+- **THEN** it runs with its original arguments without adding a frontend connection or starting a daemon
+- **AND** unrecognized help layouts retain native behavior
+
+
 ### Requirement: Executing thread identity governs agent tools
 The system SHALL use the executing Codex thread and canonical home instead of a shared backend's inherited pane. A pane or HQ role SHALL require a matching current binding. Invalid, ambiguous, subagent or unbound identities SHALL NOT borrow another pane or HQ authority. Reports MAY remain thread-only; replies SHALL target the saved exact conversation, or remain pull-readable when the original route is unavailable. Native reply attempts SHALL be claimed before mutation and SHALL NOT replay after uncertain acceptance. Independent legacy replies SHALL require matching original process birth and foreground binding. HQ event consumption and echo suppression SHALL use the same caller policy.
 

@@ -207,7 +207,7 @@ Trace indexes public prompts, assistant segments and recorded tool input, fallin
 
 Appearance defaults to System and offers explicit Light and Dark choices, stored per browser origin. The page resolves the preference before styles load and follows live system changes when System is selected. Navigation, conversation, trace, controls and overlays use shared adaptive tokens. Terminal capture colors remain those of the server terminal.
 
-The workspace brand uses a 26px mark, 22px name and a 72px header with deliberate gutters. Session search has its own full-width row below the sidebar heading. The bundled SVG favicon identifies browser tabs, and tab titles include the current conversation and mode or the workspace/access context.
+The workspace brand uses a 26px mark, 22px name and a 72px header with deliberate gutters. Session search has its own full-width row below the sidebar heading. The bundled SVG favicon identifies browser tabs, and tab titles include the current conversation and mode or the workspace/access context. Opening Trace or Diff names that session and tool in the tab; closing restores the underlying Chat, Terminal or workspace title.
 
 Trace details have a Close button and a toolbar toggle. Closing gives the list full width and restores focus to the selected row. Refresh/filter changes preserve the closed choice, and selecting a record reopens details. Stable keys preserve identified records across history additions; duplicate clockless records remain distinct within loaded order. Follow latest pauses on inspection or manual scrolling. Selection/focus holds the displayed detail revision until released. Trace preserves reading space; Chat and Terminal retain their composers.
 

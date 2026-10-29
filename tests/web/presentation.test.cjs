@@ -94,3 +94,32 @@ scenario('Legacy auto-open settings do not open panels when a session needs inpu
   assert.equal(await page.locator('.tile').count(),0);
   assert.equal(await page.locator('#wb-surface').count(),0);
 });
+
+for(const width of [390,1440]) scenario(`Browser title follows session tools and returns to Chat at ${width}`,{viewport:{width,height:900},locale:'en-US'},async(page,fixture)=>{
+  await page.goto(fixture.url+'/#code=TEST-1234');
+  if(width>=900){await page.locator('#tree').getByText('Investigate retries',{exact:true}).dblclick();await page.locator('.tile-modes [data-m="chat"]').click();await page.locator('.tile [data-action="focus"]').click();}
+  else await page.locator('#radar').getByText('Investigate retries',{exact:true}).click();
+  await page.locator('#mode [data-mode="chat"]').click();
+  assert.equal(await page.title(),'Investigate retries · Chat · gtmux');
+  await openTools(page,'trace');assert.equal(await page.title(),'Investigate retries · Trace · gtmux');await closeTools(page);
+  assert.equal(await page.title(),'Investigate retries · Chat · gtmux');
+  await openTools(page,'diff');assert.equal(await page.title(),'Investigate retries · Diff · gtmux');await closeTools(page);
+  assert.equal(await page.title(),'Investigate retries · Chat · gtmux');
+  assert.equal(fixture.state.sends.length,0);
+});
+
+scenario('Browser tool title returns to the workspace or Terminal without changing presentation',{viewport:{width:1440,height:900},locale:'en-US'},async(page,fixture)=>{
+  await page.goto(fixture.url+'/#code=TEST-1234');
+  await page.locator('#tree').getByText('Investigate retries',{exact:true}).dblclick();
+  assert.equal(await page.title(),'Agent workspace · gtmux');
+  for(const tool of ['trace','diff']){
+    await openTools(page,tool,true);assert.equal(await page.title(),'Investigate retries · '+(tool==='trace'?'Trace':'Diff')+' · gtmux');await closeTools(page);
+    assert.equal(await page.title(),'Agent workspace · gtmux');
+  }
+  await page.locator('.tile [data-action="focus"]').click();
+  await page.locator('#mode [data-mode="term"]').click();
+  assert.equal(await page.title(),'Investigate retries · Terminal · gtmux');
+  await openTools(page,'trace');await closeTools(page);
+  assert.equal(await page.title(),'Investigate retries · Terminal · gtmux');
+  assert.equal(fixture.state.sends.length,0);
+});

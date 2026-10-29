@@ -31,3 +31,34 @@ func TestLocalBridgePreservesWorkingDirectoryAndExplicitOverride(t *testing.T) {
 		}
 	}
 }
+
+func TestInstalledSubcommandsRemainNativeIncludingFutureCommands(t *testing.T) {
+	help := `Usage: codex [OPTIONS]
+Commands:
+  exec       Run non-interactively
+  resume     Resume a session
+  fork       Fork a session
+  plugin     Manage plugins
+  update     Update Codex
+  agents     Browse sessions
+  future-cmd A command unknown when the adapter shipped
+             [aliases: next-step, someday]
+
+Options:
+  --remote <ADDRESS>
+  --no-daemon
+`
+	for _, command := range []string{"exec", "plugin", "update", "agents", "future-cmd", "next-step", "someday"} {
+		if HelpAdmits([]string{"-C", "/workspace", command}, help) {
+			t.Fatal("native command became an interactive bridge", command)
+		}
+	}
+	for _, args := range [][]string{nil, {"resume", "root"}, {"fork", "--last"}, {"-C", "/workspace", "a normal prompt"}, {"--", "plugin"}} {
+		if !HelpAdmits(args, help) {
+			t.Fatal("interactive launch rejected", args)
+		}
+	}
+	if HelpAdmits(nil, "unrecognized future help layout") {
+		t.Fatal("unknown capabilities were inferred")
+	}
+}

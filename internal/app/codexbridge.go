@@ -77,7 +77,7 @@ func cmdCodex(args []string) int {
 		args = args[1:]
 	}
 	if term.IsTerminal(0) && term.IsTerminal(1) && codexbridge.Eligible(args) && os.Getenv("CODEX_EXEC_SERVER_URL") == "" {
-		if pane := terminalPane(); pane != "" && supportsCodexBridge(bin) && ensureCodexDaemon(bin) {
+		if pane := terminalPane(); pane != "" && supportsCodexBridge(bin, args) && ensureCodexDaemon(bin) {
 			if code := codexbridge.Run(bin, args, pane); code >= 0 {
 				return code
 			}
@@ -93,7 +93,7 @@ func cmdCodex(args []string) int {
 	return 1
 }
 
-func supportsCodexBridge(bin string) bool {
+func supportsCodexBridge(bin string, args []string) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, bin, "--help")
@@ -117,7 +117,7 @@ func supportsCodexBridge(bin string) bool {
 		_ = cmd.Process.Kill()
 	}
 	waitErr := cmd.Wait()
-	return err == nil && waitErr == nil && len(out) <= 128<<10 && strings.Contains(string(out), "--remote") && strings.Contains(string(out), "--no-daemon")
+	return err == nil && waitErr == nil && len(out) <= 128<<10 && strings.Contains(string(out), "--remote") && strings.Contains(string(out), "--no-daemon") && codexbridge.HelpAdmits(args, string(out))
 }
 
 func existingCodexDaemon() bool {

@@ -37,3 +37,5 @@ HQ wake batches use the same guarded addressed route for managed Codex. Uncertai
 The launch preserves explicit `-C`/`--cd`, supplying the original terminal cwd only when absent. The root response workspace is stored separately from the supervising shell cwd, so resume and `/new` do not misroute hooks. A verified hook also checks the captured backend birth. Codex hooks carrying `agent_id` are subagent events: they cannot overwrite the parent profile or complete/wake its root turn.
 
 Browser Trace preserves selected text only while the same event exists. Replacing a session immediately replaces a removed event's detail, including on narrow screens; it cannot leave the prior session visible under the new list.
+
+Launch admission also reads the installed CLI help command table and aliases, preserving native management commands introduced after the adapter. An unrecognized help layout stays native.
