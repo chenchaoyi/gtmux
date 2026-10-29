@@ -57,3 +57,11 @@ export function hqInspectorFits(windowWidth: number, sidebarHidden = false): boo
  * is the point of the big screen).
  */
 export const READING_WIDTH = 760;
+
+/** Trace uses its measured tool canvas, including split windows and large text. */
+export function traceSplitFits(contentWidth: number, fontScale: number): boolean {
+  return contentWidth >= 820 && fontScale < 1.6;
+}
+export function useTraceSplit(contentWidth: number): boolean {
+  return traceSplitFits(contentWidth, useWindowDimensions().fontScale);
+}

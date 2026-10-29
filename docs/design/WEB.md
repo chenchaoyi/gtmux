@@ -147,7 +147,7 @@ A share URL may end at `/p<port>#code=...`, with no trailing slash. The HTML est
 
 ### Shared mode semantics (2026-10-10)
 
-Focus and workbench offer Chat / Terminal as presentation modes, matching the native App. Trace and Diff open from the separate session-tools entry; native App Trace remains a proposal.
+Focus and workbench offer Chat / Terminal as presentation modes, matching the native App. Trace and Diff open from the separate session-tools entry; the native App uses the same tools structure.
 Plain panes offer Terminal with Diff in session tools. Opening a plain pane
 neither exposes an empty Chat view nor overwrites the user's saved agent mode. The
 initial default remains Terminal. Visible status and its accessible name use the
@@ -201,7 +201,7 @@ The menu-bar footer opens an authenticated `http://127.0.0.1:8765` browser works
 
 Focused Chat and board tiles share message, avatar, copy and tool-summary rendering. Supervisor sessions use the HQ role mark; stitched histories use each turn's source agent. Both Chat and Terminal use the scope-gated composer. Drafts stay per pane across polling and mode changes; text is also saved locally within the server and credential scope. Revocation clears drafts and recall data.
 
-Trace indexes public prompts, assistant segments and recorded tool input, falling back to summaries for older records. It shows working directory and truncation when recorded, with search across all loaded records, type/history filters and a keyboard/touch overview. Pane and readable external-session routes keep their existing scope. Model request timing, tokens, private reasoning and tool output are not part of this contract. Wide views split list/details; compact panels drill into details and return to the same row. The list renders at most 200 records per page. See [trace behavior and native App proposal](transcript-trace.md).
+Trace indexes public prompts, assistant segments and recorded tool input, falling back to summaries for older records. It shows working directory and truncation when recorded, with search across all loaded records, type/history filters and a keyboard/touch overview. Pane and readable external-session routes keep their existing scope. Model request timing, tokens, private reasoning and tool output are not part of this contract. Wide views split list/details; compact panels drill into details and return to the same row. The list renders at most 200 records per page. See [browser and native trace behavior](transcript-trace.md).
 
 ## Browser appearance and identity
 

@@ -1,0 +1,309 @@
+import React from 'react';
+import renderer, { act } from 'react-test-renderer';
+import { FlatList, StyleSheet } from 'react-native';
+import Clipboard from '@react-native-clipboard/clipboard';
+import { TraceReader } from './TraceModal';
+import { TraceEvent } from './model';
+import { paletteFor } from '../ui/theme';
+import { toAgent } from '../api/types';
+import { GtmuxClient, TranscriptTurn } from '../api/client';
+import { MarkdownView } from '../ui/MarkdownView';
+import { ParticipantProfileModal } from '../ui/ParticipantProfileModal';
+import { nativeDocumentPreview } from '../documents/nativePreview';
+import * as layout from '../ui/layout';
+jest.mock('../ui/ParticipantProfileModal', () => ({
+  ParticipantProfileModal: jest.fn(() => null),
+}));
+jest.mock('../documents/nativePreview', () => ({
+  nativeDocumentPreview: { open: jest.fn().mockResolvedValue(undefined) },
+}));
+const agent = toAgent({
+  pane_id: '%900',
+  agent: 'Codex',
+  session_id: 'current',
+  home_id: 'home-a',
+  status: 'working',
+  source: 'tmux',
+  task: 'Trace QA',
+});
+const command = 'line one\n  line two';
+const turn: TranscriptTurn = {
+  session_id: 'recorded',
+  prompt: 'Inspect input',
+  response: 'Answer',
+  agent: 'Codex',
+  time: '2026-10-28T10:00:00Z',
+  segments: [
+    {
+      text: 'Answer',
+      steps: [
+        {
+          kind: 'tool',
+          title: 'exec',
+          input: command,
+          input_kind: 'command',
+          workdir: '/project',
+          details_truncated: true,
+        },
+      ],
+    },
+  ],
+};
+let tree: renderer.ReactTestRenderer,
+  scale = 1;
+const base = {
+  visible: true,
+  agent,
+  turns: [turn],
+  loading: false,
+  pal: paletteFor('light'),
+  lang: 'en' as const,
+  onClose: jest.fn(),
+};
+function press(id: string) {
+  const node = tree.root
+    .findAllByProps({ testID: id })
+    .find(n => typeof n.props.onPress === 'function');
+  expect(node).toBeDefined();
+  act(() => node!.props.onPress());
+}
+function data(): TraceEvent[] {
+  return tree.root.findByType(FlatList).props.data;
+}
+function source() {
+  return tree.root.findAllByProps({ testID: 'trace-source' })[0].props.children;
+}
+function width(value: number) {
+  const node = tree.root.findAll(
+    n =>
+      typeof n.props.onLayout === 'function' &&
+      Array.isArray(n.props.edges) &&
+      n.props.edges.includes('bottom'),
+  )[0];
+  act(() =>
+    node.props.onLayout({
+      nativeEvent: { layout: { width: value, height: 800 } },
+    }),
+  );
+}
+function mount(props: Partial<React.ComponentProps<typeof TraceReader>> = {}) {
+  act(() => {
+    tree = renderer.create(<TraceReader {...base} {...props} />);
+  });
+}
+beforeEach(() => {
+  jest.useFakeTimers();
+  jest.clearAllMocks();
+  scale = 1;
+  jest
+    .spyOn(layout, 'useTraceSplit')
+    .mockImplementation(value => layout.traceSplitFits(value, scale));
+});
+afterEach(() => {
+  act(() => tree?.unmount());
+  jest.clearAllTimers();
+  jest.useRealTimers();
+  jest.restoreAllMocks();
+});
+
+test('select, copy and close retain the mounted list while full tool input remains exact', () => {
+  mount();
+  const list = tree.root.findByType(FlatList);
+  const event = data().find(e => e.kind === 'tool')!;
+  press('trace-record-' + event.key);
+  expect(tree.root.findAllByProps({ testID: 'trace-search' })).toHaveLength(0);
+  expect(source()).toBe(command);
+  expect(
+    StyleSheet.flatten(
+      tree.root.findAllByProps({ testID: 'trace-detail' })[0].props.style,
+    ).position,
+  ).toBe('absolute');
+  press('trace-copy');
+  expect(Clipboard.setString).toHaveBeenLastCalledWith(command);
+  press('trace-detail-close');
+  expect(
+    tree.root.findAllByProps({ testID: 'trace-search' }).length,
+  ).toBeGreaterThan(0);
+  expect(tree.root.findAllByProps({ testID: 'trace-detail' })).toHaveLength(0);
+  expect(tree.root.findByType(FlatList)).toBe(list);
+});
+test('details freeze through streamed input and history prepend until an explicit refresh', () => {
+  mount();
+  press('trace-record-' + data().find(e => e.kind === 'tool')!.key);
+  const updated = {
+    ...turn,
+    segments: [
+      {
+        text: 'Answer',
+        steps: [{ ...turn.segments![0].steps![0], input: 'Updated input' }],
+      },
+    ],
+  };
+  act(() =>
+    tree.update(
+      <TraceReader
+        {...base}
+        turns={[{ ...turn, session_id: 'older', prompt: 'Earlier' }, updated]}
+      />,
+    ),
+  );
+  expect(source()).toBe(command);
+  press('trace-update-detail');
+  expect(source()).toBe('Updated input');
+  press('trace-profile');
+  expect(
+    (ParticipantProfileModal as jest.Mock).mock.calls.at(-1)[0].target.turn
+      .session_id,
+  ).toBe('recorded');
+});
+test('measured width enables two columns and closing detail restores full-width records', () => {
+  mount();
+  width(1024);
+  press('trace-record-' + data().find(e => e.kind === 'tool')!.key);
+  expect(
+    StyleSheet.flatten(
+      tree.root.findAllByProps({ testID: 'trace-list-pane' })[0].props.style,
+    ).width,
+  ).toBe(320);
+  expect(
+    StyleSheet.flatten(
+      tree.root.findAllByProps({ testID: 'trace-detail' })[0].props.style,
+    ).position,
+  ).not.toBe('absolute');
+  press('trace-detail-close');
+  expect(
+    StyleSheet.flatten(
+      tree.root.findAllByProps({ testID: 'trace-list-pane' })[0].props.style,
+    ).width,
+  ).toBeUndefined();
+  press('trace-record-' + data().find(e => e.kind === 'tool')!.key);
+  scale = 2;
+  width(1025);
+  expect(
+    StyleSheet.flatten(
+      tree.root.findAllByProps({ testID: 'trace-detail' })[0].props.style,
+    ).position,
+  ).toBe('absolute');
+});
+test('search covers all loaded records while the native list keeps a bounded initial render', () => {
+  const turns = Array.from({ length: 2501 }, (_, i) => ({
+    ...turn,
+    prompt: 'Request ' + i,
+    response: 'Result ' + i,
+    segments: [{ text: 'Result ' + i }],
+  }));
+  mount({ turns });
+  expect(data()).toHaveLength(5002);
+  const rows = tree.root.findAll(
+    n =>
+      typeof n.props.testID === 'string' &&
+      n.props.testID.startsWith('trace-record-') &&
+      typeof n.props.onPress === 'function',
+  );
+  expect(rows.length).toBeLessThan(200);
+  const search = tree.root
+    .findAllByProps({ testID: 'trace-search' })
+    .find(n => typeof n.props.onChangeText === 'function')!;
+  act(() => search.props.onChangeText('Result 2500'));
+  expect(data()).toHaveLength(1);
+  expect(data()[0].body).toBe('Result 2500');
+});
+test('file opening uses the selected historical session and current verified home', async () => {
+  const client = {
+    documentRequest: jest.fn().mockReturnValue({ reference: '/tmp/report.md' }),
+  } as unknown as GtmuxClient;
+  mount({ client, turns: [{ ...turn, prompt: '[Report](/tmp/report.md)' }] });
+  press('trace-record-' + data()[0].key);
+  await act(async () => {
+    await tree.root.findByType(MarkdownView).props.openFile('/tmp/report.md');
+  });
+  expect(client.documentRequest).toHaveBeenCalledWith(
+    '/tmp/report.md',
+    'recorded',
+    'home-a',
+    'en',
+  );
+  expect(nativeDocumentPreview.open).toHaveBeenCalledTimes(1);
+});
+test('a failed read remains distinguishable from an empty conversation and offers retry', () => {
+  const retry = jest.fn();
+  mount({ turns: [], failed: true, onRetry: retry });
+  expect(JSON.stringify(tree.toJSON())).toContain(
+    'Could not load trace records.',
+  );
+  const button = tree.root.findAll(n => n.props.onPress === retry)[0];
+  act(() => button.props.onPress());
+  expect(retry).toHaveBeenCalledTimes(1);
+});
+
+test('changing home or losing the selected record immediately retires its profile', () => {
+  mount();
+  press('trace-record-' + data()[0].key);
+  press('trace-profile');
+  expect(tree.root.findAllByType(ParticipantProfileModal)).toHaveLength(1);
+  act(() =>
+    tree.update(
+      <TraceReader {...base} agent={{ ...agent, home_id: 'home-b' }} />,
+    ),
+  );
+  expect(tree.root.findAllByType(ParticipantProfileModal)).toHaveLength(0);
+  expect(tree.root.findAllByProps({ testID: 'trace-detail' })).toHaveLength(0);
+  press('trace-record-' + data()[0].key);
+  press('trace-profile');
+  act(() => tree.update(<TraceReader {...base} turns={[]} />));
+  expect(tree.root.findAllByType(ParticipantProfileModal)).toHaveLength(0);
+});
+
+test('earlier-session loading is an explicit parent action and disables repeat taps', () => {
+  const load = jest.fn();
+  mount({ earlierAvailable: true, onLoadEarlier: load });
+  press('trace-load-earlier');
+  expect(load).toHaveBeenCalledTimes(1);
+  act(() =>
+    tree.update(
+      <TraceReader
+        {...base}
+        earlierAvailable
+        loadingEarlier
+        onLoadEarlier={load}
+      />,
+    ),
+  );
+  expect(
+    tree.root.findAllByProps({ testID: 'trace-load-earlier' })[0].props
+      .disabled,
+  ).toBe(true);
+});
+
+test('accessibility escape returns from details before closing the trace', () => {
+  const close = jest.fn();
+  mount({ onClose: close });
+  press('trace-record-' + data()[0].key);
+  const root = () =>
+    tree.root.findAll(
+      n =>
+        typeof n.props.onAccessibilityEscape === 'function' &&
+        Array.isArray(n.props.edges),
+    )[0];
+  act(() => root().props.onAccessibilityEscape());
+  expect(tree.root.findAllByProps({ testID: 'trace-detail' })).toHaveLength(0);
+  expect(close).not.toHaveBeenCalled();
+  act(() => root().props.onAccessibilityEscape());
+  expect(close).toHaveBeenCalledTimes(1);
+});
+
+test('legacy title-only calls copy their recorded title instead of clearing the clipboard', () => {
+  mount({
+    turns: [
+      {
+        session_id: 'legacy',
+        prompt: '',
+        response: '',
+        segments: [{ steps: [{ kind: 'tool', title: 'Wait' }] }],
+      },
+    ],
+  });
+  press('trace-record-' + data()[0].key);
+  press('trace-copy');
+  expect(Clipboard.setString).toHaveBeenLastCalledWith('Wait');
+});

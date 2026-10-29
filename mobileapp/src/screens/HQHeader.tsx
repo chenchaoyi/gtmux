@@ -71,6 +71,7 @@ export interface HQHeaderProps {
   onToggle: () => void;
   /** The phone's back button; the iPad's main pane has none (the sidebar is the way back). */
   onBack?: () => void;
+  tools?: React.ReactNode;
   onOpenBoard: () => void;
   pal: {fg: string; fg2: string; fg3: string; divider: string; surface: string};
   zh: boolean;
@@ -206,7 +207,7 @@ function GridRow({
 
 export function HQHeader({
   model, conn, demo, boardValue, knowledgeValue, usageValue, pending,
-  open, onToggle, onBack, onOpenBoard, onOpenKnowledge, onOpenActs, onOpenUsage, pal, zh,
+  open, onToggle, onBack, tools, onOpenBoard, onOpenKnowledge, onOpenActs, onOpenUsage, pal, zh,
 }: HQHeaderProps) {
   const dot = conn === 'live' ? StatusColor.idle : conn === 'connecting' ? ERRORED_COLOR : StatusColor.waiting;
   const keyW = keyWidth(zh);
@@ -228,6 +229,7 @@ export function HQHeader({
           )}
           <View style={[styles.dot, {backgroundColor: dot}]} />
         </View>
+        {tools}
       </View>
 
       {/* ONE card: the verdict is its head, and what the verdict opens is its body. A

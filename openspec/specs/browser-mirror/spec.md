@@ -126,7 +126,7 @@ tmux pane.
 
 ### Requirement: Chat (对话) mode mirrors the transcript
 
-The pane view SHALL offer a 对话/轨迹/终端 (chat/trace/terminal) switch; the chat mode SHALL
+The pane view SHALL offer Chat / Terminal presentation modes and a separate Trace session tool; the chat mode SHALL
 render the pane's parsed transcript (see `chat-transcript`) by polling
 `GET /api/transcript` — a user-prompt bubble followed by the reply's `segments` as
 separate speech bubbles with the interleaved tool steps as collapsible groups,

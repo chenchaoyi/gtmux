@@ -1,0 +1,315 @@
+[
+  {
+    "name": "codex recorded inputs",
+    "context": {
+      "home_id": "fixture-home",
+      "session_id": "current",
+      "agent": "codex"
+    },
+    "turns": [
+      {
+        "session_id": "older",
+        "agent": "codex",
+        "prompt": "Review 中文",
+        "time": "2026-10-28T10:00:00Z",
+        "from": {
+          "kind": "hq",
+          "label": "HQ"
+        },
+        "segments": [
+          {
+            "text": "Reading",
+            "steps": [
+              {
+                "title": "exec",
+                "detail": "Inspect source",
+                "input": "line one\n  line two",
+                "workdir": "/fixture/project",
+                "details_truncated": true
+              }
+            ]
+          },
+          {
+            "text": "Answer"
+          }
+        ]
+      },
+      {
+        "session_id": "current",
+        "agent": "codex",
+        "prompt": "Next",
+        "response": "Continuing",
+        "session_break": {
+          "reason": "resume"
+        }
+      }
+    ],
+    "kinds": ["user", "assistant", "tool", "assistant", "user", "assistant"],
+    "bodies": [
+      "Review 中文",
+      "Reading",
+      "line one\n  line two",
+      "Answer",
+      "Next",
+      "Continuing"
+    ],
+    "sessions": ["older", "current"]
+  },
+  {
+    "name": "claude recorded inputs",
+    "context": {
+      "home_id": "fixture-home",
+      "session_id": "current",
+      "agent": "claude"
+    },
+    "turns": [
+      {
+        "session_id": "older",
+        "agent": "claude",
+        "prompt": "Review 中文",
+        "time": "2026-10-28T10:00:00Z",
+        "from": {
+          "kind": "hq",
+          "label": "HQ"
+        },
+        "segments": [
+          {
+            "text": "Reading",
+            "steps": [
+              {
+                "title": "exec",
+                "detail": "Inspect source",
+                "input": "line one\n  line two",
+                "workdir": "/fixture/project",
+                "details_truncated": true
+              }
+            ]
+          },
+          {
+            "text": "Answer"
+          }
+        ]
+      },
+      {
+        "session_id": "current",
+        "agent": "claude",
+        "prompt": "Next",
+        "response": "Continuing",
+        "session_break": {
+          "reason": "resume"
+        }
+      }
+    ],
+    "kinds": ["user", "assistant", "tool", "assistant", "user", "assistant"],
+    "bodies": [
+      "Review 中文",
+      "Reading",
+      "line one\n  line two",
+      "Answer",
+      "Next",
+      "Continuing"
+    ],
+    "sessions": ["older", "current"]
+  },
+  {
+    "name": "kimi recorded inputs",
+    "context": {
+      "home_id": "fixture-home",
+      "session_id": "current",
+      "agent": "kimi"
+    },
+    "turns": [
+      {
+        "session_id": "older",
+        "agent": "kimi",
+        "prompt": "Review 中文",
+        "time": "2026-10-28T10:00:00Z",
+        "from": {
+          "kind": "hq",
+          "label": "HQ"
+        },
+        "segments": [
+          {
+            "text": "Reading",
+            "steps": [
+              {
+                "title": "exec",
+                "detail": "Inspect source",
+                "input": "line one\n  line two",
+                "workdir": "/fixture/project",
+                "details_truncated": true
+              }
+            ]
+          },
+          {
+            "text": "Answer"
+          }
+        ]
+      },
+      {
+        "session_id": "current",
+        "agent": "kimi",
+        "prompt": "Next",
+        "response": "Continuing",
+        "session_break": {
+          "reason": "resume"
+        }
+      }
+    ],
+    "kinds": ["user", "assistant", "tool", "assistant", "user", "assistant"],
+    "bodies": [
+      "Review 中文",
+      "Reading",
+      "line one\n  line two",
+      "Answer",
+      "Next",
+      "Continuing"
+    ],
+    "sessions": ["older", "current"]
+  },
+  {
+    "name": "opencode recorded inputs",
+    "context": {
+      "home_id": "fixture-home",
+      "session_id": "current",
+      "agent": "opencode"
+    },
+    "turns": [
+      {
+        "session_id": "older",
+        "agent": "opencode",
+        "prompt": "Review 中文",
+        "time": "2026-10-28T10:00:00Z",
+        "from": {
+          "kind": "hq",
+          "label": "HQ"
+        },
+        "segments": [
+          {
+            "text": "Reading",
+            "steps": [
+              {
+                "title": "exec",
+                "detail": "Inspect source",
+                "input": "line one\n  line two",
+                "workdir": "/fixture/project",
+                "details_truncated": true
+              }
+            ]
+          },
+          {
+            "text": "Answer"
+          }
+        ]
+      },
+      {
+        "session_id": "current",
+        "agent": "opencode",
+        "prompt": "Next",
+        "response": "Continuing",
+        "session_break": {
+          "reason": "resume"
+        }
+      }
+    ],
+    "kinds": ["user", "assistant", "tool", "assistant", "user", "assistant"],
+    "bodies": [
+      "Review 中文",
+      "Reading",
+      "line one\n  line two",
+      "Answer",
+      "Next",
+      "Continuing"
+    ],
+    "sessions": ["older", "current"]
+  },
+  {
+    "name": "dsh recorded inputs",
+    "context": {
+      "home_id": "fixture-home",
+      "session_id": "current",
+      "agent": "dsh"
+    },
+    "turns": [
+      {
+        "session_id": "older",
+        "agent": "dsh",
+        "prompt": "Review 中文",
+        "time": "2026-10-28T10:00:00Z",
+        "from": {
+          "kind": "hq",
+          "label": "HQ"
+        },
+        "segments": [
+          {
+            "text": "Reading",
+            "steps": [
+              {
+                "title": "exec",
+                "detail": "Inspect source",
+                "input": "line one\n  line two",
+                "workdir": "/fixture/project",
+                "details_truncated": true
+              }
+            ]
+          },
+          {
+            "text": "Answer"
+          }
+        ]
+      },
+      {
+        "session_id": "current",
+        "agent": "dsh",
+        "prompt": "Next",
+        "response": "Continuing",
+        "session_break": {
+          "reason": "resume"
+        }
+      }
+    ],
+    "kinds": ["user", "assistant", "tool", "assistant", "user", "assistant"],
+    "bodies": [
+      "Review 中文",
+      "Reading",
+      "line one\n  line two",
+      "Answer",
+      "Next",
+      "Continuing"
+    ],
+    "sessions": ["older", "current"]
+  },
+  {
+    "name": "summary-only and missing clock",
+    "context": {
+      "pane_id": "%fixture"
+    },
+    "turns": [
+      null,
+      {
+        "prompt": {},
+        "segments": [
+          null,
+          {
+            "steps": [
+              null,
+              {
+                "title": "Wait",
+                "detail": "Recorded summary"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "prompt": "same"
+      },
+      {
+        "prompt": "same"
+      }
+    ],
+    "kinds": ["tool", "user", "user"],
+    "bodies": ["Recorded summary", "same", "same"],
+    "sessions": ["%fixture"]
+  }
+]

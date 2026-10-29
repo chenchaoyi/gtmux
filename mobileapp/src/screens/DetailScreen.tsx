@@ -27,7 +27,7 @@ import {Edge, SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-cont
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Agent, canReadConversation, nativeReadOnlyNotice, paneLabel, sameAgent, PaneRow, paneRowToAgent, primary, secondary, TermTheme} from '../api/types';
 import {Debug} from '../debug';
-import {SendPayload, TranscriptTurn} from '../api/client';
+import {isAuthError, SendPayload, TranscriptTurn} from '../api/client';
 import {useAgents} from '../state/AgentsContext';
 import {createReadTask, startReadPolling} from '../state/readTask';
 import {beginChatEcho, chatEchoRecorded, type PendingChatEcho} from './pendingChatEcho';
@@ -56,6 +56,8 @@ import {NativeTerm, TerminalLayout, TERM_BG} from '../ui/NativeTerm';
 import {hasCodexCutRow, splitCodexPinned} from '../ui/codexPinned';
 import {PinnedPrompt} from '../ui/PinnedPrompt';
 import {DiffModal} from '../ui/DiffModal';
+import {SessionToolsMenu} from '../ui/SessionToolsMenu';
+import {TraceModal} from '../trace/TraceModal';
 import {agentLabel} from './PaneBrowserScreen';
 import {BRAND, StatusColor} from '../ui/theme';
 import {TestIds} from '../constants/testIds';
@@ -79,6 +81,7 @@ const CODEX_PIN_REFRESH_MS = 4000;
 const FONT_SIZES = [11, 13, 15];
 // What the chat view's live card reads while chat has never been opened: nothing.
 const NO_LINES: AnsiLine[] = [];
+const EMPTY_TURNS: TranscriptTurn[] = [];
 /** Two small poll results with the same content, so a poll can keep the old array. */
 function sameJSON(a: unknown, b: unknown): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
@@ -323,6 +326,7 @@ function PaneDetailView({
   const pendingEcho = useRef<PendingChatEcho | null>(null);
   const echoAttempts = useRef(new Map<string, PendingChatEcho>());
   const [diffOpen, setDiffOpen] = useState(false);
+  const [traceOpen, setTraceOpen] = useState(false);
   // When an approval choice was just tapped (epoch ms). For a short settle window
   // after, the options poll ignores what it parses: the pane is mid-transition, so a
   // capture catches transient/redrawing frames (the just-answered menu lingering, or
@@ -333,7 +337,9 @@ function PaneDetailView({
   // Chat transcript lives HERE (DetailScreen stays mounted across mode switches) so
   // flipping 终端→对话 shows the cached history instantly instead of re-fetching +
   // spinning every time. Polled on status/prompt change; turns are never cleared.
-  const [turns, setTurns] = useState<TranscriptTurn[]>([]);
+  const chatIdentity = useMemo(() => ({client, pane: agent.pane_id, session: live.session_id, home: live.home_id, agent: live.agent}), [client, agent.pane_id, live.session_id, live.home_id, live.agent]);
+  const [chatRecord, setChatRecord] = useState<{identity: typeof chatIdentity; turns: TranscriptTurn[]; dropped: number; reset?: SessionReset; loaded: boolean; failed?: boolean}>({identity: chatIdentity, turns: [], dropped: 0, loaded: false});
+  const turns = chatRecord.identity === chatIdentity ? chatRecord.turns : EMPTY_TURNS;
   const latestTurns = useRef(turns); latestTurns.current = turns;
   useEffect(() => {
     if (pendingEcho.current && chatEchoRecorded(pendingEcho.current, turns)) {
@@ -341,13 +347,13 @@ function PaneDetailView({
     }
   }, [turns, pendingPrompt]);
   useEffect(() => {pendingEcho.current = null; echoAttempts.current.clear(); setPendingPrompt(''); setPendingDelivered(false); setBusyHint(null);}, [client, agent.pane_id]);
-  const [chatLoaded, setChatLoaded] = useState(false);
+  const chatLoaded = chatRecord.identity === chatIdentity && chatRecord.loaded;
   // How many OLDER turns the server left out to bound the payload — shown by ChatView so
   // a truncated history never reads as the whole conversation (transcript-render-bounds).
-  const [droppedTurns, setDroppedTurns] = useState(0);
+  const droppedTurns = chatRecord.identity === chatIdentity ? chatRecord.dropped : 0;
   // Set when this session began with a `/clear`/`/new` — the chat then holds the whole
   // conversation and still isn't the whole story, so the view says where it restarts.
-  const [sessionReset, setSessionReset] = useState<SessionReset | undefined>();
+  const sessionReset = chatRecord.identity === chatIdentity ? chatRecord.reset : undefined;
   // A send the server declined to submit. Held (not dropped) so the text survives and
   // can be retried — see SendFailedBar.
   const [failedSend, setFailedSend] = useState<SendPayload | null>(null);
@@ -629,25 +635,36 @@ function PaneDetailView({
   // never cleared, so a background refetch swaps in fresh history without flashing the
   // spinner — and a mode switch is instant.
   const etagRef = useRef<string | undefined>(undefined);
+  const etagIdentity = useRef(chatIdentity);
+  if (etagIdentity.current !== chatIdentity) {etagIdentity.current = chatIdentity; etagRef.current = undefined;}
+  useEffect(() => {setChatRecord({identity: chatIdentity, turns: [], dropped: 0, loaded: false}); setTraceOpen(false); setDiffOpen(false);}, [chatIdentity]);
   // The latest loader and when it last ran, for the Codex refresh below.
   const loadTurnsRef = useRef<() => void>(() => {});
   const turnsAtRef = useRef(0);
+  const pollTranscript = mode === 'chat' || traceOpen;
   useEffect(() => {
     const task = createReadTask(
       signal => {
         turnsAtRef.current = Date.now();
         return client.transcript(agent.pane_id, etagRef.current, 0, signal);
       }, ({turns: ts, dropped, reset, etag, unchanged}) => {
+        if (etagIdentity.current !== chatIdentity) return;
         etagRef.current = etag;
-        if (!unchanged) {setTurns(ts); setDroppedTurns(dropped); setSessionReset(reset);}
-        setChatLoaded(true);
-      }, {onError: () => setChatLoaded(true)},
+        setChatRecord(previous => unchanged && previous.identity === chatIdentity ? {...previous, loaded: true, failed: false} : {identity: chatIdentity, turns: ts, dropped, reset, loaded: true});
+      }, {onError: error => {
+        if (etagIdentity.current !== chatIdentity) return;
+        if (isAuthError(error)) {
+          etagRef.current = undefined;
+          setTraceOpen(false); setDiffOpen(false);
+          setChatRecord({identity: chatIdentity, turns: [], dropped: 0, loaded: true, failed: true});
+        } else setChatRecord(previous => previous.identity === chatIdentity ? {...previous, loaded: true, failed: true} : {identity: chatIdentity, turns: [], dropped: 0, loaded: true, failed: true});
+      }},
     );
     loadTurnsRef.current = task.run;
-    if (mode === 'chat') return startReadPolling(task, live.status === 'working' ? CHAT_ACTIVE_POLL_MS : CHAT_IDLE_POLL_MS);
+    if (pollTranscript) return startReadPolling(task, live.status === 'working' ? CHAT_ACTIVE_POLL_MS : CHAT_IDLE_POLL_MS);
     task.run();
     return task.dispose;
-  }, [client, agent.pane_id, live.status, pendingPrompt, mode]);
+  }, [client, agent.pane_id, chatIdentity, live.status, pendingPrompt, pollTranscript]);
 
   // Only the chat view reads these, for its live card, and it is mounted only once chat
   // was opened. Parsing the whole capture (screen plus 2000 lines of scrollback) on every
@@ -1014,14 +1031,9 @@ function PaneDetailView({
             </View>
           )}
           <View style={styles.ctlRight}>
-            {/* Diff is offered only when this pane's cwd IS a repo. `GET /api/diff`
-                returns "" outside one, so an ungated button opened an empty sheet — a
-                dead control, and most visibly on a plain shell pane, which is exactly
-                where someone does git by hand and where the button is most worth having
-                when it works. `branch` carries the answer on every tier. */}
-            {!!live?.branch && (
-              <Ctl pal={pal} label={lang === 'zh' ? '代码改动' : 'Diff'} onPress={() => setDiffOpen(true)} />
-            )}
+            <SessionToolsMenu pal={pal} lang={lang}
+              onTrace={!isPlainPane && !isNative ? () => {Keyboard.dismiss(); setTraceOpen(true);} : undefined}
+              onDiff={live.branch ? () => {Keyboard.dismiss(); setDiffOpen(true);} : undefined} />
             {/* font size + full-screen both apply to either mode (consistent behavior). */}
             <SessionDisplayMenu pal={pal} lang={lang} mode={mode} layout={terminalLayout} onLayoutChange={setTerminalLayout}
               selectionActive={mode === 'terminal' && terminalSelection} smaller={smaller} bigger={bigger} fontSize={fontSize}
@@ -1125,6 +1137,7 @@ function PaneDetailView({
         }}
       />
 
+      <TraceModal visible={traceOpen && !isPlainPane && !isNative} agent={live} client={isGuest ? undefined : client} turns={turns} loading={!chatLoaded} failed={chatRecord.identity === chatIdentity && chatRecord.failed} onRetry={() => loadTurnsRef.current()} dropped={droppedTurns} pal={pal} lang={lang} fontSize={fontSize} onClose={() => setTraceOpen(false)} />
       <DiffModal
         visible={diffOpen}
         paneId={agent.pane_id}

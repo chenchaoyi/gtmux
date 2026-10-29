@@ -710,6 +710,11 @@ describe('desktopTranscript', () => {
 });
 
 describe('periodic reads retain failure semantics and accept cancellation', () => {
+  it.each([401, 403])('preserves pane transcript denial %s for cache retirement', async status => {
+    fetchMock.mockResolvedValueOnce(okJson(null, false, status));
+    await expect(client().transcript('%fixture')).rejects.toMatchObject({status, isAuth: true});
+  });
+
   it.each(['digest', 'hqEvents', 'transcript'] as const)('%s does not turn 503 into an empty snapshot', async name => {
     fetchMock.mockResolvedValueOnce(okJson(null, false, 503));
     const c = client();

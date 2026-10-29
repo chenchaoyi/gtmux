@@ -26,7 +26,10 @@ export function useDesktopTranscript(client: GtmuxClient, id: string, enabled: b
           ? {...previous, loading: false, error: undefined}
           : {client, id, homeID, turns: result.turns, dropped: result.dropped, etag, loading: false});
       } catch (error) {
-        if (alive) setState(previous => ({...previous, loading: false, error: error instanceof DesktopTranscriptError ? error.status : 0}));
+        if (alive) setState(previous => {
+          const status = error instanceof DesktopTranscriptError ? error.status : 0;
+          return status === 401 || status === 403 ? {client, id, homeID, turns: [], dropped: 0, loading: false, error: status} : {...previous, loading: false, error: status};
+        });
       } finally {
         clearTimeout(timeout);
         if (alive) timer = setTimeout(pull, 2000);

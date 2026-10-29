@@ -15,8 +15,8 @@ const paths: Record<ActivityOperation, string> = {
   agent: 'M14 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z M4 21v-3a6 6 0 0 1 10-4 M16 17h6 M19 14l3 3-3 3',
   tool: 'M14 5a6 6 0 0 0-7 7l-5 5 5 5 5-5a6 6 0 0 0 7-7l-4 3-4-4 3-4Z',
 };
-export function ActivityIcon({operation, size = 18}: {operation: ActivityOperation; size?: number}) {
+export function ActivityIcon({operation, size = 18, color = '#AAAAB4'}: {operation: ActivityOperation; size?: number; color?: string}) {
   return <Svg testID={`activity-icon-${operation}`} accessible={false} width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path d={paths[operation]} stroke="#AAAAB4" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
+    <Path d={paths[operation]} stroke={color} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
   </Svg>;
 }
