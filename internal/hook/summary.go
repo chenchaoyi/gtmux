@@ -82,7 +82,7 @@ func lastReply(pane, agentSession, agentKey string) string {
 	key, sid := agentKey, agentSession
 	if sid == "" && pane != "" {
 		if loc := tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}"); loc != "" {
-			if rec, ok := resume.Load(loc); ok {
+			if rec, ok := resume.LoadLive(loc); ok {
 				key, sid = rec.Agent, rec.SessionID
 			}
 		}

@@ -216,3 +216,17 @@ scenario('External Trace keeps same-ID conversations in different homes separate
   assert.equal(await page.locator('#chat-input').isVisible(),false);
   assert.equal(fixture.state.sends.length,0);
 });
+
+for (const width of [390,1440]) scenario(`Trace replaces removed session detail even while old source is selected at ${width}`,{viewport:{width,height:900},locale:'en-US',hasTouch:width<700},async(page,fixture)=>{
+  agentFixture(fixture,'Codex',[record('Codex','old-root','Old root task')]);
+  const trace=await openTrace(page,fixture,width);
+  await trace.locator('.trace-event.tool').click();
+  await trace.locator('.trace-source').focus();
+  await page.evaluate(()=>{const source=document.querySelector('.session-tool .trace-source');const range=document.createRange();range.selectNodeContents(source);getSelection().removeAllRanges();getSelection().addRange(range);});
+  const next=record('Codex','new-root','New root task');next.segments[0].steps[0].input='New root exact command';
+  fixture.state.turns['%901']=[next];
+  await trace.locator('.trace-meta').filter({hasText:'new-root'}).waitFor();
+  assert.doesNotMatch(await trace.locator('.trace-inspector').innerText(),/old-root|retry-demo/);
+  assert.equal(await trace.locator('.trace-prose').innerText(),'Review result\n\nCancellation stops pending retries.');
+  assert.equal(fixture.state.sends.length,0);
+});

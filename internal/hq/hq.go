@@ -1056,7 +1056,7 @@ func CmdHQ(args []string) int {
 		if startsInOwnPane(pane) {
 			return startHQHere(pane, rawCmd, "")
 		}
-		_ = tmux.SendText(pane, agentenv.Wrap(rawCmd), true)
+		_ = tmux.SendText(pane, agentenv.Launch(rawCmd), true)
 		_ = panefocus.FocusPaneByID(pane)
 		noteAtPane(pane, i18n.Tr("gtmux: your HQ had quit, and it is restarted here",
 			"gtmux：你的 HQ 之前退出了，已在这里重新拉起"))
@@ -1081,7 +1081,7 @@ func CmdHQ(args []string) int {
 	rawCmd := hqLaunchOptions(resolveHQLaunchAgent(agentCmd))
 	// Auto-apply the network proxy so the agent starts correctly on whatever
 	// network the user is on (home VPN vs office intranet) — no manual toggling.
-	cmd := agentenv.Wrap(rawCmd)
+	cmd := agentenv.Launch(rawCmd)
 	pane := tmux.Display(name, "#{pane_id}")
 	if pane != "" {
 		nameHQWindow(pane, true)

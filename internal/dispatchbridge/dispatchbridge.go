@@ -74,7 +74,7 @@ func DispatchIO(pane string, agentCmd ...string) dispatch.IO {
 	var codexSession string
 	if isCodex {
 		loc := tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}")
-		if r, ok := resume.Load(loc); ok && r.Agent == "codex" {
+		if r, ok := resume.LoadLive(loc); ok && r.Agent == "codex" {
 			codexSession = r.SessionID
 		}
 		// An unbound Codex has no trustworthy pane-only receipt. The screen
@@ -103,6 +103,10 @@ func DispatchIO(pane string, agentCmd ...string) dispatch.IO {
 	knownDSH := len(agentCmd) > 0 && agentKey(agentCmd[0]) == "dsh"
 	if _, ok := agentclient.ForPane(pane); ok || knownDSH || agentclient.CandidatePane(pane) {
 		return agentclient.WrapIO(pane, dio, agentclient.ForPane)
+	}
+	loc := tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}")
+	if record, ok := resume.Load(loc); ok && record.Agent == "codex" && record.Frontend != "" {
+		dio.SubmitNative = codexNativeSubmit(pane)
 	}
 	return dio
 }
@@ -179,7 +183,8 @@ func WaitAgentReady(pane, agentCmd string, timeout time.Duration) bool {
 	deadline := time.Now().Add(timeout)
 	g := readyGate{agent: agentKey(agentCmd), sessionUp: driverReady(pane, agentKey(agentCmd))}
 	for {
-		if g.step(tmux.Display(pane, "#{pane_current_command}"),
+		cmd := readyCommand(pane, tmux.Display(pane, "#{pane_current_command}"), g.agent)
+		if g.step(cmd,
 			func() string { return tmux.CaptureFull(pane) }) && terminalTransportReady(pane, g.agent, agentclient.ForPane) {
 			return true
 		}
@@ -205,7 +210,7 @@ func WaitAgentReady(pane, agentCmd string, timeout time.Duration) bool {
 // the agent never launched at all, and a composer that IS ready-looking on this frame —
 // which means the gate died on the settle requirement, i.e. the screen kept repainting.
 func ReadyBlocker(pane, agentCmd string) (blocker, capture string) {
-	cmd := tmux.Display(pane, "#{pane_current_command}")
+	cmd := readyCommand(pane, tmux.Display(pane, "#{pane_current_command}"), agentKey(agentCmd))
 	if cmd == "" {
 		return "the pane is gone", ""
 	}
@@ -220,6 +225,17 @@ func ReadyBlocker(pane, agentCmd string) (blocker, capture string) {
 		return "the native terminal attachment or its input grant is not ready", capture
 	}
 	return readyBlockerOf(capture, agentKey(agentCmd)), capture
+}
+
+var codexReadyTarget = resume.CodexFrontendForPane
+
+func readyCommand(pane, command, wanted string) string {
+	if wanted == "codex" && (command == SelfCommand || ShellCommands[command]) {
+		if _, verified := codexReadyTarget(pane); verified {
+			return "codex"
+		}
+	}
+	return command
 }
 
 // readyBlockerOf is ReadyBlocker's pure half (the tmux-free part the tests drive), in

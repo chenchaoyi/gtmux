@@ -9,7 +9,6 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqinput"
-	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/hqworkspace"
 	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/resume"
@@ -18,11 +17,23 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
 
+var workspaceResolveHQ = workspaceHQTarget
+var workspaceDispatch = dispatchbridge.DispatchIO
+
+// Working clients can accept an explicit user instruction through the ordinary
+// guarded dispatcher. Permission menus and unknown states still hold delivery.
+func workspaceInputHold(status string) string {
+	if status == "idle" || status == "working" {
+		return ""
+	}
+	return "hq-waiting"
+}
+
 func workspaceConversation(p radar.Pane) (hqworkspace.Conversation, bool) {
 	if !strings.HasPrefix(p.PaneID, "%") || p.Loc == "" {
 		return hqworkspace.Conversation{}, false
 	}
-	r, ok := resume.Load(p.Loc)
+	r, ok := resume.LoadLive(p.Loc)
 	if !ok || r.SessionID == "" || r.Agent != agents.KeyForLabel(p.Agent) || r.Agent == "codex" && r.HomeID != "" && r.HomeID != transcript.CodexHomeID() {
 		return hqworkspace.Conversation{}, false
 	}
@@ -49,14 +60,11 @@ func workspaceHQTarget() (hqworkspace.Conversation, string) {
 		if !ok {
 			return c, "hq-identity-unavailable"
 		}
-		if dispatchbridge.ShellCommands[tmux.Display(p.PaneID, "#{pane_current_command}")] {
+		if dispatchbridge.ShellCommands[tmux.Display(p.PaneID, "#{pane_current_command}")] && radar.AgentDriverKey(p.PaneID) == "" {
 			return c, "hq-input-unavailable"
 		}
-		if p.Status != "idle" {
-			if p.Status == "working" {
-				return c, "hq-busy"
-			}
-			return c, "hq-waiting"
+		if why := workspaceInputHold(p.Status); why != "" {
+			return c, why
 		}
 		return c, ""
 	}
@@ -64,7 +72,7 @@ func workspaceHQTarget() (hqworkspace.Conversation, string) {
 }
 
 func workspaceIsHQCaller() bool {
-	return tmux.Bin != "" && hqpane.Find() != "" && hqpane.Find() == getenvWorkspacePane()
+	return currentCallerIsHQ()
 }
 
 func pumpWorkspace(s *hqworkspace.Store, now int64) (bool, error) {
@@ -82,10 +90,14 @@ func pumpWorkspace(s *hqworkspace.Store, now int64) (bool, error) {
 	if !pending {
 		return false, nil
 	}
-	return s.Pump(hqworkspace.DeliveryIO{Resolve: workspaceHQTarget, Send: workspaceDeliver}, now)
+	return s.Pump(hqworkspace.DeliveryIO{Resolve: workspaceResolveHQ, SendWithID: workspaceDeliverWithID}, now)
 }
 
 func workspaceDeliver(target hqworkspace.Conversation, payload string) hqworkspace.Delivery {
+	return workspaceDeliverWithID(target, payload, "")
+}
+
+func workspaceDeliverWithID(target hqworkspace.Conversation, payload, deliveryID string) hqworkspace.Delivery {
 	release, acquired, err := hqinput.Acquire()
 	if err != nil {
 		return hqworkspace.Delivery{State: "hq-input-lock-failed", Evidence: err.Error(), SafeHold: true}
@@ -95,7 +107,7 @@ func workspaceDeliver(target hqworkspace.Conversation, payload string) hqworkspa
 	}
 	defer release()
 	hold := func() string {
-		c, why := workspaceHQTarget()
+		c, why := workspaceResolveHQ()
 		if !c.Same(target) || c.Pane != target.Pane {
 			return "hq-session-changed"
 		}
@@ -105,9 +117,11 @@ func workspaceDeliver(target hqworkspace.Conversation, payload string) hqworkspa
 		return hqworkspace.Delivery{State: why, SafeHold: true}
 	}
 	cmd := target.Agent
-	io := dispatchbridge.DispatchIO(target.Pane, cmd)
+	io := workspaceDispatch(target.Pane, cmd)
 	io.Hold = hold
-	result := dispatch.Deliver(io, dispatchbridge.DeliverOpts(target.Pane, cmd, false, dispatch.LoadTuning()), payload)
+	opts := dispatchbridge.DeliverOpts(target.Pane, cmd, false, dispatch.LoadTuning())
+	opts.DeliveryID = deliveryID
+	result := dispatch.Deliver(io, opts, payload)
 	events.AuditSend(target.Pane, string(result.State), payload, time.Now().Unix())
 	safe := result.State == dispatch.StateRefusedDraft || result.State == dispatch.StateRefusedWaiting && !strings.HasPrefix(result.Evidence, dispatch.EvidenceHeldBeforeEnter) && !strings.HasPrefix(result.Evidence, dispatch.EvidenceHeldBeforeRetry)
 	return hqworkspace.Delivery{State: string(result.State), Evidence: result.Evidence, SafeHold: safe}

@@ -75,7 +75,7 @@ func startHQHere(pane, rawCmd, dir string) int {
 // briefing would never be delivered (measured on the probe: `bash`, with the agent
 // running inside it). With it, the shell IS the agent from that moment.
 func hereCommand(rawCmd, dir string) string {
-	cmd := "exec " + agentenv.Wrap(rawCmd)
+	cmd := "exec " + agentenv.Launch(rawCmd)
 	if dir != "" {
 		cmd = "cd " + shq(dir) + " && " + cmd
 	}

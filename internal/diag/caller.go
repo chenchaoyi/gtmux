@@ -56,6 +56,17 @@ func SetProcess(component, actor string) {
 	actorMu.Unlock()
 }
 
+// PushProcess scopes a single CLI invocation without holding As's request lock.
+// Nested actions can still use As; long-running components replace this context
+// with their own system identity before they begin serving work.
+func PushProcess(component, actor string) func() {
+	actorMu.Lock()
+	previousComponent, previousActor := processComp, processActor
+	processComp, processActor = component, actor
+	actorMu.Unlock()
+	return func() { actorMu.Lock(); processComp, processActor = previousComponent, previousActor; actorMu.Unlock() }
+}
+
 // As runs fn with Caller returning actor, so a verb serve performs for a device, whose
 // record is written deep inside the verb, names that device. Only the goroutine running
 // fn sees it: serve's ticks run beside its handlers, and one of them writing a record

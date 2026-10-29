@@ -10,6 +10,7 @@ After successful submitted-task verification binds a Codex thread to a live tmux
 incarnation, the system SHALL retire only an unchanged minimal startup observation:
 Codex, matching home/thread/cwd, PID-less idle, no command/terminal/launch-host/turn/outcome, and an
 explicit SessionStart or conservative legacy startup shape within the binding window.
+A verified live frontend connection MAY additionally retire an unchanged idle SessionStart from its exact shared backend PID/birth, matching home/thread/cwd and carrying no command/terminal/launch-host/turn/outcome. This exact connection proof does not require the legacy preparation window. Actual turn activity, a different backend or a newer native generation SHALL survive.
 An asynchronous explicit start MAY arrive after preparation but not confirmation;
 a legacy record SHALL predate preparation. Real native turns/processes SHALL NOT be
 retired merely because they share a thread ID, directory or title.
@@ -44,6 +45,11 @@ recovery receipts. Unknown old cases without exact proof SHALL keep existing gra
 #### Scenario: Old case lacks exact proof
 - **WHEN** an old provisional-looking record has no verified binding or matching receipt
 - **THEN** normal liveness/grace SHALL apply; saved history alone SHALL not authorize deletion
+
+#### Scenario: Shared backend remains alive after frontend exit
+- **WHEN** an exact frontend receipt retired only that backend's unchanged minimal startup observation
+- **THEN** closing the frontend does not resurrect the startup as a live external session
+- **AND** later independent native activity remains visible
 
 ### Requirement: Sense agent sessions running outside tmux
 

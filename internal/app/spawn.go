@@ -165,7 +165,7 @@ func spawnRun(args []string) int {
 	bindingToken := ""
 	explicitSID := ""
 	if matter != "" && paneFlag != "" {
-		if rec, ok := resume.Load(tmux.Display(paneFlag, "#{session_name}:#{window_index}.#{pane_index}")); ok && rec.Agent == agent {
+		if rec, ok := resume.LoadLive(tmux.Display(paneFlag, "#{session_name}:#{window_index}.#{pane_index}")); ok && rec.Agent == agent {
 			explicitSID = rec.SessionID
 		}
 	}
@@ -174,7 +174,7 @@ func spawnRun(args []string) int {
 		task.MatterBinding = bindingToken
 		if matter != "" && (task.Delivered || task.State == string(dispatch.StateQueued)) {
 			loc := tmux.Display(task.Pane, "#{session_name}:#{window_index}.#{pane_index}")
-			if rec, ok := resume.Load(loc); ok && rec.Agent == agent && (rec.UpdatedAt >= started || explicitSID != "" && rec.SessionID == explicitSID) {
+			if rec, ok := resume.LoadLive(loc); ok && rec.Agent == agent && (rec.UpdatedAt >= started || explicitSID != "" && rec.SessionID == explicitSID) {
 				task.MatterSessionID, task.MatterHomeID = rec.SessionID, rec.HomeID
 				if rec.Agent == "codex" && task.MatterHomeID == "" {
 					task.MatterHomeID = transcript.CodexHomeID()
@@ -508,7 +508,7 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOp
 	// cannot swallow their launch Enter. Existing panes retain the usual path.
 	directCommand := ""
 	if manifest, known := agents.For(agent); known && len(manifest.TerminalClients) > 0 && !oneshot {
-		directCommand = agentenv.Wrap(agentLaunchCommand(agent, model))
+		directCommand = agentenv.Launch(agentLaunchCommand(agent, model))
 	}
 	// Create a detached session (named from the branch/goal), optionally in runDir.
 	create := newSessionArgs(uniqueSessionName(name, sessionExists))
@@ -676,7 +676,7 @@ func firstWords(s string, n int) string {
 // launchAgent types the proxy-wrapped agent launch command into a pane's shell —
 // the proxy is applied BY CONSTRUCTION (fixes incident ①).
 func launchAgent(pane, agent, model string) {
-	_ = tmux.SendText(pane, agentenv.Wrap(agentLaunchCommand(agent, model)), true)
+	_ = tmux.SendText(pane, agentenv.Launch(agentLaunchCommand(agent, model)), true)
 }
 
 func agentLaunchCommand(agent, model string) string {

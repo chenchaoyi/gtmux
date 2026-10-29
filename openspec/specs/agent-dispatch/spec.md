@@ -48,7 +48,7 @@ exit non-zero.
 
 ### Requirement: Delivery via paste buffer, not literal send-keys
 
-The system SHALL deliver task text using a tmux paste buffer (`load-buffer` then
+For terminal delivery, the system SHALL deliver task text using a tmux paste buffer (`load-buffer` then
 `paste-buffer`), NOT `send-keys -l`. The paste SHALL be BRACKETED (`paste-buffer
 -p`), so that an agent TUI receives a multi-line payload as one insertion into its
 input box: sent raw, every newline reaches the TUI as a bare Return and submits the
@@ -84,6 +84,17 @@ the DRAFT before it.
   so newlines submit early and the draft no longer holds the full payload
 - **THEN** the draft fails the full-content check and Enter is not sent against the
   partial draft — the delivery is retried or reported, never submitted as-is
+
+A live kernel-verified Codex frontend MAY instead use addressed `thread/queue/add` after the same draft, waiting, lease and target-recheck guards. It SHALL verify home and backend incarnation, bind a stable message ID and require a matching queue receipt. The durable exclusive attempt claim SHALL precede mutation; uncertain attempts SHALL NOT fall back to paste/Enter or replay. Queue acceptance SHALL NOT be reported as turn execution. Existing authorized upload images SHALL retain image input semantics; other files remain text paths.
+
+#### Scenario: Shared Codex accepts input during a turn
+- **WHEN** its exact current home/thread accepts the guarded input with a matching queue receipt
+- **THEN** the result is queued rather than executed, and no terminal paste or Enter occurs
+- **AND** repeating a settled delivery ID does not create a second input
+
+#### Scenario: Native acceptance is uncertain
+- **WHEN** the connection fails after the input may have been written
+- **THEN** a durable uncertain attempt remains and no automatic replay or terminal fallback occurs
 
 ### Requirement: Layered verification — deterministic evidence before screen-reading
 
@@ -784,7 +795,6 @@ report the outcome (`reaped`, plus any `blocked_by` and any `failed`).
 - **THEN** the task ledger SHALL remain even if other steps succeeded
 
 #### Scenario: `--keep-branch` is not blocked by an unmerged branch
-
 
 - **WHEN** `gtmux reap --keep-branch` targets a dispatch whose worktree is clean but
   whose branch is not merged

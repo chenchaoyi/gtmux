@@ -57,7 +57,7 @@ func boundResume(loc, agent string) (resume.Record, bool) {
 			return resume.Record{}, false
 		}
 	}
-	rec, ok := resume.Load(loc)
+	rec, ok := resume.LoadLive(loc)
 	if !ok || rec.SessionID == "" || rec.Agent == "codex" && rec.HomeID != "" && rec.HomeID != transcript.CodexHomeID() {
 		return resume.Record{}, false
 	}
@@ -1241,7 +1241,7 @@ func gatherAgentsWithCodexScope(codexScope *transcript.CodexPathScope) ([]Pane, 
 				if codexCompletedTurnContradictsFrame(id, loc, f[9], codexScope.CodexLastTurnBoundary) ||
 					codexIdleComposerContradictsFrame(id, paneCapture(id)) {
 					status = "idle"
-					if rec, ok := resume.Load(loc); ok && rec.Agent == "codex" && hqpane.SameDir(rec.Cwd, f[9]) {
+					if rec, ok := resume.LoadLive(loc); ok && rec.Agent == "codex" && resume.CodexCwdMatches(id, rec, f[9]) {
 						if kind, _ := codexScope.CodexLastTurnBoundary(rec.SessionID); kind == "turn_aborted" {
 							_ = state.WriteMarker(state.TurnOutcomePath(id), "interrupted")
 						}

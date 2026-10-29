@@ -16,20 +16,26 @@ import (
 )
 
 type Request struct {
-	ID        string `json:"id"`
-	Kind      string `json:"kind"`
-	Pane      string `json:"pane"`
-	Session   string `json:"session"`
-	PanePID   string `json:"pane_pid"`
-	TaskID    string `json:"task_id,omitempty"`
-	Body      string `json:"body"`
-	For       string `json:"for"`
-	Blocking  bool   `json:"blocking"`
-	State     string `json:"state"`
-	CreatedAt int64  `json:"created_at"`
-	ClaimedAt int64  `json:"claimed_at,omitempty"`
-	Reply     string `json:"reply,omitempty"`
-	Delivered bool   `json:"delivered,omitempty"`
+	Agent        string `json:"agent,omitempty"`
+	HomeID       string `json:"home_id,omitempty"`
+	ThreadID     string `json:"thread_id,omitempty"`
+	ReplyAttempt string `json:"reply_attempt,omitempty"`
+	SourcePID    int    `json:"source_pid,omitempty"`
+	SourceStart  string `json:"source_start,omitempty"`
+	ID           string `json:"id"`
+	Kind         string `json:"kind"`
+	Pane         string `json:"pane"`
+	Session      string `json:"session"`
+	PanePID      string `json:"pane_pid"`
+	TaskID       string `json:"task_id,omitempty"`
+	Body         string `json:"body"`
+	For          string `json:"for"`
+	Blocking     bool   `json:"blocking"`
+	State        string `json:"state"`
+	CreatedAt    int64  `json:"created_at"`
+	ClaimedAt    int64  `json:"claimed_at,omitempty"`
+	Reply        string `json:"reply,omitempty"`
+	Delivered    bool   `json:"delivered,omitempty"`
 }
 
 var ErrConflict = errors.New("request ID already belongs to different content")
@@ -122,7 +128,8 @@ func write(r Request) error {
 	return d.Sync()
 }
 func Put(r Request) (Request, bool, error) {
-	if !validID(r.ID) || !((r.Kind == "report") || (r.Kind == "ask")) || strings.TrimSpace(r.Body) == "" || r.Pane == "" || r.Session == "" {
+	threadSource := r.Agent == "codex" && r.HomeID != "" && r.ThreadID != "" && len(r.ThreadID) <= 256
+	if !validID(r.ID) || !((r.Kind == "report") || (r.Kind == "ask")) || strings.TrimSpace(r.Body) == "" || r.Pane == "" && !threadSource || r.Session == "" {
 		return Request{}, false, errors.New("invalid request")
 	}
 	var out Request
@@ -130,7 +137,7 @@ func Put(r Request) (Request, bool, error) {
 	err := transaction(func() error {
 		old, e := read(r.ID)
 		if e == nil {
-			if old.Kind != r.Kind || old.Pane != r.Pane || old.Session != r.Session || old.PanePID != r.PanePID || old.TaskID != r.TaskID || old.Body != r.Body || old.For != r.For || old.Blocking != r.Blocking {
+			if old.Kind != r.Kind || old.Agent != r.Agent || old.HomeID != r.HomeID || old.ThreadID != r.ThreadID || old.SourcePID != r.SourcePID || old.SourceStart != r.SourceStart || old.Pane != r.Pane || old.Session != r.Session || old.PanePID != r.PanePID || old.TaskID != r.TaskID || old.Body != r.Body || old.For != r.For || old.Blocking != r.Blocking {
 				return ErrConflict
 			}
 			out = old
@@ -149,6 +156,36 @@ func Put(r Request) (Request, bool, error) {
 		return nil
 	})
 	return out, fresh, err
+}
+
+// BeginReplyAttempt persists the at-most-once mutation boundary. A missing
+// receipt after this point remains pull-readable, never automatically replayed.
+func BeginReplyAttempt(id string) error {
+	return transaction(func() error {
+		r, err := read(id)
+		if err != nil {
+			return err
+		}
+		if r.State != "replied" || r.Delivered || r.ReplyAttempt != "" {
+			return ErrState
+		}
+		r.ReplyAttempt = "submitting"
+		return write(r)
+	})
+}
+
+func ClearReplyAttempt(id string) error {
+	return transaction(func() error {
+		r, err := read(id)
+		if err != nil {
+			return err
+		}
+		if r.ReplyAttempt != "submitting" || r.Delivered {
+			return ErrState
+		}
+		r.ReplyAttempt = ""
+		return write(r)
+	})
 }
 func Get(id string) (Request, error) { return read(id) }
 func List() []Request {
@@ -230,6 +267,9 @@ func MarkDelivered(id string) error {
 			return ErrState
 		}
 		r.Delivered = true
+		if r.ReplyAttempt != "" {
+			r.ReplyAttempt = "accepted"
+		}
 		return write(r)
 	})
 }

@@ -12,6 +12,7 @@ package resume
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"sort"
@@ -22,6 +23,7 @@ import (
 
 // Record is one resumable agent session captured from a hook.
 type Record struct {
+	Frontend       string `json:"codex_frontend,omitempty"`
 	TerminalClient string `json:"terminal_client,omitempty"`
 	HomeID         string `json:"home_id,omitempty"`
 	Agent          string `json:"agent"`     // the agent key (claude/codex/cursor/…)
@@ -54,6 +56,13 @@ func fileFor(key string) string {
 
 // Save writes (overwriting) the record for a location key.
 func Save(key string, r Record) error {
+	if previous, ok := Load(key); ok && previous.Frontend != "" && r.Agent == "codex" {
+		if previous.Agent == r.Agent && previous.SessionID == r.SessionID && previous.HomeID == r.HomeID {
+			r.Frontend = previous.Frontend
+		} else if f, ok := readFrontend(previous.Frontend); ok && freshFrontend(f, false) {
+			return errors.New("live Codex frontend owns this location")
+		}
+	}
 	if err := state.MkdirAll(Dir(), 0o755); err != nil {
 		return err
 	}

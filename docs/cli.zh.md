@@ -20,6 +20,12 @@
 把 `%7` 换成 `gtmux panes` 列出的 pane。配对前需开启并能访问远程连接；第一次连接可先看
 [手机与浏览器指南](guides/phone-and-web.zh.md)。
 
+### `gtmux codex`
+
+`gtmux codex -- [Codex 参数]` 为符合条件的本机交互式 Codex 核实终端与会话归属。`gtmux install hooks --agent codex` 和 `gtmux doctor --fix` 提供可移除的 Bash/zsh 配置段，使新开的 tmux 终端直接输入 `codex` 也使用同一路径。现有别名、函数和运行中的客户端保持原样；卸载只移除该配置段。
+
+标准 Codex 的派发、HQ 和恢复共用此适配。旧版客户端、显式 `--no-daemon`、自定义包装命令、profile/config 覆盖、远程和非交互命令保留原生行为。符合条件的交互启动在首次运行时可调用官方 daemon start；不会重启后台、开启远程控制，也不会为了发现会话而恢复历史。输入回执与兼容边界见[终端会话归属](design/codex-terminal-identity.zh.md)。
+
 ## 完整参考
 
 <details>
@@ -372,6 +378,7 @@ act.awake.off           awake
 act.awake.on            awake
 act.capture             capture
 act.cleanup             doctor, serve
+act.codex.launch        codex
 act.config.set          config, quiet
 act.doctor.bundle       doctor
 act.doctor.fix          doctor

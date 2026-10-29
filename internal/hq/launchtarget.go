@@ -2,7 +2,7 @@ package hq
 
 import (
 	"errors"
-	"os"
+	"github.com/chenchaoyi/gtmux/internal/agentcaller"
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/agentenv"
@@ -127,7 +127,7 @@ func launchHQAt(kind, target, agentCmd string) int {
 	}
 	hqpane.Stamp(pane)
 	nameHQWindow(pane, false)
-	cmd := agentenv.Wrap(rawCmd)
+	cmd := agentenv.Launch(rawCmd)
 	if kind != "split" {
 		// The pane may sit anywhere; the supervisor must run in its home.
 		cmd = "cd " + shq(state.HQHome()) + " && " + cmd
@@ -152,7 +152,7 @@ func launchHQAt(kind, target, agentCmd string) int {
 	return 0
 }
 
-func ownPane() string { return os.Getenv("TMUX_PANE") }
+func ownPane() string { return agentcaller.Pane() }
 
 // hereDir is where a chosen pane starts the agent: a split is already in HQ's home (it
 // was created there), any other pane may sit anywhere and has to be moved.

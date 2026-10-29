@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -438,8 +437,6 @@ func workspaceActivity(now int64) []events.Record {
 	}
 	return out
 }
-
-func getenvWorkspacePane() string { return os.Getenv("TMUX_PANE") }
 
 // Only a journalled batch with the same payload is folded as a system signal.
 // User prose that quotes the protocol, or an unconfirmed wake, remains visible.

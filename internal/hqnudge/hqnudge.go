@@ -59,6 +59,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqinput"
 	"github.com/chenchaoyi/gtmux/internal/hqwake"
+	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
@@ -151,10 +152,12 @@ type io struct {
 	receipt func(pane, needle string, since int64) driver.Verdict
 	// foreground names the pane's foreground command, so a drain can tell a shell
 	// waiting for an agent to start from the agent itself. nil → unknown → proceed.
-	foreground func(pane string) string
+	nativeSubmit func(pane, payload, id string) (dispatch.Result, bool)
+	foreground   func(pane string) string
 }
 
 var prod = io{
+	nativeSubmit: nativeWakeSubmit,
 	capture:      tmux.CapturePane,
 	captureColor: tmux.CaptureFullColor,
 	captureFull:  tmux.CaptureFull,
@@ -170,7 +173,12 @@ var prod = io{
 		}
 		return d.Receipt(pane, needle, since)
 	},
-	foreground: func(pane string) string { return strings.TrimSpace(tmux.Display(pane, "#{pane_current_command}")) },
+	foreground: func(pane string) string {
+		if _, ok := resume.CodexFrontendForPane(pane); ok {
+			return "codex"
+		}
+		return strings.TrimSpace(tmux.Display(pane, "#{pane_current_command}"))
+	},
 }
 
 // agentUp reports whether something other than a bare shell holds the HQ pane — the
@@ -330,7 +338,7 @@ func Degraded(now int64) bool {
 	}
 	oldest := int64(0)
 	for _, e := range readQueue() {
-		if !strings.HasSuffix(e.Name(), ".txt") {
+		if !strings.HasSuffix(e.Name(), ".txt") && !strings.HasSuffix(e.Name(), nativeUncertainSuffix) {
 			continue
 		}
 		if dueOf(e.Name()) > now*int64(time.Second) {
@@ -623,6 +631,27 @@ func drainInto(x io, pane string) {
 	id := "#" + batchID(claimed, payload)
 	payload += " · " + id
 
+	if x.nativeSubmit != nil {
+		if result, managed := x.nativeSubmit(pane, payload, id); managed {
+			switch result.State {
+			case dispatch.StateQueued, dispatch.StateLanded:
+				finishDelivered(pane, payload, claimed)
+			case dispatch.StateRefusedDraft, dispatch.StateRefusedWaiting:
+				for _, c := range claimed {
+					_ = os.Rename(c, claimBase(c))
+				}
+			default:
+				// Never form a new batch ID for entries whose native acceptance
+				// is uncertain. Retain the exact payload for manual reconciliation.
+				for _, c := range claimed {
+					_ = os.Rename(c, claimBase(c)+nativeUncertainSuffix)
+				}
+				writeFailCount(readFailCount() + 1)
+				events.AuditWakeDropped(events.DropUnconfirmed, payload, time.Now().Unix())
+			}
+			return
+		}
+	}
 	since := x.nowNano()/int64(time.Second) - 1 // receipt window opens just before the paste
 	switch deliverPayload(x, pane, payload, id, since) {
 	case delivered:

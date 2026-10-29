@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/ansi"
-	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/state"
@@ -22,8 +21,8 @@ func codexTurnCompleted(pane, loc, cwd string, boundary func(string) (string, ti
 }
 
 func codexTurnEnded(pane, loc, cwd string, boundary func(string) (string, time.Time)) (time.Time, string, bool) {
-	rec, ok := resume.Load(loc)
-	if !ok || rec.Agent != "codex" || rec.SessionID == "" || !hqpane.SameDir(rec.Cwd, cwd) {
+	rec, ok := resume.LoadLive(loc)
+	if !ok || rec.Agent != "codex" || rec.SessionID == "" || !resume.CodexCwdMatches(pane, rec, cwd) {
 		return time.Time{}, "", false
 	}
 	active, err := os.Stat(state.ActivePath(pane))
@@ -54,8 +53,8 @@ func codexCompletedTurnContradictsFrame(pane, loc, cwd string, boundary func(str
 	if state.Exists(state.ActivePath(pane)) || state.Exists(state.WaitingPath(pane)) {
 		return false
 	}
-	rec, ok := resume.Load(loc)
-	if !ok || rec.Agent != "codex" || rec.SessionID == "" || !hqpane.SameDir(rec.Cwd, cwd) {
+	rec, ok := resume.LoadLive(loc)
+	if !ok || rec.Agent != "codex" || rec.SessionID == "" || !resume.CodexCwdMatches(pane, rec, cwd) {
 		return false
 	}
 	kind, at := boundary(rec.SessionID)

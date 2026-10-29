@@ -50,3 +50,7 @@ Configured does not prove loaded: restart the affected agent when convenient, re
 Regression coverage exercises tmux and native cancellation, late callbacks and newer turns, payload outcome classification, bound Codex rollout reconciliation, poller notification suppression, wrong/disabled bindings, foreign configuration preservation, Kiro V2→V3 migration, and plugin migration. The generated OpenCode JavaScript module is executed under Node with the documented SDK/shell contract, including child sessions and error→idle deduplication.
 
 This is contract and regression validation, not a live end-to-end execution of all eight upstream applications. Older upstream versions may not emit newer events; unsupported interruption paths continue to rely on existing screen/transcript sensing. Re-audit these primary contracts when changing an integration, and keep this page, its Chinese pair, installers, doctor and OpenSpec aligned.
+
+### Shared Codex frontend routing
+
+[Terminal identity](codex-terminal-identity.md) adds successful per-frontend root-operation receipts for supported shared servers. Hooks verify captured backend PID/birth against that exact current root; root workspace can differ from the supervising shell cwd. Codex hooks carrying `agent_id` do not alter the parent profile/lifecycle. Existing independent-client recovery and submitted-task witness priority remain. During an upgrade, a live bridge can restore an additive frontend field omitted by an older same-thread hook writer; it cannot reclaim another thread.

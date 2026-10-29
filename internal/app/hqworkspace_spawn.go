@@ -36,7 +36,7 @@ func linkWorkspaceTask(s *hqworkspace.Store, task dispatch.Task, candidates []wo
 		if c.Supervisor || c.Pane != task.Pane || c.Agent != task.Agent {
 			continue
 		}
-		rec, ok := resume.Load(c.Loc)
+		rec, ok := resume.LoadLive(c.Loc)
 		if !ok || rec.SessionID != c.SessionID {
 			continue
 		}

@@ -220,6 +220,13 @@ func uninstallHooks(args []string) int {
 		return installKimiHooks(false)
 	}
 	if inst, ok := selectedAgentInstaller(agent); ok {
+		if agent == "codex" {
+			rc, _ := shellRCPath()
+			if err := configureCodexTerminal(rc, "", false); err != nil {
+				i18n.Sae(err.Error(), err.Error())
+				return 1
+			}
+		}
 		return uninstallAgentHooks(inst)
 	}
 	if agent != "claude" {

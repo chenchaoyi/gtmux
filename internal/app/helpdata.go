@@ -64,6 +64,8 @@ var helpGroups = []cmdGroup{
 }
 
 var helpCommands = []command{
+	{Name: "codex", Args: "[Codex arguments]", Group: "more", Writes: true, OwnHelp: true,
+		EN: "launch Codex with verified terminal identity", ZH: "启动 Codex 并核实终端会话归属"},
 	{Name: "artifact", Args: "add FILE --session-id ID | list | remove ID", Group: "more", Writes: true, OwnHelp: true, EN: "publish a document for your paired devices", ZH: "提供会话文件供本人设备预览", Flags: []cmdFlag{
 		{Name: "--session-id ID", EN: "exact transcript session identity; required for add", ZH: "所属对话的真实 ID；add 必填"},
 		{Name: "--home-id ID", EN: "conversation home identity when present", ZH: "对话带有目录身份时指定"},
