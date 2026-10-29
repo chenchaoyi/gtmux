@@ -67,7 +67,8 @@ gtmux update                 # 更新 CLI 和菜单栏 app
 DeepSeek Harness 统一身份，dst 适配器支持核验后的 pane 管理和原生目标输入，见 [DSH 指南](docs/guides/deepseek-harness.zh.md)。Web 对话仍作为外部历史只读查看。
 专用原生 Cordis 插件接入后续生命周期事件，本轮不包含 TUI 控制。见 [DSH 配置与边界](docs/guides/deepseek-harness.zh.md)。
 
-锁定版本、镜像和源码构建见[安装说明](docs/install.zh.md)；无桌面环境的主机见 [Linux 部署](docs/linux.zh.md)。
+- [安装说明](docs/install.zh.md)：锁定版本、镜像和源码构建。
+- [Linux 部署](docs/linux.zh.md)：在无桌面环境的主机上运行。
 
 ## 配置
 
@@ -140,6 +141,7 @@ gtmux agent · 7 agent · 1 等输入 · 2 运行中 · 3 空闲 · 1 只有 she
 - [远程访问参考](docs/phone.zh.md)：连接方式、权限、通知条件与故障排查。
 - [HQ 记住的东西](docs/knowledge.zh.md)：知识库存在哪、分几层、你自己能改什么。
 - [安装说明](docs/install.zh.md)：锁定版本、从源码构建、镜像。
+- [DeepSeek Harness](docs/guides/deepseek-harness.zh.md)：接入方式、会话身份与控制边界。
 - [设计文档](docs/design/README.zh.md)，在途变更在 `openspec/`。
 
 仓库结构和贡献说明在 [CONTRIBUTING.md](CONTRIBUTING.md)（英文）。

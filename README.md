@@ -86,7 +86,8 @@ DeepSeek Harness sessions retain one identity across Web and supported terminal 
 on the menu bar, phone, iPad, Web and CLI. A dedicated native Cordis plugin adds
 future lifecycle events; TUI control is not included. See [DSH setup and limits](docs/guides/deepseek-harness.md).
 
-For version pinning, mirrors and source builds, see [Install notes](docs/install.md). For a headless host, follow [Linux setup](docs/linux.md).
+- [Install notes](docs/install.md): pinning a version, mirrors and source builds.
+- [Linux setup](docs/linux.md): run the host without a desktop.
 
 ## Configuration
 
@@ -173,6 +174,7 @@ Walkthroughs with screenshots, one task each:
 - [Remote access reference](docs/phone.md): connection methods, permissions, notifications and troubleshooting.
 - [What HQ remembers](docs/knowledge.md): the knowledge base, the three layers, and what you can change.
 - [Install notes](docs/install.md): pinning a version, building from source, mirrors.
+- [DeepSeek Harness](docs/guides/deepseek-harness.md): setup, shared identity and control limits.
 - [Design docs](docs/design/README.md), with in-flight changes in `openspec/`.
 
 The repo map and contributor notes are in [CONTRIBUTING.md](CONTRIBUTING.md).
