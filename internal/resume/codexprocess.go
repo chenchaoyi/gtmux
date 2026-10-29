@@ -40,7 +40,10 @@ func processCLIIdentity(scope *transcript.CodexPathScope, r native.Record, now i
 		return false
 	}
 	id, ok := scope.CodexIdentityFor(r.SessionID)
-	return ok && id.HomeID == r.HomeID && id.CreationClient == "terminal" && id.Source == "cli" &&
+	// A TUI connected to the shared app-server can persist source=vscode.
+	// Originator establishes creation provenance; processTarget still has to
+	// prove that this hook came from the actual foreground terminal client.
+	return ok && id.HomeID == r.HomeID && id.CreationClient == "terminal" && (id.Source == "cli" || id.Source == "vscode") &&
 		hqpane.SameDir(id.Cwd, r.Cwd)
 }
 

@@ -77,6 +77,47 @@ func TestProcessRecoveryReplacesOnlyExactOldBindingAndPreservesHistory(t *testin
 	ReconcileCodexProcesses(transcript.NewCodexPathScope(), []native.Record{r}, map[string]string{pane.ID: pane.Loc}, now)
 }
 
+func TestProcessRecoverySeparatesTUICreationFromBackendSource(t *testing.T) {
+	for _, tc := range []struct {
+		name, origin, source string
+		sharedBackend        bool
+		wantBinding          bool
+	}{
+		{"direct CLI", "codex-tui", `"cli"`, false, true},
+		{"TUI with editor backend source", "codex-tui", `"vscode"`, false, true},
+		{"shared backend is not its TUI", "codex-tui", `"vscode"`, true, false},
+		{"desktop with editor source", "Codex Desktop", `"vscode"`, false, false},
+		{"editor without TUI origin", "codex_vscode", `"vscode"`, false, false},
+		{"unknown backend source", "codex-tui", `"future-client"`, false, false},
+		{"subagent is not a TUI session", "codex-tui", `{"subagent":{"parent_thread_id":"parent"}}`, false, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			r, pane, now := processBindingFixture(t)
+			writeProcessSession(t, r.SessionID, tc.origin, tc.source, pane.Cwd)
+			if tc.sharedBackend {
+				// The callback names a daemon, while the terminal still owns a
+				// different frontend. TUI creation alone cannot bridge that gap.
+				codexProcessClients = func([]codexterminal.Pane) map[string]codexterminal.Client {
+					return map[string]codexterminal.Client{pane.ID: {PID: 303, Start: "frontend-birth", RootStart: "root-birth", TTY: "ttys001"}}
+				}
+			}
+			before, _ := Load(pane.Loc)
+			ReconcileCodexProcesses(transcript.NewCodexPathScope(), []native.Record{r}, map[string]string{pane.ID: pane.Loc}, now)
+			after, _ := Load(pane.Loc)
+			if tc.wantBinding {
+				if after.SessionID != r.SessionID || after.HomeID != r.HomeID {
+					t.Fatalf("verified TUI was not bound: %+v", after)
+				}
+			} else if after != before {
+				t.Fatalf("unproven frontend changed the incumbent: %+v", after)
+			}
+			if got, ok := native.Load(r.SessionID, r.HomeID); !ok || got != r {
+				t.Fatal("creation compatibility changed native history")
+			}
+		})
+	}
+}
+
 func TestProcessRecoveryRefusesUnprovenOrChangedOwnership(t *testing.T) {
 	for _, kind := range []string{"other home", "wrong birth", "unknown process", "headless or piped", "wrong PID", "missing birth", "missing tty", "multiple panes", "wrong cwd", "other pane location", "newer incumbent", "changed incumbent", "changed observation", "changed pane", "desktop creation", "subagent creation", "missing source", "session end", "multiple sessions", "busy lease", "command stub", "headless argv"} {
 		t.Run(kind, func(t *testing.T) {
