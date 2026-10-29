@@ -179,14 +179,11 @@
     ['chat-ro', {text: T('Read-only · ask the owner to enable input for this pane.', '只读 · 可请分享者开启此窗格的输入。')}],
     ['pane-ro', {text: T('🔒 Input is not allowed in this pane', '🔒 此窗格不允许输入')}],
     ['wb-snap', {html: '<span class="wb-sw"></span>' + T('Snap to grid', '对齐网格'), title: T('Snap to grid', '对齐网格')}],
-    ['wb-surface', {html: uiIcon('surface') + T('Auto-open waiting sessions', '自动打开待处理会话'), title: T('Add sessions to the workspace when they need a reply', '会话需要回复时，自动加入工作区')}],
     ['wb-preset', {html: uiIcon('layout') + T('Layout', '布局') + '<span id="wb-preset-cur"></span>' + uiIcon('chevron'), title: T('Layout presets', '布局预设')}],
     // The focus bar, the appearance panel and the workbench rail (%12, 2026-10-06: these
     // stayed English on a Chinese page; the test above only caught the other direction).
     ['pane-prev', {html: uiIcon('left'), title: T('Previous pane', '上一个窗格'), label: T('Previous pane', '上一个窗格')}],
     ['pane-next', {html: uiIcon('right'), title: T('Next pane', '下一个窗格'), label: T('Next pane', '下一个窗格')}],
-    ['font-dn', {title: T('Smaller', '缩小')}],
-    ['font-up', {title: T('Larger', '放大')}],
     ['copy-screen', {html: uiIcon('copy'), title: T('Copy visible screen', '复制屏幕内容'), label: T('Copy visible screen', '复制屏幕内容')}],
     ['gear', {html: uiIcon('settings'), title: T('Settings', '设置'), label: T('Settings', '设置')}],
     ['wb-gear', {html: uiIcon('settings'), title: T('Settings', '设置'), label: T('Settings', '设置')}],
@@ -200,7 +197,8 @@
     ['appearance-dark', {text: T('Dark', '深色')}],
     ['appearance-sel', {label: T('Appearance', '外观')}],
     ['return-send-lbl', {text: T('Return sends', '回车发送')}],
-    ['session-tools', {title: T('Session tools', '会话工具'), html: uiIcon('tools')}],
+    ['session-trace', {title: T('Trace', '轨迹'), html: uiIcon('trace') + T('Trace', '轨迹')}],
+    ['session-diff', {title: 'Diff', html: uiIcon('diff') + 'Diff'}],
     ['return-send-hint', {text: T('Enter adds a line by default. ⌘/Ctrl+Enter sends.', '默认 Enter 换行，⌘/Ctrl+Enter 发送。')}],
     ['size-lbl', {text: T('Terminal text size', '终端字号')}],
     ['rail-title', {text: T('Sessions', '会话')}],
@@ -244,7 +242,7 @@
   }
 
   // ---- helpers ----------------------------------------------------------
-  function show(which) { if (activeSessionTool) activeSessionTool.sheet.el.retire(); if ($('session-tools')) $('session-tools').hidden = which !== 'chat' && which !== 'pane'; if (which !== 'chat') $('chat-interaction').hidden = true; cancelReads(); viewEpoch++; ['gate', 'radar', 'panes', 'pane', 'chat', 'workbench'].forEach(function (id) { $(id).hidden = id !== which; }); if ($('chat-input')) $('chat-input').hidden = true; if (which !== 'workbench') WB.on = false; updatePageTitle(which); }
+  function show(which) { if (activeSessionTool) activeSessionTool.sheet.el.retire(); $('session-toolbar').hidden = which !== 'chat' && which !== 'pane'; $('session-trace').hidden = !(curAgent && (curAgent.agent || readableConversation(curAgent))); $('session-diff').hidden = !hasPane(curAgent); if (which !== 'chat') $('chat-interaction').hidden = true; cancelReads(); viewEpoch++; ['gate', 'radar', 'panes', 'pane', 'chat', 'workbench'].forEach(function (id) { $(id).hidden = id !== which; }); if ($('chat-input')) $('chat-input').hidden = true; if (which !== 'workbench') WB.on = false; updatePageTitle(which); }
   function updatePageTitle(view) {
     var title = T('Agent workspace', 'Agent 工作台');
     if (view === 'gate') title = T('Connect', '连接');
@@ -328,7 +326,7 @@
     curPane = null; curAgent = null; lastAgents = [];
     lastTurns = []; chatSig = ''; chatExpanded = {}; chatLive = {}; pendingPrompts = {}; $('chat').innerHTML = '';
     if (paneComposer) paneComposer.reset();
-    WB.agents = []; WB.prevStatus = null;
+    WB.agents = [];
     clearInterval(radarTimer); clearInterval(paneTimer); clearInterval(chatTimer); clearInterval(panesTimer);
     radarTimer = paneTimer = chatTimer = panesTimer = null;
     // Preserve the layout, but discard cached contents and stop all tile requests.
@@ -447,7 +445,13 @@
     var mono = document.createElement('span'); mono.className = 'mono'; mono.textContent = agentMark(a.agent);
     av.appendChild(img); av.appendChild(mono);
     if (withBadge) { var bdg = document.createElement('span'); bdg.className = 'badge'; bdg.innerHTML = badgeSVG(COLORS[a.status] ? a.status : 'running'); av.appendChild(bdg); }
-    if (a.role === 'supervisor') { av.classList.add('avatar-hq'); mono.textContent = 'HQ'; av.title = 'Gtmux HQ'; }
+    if (a.role === 'supervisor') {
+      av.classList.add('avatar-hq'); av.title = 'Gtmux HQ'; mono.hidden = true;
+      var mark = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      mark.setAttribute('viewBox', '0 0 100 100'); mark.setAttribute('aria-hidden', 'true'); mark.classList.add('hq-brand-mark');
+      mark.innerHTML = '<rect x="8" y="8" width="40" height="40" rx="9" fill="currentColor"/><rect x="52" y="8" width="40" height="40" rx="9" fill="#06B6D4"/><rect x="8" y="52" width="84" height="40" rx="9" fill="currentColor"/>';
+      av.appendChild(mark);
+    }
     else if (a.agent) loadIcon(a.agent, img, mono);
     return av;
   }
@@ -2669,14 +2673,14 @@
     button.onclick = function (event) { event.stopPropagation(); action(); }; return button;
   }
   // Tools sit above a session. The base Chat/Terminal DOM, draft and scroll stay mounted.
-  function showSessionTools(agent, tile) {
+  function showSessionTools(agent, tile, kind) {
     if (!agent || !hasPane(agent) && !readableConversation(agent)) return;
+    if (kind === 'diff' && !hasPane(agent) || kind === 'trace' && !agent.agent && !readableConversation(agent)) return;
     if (activeSessionTool) activeSessionTool.sheet.el.retire();
     var sheet = browserDialog(T('Session tools', '会话工具'));
     var state = {sheet: sheet, trace: {}, closed: false, kind: '', agent: Object.assign({}, agent), tile: tile};
     activeSessionTool = state;
     var epoch = viewEpoch, credential = token, timer = null, signature = '';
-    sheet.el.classList.add('session-tools-menu');
     sheet.onClose = function () {
       state.closed = true; clearInterval(timer); cancelRead('session-tool'); resetTrace(state.trace);
       if (activeSessionTool === state) activeSessionTool = null;
@@ -2714,16 +2718,11 @@
       });
     }
     function choose(kind) {
-      state.kind = kind; signature = ''; sheet.el.classList.remove('session-tools-menu'); sheet.el.classList.add('session-tool');
+      state.kind = kind; signature = ''; sheet.el.classList.add('session-tool');
       sheet.el.querySelector('h2').textContent = (kind === 'trace' ? T('Trace', '轨迹') : 'Diff') + ' · ' + primary(agent);
       sheet.body.replaceChildren(brandLoaderEl(null)); document.body.classList.add('has-session-tool'); poll(); timer = setInterval(poll, 2500);
     }
-    function item(kind, title, subtitle) {
-      var button = elButton(title, kind, function () { choose(kind); }); button.className = 'session-tool-item';
-      var text = el('span'); text.appendChild(el('strong', '', title)); text.appendChild(el('span', '', subtitle)); button.appendChild(text); sheet.body.appendChild(button);
-    }
-    if (agent.agent || readableConversation(agent)) item('trace', T('Trace', '轨迹'), T('Messages and recorded tool calls', '消息与工具调用记录'));
-    if (hasPane(agent)) item('diff', 'Diff', T('Changes in the session’s repository', '会话所在仓库的改动'));
+    choose(kind);
   }
   function renderDiff(host, diff) {
     var pre = el('pre', 'session-diff');
@@ -2961,21 +2960,21 @@
   // CONCURRENT pane mirrors. Wide screens only; <900px keeps the single column.
   // Tiles share the existing pane/transcript/diff APIs and scope-gated composer.
   // ======================================================================
-  var WB = {on: false, agents: [], tiles: [], railW: 232, railCollapsed: false, snap: false, surface: false, presetCur: '', prevStatus: null};
+  var WB = {on: false, agents: [], tiles: [], railW: 232, railCollapsed: false, snap: false, presetCur: ''};
   var WB_KEY = 'gtmux.board';
   function isWide() { return window.innerWidth >= 900; }
   function wbLoad() {
     try {
       var s = JSON.parse(localStorage.getItem(WB_KEY) || '{}');
       WB.railW = Math.max(170, Math.min(360, s.railW || 232));
-      WB.railCollapsed = !!s.railCollapsed; WB.snap = !!s.snap; WB.surface = !!s.surface;
+      WB.railCollapsed = !!s.railCollapsed; WB.snap = !!s.snap;
       WB.saved = Array.isArray(s.tiles) ? s.tiles : [];
     } catch (e) { WB.saved = []; }
   }
   function wbSave() {
     try {
       localStorage.setItem(WB_KEY, JSON.stringify({
-        railW: WB.railW, railCollapsed: WB.railCollapsed, snap: WB.snap, surface: WB.surface,
+        railW: WB.railW, railCollapsed: WB.railCollapsed, snap: WB.snap,
         tiles: WB.tiles.map(function (t) { return {id: t.id, x: t.x, y: t.y, w: t.w, h: t.h, mode: t.mode}; }),
       }));
     } catch (e) {}
@@ -2986,13 +2985,13 @@
     WB.on = true; updatePageTitle('workbench');
     ['gate', 'radar', 'panes', 'pane', 'chat', 'chat-input'].forEach(function (id) { $(id).hidden = true; });
     clearInterval(panesTimer); panesTimer = null;
-    $('workbench').hidden = false;
+    $('workbench').hidden = false; $('session-toolbar').hidden = true;
     $('bar').hidden = true; // the workbench has its own #wb-bar
     $('back').hidden = true; $('mode').hidden = true; $('gear').hidden = true; hideFocusChrome();
     clearInterval(paneTimer); paneTimer = null; clearInterval(chatTimer); chatTimer = null;
     applyRail();
     $('board').classList.toggle('snap', WB.snap);
-    setToggle($('wb-snap'), WB.snap); setToggle($('wb-surface'), WB.surface);
+    setToggle($('wb-snap'), WB.snap);
     updatePresetLabel();
     WB.tiles.forEach(tileInputSync);
     updateEmpty();
@@ -3015,23 +3014,8 @@
         renderTree(agents); fetchShare();
         // refresh each tile's header status + waiting border
         WB.tiles.forEach(function (t) { var a = byId(agents, t.id); if (a) { t.agent = a; updateTileHead(t); } });
-        if (WB.surface) autoSurface(agents);
-        var ps = {}; agents.forEach(function (a) { ps[a.pane_id] = a.status; }); WB.prevStatus = ps;
       }).catch(function () { if (current()) setWbConn(false); });
     }, 15000, function () { setWbConn(false); });
-  }
-  // auto-surface: a pane newly turning waiting floats onto the board and pulses
-  // once → the board doubles as a radar (WEB.md §7). Skips the first poll so we
-  // don't flood the board with everything already waiting at load.
-
-  function autoSurface(agents) {
-    if (!WB.prevStatus) return;
-    agents.forEach(function (a) {
-      if (!hasPane(a)) return;
-      if (a.status !== 'waiting' || WB.prevStatus[a.pane_id] === 'waiting') return;
-      if (WB.tiles.some(function (t) { return t.id === a.pane_id; })) return;
-      flashTile(addTile(a));
-    });
   }
   function flashTile(t) {
     if (!t || !t.el) return;
@@ -3138,7 +3122,6 @@
     });
     document.addEventListener('mouseup', function () { if (dragging) { dragging = false; document.body.style.cursor = ''; wbSave(); } });
     $('wb-snap').onclick = function () { WB.snap = !WB.snap; setToggle($('wb-snap'), WB.snap); $('board').classList.toggle('snap', WB.snap); wbSave(); };
-    $('wb-surface').onclick = function () { WB.surface = !WB.surface; setToggle($('wb-surface'), WB.surface); wbSave(); };
     // layout presets dropdown
     $('wb-preset').onclick = function (e) { e.stopPropagation(); var m = $('wb-preset-menu'); if (m.hidden) showPresetMenu(); else hidePresetMenu(); };
     document.addEventListener('click', function (e) { if (!$('wb-preset-menu').hidden && !$('wb-preset-wrap').contains(e.target)) hidePresetMenu(); });
@@ -3232,10 +3215,17 @@
       b.onclick = function (e) { e.stopPropagation(); setTileMode(t, m[0]); }; modes.appendChild(b);
     });
     controls.appendChild(modes);
-    var tools = elButton(T('Session tools', '会话工具'), 'tools', function () { showSessionTools(t.agent, t); }); tools.className = 'tile-btn session-tools-button'; tools.dataset.action = 'tools'; controls.appendChild(tools);
-    var max = document.createElement('button'); max.type = 'button'; max.className = 'tile-btn'; max.dataset.action = 'focus'; max.innerHTML = uiIcon('focus'); max.title = T('Open conversation', '打开会话'); max.setAttribute('aria-label', max.title); max.onclick = function (e) { e.stopPropagation(); openAgent(t.agent, t.mode); }; controls.appendChild(max);
-    var cl = document.createElement('button'); cl.type = 'button'; cl.className = 'tile-btn'; cl.innerHTML = uiIcon('close'); cl.title = T('Close panel', '关闭面板'); cl.setAttribute('aria-label', cl.title); cl.onclick = function (e) { e.stopPropagation(); removeTile(t); }; controls.appendChild(cl);
-    head.appendChild(controls);
+    var tools = document.createElement('div'); tools.className = 'session-actions';
+    (t.agent.agent ? ['trace', 'diff'] : ['diff']).forEach(function (kind) {
+      var label = kind === 'trace' ? T('Trace', '轨迹') : 'Diff';
+      var button = elButton(label, kind, function () { showSessionTools(t.agent, t, kind); });
+      button.dataset.tool = kind; button.appendChild(document.createTextNode(label)); tools.appendChild(button);
+    });
+    controls.appendChild(tools);
+    var windowControls = document.createElement('div'); windowControls.className = 'tile-window-controls';
+    var max = document.createElement('button'); max.type = 'button'; max.className = 'tile-btn'; max.dataset.action = 'focus'; max.innerHTML = uiIcon('focus'); max.title = T('Open conversation', '打开会话'); max.setAttribute('aria-label', max.title); max.onclick = function (e) { e.stopPropagation(); openAgent(t.agent, t.mode); }; windowControls.appendChild(max);
+    var cl = document.createElement('button'); cl.type = 'button'; cl.className = 'tile-btn'; cl.innerHTML = uiIcon('close'); cl.title = T('Close panel', '关闭面板'); cl.setAttribute('aria-label', cl.title); cl.onclick = function (e) { e.stopPropagation(); removeTile(t); }; windowControls.appendChild(cl);
+    head.appendChild(windowControls); head.appendChild(controls);
     el.appendChild(head);
     var body = document.createElement('div'); body.className = 'tile-body'; t.body = body; el.appendChild(body);
     // shared-input row (web-shared-input): the SAME composer as the single-pane view,
@@ -3477,9 +3467,7 @@
     if (b && b.height) $('settings').style.top = Math.round(b.bottom + 4) + 'px';
   }
   function setupFocus() {
-    $('session-tools').onclick = function () { showSessionTools(curAgent); };
-    $('font-dn').onclick = function () { sizePref = Math.max(10, termSize() - 1); persistSize(); applyAppearance(); };
-    $('font-up').onclick = function () { sizePref = Math.min(22, termSize() + 1); persistSize(); applyAppearance(); };
+    ['trace', 'diff'].forEach(function (kind) { $('session-' + kind).onclick = function () { showSessionTools(curAgent, null, kind); }; });
     $('copy-screen').onclick = copyScreen;
     $('pane-prev').onclick = function () { cyclePane(-1); };
     $('pane-next').onclick = function () { cyclePane(1); };

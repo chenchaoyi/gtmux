@@ -1,7 +1,6 @@
 // Exercise the real tools entry; modes remain Chat and Terminal.
 async function openTools(page, kind = 'trace', tile = false) {
-  await page.locator(tile ? '.tile [data-action="tools"]' : '#session-tools').click();
-  await page.locator('.session-tools-menu').getByRole('button', {name: kind === 'trace' ? /^(Trace|轨迹)$/ : 'Diff'}).click();
+  await page.locator((tile ? '.tile ' : '#session-actions ') + '[data-tool="' + kind + '"]').click();
   await page.locator('.session-tool').waitFor();
   return page.locator('.session-tool');
 }
