@@ -12,6 +12,23 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.155',
+    en: [
+      'Session tools',
+      'Browse conversation text and recorded calls in Trace, with search and session filters.',
+      'Read call parameters and working directories without losing your place in the conversation.',
+      'Open historical speaker profiles and files from the selected session.',
+      'Use full-width details on iPhone and adaptive split views on iPad, with improved large-text layout.',
+    ],
+    zh: [
+      '会话轨迹',
+      '新增轨迹，可搜索会话正文和调用记录，按历史会话筛选。',
+      '查看调用参数与工作目录，关闭详情后回到原来的位置。',
+      '从历史记录打开对应说话人的资料卡和文件。',
+      'iPhone 全宽阅读，iPad 自适应分栏，并改善大字号布局。',
+    ],
+  },
+  {
     version: '1.0.154',
     en: [
       'Conversation files',

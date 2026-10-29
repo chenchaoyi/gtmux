@@ -1,0 +1,5 @@
+Session tools
+• Browse conversation text and recorded calls in Trace, with search and session filters.
+• Read call parameters and working directories without losing your place in the conversation.
+• Open historical speaker profiles and files from the selected session.
+• Use full-width details on iPhone and adaptive split views on iPad, with improved large-text layout.
