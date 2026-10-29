@@ -12,6 +12,21 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.154',
+    en: [
+      'Conversation files',
+      'Open local file links directly from a conversation without registering them first.',
+      'Read formatted Markdown headings, lists, tables and code, with a source view when needed.',
+      'View local images inside Markdown and see clearer messages when a file cannot be opened.',
+    ],
+    zh: [
+      '会话文件',
+      '直接打开对话中的本地文件链接，无需提前登记文件。',
+      'Markdown 支持标题、列表、表格和代码排版，可切换查看原文。',
+      'Markdown 中的本地图片可随文查看，文件读取失败时提供更清楚的说明。',
+    ],
+  },
+  {
     version: '1.0.153',
     en: [
       'HQ and knowledge',
