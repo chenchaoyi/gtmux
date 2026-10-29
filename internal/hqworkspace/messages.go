@@ -166,6 +166,7 @@ func (s *Store) Retry(id string, acknowledgeUncertain bool, at int64) error {
 			return errors.New("instruction may already have been submitted; explicitly acknowledge before retrying")
 		}
 		m.Delivery, m.Reason, m.AttemptAt, m.Target = "pending", "", 0, Conversation{}
+		m.RetryGeneration++
 		changed(d, at, "retry", m.MatterID, id, "acknowledged-uncertain")
 		d.Messages[id] = m
 		return nil

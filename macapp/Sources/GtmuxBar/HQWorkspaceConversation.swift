@@ -163,15 +163,15 @@ struct HQWorkspaceConversationView: View {
                         message.delivery == "uncertain" ? Theme.Status.errored : Color.secondary)
                     if message.delivery == "pending" {
                         Button(
-                            store.delivering ? l10n.tr("Checking…", "正在核对…") : l10n.tr("Try delivery", "尝试送达")
+                            store.delivering ? l10n.tr("Sending…", "发送中…") : l10n.tr("Retry", "重试")
                         ) { store.attemptPending() }.disabled(store.delivering)
-                        Button(l10n.tr("Withdraw", "撤回")) {
+                        Button(l10n.tr("Cancel send", "取消发送")) {
                             store.perform(HQWorkspaceAction(op: "cancel", id: message.id))
                         }
                     } else if message.delivery == "uncertain" {
                         Button(l10n.tr("Send again…", "再次发送…")) { uncertain = message }
                     }
-                }.buttonStyle(.borderless).disabled(store.acting)
+                }.font(HQTypography.caption).buttonStyle(.borderless).disabled(store.acting)
                 if let evidence = message.evidence, !evidence.isEmpty {
                     DisclosureGroup(l10n.tr("Delivery evidence", "送达凭据")) {
                         Text(evidence).font(HQTypography.code).textSelection(.enabled)

@@ -27,6 +27,14 @@ func Resumable(agent string) bool {
 // still succeeds if the dir is gone. Returns ok=false when the record isn't
 // resumable (unknown agent or no session id).
 func Command(r Record) (string, bool) {
+	return command(r, "")
+}
+
+func CommandWithBridge(r Record, executable string) (string, bool) {
+	return command(r, executable)
+}
+
+func command(r Record, executable string) (string, bool) {
 	if r.TerminalClient != "" && r.Agent == "dsh" {
 		if r.HomeID != dsh.HomeID() || r.SessionID == "" {
 			return "", false
@@ -58,6 +66,7 @@ func Command(r Record) (string, bool) {
 		argv = append([]string{r.Launcher}, argv[1:]...)
 	}
 	cmd := agents.InteractiveCommand(strings.Join(argv, " ")) + " " + shellSingleQuote(r.SessionID)
+	cmd = agents.BridgeCommand(cmd, executable)
 	if r.Cwd != "" {
 		q := shellSingleQuote(r.Cwd)
 		cmd = "{ cd -- " + q + " 2>/dev/null || [ ! -d " + q + " ]; } && " + cmd

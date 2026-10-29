@@ -143,7 +143,7 @@ func paneLabel(pane string) (string, string) {
 		return "", ""
 	}
 	label := tmux.Display(pane, "#{session_name}")
-	if rec, ok := resume.Load(loc); ok {
+	if rec, ok := resume.LoadLive(loc); ok {
 		return label, rec.Agent
 	}
 	return label, ""

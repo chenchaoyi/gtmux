@@ -21,7 +21,7 @@ func participantProfile(pane, sid, home, at string) (any, error) {
 			return nil, sessionpolicy.ErrUnverified
 		}
 		loc := tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}")
-		r, ok := resume.Load(loc)
+		r, ok := resume.LoadLive(loc)
 		if a, bound := agentclient.ForPane(pane); bound {
 			r, ok = resume.Record{Agent: a.Agent, SessionID: a.SessionID, HomeID: a.HomeID, TerminalClient: a.Client}, true
 		} else if ok && r.Agent == "dsh" {

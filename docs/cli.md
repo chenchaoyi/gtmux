@@ -21,6 +21,12 @@ run `gtmux <command> --help`.
 Replace `%7` with a pane from `gtmux panes`. Pairing needs reachable remote access;
 start with [the phone and browser guide](guides/phone-and-web.md) if this is your first connection.
 
+### `gtmux codex`
+
+`gtmux codex -- [Codex arguments]` launches an eligible local interactive Codex with verified frontend identity. `gtmux install hooks --agent codex` and `gtmux doctor --fix` offer a removable Bash/zsh block so ordinary `codex` in new tmux shells uses the same route. Existing aliases/functions and running clients are preserved; uninstall removes only the managed block.
+
+Spawn, HQ and restore share the adapter. Older clients, explicit `--no-daemon`, custom wrappers, profiles/config overrides, remote and headless commands retain native behavior. An eligible cold interactive launch may use the official daemon start command; it never restarts a daemon, enables remote control or resumes history during discovery. See [terminal identity](design/codex-terminal-identity.md) for input receipts and compatibility limits.
+
 ## Full reference
 
 <details>
@@ -420,6 +426,7 @@ act.awake.off           awake
 act.awake.on            awake
 act.capture             capture
 act.cleanup             doctor, serve
+act.codex.launch        codex
 act.config.set          config, quiet
 act.doctor.bundle       doctor
 act.doctor.fix          doctor

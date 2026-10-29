@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"syscall"
 
 	"github.com/chenchaoyi/gtmux/internal/state"
@@ -20,8 +21,9 @@ type Delivery struct {
 }
 
 type DeliveryIO struct {
-	Resolve func() (Conversation, string)       // identity and preflight hold code
-	Send    func(Conversation, string) Delivery // rechecks before paste and Enter
+	SendWithID func(Conversation, string, string) Delivery
+	Resolve    func() (Conversation, string)       // identity and preflight hold code
+	Send       func(Conversation, string) Delivery // rechecks before paste and Enter
 }
 
 func Payload(m Message, title string) string {
@@ -120,7 +122,12 @@ func (s *Store) Pump(io DeliveryIO, at int64) (bool, error) {
 	}
 	payload := selected
 	payload.MatterID = effectiveMatter
-	verdict := io.Send(target, Payload(payload, title))
+	var verdict Delivery
+	if io.SendWithID != nil {
+		verdict = io.SendWithID(target, Payload(payload, title), selected.ID+"-"+strconv.FormatUint(selected.RetryGeneration, 10)+"-"+target.SessionID)
+	} else {
+		verdict = io.Send(target, Payload(payload, title))
+	}
 	err = s.transaction(func(d *Database) error {
 		m, ok := d.Messages[selected.ID]
 		if !ok {

@@ -872,7 +872,7 @@ func transcriptForPane(id string, earlier int) ([]byte, server.TranscriptMeta, e
 	if loc == "" {
 		return empty, meta, nil
 	}
-	rec, ok := resume.Load(loc)
+	rec, ok := resume.LoadLive(loc)
 	if a, bound := agentclient.ForPane(id); bound {
 		rec, ok = resume.Record{Agent: a.Agent, SessionID: a.SessionID, HomeID: a.HomeID, Cwd: a.Cwd, TerminalClient: a.Client}, true
 	} else if ok && rec.Agent == "dsh" {

@@ -307,7 +307,11 @@ func completeCodexBinding(scope *transcript.CodexPathScope, intent CodexBindingI
 	if observation.SessionID != "" {
 		receiptHome = observation.HomeID
 	}
-	if err := writeBindingJSON(fileFor(live.Loc), Record{Agent: "codex", HomeID: transcript.CodexHomeID(), SessionID: sid, Cwd: live.Cwd, UpdatedAt: now, Launcher: live.Launcher}); err != nil {
+	frontend := ""
+	if current.Agent == "codex" && current.HomeID == transcript.CodexHomeID() && current.SessionID == sid {
+		frontend = current.Frontend
+	}
+	if err := writeBindingJSON(fileFor(live.Loc), Record{Agent: "codex", HomeID: transcript.CodexHomeID(), SessionID: sid, Cwd: live.Cwd, UpdatedAt: now, Launcher: live.Launcher, Frontend: frontend}); err != nil {
 		return err
 	}
 	if err := native.ConfirmBinding(native.Binding{HomeID: receiptHome, ID: bindingSHA(intent.Token), SessionID: sid, Pane: live.Pane, Loc: live.Loc,

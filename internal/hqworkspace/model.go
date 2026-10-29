@@ -70,22 +70,23 @@ type Association struct {
 }
 
 type Message struct {
-	Subject     string       `json:"subject,omitempty"`
-	MatterState string       `json:"matter_state,omitempty"`
-	ID          string       `json:"id"`
-	MatterID    string       `json:"matter_id,omitempty"` // empty = global HQ conversation
-	Speaker     string       `json:"speaker"`             // user | hq
-	Kind        string       `json:"kind"`                // instruction | report | progress | decision | result | error
-	Body        string       `json:"body"`
-	At          int64        `json:"at"`
-	Seq         uint64       `json:"seq"`
-	ReplyTo     string       `json:"reply_to,omitempty"`
-	Delivery    string       `json:"delivery,omitempty"` // pending | submitting | delivered | accepted-queue | uncertain | cancelled
-	Reason      string       `json:"reason,omitempty"`
-	Target      Conversation `json:"target,omitempty"`
-	AttemptAt   int64        `json:"attempt_at,omitempty"`
-	DeliveredAt int64        `json:"delivered_at,omitempty"`
-	Evidence    string       `json:"evidence,omitempty"`
+	RetryGeneration uint64       `json:"retry_generation,omitempty"`
+	Subject         string       `json:"subject,omitempty"`
+	MatterState     string       `json:"matter_state,omitempty"`
+	ID              string       `json:"id"`
+	MatterID        string       `json:"matter_id,omitempty"` // empty = global HQ conversation
+	Speaker         string       `json:"speaker"`             // user | hq
+	Kind            string       `json:"kind"`                // instruction | report | progress | decision | result | error
+	Body            string       `json:"body"`
+	At              int64        `json:"at"`
+	Seq             uint64       `json:"seq"`
+	ReplyTo         string       `json:"reply_to,omitempty"`
+	Delivery        string       `json:"delivery,omitempty"` // pending | submitting | delivered | accepted-queue | uncertain | cancelled
+	Reason          string       `json:"reason,omitempty"`
+	Target          Conversation `json:"target,omitempty"`
+	AttemptAt       int64        `json:"attempt_at,omitempty"`
+	DeliveredAt     int64        `json:"delivered_at,omitempty"`
+	Evidence        string       `json:"evidence,omitempty"`
 }
 
 type Change struct {

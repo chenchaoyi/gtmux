@@ -21,6 +21,7 @@ var Catalog = []CatalogEntry{
 	{"act.awake.on", []string{"awake"}},
 	{"act.capture", []string{"capture"}},
 	{"act.cleanup", []string{"doctor", "serve"}},
+	{"act.codex.launch", []string{"codex"}},
 	{"act.config.set", []string{"config", "quiet"}},
 	{"act.doctor.bundle", []string{"doctor"}},
 	{"act.doctor.fix", []string{"doctor"}},

@@ -137,7 +137,7 @@ func cmdAdopt(args []string) int {
 			failed++
 			continue
 		}
-		cmd, resumable := resume.Command(resume.Record{Agent: rec.Agent, SessionID: rec.SessionID, Cwd: rec.Cwd})
+		cmd, resumable := resume.CommandWithBridge(resume.Record{Agent: rec.Agent, SessionID: rec.SessionID, Cwd: rec.Cwd}, selfPath())
 		why := radar.AdoptRefusal(rec)
 		if why == "" && !resumable {
 			why = "not-resumable"

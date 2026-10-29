@@ -236,7 +236,7 @@ func hqSessionRef(pane string) (agent, sessionID string) {
 			live = cmd
 		}
 	}
-	rec, ok := resume.Load(loc)
+	rec, ok := resume.LoadLive(loc)
 	return sessionRefForLiveAgent(live, rec, ok)
 }
 

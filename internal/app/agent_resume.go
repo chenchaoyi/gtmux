@@ -95,7 +95,7 @@ func resumeAgents() {
 		}
 		occupied[f[2]] = true
 		if !isShellCommand(f[1]) {
-			if rec, ok := resume.Load(f[2]); ok && rec.SessionID != "" {
+			if rec, ok := resume.LoadLive(f[2]); ok && rec.SessionID != "" {
 				used[rec.SessionID] = true
 			}
 			continue // a program is running here — don't type over it
@@ -150,7 +150,7 @@ func resumeAgents() {
 			restoreLogf("restore.resume", "resume[skip] pane=%s session=%s — conversation not on disk (deleted/expired)", paneID, rec.SessionID)
 			return false
 		}
-		cmd, ok := resume.Command(rec)
+		cmd, ok := resume.CommandWithBridge(rec, selfPath())
 		if !ok {
 			return false
 		}
@@ -167,7 +167,7 @@ func resumeAgents() {
 	// conversation another pane can prove is its own.
 	var pending []shellPane
 	for _, p := range panes {
-		rec, ok := resume.Load(p.loc)
+		rec, ok := resume.LoadLive(p.loc)
 		src := "exact"
 		if !ok {
 			if agent, id := layout.ByLoc[p.loc].savedSessionID(); id != "" {

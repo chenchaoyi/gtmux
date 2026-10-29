@@ -16,6 +16,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/chenchaoyi/gtmux/internal/agents"
 	"github.com/chenchaoyi/gtmux/internal/usercfg"
 )
 
@@ -66,6 +67,15 @@ func Wrap(command string) string {
 		return command
 	}
 	return Prefix() + command
+}
+
+// Launch applies the interactive frontend adapter at an execution boundary;
+// Wrap remains the unchanged environment helper for headless/custom recipes.
+func Launch(command string) string {
+	if executable, err := os.Executable(); err == nil {
+		command = agents.BridgeCommand(command, executable)
+	}
+	return Wrap(command)
 }
 
 // Active returns the proxy URL a launch WOULD apply on this network ("" = none) —

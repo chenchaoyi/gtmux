@@ -19,7 +19,7 @@ func spawnBindingPayload(pane, agent, payload string) string {
 		diag.For("cli").Warn("codex.binding.unavailable", "spawn could not identify its live Codex target", "pane", pane)
 		return payload
 	}
-	if rec, ok := resume.Load(live.Loc); ok && rec.Agent == "codex" && rec.SessionID != "" {
+	if rec, ok := resume.LoadLive(live.Loc); ok && rec.Agent == "codex" && rec.SessionID != "" {
 		return payload
 	}
 	wire, err := resume.PrepareCodexBinding(live, payload, time.Now().Unix())

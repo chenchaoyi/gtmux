@@ -7,6 +7,7 @@ package hq
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/chenchaoyi/gtmux/internal/agentcaller"
 	"os"
 	"os/signal"
 	"strconv"
@@ -370,7 +371,12 @@ func fromHQHome() bool {
 // events, and the same cursor knocked again". Nobody but HQ works in that tree (spawn
 // refuses to start there, hq-home-quarantine), so a read from it is HQ's read wherever
 // in it they were standing.
-func isHQRead() bool { return fromHQHome() || insideHQHome() }
+func isHQRead() bool {
+	if agentcaller.HasCodexRuntime() {
+		return agentcaller.IsHQ()
+	}
+	return fromHQHome() || insideHQHome()
+}
 
 // insideHQHome reports the cd-DRIFT shape: a cwd strictly inside the HQ home (`notes/`,
 // `knowledge/`, …) rather than at it. Nobody but HQ works in there, so a read from there
@@ -411,17 +417,14 @@ func insideHQHome() bool {
 // so consumption is untouched. `--all` restores the raw view for the times HQ needs to see
 // its own trail (and still consumes — it is a superset).
 //
-// HQ's own records are identified by the CALLER'S OWN `$TMUX_PANE`, never by resolving the
-// HQ pane through tmux: an agent running this from its pane already knows which pane it is,
-// and reading an env var keeps the read path free of the tmux round-trips whose wedging
-// once froze the radar. (That is also why the B9 warning does not key on the pane — see
-// insideHQHome: knowing your own pane tells you nothing about whether you are the
-// supervisor, which is the question that one has to answer.)
+// HQ's own records use the executing conversation's verified pane. Shared Codex
+// tools can inherit another frontend's TMUX_PANE; an unresolved source hides no
+// pane's events. Ordinary shell callers retain the original physical pane route.
 func pullView(delta []events.Record, apply bool) (shown []events.Record, hidden int) {
 	if !apply || !fromHQHome() {
 		return delta, 0
 	}
-	own := os.Getenv("TMUX_PANE")
+	own := agentcaller.Pane()
 	blink := unreadBlinks(delta)
 	for i, r := range delta {
 		if (own != "" && r.Pane == own) || blink[i] || events.IsAudit(r) || !sessionpolicy.ObserveEvent(r.Pane, r.Agent, r.AgentSession, r.Client, r.Ts, r.HomeID) {

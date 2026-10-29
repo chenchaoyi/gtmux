@@ -15,18 +15,21 @@ import (
 // Binding is a receipt from the exact submitted-task binding path, not a guess
 // from directory or inherited TMUX_PANE. It records no prompt or environment.
 type Binding struct {
-	HomeID      string `json:"home_id,omitempty"`
-	ID          string `json:"id"`
-	SessionID   string `json:"session_id"`
-	Pane        string `json:"pane"`
-	Loc         string `json:"loc"`
-	Cwd         string `json:"cwd"`
-	PID         int    `json:"pid"`
-	PanePID     int    `json:"pane_pid"`
-	PreparedAt  int64  `json:"prepared_at"`
-	BoundAt     int64  `json:"bound_at"`
-	Retired     bool   `json:"retired"`
-	Observation Record `json:"observation"`
+	Kind         string `json:"kind,omitempty"`
+	BackendPID   int    `json:"backend_pid,omitempty"`
+	BackendStart string `json:"backend_start,omitempty"`
+	HomeID       string `json:"home_id,omitempty"`
+	ID           string `json:"id"`
+	SessionID    string `json:"session_id"`
+	Pane         string `json:"pane"`
+	Loc          string `json:"loc"`
+	Cwd          string `json:"cwd"`
+	PID          int    `json:"pid"`
+	PanePID      int    `json:"pane_pid"`
+	PreparedAt   int64  `json:"prepared_at"`
+	BoundAt      int64  `json:"bound_at"`
+	Retired      bool   `json:"retired"`
+	Observation  Record `json:"observation"`
 }
 
 const bindingLimit = 256
@@ -75,12 +78,14 @@ func readBinding(id string, homes ...string) (Binding, error) {
 }
 
 func provisional(r Record, b Binding) bool {
+	frontendStartup := b.Kind == "frontend" && b.BackendPID > 1 && b.BackendStart != "" &&
+		r.PID == b.BackendPID && r.ProcessStart == b.BackendStart && r.Comm == "codex" && r.Event == "SessionStart"
 	// Without an explicit legacy start witness, only its minimal PID-less idle
 	// startup shape is eligible. Real turns/processes/terminal attachments survive.
 	return r.Agent == "codex" && r.HomeID == b.HomeID && r.SessionID == b.SessionID && r.Cwd == b.Cwd &&
-		r.PID == 0 && r.Comm == "" && r.Terminal == "" && r.LaunchHost == (Record{}).LaunchHost && r.State == "idle" &&
+		(frontendStartup || r.PID == 0 && r.Comm == "") && r.Terminal == "" && r.LaunchHost == (Record{}).LaunchHost && r.State == "idle" &&
 		r.TurnID == "" && r.EndReason == "" && (r.Event == "" || r.Event == "SessionStart") &&
-		r.UpdatedAt > 0 && r.UpdatedAt <= b.BoundAt && (r.Event == "SessionStart" || r.UpdatedAt <= b.PreparedAt) && r.UpdatedAt >= b.PreparedAt-600
+		r.UpdatedAt > 0 && r.UpdatedAt <= b.BoundAt && (r.Event == "SessionStart" || r.UpdatedAt <= b.PreparedAt) && (frontendStartup || r.UpdatedAt >= b.PreparedAt-600)
 }
 
 // ConfirmBinding publishes evidence before deleting an exact provisional snapshot.

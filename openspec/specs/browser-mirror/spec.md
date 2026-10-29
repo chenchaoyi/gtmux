@@ -484,7 +484,7 @@ selecting an event or choosing Show details SHALL reopen it. Width-appropriate c
 views SHALL drill into details and return to the same selected row and focus, rather
 than dividing an already narrow reading area. Identifiable records SHALL retain their
 selection across history additions. Selected text and focused detail controls SHALL
-hold their displayed revision during updates and resume after release. Inspecting or
+hold their displayed revision during updates to the SAME event and resume after release. If the selected event disappears when a session is replaced, the inspector SHALL immediately show the newly selected event rather than retain the old session under the new list. Inspecting or
 manually scrolling SHALL stop automatic following. Viewer-owned observers and timers
 SHALL be disposed when the trace is retired.
 
@@ -504,6 +504,11 @@ SHALL be disposed when the trace is retired.
 - **WHEN** older or newer identifiable history is inserted while a record is selected
 - **THEN** the same record remains selected, without substituting another record at its previous array index
 - **AND** a selected text range remains intact until the reader releases it
+
+#### Scenario: Session changes while an old call is selected
+- **WHEN** the current transcript replaces the selected event and its old source text remains selected or focused
+- **THEN** the inspector immediately displays the newly selected event with matching session metadata on desktop and compact layouts
+- **AND** ordinary streaming updates to an existing selected event still preserve the reader's selection
 
 ### Requirement: Recognizable browser identity
 The browser SHALL provide a bundled gtmux favicon and a localized contextual tab title for the workspace, access page and focused conversation modes. Workspace branding and navigation SHALL provide readable size and spacing on desktop and narrow screens.

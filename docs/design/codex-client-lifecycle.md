@@ -256,3 +256,7 @@ frontend identity. Exact binding retirement, confirmed process death and existin
 remain available. Other agents retain their existing adoption/lifecycle behavior.
 General transfer and in-place inline restart remain unavailable (batch D). No real
 client switch, release, installation, device layout or VoiceOver acceptance was performed.
+
+## Shared terminal adapter
+
+[Terminal identity](codex-terminal-identity.md) implements verified per-frontend root binding, addressed input and thread-aware tool/HQ identity. It complements the read-only lifecycle model; general Desktop takeover remains unavailable.

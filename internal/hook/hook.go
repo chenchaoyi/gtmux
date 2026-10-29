@@ -641,6 +641,17 @@ func Run(stdin io.Reader, args []string) int {
 		limits.ObserveDSHAccount(raw, time.Now())
 		return 0
 	}
+	// Subagent hooks carry the parent's session_id. They must never change the
+	// parent's lifecycle, profile, binding or HQ wake state.
+	if agentKey == "codex" {
+		var child struct {
+			ID string `json:"agent_id"`
+		}
+		_ = json.Unmarshal(raw, &child)
+		if child.ID != "" {
+			return 0
+		}
+	}
 	// Capture historical ancestry before setsid/reparenting loses the launch chain.
 	originEvent := rawEvent
 	if originEvent == "" {
@@ -802,6 +813,12 @@ func Run(stdin io.Reader, args []string) int {
 		// fallback. Leave it pane-less until its exact target can be verified.
 		pane = codexSubmittedBinding(promptText, agentSession, time.Now().Unix())
 		codexPaneChecked = true
+	}
+	if !codexPaneChecked && agentKey == "codex" && !isHelperSession(agentSession) && !isHelperPrompt(promptText) {
+		if f, ok := codexHookFrontend(transcript.CodexHomeID(), agentSession); ok &&
+			process.PID == f.BackendPID && process.Start == f.BackendStart {
+			pane, codexPaneChecked = f.Pane, true
+		}
 	}
 	if !codexPaneChecked && agentKey == "codex" && !isHelperSession(agentSession) &&
 		!(event == "UserPromptSubmit" && isHelperPrompt(promptText)) {

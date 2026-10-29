@@ -170,7 +170,7 @@ func openDirectEntry(pane string, now int64) bool {
 	}
 	loc := strings.TrimSpace(tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}"))
 	agent := ""
-	if rec, ok := resume.Load(loc); ok {
+	if rec, ok := resume.LoadLive(loc); ok {
 		agent = rec.Agent
 	}
 	return dispatch.AddTask(dispatch.Task{

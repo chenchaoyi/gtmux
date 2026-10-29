@@ -11,6 +11,7 @@ import (
 
 // CodexIdentity is persisted thread identity, not current client ownership.
 type CodexIdentity struct {
+	Subagent       bool
 	ThreadID       string
 	HomeID         string
 	CreationClient string
@@ -30,7 +31,13 @@ func canonicalHome(path string) string {
 
 // CodexHomeID is opaque on the wire. Server identity remains the caller's scope.
 func CodexHomeID() string {
-	sum := sha256.Sum256([]byte(canonicalHome(codexHome())))
+	return CodexHomeIDForPath(codexHome())
+}
+
+// CodexHomeIDForPath checks a local server's declared home without exposing its
+// filesystem path in a public identity or accepting a different configured home.
+func CodexHomeIDForPath(path string) string {
+	sum := sha256.Sum256([]byte(canonicalHome(path)))
 	return hex.EncodeToString(sum[:16])
 }
 
@@ -69,5 +76,9 @@ func codexIdentityFor(resolver codexPathResolver, id string) (CodexIdentity, boo
 	}
 	var source string
 	_ = json.Unmarshal(meta.Source, &source)
-	return CodexIdentity{ThreadID: thread, HomeID: CodexHomeID(), CreationClient: client, Source: source, Cwd: meta.Cwd}, true
+	var lineage map[string]json.RawMessage
+	_ = json.Unmarshal(meta.Source, &lineage)
+	_, snake := lineage["subagent"]
+	_, camel := lineage["subAgent"]
+	return CodexIdentity{ThreadID: thread, HomeID: CodexHomeID(), CreationClient: client, Source: source, Cwd: meta.Cwd, Subagent: snake || camel}, true
 }

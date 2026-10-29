@@ -28,8 +28,8 @@ func codexBoundSessions(panes []codexPane) map[string]string {
 		if p.loc == "" {
 			continue
 		}
-		r, ok := resume.Load(p.loc)
-		if ok && r.Agent == "codex" && r.SessionID != "" && hqpane.SameDir(r.Cwd, p.cwd) {
+		r, ok := resume.LoadLive(p.loc)
+		if ok && r.Agent == "codex" && r.SessionID != "" && resume.CodexCwdMatches(p.id, r, p.cwd) {
 			bound[p.id] = r.SessionID
 		}
 	}
@@ -185,3 +185,5 @@ func codexWaitingPane(sessionID string, panes []codexPane, bound map[string]stri
 	}
 	return candidate
 }
+
+var codexHookFrontend = resume.CodexFrontendForThread

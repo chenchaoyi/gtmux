@@ -65,6 +65,22 @@ func Run(argv []string) int {
 	}
 	_ = usercfg.Load(&lc) // malformed/missing config → empty, i.e. locale fallback
 	i18n.SetLang(resolveLang(os.Getenv, lc.Lang))
+	// A terminal bridge forwards Codex's argv verbatim, including tokens that
+	// happen to share a spelling with gtmux's global options.
+	codexAt := 0
+	for codexAt < len(argv) && strings.HasPrefix(argv[codexAt], "--lang=") {
+		codexAt++
+	}
+	if codexAt < len(argv) && argv[codexAt] == "codex" {
+		for _, option := range argv[:codexAt] {
+			lang := strings.TrimPrefix(option, "--lang=")
+			if lang != "en" && lang != "zh" {
+				return 2
+			}
+			i18n.SetLang(lang)
+		}
+		return cmdCodex(argv[codexAt+1:])
+	}
 	var args []string
 	for _, a := range argv {
 		switch {
@@ -87,7 +103,12 @@ func Run(argv []string) int {
 		args = args[1:]
 	}
 
+	if actor := commandDiagnosticActor(); actor != "" {
+		defer diag.PushProcess("cli", actor)()
+	}
 	switch sub {
+	case "codex":
+		return cmdCodex(args)
 	case "", "-h", "--help", "help":
 		// `--help --json` is the same table as data; `help <command>` is that one
 		// command. Everything else is the screen.

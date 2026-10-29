@@ -65,6 +65,9 @@ type Ev struct {
 // tests. Every field that Deliver may call must be non-nil except the optional
 // ClearDraft / Events / RecentSend / RecordSend (guarded before use).
 type IO struct {
+	// SubmitNative addresses one verified conversation after the same draft,
+	// menu, hold and resend guards. It never falls back to terminal input.
+	SubmitNative func(Opts, string, func() string) Result
 	// Begin selects optional transport retry semantics before any draft check.
 	// It never types or bypasses the ordinary pane safeguards.
 	Begin func(Opts, string)
@@ -224,6 +227,9 @@ func Deliver(io IO, opts Opts, text string) Result {
 	// 1c · Hold, before anything is typed.
 	if why := held(io); why != "" {
 		return Result{State: StateRefusedWaiting, Evidence: why}
+	}
+	if io.SubmitNative != nil {
+		return io.SubmitNative(opts, text, io.Hold)
 	}
 
 	start := io.Now()
@@ -451,6 +457,13 @@ func PasteAndSubmit(io IO, opts Opts, text string) (ok bool, refused State) {
 	}
 	if held(io) != "" {
 		return false, StateRefusedWaiting
+	}
+	if io.SubmitNative != nil {
+		result := io.SubmitNative(opts, text, io.Hold)
+		if result.Delivered || result.State == StateQueued {
+			return true, ""
+		}
+		return false, result.State
 	}
 	if !pasteWithGuard(io, opts, text) {
 		return false, StateFailed // a settled fragment — do not submit a truncated draft

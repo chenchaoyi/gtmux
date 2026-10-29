@@ -23,7 +23,7 @@ func terminalInputTarget(id string) (terminalkeys.Target, error) {
 	if len(parts) != 6 || parts[0] != id {
 		return terminalkeys.Target{}, fmt.Errorf("pane unavailable")
 	}
-	rec, _ := resume.Load(parts[5])
+	rec, _ := resume.LoadLive(parts[5])
 	// Persisted conversation identity alone is not a live route. The pane's current
 	// process/tty/session observation must match as well when sending.
 	sum := sha256.Sum256([]byte(identity + "\x00" + rec.Agent + "\x00" + rec.HomeID + "\x00" + rec.SessionID))

@@ -52,6 +52,11 @@ func installCodexHooks(yes bool) int {
 	i18n.Say("✓ registered 'gtmux hook' for Codex in "+tildeify(path)+" (UserPromptSubmit · PermissionRequest · Stop · Interrupt · Session start/end)",
 		"✓ 已为 Codex 在 "+tildeify(path)+" 注册 'gtmux hook'（UserPromptSubmit · PermissionRequest · Stop · Interrupt · Session 开始/结束）")
 	ensureCodexFeaturesHooks(codexConfigPath())
+	terminal := &fixState{yes: yes}
+	terminal.stepCodexTerminal()
+	if terminal.rc != 0 {
+		return terminal.rc
+	}
 	i18n.Say("• coexists with any existing Codex `notify` (e.g. computer-use), which is left untouched.",
 		"• 与你现有的 Codex `notify`（如 computer-use）并存，保持不动。")
 	if hostplatform.Current().MenuBar && installedAppPath() == "" {

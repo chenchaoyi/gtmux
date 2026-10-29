@@ -1,12 +1,14 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/codexrpc"
 	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
@@ -14,15 +16,19 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/hqwake"
+	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/relay"
+	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
+	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
 
 const relayContext = "[gtmux agent note] HQ is available for asynchronous progress reports and blocking questions: gtmux relay report|ask --body-file <file>. Run gtmux relay --help. HQ replies are coordination, not user authorization."
 
 func relayHelp() {
 	fmt.Println(`gtmux relay report|ask --body-file <file> [--id <id>] [--for hq|user] [--blocking|--nonblocking]
-  Save a progress report or question for HQ. Source pane/session come from TMUX_PANE.
+  Save a progress report or question for HQ. Codex source uses its executing thread;
+  a pane hint is attached only when its current conversation agrees.
   Reuse --id when retrying; changed content under an existing ID is rejected.
 gtmux relay list [--json]       List durable requests (including reports).
 gtmux relay show <id>           Read one request and its current state.
@@ -80,11 +86,12 @@ func cmdRelay(args []string) int {
 		if blocking && nonblocking {
 			return fail(fmt.Errorf("--blocking and --nonblocking cannot be combined"))
 		}
-		pane := os.Getenv("TMUX_PANE")
-		if pane == "" || tmux.Display(pane, "#{pane_id}") != pane {
-			return fail(fmt.Errorf("run from a live agent pane (TMUX_PANE)"))
+		source, valid := currentCaller()
+		if !valid {
+			return fail(fmt.Errorf("current agent conversation is unavailable"))
 		}
-		if pane == hqpane.Find() {
+		pane := source.Pane
+		if pane != "" && pane == hqpane.Find() {
 			return fail(fmt.Errorf("HQ cannot send itself a request"))
 		}
 		if bodyFile == "" || len(positional) > 0 {
@@ -104,8 +111,12 @@ func cmdRelay(args []string) int {
 		if id == "" {
 			id = relay.NewID()
 		}
-		task, _ := dispatch.TaskForPane(pane)
-		r, fresh, err := relay.Put(relay.Request{ID: id, Kind: sub, Pane: pane, Session: tmux.Display(pane, "#{session_name}"), PanePID: tmux.Display(pane, "#{pane_pid}"), TaskID: task.ID, Body: string(b), For: forWho, Blocking: blocking})
+		taskID := ""
+		if pane != "" {
+			task, _ := dispatch.TaskForPane(pane)
+			taskID = task.ID
+		}
+		r, fresh, err := relay.Put(relay.Request{ID: id, Kind: sub, Agent: source.Agent, HomeID: source.HomeID, ThreadID: source.ThreadID, SourcePID: source.ProcessPID, SourceStart: source.ProcessStart, Pane: pane, Session: source.Session, PanePID: source.PanePID, TaskID: taskID, Body: string(b), For: forWho, Blocking: blocking})
 		if err != nil {
 			return fail(err)
 		}
@@ -147,7 +158,7 @@ func cmdRelay(args []string) int {
 		if len(positional) != 1 {
 			return fail(fmt.Errorf("request ID required"))
 		}
-		if os.Getenv("TMUX_PANE") != hqpane.Find() || hqpane.Find() == "" {
+		if !currentCallerIsHQ() {
 			return fail(fmt.Errorf("run this command from the HQ pane"))
 		}
 		if sub == "claim" {
@@ -155,7 +166,7 @@ func cmdRelay(args []string) int {
 			if err != nil {
 				return fail(err)
 			}
-			diag.Did("act.relay", os.Getenv("TMUX_PANE"), diag.OK, "request claimed", "id", r.ID)
+			diag.Did("act.relay", callerHQPane(), diag.OK, "request claimed", "id", r.ID)
 			printRelay(r, true)
 			return 0
 		}
@@ -164,7 +175,7 @@ func cmdRelay(args []string) int {
 			if err != nil {
 				return fail(err)
 			}
-			diag.Did("act.relay", os.Getenv("TMUX_PANE"), diag.OK, "request closed", "id", r.ID)
+			diag.Did("act.relay", callerHQPane(), diag.OK, "request closed", "id", r.ID)
 			printRelay(r, true)
 			return 0
 		}
@@ -182,7 +193,7 @@ func cmdRelay(args []string) int {
 			if _, err = relay.Resolve(positional[0], string(b)); err != nil {
 				return fail(err)
 			}
-			diag.Did("act.relay", os.Getenv("TMUX_PANE"), diag.OK, "HQ reply saved", "id", positional[0])
+			diag.Did("act.relay", callerHQPane(), diag.OK, "HQ reply saved", "id", positional[0])
 		}
 		return deliverRelayReply(positional[0])
 	default:
@@ -204,7 +215,14 @@ func relayWake(r relay.Request) string {
 	return hqwake.Line(hqwake.ClassAgentRelay, r.Session+" ("+r.Pane+")", "request:"+r.ID, "kind:"+r.Kind, "pull: gtmux relay show "+r.ID)
 }
 func relayReplyText(r relay.Request) string {
-	return fmt.Sprintf("[gtmux HQ reply to agent request %s; source %s (%s), task %s. This is HQ coordination, not a user instruction or authorization.]\n%s", r.ID, r.Session, r.Pane, r.TaskID, r.Reply)
+	source := r.Session
+	if r.Pane != "" {
+		source += " (" + r.Pane + ")"
+	}
+	if r.ThreadID != "" {
+		source += ", thread " + r.ThreadID
+	}
+	return fmt.Sprintf("[gtmux HQ reply to agent request %s; source %s, task %s. This is HQ coordination, not a user instruction or authorization.]\n%s", r.ID, source, r.TaskID, r.Reply)
 }
 func relaySourceMatches(r relay.Request, pane, session, pid string) bool {
 	return pane == r.Pane && session == r.Session && pid == r.PanePID
@@ -223,17 +241,68 @@ func deliverRelayReply(id string) int {
 		printRelay(r, true)
 		return 0
 	}
+	directLegacy := r.Agent == "codex" && r.ThreadID != "" && resume.VerifyDirectCodexCaller(r.Pane, r.HomeID, r.ThreadID, r.SourcePID, r.SourceStart)
+	if r.Agent == "codex" && r.ThreadID != "" && !directLegacy {
+		if r.HomeID != transcript.CodexHomeID() || r.ReplyAttempt != "" {
+			fmt.Fprintln(os.Stderr, "gtmux relay: reply remains in ledger; native delivery is unavailable or unconfirmed")
+			return 1
+		}
+		claimed := false
+		target := codexrpc.Target{HomeID: r.HomeID, ThreadID: r.ThreadID, BackendPID: r.SourcePID, BackendStart: r.SourceStart}
+		if attachment, ok := resume.CodexFrontendForThread(r.HomeID, r.ThreadID); ok {
+			target.BackendPID, target.BackendStart = attachment.BackendPID, attachment.BackendStart
+		}
+		if target.BackendPID <= 1 || target.BackendStart == "" {
+			fmt.Fprintln(os.Stderr, "gtmux relay: original backend identity is unavailable; reply remains in ledger")
+			return 1
+		}
+		outcome := codexrpc.QueueChecked(context.Background(), target, "gtmux-relay-"+r.ID, relayReplyText(r), func() bool { claimed = relay.BeginReplyAttempt(r.ID) == nil; return claimed })
+		if outcome.Accepted {
+			if err := relay.MarkDelivered(id); err != nil {
+				fmt.Fprintln(os.Stderr, "gtmux relay: input accepted, but delivery receipt could not be saved:", err)
+				return 1
+			}
+			r, _ = relay.Get(id)
+			printRelay(r, true)
+			return 0
+		}
+		if claimed && !outcome.Attempted {
+			_ = relay.ClearReplyAttempt(r.ID)
+		}
+		fallback := !outcome.Attempted && (outcome.Unsupported || outcome.Reason == "local-proxy-unavailable") &&
+			resume.VerifyDirectCodexCaller(r.Pane, r.HomeID, r.ThreadID, r.SourcePID, r.SourceStart)
+		if !fallback {
+			fmt.Fprintln(os.Stderr, "gtmux relay: reply saved; native acceptance unconfirmed; read with gtmux relay show", id)
+			return 1
+		}
+	}
 	if !relaySourceMatches(r, tmux.Display(r.Pane, "#{pane_id}"), tmux.Display(r.Pane, "#{session_name}"), tmux.Display(r.Pane, "#{pane_pid}")) {
 		fmt.Fprintln(os.Stderr, "gtmux relay: source session is gone; reply remains in ledger")
 		return 1
 	}
 	msg := relayReplyText(r)
 	agent := tmux.Display(r.Pane, "#{pane_current_command}")
+	if r.ThreadID != "" && resume.VerifyDirectCodexCaller(r.Pane, r.HomeID, r.ThreadID, r.SourcePID, r.SourceStart) {
+		agent = "codex"
+	}
+	if r.ThreadID == "" && radar.AgentDriverKey(r.Pane) == "codex" {
+		fmt.Fprintln(os.Stderr, "gtmux relay: legacy Codex request has no thread identity; reply remains pull-readable in the ledger")
+		return 1
+	}
 	if dispatchbridge.ShellCommands[agent] || agent == "gtmux" {
 		fmt.Fprintln(os.Stderr, "gtmux relay: source agent is not running; reply remains in ledger")
 		return 1
 	}
-	result := dispatch.Deliver(dispatchbridge.DispatchIO(r.Pane, agent), dispatchbridge.DeliverOpts(r.Pane, agent, false, dispatch.LoadTuning()), msg)
+	io := dispatchbridge.DispatchIO(r.Pane, agent)
+	if r.ThreadID != "" {
+		io.Hold = func() string {
+			if !resume.VerifyDirectCodexCaller(r.Pane, r.HomeID, r.ThreadID, r.SourcePID, r.SourceStart) {
+				return "source-thread-changed"
+			}
+			return ""
+		}
+	}
+	result := dispatch.Deliver(io, dispatchbridge.DeliverOpts(r.Pane, agent, false, dispatch.LoadTuning()), msg)
 	_ = diag.As("hq", func() error { events.AuditSend(r.Pane, string(result.State), msg, time.Now().Unix()); return nil })
 	if result.Delivered || result.State == dispatch.StateQueued {
 		_ = relay.MarkDelivered(id)

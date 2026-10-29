@@ -12,6 +12,70 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
 
+func TestWorkspaceWorkingHQAcceptsInputWithoutOverwritingDrafts(t *testing.T) {
+	for _, tc := range []struct {
+		name, status, draft, want string
+		wantInput                 bool
+	}{
+		{"working with empty composer", "working", "", "delivered", true},
+		{"working with human draft", "working", "unfinished human input", "pending", false},
+		{"permission waiting", "waiting", "", "pending", false},
+		{"unknown state", "unknown", "", "pending", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("HOME", t.TempDir())
+			t.Setenv("CODEX_HOME", t.TempDir())
+			oldResolve, oldDispatch := workspaceResolveHQ, workspaceDispatch
+			t.Cleanup(func() { workspaceResolveHQ, workspaceDispatch = oldResolve, oldDispatch })
+			target := hqworkspace.Conversation{Agent: "codex", SessionID: "hq-session", HomeID: transcript.CodexHomeID(), Pane: "%99", Loc: "hq:0.0"}
+			workspaceResolveHQ = func() (hqworkspace.Conversation, string) { return target, workspaceInputHold(tc.status) }
+			pastes, enters := 0, 0
+			draft := tc.draft
+			submitted := ""
+			now := int64(100)
+			workspaceDispatch = func(string, ...string) dispatch.IO {
+				return dispatch.IO{
+					Capture: func() string {
+						return "• Working (esc to interrupt)\n\n› " + strings.ReplaceAll(draft, "\n", "\n  ") + "\n\n  ? for shortcuts"
+					},
+					Paste: func(text string) error { pastes++; draft = text; return nil },
+					Enter: func() error { enters++; submitted, draft = draft, ""; return nil },
+					Events: func(int64) []dispatch.Ev {
+						if submitted != "" {
+							return []dispatch.Ev{{Kind: dispatch.EvSubmit, Head: dispatch.NormalizeNeedle(submitted), Ts: now}}
+						}
+						return nil
+					},
+					Now:   func() int64 { return now },
+					Sleep: func() { now++ },
+				}
+			}
+			s := hqworkspace.New(t.TempDir())
+			if _, err := applyWorkspaceAction(s, workspaceAction{Op: "send", ID: "busy-message", Body: "A new explicit user instruction"}, 99); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := pumpWorkspace(s, 100); err != nil {
+				t.Fatal(err)
+			}
+			d, _ := s.Read()
+			if m := d.Messages["busy-message"]; m.Delivery != tc.want {
+				t.Fatalf("wrong receipt: %+v", m)
+			}
+			if tc.wantInput {
+				if pastes != 1 || enters != 1 {
+					t.Fatalf("explicit instruction was not submitted once: %d pastes, %d enters", pastes, enters)
+				}
+				_, _ = pumpWorkspace(s, 200)
+				if pastes != 1 || enters != 1 {
+					t.Fatal("accepted instruction was submitted again")
+				}
+			} else if pastes != 0 || enters != 0 || draft != tc.draft {
+				t.Fatal("held instruction changed the input", pastes, enters, draft)
+			}
+		})
+	}
+}
+
 func TestWorkspaceHoldsBeforeResolvingOrTypingWhenWakeOwnsInput(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	release, acquired, err := hqinput.Acquire()

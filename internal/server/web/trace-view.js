@@ -4,7 +4,7 @@
   window.GtmuxTraceView = {create: function (options) {
     var T = options.T, model = window.GtmuxTrace, pageSize = 200;
     var current = {events: [], sessions: []}, filtered = [], context = {}, selected = '', page = 0;
-    var inspectorOpen = null, follow = false, initialized = false, rowNodes = new Map(), lastDetail = '', deferred = null, lastInput = null, lastScope = '';
+    var inspectorOpen = null, follow = false, initialized = false, rowNodes = new Map(), lastDetail = '', lastDetailKey = '', deferred = null, lastInput = null, lastScope = '';
     var root = el('div', 'trace-view'), toolbar = el('div', 'trace-toolbar');
     var status = el('span', 'trace-status'); status.title = T('Current session status', '当前会话状态'); toolbar.appendChild(status);
     var count = el('span', 'trace-count'); count.setAttribute('role', 'status'); toolbar.appendChild(count);
@@ -61,11 +61,11 @@
       toggle.disabled = false; detail.hidden = !inspectorOpen;
       var signature = JSON.stringify([event, detailMode]);
       if (!force && signature === lastDetail) return;
-      if (!force && selectionHeld()) {
+      if (!force && event.key === lastDetailKey && selectionHeld()) {
         if (!deferred) deferred = setTimeout(function flush() { deferred = null; if (!root.isConnected) return; if (selectionHeld()) deferred = setTimeout(flush, 250); else renderDetail(false); }, 250);
         return;
       }
-      lastDetail = signature;
+      lastDetail = signature; lastDetailKey = event.key;
       var scroll = detail.scrollTop;
       title.textContent = label(event);
       metadata.textContent = [event.agent, turnLabel(event), event.session, event.time && !isNaN(new Date(event.time).getTime()) ? T('Turn started ', '本轮开始于 ') + options.formatTime(new Date(event.time)) : ''].filter(Boolean).join(' · ');
