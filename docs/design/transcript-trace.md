@@ -16,7 +16,7 @@ describe the records it actually has.
 
 ## Browser interaction
 
-Open a pane's Trace tab, search or filter its records, then select a message or call.
+Open Trace from a pane's session-tools menu, search or filter its records, then select a message or call.
 The list identifies agent, loaded turn and history boundaries. Call details preserve
 recorded input whitespace, working directory and truncation notices. Prose offers
 Preview and Source; Copy exports the displayed record's original text.
@@ -37,7 +37,7 @@ session filter is labeled History.
 
 ## iPhone proposal
 
-Extend the existing mode row to Chat / Trace / Terminal. Keep one row of mode controls,
+Keep Chat / Terminal as presentation modes. Open Trace from session tools, alongside Diff. Keep one row of mode controls,
 using the existing display menu rather than adding a second font toolbar. A plain shell
 still offers Terminal only. A readable external session offers Chat / Trace and stays
 read-only; an unreadable native session remains status-only.

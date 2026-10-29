@@ -65,7 +65,7 @@
     });
   }
   var term = null, fit = null, lastText = '', curPane = null, lastSig = '', theme = null;
-  var curAgent = null, chatTimer = null, chatSig = '', lastTurns = [], chatExpanded = {}, traceState = resetTrace(traceState);
+  var curAgent = null, chatTimer = null, chatSig = '', lastTurns = [], chatExpanded = {};
   var chatLive = {}, serverClock = 0, serverClockAt = 0;
   var pendingPrompts = {};
   var lastAgents = [], optTimer = null; // for focus prev/next + the waiting reply bar
@@ -82,6 +82,8 @@
   var systemAppearance = null;
   var sizePref = parseInt(lsGet('gtmux.fontSize', '0'), 10) || 0;  // 0 = follow terminal/default
   var preferredPaneMode = lsGet('gtmux.paneMode', 'term');
+  if (preferredPaneMode !== 'chat' && preferredPaneMode !== 'term') preferredPaneMode = 'chat';
+  var activeSessionTool = null;
   var paneMode = preferredPaneMode;          // pane view tab: 'term' | 'chat'
 
   // ---- auth -------------------------------------------------------------
@@ -198,6 +200,7 @@
     ['appearance-dark', {text: T('Dark', '深色')}],
     ['appearance-sel', {label: T('Appearance', '外观')}],
     ['return-send-lbl', {text: T('Return sends', '回车发送')}],
+    ['session-tools', {title: T('Session tools', '会话工具'), html: uiIcon('tools')}],
     ['return-send-hint', {text: T('Enter adds a line by default. ⌘/Ctrl+Enter sends.', '默认 Enter 换行，⌘/Ctrl+Enter 发送。')}],
     ['size-lbl', {text: T('Terminal text size', '终端字号')}],
     ['rail-title', {text: T('Sessions', '会话')}],
@@ -241,13 +244,13 @@
   }
 
   // ---- helpers ----------------------------------------------------------
-  function show(which) { if (which !== 'chat') $('chat-interaction').hidden = true; cancelReads(); viewEpoch++; ['gate', 'radar', 'panes', 'pane', 'chat', 'workbench'].forEach(function (id) { $(id).hidden = id !== which; }); if ($('chat-input')) $('chat-input').hidden = true; if (which !== 'workbench') WB.on = false; updatePageTitle(which); }
+  function show(which) { if (activeSessionTool) activeSessionTool.sheet.el.retire(); if ($('session-tools')) $('session-tools').hidden = which !== 'chat' && which !== 'pane'; if (which !== 'chat') $('chat-interaction').hidden = true; cancelReads(); viewEpoch++; ['gate', 'radar', 'panes', 'pane', 'chat', 'workbench'].forEach(function (id) { $(id).hidden = id !== which; }); if ($('chat-input')) $('chat-input').hidden = true; if (which !== 'workbench') WB.on = false; updatePageTitle(which); }
   function updatePageTitle(view) {
     var title = T('Agent workspace', 'Agent 工作台');
     if (view === 'gate') title = T('Connect', '连接');
     else if (view === 'panes') title = T('All panes', '所有窗格');
     else if ((view === 'chat' || view === 'pane') && curAgent) {
-      var mode = paneMode === 'trace' ? T('Trace', '轨迹') : paneMode === 'chat' ? T('Chat', '对话') : T('Terminal', '终端');
+      var mode = paneMode === 'chat' ? T('Chat', '对话') : T('Terminal', '终端');
       title = primary(curAgent) + ' · ' + mode;
     }
     document.title = title + ' · gtmux';
@@ -323,7 +326,7 @@
     ['identity', 'wb-identity', 'guest-scope'].forEach(function (id) { var n = $(id); if (n) n.hidden = true; });
     SHARE = {known: false, input: false, all: false, panes: {}};
     curPane = null; curAgent = null; lastAgents = [];
-    lastTurns = []; chatSig = ''; traceState = resetTrace(traceState); chatExpanded = {}; chatLive = {}; pendingPrompts = {}; $('chat').innerHTML = '';
+    lastTurns = []; chatSig = ''; chatExpanded = {}; chatLive = {}; pendingPrompts = {}; $('chat').innerHTML = '';
     if (paneComposer) paneComposer.reset();
     WB.agents = []; WB.prevStatus = null;
     clearInterval(radarTimer); clearInterval(paneTimer); clearInterval(chatTimer); clearInterval(panesTimer);
@@ -332,7 +335,7 @@
     // The next successful pairing restores only panes in its authorized roster.
     if (WB.tiles.length) {
       WB.saved = WB.tiles.map(function (t) { return {id: t.id, x: t.x, y: t.y, w: t.w, h: t.h, mode: t.mode}; });
-      WB.tiles.forEach(function (t) { clearInterval(t.timer); t.removed = true; resetTrace(t.traceState); if (t.inputDispose) t.inputDispose(); if (t.term) t.term.dispose(); t.el.remove(); });
+      WB.tiles.forEach(function (t) { clearInterval(t.timer); t.removed = true; if (t.inputDispose) t.inputDispose(); if (t.term) t.term.dispose(); t.el.remove(); });
       WB.tiles = []; maxedTile = null; $('board').classList.remove('maximized');
       var exit = $('board').querySelector('.max-exit'); if (exit) exit.remove();
     }
@@ -1906,7 +1909,6 @@
     chatSig = '';
     lastTurns = [];
     chatExpanded = {};
-    traceState = resetTrace(traceState);
     showChatLoader();
     updateInputBar();
     pollConversation();
@@ -2095,7 +2097,7 @@
     syncModeButtons();
     if (paneMode !== 'term') {
       clearInterval(paneTimer); paneTimer = null;
-      show('chat'); chatSig = ''; lastTurns = []; chatExpanded = {}; traceState = resetTrace(traceState); curTurnIdx = 1e9;
+      show('chat'); chatSig = ''; lastTurns = []; chatExpanded = {}; curTurnIdx = 1e9;
       showChatLoader();
       showFocusChrome(false);
       pollChat(); clearInterval(chatTimer); chatTimer = setInterval(pollChat, 2500);
@@ -2112,10 +2114,10 @@
   }
   function setMode(m) {
     if (!curPane && readableConversation(curAgent)) {
-      if ((m !== 'chat' && m !== 'trace') || m === paneMode) return;
+      if (m !== 'chat' || m === paneMode) return;
       paneMode = m; syncModeButtons(); updatePageTitle('chat'); drawChat(lastTurns); updateInputBar(); return;
     }
-    if (!['chat', 'trace', 'term'].includes(m) || m === paneMode || !curPane || (m !== 'term' && !(curAgent && curAgent.agent))) return;
+    if (!['chat', 'term'].includes(m) || m === paneMode || !curPane || (m !== 'term' && !(curAgent && curAgent.agent))) return;
     paneMode = m; preferredPaneMode = m;
     try { localStorage.setItem('gtmux.paneMode', m); } catch (e) {}
     applyMode();
@@ -2153,19 +2155,16 @@
     drawChat(turns);
   }
   // §03 wide chat: a turn-outline rail (left) + a centered conversation column with
-  // hover copy/quote on agent bubbles + a waiting approval card. Narrow: no rail.
+  // copy actions beside agent messages + a waiting approval card. Narrow: no rail.
   function drawChat(turns) {
-    var root = $('chat'), wide = isWide() && turns.length;
-    if (paneMode === 'trace' && traceState.el && root.firstChild === traceState.el) { traceView(turns, traceState, Object.assign({width: root.clientWidth, dropped: externalDropped}, curAgent || {})); return; }
+    var root = $('chat');
     var preserved = snapshotToolState(root), focused = preserved.focused, inputScroll = preserved.scroll;
     var oldScroll = root.querySelector('.conv-scroll');
     var atBottom = !oldScroll || (oldScroll.scrollHeight - oldScroll.scrollTop - oldScroll.clientHeight < 48);
     var prevTop = oldScroll ? oldScroll.scrollTop : 0;
-    root.innerHTML = ''; root.classList.toggle('wide', !!wide && paneMode !== 'trace');
+    root.innerHTML = ''; root.classList.remove('wide');
     var a = curAgent || {};
-    if (paneMode === 'trace') { root.appendChild(traceView(turns, traceState, Object.assign({width: root.clientWidth, dropped: externalDropped}, curAgent || {}))); return; }
 
-    if (wide) root.appendChild(buildOutline(turns));
     var scroll = document.createElement('div'); scroll.className = 'conv-scroll';
     var col = document.createElement('div'); col.className = 'chat-col';
     if(readableConversation(a)) col.appendChild(conversationControls());
@@ -2199,7 +2198,6 @@
     syncChatLive(main, a, function () { return !$('chat').hidden && paneMode === 'chat' && curPane === a.pane_id && curAgent && curAgent.status === 'working'; });
     scroll.scrollTop = atBottom ? scroll.scrollHeight : prevTop;
     if (curTurnIdx >= turns.length) curTurnIdx = Math.max(0, turns.length - 1);
-    if (wide) syncOutline();
     root.querySelectorAll('[data-chat-focus]').forEach(function (node) {
       var key = node.dataset.chatFocus, pos = inputScroll[key];
       if (pos) { node.scrollLeft = pos[0]; node.scrollTop = pos[1]; }
@@ -2234,33 +2232,28 @@
     toggle.dataset.chatFocus = 'group-' + stateKey;
     toggle.onclick = onToggle;
     var head = el('span', 'steps-heading');
+    head.appendChild(activityIcon('tool'));
     head.appendChild(el('span', 'steps-title', title));
     head.appendChild(el('span', 'steps-count', count));
     var chevron = el('span', 'steps-chevron'); chevron.innerHTML = uiIcon(open ? 'up' : 'down'); head.appendChild(chevron);
     toggle.appendChild(head);
-    if (!open) {
-      var counts = new Map();
-      steps.forEach(function (s) { var name = activity.label(activity.operation(s), lang); counts.set(name, (counts.get(name) || 0) + 1); });
-      var tools = Array.from(counts);
-      var summary = tools.slice(0, 3).map(function (p) { return p[0] + (p[1] > 1 ? ' ×' + p[1] : ''); }).join(' · ')
-        + (tools.length > 3 ? ' · +' + (tools.length - 3) : '');
-      if (summary !== title) toggle.appendChild(el('span', 'steps-summary', summary));
-    }
     card.appendChild(toggle);
     if (open) {
       var list = el('ol', 'steps-list');
       steps.forEach(function (s, i) {
         var row = el('li', 'step-row');
         var op = activity.operation(s), key = 'step-' + stateKey + '-' + i;
-        var details = el('details', 'step-inspect'); details.open = !!detailState[key];
+        var inspectable = !!(s.input || s.workdir || s.details_truncated);
+        var details = el(inspectable ? 'details' : 'div', 'step-inspect'); if (inspectable) details.open = !!detailState[key];
         details.saveOpenState = function () { detailState[key] = details.open; };
         details.ontoggle = function () { if (details.isConnected) detailState[key] = details.open; };
-        var summary = el('summary', 'step-toggle'); summary.dataset.chatFocus = key;
+        var summary = el(inspectable ? 'summary' : 'div', 'step-toggle' + (inspectable ? '' : ' step-static')); summary.dataset.chatFocus = key;
         summary.appendChild(activityIcon(op));
         var body = el('span', 'step-body');
         body.appendChild(el('span', 'step-label', activity.label(op, lang)));
         body.appendChild(el('span', 'step-detail' + (op === 'agent' || op === 'wait' ? ' step-prose' : ''), activity.preview(s, lang)));
         summary.appendChild(body); details.appendChild(summary);
+        if (!inspectable) { row.appendChild(details); list.appendChild(row); return; }
         var inspector = el('div', 'step-inspector');
         var meta = el('dl', 'step-meta');
         meta.appendChild(el('dt', '', T('Tool', '工具'))); meta.appendChild(el('dd', 'step-name', s.title || 'tool'));
@@ -2439,34 +2432,11 @@
     });
   }
 
-  // ---- §03 wide-chat helpers --------------------------------------------
-  var curTurnIdx = 0; // highlighted turn in the outline (j/k nav)
-  function buildOutline(turns) {
-    var rail = document.createElement('div'); rail.className = 'turn-rail';
-    var hd = document.createElement('div'); hd.className = 'to-head'; hd.textContent = T('Turns', '对话轮次'); rail.appendChild(hd);
-    var list = document.createElement('div'); list.className = 'to-list'; list.id = 'to-list';
-    turns.forEach(function (t, idx) {
-      var it = document.createElement('button'); it.className = 'to-item'; it.dataset.idx = idx;
-      var n = document.createElement('span'); n.className = 'to-n'; n.textContent = (idx + 1); it.appendChild(n);
-      var tx = document.createElement('span'); tx.className = 'to-tx';
-      tx.textContent = (t.prompt || (t.segments && t.segments[0] && t.segments[0].text) || t.response || '…').replace(/\s+/g, ' ').trim();
-      it.appendChild(tx);
-      it.onclick = function () { selectTurn(idx, true); };
-      list.appendChild(it);
-    });
-    rail.appendChild(list);
-    var ft = document.createElement('div'); ft.className = 'to-foot'; ft.textContent = T('j/k to move · c to collapse all', 'j/k 跳转 · c 折叠全部'); rail.appendChild(ft);
-    return rail;
-  }
-  function syncOutline() {
-    var list = $('to-list'); if (!list) return;
-    var items = list.querySelectorAll('.to-item');
-    for (var i = 0; i < items.length; i++) items[i].classList.toggle('on', +items[i].dataset.idx === curTurnIdx);
-  }
+  // Keyboard navigation stays in the conversation reading column.
+  var curTurnIdx = 0;
   function selectTurn(idx, scrollIt) {
     var turns = lastTurns || []; if (!turns.length) return;
     curTurnIdx = Math.max(0, Math.min(turns.length - 1, idx));
-    syncOutline();
     if (scrollIt) { var el = $('cturn-' + curTurnIdx); if (el) el.scrollIntoView({block: 'start', behavior: 'smooth'}); }
   }
   // Shared by focused chat and board tiles: one transcript, one set of affordances.
@@ -2479,7 +2449,7 @@
     if (t.prompt) {
       var ur = document.createElement('div'); ur.className = 'urow';
       var us = document.createElement('div'); us.className = 'message-stack user-message';
-      var ub = document.createElement('div'); ub.className = 'ububble'; ub.appendChild(mdRender(t.prompt)); us.appendChild(ub);
+      var ub = document.createElement('div'); ub.className = 'ububble'; ub.appendChild(mdRender(t.prompt, {session_id: t.session_id || currentAgent.session_id, home_id: currentAgent.home_id || ''})); us.appendChild(ub);
       us.appendChild(messageMeta(t.prompt, t.time, t.from));
       ur.appendChild(us); ur.appendChild(speakerAvatar(t.from ? t.from.kind : 'user', t.from || {}, t.from ? senderAvatarEl(t.from, 26) : userAvatarEl(26))); ct.appendChild(ur);
     }
@@ -2489,7 +2459,7 @@
       if (seg.text) {
         var ar = document.createElement('div'); ar.className = 'arow'; ar.appendChild(speakerAvatar('agent', a, avatarEl(a, 28, false)));
         var as = document.createElement('div'); as.className = 'message-stack assistant-message';
-        var ab = document.createElement('div'); ab.className = 'abubble'; ab.appendChild(mdRender(seg.text)); as.appendChild(ab);
+        var ab = document.createElement('div'); ab.className = 'abubble'; ab.appendChild(mdRender(seg.text, {session_id: t.session_id || currentAgent.session_id, home_id: currentAgent.home_id || ''})); as.appendChild(ab);
         as.appendChild(messageMeta(seg.text)); ar.appendChild(as); ct.appendChild(ar);
       }
       if (seg.steps && seg.steps.length) {
@@ -2624,6 +2594,10 @@
   function uiIcon(kind) {
     // Lucide 0.468.0 (ISC); attribution: vendor/lucide.LICENSE.
     var paths = {
+      "file": "<path d=\"M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z\"/><path d=\"M14 2v6h6M8 13h8M8 17h6\"/>",
+      "tools": "<path d=\"M14 5a6 6 0 0 0-7 7l-5 5 5 5 5-5a6 6 0 0 0 7-7l-4 3-4-4 3-4Z\"/>",
+      "trace": "<path d=\"M4 5h16M4 12h16M4 19h16\"/><circle cx=\"8\" cy=\"5\" r=\"2\"/><circle cx=\"16\" cy=\"12\" r=\"2\"/><circle cx=\"10\" cy=\"19\" r=\"2\"/>",
+      "diff": "<path d=\"M8 3v12m-3-3 3 3 3-3M16 21V9m-3 3 3-3 3 3\"/>",
       "copy": "<rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\" /> <path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\" />",
       "done": "<path d=\"M20 6 9 17l-5-5\" />",
       "error": "<circle cx=\"12\" cy=\"12\" r=\"10\" /> <line x1=\"12\" x2=\"12\" y1=\"8\" y2=\"12\" /> <line x1=\"12\" x2=\"12.01\" y1=\"16\" y2=\"16\" />",
@@ -2690,8 +2664,76 @@
       return ok;
     });
   }
+  function elButton(label, icon, action) {
+    var button = el('button'); button.type = 'button'; button.title = label; button.setAttribute('aria-label', label); button.innerHTML = uiIcon(icon);
+    button.onclick = function (event) { event.stopPropagation(); action(); }; return button;
+  }
+  // Tools sit above a session. The base Chat/Terminal DOM, draft and scroll stay mounted.
+  function showSessionTools(agent, tile) {
+    if (!agent || !hasPane(agent) && !readableConversation(agent)) return;
+    if (activeSessionTool) activeSessionTool.sheet.el.retire();
+    var sheet = browserDialog(T('Session tools', '会话工具'));
+    var state = {sheet: sheet, trace: {}, closed: false, kind: '', agent: Object.assign({}, agent), tile: tile};
+    activeSessionTool = state;
+    var epoch = viewEpoch, credential = token, timer = null, signature = '';
+    sheet.el.classList.add('session-tools-menu');
+    sheet.onClose = function () {
+      state.closed = true; clearInterval(timer); cancelRead('session-tool'); resetTrace(state.trace);
+      if (activeSessionTool === state) activeSessionTool = null;
+      document.body.classList.remove('has-session-tool');
+      if (state.reflowPending && sheet.restoreFocus && credential === token && epoch === viewEpoch && $('pane').hidden && $('chat').hidden) home();
+    };
+    function valid() { return !state.closed && epoch === viewEpoch && credential === token && (!tile || !tile.removed); }
+    function present(value) {
+      if (!valid()) return;
+      var next = JSON.stringify(value); if (signature === next) return; signature = next;
+      if (state.kind === 'trace') {
+        var roster = tile ? tile.agent : curAgent;
+        var view = traceView(value, state.trace, Object.assign({}, roster || agent, {width: sheet.body.clientWidth, dropped: readableConversation(agent) ? externalDropped : 0}));
+        if (view.parentNode !== sheet.body) { sheet.body.replaceChildren(view); }
+      } else renderDiff(sheet.body, value.diff || '');
+    }
+    function poll() {
+      if (!valid()) { sheet.el.retire(); return; }
+      if (state.kind === 'trace') {
+        if (tile && tile.mode === 'chat' && tile.chatSig) { signature = ''; present(tile.lastTurns || []); return; }
+        if (!tile && paneMode === 'chat' && chatSig) { signature = ''; present(lastTurns); return; }
+      }
+      runRead('session-tool', function (signal) {
+        var path = state.kind === 'diff' ? '/api/diff?id=' + encodeURIComponent(agent.pane_id)
+          : hasPane(agent) ? '/api/transcript?id=' + encodeURIComponent(agent.pane_id) : '/api/session/transcript' + conversationQuery(agent);
+        return api(path, {signal: signal}).then(function (response) {
+          if (!valid() || signal.aborted) return null;
+          if (response.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
+          if (response.status === 403) { sheet.body.replaceChildren(el('p', 'chat-empty', T('This connection cannot view these records.', '当前连接没有查看权限。'))); state.trace = resetTrace(state.trace); clearInterval(timer); return null; }
+          if (response.status === 404 && state.kind === 'trace') return [];
+          if (!response.ok) throw new Error('tool unavailable');
+          return response.json();
+        }).then(function (value) { if (value !== null && valid() && !signal.aborted) present(value); })
+          .catch(function () { if (valid() && !signature) sheet.body.replaceChildren(el('p', 'chat-empty', T('Could not load records. Close and try again.', '暂时无法读取，请关闭后重试。'))); });
+      });
+    }
+    function choose(kind) {
+      state.kind = kind; signature = ''; sheet.el.classList.remove('session-tools-menu'); sheet.el.classList.add('session-tool');
+      sheet.el.querySelector('h2').textContent = (kind === 'trace' ? T('Trace', '轨迹') : 'Diff') + ' · ' + primary(agent);
+      sheet.body.replaceChildren(brandLoaderEl(null)); document.body.classList.add('has-session-tool'); poll(); timer = setInterval(poll, 2500);
+    }
+    function item(kind, title, subtitle) {
+      var button = elButton(title, kind, function () { choose(kind); }); button.className = 'session-tool-item';
+      var text = el('span'); text.appendChild(el('strong', '', title)); text.appendChild(el('span', '', subtitle)); button.appendChild(text); sheet.body.appendChild(button);
+    }
+    if (agent.agent || readableConversation(agent)) item('trace', T('Trace', '轨迹'), T('Messages and recorded tool calls', '消息与工具调用记录'));
+    if (hasPane(agent)) item('diff', 'Diff', T('Changes in the session’s repository', '会话所在仓库的改动'));
+  }
+  function renderDiff(host, diff) {
+    var pre = el('pre', 'session-diff');
+    if (!diff) pre.textContent = T('No changes, or this session is outside a Git repository.', '没有改动，或当前会话不在 Git 仓库中。');
+    else diff.split('\n').forEach(function (line) {
+      var row = el('span', line[0] === '+' && line.indexOf('+++') !== 0 ? 'add' : line[0] === '-' && line.indexOf('---') !== 0 ? 'del' : '', line + '\n'); pre.appendChild(row);
+    });
+    host.replaceChildren(pre);
+  }
   function resetTrace(state) { if (state && state.view) state.view.dispose(); return {}; }
-  function traceEvents(turns, context) { return window.GtmuxTrace.build(turns, context || curAgent || {}).events; }
   function traceView(turns, state, context) {
     if (!state.view) {
       state.view = window.GtmuxTraceView.create({T: T, markdown: mdRender, actions: bubbleActions, icon: uiIcon, formatTime: sepTime, status: function (agent) { return LABEL[agent.status] ? {text: agent.error ? LABEL.errored : LABEL[agent.status], color: agent.error ? '#F59E0B' : COLORS[agent.status]} : null; }});
@@ -2756,12 +2798,72 @@
     return card;
   }
 
+  function showConversationDocument(reference, scope) {
+    var model = window.GtmuxDocuments, target = model && model.documentReference(reference);
+    if (!target || !scope.session_id) return;
+    var sheet = browserDialog(target.name || T('File', '文件')), credential = token, epoch = viewEpoch;
+    sheet.el.classList.add('conversation-document');
+    var controller = new AbortController(), objectURL = '', closed = false;
+    sheet.onClose = function () { closed = true; controller.abort(); if (objectURL) URL.revokeObjectURL(objectURL); };
+    function valid() { return !closed && credential === token && epoch === viewEpoch; }
+    function unavailable(reason) {
+      if (!valid()) return;
+      sheet.body.replaceChildren(el('p', 'document-error', reason === 'unsupported' ? T('This format cannot be previewed in the browser.', '此格式暂不支持浏览器预览。') : model.documentErrorMessage(reason, ZH)));
+      sheet.body.appendChild(clipboardAction(T('Copy path', '复制路径'), '', reference, 'document-path'));
+    }
+    sheet.body.appendChild(el('p', '', T('Opening file…', '正在打开文件…')));
+    if (!SHARE.all) { unavailable('forbidden'); return; }
+    api('/api/artifacts/resolve', {method: 'POST', redirect: 'error', signal: controller.signal, headers: {'Content-Type': 'application/json'}, body: JSON.stringify({reference: target.reference, session_id: scope.session_id, home_id: scope.home_id || ''})})
+      .then(function (r) { if (r.status === 401 || r.status === 403) throw new Error('forbidden'); if (!r.ok) throw new Error('unpublished'); return r.json(); })
+      .then(async function (value) {
+        if (!valid()) return;
+        var file = model.parseDocument(value, scope.session_id, scope.home_id || ''); if (!file) throw new Error('failed');
+        var response = await api('/api/artifacts/content?id=' + encodeURIComponent(file.id) + '&session_id=' + encodeURIComponent(scope.session_id) + '&home_id=' + encodeURIComponent(scope.home_id || ''), {redirect: 'error', signal: controller.signal});
+        if (!response.ok) throw new Error(response.status === 401 || response.status === 403 ? 'forbidden' : 'unpublished');
+        var limit = file.kind === 'image' ? Math.min(model.MAX_DOCUMENT_BYTES, 8 * 1024 * 1024) : model.MAX_DOCUMENT_BYTES;
+        if (file.bytes > limit || !response.body) throw new Error('failed');
+        var reader = response.body.getReader(), chunks = [], length = 0;
+        try { while (true) { var part = await reader.read(); if (part.done) break; length += part.value.length; if (length > limit || length > file.bytes || !valid()) { await reader.cancel(); throw new Error('failed'); } chunks.push(part.value); } } finally { reader.releaseLock(); }
+        if (!valid()) return;
+        var bytes = new Uint8Array(length), offset = 0; chunks.forEach(function (chunk) { bytes.set(chunk, offset); offset += chunk.length; });
+        var hash = await crypto.subtle.digest('SHA-256', bytes), digest = Array.from(new Uint8Array(hash)).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+        if (!valid()) return;
+        if (length !== file.bytes || digest !== file.sha256) throw new Error('failed');
+        sheet.el.querySelector('h2').textContent = file.name; sheet.body.replaceChildren();
+        if (file.kind === 'image' && imageWithinBudget(bytes)) {
+          var type = bytes[0] === 137 ? 'image/png' : 'image/jpeg';
+          objectURL = URL.createObjectURL(new Blob([bytes], {type: type}));
+          var image = el('img', 'document-image'); image.alt = file.name; image.src = objectURL;
+          image.onerror = function () { unavailable('failed'); }; sheet.body.appendChild(image);
+        } else if (file.kind === 'markdown' || file.kind === 'text') {
+          var text = new TextDecoder().decode(bytes.slice(0, 512 * 1024));
+          sheet.body.appendChild(file.kind === 'markdown' ? mdRender(text) : el('pre', 'document-text', text));
+        } else { unavailable('unsupported'); }
+      }).catch(function (error) { unavailable(['forbidden', 'unpublished', 'unsupported'].includes(error.message) ? error.message : 'failed'); });
+  }
+  // Inspect PNG/JPEG dimensions before allowing a decoder to allocate the bitmap.
+  function imageWithinBudget(bytes) {
+    var view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength), width = 0, height = 0;
+    if (bytes.length >= 24 && view.getUint32(0) === 0x89504e47 && view.getUint32(4) === 0x0d0a1a0a && view.getUint32(12) === 0x49484452) { width = view.getUint32(16); height = view.getUint32(20); }
+    else if (bytes.length >= 4 && bytes[0] === 255 && bytes[1] === 216) {
+      var i = 2;
+      while (i + 9 < bytes.length) {
+        if (bytes[i++] !== 255) break; while (bytes[i] === 255) i++;
+        var marker = bytes[i++]; if (marker === 0xda || marker === 0xd9) break;
+        if (marker === 0x01 || marker >= 0xd0 && marker <= 0xd8) continue;
+        if (i + 2 > bytes.length) break; var size = view.getUint16(i); if (size < 2 || i + size > bytes.length) break;
+        if ([0xc0,0xc1,0xc2,0xc3,0xc5,0xc6,0xc7,0xc9,0xca,0xcb,0xcd,0xce,0xcf].includes(marker) && size >= 8) { height = view.getUint16(i + 3); width = view.getUint16(i + 5); break; } i += size;
+      }
+    }
+    return width > 0 && height > 0 && width <= 16384 && height <= 16384 && width * height <= 24000000;
+  }
+
   // ---- markdown (vanilla → DOM) -----------------------------------------
   // A tiny Markdown subset matching the phone's markdown.ts: **bold**/*italic*/
   // `code`/[links] inline; heading/para/fenced-code/list/quote/hr/pipe-table
   // blocks. Underscore emphasis is intentionally OFF (snake_case). Built as DOM
   // with textContent (never innerHTML) so agent output can't inject markup.
-  function mdInline(s) {
+  function mdInline(s, context) {
     var frag = document.createDocumentFragment(), rest = String(s);
     while (rest.length) {
       var best = null;
@@ -2770,14 +2872,21 @@
         if (m && (!best || m.index < best.idx)) best = {idx: m.index, len: m[0].length, kind: kind, m: m};
       };
       probe(/`([^`]+)`/, 'code');
-      probe(/\[([^\]]+)\]\(([^)\s]+)\)/, 'link');
+      probe(/!?\[([^\]]+)\]\((<[^>]+>|[^)\s]+)\)/, 'link');
       probe(/\*\*([^*]+)\*\*/, 'b');
       probe(/\*([^*\n]+)\*/, 'i');
       if (!best) { frag.appendChild(document.createTextNode(rest)); break; }
       if (best.idx > 0) frag.appendChild(document.createTextNode(rest.slice(0, best.idx)));
       var m = best.m, el;
       if (best.kind === 'code') { el = document.createElement('code'); el.className = 'md-ic'; el.textContent = m[1]; }
-      else if (best.kind === 'link') { el = document.createElement('a'); if (/^https?:\/\//i.test(m[2]) || /^mailto:/i.test(m[2])) el.href = m[2]; el.target = '_blank'; el.rel = 'noopener noreferrer'; el.textContent = m[1]; }
+      else if (best.kind === 'link') {
+        var reference = m[2].replace(/^<|>$/g, '');
+        if (context && context.session_id && window.GtmuxDocuments && window.GtmuxDocuments.documentReference(reference)) {
+          el = document.createElement('button'); el.type = 'button'; el.className = 'conversation-file';
+          el.innerHTML = uiIcon('file'); var filename = document.createElement('span'); filename.textContent = m[1]; el.appendChild(filename); el.title = T('Open file: ', '打开文件：') + m[1];
+          (function (path, scope) { el.onclick = function () { showConversationDocument(path, scope); }; })(reference, context);
+        } else { el = document.createElement('a'); if (/^https?:\/\//i.test(reference) || /^mailto:/i.test(reference)) el.href = reference; el.target = '_blank'; el.rel = 'noopener noreferrer'; el.textContent = m[1]; }
+      }
       else if (best.kind === 'b') { el = document.createElement('strong'); el.textContent = m[1]; }
       else { el = document.createElement('em'); el.textContent = m[1]; }
       frag.appendChild(el);
@@ -2785,7 +2894,7 @@
     }
     return frag;
   }
-  function mdRender(src) {
+  function mdRender(src, context) {
     var root = document.createElement('div'); root.className = 'md';
     var lines = String(src).replace(/\r\n/g, '\n').split('\n'), i = 0;
     var FENCE = /^\s*```(.*)$/, HR = /^\s*([-*_])(\s*\1){2,}\s*$/, HEADING = /^\s*(#{1,6})\s+(.*)$/;
@@ -2813,19 +2922,19 @@
       if (line.trim() === '') { i++; continue; }
       if (HR.test(line)) { root.appendChild(document.createElement('hr')); i++; continue; }
       var h = HEADING.exec(line);
-      if (h) { var he = document.createElement('div'); he.className = 'md-h md-h' + h[1].length; he.appendChild(mdInline(h[2].trim())); root.appendChild(he); i++; continue; }
+      if (h) { var he = document.createElement('div'); he.className = 'md-h md-h' + h[1].length; he.appendChild(mdInline(h[2].trim(), context)); root.appendChild(he); i++; continue; }
       if (QUOTE.test(line)) {
         var q = []; while (i < lines.length && QUOTE.test(lines[i])) { q.push(lines[i].replace(QUOTE, '')); i++; }
-        var bq = document.createElement('blockquote'); bq.className = 'md-q'; bq.appendChild(mdInline(q.join(' '))); root.appendChild(bq); continue;
+        var bq = document.createElement('blockquote'); bq.className = 'md-q'; bq.appendChild(mdInline(q.join(' '), context)); root.appendChild(bq); continue;
       }
       if (BULLET.test(line)) {
         var ul = document.createElement('ul'); ul.className = 'md-list';
-        while (i < lines.length && BULLET.test(lines[i])) { var li = document.createElement('li'); li.appendChild(mdInline(lines[i].replace(BULLET, ''))); ul.appendChild(li); i++; }
+        while (i < lines.length && BULLET.test(lines[i])) { var li = document.createElement('li'); li.appendChild(mdInline(lines[i].replace(BULLET, ''), context)); ul.appendChild(li); i++; }
         root.appendChild(ul); continue;
       }
       if (ORDERED.test(line)) {
         var ol = document.createElement('ol'); ol.className = 'md-list';
-        while (i < lines.length && ORDERED.test(lines[i])) { var li2 = document.createElement('li'); li2.appendChild(mdInline(lines[i].replace(ORDERED, ''))); ol.appendChild(li2); i++; }
+        while (i < lines.length && ORDERED.test(lines[i])) { var li2 = document.createElement('li'); li2.appendChild(mdInline(lines[i].replace(ORDERED, ''), context)); ol.appendChild(li2); i++; }
         root.appendChild(ol); continue;
       }
       if (isTableStart(i)) {
@@ -2834,15 +2943,15 @@
         var wrap = document.createElement('div'); wrap.className = 'md-tablewrap';
         var tbl = document.createElement('table'); tbl.className = 'md-table';
         var thead = document.createElement('thead'), htr = document.createElement('tr');
-        header.forEach(function (c, ci) { var th = document.createElement('th'); th.style.textAlign = align[ci] || 'left'; th.appendChild(mdInline(c)); htr.appendChild(th); });
+        header.forEach(function (c, ci) { var th = document.createElement('th'); th.style.textAlign = align[ci] || 'left'; th.appendChild(mdInline(c, context)); htr.appendChild(th); });
         thead.appendChild(htr); tbl.appendChild(thead);
         var tb = document.createElement('tbody');
-        rows.forEach(function (r) { var tr = document.createElement('tr'); r.forEach(function (c, ci) { var td = document.createElement('td'); td.style.textAlign = align[ci] || 'left'; td.appendChild(mdInline(c)); tr.appendChild(td); }); tb.appendChild(tr); });
+        rows.forEach(function (r) { var tr = document.createElement('tr'); r.forEach(function (c, ci) { var td = document.createElement('td'); td.style.textAlign = align[ci] || 'left'; td.appendChild(mdInline(c, context)); tr.appendChild(td); }); tb.appendChild(tr); });
         tbl.appendChild(tb); wrap.appendChild(tbl); root.appendChild(wrap); continue;
       }
       var para = [];
       while (i < lines.length && lines[i].trim() !== '' && !/^\s*```/.test(lines[i]) && !HR.test(lines[i]) && !HEADING.test(lines[i]) && !QUOTE.test(lines[i]) && !BULLET.test(lines[i]) && !ORDERED.test(lines[i]) && !isTableStart(i)) { para.push(lines[i]); i++; }
-      var p = document.createElement('p'); p.className = 'md-p'; p.appendChild(mdInline(para.join(' '))); root.appendChild(p);
+      var p = document.createElement('p'); p.className = 'md-p'; p.appendChild(mdInline(para.join(' '), context)); root.appendChild(p);
     }
     return root;
   }
@@ -2944,16 +3053,22 @@
     // below read `undefined.length` on its pass and threw: the rail rendered the first
     // group and stopped, and the failure also fell through to the poll's catch, which
     // parked the connection dot on "reconnecting" while the board kept updating.
-    var by = {waiting: [], errored: [], working: [], idle: []}, natives = [];
+    var by = {waiting: [], errored: [], working: [], idle: []}, natives = [], supervisors = [];
     agents.forEach(function (a) {
       if (!match(a)) return;
+      if (isHQPane(a)) { supervisors.push(a); return; }
       if (!hasPane(a)) { natives.push(a); return; }
       // Same rule as the radar: an idle turn that ended on a failure is not finished.
       if (a.status === 'idle' && a.error) { by.errored.push(a); return; }
       by[sectionStatus(a.status)].push(a);
     });
     var root = $('tree'); root.innerHTML = '';
-    var nWait = (by.waiting || []).length;
+    if (supervisors.length) {
+      var hq = el('section', 'tree-hq'); hq.setAttribute('aria-label', 'gtmux HQ');
+      hq.appendChild(el('div', 'tree-group', T('Headquarters', '中控')));
+      supervisors.forEach(function (a) { hq.appendChild(treeRow(a, false)); }); root.appendChild(hq);
+    }
+    var nWait = (by.waiting || []).length + supervisors.filter(function (a) { return a.status === 'waiting'; }).length;
     $('rail-tab-n').textContent = nWait ? nWait : '';
     ORDER.forEach(function (st) {
       var list = by[st]; if (!list.length) return;
@@ -3060,7 +3175,7 @@
     if (existing) { existing.el.style.zIndex = ++zTop; return existing; }
     var board = $('board'), br = board.getBoundingClientRect();
     var t = {
-      id: a.pane_id, agent: a, mode: pos.mode || 'term',
+      id: a.pane_id, agent: a, mode: pos.mode === 'chat' || pos.mode === 'trace' ? 'chat' : 'term',
       x: pos.x != null ? Math.max(0, pos.x) : 14 + (WB.tiles.length % 4) * 28,
       y: pos.y != null ? Math.max(0, pos.y) : 14 + (WB.tiles.length % 4) * 28,
       w: pos.w || 560, h: pos.h || 480,
@@ -3075,13 +3190,24 @@
     cancelRead('tile:' + t.id);
     cancelRead('live:' + t.id);
     t.removed = true;
-    clearInterval(t.timer); resetTrace(t.traceState); if (t.inputDispose) t.inputDispose(); if (t.term) { try { t.term.dispose(); } catch (e) {} }
+    clearInterval(t.timer); if (t.inputDispose) t.inputDispose(); if (t.term) { try { t.term.dispose(); } catch (e) {} }
     t.el.remove(); WB.tiles = WB.tiles.filter(function (x) { return x !== t; });
     updateEmpty(); wbSave();
   }
   function updateEmpty() {
     var board = $('board'), ex = board.querySelector('.board-empty');
-    if (!WB.tiles.length) { if (!ex) { var e = document.createElement('div'); e.className = 'board-empty'; e.textContent = T('Double-click a session on the left, or drag it here', '双击左侧会话，或拖入此处'); board.appendChild(e); } }
+    if (!WB.tiles.length) { if (!ex) {
+      var e = el('div', 'board-empty'), welcome = el('div', 'workspace-welcome');
+      var mark = el('span', 'workspace-mark'); mark.innerHTML = uiIcon('layout'); welcome.appendChild(mark);
+      welcome.appendChild(el('h1', '', T('Start with a session', '从一个会话开始')));
+      welcome.appendChild(el('p', 'workspace-help', T('Choose a session from the sidebar, or bring several together here.', '打开左侧会话，在这里一起查看和处理。')));
+      var choose = el('button', 'dialog-primary', T('Choose a session', '选择会话')); choose.type = 'button'; choose.onclick = openCmdk; welcome.appendChild(choose);
+      var quote = el('blockquote', 'workspace-quote');
+      quote.appendChild(el('p', '', T('“A beginning is the time for taking the most delicate care…”', '“初始之际，尤须审慎……”')));
+      var cite = el('cite'), source = el('a', '', T('Frank Herbert · Dune · opening epigraph (excerpt)', '弗兰克·赫伯特 ·《沙丘》开篇题记（节译）'));
+      source.href = 'https://sites.prh.com/dune/read-an-excerpt'; source.target = '_blank'; source.rel = 'noopener noreferrer'; cite.appendChild(source); quote.appendChild(cite);
+      welcome.appendChild(quote); e.appendChild(welcome); board.appendChild(e);
+    } }
     else if (ex) ex.remove();
   }
   function buildTile(t) {
@@ -3099,14 +3225,15 @@
     var modes = document.createElement('span'); modes.className = 'tile-modes';
     // "diff" stays a developer's word in both languages, as git and every review tool use
     // it; its tooltip says what it shows.
-    var choices = [['term', T('Terminal', '终端')], ['diff', 'Diff', T('Changes in this pane\'s repository', '这个窗格所在仓库的改动')]];
-    if (t.agent.agent) choices.unshift(['chat', T('Chat', '对话')], ['trace', T('Trace', '轨迹')]);
+    var choices = [['term', T('Terminal', '终端')]];
+    if (t.agent.agent) choices.unshift(['chat', T('Chat', '对话')]);
     choices.forEach(function (m) {
       var b = document.createElement('button'); b.textContent = m[1]; b.setAttribute('data-m', m[0]); if (m[2]) b.title = m[2];
       b.onclick = function (e) { e.stopPropagation(); setTileMode(t, m[0]); }; modes.appendChild(b);
     });
     controls.appendChild(modes);
-    var max = document.createElement('button'); max.type = 'button'; max.className = 'tile-btn'; max.dataset.action = 'focus'; max.innerHTML = uiIcon('focus'); max.title = T('Open conversation', '打开会话'); max.setAttribute('aria-label', max.title); max.onclick = function (e) { e.stopPropagation(); openAgent(t.agent, t.mode === 'diff' ? undefined : t.mode); }; controls.appendChild(max);
+    var tools = elButton(T('Session tools', '会话工具'), 'tools', function () { showSessionTools(t.agent, t); }); tools.className = 'tile-btn session-tools-button'; tools.dataset.action = 'tools'; controls.appendChild(tools);
+    var max = document.createElement('button'); max.type = 'button'; max.className = 'tile-btn'; max.dataset.action = 'focus'; max.innerHTML = uiIcon('focus'); max.title = T('Open conversation', '打开会话'); max.setAttribute('aria-label', max.title); max.onclick = function (e) { e.stopPropagation(); openAgent(t.agent, t.mode); }; controls.appendChild(max);
     var cl = document.createElement('button'); cl.type = 'button'; cl.className = 'tile-btn'; cl.innerHTML = uiIcon('close'); cl.title = T('Close panel', '关闭面板'); cl.setAttribute('aria-label', cl.title); cl.onclick = function (e) { e.stopPropagation(); removeTile(t); }; controls.appendChild(cl);
     head.appendChild(controls);
     el.appendChild(head);
@@ -3135,13 +3262,10 @@
     if (bdg) bdg.innerHTML = badgeSVG(st);
     var host = t.body && t.body.querySelector('.conversation-main');
     if (t.mode === 'chat' && host) syncChatLive(host, t.agent, function () { return WB.on && !t.removed && t.mode === 'chat' && t.agent.status === 'working'; });
-    if (t.mode === 'trace' && t.traceState && t.traceState.view) t.traceState.view.update(t.lastTurns || [], Object.assign({width: t.body.clientWidth}, t.agent));
   }
   function setTileMode(t, m) {
-    if ((m === 'chat' || m === 'trace') && !t.agent.agent) m = 'term';
+    if (m !== 'chat' || !t.agent.agent) m = 'term';
     t.mode = m;
-    if (t.el) t.el.classList.toggle('tile-trace', m === 'trace');
-    if (t.traceState && t.traceState.view) t.traceState.view.dispose();
     cancelRead('tile:' + t.id);
     cancelRead('live:' + t.id);
     t.readEpoch = (t.readEpoch || 0) + 1;
@@ -3150,8 +3274,7 @@
     if (t.term) { try { t.term.dispose(); } catch (e) {} t.term = null; }
     t.body.appendChild(brandLoaderEl(null)); // cleared on first frame (or by a chat/diff re-render)
     if (m === 'term') { tileTermStart(t); }
-    else if (m === 'chat' || m === 'trace') { t.chatSig = ''; t.traceState = resetTrace(t.traceState); tilePollChat(t); t.timer = setInterval(function () { tilePollChat(t); }, 2500); }
-    else { tilePollDiff(t); t.timer = setInterval(function () { tilePollDiff(t); }, 3000); }
+    else { t.chatSig = ''; tilePollChat(t); t.timer = setInterval(function () { tilePollChat(t); }, 2500); }
     tileInputSync(t); // show the input row only in term mode for an allowed pane
     wbSave();
   }
@@ -3196,15 +3319,13 @@
     runRead('tile:' + t.id, function (signal) {
       var epoch = t.readEpoch;
       return api('/api/transcript?id=' + encodeURIComponent(t.id), {signal: signal}).then(function (r) { return (r.status === 404) ? [] : (r.ok ? r.json() : null); })
-        .then(function (turns) { if (signal.aborted || turns === null || t.removed || epoch !== t.readEpoch || (t.mode !== 'chat' && t.mode !== 'trace')) return; var sig = JSON.stringify(turns || []); if (sig === t.chatSig) return; t.chatSig = sig; renderTileChat(t, turns || []); })
+        .then(function (turns) { if (signal.aborted || turns === null || t.removed || epoch !== t.readEpoch || t.mode !== 'chat') return; var sig = JSON.stringify(turns || []); if (sig === t.chatSig) return; t.chatSig = sig; renderTileChat(t, turns || []); })
         .catch(function () {});
     });
   }
 
   function renderTileChat(t, turns) {
     t.lastTurns = turns; reconcilePendingPrompts(t.id, turns);
-    if (t.el) t.el.classList.toggle('tile-trace', t.mode === 'trace');
-    if (t.mode === 'trace') { var trace = traceView(turns, t.traceState || (t.traceState = {}), Object.assign({width: t.body.clientWidth}, t.agent)); if (t.body.firstChild !== trace) { t.body.innerHTML = ''; t.body.appendChild(trace); } return; }
     var preserved = snapshotToolState(t.body);
     var old = t.body.querySelector('.tile-chat');
     var atBottom = !old || old.scrollHeight - old.scrollTop - old.clientHeight < 48;
@@ -3220,27 +3341,6 @@
     wrap.scrollTop = atBottom ? wrap.scrollHeight : top;
     restoreToolState(t.body, preserved);
   }
-  function tilePollDiff(t) {
-    runRead('tile:' + t.id, function (signal) {
-      var epoch = t.readEpoch;
-      return api('/api/diff?id=' + encodeURIComponent(t.id), {signal: signal}).then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (j) { if (signal.aborted || !j || t.removed || epoch !== t.readEpoch || t.mode !== 'diff') return; renderTileDiff(t, j.diff || ''); })
-        .catch(function () {});
-    });
-  }
-
-  function renderTileDiff(t, diff) {
-    var pre = document.createElement('pre'); pre.className = 'tile-diff';
-    if (!diff) { pre.textContent = T('(nothing changed, or this pane is not in a git repo)', '（没有改动，或者这个窗格不在 git 仓库里）'); t.body.innerHTML = ''; t.body.appendChild(pre); return; }
-    diff.split('\n').forEach(function (ln) {
-      var span = document.createElement('span');
-      if (ln.charAt(0) === '+' && ln.indexOf('+++') !== 0) span.className = 'add';
-      else if (ln.charAt(0) === '-' && ln.indexOf('---') !== 0) span.className = 'del';
-      span.textContent = ln + '\n'; pre.appendChild(span);
-    });
-    t.body.innerHTML = ''; t.body.appendChild(pre);
-  }
-
   // drag-move (head) + resize (corner), with optional snap-to-grid.
   function dragMove(t, handle) {
     handle.addEventListener('mousedown', function (e) {
@@ -3377,6 +3477,7 @@
     if (b && b.height) $('settings').style.top = Math.round(b.bottom + 4) + 'px';
   }
   function setupFocus() {
+    $('session-tools').onclick = function () { showSessionTools(curAgent); };
     $('font-dn').onclick = function () { sizePref = Math.max(10, termSize() - 1); persistSize(); applyAppearance(); };
     $('font-up').onclick = function () { sizePref = Math.min(22, termSize() + 1); persistSize(); applyAppearance(); };
     $('copy-screen').onclick = copyScreen;
@@ -3587,7 +3688,8 @@
     var lastWide = isWide();
     window.addEventListener('resize', function () {
       var w = isWide(); if (w === lastWide) return; lastWide = w;
-      // mid-focus chat: reflow to add/remove the wide turn-outline rail (§03).
+      if (activeSessionTool) { activeSessionTool.reflowPending = true; return; }
+      // Reflow focused Chat without changing its conversation or mode.
       if (!$('chat').hidden) { chatSig = ''; drawChat(lastTurns); return; }
       if (!$('pane').hidden || !$('gate').hidden) return; // mid-focus / gated
       // All panes is a view of its own at either width: crossing the line keeps the reader

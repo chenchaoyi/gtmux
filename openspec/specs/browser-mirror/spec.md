@@ -333,15 +333,14 @@ The browser mirror SHALL load its scripts, styles, fonts and API calls inside th
 
 ### Requirement: Corresponding conversation controls use consistent semantics
 
-The browser focus and tile views SHALL order Chat, Trace, then Terminal for pane
-agents. Chat and Terminal SHALL retain their relative order with the native App; this
-requirement SHALL NOT imply that native App Trace has been implemented. Readable
-external sessions SHALL offer read-only Chat and Trace and SHALL NOT offer Terminal
-or a composer. Unreadable native sessions SHALL remain status-only. Plain panes SHALL
+The browser focus and tile views SHALL order Chat then Terminal as presentation
+modes for pane agents, matching the native App. Trace and Diff SHALL be available
+through a separate session-tools entry. Readable external sessions SHALL offer
+read-only Chat with Trace as a tool, without Terminal, Diff or a composer. Unreadable native sessions SHALL remain status-only. Plain panes SHALL
 NOT offer Chat or Trace and opening them SHALL NOT replace the saved agent mode.
 The initial pane-agent default SHALL remain Terminal. Expanding a tile or moving to
 an adjacent agent SHALL preserve the current supported mode. Plain-pane titles SHALL
-remain consistent between roster and focus. Workbench-only Diff SHALL remain available.
+remain consistent between roster and focus. Diff SHALL remain available from panels and focused views.
 Visible status and accessible status names SHALL use the same mapping. All-panes fold
 controls SHALL use Collapse all and Expand all in English and 折叠全部 and 展开全部 in Chinese.
 
@@ -379,7 +378,7 @@ Browser Chat SHALL render user prompts with the same markdown renderer as replie
 
 ### Requirement: Inspectable browser activity
 
-Focused Chat SHALL show activity using the phone's operation names, neutral icons and bounded previews. A delegation preview SHALL prefer its recorded purpose. A wait preview SHALL label only known millisecond settings, without implying elapsed time or completion. The group SHALL show its call count once. Each step SHALL offer a native disclosure for its recorded tool name, optional working directory, original input and source-truncation notice. Input SHALL remain plain text, independently copyable and scrollable in a bounded keyboard-focusable region. Live updates SHALL retain expansion, focus and input scroll. A borderless Collapse all action SHALL be available beside the conversation status. Compact workbench tiles SHALL retain reply-only Chat.
+Focused Chat SHALL show activity using the phone's operation names, neutral icons and bounded previews. A delegation preview SHALL prefer its recorded purpose. A wait preview SHALL label only known millisecond settings, without implying elapsed time or completion. The group SHALL show its call count once. A step with additional recorded input, directory or truncation SHALL offer a native disclosure; a summary-only step SHALL remain a plain row. Input SHALL remain plain text, independently copyable and scrollable in a bounded keyboard-focusable region. Live updates SHALL retain expansion, focus and input scroll. A borderless Collapse all action SHALL be available beside the conversation status. Workbench tiles SHALL share the focused Chat activity renderer.
 
 #### Scenario: Inspect a long recorded command
 
@@ -395,7 +394,7 @@ Focused Chat SHALL show activity using the phone's operation names, neutral icon
 
 ### Requirement: Consistent browser clipboard actions
 
-Copy and Copy as quote SHALL be icon-only controls with accessible names. They SHALL remain discoverable by keyboard and touch without covering reply text. Quote SHALL only copy a blockquote. Browser copy paths SHALL share a fallback when the secure Clipboard API is absent, rejects or throws; the fallback SHALL restore focus and selection. Feedback SHALL report success only when a copy operation succeeds.
+Copy SHALL use an icon-only control with an accessible name; Quote SHALL NOT be offered. They SHALL remain discoverable by keyboard and touch without covering reply text. Browser copy paths SHALL share a fallback when the secure Clipboard API is absent, rejects or throws; the fallback SHALL restore focus and selection. Feedback SHALL report success only when a copy operation succeeds.
 
 #### Scenario: Copy on a plain HTTP connection
 
@@ -612,3 +611,44 @@ accessible name.
 
 - **WHEN** a message lacks recorded identity or the reader is a guest
 - **THEN** the sheet explains the unavailable recorded facts without querying a current profile
+
+### Requirement: Session tools preserve the presentation mode
+
+Chat and Terminal SHALL be presentation modes. Trace and Diff SHALL be available
+from a separate session-tools entry in panels and focus. A tool SHALL retain the
+underlying mode, draft and reading position, and retire pending reads on close or
+identity/access changes. Readable external sessions SHALL offer Trace without
+Terminal, Diff or input. Focused Chat SHALL retain the normal conversation layout.
+
+#### Scenario: Inspect changes from focused Chat
+
+- **WHEN** a reader opens Diff from focused Chat and closes it
+- **THEN** the original conversation, selected mode and unsent draft remain
+- **AND** Trace is available from the same tools entry
+
+### Requirement: Workspace reading hierarchy
+
+The actual supervisor role SHALL have a distinct pinned section above ordinary
+session status groups. Empty workspaces SHALL offer a usable session-picker action
+and a secondary context-specific, attributed excerpt. Native select controls SHALL
+retain 44px height, inset arrows and visible focus. Tool summaries SHALL be compact
+and unboxed; records without additional input SHALL NOT open empty inspectors.
+
+#### Scenario: Begin from an empty workspace
+
+- **WHEN** the board has no open panels
+- **THEN** a clear session-selection action opens the existing searchable picker
+- **AND** the atmospheric quotation remains secondary to that action
+
+### Requirement: Authenticated conversation attachment preview
+
+Browser conversation links SHALL reuse the App document reference and metadata
+validation contract and owner-only artifact endpoints. An explicit click SHALL load
+bounded, digest-verified bytes. Images SHALL have bounded dimensions before decoding.
+Closing or losing access SHALL retire reads and release private object URLs. Raw
+HTML and arbitrary external resources SHALL NOT execute through the preview.
+
+#### Scenario: Reject corrupted image bytes
+
+- **WHEN** image content differs from its verified metadata digest or size
+- **THEN** the preview shows a recoverable failure without decoding that content

@@ -53,7 +53,7 @@ for extraction and privacy limits. The observation can be old; it is not current
 
 - Each tile = a live xterm mirror of one pane (reusing the existing xterm write + scroll lock in `app.js`).
 - Tile: drag the title to move, drag the bottom-right corner to resize, stack or tile freely; optional snap to grid alignment.
-- Tile header: avatar + corner status badge · name · `Chat / Trace / Terminal / Diff` switch · ⤢ full screen · × close.
+- Tile header: avatar + corner status badge · name · `Chat / Terminal` presentation switch · separate session-tools icon (Trace / Diff) · ⤢ full screen · × close.
 - A waiting tile gets a red border + a light pulse.
 - Multiple panes = multiple concurrent `/api/pane?id` mounts; `diff` uses `/api/diff?id`; `chat` uses `/api/transcript?id`.
 - Tiles use absolute positions: resizing one does not reflow the others. Clicking anywhere in its header except a button, without dragging, maximizes it within the board; `f` and `1–9` also maximize tiles. The workbench-only command palette adds or finds a tile, flashes it, and maximizes it in the board. Use Restore or Esc to return. This board maximization is distinct from the ⤢ focus view.
@@ -62,7 +62,7 @@ Tile headers keep mode labels on one line and wrap the control group when the ti
 
 ## 4. Full-screen focus (single-pane close reading, mockup §02)
 
-A tile’s ⤢ button or a narrow-screen radar row opens the single-pane focus view. For agents it offers Chat, Trace, then Terminal, previous/next pane, and terminal controls for font size, appearance, copying the selection or visible screen, and jumping to the latest output. Diff remains a workbench tile mode; focus has no diff tab or wrap toggle. Esc returns to the previous top-level view.
+A tile’s ⤢ button or a narrow-screen radar row opens the single-pane focus view. For agents it offers Chat and Terminal, a separate session-tools entry for Trace and Diff, previous/next pane, and terminal controls for font size, appearance, copying the selection or visible screen, and jumping to the latest output. Tools open above the base view on both entry points; closing restores the mounted conversation or terminal, draft and reading position. Focus has no terminal wrap toggle. Esc returns to the previous top-level view.
 
 **Below 800px (a phone).** The focus bar groups Back, title, connection and Settings above one row of modes. Identity metadata stays under the title; previous/next pane buttons are omitted at this width. The title truncates before pushing controls offscreen. Read-only explanations remain visible where input would otherwise appear. The appearance panel opens under the bar.
 This also applies to plain shell panes, whose Chat/Terminal tabs are hidden.
@@ -73,7 +73,7 @@ This also applies to plain shell panes, whose Chat/Terminal tabs are hidden.
 
 Same source as the mobile `ChatView` (`/api/transcript`: prompt → collapsed intermediate steps → agent reply), re-laid-out for wide screens:
 
-- Turn directory on the left: lists every turn, `j`/`k` to jump, current turn highlighted (global navigation only the big screen has).
+- Focus enlarges the same conversation renderer used by panels. No turn directory occupies the reading column; `j`/`k` still jumps between turns.
 - Centered chat column (up to 900px including padding): user bubbles on the right with the human avatar; agent bubbles on the left with the official icon; icon-only Copy actions have localized hover hints and accessible names, work with a mouse, keyboard or touch, and briefly show a checkmark or failure icon after use.
 - Waiting card: `/api/options` supplies parsed numbers and labels. A caller authorized to type can click a choice to send its digit via `/api/send`, without Enter; read-only callers see the choices without send handlers. Only parsed options become buttons: empty results or a failed options request clear the choices, never invent `1/2/3`. A typable chat view offers its composer below the conversation; a read-only view says to use the phone/Mac. Waiting can be an open question, not necessarily an approval.
 - Intermediate steps can be expanded/collapsed. Free-text input is available in **Chat** and **Terminal**: the shared multiline composer uses Enter for a newline and Ctrl/Cmd+Enter to send, with staged attachments and a control-key strip. The chat surface follows browser appearance. Copy copies the message body; Quote is not offered.
@@ -147,8 +147,8 @@ A share URL may end at `/p<port>#code=...`, with no trailing slash. The HTML est
 
 ### Shared mode semantics (2026-10-10)
 
-Focus and workbench order Chat, Trace, then Terminal. Chat and Terminal retain the same relative order as the native App; native App Trace is a proposal, not a delivered mode.
-Plain panes offer Terminal only (plus workbench-only Diff). Opening a plain pane
+Focus and workbench offer Chat / Terminal as presentation modes, matching the native App. Trace and Diff open from the separate session-tools entry; native App Trace remains a proposal.
+Plain panes offer Terminal with Diff in session tools. Opening a plain pane
 neither exposes an empty Chat view nor overwrites the user's saved agent mode. The
 initial default remains Terminal. Visible status and its accessible name use the
 same LABEL mapping; working is not announced as a generic running process. Generic
@@ -184,7 +184,7 @@ and [research and acceptance boundaries](terminal-keyboard-research.md).
 
 ### Transcript activity cards (2026-10-19)
 
-Focused Chat uses the same Activity hierarchy, operation labels and neutral action icons as phone/iPad. A heading shows the call count once; folded summaries count action types. Each row offers a short preview, then a native disclosure for the recorded tool name, working directory, input and source-truncation notice when available. Delegation previews show the recorded purpose; wait previews label explicit millisecond settings as settings, never elapsed time or completion. Unknown or partial parameters remain inspectable without guessing. Original input is plain text in a focusable, bounded, horizontally scrollable region with Copy. The group disclosure is a labelled button with `aria-expanded`, at least 44px tall. Group and row expansion, keyboard focus and input scroll survive live updates. Collapse all is a borderless brand-colored action beside the conversation status. `activity.js` holds presentation rules; tests pin its label, alias and icon tables against the mobile source. Compact workbench tiles retain reply-only rendering. [Sources and limits](transcript-activity-research.md).
+Focused Chat uses the same Activity hierarchy, operation labels and neutral action icons as phone/iPad. A single summary shows the call count once. Rows offer short previews; only records with additional input, working directory or truncation have a disclosure. Delegation previews show the recorded purpose; wait previews label explicit millisecond settings as settings, never elapsed time or completion. Unknown or partial parameters remain inspectable without guessing. Original input is plain text in a focusable, bounded, horizontally scrollable region with Copy. The group disclosure is a labelled button with `aria-expanded`, at least 44px tall. Group and row expansion, keyboard focus and input scroll survive live updates. Collapse all is a borderless brand-colored action beside the conversation status. `activity.js` holds presentation rules; tests pin its label, alias and icon tables against the mobile source. Focused and workbench Chat share the same activity renderer. [Sources and limits](transcript-activity-research.md).
 
 
 ### In-conversation interaction
@@ -238,3 +238,30 @@ The attachment sheet offers photos, files, clipboard images and a camera capture
 Text drafts, input history and snippets are saved locally within the server and credential scope. History and snippets insert text for review rather than sending it. Changing identity isolates drafts; revocation clears saved composer data. After sending, a pending message bridges the delay until the transcript records it; recorded messages replace it without duplication. An unchanged retry reuses the send identifier to avoid duplicate delivery. Network failure remains an unconfirmed delivery state.
 
 User, sender, Agent and HQ avatars open an identity sheet, using iPhone/iPad's hierarchy of avatar, identity and grouped facts. Owner agent sheets read the existing participant-profile endpoint and show recorded model, version, provider and permission facts with source/time disclosure. Message avatars use their recorded session and prompt time (`at`), including older sessions of the same provider; they never inherit the current session's status, project or navigation. Missing message identity and guest connections do not fall back to a current-profile request. User messages do not imply a personal profile or device that the transcript never recorded. Closing or changing credentials retires pending reads; sheets close with Escape or the Close icon and return focus. On phones they appear from the bottom. HQ-specific execution-chain and extension views remain native App capabilities.
+
+## Session tools and workspace hierarchy (2026-10-29)
+
+Chat and Terminal describe how the session is presented. Trace and Diff are tools,
+opened from the separate wrench control in either a panel or focus. The tool owns
+a modal reading surface; it does not replace the base mode or composer. Chat shares
+its current transcript with Trace; Terminal fetches records only while Trace is open.
+Closing retires tool reads. Credential/view changes discard private tool content.
+
+Tool calls use a compact, unboxed disclosure with an action icon and one count.
+Summary-only calls have no empty inspector; recorded input keeps its exact whitespace,
+working directory and truncation notice. HQ's actual supervisor role is pinned above
+status groups; task names never confer that role. Selects retain native semantics,
+44px height, 14px leading/trailing arrow insets and a 40px text reserve. UI controls
+inherit the system sans face; code and terminal content retain monospace.
+
+An empty board provides a clear session-picker action and a secondary short Dune
+opening excerpt, independently curated for beginning work. It does not reuse the
+human-profile quotation. The citation links to the publisher's verified excerpt:
+https://sites.prh.com/dune/read-an-excerpt . Chinese is a shortened translation.
+
+Conversation image envelopes are normalized by the core to Markdown image links.
+Web opens them as file attachments through the same owner-only document endpoints
+and generated App reference/metadata validator. Loading starts on a click, verifies
+size and digest, bounds image dimensions before decoding, and retires bytes/URLs on
+close or access changes. Missing files retain Copy path; there is no arbitrary-path
+or external-image fallback.

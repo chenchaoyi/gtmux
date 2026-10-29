@@ -1496,7 +1496,7 @@ restore SHALL keep its progress row visible as sessions reappear.
 - **THEN** the app treats the plan as unknown rather than hiding Restore or claiming all saved sessions are missing
 
 ### Requirement: Local browser workspace action
-The menu bar SHALL expose a localized local workspace action at the bottom of the panel. It SHALL open the browser on 127.0.0.1 using a single-use enrollment code, reuse an existing serve, or start a loopback-only app-owned child. App termination SHALL stop only that child. A remote access change from the app SHALL release that child before starting a managed service.
+The menu bar SHALL expose a localized local workspace action at the bottom of the panel. Local workspace, new session, environment-check and remote actions SHALL share a consistent system action type scale; local workspace SHALL use a window icon distinct from remote access. It SHALL open the browser on 127.0.0.1 using a single-use enrollment code, reuse an existing serve, or start a loopback-only app-owned child. App termination SHALL stop only that child. A remote access change from the app SHALL release that child before starting a managed service.
 
 #### Scenario: Manage agents without a tunnel
 - **WHEN** the user chooses Open local workspace

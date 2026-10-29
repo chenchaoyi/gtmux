@@ -1015,3 +1015,7 @@ The default history, source options and counts contain identified external acces
 ### Usage scope and compact breakdown (2026-10-20)
 
 Phone and Mac use Limits & balances → Output tokens → Sessions. Current provider capacity remains primary; historical quota bars, source gaps, recorded plan identifiers and observation times move into the adjacent History & sources disclosure, closed by default and still inspectable. The output chart owns a compact agent table with shared Today / Last 7 days columns and states its coverage: conversations recorded by the connected machine, not a bill or provider quota percentage. Monetary amounts retain currency and precision; unavailable never means zero. A lone ordinary quota is not repeated as a lead summary; alerts remain prominent. See [research and limits](usage-presentation-research.md).
+
+### Menu footer hierarchy (2026-10-29)
+
+Local workspace, new session, environment checks and remote access share the 12pt system action face. Version remains secondary metadata. The local workspace uses `macwindow`; remote access retains its network/globe identity.

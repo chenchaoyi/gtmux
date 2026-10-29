@@ -210,7 +210,7 @@ func ClassifyUserPrompt(s string) (text, kind string) {
 	case isClaudeMetaPrompt(s):
 		return "", PromptDrop
 	default:
-		return s, PromptUser
+		return normalizePromptMedia(s), PromptUser
 	}
 }
 

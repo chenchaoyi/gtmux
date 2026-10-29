@@ -663,11 +663,11 @@ for (const [language, chat, terminal] of [['en-US', 'Chat', 'Terminal'], ['zh-CN
     h.api.addTile(a);
     const tile = h.node('board').children[0];
     const tabs = tile.children[0].children.find(x => x.className === 'tile-controls').children.find(x => x.className === 'tile-modes');
-    assert.deepEqual(tabs.children.map(x => x.textContent), [chat, language === 'zh-CN' ? '轨迹' : 'Trace', terminal, 'Diff']);
+    assert.deepEqual(tabs.children.map(x => x.textContent), [chat, terminal]);
     h.api.addTile({...a, pane_id: '%8', agent: ''});
     const shell = h.node('board').children[1];
     const shellTabs = shell.children[0].children.find(x => x.className === 'tile-controls').children.find(x => x.className === 'tile-modes');
-    assert.deepEqual(shellTabs.children.map(x => x.textContent), [terminal, 'Diff']);
+    assert.deepEqual(shellTabs.children.map(x => x.textContent), [terminal]);
   });
 }
 
@@ -694,7 +694,7 @@ test('a plain pane keeps its roster label when opened in focus', () => {
 test('focus HTML preserves Chat before Terminal alongside the real tile controls', () => {
   const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
   const controls = html.match(/<div id="mode"[^>]*>([\s\S]*?)<\/div>/)[1];
-  assert.deepEqual([...controls.matchAll(/data-mode="([^"]+)"/g)].map(m => m[1]), ['chat', 'trace', 'term']);
+  assert.deepEqual([...controls.matchAll(/data-mode="([^"]+)"/g)].map(m => m[1]), ['chat', 'term']);
 });
 
 for (const [language, names] of [['en-US', ['needs attention', 'working', 'idle', 'idle']], ['zh-CN', ['待处理', '运行中', '空闲', '空闲']]]) {
@@ -996,10 +996,7 @@ test('DSH external history has scoped requests, read-only chrome and independent
  assert.ok(h.requests.some(r=>r.url.endsWith('/api/session/transcript?session_id=dsh-one&home_id=dsh-home')));
  assert.ok(h.requests.every(r=>!r.url.includes('/api/pane?')&&!r.url.includes('/api/send')));
  assert.equal(h.node('mode').hidden,false);assert.equal(h.api.turns()[0].response,'Public reply');
- let traceTurns;
- h.context.window.GtmuxTraceView={create:()=>({el:h.node('synthetic-trace'),update:turns=>{traceTurns=turns;}})};
- h.api.setMode('trace');assert.equal(h.api.modes().selected,'trace');assert.equal(traceTurns[0].response,'Public reply');
- h.api.setMode('term');assert.equal(h.api.modes().selected,'trace');
+ h.api.setMode('term');assert.equal(h.api.modes().selected,'chat');
  h.api.setExternalSettings({hq:false,notify:false,knowledge:false,revision:0});
  const inputs=h.api.conversationControls().children.filter(c=>c.tagName==='label').map(c=>c.children[0]);
  assert.deepEqual(inputs.map(i=>i.disabled),[false,true,true]);
@@ -1076,15 +1073,15 @@ test('activity counts repeated tools and renders ordered plain-text details', ()
   const closed = h.api.toolStepsEl(steps, false, () => toggled++);
   const toggle = closed.children[0];
   assert.equal(toggle.attrs['aria-expanded'], 'false');
-  assert.equal(toggle.children[0].children[1].textContent, '3 calls');
-  assert.equal(toggle.children[1].textContent, 'Run code ×2 · Wait');
+  assert.equal(toggle.children[0].children[2].textContent, '3 calls');
+  assert.equal(toggle.children.length, 1, 'one summary line without a duplicate tool tally');
   assert.equal(closed.children.length, 1);
   toggle.onclick(); assert.equal(toggled, 1);
   const open = h.api.toolStepsEl(steps, true, () => {});
   assert.equal(open.children[0].attrs['aria-expanded'], 'true');
   const list = open.children[1];
   assert.equal(list.tagName, 'ol');
-  assert.deepEqual(list.children.map(row => row.children[0].children[1].children[0].children[1].textContent), ['js','js','wait']);
+  assert.ok(list.children.every(row => row.children[0].tagName === 'div'), 'summary-only calls have no empty inspector');
   const detail = list.children[1].children[0].children[0].children[1].children[1];
   assert.equal(detail.textContent, steps[1].detail);
   assert.equal(detail.html, undefined, 'arguments must not become HTML');
