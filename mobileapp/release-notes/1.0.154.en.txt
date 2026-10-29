@@ -1,0 +1,4 @@
+Conversation files
+• Open local file links directly from a conversation without registering them first.
+• Read formatted Markdown headings, lists, tables and code, with a source view when needed.
+• View local images inside Markdown and see clearer messages when a file cannot be opened.
