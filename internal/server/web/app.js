@@ -244,8 +244,10 @@
   // ---- helpers ----------------------------------------------------------
   function show(which) { if (activeSessionTool) activeSessionTool.sheet.el.retire(); $('session-toolbar').hidden = which !== 'chat' && which !== 'pane'; $('session-trace').hidden = !(curAgent && (curAgent.agent || readableConversation(curAgent))); $('session-diff').hidden = !hasPane(curAgent); if (which !== 'chat') $('chat-interaction').hidden = true; cancelReads(); viewEpoch++; ['gate', 'radar', 'panes', 'pane', 'chat', 'workbench'].forEach(function (id) { $(id).hidden = id !== which; }); if ($('chat-input')) $('chat-input').hidden = true; if (which !== 'workbench') WB.on = false; updatePageTitle(which); }
   function updatePageTitle(view) {
+    view = view || ['gate', 'radar', 'panes', 'pane', 'chat', 'workbench'].find(function (id) { return !$(id).hidden; });
     var title = T('Agent workspace', 'Agent 工作台');
-    if (view === 'gate') title = T('Connect', '连接');
+    if (activeSessionTool && !activeSessionTool.closed) title = primary(activeSessionTool.agent) + ' · ' + (activeSessionTool.kind === 'trace' ? T('Trace', '轨迹') : 'Diff');
+    else if (view === 'gate') title = T('Connect', '连接');
     else if (view === 'panes') title = T('All panes', '所有窗格');
     else if ((view === 'chat' || view === 'pane') && curAgent) {
       var mode = paneMode === 'chat' ? T('Chat', '对话') : T('Terminal', '终端');
@@ -2686,6 +2688,7 @@
       if (activeSessionTool === state) activeSessionTool = null;
       document.body.classList.remove('has-session-tool');
       if (state.reflowPending && sheet.restoreFocus && credential === token && epoch === viewEpoch && $('pane').hidden && $('chat').hidden) home();
+      updatePageTitle();
     };
     function valid() { return !state.closed && epoch === viewEpoch && credential === token && (!tile || !tile.removed); }
     function present(value) {
@@ -2718,7 +2721,7 @@
       });
     }
     function choose(kind) {
-      state.kind = kind; signature = ''; sheet.el.classList.add('session-tool');
+      state.kind = kind; signature = ''; sheet.el.classList.add('session-tool'); updatePageTitle();
       sheet.el.querySelector('h2').textContent = (kind === 'trace' ? T('Trace', '轨迹') : 'Diff') + ' · ' + primary(agent);
       sheet.body.replaceChildren(brandLoaderEl(null)); document.body.classList.add('has-session-tool'); poll(); timer = setInterval(poll, 2500);
     }

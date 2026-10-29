@@ -517,6 +517,11 @@ The browser SHALL provide a bundled gtmux favicon and a localized contextual tab
 - **WHEN** a user opens Trace for an agent
 - **THEN** the tab title identifies that conversation, Trace and gtmux, and shows the bundled favicon
 
+#### Scenario: Session tool title restores its underlying context
+- **WHEN** Trace or Diff opens from focused Chat, Terminal or a workbench panel
+- **THEN** the browser title identifies the session and active tool
+- **AND** closing the tool restores the underlying conversation mode or workspace title without changing presentation or input
+
 ### Requirement: Compact message actions
 Conversation messages, tool summaries and trace details SHALL offer a Copy icon with a localized tooltip, accessible name and brief success/failure feedback. They SHALL not offer Quote. Touch targets SHALL remain usable and icons SHALL adapt to appearance.
 
