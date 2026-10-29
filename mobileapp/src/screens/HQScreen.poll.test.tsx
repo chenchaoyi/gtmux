@@ -220,3 +220,49 @@ test('slow HQ usage is coalesced, deadline recovers, and its late reply cannot r
   expect(tree!.root.findByType(UsageSheet).props.usage).toEqual(fresh);
   mockClient.usage.mockReset().mockResolvedValue(null);
 });
+
+// Tools inspect the already-mounted HQ subscription; they must not start a second poll.
+test('HQ Trace shares the existing transcript and preserves it when closed', async () => {
+ const {HQHeader} = require('./HQHeader');
+ const {TraceModal} = require('../trace/TraceModal');
+ mockClient.transcript.mockResolvedValue({turns: [{prompt: 'p', response: 'HQ record'}], dropped: 0});
+ await mount('working', 'regular');
+ const count = calls();
+ act(() => tree!.root.findByType(HQHeader).props.tools.props.onTrace());
+ expect(tree!.root.findByType(TraceModal).props.visible).toBe(true);
+ expect(tree!.root.findByType(TraceModal).props.turns[0].response).toBe('HQ record');
+ expect(calls()).toBe(count);
+ act(() => tree!.root.findByType(TraceModal).props.onClose());
+ expect(shown()).toBe('HQ record');
+ expect(calls()).toBe(count);
+});
+
+test.each([401, 403])('HQ denial %s closes Trace and clears cached records', async status => {
+ const {HQHeader} = require('./HQHeader');
+ const {TraceModal} = require('../trace/TraceModal');
+ const {ApiError} = require('../api/client');
+ mockClient.transcript.mockResolvedValueOnce({turns: [{response: 'private'}]});
+ await mount('working', 'regular');
+ act(() => tree!.root.findByType(HQHeader).props.tools.props.onTrace());
+ mockClient.transcript.mockRejectedValueOnce(new ApiError(status, 'transcript'));
+ await act(async () => {jest.advanceTimersByTime(4000);});
+ expect(tree!.root.findByType(TraceModal).props.visible).toBe(false);
+ expect(tree!.root.findByType(TraceModal).props.turns).toEqual([]);
+});
+
+test('HQ can load an earlier session from Trace through the existing read lane', async () => {
+ const {HQHeader} = require('./HQHeader');
+ const {TraceModal} = require('../trace/TraceModal');
+ mockClient.transcript.mockResolvedValueOnce({turns: [{session_id: 'now', response: 'now'}], earlierAvailable: true});
+ await mount('working', 'regular');
+ act(() => tree!.root.findByType(HQHeader).props.tools.props.onTrace());
+ let resolve: (value: any) => void = () => {};
+ mockClient.transcript.mockImplementationOnce(() => new Promise(r => {resolve = r;}));
+ act(() => tree!.root.findByType(TraceModal).props.onLoadEarlier());
+ await act(async () => {});
+ expect(mockClient.transcript.mock.calls.at(-1)[2]).toBe(1);
+ expect(tree!.root.findByType(TraceModal).props.loadingEarlier).toBe(true);
+ await act(async () => resolve({turns: [{session_id: 'older', response: 'older'}, {session_id: 'now', response: 'now'}], earlierAvailable: false}));
+ expect(tree!.root.findByType(TraceModal).props.turns.map((t: any) => t.session_id)).toEqual(['older', 'now']);
+ expect(tree!.root.findByType(TraceModal).props.loadingEarlier).toBe(false);
+});

@@ -15,11 +15,11 @@
 // direct-send input — direct control lives in each worker's own Detail).
 
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {Animated, View, Text, ScrollView, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform} from 'react-native';
+import {Animated, View, Text, ScrollView, TouchableOpacity, StyleSheet, Keyboard, KeyboardAvoidingView, Platform} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Agent} from '../api/types';
 import {Debug} from '../debug';
-import {DigestRow, HQBoard, HQEvent, KnowledgeIndex, SendPayload, TranscriptTurn, UsageReport} from '../api/client';
+import {DigestRow, HQBoard, HQEvent, isAuthError, KnowledgeIndex, SendPayload, TranscriptTurn, UsageReport} from '../api/client';
 import {useAgents} from '../state/AgentsContext';
 import {createReadTask, startReadPolling} from '../state/readTask';
 import {useApp} from '../state/AppContext';
@@ -32,6 +32,9 @@ import {AnsiLine} from '../ui/ansi';
 import {paneLines} from '../ui/term';
 import {SessionReset} from '../ui/chatWindow';
 import {ChatView} from '../ui/ChatView';
+import {SessionToolsMenu} from '../ui/SessionToolsMenu';
+import {TraceModal} from '../trace/TraceModal';
+import {DiffModal} from '../ui/DiffModal';
 import {CHROME_ANIM_MS, ChromeState, chromeDecision} from '../ui/liveEdge';
 import {useKeyboardChrome} from '../ui/useKeyboardChrome';
 import {HQ_INSPECTOR_WIDTH, READING_WIDTH, SizeClass} from '../ui/layout';
@@ -73,6 +76,7 @@ export function HQScreen({route, navigation}: any) {
 
 // How often the visible console re-reads its transcript (conditionally: a 304 when
 // nothing changed).
+const EMPTY_TURNS: TranscriptTurn[] = [];
 const HQ_ACTIVE_POLL_MS = 4000;
 const HQ_IDLE_POLL_MS = 8000;
 
@@ -85,6 +89,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
   const regular = layout === 'regular' && showInspector;
   const {client, agents, conn, demo, isGuest} = useAgents();
   const {pal, lang} = useApp();
+  const live = useMemo(() => agents.find(a => a.pane_id === hq.pane_id) ?? hq, [agents, hq]);
   const zh = lang === 'zh';
   const t = (en: string, cn: string) => (zh ? cn : en);
 
@@ -102,13 +107,16 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
   const settle = (k: 'board' | 'knowledge' | 'usage') => setDoorsPending(p => (p[k] ? {...p, [k]: false} : p));
   // The supervisor's own acts (a separate, narrowed feed — see the poll below).
   const [actFeed, setActFeed] = useState<HQEvent[]>([]);
-  const [turns, setTurns] = useState<TranscriptTurn[]>([]);
+  const [traceOpen, setTraceOpen] = useState(false), [diffOpen, setDiffOpen] = useState(false);
+  const chatIdentity = useMemo(() => ({client, pane: hq.pane_id, session: live.session_id, home: live.home_id, agent: live.agent}), [client, hq.pane_id, live.session_id, live.home_id, live.agent]);
+  const [chatRecord, setChatRecord] = useState<{identity: typeof chatIdentity; turns: TranscriptTurn[]; reset?: SessionReset; loaded: boolean; failed?: boolean; earlierAvailable: boolean}>({identity: chatIdentity, turns: [], loaded: false, earlierAvailable: false});
+  const turns = chatRecord.identity === chatIdentity ? chatRecord.turns : EMPTY_TURNS;
   // Set when the supervisor's session began with a `/clear`/`/new` — including the
   // `gtmux hq --rotate` HQ performs on itself. The console then shows this shift whole
   // and the shift before it not at all, which without a word reads as a broken app: on
   // 2026-08-09 a cleared 400-turn shift showed three bubbles and cost a diagnosis.
-  const [sessionReset, setSessionReset] = useState<SessionReset | undefined>();
-  const [loaded, setLoaded] = useState(false);
+  const sessionReset = chatRecord.identity === chatIdentity ? chatRecord.reset : undefined;
+  const loaded = chatRecord.identity === chatIdentity && chatRecord.loaded;
   const [pending, setPending] = useState<string | undefined>();
   const [selected, setSelected] = useState<DigestRow | null>(null);
   const [zone, setZone] = useState<Zone | null>(null); // null until the first digest picks it
@@ -224,7 +232,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
   const [failedSend, setFailedSend] = useState<SendPayload | null>(null);
 
   // The live supervisor row (status can change) — fall back to the route agent.
-  const live = useMemo(() => agents.find(a => a.pane_id === hq.pane_id) ?? hq, [agents, hq]);
+
 
   useEffect(() => startReadPolling(createReadTask(
     signal => client.tasks(signal), setTasks,
@@ -268,7 +276,9 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
   // `/clear` used to be the end of the visible past; now it is a seam), and whether the
   // serve knows one more before the oldest shown.
   const [earlier, setEarlier] = useState(0);
-  const [earlierAvailable, setEarlierAvailable] = useState(false);
+  const [earlierLoading, setEarlierLoading] = useState(false);
+  const loadEarlier = () => {if (!earlierLoading) {setEarlierLoading(true); setEarlier(n => n + 1);}};
+  const earlierAvailable = chatRecord.identity === chatIdentity && chatRecord.earlierAvailable;
   // The HQ conversation transcript: on mount, on a status flip or a command, AND on a
   // slow poll for as long as the console is on screen, whatever the status. It used to
   // poll only while working, so an idle or waiting HQ whose conversation moved without a
@@ -277,19 +287,26 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
   // worker Detail already polls this way. Conditional on the last ETag, so an unchanged
   // conversation costs a 304; one request at a time; nothing is set after unmount.
   const etagRef = useRef<string | undefined>(undefined);
-  useEffect(() => startReadPolling(createReadTask(
+  const etagIdentity = useRef(chatIdentity);
+  if (etagIdentity.current !== chatIdentity) {etagIdentity.current = chatIdentity; etagRef.current = undefined;}
+  useEffect(() => {setChatRecord({identity: chatIdentity, turns: [], loaded: false, earlierAvailable: false}); setEarlier(0); setEarlierLoading(false); setTraceOpen(false); setDiffOpen(false);}, [chatIdentity]);
+  const traceRetry = useRef<() => void>(() => {});
+  useEffect(() => {const task = createReadTask(
     signal => client.transcript(hq.pane_id, etagRef.current, earlier, signal),
     ({turns: ts, reset, etag, unchanged, earlierAvailable: more}) => {
+      if (etagIdentity.current !== chatIdentity) return;
       etagRef.current = etag;
-      if (!unchanged) {
-        setTurns(ts);
-        setSessionReset(earlier > 0 ? undefined : reset);
-      }
-      setEarlierAvailable(!!more);
-      setLoaded(true);
-    }, {onError: () => setLoaded(true)},
-  ), live.status === 'working' ? HQ_ACTIVE_POLL_MS : HQ_IDLE_POLL_MS),
-  [client, hq.pane_id, live.status, pending, earlier]);
+      setChatRecord(previous => unchanged && previous.identity === chatIdentity ? {...previous, loaded: true, failed: false, earlierAvailable: !!more} : {identity: chatIdentity, turns: ts, reset: earlier > 0 ? undefined : reset, loaded: true, earlierAvailable: !!more});
+    }, {onError: error => {
+      if (etagIdentity.current !== chatIdentity) return;
+      if (isAuthError(error)) {
+        etagRef.current = undefined;
+        setTraceOpen(false); setDiffOpen(false);
+        setChatRecord({identity: chatIdentity, turns: [], loaded: true, failed: true, earlierAvailable: false});
+      } else setChatRecord(previous => previous.identity === chatIdentity ? {...previous, loaded: true, failed: true} : {identity: chatIdentity, turns: [], loaded: true, failed: true, earlierAvailable: false});
+    }, onSettled: () => setEarlierLoading(false)},
+  );traceRetry.current = task.run;return startReadPolling(task, live.status === 'working' ? HQ_ACTIVE_POLL_MS : HQ_IDLE_POLL_MS);},
+  [client, hq.pane_id, chatIdentity, live.status, pending, earlier]);
 
   // Retire the optimistic echo the moment the real turn is in the transcript, with a
   // long safety net so a send that never lands can't pin a ghost bubble forever.
@@ -564,7 +581,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
               turns={turns}
               sessionReset={sessionReset}
               earlierAvailable={earlierAvailable}
-              onLoadEarlier={() => setEarlier(n => n + 1)}
+              onLoadEarlier={loadEarlier}
               acts={actList}
               actsSince={earlier > 0 ? 0 : sessionReset?.at ?? 0}
               onOpenAct={openAct}
@@ -666,6 +683,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
             onOpenActs={() => setActsOpen(true)}
             onOpenUsage={() => setUsageOpen(true)}
             onBack={onBack}
+            tools={regular || activeZone === 'console' ? <SessionToolsMenu pal={pal} lang={lang} onTrace={() => {Keyboard.dismiss(); setTraceOpen(true);}} onDiff={live.branch ? () => {Keyboard.dismiss(); setDiffOpen(true);} : undefined} /> : undefined}
             onOpenBoard={() => setBoardOpen(true)}
             knowledgeValue={knowledgeValue(knowledge, zh)}
             pending={doorsPending}
@@ -713,6 +731,8 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
   );
   const sheetsEl = (
     <>
+      <TraceModal visible={traceOpen} agent={live} client={isGuest ? undefined : client} turns={turns} loading={!loaded} failed={chatRecord.identity === chatIdentity && chatRecord.failed} onRetry={() => traceRetry.current()} earlierAvailable={earlierAvailable} loadingEarlier={earlierLoading} onLoadEarlier={loadEarlier} pal={pal} lang={lang} onClose={() => setTraceOpen(false)} />
+      <DiffModal visible={diffOpen} paneId={hq.pane_id} client={client} pal={pal} lang={lang} onClose={() => setDiffOpen(false)} />
       {/* The situation board, read-only — the supervisor's own working memory. */}
       {/* The situation board, read-only.
           `pageSheet`, not a full-screen modal. A Modal renders in its OWN native

@@ -41,6 +41,8 @@ for (const agent of ['Codex','Claude Code','Kimi','OpenCode','DeepSeek Harness']
       assert.match(await trace.locator('.trace-status').innerText(),/运行中/);
       assert.equal(await page.locator('#chat-input').isVisible(),false);
       await trace.locator('.trace-event.tool').click();
+      assert.equal(await trace.locator('.trace-toolbar').isVisible(),width>=700);
+      assert.equal(await trace.locator('.trace-overview').isVisible(),width>=700);
       assert.equal(await trace.locator('.trace-source').innerText(),command);
       assert.match(await trace.locator('.trace-workdir').innerText(),/\/workspace\/retry-demo/);
       assert.equal(await trace.locator('.trace-list').isVisible(),width>=700);
@@ -49,6 +51,7 @@ for (const agent of ['Codex','Claude Code','Kimi','OpenCode','DeepSeek Harness']
       await trace.getByRole('button',{name:'复制',exact:true}).click();
       assert.equal(await page.evaluate(()=>window.traceCopy),command);
       await trace.getByRole('button',{name:'关闭详情',exact:true}).click();
+      assert.equal(await trace.locator('.trace-toolbar').isVisible(),true);
       assert.equal(await trace.locator('.trace-inspector').isVisible(),false);
       assert.equal(await trace.locator('.trace-event.tool').evaluate(e=>e===document.activeElement),true);
       assert.equal(fixture.state.sends.length,0);

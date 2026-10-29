@@ -160,3 +160,16 @@ Open Settings → Manage server → Access history to inspect device/browser req
 In Access history, choose Logs or Devices. Filter by a full pairing ID, operation or outcome; selecting a device summary opens that device's log. Clear broadens the view. Continue summary reads earlier pages when the total is still partial. Counts describe recorded activity: successful reads are sampled, and device names do not identify a unique pairing. Older servers must be updated for filtering/grouping.
 
 For the Standard client version floor, update channel and connector restart, see [security updates](install.md#standard-tunnel-security-updates).
+
+## Trace records
+
+Open a session’s wrench menu and choose **Trace** to inspect loaded messages and recorded
+tool calls. Search and type/session filters cover the loaded history. On iPhone, select
+a record and close its details to return to the same list; a wide iPad keeps both columns
+visible. Closing details expands the list. Copy uses the original text; new content waits
+for **Update details**. Use **Follow latest** to return to current activity. Closing Trace
+keeps your conversation or terminal and its unsent draft. The same tool is available in
+HQ and readable external conversations; external sessions stay read-only.
+
+Trace shows recorded inputs and summaries. It cannot supply absent tool outputs, model
+request timing or token usage. The disclosure **About these records** explains this scope.

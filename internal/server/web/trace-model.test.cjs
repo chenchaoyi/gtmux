@@ -60,3 +60,23 @@ test('empty and malformed optional data never invents events or active content',
   assert.deepEqual(trace.build([null, {prompt: {}, response: [], segments: [null, {steps: [null]}]}]).events, []);
   assert.equal(trace.build([{prompt: '<script>alert(1)</script>'}]).events[0].body, '<script>alert(1)</script>');
 });
+
+const fixtures = require('../../../mobileapp/src/trace/fixtures.json');
+const fs = require('node:fs');
+const crypto = require('node:crypto');
+const path = require('node:path');
+for (const fixture of fixtures) test('shared native fixture: ' + fixture.name, () => {
+  const index = trace.build(fixture.turns, fixture.context);
+  assert.deepEqual(index.events.map(event => event.kind), fixture.kinds);
+  assert.deepEqual(index.events.map(event => event.body), fixture.bodies);
+  assert.deepEqual(index.sessions.map(session => session.session), fixture.sessions);
+});
+test('the generated asset identifies the current canonical typed source', () => {
+  const source = fs.readFileSync(path.join(__dirname, '../../../mobileapp/src/trace/model.ts'));
+  const hash = crypto.createHash('sha256').update(source).digest('hex');
+  assert.ok(fs.readFileSync(path.join(__dirname, 'trace-model.js'), 'utf8').startsWith('// Generated from mobileapp/src/trace/model.ts; SHA256 ' + hash + '\n'));
+  const asset = fs.readFileSync(path.join(__dirname, 'trace-model.js'), 'utf8');
+  const match = asset.match(/^\/\/ Generated[^\n]+\n\/\/ Body SHA256 ([a-f0-9]{64})\n([\s\S]*)$/);
+  assert.ok(match, 'generated source/body hashes are required');
+  assert.equal(crypto.createHash('sha256').update(match[2]).digest('hex'), match[1]);
+});

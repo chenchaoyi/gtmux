@@ -856,7 +856,7 @@ export class GtmuxClient {
     // quiet conversation never loses its way back.
     const earlierAvailable = r.headers?.get?.('X-Gtmux-Earlier-Available') === '1';
     if (r.status === 304) return {turns: [], dropped: 0, etag, unchanged: true, ...(earlierAvailable ? {earlierAvailable} : {})};
-    if (r.status >= 500) throw new ApiError(r.status, 'transcript');
+    if (r.status >= 500 || r.status === 401 || r.status === 403) throw new ApiError(r.status, 'transcript');
     if (!r.ok) return {turns: [], dropped: 0};
     const j = await r.json().catch(() => null);
     const dropped = parseInt(r.headers?.get?.('X-Gtmux-Turns-Dropped') ?? '', 10);

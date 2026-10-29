@@ -1242,6 +1242,9 @@ body { height: var(--viewport-height, 100dvh); }
 .trace-compact .trace-body { flex-direction: row; }
 .trace-compact .trace-list { flex: 1 1 100%; }
 .trace-compact .trace-inspector { position: absolute; inset: 0; z-index: 2; border: 0; padding: 12px 16px 24px; background: var(--surface); }
+/* Compact detail reading gets the search/filter/overview space back until Close. */
+.trace-compact.inspector-open .trace-toolbar,
+.trace-compact.inspector-open .trace-overview { display: none; }
 .profile-provenance { color: var(--fg2); margin-top: 12px; font-size: 12px; line-height: 1.7; }
 .profile-provenance summary { min-height: 44px; padding: 12px 0; cursor: pointer; }
 .profile-provenance p { margin: 8px 0; overflow-wrap: anywhere; }

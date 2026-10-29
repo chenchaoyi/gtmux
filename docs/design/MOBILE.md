@@ -1666,3 +1666,13 @@ recreated when the system font scale changes so cached line measurements cannot
 clip new glyphs. Parent state, drafts and disclosure stay mounted. Conversation
 content and editable text retain their independent full text scaling; glyph keys
 continue to behave like adjacent vector icons.
+
+### Session trace tools
+
+Chat / Terminal remain presentation modes. The separate 44pt session-tools control
+opens Trace and the existing Diff when available. Plain shells have Terminal only;
+readable external sessions offer read-only Chat and Trace. The HQ header uses the same
+tools entry. Trace shares the parent subscription, preserving its draft and reading
+position. iPhone uses full-width detail/return; iPad uses measured content width rather
+than a device-name test. See [Trace](transcript-trace.md) for identity, history, frozen
+details and acceptance boundaries.

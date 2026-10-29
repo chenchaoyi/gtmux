@@ -110,3 +110,20 @@ test('DSH Web uses the shared scoped reader and never exposes pane input', async
  expect(client.desktopTranscript.mock.calls[0][0]).toBe('dsh-web');expect(client.desktopTranscript.mock.calls[0][3]).toBe('dsh-home');
  expect(tree!.root.findAllByType(TextInput)).toHaveLength(0);expect(client.pane).not.toHaveBeenCalled();expect(client.sendResult).not.toHaveBeenCalled();
 });
+
+// Revocation must discard the cache immediately, rather than presenting it as offline data.
+test.each([401, 403])('access denial %s clears the conversation and closes Trace', async status => {
+ const {DesktopTranscriptError} = require('../api/client');
+ const {SessionToolsMenu} = require('../ui/SessionToolsMenu');
+ const {TraceModal} = require('../trace/TraceModal');
+ await render();
+ await act(async () => tree!.root.findByType(SessionToolsMenu).props.onTrace());
+ expect(tree!.root.findByType(TraceModal).props.visible).toBe(true);
+ const reads = client.desktopTranscript.mock.calls.length;
+ expect(reads).toBe(1);
+ client.desktopTranscript.mockRejectedValueOnce(new DesktopTranscriptError(status));
+ await act(async () => {jest.advanceTimersByTime(2000);});
+ expect(tree!.root.findByType(TraceModal).props.visible).toBe(false);
+ expect(tree!.root.findByType(TraceModal).props.turns).toEqual([]);
+ expect(tree!.root.findAllByType(ChatView)).toHaveLength(0);
+});
