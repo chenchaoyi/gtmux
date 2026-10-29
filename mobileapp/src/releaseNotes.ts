@@ -12,6 +12,21 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.156',
+    en: [
+      'Diff stability',
+      'Open large changes without rendering the entire patch at once.',
+      'Read long lines safely and keep Diff responsive while scrolling.',
+      'Retry a failed read without closing the conversation.',
+    ],
+    zh: [
+      'Diff 稳定性',
+      '大量改动按需显示，打开 Diff 时更流畅。',
+      '改善超长行的显示与滚动体验。',
+      '读取失败后可以直接重试，无需退出会话。',
+    ],
+  },
+  {
     version: '1.0.155',
     en: [
       'Session tools',
