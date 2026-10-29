@@ -1,6 +1,7 @@
 // Real embedded assets, synthetic HTTP responses, random loopback port. Never
 // contacts a running gtmux, writes a user record or sends to a real pane.
 const http = require('node:http');
+const crypto = require('node:crypto');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const root = path.resolve(__dirname, '../../internal/server/web');
@@ -44,6 +45,18 @@ async function start() {
         }
         const id = url.searchParams.get('id');
         if (['/api/pane', '/api/transcript', '/api/diff'].includes(p) && !id) return json(res, 400, {error: 'id required'});
+        if (p === '/api/artifacts/resolve' || p === '/api/artifacts/content') {
+          state.documentReads = (state.documentReads || 0) + 1;
+          if (!state.share.all) return json(res,403,{error:'forbidden'});
+          const image = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=','base64');
+          if (p.endsWith('/resolve')) {
+            const input=await body(req);
+            if(input.session_id!=='image-session'||input.home_id!=='image-home'||input.reference!=='/tmp/synthetic.png') return json(res,404,{error:'unpublished'});
+            return json(res,200,{id:'a'.repeat(32),name:'synthetic.png',kind:'image',media_type:'image/png',bytes:image.length,sha256:crypto.createHash('sha256').update(image).digest('hex'),created_at:1793180000,session_id:'image-session',home_id:'image-home',source:'/tmp/synthetic.png'});
+          }
+          if(url.searchParams.get('session_id')!=='image-session'||url.searchParams.get('home_id')!=='image-home')return json(res,404,{error:'unpublished'});
+          res.writeHead(200,{'Content-Type':'application/octet-stream'}); return res.end(state.corruptDocument?Buffer.from('wrong'):image);
+        }
         if (p === '/api/agents') return json(res, 200, state.agents);
         if (p === '/api/share') return json(res, 200, state.share);
         if (p === '/api/panes') return json(res, 200, [...state.agents.filter(a => a.pane_id).map(a => ({...a, tier: 'agent', window: '0', command: a.agent})),

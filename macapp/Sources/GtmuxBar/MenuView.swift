@@ -639,9 +639,9 @@ struct MenuView: View {
             // own as the ambient thing it is.
             Button { onAction(.localWorkspace) } label: {
                 HStack(spacing: 8) {
-                    Image(systemName: "globe").font(.system(size: 12))
+                    Image(systemName: "macwindow").font(Theme.Font.action)
                     Text(localWorkspace.opening ? l10n.tr("Opening workspace…", "正在打开工作台…") : l10n.tr("Open local workspace", "打开本机工作台"))
-                        .font(.system(size: 12, weight: .medium))
+                        .font(Theme.Font.action)
                     Spacer()
                     Image(systemName: "arrow.up.right").font(.system(size: 10))
                 }.foregroundStyle(p.fg2)
@@ -653,7 +653,7 @@ struct MenuView: View {
                 Button { onAction(.newSession) } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "plus").font(.system(size: 12, weight: .semibold))
-                        Text(l10n.tr("New session", "新建会话")).font(.system(size: 11, weight: .medium))
+                        Text(l10n.tr("New session", "新建会话")).font(Theme.Font.action)
                     }.foregroundStyle(p.fg2)
                 }.buttonStyle(.plain).fixedSize()
                 Spacer(minLength: 8)
@@ -674,7 +674,7 @@ struct MenuView: View {
                                 }
                             } else {
                                 Image(systemName: "globe").font(.system(size: 12))
-                                Text(l10n.tr("Remote on", "远程开启")).font(Theme.Font.footer)
+                                Text(l10n.tr("Remote on", "远程开启")).font(Theme.Font.action)
                             }
                         }
                         .foregroundStyle(remote.remoteClients > 0 ? Theme.Status.idle : p.fg2)
@@ -736,7 +736,7 @@ struct MenuView: View {
                     if health.checking { ProgressView().controlSize(.small) }
                     else { Image(systemName: "stethoscope").font(.system(size: 14)) }
                     Text(health.checking ? l10n.tr("Checking environment…", "正在检查运行环境…") : health.failed ? l10n.tr("Environment check incomplete", "运行环境检查未完成") : l10n.tr("Check complete · ", "检查已完成 · ") + (health.report?.attentionSummary(lang: l10n.lang) ?? ""))
-                        .font(Theme.Font.footer)
+                        .font(Theme.Font.action)
                     Spacer()
                     Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold))
                 }.foregroundStyle(p.fg2).padding(.horizontal, 14).padding(.vertical, 9)

@@ -140,7 +140,7 @@ Copy icons sit below the message background with recorded prompt time and sender
 
 While an agent is working, Chat shows a **Working** strip above the composer. Expand **Live output** to see the latest screen content, or collapse it to keep reading. It remembers your choice per pane and disappears when work stops. Runtime is shown when the server provides a known start time. Live updates preserve your draft and reading position; unavailable captures show a retry message.
 
-Choose **Trace** to inspect the recorded sequence of user prompts, agent replies and tool calls. Search the contents, filter by event type, then select an event to read or copy its detail. The overview marks follow event order. Tool details are recorded argument summaries; this view does not contain model request timing, token counts, raw arguments or tool output.
+Open **Session tools → Trace** to inspect the recorded sequence of user prompts, agent replies and tool calls. Search the contents, filter by event type, then select an event to read or copy its detail. The overview marks follow event order. Tool details are recorded argument summaries; this view does not contain model request timing, token counts, raw arguments or tool output.
 
 On macOS, choose **Open local workspace** at the bottom of the menu bar panel. It opens `http://127.0.0.1:8765` directly, using a one-time pairing code. No tunnel is needed. If serve is not running, the app starts a loopback-only child that stops when the app quits; an existing remote service is reused without changing its settings. Switching remote access in the app releases that child before starting the managed service. Non-tmux sessions remain visible as status-only entries.
 

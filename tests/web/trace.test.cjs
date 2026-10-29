@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const {scenario} = require('./harness.cjs');
+const {openTools, closeTools} = require('./tools.cjs');
 
 const command = 'rg -n "retry|cancel" internal/client\n  printf "保持缩进\\n"';
 function record(agent, session = 'synthetic-current', prompt = 'Review retries') {
@@ -14,16 +15,13 @@ async function openTrace(page, fixture, width, task = 'Trace QA') {
   await page.goto(fixture.url + '/#code=TEST-1234');
   if (width >= 900) {
     await page.locator('#tree').getByText(task, {exact:true}).dblclick();
-    await page.locator('.tile-modes [data-m="trace"]').click();
-    await page.locator('.tile .trace-event').first().waitFor();
+    await page.locator('.tile-modes [data-m="chat"]').click();
     await page.locator('.tile-btn[data-action="focus"]').click();
-    assert.equal(await page.locator('#mode [data-mode="trace"]').getAttribute('aria-pressed'), 'true');
-  } else {
-    await page.locator('#radar').getByText(task, {exact:true}).click();
-    await page.locator('#mode [data-mode="trace"]').click();
-  }
-  await page.locator('#chat .trace-event').first().waitFor();
-  return page.locator('#chat .trace-view');
+  } else await page.locator('#radar').getByText(task, {exact:true}).click();
+  await page.locator('#mode [data-mode="chat"]').click();
+  await openTools(page);
+  await page.locator('.session-tool .trace-event').first().waitFor();
+  return page.locator('.session-tool .trace-view');
 }
 function agentFixture(fixture, agent = 'Codex', turns = [record(agent)]) {
   fixture.state.agents = [{pane_id:'%901', agent, task:'Trace QA', session:'QA', status:'working', since:Math.floor(Date.now()/1000), source:'tmux'}];
@@ -104,14 +102,14 @@ scenario('Trace pauses a streamed detail while text is selected and resumes afte
   agentFixture(fixture,'Codex',[{session_id:'stream',prompt:'Work',segments:[{text:'Selected original reply'}]}]);
   const trace=await openTrace(page,fixture,1280);
   await trace.locator('.trace-event.assistant').click();
-  await page.evaluate(()=>{const text=document.querySelector('#chat .trace-prose p').firstChild;const range=document.createRange();range.setStart(text,0);range.setEnd(text,8);const selection=getSelection();selection.removeAllRanges();selection.addRange(range);});
+  await page.evaluate(()=>{const text=document.querySelector('.session-tool .trace-prose p').firstChild;const range=document.createRange();range.setStart(text,0);range.setEnd(text,8);const selection=getSelection();selection.removeAllRanges();selection.addRange(range);});
   fixture.state.turns['%901'][0].segments[0].text='Selected original reply with a new streamed ending';
   await page.waitForTimeout(3000);
   assert.equal(await trace.locator('.trace-prose').innerText(),'Selected original reply');
   assert.equal(await page.evaluate(()=>getSelection().toString()),'Selected');
   await page.evaluate(()=>getSelection().removeAllRanges());
-  await trace.getByText('Selected original reply with a new streamed ending',{exact:true}).waitFor();
-  await page.evaluate(()=>{const text=document.querySelector('#chat .trace-prose p').firstChild;const range=document.createRange();range.selectNodeContents(text);getSelection().addRange(range);});
+  await trace.locator('.trace-prose').getByText('Selected original reply with a new streamed ending',{exact:true}).waitFor();
+  await page.evaluate(()=>{const text=document.querySelector('.session-tool .trace-prose p').firstChild;const range=document.createRange();range.selectNodeContents(text);getSelection().addRange(range);});
   await trace.locator('.trace-event.user').click();
   assert.equal(await trace.locator('.trace-detail-title').innerText(),'User message');
   assert.equal(await trace.locator('.trace-prose').innerText(),'Work','explicit navigation supersedes an old text selection');
@@ -154,8 +152,8 @@ scenario('External DSH Trace stays read-only, scoped and clears on revocation', 
   await page.goto(fixture.url+'/#code=TEST-1234');
   assert.match(await page.locator('.row.native').innerText(),/只读/);
   await page.locator('.row.native').click();
-  await page.locator('#mode [data-mode="trace"]').click();
-  const trace=page.locator('#chat .trace-view');await trace.locator('.trace-event.tool').waitFor();
+  await openTools(page);
+  const trace=page.locator('.session-tool .trace-view');await trace.locator('.trace-event.tool').waitFor();
   assert.equal(await page.locator('#mode [data-mode="term"]').isVisible(),false);
   assert.equal(await page.locator('#chat-input').isVisible(),false);
   await trace.locator('.trace-event.tool').click();
@@ -179,12 +177,14 @@ scenario('A delayed Trace response cannot replace the next pane or its mode', {v
     else await route.continue();
   });
   await openTrace(page,fixture,1280);hold=true;await pending;
+  await closeTools(page);
   await page.locator('#pane-next').click();
-  await page.locator('#chat .trace-event').filter({hasText:'New owner response'}).waitFor();
-  assert.equal(await page.locator('#mode [data-mode="trace"]').getAttribute('aria-pressed'),'true');
+  await openTools(page);
+  await page.locator('.session-tool .trace-event').filter({hasText:'New owner response'}).waitFor();
+  assert.equal(await page.locator('#mode [data-mode="chat"]').getAttribute('aria-pressed'),'true');
   hold=false;release();await page.waitForTimeout(150);
-  assert.match(await page.locator('#chat').innerText(),/New owner response/);
-  assert.doesNotMatch(await page.locator('#chat').innerText(),/Late old response|Late old task/);
+  assert.match(await page.locator('.session-tool').innerText(),/New owner response/);
+  assert.doesNotMatch(await page.locator('.session-tool').innerText(),/Late old response|Late old task/);
   assert.equal(fixture.state.sends.length,0);
 });
 
@@ -199,16 +199,17 @@ scenario('External Trace keeps same-ID conversations in different homes separate
   });
   await page.goto(fixture.url+'/#code=TEST-1234');
   await page.locator('#radar').getByText('home-a',{exact:true}).click();
-  await page.locator('#mode [data-mode="trace"]').click();
-  await page.locator('#chat .trace-event').filter({hasText:'Home A reply'}).waitFor();
+  await openTools(page);
+  await page.locator('.session-tool .trace-event').filter({hasText:'Home A reply'}).waitFor();
   hold=true;await pending;
+  await closeTools(page);
   await page.locator('#back').click();
   await page.locator('#radar').getByText('home-b',{exact:true}).click();
-  await page.locator('#mode [data-mode="trace"]').click();
-  await page.locator('#chat .trace-event').filter({hasText:'Home B reply'}).waitFor();
+  await openTools(page);
+  await page.locator('.session-tool .trace-event').filter({hasText:'Home B reply'}).waitFor();
   hold=false;release();await page.waitForTimeout(150);
-  assert.match(await page.locator('#chat').innerText(),/Home B reply/);
-  assert.doesNotMatch(await page.locator('#chat').innerText(),/Home A|Late A|Late home A/);
+  assert.match(await page.locator('.session-tool').innerText(),/Home B reply/);
+  assert.doesNotMatch(await page.locator('.session-tool').innerText(),/Home A|Late A|Late home A/);
   assert.equal(await page.locator('#chat-input').isVisible(),false);
   assert.equal(fixture.state.sends.length,0);
 });

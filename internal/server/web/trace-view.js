@@ -73,8 +73,8 @@
       modes.hidden = event.kind === 'tool'; preview.setAttribute('aria-pressed', String(detailMode === 'preview')); source.setAttribute('aria-pressed', String(detailMode === 'source'));
       warning.textContent = event.step && event.step.truncated ? T('Only the recorded portion of this input is available.', '调用参数较长，仅展示已记录的部分。') : event.step && !event.step.input ? T('Only a call summary was recorded.', '此调用仅记录了摘要。') : ''; warning.hidden = !warning.textContent;
       content.replaceChildren();
-      if (event.kind !== 'tool' && detailMode === 'preview') { var prose = el('div', 'trace-prose'); prose.appendChild(options.markdown(event.body)); content.appendChild(prose); }
-      else { var code = el('pre', 'trace-source', event.body || T('No detail recorded.', '未记录详情。')); code.tabIndex = 0; content.appendChild(code); }
+      if (event.kind !== 'tool' && detailMode === 'preview') { var prose = el('div', 'trace-prose'); prose.appendChild(options.markdown(event.body, {session_id: event.session, home_id: context.home_id || ''})); content.appendChild(prose); }
+      else { var code = el('pre', 'trace-source' + (event.step && !event.step.input ? ' trace-summary' : ''), event.body || T('No detail recorded.', '未记录详情。')); code.tabIndex = 0; content.appendChild(code); }
       actions.replaceChildren(options.actions(event.body || label(event))); detail.scrollTop = scroll;
     }
     function inspect(event, reveal) {

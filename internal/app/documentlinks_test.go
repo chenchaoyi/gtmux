@@ -109,3 +109,29 @@ func TestConversationFileOpensClaudeRelativeLink(t *testing.T) {
 		t.Fatal("Claude link crossed home identity")
 	}
 }
+
+func TestConversationImageEnvelopeUsesTheSameDocumentBoundary(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("CODEX_HOME", t.TempDir())
+	source := filepath.Join(t.TempDir(), "attached image.png")
+	if err := os.WriteFile(source, []byte("synthetic image bytes"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	record := func(message string) string {
+		b, _ := json.Marshal(map[string]any{"type": "event_msg", "payload": map[string]string{"type": "user_message", "message": message}})
+		return string(b)
+	}
+	raw := `<image name=[Image #1] path="` + source + `"></image>Inspect this`
+	desktopRollout(t, os.Getenv("CODEX_HOME"), "image-owner", "01", "codex-tui", record(raw))
+	desktopRollout(t, os.Getenv("CODEX_HOME"), "image-literal", "01", "codex-tui", record("```xml\n"+raw+"\n```"))
+	if _, err := resolveConversationDocument(source, "image-literal", ""); err == nil {
+		t.Fatal("code example granted file access")
+	}
+	if _, err := resolveConversationDocument(source, "image-owner", "foreign"); err == nil {
+		t.Fatal("image crossed home identity")
+	}
+	file, err := resolveConversationDocument(source, "image-owner", "")
+	if err != nil || file.Source != source || file.Kind != "image" {
+		t.Fatal(file, err)
+	}
+}

@@ -5,6 +5,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 
 const {scenario} = require('./harness.cjs');
+const {openTools, closeTools} = require('./tools.cjs');
 
 scenario('Desktop enrollment, sidebar, restore and live chat', {viewport: {width: 1280, height: 850}, locale: 'en-US'}, async (page, fixture) => {
   await page.goto(fixture.url); // Direct path without trailing slash.
@@ -30,9 +31,10 @@ scenario('Desktop enrollment, sidebar, restore and live chat', {viewport: {width
   updated[0].segments[0].text = 'Updated live segment';
   fixture.state.turns['%901'] = updated;
   await page.getByText('Updated live segment', {exact: true}).waitFor();
-  await page.locator('.tile-modes [data-m="diff"]').click();
-  await page.locator('.tile-diff .add').waitFor();
-  assert.equal(await page.locator('.tile-diff .add').innerText(), '+new\n');
+  await openTools(page, 'diff', true);
+  await page.locator('.session-diff .add').waitFor();
+  assert.equal(await page.locator('.session-diff .add').innerText(), '+new\n');
+  await closeTools(page);
   await page.locator('.tile-modes [data-m="term"]').click();
   await page.locator('.tile .xterm-rows').waitFor();
   await page.locator('.tile-name').click();
@@ -169,11 +171,12 @@ for (const width of [320, 1280]) {
     await toggle.waitFor();
     assert.equal(await toggle.getAttribute('aria-expanded'), 'false');
     assert.equal(await card.locator('.step-row').count(), 0);
-    assert.match(await card.innerText(), /Run code ×6/);
+    assert.match(await card.innerText(), /8 calls/);
+    assert.equal(await card.locator('.steps-summary').count(),0);
     assert.ok((await toggle.boundingBox()).height >= 44);
     await toggle.click();
     assert.equal(await toggle.getAttribute('aria-expanded'), 'true');
-    assert.deepEqual(await card.locator('.step-name').allTextContents(), steps.map(s => s.title));
+    assert.equal(await card.locator('summary').count(),0,'summary-only records have no empty inspectors');
     assert.equal(await card.locator('img').count(), 0);
     assert.equal(await card.locator('.step-detail').nth(6).innerText(), steps[6].detail);
     const bounds = await card.evaluate(node => ({width: node.clientWidth, scroll: node.scrollWidth}));
@@ -209,7 +212,7 @@ for (const options of [
     const card=page.locator('.tool-steps'),toggle=card.locator('.steps-toggle');
     await toggle.waitFor();await toggle.focus();await page.keyboard.press('Enter');
     assert.equal(await toggle.evaluate(e=>e===document.activeElement),true,'group activation retains focus');
-    assert.equal(await card.locator('.activity-icon').count(),4);
+    assert.equal(await card.locator('.step-row .activity-icon').count(),4);
     assert.equal(await card.locator('.step-detail').nth(1).innerText(),'Review the layout without edits');
     assert.equal(await card.locator('.step-detail').nth(2).innerText(),zh?'超时设置 30 秒':'Timeout setting 30s');
     const row=card.locator('.step-inspect').first(),summary=row.locator('summary');
@@ -349,8 +352,8 @@ for (const width of [390, 1280]) {
 
 scenario('Workspace conversation keeps drafts, shows identities and inspectable calls', {viewport: {width: 1440, height: 1000}, locale: 'en-US', permissions: ['clipboard-read', 'clipboard-write']}, async (page, fixture) => {
   fixture.state.turns['%901'] = [
-    {prompt: 'Investigate retries', time: new Date().toISOString(), agent: 'Codex', segments: [{text: 'Inspecting the retry policy.', steps: [{title: 'exec_command', detail: 'rg retry internal/client.go'}]}, {text: 'The retry budget is shared.\n\nUse a bounded backoff.'}]},
-    {prompt: 'Check the cancellation path too.', from: {kind: 'hq', label: 'HQ'}, agent: 'Claude Code', segments: [{text: 'Cancellation now stops pending retries.', steps: [{title: 'Read', detail: 'internal/cancellation.go'}]}]},
+    {prompt: 'Investigate retries', time: new Date().toISOString(), agent: 'Codex', segments: [{text: 'Inspecting the retry policy.', steps: [{title: 'exec_command', detail: 'rg retry internal/client.go', input:'rg retry internal/client.go', input_kind:'command'}]}, {text: 'The retry budget is shared.\n\nUse a bounded backoff.'}]},
+    {prompt: 'Check the cancellation path too.', from: {kind: 'hq', label: 'HQ'}, agent: 'Claude Code', segments: [{text: 'Cancellation now stops pending retries.', steps: [{title: 'Read', detail: 'internal/cancellation.go',input:'internal/cancellation.go',input_kind:'path'}]}]},
   ];
   await page.goto(fixture.url + '/#code=TEST-1234');
   await page.locator('#tree').getByText('Investigate retries', {exact: true}).dblclick();
@@ -393,8 +396,8 @@ scenario('Workspace conversation keeps drafts, shows identities and inspectable 
   fixture.state.turns['%901'][1].segments.push({text: 'Live update from the agent.'});
   await page.getByText('Live update from the agent.', {exact: true}).waitFor();
   assert.equal(await input.inputValue(), 'Keep this unsent draft');
-  await page.locator('.tile-modes [data-m="trace"]').click();
-  const trace = page.locator('.tile .trace-view');
+  await openTools(page, 'trace', true);
+  const trace = page.locator('.session-tool .trace-view');
   await trace.locator('.trace-event.tool').first().click();
   assert.match(await trace.locator('.trace-inspector').innerText(), /rg retry/);
   await trace.getByRole('searchbox').fill('cancellation');
@@ -410,11 +413,13 @@ scenario('Workspace conversation keeps drafts, shows identities and inspectable 
     await fs.mkdir(process.env.GTMUX_WEB_EVIDENCE, {recursive: true});
     await page.screenshot({path: path.join(process.env.GTMUX_WEB_EVIDENCE, 'web-workspace-trace.png')});
   }
+  await closeTools(page);
   await page.locator('.tile-btn[data-action="focus"]').click();
-  await page.locator('#mode [data-mode="trace"]').click();
-  await page.locator('#chat .trace-event.tool').first().click();
-  if (process.env.GTMUX_WEB_EVIDENCE) await page.screenshot({path: path.join(process.env.GTMUX_WEB_EVIDENCE, 'web-trace-desktop.png')});
   await page.locator('#mode [data-mode="chat"]').click();
+  await openTools(page);
+  await page.locator('.session-tool .trace-event.tool').first().click();
+  if (process.env.GTMUX_WEB_EVIDENCE) await page.screenshot({path: path.join(process.env.GTMUX_WEB_EVIDENCE, 'web-trace-desktop.png')});
+  await closeTools(page);
   const focusedInput = page.locator('#chat-input .cx-input');
   await focusedInput.fill('Follow up from focused chat');
   await focusedInput.press('ControlOrMeta+Enter');
@@ -426,7 +431,7 @@ scenario('Workspace conversation keeps drafts, shows identities and inspectable 
   assert.equal(await page.locator('#pane-input .cx-input').inputValue(), 'Draft across modes');
   await page.locator('#mode [data-mode="chat"]').click();
   assert.equal(await focusedInput.inputValue(), 'Draft across modes');
-  await page.getByText('Inspecting the retry policy.', {exact: true}).waitFor();
+  await page.locator('#chat').getByText('Inspecting the retry policy.', {exact: true}).waitFor();
   if (process.env.GTMUX_WEB_EVIDENCE) await page.screenshot({path: path.join(process.env.GTMUX_WEB_EVIDENCE, 'web-chat-desktop.png')});
 });
 
@@ -449,13 +454,13 @@ scenario('Narrow chat supports input and touch copy while trace remains within v
   await page.locator('#chat-input .cx-input').fill('继续检查');
   await page.locator('#chat-input .cx-send').click();
   assert.equal(fixture.state.sends.at(-1).text, '继续检查');
-  await page.locator('#mode [data-mode="trace"]').click();
+  await openTools(page);
   await page.locator('.trace-event.tool').click();
   assert.equal(await page.locator('.trace-inspector pre').innerText(), 'Synthetic detail');
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), 390);
   if (process.env.GTMUX_WEB_EVIDENCE) await page.screenshot({path: path.join(process.env.GTMUX_WEB_EVIDENCE, 'web-trace-mobile.png')});
   assert.equal(await page.locator('#chat-input').isVisible(),false,'Trace keeps its reading space');
-  await page.locator('#mode [data-mode="chat"]').click();
+  await closeTools(page);
   await page.locator('#chat-input .cx-keyboard').click();
   await page.locator('#chat-input .cx-input').fill('Private draft before revocation');
   fixture.state.deny = true;
@@ -640,41 +645,27 @@ scenario('Appearance follows the system and persists an explicit choice without 
   assert.equal(await page.locator('#settings').isVisible(), true);
 });
 
-scenario('Trace inspector closes to full width and stays closed through refresh in focus and tiles', {viewport: {width: 1440, height: 1000}, locale: 'zh-CN', permissions: ['clipboard-read', 'clipboard-write']}, async (page, fixture) => {
-  await page.goto(fixture.url + '/#code=TEST-1234');
-  await page.locator('#tree').getByText('Investigate retries', {exact: true}).dblclick();
-  await page.locator('.tile-modes [data-m="trace"]').click();
-  const tileTrace = page.locator('.tile .trace-view');
-  await tileTrace.locator('.trace-event.tool').waitFor();
-  assert.equal(await tileTrace.locator('.trace-inspector').isVisible(), false, 'a compact tile starts with the complete list');
-  await tileTrace.locator('.trace-event.tool').click();
-  await tileTrace.locator('.trace-inspector pre').waitFor();
-  assert.equal(await tileTrace.locator('.trace-list').isVisible(), false, 'compact details use a reading view');
-  await tileTrace.getByRole('button', {name: '关闭详情', exact: true}).click();
-  assert.equal(await tileTrace.locator('.trace-inspector').isVisible(), false);
-  fixture.state.turns['%901'] = [...fixture.turns(), {prompt: 'Next turn', response: 'An additional reply'}];
-  await tileTrace.locator('.trace-event').filter({hasText: 'An additional reply'}).waitFor();
-  assert.equal(await tileTrace.locator('.trace-inspector').isVisible(), false);
-  await tileTrace.getByRole('button', {name: '查看详情', exact: true}).click();
-  assert.match(await tileTrace.locator('.trace-inspector pre').innerText(), /Synthetic detail/);
-  await page.locator('.tile').evaluate(e => {e.style.width = '380px';});
-  for (const selector of ['.tile-head', '.trace-toolbar']) assert.equal(await page.locator(selector).evaluate(e => e.scrollWidth <= e.clientWidth), true);
-  assert.equal(await tileTrace.locator('.trace-list').isVisible(), false);
-  await tileTrace.getByRole('button', {name: '关闭详情', exact: true}).click();
-  assert.equal(await tileTrace.locator('.trace-event.tool').evaluate(e => e === document.activeElement), true);
-  await page.locator('.tile-btn[data-action="focus"]').click();
-  assert.equal(await page.locator('#mode [data-mode="trace"]').getAttribute('aria-pressed'), 'true', 'focus preserves the active mode');
-  const focus = page.locator('#chat .trace-view');
-  await focus.locator('.trace-event.tool').click();
-  await focus.getByRole('button', {name: '关闭详情', exact: true}).click();
-  const list = await focus.locator('.trace-list').boundingBox(), body = await focus.locator('.trace-body').boundingBox();
-  assert.ok(list.width >= body.width - 2);
+scenario('Trace tool closes details and returns to the original panel draft', {viewport:{width:1440,height:1000},locale:'zh-CN'},async(page,fixture)=>{
+  await page.goto(fixture.url+'/#code=TEST-1234');
+  await page.locator('#tree').getByText('Investigate retries',{exact:true}).dblclick();
+  await page.locator('.tile-modes [data-m="chat"]').click();
+  await page.locator('.tile .cx-input').fill('Preserve this draft');
+  await openTools(page,'trace',true);
+  const trace=page.locator('.session-tool .trace-view');
+  await trace.locator('.trace-event.tool').click();
+  await trace.getByRole('button',{name:'关闭详情',exact:true}).click();
+  fixture.state.turns['%901']=[...fixture.turns(),{prompt:'Next turn',response:'An additional reply'}];
+  await trace.locator('.trace-event').filter({hasText:'An additional reply'}).waitFor();
+  assert.equal(await trace.locator('.trace-inspector').isVisible(),false);
+  const list=await trace.locator('.trace-list').boundingBox(), body=await trace.locator('.trace-body').boundingBox();assert.ok(list.width>=body.width-2);
   await page.setViewportSize({width:390,height:844});
-  await focus.locator('.trace-event.tool').click();
-  assert.equal(await focus.locator('.trace-list').isVisible(), false);
-  assert.equal(await page.locator('#chat-input').isVisible(), false);
-  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), 390);
-  if (process.env.GTMUX_WEB_EVIDENCE) { await fs.mkdir(process.env.GTMUX_WEB_EVIDENCE,{recursive:true}); await page.screenshot({path:path.join(process.env.GTMUX_WEB_EVIDENCE,'trace-mobile-detail.png')}); }
+  await trace.locator('.trace-event.tool').click();
+  assert.equal(await trace.locator('.trace-list').isVisible(),false);
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth),390);
+  await closeTools(page);
+  await page.setViewportSize({width:1440,height:1000});
+  assert.equal(await page.locator('.tile .cx-input').inputValue(),'Preserve this draft');
+  assert.equal(await page.locator('.tile-modes [data-m="chat"]').getAttribute('aria-pressed'),'true');
 });
 
 scenario('Composer stages files, annotates images, recalls input and matches app send controls', {viewport: {width: 1440, height: 1000}, locale: 'zh-CN'}, async (page, fixture) => {
