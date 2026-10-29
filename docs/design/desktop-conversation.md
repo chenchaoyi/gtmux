@@ -37,6 +37,13 @@ not user dialogue. Genuine text after it stays visible; malformed envelopes and
 literal mentions in prose are preserved. Other-home observations remain outside
 this home's rollout evidence.
 
+For Codex TUI creation, `originator=codex-tui` can coexist with rollout
+`source=cli` or `source=vscode`. Neither backend source alone identifies the
+current client. Process-backed recovery accepts either known source only after
+verifying that the callback's exact process is the live foreground terminal
+client. A shared daemon callback does not prove which terminal owns the thread;
+it remains unbound without a separate exact binding witness.
+
 ## Native reading layout
 
 The Mac reader follows mobile Chat's hierarchy and controls while retaining native
