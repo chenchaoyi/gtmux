@@ -24,55 +24,11 @@ tmux 会话和 agent 的指挥中心。
 
 gtmux 的前提是每个 agent 各占一个 tmux pane。我们推荐 [Ghostty](https://ghostty.org) + tmux + gtmux 这套组合，没用过 tmux 可以先看官方的 [Getting Started](https://github.com/tmux/tmux/wiki/Getting-Started)。
 
-## 主机平台
+从[安装](#快速上手)开始，按需[配置](#配置)，再看[主要能力](#主要能力)、[上手指南](#上手指南)和[参考](#参考)。
 
-纯 Go CLI／服务端支持 **macOS 和 Linux（amd64、arm64）**。在 tmux 所在主机运行，即可从手机、iPad 或网页连接。菜单栏 App、桌面跳转和合盖控制仅适用于 macOS。Linux 的用户、socket、systemd 和无桌面运行方式见 [Linux 指南](docs/linux.zh.md)。
+## 开始使用
 
-DeepSeek Harness 统一身份，dst 适配器支持核验后的 pane 管理和原生目标输入，见 [DSH 指南](docs/guides/deepseek-harness.zh.md)。Web 对话仍作为外部历史只读查看。
-专用原生 Cordis 插件接入后续生命周期事件，本轮不包含 TUI 控制。见 [DSH 配置与边界](docs/guides/deepseek-harness.zh.md)。
-
-## 五个入口
-
-- 在终端里，`gtmux agents` 列出所有 agent，`focus` 跳到 pane，`spawn` 给 agent 派活。
-- 菜单栏 app 常驻一个状态点，`⌘⌥G` 唤出面板，agent 等你时弹桌面通知；`⌥⌘4` 截图，标注后直接发给 agent。
-- iPhone 和 iPad app（[App Store](https://apps.apple.com/app/id6791144062)）有锁屏推送，能往 pane 里回话，还能用限定范围的链接把指定的 pane 交给协作者。
-- 网页版可在浏览器中查看雷达和 pane；已配对设备或访客链接获得输入权限后也能发送消息。
-- 在另一台电脑上，`gtmux attach` 把服务器上的 tmux 会话接到眼前的终端里。
-
-远程访问需要主机保持运行。在 macOS 上，`gtmux awake on` 经过一次管理员授权，让 Mac 合盖后继续运行，已经配好的 serve 和隧道才能继续应答。用电池时，30% 会提醒，20% 恢复睡眠；它不会替你开启远程访问。不带参数的 `gtmux awake` 只报告当前状态。
-
-## 雷达
-
-```
-gtmux agent · 7 agent · 1 等输入 · 2 运行中 · 3 空闲 · 1 只有 shell
-
-‖ 等输入   Claude Code  api:0.0                permission to run tests %7
-⠿ 运行中   Claude Code  hq:0.0                 api is waiting on you · rest normal %1
-⠿ 运行中   Claude Code  web:0.0                refactor auth middleware %11
-✓ 空闲     Claude Code  app:0.0                wire up the dashboard %9
-✓ 空闲     Codex        worker:0.0             add retry backoff %8  最近完成
-✓ 空闲     Gemini       docs:0.0               draft the API reference %3
-● 运行中   Claude Code  infra:0.0              — %5
-
-跳转：gtmux focus <pane>   （例如 gtmux focus %7）
-```
-
-按紧急程度排序。各端用同一套颜色：红色在等你，青色在跑，绿色空闲，灰色是识别出了 agent 进程，但还没有确定的回合状态。
-
-装了 gtmux hook（agent 每轮开始和结束时调用的一小段回调）的 agent 会直接上报状态。在 tmux 里，gtmux 从命令、标题和进程树识别 agent；没有 hook 上报时，屏幕和 CPU 采样可以补充状态。tmux 之外，hook 提供只读观测，Codex 和 DSH 还可通过专用读取器发现已保存的历史，无需 hook。符合条件、空闲且已有记录的非 Codex 可恢复会话，可以用 `gtmux adopt <id>` 转入 tmux；外部 Codex 和 DSH 对话不能转入。
-
-## HQ（中控）
-
-`gtmux digest` 列出各 agent 最近收到的指令、回复摘要和等待的问题，无需调用模型。`gtmux hq` 在独立会话中启动 HQ，读取摘要和事件、协调其他 agent；有会话等待时，HQ 会收到提醒。你可以把跨会话的任务交给 HQ，并核对它采取的操作。
-
-## 长什么样
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme-screens-dark.jpg" />
-  <img src="docs/assets/readme-screens.jpg" width="100%" alt="手机上的四个页面：雷达、在 pane 里回复、HQ、用量" />
-</picture>
-
-## 快速上手
+### 快速上手
 
 安装脚本会同时装好 CLI 和菜单栏 app，桌面通知由 app 负责发。
 
@@ -104,9 +60,67 @@ gtmux update                 # 更新 CLI 和菜单栏 app
 
 跳转功能（`focus`、`restore`、`new`）需要 macOS 加 [Ghostty](https://ghostty.org) 1.3+、iTerm2 或 cmux；Warp 尽力支持。`agents` 和 `overview` 在任何跑 tmux 的终端里都能用。身在中国大陆或 GitHub 访问不稳的话，看[安装说明](docs/install.zh.md)。
 
-## 和同类工具的区别
+### 主机平台
 
-claude-squad、uzi、dmux 这类工具负责启动 agent 并放进 git worktree，也只看得到自己起的那些。gtmux 读你现有的 tmux，手动起的、别的工具起的都看得见，需要时也能用 `gtmux spawn` 派活。它是一个零 cgo 的 Go 二进制，各个 app 读的都是同一份 `gtmux agents --json`。
+纯 Go CLI／服务端支持 **macOS 和 Linux（amd64、arm64）**。在 tmux 所在主机运行，即可从手机、iPad 或网页连接。菜单栏 App、桌面跳转和合盖控制仅适用于 macOS。Linux 的用户、socket、systemd 和无桌面运行方式见 [Linux 指南](docs/linux.zh.md)。
+
+DeepSeek Harness 统一身份，dst 适配器支持核验后的 pane 管理和原生目标输入，见 [DSH 指南](docs/guides/deepseek-harness.zh.md)。Web 对话仍作为外部历史只读查看。
+专用原生 Cordis 插件接入后续生命周期事件，本轮不包含 TUI 控制。见 [DSH 配置与边界](docs/guides/deepseek-harness.zh.md)。
+
+锁定版本、镜像和源码构建见[安装说明](docs/install.zh.md)；无桌面环境的主机见 [Linux 部署](docs/linux.zh.md)。
+
+## 配置
+
+先按[快速上手](#快速上手)运行 `gtmux doctor`，再按需要配置：
+
+- [语言与持久设置](docs/cli.zh.md#gtmux-config少数几个不按次给的设置)：查看、修改各个 gtmux 进程共用的设置。
+- [Agent 接入与 hook](docs/guides/agent-integrations.zh.md)：接入你用的 agent，了解各自的支持边界。
+- [远程访问](docs/phone.zh.md)：使用手机或浏览器前，选择连接方式、配对设备并设置权限。
+
+配置好后，看[雷达](#雷达)了解日常操作，或跟着[上手指南](#上手指南)走一遍。
+
+## 主要能力
+
+### 五个入口
+
+- 在终端里，`gtmux agents` 列出所有 agent，`focus` 跳到 pane，`spawn` 给 agent 派活。
+- 菜单栏 app 常驻一个状态点，`⌘⌥G` 唤出面板，agent 等你时弹桌面通知；`⌥⌘4` 截图，标注后直接发给 agent。
+- iPhone 和 iPad app（[App Store](https://apps.apple.com/app/id6791144062)）有锁屏推送，能往 pane 里回话，还能用限定范围的链接把指定的 pane 交给协作者。
+- 网页版可在浏览器中查看雷达和 pane；已配对设备或访客链接获得输入权限后也能发送消息。
+- 在另一台电脑上，`gtmux attach` 把服务器上的 tmux 会话接到眼前的终端里。
+
+远程访问需要主机保持运行。在 macOS 上，`gtmux awake on` 经过一次管理员授权，让 Mac 合盖后继续运行，已经配好的 serve 和隧道才能继续应答。用电池时，30% 会提醒，20% 恢复睡眠；它不会替你开启远程访问。不带参数的 `gtmux awake` 只报告当前状态。
+
+### 雷达
+
+```
+gtmux agent · 7 agent · 1 等输入 · 2 运行中 · 3 空闲 · 1 只有 shell
+
+‖ 等输入   Claude Code  api:0.0                permission to run tests %7
+⠿ 运行中   Claude Code  hq:0.0                 api is waiting on you · rest normal %1
+⠿ 运行中   Claude Code  web:0.0                refactor auth middleware %11
+✓ 空闲     Claude Code  app:0.0                wire up the dashboard %9
+✓ 空闲     Codex        worker:0.0             add retry backoff %8  最近完成
+✓ 空闲     Gemini       docs:0.0               draft the API reference %3
+● 运行中   Claude Code  infra:0.0              — %5
+
+跳转：gtmux focus <pane>   （例如 gtmux focus %7）
+```
+
+按紧急程度排序。各端用同一套颜色：红色在等你，青色在跑，绿色空闲，灰色是识别出了 agent 进程，但还没有确定的回合状态。
+
+装了 gtmux hook（agent 每轮开始和结束时调用的一小段回调）的 agent 会直接上报状态。在 tmux 里，gtmux 从命令、标题和进程树识别 agent；没有 hook 上报时，屏幕和 CPU 采样可以补充状态。tmux 之外，hook 提供只读观测，Codex 和 DSH 还可通过专用读取器发现已保存的历史，无需 hook。符合条件、空闲且已有记录的非 Codex 可恢复会话，可以用 `gtmux adopt <id>` 转入 tmux；外部 Codex 和 DSH 对话不能转入。
+
+### HQ（中控）
+
+`gtmux digest` 列出各 agent 最近收到的指令、回复摘要和等待的问题，无需调用模型。`gtmux hq` 在独立会话中启动 HQ，读取摘要和事件、协调其他 agent；有会话等待时，HQ 会收到提醒。你可以把跨会话的任务交给 HQ，并核对它采取的操作。
+
+### 长什么样
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme-screens-dark.jpg" />
+  <img src="docs/assets/readme-screens.jpg" width="100%" alt="手机上的四个页面：雷达、在 pane 里回复、HQ、用量" />
+</picture>
 
 ## 上手指南
 
@@ -117,7 +131,9 @@ claude-squad、uzi、dmux 这类工具负责启动 agent 并放进 git worktree�
 - [用手机、iPad 和浏览器管理](docs/guides/phone-and-web.zh.md)：配对自己的设备、回复 agent、分享指定 pane。
 - [从任意电脑接回会话](docs/guides/attach-from-anywhere.zh.md)：用一个真正的终端进到 Mac 上的会话。
 
-## 文档
+<a id="文档"></a>
+
+## 参考
 
 - [各 Agent 接入机制](docs/guides/agent-integrations.zh.md)：14 个内置条目的事件桥接、历史来源、安装方式与支持边界。
 - [CLI 与命令](docs/cli.zh.md)：所有命令、HQ、识别原理、各 agent 的 hook、tmux 按键绑定。
@@ -127,6 +143,10 @@ claude-squad、uzi、dmux 这类工具负责启动 agent 并放进 git worktree�
 - [设计文档](docs/design/README.zh.md)，在途变更在 `openspec/`。
 
 仓库结构和贡献说明在 [CONTRIBUTING.md](CONTRIBUTING.md)（英文）。
+
+## 和同类工具的区别
+
+claude-squad、uzi、dmux 这类工具负责启动 agent 并放进 git worktree，也只看得到自己起的那些。gtmux 读你现有的 tmux，手动起的、别的工具起的都看得见，需要时也能用 `gtmux spawn` 派活。它是一个零 cgo 的 Go 二进制，各个 app 读的都是同一份 `gtmux agents --json`。
 
 ## 许可
 

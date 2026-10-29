@@ -29,70 +29,11 @@ gtmux assumes each agent runs in its own tmux pane. We recommend
 [Ghostty](https://ghostty.org) + tmux + gtmux, and if tmux is new to you, start with its
 [Getting Started](https://github.com/tmux/tmux/wiki/Getting-Started) guide.
 
-## Host platforms
+Start with [installation](#quickstart), choose your [configuration](#configuration), then explore [main features](#main-features), [guides](#guides) and the [reference](#reference).
 
-The cgo-free CLI/server supports **macOS and Linux (amd64/arm64)**. Run it beside your tmux sessions and connect from the phone, iPad or browser. The menu-bar app, desktop focus and lid controls are macOS features. See the [Linux setup guide](docs/linux.md) for same-user sockets, systemd and headless operation.
+## Getting started
 
-DeepSeek Harness sessions retain one identity across Web and supported terminal clients. The dst adapter adds verified pane management and native addressed input; see the [DSH guide](docs/guides/deepseek-harness.md). Web conversations remain read-only external histories
-on the menu bar, phone, iPad, Web and CLI. A dedicated native Cordis plugin adds
-future lifecycle events; TUI control is not included. See [DSH setup and limits](docs/guides/deepseek-harness.md).
-
-## Five ways in
-
-- In the terminal, `gtmux agents` lists every agent, `focus` jumps to a pane and `spawn` hands an agent a task.
-- The menu-bar app keeps a status dot in view, opens a `⌘⌥G` palette, posts a desktop notification when an agent needs you, and with `⌥⌘4` takes a screenshot you can mark up and send to an agent.
-- The iPhone and iPad app ([App Store](https://apps.apple.com/app/id6791144062)) adds lock-screen push and replies typed into a pane, and can hand a collaborator chosen panes through a scoped link.
-- The web view opens your radar and panes in any browser. You can type where your device or a guest link has permission.
-- From another computer, `gtmux attach` brings a tmux session from your server into the local terminal.
-
-Every remote path needs its host running. On macOS, `gtmux awake on` keeps it running with the lid
-closed after one admin authorization, so an already configured serve and tunnel can
-keep answering. On battery, it warns at 30% and restores sleep at 20%; it does not
-start remote access for you. A bare `gtmux awake` reports the current state.
-
-## The radar
-
-```
-gtmux agents · 7 agents · 1 waiting · 2 working · 3 idle · 1 running
-
-‖ waiting  Claude Code  api:0.0                permission to run tests %7
-⠿ working  Claude Code  hq:0.0                 api is waiting on you · rest normal %1
-⠿ working  Claude Code  web:0.0                refactor auth middleware %11
-✓ idle     Claude Code  app:0.0                wire up the dashboard %9
-✓ idle     Codex        worker:0.0             add retry backoff %8  latest
-✓ idle     Gemini       docs:0.0               draft the API reference %3
-● running  Claude Code  infra:0.0              — %5
-
-jump: gtmux focus <pane>   (e.g. gtmux focus %7)
-```
-
-Rows are sorted by urgency. The apps use the same states in colour: red is waiting for
-you, cyan is working, green is idle, and grey is an identified agent process whose turn state is not known.
-
-Agents with the gtmux hook (a small callback the agent runs at the start and end of each
-turn) report their state directly. Inside tmux, gtmux recognises agents from their
-command, title and process tree; screen and CPU sampling can supply state when no
-hook reports it. Outside tmux, hooks provide read-only observations; dedicated
-Codex and DSH readers can also discover saved histories without hooks. Eligible idle,
-resumable non-Codex conversations with saved messages can move into tmux through
-`gtmux adopt <id>`; external Codex and DSH conversations cannot be adopted.
-
-## HQ, the supervisor
-
-`gtmux digest` shows what each agent is working on: your last prompt, the end of its
-last reply, and what it's asking when it waits. It makes no model calls. `gtmux hq`
-starts HQ in its own agent session. HQ reads the digest and events, coordinates other
-agents and is woken when one starts waiting. You can give HQ instructions for work
-across several sessions and review the actions it takes.
-
-## What it looks like
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme-screens-dark.jpg" />
-  <img src="docs/assets/readme-screens.jpg" width="100%" alt="Four phone screens: the radar, a reply typed into a pane, the HQ page and the usage sheet" />
-</picture>
-
-## Quickstart
+### Quickstart
 
 The install script sets up the CLI and the menu-bar app, which delivers the desktop
 notifications.
@@ -137,12 +78,82 @@ Jumping to a pane (`focus`, `restore`, `new`) needs macOS with
 and `overview` work in any terminal that hosts tmux. From mainland China, or with
 unreliable GitHub access, see the [install notes](docs/install.md).
 
-## How it's different
+### Host platforms
 
-Tools like claude-squad, uzi and dmux start agents in git worktrees and show you the ones
-they started. gtmux reads the tmux you already have, so it also sees agents you started by
-hand or with another tool, and it can still dispatch work with `gtmux spawn`.
-It's a single cgo-free Go binary, and the apps read the same `gtmux agents --json`.
+The cgo-free CLI/server supports **macOS and Linux (amd64/arm64)**. Run it beside your tmux sessions and connect from the phone, iPad or browser. The menu-bar app, desktop focus and lid controls are macOS features. See the [Linux setup guide](docs/linux.md) for same-user sockets, systemd and headless operation.
+
+DeepSeek Harness sessions retain one identity across Web and supported terminal clients. The dst adapter adds verified pane management and native addressed input; see the [DSH guide](docs/guides/deepseek-harness.md). Web conversations remain read-only external histories
+on the menu bar, phone, iPad, Web and CLI. A dedicated native Cordis plugin adds
+future lifecycle events; TUI control is not included. See [DSH setup and limits](docs/guides/deepseek-harness.md).
+
+For version pinning, mirrors and source builds, see [Install notes](docs/install.md). For a headless host, follow [Linux setup](docs/linux.md).
+
+## Configuration
+
+Most setup starts with `gtmux doctor` in [Quickstart](#quickstart). Then choose what you need:
+
+- [Language and persistent settings](docs/cli.md#gtmux-config-the-few-settings-that-are-not-per-run-flags): inspect and change the settings shared by gtmux processes.
+- [Agent setup and hooks](docs/guides/agent-integrations.md): connect the agents you use and understand their support limits.
+- [Remote access](docs/phone.md): choose a connection, pair devices and set permissions before using the phone or browser.
+
+Once configured, follow [the radar](#the-radar) for daily use, or [the guides](#guides) for a complete walkthrough.
+
+## Main features
+
+### Five ways in
+
+- In the terminal, `gtmux agents` lists every agent, `focus` jumps to a pane and `spawn` hands an agent a task.
+- The menu-bar app keeps a status dot in view, opens a `⌘⌥G` palette, posts a desktop notification when an agent needs you, and with `⌥⌘4` takes a screenshot you can mark up and send to an agent.
+- The iPhone and iPad app ([App Store](https://apps.apple.com/app/id6791144062)) adds lock-screen push and replies typed into a pane, and can hand a collaborator chosen panes through a scoped link.
+- The web view opens your radar and panes in any browser. You can type where your device or a guest link has permission.
+- From another computer, `gtmux attach` brings a tmux session from your server into the local terminal.
+
+Every remote path needs its host running. On macOS, `gtmux awake on` keeps it running with the lid
+closed after one admin authorization, so an already configured serve and tunnel can
+keep answering. On battery, it warns at 30% and restores sleep at 20%; it does not
+start remote access for you. A bare `gtmux awake` reports the current state.
+
+### The radar
+
+```
+gtmux agents · 7 agents · 1 waiting · 2 working · 3 idle · 1 running
+
+‖ waiting  Claude Code  api:0.0                permission to run tests %7
+⠿ working  Claude Code  hq:0.0                 api is waiting on you · rest normal %1
+⠿ working  Claude Code  web:0.0                refactor auth middleware %11
+✓ idle     Claude Code  app:0.0                wire up the dashboard %9
+✓ idle     Codex        worker:0.0             add retry backoff %8  latest
+✓ idle     Gemini       docs:0.0               draft the API reference %3
+● running  Claude Code  infra:0.0              — %5
+
+jump: gtmux focus <pane>   (e.g. gtmux focus %7)
+```
+
+Rows are sorted by urgency. The apps use the same states in colour: red is waiting for
+you, cyan is working, green is idle, and grey is an identified agent process whose turn state is not known.
+
+Agents with the gtmux hook (a small callback the agent runs at the start and end of each
+turn) report their state directly. Inside tmux, gtmux recognises agents from their
+command, title and process tree; screen and CPU sampling can supply state when no
+hook reports it. Outside tmux, hooks provide read-only observations; dedicated
+Codex and DSH readers can also discover saved histories without hooks. Eligible idle,
+resumable non-Codex conversations with saved messages can move into tmux through
+`gtmux adopt <id>`; external Codex and DSH conversations cannot be adopted.
+
+### HQ, the supervisor
+
+`gtmux digest` shows what each agent is working on: your last prompt, the end of its
+last reply, and what it's asking when it waits. It makes no model calls. `gtmux hq`
+starts HQ in its own agent session. HQ reads the digest and events, coordinates other
+agents and is woken when one starts waiting. You can give HQ instructions for work
+across several sessions and review the actions it takes.
+
+### What it looks like
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme-screens-dark.jpg" />
+  <img src="docs/assets/readme-screens.jpg" width="100%" alt="Four phone screens: the radar, a reply typed into a pane, the HQ page and the usage sheet" />
+</picture>
 
 ## Guides
 
@@ -153,7 +164,9 @@ Walkthroughs with screenshots, one task each:
 - [Use your phone, iPad and browser](docs/guides/phone-and-web.md): pair your own devices, reply to agents and share selected panes.
 - [Attach to your Mac from any computer](docs/guides/attach-from-anywhere.md): a real terminal into a session on your Mac.
 
-## Docs
+<a id="docs"></a>
+
+## Reference
 
 - [How each agent connects](docs/guides/agent-integrations.md): all 14 built-in entries, event bridges, history sources, setup and limits.
 - [CLI and commands](docs/cli.md): every command, HQ, detection, per-agent hooks, tmux key bindings.
@@ -163,6 +176,13 @@ Walkthroughs with screenshots, one task each:
 - [Design docs](docs/design/README.md), with in-flight changes in `openspec/`.
 
 The repo map and contributor notes are in [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## How it's different
+
+Tools like claude-squad, uzi and dmux start agents in git worktrees and show you the ones
+they started. gtmux reads the tmux you already have, so it also sees agents you started by
+hand or with another tool, and it can still dispatch work with `gtmux spawn`.
+It's a single cgo-free Go binary, and the apps read the same `gtmux agents --json`.
 
 ## License
 
