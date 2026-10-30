@@ -68,7 +68,7 @@ function press(id: string) {
   act(() => node!.props.onPress());
 }
 function data(): TraceEvent[] {
-  return tree.root.findByType(FlatList).props.data;
+  return tree.root.findByType(FlatList).props.data.filter((row: any) => row.type === 'event').map((row: any) => row.event);
 }
 function source() {
   return tree.root.findAllByProps({ testID: 'trace-source' })[0].props.children;
@@ -108,6 +108,7 @@ afterEach(() => {
 
 test('select, copy and close retain the mounted list while full tool input remains exact', () => {
   mount();
+  press('trace-search-toggle');
   const list = tree.root.findByType(FlatList);
   const event = data().find(e => e.kind === 'tool')!;
   press('trace-record-' + event.key);
@@ -193,7 +194,9 @@ test('search covers all loaded records while the native list keeps a bounded ini
     segments: [{ text: 'Result ' + i }],
   }));
   mount({ turns });
-  expect(data()).toHaveLength(5002);
+  expect(data()).toHaveLength(2);
+  expect(tree.root.findByProps({testID: 'trace-count'}).props.children.join('')).toContain('5002');
+  expect(tree.root.findByType(FlatList).props.data.filter((row: any) => row.type === 'turn')).toHaveLength(2501);
   const rows = tree.root.findAll(
     n =>
       typeof n.props.testID === 'string' &&
@@ -201,6 +204,7 @@ test('search covers all loaded records while the native list keeps a bounded ini
       typeof n.props.onPress === 'function',
   );
   expect(rows.length).toBeLessThan(200);
+  press('trace-search-toggle');
   const search = tree.root
     .findAllByProps({ testID: 'trace-search' })
     .find(n => typeof n.props.onChangeText === 'function')!;
@@ -306,4 +310,38 @@ test('legacy title-only calls copy their recorded title instead of clearing the 
   press('trace-record-' + data()[0].key);
   press('trace-copy');
   expect(Clipboard.setString).toHaveBeenLastCalledWith('Wait');
+});
+
+test('idle entry expands the newest turn without a follow mode switch', () => {
+  mount({agent: {...agent, status: 'idle'}, turns: [{...turn, prompt: 'Older'}, {...turn, prompt: 'Newest'}]});
+  expect(tree.root.findAllByProps({testID: 'trace-follow'})).toHaveLength(0);
+  expect(data().some(event => event.body === 'Newest')).toBe(true);
+  expect(data().some(event => event.body === 'Older')).toBe(false);
+  expect(tree.root.findAllByProps({testID: 'trace-progress'}).length).toBeGreaterThan(0);
+});
+
+test('position controls implicit following and a reading gesture prevents queued scrolling', () => {
+  const scroll = jest.spyOn(FlatList.prototype, 'scrollToEnd').mockImplementation(() => {});
+  mount();
+  const list = () => tree.root.findByType(FlatList);
+  act(() => {list().props.onContentSizeChange(); jest.advanceTimersByTime(32);});
+  expect(scroll).toHaveBeenCalled(); scroll.mockClear();
+  act(() => {list().props.onContentSizeChange(); list().props.onScrollBeginDrag(); jest.advanceTimersByTime(32);});
+  expect(scroll).not.toHaveBeenCalled();
+  act(() => list().props.onScroll({nativeEvent: {contentOffset: {y: 100}, contentSize: {height: 1000}, layoutMeasurement: {height: 400}}}));
+  act(() => list().props.onScrollEndDrag());
+  act(() => tree.update(<TraceReader {...base} turns={[turn, {...turn, prompt: 'New incoming request'}]}/>));
+  act(() => {list().props.onContentSizeChange(); jest.advanceTimersByTime(32);});
+  expect(scroll).not.toHaveBeenCalled();
+  expect(data().some(event => event.body === 'New incoming request')).toBe(false);
+  press('trace-latest');
+  act(() => {list().props.onContentSizeChange(); jest.advanceTimersByTime(32);});
+  expect(scroll).toHaveBeenCalled();
+  expect(data().some(event => event.body === 'New incoming request')).toBe(true);
+  scroll.mockClear();
+  act(() => list().props.onScrollBeginDrag());
+  act(() => list().props.onScroll({nativeEvent: {contentOffset: {y: 598}, contentSize: {height: 1000}, layoutMeasurement: {height: 400}}}));
+  act(() => list().props.onScrollEndDrag());
+  act(() => {list().props.onContentSizeChange(); jest.advanceTimersByTime(32);});
+  expect(scroll).toHaveBeenCalled();
 });

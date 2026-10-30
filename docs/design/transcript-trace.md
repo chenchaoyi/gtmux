@@ -30,8 +30,8 @@ Trace keeps this space for reading.
 
 The overview represents the entire filtered history, with a native range control for
 touch and keyboard navigation. Search covers all loaded records. The list renders at
-most 200 records per page, with explicit previous/next controls. Polling preserves
-selection and disclosure state. Follow latest can be disabled by inspecting or scrolling;
+most 200 records per page, with explicit previous/next controls. Opening Trace locates the latest loaded record, including idle sessions. There is no follow-mode toggle. Polling preserves
+selection, disclosure and the visible row anchor. Readers at the tail continue following; inspecting or scrolling away pauses it. A floating one-shot action returns to the latest record;
 selected text and focused detail controls hold their displayed revision until released.
 Session state comes from the agent roster, not inferred tool completion. An older
 session filter is labeled History.
@@ -43,16 +43,13 @@ using the existing display menu rather than adding a second font toolbar. A plai
 still offers Terminal only. A readable external session offers Chat / Trace and stays
 read-only; an unreadable native session remains status-only.
 
-Trace opens a virtualized record list with search and a compact type filter. Selecting
-a row opens full-width details over the mounted list; Close restores the same row, scroll
-offset and filters.
+Trace opens at the latest loaded activity with a compact progress summary. The virtualized timeline groups exact sessions and stable turns, expands the latest turn, and leaves older turns as readable request summaries. Consecutive calls compact into a counted group; expanding it exposes every individual input. An ordered icon rail distinguishes requests, public updates and calls without claiming tool success. Search opens from the header and covers all loaded records, including folded groups; one filter menu holds record types and readable session labels. Selecting a record opens full-width details over the mounted list; Close restores the same pixel position and filters.
 Details use the existing type scale, selectable text and copy controls. Tool input keeps
 indentation; long lines scroll within the code region. Copy and Close have 44pt touch
 targets and accessible names. Agent/sender avatars reuse the App's
 `ParticipantProfileModal` and its distinction between current and recorded facts.
 
-Follow latest must not pull a person away from an older record or interrupt selection.
-After stopping follow, offer a clear return to the newest record. Current activity and
+Implicit tail following must not pull a person away from an older record or interrupt selection. Appends, streaming and prepended history retain the visible row anchor. Returning to the tail resumes following; the one-shot latest action appears only while away. Expansions survive refresh by stable turn identity, rather than a loaded turn number. Current activity and
 historical records remain visually distinct. Trace does not duplicate the Chat composer.
 
 ## iPad interaction
@@ -97,3 +94,7 @@ selection without a second subscription.
 
 Compact details temporarily hide search, filters and the browser overview so recorded
 input can use the full reading height. Close restores those controls and their state.
+
+## Design references
+
+This iteration uses Langfuse's [session grouping](https://langfuse.com/docs/observability/features/sessions) and [aggregation of repeated observations](https://langfuse.com/docs/observability/features/agent-graphs), and Chainlit's [message/step distinction](https://docs.chainlit.io/concepts/step). It retains gtmux's own icons, palette and recorded-input boundary. OpenCode's [scroll-anchor defect report](https://github.com/anomalyco/opencode/issues/17996) illustrates why explicit navigation and user scrolling must take precedence over refresh compensation. These are source-grounded references, not a live competitor audit.

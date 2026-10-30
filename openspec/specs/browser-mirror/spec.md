@@ -544,7 +544,7 @@ Conversation actions SHALL appear outside the message background in a separate f
 - **THEN** the interface reports failure rather than success and preserves keyboard focus
 
 ### Requirement: Consistent browser interface language
-Browser routes and overlays SHALL use concise localized action labels, factual empty states and explicit recovery messages. Chinese copy SHALL distinguish the workspace, panels, agent conversations and tmux panes consistently. Agent transcripts and literal commands SHALL remain unchanged. Appearance settings SHALL state that font controls affect terminal rendering.
+Browser routes and overlays SHALL use concise localized action labels, factual empty states and explicit recovery messages. Chinese copy SHALL distinguish the workspace, panels, agent conversations and tmux panes consistently. Agent transcripts and literal commands SHALL remain unchanged. Settings SHALL distinguish conversation text size from terminal font/size controls, with immediate and persisted effects on their respective surfaces.
 
 #### Scenario: Read an empty layout menu
 - **WHEN** no layout has been saved
@@ -593,8 +593,7 @@ After Send, Chat SHALL show a temporary prompt with sending/delivered state unti
 
 User, sender and agent avatars in conversations SHALL be keyboard/touch-activatable
 and open an adaptive identity sheet using the app's avatar and information hierarchy.
-Sheets SHALL distinguish users, HQ and agents, show available role/session/status/source
-information and offer navigation only to a currently authorized matching session.
+Sheets SHALL distinguish humans, HQ and agents using the App's identity copy and recorded-fact hierarchy, including shared human quotation and fact ordering. Unrelated browser permissions or current environment information SHALL NOT replace that hierarchy.
 Owner agent sheets SHALL read recorded facts from the existing participant-profile
 endpoint, with known model/version/provider/permission fields and source/time disclosure.
 Historical message profiles SHALL use recorded session and time, including older sessions
@@ -660,3 +659,34 @@ HTML and arbitrary external resources SHALL NOT execute through the preview.
 
 - **WHEN** image content differs from its verified metadata digest or size
 - **THEN** the preview shows a recoverable failure without decoding that content
+
+### Requirement: Trace opens latest and preserves reading anchors
+Trace SHALL open at the newest loaded record regardless of roster status, without a Follow latest mode toggle. Scrolling away SHALL pause implicit tail following; returning to the tail or using a one-shot latest action SHALL resume it. Refresh and loaded history additions SHALL preserve the visible record and its pixel position, including across rendered page boundaries. Explicit range, keyboard, filter and page navigation SHALL take precedence over refresh anchoring.
+
+#### Scenario: Read history during updates
+- **WHEN** the user reads an older visible record while new turns or earlier history arrive
+- **THEN** its visible pixel position is retained and the inspector does not reopen itself
+- **AND** a one-shot latest action remains available without consuming toolbar space
+
+### Requirement: App-aligned session list sections
+Desktop and mobile browser session lists SHALL use the App's status glyphs and secondary row information. A recorded error SHALL override the completed badge and error/background text SHALL replace the normal location line. Every populated roster section, including HQ and external sections, SHALL expose a counted, keyboard-accessible collapse/expand control. Choices SHALL persist through polling and reload; collapsed rows SHALL not participate in radar keyboard navigation.
+
+#### Scenario: Inspect an errored idle session
+- **WHEN** an idle session has a recorded error
+- **THEN** both browser list entrances show the amber error badge and error text instead of a green completion tick and pane-only secondary text
+
+#### Scenario: Keep a section collapsed
+- **WHEN** a section is collapsed and its rows change or the page reloads
+- **THEN** the section remains collapsed with its updated count and an explicit expand action
+
+### Requirement: Scoped typography and touch input tools
+Settings SHALL group display, conversation and terminal preferences with labeled touch-sized controls and viewport-bounded scrolling. Conversation prose and exact focused/tiled terminal sizes SHALL update immediately and survive reload. Reset SHALL restore defaults. Extra terminal keys and input tools SHALL appear for primary coarse/touch input and remain hidden for desktop pointer/keyboard input, independently of viewport width. Composer, attachments, send and drafts SHALL remain available across input-device changes.
+
+#### Scenario: Adjust text while reading
+- **WHEN** the reader changes conversation or terminal size
+- **THEN** the matching rendered text changes without reload and retains that setting after reload
+- **AND** a terminal tile uses the same selected size as the focused terminal
+
+#### Scenario: Resize a desktop window
+- **WHEN** a desktop browser window becomes narrow
+- **THEN** the touch input-tools row remains hidden and the ordinary composer retains its draft

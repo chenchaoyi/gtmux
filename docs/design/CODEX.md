@@ -113,3 +113,6 @@ growth before claiming an inline configuration worked; the startup flag alone is
 not acceptance evidence. Chat reads the persistent conversation independently.
 Source: [Codex 0.162.1 mode switching](https://github.com/openai/codex/blob/rust-v0.162.1/codex-rs/tui/src/app/input.rs)
 and [history reflow](https://github.com/openai/codex/blob/rust-v0.162.1/codex-rs/tui/src/app/resize_reflow.rs).
+
+### Freeform tool calls (2026-10-30)
+The rollout reader accepts both `function_call` with JSON-string `arguments` and `custom_tool_call` with literal `input`. Its structural header filter must retain both. Code-mode custom `exec` is a code step; legacy JSON `exec` remains a command. Inputs use the existing UTF-8 byte/turn budgets, partial lines are retried, and outputs/reasoning/duplicate item-completed mirrors remain excluded. Nested calls mentioned inside submitted code are not separate execution evidence. This shared adapter feeds App and browser Chat/Trace; no daemon protocol or input binding changes are required.

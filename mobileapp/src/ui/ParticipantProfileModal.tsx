@@ -1,3 +1,4 @@
+import presentation from './participantPresentation.json';
 import React, {useEffect, useState} from 'react';
 import {Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions} from 'react-native';
 import type {GtmuxClient} from '../api/client';
@@ -24,7 +25,7 @@ export function ParticipantProfileModal({target, client, lang, onClose}: {target
   }, [client, target]);
   const human = target.kind === 'human';
   const hq = target.sender?.kind === 'hq' || target.kind === 'agent' && target.agent.role === 'supervisor';
-  const name = human ? zh ? '人类' : 'Human' : hq ? 'HQ' : target.sender?.label || profile?.name || target.agent.agent;
+  const name = human ? presentation.human.name[zh ? 1 : 0] : hq ? 'HQ' : target.sender?.label || profile?.name || target.agent.agent;
   const hqAgent = target.kind === 'sender' ? target.sender?.agent : profile?.name || (target.turn ? target.turn.agent : target.agent.agent);
   const facts = displayFacts(profile);
   return <Modal visible transparent animationType="fade" supportedOrientations={MODAL_ORIENTATIONS} onRequestClose={onClose}>
@@ -39,13 +40,13 @@ export function ParticipantProfileModal({target, client, lang, onClose}: {target
             {human ? <UserAvatar size={56} /> : hq ? <HQAvatar size={40} /> : target.sender ? <SenderAvatar from={target.sender} size={40} /> : <AgentAvatar agent={target.agent} size={40} radius={10} bg="#242428" fg="#ECECF1" />}
             <View style={!human && styles.flex}>
             <Text accessibilityRole="header" style={human ? styles.title : styles.agentTitle}>{name}</Text>
-            {human ? <Text style={styles.subtitle}>{zh ? '碳基决策者 · 自封' : 'Carbon-based decision maker · self-appointed'}</Text>
+            {human ? <Text style={styles.subtitle}>{presentation.human.subtitle[zh ? 1 : 0]}</Text>
               : <Text style={styles.subtitle}>{hq ? (zh ? 'gtmux 协调 Agent' : 'gtmux coordinating agent') : target.kind === 'sender' || target.turn ? (zh ? '这条消息的记录' : 'Recorded for this message') : (zh ? '当前会话 · 已记录资料' : 'Current conversation · recorded facts')}</Text>}
             </View>
           </View>
           {human ? <View style={styles.quote}>
-            <Text style={styles.quoteText}>{zh ? '“曾经，人们把思考交给机器，盼望借此获得自由。”' : '“Once, men turned their thinking over to machines in the hope that this would set them free.”'}</Text>
-            <Text style={styles.attribution}>Frank Herbert · {zh ? '《沙丘》' : 'Dune'}</Text>
+            <Text style={styles.quoteText}>{'“' + presentation.human.quote[zh ? 1 : 0] + '”'}</Text>
+            <Text style={styles.attribution}>{presentation.human.attribution[zh ? 1 : 0]}</Text>
           </View> : <>
             {hq && <HQProfileDetails target={target} client={client} recordedAgent={hqAgent} zh={zh} />}
             {read.status === 'loading' ? <View testID="profile-loading" accessibilityRole="progressbar" accessibilityLabel={zh ? '正在读取已记录资料' : 'Loading recorded profile'} style={styles.loading}>

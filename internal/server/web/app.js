@@ -80,7 +80,9 @@
   var appearancePref = lsGet('gtmux.appearance', 'system');
   if (!['system', 'light', 'dark'].includes(appearancePref)) appearancePref = 'system';
   var systemAppearance = null;
-  var sizePref = parseInt(lsGet('gtmux.fontSize', '0'), 10) || 0;  // 0 = follow terminal/default
+  var sizePref = parseInt(lsGet('gtmux.fontSize', '0'), 10) || 0; // 0 follows the host terminal/default.
+  if (sizePref) sizePref = Math.max(10, Math.min(22, sizePref));
+  var chatSizePref = Math.max(12, Math.min(24, parseInt(lsGet('gtmux.chatFontSize', '14'), 10) || 14));
   var preferredPaneMode = lsGet('gtmux.paneMode', 'term');
   if (preferredPaneMode !== 'chat' && preferredPaneMode !== 'term') preferredPaneMode = 'chat';
   var activeSessionTool = null;
@@ -188,7 +190,7 @@
     ['gear', {html: uiIcon('settings'), title: T('Settings', '设置'), label: T('Settings', '设置')}],
     ['wb-gear', {html: uiIcon('settings'), title: T('Settings', '设置'), label: T('Settings', '设置')}],
     ['wb-conn', {title: T('Connection', '连接')}],
-    ['font-lbl', {text: T('Terminal font', '终端字体')}],
+    ['font-lbl', {text: T('Font', '字体')}],
     ['font-auto', {text: T('Match terminal', '跟随终端')}],
     ['font-system', {text: T('System', '系统')}],
     ['appearance-lbl', {text: T('Appearance', '外观')}],
@@ -196,11 +198,19 @@
     ['appearance-light', {text: T('Light', '浅色')}],
     ['appearance-dark', {text: T('Dark', '深色')}],
     ['appearance-sel', {label: T('Appearance', '外观')}],
-    ['return-send-lbl', {text: T('Return sends', '回车发送')}],
+    ['return-send-lbl', {text: T('Enter to send', '回车发送')}],
+    ['settings-title', {text: T('Settings', '设置')}],
+    ['settings-display', {text: T('Display', '显示')}],
+    ['settings-chat', {text: T('Chat', '对话')}],
+    ['settings-terminal', {text: T('Terminal', '终端')}],
+    ['terminal-preview-path', {text: '~/gtmux'}], // Literal font sample, not a session path.
+    ['settings-close', {html: uiIcon('close'), label: T('Close settings', '关闭设置'), title: T('Close settings', '关闭设置')}],
+    ['settings-reset', {text: T('Reset to defaults', '恢复默认设置')}],
+    ['chat-size-lbl', {text: T('Text size', '正文字号')}],
     ['session-trace', {title: T('Trace', '轨迹'), html: uiIcon('trace') + T('Trace', '轨迹')}],
     ['session-diff', {title: 'Diff', html: uiIcon('diff') + 'Diff'}],
-    ['return-send-hint', {text: T('Enter adds a line by default. ⌘/Ctrl+Enter sends.', '默认 Enter 换行，⌘/Ctrl+Enter 发送。')}],
-    ['size-lbl', {text: T('Terminal text size', '终端字号')}],
+
+    ['size-lbl', {text: T('Text size', '字号')}],
     ['rail-title', {text: T('Sessions', '会话')}],
     ['rail-search', {placeholder: T('Search sessions', '搜索会话')}],
     ['rail-collapse', {html: uiIcon('sidebarClose'), title: T('Collapse sidebar', '收起侧栏'), label: T('Collapse sidebar', '收起侧栏')}],
@@ -377,7 +387,9 @@
     var h = launchHost(a);
     if (h) return a.agent + ' · ' + h.name;
     if (a.current_client === 'unconfirmed') return a.agent + ' · ' + T('External session', '外部会话');
-    return [a.agent, a.terminal].filter(Boolean).join(' · ');
+    if (a.client === 'chatgpt_desktop') return a.agent + ' · ' + T('ChatGPT desktop', 'ChatGPT 桌面版');
+    if (a.client === 'terminal') return a.agent + ' · ' + (a.terminal || T('terminal', '终端'));
+    return a.terminal || a.agent;
   }
   function nativeEvidenceLabel(a) {
     var h = launchHost(a), parts = [];
@@ -410,7 +422,8 @@
     return Math.floor(s / 86400) + 'd';
   }
   // status badge — the triple-encoded mark (color+shape+glyph), same as the app.
-  function badgeSVG(st) {
+  function badgeSVG(st, errored) {
+    if (errored) return '<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="#F59E0B"/><path d="M8 4v5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/><circle cx="8" cy="11.5" r="1" fill="#fff"/></svg>';
     var c = COLORS[st] || COLORS.running, W = '#fff', shape, glyph = '';
     if (st === 'waiting') {
       shape = '<rect x="1" y="1" width="14" height="14" rx="4" fill="' + c + '"/>';
@@ -446,7 +459,7 @@
     var img = document.createElement('img'); img.alt = ''; img.style.display = 'none';
     var mono = document.createElement('span'); mono.className = 'mono'; mono.textContent = agentMark(a.agent);
     av.appendChild(img); av.appendChild(mono);
-    if (withBadge) { var bdg = document.createElement('span'); bdg.className = 'badge'; bdg.innerHTML = badgeSVG(COLORS[a.status] ? a.status : 'running'); av.appendChild(bdg); }
+    if (withBadge) { var bdg = document.createElement('span'); bdg.className = 'badge'; bdg.innerHTML = badgeSVG(COLORS[a.status] ? a.status : 'running', a.error); bdg.setAttribute('role', 'img'); bdg.setAttribute('aria-label', a.error ? LABEL.errored : LABEL[a.status] || LABEL.running); av.appendChild(bdg); }
     if (a.role === 'supervisor') {
       av.classList.add('avatar-hq'); av.title = 'Gtmux HQ'; mono.hidden = true;
       var mark = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -561,6 +574,30 @@
     return p;
   }
 
+  var collapsedSections = new Set();
+  try { JSON.parse(lsGet('gtmux.collapsedSections', '[]')).forEach(function (key) { if (['hq', 'waiting', 'errored', 'working', 'idle', 'native', 'external'].includes(key)) collapsedSections.add(key); }); } catch (e) {}
+  function rowSummary(a, node) {
+    var message = a.error && a.error_text || a.bg && a.bg_text || '';
+    node.textContent = message || secondary(a); node.title = node.textContent;
+    node.classList.toggle('row-alert', !!message);
+  }
+  function rosterSection(root, key, label, count, tree, className) {
+    var section = el('section', className || 'roster-section');
+    var button = el('button', (tree ? 'tree-group' : 'group-label') + ' section-toggle ' + key);
+    button.type = 'button'; button.dataset.section = key;
+    var id = (tree ? 'tree-' : 'radar-') + key + '-rows', body = el('div', 'section-rows'); body.id = id;
+    button.setAttribute('aria-controls', id);
+    button.appendChild(el('span', 'section-name', label)); button.appendChild(el('span', 'section-count', String(count)));
+    var action = el('span', 'section-action'), chevron = el('span', 'section-chevron'); chevron.innerHTML = uiIcon('chevron'); button.appendChild(action); button.appendChild(chevron);
+    function sync() { var open = !collapsedSections.has(key); body.hidden = !open; button.setAttribute('aria-expanded', String(open)); action.textContent = open ? T('Hide', '收起') : T('Show', '展开'); }
+    button.onclick = function () {
+      if (collapsedSections.has(key)) collapsedSections.delete(key); else collapsedSections.add(key);
+      try { localStorage.setItem('gtmux.collapsedSections', JSON.stringify(Array.from(collapsedSections))); } catch (e) {}
+      sync(); lastSig = ''; // Other entry point must pick up the same preference on its next poll.
+    };
+    sync(); section.appendChild(button); section.appendChild(body); root.appendChild(section); return body;
+  }
+
   // ---- radar ------------------------------------------------------------
   function rowEl(a) {
     var st = COLORS[a.status] ? a.status : 'running';
@@ -572,21 +609,7 @@
     var text = document.createElement('div'); text.className = 'text';
     var p = document.createElement('div'); p.className = 'primary'; p.textContent = primary(a);
     var s = document.createElement('div'); s.className = 'secondary'; s.textContent = secondary(a);
-    if (a.task && primary(a) !== a.task) {
-      var tk = document.createElement('span'); tk.className = 'task'; tk.textContent = '  ' + a.task; s.appendChild(tk);
-    }
-    // Idle modifiers (amber, NEVER red — red is `waiting`): errored ⚠ (ended on an
-    // error) and background-running ⧗ (idle but bg work still in flight). Mutually
-    // exclusive; errored wins. The status badge/section stay idle.
-    var AMBER = '#F59E0B';
-    if (a.error) {
-      var em = document.createElement('span'); em.className = 'task'; em.style.color = AMBER;
-      em.textContent = '  ⚠ ' + (a.error_text || 'errored'); s.appendChild(em);
-    } else if (a.bg) {
-      var bn = (a.bg_count && a.bg_count > 1) ? a.bg_count : '';
-      var bm = document.createElement('span'); bm.className = 'task'; bm.style.color = AMBER;
-      bm.textContent = '  ⧗' + bn + ' ' + (a.bg_text || 'background running'); s.appendChild(bm);
-    }
+    rowSummary(a, s);
     text.appendChild(p); text.appendChild(s);
 
     var right = document.createElement('div'); right.className = 'right';
@@ -612,7 +635,7 @@
 
   function renderRadar(agents) {
     // only repaint when something actually changed (avoids list flicker every poll)
-    var sig = JSON.stringify(agents.map(function (a) { return [a.pane_id, a.source, a.session_id, a.home_id, a.current_client, a.launch_host, a.client, a.follow, a.project, a.terminal, a.status, a.task, a.since, a.icon, a.error, a.error_text, a.bg, a.bg_count, a.bg_text]; }));
+    var sig = JSON.stringify(agents.map(function (a) { return [a.pane_id, a.source, a.session_id, a.home_id, a.current_client, a.launch_host, a.client, a.follow, a.project, a.terminal, a.session, a.loc, a.agent, a.role, a.activity_at, a.status, a.task, a.since, a.icon, a.error, a.error_text, a.bg, a.bg_count, a.bg_text]; }));
     if (sig === lastSig) return;
     lastSig = sig;
     // tmux agents bucket by status; native (non-tmux) agents are SENSED read-only, so
@@ -627,23 +650,20 @@
       by[sectionStatus(a.status)].push(a);
     });
     var root = $('radar'); root.innerHTML = '';
-    function section(label, list, cls) {
+    function section(key, label, list) {
       if (!list.length) return;
-      var lbl = document.createElement('div'); lbl.className = 'group-label' + (cls ? ' ' + cls : '');
-      lbl.textContent = label + '  ' + list.length; root.appendChild(lbl);
-      list.forEach(function (a) { root.appendChild(rowEl(a)); });
+      var body = rosterSection(root, key, label, list.length, false);
+      list.forEach(function (a) { body.appendChild(rowEl(a)); });
     }
-    // Amber for errored — the colour its own ⚠ already uses. Never red: red is reserved
-    // for "an agent is waiting for your input".
-    ORDER.forEach(function (st) { section(LABEL[st], by[st], st === 'errored' ? 'errored' : ''); });
-    section(T('Elsewhere', '不在 tmux'), natives);
-    section(T('External conversations', '外部会话'), desktops);
+    ORDER.forEach(function (st) { section(st, LABEL[st], by[st]); });
+    section('native', T('Elsewhere', '不在 tmux'), natives);
+    section('external', T('External conversations', '外部会话'), desktops);
     if (!root.children.length) { var e = document.createElement('div'); e.className = 'group-label'; e.textContent = emptyAgentsText(); root.appendChild(e); }
     if (selIdx >= 0) { selIdx = Math.min(selIdx, radarRows().length - 1); highlightSel(); }
   }
 
   // ---- desktop keyboard nav (j/k or ↑↓ select · Enter open · Esc back) -----
-  function radarRows() { return Array.prototype.slice.call($('radar').querySelectorAll('.row')); }
+  function radarRows() { return Array.prototype.slice.call($('radar').querySelectorAll('.row')).filter(function (row) { return !row.closest('[hidden]'); }); }
   function highlightSel() {
     var rows = radarRows();
     rows.forEach(function (r, i) { r.classList.toggle('kbd-sel', i === selIdx); });
@@ -1079,6 +1099,8 @@
   }
   function termSize() { return sizePref || (theme && theme.fontSize) || 14; }
   function applyAppearance() {
+    document.documentElement.style.setProperty('--chat-text-size', chatSizePref + 'px');
+    var preview = document.querySelector('.terminal-font-preview'); if (preview) { preview.style.fontFamily = resolveFont(); preview.style.fontSize = termSize() + 'px'; }
     document.documentElement.style.setProperty('--terminal-bg', (theme && theme.background) || GHOSTTY.bg);
     if (term) {
       term.options.theme = xtermTheme();
@@ -1091,7 +1113,7 @@
       if (!t.term) return;
       t.term.options.theme = xtermTheme();
       t.term.options.fontFamily = resolveFont();
-      t.term.options.fontSize = Math.max(10, termSize() - 3);
+      t.term.options.fontSize = termSize();
       try { t.fit.fit(); } catch (e) {}
     });
   }
@@ -1114,7 +1136,7 @@
   function fetchTheme() {
     return api('/api/theme').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
       if (!j) return;
-      theme = j; applyAppearance();
+      theme = j; applyAppearance(); syncSettings();
     }).catch(function () {});
   }
 
@@ -1654,7 +1676,8 @@
   function makeComposer(getId, echo, small, onAction) {
     echo = echo || function () {};
     var generation = 0, target = null, data = null, draft = null, localVersion = -1, appliedText = '', noteSignature = '', editor = null;
-    var compact = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches), expanded = !compact;
+    var inputMedia = window.matchMedia && window.matchMedia('(pointer: coarse)');
+    var compact = !!(inputMedia && inputMedia.matches), expanded = !compact;
     var root = document.createElement('div'); root.className = 'composer' + (small ? ' composer-sm' : '');
     var keys = document.createElement('div'); keys.className = 'cx-keys'; keys.setAttribute('aria-label', T('Terminal keys and input tools', '终端按键与输入工具'));
     var terminalKeyboard = window.GtmuxTerminalKeys ? window.GtmuxTerminalKeys.create({zh: ZH, getId: getId, canInput: function () { return paneCanInput(getId()); }, request: api, send: postSend, echo: echo, onAction: onAction}) : null;
@@ -1871,7 +1894,9 @@
       });
     }
     sync();
-    return {keys: terminalKeyboard, dispose: function () { if (terminalKeyboard) terminalKeyboard.dispose(); }, el: root, sync: sync, input: ta, focus: focusInput, reset: function () { generation++; if (data && !data.revoked) { Object.keys(data.drafts).forEach(function (id) { var d = data.drafts[id]; d.files.forEach(function (a) { release(a, data); }); d.text = ''; d.files = []; d.version++; d.busy = false; d.recovery = null; d.error = ''; d.info = ''; }); saveCompose(data, true); } target = null; draft = null; data = null; localVersion = -1; ta.value = ''; appliedText = ''; note.textContent = ''; note.hidden = true; attachments.textContent = ''; attachments.hidden = true; }};
+    function inputDeviceChanged() { compact = !!inputMedia.matches; if (!compact) expanded = true; update(); grow(); }
+    if (inputMedia) { if (inputMedia.addEventListener) inputMedia.addEventListener('change', inputDeviceChanged); else inputMedia.addListener(inputDeviceChanged); }
+    return {keys: terminalKeyboard, dispose: function () { if (inputMedia) { if (inputMedia.removeEventListener) inputMedia.removeEventListener('change', inputDeviceChanged); else inputMedia.removeListener(inputDeviceChanged); } if (terminalKeyboard) terminalKeyboard.dispose(); }, el: root, sync: sync, input: ta, focus: focusInput, reset: function () { generation++; if (data && !data.revoked) { Object.keys(data.drafts).forEach(function (id) { var d = data.drafts[id]; d.files.forEach(function (a) { release(a, data); }); d.text = ''; d.files = []; d.version++; d.busy = false; d.recovery = null; d.error = ''; d.info = ''; }); saveCompose(data, true); } target = null; draft = null; data = null; localVersion = -1; ta.value = ''; appliedText = ''; note.textContent = ''; note.hidden = true; attachments.textContent = ''; attachments.hidden = true; }};
   }
 
   // openAgent enters the pane view for an agent; the selected tab (terminal mirror
@@ -2520,28 +2545,29 @@
     // An old stitched turn identifies its own agent; never assign another tool's live state.
     if (source.profileTurn || source.kind === 'agent' || source.kind === 'hq' || live && source.agent && live.agent && source.agent.toLowerCase() !== live.agent.toLowerCase()) live = null;
     var agent = live || {agent: source.agent}, name = kind === 'user' ? T('User', '用户') : source.label || (hq ? 'gtmux HQ' : source.agent || agent.agent || 'Agent');
-    var sheet = browserDialog(T('Profile', '资料')), hero = document.createElement('div'); hero.className = 'profile-hero';
-    hero.appendChild(kind === 'user' ? userAvatarEl(64) : avatarEl(Object.assign({}, agent, hq ? {role: 'supervisor'} : {}), 64, false));
-    var heading = document.createElement('h3'); heading.textContent = name; hero.appendChild(heading);
-    var role = document.createElement('p'); role.textContent = kind === 'user' ? T('User', '用户') : hq ? T('HQ · supervisor', 'HQ · 中控') : (source.agent || agent.agent || 'Agent'); if (kind !== 'user') hero.appendChild(role); sheet.body.appendChild(hero);
-    var facts = document.createElement('dl'); facts.className = 'profile-facts'; sheet.body.appendChild(facts);
+    var sheet = browserDialog(T('Profile', '资料')); sheet.el.classList.add('participant-profile');
+    var copy = window.GtmuxParticipantPresentation, human = kind === 'user';
+    if (human) name = copy.human.name[ZH ? 1 : 0];
+    var hero = document.createElement('div'); hero.className = 'profile-hero' + (human ? ' profile-human' : ' profile-agent');
+    hero.appendChild(kind === 'user' ? userAvatarEl(56) : avatarEl(Object.assign({}, agent, hq ? {role: 'supervisor'} : {}), 40, false));
+    var identity = el('div', 'profile-identity'); hero.appendChild(identity);
+    var heading = document.createElement('h3'); heading.textContent = name; identity.appendChild(heading);
+    var role = el('p', '', human ? copy.human.subtitle[ZH ? 1 : 0] : hq ? T('gtmux coordinating agent', 'gtmux 协调 Agent') : source.profileTurn || source.kind ? T('Recorded for this message', '这条消息的记录') : T('Current conversation · recorded facts', '当前会话 · 已记录资料'));
+    identity.appendChild(role); sheet.body.appendChild(hero);
+    var facts = document.createElement('dl'); facts.className = 'profile-facts';
     function fact(label, value) { if (!value) return; var dt = document.createElement('dt'); dt.textContent = label; var dd = document.createElement('dd'); dd.textContent = value; facts.appendChild(dt); facts.appendChild(dd); }
-    if (kind === 'user') {
-      fact(T('Message source', '消息来源'), T('User input', '用户输入'));
-      fact(T('Browser access', '当前浏览器权限'), !SHARE.known ? T('Loading…', '正在读取…') : SHARE.all ? T('Owner', '所有者') : T('Guest', '访客'));
-      var note = document.createElement('p'); note.className = 'profile-note'; note.textContent = T('The conversation does not record the sender’s personal profile or device.', '对话记录未提供发送者的个人资料或具体设备。'); sheet.body.appendChild(note);
+    if (human) {
+      var quote = el('blockquote', 'profile-quote'); quote.appendChild(el('p', '', '“' + copy.human.quote[ZH ? 1 : 0] + '”')); quote.appendChild(el('cite', '', copy.human.attribution[ZH ? 1 : 0])); sheet.body.appendChild(quote);
     } else {
-      if (live) fact(T('Status', '状态'), LABEL[live.status]);
-      else fact(T('Profile scope', '资料范围'), T('At message time', '消息发送时'));
-      fact(T('Agent', 'Agent'), agent.agent || source.agent);
-      fact(T('Session', '会话'), agent.session || source.label);
-      fact(T('Project', '项目'), agent.project);
-      fact(T('Directory', '目录'), agent.cwd);
-      fact(T('Pane', '窗格'), pane || (live && live.pane_id));
-      fact(T('Source', '来源'), isNative(agent) ? T('Desktop session', '桌面会话') : live ? 'tmux' : '');
-      if (live && live.pane_id && live.pane_id !== curPane) {
-        var open = document.createElement('button'); open.type = 'button'; open.className = 'dialog-primary'; open.textContent = T('Open conversation', '打开会话');
-        open.onclick = function () { sheet.close(); openAgent(live); }; sheet.foot.hidden = false; sheet.foot.appendChild(open);
+      if (hq) {
+        sheet.body.appendChild(el('p', 'profile-hq-description', T('Coordinates agents, follows progress, reviews their reports and brings decisions back to you.', '协调各个 Agent 的工作，跟进进度、审阅回执，把需要你决定的事带回来。')));
+        fact(source.kind === 'hq' ? T('Agent at delivery', '发信时的 Agent') : T('Agent', 'Agent'), source.agent || T('Not recorded', '未记录'));
+        sheet.body.appendChild(facts);
+        if (source.kind === 'hq') {
+          var currentHQ = el('details', 'profile-provenance'); currentHQ.appendChild(el('summary', '', T('Current HQ', '当前 HQ')));
+          var supervisors = lastAgents.filter(isHQPane); currentHQ.appendChild(el('p', '', supervisors.length === 1 ? supervisors[0].agent : T('No confirmed connected instance', '暂无已确认的在线实例')));
+          currentHQ.appendChild(el('p', '', T('Current information; the agent at delivery may differ.', '当前信息；发信时的 Agent 可能不同。'))); sheet.body.appendChild(currentHQ);
+        }
       }
       if (kind === 'agent') loadSpeakerFacts(sheet, source, heading);
     }
@@ -2555,7 +2581,7 @@
     var query = Object.keys(request).filter(function (key) { return request[key]; }).map(function (key) { return key + '=' + encodeURIComponent(request[key]); }).join('&');
     var credential = token, controller = new AbortController(), closed = false, timer, attempt = 0;
     sheet.onClose = function () { closed = true; attempt++; clearTimeout(timer); controller.abort(); };
-    var labels = {model:T('Model','模型'),version:T('Session version','会话版本'),cursor_version:T('Cursor version','Cursor 版本'),provider:T('Provider','供应商'),effort:T('Reasoning effort','推理强度'),mode:T('Task mode','任务模式'),permission:T('Permissions','权限策略'),sandbox:T('Sandbox','沙箱'),role:T('Agent role','Agent 角色'),variant:T('Model variant','模型变体'),model_alias:T('Model alias','模型别名'),client:T('Terminal client','终端客户端'),client_version:T('Client version','客户端版本'),subscription:T('Recorded plan','已记录套餐'),thinking:T('Thinking','思考'),thinking_level:T('Thinking level','思考等级'),thinking_budget:T('Thinking budget','思考预算'),context:T('Context option','上下文选项')};
+    var labels = {}; Object.keys(window.GtmuxParticipantPresentation.labels).forEach(function (key) { labels[key] = window.GtmuxParticipantPresentation.labels[key][ZH ? 1 : 0]; });
     var sources = {session_log:T('Session log','本会话日志'),verified_binding:T('Verified client binding','已核验的客户端绑定'),session_rate_limits:T('Rate limits recorded in this session','本会话当时的额度记录'),runtime_package:T('Runtime package','运行实例加载包'),native_hook:T('Native hook','原生 hook')};
     function current(generation) { return !closed && sheet.el.open && credential === token && (generation === undefined || generation === attempt); }
     function failed(generation) {
@@ -2581,20 +2607,64 @@
         var values = profile.facts.slice(0, 32).filter(function (value) { return value && typeof value.key === 'string' && Object.prototype.hasOwnProperty.call(labels,value.key) && typeof value.value === 'string' && value.value && typeof value.source === 'string'; });
         values.sort(function (a,b) { return Object.keys(labels).indexOf(a.key) - Object.keys(labels).indexOf(b.key); });
         note.textContent = profile.historical ? T('Recorded for this message', '这条消息的记录') : T('Current conversation · recorded facts', '当前会话 · 已记录资料');
-        if (!values.length) { note.textContent = T('No profile facts were recorded for this conversation.', '此会话未记录可显示的资料。'); return; }
-        var facts = el('dl','profile-facts profile-recorded'), provenance = el('details','profile-provenance');
+        if (!values.length) { note.textContent = T('Version, model and other details were not recorded for this participant.', '这位参与者的版本、模型等细节未记录。'); renderProfileChain(sheet, source, profile); return; }
+        var facts = el('div','profile-grid profile-recorded'), provenance = el('details','profile-provenance');
         provenance.appendChild(el('summary','',T('Sources and observation times','来源与记录时间')));
         values.forEach(function (value) {
           var brands = {openai:'OpenAI',anthropic:'Anthropic',deepseek:'DeepSeek','deepseek-official':'DeepSeek','deepseek-account':'DeepSeek Account',google:'Google'};
-          facts.appendChild(el('dt','',labels[value.key])); facts.appendChild(el('dd','',value.key === 'provider' ? brands[value.value.toLowerCase()] || value.value : value.value));
+          var item = el('dl', 'profile-field'); item.appendChild(el('dt','',labels[value.key])); item.appendChild(el('dd','',value.key === 'provider' ? brands[value.value.toLowerCase()] || value.value : value.value)); facts.appendChild(item);
           var line = el('p','',labels[value.key] + ' · ' + (sources[value.source] || T('Recorded source','已记录来源')));
           if (Number.isFinite(value.observed_at) && value.observed_at > 0) line.appendChild(el('time','', ' · ' + new Date(value.observed_at).toLocaleString()));
           provenance.appendChild(line);
         });
-        sheet.body.appendChild(facts); sheet.body.appendChild(provenance);
+        note.hidden = true; sheet.body.appendChild(facts); renderProfileChain(sheet, source, profile); sheet.body.appendChild(provenance);
       }).catch(function () { clearTimeout(ownTimer); failed(generation); });
     }
     read();
+  }
+  function renderProfileChain(sheet, source, profile) {
+    var section = el('details', 'profile-provenance profile-chain'), content = el('div');
+    section.appendChild(el('summary', '', T('Execution chain', '执行链'))); section.appendChild(content); sheet.body.appendChild(section);
+    var turn = source.profileTurn, credential = token, closed = false, controller, timer, loaded = false;
+    var priorClose = sheet.onClose; sheet.onClose = function () { closed = true; clearTimeout(timer); if (controller) controller.abort(); if (priorClose) priorClose(); };
+    function current() { return !closed && sheet.el.open && token === credential; }
+    function render(value) {
+      if (!current()) return; content.textContent = '';
+      var chain = value.historical === false && Array.isArray(value.execution_chain) ? value.execution_chain : [];
+      content.appendChild(el('p', '', chain.length ? turn ? T('Latest observations for this conversation, not the processes at this message’s time.', '当前会话的最近观察，不代表这条消息当时的进程。') : T('Recorded launch ancestry; processes may have changed since.', '最近记录的启动链；进程可能已有变化。') : T('No launch chain has been recorded for this conversation.', '此会话尚未记录启动链。')));
+      if (chain.length && Number.isFinite(value.chain_observed_at)) content.appendChild(el('p', '', new Date(value.chain_observed_at).toLocaleString()));
+      chain.slice(0, 16).forEach(function (process) {
+        if (!process || typeof process.name !== 'string') return;
+        var command = [typeof process.path === 'string' ? process.path : process.name].concat(Array.isArray(process.arguments) ? process.arguments.filter(function (v) { return typeof v === 'string'; }) : []).join(' ');
+        var row = el('div', 'profile-process'); row.appendChild(el('strong', '', process.name));
+        var line = el('div', 'profile-command'), status = el('span', 'action-status'), button = el('button', 'profile-copy'); status.setAttribute('role', 'status');
+        button.type = 'button'; button.innerHTML = uiIcon('copy'); button.setAttribute('aria-label', T('Copy sanitized command observation', '复制脱敏命令记录'));
+        button.onclick = function () { copyWithFeedback(button, command, button.getAttribute('aria-label'), 'copy', status); };
+        line.appendChild(el('pre', '', command)); line.appendChild(button); row.appendChild(line); row.appendChild(status); content.appendChild(row);
+      });
+      if (chain.length) content.appendChild(el('p', '', T('Other arguments omitted. These observations are not replayable commands.', '非展示参数已隐藏，记录不可直接重放。')));
+    }
+    function failed() {
+      if (!current()) return; content.textContent = '';
+      content.appendChild(el('p', '', T('Launch-chain observations could not be verified. Try again.', '暂时无法核对启动链，请重试。')));
+      var retry = el('button', 'dialog-secondary', T('Retry', '重试')); retry.type = 'button'; retry.onclick = read; content.appendChild(retry);
+    }
+    function read() {
+      loaded = true; clearTimeout(timer); if (controller) controller.abort(); controller = new AbortController();
+      content.textContent = T('Reading launch-chain observations…', '正在读取启动链…');
+      var request = {id: isNative(source) ? '' : source.pane_id, session_id: turn.session_id, home_id: source.home_id};
+      var query = Object.keys(request).filter(function (key) { return request[key]; }).map(function (key) { return key + '=' + encodeURIComponent(request[key]); }).join('&');
+      var requestController = controller, ownTimer = setTimeout(function () { if (controller === requestController) { requestController.abort(); failed(); } }, 15000); timer = ownTimer;
+      api('/api/participant-profile?' + query, {signal: requestController.signal}).then(function (r) { if (!current() || controller !== requestController) return; if (r.status === 401) { token = null; gate('expired'); return; } if (!r.ok) throw Error('chain'); return r.json(); }).then(function (value) {
+        clearTimeout(ownTimer); if (!current() || controller !== requestController || !value) return;
+        if (value.historical !== false || value.session_id !== turn.session_id || value.agent !== profile.agent || value.unavailable && !(value.execution_chain || []).length) throw Error('chain identity');
+        render(value);
+      }).catch(function () { clearTimeout(ownTimer); if (controller === requestController) failed(); });
+    }
+    var canRead = turn && turn.session_id && (!source.session_id || source.session_id === turn.session_id) && (isNative(source) ? source.session_id : source.pane_id);
+    if (!turn) render(profile);
+    else if (!canRead) content.textContent = T('Launch chain not recorded for this message.', '这条消息未记录启动链。');
+    else { content.textContent = T('Latest observations for this conversation', '当前会话最近记录'); section.addEventListener('toggle', function () { if (section.open && !loaded && current()) read(); }); }
   }
   // One optical grid and stroke weight for navigation, composer and message actions.
   function uiIcon(kind) {
@@ -3033,7 +3103,7 @@
 
   // ---- tree -------------------------------------------------------------
   function renderTree(agents) {
-    var focused = document.activeElement, focusedPane = focused && focused.dataset && focused.dataset.treePane;
+    var focused = document.activeElement, focusedPane = focused && focused.dataset && focused.dataset.treePane, focusedSection = focused && focused.dataset && focused.dataset.section;
     var q = ($('rail-search').value || '').trim().toLowerCase();
     var match = function (a) { return !q || (primary(a) + ' ' + (a.agent || '') + ' ' + (a.session || '') + ' ' + (a.pane_id || '')).toLowerCase().indexOf(q) !== -1; };
     // Every section in ORDER needs its own bucket. `errored` had none, so the loop
@@ -3051,16 +3121,15 @@
     });
     var root = $('tree'); root.innerHTML = '';
     if (supervisors.length) {
-      var hq = el('section', 'tree-hq'); hq.setAttribute('aria-label', 'gtmux HQ');
-      hq.appendChild(el('div', 'tree-group', T('Headquarters', '中控')));
-      supervisors.forEach(function (a) { hq.appendChild(treeRow(a, false)); }); root.appendChild(hq);
+      var hq = rosterSection(root, 'hq', T('Headquarters', '中控'), supervisors.length, true, 'tree-hq');
+      hq.parentElement.setAttribute('aria-label', 'gtmux HQ');
+      supervisors.forEach(function (a) { hq.appendChild(treeRow(a, false)); });
     }
     var nWait = (by.waiting || []).length + supervisors.filter(function (a) { return a.status === 'waiting'; }).length;
     $('rail-tab-n').textContent = nWait ? nWait : '';
     ORDER.forEach(function (st) {
       var list = by[st]; if (!list.length) return;
-      var lbl = document.createElement('div'); lbl.className = 'tree-group' + (st === 'waiting' ? ' waiting' : '');
-      lbl.textContent = LABEL[st] + ' ' + list.length; root.appendChild(lbl);
+      var body = rosterSection(root, st, LABEL[st], list.length, true);
       // group by window (session:window) so a window expands to its panes
       var wins = {}; var order = [];
       list.forEach(function (a) { var w = (a.session || '') + ':' + ((a.loc || '').split(':')[1] || '').split('.')[0]; if (!wins[w]) { wins[w] = []; order.push(w); } wins[w].push(a); });
@@ -3068,16 +3137,20 @@
         var panes = wins[w];
         if (panes.length > 1) {
           var wh = document.createElement('div'); wh.className = 'tree-win';
-          wh.innerHTML = '<span>▾</span><span>' + esc(w) + '</span>'; root.appendChild(wh);
+          wh.innerHTML = '<span>▾</span><span>' + esc(w) + '</span>'; body.appendChild(wh);
         }
-        panes.forEach(function (a) { root.appendChild(treeRow(a, panes.length > 1)); });
+        panes.forEach(function (a) { body.appendChild(treeRow(a, panes.length > 1)); });
       });
     });
     if (natives.length) {
-      var nh = document.createElement('div'); nh.className = 'tree-group'; nh.textContent = T('Other agents', '其他 Agent') + ' ' + natives.length; root.appendChild(nh);
-      natives.forEach(function (a) { root.appendChild(treeRow(a, false)); });
+      var external = natives.filter(function (a) { return a.current_client === 'unconfirmed' || a.client === 'chatgpt_desktop'; });
+      var elsewhere = natives.filter(function (a) { return external.indexOf(a) < 0; });
+      [['native', T('Elsewhere', '不在 tmux'), elsewhere], ['external', T('External conversations', '外部会话'), external]].forEach(function (part) {
+        if (!part[2].length) return; var body = rosterSection(root, part[0], part[1], part[2].length, true); part[2].forEach(function (a) { body.appendChild(treeRow(a, false)); });
+      });
     }
     if (!root.children.length) { var e = document.createElement('div'); e.className = 'tree-group'; e.textContent = q ? T('No matching sessions', '未找到匹配的会话') : emptyAgentsText(); root.appendChild(e); }
+    if (focusedSection) { var sectionButton = root.querySelector('[data-section="' + focusedSection + '"]'); if (sectionButton) sectionButton.focus(); }
     if (focusedPane) root.querySelectorAll('.tree-row').forEach(function (row) { if (row.dataset.treePane === focusedPane) row.focus(); });
   }
   function esc(s) { var d = document.createElement('span'); d.textContent = s == null ? '' : s; return d.innerHTML; }
@@ -3088,7 +3161,8 @@
     row.appendChild(avatarEl(a, 24, true));
     var tx = document.createElement('div'); tx.className = 'tr-text';
     var nm = document.createElement('div'); nm.className = 'tr-name'; nm.textContent = primary(a);
-    var sb = document.createElement('div'); sb.className = 'tr-sub'; sb.textContent = hasPane(a) ? a.pane_id + (a.agent ? ' · ' + shortAgent(a.agent) : '') : [nativeSourceLabel(a), readableConversation(a) ? T('Read-only conversation', '只读会话') : T('Status only', '仅显示状态')].filter(Boolean).join(' · ');
+    var sb = document.createElement('div'); sb.className = 'tr-sub'; sb.textContent = secondary(a);
+    rowSummary(a, sb);
     tx.appendChild(nm); tx.appendChild(sb); row.appendChild(tx);
     if (!hasPane(a)) { row.classList.add('native'); if(readableConversation(a)){row.onclick=function(){openConversation(a);};row.tabIndex=0;row.setAttribute('role','button');row.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();openConversation(a);}};} return row; }
     var g = document.createElement('span'); g.className = 'tr-grip'; g.innerHTML = uiIcon('grip'); row.appendChild(g);
@@ -3252,7 +3326,7 @@
     if (t.headNm) t.headNm.textContent = primary(t.agent);
     if (t.composer && !t.inputEl.hidden) t.composer.sync();
     var bdg = t.headAv && t.headAv.querySelector('.badge');
-    if (bdg) bdg.innerHTML = badgeSVG(st);
+    if (bdg) { bdg.innerHTML = badgeSVG(st, t.agent.error); bdg.setAttribute('aria-label', t.agent.error ? LABEL.errored : LABEL[st]); }
     var host = t.body && t.body.querySelector('.conversation-main');
     if (t.mode === 'chat' && host) syncChatLive(host, t.agent, function () { return WB.on && !t.removed && t.mode === 'chat' && t.agent.status === 'working'; });
   }
@@ -3275,7 +3349,7 @@
   // per-tile terminal (own xterm; same incremental write + scroll-lock as #pane)
   function tileTermStart(t) {
     var xt = document.createElement('div'); xt.className = 'xt'; t.body.appendChild(xt);
-    t.term = new Terminal({convertEol: true, cursorBlink: false, disableStdin: true, cursorInactiveStyle: 'none', scrollback: 4000, allowProposedApi: true, fontFamily: resolveFont(), fontSize: Math.max(10, termSize() - 3), theme: xtermTheme()});
+    t.term = new Terminal({convertEol: true, cursorBlink: false, disableStdin: true, cursorInactiveStyle: 'none', scrollback: 4000, allowProposedApi: true, fontFamily: resolveFont(), fontSize: termSize(), theme: xtermTheme()});
     t.fit = new FitAddon.FitAddon(); t.term.loadAddon(t.fit);
     try { var u = new Unicode11Addon.Unicode11Addon(); t.term.loadAddon(u); t.term.unicode.activeVersion = '11'; } catch (e) {}
     t.term.open(xt); t.lastText = '';
@@ -3467,7 +3541,7 @@
   // top sat over the bar's own bottom row, and over the controls once a narrow bar wraps.
   function placeSettings(bar) {
     var b = bar && bar.getBoundingClientRect();
-    if (b && b.height) $('settings').style.top = Math.round(b.bottom + 4) + 'px';
+    if (b && b.height) { var top = Math.round(b.bottom + 4) + 'px'; $('settings').style.top = top; $('settings').style.setProperty('--settings-top', top); }
   }
   function setupFocus() {
     ['trace', 'diff'].forEach(function (kind) { $('session-' + kind).onclick = function () { showSessionTools(curAgent, null, kind); }; });
@@ -3607,24 +3681,40 @@
   // ---- boot -------------------------------------------------------------
   // setupSettings wires the appearance panel (font + size), persisted locally.
   var settingsTrigger = null;
+  function syncSettings() {
+    $('size-rng').value = String(termSize()); $('size-val').textContent = termSize() + ' px'; $('size-rng').setAttribute('aria-valuetext', termSize() + ' px');
+    $('chat-size-rng').value = String(chatSizePref); $('chat-size-val').textContent = chatSizePref + ' px'; $('chat-size-rng').setAttribute('aria-valuetext', chatSizePref + ' px');
+    var hint = $('return-send-hint'); hint.textContent = '';
+    var sends = $('return-sends').checked;
+    hint.appendChild(el('kbd', '', sends ? 'Enter' : '⌘ / Ctrl + Enter')); hint.appendChild(document.createTextNode(T(' sends · ', ' 发送 · ')));
+    hint.appendChild(el('kbd', '', sends ? 'Shift + Enter' : 'Enter')); hint.appendChild(document.createTextNode(T(' new line', ' 换行')));
+  }
   function setSettingsOpen(open, trigger) {
     $('settings').hidden = !open;
     if (trigger) settingsTrigger = trigger;
     ['gear', 'wb-gear'].forEach(function (id) { $(id).setAttribute('aria-expanded', String(open && $(id) === settingsTrigger)); });
   }
-  function toggleSettings(anchor, trigger) { placeSettings(anchor); setSettingsOpen($('settings').hidden, trigger); if (!$('settings').hidden) $('appearance-sel').focus(); }
+  function toggleSettings(anchor, trigger) { placeSettings(anchor); setSettingsOpen($('settings').hidden, trigger); if (!$('settings').hidden) { syncSettings(); $('appearance-sel').focus(); } }
   function setupSettings() {
-    var gear = $('gear'), panel = $('settings'), sel = $('font-sel'), rng = $('size-rng'), sz = $('size-val');
+    applyAppearance();
+    var gear = $('gear'), panel = $('settings'), sel = $('font-sel'), rng = $('size-rng');
     gear.hidden = false;
     var appearance = $('appearance-sel'); appearance.value = appearancePref;
     appearance.onchange = function () { appearancePref = appearance.value; try { localStorage.setItem('gtmux.appearance', appearancePref); } catch (e) {} applyWebAppearance(); };
     sel.value = fontPref;
-    function syncSize() { rng.value = String(termSize()); sz.textContent = termSize(); }
+    function syncSize() { syncSettings(); }
     syncSize();
     panel.setAttribute('aria-label', T('Settings', '设置'));
-    var returnSend = $('return-sends'); returnSend.checked = lsGet('gtmux.returnSends', '0') === '1';
-    returnSend.onchange = function () { try { localStorage.setItem('gtmux.returnSends', returnSend.checked ? '1' : '0'); } catch (e) {} document.querySelectorAll('.cx-input').forEach(function (input) { input.setAttribute('enterkeyhint', returnSend.checked ? 'send' : 'enter'); }); };
+    var returnSend = $('return-sends'); returnSend.checked = lsGet('gtmux.returnSends', '0') === '1'; syncSettings();
+    returnSend.onchange = function () { try { localStorage.setItem('gtmux.returnSends', returnSend.checked ? '1' : '0'); } catch (e) {} document.querySelectorAll('.cx-input').forEach(function (input) { input.setAttribute('enterkeyhint', returnSend.checked ? 'send' : 'enter'); }); syncSettings(); };
     if (panel.dataset.ready) return; panel.dataset.ready = '1';
+    $('settings-close').onclick = function () { setSettingsOpen(false); if (settingsTrigger) settingsTrigger.focus(); };
+    $('chat-size-rng').oninput = function () { chatSizePref = Number(this.value); try { localStorage.setItem('gtmux.chatFontSize', String(chatSizePref)); } catch (e) {} applyAppearance(); syncSettings(); };
+    $('settings-reset').onclick = function () {
+      fontPref = 'auto'; sizePref = 0; chatSizePref = 14; appearancePref = 'system';
+      ['gtmux.fontPref', 'gtmux.fontSize', 'gtmux.chatFontSize', 'gtmux.appearance', 'gtmux.returnSends'].forEach(function (key) { try { localStorage.removeItem(key); } catch (e) {} });
+      sel.value = fontPref; returnSend.checked = false; returnSend.onchange(); applyWebAppearance(); applyAppearance(); syncSettings();
+    };
     gear.onclick = function (e) { e.stopPropagation(); toggleSettings($('bar'), gear); syncSize(); };
     document.addEventListener('click', function (e) {
       if (!panel.hidden && !panel.contains(e.target) && e.target !== gear) setSettingsOpen(false);
@@ -3636,7 +3726,7 @@
       applyAppearance();
     };
     rng.oninput = function () {
-      sizePref = parseInt(rng.value, 10); sz.textContent = sizePref;
+      sizePref = parseInt(rng.value, 10); syncSettings();
       try { localStorage.setItem('gtmux.fontSize', String(sizePref)); } catch (e) {}
       applyAppearance();
     };

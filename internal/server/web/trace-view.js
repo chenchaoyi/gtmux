@@ -4,7 +4,7 @@
   window.GtmuxTraceView = {create: function (options) {
     var T = options.T, model = window.GtmuxTrace, pageSize = 200;
     var current = {events: [], sessions: []}, filtered = [], context = {}, selected = '', page = 0;
-    var inspectorOpen = null, follow = false, initialized = false, rowNodes = new Map(), lastDetail = '', lastDetailKey = '', deferred = null, lastInput = null, lastScope = '';
+    var inspectorOpen = null, follow = true, inspecting = false, initialized = false, rowNodes = new Map(), lastDetail = '', lastDetailKey = '', deferred = null, lastInput = null, lastScope = '';
     var root = el('div', 'trace-view'), toolbar = el('div', 'trace-toolbar');
     var status = el('span', 'trace-status'); status.title = T('Current session status', '当前会话状态'); toolbar.appendChild(status);
     var count = el('span', 'trace-count'); count.setAttribute('role', 'status'); toolbar.appendChild(count);
@@ -12,7 +12,7 @@
     var kind = el('select', 'trace-filter'); kind.setAttribute('aria-label', T('Record type', '记录类型'));
     [['all', T('All events', '全部记录')], ['user', T('Messages', '用户消息')], ['assistant', T('Agent replies', 'Agent 回复')], ['tool', T('Tool calls', '工具调用')]].forEach(function (item) { kind.appendChild(option(item[0], item[1])); }); toolbar.appendChild(kind);
     var session = el('select', 'trace-session'); session.setAttribute('aria-label', T('Conversation history', '历史会话')); toolbar.appendChild(session);
-    var latest = button('trace-latest', T('Follow latest', '跟随最新'), function () { follow = !follow; if (follow) { selected = ''; page = Math.max(0, Math.floor((filtered.length - 1) / pageSize)); } draw(true); }); toolbar.appendChild(latest);
+    var latest = button('trace-latest', T('Jump to latest', '回到最新记录'), function () { follow = true; inspecting = false; selected = ''; page = Math.max(0, Math.floor((filtered.length - 1) / pageSize)); if (compact()) panel(false); draw(true); list.scrollTop = list.scrollHeight; }); latest.innerHTML = options.icon('down');
     var toggle = button('trace-toggle', T('Show details', '查看详情'), function () { panel(!inspectorOpen); if (inspectorOpen) detail.focus(); }); toolbar.appendChild(toggle); root.appendChild(toolbar);
     var overview = el('div', 'trace-overview'), map = el('div', 'trace-map'); map.setAttribute('aria-hidden', 'true'); overview.appendChild(map);
     var scrub = el('input', 'trace-scrubber'); scrub.type = 'range'; scrub.min = '0'; scrub.step = '1'; scrub.setAttribute('aria-label', T('Locate a record', '定位记录')); overview.appendChild(scrub); root.appendChild(overview);
@@ -20,14 +20,14 @@
     var detail = el('section', 'trace-inspector'); detail.id = 'trace-detail-' + Math.random().toString(36).slice(2); detail.tabIndex = -1; detail.setAttribute('aria-label', T('Event details', '记录详情')); toggle.setAttribute('aria-controls', detail.id);
     var head = el('div', 'trace-detail-head'), title = el('h3', 'trace-detail-title'); head.appendChild(title);
     var actions = el('div', 'trace-detail-actions'); head.appendChild(actions);
-    var close = button('trace-close', T('Close details', '关闭详情'), function () { panel(false); var row = rowNodes.get(selected); (row && row.isConnected ? row : toggle).focus({preventScroll: true}); }); close.innerHTML = options.icon('close'); head.appendChild(close); detail.appendChild(head);
+    var close = button('trace-close', T('Close details', '关闭详情'), function () { inspecting = false; panel(false); var row = rowNodes.get(selected); (row && row.isConnected ? row : toggle).focus({preventScroll: true}); }); close.innerHTML = options.icon('close'); head.appendChild(close); detail.appendChild(head);
     var metadata = el('p', 'trace-meta'); detail.appendChild(metadata);
     var path = el('div', 'trace-workdir'); detail.appendChild(path);
     var modes = el('div', 'trace-detail-modes'); modes.setAttribute('role', 'group'); modes.setAttribute('aria-label', T('Text presentation', '正文显示方式'));
     var preview = button('trace-preview-mode', T('Preview', '预览'), function () { detailMode = 'preview'; renderDetail(true); });
     var source = button('trace-source-mode', T('Source', '原文'), function () { detailMode = 'source'; renderDetail(true); }); modes.appendChild(preview); modes.appendChild(source); detail.appendChild(modes);
     var detailMode = 'preview', warning = el('p', 'trace-truncated'); detail.appendChild(warning);
-    var content = el('div', 'trace-detail-content'); detail.appendChild(content); body.appendChild(detail); root.appendChild(body);
+    var content = el('div', 'trace-detail-content'); detail.appendChild(content); body.appendChild(detail); body.appendChild(latest); root.appendChild(body);
     var footer = el('details', 'trace-limits'), summary = el('summary', '', T('About these records', '记录范围')); footer.appendChild(summary);
     footer.appendChild(el('p', '', T('Conversation text and recorded tool input. Tool output, call timing and token usage are not recorded. Turn numbers refer to loaded history.', '展示会话正文与已记录的调用参数，不含工具输出、调用耗时或 Token 用量。轮次按当前载入的历史编号。'))); root.appendChild(footer);
 
@@ -43,9 +43,10 @@
       status.hidden = !historical && !presentation;
       status.textContent = historical ? T('History', '历史会话') : presentation ? presentation.text : '';
       status.style.setProperty('--trace-state', historical ? 'var(--fg3)' : presentation ? presentation.color : 'var(--fg3)');
-      latest.hidden = historical || !current.events.length;
+      latest.hidden = historical || !current.events.length || follow || compact() && inspectorOpen;
+      latest.style.left = Math.max(12, list.offsetLeft + list.offsetWidth - 60) + 'px';
     }
-    function syncCompact() { var narrow = compact(), covered = narrow && inspectorOpen; root.classList.toggle('trace-compact', narrow); list.hidden = covered; list.inert = covered; }
+    function syncCompact() { var narrow = compact(), covered = narrow && inspectorOpen; root.classList.toggle('trace-compact', narrow); list.hidden = covered; list.inert = covered; updateStatus(); }
     function panel(open) {
       inspectorOpen = !!open; detail.hidden = !inspectorOpen; root.classList.toggle('inspector-closed', !inspectorOpen); root.classList.toggle('inspector-open', inspectorOpen);
       toggle.textContent = inspectorOpen ? T('Hide details', '收起详情') : T('Show details', '查看详情'); toggle.title = toggle.textContent; toggle.setAttribute('aria-label', toggle.title); toggle.setAttribute('aria-expanded', String(inspectorOpen));
@@ -81,10 +82,10 @@
       if (!event) return;
       selected = event.key;
       rowNodes.forEach(function (row, key) { row.classList.toggle('on', key === selected); row.setAttribute('aria-pressed', String(key === selected)); });
-      if (reveal) { follow = false; panel(true); }
+      if (reveal) { follow = false; inspecting = true; panel(true); }
       var position = filtered.findIndex(function (item) { return item.key === selected; });
       scrub.value = String(Math.max(0, position)); scrub.setAttribute('aria-valuetext', (position + 1) + ' / ' + filtered.length + ' · ' + turnLabel(event) + ' · ' + label(event));
-      latest.setAttribute('aria-pressed', String(follow)); renderDetail(!!reveal);
+      updateStatus(); renderDetail(!!reveal);
       if (reveal && compact()) detail.focus({preventScroll: true});
     }
     function rowFor(event) {
@@ -104,7 +105,16 @@
     function pager(text, action) { var node = button('trace-page', text, action); list.appendChild(node); }
     function renderList(scrollToSelected) {
       var active = document.activeElement, focusedKey = active && active.dataset && active.dataset.key;
-      var top = list.scrollTop, from = page * pageSize, until = Math.min(filtered.length, from + pageSize);
+      var top = list.scrollTop, anchor = null, listTop = list.getBoundingClientRect().top;
+      if (!scrollToSelected) {
+        var visible = Array.from(list.querySelectorAll('.trace-event')).find(function (row) { return row.getBoundingClientRect().bottom > listTop; });
+        if (visible) {
+          anchor = {key: visible.dataset.key, offset: visible.getBoundingClientRect().top - listTop};
+          var anchorIndex = filtered.findIndex(function (event) { return event.key === anchor.key; });
+          if (anchorIndex >= 0) page = Math.floor(anchorIndex / pageSize);
+        }
+      }
+      var from = page * pageSize, until = Math.min(filtered.length, from + pageSize);
       list.replaceChildren();
       if (!filtered.length) {
         list.appendChild(el('p', 'chat-empty', current.events.length ? T('No matching records.', '没有匹配的记录。') : T('No conversation records yet.', '暂无会话记录。')));
@@ -122,6 +132,10 @@
       });
       if (until < filtered.length) pager(T('Next ', '查看后 ') + pageSize + T(' records', ' 条'), function () { page++; renderList(true); list.scrollTop = 0; });
       list.scrollTop = top;
+      if (anchor) {
+        var anchored = rowNodes.get(anchor.key);
+        if (anchored && anchored.isConnected) list.scrollTop += anchored.getBoundingClientRect().top - list.getBoundingClientRect().top - anchor.offset;
+      }
       if (focusedKey && rowNodes.get(focusedKey) && rowNodes.get(focusedKey).isConnected) rowNodes.get(focusedKey).focus({preventScroll: true});
       if (scrollToSelected) {
         var target = rowNodes.get(selected), targetKey = selected;
@@ -139,31 +153,37 @@
       page = Math.min(page, Math.max(0, Math.floor((filtered.length - 1) / pageSize)));
       count.textContent = (filtered.length === current.events.length ? current.events.length : filtered.length + ' / ' + current.events.length) + T(' records', ' 条');
       count.title = current.turns + T(' loaded turns', ' 轮已载入会话');
-      latest.setAttribute('aria-pressed', String(follow)); latest.hidden = !current.events.length;
+      latest.hidden = !current.events.length || follow;
       updateStatus();
       map.replaceChildren(); model.overview(filtered, 120).forEach(function (bucket) { map.appendChild(el('span', 'trace-mark ' + bucket.kind)); });
       scrub.max = String(Math.max(0, filtered.length - 1)); scrub.disabled = !filtered.length; overview.hidden = filtered.length < 2;
       renderList(scrollToSelected); inspect(filtered[position], false);
       if (!filtered.length) { panel(false); detail.hidden = true; toggle.disabled = true; }
     }
-    function changedFilter() { follow = false; selected = ''; page = 0; lastDetail = ''; if (compact()) panel(false); draw(true); }
+    function changedFilter() { follow = false; inspecting = false; selected = ''; page = 0; lastDetail = ''; if (compact()) panel(false); draw(true); }
     search.oninput = kind.onchange = session.onchange = changedFilter;
-    function stopFollowing() { follow = false; latest.setAttribute('aria-pressed', 'false'); }
+    function stopFollowing() { follow = false; updateStatus(); }
     list.addEventListener('wheel', stopFollowing, {passive: true});
     list.addEventListener('touchstart', stopFollowing, {passive: true});
+    list.addEventListener('scroll', function () {
+      var tail = page === Math.max(0, Math.floor((filtered.length - 1) / pageSize)) && list.scrollHeight - list.scrollTop - list.clientHeight < 60;
+      if (!inspecting && !selectionHeld() && !search.value && kind.value === 'all' && session.value === 'all') follow = tail;
+      updateStatus();
+    }, {passive: true});
     list.onkeydown = function (event) {
       if (!event.target.matches('.trace-event') || !['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
       var index = filtered.findIndex(function (item) { return item.key === event.target.dataset.key; });
       index = event.key === 'Home' ? 0 : event.key === 'End' ? filtered.length - 1 : Math.max(0, Math.min(filtered.length - 1, index + (event.key === 'ArrowUp' ? -1 : 1)));
       event.preventDefault(); stopFollowing(); selected = filtered[index].key; page = Math.floor(index / pageSize); renderList(true); inspect(filtered[index], false); rowNodes.get(selected).focus({preventScroll: true});
     };
-    scrub.oninput = function () { follow = false; var event = filtered[Number(scrub.value)]; if (!event) return; page = Math.floor(Number(scrub.value) / pageSize); renderList(false); inspect(event, false); var row = rowNodes.get(event.key); if (row) row.scrollIntoView({block: 'nearest'}); };
+    scrub.oninput = function () { follow = false; var event = filtered[Number(scrub.value)]; if (!event) return; selected = event.key; page = Math.floor(Number(scrub.value) / pageSize); renderList(true); inspect(event, false); var row = rowNodes.get(event.key); if (row) row.scrollIntoView({block: 'nearest'}); };
     detail.onkeydown = function (event) { if (event.key === 'Escape') { event.stopPropagation(); close.click(); } };
     var resize = new ResizeObserver(syncCompact); resize.observe(root);
     return {el: root, update: function (turns, nextContext) {
       context = nextContext || {};
       var scope = JSON.stringify([context.pane_id, context.session_id, context.home_id, context.agent]);
       if (lastInput === turns && lastScope === scope) { updateStatus(); return; }
+      if (lastScope && lastScope !== scope) { initialized = false; selected = ''; page = 0; search.value = ''; kind.value = 'all'; session.value = 'all'; lastDetail = ''; lastDetailKey = ''; }
       lastInput = turns; lastScope = scope;
       current = model.build(turns, context);
       var priorSession = session.value || 'all', sessionSignature = JSON.stringify(current.sessions.map(function (entry) { return [entry.key, entry.agent, entry.session]; }));
@@ -173,7 +193,7 @@
         session.value = current.sessions.some(function (entry) { return entry.key === priorSession; }) ? priorSession : 'all';
       }
       session.hidden = current.sessions.length < 2;
-      if (!initialized) { initialized = true; follow = context.status === 'working'; panel(!compact()); }
+      if (!initialized) { initialized = true; follow = true; inspecting = false; panel(!compact()); }
       var present = new Set(current.events.map(function (event) { return event.key; })); rowNodes.forEach(function (row, key) { if (!present.has(key)) rowNodes.delete(key); });
       draw(follow || !selected);
     }, dispose: function () { clearTimeout(deferred); resize.disconnect(); rowNodes.clear(); }};

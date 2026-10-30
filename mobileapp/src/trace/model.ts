@@ -18,6 +18,7 @@ export interface TraceStep {
 }
 export interface TraceEvent {
   key: string;
+  turnKey: string;
   turn: number;
   session: string;
   sessionKey: string;
@@ -131,6 +132,7 @@ export function build(
     ) {
       const event: TraceEvent = {
         key: key + ':' + position,
+        turnKey: key,
         turn: ordinal,
         session,
         sessionKey: sessionGroup.key,
@@ -189,6 +191,43 @@ export function build(
     sessions,
     turns: Array.from(turnCounts.values()).reduce((a, b) => a + b, 0),
   };
+}
+export interface TraceTurn {
+  key: string;
+  sessionKey: string;
+  session: string;
+  agent: string;
+  turn: number;
+  time: string;
+  prompt: TraceEvent | null;
+  events: TraceEvent[];
+  calls: number;
+}
+
+/** Group only recorded order and identity; no outcome or timing is inferred. */
+export function groupTurns(events: TraceEvent[]): TraceTurn[] {
+  const groups = new Map<string, TraceTurn>();
+  for (const event of events) {
+    let group = groups.get(event.turnKey);
+    if (!group) {
+      group = {
+        key: event.turnKey,
+        sessionKey: event.sessionKey,
+        session: event.session,
+        agent: event.agent,
+        turn: event.turn,
+        time: event.time,
+        prompt: null,
+        events: [],
+        calls: 0,
+      };
+      groups.set(event.turnKey, group);
+    }
+    group.events.push(event);
+    if (event.kind === 'user') group.prompt = event;
+    if (event.kind === 'tool') group.calls++;
+  }
+  return Array.from(groups.values());
 }
 export function filter(
   events: TraceEvent[],

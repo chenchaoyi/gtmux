@@ -1,10 +1,11 @@
-// Generated from mobileapp/src/trace/model.ts; SHA256 a3b1f56163fe11a58d15ce7c38e896adbf9f07a8fda845415d81b92b33c04104
-// Body SHA256 a0e9c68b23a279d9bbf7f07947790708770afcb8efa1de95715b043d5b973809
+// Generated from mobileapp/src/trace/model.ts; SHA256 bdabf5a9530fc22c35e12f1f6b3ad666070ceb5d47b3d5451d3bd724761f2860
+// Body SHA256 34111b31ddb6930f0e19cbd2290bba3486df86ea43863df644b21d96e43fe5b5
 (function(root){var exports={};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.agentName = agentName;
 exports.build = build;
+exports.groupTurns = groupTurns;
 exports.filter = filter;
 exports.overview = overview;
 const string = (value) => typeof value === 'string' ? value : '';
@@ -77,6 +78,7 @@ function build(turns, context = {}) {
         function push(kind, position, body, title, step) {
             const event = {
                 key: key + ':' + position,
+                turnKey: key,
                 turn: ordinal,
                 session,
                 sessionKey: sessionGroup.key,
@@ -130,6 +132,33 @@ function build(turns, context = {}) {
         sessions,
         turns: Array.from(turnCounts.values()).reduce((a, b) => a + b, 0),
     };
+}
+/** Group only recorded order and identity; no outcome or timing is inferred. */
+function groupTurns(events) {
+    const groups = new Map();
+    for (const event of events) {
+        let group = groups.get(event.turnKey);
+        if (!group) {
+            group = {
+                key: event.turnKey,
+                sessionKey: event.sessionKey,
+                session: event.session,
+                agent: event.agent,
+                turn: event.turn,
+                time: event.time,
+                prompt: null,
+                events: [],
+                calls: 0,
+            };
+            groups.set(event.turnKey, group);
+        }
+        group.events.push(event);
+        if (event.kind === 'user')
+            group.prompt = event;
+        if (event.kind === 'tool')
+            group.calls++;
+    }
+    return Array.from(groups.values());
 }
 function filter(events, query = '', kind = 'all', session = 'all') {
     const needle = string(query).trim().toLocaleLowerCase();

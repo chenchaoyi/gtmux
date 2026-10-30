@@ -50,7 +50,7 @@ func codexChatRecord(prefix []byte) bool {
 						return true
 					}
 					if kind == "response_item" {
-						return subtype == "message" || subtype == "function_call"
+						return subtype == "message" || subtype == "function_call" || subtype == "custom_tool_call"
 					}
 					return subtype == "user_message" || subtype == "agent_message" || subtype == "task_complete"
 				}
