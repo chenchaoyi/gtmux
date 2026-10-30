@@ -140,7 +140,7 @@ gtmux agent · 7 agent · 1 等输入 · 2 运行中 · 3 空闲 · 1 只有 she
 
 [![浏览器工作台，左侧为雷达，右侧看板打开一个会话](docs/guides/img/web-workspace-zh.png)](docs/guides/img/web-workspace-zh.png)
 
-双击 tmux 行或将它拖入看板，再选择「对话」「终端」或「轨迹」。回车换行，Ctrl/Cmd+回车发送。支持读取的外部会话可以查看，但不能向 pane 输入。[浏览器操作](docs/guides/phone-and-web.zh.md#浏览器操作)。
+双击 tmux 行或将它拖入看板，再选择「对话」「终端」或「轨迹」。回车换行，Ctrl/Cmd+回车发送。支持读取的外部会话可以查看，但不能向 pane 输入。[浏览器操作与布局](docs/guides/phone-and-web.zh.md#网页操作)。
 
 <a id="docs" data-doc-heading="按需查阅"></a><a id="参考" data-doc-heading="按需查阅"></a>
 

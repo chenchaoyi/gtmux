@@ -118,7 +118,7 @@ In the Chat and Terminal composers, Enter starts a new line and Ctrl/Cmd+Enter s
 
 Chat shows agent avatars and the HQ role mark, with Copy icons on messages (hover for labels; a checkmark confirms copying) and expandable tool call summaries. Board tiles and focused conversations use the same presentation. Unsent drafts survive transcript refreshes and switching between Chat and Terminal; text drafts are saved separately for each pane in this browser, scoped to the server and access identity.
 
-Copy icons sit below the message background with recorded prompt time and sender attribution. Desktop controls use 36px targets and touch controls use 44px targets. Layout actions and session rows support keyboard access; Escape closes layout and settings panels.
+Copy icons sit below each message with its recorded time and sender. Layout actions and session rows support keyboard access; Escape closes layout and settings panels.
 
 While an agent is working, Chat shows a **Working** strip above the composer. Expand **Live output** to see the latest screen content, or collapse it to keep reading. It remembers your choice per pane and disappears when work stops. Runtime is shown when the server provides a known start time. Live updates preserve your draft and reading position; unavailable captures show a retry message.
 
@@ -128,18 +128,16 @@ On macOS, choose **Open local workspace** at the bottom of the menu bar panel. I
 
 If access is revoked, the browser returns to the access page and stops polling the old sessions. Enter a new pairing or share code to reconnect; only panes authorized by that credential are restored.
 
+The composer supports a larger writing area, terminal control keys, input history and snippets. Photos, files, pasted images and dropped files are staged before sending; images can be annotated. Send uploads the staged files and shows progress. A failed send keeps the draft and attachments. Reloading keeps text, but files must be selected again. History and snippets insert text for review without sending it.
+
+Click a message's user, Agent or HQ avatar to inspect its identity and available session information. Historical messages show recorded identity; unavailable personal details are not inferred. Writable conversations show the input field without a separate writable badge.
+
 ### Codex terminal history and titles
 
 For a manually launched Codex, start the next session with `codex --no-alt-screen` (two leading hyphens). To resume an existing conversation, first exit its old client, then run `codex --no-alt-screen resume <SESSION_ID>` with the same model, effort and permission options. This preserves future terminal scrollback; it cannot recover old overwritten frames. `/raw` changes presentation and does not by itself disable alternate-screen mode. See [Codex handling](../design/CODEX.md) and the [official CLI reference](https://learn.chatgpt.com/docs/developer-commands?surface=cli).
 
 A tmux session's displayed title comes from its terminal title. If Codex includes a project or directory (for example `Review changes | project`), gtmux preserves it. The app does not append that suffix. Codex's `tui.terminal_title` controls title components; native sessions use their recorded conversation title when available. A `|` in a title is not sufficient evidence to strip text. See the [official configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference).
 
-The composer supports a larger writing area, terminal control keys, input history and snippets. Photos, files, pasted images and dropped files are staged before sending; images can be annotated. Send uploads the staged files and shows progress. A failed send keeps the draft and attachments. Reloading keeps text, but files must be selected again. History and snippets insert text for review without sending it.
-
-Click a message's user, Agent or HQ avatar to inspect its identity and available session information. Historical messages show recorded identity; unavailable personal details are not inferred. Writable conversations show the input field without a separate writable badge.
-
 ### Appearance and trace details
 
 Open the **Settings** gear in the browser's top-right corner, then **Appearance**, to select **System**, **Light** or **Dark**. System is the default and updates live; your choice is saved in this browser. Terminal captures retain the server terminal's colors. Close the trace inspector to give the event list its full width and longer previews. Selecting an event or **Show details** reopens it; polling does not reopen a closed inspector.
-
-Both macOS pairing entries now show the same reachability, app scan guidance, full browser link, terminal command and code renewal/refresh controls.
