@@ -8,6 +8,20 @@ const vm = require('node:vm');
 
 const source = fs.readFileSync(path.join(__dirname, 'app.js'), 'utf8');
 
+test('browser and native attachment prompt identities share the same contract', () => {
+  const cases = require('../../../mobileapp/src/screens/promptIdentityCases.json');
+  const shared = require('./prompt-identity.js');
+  const h = harness({ok: true});
+  for (const {sent, recorded, same} of cases) {
+    assert.equal(shared.promptIdentity(sent) === shared.promptIdentity(recorded), same);
+    const echo = {text: sent, observed: h.api.promptObservations(sent, []), priorPending: 0};
+    assert.equal(h.api.pendingPromptRecorded(echo, [{prompt: recorded, time: 'new'}]), same);
+    echo.observed = h.api.promptObservations(sent, [{prompt: recorded, time: 'old'}]);
+    assert.equal(h.api.pendingPromptRecorded(echo, [{prompt: recorded, time: 'old'}]), false);
+    assert.equal(h.api.pendingPromptRecorded(echo, [{prompt: recorded, time: 'new'}]), same);
+  }
+});
+
 function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
   const nodes = new Map();
   const element = (tagName) => ({
@@ -49,7 +63,7 @@ function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
     document: {documentElement: {}, readyState: 'loading', getElementById: node, createElement: element, createElementNS: (_, name) => element(name), createDocumentFragment: () => element("fragment"),
       createTextNode: text => Object.assign(element("text"), {textContent: text}), addEventListener: (name, fn) => documentHandlers.set(name, fn),
       querySelector: sel => node('query:' + sel), querySelectorAll: () => []},
-    window: {addEventListener() {}, innerWidth: 1280, GtmuxActivity: require('./activity.js')},
+    window: {addEventListener() {}, innerWidth: 1280, GtmuxActivity: require('./activity.js'), GtmuxPromptIdentity: require('./prompt-identity.js')},
     navigator: {language, clipboard: {writeText: s => { copied.push(s); return Promise.resolve(); }}},
     ResizeObserver: class { constructor(cb) { context.__resized = cb; } observe(el) { context.__observed = el; } },
     setTimeout: (fn, ms) => setTimeout(fn, ms).unref(),

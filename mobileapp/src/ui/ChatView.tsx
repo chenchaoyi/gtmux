@@ -557,8 +557,8 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
               const collapsed = long && !promptOpen[i];
               return (
                 <>
-                  <View style={styles.userRow}>
-                    <View style={styles.userBubble}>
+                  <View testID="chat-user-row" style={styles.userRow}>
+                    <View testID="chat-user-bubble" style={styles.userBubble}>
                       {collapsed ? (
                         <CopyableText lang={lang} selectable selectionColor={SEL_COLOR} numberOfLines={8}
                           style={[styles.userText, {fontFamily, fontSize, lineHeight}]}>
@@ -644,7 +644,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
         <View style={styles.userRow}>
           <View testID="chat-pending-echo" style={[styles.userBubble, !pendingDelivered && styles.userBubblePending]}>
             <Text style={[styles.userText, {fontFamily, fontSize, lineHeight}]}>{pendingPrompt}</Text>
-            <Text style={styles.echoStatus}>{pendingDelivered ? (lang === 'zh' ? '已发送到终端，等待对话记录' : 'Sent to terminal · awaiting transcript') : (lang === 'zh' ? '正在发送…' : 'Sending…')}</Text>
+            <Text style={styles.echoStatus}>{pendingDelivered ? (lang === 'zh' ? '已发送' : 'Sent') : (lang === 'zh' ? '正在发送…' : 'Sending…')}</Text>
           </View>
           {avatar(<UserAvatar size={26} />, {kind: 'human', agent})}
         </View>

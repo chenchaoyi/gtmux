@@ -43,6 +43,13 @@ visible for a screenshot. A one-pixel bounded measurement and an unconditional d
 rebuild must fail these checks. These UIKit checks complement the React Native component
 tests; they do not exercise Yoga or establish integrated bridge/real-device acceptance.
 
+`RangeTextYoga.test.tsx` compiles `ConversationYogaFixture.cpp` against the installed
+React Native Yoga sources with the host C++20 compiler. It resolves the rendered
+ChatView/RangeText styles inside a content-sized bubble at phone and tablet widths,
+before and after native size callbacks. A percentage-only initial width must fail
+with zero text width. Temporary compiler output is removed by the test. Combined
+Yoga and UIKit checks still do not establish full bridge/real-device acceptance.
+
 ## Preview states
 
 Use `--preview --skip-selection-checks --state-checks` to exercise preview states without

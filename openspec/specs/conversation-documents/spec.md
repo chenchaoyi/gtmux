@@ -92,6 +92,11 @@ Code, tables and tool controls SHALL remain separate selection scopes.
 ### Requirement: Stable conversation text layout during refresh
 The iOS conversation SHALL initially constrain prose to its available container width rather than a one-pixel placeholder. It SHALL retain the last accepted height during content refresh and reuse a short natural width only for unchanged text layout. Changed prose SHALL regain the available width. It SHALL ignore stale measurements, avoid publishing constrained sizes before a usable width exists, and avoid rebuilding identical native documents. Unbounded code sizing and native selection SHALL remain available.
 
+#### Scenario: Content-sized user bubble
+- **WHEN** a short user message mounts inside a bubble sized by its content
+- **THEN** text has a finite initial width that is clamped by the actual parent, without a percentage sizing cycle
+- **AND** native measurement can shrink the bubble to the text width while long messages still wrap within the bubble limit
+
 #### Scenario: Polling and delayed measurements
 - **WHEN** a visible conversation refreshes while native size events are delayed
 - **THEN** existing prose retains its accepted height and native view identity

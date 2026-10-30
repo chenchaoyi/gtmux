@@ -20,3 +20,18 @@ func TestPromptImageEnvelopeIsOneSharedMarkdownLink(t *testing.T) {
 		}
 	}
 }
+
+func TestSplitCodexImageEnvelopeKeepsReferenceAndHumanText(t *testing.T) {
+	raw := "<image name=[Image #1] path=\"/tmp/a screenshot.png\">\n</image>\n[Image #1]"
+	got, ok := CleanUserPrompt(raw)
+	if !ok || got != "![Image #1](/tmp/a%20screenshot.png)\n\n[Image #1]" {
+		t.Fatalf("%q %v", got, ok)
+	}
+	for _, literal := range []string{"```xml\n" + raw + "\n```", "~~~\n" + raw + "\n~~~", "    " + raw,
+		strings.ReplaceAll(raw, "/tmp/a screenshot.png", "https://example.test/a.png"),
+		strings.ReplaceAll(raw, "\n</image>", "\nnot an empty envelope\n</image>")} {
+		if got := normalizePromptMedia(literal); got != literal {
+			t.Fatalf("literal changed: %q", got)
+		}
+	}
+}

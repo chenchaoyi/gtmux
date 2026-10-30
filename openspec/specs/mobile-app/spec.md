@@ -318,6 +318,11 @@ ordinary pane Detail and the HQ console, and SHALL not acknowledge disabled inpu
 - **THEN** its temporary echo is removed permanently, while older identical prompts alone do not confirm a new send
 - **AND** an accepted terminal delivery waiting for a transcript is labelled as sent, not left looking unsent
 
+#### Scenario: Codex records an uploaded image as an attachment
+- **WHEN** a newly recorded prompt represents the submitted local image path as a Codex image envelope or its normalized Markdown image
+- **THEN** the temporary echo is retired using the same attachment identity as the browser, preserving accompanying human text and attachment paths
+- **AND** older occurrences, another image, unrelated prose and assistant replies cannot confirm that send
+
 #### Scenario: A camera that does not open says why
 
 - **WHEN** the reader picks Camera from the attach card and the camera does not open

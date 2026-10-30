@@ -248,7 +248,9 @@ The second defect: `maxHeight: '82%'` resolved against the card's own wrapper ra
 
 ### Chat send confirmation
 
-Temporary chat echoes track a send-specific baseline of matching prompt timestamps/occurrences, rather than comparing only the transcript tail. A new matching occurrence retires the echo permanently; older identical text cannot acknowledge a repeated send. Accepted delivery is labelled Sent to terminal while the transcript lags. Refused/failed sends use the existing failure bar, and late failures cannot clear another send’s echo. Scope changes clear temporary state. No automatic resend or claim of agent execution is added.
+Temporary chat echoes track a send-specific baseline of matching prompt timestamps/occurrences, rather than comparing only the transcript tail. A new matching occurrence retires the echo permanently; older identical text cannot acknowledge a repeated send. Accepted delivery is labelled Sent while the transcript lags. Local image paths and Codex image envelopes/normalized image links share one comparison rule with the browser; human text and attachment paths still have to match. Refused/failed sends use the existing failure bar, and late failures cannot clear another send’s echo. Scope changes clear temporary state. No automatic resend or claim of agent execution is added.
+
+Content-sized user bubbles seed native prose with a finite width, clamped by the parent. Percentage width alone makes Yoga resolve the bubble and its child against each other and can leave text at zero width indefinitely. TextKit's measured natural width then shrinks short bubbles; long messages retain their existing wrapping limit. Regression coverage resolves the rendered component styles with React Native's own Yoga sources, in addition to native text-layout checks.
 
 ### The chat says whose words these are (2026-09-20)
 

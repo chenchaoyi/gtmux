@@ -589,6 +589,11 @@ After Send, Chat SHALL show a temporary prompt with sending/delivered state unti
 - **WHEN** a newly recorded occurrence matches the pending prompt
 - **THEN** the temporary row merges into the recorded conversation without duplication
 
+#### Scenario: Uploaded image representation changes
+- **WHEN** a submitted local image path appears in a new recorded prompt as a Codex image envelope or normalized Markdown image
+- **THEN** the browser uses the same comparison rule as phone and iPad to retire its temporary row
+- **AND** differing human text, attachment paths and pre-existing occurrences cannot acknowledge a new send
+
 ### Requirement: Speaker identity sheets
 
 User, sender and agent avatars in conversations SHALL be keyboard/touch-activatable
