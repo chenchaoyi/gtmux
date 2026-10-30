@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.158',
+    en: [
+      'Conversation message fixes',
+      'Restore short user messages that could appear as empty bubbles on iPhone and iPad.',
+      'Remove the temporary sent message once an uploaded image is recorded in the conversation.',
+    ],
+    zh: [
+      '对话消息修复',
+      '修复 iPhone、iPad 对话中用户消息显示为空白气泡的问题。',
+      '图片消息写入对话后，发送提示及时消失，避免重复展示。',
+    ],
+  },
+  {
     version: '1.0.157',
     en: [
       'Conversation and Trace',
