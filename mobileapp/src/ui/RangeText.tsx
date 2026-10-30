@@ -51,7 +51,7 @@ export function RangeText({children, style, allowFontScaling, unbounded}: TextPr
   const previous = useRef<{key: string; model: Model} | null>(null);
   const frozen = useRef<Model | null>(null);
   const [selecting, setSelecting] = useState(false);
-  const [size, setSize] = useState<{height: number; width?: number; revision: string} | null>(null);
+  const [size, setSize] = useState<{height: number; width?: number; revision: string; layoutKey: string} | null>(null);
   const outer: Record<string, unknown> = {};
   const textStyle: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(StyleSheet.flatten(style) ?? {})) {
@@ -77,16 +77,24 @@ export function RangeText({children, style, allowFontScaling, unbounded}: TextPr
   const model = selecting && frozen.current ? frozen.current : previous.current.model;
   const displayed = useRef(model);
   displayed.current = model;
+  const layoutKey = React.useMemo(() => JSON.stringify([model.runs, model.style, model.scale, !!unbounded]), [model, unbounded]);
+  const displayedLayout = useRef(layoutKey);
+  displayedLayout.current = layoutKey;
+  const measuredWidth = size?.layoutKey === layoutKey ? size.width : undefined;
   React.useEffect(() => () => notify(identity, false), [identity, notify]);
   const document = React.useMemo(() => ({revision: model.revision, runs: model.runs, style: model.style, scale: model.scale, unbounded: !!unbounded}), [model, unbounded]);
   if (!NativeRange) return null;
   const initialHeight = (Number(textStyle.lineHeight) || Number(textStyle.fontSize) * 1.45 || 22) * scale;
-  return <View style={[outer, unbounded ? {} : {width: outer.width as number ?? size?.width ?? 1, maxWidth: outer.maxWidth as number ?? '100%'}]} accessible={false}>
+  // A constrained paragraph must have a real width before TextKit can measure
+  // its height. A 1px bootstrap paints the first glyph while waiting for JS/native
+  // size events, and can feed a single-line measurement back into the layout.
+  return <View style={[outer, unbounded ? {} : {width: outer.width as number ?? measuredWidth ?? '100%', maxWidth: outer.maxWidth as number ?? '100%'}]} accessible={false}>
     <NativeRange document={document} style={{height: size?.height ?? initialHeight, width: unbounded ? size?.width ?? 1 : '100%'}}
       onSize={event => {
         const next = event.nativeEvent;
         if (next.revision !== displayed.current.revision || !Number.isFinite(next.height) || next.height < 1 || next.height > 200000 || !Number.isFinite(next.width) || next.width! < 1 || next.width! > 200000) return;
-        setSize(old => old?.height === next.height && old.width === next.width && old.revision === next.revision ? old : next);
+        const measuredLayout = displayedLayout.current;
+        setSize(old => old?.height === next.height && old.width === next.width && old.layoutKey === measuredLayout ? old : {...next, layoutKey: measuredLayout});
       }}
       onSelection={event => {
         const {active, revision} = event.nativeEvent;

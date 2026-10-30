@@ -1353,7 +1353,7 @@ select:disabled { opacity: .55; cursor: not-allowed; }
 .trace-source.trace-summary { font-family: inherit; white-space: pre-wrap; overflow-wrap: anywhere; }
 
 /* Session summaries share App semantics; disclosures remain usable without hover. */
-.section-toggle { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; border: 0; background: transparent; text-align: left; cursor: pointer; font-family: inherit; letter-spacing: normal; }
+.section-toggle { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; border: 0; background: transparent; text-align: left; cursor: pointer; font-family: inherit; letter-spacing: normal; text-transform: none; }
 .section-toggle .section-name { flex: 0 1 auto; min-width: 0; }
 .section-count { font-variant-numeric: tabular-nums; font-size: 11px; padding: 2px 6px; border-radius: 5px; background: var(--surface); color: var(--fg2); }
 .section-action { margin-left: auto; color: var(--fg2); font-size: 11px; font-weight: 400; white-space: nowrap; }

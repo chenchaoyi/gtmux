@@ -67,3 +67,81 @@ test('native measurement gives short bubbles a width and stale layout cannot col
   expect(native().props.style.height).toBe(44);
   act(() => tree.unmount());
 });
+
+test('bounded text starts at the available width and keeps accepted geometry through polling', () => {
+  let tree!: renderer.ReactTestRenderer;
+  const view = (text: string) => <RangeText style={{fontSize: 16, lineHeight: 24}}>{text}</RangeText>;
+  act(() => { tree = renderer.create(view('这是一段完整的对话内容，不能在刷新时退回到一个字。')); });
+  const native = () => tree.root.findByType('ConversationTextView' as any);
+  const first = native();
+  expect(native().parent?.props.style).toEqual(expect.arrayContaining([expect.objectContaining({width: '100%'})]));
+  const revision = native().props.document.revision;
+  act(() => native().props.onSize({nativeEvent: {width: 640, height: 72, revision}}));
+  for (let i = 0; i < 20; i++) {
+    act(() => tree.update(view('这是一段完整的对话内容，不能在刷新时退回到一个字。')));
+    expect(native()).toBe(first);
+    expect(native().props.document.revision).toBe(revision);
+    expect(native().props.style.height).toBe(72);
+  }
+  act(() => tree.update(view('这是一段完整的对话内容，不能在刷新时退回到一个字。新的进度仍在继续。')));
+  expect(native()).toBe(first);
+  expect(native().props.style.height).toBe(72);
+  act(() => native().props.onSize({nativeEvent: {width: 1, height: 1, revision}}));
+  expect(native().props.style.height).toBe(72);
+  act(() => tree.unmount());
+});
+
+test('conversation refresh retains the native renderers and full text of previous messages', () => {
+  const {ChatView} = require('./ChatView');
+  const {paletteFor} = require('./theme');
+  const turns = [{session_id: 'fixture', time: '2026-10-30T00:00:00Z', prompt: '整体留白需要优化。', segments: [{text: '我会收紧重复的外层间距。'}, {text: '两个设置保留明确的层级。'}]}];
+  const view = (text: string) => <ChatView agent={{pane_id: '%901', agent: 'Codex', session_id: 'fixture'}} lines={[]} status="working" fontSize={16} lang="zh" pal={paletteFor('dark')} turns={[{...turns[0], segments: [turns[0].segments[0], {text}]}]} />;
+  let tree!: renderer.ReactTestRenderer;
+  act(() => { tree = renderer.create(view(turns[0].segments[1].text)); });
+  const natives = () => tree.root.findAllByType('ConversationTextView' as any);
+  const first = natives();
+  expect(first).toHaveLength(3);
+  for (const native of first) act(() => native.props.onSize({nativeEvent: {width: 640, height: 72, revision: native.props.document.revision}}));
+  for (let i = 0; i < 20; i++) act(() => tree.update(view(turns[0].segments[1].text)));
+  first.forEach((native, i) => {
+    expect(natives()[i]).toBe(native);
+    expect(native.props.style.height).toBe(72);
+  });
+  act(() => tree.update(view(turns[0].segments[1].text + ' 新的检查已经完成。')));
+  expect(natives()[2]).toBe(first[2]);
+  expect(natives()[2].props.style.height).toBe(72);
+  expect(natives()[2].props.document.runs.map((r: any) => r.text).join('')).toContain('新的检查已经完成。');
+  act(() => tree.unmount());
+});
+
+test('explicit constrained widths and horizontal code measurement remain available', () => {
+  let tree!: renderer.ReactTestRenderer;
+  act(() => { tree = renderer.create(<RangeText style={{width: 180}}>固定宽度</RangeText>); });
+  const native = () => tree.root.findByType('ConversationTextView' as any);
+  expect(native().parent?.props.style).toEqual(expect.arrayContaining([expect.objectContaining({width: 180})]));
+  act(() => tree.update(<RangeText unbounded>{'code '.repeat(100)}</RangeText>));
+  expect(native().props.document.unbounded).toBe(true);
+  act(() => native().props.onSize({nativeEvent: {width: 4000, height: 22, revision: native().props.document.revision}}));
+  expect(native().props.style.width).toBe(4000);
+  act(() => tree.unmount());
+});
+
+test('a short message growing during refresh does not reuse its one-character width', () => {
+  let tree!: renderer.ReactTestRenderer;
+  const view = (text: string, source = text) => <RangeSourceContext.Provider value={source}><RangeText style={{fontSize: 16, lineHeight: 24}}>{text}</RangeText></RangeSourceContext.Provider>;
+  act(() => { tree = renderer.create(view('我')); });
+  const native = () => tree.root.findByType('ConversationTextView' as any);
+  const revision = native().props.document.revision;
+  act(() => native().props.onSize({nativeEvent: {width: 18, height: 24, revision}}));
+  const full = '我会保留现有的正文，在新进度到来时按可用宽度重新排版。';
+  act(() => tree.update(view(full)));
+  expect(native().parent?.props.style).toEqual(expect.arrayContaining([expect.objectContaining({width: '100%'})]));
+  expect(native().props.style.height).toBe(24);
+  act(() => native().props.onSize({nativeEvent: {width: 18, height: 24, revision}}));
+  expect(native().parent?.props.style).toEqual(expect.arrayContaining([expect.objectContaining({width: '100%'})]));
+  act(() => native().props.onSize({nativeEvent: {width: 500, height: 72, revision: native().props.document.revision}}));
+  act(() => tree.update(view(full, 'same layout, new link/source revision')));
+  expect(native().parent?.props.style).toEqual(expect.arrayContaining([expect.objectContaining({width: 500})]));
+  expect(native().props.style.height).toBe(72);
+  act(() => tree.unmount());
+});

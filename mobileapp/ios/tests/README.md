@@ -33,6 +33,16 @@ Native controls remain outside the document. The share
 popover must anchor to Share on iPad. Quick Look and text formats require separate cases;
 HTML success does not establish PDF or image acceptance.
 
+## Conversation text layout
+
+Launch with `--text-layout-checks --skip-selection-checks` to check the production
+text renderer at unresolved, phone and narrow widths, identical document refreshes,
+streaming updates, selection pin/resume and unbounded code width. Each `text-*` result
+in `Documents/fixture-results.json` must be `pass`. The fixture's initial prose stays
+visible for a screenshot. A one-pixel bounded measurement and an unconditional document
+rebuild must fail these checks. These UIKit checks complement the React Native component
+tests; they do not exercise Yoga or establish integrated bridge/real-device acceptance.
+
 ## Preview states
 
 Use `--preview --skip-selection-checks --state-checks` to exercise preview states without

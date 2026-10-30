@@ -38,6 +38,7 @@ final class ConversationTextView: UIView, UITextViewDelegate, UIGestureRecognize
 
   private func acceptDocument() {
     if selectionActive { queued = document; return }
+    guard !document.isEqual(displayed) else { return }
     displayed = document
     applying = true
     let base = displayed["style"] as? [String: Any] ?? [:]
@@ -61,7 +62,11 @@ final class ConversationTextView: UIView, UITextViewDelegate, UIGestureRecognize
     super.layoutSubviews()
     textView.frame = bounds
     let unbounded = displayed["unbounded"] as? Bool == true
-    let width = unbounded || bounds.width <= 1 ? naturalWidth : bounds.width
+    // A temporary unresolved frame is not a measurement of wrapped prose.
+    // Bounded RN text starts at its available width; only horizontal code uses
+    // its natural width before the bridge has committed a measured frame.
+    guard unbounded || bounds.width > 1 else { return }
+    let width = unbounded ? naturalWidth : bounds.width
     let size = textView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
     let height = max(1, ceil(size.height))
     if lastSize.width != bounds.width || lastSize.height != height || lastRevision != revision {
