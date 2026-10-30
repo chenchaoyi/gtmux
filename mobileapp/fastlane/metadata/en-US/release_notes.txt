@@ -1,4 +1,4 @@
-Diff stability
-• Open large changes without rendering the entire patch at once.
-• Read long lines safely and keep Diff responsive while scrolling.
-• Retry a failed read without closing the conversation.
+Conversation and Trace
+• Keep messages readable as conversations refresh and replies grow.
+• Read Trace by turn, open at the latest record, and keep your place during updates.
+• Clearer external conversation headers and participant profiles.
