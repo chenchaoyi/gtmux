@@ -1611,6 +1611,11 @@ func nativePanesScoped(tmuxPanes []Pane, profiles []agentProfile, now int64, cod
 	}
 	var out []Pane
 	titles := make(map[string]map[string]string)
+	type processKey struct {
+		pid         int
+		comm, start string
+	}
+	backends := map[processKey]bool{}
 	for _, r := range recs {
 		if inTmux[r.HomeID+"\x00"+r.SessionID] {
 			continue
@@ -1681,10 +1686,23 @@ func nativePanesScoped(tmuxPanes []Pane, profiles []agentProfile, now int64, cod
 				follow = &v
 			}
 		}
-		// Saved completion is history, not process liveness. Keep the observation
-		// and consent intact so a new turn or explicit follow can surface it again.
-		if (r.Agent == "codex" || r.Agent == "dsh") && r.PID <= 0 && status == "idle" && (follow == nil || !follow.HQ) {
-			continue
+		// A live shared daemon is not a live frontend. Completed unfollowed
+		// observations remain history, including late callbacks after worker reap.
+		// Preserve the record/consent and fresh work, waits, legacy CLI processes.
+		if (r.Agent == "codex" || r.Agent == "dsh") && status == "idle" && (follow == nil || !follow.HQ) {
+			noFrontend := r.PID <= 0
+			if r.Agent == "codex" && !noFrontend {
+				key := processKey{r.PID, r.Comm, r.ProcessStart}
+				backend, known := backends[key]
+				if !known {
+					backend = sharedCodexBackend(r)
+					backends[key] = backend
+				}
+				noFrontend = backend
+			}
+			if noFrontend {
+				continue
+			}
 		}
 		// errored-idle, as for a tmux row: when the transcript reader finds the session's
 		// last message is an error (today a readable Claude log ending on an API error;

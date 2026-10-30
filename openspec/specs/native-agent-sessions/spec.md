@@ -161,10 +161,10 @@ The system SHALL remove a non-Codex native-session record when the agent signals
 - **WHEN** a native record has not been updated within the staleness grace and no live signal exists
 - **THEN** the radar SHALL omit it
 
-#### Scenario: An idle session whose process is alive is kept
+#### Scenario: An idle session whose frontend process is alive is kept
 
 - **WHEN** a native session has sent no hook for longer than the grace period, and its
-  recorded process is still running the recorded command and started before the record's
+  recorded frontend process is still running the recorded command and started before the record's
   last update
 - **THEN** its record is kept and the session still shows
 
@@ -334,3 +334,30 @@ An unconfirmed native controller SHALL be described without assuming ChatGPT Des
 
 - **WHEN** a followed DeepSeek conversation with an unconfirmed controller needs attention
 - **THEN** the notification directs the user to the original app without labelling it ChatGPT
+
+### Requirement: Shared backend liveness is not frontend liveness
+An idle Codex observation without explicit HQ follow SHALL remain outside the active
+external list when its exact PID, command and process birth are positively verified
+as the managed shared app-server before and after transient command-role inspection.
+A managed backend's liveness SHALL NOT establish a live frontend for every thread it
+has handled. The core SHALL preserve the observation, stored conversation and consent;
+it SHALL NOT archive, delete, rebind or terminate the conversation/backend for this
+presentation decision. Unknown role/incarnation evidence SHALL retain existing
+visibility behavior. Legacy single-process CLI frontends, fresh work/waiting and
+explicitly followed history SHALL remain visible. All surfaces SHALL consume this
+core projection; no client SHALL guess ownership by title, cwd, originator or shared PID.
+
+#### Scenario: A reaped HQ worker receives late backend callbacks
+- **WHEN** its tmux resource is closed and the stored observation is idle with only a verified managed-backend PID
+- **THEN** the completed worker does not reappear as a live external conversation
+- **AND** the native record and history remain intact while other threads continue on the same backend
+
+#### Scenario: Resume real work or explicitly follow history
+- **WHEN** the same thread receives fresh working/waiting activity or the owner explicitly enables HQ follow
+- **THEN** the observation can surface under existing status and consent rules
+- **AND** no pane input route or current-client ownership is inferred
+
+#### Scenario: Preserve old clients and uncertain process evidence
+- **WHEN** an idle record belongs to a legacy frontend or its command/birth cannot be positively revalidated
+- **THEN** the existing visibility/liveness behavior remains in effect
+- **AND** one collection probes each exact process incarnation at most once for the presentation decision
