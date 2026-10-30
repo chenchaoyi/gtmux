@@ -1,4 +1,4 @@
-Trace controls and session reliability
-• Expand or collapse conversation turns and tool calls independently; open any call group when needed.
-• Review captured context and switch between Overview, Preview, Raw content and Source in trace details.
-• Keep completed Codex workers out of active session lists while preserving conversation history.
+HQ matters and steady trace reading
+• Find matters needing attention, ongoing work and recent updates in HQ.
+• Open a matter to read its assessment, participants, saved progress and related replies.
+• Keep the selected trace call when older history loads, including repeated prompts; preserve system keyboard shortcuts and use clearer counts.

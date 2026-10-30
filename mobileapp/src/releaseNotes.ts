@@ -12,6 +12,21 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.160',
+    en: [
+      'HQ matters and steady trace reading',
+      'Find matters needing attention, ongoing work and recent updates in HQ.',
+      'Open a matter to read its assessment, participants, saved progress and related replies.',
+      'Keep the selected trace call when older history loads, including repeated prompts; preserve system keyboard shortcuts and use clearer counts.',
+    ],
+    zh: [
+      'HQ 事项与轨迹阅读',
+      '在 HQ 查看待处理、正在跟进的事项和最近变化。',
+      '进入事项查看判断、参与者、已保存的进展和关联回复。',
+      '修复补载历史后重复轮次串详情的问题，保留系统快捷键，并优化轨迹数量提示。',
+    ],
+  },
+  {
     version: '1.0.159',
     en: [
       'Trace controls and session reliability',

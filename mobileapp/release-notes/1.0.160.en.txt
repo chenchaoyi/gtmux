@@ -1,0 +1,4 @@
+HQ matters and steady trace reading
+• Find matters needing attention, ongoing work and recent updates in HQ.
+• Open a matter to read its assessment, participants, saved progress and related replies.
+• Keep the selected trace call when older history loads, including repeated prompts; preserve system keyboard shortcuts and use clearer counts.
