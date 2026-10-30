@@ -17,30 +17,13 @@ Use an iPhone, iPad or browser to view agent status, read output and reply. The 
 
 **Pair is for your own devices. Send collaborators a Share link.**
 
-## Pair your iPhone or iPad
+## Connect your device
 
-Install [gtmux from the App Store](https://apps.apple.com/app/id6791144062).
-The same app works on both devices. Keep the Mac awake during setup and use.
+Complete [the three-step setup](../../README.md#get-connected) first. It covers the host installation, doctor, network choice and the App Store app's **Add a server → Scan pairing QR** controls. The same app works on iPhone and iPad. A successful pairing saves the host in the server list; open it to see the radar.
 
-1. On the Mac, open the gtmux menu-bar app → **Preferences → Remote access**.
-   Choose **Local network** if both devices are on a reachable local network, or
-   **Anywhere** to connect from other networks. Follow the prompts to turn it on.
-2. In the menu bar, open **Pair a device…** to display the pairing QR.
-3. On the iPhone or iPad, tap **Add a server → Scan pairing QR** and scan it.
+![Server list showing paired hosts and a separate guest connection](img/phone-and-web-servers-en.jpg)
 
-The Mac now appears in the app's server list. Open it to see the radar.
-A pairing code works once; generate a new one for each device.
-
-![The app server list with paired Macs and a separate guest connection](img/phone-and-web-servers-en.jpg)
-
-Prefer the terminal? Start `gtmux serve` on a local network or `gtmux tunnel` for remote
-access, then run `gtmux pair` for the QR.
-
-### Pair a browser
-
-Generate a fresh code with `gtmux pair` and open the browser link it prints. The browser
-becomes your own paired device, with access to the radar and terminal input. Use Share
-when someone else needs access.
+To add another device or browser, run `gtmux pair` on the host for a fresh code. Each code works once and expires after five minutes. Open its browser link to pair your own browser. Keep the host awake; use [connection troubleshooting](../phone.md#troubleshooting) if the radar cannot load.
 
 ## Use the app
 

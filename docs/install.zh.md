@@ -1,35 +1,17 @@
-# 安装
+# 安装、更新与卸载
 
 [English](install.md) · **中文**
 
-## Agent 插件与 hooks
+第一次安装并连接设备，按[首页三步](../README.zh.md#安装并连接)操作。本页用于选择安装方式、处理 doctor 结果和维护已有安装。
 
-安装 CLI 或 App 后，可运行 `gtmux install hooks --agent auto`，为本机检测到的 agent CLI 配置 hook。已在设置中禁用的 hook 会被跳过；只有旧配置目录、没有 CLI 时，安装器会保留原配置，不会报告安装成功。只配置 DSH 可用 `gtmux install hooks --agent dsh`；不带 `--agent` 时默认配置 Claude。`gtmux doctor` 用于检查，`gtmux doctor --fix` 会逐项提出修复。
+## 选哪个下载入口
 
-DSH 的 Cordis 插件随 gtmux 提供，无需安装 npm 包。读取历史不需要插件；接收生命周期事件则需在下次启动 Web 时使用生成的 `--patch`，见 [DSH 指南](guides/deepseek-harness.zh.md)。
-
-## Linux
-
-同一安装脚本支持 Linux amd64、arm64，自动跳过 macOS App。tmux 通过系统包管理器安装。配对、前台运行、systemd 用户服务和能力边界见 [Linux 服务器](linux.zh.md)。
-
-## Homebrew（macOS）
-
-```sh
-brew install chenchaoyi/tap/gtmux             # CLI
-brew install --cask chenchaoyi/tap/gtmux-app  # 菜单栏 app（可选）
-```
-
-也可以先 tap 一次，之后按名字装：
-
-```sh
-brew tap chenchaoyi/tap
-brew install gtmux
-brew install --cask gtmux-app
-```
-
-升级用 `brew upgrade gtmux`（app 是 `brew upgrade --cask gtmux-app`）。CLI 以 Homebrew cask
-的形式安装。app cask 默认装在 `/Applications`，自定义 Homebrew 的 `--appdir` 会改变这个位置。
-没有 Homebrew 的话，用下面的安装脚本。
+| 需要什么 | 用哪个 |
+| --- | --- |
+| Mac 上的 CLI 和菜单栏 App | 下面的官方安装器 |
+| 用 Homebrew 管理安装 | 下面的两条 Homebrew 命令 |
+| iPhone 或 iPad App | [App Store](https://apps.apple.com/app/id6791144062)，主机配置好后再配对 |
+| 只装 CLI 或指定版本 | 安装器选项，或 [GitHub Releases](https://github.com/chenchaoyi/gtmux/releases) |
 
 ## 安装脚本
 
@@ -37,54 +19,88 @@ brew install --cask gtmux-app
 curl -fsSL https://ccy.pub/gtmux/install | bash
 ```
 
-校验过 checksum 的二进制装到 `~/.local/bin/gtmux`，菜单栏 app 一并装上。可选项：
+另一个官方入口是 `https://ccy.dev/gtmux/install`。两者都会验证发行清单签名，再校验安装器和下载文件；签名不符时停止安装。原始发行包保留在 GitHub。
 
-- `GTMUX_NO_APP=1`：不装菜单栏 app，只要 CLI。
-- `GTMUX_APP_LOGIN=1`：开机自启 app。
-- `GTMUX_VERSION=vX.Y.Z`：锁定版本。
+CLI 装到 `~/.local/bin/gtmux`。macOS 上会同时安装并打开 `~/Applications` 中的菜单栏 App；若已有 `/Applications` 安装，则更新原位置。脚本不安装 tmux，Mac 上可用 `brew install tmux` 补齐。你使用的 coding agent 也需要先安装并登录。
 
-这些变量要放在执行安装脚本的 `bash` 前面，不能只传给 `curl`：
+出现 `gtmux: command not found` 时，按安装器提示把下面一行加入 shell 配置，再开新终端：
+
+```sh
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+安装选项要传给执行脚本的 `bash`：
 
 ```sh
 curl -fsSL https://ccy.pub/gtmux/install | GTMUX_NO_APP=1 bash
+curl -fsSL https://ccy.pub/gtmux/install | GTMUX_VERSION=vX.Y.Z bash
 ```
 
-从源码安装（需含安全修复的稳定版 Go 1.26.10／1.27.3 或更新版本，只安装 CLI）：
+将 `vX.Y.Z` 换成已发布的标签。`GTMUX_NO_APP=1` 只装 CLI，`GTMUX_APP_LOGIN=1` 会开启 App 登录自启。手动下载时按系统和架构选择压缩包；`Gtmux-<版本>-macos.zip` 是 Mac App，CLI 有单独的包。
+
+## 用 doctor 配置
+
+```sh
+gtmux doctor
+```
+
+检查结果按所影响的功能分组。交互终端中发现问题时，会询问「现在查看可修复项？」；确认后逐项解释并询问是否应用，也可直接运行：
+
+```sh
+gtmux doctor --fix
+```
+
+它可以配置 tmux 标题和 pane 标签、历史缓冲与会话恢复、快照插件和自动保存，以及本机已安装 agent 的受支持 hook；也会提出相关 agent 设置和缺失 App／依赖的处理步骤。每项改动都先解释再确认，需单独授权或手动完成的事项会留在报告里。gtmux 管理块以外的设置会保留，修改 tmux 配置前会保存 `.gtmux.bak`。
+
+tmux 未安装时先安装；没有运行中的服务时，用 `tmux new -s work` 创建会话再重试。socket 权限错误需先解决，不能改用另一用户运行 gtmux 来绕过。
+
+修复后再跑一次 `gtmux doctor`。**✗** 是影响功能的问题，**⚠** 是建议，**✓** 是检查通过，**·** 是信息。看清剩余检查及其操作提示，「已应用修复」仍可能有未处理的建议。hook「已配置」只说明文件已保存，agent 要在下次正常启动时加载；doctor 不会重启正在运行的会话。
+
+只检查、不询问时用 `gtmux doctor --no-prompt` 或 `gtmux doctor --json`。Mac App 也有「偏好设置 → 通用 → 运行环境检查」。仍有问题可先看 `gtmux logs --since 1h`；`gtmux doctor --bundle` 会在本地生成诊断包，发送前可先检查内容。
+
+只配置某个 agent 可用 `gtmux install hooks --agent codex`，将 key 换成所需 agent；`--agent auto` 为已安装且受支持的 CLI 配置，不带 `--agent` 默认是 Claude Code。key 和加载要求见 [Agent 接入](guides/agent-integrations.zh.md)。DSH 自带的 Cordis 模块需在下次启动 Web 时使用打印的覆盖参数。
+
+## Homebrew（macOS）
+
+```sh
+brew install chenchaoyi/tap/gtmux
+brew install --cask chenchaoyi/tap/gtmux-app
+```
+
+CLI 以 Homebrew cask 分发。App 默认装到 `/Applications`，可通过 Homebrew 的 `--appdir` 调整。升级用 `brew upgrade gtmux` 和 `brew upgrade --cask gtmux-app`。
+
+<a id="platform-support"></a>
+
+## 平台支持与源码构建
+
+同一安装器支持 macOS、Linux 的 amd64 和 arm64，Linux 会自动跳过 App。tmux 通过系统包管理器安装，gtmux 与 tmux 会话使用同一用户运行。桌面跳转、菜单栏 App 和合盖控制仅适用于 macOS。Linux 发行包仍可从 [GitHub Releases](https://github.com/chenchaoyi/gtmux/releases) 下载。
+
+源码构建需要含安全修复的稳定版 Go（1.26.10／1.27.3 或更新）：
 
 ```sh
 go install github.com/chenchaoyi/gtmux/cmd/gtmux@latest
 ```
 
-普通源码构建不含官方托管隧道的注册凭据和推送中继凭据。需要这些服务时使用正式发布版，
-或按[隧道设计文档](design/remote-access-tunnel.zh.md)和[推送中继说明](../relay/README.md)配置自己的服务。
+源码构建只装 CLI，不含官方托管隧道的注册凭据和推送中继凭据。需要这些服务时使用正式发行包；自建方式见[隧道设计](design/remote-access-tunnel.zh.md)和[中继参考](../relay/README.zh.md)。
 
-之后用 `gtmux update` 升级；它也会尝试重启已加载的 serve 和 Direct 隧道服务，让它们使用新二进制。
+## 更新或卸载
 
-自动更新按组件保留更高或未知版本；缓存索引可能落后于 GitHub。现有 `GTMUX_VERSION`
-仍可明确指定版本重装或降级。可选 App 失败后，已装好的 CLI 保留，退出码 3 表示
-App 步骤未完成；旧 App 重试 `gtmux update`，未安装时用 `gtmux install app`。详见[更新规则](cli.zh.md#安装与更新命令)。
+`gtmux update` 更新 CLI 和菜单栏 App，并尝试重启已加载的 serve、Direct 隧道服务以使用新二进制。组件版本更高时保留，未知版本不自动替换。`GTMUX_VERSION` 可明确指定版本，包括降级。详见[更新规则](cli.zh.md#安装与更新命令)。
 
+CLI 安装后返回退出码 3，表示可选的 App 步骤失败。旧 App 可重试 `gtmux update`；未安装时用 `gtmux install app`。
 
-脚本装在 `~/Applications` 里的 app，用 `gtmux uninstall app` 删除菜单栏 app 及登录项。
-`gtmux uninstall hooks` 摘掉 agent hook，`gtmux uninstall all` 两个都做；这些命令会保留
-CLI 二进制和 gtmux 的已有记录。Homebrew 安装的还需用 `brew uninstall --cask gtmux-app`
-删除 app（通常在 `/Applications`），用 `brew uninstall --cask gtmux` 删除 CLI。
+`gtmux uninstall app` 删除脚本安装的 App 和登录项，`gtmux uninstall hooks` 删除 gtmux 的 agent hook。`gtmux uninstall all` 两者都做，保留 CLI 二进制和已有记录。Homebrew 安装则用 `brew uninstall --cask gtmux-app` 和 `brew uninstall --cask gtmux` 删除对应组件。
 
-## 官方镜像与 GitHub 兜底
+## 下载失败
 
-两个官方短网址现已可用：`https://ccy.pub/gtmux/install` 和 `https://ccy.dev/gtmux/install`。短 bootstrap 从自有下载域读取并验证签名清单，再校验安装脚本和每个压缩包；签名异常停下，不自动降低验证标准。包含这项实现的原生更新器使用同一公钥在 Go 内校验，从不执行远端脚本；已有二进制在升级前仍沿用原来的更新通道。官方源网络不可用时保留原有 GitHub 通道；已有签名清单时，兜底下载仍必须匹配其摘要和大小。
-
-构建、存储、来源与运维边界见[托管说明](release-hosting.zh.md)。短入口需要 OpenSSL／LibreSSL，macOS 自带 LibreSSL。旧版安装器、Homebrew 和显式覆盖仍沿原通道运行。需要强制 GitHub 或第三方代理时，从 GitHub 取得完整安装器：
+先尝试另一个官方安装域名。短入口需要 OpenSSL／LibreSSL，macOS 自带 LibreSSL。确需使用 GitHub 原安装器或代理时，可用：
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | GTMUX_INSTALL_MIRROR=ghproxy bash
-curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | GTMUX_INSTALL_MIRROR=https://my.mirror/ bash
 curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | GTMUX_INSTALL_MIRROR=github bash
+curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | GTMUX_INSTALL_MIRROR=ghproxy bash
 ```
 
-`ghproxy` 下载发布压缩包时直接走镜像链，校验文件仍先尝试 GitHub。
-将 `https://my.mirror/` 换成自己的代理前缀；此模式先尝试 GitHub，再尝试 `<前缀><github-url>`。
-`github` 禁用镜像兜底。这些选项只影响安装脚本发起的下载，不影响管道前面的 `curl`。
+`github` 禁用镜像兜底；`ghproxy` 下载发行包时使用镜像链，校验文件仍先尝试 GitHub。这些选项不影响管道前面的 `curl`。取得签名清单后，兜底文件也必须符合其摘要和大小。校验及运维边界见[发行托管说明](release-hosting.zh.md)。
 
 ## 换一台 Mac
 

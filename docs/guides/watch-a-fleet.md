@@ -6,7 +6,7 @@ order: 1
 
 **English** · [中文](watch-a-fleet.zh.md)
 
-This guide covers running coding agents in tmux, setting up status reporting and opening a session that needs your input.
+After [installation and doctor](../../README.md#get-connected), use this guide to run agents in tmux, inspect their status and restore sessions.
 
 ## Run each agent in its own tmux pane
 
@@ -41,8 +41,7 @@ gtmux install hooks --agent codex
 
 Without `--agent` it sets up Claude Code only. Repeat for the agents you use: `gemini`,
 `cursor`, `opencode`, `kimi`, `copilot` or `kiro`. An agent that was already running picks
-the hook up after a restart. `gtmux doctor --fix` offers the hook for Claude Code, and for
-Codex and Kimi Code when it finds them; the others need the command above.
+the hook up after a restart. `gtmux doctor --fix` offers hooks for supported installed agents. You can also use `gtmux install hooks --agent auto`; see [agent setup](agent-integrations.md) for each integration’s loading requirements.
 
 For agents with process detection, gtmux can read fallback state without a hook from
 the pane title, screen and CPU sampling, with less detail (a live Codex approval menu still shows as
@@ -59,7 +58,7 @@ Or keep it in view: the menu-bar app (installed by the install script, or
 `⌘⌥G`, and posts a notification when an agent needs you. The iPhone and iPad app shows the
 same radar. See [Manage from your phone and the web](phone-and-web.md).
 
-![The radar on iPhone: one agent waiting for permission at the top, then working, idle and running agents, and a native session under Elsewhere](img/watch-a-fleet-radar-en.jpg)
+![The terminal radar, rendered from real CLI output with example sessions](img/terminal-agents-en.png)
 
 ## See every tmux pane
 

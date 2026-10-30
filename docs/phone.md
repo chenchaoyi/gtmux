@@ -4,12 +4,11 @@
 
 This reference covers remote connections, device permissions, notification requirements and troubleshooting.
 
-**Connecting an iPhone, iPad or browser for the first time?** Follow
-[Use your phone, iPad and browser](guides/phone-and-web.md) for setup, daily use and sharing.
+**Connecting an iPhone, iPad or browser for the first time?** Follow [Get connected](../README.md#3-connect-your-phone-or-browser), then use the [device guide](guides/phone-and-web.md) for everyday controls and sharing.
 
 ## Server platforms
 
-Pair with a macOS or Linux host running gtmux. The server list, routes, sharing, terminal/chat and HQ use that host's state. Linux does not offer desktop window focus or lid controls. [Linux setup](linux.md).
+Pair with a macOS or Linux host running gtmux. The server list, routes, sharing, terminal/chat and HQ use that host's state. Linux does not offer desktop window focus or lid controls.
 
 ## Connection methods
 

@@ -25,12 +25,7 @@ tunnel types.
 
 ## Install gtmux on the other computer
 
-On another Mac, use the [install script or Homebrew](../install.md). On Linux, build the CLI
-from source with Go 1.26 or newer:
-
-```sh
-go install github.com/chenchaoyi/gtmux/cmd/gtmux@latest
-```
+Use the [official installer](../install.md) on the other computer too; set `GTMUX_NO_APP=1` for CLI-only installation. The installer selects the matching macOS or Linux archive.
 
 Use an interactive terminal: Ghostty, iTerm2, Terminal, or whatever your Linux desktop has.
 

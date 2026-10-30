@@ -205,7 +205,7 @@ over one Go core (gtmux-core is the single data source):
 
 ## Platform support
 
-The cgo-free CLI/server supports macOS and Linux amd64/arm64; the native menu-bar app remains macOS-only. See `docs/linux.md` / `.zh.md`. Platform behavior belongs in adapters: `internal/userservice` (launchd/systemd), `internal/resource/host_*.go` + samplers, `internal/hostinfo/platform_*.go`, `internal/hostplatform` (capability facts), and `internal/terminal/Headless`. Do not add growing GOOS branches to enrollment, routes, HQ or UI code. Future Unix support needs its own adapters and runtime tests, not merely another release target. Preserve per-user tmux identity and never restart agent work when updating serve.
+The cgo-free CLI/server supports macOS and Linux amd64/arm64; the native menu-bar app remains macOS-only. See platform compatibility in `docs/install.md` / `.zh.md`. Platform behavior belongs in adapters: `internal/userservice` (launchd/systemd), `internal/resource/host_*.go` + samplers, `internal/hostinfo/platform_*.go`, `internal/hostplatform` (capability facts), and `internal/terminal/Headless`. Do not add growing GOOS branches to enrollment, routes, HQ or UI code. Future Unix support needs its own adapters and runtime tests, not merely another release target. Preserve per-user tmux identity and never restart agent work when updating serve.
 
 ## Build & verify
 
@@ -470,8 +470,8 @@ checklist** (a reviewer confirms them before squash-merge — they can't be full
 - **Documentation ownership** (2026-10-08): this repo is the ONE source of user documentation —
   the README pair, the user docs under `docs/`, and the guides in `docs/guides/` (frontmatter
   `title`/`description`/`order`, no `# ` H1 in the body, images `img/<slug>-<frame>-<en|zh>.jpg`; the
-  site depends on that layout). ccy.dev renders them from the latest release tag (Deploy table)
-  and owns only its landing, privacy, support and Direct pages. Fix a guide here, never on the
+  site depends on that layout). ccy.dev renders them from a release tag, or a reviewed immutable main commit for
+  documentation-only updates, and owns only its landing, privacy, support and Direct pages. Fix a guide here, never on the
   site.
 - **DESIGN DOCS ARE BILINGUAL TOO** (2026-09-13; they were Chinese-first before). Every
   `docs/design/<name>.md` is English with a `<name>.zh.md` twin, same rule as user docs:
