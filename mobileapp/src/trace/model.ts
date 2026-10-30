@@ -89,6 +89,22 @@ export function build(
   const groups = new Map<string, TraceSession>(),
     occurrences = new Map<string, number>(),
     turnCounts = new Map<string, number>();
+  // Old servers can omit both clocks and record IDs. Only ambiguous prompts
+  // need a content fallback; a single streaming turn must retain its identity.
+  const clockless = new Map<string, number>();
+  list(turns).forEach(raw => {
+    const turn = object(raw);
+    if (!turn || string(turn.record_id) || string(turn.time)) return;
+    const scope =
+      string(ctx.home_id) +
+      '\x00' +
+      (string(turn.session_id) ||
+        string(ctx.session_id) ||
+        string(ctx.pane_id) ||
+        'current');
+    const value = scope + '\x00' + string(turn.prompt);
+    clockless.set(value, (clockless.get(value) || 0) + 1);
+  });
   list(turns).forEach((raw, sourceIndex) => {
     const turn = object(raw);
     if (!turn) return;
@@ -110,7 +126,17 @@ export function build(
     turnCounts.set(scope, ordinal);
     const prompt = string(turn.prompt),
       time = string(turn.time),
-      identity = scope + '\x00' + time + '\x00' + prompt;
+      identity =
+        scope +
+        '\x00' +
+        (string(turn.record_id) || time) +
+        '\x00' +
+        prompt +
+        (!string(turn.record_id) &&
+        !time &&
+        (clockless.get(scope + '\x00' + prompt) || 0) > 1
+          ? '\x00' + JSON.stringify([turn.response, turn.segments])
+          : '');
     const occurrence = occurrences.get(identity) || 0;
     occurrences.set(identity, occurrence + 1);
     const key = digest(identity) + '-' + occurrence;

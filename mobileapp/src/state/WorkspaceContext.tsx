@@ -12,7 +12,7 @@ import React, {createContext, useCallback, useContext, useMemo, useState} from '
 import {Agent} from '../api/types';
 import {SizeClass} from '../ui/layout';
 
-export type HQResourceRequest = {page: 'usage' | 'knowledge'; at: number};
+export type HQResourceRequest = {page: 'usage' | 'knowledge' | 'board'; at: number};
 
 export type Selection =
   | {kind: 'pane'; agent: Agent; mode?: 'chat' | 'terminal'; openDiff?: boolean}

@@ -1562,3 +1562,12 @@ open with file scripts disabled and external resource loads blocked. Running scr
 requires explicit per-file native consent; interactive scripts must not be represented
 as universally network-isolated (for example, WebRTC may use non-HTTP networking).
 See [native preview design](../docs/design/conversation-documents.md).
+
+### GET /api/hq/workspace
+
+Owner/master or full paired device only; guests receive 403. Read-only, `Cache-Control: no-store`.
+With no query, returns schema 1 with `schema`, `revision`, `matters` and `overview` from the stored projection shared with `gtmux hq workspace list --overview --json` (explicit matters and the core's needs-input/following/recent projection). Assessment bodies stay in selected detail. The remote overview does not scan the roster or historical transcript sources. `?matter=ID[&before=SEQ]` returns the same matter detail as `workspace show`, with at most 60 saved messages and its `message_earlier_available` / `earlier_before` cursor. A page replaces the previous page; clients need not retain unbounded history. Reads never drain delivery queues, acknowledge event watermarks, follow participants or write records. No global/activity/participant or mutation HTTP surface is added.
+
+Missing matter: 404; invalid scope/cursor: 400; unsupported method: 405; server without the adapter: 501. A client may retain its legacy HQ page on a list 404/501. Other failures are unread answers, not an empty workspace. Responses are limited to 8 MiB; failures do not expose local source paths. Identity remains agent + home + session; pane is only a display hint.
+
+Transcript turns may additionally carry `record_id`, an opaque, session-scoped source-position identifier. Readers prefer it to prompt/time occurrence counts so repeated prompts and clockless records remain distinct through tail reads, streaming and history expansion. It is not an input target or authority to read files. Older servers may omit it; readers retain the legacy time identity and use recorded content for clockless fallback.

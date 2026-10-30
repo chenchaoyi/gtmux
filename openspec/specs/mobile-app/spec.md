@@ -425,6 +425,10 @@ center SHALL be built from what only the supervisor knows, NOT from a second ren
 the radar. It SHALL NOT list the fleet session-by-session: the per-session list belongs to
 the radar, and repeating it here adds no information.
 
+The command-center behavior below applies to the existing console and to the legacy
+HQ page on servers without the shared workspace read adapter. Current servers open
+the matter overview described below; its Talk to HQ action enters this console.
+
 **The standing header SHALL carry the supervisor's judgment and nothing else** — the
 page's identity, its connection state, and the one-line verdict. Everything else the
 header once carried standing (fleet counts, subscription window, resource line, the board
@@ -2639,3 +2643,22 @@ The floating Collapse all control SHALL reserve a plain 44pt conversation-backgr
 - **WHEN** messages scroll below the global fold action
 - **THEN** message glyphs do not overprint its label
 - **AND** the action remains a minimum 44pt target and still toggles all replies
+
+### Requirement: Mobile HQ uses the shared matter overview
+The App SHALL offer Needs input, Following and recent changes from the authoritative HQ workspace read projection. It SHALL stack groups in narrow panes and place them side by side only when the available content width permits. A matter reader SHALL show explicit assessment, participants and paged saved updates; receipt delivery MUST NOT imply completion. Talk to HQ, resources, drafts, composer and session tools SHALL retain the existing console behavior.
+
+#### Scenario: A matter is opened without sending an instruction
+- **WHEN** an owner opens a matter and chooses Ask HQ
+- **THEN** the existing HQ console opens with an editable prefill and sends nothing automatically
+
+#### Scenario: A historical participant's pane was reused
+- **WHEN** the original agent/home/session no longer matches the live roster or its membership ended
+- **THEN** the participant remains readable metadata and cannot open the new occupant of that pane
+
+#### Scenario: An old or temporarily unreachable server
+- **WHEN** the workspace list returns 404 or 501
+- **THEN** the App retains the legacy HQ page
+- **WHEN** refreshing fails transiently
+- **THEN** the last overview remains with a retry action
+- **WHEN** access is revoked
+- **THEN** private overview and matter content are cleared

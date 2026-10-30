@@ -1,3 +1,4 @@
+import {demoHQWorkspace, demoHQMatter} from './demoHQWorkspace';
 import {DocumentError} from '../documents/references';
 import {serverNowSec} from '../api/clock';
 // demoClient — a FAKE GtmuxClient for the Demo tour. It answers the handful of
@@ -218,6 +219,8 @@ export function makeDemoClient(lang: 'en' | 'zh', onAgents?: (agents: Agent[]) =
     // The supervisor's own assessment + the fleet ledger — the two things the HQ
     // page shows that the radar can't, so Demo must answer them or it demos a
     // blank page.
+    async hqWorkspace() {return demoHQWorkspace(lang === 'zh', started, phase);},
+    async hqMatter(id: string) {return demoHQMatter(id, lang === 'zh', started, phase);},
     async hqBoard(): Promise<HQBoard> {
       return phase === 'waiting' ? initialBoard : demoBoard(lang === 'zh', currentAgents());
     },

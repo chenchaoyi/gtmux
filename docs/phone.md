@@ -172,3 +172,9 @@ HQ and readable external conversations; external sessions stay read-only.
 
 Trace shows recorded inputs and summaries. It cannot supply absent tool outputs, model
 request timing or token usage. The disclosure **About these records** explains this scope.
+
+## HQ overview
+
+HQ opens a matter overview on current servers: **Needs input**, **Following**, and changes from the last 24 hours. Open a matter to read its assessment, participants and saved updates. Participant links open only the same live agent/home/session; a historical pane number never selects a new occupant. **Ask HQ** prepares a message for review in the existing console. It does not send it.
+
+**Talk to HQ** opens the conversation and its composer, Trace and Diff tools. Board, knowledge and usage remain available under **Resources**. Older servers keep the previous HQ page. Refresh failures retain the last overview with a retry; revoked access clears private content. Delivery receipts describe delivery, not task completion.

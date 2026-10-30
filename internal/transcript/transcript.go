@@ -10,6 +10,7 @@ package transcript
 
 import (
 	"bufio"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
@@ -386,6 +387,9 @@ type Step struct {
 // Turn is one user instruction and what the agent ultimately answered, with the
 // intermediate tool calls folded into Steps.
 type Turn struct {
+	// RecordID is an opaque source-position identity for readers, never an input capability.
+	RecordID string `json:"record_id,omitempty"`
+
 	// PromptMessageSeq identifies a DSH public append for server-side attribution.
 	// It is parser evidence, never a client-facing field or an input capability.
 	PromptMessageSeq *int64 `json:"-"`
@@ -544,6 +548,8 @@ func resolveLog(agent, sessionID string) (string, stepFn) {
 // parseState accumulates turns as a parser walks the log linearly, tracking the
 // byte offset at which each turn began so the cache can restart incrementally.
 type parseState struct {
+	sourceID string
+
 	turns               []Turn
 	turnStarts          []int64 // turnStarts[i] = byte offset of turns[i]'s first line
 	cur                 *Turn
@@ -566,6 +572,9 @@ func (st *parseState) flush() {
 			}
 		}
 		st.cur.Response = strings.Join(texts, "\n\n")
+		if st.cur.RecordID == "" && st.sourceID != "" {
+			st.cur.RecordID = fmt.Sprintf("%s:%d", st.sourceID, st.curStart)
+		}
 		st.turns = append(st.turns, *st.cur)
 		st.turnStarts = append(st.turnStarts, st.curStart)
 		if st.turnCap > 0 && len(st.turns) > st.turnCap {
@@ -681,7 +690,7 @@ func parseTurns(path string, startOffset int64, step stepFn) ([]Turn, int64, int
 		first, _ := r.ReadString('\n')
 		off += int64(len(first))
 	}
-	st := &parseState{off: off}
+	st := &parseState{off: off, sourceID: recordSourceID(path)}
 	for {
 		line, rerr := r.ReadString('\n')
 		if len(line) > 0 {
@@ -884,4 +893,10 @@ func fileIno(fi os.FileInfo) uint64 {
 		return uint64(st.Ino)
 	}
 	return 0
+}
+
+// No source path leaves the parser; different rollout shards can reuse offsets.
+func recordSourceID(path string) string {
+	sum := sha256.Sum256([]byte(path))
+	return fmt.Sprintf("log-%x", sum[:12])
 }

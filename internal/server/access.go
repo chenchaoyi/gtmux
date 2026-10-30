@@ -52,7 +52,7 @@ var accessRoutes = map[string]string{
 	"/api/participant-profile": "conversation",
 	"/api/agents":              "sessions", "/api/panes": "sessions", "/api/digest": "hq",
 	"/api/pane": "terminal", "/api/input-capabilities": "terminal", "/api/transcript": "conversation", "/api/session/transcript": "conversation",
-	"/api/diff": "terminal", "/api/usage": "usage", "/api/hq/board": "hq", "/api/hq/events": "hq",
+	"/api/diff": "terminal", "/api/usage": "usage", "/api/hq/board": "hq", "/api/hq/workspace": "hq", "/api/hq/events": "hq",
 	"/api/hq/knowledge": "knowledge", "/api/hq/knowledge/entry": "knowledge", "/api/hq/memory": "archive_export",
 	"/api/push/tokens": "notification_read",
 	"/api/host":        "settings", "/api/addresses": "settings", "/api/share": "settings", "/api/share/config": "settings",

@@ -749,3 +749,14 @@ semantics, Escape/focus return and desktop/touch target sizes SHALL remain effec
 - **WHEN** a reader opens Settings at 320px and selects System
 - **THEN** all categories and choices remain reachable without page overflow
 - **AND** system changes update appearance while explicit Light or Dark overrides them
+
+### Requirement: Trace navigation preserves system shortcuts and record identity
+Trace keyboard navigation SHALL handle unmodified direction/Home/End keys without consuming Alt/Control/Command combinations. Trace readers SHALL prefer opaque recorded source identities to prompt/time occurrence counts. For older clockless data with repeated prompts, recorded content SHALL distinguish otherwise ambiguous turns without changing a single streaming turn's key.
+
+#### Scenario: Modified direction key in event details
+- **WHEN** the reader presses Command-Left, Control-Home or Alt-Right
+- **THEN** the component does not change the selected detail or consume the shortcut
+
+#### Scenario: Repeated prompts across loaded history
+- **WHEN** earlier or later turns are loaded around a selected repeated prompt
+- **THEN** its source-identified tool detail remains associated with the same recorded turn

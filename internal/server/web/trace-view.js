@@ -243,14 +243,14 @@
       updateStatus();
     }, {passive: true});
     list.onkeydown = function (event) {
-      if (!event.target.matches('.trace-event') || !['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
+      if (event.altKey || event.ctrlKey || event.metaKey || !event.target.matches('.trace-event') || !['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
       var index = filtered.findIndex(function (item) { return item.key === event.target.dataset.key; });
       index = event.key === 'Home' ? 0 : event.key === 'End' ? filtered.length - 1 : Math.max(0, Math.min(filtered.length - 1, index + (event.key === 'ArrowUp' ? -1 : 1)));
       event.preventDefault(); stopFollowing(); selected = filtered[index].key; reveal(filtered[index]); page = Math.floor(positionFor(filtered[index]) / pageSize); renderList(true); inspect(filtered[index], false); rowNodes.get(selected).focus({preventScroll: true});
     };
     scrub.oninput = function () { follow = false; var event = filtered[Number(scrub.value)]; if (!event) return; selected = event.key; reveal(event); page = Math.floor(positionFor(event) / pageSize); renderList(true); inspect(event, false); var row = rowNodes.get(event.key); if (row) row.scrollIntoView({block: 'nearest'}); };
     modes.onkeydown = function (event) {
-      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+      if (event.altKey || event.ctrlKey || event.metaKey || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
       var tabs = [overviewTab, preview, source, origin], index = tabs.indexOf(document.activeElement);
       if (index < 0) return;
       index = event.key === 'Home' ? 0 : event.key === 'End' ? 3 : (index + (event.key === 'ArrowLeft' ? 3 : 1)) % 4;

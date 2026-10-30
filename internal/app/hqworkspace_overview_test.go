@@ -37,3 +37,37 @@ func TestWorkspaceOverviewIsExplicitlyRequestedAndDoesNotEnlargeSidebarMatters(t
 		}
 	}
 }
+
+func TestWorkspaceHTTPReadReusesExplicitStateWithoutWriting(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("PATH", t.TempDir())
+	s := workspaceStore()
+	_, err := s.Register("read-only-goal", "Existing goal", "Decision needed", "needs-input", hqworkspace.Origin{Kind: "task", Ref: "original-task"}, 100)
+	if err != nil {
+		t.Fatal(err)
+	}
+	before, err := s.Read()
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := workspaceHTTPRead("", 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var list workspaceList
+	if err = json.Unmarshal(raw, &list); err != nil || list.Overview == nil || len(list.Overview.NeedsInput) != 1 || list.Matters[0].Assessment != "" {
+		t.Fatal(string(raw), err)
+	}
+	raw, err = workspaceHTTPRead("read-only-goal", 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var detail workspaceDetailReport
+	if err = json.Unmarshal(raw, &detail); err != nil || detail.Matter == nil || detail.Matter.State != "needs-input" || len(detail.Messages) != 1 {
+		t.Fatal(string(raw), err)
+	}
+	after, err := s.Read()
+	if err != nil || after.Revision != before.Revision || len(after.Messages) != len(before.Messages) {
+		t.Fatal("read changed workspace", err)
+	}
+}

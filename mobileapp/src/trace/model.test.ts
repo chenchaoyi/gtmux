@@ -199,3 +199,12 @@ test('recorded context preserves prefix and interleaved order without becoming a
   }).events;
   expect(appended.at(-5)!.key).toBe(index.events[0].key);
 });
+
+test('source positions disambiguate repeated prompts through prepend, append and streaming', () => {
+  const turn = (id: string, response = '') => ({record_id: id, session_id: 'same', prompt: 'Continue', response});
+  const before = build([turn('log:10'), turn('log:20')]).events;
+  const after = build([turn('log:0'), turn('log:10'), turn('log:20', 'Streamed'), turn('log:30')]).events;
+  expect(after.find(e => e.sourceIndex === 2 && e.kind === 'user')?.key).toBe(before[1].key);
+  const clockless = (response: string) => ({prompt: 'Continue', response});
+  expect(build([clockless('Older'), clockless('Current')]).events.at(-1)?.key).toBe(build([clockless('Oldest'), clockless('Older'), clockless('Current')]).events.at(-1)?.key);
+});

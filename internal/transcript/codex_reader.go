@@ -124,7 +124,7 @@ func (l *Loader) loadCodexFile(path string, maxTurns int) ([]Turn, error) {
 	if err != nil {
 		return nil, err
 	}
-	st := &parseState{turnCap: cacheTurnCap}
+	st := &parseState{turnCap: cacheTurnCap, sourceID: recordSourceID(path)}
 	start := int64(0)
 	if hit != nil && hit.file != nil && os.SameFile(hit.file, fi) {
 		if fi.Size() == hit.size && fi.ModTime().Equal(hit.mtime) {

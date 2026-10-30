@@ -56,11 +56,9 @@ func workspaceCandidates() []workspaceCandidate {
 	return rows
 }
 
-func workspaceSnapshot(s *hqworkspace.Store, include bool, now int64) (workspaceList, error) {
-	d, err := s.Read()
-	if err != nil {
-		return workspaceList{}, err
-	}
+// The stored projection is shared by desktop and mobile. Remote overview reads do
+// not need roster discovery, historical transcript scans or source revisions.
+func workspaceStoredSnapshot(d hqworkspace.Database, include bool, now int64) workspaceList {
 	matters := hqworkspace.Matters(d)
 	for i := range matters {
 		matters[i].Assessment = ""
@@ -70,6 +68,15 @@ func workspaceSnapshot(s *hqworkspace.Store, include bool, now int64) (workspace
 		brief := hqworkspace.BuildOverview(d, now)
 		out.Overview = &brief
 	}
+	return out
+}
+
+func workspaceSnapshot(s *hqworkspace.Store, include bool, now int64) (workspaceList, error) {
+	d, err := s.Read()
+	if err != nil {
+		return workspaceList{}, err
+	}
+	out := workspaceStoredSnapshot(d, include, now)
 	for _, c := range workspaceCandidates() {
 		if c.Supervisor {
 			copy := c
@@ -517,4 +524,30 @@ func workspaceDistinctReply(turn *transcript.Turn, message string, messages map[
 		return nil
 	}
 	return &copy
+}
+
+// workspaceHTTPRead deliberately exposes reads only. It reuses the CLI builders,
+// including explicit matter states, exact membership and bounded message pages.
+func workspaceHTTPRead(matter string, before uint64) ([]byte, error) {
+	var value any
+	var err error
+	if matter == "" {
+		var d hqworkspace.Database
+		d, err = workspaceStore().Read()
+		if err == nil {
+			snapshot := workspaceStoredSnapshot(d, true, time.Now().Unix())
+			value = struct {
+				Schema   int                   `json:"schema"`
+				Revision uint64                `json:"revision"`
+				Matters  []hqworkspace.Matter  `json:"matters"`
+				Overview *hqworkspace.Overview `json:"overview"`
+			}{snapshot.Schema, snapshot.Revision, snapshot.Matters, snapshot.Overview}
+		}
+	} else {
+		value, err = workspaceDetail(workspaceStore(), matter, before, 0)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(value)
 }
