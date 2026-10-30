@@ -4,11 +4,11 @@
 
 本页说明远程连接方式、设备权限、通知条件和连接故障的排查方法。
 
-**第一次连接 iPhone、iPad 或浏览器？** 从[用手机、iPad 和浏览器管理](guides/phone-and-web.zh.md)开始，按步骤完成配对、日常操作和分享。
+**第一次连接 iPhone、iPad 或浏览器？** 先按[首页连接步骤](../README.zh.md#3-连接手机或浏览器)配对，再看[设备操作指南](guides/phone-and-web.zh.md)。
 
 ## 服务器平台
 
-可配对运行 gtmux 的 macOS 或 Linux 主机。服务器列表、线路、分享、终端／对话和 HQ 都读取所选主机的数据。Linux 不提供桌面窗口跳转、合盖控制；配置方式见 [Linux 指南](linux.zh.md)。
+可配对运行 gtmux 的 macOS 或 Linux 主机。服务器列表、线路、分享、终端／对话和 HQ 都读取所选主机的数据。Linux 不提供桌面窗口跳转、合盖控制。
 
 ## 连接方式
 

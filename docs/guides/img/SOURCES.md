@@ -31,3 +31,29 @@ These are native view captures with generic fixtures, not captures of the operat
 live sessions: three panes (`hq`, `api`, `worker`), five knowledge entries and two pending
 promotions. The knowledge image captures only the header and HQ card; the share image
 shows the permission picker before a link is created. No real code or credential is used.
+
+## Onboarding terminal and Web captures (2026-10-30)
+
+- `terminal-agents-en.png`, `terminal-agents-zh.png`: the real `agentsTable(readmeFleet())`
+  renderer from `internal/app/agents.go` and its existing test fixture at source
+  `9f891a8368ca`. A task-local Go test wrote the ANSI output; xterm from the embedded
+  Web client rendered it at 116 columns, Menlo 16px, in Chromium (1200×365). These are
+  terminal renderings of verified CLI output, not native terminal-window captures.
+  `TestREADMEAgentsSampleIsReal` also checks both accessible README text versions.
+- `web-workspace-en.png`, `web-workspace-zh.png`: the actual embedded Web assets at
+  `d182d8eb` (including the merged section-label fix), served by `tests/web/fixture.cjs` on a random loopback port.
+  Chromium used en-US / zh-CN respectively, at 1280×850. The synthetic enrollment
+  and sessions belong only to the fixture. No running gtmux, user pairing, agent
+  history or native test lane was used.
+
+- `menubar-agents-en.png`, `menubar-agents-zh.png`: current real `MenuView` rendered
+  through `NSHostingView.cacheDisplay` in an isolated SwiftPM capture test at the same
+  source. Three synthetic agents, isolated defaults, and a `GTMUX_BIN` fixture stub
+  prevent live session reads or actions. Capture bounds include the header, session
+  rows and local workspace action; the XCTest-host version footer is excluded.
+
+The overview's iPhone and iPad frames remain the corresponding real simulator captures above.
+Their captions identify the example data/date and avoid teaching superseded font
+buttons. The five overview sections each have a distinct surface image. Reviewed
+against current command help, `MenuView.swift`, mobile i18n and the Web fixture on
+2026-10-30. These captures do not establish physical-device or notification delivery.

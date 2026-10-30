@@ -12,8 +12,8 @@ It produces, under `docs/assets/`:
 
 | Image | Used in | How it's made |
 |---|---|---|
-| `readme-hero.jpg`, `readme-hero-dark.jpg` | README top image (light and dark) | `readme-hero.html`, one template for both themes |
-| `readme-screens.jpg`, `readme-screens-dark.jpg` | README "What it looks like" | `readme-screens.html`, same |
+| `readme-hero.jpg`, `readme-hero-dark.jpg` | Historical README composition (light and dark) | `readme-hero.html`, one template for both themes |
+| `readme-screens.jpg`, `readme-screens-dark.jpg` | Historical phone composition; no longer a separate docs gallery | `readme-screens.html`, same |
 | `screenshot-detail.png` | legacy phone-doc artwork | real simulator capture (Detail, Terminal) |
 | `screenshot-servers.png` | legacy phone-doc artwork | real simulator capture (connection page) |
 

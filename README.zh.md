@@ -15,86 +15,80 @@
 
 </div>
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme-hero-dark.jpg" />
-  <img src="docs/assets/readme-hero.jpg" width="100%" alt="菜单栏、终端、浏览器、iPad 和 iPhone 锁屏上的 gtmux" />
-</picture>
+gtmux 集中显示 tmux 中 coding agent 的状态：正在工作、等待回复或已经完成。你可以在 Mac 上打开对应会话，也可以从手机、iPad、浏览器或另一台电脑的终端继续操作。已有的 tmux 会话会自动识别，无需通过 gtmux 启动 agent。
 
-gtmux 集中显示 tmux 中 coding agent 的状态，包括 Claude Code、Codex、Gemini 和 Cursor。你可以查看哪些 agent 正在工作、等待回复或已完成，再打开对应 pane 操作。已有的 tmux 会话也会被识别，无需通过 gtmux 启动。
+第一次使用，先在运行 agent 的电脑上完成下面三步，再[选择日常使用的入口](#选择你的入口)。
 
-gtmux 的前提是每个 agent 各占一个 tmux pane。我们推荐 [Ghostty](https://ghostty.org) + tmux + gtmux 这套组合，没用过 tmux 可以先看官方的 [Getting Started](https://github.com/tmux/tmux/wiki/Getting-Started)。
+<a id="开始使用" data-doc-heading="安装并连接"></a><a id="快速上手" data-doc-heading="1. 下载并安装"></a>
 
-从[安装](#快速上手)开始，按需[配置](#配置)，再看[主要能力](#主要能力)、[上手指南](#上手指南)和[参考](#参考)。
+## 安装并连接
 
-## 开始使用
+### 1. 下载并安装
 
-### 快速上手
-
-安装脚本会同时装好 CLI 和菜单栏 app，桌面通知由 app 负责发。
+在 Mac 终端运行官方安装器，同时安装 CLI 和菜单栏 App：
 
 ```sh
 curl -fsSL https://ccy.pub/gtmux/install | bash
 ```
 
-另一个官方入口是 `https://ccy.dev/gtmux/install`。短安装脚本会验证发行清单的签名；GitHub 继续保留原始发行包。
+也可将命令中的地址换成 `https://ccy.dev/gtmux/install`，两个入口提供同一套签名发行包。安装器会验证发行清单和文件，把 CLI 装到 `~/.local/bin`，并打开菜单栏 App。装完找不到 `gtmux` 时，按安装器提示将该目录加入 PATH。
 
-用 Homebrew 的话，`brew install chenchaoyi/tap/gtmux` 装 CLI，`brew install --cask chenchaoyi/tap/gtmux-app` 装菜单栏 app。
+使用 Homebrew、手动下载、指定版本或只安装 CLI，见[安装选项](docs/install.zh.md)。
 
-运行环境检查，按提示配置 agent hook、focus 和 restore 所需的 set-titles、重启恢复及菜单栏 app。每项修改前都会征求确认。
+还需要 [tmux](https://github.com/tmux/tmux/wiki/Getting-Started)，以及已安装、已登录的 coding agent。macOS 可用 `brew install tmux` 安装 tmux。CLI／服务端支持 macOS 和 Linux 的 amd64、arm64；菜单栏 App、桌面跳转和合盖控制仅适用于 macOS。
+
+<a id="配置" data-doc-heading="2. 用 doctor 配置"></a>
+
+### 2. 用 doctor 配置
+
+安装后，在 Mac 终端运行：
 
 ```sh
 gtmux doctor
 ```
 
-菜单栏状态点会提示是否有 agent 等待回复。点击通知可打开对应 pane，`⌘⌥G` 可跳到等待中的 agent。也可以使用命令行：
+doctor 先检查环境。有可修复项时，回答「现在查看可修复项？」后逐项配置；也可直接运行 `gtmux doctor --fix`。每一步都会先解释改动，再询问是否应用。它会按本机情况补齐 tmux 标题、会话快照与自动保存、已安装 agent 的 hook、菜单栏 App 等设置；需要单独处理的权限或依赖会列出下一步。
+
+如果提示没有 tmux 服务，先用 `tmux new -s work` 创建会话，再从里面运行修复。结束后重新跑 `gtmux doctor`：先处理 **✗**，再按所需功能处理 **⚠**，**✓** 表示该项检查通过。hook 显示「已配置」不代表运行中的 agent 已加载，下次正常启动 agent 后才会生效。[doctor 说明与排障](docs/install.zh.md#用-doctor-配置)。
+
+### 3. 连接手机或浏览器
+
+保持主机唤醒、联网。需要从其他网络访问时，在 Mac 终端运行，并保持它运行：
 
 ```sh
-gtmux agents --watch         # 终端里的实时看板，回车跳到对应 pane
-gtmux app                    # 启动菜单栏 app（别名 menubar）
-gtmux update                 # 更新 CLI 和菜单栏 app
+gtmux tunnel
 ```
 
-菜单栏 app 已安装并运行时，`gtmux install hooks` 注册用于通知的 agent hook，Claude Code 以外的 agent 加上 `--agent codex|cursor|gemini|copilot|kiro|opencode|kimi|dsh`，也可用 `--agent auto` 自动识别支持的安装。
+首次运行时，按提示安装所需的隧道组件。它会启动所需服务并打印配对二维码。只在同一局域网使用时，改用 `gtmux serve`，再在另一个终端运行 `gtmux pair` 获取二维码。已有连接也可用 `gtmux pair` 生成新码。每个码只能用一次，5 分钟过期。
 
-想在手机上看，在可互通的局域网下跑 `gtmux serve`，或用 `gtmux tunnel` 提供可从其他网络访问的 HTTPS 地址（不用 VPN），再配对 iOS app。所在网络仍需允许这条连接，详见 [docs/phone.zh.md](docs/phone.zh.md)。
+在 iPhone 或 iPad 从 [App Store](https://apps.apple.com/app/id6791144062) 安装 gtmux，点「添加服务器 → 扫描配对二维码」，扫描 Mac 上的码，再打开保存的服务器。看到雷达即表示已连通。连接自己的浏览器时，打开 `gtmux pair` 打印的浏览器链接；每台设备都要生成新码。
 
-跳转功能（`focus`、`restore`、`new`）需要 macOS 加 [Ghostty](https://ghostty.org) 1.3+、iTerm2 或 cmux；Warp 尽力支持。`agents` 和 `overview` 在任何跑 tmux 的终端里都能用。身在中国大陆或 GitHub 访问不稳的话，看[安装说明](docs/install.zh.md)。
+也可在 Mac 菜单栏 App 的「偏好设置 → 远程访问」开启连接，再打开「配对设备…」。设备在同一可互通网络时选「局域网」，跨网络时选「任意网络」。网络不通、需要常驻连接或收不到通知，见[连接方式与排障](docs/phone.zh.md)。自己的设备用配对；给协作者用限定范围的[分享链接](docs/guides/phone-and-web.zh.md#把一个-pane-开给协作者)。
 
-### 主机平台
+<a id="主要能力" data-doc-heading="选择你的入口"></a><a id="五个入口" data-doc-heading="选择你的入口"></a><a id="上手指南" data-doc-heading="选择你的入口"></a><a id="长什么样" data-doc-heading="选择你的入口"></a>
 
-纯 Go CLI／服务端支持 **macOS 和 Linux（amd64、arm64）**。在 tmux 所在主机运行，即可从手机、iPad 或网页连接。菜单栏 App、桌面跳转和合盖控制仅适用于 macOS。Linux 的用户、socket、systemd 和无桌面运行方式见 [Linux 指南](docs/linux.zh.md)。
+## 选择你的入口
 
-DeepSeek Harness 统一身份，dst 适配器支持核验后的 pane 管理和原生目标输入，见 [DSH 指南](docs/guides/deepseek-harness.zh.md)。Web 对话仍作为外部历史只读查看。
-专用原生 Cordis 插件接入后续生命周期事件，本轮不包含 TUI 控制。见 [DSH 配置与边界](docs/guides/deepseek-harness.zh.md)。
+点击截图可查看原图。
 
-- [安装说明](docs/install.zh.md)：锁定版本、镜像和源码构建。
-- [Linux 部署](docs/linux.zh.md)：在无桌面环境的主机上运行。
+<a id="雷达" data-doc-heading="终端：查看状态和接回会话"></a>
 
-## 配置
+### 终端：查看状态和接回会话
 
-先按[快速上手](#快速上手)运行 `gtmux doctor`，再按需要配置：
+需要紧凑的状态列表，或要完整操作 tmux 会话时，用终端。每个 agent 各占一个 pane，例如用 `tmux new -s api 'claude'` 启动，再另开终端查看雷达：
 
-- [语言与持久设置](docs/cli.zh.md#gtmux-config少数几个不按次给的设置)：查看、修改各个 gtmux 进程共用的设置。
-- [Agent 接入与 hook](docs/guides/agent-integrations.zh.md)：接入你用的 agent，了解各自的支持边界。
-- [远程访问](docs/phone.zh.md)：使用手机或浏览器前，选择连接方式、配对设备并设置权限。
-
-配置好后，看[雷达](#雷达)了解日常操作，或跟着[上手指南](#上手指南)走一遍。
-
-## 主要能力
-
-### 五个入口
-
-- 在终端里，`gtmux agents` 列出所有 agent，`focus` 跳到 pane，`spawn` 给 agent 派活。
-- 菜单栏 app 常驻一个状态点，`⌘⌥G` 唤出面板，agent 等你时弹桌面通知；`⌥⌘4` 截图，标注后直接发给 agent。
-- iPhone 和 iPad app（[App Store](https://apps.apple.com/app/id6791144062)）有锁屏推送，能往 pane 里回话，还能用限定范围的链接把指定的 pane 交给协作者。
-- 网页版可在浏览器中查看雷达和 pane；已配对设备或访客链接获得输入权限后也能发送消息。
-- 在另一台电脑上，`gtmux attach` 把服务器上的 tmux 会话接到眼前的终端里。
-
-远程访问需要主机保持运行。在 macOS 上，`gtmux awake on` 经过一次管理员授权，让 Mac 合盖后继续运行，已经配好的 serve 和隧道才能继续应答。用电池时，30% 会提醒，20% 恢复睡眠；它不会替你开启远程访问。不带参数的 `gtmux awake` 只报告当前状态。
-
-### 雷达
-
+```sh
+gtmux agents --watch
 ```
+
+用 ↑/↓ 选择，按回车打开 pane。红色在等你，青色正在工作，绿色空闲，灰色表示已识别 agent、但回合状态未知。桌面跳转支持 Ghostty 1.3+、iTerm2 和 cmux；Warp 尽力支持。[启动 agent、查看状态与恢复会话](docs/guides/watch-a-fleet.zh.md)。
+
+[![终端渲染的 gtmux agents 输出，以示例会话展示等输入、运行中、空闲等状态](docs/guides/img/terminal-agents-zh.png)](docs/guides/img/terminal-agents-zh.png)
+
+<details>
+<summary>终端示例的文字版</summary>
+
+```text
 gtmux agent · 7 agent · 1 等输入 · 2 运行中 · 3 空闲 · 1 只有 shell
 
 ‖ 等输入   Claude Code  api:0.0                permission to run tests %7
@@ -108,43 +102,58 @@ gtmux agent · 7 agent · 1 等输入 · 2 运行中 · 3 空闲 · 1 只有 she
 跳转：gtmux focus <pane>   （例如 gtmux focus %7）
 ```
 
-按紧急程度排序。各端用同一套颜色：红色在等你，青色在跑，绿色空闲，灰色是识别出了 agent 进程，但还没有确定的回合状态。
+</details>
 
-装了 gtmux hook（agent 每轮开始和结束时调用的一小段回调）的 agent 会直接上报状态。在 tmux 里，gtmux 从命令、标题和进程树识别 agent；没有 hook 上报时，屏幕和 CPU 采样可以补充状态。tmux 之外，hook 提供只读观测，Codex 和 DSH 还可通过专用读取器发现已保存的历史，无需 hook。符合条件、空闲且已有记录的非 Codex 可恢复会话，可以用 `gtmux adopt <id>` 转入 tmux；外部 Codex 和 DSH 对话不能转入。
+从另一台电脑操作时，在那台电脑安装 CLI，执行主机上 `gtmux pair` 打印的 `gtmux attach '…'` 命令。以后用 `gtmux attach <host>` 选择 pane。按 `Ctrl-]` 或 tmux 的 `Ctrl-b d` 断开，远端会话继续运行。[远程终端操作](docs/guides/attach-from-anywhere.zh.md)。
 
-### HQ（中控）
+<a id="hq中控" data-doc-heading="终端：查看状态和接回会话"></a>
 
-`gtmux digest` 列出各 agent 最近收到的指令、回复摘要和等待的问题，无需调用模型。`gtmux hq` 在独立会话中启动 HQ，读取摘要和事件、协调其他 agent；有会话等待时，HQ 会收到提醒。你可以把跨会话的任务交给 HQ，并核对它采取的操作。
+需要跨会话摘要时，运行 `gtmux digest`；需要一个 agent 协调任务时，运行 `gtmux hq`，它使用你已安装的 agent CLI 和对应账号。[用 HQ 协调任务](docs/guides/hq-supervisor.zh.md)。
 
-### 长什么样
+### Mac 菜单栏：打开等待回复的会话
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme-screens-dark.jpg" />
-  <img src="docs/assets/readme-screens.jpg" width="100%" alt="手机上的四个页面：雷达、在 pane 里回复、HQ、用量" />
-</picture>
+运行 `gtmux app`，点击菜单栏标记或按 `⌘⌥G` 打开面板。选择 tmux agent，即可切到对应终端 pane。桌面通知也能打开对应 pane，需要 App 保持运行，并允许 macOS 通知。
 
-## 上手指南
+[![原生 Mac 菜单栏面板，显示等待回复、运行中和空闲的示例会话，以及本机工作台入口](docs/guides/img/menubar-agents-zh.png)](docs/guides/img/menubar-agents-zh.png)
 
-以下指南说明具体操作，并附界面截图：
+图为 2026-10-30 使用示例会话采集的原生菜单栏，底部可以打开浏览器工作台。按 `⌥⌘4` 可以截图、标注并发送给 agent。[菜单栏操作与会话跳转](docs/guides/watch-a-fleet.zh.md#跳到在等你的那个)。
 
-- [管理多个 coding agent](docs/guides/watch-a-fleet.zh.md)：启动 agent、查看状态并打开等待回复的 pane。
-- [使用 HQ 协调任务](docs/guides/hq-supervisor.zh.md)：启动中控，了解事件通知、决策范围、任务分派、知识库与迁移。
-- [用手机、iPad 和浏览器管理](docs/guides/phone-and-web.zh.md)：配对自己的设备、回复 agent、分享指定 pane。
-- [从任意电脑接回会话](docs/guides/attach-from-anywhere.zh.md)：从另一台电脑的终端连接 Mac 上的 tmux 会话。
+### iPhone：离开电脑后回复
 
-<a id="文档"></a>
+[连上设备](#3-连接手机或浏览器)后，点雷达中的 agent，阅读对话或终端，选择给出的答案或输入回复。允许 iOS 通知后，可以在 agent 等你或完成时收到提醒。
 
-## 参考
+<a href="docs/guides/img/watch-a-fleet-radar-zh.jpg"><img src="docs/guides/img/watch-a-fleet-radar-zh.jpg" width="360" alt="iPhone 雷达，等待回复的 agent 排在最上面，其后是正在工作和空闲的会话" /></a>
 
-- [各 Agent 接入机制](docs/guides/agent-integrations.zh.md)：内置接入的事件桥接、历史来源、安装方式与支持边界。
-- [CLI 与命令](docs/cli.zh.md)：所有命令、HQ、识别原理、各 agent 的 hook、tmux 按键绑定。
-- [远程访问参考](docs/phone.zh.md)：连接方式、权限、通知条件与故障排查。
-- [HQ 知识库](docs/knowledge.zh.md)：知识库存在哪、分几层、你自己能改什么。
-- [安装说明](docs/install.zh.md)：锁定版本、从源码构建、镜像。
-- [DeepSeek Harness](docs/guides/deepseek-harness.zh.md)：接入方式、会话身份与控制边界。
-- [设计文档](docs/design/README.zh.md)，在途变更在 `openspec/`。
+回复、附件、通知和协作者权限，见[手机操作与分享](docs/guides/phone-and-web.zh.md#在-app-里操作)。
 
-仓库结构和贡献说明在 [CONTRIBUTING.md](CONTRIBUTING.md)（英文）。
+### iPad：并排查看会话
+
+安装同一个 App Store App，为 iPad 生成新码配对。宽窗口下，雷达留在侧栏，选中的会话显示在主区。打开「所有 pane」还可以看到 shell 和编辑器；窄窗口使用手机布局。
+
+[![iPad 侧栏保留雷达，主区打开所有 pane](docs/guides/img/watch-a-fleet-panes-zh.jpg)](docs/guides/img/watch-a-fleet-panes-zh.jpg)
+
+共用操作见 [App 指南](docs/guides/phone-and-web.zh.md#在-app-里操作)。iPhone 和 iPad 图使用 App 模拟器中的示例会话，采集于 2026-10-08。
+
+### Web：在浏览器打开工作台
+
+在 Mac 菜单栏面板底部选择「打开本机工作台」，会在本机浏览器直接打开已配对的工作台，无需隧道。从另一台设备访问时，打开[第 3 步](#3-连接手机或浏览器)生成的新浏览器配对链接。
+
+[![浏览器工作台，左侧为雷达，右侧看板打开一个会话](docs/guides/img/web-workspace-zh.png)](docs/guides/img/web-workspace-zh.png)
+
+双击 tmux 行或将它拖入看板，再选择「对话」「终端」或「轨迹」。回车换行，Ctrl/Cmd+回车发送。支持读取的外部会话可以查看，但不能向 pane 输入。[浏览器操作](docs/guides/phone-and-web.zh.md#浏览器操作)。
+
+<a id="docs" data-doc-heading="按需查阅"></a><a id="参考" data-doc-heading="按需查阅"></a>
+
+## 按需查阅
+
+- [安装、更新与卸载](docs/install.zh.md)：PATH、Homebrew、指定版本和换 Mac。
+- [连接排障](docs/phone.zh.md)：网络选择、常驻隧道、配对、权限与通知。
+- [Agent 接入与支持范围](docs/guides/agent-integrations.zh.md)：hook、历史读取及各 agent 的边界。
+- [CLI 参考](docs/cli.zh.md)：命令参数、语言与持久设置。
+- [HQ 知识库](docs/knowledge.zh.md)：档案、知识和你自己的规则。
+- [DeepSeek Harness 接入](docs/guides/deepseek-harness.zh.md)：终端和历史集成。
+
+参与开发可看 [CONTRIBUTING.md](CONTRIBUTING.md) 和[设计文档](docs/design/README.zh.md)。
 
 ## 许可
 
