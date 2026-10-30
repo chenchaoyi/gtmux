@@ -1008,7 +1008,7 @@ test('DSH external history has scoped requests, read-only chrome and independent
  const h=harness(reply);h.node('workbench').hidden=true;
  const a={agent:'DeepSeek Harness',source:'native',session_id:'dsh-one',home_id:'dsh-home',current_client:'unconfirmed',can_read_conversation:true,status:'working'};
  h.api.openConversation(a);await new Promise(r=>setImmediate(r));
- assert.ok(h.requests.some(r=>r.url.endsWith('/api/session/transcript?session_id=dsh-one&home_id=dsh-home')));
+ assert.ok(h.requests.some(r=>r.url.endsWith('/api/session/transcript?session_id=dsh-one&home_id=dsh-home&context=1')));
  assert.ok(h.requests.every(r=>!r.url.includes('/api/pane?')&&!r.url.includes('/api/send')));
  assert.equal(h.node('mode').hidden,false);assert.equal(h.api.turns()[0].response,'Public reply');
  h.api.setMode('term');assert.equal(h.api.modes().selected,'chat');
