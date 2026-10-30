@@ -1,0 +1,3 @@
+Conversation message fixes
+• Restore short user messages that could appear as empty bubbles on iPhone and iPad.
+• Remove the temporary sent message once an uploaded image is recorded in the conversation.
