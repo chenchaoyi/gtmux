@@ -56,7 +56,7 @@ If tmux is absent, install it first. If its server is not running, create a sess
 
 After repairs, run `gtmux doctor` again. **✗** identifies a condition blocking a feature, **⚠** a recommendation, **✓** a passing check and **·** information. Read the remaining checks and their suggested actions; “applied fixes” can still have recommendations left. Hooks marked **Configured** describe saved settings. Let each agent load them on its next normal launch; a running session is not restarted.
 
-For a read-only report, use `gtmux doctor --no-prompt` or `gtmux doctor --json`. The Mac app also exposes **Preferences → General → Environment check**. If a problem persists, inspect `gtmux logs --since 1h`; `gtmux doctor --bundle` writes a local diagnostic archive for review before you share it.
+For a read-only report, use `gtmux doctor --no-prompt` or `gtmux doctor --json`. The Mac app also exposes **Preferences → Diagnostics → Environment check**. If a problem persists, inspect `gtmux logs --since 1h`; `gtmux doctor --bundle` writes a local diagnostic archive for review before you share it.
 
 For an intentional per-agent setup, use `gtmux install hooks --agent codex` (replace the key), or `--agent auto` for installed supported CLIs. Omitting `--agent` selects Claude Code. [Agent setup](guides/agent-integrations.md) describes the supported keys and loading requirements; DSH's bundled Cordis module needs its printed overlay on the next Web launch.
 

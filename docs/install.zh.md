@@ -56,7 +56,7 @@ tmux 未安装时先安装；没有运行中的服务时，用 `tmux new -s work
 
 修复后再跑一次 `gtmux doctor`。**✗** 是影响功能的问题，**⚠** 是建议，**✓** 是检查通过，**·** 是信息。看清剩余检查及其操作提示，「已应用修复」仍可能有未处理的建议。hook「已配置」只说明文件已保存，agent 要在下次正常启动时加载；doctor 不会重启正在运行的会话。
 
-只检查、不询问时用 `gtmux doctor --no-prompt` 或 `gtmux doctor --json`。Mac App 也有「偏好设置 → 通用 → 运行环境检查」。仍有问题可先看 `gtmux logs --since 1h`；`gtmux doctor --bundle` 会在本地生成诊断包，发送前可先检查内容。
+只检查、不询问时用 `gtmux doctor --no-prompt` 或 `gtmux doctor --json`。Mac App 也有「偏好设置 → 诊断 → 运行环境检查」。仍有问题可先看 `gtmux logs --since 1h`；`gtmux doctor --bundle` 会在本地生成诊断包，发送前可先检查内容。
 
 只配置某个 agent 可用 `gtmux install hooks --agent codex`，将 key 换成所需 agent；`--agent auto` 为已安装且受支持的 CLI 配置，不带 `--agent` 默认是 Claude Code。key 和加载要求见 [Agent 接入](guides/agent-integrations.zh.md)。DSH 自带的 Cordis 模块需在下次启动 Web 时使用打印的覆盖参数。
 
