@@ -1692,3 +1692,11 @@ details and acceptance boundaries.
 ### Bounded Diff reading
 
 Diff uses a virtualized vertical list inside a horizontal scroller. Only a window of native rows is mounted; all returned rows remain reachable. Row metrics follow system text size. Lines over 2048 UTF-16 units are shortened at a safe character boundary with an explicit notice, bounding native text measurement. Failed requests show Retry separately from an empty repository. Closing or changing panes retires earlier reads.
+
+### Trace disclosures and detail modes
+
+Phone and iPad share independent Turns/Calls bulk disclosures, individually openable
+call runs and context records. Details use Overview, Preview, Raw content and Source
+without changing the frozen-selection rule or creating another transcript subscription.
+Narrow views retain full-width drill-in; wide panes retain adaptive split details.
+See [Trace](transcript-trace.md) for provider coverage, scope, limits and acceptance.

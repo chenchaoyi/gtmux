@@ -1137,6 +1137,13 @@ func (s *Server) handleTranscript(w http.ResponseWriter, r *http.Request) {
 }
 
 func writeTranscript(w http.ResponseWriter, r *http.Request, b []byte, meta TranscriptMeta) {
+	var err error
+	includeContext := callerScope(r.Context()) != scopeGuest && r.URL.Query().Get("context") == "1"
+	b, meta, err = traceContextBody(b, meta, includeContext)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, errBody("transcript unavailable"))
+		return
+	}
 	// Additive HEADERS, not an envelope: the body stays the plain turn array every
 	// existing client (and the web mirror) already parses, so an app build that predates
 	// either signal simply ignores it instead of failing to decode.

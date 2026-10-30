@@ -2,7 +2,7 @@
 
 ## Delivery boundary
 
-The browser and native App read the same public-transcript index. Chat and Terminal
+The browser and native App read the same transcript index. Owner/full-scope paired readers also receive explicitly recorded harness context; guest links retain their public-message scope. Chat and Terminal
 remain presentation modes; Trace and Diff open from session tools. Native implementation
 and automated acceptance do not establish physical-device or VoiceOver acceptance.
 The current App entry is `mobileapp/src/screens/DetailScreen.tsx` (`DetailMode`), with
@@ -19,8 +19,7 @@ describe the records it actually has.
 
 Open Trace from a pane's session-tools menu, search or filter its records, then select a message or call.
 The list identifies agent, loaded turn and history boundaries. Call details preserve
-recorded input whitespace, working directory and truncation notices. Prose offers
-Preview and Source; Copy exports the displayed record's original text.
+recorded input whitespace, working directory and truncation notices. Details offer Overview, Preview, Raw content and Source. Preview formats prose and recorded JSON; Raw content preserves the recorded text. Source shows actual transcript provenance. Copy exports original content, or the displayed provenance JSON on Source.
 
 Wide views can keep list and details side by side. A compact panel uses the whole
 reading area for details; Close returns to the selected row. The same rule applies to
@@ -30,7 +29,7 @@ Trace keeps this space for reading.
 
 The overview represents the entire filtered history, with a native range control for
 touch and keyboard navigation. Search covers all loaded records. The list renders at
-most 200 records per page, with explicit previous/next controls. Opening Trace locates the latest loaded record, including idle sessions. There is no follow-mode toggle. Polling preserves
+most 200 projected rows per page, including disclosure headers, with explicit previous/next controls. Opening Trace locates the latest loaded record, including idle sessions. There is no follow-mode toggle. Polling preserves
 selection, disclosure and the visible row anchor. Readers at the tail continue following; inspecting or scrolling away pauses it. A floating one-shot action returns to the latest record;
 selected text and focused detail controls hold their displayed revision until released.
 Session state comes from the agent roster, not inferred tool completion. An older
@@ -98,3 +97,43 @@ input can use the full reading height. Close restores those controls and their s
 ## Design references
 
 This iteration uses Langfuse's [session grouping](https://langfuse.com/docs/observability/features/sessions) and [aggregation of repeated observations](https://langfuse.com/docs/observability/features/agent-graphs), and Chainlit's [message/step distinction](https://docs.chainlit.io/concepts/step). It retains gtmux's own icons, palette and recorded-input boundary. OpenCode's [scroll-anchor defect report](https://github.com/anomalyco/opencode/issues/17996) illustrates why explicit navigation and user scrolling must take precedence over refresh compensation. These are source-grounded references, not a live competitor audit.
+
+## Independent disclosures and recorded context
+
+Turns and Calls are independent bulk disclosures on browser, iPhone and iPad. Turns
+hide or reveal each whole turn; Calls compact every consecutive run, including one or
+two calls, into a counted row with tool names. A run can be opened separately. Explicit
+bulk choices apply to new turns/runs; per-group choices survive same-scope refresh.
+Filtering temporarily reveals matches without changing these choices. Folding pauses
+implicit following even if the shorter list produces a programmatic tail scroll. Only
+manual scrolling or Jump to latest may resume it. Closing a hidden record's details
+returns keyboard focus to its visible parent disclosure.
+
+Context appears in source order, with prefix instructions before the real prompt and
+runtime/background records between updates. It never becomes a human message or an
+empty Chat bubble. The four detail tabs share the same selected revision and original
+copy boundary. Source contains recorded provider/record kind, exact session, turn and
+available timestamps; a turn start is not an individual call time. It does not claim a
+complete model request, RPC ID, token count, tool result or private reasoning.
+
+| Provider | Recorded context used |
+| --- | --- |
+| Codex | Known workspace/environment input and complete system-reminder/task-notification envelopes in user records |
+| Claude Code | Complete harness envelopes in user text and explicit compact summaries |
+| Kimi | Known injection, skill activation, system trigger, hook result and compaction-summary inputs |
+| DeepSeek Harness | Public injection append records and known harness envelopes; no replay/private thinking |
+| OpenCode | No context reconstructed from its current hook log; an empty Context filter explains that none was recorded |
+
+Each record keeps at most 8 KiB of UTF-8 text; each turn keeps at most 32 context
+records and 64 KiB total. Retained partial text is marked. Existing transcript response
+and cache budgets also apply. Compatible readers explicitly request `context=1`; older clients keep their original
+message shape, without context-only segments. Context is additive in `segments[].context`
+for opted-in owners and full-scope paired devices. The server strips it, including empty context-only
+segments, for guest links and separates conditional-cache revisions by audience.
+Existing public prompts/replies are unchanged; this does not widen share permissions.
+Older clients may ignore the field. No source logs or hidden model requests are copied
+into tests: all fixtures are synthetic.
+
+The DSH Web screenshots supplied by the user informed the independent disclosures,
+counted call runs, four detail modes and settings navigation. Their timing/token fields
+are deliberately not inferred from gtmux's more limited records.

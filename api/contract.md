@@ -564,7 +564,7 @@ invocation; for other agents no claim is made rather than a wrong one.
 | `from` | object? | delivery sender (`hq` or `agent`), when matched to the audit journal as described above |
 | `session_break` | object? | `{kind, at?}` on the first turn of a later session in a stitched HQ history |
 
-`segment` = `{"text":string?, "steps":[{step}]?}`; `step` =
+`segment` = `{"text":string?, "steps":[{step}]?, "context":{context}?}`; `step` =
 `{"kind":"tool", "title":"Edit|Bash|exec|…", "detail":"<short arg summary>"?, "operation":"read|list|search|command|edit|web|code|wait|agent|tool"?, "input":"<selected original input>"?, "input_kind":"command|arguments|code|path|query|url|description|prompt"?, "workdir":"<recorded directory>"?, "details_truncated":true?}`.
 
 `detail` remains a plain-text summary. For Codex, string `title` then `description`
@@ -582,6 +582,20 @@ an additional 128 KiB budget per turn, included in cache retention accounting an
 existing transcript HTTP byte budget. `details_truncated` reports any exceeded limit,
 including when a later call has no remaining detail budget. Clients must label partial
 details and older summary-only data accurately. Older clients may ignore these fields.
+
+`context` is an optional explicitly recorded harness input:
+`{"title":string,"text":string,"source":string,"time":string?,"truncated":true?,"before_prompt":true?}`.
+Compatible readers opt in with `context=1` on either transcript route. Older servers
+ignore the query; older clients keep their original segment shape. Context is returned
+only to opted-in owners and full-scope paired devices; guest responses strip
+this field and resulting empty context-only segments. Audience-specific opaque ETags
+prevent a privileged 304 from reusing an owner representation for a guest. Prefix
+context attaches to the next real turn with `before_prompt:true`; other records retain
+segment order. It never becomes `prompt` or `response`. Text is UTF-8 bounded to 8 KiB
+per record and 64 KiB / 32 records per turn; retained partial text is marked. The
+existing transcript/cache budgets remain effective. Older clients can ignore the field;
+Chat should skip context-only segments. Provider coverage and provenance limits are
+specified in [Trace](../docs/design/transcript-trace.md).
 
 A recorded call alone says nothing about success, completion, exit code or duration.
 No tool output, stdout/stderr or reasoning is ingested. Clients must render names,

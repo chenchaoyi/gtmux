@@ -40,8 +40,11 @@ func TestDSHCurrentPublicTranscriptIsIncrementalAndPrivateFieldsStayPrivate(t *t
 	if err != nil || len(first) != 1 {
 		t.Fatalf("turns=%+v %v", first, err)
 	}
-	if first[0].Prompt != "Please inspect the tests" || !strings.Contains(first[0].Response, "Inspecting now") || !strings.Contains(first[0].Response, "Tests pass") || len(first[0].Segments) != 2 || first[0].Segments[0].Steps[0].Title != "bash" {
+	if first[0].Prompt != "Please inspect the tests" || !strings.Contains(first[0].Response, "Inspecting now") || !strings.Contains(first[0].Response, "Tests pass") || len(first[0].Segments) != 3 || first[0].Segments[1].Steps[0].Title != "bash" {
 		t.Fatalf("public transcript=%+v", first)
+	}
+	if ctx := contexts(first[0]); len(ctx) != 1 || ctx[0].Text != "PRIVATE INSTRUCTIONS" || !ctx[0].BeforePrompt {
+		t.Fatalf("scoped injection context missing: %#v", ctx)
 	}
 	if first[0].PromptMessageSeq == nil || *first[0].PromptMessageSeq != 2 {
 		t.Fatal("snapshot lost the native prompt sequence")

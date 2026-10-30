@@ -132,6 +132,8 @@ func (l *Loader) loadCodexFile(path string, maxTurns int) ([]Turn, error) {
 		}
 		if fi.Size() > hit.size {
 			start = hit.nextLine
+			st.pendingContexts = append([]ContextRecord(nil), hit.pendingContexts...)
+			st.pendingContextStart = hit.pendingContextStart
 			if n := len(hit.turns); n > 0 {
 				st.turns = append([]Turn(nil), hit.turns[:n-1]...)
 				st.turnStarts = make([]int64, n-1)
@@ -161,6 +163,6 @@ func (l *Loader) loadCodexFile(path string, maxTurns int) ([]Turn, error) {
 	if n := len(st.turnStarts); n > 0 {
 		last = st.turnStarts[n-1]
 	}
-	l.retain(&cacheEntry{path: path, size: fi.Size(), turns: st.turns, lastTurn: last, nextLine: next, file: fi, mtime: fi.ModTime()})
+	l.retain(&cacheEntry{path: path, size: fi.Size(), turns: st.turns, lastTurn: last, nextLine: next, file: fi, mtime: fi.ModTime(), pendingContexts: st.pendingContexts, pendingContextStart: st.pendingContextStart})
 	return lastN(st.turns, maxTurns), nil
 }

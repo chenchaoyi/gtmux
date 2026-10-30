@@ -196,6 +196,10 @@ func kimiStep(line string, st *parseState) {
 	case "user":
 		// Only a real instruction opens a turn — see the origin note above.
 		if o := originKind(w.Message.Origin); o != "" && o != "user" {
+			switch o {
+			case "injection", "skill_activation", "system_trigger", "hook_result", "compaction_summary":
+				st.addContext("Harness input", w.text(), "kimi/context.append_message."+o, kimiTime(w.Time))
+			}
 			return
 		}
 		// TrimSpace only. Claude's CleanUserPrompt exists to guess which user-role

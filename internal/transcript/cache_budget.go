@@ -37,6 +37,9 @@ func (l *Loader) retain(e *cacheEntry) {
 		l.m = make(map[string]*cacheEntry)
 	}
 	e.retainedBytes = cachedTurnBytes(e.turns) + int64(2*len(e.path)+256)
+	for _, record := range e.pendingContexts {
+		e.retainedBytes += int64(128 + len(record.Text) + len(record.Source) + len(record.Title) + len(record.Time))
+	}
 	if e.retainedBytes > cacheByteCap {
 		// Returning a large requested history is valid; retaining it is optional.
 		// Never truncate public content merely to make a cache entry fit.
@@ -76,6 +79,9 @@ func cachedTurnBytes(turns []Turn) int64 {
 		}
 		for _, s := range t.Segments {
 			n += int64(128 + len(s.Text))
+			if s.Context != nil {
+				n += int64(128 + len(s.Context.Text) + len(s.Context.Title) + len(s.Context.Source) + len(s.Context.Time))
+			}
 			for _, step := range s.Steps {
 				n += int64(160 + len(step.Kind) + len(step.Title) + len(step.Detail) + len(step.Operation) + len(step.Input) + len(step.InputKind) + len(step.Workdir))
 			}

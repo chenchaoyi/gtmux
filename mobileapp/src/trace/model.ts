@@ -1,7 +1,7 @@
 // One public-transcript index for native readers and the generated browser asset.
 import type { TranscriptSender, TranscriptTurn } from '../api/client';
 
-export type TraceKind = 'user' | 'assistant' | 'tool';
+export type TraceKind = 'user' | 'assistant' | 'tool' | 'context';
 export interface TraceContext {
   home_id?: string;
   session_id?: string;
@@ -30,6 +30,7 @@ export interface TraceEvent {
   from: TranscriptSender | null;
   boundary: TranscriptTurn['session_break'] | null;
   step: TraceStep | null;
+  context: { source: string; time: string; truncated: boolean } | null;
   search: string;
   sourceIndex: number;
 }
@@ -129,6 +130,7 @@ export function build(
       body: string,
       title: string,
       step: TraceStep | null,
+      contextRecord: TraceEvent['context'] = null,
     ) {
       const event: TraceEvent = {
         key: key + ':' + position,
@@ -146,8 +148,17 @@ export function build(
           (object(turn!.session_break) as TranscriptTurn['session_break']) ||
           null,
         step,
+        context: contextRecord,
         sourceIndex,
-        search: [title, body, agent, session, step?.workdir, step?.operation]
+        search: [
+          title,
+          body,
+          agent,
+          session,
+          step?.workdir,
+          step?.operation,
+          contextRecord?.source,
+        ]
           .filter(Boolean)
           .join('\n')
           .toLocaleLowerCase(),
@@ -155,13 +166,35 @@ export function build(
       events.push(event);
       sessionGroup.count++;
     }
-    if (prompt) push('user', 'prompt', prompt, string(sender?.label), null);
     let segments = list(turn.segments);
     if (!segments.length && string(turn.response))
       segments = [{ text: turn.response }];
+    function pushContext(rawSegment: unknown, index: number, before: boolean) {
+      const contextRecord = object(object(rawSegment)?.context);
+      if (
+        contextRecord &&
+        (contextRecord.before_prompt === true) === before &&
+        string(contextRecord.text)
+      )
+        push(
+          'context',
+          index + ':context',
+          string(contextRecord.text),
+          string(contextRecord.title),
+          null,
+          {
+            source: string(contextRecord.source),
+            time: string(contextRecord.time),
+            truncated: contextRecord.truncated === true,
+          },
+        );
+    }
+    segments.forEach((segment, index) => pushContext(segment, index, true));
+    if (prompt) push('user', 'prompt', prompt, string(sender?.label), null);
     segments.forEach((rawSegment, index) => {
       const segment = object(rawSegment);
       if (!segment) return;
+      pushContext(segment, index, false);
       if (string(segment.text))
         push('assistant', index + ':text', string(segment.text), agent, null);
       list(segment.steps).forEach((rawStep, offset) => {
@@ -191,6 +224,87 @@ export function build(
     sessions,
     turns: Array.from(turnCounts.values()).reduce((a, b) => a + b, 0),
   };
+}
+
+/** Recorded provenance only. This is not the provider's original request JSON. */
+export function sourceInfo(event: TraceEvent): Record<string, unknown> {
+  return {
+    format: 'gtmux transcript',
+    kind: event.kind,
+    agent: event.agent,
+    session_id: event.session,
+    turn: event.turn,
+    record_source:
+      event.context?.source ||
+      (event.kind === 'context'
+        ? 'segments.context'
+        : event.kind === 'tool'
+        ? 'segments.steps'
+        : event.kind === 'user'
+        ? 'prompt'
+        : 'segments.text'),
+    ...(event.time ? { turn_started_at: event.time } : {}),
+    ...(event.context?.time ? { recorded_at: event.context.time } : {}),
+    ...(event.from ? { sender: event.from } : {}),
+    ...(event.step?.workdir ? { workdir: event.step.workdir } : {}),
+    ...(event.step
+      ? {
+          input_kind: event.step.inputKind,
+          operation: event.step.operation,
+          truncated: event.step.truncated,
+        }
+      : {}),
+    ...(event.context ? { truncated: event.context.truncated } : {}),
+  };
+}
+
+export function contextLabel(event: TraceEvent, lang: 'en' | 'zh'): string {
+  const names: Record<string, [string, string]> = {
+    'Workspace instructions': ['Workspace instructions', '工作区指令'],
+    Environment: ['Environment', '运行环境'],
+    'Environment reminder': ['Environment reminder', '环境提醒'],
+    'Background task notification': [
+      'Background task notification',
+      '后台任务通知',
+    ],
+    'Conversation summary': ['Conversation summary', '会话摘要'],
+    'Harness input': ['Context', '上下文'],
+  };
+  return (
+    names[event.title]?.[lang === 'zh' ? 1 : 0] ||
+    event.title ||
+    (lang === 'zh' ? '上下文' : 'Context')
+  );
+}
+
+export function overviewFacts(
+  event: TraceEvent,
+  lang: 'en' | 'zh',
+): { label: string; value: string }[] {
+  const zh = lang === 'zh',
+    kinds = {
+      user: ['Message', '用户消息'],
+      assistant: ['Agent reply', 'Agent 回复'],
+      tool: ['Tool call', '工具调用'],
+      context: ['Context', '上下文'],
+    };
+  const facts = [
+    { label: zh ? '类型' : 'Type', value: kinds[event.kind][zh ? 1 : 0] },
+    { label: zh ? '轮次' : 'Turn', value: String(event.turn) },
+    { label: 'Agent', value: event.agent },
+    { label: zh ? '会话' : 'Session', value: event.session },
+  ];
+  if (event.context?.time)
+    facts.push({
+      label: zh ? '记录时间' : 'Recorded at',
+      value: event.context.time,
+    });
+  if (event.step?.workdir)
+    facts.push({
+      label: zh ? '工作目录' : 'Working directory',
+      value: event.step.workdir,
+    });
+  return facts.filter(fact => fact.value);
 }
 export interface TraceTurn {
   key: string;
@@ -262,4 +376,104 @@ export function overview(
     out.push({ from, to, kind });
   }
   return out;
+}
+
+export type TimelineRow =
+  | { key: string; type: 'turn'; group: TraceTurn; open: boolean }
+  | {
+      key: string;
+      type: 'event';
+      event: TraceEvent;
+      order: number;
+      last: boolean;
+    }
+  | {
+      key: string;
+      type: 'calls';
+      events: TraceEvent[];
+      open: boolean;
+      last: boolean;
+    };
+
+export function timelineRows(
+  groups: TraceTurn[],
+  expanded: Record<string, boolean>,
+  calls: Record<string, boolean>,
+  searching = false,
+  defaults: { turns?: boolean; calls?: boolean } = {},
+): TimelineRow[] {
+  const rows: TimelineRow[] = [];
+  for (const group of groups) {
+    const open = searching || (expanded[group.key] ?? defaults.turns ?? false);
+    rows.push({ key: 'turn:' + group.key, type: 'turn', group, open });
+    if (!open) continue;
+    for (let i = 0; i < group.events.length; i++) {
+      const event = group.events[i];
+      let end = i + 1;
+      if (!searching && event.kind === 'tool') {
+        while (end < group.events.length && group.events[end].kind === 'tool')
+          end++;
+      }
+      if (
+        !searching &&
+        event.kind === 'tool' &&
+        end - i >= (defaults.calls === undefined ? 3 : 1)
+      ) {
+        const key = 'calls:' + event.key,
+          unfolded = calls[key] ?? defaults.calls ?? false;
+        rows.push({
+          key,
+          type: 'calls',
+          events: group.events.slice(i, end),
+          open: unfolded,
+          last: end === group.events.length && !unfolded,
+        });
+        if (!unfolded) {
+          i = end - 1;
+          continue;
+        }
+        for (let j = i; j < end; j++)
+          rows.push({
+            key: group.events[j].key,
+            type: 'event',
+            event: group.events[j],
+            order: j + 1,
+            last: j === group.events.length - 1,
+          });
+        i = end - 1;
+      } else
+        rows.push({
+          key: event.key,
+          type: 'event',
+          event,
+          order: i + 1,
+          last: i === group.events.length - 1,
+        });
+    }
+  }
+  return rows;
+}
+
+/** Reading transforms only; raw content and copy retain the recorded text. */
+export function previewText(event: TraceEvent): string {
+  if (
+    event.kind === 'tool' &&
+    ['json', 'arguments'].includes(event.step?.inputKind || '')
+  ) {
+    try {
+      const value = JSON.parse(event.body);
+      if (value !== null && typeof value === 'object')
+        return JSON.stringify(value, null, 2);
+    } catch {
+      /* Older records may contain partial JSON. */
+    }
+  }
+  if (event.kind === 'context') {
+    const envelope =
+      /^\s*<(system-reminder|task-notification)\b[^>]*>([\s\S]*)<\/\1>\s*$/.exec(
+        event.body,
+      );
+    if (envelope) return envelope[2].trim();
+  }
+  return event.body;
 }

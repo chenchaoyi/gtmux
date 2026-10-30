@@ -1,13 +1,18 @@
-// Generated from mobileapp/src/trace/model.ts; SHA256 bdabf5a9530fc22c35e12f1f6b3ad666070ceb5d47b3d5451d3bd724761f2860
-// Body SHA256 34111b31ddb6930f0e19cbd2290bba3486df86ea43863df644b21d96e43fe5b5
+// Generated from mobileapp/src/trace/model.ts; SHA256 0d7820d73e396fadd42484746a6b2c83228a26a5c55a75f551013d2e49bd4edd
+// Body SHA256 26a5be18f823ee65b312d26963275ae855e711eaf3dd5d76390546bcc88c99bb
 (function(root){var exports={};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.agentName = agentName;
 exports.build = build;
+exports.sourceInfo = sourceInfo;
+exports.contextLabel = contextLabel;
+exports.overviewFacts = overviewFacts;
 exports.groupTurns = groupTurns;
 exports.filter = filter;
 exports.overview = overview;
+exports.timelineRows = timelineRows;
+exports.previewText = previewText;
 const string = (value) => typeof value === 'string' ? value : '';
 const list = (value) => (Array.isArray(value) ? value : []);
 function object(value) {
@@ -75,7 +80,7 @@ function build(turns, context = {}) {
                 pane: string(sender.pane),
             }
             : null;
-        function push(kind, position, body, title, step) {
+        function push(kind, position, body, title, step, contextRecord = null) {
             const event = {
                 key: key + ':' + position,
                 turnKey: key,
@@ -91,8 +96,17 @@ function build(turns, context = {}) {
                 boundary: object(turn.session_break) ||
                     null,
                 step,
+                context: contextRecord,
                 sourceIndex,
-                search: [title, body, agent, session, step?.workdir, step?.operation]
+                search: [
+                    title,
+                    body,
+                    agent,
+                    session,
+                    step?.workdir,
+                    step?.operation,
+                    contextRecord?.source,
+                ]
                     .filter(Boolean)
                     .join('\n')
                     .toLocaleLowerCase(),
@@ -100,15 +114,28 @@ function build(turns, context = {}) {
             events.push(event);
             sessionGroup.count++;
         }
-        if (prompt)
-            push('user', 'prompt', prompt, string(sender?.label), null);
         let segments = list(turn.segments);
         if (!segments.length && string(turn.response))
             segments = [{ text: turn.response }];
+        function pushContext(rawSegment, index, before) {
+            const contextRecord = object(object(rawSegment)?.context);
+            if (contextRecord &&
+                (contextRecord.before_prompt === true) === before &&
+                string(contextRecord.text))
+                push('context', index + ':context', string(contextRecord.text), string(contextRecord.title), null, {
+                    source: string(contextRecord.source),
+                    time: string(contextRecord.time),
+                    truncated: contextRecord.truncated === true,
+                });
+        }
+        segments.forEach((segment, index) => pushContext(segment, index, true));
+        if (prompt)
+            push('user', 'prompt', prompt, string(sender?.label), null);
         segments.forEach((rawSegment, index) => {
             const segment = object(rawSegment);
             if (!segment)
                 return;
+            pushContext(segment, index, false);
             if (string(segment.text))
                 push('assistant', index + ':text', string(segment.text), agent, null);
             list(segment.steps).forEach((rawStep, offset) => {
@@ -132,6 +159,77 @@ function build(turns, context = {}) {
         sessions,
         turns: Array.from(turnCounts.values()).reduce((a, b) => a + b, 0),
     };
+}
+/** Recorded provenance only. This is not the provider's original request JSON. */
+function sourceInfo(event) {
+    return {
+        format: 'gtmux transcript',
+        kind: event.kind,
+        agent: event.agent,
+        session_id: event.session,
+        turn: event.turn,
+        record_source: event.context?.source ||
+            (event.kind === 'context'
+                ? 'segments.context'
+                : event.kind === 'tool'
+                    ? 'segments.steps'
+                    : event.kind === 'user'
+                        ? 'prompt'
+                        : 'segments.text'),
+        ...(event.time ? { turn_started_at: event.time } : {}),
+        ...(event.context?.time ? { recorded_at: event.context.time } : {}),
+        ...(event.from ? { sender: event.from } : {}),
+        ...(event.step?.workdir ? { workdir: event.step.workdir } : {}),
+        ...(event.step
+            ? {
+                input_kind: event.step.inputKind,
+                operation: event.step.operation,
+                truncated: event.step.truncated,
+            }
+            : {}),
+        ...(event.context ? { truncated: event.context.truncated } : {}),
+    };
+}
+function contextLabel(event, lang) {
+    const names = {
+        'Workspace instructions': ['Workspace instructions', '工作区指令'],
+        Environment: ['Environment', '运行环境'],
+        'Environment reminder': ['Environment reminder', '环境提醒'],
+        'Background task notification': [
+            'Background task notification',
+            '后台任务通知',
+        ],
+        'Conversation summary': ['Conversation summary', '会话摘要'],
+        'Harness input': ['Context', '上下文'],
+    };
+    return (names[event.title]?.[lang === 'zh' ? 1 : 0] ||
+        event.title ||
+        (lang === 'zh' ? '上下文' : 'Context'));
+}
+function overviewFacts(event, lang) {
+    const zh = lang === 'zh', kinds = {
+        user: ['Message', '用户消息'],
+        assistant: ['Agent reply', 'Agent 回复'],
+        tool: ['Tool call', '工具调用'],
+        context: ['Context', '上下文'],
+    };
+    const facts = [
+        { label: zh ? '类型' : 'Type', value: kinds[event.kind][zh ? 1 : 0] },
+        { label: zh ? '轮次' : 'Turn', value: String(event.turn) },
+        { label: 'Agent', value: event.agent },
+        { label: zh ? '会话' : 'Session', value: event.session },
+    ];
+    if (event.context?.time)
+        facts.push({
+            label: zh ? '记录时间' : 'Recorded at',
+            value: event.context.time,
+        });
+    if (event.step?.workdir)
+        facts.push({
+            label: zh ? '工作目录' : 'Working directory',
+            value: event.step.workdir,
+        });
+    return facts.filter(fact => fact.value);
 }
 /** Group only recorded order and identity; no outcome or timing is inferred. */
 function groupTurns(events) {
@@ -179,6 +277,77 @@ function overview(events, maximum = 120) {
         out.push({ from, to, kind });
     }
     return out;
+}
+function timelineRows(groups, expanded, calls, searching = false, defaults = {}) {
+    const rows = [];
+    for (const group of groups) {
+        const open = searching || (expanded[group.key] ?? defaults.turns ?? false);
+        rows.push({ key: 'turn:' + group.key, type: 'turn', group, open });
+        if (!open)
+            continue;
+        for (let i = 0; i < group.events.length; i++) {
+            const event = group.events[i];
+            let end = i + 1;
+            if (!searching && event.kind === 'tool') {
+                while (end < group.events.length && group.events[end].kind === 'tool')
+                    end++;
+            }
+            if (!searching &&
+                event.kind === 'tool' &&
+                end - i >= (defaults.calls === undefined ? 3 : 1)) {
+                const key = 'calls:' + event.key, unfolded = calls[key] ?? defaults.calls ?? false;
+                rows.push({
+                    key,
+                    type: 'calls',
+                    events: group.events.slice(i, end),
+                    open: unfolded,
+                    last: end === group.events.length && !unfolded,
+                });
+                if (!unfolded) {
+                    i = end - 1;
+                    continue;
+                }
+                for (let j = i; j < end; j++)
+                    rows.push({
+                        key: group.events[j].key,
+                        type: 'event',
+                        event: group.events[j],
+                        order: j + 1,
+                        last: j === group.events.length - 1,
+                    });
+                i = end - 1;
+            }
+            else
+                rows.push({
+                    key: event.key,
+                    type: 'event',
+                    event,
+                    order: i + 1,
+                    last: i === group.events.length - 1,
+                });
+        }
+    }
+    return rows;
+}
+/** Reading transforms only; raw content and copy retain the recorded text. */
+function previewText(event) {
+    if (event.kind === 'tool' &&
+        ['json', 'arguments'].includes(event.step?.inputKind || '')) {
+        try {
+            const value = JSON.parse(event.body);
+            if (value !== null && typeof value === 'object')
+                return JSON.stringify(value, null, 2);
+        }
+        catch {
+            /* Older records may contain partial JSON. */
+        }
+    }
+    if (event.kind === 'context') {
+        const envelope = /^\s*<(system-reminder|task-notification)\b[^>]*>([\s\S]*)<\/\1>\s*$/.exec(event.body);
+        if (envelope)
+            return envelope[2].trim();
+    }
+    return event.body;
 }
 
 if(typeof module==="object"&&module.exports)module.exports=exports;else root.GtmuxTrace=exports;})(typeof window!=="undefined"?window:globalThis);

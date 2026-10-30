@@ -68,7 +68,10 @@ function press(id: string) {
   act(() => node!.props.onPress());
 }
 function data(): TraceEvent[] {
-  return tree.root.findByType(FlatList).props.data.filter((row: any) => row.type === 'event').map((row: any) => row.event);
+  return tree.root
+    .findByType(FlatList)
+    .props.data.filter((row: any) => row.type === 'event')
+    .map((row: any) => row.event);
 }
 function source() {
   return tree.root.findAllByProps({ testID: 'trace-source' })[0].props.children;
@@ -91,6 +94,118 @@ function mount(props: Partial<React.ComponentProps<typeof TraceReader>> = {}) {
     tree = renderer.create(<TraceReader {...base} {...props} />);
   });
 }
+
+test('bulk disclosures survive streaming and programmatic scroll without reopening calls or turns', () => {
+  const pairedCalls = [
+    { kind: 'tool', title: 'exec', input: 'first' },
+    { kind: 'tool', title: 'wait', input: 'second' },
+  ];
+  const turns = [
+    {
+      ...turn,
+      prompt: 'Older',
+      time: '2026-10-29T10:00:00Z',
+      segments: [{ text: 'Update', steps: pairedCalls }],
+    },
+    { ...turn, segments: [{ text: 'Update', steps: pairedCalls }] },
+  ];
+  mount({ turns });
+  press('trace-fold-turns');
+  expect(data().filter(event => event.kind === 'tool')).toHaveLength(4);
+  press('trace-fold-calls');
+  expect(data().some(event => event.kind === 'tool')).toBe(false);
+  const batches = tree.root
+    .findByType(FlatList)
+    .props.data.filter((row: any) => row.type === 'calls');
+  expect(batches).toHaveLength(2);
+  press('trace-calls-' + batches[0].key);
+  expect(data().filter(event => event.kind === 'tool')).toHaveLength(2);
+  press('trace-fold-turns');
+  expect(data()).toHaveLength(0);
+  act(() =>
+    tree.root.findByType(FlatList).props.onScroll({
+      nativeEvent: {
+        contentOffset: { y: 0 },
+        contentSize: { height: 100 },
+        layoutMeasurement: { height: 800 },
+      },
+    }),
+  );
+  act(() =>
+    tree.update(
+      <TraceReader
+        {...base}
+        turns={[...turns, { ...turn, prompt: 'Newly arrived' }]}
+      />,
+    ),
+  );
+  expect(data()).toHaveLength(0);
+  press('trace-fold-calls');
+  expect(data()).toHaveLength(0);
+  press('trace-fold-turns');
+  expect(data().filter(event => event.kind === 'tool')).toHaveLength(5);
+});
+
+test('context has four detail tabs, exact raw content and frozen recorded provenance for copy', () => {
+  const context = {
+    title: 'Environment reminder',
+    text: '<system-reminder>Use the fixture\n  keep indentation</system-reminder>',
+    source: 'codex/response_item.message.user',
+    time: '2026-10-30T10:01:00Z',
+  };
+  mount({ turns: [{ ...turn, segments: [{ context }, { text: 'Answer' }] }] });
+  const event = data().find(value => value.kind === 'context')!;
+  press('trace-record-' + event.key);
+  press('trace-tab-raw');
+  expect(source()).toBe(context.text);
+  for (const tab of ['overview', 'preview', 'raw', 'origin'])
+    expect(
+      tree.root.findAllByProps({ testID: 'trace-tab-' + tab }).length,
+    ).toBeGreaterThan(0);
+  press('trace-tab-overview');
+  expect(
+    tree.root.findAllByProps({ testID: 'trace-overview-facts' }).length,
+  ).toBeGreaterThan(0);
+  press('trace-tab-origin');
+  press('trace-copy');
+  expect(
+    JSON.parse((Clipboard.setString as jest.Mock).mock.calls.at(-1)[0]),
+  ).toMatchObject({
+    kind: 'context',
+    record_source: context.source,
+    recorded_at: context.time,
+  });
+  act(() =>
+    tree.update(
+      <TraceReader
+        {...base}
+        turns={[
+          {
+            ...turn,
+            segments: [
+              { context: { ...context, source: 'updated-source' } },
+              { text: 'Answer' },
+            ],
+          },
+        ]}
+      />,
+    ),
+  );
+  press('trace-copy');
+  expect(
+    JSON.parse((Clipboard.setString as jest.Mock).mock.calls.at(-1)[0])
+      .record_source,
+  ).toBe(context.source);
+  press('trace-update-detail');
+  press('trace-copy');
+  expect(
+    JSON.parse((Clipboard.setString as jest.Mock).mock.calls.at(-1)[0])
+      .record_source,
+  ).toBe('updated-source');
+  press('trace-tab-raw');
+  press('trace-copy');
+  expect(Clipboard.setString).toHaveBeenLastCalledWith(context.text);
+});
 beforeEach(() => {
   jest.useFakeTimers();
   jest.clearAllMocks();
@@ -195,8 +310,14 @@ test('search covers all loaded records while the native list keeps a bounded ini
   }));
   mount({ turns });
   expect(data()).toHaveLength(2);
-  expect(tree.root.findByProps({testID: 'trace-count'}).props.children.join('')).toContain('5002');
-  expect(tree.root.findByType(FlatList).props.data.filter((row: any) => row.type === 'turn')).toHaveLength(2501);
+  expect(
+    tree.root.findByProps({ testID: 'trace-count' }).props.children.join(''),
+  ).toContain('5002');
+  expect(
+    tree.root
+      .findByType(FlatList)
+      .props.data.filter((row: any) => row.type === 'turn'),
+  ).toHaveLength(2501);
   const rows = tree.root.findAll(
     n =>
       typeof n.props.testID === 'string' &&
@@ -313,35 +434,89 @@ test('legacy title-only calls copy their recorded title instead of clearing the 
 });
 
 test('idle entry expands the newest turn without a follow mode switch', () => {
-  mount({agent: {...agent, status: 'idle'}, turns: [{...turn, prompt: 'Older'}, {...turn, prompt: 'Newest'}]});
-  expect(tree.root.findAllByProps({testID: 'trace-follow'})).toHaveLength(0);
+  mount({
+    agent: { ...agent, status: 'idle' },
+    turns: [
+      { ...turn, prompt: 'Older' },
+      { ...turn, prompt: 'Newest' },
+    ],
+  });
+  expect(tree.root.findAllByProps({ testID: 'trace-follow' })).toHaveLength(0);
   expect(data().some(event => event.body === 'Newest')).toBe(true);
   expect(data().some(event => event.body === 'Older')).toBe(false);
-  expect(tree.root.findAllByProps({testID: 'trace-progress'}).length).toBeGreaterThan(0);
+  expect(
+    tree.root.findAllByProps({ testID: 'trace-progress' }).length,
+  ).toBeGreaterThan(0);
 });
 
 test('position controls implicit following and a reading gesture prevents queued scrolling', () => {
-  const scroll = jest.spyOn(FlatList.prototype, 'scrollToEnd').mockImplementation(() => {});
+  const scroll = jest
+    .spyOn(FlatList.prototype, 'scrollToEnd')
+    .mockImplementation(() => {});
   mount();
   const list = () => tree.root.findByType(FlatList);
-  act(() => {list().props.onContentSizeChange(); jest.advanceTimersByTime(32);});
-  expect(scroll).toHaveBeenCalled(); scroll.mockClear();
-  act(() => {list().props.onContentSizeChange(); list().props.onScrollBeginDrag(); jest.advanceTimersByTime(32);});
-  expect(scroll).not.toHaveBeenCalled();
-  act(() => list().props.onScroll({nativeEvent: {contentOffset: {y: 100}, contentSize: {height: 1000}, layoutMeasurement: {height: 400}}}));
-  act(() => list().props.onScrollEndDrag());
-  act(() => tree.update(<TraceReader {...base} turns={[turn, {...turn, prompt: 'New incoming request'}]}/>));
-  act(() => {list().props.onContentSizeChange(); jest.advanceTimersByTime(32);});
-  expect(scroll).not.toHaveBeenCalled();
-  expect(data().some(event => event.body === 'New incoming request')).toBe(false);
-  press('trace-latest');
-  act(() => {list().props.onContentSizeChange(); jest.advanceTimersByTime(32);});
+  act(() => {
+    list().props.onContentSizeChange();
+    jest.advanceTimersByTime(32);
+  });
   expect(scroll).toHaveBeenCalled();
-  expect(data().some(event => event.body === 'New incoming request')).toBe(true);
+  scroll.mockClear();
+  act(() => {
+    list().props.onContentSizeChange();
+    list().props.onScrollBeginDrag();
+    jest.advanceTimersByTime(32);
+  });
+  expect(scroll).not.toHaveBeenCalled();
+  act(() =>
+    list().props.onScroll({
+      nativeEvent: {
+        contentOffset: { y: 100 },
+        contentSize: { height: 1000 },
+        layoutMeasurement: { height: 400 },
+      },
+    }),
+  );
+  act(() => list().props.onScrollEndDrag());
+  act(() =>
+    tree.update(
+      <TraceReader
+        {...base}
+        turns={[turn, { ...turn, prompt: 'New incoming request' }]}
+      />,
+    ),
+  );
+  act(() => {
+    list().props.onContentSizeChange();
+    jest.advanceTimersByTime(32);
+  });
+  expect(scroll).not.toHaveBeenCalled();
+  expect(data().some(event => event.body === 'New incoming request')).toBe(
+    false,
+  );
+  press('trace-latest');
+  act(() => {
+    list().props.onContentSizeChange();
+    jest.advanceTimersByTime(32);
+  });
+  expect(scroll).toHaveBeenCalled();
+  expect(data().some(event => event.body === 'New incoming request')).toBe(
+    true,
+  );
   scroll.mockClear();
   act(() => list().props.onScrollBeginDrag());
-  act(() => list().props.onScroll({nativeEvent: {contentOffset: {y: 598}, contentSize: {height: 1000}, layoutMeasurement: {height: 400}}}));
+  act(() =>
+    list().props.onScroll({
+      nativeEvent: {
+        contentOffset: { y: 598 },
+        contentSize: { height: 1000 },
+        layoutMeasurement: { height: 400 },
+      },
+    }),
+  );
   act(() => list().props.onScrollEndDrag());
-  act(() => {list().props.onContentSizeChange(); jest.advanceTimersByTime(32);});
+  act(() => {
+    list().props.onContentSizeChange();
+    jest.advanceTimersByTime(32);
+  });
   expect(scroll).toHaveBeenCalled();
 });

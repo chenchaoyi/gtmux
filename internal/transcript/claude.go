@@ -83,13 +83,21 @@ func claudeStep(line string, st *parseState) {
 	switch e.Type {
 	case "user":
 		if e.IsMeta || e.IsCompactSummary {
+			raw := claudeContextText(e.Message.Content)
+			if e.IsCompactSummary {
+				st.addContext("Conversation summary", raw, "claude/user.compact-summary", e.Timestamp)
+			} else {
+				st.promptContexts(raw, "claude/user.meta", e.Timestamp)
+			}
 			return
 		}
 		prompt, isPrompt := claudePrompt(e.Message.Content)
 		if !isPrompt {
+			st.promptContexts(claudeContextText(e.Message.Content), "claude/user.content", e.Timestamp)
 			return // a tool_result-only user event — not a new turn
 		}
 		st.open(prompt, e.Timestamp)
+		st.promptContexts(claudeContextText(e.Message.Content), "claude/user.content", e.Timestamp)
 	case "assistant":
 		st.ensure() // tail may have started mid-turn (no preceding prompt)
 		text, steps := claudeAssistant(e.Message.Content)
@@ -98,6 +106,24 @@ func claudeStep(line string, st *parseState) {
 		}
 		st.addSteps(steps) // its tool calls attach to that bubble (intermediate process)
 	}
+}
+
+func claudeContextText(raw json.RawMessage) string {
+	var text string
+	if json.Unmarshal(raw, &text) == nil {
+		return text
+	}
+	var blocks []claudeBlock
+	if json.Unmarshal(raw, &blocks) != nil {
+		return ""
+	}
+	var parts []string
+	for _, block := range blocks {
+		if block.Type == "text" {
+			parts = append(parts, block.Text)
+		}
+	}
+	return strings.Join(parts, "\n")
 }
 
 // claudePrompt extracts a user-typed prompt from message.content. Returns ok=false

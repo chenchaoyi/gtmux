@@ -22,8 +22,8 @@ type dshCacheEntry struct {
 	dropped int
 }
 
-// Only user-authored prompts and visible text blocks become chat. Model replay
-// state, reasoning blocks, injected instructions and tool results stay out.
+// Only user-authored prompts and visible text blocks become dialogue. Recorded
+// injections use separate scoped context; replay state, reasoning and results stay out.
 func dshStep(line []byte, st *parseState) error {
 	var event dsh.Event
 	if err := json.Unmarshal(line, &event); err != nil {
@@ -39,6 +39,13 @@ func dshStep(line []byte, st *parseState) error {
 			return err
 		}
 		if msg.Source.Kind != "user" || msg.Role != "user" {
+			if msg.Role == "user" {
+				if msg.Source.Kind == "injection" {
+					st.addContext("Harness input", dshText(msg.Content), "dsh/user-message.injection", dsh.Timestamp(event.Time))
+				} else {
+					st.promptContexts(dshText(msg.Content), "dsh/user-message.harness", dsh.Timestamp(event.Time))
+				}
+			}
 			return nil
 		}
 		if text := dshText(msg.Content); text != "" {
@@ -74,6 +81,9 @@ func dshStep(line []byte, st *parseState) error {
 		size += st.toolDetailBytes
 		for _, seg := range st.cur.Segments {
 			size += len(seg.Text) + len(seg.Steps)*200
+			if seg.Context != nil {
+				size += len(seg.Context.Text) + 200
+			}
 		}
 		if size > 2<<20 || len(st.cur.Segments) > 4096 {
 			return fmt.Errorf("DSH turn exceeds public-history read limit")
@@ -141,6 +151,12 @@ func (l *Loader) loadDSH(id string, maxTurns int) ([]Turn, int, error) {
 	if e.state.cur != nil {
 		turn := *e.state.cur
 		turn.Segments = append([]Segment(nil), turn.Segments...)
+		for i := range turn.Segments {
+			if turn.Segments[i].Context != nil {
+				value := *turn.Segments[i].Context
+				turn.Segments[i].Context = &value
+			}
+		}
 		snapshot.cur = &turn
 	}
 	snapshot.flush()
@@ -167,6 +183,9 @@ func dshTurnBytes(turns []Turn) int {
 		n += len(t.Prompt) + len(t.Response)
 		for _, s := range t.Segments {
 			n += len(s.Text) + len(s.Steps)*200
+			if s.Context != nil {
+				n += len(s.Context.Text) + 200
+			}
 			for _, step := range s.Steps {
 				n += len(step.Input) + len(step.Workdir)
 			}

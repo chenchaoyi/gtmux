@@ -430,6 +430,16 @@ export interface TranscriptStep {
 export interface TranscriptSegment {
   text?: string;
   steps?: TranscriptStep[];
+  /** Recorded harness input; trace only. Guest readers do not receive this field. */
+  context?: TranscriptContext;
+}
+export interface TranscriptContext {
+  title: string;
+  text: string;
+  source: string;
+  time?: string;
+  truncated?: boolean;
+  before_prompt?: boolean;
 }
 /**
  * Who put this prompt in the pane, when it was not the person reading (who-sent-this-turn).
@@ -851,7 +861,7 @@ export class GtmuxClient {
   ): Promise<{turns: TranscriptTurn[]; dropped: number; reset?: SessionReset; etag?: string; unchanged?: boolean; earlierAvailable?: boolean}> {
     const headers = etag ? {...this.h(), 'If-None-Match': etag} : this.h();
     const q = earlier > 0 ? `&earlier=${earlier}` : '';
-    const r = await tfetch(`${this.base}/api/transcript?id=${encodeURIComponent(id)}${q}`, {headers, ...(signal ? {signal} : {})});
+    const r = await tfetch(`${this.base}/api/transcript?id=${encodeURIComponent(id)}${q}&context=1`, {headers, ...(signal ? {signal} : {})});
     // The chain's "one more exists" fact rides every response, the 304 included, so a
     // quiet conversation never loses its way back.
     const earlierAvailable = r.headers?.get?.('X-Gtmux-Earlier-Available') === '1';
@@ -876,7 +886,7 @@ export class GtmuxClient {
 
   async desktopTranscript(id: string, etag?: string, signal?: AbortSignal, homeID?: string): Promise<{turns: TranscriptTurn[]; dropped: number; etag?: string; unchanged?: boolean}> {
     const headers = etag ? {...this.h(), 'If-None-Match': etag} : this.h();
-    const r = await tfetch(`${this.base}/api/session/transcript?session_id=${encodeURIComponent(id)}${homeID ? `&home_id=${encodeURIComponent(homeID)}` : ''}`, {headers, signal});
+    const r = await tfetch(`${this.base}/api/session/transcript?session_id=${encodeURIComponent(id)}${homeID ? `&home_id=${encodeURIComponent(homeID)}` : ''}&context=1`, {headers, signal});
     if (r.status === 304) return {turns: [], dropped: 0, etag, unchanged: true};
     if (!r.ok) throw new DesktopTranscriptError(r.status);
     const turns = await r.json();

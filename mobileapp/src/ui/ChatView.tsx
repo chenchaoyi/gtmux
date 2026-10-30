@@ -511,7 +511,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
         // each segment = one assistant message's text bubble + the tool steps that
         // ran after it; rendering them in order puts intermediate process BETWEEN
         // separate speech bubbles. Fall back to the joined response when no segments.
-        const segs: TranscriptSegment[] = t.segments?.length ? t.segments : t.response ? [{text: t.response}] : [];
+        const segs: TranscriptSegment[] = (t.segments?.length ? t.segments : t.response ? [{text: t.response}] : []).filter(segment => !!segment.text || !!segment.steps?.length);
         const firstText = segs.findIndex(s => !!s.text); // first reply bubble (preview + hasReply)
         const lastText = segs.reduce((last, seg, index) => seg.text ? index : last, -1);
         const hasReply = firstText !== -1;

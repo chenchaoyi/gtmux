@@ -54,3 +54,14 @@ test('HQ says why a wake-only session has replies without manual messages', () =
   const view = mount([{...turn('', 'automatic reply'), agent: 'codex'}], hq);
   expect(JSON.stringify(view.toJSON())).toContain('automatic wake-ups, with no manual messages');
 });
+
+
+test('context-only segments do not create extra reply layout or leak into Chat copy', () => {
+  const base = {...turn('Review', 'Public answer'), segments: [{text: 'Public answer'}]};
+  const context = {context: {title: 'Environment', text: 'Fixture context', source: 'fixture'}};
+  const ordinary = mount([base]);
+  const enriched = mount([{...base, segments: [context, base.segments[0], context]}]);
+  // Each mounted avatar owns a different React useId for its SVG gradient.
+  const layout = (view: renderer.ReactTestRenderer) => JSON.stringify(view.toJSON()).replace(/gtmux-user-grad-_r_[a-z0-9]+_/g, 'gtmux-user-grad');
+  expect(layout(enriched)).toBe(layout(ordinary));
+});

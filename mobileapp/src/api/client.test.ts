@@ -172,7 +172,7 @@ describe('transcript', () => {
     expect(res.turns).toEqual(turns);
     expect(res.dropped).toBe(0);
     const [url, init] = call();
-    expect(url).toBe(`${BASE}/api/transcript?id=%2512`);
+    expect(url).toBe(`${BASE}/api/transcript?id=%2512&context=1`);
     expect((init?.headers as any).Authorization).toBe(AUTH);
   });
 
@@ -693,7 +693,7 @@ describe('desktopTranscript', () => {
     fetchMock.mockResolvedValueOnce(okJson([{prompt: 'request', response: 'commentary'}], true, 200, {'ETag': 'new', 'X-Gtmux-Turns-Dropped': '2'}));
     const value = await client().desktopTranscript('desk id', 'old', new AbortController().signal);
     expect(value).toEqual({turns: [{prompt: 'request', response: 'commentary'}], dropped: 2, etag: 'new'});
-    expect(call()[0]).toBe(`${BASE}/api/session/transcript?session_id=desk%20id`);
+    expect(call()[0]).toBe(`${BASE}/api/session/transcript?session_id=desk%20id&context=1`);
     expect(call()[1]?.headers).toMatchObject({Authorization: AUTH, 'If-None-Match': 'old'});
     expect(call()[1]?.signal).toBeTruthy();
     fetchMock.mockResolvedValueOnce(okJson(null, false, 304));
