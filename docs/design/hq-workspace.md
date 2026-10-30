@@ -4,8 +4,8 @@
 
 The menu-bar HQ card opens a native sidebar/detail workspace. Its context is a
 **matter**: a durable goal independent of a pane or a supervisor conversation.
-Phone/iPad/Web keep their existing HQ interface in this batch; no workspace HTTP
-write endpoint or guest/share access is added. The terminal exposes the same local
+Phone and iPad also offer a matter overview over an owner-only read adapter;
+Web keeps its existing HQ interface. No workspace HTTP write endpoint or guest/share access is added. The terminal exposes the same local
 protocol with `gtmux hq workspace`. Existing board, knowledge, machine and usage
 features share this one window and retain their existing data sources.
 
@@ -310,3 +310,7 @@ once; the count is changed matters, not raw events or completed tasks. Time filt
 recorded clocks, and past-day values retain a date label. The authored board stays a
 compact secondary entry. Research on topic discovery is separate from current task
 identity; see [Clio and HQ topics](hq-topic-research.md).
+
+## 8. Phone and iPad overview
+
+The App stacks Needs input and Following on phones and puts them side by side on wider iPad windows. Recent changes use the core's explicit overview; delivery uncertainty never reads as completion. Matter sheets show assessment, exact participant membership and a bounded page of saved messages, including correlated public replies. Ask HQ only prefills the existing global console; it does not submit a decision or create a scoped instruction. The existing console owns drafts, input, Trace/Diff, and resource readers. A list 404/501 keeps the legacy HQ UI; transient failures retain prior data and authorization failures clear it. `GET /api/hq/workspace` reuses the CLI list/detail builders and never drains, acknowledges or mutates.

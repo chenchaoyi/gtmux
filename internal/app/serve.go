@@ -422,7 +422,8 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		SessionTranscript: func(id, home string) ([]byte, server.TranscriptMeta, error) {
 			return desktopTranscriptRead(id, "", home)
 		},
-		HQBoard: hq.Board,
+		HQBoard:     hq.Board,
+		HQWorkspace: workspaceHTTPRead,
 		// The knowledge base, owner-only (hq-knowledge-on-phone). The act dep closes the
 		// verb list a second time: serve decides what a phone may do, the domain decides
 		// what each verb means.

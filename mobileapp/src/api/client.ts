@@ -1,3 +1,4 @@
+import type {HQWorkspace, HQMatterDetail} from './hqWorkspace';
 import {DocumentError, documentReference} from '../documents/references';
 import type {DocumentRequest} from '../documents/nativePreview';
 import type {ParticipantProfile} from './types';
@@ -453,6 +454,7 @@ export interface TranscriptSender {
   pane?: string; // the sending pane, when it has one
 }
 export interface TranscriptTurn {
+  record_id?: string; // opaque source-position identity, not a send target
   session_id?: string; // source conversation, including stitched history
   prompt: string;
   agent?: string; // agent that owned this turn's session, even across HQ handoffs
@@ -928,6 +930,25 @@ export class GtmuxClient {
     if (!r.ok) return [];
     const j = await r.json().catch(() => null);
     return Array.isArray(j) ? j : [];
+  }
+
+  // A 404/501 list means an older server; transport/auth failures never mean an empty workspace.
+  async hqWorkspace(signal?: AbortSignal): Promise<HQWorkspace | null> {
+    const r = await tfetch(`${this.base}/api/hq/workspace`, {headers: this.h(), ...(signal ? {signal} : {})});
+    if (r.status === 404 || r.status === 501) return null;
+    if (!r.ok) throw new ApiError(r.status, 'hq/workspace');
+    const j = await unreadAnswer(r, 'hq/workspace') as HQWorkspace | null;
+    if (j?.schema !== 1 || !Array.isArray(j.matters) || !j.overview || !Array.isArray(j.overview.needs_input) || !Array.isArray(j.overview.following) || !Array.isArray(j.overview.recent)) throw new Error('Invalid HQ workspace');
+    return j;
+  }
+
+  async hqMatter(id: string, before = 0, signal?: AbortSignal): Promise<HQMatterDetail> {
+    const q = `matter=${encodeURIComponent(id)}` + (before ? `&before=${before}` : '');
+    const r = await tfetch(`${this.base}/api/hq/workspace?${q}`, {headers: this.h(), ...(signal ? {signal} : {})});
+    if (!r.ok) throw new ApiError(r.status, 'hq/workspace');
+    const j = await unreadAnswer(r, 'hq/workspace') as HQMatterDetail | null;
+    if (j?.schema !== 1 || j.matter?.id !== id || !Array.isArray(j.messages)) throw new Error('Invalid HQ matter');
+    return j;
   }
 
   // hqBoard: the supervisor's own situation board (GET /api/hq/board). A board that

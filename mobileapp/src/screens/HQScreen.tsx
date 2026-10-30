@@ -1,18 +1,7 @@
-// HQScreen — the gtmux HQ command page (hq-command-page). Opening the supervisor
-// (role:"supervisor") lands here, NOT the generic Chat/Terminal Detail.
-//
-// It is built from what only the supervisor knows. It deliberately does NOT list the
-// fleet session-by-session: that list is the radar's, one tap away, and the previous
-// design's "fleet board" was a smaller copy of it wedged above the chat — so its own
-// answer to being redundant was a collapse control, which left a bare header strip.
-//
-// Instead: a status strip, an ASSESSMENT line (the deterministic conclusion + the
-// supervisor's own situation board), and three switchable zones each given the full body
-// height — YOUR CALL (a decision card per waiting session, its ask as the body rather
-// than a footnote), ACTIVITY (the severity-tagged event ledger — history, which the
-// radar's present-instant view has none of), and CONSOLE (the conversation with HQ).
-// The command bar spans all three; every command is HQ-mediated (the HQ page has no
-// direct-send input — direct control lives in each worker's own Detail).
+import {HQWorkspaceView} from './HQWorkspaceView';
+// HQ opens the shared matter overview when supported. HQConsoleView retains the
+// existing mediated input, live transcript, decisions and resource readers; it is
+// also the complete fallback for older servers. No direct worker send is added.
 
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Animated, View, Text, ScrollView, TouchableOpacity, StyleSheet, Keyboard, KeyboardAvoidingView, Platform} from 'react-native';
@@ -80,7 +69,12 @@ const EMPTY_TURNS: TranscriptTurn[] = [];
 const HQ_ACTIVE_POLL_MS = 4000;
 const HQ_IDLE_POLL_MS = 8000;
 
-export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compact', showInspector = true, openResource}: {agent: Agent; prefill?: string; onBack?: () => void; layout?: SizeClass; showInspector?: boolean; openResource?: HQResourceRequest}) {
+export function HQView(props: React.ComponentProps<typeof HQConsoleView>) {
+  return <HQWorkspaceView {...props} renderConsole={renderHQConsole} />;
+}
+const renderHQConsole = (props: React.ComponentProps<typeof HQConsoleView>) => <HQConsoleView {...props} />;
+
+export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout = 'compact', showInspector = true, openResource, onResourceExit}: {agent: Agent; prefill?: string; onBack?: () => void; layout?: SizeClass; showInspector?: boolean; openResource?: HQResourceRequest; onResourceExit?: (destination: 'overview' | 'console') => void}) {
   const {select} = useWorkspace();
   // A wide main pane (D5): the report header spans the main pane, the console takes the
   // width beneath it, and the two zones the phone puts behind tabs sit in an inspector on
@@ -120,7 +114,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
   const [pending, setPending] = useState<string | undefined>();
   const [selected, setSelected] = useState<DigestRow | null>(null);
   const [zone, setZone] = useState<Zone | null>(null); // null until the first digest picks it
-  const [boardOpen, setBoardOpen] = useState(false);
+  const [boardOpen, setBoardOpen] = useState(openResource?.page === 'board');
   const [tasks, setTasks] = useState<BackgroundTask[]>([]);
   const [tasksOpen, setTasksOpen] = useState(false);
   // The "HQ did" row's list. The row switched to the Console, which was usually the zone
@@ -136,6 +130,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
   const [knowledgeOpen, setKnowledgeOpen] = useState(openResource?.page === 'knowledge');
   useEffect(() => {
     if (!openResource) return;
+    setBoardOpen(openResource.page === 'board');
     setUsageOpen(openResource.page === 'usage');
     setKnowledgeOpen(openResource.page === 'knowledge');
   }, [openResource]);
@@ -400,6 +395,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
   const tellHQ = useCallback(
     (item: AskItem, mode: 'accept' | 'compose') => {
       setBoardOpen(false);
+      onResourceExit?.('console');
       const quote = askQuote(item, zh);
       if (mode === 'accept') {
         command(quote + (zh ? '按你的建议办。' : 'do as you suggest.'));
@@ -407,7 +403,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
         setPrefill({text: quote, at: Date.now()});
       }
     },
-    [command, zh],
+    [command, zh, onResourceExit],
   );
 
   // Open a worker's own Detail — the ONLY place direct input to a worker lives.
@@ -750,7 +746,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
         nowSecs={now}
         pal={pal}
         zh={zh}
-        onClose={() => setKnowledgeOpen(false)}
+        onClose={() => {setKnowledgeOpen(false); if (openResource?.page === 'knowledge') onResourceExit?.('overview');}}
         openAt={knowledgeOpenAt}
         loadEntry={id => client.hqKnowledgeEntry(id)}
         act={async a => {
@@ -771,7 +767,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
         pal={pal}
         lang={lang}
         layout={layout}
-        onClose={() => setUsageOpen(false)}
+        onClose={() => {setUsageOpen(false); if (openResource?.page === 'usage') onResourceExit?.('overview');}}
       />
 
       <BoardSheet
@@ -780,7 +776,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
         age={boardAge(board.updated_at, now, zh)}
         pal={pal}
         zh={zh}
-        onClose={() => setBoardOpen(false)}
+        onClose={() => {setBoardOpen(false); if (openResource?.page === 'board') onResourceExit?.('overview');}}
         onTell={demo ? undefined : tellHQ}
       />
       <HQActsSheet

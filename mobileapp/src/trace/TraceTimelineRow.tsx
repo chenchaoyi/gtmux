@@ -133,7 +133,14 @@ export function TraceTimelineRow({
           {group.events.some(event => event.kind === 'context') &&
             ` · ${
               group.events.filter(event => event.kind === 'context').length
-            }${zh ? ' 条上下文' : ' context records'}`}
+            }${
+              zh
+                ? ' 条上下文'
+                : group.events.filter(event => event.kind === 'context')
+                    .length === 1
+                ? ' context record'
+                : ' context records'
+            }`}
         </ChromeText>
       </TouchableOpacity>
     );

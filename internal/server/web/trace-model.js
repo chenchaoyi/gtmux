@@ -1,5 +1,5 @@
-// Generated from mobileapp/src/trace/model.ts; SHA256 0d7820d73e396fadd42484746a6b2c83228a26a5c55a75f551013d2e49bd4edd
-// Body SHA256 26a5be18f823ee65b312d26963275ae855e711eaf3dd5d76390546bcc88c99bb
+// Generated from mobileapp/src/trace/model.ts; SHA256 d96fbb642a669f2e7ffed8432b4a6e03acd078bd94ffb1bca23d5ff3fd177c4d
+// Body SHA256 33a42422466c3261af28b341e19f8bb718269c17fa3754ce6ed52c65765a88c7
 (function(root){var exports={};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -49,6 +49,22 @@ function build(turns, context = {}) {
     const ctx = context || {};
     const events = [], sessions = [];
     const groups = new Map(), occurrences = new Map(), turnCounts = new Map();
+    // Old servers can omit both clocks and record IDs. Only ambiguous prompts
+    // need a content fallback; a single streaming turn must retain its identity.
+    const clockless = new Map();
+    list(turns).forEach(raw => {
+        const turn = object(raw);
+        if (!turn || string(turn.record_id) || string(turn.time))
+            return;
+        const scope = string(ctx.home_id) +
+            '\x00' +
+            (string(turn.session_id) ||
+                string(ctx.session_id) ||
+                string(ctx.pane_id) ||
+                'current');
+        const value = scope + '\x00' + string(turn.prompt);
+        clockless.set(value, (clockless.get(value) || 0) + 1);
+    });
     list(turns).forEach((raw, sourceIndex) => {
         const turn = object(raw);
         if (!turn)
@@ -67,7 +83,16 @@ function build(turns, context = {}) {
         const sessionGroup = group;
         const ordinal = (turnCounts.get(scope) || 0) + 1;
         turnCounts.set(scope, ordinal);
-        const prompt = string(turn.prompt), time = string(turn.time), identity = scope + '\x00' + time + '\x00' + prompt;
+        const prompt = string(turn.prompt), time = string(turn.time), identity = scope +
+            '\x00' +
+            (string(turn.record_id) || time) +
+            '\x00' +
+            prompt +
+            (!string(turn.record_id) &&
+                !time &&
+                (clockless.get(scope + '\x00' + prompt) || 0) > 1
+                ? '\x00' + JSON.stringify([turn.response, turn.segments])
+                : '');
         const occurrence = occurrences.get(identity) || 0;
         occurrences.set(identity, occurrence + 1);
         const key = digest(identity) + '-' + occurrence;

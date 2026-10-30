@@ -254,3 +254,52 @@ scenario('Idle Trace opens latest without a follow mode and preserves a historic
   fixture.state.turns['%901']=[...fixture.state.turns['%901'],{...record('Codex','stable','TAIL APPEND'),segments:[{text:'TAIL FOLLOW ACCEPTED'}]}];
   await trace.locator('.trace-event.on').filter({hasText:'TAIL FOLLOW ACCEPTED'}).waitFor();
 });
+
+
+for (const width of [390, 1440]) {
+  scenario(`Trace preserves modified shortcuts at ${width}`, {viewport:{width,height:900},locale:'zh-CN',hasTouch:width<700}, async(page,fixture)=>{
+    agentFixture(fixture);
+    const trace=await openTrace(page,fixture,width);
+    await trace.locator('.trace-event.tool').click();
+    await page.evaluate(()=>{
+      window.traceShortcutEvents=[];
+      document.querySelector('.trace-view').addEventListener('keydown',event=>{
+        if (!(event.metaKey||event.ctrlKey||event.altKey)||!['ArrowLeft','ArrowRight','ArrowDown','Home'].includes(event.key)) return;
+        window.traceShortcutEvents.push(event.defaultPrevented);
+        // Observe the component's handling, then fence browser navigation in this fixture.
+        event.preventDefault();event.stopPropagation();
+      });
+    });
+    for (const shortcut of ['Meta+ArrowLeft','Control+Home','Alt+ArrowRight']) {
+      await trace.locator('.trace-overview-mode').click();
+      await trace.locator('.trace-overview-mode').focus();
+      await page.keyboard.press(shortcut);
+      assert.equal(await trace.locator('.trace-overview-mode').getAttribute('aria-selected'),'true',shortcut+' must not change the selected detail');
+      assert.equal(await trace.locator('.trace-overview-mode').evaluate(node=>node===document.activeElement),true);
+    }
+    await page.keyboard.press('ArrowRight');
+    assert.equal(await trace.locator('.trace-preview-mode').getAttribute('aria-selected'),'true','unmodified arrows still navigate details');
+    await trace.locator('.trace-close').click();
+    const selected=trace.locator('.trace-event[aria-pressed="true"]');
+    const key=await selected.getAttribute('data-key');
+    await selected.focus();await page.keyboard.press('Meta+ArrowDown');
+    assert.equal(await trace.locator('.trace-event[aria-pressed="true"]').getAttribute('data-key'),key,'modified arrows must not change the selected record');
+    assert.deepEqual(await page.evaluate(()=>window.traceShortcutEvents),[false,false,false,false]);
+    await page.keyboard.press('ArrowDown');
+    assert.notEqual(await trace.locator('.trace-event[aria-pressed="true"]').getAttribute('data-key'),key,'unmodified arrows still navigate records');
+    assert.equal(fixture.state.sends.length,0);
+  });
+}
+
+for (const recordIDs of [false, true]) scenario(`Trace keeps repeated clockless calls on their original turn (record IDs ${recordIDs})`, {viewport:{width:1440,height:900},locale:'en-US'}, async(page,fixture)=>{
+  agentFixture(fixture);
+  const turn = i => ({...(recordIDs ? {record_id:'log:'+i} : {}),session_id:'synthetic-current',agent:'Codex',prompt:'Continue',segments:[{text:'Inspecting',steps:[{title:'exec_command',input:'echo item-'+i,operation:'command'}]}]});
+  fixture.state.turns['%901']=[turn(1),turn(2)];
+  const trace=await openTrace(page,fixture,1440);
+  await trace.locator('.trace-event.tool').last().click();await trace.locator('.trace-source-mode').click();await trace.locator('.trace-count').click();
+  const selected=await trace.locator('.trace-event.tool[aria-pressed="true"]').getAttribute('data-key');
+  fixture.state.turns['%901']=[turn(0),turn(1),turn(2),turn(3)];
+  await page.waitForFunction(()=>document.querySelectorAll('.trace-view .trace-event.tool').length===4);
+  assert.equal(await trace.locator('.trace-event.tool[aria-pressed="true"]').getAttribute('data-key'),selected);
+  assert.equal(await trace.locator('.trace-source').innerText(),'echo item-2');assert.equal(fixture.state.sends.length,0);
+});

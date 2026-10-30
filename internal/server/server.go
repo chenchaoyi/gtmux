@@ -169,6 +169,9 @@ type Deps struct {
 	// (a supervisor that has never written one), NOT an error. Optional: nil → GET
 	// /api/hq/board reports no board rather than 503, since "no board" is the same
 	// answer either way and a client shouldn't need to tell the two apart.
+	// HQWorkspace returns the read-only CLI list/detail projection (empty matter = overview).
+	HQWorkspace func(matter string, before uint64) ([]byte, error)
+
 	HQBoard func() (text string, modUnix int64, ok bool)
 
 	// HQEvents returns the marshaled event ledger at a severity FLOOR ("" = all),
@@ -373,6 +376,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/digest", s.auth(http.HandlerFunc(s.handleDigest)))
 	mux.Handle("/api/awake", s.auth(http.HandlerFunc(s.handleServerMode)))
 	mux.Handle("/api/usage", s.auth(http.HandlerFunc(s.handleUsage)))
+	mux.Handle("/api/hq/workspace", s.auth(http.HandlerFunc(s.handleHQWorkspace)))
 	mux.Handle("/api/hq/board", s.auth(http.HandlerFunc(s.handleHQBoard)))                    // owner: the supervisor's situation board
 	mux.Handle("/api/hq/events", s.auth(http.HandlerFunc(s.handleHQEvents)))                  // owner: severity-floored event ledger
 	mux.Handle("/api/hq/knowledge", s.auth(http.HandlerFunc(s.handleHQKnowledge)))            // owner: the knowledge index

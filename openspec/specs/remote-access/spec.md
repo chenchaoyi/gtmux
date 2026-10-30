@@ -1536,3 +1536,14 @@ cloudflared. Updates SHALL preserve installation channel and TLS verification.
 - **AND** old or unverified runtime SHALL return an incomplete result with an explicit
   recovery action and long-lived connection warning, without silently restarting it
 - **AND** legacy login services and other hosts remain outside this runtime assertion
+
+### Requirement: HQ workspace remote reads are owner-only and bounded
+The server SHALL expose GET /api/hq/workspace as a read-only adapter to the same local CLI overview and selected matter builders. Guests SHALL be rejected before invoking the adapter. The adapter SHALL accept a matter ID and optional unsigned before cursor, return at most 60 saved messages per page, reject mutation methods and reserved global/activity scopes, and bound responses to 8 MiB. Reading MUST NOT drain delivery, acknowledge events, follow participants or write records.
+
+#### Scenario: A scoped guest requests matter data
+- **WHEN** a guest requests the overview or selected detail
+- **THEN** the server responds 403 without reading workspace data
+
+#### Scenario: An invalid or unavailable read
+- **WHEN** the requested matter does not exist, the cursor is invalid or the adapter is absent
+- **THEN** responses are 404, 400 or 501 respectively, with no private source paths

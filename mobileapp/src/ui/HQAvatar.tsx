@@ -3,9 +3,9 @@ import {StyleSheet, View} from 'react-native';
 import {BrandMark} from './BrandMark';
 
 /** HQ identifies the gtmux coordination role, independently of its current harness. */
-export function HQAvatar({size = 26}: {size?: number}) {
+export function HQAvatar({size = 26, ink = "rgba(255,255,255,0.92)"}: {size?: number; ink?: string}) {
   return <View testID="hq-avatar" style={[styles.tile, {width: size, height: size, borderRadius: size / 2}]}>
-    <BrandMark size={size * 0.9} neutral="rgba(255,255,255,0.92)" />
+    <BrandMark size={size * 0.9} neutral={ink} />
   </View>;
 }
 

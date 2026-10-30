@@ -860,3 +860,12 @@ test('participant profile encodes message identity and guards optional chain sha
   fetchMock.mockResolvedValueOnce(okJson({}, false, 403));
   await expect(new GtmuxClient(BASE, TOKEN).participantProfile({id: '%4'})).rejects.toMatchObject({status: 403});
 });
+
+test('HQ workspace distinguishes old servers, unread responses and revoked credentials', async () => {
+  const c = new GtmuxClient(BASE, TOKEN);
+  for (const status of [404, 501]) {fetchMock.mockResolvedValueOnce(okJson({}, false, status)); await expect(c.hqWorkspace()).resolves.toBeNull();}
+  for (const status of [401, 403, 502]) {fetchMock.mockResolvedValueOnce(okJson({}, false, status)); await expect(c.hqWorkspace()).rejects.toBeInstanceOf(ApiError);}
+  fetchMock.mockResolvedValueOnce(okJson({schema: 99})); await expect(c.hqWorkspace()).rejects.toThrow('Invalid HQ workspace');
+  fetchMock.mockResolvedValueOnce(okJson({schema: 1, matter: {id: 'wrong'}, messages: []})); await expect(c.hqMatter('correct', 42)).rejects.toThrow('Invalid HQ matter');
+  expect(fetchMock.mock.calls.at(-1)?.[0]).toBe(BASE + '/api/hq/workspace?matter=correct&before=42');
+});

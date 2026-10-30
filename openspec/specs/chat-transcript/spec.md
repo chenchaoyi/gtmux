@@ -673,3 +673,10 @@ and empty context-only segments, with audience-separated conditional revisions.
 - **WHEN** an owner client requests a transcript without the context capability query
 - **THEN** context and empty context-only segments are omitted
 - **AND** its conditional revision cannot reuse the opted-in reader representation
+
+### Requirement: Public turns carry stable opaque source positions
+Transcript parsers SHALL attach an optional opaque record_id derived from source position, scoped by the conversation. JSONL offsets SHALL remain stable through incremental reads and tail limits; distinct source files SHALL not share offset identities. DSH public append sequence SHALL identify its recorded turn without exposing replay state or creating an input capability. Older consumers MAY ignore this additive field.
+
+#### Scenario: Identical clockless prompts and a growing reply
+- **WHEN** multiple equal prompts are parsed, older history is requested and the active reply grows
+- **THEN** each recorded turn keeps its distinct record_id

@@ -27,7 +27,7 @@ function scenario(name, options, run) {
       assert.match(await page.title(), / · gtmux$/);
       assert.equal(errors.length, 0, errors.join('\n'));
     } catch (error) {
-      const output = path.join(__dirname, 'results', name.replace(/[^a-z0-9]+/gi, '-'));
+      const output = path.join(process.env.GTMUX_WEB_RESULTS || path.join(__dirname, 'results'), name.replace(/[^a-z0-9]+/gi, '-'));
       await fs.mkdir(output, {recursive: true});
       if (page) await page.screenshot({path: path.join(output, 'failure.png'), fullPage: true}).catch(() => {});
       if (context) await context.tracing.stop({path: path.join(output, 'trace.zip')}).catch(() => {});

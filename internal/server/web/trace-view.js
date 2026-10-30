@@ -165,7 +165,7 @@
       if (turn && !row.open) {
         var summary = group.prompt ? group.prompt.body : group.events[0].body;
         node.appendChild(el('span', 'trace-group-summary', summary.replace(/\s+/g, ' ')));
-        node.appendChild(el('span', 'trace-group-count', group.calls + T(' calls', ' 次调用') + ' · ' + group.events.length + T(' records', ' 条记录')));
+        node.appendChild(el('span', 'trace-group-count', group.calls + T(group.calls === 1 ? ' call' : ' calls', ' 次调用') + ' · ' + group.events.length + T(group.events.length === 1 ? ' record' : ' records', ' 条记录')));
       } else if (!turn) node.appendChild(el('span', 'trace-call-names', [...new Set(row.events.map(function (event) { return event.title; }))].join(', ')));
       return node;
     }
@@ -217,8 +217,8 @@
       var position = filtered.findIndex(function (event) { return event.key === selected; });
       if (follow || scrollToSelected) page = Math.max(0, Math.floor(positionFor(filtered[position]) / pageSize));
       page = Math.min(page, Math.max(0, Math.floor((presented.length - 1) / pageSize)));
-      count.textContent = (filtered.length === current.events.length ? current.events.length : filtered.length + ' / ' + current.events.length) + T(' records', ' 条');
-      count.title = current.turns + T(' loaded turns', ' 轮已载入会话');
+      count.textContent = (filtered.length === current.events.length ? current.events.length : filtered.length + ' / ' + current.events.length) + T(current.events.length === 1 ? ' record' : ' records', ' 条');
+      count.title = current.turns + T(current.turns === 1 ? ' loaded turn' : ' loaded turns', ' 轮已载入会话');
       var turnsOpen = model.groupTurns(filtered).every(function (group) { return expandedTurns[group.key] ?? defaults.turns; });
       var callsOpen = model.timelineRows(model.groupTurns(filtered), {}, expandedCalls, false, {turns: true, calls: defaults.calls}).filter(function (row) { return row.type === 'calls'; }).every(function (row) { return row.open; });
       [[foldTurns, turnsOpen, T('Turns', '轮次'), 'turns'], [foldCalls, callsOpen, T('Calls', '调用'), 'calls']].forEach(function (value) {
@@ -243,14 +243,14 @@
       updateStatus();
     }, {passive: true});
     list.onkeydown = function (event) {
-      if (!event.target.matches('.trace-event') || !['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
+      if (event.altKey || event.ctrlKey || event.metaKey || !event.target.matches('.trace-event') || !['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
       var index = filtered.findIndex(function (item) { return item.key === event.target.dataset.key; });
       index = event.key === 'Home' ? 0 : event.key === 'End' ? filtered.length - 1 : Math.max(0, Math.min(filtered.length - 1, index + (event.key === 'ArrowUp' ? -1 : 1)));
       event.preventDefault(); stopFollowing(); selected = filtered[index].key; reveal(filtered[index]); page = Math.floor(positionFor(filtered[index]) / pageSize); renderList(true); inspect(filtered[index], false); rowNodes.get(selected).focus({preventScroll: true});
     };
     scrub.oninput = function () { follow = false; var event = filtered[Number(scrub.value)]; if (!event) return; selected = event.key; reveal(event); page = Math.floor(positionFor(event) / pageSize); renderList(true); inspect(event, false); var row = rowNodes.get(event.key); if (row) row.scrollIntoView({block: 'nearest'}); };
     modes.onkeydown = function (event) {
-      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+      if (event.altKey || event.ctrlKey || event.metaKey || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
       var tabs = [overviewTab, preview, source, origin], index = tabs.indexOf(document.activeElement);
       if (index < 0) return;
       index = event.key === 'Home' ? 0 : event.key === 'End' ? 3 : (index + (event.key === 'ArrowLeft' ? 3 : 1)) % 4;

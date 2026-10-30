@@ -52,6 +52,7 @@ func dshStep(line []byte, st *parseState) error {
 			st.open(text, dsh.Timestamp(event.Time))
 			seq := event.Seq
 			st.cur.PromptMessageSeq = &seq
+			st.cur.RecordID = fmt.Sprintf("dsh-message:%d", seq)
 		}
 	case "assistant/message":
 		var data struct{ Message dshMessage }
@@ -77,6 +78,9 @@ func dshStep(line []byte, st *parseState) error {
 		}
 	}
 	if st.cur != nil {
+		if st.cur.RecordID == "" {
+			st.cur.RecordID = fmt.Sprintf("dsh-event:%d", event.Seq)
+		}
 		size := len(st.cur.Prompt)
 		size += st.toolDetailBytes
 		for _, seg := range st.cur.Segments {
