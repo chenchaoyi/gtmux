@@ -489,7 +489,7 @@ scenario('Workspace controls support keyboard access and truthful copy feedback'
   assert.equal(await page.locator('#wb-preset').getAttribute('aria-expanded'), 'false');
   assert.equal(await page.locator('#wb-preset').evaluate(e => e === document.activeElement), true);
   await page.locator('#wb-gear').click();
-  await page.locator('#appearance-sel').press('Escape');
+  await page.locator('#appearance-options input:checked').press('Escape');
   assert.equal(await page.locator('#settings').isVisible(), false);
   assert.equal(await page.locator('#wb-gear').getAttribute('aria-expanded'), 'false');
   assert.equal(await page.locator('#wb-gear').evaluate(e => e === document.activeElement), true);
@@ -606,11 +606,11 @@ scenario('Appearance follows the system and persists an explicit choice without 
   await page.goto(fixture.url);
   assert.equal(await page.locator('html').getAttribute('data-theme'), 'light');
   await page.getByRole('button', {name: '设置', exact: true}).click();
-  assert.equal(await page.locator('#appearance-sel').inputValue(), 'system');
+  assert.equal(await page.locator('#appearance-options input:checked').inputValue(), 'system');
   await page.emulateMedia({colorScheme: 'dark'});
   await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark');
   assert.equal(await page.locator('html').getAttribute('data-theme'), 'dark');
-  await page.locator('#appearance-sel').selectOption('light');
+  await page.locator('#appearance-light-radio').check();
   assert.equal(await page.locator('html').getAttribute('data-theme'), 'light');
   await page.reload();
   assert.equal(await page.locator('html').getAttribute('data-theme'), 'light');
@@ -630,11 +630,11 @@ scenario('Appearance follows the system and persists an explicit choice without 
     await page.screenshot({path: path.join(process.env.GTMUX_WEB_EVIDENCE, 'chat-light.png')});
   }
   await page.locator('#gear').click();
-  await page.locator('#appearance-sel').selectOption('dark');
+  await page.locator('#appearance-dark-radio').check();
   await page.locator('#gear').click();
   if (process.env.GTMUX_WEB_EVIDENCE) await page.screenshot({path: path.join(process.env.GTMUX_WEB_EVIDENCE, 'chat-dark.png')});
   await page.locator('#gear').click();
-  await page.locator('#appearance-sel').selectOption('system');
+  await page.locator('#appearance-system-radio').check();
   await page.emulateMedia({colorScheme: 'light'});
   await page.waitForFunction(() => document.documentElement.dataset.theme === 'light');
   assert.equal(await page.locator('html').getAttribute('data-theme'), 'light');

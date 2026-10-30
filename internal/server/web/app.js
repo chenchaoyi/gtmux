@@ -197,15 +197,12 @@
     ['appearance-system', {text: T('System', '跟随系统')}],
     ['appearance-light', {text: T('Light', '浅色')}],
     ['appearance-dark', {text: T('Dark', '深色')}],
-    ['appearance-sel', {label: T('Appearance', '外观')}],
     ['return-send-lbl', {text: T('Enter to send', '回车发送')}],
     ['settings-title', {text: T('Settings', '设置')}],
-    ['settings-display', {text: T('Display', '显示')}],
     ['settings-chat', {text: T('Chat', '对话')}],
     ['settings-terminal', {text: T('Terminal', '终端')}],
-    ['terminal-preview-path', {text: '~/gtmux'}], // Literal font sample, not a session path.
     ['settings-close', {html: uiIcon('close'), label: T('Close settings', '关闭设置'), title: T('Close settings', '关闭设置')}],
-    ['settings-reset', {text: T('Reset to defaults', '恢复默认设置')}],
+    ['settings-reset', {text: T('Reset', '恢复默认')}],
     ['chat-size-lbl', {text: T('Text size', '正文字号')}],
     ['session-trace', {title: T('Trace', '轨迹'), html: uiIcon('trace') + T('Trace', '轨迹')}],
     ['session-diff', {title: 'Diff', html: uiIcon('diff') + 'Diff'}],
@@ -1122,7 +1119,7 @@
     var dark = appearancePref === 'dark' || (appearancePref === 'system' && systemAppearance && systemAppearance.matches);
     document.documentElement.dataset.theme = dark ? 'dark' : 'light';
     document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
-    var sel = $('appearance-sel'); if (sel) sel.value = appearancePref;
+    document.querySelectorAll('#appearance-options input').forEach(function (radio) { radio.checked = radio.value === appearancePref; });
   }
   function setupWebAppearance() {
     systemAppearance = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
@@ -3686,21 +3683,20 @@
     $('chat-size-rng').value = String(chatSizePref); $('chat-size-val').textContent = chatSizePref + ' px'; $('chat-size-rng').setAttribute('aria-valuetext', chatSizePref + ' px');
     var hint = $('return-send-hint'); hint.textContent = '';
     var sends = $('return-sends').checked;
-    hint.appendChild(el('kbd', '', sends ? 'Enter' : '⌘ / Ctrl + Enter')); hint.appendChild(document.createTextNode(T(' sends · ', ' 发送 · ')));
-    hint.appendChild(el('kbd', '', sends ? 'Shift + Enter' : 'Enter')); hint.appendChild(document.createTextNode(T(' new line', ' 换行')));
+    hint.appendChild(el('kbd', '', sends ? 'Shift + Enter' : '⌘/Ctrl + Enter')); hint.appendChild(document.createTextNode(sends ? T(' new line', ' 换行') : T(' sends', ' 发送')));
   }
   function setSettingsOpen(open, trigger) {
     $('settings').hidden = !open;
     if (trigger) settingsTrigger = trigger;
     ['gear', 'wb-gear'].forEach(function (id) { $(id).setAttribute('aria-expanded', String(open && $(id) === settingsTrigger)); });
   }
-  function toggleSettings(anchor, trigger) { placeSettings(anchor); setSettingsOpen($('settings').hidden, trigger); if (!$('settings').hidden) { syncSettings(); $('appearance-sel').focus(); } }
+  function toggleSettings(anchor, trigger) { placeSettings(anchor); setSettingsOpen($('settings').hidden, trigger); if (!$('settings').hidden) { syncSettings(); $('appearance-options').querySelector('input:checked').focus(); } }
   function setupSettings() {
     applyAppearance();
     var gear = $('gear'), panel = $('settings'), sel = $('font-sel'), rng = $('size-rng');
     gear.hidden = false;
-    var appearance = $('appearance-sel'); appearance.value = appearancePref;
-    appearance.onchange = function () { appearancePref = appearance.value; try { localStorage.setItem('gtmux.appearance', appearancePref); } catch (e) {} applyWebAppearance(); };
+    var appearance = $('appearance-options');
+    appearance.onchange = function () { appearancePref = appearance.querySelector('input:checked').value; try { localStorage.setItem('gtmux.appearance', appearancePref); } catch (e) {} applyWebAppearance(); };
     sel.value = fontPref;
     function syncSize() { syncSettings(); }
     syncSize();
