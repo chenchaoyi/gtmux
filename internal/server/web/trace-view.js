@@ -165,7 +165,7 @@
       if (turn && !row.open) {
         var summary = group.prompt ? group.prompt.body : group.events[0].body;
         node.appendChild(el('span', 'trace-group-summary', summary.replace(/\s+/g, ' ')));
-        node.appendChild(el('span', 'trace-group-count', group.calls + T(' calls', ' 次调用') + ' · ' + group.events.length + T(' records', ' 条记录')));
+        node.appendChild(el('span', 'trace-group-count', group.calls + T(group.calls === 1 ? ' call' : ' calls', ' 次调用') + ' · ' + group.events.length + T(group.events.length === 1 ? ' record' : ' records', ' 条记录')));
       } else if (!turn) node.appendChild(el('span', 'trace-call-names', [...new Set(row.events.map(function (event) { return event.title; }))].join(', ')));
       return node;
     }
@@ -217,8 +217,8 @@
       var position = filtered.findIndex(function (event) { return event.key === selected; });
       if (follow || scrollToSelected) page = Math.max(0, Math.floor(positionFor(filtered[position]) / pageSize));
       page = Math.min(page, Math.max(0, Math.floor((presented.length - 1) / pageSize)));
-      count.textContent = (filtered.length === current.events.length ? current.events.length : filtered.length + ' / ' + current.events.length) + T(' records', ' 条');
-      count.title = current.turns + T(' loaded turns', ' 轮已载入会话');
+      count.textContent = (filtered.length === current.events.length ? current.events.length : filtered.length + ' / ' + current.events.length) + T(current.events.length === 1 ? ' record' : ' records', ' 条');
+      count.title = current.turns + T(current.turns === 1 ? ' loaded turn' : ' loaded turns', ' 轮已载入会话');
       var turnsOpen = model.groupTurns(filtered).every(function (group) { return expandedTurns[group.key] ?? defaults.turns; });
       var callsOpen = model.timelineRows(model.groupTurns(filtered), {}, expandedCalls, false, {turns: true, calls: defaults.calls}).filter(function (row) { return row.type === 'calls'; }).every(function (row) { return row.open; });
       [[foldTurns, turnsOpen, T('Turns', '轮次'), 'turns'], [foldCalls, callsOpen, T('Calls', '调用'), 'calls']].forEach(function (value) {

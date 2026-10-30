@@ -505,7 +505,8 @@ export function TraceReader({
             style={[styles.caption, styles.flex, { color: pal.fg2 }]}
           >
             {groups.length}
-            {zh ? ' 轮' : ' turns'} · {events.length}
+            {zh ? ' 轮' : groups.length === 1 ? ' turn' : ' turns'} ·{' '}
+            {events.length}
             {zh ? ' 条记录' : events.length === 1 ? ' record' : ' records'}
           </ChromeText>
           {(['turns', 'calls'] as const).map(level => {
@@ -596,7 +597,9 @@ export function TraceReader({
         <ChromeText style={[styles.notice, { color: pal.fg2 }]}>
           {zh
             ? `更早的 ${dropped} 轮未载入`
-            : `${dropped} earlier turns are not loaded`}
+            : `${dropped} earlier ${
+                dropped === 1 ? 'turn is' : 'turns are'
+              } not loaded`}
         </ChromeText>
       )}
       {listVisible && earlierAvailable && onLoadEarlier && (
