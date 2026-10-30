@@ -23,6 +23,7 @@ func TestCodexChatRecordHeaders(t *testing.T) {
 		{`{"type":"response_item","payload":{"type":"custom_tool_call_output","output":"`, false},
 		{`{"type":"event_msg","payload":{"type":"item_completed","item":`, false},
 		{`{"type":"response_item","payload":{"type":"message","role":"user"`, true},
+		{`{"type":"response_item","payload":{"type":"custom_tool_call","name":"exec"`, true},
 		{`{"type":"event_msg","payload":{"message":"body","type":"agent_message"}}`, true},
 		{`{"payload":{"type":"message"},"type":"response_item"}`, true},
 		{`{"timestamp":"long incomplete`, true},

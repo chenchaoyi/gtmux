@@ -32,13 +32,19 @@ import { ParticipantProfileModal } from '../ui/ParticipantProfileModal';
 import { ProfileTarget } from '../ui/participantProfile';
 import { MarkdownView } from '../ui/MarkdownView';
 import { CopyableText, CopyFeedbackContext } from '../ui/CopyableText';
-import { CopyIcon } from '../ui/Icons';
+import { ArrowToBottomIcon, CopyIcon, SearchIcon } from '../ui/Icons';
 import { ChromeText } from '../ui/ChromeText';
 import { SIcon } from '../ui/SettingsIcons';
 import { StatusBadge } from '../ui/StatusBadge';
 import { nativeDocumentPreview } from '../documents/nativePreview';
 import { DocumentError, documentErrorMessage } from '../documents/references';
-import { build, filter, TraceEvent, TraceKind } from './model';
+import { build, filter, groupTurns, TraceEvent, TraceKind } from './model';
+import { timelineRows, TimelineRow } from './timeline';
+import {
+  TraceTimelineRow,
+  traceEventLabel,
+  traceEventPreview,
+} from './TraceTimelineRow';
 
 type Props = {
   visible: boolean;
@@ -109,15 +115,20 @@ export function TraceReader({
     [detailsOpen, setDetailsOpen] = useState(false),
     [source, setSource] = useState(false);
   const [limitsOpen, setLimitsOpen] = useState(false);
-  const [follow, setFollow] = useState(agent.status === 'working'),
+  const [atTail, setAtTail] = useState(true),
+    [searchOpen, setSearchOpen] = useState(false),
+    [expandedTurns, setExpandedTurns] = useState<Record<string, boolean>>({}),
+    [expandedCalls, setExpandedCalls] = useState<Record<string, boolean>>({}),
     [profile, setProfile] = useState<ProfileTarget | null>(null),
     [copied, setCopied] = useState(false);
   const rows = useRef(new Map<string, View>()),
     searchRef = useRef<TextInput>(null);
-  const list = useRef<FlatList<TraceEvent>>(null),
-    followRef = useRef(follow),
+  const list = useRef<FlatList<TimelineRow>>(null),
+    stick = useRef(true),
+    dragging = useRef(false),
+    gapRef = useRef(0),
+    tailFrame = useRef<number | null>(null),
     copyTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  followRef.current = follow;
   const scope = JSON.stringify([
     agent.pane_id,
     agent.session_id,
@@ -134,8 +145,20 @@ export function TraceReader({
     setQuery('');
     setKind('all');
     setSession('all');
+    setSearchOpen(false);
+    setExpandedTurns({});
+    setExpandedCalls({});
+    stick.current = true;
+    setAtTail(true);
+    if (tailFrame.current !== null) cancelAnimationFrame(tailFrame.current);
   }, [client, scope]);
-  useEffect(() => () => clearTimeout(copyTimer.current), []);
+  useEffect(
+    () => () => {
+      clearTimeout(copyTimer.current);
+      if (tailFrame.current !== null) cancelAnimationFrame(tailFrame.current);
+    },
+    [],
+  );
   const safeTurns = sameIdentity ? turns : NO_TURNS;
   const index = useMemo(
     () =>
@@ -151,11 +174,53 @@ export function TraceReader({
     () => filter(index.events, query, kind, session),
     [index, query, kind, session],
   );
+  const groups = useMemo(() => groupTurns(events), [events]);
+  const searching = !!query.trim() || kind !== 'all' || session !== 'all';
+  const latestGroup = groups.at(-1);
+  useEffect(() => {
+    if (sameIdentity && !searching && stick.current && latestGroup)
+      setExpandedTurns(value =>
+        value[latestGroup.key] ? value : { ...value, [latestGroup.key]: true },
+      );
+  }, [sameIdentity, searching, latestGroup?.key]); // eslint-disable-line react-hooks/exhaustive-deps
+  const timeline = useMemo(
+    () => timelineRows(groups, expandedTurns, expandedCalls, searching),
+    [groups, expandedTurns, expandedCalls, searching],
+  );
+  const latestEvent = latestGroup?.events.at(-1);
+  function stopFollowing() {
+    stick.current = false;
+    setAtTail(false);
+    if (tailFrame.current !== null) cancelAnimationFrame(tailFrame.current);
+  }
+  function pinTail() {
+    if (!stick.current || searching || detailsOpen || !sameIdentity) return;
+    if (tailFrame.current !== null) cancelAnimationFrame(tailFrame.current);
+    tailFrame.current = requestAnimationFrame(() => {
+      tailFrame.current = null;
+      if (stick.current && !dragging.current)
+        list.current?.scrollToEnd({ animated: false });
+    });
+  }
+  function jumpLatest() {
+    if (latestGroup)
+      setExpandedTurns(value => ({ ...value, [latestGroup.key]: true }));
+    stick.current = true;
+    setAtTail(true);
+    pinTail();
+  }
+  function toggleTimeline(
+    row: Extract<TimelineRow, { type: 'turn' | 'calls' }>,
+  ) {
+    stopFollowing();
+    if (row.type === 'turn')
+      setExpandedTurns(value => ({ ...value, [row.group.key]: !row.open }));
+    else setExpandedCalls(value => ({ ...value, [row.key]: !row.open }));
+  }
   const current =
     selection && index.events.find(event => event.key === selection.event.key);
   const chosen = sameIdentity && current ? selection : null;
   const showDetails = detailsOpen && !!chosen;
-  const activeSession = index.sessions.find(value => value.key === session);
   const history = session !== 'all' && session !== index.sessions.at(-1)?.key;
   useEffect(() => {
     if (selection && !current) {
@@ -173,7 +238,7 @@ export function TraceReader({
   }, [index.sessions, session]);
   function select(event: TraceEvent) {
     Keyboard.dismiss();
-    setFollow(false);
+    stopFollowing();
     setSelection({ event, turn: turns[event.sourceIndex] });
     setDetailsOpen(true);
     setSource(false);
@@ -181,15 +246,6 @@ export function TraceReader({
   }
   function closeDetail() {
     setDetailsOpen(false);
-    if (chosen) {
-      const at = events.findIndex(event => event.key === chosen.event.key);
-      if (at >= 0)
-        list.current?.scrollToIndex({
-          index: at,
-          animated: false,
-          viewPosition: 0.3,
-        });
-    }
     requestAnimationFrame(() => {
       const target = findNodeHandle(
         chosen
@@ -201,7 +257,8 @@ export function TraceReader({
   }
   function changeFilter(action: () => void) {
     action();
-    setFollow(false);
+    list.current?.scrollToOffset({ offset: 0, animated: false });
+    stopFollowing();
     setDetailsOpen(false);
   }
   async function openFile(reference: string) {
@@ -290,6 +347,20 @@ export function TraceReader({
             {primary(agent)}
           </ChromeText>
         </View>
+        {listVisible && (
+          <TouchableOpacity
+            testID="trace-search-toggle"
+            accessibilityRole="button"
+            accessibilityLabel={zh ? '搜索轨迹' : 'Search trace'}
+            accessibilityState={{ expanded: searchOpen }}
+            onPress={() => {
+              setSearchOpen(value => !value);
+            }}
+            style={styles.iconButton}
+          >
+            <SearchIcon size={22} color={query ? BRAND : pal.fg2} />
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           testID="trace-close"
           accessibilityRole="button"
@@ -300,125 +371,130 @@ export function TraceReader({
           <CloseIcon color={pal.fg2} />
         </TouchableOpacity>
       </View>
+      {listVisible && latestEvent && (
+        <View
+          testID="trace-progress"
+          style={[
+            styles.progress,
+            { backgroundColor: pal.surface, borderColor: pal.divider },
+          ]}
+        >
+          <View style={styles.progressHead}>
+            {!history && !searching && (
+              <StatusBadge
+                status={agent.status}
+                size={18}
+                errored={agent.status === 'idle' && !!agent.error}
+              />
+            )}
+            <ChromeText style={[styles.progressTitle, { color: pal.fg }]}>
+              {searching && !history
+                ? zh
+                  ? '筛选结果'
+                  : 'Filtered records'
+                : history
+                ? zh
+                  ? '历史会话'
+                  : 'History'
+                : statusLabel(
+                    agent.status === 'idle' && agent.error
+                      ? 'errored'
+                      : agent.status,
+                    lang,
+                  )}{' '}
+              · {zh ? `第 ${latestEvent.turn} 轮` : `Turn ${latestEvent.turn}`}
+            </ChromeText>
+            <ChromeText
+              numberOfLines={1}
+              style={[styles.caption, styles.flex, { color: pal.fg2 }]}
+            >
+              {traceEventLabel(latestEvent, lang)}
+            </ChromeText>
+          </View>
+          <ChromeText
+            numberOfLines={1}
+            style={[styles.progressText, { color: pal.fg }]}
+          >
+            {traceEventPreview(latestEvent, lang)}
+          </ChromeText>
+        </View>
+      )}
       {listVisible && (
         <View style={styles.toolbar}>
-          {!history && (
-            <StatusBadge
-              status={agent.status}
-              size={16}
-              errored={agent.status === 'idle' && !!agent.error}
+          {searchOpen && (
+            <TextInput
+              ref={searchRef}
+              testID="trace-search"
+              accessibilityLabel={zh ? '搜索轨迹' : 'Search trace'}
+              placeholder={zh ? '搜索轨迹' : 'Search trace'}
+              placeholderTextColor={pal.fg2}
+              value={query}
+              onChangeText={value => changeFilter(() => setQuery(value))}
+              style={[
+                styles.search,
+                {
+                  backgroundColor: pal.surface,
+                  color: pal.fg,
+                  borderColor: pal.divider,
+                },
+              ]}
+              returnKeyType="search"
+              autoCorrect={false}
+              clearButtonMode="while-editing"
             />
           )}
-          <ChromeText style={[styles.caption, { color: pal.fg2 }]}>
-            {history
-              ? zh
-                ? '历史记录'
-                : 'History'
-              : statusLabel(
-                  agent.status === 'idle' && agent.error
-                    ? 'errored'
-                    : agent.status,
-                  lang,
-                )}{' '}
-            · {events.length}
+          <ChromeText
+            testID="trace-count"
+            style={[styles.caption, styles.flex, { color: pal.fg2 }]}
+          >
+            {groups.length}
+            {zh ? ' 轮' : ' turns'} · {events.length}
             {zh ? ' 条记录' : events.length === 1 ? ' record' : ' records'}
           </ChromeText>
-          {!history && (
-            <>
-              <TouchableOpacity
-                testID="trace-follow"
-                accessibilityRole="button"
-                accessibilityState={{ selected: follow }}
-                accessibilityLabel={zh ? '跟随最新' : 'Follow latest'}
-                style={[
-                  styles.pill,
-                  {
-                    backgroundColor: follow ? pal.rowSelected : pal.surface,
-                    borderColor: pal.divider,
-                  },
-                ]}
-                onPress={() => {
-                  setFollow(!follow);
-                  if (!follow) {
-                    setDetailsOpen(false);
-                    list.current?.scrollToEnd({ animated: false });
-                  }
-                }}
-              >
-                <ChromeText style={{ color: pal.fg2 }}>
-                  {zh ? '跟随最新' : 'Follow latest'}
-                </ChromeText>
-              </TouchableOpacity>
-            </>
-          )}
-          <TextInput
-            ref={searchRef}
-            testID="trace-search"
-            accessibilityLabel={zh ? '搜索轨迹' : 'Search trace'}
-            placeholder={zh ? '搜索轨迹' : 'Search trace'}
-            placeholderTextColor={pal.fg2}
-            value={query}
-            onChangeText={value => changeFilter(() => setQuery(value))}
-            style={[
-              styles.search,
-              {
-                backgroundColor: pal.surface,
-                color: pal.fg,
-                borderColor: pal.divider,
-              },
-            ]}
-            returnKeyType="search"
-            autoCorrect={false}
-            clearButtonMode="while-editing"
-          />
           <FilterMenu
-            label={kindLabels[kind][zh ? 1 : 0]}
+            label={
+              kind === 'all' && session === 'all'
+                ? zh
+                  ? '筛选'
+                  : 'Filter'
+                : kindLabels[kind][zh ? 1 : 0]
+            }
             pal={pal}
             lang={lang}
             testID="trace-kind"
-            items={Object.entries(kindLabels).map(([value, names]) => ({
-              key: value,
-              label: names[zh ? 1 : 0],
-              icon: 'history',
-              selected: value === kind,
-              onPress: () =>
-                changeFilter(() => setKind(value as TraceKind | 'all')),
-            }))}
+            items={[
+              ...Object.entries(kindLabels).map(([value, names]) => ({
+                key: 'kind-' + value,
+                label: names[zh ? 1 : 0],
+                icon: 'history' as const,
+                selected: value === kind,
+                onPress: () =>
+                  changeFilter(() => setKind(value as TraceKind | 'all')),
+              })),
+              ...(index.sessions.length > 1
+                ? [
+                    {
+                      key: 'session-all',
+                      label: zh ? '全部会话' : 'All sessions',
+                      icon: 'history' as const,
+                      selected: session === 'all',
+                      onPress: () => changeFilter(() => setSession('all')),
+                    },
+                    ...index.sessions.map((value, i) => ({
+                      key: 'session-' + value.key,
+                      label:
+                        value.agent +
+                        ' · ' +
+                        (zh ? '会话 ' : 'Session ') +
+                        (i + 1),
+                      icon: 'history' as const,
+                      selected: value.key === session,
+                      onPress: () => changeFilter(() => setSession(value.key)),
+                    })),
+                  ]
+                : []),
+            ]}
           />
-          {index.sessions.length > 1 && (
-            <FilterMenu
-              label={
-                session === 'all'
-                  ? zh
-                    ? '全部会话'
-                    : 'All sessions'
-                  : activeSession
-                  ? [activeSession.agent, activeSession.session]
-                      .filter(Boolean)
-                      .join(' · ')
-                  : session
-              }
-              pal={pal}
-              lang={lang}
-              testID="trace-session"
-              items={[
-                {
-                  key: 'all',
-                  label: zh ? '全部会话' : 'All sessions',
-                  icon: 'history',
-                  selected: session === 'all',
-                  onPress: () => changeFilter(() => setSession('all')),
-                },
-                ...index.sessions.map(value => ({
-                  key: value.key,
-                  label: value.agent + ' · ' + value.session,
-                  icon: 'history' as const,
-                  selected: session === value.key,
-                  onPress: () => changeFilter(() => setSession(value.key)),
-                })),
-              ]}
-            />
-          )}
         </View>
       )}
       {listVisible && dropped > 0 && (
@@ -491,19 +567,44 @@ export function TraceReader({
             }
             pointerEvents={listVisible ? 'auto' : 'none'}
             testID="trace-list"
-            data={events}
-            keyExtractor={event => event.key}
+            data={timeline}
+            keyExtractor={row => row.key}
             keyboardShouldPersistTaps="handled"
             style={[styles.list, !listVisible && styles.covered]}
             maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
             initialNumToRender={14}
             maxToRenderPerBatch={16}
             windowSize={7}
-            onScrollBeginDrag={() => setFollow(false)}
-            onContentSizeChange={() => {
-              if (followRef.current)
-                list.current?.scrollToEnd({ animated: false });
+            onScrollBeginDrag={() => {
+              dragging.current = true;
+              stopFollowing();
             }}
+            onScrollEndDrag={() => {
+              dragging.current = false;
+              if (gapRef.current < 60 && !searching) {
+                stick.current = true;
+                setAtTail(true);
+              }
+            }}
+            onMomentumScrollBegin={() => {
+              dragging.current = true;
+            }}
+            onMomentumScrollEnd={() => {
+              dragging.current = false;
+            }}
+            onScroll={event => {
+              const { contentOffset, contentSize, layoutMeasurement } =
+                event.nativeEvent;
+              gapRef.current =
+                contentSize.height - contentOffset.y - layoutMeasurement.height;
+              if (gapRef.current < 60 && !searching && !detailsOpen) {
+                stick.current = true;
+                setAtTail(true);
+              } else if (dragging.current) stopFollowing();
+            }}
+            scrollEventThrottle={16}
+            onContentSizeChange={pinTail}
+            onLayout={pinTail}
             onScrollToIndexFailed={info => {
               list.current?.scrollToOffset({
                 offset: Math.max(0, info.averageItemLength * info.index),
@@ -525,67 +626,43 @@ export function TraceReader({
                 </ChromeText>
               )
             }
-            renderItem={({ item, index: rowIndex }) => (
-              <TouchableOpacity
-                ref={node => {
-                  if (node) rows.current.set(item.key, node);
-                  else rows.current.delete(item.key);
+            renderItem={({ item }) => (
+              <TraceTimelineRow
+                row={item}
+                sessionNumber={
+                  item.type === 'turn' && index.sessions.length > 1
+                    ? index.sessions.findIndex(
+                        value => value.key === item.group.sessionKey,
+                      ) + 1
+                    : undefined
+                }
+                pal={pal}
+                lang={lang}
+                selected={chosen?.event.key || ''}
+                onSelect={select}
+                onToggle={toggleTimeline}
+                onRef={(key, node) => {
+                  if (node) rows.current.set(key, node);
+                  else rows.current.delete(key);
                 }}
-                testID={'trace-record-' + item.key}
-                accessibilityRole="button"
-                accessibilityState={{
-                  selected: chosen?.event.key === item.key,
-                }}
-                onPress={() => select(item)}
-                style={[
-                  styles.record,
-                  {
-                    borderBottomColor: pal.divider,
-                    backgroundColor:
-                      chosen?.event.key === item.key ? pal.rowSelected : pal.bg,
-                  },
-                ]}
-              >
-                {(rowIndex === 0 ||
-                  events[rowIndex - 1].sessionKey !== item.sessionKey) && (
-                  <ChromeText style={[styles.caption, { color: pal.fg2 }]}>
-                    {item.agent} · {item.session}
-                    {item.boundary?.kind ? ' · /' + item.boundary.kind : ''}
-                  </ChromeText>
-                )}
-                <View style={styles.recordHead}>
-                  <ChromeText style={[styles.kind, { color: pal.fg2 }]}>
-                    {kindLabels[item.kind][zh ? 1 : 0]}
-                  </ChromeText>
-                  <ChromeText
-                    numberOfLines={1}
-                    style={[styles.caption, styles.flex, { color: pal.fg2 }]}
-                  >
-                    {item.agent} ·{' '}
-                    {zh ? '第 ' + item.turn + ' 轮' : 'Turn ' + item.turn}
-                  </ChromeText>
-                </View>
-                <ChromeText
-                  numberOfLines={1}
-                  style={[styles.recordTitle, { color: pal.fg }]}
-                >
-                  {item.title ||
-                    (item.kind === 'user'
-                      ? zh
-                        ? '用户消息'
-                        : 'User message'
-                      : item.agent)}
-                </ChromeText>
-                <ChromeText
-                  numberOfLines={2}
-                  style={[styles.preview, { color: pal.fg2 }]}
-                >
-                  {item.body.replace(/\s+/g, ' ').slice(0, 240)}
-                </ChromeText>
-              </TouchableOpacity>
+              />
             )}
           />
         </View>
+        {!atTail && !searching && !showDetails && !!events.length && (
+          <TouchableOpacity
+            testID="trace-latest"
+            accessibilityRole="button"
+            accessibilityLabel={zh ? '回到最新记录' : 'Jump to latest'}
+            onPress={jumpLatest}
+            style={[
+              styles.latest,
+              { backgroundColor: pal.surface, borderColor: pal.divider },
+            ]}
+          >
+            <ArrowToBottomIcon size={22} color={BRAND} />
+          </TouchableOpacity>
+        )}
         {showDetails && chosen && (
           <View
             testID="trace-detail"
@@ -890,6 +967,28 @@ function FilterMenu({
   );
 }
 const styles = StyleSheet.create({
+  progress: {
+    marginHorizontal: 12,
+    marginTop: 10,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    gap: 6,
+  },
+  progressHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  progressTitle: { fontSize: 13, fontWeight: '600', flexShrink: 1 },
+  progressText: { fontSize: 14, lineHeight: 21, minHeight: 29 },
+  latest: {
+    position: 'absolute',
+    right: 16,
+    bottom: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   errorBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -914,7 +1013,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   toolbar: {
-    padding: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     gap: 8,
     flexDirection: 'row',
     flexWrap: 'wrap',

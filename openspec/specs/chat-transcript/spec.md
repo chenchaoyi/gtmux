@@ -28,7 +28,7 @@ or no readable log.
 #### Scenario: Codex log becomes turns
 
 - **WHEN** a pane has a Codex rollout log (`response_item` user and public assistant
-  messages, `function_call`, or legacy `agent_message` / `task_complete` records)
+  messages, `function_call` / `custom_tool_call`, or legacy `agent_message` / `task_complete` records)
 - **THEN** the parser returns turns with the same `Turn` shape as Claude
 
 #### Scenario: Codex speaks before its turn finishes
@@ -628,3 +628,15 @@ paths SHALL remain literal. Original provider logs SHALL remain unchanged.
 - **WHEN** a prompt contains an observed local image envelope outside a code block
 - **THEN** every transcript consumer receives the same escaped Markdown destination
 - **AND** file resolution still verifies that destination against its conversation
+
+### Requirement: Codex structured and freeform tool-call compatibility
+The shared Codex transcript reader SHALL retain both `response_item/function_call` with JSON-string arguments and `response_item/custom_tool_call` with literal input. Code-mode custom exec SHALL display as a code step while legacy JSON exec remains a command. Original submitted text SHALL use existing UTF-8 input/turn limits. Partial records SHALL be retried without emitting duplicate steps. Results, reasoning and mirrored item-completed events SHALL remain excluded; code text SHALL NOT be interpreted as evidence that nested tools ran.
+
+#### Scenario: Interleave new code calls and old wait/command calls
+- **WHEN** a rollout contains both freeform code input and structured wait or command calls
+- **THEN** each public call appears once in source order in the shared Chat/Trace model with its recorded input
+- **AND** tool output and internal reasoning remain absent
+
+#### Scenario: Append a long freeform call
+- **WHEN** a freeform record is partially written and then completed
+- **THEN** the completed call appears once with a valid UTF-8 bounded input and a truncation marker when required

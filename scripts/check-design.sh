@@ -24,6 +24,9 @@ THEME=macapp/Sources/GtmuxBar/Theme.swift
 fail=0
 note() { echo "design-check: $*"; }
 
+# App and browser identity copy/field order must not drift. No runtime Node dependency.
+if node mobileapp/scripts/gen-participant-web.cjs --check; then :; else fail=1; fi
+
 # Exact private identifiers belong in CI/local configuration, never in this
 # public checker or its diagnostics. Do this before any build/spec helpers.
 if python3 scripts/check_private_source.py; then :; else fail=1; fi

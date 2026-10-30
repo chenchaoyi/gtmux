@@ -27,8 +27,8 @@ scenario('HQ roster avatars retain supervisor identity without a pane-browser ti
   await page.locator('#chat .chat-state .speaker-avatar').click();
   const dialog=page.locator('.browser-dialog');
   await dialog.getByRole('heading',{name:'gtmux HQ',exact:true}).waitFor();
-  assert.match(await dialog.innerText(),/HQ · supervisor/);
-  assert.match(await dialog.innerText(),/working/);
+  assert.match(await dialog.innerText(),/gtmux coordinating agent/);
+  assert.doesNotMatch(await dialog.innerText(),/Pane|Directory|Profile scope/);
   assert.doesNotMatch(await dialog.innerText(),/Other project/);
   await dialog.getByText('current-recorded-model',{exact:true}).waitFor();
   assert.equal(await dialog.getByRole('heading',{name:'gtmux HQ',exact:true}).count(),1);
@@ -45,8 +45,8 @@ scenario('Message profiles use recorded session/time instead of another same-age
   assert.equal(requests[0].searchParams.get('at'),time);
   assert.match(await dialog.innerText(),/这条消息的记录|OpenAI/);
   assert.doesNotMatch(await dialog.innerText(),/运行中|current-recorded-model|Do not display unknown fields/);
-  await dialog.locator('.profile-provenance summary').click();
-  assert.match(await dialog.locator('.profile-provenance').innerText(),/本会话日志/);
+  await dialog.getByText('来源与记录时间',{exact:true}).click();
+  assert.match(await dialog.locator('.profile-provenance:not(.profile-chain)').innerText(),/本会话日志/);
   await dialog.getByRole('button',{name:'关闭',exact:true}).click();
   await page.locator('#chat .chat-state .speaker-avatar').click();
   await page.locator('.browser-dialog').getByText('current-recorded-model',{exact:true}).waitFor();
@@ -88,4 +88,21 @@ scenario('A profile without message identity or owner access does not request cu
   await page.locator('#chat .chat-state .speaker-avatar').click();
   await page.locator('.browser-dialog').getByText('Recorded profiles are unavailable for this connection.',{exact:true}).waitFor();
   assert.equal(requests.length,0);
+});
+
+scenario('Agent profile grid and execution chain retain exact current conversation identity',{viewport:{width:390,height:844},locale:'en-US'},async(page,fixture)=>{
+ setup(fixture);fixture.state.profiles['current-session@null'].execution_chain=[{name:'synthetic-client',path:'/fixture/client',arguments:['--mode','synthetic']}];
+ await openChat(page,fixture);await page.locator('#chat .chat-state .speaker-avatar').click();const dialog=page.locator('.participant-profile');await dialog.getByText('current-recorded-model',{exact:true}).waitFor();
+ assert.equal(await dialog.locator('.profile-field').count(),1);await dialog.locator('.profile-chain summary').click();assert.match(await dialog.locator('.profile-chain').innerText(),/synthetic-client|Recorded launch ancestry/);
+ assert.doesNotMatch(await dialog.innerText(),/Directory|Pane|Browser access/);
+ if(process.env.GTMUX_WEB_EVIDENCE) await page.screenshot({path:require('node:path').join(process.env.GTMUX_WEB_EVIDENCE,'profile-agent-recorded.png')});
+});
+
+scenario('Historical profile reads current ancestry only on expansion and only for the same conversation',{viewport:{width:390,height:844},locale:'en-US'},async(page,fixture)=>{
+ setup(fixture);fixture.state.turns['%901'][0].session_id='current-session';fixture.state.profiles['current-session@'+time]={...fixture.state.profiles['old-session@'+time],session_id:'current-session'};
+ fixture.state.profiles['current-session@null'].execution_chain=[{name:'verified-client',path:'/fixture/verified-client'}];
+ const requests=[];page.on('request',r=>{if(r.url().includes('/participant-profile'))requests.push(new URL(r.url()));});
+ await openChat(page,fixture);await page.locator('#chat .arow > .speaker-avatar').click();const dialog=page.locator('.participant-profile');await dialog.getByText('old-recorded-model',{exact:true}).waitFor();assert.equal(requests.length,1);
+ await dialog.locator('.profile-chain summary').click();await dialog.getByText('verified-client',{exact:true}).waitFor();assert.equal(requests.length,2);assert.equal(requests[1].searchParams.get('session_id'),'current-session');assert.equal(requests[1].searchParams.has('at'),false);
+ assert.match(await dialog.locator('.profile-chain').innerText(),/not the processes at this message/);assert.doesNotMatch(await dialog.innerText(),/current-recorded-model/);
 });

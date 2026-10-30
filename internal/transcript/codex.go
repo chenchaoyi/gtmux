@@ -23,13 +23,13 @@ import (
 // Observed schema contract (sanitized examples live in testdata/codex-current.jsonl):
 //   - user prompts appear as response_item message/role=user/input_text in Codex 0.157+;
 //     older rollouts may use event_msg/user_message. Some versions emit both.
-//   - tool calls live in `response_item` as function_call (name + arguments as a
-//     JSON *string*); these interleave with event_msg in file order, so a single
+//   - tool calls live in `response_item` as function_call (JSON-string arguments)
+//     or custom_tool_call (plain-text input); these interleave with event_msg in file order, so a single
 //     linear pass keeps steps in the right place.
 //   - injected AGENTS.md and environment context is filtered; current Codex writes
 //     assistant commentary/final answers as response_item/message output_text while
 //     older rollouts use event_msg/agent_message and event_msg/task_complete.
-//   - response_item/function_call carries tool calls; unknown records, including
+//   - response_item/function_call and custom_tool_call carry tool calls; unknown records, including
 //     token_count, do not affect turn parsing.
 
 type codexLine struct {
@@ -49,6 +49,7 @@ type codexPayload struct {
 	} `json:"content"` // response_item message (Codex 0.157+ user input)
 	LastAgentMessage string          `json:"last_agent_message"` // event_msg task_complete
 	Name             string          `json:"name"`               // response_item function_call
+	Input            string          `json:"input"`              // custom_tool_call freeform input
 	Arguments        string          `json:"arguments"`          // response_item function_call (JSON string)
 	SessionID        string          `json:"session_id"`         // session_meta (first line)
 	ID               string          `json:"id"`                 // current session_meta
@@ -395,7 +396,7 @@ func codexLastTurnBoundaryIn(path string) (string, time.Time) {
 
 // codexStep folds one Codex log line into the parse state: event_msg user_message
 // opens a turn; agent_message / task_complete set the (latest/authoritative)
-// reply; response_item function_call adds a tool step.
+// reply; response_item function_call/custom_tool_call adds a tool step.
 func codexStep(line string, st *parseState) {
 	var e codexLine
 	if json.Unmarshal([]byte(line), &e) != nil || len(e.Payload) == 0 {
@@ -449,6 +450,22 @@ func codexStep(line string, st *parseState) {
 			}
 		} else if p.Type == "function_call" && p.Name != "" {
 			st.addSteps([]Step{toolStep(p.Name, codexToolName(p.Name), json.RawMessage(p.Arguments), codexToolDetail(p.Arguments))})
+		} else if p.Type == "custom_tool_call" && p.Name != "" {
+			step := Step{Kind: "tool", Title: codexToolName(p.Name), Operation: toolOperation(p.Name)}
+			// exec's custom form is Codex code-mode, unlike legacy JSON exec commands.
+			// Keep the literal submitted input; never infer nested calls from code.
+			if p.Name == "exec" {
+				step.Operation = "code"
+			}
+			step.Input, step.DetailsTruncated = boundedToolText(p.Input, maxToolInputBytes)
+			step.InputKind = "text"
+			if step.Operation == "code" {
+				step.InputKind = "code"
+			} else if step.Operation == "command" {
+				step.InputKind = "command"
+			}
+			step.Detail = clip(strings.Join(strings.Fields(step.Input), " "), 80)
+			st.addSteps([]Step{step})
 		}
 	}
 }

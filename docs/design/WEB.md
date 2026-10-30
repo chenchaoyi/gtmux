@@ -267,3 +267,13 @@ close or access changes. Missing files retain Copy path; there is no arbitrary-p
 or external-image fallback.
 
 The presentation switch and tool actions stay below the session identity in both panels and focus, including phones. Font size is configured only in Settings. The supervisor avatar uses the same three-cell gtmux brand mark as the native HQ identity, with a separate status badge.
+
+## App-aligned roster, identity and browser settings (2026-10-30)
+
+Both the desktop tree and narrow radar use the App's row hierarchy: task/title, then `session · pane` for tmux or the recorded external client. A recorded error/background message replaces the locator line in amber. An error badge overrides the green completion tick. Status, HQ, elsewhere and external sections expose keyboard/touch disclosure buttons with counts; collapsed choices persist locally across roster refresh, search and reload. Collapsed rows stay outside radar keyboard selection.
+
+Speaker profiles share human identity copy, the scene-appropriate Dune excerpt and fact ordering with `mobileapp/src/ui/participantPresentation.json`; `gen-participant-web.cjs` generates the embedded browser asset and the design gate checks equality. Agent sheets use compact identity plus two-column recorded facts, collapsing to one column at narrow widths. Source/time and launch-chain observations are disclosures. Historical facts remain bound to recorded session/time; latest process observations are fetched only on explicit expansion for the same verified conversation, with a current-observation label. No current pane/environment dump substitutes for a historical profile.
+
+Settings group Display, Chat and Terminal controls, use full-width touch targets and stay inside the viewport with scrolling. Chat text size applies immediately to message prose and persists in this browser; terminal font/size controls apply the exact chosen size to focused and tiled terminals, with an authentic terminal preview. Reset restores browser defaults. Appearance supports system/light/dark. Enter-to-send help reflects the selected behavior. There is one control per typography scope, all in Settings.
+
+The extra keys/input-tools row is shown only for the primary coarse/touch input device, including large tablets. Desktop pointer/keyboard use hides it even in a narrow window; attachments, composer and Send remain. Input-device changes restore the desktop input field without losing its draft. Width changes alone do not change the input-device classification.

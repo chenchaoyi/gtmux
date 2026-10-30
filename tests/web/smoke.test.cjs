@@ -18,7 +18,7 @@ scenario('Desktop enrollment, sidebar, restore and live chat', {viewport: {width
   await page.locator('#gate-code-go').click();
   await page.locator('.tree-row').first().waitFor();
   const native = page.locator('.tree-row.native');
-  assert.match(await native.innerText(), /Status only/);
+  assert.match(await native.innerText(), /Codex · ChatGPT desktop/);
   await native.dblclick();
   assert.equal(await page.locator('.tile').count(), 0);
   await page.locator('#rail-collapse').click();
@@ -289,7 +289,7 @@ for (const locale of ['en-US','zh-CN']) {
   });
 }
 
-scenario('Chat operates an unparsed picker without visiting Terminal', {viewport: {width: 390, height: 844}, locale: 'en-US'}, async (page, fixture) => {
+scenario('Chat operates an unparsed picker without visiting Terminal', {viewport: {width: 390, height: 844}, locale: 'en-US', hasTouch: true}, async (page, fixture) => {
   fixture.state.interaction = {text: 'Choose projects\n❯ [ ] Alpha '+ 'details '.repeat(40) + '\n  [x] Beta\nSpace to toggle, Enter to submit', options: [], awaiting_reply: true, truncated: false};
   await page.goto(fixture.url + '/#code=TEST-1234');
   await page.locator('#radar').getByText('Review notes', {exact: true}).click();
@@ -300,6 +300,7 @@ scenario('Chat operates an unparsed picker without visiting Terminal', {viewport
   await screen.waitFor();
   assert.match(await screen.innerText(), /Choose projects/);
   assert.equal(await screen.evaluate(e => e.scrollWidth > e.clientWidth), true);
+  await page.locator('#chat-input .cx-keyboard').click();
   assert.equal(await page.locator('#chat-input textarea').isVisible(), true);
   const sent = page.waitForResponse(r => r.url().includes('/api/send') && r.request().method() === 'POST');
   await page.locator('#chat-input .cx-keys button[data-key="Down"]').click();
@@ -314,7 +315,7 @@ scenario('Chat operates an unparsed picker without visiting Terminal', {viewport
   assert.equal(await page.locator('#mode [data-mode="chat"]').evaluate(e=>e.classList.contains('on')),true);
 });
 
-scenario('Chat shows choices only while waiting and folds an answered prompt', {viewport: {width: 390, height: 844}, locale: 'en-US'}, async (page, fixture) => {
+scenario('Chat shows choices only while waiting and folds an answered prompt', {viewport: {width: 390, height: 844}, locale: 'en-US', hasTouch: true}, async (page, fixture) => {
   fixture.state.interaction = {text: 'Allow test tool?', options: [{n: 1, label: 'Allow once'}], awaiting_reply: true, truncated: false};
   await page.goto(fixture.url + '/#code=TEST-1234');
   await page.locator('#radar').getByText('Review notes', {exact: true}).click();
@@ -668,12 +669,13 @@ scenario('Trace tool closes details and returns to the original panel draft', {v
   assert.equal(await page.locator('.tile-modes [data-m="chat"]').getAttribute('aria-pressed'),'true');
 });
 
-scenario('Composer stages files, annotates images, recalls input and matches app send controls', {viewport: {width: 1440, height: 1000}, locale: 'zh-CN'}, async (page, fixture) => {
+scenario('Composer stages files, annotates images, recalls input and matches app send controls', {viewport: {width: 1440, height: 1000}, locale: 'zh-CN', hasTouch:true}, async (page, fixture) => {
   fixture.state.agents[0].project = 'Synthetic repo';
   await page.goto(fixture.url + '/#code=TEST-1234');
   await page.locator('#tree').getByText('Investigate retries', {exact: true}).dblclick();
   await page.locator('.tile-modes [data-m="chat"]').click();
   const composer = page.locator('.tile .composer'), input = composer.locator('.cx-input');
+  await composer.locator('.cx-keyboard').click();
   await input.fill('first line');
   await input.press('Enter');
   assert.equal(await input.inputValue(), 'first line\n');
@@ -685,6 +687,7 @@ scenario('Composer stages files, annotates images, recalls input and matches app
   await page.locator('.tile .pending-prompt').waitFor();
   fixture.state.turns['%901'] = fixture.turns().concat([{prompt: 'first line\n', response: 'Matched output', time: new Date().toISOString()}]);
   await page.locator('.tile .pending-prompt').waitFor({state: 'detached'});
+  await composer.locator('.cx-keyboard').click();
   for (const key of ['Enter', 'BSpace']) {
     const button = composer.locator('[data-key="' + key + '"]'); await button.click();
     await button.locator(':scope[data-state="done"]').waitFor();
@@ -758,6 +761,7 @@ scenario('Composer stages files, annotates images, recalls input and matches app
   assert.match(fixture.state.sends.at(-1).text, /Inspect files\n\/tmp\/gtmux-test-uploads\/notes.txt\n\/tmp\/gtmux-test-uploads\/example-marked.jpg/);
   assert.equal(await composer.locator('.cx-attachment').count(), 0);
   fixture.state.uploadStatus = 413; fixture.state.expectedHttpErrors.push(413);
+  await composer.locator('.cx-keyboard').click();
   await input.fill('Try this');
   await pick('文件', {name: 'large.txt', mimeType: 'text/plain', buffer: Buffer.from('Synthetic server-size refusal')});
   await composer.getByRole('button', {name: '发送', exact: true}).click();
@@ -774,9 +778,11 @@ scenario('Composer stages files, annotates images, recalls input and matches app
   await page.locator('#wb-gear').click();
   await page.locator('#return-sends').check();
   await page.locator('#wb-gear').click();
+  await composer.locator('.cx-keyboard').click();
   await input.fill('Return preference'); await input.press('Enter');
   await page.waitForFunction(() => !document.querySelector('.tile .cx-send').classList.contains('sending'));
   assert.equal(fixture.state.sends.at(-1).text, 'Return preference');
+  await composer.locator('.cx-keyboard').click();
   await input.fill('Persistent scoped draft'); await page.reload();
   await page.waitForFunction(() => document.querySelector('.tile .cx-input')?.value === 'Persistent scoped draft');
   assert.equal(await page.evaluate(() => localStorage.getItem('gtmux.returnSends')), '1');
@@ -800,10 +806,10 @@ scenario('Mobile composer and speaker profiles expose identity without redundant
   assert.ok(sendBox.width >= 44 && sendBox.height >= 44);
   await page.locator('#chat .urow .speaker-avatar').first().click();
   const profile = page.getByRole('dialog', {name: '资料', exact: true});
-  assert.match(await profile.innerText(), /用户输入|所有者/);
+  assert.match(await profile.innerText(), /人类|碳基决策者/);
   await profile.getByRole('button', {name: '关闭', exact: true}).click();
   await page.locator('#chat .arow .speaker-avatar').first().click();
-  assert.match(await profile.innerText(), /Codex|Synthetic repo|%901/);
+  assert.match(await profile.innerText(), /Codex/);
   if (process.env.GTMUX_WEB_EVIDENCE) {
     await fs.mkdir(process.env.GTMUX_WEB_EVIDENCE, {recursive: true});
     await page.screenshot({path: path.join(process.env.GTMUX_WEB_EVIDENCE, 'profile-agent-mobile.png')});
@@ -811,10 +817,10 @@ scenario('Mobile composer and speaker profiles expose identity without redundant
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), 390);
   await profile.getByRole('button', {name: '关闭', exact: true}).click();
   await page.locator('#chat .urow .speaker-avatar').nth(1).click();
-  assert.match(await profile.innerText(), /HQ|中控/);
+  assert.match(await profile.innerText(), /HQ|协调 Agent/);
   await profile.getByRole('button', {name: '关闭', exact: true}).click();
   await page.locator('#chat .arow .speaker-avatar').nth(2).click();
-  assert.match(await profile.innerText(), /Claude Code|历史消息/);
+  assert.match(await profile.innerText(), /Claude Code|这条消息的记录/);
   assert.doesNotMatch(await profile.innerText(), /Synthetic repo/);
   assert.equal(await profile.getByRole('button', {name: '打开会话', exact: true}).count(), 0);
   await profile.getByRole('button', {name: '关闭', exact: true}).click();

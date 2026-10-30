@@ -18,7 +18,8 @@ function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
       return this.html ?? String(this.textContent).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     },
     set innerHTML(value) { this.html = value; this.children = []; },
-    appendChild(child) { this.children.push(child); return child; },
+    appendChild(child) { child.parentElement = this; this.children.push(child); return child; },
+    closest(selector) { for (let node = this; node; node = node.parentElement) { if (selector === "[hidden]" && node.hidden) return node; } return null; },
     addEventListener(name, fn) { this[name] = fn; },
     select() { this.selected = true; },
     focus() { this.focused = true; },
@@ -738,10 +739,10 @@ test('native rows are status-only on the workbench and cannot create a tile or f
   const native = {source: 'native', pane_id: '', agent: 'Codex', task: 'Desktop work', status: 'working'};
   const pane = {pane_id: '%9', agent: 'Codex', task: 'Terminal work', status: 'idle'};
   h.api.renderTree([native, pane]);
-  const row = h.node('tree').children.find(n => n.classList.contains('native'));
+  const row = allNodes(h.node('tree')).find(n => n.classList.contains('native'));
   assert.equal(row.draggable, false);
   assert.equal(row.ondblclick, undefined);
-  assert.match(descendants(row).map(n => n.textContent).join(' '), /Status only/);
+  assert.match(descendants(row).map(n => n.textContent).join(' '), /Codex/);
   assert.equal(h.api.addTile(native), null);
   h.node('title').textContent = 'Unchanged';
   h.api.openAgent(native);
@@ -1045,12 +1046,16 @@ for (const [language, idleLabel] of [['en-US', 'idle'], ['zh-CN', '空闲']]) {
     const neutral = {pane_id: '%4', source: 'tmux', agent: 'DeepSeek', status: 'running', since: 0};
     const done = {pane_id: '%5', source: 'tmux', agent: 'Codex', status: 'idle', since: 100};
     h.api.renderRadar([neutral, done]);
-    const headers = allNodes(h.node('radar')).filter(n => n.className === 'group-label');
-    assert.deepEqual(headers.map(n => n.textContent), [idleLabel + '  2']);
+    const headers = allNodes(h.node('radar')).filter(n => (n.className || '').includes('section-toggle'));
+    assert.equal(headers.length, 1);
+    assert.equal(headers[0].children[0].textContent, idleLabel);
+    assert.equal(headers[0].children[1].textContent, '2');
     assert.equal(allNodes(h.node('radar')).filter(n => n.className === 'row').length, 2);
     h.api.renderTree([neutral, done]);
-    const groups = allNodes(h.node('tree')).filter(n => n.className === 'tree-group');
-    assert.deepEqual(groups.map(n => n.textContent), [idleLabel + ' 2']);
+    const groups = allNodes(h.node('tree')).filter(n => (n.className || '').includes('section-toggle'));
+    assert.equal(groups.length, 1);
+    assert.equal(groups[0].children[0].textContent, idleLabel);
+    assert.equal(groups[0].children[1].textContent, '2');
     assert.equal(neutral.status, 'running');
     assert.equal(neutral.since, 0);
   });
@@ -1272,4 +1277,16 @@ test('an unchanged retry keeps its send id while a new acknowledged message gets
   composerNode(c, 'cx-send').onclick({stopPropagation() {}}); await flush();
   c.input.value = 'Same message'; composerNode(c, 'cx-send').onclick({stopPropagation() {}}); await flush();
   assert.notEqual(JSON.parse(h.requests[3].options.body).send_id, first);
+});
+
+
+test('radar keyboard selection skips rows inside a collapsed section', () => {
+  const h = harness({ok:true}); h.api.show('radar');
+  const visible = h.node('visible-row'), hidden = h.node('hidden-row'), section = h.node('folded-section');
+  section.hidden = true; section.appendChild(hidden); visible.scrollIntoView = () => {};
+  h.node('radar').querySelectorAll = () => [visible, hidden]; h.node('cmdk').hidden = true;
+  h.api.setupKeyboard(); const keydown = h.documentHandlers.get('keydown');
+  keydown({key:'ArrowDown',target:{tagName:'BODY'},preventDefault(){}});
+  keydown({key:'Enter',target:{tagName:'BODY'},preventDefault(){}});
+  assert.equal(visible.clicked,true); assert.equal(hidden.clicked,undefined);
 });

@@ -93,3 +93,6 @@ Codex 0.162.1 的本机帮助提供 `--no-alt-screen`：使用行内模式，保
 滚动历史是否增长；仅有启动参数不算验收。Chat 独立读取持久化对话。
 源码：[Codex 0.162.1 模式切换](https://github.com/openai/codex/blob/rust-v0.162.1/codex-rs/tui/src/app/input.rs)
 与[历史重排](https://github.com/openai/codex/blob/rust-v0.162.1/codex-rs/tui/src/app/resize_reflow.rs)。
+
+### 自由文本工具调用（2026-10-30）
+Rollout 读取器同时接收带 JSON 字符串 `arguments` 的 `function_call` 与带原文 `input` 的 `custom_tool_call`，结构头预过滤必须保留两者。代码模式的自定义 `exec` 归为代码步骤，旧 JSON `exec` 仍为命令。输入沿用 UTF-8 字节／轮次限额，未写完行延后重读，结果／内部推理／重复的 item-completed 镜像继续排除。提交代码里提到的嵌套调用不被推断为独立执行证据。App 和浏览器的对话／轨迹共用此适配器，无须更改 daemon 协议或输入绑定。

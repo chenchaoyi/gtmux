@@ -243,7 +243,7 @@ plain shells SHALL NOT offer Trace. External sessions SHALL remain read-only.
 ### Requirement: Adaptive trace reading
 
 Trace SHALL provide a virtualized list, search over loaded history, type and session
-filters, explicit follow, original-text Copy, Markdown/source and recorded input,
+filters, position-based tail following, original-text Copy, Markdown/source and recorded input,
 working directory and truncation notices. Details SHALL be closable. Compact views
 SHALL preserve the mounted list and return to its selected record; wide views SHALL
 use measured content width and font scale to split list/details. Closing details
@@ -300,3 +300,11 @@ changes, while dismissal SHALL preserve the conversation.
 - **WHEN** a paired owner opens an external conversation with a long title and launch evidence
 - **THEN** the header stays two lines and evidence is available by tapping its title
 - **AND** closing details returns to the same read-only conversation without sending input
+
+### Requirement: Progress-oriented trace reading
+Native Trace SHALL open at the newest recorded activity without a Follow latest mode switch. It SHALL group records by their exact conversation and stable turn identity, provide a latest-turn summary, and compact consecutive tool calls without discarding records. Refresh SHALL preserve a reader away from the tail and the selected detail revision. Near-tail readers MAY continue following new activity.
+
+#### Scenario: Inspect history while the agent updates
+- **WHEN** a reader scrolls away from the tail or inspects a historical record
+- **THEN** appends, streamed text and loaded earlier history do not pull the viewport away
+- **AND** a one-shot latest action can return to the newest activity
