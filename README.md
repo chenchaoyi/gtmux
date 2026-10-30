@@ -61,7 +61,7 @@ gtmux tunnel
 
 On first use, follow its prompts to install the optional tunnel client if needed. It starts the required server and prints a pairing QR. If you only need the same local network, use `gtmux serve` instead, then run `gtmux pair` in a second terminal for the QR. For an existing connection, `gtmux pair` also generates a fresh code. Each code works once and expires after five minutes.
 
-On your iPhone or iPad, install [gtmux from the App Store](https://apps.apple.com/app/id6791144062), then tap **Add a server → Scan pairing QR**. Scan the Mac's QR and open the saved server. Seeing its radar confirms the connection. To connect your own browser, open the browser link printed by `gtmux pair`; generate another code for each device.
+On your iPhone or iPad, install [gtmux from the App Store](https://apps.apple.com/us/app/gtmux/id6791144062), then tap **Add a server → Scan pairing QR**. Scan the Mac's QR and open the saved server. Seeing its radar confirms the connection. To connect your own browser, open the browser link printed by `gtmux pair`; generate another code for each device.
 
 You can also enable access through **Preferences → Remote access** in the Mac menu-bar app and open **Pair a device…**. Choose **Local network** for devices that can reach each other, or **Anywhere** for other networks. [Connection methods and fixes](docs/phone.md) explain blocked networks, persistent access and notification requirements. Pair your own devices; give collaborators a scoped [Share link](docs/guides/phone-and-web.md#open-one-pane-to-a-collaborator).
 

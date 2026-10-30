@@ -10,7 +10,7 @@
 | --- | --- |
 | Mac 上的 CLI 和菜单栏 App | 下面的官方安装器 |
 | 用 Homebrew 管理安装 | 下面的两条 Homebrew 命令 |
-| iPhone 或 iPad App | [App Store](https://apps.apple.com/app/id6791144062)，主机配置好后再配对 |
+| iPhone 或 iPad App | [App Store](https://apps.apple.com/cn/app/gtmux/id6791144062)，主机配置好后再配对 |
 | 只装 CLI 或指定版本 | 安装器选项，或 [GitHub Releases](https://github.com/chenchaoyi/gtmux/releases) |
 
 ## 安装脚本
