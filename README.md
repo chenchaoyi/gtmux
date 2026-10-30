@@ -4,7 +4,7 @@
 
 # gtmux
 
-Command center for your tmux sessions and the agents in them.
+Monitor tmux sessions and coding agents, locally or remotely.
 
 [![Release](https://img.shields.io/github/v/release/chenchaoyi/gtmux?color=06B6D4&label=release)](https://github.com/chenchaoyi/gtmux/releases)
 [![CI](https://github.com/chenchaoyi/gtmux/actions/workflows/ci.yml/badge.svg)](https://github.com/chenchaoyi/gtmux/actions/workflows/ci.yml)
@@ -20,10 +20,7 @@ Command center for your tmux sessions and the agents in them.
   <img src="docs/assets/readme-hero.jpg" width="100%" alt="gtmux in the menu bar, the terminal, a browser, on iPad and on the iPhone Lock Screen" />
 </picture>
 
-If you run several coding agents (Claude Code, Codex, Gemini, Cursor) in tmux, it gets
-hard to tell which one is waiting on a yes/no, which is still working and which has
-finished. gtmux is a radar and a remote for those panes, and it sees the agents already
-in your tmux no matter who started them.
+gtmux shows the state of coding agents running in tmux, including Claude Code, Codex, Gemini and Cursor. See which are working, waiting for input or finished, then open a pane to continue. It also detects agents in existing tmux sessions; you do not need to launch them through gtmux.
 
 gtmux assumes each agent runs in its own tmux pane. We recommend
 [Ghostty](https://ghostty.org) + tmux + gtmux, and if tmux is new to you, start with its
@@ -48,17 +45,13 @@ verifies signed release metadata; GitHub keeps the original release packages.
 With Homebrew, use `brew install chenchaoyi/tap/gtmux` for the CLI and
 `brew install --cask chenchaoyi/tap/gtmux-app` for the menu-bar app.
 
-Then run the health check. It offers to set up what's missing (the agent hook, the
-set-titles option that focus and restore need, restore after reboot, the app) and asks
-before each change.
+Run the health check to configure agent hooks, the set-titles option used by focus and restore, session recovery after reboot and the menu-bar app. It asks before each change.
 
 ```sh
 gtmux doctor
 ```
 
-After that you can mostly leave it alone. The menu-bar dot shows whether anyone needs
-you, a notification takes you to the pane, and `⌘⌥G` jumps to whoever is waiting. The
-CLI is there when you want it:
+The menu-bar dot indicates whether an agent needs a reply. Click a notification to open its pane, or use `⌘⌥G` to jump to a waiting agent. You can also use the CLI:
 
 ```sh
 gtmux agents --watch         # live dashboard in the terminal; Enter jumps to a pane
@@ -160,19 +153,19 @@ across several sessions and review the actions it takes.
 
 Walkthroughs with screenshots, one task each:
 
-- [Watch a fleet of agents](docs/guides/watch-a-fleet.md): run agents in tmux, read the radar, jump to the one waiting.
-- [Let HQ watch the fleet for you](docs/guides/hq-supervisor.md): start the supervisor, what wakes it, when it decides, dispatch, knowledge, moving it to another Mac.
+- [Monitor coding agents in tmux](docs/guides/watch-a-fleet.md): run agents in tmux, read the radar, jump to the one waiting.
+- [Coordinate tasks with HQ](docs/guides/hq-supervisor.md): start HQ and configure event notifications, decision scope, task dispatch, knowledge and migration.
 - [Use your phone, iPad and browser](docs/guides/phone-and-web.md): pair your own devices, reply to agents and share selected panes.
-- [Attach to your Mac from any computer](docs/guides/attach-from-anywhere.md): a real terminal into a session on your Mac.
+- [Attach to your Mac from any computer](docs/guides/attach-from-anywhere.md): connect a terminal on another computer to a tmux session on your Mac.
 
 <a id="docs"></a>
 
 ## Reference
 
-- [How each agent connects](docs/guides/agent-integrations.md): all 14 built-in entries, event bridges, history sources, setup and limits.
+- [How each agent connects](docs/guides/agent-integrations.md): built-in integrations, event bridges, history sources, setup and limits.
 - [CLI and commands](docs/cli.md): every command, HQ, detection, per-agent hooks, tmux key bindings.
 - [Remote access reference](docs/phone.md): connection methods, permissions, notifications and troubleshooting.
-- [What HQ remembers](docs/knowledge.md): the knowledge base, the three layers, and what you can change.
+- [HQ knowledge base](docs/knowledge.md): the knowledge base, the three layers, and what you can change.
 - [Install notes](docs/install.md): pinning a version, building from source, mirrors.
 - [DeepSeek Harness](docs/guides/deepseek-harness.md): setup, shared identity and control limits.
 - [Design docs](docs/design/README.md), with in-flight changes in `openspec/`.

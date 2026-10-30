@@ -6,11 +6,7 @@ order: 6
 
 **English** · [中文](agent-integrations.zh.md)
 
-This is the central map of gtmux's agent integrations. It describes the implementation
-in this checkout, checked against the source on **2026-10-19**. “Supported” has
-several meanings: recognising a process, receiving events, reading a conversation and
-controlling a session are separate capabilities. The 14 entries below include the
-limited integrations, so a registered name is never mistaken for full support.
+This page describes setup and support limits for gtmux’s agent integrations, checked against the source on **2026-10-19**. Process detection, event reporting, conversation reading and session control are separate capabilities. Each section explains what is implemented and where its limits are.
 
 For the avatar dialog's model, version, subscription, mode, reasoning and execution
 chain, see the [per-agent profile design](../design/agent-profiles.md). That proposal
@@ -415,16 +411,6 @@ Only the display identity and `grok -r ID` resume recipe are registered. There i
 no built-in process profile, hook installer, dedicated event classifier, content
 reader, external provider, usage, knowledge carrier or one-shot driver. An existing
 record can use the recipe where eligible; this is not automatic Grok onboarding.
-
-Source: [manifest](../../internal/agents/registry.go).
-
-## Aider — `aider`
-
-Radar recognises the `aider` process subtree and attributes its process resources.
-Status relies on the shared title/screen/CPU sensing path. A recognised tmux pane
-can be focused and receive input, with screen-based verification. There is no
-gtmux hook installer, structured history, usage-token reader, resume recipe,
-knowledge carrier or one-shot driver. Process visibility is the integration.
 
 Source: [manifest](../../internal/agents/registry.go).
 

@@ -1,16 +1,12 @@
-# What HQ remembers
+# HQ knowledge base
 
 **English** · [中文](knowledge.zh.md)
 
-HQ is the supervisor session `gtmux hq` starts. As it watches your agents it learns
-things: that this office network resets TLS handshakes, that a command in this repo needs
-a flag nobody remembers, that you asked twice for links to be plain URLs. Those go into a
-knowledge base on your Mac. Selected machine-wide lessons can be promoted and synced
-into supported agents' instruction files, where new sessions can read their index.
+<a id="what-hq-remembers"></a>
 
-This page covers where that base sits, how a lesson gets from "HQ noticed it" to "every
-agent on this machine reads it", and what you can change yourself. Nothing here leaves
-your machine unless you send it somewhere.
+HQ is the supervisor session started by `gtmux hq`. As it coordinates tasks, it records reusable procedures, environment issues and user corrections in a knowledge base on your host. Selected lessons can be promoted for use across the host and synced into supported agents’ instruction indexes for new sessions to consult.
+
+This page covers storage, how entries are used and distributed, and what you can edit. The contents stay on the host unless you send them elsewhere.
 
 ## Read and use knowledge in the interface
 
@@ -49,7 +45,7 @@ Everything HQ owns is under `~/.config/gtmux/hq/`, and one generated file sits o
 | `hq/knowledge/tools/` | scripts HQ wrote for itself, each named by one entry | HQ |
 | `hq/AGENTS.md` | HQ's charter: how it works, shipped with gtmux | gtmux, replaced on update |
 | `hq/LOCAL.md` | your own standing rules | you; ordinary updates preserve it. HQ-targeted landing can append a section, and an explicit restore or migration can replace it |
-| `hq/notes/board.md` | HQ's current picture of the fleet, not knowledge | HQ |
+| `hq/notes/board.md` | HQ's current session progress and decisions, separate from knowledge | HQ |
 | `knowledge/machine.md` | the handful of lessons every agent on this machine must know | gtmux, generated |
 
 Two of those folders are called `knowledge`, but they serve different readers.
@@ -61,16 +57,9 @@ The normal machine-wide distribution path uses supported agents' global instruct
 such as `~/.claude/CLAUDE.md` for Claude Code. The generated index points at `machine.md`
 for the selected lessons, rather than loading HQ's whole base into every session.
 
-The cost of not having it is easy to see. On a machine where `rm` is aliased to the
-interactive version, an agent that runs it in a non-interactive shell fails silently: the
-command looks like it ran and the file is still there. Recorded in the knowledge base
-alone, that lesson stops nobody, because a new session is not automatically given that entry.
-Carried out to `machine.md` and into each agent's instruction file, it is in front of
-new sessions using the synced instruction file from their first turn.
+For example, an interactive `rm` alias can cause a non-interactive agent to skip a deletion when confirmation is unavailable. Recording that issue in HQ’s knowledge base does not automatically inform new sessions. Syncing the lesson to `machine.md` and the agents’ instruction indexes makes it available at startup to sessions using those instructions.
 
-Most entries never travel this way. They are about how HQ itself works, and hundreds of
-them in every agent's context would crowd out the work, so this list stays short: a few
-entries out of hundreds. Delete `machine.md` and the next sync writes it again.
+Only a small set of lessons that apply across agents belong in the shared instructions. HQ can look up the rest when needed, without adding the full knowledge base to every session’s context. If `machine.md` is deleted, the next sync regenerates it.
 
 ## Three layers, and which one is yours
 

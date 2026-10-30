@@ -4,11 +4,9 @@
 
 ## Agent 插件与 hooks
 
-安装 CLI／App 后，运行 `gtmux install hooks --agent auto` 只为本机找到的 Agent CLI 自动配置 Hook，
-跳过配置中已禁用 Hook 的 Agent。只有旧配置目录、没有 CLI 时不会误报已安装，也不改动已有配置。只装 DSH 则用 `gtmux install hooks --agent dsh`；
-不带 `--agent` 保留默认 Claude。`gtmux doctor` 只检查，`gtmux doctor --fix` 逐项提出修复。
-DSH 的 Cordis 插件自带于 gtmux，不需要 npm 包。已有对话无需插件即可读取；
-生命周期事件需在下次启动 Web 时带生成的 `--patch`，详见 [DSH 指南](guides/deepseek-harness.zh.md)。
+安装 CLI 或 App 后，可运行 `gtmux install hooks --agent auto`，为本机检测到的 agent CLI 配置 hook。已在设置中禁用的 hook 会被跳过；只有旧配置目录、没有 CLI 时，安装器会保留原配置，不会报告安装成功。只配置 DSH 可用 `gtmux install hooks --agent dsh`；不带 `--agent` 时默认配置 Claude。`gtmux doctor` 用于检查，`gtmux doctor --fix` 会逐项提出修复。
+
+DSH 的 Cordis 插件随 gtmux 提供，无需安装 npm 包。读取历史不需要插件；接收生命周期事件则需在下次启动 Web 时使用生成的 `--patch`，见 [DSH 指南](guides/deepseek-harness.zh.md)。
 
 ## Linux
 

@@ -4,13 +4,9 @@
 
 ## Agent plugins and hooks
 
-After installing the CLI/app, `gtmux install hooks --agent auto` configures hooks only for agent CLIs detected
-on this machine, and skips hooks disabled by settings. Old configuration directories alone
-do not count as an installed CLI. If the CLI is absent, automatic setup leaves its existing settings alone. Use `--agent dsh`
-for DSH alone; omitting `--agent` keeps the Claude default. `gtmux doctor` inspects;
-`gtmux doctor --fix` offers repairs one by one. The DSH Cordis plugin is bundled,
-with no separate npm package. History reading needs no plugin; lifecycle events
-require the generated `--patch` on the next Web launch. See the [DSH guide](guides/deepseek-harness.md).
+After installing the CLI or app, run `gtmux install hooks --agent auto` to configure hooks for agent CLIs detected on this machine. It skips hooks disabled in settings. An old configuration directory without its CLI is left unchanged and does not count as an installation. Use `--agent dsh` for DSH alone; omitting `--agent` selects Claude. `gtmux doctor` checks the setup, and `gtmux doctor --fix` offers repairs individually.
+
+The DSH Cordis plugin is bundled with gtmux, without a separate npm package. History reading needs no plugin; lifecycle events require the generated `--patch` on the next Web launch. See the [DSH guide](guides/deepseek-harness.md).
 
 ## Linux
 

@@ -1,15 +1,12 @@
 ---
-title: Let HQ watch the fleet for you
-description: Start gtmux HQ, a supervisor agent that watches your other agents, dispatches and reclaims work, learns from your corrections, and interrupts you only when a person is needed.
+title: Coordinate tasks with HQ
+description: Start HQ and configure event notifications, task dispatch, decision scope, knowledge and migration.
 order: 2
 ---
 
 **English** · [中文](hq-supervisor.zh.md)
 
-Past a dozen agents, even the radar is a lot to watch, and you end up polling panes. HQ
-takes the watching over. It is one of your own coding agents, started by gtmux in a
-tmux session of its own with a charter that teaches it the job: read the fleet, judge
-what matters, dispatch work, and bring you only what needs a person.
+HQ is a supervisor session for coordinating other agents. gtmux starts one of your installed coding agents in a separate tmux session with the HQ charter. It reads session events and summaries, tracks progress, assigns work and refers decisions that need your input to you.
 
 ![gtmux HQ on iPad: the conversation with HQ in the middle, one decision waiting on you at the right, the radar in the sidebar](img/hq-supervisor-ipad-en.jpg)
 
@@ -53,8 +50,7 @@ your language (`GTMUX_LANG`); `gtmux hq --lang en|zh` switches it.
 
 ## What wakes HQ, and what stays quiet
 
-HQ has no timer and tails nothing. When something happens that may need a decision,
-gtmux types one line into HQ's pane:
+gtmux sends event notifications to HQ, which then reads the details. A notification appears as one line in HQ’s pane:
 
 <!-- gtmux:rendered wake-lines -->
 ```
@@ -62,9 +58,7 @@ gtmux types one line into HQ's pane:
 » ▸ gtmux·done  web:2.0 (%11) │ 3m │ goal:"fix the login bug" │ tail:"tests pass" · #a3f1c2
 ```
 
-The mark after `»` is the weight: `◆` needs a decision, `▸` worth knowing, `·`
-bookkeeping. HQ then pulls the details itself (`gtmux events`, `gtmux digest`), judges in
-a short turn, and answers in one line. What knocks:
+The symbol after `»` indicates priority: `◆` needs a decision, `▸` is worth reviewing and `·` is for the record. HQ reads the details through `gtmux events` and `gtmux digest`, then replies in one line. These events trigger notifications:
 
 | What happened | Line |
 |---|---|
@@ -120,8 +114,7 @@ next pass a few seconds later, or at the next turn end.
 
 ## The situation board
 
-HQ keeps its picture of the fleet in `~/.config/gtmux/hq/notes/board.md`, so a context
-reset or a fresh session does not start from zero: HQ rereads the board before acting.
+HQ records session progress and decisions in `~/.config/gtmux/hq/notes/board.md`. After a context reset or a new session, it reads the board before continuing.
 
 - At the top, a table with one row per live pane, named by its pane ID (`%23`, the same ID
   `gtmux focus %23` takes), pruned when the work ends.
@@ -144,7 +137,7 @@ the terminal; chevrons expand details. These display rules leave the source arch
 Every event in the stream carries a severity, and HQ decides what to print by it:
 
 - `important`: an agent blocked, asking or crashed. Always printed.
-- `notable`: changes across the fleet, such as an instruction reaching a session, a turn
+- `notable`: changes across sessions, such as an instruction reaching a session, a turn
   ending, a session starting or ending. Printed unless you
   [turn quiet on](#how-much-hq-says-gtmux-quiet).
 - `routine`: written to the board and the ledger, not printed.
@@ -313,18 +306,9 @@ HQ has no clock, so gtmux raises its housekeeping:
 
 `gtmux doctor` flags either one when it is overdue.
 
-**Self-rotation.** Deep into a long, nearly full session, an agent starts to mix up what it
-wrote with what it was told, and it cannot catch that from the inside. So gtmux watches
-HQ's session from outside and knocks `self-rotate` when one of these crosses its line:
-context 75% full, 12 hours old, or 300 turns. Without asking you, HQ then brings the board
-and the knowledge base up to date, writes a handoff, and runs `gtmux hq --rotate`. gtmux
-sends the agent's own reset (`/clear` for Claude Code, `/new` for Codex) after the turn ends
-and only into an empty input box, and only a new session ID counts as done. The next session
-reads the board and carries on. Those are the only two reset commands gtmux knows: with any
-other agent running HQ, `--rotate` refuses, and a fresh session means exiting the agent and
-running `gtmux hq` again. The lines are `hqWake` settings, and `gtmux doctor`'s HQ
-conversation health row shows the current figures
-([details](../cli.md#self-rotation-when-hqs-own-session-is-the-problem)).
+**Self-rotation.** To limit the effects of long sessions and accumulated context, gtmux monitors HQ’s session. It triggers `self-rotate` at 75% context use, 12 hours or 300 turns. HQ updates the board and knowledge base, writes a handover and runs `gtmux hq --rotate`.
+
+After the turn ends and the input box is empty, gtmux sends `/clear` for Claude Code or `/new` for Codex. Rotation completes only after a new session ID appears; that session reads the board before continuing. Other agents require exiting and running `gtmux hq` again. Thresholds are configured through `hqWake`; `gtmux doctor` shows them in the HQ conversation health row ([details](../cli.md#self-rotation-when-hqs-own-session-is-the-problem)).
 
 ## How much HQ says: gtmux quiet
 

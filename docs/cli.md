@@ -12,7 +12,7 @@ run `gtmux <command> --help`.
 |---|---|
 | See all agents and jump to one | `gtmux agents --watch` |
 | Open a specific pane | `gtmux focus %7` |
-| Let HQ watch the fleet | `gtmux hq` |
+| Coordinate tasks with HQ | `gtmux hq` |
 | Check and fix setup | `gtmux doctor --fix` |
 | Keep remote access on across reboots | `gtmux tunnel --service` |
 | Connect my own phone or browser | `gtmux pair` |
@@ -52,10 +52,9 @@ jump: gtmux focus <pane>   (e.g. gtmux focus %7)
 
 Each row is status · agent · location · task · pane id.
 
-- ‖ waiting (red): blocked on you for a permission or approval mid-task; sorts to the
-  very top, and is the one colour on the screen that means act now.
-- ⠿ working (cyan): busy, leave it alone.
-- ✓ idle (green): finished its turn, your move when ready (not urgent).
+- ‖ waiting (red): needs a reply, permission or approval; sorted first.
+- ⠿ working (cyan): executing the current turn.
+- ✓ idle (green): the turn has ended and you can send another prompt.
 - ● running (grey): an identified agent process whose turn state is not known.
   The terminal table also displays watched plain panes here and counts them as running.
 
@@ -68,7 +67,7 @@ the colour it was given, which put the red on the word and not on the mark besid
 
 `gtmux agents --watch` is a live, auto-refreshing dashboard (built with
 [bubbletea](https://github.com/charmbracelet/bubbletea)): polls about every 1.5 s,
-↑/↓ select, Enter jumps to the pane, r refreshes, q quits. It groups the fleet under
+↑/↓ select, Enter jumps to the pane, r refreshes, q quits. It groups agents under
 NEEDS YOU · WORKING · IDLE · RUNNING, carries a `since` column, and ends on one line of
 plan state: the tightest three windows, the full one in amber. Columns give way as the
 terminal narrows (the agent name first, then the task) so no row ever wraps. `--json` emits the same
@@ -221,7 +220,7 @@ same JSON shape as `--json` and requires owner access.
 Claude records what each message cost, so its totals are a running sum. Codex records
 the session's running totals after every turn, so its totals are the last reading, and
 it states `model_context_window` outright (unless a configured override takes precedence).
-The current fleet report skips conversations whose session ID or log cannot be found.
+The current agent report skips conversations whose session ID or log cannot be found.
 An existing log without parsed usage yields a row with zero numeric usage fields.
 
 > Agent launch proxy: `GTMUX_AGENT_PROXY` takes precedence over `agentProxy` in
@@ -257,20 +256,9 @@ IDs to `rss_mb` and `cpu`, next to `resource.machine` and `resource.orphans`; th
 session rows. The serve tick emits a `resource·warn` nudge to HQ (one per crossing); `gtmux hq`/`new` warn
 at a red line before adding load.
 
-A candidate first has to survive one question: if this ends, what ends with it? Whatever
-the running work stands on — the tmux server every session lives inside, gtmux's own
-resident processes, the agents themselves — is never offered, whatever its size. The
-warning once read `disk getting low · 29GB free — maybe reclaimable: tmux`, and acting on
-that frees nothing and stops every piece of work on the machine at once. Such a process
-reaches the list for a structural reason, not by accident: the list looks for something
-large that no task claims, and the floor is long-lived, sizeable and claimed by nothing
-precisely because it is the floor.
+Reclaim candidates exclude processes that running work depends on, including the tmux server, resident gtmux processes and the agents themselves, regardless of their size.
 
-A candidate rides the warning only where ending it would help. It is a process, so its
-size is memory: the suggestion accompanies a memory or load warning, names what it holds
-and in which resource, and stays away from a disk or battery warning entirely. Killing a
-902MB process returns no disk, and the line that suggested it during a full disk was acted
-on twice before anyone noticed (#1109).
+Process cleanup suggestions appear only with memory or load warnings and identify the resource involved. Disk and battery warnings do not include them: ending a process does not directly free disk space or restore battery charge.
 
 The warning is damped three ways so a value sitting on a threshold can't re-alert (the
 readout itself stays raw):
@@ -860,7 +848,7 @@ old pending/queued instructions. Selective knowledge migration excludes them.
 
 ## `gtmux digest` + `gtmux hq`: HQ, the supervisor session
 
-`gtmux digest` prints the fleet at a glance with meaning, as a column-aligned table:
+`gtmux digest` lists agent goals, recent replies, wait reasons and usage in a table:
 
 ```
 1 needs input · 2 working · 1 completed
@@ -1161,7 +1149,7 @@ Set any of them to 0 to switch that one criterion off without losing the other t
 
 The debt clears only when the session actually rotates, observed as a new agent session
 id; delivering the wake does not clear it. Past `hqWake.selfRotateRepeatSec` a repeat
-fires only when the breach set or the fleet has changed, and `hqWake.selfRotateFloorSec`
+fires only when the breach set or session list has changed, and `hqWake.selfRotateFloorSec`
 (12 h) is the longest it can stay silent when nothing has changed at all. HQ's playbook
 tells it to do three things in order, without asking you first: bring `notes/board.md`
 and the knowledge base current, record the handoff, then run `gtmux hq --rotate`. The
@@ -2238,7 +2226,9 @@ bind a display-popup -E -w 80% -h 60% "gtmux agents --watch --popup"
 bind J run-shell "gtmux focus --last"
 ```
 
-### `gtmux status`: the fleet in your tmux status bar
+<a id="gtmux-status-the-fleet-in-your-tmux-status-bar"></a>
+
+### `gtmux status`: agent state in your tmux status bar
 
 ```tmux
 set -g status-right '#(gtmux status)'
@@ -2493,7 +2483,7 @@ outside the HQ home also show the raw view and do not consume.
 
 `--severity <tier>` filters to that tier and above. The tiers rank urgency, so they are
 three different reads: the unfiltered `--since-seq` delta is what you reconcile with;
-`--severity notable` is the fleet-change stream (an instruction reaching a session,
+`--severity notable` is the session-change stream (an instruction reaching a session,
 `origin:"instruction"`, plus turn-ends and lifecycle); `--severity important` is the
 escalation subset (blocked · asking · crashed), to triage first.
 

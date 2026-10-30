@@ -1,16 +1,16 @@
 ---
-title: 看住一支 agent 舰队
-description: 在 tmux 里同时跑好几个 coding agent，用 gtmux 雷达一眼看清谁在等你。
+title: 管理多个 coding agent
+description: 在 tmux 中启动 coding agent，配置状态上报，并打开需要回复的会话。
 order: 1
 ---
 
 [English](watch-a-fleet.md) · **中文**
 
-你同时开着五个 coding agent：一个在重构，一个在跑测试，一个在写文档，散在十几个 tmux 窗口里。最容易丢的，是哪一个停下来在等你。这篇把雷达搭起来，让你一眼看出来。
+本指南介绍如何在 tmux 中运行多个 coding agent，配置状态上报，并从雷达打开需要回复的会话。
 
 ## 每个 agent 跑在自己的 tmux pane 里
 
-雷达扫的是 tmux pane，agent 得跑在 tmux 里才看得到、跳得过去、回得了话。（tmux 之外的 agent 装了 gtmux hook 也能看到，但只读。）先开一个有名字的 tmux 会话，再在里面启动 agent，一个 agent 一个 pane。装好并登录 agent CLI 后：
+每个 agent 使用独立的 tmux pane，才能通过 gtmux 跳转和回复。tmux 外的 agent 也可通过 hook 提供只读状态。安装并登录 agent CLI 后，先创建一个命名会话：
 
 ```sh
 tmux new -s api 'claude'
@@ -22,7 +22,11 @@ tmux new -s api 'claude'
 tmux new -s docs 'codex'
 ```
 
-为什么用 tmux：它的会话是持久的。终端关了、SSH 断了、显示器拔了，agent 都还在跑；每个 agent 有自己的名字和 pane，找得到也认得出。重启后，`gtmux restore` 从最近保存的 tmux-resurrect 快照重建会话和布局，程序是重新起的进程；默认情况下，能恢复对话的 agent 会接着原来的对话。保存机制由 `gtmux doctor` 配好。MacBook 合盖仍会让整机休眠，agent 也跟着停；`gtmux awake on` 让它合盖后继续跑。没用过 tmux？官方的 [Getting Started](https://github.com/tmux/tmux/wiki/Getting-Started) 够用了。
+关闭终端窗口、断开 SSH 或拔掉显示器后，tmux 会话和其中的 agent 仍可继续运行。会话名称和 pane ID 用于定位各个 agent。
+
+重启后，`gtmux restore` 从最近保存的 tmux-resurrect 快照重建会话和布局；程序会作为新进程启动，支持恢复对话的 agent 默认续接原对话。`gtmux doctor` 可配置快照保存。
+
+MacBook 合盖默认休眠，`gtmux awake on` 可让它继续运行。tmux 基础操作见官方 [Getting Started](https://github.com/tmux/tmux/wiki/Getting-Started)。
 
 ## 让 agent 上雷达
 
@@ -35,7 +39,7 @@ gtmux install hooks --agent codex
 
 不加 `--agent` 只配 Claude Code。你用哪些就接着配哪些：`gemini`、`cursor`、`opencode`、`kimi`、`copilot` 或 `kiro`。已经在跑的 agent 重启后才会用上 hook。`gtmux doctor --fix` 会主动提出给 Claude Code 配 hook，找到 Codex 和 Kimi Code 时也会；其余的要用上面那条命令。
 
-支持进程识别的 agent 不装 hook 时，gtmux 从 pane 标题、屏幕和 CPU 采样读取回退状态，细节少一些（Codex 正在弹的审批菜单仍会显示为等待）。只有跑在 tmux 外面的 agent 必须装 hook 才看得到。
+支持进程识别的 agent 不装 hook 时，gtmux 从 pane 标题、屏幕和 CPU 采样读取回退状态，细节少一些（Codex 正在弹的审批菜单仍会显示为等待）。tmux 外的可见范围取决于各 agent 的 hook 和历史读取支持。
 
 ## 打开雷达
 
@@ -49,7 +53,7 @@ gtmux agents --watch      # 终端里的实时看板；↑/↓ 选择，回车�
 
 ## 查看所有 pane
 
-想连 tmux 里其他东西也看到（shell、编辑器、开发服务器），`gtmux panes` 会列出每一个 pane，不管是不是 agent。app 里它叫「所有 pane」。
+`gtmux panes` 列出所有 tmux pane，包括 agent、shell、编辑器和开发服务器。App 中对应的入口是「所有 pane」。
 
 ![iPad 上的「所有 pane」：每个 tmux 会话一张卡片，agent 带状态标记，普通 shell 排在旁边](img/watch-a-fleet-panes-zh.jpg)
 
@@ -59,10 +63,10 @@ gtmux agents --watch      # 终端里的实时看板；↑/↓ 选择，回车�
 gtmux focus %7            # 把那个 pane 所在的窗口和 pane 带到最前
 ```
 
-或者点菜单栏面板里那一行，或者点通知。gtmux 把终端窗口和 pane 带到前面，光标就在 agent 停下的地方；你回一句，它接着干。跳转支持 Ghostty 1.3+、iTerm2 和 cmux，Warp 尽力支持，还需要 tmux 的 `set-titles` 选项，`gtmux doctor` 会帮你设好（[`gtmux focus`](../cli.zh.md#gtmux-focus)）。
+点击菜单栏中的 agent 或通知，也能将对应的终端窗口和 pane 切到前台，然后输入回复。跳转支持 Ghostty 1.3+、iTerm2 和 cmux；Warp 为尽力支持。tmux 还需开启 `set-titles`，可通过 `gtmux doctor` 配置（[`gtmux focus`](../cli.zh.md#gtmux-focus)）。
 
 Mac 上按 ⌥⌘4 可截图发给 agent。已展开的菜单栏面板会保留在截图里，可以直接框选面板本身；按 Esc 取消后仍保持展开。编辑页的附言框支持回车换行，⌘↩发送；调整窗口时，截图和标注一起等比缩放，导出仍保留原始像素尺寸。
 
 ---
 
-接下来：agent 多到自己盯不过来？[让 HQ 替你盯全局](hq-supervisor.zh.md) · 不在电脑前？[用手机和网页远程管理](phone-and-web.zh.md) · 全部命令：[CLI 参考](../cli.zh.md#gtmux-agents)
+相关指南：[使用 HQ 协调任务](hq-supervisor.zh.md) · [用手机和网页远程管理](phone-and-web.zh.md) · [CLI 参考](../cli.zh.md#gtmux-agents)
