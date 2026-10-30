@@ -243,8 +243,8 @@ scope ambiguous. Modern `session_meta.id` identifies the thread; a tree-root `se
 cannot alias a fork. This batch does not expose a lineage tree or frontend-conflict UI.
 
 Verified CLI-created conversations now use the same bounded public-history reader as
-Desktop-created conversations. Mac, iPhone and iPad read serially and discard responses
-from another server/home/thread. CLI reads the same data; Web remains status-only.
+Desktop-created conversations. Mac, iPhone, iPad and Web read serially and discard responses
+from another server/home/thread. CLI reads the same data; browser Chat/Trace uses the same exact session/home scope.
 No existing-backend observer has been validated, so the stored-history fallback remains
 in use. Reading does not resume a thread, start a daemon, acquire control or change consent.
 Terminal still contains only captured terminal output; overwritten alternate-screen
@@ -260,3 +260,19 @@ client switch, release, installation, device layout or VoiceOver acceptance was 
 ## Shared terminal adapter
 
 [Terminal identity](codex-terminal-identity.md) implements verified per-frontend root binding, addressed input and thread-aware tool/HQ identity. It complements the read-only lifecycle model; general Desktop takeover remains unavailable.
+
+## Completed shared-backend observations
+
+A late Stop/Resumed callback after HQ worker reap can still name the shared Codex
+app-server PID. That daemon remaining alive does not keep each former frontend alive.
+The active external list omits idle, unfollowed observations only when their recorded
+process incarnation is positively revalidated as the managed daemon. Command arguments
+are inspected transiently with a bound; ambiguous configuration/text, inspection failure
+or PID reuse does not establish that role. One collection reuses a role result only
+within the same PID/command/birth identity.
+
+This changes visibility, not storage or control: native observations, conversation files
+and consent remain. Fresh working/waiting records, explicitly followed history and idle
+legacy CLI frontend processes retain their existing behavior. Other threads on the
+backend are untouched. CLI, menubar, phone, iPad and Web all read this core decision;
+no surface relabels history as an active HQ pane or infers a new owner from originator.

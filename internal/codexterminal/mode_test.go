@@ -26,3 +26,28 @@ func TestProcessRecoveryRejectsHeadlessModesEvenWithTerminalStdin(t *testing.T) 
 		}
 	}
 }
+
+func TestManagedBackendRequiresUnambiguousDaemonCommand(t *testing.T) {
+	for _, tc := range []struct {
+		command string
+		want    bool
+	}{
+		{"/opt/codex app-server --listen unix:// --analytics-default-enabled --managed-daemon", true},
+		{"codex app-server --managed-daemon --listen unix:///fixture.sock", true},
+		{"codex app-server --managed-daemon", true},
+		{"codex app-server --listen unix://", false},
+		{"codex resume thread", false},
+		{"codex explain app-server --managed-daemon", false},
+		{"codex app-server --config label=some --managed-daemon", false},
+		{"codex app-server --config 'label=some --managed-daemon'", false},
+		{"codex app-server --managed-daemon -- task", false},
+		{"codex app-server --listen --managed-daemon", false},
+		{"other app-server --managed-daemon", false},
+		{"codex app-server\n--managed-daemon", false},
+		{"", false},
+	} {
+		if got := managedBackendCommand(tc.command); got != tc.want {
+			t.Errorf("managed backend = %v for %q, want %v", got, tc.command, tc.want)
+		}
+	}
+}
