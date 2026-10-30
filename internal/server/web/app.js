@@ -584,7 +584,8 @@
     button.type = 'button'; button.dataset.section = key;
     var id = (tree ? 'tree-' : 'radar-') + key + '-rows', body = el('div', 'section-rows'); body.id = id;
     button.setAttribute('aria-controls', id);
-    button.appendChild(el('span', 'section-name', label)); button.appendChild(el('span', 'section-count', String(count)));
+    // Match the App's CollapseBar headings without uppercasing inline status labels.
+    button.appendChild(el('span', 'section-name', label.toUpperCase())); button.appendChild(el('span', 'section-count', String(count)));
     var action = el('span', 'section-action'), chevron = el('span', 'section-chevron'); chevron.innerHTML = uiIcon('chevron'); button.appendChild(action); button.appendChild(chevron);
     function sync() { var open = !collapsedSections.has(key); body.hidden = !open; button.setAttribute('aria-expanded', String(open)); action.textContent = open ? T('Hide', '收起') : T('Show', '展开'); }
     button.onclick = function () {

@@ -111,6 +111,13 @@ new agent output continues and appears after selection clears. Width/font-scale 
 are remeasured natively. Bounded collapsed previews keep their previous behavior until
 expanded. Older binaries fall back to the existing block-copy wrapper.
 
+Constrained prose starts at the available container width, never a one-pixel placeholder.
+Its last accepted height remains while a new revision is measured; a short natural width
+is reused only for the same text layout, so growing messages regain the available width.
+Stale events cannot shrink it. The native renderer waits for a usable constrained width
+and leaves identical documents intact. Horizontal code retains natural-width measurement. This prevents a
+refresh from briefly reducing a full message to its first character.
+
 Terminal ANSI/theme colors are presentation, not transcript facts. Markdown emphasis is
 preserved; arbitrary terminal colors do not imply waiting, success or approval.
 

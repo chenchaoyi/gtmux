@@ -37,6 +37,9 @@ final class FixtureController: UIViewController {
     if !args.contains("--skip-selection-checks") {
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.checkSelection() }
     }
+    if args.contains("--text-layout-checks") {
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.checkTextLayout() }
+    }
     if #available(iOS 16.0, *) {
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
         self.view.window?.windowScene?.requestGeometryUpdate(.iOS(interfaceOrientations: self.args.contains("--landscape") ? .landscapeRight : .portrait)) { error in
@@ -66,6 +69,38 @@ final class FixtureController: UIViewController {
     selection.clearSelection()
     record("selection-resumes", selection.textView.text.hasPrefix("A new streaming") ? "pass" : "FAIL")
     selection.document = doc("3", "长按这里可以选择部分文字，然后拖动手柄调整。\n\nYou can select across these paragraphs, including 中文 😀 and links.")
+  }
+  func checkTextLayout() {
+    let text = String(repeating: "这是一段完整的会话。刷新后应该保持完整排版，不能只显示首字。中文 😀 and English text. ", count: 8)
+    let probe = ConversationTextView(frame: CGRect(x: 0, y: 0, width: 1, height: 28))
+    var events: [[String: Any]] = []
+    probe.onSize = { events.append($0) }
+    probe.document = doc("layout-1", text)
+    probe.layoutIfNeeded()
+    record("text-unresolved-width", events.isEmpty ? "pass" : "FAIL published before usable width")
+    probe.frame.size.width = 320; probe.setNeedsLayout(); probe.layoutIfNeeded()
+    let wide = events.last?["height"] as? CGFloat ?? 0
+    record("text-constrained-height", wide > 56 ? "pass" : "FAIL \(wide)")
+    let count = events.count
+    for _ in 0..<20 { probe.document = doc("layout-1", text); probe.layoutIfNeeded() }
+    record("text-identical-refresh", events.count == count ? "pass" : "FAIL \(events.count - count) redundant measurements")
+    probe.frame.size.width = 160; probe.setNeedsLayout(); probe.layoutIfNeeded()
+    let narrow = events.last?["height"] as? CGFloat ?? 0
+    record("text-resize", narrow > wide ? "pass" : "FAIL \(wide) -> \(narrow)")
+    probe.document = doc("layout-2", text + " 新增进度。")
+    probe.layoutIfNeeded()
+    record("text-stream", probe.textView.text.hasSuffix("新增进度。") && (events.last?["height"] as? CGFloat ?? 0) >= narrow ? "pass" : "FAIL")
+    let original = probe.textView.text! as NSString
+    probe.textView.selectedRange = original.range(of: "中文 😀")
+    probe.textViewDidChangeSelection(probe.textView)
+    probe.document = doc("layout-3", "Selection finished; latest content is intact.")
+    record("text-selection-pinned", probe.textView.text == original as String ? "pass" : "FAIL")
+    probe.clearSelection()
+    record("text-selection-resumes", probe.textView.text.hasPrefix("Selection finished") ? "pass" : "FAIL")
+    let code: NSDictionary = ["revision": "code", "runs": [["text": String(repeating: "code", count: 40)]], "style": ["fontSize": 18, "lineHeight": 28], "scale": 1, "unbounded": true]
+    probe.document = code; probe.frame.size.width = 1; probe.setNeedsLayout(); probe.layoutIfNeeded()
+    record("text-unbounded-width", (events.last?["width"] as? CGFloat ?? 0) > 320 ? "pass" : "FAIL")
+    selection.document = doc("visible", "这是一段完整的对话内容。\n\n刷新时正文应保持稳定，不会先缩成一个字，再展开。\n\nRich text and 中文 😀 remain selectable across paragraphs.")
   }
   func runTransportChecks() {
     for (path, expected) in [("redirect", "network"), ("denied", "permission"), ("unpublished", "unavailable"), ("old", "unsupported"), ("checksum", "invalid"), ("network", "network"), ("large", "tooLarge")] {

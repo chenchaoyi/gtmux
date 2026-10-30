@@ -634,7 +634,7 @@ test('a failed options request clears the choices it had shown', async () => {
 
 
 test('desktop work conversations have a distinct group and saved follow badge', () => {
- for (const [lang,label,only,followed] of [['en-US','External conversations','Status only','HQ following'],['zh-CN','外部会话','仅显示状态','HQ 跟进中']]) {
+ for (const [lang,label,only,followed] of [['en-US','EXTERNAL CONVERSATIONS','Status only','HQ following'],['zh-CN','外部会话','仅显示状态','HQ 跟进中']]) {
   const h=harness({ok:true},lang);
   const a={source:'native',client:'chatgpt_desktop',session_id:'desk',agent:'Codex',status:'working',task:'Crash investigation',follow:{hq:false,revision:0}};
   h.api.renderRadar([a]);
@@ -1040,7 +1040,7 @@ test('native host presentation retains uncertainty and read-only routing in both
  }
 });
 
-for (const [language, idleLabel] of [['en-US', 'idle'], ['zh-CN', '空闲']]) {
+for (const [language, idleLabel] of [['en-US', 'IDLE'], ['zh-CN', '空闲']]) {
   test(`neutral and completed agents share the existing quiet group in ${language}`, () => {
     const h = harness({}, language);
     const neutral = {pane_id: '%4', source: 'tmux', agent: 'DeepSeek', status: 'running', since: 0};

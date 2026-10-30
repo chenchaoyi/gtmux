@@ -1,0 +1,5 @@
+- [x] Reproduce initial constrained width and invalid native measurement behavior with regressions.
+- [x] Stabilize bounded text sizing and unchanged native document updates.
+- [x] Verify delayed events, streaming, selection, constrained/unbounded layout and phone/iPad fixture rendering.
+- [x] Align browser section heading casing with the App and verify both roster layouts.
+- [x] Sync bilingual design and canonical specification; archive the implemented change.

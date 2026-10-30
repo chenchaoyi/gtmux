@@ -2,6 +2,31 @@ const assert = require('node:assert/strict');
 const {scenario} = require('./harness.cjs');
 const {openTools,closeTools} = require('./tools.cjs');
 
+for(const width of [390,1440]) scenario(`Session section casing matches App headings at ${width}`,{viewport:{width,height:900},locale:'en-US'},async(page,fixture)=>{
+  fixture.state.agents=[
+    {pane_id:'%901',agent:'Codex',status:'waiting',task:'Needs a reply'},
+    {pane_id:'%902',agent:'Claude Code',status:'idle',error:true,error_text:'Recorded error',task:'Retry failed'},
+    {pane_id:'%903',agent:'Codex',role:'supervisor',status:'idle',task:'HQ'},
+    {pane_id:'%904',agent:'Codex',status:'working',task:'Checking'},
+    {pane_id:'%905',agent:'Kimi Code',status:'idle',task:'Finished'},
+    {pane_id:'',source:'native',agent:'Codex',session_id:'external-case',current_client:'unconfirmed',can_read_conversation:true,task:'External example'},
+    {pane_id:'',source:'native',agent:'Codex',session_id:'elsewhere-case',task:'Status only'},
+  ];
+  await page.goto(fixture.url+'/#code=TEST-1234');
+  const root=page.locator(width<900?'#radar':'#tree');
+  const labels=await root.locator('.section-name').allTextContents();
+  for(const expected of ['NEEDS ATTENTION','ERRORED','WORKING','IDLE','ELSEWHERE','EXTERNAL CONVERSATIONS']) assert.ok(labels.includes(expected),expected);
+  if(width>=900)assert.ok(labels.includes('HEADQUARTERS'));
+  const toggle=root.locator('.section-toggle.working');
+  assert.equal(await toggle.locator('.section-action').innerText(),'Hide');
+  assert.equal(await toggle.locator('.section-action').evaluate(e=>getComputedStyle(e).textTransform),'none');
+  await toggle.click();assert.equal(await toggle.locator('.section-action').innerText(),'Show');
+  assert.equal(await toggle.locator('.section-name').innerText(),'WORKING');
+  for(const heading of await root.locator('.section-toggle').all())assert.ok((await heading.boundingBox()).height>=44);
+  if(process.env.GTMUX_WEB_EVIDENCE)await page.screenshot({path:require('node:path').join(process.env.GTMUX_WEB_EVIDENCE,'section-casing-'+width+'.png')});
+  assert.equal(fixture.state.sends.length,0);
+});
+
 scenario('Empty workspace has a clear first action and a scene-specific attributed excerpt',{viewport:{width:1440,height:900},locale:'zh-CN'},async(page,fixture)=>{
   await page.goto(fixture.url+'/#code=TEST-1234');
   await page.getByRole('heading',{name:'从一个会话开始'}).waitFor();
