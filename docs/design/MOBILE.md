@@ -787,6 +787,16 @@ both terminal and chat slide under it. Take `['top','left','right']`; in portrai
 
 In full-screen chat, the fixed Collapse all / Expand all control also uses the raw top safe-area inset and a horizontal gutter. It floats independently of the scrolling content, like the exit control, so its label and touch target clear rounded corners and the Dynamic Island without reserving a full-width empty strip.
 
+### Compact external conversation header
+
+Phone and iPad external readers show one title line and one harness / read-only line.
+The title opens a bounded, scrollable details sheet with the full title, source,
+original-client input guidance and any recorded launch/current-client evidence.
+These explanations do not reserve permanent conversation space or imply control.
+Back and session tools keep separate 44pt targets. Navigation labels use the shared
+chrome text-size limit; details remain fully scalable. Closing details preserves the
+conversation; changing server, home or session, or losing authorization, closes them.
+
 ### Desktop follow settings
 
 The paired owner taps a desktop row to open [read-only Chat](desktop-conversation.md).

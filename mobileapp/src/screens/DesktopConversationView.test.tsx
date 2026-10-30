@@ -1,6 +1,6 @@
 import React from 'react';
 import renderer, {act} from 'react-test-renderer';
-import {AppState, TextInput} from 'react-native';
+import {AppState, Text, TextInput} from 'react-native';
 import {DetailView} from './DetailScreen';
 import {ChatView} from '../ui/ChatView';
 import {useApp} from '../state/AppContext';
@@ -126,4 +126,40 @@ test.each([401, 403])('access denial %s clears the conversation and closes Trace
  expect(tree!.root.findByType(TraceModal).props.visible).toBe(false);
  expect(tree!.root.findByType(TraceModal).props.turns).toEqual([]);
  expect(tree!.root.findAllByType(ChatView)).toHaveLength(0);
+});
+
+test.each(['en', 'zh'] as const)('external header keeps secondary evidence behind details (%s)', async lang => {
+ const title = '读取任务文件并审查 gtmux 仓库 · a long conversation title';
+ const dsh = toAgent({agent: 'DeepSeek Harness', source: 'native', session_id: 'dsh', home_id: 'home', task: title, current_client: 'unconfirmed', can_read_conversation: true, launch_host: {name: 'Harness Web', kind: 'process', observed_at: 1793000000}});
+ (useApp as jest.Mock).mockReturnValue({pal: paletteFor('light'), lang, fontPref: 'auto'});
+ await act(async () => {tree = renderer.create(<DetailView agent={dsh} />);});
+ const header = tree!.root.findByProps({testID: 'external-conversation-header'});
+ const compact = JSON.stringify(header.findAllByType(Text).map(n => n.props.children));
+ expect(compact).toContain('DeepSeek Harness');
+ expect(compact).toContain(lang === 'zh' ? '只读' : 'Read only');
+ expect(compact).not.toContain('Harness Web');
+ expect(compact).not.toContain('unconfirmed');
+ expect(tree!.root.findAllByProps({testID: 'external-conversation-details'})).toHaveLength(0);
+ await act(async () => tree!.root.findByProps({testID: 'external-conversation-details-open'}).props.onPress());
+ const details = tree!.root.findByProps({testID: 'external-conversation-details'});
+ const expanded = JSON.stringify(details.findAllByType(Text).map(n => n.props.children));
+ expect(expanded).toContain(title);
+ expect(expanded).toContain('Harness Web');
+ expect(expanded).toContain(lang === 'zh' ? '当前输入客户端未确认' : 'Current input client unconfirmed');
+ expect(expanded).toContain(lang === 'zh' ? '请在原客户端发送消息' : 'Send messages from its original client');
+ expect(client.desktopTranscript).toHaveBeenCalledTimes(1);
+ await act(async () => tree!.root.findByProps({testID: 'external-conversation-details-close'}).props.onPress());
+ expect(tree!.root.findAllByProps({testID: 'external-conversation-details'})).toHaveLength(0);
+ await act(async () => tree!.root.findByProps({testID: 'external-conversation-details-open'}).props.onPress());
+ await act(async () => tree!.root.findByProps({testID: 'external-conversation-details-backdrop'}).props.onPress());
+ expect(tree!.root.findAllByProps({testID: 'external-conversation-details'})).toHaveLength(0);
+ expect(client.sendResult).not.toHaveBeenCalled();
+});
+
+test('switching external conversations closes details instead of carrying old metadata forward', async () => {
+ await render('old details');
+ await act(async () => tree!.root.findByProps({testID: 'external-conversation-details-open'}).props.onPress());
+ expect(tree!.root.findAllByProps({testID: 'external-conversation-details'}).length).toBeGreaterThan(0);
+ await act(async () => tree!.update(<DetailView agent={agent('new details')} />));
+ expect(tree!.root.findAllByProps({testID: 'external-conversation-details'})).toHaveLength(0);
 });
