@@ -413,6 +413,7 @@ func codexStep(line string, st *parseState) {
 			if prompt, ok := codexUserPrompt(p.Message); ok {
 				codexOpenPrompt(st, prompt, e.Timestamp)
 			}
+			st.promptContexts(p.Message, "codex/event_msg.user_message", e.Timestamp)
 		case "agent_message":
 			if msg := strings.TrimSpace(p.Message); msg != "" && !lastSegmentText(st, msg) {
 				st.addText(msg) // each agent message starts a new bubble
@@ -432,9 +433,11 @@ func codexStep(line string, st *parseState) {
 					parts = append(parts, block.Text)
 				}
 			}
-			if prompt, ok := codexUserPrompt(strings.Join(parts, "\n")); ok {
+			raw := strings.Join(parts, "\n")
+			if prompt, ok := codexUserPrompt(raw); ok {
 				codexOpenPrompt(st, prompt, e.Timestamp)
 			}
+			st.promptContexts(raw, "codex/response_item.message.user", e.Timestamp)
 		} else if p.Type == "message" && p.Role == "assistant" &&
 			(p.Phase == "commentary" || p.Phase == "final_answer") {
 			// Current Codex emits these as soon as it speaks, including mid-turn.
@@ -504,8 +507,17 @@ func codexUserPrompt(raw string) (string, bool) {
 // Some rollouts carry both the response_item and event_msg form of the same
 // user input. They are adjacent before any reply; keep one prompt bubble.
 func codexOpenPrompt(st *parseState, prompt, timestamp string) {
-	if st.cur != nil && st.cur.Prompt == prompt && len(st.cur.Segments) == 0 {
-		return
+	if st.cur != nil && st.cur.Prompt == prompt {
+		onlyContext := true
+		for _, segment := range st.cur.Segments {
+			if segment.Context == nil {
+				onlyContext = false
+				break
+			}
+		}
+		if onlyContext {
+			return
+		}
 	}
 	st.open(prompt, timestamp)
 }

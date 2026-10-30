@@ -99,6 +99,7 @@
     : (location.pathname || '/').replace(/\/index\.html$/, '').replace(/\/+$/, '');
   function authHeaders() { return token ? {Authorization: 'Bearer ' + token} : {}; }
   function api(path, opts) {
+    if (/^\/api\/(?:session\/)?transcript\?/.test(path)) path += '&context=1';
     opts = opts || {};
     opts.headers = Object.assign({}, opts.headers || {}, authHeaders());
     return fetch(BASE + path, opts);
@@ -201,6 +202,13 @@
     ['settings-title', {text: T('Settings', '设置')}],
     ['settings-chat', {text: T('Chat', '对话')}],
     ['settings-terminal', {text: T('Terminal', '终端')}],
+    ['settings-scope', {text: T('Saved in this browser. Changes apply immediately.', '仅影响当前浏览器，即时生效。')}],
+    ['settings-navigation', {label: T('Settings categories', '设置分类')}],
+    ['settings-nav-appearance', {html: uiIcon('sun') + T('Appearance', '外观')}],
+    ['settings-nav-chat', {html: uiIcon('snippets') + T('Chat', '对话')}],
+    ['settings-nav-terminal', {html: uiIcon('terminal') + T('Terminal', '终端')}],
+    ['settings-chat-hint', {text: T('Reading size and keyboard sending behavior.', '调整阅读字号和键盘发送方式。')}],
+    ['settings-terminal-hint', {text: T('Font and size for the terminal display.', '字体和字号仅用于终端画面。')}],
     ['settings-close', {html: uiIcon('close'), label: T('Close settings', '关闭设置'), title: T('Close settings', '关闭设置')}],
     ['settings-reset', {text: T('Reset', '恢复默认')}],
     ['chat-size-lbl', {text: T('Text size', '正文字号')}],
@@ -2470,7 +2478,7 @@
   }
   // Shared by focused chat and board tiles: one transcript, one set of affordances.
   function turnSegments(t) {
-    return t.segments && t.segments.length ? t.segments : [{text: t.response || '', steps: t.steps || []}];
+    return (t.segments && t.segments.length ? t.segments : [{text: t.response || '', steps: t.steps || []}]).filter(function (segment) { return segment.text || segment.steps && segment.steps.length; });
   }
   function conversationTurn(t, currentAgent, idx, expanded, separator, focused, onUpdate) {
     var ct = document.createElement('article'); ct.className = 'cturn'; if (focused) ct.id = 'cturn-' + idx;
@@ -2668,6 +2676,11 @@
   function uiIcon(kind) {
     // Lucide 0.468.0 (ISC); attribution: vendor/lucide.LICENSE.
     var paths = {
+      "sun": "<circle cx=\"12\" cy=\"12\" r=\"4\"/><path d=\"M12 2v2m0 16v2M2 12h2m16 0h2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42\"/>",
+      "moon": "<path d=\"M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z\"/>",
+      "monitor": "<rect x=\"2\" y=\"3\" width=\"20\" height=\"14\" rx=\"2\"/><path d=\"M8 21h8m-4-4v4\"/>",
+      "terminal": "<rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\"/><path d=\"m7 8 4 4-4 4m6 0h4\"/>",
+
       "file": "<path d=\"M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z\"/><path d=\"M14 2v6h6M8 13h8M8 17h6\"/>",
       "tools": "<path d=\"M14 5a6 6 0 0 0-7 7l-5 5 5 5 5-5a6 6 0 0 0 7-7l-4 3-4-4 3-4Z\"/>",
       "trace": "<path d=\"M4 5h16M4 12h16M4 19h16\"/><circle cx=\"8\" cy=\"5\" r=\"2\"/><circle cx=\"16\" cy=\"12\" r=\"2\"/><circle cx=\"10\" cy=\"19\" r=\"2\"/>",
@@ -3705,6 +3718,17 @@
     var returnSend = $('return-sends'); returnSend.checked = lsGet('gtmux.returnSends', '0') === '1'; syncSettings();
     returnSend.onchange = function () { try { localStorage.setItem('gtmux.returnSends', returnSend.checked ? '1' : '0'); } catch (e) {} document.querySelectorAll('.cx-input').forEach(function (input) { input.setAttribute('enterkeyhint', returnSend.checked ? 'send' : 'enter'); }); syncSettings(); };
     if (panel.dataset.ready) return; panel.dataset.ready = '1';
+    panel.querySelectorAll('[data-appearance-icon]').forEach(function (node) { node.innerHTML = uiIcon(node.dataset.appearanceIcon); });
+    var settingsBody = panel.querySelector('.settings-body'), navigation = panel.querySelector('nav');
+    function markSection(id) { navigation.querySelectorAll('button').forEach(function (button) { if (button.dataset.settingsSection === id) button.setAttribute('aria-current', 'location'); else button.removeAttribute('aria-current'); }); }
+    navigation.onclick = function (event) {
+      var button = event.target.closest('[data-settings-section]'); if (!button) return;
+      var target = $(button.dataset.settingsSection); target.scrollIntoView({block: 'start'}); target.focus({preventScroll: true}); markSection(target.id);
+    };
+    settingsBody.addEventListener('scroll', function () {
+      var top = settingsBody.getBoundingClientRect().top + 28, selected = 'settings-appearance-section';
+      settingsBody.querySelectorAll('fieldset').forEach(function (section) { if (section.getBoundingClientRect().top <= top) selected = section.id; }); if (settingsBody.scrollHeight - settingsBody.scrollTop - settingsBody.clientHeight < 4) selected = 'settings-terminal-section'; markSection(selected);
+    }, {passive: true});
     $('settings-close').onclick = function () { setSettingsOpen(false); if (settingsTrigger) settingsTrigger.focus(); };
     $('chat-size-rng').oninput = function () { chatSizePref = Number(this.value); try { localStorage.setItem('gtmux.chatFontSize', String(chatSizePref)); } catch (e) {} applyAppearance(); syncSettings(); };
     $('settings-reset').onclick = function () {

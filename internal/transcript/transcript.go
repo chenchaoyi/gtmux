@@ -446,8 +446,9 @@ type SessionBreak struct {
 // and the tool calls that followed it. Either side may be empty (a tools-only
 // segment renders as just the collapsed step group; a text-only one as a bubble).
 type Segment struct {
-	Text  string `json:"text,omitempty"`
-	Steps []Step `json:"steps,omitempty"`
+	Text    string         `json:"text,omitempty"`
+	Steps   []Step         `json:"steps,omitempty"`
+	Context *ContextRecord `json:"context,omitempty"`
 }
 
 // maxTailBytes bounds the raw tail read for non-Codex agents. Codex uses the
@@ -543,13 +544,15 @@ func resolveLog(agent, sessionID string) (string, stepFn) {
 // parseState accumulates turns as a parser walks the log linearly, tracking the
 // byte offset at which each turn began so the cache can restart incrementally.
 type parseState struct {
-	turns           []Turn
-	turnStarts      []int64 // turnStarts[i] = byte offset of turns[i]'s first line
-	cur             *Turn
-	curStart        int64
-	turnCap         int   // optional retention limit while streaming
-	off             int64 // start offset of the line currently being fed to a step
-	toolDetailBytes int   // additional tool-input bytes retained in the active turn
+	turns               []Turn
+	turnStarts          []int64 // turnStarts[i] = byte offset of turns[i]'s first line
+	cur                 *Turn
+	curStart            int64
+	turnCap             int             // optional retention limit while streaming
+	off                 int64           // start offset of the line currently being fed to a step
+	toolDetailBytes     int             // additional tool-input bytes retained in the active turn
+	pendingContexts     []ContextRecord // prefix instructions wait for a real turn
+	pendingContextStart int64
 }
 
 // flush commits the in-progress turn (if it carries any content) and records
@@ -586,7 +589,14 @@ func lastSegmentText(st *parseState, s string) bool {
 	if st.cur == nil || len(st.cur.Segments) == 0 {
 		return false
 	}
-	return st.cur.Segments[len(st.cur.Segments)-1].Text == s
+	for i := len(st.cur.Segments) - 1; i >= 0; i-- {
+		segment := st.cur.Segments[i]
+		if segment.Context != nil && segment.Text == "" && len(segment.Steps) == 0 {
+			continue
+		}
+		return segment.Text == s
+	}
+	return false
 }
 
 // addSteps attaches tool steps to the current segment (the tools that ran after the
@@ -619,6 +629,7 @@ func (st *parseState) open(prompt, ts string) {
 	st.flush()
 	st.cur = &Turn{Prompt: prompt, Time: ts}
 	st.curStart = st.off
+	st.attachContexts()
 }
 
 // ensure opens a prompt-less turn for assistant output that arrived with no
@@ -627,6 +638,7 @@ func (st *parseState) ensure() {
 	if st.cur == nil {
 		st.cur = &Turn{}
 		st.curStart = st.off
+		st.attachContexts()
 	}
 }
 
@@ -698,11 +710,13 @@ func parseTurns(path string, startOffset int64, step stepFn) ([]Turn, int64, int
 const cacheTurnCap = 800
 
 type cacheEntry struct {
-	path     string
-	size     int64
-	turns    []Turn
-	nextLine int64 // Codex: first byte not yet consumed as a complete JSONL record
-	lastTurn int64 // byte offset of the last turn's start (-1 if none)
+	path                string
+	size                int64
+	turns               []Turn
+	nextLine            int64 // Codex: first byte not yet consumed as a complete JSONL record
+	lastTurn            int64 // byte offset of the last turn's start (-1 if none)
+	pendingContexts     []ContextRecord
+	pendingContextStart int64
 	// file and mtime are the log as it was stat'ed BEFORE the parse: which file (an
 	// atomic replace is another file at the same path) and when it last changed (a
 	// rewrite in place can keep the size). Size alone used to stand for "unchanged",

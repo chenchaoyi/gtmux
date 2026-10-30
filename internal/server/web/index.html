@@ -81,28 +81,34 @@
 
   <!-- Browser-local preferences; terminal and conversation typography are explicit. -->
   <section id="settings" role="region" hidden>
-    <div class="settings-head"><h2 id="settings-title">设置</h2><button id="settings-close" type="button"></button></div>
-    <div class="srow settings-appearance">
-      <span id="appearance-lbl">外观</span>
-      <div id="appearance-options" class="appearance-options" role="radiogroup" aria-labelledby="appearance-lbl">
-        <label><input id="appearance-system-radio" type="radio" name="appearance" value="system" checked><span id="appearance-system">跟随系统</span></label>
-        <label><input id="appearance-light-radio" type="radio" name="appearance" value="light"><span id="appearance-light">浅色</span></label>
-        <label><input id="appearance-dark-radio" type="radio" name="appearance" value="dark"><span id="appearance-dark">深色</span></label>
+    <div class="settings-head"><div><h2 id="settings-title">设置</h2><p id="settings-scope" class="settings-hint">仅影响当前浏览器，即时生效。</p></div><button id="settings-close" type="button"></button></div>
+    <div class="settings-shell">
+      <nav id="settings-navigation" aria-label="设置分类">
+        <button type="button" data-settings-section="settings-appearance-section" aria-controls="settings-appearance-section" aria-current="location" id="settings-nav-appearance">外观</button>
+        <button type="button" data-settings-section="settings-chat-section" aria-controls="settings-chat-section" id="settings-nav-chat">对话</button>
+        <button type="button" data-settings-section="settings-terminal-section" aria-controls="settings-terminal-section" id="settings-nav-terminal">终端</button>
+      </nav>
+      <div class="settings-body">
+        <fieldset id="settings-appearance-section" tabindex="-1"><legend id="appearance-lbl">外观</legend>
+          <div id="appearance-options" class="appearance-options" role="radiogroup" aria-labelledby="appearance-lbl">
+            <label><input id="appearance-light-radio" type="radio" name="appearance" value="light"><span class="appearance-choice"><span class="appearance-icon" data-appearance-icon="sun" aria-hidden="true"></span><span id="appearance-light">浅色</span></span></label>
+            <label><input id="appearance-dark-radio" type="radio" name="appearance" value="dark"><span class="appearance-choice"><span class="appearance-icon" data-appearance-icon="moon" aria-hidden="true"></span><span id="appearance-dark">深色</span></span></label>
+            <label><input id="appearance-system-radio" type="radio" name="appearance" value="system" checked><span class="appearance-choice"><span class="appearance-icon" data-appearance-icon="monitor" aria-hidden="true"></span><span id="appearance-system">跟随系统</span></span></label>
+          </div>
+        </fieldset>
+        <fieldset id="settings-chat-section" tabindex="-1"><legend id="settings-chat">对话</legend>
+          <p id="settings-chat-hint" class="settings-hint">调整阅读字号和键盘发送方式。</p>
+          <div class="srow setting-switch"><label class="settings-send-label" for="return-sends"><span id="return-send-lbl">回车发送</span><small id="return-send-hint" class="settings-hint"></small></label><input id="return-sends" type="checkbox" role="switch" aria-describedby="return-send-hint" /></div>
+          <div class="setting-size"><label id="chat-size-lbl" for="chat-size-rng">正文字号</label><output id="chat-size-val" for="chat-size-rng"></output><input id="chat-size-rng" type="range" min="12" max="24" step="1" /></div>
+        </fieldset>
+        <fieldset id="settings-terminal-section" tabindex="-1"><legend class="settings-terminal-title"><span id="settings-terminal">终端</span><span class="terminal-font-preview" aria-hidden="true">Aa</span></legend>
+          <p id="settings-terminal-hint" class="settings-hint">字体和字号仅用于终端画面。</p>
+          <div class="srow"><label id="font-lbl" for="font-sel">字体</label><select id="font-sel"><option id="font-auto" value="auto">跟随终端</option><option id="font-system" value="system">系统</option><option value="Hack">Hack</option><option value="JetBrains Mono">JetBrains Mono</option><option value="Fira Code">Fira Code</option><option value="IBM Plex Mono">IBM Plex Mono</option></select></div>
+          <div class="setting-size"><label id="size-lbl" for="size-rng">字号</label><output id="size-val" for="size-rng"></output><input id="size-rng" type="range" min="10" max="22" step="1" /></div>
+        </fieldset>
+        <button id="settings-reset" class="settings-reset" type="button">恢复默认</button>
       </div>
     </div>
-    <fieldset><legend id="settings-chat">对话</legend>
-      <div class="srow setting-switch"><label class="settings-send-label" for="return-sends"><span id="return-send-lbl">回车发送</span><small id="return-send-hint" class="settings-hint"></small></label><input id="return-sends" type="checkbox" role="switch" aria-describedby="return-send-hint" /></div>
-      <div class="setting-size"><label id="chat-size-lbl" for="chat-size-rng">正文字号</label><output id="chat-size-val" for="chat-size-rng"></output>
-        <input id="chat-size-rng" type="range" min="12" max="24" step="1" />
-      </div>
-    </fieldset>
-    <fieldset><legend class="settings-terminal-title"><span id="settings-terminal">终端</span><span class="terminal-font-preview" aria-hidden="true">Aa</span></legend>
-      <div class="srow"><label id="font-lbl" for="font-sel">字体</label>
-        <select id="font-sel"><option id="font-auto" value="auto">跟随终端</option><option id="font-system" value="system">系统</option><option value="Hack">Hack</option><option value="JetBrains Mono">JetBrains Mono</option><option value="Fira Code">Fira Code</option><option value="IBM Plex Mono">IBM Plex Mono</option></select>
-      </div>
-      <div class="setting-size"><label id="size-lbl" for="size-rng">字号</label><output id="size-val" for="size-rng"></output><input id="size-rng" type="range" min="10" max="22" step="1" /></div>
-    </fieldset>
-    <button id="settings-reset" class="settings-reset" type="button">恢复默认</button>
   </section>
 
   <!-- pairing / error gate. Structure, not one sentence: a reader who lands here (a

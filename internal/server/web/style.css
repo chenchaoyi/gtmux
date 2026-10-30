@@ -1163,6 +1163,19 @@ body { height: var(--viewport-height, 100dvh); }
 .trace-body { position: relative; }
 .trace-list { flex: 1 1 50%; padding: 8px 12px 16px; overscroll-behavior: contain; }
 .trace-turn { padding: 12px 10px 6px; font-size: 12px; color: var(--fg3); overflow-wrap: anywhere; }
+.trace-fold-turns, .trace-fold-calls { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 40px; padding: 6px 9px; border: 0; border-radius: 6px; background: transparent; color: var(--fg2); font: inherit; font-size: 13px; cursor: pointer; }
+.trace-fold-turns:hover, .trace-fold-calls:hover, .trace-turn:hover, .trace-calls:hover { background: var(--hover); color: var(--fg); }
+.trace-fold-turns:disabled, .trace-fold-calls:disabled { opacity: .45; cursor: default; }
+.trace-chevron { display: inline-flex; flex: 0 0 20px; width: 20px; height: 20px; }
+.trace-chevron svg { width: 20px; height: 20px; }
+.trace-chevron.open { transform: rotate(90deg); }
+button.trace-turn, .trace-calls { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; width: 100%; min-height: 44px; padding: 9px 10px; text-align: left; border: 0; border-radius: 6px; background: transparent; color: var(--fg2); font: inherit; font-size: 13px; cursor: pointer; }
+.trace-group-label { font-weight: 550; }
+.trace-group-summary { flex-basis: 100%; padding-left: 26px; color: var(--fg); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; line-height: 1.65; }
+.trace-group-count { padding-left: 26px; font-size: 12px; color: var(--fg3); }
+.trace-call-names { color: var(--fg3); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; flex: 1 1 60px; }
+.trace-turn:focus-visible, .trace-calls:focus-visible, .trace-fold-turns:focus-visible, .trace-fold-calls:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: -2px; }
+@media (pointer: coarse) { .trace-fold-turns, .trace-fold-calls { min-height: 44px; } }
 .trace-session-break { border-top: 1px solid var(--divider); margin-top: 14px; padding-top: 18px; }
 .trace-event { align-items: flex-start; min-height: 64px; padding: 10px; gap: 12px; }
 .trace-kind { flex: 0 0 42px; padding-top: 1px; font-size: 12px; }
@@ -1432,3 +1445,52 @@ select:disabled { opacity: .55; cursor: not-allowed; }
 /* Extra terminal keys are touch-input aids. Desktop keeps its normal keyboard. */
 .cx-keys, .composer-sm .cx-keys { display: none; }
 @media (pointer: coarse) { .cx-keys, .composer-sm .cx-keys { display: flex; } }
+
+/* Trace detail sections share one content model across browser and App. */
+.trace-mark.context { background: var(--fg2); }
+.trace-event.context .trace-kind { color: var(--fg2); }
+.trace-detail-modes { position: sticky; top: -16px; z-index: 2; background: var(--surface); border-bottom: 1px solid var(--divider); gap: 0; }
+.trace-detail-modes button { border-radius: 0; border-bottom: 2px solid transparent; font: inherit; font-size: 13px; min-height: 44px; padding: 8px 10px; }
+.trace-detail-modes button[aria-selected="true"] { color: var(--accent-ink); border-bottom-color: var(--accent-ink); }
+.trace-detail-modes button:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: -3px; }
+.trace-facts { display: grid; grid-template-columns: max-content minmax(0,1fr); gap: 12px 18px; margin: 18px 0; font-size: 13px; }
+.trace-facts dt { color: var(--fg3); }
+.trace-facts dd { margin: 0; color: var(--fg); overflow-wrap: anywhere; }
+.trace-excerpt, .trace-origin-note { color: var(--fg2); font-size: 13px; line-height: 1.7; overflow-wrap: anywhere; }
+.trace-origin { padding: 12px; background: var(--bg); border-radius: 6px; }
+
+/* Compact settings with persistent category navigation and browser-local scope. */
+#settings { width: min(620px, calc(100vw - 24px)); max-height: min(480px, calc(100dvh - var(--settings-top, 80px) - 12px)); display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+.settings-head { flex: 0 0 auto; padding: 10px 14px 10px 18px; gap: 12px; border-bottom: 1px solid var(--divider); }
+#settings .settings-head h2 { font-size: 17px; }
+#settings .settings-head .settings-hint { font-size: 12px; margin-top: 4px; }
+.settings-shell { display: grid; grid-template-columns: 136px minmax(0, 1fr); flex: 1 1 auto; min-height: 0; }
+#settings nav { display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 12px 8px; border-right: 1px solid var(--divider); background: var(--surface); }
+#settings nav button { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 10px; border: 0; border-radius: 7px; color: var(--fg2); background: transparent; text-align: left; font: inherit; font-size: 13px; cursor: pointer; }
+#settings nav button svg { width: 20px; height: 20px; flex: 0 0 20px; }
+#settings nav button[aria-current] { color: var(--fg); background: var(--control); font-weight: 600; }
+#settings nav button:hover { background: var(--hover); }
+#settings nav button:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: -2px; }
+.settings-body { min-height: 0; overflow: auto; padding: 0 18px 8px; overscroll-behavior: contain; scroll-padding-top: 12px; }
+#settings fieldset { border: 0; border-bottom: 1px solid var(--divider); padding: 16px 0; margin: 0; scroll-margin-top: 12px; }
+#settings fieldset:focus { outline: none; }
+#settings legend { float: none; width: auto; font-size: 14px; color: var(--fg); padding: 0; transform: translateY(12px); margin-bottom: 12px; font-weight: 600; }
+#settings fieldset > .settings-hint { font-size: 12px; margin: 2px 0 8px; }
+#settings .srow { min-height: 44px; }
+#settings .appearance-options { gap: 8px; padding: 0; border: 0; background: transparent; margin-top: 2px; }
+#settings .appearance-options label { flex: 1 1 0; min-width: 0; width: 0; }
+#settings .appearance-choice { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 5px; min-height: 68px; padding: 8px 2px; border: 1px solid var(--divider); border-radius: 9px; background: var(--bg); }
+#settings .appearance-choice > span { min-height: 0; padding: 0; color: inherit; font-size: 12px; }
+#settings .appearance-icon, #settings .appearance-icon svg { width: 22px; height: 22px; }
+#settings .appearance-options input:checked + span { border-color: var(--accent-ink); background: var(--control); color: var(--fg); box-shadow: none; }
+#settings .appearance-options input:focus-visible + span { outline-color: var(--accent-ink); }
+#settings .settings-reset { margin-top: 8px; }
+@media (max-width: 560px) {
+  #settings { width: calc(100vw - 24px); }
+  .settings-shell { display: flex; flex-direction: column; }
+  #settings nav { flex-direction: row; padding: 6px 12px; border-right: 0; border-bottom: 1px solid var(--divider); }
+  #settings nav button { flex: 1 1 0; justify-content: center; padding: 6px; font-size: 12px; gap: 5px; }
+  .settings-body { padding-inline: 14px; }
+}
+
+#settings .settings-terminal-title { display: flex; align-items: baseline; gap: 8px; }

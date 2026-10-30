@@ -32,13 +32,22 @@ import { ParticipantProfileModal } from '../ui/ParticipantProfileModal';
 import { ProfileTarget } from '../ui/participantProfile';
 import { MarkdownView } from '../ui/MarkdownView';
 import { CopyableText, CopyFeedbackContext } from '../ui/CopyableText';
-import { ArrowToBottomIcon, CopyIcon, SearchIcon } from '../ui/Icons';
+import { ArrowToBottomIcon, CopyIcon, SearchIcon, Chevron } from '../ui/Icons';
 import { ChromeText } from '../ui/ChromeText';
 import { SIcon } from '../ui/SettingsIcons';
 import { StatusBadge } from '../ui/StatusBadge';
 import { nativeDocumentPreview } from '../documents/nativePreview';
 import { DocumentError, documentErrorMessage } from '../documents/references';
-import { build, filter, groupTurns, TraceEvent, TraceKind } from './model';
+import {
+  build,
+  filter,
+  groupTurns,
+  sourceInfo,
+  overviewFacts,
+  previewText,
+  TraceEvent,
+  TraceKind,
+} from './model';
 import { timelineRows, TimelineRow } from './timeline';
 import {
   TraceTimelineRow,
@@ -69,6 +78,7 @@ const kindLabels = {
   user: ['Messages', '用户消息'],
   assistant: ['Agent replies', 'Agent 回复'],
   tool: ['Tool calls', '工具调用'],
+  context: ['Context', '上下文'],
 };
 const NO_TURNS: TranscriptTurn[] = [];
 export function TraceModal(props: Props) {
@@ -113,7 +123,9 @@ export function TraceReader({
     [session, setSession] = useState('all');
   const [selection, setSelection] = useState<Selection | null>(null),
     [detailsOpen, setDetailsOpen] = useState(false),
-    [source, setSource] = useState(false);
+    [detailTab, setDetailTab] = useState<
+      'overview' | 'preview' | 'raw' | 'origin'
+    >('preview');
   const [limitsOpen, setLimitsOpen] = useState(false);
   const [atTail, setAtTail] = useState(true),
     [searchOpen, setSearchOpen] = useState(false),
@@ -121,10 +133,13 @@ export function TraceReader({
     [expandedCalls, setExpandedCalls] = useState<Record<string, boolean>>({}),
     [profile, setProfile] = useState<ProfileTarget | null>(null),
     [copied, setCopied] = useState(false);
+  const [turnDefault, setTurnDefault] = useState<boolean | undefined>(),
+    [callDefault, setCallDefault] = useState<boolean | undefined>();
   const rows = useRef(new Map<string, View>()),
     searchRef = useRef<TextInput>(null);
   const list = useRef<FlatList<TimelineRow>>(null),
     stick = useRef(true),
+    disclosureHold = useRef(false),
     dragging = useRef(false),
     gapRef = useRef(0),
     tailFrame = useRef<number | null>(null),
@@ -148,7 +163,10 @@ export function TraceReader({
     setSearchOpen(false);
     setExpandedTurns({});
     setExpandedCalls({});
+    setTurnDefault(undefined);
+    setCallDefault(undefined);
     stick.current = true;
+    disclosureHold.current = false;
     setAtTail(true);
     if (tailFrame.current !== null) cancelAnimationFrame(tailFrame.current);
   }, [client, scope]);
@@ -178,15 +196,46 @@ export function TraceReader({
   const searching = !!query.trim() || kind !== 'all' || session !== 'all';
   const latestGroup = groups.at(-1);
   useEffect(() => {
-    if (sameIdentity && !searching && stick.current && latestGroup)
+    if (
+      sameIdentity &&
+      !searching &&
+      stick.current &&
+      latestGroup &&
+      turnDefault === undefined
+    )
       setExpandedTurns(value =>
         value[latestGroup.key] ? value : { ...value, [latestGroup.key]: true },
       );
-  }, [sameIdentity, searching, latestGroup?.key]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [sameIdentity, searching, latestGroup?.key, turnDefault]); // eslint-disable-line react-hooks/exhaustive-deps
   const timeline = useMemo(
-    () => timelineRows(groups, expandedTurns, expandedCalls, searching),
-    [groups, expandedTurns, expandedCalls, searching],
+    () =>
+      timelineRows(groups, expandedTurns, expandedCalls, searching, {
+        turns: turnDefault,
+        calls: callDefault,
+      }),
+    [groups, expandedTurns, expandedCalls, searching, turnDefault, callDefault],
   );
+  const allTurnsOpen =
+    groups.length > 0 &&
+    groups.every(group => expandedTurns[group.key] ?? turnDefault ?? false);
+  const callBatches = timelineRows(groups, {}, expandedCalls, false, {
+    turns: true,
+    calls: callDefault,
+  }).filter(row => row.type === 'calls');
+  const allCallsOpen = callBatches.every(
+    row => row.type === 'calls' && row.open,
+  );
+  function foldAll(level: 'turns' | 'calls') {
+    disclosureHold.current = true;
+    stopFollowing();
+    if (level === 'turns') {
+      setTurnDefault(!allTurnsOpen);
+      setExpandedTurns({});
+    } else {
+      setCallDefault(!allCallsOpen);
+      setExpandedCalls({});
+    }
+  }
   const latestEvent = latestGroup?.events.at(-1);
   function stopFollowing() {
     stick.current = false;
@@ -203,6 +252,7 @@ export function TraceReader({
     });
   }
   function jumpLatest() {
+    disclosureHold.current = false;
     if (latestGroup)
       setExpandedTurns(value => ({ ...value, [latestGroup.key]: true }));
     stick.current = true;
@@ -212,6 +262,7 @@ export function TraceReader({
   function toggleTimeline(
     row: Extract<TimelineRow, { type: 'turn' | 'calls' }>,
   ) {
+    disclosureHold.current = true;
     stopFollowing();
     if (row.type === 'turn')
       setExpandedTurns(value => ({ ...value, [row.group.key]: !row.open }));
@@ -241,7 +292,7 @@ export function TraceReader({
     stopFollowing();
     setSelection({ event, turn: turns[event.sourceIndex] });
     setDetailsOpen(true);
-    setSource(false);
+    setDetailTab('preview');
     setCopied(false);
   }
   function closeDetail() {
@@ -249,7 +300,9 @@ export function TraceReader({
     requestAnimationFrame(() => {
       const target = findNodeHandle(
         chosen
-          ? rows.current.get(chosen.event.key) || searchRef.current
+          ? rows.current.get(chosen.event.key) ||
+              rows.current.get('turn:' + chosen.event.turnKey) ||
+              searchRef.current
           : searchRef.current,
       );
       if (target) AccessibilityInfo.setAccessibilityFocus(target);
@@ -294,7 +347,10 @@ export function TraceReader({
   }
   function copy() {
     if (!chosen) return;
-    const value = chosen.event.body || chosen.event.title;
+    const value =
+      detailTab === 'origin'
+        ? JSON.stringify(sourceInfo(chosen.event), null, 2)
+        : chosen.event.body || chosen.event.title;
     if (!value) return;
     try {
       Clipboard.setString(value);
@@ -323,7 +379,8 @@ export function TraceReader({
     !!chosen &&
     !!current &&
     (chosen.event.body !== current.body ||
-      JSON.stringify(chosen.event.step) !== JSON.stringify(current.step));
+      JSON.stringify(chosen.event.step) !== JSON.stringify(current.step) ||
+      JSON.stringify(chosen.event.context) !== JSON.stringify(current.context));
   const twoColumns = split && showDetails;
   const listVisible = twoColumns || !showDetails;
   const turnTime = chosen ? validTime(chosen.event.time, lang) : '';
@@ -451,6 +508,44 @@ export function TraceReader({
             {zh ? ' 轮' : ' turns'} · {events.length}
             {zh ? ' 条记录' : events.length === 1 ? ' record' : ' records'}
           </ChromeText>
+          {(['turns', 'calls'] as const).map(level => {
+            const open = level === 'turns' ? allTurnsOpen : allCallsOpen;
+            const name =
+              level === 'turns'
+                ? zh
+                  ? '轮次'
+                  : 'Turns'
+                : zh
+                ? '调用'
+                : 'Calls';
+            const disabled =
+              searching ||
+              !groups.length ||
+              (level === 'calls' && !groups.some(group => group.calls));
+            return (
+              <TouchableOpacity
+                key={level}
+                testID={'trace-fold-' + level}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  zh
+                    ? `${open ? '收起' : '展开'}所有${name}`
+                    : `${
+                        open ? 'Collapse' : 'Expand'
+                      } all ${name.toLowerCase()}`
+                }
+                accessibilityState={{ expanded: open, disabled }}
+                disabled={disabled}
+                onPress={() => foldAll(level)}
+                style={[styles.foldButton, { opacity: disabled ? 0.45 : 1 }]}
+              >
+                <Chevron open={open} size={16} color={pal.fg2} />
+                <ChromeText numberOfLines={1} style={{ color: pal.fg }}>
+                  {name}
+                </ChromeText>
+              </TouchableOpacity>
+            );
+          })}
           <FilterMenu
             label={
               kind === 'all' && session === 'all'
@@ -576,6 +671,7 @@ export function TraceReader({
             maxToRenderPerBatch={16}
             windowSize={7}
             onScrollBeginDrag={() => {
+              disclosureHold.current = false;
               dragging.current = true;
               stopFollowing();
             }}
@@ -597,7 +693,12 @@ export function TraceReader({
                 event.nativeEvent;
               gapRef.current =
                 contentSize.height - contentOffset.y - layoutMeasurement.height;
-              if (gapRef.current < 60 && !searching && !detailsOpen) {
+              if (
+                gapRef.current < 60 &&
+                !searching &&
+                !detailsOpen &&
+                !disclosureHold.current
+              ) {
                 stick.current = true;
                 setAtTail(true);
               } else if (dragging.current) stopFollowing();
@@ -616,7 +717,12 @@ export function TraceReader({
                 <ActivityIndicator color={pal.fg2} style={styles.empty} />
               ) : failed ? null : (
                 <ChromeText style={[styles.empty, { color: pal.fg2 }]}>
-                  {query || kind !== 'all' || session !== 'all'
+                  {kind === 'context' &&
+                  !index.events.some(event => event.kind === 'context')
+                    ? zh
+                      ? '此会话记录未包含可读取的上下文'
+                      : 'No readable context was recorded in this conversation log'
+                    : query || kind !== 'all' || session !== 'all'
                     ? zh
                       ? '没有匹配的记录'
                       : 'No matching records'
@@ -641,6 +747,7 @@ export function TraceReader({
                 selected={chosen?.event.key || ''}
                 onSelect={select}
                 onToggle={toggleTimeline}
+                foldingDisabled={searching}
                 onRef={(key, node) => {
                   if (node) rows.current.set(key, node);
                   else rows.current.delete(key);
@@ -677,12 +784,24 @@ export function TraceReader({
                 testID="trace-profile"
                 accessibilityRole="button"
                 accessibilityLabel={
-                  zh ? '查看说话人资料' : 'View speaker profile'
+                  chosen.event.kind === 'context'
+                    ? zh
+                      ? '查看来源'
+                      : 'View source'
+                    : zh
+                    ? '查看说话人资料'
+                    : 'View speaker profile'
                 }
-                onPress={openProfile}
+                onPress={
+                  chosen.event.kind === 'context'
+                    ? () => setDetailTab('origin')
+                    : openProfile
+                }
                 style={styles.iconButton}
               >
-                {chosen.event.kind === 'user' ? (
+                {chosen.event.kind === 'context' ? (
+                  <SIcon name="info" size={24} color={pal.fg2} />
+                ) : chosen.event.kind === 'user' ? (
                   chosen.event.from ? (
                     <SenderAvatar from={chosen.event.from} size={28} />
                   ) : (
@@ -702,7 +821,9 @@ export function TraceReader({
                 numberOfLines={2}
                 style={[styles.recordTitle, styles.flex, { color: pal.fg }]}
               >
-                {chosen.event.title || (zh ? '用户消息' : 'User message')}
+                {chosen.event.kind === 'context'
+                  ? traceEventLabel(chosen.event, lang)
+                  : chosen.event.title || (zh ? '用户消息' : 'User message')}
               </ChromeText>
               <TouchableOpacity
                 testID="trace-copy"
@@ -731,6 +852,36 @@ export function TraceReader({
                 {zh ? '已复制' : 'Copied'}
               </ChromeText>
             )}
+            <View accessibilityRole="tablist" style={styles.detailTabs}>
+              {(['overview', 'preview', 'raw', 'origin'] as const).map(
+                (tab, i) => (
+                  <TouchableOpacity
+                    key={tab}
+                    testID={'trace-tab-' + tab}
+                    accessibilityRole="tab"
+                    accessibilityState={{ selected: tab === detailTab }}
+                    onPress={() => setDetailTab(tab)}
+                    style={[
+                      styles.detailTab,
+                      {
+                        borderBottomColor:
+                          tab === detailTab ? BRAND : 'transparent',
+                      },
+                    ]}
+                  >
+                    <ChromeText
+                      style={{ color: tab === detailTab ? BRAND : pal.fg2 }}
+                    >
+                      {
+                        (zh
+                          ? ['概述', '预览', '原始内容', '来源']
+                          : ['Overview', 'Preview', 'Raw content', 'Source'])[i]
+                      }
+                    </ChromeText>
+                  </TouchableOpacity>
+                ),
+              )}
+            </View>
             <ScrollView
               testID="trace-detail-scroll"
               style={styles.flex}
@@ -757,11 +908,12 @@ export function TraceReader({
                   {chosen.event.step.workdir}
                 </Text>
               )}
-              {chosen.event.step?.truncated && (
+              {(chosen.event.step?.truncated ||
+                chosen.event.context?.truncated) && (
                 <ChromeText style={[styles.notice, { color: pal.fg2 }]}>
                   {zh
-                    ? '参数较长，仅显示已记录的部分。'
-                    : 'Only the recorded portion of this input is available.'}
+                    ? '内容较长，仅显示已记录的部分。'
+                    : 'Only the recorded portion is available.'}
                 </ChromeText>
               )}
               {chosen.event.step && !chosen.event.step.input && (
@@ -789,35 +941,53 @@ export function TraceReader({
                   </ChromeText>
                 </TouchableOpacity>
               )}
-              {chosen.event.kind !== 'tool' && (
-                <TouchableOpacity
-                  testID="trace-source-toggle"
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    source
-                      ? zh
-                        ? '显示预览'
-                        : 'Show preview'
-                      : zh
-                      ? '显示原文'
-                      : 'Show source'
-                  }
-                  onPress={() => setSource(!source)}
-                  style={styles.update}
-                >
-                  <ChromeText style={{ color: BRAND }}>
-                    {source
-                      ? zh
-                        ? '预览'
-                        : 'Preview'
-                      : zh
-                      ? '原文'
-                      : 'Source'}
-                  </ChromeText>
-                </TouchableOpacity>
-              )}
               <CopyFeedbackContext.Provider value>
-                {chosen.event.kind === 'tool' || source ? (
+                {detailTab === 'overview' ? (
+                  <View testID="trace-overview-facts" style={{ gap: 12 }}>
+                    {overviewFacts(chosen.event, lang).map(fact => (
+                      <View key={fact.label}>
+                        <ChromeText style={{ color: pal.fg2 }}>
+                          {fact.label}
+                        </ChromeText>
+                        <Text
+                          selectable
+                          style={{
+                            color: pal.fg,
+                            fontSize,
+                            lineHeight: fontSize * 1.6,
+                          }}
+                        >
+                          {fact.value}
+                        </Text>
+                      </View>
+                    ))}
+                    <Text
+                      selectable
+                      numberOfLines={4}
+                      style={{ color: pal.fg, fontSize }}
+                    >
+                      {traceEventPreview(chosen.event, lang)}
+                    </Text>
+                  </View>
+                ) : detailTab === 'origin' ? (
+                  <View testID="trace-origin">
+                    <ChromeText style={[styles.notice, { color: pal.fg2 }]}>
+                      {zh
+                        ? '会话记录中的来源信息。'
+                        : 'Source information from the conversation record.'}
+                    </ChromeText>
+                    <CopyableText
+                      selectable
+                      lang={lang}
+                      style={[styles.source, { color: pal.fg, fontSize }]}
+                    >
+                      {JSON.stringify(sourceInfo(chosen.event), null, 2)}
+                    </CopyableText>
+                  </View>
+                ) : chosen.event.kind === 'tool' ||
+                  (chosen.event.kind === 'context' &&
+                    chosen.event.title === 'Environment') ||
+                  detailTab === 'raw' ? (
                   <ScrollView
                     horizontal={!!chosen.event.step?.input}
                     style={styles.codeScroll}
@@ -837,12 +1007,14 @@ export function TraceReader({
                         chosen.event.step?.input && styles.mono,
                       ]}
                     >
-                      {chosen.event.body}
+                      {detailTab === 'preview'
+                        ? previewText(chosen.event)
+                        : chosen.event.body}
                     </CopyableText>
                   </ScrollView>
                 ) : (
                   <MarkdownView
-                    source={chosen.event.body}
+                    source={previewText(chosen.event)}
                     colors={colors}
                     fontSize={fontSize}
                     selectable
@@ -880,8 +1052,8 @@ export function TraceReader({
         >
           <Text style={[styles.limits, { color: pal.fg2, borderTopWidth: 0 }]}>
             {zh
-              ? '展示会话正文与调用参数，轮次按已加载记录编号。不含工具输出、调用耗时或 Token 用量。'
-              : 'Conversation text and call input. Turn numbers refer to loaded history. Tool output, call timing and token usage are not recorded.'}
+              ? '展示会话正文、已记录上下文与调用参数，轮次按已加载记录编号。不含工具输出、调用耗时或 Token 用量。'
+              : 'Conversation text, recorded context and call input. Turn numbers refer to loaded history. Tool output, call timing and token usage are not recorded.'}
           </Text>
         </ScrollView>
       )}
@@ -1012,6 +1184,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  foldButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    minHeight: 44,
+    paddingHorizontal: 6,
+  },
   toolbar: {
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -1079,6 +1258,13 @@ const styles = StyleSheet.create({
   },
   detailContent: { padding: 16, paddingBottom: 36 },
   meta: { fontSize: 12, lineHeight: 20, marginBottom: 8 },
+  detailTabs: { flexDirection: 'row', flexWrap: 'wrap', marginVertical: 8 },
+  detailTab: {
+    minHeight: 44,
+    paddingHorizontal: 10,
+    justifyContent: 'center',
+    borderBottomWidth: 2,
+  },
   source: { lineHeight: 24 },
   mono: { fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace' },
   codeScroll: { flexGrow: 0 },

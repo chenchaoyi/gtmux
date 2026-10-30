@@ -6,14 +6,13 @@ import {
   activityLabel,
   activityOperation,
   activityPreview,
-  activitySummary,
 } from '../ui/activity';
 import { Chevron } from '../ui/Icons';
 import { SIcon } from '../ui/SettingsIcons';
 import { SenderAvatar } from '../ui/SenderAvatar';
 import { ChromeText } from '../ui/ChromeText';
 import { Palette } from '../ui/theme';
-import { TraceEvent, TraceStep } from './model';
+import { TraceEvent, TraceStep, contextLabel } from './model';
 import { TimelineRow, tracePreview } from './timeline';
 
 export function recordedStep(event: TraceEvent) {
@@ -28,6 +27,7 @@ export function recordedStep(event: TraceEvent) {
   };
 }
 export function traceEventLabel(event: TraceEvent, lang: Lang) {
+  if (event.kind === 'context') return contextLabel(event, lang);
   return event.kind === 'tool'
     ? activityLabel(activityOperation(recordedStep(event)), lang)
     : event.kind === 'user'
@@ -51,6 +51,7 @@ export function TraceTimelineRow({
   onToggle,
   onRef,
   sessionNumber,
+  foldingDisabled = false,
 }: {
   row: TimelineRow;
   pal: Palette;
@@ -60,6 +61,7 @@ export function TraceTimelineRow({
   onToggle: (row: Extract<TimelineRow, { type: 'turn' | 'calls' }>) => void;
   onRef: (key: string, node: View | null) => void;
   sessionNumber?: number;
+  foldingDisabled?: boolean;
 }) {
   const zh = lang === 'zh';
   if (row.type === 'turn') {
@@ -73,9 +75,11 @@ export function TraceTimelineRow({
         : '';
     return (
       <TouchableOpacity
+        ref={node => onRef('turn:' + group.key, node)}
         testID={'trace-turn-' + group.key}
         accessibilityRole="button"
-        accessibilityState={{ expanded: row.open }}
+        accessibilityState={{ expanded: row.open, disabled: foldingDisabled }}
+        disabled={foldingDisabled}
         onPress={() => onToggle(row)}
         style={[
           s.turn,
@@ -114,12 +118,22 @@ export function TraceTimelineRow({
         <ChromeText style={[s.meta, { color: pal.fg2 }]}>
           {group.calls}
           {zh ? ' 次调用' : group.calls === 1 ? ' call' : ' calls'} ·{' '}
-          {group.events.length - group.calls}
+          {
+            group.events.filter(
+              event => event.kind === 'user' || event.kind === 'assistant',
+            ).length
+          }
           {zh
             ? ' 条消息'
-            : group.events.length - group.calls === 1
+            : group.events.filter(
+                event => event.kind === 'user' || event.kind === 'assistant',
+              ).length === 1
             ? ' message'
             : ' messages'}
+          {group.events.some(event => event.kind === 'context') &&
+            ` · ${
+              group.events.filter(event => event.kind === 'context').length
+            }${zh ? ' 条上下文' : ' context records'}`}
         </ChromeText>
       </TouchableOpacity>
     );
@@ -127,7 +141,11 @@ export function TraceTimelineRow({
   const batch = row.type === 'calls';
   const event = batch ? row.events.at(-1)! : row.event;
   const title = batch
-    ? activitySummary(row.events.map(recordedStep), lang)
+    ? zh
+      ? `${row.events.length} 个工具调用`
+      : `${row.events.length} tool ${
+          row.events.length === 1 ? 'call' : 'calls'
+        }`
     : traceEventLabel(event, lang);
   return (
     <TouchableOpacity
@@ -150,7 +168,9 @@ export function TraceTimelineRow({
           <View style={[s.line, { backgroundColor: pal.divider }]} />
         )}
         <View style={[s.marker, { backgroundColor: pal.bg }]}>
-          {event.kind === 'tool' ? (
+          {event.kind === 'context' ? (
+            <SIcon name="info" size={20} color={pal.fg2} />
+          ) : event.kind === 'tool' ? (
             <ActivityIcon
               operation={activityOperation(recordedStep(event))}
               size={20}
@@ -172,15 +192,17 @@ export function TraceTimelineRow({
           <ChromeText style={[s.label, { color: pal.fg }]}>{title}</ChromeText>
           <ChromeText style={[s.meta, s.flex, { color: pal.fg2 }]}>
             {batch
-              ? `${row.events.length}${zh ? ' 次' : ' calls'}`
+              ? [...new Set(row.events.map(value => value.title))].join(', ')
               : String(row.order).padStart(2, '0')}
           </ChromeText>
           <Chevron open={batch && row.open} size={16} color={pal.fg2} />
         </View>
-        <Text numberOfLines={2} style={[s.preview, { color: pal.fg2 }]}>
-          {batch && !row.open ? (zh ? '最近：' : 'Latest: ') : ''}
-          {traceEventPreview(event, lang)}
-        </Text>
+        {(!batch || row.open) && (
+          <Text numberOfLines={2} style={[s.preview, { color: pal.fg2 }]}>
+            {batch && !row.open ? (zh ? '最近：' : 'Latest: ') : ''}
+            {traceEventPreview(event, lang)}
+          </Text>
+        )}
       </View>
     </TouchableOpacity>
   );

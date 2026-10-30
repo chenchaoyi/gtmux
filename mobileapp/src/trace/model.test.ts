@@ -1,5 +1,12 @@
 /// <reference types="node" />
-import { agentName, build, filter, overview } from './model';
+import {
+  agentName,
+  build,
+  filter,
+  overview,
+  previewText,
+  sourceInfo,
+} from './model';
 
 test.each(['codex', 'claude', 'kimi', 'opencode', 'dsh'])(
   '%s indexes recorded inputs without fabricating outcomes',
@@ -102,6 +109,23 @@ const fixtures: {
   sessions: string[];
 }[] = require('./fixtures.json');
 const generated = require('../../../internal/server/web/trace-model.js');
+test.each(['json', 'arguments'])(
+  'preview formats recorded %s while raw input stays unchanged',
+  inputKind => {
+    const raw = '{"command":"echo fixture","args":["one","two"]}';
+    const event = build([
+      {
+        prompt: 'Read',
+        segments: [
+          { steps: [{ title: 'run', input: raw, input_kind: inputKind }] },
+        ],
+      },
+    ]).events[1];
+    expect(previewText(event)).toBe(JSON.stringify(JSON.parse(raw), null, 2));
+    expect(event.body).toBe(raw);
+    expect(previewText({ ...event, body: '{incomplete' })).toBe('{incomplete');
+  },
+);
 test.each(fixtures)(
   '$name agrees with the generated browser consumer',
   fixture => {
@@ -123,4 +147,55 @@ test('the checked-in browser asset matches its typed source and generator', () =
       '--check',
     ]),
   ).not.toThrow();
+});
+
+test('recorded context preserves prefix and interleaved order without becoming a prompt or invented request', () => {
+  const original = {
+    session_id: 'recorded',
+    prompt: 'Human request',
+    time: '2026-10-30T10:00:00Z',
+    segments: [
+      {
+        context: {
+          title: 'Workspace instructions',
+          text: 'Follow the fixture rules',
+          source: 'codex/response_item.message.user',
+          before_prompt: true,
+        },
+      },
+      { text: 'First update' },
+      {
+        context: {
+          title: 'Background task notification',
+          text: 'Background result',
+          source: 'claude/user.content',
+          time: '2026-10-30T10:01:00Z',
+        },
+      },
+      { steps: [{ title: 'exec', input: 'command' }] },
+    ],
+  };
+  const index = build([original], { home_id: 'a' });
+  expect(index.turns).toBe(1);
+  expect(index.events.map(event => event.kind)).toEqual([
+    'context',
+    'user',
+    'assistant',
+    'context',
+    'tool',
+  ]);
+  expect(filter(index.events, 'background', 'context')).toHaveLength(1);
+  const provenance = sourceInfo(index.events[3]);
+  expect(provenance).toMatchObject({
+    kind: 'context',
+    session_id: 'recorded',
+    record_source: 'claude/user.content',
+    recorded_at: '2026-10-30T10:01:00Z',
+  });
+  expect(provenance).not.toHaveProperty('token_count');
+  expect(provenance).not.toHaveProperty('request_id');
+  const appended = build([{ ...original, prompt: 'Earlier' }, original], {
+    home_id: 'a',
+  }).events;
+  expect(appended.at(-5)!.key).toBe(index.events[0].key);
 });

@@ -279,3 +279,18 @@ Settings expose System/Light/Dark as native radio segments with immediate one-ac
 The extra keys/input-tools row is shown only for the primary coarse/touch input device, including large tablets. Desktop pointer/keyboard use hides it even in a narrow window; attachments, composer and Send remain. Input-device changes restore the desktop input field without losing its draft. Width changes alone do not change the input-device classification.
 
 Expanded conversation calls use a single 44px disclosure target per row without stacked outer vertical padding. Message/footer and turn gaps are reduced while retaining separate copy controls, readable text and visible turn boundaries. The same density applies to pane-bound and external transcripts.
+
+## Trace disclosures and navigable settings
+
+Trace uses independent Turns/Calls disclosures and four detail tabs (Overview, Preview,
+Raw content, Source), including explicitly recorded owner/paired context. Guest links
+retain their public-message scope. See [Trace](transcript-trace.md) for ordering,
+fold/search/refresh behavior and provenance limits.
+
+Settings keeps one bounded panel with Appearance, Chat and Terminal navigation.
+Sections have restrained spacing, dividers and short explanations. Desktop uses a
+side navigation; narrow views use a horizontal row. Light, Dark and System choices
+have Sun, Moon and Monitor icons and native radio keyboard behavior. Preferences
+remain local to this browser and apply immediately. The content scrolls within a
+480px maximum height; category changes move focus to the chosen section. There is
+one control for each text-size preference, with existing desktop/touch target metrics.
