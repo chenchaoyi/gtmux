@@ -2329,7 +2329,7 @@
     wrap.appendChild(b); wrap.appendChild(status); return wrap;
   }
 
-  function promptText(value) { return String(value || '').replace(/\r\n/g, '\n').trim(); }
+  function promptText(value) { return window.GtmuxPromptIdentity.promptIdentity(value); }
   function promptObservations(text, turns) {
     var counts = new Map(); turns.forEach(function (turn) { if (promptText(turn.prompt) === promptText(text)) { var key = turn.time || ''; counts.set(key, (counts.get(key) || 0) + 1); } }); return counts;
   }
@@ -2355,7 +2355,7 @@
   function appendPendingPrompts(host, id, agent) {
     (pendingPrompts[id] || []).forEach(function (echo) {
       var turn = conversationTurn({prompt: echo.text}, agent, -1, {}, '', false); turn.classList.add('pending-prompt');
-      var status = document.createElement('span'); status.className = 'pending-prompt-note'; status.textContent = echo.delivered ? T('Sent · awaiting conversation record', '已发送，等待对话记录') : T('Sending…', '正在发送…');
+      var status = document.createElement('span'); status.className = 'pending-prompt-note'; status.textContent = echo.delivered ? T('Sent', '已发送') : T('Sending…', '正在发送…');
       var footer = turn.querySelector('.message-meta'); footer.insertBefore(status, footer.firstChild); host.appendChild(turn);
     });
   }

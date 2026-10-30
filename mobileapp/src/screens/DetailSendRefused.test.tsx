@@ -117,12 +117,26 @@ test('retires the sent echo after a poll containing its prompt and later turns; 
   const t = await mount(jest.fn().mockResolvedValue({ok: true}), undefined, transcript);
   await send(t, 'please fix it');
   expect(t.root.findByType(ChatView).props.pendingDelivered).toBe(true);
-  expect(t.root.findAllByType(Text).map(n => n.props.children).join(' ')).toContain('Sent to terminal');
+  expect(t.root.findAllByType(Text).some(n => n.props.children === 'Sent')).toBe(true);
   turns = [...turns, {prompt: 'please fix it', response: 'fixed', time: '2026-10-17T10:01:00Z'}, {prompt: 'continue', response: '', time: '2026-10-17T10:02:00Z'}];
   await act(async () => jest.advanceTimersByTime(9000)); await flush();
   expect(t.root.findByType(ChatView).props.pendingPrompt).toBe('');
   turns.push({prompt: 'later still', response: '', time: '2026-10-17T10:03:00Z'});
   await act(async () => jest.advanceTimersByTime(9000)); await flush();
+  expect(t.root.findByType(ChatView).props.pendingPrompt).toBe('');
+});
+
+test('a recorded Codex image replaces its temporary path echo while the agent is still working', async () => {
+  jest.useFakeTimers();
+  let turns: any[] = [];
+  const transcript = jest.fn(async () => ({turns: [...turns], dropped: 0}));
+  const t = await mount(jest.fn().mockResolvedValue({ok: true}), undefined, transcript, 'working');
+  await send(t, '/tmp/photo.png');
+  expect(t.root.findByType(ChatView).props.pendingDelivered).toBe(true);
+  turns = [{prompt: '![Image #1](/tmp/photo.png)\n\n[Image #1]', response: '正在检查截图。', time: '2026-10-30T06:00:00Z'}];
+  await act(async () => jest.advanceTimersByTime(2500)); await flush();
+  expect(t.root.findByType(ChatView).props.pendingPrompt).toBe('');
+  await act(async () => jest.advanceTimersByTime(120000)); await flush();
   expect(t.root.findByType(ChatView).props.pendingPrompt).toBe('');
 });
 

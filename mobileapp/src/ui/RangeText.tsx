@@ -42,7 +42,7 @@ export function rangeRuns(children: React.ReactNode, inherited: Record<string, u
 }
 
 export function RangeText({children, style, allowFontScaling, unbounded}: TextProps & {unbounded?: boolean}) {
-  const {fontScale} = useWindowDimensions();
+  const {fontScale, width: windowWidth} = useWindowDimensions();
   const source = useContext(RangeSourceContext);
   const notify = useContext(TextSelectionContext);
   const identity = useId();
@@ -85,10 +85,10 @@ export function RangeText({children, style, allowFontScaling, unbounded}: TextPr
   const document = React.useMemo(() => ({revision: model.revision, runs: model.runs, style: model.style, scale: model.scale, unbounded: !!unbounded}), [model, unbounded]);
   if (!NativeRange) return null;
   const initialHeight = (Number(textStyle.lineHeight) || Number(textStyle.fontSize) * 1.45 || 22) * scale;
-  // A constrained paragraph must have a real width before TextKit can measure
-  // its height. A 1px bootstrap paints the first glyph while waiting for JS/native
-  // size events, and can feed a single-line measurement back into the layout.
-  return <View style={[outer, unbounded ? {} : {width: outer.width as number ?? measuredWidth ?? '100%', maxWidth: outer.maxWidth as number ?? '100%'}]} accessible={false}>
+  // A content-sized bubble cannot resolve a percentage child against itself.
+  // Seed a finite width; Yoga's maxWidth then clamps it to the actual container.
+  // TextKit can measure that frame and shrink short prose to its natural width.
+  return <View style={[outer, unbounded ? {} : {width: outer.width as number ?? measuredWidth ?? windowWidth, maxWidth: outer.maxWidth as number ?? '100%'}]} accessible={false}>
     <NativeRange document={document} style={{height: size?.height ?? initialHeight, width: unbounded ? size?.width ?? 1 : '100%'}}
       onSize={event => {
         const next = event.nativeEvent;

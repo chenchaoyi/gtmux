@@ -1,0 +1,15 @@
+[
+  {"sent":"/tmp/photo.png", "recorded":"<image name=[Image #1] path=\"/tmp/photo.png\">\n</image>\n[Image #1]", "same":true},
+  {"sent":"/tmp/photo.png", "recorded":"![Image #1](/tmp/photo.png)\n\n[Image #1]", "same":true},
+  {"sent":"请看截图\n/tmp/a photo.jpg", "recorded":"![Image #1](/tmp/a%20photo.jpg)\n请看截图\n[Image #1]", "same":true},
+  {"sent":"两张图\n/tmp/a.png\n/tmp/b.png", "recorded":"<image name=[Image #1] path=\"/tmp/a.png\"></image>\n<image name=[Image #2] path=\"/tmp/b.png\">\n</image>\n两张图\n[Image #1]\n[Image #2]", "same":true},
+  {"sent":"again\r\nplease", "recorded":" again\nplease ", "same":true},
+  {"sent":"请看截图\n/tmp/a.jpg", "recorded":"![Image #1](/tmp/a.jpg)\n不同的问题\n[Image #1]", "same":false},
+  {"sent":"/tmp/a.png", "recorded":"![Image #1](/tmp/b.png)\n[Image #1]", "same":false},
+  {"sent":"/tmp/a.png", "recorded":"![Image #1](https://example.test/a.png)\n[Image #1]", "same":false},
+  {"sent":"/tmp/a.png", "recorded":"```\n![Image #1](/tmp/a.png)\n```", "same":false},
+  {"sent":"/tmp/a.png", "recorded":"![Image #1](/tmp/%ZZ.png)\n[Image #1]", "same":false},
+  {"sent":"/tmp/a.png", "recorded":"![User's title](/tmp/a.png)\n[Image #1]", "same":false},
+  {"sent":"/tmp/a.png", "recorded":"<image name=[Image #1] path=\"//host/a.png\">\n</image>\n[Image #1]", "same":false},
+  {"sent":"/tmp/a.png", "recorded":"/tmp/a.png\n[Image #1]", "same":false}
+]

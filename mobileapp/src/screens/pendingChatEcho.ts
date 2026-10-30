@@ -1,11 +1,11 @@
 import type {TranscriptTurn} from '../api/client';
+import {promptIdentity} from './promptIdentity';
 
 export type PendingChatEcho = {id: string; text: string; observed: Map<string, number>};
-const textOf = (text: string) => text.replace(/\r\n/g, '\n').trim();
 function occurrences(text: string, turns: TranscriptTurn[]) {
   const counts = new Map<string, number>();
   for (const turn of turns) {
-    if (textOf(turn.prompt) !== textOf(text)) continue;
+    if (promptIdentity(turn.prompt) !== promptIdentity(text)) continue;
     const key = turn.time || '';
     counts.set(key, (counts.get(key) || 0) + 1);
   }

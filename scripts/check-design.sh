@@ -26,6 +26,7 @@ note() { echo "design-check: $*"; }
 
 # App and browser identity copy/field order must not drift. No runtime Node dependency.
 if node mobileapp/scripts/gen-participant-web.cjs --check; then :; else fail=1; fi
+if node mobileapp/scripts/gen-prompt-identity-web.cjs --check; then :; else fail=1; fi
 
 # Exact private identifiers belong in CI/local configuration, never in this
 # public checker or its diagnostics. Do this before any build/spec helpers.

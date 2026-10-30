@@ -1,4 +1,6 @@
 import {beginChatEcho, chatEchoRecorded} from './pendingChatEcho';
+import cases from './promptIdentityCases.json';
+import {promptIdentity} from './promptIdentity';
 const turn = (prompt: string, time?: string) => ({prompt, time, response: ''});
 test('confirms a prompt even when the same poll includes later turns', () => {
   const echo = beginChatEcho('a', 'please fix it', [turn('older', 't1')]);
@@ -15,4 +17,14 @@ test('missing timestamps require a new occurrence; response text is not confirma
   expect(chatEchoRecorded(echo, [turn('again\nplease')])).toBe(false);
   expect(chatEchoRecorded(echo, [turn('again\nplease'), turn(' again\nplease ')])).toBe(true);
   expect(chatEchoRecorded(echo, [{prompt: 'other', response: echo.text}])).toBe(false);
+});
+
+test.each(cases)('attachment prompt identity $same: $sent -> $recorded', ({sent, recorded, same}) => {
+  expect(promptIdentity(sent) === promptIdentity(recorded)).toBe(same);
+  const echo = beginChatEcho('image', sent, []);
+  expect(chatEchoRecorded(echo, [turn(recorded, 'new')])).toBe(same);
+  const repeated = beginChatEcho('again', sent, [turn(recorded, 'old')]);
+  expect(chatEchoRecorded(repeated, [turn(recorded, 'old')])).toBe(false);
+  expect(chatEchoRecorded(repeated, [turn(recorded, 'new')])).toBe(same);
+  expect(chatEchoRecorded(echo, [{prompt: 'another request', response: recorded}])).toBe(false);
 });
