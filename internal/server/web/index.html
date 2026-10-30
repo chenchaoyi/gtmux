@@ -82,26 +82,27 @@
   <!-- Browser-local preferences; terminal and conversation typography are explicit. -->
   <section id="settings" role="region" hidden>
     <div class="settings-head"><h2 id="settings-title">设置</h2><button id="settings-close" type="button"></button></div>
-    <fieldset><legend id="settings-display">显示</legend>
-      <div class="srow"><label id="appearance-lbl" for="appearance-sel">外观</label>
-        <select id="appearance-sel"><option id="appearance-system" value="system">跟随系统</option><option id="appearance-light" value="light">浅色</option><option id="appearance-dark" value="dark">深色</option></select>
+    <div class="srow settings-appearance">
+      <span id="appearance-lbl">外观</span>
+      <div id="appearance-options" class="appearance-options" role="radiogroup" aria-labelledby="appearance-lbl">
+        <label><input id="appearance-system-radio" type="radio" name="appearance" value="system" checked><span id="appearance-system">跟随系统</span></label>
+        <label><input id="appearance-light-radio" type="radio" name="appearance" value="light"><span id="appearance-light">浅色</span></label>
+        <label><input id="appearance-dark-radio" type="radio" name="appearance" value="dark"><span id="appearance-dark">深色</span></label>
       </div>
-    </fieldset>
+    </div>
     <fieldset><legend id="settings-chat">对话</legend>
-      <div class="srow setting-switch"><label id="return-send-lbl" for="return-sends">回车发送</label><input id="return-sends" type="checkbox" role="switch" aria-describedby="return-send-hint" /></div>
-      <p id="return-send-hint" class="settings-hint"></p>
-      <div class="setting-size"><div class="size-heading"><label id="chat-size-lbl" for="chat-size-rng">正文字号</label><output id="chat-size-val" for="chat-size-rng"></output></div>
+      <div class="srow setting-switch"><label class="settings-send-label" for="return-sends"><span id="return-send-lbl">回车发送</span><small id="return-send-hint" class="settings-hint"></small></label><input id="return-sends" type="checkbox" role="switch" aria-describedby="return-send-hint" /></div>
+      <div class="setting-size"><label id="chat-size-lbl" for="chat-size-rng">正文字号</label><output id="chat-size-val" for="chat-size-rng"></output>
         <input id="chat-size-rng" type="range" min="12" max="24" step="1" />
       </div>
     </fieldset>
-    <fieldset><legend id="settings-terminal">终端</legend>
+    <fieldset><legend class="settings-terminal-title"><span id="settings-terminal">终端</span><span class="terminal-font-preview" aria-hidden="true">Aa</span></legend>
       <div class="srow"><label id="font-lbl" for="font-sel">字体</label>
         <select id="font-sel"><option id="font-auto" value="auto">跟随终端</option><option id="font-system" value="system">系统</option><option value="Hack">Hack</option><option value="JetBrains Mono">JetBrains Mono</option><option value="Fira Code">Fira Code</option><option value="IBM Plex Mono">IBM Plex Mono</option></select>
       </div>
-      <div class="setting-size"><div class="size-heading"><label id="size-lbl" for="size-rng">字号</label><output id="size-val" for="size-rng"></output></div><input id="size-rng" type="range" min="10" max="22" step="1" /></div>
-      <div class="terminal-font-preview" aria-hidden="true">Aa 0123 <span id="terminal-preview-path"></span></div>
+      <div class="setting-size"><label id="size-lbl" for="size-rng">字号</label><output id="size-val" for="size-rng"></output><input id="size-rng" type="range" min="10" max="22" step="1" /></div>
     </fieldset>
-    <button id="settings-reset" class="settings-reset" type="button">恢复默认设置</button>
+    <button id="settings-reset" class="settings-reset" type="button">恢复默认</button>
   </section>
 
   <!-- pairing / error gate. Structure, not one sentence: a reader who lands here (a

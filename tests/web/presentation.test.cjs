@@ -64,7 +64,7 @@ for(const width of [320,390,768,1440]) scenario(`Focused Chat is a conversation 
 scenario('Appearance selects keep a 44px target and inset arrows in both themes',{viewport:{width:390,height:844},locale:'zh-CN'},async(page,fixture)=>{
   await page.goto(fixture.url+'/#code=TEST-1234');await page.locator('#gear').click();
   for(const theme of ['light','dark']){
-    await page.locator('#appearance-sel').selectOption(theme);
+    await page.locator('#appearance-options input[value="'+theme+'"]').check();
     for(const select of await page.locator('#settings select').all()){
       const style=await select.evaluate(e=>{const s=getComputedStyle(e);return {height:e.getBoundingClientRect().height,left:parseFloat(s.paddingLeft),right:parseFloat(s.paddingRight),arrow:s.backgroundPosition,font:s.fontFamily};});
       assert.ok(style.height>=44&&style.left>=12&&style.right>=40);assert.match(style.arrow,/14px/);assert.match(style.font,/-apple-system/);
@@ -122,4 +122,42 @@ scenario('Browser tool title returns to the workspace or Terminal without changi
   await openTools(page,'trace');await closeTools(page);
   assert.equal(await page.title(),'Investigate retries · Terminal · gtmux');
   assert.equal(fixture.state.sends.length,0);
+});
+
+for(const [width,locale] of [[320,'zh-CN'],[390,'en-US'],[1440,'en-US']]) scenario(`Compact settings expose direct appearance choices and bounded call rows at ${width}`,{viewport:{width,height:900},locale,hasTouch:width<800},async(page,fixture)=>{
+  fixture.state.turns['%901']=[{prompt:'Review this fixture',segments:[{text:'Reading the fixture',steps:Array.from({length:12},(_,i)=>({title:'read_file',operation:'read',input:'/fixture/analysis-'+i+'.md',input_kind:'path'}))},{text:'The fixture is ready'}]}];
+  await page.goto(fixture.url+'/#code=TEST-1234');
+  await (width>=900?page.locator('#wb-gear'):page.locator('#gear')).click();
+  const panel=page.locator('#settings'), group=page.locator('#appearance-options');
+  assert.equal(await group.getByRole('radio').count(),3);assert.equal(await panel.locator('#appearance-sel').count(),0);
+  for(const value of ['light','dark','system']){const radio=group.locator('input[value="'+value+'"]');assert.equal(await radio.isVisible(),true);const hit=await radio.boundingBox();assert.ok(hit.height>=44&&hit.width>=44);await radio.check();assert.equal(await radio.isChecked(),true);}
+  await page.emulateMedia({colorScheme:'dark'});await page.waitForFunction(()=>document.documentElement.dataset.theme==='dark');
+  await page.emulateMedia({colorScheme:'light'});await page.waitForFunction(()=>document.documentElement.dataset.theme==='light');
+  await group.locator('input[value="system"]').focus();await group.locator('input[value="system"]').press('ArrowRight');assert.equal(await group.locator('input[value="light"]').isChecked(),true);
+  await page.reload();await (width>=900?page.locator('#wb-gear'):page.locator('#gear')).click();assert.equal(await group.locator('input[value="light"]').isChecked(),true);
+  const rect=await panel.boundingBox();assert.ok(rect.height<=480,`settings height ${rect.height} should fit a compact reading panel`);assert.ok(rect.x>=0&&rect.x+rect.width<=width);assert.ok(rect.y+rect.height<=900);
+  const toggle=await panel.locator('#return-sends').boundingBox();assert.ok(toggle.height>=44&&toggle.width>=44);
+  await panel.locator('#settings-reset').click();assert.equal(await group.locator('input[value="system"]').isChecked(),true);
+  if(process.env.GTMUX_WEB_EVIDENCE)await page.screenshot({path:require('node:path').join(process.env.GTMUX_WEB_EVIDENCE,'compact-settings-'+width+'.png')});
+  await panel.locator('#settings-close').click();
+  if(width>=900){await page.locator('#tree').getByText('Investigate retries',{exact:true}).dblclick();await page.locator('.tile [data-action="focus"]').click();}
+  else await page.locator('#radar').getByText('Investigate retries',{exact:true}).click();
+  await page.locator('#mode [data-mode="chat"]').click();await page.locator('#chat .steps-toggle').click();
+  const rows=page.locator('#chat .steps-list .step-toggle');assert.equal(await rows.count(),12);
+  for(const row of await rows.all()){const box=await row.boundingBox();assert.ok(box.height>=44&&box.height<=46,`call target ${box.height} preserves touch size without doubled padding`);}
+  assert.equal(await page.locator('#chat .step-row').first().evaluate(e=>e.getBoundingClientRect().height),await rows.first().evaluate(e=>e.getBoundingClientRect().height));
+  await rows.first().click();assert.equal(await page.locator('#chat .step-input').first().innerText(),'/fixture/analysis-0.md');
+  if(process.env.GTMUX_WEB_EVIDENCE)await page.screenshot({path:require('node:path').join(process.env.GTMUX_WEB_EVIDENCE,'compact-calls-'+width+'.png')});
+  assert.equal(fixture.state.sends.length,0);
+});
+
+scenario('External conversations share compact calls and preserve full input',{viewport:{width:1440,height:900},locale:'zh-CN'},async(page,fixture)=>{
+ fixture.state.agents=[{pane_id:'',source:'native',agent:'DeepSeek Harness',session_id:'external-density',home_id:'fixture-home',current_client:'unconfirmed',can_read_conversation:true,status:'idle',task:'外部会话密度示例'}];
+ fixture.state.externalSessions={'external-density\u0000fixture-home':[{session_id:'external-density',agent:'DeepSeek Harness',prompt:'检查示例报告',segments:[{text:'撰写分析报告',steps:Array.from({length:13},(_,i)=>({title:i%2?'read_file':'edit_file',operation:i%2?'read':'edit',input:'/fixture/analysis.md',input_kind:'path'}))},{text:'示例报告已完成'}]}]};
+ await page.goto(fixture.url+'/#code=TEST-1234');await page.locator('#tree').getByText('外部会话密度示例',{exact:true}).click();
+ await page.locator('#chat .steps-toggle').click();const rows=page.locator('#chat .step-toggle');assert.equal(await rows.count(),13);
+ for(const row of await rows.all())assert.ok((await row.boundingBox()).height<=46);
+ await page.locator('#chat .conv-scroll').evaluate(e=>{e.scrollTop=0;});
+ if(process.env.GTMUX_WEB_EVIDENCE)await page.screenshot({path:require('node:path').join(process.env.GTMUX_WEB_EVIDENCE,'compact-external-calls.png')});
+ await rows.first().click();assert.equal(await page.locator('#chat .step-input').first().innerText(),'/fixture/analysis.md');assert.equal(fixture.state.sends.length,0);
 });

@@ -690,3 +690,18 @@ Settings SHALL group display, conversation and terminal preferences with labeled
 #### Scenario: Resize a desktop window
 - **WHEN** a desktop browser window becomes narrow
 - **THEN** the touch input-tools row remains hidden and the ordinary composer retains its draft
+
+### Requirement: Direct compact appearance settings
+Browser settings SHALL expose System, Light and Dark as immediately selectable choices, without opening a menu. The control SHALL retain native radio keyboard and selection semantics, persisted preferences and system following. Settings SHALL avoid redundant singleton headings and keep labels, size sliders and short hints compact while preserving touch targets and viewport bounds.
+
+#### Scenario: Switch appearance in one action
+- **WHEN** a reader activates a visible appearance choice
+- **THEN** the page applies it immediately, exposes its selected state and preserves it after reload
+- **AND** selecting System resumes following system appearance
+
+### Requirement: Compact readable conversation activity
+Browser conversation activity SHALL avoid stacked outer row padding around its disclosure targets. Call rows SHALL retain at least 44px touch targets, readable text/icons and full recorded-input expansion while reducing redundant gaps between messages, copy controls and turns. Separate turns SHALL remain visually distinct, and external conversations SHALL use the same rendering rules.
+
+#### Scenario: Read a long expanded call group
+- **WHEN** a reader expands a group of recorded calls
+- **THEN** each single-line call uses one compact touch-sized row and opens its full recorded input without changing the conversation or sending input
