@@ -95,11 +95,15 @@ func TitleMatchesSession(title, session string) bool {
 	return t == session || strings.HasPrefix(t, session+" — ")
 }
 
-// osascript runs an AppleScript and returns trimmed stdout.
+// osascript strips only record terminators. A terminal's exact title may end in
+// spaces: TrimSpace would corrupt the last enumerated title and make its later
+// exact-title focus fail, while every preceding tab still works.
 func osascript(script string) (string, error) {
 	out, err := exec.Command("/usr/bin/osascript", "-e", script).Output()
-	return strings.TrimSpace(string(out)), err
+	return scriptOutput(out), err
 }
+
+func scriptOutput(out []byte) string { return strings.TrimRight(string(out), "\r\n") }
 
 // Quote escapes a string for use inside an AppleScript "..." literal.
 func Quote(s string) string {
@@ -169,6 +173,10 @@ end tell`)
 	if err != nil {
 		return nil, err
 	}
+	return parseTabTitles(out), nil
+}
+
+func parseTabTitles(out string) []tabTitle {
 	var rows []tabTitle
 	for _, line := range strings.Split(out, "\n") {
 		parts := strings.SplitN(strings.TrimRight(line, "\r"), "\t", 3)
@@ -182,7 +190,7 @@ end tell`)
 		}
 		rows = append(rows, tabTitle{win: w, tab: t, name: parts[2]})
 	}
-	return rows, nil
+	return rows
 }
 
 // IsViewing reports whether you are already looking at this session's tab:
