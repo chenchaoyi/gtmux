@@ -1,3 +1,4 @@
-Conversation message fixes
-• Restore short user messages that could appear as empty bubbles on iPhone and iPad.
-• Remove the temporary sent message once an uploaded image is recorded in the conversation.
+Trace controls and session reliability
+• Expand or collapse conversation turns and tool calls independently; open any call group when needed.
+• Review captured context and switch between Overview, Preview, Raw content and Source in trace details.
+• Keep completed Codex workers out of active session lists while preserving conversation history.
