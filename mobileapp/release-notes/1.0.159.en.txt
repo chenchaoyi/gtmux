@@ -1,0 +1,4 @@
+Trace controls and session reliability
+• Expand or collapse conversation turns and tool calls independently; open any call group when needed.
+• Review captured context and switch between Overview, Preview, Raw content and Source in trace details.
+• Keep completed Codex workers out of active session lists while preserving conversation history.

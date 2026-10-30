@@ -12,6 +12,21 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.159',
+    en: [
+      'Trace controls and session reliability',
+      'Expand or collapse conversation turns and tool calls independently; open any call group when needed.',
+      'Review captured context and switch between Overview, Preview, Raw content and Source in trace details.',
+      'Keep completed Codex workers out of active session lists while preserving conversation history.',
+    ],
+    zh: [
+      '轨迹阅读与会话识别',
+      '分别展开或收起轮次、工具调用，也可单独查看一组调用。',
+      '轨迹支持查看上下文，详情按概览、预览、原始内容和来源呈现。',
+      '已结束的 Codex 任务不再误显示为活跃的外部会话，对话历史继续保留。',
+    ],
+  },
+  {
     version: '1.0.158',
     en: [
       'Conversation message fixes',
