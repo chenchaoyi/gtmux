@@ -222,7 +222,7 @@ export function HQWorkspaceView(
               <Text style={[s.buttonText, { color: pal.fg }]}>
                 {
                   [
-                    t('Board', '工作记忆'),
+                    t('Board', '态势板'),
                     t('Knowledge', '知识库'),
                     t('Usage', '用量'),
                   ][i]
