@@ -12,6 +12,21 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.157',
+    en: [
+      'Conversation and Trace',
+      'Keep messages readable as conversations refresh and replies grow.',
+      'Read Trace by turn, open at the latest record, and keep your place during updates.',
+      'Clearer external conversation headers and participant profiles.',
+    ],
+    zh: [
+      '对话与轨迹',
+      '改善刷新时正文短暂缩成一个字的问题。',
+      '轨迹按轮次整理，打开定位最新记录；刷新时保留阅读位置。',
+      '精简外部会话头部，统一参与者资料卡的信息呈现。',
+    ],
+  },
+  {
     version: '1.0.156',
     en: [
       'Diff stability',
