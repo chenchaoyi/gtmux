@@ -2920,3 +2920,19 @@ remain separate. The check never installs a component.
 # Native grouped-Form snapshots are blank
 
 SwiftUI `ImageRenderer` can return a nonempty image containing only the background for an AppKit-backed grouped `Form`. That is not visual acceptance. Render the isolated component in an `NSHostingView` and use its bitmap cache instead; `NotificationPreferencesLayoutTests` demonstrates this with synthetic state and callbacks that fail if invoked. Inspect the image, and compare distinct feedback states to catch blank output. An offscreen component snapshot still does not verify the installed window, keyboard interaction, VoiceOver or real notification delivery.
+
+### One Ghostty session refuses to focus, while neighboring tabs work
+
+A click may select the correct tmux window and pane but report that no Ghostty tab
+shows the session. Check the actual Ghostty title, including trailing whitespace,
+and whether it is the final item in the tab enumeration. A tmux window title can
+legitimately end in spaces. Trimming all whitespace from the AppleScript output
+removed those spaces only from the last enumerated title, so the subsequent exact
+name match failed. This was reproduced with a single-surface Ghostty tab and a
+single tmux pane; multiple splits were not the cause.
+
+Keep exact title bytes when decoding AppleScript results; remove only output line
+terminators. Regression coverage includes the last tab, CJK names, spaces, tabs and
+CRLF. Verify a focus by reading the foreground Ghostty tab and exact active tmux
+pane, rather than trusting the command's exit status alone. Do not rename the user's
+session, alter titles, open duplicate terminals or change permissions as a workaround.
