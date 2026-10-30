@@ -207,3 +207,23 @@ test('a failed older page can return to latest without reopening the matter', as
     'The fix is ready. Run the full suite before merging?',
   );
 });
+
+test('closing a resource returns to its originating overview; composing from it stays in HQ', async () => {
+  await mount();
+  await press('Usage');
+  expect(consoleRender.mock.calls.at(-1)?.[0].openResource.page).toBe('usage');
+  await act(async () =>
+    consoleRender.mock.calls.at(-1)![0].onResourceExit('overview'),
+  );
+  expect(text()).not.toContain('HQ console fixture');
+  expect(
+    tree.root.findAllByProps({ testID: 'hq-overview' }).length,
+  ).toBeGreaterThan(0);
+  await press('Board');
+  await act(async () =>
+    consoleRender.mock.calls.at(-1)![0].onResourceExit('console'),
+  );
+  expect(text()).toContain('HQ console fixture');
+  expect(consoleRender.mock.calls.at(-1)?.[0].openResource).toBeUndefined();
+  expect(consoleRender.mock.calls.at(-1)?.[0].onResourceExit).toBeUndefined();
+});

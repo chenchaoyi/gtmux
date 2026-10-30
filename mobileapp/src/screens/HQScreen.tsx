@@ -74,7 +74,7 @@ export function HQView(props: React.ComponentProps<typeof HQConsoleView>) {
 }
 const renderHQConsole = (props: React.ComponentProps<typeof HQConsoleView>) => <HQConsoleView {...props} />;
 
-export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout = 'compact', showInspector = true, openResource}: {agent: Agent; prefill?: string; onBack?: () => void; layout?: SizeClass; showInspector?: boolean; openResource?: HQResourceRequest}) {
+export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout = 'compact', showInspector = true, openResource, onResourceExit}: {agent: Agent; prefill?: string; onBack?: () => void; layout?: SizeClass; showInspector?: boolean; openResource?: HQResourceRequest; onResourceExit?: (destination: 'overview' | 'console') => void}) {
   const {select} = useWorkspace();
   // A wide main pane (D5): the report header spans the main pane, the console takes the
   // width beneath it, and the two zones the phone puts behind tabs sit in an inspector on
@@ -395,6 +395,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   const tellHQ = useCallback(
     (item: AskItem, mode: 'accept' | 'compose') => {
       setBoardOpen(false);
+      onResourceExit?.('console');
       const quote = askQuote(item, zh);
       if (mode === 'accept') {
         command(quote + (zh ? '按你的建议办。' : 'do as you suggest.'));
@@ -402,7 +403,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
         setPrefill({text: quote, at: Date.now()});
       }
     },
-    [command, zh],
+    [command, zh, onResourceExit],
   );
 
   // Open a worker's own Detail — the ONLY place direct input to a worker lives.
@@ -745,7 +746,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
         nowSecs={now}
         pal={pal}
         zh={zh}
-        onClose={() => setKnowledgeOpen(false)}
+        onClose={() => {setKnowledgeOpen(false); if (openResource?.page === 'knowledge') onResourceExit?.('overview');}}
         openAt={knowledgeOpenAt}
         loadEntry={id => client.hqKnowledgeEntry(id)}
         act={async a => {
@@ -766,7 +767,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
         pal={pal}
         lang={lang}
         layout={layout}
-        onClose={() => setUsageOpen(false)}
+        onClose={() => {setUsageOpen(false); if (openResource?.page === 'usage') onResourceExit?.('overview');}}
       />
 
       <BoardSheet
@@ -775,7 +776,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
         age={boardAge(board.updated_at, now, zh)}
         pal={pal}
         zh={zh}
-        onClose={() => setBoardOpen(false)}
+        onClose={() => {setBoardOpen(false); if (openResource?.page === 'board') onResourceExit?.('overview');}}
         onTell={demo ? undefined : tellHQ}
       />
       <HQActsSheet

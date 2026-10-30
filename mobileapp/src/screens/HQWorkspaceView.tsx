@@ -30,6 +30,7 @@ type Props = {
   layout?: SizeClass;
   showInspector?: boolean;
   openResource?: HQResourceRequest;
+  onResourceExit?: (destination: 'overview' | 'console') => void;
 };
 export function HQWorkspaceView(
   props: Props & { renderConsole: (props: Props) => React.ReactNode },
@@ -92,6 +93,16 @@ export function HQWorkspaceView(
       ...props,
       prefill,
       openResource: resource,
+      onResourceExit:
+        resource && supported && data !== null
+          ? destination => {
+              setResource(undefined);
+              if (destination === 'overview') {
+                setPage('overview');
+                setPrefill(undefined);
+              }
+            }
+          : undefined,
       onBack:
         supported && data !== null
           ? () => {
