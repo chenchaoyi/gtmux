@@ -140,7 +140,7 @@ On your Mac, choose **Open local workspace** at the bottom of the menu-bar panel
 
 [![The browser workspace with a radar sidebar and a session open on the board](docs/guides/img/web-workspace-en.png)](docs/guides/img/web-workspace-en.png)
 
-Double-click a tmux row or drag it onto the board. Choose **Chat**, **Terminal** or **Trace** for that session. Enter adds a line; Ctrl/Cmd+Enter sends. External sessions can be read where supported but do not accept pane input. [Browser controls](docs/guides/phone-and-web.md#browser-controls).
+Double-click a tmux row or drag it onto the board. Choose **Chat**, **Terminal** or **Trace** for that session. Enter adds a line; Ctrl/Cmd+Enter sends. External sessions can be read where supported but do not accept pane input. [Browser controls and layout](docs/guides/phone-and-web.md#browser-controls).
 
 <a id="docs" data-doc-heading="Reference"></a>
 
