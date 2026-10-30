@@ -36,7 +36,7 @@
         if (/^\/(?!\/)[^\x00\r\n]+\.(?:png|jpe?g|webp|gif|heic|heif|bmp|tiff?)$/i.test(line)) {
           images.push(line); continue;
         }
-        if (labels.has(trimmed)) { continue; }
+        if (line.startsWith('[') && labels.has(trimmed)) { continue; }
       }
       prose.push(line);
     }

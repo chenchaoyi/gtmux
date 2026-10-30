@@ -11,5 +11,7 @@
   {"sent":"/tmp/a.png", "recorded":"![Image #1](/tmp/%ZZ.png)\n[Image #1]", "same":false},
   {"sent":"/tmp/a.png", "recorded":"![User's title](/tmp/a.png)\n[Image #1]", "same":false},
   {"sent":"/tmp/a.png", "recorded":"<image name=[Image #1] path=\"//host/a.png\">\n</image>\n[Image #1]", "same":false},
-  {"sent":"/tmp/a.png", "recorded":"/tmp/a.png\n[Image #1]", "same":false}
+  {"sent":"/tmp/a.png", "recorded":"/tmp/a.png\n[Image #1]", "same":false},
+  {"sent":"/tmp/a.png","recorded":"![Image #1](/tmp/a.png)\n    [Image #1]","same":false},
+  {"sent":"/tmp/a.png","recorded":"![Image #1](/tmp/a.png)\n\t[Image #1]","same":false}
 ]
