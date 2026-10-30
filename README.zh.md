@@ -61,7 +61,7 @@ gtmux tunnel
 
 首次运行时，按提示安装所需的隧道组件。它会启动所需服务并打印配对二维码。只在同一局域网使用时，改用 `gtmux serve`，再在另一个终端运行 `gtmux pair` 获取二维码。已有连接也可用 `gtmux pair` 生成新码。每个码只能用一次，5 分钟过期。
 
-在 iPhone 或 iPad 从 [App Store](https://apps.apple.com/app/id6791144062) 安装 gtmux，点「添加服务器 → 扫描配对二维码」，扫描 Mac 上的码，再打开保存的服务器。看到雷达即表示已连通。连接自己的浏览器时，打开 `gtmux pair` 打印的浏览器链接；每台设备都要生成新码。
+在 iPhone 或 iPad 从 [App Store](https://apps.apple.com/cn/app/gtmux/id6791144062) 安装 gtmux，点「添加服务器 → 扫描配对二维码」，扫描 Mac 上的码，再打开保存的服务器。看到雷达即表示已连通。连接自己的浏览器时，打开 `gtmux pair` 打印的浏览器链接；每台设备都要生成新码。
 
 也可在 Mac 菜单栏 App 的「偏好设置 → 远程访问」开启连接，再打开「配对设备…」。设备在同一可互通网络时选「局域网」，跨网络时选「任意网络」。网络不通、需要常驻连接或收不到通知，见[连接方式与排障](docs/phone.zh.md)。自己的设备用配对；给协作者用限定范围的[分享链接](docs/guides/phone-and-web.zh.md#把一个-pane-开给协作者)。
 

@@ -10,7 +10,7 @@ For the shortest path from installation to a connected device, start with [Get c
 | --- | --- |
 | CLI and menu-bar app on a Mac | The official installer below |
 | Manage both through Homebrew | The two Homebrew commands below |
-| iPhone or iPad app | [App Store](https://apps.apple.com/app/id6791144062); pair it after setting up the host |
+| iPhone or iPad app | [App Store](https://apps.apple.com/us/app/gtmux/id6791144062); pair it after setting up the host |
 | CLI only or a specific release | Installer options below, or [GitHub Releases](https://github.com/chenchaoyi/gtmux/releases) |
 
 ## Install script
