@@ -285,3 +285,18 @@ Diff SHALL mount only a window of native rows while retaining access to every re
 #### Scenario: Retry a failed read
 - **WHEN** the Diff read fails and the user selects Retry
 - **THEN** the error remains distinct from no changes and a successful retry shows the current pane's diff
+
+### Requirement: Compact external conversation identity
+
+Phone and iPad external readers SHALL share a compact header containing one title
+line and one harness / read-only line. Tapping the title SHALL reveal the full title,
+source, original-client input guidance and recorded connection evidence in a bounded,
+scrollable, dismissible details sheet. Secondary evidence SHALL NOT permanently
+expand the header or grant input authority. Back and tools SHALL retain independent
+44pt targets. Details SHALL close when the server, home, session or authorization
+changes, while dismissal SHALL preserve the conversation.
+
+#### Scenario: Read an external conversation on a narrow screen
+- **WHEN** a paired owner opens an external conversation with a long title and launch evidence
+- **THEN** the header stays two lines and evidence is available by tapping its title
+- **AND** closing details returns to the same read-only conversation without sending input
