@@ -11,7 +11,7 @@
 |---|---|
 | 查看所有 agent 并跳过去 | `gtmux agents --watch` |
 | 打开指定 pane | `gtmux focus %7` |
-| 让 HQ 盯全局 | `gtmux hq` |
+| 使用 HQ 协调任务 | `gtmux hq` |
 | 检查并修复安装配置 | `gtmux doctor --fix` |
 | 让远程访问重启后继续运行 | `gtmux tunnel --service` |
 | 连接自己的手机或浏览器 | `gtmux pair` |
@@ -51,10 +51,9 @@ gtmux agent · 7 agent · 1 等输入 · 2 运行中 · 3 空闲 · 1 只有 she
 
 每行是状态 · agent · 位置 · 任务 · pane id。
 
-- ‖ waiting（红）：干到一半，卡在你这儿等一个授权或批准；永远排最上面，也是这屏上唯一
-  表示「现在就得动」的颜色。
-- ⠿ working（青）：在忙，别打扰。
-- ✓ idle（绿）：这一回合结束了，你想动的时候再动，不急。
+- ‖ waiting（红）：需要回复、授权或批准，排在列表顶部。
+- ⠿ working（青）：正在执行当前回合。
+- ✓ idle（绿）：当前回合已结束，可继续输入。
 - ● running（灰）：认出了 agent 进程，但没有确定的回合状态。
   终端表格里，被关注的普通 pane 也显示在这里，并计入 running 的数量。
 
@@ -231,15 +230,9 @@ JSON 才省略整个电池对象）。低电量只在放电时
 （残留的 iOS 模拟器运行时聚合成一条，dev server 各自单列）。阈值在
 `~/.config/gtmux/config.json` 的 `resource` 对象里（diskAmberGB 50 / diskRedGB 15 /
 loadAmber 1.0 / loadRed 1.5 / orphanRssMB 300 / batteryAmberPct 20 / batteryRedPct 10）。
-候选要先过一道：这个东西死了，谁会跟着死？凡是在跑的活计赖以站立的东西 —— 所有会话都住在
-里面的那个 tmux 服务、gtmux 自己常驻的进程、agent 进程本身 —— 不管多大都不会被提出来。
-这条告警曾经写过 `disk getting low · 29GB free — maybe reclaimable: tmux`，照做不但腾不出
-空间，还会一次性停掉机器上所有在跑的活。这类进程会进候选不是偶然：清单找的是「大的、没有
-任务认领的」，而地基恰恰长期驻留、占用可观，又正因为它是地基，所以没有哪个任务会认领它。
+可回收候选会排除正在运行的工作所依赖的进程，包括 tmux 服务、gtmux 常驻进程和 agent 本身，无论其资源占用大小。
 
-可回收候选只跟着它救得了的那种告警走。候选是进程，它的体积是内存：这条建议只跟着内存和负载
-的告警出现，并写明它占的是多少、哪一种资源；磁盘和电量的告警不带它。杀掉一个 902MB 的进程还不回
-一个字节磁盘，而磁盘告急时给出这条建议，前后被照做过两次才有人发现（#1109）。
+进程回收建议仅出现在内存或负载告警中，并标明资源占用。磁盘和电量告警不附带此建议，因为结束进程不能直接释放磁盘空间或恢复电量。
 
 `GET /api/usage` 的 `resource.agents` 按 pane ID 给出 `rss_mb` 和 `cpu`，与
 `resource.machine`、`resource.orphans` 并列；这些不是 token 用量会话行里的字段。
@@ -761,7 +754,7 @@ JSON
 
 ## `gtmux digest` + `gtmux hq`：HQ，也就是中控会话
 
-`gtmux digest` 把整支舰队连同含义一眼摆出来，是一张排好列的表：
+`gtmux digest` 以表格列出各 agent 的目标、最近回复、等待原因和用量：
 
 ```
 1 needs input · 2 working · 1 completed
@@ -974,7 +967,7 @@ HQ home 本目录下的不过滤增量拉取默认隐藏这些不计数的记录
 `--all` 也显示原始视图。是否计入消费仍要满足上面的条件。日志按大小上限轮转，
 旧代文件可能离开保留的历史。
 
-`gtmux events` 会说清一条指令是谁写的 —— 前提是那不是你。同一个 pane 上的两条提交，不管是你自己敲的还是 HQ 投递的，字段完全一样；唯一分得开的是 gtmux 自己那条投递留痕，而它恰好被中控的拉取视图当作「不欠的东西」隐掉了。所以现在直接告诉读的人：由 gtmux 代别人投递进去的那条，行尾会打上 `← hq`（或 `← agent:%N`），`--json` 里是一个附加的 `author` 字段。没有 author 的，是没有哪次投递对得上的，通常就是你自己写的。每次投递只认一条：同一个 pane 上，先看文字吻合得最完整，再看时间上最近（相差两分钟以内）的那条。所以一小时前你自己敲的同样的话不会被后来的投递认走；两条一样合适时，一条都不认。
+`gtmux events` 会尝试将提示提交与 gtmux 的投递记录匹配。匹配成功时，文本行尾显示 `← hq` 或 `← agent:%N`，`--json` 增加 `author` 字段。未匹配的提交不标作者，通常是用户直接输入。每次投递只匹配同一 pane 中的一条提交：先比较文本匹配程度，再选择两分钟以内时间最接近的一条；有多个同等候选时不归属。
 
 归属是读的时候算出来的，所以欠什么、显示什么都没有变：投递留痕仍然不计入消费债务，也仍然不出现在默认视图里。这件事不需要 `--all`，`--all` 本身也没动。被拒绝或失败的投递没有真的进到 pane，不会归属任何一条。
 
@@ -1009,7 +1002,7 @@ HQ home 本目录下的不过滤增量拉取默认隐藏这些不计数的记录
 控制重敲的节奏，`selfRotateCheckSec`（默认 300 秒）控制评估的节奏。
 
 这笔债只有会话真的轮换了才清，判据是出现了新的 agent 会话 id；把唤醒送到不算。
-过了 `hqWake.selfRotateRepeatSec` 之后，只有越界集合或舰队变了才会再敲，
+过了 `hqWake.selfRotateRepeatSec` 之后，只有超限项或会话列表变化才会再敲，
 `hqWake.selfRotateFloorSec`（12 小时）是什么都没变时它能沉默的上限。HQ 的说明书要求它
 按顺序做三件事，不先问你：把 `notes/board.md` 和知识库更新到位，记下交接，然后跑
 `gtmux hq --rotate`。常驻服务等当前回合结束后再投重置命令（`/clear`，Codex 是 `/new`）。
@@ -1914,7 +1907,9 @@ bind a display-popup -E -w 80% -h 60% "gtmux agents --watch --popup"
 bind J run-shell "gtmux focus --last"
 ```
 
-### `gtmux status`：把舰队放进 tmux 状态栏
+<a id="gtmux-status把舰队放进-tmux-状态栏"></a>
+
+### `gtmux status`：在 tmux 状态栏显示 agent 状态
 
 ```tmux
 set -g status-right '#(gtmux status)'
@@ -2134,7 +2129,7 @@ gtmux 的 `gtmux:audit:*` 轨迹），并在 stderr 上说明扣掉了多少条�
 HQ 目录以外的读取同样显示原始视图，但不算消费。
 
 `--severity <tier>` 过滤出那一档及以上。档位排的是紧急度，所以它们是三种不同的读法：
-不带过滤的 `--since-seq` 增量用来对账；`--severity notable` 是舰队变化流（一条指令
+不带过滤的 `--since-seq` 增量用来对账；`--severity notable` 用于查看各会话的变化（一条指令
 抵达某个会话，`origin:"instruction"`，加上回合结束和生命周期）；`--severity important`
 是升级子集（卡住 · 在问 · 崩了），用来先分诊。
 

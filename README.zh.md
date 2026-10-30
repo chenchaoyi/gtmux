@@ -4,7 +4,7 @@
 
 # gtmux
 
-tmux 会话和 agent 的指挥中心。
+集中查看 tmux 会话和 coding agent 的状态，并在本机或远程操作。
 
 [![Release](https://img.shields.io/github/v/release/chenchaoyi/gtmux?color=06B6D4&label=release)](https://github.com/chenchaoyi/gtmux/releases)
 [![CI](https://github.com/chenchaoyi/gtmux/actions/workflows/ci.yml/badge.svg)](https://github.com/chenchaoyi/gtmux/actions/workflows/ci.yml)
@@ -20,7 +20,7 @@ tmux 会话和 agent 的指挥中心。
   <img src="docs/assets/readme-hero.jpg" width="100%" alt="菜单栏、终端、浏览器、iPad 和 iPhone 锁屏上的 gtmux" />
 </picture>
 
-在 tmux 里同时跑几个 coding agent（Claude Code、Codex、Gemini、Cursor），很容易分不清哪个在等你点头，哪个还在跑，哪个已经跑完。gtmux 是这些 pane 上的雷达和遥控器，不管 agent 是谁起的，只要在你的 tmux 里就看得见。
+gtmux 集中显示 tmux 中 coding agent 的状态，包括 Claude Code、Codex、Gemini 和 Cursor。你可以查看哪些 agent 正在工作、等待回复或已完成，再打开对应 pane 操作。已有的 tmux 会话也会被识别，无需通过 gtmux 启动。
 
 gtmux 的前提是每个 agent 各占一个 tmux pane。我们推荐 [Ghostty](https://ghostty.org) + tmux + gtmux 这套组合，没用过 tmux 可以先看官方的 [Getting Started](https://github.com/tmux/tmux/wiki/Getting-Started)。
 
@@ -40,13 +40,13 @@ curl -fsSL https://ccy.pub/gtmux/install | bash
 
 用 Homebrew 的话，`brew install chenchaoyi/tap/gtmux` 装 CLI，`brew install --cask chenchaoyi/tap/gtmux-app` 装菜单栏 app。
 
-然后跑一遍体检。缺的东西它会逐项提出来帮你配上（agent hook、focus 和 restore 依赖的 set-titles、重启后恢复、菜单栏 app），每一步都先问你。
+运行环境检查，按提示配置 agent hook、focus 和 restore 所需的 set-titles、重启恢复及菜单栏 app。每项修改前都会征求确认。
 
 ```sh
 gtmux doctor
 ```
 
-之后基本不用管它。菜单栏的点告诉你有没有 agent 在等，点通知就跳到对应 pane，`⌘⌥G` 直接跳到在等你的那个。想用命令行也随时可以：
+菜单栏状态点会提示是否有 agent 等待回复。点击通知可打开对应 pane，`⌘⌥G` 可跳到等待中的 agent。也可以使用命令行：
 
 ```sh
 gtmux agents --watch         # 终端里的实时看板，回车跳到对应 pane
@@ -125,21 +125,21 @@ gtmux agent · 7 agent · 1 等输入 · 2 运行中 · 3 空闲 · 1 只有 she
 
 ## 上手指南
 
-带截图的实操，一篇讲一件事：
+以下指南说明具体操作，并附界面截图：
 
-- [看住一支 agent 舰队](docs/guides/watch-a-fleet.zh.md)：在 tmux 里跑 agent、看懂雷达、跳到在等你的那个。
-- [让 HQ 替你盯全局](docs/guides/hq-supervisor.zh.md)：启动中控，什么会叫醒它，它什么时候自己定，派活、知识库、搬到另一台 Mac。
+- [管理多个 coding agent](docs/guides/watch-a-fleet.zh.md)：启动 agent、查看状态并打开等待回复的 pane。
+- [使用 HQ 协调任务](docs/guides/hq-supervisor.zh.md)：启动中控，了解事件通知、决策范围、任务分派、知识库与迁移。
 - [用手机、iPad 和浏览器管理](docs/guides/phone-and-web.zh.md)：配对自己的设备、回复 agent、分享指定 pane。
-- [从任意电脑接回会话](docs/guides/attach-from-anywhere.zh.md)：用一个真正的终端进到 Mac 上的会话。
+- [从任意电脑接回会话](docs/guides/attach-from-anywhere.zh.md)：从另一台电脑的终端连接 Mac 上的 tmux 会话。
 
 <a id="文档"></a>
 
 ## 参考
 
-- [各 Agent 接入机制](docs/guides/agent-integrations.zh.md)：14 个内置条目的事件桥接、历史来源、安装方式与支持边界。
+- [各 Agent 接入机制](docs/guides/agent-integrations.zh.md)：内置接入的事件桥接、历史来源、安装方式与支持边界。
 - [CLI 与命令](docs/cli.zh.md)：所有命令、HQ、识别原理、各 agent 的 hook、tmux 按键绑定。
 - [远程访问参考](docs/phone.zh.md)：连接方式、权限、通知条件与故障排查。
-- [HQ 记住的东西](docs/knowledge.zh.md)：知识库存在哪、分几层、你自己能改什么。
+- [HQ 知识库](docs/knowledge.zh.md)：知识库存在哪、分几层、你自己能改什么。
 - [安装说明](docs/install.zh.md)：锁定版本、从源码构建、镜像。
 - [DeepSeek Harness](docs/guides/deepseek-harness.zh.md)：接入方式、会话身份与控制边界。
 - [设计文档](docs/design/README.zh.md)，在途变更在 `openspec/`。

@@ -6,11 +6,11 @@ order: 4
 
 **English** · [中文](attach-from-anywhere.zh.md)
 
-Your Mac at the office is running a pile of agents, and you are at home in front of a
-different computer. The phone can watch and reply, but sometimes you want a real terminal:
-the session as it is, to keep working in. That is what `gtmux attach` is for.
+`gtmux attach` connects a terminal on another computer to an existing tmux session on your Mac. You can operate the programs in that session, then detach without stopping them.
 
-## Open a door on your Mac
+<a id="open-a-door-on-your-mac"></a>
+
+## Enable access on your Mac
 
 ```sh
 gtmux serve                # the other computer is on the same local network
@@ -56,7 +56,9 @@ and replace every placeholder:
 gtmux attach <host> --token <token> %7
 ```
 
-## What you get
+<a id="what-you-get"></a>
+
+## Using the remote session
 
 Your local terminal becomes the Mac's tmux session: the Mac's tmux and its config,
 full-screen programs, colour, all of it. It attaches a tmux client to the whole session
@@ -72,7 +74,9 @@ someone one pane, see
 Two options worth knowing: `--read-only` to watch without sending input, and `--predict`
 (experimental) to show your own typing immediately on a slow link.
 
-## Leave cleanly
+<a id="leave-cleanly"></a>
+
+## Disconnect
 
 Detach with tmux's `prefix d` (by default `Ctrl-b d`) or with `Ctrl-]`. The session keeps
 running on the Mac, untouched. **Do not type `exit` in the pane**: that closes the shell
@@ -80,6 +84,4 @@ in it.
 
 ---
 
-Next: just want to watch and reply? The phone is smoother; see
-[Manage from your phone and the web](phone-and-web.md) · Every flag:
-[`gtmux attach`](../cli.md#gtmux-attach-work-in-a-remote-session-from-another-machines-terminal)
+Related guide: [Manage from your phone and the web](phone-and-web.md) · All options: [`gtmux attach`](../cli.md#gtmux-attach-work-in-a-remote-session-from-another-machines-terminal)

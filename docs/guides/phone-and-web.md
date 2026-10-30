@@ -6,8 +6,7 @@ order: 3
 
 **English** · [中文](phone-and-web.zh.md)
 
-Use the iPhone and iPad app to check your agents, answer a request and talk to HQ while
-away from the Mac. A browser can also show the radar and let you type into panes.
+Use an iPhone, iPad or browser to view agent status, read output and reply. The app also provides access to HQ. This guide covers pairing your devices, everyday controls and sharing panes.
 
 ## Choose Pair or Share
 

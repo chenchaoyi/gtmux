@@ -4,9 +4,7 @@ description: Read Web histories and manage verified DeepSeek Harness terminal se
 order: 18
 ---
 
-DeepSeek Harness keeps one identity and its official whale icon, whether you use
-Web or a supported community terminal client. dst is the first terminal adapter;
-it is not another agent category. See the [all-agent integration map](agent-integrations.md).
+gtmux reads saved DeepSeek Harness Web conversations and manages verified terminal sessions through dst. Both appear as DeepSeek Harness with its official whale icon. For other agents, see the [integration guide](agent-integrations.md).
 
 ## Web histories
 

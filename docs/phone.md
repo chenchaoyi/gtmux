@@ -2,7 +2,7 @@
 
 **English** · [中文](phone.zh.md)
 
-Connection methods, device permissions and notification requirements.
+This reference covers remote connections, device permissions, notification requirements and troubleshooting.
 
 **Connecting an iPhone, iPad or browser for the first time?** Follow
 [Use your phone, iPad and browser](guides/phone-and-web.md) for setup, daily use and sharing.

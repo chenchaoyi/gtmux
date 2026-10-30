@@ -6,7 +6,7 @@ order: 3
 
 [English](phone-and-web.md) · **中文**
 
-离开 Mac，也能用 iPhone／iPad 查看 agent、回复请求、和 HQ 对话。浏览器也能查看雷达、向 pane 输入。
+通过 iPhone、iPad 或浏览器，可以查看主机上的 agent 状态、阅读输出并回复。App 还提供 HQ 入口。本指南介绍设备配对、日常操作和 pane 分享。
 
 ## 先选 Pair 还是 Share
 

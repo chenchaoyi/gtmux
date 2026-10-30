@@ -1,14 +1,16 @@
 ---
 title: 从任意电脑接回会话
-description: 在另一台电脑的终端里用 gtmux attach 进入你 Mac 上的 tmux 会话，局域网或隧道都行，断开时什么都不会停。
+description: 通过局域网或隧道连接 Mac 上的 tmux 会话，断开客户端后会话继续运行。
 order: 4
 ---
 
 [English](attach-from-anywhere.md) · **中文**
 
-你在公司的 Mac 上跑着一堆 agent，人却在家里另一台电脑前。手机能看能回，但有时你要的是一个真正的终端：原样进到那个会话里接着干。`gtmux attach` 就是干这个的。
+`gtmux attach` 将另一台电脑的终端连接到 Mac 上已有的 tmux 会话。连接后可以操作其中的程序，断开客户端不会结束远端会话。
 
-## 在 Mac 上开个口子
+<a id="在-mac-上开个口子"></a>
+
+## 在 Mac 上开启连接
 
 ```sh
 gtmux serve                # 另一台电脑和 Mac 在同一个局域网
@@ -51,10 +53,12 @@ gtmux attach <host> --token <token> %7
 
 两个值得知道的选项：`--read-only` 只看不输入；`--predict`（实验性）在慢网络上让你打的字立刻显示出来。
 
-## 干完就走
+<a id="干完就走"></a>
+
+## 断开连接
 
 按 tmux 的 `前缀键 d`（默认是 `Ctrl-b d`）或 `Ctrl-]` 断开。会话在 Mac 上照常跑，一点不受影响。**别在 pane 里敲 `exit`**，那会关掉里面的 shell。
 
 ---
 
-接下来：只想看看、回一句？手机更顺手，见[用手机和网页远程管理](phone-and-web.zh.md) · 全部参数：[`gtmux attach`](../cli.zh.md#gtmux-attach在另一台机器的终端里进远端会话)
+相关指南：[用手机和网页远程管理](phone-and-web.zh.md) · 全部参数：[`gtmux attach`](../cli.zh.md#gtmux-attach在另一台机器的终端里进远端会话)
