@@ -12,6 +12,10 @@ describe.each(['en', 'zh'] as const)('demo consistency (%s)', lang => {
     expect((await c.pane('%7')).text).not.toContain('All green');
     expect((await c.transcript('%7')).turns.at(-1)?.response).toMatch(/not run|未运行/);
     expect((await c.hqBoard()).text).not.toMatch(/blocked on|正卡在/);
+    const matter = await c.hqMatter('verify-tests');
+    expect(matter.matter.state).toBe('closed');
+    expect(matter.messages[0].body).toMatch(/not run|未运行/);
+    expect(matter.messages[0].body).not.toMatch(/Completed|已完成/);
     await c.send('%1', {text: "who's waiting?"});
     expect((await c.transcript('%1')).turns.at(-1)?.response).toMatch(/No session|没有会话/);
   });

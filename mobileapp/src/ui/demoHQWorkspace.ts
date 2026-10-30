@@ -126,7 +126,14 @@ export function demoHQMatter(
         speaker: 'hq',
         kind: 'progress',
         body:
-          preview?.body ?? (zh ? '已完成并交付。' : 'Completed and delivered.'),
+          preview?.body ??
+          (id === 'verify-tests' && phase === 'declined'
+            ? zh
+              ? '未运行测试。'
+              : 'Tests were not run.'
+            : zh
+            ? '已完成并交付。'
+            : 'Completed and delivered.'),
         at: matter.updated_at,
       },
     ],
