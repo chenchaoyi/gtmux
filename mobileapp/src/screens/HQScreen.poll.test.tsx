@@ -6,6 +6,8 @@ import {KnowledgeSheet} from './KnowledgeSheet';
 import {HQResourceRequest} from '../state/WorkspaceContext';
 import {HQView} from './HQScreen';
 import {ChatView} from '../ui/ChatView';
+import {HQHeader} from './HQHeader';
+import {demoHQWorkspace} from '../ui/demoHQWorkspace';
 import {Agent} from '../api/types';
 import type {DigestRow} from '../api/client';
 
@@ -20,6 +22,7 @@ jest.mock('../ui/Composer', () => ({Composer: () => null}));
 jest.mock('./HQHeader', () => ({HQHeader: () => null}));
 
 const mockClient = {
+  hqWorkspace: undefined as undefined | jest.Mock,
   tasks: jest.fn(async () => []),
   digest: jest.fn(async (): Promise<DigestRow[]> => []),
   usage: jest.fn(async () => null),
@@ -47,6 +50,7 @@ async function mount(status: string, layout: 'regular' | 'compact', openResource
 
 beforeEach(() => {
   jest.useFakeTimers();
+  mockClient.hqWorkspace = undefined;
   globalThis.fetch = jest.fn(() => {
     throw new Error('no real HTTP in this test');
   }) as unknown as typeof fetch;
@@ -265,4 +269,32 @@ test('HQ can load an earlier session from Trace through the existing read lane',
  await act(async () => resolve({turns: [{session_id: 'older', response: 'older'}, {session_id: 'now', response: 'now'}], earlierAvailable: false}));
  expect(tree!.root.findByType(TraceModal).props.turns.map((t: any) => t.session_id)).toEqual(['older', 'now']);
  expect(tree!.root.findByType(TraceModal).props.loadingEarlier).toBe(false);
+});
+
+test('workspace-backed conversations use the same matters and keep them current without legacy tabs', async () => {
+  let data = demoHQWorkspace(false);
+  mockClient.hqWorkspace = jest.fn(async () => data);
+  mockClient.digest.mockResolvedValue([{pane_id: '%worker', loc: 'worker', source: 'tmux', agent: 'Codex', status: 'waiting'}]);
+  mockClient.transcript.mockResolvedValue({turns: []});
+  await mount('idle', 'regular');
+  await act(async () => tree!.root.findAllByProps({testID: 'hq-overview-talk'})[0].props.onPress());
+  const header = () => tree!.root.findByType(HQHeader);
+  expect(tree!.root.findAllByProps({testID: 'hq-tab-calls'})).toHaveLength(0);
+  expect(tree!.root.findAllByProps({testID: 'hq-tab-console'})).toHaveLength(0);
+  expect(tree!.root.findAllByProps({testID: 'hq-inspector'})).toHaveLength(0);
+  expect(header().props.model.verdict).toBe('1 needs input · 2 ongoing');
+  expect(header().props.pendingMatters).toBe(1);
+  expect(header().props.model.rows.some((row: {key: string}) => row.key === 'context')).toBe(false);
+  expect(header().props.backLabel).toBe('Overview');
+  expect(header().props.open).toBe(false);
+  await act(async () => header().props.onToggle());
+  expect(header().props.open).toBe(true);
+  expect(tree!.root.findByType(ChatView)).toBeDefined();
+  data = {...data, matters: data.matters.map(m => m.id === 'api-refactor' ? {...m, state: 'needs-input' as const} : m)};
+  await act(async () => jest.advanceTimersByTime(10000));
+  expect(header().props.model.verdict).toBe('2 need input · 1 ongoing');
+  expect(header().props.pendingMatters).toBe(2);
+  expect(mockClient.hqWorkspace!.mock.calls.length).toBeGreaterThanOrEqual(2);
+  await act(async () => header().props.onBack());
+  expect(tree!.root.findAllByProps({testID: 'hq-overview-talk'}).length).toBeGreaterThan(0);
 });

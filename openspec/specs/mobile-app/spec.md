@@ -440,14 +440,14 @@ tally of states is the weaker answer to "what is going on". A resource condition
 promoted OUT of the disclosure only at the critical tier, which the verdict already
 models.
 
-It SHALL contain two switchable zones, each given the full body height rather than a
-share of it: a YOUR-CALL zone (one decision card per waiting session, each showing that
+Only the legacy HQ page on servers without workspace matters SHALL contain two switchable zones, each given the full body height rather than a
+share of it: a WAITING-SESSIONS zone (one decision card per waiting session, each showing that
 session's ask as the card's body rather than as a footnote, and offering both opening that
 session directly and asking the supervisor to draft a reply), and a CONSOLE zone (a
 conversation with the supervisor, with its recorded acts beside its words as required
 below). The command bar — free text plus quick-command chips — SHALL remain available on
 every zone. The zone selector SHALL carry each zone's own signal so the zones
-the user is NOT looking at still report themselves. The app SHALL open on the your-call
+the user is NOT looking at still report themselves. The legacy app SHALL open on the waiting-sessions
 zone when something is waiting and on the console otherwise. Commands are HQ-mediated: the
 command bar addresses the supervisor, which drives the fleet; the HQ screen has NO
 direct-send input of its own. Every zone SHALL state its empty condition in words; NO zone
@@ -1424,9 +1424,10 @@ SHALL render as before.
 
 ### Requirement: A door on the HQ page shows one fact per line
 
-Each of the three doors (board, knowledge, usage) SHALL show its value as one fact per
-line, at most two lines, splitting the value at its " · " joints; a fact SHALL NOT end in
-an ellipsis while a second line is free. With tokens by day available, the usage door's
+Each of the three resource tiles (board, knowledge, usage) SHALL split its value into
+at most two facts at its " · " joints. Each fact MAY wrap onto two lines on compact
+screens, and larger Dynamic Type sizes SHALL stack the tiles. A fact SHALL NOT end in
+an ellipsis while its next line is free. With tokens by day available, the usage door's
 value SHALL be today's and this week's totals; the tightest window is read in the usage
 sheet behind it.
 
@@ -1440,7 +1441,7 @@ what it last showed.
 
 #### Scenario: Opening the HQ page
 
-- **WHEN** the page opens and the board, knowledge and usage reads are still in flight
+- **WHEN** the conversation context is expanded and the board, knowledge and usage reads are still in flight
 - **THEN** three tiles are already there, each with the loading mark; each turns into its
   value as its read lands
 
@@ -1512,8 +1513,9 @@ software keyboard on every zone, the same as on a session's Detail.
 
 ### Requirement: HQ's recorded acts sit in the console, beside its words
 
-The HQ page SHALL have two zones, "Your call" and "Console"; there SHALL be no zone of
-its own for the supervisor's recorded acts (hq-work direction A, 2026-09-15: the tab said
+Only older servers without workspace matters SHALL retain the two zones, "Waiting sessions"
+and "Console". Workspace-capable servers SHALL use the shared matter overview and a
+single conversation. There SHALL be no zone of its own for the supervisor's recorded acts (hq-work direction A, 2026-09-15: the tab said
 in a fourth place what HQ's own words, the header's "HQ did" row and the Mac card already
 said, with nothing to act on). The acts (`gtmux:audit:*` minus wake delivery) SHALL be
 drawn in the console as small rows between the turns, each above the first turn that
@@ -2645,7 +2647,7 @@ The floating Collapse all control SHALL reserve a plain 44pt conversation-backgr
 - **AND** the action remains a minimum 44pt target and still toggles all replies
 
 ### Requirement: Mobile HQ uses the shared matter overview
-The App SHALL offer Needs input, Following and recent changes from the authoritative HQ workspace read projection. It SHALL stack groups in narrow panes and place them side by side only when the available content width permits. A matter reader SHALL show explicit assessment, participants and paged saved updates; receipt delivery MUST NOT imply completion. Talk to HQ, resources, drafts, composer and session tools SHALL retain the existing console behavior.
+The App SHALL offer Needs input, Following and recent changes from the authoritative HQ workspace read projection. It SHALL stack groups in narrow panes and flow current-matter cards in a shared grid when the available content width and text scale permit. A matter reader SHALL show explicit assessment, participants and paged saved updates; receipt delivery MUST NOT imply completion. Talk to HQ, resources, drafts, composer and session tools SHALL retain the existing console behavior.
 
 #### Scenario: A matter is opened without sending an instruction
 - **WHEN** an owner opens a matter and chooses Ask HQ
@@ -2662,3 +2664,37 @@ The App SHALL offer Needs input, Following and recent changes from the authorita
 - **THEN** the last overview remains with a retry action
 - **WHEN** access is revoked
 - **THEN** private overview and matter content are cleared
+
+### Requirement: Session-led Trace details and HQ briefing cards
+The App SHALL lead Trace with the selected session name, show full recorded tool input with wrapping, and avoid repeating an individual input in its group heading. HQ SHALL show actual board, knowledge and usage summaries before independent matter cards. Summary requests SHALL preserve owner scope, cancellation and transient-error semantics. Current assessments SHALL be identified as current rather than attributed to historical changes.
+
+#### Scenario: A long command is inspected on a phone
+- **WHEN** a reader selects an individual tool in an expanded call group
+- **THEN** details show that call's full recorded input with wrapping and exact copy
+- **AND** closing details retains the timeline, folds and reading position
+
+#### Scenario: HQ opens with available summaries
+- **WHEN** an owner opens the matter overview
+- **THEN** resource summaries precede matters without requiring another reader
+- **AND** cards show authoritative current states and dated updates without treating delivery as completion
+
+#### Scenario: Resource authorization is revoked
+- **WHEN** an owner-only summary request returns an authorization error
+- **THEN** the overview, selection and resource summaries are cleared and pending summary and workspace reads are retired; an older response cannot repopulate them
+- **WHEN** a summary refresh fails transiently
+- **THEN** its previous reading remains explicitly marked and independent resources can still update
+
+### Requirement: HQ conversations share one authoritative matter overview
+Workspace-capable HQ conversations SHALL use the same current matter counts and overview navigation as the outer HQ page. They SHALL NOT expose a second waiting-session attention tab or inspector. The full context SHALL collapse together, while a critical machine condition remains visible in the compact headline. Expanded context SHALL have a bounded scroll area. Unknown data SHALL NOT be displayed as zero.
+
+#### Scenario: An agent waits without a persistent matter
+- **WHEN** digest shows a waiting agent but the authoritative HQ matter set has a different needs-input count
+- **THEN** the conversation reflects the matter set and opens the same overview as the outer HQ entrance
+
+#### Scenario: Context is folded
+- **WHEN** a reader collapses the context
+- **THEN** resource cards and HQ detail rows are hidden, a critical condition remains in the compact headline, and the chat/composer stay mounted
+
+#### Scenario: An older server
+- **WHEN** the workspace adapter is absent or explicitly unsupported
+- **THEN** the legacy session view remains available as Waiting sessions, distinct from persistent HQ matters

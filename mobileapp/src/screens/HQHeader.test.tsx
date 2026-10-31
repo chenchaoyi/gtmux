@@ -51,7 +51,7 @@ function render(m: HeaderModel, open = true) {
 }
 
 test('HQ destinations and disclosure expose actionable roles, readings and expanded state', () => {
-  const tree = render(model(), false);
+  const tree = render(model(), true);
   for (const [id, value] of [
     ['hq-board-open', 'updated 1s ago'],
     ['hq-knowledge-open', '352 entries'],
@@ -61,10 +61,11 @@ test('HQ destinations and disclosure expose actionable roles, readings and expan
     expect(button.props.accessibilityRole).toBe('button');
     expect(button.props.accessibilityValue).toEqual({text: value});
   }
-  expect(tree.root.findByProps({testID: 'hq-verdict'}).props.accessibilityState).toEqual({expanded: false});
+  expect(tree.root.findByProps({testID: 'hq-verdict'}).props.accessibilityState).toEqual({expanded: true});
   act(() => tree.unmount());
-  const expanded = render(model(), true);
-  expect(expanded.root.findByProps({testID: 'hq-verdict'}).props.accessibilityState).toEqual({expanded: true});
+  const expanded = render(model(), false);
+  expect(expanded.root.findByProps({testID: 'hq-verdict'}).props.accessibilityState).toEqual({expanded: false});
+  expect(expanded.root.findAllByProps({testID: 'hq-board-open'})).toHaveLength(0);
   act(() => expanded.unmount());
 });
 
@@ -144,26 +145,24 @@ test('closed, the header shows the verdict and nothing else', () => {
   expect(strings(t.root as unknown as Node).join(' ')).toContain('all normal');
 });
 
-test('the three documents STAND — they are not rows in a closed disclosure', () => {
-  // They were GridRows sharing the figures' key column, which made them look like more
-  // readings. But the disclosure defaults CLOSED, and these are the only way to reach
-  // the situation board, the knowledge base or usage from the phone at all: opening the
-  // page offered no route to any of them (user report, 2026-09-09).
-  //
-  // This supersedes "figures and documents are rows of ONE grid": that pinned a shared
-  // key column, and a destination that has to be uncovered is not a destination.
-  const t = render(model(), false); // CLOSED, which is how the page opens
-  expect(t.root.findAllByProps({testID: 'hq-disclosure'})).toHaveLength(0);
-  for (const id of ['hq-board-open', 'hq-knowledge-open']) {
-    expect(t.root.findAll(n => n.props?.testID === id).length).toBeGreaterThan(0);
+test('all resource values fold with the shared disclosure', () => {
+  const closed = render(model(), false);
+  for (const id of ['hq-board-open', 'hq-knowledge-open', 'hq-usage-open']) {
+    expect(closed.root.findAllByProps({testID: id})).toHaveLength(0);
   }
+  act(() => closed.unmount());
+  const open = render(model(), true);
+  for (const id of ['hq-board-open', 'hq-knowledge-open', 'hq-usage-open']) {
+    expect(open.root.findAllByProps({testID: id}).length).toBeGreaterThan(0);
+  }
+  act(() => open.unmount());
 });
 
 test('a document that owes you something says so in the attention colour', () => {
   // The tile that wants you should be the one that looks like it. Zero owed is not a
   // warning — "0 待带走" in red would cry wolf on the most ordinary state there is.
   // The fixture's model carries an `owed` row, which is what makes the tile want you.
-  const owed = render(model(), false);
+  const owed = render(model(), true);
   const val = (t: ReturnType<typeof render>, id: string) => {
     const tile = t.root.findAll(n => n.props?.testID === id && typeof n.props?.onPress === 'function')[0];
     const texts = tile.findAllByType(Text);
@@ -242,7 +241,7 @@ describe('a door on its first fetch', () => {
     let tree: renderer.ReactTestRenderer | undefined;
     act(() => {
       tree = renderer.create(
-        <HQHeader model={model()} conn="live" open={false} onToggle={() => {}} onBack={() => {}} onOpenBoard={() => {}} onOpenKnowledge={() => {}} pal={paletteFor('dark')} zh={false} {...props} />,
+        <HQHeader model={model()} conn="live" open={true} onToggle={() => {}} onBack={() => {}} onOpenBoard={() => {}} onOpenKnowledge={() => {}} pal={paletteFor('dark')} zh={false} {...props} />,
       );
     });
     return tree!;
@@ -253,7 +252,7 @@ describe('a door on its first fetch', () => {
     expect(ids(t)).toEqual(expect.arrayContaining(['hq-board-loading', 'hq-knowledge-loading', 'hq-usage-loading', 'loading-mark']));
     act(() => {
       t.update(
-        <HQHeader model={model()} conn="live" open={false} onToggle={() => {}} onBack={() => {}} onOpenBoard={() => {}} onOpenKnowledge={() => {}} pal={paletteFor('dark')} zh={false} boardValue="updated 1s ago" pending={{board: false, knowledge: true, usage: false}} />,
+        <HQHeader model={model()} conn="live" open={true} onToggle={() => {}} onBack={() => {}} onOpenBoard={() => {}} onOpenKnowledge={() => {}} pal={paletteFor('dark')} zh={false} boardValue="updated 1s ago" pending={{board: false, knowledge: true, usage: false}} />,
       );
     });
     const after = ids(t);

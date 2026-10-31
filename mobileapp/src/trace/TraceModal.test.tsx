@@ -1,6 +1,6 @@
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
-import { FlatList, StyleSheet } from 'react-native';
+import { FlatList, ScrollView, StyleSheet, Text } from 'react-native';
 import Clipboard from '@react-native-clipboard/clipboard';
 import { TraceReader } from './TraceModal';
 import { TraceEvent } from './model';
@@ -11,6 +11,7 @@ import { MarkdownView } from '../ui/MarkdownView';
 import { ParticipantProfileModal } from '../ui/ParticipantProfileModal';
 import { nativeDocumentPreview } from '../documents/nativePreview';
 import * as layout from '../ui/layout';
+import { CopyableText } from '../ui/CopyableText';
 jest.mock('../ui/ParticipantProfileModal', () => ({
   ParticipantProfileModal: jest.fn(() => null),
 }));
@@ -94,6 +95,65 @@ function mount(props: Partial<React.ComponentProps<typeof TraceReader>> = {}) {
     tree = renderer.create(<TraceReader {...base} {...props} />);
   });
 }
+
+test('session name leads the heading; each expanded call opens its own fully wrapped input', () => {
+  const inputs = [
+    'printf ' + 'a very long command '.repeat(50),
+    'second line\n  preserved indentation',
+    'third',
+  ];
+  mount({
+    turns: [
+      {
+        ...turn,
+        segments: [
+          {
+            steps: inputs.map(input => ({
+              kind: 'tool',
+              title: 'bash',
+              input,
+              input_kind: 'command',
+            })),
+          },
+        ],
+      },
+    ],
+  });
+  expect(
+    tree.root.findAllByProps({ testID: 'trace-session-title' })[0].props
+      .children,
+  ).toBe('Trace QA');
+  const batch = tree.root
+    .findByType(FlatList)
+    .props.data.find((row: any) => row.type === 'calls');
+  press('trace-calls-' + batch.key);
+  const group = tree.root
+    .findAllByProps({ testID: 'trace-calls-' + batch.key })
+    .find(n => typeof n.props.onPress === 'function')!;
+  expect(
+    group.findAllByType(Text).some(n => n.props.children === inputs[2]),
+  ).toBe(false);
+  const events = data().filter(e => e.kind === 'tool');
+  expect(events).toHaveLength(3);
+  events.forEach((event, i) => {
+    press('trace-record-' + event.key);
+    const input = tree.root
+      .findAllByType(CopyableText)
+      .find(n => n.props.testID === 'trace-source')!;
+    expect(input.props.children).toBe(inputs[i]);
+    expect(input.props.numberOfLines).toBeUndefined();
+    expect(input.props.rangeUnbounded).not.toBe(true);
+    let parent = input.parent;
+    while (parent) {
+      if (parent.type === ScrollView)
+        expect(parent.props.horizontal).not.toBe(true);
+      parent = parent.parent;
+    }
+    press('trace-copy');
+    expect(Clipboard.setString).toHaveBeenLastCalledWith(inputs[i]);
+    press('trace-detail-close');
+  });
+});
 
 test('bulk disclosures survive streaming and programmatic scroll without reopening calls or turns', () => {
   const pairedCalls = [

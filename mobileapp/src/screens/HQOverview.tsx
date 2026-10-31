@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import type { HQWorkspace, HQOverviewItem } from '../api/hqWorkspace';
-import { BRAND, Palette, StatusColor } from '../ui/theme';
-import { DisclosureChevron } from '../ui/DisclosureChevron';
+import type { Palette } from '../ui/theme';
 import { relTime } from './hqZones';
-import { matterState, recentChange, matterPreview } from './hqWorkspaceModel';
+import { recentChange, matterPreview } from './hqWorkspaceModel';
+import { HQBriefCard } from './HQBriefCard';
 import { HQWorkspaceStyles as s } from './hqWorkspaceStyles';
 
 export function HQOverview({
@@ -39,127 +39,130 @@ export function HQOverview({
       items: data.overview.following,
       empty: t('No ongoing matters.', '暂无正在跟进的事项。'),
     },
-  ];
+  ].map(group => {
+    const all = [...matters.values()].filter(m => m.state === group.key);
+    const items: HQOverviewItem[] = expanded.has(group.key)
+      ? all.map(
+          m =>
+            group.items.find(i => i.matter_id === m.id) ?? { matter_id: m.id },
+        )
+      : group.items;
+    return { ...group, all, items, previewCount: group.items.length };
+  });
   const toggle = (key: string) =>
     setExpanded(prev => {
       const next = new Set(prev);
       next.has(key) ? next.delete(key) : next.add(key);
       return next;
     });
+  const card = (item: HQOverviewItem) => {
+    const matter = matters.get(item.matter_id);
+    if (!matter) return null;
+    const assessment = matterPreview(matter.assessment ?? '');
+    const byline =
+      !assessment && item.preview?.at
+        ? `${t('HQ update', 'HQ 进展')} · ${relTime(
+            item.preview.at,
+            data.overview.generated_at,
+          )}`
+        : matter.updated_at
+        ? `${t('Updated', '更新于')} ${relTime(
+            matter.updated_at,
+            data.overview.generated_at,
+          )}`
+        : undefined;
+    return (
+      <HQBriefCard
+        key={matter.id}
+        testID={`hq-matter-${matter.id}`}
+        matter={matter}
+        preview={item.preview?.body}
+        pal={pal}
+        zh={zh}
+        wide={wide}
+        byline={byline}
+        onPress={() => onMatter(matter.id)}
+      />
+    );
+  };
+  const more = (group: (typeof groups)[number]) =>
+    group.all.length > group.previewCount ? (
+      <TouchableOpacity
+        key={group.key}
+        accessibilityRole="button"
+        accessibilityLabel={`${
+          expanded.has(group.key)
+            ? t('Show less', '收起')
+            : t('View all', '查看全部')
+        } · ${group.title}`}
+        accessibilityState={{ expanded: expanded.has(group.key) }}
+        onPress={() => toggle(group.key)}
+        style={s.more}
+      >
+        <Text style={[s.buttonText, { color: pal.fg2 }]}>
+          {expanded.has(group.key)
+            ? t('Show less', '收起')
+            : wide
+            ? t(
+                `View all ${group.all.length} · ${group.title}`,
+                `查看全部 ${group.all.length} 项 · ${group.title}`,
+              )
+            : t(
+                `View all ${group.all.length}`,
+                `查看全部 ${group.all.length} 项`,
+              )}
+        </Text>
+      </TouchableOpacity>
+    ) : null;
   return (
     <>
-      <View style={[s.groups, wide && s.wide]}>
-        {groups.map(group => {
-          const all = [...matters.values()].filter(m => m.state === group.key);
-          const items: HQOverviewItem[] = expanded.has(group.key)
-            ? all.map(
-                m =>
-                  group.items.find(i => i.matter_id === m.id) ?? {
-                    matter_id: m.id,
-                  },
-              )
-            : group.items;
-          return (
-            <View key={group.key} style={s.group}>
-              <View style={s.sectionHead}>
-                <Text
-                  accessibilityRole="header"
-                  style={[s.sectionTitle, { color: pal.fg }]}
-                >
-                  {group.title}
-                </Text>
-                <Text style={[s.count, { color: pal.fg2 }]}>{all.length}</Text>
-              </View>
-              <View
-                style={[
-                  s.card,
-                  { backgroundColor: pal.surface, borderColor: pal.divider },
-                ]}
+      {wide ? (
+        <>
+          <View style={s.sectionHead}>
+            <Text
+              accessibilityRole="header"
+              style={[s.sectionTitle, { color: pal.fg }]}
+            >
+              {t('Current matters', '当前事项')}
+            </Text>
+            <Text style={[s.count, { color: pal.fg2 }]}>
+              {groups.reduce((n, group) => n + group.all.length, 0)}
+            </Text>
+          </View>
+          <View style={styles.currentGrid}>
+            {groups.flatMap(group => group.items.map(card))}
+          </View>
+          {groups.every(group => group.all.length === 0) && (
+            <Text style={[s.empty, { color: pal.fg2 }]}>
+              {t('No ongoing matters.', '暂无正在跟进的事项。')}
+            </Text>
+          )}
+          <View style={styles.moreRow}>{groups.map(more)}</View>
+        </>
+      ) : (
+        groups.map(group => (
+          <View key={group.key}>
+            <View style={s.sectionHead}>
+              <Text
+                accessibilityRole="header"
+                style={[s.sectionTitle, { color: pal.fg }]}
               >
-                {items.length === 0 && (
-                  <Text style={[s.empty, { color: pal.fg2 }]}>
-                    {group.empty}
-                  </Text>
-                )}
-                {items.map((item, i) => {
-                  const m = matters.get(item.matter_id);
-                  return m ? (
-                    <TouchableOpacity
-                      key={m.id}
-                      testID={`hq-matter-${m.id}`}
-                      accessibilityRole="button"
-                      onPress={() => onMatter(m.id)}
-                      style={[
-                        s.matter,
-                        i > 0 && {
-                          borderTopWidth: StyleSheet.hairlineWidth,
-                          borderTopColor: pal.divider,
-                        },
-                      ]}
-                    >
-                      <View style={s.row}>
-                        <View
-                          style={[
-                            s.dot,
-                            {
-                              backgroundColor:
-                                m.state === 'needs-input'
-                                  ? StatusColor.waiting
-                                  : BRAND,
-                            },
-                          ]}
-                        />
-                        <Text
-                          style={[s.matterTitle, { color: pal.fg }]}
-                          numberOfLines={2}
-                        >
-                          {m.title}
-                        </Text>
-                        <DisclosureChevron open={false} color={pal.fg2} />
-                      </View>
-                      <Text
-                        style={[s.preview, { color: pal.fg2 }]}
-                        numberOfLines={3}
-                      >
-                        {matterPreview(item.preview?.body ?? '') ||
-                          t('Open matter for details', '查看事项详情')}
-                      </Text>
-                      <Text style={[s.meta, { color: pal.fg2 }]}>
-                        {item.preview
-                          ? t('HQ update', 'HQ 进展')
-                          : matterState(m.state, zh)}
-                        {item.preview?.at
-                          ? ` · ${relTime(
-                              item.preview.at,
-                              data.overview.generated_at,
-                            )}`
-                          : ''}
-                      </Text>
-                    </TouchableOpacity>
-                  ) : null;
-                })}
-                {all.length > group.items.length && (
-                  <TouchableOpacity
-                    accessibilityRole="button"
-                    accessibilityState={{ expanded: expanded.has(group.key) }}
-                    onPress={() => toggle(group.key)}
-                    style={s.more}
-                  >
-                    <Text style={[s.buttonText, { color: pal.fg2 }]}>
-                      {expanded.has(group.key)
-                        ? t('Show less', '收起')
-                        : t(
-                            `View all ${all.length}`,
-                            `查看全部 ${all.length} 项`,
-                          )}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
+                {group.title}
+              </Text>
+              <Text style={[s.count, { color: pal.fg2 }]}>
+                {group.all.length}
+              </Text>
             </View>
-          );
-        })}
-      </View>
+            <View style={styles.cards}>
+              {group.items.length === 0 && (
+                <Text style={[s.empty, { color: pal.fg2 }]}>{group.empty}</Text>
+              )}
+              {group.items.map(card)}
+              {more(group)}
+            </View>
+          </View>
+        ))
+      )}
       <View style={s.sectionHead}>
         <Text
           accessibilityRole="header"
@@ -168,54 +171,44 @@ export function HQOverview({
           {t('Last 24 hours', '最近 24 小时')}
         </Text>
       </View>
-      <View
-        style={[
-          s.card,
-          { backgroundColor: pal.surface, borderColor: pal.divider },
-        ]}
-      >
+      <View style={[styles.cards, wide && styles.currentGrid]}>
         {data.overview.recent.length === 0 && (
           <Text style={[s.empty, { color: pal.fg2 }]}>
             {t('No recent changes.', '暂无新动态。')}
           </Text>
         )}
-        {data.overview.recent.map((change, i) => {
-          const m = matters.get(change.matter_id);
-          return m ? (
-            <TouchableOpacity
+        {data.overview.recent.map(change => {
+          const matter = matters.get(change.matter_id);
+          return matter ? (
+            <HQBriefCard
               key={change.seq}
-              accessibilityRole="button"
-              onPress={() => onMatter(m.id)}
-              style={[
-                s.matter,
-                i > 0 && {
-                  borderTopWidth: StyleSheet.hairlineWidth,
-                  borderTopColor: pal.divider,
-                },
-              ]}
-            >
-              <Text
-                style={[s.matterTitle, { color: pal.fg }]}
-                numberOfLines={2}
-              >
-                {m.title}
-              </Text>
-              <Text style={[s.meta, { color: pal.fg2 }]}>
-                {recentChange(change.kind, change.state, zh)} ·{' '}
-                {relTime(change.at, data.overview.generated_at)}
-              </Text>
-            </TouchableOpacity>
+              matter={matter}
+              pal={pal}
+              zh={zh}
+              wide={wide}
+              byline={`${recentChange(
+                change.kind,
+                change.state,
+                zh,
+              )} · ${relTime(change.at, data.overview.generated_at)}`}
+              onPress={() => onMatter(matter.id)}
+            />
           ) : null;
         })}
       </View>
       {data.overview.recent_total > data.overview.recent.length && (
         <Text style={[s.footnote, { color: pal.fg2 }]}>
           {t(
-            `Showing the latest ${data.overview.recent.length} of ${data.overview.recent_total} changed matters`,
-            `展示 ${data.overview.recent_total} 个有变化事项中的最近 ${data.overview.recent.length} 个`,
+            `Latest ${data.overview.recent.length} of ${data.overview.recent_total} updated matters`,
+            `最近 ${data.overview.recent.length} 项 · 共 ${data.overview.recent_total} 项有更新`,
           )}
         </Text>
       )}
     </>
   );
 }
+const styles = StyleSheet.create({
+  cards: { gap: 10 },
+  currentGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  moreRow: { flexDirection: 'row', flexWrap: 'wrap' },
+});

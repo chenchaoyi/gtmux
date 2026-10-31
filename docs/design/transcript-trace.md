@@ -44,7 +44,7 @@ read-only; an unreadable native session remains status-only.
 
 Trace opens at the latest loaded activity with a compact progress summary. The virtualized timeline groups exact sessions and stable turns, expands the latest turn, and leaves older turns as readable request summaries. Consecutive calls compact into a counted group; expanding it exposes every individual input. An ordered icon rail distinguishes requests, public updates and calls without claiming tool success. Search opens from the header and covers all loaded records, including folded groups; one filter menu holds record types and readable session labels. Selecting a record opens full-width details over the mounted list; Close restores the same pixel position and filters.
 Details use the existing type scale, selectable text and copy controls. Tool input keeps
-indentation; long lines scroll within the code region. Copy and Close have 44pt touch
+indentation and wraps long lines within the detail reader. Copy and Close have 44pt touch
 targets and accessible names. Agent/sender avatars reuse the App's
 `ParticipantProfileModal` and its distinction between current and recorded facts.
 
