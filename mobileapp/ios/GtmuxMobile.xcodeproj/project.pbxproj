@@ -60,6 +60,7 @@
 		E25AA8FA4D868F3163B0419D /* HQMemory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D3A1A7B6F2AD4E90DF12E33 /* HQMemory.swift */; };
 		F0ECE9F715E0351FE5619846 /* ConversationTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D63D39FD6CE1D201A21F8F0C /* ConversationTextView.swift */; };
 		F1E1182EA981A547C85A1095 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = F602BC5F68D10C3077EE7820 /* Localizable.xcstrings */; };
+		FAC4748F8A785D0DA183BA3F /* DocumentHTML.swift in Sources */ = {isa = PBXBuildFile; fileRef = 284BEFFAA1ACA363220BC6BB /* DocumentHTML.swift */; };
 		FD4F3E492F1B10AEEA7F3873 /* DocumentStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC4C83C073F7BD1C59E30FB5 /* DocumentStatusView.swift */; };
 /* End PBXBuildFile section */
 
@@ -113,6 +114,7 @@
 		22AEE59ECB1BEE185D99CD10 /* WidgetUsageRequest.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetUsageRequest.swift; sourceTree = "<group>"; };
 		25E815F229EF6E539720EC3A /* UsageWidgetSelection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UsageWidgetSelection.swift; sourceTree = "<group>"; };
 		2608DA1E53D84193347DD36A /* LiveActivityModule.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = LiveActivityModule.m; path = GtmuxMobile/LiveActivityModule.m; sourceTree = "<group>"; };
+		284BEFFAA1ACA363220BC6BB /* DocumentHTML.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DocumentHTML.swift; sourceTree = "<group>"; };
 		310F828FDD6A5D78EF0BD51D /* GtmuxDocuments.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GtmuxDocuments.swift; sourceTree = "<group>"; };
 		3A987514AB2EB77A65A3204C /* DocumentPreviewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DocumentPreviewController.swift; sourceTree = "<group>"; };
 		3B4392A12AC88292D35C810B /* Pods-GtmuxMobile.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GtmuxMobile.debug.xcconfig"; path = "Target Support Files/Pods-GtmuxMobile/Pods-GtmuxMobile.debug.xcconfig"; sourceTree = "<group>"; };
@@ -255,6 +257,7 @@
 				CC4C83C073F7BD1C59E30FB5 /* DocumentStatusView.swift */,
 				15C33555DD5A8D7C9298D672 /* DocumentMarkdown.swift */,
 				6E50E47647F4BB2D4964B8FD /* DocumentResources.swift */,
+				284BEFFAA1ACA363220BC6BB /* DocumentHTML.swift */,
 			);
 			name = Documents;
 			path = Documents;
@@ -731,6 +734,7 @@
 				63EBCD9A1929C93834020707 /* WidgetUsageRequest.swift in Sources */,
 				6F7320AC949ADE81205B6250 /* DocumentMarkdown.swift in Sources */,
 				8132E44D826407E8D690EA28 /* DocumentResources.swift in Sources */,
+				FAC4748F8A785D0DA183BA3F /* DocumentHTML.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

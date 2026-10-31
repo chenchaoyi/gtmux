@@ -1,10 +1,12 @@
 import React, { useMemo } from 'react';
 import { Platform, StyleSheet, Text, TextStyle } from 'react-native';
 import { CopyableText } from './CopyableText';
+import { formatCode } from './codeFormatting';
 import { codeLanguage, codeTokens, syntaxColors } from './codeReading';
 
 export function CodeText({
-  source,
+  source: original,
+  formatted = false,
   hint,
   dark = true,
   fontSize = 13,
@@ -16,6 +18,7 @@ export function CodeText({
   selectionColor,
 }: {
   source: string;
+  formatted?: boolean;
   hint?: string;
   dark?: boolean;
   fontSize?: number;
@@ -26,6 +29,13 @@ export function CodeText({
   selectable?: boolean;
   selectionColor?: string;
 }) {
+  const source = useMemo(
+    () =>
+      formatted
+        ? formatCode(original, hint || codeLanguage(original))
+        : original,
+    [original, hint, formatted],
+  );
   const tokens = useMemo(
     () => codeTokens(source, codeLanguage(source, hint)),
     [source, hint],

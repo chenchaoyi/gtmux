@@ -123,3 +123,29 @@ func TestCodexReaderScopeAndForkDoNotAlias(t *testing.T) {
 		t.Fatal("reading changed follow consent")
 	}
 }
+
+func TestFullToolInputVerifiesHomeAndSourceShard(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	root := t.TempDir()
+	t.Setenv("CODEX_HOME", root)
+	code := "const data = '" + strings.Repeat("text", 5000) + "';"
+	call, _ := json.Marshal(map[string]any{"type": "response_item", "payload": map[string]string{"type": "custom_tool_call", "name": "exec", "input": code}})
+	desktopRollout(t, root, "reader", "01", "codex-tui", `{"type":"event_msg","payload":{"type":"user_message","message":"run"}}`, string(call))
+	turns, err := transcript.Load("codex", "reader", 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ref := turns[0].Segments[0].Steps[0].InputRef
+	full, err := fullToolInput("reader", transcript.CodexHomeID(), ref)
+	if err != nil || !strings.Contains(string(full), code) {
+		t.Fatal("full input unavailable", err)
+	}
+	for _, scope := range [][2]string{{"reader", "foreign"}, {"unknown", transcript.CodexHomeID()}} {
+		if _, err := fullToolInput(scope[0], scope[1], ref); err == nil {
+			t.Fatal("crossed identity", scope)
+		}
+	}
+	if sessionpolicy.Get("reader").HQ {
+		t.Fatal("read enrolled observation")
+	}
+}

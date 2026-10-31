@@ -73,6 +73,7 @@ async function start() {
           if(req.headers['if-none-match']==='W/"dsh-test-1"'){res.writeHead(304);return res.end();}
           return json(res,200,turns());
         }
+        if (p === '/api/tool-input') { state.toolReads = (state.toolReads || 0) + 1; const record = state.toolInputs && state.toolInputs[url.searchParams.get('ref')]; return json(res, record ? 200 : 404, record || {error:'not found'}); }
         if (p === '/api/session-follow') {
           if(req.method==='POST') {const input=await body(req);if(input.home_id!=='synthetic-dsh-home')return json(res,422,{error:'home'});
             if(input.settings.revision!==state.follow.revision)return json(res,409,{error:'conflict'});
@@ -94,7 +95,7 @@ async function start() {
           const agent=state.agents.find(a=>a.pane_id===id||a.session_id===sid)?.agent||'Codex';
           return json(res,200,selected||{agent,name:agent,session_id:sid||'fixture-session',historical:!!at,facts:[]});
         }
-        if (p === '/api/diff') return json(res, 200, {diff: 'diff --git a/a b/a\n--- a/a\n+++ b/a\n-old\n+new'});
+        if (p === '/api/diff') return json(res, 200, {diff: state.diff === undefined ? 'diff --git a/a b/a\n--- a/a\n+++ b/a\n@@ -1 +1 @@\n-old\n+new' : state.diff});
         if (p === '/api/send') {state.sends.push(await body(req)); return json(res, 200, {status: 'ok'});}
         return json(res, 404, {error: 'not found'});
       }

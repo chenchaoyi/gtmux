@@ -112,6 +112,7 @@ export function makeDemoClient(lang: 'en' | 'zh', onAgents?: (agents: Agent[]) =
   // Everything not named below MUST be implemented, so adding a client method is a
   // compile error here until someone decides what the tour should show.
   const fake: Omit<GtmuxClient, NotInDemo> & {dispose: () => void} = {
+    async toolInput() { throw new Error('Full tool input is unavailable in demo'); },
     documentRequest() { throw new DocumentError('unsupported'); },
     async participantProfile(target) {
       const agent = currentAgents().find(a => a.pane_id === target.id);

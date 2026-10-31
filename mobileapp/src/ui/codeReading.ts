@@ -3,6 +3,11 @@ export type CodeLanguage =
   | 'json'
   | 'shell'
   | 'python'
+  | 'go'
+  | 'rust'
+  | 'swift'
+  | 'html'
+  | 'css'
   | 'yaml'
   | 'text';
 export type CodeTokenKind =
@@ -31,21 +36,33 @@ const aliases: Record<string, CodeLanguage> = {
   shell: 'shell',
   py: 'python',
   python: 'python',
+  go: 'go',
+  golang: 'go',
+  rs: 'rust',
+  rust: 'rust',
+  swift: 'swift',
+  html: 'html',
+  css: 'css',
+  scss: 'css',
   yaml: 'yaml',
   yml: 'yaml',
   text: 'text',
   plaintext: 'text',
 };
 const words = new Set(
-  'const let var await async return function if else for of in while try catch finally throw new class extends import from export default true false null undefined this typeof instanceof void yield break continue switch case None True False def with as lambda pass and or not elif then fi do done echo cd exit'.split(
+  'const let var await async return function if else for of in while try catch finally throw new class extends import from export default true false null undefined this typeof instanceof void yield break continue switch case None True False def with as lambda pass and or not elif then fi do done echo cd exit package func type struct interface map range go defer select chan fallthrough const mut pub fn impl trait enum mod use match self let where guard protocol extension override init deinit some optional'.split(
     ' ',
   ),
 );
 
 export function codeLanguage(source: string, hint = ''): CodeLanguage {
-  const known = aliases[hint.toLowerCase()];
+  const known = aliases[String(hint || '').toLowerCase()];
   if (known) return known;
   const head = source.slice(0, 600).trimStart();
+  if (/^package\s+\w+/.test(head)) return 'go';
+  if (/^(?:pub\s+)?(?:fn|use|impl)\s/.test(head)) return 'rust';
+  if (/^import\s+(?:SwiftUI|Foundation|UIKit)\b/.test(head)) return 'swift';
+  if (/^<(?!!--)/.test(head)) return 'html';
   if (/^[\[{]/.test(head)) return 'json';
   if (
     /^(?:const|let|var|await|async|function|import|export)\b/.test(head) ||
@@ -100,7 +117,9 @@ export function codeTokens(
     const hashComment =
       c === '#' && ['shell', 'python', 'yaml'].includes(language);
     const slashComment =
-      c === '/' && language === 'javascript' && (next === '/' || next === '*');
+      c === '/' &&
+      ['javascript', 'go', 'rust', 'swift', 'css'].includes(language) &&
+      (next === '/' || next === '*');
     if (hashComment || slashComment) {
       const block = slashComment && next === '*';
       let end = block ? source.indexOf('*/', i + 2) : source.indexOf('\n', i);
@@ -132,8 +151,15 @@ export function codeTokens(
         continue;
       }
       if (
-        ['javascript', 'yaml'].includes(language) &&
+        ['javascript', 'yaml', 'go', 'rust', 'swift'].includes(language) &&
         /^\s*:/.test(source.slice(end, Math.min(cap, end + 80)))
+      ) {
+        add(end, 'property');
+        continue;
+      }
+      if (
+        ['javascript', 'python', 'go', 'rust', 'swift'].includes(language) &&
+        /^\s*\(/.test(source.slice(end, Math.min(cap, end + 30)))
       ) {
         add(end, 'property');
         continue;
@@ -195,4 +221,22 @@ export function darkCodeBackground(background: string, foreground = '') {
   if (bg) return bg.reduce((a, b) => a + b, 0) < 384;
   const fg = channels(foreground);
   return fg ? fg.reduce((a, b) => a + b, 0) >= 384 : false;
+}
+
+export function codeLabel(source: string, hint = '') {
+  if (/^(ts|tsx|typescript)$/i.test(hint)) return 'TypeScript';
+  const language = codeLanguage(source, hint);
+  return {
+    javascript: 'JavaScript',
+    json: 'JSON',
+    shell: 'Shell',
+    python: 'Python',
+    yaml: 'YAML',
+    go: 'Go',
+    rust: 'Rust',
+    swift: 'Swift',
+    html: 'HTML',
+    css: 'CSS',
+    text: 'Text',
+  }[language];
 }

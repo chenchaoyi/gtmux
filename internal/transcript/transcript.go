@@ -382,6 +382,9 @@ type Step struct {
 	InputKind        string `json:"input_kind,omitempty"`
 	Workdir          string `json:"workdir,omitempty"`
 	DetailsTruncated bool   `json:"details_truncated,omitempty"`
+	InputRef         string `json:"input_ref,omitempty"` // source-position reader, never a file path or input capability
+	fullInput        string
+	fullWorkdir      string
 }
 
 // Turn is one user instruction and what the agent ultimately answered, with the
@@ -548,7 +551,10 @@ func resolveLog(agent, sessionID string) (string, stepFn) {
 // parseState accumulates turns as a parser walks the log linearly, tracking the
 // byte offset at which each turn began so the cache can restart incrementally.
 type parseState struct {
-	sourceID string
+	sourceID    string
+	fullTools   bool
+	stepOff     int64
+	stepOrdinal int
 
 	turns               []Turn
 	turnStarts          []int64 // turnStarts[i] = byte offset of turns[i]'s first line
@@ -618,6 +624,20 @@ func (st *parseState) addSteps(steps []Step) {
 	st.ensure()
 	for i := range steps {
 		step := &steps[i]
+		if st.stepOff != st.off {
+			st.stepOff, st.stepOrdinal = st.off, 0
+		}
+		if st.sourceID != "" {
+			step.InputRef = toolInputRef(st.sourceID, st.off, st.stepOrdinal, *step)
+		}
+		st.stepOrdinal++
+		if st.fullTools {
+			step.Input, step.Workdir, step.DetailsTruncated = step.fullInput, step.fullWorkdir, false
+		}
+		step.fullInput, step.fullWorkdir = "", ""
+		if st.fullTools {
+			continue
+		}
 		for _, field := range []*string{&step.Input, &step.Workdir} {
 			value, cut := boundedToolText(*field, maxTurnToolDetailBytes-st.toolDetailBytes)
 			*field = value

@@ -32,6 +32,7 @@ func dshStep(line []byte, st *parseState) error {
 	if !event.AppendsHistory() {
 		return nil
 	}
+	st.off = event.Seq
 	switch event.Type {
 	case "user/message":
 		var msg dshMessage
@@ -135,6 +136,7 @@ func (l *Loader) loadDSH(id string, maxTurns int) ([]Turn, int, error) {
 			e.header = true
 			return nil
 		}
+		e.state.sourceID = recordSourceID(session.Path)
 		if err := dshStep(line, &e.state); err != nil {
 			return err
 		}

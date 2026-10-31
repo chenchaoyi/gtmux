@@ -266,7 +266,16 @@ final class DocumentPreviewController: UIViewController, QLPreviewControllerData
     do {
       let generation = UUID(); renderID = generation
       let allowScripts = file?.kind == "html" && scriptsAllowed
-      let html = try renderedHTML ?? String(contentsOf: source, encoding: .utf8)
+      let original = try renderedHTML ?? String(contentsOf: source, encoding: .utf8)
+      var html = original
+      var resources = resources
+      if renderedHTML == nil, let file {
+        let rendered = DocumentHTML.render(original)
+        html = rendered.html
+        markdownResources?.cleanup()
+        let mapped = DocumentResources(references: rendered.images, request: request, parentID: file.id)
+        markdownResources = mapped; resources = mapped
+      }
       let policy = "default-src 'none'; script-src \(allowScripts ? "'unsafe-inline'" : "'none'"); style-src 'unsafe-inline'; img-src data: blob: gtmux-document:; font-src data:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; media-src 'none'; base-uri 'none'; form-action 'none'"
       let secured = "<!doctype html><meta charset=\"utf-8\"><meta http-equiv=\"Content-Security-Policy\" content=\"\(policy)\">" + html
       let rendered = source.deletingLastPathComponent().appendingPathComponent("Rendered", isDirectory: true)

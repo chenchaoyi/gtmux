@@ -184,6 +184,17 @@ final class FixtureController: UIViewController {
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
       func descendants(_ view: UIView) -> [UIView] { [view] + view.subviews.flatMap(descendants) }
       if let web = descendants(preview.view).compactMap({ $0 as? WKWebView }).first {
+        if self.args.contains("--html-image-checks") {
+          web.evaluateJavaScript("JSON.stringify({images:[...document.images].filter(i=>i.complete&&i.naturalWidth>0).length,external:[...document.images].filter(i=>i.src.startsWith('https:')&&i.naturalWidth>0).length,inline:!!window.__imageFixtureScript,bridge:!!window.webkit?.messageHandlers,overflow:document.documentElement.scrollWidth>innerWidth})") { value, error in
+            if let value = value as? String, let data = value.data(using:.utf8), let state = try? JSONSerialization.jsonObject(with:data) as? [String:Any], (state["images"] as? Int) == 2 {
+              self.record("html-images", value)
+              self.record("html-images-static", !web.configuration.defaultWebpagePreferences.allowsContentJavaScript ? "pass" : "FAIL")
+              precondition(state["external"] as? Int == 0 && state["inline"] as? Bool == false && state["bridge"] as? Bool == false)
+            } else if attempts > 0 { self.poll(preview, attempts: attempts-1) }
+            else { self.record("html-images", "FAIL \(error?.localizedDescription ?? value as? String ?? "not loaded")") }
+          }
+          return
+        }
         if self.args.contains("--markdown-checks") {
           web.evaluateJavaScript("JSON.stringify({headings:document.querySelectorAll('h1,h2').length, tables:document.querySelectorAll('table').length, strong:document.querySelectorAll('strong').length, code:document.querySelectorAll('pre code').length, images:[...document.images].filter(i=>i.complete&&i.naturalWidth>0).length, bridge:!!window.webkit?.messageHandlers, overflow:document.documentElement.scrollWidth>innerWidth})") { value, error in
             if let value = value as? String, let data = value.data(using: .utf8), let result = try? JSONSerialization.jsonObject(with: data) as? [String: Any],

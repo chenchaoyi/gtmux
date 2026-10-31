@@ -424,6 +424,7 @@ export interface TranscriptStep {
   input_kind?: string;
   workdir?: string;
   details_truncated?: boolean;
+  input_ref?: string;
 }
 // One chronological piece of a reply: an assistant text bubble + the tool steps
 // that ran after it. The chat renders each as its own speech bubble so interleaved
@@ -884,6 +885,15 @@ export class GtmuxClient {
       etag: r.headers?.get?.('ETag') ?? undefined,
       ...(earlierAvailable ? {earlierAvailable} : {}),
     };
+  }
+
+  async toolInput(session: string, home: string, ref: string, signal?: AbortSignal): Promise<TranscriptStep> {
+    const r = await tfetch(`${this.base}/api/tool-input?session_id=${encodeURIComponent(session)}&home_id=${encodeURIComponent(home)}&ref=${encodeURIComponent(ref)}`, {headers: this.h(), signal});
+    if (!r.ok) throw new ApiError(r.status, 'tool-input');
+    const value = await r.json();
+    if (value && value.input === undefined) value.input = '';
+    if (!value || typeof value.input !== 'string' || value.input_ref !== ref || value.details_truncated) throw new Error('Incomplete tool input');
+    return value;
   }
 
   async desktopTranscript(id: string, etag?: string, signal?: AbortSignal, homeID?: string): Promise<{turns: TranscriptTurn[]; dropped: number; etag?: string; unchanged?: boolean}> {

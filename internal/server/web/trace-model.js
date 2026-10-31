@@ -1,5 +1,5 @@
-// Generated from mobileapp/src/trace/model.ts; SHA256 d96fbb642a669f2e7ffed8432b4a6e03acd078bd94ffb1bca23d5ff3fd177c4d
-// Body SHA256 33a42422466c3261af28b341e19f8bb718269c17fa3754ce6ed52c65765a88c7
+// Generated from mobileapp/src/trace/model.ts; SHA256 4293c23c5a35264ef012a65c615a1a77fb248d414d484698c831c2d4a939562d
+// Body SHA256 9850e217c31156c01509b57671467ed4c86cc59f72f7e15cc4da728459a75899
 (function(root){var exports={};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -175,6 +175,7 @@ function build(turns, context = {}) {
                     workdir: string(step.workdir),
                     operation: string(step.operation),
                     truncated: step.details_truncated === true,
+                    inputRef: string(step.input_ref),
                 });
             });
         });

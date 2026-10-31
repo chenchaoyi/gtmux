@@ -460,6 +460,7 @@ func codexStep(line string, st *parseState) {
 			if p.Name == "exec" {
 				step.Operation = "code"
 			}
+			step.fullInput = p.Input
 			step.Input, step.DetailsTruncated = boundedToolText(p.Input, maxToolInputBytes)
 			step.InputKind = "text"
 			if step.Operation == "code" {

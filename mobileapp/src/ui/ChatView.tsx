@@ -624,7 +624,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
                   {!!seg.steps?.length && (() => {
                     const stepsShown = stepsOpen(expanded[key]);
                     return (
-                    <ToolSteps steps={seg.steps} open={stepsShown} lang={lang} fontSize={fontSize}
+                    <ToolSteps client={client} session={t.session_id || agent.session_id} home={agent.home_id} steps={seg.steps} open={stepsShown} lang={lang} fontSize={fontSize}
                       onToggle={() => setExpanded(e => ({...e, [key]: !stepsShown}))} />
                     );
                   })()}

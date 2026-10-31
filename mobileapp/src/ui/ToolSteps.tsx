@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native';
 import Clipboard from '@react-native-clipboard/clipboard';
-import { TranscriptStep } from '../api/client';
+import { GtmuxClient, TranscriptStep } from '../api/client';
 import { ActivityIcon } from './ActivityIcon';
 import {
   activityLabel,
@@ -18,18 +18,25 @@ import {
 } from './activity';
 import { CheckIcon, Chevron, CopyIcon, ExpandIcon } from './Icons';
 import { CodeText } from './CodeText';
-import { toolCodeHint } from './codeReading';
+import { codeLabel, toolCodeHint } from './codeReading';
 import { CodeReaderModal } from './CodeReaderModal';
+import { useToolInput } from './useToolInput';
 
 /** A call is evidence of an action, not evidence that it succeeded. */
 export function ToolSteps({
   steps,
+  client,
+  session,
+  home,
   open,
   onToggle,
   lang,
   fontSize,
 }: {
   steps: TranscriptStep[];
+  client?: GtmuxClient;
+  session?: string;
+  home?: string;
   open: boolean;
   onToggle: () => void;
   lang: 'en' | 'zh';
@@ -153,6 +160,9 @@ export function ToolSteps({
                 {hasDetails && expanded && (
                   <ToolInput
                     step={step}
+                    client={client}
+                    session={session}
+                    home={home}
                     lang={lang}
                     size={size}
                     readerFontSize={Math.max(12, fontSize - 1)}
@@ -168,16 +178,29 @@ export function ToolSteps({
 }
 
 function ToolInput({
-  step,
+  step: original,
+  client,
+  session,
+  home,
   lang,
   size,
   readerFontSize,
 }: {
   step: TranscriptStep;
+  client?: GtmuxClient;
+  session?: string;
+  home?: string;
   lang: 'en' | 'zh';
   size: number;
   readerFontSize: number;
 }) {
+  const {
+    step: loaded,
+    loading,
+    failed,
+    retry,
+  } = useToolInput(original, client, session, home);
+  const step = loaded!;
   const { fontScale } = useWindowDimensions();
   const input = step.input || step.detail || '';
   const [reader, setReader] = useState<{
@@ -188,7 +211,15 @@ function ToolInput({
   const [copied, setCopied] = useState<string | null>(null);
   const done = copied === input;
   const hint = toolCodeHint(step.title, step.input_kind, step.operation);
-  const provenance = step.details_truncated
+  const provenance = loading
+    ? lang === 'zh'
+      ? '读取完整输入…'
+      : 'Loading full input…'
+    : failed
+    ? lang === 'zh'
+      ? '读取失败'
+      : 'Could not load'
+    : step.details_truncated
     ? lang === 'zh'
       ? '部分'
       : 'Partial'
@@ -199,6 +230,18 @@ function ToolInput({
     : '';
   return (
     <View testID="tool-step-details" style={styles.inspector}>
+      {failed && (
+        <TouchableOpacity
+          testID="tool-input-retry"
+          onPress={retry}
+          accessibilityRole="button"
+          style={{ minHeight: 44, justifyContent: 'center' }}
+        >
+          <Text style={{ color: '#86BFFC' }}>
+            {lang === 'zh' ? '重试读取完整输入' : 'Retry full input'}
+          </Text>
+        </TouchableOpacity>
+      )}
       <View style={styles.inspectorHeader}>
         <Text
           selectable
@@ -226,6 +269,7 @@ function ToolInput({
           {!!input && (
             <TouchableOpacity
               testID="tool-input-open"
+              disabled={loading || !!step.details_truncated}
               accessibilityRole="button"
               accessibilityLabel={
                 lang === 'zh' ? '打开代码阅读器' : 'Open code reader'
@@ -245,6 +289,7 @@ function ToolInput({
           {!!input && (
             <TouchableOpacity
               testID="tool-input-copy"
+              disabled={loading || !!step.details_truncated}
               accessibilityRole="button"
               accessibilityLabel={
                 done
@@ -276,6 +321,11 @@ function ToolInput({
         </Text>
       )}
       {!!input && (
+        <Text style={{ color: '#A4A4AD', fontSize: 11, marginBottom: 6 }}>
+          {codeLabel(input, hint)}
+        </Text>
+      )}
+      {!!input && (
         <ScrollView
           testID="tool-input-vertical"
           nestedScrollEnabled
@@ -283,6 +333,7 @@ function ToolInput({
         >
           <CodeText
             testID="tool-input-text"
+            formatted
             source={input}
             hint={hint}
             lang={lang}

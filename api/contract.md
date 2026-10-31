@@ -565,7 +565,7 @@ invocation; for other agents no claim is made rather than a wrong one.
 | `session_break` | object? | `{kind, at?}` on the first turn of a later session in a stitched HQ history |
 
 `segment` = `{"text":string?, "steps":[{step}]?, "context":{context}?}`; `step` =
-`{"kind":"tool", "title":"Edit|Bash|exec|…", "detail":"<short arg summary>"?, "operation":"read|list|search|command|edit|web|code|wait|agent|tool"?, "input":"<selected original input>"?, "input_kind":"command|arguments|code|path|query|url|description|prompt"?, "workdir":"<recorded directory>"?, "details_truncated":true?}`.
+`{"kind":"tool", "title":"Edit|Bash|exec|…", "detail":"<short arg summary>"?, "operation":"read|list|search|command|edit|web|code|wait|agent|tool"?, "input":"<selected original input>"?, "input_kind":"command|arguments|code|path|query|url|description|prompt"?, "workdir":"<recorded directory>"?, "details_truncated":true?, "input_ref":"<opaque original-call reader>"?}`.
 
 `detail` remains a plain-text summary. For Codex, string `title` then `description`
 takes precedence over command/path fallbacks, with collapsed whitespace and at most
@@ -582,6 +582,18 @@ an additional 128 KiB budget per turn, included in cache retention accounting an
 existing transcript HTTP byte budget. `details_truncated` reports any exceeded limit,
 including when a later call has no remaining detail budget. Clients must label partial
 details and older summary-only data accurately. Older clients may ignore these fields.
+
+`GET /api/tool-input?session_id=…&home_id=…&ref=…` returns one complete selected
+original input as a `step`, bypassing preview budgets without expanding transcript polls.
+`input_ref` identifies the resolved source record and call ordinal, with a content hash;
+rewritten, incomplete or missing records return 404, never a summary labelled complete.
+It is an authenticated, no-store owner/full-paired read, denied to guests. Session/home
+identity is independently verified; references cannot choose file paths, tool results or
+context. Readers parse at most one 32 MiB source record (DSH retains its source limits),
+rejecting oversized records explicitly. Older servers may omit `input_ref` or return 503;
+clients retain an honest preview and retry affordance. Formatting is read-only presentation;
+Raw content and Copy preserve the selected original input. Formatting parser work is
+bounded independently; unusually large input falls back verbatim without cutting content.
 
 `context` is an optional explicitly recorded harness input:
 `{"title":string,"text":string,"source":string,"time":string?,"truncated":true?,"before_prompt":true?}`.
@@ -1550,7 +1562,7 @@ click; unknown paths never grant arbitrary file access. Explicitly published cop
   32 lowercase hex ID, a registered source path, or a local destination verified against
   public Markdown links in the requested conversation. Session/home identity must match.
   With `parent_id` (32 lowercase hex), resolve only destinations declared by the verified
-  Markdown parent and contained in its directory tree; no transcript inference or root
+  Markdown parent (or actual `img src`/`img,source srcset` image reference in an HTML parent) and contained in its directory tree; no transcript inference or root
   request can substitute for that parent. Relative chat links need a verified cwd.
   The server snapshots a verified source internally; fixed IDs remain immutable and
   source-path opens refresh current bytes. Removed versions are not automatically recreated. Returns `{id,name,kind,media_type,bytes,sha256,created_at,

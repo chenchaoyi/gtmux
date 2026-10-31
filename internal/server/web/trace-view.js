@@ -3,6 +3,7 @@
   'use strict';
   window.GtmuxTraceView = {create: function (options) {
     var T = options.T, model = window.GtmuxTrace, pageSize = 200;
+    var fullInputs = new Map(), inputPending = new Set(), inputFailed = new Set();
     var current = {events: [], sessions: []}, filtered = [], presented = [], context = {}, selected = '', page = 0;
     var expandedTurns = {}, expandedCalls = {}, defaults = {turns: true, calls: true}, disclosureHold = false;
     var inspectorOpen = null, follow = true, inspecting = false, initialized = false, rowNodes = new Map(), lastDetail = '', lastDetailKey = '', deferred = null, lastInput = null, lastScope = '';
@@ -64,6 +65,12 @@
     function renderDetail(force) {
       var event = filtered.find(function (item) { return item.key === selected; });
       if (!event) { detail.hidden = true; toggle.disabled = true; return; }
+      var originalEvent = event, inputKey = event.step && event.step.inputRef ? JSON.stringify([event.session,context.home_id,event.step.inputRef]) : '';
+      if (inputKey && fullInputs.has(inputKey)) { var full = fullInputs.get(inputKey); event = Object.assign({},event,{body:full.input,step:Object.assign({},event.step,{input:full.input,workdir:full.workdir || '',truncated:false})}); }
+      if (inspectorOpen && inputKey && event.step.truncated && options.toolInput && !inputPending.has(inputKey) && !inputFailed.has(inputKey)) {
+        inputPending.add(inputKey);
+        options.toolInput(event.session, context.home_id || '', event.step.inputRef).then(function(full) { inputPending.delete(inputKey); if(root.isConnected && selected===originalEvent.key) { fullInputs.clear(); fullInputs.set(inputKey,full); renderDetail(true); } }).catch(function() { inputPending.delete(inputKey); inputFailed.add(inputKey); if(root.isConnected && selected===originalEvent.key) renderDetail(true); });
+      }
       toggle.disabled = false; detail.hidden = !inspectorOpen;
       var signature = JSON.stringify([event, detailMode]);
       if (!force && signature === lastDetail) return;
@@ -77,15 +84,15 @@
       metadata.textContent = [event.agent, turnLabel(event), event.session, event.time && !isNaN(new Date(event.time).getTime()) ? T('Turn started ', '本轮开始于 ') + options.formatTime(new Date(event.time)) : ''].filter(Boolean).join(' · ');
       path.textContent = event.step && event.step.workdir ? T('Working directory: ', '工作目录：') + event.step.workdir : ''; path.hidden = !path.textContent;
       modes.hidden = false; [overviewTab, preview, source, origin].forEach(function (tab, i) { var active = detailMode === ['overview', 'preview', 'raw', 'origin'][i]; tab.setAttribute('aria-selected', String(active)); if (active) content.setAttribute('aria-labelledby', tab.id); tab.tabIndex = active ? 0 : -1; });
-      warning.textContent = (event.context && event.context.truncated || event.step && event.step.truncated) ? T('Only the recorded portion is available.', '内容较长，仅展示已记录的部分。') : event.step && !event.step.input ? T('Only a call summary was recorded.', '此调用仅记录了摘要。') : ''; warning.hidden = !warning.textContent;
+      warning.textContent = inputPending.has(inputKey) ? T('Loading full input…', '读取完整输入…') : inputFailed.has(inputKey) ? T('Could not load full input. Tap to retry.', '未能读取完整输入，点此重试。') : (event.context && event.context.truncated || event.step && event.step.truncated) ? T('Only the recorded portion is available.', '内容较长，仅展示已记录的部分。') : event.step && !event.step.input ? T('Only a call summary was recorded.', '此调用仅记录了摘要。') : ''; warning.hidden = !warning.textContent; warning.onclick = function () { if(inputFailed.has(inputKey)){inputFailed.delete(inputKey);renderDetail(true);} }; warning.setAttribute('role',inputFailed.has(inputKey)?'button':'status'); warning.tabIndex=inputFailed.has(inputKey)?0:-1; warning.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();warning.click();}};
       content.replaceChildren();
       if (detailMode === 'overview') {
         var facts = el('dl', 'trace-facts'); model.overviewFacts(event, T('en', 'zh')).forEach(function (fact) { facts.appendChild(el('dt', '', fact.label)); facts.appendChild(el('dd', '', fact.value)); }); content.appendChild(facts); content.appendChild(el('p', 'trace-excerpt', event.body.replace(/\s+/g, ' ').slice(0, 240)));
       } else if (detailMode === 'origin') {
         content.appendChild(el('p', 'trace-origin-note', T('Source information from the conversation record.', '会话记录中的来源信息。'))); var originText = el('pre', 'trace-origin', JSON.stringify(model.sourceInfo(event), null, 2)); originText.tabIndex = 0; content.appendChild(originText);
       } else if (event.kind !== 'tool' && !(event.kind === 'context' && event.title === 'Environment') && detailMode === 'preview') { var prose = el('div', 'trace-prose'); prose.appendChild(options.markdown(model.previewText(event), {session_id: event.session, home_id: context.home_id || ''})); content.appendChild(prose); }
-      else { var code = el('pre', 'trace-source' + (event.step && !event.step.input ? ' trace-summary' : ''), (detailMode === 'preview' ? model.previewText(event) : event.body) || T('No detail recorded.', '未记录详情。')); code.tabIndex = 0; content.appendChild(code); }
-      actions.replaceChildren(options.actions(detailMode === 'origin' ? JSON.stringify(model.sourceInfo(event), null, 2) : event.body || label(event))); detail.scrollTop = scroll;
+      else { var code = el('pre', 'trace-source' + (event.step && !event.step.input ? ' trace-summary' : ''), (detailMode === 'preview' ? options.formatCode ? options.formatCode(model.previewText(event), {input_kind:event.step && event.step.inputKind,operation:event.step && event.step.operation}) : model.previewText(event) : event.body) || T('No detail recorded.', '未记录详情。')); if(options.renderCode) options.renderCode(code, code.textContent, event.step && event.step.inputKind === 'code' ? 'javascript' : event.step && event.step.inputKind); code.tabIndex = 0; content.appendChild(code); }
+      actions.replaceChildren(...(event.step && event.step.truncated ? [] : [options.actions(detailMode === 'origin' ? JSON.stringify(model.sourceInfo(event), null, 2) : event.body || label(event))])); detail.scrollTop = scroll;
     }
     function inspect(event, reveal) {
       if (!event) return;
@@ -275,6 +282,6 @@
       if (!initialized) { initialized = true; follow = true; inspecting = false; panel(!compact()); }
       var present = new Set(current.events.map(function (event) { return event.key; })); rowNodes.forEach(function (row, key) { if (!present.has(key)) rowNodes.delete(key); });
       draw(follow || !selected);
-    }, dispose: function () { clearTimeout(deferred); resize.disconnect(); rowNodes.clear(); }};
+    }, dispose: function () { clearTimeout(deferred); resize.disconnect(); rowNodes.clear(); fullInputs.clear(); inputPending.clear(); inputFailed.clear(); }};
   }};
 })();

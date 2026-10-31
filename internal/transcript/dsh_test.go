@@ -1,6 +1,7 @@
 package transcript
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -79,5 +80,41 @@ func TestDSHCurrentPublicTranscriptIsIncrementalAndPrivateFieldsStayPrivate(t *t
 	}
 	if FirstMessageTime("dsh", "visible") != 2 || LastMessageTime("dsh", "visible") != 2 {
 		t.Fatal("message timestamps unavailable")
+	}
+}
+
+func TestDSHFullToolInputReadsBothDurableFormats(t *testing.T) {
+	for _, compressed := range []bool{false, true} {
+		t.Run(map[bool]string{false: "jsonl", true: "zstd"}[compressed], func(t *testing.T) {
+			t.Setenv("DSH_HOME", t.TempDir())
+			dir := filepath.Join(dsh.Home(), "sessions", "project", "full")
+			os.MkdirAll(dir, 0700)
+			code := strings.Repeat("echo complete\n", 2000)
+			args, _ := json.Marshal(map[string]string{"command": code})
+			call, _ := json.Marshal(map[string]any{"type": "tool/call", "seq": 2, "data": map[string]string{"name": "bash", "arguments": string(args)}})
+			rows := []string{`{"type":"session","version":4,"id":"full","cwd":"/project"}`, `{"type":"user/message","seq":1,"data":{"role":"user","source":{"kind":"user"},"content":[{"type":"text","text":"run"}]}}`, string(call)}
+			path := filepath.Join(dir, "session.v4.jsonl")
+			data := []byte(strings.Join(rows, "\n") + "\n")
+			if compressed {
+				path += ".zstd"
+				enc, _ := zstd.NewWriter(nil)
+				data = enc.EncodeAll(data, nil)
+				enc.Close()
+			}
+			os.WriteFile(path, data, 0600)
+			l := &Loader{}
+			turns, err := l.load("dsh", "full", 10)
+			if err != nil || len(turns) != 1 {
+				t.Fatal(err)
+			}
+			step := turns[0].Segments[0].Steps[0]
+			if !step.DetailsTruncated {
+				t.Fatal("fixture did not exceed preview")
+			}
+			full, err := ToolInput("dsh", "full", step.InputRef)
+			if err != nil || full.Input != code || full.DetailsTruncated {
+				t.Fatal("original input unavailable", len(full.Input), err)
+			}
+		})
 	}
 }

@@ -44,6 +44,7 @@ func toolStep(name, title string, raw json.RawMessage, summary string) Step {
 		if strings.TrimSpace(value) == "" {
 			continue
 		}
+		step.fullInput = value
 		step.Input, step.DetailsTruncated = boundedToolText(value, maxToolInputBytes)
 		step.InputKind = kind
 		break
@@ -51,12 +52,14 @@ func toolStep(name, title string, raw json.RawMessage, summary string) Step {
 	for _, key := range []string{"workdir", "cwd"} {
 		if value, ok := args[key].(string); ok && strings.TrimSpace(value) != "" {
 			var cut bool
+			step.fullWorkdir = value
 			step.Workdir, cut = boundedToolText(value, 4096)
 			step.DetailsTruncated = step.DetailsTruncated || cut
 			break
 		}
 	}
 	if parameters, limited := toolParameters(step.Operation, args); parameters != "" {
+		step.fullInput, _ = selectedToolParameters(step.Operation, args, int(^uint(0)>>1))
 		var cut bool
 		step.Input, cut = boundedToolText(parameters, maxToolInputBytes)
 		step.InputKind = "parameters"
@@ -77,6 +80,9 @@ func toolStep(name, title string, raw json.RawMessage, summary string) Step {
 // Keep known task/wait inputs inspectable without exposing unrelated credentials,
 // nested configuration or tool results. Every adapter shares the same byte budgets.
 func toolParameters(operation string, args map[string]any) (string, bool) {
+	return selectedToolParameters(operation, args, maxToolInputBytes)
+}
+func selectedToolParameters(operation string, args map[string]any, limit int) (string, bool) {
 	var keys []string
 	switch operation {
 	case "agent":
@@ -87,7 +93,7 @@ func toolParameters(operation string, args map[string]any) (string, bool) {
 		return "", false
 	}
 	selected := make(map[string]any)
-	remaining, truncated := maxToolInputBytes, false
+	remaining, truncated := limit, false
 	text := func(value string) string {
 		bounded, cut := boundedToolText(value, remaining)
 		remaining -= len(bounded)
@@ -114,7 +120,7 @@ func toolParameters(operation string, args map[string]any) (string, bool) {
 			if valid {
 				values := make([]string, 0)
 				for i, item := range v {
-					if remaining == 0 || i >= 128 {
+					if remaining == 0 || (limit == maxToolInputBytes && i >= 128) {
 						truncated = true
 						break
 					}

@@ -66,6 +66,7 @@ import {KeyBus} from '../keys/bus';
 import {draftKeyFor} from '../state/drafts';
 import {historyScope} from '../state/history';
 import {CHROME_ANIM_MS, ChromeState, chromeDecision} from '../ui/liveEdge';
+import {adjustSessionFont, restoreSessionFont, MIN_SESSION_FONT, MAX_SESSION_FONT, DEFAULT_SESSION_FONT, SESSION_FONT_KEY, LEGACY_FONT_KEY} from '../ui/fontSettings';
 import {useKeyboardChrome} from '../ui/useKeyboardChrome';
 
 // Shared by BOTH the terminal renderer and the chat view (A−/A+ adjusts both, in
@@ -78,7 +79,6 @@ const CHAT_IDLE_POLL_MS = 8000;
 // The terminal's log refresh while Codex's cut prompt row is unexplained (see unmatchedCut).
 const CODEX_PIN_REFRESH_MS = 4000;
 
-const FONT_SIZES = [11, 13, 15];
 // What the chat view's live card reads while chat has never been opened: nothing.
 const NO_LINES: AnsiLine[] = [];
 const EMPTY_TURNS: TranscriptTurn[] = [];
@@ -91,7 +91,6 @@ type DetailMode = 'chat' | 'terminal';
 const MODE_KEY = (paneId: string) => `detail.mode.${paneId}`;
 // Font size is a GLOBAL config (not per-pane): shared by both chat + terminal and
 // remembered across panes/sessions, so A−/A+ in either mode adjusts both and sticks.
-const FONT_IDX_KEY = 'detail.fontIdx';
 
 // The terminal-loading overlay ("Still connecting… slow network") renders ON the
 // terminal, which is ALWAYS dark (#17171a) regardless of the app theme — so its
@@ -317,7 +316,8 @@ function PaneDetailView({
   );
   const chatEdge = useMemo(() => edgeFrom('chat'), [edgeFrom]);
   const termEdge = useMemo(() => edgeFrom('terminal'), [edgeFrom]);
-  const [fontIdx, setFontIdx] = useState(1);
+  const [fontSize, setFontSize] = useState(DEFAULT_SESSION_FONT);
+  const [fontReady, setFontReady] = useState(false);
   const [terminalLayout, setTerminalLayout] = useState<TerminalLayout>('fit');
   const [terminalSelection, setTerminalSelection] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
@@ -424,8 +424,8 @@ function PaneDetailView({
     const offs = [
       KeyBus.on('mode.chat', () => pickModeRef.current('chat')),
       KeyBus.on('mode.terminal', () => pickModeRef.current('terminal')),
-      KeyBus.on('font.up', () => setFontIdx(i => Math.min(FONT_SIZES.length - 1, i + 1))),
-      KeyBus.on('font.down', () => setFontIdx(i => Math.max(0, i - 1))),
+      KeyBus.on('font.up', () => setFontSize(n => adjustSessionFont(n, 1))),
+      KeyBus.on('font.down', () => setFontSize(n => adjustSessionFont(n, -1))),
     ];
     return () => offs.forEach(off => off());
   }, []);
@@ -470,20 +470,14 @@ function PaneDetailView({
   // read the same fontSize, so this is the single source of truth for either A−/A+.
   useEffect(() => {
     let alive = true;
-    AsyncStorage.getItem(FONT_IDX_KEY).then(v => {
-      const n = v == null ? NaN : parseInt(v, 10);
-      if (alive && Number.isInteger(n) && n >= 0 && n < FONT_SIZES.length) setFontIdx(n);
-    });
-    return () => {
-      alive = false;
-    };
+    Promise.all([AsyncStorage.getItem(SESSION_FONT_KEY), AsyncStorage.getItem(LEGACY_FONT_KEY)]).then(([value, legacy]) => {
+      if (alive) { setFontSize(restoreSessionFont(value, legacy)); setFontReady(true); }
+    }).catch(() => { if (alive) setFontReady(true); });
+    return () => { alive = false; };
   }, []);
-  const setFont = (i: number) => {
-    setFontIdx(i);
-    AsyncStorage.setItem(FONT_IDX_KEY, String(i));
-  };
-  const smaller = () => setFont(Math.max(0, fontIdx - 1));
-  const bigger = () => setFont(Math.min(FONT_SIZES.length - 1, fontIdx + 1));
+  useEffect(() => { if (fontReady) AsyncStorage.setItem(SESSION_FONT_KEY, String(fontSize)).catch(() => {}); }, [fontReady, fontSize]);
+  const smaller = () => setFontSize(n => adjustSessionFont(n, -1));
+  const bigger = () => setFontSize(n => adjustSessionFont(n, 1));
 
   const paneRead = useRef<ReturnType<typeof createReadTask> | null>(null);
   const loadPane = useCallback(() => paneRead.current?.run(), []);
@@ -671,7 +665,6 @@ function PaneDetailView({
   // terminal change for a view that does not exist was work the composer's keystrokes
   // waited behind (2026-10-05).
   const lines: AnsiLine[] = useMemo(() => (seenChat ? paneLines(text) : NO_LINES), [text, seenChat]);
-  const fontSize = FONT_SIZES[fontIdx];
 
   // Memoize the two HEAVY views by their real data deps so a mode switch (which
   // changes only `mode`/`switching`, not these deps) reuses the SAME element refs
@@ -1037,7 +1030,7 @@ function PaneDetailView({
             {/* font size + full-screen both apply to either mode (consistent behavior). */}
             <SessionDisplayMenu pal={pal} lang={lang} mode={mode} layout={terminalLayout} onLayoutChange={setTerminalLayout}
               selectionActive={mode === 'terminal' && terminalSelection} smaller={smaller} bigger={bigger} fontSize={fontSize}
-              canShrink={fontIdx > 0} canGrow={fontIdx < FONT_SIZES.length - 1} />
+              canShrink={fontSize > MIN_SESSION_FONT} canGrow={fontSize < MAX_SESSION_FONT} />
             <Ctl pal={pal} label="⛶" glyph onPress={() => setFullscreen(true)} testID={TestIds.detail.fullscreen} />
           </View>
         </View>
@@ -1139,6 +1132,7 @@ function PaneDetailView({
 
       <TraceModal visible={traceOpen && !isPlainPane && !isNative} agent={live} client={isGuest ? undefined : client} turns={turns} loading={!chatLoaded} failed={chatRecord.identity === chatIdentity && chatRecord.failed} onRetry={() => loadTurnsRef.current()} dropped={droppedTurns} pal={pal} lang={lang} fontSize={fontSize} onClose={() => setTraceOpen(false)} />
       <DiffModal
+        fontSize={fontSize}
         visible={diffOpen}
         paneId={agent.pane_id}
         client={client}
