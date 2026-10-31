@@ -91,7 +91,11 @@ func Related(reference, parentID, session, home string) (File, error) {
 		return File{}, ErrUnavailable
 	}
 	base := filepath.Dir(parent.Source)
-	target, ok := LocalPath(reference, base)
+	resolvePath := LocalPath
+	if parent.Kind == "html" {
+		resolvePath = htmlImagePath
+	}
+	target, ok := resolvePath(reference, base)
 	if !ok {
 		return File{}, ErrUnavailable
 	}
@@ -101,7 +105,7 @@ func Related(reference, parentID, session, home string) (File, error) {
 		references = HTMLImages(string(content))
 	}
 	for _, ref := range references {
-		path, ok := LocalPath(ref, base)
+		path, ok := resolvePath(ref, base)
 		if ok && path == target {
 			linked = true
 			break

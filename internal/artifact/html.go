@@ -3,6 +3,7 @@ package artifact
 import (
 	"golang.org/x/net/html"
 	"io"
+	"net/url"
 	"strings"
 )
 
@@ -37,4 +38,21 @@ func HTMLImages(source string) []string {
 			return nil
 		}
 	}
+}
+
+// File-style cache queries do not change an HTML image's local path. This is
+// used only after the immutable HTML parent and its declared image are checked.
+func htmlImagePath(reference, base string) (string, bool) {
+	if len(reference) > 4096 {
+		return "", false
+	}
+	u, err := url.Parse(reference)
+	if err != nil {
+		return "", false
+	}
+	u.RawQuery = ""
+	u.ForceQuery = false
+	u.Fragment = ""
+	u.RawFragment = ""
+	return LocalPath(u.String(), base)
 }

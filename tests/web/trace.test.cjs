@@ -50,7 +50,7 @@ for (const agent of ['Codex','Claude Code','Kimi','OpenCode','DeepSeek Harness']
       await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.traceCopy=text;}}}));
       await trace.getByRole('button',{name:'复制',exact:true}).click();
       assert.equal(await page.evaluate(()=>window.traceCopy),command);
-      await trace.getByRole('button',{name:'关闭详情',exact:true}).click();
+      await trace.locator('.trace-detail-head').getByRole('button',{name:width>=700?'收起详情':'返回轨迹',exact:true}).click();
       assert.equal(await trace.locator('.trace-toolbar').isVisible(),true);
       assert.equal(await trace.locator('.trace-inspector').isVisible(),false);
       assert.equal(await trace.locator('.trace-event.tool').evaluate(e=>e===document.activeElement),true);
@@ -70,7 +70,7 @@ for (const width of [320,768]) {
     for(const control of await trace.locator('.trace-detail-head button').all()) {
       const box=await control.boundingBox();assert.ok(box.width>=44&&box.height>=44);
     }
-    await trace.getByRole('button',{name:'关闭详情',exact:true}).click();
+    await trace.locator('.trace-detail-head').getByRole('button',{name:width>=700?'收起详情':'返回轨迹',exact:true}).click();
     await trace.getByRole('searchbox',{name:'搜索轨迹',exact:true}).fill('no match at all');
     await trace.getByText('没有匹配的记录。',{exact:true}).waitFor();
     assert.equal(await trace.locator('.trace-inspector').isVisible(),false);
@@ -302,4 +302,34 @@ for (const recordIDs of [false, true]) scenario(`Trace keeps repeated clockless 
   await page.waitForFunction(()=>document.querySelectorAll('.trace-view .trace-event.tool').length===4);
   assert.equal(await trace.locator('.trace-event.tool[aria-pressed="true"]').getAttribute('data-key'),selected);
   assert.equal(await trace.locator('.trace-source').innerText(),'echo item-2');assert.equal(fixture.state.sends.length,0);
+});
+
+
+scenario('iPad portrait, landscape and multitasking resize keep the selected tool and distinct navigation', {viewport:{width:1194,height:834},locale:'en-US',hasTouch:true},async(page,fixture)=>{
+  agentFixture(fixture);
+  const trace=await openTrace(page,fixture,1194);
+  await trace.locator('.trace-event.tool').click();
+  const selected=await trace.locator('.trace-event.tool').getAttribute('data-key');
+  for(const [width,height] of [[834,1194],[744,1133],[507,1024],[320,1024],[768,1024],[1024,768],[1366,1024],[1194,834]]) {
+    await page.setViewportSize({width,height});
+    await page.waitForFunction(()=>{const t=document.querySelector('.session-tool .trace-view');return t&&t.classList.contains('trace-compact')===(t.getBoundingClientRect().width<700)});
+    assert.equal(await trace.locator('.trace-source').innerText(),command);
+    assert.equal(await trace.locator('.trace-event.on').getAttribute('data-key'),selected);
+    const compact=await trace.evaluate(e=>e.getBoundingClientRect().width<700);
+    const nav=trace.locator('.trace-detail-head').getByRole('button',{name:compact?'Back to trace':'Hide details',exact:true});
+    assert.equal(await nav.count(),1);
+    const closeIcon=await nav.locator('svg path').evaluateAll(paths=>paths.map(p=>p.getAttribute('d')).join(' '));
+    assert.ok(closeIcon&&!closeIcon.includes('m6 6 12 12'));
+    const box=await trace.locator('.trace-inspector').boundingBox();
+    assert.ok(box.x>=0&&box.x+box.width<=width+1);
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth),width);
+  }
+  await trace.locator('.trace-close').focus();
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('.session-tool').isVisible(),true);
+  assert.equal(await trace.locator('.trace-inspector').isVisible(),false);
+  assert.equal(await trace.locator('.trace-event.on').getAttribute('data-key'),selected);
+  assert.equal(await trace.locator('.trace-event.on').evaluate(e=>e===document.activeElement),true,await page.evaluate(()=>document.activeElement.outerHTML));
+  assert.equal(fixture.state.sends.length,0);
+  await evidence(page,'trace-ipad-resize');
 });

@@ -1,3 +1,4 @@
+import {useModalEscape} from '../keys/useModalEscape';
 // DiffModal — "what did the agent change". Fetches a unified `git diff` of the
 // pane's cwd from /api/diff and renders it line-coloured (additions green,
 // deletions red, hunks cyan). Read-only; full-screen over the Detail.
@@ -28,6 +29,8 @@ import { Lang } from '../i18n';
 import { Palette } from './theme';
 import { diffLineColor, diffRows } from './diff';
 import { diffPresentation, hunkRange } from './diffModel';
+import { ChromeText } from './ChromeText';
+import { CHROME_MAX_SCALE } from './textScale';
 import { CodeText } from './CodeText';
 import { CodeReaderModal } from './CodeReaderModal';
 import { CopyIcon, Chevron, ExpandIcon } from './Icons';
@@ -61,6 +64,7 @@ export function DiffModal({
     title: string;
     hint: string;
   } | null>(null);
+  useModalEscape(visible && !reader, onClose);
   const [attempt, setAttempt] = useState(0);
   const { width, fontScale } = useWindowDimensions();
   const [viewportWidth, setViewportWidth] = useState(width);
@@ -68,9 +72,12 @@ export function DiffModal({
   const [contentHeight, setContentHeight] = useState(0);
   const verticalOffset = useRef(new Animated.Value(0)).current;
   const scale = fontScale;
-  const rowHeight = PixelRatio.roundToNearestPixel(
-    Math.ceil(fontSize * 1.5) * scale,
-  );
+  const chromeScale = Math.min(scale, CHROME_MAX_SCALE);
+  const baseLineHeight = Math.ceil(fontSize * 1.5);
+  const fileHeight = Math.max(64, Math.ceil(34 * chromeScale + 28));
+  const hunkHeight = Math.max(44, Math.ceil(18 * chromeScale + 16));
+  const gutterFont = Math.max(10, Math.min(12, fontSize - 2));
+  const rowHeight = PixelRatio.roundToNearestPixel(baseLineHeight * scale);
 
   useEffect(() => {
     if (!visible) {
@@ -106,16 +113,26 @@ export function DiffModal({
     () => diffRows(structured.lines.join('\n')),
     [structured],
   );
+  const gutterWidth = useMemo(() => {
+    let maximum = 1;
+    for (const file of structured.files)
+      for (const row of file.rows)
+        maximum = Math.max(maximum, row.meta.old || 0, row.meta.next || 0);
+    return Math.max(
+      34,
+      Math.ceil(String(maximum).length * gutterFont * 0.62 * chromeScale + 6),
+    );
+  }, [structured.files, gutterFont, chromeScale]);
   const contentWidth = Math.max(
     viewportWidth,
     rows.columns * fontSize * 0.62 * scale +
-      (structured.files.length ? 110 : 24),
+      (structured.files.length ? 2 * (gutterWidth + 6) + 42 : 24),
   );
   const listStyle = useMemo(
     () => ({
       width:
         structured.files.length && wrapLines
-          ? Math.max(1, viewportWidth - 8)
+          ? Math.max(1, viewportWidth)
           : contentWidth,
     }),
     [contentWidth, structured.files.length, wrapLines, viewportWidth],
@@ -124,19 +141,25 @@ export function DiffModal({
     let offset = 0;
     return rows.lines.map((_, index) => {
       const kind = structured.meta[index]?.kind;
-      const length = kind === 'file' ? 64 : kind === 'hunk' ? 44 : rowHeight;
+      const length =
+        kind === 'file' ? fileHeight : kind === 'hunk' ? hunkHeight : rowHeight;
       const value = { length, offset, index };
       offset += length;
       return value;
     });
-  }, [rows, structured, rowHeight]);
+  }, [rows, structured, rowHeight, fileHeight, hunkHeight]);
   const renderLine = useCallback(
     ({ item, index }: { item: string; index: number }) => {
       const meta = structured.meta[index];
       const hint = meta?.path?.split('.').pop() || 'text';
       if (meta?.kind === 'file')
         return (
-          <View style={[styles.fileCard, { width: viewportWidth - 12 }]}>
+          <View
+            style={[
+              styles.fileCard,
+              { width: Math.max(1, viewportWidth - 24), height: fileHeight },
+            ]}
+          >
             <TouchableOpacity
               testID={'diff-file-' + meta.key}
               accessibilityRole="button"
@@ -148,15 +171,15 @@ export function DiffModal({
             >
               <Chevron open={!!meta.open} color="#B5B5BE" size={14} />
               <View style={{ flex: 1, minWidth: 0 }}>
-                <Text numberOfLines={1} style={styles.fileName}>
+                <ChromeText numberOfLines={1} style={styles.fileName}>
                   {meta.path?.split('/').pop()}
-                </Text>
-                <Text numberOfLines={1} style={styles.filePath}>
+                </ChromeText>
+                <ChromeText numberOfLines={1} style={styles.filePath}>
                   {meta.path?.split('/').slice(0, -1).join('/') || '.'}
-                </Text>
+                </ChromeText>
               </View>
-              <Text style={styles.added}>+{meta.added}</Text>
-              <Text style={styles.removed}>−{meta.removed}</Text>
+              <ChromeText style={styles.added}>+{meta.added}</ChromeText>
+              <ChromeText style={styles.removed}>−{meta.removed}</ChromeText>
             </TouchableOpacity>
             <TouchableOpacity
               accessibilityRole="button"
@@ -184,16 +207,19 @@ export function DiffModal({
             testID={'diff-hunk-' + meta.key}
             accessibilityRole="button"
             accessibilityState={{ expanded: meta.open }}
-            style={[styles.hunk, { width: viewportWidth - 12 }]}
+            style={[
+              styles.hunk,
+              { width: Math.max(1, viewportWidth - 24), height: hunkHeight },
+            ]}
             onPress={() => setFolded(v => ({ ...v, [meta.key]: !!meta.open }))}
           >
             <Chevron open={!!meta.open} color="#B5B5BE" size={13} />
-            <Text numberOfLines={1} style={styles.hunkText}>
+            <ChromeText numberOfLines={1} style={styles.hunkText}>
               {lang === 'zh' ? '行 ' : 'Lines '}
               {hunkRange(item)}
-            </Text>
-            <Text style={styles.added}>+{meta.added}</Text>
-            <Text style={styles.removed}>−{meta.removed}</Text>
+            </ChromeText>
+            <ChromeText style={styles.added}>+{meta.added}</ChromeText>
+            <ChromeText style={styles.removed}>−{meta.removed}</ChromeText>
           </TouchableOpacity>
         );
       if (meta?.kind === 'code')
@@ -213,10 +239,32 @@ export function DiffModal({
               },
             ]}
           >
-            <Text style={[styles.lineNumber, { fontSize: fontSize - 2 }]}>
+            <Text
+              numberOfLines={1}
+              maxFontSizeMultiplier={CHROME_MAX_SCALE}
+              style={[
+                styles.lineNumber,
+                {
+                  fontSize: gutterFont,
+                  width: gutterWidth,
+                  lineHeight: (baseLineHeight * scale) / chromeScale,
+                },
+              ]}
+            >
               {meta.old ?? ''}
             </Text>
-            <Text style={[styles.lineNumber, { fontSize: fontSize - 2 }]}>
+            <Text
+              numberOfLines={1}
+              maxFontSizeMultiplier={CHROME_MAX_SCALE}
+              style={[
+                styles.lineNumber,
+                {
+                  fontSize: gutterFont,
+                  width: gutterWidth,
+                  lineHeight: (baseLineHeight * scale) / chromeScale,
+                },
+              ]}
+            >
               {meta.next ?? ''}
             </Text>
             <Text
@@ -224,6 +272,7 @@ export function DiffModal({
                 styles.sign,
                 {
                   fontSize,
+                  lineHeight: baseLineHeight,
                   color:
                     meta.role === 'add'
                       ? '#A8C997'
@@ -242,7 +291,7 @@ export function DiffModal({
                 fontSize={fontSize}
                 maxLines={wrapLines ? undefined : 1}
                 selectable={false}
-                style={{ lineHeight: rowHeight }}
+                style={{ lineHeight: baseLineHeight }}
               />
             </View>
           </View>
@@ -255,7 +304,7 @@ export function DiffModal({
             {
               fontSize,
               height: rowHeight,
-              lineHeight: rowHeight,
+              lineHeight: baseLineHeight,
               color: diffLineColor(item),
             },
           ]}
@@ -264,7 +313,21 @@ export function DiffModal({
         </Text>
       );
     },
-    [structured, viewportWidth, rowHeight, fontSize, lang, wrapLines],
+    [
+      structured,
+      viewportWidth,
+      rowHeight,
+      fontSize,
+      lang,
+      wrapLines,
+      fileHeight,
+      hunkHeight,
+      gutterWidth,
+      gutterFont,
+      baseLineHeight,
+      scale,
+      chromeScale,
+    ],
   );
   const trackHeight = Math.max(0, viewportHeight - 8);
   const thumbHeight = Math.min(
@@ -282,27 +345,46 @@ export function DiffModal({
     <Modal
       supportedOrientations={MODAL_ORIENTATIONS}
       visible={visible}
+      backdropColor={pal.bg}
       animationType="slide"
       onRequestClose={onClose}
     >
       <StatusBar hidden />
       <View style={[styles.root, { backgroundColor: pal.bg }]}>
         <View style={[styles.bar, { borderBottomColor: pal.divider }]}>
-          <Text style={[styles.title, { color: pal.fg }]}>
+          <ChromeText
+            numberOfLines={2}
+            style={[styles.title, { color: pal.fg }]}
+          >
             {lang === 'zh' ? '工作区改动' : 'Working tree'}
-          </Text>
-          <TouchableOpacity onPress={onClose} hitSlop={hit}>
-            <Text style={styles.done}>{lang === 'zh' ? '完成' : 'Done'}</Text>
+          </ChromeText>
+          <TouchableOpacity
+            onPress={onClose}
+            hitSlop={hit}
+            accessibilityRole="button"
+            accessibilityLabel={lang === 'zh' ? '关闭改动' : 'Close changes'}
+            style={{
+              minHeight: 44,
+              minWidth: 44,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <ChromeText style={styles.done}>
+              {lang === 'zh' ? '完成' : 'Done'}
+            </ChromeText>
           </TouchableOpacity>
         </View>
 
         {!!structured.files.length && (
           <View style={styles.summary}>
-            <Text style={styles.filePath}>
+            <ChromeText style={styles.filePath}>
               {structured.files.length} {lang === 'zh' ? '个文件' : 'files'}
-            </Text>
-            <Text style={styles.added}>+{structured.added}</Text>
-            <Text style={styles.removed}>−{structured.removed}</Text>
+            </ChromeText>
+            <ChromeText style={styles.added}>+{structured.added}</ChromeText>
+            <ChromeText style={styles.removed}>
+              −{structured.removed}
+            </ChromeText>
             <TouchableOpacity
               testID="diff-wrap"
               accessibilityRole="button"
@@ -345,13 +427,15 @@ export function DiffModal({
                 : 'Could not load changes. Check the connection and retry.'}
             </Text>
             <TouchableOpacity
+              testID="diff-retry"
+              accessibilityLabel={lang === 'zh' ? '重试' : 'Retry'}
               accessibilityRole="button"
               onPress={() => setAttempt(value => value + 1)}
               style={styles.retry}
             >
-              <Text style={styles.done}>
+              <ChromeText style={styles.done}>
                 {lang === 'zh' ? '重试' : 'Retry'}
-              </Text>
+              </ChromeText>
             </TouchableOpacity>
           </View>
         ) : empty ? (
@@ -457,6 +541,7 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   summary: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     gap: 8,
     paddingLeft: 16,
@@ -516,7 +601,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  title: { fontSize: 17, fontWeight: '700' },
+  title: { fontSize: 17, fontWeight: '700', flex: 1, minWidth: 0 },
   done: { fontSize: 15, fontWeight: '700', color: '#06B6D4' },
   center: { marginTop: 60 },
   retry: {

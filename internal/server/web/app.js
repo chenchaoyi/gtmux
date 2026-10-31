@@ -2703,6 +2703,8 @@
       "tools": "<path d=\"M14 5a6 6 0 0 0-7 7l-5 5 5 5 5-5a6 6 0 0 0 7-7l-4 3-4-4 3-4Z\"/>",
       "trace": "<path d=\"M4 5h16M4 12h16M4 19h16\"/><circle cx=\"8\" cy=\"5\" r=\"2\"/><circle cx=\"16\" cy=\"12\" r=\"2\"/><circle cx=\"10\" cy=\"19\" r=\"2\"/>",
       "diff": "<path d=\"M8 3v12m-3-3 3 3 3-3M16 21V9m-3 3 3-3 3 3\"/>",
+      "back": "<path d=\"m15 6-6 6 6 6\"/>",
+      "collapseRight": "<path d=\"m9 6 6 6-6 6\"/>",
       "copy": "<rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\" /> <path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\" />",
       "done": "<path d=\"M20 6 9 17l-5-5\" />",
       "error": "<circle cx=\"12\" cy=\"12\" r=\"10\" /> <line x1=\"12\" x2=\"12\" y1=\"8\" y2=\"12\" /> <line x1=\"12\" x2=\"12.01\" y1=\"16\" y2=\"16\" />",
@@ -2836,6 +2838,7 @@
     if (!diff) { root.textContent = T('No changes, or this session is outside a Git repository.', '没有改动，或当前会话不在 Git 仓库中。'); host.replaceChildren(root); return; }
     var files = window.GtmuxDiffModel.diffFiles(diff);
     if (!files.length) { var raw = el('pre', ''); diff.split('\n').forEach(function(line){raw.appendChild(el('span',line[0]==='+'?'add':line[0]==='-'?'del':'',line+'\n'));}); root.appendChild(raw); host.replaceChildren(root); return; }
+    var maximumLine = 1; files.forEach(function(file){file.rows.forEach(function(row){maximumLine=Math.max(maximumLine,row.meta.old||0,row.meta.next||0);});}); root.style.setProperty('--diff-gutter',Math.max(34,String(maximumLine).length*7+6)+'px');
     var stats = el('div', 'diff-summary'); stats.appendChild(el('span', '', T('Working tree', '工作区改动') + ' · ' + files.length + T(' files', ' 个文件'))); stats.appendChild(el('span', 'diff-added', '+' + files.reduce(function(n,f){return n+f.added;},0))); stats.appendChild(el('span', 'diff-removed', '−' + files.reduce(function(n,f){return n+f.removed;},0))); stats.appendChild(clipboardAction(T('Copy complete diff', '复制完整改动'), '', diff));
     var wrap = el('button', 'diff-wrap', T('Wrap lines', '自动换行')); wrap.type = 'button';wrap.setAttribute('aria-pressed','true');var wrapped=true;wrap.onclick=function(){wrapped=!wrapped;root.classList.toggle('diff-no-wrap',!wrapped);wrap.setAttribute('aria-pressed',String(wrapped));};stats.appendChild(wrap);root.appendChild(stats);
     files.forEach(function(file,fileIndex){

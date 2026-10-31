@@ -1,3 +1,4 @@
+import {useModalEscape} from '../keys/useModalEscape';
 // AnchoredMenu — a few actions that drop from the control that opened them, the way an
 // iOS pull-down menu does. The Servers page's ••• opens one.
 //
@@ -69,6 +70,7 @@ export function AnchoredMenu({
   footer?: React.ReactNode;
   preferredWidth?: number;
 }) {
+  useModalEscape(visible, onClose);
   const {width: winW, height: winH} = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const settings = sectionLabels !== undefined;

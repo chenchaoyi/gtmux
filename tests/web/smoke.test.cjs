@@ -654,7 +654,7 @@ scenario('Trace tool closes details and returns to the original panel draft', {v
   await openTools(page,'trace',true);
   const trace=page.locator('.session-tool .trace-view');
   await trace.locator('.trace-event.tool').click();
-  await trace.getByRole('button',{name:'关闭详情',exact:true}).click();
+  await trace.locator('.trace-detail-head').getByRole('button',{name:'收起详情',exact:true}).click();
   fixture.state.turns['%901']=[...fixture.turns(),{prompt:'Next turn',response:'An additional reply'}];
   await trace.locator('.trace-event').filter({hasText:'An additional reply'}).waitFor();
   assert.equal(await trace.locator('.trace-inspector').isVisible(),false);

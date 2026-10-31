@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   AccessibilityInfo,
   ActivityIndicator,
@@ -21,6 +27,7 @@ import Svg, { Path } from 'react-native-svg';
 import { GtmuxClient, TranscriptTurn } from '../api/client';
 import { Agent, primary } from '../api/types';
 import { Lang, statusLabel } from '../i18n';
+import {useModalEscape} from '../keys/useModalEscape';
 import { Palette, BRAND } from '../ui/theme';
 import { AnchoredMenu, MenuAnchor, MenuItem } from '../ui/AnchoredMenu';
 import { MODAL_ORIENTATIONS } from '../ui/modalOrientations';
@@ -85,17 +92,30 @@ const kindLabels = {
 };
 const NO_TURNS: TranscriptTurn[] = [];
 export function TraceModal(props: Props) {
+  const [retained, setRetained] = useState(props.visible);
+  const visible = useRef(props.visible);
+  visible.current = props.visible;
+  useLayoutEffect(() => {
+    if (props.visible) setRetained(true);
+    else if (Platform.OS !== 'ios') setRetained(false);
+  }, [props.visible]);
   // The modal owns no reader: its parent supplies the existing transcript subscription.
   // Native modals need their own safe-area root, as in the pairing scanner.
   return (
     <Modal
+      supportedOrientations={MODAL_ORIENTATIONS}
       visible={props.visible}
       animationType="slide"
-      supportedOrientations={MODAL_ORIENTATIONS}
+      backdropColor={props.pal.bg}
+      onDismiss={() => {
+        if (!visible.current) setRetained(false);
+      }}
       onRequestClose={props.onClose}
     >
-      {props.visible && (
-        <SafeAreaProvider style={styles.root}>
+      {(props.visible || retained) && (
+        <SafeAreaProvider
+          style={[styles.root, { backgroundColor: props.pal.bg }]}
+        >
           <TraceReader {...props} />
         </SafeAreaProvider>
       )}
@@ -103,6 +123,7 @@ export function TraceModal(props: Props) {
   );
 }
 export function TraceReader({
+  visible: readerVisible,
   agent,
   client,
   turns = NO_TURNS,
@@ -313,6 +334,7 @@ export function TraceReader({
       : selection;
   const chosen = sameIdentity && current ? selectedFull : null;
   const showDetails = detailsOpen && !!chosen;
+  useModalEscape(readerVisible && !profile, showDetails ? closeDetail : onClose);
   const history = session !== 'all' && session !== index.sessions.at(-1)?.key;
   useEffect(() => {
     if (selection && !current) {
@@ -425,6 +447,26 @@ export function TraceReader({
         JSON.stringify(current.context));
   const twoColumns = split && showDetails;
   const listVisible = twoColumns || !showDetails;
+  const detailBack = (
+    <TouchableOpacity
+      key="trace-detail-nav"
+      testID="trace-detail-close"
+      accessibilityRole="button"
+      accessibilityLabel={
+        twoColumns
+          ? zh
+            ? '收起详情'
+            : 'Hide details'
+          : zh
+          ? '返回轨迹'
+          : 'Back to trace'
+      }
+      onPress={closeDetail}
+      style={styles.iconButton}
+    >
+      <DetailBackIcon color={pal.fg2} split={twoColumns} />
+    </TouchableOpacity>
+  );
   const turnTime = chosen ? validTime(chosen.event.time, lang) : '';
   return (
     <SafeAreaView
@@ -439,8 +481,12 @@ export function TraceReader({
           <ChromeText
             testID="trace-session-title"
             accessibilityRole="header"
-            numberOfLines={2}
-            style={[styles.title, { color: pal.fg }]}
+            numberOfLines={split ? 2 : 1}
+            style={[
+              styles.title,
+              !split && styles.compactTitle,
+              { color: pal.fg },
+            ]}
           >
             {primary(agent) || (zh ? '轨迹' : 'Trace')}
           </ChromeText>
@@ -853,6 +899,7 @@ export function TraceReader({
               </TouchableOpacity>
             )}
             <View style={styles.detailHeader}>
+              {!twoColumns && detailBack}
               <TouchableOpacity
                 testID="trace-profile"
                 accessibilityRole="button"
@@ -908,15 +955,7 @@ export function TraceReader({
               >
                 <CopyIcon color={pal.fg2} size={22} />
               </TouchableOpacity>
-              <TouchableOpacity
-                testID="trace-detail-close"
-                accessibilityRole="button"
-                accessibilityLabel={zh ? '关闭详情' : 'Close details'}
-                onPress={closeDetail}
-                style={styles.iconButton}
-              >
-                <CloseIcon color={pal.fg2} />
-              </TouchableOpacity>
+              {twoColumns && detailBack}
             </View>
             {copied && (
               <ChromeText
@@ -1123,6 +1162,20 @@ function validTime(value: string, lang: Lang) {
     ? date.toLocaleString(lang === 'zh' ? 'zh-CN' : 'en-US')
     : '';
 }
+function DetailBackIcon({ color, split }: { color: string; split: boolean }) {
+  return (
+    <Svg width={22} height={22} viewBox="0 0 24 24">
+      <Path
+        d={split ? 'm9 6 6 6-6 6' : 'm15 6-6 6 6 6'}
+        stroke={color}
+        fill="none"
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
 function CloseIcon({ color }: { color: string }) {
   return (
     <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
@@ -1226,6 +1279,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   title: { fontSize: 20, fontWeight: '600' },
+  compactTitle: { fontSize: 16 },
   caption: { fontSize: 12, lineHeight: 18 },
   iconButton: {
     width: 44,

@@ -63,7 +63,7 @@ per image and 20 MiB combined are allowed; dimensions are checked before decodin
 retrying or switching source cancels only that viewer's resource work and private caches.
 
 HTML previews use the same scoped loader for local `img src` and responsive `srcset`
-images, including encoded filenames. The server parses the immutable HTML snapshot and
+images, including encoded filenames, unquoted candidate lists and file-style cache queries. The server parses the immutable HTML snapshot and
 allows only its declared images within the parent directory tree. Image loading does not
 require enabling scripts. Static mode, external-resource blocking, per-file interaction
 consent, image budgets and the absence of a document-to-app bridge remain unchanged.

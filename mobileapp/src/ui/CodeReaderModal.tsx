@@ -1,3 +1,4 @@
+import {useModalEscape} from '../keys/useModalEscape';
 import React, { useState } from 'react';
 import {
   Modal,
@@ -33,11 +34,13 @@ export function CodeReaderModal({
   fontSize: number;
   onClose: () => void;
 }) {
+  useModalEscape(true, onClose);
   const [formatted, setFormatted] = useState(true);
   const [copied, setCopied] = useState(false);
   return (
     <Modal
       visible
+      backdropColor="#0D0D0F"
       animationType="slide"
       supportedOrientations={MODAL_ORIENTATIONS}
       onRequestClose={onClose}
