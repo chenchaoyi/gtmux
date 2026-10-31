@@ -314,3 +314,11 @@ test('opens full input on demand and copies original while formatting only the r
   act(() => byID('code-reader-copy').props.onPress());
   expect(Clipboard.setString).toHaveBeenLastCalledWith(full.input);
 });
+
+
+test('complete-code controls keep the shared chrome scale while the recorded source retains its chosen size', () => {
+  act(() => { tree = renderer.create(<CodeReaderModal source="const value={first:1};" title="Original input" hint="javascript" lang="en" fontSize={19} onClose={jest.fn()} />); });
+  const format = tree.root.findAllByProps({testID:'code-reader-format'}).find(n => typeof n.props.onPress === 'function')!;
+  expect(format.findByType(Text).props.maxFontSizeMultiplier).toBe(1.35);
+  expect(tree.root.findAllByProps({testID:'code-reader-text'}).find(n => n.props.source)?.props.fontSize).toBe(19);
+});

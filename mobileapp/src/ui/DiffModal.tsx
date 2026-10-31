@@ -379,7 +379,7 @@ export function DiffModal({
         {!!structured.files.length && (
           <View style={styles.summary}>
             <ChromeText style={styles.filePath}>
-              {structured.files.length} {lang === 'zh' ? '个文件' : 'files'}
+              {structured.files.length} {lang === 'zh' ? '个文件' : structured.files.length === 1 ? 'file' : 'files'}
             </ChromeText>
             <ChromeText style={styles.added}>+{structured.added}</ChromeText>
             <ChromeText style={styles.removed}>
@@ -393,14 +393,14 @@ export function DiffModal({
               style={styles.fileAction}
               onPress={() => setWrapLines(v => !v)}
             >
-              <Text
+              <ChromeText
                 style={{
                   color: wrapLines ? '#9FC7E9' : '#B5B5BE',
                   fontSize: 12,
                 }}
               >
                 {lang === 'zh' ? '换行' : 'Wrap'}
-              </Text>
+              </ChromeText>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.fileAction}

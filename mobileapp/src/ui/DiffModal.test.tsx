@@ -208,6 +208,8 @@ test('large Dynamic Type keeps chrome and six-digit line numbers within the wrap
     expect(gutter.props.numberOfLines).toBe(1);
     expect(rn.StyleSheet.flatten(gutter.props.style).width).toBeGreaterThan(45);
     expect(gutter.props.maxFontSizeMultiplier).toBeLessThan(2);
+    const wrap = tree.root.findAllByType(TouchableOpacity).find(n => n.props.testID === 'diff-wrap')!;
+    expect(wrap.findByType(Text).props.maxFontSizeMultiplier).toBe(1.35);
   } finally {
     if (rowTree) act(() => rowTree!.unmount());
     dimensions.mockRestore();

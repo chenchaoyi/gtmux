@@ -5,7 +5,6 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -13,6 +12,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import Clipboard from '@react-native-clipboard/clipboard';
 import { CodeText } from './CodeText';
+import {ChromeText} from './ChromeText';
 import { codeLabel } from './codeReading';
 import { CheckIcon, CopyIcon } from './Icons';
 import { MODAL_ORIENTATIONS } from './modalOrientations';
@@ -49,13 +49,13 @@ export function CodeReaderModal({
       <SafeAreaProvider>
         <SafeAreaView style={styles.root}>
           <View style={styles.header}>
-            <Text
+            <ChromeText
               accessibilityRole="header"
               style={styles.title}
               numberOfLines={2}
             >
               {title}
-            </Text>
+            </ChromeText>
             <TouchableOpacity
               testID="code-reader-format"
               style={styles.button}
@@ -72,7 +72,7 @@ export function CodeReaderModal({
               accessibilityState={{ selected: formatted }}
               onPress={() => setFormatted(v => !v)}
             >
-              <Text
+              <ChromeText
                 style={{
                   color: formatted ? '#86BFFC' : '#D8DEE9',
                   fontSize: 18,
@@ -80,7 +80,7 @@ export function CodeReaderModal({
                 }}
               >
                 {'{ }'}
-              </Text>
+              </ChromeText>
             </TouchableOpacity>
             <TouchableOpacity
               testID="code-reader-copy"
@@ -128,9 +128,9 @@ export function CodeReaderModal({
             contentContainerStyle={styles.content}
           >
             <View style={styles.card}>
-              <Text accessibilityRole="header" style={styles.language}>
+              <ChromeText accessibilityRole="header" style={styles.language}>
                 {codeLabel(source, hint)}
-              </Text>
+              </ChromeText>
               <RangeSourceContext.Provider value={source}>
                 <CopyFeedbackContext.Provider value>
                   <CodeText
