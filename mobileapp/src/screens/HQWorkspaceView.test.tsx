@@ -263,6 +263,10 @@ test('a resource auth failure retires an older workspace response as well', asyn
   );
   expect(text()).not.toContain('API refactor');
   await act(async () => resolve(demoHQWorkspace(false)));
+  expect(
+    tree.root.findAllByProps({ testID: 'hq-overview' })[0].props.refreshControl
+      .props.refreshing,
+  ).toBe(false);
   expect(text()).not.toContain('API refactor');
   expect(text()).not.toContain('12 entries');
 });

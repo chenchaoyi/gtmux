@@ -62,6 +62,7 @@ export function HQWorkspaceView(
   const data = record?.client === client ? record.value : undefined;
   const clearPrivate = useCallback(() => {
     retireWorkspace.current();
+    setRefreshing(false);
     setRecord(null);
     setSelected(null);
     setFailed(true);
