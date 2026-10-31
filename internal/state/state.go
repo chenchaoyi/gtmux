@@ -353,6 +353,8 @@ func FinishedDir() string { return filepath.Join(Dir(), "finished") }
 // the agent's turn ended, i.e. how long the pane has been idle. `gtmux agents`
 // reads it so an idle session's relative time reflects when it FINISHED, not the
 // last time its TUI redrew (a live status line keeps window-activity ticking).
+// Its optional versioned Completion payload is lifecycle evidence; mtime and
+// legacy empty/inferred markers alone never authorize a completion alert.
 func FinishedPath(pane string) string { return filepath.Join(FinishedDir(), pane) }
 
 // BackgroundDir is the directory of per-pane "background work still running" markers.

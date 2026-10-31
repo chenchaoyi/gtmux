@@ -122,6 +122,14 @@ mechanism, and an agent with no hooks is unaffected.
   a new completion event
 - **AND** if the bound rollout's bounded tail has no supported activity and there is
   no prior marker, its idle start remains unknown instead of using a fresh window repaint
+
+#### Scenario: Display timestamps do not become completion authority
+
+- **WHEN** the radar writes or repairs a per-pane idle-time cache
+- **THEN** that timestamp alone cannot confirm a finished turn for notifications
+- **AND** only a versioned hook completion payload or an explicit matching native/transcript turn boundary supplies completion evidence
+- **AND** legacy empty markers remain display-only until new lifecycle evidence arrives
+- **AND** native terminal Stop evidence is admitted independently of generic per-pane marker caches
 - **AND** surfaces omit an unknown idle duration rather than substituting window activity
 
 #### Scenario: A prose list does not imply waiting

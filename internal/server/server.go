@@ -321,6 +321,7 @@ func New(cfg Config, deps Deps) *Server {
 		deps.Push.SetEligible(deps.Enroll.IsOwnerDevice)
 	}
 	if deps.Push != nil { // on every tally change: Live Activity update + silent badge sync
+		deps.Push.SetStatusSource(deps.AgentStatuses)
 		s.hub.onTally = deps.Push.OnTally
 		// Heartbeat re-pushes ONLY the Live Activity (refresh its stale-date) — not the
 		// badge — so a healthy idle server keeps the lock-screen card from going stale.

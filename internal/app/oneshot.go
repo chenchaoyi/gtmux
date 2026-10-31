@@ -138,7 +138,7 @@ func finishOneshot(pane, agent, goal string, o driver.HeadlessOutcome, failed bo
 		if failed {
 			state.Remove(state.FinishedPath(pane)) // a crash must never read as done
 		} else {
-			_ = state.WriteMarker(state.FinishedPath(pane), "")
+			_ = state.RecordCompletion(pane, agent, o.Session, "", time.Now())
 			_ = state.WriteLastFinished(pane)
 		}
 	}

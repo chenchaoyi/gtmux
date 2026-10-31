@@ -332,7 +332,13 @@ type Pane struct {
 	Bg        bool
 	BgCount   int
 	EndReason string // interrupted | error; retained for the independent alert poller
-	BgText    string
+	// Confirmed gates completion alerts. An idle state inferred only from
+	// screen/CPU quiet is displayable, but must not be presented as a finished turn.
+	Confirmed    bool
+	CompletionID string // lifecycle generation, never inferred from display activity
+	CompletedAt  int64  // Unix nanoseconds of that lifecycle boundary
+	Instance     string // notification identity, independent of the pane's display title
+	BgText       string
 	// usage-watch modifier: this session breached (or projects into) a usage
 	// layer — content of the usagewarn marker, e.g. "ctx 86%". Amber, like bg.
 	usageWarn string
@@ -1205,10 +1211,8 @@ func gatherAgentsWithCodexScope(codexScope *transcript.CodexPathScope) ([]Pane, 
 						_ = state.WriteMarker(state.TurnOutcomePath(id), "interrupted")
 					} else {
 						state.Remove(state.TurnOutcomePath(id))
-						fp := state.FinishedPath(id)
-						if state.Touch(fp) == nil {
-							_ = os.Chtimes(fp, at, at)
-						}
+						rec, _ := resume.LoadLive(loc)
+						_ = state.RecordCompletion(id, "codex", rec.SessionID, "", at)
 					}
 					status = "idle"
 				}
@@ -1356,6 +1360,7 @@ func gatherAgentsWithCodexScope(codexScope *transcript.CodexPathScope) ([]Pane, 
 		// fixture written before this field) leaves it false — absent means "ordinary",
 		// never "detached", so a missing field can't invent a warning.
 		detached := len(f) >= 13 && f[12] == "0"
+		completionID, completedAt, instance := paneCompletion(id, fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3]), cwd, agent, panePid, status, terminal[id], codexScope)
 		panes = append(panes, Pane{
 			PaneID:     id,
 			session:    f[1],
@@ -1378,13 +1383,14 @@ func gatherAgentsWithCodexScope(codexScope *transcript.CodexPathScope) ([]Pane, 
 			Errored:    errored,
 			EndReason:  endReason,
 			ErrorText:  errorText,
-			Bg:         bg,
-			BgCount:    bgCount,
-			BgText:     bgText,
-			usageWarn:  usageWarn,
-			inMode:     inMode,
-			detached:   detached,
-			pid:        panePid,
+			Confirmed:  completionID != "", CompletionID: completionID, CompletedAt: completedAt, Instance: instance,
+			Bg:        bg,
+			BgCount:   bgCount,
+			BgText:    bgText,
+			usageWarn: usageWarn,
+			inMode:    inMode,
+			detached:  detached,
+			pid:       panePid,
 		})
 	}
 	// Sensed non-tmux (native) sessions: hook-tracked, no pane to view/jump/send.
@@ -1713,8 +1719,9 @@ func nativePanesScoped(tmuxPanes []Pane, profiles []agentProfile, now int64, cod
 		if status == "idle" && nativeReadableScope(r) {
 			errored, errorText = scopedLastMessageError(r.Agent, r.SessionID)
 		}
+		completionID, completedAt := nativeCompletion(r, status, codexScope)
 		out = append(out, Pane{
-			Agent: name, Status: status, source: "native",
+			Agent: name, Status: status, Confirmed: completionID != "", CompletionID: completionID, CompletedAt: completedAt, source: "native",
 			Errored: errored, ErrorText: errorText,
 			EndReason: failedTurnOutcome(nativeTurnOutcomeScoped(codexScope, r), errored),
 			Task:      nativeTitle(r, titles[r.Agent]),
