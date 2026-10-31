@@ -1,4 +1,5 @@
-HQ matters and steady trace reading
-• Find matters needing attention, ongoing work and recent updates in HQ.
-• Open a matter to read its assessment, participants, saved progress and related replies.
-• Keep the selected trace call when older history loads, including repeated prompts; preserve system keyboard shortcuts and use clearer counts.
+HQ, Trace and clearer code reading
+• Read HQ resource summaries and matter cards together, with the same overview inside HQ conversations.
+• Collapse the full conversation context and inspect individual tool calls under the session name in Trace.
+• Browse long tool input with a compact draggable control; open content-limit information only when needed.
+• Keep your position visible in Diff while panning long lines, with clearer controls at large text sizes.
