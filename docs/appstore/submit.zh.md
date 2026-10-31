@@ -247,7 +247,7 @@ App Store 认可用功能完整的演示模式代替演示账号。
 | App Privacy | **Data Not Collected**（用户 2026-10-07 定）。依据是 app 的实际数据流：手机只和用户自己的 Mac 通信；推送由 Mac 发给 relay（`relay-worker`），relay 实时转给 APNs，不用 KV、不打日志，Worker 也没开 observability 或 logpush；Standard 和 Direct 隧道的标识、账号由 Mac 上的 CLI 写进 tunnel Worker，不是 app 写的；相机拍的照片只发到用户自己的 Mac。Standard 隧道的流量会经过 ccy.dev 这个 Cloudflare zone，free 计划的 HTTP 分析只有聚合数据，没开 Logpush。没有分析或追踪 SDK，token 只在 iOS Keychain 里。`PrivacyInfo.xcprivacy` 的 collected types 保持为空。以后要是 relay 或 Worker 开始留存数据或开日志，这一项要重新判断。 |
 | Export Compliance | 豁免，只用标准 HTTPS/TLS；`ITSAppUsesNonExemptEncryption=false` 会跳过上传时的追问 |
 | Pricing | 免费 |
-| Availability | 除中国大陆外的所有国家和地区。大陆要 app 备案加备案域名，先放着 |
+| Availability | 从 ASC 读回当前国家和地区的可用性并保持不变；不要把历史地区列表当作当前分发策略 |
 | Sign-in required | 否，没有账号体系，配对配的是用户自己的 Mac |
 
 隐私政策链接 `https://ccy.dev/projects/gtmux/privacy` 必须能打开，Apple 会去抓，404 直接判元数据打回。
