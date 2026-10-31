@@ -1,5 +1,5 @@
 import React, {useRef, useState} from 'react';
-import {Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {Alert, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View} from 'react-native';
 import Clipboard from '@react-native-clipboard/clipboard';
 import {TranscriptStep} from '../api/client';
 import {ActivityIcon} from './ActivityIcon';
@@ -70,6 +70,7 @@ export function ToolSteps({steps, open, onToggle, lang, fontSize}: {
 }
 
 function ToolInput({step, lang, size}: {step: TranscriptStep; lang: 'en' | 'zh'; size: number}) {
+  const {fontScale} = useWindowDimensions();
   const input = step.input || step.detail || '';
   const [viewport, setViewport] = useState(0);
   const [content, setContent] = useState(0);
@@ -87,7 +88,7 @@ function ToolInput({step, lang, size}: {step: TranscriptStep; lang: 'en' | 'zh';
   };
   return <View testID="tool-step-details" style={styles.inspector}>
     <View style={styles.inspectorHeader}>
-      <Text selectable style={[styles.tool, {fontSize: size - 2}]}>{step.title || 'tool'}{step.input_kind === 'arguments' ? ' · argv (JSON)' : step.input_kind === 'parameters' ? (lang === 'zh' ? ' · 参数' : ' · Parameters') : ''}</Text>
+      <Text selectable style={[styles.tool, {fontSize: size - 2}, fontScale > 1.3 && styles.toolStacked]}>{step.title || 'tool'}{step.input_kind === 'arguments' ? ' · argv (JSON)' : step.input_kind === 'parameters' ? (lang === 'zh' ? ' · 参数' : ' · Parameters') : ''}</Text>
       <View style={styles.inspectorControls}>
       {viewport > 0 && content > viewport + 1 && <HorizontalScrollHandle testID="tool-input-scroll-control" viewport={viewport} content={content} offset={offset} onScrollTo={scrollTo} lang={lang} />}
       {(partial || summary) && <TouchableOpacity testID="tool-input-info" accessibilityRole="button" accessibilityLabel={noticeTitle}
@@ -131,6 +132,7 @@ const styles = StyleSheet.create({
   inspectorHeader: {flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8},
   inspectorControls: {flexDirection: 'row', alignItems: 'center', gap: 4, marginLeft: 'auto'},
   tool: {color: '#A4A4AD', fontFamily: 'Menlo', flex: 1, minWidth: 60, paddingVertical: 6},
+  toolStacked: {flexBasis: '100%', flexGrow: 0},
   copy: {minHeight: 44, minWidth: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10},
   workdir: {color: '#A4A4AD', fontFamily: 'Menlo', paddingBottom: 6},
   codeHeight: {maxHeight: 220},
