@@ -8,10 +8,13 @@ Sessions and replies
 • Use function keys and modifier combinations when a session needs keyboard input. Input access is controlled separately from viewing.
 
 HQ and knowledge
-HQ follows multiple agent sessions, summarizes progress and shows pending decisions and recorded actions. It can dispatch work within your authorization. HQ keeps project context, reusable lessons and your feedback in a local knowledge base, updating and referring to those records in later tasks to become more familiar with your projects and the way you work.
+Follow ongoing matters, decisions and recent results in HQ. Open a matter to see its participants, progress and related messages. Talk to HQ and send files from the same view. HQ can dispatch work within your authorization and keep project context, reusable lessons and feedback in a local knowledge base.
+
+Trace and files
+Review a session by conversation turn, tool call and recorded context. Search the records, inspect individual calls and read code with syntax highlighting. Open local files from conversations, including formatted Markdown, HTML reports, PDFs and images. HTML interaction requires your permission for each file.
 
 Usage and notifications
-Check the limits, reset times and usage records available from supported agents. Receive notifications when your attention is needed or a task finishes, and follow session state through Live Activities.
+Check the limits, reset times and usage records available from supported agents. Add usage widgets to the iPhone or iPad Home Screen or Lock Screen. Receive notifications when your attention is needed or a task finishes, and follow session state through Live Activities.
 
 Connections
 Pair with multiple servers, or open a limited session-sharing link. Sharing can be revoked, and terminal input must be enabled separately. iPad supports a sidebar layout and hardware keyboard shortcuts. English and Simplified Chinese are included.
