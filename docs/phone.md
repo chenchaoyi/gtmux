@@ -171,7 +171,8 @@ keeps your conversation or terminal and its unsent draft. The same tool is avail
 HQ and readable external conversations; external sessions stay read-only.
 
 Trace shows recorded inputs and summaries. It cannot supply absent tool outputs, model
-request timing or token usage. The disclosure **About these records** explains this scope.
+request timing or token usage. Preview wraps and highlights code; Overview and Source retain
+the available record provenance.
 
 ## HQ overview
 

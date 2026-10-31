@@ -31,7 +31,9 @@ import { SenderAvatar } from '../ui/SenderAvatar';
 import { ParticipantProfileModal } from '../ui/ParticipantProfileModal';
 import { ProfileTarget } from '../ui/participantProfile';
 import { MarkdownView } from '../ui/MarkdownView';
-import { CopyableText, CopyFeedbackContext } from '../ui/CopyableText';
+import { CodeText } from '../ui/CodeText';
+import { darkCodeBackground, toolCodeHint } from '../ui/codeReading';
+import { CopyFeedbackContext } from '../ui/CopyableText';
 import { ArrowToBottomIcon, CopyIcon, SearchIcon, Chevron } from '../ui/Icons';
 import { ChromeText } from '../ui/ChromeText';
 import { SIcon } from '../ui/SettingsIcons';
@@ -126,7 +128,6 @@ export function TraceReader({
     [detailTab, setDetailTab] = useState<
       'overview' | 'preview' | 'raw' | 'origin'
     >('preview');
-  const [limitsOpen, setLimitsOpen] = useState(false);
   const [atTail, setAtTail] = useState(true),
     [searchOpen, setSearchOpen] = useState(false),
     [expandedTurns, setExpandedTurns] = useState<Record<string, boolean>>({}),
@@ -902,7 +903,6 @@ export function TraceReader({
                   zh
                     ? '第 ' + chosen.event.turn + ' 轮'
                     : 'Turn ' + chosen.event.turn,
-                  chosen.event.session,
                   turnTime
                     ? (zh ? '本轮开始于 ' : 'Turn started ') + turnTime
                     : '',
@@ -916,21 +916,24 @@ export function TraceReader({
                   {chosen.event.step.workdir}
                 </Text>
               )}
-              {(chosen.event.step?.truncated ||
-                chosen.event.context?.truncated) && (
-                <ChromeText style={[styles.notice, { color: pal.fg2 }]}>
-                  {zh
-                    ? '内容较长，仅显示已记录的部分。'
-                    : 'Only the recorded portion is available.'}
-                </ChromeText>
-              )}
-              {chosen.event.step && !chosen.event.step.input && (
-                <ChromeText style={[styles.notice, { color: pal.fg2 }]}>
-                  {zh
-                    ? '此调用仅记录了摘要。'
-                    : 'Only a call summary was recorded.'}
-                </ChromeText>
-              )}
+              {(detailTab === 'overview' || detailTab === 'origin') &&
+                (chosen.event.step?.truncated ||
+                  chosen.event.context?.truncated) && (
+                  <ChromeText style={[styles.notice, { color: pal.fg2 }]}>
+                    {zh
+                      ? '内容较长，仅显示已记录的部分。'
+                      : 'Only the recorded portion is available.'}
+                  </ChromeText>
+                )}
+              {(detailTab === 'overview' || detailTab === 'origin') &&
+                chosen.event.step &&
+                !chosen.event.step.input && (
+                  <ChromeText style={[styles.notice, { color: pal.fg2 }]}>
+                    {zh
+                      ? '此调用仅记录了摘要。'
+                      : 'Only a call summary was recorded.'}
+                  </ChromeText>
+                )}
               {changed && (
                 <TouchableOpacity
                   testID="trace-update-detail"
@@ -979,42 +982,48 @@ export function TraceReader({
                   </View>
                 ) : detailTab === 'origin' ? (
                   <View testID="trace-origin">
-                    <ChromeText style={[styles.notice, { color: pal.fg2 }]}>
-                      {zh
-                        ? '会话记录中的来源信息。'
-                        : 'Source information from the conversation record.'}
-                    </ChromeText>
-                    <CopyableText
-                      selectable
+                    <CodeText
+                      source={JSON.stringify(sourceInfo(chosen.event), null, 2)}
+                      hint="json"
+                      dark={darkCodeBackground(pal.surface)}
                       lang={lang}
-                      style={[styles.source, { color: pal.fg, fontSize }]}
-                    >
-                      {JSON.stringify(sourceInfo(chosen.event), null, 2)}
-                    </CopyableText>
+                      fontSize={Math.max(12, fontSize - 1)}
+                    />
                   </View>
                 ) : chosen.event.kind === 'tool' ||
                   (chosen.event.kind === 'context' &&
                     chosen.event.title === 'Environment') ||
                   detailTab === 'raw' ? (
-                  <View style={styles.sourceBlock}>
-                    <CopyableText
+                  <View
+                    style={[
+                      styles.sourceBlock,
+                      {
+                        backgroundColor: pal.raised,
+                        borderRadius: 6,
+                        padding: 12,
+                      },
+                    ]}
+                  >
+                    <CodeText
                       testID="trace-source"
+                      source={
+                        detailTab === 'preview'
+                          ? previewText(chosen.event)
+                          : chosen.event.body
+                      }
+                      hint={
+                        detailTab === 'raw'
+                          ? 'text'
+                          : toolCodeHint(
+                              chosen.event.title,
+                              chosen.event.step?.inputKind,
+                              chosen.event.step?.operation,
+                            )
+                      }
+                      dark={darkCodeBackground(pal.surface)}
                       lang={lang}
-                      selectable
-                      style={[
-                        styles.source,
-                        {
-                          color: pal.fg,
-                          fontSize,
-                          lineHeight: fontSize * 1.65,
-                        },
-                        chosen.event.step?.input && styles.mono,
-                      ]}
-                    >
-                      {detailTab === 'preview'
-                        ? previewText(chosen.event)
-                        : chosen.event.body}
-                    </CopyableText>
+                      fontSize={Math.max(12, fontSize - 1)}
+                    />
                   </View>
                 ) : (
                   <MarkdownView
@@ -1031,36 +1040,6 @@ export function TraceReader({
           </View>
         )}
       </View>
-      <TouchableOpacity
-        testID="trace-limits"
-        accessibilityRole="button"
-        accessibilityState={{ expanded: limitsOpen }}
-        onPress={() => setLimitsOpen(!limitsOpen)}
-        style={[
-          styles.limits,
-          {
-            borderTopColor: pal.divider,
-            minHeight: 44,
-            justifyContent: 'center',
-          },
-        ]}
-      >
-        <ChromeText style={{ color: pal.fg2 }}>
-          {zh ? '记录范围' : 'About these records'}
-        </ChromeText>
-      </TouchableOpacity>
-      {limitsOpen && (
-        <ScrollView
-          testID="trace-limits-content"
-          style={{ maxHeight: 200, flexGrow: 0 }}
-        >
-          <Text style={[styles.limits, { color: pal.fg2, borderTopWidth: 0 }]}>
-            {zh
-              ? '展示会话正文、已记录上下文与调用参数，轮次按已加载记录编号。不含工具输出、调用耗时或 Token 用量。'
-              : 'Conversation text, recorded context and call input. Turn numbers refer to loaded history. Tool output, call timing and token usage are not recorded.'}
-          </Text>
-        </ScrollView>
-      )}
       {profile && sameIdentity && chosen && (
         <ParticipantProfileModal
           target={profile}
@@ -1280,11 +1259,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   empty: { margin: 24, textAlign: 'center', fontSize: 14, lineHeight: 22 },
-  limits: {
-    fontSize: 11,
-    lineHeight: 17,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderTopWidth: StyleSheet.hairlineWidth,
-  },
 });

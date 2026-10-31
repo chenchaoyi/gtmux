@@ -4,13 +4,22 @@
 // palette to render on a light surface.
 
 import React from 'react';
-import {Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
-import {Block, Inline, parseBlocks} from './markdown';
-import {DisclosureChevron} from './DisclosureChevron';
-import {CopyableText, CopyFeedbackContext} from './CopyableText';
-import {RangeSourceContext, nativeRangeAvailable} from './RangeText';
-import {documentReference} from '../documents/references';
-import {Lang} from '../i18n';
+import {
+  Linking,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { Block, Inline, parseBlocks } from './markdown';
+import { CodeText } from './CodeText';
+import { darkCodeBackground } from './codeReading';
+import { DisclosureChevron } from './DisclosureChevron';
+import { CopyableText, CopyFeedbackContext } from './CopyableText';
+import { RangeSourceContext, nativeRangeAvailable } from './RangeText';
+import { documentReference } from '../documents/references';
+import { Lang } from '../i18n';
 
 export interface MdColors {
   text: string; // body text
@@ -62,7 +71,13 @@ interface Props {
 // Inline code's size in calm prose, as a share of the text around it (see 'code' below).
 const CODE_IN_PROSE = 0.85;
 
-function renderSpans(nodes: Inline[], c: MdColors, fs: number, calm = false, openFile?: (reference: string) => void): React.ReactNode[] {
+function renderSpans(
+  nodes: Inline[],
+  c: MdColors,
+  fs: number,
+  calm = false,
+  openFile?: (reference: string) => void,
+): React.ReactNode[] {
   return nodes.map((n, i) => {
     switch (n.t) {
       case 'b':
@@ -94,16 +109,30 @@ function renderSpans(nodes: Inline[], c: MdColors, fs: number, calm = false, ope
         // lowercase heights meet, the ratio GitHub uses for inline code.
         if (calm) {
           return (
-            <Text key={i} style={[styles.codeCalm, {color: c.code, fontSize: Math.round(fs * CODE_IN_PROSE * 2) / 2}]}>
+            <Text
+              key={i}
+              style={[
+                styles.codeCalm,
+                {
+                  color: c.code,
+                  fontSize: Math.round(fs * CODE_IN_PROSE * 2) / 2,
+                },
+              ]}
+            >
               {n.s}
             </Text>
           );
         }
         return (
-          <Text key={i} style={[styles.codeInline, {color: c.code, backgroundColor: c.codeBg, fontSize: fs - 1}]}>
+          <Text
+            key={i}
+            style={[
+              styles.codeInline,
+              { color: c.code, backgroundColor: c.codeBg, fontSize: fs - 1 },
+            ]}
+          >
             {' '}
-            {n.s}
-            {' '}
+            {n.s}{' '}
           </Text>
         );
       case 'del':
@@ -117,15 +146,28 @@ function renderSpans(nodes: Inline[], c: MdColors, fs: number, calm = false, ope
         return <Text key={i}>{'\n'}</Text>;
       case 'link': {
         const file = documentReference(n.href);
-        if (file) return <Text key={i} style={{color: c.link, textDecorationLine: 'underline'}}
-          accessibilityRole={openFile ? 'link' : undefined}
-          accessibilityHint={file.path || undefined}
-          onPress={openFile ? () => openFile(file.reference) : undefined}>
-          {'▤ '}{n.s}{!openFile && file.path ? ` (${file.path})` : ''}
-        </Text>;
-        if (!/^(https?:\/\/|mailto:)/i.test(n.href)) return <Text key={i}>{n.s}</Text>;
+        if (file)
+          return (
+            <Text
+              key={i}
+              style={{ color: c.link, textDecorationLine: 'underline' }}
+              accessibilityRole={openFile ? 'link' : undefined}
+              accessibilityHint={file.path || undefined}
+              onPress={openFile ? () => openFile(file.reference) : undefined}
+            >
+              {'▤ '}
+              {n.s}
+              {!openFile && file.path ? ` (${file.path})` : ''}
+            </Text>
+          );
+        if (!/^(https?:\/\/|mailto:)/i.test(n.href))
+          return <Text key={i}>{n.s}</Text>;
         return (
-          <Text key={i} style={{color: c.link, textDecorationLine: 'underline'}} onPress={() => Linking.openURL(n.href).catch(() => {})}>
+          <Text
+            key={i}
+            style={{ color: c.link, textDecorationLine: 'underline' }}
+            onPress={() => Linking.openURL(n.href).catch(() => {})}
+          >
             {n.s}
           </Text>
         );
@@ -136,10 +178,24 @@ function renderSpans(nodes: Inline[], c: MdColors, fs: number, calm = false, ope
   });
 }
 
-const HEADING_SIZE: Record<number, number> = {1: 6, 2: 4, 3: 2, 4: 1, 5: 0, 6: 0};
+const HEADING_SIZE: Record<number, number> = {
+  1: 6,
+  2: 4,
+  3: 2,
+  4: 1,
+  5: 0,
+  6: 0,
+};
 // Calm headings get MORE size, not less weight: the hierarchy has to be restored
 // from the heading's side, since the body's emphasis is what drowned it.
-const HEADING_SIZE_CALM: Record<number, number> = {1: 8, 2: 6, 3: 4, 4: 2, 5: 1, 6: 0};
+const HEADING_SIZE_CALM: Record<number, number> = {
+  1: 8,
+  2: 6,
+  3: 4,
+  4: 2,
+  5: 1,
+  6: 0,
+};
 
 function TableRow({
   cells,
@@ -169,8 +225,18 @@ function TableRow({
   return (
     <View style={styles.tr}>
       {cells.map((cell, i) => (
-        <View key={i} style={[styles.td, {borderColor: c.border, backgroundColor: header ? c.codeBg : 'transparent'}]}>
-          <CopyableText lang={lang}
+        <View
+          key={i}
+          style={[
+            styles.td,
+            {
+              borderColor: c.border,
+              backgroundColor: header ? c.codeBg : 'transparent',
+            },
+          ]}
+        >
+          <CopyableText
+            lang={lang}
             selectable={sel}
             selectionColor={sc}
             style={{
@@ -180,7 +246,8 @@ function TableRow({
               lineHeight: (fs - 0.5) * 1.4,
               fontWeight: header ? '700' : '400',
               textAlign: align[i] ?? 'left',
-            }}>
+            }}
+          >
             {renderSpans(cell, c, fs, calm, openFile)}
           </CopyableText>
         </View>
@@ -201,9 +268,18 @@ export const PROSE_CLAMP_CHARS = 220;
 const PROSE_CLAMP_LINES = 4;
 
 function Paragraph({
-  b, c, fs, sel, sc, ff, calm, clamp, lang = 'en', openFile,
+  b,
+  c,
+  fs,
+  sel,
+  sc,
+  ff,
+  calm,
+  clamp,
+  lang = 'en',
+  openFile,
 }: {
-  b: Extract<Block, {t: 'p'}>;
+  b: Extract<Block, { t: 'p' }>;
   c: MdColors;
   fs: number;
   sel?: boolean;
@@ -217,11 +293,16 @@ function Paragraph({
   const long = clamp === true && plainLength(b.spans) > PROSE_CLAMP_CHARS;
   const [open, setOpen] = React.useState(false);
   const body = (
-    <CopyableText lang={lang}
+    <CopyableText
+      lang={lang}
       selectable={sel}
       selectionColor={sc}
       numberOfLines={long && !open ? PROSE_CLAMP_LINES : undefined}
-      style={[styles.block, {color: c.text, fontFamily: ff, fontSize: fs, lineHeight: fs * 1.45}]}>
+      style={[
+        styles.block,
+        { color: c.text, fontFamily: ff, fontSize: fs, lineHeight: fs * 1.45 },
+      ]}
+    >
       {renderSpans(b.spans, c, fs, calm, openFile)}
     </CopyableText>
   );
@@ -232,13 +313,28 @@ function Paragraph({
       <TouchableOpacity
         testID="md-prose-toggle"
         accessibilityRole="button"
-        accessibilityState={{expanded: open}}
-        accessibilityLabel={lang === 'zh' ? (open ? '收起全文' : '展开全文') : (open ? 'Show less' : 'Show full text')}
+        accessibilityState={{ expanded: open }}
+        accessibilityLabel={
+          lang === 'zh'
+            ? open
+              ? '收起全文'
+              : '展开全文'
+            : open
+            ? 'Show less'
+            : 'Show full text'
+        }
         onPress={() => setOpen(o => !o)}
         activeOpacity={0.6}
-        style={[styles.proseToggle, {borderColor: c.border}]}>
-        <Text style={[styles.proseToggleText, {color: c.link}]}>
-          {lang === 'zh' ? (open ? '收起' : '展开全文') : (open ? 'Show less' : 'Show full text')}
+        style={[styles.proseToggle, { borderColor: c.border }]}
+      >
+        <Text style={[styles.proseToggleText, { color: c.link }]}>
+          {lang === 'zh'
+            ? open
+              ? '收起'
+              : '展开全文'
+            : open
+            ? 'Show less'
+            : 'Show full text'}
         </Text>
         <DisclosureChevron open={open} color={c.link} prose />
       </TouchableOpacity>
@@ -255,7 +351,7 @@ export interface StackedRow {
   /** The row's first cell — what the row IS (the board puts the pane id here). */
   head: Inline[];
   /** The remaining cells, each paired with its column heading. Empty cells are dropped. */
-  fields: {label: string; value: Inline[]}[];
+  fields: { label: string; value: Inline[] }[];
 }
 
 /**
@@ -269,15 +365,26 @@ export interface StackedRow {
  * Empty cells are dropped rather than rendered as blank rows: half the board's cells are
  * `—` or empty, and a label with nothing after it is noise.
  */
-export function stackRows(header: Inline[][], rows: Inline[][][]): StackedRow[] {
-  const labels = header.map(cells => cells.map(n => n.s).join('').trim());
+export function stackRows(
+  header: Inline[][],
+  rows: Inline[][][],
+): StackedRow[] {
+  const labels = header.map(cells =>
+    cells
+      .map(n => n.s)
+      .join('')
+      .trim(),
+  );
   return rows.map(row => ({
     head: row[0] ?? [],
     fields: row
       .slice(1)
-      .map((value, i) => ({label: labels[i + 1] ?? '', value}))
+      .map((value, i) => ({ label: labels[i + 1] ?? '', value }))
       .filter(f => {
-        const text = f.value.map(n => n.s).join('').trim();
+        const text = f.value
+          .map(n => n.s)
+          .join('')
+          .trim();
         return text !== '' && text !== '—' && text !== '-';
       }),
   }));
@@ -291,28 +398,74 @@ export function stackRows(header: Inline[][], rows: Inline[][][]): StackedRow[] 
 export function rowSubtitle(r: StackedRow): string {
   const f = r.fields[0];
   if (!f) return '';
-  return f.value.map(n => n.s).join('').trim();
+  return f.value
+    .map(n => n.s)
+    .join('')
+    .trim();
 }
 
 /** Known board columns only; unknown headings retain the author's words. */
 function fieldKind(label: string): string {
-  const aliases: Record<string, string> = {loc: 'location', location: 'location', '位置': 'location',
-    doing: 'task', task: 'task', '在做什么': 'task', '任务': 'task',
-    '谁派的': 'origin', 'dispatched by': 'origin', '来源': 'origin',
-    priority: 'priority', '优先级': 'priority', status: 'status', '状态': 'status',
-    '等你定': 'decision', 'your call': 'decision', '教训': 'lessons', lessons: 'lessons'};
+  const aliases: Record<string, string> = {
+    loc: 'location',
+    location: 'location',
+    位置: 'location',
+    doing: 'task',
+    task: 'task',
+    在做什么: 'task',
+    任务: 'task',
+    谁派的: 'origin',
+    'dispatched by': 'origin',
+    来源: 'origin',
+    priority: 'priority',
+    优先级: 'priority',
+    status: 'status',
+    状态: 'status',
+    等你定: 'decision',
+    'your call': 'decision',
+    教训: 'lessons',
+    lessons: 'lessons',
+  };
   return aliases[label.trim().toLowerCase()] ?? '';
 }
 
 function fieldLabel(label: string, lang: Lang): string {
-  const labels: Record<string, [string, string]> = {location: ['Location', '位置'], task: ['Task', '任务'],
-    origin: ['Requested by', '来源'], priority: ['Priority', '优先级'], status: ['Status', '状态'],
-    decision: ['Your decision', '待你确认'], lessons: ['Lessons', '经验']};
+  const labels: Record<string, [string, string]> = {
+    location: ['Location', '位置'],
+    task: ['Task', '任务'],
+    origin: ['Requested by', '来源'],
+    priority: ['Priority', '优先级'],
+    status: ['Status', '状态'],
+    decision: ['Your decision', '待你确认'],
+    lessons: ['Lessons', '经验'],
+  };
   const pair = labels[fieldKind(label)];
   return pair ? pair[lang === 'zh' ? 1 : 0] : label;
 }
 
-function StackedTable({b, c, fs, sel, sc, ff, calm, fold, lang = 'en', openFile}: {b: Extract<Block, {t: 'table'}>; c: MdColors; fs: number; sel?: boolean; sc?: string; ff?: string; calm?: boolean; fold?: boolean; lang?: Lang; openFile?: (reference: string) => void}) {
+function StackedTable({
+  b,
+  c,
+  fs,
+  sel,
+  sc,
+  ff,
+  calm,
+  fold,
+  lang = 'en',
+  openFile,
+}: {
+  b: Extract<Block, { t: 'table' }>;
+  c: MdColors;
+  fs: number;
+  sel?: boolean;
+  sc?: string;
+  ff?: string;
+  calm?: boolean;
+  fold?: boolean;
+  lang?: Lang;
+  openFile?: (reference: string) => void;
+}) {
   const rows = stackRows(b.header, b.rows);
   // Keys identify rows, not positions: inserting a new pane during a poll must not
   // move the reader's open state onto a different pane.
@@ -324,59 +477,154 @@ function StackedTable({b, c, fs, sel, sc, ff, calm, fold, lang = 'en', openFile}
     return JSON.stringify([id, occurrence]);
   });
   const [open, setOpen] = React.useState<Set<string>>(new Set());
-  const toggle = (key: string) => setOpen(prev => {
-    const next = new Set(prev);
-    next.has(key) ? next.delete(key) : next.add(key);
-    return next;
-  });
+  const toggle = (key: string) =>
+    setOpen(prev => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
 
   return (
     <View style={styles.block}>
       {rows.map((r, i) => {
         const shut = fold && !open.has(keys[i]);
-        const identity = r.head.map(n => n.s).join('').trim();
+        const identity = r.head
+          .map(n => n.s)
+          .join('')
+          .trim();
         const task = r.fields.find(f => fieldKind(f.label) === 'task');
-        const summary = task?.value.map(n => n.s).join('').trim();
+        const summary = task?.value
+          .map(n => n.s)
+          .join('')
+          .trim();
         const location = r.fields.find(f => fieldKind(f.label) === 'location');
-        const subtitle = location ? location.value.map(n => n.s).join('').trim() : rowSubtitle(r);
+        const subtitle = location
+          ? location.value
+              .map(n => n.s)
+              .join('')
+              .trim()
+          : rowSubtitle(r);
         return (
-          <View key={keys[i]} style={shut ? [styles.stackShut, {borderBottomColor: c.border}]
-            : [styles.stackRow, {borderColor: c.border, backgroundColor: c.codeBg}]}>
+          <View
+            key={keys[i]}
+            style={
+              shut
+                ? [styles.stackShut, { borderBottomColor: c.border }]
+                : [
+                    styles.stackRow,
+                    { borderColor: c.border, backgroundColor: c.codeBg },
+                  ]
+            }
+          >
             {fold ? (
-              <TouchableOpacity testID={`md-stack-row-${i}`} accessibilityRole="button"
-                accessibilityState={{expanded: !shut}} accessibilityLabel={[summary, identity, subtitle].filter(Boolean).join(', ')}
-                activeOpacity={0.6} onPress={() => toggle(keys[i])} style={styles.stackHead}>
+              <TouchableOpacity
+                testID={`md-stack-row-${i}`}
+                accessibilityRole="button"
+                accessibilityState={{ expanded: !shut }}
+                accessibilityLabel={[summary, identity, subtitle]
+                  .filter(Boolean)
+                  .join(', ')}
+                activeOpacity={0.6}
+                onPress={() => toggle(keys[i])}
+                style={styles.stackHead}
+              >
                 <View style={styles.stackIdentity}>
-                  <Text numberOfLines={2} style={{color: c.text, fontSize: fs, fontWeight: '600', lineHeight: fs * 1.4}}>
+                  <Text
+                    numberOfLines={2}
+                    style={{
+                      color: c.text,
+                      fontSize: fs,
+                      fontWeight: '600',
+                      lineHeight: fs * 1.4,
+                    }}
+                  >
                     {summary || renderSpans(r.head, c, fs, calm, openFile)}
                   </Text>
                   {(summary || subtitle) && (
-                    <Text numberOfLines={2} style={[styles.stackSub, {color: c.dim, fontSize: fs - 1, lineHeight: fs * 1.4}]}>
-                      {[summary ? identity : '', subtitle !== summary ? subtitle : ''].filter(Boolean).join(' · ')}
+                    <Text
+                      numberOfLines={2}
+                      style={[
+                        styles.stackSub,
+                        {
+                          color: c.dim,
+                          fontSize: fs - 1,
+                          lineHeight: fs * 1.4,
+                        },
+                      ]}
+                    >
+                      {[
+                        summary ? identity : '',
+                        subtitle !== summary ? subtitle : '',
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
                     </Text>
                   )}
                 </View>
                 <DisclosureChevron open={!shut} color={c.dim} />
               </TouchableOpacity>
             ) : (
-              <CopyableText lang={lang} selectable={sel} selectionColor={sc} style={{color: c.text, fontFamily: ff, fontSize: fs, fontWeight: '600', lineHeight: fs * 1.4, marginBottom: 3}}>
+              <CopyableText
+                lang={lang}
+                selectable={sel}
+                selectionColor={sc}
+                style={{
+                  color: c.text,
+                  fontFamily: ff,
+                  fontSize: fs,
+                  fontWeight: '600',
+                  lineHeight: fs * 1.4,
+                  marginBottom: 3,
+                }}
+              >
                 {renderSpans(r.head, c, fs, calm, openFile)}
               </CopyableText>
             )}
-            {!shut && r.fields.map((f, j) => (
-              <View key={j} style={fold ? styles.stackFieldVertical : styles.stackField}>
-                <Text style={[fold ? styles.stackLabelVertical : styles.stackLabel, {color: c.dim, fontSize: fs - 1, lineHeight: fs * 1.4}]}>
-                  {fold ? fieldLabel(f.label, lang) : f.label}
-                </Text>
-                {fold ? (
-                  <Paragraph b={{t: 'p', spans: f.value}} c={c} fs={fs} sel={sel} sc={sc} ff={ff} calm={calm} clamp lang={lang} openFile={openFile} />
-                ) : (
-                  <CopyableText lang={lang} selectable={sel} selectionColor={sc} style={{flex: 1, color: c.text, fontFamily: ff, fontSize: fs - 1, lineHeight: (fs - 1) * 1.4}}>
-                    {renderSpans(f.value, c, fs - 1, calm, openFile)}
-                  </CopyableText>
-                )}
-              </View>
-            ))}
+            {!shut &&
+              r.fields.map((f, j) => (
+                <View
+                  key={j}
+                  style={fold ? styles.stackFieldVertical : styles.stackField}
+                >
+                  <Text
+                    style={[
+                      fold ? styles.stackLabelVertical : styles.stackLabel,
+                      { color: c.dim, fontSize: fs - 1, lineHeight: fs * 1.4 },
+                    ]}
+                  >
+                    {fold ? fieldLabel(f.label, lang) : f.label}
+                  </Text>
+                  {fold ? (
+                    <Paragraph
+                      b={{ t: 'p', spans: f.value }}
+                      c={c}
+                      fs={fs}
+                      sel={sel}
+                      sc={sc}
+                      ff={ff}
+                      calm={calm}
+                      clamp
+                      lang={lang}
+                      openFile={openFile}
+                    />
+                  ) : (
+                    <CopyableText
+                      lang={lang}
+                      selectable={sel}
+                      selectionColor={sc}
+                      style={{
+                        flex: 1,
+                        color: c.text,
+                        fontFamily: ff,
+                        fontSize: fs - 1,
+                        lineHeight: (fs - 1) * 1.4,
+                      }}
+                    >
+                      {renderSpans(f.value, c, fs - 1, calm, openFile)}
+                    </CopyableText>
+                  )}
+                </View>
+              ))}
           </View>
         );
       })}
@@ -384,25 +632,88 @@ function StackedTable({b, c, fs, sel, sc, ff, calm, fold, lang = 'en', openFile}
   );
 }
 
-function BlockView({b, c, fs, sel, sc, ff, calm, fold, clampProse, lang, openFile}: {b: Block; c: MdColors; fs: number; sel?: boolean; sc?: string; ff?: string; calm?: boolean; fold?: boolean; clampProse?: boolean; lang?: Lang; openFile?: (reference: string) => void}) {
+function BlockView({
+  b,
+  c,
+  fs,
+  sel,
+  sc,
+  ff,
+  calm,
+  fold,
+  clampProse,
+  lang,
+  openFile,
+}: {
+  b: Block;
+  c: MdColors;
+  fs: number;
+  sel?: boolean;
+  sc?: string;
+  ff?: string;
+  calm?: boolean;
+  fold?: boolean;
+  clampProse?: boolean;
+  lang?: Lang;
+  openFile?: (reference: string) => void;
+}) {
   switch (b.t) {
     case 'h':
       return (
-        <CopyableText lang={lang} selectable={sel} selectionColor={sc} style={[styles.block, {color: c.text, fontFamily: ff, fontSize: fs + ((calm ? HEADING_SIZE_CALM : HEADING_SIZE)[b.level] ?? 0), fontWeight: '700', lineHeight: (fs + 6) * 1.3, marginTop: calm ? 10 : 0}]}>
+        <CopyableText
+          lang={lang}
+          selectable={sel}
+          selectionColor={sc}
+          style={[
+            styles.block,
+            {
+              color: c.text,
+              fontFamily: ff,
+              fontSize:
+                fs + ((calm ? HEADING_SIZE_CALM : HEADING_SIZE)[b.level] ?? 0),
+              fontWeight: '700',
+              lineHeight: (fs + 6) * 1.3,
+              marginTop: calm ? 10 : 0,
+            },
+          ]}
+        >
           {renderSpans(b.spans, c, fs, calm, openFile)}
         </CopyableText>
       );
     case 'p':
-      return <Paragraph b={b} c={c} fs={fs} sel={sel} sc={sc} ff={ff} calm={calm} clamp={clampProse} lang={lang} openFile={openFile} />;
+      return (
+        <Paragraph
+          b={b}
+          c={c}
+          fs={fs}
+          sel={sel}
+          sc={sc}
+          ff={ff}
+          calm={calm}
+          clamp={clampProse}
+          lang={lang}
+          openFile={openFile}
+        />
+      );
     case 'code':
       return (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={[styles.codeBlock, {backgroundColor: c.codeBg, borderColor: c.border}]}
-          contentContainerStyle={styles.codeBlockContent}>
-          <CopyableText rangeUnbounded lang={lang} selectable={sel} selectionColor={sc} style={[styles.codeBlockText, {color: c.code, fontSize: fs - 1, lineHeight: (fs - 1) * 1.4}]}>{b.text}</CopyableText>
-        </ScrollView>
+        <View
+          style={[
+            styles.codeBlock,
+            styles.codeBlockContent,
+            { backgroundColor: c.codeBg, borderColor: c.border },
+          ]}
+        >
+          <CodeText
+            source={b.text}
+            hint={b.lang}
+            dark={darkCodeBackground(c.codeBg, c.text)}
+            fontSize={fs - 1}
+            lang={lang}
+            selectable={sel}
+            selectionColor={sc}
+          />
+        </View>
       );
     case 'ul':
     case 'ol':
@@ -410,85 +721,243 @@ function BlockView({b, c, fs, sel, sc, ff, calm, fold, clampProse, lang, openFil
         <View style={styles.block}>
           {b.items.map((item, i) => (
             <View key={i} style={styles.li}>
-              <Text style={[styles.bullet, {color: c.dim, fontFamily: ff, fontSize: fs, lineHeight: fs * 1.45}]}>{b.t === 'ol' ? `${b.start + i}. ` : '• '}</Text>
-              <CopyableText lang={lang} selectable={sel} selectionColor={sc} style={[styles.liText, {color: c.text, fontFamily: ff, fontSize: fs, lineHeight: fs * 1.45}]}>{renderSpans(item, c, fs, calm, openFile)}</CopyableText>
+              <Text
+                style={[
+                  styles.bullet,
+                  {
+                    color: c.dim,
+                    fontFamily: ff,
+                    fontSize: fs,
+                    lineHeight: fs * 1.45,
+                  },
+                ]}
+              >
+                {b.t === 'ol' ? `${b.start + i}. ` : '• '}
+              </Text>
+              <CopyableText
+                lang={lang}
+                selectable={sel}
+                selectionColor={sc}
+                style={[
+                  styles.liText,
+                  {
+                    color: c.text,
+                    fontFamily: ff,
+                    fontSize: fs,
+                    lineHeight: fs * 1.45,
+                  },
+                ]}
+              >
+                {renderSpans(item, c, fs, calm, openFile)}
+              </CopyableText>
             </View>
           ))}
         </View>
       );
     case 'quote':
       return (
-        <View style={[styles.quote, {borderLeftColor: c.border}]}>
-          <CopyableText lang={lang} selectable={sel} selectionColor={sc} style={{color: c.dim, fontFamily: ff, fontSize: fs, lineHeight: fs * 1.45, fontStyle: 'italic'}}>{renderSpans(b.spans, c, fs, calm, openFile)}</CopyableText>
+        <View style={[styles.quote, { borderLeftColor: c.border }]}>
+          <CopyableText
+            lang={lang}
+            selectable={sel}
+            selectionColor={sc}
+            style={{
+              color: c.dim,
+              fontFamily: ff,
+              fontSize: fs,
+              lineHeight: fs * 1.45,
+              fontStyle: 'italic',
+            }}
+          >
+            {renderSpans(b.spans, c, fs, calm, openFile)}
+          </CopyableText>
         </View>
       );
     case 'table':
       // Wide tables stack on a phone (see stackRows). A table narrow enough to fit still
       // renders as a table — a two-column key/value grid reads better as one.
       if (calm && b.header.length > 3) {
-        return <StackedTable b={b} c={c} fs={fs} sel={sel} sc={sc} ff={ff} calm={calm} fold={fold} lang={lang} openFile={openFile} />;
+        return (
+          <StackedTable
+            b={b}
+            c={c}
+            fs={fs}
+            sel={sel}
+            sc={sc}
+            ff={ff}
+            calm={calm}
+            fold={fold}
+            lang={lang}
+            openFile={openFile}
+          />
+        );
       }
       return (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.block}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.block}
+        >
           <View>
-            <TableRow cells={b.header} align={b.align} c={c} fs={fs} header sel={sel} sc={sc} ff={ff} calm={calm} lang={lang} openFile={openFile} />
+            <TableRow
+              cells={b.header}
+              align={b.align}
+              c={c}
+              fs={fs}
+              header
+              sel={sel}
+              sc={sc}
+              ff={ff}
+              calm={calm}
+              lang={lang}
+              openFile={openFile}
+            />
             {b.rows.map((row, i) => (
-              <TableRow key={i} cells={row} align={b.align} c={c} fs={fs} sel={sel} sc={sc} ff={ff} calm={calm} lang={lang} openFile={openFile} />
+              <TableRow
+                key={i}
+                cells={row}
+                align={b.align}
+                c={c}
+                fs={fs}
+                sel={sel}
+                sc={sc}
+                ff={ff}
+                calm={calm}
+                lang={lang}
+                openFile={openFile}
+              />
             ))}
           </View>
         </ScrollView>
       );
     case 'hr':
-      return <View style={[styles.hr, {backgroundColor: c.border}]} />;
+      return <View style={[styles.hr, { backgroundColor: c.border }]} />;
     default:
       return null;
   }
 }
 
-export function MarkdownView({source, colors, fontSize = 14, selectable, selectionColor, fontFamily, calmEmphasis, foldRows, clampProse, lang, openFile}: Props) {
+export function MarkdownView({
+  source,
+  colors,
+  fontSize = 14,
+  selectable,
+  selectionColor,
+  fontFamily,
+  calmEmphasis,
+  foldRows,
+  clampProse,
+  lang,
+  openFile,
+}: Props) {
   const blocks = React.useMemo(() => parseBlocks(source), [source]);
   const feedback = React.useContext(CopyFeedbackContext);
-  const continuous = feedback && selectable && nativeRangeAvailable && !clampProse;
+  const continuous =
+    feedback && selectable && nativeRangeAvailable && !clampProse;
   const groups: Block[][] = [];
   for (const block of blocks) {
-    if (continuous && block.t === 'p' && groups.length && groups[groups.length - 1].every(b => b.t === 'p')) groups[groups.length - 1].push(block);
+    if (
+      continuous &&
+      block.t === 'p' &&
+      groups.length &&
+      groups[groups.length - 1].every(b => b.t === 'p')
+    )
+      groups[groups.length - 1].push(block);
     else groups.push([block]);
   }
   return (
     <RangeSourceContext.Provider value={source}>
-    <View>
-      {groups.map((group, i) => continuous && group[0].t === 'p' ? (
-        <CopyableText key={i} lang={lang} selectable={selectable} selectionColor={selectionColor}
-          style={[styles.block, {color: colors.text, fontFamily, fontSize, lineHeight: fontSize * 1.45}]}>
-          {group.map((b, n) => b.t === 'p' ? <Text key={n}>{n ? '\n\n' : ''}{renderSpans(b.spans, colors, fontSize, calmEmphasis, openFile)}</Text> : null)}
-        </CopyableText>
-      ) : <BlockView key={i} b={group[0]} c={colors} fs={fontSize} sel={selectable} sc={selectionColor} ff={fontFamily} calm={calmEmphasis} fold={foldRows} clampProse={clampProse} lang={lang} openFile={openFile} />)}
-    </View>
+      <View>
+        {groups.map((group, i) =>
+          continuous && group[0].t === 'p' ? (
+            <CopyableText
+              key={i}
+              lang={lang}
+              selectable={selectable}
+              selectionColor={selectionColor}
+              style={[
+                styles.block,
+                {
+                  color: colors.text,
+                  fontFamily,
+                  fontSize,
+                  lineHeight: fontSize * 1.45,
+                },
+              ]}
+            >
+              {group.map((b, n) =>
+                b.t === 'p' ? (
+                  <Text key={n}>
+                    {n ? '\n\n' : ''}
+                    {renderSpans(
+                      b.spans,
+                      colors,
+                      fontSize,
+                      calmEmphasis,
+                      openFile,
+                    )}
+                  </Text>
+                ) : null,
+              )}
+            </CopyableText>
+          ) : (
+            <BlockView
+              key={i}
+              b={group[0]}
+              c={colors}
+              fs={fontSize}
+              sel={selectable}
+              sc={selectionColor}
+              ff={fontFamily}
+              calm={calmEmphasis}
+              fold={foldRows}
+              clampProse={clampProse}
+              lang={lang}
+              openFile={openFile}
+            />
+          ),
+        )}
+      </View>
     </RangeSourceContext.Provider>
   );
 }
 
 const styles = StyleSheet.create({
-  proseToggle: {alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, paddingHorizontal: 10, borderWidth: StyleSheet.hairlineWidth, borderRadius: 7, marginBottom: 8},
-  proseToggleText: {fontSize: 12.5, fontWeight: '600'},
-  block: {marginBottom: 8},
-  bold: {fontWeight: '700'},
+  proseToggle: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    minHeight: 44,
+    paddingHorizontal: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 7,
+    marginBottom: 8,
+  },
+  proseToggleText: { fontSize: 12.5, fontWeight: '600' },
+  block: { marginBottom: 8 },
+  bold: { fontWeight: '700' },
   // Emphasis at the SAME weight as a heading erases the hierarchy. The situation
   // board carries ~1 bold span per line (634 across 654 lines when measured), so
   // there it is 600: still emphasis, no longer a shout.
-  boldCalm: {fontWeight: '600'},
-  italic: {fontStyle: 'italic'},
-  del: {textDecorationLine: 'line-through'},
-  codeInline: {fontFamily: 'Menlo', borderRadius: 3},
-  codeCalm: {fontFamily: 'Menlo'},
-  codeBlock: {borderRadius: 8, borderWidth: StyleSheet.hairlineWidth, marginBottom: 8, maxWidth: '100%'},
-  codeBlockContent: {padding: 10},
-  codeBlockText: {fontFamily: 'Menlo'},
-  li: {flexDirection: 'row', alignItems: 'flex-start'},
-  bullet: {fontVariant: ['tabular-nums']},
-  liText: {flex: 1},
-  quote: {borderLeftWidth: 3, paddingLeft: 10, marginBottom: 8},
-  hr: {height: StyleSheet.hairlineWidth, marginVertical: 10},
+  boldCalm: { fontWeight: '600' },
+  italic: { fontStyle: 'italic' },
+  del: { textDecorationLine: 'line-through' },
+  codeInline: { fontFamily: 'Menlo', borderRadius: 3 },
+  codeCalm: { fontFamily: 'Menlo' },
+  codeBlock: {
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    marginBottom: 8,
+    maxWidth: '100%',
+  },
+  codeBlockContent: { padding: 10 },
+  codeBlockText: { fontFamily: 'Menlo' },
+  li: { flexDirection: 'row', alignItems: 'flex-start' },
+  bullet: { fontVariant: ['tabular-nums'] },
+  liText: { flex: 1 },
+  quote: { borderLeftWidth: 3, paddingLeft: 10, marginBottom: 8 },
+  hr: { height: StyleSheet.hairlineWidth, marginVertical: 10 },
   // A CARD per row, not a rule beside it. One row of the situation board's table can run
   // a dozen lines, and a 2pt left rule with a 9pt gap gave the eye nothing to find the end
   // of a ship by: two entries read as one continuous wall. Same treatment the radar's rows
@@ -500,14 +969,34 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     marginBottom: 10,
   },
-  stackShut: {borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 2},
-  stackHead: {flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48, paddingVertical: 8},
-  stackIdentity: {flex: 1, minWidth: 0},
-  stackSub: {marginTop: 3},
-  stackFieldVertical: {marginTop: 10},
-  stackLabelVertical: {fontWeight: '500', marginBottom: 3},
-  stackField: {flexDirection: 'row', alignItems: 'flex-start', gap: 9, marginTop: 3},
-  stackLabel: {minWidth: 58, fontVariant: ['tabular-nums']},
-  tr: {flexDirection: 'row'},
-  td: {borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 8, paddingVertical: 5, minWidth: 92, justifyContent: 'center'},
+  stackShut: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingVertical: 2,
+  },
+  stackHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    minHeight: 48,
+    paddingVertical: 8,
+  },
+  stackIdentity: { flex: 1, minWidth: 0 },
+  stackSub: { marginTop: 3 },
+  stackFieldVertical: { marginTop: 10 },
+  stackLabelVertical: { fontWeight: '500', marginBottom: 3 },
+  stackField: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 9,
+    marginTop: 3,
+  },
+  stackLabel: { minWidth: 58, fontVariant: ['tabular-nums'] },
+  tr: { flexDirection: 'row' },
+  td: {
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    minWidth: 92,
+    justifyContent: 'center',
+  },
 });
