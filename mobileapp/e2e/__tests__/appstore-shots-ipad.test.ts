@@ -50,7 +50,7 @@ function shot(name: string): void {
 }
 
 gated('app store demo shots (iPad)', () => {
-  it('captures the split shell, HQ with its inspector, the pane grid and the knowledge sheet', async () => {
+  it('captures the split shell, HQ matters, the pane grid and the knowledge sheet', async () => {
     mkdirSync(OUT, {recursive: true});
     for (const name of SHOTS) rmSync(join(OUT, `${name}.png`), {force: true});
     simctl(['status_bar', UDID, 'override', '--time', '9:41', '--batteryState', 'charged',
@@ -72,9 +72,9 @@ gated('app store demo shots (iPad)', () => {
     shot('01-split');
 
     await driver.$('~radar-hq-card').click();
-    await driver.$('~hq-inspector').waitForDisplayed({timeout: 10_000});
-    await driver.$('~hq-verdict').waitForDisplayed({timeout: 15_000});
-    await driver.$('~hq-call-api:0.0').waitForDisplayed({timeout: 20_000});
+    await driver.$('~hq-overview-talk').waitForDisplayed({timeout: 15_000});
+    await driver.$('~hq-matter-verify-tests').waitForDisplayed({timeout: 20_000});
+    await driver.$('~hq-resource-knowledge').waitForDisplayed({timeout: 10_000});
     shot('02-hq');
 
     await driver.$(`~${TestIds.radar.panes}`).click();
@@ -83,8 +83,8 @@ gated('app store demo shots (iPad)', () => {
     shot('03-panes');
 
     await driver.$('~radar-hq-card').click();
-    await driver.$('~hq-knowledge-open').waitForDisplayed({timeout: 10_000});
-    await driver.$('~hq-knowledge-open').click();
+    await driver.$('~hq-resource-knowledge').waitForDisplayed({timeout: 10_000});
+    await driver.$('~hq-resource-knowledge').click();
     await driver.$('~knowledge-find').waitForDisplayed({timeout: 10_000});
     // The demo always includes k2. Require its detail to load: a bare list screenshot
     // contradicts the caption and previously passed when the generic selector missed.

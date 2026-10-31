@@ -5,7 +5,7 @@
     "sub": "See sessions. Reply to agents. Follow progress with HQ.",
     "dot": "#06B6D4",
     "ipad": "03-panes",
-    "phone": "04-console",
+    "phone": "03-hq",
     "header": "tmux sessions + HQ"
   },
   "zh": {
@@ -13,7 +13,7 @@
     "sub": "查看进度，回复 Agent。",
     "dot": "#06B6D4",
     "ipad": "03-panes",
-    "phone": "04-console",
+    "phone": "03-hq",
     "header": "tmux 会话与 HQ"
   }
 }

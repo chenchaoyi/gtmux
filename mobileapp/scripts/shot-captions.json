@@ -14,9 +14,9 @@
       "dot": "#EF4444"
     },
     {
-      "file": "04-console",
-      "title": "Follow progress with HQ",
-      "sub": "Read updates, pending decisions and recorded actions.",
+      "file": "03-hq",
+      "title": "Follow matters with HQ",
+      "sub": "Review ongoing work, decisions and recent results.",
       "dot": "#06B6D4"
     },
     {
@@ -58,9 +58,9 @@
       "dot": "#EF4444"
     },
     {
-      "file": "04-console",
-      "title": "跟进任务进度",
-      "sub": "查看 HQ 的回复、待处理事项和操作记录。",
+      "file": "03-hq",
+      "title": "跟进 HQ 事项",
+      "sub": "查看进行中的工作、待决问题和最新结果。",
       "dot": "#06B6D4"
     },
     {
@@ -97,8 +97,8 @@
     },
     {
       "file": "02-hq",
-      "title": "HQ and pending requests",
-      "sub": "Read the HQ conversation alongside requests that need your reply.",
+      "title": "Your HQ overview",
+      "sub": "Open matters, review progress and reach project resources.",
       "dot": "#EF4444"
     },
     {
@@ -118,19 +118,19 @@
     {
       "file": "01-split",
       "title": "会话与列表并排显示",
-      "sub": "侧栏显示所有 agent，右侧查看和操作当前会话。",
+      "sub": "侧栏显示所有 Agent，右侧查看和操作当前会话。",
       "dot": "#EF4444"
     },
     {
       "file": "02-hq",
-      "title": "对话与待办并排显示",
-      "sub": "与 HQ 沟通时，同时查看等待你处理的事项。",
+      "title": "查看 HQ 总览",
+      "sub": "进入事项查看进展，直接打开项目资料。",
       "dot": "#EF4444"
     },
     {
       "file": "03-panes",
       "title": "所有窗格，一屏看完",
-      "sub": "集中查看 agent 和普通终端，支持搜索。",
+      "sub": "集中查看 Agent 和普通终端，支持搜索。",
       "dot": "#06B6D4"
     },
     {

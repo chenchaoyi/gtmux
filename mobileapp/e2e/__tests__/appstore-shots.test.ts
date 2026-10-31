@@ -83,32 +83,24 @@ gated('app store demo shots', () => {
     await driver.$(`~${TestIds.detail.back}`).click();
     await hqDisc.waitForDisplayed({timeout: 10_000});
 
-    // 3) HQ command page — the chief-of-staff differentiator: the assessment line +
-    //    the your-call / activity / console zones (hq-command-page removed the old fleet
-    //    board). Tapping the disc opens the real HQScreen.
+    // 3) Current HQ overview: resources and real synthetic matter cards.
     await hqDisc.click();
-    // The mounted page can still contain the initial empty digest. Require the
-    // demo's actual pending item before recording HQ.
-    await driver.$('~hq-verdict').waitForDisplayed({timeout: 15_000});
-    await driver.$('~hq-call-api:0.0').waitForDisplayed({timeout: 20_000});
+    // Require the actual pending matter rather than an empty loading state.
+    await driver.$('~hq-overview-talk').waitForDisplayed({timeout: 15_000});
+    await driver.$('~hq-matter-verify-tests').waitForDisplayed({timeout: 20_000});
+    await driver.$('~hq-resource-usage').waitForDisplayed({timeout: 10_000});
     shot('03-hq');
 
-    // 4) The console — HQ's words with the acts it recorded threaded in. The page's whole
-    //    argument is that a supervisor which does not show what it did is a dashboard.
-    //    The acts had their own tab until #1086 folded them in here; this step went on
-    //    tapping `hq-tab-acts` and swallowing the failure, so it re-photographed the
-    //    screen before it and shipped two identical store shots. Tap for real: a tab that
-    //    stops existing must fail the capture, not pass it quietly.
-    await driver.$('~hq-tab-console').click();
+    // 4) Enter the HQ conversation through its visible action.
+    await driver.$('~hq-overview-talk').click();
+    await driver.$('~hq-back').waitForDisplayed({timeout: 15_000});
+    await driver.$('~hq-verdict').waitForDisplayed({timeout: 15_000});
     await settle(1800);
     shot('04-console');
 
-    // 5) Usage — the plan windows, which is the one number local counting cannot produce.
-    //    Reached from the header's usage door, beside the board and the knowledge base.
-    await driver.$('~hq-tab-calls').click().catch(() => {});
-    await settle(500);
-    // Required: a demo HQ page without its usage door is a capture that failed.
-    const usageDoor = driver.$('~hq-usage-open');
+    // 5) Return to the overview and open its usage resource card.
+    await driver.$('~hq-back').click();
+    const usageDoor = driver.$('~hq-resource-usage');
     await usageDoor.waitForDisplayed({timeout: 10_000});
     await usageDoor.click();
     const usageClose = driver.$('~hq-usage-close');

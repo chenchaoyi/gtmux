@@ -1,0 +1,21 @@
+Trace
+• Review each conversation turn, tool call and recorded context. Expand turns and calls separately, search the session, and inspect individual calls.
+• Read code with syntax highlighting and wrapping. Open long tool input in a dedicated reader to select and copy it.
+• Keep your place as new records arrive or older history loads.
+
+HQ
+• Follow ongoing matters, decisions and recent results in a card layout. Open a matter to see its participants, progress and related messages.
+• See the same HQ overview from its conversation, collapse the context, and send images or files to HQ.
+
+Files and documents
+• Open local file links directly from conversations, with progress, retry and system sharing.
+• Preview formatted Markdown with local images, plus HTML reports, PDFs, images and text. HTML interaction requires your permission for each file.
+
+Usage widgets
+• Add an Agent usage widget to the Home Screen or Lock Screen on iPhone and iPad, then tap it to open usage details.
+• See available quota or locally recorded output, with dates for older readings. Output tokens are not a balance or bill.
+
+Fixes
+• Improve long conversations, short messages, image attachments and repeated pairing. Large diffs stay responsive, and reading code no longer triggers navigation across the screen.
+
+Update gtmux on your server to 1.0.162 or later for all new features.

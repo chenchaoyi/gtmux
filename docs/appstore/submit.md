@@ -216,7 +216,7 @@ read back WAITING_FOR_REVIEW. Archive combined release notes as described in §1
 | App Privacy | Data Not Collected (operator decision, 2026-10-07); do not change as an accessibility side effect |
 | Export Compliance | Standard HTTPS/TLS exemption; `ITSAppUsesNonExemptEncryption=false` |
 | Pricing | Free |
-| Availability | All countries/regions except mainland China; preserve existing access policy |
+| Availability | Read current country/region availability from ASC and preserve it; do not use a historical territory list as the current policy |
 | Sign-in required | No account; pairing connects to the user's own server |
 
 The existing privacy answer reflects the app's actual data flow: the phone communicates
