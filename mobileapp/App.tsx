@@ -9,6 +9,7 @@ import {
   useNavigationContainerRef,
 } from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import {APP_STACK_OPTIONS} from './src/navigationOptions';
 import React, {useEffect, useRef} from 'react';
 import {Alert, StatusBar} from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
@@ -267,7 +268,7 @@ function Root() {
       <UsageWidgetBridge />
       <WhatsNew />
       <NavigationContainer ref={navRef} theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack.Navigator screenOptions={{headerShown: false}}>
+        <Stack.Navigator screenOptions={APP_STACK_OPTIONS}>
           <Stack.Screen name="Radar" component={RadarRoute} />
           <Stack.Screen name="Detail" component={DetailScreen} />
           <Stack.Screen name="Panes" component={PaneBrowserScreen} />

@@ -11,7 +11,7 @@ import { MarkdownView } from '../ui/MarkdownView';
 import { ParticipantProfileModal } from '../ui/ParticipantProfileModal';
 import { nativeDocumentPreview } from '../documents/nativePreview';
 import * as layout from '../ui/layout';
-import { CopyableText } from '../ui/CopyableText';
+import { CodeText } from '../ui/CodeText';
 jest.mock('../ui/ParticipantProfileModal', () => ({
   ParticipantProfileModal: jest.fn(() => null),
 }));
@@ -75,7 +75,7 @@ function data(): TraceEvent[] {
     .map((row: any) => row.event);
 }
 function source() {
-  return tree.root.findAllByProps({ testID: 'trace-source' })[0].props.children;
+  return tree.root.findAllByProps({ testID: 'trace-source' })[0].props.source;
 }
 function width(value: number) {
   const node = tree.root.findAll(
@@ -138,9 +138,9 @@ test('session name leads the heading; each expanded call opens its own fully wra
   events.forEach((event, i) => {
     press('trace-record-' + event.key);
     const input = tree.root
-      .findAllByType(CopyableText)
+      .findAllByType(CodeText)
       .find(n => n.props.testID === 'trace-source')!;
-    expect(input.props.children).toBe(inputs[i]);
+    expect(input.props.source).toBe(inputs[i]);
     expect(input.props.numberOfLines).toBeUndefined();
     expect(input.props.rangeUnbounded).not.toBe(true);
     let parent = input.parent;
@@ -579,4 +579,38 @@ test('position controls implicit following and a reading gesture prevents queued
     jest.advanceTimersByTime(32);
   });
   expect(scroll).toHaveBeenCalled();
+});
+
+test('Preview uses shared syntax rendering and has no reading-explanation footer', () => {
+  mount({
+    turns: [
+      {
+        ...turn,
+        segments: [
+          {
+            steps: [
+              {
+                kind: 'tool',
+                title: 'exec',
+                input: 'const answer = "value";',
+                input_kind: 'code',
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  });
+  const event = data().find(e => e.kind === 'tool')!;
+  press('trace-record-' + event.key);
+  press('trace-tab-preview');
+  expect(
+    tree.root
+      .findAllByType(CodeText)
+      .some(n => n.props.source === 'const answer = "value";'),
+  ).toBe(true);
+  expect(tree.root.findAllByProps({ testID: 'trace-limits' })).toHaveLength(0);
+  expect(
+    tree.root.findAllByProps({ testID: 'trace-limits-content' }),
+  ).toHaveLength(0);
 });

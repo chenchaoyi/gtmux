@@ -141,3 +141,7 @@ A tmux session's displayed title comes from its terminal title. If Codex include
 ### Appearance and trace details
 
 Open the **Settings** gear in the browser's top-right corner, then **Appearance**, to select **System**, **Light** or **Dark**. System is the default and updates live; your choice is saved in this browser. Terminal captures retain the server terminal's colors. Close the trace inspector to give the event list its full width and longer previews. Selecting an event or **Show details** reopens it; polling does not reopen a closed inspector.
+
+### Read code on phone and iPad
+
+Tool details and Trace Preview color code syntax and wrap long lines. Open a tool input in its reader to use the full screen; Copy preserves its recorded text. A short Partial or Summary label identifies limited records. Reading controls do not use a sideways drag handle, and back navigation starts at the screen edge.

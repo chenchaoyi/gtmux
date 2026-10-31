@@ -4,19 +4,6 @@
 import React from 'react';
 import Svg, {Circle, Path, Rect} from 'react-native-svg';
 
-export function HorizontalScrollIcon({size = 20, color = '#fff'}: {size?: number; color?: string}) {
-  return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path d="M4 12h16M8 8l-4 4 4 4m8-8 4 4-4 4" stroke={color} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" />
-  </Svg>;
-}
-
-export function InfoIcon({size = 20, color = '#fff'}: {size?: number; color?: string}) {
-  return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Circle cx="12" cy="12" r="8.5" stroke={color} strokeWidth={1.7} />
-    <Path d="M12 11v5m0-8v.2" stroke={color} strokeWidth={1.7} strokeLinecap="round" />
-  </Svg>;
-}
-
 // A flat keyboard: rounded outline + key dots + a space bar (replaces the
 // skeuomorphic ⌨ emoji glyph).
 export function KeyboardIcon({size = 20, color = '#fff'}: {size?: number; color?: string}) {
