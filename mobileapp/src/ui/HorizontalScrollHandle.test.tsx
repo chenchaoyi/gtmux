@@ -1,0 +1,31 @@
+import React from 'react';
+import renderer, {act} from 'react-test-renderer';
+import {GestureResponderEvent, PanResponder, PanResponderCallbacks, PanResponderGestureState} from 'react-native';
+import {HorizontalScrollHandle} from './HorizontalScrollHandle';
+
+test('drag maps to the real scroll extent, clamps at either edge and uses current readings', () => {
+  let callbacks: PanResponderCallbacks = {};
+  const create = PanResponder.create;
+  const spy = jest.spyOn(PanResponder, 'create').mockImplementation(config => {callbacks = config; return create(config);});
+  const onScrollTo = jest.fn();
+  let tree: renderer.ReactTestRenderer;
+  const props = {viewport: 260, content: 2000, offset: 0, onScrollTo, lang: 'en' as const};
+  act(() => {tree = renderer.create(<HorizontalScrollHandle {...props} />);});
+  const event = {} as GestureResponderEvent;
+  const move = (dx: number) => callbacks.onPanResponderMove!(event, {dx, dy: 0} as PanResponderGestureState);
+  callbacks.onPanResponderGrant!(event, {} as PanResponderGestureState);
+  move(26); expect(onScrollTo).toHaveBeenLastCalledWith(870);
+  move(-20); expect(onScrollTo).toHaveBeenLastCalledWith(0);
+  move(10000); expect(onScrollTo).toHaveBeenLastCalledWith(1740);
+  act(() => tree!.update(<HorizontalScrollHandle {...props} offset={1000} />));
+  callbacks.onPanResponderGrant!(event, {} as PanResponderGestureState);
+  move(-26); expect(onScrollTo).toHaveBeenLastCalledWith(130);
+  const thumb = tree!.root.findByProps({testID: 'code-scroll-thumb'});
+  expect(thumb.props.accessibilityValue.now).toBe(57);
+  act(() => thumb.props.onAccessibilityAction({nativeEvent: {actionName: 'increment'}}));
+  expect(onScrollTo).toHaveBeenLastCalledWith(1208);
+  act(() => thumb.props.onAccessibilityAction({nativeEvent: {actionName: 'decrement'}}));
+  expect(onScrollTo).toHaveBeenLastCalledWith(792);
+  act(() => tree!.unmount());
+  spy.mockRestore();
+});

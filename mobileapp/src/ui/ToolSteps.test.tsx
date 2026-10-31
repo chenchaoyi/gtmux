@@ -1,5 +1,5 @@
 import React from 'react';
-import {ScrollView, Text} from 'react-native';
+import {Alert, ScrollView, Text} from 'react-native';
 import Clipboard from '@react-native-clipboard/clipboard';
 import renderer, {act} from 'react-test-renderer';
 import {ToolSteps} from './ToolSteps';
@@ -45,7 +45,12 @@ test('individual rows disclose exact selectable input, working directory and hor
     byID('tool-input-horizontal').props.onLayout({nativeEvent: {layout: {width: 240}}});
     byID('tool-input-horizontal').props.onContentSizeChange(2000);
   });
-  expect(byID('tool-input-scroll-hint')).toBeDefined();
+  expect(byID('tool-input-scroll-control')).toBeDefined();
+  act(() => byID('tool-input-horizontal').props.onScroll({nativeEvent: {contentOffset: {x: 800}}}));
+  expect(byID('tool-input-scroll-control').props.offset).toBe(800);
+  act(() => byID('tool-input-scroll-control').props.onScrollTo(50000));
+  expect(byID('tool-input-scroll-control').props.offset).toBe(1760);
+  expect(byID('tool-input-scroll-hint')).toBeUndefined();
   act(() => byID('tool-step-toggle-1').props.onPress());
   expect(tree.root.findAllByType(ScrollView)).toHaveLength(0);
 });
@@ -56,7 +61,10 @@ test('one row stays selected as activity appends; group collapse and older cores
   expect(byID('tool-step-toggle-1').props.accessibilityState.expanded).toBe(true);
   act(() => byID('tool-step-toggle-2').props.onPress());
   expect(byID('tool-input-text').props.children).toBe(steps[2].detail);
-  expect(tree.root.findAllByType(Text).some(n => n.props.children === 'Argument summary only')).toBe(true);
+  expect(byID('tool-input-info').props.accessibilityLabel).toBe('Argument summary');
+  const alert = jest.spyOn(Alert, 'alert');
+  act(() => byID('tool-input-info').props.onPress());
+  expect(alert).toHaveBeenCalledWith('Argument summary', expect.stringContaining('rather than the original input'));
   expect(tree.root.findAllByType(Text).some(n => /success|completed|failed/i.test(String(n.props.children)))).toBe(false);
   act(() => tree.update(<ToolSteps {...props(false)} />));
   expect(tree.root.findAllByType(ScrollView)).toHaveLength(0);
@@ -64,7 +72,11 @@ test('one row stays selected as activity appends; group collapse and older cores
 test('a size-limited input is explicit and missing fields never imply full detail', () => {
   act(() => {tree = renderer.create(<ToolSteps {...props(true)} lang="zh" steps={[{kind: 'tool', title: 'exec', detail: 'short…', details_truncated: true}]} />);});
   act(() => byID('tool-step-toggle-0').props.onPress());
-  expect(tree.root.findAllByType(Text).some(n => n.props.children === '部分详情超过显示限制')).toBe(true);
+  expect(byID('tool-input-info').props.accessibilityLabel).toBe('部分调用详情');
+  expect(tree.root.findAllByType(Text).some(n => n.props.children === '部分详情超过显示限制')).toBe(false);
+  const alert = jest.spyOn(Alert, 'alert');
+  act(() => byID('tool-input-info').props.onPress());
+  expect(alert).toHaveBeenCalledWith('部分调用详情', expect.stringContaining('复制得到的是这里显示的内容'));
 });
 test.each([
   ['Read', 'read'], ['mcp__fs__list_directory', 'list'], ['Grep', 'search'], ['Bash', 'command'],

@@ -1,6 +1,6 @@
 import React from 'react';
 import renderer, {act} from 'react-test-renderer';
-import {FlatList, Text, TouchableOpacity} from 'react-native';
+import {FlatList, ScrollView, Text, TouchableOpacity} from 'react-native';
 import {DiffModal} from './DiffModal';
 import {paletteFor} from './theme';
 import {diffRows} from './diff';
@@ -39,4 +39,34 @@ test('minified lines have a bounded native text measurement and disclose shorten
   expect(result.lines[0].length).toBeLessThan(2100);
   expect(result.columns).toBeLessThan(2100);
   expect(diffRows('+small\n context\n').lines).toEqual(['+small', ' context']);
+});
+
+test('wide diffs keep a contrasting position indicator in a fixed viewport gutter', async () => {
+  const client = {diff: async () => Array.from({length: 200}, () => '+' + 'x'.repeat(200)).join('\n')} as any;
+  await act(async () => {tree = renderer.create(<DiffModal {...props} pal={paletteFor('light')} client={client} />);});
+  const horizontal = () => tree.root.findAllByType(ScrollView).find(n => n.props.testID === 'diff-horizontal')!;
+  const list = () => tree.root.findByType(FlatList);
+  act(() => {
+    horizontal().props.onLayout({nativeEvent: {layout: {width: 300, height: 600}}});
+    list().props.onContentSizeChange(1424, 3200);
+  });
+  const track = tree.root.findByProps({testID: 'diff-scroll-track'});
+  expect(track.props.pointerEvents).toBe('none');
+  expect(track.props.style.right).toBe(2);
+  expect(horizontal().props.style.marginRight).toBe(8);
+  const thumb = tree.root.findByProps({testID: 'diff-scroll-thumb'});
+  const position = () => thumb.props.style[1].transform[0].translateY.__getValue();
+  expect(position()).toBe(0);
+  act(() => list().props.onScroll({nativeEvent: {contentOffset: {y: 1300}}}));
+  expect(position()).toBeGreaterThan(0);
+  act(() => list().props.onScroll({nativeEvent: {contentOffset: {y: 2600}}}));
+  expect(position()).toBeCloseTo(592 - thumb.props.style[1].height);
+  expect(list().props.style.width).toBeGreaterThan(300);
+  expect(list().props.showsVerticalScrollIndicator).toBe(false);
+  expect(horizontal().props.indicatorStyle).toBe('white');
+  expect(tree.root.findAllByType(Text).length).toBeLessThan(200);
+  act(() => horizontal().props.onLayout({nativeEvent: {layout: {width: 1800, height: 800}}}));
+  expect(tree.root.findAllByProps({testID: 'diff-scroll-track'}).length).toBeGreaterThan(0);
+  act(() => list().props.onContentSizeChange(1800, 100));
+  expect(tree.root.findAllByProps({testID: 'diff-scroll-track'})).toHaveLength(0);
 });

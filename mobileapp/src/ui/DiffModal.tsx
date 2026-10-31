@@ -2,8 +2,8 @@
 // pane's cwd from /api/diff and renders it line-coloured (additions green,
 // deletions red, hunks cyan). Read-only; full-screen over the Detail.
 
-import React, {useEffect, useMemo, useState} from 'react';
-import {ActivityIndicator, FlatList, Modal, PixelRatio, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View} from 'react-native';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {ActivityIndicator, Animated, FlatList, Modal, PixelRatio, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View} from 'react-native';
 import {GtmuxClient} from '../api/client';
 import {Lang} from '../i18n';
 import {Palette} from './theme';
@@ -30,6 +30,10 @@ export function DiffModal({
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const {width, fontScale} = useWindowDimensions();
+  const [viewportWidth, setViewportWidth] = useState(width);
+  const [viewportHeight, setViewportHeight] = useState(0);
+  const [contentHeight, setContentHeight] = useState(0);
+  const verticalOffset = useRef(new Animated.Value(0)).current;
   const scale = fontScale;
   const rowHeight = PixelRatio.roundToNearestPixel(16 * scale);
 
@@ -39,6 +43,7 @@ export function DiffModal({
     setLoading(true);
     setFailed(false);
     setText(null);
+    verticalOffset.setValue(0);
     client
       .diff(paneId)
       .then(d => alive && (setText(d), setLoading(false)))
@@ -46,10 +51,15 @@ export function DiffModal({
     return () => {
       alive = false;
     };
-  }, [visible, paneId, client, attempt]);
+  }, [visible, paneId, client, attempt, verticalOffset]);
 
   const rows = useMemo(() => diffRows(text ?? ''), [text]);
-  const contentWidth = Math.max(width, rows.columns * 7 * scale + 24);
+  const contentWidth = Math.max(viewportWidth, rows.columns * 7 * scale + 24);
+  const listStyle = useMemo(() => ({width: contentWidth}), [contentWidth]);
+  const renderLine = useCallback(({item}: {item: string}) => <Text numberOfLines={1} style={[styles.line, {height: rowHeight, lineHeight: rowHeight, color: diffLineColor(item)}]}>{item || ' '}</Text>, [rowHeight]);
+  const trackHeight = Math.max(0, viewportHeight - 8);
+  const thumbHeight = Math.min(trackHeight, Math.max(28, trackHeight * viewportHeight / Math.max(1, contentHeight)));
+  const indicatorTop = verticalOffset.interpolate({inputRange: [0, Math.max(1, contentHeight - viewportHeight)], outputRange: [0, Math.max(0, trackHeight - thumbHeight)], extrapolate: 'clamp'});
   const empty = !loading && (text ?? '') === '';
 
   return (
@@ -79,11 +89,16 @@ export function DiffModal({
         ) : (
           <View style={styles.body}>
             {rows.shortened && <Text style={styles.notice}>{lang === 'zh' ? '超长行已缩短显示；完整内容请在本机查看。' : 'Very long lines are shortened. View the complete content on your Mac.'}</Text>}
-            <ScrollView horizontal contentContainerStyle={styles.hContent} showsHorizontalScrollIndicator>
+            <View style={styles.readingViewport}>
+            <ScrollView testID="diff-horizontal" style={styles.horizontal} horizontal contentContainerStyle={styles.hContent} showsHorizontalScrollIndicator indicatorStyle="white"
+              onLayout={event => {setViewportWidth(event.nativeEvent.layout.width); setViewportHeight(event.nativeEvent.layout.height);}}>
               <FlatList
                 key={rowHeight}
                 testID="diff-lines"
-                style={{width: contentWidth}}
+                style={listStyle}
+                showsVerticalScrollIndicator={false}
+                onContentSizeChange={(_width, height) => setContentHeight(height)}
+                onScroll={event => verticalOffset.setValue(event.nativeEvent.contentOffset.y)} scrollEventThrottle={16}
                 contentContainerStyle={styles.bodyContent}
                 data={rows.lines}
                 initialNumToRender={40}
@@ -91,9 +106,13 @@ export function DiffModal({
                 windowSize={5}
                 getItemLayout={(_, index) => ({length: rowHeight, offset: rowHeight * index, index})}
                 keyExtractor={(_, index) => String(index)}
-                renderItem={({item}) => <Text numberOfLines={1} style={[styles.line, {height: rowHeight, lineHeight: rowHeight, color: diffLineColor(item)}]}>{item || ' '}</Text>}
+                renderItem={renderLine}
               />
             </ScrollView>
+            {viewportHeight > 0 && contentHeight > viewportHeight + 1 && <View testID="diff-scroll-track" pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.scrollTrack}>
+              <Animated.View testID="diff-scroll-thumb" style={[styles.scrollThumb, {height: thumbHeight, transform: [{translateY: indicatorTop}]}]} />
+            </View>}
+            </View>
           </View>
         )}
       </View>
@@ -121,6 +140,10 @@ const styles = StyleSheet.create({
   notice: {color: '#EBEBF5', padding: 12, fontSize: 12},
   empty: {fontSize: 14, textAlign: 'center', marginTop: 60, paddingHorizontal: 24},
   body: {flex: 1, backgroundColor: '#0A0A0C'},
+  readingViewport: {flex: 1},
+  horizontal: {flex: 1, marginRight: 8},
+  scrollTrack: {position: 'absolute', right: 2, top: 4, bottom: 4, width: 4, borderRadius: 2, backgroundColor: '#242429'},
+  scrollThumb: {width: 4, borderRadius: 2, backgroundColor: '#C4C4CE'},
   // horizontal content must at least fill the screen so a narrow diff doesn't
   // leave a void to its right (the dark body bg still covers, but edges snap).
   hContent: {flexGrow: 1, minWidth: '100%'},
