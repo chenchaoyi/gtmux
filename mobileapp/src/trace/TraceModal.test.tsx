@@ -614,3 +614,43 @@ test('Preview uses shared syntax rendering and has no reading-explanation footer
     tree.root.findAllByProps({ testID: 'trace-limits-content' }),
   ).toHaveLength(0);
 });
+
+test('truncated Trace input loads its complete source and keeps Raw and Copy verbatim', async () => {
+  const full = {
+    kind: 'tool',
+    title: 'exec',
+    input: 'const result={first:1,second:2};',
+    input_kind: 'code',
+    input_ref: 'trace-full',
+  };
+  const client = {
+    toolInput: jest.fn().mockResolvedValue(full),
+  } as unknown as GtmuxClient;
+  const target = {
+    ...turn,
+    segments: [
+      { steps: [{ ...full, input: 'const…', details_truncated: true }] },
+    ],
+  };
+  mount({ client, turns: [target] });
+  const batch = tree.root
+    .findByType(FlatList)
+    .props.data.find((r: any) => r.type === 'calls');
+  if (batch) press('trace-calls-' + batch.key);
+  const event = data().find(e => e.kind === 'tool')!;
+  await act(async () => {
+    press('trace-record-' + event.key);
+  });
+  expect(source()).toBe(full.input);
+  expect(client.toolInput).toHaveBeenCalledWith(
+    'recorded',
+    'home-a',
+    'trace-full',
+    expect.anything(),
+  );
+  expect(
+    tree.root.findAllByProps({ testID: 'trace-detail-update' }),
+  ).toHaveLength(0);
+  press('trace-copy');
+  expect(Clipboard.setString).toHaveBeenLastCalledWith(full.input);
+});

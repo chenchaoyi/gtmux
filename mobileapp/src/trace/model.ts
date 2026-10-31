@@ -14,6 +14,7 @@ export interface TraceStep {
   inputKind: string;
   workdir: string;
   operation: string;
+  inputRef?: string;
   truncated: boolean;
 }
 export interface TraceEvent {
@@ -240,6 +241,7 @@ export function build(
             workdir: string(step.workdir),
             operation: string(step.operation),
             truncated: step.details_truncated === true,
+            inputRef: string(step.input_ref),
           },
         );
       });

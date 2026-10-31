@@ -32,8 +32,8 @@ scenario('Desktop enrollment, sidebar, restore and live chat', {viewport: {width
   fixture.state.turns['%901'] = updated;
   await page.getByText('Updated live segment', {exact: true}).waitFor();
   await openTools(page, 'diff', true);
-  await page.locator('.session-diff .add').waitFor();
-  assert.equal(await page.locator('.session-diff .add').innerText(), '+new\n');
+  await page.locator('.session-diff .diff-line.add .diff-code').waitFor();
+  assert.equal(await page.locator('.session-diff .diff-line.add .diff-code').innerText(), 'new');
   await closeTools(page);
   await page.locator('.tile-modes [data-m="term"]').click();
   await page.locator('.tile .xterm-rows').waitFor();
@@ -260,7 +260,7 @@ for (const options of [
     await page.evaluate(()=>{Object.defineProperty(navigator,'clipboard',{configurable:true,value:undefined});document.execCommand=()=>false;});
     await copy.click();assert.equal(await row.getByRole('status').innerText(),zh?'复制失败':'Copy failed');
     await card.locator('.step-inspect').nth(3).locator('summary').click();
-    await card.getByText(zh?'此记录已在来源处截断。':'This record was truncated at the source.',{exact:true}).waitFor();
+    await card.getByText(zh?'更新服务端并刷新会话后可读取完整输入。':'Refresh this conversation after updating the server to read full input.',{exact:true}).waitFor();
     const collapse=page.getByRole('button',{name:zh?'折叠全部':'Collapse all',exact:true});
     assert.equal(await collapse.evaluate(e=>getComputedStyle(e).borderStyle),'none');
     await collapse.click();assert.equal(await card.locator('.step-row').count(),0);

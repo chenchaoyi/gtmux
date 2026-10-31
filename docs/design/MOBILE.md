@@ -1712,3 +1712,23 @@ Talk to HQ is a single conversation on workspace-capable servers. It shares the 
 
 ### Code reading controls (2026-10-31)
 Tool details, Trace Preview and Markdown fences share native selectable syntax coloring and wrap within the viewport. A dedicated wrapping reader opens long tool input and freezes that recorded source until closed; Copy preserves its complete recorded text. Compact Partial/Summary markers replace explanatory actions. The horizontal drag handle and global Trace reading-help footer are removed. Native-stack navigation explicitly disables content-wide back swipes on iOS26 while retaining native edge-back; code and terminal gestures must not navigate the whole page. Diff keeps a contrasting vertical position indicator in a fixed viewport gutter, driven by actual scroll measurements without re-rendering its virtualized rows. The native horizontal indicator also contrasts with the dark canvas.
+
+
+### Complete tool input and compact reading (2026-11-01)
+
+Chat and Trace retain bounded input previews for polling. Expanding a truncated call
+reads its original selected input on demand, scoped to the recorded session/home and
+source record; loading/failure and retry stay visible, and Copy/reader actions cannot
+silently copy an incomplete preview. Preview formats supported JavaScript/TypeScript,
+JSON, HTML, CSS and YAML with two-space indentation and a compact line width. Unsupported
+or incomplete code remains verbatim; the reader can switch to original text and Copy
+always preserves it. Session text size changes by one point from 10–24 pt, shared by
+Chat and Terminal and remembered across sessions, including keyboard adjustments. Old
+11/13/15 pt index settings migrate by their actual size rather than reinterpreting indices.
+
+Diff uses file cards with per-file and total change counts, independently folded hunks,
+old/new line numbers and the same syntax palette. A virtualized native list keeps large
+changes bounded; structured diffs wrap by default and retain original-width reading.
+A per-file reader and Copy retain the original patch, including shortened list lines.
+The range is explicitly the working tree, not an inferred last turn or full repository.
+The browser consumes the same structure and mounts large hunks in readable batches.

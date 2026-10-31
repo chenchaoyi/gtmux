@@ -155,6 +155,7 @@ type Deps struct {
 	// log isn't found. Optional: nil → GET /api/transcript is 503.
 	// earlier is how many previous sessions to stitch in front of the current one
 	// (hq-console-history): 0 is the current session alone.
+	ToolInput  func(sessionID, homeID, ref string) ([]byte, error)
 	Transcript func(id string, earlier int) (turns []byte, meta TranscriptMeta, err error)
 	// SessionTranscript reads verified desktop sessions, never arbitrary file paths.
 	SessionTranscript func(id, homeID string) (turns []byte, meta TranscriptMeta, err error)
@@ -394,6 +395,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/upload", s.auth(http.HandlerFunc(s.handleUpload)))
 	mux.Handle("/api/icon", s.auth(http.HandlerFunc(s.handleIcon)))
 	mux.Handle("/api/diff", s.auth(http.HandlerFunc(s.handleDiff)))
+	mux.Handle("/api/tool-input", s.auth(http.HandlerFunc(s.handleToolInput)))
 	mux.Handle("/api/transcript", s.auth(http.HandlerFunc(s.handleTranscript)))
 	mux.Handle("/api/artifacts/resolve", s.auth(http.HandlerFunc(s.handleArtifactResolve)))
 	mux.Handle("/api/artifacts/content", s.auth(http.HandlerFunc(s.handleArtifactContent)))

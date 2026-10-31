@@ -78,7 +78,7 @@ func LocalPath(reference, base string) (string, bool) {
 // Related reads only links in a verified Markdown snapshot and stays in its directory.
 func Related(reference, parentID, session, home string) (File, error) {
 	parent, err := Resolve("gtmux-file:"+parentID, session, home)
-	if err != nil || parent.Kind != "markdown" || parent.Bytes > 4<<20 {
+	if err != nil || (parent.Kind != "markdown" && parent.Kind != "html") || parent.Bytes > 4<<20 {
 		return File{}, ErrUnavailable
 	}
 	_, f, err := Open(parent.ID)
@@ -96,7 +96,11 @@ func Related(reference, parentID, session, home string) (File, error) {
 		return File{}, ErrUnavailable
 	}
 	linked := false
-	for _, ref := range Links(string(content)) {
+	references := Links(string(content))
+	if parent.Kind == "html" {
+		references = HTMLImages(string(content))
+	}
+	for _, ref := range references {
 		path, ok := LocalPath(ref, base)
 		if ok && path == target {
 			linked = true
@@ -112,5 +116,11 @@ func Related(reference, parentID, session, home string) (File, error) {
 		return File{}, ErrUnavailable
 	}
 	defer root.Close()
+	if parent.Kind == "html" {
+		kind, _ := kind(target)
+		if kind != "image" {
+			return File{}, ErrUnavailable
+		}
+	}
 	return add(target, session, home, true, root, relative)
 }

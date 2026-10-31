@@ -409,6 +409,7 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		Icon:            agentIconPNG,
 		Diff:            diffForPane,
 		Transcript:      transcriptForPane,
+		ToolInput:       fullToolInput,
 		ArtifactResolve: resolveConversationDocument,
 		ArtifactRelated: artifact.Related,
 		ArtifactContent: func(id, sid, home string) (artifact.File, io.ReadSeekCloser, error) {
@@ -922,7 +923,7 @@ func transcriptForPane(id string, earlier int) ([]byte, server.TranscriptMeta, e
 		turns, senderRevision = stampMessageSenders(turns, by), revision
 	}
 	if revision := transcript.LogRevision(rec.Agent, rec.SessionID); revision != "" {
-		meta.Etag = fmt.Sprintf("W/%q", fmt.Sprintf("profile-v2-%s-%s-%s-%s", rec.SessionID, revision, oldest, senderRevision))
+		meta.Etag = fmt.Sprintf("W/%q", fmt.Sprintf("profile-v3-tool-input-%s-%s-%s-%s", rec.SessionID, revision, oldest, senderRevision))
 	}
 	// Who put each prompt there, for the ones gtmux delivered on someone else's behalf
 	// (who-sent-this-turn). After the stitch, so an earlier session's turns are attributed

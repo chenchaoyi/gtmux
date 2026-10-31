@@ -266,3 +266,51 @@ test.each(['en', 'zh'] as const)(
     expect(Clipboard.setString).toHaveBeenLastCalledWith(input);
   },
 );
+
+test('opens full input on demand and copies original while formatting only the reader', async () => {
+  const full = {
+    kind: 'tool',
+    title: 'exec',
+    input: 'const value={first:1,second:2};',
+    input_kind: 'code',
+    input_ref: 'ref',
+  };
+  const client = {
+    toolInput: jest.fn().mockResolvedValue(full),
+  } as unknown as import('../api/client').GtmuxClient;
+  await act(async () => {
+    tree = renderer.create(
+      <ToolSteps
+        {...props(true)}
+        steps={[{ ...full, input: 'const…', details_truncated: true }]}
+        client={client}
+        session="recorded"
+        home="home"
+      />,
+    );
+  });
+  expect(client.toolInput).not.toHaveBeenCalled();
+  await act(async () => {
+    byID('tool-step-toggle-0').props.onPress();
+  });
+  expect(client.toolInput).toHaveBeenCalledWith(
+    'recorded',
+    'home',
+    'ref',
+    expect.anything(),
+  );
+  expect(tree.root.findByType(CodeText).props.source).toBe(full.input);
+  expect(tree.root.findByType(CodeText).props.formatted).toBe(true);
+  act(() => byID('tool-input-copy').props.onPress());
+  expect(Clipboard.setString).toHaveBeenLastCalledWith(full.input);
+  act(() => byID('tool-input-open').props.onPress());
+  expect(byID('code-reader-format').props.accessibilityState.selected).toBe(
+    true,
+  );
+  act(() => byID('code-reader-format').props.onPress());
+  expect(byID('code-reader-format').props.accessibilityState.selected).toBe(
+    false,
+  );
+  act(() => byID('code-reader-copy').props.onPress());
+  expect(Clipboard.setString).toHaveBeenLastCalledWith(full.input);
+});

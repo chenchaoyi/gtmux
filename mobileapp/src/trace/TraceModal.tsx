@@ -32,6 +32,7 @@ import { ParticipantProfileModal } from '../ui/ParticipantProfileModal';
 import { ProfileTarget } from '../ui/participantProfile';
 import { MarkdownView } from '../ui/MarkdownView';
 import { CodeText } from '../ui/CodeText';
+import { useToolInput } from '../ui/useToolInput';
 import { darkCodeBackground, toolCodeHint } from '../ui/codeReading';
 import { CopyFeedbackContext } from '../ui/CopyableText';
 import { ArrowToBottomIcon, CopyIcon, SearchIcon, Chevron } from '../ui/Icons';
@@ -271,7 +272,46 @@ export function TraceReader({
   }
   const current =
     selection && index.events.find(event => event.key === selection.event.key);
-  const chosen = sameIdentity && current ? selection : null;
+  const selectedStep = selection?.event.step;
+  const {
+    step: fullStep,
+    loading: inputLoading,
+    failed: inputFailed,
+    retry: retryInput,
+  } = useToolInput(
+    selectedStep
+      ? {
+          kind: 'tool',
+          title: selection!.event.title,
+          input: selectedStep.input,
+          input_kind: selectedStep.inputKind,
+          details_truncated: selectedStep.truncated,
+          input_ref: selectedStep.inputRef,
+          workdir: selectedStep.workdir,
+          operation: selectedStep.operation,
+        }
+      : undefined,
+    detailsOpen ? client : undefined,
+    selection?.event.session || agent.session_id,
+    agent.home_id,
+  );
+  const selectedFull =
+    fullStep && !fullStep.details_truncated && selectedStep?.truncated
+      ? {
+          ...selection!,
+          event: {
+            ...selection!.event,
+            body: fullStep.input || '',
+            step: {
+              ...selectedStep,
+              input: fullStep.input || '',
+              workdir: fullStep.workdir || '',
+              truncated: false,
+            },
+          },
+        }
+      : selection;
+  const chosen = sameIdentity && current ? selectedFull : null;
   const showDetails = detailsOpen && !!chosen;
   const history = session !== 'all' && session !== index.sessions.at(-1)?.key;
   useEffect(() => {
@@ -379,9 +419,10 @@ export function TraceReader({
   const changed =
     !!chosen &&
     !!current &&
-    (chosen.event.body !== current.body ||
-      JSON.stringify(chosen.event.step) !== JSON.stringify(current.step) ||
-      JSON.stringify(chosen.event.context) !== JSON.stringify(current.context));
+    (selection!.event.body !== current.body ||
+      JSON.stringify(selection!.event.step) !== JSON.stringify(current.step) ||
+      JSON.stringify(selection!.event.context) !==
+        JSON.stringify(current.context));
   const twoColumns = split && showDetails;
   const listVisible = twoColumns || !showDetails;
   const turnTime = chosen ? validTime(chosen.event.time, lang) : '';
@@ -788,6 +829,29 @@ export function TraceReader({
               { backgroundColor: pal.surface },
             ]}
           >
+            {(inputLoading || inputFailed) && (
+              <TouchableOpacity
+                testID="trace-input-state"
+                disabled={!inputFailed}
+                onPress={retryInput}
+                accessibilityRole={inputFailed ? 'button' : 'text'}
+                style={{
+                  minHeight: 44,
+                  justifyContent: 'center',
+                  paddingHorizontal: 16,
+                }}
+              >
+                <Text style={{ color: pal.fg2 }}>
+                  {inputLoading
+                    ? zh
+                      ? '读取完整输入…'
+                      : 'Loading full input…'
+                    : zh
+                    ? '读取失败，点此重试'
+                    : 'Could not load. Tap to retry.'}
+                </Text>
+              </TouchableOpacity>
+            )}
             <View style={styles.detailHeader}>
               <TouchableOpacity
                 testID="trace-profile"
@@ -836,6 +900,7 @@ export function TraceReader({
               </ChromeText>
               <TouchableOpacity
                 testID="trace-copy"
+                disabled={inputLoading || !!chosen.event.step?.truncated}
                 accessibilityRole="button"
                 accessibilityLabel={zh ? '复制' : 'Copy'}
                 onPress={copy}
@@ -1006,6 +1071,7 @@ export function TraceReader({
                   >
                     <CodeText
                       testID="trace-source"
+                      formatted={detailTab === 'preview'}
                       source={
                         detailTab === 'preview'
                           ? previewText(chosen.event)

@@ -314,6 +314,7 @@
   // a command — the old copy carried markdown backticks into a rendered page, where they
   // showed up as literal ` characters.
   function gate(which) {
+    if (fullInputCache) fullInputCache.clear();
     clearComposeData();
     document.querySelectorAll('.browser-dialog').forEach(function (dialog) { if (dialog.retire) dialog.retire(); else { dialog.close(); dialog.remove(); } });
     var g = GATE[which] || GATE.unpaired;
@@ -2256,7 +2257,7 @@
     });
   }
   // Plain text only: tool arguments are untrusted transcript content, never markup.
-  function toolStepsEl(steps, open, onToggle, stateKey, expansion) {
+  function toolStepsEl(steps, open, onToggle, stateKey, expansion, inputScope) {
     var detailState = expansion || chatExpanded;
     var activity = window.GtmuxActivity, lang = ZH ? 'zh' : 'en';
     var card = el('div', 'tool-steps');
@@ -2291,31 +2292,48 @@
         body.appendChild(el('span', 'step-detail' + (op === 'agent' || op === 'wait' ? ' step-prose' : ''), activity.preview(s, lang)));
         summary.appendChild(body); details.appendChild(summary);
         if (!inspectable) { row.appendChild(details); list.appendChild(row); return; }
-        var inspector = el('div', 'step-inspector');
-        var meta = el('dl', 'step-meta');
-        meta.appendChild(el('dt', '', T('Tool', '工具'))); meta.appendChild(el('dd', 'step-name', s.title || 'tool'));
-        if (s.workdir) { meta.appendChild(el('dt', '', T('Working directory', '工作目录'))); meta.appendChild(el('dd', '', s.workdir)); }
-        inspector.appendChild(meta);
-        var input = s.input || s.detail;
-        if (input) {
-          var inputLabel = !s.input ? T('Recorded detail', '已记录详情')
-            : s.input_kind === 'command' ? T('Recorded command', '已记录命令')
-            : s.input_kind === 'code' ? T('Recorded code', '已记录代码')
-            : s.input_kind === 'patch' ? T('Recorded patch', '已记录补丁')
-            : s.input_kind === 'parameters' || s.input_kind === 'arguments' ? T('Recorded parameters', '已记录参数') : T('Recorded input', '已记录输入');
-          var toolbar = el('div', 'step-toolbar'); toolbar.appendChild(el('span', '', inputLabel));
-          toolbar.appendChild(clipboardAction(T('Copy', '复制'), '⧉', input, key + '-copy')); inspector.appendChild(toolbar);
-          var pre = el('pre', 'step-input', input); pre.tabIndex = 0; pre.dataset.chatFocus = key + '-input';
-          pre.setAttribute('role', 'region'); pre.setAttribute('aria-label', inputLabel); inspector.appendChild(pre);
+        var inspector = el('div', 'step-inspector'), pending = false, loaded = !s.details_truncated, formatted = true;
+        function renderInput(message) {
+          inspector.replaceChildren();
+          var meta = el('dl', 'step-meta'); meta.appendChild(el('dt', '', T('Tool', '工具'))); meta.appendChild(el('dd', 'step-name', s.title || 'tool'));
+          if (s.workdir) { meta.appendChild(el('dt', '', T('Working directory', '工作目录'))); meta.appendChild(el('dd', '', s.workdir)); } inspector.appendChild(meta);
+          var input = s.input || s.detail || '';
+          var inputLabel = !s.input ? T('Recorded detail','已记录详情') : s.input_kind === 'code' ? T('Recorded code','已记录代码') : s.input_kind === 'command' ? T('Recorded command','已记录命令') : ['parameters','arguments'].includes(s.input_kind) ? T('Recorded parameters','已记录参数') : T('Recorded input','已记录输入');
+          var toolbar = el('div', 'step-toolbar'); toolbar.appendChild(el('span', '', s.details_truncated ? T('Input preview', '输入预览') : inputLabel));
+          var format = el('button', '', '{ }'); format.type = 'button'; format.title = T(formatted ? 'Show original' : 'Format code', formatted ? '查看原文' : '格式化代码'); format.setAttribute('aria-label', format.title); format.setAttribute('aria-pressed', String(formatted)); format.onclick = function () { formatted = !formatted; renderInput(message); }; toolbar.appendChild(format);
+          if (loaded) toolbar.appendChild(clipboardAction(T('Copy', '复制'), '', input, key + '-copy')); inspector.appendChild(toolbar);
+          var pre = el('pre', 'step-input'); renderCode(pre, formatted ? formatToolInput(input, s) : input, s.input_kind === 'code' ? 'javascript' : s.input_kind === 'command' ? 'shell' : s.input_kind); pre.tabIndex = 0; pre.dataset.chatFocus = key + '-input'; pre.setAttribute('role', 'region'); pre.setAttribute('aria-label', inputLabel); inspector.appendChild(pre);
+          if (message) { var notice = el('p', 'step-truncated', message); notice.setAttribute('role', 'status'); inspector.appendChild(notice); }
+          if (s.details_truncated && s.input_ref && inputScope && !pending) { var retry = el('button', 'step-load-full', T('Load full input', '读取完整输入')); retry.type = 'button'; retry.onclick = loadInput; inspector.appendChild(retry); }
         }
-        if (s.details_truncated) inspector.appendChild(el('p', 'step-truncated', T('This record was truncated at the source.', '此记录已在来源处截断。')));
+        function loadInput() {
+          if (pending || loaded || !s.input_ref || !inputScope || !inputScope.session_id) return;
+          pending = true; renderInput(T('Loading full input…', '读取完整输入…'));
+          readToolInput(inputScope.session_id, inputScope.home_id || '', s.input_ref).then(function (full) { pending = false; if (!details.isConnected) return; s = full; loaded = true; renderInput(); }).catch(function () { pending = false; if (details.isConnected) renderInput(T('Could not load full input. Retry or refresh the conversation.', '未能读取完整输入，请重试或刷新会话。')); });
+        }
+        details.ontoggle = function () { if (details.isConnected) { detailState[key] = details.open; if (details.open) loadInput(); } };
+        renderInput(s.details_truncated && !s.input_ref ? T('Refresh this conversation after updating the server to read full input.', '更新服务端并刷新会话后可读取完整输入。') : '');
         details.appendChild(inspector); row.appendChild(details); list.appendChild(row);
+        if (details.open) setTimeout(loadInput, 0);
       });
       card.appendChild(list);
     }
     return card;
   }
 
+  function formatToolInput(input, step) {
+    var hint = step.input_kind === 'code' || step.operation === 'code' ? 'javascript' : ['parameters', 'arguments'].includes(step.input_kind) ? 'json' : step.input_kind;
+    return window.GtmuxCodeFormat.formatCode(input, hint);
+  }
+  var fullInputCache = new Map();
+  function readToolInput(session, home, ref) {
+    var key = JSON.stringify([token,session,home,ref]), credential = token;
+    if (fullInputCache.has(key)) return fullInputCache.get(key);
+    var request = api('/api/tool-input?session_id=' + encodeURIComponent(session) + '&home_id=' + encodeURIComponent(home) + '&ref=' + encodeURIComponent(ref)).then(function (r) {
+      if (!r.ok || token !== credential) throw new Error('full input unavailable'); return r.json();
+    }).then(function (step) { if (step.input === undefined) step.input = ''; if (step.input_ref !== ref || step.details_truncated || typeof step.input !== 'string') throw new Error('incomplete input'); if(step.input.length > 256000) fullInputCache.delete(key); return step; }).catch(function (e) { fullInputCache.delete(key); throw e; });
+    fullInputCache.set(key, request); while (fullInputCache.size > 8) fullInputCache.delete(fullInputCache.keys().next().value); return request;
+  }
   function activityIcon(operation) {
     var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('class', 'activity-icon'); svg.setAttribute('aria-hidden', 'true');
@@ -2504,7 +2522,7 @@
         ct.appendChild(toolStepsEl(seg.steps, !!expanded[key], function () {
           expanded[key] = !expanded[key];
           if (onUpdate) onUpdate(); else if (focused) drawChat(lastTurns);
-        }, key, expanded));
+        }, key, expanded, {session_id:t.session_id || currentAgent.session_id,home_id:currentAgent.home_id || ''}));
       }
     });
     return ct;
@@ -2808,18 +2826,42 @@
     }
     choose(kind);
   }
+  function renderCode(node, source, hint) {
+    var reading = window.GtmuxCodeReading, colors = reading.syntaxColors[document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light'];
+    node.replaceChildren();
+    reading.codeTokens(source, reading.codeLanguage(source, hint)).forEach(function (token) { var span = el('span', '', token.text); span.style.color = colors[token.kind]; node.appendChild(span); });
+  }
   function renderDiff(host, diff) {
-    var pre = el('pre', 'session-diff');
-    if (!diff) pre.textContent = T('No changes, or this session is outside a Git repository.', '没有改动，或当前会话不在 Git 仓库中。');
-    else diff.split('\n').forEach(function (line) {
-      var row = el('span', line[0] === '+' && line.indexOf('+++') !== 0 ? 'add' : line[0] === '-' && line.indexOf('---') !== 0 ? 'del' : '', line + '\n'); pre.appendChild(row);
+    var root = el('div', 'session-diff diff-view'); root.tabIndex = 0; root.setAttribute('aria-label', T('Working tree changes', '工作区改动'));
+    if (!diff) { root.textContent = T('No changes, or this session is outside a Git repository.', '没有改动，或当前会话不在 Git 仓库中。'); host.replaceChildren(root); return; }
+    var files = window.GtmuxDiffModel.diffFiles(diff);
+    if (!files.length) { var raw = el('pre', ''); diff.split('\n').forEach(function(line){raw.appendChild(el('span',line[0]==='+'?'add':line[0]==='-'?'del':'',line+'\n'));}); root.appendChild(raw); host.replaceChildren(root); return; }
+    var stats = el('div', 'diff-summary'); stats.appendChild(el('span', '', T('Working tree', '工作区改动') + ' · ' + files.length + T(' files', ' 个文件'))); stats.appendChild(el('span', 'diff-added', '+' + files.reduce(function(n,f){return n+f.added;},0))); stats.appendChild(el('span', 'diff-removed', '−' + files.reduce(function(n,f){return n+f.removed;},0))); stats.appendChild(clipboardAction(T('Copy complete diff', '复制完整改动'), '', diff));
+    var wrap = el('button', 'diff-wrap', T('Wrap lines', '自动换行')); wrap.type = 'button';wrap.setAttribute('aria-pressed','true');var wrapped=true;wrap.onclick=function(){wrapped=!wrapped;root.classList.toggle('diff-no-wrap',!wrapped);wrap.setAttribute('aria-pressed',String(wrapped));};stats.appendChild(wrap);root.appendChild(stats);
+    files.forEach(function(file,fileIndex){
+      var card=el('details','diff-file');card.open=true;
+      var heading=el('summary','diff-file-heading'),names=el('span','diff-file-names');names.appendChild(el('strong','',file.path.split('/').pop()));names.appendChild(el('small','',file.path.split('/').slice(0,-1).join('/')||'.'));heading.appendChild(names);heading.appendChild(el('span','diff-added','+'+file.added));heading.appendChild(el('span','diff-removed','−'+file.removed));card.appendChild(heading);
+      var current = null, first = true;
+      file.rows.forEach(function(row){
+        if(row.meta.kind==='hunk'){
+          current={node:el('details','diff-hunk'),rows:[],mounted:0};current.node.open=fileIndex===0&&first;first=false;
+          var hunkTitle=el('summary','diff-hunk-heading',T('Lines ','行 ')+window.GtmuxDiffModel.hunkRange(row.text));hunkTitle.appendChild(el('span','diff-hunk-count','+'+row.meta.added+' −'+row.meta.removed));current.node.appendChild(hunkTitle);
+          var hunk=current;
+          function fill(){var end=Math.min(hunk.rows.length,hunk.mounted+400);for(;hunk.mounted<end;hunk.mounted++)appendRow(hunk.node,hunk.rows[hunk.mounted]);if(hunk.more)hunk.more.remove();if(hunk.mounted<hunk.rows.length){hunk.more=el('button','diff-more',T('Show more lines','展开更多行')+' · '+hunk.mounted+'/'+hunk.rows.length);hunk.more.onclick=fill;hunk.node.appendChild(hunk.more);}}
+          hunk.fill=fill;hunk.node.ontoggle=function(){if(hunk.node.open&&!hunk.mounted)fill();};card.appendChild(hunk.node);
+        }else if(current)current.rows.push(row);else card.appendChild(el('pre','diff-meta',row.text));
+      });
+      if(current&&current.node.open)current.fill();
+      // Earlier open hunks are filled by their toggle after insertion.
+      root.appendChild(card);
+      function appendRow(parent,row){var line=el('div','diff-line '+(row.meta.role||'meta'));line.appendChild(el('span','diff-line-number',row.meta.old===undefined?'':String(row.meta.old)));line.appendChild(el('span','diff-line-number',row.meta.next===undefined?'':String(row.meta.next)));line.appendChild(el('span','diff-sign',row.meta.role?row.text[0]:''));var code=el('code','diff-code');renderCode(code,row.meta.role?row.text.slice(1):row.text,file.path.split('.').pop());line.appendChild(code);parent.appendChild(line);}
     });
-    host.replaceChildren(pre);
+    host.replaceChildren(root);
   }
   function resetTrace(state) { if (state && state.view) state.view.dispose(); return {}; }
   function traceView(turns, state, context) {
     if (!state.view) {
-      state.view = window.GtmuxTraceView.create({T: T, markdown: mdRender, actions: bubbleActions, icon: uiIcon, formatTime: sepTime, status: function (agent) { return LABEL[agent.status] ? {text: agent.error ? LABEL.errored : LABEL[agent.status], color: agent.error ? '#F59E0B' : COLORS[agent.status]} : null; }});
+      state.view = window.GtmuxTraceView.create({T: T, markdown: mdRender, actions: bubbleActions, icon: uiIcon, formatTime: sepTime, toolInput: readToolInput, formatCode: formatToolInput, renderCode: renderCode, status: function (agent) { return LABEL[agent.status] ? {text: agent.error ? LABEL.errored : LABEL[agent.status], color: agent.error ? '#F59E0B' : COLORS[agent.status]} : null; }});
       state.el = state.view.el;
     }
     state.view.update(turns, context || curAgent || {}); return state.el;

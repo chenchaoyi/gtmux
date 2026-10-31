@@ -106,3 +106,14 @@ test('tool metadata disambiguates command scripts and code with long leading com
   expect(toolCodeHint('wait', 'parameters')).toBe('json');
   expect(toolCodeHint('future_tool')).toBe('future_tool');
 });
+
+test('Go and other source languages keep recognizable labels and syntax', () => {
+  expect(codeLanguage('package server\nfunc test() {}')).toBe('go');
+  expect(codeTokens('package server\nfunc test() {}', 'go')).toEqual(
+    expect.arrayContaining([
+      { text: 'package', kind: 'keyword' },
+      { text: 'func', kind: 'keyword' },
+      { text: 'test', kind: 'property' },
+    ]),
+  );
+});
