@@ -688,7 +688,7 @@ func pushCopy(a server.Alert, paneText func(string) (string, bool)) (string, str
 		if a.Kind == "waiting" {
 			return title, i18n.Tr("Needs your attention · continue in ChatGPT desktop", "需要处理，请在 ChatGPT 桌面版继续"), 0
 		}
-		return title, i18n.Tr("Finished in ChatGPT desktop", "ChatGPT 桌面版会话已完成"), 0
+		return title, i18n.Tr("Turn finished in ChatGPT desktop", "ChatGPT 桌面版本轮结束"), 0
 	}
 	if a.Client == "unconfirmed" {
 		// An unconfirmed controller can belong to any supported native agent.
@@ -717,7 +717,7 @@ func pushCopy(a server.Alert, paneText func(string) (string, bool)) (string, str
 			return title, i18n.Tr("Needs you", "等你输入"), 0
 		}
 	}
-	return title, i18n.Tr("Finished", "已完成"), 0
+	return title, i18n.Tr("Turn finished", "本轮结束"), 0
 }
 
 // optionsBody formats a waiting pane's 1/2/3 choices for the notification body — the
@@ -1386,8 +1386,8 @@ func serveAgentStatuses() []server.AgentStatus {
 		}
 		out = append(out, server.AgentStatus{
 			FollowRevision: revision, PaneID: p.PaneID, Agent: p.Agent, Loc: p.Loc, Task: p.Task, Status: p.Status,
-			EndReason: p.EndReason,
-			Since:     p.Since, Role: p.Role(), SessionID: p.NativeSessionID(), HomeID: p.NativeHomeID(), Client: p.DesktopClient(), StatusOnly: p.StatusOnlyDesktop(), Notify: p.DesktopNotifications(),
+			EndReason: p.EndReason, Confirmed: p.Confirmed, CompletionID: p.CompletionID, CompletedAt: p.CompletedAt, Instance: p.Instance,
+			Since: p.Since, Role: p.Role(), SessionID: p.NativeSessionID(), HomeID: p.NativeHomeID(), Client: p.DesktopClient(), StatusOnly: p.StatusOnlyDesktop(), Notify: p.DesktopNotifications(),
 		})
 	}
 	return out

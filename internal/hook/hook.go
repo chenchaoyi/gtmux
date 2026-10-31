@@ -1076,6 +1076,11 @@ func Run(stdin io.Reader, args []string) int {
 		}
 		applyState(d, pane)
 		applyTurnOutcome(event, pane)
+		if d.setFinished {
+			if err := state.RecordCompletion(pane, agentKey, agentSession, payload.TurnID, time.Now()); err != nil {
+				diag.For("hook").Warn("completion.write_failed", "could not persist turn completion evidence", "error", err)
+			}
+		}
 		if terminalAttachment.Pane == pane && agentclient.ProvidesLifecycle(terminalAttachment.Client) {
 			if err := agentclient.ObserveLifecycle(terminalAttachment, event, payload.TurnID, time.Now()); err != nil {
 				diag.For("hook").Warn("terminal.lifecycle.write_failed", "native lifecycle evidence could not be saved", "error", err.Error())

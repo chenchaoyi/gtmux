@@ -1030,6 +1030,15 @@ connect the server sends one `agents` event to sync; thereafter:
 | `ping` | `{}` | ~20s heartbeat to keep the stream alive. |
 
 The server re-snapshots agents every ~1500ms (in step with the watch TUI).
+`done` requires a verified successful turn-end hook or an explicit matching native/
+transcript boundary; screen/CPU quietness and idle-time caches do not suffice.
+If evidence arrives after an idle display, the server retains the observed work
+and emits once when confirmed. Startup idle and an already observed completion
+are not replayed. Failures, identity changes, disappearance or consent revocation
+cancel pending completion attention. Queued pushes recheck the exact session and
+completion generation before each device delivery. A local check cannot recall
+an intent already handed to the relay/APNs. Internal evidence fields are not
+added to the REST or SSE payloads.
 SSE only signals *that* something changed; `/api/agents` stays the one
 authoritative payload (no second data shape on the wire).
 

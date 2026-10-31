@@ -70,6 +70,13 @@ type AgentStatus struct {
 	StatusOnly     bool
 	Notify         bool
 	EndReason      string // interrupted | error suppress the successful-completion alert
+	// Confirmed is true only when the idle state has lifecycle evidence
+	// (a hook-written finish marker or a native transcript boundary). Screen/CPU
+	// inference is useful for the radar display, but is not enough to push "done".
+	Confirmed    bool
+	CompletionID string
+	CompletedAt  int64  // Unix nanoseconds of the verified completion
+	Instance     string // exact pane/session incarnation, not its display title
 }
 
 func (a AgentStatus) explicitNotifyConsent() bool {
@@ -95,15 +102,17 @@ func (a AgentStatus) key() string {
 // waiting on the user ("waiting") or finished its turn ("done"). It is both an
 // SSE `alert` event (for an in-app banner) and the trigger for a push (later).
 type Alert struct {
-	Pane      string `json:"pane"`
-	Kind      string `json:"kind"` // "waiting" | "done"
-	Agent     string `json:"agent"`
-	Loc       string `json:"loc"`
-	Task      string `json:"task"`
-	HomeID    string `json:"home_id,omitempty"`
-	SessionID string `json:"session_id,omitempty"`
-	Client    string `json:"client,omitempty"`
-	Repeat    bool   `json:"repeat,omitempty"` // a re-nudge: still waiting, not a fresh transition
+	Pane         string `json:"pane"`
+	Kind         string `json:"kind"` // "waiting" | "done"
+	Agent        string `json:"agent"`
+	Loc          string `json:"loc"`
+	Task         string `json:"task"`
+	HomeID       string `json:"home_id,omitempty"`
+	SessionID    string `json:"session_id,omitempty"`
+	Client       string `json:"client,omitempty"`
+	Repeat       bool   `json:"repeat,omitempty"` // a re-nudge: still waiting, not a fresh transition
+	CompletionID string `json:"-"`                // internal delivery guard; no wire-contract change
+	Instance     string `json:"-"`
 }
 
 // Tally is the lock-screen Live Activity's content: the per-status counts plus the
@@ -248,6 +257,8 @@ type hub struct {
 	// waitAlertAt[pane] is when we last alerted that pane is waiting; used to time
 	// re-nudges. Touched only inside tick() (serial), so it needs no extra lock.
 	waitAlertAt map[string]time.Time
+	pendingDone map[string]AgentStatus // observed work awaiting its completion evidence
+	lastDone    map[string]string      // completion generations already observed, including startup
 	// lastTally / tallyKnown drive Live Activity push-on-change. Touched only in
 	// tick() (serial).
 	lastTally  Tally
@@ -431,6 +442,9 @@ func (h *hub) tick() {
 		if !existed || p != a {
 			changed = true
 		}
+		if h.completionReady(a, p, existed) {
+			h.emitAlert(Alert{Pane: a.PaneID, Kind: "done", Agent: a.Agent, Loc: a.Loc, Task: a.Task, SessionID: a.SessionID, HomeID: a.HomeID, Client: a.Client, CompletionID: a.CompletionID, Instance: a.Instance})
+		}
 		// ALERTS are worker events too. hq-meta-layer took the supervisor out of the
 		// tally and the headline but left this loop alerting for it, so HQ still pushed
 		// notifications worded and routed exactly like a worker's — for a session the
@@ -464,15 +478,14 @@ func (h *hub) tick() {
 			}
 		} else {
 			delete(h.waitAlertAt, a.key()) // no longer waiting → stop tracking
-			if prev != nil && existed && !p.StatusOnly && (!p.explicitNotifyConsent() || p.Notify) && a.Status == "idle" && p.Status == "working" && a.EndReason == "" {
-				h.emitAlert(Alert{Pane: a.PaneID, Kind: "done", Agent: a.Agent, Loc: a.Loc, Task: a.Task, SessionID: a.SessionID, HomeID: a.HomeID, Client: a.Client})
-			}
 		}
 	}
 	for id := range prev { // a pane that disappeared is also a change
 		if _, ok := curMap[id]; !ok {
 			changed = true
 			delete(h.waitAlertAt, id)
+			delete(h.pendingDone, id)
+			delete(h.lastDone, id)
 		}
 	}
 

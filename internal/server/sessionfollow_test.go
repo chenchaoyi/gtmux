@@ -91,7 +91,7 @@ func TestDesktopHubConsentDoesNotReplayOrAlertOtherSessions(t *testing.T) {
 			a.Status = "working"
 			cur = []AgentStatus{a, b}
 			h.tick()
-			a.Status = "idle"
+			a.Status, a.Confirmed = "idle", true
 			cur = []AgentStatus{a, b}
 			h.tick()
 			if len(alerts) != 1 || alerts[0].SessionID != "desktop" || alerts[0].Client != client {
@@ -106,7 +106,7 @@ func TestDesktopHubConsentDoesNotReplayOrAlertOtherSessions(t *testing.T) {
 			if len(alerts) != 0 || len(h.waitAlertAt) != 0 {
 				t.Fatal("revoked permission kept reminders")
 			}
-			b.Status = "idle"
+			b.Status, b.Confirmed = "idle", true
 			cur = []AgentStatus{a, b}
 			h.tick()
 			if len(alerts) != 1 || alerts[0].Agent != "Claude Code" {

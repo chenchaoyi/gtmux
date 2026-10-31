@@ -1,6 +1,7 @@
 package radar
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/agentclient"
@@ -11,6 +12,8 @@ import (
 type terminalState struct {
 	status, reason string
 	since          int64
+	completionID   string
+	completedAt    int64
 }
 
 var terminalHistory = dsh.Sessions.Resolve
@@ -23,7 +26,11 @@ func terminalStatus(a agentclient.Attachment, now time.Time) terminalState {
 	out := terminalState{status: "running"}
 	v, ok := agentclient.ReadLifecycle(a, now)
 	if ok {
-		out = terminalState{v.Status(), v.EndReason(), v.Since / 1000}
+		out = terminalState{status: v.Status(), reason: v.EndReason(), since: v.Since / 1000}
+		if v.Event == "Stop" {
+			out.completionID = "terminal:" + v.TurnID + ":" + strconv.FormatInt(v.ObservedAt, 10)
+			out.completedAt = v.ObservedAt * int64(time.Millisecond)
+		}
 		if out.status == "running" {
 			out.since = 0
 		}
@@ -33,7 +40,11 @@ func terminalStatus(a agentclient.Attachment, now time.Time) terminalState {
 		if err == nil && s.ID == a.SessionID && s.HomeID == a.HomeID && s.Origin != "subagent" && hqpane.SameDir(s.Cwd, a.Cwd) &&
 			s.TurnAt >= max(a.StartedAt, a.BindingEpoch) && s.TurnAt <= now.UnixMilli()+1000 &&
 			(!ok || s.TurnAt > v.ObservedAt) && (s.State == "working" || s.State == "idle") {
-			out = terminalState{s.State, s.EndReason, s.TurnAt / 1000}
+			out = terminalState{status: s.State, reason: s.EndReason, since: s.TurnAt / 1000}
+			if s.State == "idle" && s.EndReason == "" {
+				out.completionID = "dsh:" + s.ID + ":" + strconv.FormatInt(s.TurnAt, 10)
+				out.completedAt = s.TurnAt * int64(time.Millisecond)
+			}
 		}
 	}
 	return out

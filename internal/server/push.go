@@ -146,6 +146,10 @@ type PushManager struct {
 	// a lift is ordinary; a count that keeps climbing is a channel that has stopped.
 	activityFails int
 	lastFailAt    int64
+	// statusSource is checked immediately before a done push leaves the Mac. A pane
+	// can start a new turn after the hub queued the prior completion alert; sending
+	// that queued alert would make the phone report a finished task that is running.
+	statusSource func() []AgentStatus
 	// The last tally pushed, so a newly registered activity gets the current state
 	// instead of waiting for the fleet to change.
 	lastTally atomic.Pointer[Tally]
@@ -155,6 +159,17 @@ type PushManager struct {
 	// quick-reply category can have that many buttons. -1 = unknown (no counting).
 	format     func(Alert) (title, body string, options int)
 	serverName string // this Mac's name → notification subtitle (WHICH server)
+}
+
+// SetStatusSource lets the server revalidate queued completion alerts against the
+// latest radar snapshot. It is optional for standalone PushManager tests/users.
+func (p *PushManager) SetStatusSource(source func() []AgentStatus) {
+	if p == nil {
+		return
+	}
+	p.mu.Lock()
+	p.statusSource = source
+	p.mu.Unlock()
 }
 
 // NewPushManager builds a manager seeded with any persisted tokens. relay may be
@@ -477,6 +492,9 @@ func (p *PushManager) OnAlert(a Alert) {
 // (best-effort: a dead token must not stop the others). Synchronous — OnAlert
 // runs it in a goroutine.
 func (p *PushManager) dispatch(a Alert) {
+	if !p.alertStillCurrent(a) {
+		return
+	}
 	// Recheck immediately before delivery: a queued alert must respect revocation.
 	if a.Client == "chatgpt_desktop" || a.Client == "unconfirmed" {
 		if !sessionpolicy.ValidHome(a.HomeID) {
@@ -492,6 +510,9 @@ func (p *PushManager) dispatch(a Alert) {
 		if !d.wants(a.Kind) || !p.sendableToken(d) {
 			continue
 		}
+		if !p.alertStillCurrent(a) {
+			return
+		}
 		_ = p.relay.Send(PushIntent{
 			Token: d.Token, Platform: d.Platform, Env: d.Env,
 			Title: title, Body: body, Subtitle: p.serverName, Pane: a.Pane, Kind: a.Kind,
@@ -501,6 +522,34 @@ func (p *PushManager) dispatch(a Alert) {
 			CollapseID: alertCollapseID(a),
 		})
 	}
+}
+
+// alertStillCurrent prevents a queued done alert from crossing a new turn. The
+// hub's transition was valid when observed; this second read protects the user
+// from the normal race where the same pane is prompted again before APNs delivery.
+func (p *PushManager) alertStillCurrent(a Alert) bool {
+	if a.Kind != "done" {
+		return true
+	}
+	p.mu.Lock()
+	source := p.statusSource
+	p.mu.Unlock()
+	if source == nil {
+		return true
+	}
+	for _, s := range source() {
+		matches := a.Pane != "" && s.PaneID == a.Pane
+		if a.Pane == "" {
+			matches = s.SessionID != "" && s.SessionID == a.SessionID && s.HomeID == a.HomeID
+		}
+		if matches {
+			return s.Status == "idle" && s.EndReason == "" && s.Confirmed &&
+				s.CompletionID == a.CompletionID && s.Instance == a.Instance &&
+				(s.Agent == "" || s.Agent == a.Agent) && s.SessionID == a.SessionID && s.HomeID == a.HomeID &&
+				!s.StatusOnly && s.Role != "supervisor" && (!s.explicitNotifyConsent() || s.Notify)
+		}
+	}
+	return false // the pane/session disappeared; do not deliver a stale completion
 }
 
 // OnTally is the hub's tally hook: it pushes the Live Activity update AND a silent

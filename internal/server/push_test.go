@@ -106,6 +106,87 @@ func TestPushManagerDispatch(t *testing.T) {
 	}
 }
 
+func TestPushManagerDropsStaleDoneAlert(t *testing.T) {
+	relay := &fakeRelay{}
+	pm := NewPushManager(relay, nil, nil, "Mac", nil)
+	pm.Register(DeviceToken{Origin: originMaster, Token: "tok", Platform: "ios"})
+
+	current := []AgentStatus{{PaneID: "%1", Status: "working"}}
+	pm.SetStatusSource(func() []AgentStatus {
+		return append([]AgentStatus(nil), current...)
+	})
+	done := Alert{Pane: "%1", Kind: "done", Agent: "Codex"}
+
+	// The hub may observe idle and queue a push, then the same pane can start a
+	// new turn before the asynchronous dispatch runs.
+	pm.dispatch(done)
+	if got := len(relay.intents()); got != 0 {
+		t.Fatalf("stale done alert sent while pane is working: %d intents", got)
+	}
+
+	current = []AgentStatus{{PaneID: "%1", Status: "idle", Confirmed: true}}
+	pm.dispatch(done)
+	if got := len(relay.intents()); got != 1 {
+		t.Fatalf("current done alert sent %d intents, want 1", got)
+	}
+
+	current = []AgentStatus{{PaneID: "%1", Status: "idle", Confirmed: true, EndReason: "error"}}
+	pm.dispatch(done)
+	if got := len(relay.intents()); got != 1 {
+		t.Fatalf("errored done alert sent %d intents, want no additional push", got)
+	}
+}
+
+func TestQueuedDoneRequiresSameCompletionAndInstance(t *testing.T) {
+	done := Alert{Pane: "%1", Kind: "done", Agent: "Codex", CompletionID: "one", Instance: "original"}
+	valid := AgentStatus{PaneID: "%1", Agent: "Codex", Status: "idle", Confirmed: true, CompletionID: "one", Instance: "original"}
+	for _, tc := range []struct {
+		name   string
+		change func(*AgentStatus)
+	}{
+		{"newer completed turn", func(s *AgentStatus) { s.CompletionID = "two" }},
+		{"replacement pane owner", func(s *AgentStatus) { s.Instance = "replacement" }},
+		{"another agent", func(s *AgentStatus) { s.Agent = "Claude Code" }},
+		{"unconfirmed idle", func(s *AgentStatus) { s.Confirmed = false }},
+		{"missing pane", func(s *AgentStatus) { s.PaneID = "%2" }},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			relay := &fakeRelay{}
+			pm := NewPushManager(relay, nil, nil, "Mac", nil)
+			pm.Register(DeviceToken{Origin: originMaster, Token: "tok", Platform: "ios"})
+			current := valid
+			tc.change(&current)
+			pm.SetStatusSource(func() []AgentStatus { return []AgentStatus{current} })
+			pm.dispatch(done)
+			if got := relay.intents(); len(got) != 0 {
+				t.Fatalf("stale completion was sent: %+v", got)
+			}
+		})
+	}
+}
+
+type onSendRelay struct{ send func(PushIntent) error }
+
+func (r onSendRelay) Send(i PushIntent) error { return r.send(i) }
+
+func TestDoneRecheckedBetweenSlowDeviceDeliveries(t *testing.T) {
+	current := AgentStatus{PaneID: "%1", Agent: "Codex", Status: "idle", Confirmed: true, CompletionID: "one"}
+	sent := 0
+	pm := NewPushManager(onSendRelay{send: func(PushIntent) error {
+		sent++
+		// A slow first delivery returns after the agent has started another turn.
+		current.Status = "working"
+		return nil
+	}}, nil, nil, "Mac", nil)
+	pm.Register(DeviceToken{Origin: originMaster, Token: "a", Platform: "ios"})
+	pm.Register(DeviceToken{Origin: originMaster, Token: "b", Platform: "ios"})
+	pm.SetStatusSource(func() []AgentStatus { return []AgentStatus{current} })
+	pm.dispatch(Alert{Pane: "%1", Kind: "done", Agent: "Codex", CompletionID: "one"})
+	if sent != 1 {
+		t.Fatalf("sent %d pushes; the second device must not get the now-stale completion", sent)
+	}
+}
+
 func TestPushManagerUnregister(t *testing.T) {
 	relay := &fakeRelay{}
 	var saves int

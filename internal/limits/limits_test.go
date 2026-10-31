@@ -394,7 +394,9 @@ func TestRunAndParseUsesTheLoginShell(t *testing.T) {
 		t.Fatal(err)
 	}
 	shim := filepath.Join(dir, "shell")
-	if err := os.WriteFile(shim, []byte("#!/bin/sh\n. "+rc+"\nexec /bin/sh \"$@\"\n"), 0o755); err != nil {
+	// Model the login-shell startup after checking the requested flag. Starting
+	// another login shell would let /etc/profile erase this fixture's PATH.
+	if err := os.WriteFile(shim, []byte("#!/bin/sh\n[ \"$1\" = '-lc' ] || exit 64\n. "+rc+"\nexec /bin/sh -c \"$2\"\n"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("SHELL", shim)

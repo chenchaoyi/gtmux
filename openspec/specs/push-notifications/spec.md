@@ -213,6 +213,29 @@ set the date, so the killed-app (push-only) and foreground (app-driven) paths bo
 The system SHALL derive `waiting`/`done` alerts from its own ~1.5s diff loop (not
 by draining the notify queue) and forward each to the relay for delivery.
 
+Successful `done` alerts SHALL require a verified turn-end hook or an explicit
+terminal boundary belonging to the current session. Screen/CPU quietness and
+idle-time cache files SHALL NOT constitute completion evidence. Completion copy
+SHALL describe the end of a turn, not claim the user's whole task is complete.
+
+#### Scenario: A running turn becomes quiet
+
+- **WHEN** the radar displays idle from screen/CPU evidence without a verified end
+- **THEN** no `done` alert or push is emitted, including after repeated polls
+
+#### Scenario: Completion evidence arrives after the idle display
+
+- **WHEN** the server observed working, then unconfirmed idle, then that turn's verified successful end
+- **THEN** it emits one `done` alert when the evidence arrives
+- **AND** failure, disappearance, changed session identity or revoked notification consent cancels pending attention
+- **AND** startup idle and repaints of an already observed completion do not replay it
+
+#### Scenario: A queued completion is superseded
+
+- **WHEN** a completion is queued and the session starts another turn, changes identity or disappears before delivery
+- **THEN** the queued push is dropped
+- **AND** the current successful completion generation and consent are rechecked before each device delivery, including after a slow previous delivery
+
 #### Scenario: Agent goes waiting
 
 - **WHEN** an agent transitions any→waiting

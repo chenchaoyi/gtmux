@@ -19,6 +19,21 @@ A hook observes the agent; it must not approve tools, change prompts, block a tu
 
 ## Ownership and polling
 
+Completion alerts require an accepted successful turn-end event or a matching
+explicit transcript boundary. The `finished/<pane>` mtime still supplies idle
+display time; only its versioned lifecycle payload proves completion. Empty
+legacy markers and timestamps inferred by the radar cannot do so, even on later
+polls. Native terminal lifecycle evidence remains separate from these caches.
+
+The server remembers observed work while an idle display awaits confirmation,
+then alerts once for the confirmed turn. Startup idle and a repaint of the same
+completion do not replay alerts. Failed turns, disappearing or replaced sessions,
+and revoked notification consent cancel pending attention. Queued completion
+pushes recheck the current session and completion generation before each device
+delivery; they are discarded if work has resumed. Copy says a turn finished,
+without asserting that the whole user task is complete. Delivery already handed
+to the relay/APNs cannot be recalled by a later local state change.
+
 Known mismatched turn_id callbacks cannot end a newer turn. Tool, permission and compaction callbacks arriving after a cancellation cannot rearm it; only an actual new prompt/turn start can. The same guard applies to native sessions outside tmux. Agents without a turn identifier retain session-level guards; this is not a claim of universal event ordering.
 
 Codex's tmux fallback accepts the bound rollout's latest task_complete or turn_aborted only after the current active and waiting timestamps. A newer task_started, session mismatch, changed cwd, future timestamp or absent binding prevents reconciliation. The aborted path retains interrupted and does not stamp a successful finish. Native Codex rows also consult their own rollout; no protocol or UI shape changes are required.
