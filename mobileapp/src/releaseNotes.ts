@@ -12,6 +12,23 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.161',
+    en: [
+      'HQ, Trace and clearer code reading',
+      'Read HQ resource summaries and matter cards together, with the same overview inside HQ conversations.',
+      'Collapse the full conversation context and inspect individual tool calls under the session name in Trace.',
+      'Browse long tool input with a compact draggable control; open content-limit information only when needed.',
+      'Keep your position visible in Diff while panning long lines, with clearer controls at large text sizes.',
+    ],
+    zh: [
+      'HQ、轨迹与代码阅读',
+      'HQ 置顶资源摘要，用简报卡呈现事项；对话页与总览使用同一组事项信息。',
+      'HQ 对话顶部可整块收起；轨迹以会话名为标题，逐条查看工具调用详情。',
+      '工具输入改用可拖动的小滚动柄和信息图标，减少说明文字，大字体下工具名保持完整。',
+      '浏览长 Diff 时保留清晰的竖向位置条，横向查看长行也不丢失阅读位置。',
+    ],
+  },
+  {
     version: '1.0.160',
     en: [
       'HQ matters and steady trace reading',
