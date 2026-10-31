@@ -1,8 +1,8 @@
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
-import { FlatList, ScrollView, StyleSheet, Text } from 'react-native';
+import { FlatList, Modal, ScrollView, StyleSheet, Text } from 'react-native';
 import Clipboard from '@react-native-clipboard/clipboard';
-import { TraceReader } from './TraceModal';
+import { TraceModal, TraceReader } from './TraceModal';
 import { TraceEvent } from './model';
 import { paletteFor } from '../ui/theme';
 import { toAgent } from '../api/types';
@@ -11,6 +11,7 @@ import { MarkdownView } from '../ui/MarkdownView';
 import { ParticipantProfileModal } from '../ui/ParticipantProfileModal';
 import { nativeDocumentPreview } from '../documents/nativePreview';
 import * as layout from '../ui/layout';
+import {KeyBus} from '../keys/bus';
 import { CodeText } from '../ui/CodeText';
 jest.mock('../ui/ParticipantProfileModal', () => ({
   ParticipantProfileModal: jest.fn(() => null),
@@ -653,4 +654,79 @@ test('truncated Trace input loads its complete source and keeps Raw and Copy ver
   ).toHaveLength(0);
   press('trace-copy');
   expect(Clipboard.setString).toHaveBeenLastCalledWith(full.input);
+});
+
+test('detail navigation returns to the list while the single close exits Trace', () => {
+  const close = jest.fn();
+  mount({ onClose: close });
+  const event = data().find(e => e.kind === 'tool')!;
+  press('trace-record-' + event.key);
+  const back = tree.root
+    .findAllByProps({ testID: 'trace-detail-close' })
+    .find(n => typeof n.props.onPress === 'function')!;
+  expect(back.props.accessibilityLabel).toBe('Back to trace');
+  press('trace-detail-close');
+  expect(close).not.toHaveBeenCalled();
+  expect(tree.root.findAllByProps({ testID: 'trace-detail' })).toHaveLength(0);
+  press('trace-close');
+  expect(close).toHaveBeenCalledTimes(1);
+});
+test('iOS dismissal retains the painted Trace tree until onDismiss, then releases it', () => {
+  act(() => {
+    tree = renderer.create(<TraceModal {...base} />);
+  });
+  expect(tree.root.findByType(Modal).props.backdropColor).toBe(base.pal.bg);
+  act(() => tree.update(<TraceModal {...base} visible={false} />));
+  expect(tree.root.findByType(Modal).props.children.props.children.type).toBe(TraceReader);
+  act(() => tree.root.findByType(Modal).props.onDismiss());
+  expect(tree.root.findByType(Modal).props.children).toBe(false);
+});
+test('closing keeps current scope retirement and a stale dismiss cannot blank a reopened trace', () => {
+  act(() => {
+    tree = renderer.create(<TraceModal {...base} />);
+  });
+  act(() => tree.update(<TraceModal {...base} turns={[]} visible={false} />));
+  expect(tree.root.findByType(Modal).props.children.props.children.props.turns).toEqual([]);
+  const dismiss = tree.root.findByType(Modal).props.onDismiss;
+  act(() => tree.update(<TraceModal {...base} visible />));
+  act(() => dismiss());
+  expect(tree.root.findAllByType(TraceReader)).toHaveLength(1);
+});
+
+
+test('iPad resizing and Dynamic Type preserve the selected original call with the appropriate navigation', () => {
+  mount();
+  width(1194);
+  const event = data().find(e => e.kind === 'tool')!;
+  press('trace-record-' + event.key);
+  const navigation = () => tree.root.findAllByProps({testID: 'trace-detail-close'}).find(n => typeof n.props.onPress === 'function')!;
+  expect(navigation().props.accessibilityLabel).toBe('Hide details');
+  expect(source()).toBe(command);
+  for (const w of [834, 744, 507, 320, 1366]) {
+    width(w);
+    expect(source()).toBe(command);
+    expect(navigation().props.accessibilityLabel).toBe(w >= 820 ? 'Hide details' : 'Back to trace');
+  }
+  scale = 3;
+  act(() => tree.update(<TraceReader {...base} />));
+  expect(navigation().props.accessibilityLabel).toBe('Back to trace');
+  expect(source()).toBe(command);
+  press('trace-detail-close');
+  expect(base.onClose).not.toHaveBeenCalled();
+});
+
+
+test('hardware Escape returns from call details before closing Trace and does not reach the page behind', () => {
+  const page = jest.fn(), close = jest.fn();
+  const stop = KeyBus.on('sheet.close', page);
+  mount({onClose: close});
+  press('trace-record-' + data().find(e => e.kind === 'tool')!.key);
+  act(() => { KeyBus.emit('sheet.close'); });
+  expect(tree.root.findAllByProps({testID:'trace-detail'})).toHaveLength(0);
+  expect(close).not.toHaveBeenCalled();
+  expect(page).not.toHaveBeenCalled();
+  act(() => { KeyBus.emit('sheet.close'); });
+  expect(close).toHaveBeenCalledTimes(1);
+  expect(page).not.toHaveBeenCalled();
+  stop();
 });

@@ -49,7 +49,7 @@ test('a failed read is an error with retry, not an empty repository', async () =
   await act(async () =>
     tree.root
       .findAllByType(TouchableOpacity)
-      .find(t => t.props.accessibilityRole === 'button')!
+      .find(t => t.props.testID === 'diff-retry')!
       .props.onPress(),
   );
   expect(diff).toHaveBeenCalledTimes(2);
@@ -165,4 +165,53 @@ test('file cards, hunk folding, line numbers and full source reader share the or
     .find(n => n.props.title === 'a.go');
   expect(reader).toBeDefined();
   act(() => file!.unmount());
+});
+
+test('large Dynamic Type keeps chrome and six-digit line numbers within the wrapped viewport', async () => {
+  const rn = require('react-native');
+  const dimensions = jest
+    .spyOn(rn, 'useWindowDimensions')
+    .mockReturnValue({ width: 390, height: 900, scale: 3, fontScale: 3 });
+  let rowTree: renderer.ReactTestRenderer | undefined;
+  try {
+    const text =
+      'diff --git a/a.go b/a.go\n--- a/a.go\n+++ b/a.go\n@@ -100000 +100000 @@\n-old\n+updated';
+    await act(async () => {
+      tree = renderer.create(
+        <DiffModal
+          {...props}
+          fontSize={24}
+          client={{ diff: async () => text } as any}
+        />,
+      );
+    });
+    const list = tree.root.findByType(FlatList);
+    expect(list.props.style.width).toBe(390);
+    act(() => {
+      rowTree = renderer.create(
+        list.props.renderItem({ item: list.props.data[0], index: 0 }),
+      );
+    });
+    const header = rn.StyleSheet.flatten(
+      rowTree!.root.findByType(rn.View).props.style,
+    );
+    expect(header.width + 24).toBeLessThanOrEqual(list.props.style.width);
+    expect(header.height).toBeGreaterThan(64);
+    act(() => rowTree!.unmount());
+    const index = list.props.data.findIndex((line: string) => line === '-old');
+    act(() => {
+      rowTree = renderer.create(list.props.renderItem({ item: '-old', index }));
+    });
+    const gutter = rowTree!.root
+      .findAllByType(Text)
+      .find(n => n.props.children === 100000)!;
+    expect(gutter.props.numberOfLines).toBe(1);
+    expect(rn.StyleSheet.flatten(gutter.props.style).width).toBeGreaterThan(45);
+    expect(gutter.props.maxFontSizeMultiplier).toBeLessThan(2);
+    const wrap = tree.root.findAllByType(TouchableOpacity).find(n => n.props.testID === 'diff-wrap')!;
+    expect(wrap.findByType(Text).props.maxFontSizeMultiplier).toBe(1.35);
+  } finally {
+    if (rowTree) act(() => rowTree!.unmount());
+    dimensions.mockRestore();
+  }
 });

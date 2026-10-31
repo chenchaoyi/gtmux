@@ -18,7 +18,7 @@ test('every command has a title in both languages and an owner', () => {
   for (const b of KEYMAP) {
     expect(b.title.en.trim()).not.toBe('');
     expect(b.title.zh.trim()).not.toBe('');
-    expect(['shell', 'detail', 'composer', 'panes', 'hq']).toContain(b.owner);
+    expect(['shell', 'detail', 'composer', 'panes', 'hq', 'overlay']).toContain(b.owner);
   }
 });
 
@@ -51,4 +51,22 @@ test('the bus delivers to the views that subscribed, and says when nobody did', 
   off();
   expect(KeyBus.emit('mode.chat')).toBe(false);
   expect(hits).toEqual(['a']);
+});
+
+
+test('only the foremost overlay handles Escape; closing it restores the underlying owner', () => {
+  KeyBus._reset();
+  const hits: string[] = [];
+  const page = KeyBus.on('sheet.close', () => hits.push('page'));
+  const trace = KeyBus.capture('sheet.close', () => hits.push('trace'));
+  const menu = KeyBus.capture('sheet.close', () => hits.push('menu'));
+  KeyBus.emit('sheet.close');
+  expect(hits).toEqual(['menu']);
+  menu();
+  KeyBus.emit('sheet.close');
+  expect(hits).toEqual(['menu', 'trace']);
+  trace();
+  KeyBus.emit('sheet.close');
+  expect(hits).toEqual(['menu', 'trace', 'page']);
+  page();
 });

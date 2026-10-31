@@ -19,8 +19,7 @@ enum DocumentHTML {
             reference.rangeOfCharacter(from: .controlCharacters) == nil,
             !reference.hasPrefix("//"), let url = URL(string: reference),
             url.scheme == nil || url.scheme?.lowercased() == "file" || url.scheme == "gtmux-file",
-            url.host == nil || url.host == "" || url.host == "localhost",
-            url.query == nil else { return nil }
+            url.host == nil || url.host == "" || url.host == "localhost" else { return nil }
       if let key = known[reference] { return key }
       guard images.count < 32 else { return nil }
       let key = "gtmux-document://image/\(images.count)"
@@ -49,7 +48,9 @@ enum DocumentHTML {
             guard let first = fields.first, let target = scoped(first) else { return item }
             return ([target] + fields.dropFirst()).joined(separator: " ")
           }
-          replacements.append((valueRange, candidates.joined(separator: ", ")))
+          let encoded = candidates.joined(separator: ", ").replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "\"", with: "&quot;").replacingOccurrences(of: "'", with: "&#39;")
+          replacements.append((valueRange, attr.range(at: 4).location != NSNotFound ? "\"\(encoded)\"" : encoded))
         }
       }
     }

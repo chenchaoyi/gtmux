@@ -532,7 +532,7 @@ hand-off 「read it out这种指令很蠢」, and it is gone from both surfaces.
   touch targets. The menu uses two type sizes: 15 pt for its title, option labels and text-size controls; 12 pt for group
   captions and explanations. Only the title is semibold; option labels are regular and A− / A+ share the same medium
   weight and size. Headings and the text-size group align at 20 pt from the menu edge. A compact text-size row shows
-  the current base size (11 / 13 / 15 pt) in primary text between A− and A+. These update immediately without dismissing
+  the current base size (10–24 pt, one-point steps) in primary text between A− and A+. These update immediately without dismissing
   the menu; the exhausted direction is dimmed and disabled.
   Both layouts and text-size limits have accessibility states and labels. The menu is 288 pt wide at most, stays inside
   safe areas and scrolls its body on short viewports; fixed menu text follows `CHROME_MAX_SCALE`. Server action menus
@@ -1732,3 +1732,18 @@ changes bounded; structured diffs wrap by default and retain original-width read
 A per-file reader and Copy retain the original patch, including shortened list lines.
 The range is explicitly the working tree, not an inferred last turn or full repository.
 The browser consumes the same structure and mounts large hunks in readable batches.
+
+### Adaptive reader navigation (2026-11-01)
+
+Trace has a single outer Close. On a compact canvas, a leading Back to trace chevron
+returns from record details; on a wide canvas, a trailing collapse chevron hides the
+inspector. Resizing or large Dynamic Type keeps the selected record while switching
+between these layouts. Its themed tree remains painted until the native dismissal
+finishes; authorization and identity changes still retire old data immediately.
+
+Trace, Diff, the complete-code reader, profile cards and anchored menus share a
+foremost-overlay Escape handler. Escape first leaves Trace details, then Trace;
+it does not also act on the HQ page underneath. A nested reader or menu temporarily
+owns the shortcut. This is shared phone/iPad behavior, not an iPad-only screen.
+Diff keeps six-digit gutters legible, caps metadata at the existing chrome scale,
+and wraps its content inside the measured canvas at accessibility text sizes.

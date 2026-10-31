@@ -1515,3 +1515,5 @@ select:disabled { opacity: .55; cursor: not-allowed; }
 .diff-line.add .diff-sign{color:#36723a}.diff-line.del .diff-sign{color:#b63843}[data-theme=dark] .diff-line.add .diff-sign{color:#A8C997}[data-theme=dark] .diff-line.del .diff-sign{color:#EEA3AC}
 
 .diff-file{border-color:var(--divider)}.diff-hunk-count{float:right;margin-left:12px;color:var(--fg2);font-variant-numeric:tabular-nums}.diff-wrap{border:0;border-radius:7px;padding:6px 10px;background:var(--control);color:var(--fg2);font:inherit;cursor:pointer}.diff-wrap[aria-pressed=true]{color:var(--accent-ink);background:var(--sel)}.diff-wrap:focus-visible{outline:2px solid var(--accent-ink);outline-offset:2px}
+
+.diff-line-number{flex-basis:var(--diff-gutter,34px);white-space:nowrap}

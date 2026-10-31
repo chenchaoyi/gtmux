@@ -768,3 +768,14 @@ The browser SHALL load complete selected tool input on reader intent with truthf
 - **WHEN** the reader switches from a tool call to context Raw content without a code-language field
 - **THEN** the content stays readable and exact without a rendering exception
 - **AND** system shortcuts, historical viewport and private-scope retirement remain intact
+
+### Requirement: Distinct adaptive trace detail navigation
+Trace SHALL distinguish returning from record details from closing the tool. A compact
+reader SHALL provide a leading Back action and a wide inspector a trailing Hide details
+action. Resizing between phone, tablet and desktop widths SHALL retain the selected
+original call, contain the inspector and preserve keyboard focus when details close.
+
+#### Scenario: Resize an inspected call through tablet multitasking widths
+- **WHEN** the viewport changes through portrait, landscape and narrow tablet widths
+- **THEN** the original selected source remains readable without widening the page
+- **AND** closing details restores focus to its original record without sending input

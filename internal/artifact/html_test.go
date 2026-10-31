@@ -31,7 +31,7 @@ func TestHTMLRelatedImagesUseSnapshotAndKeepDirectoryFence(t *testing.T) {
 		t.Fatal(err)
 	}
 	os.WriteFile(path, []byte(`<img src="images/unlinked.png">`), 0600)
-	for _, ref := range []string{"images/shot.png", "images/a%20b.png"} {
+	for _, ref := range []string{"images/shot.png", "images/a%20b.png", "images/shot.png?revision=2#preview"} {
 		if f, err := Related(ref, p.ID, "session", "home"); err != nil || f.Kind != "image" {
 			t.Fatal(ref, f, err)
 		}

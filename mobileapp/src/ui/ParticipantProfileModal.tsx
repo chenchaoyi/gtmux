@@ -1,3 +1,4 @@
+import {useModalEscape} from '../keys/useModalEscape';
 import presentation from './participantPresentation.json';
 import React, {useEffect, useState} from 'react';
 import {Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions} from 'react-native';
@@ -15,6 +16,7 @@ import {ProfileExecutionChain} from './ProfileExecutionChain';
 import {HQProfileDetails} from './HQProfileDetails';
 
 export function ParticipantProfileModal({target, client, lang, onClose}: {target: ProfileTarget; client?: GtmuxClient; lang: Lang; onClose: () => void}) {
+  useModalEscape(true, onClose);
   const zh = lang === 'zh';
   const {height, fontScale} = useWindowDimensions();
   const [sourcesOpen, setSourcesOpen] = useState(false);

@@ -9,7 +9,7 @@ export type Modifier = 'cmd' | 'shift' | 'ctrl' | 'alt';
 
 /** Who handles the command: the shell (selection, HQ, All panes, sidebar) or a view that
  * subscribes on the key bus. */
-export type KeyOwner = 'shell' | 'detail' | 'composer' | 'panes' | 'hq';
+export type KeyOwner = 'shell' | 'detail' | 'composer' | 'panes' | 'hq' | 'overlay';
 
 export interface KeyBinding {
   id: string;
@@ -38,7 +38,7 @@ export const KEYMAP: KeyBinding[] = [
   {id: 'sidebar.toggle', input: 's', modifiers: ['cmd', 'ctrl'], title: {en: 'Show or hide the sidebar', zh: '显示 / 收起侧栏'}, owner: 'shell'},
   {id: 'panes.search', input: 'f', modifiers: ['cmd'], title: {en: 'Search panes', zh: '搜索 pane'}, owner: 'panes'},
   {id: 'composer.focus', input: 'k', modifiers: ['cmd'], title: {en: 'Type a message', zh: '输入'}, owner: 'composer'},
-  {id: 'sheet.close', input: 'escape', modifiers: [], title: {en: 'Close', zh: '关闭'}, owner: 'hq'},
+  {id: 'sheet.close', input: 'escape', modifiers: [], title: {en: 'Close', zh: '关闭'}, owner: 'overlay'},
   {id: 'mode.chat', input: '[', modifiers: ['cmd'], title: {en: 'Chat', zh: '对话'}, owner: 'detail'},
   {id: 'mode.terminal', input: ']', modifiers: ['cmd'], title: {en: 'Terminal', zh: '终端'}, owner: 'detail'},
   {id: 'font.up', input: '=', modifiers: ['cmd'], title: {en: 'Larger text', zh: '字大一点'}, owner: 'detail'},
