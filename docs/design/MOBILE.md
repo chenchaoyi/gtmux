@@ -1700,3 +1700,7 @@ call runs and context records. Details use Overview, Preview, Raw content and So
 without changing the frozen-selection rule or creating another transcript subscription.
 Narrow views retain full-width drill-in; wide panes retain adaptive split details.
 See [Trace](transcript-trace.md) for provider coverage, scope, limits and acceptance.
+
+### HQ overview briefing cards
+
+The matter overview leads with board, knowledge and usage summary cards, using existing owner-only resource reads and presentation models. Each matter has a separate compact card: current state, title, recorded update or explicitly labelled current assessment, and a dated byline. Delivery is not completion. Phone layouts stack; wide panes share columns only when their actual width and text scale permit. Resource readers and the HQ console keep their navigation and editable drafts. Unauthorized reads clear private summaries; transient failures label retained readings. Trace leads with the selected session name and wraps complete recorded inputs, preserving exact copy and frozen selection. Wide overview cards flow together in priority order, so uneven group sizes do not leave an empty column. Fixed header labels use the existing chrome text-scale limit; content still follows the system text size.

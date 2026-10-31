@@ -1,13 +1,13 @@
 // Shared matter data, with a compact landing page and the existing HQ console.
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   RefreshControl,
   ScrollView,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { Agent } from '../api/types';
@@ -18,9 +18,12 @@ import { useApp } from '../state/AppContext';
 import type { HQResourceRequest } from '../state/WorkspaceContext';
 import { createReadTask, startReadPolling } from '../state/readTask';
 import { HQAvatar } from '../ui/HQAvatar';
+import { ChromeText } from '../ui/ChromeText';
 import type { SizeClass } from '../ui/layout';
 import { HQOverview } from './HQOverview';
 import { HQMatterSheet } from './HQMatterSheet';
+import { HQResourceCards } from './HQResourceCards';
+import { useHQResourceSummaries } from './useHQResourceSummaries';
 import { HQWorkspaceStyles as s } from './hqWorkspaceStyles';
 
 type Props = {
@@ -37,6 +40,7 @@ export function HQWorkspaceView(
 ) {
   const { client, isGuest } = useAgents();
   const { pal, lang } = useApp();
+  const { fontScale } = useWindowDimensions();
   const zh = lang === 'zh',
     t = (en: string, cn: string) => (zh ? cn : en);
   const [page, setPage] = useState<'overview' | 'console'>(() =>
@@ -53,8 +57,20 @@ export function HQWorkspaceView(
   const [contentWidth, setContentWidth] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const retry = useRef<() => void>(() => {});
+  const retireWorkspace = useRef<() => void>(() => {});
   const supported = typeof client.hqWorkspace === 'function' && !isGuest;
   const data = record?.client === client ? record.value : undefined;
+  const clearPrivate = useCallback(() => {
+    retireWorkspace.current();
+    setRecord(null);
+    setSelected(null);
+    setFailed(true);
+  }, []);
+  const resources = useHQResourceSummaries(
+    client,
+    supported && page === 'overview' && !!data,
+    clearPrivate,
+  );
   useEffect(() => {
     if (props.prefill || props.openResource) {
       setPage('console');
@@ -86,6 +102,7 @@ export function HQWorkspaceView(
       },
     );
     retry.current = task.run;
+    retireWorkspace.current = task.invalidate;
     return startReadPolling(task, 10000);
   }, [client, supported, page]);
   if (!supported || data === null || page === 'console')
@@ -131,17 +148,20 @@ export function HQWorkspaceView(
             onPress={props.onBack}
             style={s.icon}
           >
-            <Text style={[s.back, { color: pal.fg2 }]}>‹</Text>
+            <ChromeText style={[s.back, { color: pal.fg2 }]}>‹</ChromeText>
           </TouchableOpacity>
         )}
         <HQAvatar size={32} ink={pal.fg2} />
         <View style={s.flex}>
-          <Text accessibilityRole="header" style={[s.title, { color: pal.fg }]}>
+          <ChromeText
+            accessibilityRole="header"
+            style={[s.title, { color: pal.fg }]}
+          >
             HQ
-          </Text>
-          <Text style={[s.caption, { color: pal.fg2 }]}>
+          </ChromeText>
+          <ChromeText style={[s.caption, { color: pal.fg2 }]}>
             {t('Overview', '总览')}
-          </Text>
+          </ChromeText>
         </View>
         <TouchableOpacity
           testID="hq-overview-talk"
@@ -152,9 +172,9 @@ export function HQWorkspaceView(
             { backgroundColor: pal.surface, borderColor: pal.divider },
           ]}
         >
-          <Text style={[s.buttonText, { color: pal.fg }]}>
+          <ChromeText style={[s.buttonText, { color: pal.fg }]}>
             {t('Talk to HQ', '与 HQ 对话')}
-          </Text>
+          </ChromeText>
         </TouchableOpacity>
       </View>
       <ScrollView
@@ -166,6 +186,7 @@ export function HQWorkspaceView(
             onRefresh={() => {
               setRefreshing(true);
               retry.current();
+              resources.refresh.current();
             }}
             tintColor={pal.fg2}
           />
@@ -197,51 +218,25 @@ export function HQWorkspaceView(
           />
         )}
         {data && (
+          <HQResourceCards
+            data={data}
+            readings={resources.readings}
+            pal={pal}
+            zh={zh}
+            wide={contentWidth / fontScale >= 700}
+            width={contentWidth}
+            onOpen={door => talk(undefined, door)}
+          />
+        )}
+        {data && (
           <HQOverview
             data={data}
             pal={pal}
             zh={zh}
-            wide={contentWidth >= 700}
+            wide={contentWidth / fontScale >= 700}
             onMatter={setSelected}
           />
         )}
-        <Text
-          accessibilityRole="header"
-          style={[s.sectionTitle, { color: pal.fg }]}
-        >
-          {t('Resources', '资料')}
-        </Text>
-        <View
-          style={[
-            s.resources,
-            { backgroundColor: pal.surface, borderColor: pal.divider },
-          ]}
-        >
-          {(['board', 'knowledge', 'usage'] as const).map((door, i) => (
-            <TouchableOpacity
-              key={door}
-              accessibilityRole="button"
-              style={[
-                s.resource,
-                i > 0 && {
-                  borderLeftWidth: StyleSheet.hairlineWidth,
-                  borderLeftColor: pal.divider,
-                },
-              ]}
-              onPress={() => talk(undefined, door)}
-            >
-              <Text style={[s.buttonText, { color: pal.fg }]}>
-                {
-                  [
-                    t('Board', '态势板'),
-                    t('Knowledge', '知识库'),
-                    t('Usage', '用量'),
-                  ][i]
-                }
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
         {data && (
           <Text style={[s.footnote, { color: pal.fg2 }]}>
             {t('Updated', '更新于')}{' '}

@@ -2645,7 +2645,7 @@ The floating Collapse all control SHALL reserve a plain 44pt conversation-backgr
 - **AND** the action remains a minimum 44pt target and still toggles all replies
 
 ### Requirement: Mobile HQ uses the shared matter overview
-The App SHALL offer Needs input, Following and recent changes from the authoritative HQ workspace read projection. It SHALL stack groups in narrow panes and place them side by side only when the available content width permits. A matter reader SHALL show explicit assessment, participants and paged saved updates; receipt delivery MUST NOT imply completion. Talk to HQ, resources, drafts, composer and session tools SHALL retain the existing console behavior.
+The App SHALL offer Needs input, Following and recent changes from the authoritative HQ workspace read projection. It SHALL stack groups in narrow panes and flow current-matter cards in a shared grid when the available content width and text scale permit. A matter reader SHALL show explicit assessment, participants and paged saved updates; receipt delivery MUST NOT imply completion. Talk to HQ, resources, drafts, composer and session tools SHALL retain the existing console behavior.
 
 #### Scenario: A matter is opened without sending an instruction
 - **WHEN** an owner opens a matter and chooses Ask HQ
@@ -2662,3 +2662,22 @@ The App SHALL offer Needs input, Following and recent changes from the authorita
 - **THEN** the last overview remains with a retry action
 - **WHEN** access is revoked
 - **THEN** private overview and matter content are cleared
+
+### Requirement: Session-led Trace details and HQ briefing cards
+The App SHALL lead Trace with the selected session name, show full recorded tool input with wrapping, and avoid repeating an individual input in its group heading. HQ SHALL show actual board, knowledge and usage summaries before independent matter cards. Summary requests SHALL preserve owner scope, cancellation and transient-error semantics. Current assessments SHALL be identified as current rather than attributed to historical changes.
+
+#### Scenario: A long command is inspected on a phone
+- **WHEN** a reader selects an individual tool in an expanded call group
+- **THEN** details show that call's full recorded input with wrapping and exact copy
+- **AND** closing details retains the timeline, folds and reading position
+
+#### Scenario: HQ opens with available summaries
+- **WHEN** an owner opens the matter overview
+- **THEN** resource summaries precede matters without requiring another reader
+- **AND** cards show authoritative current states and dated updates without treating delivery as completion
+
+#### Scenario: Resource authorization is revoked
+- **WHEN** an owner-only summary request returns an authorization error
+- **THEN** the overview, selection and resource summaries are cleared and pending summary and workspace reads are retired; an older response cannot repopulate them
+- **WHEN** a summary refresh fails transiently
+- **THEN** its previous reading remains explicitly marked and independent resources can still update

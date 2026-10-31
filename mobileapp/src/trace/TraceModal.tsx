@@ -394,14 +394,19 @@ export function TraceReader({
     >
       <View style={[styles.header, { borderBottomColor: pal.divider }]}>
         <View style={styles.flex}>
-          <ChromeText style={[styles.title, { color: pal.fg }]}>
-            {zh ? '轨迹' : 'Trace'}
+          <ChromeText
+            testID="trace-session-title"
+            accessibilityRole="header"
+            numberOfLines={2}
+            style={[styles.title, { color: pal.fg }]}
+          >
+            {primary(agent) || (zh ? '轨迹' : 'Trace')}
           </ChromeText>
           <ChromeText
             numberOfLines={1}
             style={[styles.caption, { color: pal.fg2 }]}
           >
-            {primary(agent)}
+            {zh ? '轨迹' : 'Trace'}
           </ChromeText>
         </View>
         {listVisible && (
@@ -991,15 +996,11 @@ export function TraceReader({
                   (chosen.event.kind === 'context' &&
                     chosen.event.title === 'Environment') ||
                   detailTab === 'raw' ? (
-                  <ScrollView
-                    horizontal={!!chosen.event.step?.input}
-                    style={styles.codeScroll}
-                  >
+                  <View style={styles.sourceBlock}>
                     <CopyableText
                       testID="trace-source"
                       lang={lang}
                       selectable
-                      rangeUnbounded
                       style={[
                         styles.source,
                         {
@@ -1014,7 +1015,7 @@ export function TraceReader({
                         ? previewText(chosen.event)
                         : chosen.event.body}
                     </CopyableText>
-                  </ScrollView>
+                  </View>
                 ) : (
                   <MarkdownView
                     source={previewText(chosen.event)}
@@ -1270,7 +1271,7 @@ const styles = StyleSheet.create({
   },
   source: { lineHeight: 24 },
   mono: { fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace' },
-  codeScroll: { flexGrow: 0 },
+  sourceBlock: { width: '100%', minWidth: 0 },
   update: { minHeight: 44, justifyContent: 'center', paddingVertical: 10 },
   loadEarlier: {
     minHeight: 44,

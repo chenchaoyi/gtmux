@@ -204,9 +204,8 @@ export function TraceTimelineRow({
           </ChromeText>
           <Chevron open={batch && row.open} size={16} color={pal.fg2} />
         </View>
-        {(!batch || row.open) && (
+        {!batch && (
           <Text numberOfLines={2} style={[s.preview, { color: pal.fg2 }]}>
-            {batch && !row.open ? (zh ? '最近：' : 'Latest: ') : ''}
             {traceEventPreview(event, lang)}
           </Text>
         )}
