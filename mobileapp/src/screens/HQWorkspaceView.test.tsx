@@ -140,6 +140,21 @@ test('resource summaries lead the overview with real facts and keep resource nav
   );
   expect(text()).toContain('Needs input');
 });
+test('an unavailable workspace in the conversation stays unknown instead of becoming an empty legacy queue', async () => {
+  await mount();
+  await press('Talk to HQ');
+  expect(consoleRender.mock.calls.at(-1)?.[0].matterSummary).toEqual({
+    needsInput: 1,
+    following: 2,
+  });
+  mockContext.client.hqWorkspace.mockRejectedValue(
+    new ApiError(403, 'workspace'),
+  );
+  await act(async () => jest.advanceTimersByTime(10000));
+  const props = consoleRender.mock.calls.at(-1)?.[0];
+  expect(props.workspaceMode).toBe(true);
+  expect(props.matterSummary).toBeUndefined();
+});
 test('wide overviews flow current matters together while expansion remains reversible', async () => {
   mockWindowWidth = 1024;
   const data = demoHQWorkspace(false);
@@ -318,6 +333,23 @@ test('older servers retain existing HQ and guests never request workspace data',
   expect(mockContext.client.hqWorkspace).not.toHaveBeenCalled();
   expect(mockContext.client.hqKnowledge).not.toHaveBeenCalled();
   expect(mockContext.client.usage).not.toHaveBeenCalled();
+});
+test('old-server capability can recover without navigating away from a conversation', async () => {
+  mockContext.client.hqWorkspace.mockResolvedValue(null);
+  await mount();
+  expect(consoleRender.mock.calls.at(-1)?.[0].workspaceMode).toBe(false);
+  mockContext.client.hqWorkspace.mockResolvedValue(demoHQWorkspace(false));
+  await act(async () => jest.advanceTimersByTime(60000));
+  const props = consoleRender.mock.calls.at(-1)?.[0];
+  expect(props.workspaceMode).toBe(true);
+  expect(props.matterSummary).toEqual({ needsInput: 1, following: 2 });
+  expect(tree.root.findAllByProps({ testID: 'hq-overview-talk' })).toHaveLength(
+    0,
+  );
+  await act(async () => props.onBack());
+  expect(
+    tree.root.findAllByProps({ testID: 'hq-overview-talk' }).length,
+  ).toBeGreaterThan(0);
 });
 test('participants require the original live agent/home/thread, not a recycled pane', () => {
   const association = {

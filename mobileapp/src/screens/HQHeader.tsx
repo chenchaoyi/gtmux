@@ -1,36 +1,16 @@
-// HQHeader — the HQ page's standing header (hq-page-shows-its-work).
-//
-// Two rows standing: who this is, and what gtmux concludes. Everything else lives one
-// tap down, inside the verdict's disclosure. The four stacked bands this replaces cost
-// ~200pt before the body began, and with a keyboard up the conversation underneath was
-// left four or five lines.
-//
-// The disclosure was rebuilt once on 2026-09-03 ("这一块信息还是很零散，不专业") and again
-// on 2026-09-05, from a screenshot of the real thing. The second round fixed what the
-// first one could not see without looking at it:
-//
-//   - **the verdict did not read as a control.** It was a plain sentence between two
-//     hairlines with a 12pt triangle in the faintest gray pinned to the far right — a
-//     status band, not a button, and it was read as one. It is now one rounded surface
-//     card holding the verdict and everything the verdict opens, with the chevron at the
-//     weight of the text it belongs to. A disclosure has to look like the thing it opens.
-//   - **five things stacked in three layouts is not an organised block.** A quotation, a
-//     key/value list, and two icon rows each had their own left edge and their own idea
-//     of a row. Board and knowledge are now rows of the SAME grid, so the whole disclosure
-//     is one key column and one value column, top to bottom. Their `▤`/`◆` icons went with
-//     the change: a row whose key says `board` does not also need a picture of one.
-//   - **the quotation quoted the wrong thing** — see `supervisorSignal`. That is a
-//     judgment, so it lives in the model.
-//
-// The view stays thin: what belongs standing and what belongs behind the disclosure is
-// decided in hqHeaderModel.ts, where it is tested as rules.
+// HQ conversations keep identity and one summary visible. Resources, machine
+// details and HQ updates share one bounded disclosure so the chat keeps its space.
+// Matter-backed summaries come from the same workspace as the outer HQ overview;
+// older servers retain their separately labelled waiting-session view.
 
 import React from 'react';
 import {LoadingMark} from '../ui/LoadingMark';
-import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {StyleSheet, Text, TouchableOpacity, View, ScrollView, useWindowDimensions} from 'react-native';
 import {ConnState} from '../state/AgentsContext';
 import {gradeLabel, HeaderModel, InlineSeg} from './hqHeaderModel';
 import {ERRORED_COLOR, StatusColor} from '../ui/theme';
+import {HQAvatar} from '../ui/HQAvatar';
+import {ChromeText} from '../ui/ChromeText';
 
 const hit = {top: 8, bottom: 8, left: 8, right: 8};
 
@@ -71,6 +51,8 @@ export interface HQHeaderProps {
   onToggle: () => void;
   /** The phone's back button; the iPad's main pane has none (the sidebar is the way back). */
   onBack?: () => void;
+  backLabel?: string;
+  pendingMatters?: number;
   tools?: React.ReactNode;
   onOpenBoard: () => void;
   pal: {fg: string; fg2: string; fg3: string; divider: string; surface: string};
@@ -90,19 +72,6 @@ function Runs({segs, style, code}: {segs: InlineSeg[]; style: any; code: any}) {
   );
 }
 
-/**
- * One row of the disclosure's grid: a key, a value, and — when the row leads somewhere —
- * a chevron. Figures and documents share it so they share an alignment.
- */
-/**
- * One of HQ's three documents, as a tile that also reports.
- *
- * A row in a closed disclosure is not a destination — it is a thing you have to know is
- * there. These stand, side by side, each showing the one number that says whether it
- * wants you: how fresh the board is, how much the knowledge base owes you, where the
- * plan stands. `owed` paints the value in the attention colour when there IS something
- * owed, so the tile that needs you is the one that looks like it.
- */
 /** destLines splits a door value at its " · " joints, at most two lines. */
 export function destLines(value: string): string[] {
   const parts = value.split(/\s+·\s+/).map(s => s.trim()).filter(Boolean);
@@ -153,13 +122,10 @@ function Dest({
       <Text style={[styles.destLabel, {color: pal.fg}]} numberOfLines={1}>
         {label}
       </Text>
-      {/* One fact per line. The value is a " · " list ("499 entries · 6 waiting on you",
-          "today 3.3M · week 16.7M") and a phone tile is ~90pt of text: on one line the
-          second fact always ended as "6…" / "w…", the half that carries the debt or the
-          week (simulator, 2026-09-14). Two lines hold both; a third fact would need a
-          taller row than its neighbours, so the model keeps the value to two. */}
+      {/* Split facts and allow each to wrap within a compact phone tile. Larger
+          Dynamic Type sizes stack the cards instead of clipping their summaries. */}
       {destLines(value).map((line, i) => (
-        <Text key={i} style={[styles.destValue, {color: wants ? ERRORED_COLOR : pal.fg3}]} numberOfLines={1}>
+        <Text key={i} style={[styles.destValue, {color: wants ? ERRORED_COLOR : pal.fg2}]} numberOfLines={2}>
           {line}
         </Text>
       ))}
@@ -207,8 +173,9 @@ function GridRow({
 
 export function HQHeader({
   model, conn, demo, boardValue, knowledgeValue, usageValue, pending,
-  open, onToggle, onBack, tools, onOpenBoard, onOpenKnowledge, onOpenActs, onOpenUsage, pal, zh,
+  open, onToggle, onBack, backLabel, pendingMatters, tools, onOpenBoard, onOpenKnowledge, onOpenActs, onOpenUsage, pal, zh,
 }: HQHeaderProps) {
+  const {height, fontScale} = useWindowDimensions();
   const dot = conn === 'live' ? StatusColor.idle : conn === 'connecting' ? ERRORED_COLOR : StatusColor.waiting;
   const keyW = keyWidth(zh);
   const sig = model.signal;
@@ -216,15 +183,21 @@ export function HQHeader({
     <View>
       <View style={styles.strip}>
         {onBack && (
-          <TouchableOpacity testID="hq-back" accessibilityRole="button" accessibilityLabel={zh ? '返回' : 'Back'} onPress={onBack} hitSlop={hit}>
-            <Text style={[styles.back, {color: pal.fg2}]}>‹</Text>
+          <TouchableOpacity testID="hq-back" accessibilityRole="button" accessibilityLabel={backLabel ? `${backLabel}${pendingMatters ? ` · ${pendingMatters} ${zh ? '项待处理' : 'need input'}` : ''}` : zh ? '返回' : 'Back'} onPress={onBack} hitSlop={hit} style={styles.backButton}>
+            <ChromeText style={[styles.back, {color: pal.fg2}]}>‹</ChromeText>
+            {backLabel && <ChromeText style={[styles.backLabel, {color: pal.fg2}]}>{backLabel}</ChromeText>}
+            {!!pendingMatters && <ChromeText style={[styles.backLabel, {color: StatusColor.waiting}]}>{pendingMatters}</ChromeText>}
           </TouchableOpacity>
         )}
         <View style={styles.titleRow}>
-          <Text style={[styles.title, {color: pal.fg}]}>gtmux HQ</Text>
+          <HQAvatar size={32} ink={pal.fg2} />
+          <View style={styles.name}>
+            <ChromeText accessibilityRole="header" style={[styles.title, {color: pal.fg}]}>HQ</ChromeText>
+            <ChromeText style={[styles.subtitle, {color: pal.fg2}]}>{zh ? '对话' : 'Chat'}</ChromeText>
+          </View>
           {demo && (
             <View style={[styles.demoPill, {borderColor: StatusColor.working}]}>
-              <Text style={[styles.demoPillText, {color: StatusColor.working}]}>DEMO</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.demoPillText, {color: StatusColor.working}]}>DEMO</Text>
             </View>
           )}
           <View style={[styles.dot, {backgroundColor: dot}]} />
@@ -240,13 +213,15 @@ export function HQHeader({
           testID="hq-verdict"
           accessibilityRole="button"
           accessibilityState={{expanded: open}}
+          accessibilityHint={open ? zh ? '收起资源和 HQ 更新' : 'Collapse resources and HQ updates' : zh ? '展开态势板、知识库、用量和 HQ 更新' : 'Show board, knowledge, usage and HQ updates'}
           activeOpacity={0.6}
           onPress={onToggle}
           style={styles.verdictRow}>
           <Text
-            style={[styles.verdict, {color: model.urgent ? ERRORED_COLOR : pal.fg}]}
+            maxFontSizeMultiplier={1.5}
+            style={[styles.verdict, {color: (!open && model.standing) || model.urgent ? StatusColor.waiting : pal.fg}]}
             numberOfLines={open ? undefined : 2}>
-            {model.verdict}
+            {!open && model.standing ? model.standing : model.verdict}
           </Text>
           {/* A rotated `›` is the chevron the rest of the app already uses, at the weight
               of the sentence it belongs to rather than the faintest gray available. */}
@@ -259,24 +234,21 @@ export function HQHeader({
           </Text>
         </TouchableOpacity>
 
-        {/* Promoted out of the disclosure: a machine at its critical tier is not something
-            to find by tapping. Everything below the amber line stays inside. */}
-        {model.standing && (
+        {open && <ScrollView testID="hq-context" style={{maxHeight: Math.min(height * 0.45, 360) / Math.min(fontScale, 2)}} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
+        {/* Critical information remains in the compact headline while the expanded
+            context carries the full warning and resource readers. */}
+        {open && model.standing && (
           <View style={[styles.standing, {borderTopColor: pal.divider}]}>
-            <Text style={[styles.standingText, {color: StatusColor.waiting}]} numberOfLines={1}>
+            <Text maxFontSizeMultiplier={1.5} style={[styles.standingText, {color: StatusColor.waiting}]} numberOfLines={2}>
               ⚠ {model.standing}
             </Text>
           </View>
         )}
 
-        {/* HQ's three documents, STANDING.
-            They were rows inside the disclosure, and the disclosure defaults CLOSED — so
-            opening this page showed no way at all to reach the situation board, the
-            knowledge base or usage, and this is the only way to reach any of them from
-            the phone (user report, 2026-09-09). A destination is not a detail. Each tile
-            carries its own live value, so the row reports as well as navigates. */}
-        {(boardValue || knowledgeValue || usageValue || pending?.board || pending?.knowledge || pending?.usage) && (
-          <View style={[styles.dests, {borderTopColor: pal.divider}]}>
+        {/* Resources remain directly visible on the overview. Inside a conversation
+            they fold with the rest of the context to leave room for reading. */}
+        {open && (boardValue || knowledgeValue || usageValue || pending?.board || pending?.knowledge || pending?.usage) && (
+          <View style={[styles.dests, fontScale > 1.3 && styles.destStacked, {borderTopColor: pal.divider}]}>
             {boardValue ? (
               <Dest testID="hq-board-open" label={zh ? '态势板' : 'Board'} value={boardValue} pal={pal} onPress={onOpenBoard} />
             ) : pending?.board ? (
@@ -384,6 +356,7 @@ export function HQHeader({
 
           </View>
         )}
+        </ScrollView>}
       </View>
     </View>
   );
@@ -391,9 +364,13 @@ export function HQHeader({
 
 const styles = StyleSheet.create({
   strip: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingTop: 8, paddingBottom: 2},
-  back: {fontSize: 30, fontWeight: '300', marginRight: 10, marginTop: -4},
-  titleRow: {flexDirection: 'row', alignItems: 'center', flex: 1},
-  title: {fontSize: 17, fontWeight: '700'},
+  backButton: {minHeight: 44, minWidth: 44, flexDirection: 'row', alignItems: 'center', gap: 4, paddingRight: 10},
+  back: {fontSize: 30, fontWeight: '300', marginTop: -4},
+  backLabel: {fontSize: 13, fontWeight: '600'},
+  titleRow: {flexDirection: 'row', alignItems: 'center', flex: 1, minWidth: 0, gap: 8},
+  name: {flexShrink: 1},
+  title: {fontSize: 20, fontWeight: '700'},
+  subtitle: {fontSize: 12},
   demoPill: {borderWidth: 1, borderRadius: 5, paddingHorizontal: 5, paddingVertical: 0.5, marginLeft: 8},
   demoPillText: {fontSize: 10, fontWeight: '700'},
   dot: {width: 8, height: 8, borderRadius: 4, marginLeft: 8},
@@ -406,10 +383,11 @@ const styles = StyleSheet.create({
   // it. 17pt is the weight of a conclusion (user report, 2026-09-09: 太简陋).
   verdict: {flex: 1, fontSize: 17, fontWeight: '600', lineHeight: 23.5, letterSpacing: -0.2},
   dests: {flexDirection: 'row', gap: 7, paddingHorizontal: 10, paddingBottom: 10, paddingTop: 2},
-  dest: {flex: 1, minHeight: 44, justifyContent: 'center', gap: 2, paddingHorizontal: 9,
+  destStacked: {flexDirection: 'column'},
+  dest: {flex: 1, minHeight: 60, justifyContent: 'center', gap: 2, paddingHorizontal: 9,
     paddingVertical: 7, borderRadius: 10, borderWidth: StyleSheet.hairlineWidth},
-  destLabel: {fontSize: 12, fontWeight: '600'},
-  destValue: {fontSize: 11, fontVariant: ['tabular-nums']},
+  destLabel: {fontSize: 13, fontWeight: '600'},
+  destValue: {fontSize: 13, lineHeight: 19, fontVariant: ['tabular-nums']},
   // The mark sits where the value's first line would, so the tile keeps its height.
   destLoading: {height: 14, justifyContent: 'center'},
   chevron: {fontSize: 17, fontWeight: '500'},

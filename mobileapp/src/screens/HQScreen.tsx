@@ -41,6 +41,7 @@ import {HQResourceRequest, useWorkspace} from '../state/WorkspaceContext';
 import {AskItem, askQuote, parseBoardSections} from './boardSections';
 import {acts as supervisorActs} from './hqActsModel';
 import {HQHeader} from './HQHeader';
+import {consoleHeaderModel, type HQMatterCounts} from './hqWorkspaceModel';
 import {ResourceState, WindowPct, headerModel, usageDoorValue} from './hqHeaderModel';
 import {machineWarn} from './usageModel';
 import {
@@ -74,7 +75,7 @@ export function HQView(props: React.ComponentProps<typeof HQConsoleView>) {
 }
 const renderHQConsole = (props: React.ComponentProps<typeof HQConsoleView>) => <HQConsoleView {...props} />;
 
-export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout = 'compact', showInspector = true, openResource, onResourceExit}: {agent: Agent; prefill?: string; onBack?: () => void; layout?: SizeClass; showInspector?: boolean; openResource?: HQResourceRequest; onResourceExit?: (destination: 'overview' | 'console') => void}) {
+export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout = 'compact', showInspector = true, openResource, onResourceExit, workspaceMode = false, matterSummary}: {agent: Agent; prefill?: string; onBack?: () => void; layout?: SizeClass; showInspector?: boolean; openResource?: HQResourceRequest; onResourceExit?: (destination: 'overview' | 'console') => void; workspaceMode?: boolean; matterSummary?: HQMatterCounts}) {
   const {select} = useWorkspace();
   // A wide main pane (D5): the report header spans the main pane, the console takes the
   // width beneath it, and the two zones the phone puts behind tabs sit in an inspector on
@@ -178,7 +179,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   // Both bands fold on one driver, so the distance the chrome slides out — and the padding
   // the content carries — is their SUM. A band folded but not counted would slide only
   // partway out, or leave content starting underneath it.
-  const chromeH = headerH + tabsH;
+  const chromeH = headerH + (workspaceMode ? 0 : tabsH);
   const chrome = useRef<ChromeState>({hidden: false, settledAt: 0});
   const lastGap = useRef(0);
   // One rule, shared with Detail: `ui/liveEdge`. No decision is taken from a frame
@@ -323,9 +324,9 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   // the first digest that arrives, so a later state change never yanks the zone out from
   // under the user mid-read.
   useEffect(() => {
-    if (zone === null && digest.length > 0) setZone(initialZone(digest));
-  }, [digest, zone]);
-  const activeZone: Zone = zone ?? 'console';
+    if (!workspaceMode && zone === null && digest.length > 0) setZone(initialZone(digest));
+  }, [digest, zone, workspaceMode]);
+  const activeZone: Zone = workspaceMode ? 'console' : zone ?? 'console';
 
   // Reveal the top when switching zones — each zone starts at its resting edge, so a
   // stale collapsed state from the previous zone would hide the header with nothing
@@ -430,13 +431,13 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
       ];
 
   const tabs: {key: Zone; label: string; badge?: string; dot?: boolean}[] = [
-    {key: 'calls', label: t('Needs attention', '待处理'), badge: calls.length > 0 ? String(calls.length) : undefined},
+    {key: 'calls', label: t('Waiting sessions', '等待输入的会话'), badge: calls.length > 0 ? String(calls.length) : undefined},
     ...(regular ? [] : [{key: 'console' as Zone, label: t('Console', '对话')}]),
   ];
 
   // The "your call" zone's body, rendered once: the phone scrolls it as a zone, the
   // regular shell shows it in the inspector.
-  const callsBody = (
+  const callsBody = workspaceMode ? null : (
     <>
             {calls.length === 0 ? (
               /* The quiet state is the COMMON state, and it was one grey sentence over an
@@ -650,7 +651,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   );
   const headerEl = (
     <HQHeader
-            model={headerModel({
+            model={consoleHeaderModel(headerModel({
               verdict: assessment(digest, zh),
               urgent: calls.length > 0,
               digest,
@@ -669,7 +670,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
               },
               nowSecs: now,
               zh,
-            })}
+            }), workspaceMode, matterSummary, zh)}
             conn={conn}
             demo={demo && !Debug.shotMode}
             boardValue={board.exists ? boardAge(board.updated_at, now, zh) : null}
@@ -679,6 +680,8 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
             onOpenActs={() => setActsOpen(true)}
             onOpenUsage={() => setUsageOpen(true)}
             onBack={onBack}
+            backLabel={workspaceMode ? t('Overview', '总览') : undefined}
+            pendingMatters={workspaceMode ? matterSummary?.needsInput : undefined}
             tools={regular || activeZone === 'console' ? <SessionToolsMenu pal={pal} lang={lang} onTrace={() => {Keyboard.dismiss(); setTraceOpen(true);}} onDiff={live.branch ? () => {Keyboard.dismiss(); setDiffOpen(true);} : undefined} /> : undefined}
             onOpenBoard={() => setBoardOpen(true)}
             knowledgeValue={knowledgeValue(knowledge, zh)}
@@ -688,7 +691,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
             zh={zh}
           />
   );
-  const tabsEl = (
+  const tabsEl = workspaceMode ? null : (
     <View
           onLayout={e => {
             const h = e.nativeEvent.layout.height;
@@ -818,7 +821,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   // under-pads by everything above it (the status-bar inset, here): the key row stopped
   // at the keyboard and the text field sat UNDER it. On the simulator (2026-09-15) the
   // HQ composer opened with nothing to type into, on every zone.
-  if (regular) {
+  if (regular && !workspaceMode) {
     return (
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <SafeAreaView style={[styles.root, {backgroundColor: pal.bg}]} edges={['top', 'bottom']}>

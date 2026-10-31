@@ -14,7 +14,11 @@ import type { Palette } from '../ui/theme';
 import { parseBoardSections } from './boardSections';
 import { usageDoorValue } from './hqHeaderModel';
 import { knowledgeValue } from './knowledgeModel';
-import { matterPreview } from './hqWorkspaceModel';
+import {
+  matterPreview,
+  workspaceCounts,
+  workspaceSummary,
+} from './hqWorkspaceModel';
 import { boardAge } from './hqZones';
 import { machineWarn } from './usageModel';
 import type { HQResourceReadings } from './useHQResourceSummaries';
@@ -48,9 +52,7 @@ export function HQResourceCards({
         )
       : '';
   }, [board?.text]);
-  const matters = data.matters.filter(m => !m.merged_into);
-  const needed = matters.filter(m => m.state === 'needs-input').length;
-  const following = matters.filter(m => m.state === 'open').length;
+  const counts = workspaceCounts(data);
   const knowledge = readings.knowledge.value;
   const usage = readings.usage.value;
   const usageText = usageDoorValue(
@@ -75,14 +77,7 @@ export function HQResourceCards({
       key: 'board',
       icon: 'layout',
       title: t('Board', '态势板'),
-      value: zh
-        ? [`${needed} 项待处理`, `${following} 项跟进中`].join(
-            stacked ? '\n' : ' · ',
-          )
-        : [
-            `${needed} need${needed === 1 ? 's' : ''} input`,
-            `${following} ongoing`,
-          ].join(stacked ? '\n' : ' · '),
+      value: workspaceSummary(counts, zh, stacked ? '\n' : ' · '),
       note:
         boardBrief ||
         (board

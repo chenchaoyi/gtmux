@@ -24,6 +24,7 @@ import { HQOverview } from './HQOverview';
 import { HQMatterSheet } from './HQMatterSheet';
 import { HQResourceCards } from './HQResourceCards';
 import { useHQResourceSummaries } from './useHQResourceSummaries';
+import { workspaceCounts, type HQMatterCounts } from './hqWorkspaceModel';
 import { HQWorkspaceStyles as s } from './hqWorkspaceStyles';
 
 type Props = {
@@ -34,6 +35,8 @@ type Props = {
   showInspector?: boolean;
   openResource?: HQResourceRequest;
   onResourceExit?: (destination: 'overview' | 'console') => void;
+  workspaceMode?: boolean;
+  matterSummary?: HQMatterCounts;
 };
 export function HQWorkspaceView(
   props: Props & { renderConsole: (props: Props) => React.ReactNode },
@@ -60,6 +63,7 @@ export function HQWorkspaceView(
   const retireWorkspace = useRef<() => void>(() => {});
   const supported = typeof client.hqWorkspace === 'function' && !isGuest;
   const data = record?.client === client ? record.value : undefined;
+  const unavailable = data === null;
   const clearPrivate = useCallback(() => {
     retireWorkspace.current();
     setRefreshing(false);
@@ -84,11 +88,12 @@ export function HQWorkspaceView(
     setFailed(false);
   }, [client]);
   useEffect(() => {
-    if (!supported || page !== 'overview') return;
+    if (!supported) return;
     const task = createReadTask(
       signal => client.hqWorkspace(signal),
       value => {
         setRecord({ client, value });
+        if (value === null) setPage('console');
         setFailed(false);
       },
       {
@@ -104,11 +109,13 @@ export function HQWorkspaceView(
     );
     retry.current = task.run;
     retireWorkspace.current = task.invalidate;
-    return startReadPolling(task, 10000);
-  }, [client, supported, page]);
+    return startReadPolling(task, unavailable ? 60000 : 10000);
+  }, [client, supported, unavailable]);
   if (!supported || data === null || page === 'console')
     return props.renderConsole({
       ...props,
+      workspaceMode: supported && data !== null,
+      matterSummary: data ? workspaceCounts(data) : undefined,
       prefill,
       openResource: resource,
       onResourceExit:

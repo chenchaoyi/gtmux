@@ -1,7 +1,61 @@
 import { parseBlocks, type Inline } from '../ui/markdown';
 import { agentName } from '../trace/model';
 import type { Agent } from '../api/types';
-import type { HQAssociation, MatterState } from '../api/hqWorkspace';
+import type {
+  HQAssociation,
+  MatterState,
+  HQWorkspace,
+} from '../api/hqWorkspace';
+import type { HeaderModel } from './hqHeaderModel';
+
+export type HQMatterCounts = { needsInput: number; following: number };
+export function workspaceCounts(
+  data: Pick<HQWorkspace, 'matters'>,
+): HQMatterCounts {
+  const matters = data.matters.filter(m => !m.merged_into);
+  return {
+    needsInput: matters.filter(m => m.state === 'needs-input').length,
+    following: matters.filter(m => m.state === 'open').length,
+  };
+}
+export function workspaceSummary(
+  counts: HQMatterCounts,
+  zh: boolean,
+  separator = ' · ',
+): string {
+  return (
+    zh
+      ? [`${counts.needsInput} 项待处理`, `${counts.following} 项跟进中`]
+      : [
+          `${counts.needsInput} need${
+            counts.needsInput === 1 ? 's' : ''
+          } input`,
+          `${counts.following} ongoing`,
+        ]
+  ).join(separator);
+}
+export function consoleHeaderModel(
+  base: HeaderModel,
+  workspaceMode: boolean,
+  counts: HQMatterCounts | undefined,
+  zh: boolean,
+): HeaderModel {
+  if (!workspaceMode) return base;
+  return {
+    ...base,
+    rows: base.rows
+      .filter(row => row.key !== 'context')
+      .map(row =>
+        row.key === 'owed' ? { ...row, label: zh ? '知识计划' : 'Plans' } : row,
+      ),
+    verdict: counts
+      ? workspaceSummary(counts, zh)
+      : zh
+      ? '对话详情'
+      : 'Conversation details',
+    urgent: (counts?.needsInput ?? 0) > 0,
+  };
+}
 
 export function matterState(state: MatterState, zh: boolean): string {
   const names = {
