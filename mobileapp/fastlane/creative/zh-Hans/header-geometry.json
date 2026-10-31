@@ -1,0 +1,56 @@
+{
+  "canvas": {
+    "file": "header-21x9.png",
+    "width": 3840,
+    "height": 1646,
+    "safe": {
+      "x": 1097,
+      "y": 493,
+      "width": 1646,
+      "height": 661
+    },
+    "brand": {
+      "x": 1125,
+      "y": 695,
+      "width": 520,
+      "height": 300
+    },
+    "stage": {
+      "x": 1715,
+      "y": 512,
+      "width": 1000,
+      "height": 620
+    },
+    "phone": 266,
+    "tablet": 672,
+    "tabletLeft": 296,
+    "tabletTop": 42
+  },
+  "rectangles": {
+    "name": {
+      "x": 1125,
+      "y": 695,
+      "width": 520,
+      "height": 162.796875
+    },
+    "label": {
+      "x": 1125,
+      "y": 889.796875,
+      "width": 520,
+      "height": 59.796875
+    },
+    "tablet": {
+      "x": 2011,
+      "y": 554,
+      "width": 704,
+      "height": 536
+    },
+    "phone": {
+      "x": 1715,
+      "y": 534.0625,
+      "width": 286,
+      "height": 597.9375
+    }
+  },
+  "overflow": false
+}

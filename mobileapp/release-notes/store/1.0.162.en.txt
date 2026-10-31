@@ -16,6 +16,7 @@ Usage widgets
 • See available quota or locally recorded output, with dates for older readings. Output tokens are not a balance or bill.
 
 Fixes
-• Improve long conversations, short messages, image attachments and repeated pairing. Large diffs stay responsive, and reading code no longer triggers navigation across the screen.
+• Fix short messages that could appear blank, duplicate image placeholders, and repeated pairing entries.
+• Improve scrolling in long conversations and large diffs. Prevent accidental back navigation while reading code.
 
 Update gtmux on your server to 1.0.162 or later for all new features.

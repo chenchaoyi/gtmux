@@ -1,1 +1,1 @@
-View tmux and reply from iPhone or iPad. HQ follows tasks and refines a local knowledge base for your projects and workflow. Requires your own Mac or Linux server.
+View tmux sessions and reply to agents from iPhone or iPad. Review tool calls in Trace and track matters in HQ. Requires your own Mac or Linux server.
