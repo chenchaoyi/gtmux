@@ -1,0 +1,4 @@
+Code reading and touch navigation
+• Code in Trace Preview, tool details and Markdown now wraps and uses syntax highlighting.
+• Open long tool input in a dedicated reader with native selection and exact copying.
+• Removed horizontal drag and help controls. Reading code keeps the current page; edge-back remains available.

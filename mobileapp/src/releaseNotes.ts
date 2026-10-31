@@ -12,6 +12,21 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.162',
+    en: [
+      'Code reading and touch navigation',
+      'Code in Trace Preview, tool details and Markdown now wraps and uses syntax highlighting.',
+      'Open long tool input in a dedicated reader with native selection and exact copying.',
+      'Removed horizontal drag and help controls. Reading code keeps the current page; edge-back remains available.',
+    ],
+    zh: [
+      '代码阅读与手势修复',
+      '轨迹预览、工具详情与 Markdown 中的代码支持自动换行和语法高亮。',
+      '长工具输入可打开独立阅读页，支持原生文字选择和完整复制。',
+      '移除横拖控件与解读入口，阅读代码不再误触整页返回，仍可从屏幕边缘返回。',
+    ],
+  },
+  {
     version: '1.0.161',
     en: [
       'HQ, Trace and clearer code reading',
