@@ -25,7 +25,8 @@ export function formatCode(source: string, hint = ''): string {
     : /^(?:yaml|yml)$/.test(kind)
     ? 'yaml'
     : '';
-  if (!parser || !source.trim()) return source;
+  // Bound parser/AST work independently of source completeness on a phone.
+  if (!parser || source.length > 256000 || !source.trim()) return source;
   try {
     return prettier
       .format(source, {

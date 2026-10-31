@@ -592,7 +592,8 @@ identity is independently verified; references cannot choose file paths, tool re
 context. Readers parse at most one 32 MiB source record (DSH retains its source limits),
 rejecting oversized records explicitly. Older servers may omit `input_ref` or return 503;
 clients retain an honest preview and retry affordance. Formatting is read-only presentation;
-Raw content and Copy preserve the selected original input.
+Raw content and Copy preserve the selected original input. Formatting parser work is
+bounded independently; unusually large input falls back verbatim without cutting content.
 
 `context` is an optional explicitly recorded harness input:
 `{"title":string,"text":string,"source":string,"time":string?,"truncated":true?,"before_prompt":true?}`.

@@ -22,15 +22,43 @@ export type DiffFile = {
   rows: Array<{ text: string; meta: DiffRowMeta }>;
 };
 function gitPath(value: string) {
-  if (value.startsWith('"')) {
+  if (value.startsWith('"') && value.endsWith('"')) {
     try {
-      return (JSON.parse(value) as string).replace(/^[ab]\//, '');
+      value = JSON.parse(value) as string;
     } catch {
-      return value;
+      // Git quotes non-ASCII filenames as UTF-8 octal bytes, not JSON escapes.
+      const quoted = value.slice(1, -1);
+      const escapes: Record<string, string> = {
+        a: '\x07',
+        b: '\b',
+        f: '\f',
+        n: '\n',
+        r: '\r',
+        t: '\t',
+        v: '\v',
+        '"': '"',
+        '\\': '\\',
+      };
+      let encoded = '',
+        cursor = 0;
+      for (const match of quoted.matchAll(/\\([0-7]{1,3}|[abfnrtv"\\])/g)) {
+        encoded += encodeURIComponent(quoted.slice(cursor, match.index));
+        encoded += /^[0-7]/.test(match[1])
+          ? '%' + parseInt(match[1], 8).toString(16).padStart(2, '0')
+          : encodeURIComponent(escapes[match[1]]);
+        cursor = match.index! + match[0].length;
+      }
+      encoded += encodeURIComponent(quoted.slice(cursor));
+      try {
+        value = decodeURIComponent(encoded);
+      } catch {
+        /* Preserve unfamiliar filename bytes verbatim. */
+      }
     }
   }
   return value.replace(/^[ab]\//, '');
 }
+
 export function diffFiles(text: string): DiffFile[] {
   const files: DiffFile[] = [];
   let file: DiffFile | undefined;

@@ -1,4 +1,4 @@
-// Generated code formatter; source SHA256 011f96339a7f358805e4559283404833be5ec082e7cb5d2bf53eceae4773afa0
+// Generated code formatter; source SHA256 ad1821fa51bc63df19c7db5b4bfec644b206086859b79df89f0f1fa11b2a186e
 (function(){var exports={};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -22,7 +22,8 @@ function formatCode(source, hint = '') {
                         : /^(?:yaml|yml)$/.test(kind)
                             ? 'yaml'
                             : '';
-    if (!parser || !source.trim())
+    // Bound parser/AST work independently of source completeness on a phone.
+    if (!parser || source.length > 256000 || !source.trim())
         return source;
     try {
         return prettier

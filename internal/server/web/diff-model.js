@@ -1,4 +1,4 @@
-// Generated from mobileapp/src/ui/diffModel.ts; SHA256 165c615e59bcb74175db9a509a5884947afe038854fb5b794620c7efc6152f8a
+// Generated from mobileapp/src/ui/diffModel.ts; SHA256 966424d36d2995b7e2e49fe5f4890c7493d4ae85008b1393917d6f7470adee31
 (function(root){var exports={};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -6,12 +6,39 @@ exports.diffFiles = diffFiles;
 exports.diffPresentation = diffPresentation;
 exports.hunkRange = hunkRange;
 function gitPath(value) {
-    if (value.startsWith('"')) {
+    if (value.startsWith('"') && value.endsWith('"')) {
         try {
-            return JSON.parse(value).replace(/^[ab]\//, '');
+            value = JSON.parse(value);
         }
         catch {
-            return value;
+            // Git quotes non-ASCII filenames as UTF-8 octal bytes, not JSON escapes.
+            const quoted = value.slice(1, -1);
+            const escapes = {
+                a: '\x07',
+                b: '\b',
+                f: '\f',
+                n: '\n',
+                r: '\r',
+                t: '\t',
+                v: '\v',
+                '"': '"',
+                '\\': '\\',
+            };
+            let encoded = '', cursor = 0;
+            for (const match of quoted.matchAll(/\\([0-7]{1,3}|[abfnrtv"\\])/g)) {
+                encoded += encodeURIComponent(quoted.slice(cursor, match.index));
+                encoded += /^[0-7]/.test(match[1])
+                    ? '%' + parseInt(match[1], 8).toString(16).padStart(2, '0')
+                    : encodeURIComponent(escapes[match[1]]);
+                cursor = match.index + match[0].length;
+            }
+            encoded += encodeURIComponent(quoted.slice(cursor));
+            try {
+                value = decodeURIComponent(encoded);
+            }
+            catch {
+                /* Preserve unfamiliar filename bytes verbatim. */
+            }
         }
     }
     return value.replace(/^[ab]\//, '');

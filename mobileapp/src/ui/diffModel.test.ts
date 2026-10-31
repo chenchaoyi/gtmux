@@ -36,3 +36,16 @@ test('plain and binary diffs remain readable', () => {
   expect(binary[0].rows[0].meta.kind).toBe('meta');
   expect(binary[0].added).toBe(0);
 });
+
+test('Git octal-quoted UTF-8 and literal percent filenames remain recognizable', () => {
+  const text = String.raw`diff --git "a/\346\226\207\344\273\266.go" "b/\346\226\207\344\273\266.go"
+--- "a/\346\226\207\344\273\266.go"
++++ "b/\346\226\207\344\273\266.go"
+@@ -1 +1 @@
+-old
++new`;
+  expect(diffFiles(text)[0].path).toBe('文件.go');
+  expect(
+    diffFiles('diff --git "a/100% ready.go" "b/100% ready.go"')[0].path,
+  ).toBe('100% ready.go');
+});
