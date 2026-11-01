@@ -2888,11 +2888,9 @@
     var files = window.GtmuxDiffModel.diffFiles(diff);
     if (!files.length) { var raw = el('pre', ''); diff.split('\n').forEach(function(line){raw.appendChild(el('span',line[0]==='+'?'add':line[0]==='-'?'del':'',line+'\n'));}); root.appendChild(raw); host.replaceChildren(root); return; }
     var maximumLine = 1; files.forEach(function(file){file.rows.forEach(function(row){maximumLine=Math.max(maximumLine,row.meta.old||0,row.meta.next||0);});}); root.style.setProperty('--diff-gutter',Math.max(26,String(maximumLine).length*7+6)+'px');
-    var formatted = true, codeCells = [];
     var stats = el('div', 'diff-summary'); stats.appendChild(el('span', '', T('Working tree', '工作区改动') + ' · ' + files.length + T(files.length === 1 ? ' file' : ' files', ' 个文件'))); stats.appendChild(el('span', 'diff-added', '+' + files.reduce(function(n,f){return n+f.added;},0))); stats.appendChild(el('span', 'diff-removed', '−' + files.reduce(function(n,f){return n+f.removed;},0))); stats.appendChild(clipboardAction(T('Copy complete diff', '复制完整改动'), '', diff));
     var wrap = el('button', 'diff-wrap', T('Wrap lines', '自动换行')); wrap.type = 'button';wrap.setAttribute('aria-pressed','true');var wrapped=true;wrap.onclick=function(){wrapped=!wrapped;root.classList.toggle('diff-no-wrap',!wrapped);wrap.setAttribute('aria-pressed',String(wrapped));};stats.appendChild(wrap);
-    var format = el('button', 'diff-format', '{ }');format.type='button';format.setAttribute('aria-label',T('Format code','格式化代码'));format.setAttribute('aria-pressed','true');format.onclick=function(){formatted=!formatted;format.setAttribute('aria-pressed',String(formatted));codeCells.forEach(drawCode);};stats.appendChild(format);root.appendChild(stats);
-    function drawCode(cell){renderCode(cell.node,formatted?window.GtmuxCodeFormat.formatCode(cell.source,cell.hint):cell.source,cell.hint);}
+    root.appendChild(stats);
     files.forEach(function(file,fileIndex){
       var card=el('details','diff-file');card.open=true;
       var heading=el('summary','diff-file-heading'),names=el('span','diff-file-names');names.appendChild(el('strong','',file.path.split('/').pop()));names.appendChild(el('small','',file.path.split('/').slice(0,-1).join('/')||'.'));heading.appendChild(names);heading.appendChild(el('span','diff-added','+'+file.added));heading.appendChild(el('span','diff-removed','−'+file.removed));card.appendChild(heading);
@@ -2909,7 +2907,7 @@
       if(current&&current.node.open)current.fill();
       // Earlier open hunks are filled by their toggle after insertion.
       root.appendChild(card);
-      function appendRow(parent,row){var line=el('div','diff-line '+(row.meta.role||'meta'));var number=row.meta.role==='del'?row.meta.old:row.meta.next;line.appendChild(el('span','diff-line-number',number===undefined?'':String(number)));line.appendChild(el('span','diff-sign',row.meta.role?row.text[0]:''));var code=el('code','diff-code');var cell={node:code,source:row.meta.role?row.text.slice(1):row.text,hint:file.path.split('.').pop()};codeCells.push(cell);drawCode(cell);line.appendChild(code);parent.appendChild(line);}
+      function appendRow(parent,row){var line=el('div','diff-line '+(row.meta.role||'meta'));var number=row.meta.role==='del'?row.meta.old:row.meta.next;line.appendChild(el('span','diff-line-number',number===undefined?'':String(number)));line.appendChild(el('span','diff-sign',row.meta.role?row.text[0]:''));var code=el('code','diff-code');renderCode(code,row.meta.role?row.text.slice(1):row.text,file.path.split('.').pop());line.appendChild(code);parent.appendChild(line);}
     });
     host.replaceChildren(root);
   }

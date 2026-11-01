@@ -1691,7 +1691,7 @@ details and acceptance boundaries.
 
 ### Bounded Diff reading
 
-Diff uses a virtualized vertical list inside a horizontal scroller. Only a window of native rows is mounted; all returned rows remain reachable. Row metrics follow system text size. Structured patch lines are split into bounded display rows at Unicode-safe boundaries without dropping their tail. A compact single gutter shows the original old line for deletions and new line for additions/context; continuation rows do not invent source line numbers. Wrap and compact formatting are independent, syntax coloring persists in either state, and Copy preserves the original patch. The unstructured legacy reader retains its explicit bounded-preview notice. Failed requests show Retry separately from an empty repository. Closing or changing panes retires earlier reads.
+Diff uses a virtualized vertical list inside a horizontal scroller. Only a window of native rows is mounted; all returned rows remain reachable. Row metrics follow system text size. Structured patch lines are split into bounded display rows at Unicode-safe boundaries without dropping their tail. A compact single gutter shows the original old line for deletions and new line for additions/context; continuation rows do not invent source line numbers. Diff preserves recorded whitespace and code layout without a format control. Wrap changes only line presentation; syntax coloring remains and Copy preserves the original patch. Complete-code readers retain their own formatting controls. The unstructured legacy reader retains its explicit bounded-preview notice. Failed requests show Retry separately from an empty repository. Closing or changing panes retires earlier reads.
 
 ### Trace disclosures and detail modes
 

@@ -1,3 +1,5 @@
 Full call now leads the code views, followed by outer commands and their embedded scripts in recorded order.
 
 The HQ Board card keeps the current briefing and local resource warnings directly visible, without opening a duplicate board page.
+
+Diff now preserves the original code layout, with syntax colors and wrapping and no format toggle.

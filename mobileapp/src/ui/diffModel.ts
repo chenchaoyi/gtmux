@@ -207,10 +207,9 @@ export function hunkRange(header: string): string {
   return span > 1 ? `${start}–${start + span - 1}` : String(start);
 }
 
-/** Project display-only formatting into bounded native rows, retaining source numbers. */
+/** Split recorded patch lines into bounded native rows without reformatting source. */
 export function diffDisplayRows(
   presentation: ReturnType<typeof diffPresentation>,
-  format: (source: string, path: string) => string = source => source,
 ) {
   const lines: string[] = [], meta: DiffRowMeta[] = [];
   let columns = 0;
@@ -221,23 +220,21 @@ export function diffDisplayRows(
       meta.push(original);
       return;
     }
-    const display = format(line.slice(1), original.path || '');
+    const physical = line.slice(1);
     let part = 0;
-    for (const physical of display.split('\n')) {
-      let offset = 0;
-      do {
-        let end = Math.min(offset + 1024, physical.length);
-        if (end < physical.length && /[\uD800-\uDBFF]/.test(physical[end - 1])) end--;
-        const source = physical.slice(offset, end);
-        lines.push((part ? ' ' : line[0]) + source);
-        meta.push(part ? {...original, key: original.key + ':part:' + part,
-          old: undefined, next: undefined, continuation: true} : original);
-        columns = Math.max(columns, Array.from(source).reduce((n, c) =>
-          n + (c === '\t' ? 4 : c.codePointAt(0)! >= 0x1100 ? 2 : 1), 0));
-        part++;
-        offset = end;
-      } while (offset < physical.length);
-    }
+    let offset = 0;
+    do {
+      let end = Math.min(offset + 1024, physical.length);
+      if (end < physical.length && /[\uD800-\uDBFF]/.test(physical[end - 1])) end--;
+      const source = physical.slice(offset, end);
+      lines.push((part ? ' ' : line[0]) + source);
+      meta.push(part ? {...original, key: original.key + ':part:' + part,
+        old: undefined, next: undefined, continuation: true} : original);
+      columns = Math.max(columns, Array.from(source).reduce((n, c) =>
+        n + (c === '\t' ? 4 : c.codePointAt(0)! >= 0x1100 ? 2 : 1), 0));
+      part++;
+      offset = end;
+    } while (offset < physical.length);
   });
   return {lines, meta, columns, shortened: false};
 }

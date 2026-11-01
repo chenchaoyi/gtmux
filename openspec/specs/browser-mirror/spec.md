@@ -781,11 +781,12 @@ original call, contain the inspector and preserve keyboard focus when details cl
 - **AND** closing details restores focus to its original record without sending input
 
 ### Requirement: Compact Diff controls and folded Trace entry
-Browser working-tree Diff SHALL retain independent formatting and wrapping, shared syntax colors and one compact source-number gutter. Copy SHALL retain the original patch. Trace SHALL begin with folded turns and preserve manual disclosure choices across updates; newly arriving turns SHALL remain folded unless the reader chose a bulk-open default.
+Browser working-tree Diff SHALL preserve recorded whitespace and code layout without a format control. Wrapping SHALL change only line presentation, retaining shared syntax colors and one compact source-number gutter. Copy SHALL retain the original patch. Trace SHALL begin with folded turns and preserve manual disclosure choices across updates; newly arriving turns SHALL remain folded unless the reader chose a bulk-open default.
 
-#### Scenario: Change wrapping without discarding display formatting
-- **WHEN** a reader formats a patch and toggles wrapping
-- **THEN** syntax colors and formatting remain intact and copying yields the complete original patch
+#### Scenario: Change wrapping without rewriting the patch
+- **WHEN** a reader opens a patch and toggles wrapping
+- **THEN** recorded code layout, syntax colors and original source numbers remain intact and copying yields the complete original patch
+- **AND** Diff has no format control
 
 #### Scenario: Open Trace while new turns arrive
 - **WHEN** Trace is first opened and another turn arrives
