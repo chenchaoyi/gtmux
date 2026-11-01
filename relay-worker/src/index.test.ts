@@ -129,3 +129,21 @@ test('actual Worker requests match the shared Go/Worker APNs contract', async ()
     Date.now = oldNow;
   }
 });
+
+test('relay rejects missing configuration and oversized or invalid objects before provider work', async () => {
+  const oldFetch=globalThis.fetch;let calls=0;
+  globalThis.fetch=async()=>{calls++;throw new Error('unexpected provider call');};
+  const env={RELAY_TOKEN:'fixture-gate',APNS_KEY:'not-a-key',APNS_KEY_ID:'K',APNS_TEAM_ID:'T',APNS_TOPIC:TOPIC} as Env;
+  const request=(body:string,headers:Record<string,string>={})=>new Request('https://fixture.invalid/push',{method:'POST',headers:{Authorization:'Bearer fixture-gate',...headers},body});
+  try {
+    for(const token of ['',undefined]) {
+      const r=await worker.fetch(request('{"token":"t"}',{Authorization:'Bearer undefined'}),{...env,RELAY_TOKEN:token} as Env);
+      assert.equal(r.status,503);
+    }
+    assert.equal((await worker.fetch(request('{"token":"t"}',{'Content-Length':'65537'}),env)).status,413);
+    assert.equal((await worker.fetch(request('{"token":"t","body":"'+'a'.repeat(65536)+'"}',{'Content-Length':'1'}),env)).status,413);
+    for(const text of ['null','[]','{"token":123}','{} {}']) assert.equal((await worker.fetch(request(text),env)).status,400);
+    assert.equal((await worker.fetch(request('not json',{Authorization:'Bearer invalid'}),env)).status,401);
+    assert.equal(calls,0);
+  }finally{globalThis.fetch=oldFetch;}
+});

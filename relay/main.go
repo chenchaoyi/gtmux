@@ -4,13 +4,14 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 )
 
 // main wires the relay from the environment and serves. All secrets come from
 // env vars (never committed):
 //
 //	PORT            listen port (default 8080)
-//	GTMUX_RELAY_TOKEN  optional bearer the calling Mac must present on /push
+//	GTMUX_RELAY_TOKEN  required bearer the calling Mac must present on /push
 //	APNS_KEY_PATH   path to the Apple AuthKey .p8 (PKCS#8 EC P-256)
 //	APNS_KEY_ID     the key's Key ID
 //	APNS_TEAM_ID    your Apple Developer Team ID
@@ -41,7 +42,8 @@ func main() {
 	}
 	addr := ":" + port
 	log.Printf("relay: listening on %s", addr)
-	if err := http.ListenAndServe(addr, srv.handler()); err != nil {
+	server := &http.Server{Addr: addr, Handler: srv.handler(), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 25 * time.Second, IdleTimeout: 60 * time.Second}
+	if err := server.ListenAndServe(); err != nil {
 		log.Fatalf("relay: %v", err)
 	}
 }

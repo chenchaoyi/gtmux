@@ -1,0 +1,5 @@
+Trace keeps your session’s turn numbers and loads earlier records in smaller pages. Opened history, fold choices and reading position stay in place during live updates.
+
+Terminal tab-order snapshots back off after failures and keep the last valid order. Notification diagnostics group repeated failures and show recovery clearly. Storage checks separate active data from saved releases and reports.
+
+Push and connection services reject malformed or oversized requests before provider work.

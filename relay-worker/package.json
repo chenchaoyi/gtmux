@@ -6,7 +6,7 @@
   "scripts": {
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test src/index.test.ts"
+    "test": "node --experimental-strip-types --test ../shared/worker-json.test.mts src/index.test.ts"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250601.0",

@@ -360,3 +360,24 @@ test("a deletion response for a different instance cannot authorize replacing th
   assert.equal((await worker.fetch(f.request(false, true), f.env)).status, 502);
   assert.deepEqual(f.writes, []);
 });
+
+test('incoming handlers reject oversized objects before KV or provider work', async () => {
+  const oldFetch=globalThis.fetch;let io=0;
+  globalThis.fetch=async()=>{io++;throw new Error('unexpected provider call');};
+  const kv={get:async()=>{io++;throw new Error('unexpected KV read');},put:async()=>{io++;throw new Error('unexpected KV write');},list:async()=>{io++;throw new Error('unexpected KV list');}};
+  const env={REG_SECRET:'fixture-gate',TUNNELS:kv,DIRECT_CODES:kv,DIRECT_URL:'https://fixture.invalid',CF_API_TOKEN:'fixture',CF_ACCOUNT_ID:'fixture',CF_ZONE_ID:'fixture',ZONE_NAME:'example.invalid'} as any;
+  try {
+    for(const route of ['/provision','/direct/redeem','/direct/servers','/direct/move']) {
+      for(const headers of [{'Content-Length':'65537'},{'Content-Length':'1'},{}]) {
+        const body=headers['Content-Length']==='65537'?'{}':'{"padding":"'+'a'.repeat(65536)+'"}';
+        const response=await worker.fetch(new Request('https://fixture.invalid'+route,{method:'POST',headers:{'x-gtmux-reg':'fixture-gate',...headers},body}),env,{} as any);
+        assert.equal(response.status,413,route);
+      }
+      for(const body of ['null','[]','{"code":42,"deviceId":42,"secret":42}']) {
+        const response=await worker.fetch(new Request('https://fixture.invalid'+route,{method:'POST',headers:{'x-gtmux-reg':'fixture-gate'},body}),env,{} as any);
+        assert.equal(response.status,400,route);
+      }
+    }
+    assert.equal(io,0);
+  }finally{globalThis.fetch=oldFetch;}
+});

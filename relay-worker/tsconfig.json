@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES2022", "module": "ES2022", "moduleResolution": "Bundler",
     "lib": ["ES2022"], "types": ["@cloudflare/workers-types"],
-    "strict": true, "noEmit": true, "skipLibCheck": true
+    "strict": true, "noEmit": true, "skipLibCheck": true, "allowImportingTsExtensions": true
   },
   "include": ["src/**/*.ts"],
   "//exclude": "test files import node:test/node:assert (no @types/node here); they run via `npm test` (node --test, type-stripped), not tsc.",

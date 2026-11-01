@@ -7,7 +7,7 @@
     "deploy": "wrangler deploy",
     "dev": "wrangler dev",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test src/index.test.ts src/direct.test.ts && npm run test:runtime",
+    "test": "node --experimental-strip-types --test ../shared/worker-json.test.mts src/index.test.ts src/direct.test.ts && npm run test:runtime",
     "test:runtime": "vitest run"
   },
   "devDependencies": {

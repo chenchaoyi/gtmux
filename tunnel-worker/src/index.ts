@@ -1,5 +1,6 @@
 // gtmux tunnel control-plane Worker.
 import { redeem, move, authfile, authfileClaim, AUTHFILE_HEADER, loadRegistry, readRegistry, loadServers, offered, serverByToken, serverOf } from "./direct.ts";
+import {readJSONObject, jsonBodyStatus} from '../../shared/worker-json.mts';
 //
 // One endpoint that matters: POST /provision. It idempotently creates (or reuses)
 // a Cloudflare *named* tunnel for the caller's Mac plus a
@@ -92,9 +93,10 @@ async function provision(req: Request, env: Env): Promise<Response> {
 
   let body: ProvisionReq;
   try {
-    body = (await req.json()) as ProvisionReq;
-  } catch {
-    return json({ error: "bad json" }, 400);
+    body = await readJSONObject<ProvisionReq>(req);
+  } catch (error) {
+    const status = jsonBodyStatus(error);
+    return json({ error: status === 413 ? "request too large" : "bad json" }, status);
   }
   const deviceId = typeof body?.deviceId === "string" ? body.deviceId.trim() : "";
   if (!/^[a-zA-Z0-9_-]{16,128}$/.test(deviceId)) {
@@ -471,10 +473,11 @@ interface RedeemReq {
 async function redeemDirect(req: Request, env: Env): Promise<Response> {
   let body: RedeemReq;
   try {
-    body = (await req.json()) as RedeemReq;
-  } catch {
-    return json({ error: "bad request" }, 400);
+    body = await readJSONObject<RedeemReq>(req);
+  } catch (error) {
+    return json({ error: "bad request" }, jsonBodyStatus(error));
   }
+  if ([body.code, body.deviceId, body.server, body.region].some(value => value !== undefined && typeof value !== "string")) return json({error: "bad request"}, 400);
   if (!env.DIRECT_URL) {
     return json({ error: "direct not configured" }, 503);
   }
@@ -501,10 +504,11 @@ async function redeemDirect(req: Request, env: Env): Promise<Response> {
 async function directServers(req: Request, env: Env): Promise<Response> {
   let body: { code?: string; deviceId?: string } = {};
   try {
-    body = (await req.json()) as { code?: string; deviceId?: string };
-  } catch {
-    body = {}; // an empty body is a fair question: "which servers are open to anyone?"
+    body = await readJSONObject<{ code?: string; deviceId?: string }>(req, true);
+  } catch (error) {
+    return json({ error: "bad request" }, jsonBodyStatus(error));
   }
+  if ([body.code, body.deviceId].some(value => value !== undefined && typeof value !== "string")) return json({error: "bad request"}, 400);
   const servers = await loadServers(env.DIRECT_CODES, env.DIRECT_URL);
   let current: string | undefined;
   let code = (body.code || "").trim();
@@ -524,10 +528,11 @@ async function directServers(req: Request, env: Env): Promise<Response> {
 async function directMove(req: Request, env: Env): Promise<Response> {
   let body: { deviceId?: string; secret?: string; server?: string };
   try {
-    body = (await req.json()) as { deviceId?: string; secret?: string; server?: string };
-  } catch {
-    return json({ error: "bad request" }, 400);
+    body = await readJSONObject<{ deviceId?: string; secret?: string; server?: string }>(req);
+  } catch (error) {
+    return json({ error: "bad request" }, jsonBodyStatus(error));
   }
+  if ([body.deviceId, body.secret, body.server].some(value => value !== undefined && typeof value !== "string")) return json({error: "bad request"}, 400);
   if (!body.server) return json({ error: "no server named" }, 400);
   try {
     const r = await move(body.deviceId || "", body.secret || "", {

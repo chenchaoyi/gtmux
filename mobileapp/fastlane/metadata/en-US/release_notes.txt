@@ -1,9 +1,5 @@
-Full call now leads the code views, followed by outer commands and their embedded scripts in recorded order.
+Trace keeps your session’s turn numbers and loads earlier records in smaller pages. Opened history, fold choices and reading position stay in place during live updates.
 
-The HQ Board card keeps the current briefing and local resource warnings directly visible, without opening a duplicate board page.
+Terminal tab-order snapshots back off after failures and keep the last valid order. Notification diagnostics group repeated failures and show recovery clearly. Storage checks separate active data from saved releases and reports.
 
-Diff now preserves the original code layout, with syntax colors and wrapping and no format toggle.
-
-Diagnostics now combine repeated notification request failures while preserving changed causes and recovery counts. Terminal-order snapshots use bounded reads and slower retries after failure. Storage checks separate working state from release and recovery files.
-
-Long-session Trace keeps original turn numbers and lets you load earlier records in pages without losing your place.
+Push and connection services reject malformed or oversized requests before provider work.

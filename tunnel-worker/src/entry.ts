@@ -1,4 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
+import { readJSONObject, jsonBodyStatus } from "../../shared/worker-json.mts";
 import worker, { reconcileActiveCount, reapDevice, type Env, type TunnelRecord } from "./index.ts";
 
 export interface CoordinatedEnv extends Env {
@@ -93,34 +94,17 @@ export default {
     let body: string;
     let deviceId: string;
     try {
-      const reader = req.body?.getReader();
-      const chunks: Uint8Array[] = [];
-      let size = 0;
-      if (reader) {
-        try {
-          for (;;) {
-            const part = await reader.read();
-            if (part.done) break;
-            size += part.value.length;
-            if (size > 4096) {
-              await reader.cancel();
-              return Response.json({ error: "request too large" }, { status: 413 });
-            }
-            chunks.push(part.value);
-          }
-        } finally { reader.releaseLock(); }
-      }
-      const bytes = new Uint8Array(size);
-      let offset = 0;
-      for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
-      body = new TextDecoder().decode(bytes);
-      const parsed = JSON.parse(body);
+      const parsed = await readJSONObject<{ deviceId?: string; recover?: boolean; force?: boolean }>(req, false, 4096);
+      body = JSON.stringify(parsed);
       if (path === "/standard/recover" && (parsed?.recover !== true || parsed?.force === true)) {
         return Response.json({ error: "stable recovery mode required" }, { status: 400 });
       }
       deviceId = typeof parsed?.deviceId === "string" ? parsed.deviceId.trim() : "";
       if (!/^[a-zA-Z0-9_-]{16,128}$/.test(deviceId)) return Response.json({ error: "bad deviceId" }, { status: 400 });
-    } catch { return Response.json({ error: "bad json" }, { status: 400 }); }
+    } catch (error) {
+      const status = jsonBodyStatus(error);
+      return Response.json({ error: status === 413 ? "request too large" : "bad json" }, { status });
+    }
     try {
       return await env.STANDARD_DEVICES.getByName(deviceId).provision(deviceId, body, req.headers.get("CF-Connecting-IP") || "unknown");
     } catch {

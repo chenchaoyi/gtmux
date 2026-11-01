@@ -40,27 +40,29 @@ Mac 使用 `gtmux serve --relay-url https://<relay-host>/push --relay-token <sha
 | 环境变量 | 含义 |
 | --- | --- |
 | `PORT` | 监听端口，默认 8080 |
-| `GTMUX_RELAY_TOKEN` | 可选；设置后 `/push` 要求对应 bearer |
+| `GTMUX_RELAY_TOKEN` | 必填；`/push` 要求对应 bearer |
 | `APNS_KEY_PATH` | PKCS#8 EC P-256 `.p8` 文件路径 |
 | `APNS_KEY_ID` | Apple 密钥标识 |
 | `APNS_TEAM_ID` | Apple Developer 团队标识 |
 | `APNS_TOPIC` | 应用 bundle id |
 | `APNS_ENV` | 请求未带 `env` 时的默认值；sandbox 为开发环境，其余为生产环境 |
 
-未配置 APNs 凭据时仍能启动并返回健康状态，但 iOS 推送返回不支持该平台。
+未配置 APNs 凭据时仍能启动并返回健康状态；已配置 relay token 的请求在尚无 APNs 网关时返回不支持该平台。
 
 ## HTTP 合同
 
 `GET /health` 返回 `200 {"service":"gtmux-relay","status":"ok"}`。
 
-`POST /push` 在配置 token 后要求 `Authorization: Bearer <GTMUX_RELAY_TOKEN>`。
+`POST /push` 要求 `Authorization: Bearer <GTMUX_RELAY_TOKEN>`。服务端未配置 relay token 时返回 503，`/health` 仍然可用。
 请求包含 `token`、`platform`（默认 ios）、`title`、`body`、`pane`、`kind`；可选字段为
 `subtitle`、`options`、`silent`、`badge`、`collapseId`、`env`、`liveActivity`、`event`、
 `contentState`、`staleDate`。
 
-成功返回 `200 {"status":"ok"}`；无 token 或坏请求返回 400，错误 bearer 返回 401。
+成功返回 `200 {"status":"ok"}`；无 token 或坏请求返回 400，错误 bearer 返回 401；请求正文超过 64 KiB 返回 413。
 APNs 拒绝返回 `502 {"error":"apns","status":410,"detail":"…"}`，其中 status 保留 Apple
 原状态；传输或其他网关错误返回 `502 {"error":"push failed: …"}`。
 
 当前 ios 使用 APNs。Android（FCM）、HarmonyOS（HMS）可通过 `Pusher` 接口扩展，
 尚未实现对应网关。
+
+推送正文必须是单个 JSON 对象，大小不超过 64 KiB（包括空白）。Go 与 Worker 实现都在调用推送服务前检查实际字节数，缺少或伪造 `Content-Length` 不能绕过限制。Go 服务还限制请求头、正文读取和推送调用的耗时。格式错误或多个 JSON 值返回 400。

@@ -61,9 +61,9 @@ func TestGoRelayRetiresAPNSGoneThroughRealClient(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	relay := httptest.NewServer((&relayServer{pushers: map[string]Pusher{"ios": p}}).handler())
+	relay := httptest.NewServer((&relayServer{token: "fixture-secret", pushers: map[string]Pusher{"ios": p}}).handler())
 	defer relay.Close()
-	err = server.NewHTTPRelay(relay.URL+"/push", "").Send(server.PushIntent{Token: "fixture", Platform: "ios"})
+	err = server.NewHTTPRelay(relay.URL+"/push", "fixture-secret").Send(server.PushIntent{Token: "fixture", Platform: "ios"})
 	var gone *server.APNsError
 	if !errors.As(err, &gone) || !gone.Gone() || gone.Status != 410 {
 		t.Fatalf("dead-token verdict lost: %v", err)
