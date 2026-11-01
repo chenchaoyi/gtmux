@@ -1773,3 +1773,7 @@ keep their existing stable keys, virtualization and refresh anchors.
 ### HQ Board summary (2026-11-01)
 
 On workspace-capable servers the Board card is a static current briefing: matter counts and the recorded summary, without a chevron or another board page. The original matters remain below. Local machine warnings from the existing usage read appear inside this card at both amber and red tiers, with their source severity and an explicit previous-reading label after refresh failure. No warning or healthy state is inferred from missing data. Knowledge and Usage remain actionable resource cards; the legacy board reader remains available for old-server compatibility. Phone and iPad share this presentation.
+
+### Request failure history
+
+Push registration failures are recorded once through the sampled request lane. Repeated identical failures retain their count; a changed HTTP status, deadline or failure reason is recorded immediately. Recovery includes the total failed requests and any repeats suppressed since the last entry. Each server and route remains independent. HTTP530 reads as an unavailable remote endpoint; a failed notification write remains unsynchronized. Successful registration records an action, without claiming notification delivery. Legacy diagnostic entries remain readable.

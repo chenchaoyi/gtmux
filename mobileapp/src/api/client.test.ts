@@ -828,6 +828,22 @@ test('baseline access history requires external provenance even without user fil
 });
 
 describe('multi-server diagnostic attribution through the real client', () => {
+  it('records repeated failed push registration through one sampled request lane', async () => {
+    const record = jest.spyOn(diagBuffer, 'record');
+    const c = new GtmuxClient('https://push-single-log.invalid', TOKEN);
+    const start = record.mock.calls.length;
+    fetchMock.mockResolvedValueOnce(okJson(null, false, 530));
+    await c.registerPush('synthetic-apns');
+    fetchMock.mockResolvedValueOnce(okJson(null, false, 530));
+    await c.registerPush('synthetic-apns');
+    const entries = record.mock.calls.slice(start).map(([e]) => e);
+    expect(entries.filter(e => e.event === 'api.failed')).toHaveLength(1);
+    expect(entries.filter(e => e.event === 'act.push.register')).toHaveLength(0);
+    fetchMock.mockResolvedValueOnce(okJson(null));
+    await c.registerPush('synthetic-apns');
+    expect(record.mock.calls.slice(start).map(([e]) => e).filter(e => e.event === 'api.recovered')[0].attrs)
+      .toMatchObject({origin: 'https://push-single-log.invalid', failures: 2});
+  });
   it('keeps one origin failure open while another push registration succeeds', async () => {
     const record = jest.spyOn(diagBuffer, 'record');
     const a = new GtmuxClient('https://push-a.invalid', TOKEN);

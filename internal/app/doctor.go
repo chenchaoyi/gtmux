@@ -516,24 +516,6 @@ func rowHQMemory() dcheck {
 			st.Snapshots, when, off)}
 }
 
-func rowDiskUsage() dcheck {
-	label := i18n.Tr("gtmux disk usage", "gtmux 磁盘占用")
-	total := treeSize(state.Dir())
-	switch {
-	case total >= diskRedBytes:
-		return dcheck{stMiss, label, humanBytes(total),
-			i18n.Tr("very large; the Logs section below names what grew",
-				"过大，下面的日志一节会指出是哪个在涨")}
-	case total >= diskAmberBytes:
-		return dcheck{stRec, label, humanBytes(total),
-			i18n.Tr("trending large; gtmux trims logs and uploads automatically",
-				"偏大，gtmux 会自动裁剪日志与上传文件")}
-	default:
-		return dcheck{stOK, label, humanBytes(total),
-			i18n.Tr("state dir under control", "状态目录占用正常")}
-	}
-}
-
 // --- individual checks (read-only) ---
 
 func rowTmux() dcheck {
@@ -1720,23 +1702,7 @@ func codexNotifyIsGtmux() bool {
 	return false
 }
 
-// treeSize / humanBytes are small local copies of the disk-usage helpers the hq
-// disk-hygiene sweep also uses — a leaf-level primitive duplicated (not shared)
-// so the doctor command need not import the supervisor package.
-func treeSize(dir string) int64 {
-	var total int64
-	_ = filepath.WalkDir(dir, func(_ string, d os.DirEntry, err error) error {
-		if err != nil || d.IsDir() {
-			return nil
-		}
-		if fi, err := d.Info(); err == nil {
-			total += fi.Size()
-		}
-		return nil
-	})
-	return total
-}
-
+// Keep the doctor's size labels independent of the supervisor package.
 func humanBytes(n int64) string {
 	switch {
 	case n >= 1<<30:

@@ -244,7 +244,7 @@ export const diagBuffer = new DiagBuffer(AsyncStorage as unknown as Store);
 // success after failures is written once, with how many there were. Each origin and
 // method/path has its own state; another server's success cannot clear it.
 export class ApiWatch {
-  private failing = new Map<string, {since: number; count: number; lastWritten: number}>();
+  private failing = new Map<string, {since: number; count: number; total: number; signature: string; lastWritten: number}>();
 
   constructor(
     private buf: DiagBuffer,
@@ -276,12 +276,15 @@ export class ApiWatch {
     const key = JSON.stringify([origin ?? null, route]);
     const t = this.now();
     const f = this.failing.get(key);
-    if (f && t - f.lastWritten < this.quietMs) {
+    // An authentication error must not disappear behind a recent gateway error.
+    const signature = JSON.stringify([what.status ?? null, what.reason ?? null, what.timeoutMs ?? null, what.error ?? null]);
+    if (f && f.signature === signature && t - f.lastWritten < this.quietMs) {
       f.count++;
+      f.total++;
       return;
     }
     const repeats = f ? f.count : 0;
-    this.failing.set(key, {since: f?.since ?? t, count: 0, lastWritten: t});
+    this.failing.set(key, {since: f?.since ?? t, count: 0, total: (f?.total ?? 0) + 1, signature, lastWritten: t});
     this.buf.record({
       level: 'warn', kind: 'diag', event: 'api.failed', msg: 'a request to the server did not succeed',
       attrs: {
@@ -303,7 +306,7 @@ export class ApiWatch {
     this.failing.delete(key);
     this.buf.record({
       level: 'info', kind: 'diag', event: 'api.recovered', msg: 'a request that was failing succeeds again',
-      attrs: {route, ...(origin ? {origin} : {}), failingSec: Math.round((this.now() - f.since) / 1000)},
+      attrs: {route, ...(origin ? {origin} : {}), failingSec: Math.round((this.now() - f.since) / 1000), failures: f.total, ...(f.count ? {repeats: f.count} : {})},
     });
   }
 }

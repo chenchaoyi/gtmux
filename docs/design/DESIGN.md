@@ -1019,3 +1019,9 @@ Phone and Mac use Limits & balances → Output tokens → Sessions. Current prov
 ### Menu footer hierarchy (2026-10-29)
 
 Local workspace, new session, environment checks and remote access share the 12pt system action face. Version remains secondary metadata. The local workspace uses `macwindow`; remote access retains its network/globe identity.
+
+### Terminal order polling and storage diagnostics
+
+Tab-order snapshots use a bulk Ghostty property read with a four-second process deadline and a shared-budget legacy fallback. The menu bar gives this background task a six-second outer bound, one in-flight query and retries from 12 seconds up to five minutes. The first failure, changed cause and five-minute summaries retain counts; only a verified successful save records recovery. Empty/degraded snapshots preserve the last saved order. Logs carry safe reasons and counts, never terminal titles or script output.
+
+Doctor measures logical file sizes for working state, retained release/recovery files and reports separately, without following symlinks; these are distinct from volume available space. Existing footprint thresholds apply to working state; a large retained archive is informational. Large working state names its largest measured item. Unreadable paths are reported as incomplete rather than healthy. This measurement never deletes retained files or changes their access.

@@ -23,7 +23,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let settings = AppSettings.shared
     private var timer: Timer?
     private var tabOrderTimer: Timer?
-    private let tabOrderGate = AgentRefreshGate()
+    private let tabOrderPoll = TabOrderPoll()
     private var resourceTimer: Timer?
     private var hotkey: GlobalHotkey?
     private var screenshotHotkey: GlobalHotkey?
@@ -258,10 +258,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func saveTabOrder() {
-        guard tabOrderGate.enter() else { return }
+        guard tabOrderPoll.begin(now: ProcessInfo.processInfo.systemUptime) else { return }
         DispatchQueue.global(qos: .utility).async {
-            defer { self.tabOrderGate.leave() }
-            _ = GtmuxCLI.capturePoll(["save-tab-order"])
+            let result = GtmuxCLI.captureTabOrder()
+            guard let event = self.tabOrderPoll.finish(result, now: ProcessInfo.processInfo.systemUptime) else { return }
+            let attrs: [String: Any] = ["reason": event.reason, "failures": event.failures, "duration_seconds": event.duration, "next_retry_seconds": event.retry]
+            if event.recovered {
+                DiagLog.info("tab-order.recovered", "terminal tab order saved again", attrs)
+            } else {
+                DiagLog.warn("tab-order.unavailable", "terminal tab order could not be saved", attrs)
+            }
         }
     }
 

@@ -1,6 +1,67 @@
 package app
 
-import "testing"
+import (
+	"encoding/json"
+	"errors"
+	"os"
+	"strings"
+	"testing"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
+	"github.com/chenchaoyi/gtmux/internal/terminal"
+)
+
+type tabOrderTestDriver struct {
+	terminal.Headless
+	order []string
+	err   error
+}
+
+func (tabOrderTestDriver) Name() string                      { return "synthetic" }
+func (d tabOrderTestDriver) ReadTabOrder() ([]string, error) { return d.order, d.err }
+
+func TestTabOrderFailedOrDegradedReadPreservesLastGoodSnapshot(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	if err := state.SaveTabOrder([]string{"first", "second"}); err != nil {
+		t.Fatal(err)
+	}
+	failed, err := saveTabOrder(tabOrderTestDriver{err: errors.New("private terminal title")})
+	if err == nil || failed.Status != "unavailable" || failed.Reason != "read-failed" {
+		t.Fatalf("hidden failure: %+v %v", failed, err)
+	}
+	raw, _ := json.Marshal(failed)
+	if strings.Contains(string(raw), "private") {
+		t.Fatal("response leaked error content")
+	}
+	for _, next := range [][]string{nil, {"first"}} {
+		result, err := saveTabOrder(tabOrderTestDriver{order: next})
+		if err != nil || result.Status == "saved" {
+			t.Fatalf("degraded save: %+v %v", result, err)
+		}
+		if strings.Join(state.LoadTabOrder(), ",") != "first,second" {
+			t.Fatal("last good order overwritten")
+		}
+	}
+	result, err := saveTabOrder(tabOrderTestDriver{order: []string{"second", "first"}})
+	if err != nil || result.Status != "saved" || strings.Join(state.LoadTabOrder(), ",") != "second,first" {
+		t.Fatalf("recovery: %+v %v", result, err)
+	}
+}
+
+func TestTabOrderWriteFailureIsReportedWithoutPrivatePath(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	if err := os.MkdirAll(state.TabOrderPath(), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	result, err := saveTabOrder(tabOrderTestDriver{order: []string{"first"}})
+	if err == nil || result.Status != "unavailable" || result.Reason != "storage" {
+		t.Fatalf("write failure was hidden: %+v %v", result, err)
+	}
+	raw, _ := json.Marshal(result)
+	if strings.Contains(string(raw), state.Dir()) {
+		t.Fatal("response leaked filesystem error")
+	}
+}
 
 func eqStrs(a, b []string) bool {
 	if len(a) != len(b) {

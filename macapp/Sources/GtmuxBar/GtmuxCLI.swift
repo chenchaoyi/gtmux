@@ -102,6 +102,13 @@ enum GtmuxCLI {
         return result.stdout.data(using: .utf8)
     }
 
+    /// This optional background write has its own failure/backoff owner. Do not
+    /// also emit generic cli.failed records or retain terminal titles in logs.
+    static func captureTabOrder() -> TabOrderRead {
+        let result = runBounded(makeProcess(["save-tab-order", "--json"]), timeout: 6, outputLimit: 65_536, terminateDescendants: true)
+        return TabOrderRead.decode(status: result.status, stdout: result.stdout)
+    }
+
     /// Run gtmux and return its exit status + trimmed stderr. Blocking — call
     /// off-main. status is -1 if the process couldn't be launched. Used by
     /// state-changing commands (e.g. `tunnel --service`) that need to surface a

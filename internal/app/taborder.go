@@ -1,6 +1,12 @@
 package app
 
 import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"os"
+	"slices"
+
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
 )
@@ -9,16 +15,65 @@ import (
 // can replay it (instead of tmux's alphabetical `list-sessions` order). The
 // always-on menu-bar app calls this on a slow timer. Silent and best-effort.
 func cmdSaveTabOrder(args []string) int {
-	next := terminal.Active().TabOrder()
+	result, err := saveTabOrder(terminal.Active())
+	if slices.Contains(args, "--json") {
+		if encodeErr := json.NewEncoder(os.Stdout).Encode(result); encodeErr != nil {
+			return 1
+		}
+	} else if err != nil {
+		fmt.Fprintln(os.Stderr, "tab order unavailable:", result.Reason)
+	}
+	if err != nil {
+		return 1
+	}
+	return 0
+}
+
+type tabOrderResult struct {
+	Status   string `json:"status"`
+	Reason   string `json:"reason,omitempty"`
+	Terminal string `json:"terminal"`
+	Count    int    `json:"count"`
+}
+
+func saveTabOrder(driver terminal.Terminal) (tabOrderResult, error) {
+	result := tabOrderResult{Status: "empty", Terminal: driver.Name()}
+	var next []string
+	if reader, ok := driver.(interface{ ReadTabOrder() ([]string, error) }); ok {
+		var err error
+		next, err = reader.ReadTabOrder()
+		if err != nil {
+			result.Status, result.Reason = "unavailable", "read-failed"
+			var safe interface{ TabOrderReason() string }
+			if errors.As(err, &safe) {
+				switch safe.TabOrderReason() {
+				case "timeout", "automation-denied", "script":
+					result.Reason = safe.TabOrderReason()
+				}
+			}
+			return result, err
+		}
+	} else {
+		next = driver.TabOrder()
+	}
+	result.Count = len(next)
+	if len(next) == 0 {
+		return result, nil
+	}
 	if shrinksTabOrder(next, state.LoadTabOrder()) {
 		// A degraded snapshot (classically: right after a reboot only a bootstrap
 		// 'main' tab is up) is about to wipe a richer recorded order. Don't — keep
 		// the real order around for `gtmux restore` to replay. This is the tab-order
 		// analogue of sanitizeLast guarding resurrect's `last`.
-		return 0
+		result.Status = "preserved"
+		return result, nil
 	}
-	_ = state.SaveTabOrder(next)
-	return 0
+	if err := state.SaveTabOrder(next); err != nil {
+		result.Status, result.Reason = "unavailable", "storage"
+		return result, err
+	}
+	result.Status = "saved"
+	return result, nil
 }
 
 // shrinksTabOrder reports whether `next` is a proper subset of `prev`: strictly
