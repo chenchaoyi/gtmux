@@ -15,6 +15,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"time"
 )
@@ -55,7 +56,7 @@ type Pusher interface {
 
 // relayServer routes intents to a Pusher per platform.
 type relayServer struct {
-	token   string            // optional bearer to authenticate the calling Mac
+	token   string            // required bearer to authenticate the calling Mac
 	pushers map[string]Pusher // platform → gateway
 }
 
@@ -73,12 +74,41 @@ func (s *relayServer) handlePush(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusMethodNotAllowed, errBody("method not allowed"))
 		return
 	}
-	if s.token != "" && r.Header.Get("Authorization") != "Bearer "+s.token {
+	if s.token == "" {
+		writeJSON(w, http.StatusServiceUnavailable, errBody("relay unavailable"))
+		return
+	}
+	if r.Header.Get("Authorization") != "Bearer "+s.token {
 		writeJSON(w, http.StatusUnauthorized, errBody("unauthorized"))
 		return
 	}
 	var req pushRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Token == "" {
+	if r.ContentLength > 64<<10 {
+		writeJSON(w, http.StatusRequestEntityTooLarge, errBody("request too large"))
+		return
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&req); err != nil {
+		var limit *http.MaxBytesError
+		if errors.As(err, &limit) {
+			writeJSON(w, http.StatusRequestEntityTooLarge, errBody("request too large"))
+		} else {
+			writeJSON(w, http.StatusBadRequest, errBody("invalid request"))
+		}
+		return
+	}
+	var extra json.RawMessage
+	if err := decoder.Decode(&extra); err != io.EOF {
+		var limit *http.MaxBytesError
+		if errors.As(err, &limit) {
+			writeJSON(w, http.StatusRequestEntityTooLarge, errBody("request too large"))
+		} else {
+			writeJSON(w, http.StatusBadRequest, errBody("invalid request"))
+		}
+		return
+	}
+	if req.Token == "" {
 		writeJSON(w, http.StatusBadRequest, errBody("invalid request"))
 		return
 	}

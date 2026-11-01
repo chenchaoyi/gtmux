@@ -65,7 +65,7 @@ Replace the credential placeholders before running. Then point the Mac at it: `g
 | var | meaning |
 |---|---|
 | `PORT` | listen port (default `8080`) |
-| `GTMUX_RELAY_TOKEN` | optional bearer the calling Mac must present on `/push` |
+| `GTMUX_RELAY_TOKEN` | required bearer the calling Mac must present on `/push` |
 | `APNS_KEY_PATH` | path to the Apple AuthKey `.p8` (PKCS#8 EC P-256) |
 | `APNS_KEY_ID` | the key's Key ID |
 | `APNS_TEAM_ID` | your Apple Developer Team ID |
@@ -74,7 +74,7 @@ Replace the credential placeholders before running. Then point the Mac at it: `g
 
 With the `APNS_*` vars unset the relay still starts (so you can deploy first):
 `/health` works and `/push` for `ios` returns `unsupported platform` until
-credentials are added.
+credentials are added (and the required relay bearer is configured).
 
 ## HTTP contract
 
@@ -84,17 +84,21 @@ credentials are added.
 ```
 
 ### `POST /push`
-Auth: `Authorization: Bearer <GTMUX_RELAY_TOKEN>` when the token is set.
+Auth: `Authorization: Bearer <GTMUX_RELAY_TOKEN>` is required. Without configured relay credentials, `/push` returns 503 and `/health` remains available.
 ```
 body: {"token","platform","title","body","pane","kind"}   // platform defaults to ios
 optional: {"subtitle","options","silent","badge","collapseId","env","liveActivity","event","contentState","staleDate"}
 200 {"status":"ok"}
 400 {"error":"invalid request"}            // missing device token / bad body
 400 {"error":"unsupported platform: …"}    // no gateway for that platform
-401 {"error":"unauthorized"}               // bad/absent relay token
+401 {"error":"unauthorized"}               // bad/absent caller bearer
+413 {"error":"request too large"}          // JSON body exceeds 64 KiB
+503 {"error":"relay unavailable"}          // relay token is not configured
 502 {"error":"apns","status":410,"detail":"…"} // APNs rejected it; preserve its status
 502 {"error":"push failed: …"}             // transport/other gateway failure
 ```
+
+Incoming push JSON must be one object of at most 64 KiB, including whitespace. Both implementations count actual bytes before provider work; a missing or misleading `Content-Length` cannot bypass the cap. The Go listener also bounds header/body reads and provider requests. Malformed or multiple JSON values return 400.
 
 ## Multi-platform
 

@@ -424,3 +424,19 @@ The Go reference relay and deployed Worker SHALL share executable contract fixtu
 
 - **WHEN** the relay receives Live Activity content state and event fields
 - **THEN** both implementations emit the same dedicated APNs headers and aps fields for the shared fixture
+
+### Requirement: Relay requests fail closed and bound incoming JSON
+The relay SHALL require a configured bearer for push operations and SHALL reject a caller without the matching bearer before reading its body. A missing relay credential SHALL leave health available while push returns 503. Incoming push JSON SHALL be one object of at most 65,536 streamed bytes; missing or misleading length headers SHALL NOT bypass that budget. The Go reference listener SHALL bound request reads independently of the downstream provider timeout.
+
+#### Scenario: Relay credential is missing
+- **WHEN** a relay has no configured bearer
+- **THEN** push returns 503 without contacting APNs and health remains readable
+
+#### Scenario: Oversized or malformed push
+- **WHEN** an authenticated caller sends oversized JSON, including chunked input or padding after a valid object
+- **THEN** the relay returns 413 before provider work
+- **AND** malformed or multiple JSON values and non-object roots return 400
+
+#### Scenario: Compatible request at the limit
+- **WHEN** one valid object occupies exactly 65,536 bytes including whitespace
+- **THEN** its supported fields and provider response behavior remain compatible

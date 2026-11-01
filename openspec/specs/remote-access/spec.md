@@ -1547,3 +1547,15 @@ The server SHALL expose GET /api/hq/workspace as a read-only adapter to the same
 #### Scenario: An invalid or unavailable read
 - **WHEN** the requested matter does not exist, the cursor is invalid or the adapter is absent
 - **THEN** responses are 404, 400 or 501 respectively, with no private source paths
+
+### Requirement: Control-plane JSON is bounded before parsing
+The control plane SHALL cap incoming JSON at 65,536 actual bytes before parsing for provisioning, Direct redemption, server listing and moving. The deployed Standard coordinator SHALL retain its stricter 4,096-byte limit for provisioning and recovery. Worker implementations SHALL reuse the shared bounded object reader and SHALL NOT await producer cancellation before returning an overflow error. Existing authentication and device/account authorization SHALL remain enforced. Oversized input SHALL return 413 without KV or provider work, regardless of length headers; malformed objects and invalid known field types SHALL return 400.
+
+#### Scenario: Oversized request before validation
+- **WHEN** a caller sends oversized JSON to an incoming control-plane handler
+- **THEN** it returns 413 before reading KV or issuing a provider request
+
+#### Scenario: Public server list with an empty body
+- **WHEN** a caller asks for public Direct servers using an empty body
+- **THEN** the handler still accepts that explicit empty-object form
+- **AND** malformed nonempty JSON and wrong field types are rejected rather than treated as an empty request

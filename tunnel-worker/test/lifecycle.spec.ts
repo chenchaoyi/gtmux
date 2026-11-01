@@ -131,3 +131,20 @@ it("an abandoned pending instance can be reclaimed and a returning legacy Mac st
   expect(p.created).toHaveLength(2);
   expect(p.route()).toBe("new-id-1.cfargotunnel.com");
 });
+
+ it('deployed entry preserves the smaller Standard body limit and rejects before coordination', async () => {
+  const p = provider();
+  for (const route of ['/provision', '/standard/recover']) {
+    for (const body of ['null', '[]', '{broken']) {
+      const response = await exports.default.fetch('https://control' + route, {method: 'POST', headers: {'x-gtmux-reg': 'test-gate'}, body});
+      expect(response.status).toBe(400);
+    }
+    for (const length of [undefined, '1', '4097']) {
+      const response = await exports.default.fetch('https://control' + route, {method: 'POST', headers: {'x-gtmux-reg': 'test-gate', ...(length ? {'Content-Length': length} : {})}, body: JSON.stringify({deviceId: 'entry-bounds-fixture', padding: 'x'.repeat(4096)})});
+      expect(response.status).toBe(413);
+    }
+    const unauthorized = await exports.default.fetch('https://control' + route, {method: 'POST', body: 'x'.repeat(4097)});
+    expect(unauthorized.status).toBe(401);
+  }
+  expect(p.mock).not.toHaveBeenCalled();
+ });

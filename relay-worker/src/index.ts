@@ -3,6 +3,8 @@
 // Web Crypto from the .p8 key), and POSTs the alert to APNs. Mirrors relay/apns.go
 // — same payload {aps:{alert:{title,body},sound:default}, pane, kind} + headers.
 
+import {readJSONObject, jsonBodyStatus} from '../../shared/worker-json.mts';
+
 export interface Env {
   RELAY_TOKEN: string;
   APNS_KEY: string; // the AuthKey_*.p8 PEM text
@@ -52,16 +54,18 @@ export default {
     const url = new URL(req.url);
     if (req.method === 'GET' && url.pathname === '/health') return json({ok: true});
     if (req.method !== 'POST') return json({error: 'method not allowed'}, 405);
+    if (!env.RELAY_TOKEN) return json({error: 'relay unavailable'}, 503);
     if (req.headers.get('Authorization') !== 'Bearer ' + env.RELAY_TOKEN) {
       return json({error: 'unauthorized'}, 401);
     }
     let intent: PushIntent;
     try {
-      intent = (await req.json()) as PushIntent;
-    } catch {
-      return json({error: 'bad json'}, 400);
+      intent = await readJSONObject<PushIntent>(req);
+    } catch (error) {
+      const status = jsonBodyStatus(error);
+      return json({error: status === 413 ? 'request too large' : 'bad json'}, status);
     }
-    if (!intent.token) return json({error: 'no token'}, 400);
+    if (typeof intent.token !== 'string' || !intent.token) return json({error: 'no token'}, 400);
 
     const jwt = await providerJWT(env);
     // Per-token env wins (the device told us at registration); APNS_ENV is the

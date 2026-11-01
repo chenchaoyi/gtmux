@@ -80,8 +80,8 @@ func TestRelayPush(t *testing.T) {
 
 func TestRelayPushGatewayError(t *testing.T) {
 	fp := &fakePusher{err: errors.New("BadDeviceToken")}
-	s := &relayServer{pushers: map[string]Pusher{"ios": fp}} // no token → open
-	rr := post(t, s.handler(), `{"token":"d","platform":"ios"}`, "")
+	s := &relayServer{token: "fixture-secret", pushers: map[string]Pusher{"ios": fp}}
+	rr := post(t, s.handler(), `{"token":"d","platform":"ios"}`, "fixture-secret")
 	if rr.Code != http.StatusBadGateway {
 		t.Fatalf("gateway error = %d, want 502", rr.Code)
 	}
