@@ -1,0 +1,7 @@
+Complete code and trace reading
+• Load a call’s recorded input in full. Compact formatting improves readability; copying preserves the original text.
+• Local HTML reports show their local images without enabling scripts.
+• Adjust session text from 10–24 pt in one-point steps. Chat and Terminal share the setting.
+• Read working-tree changes by file and region, with line numbers, change counts and independent folding.
+• Trace details use Back or Hide details; Close exits Trace. Fixed the closing white flash and improved iPad resizing and large-text controls.
+• Completion notifications wait for confirmed turn completion.

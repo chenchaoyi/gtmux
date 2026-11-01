@@ -1,4 +1,7 @@
-Code reading and touch navigation
-• Code in Trace Preview, tool details and Markdown now wraps and uses syntax highlighting.
-• Open long tool input in a dedicated reader with native selection and exact copying.
-• Removed horizontal drag and help controls. Reading code keeps the current page; edge-back remains available.
+Complete code and trace reading
+• Load a call’s recorded input in full. Compact formatting improves readability; copying preserves the original text.
+• Local HTML reports show their local images without enabling scripts.
+• Adjust session text from 10–24 pt in one-point steps. Chat and Terminal share the setting.
+• Read working-tree changes by file and region, with line numbers, change counts and independent folding.
+• Trace details use Back or Hide details; Close exits Trace. Fixed the closing white flash and improved iPad resizing and large-text controls.
+• Completion notifications wait for confirmed turn completion.
