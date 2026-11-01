@@ -6,7 +6,7 @@ import { TraceModal, TraceReader } from './TraceModal';
 import { TraceEvent } from './model';
 import { paletteFor } from '../ui/theme';
 import { toAgent } from '../api/types';
-import { GtmuxClient, TranscriptTurn } from '../api/client';
+import { ApiError, GtmuxClient, TranscriptTurn } from '../api/client';
 import { MarkdownView } from '../ui/MarkdownView';
 import { ParticipantProfileModal } from '../ui/ParticipantProfileModal';
 import { nativeDocumentPreview } from '../documents/nativePreview';

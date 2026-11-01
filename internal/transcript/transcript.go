@@ -466,8 +466,8 @@ const maxTailBytes = 64 << 20 // 64 MiB
 
 // Load returns up to maxTurns most-recent turns (oldest-first) for an agent
 // session, backed by a process-wide incremental cache. Codex streams chat records
-// once and then consumes appended complete lines. Other agents deep-tail on cold
-// load and reparse the active turn on growth. Unknown agent or missing log yields
+// once and then consumes appended complete lines. Other agents stream the source
+// on cold load, retain a bounded tail, and reparse the active turn on growth. Unknown agent or missing log yields
 // no history; neither path changes the source log.
 func Load(agent, sessionID string, maxTurns int) ([]Turn, error) {
 	return defaultLoader.load(agent, sessionID, maxTurns)
@@ -884,7 +884,7 @@ func (l *Loader) loadFile(path string, step stepFn, maxTurns int) ([]Turn, error
 		}
 	}
 
-	// cold / shrunk / replaced / rewritten → full deep-tail parse.
+	// Cold, shrunk, replaced or rewritten: stream from the source beginning for ordinals.
 	fi, _ := os.Stat(path) // nil leaves the next call to parse again
 	turns, last, size, err := parseTurnsFrom(path, 0, step, 0)
 	if err != nil {
