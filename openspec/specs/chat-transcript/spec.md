@@ -688,3 +688,23 @@ The server SHALL retain bounded tool previews for polling and provide an optiona
 - **WHEN** a visible call has no remaining preview budget and the reader opens its details
 - **THEN** a compatible owner/full-paired reader can retrieve its complete original selected input without widening regular transcript polls
 - **AND** copying cannot silently use a partial preview as complete source
+
+### Requirement: Bounded earlier trace pages with source turn positions
+The system SHALL retain each turn's one-based position within its source session before newest-turn limits or byte budgets are applied. A supported source history SHALL be reachable in earlier pages of at most 50 turns, independently bounded by the transcript response budget. History cursors SHALL identify an anchor in an authorized source session and SHALL NOT authorize another conversation or expose filesystem paths.
+
+#### Scenario: Long session tail
+- **WHEN** a session has 167 parsed turns and the newest response retains ten
+- **THEN** their source positions are 158 through 167, and the oldest returned turn offers an earlier-page cursor
+
+#### Scenario: Earlier than the newest-turn cache
+- **WHEN** the reader loads pages older than the cache's retained turns
+- **THEN** the system reads canonical source boundaries, returns the adjacent earlier page, and preserves original turn positions
+
+#### Scenario: Live update during historical reading
+- **WHEN** a reader has opened earlier pages and a newer snapshot arrives
+- **THEN** overlapping records are updated without discarding explicitly loaded history, folds, selection or the visible scroll anchor
+- **AND** a nonoverlapping snapshot is not silently joined across an unobserved gap; the reader can explicitly return to latest records
+
+#### Scenario: Changed source or denied connection
+- **WHEN** the cursor's session, source identity or anchor no longer matches, or the connection cannot read that conversation
+- **THEN** the history page fails explicitly, existing displayed records remain available for retry, and the existing pane/home and guest context restrictions apply

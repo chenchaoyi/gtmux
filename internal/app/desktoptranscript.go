@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -30,6 +31,12 @@ func desktopTranscriptRead(id, etag string, homes ...string) ([]byte, server.Tra
 	if resolveErr != nil {
 		return nil, meta, sessionpolicy.ErrUnverified
 	}
+	meta.History = func(ctx context.Context, before string) ([]byte, server.TranscriptMeta, error) {
+		return transcriptHistoryPage(ctx, ref.Agent, id, before, func(ts []transcript.Turn) []transcript.Turn {
+			by, _ := events.Sends.MessageSenders(ref.Agent, ref.HomeID, id)
+			return stampMessageSenders(ts, by)
+		})
+	}
 	var senders map[int64]events.MessageSender
 	senderRevision := ""
 	if ref.Agent == "dsh" {
@@ -38,7 +45,7 @@ func desktopTranscriptRead(id, etag string, homes ...string) ([]byte, server.Tra
 	// Read the validator before content: an append during parsing must force another
 	// read, not mark older content with a newer revision.
 	if revision := transcript.LogRevision(ref.Agent, id); revision != "" {
-		meta.Etag = fmt.Sprintf("W/%q", "profile-v3-tool-input-"+ref.HomeID+"-"+id+"-"+revision+"-"+senderRevision)
+		meta.Etag = fmt.Sprintf("W/%q", "profile-v4-trace-history-"+ref.HomeID+"-"+id+"-"+revision+"-"+senderRevision)
 	}
 	if etag != "" && meta.Etag == etag {
 		return nil, meta, nil
@@ -54,6 +61,7 @@ func desktopTranscriptRead(id, etag string, homes ...string) ([]byte, server.Tra
 	if err != nil {
 		return nil, meta, err
 	}
+	turns = append([]transcript.Turn(nil), turns...)
 	for i := range turns {
 		turns[i].Agent = ref.Agent
 		turns[i].SessionID = id
@@ -64,6 +72,12 @@ func desktopTranscriptRead(id, etag string, homes ...string) ([]byte, server.Tra
 		kept = []transcript.Turn{}
 	}
 	meta.Dropped = dropped + retained
+	if len(kept) > 0 {
+		transcript.SetHistoryCursor(ref.Agent, id, kept)
+		if kept[0].Ordinal > 0 {
+			meta.Dropped = max(meta.Dropped, kept[0].Ordinal-1)
+		}
+	}
 	b, err := json.Marshal(kept)
 	return b, meta, err
 }
@@ -141,4 +155,27 @@ func cmdTranscript(args []string) int {
 		i18n.Sae("Earlier messages omitted from this bounded view.", "此视图省略了较早的部分对话。")
 	}
 	return 0
+}
+
+func transcriptHistoryPage(ctx context.Context, agent, sid, before string, stamp func([]transcript.Turn) []transcript.Turn) ([]byte, server.TranscriptMeta, error) {
+	var meta server.TranscriptMeta
+	ts, err := transcript.LoadBefore(ctx, agent, sid, before)
+	if err != nil {
+		return nil, meta, err
+	}
+	for i := range ts {
+		ts[i].Agent = agent
+		ts[i].SessionID = sid
+	}
+	ts = stamp(ts)
+	ts, _ = turnsWithinBudget(ts, transcriptByteBudget)
+	if ts == nil {
+		ts = []transcript.Turn{}
+	}
+	transcript.SetHistoryCursor(agent, sid, ts)
+	if len(ts) > 0 {
+		meta.Dropped = max(0, ts[0].Ordinal-1)
+	}
+	b, err := json.Marshal(ts)
+	return b, meta, err
 }

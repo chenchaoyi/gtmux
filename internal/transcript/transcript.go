@@ -391,7 +391,9 @@ type Step struct {
 // intermediate tool calls folded into Steps.
 type Turn struct {
 	// RecordID is an opaque source-position identity for readers, never an input capability.
-	RecordID string `json:"record_id,omitempty"`
+	RecordID      string `json:"record_id,omitempty"`
+	Ordinal       int    `json:"turn_ordinal,omitempty"`
+	HistoryBefore string `json:"history_before,omitempty"`
 
 	// PromptMessageSeq identifies a DSH public append for server-side attribution.
 	// It is parser evidence, never a client-facing field or an input capability.
@@ -464,8 +466,8 @@ const maxTailBytes = 64 << 20 // 64 MiB
 
 // Load returns up to maxTurns most-recent turns (oldest-first) for an agent
 // session, backed by a process-wide incremental cache. Codex streams chat records
-// once and then consumes appended complete lines. Other agents deep-tail on cold
-// load and reparse the active turn on growth. Unknown agent or missing log yields
+// once and then consumes appended complete lines. Other agents stream the source
+// on cold load, retain a bounded tail, and reparse the active turn on growth. Unknown agent or missing log yields
 // no history; neither path changes the source log.
 func Load(agent, sessionID string, maxTurns int) ([]Turn, error) {
 	return defaultLoader.load(agent, sessionID, maxTurns)
@@ -551,6 +553,9 @@ func resolveLog(agent, sessionID string) (string, stepFn) {
 // parseState accumulates turns as a parser walks the log linearly, tracking the
 // byte offset at which each turn began so the cache can restart incrementally.
 type parseState struct {
+	nextOrdinal int
+	onTurn      func(Turn) bool
+	stop        bool
 	sourceID    string
 	fullTools   bool
 	stepOff     int64
@@ -560,6 +565,8 @@ type parseState struct {
 	turnStarts          []int64 // turnStarts[i] = byte offset of turns[i]'s first line
 	cur                 *Turn
 	curStart            int64
+	byteCap             int64
+	retainedBytes       int64
 	turnCap             int             // optional retention limit while streaming
 	off                 int64           // start offset of the line currently being fed to a step
 	toolDetailBytes     int             // additional tool-input bytes retained in the active turn
@@ -581,11 +588,27 @@ func (st *parseState) flush() {
 		if st.cur.RecordID == "" && st.sourceID != "" {
 			st.cur.RecordID = fmt.Sprintf("%s:%d", st.sourceID, st.curStart)
 		}
+		if st.cur.Ordinal == 0 {
+			st.nextOrdinal++
+			st.cur.Ordinal = st.nextOrdinal
+		} else {
+			st.nextOrdinal = st.cur.Ordinal
+		}
+		if st.onTurn != nil && !st.onTurn(*st.cur) {
+			st.stop = true
+		}
+		st.retainedBytes += cachedTurnBytes([]Turn{*st.cur})
 		st.turns = append(st.turns, *st.cur)
 		st.turnStarts = append(st.turnStarts, st.curStart)
 		if st.turnCap > 0 && len(st.turns) > st.turnCap {
+			st.retainedBytes -= cachedTurnBytes(st.turns[:len(st.turns)-st.turnCap])
 			st.turns = append([]Turn(nil), st.turns[len(st.turns)-st.turnCap:]...)
 			st.turnStarts = append([]int64(nil), st.turnStarts[len(st.turnStarts)-st.turnCap:]...)
+		}
+		for st.byteCap > 0 && len(st.turns) > 1 && st.retainedBytes > st.byteCap {
+			st.retainedBytes -= cachedTurnBytes(st.turns[:1])
+			st.turns = append([]Turn(nil), st.turns[1:]...)
+			st.turnStarts = append([]int64(nil), st.turnStarts[1:]...)
 		}
 	}
 	st.cur = nil
@@ -677,6 +700,10 @@ func (st *parseState) ensure() {
 // turns, the byte offset where the LAST turn began (-1 if none), and the file
 // size it parsed to.
 func parseTurns(path string, startOffset int64, step stepFn) ([]Turn, int64, int64, error) {
+	return parseTurnsFrom(path, startOffset, step, 0)
+}
+
+func parseTurnsFrom(path string, startOffset int64, step stepFn, ordinal int) ([]Turn, int64, int64, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, -1, 0, err
@@ -710,7 +737,7 @@ func parseTurns(path string, startOffset int64, step stepFn) ([]Turn, int64, int
 		first, _ := r.ReadString('\n')
 		off += int64(len(first))
 	}
-	st := &parseState{off: off, sourceID: recordSourceID(path)}
+	st := &parseState{off: off, sourceID: recordSourceID(path), nextOrdinal: ordinal, turnCap: cacheTurnCap, byteCap: cacheByteCap}
 	for {
 		line, rerr := r.ReadString('\n')
 		if len(line) > 0 {
@@ -807,12 +834,21 @@ func (l *Loader) loadCodexPaths(paths []string, maxTurns int) ([]Turn, error) {
 		limit = cacheTurnCap
 	}
 	var turns []Turn
+	ordinal := 0
 	for _, path := range paths {
 		part, err := l.loadCodexFile(path, limit)
 		if err != nil {
 			return nil, err
 		}
-		turns = lastN(append(turns, part...), limit)
+		for _, original := range part {
+			t := original
+			t.Ordinal += ordinal
+			turns = append(turns, t)
+		}
+		if len(part) > 0 {
+			ordinal += part[len(part)-1].Ordinal
+		}
+		turns = lastN(turns, limit)
 	}
 	return turns, nil
 }
@@ -829,7 +865,7 @@ func (l *Loader) loadFile(path string, step stepFn, maxTurns int) ([]Turn, error
 				return lastN(hit.turns, maxTurns), nil
 			case same && fi.Size() > hit.size && hit.lastTurn >= 0 && len(hit.turns) > 0:
 				// grew → re-parse only from the last turn's start and splice.
-				tail, last, size, perr := parseTurns(path, hit.lastTurn, step)
+				tail, last, size, perr := parseTurnsFrom(path, hit.lastTurn, step, hit.turns[len(hit.turns)-1].Ordinal-1)
 				if perr == nil {
 					merged := make([]Turn, 0, len(hit.turns)-1+len(tail))
 					merged = append(merged, hit.turns[:len(hit.turns)-1]...)
@@ -848,9 +884,9 @@ func (l *Loader) loadFile(path string, step stepFn, maxTurns int) ([]Turn, error
 		}
 	}
 
-	// cold / shrunk / replaced / rewritten → full deep-tail parse.
+	// Cold, shrunk, replaced or rewritten: stream from the source beginning for ordinals.
 	fi, _ := os.Stat(path) // nil leaves the next call to parse again
-	turns, last, size, err := parseTurns(path, -1, step)
+	turns, last, size, err := parseTurnsFrom(path, 0, step, 0)
 	if err != nil {
 		delete(l.m, path)
 		return nil, err

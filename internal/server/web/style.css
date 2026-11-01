@@ -1532,3 +1532,10 @@ select:disabled { opacity: .55; cursor: not-allowed; }
 .trace-event.trace-call-child::before { content: ''; position: absolute; left: -19px; top: 0; bottom: 0; border-left: 1px solid var(--divider); }
 .trace-event.trace-call-child::after { content: ''; position: absolute; left: -19px; top: 24px; width: 18px; border-top: 1px solid var(--divider); }
 .trace-event.trace-call-child.trace-call-last::before { bottom: auto; height: 24px; }
+
+.trace-history-bar {display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:8px 16px;font-size:13px;color:var(--fg2);border-bottom:1px solid var(--divider);}
+.trace-history-bar[hidden],.trace-history-bar button[hidden] {display:none;}
+.trace-history-bar button {border:0;background:transparent;color:var(--accent-ink);font:inherit;min-height:44px;padding:4px 8px;cursor:pointer;}
+.trace-history-bar button:disabled {opacity:.6;cursor:wait;}
+
+.trace-history-bar button:focus-visible {outline:2px solid var(--accent-ink);outline-offset:2px;border-radius:6px;}

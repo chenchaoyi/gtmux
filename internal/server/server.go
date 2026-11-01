@@ -1091,6 +1091,8 @@ func (s *Server) handleDiff(w http.ResponseWriter, r *http.Request) {
 // response headers rather than an envelope, so the body stays the plain turn array a
 // client predating either signal already parses.
 type TranscriptMeta struct {
+	History func(context.Context, string) ([]byte, TranscriptMeta, error)
+
 	// EarlierAvailable is set when a session before the oldest one served is known (the
 	// HQ session chain), so a client can offer to load it instead of ending at a wall.
 	EarlierAvailable bool
@@ -1145,6 +1147,30 @@ func (s *Server) handleTranscript(w http.ResponseWriter, r *http.Request) {
 
 func writeTranscript(w http.ResponseWriter, r *http.Request, b []byte, meta TranscriptMeta) {
 	var err error
+	if before := r.URL.Query().Get("before"); before != "" {
+		if len(before) > 2048 {
+			writeJSON(w, 400, errBody("invalid history cursor"))
+			return
+		}
+		if meta.History == nil {
+			writeJSON(w, 501, errBody("history paging unavailable"))
+			return
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), 8*time.Second)
+		defer cancel()
+		b, meta, err = meta.History(ctx, before)
+		if err != nil {
+			code := 409
+			if errors.Is(err, context.DeadlineExceeded) {
+				code = 408
+			}
+			writeJSON(w, code, errBody("history page unavailable; refresh and retry"))
+			return
+		}
+		w.Header().Set("X-Gtmux-History-Page", "1")
+		w.Header().Set("Cache-Control", "no-store")
+	}
+
 	includeContext := callerScope(r.Context()) != scopeGuest && r.URL.Query().Get("context") == "1"
 	b, meta, err = traceContextBody(b, meta, includeContext)
 	if err != nil {

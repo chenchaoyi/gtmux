@@ -5,3 +5,5 @@ The HQ Board card keeps the current briefing and local resource warnings directl
 Diff now preserves the original code layout, with syntax colors and wrapping and no format toggle.
 
 Diagnostics now combine repeated notification request failures while preserving changed causes and recovery counts. Terminal-order snapshots use bounded reads and slower retries after failure. Storage checks separate working state from release and recovery files.
+
+Long-session Trace keeps original turn numbers and lets you load earlier records in pages without losing your place.

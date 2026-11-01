@@ -455,6 +455,8 @@ export interface TranscriptSender {
   pane?: string; // the sending pane, when it has one
 }
 export interface TranscriptTurn {
+  turn_ordinal?: number;
+  history_before?: string;
   record_id?: string; // opaque source-position identity, not a send target
   session_id?: string; // source conversation, including stitched history
   prompt: string;
@@ -885,6 +887,17 @@ export class GtmuxClient {
       etag: r.headers?.get?.('ETag') ?? undefined,
       ...(earlierAvailable ? {earlierAvailable} : {}),
     };
+  }
+
+  async traceHistory(agent: {pane_id?: string; session_id?: string; home_id?: string}, before: string, signal?: AbortSignal): Promise<TranscriptTurn[]> {
+    const path = agent.pane_id?.startsWith('%')
+      ? `/api/transcript?id=${encodeURIComponent(agent.pane_id)}`
+      : `/api/session/transcript?session_id=${encodeURIComponent(agent.session_id || '')}&home_id=${encodeURIComponent(agent.home_id || '')}`;
+    const r = await tfetch(`${this.base}${path}&context=1&before=${encodeURIComponent(before)}`, {headers: this.h(), signal});
+    if (!r.ok || r.headers?.get?.('X-Gtmux-History-Page') !== '1') throw new ApiError(r.status, 'trace-history');
+    const turns = await r.json();
+    if (!Array.isArray(turns) || !turns.length) throw new Error('Empty history page');
+    return turns;
   }
 
   async toolInput(session: string, home: string, ref: string, signal?: AbortSignal): Promise<TranscriptStep> {

@@ -6,7 +6,7 @@ import { TraceModal, TraceReader } from './TraceModal';
 import { TraceEvent } from './model';
 import { paletteFor } from '../ui/theme';
 import { toAgent } from '../api/types';
-import { GtmuxClient, TranscriptTurn } from '../api/client';
+import { ApiError, GtmuxClient, TranscriptTurn } from '../api/client';
 import { MarkdownView } from '../ui/MarkdownView';
 import { ParticipantProfileModal } from '../ui/ParticipantProfileModal';
 import { nativeDocumentPreview } from '../documents/nativePreview';
@@ -68,7 +68,9 @@ function press(id: string) {
     .findAllByProps({ testID: id })
     .find(n => typeof n.props.onPress === 'function');
   expect(node).toBeDefined();
-  act(() => node!.props.onPress());
+  act(() => {
+    node!.props.onPress();
+  });
 }
 function data(): TraceEvent[] {
   return tree.root
@@ -799,4 +801,110 @@ test('initial turns stay folded and the progress card uses the same name as the 
   const latest = tree.root.findByType(FlatList).props.data.at(-1);
   press('trace-turn-' + latest.group.key);
   expect(data().length).toBeGreaterThan(0);
+});
+
+test('loads an earlier trace page, preserves folds and keeps it through a live update', async () => {
+  const t = (n: number): TranscriptTurn => ({
+    session_id: 'recorded',
+    record_id: `history:${n}`,
+    turn_ordinal: n,
+    prompt: `Question ${n}`,
+    response: `Answer ${n}`,
+  });
+  const latest = [{ ...t(158), history_before: 'before-158' }, t(159)];
+  const traceHistory = jest
+    .fn()
+    .mockResolvedValue([{ ...t(156), history_before: 'before-156' }, t(157)]);
+  const client = { traceHistory } as any;
+  mount({ turns: latest, client }, false);
+  expect(
+    tree.root.findByType(FlatList).props.data.map((r: any) => r.group.turn),
+  ).toEqual([158, 159]);
+  await act(async () => {
+    press('trace-history-earlier');
+  });
+  expect(traceHistory).toHaveBeenCalledWith(
+    agent,
+    'before-158',
+    expect.anything(),
+  );
+  expect(
+    tree.root.findByType(FlatList).props.data.map((r: any) => r.group.turn),
+  ).toEqual([156, 157, 158, 159]);
+  act(() =>
+    tree.update(
+      <TraceReader {...base} client={client} turns={[...latest, t(160)]} />,
+    ),
+  );
+  expect(
+    tree.root.findByType(FlatList).props.data.map((r: any) => r.group.turn),
+  ).toEqual([156, 157, 158, 159, 160]);
+  expect(
+    tree.root.findByType(FlatList).props.maintainVisibleContentPosition,
+  ).toEqual({ minIndexForVisible: 0 });
+});
+test('failed or late history pages cannot replace records from a different session', async () => {
+  const latest: TranscriptTurn[] = [
+    {
+      session_id: 'recorded',
+      record_id: 'history:158',
+      turn_ordinal: 158,
+      history_before: 'before-158',
+      prompt: 'Latest',
+      response: 'Answer',
+    },
+  ];
+  let resolve!: (turns: TranscriptTurn[]) => void;
+  const client = {
+    traceHistory: jest.fn(
+      () =>
+        new Promise<TranscriptTurn[]>(r => {
+          resolve = r;
+        }),
+    ),
+  } as any;
+  mount({ turns: latest, client }, false);
+  press('trace-history-earlier');
+  act(() =>
+    tree.update(
+      <TraceReader
+        {...base}
+        agent={{ ...agent, session_id: 'changed' }}
+        client={client}
+        turns={[]}
+      />,
+    ),
+  );
+  expect(tree.root.findByType(TraceReader).props.agent.session_id).toBe(
+    'changed',
+  );
+  await act(async () => resolve([{ ...latest[0], turn_ordinal: 157 }]));
+  expect(tree.root.findByType(FlatList).props.data).toEqual([]);
+});
+
+test('a changed history source offers an explicit latest refresh while retaining the reader', async () => {
+  const latest: TranscriptTurn[] = [
+    {
+      session_id: 'recorded',
+      record_id: 'history:158',
+      turn_ordinal: 158,
+      history_before: 'before-158',
+      prompt: 'Current record',
+      response: 'Answer',
+    },
+  ];
+  const client = {
+    traceHistory: jest.fn().mockRejectedValue(new ApiError(409, 'history')),
+  } as any;
+  const retry = jest.fn();
+  mount({ turns: latest, client, onRetry: retry }, false);
+  await act(async () => {
+    press('trace-history-earlier');
+  });
+  expect(tree.root.findByType(FlatList).props.data[0].group.turn).toBe(158);
+  expect(
+    tree.root.findAllByProps({ testID: 'trace-history-earlier' }),
+  ).toHaveLength(0);
+  press('trace-history-latest');
+  expect(retry).toHaveBeenCalledTimes(1);
 });

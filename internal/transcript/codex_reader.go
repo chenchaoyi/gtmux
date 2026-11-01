@@ -104,6 +104,9 @@ func readCodexRecords(r io.Reader, start int64, st *parseState) (int64, error) {
 			codexStep(string(record), st)
 		}
 		next += length
+		if st.stop {
+			return next, nil
+		}
 	}
 }
 
@@ -148,6 +151,7 @@ func (l *Loader) loadCodexFile(path string, maxTurns int) ([]Turn, error) {
 					}
 				}
 				st.cur, st.curStart = &cur, hit.lastTurn
+				st.nextOrdinal = cur.Ordinal - 1
 			}
 		}
 	}

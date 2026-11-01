@@ -1,0 +1,56 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs/promises');
+const path=require('node:path');
+const {scenario}=require('./harness.cjs');
+const {openTools,closeTools}=require('./tools.cjs');
+const turn=n=>({session_id:'synthetic-current',record_id:'source:'+n,turn_ordinal:n,prompt:'Question '+n,response:'Answer '+n,agent:'Codex'});
+for(const width of [390,834,1440]) scenario('trace-history-'+width,{viewport:{width,height:950}},async(page,fixture)=>{
+ fixture.state.agents=[{...fixture.state.agents[0],task:'History QA'}];
+ const latest=Array.from({length:10},(_,i)=>turn(158+i));latest[0].history_before='before-158';fixture.state.turns['%901']=latest;
+ let failed=true,pages=0;
+ fixture.state.expectedHttpErrors.push(503,409);
+ await page.route('**/api/transcript*',async route=>{
+  const before=new URL(route.request().url()).searchParams.get('before');
+  if(!before)return route.continue();
+  pages++;
+  if(before==='before-78') return route.fulfill({status:409,contentType:'application/json',body:'{"error":"source changed"}'});
+  if(before==='before-118' && failed) return route.fulfill({status:503,contentType:'application/json',body:'{"error":"synthetic failure"}'});
+  const end=Number(before.split('-')[1])-1;
+  const records=Array.from({length:Math.min(40,end)},(_,i)=>turn(end-Math.min(40,end)+1+i));
+  if(records[0].turn_ordinal>1)records[0].history_before='before-'+records[0].turn_ordinal;
+  return route.fulfill({status:200,headers:{'Content-Type':'application/json','X-Gtmux-History-Page':'1'},body:JSON.stringify(records)});
+ });
+ await page.goto(fixture.url+'/#code=TEST-1234');
+ if(width>=900){await page.locator('#tree').getByText('History QA',{exact:true}).dblclick();await page.locator('.tile-modes [data-m="chat"]').click();await page.locator('.tile-btn[data-action="focus"]').click();}
+ else await page.locator('#radar').getByText('History QA',{exact:true}).click();
+ await page.locator('#mode [data-mode="chat"]').click();await openTools(page);
+ const trace=page.locator('.session-tool .trace-view');await trace.locator('.trace-turn').first().waitFor();
+ assert.match(await trace.locator('.trace-turn').first().textContent(),/158/);
+ const colors=await trace.locator('.trace-history-bar').evaluate(n=>({label:getComputedStyle(n.querySelector('span')).color,action:getComputedStyle(n.querySelector('button')).color,border:getComputedStyle(n).borderBottomStyle,height:n.querySelector('button').getBoundingClientRect().height}));
+ assert.notEqual(colors.action,colors.label,'history action uses the shared accent token');assert.equal(colors.border,'solid');assert.ok(colors.height>=44,'history action keeps a touch target');
+ const anchor=await trace.locator('.trace-turn').last().evaluate(n=>({key:n.dataset.rowKey,y:n.getBoundingClientRect().y}));
+ await trace.locator('.trace-history-earlier').click();
+ await page.waitForFunction(()=>document.querySelector('.trace-turn')?.textContent.includes('118'));
+ const held=trace.locator('[data-row-key="'+anchor.key+'"]');
+ assert.ok(Math.abs((await held.boundingBox()).y-anchor.y)<4,'older loading preserves the visible row');
+ const appended=Array.from({length:10},(_,i)=>turn(159+i));appended[0].history_before='before-159';fixture.state.turns['%901']=appended;
+ await page.waitForFunction(()=>Array.from(document.querySelectorAll('.trace-turn')).some(n=>n.textContent.includes('168')));
+ assert.match(await trace.locator('.trace-turn').first().textContent(),/118/,'live update retains explicitly opened history');
+ await trace.locator('.trace-history-earlier').click();
+ await page.waitForFunction(()=>document.querySelector('.trace-history-bar')?.textContent.includes('Could not load'));
+ assert.match(await trace.locator('.trace-turn').first().textContent(),/118/);
+ failed=false;await trace.locator('.trace-history-earlier').click();
+ await page.waitForFunction(()=>document.querySelector('.trace-history-bar')?.textContent.includes('77 earlier turns'));
+ assert.ok(Math.abs((await held.boundingBox()).y-anchor.y)<4,'retry also preserves the same visible row');
+ await trace.locator('.trace-page').filter({hasText:'Previous'}).click();
+ assert.match(await trace.locator('.trace-turn').first().textContent(),/78/);
+ assert.equal(pages,3);
+ if(process.env.GTMUX_WEB_RESULTS){await fs.mkdir(process.env.GTMUX_WEB_RESULTS,{recursive:true});await page.screenshot({path:path.join(process.env.GTMUX_WEB_RESULTS,'history-'+width+'.png')});}
+ await trace.locator('.trace-history-earlier').click();
+ await page.waitForFunction(()=>!document.querySelector('.trace-history-latest').hidden);
+ assert.match(await trace.locator('.trace-turn').first().textContent(),/78/);
+ await trace.locator('.trace-history-latest').click();
+ await page.waitForFunction(()=>document.querySelector('.trace-history-bar')?.textContent.includes('158 earlier turns'));
+ assert.match(await trace.locator('.trace-turn').first().textContent(),/159/);
+ await closeTools(page);
+});

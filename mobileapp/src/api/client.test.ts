@@ -885,3 +885,15 @@ test('HQ workspace distinguishes old servers, unread responses and revoked crede
   fetchMock.mockResolvedValueOnce(okJson({schema: 1, matter: {id: 'wrong'}, messages: []})); await expect(c.hqMatter('correct', 42)).rejects.toThrow('Invalid HQ matter');
   expect(fetchMock.mock.calls.at(-1)?.[0]).toBe(BASE + '/api/hq/workspace?matter=correct&before=42');
 });
+
+test('trace history requires a page response and distinguishes pane from external session', async()=>{
+  const client = new GtmuxClient('http://fixture', 'secret');
+  const mockFetch=global.fetch as jest.Mock;
+  mockFetch.mockResolvedValueOnce({ok:true,status:200,headers:{get:(n:string)=>n==='X-Gtmux-History-Page'?'1':null},json:async()=>[{record_id:'r',turn_ordinal:157,prompt:'p',response:''}]});
+  const page=await client.traceHistory({pane_id:'%17'},'opaque-cursor');
+  expect(page[0].turn_ordinal).toBe(157);
+  expect(mockFetch.mock.calls.at(-1)[0]).toContain('/api/transcript?id=%2517&context=1&before=opaque-cursor');
+  mockFetch.mockResolvedValueOnce({ok:true,status:200,headers:{get:()=>null},json:async()=>[]});
+  await expect(client.traceHistory({pane_id:'native:codex:s',session_id:'s',home_id:'h'},'opaque')).rejects.toThrow();
+  expect(mockFetch.mock.calls.at(-1)[0]).toContain('/api/session/transcript?session_id=s&home_id=h');
+});
