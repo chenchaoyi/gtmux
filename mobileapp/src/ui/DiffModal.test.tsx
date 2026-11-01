@@ -215,3 +215,20 @@ test('large Dynamic Type keeps chrome and six-digit line numbers within the wrap
     dimensions.mockRestore();
   }
 });
+
+test('wrapping and formatting are independent and code rows use one compact source gutter', async () => {
+  const text = 'diff --git a/a.js b/a.js\n--- a/a.js\n+++ b/a.js\n@@ -9 +9 @@\n-const old=1;\n+const next={value:1};';
+  await act(async () => {tree = renderer.create(<DiffModal {...props} client={{diff: async () => text} as any} />);});
+  const list = () => tree.root.findByType(FlatList);
+  const formatted = list().props.data;
+  expect(formatted).toContain('+const next = { value: 1 };');
+  act(() => tree.root.findAllByType(TouchableOpacity).find(n => n.props.testID === 'diff-wrap')!.props.onPress());
+  expect(list().props.data).toBe(formatted);
+  const index = formatted.findIndex((line: string) => line.startsWith('+const next'));
+  let row!: renderer.ReactTestRenderer;
+  act(() => {row = renderer.create(list().props.renderItem({item: formatted[index], index}));});
+  expect(row.root.findAllByType(Text).filter(n => n.props.children === 9)).toHaveLength(1);
+  act(() => row.unmount());
+  act(() => tree.root.findAllByType(TouchableOpacity).find(n => n.props.testID === 'diff-format')!.props.onPress());
+  expect(list().props.data).toContain('+const next={value:1};');
+});

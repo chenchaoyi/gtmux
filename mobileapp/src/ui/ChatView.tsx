@@ -401,6 +401,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
       {turns.length > 0 && (
         <Animated.View
           testID="chat-collapse-bar"
+          pointerEvents="box-none"
           style={[
             styles.collapseBar,
             controlsTop !== undefined && [styles.collapseBarFloating, {top: controlsTop}],
@@ -694,7 +695,7 @@ const styles = StyleSheet.create({
   seamText: {fontSize: 11.5, color: 'rgba(235,235,245,0.45)', textAlign: 'center', fontVariant: ['tabular-nums']},
   earlierText: {fontSize: 12, color: 'rgba(235,235,245,0.55)', textAlign: 'center'},
   collapseBar: {flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 14, paddingTop: 8, paddingBottom: 4},
-  collapseBarFloating: {position: 'absolute', left: 0, right: 0, height: 44, zIndex: 2, backgroundColor: '#0D0D0F', paddingHorizontal: 14, paddingVertical: 0},
+  collapseBarFloating: {position: 'absolute', right: 14, height: 44, zIndex: 2, backgroundColor: 'transparent', paddingHorizontal: 0, paddingVertical: 0},
   collapseBarText: {fontSize: 12.5, color: '#27C7E6', fontWeight: '600'},
   // per-turn reply toggle shown while collapsed (chevron + preview).
   replyToggle: {alignSelf: 'flex-start', marginLeft: 35, paddingVertical: 3, maxWidth: '88%'},

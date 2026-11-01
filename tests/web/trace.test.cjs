@@ -231,10 +231,12 @@ for (const width of [390,1440]) scenario(`Trace replaces removed session detail 
   assert.equal(fixture.state.sends.length,0);
 });
 
-scenario('Idle Trace opens latest without a follow mode and preserves a historical viewport through refresh', {viewport:{width:1280,height:850},locale:'en-US'},async(page,fixture)=>{
+scenario('Idle Trace jumps to latest after expanding turns and preserves a historical viewport through refresh', {viewport:{width:1280,height:850},locale:'en-US'},async(page,fixture)=>{
   const initial=Array.from({length:80},(_,i)=>record('Codex','stable','Task '+i));
   agentFixture(fixture,'Codex',initial);fixture.state.agents[0].status='idle';
   const trace=await openTrace(page,fixture,1280);
+  // Bulk expansion intentionally holds the current viewport; latest is an explicit action.
+  await trace.getByRole('button',{name:'Jump to latest',exact:true}).click();
   assert.match(await trace.locator('.trace-event.on').innerText(),/Review result/);
   assert.equal(await trace.locator('.trace-latest').isVisible(),false);
   assert.equal(await trace.locator('.trace-latest').getAttribute('aria-pressed'),null);

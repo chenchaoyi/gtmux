@@ -286,10 +286,8 @@ test('workspace-backed conversations use the same matters and keep them current 
   expect(header().props.pendingMatters).toBe(1);
   expect(header().props.model.rows.some((row: {key: string}) => row.key === 'context')).toBe(false);
   expect(header().props.backLabel).toBe('Overview');
-  expect(header().props.open).toBe(false);
-  await act(async () => header().props.onToggle());
-  expect(header().props.open).toBe(true);
-  expect(tree!.root.findByType(ChatView)).toBeDefined();
+  expect(header().props.showContext).toBe(false);
+  expect(tree!.root.findByType(ChatView).props.acts).toBeUndefined();
   data = {...data, matters: data.matters.map(m => m.id === 'api-refactor' ? {...m, state: 'needs-input' as const} : m)};
   await act(async () => jest.advanceTimersByTime(10000));
   expect(header().props.model.verdict).toBe('2 need input · 1 ongoing');

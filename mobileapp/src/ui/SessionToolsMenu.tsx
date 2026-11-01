@@ -66,6 +66,7 @@ export function SessionToolsMenu({
         anchor={anchor}
         title={zh ? '会话工具' : 'Session tools'}
         sections={[items]}
+        iconPlacement="leading"
         pal={pal}
         closeLabel={zh ? '关闭' : 'Close'}
         onClose={() => setVisible(false)}

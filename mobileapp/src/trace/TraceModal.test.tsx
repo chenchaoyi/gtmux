@@ -91,10 +91,17 @@ function width(value: number) {
     }),
   );
 }
-function mount(props: Partial<React.ComponentProps<typeof TraceReader>> = {}) {
+function mount(props: Partial<React.ComponentProps<typeof TraceReader>> = {}, expandLatest = true) {
   act(() => {
     tree = renderer.create(<TraceReader {...base} {...props} />);
   });
+  // Existing detail scenarios explicitly open the latest turn before inspecting it.
+  const latest = tree.root.findByType(FlatList).props.data.at(-1);
+  if (expandLatest && latest?.type === 'turn') {
+    const list = tree.root.findByType(FlatList);
+    act(() => list.props.renderItem({item: latest}).props.onToggle(latest));
+    press('trace-latest');
+  }
 }
 
 test('session name leads the heading; each expanded call opens its own fully wrapped input', () => {
@@ -434,6 +441,7 @@ test('changing home or losing the selected record immediately retires its profil
   );
   expect(tree.root.findAllByType(ParticipantProfileModal)).toHaveLength(0);
   expect(tree.root.findAllByProps({ testID: 'trace-detail' })).toHaveLength(0);
+  press('trace-fold-turns');
   press('trace-record-' + data()[0].key);
   press('trace-profile');
   act(() => tree.update(<TraceReader {...base} turns={[]} />));
@@ -729,4 +737,15 @@ test('hardware Escape returns from call details before closing Trace and does no
   expect(close).toHaveBeenCalledTimes(1);
   expect(page).not.toHaveBeenCalled();
   stop();
+});
+
+test('initial turns stay folded and the progress card uses the same name as the session list', () => {
+  mount({}, false);
+  expect(tree.root.findByType(FlatList).props.data.every((row: any) => row.type === 'turn' && !row.open)).toBe(true);
+  expect(tree.root.findAllByProps({testID: 'trace-progress-session'})[0].props.children).toBe('Trace QA');
+  act(() => tree.update(<TraceReader {...base} turns={[turn, {...turn, prompt: 'New incoming turn'}]} />));
+  expect(data()).toHaveLength(0);
+  const latest = tree.root.findByType(FlatList).props.data.at(-1);
+  press('trace-turn-' + latest.group.key);
+  expect(data().length).toBeGreaterThan(0);
 });

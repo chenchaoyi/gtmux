@@ -265,3 +265,16 @@ describe('a door on its first fetch', () => {
     expect(ids(mount({pending: {board: false, knowledge: false, usage: false}}))).not.toContain('hq-board-loading');
   });
 });
+
+test('HQ chat reached from the workspace retains identity and tools without a duplicate overview', () => {
+  const back = jest.fn();
+  let tree!: renderer.ReactTestRenderer;
+  act(() => {tree = renderer.create(<HQHeader model={model()} conn="live" open onToggle={() => {}} showContext={false} onBack={back} onOpenBoard={() => {}} tools={<Text>Session tools</Text>} pal={paletteFor('dark')} zh={false} />);});
+  expect(tree.root.findAllByProps({testID: 'hq-verdict'})).toHaveLength(0);
+  expect(tree.root.findAllByProps({testID: 'hq-context'})).toHaveLength(0);
+  expect(tree.root.findAllByProps({testID: 'hq-board-open'})).toHaveLength(0);
+  expect(tree.root.findAllByType(Text).some(n => n.props.children === 'HQ')).toBe(true);
+  act(() => tree.root.findAllByType(TouchableOpacity).find(n => n.props.testID === 'hq-back')!.props.onPress());
+  expect(back).toHaveBeenCalledTimes(1);
+  act(() => tree.unmount());
+});

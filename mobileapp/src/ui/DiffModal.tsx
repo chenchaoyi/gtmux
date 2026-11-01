@@ -28,7 +28,8 @@ import { GtmuxClient } from '../api/client';
 import { Lang } from '../i18n';
 import { Palette } from './theme';
 import { diffLineColor, diffRows } from './diff';
-import { diffPresentation, hunkRange } from './diffModel';
+import { diffDisplayRows, diffPresentation, hunkRange } from './diffModel';
+import { formatCode } from './codeFormatting';
 import { ChromeText } from './ChromeText';
 import { CHROME_MAX_SCALE } from './textScale';
 import { CodeText } from './CodeText';
@@ -58,6 +59,7 @@ export function DiffModal({
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
   const [wrapLines, setWrapLines] = useState(true);
+  const [formatted, setFormatted] = useState(true);
   const [folded, setFolded] = useState<Record<string, boolean>>({});
   const [reader, setReader] = useState<{
     source: string;
@@ -110,8 +112,11 @@ export function DiffModal({
     [text, folded],
   );
   const rows = useMemo(
-    () => diffRows(structured.lines.join('\n')),
-    [structured],
+    () => structured.files.length
+      ? diffDisplayRows(structured, (source, path) => formatted
+        ? formatCode(source, path.split('.').pop()) : source)
+      : {...diffRows(structured.lines.join('\n')), meta: structured.meta},
+    [structured, formatted],
   );
   const gutterWidth = useMemo(() => {
     let maximum = 1;
@@ -119,14 +124,14 @@ export function DiffModal({
       for (const row of file.rows)
         maximum = Math.max(maximum, row.meta.old || 0, row.meta.next || 0);
     return Math.max(
-      34,
+      26,
       Math.ceil(String(maximum).length * gutterFont * 0.62 * chromeScale + 6),
     );
   }, [structured.files, gutterFont, chromeScale]);
   const contentWidth = Math.max(
     viewportWidth,
     rows.columns * fontSize * 0.62 * scale +
-      (structured.files.length ? 2 * (gutterWidth + 6) + 42 : 24),
+      (structured.files.length ? gutterWidth + 4 + 42 : 24),
   );
   const listStyle = useMemo(
     () => ({
@@ -140,17 +145,17 @@ export function DiffModal({
   const layouts = useMemo(() => {
     let offset = 0;
     return rows.lines.map((_, index) => {
-      const kind = structured.meta[index]?.kind;
+      const kind = rows.meta[index]?.kind;
       const length =
         kind === 'file' ? fileHeight : kind === 'hunk' ? hunkHeight : rowHeight;
       const value = { length, offset, index };
       offset += length;
       return value;
     });
-  }, [rows, structured, rowHeight, fileHeight, hunkHeight]);
+  }, [rows, rowHeight, fileHeight, hunkHeight]);
   const renderLine = useCallback(
     ({ item, index }: { item: string; index: number }) => {
-      const meta = structured.meta[index];
+      const meta = rows.meta[index];
       const hint = meta?.path?.split('.').pop() || 'text';
       if (meta?.kind === 'file')
         return (
@@ -251,21 +256,7 @@ export function DiffModal({
                 },
               ]}
             >
-              {meta.old ?? ''}
-            </Text>
-            <Text
-              numberOfLines={1}
-              maxFontSizeMultiplier={CHROME_MAX_SCALE}
-              style={[
-                styles.lineNumber,
-                {
-                  fontSize: gutterFont,
-                  width: gutterWidth,
-                  lineHeight: (baseLineHeight * scale) / chromeScale,
-                },
-              ]}
-            >
-              {meta.next ?? ''}
+              {meta.role === 'del' ? meta.old ?? '' : meta.next ?? ''}
             </Text>
             <Text
               style={[
@@ -282,7 +273,7 @@ export function DiffModal({
                 },
               ]}
             >
-              {item[0]}
+              {meta.continuation ? '' : item[0]}
             </Text>
             <View style={{ flex: 1 }}>
               <CodeText
@@ -315,6 +306,7 @@ export function DiffModal({
     },
     [
       structured,
+      rows,
       viewportWidth,
       rowHeight,
       fontSize,
@@ -401,6 +393,16 @@ export function DiffModal({
               >
                 {lang === 'zh' ? '换行' : 'Wrap'}
               </ChromeText>
+            </TouchableOpacity>
+            <TouchableOpacity
+              testID="diff-format"
+              accessibilityRole="button"
+              accessibilityState={{ selected: formatted }}
+              accessibilityLabel={lang === 'zh' ? formatted ? '查看原始排版' : '格式化代码' : formatted ? 'Show original layout' : 'Format code'}
+              style={styles.fileAction}
+              onPress={() => setFormatted(value => !value)}
+            >
+              <ChromeText style={{color: formatted ? '#9FC7E9' : '#B5B5BE', fontSize: 18}}>{'{ }'}</ChromeText>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.fileAction}
@@ -589,7 +591,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     color: '#A1A7B2',
     fontFamily: 'Menlo',
-    marginRight: 6,
+    marginRight: 4,
   },
   sign: { width: 18, fontFamily: 'Menlo' },
   bar: {

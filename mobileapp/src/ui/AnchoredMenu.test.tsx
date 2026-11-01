@@ -2,6 +2,7 @@ import React from 'react';
 import renderer, {act} from 'react-test-renderer';
 import {Dimensions, Modal, ScrollView, StyleSheet, Text, View} from 'react-native';
 import * as SafeArea from 'react-native-safe-area-context';
+import {SIcon} from './SettingsIcons';
 import {AnchoredMenu, MenuItem} from './AnchoredMenu';
 import {paletteFor} from './theme';
 
@@ -140,4 +141,15 @@ test('settings content fits landscape safe areas and its footer is in the scroll
   } finally {
     act(() => Dimensions.set({window: previous}));
   }
+});
+
+test('leading action icons sit in the title row and descriptions align with the label', () => {
+  mount({iconPlacement: 'leading', sections: [[item('Trace', {icon: 'trace', description: 'Recorded tool calls'})]]});
+  const row = tree.root.findAll(n => n.props.testID === 'menu-Trace' && typeof n.props.onPress === 'function')[0];
+  const icons = row.findAllByType(SIcon);
+  expect(icons).toHaveLength(1);
+  const parent = icons[0].parent!;
+  expect(StyleSheet.flatten(parent.props.style)).toMatchObject({flexDirection: 'row', alignItems: 'center'});
+  expect(parent.findAllByType(Text).some(n => n.props.children === 'Trace')).toBe(true);
+  expect(StyleSheet.flatten(row.findAllByType(Text).find(n => n.props.children === 'Recorded tool calls')!.props.style).marginLeft).toBe(28);
 });

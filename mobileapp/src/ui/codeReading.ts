@@ -9,6 +9,7 @@ export type CodeLanguage =
   | 'html'
   | 'css'
   | 'yaml'
+  | 'markdown'
   | 'text';
 export type CodeTokenKind =
   | 'plain'
@@ -46,6 +47,8 @@ const aliases: Record<string, CodeLanguage> = {
   scss: 'css',
   yaml: 'yaml',
   yml: 'yaml',
+  md: 'markdown',
+  markdown: 'markdown',
   text: 'text',
   plaintext: 'text',
 };
@@ -114,6 +117,13 @@ export function codeTokens(
   while (i < cap && out.length < MAX_TOKENS) {
     const c = source[i],
       next = source[i + 1];
+    if (language === 'markdown' && '#*_`['.includes(c)) {
+      const token = /^(?:#{1,6} [^\n]*|\*\*[^\n]*?\*\*|__[^\n]*?__|`[^`\n]+`|\[[^\]\n]*\]\([^\)\n]*\))/.exec(source.slice(i, cap));
+      if (token) {
+        add(i + token[0].length, c === '#' ? 'keyword' : c === '`' ? 'string' : 'property');
+        continue;
+      }
+    }
     const hashComment =
       c === '#' && ['shell', 'python', 'yaml'].includes(language);
     const slashComment =
@@ -238,5 +248,6 @@ export function codeLabel(source: string, hint = '') {
     html: 'HTML',
     css: 'CSS',
     text: 'Text',
+    markdown: 'Markdown',
   }[language];
 }

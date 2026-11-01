@@ -24,9 +24,11 @@ test.each([undefined, 59, 0])('chat collapse control clears the safe top %s and 
     } else {
       expect(style.position).toBe('absolute');
       expect(style.top).toBe(controlsTop);
-      expect(style.left).toBe(0);
-      expect(style.right).toBe(0);
+      expect(style.left).toBeUndefined();
+      expect(style.right).toBe(14);
       expect(style.height).toBe(44);
+      expect(style.backgroundColor).toBe('transparent');
+      expect(bar.props.pointerEvents).toBe('box-none');
       const scroll = tree.root.findByType(ScrollView);
       expect(StyleSheet.flatten(scroll.props.contentContainerStyle).paddingTop).toBe(controlsTop + 44);
       expect(style.borderWidth ?? 0).toBe(0);

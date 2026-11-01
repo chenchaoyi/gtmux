@@ -1,4 +1,4 @@
-import { diffFiles, diffPresentation } from './diffModel';
+import { diffDisplayRows, diffFiles, diffPresentation } from './diffModel';
 const source =
   'diff --git a/a.go b/a.go\nindex x..y\n--- a/a.go\n+++ b/a.go\n@@ -2,2 +2,3 @@\n old\n-gone\n+new\n+extra\n@@ -8 +9 @@\n-before\n+after\ndiff --git a/b.txt b/b.txt\n--- a/b.txt\n+++ b/b.txt\n@@ -1 +1 @@\n-x\n+y';
 test('files and hunks count only real additions and keep line numbers', () => {
@@ -48,4 +48,27 @@ test('Git octal-quoted UTF-8 and literal percent filenames remain recognizable',
   expect(
     diffFiles('diff --git "a/100% ready.go" "b/100% ready.go"')[0].path,
   ).toBe('100% ready.go');
+});
+
+
+test('display formatting retains original patch numbers and does not change the source', () => {
+  const raw = 'diff --git a/a.js b/a.js\n--- a/a.js\n+++ b/a.js\n@@ -7 +7 @@\n-const old=1;\n+const current={value:1};';
+  const presentation = diffPresentation(raw);
+  const shown = diffDisplayRows(presentation, line => line.replace('{value:1}', '{\n  value: 1\n}'));
+  const start = shown.lines.indexOf('+const current={');
+  expect(shown.meta[start].next).toBe(7);
+  expect(shown.meta[start + 1]).toMatchObject({continuation: true, role: 'add'});
+  expect(shown.meta[start + 1].next).toBeUndefined();
+  expect(shown.meta[start + 2].next).toBeUndefined();
+  expect(presentation.files[0].raw).toBe(raw);
+});
+test('complete long lines are split without losing Unicode or the final character', () => {
+  const long = 'x'.repeat(1023) + '🙂鲸'.repeat(1500) + 'END';
+  const raw = 'diff --git a/a.txt b/a.txt\n--- a/a.txt\n+++ b/a.txt\n@@ -1 +1 @@\n+' + long;
+  const shown = diffDisplayRows(diffPresentation(raw));
+  const code = shown.lines.filter((_, i) => shown.meta[i].kind === 'code');
+  expect(code.map(line => line.slice(1)).join('')).toBe(long);
+  expect(code.every(line => line.length <= 1025)).toBe(true);
+  expect(code.at(-1)).toContain('END');
+  expect(shown.shortened).toBe(false);
 });

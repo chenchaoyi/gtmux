@@ -1,4 +1,4 @@
-// Generated from mobileapp/src/ui/codeReading.ts; SHA256 42283cf94f3dbdbe0b420f0eecb7bcdee30cd8a4b33492690e31751f68702328
+// Generated from mobileapp/src/ui/codeReading.ts; SHA256 f392d41d95fb80d3746ad6704ee0e99ea659eb27eb5d3dbd23e8e049c3e0d5d2
 (function(root){var exports={};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -36,6 +36,8 @@ const aliases = {
     scss: 'css',
     yaml: 'yaml',
     yml: 'yaml',
+    md: 'markdown',
+    markdown: 'markdown',
     text: 'text',
     plaintext: 'text',
 };
@@ -96,6 +98,13 @@ function codeTokens(source, language) {
     };
     while (i < cap && out.length < MAX_TOKENS) {
         const c = source[i], next = source[i + 1];
+        if (language === 'markdown' && '#*_`['.includes(c)) {
+            const token = /^(?:#{1,6} [^\n]*|\*\*[^\n]*?\*\*|__[^\n]*?__|`[^`\n]+`|\[[^\]\n]*\]\([^\)\n]*\))/.exec(source.slice(i, cap));
+            if (token) {
+                add(i + token[0].length, c === '#' ? 'keyword' : c === '`' ? 'string' : 'property');
+                continue;
+            }
+        }
         const hashComment = c === '#' && ['shell', 'python', 'yaml'].includes(language);
         const slashComment = c === '/' &&
             ['javascript', 'go', 'rust', 'swift', 'css'].includes(language) &&
@@ -210,6 +219,7 @@ function codeLabel(source, hint = '') {
         html: 'HTML',
         css: 'CSS',
         text: 'Text',
+        markdown: 'Markdown',
     }[language];
 }
 

@@ -117,3 +117,11 @@ test('Go and other source languages keep recognizable labels and syntax', () => 
     ]),
   );
 });
+
+test('Markdown diffs retain all text and highlight inline structure in either wrapping mode', () => {
+  const source = '# Title\n**Important** with `source` and [link](https://example.invalid).';
+  expect(codeLanguage(source, 'md')).toBe('markdown');
+  const tokens = codeTokens(source, 'markdown');
+  expect(tokens.map(t => t.text).join('')).toBe(source);
+  expect(tokens).toEqual(expect.arrayContaining([{text: '**Important**', kind: 'property'}, {text: '`source`', kind: 'string'}]));
+});

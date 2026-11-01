@@ -51,6 +51,7 @@ export function AnchoredMenu({
   sectionLabels,
   footer,
   preferredWidth = WIDTH,
+  iconPlacement = 'trailing',
 }: {
   visible: boolean;
   /** null until the control is measured; if that never comes, the window's top right. */
@@ -69,6 +70,7 @@ export function AnchoredMenu({
   /** Inline settings update without dismissing the menu. */
   footer?: React.ReactNode;
   preferredWidth?: number;
+  iconPlacement?: 'leading' | 'trailing';
 }) {
   useModalEscape(visible, onClose);
   const {width: winW, height: winH} = useWindowDimensions();
@@ -171,16 +173,19 @@ export function AnchoredMenu({
                     style={[styles.item, item.description !== undefined && styles.choice, item.selected && {backgroundColor: pal.rowSelected}, item.disabled && {opacity: 0.4}]}>
                     {item.selected !== undefined && <SIcon name={item.icon} size={20} color={pal.fg2} />}
                     <View style={styles.itemText}>
+                      <View style={styles.itemTitle}>
+                      {iconPlacement === 'leading' && item.selected === undefined && <SIcon name={item.icon} size={20} color={item.danger ? DANGER : pal.fg} />}
                       <Text maxFontSizeMultiplier={CHROME_MAX_SCALE} style={[styles.label, item.description !== undefined && styles.choiceLabel, {color: item.danger ? DANGER : pal.fg}]} numberOfLines={1}>
                         {item.label}
                       </Text>
-                      {item.description !== undefined && <Text accessible={false} maxFontSizeMultiplier={CHROME_MAX_SCALE} style={[styles.description, {color: pal.fg2}]}>{item.description}</Text>}
+                      </View>
+                      {item.description !== undefined && <Text accessible={false} maxFontSizeMultiplier={CHROME_MAX_SCALE} style={[styles.description, iconPlacement === 'leading' && item.selected === undefined && styles.leadingDescription, {color: pal.fg2}]}>{item.description}</Text>}
                     </View>
-                    <View style={styles.mark}>
+                    {(iconPlacement !== 'leading' || item.selected !== undefined) && <View style={styles.mark}>
                       {item.selected === undefined
                         ? <SIcon name={item.icon} size={20} color={item.danger ? DANGER : pal.fg} />
                         : item.selected && <SIcon name="check" size={20} color={pal.fg} />}
-                    </View>
+                    </View>}
                   </TouchableOpacity>
                 </View>
               ))}
@@ -232,6 +237,8 @@ const styles = StyleSheet.create({
   label: {fontSize: 17, flexShrink: 1},
   body: {flexGrow: 0, flexShrink: 1},
   itemText: {flex: 1, gap: 3},
+  itemTitle: {flexDirection: 'row', alignItems: 'center', gap: 8},
+  leadingDescription: {marginLeft: 28},
   mark: {width: 20, alignItems: 'center'},
   choice: {minHeight: 64, paddingHorizontal: 12, paddingVertical: 10, marginHorizontal: 8, borderRadius: 8},
   choiceLabel: {fontSize: 15, lineHeight: 20, fontWeight: '400'},

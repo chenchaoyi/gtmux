@@ -39,9 +39,9 @@ it('draws on a frame of the picture, and exports that frame alone at its pixels 
     wrap.props.onLayout({nativeEvent: {layout: {x: 0, y: 0, width: 378, height: 600}}});
   });
   const frame = host(t, 'markup-frame')[0];
-  const fitW = (1290 / 2796) * 600;
+  const fitW = (1290 / 2796) * 576;
   expect(frame.props.style.width).toBeCloseTo(fitW);
-  expect(frame.props.style.height).toBeCloseTo(600);
+  expect(frame.props.style.height).toBeCloseTo(576);
 
   // Redact a box with the real PanResponder.
   await act(async () => {
@@ -89,7 +89,7 @@ it('draws on a frame of the picture, and exports that frame alone at its pixels 
   expect(atCapture.style.left).toBeLessThan(-430); // off screen
   const [, , vw, vh] = atCapture.viewBox.split(' ').map(Number);
   expect(vw).toBeCloseTo(fitW);
-  expect(vh).toBeCloseTo(600);
+  expect(vh).toBeCloseTo(576);
   // The same box, in the same viewBox units: x 10..110 of fitW, y 20..220 of 600.
   expect(atCapture.rects).toHaveLength(1);
   expect(atCapture.rects[0]).toMatchObject({x: 10, y: 20, width: 100, height: 200, fill: '#000000'});
@@ -232,4 +232,35 @@ describe('a large picture', () => {
     expect(t.root.findByProps({testID: 'markup-done'}).props.disabled).toBe(false);
     act(() => t.unmount());
   });
+});
+
+it('pan and zoom never create strokes, and resized viewports retain annotation coordinates', async () => {
+  let t!: renderer.ReactTestRenderer;
+  await act(async () => {t = renderer.create(<ImageMarkup visible uri="file:///tmp/synthetic.png" lang="en" onCancel={() => {}} onDone={() => {}} />);});
+  const wrap = t.root.findAll(n => typeof n.type === 'string' && typeof n.props.onLayout === 'function')[0];
+  const resize = (width: number, height: number) => act(() => wrap.props.onLayout({nativeEvent: {layout: {width, height}}}));
+  resize(378, 600);
+  const frame = () => host(t, 'markup-frame')[0];
+  const pad = () => frame().findAll(n => typeof n.type === 'string' && typeof n.props.onResponderGrant === 'function')[0];
+  const initial = {...frame().props.style};
+  act(() => t.root.findByProps({testID: 'markup-tool-pan'}).props.onPress());
+  act(() => {pad().props.onResponderGrant(touch(10, 20)); pad().props.onResponderMove(touch(80, 90)); pad().props.onResponderRelease(touch(80, 90));});
+  expect(frame().findAllByType(Rect)).toHaveLength(0);
+  act(() => t.root.findByProps({testID: 'markup-zoom-in'}).props.onPress());
+  expect(host(t, 'markup-viewport')[0].props.zoomScale).toBe(1.5);
+  act(() => t.root.findByProps({testID: 'markup-tool-box'}).props.onPress());
+  act(() => {pad().props.onResponderGrant(touch(10, 20)); pad().props.onResponderMove(touch(110, 220)); pad().props.onResponderRelease(touch(110, 220));});
+  resize(800, 420);
+  const current = frame().props.style;
+  const sx = current.width / initial.width, sy = current.height / initial.height;
+  act(() => {pad().props.onResponderGrant(touch(10 * sx, 20 * sy)); pad().props.onResponderMove(touch(110 * sx, 220 * sy)); pad().props.onResponderRelease(touch(110 * sx, 220 * sy));});
+  const rects = frame().findAllByType(Rect);
+  expect(rects).toHaveLength(2);
+  expect(rects[1].props.x).toBeCloseTo(rects[0].props.x);
+  expect(rects[1].props.y).toBeCloseTo(rects[0].props.y);
+  expect(rects[1].props.width).toBeCloseTo(rects[0].props.width);
+  expect(rects[1].props.height).toBeCloseTo(rects[0].props.height);
+  act(() => t.root.findByProps({testID: 'markup-fit'}).props.onPress());
+  expect(host(t, 'markup-viewport')[0].props.zoomScale).toBe(1);
+  act(() => t.unmount());
 });
