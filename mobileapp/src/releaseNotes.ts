@@ -15,11 +15,13 @@ export const RELEASE_NOTES: ReleaseNote[] = [
     version: '1.0.166',
     en: [
       'Trace keeps your session’s turn numbers and loads earlier records in smaller pages. Opened history, fold choices and reading position stay in place during live updates.',
+      'Code readers put Full call first, followed by embedded scripts in source order. HQ keeps the briefing and local resource warnings in its summary card. Diff keeps the original patch layout without a redundant format switch.',
       'Terminal tab-order snapshots back off after failures and keep the last valid order. Notification diagnostics group repeated failures and show recovery clearly. Storage checks separate active data from saved releases and reports.',
       'Push and connection services reject malformed or oversized requests before provider work.',
     ],
     zh: [
       '长会话轨迹保留原来的轮次，可分段加载更早记录。实时更新时保留阅读位置、展开选择和已加载的历史。',
+      '代码阅读先展示 Full call，再按源码顺序展示内嵌脚本。HQ 摘要卡直接呈现当前进展和本机资源警示。Diff 保留原始补丁排版，去掉多余的格式开关。',
       '终端标签顺序保存失败时保留上次结果，并逐步延长重试间隔。通知诊断合并重复错误，变化和恢复仍可见；存储检查区分日常数据、发行归档和报告。',
       '通知和连接服务加强异常请求校验。',
     ],
