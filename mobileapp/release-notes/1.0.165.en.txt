@@ -1,0 +1,3 @@
+Read tool input consistently in Chat and Trace. Recorded commands can show their Python and JavaScript scripts separately, with compact formatting and original-source copy.
+
+Expanded Trace tool groups now show a clear hierarchy of individual calls.
