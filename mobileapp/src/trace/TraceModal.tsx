@@ -218,18 +218,6 @@ export function TraceReader({
   const groups = useMemo(() => groupTurns(events), [events]);
   const searching = !!query.trim() || kind !== 'all' || session !== 'all';
   const latestGroup = groups.at(-1);
-  useEffect(() => {
-    if (
-      sameIdentity &&
-      !searching &&
-      stick.current &&
-      latestGroup &&
-      turnDefault === undefined
-    )
-      setExpandedTurns(value =>
-        value[latestGroup.key] ? value : { ...value, [latestGroup.key]: true },
-      );
-  }, [sameIdentity, searching, latestGroup?.key, turnDefault]); // eslint-disable-line react-hooks/exhaustive-deps
   const timeline = useMemo(
     () =>
       timelineRows(groups, expandedTurns, expandedCalls, searching, {
@@ -562,10 +550,11 @@ export function TraceReader({
             </ChromeText>
           </View>
           <ChromeText
+            testID="trace-progress-session"
             numberOfLines={1}
             style={[styles.progressText, { color: pal.fg }]}
           >
-            {traceEventPreview(latestEvent, lang)}
+            {primary(agent)}
           </ChromeText>
         </View>
       )}

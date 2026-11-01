@@ -26,6 +26,7 @@ const keyWidth = (zh: boolean) => (zh ? 48 : 80);
 
 export interface HQHeaderProps {
   model: HeaderModel;
+  showContext?: boolean;
   /** Connection state, shown as the dot beside the name. */
   conn: ConnState;
   demo?: boolean;
@@ -172,7 +173,7 @@ function GridRow({
 }
 
 export function HQHeader({
-  model, conn, demo, boardValue, knowledgeValue, usageValue, pending,
+  model, showContext = true, conn, demo, boardValue, knowledgeValue, usageValue, pending,
   open, onToggle, onBack, backLabel, pendingMatters, tools, onOpenBoard, onOpenKnowledge, onOpenActs, onOpenUsage, pal, zh,
 }: HQHeaderProps) {
   const {height, fontScale} = useWindowDimensions();
@@ -208,7 +209,7 @@ export function HQHeader({
       {/* ONE card: the verdict is its head, and what the verdict opens is its body. A
           disclosure control and the thing it discloses have to be one object, or the
           control reads as a caption. */}
-      <View style={[styles.card, {backgroundColor: pal.surface}]}>
+      {showContext && <View style={[styles.card, {backgroundColor: pal.surface}]}>
         <TouchableOpacity
           testID="hq-verdict"
           accessibilityRole="button"
@@ -357,7 +358,7 @@ export function HQHeader({
           </View>
         )}
         </ScrollView>}
-      </View>
+      </View>}
     </View>
   );
 }

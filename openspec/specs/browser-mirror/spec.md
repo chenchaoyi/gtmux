@@ -779,3 +779,14 @@ original call, contain the inspector and preserve keyboard focus when details cl
 - **WHEN** the viewport changes through portrait, landscape and narrow tablet widths
 - **THEN** the original selected source remains readable without widening the page
 - **AND** closing details restores focus to its original record without sending input
+
+### Requirement: Compact Diff controls and folded Trace entry
+Browser working-tree Diff SHALL retain independent formatting and wrapping, shared syntax colors and one compact source-number gutter. Copy SHALL retain the original patch. Trace SHALL begin with folded turns and preserve manual disclosure choices across updates; newly arriving turns SHALL remain folded unless the reader chose a bulk-open default.
+
+#### Scenario: Change wrapping without discarding display formatting
+- **WHEN** a reader formats a patch and toggles wrapping
+- **THEN** syntax colors and formatting remain intact and copying yields the complete original patch
+
+#### Scenario: Open Trace while new turns arrive
+- **WHEN** Trace is first opened and another turn arrives
+- **THEN** every turn remains folded until the reader explicitly opens it or searches its records

@@ -2706,3 +2706,27 @@ Phone and iPad SHALL show light vertical scroll indicators on the dark Diff canv
 - **WHEN** a reader scrolls vertically with the horizontal view at its left, middle or right position
 - **THEN** the vertical indicator remains visible at the current viewport edge rather than the long-line content edge
 - **AND** changing the viewport or reading appearance does not hide it or mount the whole diff
+
+### Requirement: Compact complete Diff and independent reading controls
+Native working-tree Diff SHALL keep wrap and display formatting independent, retain syntax colors, use one compact original source-number gutter, and virtualize bounded Unicode-safe display segments without dropping a structured line tail. Continuations SHALL NOT invent source line numbers; Copy SHALL preserve the original patch.
+
+#### Scenario: Format a long recorded change and disable wrapping
+- **WHEN** a reader formats a complete supported code line and changes wrapping
+- **THEN** formatting and syntax colors remain selected independently
+- **AND** additions, deletions, original source numbers and complete original copying remain available
+
+### Requirement: Focused HQ conversations and collapsed Trace entry
+HQ conversations reached from the matter workspace SHALL omit its duplicate resource, brief and activity overview while preserving identity, Back, session tools and mediated input. Legacy servers without the workspace SHALL retain their existing resource entry. Session tools SHALL place action icons before their titles. Trace progress SHALL use the same primary session name as the session list. Turns SHALL start collapsed, including arriving turns, until an explicit disclosure, search or latest action opens them.
+
+#### Scenario: Read new trace activity without opening every turn
+- **WHEN** a reader opens Trace and new turns arrive
+- **THEN** turn contents remain folded and the progress card identifies the selected session
+- **AND** individual manual disclosures survive refresh
+
+### Requirement: Reachable image annotation edges and independent viewport movement
+The markup editor SHALL place its canvas between safe-area-aware controls, keep all image edges reachable, and offer viewport pan, zoom and Fit without creating annotation marks. Resizing or transforming the viewport SHALL preserve annotation positions and the original-pixel export. Full-screen conversation controls SHALL float independently without an opaque full-width background or intercepting gestures outside their targets.
+
+#### Scenario: Move and resize an annotated screenshot
+- **WHEN** a reader pans, zooms or resizes an annotated screenshot viewport
+- **THEN** existing marks remain aligned with the image and viewport movement creates no marks
+- **AND** Done exports the original picture dimensions with marks at their original image coordinates

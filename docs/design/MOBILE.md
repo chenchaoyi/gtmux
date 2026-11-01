@@ -1691,7 +1691,7 @@ details and acceptance boundaries.
 
 ### Bounded Diff reading
 
-Diff uses a virtualized vertical list inside a horizontal scroller. Only a window of native rows is mounted; all returned rows remain reachable. Row metrics follow system text size. Lines over 2048 UTF-16 units are shortened at a safe character boundary with an explicit notice, bounding native text measurement. Failed requests show Retry separately from an empty repository. Closing or changing panes retires earlier reads.
+Diff uses a virtualized vertical list inside a horizontal scroller. Only a window of native rows is mounted; all returned rows remain reachable. Row metrics follow system text size. Structured patch lines are split into bounded display rows at Unicode-safe boundaries without dropping their tail. A compact single gutter shows the original old line for deletions and new line for additions/context; continuation rows do not invent source line numbers. Wrap and compact formatting are independent, syntax coloring persists in either state, and Copy preserves the original patch. The unstructured legacy reader retains its explicit bounded-preview notice. Failed requests show Retry separately from an empty repository. Closing or changing panes retires earlier reads.
 
 ### Trace disclosures and detail modes
 
@@ -1707,7 +1707,7 @@ The matter overview leads with board, knowledge and usage summary cards, using e
 
 ### HQ conversation context (2026-10-31)
 
-Talk to HQ is a single conversation on workspace-capable servers. It shares the overview's matter counts and keeps that snapshot current; waiting agent sessions are not a second HQ attention queue. The Overview back action carries the actual pending-matter count. Resources, machine details and HQ updates fold together, with a critical condition retained in the compact headline. Expanded context scrolls within a bounded region so the conversation retains space. Phone and iPad share this behavior; the modern iPad conversation omits the legacy waiting-session inspector. Old-server fallback labels that separate concept Waiting sessions. HQ logo and fixed navigation typography match the overview. This supersedes the earlier always-standing resource-door behavior inside the conversation; overview summaries remain directly visible.
+Talk to HQ is a single conversation on workspace-capable servers. It shares the overview's matter counts and keeps that snapshot current; waiting agent sessions are not a second HQ attention queue. The Overview back action carries the actual pending-matter count. Resources, machine details and HQ updates stay on the HQ overview rather than repeating inside this conversation. Legacy servers retain a bounded, collapsible context area. Phone and iPad share this behavior; the modern iPad conversation omits the legacy waiting-session inspector. Old-server fallback labels that separate concept Waiting sessions. HQ logo and fixed navigation typography match the overview. This supersedes the earlier always-standing resource-door behavior inside the conversation; overview summaries remain directly visible.
 
 
 ### Code reading controls (2026-10-31)
@@ -1727,9 +1727,9 @@ Chat and Terminal and remembered across sessions, including keyboard adjustments
 11/13/15 pt index settings migrate by their actual size rather than reinterpreting indices.
 
 Diff uses file cards with per-file and total change counts, independently folded hunks,
-old/new line numbers and the same syntax palette. A virtualized native list keeps large
+a single compact source-number gutter and the same syntax palette. A virtualized native list keeps large
 changes bounded; structured diffs wrap by default and retain original-width reading.
-A per-file reader and Copy retain the original patch, including shortened list lines.
+A per-file reader and Copy retain the original patch, including every long-line display segment.
 The range is explicitly the working tree, not an inferred last turn or full repository.
 The browser consumes the same structure and mounts large hunks in readable batches.
 
@@ -1747,3 +1747,9 @@ it does not also act on the HQ page underneath. A nested reader or menu temporar
 owns the shortcut. This is shared phone/iPad behavior, not an iPad-only screen.
 Diff keeps six-digit gutters legible, caps metadata at the existing chrome scale,
 and wraps its content inside the measured canvas at accessibility text sizes.
+
+HQ conversations reached from the shared workspace retain identity, Back and session tools without repeating the workspace resource cards, brief or activity overview. Those readers remain reachable from the HQ overview; older servers retain the legacy overview fallback. Session-tools action icons precede their titles.
+
+Trace progress uses the shared session-list primary name rather than a latest-reply excerpt. All turns begin collapsed, including newly arriving turns, until explicitly opened or found by a search. The full-screen chat actions float independently on a transparent, pass-through overlay rather than an opaque horizontal strip.
+
+The image markup editor places the canvas between safe-area-aware toolbars. Move and native pinch zoom share the same image/annotation surface, with explicit zoom and Fit controls. A small canvas inset leaves each image edge editable. Annotation coordinates remain fixed to their initial image frame across viewport resize; exporting renders that original coordinate space at the original image pixel dimensions, independent of zoom and pan. Palette targets extend to at least 44pt and are named for accessibility.

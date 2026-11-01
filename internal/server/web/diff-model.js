@@ -1,10 +1,11 @@
-// Generated from mobileapp/src/ui/diffModel.ts; SHA256 966424d36d2995b7e2e49fe5f4890c7493d4ae85008b1393917d6f7470adee31
+// Generated from mobileapp/src/ui/diffModel.ts; SHA256 bc6a89b206a4770606fcaa07759e04a2143164783c57a069a19acddbfca41737
 (function(root){var exports={};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.diffFiles = diffFiles;
 exports.diffPresentation = diffPresentation;
 exports.hunkRange = hunkRange;
+exports.diffDisplayRows = diffDisplayRows;
 function gitPath(value) {
     if (value.startsWith('"') && value.endsWith('"')) {
         try {
@@ -184,6 +185,37 @@ function hunkRange(header) {
     const start = Number(count > 0 ? match[3] : match[1]);
     const span = count > 0 ? count : Number(match[2] ?? 1);
     return span > 1 ? `${start}–${start + span - 1}` : String(start);
+}
+/** Project display-only formatting into bounded native rows, retaining source numbers. */
+function diffDisplayRows(presentation, format = source => source) {
+    const lines = [], meta = [];
+    let columns = 0;
+    presentation.lines.forEach((line, index) => {
+        const original = presentation.meta[index];
+        if (original?.kind !== 'code') {
+            lines.push(line);
+            meta.push(original);
+            return;
+        }
+        const display = format(line.slice(1), original.path || '');
+        let part = 0;
+        for (const physical of display.split('\n')) {
+            let offset = 0;
+            do {
+                let end = Math.min(offset + 1024, physical.length);
+                if (end < physical.length && /[\uD800-\uDBFF]/.test(physical[end - 1]))
+                    end--;
+                const source = physical.slice(offset, end);
+                lines.push((part ? ' ' : line[0]) + source);
+                meta.push(part ? { ...original, key: original.key + ':part:' + part,
+                    old: undefined, next: undefined, continuation: true } : original);
+                columns = Math.max(columns, Array.from(source).reduce((n, c) => n + (c === '\t' ? 4 : c.codePointAt(0) >= 0x1100 ? 2 : 1), 0));
+                part++;
+                offset = end;
+            } while (offset < physical.length);
+        }
+    });
+    return { lines, meta, columns, shortened: false };
 }
 
 if(typeof module==="object"&&module.exports)module.exports=exports;else root.GtmuxDiffModel=exports;})(typeof window!=="undefined"?window:globalThis);

@@ -1,6 +1,7 @@
 // ImageMarkup — an annotate-then-send editor (MOBILE §4 / B3). When the clipboard
 // holds an image and you tap Paste, this opens full-screen: the image fills the
-// canvas and you annotate over it with a tool — brush (freehand), arrow, box, or
+// canvas with an edge inset; Move and pinch expose the full picture. Draw with
+// brush (freehand), arrow, box, or
 // redact (打码, an opaque box to hide secrets) — in one of 5 colors. Undo/Clear
 // step back. Done flattens the picture + annotations, at the picture's own pixels and
 // nothing around it, into a JPEG (react-native-view-shot; markupGeometry has the
@@ -17,22 +18,24 @@ import {
   Modal,
   PanResponder,
   PixelRatio,
+  ScrollView,
   StatusBar,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
+import {ChromeText} from './ChromeText';
 import Svg, {Line, Path, Polygon, Rect} from 'react-native-svg';
 import {captureRef} from 'react-native-view-shot';
 import {Lang} from '../i18n';
 import {captureSize, exportPixels, exportPoints, fitSize, MARKUP_JPEG_QUALITY, MARKUP_SCALED_EDGE, Size} from './markupGeometry';
 import {MODAL_ORIENTATIONS} from './modalOrientations';
 
-type Tool = 'brush' | 'arrow' | 'box' | 'redact';
+type Tool = 'brush' | 'arrow' | 'box' | 'redact' | 'pan';
 
 interface Shape {
-  tool: Tool;
+  tool: Exclude<Tool, 'pan'>;
   color: string;
   d?: string; // brush path
   x1?: number;
@@ -43,15 +46,33 @@ interface Shape {
 
 // 5-color palette (B3). Redact ignores color (always opaque, see REDACT).
 const PALETTE = ['#FF3B30', '#FF9500', '#34C759', '#0A84FF', '#FFFFFF'];
+const COLOR_LABELS = ['Red', 'Orange', 'Green', 'Blue', 'White'];
+const COLOR_LABELS_ZH = ['红色', '橙色', '绿色', '蓝色', '白色'];
 const REDACT = '#000000';
 const ACCENT = '#FF3B30';
 
-const TOOLS: {key: Tool; glyph: string; zh: string; en: string}[] = [
-  {key: 'brush', glyph: '✎', zh: '画笔', en: 'Draw'},
-  {key: 'arrow', glyph: '↗', zh: '箭头', en: 'Arrow'},
-  {key: 'box', glyph: '▢', zh: '方框', en: 'Box'},
-  {key: 'redact', glyph: '▦', zh: '打码', en: 'Redact'},
+const TOOLS: {key: Tool; zh: string; en: string}[] = [
+  {key: 'pan', zh: '移动', en: 'Move'},
+  {key: 'brush', zh: '画笔', en: 'Draw'},
+  {key: 'arrow', zh: '箭头', en: 'Arrow'},
+  {key: 'box', zh: '方框', en: 'Box'},
+  {key: 'redact', zh: '打码', en: 'Redact'},
 ];
+
+function imagePoint(x: number, y: number, drawing: Size | null, display: Size | null) {
+  if (!drawing || !display) return {x, y};
+  return {x: Math.max(0, Math.min(drawing.w, x * drawing.w / display.w)),
+    y: Math.max(0, Math.min(drawing.h, y * drawing.h / display.h))};
+}
+
+function MarkupToolIcon({tool, color}: {tool: Tool; color: string}) {
+  return <Svg width={22} height={22} viewBox="0 0 24 24">
+    {tool === 'pan' ? <Path d="M12 3v18M3 12h18M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3" stroke={color} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    : tool === 'brush' ? <Path d="M4 20l4-1 12-12-4-4L4 15v5zM14 5l4 4M4 15l4 4" stroke={color} strokeWidth={1.7} strokeLinejoin="round" fill="none" />
+    : tool === 'arrow' ? <Path d="M5 19L19 5M9 5h10v10" stroke={color} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    : <Rect x={4} y={4} width={16} height={16} rx={2} stroke={color} strokeWidth={1.7} fill={tool === 'redact' ? color : 'none'} />}
+  </Svg>;
+}
 
 function arrowHead(x1: number, y1: number, x2: number, y2: number): string {
   const ang = Math.atan2(y2 - y1, x2 - x1);
@@ -114,6 +135,10 @@ export function ImageMarkup({
   const toolRef = useRef<Tool>('brush'); // read inside the (once-created) responder
   const colorRef = useRef(PALETTE[0]);
   const shotRef = useRef<View>(null);
+  const scrollRef = useRef<ScrollView>(null);
+  const [zoom, setZoom] = useState(1);
+  const drawingFit = useRef<Size | null>(null);
+  const displayedFit = useRef<Size | null>(null);
   // The picture's own size, and the room the canvas has: together they lay the frame out
   // to the picture's shape. A picture whose size cannot be read is drawn over the whole
   // canvas and exported at the canvas's size, as before.
@@ -128,6 +153,8 @@ export function ImageMarkup({
 
   useEffect(() => {
     setNatural(null);
+    drawingFit.current = null;
+    setZoom(1);
     setSizeFailed(false);
     if (!uri) return undefined;
     let live = true;
@@ -145,7 +172,11 @@ export function ImageMarkup({
     };
   }, [uri]);
 
-  const fit = box ? (natural ? fitSize(natural, box) : sizeFailed ? box : null) : null;
+  const room = box ? {w: Math.max(1, box.w - 24), h: Math.max(1, box.h - 24)} : null;
+  const fit = room ? (natural ? fitSize(natural, room) : sizeFailed ? room : null) : null;
+  displayedFit.current = fit;
+  if (fit && !drawingFit.current) drawingFit.current = fit;
+  const drawing = drawingFit.current ?? fit;
   const scale = PixelRatio.get();
   const own = fit ? natural ?? {w: fit.w * scale, h: fit.h * scale} : null;
   const px = own ? exportPixels(own, scaledTo ?? Infinity) : null;
@@ -162,10 +193,13 @@ export function ImageMarkup({
 
   const responder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponder: e => toolRef.current !== 'pan' && e.nativeEvent.touches.length < 2,
+      onMoveShouldSetPanResponder: e => toolRef.current !== 'pan' && e.nativeEvent.touches.length < 2,
+      onPanResponderTerminationRequest: () => true,
+      onPanResponderTerminate: () => {draftRef.current = null; setTick(v => v + 1);},
       onPanResponderGrant: e => {
-        const {locationX: x, locationY: y} = e.nativeEvent;
+        if (toolRef.current === 'pan' || e.nativeEvent.touches.length > 1) return;
+        const {x, y} = imagePoint(e.nativeEvent.locationX, e.nativeEvent.locationY, drawingFit.current, displayedFit.current);
         const t = toolRef.current;
         const c = t === 'redact' ? REDACT : colorRef.current;
         draftRef.current =
@@ -175,7 +209,8 @@ export function ImageMarkup({
         setTick(v => v + 1);
       },
       onPanResponderMove: e => {
-        const {locationX: x, locationY: y} = e.nativeEvent;
+        if (e.nativeEvent.touches.length > 1) {draftRef.current = null; setTick(v => v + 1); return;}
+        const {x, y} = imagePoint(e.nativeEvent.locationX, e.nativeEvent.locationY, drawingFit.current, displayedFit.current);
         const d = draftRef.current;
         if (!d) return;
         if (d.tool === 'brush') d.d += ` L${x.toFixed(1)},${y.toFixed(1)}`;
@@ -218,12 +253,13 @@ export function ImageMarkup({
     setScaledTo(edge);
     // Mount the export frame and wait for its picture to load at that size: a capture
     // taken before that would be the frame's background with the marks on it.
+    let loadTimer: ReturnType<typeof setTimeout> | undefined;
     const loaded = new Promise<void>(resolve => {
       exportLoaded.current = resolve;
     });
     setExporting(true);
     try {
-      await Promise.race([loaded, new Promise<void>(r => setTimeout(() => r(), 5000))]);
+      await Promise.race([loaded, new Promise<void>(r => {loadTimer = setTimeout(r, 5000);})]);
       await new Promise(r => requestAnimationFrame(() => r(undefined)));
       // The size is given, not taken from the view: see captureSize for the extra pixel. It
       // is worked out here from the size chosen, not read from this render's `px`, which
@@ -232,6 +268,7 @@ export function ImageMarkup({
       const at = target ? captureSize(target, scale) : undefined;
       return await captureRef(shotRef, {format: 'jpg', quality: MARKUP_JPEG_QUALITY, result: 'tmpfile', ...at});
     } finally {
+      clearTimeout(loadTimer);
       setExporting(false);
     }
   };
@@ -292,24 +329,25 @@ export function ImageMarkup({
   return (
     <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={visible} animationType="slide" onRequestClose={cancel} onDismiss={onDismiss}>
       <StatusBar hidden />
-      <View style={styles.root}>
+      <SafeAreaProvider>
+      <SafeAreaView testID="markup-root" style={styles.root}>
         <View style={styles.bar}>
           <TouchableOpacity onPress={cancel} hitSlop={hit}>
-            <Text style={styles.barText}>{lang === 'zh' ? '取消' : 'Cancel'}</Text>
+            <ChromeText style={styles.barText}>{lang === 'zh' ? '取消' : 'Cancel'}</ChromeText>
           </TouchableOpacity>
           <View style={styles.barMid}>
             <TouchableOpacity testID="markup-undo" onPress={undo} disabled={!hasShapes} hitSlop={hit}>
-              <Text style={[styles.barText, !hasShapes && styles.dim]}>{lang === 'zh' ? '撤销' : 'Undo'}</Text>
+              <ChromeText style={[styles.barText, !hasShapes && styles.dim]}>{lang === 'zh' ? '撤销' : 'Undo'}</ChromeText>
             </TouchableOpacity>
             <TouchableOpacity onPress={clear} disabled={!hasShapes} hitSlop={hit} style={styles.clearBtn}>
-              <Text style={[styles.barText, !hasShapes && styles.dim]}>{lang === 'zh' ? '清除' : 'Clear'}</Text>
+              <ChromeText style={[styles.barText, !hasShapes && styles.dim]}>{lang === 'zh' ? '清除' : 'Clear'}</ChromeText>
             </TouchableOpacity>
           </View>
           <TouchableOpacity testID="markup-done" onPress={done} disabled={busy || !fit} hitSlop={hit}>
             {busy ? (
               <ActivityIndicator color={ACCENT} />
             ) : (
-              <Text style={[styles.barText, styles.done]}>{lang === 'zh' ? '完成' : 'Done'}</Text>
+              <ChromeText style={[styles.barText, styles.done]}>{lang === 'zh' ? '完成' : 'Done'}</ChromeText>
             )}
           </TouchableOpacity>
         </View>
@@ -317,13 +355,28 @@ export function ImageMarkup({
         <View
           style={styles.canvasWrap}
           onLayout={e => setBox({w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height})}>
+          <ScrollView
+            ref={scrollRef}
+            testID="markup-viewport"
+            style={{flex: 1, width: '100%'}}
+            contentContainerStyle={styles.imageContent}
+            centerContent
+            minimumZoomScale={1}
+            maximumZoomScale={6}
+            zoomScale={zoom}
+            pinchGestureEnabled
+            scrollEnabled={tool === 'pan'}
+            bounces={false}
+            onScroll={e => {const value = e.nativeEvent.zoomScale; if (value > 0) setZoom(value);}}
+            scrollEventThrottle={32}
+          >
           {fit ? (
             // The frame is the picture's own shape: a mark lands on the picture or nowhere,
             // and its points are the picture's, as displayed (markupGeometry).
             <View testID="markup-frame" style={{width: fit.w, height: fit.h}}>
               {uri && <Image source={{uri}} style={StyleSheet.absoluteFill} resizeMode="stretch" />}
               <View style={StyleSheet.absoluteFill} {...responder.panHandlers}>
-                <Svg style={StyleSheet.absoluteFill} width={fit.w} height={fit.h}>
+                <Svg pointerEvents="none" style={StyleSheet.absoluteFill} width={fit.w} height={fit.h} viewBox={`0 0 ${drawing?.w ?? fit.w} ${drawing?.h ?? fit.h}`}>
                   {shapes.map((s, i) => (
                     <ShapeView key={`s${i}`} s={s} k={`s${i}`} />
                   ))}
@@ -334,6 +387,12 @@ export function ImageMarkup({
           ) : (
             uri && <ActivityIndicator color="#fff" />
           )}
+          </ScrollView>
+        </View>
+        <View style={styles.zoomRow}>
+          <TouchableOpacity testID="markup-zoom-out" accessibilityRole="button" accessibilityLabel={lang === 'zh' ? '缩小' : 'Zoom out'} style={styles.zoomButton} onPress={() => setZoom(v => Math.max(1, v / 1.5))}><ChromeText style={styles.barText}>−</ChromeText></TouchableOpacity>
+          <TouchableOpacity testID="markup-fit" accessibilityRole="button" accessibilityLabel={lang === 'zh' ? '适合画布' : 'Fit image'} style={styles.zoomButton} onPress={() => {setZoom(1); scrollRef.current?.scrollTo({x: 0, y: 0, animated: false});}}><ChromeText style={styles.zoomText}>{Math.round(zoom * 100)}%</ChromeText></TouchableOpacity>
+          <TouchableOpacity testID="markup-zoom-in" accessibilityRole="button" accessibilityLabel={lang === 'zh' ? '放大' : 'Zoom in'} style={styles.zoomButton} onPress={() => setZoom(v => Math.min(6, v * 1.5))}><ChromeText style={styles.barText}>+</ChromeText></TouchableOpacity>
         </View>
         {exporting && fit && pt && (
           // Off screen, at the picture's pixels: the same marks through a viewBox of the
@@ -352,7 +411,7 @@ export function ImageMarkup({
                 onLoadEnd={() => exportLoaded.current?.()}
               />
             )}
-            <Svg style={StyleSheet.absoluteFill} width={pt.w} height={pt.h} viewBox={`0 0 ${fit.w} ${fit.h}`}>
+            <Svg style={StyleSheet.absoluteFill} width={pt.w} height={pt.h} viewBox={`0 0 ${drawing?.w ?? fit.w} ${drawing?.h ?? fit.h}`}>
               {shapes.map((s, i) => (
                 <ShapeView key={`e${i}`} s={s} k={`e${i}`} />
               ))}
@@ -367,19 +426,26 @@ export function ImageMarkup({
               <TouchableOpacity
                 key={tdef.key}
                 testID={`markup-tool-${tdef.key}`}
+                accessibilityRole="button"
+                accessibilityLabel={lang === 'zh' ? tdef.zh : tdef.en}
+                accessibilityState={{selected: tool === tdef.key}}
                 onPress={() => setTool(tdef.key)}
                 style={[styles.tool, tool === tdef.key && styles.toolOn]}>
-                <Text style={[styles.toolGlyph, tool === tdef.key && styles.toolGlyphOn]}>{tdef.glyph}</Text>
-                <Text style={[styles.toolLabel, tool === tdef.key && styles.toolGlyphOn]}>
+                <MarkupToolIcon tool={tdef.key} color={tool === tdef.key ? '#fff' : '#B5B5BE'} />
+                <ChromeText style={[styles.toolLabel, tool === tdef.key && styles.toolGlyphOn]}>
                   {lang === 'zh' ? tdef.zh : tdef.en}
-                </Text>
+                </ChromeText>
               </TouchableOpacity>
             ))}
           </View>
           <View style={[styles.colorRow, tool === 'redact' && styles.colorRowOff]}>
-            {PALETTE.map(c => (
+            {PALETTE.map((c, i) => (
               <TouchableOpacity
                 key={c}
+                accessibilityRole="button"
+                accessibilityLabel={lang === 'zh' ? COLOR_LABELS_ZH[i] : COLOR_LABELS[i]}
+                accessibilityState={{selected: color === c && tool !== 'redact', disabled: tool === 'redact'}}
+                hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}
                 disabled={tool === 'redact'}
                 onPress={() => setColor(c)}
                 style={[styles.swatch, {backgroundColor: c}, color === c && tool !== 'redact' && styles.swatchOn]}
@@ -388,12 +454,13 @@ export function ImageMarkup({
           </View>
         </View>
 
-        <Text style={styles.tip}>
+        <ChromeText style={styles.tip}>
           {tool === 'redact'
-            ? lang === 'zh' ? '拖动框选要遮挡的区域 · 完成发给 agent' : 'Drag over what to hide · Done sends it'
-            : lang === 'zh' ? '选工具标注 · 点完成发给 agent' : 'Pick a tool and annotate · Done sends it to the agent'}
-        </Text>
-      </View>
+            ? lang === 'zh' ? '拖动框选遮挡区域' : 'Drag to redact'
+            : lang === 'zh' ? '选“移动”拖动图片，或用双指缩放' : 'Move to pan · Pinch to zoom'}
+        </ChromeText>
+      </SafeAreaView>
+      </SafeAreaProvider>
     </Modal>
   );
 }
@@ -407,11 +474,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 18,
-    paddingTop: 56,
+    paddingTop: 4,
+    minHeight: 48,
     paddingBottom: 12,
   },
   barMid: {flexDirection: 'row', alignItems: 'center'},
   clearBtn: {marginLeft: 18},
+  imageContent: {flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 12},
+  zoomRow: {flexDirection: 'row', justifyContent: 'center', alignItems: 'center'},
+  zoomButton: {minWidth: 44, minHeight: 44, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 8},
+  zoomText: {color: '#fff', fontSize: 12, fontVariant: ['tabular-nums']},
   barText: {color: '#fff', fontSize: 16, fontWeight: '600'},
   dim: {color: 'rgba(255,255,255,0.3)'},
   done: {color: ACCENT, fontWeight: '700'},
@@ -419,7 +491,7 @@ const styles = StyleSheet.create({
   exportFrame: {position: 'absolute', top: 0, backgroundColor: '#000'},
   tools: {paddingHorizontal: 14, gap: 12},
   toolRow: {flexDirection: 'row', justifyContent: 'space-between', gap: 8},
-  tool: {flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.06)'},
+  tool: {flex: 1, minHeight: 44, alignItems: 'center', paddingVertical: 8, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.06)'},
   toolOn: {backgroundColor: 'rgba(255,255,255,0.18)'},
   toolGlyph: {color: 'rgba(255,255,255,0.7)', fontSize: 18, lineHeight: 22},
   toolGlyphOn: {color: '#fff'},
@@ -428,5 +500,5 @@ const styles = StyleSheet.create({
   colorRowOff: {opacity: 0.3},
   swatch: {width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: 'transparent'},
   swatchOn: {borderColor: '#fff', transform: [{scale: 1.15}]},
-  tip: {color: 'rgba(255,255,255,0.5)', fontSize: 12.5, textAlign: 'center', paddingBottom: 28, paddingTop: 10},
+  tip: {color: 'rgba(255,255,255,0.5)', fontSize: 12.5, textAlign: 'center', paddingBottom: 8, paddingTop: 8},
 });

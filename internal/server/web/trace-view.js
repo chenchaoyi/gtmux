@@ -5,7 +5,7 @@
     var T = options.T, model = window.GtmuxTrace, pageSize = 200;
     var fullInputs = new Map(), inputPending = new Set(), inputFailed = new Set();
     var current = {events: [], sessions: []}, filtered = [], presented = [], context = {}, selected = '', page = 0;
-    var expandedTurns = {}, expandedCalls = {}, defaults = {turns: true, calls: true}, disclosureHold = false;
+    var expandedTurns = {}, expandedCalls = {}, defaults = {turns: false, calls: true}, disclosureHold = false;
     var inspectorOpen = null, follow = true, inspecting = false, initialized = false, rowNodes = new Map(), lastDetail = '', lastDetailKey = '', deferred = null, lastInput = null, lastScope = '';
     var root = el('div', 'trace-view'), toolbar = el('div', 'trace-toolbar');
     var status = el('span', 'trace-status'); status.title = T('Current session status', '当前会话状态'); toolbar.appendChild(status);
@@ -269,7 +269,7 @@
       context = nextContext || {};
       var scope = JSON.stringify([context.pane_id, context.session_id, context.home_id, context.agent]);
       if (lastInput === turns && lastScope === scope) { updateStatus(); return; }
-      if (lastScope && lastScope !== scope) { initialized = false; selected = ''; page = 0; expandedTurns = {}; expandedCalls = {}; defaults = {turns: true, calls: true}; disclosureHold = false; search.value = ''; kind.value = 'all'; session.value = 'all'; lastDetail = ''; lastDetailKey = ''; }
+      if (lastScope && lastScope !== scope) { initialized = false; selected = ''; page = 0; expandedTurns = {}; expandedCalls = {}; defaults = {turns: false, calls: true}; disclosureHold = false; search.value = ''; kind.value = 'all'; session.value = 'all'; lastDetail = ''; lastDetailKey = ''; }
       lastInput = turns; lastScope = scope;
       current = model.build(turns, context);
       var priorSession = session.value || 'all', sessionSignature = JSON.stringify(current.sessions.map(function (entry) { return [entry.key, entry.agent, entry.session]; }));

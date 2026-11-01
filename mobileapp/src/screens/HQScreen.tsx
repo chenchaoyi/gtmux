@@ -579,7 +579,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
               sessionReset={sessionReset}
               earlierAvailable={earlierAvailable}
               onLoadEarlier={loadEarlier}
-              acts={actList}
+              acts={workspaceMode ? undefined : actList}
               actsSince={earlier > 0 ? 0 : sessionReset?.at ?? 0}
               onOpenAct={openAct}
               loading={!loaded}
@@ -651,6 +651,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   );
   const headerEl = (
     <HQHeader
+            showContext={!workspaceMode}
             model={consoleHeaderModel(headerModel({
               verdict: assessment(digest, zh),
               urgent: calls.length > 0,
