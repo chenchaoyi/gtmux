@@ -12,6 +12,27 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.163',
+    en: [
+      'Complete code and trace reading',
+      'Load a call’s recorded input in full. Compact formatting improves readability; copying preserves the original text.',
+      'Local HTML reports show their local images without enabling scripts.',
+      'Adjust session text from 10–24 pt in one-point steps. Chat and Terminal share the setting.',
+      'Read working-tree changes by file and region, with line numbers, change counts and independent folding.',
+      'Trace details use Back or Hide details; Close exits Trace. Fixed the closing white flash and improved iPad resizing and large-text controls.',
+      'Completion notifications wait for confirmed turn completion.',
+    ],
+    zh: [
+      '完整调用与轨迹阅读',
+      '调用详情可按需读取完整记录输入，支持紧凑代码排版；复制保留原文。',
+      '本地 HTML 报告可直接显示本地图片，无需开启脚本。',
+      '会话字号支持 10–24 pt、每次调整 1 pt，Chat 与 Terminal 共用设置。',
+      'Diff 按文件和区块组织改动，显示行号、增删数，支持独立展开收起。',
+      'Trace 详情使用返回或收起，关闭退出整个轨迹；修复关闭白闪，完善 iPad 窗口与大字号布局。',
+      '回合确认结束后再发送完成通知，减少提前提示。',
+    ],
+  },
+  {
     version: '1.0.162',
     en: [
       'Code reading and touch navigation',
