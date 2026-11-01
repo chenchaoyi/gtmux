@@ -21,7 +21,11 @@ for(const width of [320,768,1440]) for(const colorScheme of ['light','dark']) {
     const chat=page.locator('#chat .code-panel').first();
     assert.equal(await chat.locator('pre').evaluate(node=>getComputedStyle(node).fontSize),'19px');
     assert.match(await chat.locator('pre').innerText(),/git status/);
-    assert.equal(await chat.locator('.code-language').innerText(),'Shell');
+    assert.equal(await chat.locator('.code-language').innerText(),'JavaScript');
+    assert.deepEqual(await chat.getByRole('tab').allTextContents(),['Full call','Shell · cmd 1','Python · cmd 1']);
+    assert.equal(await chat.getByRole('tab').first().getAttribute('aria-selected'),'true');
+    await chat.getByRole('tab',{name:'Shell · cmd 1',exact:true}).click();
+    assert.match(await chat.locator('pre').innerText(),/git status/);
     await chat.getByRole('tab',{name:'Python · cmd 1'}).click();
     assert.match(await chat.locator('pre').innerText(),/a = Path/);
     assert.equal(await chat.getByRole('tab',{name:'Python · cmd 1'}).getAttribute('aria-selected'),'true');
@@ -48,6 +52,7 @@ for(const width of [320,768,1440]) for(const colorScheme of ['light','dark']) {
     await children.first().click();
     const preview=trace.locator('.code-panel');
     assert.equal(await preview.locator('pre').evaluate(node=>getComputedStyle(node).fontSize),'19px');
+    assert.deepEqual(await preview.getByRole('tab').allTextContents(),['Full call','Shell · cmd 1','Python · cmd 1']);
     await preview.getByRole('tab',{name:'Python · cmd 1'}).click();
     assert.match(await preview.locator('pre').innerText(),/b = \{"count": 2\}/);
     const colors=await preview.locator('pre span').evaluateAll(nodes=>new Set(nodes.map(n=>n.style.color)).size);

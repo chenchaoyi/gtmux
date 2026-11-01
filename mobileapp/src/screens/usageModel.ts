@@ -349,26 +349,29 @@ export function splitSessions(rows: SessionRow[]): {shown: SessionRow[]; rest: S
  */
 export function machineWarn(m: ResourceReport['machine'] | null | undefined, zh = false): string {
   if (!m || (m.tier !== 'amber' && m.tier !== 'red')) return '';
-  const gb = m.disk_free_gb ?? 0;
-  const load = (m.load_ratio ?? 0).toFixed(1);
-  const pct = m.battery?.percent ?? 0;
+  const gb = m.disk_free_gb;
+  const load = m.load_ratio?.toFixed(1);
+  const pct = m.battery?.percent;
+  const free = gb == null ? '' : zh ? ` · 剩 ${gb}GB` : ` · ${gb}GB free`;
+  const loaded = load == null ? '' : zh ? ` · ${load} 倍核数` : ` · ${load}×cores`;
+  const charge = pct == null ? '' : ` · ${pct}%`;
   switch (m.warn_key) {
     case 'disk-critical':
-      return zh ? `磁盘告急 · 剩 ${gb}GB` : `disk critical · ${gb}GB free`;
+      return (zh ? '磁盘告急' : 'disk critical') + free;
     case 'disk-low':
-      return zh ? `磁盘快满了 · 剩 ${gb}GB` : `disk getting low · ${gb}GB free`;
+      return (zh ? '磁盘快满了' : 'disk getting low') + free;
     case 'memory-critical':
       return zh ? '内存告急' : 'memory critical';
     case 'memory-warn':
       return zh ? '内存吃紧' : 'memory warn';
     case 'load-critical':
-      return zh ? `负载告急 · ${load} 倍核数` : `load critical · ${load}×cores`;
+      return (zh ? '负载告急' : 'load critical') + loaded;
     case 'load-high':
-      return zh ? `负载偏高 · ${load} 倍核数` : `load high · ${load}×cores`;
+      return (zh ? '负载偏高' : 'load high') + loaded;
     case 'battery-critical':
-      return zh ? `电量告急 · ${pct}%` : `battery critical · ${pct}%`;
+      return (zh ? '电量告急' : 'battery critical') + charge;
     case 'battery-low':
-      return zh ? `电量偏低 · ${pct}%` : `battery low · ${pct}%`;
+      return (zh ? '电量偏低' : 'battery low') + charge;
   }
   return m.warn ?? '';
 }

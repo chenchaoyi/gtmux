@@ -145,7 +145,7 @@ Chat tool input, Markdown fences, Trace Preview and the complete-code reader sha
 wrapping and 44pt controls. Opening the reader freezes the selected call and retains
 its appearance, selected script and formatting. Raw content never unwraps or formats.
 Static JavaScript/JSON command fields and complete Python/Node heredocs offer separate
-script previews plus an always-reachable Full call. Mixed commands lead with the complete Shell command; cmd is never assumed to be Python. Dynamic expressions and templates
+script previews. Full call is first and initially selected. Remaining views follow expansion order: each complete Shell command, then its scripts in recorded order; cmd is never assumed to be Python. Dynamic expressions and templates
 with interpolation remain literal. Python compact formatting uses an offline syntax
 parser; strings, comments, f-strings and statement suite ownership must remain identical
 or the original text is retained. The browser consumes these same pure transforms.

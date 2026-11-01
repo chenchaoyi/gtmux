@@ -1,6 +1,6 @@
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, TouchableOpacity } from 'react-native';
 import Clipboard from '@react-native-clipboard/clipboard';
 import { CodeBlock } from './CodeBlock';
 import { CodePanel } from './CodePanel';
@@ -32,8 +32,19 @@ test.each([true, false])(
       tree = renderer.create(<CodeBlock {...props} dark={dark} />);
     });
     const code = () => tree.root.findByType(CodeText);
+    expect(code().props.source).toBe(source);
+    expect(code().props.hint).toBe('javascript');
+    const tabs = tree.root
+      .findAllByType(TouchableOpacity)
+      .filter(node => node.props.accessibilityRole === 'tab');
+    expect(tabs.map(node => node.props.testID)).toEqual([
+      'code-part-original',
+      'code-part-cmd 1',
+      'code-part-cmd 1:0',
+    ]);
+    expect(tabs[0].props.accessibilityState.selected).toBe(true);
+    press('code-part-cmd 1:0');
     expect(code().props.source).toBe(python);
-    expect(code().props.hint).toBe('python');
     expect(code().props.dark).toBe(dark);
     expect(code().props.formatted).toBe(true);
     press('code-format');
@@ -60,6 +71,7 @@ test('full-screen reading freezes the complete selected call while sharing its c
   act(() => {
     tree = renderer.create(<CodeBlock {...props} title="exec" />);
   });
+  press('code-part-cmd 1:0');
   press('code-open');
   act(() =>
     tree.update(<CodeBlock {...props} source="later input" title="exec" />),

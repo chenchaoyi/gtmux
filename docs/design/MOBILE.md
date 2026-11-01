@@ -1761,10 +1761,15 @@ Chat tool input, Markdown fences, Trace Preview and the complete-code reader sha
 wrapping and 44pt controls. Opening the reader freezes the selected call and retains
 its appearance, selected script and formatting. Raw content never unwraps or formats.
 Static JavaScript/JSON command fields and complete Python/Node heredocs offer separate
-script previews plus an always-reachable Full call. Mixed commands lead with the complete Shell command; cmd is never assumed to be Python. Dynamic expressions and templates
+script previews. Full call is first and initially selected. Remaining views follow expansion order: each complete Shell command, then its scripts in recorded order; cmd is never assumed to be Python. Dynamic expressions and templates
 with interpolation remain literal. Python compact formatting uses an offline syntax
 parser; strings, comments, f-strings and statement suite ownership must remain identical
 or the original text is retained. The browser consumes these same pure transforms.
 Expanded call groups indent their child records and retain a connecting parent rail;
 request/progress siblings return to the outer rail. Native and browser flat projections
 keep their existing stable keys, virtualization and refresh anchors.
+
+
+### HQ Board summary (2026-11-01)
+
+On workspace-capable servers the Board card is a static current briefing: matter counts and the recorded summary, without a chevron or another board page. The original matters remain below. Local machine warnings from the existing usage read appear inside this card at both amber and red tiers, with their source severity and an explicit previous-reading label after refresh failure. No warning or healthy state is inferred from missing data. Knowledge and Usage remain actionable resource cards; the legacy board reader remains available for old-server compatibility. Phone and iPad share this presentation.

@@ -475,3 +475,15 @@ test('quota captions identify legacy dates without guessing a timezone or durati
   expect(quotaWindowLabel('week (all models)', false)).toBe('Weekly limit (all models)');
   expect(quotaWindowLabel('本周（全部模型）', true)).toBe('周额度（全部模型）');
 });
+
+
+it.each([
+  ['disk-critical', 'disk critical'],
+  ['disk-low', 'disk getting low'],
+  ['load-critical', 'load critical'],
+  ['load-high', 'load high'],
+  ['battery-critical', 'battery critical'],
+  ['battery-low', 'battery low'],
+])('machine warning %s preserves severity without inventing a zero reading', (warn_key, expected) => {
+  expect(machineWarn({tier:'red', warn_key}, false)).toBe(expected);
+});

@@ -1,3 +1,3 @@
-Read tool input consistently in Chat and Trace. Recorded commands can show their Python and JavaScript scripts separately, with compact formatting and original-source copy.
+Full call now leads the code views, followed by outer commands and their embedded scripts in recorded order.
 
-Expanded Trace tool groups now show a clear hierarchy of individual calls.
+The HQ Board card keeps the current briefing and local resource warnings directly visible, without opening a duplicate board page.

@@ -354,7 +354,7 @@ active overlay. Large-text Diff SHALL keep gutters and wrapped content in its vi
 - **THEN** the theme stays painted through dismissal and old private props are not frozen
 
 ### Requirement: Shared code cards and nested call ownership
-Chat and Trace SHALL share code presentation and pure reading transforms. Static recorded command wrappers MAY expose separately labelled embedded Python/JavaScript script previews, with the complete original call always reachable. Copy SHALL preserve complete recorded input. Dynamic expressions SHALL NOT be evaluated. Compact Python formatting SHALL preserve literal content and statement-suite ownership or fall back verbatim. Raw mode SHALL remain unchanged. Expanded tool groups SHALL visually indent their children and expose their group position, preserving stable identities and refresh anchors.
+Chat and Trace SHALL share code presentation and pure reading transforms. Static recorded command wrappers MAY expose separately labelled embedded Python/JavaScript script previews, with Full call first and initially selected, followed by each outer command and its embedded scripts in recorded expansion order. Copy SHALL preserve complete recorded input. Dynamic expressions SHALL NOT be evaluated. Compact Python formatting SHALL preserve literal content and statement-suite ownership or fall back verbatim. Raw mode SHALL remain unchanged. Expanded tool groups SHALL visually indent their children and expose their group position, preserving stable identities and refresh anchors.
 
 #### Scenario: Read a Python heredoc inside a JavaScript tool call
 - **WHEN** a complete static command contains a Python heredoc
@@ -365,3 +365,12 @@ Chat and Trace SHALL share code presentation and pure reading transforms. Static
 - **WHEN** a counted tool group expands
 - **THEN** its five calls have a visible nested relationship and recorded group positions
 - **AND** the following progress record returns to the outer level
+
+
+### Requirement: HQ current briefing without duplicate navigation
+Phone and iPad HQ overviews SHALL present the Board card as a non-interactive current summary, without a disclosure or duplicate board page. Amber and red machine warnings from the existing owner-only resource read SHALL appear within this summary. Missing readings SHALL NOT imply a healthy or warned machine; retained failed readings SHALL remain explicitly stale. Knowledge and Usage details and the legacy server fallback SHALL remain available.
+
+#### Scenario: Inspect current HQ state
+- **WHEN** the user opens a workspace-capable HQ overview with a recorded machine warning
+- **THEN** the current Board summary contains that warning and no board-navigation control
+- **AND** the original matters stay directly below and other resource details remain reachable
