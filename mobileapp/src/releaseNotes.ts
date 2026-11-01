@@ -12,6 +12,23 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.164',
+    en: [
+      '- Keep Diff formatting and syntax colors when wrapping, with compact line numbers and complete long lines.',
+      '- Identify Trace by session name, start with folded turns, and retain disclosure choices during refresh.',
+      '- Place session-tool icons before their titles and remove the repeated overview from HQ conversations.',
+      '- Float fullscreen Chat controls on transparent backgrounds with larger touch targets.',
+      '- Move, zoom and fit screenshots while annotating; edit every edge and export at the original resolution.',
+    ],
+    zh: [
+      '- Diff 换行时保留格式化和语法高亮，行号更紧凑，长行完整显示。',
+      '- Trace 使用会话名称，默认收起轮次，刷新保留展开选择。',
+      '- 会话工具图标移到标题前，HQ 对话移除重复概览。',
+      '- 全屏对话的退出与折叠操作透明悬浮，扩大点击区域。',
+      '- 截图标注支持移动、缩放和适合画布，图片四边可编辑，导出保留原始尺寸。',
+    ],
+  },
+  {
     version: '1.0.163',
     en: [
       'Complete code and trace reading',
