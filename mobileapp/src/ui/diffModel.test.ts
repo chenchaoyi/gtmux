@@ -51,15 +51,16 @@ test('Git octal-quoted UTF-8 and literal percent filenames remain recognizable',
 });
 
 
-test('display formatting retains original patch numbers and does not change the source', () => {
+test('display rows preserve recorded whitespace and original patch numbers', () => {
   const raw = 'diff --git a/a.js b/a.js\n--- a/a.js\n+++ b/a.js\n@@ -7 +7 @@\n-const old=1;\n+const current={value:1};';
   const presentation = diffPresentation(raw);
-  const shown = diffDisplayRows(presentation, line => line.replace('{value:1}', '{\n  value: 1\n}'));
-  const start = shown.lines.indexOf('+const current={');
+  const shown = diffDisplayRows(presentation);
+  const start = shown.lines.indexOf('+const current={value:1};');
+  expect(start).toBeGreaterThan(-1);
   expect(shown.meta[start].next).toBe(7);
-  expect(shown.meta[start + 1]).toMatchObject({continuation: true, role: 'add'});
-  expect(shown.meta[start + 1].next).toBeUndefined();
-  expect(shown.meta[start + 2].next).toBeUndefined();
+  expect(shown.lines.filter((_, i) => shown.meta[i].kind === 'code')).toEqual([
+    '-const old=1;', '+const current={value:1};',
+  ]);
   expect(presentation.files[0].raw).toBe(raw);
 });
 test('complete long lines are split without losing Unicode or the final character', () => {

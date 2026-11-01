@@ -29,7 +29,6 @@ import { Lang } from '../i18n';
 import { Palette } from './theme';
 import { diffLineColor, diffRows } from './diff';
 import { diffDisplayRows, diffPresentation, hunkRange } from './diffModel';
-import { formatCode } from './codeFormatting';
 import { ChromeText } from './ChromeText';
 import { CHROME_MAX_SCALE } from './textScale';
 import { CodeText } from './CodeText';
@@ -59,7 +58,6 @@ export function DiffModal({
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
   const [wrapLines, setWrapLines] = useState(true);
-  const [formatted, setFormatted] = useState(true);
   const [folded, setFolded] = useState<Record<string, boolean>>({});
   const [reader, setReader] = useState<{
     source: string;
@@ -113,10 +111,9 @@ export function DiffModal({
   );
   const rows = useMemo(
     () => structured.files.length
-      ? diffDisplayRows(structured, (source, path) => formatted
-        ? formatCode(source, path.split('.').pop()) : source)
+      ? diffDisplayRows(structured)
       : {...diffRows(structured.lines.join('\n')), meta: structured.meta},
-    [structured, formatted],
+    [structured],
   );
   const gutterWidth = useMemo(() => {
     let maximum = 1;
@@ -393,16 +390,6 @@ export function DiffModal({
               >
                 {lang === 'zh' ? '换行' : 'Wrap'}
               </ChromeText>
-            </TouchableOpacity>
-            <TouchableOpacity
-              testID="diff-format"
-              accessibilityRole="button"
-              accessibilityState={{ selected: formatted }}
-              accessibilityLabel={lang === 'zh' ? formatted ? '查看原始排版' : '格式化代码' : formatted ? 'Show original layout' : 'Format code'}
-              style={styles.fileAction}
-              onPress={() => setFormatted(value => !value)}
-            >
-              <ChromeText style={{color: formatted ? '#9FC7E9' : '#B5B5BE', fontSize: 18}}>{'{ }'}</ChromeText>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.fileAction}

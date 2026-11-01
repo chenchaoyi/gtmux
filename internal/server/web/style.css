@@ -1508,13 +1508,13 @@ select:disabled { opacity: .55; cursor: not-allowed; }
 .diff-line {display:flex;align-items:flex-start;min-height:20px;white-space:pre-wrap;overflow-wrap:anywhere}.diff-line.add {background:rgba(51,145,79,.13)}.diff-line.del {background:rgba(201,61,76,.14)}
 .diff-line-number {flex:0 0 26px;text-align:right;color:var(--fg3);font-size:11px;user-select:none;padding-right:6px;line-height:20px}.diff-sign {flex:0 0 16px;user-select:none}.diff-code {flex:1;min-width:0;font:inherit;line-height:20px}
 .diff-meta {margin:0;padding:4px 12px;font:11px/1.5 ui-monospace,Menlo,monospace;color:var(--fg3);white-space:pre-wrap;overflow-wrap:anywhere}
-.diff-no-wrap .diff-line {white-space:pre;overflow-wrap:normal;min-width:max-content}.diff-hunk {overflow:auto}.diff-more,.diff-wrap,.diff-format {min-height:36px}
-@media(pointer:coarse){.diff-more,.diff-wrap,.diff-format{min-height:44px;min-width:44px}}
+.diff-no-wrap .diff-line {white-space:pre;overflow-wrap:normal;min-width:max-content}.diff-hunk {overflow:auto}.diff-more,.diff-wrap {min-height:36px}
+@media(pointer:coarse){.diff-more,.diff-wrap{min-height:44px;min-width:44px}}
 
 .diff-file-heading::before{content:'›';font-size:20px;transform:rotate(90deg);width:12px;text-align:center}.diff-file:not([open])>.diff-file-heading::before{transform:none}
 .diff-line.add .diff-sign{color:#36723a}.diff-line.del .diff-sign{color:#b63843}[data-theme=dark] .diff-line.add .diff-sign{color:#A8C997}[data-theme=dark] .diff-line.del .diff-sign{color:#EEA3AC}
 
-.diff-file{border-color:var(--divider)}.diff-hunk-count{float:right;margin-left:12px;color:var(--fg2);font-variant-numeric:tabular-nums}.diff-wrap,.diff-format{border:0;border-radius:7px;padding:6px 10px;background:var(--control);color:var(--fg2);font:inherit;cursor:pointer}.diff-wrap[aria-pressed=true],.diff-format[aria-pressed=true]{color:var(--accent-ink);background:var(--sel)}.diff-wrap:focus-visible,.diff-format:focus-visible{outline:2px solid var(--accent-ink);outline-offset:2px}
+.diff-file{border-color:var(--divider)}.diff-hunk-count{float:right;margin-left:12px;color:var(--fg2);font-variant-numeric:tabular-nums}.diff-wrap{border:0;border-radius:7px;padding:6px 10px;background:var(--control);color:var(--fg2);font:inherit;cursor:pointer}.diff-wrap[aria-pressed=true]{color:var(--accent-ink);background:var(--sel)}.diff-wrap:focus-visible{outline:2px solid var(--accent-ink);outline-offset:2px}
 
 .diff-line-number{flex-basis:var(--diff-gutter,26px);white-space:nowrap}
 

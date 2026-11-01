@@ -17,20 +17,19 @@ async function shot(page, name) {
   await page.screenshot({path: path.join(process.env.GTMUX_WEB_EVIDENCE, name + '.png')});
 }
 for (const width of [320, 390, 1440]) {
-  scenario(`Diff format and wrap preserve syntax and original copy at ${width}`, {viewport: {width, height: 900}, locale: 'en-US', hasTouch: width < 700, permissions: ['clipboard-read', 'clipboard-write']}, async(page, fixture) => {
+  scenario(`Diff preserves recorded layout, syntax and original copy at ${width}`, {viewport: {width, height: 900}, locale: 'en-US', hasTouch: width < 700, permissions: ['clipboard-read', 'clipboard-write']}, async(page, fixture) => {
     const raw = 'diff --git a/a.js b/a.js\n--- a/a.js\n+++ b/a.js\n@@ -9 +9 @@\n-const old=1;\n+const next={value:1};';
     fixture.state.diff = raw;
     await session(page, fixture, width); await openTools(page, 'diff');
     const diff = page.locator('.session-diff'), code = diff.locator('.diff-line.add .diff-code');
-    assert.equal(await code.innerText(), 'const next = { value: 1 };');
+    assert.equal(await code.innerText(), 'const next={value:1};');
     assert.equal(await diff.locator('.diff-line.add .diff-line-number').count(), 1);
     assert.equal(await diff.locator('.diff-line.add .diff-line-number').innerText(), '9');
     const colors = await code.locator('span').evaluateAll(nodes => [...new Set(nodes.map(n => n.style.color))]);
     assert.ok(colors.length > 1);
     await diff.locator('.diff-wrap').click();
-    assert.equal(await code.innerText(), 'const next = { value: 1 };');
-    assert.equal(await diff.locator('.diff-format').getAttribute('aria-pressed'), 'true');
-    await diff.locator('.diff-format').click();
+    assert.equal(await code.innerText(), 'const next={value:1};');
+    assert.equal(await diff.locator('.diff-format').count(), 0);
     assert.equal(await code.innerText(), 'const next={value:1};');
     await diff.locator('.diff-wrap').click();
     assert.equal(await code.innerText(), 'const next={value:1};');
@@ -38,8 +37,6 @@ for (const width of [320, 390, 1440]) {
     assert.equal(await page.evaluate(() => navigator.clipboard.readText()), raw);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), width);
     await shot(page, 'diff-raw-wrapped-' + width);
-    await diff.locator('.diff-format').click();
-    await shot(page, 'diff-formatted-wrapped-' + width);
     assert.equal(fixture.state.sends.length, 0);
   });
   scenario(`Trace defaults to folded turns and preserves manual disclosure at ${width}`, {viewport: {width, height: 900}, locale: 'en-US', hasTouch: width < 700}, async(page, fixture) => {
