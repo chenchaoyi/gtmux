@@ -790,3 +790,16 @@ Browser working-tree Diff SHALL retain independent formatting and wrapping, shar
 #### Scenario: Open Trace while new turns arrive
 - **WHEN** Trace is first opened and another turn arrives
 - **THEN** every turn remains folded until the reader explicitly opens it or searches its records
+
+### Requirement: Shared code cards and nested call ownership
+Chat and Trace SHALL share code presentation and pure reading transforms. Static recorded command wrappers MAY expose separately labelled embedded Python/JavaScript script previews, with the complete original call always reachable. Copy SHALL preserve complete recorded input. Dynamic expressions SHALL NOT be evaluated. Compact Python formatting SHALL preserve literal content and statement-suite ownership or fall back verbatim. Raw mode SHALL remain unchanged. Expanded tool groups SHALL visually indent their children and expose their group position, preserving stable identities and refresh anchors.
+
+#### Scenario: Read a Python heredoc inside a JavaScript tool call
+- **WHEN** a complete static command contains a Python heredoc
+- **THEN** Preview offers Python syntax and compact formatting alongside Full call
+- **AND** original-copy and Raw content preserve the complete recorded wrapper
+
+#### Scenario: Expand five consecutive tool calls
+- **WHEN** a counted tool group expands
+- **THEN** its five calls have a visible nested relationship and recorded group positions
+- **AND** the following progress record returns to the outer level

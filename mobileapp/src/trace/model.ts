@@ -414,6 +414,7 @@ export type TimelineRow =
       event: TraceEvent;
       order: number;
       last: boolean;
+      parentCall?: { key: string; index: number; total: number };
     }
   | {
       key: string;
@@ -467,6 +468,7 @@ export function timelineRows(
             event: group.events[j],
             order: j + 1,
             last: j === group.events.length - 1,
+            parentCall: {key, index: j - i + 1, total: end - i},
           });
         i = end - 1;
       } else

@@ -91,6 +91,7 @@
       } else if (detailMode === 'origin') {
         content.appendChild(el('p', 'trace-origin-note', T('Source information from the conversation record.', '会话记录中的来源信息。'))); var originText = el('pre', 'trace-origin', JSON.stringify(model.sourceInfo(event), null, 2)); originText.tabIndex = 0; content.appendChild(originText);
       } else if (event.kind !== 'tool' && !(event.kind === 'context' && event.title === 'Environment') && detailMode === 'preview') { var prose = el('div', 'trace-prose'); prose.appendChild(options.markdown(model.previewText(event), {session_id: event.session, home_id: context.home_id || ''})); content.appendChild(prose); }
+      else if (options.codePanel) { content.appendChild(options.codePanel(event.body, {className:'trace-source', copy:false, hint: detailMode === 'raw' ? 'text' : event.step && event.step.inputKind === 'code' ? 'javascript' : event.step && event.step.inputKind === 'command' ? 'shell' : event.step && event.step.inputKind, formatted: detailMode === 'preview', allowFormat: detailMode === 'preview', embedded: detailMode === 'preview', disabled: inputPending.has(inputKey) || !!(event.step && event.step.truncated)})); }
       else { var code = el('pre', 'trace-source' + (event.step && !event.step.input ? ' trace-summary' : ''), (detailMode === 'preview' ? options.formatCode ? options.formatCode(model.previewText(event), {input_kind:event.step && event.step.inputKind,operation:event.step && event.step.operation}) : model.previewText(event) : event.body) || T('No detail recorded.', '未记录详情。')); if(options.renderCode) options.renderCode(code, code.textContent, event.step && event.step.inputKind === 'code' ? 'javascript' : event.step && event.step.inputKind); code.tabIndex = 0; content.appendChild(code); }
       actions.replaceChildren(...(event.step && event.step.truncated ? [] : [options.actions(detailMode === 'origin' ? JSON.stringify(model.sourceInfo(event), null, 2) : event.body || label(event))])); detail.scrollTop = scroll;
     }
@@ -199,7 +200,7 @@
       var liveKeys = new Set();
       presented.slice(from, until).forEach(function (row) {
         var node;
-        if (row.type === 'event') { node = rowFor(row.event); node.dataset.rowKey = row.key; node.dataset.turnKey = row.event.turnKey; liveKeys.add(row.key); }
+        if (row.type === 'event') { node = rowFor(row.event); node.classList.toggle('trace-call-child', !!row.parentCall); node.classList.toggle('trace-call-last', !!row.parentCall && row.parentCall.index === row.parentCall.total); if(row.parentCall) {node.dataset.callParent=row.parentCall.key;node.setAttribute('aria-description',T('Call '+row.parentCall.index+' of '+row.parentCall.total+' in this group','本组第 '+row.parentCall.index+' 个调用，共 '+row.parentCall.total+' 个'));} else {delete node.dataset.callParent;node.removeAttribute('aria-description');} node.dataset.rowKey = row.key; node.dataset.turnKey = row.event.turnKey; liveKeys.add(row.key); }
         else node = groupNode(row);
         list.appendChild(node);
       });

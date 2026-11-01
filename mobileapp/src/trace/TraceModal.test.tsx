@@ -11,8 +11,9 @@ import { MarkdownView } from '../ui/MarkdownView';
 import { ParticipantProfileModal } from '../ui/ParticipantProfileModal';
 import { nativeDocumentPreview } from '../documents/nativePreview';
 import * as layout from '../ui/layout';
-import {KeyBus} from '../keys/bus';
+import { KeyBus } from '../keys/bus';
 import { CodeText } from '../ui/CodeText';
+import { CodeBlock } from '../ui/CodeBlock';
 jest.mock('../ui/ParticipantProfileModal', () => ({
   ParticipantProfileModal: jest.fn(() => null),
 }));
@@ -91,7 +92,10 @@ function width(value: number) {
     }),
   );
 }
-function mount(props: Partial<React.ComponentProps<typeof TraceReader>> = {}, expandLatest = true) {
+function mount(
+  props: Partial<React.ComponentProps<typeof TraceReader>> = {},
+  expandLatest = true,
+) {
   act(() => {
     tree = renderer.create(<TraceReader {...base} {...props} />);
   });
@@ -99,7 +103,7 @@ function mount(props: Partial<React.ComponentProps<typeof TraceReader>> = {}, ex
   const latest = tree.root.findByType(FlatList).props.data.at(-1);
   if (expandLatest && latest?.type === 'turn') {
     const list = tree.root.findByType(FlatList);
-    act(() => list.props.renderItem({item: latest}).props.onToggle(latest));
+    act(() => list.props.renderItem({ item: latest }).props.onToggle(latest));
     press('trace-latest');
   }
 }
@@ -143,12 +147,33 @@ test('session name leads the heading; each expanded call opens its own fully wra
   ).toBe(false);
   const events = data().filter(e => e.kind === 'tool');
   expect(events).toHaveLength(3);
+  const rows = tree.root.findByType(FlatList).props.data;
+  const nested = rows.filter(
+    (row: any) => row.type === 'event' && row.parentCall,
+  );
+  expect(nested).toHaveLength(3);
+  const progress = rows.filter(
+    (row: any) => row.type === 'event' && row.event.kind !== 'tool',
+  );
+  expect(progress.every((row: any) => !row.parentCall)).toBe(true);
+  const list = tree.root.findByType(FlatList);
+  let child: renderer.ReactTestRenderer;
+  act(() => {
+    child = renderer.create(list.props.renderItem({ item: nested[0] }));
+  });
+  expect(
+    child!.root.findAllByProps({ testID: 'trace-call-parent-rail' }).length,
+  ).toBeGreaterThan(0);
+  act(() => child!.unmount());
   events.forEach((event, i) => {
     press('trace-record-' + event.key);
     const input = tree.root
       .findAllByType(CodeText)
       .find(n => n.props.testID === 'trace-source')!;
     expect(input.props.source).toBe(inputs[i]);
+    expect(tree.root.findByType(CodeBlock).props.testIDPrefix).toBe(
+      'trace-code',
+    );
     expect(input.props.numberOfLines).toBeUndefined();
     expect(input.props.rangeUnbounded).not.toBe(true);
     let parent = input.parent;
@@ -685,7 +710,9 @@ test('iOS dismissal retains the painted Trace tree until onDismiss, then release
   });
   expect(tree.root.findByType(Modal).props.backdropColor).toBe(base.pal.bg);
   act(() => tree.update(<TraceModal {...base} visible={false} />));
-  expect(tree.root.findByType(Modal).props.children.props.children.type).toBe(TraceReader);
+  expect(tree.root.findByType(Modal).props.children.props.children.type).toBe(
+    TraceReader,
+  );
   act(() => tree.root.findByType(Modal).props.onDismiss());
   expect(tree.root.findByType(Modal).props.children).toBe(false);
 });
@@ -694,26 +721,32 @@ test('closing keeps current scope retirement and a stale dismiss cannot blank a 
     tree = renderer.create(<TraceModal {...base} />);
   });
   act(() => tree.update(<TraceModal {...base} turns={[]} visible={false} />));
-  expect(tree.root.findByType(Modal).props.children.props.children.props.turns).toEqual([]);
+  expect(
+    tree.root.findByType(Modal).props.children.props.children.props.turns,
+  ).toEqual([]);
   const dismiss = tree.root.findByType(Modal).props.onDismiss;
   act(() => tree.update(<TraceModal {...base} visible />));
   act(() => dismiss());
   expect(tree.root.findAllByType(TraceReader)).toHaveLength(1);
 });
 
-
 test('iPad resizing and Dynamic Type preserve the selected original call with the appropriate navigation', () => {
   mount();
   width(1194);
   const event = data().find(e => e.kind === 'tool')!;
   press('trace-record-' + event.key);
-  const navigation = () => tree.root.findAllByProps({testID: 'trace-detail-close'}).find(n => typeof n.props.onPress === 'function')!;
+  const navigation = () =>
+    tree.root
+      .findAllByProps({ testID: 'trace-detail-close' })
+      .find(n => typeof n.props.onPress === 'function')!;
   expect(navigation().props.accessibilityLabel).toBe('Hide details');
   expect(source()).toBe(command);
   for (const w of [834, 744, 507, 320, 1366]) {
     width(w);
     expect(source()).toBe(command);
-    expect(navigation().props.accessibilityLabel).toBe(w >= 820 ? 'Hide details' : 'Back to trace');
+    expect(navigation().props.accessibilityLabel).toBe(
+      w >= 820 ? 'Hide details' : 'Back to trace',
+    );
   }
   scale = 3;
   act(() => tree.update(<TraceReader {...base} />));
@@ -723,17 +756,21 @@ test('iPad resizing and Dynamic Type preserve the selected original call with th
   expect(base.onClose).not.toHaveBeenCalled();
 });
 
-
 test('hardware Escape returns from call details before closing Trace and does not reach the page behind', () => {
-  const page = jest.fn(), close = jest.fn();
+  const page = jest.fn(),
+    close = jest.fn();
   const stop = KeyBus.on('sheet.close', page);
-  mount({onClose: close});
+  mount({ onClose: close });
   press('trace-record-' + data().find(e => e.kind === 'tool')!.key);
-  act(() => { KeyBus.emit('sheet.close'); });
-  expect(tree.root.findAllByProps({testID:'trace-detail'})).toHaveLength(0);
+  act(() => {
+    KeyBus.emit('sheet.close');
+  });
+  expect(tree.root.findAllByProps({ testID: 'trace-detail' })).toHaveLength(0);
   expect(close).not.toHaveBeenCalled();
   expect(page).not.toHaveBeenCalled();
-  act(() => { KeyBus.emit('sheet.close'); });
+  act(() => {
+    KeyBus.emit('sheet.close');
+  });
   expect(close).toHaveBeenCalledTimes(1);
   expect(page).not.toHaveBeenCalled();
   stop();
@@ -741,9 +778,23 @@ test('hardware Escape returns from call details before closing Trace and does no
 
 test('initial turns stay folded and the progress card uses the same name as the session list', () => {
   mount({}, false);
-  expect(tree.root.findByType(FlatList).props.data.every((row: any) => row.type === 'turn' && !row.open)).toBe(true);
-  expect(tree.root.findAllByProps({testID: 'trace-progress-session'})[0].props.children).toBe('Trace QA');
-  act(() => tree.update(<TraceReader {...base} turns={[turn, {...turn, prompt: 'New incoming turn'}]} />));
+  expect(
+    tree.root
+      .findByType(FlatList)
+      .props.data.every((row: any) => row.type === 'turn' && !row.open),
+  ).toBe(true);
+  expect(
+    tree.root.findAllByProps({ testID: 'trace-progress-session' })[0].props
+      .children,
+  ).toBe('Trace QA');
+  act(() =>
+    tree.update(
+      <TraceReader
+        {...base}
+        turns={[turn, { ...turn, prompt: 'New incoming turn' }]}
+      />,
+    ),
+  );
   expect(data()).toHaveLength(0);
   const latest = tree.root.findByType(FlatList).props.data.at(-1);
   press('trace-turn-' + latest.group.key);

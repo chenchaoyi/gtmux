@@ -7,6 +7,10 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const source = fs.readFileSync(path.join(__dirname, 'app.js'), 'utf8');
+const formattingContext = vm.createContext({});
+formattingContext.window = formattingContext;
+for (const file of ['vendor/prettier-standalone.js','vendor/prettier-parser-babel.js','vendor/prettier-parser-html.js','vendor/prettier-parser-postcss.js','vendor/prettier-parser-yaml.js','code-format.js'])
+  vm.runInContext(fs.readFileSync(path.join(__dirname,file),'utf8'),formattingContext);
 
 test('browser and native attachment prompt identities share the same contract', () => {
   const cases = require('../../../mobileapp/src/screens/promptIdentityCases.json');
@@ -33,6 +37,7 @@ function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
     },
     set innerHTML(value) { this.html = value; this.children = []; },
     appendChild(child) { child.parentElement = this; this.children.push(child); return child; },
+    replaceChildren(...children) { this.children = []; this.textContent = ''; for(const child of children)this.appendChild(child); },
     closest(selector) { for (let node = this; node; node = node.parentElement) { if (selector === "[hidden]" && node.hidden) return node; } return null; },
     addEventListener(name, fn) { this[name] = fn; },
     select() { this.selected = true; },
@@ -60,10 +65,10 @@ function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
   const saved = new Map(Object.entries(stored));
   const copied = [];
   const context = {
-    document: {documentElement: {}, readyState: 'loading', getElementById: node, createElement: element, createElementNS: (_, name) => element(name), createDocumentFragment: () => element("fragment"),
+    document: {documentElement: {dataset:{}}, readyState: 'loading', getElementById: node, createElement: element, createElementNS: (_, name) => element(name), createDocumentFragment: () => element("fragment"),
       createTextNode: text => Object.assign(element("text"), {textContent: text}), addEventListener: (name, fn) => documentHandlers.set(name, fn),
       querySelector: sel => node('query:' + sel), querySelectorAll: () => []},
-    window: {addEventListener() {}, innerWidth: 1280, GtmuxActivity: require('./activity.js'), GtmuxPromptIdentity: require('./prompt-identity.js')},
+    window: {addEventListener() {}, innerWidth: 1280, GtmuxActivity: require('./activity.js'), GtmuxPromptIdentity: require('./prompt-identity.js'),GtmuxCodeFormat:formattingContext.GtmuxCodeFormat,GtmuxCodeReading:require('./code-reading.js')},
     navigator: {language, clipboard: {writeText: s => { copied.push(s); return Promise.resolve(); }}},
     ResizeObserver: class { constructor(cb) { context.__resized = cb; } observe(el) { context.__observed = el; } },
     setTimeout: (fn, ms) => setTimeout(fn, ms).unref(),
@@ -736,7 +741,7 @@ test('both Chat surfaces render user markdown without altering transcript or exe
     const bubble = descendants(root).find(n => n.className === 'ububble');
     const nodes = descendants(bubble);
     assert.ok(nodes.some(n => n.tagName === 'strong' && n.textContent === 'Bold'));
-    assert.ok(nodes.some(n => n.tagName === 'code' && n.textContent === 'echo hello'));
+    assert.ok(nodes.some(n => n.tagName === 'pre' && descendants(n).filter(child=>child.tagName==='span').map(child=>child.textContent).join('') === 'echo hello'));
     assert.ok(nodes.some(n => n.tagName === 'ul'));
     assert.ok(!nodes.some(n => n.tagName === 'script'));
   }

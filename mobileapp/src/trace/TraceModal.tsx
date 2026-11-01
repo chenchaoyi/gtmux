@@ -27,7 +27,7 @@ import Svg, { Path } from 'react-native-svg';
 import { GtmuxClient, TranscriptTurn } from '../api/client';
 import { Agent, primary } from '../api/types';
 import { Lang, statusLabel } from '../i18n';
-import {useModalEscape} from '../keys/useModalEscape';
+import { useModalEscape } from '../keys/useModalEscape';
 import { Palette, BRAND } from '../ui/theme';
 import { AnchoredMenu, MenuAnchor, MenuItem } from '../ui/AnchoredMenu';
 import { MODAL_ORIENTATIONS } from '../ui/modalOrientations';
@@ -39,6 +39,7 @@ import { ParticipantProfileModal } from '../ui/ParticipantProfileModal';
 import { ProfileTarget } from '../ui/participantProfile';
 import { MarkdownView } from '../ui/MarkdownView';
 import { CodeText } from '../ui/CodeText';
+import { CodeBlock } from '../ui/CodeBlock';
 import { useToolInput } from '../ui/useToolInput';
 import { darkCodeBackground, toolCodeHint } from '../ui/codeReading';
 import { CopyFeedbackContext } from '../ui/CopyableText';
@@ -322,7 +323,10 @@ export function TraceReader({
       : selection;
   const chosen = sameIdentity && current ? selectedFull : null;
   const showDetails = detailsOpen && !!chosen;
-  useModalEscape(readerVisible && !profile, showDetails ? closeDetail : onClose);
+  useModalEscape(
+    readerVisible && !profile,
+    showDetails ? closeDetail : onClose,
+  );
   const history = session !== 'all' && session !== index.sessions.at(-1)?.key;
   useEffect(() => {
     if (selection && !current) {
@@ -1087,38 +1091,30 @@ export function TraceReader({
                   (chosen.event.kind === 'context' &&
                     chosen.event.title === 'Environment') ||
                   detailTab === 'raw' ? (
-                  <View
-                    style={[
-                      styles.sourceBlock,
-                      {
-                        backgroundColor: pal.raised,
-                        borderRadius: 6,
-                        padding: 12,
-                      },
-                    ]}
-                  >
-                    <CodeText
-                      testID="trace-source"
-                      formatted={detailTab === 'preview'}
-                      source={
-                        detailTab === 'preview'
-                          ? previewText(chosen.event)
-                          : chosen.event.body
-                      }
-                      hint={
-                        detailTab === 'raw'
-                          ? 'text'
-                          : toolCodeHint(
-                              chosen.event.title,
-                              chosen.event.step?.inputKind,
-                              chosen.event.step?.operation,
-                            )
-                      }
-                      dark={darkCodeBackground(pal.surface)}
-                      lang={lang}
-                      fontSize={Math.max(12, fontSize - 1)}
-                    />
-                  </View>
+                  <CodeBlock
+                    key={chosen.event.key + ':' + detailTab}
+                    source={chosen.event.body}
+                    title={chosen.event.title}
+                    hint={
+                      detailTab === 'raw'
+                        ? 'text'
+                        : toolCodeHint(
+                            chosen.event.title,
+                            chosen.event.step?.inputKind,
+                            chosen.event.step?.operation,
+                          )
+                    }
+                    dark={darkCodeBackground(pal.surface)}
+                    lang={lang}
+                    fontSize={Math.max(12, fontSize - 1)}
+                    disabled={inputLoading || !!chosen.event.step?.truncated}
+                    allowFormat={detailTab === 'preview'}
+                    allowEmbedded={detailTab === 'preview'}
+                    initialFormatted={detailTab === 'preview'}
+                    testIDPrefix="trace-code"
+                    textTestID="trace-source"
+                    showCopy={false}
+                  />
                 ) : (
                   <MarkdownView
                     source={previewText(chosen.event)}

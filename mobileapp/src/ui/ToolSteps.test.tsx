@@ -75,6 +75,7 @@ test('individual input wraps without horizontal controls and copies the complete
   mount(true);
   act(() => byID('tool-step-toggle-1').props.onPress());
   expect(tree.root.findByType(CodeText).props.source).toBe(command);
+  expect(tree.root.findByType(CodeText).props.fontSize).toBe(17);
   expect(
     tree.root.findAllByType(ScrollView).every(n => !n.props.horizontal),
   ).toBe(true);
@@ -315,10 +316,26 @@ test('opens full input on demand and copies original while formatting only the r
   expect(Clipboard.setString).toHaveBeenLastCalledWith(full.input);
 });
 
-
 test('complete-code controls keep the shared chrome scale while the recorded source retains its chosen size', () => {
-  act(() => { tree = renderer.create(<CodeReaderModal source="const value={first:1};" title="Original input" hint="javascript" lang="en" fontSize={19} onClose={jest.fn()} />); });
-  const format = tree.root.findAllByProps({testID:'code-reader-format'}).find(n => typeof n.props.onPress === 'function')!;
+  act(() => {
+    tree = renderer.create(
+      <CodeReaderModal
+        source="const value={first:1};"
+        title="Original input"
+        hint="javascript"
+        lang="en"
+        fontSize={19}
+        onClose={jest.fn()}
+      />,
+    );
+  });
+  const format = tree.root
+    .findAllByProps({ testID: 'code-reader-format' })
+    .find(n => typeof n.props.onPress === 'function')!;
   expect(format.findByType(Text).props.maxFontSizeMultiplier).toBe(1.35);
-  expect(tree.root.findAllByProps({testID:'code-reader-text'}).find(n => n.props.source)?.props.fontSize).toBe(19);
+  expect(
+    tree.root
+      .findAllByProps({ testID: 'code-reader-text' })
+      .find(n => n.props.source)?.props.fontSize,
+  ).toBe(19);
 });
