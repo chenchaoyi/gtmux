@@ -3,6 +3,7 @@
   'use strict';
   window.GtmuxTraceView = {create: function (options) {
     var T = options.T, model = window.GtmuxTrace, pageSize = 200;
+    var historyHeld = [], tailInput = [], historyLoading = false, historyError = false, historyChanged = false, historyEpoch = 0;
     var fullInputs = new Map(), inputPending = new Set(), inputFailed = new Set();
     var current = {events: [], sessions: []}, filtered = [], presented = [], context = {}, selected = '', page = 0;
     var expandedTurns = {}, expandedCalls = {}, defaults = {turns: false, calls: true}, disclosureHold = false;
@@ -20,6 +21,19 @@
     var toggle = button('trace-toggle', T('Show details', '查看详情'), function () { panel(!inspectorOpen); if (inspectorOpen) detail.focus(); }); toolbar.appendChild(toggle); root.appendChild(toolbar);
     var overview = el('div', 'trace-overview'), map = el('div', 'trace-map'); map.setAttribute('aria-hidden', 'true'); overview.appendChild(map);
     var scrub = el('input', 'trace-scrubber'); scrub.type = 'range'; scrub.min = '0'; scrub.step = '1'; scrub.setAttribute('aria-label', T('Locate a record', '定位记录')); overview.appendChild(scrub); root.appendChild(overview);
+    var historyBar = el('div', 'trace-history-bar'), historyLabel = el('span'), historyLoad = button('trace-history-earlier', T('Load earlier records', '加载更早记录'), loadHistory), historyLatest = button('trace-history-latest', T('Records updated · View latest', '记录已更新 · 查看最新记录'), function () {historyHeld=[];follow=true;disclosureHold=false;historyError=false;historyChanged=false;lastInput=null;controller.update(tailInput,context);});
+    historyLabel.setAttribute('role','status');historyBar.append(historyLabel,historyLoad,historyLatest);root.appendChild(historyBar);
+    function loadHistory() {
+      var before = historyHeld.length ? historyHeld[0].history_before : tailInput[0] && tailInput[0].history_before;
+      if(!before || historyLoading || !options.history) return;
+      historyLoading=true;historyError=false;historyChanged=false;follow=false;disclosureHold=true;
+      var epoch=historyEpoch, held=model.mergeHistory(historyHeld,tailInput).turns;
+      lastInput=null;controller.update(tailInput,context);
+      options.history(before,context).then(function(page) {
+        if(epoch!==historyEpoch) return;
+        historyHeld=model.prependHistory(page,held);
+      }).catch(function(error){if(epoch===historyEpoch) {historyError=true;historyChanged=error.status===409;}}).finally(function(){if(epoch===historyEpoch) {historyLoading=false;lastInput=null;controller.update(tailInput,context);}});
+    }
     var body = el('div', 'trace-body'), list = el('div', 'trace-list'); list.setAttribute('aria-label', T('Trace events', '轨迹记录')); body.appendChild(list);
     var detail = el('section', 'trace-inspector'); detail.id = 'trace-detail-' + Math.random().toString(36).slice(2); detail.tabIndex = -1; detail.setAttribute('aria-label', T('Event details', '记录详情')); toggle.setAttribute('aria-controls', detail.id);
     var head = el('div', 'trace-detail-head'), title = el('h3', 'trace-detail-title'); head.appendChild(title);
@@ -35,7 +49,7 @@
     var detailMode = 'preview', warning = el('p', 'trace-truncated'); detail.appendChild(warning);
     var content = el('div', 'trace-detail-content'); content.id = detail.id + '-content'; content.setAttribute('role', 'tabpanel'); [overviewTab, preview, source, origin].forEach(function (tab, i) { tab.id = detail.id + '-tab-' + i; tab.setAttribute('aria-controls', content.id); }); detail.appendChild(content); body.appendChild(detail); body.appendChild(latest); root.appendChild(body);
     var footer = el('details', 'trace-limits'), summary = el('summary', '', T('About these records', '记录范围')); footer.appendChild(summary);
-    footer.appendChild(el('p', '', T('Conversation text, recorded context and tool input. Tool output, call timing and token usage are not recorded. Turn numbers refer to loaded history.', '展示会话正文、已记录的上下文与调用参数，不含工具输出、调用耗时或 Token 用量。轮次按当前载入的历史编号。'))); root.appendChild(footer);
+    footer.appendChild(el('p', '', T('Conversation text, recorded context and tool input. Tool output, call timing and token usage are not recorded. Turn numbers keep their positions in the source session when available.', '展示会话正文、已记录的上下文与调用参数，不含工具输出、调用耗时或 Token 用量。轮次保留源会话中的编号（需服务端支持）。'))); root.appendChild(footer);
 
     function el(tag, name, text) { var node = document.createElement(tag); if (name) node.className = name; if (text !== undefined) node.textContent = text; return node; }
     function option(value, label) { var node = el('option', '', label); node.value = value; return node; }
@@ -266,13 +280,19 @@
     };
     detail.onkeydown = function (event) { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close.click(); } };
     var resize = new ResizeObserver(syncCompact); resize.observe(root);
-    return {el: root, update: function (turns, nextContext) {
+    var controller = {el: root, update: function (turns, nextContext) {
       context = nextContext || {};
       var scope = JSON.stringify([context.pane_id, context.session_id, context.home_id, context.agent]);
       if (lastInput === turns && lastScope === scope) { updateStatus(); return; }
-      if (lastScope && lastScope !== scope) { initialized = false; selected = ''; page = 0; expandedTurns = {}; expandedCalls = {}; defaults = {turns: false, calls: true}; disclosureHold = false; search.value = ''; kind.value = 'all'; session.value = 'all'; lastDetail = ''; lastDetailKey = ''; }
+      if (lastScope && lastScope !== scope) { historyEpoch++;historyHeld=[];historyLoading=false;historyError=false;historyChanged=false; initialized = false; selected = ''; page = 0; expandedTurns = {}; expandedCalls = {}; defaults = {turns: false, calls: true}; disclosureHold = false; search.value = ''; kind.value = 'all'; session.value = 'all'; lastDetail = ''; lastDetailKey = ''; }
       lastInput = turns; lastScope = scope;
-      current = model.build(turns, context);
+      tailInput=turns;
+      var historyWindow=model.mergeHistory(historyHeld,turns), shown=historyWindow.turns, first=shown[0] || {}, remaining=first.turn_ordinal ? first.turn_ordinal-1 : context.dropped || 0;
+      historyBar.hidden=!remaining && !historyWindow.gap && !historyError;
+      historyLabel.textContent=historyError ? (historyChanged ? T('Source records changed. Your position is kept.','源记录已更新，当前阅读位置已保留。') : T('Could not load. Current records are kept.','暂时无法加载，当前记录已保留。')) : remaining ? T(remaining+' earlier turns','还有 '+remaining+' 轮更早记录') : '';
+      historyLoad.hidden=historyChanged || !first.history_before || !options.history;historyLoad.disabled=historyLoading;historyLoad.setAttribute('aria-busy',String(historyLoading));historyLoad.textContent=historyLoading ? T('Loading…','正在加载…') : historyError ? T('Retry','重试') : T('Load earlier records','加载更早记录');
+      historyLatest.hidden=!historyWindow.gap && !historyChanged;
+      current = model.build(shown, context);
       var priorSession = session.value || 'all', sessionSignature = JSON.stringify(current.sessions.map(function (entry) { return [entry.key, entry.agent, entry.session]; }));
       if (session.dataset.signature !== sessionSignature) {
         session.dataset.signature = sessionSignature; session.replaceChildren(option('all', T('All sessions', '全部会话')));
@@ -283,6 +303,7 @@
       if (!initialized) { initialized = true; follow = true; inspecting = false; panel(!compact()); }
       var present = new Set(current.events.map(function (event) { return event.key; })); rowNodes.forEach(function (row, key) { if (!present.has(key)) rowNodes.delete(key); });
       draw(follow || !selected);
-    }, dispose: function () { clearTimeout(deferred); resize.disconnect(); rowNodes.clear(); fullInputs.clear(); inputPending.clear(); inputFailed.clear(); }};
+    }, dispose: function () { historyEpoch++;clearTimeout(deferred); resize.disconnect(); rowNodes.clear(); fullInputs.clear(); inputPending.clear(); inputFailed.clear(); }};
+    return controller;
   }};
 })();

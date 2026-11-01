@@ -1777,3 +1777,9 @@ On workspace-capable servers the Board card is a static current briefing: matter
 ### Request failure history
 
 Push registration failures are recorded once through the sampled request lane. Repeated identical failures retain their count; a changed HTTP status, deadline or failure reason is recorded immediately. Recovery includes the total failed requests and any repeats suppressed since the last entry. Each server and route remains independent. HTTP530 reads as an unavailable remote endpoint; a failed notification write remains unsynchronized. Successful registration records an action, without claiming notification delivery. Legacy diagnostic entries remain readable.
+
+### Earlier trace pages
+
+Trace retains source-session turn positions instead of numbering the loaded tail from one. The oldest loaded turn offers **Load earlier records** when the server supplies a history cursor. Each request reads at most 50 preceding turns and respects the same response byte budget; this is separate from HQ's earlier-session chain. App and browser reuse the transcript index and history merge rules. Explicitly loaded pages survive overlapping live updates, with the visible anchor and disclosure choices retained. A gap exposes **View latest** rather than joining unrelated windows. Failure leaves the current window in place with Retry. Older servers without cursors retain their bounded read-only view.
+
+History reads do not enroll sessions, send input, expand guest permissions or change file access. Source replacement and mismatched anchors reject the cursor. Native touch, VoiceOver and physical-device behavior require their own acceptance evidence; component and browser checks do not establish them.

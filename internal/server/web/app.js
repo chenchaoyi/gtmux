@@ -2914,7 +2914,14 @@
   function resetTrace(state) { if (state && state.view) state.view.dispose(); return {}; }
   function traceView(turns, state, context) {
     if (!state.view) {
-      state.view = window.GtmuxTraceView.create({T: T, markdown: mdRender, actions: bubbleActions, icon: uiIcon, formatTime: sepTime, toolInput: readToolInput, formatCode: formatToolInput, renderCode: renderCode, codePanel: codePanelEl, status: function (agent) { return LABEL[agent.status] ? {text: agent.error ? LABEL.errored : LABEL[agent.status], color: agent.error ? '#F59E0B' : COLORS[agent.status]} : null; }});
+      state.view = window.GtmuxTraceView.create({T: T, markdown: mdRender, actions: bubbleActions, icon: uiIcon, formatTime: sepTime, toolInput: readToolInput, formatCode: formatToolInput, renderCode: renderCode, codePanel: codePanelEl, history: function (before, agent) {
+        var epoch = viewEpoch, credential = token;
+        var path = hasPane(agent) ? '/api/transcript?id=' + encodeURIComponent(agent.pane_id) : '/api/session/transcript' + conversationQuery(agent);
+        return api(path + '&context=1&before=' + encodeURIComponent(before)).then(function(r) {
+          if(epoch!==viewEpoch || credential!==token || !r.ok || r.headers.get('X-Gtmux-History-Page')!=='1') throw Object.assign(new Error('history unavailable'),{status:r.status});
+          return r.json();
+        });
+      }, status: function (agent) { return LABEL[agent.status] ? {text: agent.error ? LABEL.errored : LABEL[agent.status], color: agent.error ? '#F59E0B' : COLORS[agent.status]} : null; }});
       state.el = state.view.el;
     }
     state.view.update(turns, context || curAgent || {}); return state.el;

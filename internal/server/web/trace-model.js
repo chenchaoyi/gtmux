@@ -1,5 +1,5 @@
-// Generated from mobileapp/src/trace/model.ts; SHA256 cb0d6870adff76ea78d3580c67c62aca6fb7fda452cebfd16d369fdc20935371
-// Body SHA256 087052f5fa4422e0337416abccea579aa71420c6a6ab892a2c7f266f15725356
+// Generated from mobileapp/src/trace/model.ts; SHA256 b63a89c11fff8e8a016916a8dad990bd5f7d8964442b1fb910c78f4c638df3a3
+// Body SHA256 378d4d4c0bcaa033b145830e282ea7fb98e20b7afe8dee425e8847985ad19cfd
 (function(root){var exports={};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -13,6 +13,8 @@ exports.filter = filter;
 exports.overview = overview;
 exports.timelineRows = timelineRows;
 exports.previewText = previewText;
+exports.mergeHistory = mergeHistory;
+exports.prependHistory = prependHistory;
 const string = (value) => typeof value === 'string' ? value : '';
 const list = (value) => (Array.isArray(value) ? value : []);
 function object(value) {
@@ -81,7 +83,10 @@ function build(turns, context = {}) {
             sessions.push(group);
         }
         const sessionGroup = group;
-        const ordinal = (turnCounts.get(scope) || 0) + 1;
+        const ordinal = Number.isSafeInteger(turn.turn_ordinal) &&
+            turn.turn_ordinal > 0
+            ? turn.turn_ordinal
+            : (turnCounts.get(scope) || 0) + 1;
         turnCounts.set(scope, ordinal);
         const prompt = string(turn.prompt), time = string(turn.time), identity = scope +
             '\x00' +
@@ -375,6 +380,36 @@ function previewText(event) {
             return envelope[2].trim();
     }
     return event.body;
+}
+// Keep explicitly opened history across tail polls. A missing overlap is visible;
+// never join an old window to a new tail across an unobserved gap or source reset.
+function mergeHistory(held, latest) {
+    if (!held.length)
+        return { turns: latest, gap: false };
+    if (!latest.length)
+        return { turns: held, gap: false };
+    const key = (t) => t.record_id ? `${t.session_id || ''}\x00${t.record_id}\x00${t.turn_ordinal || ''}\x00${digest((t.time || '') + '\x00' + t.prompt)}` : '';
+    const keys = new Set(latest.map(key).filter(Boolean));
+    const overlap = held.findIndex(t => keys.has(key(t)));
+    if (overlap >= 0)
+        return { turns: held.slice(0, overlap).concat(latest), gap: false };
+    const end = held[held.length - 1], start = latest[0];
+    if (end.session_id === start.session_id &&
+        end.turn_ordinal &&
+        start.turn_ordinal === end.turn_ordinal + 1) {
+        return { turns: held.concat(latest), gap: false };
+    }
+    return { turns: held, gap: true };
+}
+function prependHistory(page, current) {
+    const end = page[page.length - 1], start = current[0];
+    if (!end ||
+        !start ||
+        end.session_id !== start.session_id ||
+        !end.turn_ordinal ||
+        start.turn_ordinal !== end.turn_ordinal + 1)
+        throw new Error('History anchor changed');
+    return page.concat(current);
 }
 
 if(typeof module==="object"&&module.exports)module.exports=exports;else root.GtmuxTrace=exports;})(typeof window!=="undefined"?window:globalThis);

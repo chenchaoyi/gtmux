@@ -24,7 +24,7 @@ import {
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import Clipboard from '@react-native-clipboard/clipboard';
 import Svg, { Path } from 'react-native-svg';
-import { GtmuxClient, TranscriptTurn } from '../api/client';
+import { ApiError, GtmuxClient, TranscriptTurn } from '../api/client';
 import { Agent, primary } from '../api/types';
 import { Lang, statusLabel } from '../i18n';
 import { useModalEscape } from '../keys/useModalEscape';
@@ -51,6 +51,8 @@ import { nativeDocumentPreview } from '../documents/nativePreview';
 import { DocumentError, documentErrorMessage } from '../documents/references';
 import {
   build,
+  mergeHistory,
+  prependHistory,
   filter,
   groupTurns,
   sourceInfo,
@@ -201,7 +203,73 @@ export function TraceReader({
     },
     [],
   );
-  const safeTurns = sameIdentity ? turns : NO_TURNS;
+  const [pageHistory, setHistory] = useState<{
+    scope: string;
+    client?: GtmuxClient;
+    turns: TranscriptTurn[];
+  }>({ scope, client, turns: [] });
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState(false);
+  const [historyChanged, setHistoryChanged] = useState(false);
+  const historyRequest = useRef<AbortController | null>(null);
+  useEffect(() => {
+    setHistory({ scope, client, turns: [] });
+    setHistoryLoading(false);
+    setHistoryError(false);
+    setHistoryChanged(false);
+    return () => {
+      historyRequest.current?.abort();
+      historyRequest.current = null;
+    };
+  }, [scope, client]);
+  useEffect(() => {
+    if (!readerVisible) {
+      historyRequest.current?.abort();
+      historyRequest.current = null;
+      setHistoryLoading(false);
+    }
+  }, [readerVisible]);
+  const historyWindow = useMemo(
+    () =>
+      mergeHistory(
+        pageHistory.scope === scope && pageHistory.client === client
+          ? pageHistory.turns
+          : NO_TURNS,
+        sameIdentity ? turns : NO_TURNS,
+      ),
+    [pageHistory, scope, client, sameIdentity, turns],
+  );
+  const safeTurns = historyWindow.turns;
+  const before = safeTurns[0]?.history_before;
+  const remaining = safeTurns[0]?.turn_ordinal
+    ? safeTurns[0].turn_ordinal! - 1
+    : dropped;
+  const loadHistory = async () => {
+    if (!client || !before || historyRequest.current) return;
+    const request = new AbortController();
+    historyRequest.current = request;
+    setHistoryLoading(true);
+    setHistoryError(false);
+    setHistoryChanged(false);
+    stick.current = false;
+    disclosureHold.current = true;
+    setAtTail(false);
+    try {
+      const page = await client.traceHistory(agent, before, request.signal);
+      if (request.signal.aborted || historyRequest.current !== request) return;
+      setHistory({ scope, client, turns: prependHistory(page, safeTurns) });
+    } catch (error) {
+      if (!request.signal.aborted && historyRequest.current === request) {
+        setHistoryError(true);
+        setHistoryChanged(error instanceof ApiError && error.status === 409);
+      }
+    } finally {
+      if (historyRequest.current === request) {
+        historyRequest.current = null;
+        setHistoryLoading(false);
+      }
+    }
+  };
   const index = useMemo(
     () =>
       build(safeTurns, {
@@ -345,7 +413,7 @@ export function TraceReader({
   function select(event: TraceEvent) {
     Keyboard.dismiss();
     stopFollowing();
-    setSelection({ event, turn: turns[event.sourceIndex] });
+    setSelection({ event, turn: safeTurns[event.sourceIndex] });
     setDetailsOpen(true);
     setDetailTab('preview');
     setCopied(false);
@@ -679,14 +747,70 @@ export function TraceReader({
           />
         </View>
       )}
-      {listVisible && dropped > 0 && (
-        <ChromeText style={[styles.notice, { color: pal.fg2 }]}>
-          {zh
-            ? `更早的 ${dropped} 轮未载入`
-            : `${dropped} earlier ${
-                dropped === 1 ? 'turn is' : 'turns are'
-              } not loaded`}
-        </ChromeText>
+      {listVisible && remaining > 0 && (
+        <View style={styles.historyBar}>
+          <ChromeText style={{ color: pal.fg2 }}>
+            {zh ? `还有 ${remaining} 轮更早记录` : `${remaining} earlier turns`}
+          </ChromeText>
+          {before && client && !historyChanged && (
+            <TouchableOpacity
+              testID="trace-history-earlier"
+              accessibilityRole="button"
+              disabled={historyLoading}
+              accessibilityState={{
+                disabled: historyLoading,
+                busy: historyLoading,
+              }}
+              onPress={loadHistory}
+              style={styles.historyAction}
+            >
+              <ChromeText style={{ color: BRAND }}>
+                {historyLoading
+                  ? zh
+                    ? '正在加载…'
+                    : 'Loading…'
+                  : historyError
+                  ? zh
+                    ? '重试'
+                    : 'Retry'
+                  : zh
+                  ? '加载更早记录'
+                  : 'Load earlier records'}
+              </ChromeText>
+            </TouchableOpacity>
+          )}
+          {historyError && (
+            <ChromeText accessibilityRole="alert" style={{ color: pal.fg2 }}>
+              {zh
+                ? historyChanged
+                  ? '源记录已更新，当前阅读位置已保留。'
+                  : '暂时无法加载，当前记录已保留。'
+                : historyChanged
+                ? 'Source records changed. Your position is kept.'
+                : 'Could not load. Current records are kept.'}
+            </ChromeText>
+          )}
+        </View>
+      )}
+      {listVisible && (historyWindow.gap || historyChanged) && (
+        <TouchableOpacity
+          testID="trace-history-latest"
+          accessibilityRole="button"
+          style={styles.loadEarlier}
+          onPress={() => {
+            setHistory({ scope, client, turns: [] });
+            setHistoryError(false);
+            setHistoryChanged(false);
+            setSelection(null);
+            onRetry?.();
+            stick.current = true;
+            disclosureHold.current = false;
+          }}
+        >
+          <ChromeText style={{ color: BRAND }}>
+            {zh ? '记录已更新 · 查看最新记录' : 'Records updated · View latest'}
+          </ChromeText>
+        </TouchableOpacity>
       )}
       {listVisible && earlierAvailable && onLoadEarlier && (
         <TouchableOpacity
@@ -1038,7 +1162,7 @@ export function TraceReader({
                   onPress={() => {
                     setSelection({
                       event: current!,
-                      turn: turns[current!.sourceIndex],
+                      turn: safeTurns[current!.sourceIndex],
                     });
                     setCopied(false);
                   }}
@@ -1357,6 +1481,20 @@ const styles = StyleSheet.create({
   mono: { fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace' },
   sourceBlock: { width: '100%', minWidth: 0 },
   update: { minHeight: 44, justifyContent: 'center', paddingVertical: 10 },
+  historyBar: {
+    minHeight: 44,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  historyAction: {
+    minHeight: 44,
+    paddingHorizontal: 8,
+    justifyContent: 'center',
+  },
   loadEarlier: {
     minHeight: 44,
     alignItems: 'center',

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -883,11 +884,41 @@ func transcriptForPane(id string, earlier int) ([]byte, server.TranscriptMeta, e
 	if !ok {
 		return empty, meta, nil
 	}
+	meta.History = func(ctx context.Context, before string) ([]byte, server.TranscriptMeta, error) {
+		sid := transcript.HistorySession(before)
+		agent := rec.Agent
+		if sid != rec.SessionID {
+			allowed := false
+			if hqpane.Find() == id {
+				current := rec.SessionID
+				for n := 0; n < 64; n++ {
+					previous, a := events.HQSessionPredecessorLink(current, time.Now().Unix())
+					if previous == "" {
+						break
+					}
+					if previous == sid {
+						agent = a
+						if agent == "" {
+							agent = transcript.AgentForSession(sid)
+						}
+						allowed = agent != ""
+						break
+					}
+					current = previous
+				}
+			}
+			if !allowed {
+				return nil, server.TranscriptMeta{}, transcript.ErrHistoryChanged
+			}
+		}
+		return transcriptHistoryPage(ctx, agent, sid, before, func(ts []transcript.Turn) []transcript.Turn { return stampSenders(ts, id, time.Now().Unix()) })
+	}
 	// Read BEFORE the turns and report it even when there are none: a session cleared a
 	// moment ago has an empty transcript, and that is exactly when the reader most needs
 	// to be told why rather than shown a blank screen.
 	meta.Reset, meta.ResetAt = transcript.SessionOrigin(rec.Agent, rec.SessionID)
 	turns, err := transcript.Load(rec.Agent, rec.SessionID, maxTranscriptTurns)
+	turns = append([]transcript.Turn(nil), turns...)
 	if err != nil {
 		return empty, meta, nil
 	}
@@ -923,7 +954,7 @@ func transcriptForPane(id string, earlier int) ([]byte, server.TranscriptMeta, e
 		turns, senderRevision = stampMessageSenders(turns, by), revision
 	}
 	if revision := transcript.LogRevision(rec.Agent, rec.SessionID); revision != "" {
-		meta.Etag = fmt.Sprintf("W/%q", fmt.Sprintf("profile-v3-tool-input-%s-%s-%s-%s", rec.SessionID, revision, oldest, senderRevision))
+		meta.Etag = fmt.Sprintf("W/%q", fmt.Sprintf("profile-v4-trace-history-%s-%s-%s-%s", rec.SessionID, revision, oldest, senderRevision))
 	}
 	// Who put each prompt there, for the ones gtmux delivered on someone else's behalf
 	// (who-sent-this-turn). After the stitch, so an earlier session's turns are attributed
@@ -935,6 +966,12 @@ func transcriptForPane(id string, earlier int) ([]byte, server.TranscriptMeta, e
 	// The budget grows with the sessions asked for, else the stitched history would be
 	// cut back to the newest turns and the earlier session never reach the reader.
 	kept, dropped := turnsWithinBudget(turns, transcriptByteBudget*(1+min(earlier, 3)))
+	if len(kept) > 0 {
+		transcript.SetHistoryCursor(kept[0].Agent, kept[0].SessionID, kept)
+		if kept[0].Ordinal > 0 {
+			dropped = max(dropped, kept[0].Ordinal-1)
+		}
+	}
 	b, err := json.Marshal(kept)
 	if err != nil {
 		return empty, meta, nil

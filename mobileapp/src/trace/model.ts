@@ -123,7 +123,11 @@ export function build(
       sessions.push(group);
     }
     const sessionGroup = group;
-    const ordinal = (turnCounts.get(scope) || 0) + 1;
+    const ordinal =
+      Number.isSafeInteger(turn.turn_ordinal) &&
+      (turn.turn_ordinal as number) > 0
+        ? (turn.turn_ordinal as number)
+        : (turnCounts.get(scope) || 0) + 1;
     turnCounts.set(scope, ordinal);
     const prompt = string(turn.prompt),
       time = string(turn.time),
@@ -468,7 +472,7 @@ export function timelineRows(
             event: group.events[j],
             order: j + 1,
             last: j === group.events.length - 1,
-            parentCall: {key, index: j - i + 1, total: end - i},
+            parentCall: { key, index: j - i + 1, total: end - i },
           });
         i = end - 1;
       } else
@@ -506,4 +510,46 @@ export function previewText(event: TraceEvent): string {
     if (envelope) return envelope[2].trim();
   }
   return event.body;
+}
+
+// Keep explicitly opened history across tail polls. A missing overlap is visible;
+// never join an old window to a new tail across an unobserved gap or source reset.
+export function mergeHistory(
+  held: TranscriptTurn[],
+  latest: TranscriptTurn[],
+): { turns: TranscriptTurn[]; gap: boolean } {
+  if (!held.length) return { turns: latest, gap: false };
+  if (!latest.length) return { turns: held, gap: false };
+  const key = (t: TranscriptTurn) =>
+    t.record_id ? `${t.session_id || ''}\x00${t.record_id}\x00${t.turn_ordinal || ''}\x00${digest((t.time || '')+'\x00'+t.prompt)}` : '';
+  const keys = new Set(latest.map(key).filter(Boolean));
+  const overlap = held.findIndex(t => keys.has(key(t)));
+  if (overlap >= 0)
+    return { turns: held.slice(0, overlap).concat(latest), gap: false };
+  const end = held[held.length - 1],
+    start = latest[0];
+  if (
+    end.session_id === start.session_id &&
+    end.turn_ordinal &&
+    start.turn_ordinal === end.turn_ordinal + 1
+  ) {
+    return { turns: held.concat(latest), gap: false };
+  }
+  return { turns: held, gap: true };
+}
+export function prependHistory(
+  page: TranscriptTurn[],
+  current: TranscriptTurn[],
+): TranscriptTurn[] {
+  const end = page[page.length - 1],
+    start = current[0];
+  if (
+    !end ||
+    !start ||
+    end.session_id !== start.session_id ||
+    !end.turn_ordinal ||
+    start.turn_ordinal !== end.turn_ordinal + 1
+  )
+    throw new Error('History anchor changed');
+  return page.concat(current);
 }
