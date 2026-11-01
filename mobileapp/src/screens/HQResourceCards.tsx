@@ -10,7 +10,7 @@ import type { HQWorkspace } from '../api/hqWorkspace';
 import type { HQResourceRequest } from '../state/WorkspaceContext';
 import { DisclosureChevron } from '../ui/DisclosureChevron';
 import { SIcon, IconName } from '../ui/SettingsIcons';
-import type { Palette } from '../ui/theme';
+import { ERRORED_COLOR, StatusColor, type Palette } from '../ui/theme';
 import { parseBoardSections } from './boardSections';
 import { usageDoorValue } from './hqHeaderModel';
 import { knowledgeValue } from './knowledgeModel';
@@ -38,7 +38,7 @@ export function HQResourceCards({
   zh: boolean;
   wide: boolean;
   width: number;
-  onOpen: (page: HQResourceRequest['page']) => void;
+  onOpen: (page: Exclude<HQResourceRequest['page'], 'board'>) => void;
 }) {
   const { fontScale } = useWindowDimensions();
   const stacked = fontScale > 1.3 || width < 350;
@@ -61,6 +61,20 @@ export function HQResourceCards({
       .map(w => ({ label: w.label, pct: w.pct_used, agent: w.agent })),
     zh,
     usage?.history,
+  );
+  const machine = usage?.resource?.machine;
+  const warning =
+    machine?.tier === 'amber' || machine?.tier === 'red'
+      ? machineWarn(machine, zh) || t('Resource warning', '本机资源警示')
+      : '';
+  const warningColor =
+    machine?.tier === 'red' ? StatusColor.waiting : ERRORED_COLOR;
+  const warningText = warning
+    ? `${t('Local resources', '本机资源')} · ${warning}`
+    : '';
+  const previous = t(
+    'Previous reading · couldn’t refresh',
+    '上次记录 · 刷新失败',
   );
   const unavailable = (failed?: boolean) =>
     failed ? t('Unavailable', '暂时无法加载') : t('Loading…', '正在加载…');
@@ -116,61 +130,95 @@ export function HQResourceCards({
           : t('No usage recorded', '暂无用量记录')),
       failed: readings.usage.failed,
       loaded: usage !== undefined,
-      note:
-        usage?.resource?.machine?.tier === 'red'
-          ? machineWarn(usage.resource.machine, zh) ||
-            usage.resource.machine.warn
-          : undefined,
     },
   ];
   return (
     <View testID="hq-resource-summaries" style={[s.grid, wide && s.wide]}>
-      {resources.map(resource => (
-        <TouchableOpacity
-          key={resource.key}
-          testID={`hq-resource-${resource.key}`}
-          accessibilityRole="button"
-          accessibilityLabel={`${resource.title}. ${resource.value}${
-            resource.note ? '. ' + resource.note : ''
-          }${
-            resource.failed && resource.loaded
-              ? '. ' + t('Previous reading', '上次记录')
-              : ''
-          }`}
-          onPress={() => onOpen(resource.key)}
-          style={[
-            s.card,
-            { backgroundColor: pal.surface, borderColor: pal.divider },
-            wide
-              ? s.column
-              : resource.key === 'board' || stacked
-              ? s.full
-              : s.half,
-          ]}
-        >
-          <View style={s.heading}>
-            <SIcon name={resource.icon} size={20} color={pal.fg2} />
-            <Text style={[s.label, { color: pal.fg2 }]}>{resource.title}</Text>
-            <DisclosureChevron open={false} color={pal.fg2} />
-          </View>
-          <Text style={[s.value, { color: pal.fg }]}>
-            {resource.value.replace(
-              /\s+·\s+/g,
-              resource.key === 'usage' ? '\n' : ' · ',
+      {resources.map(resource => {
+        const page = resource.key;
+        const label = `${resource.title}. ${resource.value}${
+          resource.note ? '. ' + resource.note : ''
+        }${resource.failed && resource.loaded ? '. ' + previous : ''}${
+          resource.key === 'board' && warningText
+            ? '. ' +
+              warningText +
+              (readings.usage.failed ? '. ' + previous : '')
+            : ''
+        }`;
+        const style = [
+          s.card,
+          { backgroundColor: pal.surface, borderColor: pal.divider },
+          wide
+            ? s.column
+            : resource.key === 'board' || stacked
+            ? s.full
+            : s.half,
+        ];
+        const content = (
+          <>
+            <View style={s.heading}>
+              <SIcon name={resource.icon} size={20} color={pal.fg2} />
+              <Text style={[s.label, { color: pal.fg2 }]}>
+                {resource.title}
+              </Text>
+              {resource.key !== 'board' && (
+                <DisclosureChevron open={false} color={pal.fg2} />
+              )}
+            </View>
+            <Text style={[s.value, { color: pal.fg }]}>
+              {resource.value.replace(
+                /\s+·\s+/g,
+                resource.key === 'usage' ? '\n' : ' · ',
+              )}
+            </Text>
+            {!!resource.note && (
+              <Text numberOfLines={2} style={[s.note, { color: pal.fg2 }]}>
+                {resource.note}
+              </Text>
             )}
-          </Text>
-          {!!resource.note && (
-            <Text numberOfLines={2} style={[s.note, { color: pal.fg2 }]}>
-              {resource.note}
-            </Text>
-          )}
-          {resource.failed && resource.loaded && (
-            <Text style={[s.note, { color: pal.fg2 }]}>
-              {t('Previous reading · couldn’t refresh', '上次记录 · 刷新失败')}
-            </Text>
-          )}
-        </TouchableOpacity>
-      ))}
+            {resource.failed && resource.loaded && (
+              <Text style={[s.note, { color: pal.fg2 }]}>{previous}</Text>
+            )}
+            {resource.key === 'board' && !!warningText && (
+              <View
+                testID="hq-resource-warning"
+                style={[s.warning, { borderTopColor: pal.divider }]}
+              >
+                <SIcon name="server" size={20} color={warningColor} />
+                <View style={s.warningContent}>
+                  <Text style={[s.note, { color: pal.fg }]}>{warningText}</Text>
+                  {readings.usage.failed && (
+                    <Text style={[s.note, { color: pal.fg2 }]}>{previous}</Text>
+                  )}
+                </View>
+              </View>
+            )}
+          </>
+        );
+        // Matters are already below: the board is a briefing, not another door.
+        return page === 'board' ? (
+          <View
+            key={resource.key}
+            testID="hq-resource-board"
+            accessible
+            accessibilityLabel={label}
+            style={style}
+          >
+            {content}
+          </View>
+        ) : (
+          <TouchableOpacity
+            key={resource.key}
+            testID={`hq-resource-${resource.key}`}
+            accessibilityRole="button"
+            accessibilityLabel={label}
+            onPress={() => onOpen(page)}
+            style={style}
+          >
+            {content}
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 }
@@ -196,4 +244,11 @@ const s = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   note: { fontSize: 13, lineHeight: 19 },
+  warning: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingTop: 9,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  warningContent: { flex: 1, gap: 3 },
 });

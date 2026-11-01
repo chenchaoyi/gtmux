@@ -427,7 +427,7 @@ test('closing a resource returns to its originating overview; composing from it 
   expect(
     tree.root.findAllByProps({ testID: 'hq-overview' }).length,
   ).toBeGreaterThan(0);
-  await press('Board');
+  await press('Knowledge');
   await act(async () =>
     consoleRender.mock.calls.at(-1)![0].onResourceExit('console'),
   );

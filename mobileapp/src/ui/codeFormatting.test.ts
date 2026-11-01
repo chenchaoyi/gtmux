@@ -96,15 +96,15 @@ test('static JavaScript command strings decode into Python while preserving the 
     'await tools.exec_command({cmd:' + JSON.stringify(shell) + '});';
   const parts = codeParts(source, 'javascript');
   expect(parts.map(part => part.hint)).toEqual([
+    'javascript',
     'shell',
     'python',
-    'javascript',
   ]);
-  expect(parts[0].source).toBe(shell);
-  expect(parts[1].source).toBe(python);
-  expect(parts.at(-1)?.source).toBe(source);
-  expect(parts[0].path).toBe('cmd 1');
-  expect(formatCode(parts[1].source, parts[1].hint)).toContain('s = Path');
+  expect(parts[0].source).toBe(source);
+  expect(parts[1].source).toBe(shell);
+  expect(parts[2].source).toBe(python);
+  expect(parts[1].path).toBe('cmd 1');
+  expect(formatCode(parts[2].source, parts[2].hint)).toContain('s = Path');
 });
 
 test('JSON arrays and multiple heredocs expose separate, uniquely keyed recorded scripts', () => {
@@ -143,17 +143,53 @@ test('command is Shell unless an explicit interpreter identifies an embedded lan
   ]) {
     const input = JSON.stringify({ cmd });
     expect(codeParts(input, 'json').map(part => part.hint)).toEqual([
-      'shell',
       'json',
+      'shell',
     ]);
-    expect(codeParts(input, 'json')[0].source).toBe(cmd);
+    expect(codeParts(input, 'json')[1].source).toBe(cmd);
   }
   const cmd = "node - <<'JS'\nconst value={count:1};console.log(value);\nJS";
-  expect(codeParts(JSON.stringify({ cmd }), 'json')[0].hint).toBe('javascript');
+  expect(
+    codeParts(JSON.stringify({ cmd }), 'json').map(part => part.hint),
+  ).toEqual(['json', 'shell', 'javascript']);
   const bash = "bash <<'SH'\necho 'import json'\nSH";
   expect(
     codeParts(JSON.stringify({ cmd: bash }), 'json').every(
       part => part.hint !== 'python',
     ),
   ).toBe(true);
+});
+
+test('full call leads outer commands and their scripts in recorded expansion order', () => {
+  const first =
+    "python3 - <<'PY'\nprint(1)\nPY\nnode - <<'JS'\nconsole.log(2)\nJS";
+  const second = "bash <<'SH'\necho done\nSH";
+  const source = JSON.stringify([{ cmd: first }, { command: second }]);
+  const parts = codeParts(source, 'json');
+  expect(parts.map(part => part.hint)).toEqual([
+    'json',
+    'shell',
+    'python',
+    'javascript',
+    'shell',
+    'shell',
+  ]);
+  expect(parts.map(part => part.path)).toEqual([
+    '',
+    'cmd 1',
+    'cmd 1',
+    'cmd 1',
+    'command 2',
+    'command 2',
+  ]);
+  expect(parts[0].source).toBe(source);
+  expect(parts[1].source).toBe(first);
+  expect(parts[2].source).toBe('print(1)\n');
+  expect(parts[3].source).toBe('console.log(2)\n');
+  expect(parts[4].source).toBe(second);
+  expect(codeParts(first, 'shell').map(part => part.hint)).toEqual([
+    'shell',
+    'python',
+    'javascript',
+  ]);
 });

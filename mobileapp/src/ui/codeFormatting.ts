@@ -160,19 +160,14 @@ export function codeParts(source: string, hint = ''): CodePart[] {
   if (source.length > 256000) return [original];
   const found: CodePart[] = [];
   let fields = 0;
-  let preferOriginal = false;
   function script(command: string, path: string) {
     const lines = command.split('\n');
-    const scripts: CodePart[] = [],
-      outside: string[] = [];
+    const scripts: CodePart[] = [];
     for (let i = 0; i < lines.length; i++) {
       const start = lines[i].match(
         /^\s*(python(?:\d(?:\.\d+)?)?|node(?:js)?|bash|sh|zsh)\s+(?:-\w+\s+)*(?:-\s+)?<<(-?)(['"]?)([A-Za-z_]\w*)\3\s*\r?$/,
       );
-      if (!start) {
-        outside.push(lines[i]);
-        continue;
-      }
+      if (!start) continue;
       let end = i + 1;
       while (
         end < lines.length &&
@@ -182,10 +177,7 @@ export function codeParts(source: string, hint = ''): CodePart[] {
         ) !== start[4]
       )
         end++;
-      if (end === lines.length) {
-        outside.push(lines[i]);
-        continue;
-      }
+      if (end === lines.length) continue;
       const text =
         lines
           .slice(i + 1, end)
@@ -203,13 +195,10 @@ export function codeParts(source: string, hint = ''): CodePart[] {
       });
       i = end;
     }
-    const mixed = !!outside.join('\n').trim();
-    const shellPart = { id: path, source: command, hint: 'shell', path };
-    // A mixed command leads with all shell operations, never just its Python body.
-    if (path && mixed && command.trim()) found.push(shellPart);
+    // Keep each outer command before its scripts, matching source expansion.
+    if (path && command.trim())
+      found.push({ id: path, source: command, hint: 'shell', path });
     found.push(...scripts);
-    if (path && !mixed && command.trim()) found.push(shellPart);
-    if (!path && mixed) preferOriginal = true;
   }
   try {
     if (/^(?:shell|sh|bash|zsh|command)$/.test(hint)) script(source, '');
@@ -280,11 +269,7 @@ export function codeParts(source: string, hint = ''): CodePart[] {
     return [original];
   }
   // A large wrapper stays readable in full without mounting an unbounded tab list.
-  return found.length && found.length <= 16
-    ? preferOriginal
-      ? [original, ...found]
-      : [...found, original]
-    : [original];
+  return found.length && found.length <= 16 ? [original, ...found] : [original];
 }
 
 export function formatCode(source: string, hint = ''): string {
