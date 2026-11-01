@@ -2236,6 +2236,7 @@
     syncChatLive(main, a, function () { return !$('chat').hidden && paneMode === 'chat' && curPane === a.pane_id && curAgent && curAgent.status === 'working'; });
     scroll.scrollTop = atBottom ? scroll.scrollHeight : prevTop;
     if (curTurnIdx >= turns.length) curTurnIdx = Math.max(0, turns.length - 1);
+    restoreCodeState(root,preserved);
     root.querySelectorAll('[data-chat-focus]').forEach(function (node) {
       var key = node.dataset.chatFocus, pos = inputScroll[key];
       if (pos) { node.scrollLeft = pos[0]; node.scrollTop = pos[1]; }
@@ -2244,12 +2245,17 @@
   }
 
   function snapshotToolState(root) {
-    var active = document.activeElement, scroll = {};
+    var active = document.activeElement, scroll = {}, code = {};
+    root.querySelectorAll('.code-panel').forEach(function(node){if(node.readingKey && node.readingState)code[node.readingKey]=node.readingState();});
     root.querySelectorAll('.step-inspect').forEach(function (node) { if (node.saveOpenState) node.saveOpenState(); });
     root.querySelectorAll('.step-input').forEach(function (node) { scroll[node.dataset.chatFocus] = [node.scrollLeft, node.scrollTop]; });
-    return {focused: active && root.contains && root.contains(active) ? active.getAttribute('data-chat-focus') : null, scroll: scroll};
+    return {focused: active && root.contains && root.contains(active) ? active.getAttribute('data-chat-focus') : null, scroll: scroll, code:code};
+  }
+  function restoreCodeState(root,preserved) {
+    root.querySelectorAll('.code-panel').forEach(function(node){var state=preserved.code && preserved.code[node.readingKey];if(state && node.restoreReadingState)node.restoreReadingState(state);});
   }
   function restoreToolState(root, preserved) {
+    restoreCodeState(root,preserved);
     root.querySelectorAll('[data-chat-focus]').forEach(function (node) {
       var key = node.dataset.chatFocus, scroll = preserved.scroll[key];
       if (scroll) { node.scrollLeft = scroll[0]; node.scrollTop = scroll[1]; }
@@ -2292,17 +2298,16 @@
         body.appendChild(el('span', 'step-detail' + (op === 'agent' || op === 'wait' ? ' step-prose' : ''), activity.preview(s, lang)));
         summary.appendChild(body); details.appendChild(summary);
         if (!inspectable) { row.appendChild(details); list.appendChild(row); return; }
-        var inspector = el('div', 'step-inspector'), pending = false, loaded = !s.details_truncated, formatted = true;
+        var inspector = el('div', 'step-inspector'), pending = false, loaded = !s.details_truncated, formatted = true, rendered = false;
         function renderInput(message) {
-          inspector.replaceChildren();
+          rendered = true; inspector.replaceChildren();
           var meta = el('dl', 'step-meta'); meta.appendChild(el('dt', '', T('Tool', '工具'))); meta.appendChild(el('dd', 'step-name', s.title || 'tool'));
           if (s.workdir) { meta.appendChild(el('dt', '', T('Working directory', '工作目录'))); meta.appendChild(el('dd', '', s.workdir)); } inspector.appendChild(meta);
           var input = s.input || s.detail || '';
           var inputLabel = !s.input ? T('Recorded detail','已记录详情') : s.input_kind === 'code' ? T('Recorded code','已记录代码') : s.input_kind === 'command' ? T('Recorded command','已记录命令') : ['parameters','arguments'].includes(s.input_kind) ? T('Recorded parameters','已记录参数') : T('Recorded input','已记录输入');
-          var toolbar = el('div', 'step-toolbar'); toolbar.appendChild(el('span', '', s.details_truncated ? T('Input preview', '输入预览') : inputLabel));
-          var format = el('button', '', '{ }'); format.type = 'button'; format.title = T(formatted ? 'Show original' : 'Format code', formatted ? '查看原文' : '格式化代码'); format.setAttribute('aria-label', format.title); format.setAttribute('aria-pressed', String(formatted)); format.onclick = function () { formatted = !formatted; renderInput(message); }; toolbar.appendChild(format);
-          if (loaded) toolbar.appendChild(clipboardAction(T('Copy', '复制'), '', input, key + '-copy')); inspector.appendChild(toolbar);
-          var pre = el('pre', 'step-input'); renderCode(pre, formatted ? formatToolInput(input, s) : input, s.input_kind === 'code' ? 'javascript' : s.input_kind === 'command' ? 'shell' : s.input_kind); pre.tabIndex = 0; pre.dataset.chatFocus = key + '-input'; pre.setAttribute('role', 'region'); pre.setAttribute('aria-label', inputLabel); inspector.appendChild(pre);
+          var codePanel = codePanelEl(input, {hint: s.input_kind === 'code' || s.operation === 'code' ? 'javascript' : s.input_kind === 'command' ? 'shell' : s.input_kind,
+            formatted: formatted, disabled: !loaded, label: inputLabel, focusKey: key + '-input'});
+          inspector.appendChild(codePanel);
           if (message) { var notice = el('p', 'step-truncated', message); notice.setAttribute('role', 'status'); inspector.appendChild(notice); }
           if (s.details_truncated && s.input_ref && inputScope && !pending) { var retry = el('button', 'step-load-full', T('Load full input', '读取完整输入')); retry.type = 'button'; retry.onclick = loadInput; inspector.appendChild(retry); }
         }
@@ -2311,8 +2316,10 @@
           pending = true; renderInput(T('Loading full input…', '读取完整输入…'));
           readToolInput(inputScope.session_id, inputScope.home_id || '', s.input_ref).then(function (full) { pending = false; if (!details.isConnected) return; s = full; loaded = true; renderInput(); }).catch(function () { pending = false; if (details.isConnected) renderInput(T('Could not load full input. Retry or refresh the conversation.', '未能读取完整输入，请重试或刷新会话。')); });
         }
-        details.ontoggle = function () { if (details.isConnected) { detailState[key] = details.open; if (details.open) loadInput(); } };
-        renderInput(s.details_truncated && !s.input_ref ? T('Refresh this conversation after updating the server to read full input.', '更新服务端并刷新会话后可读取完整输入。') : '');
+        function firstInput() { if(!rendered)renderInput(s.details_truncated && !s.input_ref ? T('Refresh this conversation after updating the server to read full input.', '更新服务端并刷新会话后可读取完整输入。') : ''); }
+        summary.onclick = function () { if(!details.open)firstInput(); };
+        details.ontoggle = function () { if (details.isConnected) { detailState[key] = details.open; if (details.open) { firstInput(); loadInput(); } } };
+        if(details.open)firstInput();
         details.appendChild(inspector); row.appendChild(details); list.appendChild(row);
         if (details.open) setTimeout(loadInput, 0);
       });
@@ -2504,7 +2511,7 @@
     if (t.prompt) {
       var ur = document.createElement('div'); ur.className = 'urow';
       var us = document.createElement('div'); us.className = 'message-stack user-message';
-      var ub = document.createElement('div'); ub.className = 'ububble'; ub.appendChild(mdRender(t.prompt, {session_id: t.session_id || currentAgent.session_id, home_id: currentAgent.home_id || ''})); us.appendChild(ub);
+      var ub = document.createElement('div'); ub.className = 'ububble'; ub.appendChild(mdRender(t.prompt, {codeKey: 'prompt-'+(t.session_id||currentAgent.pane_id)+'-'+idx, session_id: t.session_id || currentAgent.session_id, home_id: currentAgent.home_id || ''})); us.appendChild(ub);
       us.appendChild(messageMeta(t.prompt, t.time, t.from));
       ur.appendChild(us); ur.appendChild(speakerAvatar(t.from ? t.from.kind : 'user', t.from || {}, t.from ? senderAvatarEl(t.from, 26) : userAvatarEl(26))); ct.appendChild(ur);
     }
@@ -2514,7 +2521,7 @@
       if (seg.text) {
         var ar = document.createElement('div'); ar.className = 'arow'; ar.appendChild(speakerAvatar('agent', a, avatarEl(a, 28, false)));
         var as = document.createElement('div'); as.className = 'message-stack assistant-message';
-        var ab = document.createElement('div'); ab.className = 'abubble'; ab.appendChild(mdRender(seg.text, {session_id: t.session_id || currentAgent.session_id, home_id: currentAgent.home_id || ''})); as.appendChild(ab);
+        var ab = document.createElement('div'); ab.className = 'abubble'; ab.appendChild(mdRender(seg.text, {codeKey: 'reply-'+(t.session_id||currentAgent.pane_id)+'-'+idx+'-'+k, session_id: t.session_id || currentAgent.session_id, home_id: currentAgent.home_id || ''})); as.appendChild(ab);
         as.appendChild(messageMeta(seg.text)); ar.appendChild(as); ct.appendChild(ar);
       }
       if (seg.steps && seg.steps.length) {
@@ -2828,6 +2835,48 @@
     }
     choose(kind);
   }
+  function codePanelEl(source, options) {
+    options = options || {};
+    var parts = options.embedded === false ? [{id: 'original', source: source, hint: options.hint, path: ''}] : window.GtmuxCodeFormat.codeParts(source, options.hint);
+    var current = parts[0], formatted = options.formatted !== false;
+    var root = el('section', 'code-panel'), toolbar = el('div', 'step-toolbar code-panel-toolbar');
+    var language = el('span', 'code-language'); toolbar.appendChild(language);
+    var format;
+    if (options.allowFormat !== false) {
+      format = el('button', 'code-format', '{ }'); format.type = 'button'; if(options.focusKey)format.dataset.chatFocus=options.focusKey+'-format';
+      format.onclick = function () { formatted = !formatted; draw(); }; toolbar.appendChild(format);
+    }
+    if (!options.disabled && options.copy !== false) toolbar.appendChild(clipboardAction(T('Copy recorded input', '复制调用原文'), '', source, options.focusKey && options.focusKey + '-copy'));
+    root.appendChild(toolbar);
+    var tabs = el('div', 'code-parts'); tabs.setAttribute('role', 'tablist'); tabs.hidden = parts.length < 2;
+    var tabButtons = parts.map(function(part) {
+      var name = part.id === 'original' ? T('Full call', '完整调用') : window.GtmuxCodeReading.codeLabel(part.source, part.hint) + ' · ' + (part.path || T('Script', '脚本'));
+      var button = el('button', '', name); button.type = 'button'; button.setAttribute('role', 'tab'); if(options.focusKey)button.dataset.chatFocus=options.focusKey+'-part-'+part.id;
+      button.onclick = function () { current = part; draw(); }; tabs.appendChild(button); return button;
+    });
+    tabs.onkeydown = function(event) {
+      if(event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || !['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
+      event.preventDefault(); event.stopPropagation();
+      var i = parts.indexOf(current), next = event.key === 'Home' ? 0 : event.key === 'End' ? parts.length-1 : (i + (event.key === 'ArrowRight' ? 1 : -1) + parts.length) % parts.length;
+      current = parts[next]; draw(); tabButtons[next].focus();
+    };
+    root.appendChild(tabs);
+    var pre = el('pre', options.className || 'step-input'); pre.tabIndex = 0;
+    pre.setAttribute('role', 'region'); pre.setAttribute('aria-label', options.label || T('Recorded code', '已记录代码'));
+    if(options.focusKey) pre.dataset.chatFocus = options.focusKey;
+    root.appendChild(pre);
+    function draw() {
+      language.textContent = window.GtmuxCodeReading.codeLabel(current.source, current.hint);
+      if(format) format.hidden = !['JavaScript','TypeScript','JSON','HTML','CSS','YAML','Python'].includes(language.textContent);
+      if(format) { format.setAttribute('aria-pressed',String(formatted)); format.title = T(formatted ? 'Show original' : 'Format code', formatted ? '查看原文' : '格式化代码'); format.setAttribute('aria-label',format.title); }
+      tabButtons.forEach(function(button,i) { var selected = parts[i] === current; button.setAttribute('aria-selected',String(selected)); button.tabIndex = selected ? 0 : -1; });
+      renderCode(pre, formatted && options.allowFormat !== false ? window.GtmuxCodeFormat.formatCode(current.source,current.hint || window.GtmuxCodeReading.codeLanguage(current.source)) : current.source,current.hint);
+    }
+    root.readingKey=options.focusKey;
+    root.readingState=function(){return {source:source,part:current.id,formatted:formatted};};
+    root.restoreReadingState=function(state){if(state.source!==source)return;current=parts.find(function(part){return part.id===state.part;})||parts[0];formatted=state.formatted;draw();};
+    draw(); return root;
+  }
   function renderCode(node, source, hint) {
     var reading = window.GtmuxCodeReading, colors = reading.syntaxColors[document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light'];
     node.replaceChildren();
@@ -2867,7 +2916,7 @@
   function resetTrace(state) { if (state && state.view) state.view.dispose(); return {}; }
   function traceView(turns, state, context) {
     if (!state.view) {
-      state.view = window.GtmuxTraceView.create({T: T, markdown: mdRender, actions: bubbleActions, icon: uiIcon, formatTime: sepTime, toolInput: readToolInput, formatCode: formatToolInput, renderCode: renderCode, status: function (agent) { return LABEL[agent.status] ? {text: agent.error ? LABEL.errored : LABEL[agent.status], color: agent.error ? '#F59E0B' : COLORS[agent.status]} : null; }});
+      state.view = window.GtmuxTraceView.create({T: T, markdown: mdRender, actions: bubbleActions, icon: uiIcon, formatTime: sepTime, toolInput: readToolInput, formatCode: formatToolInput, renderCode: renderCode, codePanel: codePanelEl, status: function (agent) { return LABEL[agent.status] ? {text: agent.error ? LABEL.errored : LABEL[agent.status], color: agent.error ? '#F59E0B' : COLORS[agent.status]} : null; }});
       state.el = state.view.el;
     }
     state.view.update(turns, context || curAgent || {}); return state.el;
@@ -3027,7 +3076,7 @@
   }
   function mdRender(src, context) {
     var root = document.createElement('div'); root.className = 'md';
-    var lines = String(src).replace(/\r\n/g, '\n').split('\n'), i = 0;
+    var lines = String(src).replace(/\r\n/g, '\n').split('\n'), i = 0, fence = 0;
     var FENCE = /^\s*```(.*)$/, HR = /^\s*([-*_])(\s*\1){2,}\s*$/, HEADING = /^\s*(#{1,6})\s+(.*)$/;
     var QUOTE = /^\s*>\s?/, BULLET = /^\s*[-*+]\s+/, ORDERED = /^\s*\d+\.\s+/;
     var TABLE_SEP = /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/;
@@ -3046,9 +3095,7 @@
         var body = []; i++;
         while (i < lines.length && !/^\s*```/.test(lines[i])) { body.push(lines[i]); i++; }
         i++;
-        var pre = document.createElement('pre'); pre.className = 'md-pre';
-        var code = document.createElement('code'); code.textContent = body.join('\n'); pre.appendChild(code);
-        root.appendChild(pre); continue;
+        root.appendChild(codePanelEl(body.join('\n'), {hint: fm[1].trim(), formatted: false, className: 'md-pre', focusKey:context && context.codeKey && context.codeKey+'-fence-'+fence++})); continue;
       }
       if (line.trim() === '') { i++; continue; }
       if (HR.test(line)) { root.appendChild(document.createElement('hr')); i++; continue; }

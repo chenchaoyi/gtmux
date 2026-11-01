@@ -161,19 +161,46 @@ export function TraceTimelineRow({
       }}
       testID={batch ? 'trace-calls-' + row.key : 'trace-record-' + event.key}
       accessibilityRole="button"
+      accessibilityHint={
+        !batch && row.parentCall
+          ? zh
+            ? `本组第 ${row.parentCall.index} 个调用，共 ${row.parentCall.total} 个`
+            : `Call ${row.parentCall.index} of ${row.parentCall.total} in this group`
+          : undefined
+      }
       accessibilityState={
         batch ? { expanded: row.open } : { selected: selected === event.key }
       }
       onPress={() => (batch ? onToggle(row) : onSelect(event))}
       style={[
         s.record,
-        { backgroundColor: selected === event.key ? pal.rowSelected : pal.bg },
+        !batch && row.parentCall && s.nestedRecord,
+        {
+          backgroundColor:
+            !batch && selected === event.key ? pal.rowSelected : pal.bg,
+        },
       ]}
     >
+      {!batch && row.parentCall && (
+        <>
+          <View
+            testID="trace-call-parent-rail"
+            style={[
+              s.parentRail,
+              row.last && s.parentRailEnd,
+              { backgroundColor: pal.divider },
+            ]}
+          />
+          <View style={[s.branch, { backgroundColor: pal.divider }]} />
+        </>
+      )}
       <View style={s.rail}>
-        {!row.last && (
-          <View style={[s.line, { backgroundColor: pal.divider }]} />
-        )}
+        {!row.last &&
+          (batch ||
+            !row.parentCall ||
+            row.parentCall.index < row.parentCall.total) && (
+            <View style={[s.line, { backgroundColor: pal.divider }]} />
+          )}
         <View style={[s.marker, { backgroundColor: pal.bg }]}>
           {event.kind === 'context' ? (
             <SIcon name="info" size={20} color={pal.fg2} />
@@ -237,6 +264,10 @@ const s = StyleSheet.create({
     minHeight: 60,
   },
   rail: { width: 24, alignItems: 'center' },
+  nestedRecord: { paddingLeft: 48 },
+  parentRail: { position: 'absolute', left: 31.5, top: 0, bottom: 0, width: 1 },
+  parentRailEnd: { bottom: undefined, height: 22 },
+  branch: { position: 'absolute', left: 31.5, top: 22, width: 28, height: 1 },
   marker: {
     width: 24,
     height: 24,

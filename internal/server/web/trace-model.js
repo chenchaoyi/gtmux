@@ -1,5 +1,5 @@
-// Generated from mobileapp/src/trace/model.ts; SHA256 4293c23c5a35264ef012a65c615a1a77fb248d414d484698c831c2d4a939562d
-// Body SHA256 9850e217c31156c01509b57671467ed4c86cc59f72f7e15cc4da728459a75899
+// Generated from mobileapp/src/trace/model.ts; SHA256 cb0d6870adff76ea78d3580c67c62aca6fb7fda452cebfd16d369fdc20935371
+// Body SHA256 087052f5fa4422e0337416abccea579aa71420c6a6ab892a2c7f266f15725356
 (function(root){var exports={};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -340,6 +340,7 @@ function timelineRows(groups, expanded, calls, searching = false, defaults = {})
                         event: group.events[j],
                         order: j + 1,
                         last: j === group.events.length - 1,
+                        parentCall: { key, index: j - i + 1, total: end - i },
                     });
                 i = end - 1;
             }

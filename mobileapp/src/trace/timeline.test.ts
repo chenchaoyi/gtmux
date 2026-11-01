@@ -33,6 +33,18 @@ test('turn identity and expansion survive prepend while calls remain individuall
       .filter(row => row.type === 'event')
       .map(row => row.type === 'event' && row.event.body),
   ).toEqual(original.events.map(event => event.body));
+  const children = expanded.filter(
+    row => row.type === 'event' && row.parentCall,
+  );
+  expect(children).toHaveLength(8);
+  expect(children.map(row => row.type === 'event' && row.parentCall)).toEqual(
+    calls.map((_, i) => ({ key: batch.key, index: i + 1, total: 8 })),
+  );
+  expect(
+    expanded
+      .filter(row => row.type === 'event' && row.event.kind !== 'tool')
+      .every(row => row.type === 'event' && !row.parentCall),
+  ).toBe(true);
   expect(groupTurns(build([turn], { home_id: 'two' }).events)[0].key).not.toBe(
     original.key,
   );

@@ -224,26 +224,24 @@ for (const options of [
     await input.focus();
     // Let the resized view and native focus-scroll state reach a painted frame.
     await input.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-    const scrollStart=await input.evaluate(e=>({x:e.scrollLeft,width:e.clientWidth,extent:e.scrollWidth,focused:e===document.activeElement,windowFocused:document.hasFocus(),visibility:document.visibilityState}));
-    await page.evaluate(()=>{window.scrollKeyEvents=[];document.addEventListener('keydown',e=>{if(e.key==='ArrowRight')window.scrollKeyEvents.push({target:e.target.className,active:document.activeElement?.className,prevented:e.defaultPrevented});});});
-    await page.keyboard.press('ArrowRight');
-    await page.waitForFunction(()=>document.querySelector('.step-input').scrollLeft>0).catch(async error=>{throw new Error('Keyboard scroll: '+JSON.stringify({before:scrollStart,events:await page.evaluate(()=>window.scrollKeyEvents),after:await input.evaluate(e=>({x:e.scrollLeft,width:e.clientWidth,extent:e.scrollWidth,focused:e===document.activeElement,windowFocused:document.hasFocus(),visibility:document.visibilityState,active:document.activeElement?.className}))}),{cause:error});});
-    assert.ok(await input.evaluate(e=>e.scrollLeft>0),'keyboard scrolls the recorded command');
-    // Native keyboard scrolling animates beyond its first nonzero offset.
+    assert.ok(await input.evaluate(e=>e.scrollWidth<=e.clientWidth+1),'recorded code wraps inside the viewport');
+    await page.keyboard.press('ArrowDown');
+    await page.waitForFunction(()=>document.querySelector('.step-input').scrollTop>0);
+    assert.ok(await input.evaluate(e=>e.scrollTop>0),'keyboard scrolls the wrapped recorded command vertically');
     await input.evaluate(e=>new Promise(resolve=>{let timer;function done(){e.removeEventListener('scroll',moved);resolve();}function moved(){clearTimeout(timer);timer=setTimeout(done,150);}e.addEventListener('scroll',moved);moved();}));
-    await input.evaluate(e=>{e.scrollLeft=120;e.scrollTop=60;});
+    await input.evaluate(e=>{e.scrollTop=60;});
     fixture.state.turns['%901'][0].segments[0].steps[1].input='{"message":"Updated review purpose"}';
     await card.getByText('Updated review purpose',{exact:true}).waitFor();
     assert.equal(await row.evaluate(e=>e.open),true,'row expansion survives changed transcript');
     const retained=await input.evaluate(e=>({focus:e===document.activeElement,x:e.scrollLeft,y:e.scrollTop}));
-    assert.deepEqual(retained,{focus:true,x:120,y:60});
+    assert.deepEqual(retained,{focus:true,x:0,y:60});
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'no page overflow');
     await page.evaluate(()=>{
       window.copyRecords=[];
       Object.defineProperty(navigator,'clipboard',{configurable:true,value:undefined});
       document.execCommand=cmd=>{window.copyRecords.push({cmd,text:document.activeElement.value});return true;};
     });
-    const copy=row.getByRole('button',{name:zh?'复制':'Copy',exact:true});
+    const copy=row.getByRole('button',{name:zh?'复制调用原文':'Copy recorded input',exact:true});
     if(options.hasTouch){assert.ok((await copy.boundingBox()).width>=44);assert.equal(await page.locator('.bub-act').first().evaluate(e=>getComputedStyle(e).opacity),'1','touch needs no hover');}
     await copy.click();
     assert.equal(await page.evaluate(()=>window.copyRecords[0].text),command,'copy keeps exact recorded bytes');
@@ -376,7 +374,7 @@ scenario('Workspace conversation keeps drafts, shows identities and inspectable 
   await page.locator('.tool-steps > .steps-toggle').first().click();
   await page.locator('.step-inspect > summary').first().click();
   assert.equal(await page.locator('.step-input').first().isVisible(), true);
-  const copyCall = page.locator('.step-row').first().getByRole('button', {name: 'Copy', exact: true});
+  const copyCall = page.locator('.step-row').first().getByRole('button', {name: 'Copy recorded input', exact: true});
   assert.equal(await copyCall.innerText(), '');
   assert.equal(await copyCall.locator('svg').count(), 1);
   await copyCall.click();

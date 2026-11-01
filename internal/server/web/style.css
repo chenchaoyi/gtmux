@@ -1517,3 +1517,18 @@ select:disabled { opacity: .55; cursor: not-allowed; }
 .diff-file{border-color:var(--divider)}.diff-hunk-count{float:right;margin-left:12px;color:var(--fg2);font-variant-numeric:tabular-nums}.diff-wrap,.diff-format{border:0;border-radius:7px;padding:6px 10px;background:var(--control);color:var(--fg2);font:inherit;cursor:pointer}.diff-wrap[aria-pressed=true],.diff-format[aria-pressed=true]{color:var(--accent-ink);background:var(--sel)}.diff-wrap:focus-visible,.diff-format:focus-visible{outline:2px solid var(--accent-ink);outline-offset:2px}
 
 .diff-line-number{flex-basis:var(--diff-gutter,26px);white-space:nowrap}
+
+/* Shared Chat / Trace code reading and nested call ownership. */
+.code-panel { min-width: 0; margin: 10px 0; border: 1px solid var(--divider); border-radius: 10px; overflow: hidden; background: var(--control); }
+.code-panel-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0; padding-left: 12px; border-bottom: 1px solid var(--divider); }
+.code-language { flex: 1 1 60px; min-width: 0; color: var(--fg2); font-size: 12px; font-weight: 600; }
+.code-panel-toolbar button, .code-parts button { min-width: 44px; min-height: 44px; margin: 0; }
+.code-panel pre, .trace-inspector .code-panel pre { margin: 0; border: 0; background: transparent; padding: 12px; white-space: pre-wrap; overflow-wrap: anywhere; min-width: 0; font-family: Menlo, monospace; font-size: max(12px, calc(var(--chat-text-size, 14px) - 1px)); line-height: 1.55; }
+.code-parts { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 10px 0; }
+.code-parts[hidden] { display: none; }
+.code-parts button { padding: 5px 10px; border: 1px solid var(--divider); border-radius: 8px; color: var(--fg2); background: transparent; font: inherit; font-size: 12px; cursor: pointer; }
+.code-parts button[aria-selected="true"] { color: var(--accent-ink); border-color: var(--accent-ink); }
+.trace-event.trace-call-child { position: relative; width: calc(100% - 28px); margin-left: 28px; border-left: 1px solid var(--divider); border-radius: 0; }
+.trace-event.trace-call-child::before { content: ''; position: absolute; left: -19px; top: 0; bottom: 0; border-left: 1px solid var(--divider); }
+.trace-event.trace-call-child::after { content: ''; position: absolute; left: -19px; top: 24px; width: 18px; border-top: 1px solid var(--divider); }
+.trace-event.trace-call-child.trace-call-last::before { bottom: auto; height: 24px; }

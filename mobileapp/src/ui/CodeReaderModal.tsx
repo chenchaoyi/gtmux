@@ -1,5 +1,5 @@
-import {useModalEscape} from '../keys/useModalEscape';
-import React, { useState } from 'react';
+import { useModalEscape } from '../keys/useModalEscape';
+import React from 'react';
 import {
   Modal,
   ScrollView,
@@ -10,14 +10,10 @@ import {
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
-import Clipboard from '@react-native-clipboard/clipboard';
-import { CodeText } from './CodeText';
-import {ChromeText} from './ChromeText';
-import { codeLabel } from './codeReading';
-import { CheckIcon, CopyIcon } from './Icons';
+import { CodePanel } from './CodePanel';
+import { ChromeText } from './ChromeText';
 import { MODAL_ORIENTATIONS } from './modalOrientations';
-import { RangeSourceContext } from './RangeText';
-import { CopyFeedbackContext } from './CopyableText';
+import { paletteFor } from './theme';
 
 export function CodeReaderModal({
   source,
@@ -25,6 +21,11 @@ export function CodeReaderModal({
   hint,
   lang,
   fontSize,
+  dark = true,
+  initialPartID,
+  initialFormatted = true,
+  allowEmbedded = true,
+  allowFormat = true,
   onClose,
 }: {
   source: string;
@@ -32,80 +33,34 @@ export function CodeReaderModal({
   hint?: string;
   lang: 'en' | 'zh';
   fontSize: number;
+  dark?: boolean;
+  initialPartID?: string;
+  initialFormatted?: boolean;
+  allowEmbedded?: boolean;
+  allowFormat?: boolean;
   onClose: () => void;
 }) {
   useModalEscape(true, onClose);
-  const [formatted, setFormatted] = useState(true);
-  const [copied, setCopied] = useState(false);
+  const pal = paletteFor(dark ? 'dark' : 'light');
   return (
     <Modal
       visible
-      backdropColor="#0D0D0F"
+      backdropColor={pal.bg}
       animationType="slide"
       supportedOrientations={MODAL_ORIENTATIONS}
       onRequestClose={onClose}
     >
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={dark ? 'light-content' : 'dark-content'} />
       <SafeAreaProvider>
-        <SafeAreaView style={styles.root}>
-          <View style={styles.header}>
+        <SafeAreaView style={[styles.root, { backgroundColor: pal.bg }]}>
+          <View style={[styles.header, { borderBottomColor: pal.divider }]}>
             <ChromeText
               accessibilityRole="header"
-              style={styles.title}
+              style={[styles.title, { color: pal.fg }]}
               numberOfLines={2}
             >
               {title}
             </ChromeText>
-            <TouchableOpacity
-              testID="code-reader-format"
-              style={styles.button}
-              accessibilityRole="button"
-              accessibilityLabel={
-                lang === 'zh'
-                  ? formatted
-                    ? '查看原文'
-                    : '格式化代码'
-                  : formatted
-                  ? 'Show original'
-                  : 'Format code'
-              }
-              accessibilityState={{ selected: formatted }}
-              onPress={() => setFormatted(v => !v)}
-            >
-              <ChromeText
-                style={{
-                  color: formatted ? '#86BFFC' : '#D8DEE9',
-                  fontSize: 18,
-                  fontWeight: '600',
-                }}
-              >
-                {'{ }'}
-              </ChromeText>
-            </TouchableOpacity>
-            <TouchableOpacity
-              testID="code-reader-copy"
-              style={styles.button}
-              accessibilityRole="button"
-              accessibilityLabel={
-                lang === 'zh'
-                  ? copied
-                    ? '已复制'
-                    : '复制调用输入'
-                  : copied
-                  ? 'Copied'
-                  : 'Copy recorded input'
-              }
-              onPress={() => {
-                Clipboard.setString(source);
-                setCopied(true);
-              }}
-            >
-              {copied ? (
-                <CheckIcon size={20} color="#D8DEE9" />
-              ) : (
-                <CopyIcon size={20} color="#D8DEE9" />
-              )}
-            </TouchableOpacity>
             <TouchableOpacity
               testID="code-reader-close"
               style={styles.button}
@@ -116,7 +71,7 @@ export function CodeReaderModal({
               <Svg width={22} height={22} viewBox="0 0 24 24">
                 <Path
                   d="M6 6l12 12M18 6L6 18"
-                  stroke="#D8DEE9"
+                  stroke={pal.fg}
                   strokeWidth={1.7}
                   strokeLinecap="round"
                 />
@@ -127,23 +82,19 @@ export function CodeReaderModal({
             testID="code-reader-scroll"
             contentContainerStyle={styles.content}
           >
-            <View style={styles.card}>
-              <ChromeText accessibilityRole="header" style={styles.language}>
-                {codeLabel(source, hint)}
-              </ChromeText>
-              <RangeSourceContext.Provider value={source}>
-                <CopyFeedbackContext.Provider value>
-                  <CodeText
-                    source={source}
-                    formatted={formatted}
-                    hint={hint}
-                    fontSize={fontSize}
-                    lang={lang}
-                    testID="code-reader-text"
-                  />
-                </CopyFeedbackContext.Provider>
-              </RangeSourceContext.Provider>
-            </View>
+            <CodePanel
+              source={source}
+              hint={hint}
+              lang={lang}
+              fontSize={fontSize}
+              dark={dark}
+              initialPartID={initialPartID}
+              initialFormatted={initialFormatted}
+              allowEmbedded={allowEmbedded}
+              allowFormat={allowFormat}
+              testIDPrefix="code-reader"
+              textTestID="code-reader-text"
+            />
           </ScrollView>
         </SafeAreaView>
       </SafeAreaProvider>
@@ -174,17 +125,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   content: { padding: 12 },
-  card: {
-    padding: 14,
-    borderRadius: 12,
-    backgroundColor: '#1C1C21',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#343439',
-  },
-  language: {
-    color: '#B5B5BE',
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
 });

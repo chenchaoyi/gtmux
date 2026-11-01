@@ -42,7 +42,7 @@ using the existing display menu rather than adding a second font toolbar. A plai
 still offers Terminal only. A readable external session offers Chat / Trace and stays
 read-only; an unreadable native session remains status-only.
 
-Trace opens at the latest loaded activity with a compact progress summary. The virtualized timeline groups exact sessions and stable turns, expands the latest turn, and leaves older turns as readable request summaries. Consecutive calls compact into a counted group; expanding it exposes every individual input. An ordered icon rail distinguishes requests, public updates and calls without claiming tool success. Search opens from the header and covers all loaded records, including folded groups; one filter menu holds record types and readable session labels. Selecting a record opens full-width details over the mounted list; Close restores the same pixel position and filters.
+Trace opens at the latest loaded activity with a compact progress summary. The virtualized timeline groups exact sessions and stable turns, starts all turns folded as readable request summaries until the reader opens them. Consecutive calls compact into a counted group; expanding it exposes every individual input. An ordered icon rail distinguishes requests, public updates and calls without claiming tool success. Search opens from the header and covers all loaded records, including folded groups; one filter menu holds record types and readable session labels. Selecting a record opens full-width details over the mounted list; Close restores the same pixel position and filters.
 Details use the existing type scale, selectable text and copy controls. Tool input keeps
 indentation and wraps long lines within the detail reader. Copy and Close have 44pt touch
 targets and accessible names. Agent/sender avatars reuse the App's
@@ -137,3 +137,18 @@ into tests: all fixtures are synthetic.
 The DSH Web screenshots supplied by the user informed the independent disclosures,
 counted call runs, four detail modes and settings navigation. Their timing/token fields
 are deliberately not inferred from gtmux's more limited records.
+
+### Shared code cards and wrapped scripts (2026-11-01)
+
+Chat tool input, Markdown fences, Trace Preview and the complete-code reader share
+`CodeBlock` / `CodePanel`, including language, format/original, exact recorded-copy,
+wrapping and 44pt controls. Opening the reader freezes the selected call and retains
+its appearance, selected script and formatting. Raw content never unwraps or formats.
+Static JavaScript/JSON command fields and complete Python/Node heredocs offer separate
+script previews plus an always-reachable Full call. Mixed commands lead with the complete Shell command; cmd is never assumed to be Python. Dynamic expressions and templates
+with interpolation remain literal. Python compact formatting uses an offline syntax
+parser; strings, comments, f-strings and statement suite ownership must remain identical
+or the original text is retained. The browser consumes these same pure transforms.
+Expanded call groups indent their child records and retain a connecting parent rail;
+request/progress siblings return to the outer rail. Native and browser flat projections
+keep their existing stable keys, virtualization and refresh anchors.

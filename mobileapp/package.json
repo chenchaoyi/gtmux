@@ -15,6 +15,7 @@
     "e2e:build": "bash scripts/e2e-build-sim.sh"
   },
   "dependencies": {
+    "@lezer/python": "1.1.19",
     "@react-native-async-storage/async-storage": "^3.1.1",
     "@react-native-clipboard/clipboard": "^1.16.3",
     "@react-native-community/push-notification-ios": "^1.12.0",

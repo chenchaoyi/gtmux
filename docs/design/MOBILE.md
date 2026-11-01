@@ -1753,3 +1753,18 @@ HQ conversations reached from the shared workspace retain identity, Back and ses
 Trace progress uses the shared session-list primary name rather than a latest-reply excerpt. All turns begin collapsed, including newly arriving turns, until explicitly opened or found by a search. The full-screen chat actions float independently on a transparent, pass-through overlay rather than an opaque horizontal strip.
 
 The image markup editor places the canvas between safe-area-aware toolbars. Move and native pinch zoom share the same image/annotation surface, with explicit zoom and Fit controls. A small canvas inset leaves each image edge editable. Annotation coordinates remain fixed to their initial image frame across viewport resize; exporting renders that original coordinate space at the original image pixel dimensions, independent of zoom and pan. Palette targets extend to at least 44pt and are named for accessibility.
+
+### Shared code cards and wrapped scripts (2026-11-01)
+
+Chat tool input, Markdown fences, Trace Preview and the complete-code reader share
+`CodeBlock` / `CodePanel`, including language, format/original, exact recorded-copy,
+wrapping and 44pt controls. Opening the reader freezes the selected call and retains
+its appearance, selected script and formatting. Raw content never unwraps or formats.
+Static JavaScript/JSON command fields and complete Python/Node heredocs offer separate
+script previews plus an always-reachable Full call. Mixed commands lead with the complete Shell command; cmd is never assumed to be Python. Dynamic expressions and templates
+with interpolation remain literal. Python compact formatting uses an offline syntax
+parser; strings, comments, f-strings and statement suite ownership must remain identical
+or the original text is retained. The browser consumes these same pure transforms.
+Expanded call groups indent their child records and retain a connecting parent rail;
+request/progress siblings return to the outer rail. Native and browser flat projections
+keep their existing stable keys, virtualization and refresh anchors.

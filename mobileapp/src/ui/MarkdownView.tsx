@@ -13,7 +13,7 @@ import {
   View,
 } from 'react-native';
 import { Block, Inline, parseBlocks } from './markdown';
-import { CodeText } from './CodeText';
+import { CodeBlock } from './CodeBlock';
 import { darkCodeBackground } from './codeReading';
 import { DisclosureChevron } from './DisclosureChevron';
 import { CopyableText, CopyFeedbackContext } from './CopyableText';
@@ -697,21 +697,16 @@ function BlockView({
       );
     case 'code':
       return (
-        <View
-          style={[
-            styles.codeBlock,
-            styles.codeBlockContent,
-            { backgroundColor: c.codeBg, borderColor: c.border },
-          ]}
-        >
-          <CodeText
+        <View style={styles.block}>
+          <CodeBlock
             source={b.text}
             hint={b.lang}
             dark={darkCodeBackground(c.codeBg, c.text)}
-            fontSize={fs - 1}
+            fontSize={Math.max(12, fs - 1)}
             lang={lang}
             selectable={sel}
             selectionColor={sc}
+            initialFormatted={false}
           />
         </View>
       );

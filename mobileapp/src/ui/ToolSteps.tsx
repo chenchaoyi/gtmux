@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
 import {
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   useWindowDimensions,
   View,
 } from 'react-native';
-import Clipboard from '@react-native-clipboard/clipboard';
 import { GtmuxClient, TranscriptStep } from '../api/client';
 import { ActivityIcon } from './ActivityIcon';
 import {
@@ -16,10 +14,9 @@ import {
   activityPreview,
   activitySummary,
 } from './activity';
-import { CheckIcon, Chevron, CopyIcon, ExpandIcon } from './Icons';
-import { CodeText } from './CodeText';
-import { codeLabel, toolCodeHint } from './codeReading';
-import { CodeReaderModal } from './CodeReaderModal';
+import { Chevron } from './Icons';
+import { CodeBlock } from './CodeBlock';
+import { toolCodeHint } from './codeReading';
 import { useToolInput } from './useToolInput';
 
 /** A call is evidence of an action, not evidence that it succeeded. */
@@ -203,13 +200,6 @@ function ToolInput({
   const step = loaded!;
   const { fontScale } = useWindowDimensions();
   const input = step.input || step.detail || '';
-  const [reader, setReader] = useState<{
-    input: string;
-    title: string;
-    hint: string;
-  } | null>(null);
-  const [copied, setCopied] = useState<string | null>(null);
-  const done = copied === input;
   const hint = toolCodeHint(step.title, step.input_kind, step.operation);
   const provenance = loading
     ? lang === 'zh'
@@ -266,53 +256,6 @@ function ToolInput({
               {provenance}
             </Text>
           )}
-          {!!input && (
-            <TouchableOpacity
-              testID="tool-input-open"
-              disabled={loading || !!step.details_truncated}
-              accessibilityRole="button"
-              accessibilityLabel={
-                lang === 'zh' ? '打开代码阅读器' : 'Open code reader'
-              }
-              onPress={() =>
-                setReader({
-                  input,
-                  title: step.title || 'tool',
-                  hint: hint || '',
-                })
-              }
-              style={styles.copy}
-            >
-              <ExpandIcon size={20} color="#A4A4AD" />
-            </TouchableOpacity>
-          )}
-          {!!input && (
-            <TouchableOpacity
-              testID="tool-input-copy"
-              disabled={loading || !!step.details_truncated}
-              accessibilityRole="button"
-              accessibilityLabel={
-                done
-                  ? lang === 'zh'
-                    ? '已复制'
-                    : 'Copied'
-                  : lang === 'zh'
-                  ? '复制调用输入'
-                  : 'Copy recorded input'
-              }
-              onPress={() => {
-                Clipboard.setString(input);
-                setCopied(input);
-              }}
-              style={styles.copy}
-            >
-              {done ? (
-                <CheckIcon size={20} color="#A4A4AD" />
-              ) : (
-                <CopyIcon size={20} color="#A4A4AD" />
-              )}
-            </TouchableOpacity>
-          )}
         </View>
       </View>
       {!!step.workdir && (
@@ -321,34 +264,17 @@ function ToolInput({
         </Text>
       )}
       {!!input && (
-        <Text style={{ color: '#A4A4AD', fontSize: 11, marginBottom: 6 }}>
-          {codeLabel(input, hint)}
-        </Text>
-      )}
-      {!!input && (
-        <ScrollView
-          testID="tool-input-vertical"
-          nestedScrollEnabled
-          style={styles.codeHeight}
-        >
-          <CodeText
-            testID="tool-input-text"
-            formatted
-            source={input}
-            hint={hint}
-            lang={lang}
-            fontSize={size}
-          />
-        </ScrollView>
-      )}
-      {reader && (
-        <CodeReaderModal
-          source={reader.input}
-          title={reader.title}
-          hint={reader.hint}
+        <CodeBlock
+          source={input}
+          hint={hint}
           lang={lang}
-          fontSize={readerFontSize}
-          onClose={() => setReader(null)}
+          fontSize={Math.max(12, readerFontSize)}
+          readerFontSize={Math.max(12, readerFontSize)}
+          title={step.title || 'tool'}
+          disabled={loading || !!step.details_truncated}
+          maxHeight={220}
+          testIDPrefix="tool-input"
+          textTestID="tool-input-text"
         />
       )}
     </View>
