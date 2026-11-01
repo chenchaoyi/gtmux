@@ -1,7 +1,5 @@
-Complete code and trace reading
-• Load a call’s recorded input in full. Compact formatting improves readability; copying preserves the original text.
-• Local HTML reports show their local images without enabling scripts.
-• Adjust session text from 10–24 pt in one-point steps. Chat and Terminal share the setting.
-• Read working-tree changes by file and region, with line numbers, change counts and independent folding.
-• Trace details use Back or Hide details; Close exits Trace. Fixed the closing white flash and improved iPad resizing and large-text controls.
-• Completion notifications wait for confirmed turn completion.
+- Keep Diff formatting and syntax colors when wrapping, with compact line numbers and complete long lines.
+- Identify Trace by session name, start with folded turns, and retain disclosure choices during refresh.
+- Place session-tool icons before their titles and remove the repeated overview from HQ conversations.
+- Float fullscreen Chat controls on transparent backgrounds with larger touch targets.
+- Move, zoom and fit screenshots while annotating; edit every edge and export at the original resolution.

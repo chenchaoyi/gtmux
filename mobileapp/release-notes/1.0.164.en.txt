@@ -1,0 +1,5 @@
+- Keep Diff formatting and syntax colors when wrapping, with compact line numbers and complete long lines.
+- Identify Trace by session name, start with folded turns, and retain disclosure choices during refresh.
+- Place session-tool icons before their titles and remove the repeated overview from HQ conversations.
+- Float fullscreen Chat controls on transparent backgrounds with larger touch targets.
+- Move, zoom and fit screenshots while annotating; edit every edge and export at the original resolution.
