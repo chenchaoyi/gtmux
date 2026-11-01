@@ -26,6 +26,8 @@ for(const width of [390,834,1440]) scenario('trace-history-'+width,{viewport:{wi
  await page.locator('#mode [data-mode="chat"]').click();await openTools(page);
  const trace=page.locator('.session-tool .trace-view');await trace.locator('.trace-turn').first().waitFor();
  assert.match(await trace.locator('.trace-turn').first().textContent(),/158/);
+ const colors=await trace.locator('.trace-history-bar').evaluate(n=>({label:getComputedStyle(n.querySelector('span')).color,action:getComputedStyle(n.querySelector('button')).color,border:getComputedStyle(n).borderBottomStyle,height:n.querySelector('button').getBoundingClientRect().height}));
+ assert.notEqual(colors.action,colors.label,'history action uses the shared accent token');assert.equal(colors.border,'solid');assert.ok(colors.height>=44,'history action keeps a touch target');
  const anchor=await trace.locator('.trace-turn').last().evaluate(n=>({key:n.dataset.rowKey,y:n.getBoundingClientRect().y}));
  await trace.locator('.trace-history-earlier').click();
  await page.waitForFunction(()=>document.querySelector('.trace-turn')?.textContent.includes('118'));
