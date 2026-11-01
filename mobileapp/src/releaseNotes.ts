@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.165',
+    en: [
+      'Read tool input consistently in Chat and Trace. Recorded commands can show their Python and JavaScript scripts separately, with compact formatting and original-source copy.',
+      'Expanded Trace tool groups now show a clear hierarchy of individual calls.',
+    ],
+    zh: [
+      '对话和 Trace 共用代码卡。命令中的 Python、JavaScript 脚本可单独阅读和紧凑排版，复制保留调用原文。',
+      '工具组展开后，通过缩进和连接线区分子调用。',
+    ],
+  },
+  {
     version: '1.0.164',
     en: [
       '- Keep Diff formatting and syntax colors when wrapping, with compact line numbers and complete long lines.',
