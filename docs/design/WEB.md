@@ -294,3 +294,5 @@ have Sun, Moon and Monitor icons and native radio keyboard behavior. Preferences
 remain local to this browser and apply immediately. The content scrolls within a
 480px maximum height; category changes move focus to the chosen section. There is
 one control for each text-size preference, with existing desktop/touch target metrics.
+
+Browser Diff keeps display formatting separate from wrapping and uses one compact source-number gutter, with deletions showing the old number and additions/context the new number. Copy retains the original patch. Trace initially folds turns; individual choices survive updates and arriving turns stay folded unless a bulk-open default was chosen.

@@ -823,7 +823,7 @@ function PaneDetailView({
       {/* full-screen exit pill — at body level so it floats over EITHER mode (the
           top chrome is hidden in full-screen; this is the way back). */}
       {fullscreen && (
-        <View style={[styles.fsBar, {top: insets.top}]}>
+        <View pointerEvents="box-none" style={[styles.fsBar, mode === 'chat' && styles.fsChatBar, {top: insets.top}]}>
           {/* An ICON, not a labelled pill. The pill was the width of its sentence and sat
               a long way down the screen, which is a lot of chrome to carry for a control
               you use once. Four arrows pulling inward say the same thing wordlessly, and
@@ -831,6 +831,7 @@ function PaneDetailView({
               them. The brand cyan is the whole point of the colour: it has to be findable
               against a full screen of terminal output. */}
           <FsBtn
+            bare={mode === 'chat'}
             label={lang === 'zh' ? '退出全屏' : 'Exit full screen'}
             onPress={() => setFullscreen(false)}
             testID={TestIds.detail.fsExit}
@@ -1190,16 +1191,16 @@ function Ctl({pal, label, onPress, testID, glyph}: {pal: any; label: string; onP
 }
 
 // FsBtn — a button in the floating full-screen control pill (over the terminal).
-function FsBtn({label, onPress, testID}: {label: string; onPress: () => void; testID?: string}) {
+function FsBtn({label, onPress, testID, bare = false}: {label: string; onPress: () => void; testID?: string; bare?: boolean}) {
   return (
     <TouchableOpacity
       testID={testID}
       accessibilityLabel={label}
       accessibilityRole="button"
       onPress={onPress}
-      style={styles.fsBtn}
+      style={[styles.fsBtn, bare && styles.fsBareBtn]}
       hitSlop={hit}>
-      <ExitFullScreenIcon size={15} color={FS_ACCENT} />
+      <ExitFullScreenIcon size={bare ? 20 : 15} color={FS_ACCENT} />
     </TouchableOpacity>
   );
 }
@@ -1316,5 +1317,7 @@ const styles = StyleSheet.create({
     shadowOffset: {width: 0, height: 2},
     elevation: 6,
   },
+  fsChatBar: {left: 10, backgroundColor: 'transparent', borderWidth: 0, paddingHorizontal: 0, shadowOpacity: 0, elevation: 0},
+  fsBareBtn: {width: 44, height: 44},
   fsBtn: {width: 28, height: 28, alignItems: 'center', justifyContent: 'center'},
 });
