@@ -128,6 +128,22 @@ describe('failed requests', () => {
     expect(es[0].attrs).toMatchObject({route: 'GET /api/agents', status: 530});
     expect(es[1].attrs?.repeats).toBe(11);
     expect(es[2].attrs?.failingSec).toBe(70);
+    expect(es[2].attrs?.failures).toBe(13);
+  });
+
+  it('reports a changed failure immediately and retains quiet-period failures on recovery', () => {
+    const b = new DiagBuffer(null, () => at);
+    const w = new ApiWatch(b, () => 0);
+    const route = 'POST /api/push/register';
+    w.failed(route, {status: 530}, 10, 'https://mac.example');
+    w.failed(route, {status: 530}, 10, 'https://mac.example');
+    w.failed(route, {status: 401}, 10, 'https://mac.example');
+    w.failed(route, {status: 401}, 10, 'https://mac.example');
+    w.ok(route, 'https://mac.example');
+    expect(b.entries().map(e => [e.event, e.attrs?.status])).toEqual([
+      ['api.failed', 530], ['api.failed', 401], ['api.recovered', undefined],
+    ]);
+    expect(b.entries().at(-1)?.attrs).toMatchObject({failures: 4, repeats: 1});
   });
 });
 

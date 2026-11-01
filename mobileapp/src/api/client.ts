@@ -1210,7 +1210,9 @@ export class GtmuxClient {
       body: JSON.stringify({token: deviceToken, platform: 'ios', kinds: kinds ?? [], env}),
       signal,
     });
-    Diag.act('act.push.register', 'push', r.ok ? 'ok' : 'failed', 'asked the server to push to this device',
+    // tfetch/ApiWatch owns failed requests and their repeat/recovery history.
+    // A second failed action here would bypass its quiet period.
+    if (r.ok) Diag.act('act.push.register', 'push', 'ok', 'registered push notifications',
       {server: ApiWatch.server(this.base), status: r.status, env: env ?? '', kinds: (kinds ?? []).join(',')});
     return r.ok;
   }

@@ -3,3 +3,5 @@ Full call now leads the code views, followed by outer commands and their embedde
 The HQ Board card keeps the current briefing and local resource warnings directly visible, without opening a duplicate board page.
 
 Diff now preserves the original code layout, with syntax colors and wrapping and no format toggle.
+
+Diagnostics now combine repeated notification request failures while preserving changed causes and recovery counts. Terminal-order snapshots use bounded reads and slower retries after failure. Storage checks separate working state from release and recovery files.

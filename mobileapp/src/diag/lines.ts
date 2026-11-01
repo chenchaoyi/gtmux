@@ -115,7 +115,10 @@ export function describeEntry(e: Entry, zh: boolean): {title: string; detail?: s
           : `then ${repeats} more time${repeats === 1 ? '' : 's'} in a minute`
         : undefined;
       return {
-        title: status ? (zh ? '服务器请求失败' : 'Server request failed')
+        title: status === 530 ? (zh ? '远程入口不可用' : 'Remote endpoint unavailable')
+          : status && /^POST .*\/api\/push\/(register|unregister)$/.test(route)
+          ? (zh ? '通知设置尚未同步' : 'Notification settings not synced')
+          : status ? (zh ? '服务器请求失败' : 'Server request failed')
           : timeout ? (zh ? '请求超时' : 'Request timed out')
           : (zh ? '请求未完成' : 'Request did not complete'),
         detail: join(str(a.origin), answered, again),
@@ -128,6 +131,7 @@ export function describeEntry(e: Entry, zh: boolean): {title: string; detail?: s
           str(a.origin), str(a.route),
           spell(num(a.failingSec), zh) &&
             (zh ? `失败了 ${spell(num(a.failingSec), zh)}` : `it had been failing for ${spell(num(a.failingSec), zh)}`),
+          num(a.failures) ? (zh ? `${num(a.failures)} 次失败后恢复` : `recovered after ${num(a.failures)} failed requests`) : undefined,
         ),
       };
     case 'sse.disconnected':

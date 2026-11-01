@@ -182,3 +182,12 @@ test.each([false, true])('request and push descriptions identify their server wi
   expect(describeEntry(legacy, zh).detail).toBe('POST /api/push/register · HTTP 530');
   expect(JSON.stringify(legacy)).toBe(original);
 });
+
+test.each([false, true])('gateway errors describe the connection and recovery keeps failure counts (zh=%s)', zh => {
+  const failed = at('2026-11-01T21:00:00+08:00', {event: 'api.failed', level: 'warn', attrs: {route: 'POST /api/push/register', status: 530}});
+  expect(describeEntry(failed, zh).title).toBe(zh ? '远程入口不可用' : 'Remote endpoint unavailable');
+  expect(describeEntry({...failed, attrs: {route: 'POST /p1/api/push/unregister', status: 502}}, zh).title)
+    .toBe(zh ? '通知设置尚未同步' : 'Notification settings not synced');
+  const recovered = {...failed, event: 'api.recovered', level: 'info' as const, attrs: {route: 'POST /api/push/register', failingSec: 60, failures: 4}};
+  expect(describeEntry(recovered, zh).detail).toContain(zh ? '4 次失败后恢复' : 'recovered after 4 failed requests');
+});

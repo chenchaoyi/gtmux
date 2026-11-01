@@ -585,3 +585,26 @@ Counters SHALL include PID, application/Go version, diagnostic start and capture
 - **WHEN** serve returns normally or receives its handled stop signal
 - **THEN** its diagnostic listener closes and only its own socket/run directory are removed
 - **AND** a substituted file or caller-owned directory is preserved; an unclean exit cannot make a future start reuse a stale socket
+
+### Requirement: Request sampling preserves changed failures and recovery counts
+Push registration SHALL use one sampled failure writer. Identical request failures MAY be coalesced, but changed HTTP status, deadline or error reason SHALL be recorded immediately. Recovery SHALL retain total failures and any unreported repeats. Sampling and recovery SHALL remain isolated by server and route. Endpoint failures SHALL NOT be described as proof of failed notification permissions or APNs delivery.
+
+#### Scenario: A gateway failure changes to an authentication failure
+- **WHEN** repeated HTTP530 responses are followed by HTTP401 within the quiet period
+- **THEN** both causes remain visible and the later successful request reports all failures
+- **AND** push registration does not add a duplicate failed-action entry
+
+### Requirement: Optional terminal snapshots fail safely
+Periodic terminal-order reads SHALL have a bounded child-process lifetime, one in-flight read and bounded retry backoff. Compatible Ghostty bulk and legacy reads SHALL share one deadline. First failures, changed reasons and periodic summaries SHALL preserve counts; only a confirmed save SHALL report recovery. Failed, empty or degraded snapshots SHALL NOT overwrite the last good order. Diagnostics SHALL exclude terminal titles and raw script output.
+
+#### Scenario: A terminal remains unresponsive and later saves again
+- **WHEN** consecutive reads time out while timer ticks continue
+- **THEN** reads do not overlap, retries slow to a bounded interval and the last good snapshot remains
+- **AND** a later confirmed save produces one recovery with the failure count
+
+### Requirement: Storage diagnostics distinguish retained deliverables
+Doctor SHALL measure working state separately from release/recovery archives and reports without following symlinks. Working-state thresholds SHALL NOT classify retained deliverables as broken runtime state. An incomplete measurement SHALL remain unknown and visible. Large working state SHALL identify its measured largest item without automatically deleting any data.
+
+#### Scenario: Recovery archives are large while working state is small
+- **WHEN** retained recovery files exceed the footprint threshold but working state does not
+- **THEN** Doctor reports their separate sizes as informational and does not blame log growth

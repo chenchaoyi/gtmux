@@ -31,19 +31,8 @@ func (Driver) TabOrder() []string { return TabOrder() }
 // TabOrder returns the tmux session names of Ghostty's tabs in order (across
 // windows), derived from each tab's title "#S — #W". nil if it can't be read.
 func TabOrder() []string {
-	out, err := osascript(`tell application "Ghostty"
-  set txt to ""
-  repeat with w in windows
-    repeat with t in tabs of w
-      set txt to txt & (name of t) & linefeed
-    end repeat
-  end repeat
-  return txt
-end tell`)
-	if err != nil {
-		return nil
-	}
-	return SessionsFromTitles(out)
+	order, _ := (Driver{}).ReadTabOrder()
+	return order
 }
 
 // SessionsFromTitles maps newline-separated tab titles ("#S — #W") to their
