@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.167',
+    en: [
+      'HQ presents a specific question with its reason and scope, separate from progress history. Choosing a reply prepares a draft and preserves your edits; a saved reply is distinct from an executed action.',
+      'Trace shares its labels, tool categories, summaries and icon meanings with the browser. Existing original turn numbers and paged history remain intact.',
+    ],
+    zh: [
+      'HQ 将需要你处理的具体问题、原因和范围与进展历史分开呈现。选择答复先填入草稿，保留你的修改；答复已保存与操作已执行分别显示。',
+      '轨迹与浏览器共用标签、工具分类、摘要和图标含义，继续保留原始轮次和分段加载的历史。',
+    ],
+  },
+  {
     version: '1.0.166',
     en: [
       'Trace keeps your session’s turn numbers and loads earlier records in smaller pages. Opened history, fold choices and reading position stay in place during live updates.',
