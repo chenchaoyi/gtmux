@@ -4,6 +4,9 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/chenchaoyi/gtmux/internal/resume"
+	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
 
 // The fixtures below have the exact SHAPE of the lines written to
@@ -121,6 +124,10 @@ func TestSavedPaneEvidence(t *testing.T) {
 		{"live claude", savedPane{Cmd: "2.1.220", Full: "claude --resume abc"}, evidenceAgent},
 		{"claude with no id", savedPane{Cmd: "2.1.220", Full: "claude"}, evidenceAgent},
 		{"agent via interpreter", savedPane{Cmd: "node", Full: "node /opt/bin/codex resume abc"}, evidenceAgent},
+		{"managed Codex bridge", savedPane{Cmd: "gtmux", Full: "/synthetic/gtmux codex -- --model model --approve-for-me"}, evidenceAgent},
+		{"managed Codex resume", savedPane{Cmd: "gtmux", Full: "gtmux codex -- resume abc"}, evidenceAgent},
+		{"gtmux service is not an agent", savedPane{Cmd: "gtmux", Full: "gtmux serve"}, evidenceOther},
+		{"headless Codex is not an interactive bridge", savedPane{Cmd: "gtmux", Full: "gtmux codex -- exec prompt"}, evidenceOther},
 		{"idle shell", savedPane{Cmd: "bash", Full: ""}, evidenceShell},
 		{"login shell", savedPane{Cmd: "-zsh", Full: ""}, evidenceShell},
 		{"shell with a full command", savedPane{Cmd: "bash", Full: "bash"}, evidenceShell},
@@ -163,6 +170,37 @@ func TestSavedSessionID(t *testing.T) {
 	shell, _ := parseSavedPaneLine(realShellLine)
 	if a, i := shell.savedSessionID(); a != "" || i != "" {
 		t.Fatalf("a shell pane carries no conversation, got %q/%q", a, i)
+	}
+}
+
+func TestSavedCodexRestoreRecordIsNotLiveAuthority(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("CODEX_HOME", filepath.Join(os.Getenv("HOME"), ".codex"))
+	for _, tc := range []struct {
+		name, home, full string
+		want             bool
+	}{
+		{"same home expired frontend", transcript.CodexHomeID(), "gtmux codex -- --model model", true},
+		{"matching explicit thread", transcript.CodexHomeID(), "gtmux codex -- resume saved-thread", true},
+		{"new thread overrides original launch", transcript.CodexHomeID(), "gtmux codex -- resume original-thread", true},
+		{"foreign home", "foreign-home", "gtmux codex --", false},
+		{"unproven saved process", transcript.CodexHomeID(), "gtmux serve", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			sp := savedPane{Loc: "worker:0.0", Cmd: "gtmux", Full: tc.full}
+			if err := resume.Save(sp.Loc, resume.Record{Agent: "codex", SessionID: "saved-thread", HomeID: tc.home, Frontend: "expired-frontend"}); err != nil {
+				t.Fatal(err)
+			}
+			if _, live := resume.LoadLive(sp.Loc); live {
+				t.Fatal("restore history acquired live-input authority")
+			}
+			if rec, ok := sp.restorableRecord(); ok != tc.want || ok && rec.SessionID != "saved-thread" {
+				t.Fatalf("restorable=%v, want %v", ok, tc.want)
+			}
+			if tc.home == "foreign-home" && sp.resumeEvidence().allowsResume() {
+				t.Fatal("foreign Codex home passed the saved liveness gate")
+			}
+		})
 	}
 }
 

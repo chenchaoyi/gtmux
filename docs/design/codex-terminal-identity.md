@@ -39,3 +39,25 @@ The launch preserves explicit `-C`/`--cd`, supplying the original terminal cwd o
 Browser Trace preserves selected text only while the same event exists. Replacing a session immediately replaces a removed event's detail, including on narrow screens; it cannot leave the prior session visible under the new list.
 
 Launch admission also reads the installed CLI help command table and aliases, preserving native management commands introduced after the adapter. An unrecognized help layout stays native.
+
+## Reboot restore of managed Codex frontends
+
+A resurrect save records the supervising `gtmux codex` process for a managed
+interactive frontend. Restore identifies that exact entry point, including an
+absolute/quoted executable, optional gtmux language flag and forwarding `--`.
+Launch admission and saved-command recognition share the same interactive argv
+policy. The existing exact-location resume record supplies the original thread;
+when absent, an explicit saved `resume` argument remains the identity fallback.
+The restore preview and the actual resume gate use this same recognition. A saved
+frontend record remains usable after its live lease expires only with an explicit
+saved Codex process and matching Codex home. Its hook-updated thread takes
+precedence over the launch-time ID, including after `/new`. Live ownership and input continue to require the fresh lease.
+
+Bare shells, other gtmux subcommands, management/headless Codex modes and missing
+saved panes cannot revive a stale conversation. Native/embedded Codex command
+lines retain their legacy path. Recorded shell quoting is parsed without
+execution; lossy ps arguments with unmatched quotes retain the legacy splitter.
+This is saved-process evidence, never permission for live input or ownership.
+Tests cover parser/command round trips, preview selection and production resume
+sending on a verified private tmux server in type-only mode; no real Codex or HQ
+conversation is resumed by those tests.

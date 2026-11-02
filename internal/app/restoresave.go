@@ -9,6 +9,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/agentclient"
 	"github.com/chenchaoyi/gtmux/internal/resume"
+	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
 
 // Reading a tmux-resurrect save as EVIDENCE of what was running in each pane at the
@@ -102,12 +103,32 @@ func (e paneEvidence) allowsResume() bool { return e == evidenceAgent || e == ev
 
 // evidence classifies what this saved pane was doing.
 func (sp savedPane) resumeEvidence() paneEvidence {
+	if rec, ok := resume.Load(sp.Loc); ok && rec.Agent == "codex" && rec.Frontend != "" && rec.HomeID != transcript.CodexHomeID() {
+		return evidenceOther // a different Codex home cannot supply this restore
+	}
 	if rec, ok := resume.Load(sp.Loc); ok && rec.Agent == "dsh" && rec.TerminalClient != "" && agentclient.MatchesSavedClient(rec.TerminalClient, sp.Full) {
 		if _, alive := resume.Resolve(rec); alive {
 			return evidenceAgent
 		}
 	}
 	return sp.evidence()
+}
+
+// restorableRecord is history for an explicitly saved pane, not a live-input
+// lease. Frontend leases necessarily expire at reboot; keep LoadLive's strict
+// checks for current owners, while preview and restore use the same saved proof.
+func (sp savedPane) restorableRecord() (resume.Record, bool) {
+	r, ok := resume.Load(sp.Loc)
+	if !ok || r.Agent != "codex" || r.Frontend == "" {
+		return r, ok
+	}
+	agent, _ := resume.FromCommand(sp.Full)
+	if agent != "codex" || r.HomeID != transcript.CodexHomeID() {
+		return resume.Record{}, false
+	}
+	// Hooks follow /new; the saved launch argv can still name its older thread.
+	// Preserve the existing exact-record precedence over that launch-time ID.
+	return r, true
 }
 
 func (sp savedPane) evidence() paneEvidence {

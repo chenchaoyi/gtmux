@@ -145,6 +145,37 @@ func TestBuildRestorePlan_NoSave(t *testing.T) {
 	}
 }
 
+func TestBuildRestorePlanManagedCodexBridge(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("CODEX_HOME", filepath.Join(os.Getenv("HOME"), ".codex"))
+	save := filepath.Join(t.TempDir(), "resurrect.txt")
+	lines := []string{
+		savePaneCmd("bridge", "0", "0", "/synthetic/work", "gtmux", ":/synthetic/gtmux codex -- --model model --approve-for-me"),
+		savePaneCmd("saved-id", "0", "0", "/synthetic/work", "gtmux", ":gtmux codex -- --no-alt-screen resume original-id"),
+		saveShellPane("shell", "0", "0", "/synthetic/work"),
+		savePaneCmd("service", "0", "0", "/synthetic/work", "gtmux", ":gtmux serve"),
+		savePaneCmd("headless", "0", "0", "/synthetic/work", "gtmux", ":gtmux codex -- exec prompt"),
+	}
+	if err := os.WriteFile(save, []byte(strings.Join(lines, "\n")+"\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	for _, loc := range []string{"bridge:0.0", "shell:0.0", "service:0.0", "headless:0.0"} {
+		if err := resume.Save(loc, resume.Record{Agent: "codex", SessionID: loc, Cwd: "/synthetic/work"}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	plan := buildRestorePlanFrom(save)
+	if plan.agentCount() != 2 {
+		t.Fatalf("only saved interactive bridges may resume, got %+v", plan.Sessions)
+	}
+	if got := plan.Sessions[0].Agents; len(got) != 1 || got[0].SessionID != "bridge:0.0" {
+		t.Fatalf("fresh bridge lost its exact record: %+v", got)
+	}
+	if got := plan.Sessions[1].Agents; len(got) != 1 || got[0].SessionID != "original-id" {
+		t.Fatalf("bridge lost the saved command's original id: %+v", got)
+	}
+}
+
 func TestLocSession(t *testing.T) {
 	cases := map[string]string{
 		"MP:0.1":        "MP",

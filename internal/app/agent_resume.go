@@ -168,6 +168,9 @@ func resumeAgents() {
 	var pending []shellPane
 	for _, p := range panes {
 		rec, ok := resume.LoadLive(p.loc)
+		if gated {
+			rec, ok = layout.ByLoc[p.loc].restorableRecord()
+		}
 		src := "exact"
 		if !ok {
 			if agent, id := layout.ByLoc[p.loc].savedSessionID(); id != "" {
