@@ -98,3 +98,12 @@ SHALL read only the existing typed bounded display projection.
 - **WHEN** no Developer ID team can be derived
 - **THEN** the extension may compile but SHALL NOT claim group sharing or receive the
   iOS container as a fallback
+
+### Requirement: Shared widget identity and delivery coverage
+
+The Home Screen and native Mac usage widgets SHALL reuse the colored gtmux app mark and shared view composition. Provider marks SHALL remain distinct from the product identity. Server names SHALL truncate within the header, while the quota and reading time remain legible. The release scope classifier SHALL include shared widget sources, resources and package configuration as iOS inputs, excluding shared tests and documentation.
+
+#### Scenario: Only a shared widget resource changes
+
+- **WHEN** a release changes the shared widget brand resource without changing React Native code
+- **THEN** mobile delivery requires a new package and both widget targets receive the canonical app mark

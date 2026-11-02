@@ -34,7 +34,7 @@ struct MacUsageEntryView: View {
         Group {
             if entry.snapshot.selected(entry.provider).isEmpty {
                 VStack(alignment: .leading, spacing: 6) {
-                    Label("gtmux", systemImage: "square.split.2x2").font(.headline)
+                    UsageWidgetBrand().font(.headline)
                     Text(chinese ? "暂无用量数据" : "Usage unavailable").font(.subheadline.weight(.semibold))
                     Text(entry.provider.isEmpty
                          ? (chinese ? "打开 gtmux，更新本机用量。" : "Open gtmux to update usage on this Mac.")

@@ -46,4 +46,7 @@ Dir.glob(File.join(ios, 'GtmuxWidget/Assets.xcassets/UsageAgent-*.imageset')).ea
   copies = [File.join(directory, 'mark.png'), File.join(root, "shared/UsageWidgets/Sources/GtmuxUsageWidgets/Resources/UsageAgent-#{key}.png")]
   copies.each { |copy| raise "Icon differs from its official source: #{copy}" unless Digest::SHA256.file(copy) == Digest::SHA256.file(canonical) }
 end
+brand = File.join(ios, 'GtmuxWidget/Assets.xcassets/BrandIcon.imageset/brand-192.png')
+shared_brand = File.join(root, 'shared/UsageWidgets/Sources/GtmuxUsageWidgets/Resources/BrandIcon.png')
+raise 'Shared widget brand differs from the app mark' unless Digest::SHA256.file(brand) == Digest::SHA256.file(shared_brand)
 puts 'Usage widget target, entitlement and canonical-icon boundaries passed'

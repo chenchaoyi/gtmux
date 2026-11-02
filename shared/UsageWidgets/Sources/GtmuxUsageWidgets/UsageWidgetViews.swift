@@ -70,7 +70,7 @@ public struct UsageWidgetContent: View {
 
     private var emptyHome: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Label("gtmux", systemImage: "square.split.2x2").font(.headline)
+            UsageWidgetBrand().font(.headline)
             Text(tr("Usage unavailable", "暂无用量数据")).font(.subheadline.weight(.semibold))
             Text(provider.isEmpty ? tr("Open gtmux to sync your server.", "打开 gtmux，同步服务器用量。") :
                 tr("This server has no current reading for this agent.", "当前服务器未提供此 Agent 的读数。"))
@@ -96,7 +96,7 @@ public struct UsageWidgetContent: View {
     private func heading(_ account: UsageWidgetAccount) -> some View {
         HStack(spacing: 5) {
             UsageWidgetAgentMark(agent: account.agent)
-            Text(account.name).font(.caption.weight(.semibold)).lineLimit(1)
+            Text(account.name).font(.caption.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.85)
         }
     }
 
@@ -131,11 +131,11 @@ public struct UsageWidgetContent: View {
     }
 
     private func medium(_ account: UsageWidgetAccount) -> some View {
-        VStack(alignment: .leading, spacing: 9) {
-            HStack {
-                Label("gtmux", systemImage: "square.split.2x2").font(.caption.weight(.semibold))
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                UsageWidgetBrand().font(.caption.weight(.semibold)).layoutPriority(1)
                 Spacer(minLength: 4)
-                Text(snapshot.server).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                Text(snapshot.server).font(.caption2).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
             }
             if provider.isEmpty && accounts.count > 1 {
                 HStack(alignment: .top, spacing: 16) {
@@ -198,7 +198,7 @@ public struct UsageWidgetContent: View {
                         Capsule().fill(tint(window, account: account))
                             .frame(width: geometry.size.width * min(1, max(0, window.percent / 100)))
                     }
-                }.frame(height: 4).accessibilityHidden(true)
+                }.frame(height: 5).accessibilityHidden(true)
             }
             reset(window)
         }
@@ -213,7 +213,8 @@ public struct UsageWidgetContent: View {
         } else if let reset = window.resetAt {
             HStack(spacing: 3) {
                 Text(tr("Resets", "重置")).font(.caption2)
-                readingTime(reset).font(.caption2).monospacedDigit()
+                Text(Date(timeIntervalSince1970: reset), format: .dateTime.month(.abbreviated).day().hour().minute().locale(Locale(identifier: chinese ? "zh-Hans" : "en")))
+                    .font(.caption2).monospacedDigit()
             }.foregroundStyle(.secondary).lineLimit(1)
         } else {
             Text(tr("Used quota", "已用额度")).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
@@ -328,30 +329,44 @@ public struct UsageWidgetContent: View {
     #endif
 }
 
+/// The same app mark is packaged for SwiftPM (Mac) and the iOS extension.
+@available(iOS 16.0, macOS 14.0, *)
+public struct UsageWidgetBrand: View {
+    public init() {}
+    public var body: some View {
+        HStack(spacing: 6) {
+            (usageWidgetImage("BrandIcon") ?? Image(systemName: "square.split.2x2"))
+                .renderingMode(.original).resizable().scaledToFit()
+                .frame(width: 22, height: 22)
+                .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+                .accessibilityHidden(true)
+            Text("gtmux").lineLimit(1)
+        }
+    }
+}
+
+private func usageWidgetImage(_ name: String) -> Image? {
+    #if SWIFT_PACKAGE
+    let bundle = Bundle.module
+    #else
+    let bundle = Bundle.main
+    #endif
+    #if os(macOS)
+    let icon = bundle.url(forResource: name, withExtension: "png").flatMap { NSImage(contentsOf: $0) }
+        ?? bundle.image(forResource: NSImage.Name(name))
+    return icon.map { Image(nsImage: $0) }
+    #else
+    guard UIImage(named: name, in: bundle, compatibleWith: nil) != nil else { return nil }
+    return Image(name, bundle: bundle)
+    #endif
+}
+
 @available(iOS 16.0, macOS 14.0, *)
 private struct UsageWidgetAgentMark: View {
     let agent: String
-    private var mark: Image? {
-        let name = "UsageAgent-" + agent
-        #if SWIFT_PACKAGE
-        let bundle = Bundle.module
-        #else
-        let bundle = Bundle.main
-        #endif
-        #if os(macOS)
-        let icon = bundle.url(forResource: name, withExtension: "png").flatMap { NSImage(contentsOf: $0) }
-            ?? bundle.image(forResource: NSImage.Name(name))
-        return icon.map { Image(nsImage: $0) }
-        #else
-        guard UIImage(named: name, in: bundle, compatibleWith: nil) != nil else { return nil }
-        return Image(name, bundle: bundle)
-        #endif
-    }
     var body: some View {
-        // Resource presence selects the official mark. Custom/new providers can
-        // add an asset without adding another provider list to the view code.
-        Group {
-            (mark ?? Image(systemName: "terminal")).resizable().scaledToFit().padding(2)
-        }.frame(width: 18, height: 18).accessibilityHidden(true)
+        (usageWidgetImage("UsageAgent-" + agent) ?? Image(systemName: "terminal"))
+            .renderingMode(.original).resizable().scaledToFit()
+            .frame(width: 18, height: 18).accessibilityHidden(true)
     }
 }

@@ -41,7 +41,7 @@ class DeliveryScopeTests(unittest.TestCase):
     def test_version_only_release_skips_even_with_mac_docs_and_test_changes(self):
         self.put("mobileapp/src/version.ts", "version = '1.0.143'")
         self.put("mobileapp/ios/Project.xcodeproj/project.pbxproj", "MARKETING_VERSION = 1.0.143;\nOTHER_SETTING = YES;\n")
-        for path in ["macapp/Sources/Example.swift", "mobileapp/DISTRIBUTION.md", "mobileapp/e2e/example.js", "mobileapp/src/ui/example.test.tsx", "mobileapp/scripts/delivery-scope.py"]:
+        for path in ["macapp/Sources/Example.swift", "mobileapp/DISTRIBUTION.md", "mobileapp/e2e/example.js", "mobileapp/src/ui/example.test.tsx", "mobileapp/scripts/delivery-scope.py", "shared/UsageWidgets/Tests/Example.swift", "shared/UsageWidgets/README.md"]:
             self.put(path, "non-shipping change")
         head = self.commit("v1.0.143")
         result = scope.decide(self.root, "release-test", "v1.0.143", head, self.releases)
@@ -49,7 +49,7 @@ class DeliveryScopeTests(unittest.TestCase):
         self.assertEqual(result["baseline"], "v1.0.142")
 
     def test_js_native_dependencies_notes_and_unknown_inputs_require_package(self):
-        for path in ["mobileapp/App.tsx", "mobileapp/src/releaseNotes.ts", "mobileapp/ios/App.swift", "mobileapp/package-lock.json", "mobileapp/ios/Podfile.lock", "mobileapp/new-runtime-input.dat"]:
+        for path in ["mobileapp/App.tsx", "mobileapp/src/releaseNotes.ts", "mobileapp/ios/App.swift", "mobileapp/package-lock.json", "mobileapp/ios/Podfile.lock", "mobileapp/new-runtime-input.dat", "shared/UsageWidgets/Sources/GtmuxUsageWidgets/UsageWidgetViews.swift", "shared/UsageWidgets/Sources/GtmuxUsageWidgets/Resources/BrandIcon.png", "shared/UsageWidgets/Package.swift"]:
             with self.subTest(path=path):
                 self.put(path, "changed input")
                 head = self.commit("v2.0." + str(len(self.git("tag").splitlines())))

@@ -1,5 +1,7 @@
 # Usage widgets
 
+Home Screen and Mac widgets share the colored gtmux app mark and provider marks, a compact server header, a prominent usage value and a dated reading. Light and dark appearances use system colors; system-tinted widgets may adapt image colors to the selected appearance.
+
 On iOS/iPadOS 17 or later, add **Agent usage** from the system widget gallery. Small
 and medium Home Screen widgets show quota, balances or recorded output. Lock Screen
 widgets support circular, rectangular and inline layouts. Live Activities remain a

@@ -1,3 +1,1 @@
-HQ presents a specific question with its reason and scope, separate from progress history. Choosing a reply prepares a draft and preserves your edits; a saved reply is distinct from an executed action.
-
-Trace shares its labels, tool categories, summaries and icon meanings with the browser. Existing original turn numbers and paged history remain intact.
+• Usage widgets now use the colored gtmux logo, clearer provider icons and a more compact header.

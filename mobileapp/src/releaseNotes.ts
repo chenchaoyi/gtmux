@@ -12,6 +12,15 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.168',
+    en: [
+      'Usage widgets now use the colored gtmux logo, clearer provider icons and a more compact header.',
+    ],
+    zh: [
+      '用量小组件换用彩色 gtmux 标识，优化 Agent 图标与标题布局。',
+    ],
+  },
+  {
     version: '1.0.167',
     en: [
       'HQ presents a specific question with its reason and scope, separate from progress history. Choosing a reply prepares a draft and preserves your edits; a saved reply is distinct from an executed action.',

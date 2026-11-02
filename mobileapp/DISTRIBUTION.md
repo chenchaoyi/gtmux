@@ -40,7 +40,8 @@ local fallback below.
 For `release-test`, the trusted-source job compares the exact release commit with
 the nearest earlier published stable release in the official latest-100 release list.
 It checks tracked iOS build inputs, including `App.tsx`, runtime JS, bundled notes,
-dependencies, assets and native iOS files. Generated `src/version.ts` and only the
+dependencies, assets, native iOS files, and the sources/resources/package configuration in
+`shared/UsageWidgets`. Shared tests and documentation do not require a package. Generated `src/version.ts` and only the
 `MARKETING_VERSION` values in Xcode projects are ignored, along with Android,
 tests, documentation and delivery tooling. Unknown mobile input paths require a
 build. No relevant change skips the native job before environment approval,

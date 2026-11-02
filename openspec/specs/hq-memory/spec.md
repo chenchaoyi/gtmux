@@ -99,3 +99,15 @@ Storage reporting SHALL distinguish runtime data, automatic backups, release rec
 #### Scenario: Existing legacy material on first startup
 - **WHEN** a machine already has older full archives or retained delivery material
 - **THEN** new defaults neither move nor retire them, and the read model names their separate sources and review boundary
+
+### Requirement: Many small records remain recoverable within unchanged byte bounds
+The shared archive reader and writer SHALL accept up to 10,000 entries while retaining the 128 MiB compressed/decompressed and 32 MiB individual-file limits. Record buffers SHALL match declared lengths. Older-reader limitations SHALL be documented. Core selection SHALL recognize generated relay observation phase variants, preserve ordinary structured conclusions and honor exact include overrides. No original note SHALL be deleted to satisfy the core policy.
+
+#### Scenario: More than five thousand small unique notes
+- **WHEN** an owner creates a core point containing 6,750 small unique structured notes within byte limits
+- **THEN** the point is fully validated and every unique note round trips through restore
+- **AND** generated relay observations are omitted unless explicitly included
+
+#### Scenario: An entry or byte bound is exceeded
+- **WHEN** an archive exceeds the shared entry or byte limits
+- **THEN** export/import fails before publication and preserves the original destination and recovery points
