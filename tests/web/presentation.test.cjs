@@ -3,6 +3,10 @@ const {scenario} = require('./harness.cjs');
 const {openTools,closeTools} = require('./tools.cjs');
 
 for(const width of [390,1440]) scenario(`Session section casing matches App headings at ${width}`,{viewport:{width,height:900},locale:'en-US'},async(page,fixture)=>{
+  // Hold first data beyond page load, so a snapshot-only read cannot pass by timing.
+  let releaseAgents;
+  const agentsReady=new Promise(resolve=>{releaseAgents=resolve;});
+  await page.route('**/api/agents',async route=>{await agentsReady;await new Promise(resolve=>setTimeout(resolve,500));await route.continue();});
   fixture.state.agents=[
     {pane_id:'%901',agent:'Codex',status:'waiting',task:'Needs a reply'},
     {pane_id:'%902',agent:'Claude Code',status:'idle',error:true,error_text:'Recorded error',task:'Retry failed'},
@@ -14,6 +18,9 @@ for(const width of [390,1440]) scenario(`Session section casing matches App head
   ];
   await page.goto(fixture.url+'/#code=TEST-1234');
   const root=page.locator(width<900?'#radar':'#tree');
+  assert.equal(await root.getByText('NEEDS ATTENTION',{exact:true}).count(),0,'The response is deliberately held until the shell has loaded');
+  releaseAgents();
+  await root.getByText('NEEDS ATTENTION',{exact:true}).waitFor();
   const labels=await root.locator('.section-name').allTextContents();
   for(const expected of ['NEEDS ATTENTION','ERRORED','WORKING','IDLE','ELSEWHERE','EXTERNAL CONVERSATIONS']) assert.ok(labels.includes(expected),expected);
   if(width>=900)assert.ok(labels.includes('HEADQUARTERS'));
