@@ -98,7 +98,7 @@ struct HQWorkspaceView: View {
                         Text(matter.title).font(HQTypography.title).lineLimit(2).textSelection(.enabled)
                         Text(matter.stateLabel(l10n)).font(HQTypography.body)
                             .foregroundStyle(
-                                HQMatterGroup.of(matter.state).status.color)
+                                HQMatterGroup.of(matter).status.color)
                         if let origin = matter.origin {
                             HQMatterSource(l10n: l10n, origin: origin)
                         }
@@ -131,6 +131,9 @@ struct HQWorkspaceView: View {
                         Image(systemName: "ellipsis")
                     }.menuStyle(.borderlessButton).frame(width: 32, height: 28)
                         .accessibilityLabel(l10n.tr("Matter actions", "事项操作"))
+                }
+                HQHumanInputCard(l10n: l10n, matter: matter) { question, choice in
+                    store.prepareHumanReply(question, choice: choice)
                 }
                 HStack {
                     Text(l10n.tr("Agent conversations", "Agent 对话")).font(HQTypography.rowTitle)

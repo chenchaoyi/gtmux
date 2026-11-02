@@ -114,6 +114,11 @@ func TestWorkspaceRequestIsOneStrictBoundedJSONAndPreservesMarkdown(t *testing.T
 	if _, err := applyWorkspaceAction(s, workspaceAction{Op: "report", ID: "report-id", Kind: "progress", Body: "fake HQ"}, 101); err == nil {
 		t.Fatal("non HQ published report")
 	}
+	for _, op := range []string{"request-input", "clear-input"} {
+		if _, err := applyWorkspaceAction(s, workspaceAction{Op: op, Matter: "goal-id"}, 102); err == nil {
+			t.Fatalf("non HQ accepted %s", op)
+		}
+	}
 }
 
 func TestWorkspaceRegistrationRequiresHQAndExplicitProvenance(t *testing.T) {

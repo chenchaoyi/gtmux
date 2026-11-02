@@ -635,7 +635,8 @@ private final class WorkspaceFake: HQWorkspaceServing, @unchecked Sendable {
         let grouped = HQMatterGroup.allCases.flatMap { $0.matters(in: snapshot) }
         XCTAssertEqual(Set(grouped.map(\.id)), Set(snapshot.matters.map(\.id)))
         XCTAssertEqual(grouped.count, snapshot.matters.count)
-        XCTAssertEqual(HQMatterGroup.needsInput.matters(in: snapshot).map(\.id), ["matter-b"])
+        XCTAssertEqual(HQMatterGroup.awaitingHQ.matters(in: snapshot).map(\.id), ["matter-b"])
+        XCTAssertTrue(HQMatterGroup.needsInput.matters(in: snapshot).isEmpty)
         XCTAssertEqual(Set(HQMatterGroup.ended.matters(in: snapshot).map(\.id)), ["ended", "closed"])
         XCTAssertEqual(HQMatterGroup.needsInput.status, .waiting)
         XCTAssertEqual(HQMatterGroup.following.status, .working)

@@ -342,7 +342,7 @@
     ['identity', 'wb-identity', 'guest-scope'].forEach(function (id) { var n = $(id); if (n) n.hidden = true; });
     SHARE = {known: false, input: false, all: false, panes: {}};
     curPane = null; curAgent = null; lastAgents = [];
-    lastTurns = []; chatSig = ''; chatExpanded = {}; chatLive = {}; pendingPrompts = {}; $('chat').innerHTML = '';
+    lastTurns = []; chatSig = ''; chatExpanded = {}; chatLive = {}; pendingPrompts = {}; if($('chat').conversationMapDispose){$('chat').conversationMapDispose();$('chat').conversationMapDispose=null;} $('chat').innerHTML = '';
     if (paneComposer) paneComposer.reset();
     WB.agents = [];
     clearInterval(radarTimer); clearInterval(paneTimer); clearInterval(chatTimer); clearInterval(panesTimer);
@@ -351,7 +351,7 @@
     // The next successful pairing restores only panes in its authorized roster.
     if (WB.tiles.length) {
       WB.saved = WB.tiles.map(function (t) { return {id: t.id, x: t.x, y: t.y, w: t.w, h: t.h, mode: t.mode}; });
-      WB.tiles.forEach(function (t) { clearInterval(t.timer); t.removed = true; if (t.inputDispose) t.inputDispose(); if (t.term) t.term.dispose(); t.el.remove(); });
+      WB.tiles.forEach(function (t) { clearInterval(t.timer); t.removed = true; if(t.conversationMapDispose) t.conversationMapDispose(); if (t.inputDispose) t.inputDispose(); if (t.termBoundsDispose) t.termBoundsDispose(); if (t.term) disposeTerminal(t.term); t.el.remove(); });
       WB.tiles = []; maxedTile = null; $('board').classList.remove('maximized');
       var exit = $('board').querySelector('.max-exit'); if (exit) exit.remove();
     }
@@ -1147,6 +1147,31 @@
     }).catch(function () {});
   }
 
+  // Fit after the host changes (composer, pinned prompt, maximization, fonts),
+  // not only after window resize. Padding belongs to xterm, as FitAddon expects.
+  function observeTerminalBounds(host, terminal, addon) {
+    if (typeof ResizeObserver === 'undefined') return function () {};
+    var frame = 0;
+    var observer = new ResizeObserver(function () {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(function () {
+        if (!host.isConnected || !host.clientWidth || !host.clientHeight) return;
+        try { addon.fit(); } catch (e) { return; }
+      });
+    });
+    observer.observe(host);
+    return function () { observer.disconnect(); cancelAnimationFrame(frame); };
+  }
+
+  function disposeTerminal(terminal) {
+    if (!terminal) return;
+    // xterm 5.5 reset schedules a viewport sync without a disposable RAF.
+    // Stop that instance's late sync before its render service is destroyed.
+    var viewport = terminal._core && terminal._core.viewport;
+    if (viewport && typeof viewport.syncScrollArea === 'function') viewport.syncScrollArea = function () {};
+    terminal.dispose();
+  }
+
   function ensureTerm() {
     if (term) return;
     term = new Terminal({
@@ -1158,6 +1183,7 @@
     fit = new FitAddon.FitAddon(); term.loadAddon(fit);
     try { var u = new Unicode11Addon.Unicode11Addon(); term.loadAddon(u); term.unicode.activeVersion = '11'; } catch (e) {}
     term.open($('term'));
+    observeTerminalBounds($('term'), term, fit);
     // Hold repaints while the reader is actively scrolling (wheel/drag), so a poll
     // mid-gesture doesn't yank the view; flush the held frame once they settle.
     var el = $('term');
@@ -2200,6 +2226,7 @@
     var oldScroll = root.querySelector('.conv-scroll');
     var atBottom = !oldScroll || (oldScroll.scrollHeight - oldScroll.scrollTop - oldScroll.clientHeight < 48);
     var prevTop = oldScroll ? oldScroll.scrollTop : 0;
+    if(root.conversationMapDispose) root.conversationMapDispose();
     root.innerHTML = ''; root.classList.remove('wide');
     var a = curAgent || {};
 
@@ -2235,6 +2262,7 @@
     renderChatInteraction();
     syncChatLive(main, a, function () { return !$('chat').hidden && paneMode === 'chat' && curPane === a.pane_id && curAgent && curAgent.status === 'working'; });
     scroll.scrollTop = atBottom ? scroll.scrollHeight : prevTop;
+    root.conversationMapDispose = window.GtmuxConversationMap.mount(main,scroll,turns,T);
     if (curTurnIdx >= turns.length) curTurnIdx = Math.max(0, turns.length - 1);
     restoreCodeState(root,preserved);
     root.querySelectorAll('[data-chat-focus]').forEach(function (node) {
@@ -2914,7 +2942,7 @@
   function resetTrace(state) { if (state && state.view) state.view.dispose(); return {}; }
   function traceView(turns, state, context) {
     if (!state.view) {
-      state.view = window.GtmuxTraceView.create({T: T, markdown: mdRender, actions: bubbleActions, icon: uiIcon, formatTime: sepTime, toolInput: readToolInput, formatCode: formatToolInput, renderCode: renderCode, codePanel: codePanelEl, history: function (before, agent) {
+      state.view = window.GtmuxTraceView.create({T: T, markdown: mdRender, actions: bubbleActions, icon: uiIcon, activityIcon: activityIcon, senderAvatar: senderAvatarEl, formatTime: sepTime, toolInput: readToolInput, formatCode: formatToolInput, renderCode: renderCode, codePanel: codePanelEl, history: function (before, agent) {
         var epoch = viewEpoch, credential = token;
         var path = hasPane(agent) ? '/api/transcript?id=' + encodeURIComponent(agent.pane_id) : '/api/session/transcript' + conversationQuery(agent);
         return api(path + '&context=1&before=' + encodeURIComponent(before)).then(function(r) {
@@ -3361,7 +3389,8 @@
     cancelRead('tile:' + t.id);
     cancelRead('live:' + t.id);
     t.removed = true;
-    clearInterval(t.timer); if (t.inputDispose) t.inputDispose(); if (t.term) { try { t.term.dispose(); } catch (e) {} }
+    if(t.conversationMapDispose) t.conversationMapDispose();
+    clearInterval(t.timer); if (t.inputDispose) t.inputDispose(); if (t.termBoundsDispose) { t.termBoundsDispose(); t.termBoundsDispose = null; } if (t.term) { try { disposeTerminal(t.term); } catch (e) {} }
     t.el.remove(); WB.tiles = WB.tiles.filter(function (x) { return x !== t; });
     updateEmpty(); wbSave();
   }
@@ -3442,14 +3471,16 @@
     if (t.mode === 'chat' && host) syncChatLive(host, t.agent, function () { return WB.on && !t.removed && t.mode === 'chat' && t.agent.status === 'working'; });
   }
   function setTileMode(t, m) {
+    if (m === t.mode && t.body && t.body.querySelector(m === 'term' ? '.xt' : '.tile-chat')) return;
     if (m !== 'chat' || !t.agent.agent) m = 'term';
     t.mode = m;
     cancelRead('tile:' + t.id);
     cancelRead('live:' + t.id);
     t.readEpoch = (t.readEpoch || 0) + 1;
     Array.prototype.forEach.call(t.el.querySelectorAll('.tile-modes button'), function (b) { var selected = b.getAttribute('data-m') === m; b.classList.toggle('on', selected); b.setAttribute('aria-pressed', String(selected)); });
+    if(t.conversationMapDispose) {t.conversationMapDispose();t.conversationMapDispose=null;}
     clearInterval(t.timer); t.timer = null; t.body.innerHTML = '';
-    if (t.term) { try { t.term.dispose(); } catch (e) {} t.term = null; }
+    if (t.termBoundsDispose) { t.termBoundsDispose(); t.termBoundsDispose = null; } if (t.term) { try { disposeTerminal(t.term); } catch (e) {} t.term = null; }
     t.body.appendChild(brandLoaderEl(null)); // cleared on first frame (or by a chat/diff re-render)
     if (m === 'term') { tileTermStart(t); }
     else { t.chatSig = ''; tilePollChat(t); t.timer = setInterval(function () { tilePollChat(t); }, 2500); }
@@ -3464,9 +3495,10 @@
     t.fit = new FitAddon.FitAddon(); t.term.loadAddon(t.fit);
     try { var u = new Unicode11Addon.Unicode11Addon(); t.term.loadAddon(u); t.term.unicode.activeVersion = '11'; } catch (e) {}
     t.term.open(xt); t.lastText = '';
+    t.termBoundsDispose = observeTerminalBounds(xt, t.term, t.fit);
     var mark = function () { t.scrolling = true; clearTimeout(t.scrollIdle); t.scrollIdle = setTimeout(function () { t.scrolling = false; if (t.pending !== null) { var x = t.pending; t.pending = null; tileWrite(t, x); } }, 900); };
     xt.addEventListener('wheel', mark, {passive: true});
-    setTimeout(function () { try { t.fit.fit(); } catch (e) {} }, 0);
+    setTimeout(function () { if(t.removed || !t.term || !t.term.element || !t.term.element.isConnected || t.mode !== 'term') return; try { t.fit.fit(); } catch (e) {} }, 0);
     tilePollPane(t); t.timer = setInterval(function () { tilePollPane(t); }, 1300);
   }
   function tileWrite(t, text) {
@@ -3514,9 +3546,11 @@
     turns.forEach(function (tn, idx) { wrap.appendChild(conversationTurn(tn, t.agent || {}, idx, t.expanded || (t.expanded = {}), seps[idx], false, function () { renderTileChat(t, t.lastTurns || []); })); });
     appendPendingPrompts(wrap, t.id, t.agent || {});
     var main = document.createElement('div'); main.className = 'conversation-main'; main.appendChild(wrap);
+    if(t.conversationMapDispose) t.conversationMapDispose();
     t.body.innerHTML = ''; t.body.appendChild(main);
     syncChatLive(main, t.agent || {}, function () { return WB.on && !t.removed && t.mode === 'chat' && t.agent.status === 'working'; });
     wrap.scrollTop = atBottom ? wrap.scrollHeight : top;
+    t.conversationMapDispose = window.GtmuxConversationMap.mount(main,wrap,turns,T);
     restoreToolState(t.body, preserved);
   }
   // drag-move (head) + resize (corner), with optional snap-to-grid.
@@ -3697,7 +3731,7 @@
     refitTile(t);
   }
   function refitTile(t) {
-    if (t.fit && t.mode === 'term') setTimeout(function () { try { t.fit.fit(); } catch (e) {} if (t.lastText) { var x = t.lastText; t.lastText = ''; tileWrite(t, x); } }, 0);
+    if (t.fit && t.mode === 'term') setTimeout(function () { if(t.removed || !t.term || !t.term.element || !t.term.element.isConnected || t.mode !== 'term') return; try { t.fit.fit(); } catch (e) {} }, 0);
   }
 
   // ---- layout presets (WEB.md §7) ---------------------------------------

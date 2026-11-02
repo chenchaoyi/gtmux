@@ -4,7 +4,7 @@ import type { HQMatter } from '../api/hqWorkspace';
 import { DisclosureChevron } from '../ui/DisclosureChevron';
 import { SIcon } from '../ui/SettingsIcons';
 import { Palette, StatusColor } from '../ui/theme';
-import { matterPreview, matterState } from './hqWorkspaceModel';
+import { matterPreview, matterStatus } from './hqWorkspaceModel';
 
 // A matter's current state and a saved change are different facts. The stamp
 // always names the former; the byline dates the actual update, never a receipt.
@@ -28,8 +28,17 @@ export function HQBriefCard({
   wide?: boolean;
 }) {
   const assessment = matterPreview(matter.assessment ?? '');
-  const body = assessment || matterPreview(preview ?? '');
-  const needsInput = matter.state === 'needs-input';
+  const question =
+    matter.state === 'needs-input' ? matter.user_input : undefined;
+  const body = question
+    ? question.prompt
+    : matter.state === 'needs-input'
+    ? zh
+      ? 'HQ 尚未写清当前问题，需要先核对这条旧记录。'
+      : 'HQ needs to clarify whether this older record still needs your input.'
+    : assessment || matterPreview(preview ?? '');
+  const needsInput =
+    matter.state === 'needs-input' && !!question && !question.answer_id;
   return (
     <TouchableOpacity
       testID={testID}
@@ -63,7 +72,7 @@ export function HQBriefCard({
             { color: needsInput ? StatusColor.waiting : pal.fg2 },
           ]}
         >
-          {matterState(matter.state, zh)}
+          {matterStatus(matter, zh)}
         </Text>
         <DisclosureChevron open={false} color={pal.fg2} />
       </View>
@@ -72,7 +81,7 @@ export function HQBriefCard({
       </Text>
       {!!body && (
         <View style={s.brief}>
-          {!!assessment && (
+          {matter.state !== 'needs-input' && !!assessment && (
             <Text style={[s.caption, { color: pal.fg2 }]}>
               {zh ? '当前判断' : 'Current assessment'}
             </Text>
@@ -81,6 +90,11 @@ export function HQBriefCard({
             {body}
           </Text>
         </View>
+      )}
+      {!!question && !question.answer_id && (
+        <Text numberOfLines={2} style={[s.body, { color: pal.fg2 }]}>
+          {question.why}
+        </Text>
       )}
       {!!byline && <Text style={[s.byline, { color: pal.fg2 }]}>{byline}</Text>}
     </TouchableOpacity>

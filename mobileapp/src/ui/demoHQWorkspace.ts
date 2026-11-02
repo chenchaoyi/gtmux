@@ -13,11 +13,11 @@ export function demoHQWorkspace(
   const rows: [string, string, string, MatterState, string, string][] = [
     [
       'verify-tests',
-      'Approve the verification run',
-      '确认验证范围',
+      'Choose verification scope',
+      '选择验证范围',
       'needs-input',
-      'The fix is ready. Run the full suite before merging?',
-      '修复已完成，合入前是否运行完整回归？',
+      'Choose a targeted check or the full demo verification.',
+      '选择针对性检查，或完整的演示验证。',
     ],
     [
       'api-refactor',
@@ -65,6 +65,27 @@ export function demoHQWorkspace(
     id,
     title: zh ? cn : en,
     state,
+    ...(state === 'needs-input'
+      ? {
+          user_input: {
+            id: 'question-scope',
+            kind: 'decision' as const,
+            prompt: zh
+              ? '运行针对性检查，还是完整演示验证？'
+              : 'Targeted check or full demo verification?',
+            why: zh
+              ? '两种范围都可执行，耗时不同，按你的需要选择。'
+              : 'Both scopes are available and take different amounts of time.',
+            impact: zh
+              ? '只运行演示中的合成检查，不控制演示之外的会话。'
+              : 'Only synthetic demo checks run; sessions outside the demo are not controlled.',
+            choices: zh
+              ? ['针对性检查', '完整验证']
+              : ['Targeted check', 'Full verification'],
+            at: now,
+          },
+        }
+      : {}),
     updated_at: now - (i + 1) * 120,
     revision: i + 1,
     participants: [],
@@ -88,6 +109,10 @@ export function demoHQWorkspace(
     overview: {
       generated_at: now,
       since: now - 86400,
+      human_input: matters
+        .filter(m => m.state === 'needs-input' && !!m.user_input)
+        .map(item),
+      awaiting_hq: [],
       needs_input: matters.filter(m => m.state === 'needs-input').map(item),
       following: matters.filter(m => m.state === 'open').map(item),
       recent: [

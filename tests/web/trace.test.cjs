@@ -114,7 +114,7 @@ scenario('Trace pauses a streamed detail while text is selected and resumes afte
   await trace.locator('.trace-prose').getByText('Selected original reply with a new streamed ending',{exact:true}).waitFor();
   await page.evaluate(()=>{const text=document.querySelector('.session-tool .trace-prose p').firstChild;const range=document.createRange();range.selectNodeContents(text);getSelection().addRange(range);});
   await trace.locator('.trace-event.user').click();
-  assert.equal(await trace.locator('.trace-detail-title').innerText(),'User message');
+  assert.equal(await trace.locator('.trace-detail-title').innerText(),'Request');
   assert.equal(await trace.locator('.trace-prose').innerText(),'Work','explicit navigation supersedes an old text selection');
 });
 
@@ -127,9 +127,9 @@ scenario('Trace bounds long-history DOM, searches all records and reaches the fi
   assert.ok(await trace.locator('.trace-event').count()<=200);
   assert.ok(await trace.locator('.trace-mark').count()<=120);
   await trace.locator('.trace-scrubber').focus();await page.keyboard.press('Home');
-  assert.equal(await trace.locator('.trace-event.on').innerText(),'Message\nUser message\nRequest 0');
+  assert.equal(await trace.locator('.trace-event.on').innerText(),'Request\nRequest 0');
   await page.keyboard.press('End');
-  assert.match(await trace.locator('.trace-event.on').innerText(),/Final uniquely searchable command/);
+  assert.equal(await trace.locator('.trace-event.on').innerText(),'Read file\nrecord 2500');
   assert.equal(await trace.locator('.trace-source').innerText(),'Final uniquely searchable command');
   await trace.getByRole('searchbox',{name:'Search trace',exact:true}).fill('uniquely searchable');
   assert.equal(await trace.locator('.trace-event').count(),1);

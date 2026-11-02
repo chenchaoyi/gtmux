@@ -1,6 +1,8 @@
 import Foundation
 
 struct HQOverviewSnapshot: Decodable {
+    var humanInput: [HQOverviewItem]? = nil
+    var awaitingHq: [HQOverviewItem]? = nil
     var generatedAt: Int64
     var since: Int64
     var needsInput: [HQOverviewItem]
@@ -44,7 +46,12 @@ struct HQOverviewChange: Decodable, Identifiable {
 enum HQOverviewModel {
     static func items(_ group: HQMatterGroup, in snapshot: HQWorkspaceSnapshot?) -> [HQOverviewItem] {
         let explicit = group.matters(in: snapshot)
-        let records = group == .needsInput ? snapshot?.overview?.needsInput : snapshot?.overview?.following
+        let records: [HQOverviewItem]?
+        switch group {
+        case .needsInput: records = snapshot?.overview?.humanInput
+        case .awaitingHQ: records = snapshot?.overview?.awaitingHq
+        default: records = snapshot?.overview?.following
+        }
         guard let records else { return explicit.prefix(3).map { HQOverviewItem(matterId: $0.id) } }
         let ids = Set(explicit.map(\.id))
         return Array(records.filter { ids.contains($0.matterId) }.prefix(3))

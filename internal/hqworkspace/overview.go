@@ -10,6 +10,8 @@ import (
 type Overview struct {
 	GeneratedAt int64            `json:"generated_at"`
 	Since       int64            `json:"since"`
+	HumanInput  []OverviewItem   `json:"human_input"`
+	AwaitingHQ  []OverviewItem   `json:"awaiting_hq"`
 	NeedsInput  []OverviewItem   `json:"needs_input"`
 	Following   []OverviewItem   `json:"following"`
 	Recent      []OverviewChange `json:"recent"`
@@ -38,7 +40,7 @@ type OverviewChange struct {
 }
 
 func BuildOverview(d Database, now int64) Overview {
-	out := Overview{GeneratedAt: now, Since: now - 86400, NeedsInput: []OverviewItem{}, Following: []OverviewItem{}, Recent: []OverviewChange{}}
+	out := Overview{GeneratedAt: now, Since: now - 86400, HumanInput: []OverviewItem{}, AwaitingHQ: []OverviewItem{}, NeedsInput: []OverviewItem{}, Following: []OverviewItem{}, Recent: []OverviewChange{}}
 	wanted := map[string]bool{}
 	for _, m := range Matters(d) {
 		item := OverviewItem{MatterID: m.ID}
@@ -49,6 +51,26 @@ func BuildOverview(d Database, now int64) Overview {
 			out.Following = append(out.Following, item)
 		default:
 			continue
+		}
+		wanted[m.ID] = true
+	}
+	// needs_input stays as a compatibility projection for older clients.
+	// New clients distinguish a concrete human question from HQ's own follow-up.
+	for _, m := range Matters(d) {
+		if m.State != "needs-input" {
+			continue
+		}
+		item := OverviewItem{MatterID: m.ID}
+		if m.UserInput != nil && m.UserInput.AnswerID == "" {
+			if len(out.HumanInput) >= 3 {
+				continue
+			}
+			out.HumanInput = append(out.HumanInput, item)
+		} else {
+			if len(out.AwaitingHQ) >= 3 {
+				continue
+			}
+			out.AwaitingHQ = append(out.AwaitingHQ, item)
 		}
 		wanted[m.ID] = true
 	}
@@ -75,9 +97,11 @@ func BuildOverview(d Database, now int64) Overview {
 			latest[id] = msg
 		}
 	}
-	for _, items := range [][]OverviewItem{out.NeedsInput, out.Following} {
+	for _, items := range [][]OverviewItem{out.NeedsInput, out.Following, out.HumanInput, out.AwaitingHQ} {
 		for i := range items {
-			if msg, ok := latest[items[i].MatterID]; ok {
+			if q := d.Matters[items[i].MatterID].UserInput; q != nil && d.Matters[items[i].MatterID].State == "needs-input" {
+				items[i].Preview = &OverviewPreview{MessageID: q.ID, Kind: "question", Body: q.Prompt, At: q.At}
+			} else if msg, ok := latest[items[i].MatterID]; ok {
 				body, clipped := overviewExcerpt(msg.Body, 768)
 				items[i].Preview = &OverviewPreview{MessageID: msg.ID, Kind: msg.Kind, Body: body, At: msg.At, Truncated: clipped}
 			} else if body, clipped := overviewExcerpt(d.Matters[items[i].MatterID].Assessment, 768); body != "" {

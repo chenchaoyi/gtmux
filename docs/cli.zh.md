@@ -752,6 +752,13 @@ JSON
 点击发送后才会交给 HQ；已有草稿会保留。“查看交接快照”保留原板入口。
 新版章程在下次运行 `gtmux hq` 时更新，已在运行的 agent 还需读取更新后的章程。
 
+当前需要人处理的问题由 HQ 使用 `op: request-input` 登记，包含 `matter`、
+`revision` 和 `user_input: {id, kind, prompt, why, impact, choices?}`，只写一个
+具体问题，技术进展另存。核实答复或新事实后使用 `op: clear-input`，提供
+`id`、`matter`、`revision`、`reply_to`（问题ID）和 `body`（核实依据），只撤下
+问题，不把持续目标直接标完成。用户的 `send` 可用 `reply_to` 关联当前问题；
+选择选项仅准备草稿，已保存答复不代表工作已执行。见[工作台阅读设计](design/workspace-reading.zh.md)。
+
 ## `gtmux digest` + `gtmux hq`：HQ，也就是中控会话
 
 `gtmux digest` 以表格列出各 agent 的目标、最近回复、等待原因和用量：

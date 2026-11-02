@@ -13,7 +13,7 @@
     var count = el('span', 'trace-count'); count.setAttribute('role', 'status'); toolbar.appendChild(count);
     var search = el('input', 'trace-search'); search.type = 'search'; search.placeholder = T('Search trace', '搜索轨迹'); search.setAttribute('aria-label', search.placeholder); toolbar.appendChild(search);
     var kind = el('select', 'trace-filter'); kind.setAttribute('aria-label', T('Record type', '记录类型'));
-    [['all', T('All events', '全部记录')], ['user', T('Messages', '用户消息')], ['assistant', T('Agent replies', 'Agent 回复')], ['tool', T('Tool calls', '工具调用')], ['context', T('Context', '上下文')]].forEach(function (item) { kind.appendChild(option(item[0], item[1])); }); toolbar.appendChild(kind);
+    Object.keys(model.traceKindLabels).forEach(function (key) { kind.appendChild(option(key, model.traceKindLabels[key][T('en','zh') === 'zh' ? 1 : 0])); }); toolbar.appendChild(kind);
     var foldTurns = button('trace-fold-turns', T('Collapse all turns', '收起所有轮次'), function () { foldAll('turns'); }); toolbar.appendChild(foldTurns);
     var foldCalls = button('trace-fold-calls', T('Collapse all calls', '收起所有调用'), function () { foldAll('calls'); }); toolbar.appendChild(foldCalls);
     var session = el('select', 'trace-session'); session.setAttribute('aria-label', T('Conversation history', '历史会话')); toolbar.appendChild(session);
@@ -42,9 +42,9 @@
     var metadata = el('p', 'trace-meta'); detail.appendChild(metadata);
     var path = el('div', 'trace-workdir'); detail.appendChild(path);
     var modes = el('div', 'trace-detail-modes'); modes.setAttribute('role', 'tablist'); modes.setAttribute('aria-label', T('Text presentation', '正文显示方式'));
-    var overviewTab = button('trace-overview-mode', T('Overview', '概述'), function () { detailMode = 'overview'; renderDetail(true); });
-    var preview = button('trace-preview-mode', T('Preview', '预览'), function () { detailMode = 'preview'; renderDetail(true); });
-    var source = button('trace-source-mode', T('Raw content', '原始内容'), function () { detailMode = 'raw'; renderDetail(true); }); var origin = button('trace-origin-mode', T('Source', '来源'), function () { detailMode = 'origin'; renderDetail(true); });
+    var overviewTab = button('trace-overview-mode', model.traceDetailLabels.overview[T('en','zh') === 'zh' ? 1 : 0], function () { detailMode = 'overview'; renderDetail(true); });
+    var preview = button('trace-preview-mode', model.traceDetailLabels.preview[T('en','zh') === 'zh' ? 1 : 0], function () { detailMode = 'preview'; renderDetail(true); });
+    var source = button('trace-source-mode', model.traceDetailLabels.raw[T('en','zh') === 'zh' ? 1 : 0], function () { detailMode = 'raw'; renderDetail(true); }); var origin = button('trace-origin-mode', model.traceDetailLabels.origin[T('en','zh') === 'zh' ? 1 : 0], function () { detailMode = 'origin'; renderDetail(true); });
     [overviewTab, preview, source, origin].forEach(function (tab) { tab.setAttribute('role', 'tab'); modes.appendChild(tab); }); detail.appendChild(modes);
     var detailMode = 'preview', warning = el('p', 'trace-truncated'); detail.appendChild(warning);
     var content = el('div', 'trace-detail-content'); content.id = detail.id + '-content'; content.setAttribute('role', 'tabpanel'); [overviewTab, preview, source, origin].forEach(function (tab, i) { tab.id = detail.id + '-tab-' + i; tab.setAttribute('aria-controls', content.id); }); detail.appendChild(content); body.appendChild(detail); body.appendChild(latest); root.appendChild(body);
@@ -54,7 +54,7 @@
     function el(tag, name, text) { var node = document.createElement(tag); if (name) node.className = name; if (text !== undefined) node.textContent = text; return node; }
     function option(value, label) { var node = el('option', '', label); node.value = value; return node; }
     function button(name, label, action) { var node = el('button', name, label); node.type = 'button'; node.title = label; node.setAttribute('aria-label', label); node.onclick = action; return node; }
-    function label(event) { if (event.kind === 'context') return model.contextLabel(event, T('en', 'zh')); return event.title || (event.kind === 'tool' ? T('Tool call', '工具调用') : event.kind === 'user' ? T('User message', '用户消息') : event.agent || T('Agent reply', 'Agent 回复')); }
+    function label(event) { return model.traceEventLabel(event, T('en','zh')); }
     function turnLabel(event) { return T('Turn ', '第 ') + event.turn + T('', ' 轮'); }
     function compact() { return (root.clientWidth || context.width || window.innerWidth) < 700; }
     function updateStatus() {
@@ -123,12 +123,12 @@
       var row = rowNodes.get(event.key);
       if (!row) {
         row = el('button', 'trace-event ' + event.kind); row.type = 'button'; row.dataset.key = event.key;
-        var identity = el('span', 'trace-kind'); identity.appendChild(el('span', '', event.kind === 'tool' ? T('Tool', '工具') : event.kind === 'user' ? T('Message', '消息') : event.kind === 'context' ? T('Context', '上下文') : T('Agent', 'Agent'))); row.appendChild(identity);
+        var identity = el('span', 'trace-kind'); identity.setAttribute('aria-hidden','true'); if(event.kind === 'tool') identity.appendChild(options.activityIcon(model.traceEventIcon(event))); else if(event.kind === 'user' && event.from && options.senderAvatar) identity.appendChild(options.senderAvatar(event.from,20)); else { var svg=document.createElementNS('http://www.w3.org/2000/svg','svg'),path=document.createElementNS(svg.namespaceURI,'path');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('class','activity-icon');path.setAttribute('d',model.traceRecordPaths[event.kind]);svg.appendChild(path);identity.appendChild(svg); } row.appendChild(identity);
         var text = el('span', 'trace-row-text'); text.appendChild(el('span', 'trace-row-title')); text.appendChild(el('span', 'trace-preview')); row.appendChild(text);
         rowNodes.set(event.key, row);
       }
       row.querySelector('.trace-row-title').textContent = label(event);
-      row.querySelector('.trace-preview').textContent = event.body.replace(/\s+/g, ' ');
+      row.querySelector('.trace-preview').textContent = model.traceEventPreview(event, T('en','zh'));
       row.setAttribute('aria-controls', detail.id); row.setAttribute('aria-pressed', String(event.key === selected)); row.classList.toggle('on', event.key === selected);
       row.onclick = function () { inspect(event, true); };
       return row;

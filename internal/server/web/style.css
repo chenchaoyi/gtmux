@@ -264,7 +264,7 @@ section { flex: 1 1 auto; min-height: 0; overflow: auto; }
 
 /* pane (terminal) — Ghostty background; terminal fills full width */
 #pane { padding: 0; background: var(--terminal-bg); position: relative; }
-#term { position: absolute; inset: 49px 0 0 0; padding: 8px 10px; background: var(--terminal-bg); }
+#term { position: absolute; inset: 49px 0 0 0; background: var(--terminal-bg); }
 /* Codex's pinned prompt, in full: two lines at rest, a click opens it. The terminal moves
    down by its height (app.js refitTerm). */
 #pinned {
@@ -288,7 +288,7 @@ section { flex: 1 1 auto; min-height: 0; overflow: auto; }
   color: var(--fg2); font-size: 12px; line-height: 16px; padding: 1px 8px; cursor: pointer;
 }
 #pinned .pin-copy:hover { color: var(--fg); }
-.xterm { height: 100%; }
+.xterm { height: 100%; box-sizing: border-box; padding: 8px 10px; }
 
 /* settings (font + size) */
 #gear {
@@ -650,7 +650,8 @@ body:has(#gate:not([hidden])) #gear { margin-left: auto; }
 .composer-sm .cx-row { gap: 5px; }
 .composer-sm .cx-input { font-size: 13px; padding: 8px 10px; border-radius: 8px; background: var(--surface); }
 .composer-sm .cx-attach, .composer-sm .cx-send { border-radius: 8px; background: var(--surface); }
-.tile-body .xt { position: absolute; inset: 0; padding: 6px 8px; }
+.tile-body .xt { position: absolute; inset: 0; }
+.tile-body .xt .xterm { padding: 6px 8px; }
 .tile-body .tile-chat { position: absolute; inset: 0; overflow: auto; padding: 4px 0; }
 .tile-body .tile-diff { position: absolute; inset: 0; overflow: auto; margin: 0; padding: 10px 12px; font-family: Menlo, monospace; font-size: 11.5px; line-height: 1.5; white-space: pre; color: var(--fg2); }
 .tile-body .tile-diff .add { color: var(--idle); }
@@ -1539,3 +1540,21 @@ select:disabled { opacity: .55; cursor: not-allowed; }
 .trace-history-bar button:disabled {opacity:.6;cursor:wait;}
 
 .trace-history-bar button:focus-visible {outline:2px solid var(--accent-ink);outline-offset:2px;border-radius:6px;}
+
+/* Compact conversation overview: proximity lens and explicit jump preview. */
+.conversation-main { position: relative; }
+.has-conversation-map .chat-col { padding-right: 48px; }
+.tile-body .has-conversation-map > .tile-chat { padding-right: 48px; }
+.conversation-map { position: absolute; right: 2px; top: 0; bottom: 0; width: 40px; pointer-events: none; z-index: 3; }
+.conversation-map-track { position: absolute; width: 40px; right: 0; top: 15%; height: 65%; max-height: 480px; min-height: 100px; pointer-events: auto; cursor: pointer; touch-action: pan-y; outline-offset: -4px; }
+.conversation-map-track i { position: absolute; right: 12px; height: calc(2px + var(--map-lens,0)*2px); width: calc(8px + var(--map-lens,0)*20px); background: var(--fg3); opacity: calc(.4 + var(--map-lens,0)*.6); border-radius: 3px; transform: translateY(-50%); transition: width 90ms, height 90ms, opacity 90ms; }
+.conversation-map-track i.current { background: var(--accent-ink); opacity: 1; width: 20px; }
+.conversation-map-preview { position: absolute; right: 40px; width: 320px; max-width: calc(100vw - 80px); padding: 14px; border: 1px solid var(--divider); border-radius: 12px; background: var(--surface); color: var(--fg); box-shadow: 0 8px 28px rgba(0,0,0,.15); pointer-events: auto; font-size: 13px; line-height: 1.5; }
+.conversation-map-preview strong,.conversation-map-preview p { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-wrap; overflow-wrap: anywhere; margin: 5px 0; }
+.conversation-map-meta { color: var(--fg2); font-size: 11px; }
+.conversation-map-preview button { min-height: 36px; padding: 6px 10px; margin-top: 5px; border-radius: 7px; background: var(--control); color: var(--fg); cursor: pointer; }
+.conversation-map-target { animation: conversation-locate 1.2s ease-out; }
+@keyframes conversation-locate { from { outline: 2px solid var(--accent-ink); outline-offset: 5px; } to { outline: 2px solid transparent; outline-offset: 5px; } }
+@media (prefers-reduced-motion: reduce) { .conversation-map-track i { transition: none; } .conversation-map-target { animation: none; } }
+@media (max-width: 700px) { .conversation-map-preview button { min-height: 44px; } .has-conversation-map .chat-col { padding-right: 40px; } }
+.trace-kind .activity-icon { width: 20px; height: 20px; stroke-width: 1.8; }

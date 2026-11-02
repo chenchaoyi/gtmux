@@ -3,23 +3,42 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const ts = require('typescript');
 const root = path.resolve(__dirname, '../..');
-const source = fs.readFileSync(
-  path.join(root, 'mobileapp/src/trace/model.ts'),
-  'utf8',
+const inputs = {
+  model: 'mobileapp/src/trace/model.ts',
+  activity: 'mobileapp/src/ui/activity.ts',
+  timeline: 'mobileapp/src/trace/timeline.ts',
+  presentation: 'mobileapp/src/trace/presentation.ts',
+};
+const sources = Object.fromEntries(
+  Object.entries(inputs).map(([key, file]) => [
+    key,
+    fs.readFileSync(path.join(root, file), 'utf8'),
+  ]),
 );
-const hash = crypto.createHash('sha256').update(source).digest('hex');
-const js = ts.transpileModule(source, {
-  compilerOptions: {
-    target: ts.ScriptTarget.ES2020,
-    module: ts.ModuleKind.CommonJS,
-  },
-}).outputText;
+const hash = crypto
+  .createHash('sha256')
+  .update(JSON.stringify(sources))
+  .digest('hex');
+const modules = Object.entries(sources)
+  .map(
+    ([key, source]) =>
+      JSON.stringify(key) +
+      ':function(exports,require){\n' +
+      ts.transpileModule(source, {
+        compilerOptions: {
+          target: ts.ScriptTarget.ES2020,
+          module: ts.ModuleKind.CommonJS,
+        },
+      }).outputText +
+      '\n}',
+  )
+  .join(',\n');
 const body =
-  '(function(root){var exports={};\n' +
-  js +
-  '\nif(typeof module==="object"&&module.exports)module.exports=exports;else root.GtmuxTrace=exports;})(typeof window!=="undefined"?window:globalThis);\n';
+  '(function(root){var modules={' +
+  modules +
+  '},cache={};function load(key){if(cache[key])return cache[key];var exports={};cache[key]=exports;modules[key](exports,function(name){var id={"./model":"model","../ui/activity":"activity","./timeline":"timeline"}[name];if(!id)throw new Error("Unknown shared trace module");return load(id);});return exports;}var api=Object.assign({},load("model"),load("presentation"));\nif(typeof module==="object"&&module.exports)module.exports=api;else root.GtmuxTrace=api;})(typeof window!=="undefined"?window:globalThis);\n';
 const output =
-  '// Generated from mobileapp/src/trace/model.ts; SHA256 ' +
+  '// Generated from shared App trace analysis and presentation; SHA256 ' +
   hash +
   '\n// Body SHA256 ' +
   crypto.createHash('sha256').update(body).digest('hex') +

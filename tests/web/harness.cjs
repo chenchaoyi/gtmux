@@ -16,7 +16,7 @@ function scenario(name, options, run) {
       context.setDefaultTimeout(6000);
       await context.tracing.start({screenshots: true, snapshots: true});
       page = await context.newPage();
-      page.on('pageerror', error => errors.push(error.message));
+      page.on('pageerror', error => errors.push(error.stack || error.message));
       page.on('console', message => {
         // Invalid enrollment and deliberate revocation produce expected HTTP 401 console messages.
         const status = /status of (\d+)/.exec(message.text());

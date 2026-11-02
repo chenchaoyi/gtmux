@@ -2,8 +2,12 @@ import Foundation
 
 /// One grouping rule for both navigation and Overview; no Markdown state inference.
 enum HQMatterGroup: String, CaseIterable, Hashable, Identifiable {
-    case needsInput, following, ended, other
+    case needsInput, following, awaitingHQ, ended, other
     var id: Self { self }
+    static func of(_ matter: HQMatter) -> Self {
+        if matter.state == "needs-input", matter.userInput == nil || matter.userInput?.answerId != nil { return .awaitingHQ }
+        return of(matter.state)
+    }
     static func of(_ state: String) -> Self {
         switch state {
         case "needs-input": return .needsInput
@@ -16,6 +20,7 @@ enum HQMatterGroup: String, CaseIterable, Hashable, Identifiable {
         switch self {
         case .needsInput: return .waiting
         case .following: return .working
+        case .awaitingHQ: return .running
         case .ended: return .idle
         case .other: return .running
         }
@@ -24,12 +29,13 @@ enum HQMatterGroup: String, CaseIterable, Hashable, Identifiable {
         switch self {
         case .needsInput: return l.tr("Needs your input", "待你处理")
         case .following: return l.tr("Following", "正在跟进")
+        case .awaitingHQ: return l.tr("HQ follow-up", "由 HQ 跟进")
         case .ended: return l.tr("Recently ended", "最近结束")
         case .other: return l.tr("Other matters", "其他事项")
         }
     }
     func matters(in snapshot: HQWorkspaceSnapshot?) -> [HQMatter] {
-        (snapshot?.matters ?? []).filter { Self.of($0.state) == self }.sorted {
+        (snapshot?.matters ?? []).filter { Self.of($0) == self }.sorted {
             $0.updatedAt == $1.updatedAt ? $0.id < $1.id : $0.updatedAt > $1.updatedAt
         }
     }

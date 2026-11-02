@@ -804,3 +804,31 @@ Chat and Trace SHALL share code presentation and pure reading transforms. Static
 - **WHEN** a counted tool group expands
 - **THEN** its five calls have a visible nested relationship and recorded group positions
 - **AND** the following progress record returns to the outer level
+
+### Requirement: Conversation navigation preserves reading position
+Long browser conversations SHALL provide a bounded loaded-turn overview with proximity emphasis, summary preview and explicit navigation. Desktop pointer and keyboard input and mobile touch SHALL be supported. Original source turn ordinals SHALL be used when provided, and overview navigation SHALL NOT send agent input or load hidden private content.
+
+#### Scenario: Preview and navigate a long conversation
+- **WHEN** a reader hovers or focuses the overview, or taps it on mobile
+- **THEN** the corresponding loaded turn's short prompt and reply are previewed
+- **AND** an explicit jump locates that turn without changing the session
+
+#### Scenario: A new turn arrives while reading earlier content
+- **WHEN** the conversation refreshes while the reader is away from the tail
+- **THEN** their reading position is preserved
+- **AND** the overview remains bounded for large loaded histories
+
+### Requirement: Browser trace presentation shares native semantics
+Browser Trace SHALL consume the same typed analysis, record labels, tool classification, summaries, filter names and detail labels as the App. Tool glyphs SHALL use the existing shared activity icon semantics.
+
+#### Scenario: The same transcript is opened on both clients
+- **WHEN** a tool, message or context record is displayed
+- **THEN** its semantic label and summary match across clients without inventing output or timing data
+
+### Requirement: Terminal grids fit their actual host bounds
+Terminal padding and host size changes SHALL be accounted for by the terminal fit operation, including composer, maximization, font and viewport changes. Disposal SHALL cancel pending fitting observers.
+
+#### Scenario: A narrow terminal is resized or maximized
+- **WHEN** its available width or height changes
+- **THEN** the grid remains within the host with its rightmost column visible
+- **AND** resizing does not clear the existing screen

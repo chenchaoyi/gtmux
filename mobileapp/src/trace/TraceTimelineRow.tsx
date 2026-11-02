@@ -1,47 +1,27 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Lang } from '../i18n';
+import Svg, { Path } from 'react-native-svg';
 import { ActivityIcon } from '../ui/ActivityIcon';
-import {
-  activityLabel,
-  activityOperation,
-  activityPreview,
-} from '../ui/activity';
+import { activityOperation } from '../ui/activity';
 import { Chevron } from '../ui/Icons';
-import { SIcon } from '../ui/SettingsIcons';
 import { SenderAvatar } from '../ui/SenderAvatar';
 import { ChromeText } from '../ui/ChromeText';
 import { Palette } from '../ui/theme';
-import { TraceEvent, TraceStep, contextLabel } from './model';
+import { TraceEvent } from './model';
 import { TimelineRow, tracePreview } from './timeline';
 
-export function recordedStep(event: TraceEvent) {
-  const step = event.step as TraceStep;
-  return {
-    kind: 'tool',
-    title: event.title,
-    input: step.input,
-    detail: step.summary,
-    operation: step.operation,
-    input_kind: step.inputKind,
-  };
-}
-export function traceEventLabel(event: TraceEvent, lang: Lang) {
-  if (event.kind === 'context') return contextLabel(event, lang);
-  return event.kind === 'tool'
-    ? activityLabel(activityOperation(recordedStep(event)), lang)
-    : event.kind === 'user'
-    ? event.from?.label || (lang === 'zh' ? '请求' : 'Request')
-    : lang === 'zh'
-    ? '进展记录'
-    : 'Progress';
-}
-export function traceEventPreview(event: TraceEvent, lang: Lang) {
-  return event.kind === 'tool'
-    ? activityPreview(recordedStep(event), lang)
-    : tracePreview(event.body, lang);
-}
-
+export {
+  recordedStep,
+  traceEventLabel,
+  traceEventPreview,
+} from './presentation';
+import {
+  recordedStep,
+  traceEventLabel,
+  traceEventPreview,
+  traceRecordPaths,
+} from './presentation';
 export function TraceTimelineRow({
   row,
   pal,
@@ -203,7 +183,7 @@ export function TraceTimelineRow({
           )}
         <View style={[s.marker, { backgroundColor: pal.bg }]}>
           {event.kind === 'context' ? (
-            <SIcon name="info" size={20} color={pal.fg2} />
+            <RecordIcon kind="context" color={pal.fg2} />
           ) : event.kind === 'tool' ? (
             <ActivityIcon
               operation={activityOperation(recordedStep(event))}
@@ -213,9 +193,8 @@ export function TraceTimelineRow({
           ) : event.kind === 'user' && event.from ? (
             <SenderAvatar from={event.from} size={20} />
           ) : (
-            <SIcon
-              name={event.kind === 'user' ? 'person' : 'sparkle'}
-              size={20}
+            <RecordIcon
+              kind={event.kind === 'user' ? 'user' : 'assistant'}
               color={pal.fg2}
             />
           )}
@@ -238,6 +217,31 @@ export function TraceTimelineRow({
         )}
       </View>
     </TouchableOpacity>
+  );
+}
+function RecordIcon({
+  kind,
+  color,
+}: {
+  kind: keyof typeof traceRecordPaths;
+  color: string;
+}) {
+  return (
+    <Svg
+      width={20}
+      height={20}
+      viewBox="0 0 24 24"
+      fill="none"
+      accessible={false}
+    >
+      <Path
+        d={traceRecordPaths[kind]}
+        stroke={color}
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
   );
 }
 const s = StyleSheet.create({

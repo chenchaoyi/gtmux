@@ -262,9 +262,9 @@ export function HQWorkspaceView(
           pal={pal}
           zh={zh}
           onClose={() => setSelected(null)}
-          onTalk={title => {
+          onTalk={text => {
             setSelected(null);
-            talk(t(`About “${title}”: `, `关于「${title}」：`));
+            talk(text);
           }}
         />
       )}

@@ -31,6 +31,7 @@ struct HQWorkspaceOverview: View {
                             matterSection(.needsInput)
                             matterSection(.following)
                         }
+                        if !HQMatterGroup.awaitingHQ.matters(in: store.snapshot).isEmpty { matterSection(.awaitingHQ) }
                         recentChanges
                     }
                     Divider()

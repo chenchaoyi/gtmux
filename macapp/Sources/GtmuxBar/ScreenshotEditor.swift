@@ -55,7 +55,6 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
                          backing: .buffered, defer: false)
         w.title = ScreenshotLayout.title(l10n)
         w.subtitle = ScreenshotLayout.subtitle(pixelWidth: doc.image.width, pixelHeight: doc.image.height, l10n: l10n)
-        copiedMark = CopiedConfirmation(text: l10n.tr("Copied", "已复制"))
         let toolbar = NSToolbar(identifier: "gtmux.screenshot")
         toolbar.delegate = self
         toolbar.displayMode = .iconOnly
@@ -102,12 +101,11 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
 
     // MARK: tool bar — Copy and Save, with their keys
 
-    static let copiedItem = NSToolbarItem.Identifier("gtmux.screenshot.copied")
     static let copyItem = NSToolbarItem.Identifier("gtmux.screenshot.copy")
     static let saveItem = NSToolbarItem.Identifier("gtmux.screenshot.save")
 
     func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        [.flexibleSpace, Self.copiedItem, Self.copyItem, Self.saveItem]
+        [.flexibleSpace, Self.copyItem, Self.saveItem]
     }
 
     func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
@@ -117,16 +115,6 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
     func toolbar(_ toolbar: NSToolbar, itemForItemIdentifier id: NSToolbarItem.Identifier,
                  willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
         let l = L10n.shared
-        if id == Self.copiedItem {
-            // The bar gets this window's one mark every time it inserts the item, so a
-            // rebuild keeps what Copy lit; any other ask gets a view of its own.
-            let view = flag ? (copiedMark ?? CopiedConfirmation(text: l.tr("Copied", "已复制")))
-                            : CopiedConfirmation(text: l.tr("Copied", "已复制"))
-            let item = NSToolbarItem(itemIdentifier: id)
-            item.view = view
-            item.label = l.tr("Copied", "已复制")
-            return item
-        }
         let copy = id == Self.copyItem
         guard copy || id == Self.saveItem else { return nil }
         let title = copy ? l.tr("Copy Image", "拷贝图片") : l.tr("Save…", "存储…")
@@ -156,63 +144,18 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
 
     /// Where Copy puts the image; a test swaps in a private pasteboard.
     var pasteboard: NSPasteboard = .general
-    /// The "Copied" mark beside Copy: always the one the window's tool bar holds NOW. A tool
-    /// bar may build an item's view more than once, and a reference kept from the first
-    /// build showed a mark nobody could see while the visible one stayed hidden (CI run
-    /// 37258635762, ScreenshotTests:508).
-    var copied: CopiedConfirmation? {
-        window?.toolbar?.items.first { $0.itemIdentifier == Self.copiedItem }?.view as? CopiedConfirmation
-    }
-    /// This window's one "Copied" mark, made with the window and handed to the bar each
-    /// time it inserts the item. Built fresh on every ask, the mark Copy lit on its first
-    /// click was replaced by an unlit one at the bar's first layout: the copy worked, the
-    /// status line said so, and the mark beside Copy stayed dark (CI runs 37258635762 and
-    /// 37301766922, both on the first click only).
-    private var copiedMark: CopiedConfirmation?
-    private func setCopied(_ shown: Bool) {
-        copiedMark?.set(shown: shown)
-        if let now = copied, now !== copiedMark { now.set(shown: shown) }
-    }
-    /// The pending task that takes the mark away again.
-    private var copiedHide: DispatchWorkItem?
-    /// How long the mark stays.
-    var copiedFor: TimeInterval = 2.5
-    /// Schedules the task that takes the mark away after `copiedFor`. A test takes the task
-    /// and runs it itself: a real clock raced the test's first assertion, because the first
-    /// click of a process turns the run loop after its action (about 0.1s here, longer on a
-    /// loaded CI runner), which is when a short hide fired (CI run 37343213194).
-    var scheduleHide: (TimeInterval, DispatchWorkItem) -> Void = { delay, task in
-        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: task)
-    }
+    private var retainedExports: Set<URL> = []
     /// Stands in for the copy in a test, which cannot make the pasteboard refuse.
     var copyForTesting: (() -> Bool)?
 
-    /// The button and ⇧⌘C both land here, so both confirm the same way. The mark appears only
-    /// once the image is on the pasteboard; a failed copy takes away a mark still showing from
-    /// an earlier one, so the bar never says "Copied" over an error.
+    /// A completed export consumes this editing task. Failed copies preserve it.
     @objc func copyImage() {
         guard let model, !model.editingBlocked else { return }
-        copiedHide?.cancel()
-        copiedHide = nil
-        guard copyForTesting?() ?? model.copy(to: pasteboard) else {
-            setCopied(false)
-            return
-        }
-        setCopied(true)
-        // Spoken by VoiceOver where the reader already is: no focus moves, no notification.
+        guard copyForTesting?() ?? model.copy(to: pasteboard) else { return }
         let text = L10n.shared.tr("Copied", "已复制")
         NSAccessibility.post(element: window as Any, notification: .announcementRequested,
                              userInfo: [.announcement: text, .priority: NSAccessibilityPriorityLevel.high.rawValue])
-        // A second copy restarts the time; the task is checked against this editor, so a
-        // window closed and reopened in between is never touched by the old one.
-        let shownIn = window
-        let hide = DispatchWorkItem { [weak self] in
-            guard let self, self.isCurrent(shownIn) else { return }
-            self.setCopied(false)
-            self.copiedHide = nil
-        }
-        copiedHide = hide
-        scheduleHide(copiedFor, hide)
+        close(discarding: true)
     }
     /// Replaces the save panel in a test, which cannot answer a sheet.
     var saveForTesting: (() -> Void)?
@@ -229,10 +172,20 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
         panel.allowedContentTypes = [.png]
         panel.canCreateDirectories = true
         panel.nameFieldStringValue = ScreenshotLayout.saveName()
-        panel.beginSheetModal(for: window) { response in
-            guard response == .OK, !model.editingBlocked, let url = panel.url else { return }
-            model.status = model.write(to: url) ? .saved(url.path) : .error(url.path)
+        panel.beginSheetModal(for: window) { [weak self, weak window] response in
+            guard response == .OK, let window, let url = panel.url else { return }
+            self?.finishSaving(to: url, from: window)
         }
+    }
+
+    /// Ignore late results from a replaced editor; the chosen file must survive
+    /// temporary-capture cleanup even if the user saves over the original path.
+    func finishSaving(to url: URL, from expectedWindow: NSWindow) {
+        guard isCurrent(expectedWindow), let model, !model.editingBlocked else { return }
+        guard model.write(to: url) else { model.status = .error(url.path); return }
+        retainedExports.insert(url.standardizedFileURL.resolvingSymlinksInPath())
+        model.status = .saved(url.path)
+        close(discarding: true)
     }
 
     func send() {
@@ -284,8 +237,6 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
         if blocked {
             if resumeResponder == nil { resumeResponder = window.firstResponder }
             window.makeFirstResponder(nil)
-            copiedHide?.cancel()
-            setCopied(false)
         } else if let responder = resumeResponder {
             resumeResponder = nil
             DispatchQueue.main.async { [weak self, weak window, weak responder] in
@@ -340,53 +291,15 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
         sendState = nil
         resumeResponder = nil
         if let model {
-            try? FileManager.default.removeItem(at: model.captureFile)
-            try? FileManager.default.removeItem(at: model.captureFile.deletingLastPathComponent().appendingPathComponent("screenshot.png"))
+            for url in [model.captureFile, model.captureFile.deletingLastPathComponent().appendingPathComponent("screenshot.png")] {
+                if !retainedExports.contains(url.standardizedFileURL.resolvingSymlinksInPath()) {
+                    try? FileManager.default.removeItem(at: url)
+                }
+            }
         }
-        copiedHide?.cancel()
-        copiedHide = nil
-        copiedMark = nil
+        retainedExports.removeAll()
         window = nil
         model = nil
-    }
-}
-
-/// The "Copied" mark in the tool bar, beside Copy. Its width is fixed and always held, so
-/// showing it never moves Copy, Save or the title; hidden, it is also out of VoiceOver's
-/// reach. A check and a word, never colour alone.
-final class CopiedConfirmation: NSView {
-    private let stack: NSStackView
-    private(set) var isShown = false
-
-    init(text: String) {
-        let check = NSImageView(image: NSImage(systemSymbolName: "checkmark.circle.fill", accessibilityDescription: nil) ?? NSImage())
-        // The accent colour, not a status colour: those mean an agent's state and nothing else.
-        check.contentTintColor = .controlAccentColor
-        check.symbolConfiguration = .init(pointSize: 13, weight: .semibold)
-        let label = NSTextField(labelWithString: text)
-        label.font = .systemFont(ofSize: 12, weight: .semibold)
-        label.textColor = .labelColor
-        stack = NSStackView(views: [check, label])
-        stack.orientation = .horizontal
-        stack.spacing = 4
-        stack.isHidden = true
-        let width = ceil(stack.fittingSize.width) + 8
-        super.init(frame: NSRect(x: 0, y: 0, width: width, height: 24))
-        stack.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(stack)
-        NSLayoutConstraint.activate([
-            widthAnchor.constraint(equalToConstant: width),
-            heightAnchor.constraint(equalToConstant: 24),
-            stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4),
-            stack.centerYAnchor.constraint(equalTo: centerYAnchor),
-        ])
-    }
-
-    required init?(coder: NSCoder) { nil }
-
-    func set(shown: Bool) {
-        isShown = shown
-        stack.isHidden = !shown
     }
 }
 
