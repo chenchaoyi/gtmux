@@ -1,11 +1,12 @@
 // The native parent refreshes its widget using its existing private Keychain.
 // JS supplies only the current address, never a bearer or usage history.
 import React, {useEffect, useState} from 'react';
-import {Linking, NativeModules, Platform} from 'react-native';
+import {AppState, Linking, NativeModules, Platform} from 'react-native';
 import {useApp} from '../state/AppContext';
 import {useAgents} from '../state/AgentsContext';
 import {UsageSheet} from '../screens/UsageSheet';
-import {UsageReport} from '../api/client';
+import {GtmuxClient, UsageReport} from '../api/client';
+import {quotaWindowLabel} from '../screens/usageModel';
 import {useSizeClass} from '../ui/layout';
 
 let consumedInitialLink = false;
@@ -13,14 +14,43 @@ let consumedInitialLink = false;
 export const isUsageWidgetLink = (url: string) => /^gtmux:\/\/usage\/?$/i.test(url);
 
 export function useUsageWidgetContext() {
-  const {ready, mac} = useApp();
+  const {ready, mac, lang} = useApp();
   const url = mac?.url, token = mac?.token, scope = mac?.scope;
+  const name = mac?.name;
   useEffect(() => {
-    if (!ready || Platform.OS !== 'ios') return;
+    if (!ready || !['ios', 'android'].includes(Platform.OS)) return;
     // This also runs on the connection page and when a pairing is removed.
     const selected = url && token && scope !== 'guest' ? url : null;
-    void NativeModules.UsageWidgetsModule?.configure(selected)?.catch(() => {});
-  }, [ready, url, token, scope]);
+    const module = NativeModules.UsageWidgetsModule;
+    if (Platform.OS === 'ios') {
+      void module?.configure(selected)?.catch(() => {});
+      return;
+    }
+    let live = true, busy = false;
+    let abort: AbortController | undefined;
+    const configure = module?.configure(selected);
+    const refresh = async () => {
+      if (!selected || !token || !module || !live || busy || AppState.currentState !== 'active') return;
+      busy = true;
+      abort = new AbortController();
+      const deadline = setTimeout(() => abort?.abort(), 15000);
+      try {
+        await configure;
+        const usage = await new GtmuxClient(selected, token).usage(abort.signal);
+        if (live && usage && !abort.signal.aborted) await module.updateSnapshot({
+          owner: selected, name: (name ?? 'gtmux').slice(0, 120),
+          windows: (usage.limits?.windows ?? []).filter(w => Number.isFinite(w.pct_used) && !w.stale).slice(0, 6)
+            .map(w => ({label: `${w.agent_name ?? w.agent ?? ''} · ${quotaWindowLabel(w.label, lang === 'zh')}`.slice(0, 120), used: Math.min(100, Math.max(0, w.pct_used))})),
+        });
+      } catch { /* Keep the dated last-seen snapshot; an offline request is never fresh data. */ }
+      finally { clearTimeout(deadline); busy = false; }
+    };
+    void configure?.catch(() => {});
+    void refresh();
+    const timer = setInterval(() => {void refresh();}, 60000);
+    const sub = AppState.addEventListener('change', state => {if (state === 'active') void refresh(); else abort?.abort();});
+    return () => {live = false; abort?.abort(); clearInterval(timer); sub.remove();};
+  }, [ready, url, token, scope, name, lang]);
 }
 
 // This modal belongs to the server, so it is available even without a running HQ.

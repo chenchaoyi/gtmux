@@ -1,0 +1,17 @@
+[
+  {
+    "version": "1.0.168",
+    "en": [
+      "Manage your existing agent sessions on Android phones and tablets with Chat, Terminal and HQ.",
+      "Read Trace, complete tool inputs and Diff using the same code readers as the other mobile clients.",
+      "Open authorized local files and embedded images, share documents and export an HQ copy.",
+      "Optional Android notifications show their setup status; the home widget shows dated, last-seen usage."
+    ],
+    "zh": [
+      "在 Android 手机和平板上管理现有 Agent 会话，使用对话、终端和 HQ。",
+      "Trace、完整工具输入和 Diff 共用移动端代码阅读体验。",
+      "预览已授权的本地文件及嵌入图片，分享文件并导出 HQ 副本。",
+      "可选 Android 通知会说明配置状态；桌面组件显示带时间的上次用量快照。"
+    ]
+  }
+]

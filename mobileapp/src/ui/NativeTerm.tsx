@@ -40,12 +40,13 @@ import {useTermReflow, TermReflowViewport} from './useTermReflow';
 import {JumpToBottom} from './JumpToBottom';
 import {Debug} from '../debug';
 import {AnsiLine} from './ansi';
-import {PAD, cellWidthFor, colsFor, cursorSpans, flattenGrid, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, renderView, rowHeightFor, tapTarget} from './term';
+import {PAD, cellWidthFor, colsFor, cursorSpans, flattenGrid, linkify, nativeFontFamily, normalizeGlyphs, renderView, rowHeightFor, tapTarget} from './term';
 import {makeLineCache, parseLinesCached, wrapLinesCached} from './termLineCache';
 import {TermTheme} from '../api/types';
 import {edgeDistance} from './liveEdge';
 import {sourceGridColumns, termAnchor, termAnchorOffset} from './termViewport';
 import {TestIds} from '../constants/testIds';
+import {useAndroidTextSelection} from '../native/useTextSelection';
 
 // The Stage 2 native selection overlay (iOS only; ios/TermSelection/). A
 // transparent view mounted absoluteFill over the block stack that implements a
@@ -123,7 +124,7 @@ const DEF_FG = '#d4d2cc';
 // width), via the shared resolver so the chat view uses the exact same font. The
 // bundled woff2 picker fonts are webview-only; native would need them linked as
 // .ttf — a later follow-up, not needed for the read-only viewer.
-const MONO = nativeFontFamily();
+const MONO = nativeFontFamily(undefined, Platform.OS);
 // cap how many trailing capture lines we render as one selectable <Text> — enough
 // scrollback for a phone glance, light enough not to hitch/crash. Deeper history
 // lives in Chat mode (the conversation, itself bounded by the server and the view).
@@ -180,7 +181,7 @@ const TermLine = React.memo(function TermLine({
 }) {
   const body = spans.map((s, j) => {
         const base = {
-          color: s.color,
+          color: s.color ?? color,
           backgroundColor: s.bg,
           fontWeight: (s.bold ? '700' : '400') as '700' | '400',
         };
@@ -417,20 +418,6 @@ export function NativeTerm({text, fontSize = 12, cursor, paneCols, theme, lang =
     [rendered, vLines, vRows, cols],
   );
 
-  // ANDROID-ONLY (iOS's native selection overlay lets taps through to the color layer
-  // until a long press starts a selection, so links are the color layer's there): the
-  // transparent overlay is the TOP
-  // layer and the ONLY one that receives touches there, so EVERY link the color layer
-  // draws must be tappable on it — both a bare URL (linkify) and an OSC 8 hyperlink
-  // (span.href). Built from the same `lines` spans as plainText so the flattened text
-  // still equals plainText exactly (same wrapping/alignment). Cursor cell excluded.
-  const plainText = useMemo(
-    () => (Platform.OS === 'android' ? vLines.map(spans => spans.map(s => s.text).join('')).join('\n') : ''),
-    [vLines],
-  );
-  const overlaySegs = useMemo(() => (Platform.OS === 'android' ? linkSegsForLines(vLines) : []), [vLines]);
-  const overlayHasLink = useMemo(() => overlaySegs.some(s => s.url), [overlaySegs]);
-
   // atBottom drives the jump-to-bottom FAB (a ref can't re-render); stick keeps the
   // follow-live behavior. Both track the same "near the tail" test.
   const [atBottom, setAtBottom] = useState(true);
@@ -561,6 +548,11 @@ export function NativeTerm({text, fontSize = 12, cursor, paneCols, theme, lang =
     else thawSoon();
   };
 
+  useAndroidTextSelection(active => {
+    selActive.current = active; setSelectionActive(active); onSelectionChange?.(active);
+    if (active) freeze(); else thawSoon();
+  });
+
   // LAYERS. iOS: a STACK of per-ROW <Text> blocks (see TermLine's block shape) —
   // the uniform grid: pre-wrapped visual rows at an explicit shared lineHeight, the
   // only always-on layer; link taps land on it directly (the selection overlay
@@ -582,9 +574,9 @@ export function NativeTerm({text, fontSize = 12, cursor, paneCols, theme, lang =
           ))}
         </View>
       ) : (
-        <Text style={[styles.mono, {fontSize, color: fg}]}>
+        <Text testID={TestIds.detail.termRows} selectable selectionColor={SELECTION_TINT} style={[styles.mono, {fontSize, color: fg}]}>
           {rendered.map((spans, i) => (
-            <TermLine key={i} spans={spans} last={i === rendered.length - 1} />
+            <TermLine key={i} spans={spans} last={i === rendered.length - 1} color={fg} />
           ))}
         </Text>
       ),
@@ -655,24 +647,7 @@ export function NativeTerm({text, fontSize = 12, cursor, paneCols, theme, lang =
               onSelectionActive={onSelectionActive}
             />
           )}
-          {Platform.OS === 'android' && (
-            /* Android-only: FLAT selectable Text draws the band properly there;
-               nested Text keeps OSC 8 / bare-URL taps. iOS selects through its
-               native overlay (TermSelection, above). */
-            <Text selectable selectionColor={SELECTION_TINT} style={[styles.mono, styles.overlay, {fontSize, color: 'transparent'}]}>
-              {!overlayHasLink
-                ? plainText
-                : overlaySegs.map((seg, i) =>
-                    seg.url ? (
-                      <Text key={i} onPress={() => Linking.openURL(seg.url!)}>
-                        {seg.text}
-                      </Text>
-                    ) : (
-                      seg.text
-                    ),
-                  )}
-            </Text>
-          )}
+
         </View>
     </ScrollView>
   );
@@ -724,5 +699,5 @@ const styles = StyleSheet.create({
   // color layer (bottom) defines the height; the transparent selectable layer is
   // absolutely overlaid on top, same width/font → same wrapping → exact alignment.
   layerWrap: {position: 'relative', overflow: 'visible'},
-  overlay: {position: 'absolute', top: 0, left: 0, right: 0},
+
 });

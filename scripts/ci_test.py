@@ -36,11 +36,11 @@ class ScopeTests(unittest.TestCase):
     def test_recognized_modules_include_consumers(self):
         self.assertEqual(ci.classify(["internal/radar/agents_test.go"])["selected"], ["test"])
         self.assertEqual(set(ci.classify(["mobileapp/src/components/Chat.tsx"])["selected"]),
-                         {"mobile", "web", "ios-native"})
+                         {"mobile", "web", "ios-native", "android-native"})
         self.assertEqual(set(ci.classify(["mobileapp/ios/GtmuxWidget/Widget.swift"])["selected"]),
                          {"mobile", "ios-native"})
         self.assertEqual(set(ci.classify(["relay-worker/src/index.ts"])["selected"]),
-                         {"relay-worker", "test", "mobile"})
+                         {"relay-worker", "test", "mobile", "android-native"})
 
     def test_nul_parser_preserves_names_and_old_rename_path(self):
         names = ci.parse_diff(b"R100\0internal/radar/a.go\0docs/a.md\0D\0docs/deleted.md\0M\0docs/\xe4\xb8\xad\xe6\x96\x87\n$(oops).md\0")

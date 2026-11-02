@@ -10,7 +10,7 @@
 // resume record (the gtmux hooks capture the agent + session id).
 
 import React, {useMemo, useState} from 'react';
-import {Alert, Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {Alert, Animated, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {AnsiLine} from './ansi';
 import {AgentAvatar} from './AgentAvatar';
 import {ReplyActions} from './ReplyActions';
@@ -21,6 +21,7 @@ import {CopyableText, CopyFeedbackContext} from './CopyableText';
 import {TextSelectionContext} from './RangeText';
 import Clipboard from '@react-native-clipboard/clipboard';
 import {nativeDocumentPreview} from '../documents/nativePreview';
+import {useAndroidTextSelection} from '../native/useTextSelection';
 import {DocumentError, documentErrorMessage} from '../documents/references';
 import {JumpToBottom} from './JumpToBottom';
 import {SenderAvatar} from './SenderAvatar';
@@ -38,7 +39,7 @@ import {ToolSteps} from './ToolSteps';
 import {Agent, StatusName} from '../api/types';
 import {TranscriptSegment, TranscriptTurn} from '../api/client';
 import {statusLabel, Lang} from '../i18n';
-import {StatusColor, ERRORED_COLOR} from './theme';
+import {StatusColor, ERRORED_COLOR, paletteFor} from './theme';
 import {Act} from '../screens/hqActsModel';
 import {ConsoleRow, placeActs} from './consoleActs';
 import {TestIds} from '../constants/testIds';
@@ -178,7 +179,7 @@ export function liveLabel(since: number | undefined, nowSec: number, lang: Lang)
   return el ? `${base} · ${el}` : base;
 }
 
-export function ChatView({client, readOnly = false, agent, lines, status, fontSize, lang, turns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, pendingPrompt, pendingDelivered = false, fontPref, workingSince, onLiveEdge, topPad = 0, controlsTop, controlsShift, maxWidth}: Props) {
+export function ChatView({client, readOnly = false, agent, lines, status, fontSize, pal, lang, turns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, pendingPrompt, pendingDelivered = false, fontPref, workingSince, onLiveEdge, topPad = 0, controlsTop, controlsShift, maxWidth}: Props) {
   // Radar timestamps and temporary status changes are observations, not a new reader.
   const liveScope = JSON.stringify([client?.base, agent.pane_id, agent.home_id, agent.session_id]);
   const [liveDisclosure, setLiveDisclosure] = useState({scope: liveScope, open: false});
@@ -186,7 +187,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   React.useEffect(() => {setLiveDisclosure(prev => prev.scope === liveScope ? prev : {scope: liveScope, open: false});}, [liveScope]);
   const [profileTarget, setProfileTarget] = useState<ProfileTarget | null>(null);
   const avatar = (content: React.ReactNode, target: ProfileTarget) => <TouchableOpacity testID="participant-avatar" accessibilityRole="button" accessibilityLabel={lang === 'zh' ? '查看参与者资料' : 'View participant profile'} style={styles.avatarButton} onPress={() => setProfileTarget(target)}>{content}</TouchableOpacity>;
-  const fontFamily = nativeFontFamily(fontPref); // match the terminal font (shared resolver)
+  const fontFamily = nativeFontFamily(fontPref, Platform.OS); // match the terminal font (shared resolver)
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({}); // per step-group
   const scrollRef = React.useRef<ScrollView>(null);
   const offRef = React.useRef(0);
@@ -209,6 +210,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   const trackSelection = React.useCallback((id: string, active: boolean) => {
     if (active) selectedText.current.add(id); else selectedText.current.delete(id);
   }, []);
+  useAndroidTextSelection(active => trackSelection('android-system-selection', active));
   const openFile = (reference: string, session: string) => {
     const zh = lang === 'zh';
     const showFailure = (error: unknown) => {
@@ -220,7 +222,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
     };
     try {
       if (!client) throw new DocumentError('unsupported');
-      nativeDocumentPreview.open(client.documentRequest(reference, session, agent.home_id ?? '', lang)).catch(showFailure);
+      nativeDocumentPreview.open({...client.documentRequest(reference, session, agent.home_id ?? '', lang), appearance: pal.bg === paletteFor('dark').bg ? 'dark' : 'light'}).catch(showFailure);
     } catch (error) { showFailure(error); }
   };
 
@@ -407,7 +409,9 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
             controlsTop !== undefined && [styles.collapseBarFloating, {top: controlsTop}],
             // Under the chrome (not in full screen) it rides the chrome's slide. It used to
             // stay in the flow at the top of the chat, under the chrome (%6, 2026-10-06).
-            controlsShift !== undefined && {transform: [{translateY: controlsShift}]},
+            // Keep an identity transform when leaving the native animation. Fabric
+            // must not receive transform:null while a synchronous native patch is held.
+            {transform: [{translateY: controlsShift ?? 0}]},
           ]}>
           <TouchableOpacity testID={TestIds.detail.collapseAll} accessibilityRole="button" accessibilityLabel={collapsedAll ? (lang === 'zh' ? '展开全部' : 'Expand all') : (lang === 'zh' ? '折叠全部' : 'Collapse all')} onPress={collapsedAll ? expandAll : collapseAll} activeOpacity={0.7} hitSlop={hitSlop} style={styles.globalFold}>
             <ChromeText style={styles.collapseBarText}>{collapsedAll ? (lang === 'zh' ? '展开全部' : 'Expand all') : (lang === 'zh' ? '折叠全部' : 'Collapse all')}</ChromeText>

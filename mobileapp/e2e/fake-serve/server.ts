@@ -21,6 +21,8 @@ import {createServer, IncomingMessage, Server, ServerResponse} from 'http';
 import {AddressInfo} from 'net';
 import {World} from './world';
 import {iconBytes} from './icons';
+import {createHash} from 'crypto';
+import {posix} from 'path';
 
 /**
  * A guest link's two allowlists, kept separate because the real serve keeps them separate:
@@ -60,6 +62,7 @@ export interface Fake {
    * relaunch to reconnect looks, to its reader, exactly like a Mac that went away.
    */
   dropStreams: () => number;
+  activeStreams: () => number;
   close: () => Promise<void>;
 }
 
@@ -139,6 +142,30 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
       json(res, 403, {error: 'forbidden: not shared'});
       return false;
     };
+
+    if (path.startsWith('/api/artifacts/')) {
+      if (!ownerOnly()) return;
+      if (req.method === 'POST' && path === '/api/artifacts/resolve') {
+        const body = await readBody(req); world.record(path, body);
+        let reference = String(body.reference ?? '');
+        const parent = body.parent_id ? [...world.documents.entries()].find(([, value]) => value.id === body.parent_id) : undefined;
+        if (body.parent_id && (!parent || parent[1].session !== body.session_id || parent[1].home !== (body.home_id ?? ''))) return json(res, 403, {error:'wrong parent scope'});
+        if (reference.startsWith('gtmux-file:')) reference = [...world.documents.entries()].find(([, value]) => value.id === reference.slice(11))?.[0] ?? '';
+        else if (parent && !reference.startsWith('/')) reference = posix.resolve(posix.dirname(parent[0]), reference);
+        const document = world.documents.get(reference);
+        if (!document || document.session !== body.session_id || document.home !== (body.home_id ?? '')) return json(res, 404, {error:'document unavailable'});
+        return json(res, 200, {id:document.id, name:posix.basename(reference), source:reference, kind:document.kind, media_type:document.media,
+          bytes:document.body.length, sha256:createHash('sha256').update(document.body).digest('hex'), created_at:1700000000,
+          session_id:document.session, home_id:document.home});
+      }
+      if (req.method === 'GET' && path === '/api/artifacts/content') {
+        const document = [...world.documents.values()].find(value => value.id === q.get('id'));
+        if (!document || document.session !== q.get('session_id') || document.home !== (q.get('home_id') ?? '')) return json(res, 404, {error:'document unavailable'});
+        world.record(path, {id:document.id});
+        res.writeHead(200, {'Content-Type':document.media,'Content-Length':document.body.length});res.end(document.body);return;
+      }
+      return json(res,404,{error:'unsupported document endpoint'});
+    }
 
     if (path === '/api/events') {
       res.writeHead(200, {'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive'});
@@ -236,8 +263,16 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
           const id = q.get('id') ?? '';
           if (!mayReach('view', id)) return json(res, 403, {error: 'forbidden: pane not shared'});
           // A suite that needs a particular conversation sets it per pane.
+          const before = q.get('before');
+          if (before) {
+            world.record('/api/transcript/history', {id,before});
+            const page = world.historyPages.get(`${id}:${before}`);
+            if (!page) return json(res, 400, {error: 'unknown history cursor'});
+            res.setHeader('X-Gtmux-History-Page', '1');
+            return json(res, 200, owner ? page : page.map(turn => ({...turn, segments: turn.segments?.filter(segment => !segment.context)})));
+          }
           const set = world.transcripts.get(id);
-          if (set) return json(res, 200, set);
+          if (set) return json(res, 200, owner ? set : set.map(turn => ({...turn, segments: turn.segments?.filter(segment => !segment.context)})));
           // A conversation with REAL gaps in it, so a surface can show where it broke
           // (chat-time-separator): two turns minutes apart carry no separator, the ones
           // after a night and after a pause do.
@@ -248,6 +283,11 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
             {prompt: '今天先看分享链接', response: '⟣ 短码那条已经合了。', time: ago(75)},
             {prompt: '发版后本地也更新一下', response: '⟣ 装好了,命令行和菜单栏都是新版。', time: ago(4)},
           ]);
+        }
+        case '/api/diff': {
+          const id = q.get('id') ?? '';
+          if (!ownerOnly() || !mayReach('view',id)) return;
+          return json(res,200,{diff:world.diffs.get(id) ?? ''});
         }
         case '/api/theme':
           return json(res, 200, world.theme);
@@ -447,6 +487,7 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
     token,
     world,
     bumpAgents,
+    activeStreams: () => streams.size,
     dropStreams: () => {
       const n = streams.size;
       streams.forEach(r => r.destroy());

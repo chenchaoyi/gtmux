@@ -50,6 +50,7 @@ import {loadSnippets, saveSnippets} from '../state/snippets';
 import {HistoryStore, emptyStore, historyFor, loadHistory, pushHistory, removeHistory, saveHistory} from '../state/history';
 import {demoInputHistory} from './demoData';
 import {Haptics} from '../native/haptics';
+import {cameraPermission} from '../native/cameraPermission';
 import {MODAL_ORIENTATIONS} from './modalOrientations';
 import {useTerminalKeys, type LoadKeys, type SendKey, type TerminalKeyController} from './terminalKeys';
 import {TerminalKeyPanel, TerminalKeyFeedback} from './TerminalKeyPanel';
@@ -295,7 +296,7 @@ export const Composer = React.memo(function Composer({
     inputRef.current?.focus();
   };
   const openKeys = () => { focusAfterKeys.current = inputRef.current?.isFocused() ?? false; Keyboard.dismiss(); terminalKeys.refresh(); setKeysOpen(true); };
-  const closeKeys = () => { setKeysOpen(false); if (Platform.OS !== 'ios') requestAnimationFrame(finishKeysDismissal); };
+  const closeKeys = () => setKeysOpen(false);
   useEffect(() => { setKeysOpen(false); focusAfterKeys.current = false; }, [keyTarget]);
   useEffect(() => {
     if (!prefill || !prefill.text) return;
@@ -347,12 +348,6 @@ export const Composer = React.memo(function Composer({
     focusAfterMarkup.current = false;
     inputRef.current?.focus();
   };
-  useEffect(() => {
-    // iOS supplies the modal's completed-dismissal callback. Android does not.
-    if (Platform.OS === 'ios' || markupUri || !focusAfterMarkup.current) return;
-    const frame = requestAnimationFrame(finishMarkupDismissal);
-    return () => cancelAnimationFrame(frame);
-  }, [markupUri]); // eslint-disable-line react-hooks/exhaustive-deps
   const [snippets, setSnippets] = useState<string[]>([]);
   const [snippetsOpen, setSnippetsOpen] = useState(false); // the picker sheet
   const [manageSnippets, setManageSnippets] = useState(false);
@@ -529,6 +524,7 @@ export const Composer = React.memo(function Composer({
   };
   const takePhoto = async () => {
     try {
+      if (!await cameraPermission()) { setSendError(cameraFailureText('permission', lang === 'zh')); return; }
       const r = await launchCamera({mediaType: 'photo', quality: 0.8, saveToPhotos: false});
       if (r.assets?.[0]) editPhoto(r.assets[0]);
       else if (r.errorCode) setSendError(cameraFailureText(r.errorCode, lang === 'zh'));
@@ -832,7 +828,7 @@ export const Composer = React.memo(function Composer({
           Return = newline here too; ⌘⏎ (hardware kbd) or the Send button sends. */}
       <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={fullCompose} animationType="slide" onRequestClose={() => setFullCompose(false)}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={[styles.fcWrap, {backgroundColor: pal.bg}]}>
           <View style={[styles.fcBar, {borderBottomColor: pal.divider}]}>
             <TouchableOpacity accessibilityRole="button" onPress={() => setFullCompose(false)} hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>

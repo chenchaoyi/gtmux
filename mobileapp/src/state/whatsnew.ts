@@ -15,7 +15,8 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Lang} from '../i18n';
-import {ReleaseNote, RELEASE_NOTES} from '../releaseNotes';
+import {ReleaseNote} from '../releaseNotes';
+import {MOBILE_RELEASE_NOTES as RELEASE_NOTES} from '../platformReleaseNotes';
 import {APP_VERSION} from '../version';
 
 const SEEN_KEY = 'gtmux.whatsnewSeen';

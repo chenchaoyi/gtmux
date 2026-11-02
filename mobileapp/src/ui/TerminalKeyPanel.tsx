@@ -13,6 +13,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import type {Palette} from './theme';
 import type {Lang} from '../i18n';
 import {MODAL_ORIENTATIONS} from './modalOrientations';
+import {useModalDismiss} from './useModalDismiss';
 import {CHROME_MAX_SCALE} from './textScale';
 import {
   keyEventLabel,
@@ -107,6 +108,7 @@ export function TerminalKeyPanel({
   pal: Palette;
   lang: Lang;
 }) {
+  const dismissed = useModalDismiss(visible, onDismiss);
   const [group, setGroup] = useState('navigation');
   const [mods, setMods] = useState<KeyModifier[]>([]);
   const {width, height, fontScale} = useWindowDimensions();
@@ -145,7 +147,7 @@ export function TerminalKeyPanel({
       animationType="slide"
       supportedOrientations={MODAL_ORIENTATIONS}
       onRequestClose={onClose}
-      onDismiss={onDismiss}
+      onDismiss={dismissed}
     >
       <TouchableOpacity
         accessible={false}

@@ -1,3 +1,1 @@
-<resources>
-    <string name="app_name">GtmuxMobile</string>
-</resources>
+<resources><string name="app_name">gtmux</string><string name="usage_widget_description">Last-seen agent quota usage from your selected server</string></resources>

@@ -2,88 +2,48 @@ apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 
-/**
- * This is the configuration block to customize your React Native Android app.
- * By default you don't need to apply any configuration, just uncomment the lines you need.
- */
-react {
-    /* Folders */
-    //   The root of your project, i.e. where "package.json" lives. Default is '../..'
-    // root = file("../../")
-    //   The folder where the react-native NPM package is. Default is ../../node_modules/react-native
-    // reactNativeDir = file("../../node_modules/react-native")
-    //   The folder where the react-native Codegen package is. Default is ../../node_modules/@react-native/codegen
-    // codegenDir = file("../../node_modules/@react-native/codegen")
-    //   The cli.js file which is the React Native CLI entrypoint. Default is ../../node_modules/react-native/cli.js
-    // cliFile = file("../../node_modules/react-native/cli.js")
+react { autolinkLibrariesWithApp() }
 
-    /* Variants */
-    //   The list of variants to that are debuggable. For those we're going to
-    //   skip the bundling of the JS bundle and the assets. Default is "debug", "debugOptimized".
-    //   If you add flavors like lite, prod, etc. you'll have to list your debuggableVariants.
-    // debuggableVariants = ["liteDebug", "liteDebugOptimized", "prodDebug", "prodDebugOptimized"]
-
-    /* Bundling */
-    //   A list containing the node command and its flags. Default is just 'node'.
-    // nodeExecutableAndArgs = ["node"]
-    //
-    //   The command to run when bundling. By default is 'bundle'
-    // bundleCommand = "ram-bundle"
-    //
-    //   The path to the CLI configuration file. Default is empty.
-    // bundleConfig = file(../rn-cli.config.js)
-    //
-    //   The name of the generated asset file containing your JS bundle
-    // bundleAssetName = "MyApplication.android.bundle"
-    //
-    //   The entry file for bundle generation. Default is 'index.android.js' or 'index.js'
-    // entryFile = file("../js/MyApplication.android.js")
-    //
-    //   A list of extra flags to pass to the 'bundle' commands.
-    //   See https://github.com/react-native-community/cli/blob/main/docs/commands.md#bundle
-    // extraPackagerArgs = []
-
-    /* Hermes Commands */
-    //   The hermes compiler command to run. By default it is 'hermesc'
-    // hermesCommand = "$rootDir/my-custom-hermesc/bin/hermesc"
-    //
-    //   The list of flags to pass to the Hermes compiler. By default is "-O", "-output-source-map"
-    // hermesFlags = ["-O", "-output-source-map"]
-
-    /* Autolinking */
-    autolinkLibrariesWithApp()
-}
-
-/**
- * Set this to true to Run Proguard on Release builds to minify the Java bytecode.
- */
-def enableProguardInReleaseBuilds = false
-
-/**
- * The preferred build flavor of JavaScriptCore (JSC)
- *
- * For example, to use the international variant, you can use:
- * `def jscFlavor = io.github.react-native-community:jsc-android-intl:2026004.+`
- *
- * The international variant includes ICU i18n library and necessary data
- * allowing to use e.g. `Date.toLocaleString` and `String.localeCompare` that
- * give correct results when using with locales other than en-US. Note that
- * this variant is about 6MiB larger per architecture than default.
- */
-def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
+def stamped = file("../../src/version.ts").text =~ /APP_VERSION = '([0-9]+\.[0-9]+\.[0-9]+)'/
+if (!stamped.find()) throw new GradleException("Missing stamped mobile version")
+def appVersion = providers.gradleProperty("gtmuxVersionName").getOrElse(stamped.group(1))
+if (!(appVersion ==~ /[0-9]+\.[0-9]+\.[0-9]+/)) throw new GradleException("Invalid Android version name")
+def parts = appVersion.tokenize('.').collect { it.toLong() }
+def ordinal = providers.gradleProperty("gtmuxBuildNumber").getOrElse("1").toInteger()
+if (parts.size() != 3 || parts[1] > 99 || parts[2] > 999 || ordinal < 1 || ordinal > 999) throw new GradleException("Invalid Android version")
+def appCode = parts[0] * 100000000 + parts[1] * 1000000 + parts[2] * 1000 + ordinal
+if (appCode < 1 || appCode > 2100000000) throw new GradleException("Android version code outside Play range")
+def sourceSHA = providers.environmentVariable("GTMUX_SOURCE_SHA").getOrElse("development")
+if (!(sourceSHA ==~ /[a-f0-9]{40}|development/)) throw new GradleException("Invalid source SHA")
+def releaseRequested = gradle.startParameter.taskNames.any { it.toLowerCase().contains("release") }
+def productionRequested = releaseRequested || gradle.startParameter.taskNames.any { it.toLowerCase().contains("unsigned") }
+if (productionRequested && sourceSHA == "development") throw new GradleException("Release requires an exact source commit")
+def signing = ["GTMUX_ANDROID_KEYSTORE", "GTMUX_ANDROID_STORE_PASSWORD", "GTMUX_ANDROID_KEY_ALIAS", "GTMUX_ANDROID_KEY_PASSWORD"].collectEntries { [(it): System.getenv(it)] }
+if (releaseRequested && signing.values().any { !it }) throw new GradleException("Release signing credentials are required; debug signing is never a release fallback")
 
 android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
-
-    namespace "com.gtmuxmobile"
+    namespace "com.gtmux.app"
     defaultConfig {
-        applicationId "com.gtmuxmobile"
+        applicationId "com.gtmux.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode appCode.toInteger()
+        versionName appVersion
+        manifestPlaceholders.gtmuxSourceSHA = sourceSHA
+        externalNativeBuild { cmake { arguments "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON" } }
+        buildConfigField "String", "SOURCE_SHA", '"' + sourceSHA + '"'
+        buildConfigField "boolean", "QA_TESTING", "false"
+        def firebaseFields = ["google_app_id": "GTMUX_FIREBASE_APP_ID", "gcm_defaultSenderId": "GTMUX_FIREBASE_SENDER_ID", "google_api_key": "GTMUX_FIREBASE_API_KEY", "project_id": "GTMUX_FIREBASE_PROJECT_ID"]
+        def firebaseReady = firebaseFields.values().every { System.getenv(it) }
+        buildConfigField "boolean", "FIREBASE_CONFIGURED", firebaseReady.toString()
+        if (firebaseReady) firebaseFields.each { name, env ->
+            def value = System.getenv(env)
+            if (!(value ==~ /[a-zA-Z0-9_:.\-]+/)) throw new GradleException("Invalid Firebase client configuration")
+            resValue "string", name, value
+        }
     }
     signingConfigs {
         debug {
@@ -92,28 +52,61 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        delivery {
+            if (signing.values().every { it }) {
+                storeFile file(signing.GTMUX_ANDROID_KEYSTORE)
+                storePassword signing.GTMUX_ANDROID_STORE_PASSWORD
+                keyAlias signing.GTMUX_ANDROID_KEY_ALIAS
+                keyPassword signing.GTMUX_ANDROID_KEY_PASSWORD
+            }
+        }
     }
     buildTypes {
         debug {
+            applicationIdSuffix ".debug"
             signingConfig signingConfigs.debug
+            buildConfigField "boolean", "QA_TESTING", "true"
+        }
+        qa {
+            initWith debug
+            applicationIdSuffix ".qa"
+            matchingFallbacks = ['release']
+            // QA uses release native dependencies with a debuggable Java fixture shell.
+            // Keep Fabric header ABI identical to those libraries, including its vtables.
+            externalNativeBuild { cmake { cppFlags "-DREACT_NATIVE_PRODUCTION=1" } }
+            // Bundled JS with no Metro/debugger dependency. QA-only fixture module remains inspectable.
+            debuggable true
+            buildConfigField "boolean", "QA_TESTING", "true"
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
-            minifyEnabled enableProguardInReleaseBuilds
-            proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+            signingConfig signingConfigs.delivery
+            minifyEnabled true
+            shrinkResources true
+            ndk { debugSymbolLevel 'SYMBOL_TABLE' }
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }
     }
+    buildTypes {
+        unsigned {
+            initWith release
+            matchingFallbacks = ['release']
+            signingConfig null
+        }
+    }
+    buildFeatures { buildConfig true }
+    packaging { jniLibs { useLegacyPackaging false } }
+    testOptions { unitTests.returnDefaultValues = true }
 }
 
 dependencies {
-    // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
-
-    if (hermesEnabled.toBoolean()) {
-        implementation("com.facebook.react:hermes-android")
-    } else {
-        implementation jscFlavor
-    }
+    implementation("com.facebook.react:hermes-android")
+    implementation("androidx.webkit:webkit:1.18.0")
+    implementation("org.commonmark:commonmark:0.32.0")
+    implementation("org.commonmark:commonmark-ext-gfm-tables:0.32.0")
+    implementation("org.jsoup:jsoup:1.23.2")
+    implementation("androidx.recyclerview:recyclerview:1.4.0")
+    implementation(platform("com.google.firebase:firebase-bom:35.1.0"))
+    implementation("com.google.firebase:firebase-messaging")
+    testImplementation("junit:junit:4.13.2")
 }

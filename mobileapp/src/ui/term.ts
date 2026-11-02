@@ -10,8 +10,8 @@ import {AnsiLine, AnsiOpts, Span, parseAnsi} from './ansi';
 // woff2 are webview-only), so every pref currently resolves to the system
 // monospace; centralized here so when native font-linking lands, both surfaces
 // follow the same config automatically.
-export function nativeFontFamily(_fontPref?: string): string {
-  return 'Menlo';
+export function nativeFontFamily(_fontPref?: string, platform = 'ios'): string {
+  return platform === 'android' ? 'monospace' : 'Menlo';
 }
 
 // GOAL: the terminal view in the app must look exactly like the real terminal.

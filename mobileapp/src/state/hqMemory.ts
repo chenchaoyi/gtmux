@@ -16,7 +16,7 @@
 // the share sheet, because putting it in Files or iCloud Drive yourself is the version
 // you can verify, and it is one tap.
 
-import {NativeModules} from 'react-native';
+import {NativeModules, Platform, Share} from 'react-native';
 
 export interface MemoryCopy {
   /** Local file path, for the share sheet. */
@@ -31,6 +31,7 @@ interface HQMemoryNative {
   save(url: string, token: string): Promise<MemoryCopy>;
   state(): Promise<MemoryCopy | null>;
   forget(): Promise<void>;
+  share?(): Promise<void>;
 }
 
 // Read on each call rather than captured at import: the module is registered by the
@@ -124,5 +125,16 @@ export async function forgetCopy(): Promise<void> {
     await n.forget();
   } catch {
     // best-effort: the row re-reads state either way
+  }
+}
+
+/** Android shares a narrowly granted content URI; iOS uses its native file share sheet. */
+export async function shareCopy(copy: MemoryCopy): Promise<void> {
+  if (Platform.OS === 'android') {
+    const module = nat();
+    if (!module?.share) throw new Error('File export is unavailable on this build');
+    await module.share();
+  } else {
+    await Share.share({url: copy.url});
   }
 }

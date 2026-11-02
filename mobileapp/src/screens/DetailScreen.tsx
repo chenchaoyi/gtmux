@@ -59,7 +59,7 @@ import {DiffModal} from '../ui/DiffModal';
 import {SessionToolsMenu} from '../ui/SessionToolsMenu';
 import {TraceModal} from '../trace/TraceModal';
 import {agentLabel} from './PaneBrowserScreen';
-import {BRAND, StatusColor} from '../ui/theme';
+import {BRAND, StatusColor, paletteFor} from '../ui/theme';
 import {TestIds} from '../constants/testIds';
 import {READING_WIDTH, useSizeClass} from '../ui/layout';
 import {KeyBus} from '../keys/bus';
@@ -750,7 +750,7 @@ function PaneDetailView({
     <KeyboardAvoidingView
       testID={TestIds.detail.screen}
       style={[styles.safe, {backgroundColor: backdrop}]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <StatusBar hidden={fullscreen} />
       {/* Full-screen DROPS the top edge: the status bar is already hidden here, so that
           inset was ~59pt of reserved nothing above a view whose whole point is reading
@@ -830,8 +830,11 @@ function PaneDetailView({
               the words stay in the accessibility label where a screen reader still gets
               them. The brand cyan is the whole point of the colour: it has to be findable
               against a full screen of terminal output. */}
+          <SessionToolsMenu presentation="direct" pal={paletteFor('dark')} lang={lang}
+            onTrace={!isPlainPane && !isNative ? () => {Keyboard.dismiss(); setTraceOpen(true);} : undefined}
+            onDiff={live.branch ? () => {Keyboard.dismiss(); setDiffOpen(true);} : undefined} />
           <FsBtn
-            bare={mode === 'chat'}
+            bare
             label={lang === 'zh' ? '退出全屏' : 'Exit full screen'}
             onPress={() => setFullscreen(false)}
             testID={TestIds.detail.fsExit}
@@ -1297,27 +1300,11 @@ const styles = StyleSheet.create({
   // is legible over a dense wall of text and over an empty pane, in a dark terminal
   // theme or a light one.
   fsBar: {
-    position: 'absolute',
-    // `top` is set inline from the safe-area inset: in full-screen the container no
-    // longer applies that edge (content uses the whole screen), so this control has to
-    // clear the Dynamic Island itself.
-    left: 10, // top-LEFT so it doesn't collide with the chat's top-right collapse bar
-    zIndex: 10, // above the mode layers (layerOn uses zIndex:1) so it's tappable
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#141416', // opaque: nothing behind it may show through
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.45)',
-    paddingHorizontal: 1,
-    // Separation that does not depend on the fill contrasting with the content.
-    shadowColor: '#000',
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    shadowOffset: {width: 0, height: 2},
-    elevation: 6,
+    position: 'absolute', left: 10, zIndex: 10,
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: 'transparent',
   },
-  fsChatBar: {left: 10, backgroundColor: 'transparent', borderWidth: 0, paddingHorizontal: 0, shadowOpacity: 0, elevation: 0},
-  fsBareBtn: {width: 44, height: 44},
+  fsChatBar: {backgroundColor: 'transparent'},
+  fsBareBtn: {width:48, height:48, borderRadius:24, backgroundColor:'#1C1C1F'},
   fsBtn: {width: 28, height: 28, alignItems: 'center', justifyContent: 'center'},
 });

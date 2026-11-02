@@ -6,6 +6,8 @@ This reference covers remote connections, device permissions, notification requi
 
 **Connecting an iPhone, iPad or browser for the first time?** Follow [Get connected](../README.md#3-connect-your-phone-or-browser), then use the [device guide](guides/phone-and-web.md) for everyday controls and sharing.
 
+Android build, installation and testing: [Android](https://github.com/chenchaoyi/gtmux/blob/main/mobileapp/ANDROID.md) ([中文](https://github.com/chenchaoyi/gtmux/blob/main/mobileapp/ANDROID.zh.md)).
+
 ## Server platforms
 
 Pair with a macOS or Linux host running gtmux. The server list, routes, sharing, terminal/chat and HQ use that host's state. Linux does not offer desktop window focus or lid controls.

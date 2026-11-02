@@ -11,6 +11,7 @@ export interface DocumentRequest {
   home_id: string;
   name: string;
   lang: string;
+  appearance?: 'light' | 'dark';
 }
 export interface DocumentPreviewAdapter {
   open(request: DocumentRequest): Promise<void>;

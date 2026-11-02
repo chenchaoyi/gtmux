@@ -74,3 +74,9 @@ iPad 的分栏 2026-07 就做了一半，首次上架时延后，之后两个月
 共享核心支持 macOS 和 Linux，远程服务器不一定是 Mac。连接、配对和错误提示使用“服务器”；真实 Apple 设备名和 macOS 专属控制仍保留 Mac／macOS。桌面跳转、桌面通知、菜单栏和合盖控制以 `GET /api/host.capabilities` 为准，不从 agent 或终端名推断。明确为 false 时移除对应操作，缺字段时保留旧版呈现。Linux 用户可在 App、网页、终端管理会话，Mac 菜单栏仍操作本机。
 
 服务管理、主机信息、资源采样和桌面交互分别由平台模块实现；注册、访问规则、pane 身份和 HQ 行为留在共享核心。FreeBSD 仅为后续扩展目标，尚未纳入支持平台。
+
+## Android 手机和平板
+
+Android 复用手机与常规平板这两种界面形态，不另建业务模型或复制 UI。原生适配与交付约定见 `mobileapp/ANDROID.zh.md`。会话/HQ 状态、Chat、Terminal、Trace、Diff、代码排版、主题、配对和访客范围仍使用同一套 React Native/Go 实现。Kotlin 适配文件与系统分享、键盘/触感、可选 FCM，以及不含凭据的上次用量桌面组件。文件阅读样式由同一份源文件生成给 UIKit/WebKit 和 Android WebView，解析器与传输保持各平台原生适配。
+
+Android 验收独立记账：捆绑 JS 的 QA 构建、自有模拟器真实操作、手机/平板窗口变化、返回键/输入法、权限、TalkBack、真机、真实 FCM 和商店上架分别保留证据。缺少 Google 配置或服务时应明确提示，同时允许正常配对使用。不能将 iOS 云备份或 Live Activity 的说明直接套给 Android。

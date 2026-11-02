@@ -690,3 +690,34 @@ func waitFor(t *testing.T, ok func() bool) {
 	}
 	t.Fatal("condition never became true")
 }
+
+func TestAndroidRevokedTokenRetiredButTransientFailureRetained(t *testing.T) {
+	for _, code := range []string{"UNREGISTERED", "REJECTED"} {
+		t.Run(code, func(t *testing.T) {
+			provider := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				writeJSON(w, 502, map[string]any{"error": "fcm", "status": 404, "code": code, "message": "private-provider-detail"})
+			}))
+			defer provider.Close()
+			pm := NewPushManager(NewHTTPRelay(provider.URL, "synthetic"), nil, nil, "Synthetic host", nil)
+			pm.Register(DeviceToken{Token: "synthetic-android", Platform: "android", Origin: originMaster})
+			pm.Test()
+			want := 1
+			if code == "UNREGISTERED" {
+				want = 0
+			}
+			if len(pm.Tokens()) != want {
+				t.Fatalf("tokens=%d want=%d", len(pm.Tokens()), want)
+			}
+		})
+	}
+}
+func TestAndroidBadgeCarriesOwnerAndNoAPNsEnvironment(t *testing.T) {
+	relay := &fakeRelay{}
+	pm := NewPushManager(relay, nil, nil, "Synthetic host", nil)
+	pm.Register(DeviceToken{Token: "synthetic-android", Platform: "android", Origin: originMaster})
+	pm.pushBadge(0)
+	row := relay.intents()[0]
+	if row.Platform != "android" || row.Subtitle != "Synthetic host" || row.Env != "" || !row.Silent || row.Badge == nil || *row.Badge != 0 {
+		t.Fatalf("wrong Android badge contract: %+v", row)
+	}
+}

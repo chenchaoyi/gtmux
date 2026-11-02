@@ -13,13 +13,15 @@ interface Native {
   register(list: {id: string; input: string; modifiers: string[]; title: string}[]): void;
 }
 
-const M: Native | undefined = Platform.OS === 'ios' ? NativeModules.KeyCommands : undefined;
+const M: Native | undefined = NativeModules.KeyCommands;
 
 export function useKeyCommands(lang: string, onCommand: (id: string) => void): void {
   useEffect(() => {
     if (!M) return;
     try {
-      M.register(nativeBindings(lang));
+      M.register(nativeBindings(lang).map(binding => ({...binding, modifiers: Platform.OS === 'android'
+        ? binding.modifiers.map(modifier => modifier === 'cmd' && !binding.modifiers.includes('ctrl') ? 'ctrl' : modifier)
+        : binding.modifiers})));
       if (Debug.logNet) Debug.record({event: 'key-register', n: nativeBindings(lang).length});
     } catch (e) {
       if (Debug.logNet) Debug.record({event: 'key-register-failed', error: String(e)});

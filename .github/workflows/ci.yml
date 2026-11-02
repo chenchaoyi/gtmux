@@ -31,6 +31,7 @@ jobs:
       relay: ${{ steps.plan.outputs.relay }}
       tunnel: ${{ steps.plan.outputs.tunnel }}
       ios: ${{ steps.plan.outputs.ios }}
+      android: ${{ steps.plan.outputs.android }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -224,6 +225,88 @@ jobs:
           python3 -m unittest discover -s mobileapp/scripts -p '*_test.py'
           node --test mobileapp/scripts/creative-layout.test.mjs
 
+  android-native:
+    name: Android build and emulator flows
+    needs: scope
+    if: needs.scope.outputs.android == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      APPIUM_HOME: ${{ runner.temp }}/gtmux-appium
+      GTMUX_SOURCE_SHA: ${{ github.sha }}
+      GTMUX_ANDROID_E2E_OUTPUT: ${{ runner.temp }}/gtmux-android-evidence
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: mobileapp/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Install JS and Android automation dependencies
+        working-directory: mobileapp
+        run: |
+          npm ci
+          npx appium driver install --source=local "$PWD/node_modules/appium-uiautomator2-driver"
+      - name: Build bundled QA and test native policies
+        working-directory: mobileapp/android
+        run: ./gradlew :app:assembleQa :app:testQaUnitTest :app:lintQa -PreactNativeArchitectures=arm64-v8a,x86_64 --no-daemon --max-workers=2
+      - name: Missing release credentials must fail closed
+        working-directory: mobileapp/android
+        run: |
+          if ./gradlew :app:assembleRelease --no-daemon > "$RUNNER_TEMP/android-signing-refusal.log" 2>&1; then
+            echo 'Release unexpectedly accepted absent signing credentials'; exit 1
+          fi
+          grep -q 'Release signing credentials are required' "$RUNNER_TEMP/android-signing-refusal.log"
+      - name: Allow KVM on this disposable runner
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-gtmux-kvm.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Exercise owned emulator with synthetic agents
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          profile: pixel_7
+          avd-name: gtmux-ci-phone
+          force-avd-creation: true
+          emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader
+          script: ANDROID_SERIAL=emulator-5554 GTMUX_ANDROID_E2E_OUTPUT="$GTMUX_ANDROID_E2E_OUTPUT/phone" npm --prefix mobileapp run test:e2e:android
+      - name: Exercise tablet layout with the same package and fixtures
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          profile: pixel_tablet
+          avd-name: gtmux-ci-tablet
+          force-avd-creation: true
+          emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader
+          script: ANDROID_SERIAL=emulator-5554 GTMUX_ANDROID_E2E_OUTPUT="$GTMUX_ANDROID_E2E_OUTPUT/tablet" npm --prefix mobileapp run test:e2e:android
+      - name: Preserve QA package for reproducible emulator diagnosis
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-qa-${{ github.run_id }}
+          path: mobileapp/android/app/build/outputs/apk/qa/app-qa.apk
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Preserve synthetic emulator evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-emulator-${{ github.run_id }}
+          path: ${{ runner.temp }}/gtmux-android-evidence
+          if-no-files-found: warn
+          retention-days: 7
+
   web:
     name: Web logic and rendered browser flows
     needs: scope
@@ -409,7 +492,7 @@ jobs:
 
   ci-required:
     if: always()
-    needs: [scope, quality, test, cross-build, mobile, web, ios-native, relay-worker, tunnel-worker, menubar]
+    needs: [scope, quality, test, cross-build, mobile, web, ios-native, android-native, relay-worker, tunnel-worker, menubar]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

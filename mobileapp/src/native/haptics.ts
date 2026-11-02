@@ -8,7 +8,7 @@
 // The composer also sends terminal control keys whose effect may be invisible until a
 // remote screen refresh. Its selection tick confirms the LOCAL tap, not delivery.
 
-import {NativeModules, Platform} from 'react-native';
+import {NativeModules} from 'react-native';
 
 interface Native {
   prepare(): void;
@@ -17,7 +17,7 @@ interface Native {
 
 // Absent off iOS and in any build without the module (the jest environment, the Demo
 // screen's harness). Every call is then a no-op rather than a crash.
-const M: Native | undefined = Platform.OS === 'ios' ? NativeModules.Haptics : undefined;
+const M: Native | undefined = NativeModules.Haptics;
 
 export const Haptics = {
   /** A finger went down on something that may become a long press: warm the engine. */

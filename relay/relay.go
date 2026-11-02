@@ -125,8 +125,11 @@ func (s *relayServer) handlePush(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	if err := pusher.Push(ctx, req); err != nil {
 		var rejection *apnsFailure
+		var fcm *fcmFailure
 		if errors.As(err, &rejection) {
 			writeJSON(w, http.StatusBadGateway, map[string]any{"error": "apns", "status": rejection.Status, "detail": rejection.Detail})
+		} else if errors.As(err, &fcm) {
+			writeJSON(w, http.StatusBadGateway, map[string]any{"error": "fcm", "status": fcm.Status, "code": fcm.Code})
 		} else {
 			writeJSON(w, http.StatusBadGateway, errBody("push failed: "+err.Error()))
 		}

@@ -513,7 +513,7 @@ func (p *PushManager) dispatch(a Alert) {
 		if !p.alertStillCurrent(a) {
 			return
 		}
-		_ = p.relay.Send(PushIntent{
+		p.sendNotification(PushIntent{
 			Token: d.Token, Platform: d.Platform, Env: d.Env,
 			Title: title, Body: body, Subtitle: p.serverName, Pane: a.Pane, Kind: a.Kind,
 			Options: optionCount(opts),
@@ -571,9 +571,19 @@ func (p *PushManager) pushBadge(waiting int) {
 		if !p.sendableToken(d) {
 			continue
 		}
-		_ = p.relay.Send(PushIntent{
-			Token: d.Token, Platform: d.Platform, Env: d.Env, Silent: true, Badge: &n,
+		p.sendNotification(PushIntent{
+			Token: d.Token, Platform: d.Platform, Env: d.Env, Subtitle: p.serverName, Silent: true, Badge: &n,
 		})
+	}
+}
+
+// sendNotification retires only an Android token explicitly revoked by FCM.
+// A relay/network/configuration failure never says the user's device is gone.
+func (p *PushManager) sendNotification(intent PushIntent) {
+	err := p.relay.Send(intent)
+	var failure *FCMError
+	if intent.Platform == "android" && errors.As(err, &failure) && failure.Code == "UNREGISTERED" {
+		p.Unregister(intent.Token)
 	}
 }
 
@@ -594,7 +604,7 @@ func (p *PushManager) Test() int {
 			continue
 		}
 		tried++
-		_ = p.relay.Send(PushIntent{
+		p.sendNotification(PushIntent{
 			Token: d.Token, Platform: d.Platform, Env: d.Env,
 			Title: title, Body: body, Subtitle: p.serverName,
 			Pane: a.Pane, Kind: a.Kind, Options: optionCount(opts), CollapseID: alertCollapseID(a),
@@ -887,14 +897,32 @@ func (r *HTTPRelay) Send(intent PushIntent) error {
 		var v struct {
 			Error  string `json:"error"`
 			Status int    `json:"status"`
+			Code   string `json:"code"`
 		}
-		if json.Unmarshal(body, &v) == nil && v.Error == "apns" && v.Status > 0 {
-			return &APNsError{Status: v.Status}
+		if json.Unmarshal(body, &v) == nil && v.Status > 0 {
+			if v.Error == "apns" {
+				return &APNsError{Status: v.Status}
+			}
+			if v.Error == "fcm" && intent.Platform == "android" {
+				code := "REJECTED"
+				if v.Code == "UNREGISTERED" {
+					code = v.Code
+				}
+				return &FCMError{Status: v.Status, Code: code}
+			}
 		}
 		return fmt.Errorf("relay status %d", resp.StatusCode)
 	}
 	return nil
 }
+
+// FCMError carries a bounded provider verdict without the provider's private message.
+type FCMError struct {
+	Status int
+	Code   string
+}
+
+func (e *FCMError) Error() string { return fmt.Sprintf("fcm status %d (%s)", e.Status, e.Code) }
 
 // APNsError is APNs's own rejection, forwarded through the relay.
 type APNsError struct{ Status int }

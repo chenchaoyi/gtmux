@@ -31,6 +31,7 @@ import {captureRef} from 'react-native-view-shot';
 import {Lang} from '../i18n';
 import {captureSize, exportPixels, exportPoints, fitSize, MARKUP_JPEG_QUALITY, MARKUP_SCALED_EDGE, Size} from './markupGeometry';
 import {MODAL_ORIENTATIONS} from './modalOrientations';
+import {useModalDismiss} from './useModalDismiss';
 
 type Tool = 'brush' | 'arrow' | 'box' | 'redact' | 'pan';
 
@@ -126,6 +127,7 @@ export function ImageMarkup({
   onDone: (fileUri: string) => void;
   onDismiss?: () => void;
 }) {
+  const dismissed = useModalDismiss(visible, onDismiss);
   const [shapes, setShapes] = useState<Shape[]>([]);
   const [tool, setToolState] = useState<Tool>('brush');
   const [color, setColorState] = useState(PALETTE[0]);
@@ -327,7 +329,7 @@ export function ImageMarkup({
   const hasShapes = shapes.length > 0;
 
   return (
-    <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={visible} animationType="slide" onRequestClose={cancel} onDismiss={onDismiss}>
+    <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={visible} animationType="slide" onRequestClose={cancel} onDismiss={dismissed}>
       <StatusBar hidden />
       <SafeAreaProvider>
       <SafeAreaView testID="markup-root" style={styles.root}>

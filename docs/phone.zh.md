@@ -6,6 +6,8 @@
 
 **第一次连接 iPhone、iPad 或浏览器？** 先按[首页连接步骤](../README.zh.md#3-连接手机或浏览器)配对，再看[设备操作指南](guides/phone-and-web.zh.md)。
 
+Android 构建、安装与测试见 [Android 说明](https://github.com/chenchaoyi/gtmux/blob/main/mobileapp/ANDROID.zh.md)（[English](https://github.com/chenchaoyi/gtmux/blob/main/mobileapp/ANDROID.md)）。
+
 ## 服务器平台
 
 可配对运行 gtmux 的 macOS 或 Linux 主机。服务器列表、线路、分享、终端／对话和 HQ 都读取所选主机的数据。Linux 不提供桌面窗口跳转、合盖控制。

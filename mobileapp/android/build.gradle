@@ -19,3 +19,22 @@ buildscript {
 }
 
 apply plugin: "com.facebook.react.rootproject"
+
+// Native dependencies share the AGP version selected by this React Native release.
+// Older library build scripts must not load a second, incompatible AGP into Gradle.
+subprojects {
+    buildscript.configurations.configureEach {
+        resolutionStrategy.eachDependency { details ->
+            if (details.requested.group == "com.android.tools.build" && details.requested.name == "gradle") details.useVersion("8.12.0")
+        }
+    }
+}
+
+// Compile all native adapters against the host SDK; some libraries still pin an older compileSdk.
+subprojects { project ->
+    project.plugins.withId("com.android.library") {
+        project.extensions.getByName("androidComponents").finalizeDsl { androidDsl ->
+            androidDsl.compileSdk = rootProject.ext.compileSdkVersion
+        }
+    }
+}

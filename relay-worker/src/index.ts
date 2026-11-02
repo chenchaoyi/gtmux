@@ -3,10 +3,12 @@
 // Web Crypto from the .p8 key), and POSTs the alert to APNs. Mirrors relay/apns.go
 // — same payload {aps:{alert:{title,body},sound:default}, pane, kind} + headers.
 
+import {sendFCM} from './fcm.ts';
 import {readJSONObject, jsonBodyStatus} from '../../shared/worker-json.mts';
 
 export interface Env {
   RELAY_TOKEN: string;
+  FCM_SERVICE_ACCOUNT?: string; // private HTTP v1 service account; absent means Android unavailable
   APNS_KEY: string; // the AuthKey_*.p8 PEM text
   APNS_KEY_ID: string;
   APNS_TEAM_ID: string;
@@ -67,6 +69,9 @@ export default {
     }
     if (typeof intent.token !== 'string' || !intent.token) return json({error: 'no token'}, 400);
 
+    const platform = intent.platform || 'ios';
+    if (platform === 'android') return sendFCM(intent, env.FCM_SERVICE_ACCOUNT);
+    if (platform !== 'ios') return json({error: 'unsupported platform'}, 400);
     const jwt = await providerJWT(env);
     // Per-token env wins (the device told us at registration); APNS_ENV is the
     // fallback for older tokens registered before the app reported an env.

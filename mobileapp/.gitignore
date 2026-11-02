@@ -15,6 +15,9 @@ ios/.xcode.env.local
 android/.gradle/
 android/app/build/
 android/build/
+android/app/.cxx/
+android/app/.externalNativeBuild/
+android/.kotlin/
 android/local.properties
 *.keystore
 !debug.keystore
