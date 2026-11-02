@@ -48,7 +48,7 @@ var shells = map[string]bool{
 //	"claude"                          → "claude", ""      (fresh session, no id)
 //	"bash" / "vim notes.md"           → "",       ""
 func FromCommand(cmdline string) (agent, sessionID string) {
-	toks := strings.Fields(cmdline)
+	toks := commandWords(cmdline)
 	i := 0
 	for i < len(toks) {
 		t := toks[i]
@@ -70,6 +70,13 @@ func FromCommand(cmdline string) (agent, sessionID string) {
 	}
 	if i >= len(toks) {
 		return "", ""
+	}
+	if filepath.Base(toks[i]) == "gtmux" {
+		args, ok := codexBridgeArgs(toks[i+1:])
+		if !ok {
+			return "", ""
+		}
+		return "codex", sessionIDFromArgs("codex", args)
 	}
 	key, ok := commandKeys[filepath.Base(toks[i])]
 	if !ok {
@@ -111,4 +118,23 @@ func unquote(s string) string {
 		return s[1 : len(s)-1]
 	}
 	return s
+}
+
+// codexBridgeArgs accepts only the managed interactive entry point. It does not
+// turn an arbitrary gtmux process (serve, restore, headless Codex) into an agent.
+func codexBridgeArgs(args []string) ([]string, bool) {
+	for len(args) > 0 && strings.HasPrefix(args[0], "--lang=") {
+		if args[0] != "--lang=en" && args[0] != "--lang=zh" {
+			return nil, false
+		}
+		args = args[1:]
+	}
+	if len(args) == 0 || args[0] != "codex" {
+		return nil, false
+	}
+	args = args[1:]
+	if len(args) > 0 && args[0] == "--" {
+		args = args[1:]
+	}
+	return args, agents.CodexBridgeEligible(args)
 }

@@ -114,7 +114,7 @@ func buildRestorePlanFrom(save string) restorePlan {
 		if !sp.resumeEvidence().allowsResume() {
 			continue
 		}
-		if rec, ok := resume.Load(sp.Loc); ok && rec.SessionID != "" {
+		if rec, ok := sp.restorableRecord(); ok && rec.SessionID != "" {
 			add(sp, rec)
 			continue
 		}

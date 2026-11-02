@@ -746,3 +746,33 @@ layout-changing decisions; the read-only plan JSON remains unchanged.
 #### Scenario: Old evidence is unavailable
 - **WHEN** an older saved window has no readable pane IDs
 - **THEN** the receipt names the missing evidence and still shows available current IDs
+
+### Requirement: Recognize saved managed Codex frontends
+
+The system SHALL recognize a saved interactive `gtmux codex` frontend using the
+same argv admission policy as managed launch. It SHALL preserve the original
+conversation identity through the existing exact-location record or explicit
+saved resume argument, and apply the same evidence in preview and execution.
+Native Codex command compatibility and live-input ownership checks SHALL remain.
+
+#### Scenario: A managed frontend survives the reboot liveness gate
+
+- **WHEN** the saved process is an interactive `gtmux codex --` frontend
+- **THEN** the preview includes its original conversation and restore continues that same conversation in the restored shell
+- **AND** quoted executable paths and the standard forwarding delimiter do not hide the agent
+
+#### Scenario: Saved infrastructure must not revive stale conversations
+
+- **WHEN** the save records a shell, another gtmux command or a non-interactive Codex mode
+- **THEN** a historical resume record does not authorize continuing a conversation there
+
+#### Scenario: Live frontend expiry must not discard reboot history
+
+- **WHEN** a saved managed frontend's live lease has expired after reboot
+- **THEN** matching saved Codex process and home evidence allow its original history to restore
+- **AND** live ownership/input still require fresh proof and a foreign home is refused
+
+#### Scenario: A new thread replaces the initial launch conversation
+
+- **WHEN** a saved frontend was launched with a resume ID but its hook record follows a later `/new`
+- **THEN** preview and restore prefer that exact-location current thread over the launch-time ID

@@ -53,3 +53,43 @@ func TestFromCommandRoundTripsCommand(t *testing.T) {
 		}
 	}
 }
+
+func TestFromCommandCodexBridge(t *testing.T) {
+	for _, tc := range []struct{ line, agent, id string }{
+		{"gtmux codex -- --model model --approve-for-me", "codex", ""},
+		{"/Applications/Gtmux.app/Contents/MacOS/gtmux codex -- --no-alt-screen resume thread-1", "codex", "thread-1"},
+		{"gtmux --lang=zh codex -- resume thread-2", "codex", "thread-2"},
+		{"'/synthetic tools/gtmux' codex -- -C '/synthetic work' resume 'thread-3'", "codex", "thread-3"},
+		{"env SAMPLE=value gtmux codex resume thread-4", "codex", "thread-4"},
+		{"gtmux serve", "", ""},
+		{"gtmux restore codex", "", ""},
+		{"gtmux codex --help", "", ""},
+		{"gtmux codex -- --model model exec resume thread-5", "", ""},
+		{"gtmux codex -- app-server daemon start", "", ""},
+		{"gtmux codex -- plugin list", "", ""},
+		{"gtmux --lang=invalid codex resume thread-6", "", ""},
+		{"bash", "", ""},
+		// Native/embedded Codex remains on the existing legacy path.
+		{"codex --no-daemon resume legacy-thread", "codex", "legacy-thread"},
+	} {
+		t.Run(tc.line, func(t *testing.T) {
+			a, id := FromCommand(tc.line)
+			if a != tc.agent || id != tc.id {
+				t.Fatalf("got %q/%q, want %q/%q", a, id, tc.agent, tc.id)
+			}
+		})
+	}
+}
+
+func TestFromCommandRoundTripsBridgeCommand(t *testing.T) {
+	for _, executable := range []string{"/synthetic/gtmux", "/synthetic tools/gtmux", "/synthetic's tools/gtmux"} {
+		cmd, ok := CommandWithBridge(Record{Agent: "codex", SessionID: "original-thread"}, executable)
+		if !ok {
+			t.Fatal("missing bridge command")
+		}
+		a, id := FromCommand(cmd)
+		if a != "codex" || id != "original-thread" {
+			t.Fatalf("bridge round trip %q lost identity: %q/%q", cmd, a, id)
+		}
+	}
+}
