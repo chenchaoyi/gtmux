@@ -1552,9 +1552,12 @@ select:disabled { opacity: .55; cursor: not-allowed; }
 .conversation-map-preview { position: absolute; right: 40px; width: 320px; max-width: calc(100vw - 80px); padding: 14px; border: 1px solid var(--divider); border-radius: 12px; background: var(--surface); color: var(--fg); box-shadow: 0 8px 28px rgba(0,0,0,.15); pointer-events: auto; font-size: 13px; line-height: 1.5; }
 .conversation-map-preview strong,.conversation-map-preview p { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-wrap; overflow-wrap: anywhere; margin: 5px 0; }
 .conversation-map-meta { color: var(--fg2); font-size: 11px; }
-.conversation-map-preview button { min-height: 36px; padding: 6px 10px; margin-top: 5px; border-radius: 7px; background: var(--control); color: var(--fg); cursor: pointer; }
+.conversation-map-preview button { border: 1px solid var(--divider); font: inherit; font-weight: 500; min-height: 36px; padding: 6px 10px; margin-top: 5px; border-radius: 7px; background: var(--control); color: var(--fg); cursor: pointer; }
 .conversation-map-target { animation: conversation-locate 1.2s ease-out; }
 @keyframes conversation-locate { from { outline: 2px solid var(--accent-ink); outline-offset: 5px; } to { outline: 2px solid transparent; outline-offset: 5px; } }
 @media (prefers-reduced-motion: reduce) { .conversation-map-track i { transition: none; } .conversation-map-target { animation: none; } }
 @media (max-width: 700px) { .conversation-map-preview button { min-height: 44px; } .has-conversation-map .chat-col { padding-right: 40px; } }
 .trace-kind .activity-icon { width: 20px; height: 20px; stroke-width: 1.8; }
+
+.conversation-map-track:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: -5px; border-radius: 8px; }
+.cturn:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 4px; border-radius: 8px; }
