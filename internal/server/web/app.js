@@ -2262,7 +2262,7 @@
     renderChatInteraction();
     syncChatLive(main, a, function () { return !$('chat').hidden && paneMode === 'chat' && curPane === a.pane_id && curAgent && curAgent.status === 'working'; });
     scroll.scrollTop = atBottom ? scroll.scrollHeight : prevTop;
-    root.conversationMapDispose = window.GtmuxConversationMap.mount(main,scroll,turns,T);
+    root.conversationMapDispose = window.GtmuxConversationMap ? window.GtmuxConversationMap.mount(main,scroll,turns,T) : null;
     if (curTurnIdx >= turns.length) curTurnIdx = Math.max(0, turns.length - 1);
     restoreCodeState(root,preserved);
     root.querySelectorAll('[data-chat-focus]').forEach(function (node) {
@@ -3550,7 +3550,7 @@
     t.body.innerHTML = ''; t.body.appendChild(main);
     syncChatLive(main, t.agent || {}, function () { return WB.on && !t.removed && t.mode === 'chat' && t.agent.status === 'working'; });
     wrap.scrollTop = atBottom ? wrap.scrollHeight : top;
-    t.conversationMapDispose = window.GtmuxConversationMap.mount(main,wrap,turns,T);
+    t.conversationMapDispose = window.GtmuxConversationMap ? window.GtmuxConversationMap.mount(main,wrap,turns,T) : null;
     restoreToolState(t.body, preserved);
   }
   // drag-move (head) + resize (corner), with optional snap-to-grid.

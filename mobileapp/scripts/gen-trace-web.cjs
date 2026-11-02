@@ -3,12 +3,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const ts = require('typescript');
 const root = path.resolve(__dirname, '../..');
-const inputs = {
-  model: 'mobileapp/src/trace/model.ts',
-  activity: 'mobileapp/src/ui/activity.ts',
-  timeline: 'mobileapp/src/trace/timeline.ts',
-  presentation: 'mobileapp/src/trace/presentation.ts',
-};
+const inputs = require('../src/trace/shared-sources.json');
 const sources = Object.fromEntries(
   Object.entries(inputs).map(([key, file]) => [
     key,

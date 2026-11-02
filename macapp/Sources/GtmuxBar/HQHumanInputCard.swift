@@ -21,8 +21,10 @@ struct HQHumanInputCard: View {
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 150))], alignment: .leading, spacing: 6) {
                             ForEach(q.choices ?? [], id: \.self) { choice in
                                 Button(choice) { prepare(q, choice) }.buttonStyle(.bordered)
+                                    .accessibilityIdentifier("hq-human-choice-\(q.choices?.firstIndex(of: choice) ?? 0)")
                             }
                             Button(l10n.tr("Write a reply", "自行答复")) { prepare(q, "") }.buttonStyle(.bordered)
+                                .accessibilityIdentifier("hq-human-write-reply")
                         }
                         Text(l10n.tr("Choose to prepare a reply, then send it below.", "选择后会填入下方输入框，由你确认发送。"))
                             .font(HQTypography.caption).foregroundStyle(.secondary)

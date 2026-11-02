@@ -1113,8 +1113,9 @@ extension HQWorkspaceTests {
         XCTAssertGreaterThanOrEqual(child.accessibilityFrame().minX - header.accessibilityFrame().minX, 18)
         let resourceHeader = try XCTUnwrap(NativeUIProbe.find("hq-sidebar-section-resources", in: host))
         let resourceChild = try XCTUnwrap(NativeUIProbe.find("hq-sidebar-resource-knowledge", in: host))
-        let needsInput = try XCTUnwrap(NativeUIProbe.find("hq-sidebar-section-needsInput", in: host))
-        XCTAssertGreaterThan(resourceChild.accessibilityFrame().minY, needsInput.accessibilityFrame().maxY,
+        let awaitingHQ = try XCTUnwrap(NativeUIProbe.find("hq-sidebar-section-awaitingHQ", in: host))
+        XCTAssertNil(NativeUIProbe.find("hq-sidebar-section-needsInput", in: host), "An unstructured old record is HQ clarification, not a human request")
+        XCTAssertGreaterThan(resourceChild.accessibilityFrame().minY, awaitingHQ.accessibilityFrame().maxY,
                              "Resources must remain reachable above the growing matter groups")
         XCTAssertGreaterThanOrEqual(resourceChild.accessibilityFrame().minX - resourceHeader.accessibilityFrame().minX, 18)
         XCTAssertTrue(child.accessibilityPerformPress())
@@ -1126,4 +1127,35 @@ extension HQWorkspaceTests {
         XCTAssertEqual(store.selection, .matter("matter-a"), "Collapsing must not change the selected matter")
         XCTAssertTrue(fake.actions.isEmpty)
     }
+    func testHumanChoiceUsesTheNativeButtonAndPreservesUserDraftsWithoutSending() async throws {
+        NativeUIProbe.prepareAccessibility()
+        let fake = WorkspaceFake()
+        let question = HQHumanInput(id: "question-id", kind: "decision", prompt: "Keep the sample?",
+                                    why: "Two options remain.", impact: "Only the synthetic sample changes.",
+                                    choices: ["Keep", "Remove"], at: 100)
+        fake.snapshotValue.matters[1].userInput = question
+        let store = HQWorkspaceStore(client: fake, resources: HQResourceStore(read: { _ in nil }))
+        store.refresh(); try await settled(store)
+        store.select(.matter("matter-b")); try await settled(store)
+        let host = NSHostingView(rootView: HQHumanInputCard(l10n: .shared, matter: fake.snapshotValue.matters[1]) {
+            store.prepareHumanReply($0, choice: $1)
+        })
+        let window = NSWindow(contentRect: NSRect(x: 100, y: 100, width: 500, height: 380),
+                              styleMask: [.titled], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false; window.contentView = host; window.orderFront(nil)
+        defer { window.close(); store.stop() }
+        try await Task.sleep(nanoseconds: 100_000_000); host.layoutSubtreeIfNeeded()
+        let keep = try XCTUnwrap(NativeUIProbe.find("hq-human-choice-0", in: host))
+        let remove = try XCTUnwrap(NativeUIProbe.find("hq-human-choice-1", in: host))
+        XCTAssertTrue(keep.accessibilityPerformPress())
+        XCTAssertEqual(store.draft, "Keep the sample?\nKeep")
+        XCTAssertTrue(remove.accessibilityPerformPress())
+        XCTAssertEqual(store.draft, "Keep the sample?\nRemove", "A second selection replaces only the untouched prepared reply")
+        store.draft = "User-edited notes"
+        XCTAssertTrue(keep.accessibilityPerformPress())
+        XCTAssertEqual(store.draft, "User-edited notes")
+        XCTAssertNotNil(store.error)
+        XCTAssertTrue(fake.actions.isEmpty, "Choosing a reply must not send or execute it")
+    }
+
 }

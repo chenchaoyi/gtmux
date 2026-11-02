@@ -2,6 +2,7 @@
 (function () {
   'use strict';
   window.GtmuxConversationMap = {mount: function (main, scroll, turns, T) {
+    if(!window.GtmuxTrace || !window.GtmuxTrace.conversationOutline) return function () {};
     var outline = window.GtmuxTrace.conversationOutline(turns,T('en','zh')), nodes = Array.from(scroll.querySelectorAll('.cturn'));
     if (outline.length < 8) return function () {};
     var nav=document.createElement('div');nav.className='conversation-map';

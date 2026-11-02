@@ -72,9 +72,10 @@ for (const fixture of fixtures) test('shared native fixture: ' + fixture.name, (
   assert.deepEqual(index.sessions.map(session => session.session), fixture.sessions);
 });
 test('the generated asset identifies the current canonical typed source', () => {
-  const source = fs.readFileSync(path.join(__dirname, '../../../mobileapp/src/trace/model.ts'));
-  const hash = crypto.createHash('sha256').update(source).digest('hex');
-  assert.ok(fs.readFileSync(path.join(__dirname, 'trace-model.js'), 'utf8').startsWith('// Generated from mobileapp/src/trace/model.ts; SHA256 ' + hash + '\n'));
+  const inputs = require('../../../mobileapp/src/trace/shared-sources.json');
+  const sources = Object.fromEntries(Object.entries(inputs).map(([key, file]) => [key, fs.readFileSync(path.join(__dirname, '../../..', file), 'utf8')]));
+  const hash = crypto.createHash('sha256').update(JSON.stringify(sources)).digest('hex');
+  assert.ok(fs.readFileSync(path.join(__dirname, 'trace-model.js'), 'utf8').startsWith('// Generated from shared App trace analysis and presentation; SHA256 ' + hash + '\n'));
   const asset = fs.readFileSync(path.join(__dirname, 'trace-model.js'), 'utf8');
   const match = asset.match(/^\/\/ Generated[^\n]+\n\/\/ Body SHA256 ([a-f0-9]{64})\n([\s\S]*)$/);
   assert.ok(match, 'generated source/body hashes are required');
