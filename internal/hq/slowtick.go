@@ -88,11 +88,9 @@ func SlowTickEval() {
 	// is told to rotate. Resident trigger on purpose: a periodic job without one does not
 	// run at all, which this codebase has paid for.
 	usage.BackfillWindows()
-	// Snapshot the supervisor's memory (hq-memory-safety). HQ's whole claim is a memory
-	// that survives a context reset, and on the machine this was written for that was
-	// 6.1 MB over three months with nothing protecting it: no export, no snapshot, no
-	// Time Machine destination, no cloud folder. Cheap and quiet — a fingerprint check
-	// most ticks, one write on a day the memory actually moved.
+	// Automatic core recovery is interval/size bounded and content-deduplicated.
+	// A new point must be durably validated before managed retention can retire an
+	// old one. Legacy archives are protected independently of the new defaults.
 	if _, _, err := Snapshot(time.Now()); err != nil {
 		// A failed snapshot is not worth interrupting anyone; doctor reports the gap.
 		_ = err

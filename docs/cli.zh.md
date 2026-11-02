@@ -2070,8 +2070,15 @@ tar.gz。`--import` 看文件头就知道是哪种，需要时才问口令，口
 
 `--import` 绝不就地覆盖：已有的档案会被挪到旁边一个名为 `hq.replaced-…` 的文件夹，路径会打印出来。
 
-`gtmux serve` 每天快照到 `~/.local/share/gtmux/hq-snapshots/`，保留 14 份，只在档案
-真的变了时才写。快照放在状态目录里，在 HQ 目录之外。
+`gtmux serve` 默认在 `~/.local/share/gtmux/hq-snapshots/automatic-v1/` 保留三个已验核心恢复点，
+托管预算64 MiB，两次尝试至少间隔十五分钟。内容不变时跨日不重复保存。
+`gtmux config snapshots [on|off] [--keep 3] [--max-mb 64] [--interval-minutes 15]`
+可调整；关闭也保留已有恢复点。知识、个性化规则、事项和普通笔记被保护，过程报告及附件
+另有范围；独有文件可用 `hqSnapshots.include` 精确纳入。现有旧包不动，也不默认视为有效备份。
+
+显式全量导出仍含过程报告和附件。明文、加密和HTTP导出在发布前遵守相同导入限制：
+压缩与解压各128 MiB、单文件32 MiB、5000条目。超限不替换目标，不静默改成核心子集。
+范围、失败保留、交付材料保留及旧档案迁移边界见[存储与恢复设计](design/hq-storage-recovery.zh.md)。
 
 **快照挡的是误操作，挡不住硬盘坏掉。** 它们和数据在同一块盘上。`gtmux doctor` 的
 `HQ 档案` 那行会说有多少东西、积累了多久和备份线索；导出到同一块盘的文件仍要另行复制出去。

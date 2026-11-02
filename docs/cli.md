@@ -2412,9 +2412,21 @@ in a sheet that can keep it in the Mac's keychain.
 `--import` never overwrites in place: existing records are moved aside to a sibling folder
 named `hq.replaced-…`, and the path is printed.
 
-`gtmux serve` snapshots daily to `~/.local/share/gtmux/hq-snapshots/`, keeping 14, and
-only writes when the records actually changed. Snapshots live beside the state, outside
-the HQ home.
+`gtmux serve` keeps three validated core recovery points in
+`~/.local/share/gtmux/hq-snapshots/automatic-v1/`, with a 64 MiB managed budget and
+at least fifteen minutes between attempts. Unchanged content is not copied again
+across days. `gtmux config snapshots [on|off] [--keep 3] [--max-mb 64]
+[--interval-minutes 15]` configures this; disabling preserves existing points.
+Knowledge, personal rules, workspace and notes are protected. Process report payloads
+and attachments have a separate scope, with exact `hqSnapshots.include` overrides
+for unique files. Legacy archives remain untouched and their validity is not assumed.
+
+Explicit full exports still include report payloads and attachments. Plain, encrypted
+and HTTP exports now validate the same import limits before publishing: 128 MiB
+compressed/decompressed, 32 MiB per file, 5,000 entries. An oversized full export fails
+without replacing the destination; it does not silently become a core export. See
+[storage and recovery](design/hq-storage-recovery.md) for scope, failure behavior,
+delivery retention and the protected legacy migration boundary.
 
 **Snapshots cover accidents, not the disk.** They sit on the same one. The `HQ records`
 row in `gtmux doctor` says how much is at risk, how long it took to accumulate, and

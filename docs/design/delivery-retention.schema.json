@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Explicit delivery retention",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "purpose", "source", "budget_bytes", "retain_until", "review_by", "review_owner", "auto_delete"],
+  "properties": {
+    "schema": {"const": "gtmux.delivery-retention.v1"},
+    "purpose": {"type": "string", "minLength": 1, "maxLength": 1024},
+    "source": {"type": "object", "additionalProperties": false, "required": ["revision", "channel"], "properties": {
+      "revision": {"type": "string", "pattern": "^[a-f0-9]{7,64}$"},
+      "channel": {"enum": ["release", "store", "engineering"]}
+    }},
+    "budget_bytes": {"type": "integer", "minimum": 1},
+    "retain_until": {"type": "string", "format": "date"},
+    "review_by": {"type": "string", "format": "date"},
+    "review_owner": {"type": "string", "pattern": "^[a-z][a-z0-9_-]{1,63}$"},
+    "auto_delete": {"const": false}
+  }
+}

@@ -502,18 +502,21 @@ func rowHQMemory() dcheck {
 			age = fmt.Sprintf(i18n.Tr(", %dd of it", "，积累 %d 天"), d)
 		}
 	}
-	if st.LastSnap == "" {
-		return dcheck{stRec, label, size + age,
-			i18n.Tr("no snapshot yet; `gtmux hq --export <path>` writes it to one file (serve snapshots daily)",
-				"还没有快照，`gtmux hq --export <路径>` 可导出成一个文件（serve 每天会自动快照）")}
+	backup := hq.ReadSnapshotOverview()
+	note := fmt.Sprintf(i18n.Tr("Automatic backups: %d points · %d legacy archives (not revalidated) · policy: gtmux config snapshots", "自动备份：%d 份恢复点 · %d 份旧档案（未重新验包）· 规则：gtmux config snapshots"), backup.ManagedPoints, backup.LegacyArchives)
+	status := stOK
+	if !backup.Policy.Enabled {
+		status = stInfo
+		note += i18n.Tr(" · automatic backups off", " · 自动备份已关闭")
+	} else if backup.LastError != "" {
+		status = stRec
+		note += i18n.Tr(" · backup failed; prior points preserved: ", " · 备份失败，原恢复点保留：") + backup.LastError
+	} else if backup.ManagedPoints == 0 {
+		status = stRec
+		note += i18n.Tr(" · run gtmux serve for automatic recovery, or gtmux hq --export <path> for an explicit full export", " · 运行 gtmux serve 生成自动恢复点，或用 gtmux hq --export <路径> 显式全量导出")
 	}
-	when := fmtAgo(st.LastSnapAt)
-	// A snapshot lives on the SAME disk. It covers the deletion, not the disk, and the
-	// row must not let anyone read it as more than that.
-	off := hq.OffMachineHint()
-	return dcheck{stOK, label, size + age,
-		fmt.Sprintf(i18n.Tr("%d local snapshots, newest %s · %s", "%d 份本地快照，最新 %s · %s"),
-			st.Snapshots, when, off)}
+	note += " · " + hq.OffMachineHint()
+	return dcheck{status, label, size + age, note}
 }
 
 // --- individual checks (read-only) ---

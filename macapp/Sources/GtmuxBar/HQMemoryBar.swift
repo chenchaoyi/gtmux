@@ -33,8 +33,9 @@ struct HQMemoryBar: View {
         }
         guard mem.exists else { return l10n.tr("No HQ data to back up on this computer", "这台电脑尚无可备份的 HQ 资料") }
         var lines = [l10n.tr("Backs up HQ instructions, task records and knowledge together.", "一起备份 HQ 指令、任务记录和知识库。"),
-            "\(mem.sizeText) · \(mem.snapshots) " + l10n.tr("local snapshots", "份本地快照"), l10n.tr("Stored on this computer. Export a copy to keep it elsewhere.", "档案保存在此电脑，可导出副本另行保存。"),
+            "\(mem.sizeText)" + l10n.tr(" of HQ records", " HQ 档案"), l10n.tr("Stored on this computer. Export a copy to keep it elsewhere.", "档案保存在此电脑，可导出副本另行保存。"),
         ]
+        lines += hqAutomaticBackupLines(mem, l10n)
         if let backup = hqArchiveBackupHint(mem.offMachine, l10n) { lines.append(backup) }
         if mem.lastExportAt > 0 {
             let age = relativeTime(Int(mem.lastExportAt), now: Int(Date().timeIntervalSince1970))
@@ -92,4 +93,18 @@ func hqArchiveBackupHint(_ raw: String, _ l10n: L10n) -> String? {
         return l10n.tr("No backup destination detected", "未检测到备份位置")
     default: return raw
     }
+}
+
+// Read the core's backup semantics; the client never re-classifies archive files.
+func hqAutomaticBackupLines(_ mem: HQMemoryState, _ l10n: L10n) -> [String] {
+    guard let a = mem.automatic else {
+        return ["\(mem.snapshots) " + l10n.tr("local archives; restore validity has not been checked", "份本地档案，恢复可用性尚未核验")]
+    }
+    var rows = [a.enabled
+        ? l10n.tr("Automatic backups: \(a.points) points · keep \(a.keep) · \(a.maxMB) MB budget", "自动备份：\(a.points) 份 · 保留 \(a.keep) 份 · 预算 \(a.maxMB) MB")
+        : l10n.tr("Automatic backups are off; existing points are retained", "自动备份已关闭，现有恢复点保留")]
+    rows.append(l10n.tr("Covers instructions, task records, knowledge and notes. Full exports also include raw reports and attachments.", "自动保护指令、事项、知识与笔记；全量导出另含过程报告和附件。"))
+    if a.legacy > 0 { rows.append(l10n.tr("\(a.legacy) legacy archives retained for review", "另有 \(a.legacy) 份旧档案保留待复核")) }
+    if !a.lastError.isEmpty { rows.append(l10n.tr("Automatic backup failed; earlier points are preserved.", "自动备份暂时失败，原恢复点保留。")) }
+    return rows
 }

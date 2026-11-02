@@ -74,6 +74,9 @@ func ExportMemoryEncrypted(dst, passphrase string) (path string, n int64, err er
 	if PassphraseStrength(passphrase) == "short" {
 		return "", 0, fmt.Errorf("passphrase too short (%d characters at least)", PassphraseMin)
 	}
+	if err := exportOutsideHQ(dst); err != nil {
+		return "", 0, err
+	}
 	root := MemoryRoot()
 	if st, err := os.Stat(root); err != nil || !st.IsDir() {
 		return "", 0, fmt.Errorf("no HQ records at %s", root)
@@ -114,6 +117,9 @@ func ExportMemoryEncrypted(dst, passphrase string) (path string, n int64, err er
 	}
 	if err != nil {
 		_ = os.Remove(tmp)
+		return "", 0, err
+	}
+	if _, err := readMemoryArchive(tmp, passphrase); err != nil {
 		return "", 0, err
 	}
 	if err := os.Rename(tmp, dst); err != nil {

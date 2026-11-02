@@ -2,12 +2,15 @@ package app
 
 import (
 	"encoding/json"
+	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/agentenv"
 	"github.com/chenchaoyi/gtmux/internal/diag"
+	"github.com/chenchaoyi/gtmux/internal/hq"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tabalert"
@@ -25,6 +28,8 @@ func cmdConfig(args []string) int {
 		return configUsage()
 	}
 	switch args[0] {
+	case "snapshots":
+		return configSnapshots(args[1:])
 	case "agent-proxy":
 		return configAgentProxy(args[1:])
 	case "tab-alert":
@@ -169,7 +174,9 @@ func writeConfigMap(m map[string]any) error {
 
 func configUsage() int {
 	i18n.Sae(
-		"usage: gtmux config agent-proxy [<url>|off]\n"+
+		"usage: gtmux config snapshots [on|off] [--keep 3] [--max-mb 64] [--interval-minutes 15]\n"+
+			"  Shows only snapshot settings; existing legacy archives are not pruned.\n\n"+
+			"usage: gtmux config agent-proxy [<url>|off]\n"+
 			"  <url>  HTTP(S) proxy to apply when gtmux launches an agent (e.g. http://127.0.0.1:PORT)\n"+
 			"  off    no proxy, launch bare (the default when unset)\n"+
 			"  (no value shows the current resolved proxy; env GTMUX_AGENT_PROXY overrides)\n"+
@@ -187,7 +194,9 @@ func configUsage() int {
 			"  off           back to the ordinary entries (the default)\n"+
 			"  <components>  just these, comma-separated: serve, tunnel, hook, cli, hq, menubar\n"+
 			"  (for chasing something specific; `gtmux logs --stats` says whether it is on)",
-		"用法：gtmux config agent-proxy [<url>|off]\n"+
+		"用法：gtmux config snapshots [on|off] [--keep 3] [--max-mb 64] [--interval-minutes 15]\n"+
+			"  仅显示快照设置；不会裁剪现存旧档案。\n\n"+
+			"用法：gtmux config agent-proxy [<url>|off]\n"+
 			"  <url>  起 agent 时应用的 HTTP(S) 代理（如 http://127.0.0.1:端口）\n"+
 			"  off    不加代理，裸起（未设时的默认）\n"+
 			"  （不带值则显示当前生效值;环境变量 GTMUX_AGENT_PROXY 优先）\n"+
@@ -254,4 +263,44 @@ func configTabAlert(args []string) int {
 			"gtmux config tab-alert: 取值须为 on 或 off")
 		return 2
 	}
+}
+
+// Snapshot settings are a narrow projection; never print the full user config.
+func configSnapshots(args []string) int {
+	holder := struct {
+		Policy hq.SnapshotPolicy `json:"hqSnapshots"`
+	}{hq.DefaultSnapshotPolicy()}
+	err := usercfg.Load(&holder)
+	c := holder.Policy
+	if err != nil {
+		i18n.Sae("Invalid snapshot configuration", "快照配置无效")
+		return 1
+	}
+	changed := len(args) > 0
+	if len(args) > 0 && (args[0] == "on" || args[0] == "off") {
+		c.Enabled = args[0] == "on"
+		args = args[1:]
+	}
+	fs := flag.NewFlagSet("snapshots", flag.ContinueOnError)
+	fs.IntVar(&c.Keep, "keep", c.Keep, "recovery points")
+	fs.IntVar(&c.MaxMB, "max-mb", c.MaxMB, "managed compressed archive budget")
+	fs.IntVar(&c.IntervalMinutes, "interval-minutes", c.IntervalMinutes, "minimum interval")
+	if fs.Parse(args) != nil || fs.NArg() != 0 {
+		return 2
+	}
+	if err := hq.ValidateSnapshotPolicy(c); err != nil {
+		i18n.Sae(err.Error(), err.Error())
+		return 2
+	}
+	if changed {
+		if err := setConfigKey("hqSnapshots", c); err != nil {
+			return 1
+		}
+	}
+	b, err := json.Marshal(c)
+	if err != nil {
+		return 1
+	}
+	fmt.Println(string(b))
+	return 0
 }

@@ -54,7 +54,7 @@ func TestStorageSeparatesRetainedDeliverablesFromWorkingGrowth(t *testing.T) {
 		t.Fatal(err)
 	}
 	_ = f.Close()
-	if err := os.WriteFile(filepath.Join(base, "working"), []byte("state"), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(base, "events"), []byte("state"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	measured := measureStateStorage(base)
@@ -94,5 +94,21 @@ func TestStorageMissingStateIsKnownEmpty(t *testing.T) {
 	f := measureStateStorage(filepath.Join(t.TempDir(), "not-created"))
 	if !f.complete || f.check().status != stOK {
 		t.Fatalf("new installation is not an unreadable store: %+v", f)
+	}
+}
+
+func TestStorageCategoriesIncludeBackupAndEvidence(t *testing.T) {
+	root := t.TempDir()
+	for name, size := range map[string]int{"logs/log": 1, "hq-snapshots/old.tar.gz": 2, "releases/package": 3, "reviews/receipt": 4, "verification/result": 5, "appstore/archive": 6, "reports/report": 7, "unknown/data": 8} {
+		p := filepath.Join(root, name)
+		_ = os.MkdirAll(filepath.Dir(p), 0700)
+		_ = os.WriteFile(p, make([]byte, size), 0600)
+	}
+	f := measureStateStorage(root)
+	if f.working != 1 || f.backups != 2 || f.releases != 9 || f.reports != 16 || f.unclassified != 8 {
+		t.Fatalf("classification %+v", f)
+	}
+	if !strings.Contains(f.check().note, "hq-snapshots/") {
+		t.Fatal("source and policy entry missing")
 	}
 }
