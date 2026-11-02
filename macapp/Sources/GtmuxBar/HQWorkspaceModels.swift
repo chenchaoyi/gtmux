@@ -20,7 +20,19 @@ struct HQParticipant: Codable, Identifiable, Hashable {
     var active: Bool { removedAt == nil || removedAt == 0 }
 }
 
+struct HQHumanInput: Codable {
+    var id: String
+    var kind: String
+    var prompt: String
+    var why: String
+    var impact: String
+    var choices: [String]?
+    var answerId: String?
+    var at: Int64
+}
+
 struct HQMatter: Codable, Identifiable {
+    var userInput: HQHumanInput? = nil
     var id: String
     var title: String
     var state: String
@@ -35,7 +47,9 @@ struct HQMatter: Codable, Identifiable {
     var activeParticipants: [HQParticipant] { participants.filter(\.active) }
     func stateLabel(_ l: L10n) -> String {
         switch state {
-        case "needs-input": return l.tr("Needs your input", "待你处理")
+        case "needs-input":
+            if userInput?.answerId != nil { return l.tr("Reply saved · HQ following up", "答复已保存 · HQ 跟进中") }
+            return userInput == nil ? l.tr("HQ needs to clarify", "待 HQ 明确问题") : l.tr("Your reply needed", "请你答复")
         case "completed": return l.tr("Completed", "已完成")
         case "closed": return l.tr("Closed", "已结束")
         case "open": return l.tr("Following", "跟进中")

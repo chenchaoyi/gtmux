@@ -8,26 +8,12 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/hostplatform"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/panefocus"
-	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
 var paneIDRe = regexp.MustCompile(`^%[0-9]+`)
-
-// paneRunsAgent reports whether a pane id is currently a live agent on the radar —
-// the same classification the radar uses (title glyph + process subtree), so a pane
-// whose agent has exited (now a plain shell) answers false even if a stale tmux
-// title lingers. Overridable for tests.
-var paneRunsAgent = func(paneID string) bool {
-	for _, p := range radar.GatherAgents() {
-		if p.PaneID == paneID {
-			return true
-		}
-	}
-	return false
-}
 
 // cmdFocus implements `gtmux focus <session|pane-id>`.
 // A tmux pane id (%N) first selects that window+pane inside its session (so the
@@ -134,15 +120,8 @@ func focus(args []string) (int, []any) {
 			i18n.Sae("Pane "+target+" no longer exists", "pane "+target+" 已不存在")
 			return 1, []any{"stage", "pane-missing"}
 		}
-		// The pane exists, but no coding agent may be running in it: one that exited
-		// since the notification, or a pane that never ran one. Still jump (its screen
-		// is often what you want to see), but say so. Say only what is known: nothing
-		// here tells an exited agent from a pane that never had one, and the line used
-		// to claim an exit for both (%12, 2026-10-06).
-		if !paneRunsAgent(target) {
-			i18n.Say("↪ "+target+": no coding agent is running here right now.",
-				"↪ "+target+"：这里目前没有在运行的 coding agent。")
-		}
+		// Focus is based on this exact live pane. A full agent scan here used
+		// seconds only to print an optional warning before any visible jump.
 		sess := tmux.Display(target, "#{session_name}")
 		win := tmux.Display(target, "#{window_id}")
 		if win != "" {

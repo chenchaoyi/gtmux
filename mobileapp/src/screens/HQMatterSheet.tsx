@@ -18,7 +18,8 @@ import { DocumentError, documentErrorMessage } from '../documents/references';
 import { MarkdownView } from '../ui/MarkdownView';
 import { BRAND, Palette } from '../ui/theme';
 import { MODAL_ORIENTATIONS } from '../ui/modalOrientations';
-import { matterState, liveParticipant } from './hqWorkspaceModel';
+import { HQHumanInputCard } from './HQHumanInputCard';
+import { matterStatus, liveParticipant } from './hqWorkspaceModel';
 import { HQWorkspaceStyles as s } from './hqWorkspaceStyles';
 
 export function HQMatterSheet({
@@ -40,6 +41,10 @@ export function HQMatterSheet({
     client: typeof client;
     detail: HQMatterDetail;
   } | null>(null);
+  const [expandedReports, setExpandedReports] = useState<Set<string>>(
+    new Set(),
+  );
+  const [showAssessment, setShowAssessment] = useState(false);
   const [failed, setFailed] = useState(false),
     [before, setBefore] = useState(0);
   const retry = useRef<() => void>(() => {});
@@ -172,9 +177,29 @@ export function HQMatterSheet({
                 {detail.matter.title}
               </Text>
               <Text style={[s.meta, { color: pal.fg2 }]}>
-                {matterState(detail.matter.state, zh)}
+                {matterStatus(detail.matter, zh)}
               </Text>
+              <HQHumanInputCard
+                matter={detail.matter}
+                pal={pal}
+                zh={zh}
+                onReply={text => onTalk(text)}
+              />
               {!!detail.matter.assessment && (
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: showAssessment }}
+                  onPress={() => setShowAssessment(!showAssessment)}
+                  style={s.more}
+                >
+                  <Text style={{ color: pal.fg2 }}>
+                    {showAssessment
+                      ? t('Hide assessment', '收起最近结论')
+                      : t('Latest assessment', '最近结论')}
+                  </Text>
+                </TouchableOpacity>
+              )}
+              {!!detail.matter.assessment && showAssessment && (
                 <View style={[s.assessment, { backgroundColor: pal.surface }]}>
                   <MarkdownView
                     source={detail.matter.assessment}
@@ -246,7 +271,14 @@ export function HQMatterSheet({
                 </Text>
                 <TouchableOpacity
                   accessibilityRole="button"
-                  onPress={() => onTalk(detail.matter.title)}
+                  onPress={() =>
+                    onTalk(
+                      t(
+                        `About “${detail.matter.title}”: `,
+                        `关于「${detail.matter.title}」：`,
+                      ),
+                    )
+                  }
                   style={s.more}
                 >
                   <Text style={[s.buttonText, { color: pal.fg2 }]}>
@@ -285,7 +317,13 @@ export function HQMatterSheet({
                       : ''}
                   </Text>
                   <MarkdownView
-                    source={message.body}
+                    source={
+                      message.speaker === 'hq' &&
+                      message.body.length > 360 &&
+                      !expandedReports.has(message.id)
+                        ? message.body.slice(0, 360) + '…'
+                        : message.body
+                    }
                     openFile={ref =>
                       openFile(
                         ref,
@@ -298,6 +336,30 @@ export function HQMatterSheet({
                     clampProse
                     calmEmphasis
                   />
+                  {message.speaker === 'hq' && message.body.length > 360 && (
+                    <TouchableOpacity
+                      accessibilityRole="button"
+                      accessibilityState={{
+                        expanded: expandedReports.has(message.id),
+                      }}
+                      onPress={() =>
+                        setExpandedReports(prev => {
+                          const next = new Set(prev);
+                          next.has(message.id)
+                            ? next.delete(message.id)
+                            : next.add(message.id);
+                          return next;
+                        })
+                      }
+                      style={s.more}
+                    >
+                      <Text style={{ color: pal.fg2 }}>
+                        {expandedReports.has(message.id)
+                          ? t('Collapse record', '收起记录')
+                          : t('Read full record', '展开完整记录')}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                   {!!message.reply?.response && (
                     <View style={s.reply}>
                       <Text style={[s.meta, { color: pal.fg2 }]}>HQ</Text>

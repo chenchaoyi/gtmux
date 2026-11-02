@@ -48,6 +48,10 @@ func (s *Store) Start(id, title, messageID, body string, at int64) (Matter, erro
 // Submit persists before any input is attempted. Exact ID/content reuse converges,
 // including after a caller lost the first response; it never duplicates a command.
 func (s *Store) Submit(id, matter, body string, at int64) (Message, error) {
+	return s.SubmitReply(id, matter, body, "", at)
+}
+
+func (s *Store) SubmitReply(id, matter, body, replyTo string, at int64) (Message, error) {
 	var out Message
 	if !validID(id) {
 		return out, errors.New("invalid message ID")
@@ -58,7 +62,7 @@ func (s *Store) Submit(id, matter, body string, at int64) (Message, error) {
 	}
 	err = s.transaction(func(d *Database) error {
 		if old, exists := d.Messages[id]; exists {
-			if old.Speaker != "user" || old.MatterID != matter || old.Body != body {
+			if old.Speaker != "user" || old.MatterID != matter || old.Body != body || old.ReplyTo != replyTo {
 				return ErrConflict
 			}
 			out = old
@@ -69,8 +73,21 @@ func (s *Store) Submit(id, matter, body string, at int64) (Message, error) {
 				return err
 			}
 		}
+		if replyTo != "" {
+			m, err := getMatter(d, matter, 0)
+			if err != nil {
+				return err
+			}
+			if m.UserInput == nil || m.UserInput.ID != replyTo || m.UserInput.AnswerID != "" || m.State != "needs-input" {
+				return ErrConflict
+			}
+			q := *m.UserInput
+			q.AnswerID = id
+			m.UserInput = &q
+			saveMatter(d, m, at)
+		}
 		changed(d, at, "instruction", matter, id, "")
-		out = Message{ID: id, MatterID: matter, Speaker: "user", Kind: "instruction", Body: body, At: at, Seq: d.Revision, Delivery: "pending"}
+		out = Message{ID: id, MatterID: matter, Speaker: "user", Kind: "instruction", Body: body, At: at, Seq: d.Revision, Delivery: "pending", ReplyTo: replyTo}
 		d.Messages[id] = out
 		return nil
 	})
@@ -124,6 +141,9 @@ func (s *Store) Publish(id, matter, replyTo, kind, body, state string, at int64)
 			m.Assessment = body
 			if state != "" {
 				m.State = state
+				if state != "needs-input" {
+					m.UserInput = nil
+				}
 			} // Never infer completed from kind=result or a turn ending.
 			saveMatter(d, m, at)
 		}
@@ -143,6 +163,14 @@ func (s *Store) Cancel(id string, at int64) error {
 		}
 		if m.Delivery != "pending" {
 			return errors.New("only an unattempted pending instruction can be cancelled")
+		}
+		if m.ReplyTo != "" {
+			if goal, ok := d.Matters[CanonicalMatter(*d, m.MatterID)]; ok && goal.UserInput != nil && goal.UserInput.ID == m.ReplyTo && goal.UserInput.AnswerID == m.ID {
+				q := *goal.UserInput
+				q.AnswerID = ""
+				goal.UserInput = &q
+				saveMatter(d, goal, at)
+			}
 		}
 		m.Delivery, m.Reason = "cancelled", ""
 		changed(d, at, "cancel", m.MatterID, id, "")

@@ -256,3 +256,22 @@ Removal, individual move, split and merge SHALL require confirmation naming the 
 - **WHEN** a user selects a saved-only conversation and the metadata save fails
 - **THEN** the chosen identity and valid bounded reference draft remain available with the error
 - **AND** no instruction is sent to the agent or HQ
+
+### Requirement: Human requests are explicit and distinct from operational reports
+HQ SHALL publish a bounded request containing one concrete prompt, its reason, scope and impact, and optional short choices. Only the verified HQ caller SHALL publish or withdraw these requests. New clients SHALL separate unanswered requests from unstructured historical records and saved replies awaiting HQ follow-up. Routine engineering work SHALL NOT be presented as a user decision.
+
+#### Scenario: Reports arrive after a request
+- **WHEN** HQ publishes a progress report while a question is unanswered
+- **THEN** the current question remains visible above the expandable history
+- **AND** choosing an option prepares a draft without executing any action
+
+#### Scenario: A reply is saved or cancelled
+- **WHEN** the user explicitly sends a reply linked to the current request
+- **THEN** its durable receipt is linked to that request without claiming delivery or execution
+- **AND** cancelling an unsent reply makes the question available again
+
+#### Scenario: Historical clarification and verified resolution
+- **WHEN** an old needs-input record has no specific current question
+- **THEN** clients show that HQ must clarify it instead of asking the user to interpret operational logs
+- **WHEN** a verified answer or superseding fact resolves a request
+- **THEN** HQ records the explanation and withdraws that request without completing the continuing goal or deleting history

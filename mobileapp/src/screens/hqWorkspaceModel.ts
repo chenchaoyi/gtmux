@@ -5,6 +5,7 @@ import type {
   HQAssociation,
   MatterState,
   HQWorkspace,
+  HQMatter,
 } from '../api/hqWorkspace';
 import type { HeaderModel } from './hqHeaderModel';
 
@@ -14,7 +15,10 @@ export function workspaceCounts(
 ): HQMatterCounts {
   const matters = data.matters.filter(m => !m.merged_into);
   return {
-    needsInput: matters.filter(m => m.state === 'needs-input').length,
+    needsInput: matters.filter(
+      m =>
+        m.state === 'needs-input' && !!m.user_input && !m.user_input.answer_id,
+    ).length,
     following: matters.filter(m => m.state === 'open').length,
   };
 }
@@ -57,6 +61,17 @@ export function consoleHeaderModel(
   };
 }
 
+export function matterStatus(matter: HQMatter, zh: boolean): string {
+  if (matter.state !== 'needs-input') return matterState(matter.state, zh);
+  if (!matter.user_input) return zh ? '待 HQ 明确问题' : 'HQ needs to clarify';
+  return matter.user_input.answer_id
+    ? zh
+      ? '答复已保存 · HQ 跟进中'
+      : 'Reply saved · HQ following up'
+    : zh
+    ? '请你答复'
+    : 'Your reply needed';
+}
 export function matterState(state: MatterState, zh: boolean): string {
   const names = {
     open: ['Following', '正在跟进'],

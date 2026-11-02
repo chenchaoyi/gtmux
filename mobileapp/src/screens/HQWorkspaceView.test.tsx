@@ -119,7 +119,7 @@ test('overview opens a matter, distinguishes delivery from completion and only p
   expect(d.matter.state).toBe('needs-input');
   await press('Ask HQ');
   expect(consoleRender.mock.calls.at(-1)?.[0].prefill).toContain(
-    'Approve the verification run',
+    'Choose verification scope',
   );
   expect(mockSelect).not.toHaveBeenCalled();
 });
@@ -183,7 +183,7 @@ test('wide overviews flow current matters together while expansion remains rever
   expect(text()).toContain('Extra matter 4');
   await press('Show less');
   expect(text()).not.toContain('Extra matter 4');
-  expect(text()).toContain('Approve the verification run');
+  expect(text()).toContain('Choose verification scope');
   expect(text()).toContain('API refactor');
 });
 test('slow summaries are independent, serialized and cannot leak across a client switch', async () => {
@@ -412,7 +412,7 @@ test('a failed older page can return to latest without reopening the matter', as
   expect(text()).toContain('Couldn’t refresh this matter.');
   await press('Back to latest updates');
   expect(text()).toContain(
-    'The fix is ready. Run the full suite before merging?',
+    'Choose a targeted check or the full demo verification.',
   );
 });
 

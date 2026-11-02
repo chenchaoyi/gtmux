@@ -86,13 +86,10 @@ type Props = {
   onLoadEarlier?: () => void;
 };
 type Selection = { event: TraceEvent; turn: TranscriptTurn };
-const kindLabels = {
-  all: ['All records', '全部记录'],
-  user: ['Messages', '用户消息'],
-  assistant: ['Agent replies', 'Agent 回复'],
-  tool: ['Tool calls', '工具调用'],
-  context: ['Context', '上下文'],
-};
+import {
+  traceKindLabels as kindLabels,
+  traceDetailLabels,
+} from './presentation';
 const NO_TURNS: TranscriptTurn[] = [];
 export function TraceModal(props: Props) {
   const [retained, setRetained] = useState(props.visible);
@@ -1102,11 +1099,7 @@ export function TraceReader({
                     <ChromeText
                       style={{ color: tab === detailTab ? BRAND : pal.fg2 }}
                     >
-                      {
-                        (zh
-                          ? ['概述', '预览', '原始内容', '来源']
-                          : ['Overview', 'Preview', 'Raw content', 'Source'])[i]
-                      }
+                      {Object.values(traceDetailLabels)[i][zh ? 1 : 0]}
                     </ChromeText>
                   </TouchableOpacity>
                 ),

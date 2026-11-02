@@ -53,6 +53,9 @@ func (s *Store) Update(id, title, state, assessment string, revision uint64, at 
 		}
 		if state != "" {
 			m.State = state
+			if state != "needs-input" {
+				m.UserInput = nil
+			}
 		}
 		if assessment != "" {
 			m.Assessment = assessment
@@ -199,6 +202,14 @@ func (s *Store) Merge(from, into string, revision uint64, at int64) error {
 			target.Participants = append(target.Participants, a)
 		}
 		m.MergedInto, m.State = into, "closed"
+		if m.UserInput != nil {
+			if target.UserInput != nil {
+				return errors.New("resolve one human request before merging these matters")
+			}
+			target.UserInput = m.UserInput
+			target.State = "needs-input"
+			m.UserInput = nil
+		}
 		// Messages retain original matter identity; readers follow the explicit merge edge.
 		changed(d, at, "merge", from, into, "")
 		saveMatter(d, m, at)

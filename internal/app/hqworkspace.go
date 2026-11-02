@@ -18,6 +18,7 @@ import (
 // workspaceAction is shared by the local CLI and its native consumer. Message
 // bodies travel over stdin, never shell interpolation or process arguments.
 type workspaceAction struct {
+	UserInput            *hqworkspace.UserInput  `json:"user_input,omitempty"`
 	Op                   string                  `json:"op"`
 	ID                   string                  `json:"id"`
 	Matter               string                  `json:"matter,omitempty"`
@@ -47,11 +48,14 @@ gtmux hq workspace act --stdin --json
 gtmux hq workspace drain --json
 
 The workspace keeps explicit goals, conversation membership and instruction receipts.
-act reads ONE JSON object from stdin. Operations: create, register, send, report, update,
+act reads ONE JSON object from stdin. Operations: create, register, send, report, request-input, clear-input, update,
 associate, unlink, move, interval, merge, split, cancel, retry, focus.
 create needs id/title/body (one new goal and first instruction); send needs id/body
 and optional matter; report needs id/kind/body and optional matter/reply_to/state.
 register needs id/title/body/state/origin {kind: board|task|conversation, ref: citation}.
+request-input needs matter/revision/user_input {id,kind:decision|manual|information,prompt,why,impact,choices?}.
+clear-input needs matter/revision/id/reply_to (question ID)/body (verified resolution).
+These two operations are HQ-only; they never send a user instruction or execute a choice.
 It enrolls verified existing work without a user instruction or delivery. register and
 report are accepted only from the current HQ pane. Association uses an exact agent,
 home/session identity and from/until timestamps, never a title or recycled pane.
@@ -190,12 +194,25 @@ func applyWorkspaceAction(s *hqworkspace.Store, a workspaceAction, now int64) (a
 		}
 		result, err = s.Register(a.ID, a.Title, a.Body, a.State, a.Origin, now)
 	case "send":
-		result, err = s.Submit(a.ID, a.Matter, a.Body, now)
+		result, err = s.SubmitReply(a.ID, a.Matter, a.Body, a.ReplyTo, now)
 	case "report":
 		if !workspaceIsHQCaller() {
 			return nil, errors.New("only the verified current HQ pane may publish an HQ report")
 		}
 		result, err = s.Publish(a.ID, a.Matter, a.ReplyTo, a.Kind, a.Body, a.State, now)
+	case "request-input":
+		if !workspaceIsHQCaller() {
+			return nil, errors.New("only the verified current HQ pane may request human input")
+		}
+		if a.UserInput == nil {
+			return nil, errors.New("user_input is required")
+		}
+		err = s.RequestInput(a.Matter, *a.UserInput, a.Revision, now)
+	case "clear-input":
+		if !workspaceIsHQCaller() {
+			return nil, errors.New("only the verified current HQ pane may withdraw a human request")
+		}
+		err = s.ClearInput(a.Matter, a.ReplyTo, a.ID, a.Body, a.Revision, now)
 	case "update":
 		err = s.Update(a.Matter, a.Title, a.State, a.Body, a.Revision, now)
 	case "associate":

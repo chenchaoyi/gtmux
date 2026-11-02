@@ -15,7 +15,15 @@ struct HQOverviewMatterRow: View {
                     Spacer(minLength: 4)
                     Image(systemName: "chevron.right").font(HQTypography.caption).foregroundStyle(.tertiary)
                 }
-                if let preview = item.preview {
+                if matter.state == "needs-input", let question = matter.userInput {
+                    Text(question.prompt).font(HQTypography.rowTitle).foregroundStyle(.primary)
+                        .lineLimit(3).multilineTextAlignment(.leading)
+                    Text(question.answerId == nil ? question.why : l10n.tr("Your reply is saved. HQ will confirm the next step.", "答复已保存，接下来由 HQ 确认并跟进。"))
+                        .font(HQTypography.body).foregroundStyle(.secondary).lineLimit(2)
+                } else if matter.state == "needs-input" {
+                    Text(l10n.tr("HQ has not specified a current question. No action to take from this record yet.", "HQ 尚未写清当前问题，这条记录暂时无法操作。"))
+                        .font(HQTypography.body).foregroundStyle(.secondary).lineLimit(3)
+                } else if let preview = item.preview {
                     Text(HQOverviewModel.snippet(preview.body))
                         .font(HQTypography.body).foregroundStyle(.secondary).lineLimit(3)
                         .multilineTextAlignment(.leading)

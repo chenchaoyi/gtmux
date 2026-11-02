@@ -26,6 +26,7 @@ type Database struct {
 }
 
 type Matter struct {
+	UserInput    *UserInput    `json:"user_input,omitempty"`
 	ID           string        `json:"id"`
 	Title        string        `json:"title"`
 	State        string        `json:"state"` // open | needs-input | completed | closed
@@ -70,6 +71,7 @@ type Association struct {
 }
 
 type Message struct {
+	UserInput       *UserInput   `json:"user_input,omitempty"`
 	RetryGeneration uint64       `json:"retry_generation,omitempty"`
 	Subject         string       `json:"subject,omitempty"`
 	MatterState     string       `json:"matter_state,omitempty"`

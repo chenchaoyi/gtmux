@@ -19,6 +19,9 @@ private func overviewFixture(zh: Bool = false) throws -> HQWorkspaceSnapshot {
         matters.append(["id": "goal-\(i)", "title": titles[i], "state": i < 4 ? "needs-input" : "open",
                         "created_at": now - 3600, "updated_at": now - Int64(i * 60), "revision": i + 1, "participants": []])
     }
+    for i in 0..<4 {
+        matters[i]["user_input"] = ["id": "question-\(i)", "kind": "decision", "prompt": titles[i], "why": reports[i].isEmpty ? "Two valid alternatives remain." : reports[i], "impact": "Only the selected synthetic scope changes.", "choices": ["Keep current", "Change"], "at": now]
+    }
     for i in 4...5 {
         let identity: [String: Any] = ["agent": i == 4 ? "codex" : "claude", "home_id": "fixture-home",
             "session_id": "session-\(i)", "name": zh ? "执行会话 \(i)" : "Worker \(i)", "pane": "%\(i)"]

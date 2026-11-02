@@ -846,6 +846,14 @@ serve loop resumes safe holds; an uncertain attempt is never retried automatical
 Full HQ backup includes workspace records; restore requires review before replaying
 old pending/queued instructions. Selective knowledge migration excludes them.
 
+Human requests use `op: request-input` (HQ only) with `matter`, `revision`, and
+`user_input: {id, kind, prompt, why, impact, choices?}`. Keep one concrete question
+separate from technical progress. `op: clear-input` (HQ only) uses `id`, `matter`,
+`revision`, `reply_to` (question ID), and `body` (verified resolution); it withdraws
+the question without completing its goal. A user `send` may include `reply_to`
+for the current question. A choice only prepares a draft; saving a reply never
+means the requested work ran. See [workspace reading](design/workspace-reading.md).
+
 ## `gtmux digest` + `gtmux hq`: HQ, the supervisor session
 
 `gtmux digest` lists agent goals, recent replies, wait reasons and usage in a table:

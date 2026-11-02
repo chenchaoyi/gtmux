@@ -30,7 +30,12 @@ export function HQOverview({
     {
       key: 'needs-input',
       title: t('Needs input', '待你处理'),
-      items: data.overview.needs_input,
+      items:
+        data.overview.human_input ??
+        data.overview.needs_input.filter(i => {
+          const m = matters.get(i.matter_id);
+          return !!m?.user_input && !m.user_input.answer_id;
+        }),
       empty: t('No decisions waiting for you.', '暂时没有需要你决定的事。'),
     },
     {
@@ -39,14 +44,29 @@ export function HQOverview({
       items: data.overview.following,
       empty: t('No ongoing matters.', '暂无正在跟进的事项。'),
     },
+    {
+      key: 'awaiting-hq',
+      title: t('HQ follow-up', '由 HQ 跟进'),
+      items: data.overview.awaiting_hq ?? [],
+      empty: t('No follow-up waiting.', '暂无待核对事项。'),
+    },
   ].map(group => {
-    const all = [...matters.values()].filter(m => m.state === group.key);
+    const all = [...matters.values()].filter(m =>
+      group.key === 'awaiting-hq'
+        ? m.state === 'needs-input' &&
+          (!m.user_input || !!m.user_input.answer_id)
+        : group.key === 'needs-input'
+        ? m.state === 'needs-input' && !!m.user_input && !m.user_input.answer_id
+        : m.state === group.key,
+    );
     const items: HQOverviewItem[] = expanded.has(group.key)
       ? all.map(
           m =>
             group.items.find(i => i.matter_id === m.id) ?? { matter_id: m.id },
         )
-      : group.items;
+      : group.items.length
+      ? group.items
+      : all.slice(0, 3).map(m => ({ matter_id: m.id }));
     return { ...group, all, items, previewCount: group.items.length };
   });
   const toggle = (key: string) =>

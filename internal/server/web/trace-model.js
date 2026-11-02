@@ -1,6 +1,6 @@
-// Generated from mobileapp/src/trace/model.ts; SHA256 b63a89c11fff8e8a016916a8dad990bd5f7d8964442b1fb910c78f4c638df3a3
-// Body SHA256 378d4d4c0bcaa033b145830e282ea7fb98e20b7afe8dee425e8847985ad19cfd
-(function(root){var exports={};
+// Generated from shared App trace analysis and presentation; SHA256 6325184a9456e374b3a4a747903ac39d306df777d0ad2e43ef90f93cb140a250
+// Body SHA256 8b1e80a19e1fa46d2209165ff6ac0fe501c7f25def7c5e4e7572718dc56dc1d4
+(function(root){var modules={"model":function(exports,require){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.agentName = agentName;
@@ -412,4 +412,188 @@ function prependHistory(page, current) {
     return page.concat(current);
 }
 
-if(typeof module==="object"&&module.exports)module.exports=exports;else root.GtmuxTrace=exports;})(typeof window!=="undefined"?window:globalThis);
+},
+"activity":function(exports,require){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.activityOperation = activityOperation;
+exports.activityLabel = activityLabel;
+exports.activitySummary = activitySummary;
+exports.activityPreview = activityPreview;
+const names = {
+    read: 'read', readfile: 'read', read_file: 'read', read_text_file: 'read',
+    ls: 'list', list: 'list', list_files: 'list', list_directory: 'list', glob: 'list',
+    grep: 'search', rg: 'search', search: 'search', search_query: 'search', find: 'search', find_files: 'search',
+    bash: 'command', shell: 'command', exec: 'command', exec_command: 'command', local_shell: 'command', run_command: 'command',
+    edit: 'edit', write: 'edit', apply_patch: 'edit', patch: 'edit', write_file: 'edit', edit_file: 'edit',
+    web_search: 'web', webfetch: 'web', web_fetch: 'web', browse: 'web', open_url: 'web', fetch: 'web',
+    js: 'code', python: 'code', wait: 'wait', wait_for: 'wait', waitfor: 'wait', sleep: 'wait', wait_agent: 'wait', taskoutput: 'wait',
+    agent: 'agent', task: 'agent', spawn_agent: 'agent', delegate: 'agent', followup_task: 'agent', resume_agent: 'agent',
+};
+const labels = {
+    read: ['Read file', '读取文件'], list: ['List files', '浏览目录'], search: ['Search', '搜索'],
+    command: ['Run command', '运行命令'], edit: ['Edit file', '编辑文件'], web: ['Browse web', '访问网页'],
+    code: ['Run code', '运行代码'], wait: ['Wait', '等待'], agent: ['Delegate', '委派任务'], tool: ['Tool call', '工具调用'],
+};
+function activityOperation(step) {
+    if (step.operation && Object.prototype.hasOwnProperty.call(labels, step.operation)) {
+        return step.operation;
+    }
+    const name = (step.title || '').split(/__|\./).pop()?.toLowerCase() || '';
+    return names[name] || 'tool';
+}
+function activityLabel(operation, lang) {
+    return labels[operation][lang === 'zh' ? 1 : 0];
+}
+function activitySummary(steps, lang) {
+    const operations = [...new Set(steps.map(activityOperation))];
+    if (operations.length === 1) {
+        return activityLabel(operations[0], lang);
+    }
+    return lang === 'zh' ? '执行过程' : 'Activity';
+}
+function compactPreview(value) {
+    const text = value.replace(/\s+/g, ' ').trim();
+    // Bound the spoken label too; the inspector retains the complete recorded input.
+    return text.length <= 160 ? text : text.slice(0, 159).replace(/[\uD800-\uDBFF]$/, '') + '…';
+}
+function activityPreview(step, lang = 'en') {
+    const operation = activityOperation(step);
+    const structured = step.input_kind === 'parameters' ||
+        step.input_kind === 'arguments' && (operation === 'agent' || operation === 'wait');
+    if (structured && step.input) {
+        if (step.detail && !step.detail.trimStart().startsWith('{') && step.detail !== step.title)
+            return compactPreview(step.detail);
+        let args = {};
+        // Current cores bound each input to 8 KiB. Older/foreign inputs need no large parse.
+        if (step.input.length <= 8192) {
+            try {
+                const parsed = JSON.parse(step.input);
+                if (parsed && typeof parsed === 'object' && !Array.isArray(parsed))
+                    args = parsed;
+            }
+            catch { /* A partial record stays available in the inspector. */ }
+        }
+        if (operation === 'agent') {
+            for (const key of ['description', 'title', 'message', 'prompt', 'task_name']) {
+                const value = args[key];
+                if (typeof value === 'string' && value.trim())
+                    return compactPreview(value);
+            }
+        }
+        else if (operation === 'wait') {
+            for (const [key, en, zh] of [
+                ['duration_ms', 'Requested', '设定'], ['yield_time_ms', 'Up to', '最多'], ['timeout_ms', 'Timeout setting', '超时设置'],
+            ]) {
+                const value = args[key];
+                if (typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= Number.MAX_SAFE_INTEGER) {
+                    return lang === 'zh' ? `${zh} ${value / 1000} 秒` : `${en} ${value / 1000}s`;
+                }
+            }
+        }
+        return lang === 'zh' ? '已记录参数' : 'Recorded parameters';
+    }
+    return compactPreview(step.detail || step.input || step.title || 'tool');
+}
+
+},
+"timeline":function(exports,require){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.timelineRows = void 0;
+exports.tracePreview = tracePreview;
+var model_1 = require("./model");
+Object.defineProperty(exports, "timelineRows", { enumerable: true, get: function () { return model_1.timelineRows; } });
+function tracePreview(value, lang) {
+    let images = 0;
+    const clean = value.replace(/<image\s+name=[^>]*\bpath="[^"]+"[^>]*>/g, () => {
+        images++;
+        return '';
+    });
+    const text = (images ? clean.replace(/<\/image>/g, '') : clean)
+        .replace(/\s+/g, ' ')
+        .trim();
+    return (text || (images ? (lang === 'zh' ? '图片消息' : 'Image message') : '')).slice(0, 240);
+}
+
+},
+"presentation":function(exports,require){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.traceRecordPaths = exports.traceDetailLabels = exports.traceKindLabels = void 0;
+exports.recordedStep = recordedStep;
+exports.traceEventLabel = traceEventLabel;
+exports.traceEventPreview = traceEventPreview;
+exports.traceEventIcon = traceEventIcon;
+exports.conversationOutline = conversationOutline;
+const model_1 = require("./model");
+const activity_1 = require("../ui/activity");
+const timeline_1 = require("./timeline");
+exports.traceKindLabels = {
+    all: ['All records', '全部记录'],
+    user: ['Messages', '用户消息'],
+    assistant: ['Agent replies', 'Agent 回复'],
+    tool: ['Tool calls', '工具调用'],
+    context: ['Context', '上下文'],
+};
+exports.traceDetailLabels = {
+    overview: ['Overview', '概述'],
+    preview: ['Preview', '预览'],
+    raw: ['Raw content', '原始内容'],
+    origin: ['Source', '来源'],
+};
+function recordedStep(event) {
+    const step = event.step;
+    return {
+        kind: 'tool',
+        title: event.title,
+        input: step.input,
+        detail: step.summary,
+        operation: step.operation,
+        input_kind: step.inputKind,
+    };
+}
+function traceEventLabel(event, lang) {
+    if (event.kind === 'context')
+        return (0, model_1.contextLabel)(event, lang);
+    return event.kind === 'tool'
+        ? (0, activity_1.activityLabel)((0, activity_1.activityOperation)(recordedStep(event)), lang)
+        : event.kind === 'user'
+            ? event.from?.label || (lang === 'zh' ? '请求' : 'Request')
+            : lang === 'zh'
+                ? '进展记录'
+                : 'Progress';
+}
+function traceEventPreview(event, lang) {
+    return event.kind === 'tool'
+        ? (0, activity_1.activityPreview)(recordedStep(event), lang)
+        : (0, timeline_1.tracePreview)(event.body, lang);
+}
+function traceEventIcon(event) {
+    return event.kind === 'tool'
+        ? (0, activity_1.activityOperation)(recordedStep(event))
+        : event.kind;
+}
+// Same neutral glyphs for non-tool records in both renderers; sender identities
+// use each client's existing shared avatar component when one was recorded.
+exports.traceRecordPaths = {
+    context: 'M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18 M12 11v6 M12 7v.1',
+    user: 'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0 M4 21v-2a8 8 0 0 1 16 0v2',
+    assistant: 'm12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3Z',
+};
+// Loaded-window navigation reuses trace identity, original ordinals and summaries.
+function conversationOutline(turns, lang = 'en') {
+    return (0, model_1.groupTurns)((0, model_1.build)(turns).events).map(group => ({
+        key: group.key,
+        sourceIndex: group.events[0].sourceIndex,
+        turn: group.turn,
+        agent: group.agent,
+        session: group.session,
+        prompt: (0, timeline_1.tracePreview)(group.prompt?.body || group.events[0].body, lang),
+        summary: (0, timeline_1.tracePreview)([...group.events].reverse().find(event => event.kind === 'assistant')
+            ?.body || '', lang),
+    }));
+}
+
+}},cache={};function load(key){if(cache[key])return cache[key];var exports={};cache[key]=exports;modules[key](exports,function(name){var id={"./model":"model","../ui/activity":"activity","./timeline":"timeline"}[name];if(!id)throw new Error("Unknown shared trace module");return load(id);});return exports;}var api=Object.assign({},load("model"),load("presentation"));
+if(typeof module==="object"&&module.exports)module.exports=api;else root.GtmuxTrace=api;})(typeof window!=="undefined"?window:globalThis);

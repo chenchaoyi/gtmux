@@ -1509,3 +1509,15 @@ Both native pairing entry points SHALL use shared components for the owner acces
 #### Scenario: Pair from either native entry
 - **WHEN** the user opens the standalone pairing window or the pairing sheet
 - **THEN** the same pairing code can be used through the app, browser or terminal, with the same explanatory and renewal controls
+
+### Requirement: A completed screenshot export ends its editing task
+A screenshot editor SHALL close after the marked image is successfully copied or saved. Cancelled or failed exports SHALL preserve editing. The user's saved file SHALL survive temporary capture cleanup, including when its path matches a temporary capture name. A late save callback SHALL NOT close a newer editor.
+
+#### Scenario: Copy or save succeeds
+- **WHEN** the image reaches the clipboard or is successfully written to the chosen path
+- **THEN** the editor closes without a discard confirmation
+- **AND** the exported image remains available
+
+#### Scenario: Export fails or is cancelled
+- **WHEN** copying fails, writing fails, or the save sheet is cancelled
+- **THEN** the image and annotations remain available in the editor

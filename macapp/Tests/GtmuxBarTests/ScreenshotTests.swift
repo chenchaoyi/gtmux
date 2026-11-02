@@ -473,136 +473,54 @@ final class ScreenshotTests: XCTestCase {
         _ = w.performKeyEquivalent(with: key("c", [.command], 8))
         XCTAssertNotEqual(c.model?.status, .copied, "⌘C copied the image over the user's text copy")
         XCTAssertNil(pb.data(forType: .png))
-        // ⇧⌘C copies the image.
-        XCTAssertTrue(w.performKeyEquivalent(with: key("C", [.command, .shift], 8)))
-        XCTAssertEqual(c.model?.status, .copied)
-        XCTAssertNotNil(pb.data(forType: .png))
-        // ⌘S saves.
+        // ⌘S reaches the save action; a cancelled sheet leaves editing available.
         XCTAssertTrue(w.performKeyEquivalent(with: key("s", [.command], 1)))
         XCTAssertEqual(saves, 1)
+        XCTAssertTrue(c.isOpen)
+        // ⇧⌘C copies the image and finishes this editing task.
+        XCTAssertTrue(w.performKeyEquivalent(with: key("C", [.command, .shift], 8)))
+        XCTAssertFalse(c.isOpen)
+        XCTAssertNotNil(pb.data(forType: .png))
     }
 
-    /// A copy is confirmed beside Copy, not only in the status line at the bottom: the
-    /// button and ⇧⌘C both show it, it goes away by itself, a second copy restarts its
-    /// time, a failed copy never shows it, and closing the editor ends it.
-    func testACopyIsConfirmedBesideTheButton() throws {
+    func testCopyFailurePreservesTheEditorAndSuccessfulCopyClosesIt() throws {
         let c = ScreenshotEditorController()
-        let pb = NSPasteboard(name: NSPasteboard.Name("gtmux-test-\(UUID().uuidString)"))
-        c.pasteboard = pb
-        // The test runs the hide itself. On a real clock a short copiedFor raced the first
-        // assertion: the first click of a process turns the run loop AFTER its action (about
-        // 0.1s locally, longer on a loaded runner), and a 0.3s hide fired inside it (CI run
-        // 37343213194; reproduced 3 of 3 with copiedFor 0 on a process's first click).
-        var hides: [(delay: TimeInterval, task: DispatchWorkItem)] = []
-        c.scheduleHide = { hides.append(($0, $1)) }
-        // Runs a scheduled hide as the main queue would: a cancelled task does nothing.
-        func fire(_ i: Int) { if !hides[i].task.isCancelled { hides[i].task.perform() } }
-        defer { pb.releaseGlobally() }
-        let doc = ScreenshotDocument(image: blankImage(width: 120, height: 80), pointSize: CGSize(width: 60, height: 40))
-        c.show(doc: doc, captureFile: URL(fileURLWithPath: "/tmp/gtmux-test-4.png"), target: nil, store: AgentStore(), l10n: L10n.shared)
-        let w = try XCTUnwrap(c.window)
-
-        // It sits just before Copy, and holds its width whether shown or not.
-        let ids = w.toolbar?.items.map(\.itemIdentifier) ?? []
-        let at = try XCTUnwrap(ids.firstIndex(of: ScreenshotEditorController.copiedItem))
-        XCTAssertEqual(ids[at + 1], ScreenshotEditorController.copyItem)
-        // Read from the tool bar each time, as the controller does: the bar may rebuild it.
-        var mark: CopiedConfirmation { c.copied! }
-        XCTAssertNotNil(c.copied)
-        let width = mark.frame.width
-        XCTAssertGreaterThan(width, 0)
-        XCTAssertFalse(mark.isShown)
-
-        // The tool bar may build an item's view again without showing it; the mark that
-        // lights is still the one in the bar (CI run 37258635762 lit a stray one).
-        let stray = c.toolbar(try XCTUnwrap(w.toolbar), itemForItemIdentifier: ScreenshotEditorController.copiedItem,
-                              willBeInsertedIntoToolbar: false)?.view as? CopiedConfirmation
-        XCTAssertNotNil(stray)
-
-        // The button.
-        let button = try XCTUnwrap(w.toolbar?.items.first { $0.itemIdentifier == ScreenshotEditorController.copyItem }?.view as? NSButton)
-        button.performClick(nil)
-        XCTAssertTrue(mark.isShown)
-        XCTAssertFalse(stray?.isShown ?? true, "a view the bar does not show is not the mark")
-        XCTAssertEqual(mark.frame.width, width, "showing the mark must not move the bar")
-        XCTAssertEqual(c.model?.status, .copied, "the status line still says it too")
-        XCTAssertEqual(hides.count, 1)
-        XCTAssertEqual(hides[0].delay, c.copiedFor, "it stays for copiedFor")
-        fire(0)
-        XCTAssertFalse(mark.isShown, "it goes away by itself")
-
-        // ⇧⌘C, through the window's own key dispatch.
-        let key = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [.command, .shift], timestamp: 0,
-                                   windowNumber: w.windowNumber, context: nil, characters: "C",
-                                   charactersIgnoringModifiers: "C", isARepeat: false, keyCode: 8)!
-        XCTAssertTrue(w.performKeyEquivalent(with: key))
-        XCTAssertTrue(mark.isShown)
-        XCTAssertEqual(hides.count, 2)
-
-        // A second copy restarts the time: the first one's end comes, and it is still there.
-        button.performClick(nil)
-        XCTAssertEqual(hides.count, 3)
-        fire(1)
-        XCTAssertTrue(mark.isShown, "the first copy's timer took down the second copy's mark")
-        fire(2)
-        XCTAssertFalse(mark.isShown)
-
-        // A copy that fails never says Copied, and takes away a mark still showing.
-        button.performClick(nil)
-        XCTAssertTrue(mark.isShown)
         c.copyForTesting = { false }
-        button.performClick(nil)
-        XCTAssertFalse(mark.isShown)
-        XCTAssertEqual(hides.count, 4, "a failed copy schedules nothing")
-        fire(3)
-        XCTAssertFalse(mark.isShown)
-
-        // Closing the editor ends it; the timer left behind does nothing.
-        c.copyForTesting = nil
-        button.performClick(nil)
-        w.performClose(nil)
-        XCTAssertNil(c.copied)
-        XCTAssertNil(c.window)
-        XCTAssertEqual(hides.count, 5)
-        fire(4)
-        XCTAssertNil(c.copied)
+        let doc = ScreenshotDocument(image: blankImage(width: 120, height: 80), pointSize: CGSize(width: 60, height: 40))
+        c.show(doc: doc, captureFile: URL(fileURLWithPath: "/tmp/gtmux-synthetic-copy.png"), target: nil, store: AgentStore(), l10n: .shared)
+        c.copyImage()
+        XCTAssertTrue(c.isOpen)
+        c.copyForTesting = { true }
+        c.copyImage()
+        XCTAssertFalse(c.isOpen)
     }
 
-    /// The bar may insert the Copied item again (it did at its first layout on CI, runs
-    /// 37258635762 and 37301766922): the mark Copy lit must be the one the bar shows after.
-    func testTheCopiedMarkSurvivesTheBarInsertingItsItemAgain() throws {
+    func testSaveFailureKeepsTheEditorAndConfirmedSaveKeepsTheChosenFile() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
         let c = ScreenshotEditorController()
-        let pb = NSPasteboard(name: NSPasteboard.Name("gtmux-test-\(UUID().uuidString)"))
-        c.pasteboard = pb
-        c.scheduleHide = { _, _ in } // never: only the rebuild could take it down here
-        defer { pb.releaseGlobally() }
         let doc = ScreenshotDocument(image: blankImage(width: 120, height: 80), pointSize: CGSize(width: 60, height: 40))
-        c.show(doc: doc, captureFile: URL(fileURLWithPath: "/tmp/gtmux-test-6.png"), target: nil, store: AgentStore(), l10n: L10n.shared)
+        let destination = dir.appendingPathComponent("screenshot.png")
+        c.show(doc: doc, captureFile: destination, target: nil, store: AgentStore(), l10n: .shared)
         let w = try XCTUnwrap(c.window)
-        defer { w.performClose(nil) }
-        let bar = try XCTUnwrap(w.toolbar)
-        let button = try XCTUnwrap(bar.items.first { $0.itemIdentifier == ScreenshotEditorController.copyItem }?.view as? NSButton)
-        let at = try XCTUnwrap(bar.items.firstIndex { $0.itemIdentifier == ScreenshotEditorController.copiedItem })
-        // The bar replaces the item: out, and in again through its delegate.
-        func reinsert() {
-            bar.removeItem(at: at)
-            bar.insertItem(withItemIdentifier: ScreenshotEditorController.copiedItem, at: at)
-        }
+        c.finishSaving(to: dir.appendingPathComponent("absent/output.png"), from: w)
+        XCTAssertTrue(c.isOpen)
+        c.finishSaving(to: destination, from: w)
+        XCTAssertFalse(c.isOpen)
+        XCTAssertNotNil(NSBitmapImageRep(data: try Data(contentsOf: destination)))
+    }
 
-        // Rebuilt before the click: the click lights the mark the bar shows.
-        reinsert()
-        XCTAssertFalse(try XCTUnwrap(c.copied).isShown)
-        button.performClick(nil)
-        XCTAssertTrue(try XCTUnwrap(c.copied).isShown)
-
-        // Rebuilt after the click: the bar still shows the lit mark.
-        reinsert()
-        XCTAssertTrue(try XCTUnwrap(c.copied).isShown, "the bar shows a mark Copy never lit")
-
-        // And it still goes when told to: a failed copy takes it down.
-        c.copyForTesting = { false }
-        button.performClick(nil)
-        XCTAssertFalse(try XCTUnwrap(c.copied).isShown)
+    func testLateSaveCallbackCannotCloseANewerEditor() throws {
+        let c = ScreenshotEditorController()
+        let doc = ScreenshotDocument(image: blankImage(width: 120, height: 80), pointSize: CGSize(width: 60, height: 40))
+        c.show(doc: doc, captureFile: URL(fileURLWithPath: "/tmp/gtmux-synthetic-old.png"), target: nil, store: AgentStore(), l10n: .shared)
+        let old = try XCTUnwrap(c.window)
+        c.show(doc: doc, captureFile: URL(fileURLWithPath: "/tmp/gtmux-synthetic-new.png"), target: nil, store: AgentStore(), l10n: .shared)
+        c.finishSaving(to: URL(fileURLWithPath: "/tmp/gtmux-must-not-save.png"), from: old)
+        XCTAssertTrue(c.isOpen)
+        XCTAssertFalse(c.isCurrent(old))
+        c.copyForTesting = { true }; c.copyImage()
     }
 
     /// A note grown to its four lines takes room from below the capture; the capture stays

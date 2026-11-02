@@ -17,7 +17,18 @@ export interface HQAssociation {
   until?: number;
   removed_at?: number;
 }
+export interface HQHumanInput {
+  id: string;
+  kind: 'decision' | 'manual' | 'information';
+  prompt: string;
+  why: string;
+  impact: string;
+  choices?: string[];
+  answer_id?: string;
+  at: number;
+}
 export interface HQMatter {
+  user_input?: HQHumanInput;
   id: string;
   title: string;
   state: MatterState;
@@ -45,6 +56,8 @@ export interface HQWorkspace {
   overview: {
     generated_at: number;
     since: number;
+    human_input?: HQOverviewItem[];
+    awaiting_hq?: HQOverviewItem[];
     needs_input: HQOverviewItem[];
     following: HQOverviewItem[];
     recent: {

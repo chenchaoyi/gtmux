@@ -51,6 +51,7 @@ struct HQWorkspaceConversationView: View {
     @StateObject private var scrollIntent = HQConversationScrollIntent()
     @State private var newContent = false
     @State private var uncertain: HQWorkspaceMessage?
+    @State private var expandedReports: Set<String> = []
     var body: some View {
         let rows = HQConversationRow.rows(store.detail)
         let separators = HQChatTimeline.separators(rows.map { $0.at })
@@ -151,11 +152,23 @@ struct HQWorkspaceConversationView: View {
             Button(l10n.tr("Cancel", "取消"), role: .cancel) { uncertain = nil }
         }
     }
+    private func displayBody(_ message: HQWorkspaceMessage) -> String {
+        guard message.speaker == "hq", message.body.count > 360, !expandedReports.contains(message.id) else { return message.body }
+        return String(message.body.prefix(360)) + "…"
+    }
+
     @ViewBuilder private func messageRow(_ message: HQWorkspaceMessage) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HQChatBubble(
                 l10n: l10n, user: message.speaker == "user",
-                label: message.speaker == "user" ? l10n.tr("You", "你") : "HQ", bodyText: message.body)
+                label: message.speaker == "user" ? l10n.tr("You", "你") : "HQ", bodyText: displayBody(message))
+            if message.speaker == "hq", message.body.count > 360 {
+                Button(l10n.tr(expandedReports.contains(message.id) ? "Collapse record" : "Read full record",
+                               expandedReports.contains(message.id) ? "收起记录" : "展开完整记录")) {
+                    if expandedReports.contains(message.id) { expandedReports.remove(message.id) }
+                    else { expandedReports.insert(message.id) }
+                }.buttonStyle(.borderless).font(HQTypography.caption)
+            }
             if message.speaker == "user" {
                 HStack(spacing: 8) {
                     Spacer(minLength: 40)

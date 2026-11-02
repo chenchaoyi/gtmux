@@ -24,6 +24,8 @@ final class HQWorkspaceStore: ObservableObject {
     private var timer: Timer?
     private var visible = false
     private var generation = 0
+    private var preparedHumanDrafts: [HQWorkspaceSelection: String] = [:]
+    private var replyTargets: [HQWorkspaceSelection: String] = [:]
     private var drafts: [HQWorkspaceSelection: String] = [:]
     private var oldMessages: [HQWorkspaceMessage] = []
     private var earlier = 0
@@ -214,6 +216,20 @@ final class HQWorkspaceStore: ObservableObject {
         }
     }
 
+    // Choosing an option only prepares a draft. Preserve existing user text;
+    // the Send action still performs the normal durable submission.
+    func prepareHumanReply(_ question: HQHumanInput, choice: String) {
+        guard let active = currentMatter?.userInput, active.id == question.id, active.answerId == nil else { return }
+        let response = question.prompt + "\n" + choice
+        guard draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || draft == preparedHumanDrafts[selection] else {
+            error = L10n.shared.tr("Keep or send your current draft before choosing a reply.", "请先处理当前草稿，再选择答复。")
+            return
+        }
+        draft = response
+        preparedHumanDrafts[selection] = response
+        replyTargets[selection] = question.id
+    }
+
     func send() {
         guard canSend else { return }
         let text = draft
@@ -230,13 +246,15 @@ final class HQWorkspaceStore: ObservableObject {
                 action = HQWorkspaceAction(op: "create", id: id, title: String(first.prefix(60)), body: text)
             } else {
                 action = HQWorkspaceAction(
-                    op: "send", id: id, matter: origin.scope == "global" ? nil : origin.scope, body: text)
+                    op: "send", id: id, matter: origin.scope == "global" ? nil : origin.scope, body: text, replyTo: replyTargets[origin])
             }
             retrySubmission = (origin, text, action)
         }
         perform(action) { [weak self] in
             guard let self else { return }
             self.drafts[origin] = ""
+            self.replyTargets.removeValue(forKey: origin)
+            self.preparedHumanDrafts.removeValue(forKey: origin)
             self.retrySubmission = nil
             if self.selection == origin {
                 self.draft = ""

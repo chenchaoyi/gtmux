@@ -10,6 +10,9 @@ module.exports = {
   testPathIgnorePatterns: ['/node_modules/', '/e2e/__tests__/'],
   // Transform the RN ecosystem + community/navigation packages (they ship ESM/Flow).
   transformIgnorePatterns: [
+    // Execute the self-contained browser artifact as shipped. RN Babel would
+    // inject helpers outside mobileapp and change the artifact under test.
+    '/internal/server/web/trace-model\\.js$',
     'node_modules/(?!(?:jest-)?@?react-native|@react-native-community|@react-native-async-storage|@react-navigation|react-native-.*)/',
   ],
 };

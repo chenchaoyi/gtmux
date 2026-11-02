@@ -1,0 +1,6 @@
+{
+  "model": "mobileapp/src/trace/model.ts",
+  "activity": "mobileapp/src/ui/activity.ts",
+  "timeline": "mobileapp/src/trace/timeline.ts",
+  "presentation": "mobileapp/src/trace/presentation.ts"
+}
