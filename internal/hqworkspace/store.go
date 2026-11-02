@@ -31,6 +31,10 @@ func (s *Store) Read() (Database, error) {
 	if err != nil {
 		return Database{}, err
 	}
+	return decodeRecords(b)
+}
+
+func decodeRecords(b []byte) (Database, error) {
 	if len(b) > 32<<20 {
 		return Database{}, errors.New("workspace snapshot exceeds 32MiB; keep an archive before reorganizing records")
 	}
@@ -75,12 +79,9 @@ func (s *Store) transaction(fn func(*Database) error) error {
 }
 
 func (s *Store) write(d Database) error {
-	b, err := json.Marshal(d)
+	b, err := encodeRecords(d)
 	if err != nil {
 		return err
-	}
-	if len(b) > 32<<20 {
-		return errors.New("workspace snapshot exceeds 32MiB; write refused without changing saved records")
 	}
 	f, err := state.CreateTemp(s.dir, ".records-")
 	if err != nil {
@@ -134,4 +135,15 @@ func getMatter(d *Database, id string, revision uint64) (Matter, error) {
 func saveMatter(d *Database, m Matter, at int64) {
 	m.UpdatedAt, m.Revision = at, d.Revision
 	d.Matters[m.ID] = m
+}
+
+func encodeRecords(d Database) ([]byte, error) {
+	b, err := json.Marshal(d)
+	if err != nil {
+		return nil, err
+	}
+	if len(b) > 32<<20 {
+		return nil, errors.New("workspace snapshot exceeds 32MiB; write refused without changing saved records")
+	}
+	return b, nil
 }

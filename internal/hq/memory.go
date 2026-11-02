@@ -13,7 +13,7 @@ package hq
 // so losing it does not self-heal. gtmux would simply see a file it does not own and
 // leave the gap where the operator's own charter used to be.
 //
-// This is the cheap, certain layer: a single-file archive, and a daily snapshot of it
+// This is the cheap, certain layer: a single-file archive, and bounded automatic recovery points
 // kept beside the state rather than beside the data. It does not pretend to be an
 // off-machine backup — that is a separate decision the operator has to make knowingly,
 // because this archive carries their project detail. What it does cover is the failure
@@ -21,10 +21,6 @@ package hq
 // itself wrote into a corner.
 
 import (
-	"archive/tar"
-	"compress/gzip"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -42,13 +38,9 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
-// SnapshotKeep is how many daily snapshots are retained.
-//
-// Two weeks: long enough that a loss noticed "sometime last week" is still recoverable,
-// short enough that the whole history is a few tens of megabytes. Snapshots are only
-// written when the memory CHANGED, so a quiet fortnight does not evict real history
-// with fourteen identical copies of it.
-const SnapshotKeep = 14
+// SnapshotKeep is the default number of distinct validated automatic recovery points.
+// Legacy packages have a separate, protected retention authority.
+const SnapshotKeep = 3
 
 // snapshotDir holds the daily snapshots.
 //
@@ -68,6 +60,9 @@ func MemoryRoot() string { return state.HQHome() }
 // or without gtmux, which matters for the one case this exists for.
 func ExportMemory(dst string) (int64, error) {
 	root := MemoryRoot()
+	if err := exportOutsideHQ(dst); err != nil {
+		return 0, err
+	}
 	if st, err := os.Stat(root); err != nil || !st.IsDir() {
 		return 0, fmt.Errorf("no HQ records at %s", root)
 	}
@@ -94,6 +89,9 @@ func ExportMemory(dst string) (int64, error) {
 		_ = os.Remove(tmp)
 		return 0, err
 	}
+	if _, err := readMemoryArchive(tmp, ""); err != nil {
+		return 0, err
+	}
 	if err := os.Rename(tmp, dst); err != nil {
 		_ = os.Remove(tmp)
 		return 0, err
@@ -105,58 +103,7 @@ func ExportMemory(dst string) (int64, error) {
 	return st.Size(), nil
 }
 
-func writeArchive(w io.Writer, root string) error {
-	gz := gzip.NewWriter(w)
-	tw := tar.NewWriter(gz)
-	err := filepath.Walk(root, func(p string, fi os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		rel, rerr := filepath.Rel(root, p)
-		if rerr != nil {
-			return rerr
-		}
-		if rel == "." {
-			return nil
-		}
-		if strings.HasPrefix(filepath.ToSlash(rel), "workspace/.") {
-			return nil
-		}
-		// Symlinks are not followed: the home is documents, and a link out of it
-		// would either duplicate something huge or dangle on restore.
-		if fi.Mode()&os.ModeSymlink != 0 {
-			return nil
-		}
-		if !fi.IsDir() && !fi.Mode().IsRegular() {
-			return fmt.Errorf("unsupported HQ file type: %s", rel)
-		}
-		h, herr := tar.FileInfoHeader(fi, "")
-		if herr != nil {
-			return herr
-		}
-		h.Name = filepath.ToSlash(rel)
-		if err := tw.WriteHeader(h); err != nil {
-			return err
-		}
-		if fi.IsDir() {
-			return nil
-		}
-		src, oerr := os.Open(p)
-		if oerr != nil {
-			return oerr
-		}
-		defer src.Close()
-		_, cerr := io.Copy(tw, src)
-		return cerr
-	})
-	if err != nil {
-		return err
-	}
-	if err := tw.Close(); err != nil {
-		return err
-	}
-	return gz.Close()
-}
+func writeArchive(w io.Writer, root string) error { return writeSelectedArchive(w, root, false, nil) }
 
 // ImportMemory restores an archive over the HQ home.
 //
@@ -236,67 +183,13 @@ func safeName(name string) error {
 	return nil
 }
 
-// MemoryFingerprint is a content hash of the HQ home, used to skip a snapshot when
-// nothing changed. Names, sizes and mtimes — not contents, which would mean reading
-// megabytes on a tick that runs all day.
-func MemoryFingerprint() string {
-	h := sha256.New()
-	_ = filepath.Walk(MemoryRoot(), func(p string, fi os.FileInfo, err error) error {
-		if err != nil || fi.IsDir() {
-			return nil //nolint:nilerr // an unreadable file simply does not contribute
-		}
-		rel, _ := filepath.Rel(MemoryRoot(), p)
-		fmt.Fprintf(h, "%s|%d|%d\n", filepath.ToSlash(rel), fi.Size(), fi.ModTime().Unix())
-		return nil
-	})
-	return hex.EncodeToString(h.Sum(nil))[:16]
-}
-
-// Snapshot writes today's snapshot unless one already exists for today with the same
-// fingerprint, then prunes to SnapshotKeep. It reports whether it wrote one.
-//
-// Named by DATE and fingerprint, so a day's repeated ticks reuse one file and a day
-// where the memory actually changed replaces it with the newer state.
-func Snapshot(now time.Time) (path string, wrote bool, err error) {
-	root := MemoryRoot()
-	if st, serr := os.Stat(root); serr != nil || !st.IsDir() {
-		return "", false, nil // no supervisor on this machine: nothing to protect
-	}
-	fp := MemoryFingerprint()
-	day := now.Format("2006-01-02")
-	path = filepath.Join(snapshotDir(), fmt.Sprintf("hq-%s-%s.tar.gz", day, fp))
-	if _, err := os.Stat(path); err == nil {
-		return path, false, nil // this exact memory is already snapshotted today
-	}
-	// Today's earlier snapshot, if the memory has moved on since, is replaced rather
-	// than kept: a day is the unit, and fourteen of them is the promise.
-	for _, old := range snapshotsForDay(day) {
-		_ = os.Remove(old)
-	}
-	if _, err = ExportMemory(path); err != nil {
-		return "", false, err
-	}
-	pruneSnapshots()
-	return path, true, nil
-}
-
-func snapshotsForDay(day string) []string {
-	m, _ := filepath.Glob(filepath.Join(snapshotDir(), "hq-"+day+"-*.tar.gz"))
-	return m
-}
-
-// Snapshots lists the snapshots, newest first.
+// Snapshots includes protected legacy packages and new automatic recovery points.
 func Snapshots() []string {
-	m, _ := filepath.Glob(filepath.Join(snapshotDir(), "hq-*.tar.gz"))
-	sort.Sort(sort.Reverse(sort.StringSlice(m)))
-	return m
-}
-
-func pruneSnapshots() {
-	all := Snapshots()
-	for i := SnapshotKeep; i < len(all); i++ {
-		_ = os.Remove(all[i])
-	}
+	old, _ := filepath.Glob(filepath.Join(snapshotDir(), "hq-*.tar.gz"))
+	managed, _ := filepath.Glob(filepath.Join(automaticDir(), "hq-*.tar.gz"))
+	all := append(old, managed...)
+	sort.Slice(all, func(i, j int) bool { return filepath.Base(all[i]) > filepath.Base(all[j]) })
+	return all
 }
 
 // MemoryState is what `doctor` reports: the size of what is at risk, and what is
@@ -345,26 +238,22 @@ func ReadMemoryState() MemoryState {
 // the serve endpoint hands it the HTTP response directly rather than buffering megabytes
 // in a daemon whose day job is serving rows of JSON.
 func WriteMemoryArchive(w io.Writer) (int64, error) {
-	root := MemoryRoot()
-	if st, err := os.Stat(root); err != nil || !st.IsDir() {
-		return 0, fmt.Errorf("no HQ records at %s", root)
+	f, err := state.CreateTemp("", ".hq-transfer-*")
+	if err != nil {
+		return 0, err
 	}
-	c := &countingWriter{w: w}
-	if err := writeArchive(c, root); err != nil {
-		return c.n, err
+	tmp := f.Name()
+	_ = f.Close()
+	defer os.Remove(tmp)
+	if _, err := ExportMemory(tmp); err != nil {
+		return 0, err
 	}
-	return c.n, nil
-}
-
-type countingWriter struct {
-	w io.Writer
-	n int64
-}
-
-func (c *countingWriter) Write(p []byte) (int, error) {
-	n, err := c.w.Write(p)
-	c.n += int64(n)
-	return n, err
+	src, err := os.Open(tmp)
+	if err != nil {
+		return 0, err
+	}
+	defer src.Close()
+	return io.Copy(w, src)
 }
 
 // timeMachineDestinations is `tmutil destinationinfo`, swappable so a test reads a machine it
@@ -400,14 +289,15 @@ func OffMachineHint() string {
 // memoryJSON is the shape `gtmux hq --memory --json` prints — what a surface needs to say
 // the same sentence the doctor row says, without re-deriving any of it.
 type memoryJSON struct {
-	Exists     bool   `json:"exists"`
-	Bytes      int64  `json:"bytes"`
-	Files      int    `json:"files"`
-	Snapshots  int    `json:"snapshots"`
-	LastSnapAt int64  `json:"last_snapshot_at,omitempty"`
-	OldestUnix int64  `json:"oldest_at,omitempty"`
-	OffMachine string `json:"off_machine"`
-	Root       string `json:"root"`
+	Exists     bool             `json:"exists"`
+	Bytes      int64            `json:"bytes"`
+	Files      int              `json:"files"`
+	Snapshots  int              `json:"snapshots"`
+	Automatic  SnapshotOverview `json:"automatic_backup"`
+	LastSnapAt int64            `json:"last_snapshot_at,omitempty"`
+	OldestUnix int64            `json:"oldest_at,omitempty"`
+	OffMachine string           `json:"off_machine"`
+	Root       string           `json:"root"`
 	// The last export on this machine: when, and whether it was locked. Absent when
 	// there has never been one — a surface must not invent a reassuring date.
 	LastExportAt        int64 `json:"last_export_at,omitempty"`
@@ -421,7 +311,7 @@ func printMemoryState(asJSON bool) int {
 		row := memoryJSON{
 			Exists: st.Exists, Bytes: st.Bytes, Files: st.Files, Snapshots: st.Snapshots,
 			LastSnapAt: st.LastSnapAt, OldestUnix: st.OldestUnix,
-			OffMachine: OffMachineHint(), Root: MemoryRoot(),
+			OffMachine: OffMachineHint(), Root: MemoryRoot(), Automatic: ReadSnapshotOverview(),
 		}
 		if rec, ok := LastExport(); ok {
 			row.LastExportAt, row.LastExportEncrypted = rec.At, rec.Encrypted

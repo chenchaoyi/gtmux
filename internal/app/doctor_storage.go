@@ -13,15 +13,17 @@ import (
 
 type storageFootprint struct {
 	working, releases, reports int64
+	backups, unclassified      int64
 	largest                    string
 	largestBytes               int64
 	complete                   bool
+	root                       string
 }
 
 // Measure retained deliverables separately. WalkDir never follows symlinks into
 // other workspaces or shared dependencies; an unreadable path stays unknown.
 func measureStateStorage(root string) storageFootprint {
-	f := storageFootprint{complete: true}
+	f := storageFootprint{complete: true, root: root}
 	groups := map[string]int64{}
 	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
@@ -49,12 +51,17 @@ func measureStateStorage(root string) storageFootprint {
 		}
 		group := strings.SplitN(rel, string(filepath.Separator), 2)[0]
 		switch group {
-		case "releases":
+		case "releases", "appstore":
 			f.releases += info.Size()
-		case "reports":
+		case "hq-snapshots":
+			f.backups += info.Size()
+		case "reports", "reviews", "verification":
 			f.reports += info.Size()
-		default:
+		case "active", "waiting", "finished", "bg", "native", "resume", "logs", "cache", "events", "mine", "usage", "notify", "uploads", "locks", "codex-frontends", "codex-processes":
 			f.working += info.Size()
+			groups[group] += info.Size()
+		default:
+			f.unclassified += info.Size()
 			groups[group] += info.Size()
 		}
 		return nil
@@ -72,18 +79,18 @@ func measureStateStorage(root string) storageFootprint {
 
 func (f storageFootprint) check() dcheck {
 	label := i18n.Tr("gtmux disk usage", "gtmux 磁盘占用")
-	note := fmt.Sprintf(i18n.Tr("Working state %s · releases and recovery %s · reports %s",
-		"运行状态 %s · 发布与恢复 %s · 报告 %s"), humanBytes(f.working), humanBytes(f.releases), humanBytes(f.reports))
+	note := fmt.Sprintf(i18n.Tr("Runtime %s · automatic backups %s · release recovery %s · verification archives %s · unclassified %s",
+		"运行数据 %s · 自动备份 %s · 发布恢复 %s · 验收档案 %s · 待分类 %s"), humanBytes(f.working), humanBytes(f.backups), humanBytes(f.releases), humanBytes(f.reports), humanBytes(f.unclassified))
 	status := stOK
-	if f.working >= diskRedBytes {
+	if f.working+f.unclassified >= diskRedBytes {
 		status = stMiss
-	} else if f.working >= diskAmberBytes {
+	} else if f.working+f.unclassified >= diskAmberBytes {
 		status = stRec
-	} else if f.releases+f.reports >= diskAmberBytes {
+	} else if f.releases+f.reports+f.backups >= diskAmberBytes {
 		status = stInfo
 	}
-	if f.working >= diskAmberBytes && f.largest != "" {
-		note += fmt.Sprintf(i18n.Tr(" · largest working item: %s (%s)", " · 最大运行项目：%s（%s）"), f.largest, humanBytes(f.largestBytes))
+	if f.working+f.unclassified >= diskAmberBytes && f.largest != "" {
+		note += fmt.Sprintf(i18n.Tr(" · largest runtime/unclassified item: %s (%s)", " · 较大的数据来源：%s（%s）"), f.largest, humanBytes(f.largestBytes))
 	}
 	if !f.complete {
 		if status != stMiss {
@@ -91,7 +98,11 @@ func (f storageFootprint) check() dcheck {
 		}
 		note += i18n.Tr(" · some paths could not be measured", " · 部分路径无法计量")
 	}
-	return dcheck{status, label, humanBytes(f.working + f.releases + f.reports), note}
+	if f.root != "" {
+		note += i18n.Tr(" · application directory: ", " · 应用目录：") + f.root
+	}
+	note += i18n.Tr(" · sources: hq-snapshots/; releases/, appstore/; reports/, reviews/, verification/ · backup policy: gtmux config snapshots", " · 来源：hq-snapshots/；releases/、appstore/；reports/、reviews/、verification/ · 备份规则：gtmux config snapshots")
+	return dcheck{status, label, humanBytes(f.working + f.backups + f.releases + f.reports + f.unclassified), note}
 }
 
 func rowDiskUsage() dcheck { return measureStateStorage(state.Dir()).check() }

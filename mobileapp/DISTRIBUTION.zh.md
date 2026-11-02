@@ -379,3 +379,7 @@ Worker 配置已关闭 observability，应用代码不记录安装链接。
 到期前私下下载、解密并核对原生 UUID，再保存加密的异机备份。
 经过筛选的归档重新导出时，需要另行提供 profile。这项改动不会配置云端商店上传，
 见[商店准备指引](../docs/appstore/preparation.zh.md)。
+
+## 交付归档责任
+
+编译中间产物、运输包下载副本和解包验包目录留在任务/构建存储，随任务收口；可复现资产以发布渠道为主。跨树仅保留独有签名/恢复/符号及简明验收证据，使用明确交付归档，并登记用途、源码与渠道、字节预算、最短保留期、复核日及责任角色。日期只触发复核，不自动删除。参见[存储规则](../docs/design/hq-storage-recovery.zh.md)，可运行 `python3 scripts/check_delivery_retention.py <归档>/retention.json` 检查。约定不自动迁移或退役现有材料；同盘移动不释放空间。

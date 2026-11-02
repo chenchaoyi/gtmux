@@ -463,3 +463,7 @@ excluding embedded provisioning profiles, signing setup and symlinks. It expires
 an encrypted off-machine backup. A sanitized archive needs separately supplied profiles
 to export again. This does not configure a hosted App Store upload; see
 [Store preparation](../docs/appstore/preparation.md).
+
+## Delivery archive ownership
+
+Build intermediates, downloaded transport copies and unpacked verification belong to task/build storage. Release channels are the primary source of reproducible assets. Retain only unique recovery/signing/symbol material and concise acceptance evidence in an explicit delivery archive, with purpose, source revision/channel, byte budget, retain-until, review-by and responsible role. Dates trigger review, never automatic deletion. See [storage policy](../docs/design/hq-storage-recovery.md) and validate `retention.json` with `python3 scripts/check_delivery_retention.py <archive>/retention.json`. Existing archives are not moved or retired by this convention; moving on the same disk releases no space.

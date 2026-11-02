@@ -170,19 +170,19 @@ func TestSnapshotWritesOncePerChange(t *testing.T) {
 		t.Errorf("got %d snapshots, want 1", len(Snapshots()))
 	}
 
-	// A day where the memory really moved replaces that day's snapshot.
+	// Distinct changes are recovery points, even on the same day.
 	if err := os.WriteFile(filepath.Join(MemoryRoot(), "notes", "board.md"), []byte("new state"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if _, wrote, _ := Snapshot(now.Add(2 * time.Hour)); !wrote {
 		t.Error("did not snapshot after the memory changed")
 	}
-	if len(Snapshots()) != 1 {
-		t.Errorf("a second same-day snapshot accumulated: %d", len(Snapshots()))
+	if len(Snapshots()) != 2 {
+		t.Errorf("distinct same-day state was not retained: %d", len(Snapshots()))
 	}
 }
 
-func TestSnapshotKeepsAFortnightAndPrunesTheRest(t *testing.T) {
+func TestSnapshotKeepsConfiguredRecoveryPoints(t *testing.T) {
 	seedMemory(t)
 	base := time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC)
 	for i := 0; i < SnapshotKeep+6; i++ {

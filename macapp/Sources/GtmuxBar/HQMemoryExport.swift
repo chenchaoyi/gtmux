@@ -23,10 +23,20 @@ import SwiftUI
 // the person at their own keyboard. The passphrase goes to the CLI over stdin, never argv.
 
 /// What the CLI knows about the memory, for the row above the button.
+struct HQAutomaticBackup {
+    var enabled = true
+    var keep = 3
+    var maxMB = 64
+    var points = 0
+    var legacy = 0
+    var lastError = ""
+}
+
 struct HQMemoryState {
     var bytes: Int64 = 0
     var files: Int = 0
     var snapshots: Int = 0
+    var automatic: HQAutomaticBackup?
     var offMachine: String = ""
     var exists: Bool = false
     /// The last export on this machine, when there has been one.
@@ -59,6 +69,16 @@ func decodeHQMemoryState(_ d: Data) -> HQMemoryState? {
     s.bytes = (row["bytes"] as? NSNumber)?.int64Value ?? 0
     s.files = (row["files"] as? NSNumber)?.intValue ?? 0
     s.snapshots = (row["snapshots"] as? NSNumber)?.intValue ?? 0
+    if let auto = row["automatic_backup"] as? [String: Any], let policy = auto["policy"] as? [String: Any] {
+        var a = HQAutomaticBackup()
+        a.enabled = policy["enabled"] as? Bool ?? true
+        a.keep = (policy["keep"] as? NSNumber)?.intValue ?? 3
+        a.maxMB = (policy["maxMB"] as? NSNumber)?.intValue ?? 64
+        a.points = (auto["managed_points"] as? NSNumber)?.intValue ?? 0
+        a.legacy = (auto["legacy_archives"] as? NSNumber)?.intValue ?? 0
+        a.lastError = auto["last_error"] as? String ?? ""
+        s.automatic = a
+    }
     s.offMachine = row["off_machine"] as? String ?? ""
     s.lastExportAt = (row["last_export_at"] as? NSNumber)?.int64Value ?? 0
     s.lastExportEncrypted = row["last_export_encrypted"] as? Bool ?? false

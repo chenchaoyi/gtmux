@@ -68,3 +68,34 @@ inspection SHALL be bounded and SHALL NOT replace backend archive validation.
 #### Scenario: Reviewing knowledge
 - **WHEN** selected content is ready for review
 - **THEN** the sheet provides a bounded list/detail workspace with review gates and apply actions visible
+
+### Requirement: Bounded validated automatic recovery
+Automatic backup SHALL default to three changed-content core points, a configurable total byte budget and a minimum interval. It SHALL support disabling without deletion and content deduplication across dates. Instructions, knowledge, workspace and ordinary notes SHALL be protected; process report payloads/attachments SHALL have a documented scope with explicit inclusion overrides. Unknown unique notes SHALL fail the backup rather than be silently truncated.
+
+#### Scenario: New automatic point succeeds
+- **WHEN** a complete core package passes the same size, structure, workspace and integrity checks as import
+- **THEN** the archive and receipt are durably published and rechecked before unchanged verified managed points are eligible for retention
+- **AND** legacy archives remain protected outside this version's managed store
+
+#### Scenario: Size, corruption or publication fails
+- **WHEN** the source, package, budget, checksum, metadata or publication cannot be validated
+- **THEN** existing recovery points remain and the failure is reported
+- **AND** unverified files cannot be adopted as valid replacements or silently pruned
+
+#### Scenario: Content is unchanged on another day
+- **WHEN** only dates or file modification times change
+- **THEN** no duplicate recovery package is stored and old history is not evicted
+
+### Requirement: Full exports and imports share one capacity contract
+Plain, encrypted and HTTP full exports SHALL retain the explicit full scope or fail before destination publication/HTTP payload. They SHALL satisfy the current import limits without increasing the owner endpoint's memory budget. Restores SHALL retain the displaced home, including data excluded from a core point.
+
+#### Scenario: A full export exceeds import capacity
+- **WHEN** compressed/decompressed bytes, per-file bytes or entry count exceed the supported import limit
+- **THEN** the export fails without replacing an existing destination or emitting a misleading downloadable package
+
+### Requirement: Storage and delivery retention are explicit
+Storage reporting SHALL distinguish runtime data, automatic backups, release recovery, verification archives and unclassified sources. Legacy counts SHALL NOT be presented as validated automatic recovery points. Cross-task delivery archives SHALL register purpose, source/channel, byte budget, retention/review dates and reviewer; a review date SHALL NOT authorize deletion.
+
+#### Scenario: Existing legacy material on first startup
+- **WHEN** a machine already has older full archives or retained delivery material
+- **THEN** new defaults neither move nor retire them, and the read model names their separate sources and review boundary

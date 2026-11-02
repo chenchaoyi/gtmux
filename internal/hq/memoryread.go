@@ -12,8 +12,10 @@ import (
 	"path"
 	"sort"
 	"strings"
+	"time"
 
 	"filippo.io/age"
+	"github.com/chenchaoyi/gtmux/internal/hqworkspace"
 )
 
 const archiveMaxBytes = 128 << 20
@@ -130,6 +132,11 @@ func readMemoryArchive(src, pass string) (memoryArchive, error) {
 			}
 		}
 	}
+	if f, ok := a.files["workspace/records.json"]; ok {
+		if err := hqworkspace.ValidateRestoreRecords(f.data, time.Now().Unix()); err != nil {
+			return a, fmt.Errorf("workspace restore validation: %w", err)
+		}
+	}
 	names := make([]string, 0, len(a.files))
 	for name := range a.files {
 		names = append(names, name)
@@ -137,9 +144,13 @@ func readMemoryArchive(src, pass string) (memoryArchive, error) {
 	sort.Strings(names)
 	hash := sha256.New()
 	for _, name := range names {
-		fmt.Fprintf(hash, "%d:%s:%d:%o:", len(name), name, len(a.files[name].data), a.files[name].mode)
+		writeMemoryDigestHeader(hash, name, int64(len(a.files[name].data)), a.files[name].mode)
 		hash.Write(a.files[name].data)
 	}
 	a.digest = hex.EncodeToString(hash.Sum(nil))
 	return a, nil
+}
+
+func writeMemoryDigestHeader(w io.Writer, name string, size int64, mode os.FileMode) {
+	_, _ = fmt.Fprintf(w, "%d:%s:%d:%o:", len(name), name, size, mode&0700)
 }

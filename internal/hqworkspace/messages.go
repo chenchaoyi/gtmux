@@ -238,15 +238,33 @@ func (s *Store) MarkRestored(at int64) error {
 	if len(d.Messages) == 0 {
 		return nil
 	}
-	return s.transaction(func(d *Database) error {
-		for id, m := range d.Messages {
-			if m.Delivery != "pending" && m.Delivery != "submitting" && m.Delivery != "accepted-queue" {
-				continue
-			}
-			m.Delivery, m.Reason = "uncertain", "restored-backup"
-			changed(d, at, "delivery-uncertain", m.MatterID, id, m.Reason)
-			d.Messages[id] = m
+	return s.transaction(func(d *Database) error { markRestored(d, at); return nil })
+}
+
+func markRestored(d *Database, at int64) bool {
+	altered := false
+	for id, m := range d.Messages {
+		if m.Delivery != "pending" && m.Delivery != "submitting" && m.Delivery != "accepted-queue" {
+			continue
 		}
+		m.Delivery, m.Reason = "uncertain", "restored-backup"
+		changed(d, at, "delivery-uncertain", m.MatterID, id, m.Reason)
+		d.Messages[id] = m
+		altered = true
+	}
+	return altered
+}
+
+// ValidateRestoreRecords shares Read, MarkRestored and write constraints without
+// touching a live store. Backup publication must include transformation growth.
+func ValidateRestoreRecords(data []byte, at int64) error {
+	d, err := decodeRecords(data)
+	if err != nil {
+		return err
+	}
+	if !markRestored(&d, at) {
 		return nil
-	})
+	}
+	_, err = encodeRecords(d)
+	return err
 }
