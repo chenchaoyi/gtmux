@@ -70,7 +70,7 @@ session, event sequence and path metadata still refer to the **old Mac**, not lo
 ## Validation and limits
 
 The entire tar/gzip/age stream is validated before the current home can be moved. Limits
-are 128 MiB total archive/decompressed data, 32 MiB per file, 5,000 archive entries and
+are 128 MiB total archive/decompressed data, 32 MiB per file, 10,000 archive entries and
 50,000 knowledge records; age scrypt work factor is capped at 18. Unsafe paths, duplicate
 normalized paths, links/special files, bad checksums, unsupported ledger operations,
 unknown fields and invalid lineage fail explicitly. Staged digests and paths are checked
@@ -78,6 +78,8 @@ again on review/application. Staging directories are private and files are non-e
 
 Legacy Markdown-only archives can be fully restored, or personal requirements/tools can
 be staged, but knowledge needs manual curation into a ledger before selective migration.
+Points with more than 5,000 entries require a reader supporting the 10,000-entry contract (1.0.168 or newer); older readers reject them explicitly. No byte cap is expanded.
+
 No facts or provenance are invented. Conflicting IDs are left for explicit knowledge
 ledger revision, never overwritten just to finish a move. Staged attachments and backups
 are retained; this feature does not delete them automatically.

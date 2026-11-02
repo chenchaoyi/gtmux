@@ -31,6 +31,8 @@ def previous_release(tag, releases):
 
 def shipping_input(path):
     p = PurePosixPath(path)
+    if p.parts[:2] == ("shared", "UsageWidgets"):
+        return len(p.parts) > 2 and p.parts[2] in {"Sources", "Package.swift"}
     parts = p.parts[1:]
     if not parts or p.parts[0] != "mobileapp":
         return False
@@ -49,7 +51,7 @@ def build_inputs_changed(root, baseline, commit):
         raise ValueError("Use an exact commit and stable baseline tag.")
     base = git(root, "rev-parse", "--verify", f"refs/tags/{baseline}^{{commit}}").decode().strip()
     git(root, "merge-base", "--is-ancestor", base, commit)
-    paths = git(root, "diff", "--no-renames", "--name-only", "-z", base, commit, "--", "mobileapp").decode().split("\0")
+    paths = git(root, "diff", "--no-renames", "--name-only", "-z", base, commit, "--", "mobileapp", "shared/UsageWidgets").decode().split("\0")
     changed = []
     for path in filter(shipping_input, paths):
         if path.endswith(".pbxproj"):

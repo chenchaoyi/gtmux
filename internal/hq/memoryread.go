@@ -20,7 +20,10 @@ import (
 
 const archiveMaxBytes = 128 << 20
 const archiveFileMaxBytes = 32 << 20
-const archiveMaxEntries = 5000
+
+// More small records do not enlarge either byte cap. Exact-sized record buffers
+// avoid the per-file minimum and geometric growth of io.ReadAll.
+const archiveMaxEntries = 10000
 
 type memoryFile struct {
 	data []byte
@@ -84,7 +87,7 @@ func readMemoryArchive(src, pass string) (memoryArchive, error) {
 		}
 		count++
 		if count > archiveMaxEntries {
-			return a, errors.New("archive exceeds 5,000 entries")
+			return a, fmt.Errorf("archive exceeds %d entries", archiveMaxEntries)
 		}
 		if err := safeName(h.Name); err != nil {
 			return a, err
@@ -103,7 +106,8 @@ func readMemoryArchive(src, pass string) (memoryArchive, error) {
 		if h.Typeflag == tar.TypeDir {
 			continue
 		}
-		b, err := io.ReadAll(tr)
+		b := make([]byte, int(h.Size)) // h.Size is already bounded by 32 MiB above.
+		_, err = io.ReadFull(tr, b)
 		if err != nil {
 			return a, err
 		}

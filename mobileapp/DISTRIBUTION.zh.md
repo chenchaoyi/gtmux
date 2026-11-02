@@ -30,7 +30,8 @@ CLI 与公证后的 Mac App 两项 release job 都完成后再运行 `gtmux upda
 
 `release-test` 在签名申请前，将精确发布提交与官方最近 100 个发布中版本号最接近的
 上一正式版比较。检查 `App.tsx`、运行时代码、内置更新说明、依赖、资源及原生 iOS
-文件；忽略自动生成的 `src/version.ts` 和 Xcode 项目中单独的 `MARKETING_VERSION`
+文件，以及 `shared/UsageWidgets` 的源码、资源与包配置；共享测试和文档不触发出包。
+忽略自动生成的 `src/version.ts` 和 Xcode 项目中单独的 `MARKETING_VERSION`
 值，以及 Android、测试、文档和分发工具。未知手机路径按需要构建处理。没有实际
 变化就跳过整个原生出包任务，不申请环境审批、不签名、不上传、不安装；摘要记录
 比较版本和原因。Git 历史缺失或基准无效时停止；有界发布列表中没有更早正式版时，

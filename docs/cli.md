@@ -2431,7 +2431,7 @@ for unique files. Legacy archives remain untouched and their validity is not ass
 
 Explicit full exports still include report payloads and attachments. Plain, encrypted
 and HTTP exports now validate the same import limits before publishing: 128 MiB
-compressed/decompressed, 32 MiB per file, 5,000 entries. An oversized full export fails
+compressed/decompressed, 32 MiB per file, 10,000 entries. An oversized full export fails
 without replacing the destination; it does not silently become a core export. See
 [storage and recovery](design/hq-storage-recovery.md) for scope, failure behavior,
 delivery retention and the protected legacy migration boundary.

@@ -1,0 +1,1 @@
+• Usage widgets now use the colored gtmux logo, clearer provider icons and a more compact header.

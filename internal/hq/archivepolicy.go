@@ -10,8 +10,14 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
+
+// Generated observation exports include a relays phase suffix. Conclusions and
+// ordinary structured notes do not share this naming contract; an include
+// override still protects an explicitly retained export.
+var generatedRelayObservation = regexp.MustCompile(`^[a-z][a-z0-9-]*-relays-(before|after|final(-check)?|verified|closed|current|follow|first|second|latest|next|[0-9]+)\.json$`)
 
 type archiveEntry struct {
 	path, name string
@@ -39,7 +45,7 @@ func automaticFile(name string, include []string) bool {
 	case ".png", ".jpg", ".jpeg", ".gif", ".webp", ".mp4", ".mov", ".pdf", ".zip", ".gz", ".bundle", ".ipa", ".log":
 		return false
 	}
-	if ext == ".json" && (base == "relays.json" || strings.HasSuffix(base, "-relays.json") || strings.HasPrefix(base, "relays-")) {
+	if ext == ".json" && (base == "relays.json" || strings.HasSuffix(base, "-relays.json") || strings.HasPrefix(base, "relays-") || generatedRelayObservation.MatchString(base)) {
 		return false
 	}
 	if strings.HasPrefix(name, "notes/reports/") {
@@ -85,7 +91,7 @@ func selectArchive(root string, core bool, include []string) ([]archiveEntry, er
 		}
 		total += fi.Size() + 1024 // tar headers/padding are additionally bounded while writing
 		if total > archiveMaxBytes || len(entries) >= archiveMaxEntries {
-			return errors.New("HQ records exceed restore limits (128 MiB, 5,000 entries); destination unchanged")
+			return fmt.Errorf("HQ records exceed restore limits (128 MiB, %d entries); destination unchanged", archiveMaxEntries)
 		}
 		entries = append(entries, archiveEntry{p, name, fi})
 		return nil
