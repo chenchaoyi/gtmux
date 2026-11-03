@@ -1,6 +1,6 @@
 import React from 'react';
 import renderer, {act} from 'react-test-renderer';
-import {Alert, Image, PixelRatio} from 'react-native';
+import {Alert, Image, PixelRatio, Platform} from 'react-native';
 import {Rect} from 'react-native-svg';
 import {captureRef} from 'react-native-view-shot';
 import {ImageMarkup} from './ImageMarkup';
@@ -263,4 +263,23 @@ it('pan and zoom never create strokes, and resized viewports retain annotation c
   act(() => t.root.findByProps({testID: 'markup-fit'}).props.onPress());
   expect(host(t, 'markup-viewport')[0].props.zoomScale).toBe(1);
   act(() => t.unmount());
+});
+
+
+it('Android captures exact pixels with no image fade, independently of display density', async () => {
+  const platform = Platform.OS;
+  Object.defineProperty(Platform, 'OS', {configurable: true, value: 'android'});
+  let tree!: renderer.ReactTestRenderer;
+  try {
+    (PixelRatio.get as jest.Mock).mockReturnValue(2);
+    (Image.getSize as jest.Mock).mockImplementation((_uri: string, ok: (w: number, h: number) => void) => ok(192, 192));
+    await act(async () => {tree = renderer.create(<ImageMarkup visible uri="file:///fixture.png" lang="en" onCancel={jest.fn()} onDone={jest.fn()} />);});
+    const wrap = tree.root.findAll(n => typeof n.type === 'string' && typeof n.props.onLayout === 'function')[0];
+    await act(async () => {wrap.props.onLayout({nativeEvent: {layout: {x: 0, y: 0, width: 378, height: 600}}});});
+    await act(async () => {tree.root.findByProps({testID: 'markup-done'}).props.onPress();});
+    const image = host(tree, 'markup-export')[0].findAllByType(Image)[0];
+    expect(image.props.fadeDuration).toBe(0);
+    await act(async () => {image.props.onLoadEnd(); await new Promise<void>(resolve => setTimeout(resolve, 30));});
+    expect(captureRef).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({width: 192, height: 192}));
+  } finally {if (tree) act(() => tree.unmount()); Object.defineProperty(Platform, 'OS', {configurable: true, value: platform});}
 });

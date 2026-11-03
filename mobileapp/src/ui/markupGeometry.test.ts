@@ -1,4 +1,4 @@
-import {captureSize, exportPixels, exportPoints, fitSize, MARKUP_FILE, MARKUP_SCALED_EDGE, toExport} from './markupGeometry';
+import {clampCanvasPan, pinchCanvas, captureSize, exportPixels, exportPoints, fitSize, MARKUP_FILE, MARKUP_SCALED_EDGE, toExport} from './markupGeometry';
 
 // Where a mark sits, from the finger to the file (markupGeometry).
 describe('markup geometry', () => {
@@ -72,4 +72,11 @@ describe('the capture size', () => {
   it('draws the frame at 99.999% or more of its size', () => {
     for (const n of sizes) expect(captureSize({w: n, h: n}, 3).width / (n / 3)).toBeGreaterThan(0.99999 - 0.00001);
   });
+});
+
+
+test('canvas pan stays within the image and pinch preserves the focal point',()=>{
+  expect(clampCanvasPan({w:200,h:100},{w:200,h:100},1,{x:80,y:80})).toEqual({x:0,y:0});
+  expect(clampCanvasPan({w:200,h:100},{w:200,h:100},2,{x:200,y:-100})).toEqual({x:100,y:-50});
+  expect(pinchCanvas({w:200,h:100},{w:200,h:100},1,2,{x:150,y:50},{x:150,y:50},{x:0,y:0})).toEqual({x:-50,y:0});
 });

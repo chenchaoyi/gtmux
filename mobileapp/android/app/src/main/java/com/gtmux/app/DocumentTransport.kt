@@ -13,6 +13,7 @@ import java.util.UUID
 object DocumentPolicy {
   const val MAX_BYTES = 30L * 1024 * 1024
   const val IMAGE_BYTES = 8L * 1024 * 1024
+  fun imageDimensions(width: Int, height: Int) = width in 1..20000 && height in 1..20000 && width.toLong() * height <= 50_000_000
   fun resolver(raw: String): URI {
     val uri = URI(raw)
     require(uri.scheme in setOf("http", "https") && !uri.host.isNullOrEmpty() && uri.rawUserInfo == null && uri.rawQuery == null && uri.rawFragment == null && uri.path.endsWith("/api/artifacts/resolve")) { "invalid" }

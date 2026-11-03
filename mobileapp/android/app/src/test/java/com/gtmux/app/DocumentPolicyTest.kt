@@ -4,6 +4,12 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class DocumentPolicyTest {
+  @Test fun imageBoundsAreSharedByDocumentAndClipboardReaders() {
+    assertTrue(DocumentPolicy.imageDimensions(2000, 2500))
+    assertFalse(DocumentPolicy.imageDimensions(0, 100))
+    assertFalse(DocumentPolicy.imageDimensions(20001, 1))
+    assertFalse(DocumentPolicy.imageDimensions(10000, 10000))
+  }
   @Test fun resolverKeepsOriginAndRejectsCredentialOrQueryConfusion() {
     assertEquals("localhost", DocumentPolicy.resolver("http://localhost:8765/api/artifacts/resolve").host)
     listOf("file:///api/artifacts/resolve", "https://a:b@example.test/api/artifacts/resolve", "https://example.test/api/artifacts/resolve?token=secret", "https://example.test/api/artifacts/resolve#fragment", "https://example.test/api/artifacts/content").forEach {

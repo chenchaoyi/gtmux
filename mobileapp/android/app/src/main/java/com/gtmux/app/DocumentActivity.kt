@@ -157,6 +157,13 @@ class DocumentActivity : Activity() {
     CookieManager.getInstance().setAcceptThirdPartyCookies(reader, false)
     reader.setDownloadListener { _, _, _, _, _ -> Unit }
     reader.webViewClient = object : WebViewClient() {
+      override fun onRenderProcessGone(view: WebView, detail: android.webkit.RenderProcessGoneDetail): Boolean {
+        content.removeView(view)
+        if (web === view) web = null
+        view.destroy()
+        if (!isFinishing && !isDestroyed) showStatus(tr("Preview stopped. Close and reopen the document.", "预览已停止，请关闭后重新打开文件。"))
+        return true
+      }
       override fun shouldOverrideUrlLoading(view: WebView, navigation: WebResourceRequest): Boolean {
         val url = navigation.url.toString()
         if (url == documentURL || url.startsWith("$documentURL#")) return false
@@ -242,7 +249,7 @@ class DocumentActivity : Activity() {
       return WebResourceResponse(value.media, null, ByteArrayInputStream(bytes))
     } catch (_: Exception) { return blocked() } finally { imageSlots.release() }
   }
-  private fun safeImage(opts: BitmapFactory.Options) = opts.outWidth in 1..20000 && opts.outHeight in 1..20000 && opts.outWidth.toLong() * opts.outHeight <= 50_000_000
+  private fun safeImage(opts: BitmapFactory.Options) = DocumentPolicy.imageDimensions(opts.outWidth, opts.outHeight)
   private fun blocked() = WebResourceResponse("text/plain", "utf-8", 404, "Not available", emptyMap(), ByteArrayInputStream(ByteArray(0)))
   private fun openLink(url: String) {
     val ref = links[url]

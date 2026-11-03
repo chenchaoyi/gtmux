@@ -13,7 +13,7 @@ import org.json.JSONObject
 
 class GtmuxPackage : ReactPackage {
   override fun createNativeModules(context: ReactApplicationContext): List<NativeModule> = buildList {
-    add(HapticsModule(context)); add(KeyCommandsModule(context))
+    add(HapticsModule(context)); add(KeyCommandsModule(context)); add(ClipboardImageModule(context))
     add(HQMemoryModule(context)); add(DocumentsModule(context)); add(PushNotificationsModule(context)); add(UsageWidgetsModule(context))
     if (BuildConfig.QA_TESTING) add(DebugSettingsModule(context))
   }
@@ -88,6 +88,7 @@ class DebugSettingsModule(context: ReactApplicationContext) : ReactContextBaseJa
       json.keys().asSequence().filter { it.matches(Regex("GTMUX_DEBUG_[A-Z_]+")) }
         .associateWith { json.getString(it) }
     }.getOrDefault(emptyMap())
+    if (flags["GTMUX_DEBUG_CLIPBOARD_IMAGE"] == "1") ClipboardImageModule.seedFixture(reactApplicationContext)
     return mapOf("flags" to flags)
   }
   @ReactMethod fun record(line: String) {

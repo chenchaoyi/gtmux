@@ -114,3 +114,5 @@ Keep intermediate builds and verification copies in the task/build cache. Preser
 unique encrypted signing/symbol/source recovery and small evidence outside application
 runtime state, with an owner, size budget and review date. Artifact expiry is not an
 offsite recovery policy; do not delete the only signing or recovery material.
+
+Android image Paste reads only on an explicit tap, through a size/pixel-bounded private temporary file. Markup reuses shared drawing/export, with Android pinch/pan handling and full-pixel JPEG capture. Automation uses Node 24.12+ and owned emulators; orientation is verified from actual screen aspect.

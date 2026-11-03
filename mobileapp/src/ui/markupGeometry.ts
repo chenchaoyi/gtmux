@@ -78,3 +78,14 @@ export function captureSize(px: Size, scale: number): {width: number; height: nu
 export function toExport(p: {x: number; y: number}, fit: Size, px: Size): {x: number; y: number} {
   return {x: (p.x * px.w) / fit.w, y: (p.y * px.h) / fit.h};
 }
+
+export type CanvasPan = {x: number; y: number};
+export function clampCanvasPan(fit: Size, viewport: Size, zoom: number, pan: CanvasPan): CanvasPan {
+  const x = Math.max(0, (fit.w * zoom - viewport.w) / 2), y = Math.max(0, (fit.h * zoom - viewport.h) / 2);
+  return {x: Math.max(-x, Math.min(x, pan.x)), y: Math.max(-y, Math.min(y, pan.y))};
+}
+export function pinchCanvas(fit: Size, viewport: Size, oldZoom: number, zoom: number, from: CanvasPan, to: CanvasPan, pan: CanvasPan): CanvasPan {
+  const ratio = zoom / oldZoom;
+  return clampCanvasPan(fit, viewport, zoom, {x: to.x - viewport.w / 2 - (from.x - viewport.w / 2 - pan.x) * ratio,
+    y: to.y - viewport.h / 2 - (from.y - viewport.h / 2 - pan.y) * ratio});
+}
