@@ -116,3 +116,20 @@ runtime state, with an owner, size budget and review date. Artifact expiry is no
 offsite recovery policy; do not delete the only signing or recovery material.
 
 Android image Paste reads only on an explicit tap, through a size/pixel-bounded private temporary file. Markup reuses shared drawing/export, with Android pinch/pan handling and full-pixel JPEG capture. Automation uses Node 24.12+ and owned emulators; orientation is verified from actual screen aspect.
+
+For the existing private download service, use its separate Android publisher config
+(owner-only, outside Git) and catalog. The maintainer adapter keeps credentials out of
+arguments and writes installation links only to private result files:
+
+```sh
+python3 scripts/test-publisher.py --platform android run \
+  --uploader /path/to/website/distribution/scripts/builds.py \
+  --output /private/path/published.json --log /private/path/published.log -- \
+  publish /private/path/gtmux.apk \
+  --android-verification /private/path/VERIFICATION.json \
+  --available-days 90 --receipt /private/path/upload-receipt.json
+```
+
+`--platform android` selects `gtmux-android` and its own configuration by default;
+it refuses a non-APK or a missing verification receipt. The service's scoped link
+remains private and defaults to 24 hours. Availability is not signing expiry.

@@ -123,14 +123,14 @@ class PublisherTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("Uploader not found", text)
 
-    def dummy_run(self, code=0, existing=False):
+    def dummy_run(self, code=0, existing=False, platform="ios"):
         self.save()
         uploader = self.root / "builds.py"
         uploader.write_text('import os,sys,json\nprint(json.dumps({"key":os.environ["BUILDS_UPLOAD_KEY"],"args":sys.argv[1:],"link":"https://example.test/private-bearer"}))\nprint("synthetic-private-log",file=sys.stderr)\nsys.exit(' + str(code) + ')\n')
         output, log = self.root / "result.json", self.root / "result.log"
         if existing:
             output.write_text("preserve-me")
-        result = self.invoke(["run", "--uploader", str(uploader), "--output", str(output), "--log", str(log), "--", "link", "--build", "synthetic-id"])
+        result = self.invoke(["--platform", platform, "run", "--uploader", str(uploader), "--output", str(output), "--log", str(log), "--", "link", "--build", "synthetic-id"])
         return result, output, log
 
     def test_secrets_stay_in_environment_and_private_files(self):
@@ -160,6 +160,24 @@ class PublisherTests(unittest.TestCase):
         self.assertEqual(output.read_text(), "preserve-me")
         self.assertFalse(log.exists())
 
+
+    def test_android_uses_its_separate_catalog_and_configuration_default(self):
+        (code, text), output, log = self.dummy_run(platform="android")
+        self.assertEqual(code, 0)
+        value = json.loads(output.read_text())
+        self.assertEqual(value["args"][:4], ["--server", self.data["origin"], "--app", "gtmux-android"])
+        self.assertEqual(publisher.config_path({}, "android").name, "gtmux-android-publisher.json")
+        self.assertNotIn("synthetic-secret", text)
+
+    def test_android_refuses_unverified_or_non_apk_publication_before_execution(self):
+        self.save()
+        uploader = self.root / "builds.py"; uploader.write_text("raise RuntimeError('must not run')")
+        for args in [["publish", "file.ipa", "--android-verification", "check.json"], ["publish", "file.apk"]]:
+            output, log = self.root / "android.json", self.root / "android.log"
+            with patch.object(publisher.subprocess, "run") as execute:
+                code, text = self.invoke(["--platform", "android", "run", "--uploader", str(uploader), "--output", str(output), "--log", str(log), "--", *args])
+                self.assertEqual(code, 1); execute.assert_not_called()
+            self.assertFalse(output.exists()); self.assertFalse(log.exists())
 
 if __name__ == "__main__":
     unittest.main()

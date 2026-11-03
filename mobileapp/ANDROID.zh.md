@@ -60,3 +60,16 @@ npm run test:e2e:android
 中间构建和临时验包副本留在任务／构建缓存。只有唯一的签名、符号、源码恢复和关键验收证据，才在应用运行目录之外归档，并登记负责人、容量和复核日期。CI 产物会过期，不代表已经有异地恢复保障；不得删除唯一的签名或恢复材料。
 
 Android 图片粘贴仅在点击“粘贴”后读取剪贴板，使用有大小和像素上限的私有临时文件；图片标注复用共享绘制与导出，Android 适配双指缩放和移动。自动化使用 Node 24.12+ 与本任务拥有的模拟器，按实际屏幕宽高核验横竖屏。
+
+使用既有私有下载服务时，发布器读取 Git 之外、仅本用户可读的 Android 配置，使用独立安装包目录。凭据不进入命令参数，私有安装链接只写入私有结果文件：
+
+```sh
+python3 scripts/test-publisher.py --platform android run \
+  --uploader /path/to/website/distribution/scripts/builds.py \
+  --output /private/path/published.json --log /private/path/published.log -- \
+  publish /private/path/gtmux.apk \
+  --android-verification /private/path/VERIFICATION.json \
+  --available-days 90 --receipt /private/path/upload-receipt.json
+```
+
+`--platform android` 默认选择 `gtmux-android` 及其独立配置，拒绝非 APK 或缺少验签回执的发布。访问链接仍为私有、默认 24 小时；版本可下载期限与签名有效性是两件事。

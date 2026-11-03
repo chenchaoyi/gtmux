@@ -2,7 +2,7 @@
 """Load private publisher settings without putting credentials in shell commands.
 
 This is a maintainer adapter for ccy.dev's uploader, not a gtmux product feature.
-Only the existing uploader performs IPA inspection, publication and link issuance.
+Only the existing uploader performs IPA/APK inspection, publication and link issuance.
 """
 import argparse
 import json
@@ -25,12 +25,12 @@ class ConfigError(Exception):
     pass
 
 
-def config_path(environ):
+def config_path(environ, platform="ios"):
     explicit = environ.get("BUILDS_PUBLISHER_CONFIG")
     if explicit:
         return Path(explicit).expanduser()
     root = environ.get("XDG_CONFIG_HOME") or str(Path.home() / ".config")
-    return Path(root).expanduser() / "ccy-builds/gtmux-publisher.json"
+    return Path(root).expanduser() / "ccy-builds" / ("gtmux-android-publisher.json" if platform == "android" else "gtmux-publisher.json")
 
 
 def validate(data):
@@ -117,6 +117,7 @@ def private_output(path):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, help="private JSON path; overrides BUILDS_PUBLISHER_CONFIG and XDG_CONFIG_HOME")
+    parser.add_argument("--platform", choices=("ios", "android"), default="ios", help="select the existing iOS catalog or separate Android APK catalog")
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("import-config", help="read private JSON from stdin, create mode-0600 file; never overwrite")
     check = commands.add_parser("check", help="local preflight only; no network calls or secret output")
@@ -127,7 +128,7 @@ def main(argv=None):
     run.add_argument("--log", type=Path, required=True, help="new private stderr log path")
     run.add_argument("args", nargs=argparse.REMAINDER, help="after --: publish IPA --receipt PATH, or link --build ID")
     args = parser.parse_args(argv)
-    path = args.config.expanduser() if args.config else config_path(os.environ)
+    path = args.config.expanduser() if args.config else config_path(os.environ, args.platform)
     try:
         if args.command == "import-config":
             import_config(path, sys.stdin.buffer)
@@ -150,11 +151,14 @@ def main(argv=None):
             raise ConfigError("Supply publish or link arguments after --; origin and App are set by the adapter.")
         if args.output.resolve() == args.log.resolve():
             raise ConfigError("Use distinct new output and log paths.")
+        if args.platform == "android" and forwarded[0] == "publish" and (len(forwarded) < 2 or Path(forwarded[1]).suffix.lower() != ".apk" or "--android-verification" not in forwarded):
+            raise ConfigError("Android publication needs an APK and its --android-verification receipt.")
+        app = "gtmux-android" if args.platform == "android" else "gtmux"
         with private_output(args.output) as out, private_output(args.log) as log:
-            result = subprocess.run([sys.executable, str(uploader), "--server", origin, "--app", "gtmux", *forwarded], env=env, stdout=out, stderr=log)
+            result = subprocess.run([sys.executable, str(uploader), "--server", origin, "--app", app, *forwarded], env=env, stdout=out, stderr=log)
         print("Uploader finished. Read the private result and log locally; do not publish installation URLs.")
         if result.returncode:
-            print("Uploader failed; preserve its IPA and receipt before retrying.", file=sys.stderr)
+            print("Uploader failed; preserve its " + ("APK" if args.platform == "android" else "IPA") + " and receipt before retrying.", file=sys.stderr)
         return result.returncode
     except (ConfigError, OSError) as error:
         message = str(error) if isinstance(error, ConfigError) else "Local file or process operation failed; check paths and permissions."

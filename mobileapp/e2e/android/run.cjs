@@ -162,7 +162,7 @@ async function run() {
   await check('17-markdown-native-share-and-back',async()=>{
     await tapLink('Android Markdown report');
     await driver.$('//*[contains(@text,"Android Markdown reader")]').waitForDisplayed({timeout:30000});
-    await tap(label('Share document'));await driver.waitUntil(async()=>await driver.getCurrentPackage()!=='com.gtmux.app.qa'||(await source()).includes('android:id/chooser_header'),{timeout:10000});await wait(700);await driver.back();await wait(700);if(await shown(label('Close document'))) await tap(label('Close document'));
+    await wait(700);const share=await label('Share document'),at=await share.getLocation(),size=await share.getSize();await driver.execute('mobile: clickGesture',{x:Math.round(at.x+size.width/2),y:Math.round(at.y+size.height/2)});await driver.waitUntil(async()=>(await driver.getCurrentActivity()).includes('ChooserActivity')||await driver.getCurrentPackage()!=='com.gtmux.app.qa',{timeout:15000});await wait(700);await driver.back();await wait(700);if(await shown(label('Close document'))) await tap(label('Close document'));
     const exports=adb('shell','run-as',app,'find','cache/share-exports','-type','f');assert.ok(exports.includes('report.md'));
     await id('detail-mode-chat').waitForDisplayed({timeout:10000});
   });
