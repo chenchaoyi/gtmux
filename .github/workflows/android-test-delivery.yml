@@ -67,7 +67,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      DELIVERY_ROOT: ${{ runner.temp }}/gtmux-android-delivery
       RESULT_RECIPIENT: ${{ inputs.result_recipient }}
       GTMUX_FIREBASE_APP_ID: ${{ vars.ANDROID_FIREBASE_APP_ID }}
       GTMUX_FIREBASE_SENDER_ID: ${{ vars.ANDROID_FIREBASE_SENDER_ID }}
@@ -78,6 +77,8 @@ jobs:
         with:
           ref: ${{ needs.preflight.outputs.source }}
           persist-credentials: false
+      - name: Isolate delivery files
+        run: echo "DELIVERY_ROOT=$RUNNER_TEMP/gtmux-android-delivery" >> "$GITHUB_ENV"
       - uses: actions/setup-node@v4
         with:
           node-version: '24'

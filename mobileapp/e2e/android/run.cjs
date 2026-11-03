@@ -26,6 +26,11 @@ const id = value => driver.$(`//*[@resource-id="${value}"]`);
 const label = value => driver.$(`~${value}`);
 async function shown(element) { return element.isDisplayed().catch(() => false); }
 async function tap(element) { await element.waitForDisplayed({timeout:15000}); await element.click(); await wait(300); }
+// Android exposes a whole paragraph as a text node; its center can lie beyond a short link span.
+async function tapLink(text) {
+  const element=driver.$('//*[contains(@text,"'+text+'") ]');await element.waitForDisplayed({timeout:15000});
+  const [position,size]=await Promise.all([element.getLocation(),element.getSize()]);const rect={...position,...size};await driver.execute('mobile: clickGesture',{x:Math.round(rect.x+Math.min(30,rect.width/4)),y:Math.round(rect.y+rect.height/2)});await wait(400);
+}
 async function source() { return driver.getPageSource(); }
 async function capture(name) {
   await driver.saveScreenshot(path.join(output,name+'.png'));
@@ -43,12 +48,12 @@ async function launch(extra = {}, fixture = owner) {
   if(extra.GTMUX_DEBUG_PAIR_URL === '') { await id('pairing-screen').waitForDisplayed({timeout:30000});return; }
   await driver.waitUntil(async () => shown(id('radar-screen')).then(async ok => ok || await shown(id('radar-split'))),{timeout:30000,timeoutMsg:'Radar did not load'});
 }
-async function seek(element, direction='down') {
+async function seek(element, direction='down', scrollID) {
   const rect=await driver.getWindowRect();
-  for(let i=0;i<24;i++) {if(await shown(element)) return;await driver.execute('mobile: scrollGesture',{left:Math.round(rect.width*.08),top:Math.round(rect.height*.25),width:Math.round(rect.width*.84),height:Math.round(rect.height*.58),direction,percent:.8});}
+  for(let i=0;i<24;i++) {if(await shown(element)) return;await driver.execute('mobile: scrollGesture',scrollID?{elementId:(await id(scrollID)).elementId,direction,percent:.9}:{left:Math.round(rect.width*.08),top:Math.round(rect.height*.25),width:Math.round(rect.width*.84),height:Math.round(rect.height*.58),direction,percent:.8});}
   await element.waitForDisplayed({timeout:5000});
 }
-async function open(pane = '%12') { await tap(id('agent-row-'+pane)); await id('detail-mode-chat').waitForDisplayed({timeout:15000}); }
+async function open(pane = '%12') { if(!(pane==='%12' && await shown(id('detail-mode-chat')) && (await source()).includes('knowledge on the phone'))) await tap(id('agent-row-'+pane));await id('detail-mode-chat').waitForDisplayed({timeout:15000}); }
 async function tools(name) { await tap(id('session-tools')); await tap(label(name)); }
 async function check(name, action) {
   const only=process.env.GTMUX_ANDROID_E2E_ONLY?.split(',');
@@ -112,7 +117,7 @@ async function run() {
   await check('05-display-size',async()=>{await tap(id('detail-chat-display'));await tap(id('detail-chat-bigger'));await tap(id('detail-chat-smaller'));await driver.back();});
   await check('06-trace-session-and-turns',async()=>{await tools('Trace');await id('trace-session-title').waitForDisplayed({timeout:15000});assert.ok((await source()).includes('knowledge on the phone'));assert.ok((await source()).includes('151'));});
   await check('07-trace-expand-collapse',async()=>{await tap(id('trace-fold-turns'));assert.ok((await source()).includes('Android trace'));await tap(id('trace-fold-calls'));await tap(id('trace-fold-calls'));});
-  await check('08-trace-earlier',async()=>{const earlier=id('trace-history-earlier');await tap(earlier);await driver.waitUntil(async()=>owner.world.writesTo('/api/transcript/history').length===1,{timeout:10000});await seek(driver.$('//*[contains(@text,\"Earlier request 150\")]'),'up');});
+  await check('08-trace-earlier',async()=>{await tap(id('trace-fold-turns'));const earlier=id('trace-history-earlier');await tap(earlier);await driver.waitUntil(async()=>owner.world.writesTo('/api/transcript/history').length===1,{timeout:10000});await seek(driver.$('//*[contains(@text,\"Earlier request 150\")]'),'up','trace-list');});
   await check('09-trace-search',async()=>{await tap(id('trace-search-toggle'));await id('trace-search').setValue('response 160');assert.ok((await source()).includes('160'));await driver.hideKeyboard().catch(()=>{});await id('trace-search').clearValue();await tap(id('trace-close'));});
   await check('10-diff-wrap-and-back',async()=>{await tools('Diff');await id('diff-wrap').waitForDisplayed({timeout:10000});await tap(id('diff-wrap'));await tap(id('diff-wrap'));await driver.back();assert.equal(await shown(id('diff-wrap')),false);});
   await check('11-fullscreen-tools',async()=>{await launch();await open();await tap(id('detail-mode-chat'));await id('detail-chat').waitForDisplayed({timeout:15000});for(let cycle=0;cycle<3;cycle++){await tap(id('detail-fullscreen'));await id('detail-fs-exit').waitForDisplayed({timeout:10000});assert.equal(await driver.getCurrentPackage(),app);await tap(id('session-tool-trace'));await id('trace-session-title').waitForDisplayed({timeout:10000});await tap(id('trace-close'));await tap(id('detail-fs-exit'));}});
@@ -122,7 +127,7 @@ async function run() {
   await check('15-settings-and-honest-push',async()=>{await tap(id('radar-settings'));const status=driver.$('//*[contains(@text,\"Android push is not configured\")]');await seek(status);assert.ok(await shown(status));});
   await check('16-html-native-local-image-and-consent',async()=>{
     await launch();await open();await tap(id('detail-mode-chat'));await id('detail-chat').waitForDisplayed({timeout:15000});
-    await tap(driver.$('//*[contains(@text,"Android HTML report")]'));
+    await tapLink('Android HTML report');
     await driver.waitUntil(async()=>(await source()).includes('Android document preview'),{timeout:15000});
     assert.ok((await source()).includes('Static report is readable'));assert.equal((await source()).includes('Interactive code ran'),false);
     await driver.waitUntil(async()=>owner.world.writesTo('/api/artifacts/resolve').some(row=>row.reference==='logo.png'&&row.parent_id===createHash('md5').update('report.html').digest('hex')),{timeout:15000});
@@ -131,7 +136,7 @@ async function run() {
     await capture('16-html-interactive');await driver.back();await id('detail-mode-chat').waitForDisplayed({timeout:10000});
   });
   await check('17-markdown-native-share-and-back',async()=>{
-    await tap(driver.$('//*[contains(@text,"Android Markdown report")]'));
+    await tapLink('Android Markdown report');
     await driver.waitUntil(async()=>(await source()).includes('Android Markdown reader'),{timeout:15000});
     await tap(label('Share document'));assert.ok((await source()).length>0);await driver.back();await tap(label('Close document'));
     const exports=adb('shell','run-as',app,'find','cache/share-exports','-type','f');assert.ok(exports.includes('report.md'));
@@ -139,7 +144,7 @@ async function run() {
   });
   await check('18-image-native-zoom-and-back',async()=>{
     await launch();await open();await tap(id('detail-mode-chat'));await id('detail-chat').waitForDisplayed({timeout:15000});
-    await tap(driver.$('//*[contains(@text,"Android image")]'));await label('Share document').waitForDisplayed({timeout:15000});
+    await tapLink('Android image');await label('Share document').waitForDisplayed({timeout:15000});
     const rect=await driver.getWindowRect();await driver.execute('mobile: pinchOpenGesture',{left:100,top:250,width:rect.width-200,height:rect.height-500,percent:.6});
     await capture('18-image-zoomed');await driver.back();await id('detail-mode-chat').waitForDisplayed({timeout:10000});
   });

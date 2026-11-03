@@ -232,11 +232,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
-      APPIUM_HOME: ${{ runner.temp }}/gtmux-appium
       GTMUX_SOURCE_SHA: ${{ github.sha }}
-      GTMUX_ANDROID_E2E_OUTPUT: ${{ runner.temp }}/gtmux-android-evidence
     steps:
       - uses: actions/checkout@v5
+      - name: Isolate Android automation data
+        run: |
+          echo "APPIUM_HOME=$RUNNER_TEMP/gtmux-appium" >> "$GITHUB_ENV"
+          echo "GTMUX_ANDROID_E2E_OUTPUT=$RUNNER_TEMP/gtmux-android-evidence" >> "$GITHUB_ENV"
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
