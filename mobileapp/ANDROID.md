@@ -133,3 +133,5 @@ python3 scripts/test-publisher.py --platform android run \
 `--platform android` selects `gtmux-android` and its own configuration by default;
 it refuses a non-APK or a missing verification receipt. The service's scoped link
 remains private and defaults to 24 hours. Availability is not signing expiry.
+
+The emulator runner keeps a bounded 2 MiB device-log tail independently of Appium screenshots and XML capture. If the automation connection is lost, it retains the first failure, records subsequent flows as not run, and exits unsuccessfully; it does not silently restart a session or count later flows as passed.

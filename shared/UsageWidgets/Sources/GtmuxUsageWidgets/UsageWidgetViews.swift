@@ -131,37 +131,39 @@ public struct UsageWidgetContent: View {
     }
 
     private func medium(_ account: UsageWidgetAccount) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
-                UsageWidgetBrand().font(.caption.weight(.semibold)).layoutPriority(1)
+                if provider.isEmpty && accounts.count > 1 {
+                    UsageWidgetBrand().font(.caption.weight(.semibold))
+                } else { heading(account) }
                 Spacer(minLength: 4)
-                Text(snapshot.server).font(.caption2).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+                if provider.isEmpty && accounts.count > 1 {
+                    Text(snapshot.server).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                } else { UsageWidgetBrand().font(.caption2) }
             }
-            if provider.isEmpty && accounts.count > 1 {
-                HStack(alignment: .top, spacing: 16) {
+            Spacer(minLength: 0)
+            HStack(alignment: .top, spacing: 16) {
+                if provider.isEmpty && accounts.count > 1 {
                     ForEach(Array(accounts.prefix(2))) { item in
-                        VStack(alignment: .leading, spacing: 7) {
+                        VStack(alignment: .leading, spacing: 3) {
                             heading(item)
-                            if let window = item.windows.first { quota(window, account: item, large: true) }
+                            if let window = item.windows.first { compactQuota(window, account: item, large: true) }
                             else { nonQuota(item, large: true) }
                         }.frame(maxWidth: .infinity, alignment: .leading)
                     }
-                }
-            } else {
-                HStack(alignment: .top, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        heading(account)
-                        if let window = account.windows.first { quota(window, account: account, large: true) }
+                } else {
+                    Group {
+                        if let window = account.windows.first { compactQuota(window, account: account, large: true) }
                         else { nonQuota(account, large: true) }
                     }.frame(maxWidth: .infinity, alignment: .leading)
                     if account.windows.count > 1 {
-                        VStack(alignment: .leading, spacing: 5) {
+                        VStack(alignment: .leading, spacing: 6) {
                             ForEach(Array(account.windows.dropFirst().prefix(2).enumerated()), id: \.offset) { _, window in
-                                quota(window, account: account, large: false)
+                                compactQuota(window, account: account, large: false)
                             }
                         }.frame(maxWidth: .infinity, alignment: .leading)
                     } else if account.wallets.count > 1 {
-                        VStack(alignment: .leading, spacing: 6) {
+                        VStack(alignment: .leading, spacing: 4) {
                             ForEach(Array(account.wallets.dropFirst().prefix(2).enumerated()), id: \.offset) { _, wallet in
                                 Text(UsageWidgetWords.wallet(wallet, chinese: chinese)).font(.caption2).foregroundStyle(.secondary)
                                 Text(wallet.currency + " " + wallet.amount).font(.subheadline.weight(.semibold)).lineLimit(1)
@@ -171,15 +173,41 @@ public struct UsageWidgetContent: View {
                 }
             }
             Spacer(minLength: 0)
-            HStack {
-                updated(account)
-                Spacer(minLength: 4)
-                if provider.isEmpty && accounts.count > 2 {
+            HStack(spacing: 8) {
+                if !(provider.isEmpty && accounts.count > 1) {
+                    Text(snapshot.server).font(.caption2).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+                } else if accounts.count > 2 {
                     Text(tr("+\(accounts.count - 2) more", "另有 \(accounts.count - 2) 项"))
                         .font(.caption2).foregroundStyle(.secondary)
                 }
+                Spacer(minLength: 0)
+                updated(account).fixedSize(horizontal: true, vertical: false)
             }
         }
+    }
+
+    private func compactQuota(_ window: UsageWidgetWindow, account: UsageWidgetAccount, large: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(window.expired(at: date) ? tr("Update needed", "等待更新") : UsageWidgetWords.percent(window.percent))
+                    .font(large ? .system(size: 30, weight: .semibold, design: .rounded) : .subheadline.weight(.semibold))
+                    .foregroundStyle(tint(window, account: account)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.8)
+                Spacer(minLength: 0)
+                Text(UsageWidgetWords.window(window, agent: account.agent, chinese: chinese))
+                    .font(.caption2).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.8)
+            }
+            if !window.expired(at: date) {
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(Color.secondary.opacity(0.15))
+                        Capsule().fill(tint(window, account: account))
+                            .frame(width: geometry.size.width * min(1, max(0, window.percent / 100)))
+                    }
+                }.frame(height: 4).accessibilityHidden(true)
+            }
+            reset(window)
+        }
+        .accessibilityElement(children: .combine)
     }
 
     private func quota(_ window: UsageWidgetWindow, account: UsageWidgetAccount, large: Bool) -> some View {

@@ -24,6 +24,9 @@ for(const width of [320,768,1440]) for(const colorScheme of ['light','dark']) {
     assert.equal(await chat.locator('.code-language').innerText(),'JavaScript');
     assert.deepEqual(await chat.getByRole('tab').allTextContents(),['Full call','Shell · cmd 1','Python · cmd 1']);
     assert.equal(await chat.getByRole('tab').first().getAttribute('aria-selected'),'true');
+    assert.match(await chat.locator('.code-call-outline > summary').innerText(),/Commands in code · 1/);
+    await chat.locator('.code-call-command').click();
+    assert.equal(await chat.getByRole('tab',{name:'Shell · cmd 1',exact:true}).getAttribute('aria-selected'),'true');
     await chat.getByRole('tab',{name:'Shell · cmd 1',exact:true}).click();
     assert.match(await chat.locator('pre').innerText(),/git status/);
     await chat.getByRole('tab',{name:'Python · cmd 1'}).click();
@@ -36,6 +39,15 @@ for(const width of [320,768,1440]) for(const colorScheme of ['light','dark']) {
     await page.locator('#chat').getByText('A later progress record',{exact:true}).waitFor();
     assert.equal(await chat.getByRole('tab',{name:'Python · cmd 1'}).getAttribute('aria-selected'),'true');
     assert.equal(await chat.locator('pre').innerText(),python);
+    fixture.state.turns['%901'].unshift({session_id:'synthetic',record_id:'earlier-call',time:'2026-11-01T06:59:00Z',prompt:'An earlier tool call',segments:[{steps:[{title:'exec_command',operation:'command',input_kind:'command',input:'echo earlier'}]}]});
+    await page.waitForFunction(()=>document.querySelectorAll('#chat .cturn').length===2);
+    assert.equal(await page.locator('#chat .steps-toggle').first().getAttribute('aria-expanded'),'false','a newly loaded older turn must not inherit another turn disclosure');
+    assert.equal(await page.locator('#chat .steps-toggle').last().getAttribute('aria-expanded'),'true','original call group remains open after prepend');
+    assert.equal(await chat.getByRole('tab',{name:'Python · cmd 1'}).getAttribute('aria-selected'),'true','source selector follows its real turn');
+    assert.equal(await chat.locator('pre').innerText(),python);
+    fixture.state.turns['%901'].shift();
+    await page.waitForFunction(()=>document.querySelectorAll('#chat .cturn').length===1);
+    assert.equal(await chat.getByRole('tab',{name:'Python · cmd 1'}).getAttribute('aria-selected'),'true','source selector survives history window roll');
     await chat.getByRole('tab',{name:'Full call',exact:true}).click();
     assert.match(await chat.locator('pre').innerText(),/tools\.exec_command/);
     assert.equal(await chat.locator('pre').innerText(),source);
@@ -51,6 +63,7 @@ for(const width of [320,768,1440]) for(const colorScheme of ['light','dark']) {
     if(process.env.GTMUX_WEB_EVIDENCE){await fs.mkdir(process.env.GTMUX_WEB_EVIDENCE,{recursive:true});await page.screenshot({path:path.join(process.env.GTMUX_WEB_EVIDENCE,`nested-calls-${width}-${colorScheme}.png`)});}
     await children.first().click();
     const preview=trace.locator('.code-panel');
+    assert.equal(await preview.locator('.code-call-command').count(),1,'trace reuses the same submitted-command outline');
     assert.equal(await preview.locator('pre').evaluate(node=>getComputedStyle(node).fontSize),'19px');
     assert.deepEqual(await preview.getByRole('tab').allTextContents(),['Full call','Shell · cmd 1','Python · cmd 1']);
     await preview.getByRole('tab',{name:'Python · cmd 1'}).click();

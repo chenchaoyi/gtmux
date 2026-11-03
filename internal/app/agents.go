@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
@@ -55,10 +56,12 @@ func agentsSummary(panes []radar.Pane) string {
 	return s + " · " + strings.Join(parts, " · ")
 }
 
-// cmdAgents implements `gtmux agents [--watch] [--popup] [--json]`.
+// cmdAgents implements `gtmux agents [--watch] [--popup] [--json [--pane %N]]`.
 func cmdAgents(args []string) int {
 	watch, popup, asJSON := false, false, false
-	for _, a := range args {
+	pane := ""
+	for i := 0; i < len(args); i++ {
+		a := args[i]
 		switch a {
 		case "-h", "--help":
 			commandHelp("agents")
@@ -69,7 +72,37 @@ func cmdAgents(args []string) int {
 			popup = true // close the TUI after a jump (used by the prefix+a popup)
 		case "--json":
 			asJSON = true
+		case "--pane":
+			i++
+			if i >= len(args) {
+				i18n.Sae("--pane requires a pane ID", "--pane 需要窗格 ID")
+				return 1
+			}
+			pane = args[i]
+			if len(pane) < 2 || pane[0] != '%' {
+				i18n.Sae("invalid pane ID", "窗格 ID 无效")
+				return 1
+			}
+			for _, c := range pane[1:] {
+				if c < '0' || c > '9' {
+					i18n.Sae("invalid pane ID", "窗格 ID 无效")
+					return 1
+				}
+			}
 		}
+	}
+	if pane != "" {
+		if !asJSON || watch || popup {
+			i18n.Sae("--pane requires --json without --watch or --popup", "--pane 须与 --json 同用，不可与 --watch 或 --popup 同用")
+			return 1
+		}
+		b, err := radar.PaneAgentsJSONBytes(pane)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return 1
+		}
+		fmt.Println(string(b))
+		return 0
 	}
 	// The JSON is the agents contract, and it lists native sessions (agents outside tmux,
 	// sensed by their hooks) with no tmux server too: the radar then scans no panes and

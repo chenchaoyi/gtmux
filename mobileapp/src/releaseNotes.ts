@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.169',
+    en: [
+      '- Read commands in Chat and Trace with clearer source-language previews while keeping the complete original call available.',
+      '- Fixed links wrapped in bold or other text styles displaying as raw Markdown.',
+      '- Refined usage widgets so the current value, usage window and update time are easier to read.',
+    ],
+    zh: [
+      '- 优化 Chat 和 Trace 中的命令阅读，按语言展示代码，同时保留完整调用原文。',
+      '- 修复粗体等文字样式中的链接显示为 Markdown 原文的问题。',
+      '- 调整用量小组件排版，让当前用量、统计周期和更新时间更清楚。',
+    ],
+  },
+  {
     version: '1.0.168',
     en: [
       'Usage widgets now use the colored gtmux logo, clearer provider icons and a more compact header.',

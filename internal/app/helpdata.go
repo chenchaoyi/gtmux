@@ -72,12 +72,13 @@ var helpCommands = []command{
 		{Name: "--json", EN: "print metadata instead of a Markdown link", ZH: "输出元数据，替代 Markdown 链接"},
 	}},
 	{
-		Name: "agents", Args: "[--watch|--json]", Group: "look",
+		Name: "agents", Args: "[--watch|--json [--pane %N]]", Group: "look",
 		EN: "who is waiting, working, idle, and where",
 		ZH: "谁在等你、谁在跑、谁空着，各在哪",
 		Flags: []cmdFlag{
 			{Name: "--watch", EN: "the live board: ↑↓ select, ⏎ jump, r refresh, q quit", ZH: "实时看板：↑↓ 选择，⏎ 跳转，r 刷新，q 退出"},
 			{Name: "--json", EN: "the same rows as a structured array, for scripts and apps", ZH: "同样的行，输出成结构化数组，给脚本和 app 用"},
+			{Name: "--pane %N", EN: "fresh status for one pane; requires --json, excludes --watch/--popup and native histories", ZH: "实时检查单个窗格；须与 --json 同用，不可与 --watch/--popup 同用，不扫描外部历史会话"},
 		},
 		DetailEN: "Every pane with a coding agent in it, grouped by what it wants from you and sorted so the one that wants something is first. The pane id in the last column is what `gtmux focus` takes.",
 		DetailZH: "每个跑着 coding agent 的 pane，按它需要你做什么分组，需要你的排在最前。最后一列的pane id 就是 `gtmux focus` 要的那个。",

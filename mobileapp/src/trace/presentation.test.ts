@@ -64,3 +64,14 @@ test('outline summaries use the requested language for image-only prompts', () =
     conversationOutline(turns, 'zh'),
   );
 });
+
+test('overview preserves Markdown destinations and bookmark identity across history pages and home scopes',()=>{
+ const turn:any={record_id:'record-late',session_id:'session',turn_ordinal:151,prompt:'**[Read](https://example.test/'+ 'long'.repeat(100)+')**',response:'## Result\n\n- **Complete**'};
+ const before=conversationOutline([turn],'en',{home_id:'home-one'})[0];
+ const after=conversationOutline([{...turn,record_id:'record-early',turn_ordinal:150,prompt:'Earlier'},turn],'en',{home_id:'home-one'})[1];
+ expect(after.key).toBe(before.key);expect(after.bookmarkKey).toBe(before.bookmarkKey);expect(after.turn).toBe(151);expect(before.promptMarkdown).toBe(turn.prompt);expect(before.summaryMarkdown).toBe(turn.response);
+ expect(conversationOutline([turn],'en',{home_id:'home-two'})[0].bookmarkKey).not.toBe(before.bookmarkKey);
+ expect(conversationOutline([{...turn,response:'Updated progress'}],'en',{home_id:'home-one'})[0].bookmarkKey).toBe(before.bookmarkKey);
+ expect(conversationOutline([{prompt:'Unidentified',response:'Reply'}])[0].bookmarkKey).toBeUndefined();
+ expect(browser.conversationOutline([turn],'en',{home_id:'home-one'})).toEqual([before]);
+});

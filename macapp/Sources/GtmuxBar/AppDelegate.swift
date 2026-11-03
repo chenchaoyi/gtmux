@@ -641,11 +641,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // Gtmux.app's name. A restore started from a terminal is already attributed
             // to that terminal, which is honest; only an app has to say so, because
             // gtmux cannot read its own attribution. See startBootServer.
-            GtmuxCLI.spawn(["restore", "--from-app"], onExit: { [weak self] in
-                self?.store.endRestore()
-                self?.store.refreshRestorePlan()
-                self?.store.refresh() // the fleet it just brought back
-            })
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                // A large working set opens many tabs; use a restore budget, not the short diagnostic deadline.
+                let result = GtmuxCLI.captureBounded(["restore", "--from-app"], timeout: 1800)
+                GtmuxCLI.logFailure(["restore"], status: result.status)
+                DispatchQueue.main.async {
+                    self?.store.endRestore(failed: result.status != 0)
+                    self?.store.refreshRestorePlan()
+                    self?.store.refresh()
+                }
+            }
         case .newSession: newSession() // manages its own popover close + prompt
         case .environmentHealth:
             popover.performClose(nil)

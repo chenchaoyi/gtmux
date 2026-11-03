@@ -1,12 +1,12 @@
-import type { TraceEvent, TraceStep } from './model';
-import { contextLabel, build, groupTurns } from './model';
+import type { TraceEvent, TraceStep, TraceContext } from './model';
+import { contextLabel, build, groupTurns, turnBookmarkKey } from './model';
 import type { TranscriptTurn } from '../api/client';
 import {
   activityOperation,
   activityLabel,
   activityPreview,
 } from '../ui/activity';
-import { tracePreview } from './timeline';
+import { tracePreview, tracePreviewSource } from './timeline';
 
 export const traceKindLabels = {
   all: ['All records', '全部记录'],
@@ -64,18 +64,29 @@ export const traceRecordPaths = {
 export function conversationOutline(
   turns: TranscriptTurn[],
   lang: 'en' | 'zh' = 'en',
+  context?: TraceContext,
 ) {
-  return groupTurns(build(turns).events).map(group => ({
+  return groupTurns(build(turns, context).events).map(group => ({
     key: group.key,
+    bookmarkKey: turnBookmarkKey(turns[group.events[0].sourceIndex], context),
     sourceIndex: group.events[0].sourceIndex,
     turn: group.turn,
     agent: group.agent,
     session: group.session,
     prompt: tracePreview(group.prompt?.body || group.events[0].body, lang),
+    promptMarkdown: tracePreviewSource(
+      group.prompt?.body || group.events[0].body,
+      lang,
+    ).slice(0, 8192),
     summary: tracePreview(
       [...group.events].reverse().find(event => event.kind === 'assistant')
         ?.body || '',
       lang,
     ),
+    summaryMarkdown: tracePreviewSource(
+      [...group.events].reverse().find(event => event.kind === 'assistant')
+        ?.body || '',
+      lang,
+    ).slice(0, 8192),
   }));
 }

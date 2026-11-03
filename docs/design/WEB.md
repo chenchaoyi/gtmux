@@ -296,3 +296,11 @@ remain local to this browser and apply immediately. The content scrolls within a
 one control for each text-size preference, with existing desktop/touch target metrics.
 
 Browser Diff preserves recorded whitespace and code layout without a format control. Wrapping changes only line presentation. One compact source-number gutter shows the old number for deletions and the new number for additions/context. Copy retains the original patch. Trace initially folds turns; individual choices survive updates and arriving turns stay folded unless a bulk-open default was chosen.
+
+## Conversation overview bookmarks
+
+The overview preview uses the message Markdown renderer, with bounded visible text and intact link destinations. Its bookmark button marks a real turn; ticks use the gtmux accent plus a dot. Marks persist only in this browser and are isolated by server path, credential, conversation home and session. Loading earlier turns preserves identity and the visible reading anchor. No hover or bookmark sends input or fetches hidden conversation content. Authorization rejection clears local marks. Chat and Trace readers share the generated static command-input outline; it is not an execution receipt.
+
+Recent-history window rollover also preserves the visible turn. Tool disclosures and code-source selectors reuse the same stable turn identity, and selectors are restored before measuring message geometry.
+
+If browser storage is denied or full, marks remain in page memory through transcript redraws; the preview names that limit. Revoking authorization clears both stored and page-only marks.

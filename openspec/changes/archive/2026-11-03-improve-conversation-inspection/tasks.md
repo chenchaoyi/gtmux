@@ -1,0 +1,20 @@
+## Implementation
+
+- [x] Preserve nested Markdown links and native range callbacks.
+- [x] Add bounded formatted overview previews and stable local bookmarks.
+- [x] Preserve visible turns when history is prepended after map layout.
+- [x] Reuse static command input analysis in both readers without fabricated execution events.
+- [x] Add fresh target-pane radar reads and use them for screenshot delivery guards.
+- [x] Fix inherited GUI tmux environment handling and visible restore feedback.
+- [x] Compact shared Apple usage widget composition.
+- [x] Complete targeted regressions, shared App/core gates and review rendered states; final candidate/main gates remain delivery evidence outside the feature checklist.
+- [x] Synchronize specifications and bilingual behavior documentation.
+
+- [x] Preserve Chat reading/disclosure state when a bounded history window rolls, retaining legacy per-row fallback.
+- [x] Capture independent bounded emulator diagnostics and stop dependent flows honestly after driver loss.
+
+- [x] Keep page-only marks across redraws when storage fails and clear them on authorization revocation.
+
+## Acceptance
+
+Synthetic browser/native/component fixtures are separate from actual installed-device acceptance. No real user pane input or restore is exercised. Live status timing measures read latency only, not complete screenshot delivery. Native touches/VoiceOver and a real WidgetKit gallery remain separate acceptance boundaries.

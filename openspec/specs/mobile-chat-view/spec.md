@@ -366,7 +366,6 @@ Chat and Trace SHALL share code presentation and pure reading transforms. Static
 - **THEN** its five calls have a visible nested relationship and recorded group positions
 - **AND** the following progress record returns to the outer level
 
-
 ### Requirement: HQ current briefing without duplicate navigation
 Phone and iPad HQ overviews SHALL present the Board card as a non-interactive current summary, without a disclosure or duplicate board page. Amber and red machine warnings from the existing owner-only resource read SHALL appear within this summary. Missing readings SHALL NOT imply a healthy or warned machine; retained failed readings SHALL remain explicitly stale. Knowledge and Usage details and the legacy server fallback SHALL remain available.
 
@@ -374,3 +373,12 @@ Phone and iPad HQ overviews SHALL present the Board card as a non-interactive cu
 - **WHEN** the user opens a workspace-capable HQ overview with a recorded machine warning
 - **THEN** the current Board summary contains that warning and no board-navigation control
 - **AND** the original matters stay directly below and other resource details remain reachable
+
+### Requirement: Nested links and submitted command inspection
+
+Shared App Markdown SHALL preserve link activation inside supported emphasis and pass inherited styling and callbacks to the native range renderer. Literal code and unsafe link schemes SHALL remain inert. Shared Chat and Trace code readers SHALL expose a bounded outline of static command inputs with the corresponding source selectors. They SHALL retain Full call first, original-copy semantics and unchanged recorded tool-call counts. Dynamic expressions SHALL NOT be evaluated, and input outlines SHALL NOT claim execution or success. The browser SHALL use the same generated command analysis.
+
+#### Scenario: A code-mode call includes a file read
+
+- **WHEN** a recorded wrapper includes a static command and a dynamic command expression
+- **THEN** the static command can be inspected as input while the dynamic expression remains only in Full call

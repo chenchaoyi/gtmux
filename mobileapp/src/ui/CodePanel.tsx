@@ -2,8 +2,10 @@ import React, { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Clipboard from '@react-native-clipboard/clipboard';
 import { CodeText } from './CodeText';
+import { ActivityIcon } from './ActivityIcon';
+import { activityLabel } from './activity';
 import { ChromeText } from './ChromeText';
-import { codeParts } from './codeFormatting';
+import { codeParts, commandOutline } from './codeFormatting';
 import { codeLabel } from './codeReading';
 import { CheckIcon, CopyIcon, ExpandIcon } from './Icons';
 import { CopyFeedbackContext } from './CopyableText';
@@ -57,6 +59,8 @@ export function CodePanel({
         : [{ id: 'original', source, hint: hint || '', path: '' }],
     [source, hint, allowEmbedded],
   );
+  const outline = useMemo(() => commandOutline(parts), [parts]);
+  const [outlineOpen, setOutlineOpen] = useState(true);
   const [partID, setPartID] = useState<string | null>(initialPartID || null);
   const part = parts.find(p => p.id === partID) || parts[0];
   const canFormat =
@@ -179,6 +183,56 @@ export function CodePanel({
           )}
         </View>
       </View>
+      {outline.length > 0 && (
+        <View
+          style={{
+            borderBottomColor: border,
+            borderBottomWidth: StyleSheet.hairlineWidth,
+          }}
+        >
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityState={{ expanded: outlineOpen }}
+            onPress={() => setOutlineOpen(v => !v)}
+            style={styles.outlineToggle}
+            testID={testIDPrefix + '-outline-toggle'}
+          >
+            <ChromeText style={[styles.outlineText, { color: dim }]}>
+              {lang === 'zh' ? '代码内命令' : 'Commands in code'} ·{' '}
+              {outline.length}
+            </ChromeText>
+          </TouchableOpacity>
+          {outlineOpen && (
+            <ScrollView nestedScrollEnabled style={styles.outlineList}>
+              {outline.map(item => (
+                <TouchableOpacity
+                  key={item.partID}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${activityLabel(
+                    item.operation,
+                    lang,
+                  )}: ${item.preview}`}
+                  onPress={() => setPartID(item.partID)}
+                  testID={testIDPrefix + '-outline-' + item.partID}
+                  style={styles.outlineRow}
+                >
+                  <ActivityIcon
+                    operation={item.operation}
+                    size={16}
+                    color={dim}
+                  />
+                  <ChromeText
+                    numberOfLines={2}
+                    style={[styles.outlinePreview, { color: fg }]}
+                  >
+                    {item.preview}
+                  </ChromeText>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
+        </View>
+      )}
       {parts.length > 1 && (
         <View accessibilityRole="tablist" style={styles.parts}>
           {parts.map(p => (
@@ -231,6 +285,22 @@ export function CodePanel({
   );
 }
 const styles = StyleSheet.create({
+  outlineToggle: {
+    minHeight: 44,
+    paddingHorizontal: 10,
+    justifyContent: 'center',
+  },
+  outlineText: { fontSize: 12 },
+  outlinePreview: { flex: 1, fontSize: 12 },
+  outlineList: { maxHeight: 176 },
+  outlineRow: {
+    minHeight: 44,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   root: {
     minWidth: 0,
     borderWidth: StyleSheet.hairlineWidth,

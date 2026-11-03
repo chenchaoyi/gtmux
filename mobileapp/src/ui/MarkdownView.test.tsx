@@ -188,3 +188,18 @@ test('local document links retain their destination and use the file callback', 
   expect(texts(render('[报告](/private/tmp/report.html)')).join('')).toContain('/private/tmp/report.html');
   act(() => tree.unmount());
 });
+
+test.each(['**[Open](https://downloads.example.test/install)**','*[Open](https://downloads.example.test/install)*','~~[Open](https://downloads.example.test/install)~~'])('emphasis preserves an actionable nested link: %s', source => {
+  const {Linking}=require('react-native');const open=jest.spyOn(Linking,'openURL').mockResolvedValue(undefined);
+  let tree!:renderer.ReactTestRenderer;
+  act(()=>{tree=renderer.create(<MarkdownView source={source} colors={colors}/>);});
+  const link=tree.root.findAllByType(Text).find(n=>n.props.accessibilityRole==='link');
+  expect(link).toBeDefined();act(()=>{link!.props.onPress();});expect(open).toHaveBeenCalledWith('https://downloads.example.test/install');
+  act(()=>tree.unmount());open.mockRestore();
+});
+test('nested local links keep scoped file open, while code and unsafe URLs stay inert',()=>{
+ const open=jest.fn();let tree!:renderer.ReactTestRenderer;
+ act(()=>{tree=renderer.create(<MarkdownView source={'**[Report](/private/tmp/report.md)**\n\n`[literal](https://example.test)`\n\n**[Bad](javascript:alert)**'} colors={colors} openFile={open}/>);});
+ const links=tree.root.findAllByType(Text).filter(n=>n.props.accessibilityRole==='link');expect(links).toHaveLength(1);
+ act(()=>{links[0].props.onPress();});expect(open).toHaveBeenCalledWith('/private/tmp/report.md');act(()=>tree.unmount());
+});

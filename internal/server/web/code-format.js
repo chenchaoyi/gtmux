@@ -1,4 +1,4 @@
-// Generated code formatter; source SHA256 f22a136b71499a1a559d012c81a2d3bce640a5e600d54e0abb81d909fb429b10
+// Generated code formatter; source SHA256 1b3e6702782f071be771e7bc4a54438dc74944343ca51e2924e3a679d0853ad7
 // Includes @lezer/*, MIT; see vendor/lezer.LICENSE.
 (function(){
 var factories={},cache={};
@@ -3839,6 +3839,7 @@ var exports={};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.codeParts = codeParts;
+exports.commandOutline = commandOutline;
 exports.formatCode = formatCode;
 // Read-only formatting; parsers never execute recorded code. Unsupported or
 // incomplete input falls back verbatim, including whitespace-sensitive scripts.
@@ -4056,6 +4057,16 @@ function codeParts(source, hint = '') {
     }
     // A large wrapper stays readable in full without mounting an unbounded tab list.
     return found.length && found.length <= 16 ? [original, ...found] : [original];
+}
+/** Static input outline, never an execution trace or a success receipt. */
+function commandOutline(parts) {
+    return parts.filter(part => /^(?:cmd|command) \d+$/.test(part.id)).map(part => {
+        const line = part.source.trim().split('\n')[0].slice(0, 160).replace(/[\uD800-\uDBFF]$/, '');
+        const operation = /^(?:cat|head|tail|sed)\s/.test(line) ? 'read' :
+            /^(?:ls|find)\b|^rg\s+--files\b/.test(line) ? 'list' :
+                /^(?:rg|grep)\s/.test(line) ? 'search' : 'command';
+        return { partID: part.id, operation, preview: line };
+    });
 }
 function formatCode(source, hint = '') {
     const kind = String(hint || '').toLowerCase();

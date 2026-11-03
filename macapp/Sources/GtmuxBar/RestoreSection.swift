@@ -14,6 +14,12 @@ struct RestoreSection: View {
         VStack(spacing: 0) {
             if store.showsRestore {
                 restoreRow(p)
+                if store.restoreError {
+                    Label(l10n.tr("Restore didn’t complete. Check Terminal or Diagnostics before retrying.", "恢复未完成，请先查看终端或诊断，再重试。"), systemImage: "exclamationmark.triangle")
+                        .font(.system(size: 11)).foregroundStyle(p.fg2)
+                        .padding(.horizontal, 12).padding(.bottom, 8)
+                        .accessibilityIdentifier("restore-error")
+                }
                 Divider().overlay(p.divider)
             }
         }
@@ -26,7 +32,7 @@ struct RestoreSection: View {
             restoreBusyRow(p)
         } else if count > 0 {
             restoreBanner(count, p)
-        } else if plan == nil {
+        } else if plan == nil || store.restoreError {
             restoreQuietRow(p)
         }
     }
@@ -64,7 +70,9 @@ struct RestoreSection: View {
                 Button { onRestore() } label: {
                     HStack(spacing: 7) {
                         Image(systemName: "arrow.uturn.backward.circle.fill").font(.system(size: 13))
-                        Text(l10n.tr("Restore \(count) session\(count == 1 ? "" : "s")", "恢复 \(count) 个会话"))
+                        Text(store.restorePlan?.sessions.allSatisfy { $0.state == "detached" } == true
+                             ? l10n.tr("Open \(count) session\(count == 1 ? "" : "s") in Terminal", "在终端打开 \(count) 个会话")
+                             : l10n.tr("Restore \(count) session\(count == 1 ? "" : "s")", "恢复 \(count) 个会话"))
                             .font(.system(size: 11.5, weight: .semibold))
                         Spacer(minLength: 4)
                     }
@@ -121,6 +129,8 @@ struct RestoreSection: View {
 
     @ViewBuilder private func restorePlanList(_ plan: RestorePlan, _ p: Theme.Palette) -> some View {
         VStack(alignment: .leading, spacing: 5) {
+            Text(l10n.tr("Opens new tabs. Your current sessions stay open.", "在新标签页打开，保留当前所有会话。"))
+                .font(.system(size: 10)).foregroundStyle(p.fg3)
             ForEach(plan.sessions) { s in
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
@@ -130,7 +140,7 @@ struct RestoreSection: View {
                             .font(.system(size: 9)).foregroundStyle(p.fg3)
                         Spacer(minLength: 0)
                         if let state = s.state {
-                            Text(state == "detached" ? l10n.tr("Detached", "未连接") : l10n.tr("From save", "来自存档"))
+                            Text(state == "detached" ? l10n.tr("Not open in Terminal", "未在终端打开") : l10n.tr("From save", "来自存档"))
                                 .font(.system(size: 9)).foregroundStyle(p.fg3)
                         }
                     }
