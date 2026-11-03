@@ -56,7 +56,9 @@ final class MacUsageWidgetSupportTests: XCTestCase {
                 let image = try XCTUnwrap(renderer.nsImage)
                 if let folder = ProcessInfo.processInfo.environment["GTMUX_WIDGET_RENDER_DIR"], let tiff = image.tiffRepresentation,
                    let bitmap = NSBitmapImageRep(data: tiff), let png = bitmap.representation(using: .png, properties: [:]) {
-                    try png.write(to: URL(fileURLWithPath: folder).appendingPathComponent("medium-\(state)-\(dark ? "dark" : "light").png"))
+                    let output = URL(fileURLWithPath: folder)
+                    try FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
+                    try png.write(to: output.appendingPathComponent("medium-\(state)-\(dark ? "dark" : "light").png"))
                 }
             }
         }
