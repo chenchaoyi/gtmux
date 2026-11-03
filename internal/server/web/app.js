@@ -1672,6 +1672,9 @@
     for (var i = 0; i < value.length; i++) { one = Math.imul(one ^ value.charCodeAt(i), 16777619); two = Math.imul(two, 33) ^ value.charCodeAt(i); }
     return 'gtmux.compose:' + BASE + ':' + (one >>> 0).toString(36) + (two >>> 0).toString(36);
   }
+  function mapOptions(agent,state) {
+    return {state:state,storageKey:composeNamespace().replace('gtmux.compose:','gtmux.bookmarks:'),bookmarkIcon:uiIcon('bookmark'),context:agent||{}};
+  }
   function composeData() {
     var key = composeNamespace();
     if (composeCache && composeCache.key === key && !composeCache.revoked) return composeCache;
@@ -1699,7 +1702,7 @@
       data.revoked = true; clearTimeout(data.timer); data.requests.forEach(function (r) { r.abort(); }); data.urls.forEach(function (url) { URL.revokeObjectURL(url); }); data.urls.clear();
       Object.keys(data.drafts).forEach(function (id) { var draft = data.drafts[id]; draft.text = ''; draft.files = []; draft.recovery = null; });
     }
-    try { var prefix = 'gtmux.compose:' + BASE + ':'; for (var i = localStorage.length - 1; i >= 0; i--) { var key = localStorage.key(i); if (key && key.indexOf(prefix) === 0) localStorage.removeItem(key); } } catch (e) {}
+    try { var prefix = 'gtmux.compose:' + BASE + ':'; for (var i = localStorage.length - 1; i >= 0; i--) { var key = localStorage.key(i); if (key && (key.indexOf(prefix) === 0 || key.indexOf('gtmux.bookmarks:' + BASE + ':') === 0)) localStorage.removeItem(key); } } catch (e) {}
     composeCache = null;
   }
 
@@ -2226,6 +2229,8 @@
     var oldScroll = root.querySelector('.conv-scroll');
     var atBottom = !oldScroll || (oldScroll.scrollHeight - oldScroll.scrollTop - oldScroll.clientHeight < 48);
     var prevTop = oldScroll ? oldScroll.scrollTop : 0;
+    var anchor = readingAnchor(oldScroll), prepended = hasPrependedTurns(oldScroll, turns);
+    var mapState=root.conversationMapDispose && root.conversationMapDispose.snapshot && root.conversationMapDispose.snapshot();
     if(root.conversationMapDispose) root.conversationMapDispose();
     root.innerHTML = ''; root.classList.remove('wide');
     var a = curAgent || {};
@@ -2261,8 +2266,9 @@
     scroll.appendChild(col); main.appendChild(scroll); root.appendChild(main);
     renderChatInteraction();
     syncChatLive(main, a, function () { return !$('chat').hidden && paneMode === 'chat' && curPane === a.pane_id && curAgent && curAgent.status === 'working'; });
-    scroll.scrollTop = atBottom ? scroll.scrollHeight : prevTop;
-    root.conversationMapDispose = window.GtmuxConversationMap ? window.GtmuxConversationMap.mount(main,scroll,turns,T) : null;
+    root.conversationMapDispose = window.GtmuxConversationMap ? window.GtmuxConversationMap.mount(main,scroll,turns,T,mdPreview,mapOptions(a,mapState)) : null;
+    scroll.scrollTop = atBottom && !prepended ? scroll.scrollHeight : prevTop;
+    if (prepended) restoreReadingAnchor(scroll, anchor);
     if (curTurnIdx >= turns.length) curTurnIdx = Math.max(0, turns.length - 1);
     restoreCodeState(root,preserved);
     root.querySelectorAll('[data-chat-focus]').forEach(function (node) {
@@ -2277,9 +2283,10 @@
     root.querySelectorAll('.code-panel').forEach(function(node){if(node.readingKey && node.readingState)code[node.readingKey]=node.readingState();});
     root.querySelectorAll('.step-inspect').forEach(function (node) { if (node.saveOpenState) node.saveOpenState(); });
     root.querySelectorAll('.step-input').forEach(function (node) { scroll[node.dataset.chatFocus] = [node.scrollLeft, node.scrollTop]; });
-    return {focused: active && root.contains && root.contains(active) ? active.getAttribute('data-chat-focus') : null, scroll: scroll, code:code};
+    return {turnFocus:active&&root.contains(active)&&active.classList.contains('cturn')?active.dataset.turnIdentity:null,focused: active && root.contains && root.contains(active) ? active.getAttribute('data-chat-focus') : null, scroll: scroll, code:code};
   }
   function restoreCodeState(root,preserved) {
+    if(preserved.turnFocus){var turn=Array.from(root.querySelectorAll('.cturn')).find(function(node){return node.dataset.turnIdentity===preserved.turnFocus;});if(turn){turn.tabIndex=-1;turn.focus({preventScroll:true});}}
     root.querySelectorAll('.code-panel').forEach(function(node){var state=preserved.code && preserved.code[node.readingKey];if(state && node.restoreReadingState)node.restoreReadingState(state);});
   }
   function restoreToolState(root, preserved) {
@@ -2533,8 +2540,23 @@
   function turnSegments(t) {
     return (t.segments && t.segments.length ? t.segments : [{text: t.response || '', steps: t.steps || []}]).filter(function (segment) { return segment.text || segment.steps && segment.steps.length; });
   }
+  function conversationIdentity(t) { return JSON.stringify([t.session_id||'',t.record_id||t.time||t.turn_ordinal||t.prompt||'']); }
+  function readingAnchor(scroll) {
+    if(!scroll)return null;
+    var top=scroll.getBoundingClientRect().top,node=Array.from(scroll.querySelectorAll('.cturn')).find(function(n){return n.getBoundingClientRect().bottom>top;});
+    return node?{key:node.dataset.turnIdentity,offset:node.getBoundingClientRect().top-top}:null;
+  }
+  function hasPrependedTurns(scroll,turns) {
+    var first=scroll&&scroll.querySelector('.cturn');
+    return first&&turns.length&&first.dataset.turnIdentity!==conversationIdentity(turns[0])&&turns.some(function(t){return conversationIdentity(t)===first.dataset.turnIdentity;});
+  }
+  function restoreReadingAnchor(scroll,anchor) {
+    if(!anchor)return;
+    var node=Array.from(scroll.querySelectorAll('.cturn')).find(function(n){return n.dataset.turnIdentity===anchor.key;});
+    if(node)scroll.scrollTop+=node.getBoundingClientRect().top-scroll.getBoundingClientRect().top-anchor.offset;
+  }
   function conversationTurn(t, currentAgent, idx, expanded, separator, focused, onUpdate) {
-    var ct = document.createElement('article'); ct.className = 'cturn'; if (focused) ct.id = 'cturn-' + idx;
+    var ct = document.createElement('article'); ct.className = 'cturn'; ct.dataset.turnIdentity=conversationIdentity(t); if (focused) ct.id = 'cturn-' + idx;
     if (separator) ct.appendChild(sepEl(separator));
     if (t.prompt) {
       var ur = document.createElement('div'); ur.className = 'urow';
@@ -2729,6 +2751,7 @@
   function uiIcon(kind) {
     // Lucide 0.468.0 (ISC); attribution: vendor/lucide.LICENSE.
     var paths = {
+      "bookmark": '<path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>',
       "sun": "<circle cx=\"12\" cy=\"12\" r=\"4\"/><path d=\"M12 2v2m0 16v2M2 12h2m16 0h2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42\"/>",
       "moon": "<path d=\"M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z\"/>",
       "monitor": "<rect x=\"2\" y=\"3\" width=\"20\" height=\"14\" rx=\"2\"/><path d=\"M8 21h8m-4-4v4\"/>",
@@ -2888,6 +2911,14 @@
       var i = parts.indexOf(current), next = event.key === 'Home' ? 0 : event.key === 'End' ? parts.length-1 : (i + (event.key === 'ArrowRight' ? 1 : -1) + parts.length) % parts.length;
       current = parts[next]; draw(); tabButtons[next].focus();
     };
+    var outline=window.GtmuxCodeFormat.commandOutline(parts);
+    if(outline.length){
+      var commands=el('details','code-call-outline');commands.open=true;
+      commands.appendChild(el('summary','',T('Commands in code','代码内命令')+' · '+outline.length));
+      var list=el('div','code-call-commands');
+      outline.forEach(function(item){var button=el('button','code-call-command');button.type='button';button.appendChild(activityIcon(item.operation));button.appendChild(el('span','',item.preview));button.onclick=function(){current=parts.find(function(p){return p.id===item.partID;});draw();};list.appendChild(button);});
+      commands.appendChild(list);root.appendChild(commands);
+    }
     root.appendChild(tabs);
     var pre = el('pre', options.className || 'step-input'); pre.tabIndex = 0;
     pre.setAttribute('role', 'region'); pre.setAttribute('aria-label', options.label || T('Recorded code', '已记录代码'));
@@ -3076,7 +3107,9 @@
   // `code`/[links] inline; heading/para/fenced-code/list/quote/hr/pipe-table
   // blocks. Underscore emphasis is intentionally OFF (snake_case). Built as DOM
   // with textContent (never innerHTML) so agent output can't inject markup.
-  function mdInline(s, context) {
+  function mdInline(s, context, depth, inLink) {
+    depth = depth || 0;
+    if (depth >= 12) return document.createTextNode(String(s));
     var frag = document.createDocumentFragment(), rest = String(s);
     while (rest.length) {
       var best = null;
@@ -3088,26 +3121,41 @@
       probe(/!?\[([^\]]+)\]\((<[^>]+>|[^)\s]+)\)/, 'link');
       probe(/\*\*([^*]+)\*\*/, 'b');
       probe(/\*([^*\n]+)\*/, 'i');
+      probe(/~~([^~]+)~~/, 'del');
       if (!best) { frag.appendChild(document.createTextNode(rest)); break; }
       if (best.idx > 0) frag.appendChild(document.createTextNode(rest.slice(0, best.idx)));
       var m = best.m, el;
       if (best.kind === 'code') { el = document.createElement('code'); el.className = 'md-ic'; el.textContent = m[1]; }
       else if (best.kind === 'link') {
         var reference = m[2].replace(/^<|>$/g, '');
-        if (context && context.session_id && window.GtmuxDocuments && window.GtmuxDocuments.documentReference(reference)) {
+        if (!inLink && context && context.session_id && window.GtmuxDocuments && window.GtmuxDocuments.documentReference(reference)) {
           el = document.createElement('button'); el.type = 'button'; el.className = 'conversation-file';
-          el.innerHTML = uiIcon('file'); var filename = document.createElement('span'); filename.textContent = m[1]; el.appendChild(filename); el.title = T('Open file: ', '打开文件：') + m[1];
+          el.innerHTML = uiIcon('file'); var filename = document.createElement('span'); filename.appendChild(mdInline(m[1], null, depth + 1, true)); el.appendChild(filename); el.title = T('Open file: ', '打开文件：') + m[1];
           (function (path, scope) { el.onclick = function () { showConversationDocument(path, scope); }; })(reference, context);
-        } else { el = document.createElement('a'); if (/^https?:\/\//i.test(reference) || /^mailto:/i.test(reference)) el.href = reference; el.target = '_blank'; el.rel = 'noopener noreferrer'; el.textContent = m[1]; }
+        } else { el = document.createElement(!inLink && (/^https?:\/\//i.test(reference) || /^mailto:/i.test(reference)) ? 'a' : 'span'); if (!inLink && (/^https?:\/\//i.test(reference) || /^mailto:/i.test(reference))) { el.href = reference; el.target = '_blank'; el.rel = 'noopener noreferrer'; } el.appendChild(mdInline(m[1], null, depth + 1, true)); }
       }
-      else if (best.kind === 'b') { el = document.createElement('strong'); el.textContent = m[1]; }
-      else { el = document.createElement('em'); el.textContent = m[1]; }
+      else { el = document.createElement(best.kind === 'b' ? 'strong' : best.kind === 'del' ? 'del' : 'em'); el.appendChild(mdInline(m[1], context, depth + 1, inLink)); }
       frag.appendChild(el);
       rest = rest.slice(best.idx + best.len);
     }
     return frag;
   }
-  function mdRender(src, context) {
+  // Reuse the message renderer, then trim visible text rather than Markdown
+  // source: an abbreviated URL must never become a different link target.
+  function mdPreview(source) {
+    var root = mdRender(String(source).slice(0, 8192), null, {preview: true});
+    var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT), nodes = [], node, remaining = 320;
+    while ((node = walker.nextNode())) nodes.push(node);
+    nodes.forEach(function (text) {
+      if (remaining <= 0) { text.remove(); return; }
+      var value = text.textContent;
+      if (value.length > remaining) { text.textContent = value.slice(0, remaining).replace(/[\uD800-\uDBFF]$/, '') + '…'; remaining = 0; }
+      else remaining -= value.length;
+    });
+    Array.from(root.querySelectorAll('*')).reverse().forEach(function (el) { if (!el.textContent) el.remove(); });
+    return root;
+  }
+  function mdRender(src, context, options) {
     var root = document.createElement('div'); root.className = 'md';
     var lines = String(src).replace(/\r\n/g, '\n').split('\n'), i = 0, fence = 0;
     var FENCE = /^\s*```(.*)$/, HR = /^\s*([-*_])(\s*\1){2,}\s*$/, HEADING = /^\s*(#{1,6})\s+(.*)$/;
@@ -3128,7 +3176,8 @@
         var body = []; i++;
         while (i < lines.length && !/^\s*```/.test(lines[i])) { body.push(lines[i]); i++; }
         i++;
-        root.appendChild(codePanelEl(body.join('\n'), {hint: fm[1].trim(), formatted: false, className: 'md-pre', focusKey:context && context.codeKey && context.codeKey+'-fence-'+fence++})); continue;
+        if (options && options.preview) { var pre = document.createElement('pre'), code = document.createElement('code'); pre.className = 'md-pre'; renderCode(code, body.join('\n'), fm[1].trim()); pre.appendChild(code); root.appendChild(pre); }
+        else root.appendChild(codePanelEl(body.join('\n'), {hint: fm[1].trim(), formatted: false, className: 'md-pre', focusKey:context && context.codeKey && context.codeKey+'-fence-'+fence++})); continue;
       }
       if (line.trim() === '') { i++; continue; }
       if (HR.test(line)) { root.appendChild(document.createElement('hr')); i++; continue; }
@@ -3536,10 +3585,10 @@
 
   function renderTileChat(t, turns) {
     t.lastTurns = turns; reconcilePendingPrompts(t.id, turns);
-    var preserved = snapshotToolState(t.body);
+    var preserved = snapshotToolState(t.body), mapState=t.conversationMapDispose && t.conversationMapDispose.snapshot && t.conversationMapDispose.snapshot();
     var old = t.body.querySelector('.tile-chat');
     var atBottom = !old || old.scrollHeight - old.scrollTop - old.clientHeight < 48;
-    var top = old ? old.scrollTop : 0;
+    var top = old ? old.scrollTop : 0, anchor=readingAnchor(old), prepended=hasPrependedTurns(old,turns);
     var wrap = document.createElement('div'); wrap.className = 'tile-chat';
     if (!turns.length && !(pendingPrompts[t.id] || []).length) { var e = document.createElement('div'); e.className = 'chat-empty'; e.textContent = T('No conversation yet.', '还没有对话。'); wrap.appendChild(e); }
     var seps = sepLabels(turns);
@@ -3549,8 +3598,9 @@
     if(t.conversationMapDispose) t.conversationMapDispose();
     t.body.innerHTML = ''; t.body.appendChild(main);
     syncChatLive(main, t.agent || {}, function () { return WB.on && !t.removed && t.mode === 'chat' && t.agent.status === 'working'; });
-    wrap.scrollTop = atBottom ? wrap.scrollHeight : top;
-    t.conversationMapDispose = window.GtmuxConversationMap ? window.GtmuxConversationMap.mount(main,wrap,turns,T) : null;
+    t.conversationMapDispose = window.GtmuxConversationMap ? window.GtmuxConversationMap.mount(main,wrap,turns,T,mdPreview,mapOptions(t.agent,mapState)) : null;
+    wrap.scrollTop = atBottom && !prepended ? wrap.scrollHeight : top;
+    if(prepended)restoreReadingAnchor(wrap,anchor);
     restoreToolState(t.body, preserved);
   }
   // drag-move (head) + resize (corner), with optional snap-to-grid.

@@ -1457,7 +1457,6 @@ Both non-tmux groups SHALL provide a whole-header Show/Hide button with a chevro
 - **WHEN** the popover is reopened after folding a non-tmux group
 - **THEN** it stays folded until the user unfolds it
 
-
 ### Requirement: Restore availability follows tmux recovery work
 
 The menu bar SHALL use the core's read-only pending restore plan independently
@@ -1502,7 +1501,6 @@ The menu bar SHALL expose a localized local workspace action at the bottom of th
 - **WHEN** the user chooses Open local workspace
 - **THEN** the browser opens an authenticated local agent workspace without enabling a tunnel or changing existing remote service settings
 
-
 ### Requirement: Consistent native pairing delivery
 Both native pairing entry points SHALL use shared components for the owner access explanation, measured reachability, the app QR with scan guidance, full selectable browser link and terminal command, and code renewal countdown and refresh. Both SHALL use one-time enrollment codes from PairStore, preserve route controls and existing renewal behavior, and SHALL NOT add a terminal command to guest share delivery.
 
@@ -1521,3 +1519,12 @@ A screenshot editor SHALL close after the marked image is successfully copied or
 #### Scenario: Export fails or is cancelled
 - **WHEN** copying fails, writing fails, or the save sheet is cancelled
 - **THEN** the image and annotations remain available in the editor
+
+### Requirement: Visible restore outcomes and detached session meaning
+
+The menu-bar Restore action SHALL retain in-progress exclusion and capture a bounded completion outcome off the main thread. Failure SHALL remain visible, including with an empty pending plan, and a new attempt SHALL clear the prior error. All-detached plans SHALL describe opening sessions in the terminal, distinguish them from saved missing sessions, and state that current sessions remain open.
+
+#### Scenario: A restore command fails before opening a tab
+
+- **WHEN** the application restore command exits unsuccessfully
+- **THEN** the user sees a failure indication and can retry rather than receiving an unchanged silent button

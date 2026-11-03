@@ -1,4 +1,4 @@
-import { codeParts, formatCode } from './codeFormatting';
+import { codeParts, formatCode, commandOutline } from './codeFormatting';
 
 test.each([
   [
@@ -192,4 +192,12 @@ test('full call leads outer commands and their scripts in recorded expansion ord
     'python',
     'javascript',
   ]);
+});
+
+test('command outline describes static submitted inputs without inventing dynamic calls or outcomes', () => {
+ const source = 'if (ready) await tools.exec_command({cmd:"cat report.md"}); await tools.exec_command({cmd:"rg --files src"}); await tools.exec_command({cmd:"rg pattern src"}); await tools.exec_command({cmd:dynamic});';
+ const result=commandOutline(codeParts(source,'javascript'));
+ expect(result).toEqual([{partID:'cmd 1',operation:'read',preview:'cat report.md'},{partID:'cmd 2',operation:'list',preview:'rg --files src'},{partID:'cmd 3',operation:'search',preview:'rg pattern src'}]);
+ expect(commandOutline(codeParts('await tools.exec_command({cmd:`echo ${dynamic}`})','javascript'))).toEqual([]);
+ expect(commandOutline(codeParts('const broken = {','javascript'))).toEqual([]);
 });

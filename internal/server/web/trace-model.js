@@ -1,8 +1,9 @@
-// Generated from shared App trace analysis and presentation; SHA256 6325184a9456e374b3a4a747903ac39d306df777d0ad2e43ef90f93cb140a250
-// Body SHA256 8b1e80a19e1fa46d2209165ff6ac0fe501c7f25def7c5e4e7572718dc56dc1d4
+// Generated from shared App trace analysis and presentation; SHA256 c631356902a55f8fdb3b5083d2bca68941c4f0f404006db25519dc3d7156ff35
+// Body SHA256 e30dc55888bb8c5bdfd5ed667e6d5e0cbdb5b19d0c223ac70df4cf3e305c3923
 (function(root){var modules={"model":function(exports,require){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.turnBookmarkKey = turnBookmarkKey;
 exports.agentName = agentName;
 exports.build = build;
 exports.sourceInfo = sourceInfo;
@@ -32,6 +33,19 @@ function digest(value) {
     return (a >>> 0).toString(36) + '-' + (b >>> 0).toString(36);
 }
 /* eslint-enable no-bitwise */
+// Persist only a real session and source identity, never a loaded row index or
+// streaming reply body. Legacy records without either remain navigable, unmarked.
+function turnBookmarkKey(value, context = {}) {
+    const turn = object(value);
+    if (!turn)
+        return undefined;
+    const session = string(turn.session_id) || string(context.session_id);
+    const record = string(turn.record_id), time = string(turn.time);
+    const ordinal = Number.isSafeInteger(turn.turn_ordinal) && turn.turn_ordinal > 0 ? turn.turn_ordinal : null;
+    if (!session || !record && !time && !ordinal)
+        return undefined;
+    return digest(JSON.stringify([string(context.home_id), session, record ? ['record', record] : time ? ['time', time] : ['ordinal', ordinal]]));
+}
 function agentName(value) {
     const name = string(value).trim();
     const brands = {
@@ -501,19 +515,23 @@ function activityPreview(step, lang = 'en') {
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.timelineRows = void 0;
+exports.tracePreviewSource = tracePreviewSource;
 exports.tracePreview = tracePreview;
 var model_1 = require("./model");
 Object.defineProperty(exports, "timelineRows", { enumerable: true, get: function () { return model_1.timelineRows; } });
-function tracePreview(value, lang) {
+// Preserve Markdown and line breaks for a rich preview. The compact trace row
+// still uses tracePreview below; image transport envelopes never become prose.
+function tracePreviewSource(value, lang) {
     let images = 0;
     const clean = value.replace(/<image\s+name=[^>]*\bpath="[^"]+"[^>]*>/g, () => {
         images++;
         return '';
     });
-    const text = (images ? clean.replace(/<\/image>/g, '') : clean)
-        .replace(/\s+/g, ' ')
-        .trim();
-    return (text || (images ? (lang === 'zh' ? '图片消息' : 'Image message') : '')).slice(0, 240);
+    const text = (images ? clean.replace(/<\/image>/g, '') : clean).trim();
+    return (text || (images ? (lang === 'zh' ? '图片消息' : 'Image message') : ''));
+}
+function tracePreview(value, lang) {
+    return tracePreviewSource(value, lang).replace(/\s+/g, ' ').slice(0, 240);
 }
 
 },
@@ -582,16 +600,20 @@ exports.traceRecordPaths = {
     assistant: 'm12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3Z',
 };
 // Loaded-window navigation reuses trace identity, original ordinals and summaries.
-function conversationOutline(turns, lang = 'en') {
-    return (0, model_1.groupTurns)((0, model_1.build)(turns).events).map(group => ({
+function conversationOutline(turns, lang = 'en', context) {
+    return (0, model_1.groupTurns)((0, model_1.build)(turns, context).events).map(group => ({
         key: group.key,
+        bookmarkKey: (0, model_1.turnBookmarkKey)(turns[group.events[0].sourceIndex], context),
         sourceIndex: group.events[0].sourceIndex,
         turn: group.turn,
         agent: group.agent,
         session: group.session,
         prompt: (0, timeline_1.tracePreview)(group.prompt?.body || group.events[0].body, lang),
+        promptMarkdown: (0, timeline_1.tracePreviewSource)(group.prompt?.body || group.events[0].body, lang).slice(0, 8192),
         summary: (0, timeline_1.tracePreview)([...group.events].reverse().find(event => event.kind === 'assistant')
             ?.body || '', lang),
+        summaryMarkdown: (0, timeline_1.tracePreviewSource)([...group.events].reverse().find(event => event.kind === 'assistant')
+            ?.body || '', lang).slice(0, 8192),
     }));
 }
 

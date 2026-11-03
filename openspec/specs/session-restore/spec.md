@@ -776,3 +776,12 @@ Native Codex command compatibility and live-input ownership checks SHALL remain.
 
 - **WHEN** a saved frontend was launched with a resume ID but its hook record follows a later `/new`
 - **THEN** preview and restore prefer that exact-location current thread over the launch-time ID
+
+### Requirement: Application restore tolerates inherited terminal markers
+
+Explicit application restore invocations SHALL not be rejected solely because the GUI inherited TMUX from its launcher. The selected socket environment and existing additive restore behavior SHALL be preserved. Ordinary terminal invocations from inside tmux SHALL remain refused.
+
+#### Scenario: A menu-bar app was launched by tmux
+
+- **WHEN** the app invokes restore with its explicit application flag and inherited TMUX
+- **THEN** restore reaches the pending-session path without replacing live sessions or clearing the socket environment

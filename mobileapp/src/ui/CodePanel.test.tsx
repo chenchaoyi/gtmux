@@ -101,3 +101,12 @@ test('raw readers retain the complete wrapper without formatting or script selec
     0,
   );
 });
+
+test('shared Chat and Trace code panel outlines command inputs and selects the original command',()=>{
+ act(()=>{tree=renderer.create(<CodePanel source={'await tools.exec_command({cmd:"cat report.md"}); await tools.exec_command({cmd:"rg query src"});'} hint="javascript"/>);});
+ expect(tree.root.findAllByProps({testID:'code-outline-cmd 1'}).some(n=>typeof n.props.onPress==='function')).toBe(true);
+ press('code-outline-cmd 1');expect(tree.root.findByType(CodeText).props.source).toBe('cat report.md');
+ press('code-outline-cmd 2');expect(tree.root.findByType(CodeText).props.source).toBe('rg query src');
+ press('code-outline-toggle');expect(tree.root.findAllByProps({testID:'code-outline-cmd 1'})).toHaveLength(0);
+ press('code-part-original');expect(tree.root.findByType(CodeText).props.source).toContain('tools.exec_command');
+});

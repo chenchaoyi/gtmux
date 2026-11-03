@@ -272,6 +272,18 @@ export function codeParts(source: string, hint = ''): CodePart[] {
   return found.length && found.length <= 16 ? [original, ...found] : [original];
 }
 
+/** Static input outline, never an execution trace or a success receipt. */
+export function commandOutline(parts: CodePart[]) {
+  return parts.filter(part => /^(?:cmd|command) \d+$/.test(part.id)).map(part => {
+    const line = part.source.trim().split('\n')[0].slice(0, 160).replace(/[\uD800-\uDBFF]$/, '');
+    const operation: 'read' | 'list' | 'search' | 'command' =
+      /^(?:cat|head|tail|sed)\s/.test(line) ? 'read' :
+      /^(?:ls|find)\b|^rg\s+--files\b/.test(line) ? 'list' :
+      /^(?:rg|grep)\s/.test(line) ? 'search' : 'command';
+    return {partID: part.id, operation, preview: line};
+  });
+}
+
 export function formatCode(source: string, hint = ''): string {
   const kind = String(hint || '').toLowerCase();
   const parser = /^(?:ts|tsx|typescript)$/.test(kind)

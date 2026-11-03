@@ -34,6 +34,8 @@ Spawn, HQ and restore share the adapter. Older clients, explicit `--no-daemon`, 
 
 ## `gtmux agents`
 
+Use `gtmux agents --json --pane %7` for a fresh reading of one pane. It returns the same array shape and status rules, without scanning unrelated pane histories or removing orphan markers. A missing pane returns `[]`. The pane filter requires `--json` and cannot be combined with `--watch` or `--popup`.
+
 Lists the coding agents running in your tmux panes, sorted by urgency.
 
 ```

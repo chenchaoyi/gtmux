@@ -33,6 +33,8 @@
 
 ## `gtmux agents`
 
+需要实时检查单个窗格时，使用 `gtmux agents --json --pane %7`。返回值沿用相同的数组结构和状态判定，不扫描无关窗格的历史，也不清理孤立标记。窗格不存在时返回 `[]`。该筛选须与 `--json` 同用，不可与 `--watch` 或 `--popup` 同用。
+
 列出你 tmux pane 里在跑的 coding agent，按紧急程度排序。
 
 ```

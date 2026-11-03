@@ -691,7 +691,7 @@ func cmdRestore(args []string) int {
 		restoreResumeFlag = "off" // never touch panes on a dry run
 	}
 
-	if tmux.InTmux() {
+	if tmux.InTmux() && !restoreFromApp {
 		i18n.Sae("Already inside tmux. Run this in a fresh tab.", "已在 tmux 内，请在新 tab 里运行。")
 		return 1
 	}

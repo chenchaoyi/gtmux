@@ -65,6 +65,16 @@ function digest(value: string): string {
   return (a >>> 0).toString(36) + '-' + (b >>> 0).toString(36);
 }
 /* eslint-enable no-bitwise */
+// Persist only a real session and source identity, never a loaded row index or
+// streaming reply body. Legacy records without either remain navigable, unmarked.
+export function turnBookmarkKey(value: unknown, context: TraceContext = {}): string | undefined {
+  const turn=object(value);if(!turn)return undefined;
+  const session=string(turn.session_id)||string(context.session_id);
+  const record=string(turn.record_id), time=string(turn.time);
+  const ordinal=Number.isSafeInteger(turn.turn_ordinal)&&(turn.turn_ordinal as number)>0 ? turn.turn_ordinal : null;
+  if(!session||!record&&!time&&!ordinal)return undefined;
+  return digest(JSON.stringify([string(context.home_id),session,record?['record',record]:time?['time',time]:['ordinal',ordinal]]));
+}
 export function agentName(value: unknown): string {
   const name = string(value).trim();
   const brands: Record<string, string> = {

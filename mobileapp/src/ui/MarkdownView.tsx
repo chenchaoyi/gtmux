@@ -12,7 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Block, Inline, parseBlocks } from './markdown';
+import { Block, Inline, parseBlocks, parseInline } from './markdown';
 import { CodeBlock } from './CodeBlock';
 import { darkCodeBackground } from './codeReading';
 import { DisclosureChevron } from './DisclosureChevron';
@@ -77,19 +77,28 @@ function renderSpans(
   fs: number,
   calm = false,
   openFile?: (reference: string) => void,
+  depth = 0,
+  inLink = false,
 ): React.ReactNode[] {
+  const nested = (text: string, linkLabel = inLink): React.ReactNode => {
+    if (depth >= 12) return text;
+    const spans = parseInline(text);
+    return spans.every(span => span.t === 'text')
+      ? text
+      : renderSpans(spans, c, fs, calm, openFile, depth + 1, linkLabel);
+  };
   return nodes.map((n, i) => {
     switch (n.t) {
       case 'b':
         return (
           <Text key={i} style={calm ? styles.boldCalm : styles.bold}>
-            {n.s}
+            {nested(n.s)}
           </Text>
         );
       case 'i':
         return (
           <Text key={i} style={styles.italic}>
-            {n.s}
+            {nested(n.s)}
           </Text>
         );
       case 'code':
@@ -138,13 +147,14 @@ function renderSpans(
       case 'del':
         return (
           <Text key={i} style={styles.del}>
-            {n.s}
+            {nested(n.s)}
           </Text>
         );
       case 'br':
         // A real newline inside the Text: what the author asked for, and never the tag.
         return <Text key={i}>{'\n'}</Text>;
       case 'link': {
+        if (inLink) return <Text key={i}>{nested(n.s, true)}</Text>;
         const file = documentReference(n.href);
         if (file)
           return (
@@ -156,19 +166,20 @@ function renderSpans(
               onPress={openFile ? () => openFile(file.reference) : undefined}
             >
               {'▤ '}
-              {n.s}
+              {nested(n.s, true)}
               {!openFile && file.path ? ` (${file.path})` : ''}
             </Text>
           );
         if (!/^(https?:\/\/|mailto:)/i.test(n.href))
-          return <Text key={i}>{n.s}</Text>;
+          return <Text key={i}>{nested(n.s, true)}</Text>;
         return (
           <Text
             key={i}
             style={{ color: c.link, textDecorationLine: 'underline' }}
+            accessibilityRole="link"
             onPress={() => Linking.openURL(n.href).catch(() => {})}
           >
-            {n.s}
+            {nested(n.s, true)}
           </Text>
         );
       }

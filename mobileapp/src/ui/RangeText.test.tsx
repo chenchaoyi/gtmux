@@ -145,3 +145,14 @@ test('a short message growing during refresh does not reuse its one-character wi
   expect(native().props.style.height).toBe(72);
   act(() => tree.unmount());
 });
+
+test('Markdown emphasis serializes a real styled link into the native range renderer',()=>{
+ const {MarkdownView}=require('./MarkdownView');const {CopyFeedbackContext}=require('./CopyableText');const {Linking}=require('react-native');
+ const open=jest.spyOn(Linking,'openURL').mockResolvedValue(undefined);let tree!:renderer.ReactTestRenderer;
+ const colors={text:'#000',dim:'#888',code:'#111',codeBg:'#fff',border:'#ccc',link:'#06f'};
+ act(()=>{tree=renderer.create(<CopyFeedbackContext.Provider value><MarkdownView source="**[Install](https://downloads.example.test/install)**" colors={colors} selectable/></CopyFeedbackContext.Provider>);});
+ const native=tree.root.findByType('ConversationTextView' as any),runs=native.props.document.runs;
+ expect(runs.some((r:any)=>r.text==='Install'&&r.style.fontWeight==='700'&&r.link===0)).toBe(true);
+ act(()=>native.props.onLink({nativeEvent:{index:0,revision:native.props.document.revision}}));expect(open).toHaveBeenCalledWith('https://downloads.example.test/install');
+ act(()=>tree.unmount());open.mockRestore();
+});

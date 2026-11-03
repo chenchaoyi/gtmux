@@ -138,7 +138,7 @@ enum ScreenshotSender {
                      completion: @escaping (ScreenshotSendResult) -> Void) {
         DispatchQueue.global(qos: .userInitiated).async {
             // A failed read is not "the pane is gone": say what actually happened.
-            let agents = GtmuxCLI.capture(["agents", "--json"]).flatMap { try? JSONDecoder().decode([Agent].self, from: $0) }
+            let agents = GtmuxCLI.capture(["agents", "--json", "--pane", pane]).flatMap { try? JSONDecoder().decode([Agent].self, from: $0) }
             let result: ScreenshotSendResult
             if let refused = preflight(target: pane, session: session, agents: agents) {
                 result = refused

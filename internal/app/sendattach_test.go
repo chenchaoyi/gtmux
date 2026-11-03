@@ -185,7 +185,12 @@ const (
 func stubHold(t *testing.T, rows []radar.Pane, screen string, err error) {
 	t.Helper()
 	prevR, prevC := holdRadar, holdCapture
-	holdRadar = func() []radar.Pane { return rows }
+	holdRadar = func(pane string) []radar.Pane {
+		if pane != "%7" {
+			t.Fatalf("wrong pane %s", pane)
+		}
+		return rows
+	}
 	holdCapture = func(string) (string, error) { return screen, err }
 	t.Cleanup(func() { holdRadar, holdCapture = prevR, prevC })
 }

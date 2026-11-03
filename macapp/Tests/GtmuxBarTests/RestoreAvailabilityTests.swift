@@ -179,3 +179,19 @@ final class RestoreAvailabilityTests: XCTestCase {
         }
     }
 }
+
+extension RestoreAvailabilityTests {
+    func testRestoreFailureRemainsVisibleAndRetryClearsIt() {
+        let store = AgentStore(readPoll: { _ in self.empty })
+        refresh(store)
+        store.beginRestore()
+        store.endRestore(failed: true)
+        XCTAssertTrue(store.showsRestore)
+        XCTAssertTrue(store.restoreError)
+        store.beginRestore()
+        XCTAssertFalse(store.restoreError)
+        XCTAssertTrue(store.restoring)
+        store.endRestore()
+        XCTAssertFalse(store.showsRestore)
+    }
+}

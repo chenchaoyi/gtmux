@@ -82,7 +82,7 @@ func withAttachments(text string, paths []string) string {
 
 // The radar and the screen, swappable for tests.
 var (
-	holdRadar   = radar.GatherAgents
+	holdRadar   = radar.GatherPaneAgents
 	holdCapture = tmux.CapturePaneChecked
 )
 
@@ -101,7 +101,7 @@ var (
 //
 // A pane that cannot be read is refused: this guard exists to fail closed.
 func attachHold(paneID string) string {
-	for _, p := range holdRadar() {
+	for _, p := range holdRadar(paneID) {
 		if p.PaneID == paneID {
 			if p.Status == "waiting" {
 				return "the agent is waiting on a decision (a permission prompt or a question)"

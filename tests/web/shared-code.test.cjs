@@ -24,6 +24,9 @@ for(const width of [320,768,1440]) for(const colorScheme of ['light','dark']) {
     assert.equal(await chat.locator('.code-language').innerText(),'JavaScript');
     assert.deepEqual(await chat.getByRole('tab').allTextContents(),['Full call','Shell · cmd 1','Python · cmd 1']);
     assert.equal(await chat.getByRole('tab').first().getAttribute('aria-selected'),'true');
+    assert.match(await chat.locator('.code-call-outline > summary').innerText(),/Commands in code · 1/);
+    await chat.locator('.code-call-command').click();
+    assert.equal(await chat.getByRole('tab',{name:'Shell · cmd 1',exact:true}).getAttribute('aria-selected'),'true');
     await chat.getByRole('tab',{name:'Shell · cmd 1',exact:true}).click();
     assert.match(await chat.locator('pre').innerText(),/git status/);
     await chat.getByRole('tab',{name:'Python · cmd 1'}).click();
@@ -51,6 +54,7 @@ for(const width of [320,768,1440]) for(const colorScheme of ['light','dark']) {
     if(process.env.GTMUX_WEB_EVIDENCE){await fs.mkdir(process.env.GTMUX_WEB_EVIDENCE,{recursive:true});await page.screenshot({path:path.join(process.env.GTMUX_WEB_EVIDENCE,`nested-calls-${width}-${colorScheme}.png`)});}
     await children.first().click();
     const preview=trace.locator('.code-panel');
+    assert.equal(await preview.locator('.code-call-command').count(),1,'trace reuses the same submitted-command outline');
     assert.equal(await preview.locator('pre').evaluate(node=>getComputedStyle(node).fontSize),'19px');
     assert.deepEqual(await preview.getByRole('tab').allTextContents(),['Full call','Shell · cmd 1','Python · cmd 1']);
     await preview.getByRole('tab',{name:'Python · cmd 1'}).click();

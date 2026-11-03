@@ -1051,7 +1051,21 @@ func gatherAgents() ([]Pane, map[int]procInfo) {
 	return gatherAgentsWithCodexScope(transcript.NewCodexPathScope())
 }
 
+// GatherPaneAgents uses the same fresh status pipeline for one live pane. It
+// avoids scanning unrelated histories and never runs full-roster orphan cleanup.
+func GatherPaneAgents(paneID string) []Pane {
+	if paneID == "" {
+		return nil
+	}
+	panes, _ := gatherAgentsScoped(transcript.NewCodexPathScope(), paneID)
+	return panes
+}
+
 func gatherAgentsWithCodexScope(codexScope *transcript.CodexPathScope) ([]Pane, map[int]procInfo) {
+	return gatherAgentsScoped(codexScope, "")
+}
+
+func gatherAgentsScoped(codexScope *transcript.CodexPathScope, targetPane string) ([]Pane, map[int]procInfo) {
 	if codexScope == nil {
 		codexScope = transcript.NewCodexPathScope()
 	}
@@ -1078,6 +1092,12 @@ func gatherAgentsWithCodexScope(codexScope *transcript.CodexPathScope) ([]Pane, 
 			continue
 		}
 		livePanes[f[0]] = true
+		if len(f) >= 12 && f[11] != "" {
+			hqStamps[f[0]] = f[11]
+		}
+		if targetPane != "" && f[0] != targetPane {
+			continue
+		}
 		// A window linked into more than one session (or a shared/attached window) is
 		// listed by `list-panes -a` ONCE PER SESSION, so the same pane_id arrives on
 		// multiple lines with different session/window fields. Emit ONE radar row per
@@ -1394,7 +1414,9 @@ func gatherAgentsWithCodexScope(codexScope *transcript.CodexPathScope) ([]Pane, 
 		})
 	}
 	// Sensed non-tmux (native) sessions: hook-tracked, no pane to view/jump/send.
-	panes = append(panes, nativePanesScoped(panes, profiles, now, codexScope)...)
+	if targetPane == "" {
+		panes = append(panes, nativePanesScoped(panes, profiles, now, codexScope)...)
+	}
 	// Opt-in watched plain panes (tiered-pane-control): user-promoted non-agent panes,
 	// appended as distinct watched rows (no agent status). Built from the raw pane
 	// scan so we know their loc/cwd/command; only panes NOT already an agent row and
@@ -1405,7 +1427,7 @@ func gatherAgentsWithCodexScope(codexScope *transcript.CodexPathScope) ([]Pane, 
 	// (an exited agent whose pane was closed). livePanes is the raw pane set gathered
 	// above (agents or not) — reusing it avoids a second list-panes on the hot path.
 	// Guard on non-empty: a transient empty scan must never reap every marker.
-	if len(livePanes) > 0 {
+	if targetPane == "" && len(livePanes) > 0 {
 		state.ReapOrphanTurnMarkers(livePanes)
 	}
 	sortPanes(panes)
@@ -2005,6 +2027,10 @@ func statusRank(s string) int {
 // AgentsJSONBytes marshals the live agents into the stable `gtmux agents --json`
 // array (no colors, no screen-scraping). Shared by the CLI command and the
 // remote server (internal/server) so both speak one byte-identical contract.
+func PaneAgentsJSONBytes(paneID string) ([]byte, error) {
+	return agentsJSONBytes(GatherPaneAgents(paneID))
+}
+
 func AgentsJSONBytes() ([]byte, error) {
 	return agentsJSONBytes(GatherAgents())
 }

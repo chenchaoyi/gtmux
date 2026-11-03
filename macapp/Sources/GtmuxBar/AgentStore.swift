@@ -317,8 +317,9 @@ final class AgentStore: ObservableObject {
     /// (state.RunLock); this is the half that keeps the user from having to find out.
     @Published private(set) var restoring = false
 
-    func beginRestore() { restoring = true }
-    func endRestore() { restoring = false }
+    @Published private(set) var restoreError = false
+    func beginRestore() { restoreError = false; restoring = true }
+    func endRestore(failed: Bool = false) { restoring = false; restoreError = failed }
 
     /// Test seam: the section grouping is a pure function of `agents`, and the poll that
     /// normally fills it needs a live tmux. Without this the grouping — where a failure
@@ -328,7 +329,7 @@ final class AgentStore: ObservableObject {
     /// Only missing saved sessions or detached live sessions. nil means unknown.
     @Published private(set) var restorePlan: RestorePlan?
 
-    var showsRestore: Bool { restoring || (restorePlan.map { !$0.sessions.isEmpty } ?? true) }
+    var showsRestore: Bool { restoring || restoreError || (restorePlan.map { !$0.sessions.isEmpty } ?? true) }
 
     /// Independent of radar rows: external histories and partial recovery do not
     /// determine whether tmux has a working set left to restore. Runs on a slow

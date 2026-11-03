@@ -37,6 +37,31 @@ final class MacUsageWidgetSupportTests: XCTestCase {
             }
         }
     }
+    @MainActor
+    func testMediumSingleProviderAndStaleStatesRenderWithoutDuplicateHeaders() throws {
+        let now = Date(timeIntervalSince1970: 1_792_998_000)
+        for state in ["zero", "expired", "stale", "long"] {
+            let old = state == "stale" ? 3600.0 : 0.0
+            let snapshot = UsageWidgetSnapshot(server: state == "long" ? "A very long server name that needs truncation" : "This Mac", capturedAt: now.timeIntervalSince1970 - old, accounts: [
+                UsageWidgetAccount(id: "codex", agent: "codex", name: state == "long" ? "Agent with a long display name" : "Codex", windows: [
+                    UsageWidgetWindow(label: "Weekly", kind: "week", percent: 0, resetAt: now.timeIntervalSince1970 + (state == "expired" ? -1 : 3600), observedAt: now.timeIntervalSince1970 - old)
+                ], wallets: [])
+            ])
+            for dark in [false, true] {
+                let view = UsageWidgetContent(snapshot: snapshot, provider: "codex", date: now, family: .systemMedium, chinese: false)
+                    .padding(16).frame(width: 350, height: 170)
+                    .background(dark ? Color.black : Color.white)
+                    .environment(\.colorScheme, dark ? .dark : .light)
+                let renderer = ImageRenderer(content: view); renderer.scale = 2
+                let image = try XCTUnwrap(renderer.nsImage)
+                if let folder = ProcessInfo.processInfo.environment["GTMUX_WIDGET_RENDER_DIR"], let tiff = image.tiffRepresentation,
+                   let bitmap = NSBitmapImageRep(data: tiff), let png = bitmap.representation(using: .png, properties: [:]) {
+                    try png.write(to: URL(fileURLWithPath: folder).appendingPathComponent("medium-\(state)-\(dark ? "dark" : "light").png"))
+                }
+            }
+        }
+    }
+
     func testOnlySignerScopedMacContainerIsAccepted() {
         XCTAssertEqual(MacUsageWidgetContainer.groupIdentifier(team: "SYNTH12345", group: "SYNTH12345.com.gtmux.menubar.usage"), "SYNTH12345.com.gtmux.menubar.usage")
         for (team, group) in [("", ""), ("SYNTH12345", "group.com.gtmux.app.usage"), ("OTHER12345", "SYNTH12345.com.gtmux.menubar.usage"), ("../invalid", "../invalid.com.gtmux.menubar.usage"), ("SYNTH12345\n", "SYNTH12345\n.com.gtmux.menubar.usage")] {
