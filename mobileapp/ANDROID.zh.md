@@ -75,3 +75,5 @@ python3 scripts/test-publisher.py --platform android run \
 `--platform android` 默认选择 `gtmux-android` 及其独立配置，拒绝非 APK 或缺少验签回执的发布。访问链接仍为私有、默认 24 小时；版本可下载期限与签名有效性是两件事。
 
 模拟器测试独立保留最近 2 MiB 的设备日志，不依赖 Appium 截图或控件树读取成功。自动化连接丢失时保留首个失败，后续流程记为未执行，并以失败退出；不会静默重启会话或把后续流程记为通过。
+
+准备新的 Android 交付版本前，先在 `release-notes/android.json` 顶部加入该版本的中英文说明。Android 的「更新内容」使用这份独立记录；`scripts/set-version.sh` 更新的是 Apple 端记录，不能替代这一步。Android 说明不要混入仅 Apple 平台具备的能力；签名构建预检会拒绝缺少本版本双语说明的交付。
