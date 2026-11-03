@@ -740,12 +740,22 @@ test('both Chat surfaces render user markdown without altering transcript or exe
   for (const root of [h.node('chat'), tile.body]) {
     const bubble = descendants(root).find(n => n.className === 'ububble');
     const nodes = descendants(bubble);
-    assert.ok(nodes.some(n => n.tagName === 'strong' && n.textContent === 'Bold'));
+    assert.ok(nodes.some(n => n.tagName === 'strong' && descendants(n).map(child => child.textContent).join('') === 'Bold'));
     assert.ok(nodes.some(n => n.tagName === 'pre' && descendants(n).filter(child=>child.tagName==='span').map(child=>child.textContent).join('') === 'echo hello'));
     assert.ok(nodes.some(n => n.tagName === 'ul'));
     assert.ok(!nodes.some(n => n.tagName === 'script'));
   }
   assert.equal(turns[0].prompt, prompt);
+});
+test('nested Markdown links retain their destination and emphasis in the composed DOM', () => {
+  const h=harness({});
+  const root=h.api.mdRender('**[Read](https://example.test/report)** and [**Details**](https://example.test/details)');
+  const nodes=descendants(root), strong=nodes.filter(n=>n.tagName==='strong');
+  assert.equal(strong.length,2);
+  assert.ok(descendants(strong[0]).some(n=>n.href==='https://example.test/report'));
+  const link=nodes.find(n=>n.href==='https://example.test/details');
+  assert.ok(descendants(link).some(n=>n.tagName==='strong'));
+  assert.equal(nodes.filter(n=>n.href).length,2);
 });
 test('markdown links only allow web and email destinations', () => {
   const h = harness({});

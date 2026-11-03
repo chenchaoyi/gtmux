@@ -23,6 +23,7 @@
   --control: #edf0f4;
   --code-fg: #29354a;
   --accent-ink: #087c92;
+  --brand: #06B6D4;
   --trace-agent: #7555a1;
   --trace-tool: #8b6424;
   --shadow: rgba(20,30,45,.12);
@@ -1577,8 +1578,8 @@ select:disabled { opacity: .55; cursor: not-allowed; }
 .conversation-map-preview .conversation-map-bookmark.marked { color: var(--accent-ink); background: var(--control); }
 .conversation-map-bookmark.marked svg { fill: currentColor; fill-opacity: .18; }
 .conversation-map-feedback { display: block; color: var(--fg2); font-size: 11px; }
-.conversation-map-track i.marked { background: var(--accent-ink); opacity: 1; min-width: 16px; }
-.conversation-map-track i.marked::after { content: ''; position: absolute; right: -7px; top: 50%; width: 4px; height: 4px; border-radius: 50%; background: currentColor; color: var(--accent-ink); transform: translateY(-50%); }
+.conversation-map-track i.marked { background: var(--brand); box-shadow: 0 0 0 .5px var(--accent-ink); opacity: 1; min-width: 16px; }
+.conversation-map-track i.marked::after { content: ''; position: absolute; right: -7px; top: 50%; width: 4px; height: 4px; border-radius: 50%; background: currentColor; color: var(--brand); box-shadow: 0 0 0 .5px var(--accent-ink); transform: translateY(-50%); }
 @media (pointer: coarse) { .conversation-map-preview .conversation-map-bookmark { flex-basis: 44px; width: 44px; height: 44px; padding: 12px; } }
 
 .code-call-outline { border-bottom: 1px solid var(--divider); color: var(--fg2); font-size: 12px; }
