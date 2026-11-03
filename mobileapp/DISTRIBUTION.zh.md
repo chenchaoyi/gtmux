@@ -117,14 +117,18 @@ gh workflow run ios-test-delivery.yml --ref main -f purpose=ui-preview
 gh workflow run ios-test-delivery.yml --ref main -f purpose=release-test -f release_tag=vX.Y.Z
 gh run list --workflow ios-test-delivery.yml
 # 选择本次实际 run ID，避免下载另一次发版的结果。
-gh run download "$DELIVERY_RUN_ID" -n "$DELIVERY_ARTIFACT_NAME" -D "$PRIVATE_RESULT_DIR"
+python3 mobileapp/scripts/fetch-delivery.py --platform ios \
+  --run "$DELIVERY_RUN_ID" --attempt "$DELIVERY_ATTEMPT" --artifact "$DELIVERY_ARTIFACT_ID" \
+  --source "$DELIVERY_SOURCE_SHA" --output "$PRIVATE_RESULT_DIR"
 age --decrypt -i "$PRIVATE_DELIVERY_IDENTITY" \
-  -o "$PRIVATE_RESULT_DIR/result.tar.gz" "$PRIVATE_RESULT_DIR/ios-delivery.tar.gz.age"
-tar -xzf "$PRIVATE_RESULT_DIR/result.tar.gz" -C "$PRIVATE_RESULT_DIR"
+  -o "$PRIVATE_UNPACK_DIR/result.tar.gz" "$PRIVATE_RESULT_DIR/ios-delivery.tar.gz.age"
+tar -xzf "$PRIVATE_UNPACK_DIR/result.tar.gz" -C "$PRIVATE_UNPACK_DIR"
 ```
 
+解密使用另一个私有目录，下载缓存只保存加密运输文件。工具要求工作流与交付使用同一精确提交。有限重试、缓存校验和仅进程 IPv4 见[发版准备与取回](../docs/release-process.zh.md)，不替代包验签。
+
 先创建新的私有结果目录，并使用 `umask 077`。产物名称包含 run ID 和重试次数，保留
-三天；公开产物仅有加密文件。解密后的 `publication.json` 中有仅限该版本、有效期
+当前工作流保留 14 天，使用前核实际 `expires_at`；公开产物仅有加密文件。解密后的 `publication.json` 中有仅限该版本、有效期
 24 小时的 Safari 安装链接，私下发给测试者即可。结果也包含 IPA；可信 Mac 能连接到
 已配对手机时，仍可无线直装。GitHub 的构建机器没有本机的设备配对，也不能直接连接手机。
 

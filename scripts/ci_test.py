@@ -36,11 +36,11 @@ class ScopeTests(unittest.TestCase):
     def test_recognized_modules_include_consumers(self):
         self.assertEqual(ci.classify(["internal/radar/agents_test.go"])["selected"], ["test"])
         self.assertEqual(set(ci.classify(["mobileapp/src/components/Chat.tsx"])["selected"]),
-                         {"mobile", "web", "ios-native", "android-native"})
+                         {"mobile", "web", "ios-native", "android-native", "android-emulator"})
         self.assertEqual(set(ci.classify(["mobileapp/ios/GtmuxWidget/Widget.swift"])["selected"]),
                          {"mobile", "ios-native"})
         self.assertEqual(set(ci.classify(["relay-worker/src/index.ts"])["selected"]),
-                         {"relay-worker", "test", "mobile", "android-native"})
+                         {"relay-worker", "test", "mobile", "android-native", "android-emulator"})
 
     def test_nul_parser_preserves_names_and_old_rename_path(self):
         names = ci.parse_diff(b"R100\0internal/radar/a.go\0docs/a.md\0D\0docs/deleted.md\0M\0docs/\xe4\xb8\xad\xe6\x96\x87\n$(oops).md\0")
@@ -98,6 +98,20 @@ class ScopeTests(unittest.TestCase):
         for job, flag in ci.JOBS.items():
             block = re.split(r"\n  \S", text.split("  " + job + ":\n", 1)[1], maxsplit=1)[0]
             self.assertIn("needs.scope.outputs." + flag + " == 'true'", block)
+
+    def test_android_package_is_built_once_and_both_devices_use_its_output(self):
+        text = (ROOT / ".github/workflows/ci.yml").read_text()
+        build = text.split("  android-native:\n", 1)[1].split("  android-emulator:\n", 1)[0]
+        emulators = text.split("  android-emulator:\n", 1)[1].split("  web:\n", 1)[0]
+        self.assertEqual(text.count(":app:assembleQa"), 1)
+        self.assertIn("fail-fast: false", emulators)
+        for device in ("phone", "tablet"):
+            self.assertIn("- device: " + device, emulators)
+        self.assertIn("steps.package.outputs.name", build)
+        self.assertIn("needs.android-native.outputs.package", emulators)
+        self.assertIn("android_ci_package.py verify", emulators)
+        self.assertNotIn("GTMUX_ANDROID_E2E_ONLY", emulators)
+        self.assertIn("github.run_attempt", emulators)
 
 
 class ResultTests(unittest.TestCase):

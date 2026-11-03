@@ -226,13 +226,73 @@ jobs:
           node --test mobileapp/scripts/creative-layout.test.mjs
 
   android-native:
-    name: Android build and emulator flows
+    name: Android QA build and native policies
     needs: scope
     if: needs.scope.outputs.android == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 30
+    outputs:
+      package: ${{ steps.package.outputs.name }}
     env:
       GTMUX_SOURCE_SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: mobileapp/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Install JS dependencies
+        working-directory: mobileapp
+        run: |
+          npm ci
+      - name: Build bundled QA and test native policies
+        working-directory: mobileapp/android
+        run: ./gradlew :app:assembleQa :app:testQaUnitTest :app:lintQa -PreactNativeArchitectures=arm64-v8a,x86_64 --no-daemon --max-workers=2
+      - name: Missing release credentials must fail closed
+        working-directory: mobileapp/android
+        run: |
+          if ./gradlew :app:assembleRelease --no-daemon > "$RUNNER_TEMP/android-signing-refusal.log" 2>&1; then
+            echo 'Release unexpectedly accepted absent signing credentials'; exit 1
+          fi
+          grep -q 'Release signing credentials are required' "$RUNNER_TEMP/android-signing-refusal.log"
+      - name: Record exact QA package identity
+        id: package
+        run: |
+          python3 scripts/android_ci_package.py write --source "$GITHUB_SHA" --run "$GITHUB_RUN_ID" --attempt "$GITHUB_RUN_ATTEMPT"
+          echo "name=android-qa-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+      - name: Preserve the checked QA package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.package.outputs.name }}
+          path: |
+            mobileapp/android/app/build/outputs/apk/qa/app-qa.apk
+            mobileapp/android/app/build/outputs/apk/qa/CI-PACKAGE.json
+          if-no-files-found: error
+          retention-days: 7
+
+  android-emulator:
+    name: Android ${{ matrix.device }} emulator flows
+    needs: [scope, android-native]
+    if: needs.scope.outputs.android == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - device: phone
+            profile: pixel_7
+          - device: tablet
+            profile: pixel_tablet
     steps:
       - uses: actions/checkout@v5
       - name: Isolate Android automation data
@@ -251,62 +311,38 @@ jobs:
       - uses: android-actions/setup-android@v3
         with:
           packages: platform-tools
-      - uses: gradle/actions/setup-gradle@v4
-      - name: Install JS and Android automation dependencies
+      - name: Install Android automation dependencies
         working-directory: mobileapp
         run: |
           npm ci
           npx appium driver install --source=local "$PWD/node_modules/appium-uiautomator2-driver"
-      - name: Build bundled QA and test native policies
-        working-directory: mobileapp/android
-        run: ./gradlew :app:assembleQa :app:testQaUnitTest :app:lintQa -PreactNativeArchitectures=arm64-v8a,x86_64 --no-daemon --max-workers=2
-      - name: Missing release credentials must fail closed
-        working-directory: mobileapp/android
-        run: |
-          if ./gradlew :app:assembleRelease --no-daemon > "$RUNNER_TEMP/android-signing-refusal.log" 2>&1; then
-            echo 'Release unexpectedly accepted absent signing credentials'; exit 1
-          fi
-          grep -q 'Release signing credentials are required' "$RUNNER_TEMP/android-signing-refusal.log"
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.android-native.outputs.package }}
+          path: mobileapp/android/app/build/outputs/apk/qa
+      - name: Verify the shared QA package before installation
+        run: python3 scripts/android_ci_package.py verify --source "$GITHUB_SHA" --run "$GITHUB_RUN_ID" --attempt "$GITHUB_RUN_ATTEMPT"
       - name: Allow KVM on this disposable runner
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-gtmux-kvm.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Exercise owned emulator with synthetic agents
+      - name: Exercise the complete synthetic suite
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 36
           target: google_apis
           arch: x86_64
-          profile: pixel_7
-          avd-name: gtmux-ci-phone
+          profile: ${{ matrix.profile }}
+          avd-name: gtmux-ci-${{ matrix.device }}
           force-avd-creation: true
           emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader
-          script: ANDROID_SERIAL=emulator-5554 GTMUX_ANDROID_E2E_OUTPUT="$GTMUX_ANDROID_E2E_OUTPUT/phone" npm --prefix mobileapp run test:e2e:android
-      - name: Exercise tablet layout with the same package and fixtures
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 36
-          target: google_apis
-          arch: x86_64
-          profile: pixel_tablet
-          avd-name: gtmux-ci-tablet
-          force-avd-creation: true
-          emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader
-          script: ANDROID_SERIAL=emulator-5554 GTMUX_ANDROID_E2E_OUTPUT="$GTMUX_ANDROID_E2E_OUTPUT/tablet" npm --prefix mobileapp run test:e2e:android
-      - name: Preserve QA package for reproducible emulator diagnosis
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-qa-${{ github.run_id }}
-          path: mobileapp/android/app/build/outputs/apk/qa/app-qa.apk
-          if-no-files-found: warn
-          retention-days: 7
+          script: ANDROID_SERIAL=emulator-5554 npm --prefix mobileapp run test:e2e:android
       - name: Preserve synthetic emulator evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: android-emulator-${{ github.run_id }}
+          name: android-emulator-${{ matrix.device }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/gtmux-android-evidence
           if-no-files-found: warn
           retention-days: 7
@@ -496,7 +532,7 @@ jobs:
 
   ci-required:
     if: always()
-    needs: [scope, quality, test, cross-build, mobile, web, ios-native, android-native, relay-worker, tunnel-worker, menubar]
+    needs: [scope, quality, test, cross-build, mobile, web, ios-native, android-native, android-emulator, relay-worker, tunnel-worker, menubar]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

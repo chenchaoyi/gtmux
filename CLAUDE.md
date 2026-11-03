@@ -245,6 +245,7 @@ The cgo-free CLI/server supports macOS and Linux amd64/arm64; the native menu-ba
   for "drive tmux / control arbitrary terminals"). Ship **Developer ID + notarized
   direct distribution**; MAS would require a sandbox-compatible rearchitect.
 - Workflow: branch → PR → CI green → squash-merge → tag. Don't commit to `main`.
+- **Release preparation:** use `mobileapp/scripts/set-version.sh --version X.Y.Z` to stamp a future version without creating a temporary tag. Before the first release PR, run `python3 mobileapp/scripts/release-preflight.py --version X.Y.Z --platform ios --platform android` for the platforms actually selected (`--platform none` for CLI/Mac only). Android notes stay independent. See `docs/release-process.md` and its Chinese twin for retrieval and timing.
 - **Release scope check:** before preparing a release, list the changes requested in
   the current conversation and their PR/merge status. Include every authorized change
   in that release; do not silently narrow the scope to the current branch or leave a
