@@ -417,6 +417,22 @@ jobs:
             -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -jobs 2 \
             -derivedDataPath "$RUNNER_TEMP/gtmux-ios-ci" ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO \
             build 2>&1 | tee "$RUNNER_TEMP/gtmux-ios-build.log"
+      - name: Verify actual ARM64 app and extension products
+        run: |
+          python3 - <<'PY'
+          import os, pathlib, plistlib, subprocess
+          products = pathlib.Path(os.environ['RUNNER_TEMP']) / 'gtmux-ios-ci/Build/Products/Release-iphonesimulator'
+          apps = list(products.glob('*.app'))
+          assert len(apps) == 1, 'Expected one complete Simulator app'
+          extensions = list((apps[0] / 'PlugIns').glob('*.appex'))
+          assert len(extensions) == 2, 'Both app extensions must be embedded'
+          for bundle in [apps[0], *extensions]:
+              info = plistlib.loads((bundle / 'Info.plist').read_bytes())
+              executable = bundle / info['CFBundleExecutable']
+              architectures = subprocess.check_output(['lipo', '-archs', str(executable)], text=True).split()
+              assert architectures == ['arm64'], 'Native product target differs from ARM64'
+          print('Unsigned app and both embedded extensions verified as ARM64')
+          PY
       - name: Native build failure evidence
         if: failure()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
