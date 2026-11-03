@@ -4,17 +4,20 @@ import { Lang } from '../i18n';
 import { AnchoredMenu, MenuAnchor, MenuItem } from './AnchoredMenu';
 import { ActivityIcon } from './ActivityIcon';
 import { Palette } from './theme';
+import {SIcon} from './SettingsIcons';
 
 export function SessionToolsMenu({
   pal,
   lang,
   onTrace,
   onDiff,
+  presentation = 'menu',
 }: {
   pal: Palette;
   lang: Lang;
   onTrace?: () => void;
   onDiff?: () => void;
+  presentation?: 'menu' | 'direct';
 }) {
   const ref = useRef<View>(null),
     [visible, setVisible] = useState(false),
@@ -42,6 +45,12 @@ export function SessionToolsMenu({
       onPress: onDiff,
     });
   if (!items.length) return null;
+  if (presentation === 'direct') return <View style={styles.direct}>
+    {items.map(item => <TouchableOpacity key={item.key} testID={`session-tool-${item.key}`}
+      accessibilityRole="button" accessibilityLabel={item.label} style={[styles.button, styles.floatingButton, {backgroundColor:pal.surface}]} onPress={item.onPress}>
+      <SIcon name={item.key === 'trace' ? 'trace' : 'diff'} size={23} color={pal.fg} />
+    </TouchableOpacity>)}
+  </View>;
   return (
     <>
       <TouchableOpacity
@@ -76,6 +85,8 @@ export function SessionToolsMenu({
   );
 }
 const styles = StyleSheet.create({
+  direct: {flexDirection: 'row', alignItems: 'center', gap: 6},
+  floatingButton: {width:48, height:48, borderRadius:24},
   button: {
     width: 44,
     height: 44,

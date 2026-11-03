@@ -6,6 +6,7 @@ import {SizeClass} from './layout';
 import {Lang} from '../i18n';
 import {Palette, StatusColor} from './theme';
 import {MODAL_ORIENTATIONS} from './modalOrientations';
+import {useModalDismiss} from './useModalDismiss';
 
 export function normalizedSessionName(name: string): string { return name.trim().replace(/[.:]/g, '-'); }
 
@@ -45,6 +46,7 @@ export function NewSessionSheet({visible, client, macName, lang, pal, layout = '
   layout?: SizeClass; visible: boolean; client: GtmuxClient; macName: string; lang: Lang; pal: Palette;
   onClose: () => void; onCreated: (result: SessionCreated) => void; onDismiss: () => void; onCheckSessions: () => void;
 }) {
+  const dismissed = useModalDismiss(visible, onDismiss);
   const zh = lang === 'zh';
   const regular = layout === 'regular';
   const {height} = useWindowDimensions();
@@ -199,7 +201,7 @@ export function NewSessionSheet({visible, client, macName, lang, pal, layout = '
         </View>
       </SafeAreaView>
   );
-  return <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={visible} transparent animationType="fade" onDismiss={onDismiss} onRequestClose={close}>
+  return <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={visible} transparent animationType="fade" onDismiss={dismissed} onRequestClose={close}>
     {follow ? (
       <View style={styles.overlay}>
         <Animated.View testID="new-session-lift" style={[styles.liftBox, {transform: [{translateY: lift}]}]}>
@@ -207,7 +209,7 @@ export function NewSessionSheet({visible, client, macName, lang, pal, layout = '
         </Animated.View>
       </View>
     ) : (
-      <KeyboardAvoidingView style={[styles.overlay, regular && styles.regular]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={[styles.overlay, regular && styles.regular]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         {form}
       </KeyboardAvoidingView>
     )}

@@ -5,19 +5,19 @@
 // app falls back to Pairing automatically.
 
 import React, {useEffect, useState} from 'react';
-import {Alert, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {Alert, AppState, NativeModules, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {APP_VERSION as appVersion} from '../version';
 import {LangPref} from '../i18n';
 import {useApp} from '../state/AppContext';
 import {connectionHeading, routeSetting, showRouteRow, statusConnectionDetail} from './connectionGroup';
 import {useRouteChoices} from './useRouteChoices';
-import {MemoryCopy, describeCopy, fetchCopy, readCopy} from '../state/hqMemory';
+import {MemoryCopy, describeCopy, fetchCopy, readCopy, shareCopy} from '../state/hqMemory';
 import {useAgents} from '../state/AgentsContext';
 import {SettingsGroup, SettingsRow, PickerSheet, InfoSheet} from '../ui/SettingsRow';
 import {ContentColumn} from '../ui/ContentColumn';
 import {WhatsNewModal} from '../ui/WhatsNewModal';
-import {RELEASE_NOTES} from '../releaseNotes';
+import {MOBILE_RELEASE_NOTES as RELEASE_NOTES} from '../platformReleaseNotes';
 import {diagBuffer} from '../diag';
 import {countProblems, describeRecord} from '../diag/lines';
 
@@ -54,8 +54,26 @@ export function SettingsScreen({navigation}: any) {
   };
   const shareMemory = () => {
     if (!memCopy) return;
-    Share.share({url: memCopy.url}).catch(() => {});
+    shareCopy(memCopy).catch(() => Alert.alert(lang === 'zh' ? '导出失败' : 'Export failed', lang === 'zh' ? '请重试。' : 'Please try again.'));
   };
+
+  const [androidPush, setAndroidPush] = useState('');
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    let live = true;
+    const refresh = () => {void NativeModules.PushNotifications?.status().then((value: {reason?: string}) => {
+      if (live) setAndroidPush(value.reason ?? 'not-configured');
+    }).catch(() => {if (live) setAndroidPush('not-configured');});};
+    refresh();
+    const sub = AppState.addEventListener('change', state => {if (state === 'active') refresh();});
+    return () => {live = false; sub.remove();};
+  }, []);
+  const pushUnavailable = Platform.OS === 'android' && androidPush !== 'ready';
+  const pushExplanation = androidPush === 'not-configured'
+    ? (lang === 'zh' ? '此安装包尚未配置 Android 推送' : 'Android push is not configured in this build')
+    : androidPush === 'google-services-unavailable'
+    ? (lang === 'zh' ? '此设备没有可用的 Google Play 服务' : 'Google Play services are unavailable on this device')
+    : (lang === 'zh' ? '请在系统设置中允许 gtmux 通知' : 'Allow gtmux notifications in system settings');
 
   // The diagnostics buffer (src/diag) is a PAGE now, not three rows here. This screen
   // keeps only what the row has to say: how much is in there, and whether any of it is a
@@ -265,15 +283,15 @@ export function SettingsScreen({navigation}: any) {
         {!isGuest && (
         <SettingsGroup title={lang === 'zh' ? '通知' : 'Notifications'} pal={pal}>
           <SettingsRow icon="bell" label={t('push')}
-            sub={lang === 'zh' ? '可在服务器列表选择通知来源' : 'Choose notification sources in Servers'}
-            pal={pal} toggle={pushEnabled} onToggle={setPushEnabled} divider />
+            sub={pushUnavailable ? pushExplanation : lang === 'zh' ? '可在服务器列表选择通知来源' : 'Choose notification sources in Servers'}
+            pal={pal} toggle={pushEnabled && !pushUnavailable} toggleDisabled={androidPush === 'not-configured' || androidPush === 'google-services-unavailable'} onToggle={setPushEnabled} divider />
           <SettingsRow
             inset
             label={lang === 'zh' ? '待处理提醒' : 'Input requests'}
             sub={lang === 'zh' ? '会话需要输入或确认时通知' : 'Notify when a session needs input or confirmation'}
             pal={pal}
-            toggle={pushEnabled && pushKinds.waiting}
-            toggleDisabled={!pushEnabled}
+            toggle={pushEnabled && !pushUnavailable && pushKinds.waiting}
+            toggleDisabled={!pushEnabled || pushUnavailable}
             onToggle={v => setPushKinds({...pushKinds, waiting: v})}
             divider
           />
@@ -282,8 +300,8 @@ export function SettingsScreen({navigation}: any) {
             label={lang === 'zh' ? '本轮结束' : 'Turn completion'}
             sub={lang === 'zh' ? '会话本轮成功结束时通知' : 'Notify when a session completes a turn successfully'}
             pal={pal}
-            toggle={pushEnabled && pushKinds.done}
-            toggleDisabled={!pushEnabled}
+            toggle={pushEnabled && !pushUnavailable && pushKinds.done}
+            toggleDisabled={!pushEnabled || pushUnavailable}
             onToggle={v => setPushKinds({...pushKinds, done: v})}
           />
         </SettingsGroup>
@@ -365,8 +383,8 @@ export function SettingsScreen({navigation}: any) {
         }
         note={
           lang === 'zh'
-            ? '手机保存的是上次获取的副本。app 无法确认手机备份是否完成。你也可以导出到「文件」；导出的档案未加密，请妥善保存。'
-            : 'This phone keeps the last copy you fetched. The app cannot confirm that a phone backup ran. You can export the copy to Files; the exported archive is unencrypted, so store it securely.'
+            ? '手机保存的是上次获取的副本。app 无法确认手机备份是否完成。你也可以导出副本；导出的档案未加密，请妥善保存。'
+            : 'This phone keeps the last copy you fetched. The app cannot confirm that a phone backup ran. You can export the copy; the exported archive is unencrypted, so store it securely.'
         }
       />
 

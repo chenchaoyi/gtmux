@@ -9,7 +9,7 @@
 // (see the dark-surface trap). Shared by the radar row and the chat view.
 
 import React, {useEffect, useRef, useState} from 'react';
-import {Image, StyleSheet, Text, View} from 'react-native';
+import {Image, Platform, StyleSheet, Text, View} from 'react-native';
 import {Agent} from '../api/types';
 import {agentMark} from './agentMark';
 import {useAgentsOptional} from '../state/AgentsContext';
@@ -98,7 +98,9 @@ export function AgentAvatar({
         },
       ]}>
       {source ? (
-        <Image key={tries} source={source} style={[styles.img, whale && styles.whale]} resizeMode="contain" onError={onError} />
+        // RN 0.86 Android forwards request headers from the source-array path.
+        // Keep authentication in headers, never in the icon URL.
+        <Image key={tries} source={Platform.OS === 'android' ? [source] : source} style={[styles.img, whale && styles.whale]} resizeMode="contain" onError={onError} />
       ) : (
         // The mark is drawn to the avatar's own size, like SenderAvatar's: an icon, not
         // text to read, so it does not follow the system text size out of its box.

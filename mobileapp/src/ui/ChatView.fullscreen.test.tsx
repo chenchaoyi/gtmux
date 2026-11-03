@@ -81,3 +81,17 @@ test('the detail screen hands the chat the chrome height and its slide', () => {
   expect(src).toContain('controlsTop={fullscreen ? insets.top : chromeH + questionInset}');
   expect(src).toMatch(/controlsShift=\{fullscreen \? undefined : collapse\.interpolate\(\{inputRange: \[0, 1\], outputRange: \[0, -chromeH\]\}\)\}/);
 });
+
+test('entering and leaving full screen keeps the transform array valid for Android Fabric', () => {
+  const {Animated}=require('react-native');const slide=new Animated.Value(0);
+  const props={agent,lines:[],status:'idle' as const,fontSize:13,pal:paletteFor('dark'),lang:'en' as const,turns:[{prompt:'hello',response:'done',time:''}],loading:false};
+  let tree!:renderer.ReactTestRenderer;
+  act(()=>{tree=renderer.create(<ChatView {...props} controlsShift={slide.interpolate({inputRange:[0,1],outputRange:[0,-140]})} />);});
+  for (const shift of [undefined,slide.interpolate({inputRange:[0,1],outputRange:[0,-140]}),undefined]) {
+    act(()=>tree.update(<ChatView {...props} controlsShift={shift} />));
+    const style=StyleSheet.flatten(tree.root.findAll(n=>n.props.testID==='chat-collapse-bar')[0].props.style);
+    expect(Array.isArray(style.transform)).toBe(true);expect(style.transform).toHaveLength(1);
+    if (!shift) expect(style.transform).toEqual([{translateY:0}]);
+  }
+  act(()=>tree.unmount());
+});

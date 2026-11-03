@@ -10,6 +10,7 @@ import {TestIds} from '../constants/testIds';
 import {Palette} from './theme';
 import {PhotoLibraryIcon, CameraIcon, FileIcon, PasteIcon} from './Icons';
 import {MODAL_ORIENTATIONS} from './modalOrientations';
+import {useModalDismiss} from './useModalDismiss';
 
 type Row = {
   icon: React.ComponentType<{size?: number; color?: string}>;
@@ -56,6 +57,12 @@ export function AttachSheet({
   // sheet becomes that one. Dismissing by BACKDROP or back-gesture still slides, because
   // there the sheet going away IS the outcome and the motion is the feedback.
   const [instant, setInstant] = React.useState(false);
+  const dismissed = useModalDismiss(visible, () => {
+    const fn = pendingRef.current;
+    pendingRef.current = null;
+    setInstant(false);
+    void fn?.();
+  });
   const choose = (fn: () => void | Promise<void>) => {
     pendingRef.current = fn;
     setInstant(true);
@@ -78,12 +85,7 @@ export function AttachSheet({
       transparent
       animationType={instant ? 'none' : 'slide'}
       onRequestClose={onClose}
-      onDismiss={() => {
-        const fn = pendingRef.current;
-        pendingRef.current = null;
-        setInstant(false); // the next open slides in normally
-        return fn?.();
-      }}>
+      onDismiss={dismissed}>
       <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose}>
         <TouchableOpacity
           testID={TestIds.composer.attachSheet}

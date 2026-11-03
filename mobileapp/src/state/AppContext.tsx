@@ -5,7 +5,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, {createContext, useCallback, useContext, useEffect, useMemo, useRef, useState} from 'react';
-import {AppState, Platform, useColorScheme} from 'react-native';
+import {AppState, NativeModules, Platform, useColorScheme} from 'react-native';
 import {Lang, LangPref, makeT, resolveLang} from '../i18n';
 import {PairedMac} from '../pairing/qr';
 import {loadServers, renameServer as renameSaved, reorderServers, saveServers, ServerStore, upsertServer} from '../pairing/store';
@@ -215,7 +215,11 @@ export function AppProvider({children}: {children: React.ReactNode}) {
   }, []);
 
   useEffect(() => {
-    if (!ready || Platform.OS !== 'ios' || Debug.noPush) return;
+    if (ready && Platform.OS === 'android') NativeModules.PushNotifications?.configure(servers.filter(s => s.scope !== 'guest').flatMap(s => [s.name, ...(s.macName ? [s.macName] : [])]));
+  }, [ready, servers]);
+
+  useEffect(() => {
+    if (!ready || !['ios', 'android'].includes(Platform.OS) || Debug.noPush) return;
     const owners = servers.filter(s => s.scope !== 'guest');
     const currentUrls = new Set(owners.map(s => s.url));
     for (const [url, queue] of pushQueues.current) {
@@ -242,7 +246,7 @@ export function AppProvider({children}: {children: React.ReactNode}) {
       queue.schedule(async current => {
         if (!current()) return;
         const ok = await syncServerPush(
-          server, pushToken, mayNotify(pushEnabled, pushKinds, server), kinds, apnsEnv(),
+          server, pushToken, mayNotify(pushEnabled, pushKinds, server), kinds, Platform.OS === 'android' ? '' : apnsEnv(),
         );
         if (current()) {
           setPushSync(prev => ({...prev, [server.url]: ok ? 'synced' : 'pending'}));

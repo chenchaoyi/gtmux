@@ -20,6 +20,7 @@ import {PaneResponse, PaneRow, ReplyOption, StatusName} from '../../src/api/type
 import type {BackgroundTask} from '../../src/api/backgroundTasks';
 import {makeDemoClient, DemoClient} from '../../src/ui/demoClient';
 import {iconFile} from './icons';
+import type {ConversationDocument} from '../../src/documents/references';
 
 /**
  * One radar row, in the REAL serve's field names AND its value vocabulary.
@@ -116,6 +117,10 @@ export class World {
   screens = new Map<string, string>();
   /** A conversation a suite set for a pane; /api/transcript answers it instead of the stock one. */
   transcripts = new Map<string, TranscriptTurn[]>();
+  historyPages = new Map<string, TranscriptTurn[]>();
+  diffs = new Map<string, string>();
+  /** Explicit synthetic documents only; no real filesystem access. */
+  documents = new Map<string, {body: Buffer; kind: ConversationDocument['kind']; media: string; session: string; home: string; id: string}>();
   /** pane id → an unsubmitted draft, so the draft-protection path can be exercised. */
   drafts = new Map<string, string>();
   knowledge: {entries: KnowledgeRow[]} = {entries: []};

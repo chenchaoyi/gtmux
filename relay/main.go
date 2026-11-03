@@ -36,6 +36,13 @@ func main() {
 		log.Printf("relay: APNs not configured (set APNS_* to enable iOS push)")
 	}
 
+	if p, err := fcmFromEnv(); err != nil {
+		log.Fatalf("relay: FCM configuration error: %v", err)
+	} else if p != nil {
+		srv.pushers["android"] = p
+		log.Printf("relay: Android FCM enabled")
+	}
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"

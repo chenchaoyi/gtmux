@@ -18,6 +18,7 @@ import {
   Modal,
   PanResponder,
   PixelRatio,
+  Platform,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -31,6 +32,8 @@ import {captureRef} from 'react-native-view-shot';
 import {Lang} from '../i18n';
 import {captureSize, exportPixels, exportPoints, fitSize, MARKUP_JPEG_QUALITY, MARKUP_SCALED_EDGE, Size} from './markupGeometry';
 import {MODAL_ORIENTATIONS} from './modalOrientations';
+import {useModalDismiss} from './useModalDismiss';
+import {AndroidImageCanvas} from './AndroidImageCanvas';
 
 type Tool = 'brush' | 'arrow' | 'box' | 'redact' | 'pan';
 
@@ -126,6 +129,7 @@ export function ImageMarkup({
   onDone: (fileUri: string) => void;
   onDismiss?: () => void;
 }) {
+  const dismissed = useModalDismiss(visible, onDismiss);
   const [shapes, setShapes] = useState<Shape[]>([]);
   const [tool, setToolState] = useState<Tool>('brush');
   const [color, setColorState] = useState(PALETTE[0]);
@@ -265,7 +269,8 @@ export function ImageMarkup({
       // is worked out here from the size chosen, not read from this render's `px`, which
       // still holds the previous choice.
       const target = own ? exportPixels(own, edge ?? Infinity) : null;
-      const at = target ? captureSize(target, scale) : undefined;
+      // Android's view-shot width/height are pixels; iOS takes point dimensions.
+      const at = target ? Platform.OS === 'android' ? {width: target.w, height: target.h} : captureSize(target, scale) : undefined;
       return await captureRef(shotRef, {format: 'jpg', quality: MARKUP_JPEG_QUALITY, result: 'tmpfile', ...at});
     } finally {
       clearTimeout(loadTimer);
@@ -326,8 +331,25 @@ export function ImageMarkup({
   const draft = draftRef.current;
   const hasShapes = shapes.length > 0;
 
+  const imageFrame = (fit ? (
+            // The frame is the picture's own shape: a mark lands on the picture or nowhere,
+            // and its points are the picture's, as displayed (markupGeometry).
+            <View testID="markup-frame" style={{width: fit.w, height: fit.h}}>
+              {uri && <Image source={{uri}} style={StyleSheet.absoluteFill} resizeMode="stretch" fadeDuration={0} />}
+              <View style={StyleSheet.absoluteFill} {...responder.panHandlers}>
+                <Svg pointerEvents="none" style={StyleSheet.absoluteFill} width={fit.w} height={fit.h} viewBox={`0 0 ${drawing?.w ?? fit.w} ${drawing?.h ?? fit.h}`}>
+                  {shapes.map((s, i) => (
+                    <ShapeView key={`s${i}`} s={s} k={`s${i}`} />
+                  ))}
+                  {draft && <ShapeView key="draft" s={draft} k="draft" />}
+                </Svg>
+              </View>
+            </View>
+          ) : (
+            uri && <ActivityIndicator color="#fff" />
+          ));
   return (
-    <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={visible} animationType="slide" onRequestClose={cancel} onDismiss={onDismiss}>
+    <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={visible} animationType="slide" onRequestClose={cancel} onDismiss={dismissed}>
       <StatusBar hidden />
       <SafeAreaProvider>
       <SafeAreaView testID="markup-root" style={styles.root}>
@@ -355,6 +377,7 @@ export function ImageMarkup({
         <View
           style={styles.canvasWrap}
           onLayout={e => setBox({w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height})}>
+          {Platform.OS === 'android' ? <AndroidImageCanvas lang={lang} fit={fit} zoom={zoom} onZoom={setZoom} panMode={tool==='pan'} resetKey={uri??''}>{imageFrame}</AndroidImageCanvas> : (
           <ScrollView
             ref={scrollRef}
             testID="markup-viewport"
@@ -370,24 +393,9 @@ export function ImageMarkup({
             onScroll={e => {const value = e.nativeEvent.zoomScale; if (value > 0) setZoom(value);}}
             scrollEventThrottle={32}
           >
-          {fit ? (
-            // The frame is the picture's own shape: a mark lands on the picture or nowhere,
-            // and its points are the picture's, as displayed (markupGeometry).
-            <View testID="markup-frame" style={{width: fit.w, height: fit.h}}>
-              {uri && <Image source={{uri}} style={StyleSheet.absoluteFill} resizeMode="stretch" />}
-              <View style={StyleSheet.absoluteFill} {...responder.panHandlers}>
-                <Svg pointerEvents="none" style={StyleSheet.absoluteFill} width={fit.w} height={fit.h} viewBox={`0 0 ${drawing?.w ?? fit.w} ${drawing?.h ?? fit.h}`}>
-                  {shapes.map((s, i) => (
-                    <ShapeView key={`s${i}`} s={s} k={`s${i}`} />
-                  ))}
-                  {draft && <ShapeView key="draft" s={draft} k="draft" />}
-                </Svg>
-              </View>
-            </View>
-          ) : (
-            uri && <ActivityIndicator color="#fff" />
-          )}
+          {imageFrame}
           </ScrollView>
+          )}
         </View>
         <View style={styles.zoomRow}>
           <TouchableOpacity testID="markup-zoom-out" accessibilityRole="button" accessibilityLabel={lang === 'zh' ? '缩小' : 'Zoom out'} style={styles.zoomButton} onPress={() => setZoom(v => Math.max(1, v / 1.5))}><ChromeText style={styles.barText}>−</ChromeText></TouchableOpacity>
@@ -408,6 +416,7 @@ export function ImageMarkup({
                 source={{uri}}
                 style={StyleSheet.absoluteFill}
                 resizeMode="stretch"
+                fadeDuration={0}
                 onLoadEnd={() => exportLoaded.current?.()}
               />
             )}

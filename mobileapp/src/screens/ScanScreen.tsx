@@ -2,11 +2,12 @@
 // with a clear scan window (corner brackets + a moving scan line) over the live
 // camera; reads a gtmux pairing QR and hands the raw string to the pairing flow.
 
-import React, {useEffect, useRef} from 'react';
-import {Animated, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View} from 'react-native';
+import React, {useEffect, useRef, useState} from 'react';
+import {Animated, AppState, Linking, Platform, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View} from 'react-native';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import {Camera, CameraType} from 'react-native-camera-kit';
 import {useApp} from '../state/AppContext';
+import {cameraPermission} from '../native/cameraPermission';
 
 const CYAN = '#06B6D4';
 
@@ -24,6 +25,18 @@ export function ScanScreen({
   // Leave the title, cancel action and safe areas visible on a landscape phone.
   const win = Math.max(100, Math.min(256, width - insets.left - insets.right - 48,
     height - insets.top - insets.bottom - 136));
+  const [cameraAllowed, setCameraAllowed] = useState(Platform.OS !== 'android');
+  const [cameraDenied, setCameraDenied] = useState(false);
+  useEffect(() => {
+    let live = true;
+    const check = async (ask: boolean) => {
+      const allowed = await cameraPermission(ask);
+      if (live) {setCameraAllowed(allowed); setCameraDenied(!allowed);}
+    };
+    void check(true);
+    const subscription = AppState.addEventListener('change', state => {if (state === 'active') void check(false);});
+    return () => {live = false; subscription.remove();};
+  }, []);
   const done = useRef(false);
   const scan = useRef(new Animated.Value(0)).current;
 
@@ -42,7 +55,7 @@ export function ScanScreen({
 
   return (
     <View style={styles.root}>
-      <Camera
+      {cameraAllowed && <Camera
         style={StyleSheet.absoluteFill}
         cameraType={CameraType.Back}
         scanBarcode
@@ -54,7 +67,7 @@ export function ScanScreen({
             onScanned(String(v));
           }
         }}
-      />
+      />}
 
       {/* dim top + title */}
       <View style={styles.dimTop}>
@@ -68,6 +81,9 @@ export function ScanScreen({
         </SafeAreaView>
       </View>
 
+      {cameraDenied && <TouchableOpacity accessibilityRole="button" style={styles.permission} onPress={() => {void Linking.openSettings();}}>
+        <Text style={styles.cancelText}>{lang === 'zh' ? '相机权限未开启。前往设置，或取消后粘贴配对链接。' : 'Camera access is off. Open Settings, or cancel and paste a pairing link.'}</Text>
+      </TouchableOpacity>}
       {/* middle: dim sides + clear window */}
       <View style={[styles.middle, {height: win}]}>
         <View style={styles.dimSide} />
@@ -94,6 +110,7 @@ export function ScanScreen({
 const DIM = 'rgba(0,0,0,0.6)';
 
 const styles = StyleSheet.create({
+  permission: {padding: 24, backgroundColor: '#202027'},
   root: {flex: 1, backgroundColor: '#000'},
   dimTop: {flex: 1, backgroundColor: DIM, paddingHorizontal: 28},
   title: {color: '#fff', fontSize: 20, fontWeight: '700', marginTop: 8, textAlign: 'center'},

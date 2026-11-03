@@ -18,6 +18,7 @@ import { Chevron } from './Icons';
 import { CodeBlock } from './CodeBlock';
 import { toolCodeHint } from './codeReading';
 import { useToolInput } from './useToolInput';
+import {ChromeText} from './ChromeText';
 
 /** A call is evidence of an action, not evidence that it succeeded. */
 export function ToolSteps({
@@ -67,10 +68,10 @@ export function ToolSteps({
         style={styles.header}
       >
         <Chevron open={open} size={12} color="#A4A4AD" />
-        <Text style={[styles.heading, { fontSize: size }]} numberOfLines={1}>
+        <ChromeText style={[styles.heading, { fontSize: size }]} numberOfLines={1}>
           {open ? (lang === 'zh' ? '工具调用' : 'Tool calls') : heading} ·{' '}
           {steps.length}
-        </Text>
+        </ChromeText>
       </TouchableOpacity>
       {open && (
         <View testID="tool-steps-list" style={styles.list}>

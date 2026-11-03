@@ -2,7 +2,7 @@ import React from 'react';
 import renderer, {act} from 'react-test-renderer';
 import {AgentAvatar} from './AgentAvatar';
 import {Agent} from '../api/types';
-import {StyleSheet, View} from 'react-native';
+import {Platform, StyleSheet, View} from 'react-native';
 
 // Regression: AgentAvatar must render OUTSIDE an AgentsProvider — the pre-pairing
 // Demo screen (the App Store reviewer's fallback) reuses the radar row, which
@@ -30,7 +30,7 @@ test('renders without an AgentsProvider (Demo screen path)', () => {
 // as long as it stayed mounted.
 jest.mock('../state/AgentsContext', () => ({
   useAgentsOptional: () => ({
-    client: {iconUri: (name: string) => ({uri: 'https://mac/api/icon?agent=' + name, headers: {}})},
+    client: {iconUri: (name: string) => ({uri: 'https://mac/api/icon?agent=' + name, headers: {Authorization: 'Bearer synthetic'}})},
   }),
 }));
 
@@ -164,3 +164,18 @@ test('a changed icon hint for the same agent is a fresh question', () => {
   jest.useRealTimers();
 });
 
+
+
+test('Android uses the authenticated image-source array path; iOS keeps its existing source', () => {
+  const platform = Platform.OS;
+  try {
+    Object.defineProperty(Platform, 'OS', {configurable: true, value: 'android'});
+    const android = mount(withIcon);
+    expect(images(android)[0].props.source).toEqual([{uri: 'https://mac/api/icon?agent=Claude Code', headers: {Authorization: 'Bearer synthetic'}}]);
+    act(() => android.unmount());
+    Object.defineProperty(Platform, 'OS', {configurable: true, value: 'ios'});
+    const ios = mount(withIcon);
+    expect(images(ios)[0].props.source).toEqual({uri: 'https://mac/api/icon?agent=Claude Code', headers: {Authorization: 'Bearer synthetic'}});
+    act(() => ios.unmount());
+  } finally {Object.defineProperty(Platform, 'OS', {configurable: true, value: platform});}
+});

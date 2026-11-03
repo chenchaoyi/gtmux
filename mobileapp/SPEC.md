@@ -5,7 +5,7 @@ but it is no longer the current build guide or feature specification. The body
 is retained as implementation history. In particular, **do not run its project
 initialization command in this existing checkout**.
 
-For current setup use [README.md](README.md). Current behavior is specified in
+For current setup use [README.md](README.md); Android setup and delivery use [ANDROID.md](ANDROID.md). Current behavior is specified in
 [mobile-app](../openspec/specs/mobile-app/spec.md),
 [mobile-pane-renderer](../openspec/specs/mobile-pane-renderer/spec.md), and the
 [HTTP contract](../api/contract.md). Dependencies are declared in

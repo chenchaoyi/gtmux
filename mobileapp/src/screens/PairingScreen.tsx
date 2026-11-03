@@ -185,7 +185,7 @@ export function PairingScreen({onCancel, onDemo, onPaired}: {onCancel?: () => vo
   return (
     <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} testID={TestIds.pairing.screen}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.flex}>
         {onCancel && (
           <TouchableOpacity onPress={cancel} disabled={saving} hitSlop={hitC} style={styles.cancel}>

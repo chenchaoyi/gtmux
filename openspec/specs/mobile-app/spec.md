@@ -2730,3 +2730,47 @@ The markup editor SHALL place its canvas between safe-area-aware controls, keep 
 - **WHEN** a reader pans, zooms or resizes an annotated screenshot viewport
 - **THEN** existing marks remain aligned with the image and viewport movement creates no marks
 - **AND** Done exports the original picture dimensions with marks at their original image coordinates
+
+### Requirement: Android reuses the shared mobile product
+The Android application MUST consume the same server authorization, session identity, React Native navigation, session/HQ views and readers as iOS. Native adapters SHALL supply operating-system document, sharing, keyboard, haptic, notification and widget facilities without a second business model.
+
+#### Scenario: A user scans or denies camera access
+- **WHEN** an Android user opens the scanner
+- **THEN** the app requests camera access at use, and denial leaves manual pairing available
+
+#### Scenario: A user opens a local document
+- **WHEN** an owner opens an authorized conversation file or local image reference
+- **THEN** bounded native transport validates session/home and content SHA, the parent-document API authorizes local images, and the page receives no pairing credentials or arbitrary local-file/network bridge
+
+#### Scenario: Optional push is not configured
+- **WHEN** Firebase configuration, Google services or notification permission is unavailable
+- **THEN** settings explains that state, the rest of the app remains usable, and an Android token is never routed to APNs
+
+#### Scenario: Widget data is no longer current
+- **WHEN** the app is backgrounded or the owner connection changes
+- **THEN** the credential-free widget remains explicitly last-seen or clears the prior connection, rather than claiming fresh usage
+
+### Requirement: Android delivery uses verified source and signing
+Android QA automation MUST target an explicit owned emulator and a distinct QA package. Production delivery SHALL require private signing inputs, an exact reviewed main commit with successful Android checks, version/certificate provenance, bundled JS and native-library verification, and 16 KB page compatibility. Package delivery and store submission MUST be separately reported.
+
+#### Scenario: Signing input is missing
+- **WHEN** a production Android build lacks private signing inputs or exact source identity
+- **THEN** the build fails instead of using the public debug key
+
+#### Scenario: Automation is pointed at an unrelated device
+- **WHEN** the Android UI runner receives a physical device or an AVD outside its owned naming scope
+- **THEN** it refuses to install, reset or drive that device
+
+### Requirement: Android shares the mobile product
+Android SHALL reuse the React Native session/HQ/Chat/Terminal/Trace/Diff/composer and access models, with native adapters for operating-system capabilities. It SHALL preserve paired owner/guest scopes, actual turn numbers, bounded history and cross-client labels/icons. Release artifacts SHALL use an explicit Android identity, source/version provenance and a private release signer, never the public QA signer.
+
+#### Scenario: Android opens an existing session
+- **WHEN** a paired owner opens a session on an Android phone or tablet
+- **THEN** the existing shared views display the same session, original turns, tools and capabilities, with safe insets and usable Back/IME behavior
+
+### Requirement: Android acceptance and delivery are explicit
+Android delivery SHALL verify APK/AAB identity, version, signature, native library alignment and source provenance. Isolated emulator interactions, unit checks, screenshots, physical-device behavior, live push and Store publication SHALL be reported separately. Missing account/provider setup SHALL not become a false success or silent no-op.
+
+#### Scenario: Push provider is not configured
+- **WHEN** Firebase or its server provider is unavailable
+- **THEN** the app remains usable, identifies unavailable background push and does not register an FCM token as APNs or claim tested delivery

@@ -1220,7 +1220,7 @@ export class GtmuxClient {
     const r = await tfetch(`${this.base}/api/push/register`, {
       method: 'POST',
       headers: {...this.h(), 'Content-Type': 'application/json'},
-      body: JSON.stringify({token: deviceToken, platform: 'ios', kinds: kinds ?? [], env}),
+      body: JSON.stringify({token: deviceToken, platform: Platform.OS === 'android' ? 'android' : 'ios', kinds: kinds ?? [], ...(Platform.OS === 'android' ? {} : {env})}),
       signal,
     });
     // tfetch/ApiWatch owns failed requests and their repeat/recovery history.

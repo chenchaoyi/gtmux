@@ -89,3 +89,9 @@ Physical iPhone/iPad and spoken VoiceOver acceptance are not covered by these ch
 The shared core runs on macOS and Linux; a server is not necessarily a Mac. Use “server” for remote connection, pairing and failure text. Keep Mac/macOS for actual Apple device names and macOS-only controls. `GET /api/host.capabilities` is the support source for desktop focus, desktop notifications, menu bar and lid control; clients must not infer these from agent or terminal names. An explicit false removes the corresponding action. Missing fields retain legacy presentation. Linux headless users manage sessions in the app, browser or terminal; local macOS menu-bar controls remain local.
 
 Service management, host metadata, resource sampling and desktop interaction have separate platform adapters. Keep enrollment, access policy, pane identity and HQ behavior in the shared core. FreeBSD is an extension target, not a currently supported platform.
+
+## Android phones and tablets
+
+Android uses these same Phone and regular-tablet surfaces; it is not a separate business model or a copied UI. `mobileapp/ANDROID.md` records the native boundary and delivery contract. Session/HQ state, Chat, Terminal, Trace, Diff, code formatting, themes, pairing and guest scopes remain shared React Native/Go implementations. Kotlin adapts documents and system sharing, keyboard/haptics, optional FCM and a credential-free last-seen usage widget. The document reader stylesheet is generated from one source for UIKit/WebKit and Android WebView; platform parsers and transport remain native adapters.
+
+Native Android acceptance is independent: bundled QA builds and owned-emulator interactions, phone/tablet resizing, Back/IME, system permissions, TalkBack, physical devices, live FCM and store publication have separate evidence. Missing Google configuration/services must be visible without blocking ordinary paired use. Android does not inherit iOS cloud-backup or Live Activity claims.

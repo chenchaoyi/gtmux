@@ -12,7 +12,7 @@ import sys
 JOBS = {
     "test": "core", "cross-build": "cross", "mobile": "mobile", "web": "web",
     "menubar": "menubar", "relay-worker": "relay", "tunnel-worker": "tunnel",
-    "ios-native": "ios",
+    "ios-native": "ios", "android-native": "android",
 }
 DOC_FILES = {"README.md", "README.zh.md", "CONTRIBUTING.md", "SECURITY.md", "LICENSE",
              "CLAUDE.md", ".github/pull_request_template.md"}
@@ -50,7 +50,7 @@ def classify(paths, force_reason=None):
             full = True
             reasons.append("Shared HTTP contract consumer: " + json.dumps(path))
         elif path.startswith(("mobileapp/src/", "mobileapp/e2e/")) and PurePosixPath(path).suffix in {".ts", ".tsx", ".js", ".cjs"}:
-            selected.update(("mobile", "web", "ios-native"))
+            selected.update(("mobile", "web", "ios-native", "android-native"))
             reasons.append("Phone/iPad code, native compile and shared Web presentation: " + json.dumps(path))
         elif path.startswith("mobileapp/ios/") and PurePosixPath(path).suffix in {".swift", ".m", ".mm", ".h"}:
             selected.update(("mobile", "ios-native"))
@@ -59,7 +59,7 @@ def classify(paths, force_reason=None):
             selected.add("menubar")
             reasons.append("Menu-bar implementation/tests: " + json.dumps(path))
         elif path.startswith(("relay-worker/src/", "relay-worker/test/")) and PurePosixPath(path).suffix == ".ts":
-            selected.update(("relay-worker", "test", "mobile"))
+            selected.update(("relay-worker", "test", "mobile", "android-native"))
             reasons.append("Push Worker, Go reference and phone consumer: " + json.dumps(path))
         else:
             # Core/API, tunnel control plane, dependencies, CI/build/install machinery,

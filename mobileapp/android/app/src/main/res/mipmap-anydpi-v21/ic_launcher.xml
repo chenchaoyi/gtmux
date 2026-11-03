@@ -1,0 +1,1 @@
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android"><item android:drawable="@color/launcher_background"/><item android:top="8dp" android:bottom="8dp" android:left="8dp" android:right="8dp"><bitmap android:src="@drawable/brand" android:gravity="fill" /></item></layer-list>

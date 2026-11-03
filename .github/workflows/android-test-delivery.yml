@@ -1,0 +1,145 @@
+name: Android private delivery build
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Exact reviewed main commit with successful Android emulator CI
+        required: true
+        type: string
+      build_number:
+        description: Android build ordinal 1–999 for this semantic version
+        required: true
+        default: '1'
+        type: string
+      result_recipient:
+        description: Public age recipient for the encrypted unsigned build (no private signing key)
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: android-signed-delivery
+  cancel-in-progress: false
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      source: ${{ steps.check.outputs.source }}
+      number: ${{ steps.check.outputs.number }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - id: check
+        name: Require exact reviewed source and native/emulator checks
+        env:
+          SOURCE: ${{ inputs.source_sha }}
+          NUMBER: ${{ inputs.build_number }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$GITHUB_REF" = refs/heads/main
+          test "$GITHUB_REPOSITORY" = chenchaoyi/gtmux
+          python3 - <<'PY'
+          import os,re
+          assert re.fullmatch(r'[a-f0-9]{40}',os.environ['SOURCE']), 'Exact source SHA required'
+          assert re.fullmatch(r'[1-9][0-9]{0,2}',os.environ['NUMBER']), 'Build number must be 1–999'
+          PY
+          git merge-base --is-ancestor "$SOURCE" origin/main
+          gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$SOURCE&event=push&per_page=100" > "$RUNNER_TEMP/android-ci.json"
+          python3 - <<'PY'
+          import json,os,subprocess,sys
+          sys.path.insert(0,'mobileapp/scripts')
+          from delivery_source import validate_ci
+          source=os.environ['SOURCE']; runs=json.load(open(os.environ['RUNNER_TEMP']+'/android-ci.json'))['workflow_runs']
+          validate_ci(source,runs)
+          run=max((r for r in runs if r['head_sha']==source and r['head_branch']=='main' and r['event']=='push'),key=lambda r:(r['run_number'],r['run_attempt']))
+          jobs=json.loads(subprocess.check_output(['gh','api',f"repos/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{run['id']}/jobs?per_page=100"]))['jobs']
+          android=[j for j in jobs if j['name']=='Android build and emulator flows']
+          assert len(android)==1 and android[0]['conclusion']=='success', 'Android emulator gate must pass for this exact source'
+          with open(os.environ['GITHUB_OUTPUT'],'a') as out: out.write(f"source={source}\nnumber={os.environ['NUMBER']}\n")
+          PY
+  delivery:
+    needs: preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      RESULT_RECIPIENT: ${{ inputs.result_recipient }}
+      GTMUX_FIREBASE_APP_ID: ${{ vars.ANDROID_FIREBASE_APP_ID }}
+      GTMUX_FIREBASE_SENDER_ID: ${{ vars.ANDROID_FIREBASE_SENDER_ID }}
+      GTMUX_FIREBASE_API_KEY: ${{ vars.ANDROID_FIREBASE_API_KEY }}
+      GTMUX_FIREBASE_PROJECT_ID: ${{ vars.ANDROID_FIREBASE_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.preflight.outputs.source }}
+          persist-credentials: false
+      - name: Isolate delivery files
+        run: echo "DELIVERY_ROOT=$RUNNER_TEMP/gtmux-android-delivery" >> "$GITHUB_ENV"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: mobileapp/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27'
+      - name: Prepare encrypted result tools (no signing credentials)
+        run: |
+          umask 077
+          python3 - <<'PY'
+          import os,pathlib,re
+          assert re.fullmatch(r'age1[0-9a-z]+',os.environ['RESULT_RECIPIENT']), 'Public result recipient is required'
+          pathlib.Path(os.environ['DELIVERY_ROOT']).mkdir(mode=0o700)
+          PY
+          curl -fL --proto '=https' --proto-redir '=https' --retry 2 -o "$RUNNER_TEMP/bundletool.jar" https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar
+          echo "a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29  $RUNNER_TEMP/bundletool.jar" | sha256sum -c -
+          GOBIN="$RUNNER_TEMP/android-tools" go install filippo.io/age/cmd/age@v1.3.2
+      - name: Install dependencies
+        run: npm --prefix mobileapp ci
+      - name: Build reviewed-source unsigned APK and AAB
+        env:
+          SOURCE: ${{ needs.preflight.outputs.source }}
+          NUMBER: ${{ needs.preflight.outputs.number }}
+        run: python3 mobileapp/scripts/android-delivery.py build --unsigned --source "$SOURCE" --number "$NUMBER" --output "$DELIVERY_ROOT"
+      - name: Check package and bundle before private local signing
+        env:
+          SOURCE: ${{ needs.preflight.outputs.source }}
+        run: |
+          python3 - <<'PY'
+          import json,os,pathlib,subprocess
+          root=pathlib.Path(os.environ['DELIVERY_ROOT']); receipt=json.loads((root/'DELIVERY.json').read_text())
+          assert receipt['signed'] is False and receipt['source']==os.environ['SOURCE']
+          tools=pathlib.Path(os.environ['ANDROID_HOME'])/'build-tools/36.0.0'
+          text=subprocess.check_output([tools/'aapt','dump','badging',root/'gtmux-unsigned.apk'],text=True)
+          assert "package: name='com.gtmux.app'" in text and 'application-debuggable' not in text
+          manifest=subprocess.check_output([tools/'aapt2','dump','xmltree',root/'gtmux-unsigned.apk','--file','AndroidManifest.xml'],text=True)
+          assert os.environ['SOURCE'] in manifest
+          subprocess.run(['java','-jar',os.environ['RUNNER_TEMP']+'/bundletool.jar','validate','--bundle='+str(root/'gtmux-unsigned.aab')],check=True)
+          PY
+      - name: Encrypt recoverable build
+        if: always()
+        run: |
+          test -d "$DELIVERY_ROOT"
+          tar -C "$DELIVERY_ROOT" -czf - . | "$RUNNER_TEMP/android-tools/age" -r "$RESULT_RECIPIENT" -o "$RUNNER_TEMP/android-delivery.tar.gz.age"
+      - name: Keep only encrypted private delivery
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-delivery-encrypted-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/android-delivery.tar.gz.age
+          if-no-files-found: error
+          retention-days: 14
+      # Download and verify this exact result, sign locally, then run the strict final verifier.
+      # Application/upload private keys and Play credentials never enter this workflow.

@@ -1,0 +1,66 @@
+[
+  {
+    "name": "waiting",
+    "intent": {
+      "token": "synthetic-fcm-token",
+      "platform": "android",
+      "title": "Needs input",
+      "body": "1. Continue\n2. Cancel",
+      "subtitle": "Test host",
+      "pane": "%12",
+      "kind": "waiting",
+      "options": 2,
+      "collapseId": "%12"
+    },
+    "message": {
+      "message": {
+        "token": "synthetic-fcm-token",
+        "data": {
+          "title": "Needs input",
+          "body": "1. Continue\n2. Cancel",
+          "server": "Test host",
+          "pane": "%12",
+          "kind": "waiting",
+          "silent": "false",
+          "options": "2",
+          "collapseId": "%12"
+        },
+        "android": {
+          "priority": "HIGH",
+          "ttl": "120s"
+        }
+      }
+    }
+  },
+  {
+    "name": "silent",
+    "intent": {
+      "token": "synthetic-fcm-token",
+      "platform": "android",
+      "subtitle": "Test host",
+      "pane": "%12",
+      "silent": true,
+      "badge": 0,
+      "collapseId": "%12"
+    },
+    "message": {
+      "message": {
+        "token": "synthetic-fcm-token",
+        "data": {
+          "title": "",
+          "body": "",
+          "server": "Test host",
+          "pane": "%12",
+          "kind": "",
+          "silent": "true",
+          "badge": "0",
+          "collapseId": "%12"
+        },
+        "android": {
+          "priority": "NORMAL",
+          "ttl": "300s"
+        }
+      }
+    }
+  }
+]

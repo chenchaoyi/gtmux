@@ -1,0 +1,4 @@
+<network-security-config>
+  <!-- Pairing supports operator-entered LAN HTTP addresses. HTTPS always uses normal public CA validation. -->
+  <base-config cleartextTrafficPermitted="true"><trust-anchors><certificates src="system" /></trust-anchors></base-config>
+</network-security-config>

@@ -6,7 +6,7 @@
 |---|---|
 | `cmd/gtmux` + `internal/` | the Go CLI core (cgo-free) — the single data source |
 | `macapp/` | macOS menu-bar app (Swift/AppKit), core radar consumer (local serve or standalone CLI) |
-| `mobileapp/` | iOS app (bare RN, `com.gtmux.app`), third surface |
+| `mobileapp/` | shared iOS/iPad/Android app (bare RN, `com.gtmux.app`); Android native adapters and delivery: `mobileapp/ANDROID.md` |
 | `relay-worker/` | **DEPLOYED push relay** (Cloudflare Worker, `gtmux-relay.ccy.dev`) — changes need `npx wrangler deploy` |
 | `relay/` | Go **self-host reference impl** of the relay — NEVER deployed; keep payload shape in sync with `relay-worker/` |
 | `tunnel-worker/` | **DEPLOYED tunnel provisioner** (Cloudflare Worker, `api.gtmux.ccy.dev`) |

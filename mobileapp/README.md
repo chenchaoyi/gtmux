@@ -1,6 +1,6 @@
 # gtmux mobile app
 
-The iPhone/iPad app for gtmux — monitor and send input to your tmux coding agents
+The iPhone, iPad and Android app for gtmux — monitor and send input to your tmux coding agents
 over a reachable LAN, tunnel or VPN connection, with lock-screen notifications
 when push is enabled and configured.
 
@@ -65,3 +65,7 @@ Scope: live colored terminal view (`/api/pane`), focus, terminal **write**
 full-screen per session, official agent icons (`/api/icon`), and lock-screen
 **push** with per-kind filtering. The bearer token gates writes — a leaked token
 is RCE on the Mac, so keep the tunnel deliberate.
+
+## Android
+
+See [Android build, install and emulator testing](ANDROID.md) ([中文](ANDROID.zh.md)). Android uses the existing React Native screens and a separate signing/delivery path.

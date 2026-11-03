@@ -1101,6 +1101,12 @@ body: {"token":"<device-token>","platform":"ios","env":"production","kinds":["wa
 `done` = finished). Omit or send `[]` for **all** kinds. Lets the phone opt out
 of e.g. completion notifications from the settings screen.
 
+`platform:"android"` registers an FCM token; it does not use APNs `env`. Android
+requires a configured FCM relay and an optional Firebase-enabled client. The hosted
+Worker and self-host reference route platforms explicitly; an unconfigured Android
+provider returns unavailable and never falls through to Apple's gateway. Android
+notification taps open the current prompt rather than auto-sending stale choices.
+
 `env` selects `sandbox` for a development-signed build or `production` for App
 Store/TestFlight. Both the hosted Worker and self-host Go reference honor this
 per-token field; if omitted, the relay uses its configured `APNS_ENV` default.

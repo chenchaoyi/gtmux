@@ -1,0 +1,8 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/widget_root" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="@drawable/widget_background" android:padding="16dp">
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical">
+    <ImageView android:layout_width="26dp" android:layout_height="26dp" android:src="@drawable/brand" android:contentDescription="gtmux" />
+    <TextView android:id="@+id/widget_server" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="9dp" android:text="gtmux" android:textColor="@color/widget_ink" android:textSize="16sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="middle" />
+  </LinearLayout>
+  <TextView android:id="@+id/widget_quotas" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:gravity="center_vertical" android:textColor="@color/widget_ink" android:textSize="14sp" android:lineSpacingExtra="4dp" android:maxLines="3" android:ellipsize="end" />
+  <TextView android:id="@+id/widget_updated" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@color/widget_muted" android:textSize="11sp" android:maxLines="1" android:ellipsize="end" />
+</LinearLayout>
