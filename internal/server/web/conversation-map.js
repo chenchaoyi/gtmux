@@ -1,7 +1,13 @@
 /* One loaded-conversation navigator for focused chat and workbench tiles. */
 (function () {
   'use strict';
+  var pageBookmarks = new Map();
   window.GtmuxConversationMap = {
+    clearBookmarks: function (prefix) {
+      pageBookmarks.forEach(function (_, key) {
+        if (key.indexOf(prefix) === 0) pageBookmarks.delete(key);
+      });
+    },
     mount: function (main, scroll, turns, T, markdownPreview, options) {
       if (!window.GtmuxTrace || !window.GtmuxTrace.conversationOutline)
         return function () {};
@@ -65,7 +71,13 @@
         storageKey = options.storageKey,
         volatile = false;
       function readBookmarks() {
+        if (pageBookmarks.has(storageKey)) {
+          saved = new Set(pageBookmarks.get(storageKey));
+          volatile = true;
+          return;
+        }
         try {
+          volatile = false;
           var raw = localStorage.getItem(storageKey);
           if (!raw) {
             saved = new Set();
@@ -144,6 +156,11 @@
           );
           bookmark.setAttribute('aria-label', bookmark.title);
         }
+        if (volatile)
+          feedback.textContent = T(
+            'Saved for this page only; browser storage is unavailable.',
+            '浏览器存储不可用，书签仅保留到关闭页面。'
+          );
       }
       bookmark.onclick = function () {
         var key = outline[selected].bookmarkKey;
@@ -160,8 +177,10 @@
         try {
           localStorage.setItem(storageKey, JSON.stringify(Array.from(saved)));
           volatile = false;
+          pageBookmarks.delete(storageKey);
         } catch (e) {
           volatile = true;
+          pageBookmarks.set(storageKey, new Set(saved));
         }
         feedback.textContent = volatile
           ? T(
@@ -177,7 +196,12 @@
         );
       };
       function bookmarksChanged(e) {
-        if ((e.type === 'storage' ? e.key : e.detail) !== storageKey) return;
+        if (e.type === 'storage') {
+          if (e.key !== null && e.key !== storageKey) return;
+          pageBookmarks.delete(storageKey);
+          saved = new Set();
+          feedback.textContent = '';
+        } else if (e.detail !== storageKey) return;
         readBookmarks();
         syncMarks();
         paint();

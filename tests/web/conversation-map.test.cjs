@@ -132,3 +132,33 @@ scenario('Legacy clockless repeated prompts keep separate call disclosures',{vie
  assert.equal(await page.locator('#chat .steps-toggle').last().getAttribute('aria-expanded'),'false');
  assert.equal(fixture.state.sends.length,0);
 });
+
+for(const denyRead of [false,true])scenario(`Overview keeps page-only bookmarks through refresh (read denied ${denyRead})`,{viewport:{width:390,height:900}},async(page,fixture)=>{
+ await page.addInitScript(deny=>{
+  const get=Storage.prototype.getItem,set=Storage.prototype.setItem;
+  Storage.prototype.getItem=function(key){if(deny&&key.startsWith('gtmux.bookmarks:'))throw new DOMException('Synthetic storage denial','SecurityError');return get.call(this,key);};
+  Storage.prototype.setItem=function(key,value){if(key.startsWith('gtmux.bookmarks:'))throw new DOMException('Synthetic quota exhaustion','QuotaExceededError');return set.call(this,key,value);};
+ },denyRead);
+ fixture.state.turns['%901']=turns();
+ await page.goto(fixture.url+'/#code=TEST-1234');
+ await page.locator('#radar').getByText('Investigate retries',{exact:true}).click();
+ await page.locator('#mode [data-mode="chat"]').click();
+ const track=page.locator('#chat .conversation-map-track'),tip=page.locator('#chat .conversation-map-preview');
+ await track.focus();await track.press('Home');
+ await tip.getByRole('button',{name:'Bookmark this turn',exact:true}).click();
+ assert.equal(await track.locator('i.marked').count(),1);assert.match(await tip.innerText(),/this page only/);
+ fixture.state.turns['%901'].push({session_id:'long-session',record_id:'volatile-new',turn_ordinal:211,prompt:'Refresh while storage is unavailable',response:'Keep the page-only mark'});
+ await page.locator('#chat').getByText('Refresh while storage is unavailable',{exact:true}).waitFor();
+ await track.focus();await track.press('Home');
+ assert.equal(await track.locator('i.marked').count(),1,'a page-only mark survives transcript redraw');
+ assert.equal(await tip.getByRole('button',{name:'Remove bookmark',exact:true}).getAttribute('aria-pressed'),'true');
+ assert.match(await tip.innerText(),/this page only/);
+ await tip.getByRole('button',{name:'Remove bookmark',exact:true}).click();assert.equal(await track.locator('i.marked').count(),0);
+ await tip.getByRole('button',{name:'Bookmark this turn',exact:true}).click();assert.equal(await track.locator('i.marked').count(),1);
+ fixture.state.deny=true;await page.locator('#gate').waitFor();
+ fixture.state.deny=false;await page.locator('#gate-code-input').fill('TEST-1234');await page.locator('#gate-code-go').click();
+ await page.locator('#radar').getByText('Investigate retries',{exact:true}).click();
+ await page.locator('#mode [data-mode="chat"]').click();
+ await track.waitFor();assert.equal(await track.locator('i.marked').count(),0,'authorization revocation clears page-only bookmarks');
+ assert.equal(fixture.state.sends.length,0);
+});

@@ -1574,3 +1574,9 @@ The browser conversation overview SHALL render bounded Markdown previews using t
 - **WHEN** a new turn pushes an older loaded turn outside the bounded history window
 - **THEN** a still-loaded visible turn keeps its screen position
 - **AND** tool disclosures and code-source selectors follow their real conversation identity rather than the changed list offset
+
+#### Scenario: Browser storage is unavailable
+
+- **WHEN** reading or writing local bookmark storage is refused or quota-exhausted
+- **THEN** marked turns remain available through transcript redraws for this page lifetime and the preview states that limit
+- **AND** authorization revocation clears those page-only marks before the connection can be used again

@@ -1703,6 +1703,7 @@
       Object.keys(data.drafts).forEach(function (id) { var draft = data.drafts[id]; draft.text = ''; draft.files = []; draft.recovery = null; });
     }
     try { var prefix = 'gtmux.compose:' + BASE + ':'; for (var i = localStorage.length - 1; i >= 0; i--) { var key = localStorage.key(i); if (key && (key.indexOf(prefix) === 0 || key.indexOf('gtmux.bookmarks:' + BASE + ':') === 0)) localStorage.removeItem(key); } } catch (e) {}
+    if (window.GtmuxConversationMap && window.GtmuxConversationMap.clearBookmarks) window.GtmuxConversationMap.clearBookmarks('gtmux.bookmarks:' + BASE + ':');
     composeCache = null;
   }
 

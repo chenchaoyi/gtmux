@@ -13,6 +13,8 @@
 - [x] Preserve Chat reading/disclosure state when a bounded history window rolls, retaining legacy per-row fallback.
 - [x] Capture independent bounded emulator diagnostics and stop dependent flows honestly after driver loss.
 
+- [x] Keep page-only marks across redraws when storage fails and clear them on authorization revocation.
+
 ## Acceptance
 
 Synthetic browser/native/component fixtures are separate from actual installed-device acceptance. No real user pane input or restore is exercised. Live status timing measures read latency only, not complete screenshot delivery. Native touches/VoiceOver and a real WidgetKit gallery remain separate acceptance boundaries.
