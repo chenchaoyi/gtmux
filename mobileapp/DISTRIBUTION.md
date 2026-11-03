@@ -145,14 +145,19 @@ gh workflow run ios-test-delivery.yml --ref main -f purpose=ui-preview
 gh workflow run ios-test-delivery.yml --ref main -f purpose=release-test -f release_tag=vX.Y.Z
 gh run list --workflow ios-test-delivery.yml
 # Select the actual run ID; do not accidentally download another concurrent release.
-gh run download "$DELIVERY_RUN_ID" -n "$DELIVERY_ARTIFACT_NAME" -D "$PRIVATE_RESULT_DIR"
+python3 mobileapp/scripts/fetch-delivery.py --platform ios \
+  --run "$DELIVERY_RUN_ID" --attempt "$DELIVERY_ATTEMPT" --artifact "$DELIVERY_ARTIFACT_ID" \
+  --source "$DELIVERY_SOURCE_SHA" --output "$PRIVATE_RESULT_DIR"
 age --decrypt -i "$PRIVATE_DELIVERY_IDENTITY" \
-  -o "$PRIVATE_RESULT_DIR/result.tar.gz" "$PRIVATE_RESULT_DIR/ios-delivery.tar.gz.age"
-tar -xzf "$PRIVATE_RESULT_DIR/result.tar.gz" -C "$PRIVATE_RESULT_DIR"
+  -o "$PRIVATE_UNPACK_DIR/result.tar.gz" "$PRIVATE_RESULT_DIR/ios-delivery.tar.gz.age"
+tar -xzf "$PRIVATE_UNPACK_DIR/result.tar.gz" -C "$PRIVATE_UNPACK_DIR"
 ```
 
+Use a separate private directory for decryption; the retrieval cache contains only encrypted transport files. The helper requires workflow and delivery to share the selected exact commit. See [release preparation and retrieval](../docs/release-process.md) for bounded retries, checked cache reuse and process-only IPv4. It does not replace package verification.
+
 Create a new owner-only result directory first and keep `umask 077`. The artifact
-name includes the run ID and attempt, and expires after three days. **Only encrypted
+name includes the run ID and attempt. The current workflow retains it for 14 days;
+read its actual `expires_at` before relying on it. **Only encrypted
 files are public artifacts.** The decrypted `publication.json` contains the single-build
 24-hour Safari link; share it privately with the tester. The decrypted export includes
 the IPA, so a reachable paired phone can still be installed wirelessly by a trusted

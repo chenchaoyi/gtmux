@@ -53,13 +53,12 @@ jobs:
           python3 - <<'PY'
           import json,os,subprocess,sys
           sys.path.insert(0,'mobileapp/scripts')
-          from delivery_source import validate_ci
+          from delivery_source import validate_ci, validate_android_jobs
           source=os.environ['SOURCE']; runs=json.load(open(os.environ['RUNNER_TEMP']+'/android-ci.json'))['workflow_runs']
           validate_ci(source,runs)
           run=max((r for r in runs if r['head_sha']==source and r['head_branch']=='main' and r['event']=='push'),key=lambda r:(r['run_number'],r['run_attempt']))
           jobs=json.loads(subprocess.check_output(['gh','api',f"repos/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{run['id']}/jobs?per_page=100"]))['jobs']
-          android=[j for j in jobs if j['name']=='Android build and emulator flows']
-          assert len(android)==1 and android[0]['conclusion']=='success', 'Android emulator gate must pass for this exact source'
+          validate_android_jobs(source,jobs)
           with open(os.environ['GITHUB_OUTPUT'],'a') as out: out.write(f"source={source}\nnumber={os.environ['NUMBER']}\n")
           PY
   delivery:
