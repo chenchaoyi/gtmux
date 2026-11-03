@@ -99,6 +99,15 @@ class ScopeTests(unittest.TestCase):
             block = re.split(r"\n  \S", text.split("  " + job + ":\n", 1)[1], maxsplit=1)[0]
             self.assertIn("needs.scope.outputs." + flag + " == 'true'", block)
 
+    def test_unsigned_ios_changes_host_but_preserves_arm64_target(self):
+        text = (ROOT / ".github/workflows/ci.yml").read_text()
+        block = text.split("  ios-native:\n", 1)[1].split("  relay-worker:\n", 1)[0]
+        self.assertIn("runs-on: macos-26-intel", block)
+        self.assertIn("ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO", block)
+        self.assertNotIn("ARCHS=\"$(uname -m)\"", block)
+        for target in ("GtmuxMobile", "usage_widget_targets_test.rb"):
+            self.assertIn(target, block)
+
     def test_android_package_is_built_once_and_both_devices_use_its_output(self):
         text = (ROOT / ".github/workflows/ci.yml").read_text()
         build = text.split("  android-native:\n", 1)[1].split("  android-emulator:\n", 1)[0]

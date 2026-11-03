@@ -57,7 +57,7 @@ Affected Web CI SHALL exercise real embedded assets against a synthetic loopback
 in Chromium, covering enrollment/retry, private-content revocation, live Chat refresh,
 sidebar/restore controls and read-only narrow-screen layouts. Failure evidence SHALL
 be retained. Affected mobile CI SHALL compile the app and its extensions for iOS
-Simulator using the runner's architecture, without signing, provisioning, uploading or installing. Runner-space
+Simulator targeting ARM64 independently of the runner host architecture, without signing, provisioning, uploading or installing. Runner-space
 preflight SHALL fail before a native build with insufficient space.
 
 #### Scenario: A narrow toolbar overflows
@@ -139,3 +139,12 @@ Maintainers SHALL be able to stamp an explicit stable version without creating a
 
 - **WHEN** an artifact GET fails before completion
 - **THEN** retrieval may retry within its bound, and only complete digest-verified encrypted bytes become output
+
+### Requirement: Preserve native target coverage when changing build hosts
+
+Unsigned iOS CI SHALL compile the app and both extensions for ARM64 Simulator on a standard, explicitly selected Intel host. Changing the host SHALL NOT silently change target coverage to x86_64, introduce signing credentials, or change the protected production delivery runner. The complete native build SHALL pass on the actual candidate and main before acceptance.
+
+#### Scenario: Host architecture differs from the app target
+
+- **WHEN** the unsigned CI host is Intel
+- **THEN** the archive build settings still explicitly select ARM64 and disable signing

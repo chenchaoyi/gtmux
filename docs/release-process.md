@@ -38,9 +38,10 @@ The Android delivery gate accepts either the complete older combined check or al
 three new checks, so previously reviewed sources remain usable.
 
 Mac CLI and App publication, protected iOS signing and production Android signing
-remain unchanged. Do not skip latest-main CI to save time. Do not change runner
-architecture, protection rules, cache trust or signing identities based only on a
-queue timeout.
+remain unchanged. Unsigned iOS CI uses the standard `macos-26-intel` host but explicitly
+compiles the same ARM64 Simulator target; it does not use signing secrets. Native
+compilation must actually pass on the candidate and main. Do not skip latest-main CI
+or change protection rules, cache trust or signing identities to save time.
 
 ## Retrieve encrypted results consistently
 

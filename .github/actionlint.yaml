@@ -1,0 +1,6 @@
+# Pinned actionlint predates this standard GitHub-hosted label. This extends its
+# label inventory only; no self-hosted runner is registered or selected.
+# https://docs.github.com/en/actions/reference/runners/github-hosted-runners
+self-hosted-runner:
+  labels:
+    - macos-26-intel

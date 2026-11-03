@@ -380,7 +380,8 @@ jobs:
     name: iOS app and extensions compile (unsigned)
     needs: scope
     if: needs.scope.outputs.ios == 'true'
-    runs-on: macos-latest
+    # Standard Intel capacity; the compile target stays ARM64, independent of host.
+    runs-on: macos-26-intel
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
@@ -388,6 +389,7 @@ jobs:
           persist-credentials: false
       - name: Runner space and SDK preflight
         run: |
+          test "$(uname -m)" = x86_64
           python3 -c 'import shutil; n=shutil.disk_usage(".").free; print(f"Available: {n/1024**3:.1f} GiB"); assert n >= 25*1024**3, "Insufficient space for native CI build"'
           xcodebuild -version
           xcodebuild -showsdks
@@ -413,7 +415,7 @@ jobs:
           set -o pipefail
           xcodebuild -workspace ios/GtmuxMobile.xcworkspace -scheme GtmuxMobile \
             -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -jobs 2 \
-            -derivedDataPath "$RUNNER_TEMP/gtmux-ios-ci" ARCHS="$(uname -m)" CODE_SIGNING_ALLOWED=NO \
+            -derivedDataPath "$RUNNER_TEMP/gtmux-ios-ci" ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO \
             build 2>&1 | tee "$RUNNER_TEMP/gtmux-ios-build.log"
       - name: Native build failure evidence
         if: failure()
