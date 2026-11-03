@@ -2229,7 +2229,7 @@
     var oldScroll = root.querySelector('.conv-scroll');
     var atBottom = !oldScroll || (oldScroll.scrollHeight - oldScroll.scrollTop - oldScroll.clientHeight < 48);
     var prevTop = oldScroll ? oldScroll.scrollTop : 0;
-    var anchor = readingAnchor(oldScroll), prepended = hasPrependedTurns(oldScroll, turns);
+    var anchor = readingAnchor(oldScroll), prepended = hasPrependedTurns(oldScroll, turns, curAgent);
     var mapState=root.conversationMapDispose && root.conversationMapDispose.snapshot && root.conversationMapDispose.snapshot();
     if(root.conversationMapDispose) root.conversationMapDispose();
     root.innerHTML = ''; root.classList.remove('wide');
@@ -2266,11 +2266,11 @@
     scroll.appendChild(col); main.appendChild(scroll); root.appendChild(main);
     renderChatInteraction();
     syncChatLive(main, a, function () { return !$('chat').hidden && paneMode === 'chat' && curPane === a.pane_id && curAgent && curAgent.status === 'working'; });
+    restoreCodeState(root,preserved);
     root.conversationMapDispose = window.GtmuxConversationMap ? window.GtmuxConversationMap.mount(main,scroll,turns,T,mdPreview,mapOptions(a,mapState)) : null;
     scroll.scrollTop = atBottom && !prepended ? scroll.scrollHeight : prevTop;
-    if (prepended) restoreReadingAnchor(scroll, anchor);
+    if (prepended || !atBottom) restoreReadingAnchor(scroll, anchor);
     if (curTurnIdx >= turns.length) curTurnIdx = Math.max(0, turns.length - 1);
-    restoreCodeState(root,preserved);
     root.querySelectorAll('[data-chat-focus]').forEach(function (node) {
       var key = node.dataset.chatFocus, pos = inputScroll[key];
       if (pos) { node.scrollLeft = pos[0]; node.scrollTop = pos[1]; }
@@ -2540,15 +2540,15 @@
   function turnSegments(t) {
     return (t.segments && t.segments.length ? t.segments : [{text: t.response || '', steps: t.steps || []}]).filter(function (segment) { return segment.text || segment.steps && segment.steps.length; });
   }
-  function conversationIdentity(t) { return JSON.stringify([t.session_id||'',t.record_id||t.time||t.turn_ordinal||t.prompt||'']); }
+  function conversationIdentity(t,agent) { var stable=window.GtmuxTrace && window.GtmuxTrace.turnBookmarkKey && window.GtmuxTrace.turnBookmarkKey(t,agent||{});return stable||JSON.stringify([t.session_id||'',t.record_id||t.time||t.turn_ordinal||t.prompt||'']); }
   function readingAnchor(scroll) {
     if(!scroll)return null;
     var top=scroll.getBoundingClientRect().top,node=Array.from(scroll.querySelectorAll('.cturn')).find(function(n){return n.getBoundingClientRect().bottom>top;});
     return node?{key:node.dataset.turnIdentity,offset:node.getBoundingClientRect().top-top}:null;
   }
-  function hasPrependedTurns(scroll,turns) {
+  function hasPrependedTurns(scroll,turns,agent) {
     var first=scroll&&scroll.querySelector('.cturn');
-    return first&&turns.length&&first.dataset.turnIdentity!==conversationIdentity(turns[0])&&turns.some(function(t){return conversationIdentity(t)===first.dataset.turnIdentity;});
+    return first&&turns.length&&first.dataset.turnIdentity!==conversationIdentity(turns[0],agent)&&turns.some(function(t){return conversationIdentity(t,agent)===first.dataset.turnIdentity;});
   }
   function restoreReadingAnchor(scroll,anchor) {
     if(!anchor)return;
@@ -2556,12 +2556,14 @@
     if(node)scroll.scrollTop+=node.getBoundingClientRect().top-scroll.getBoundingClientRect().top-anchor.offset;
   }
   function conversationTurn(t, currentAgent, idx, expanded, separator, focused, onUpdate) {
-    var ct = document.createElement('article'); ct.className = 'cturn'; ct.dataset.turnIdentity=conversationIdentity(t); if (focused) ct.id = 'cturn-' + idx;
+    var stable=window.GtmuxTrace && window.GtmuxTrace.turnBookmarkKey && window.GtmuxTrace.turnBookmarkKey(t,currentAgent||{});
+    var turnKey=stable || (t.session_id||currentAgent.pane_id||'legacy')+'-'+(t.record_id||t.time||idx);
+    var ct = document.createElement('article'); ct.className = 'cturn'; ct.dataset.turnIdentity=conversationIdentity(t,currentAgent); if (focused) ct.id = 'cturn-' + idx;
     if (separator) ct.appendChild(sepEl(separator));
     if (t.prompt) {
       var ur = document.createElement('div'); ur.className = 'urow';
       var us = document.createElement('div'); us.className = 'message-stack user-message';
-      var ub = document.createElement('div'); ub.className = 'ububble'; ub.appendChild(mdRender(t.prompt, {codeKey: 'prompt-'+(t.session_id||currentAgent.pane_id)+'-'+idx, session_id: t.session_id || currentAgent.session_id, home_id: currentAgent.home_id || ''})); us.appendChild(ub);
+      var ub = document.createElement('div'); ub.className = 'ububble'; ub.appendChild(mdRender(t.prompt, {codeKey: 'prompt-'+turnKey, session_id: t.session_id || currentAgent.session_id, home_id: currentAgent.home_id || ''})); us.appendChild(ub);
       us.appendChild(messageMeta(t.prompt, t.time, t.from));
       ur.appendChild(us); ur.appendChild(speakerAvatar(t.from ? t.from.kind : 'user', t.from || {}, t.from ? senderAvatarEl(t.from, 26) : userAvatarEl(26))); ct.appendChild(ur);
     }
@@ -2571,11 +2573,11 @@
       if (seg.text) {
         var ar = document.createElement('div'); ar.className = 'arow'; ar.appendChild(speakerAvatar('agent', a, avatarEl(a, 28, false)));
         var as = document.createElement('div'); as.className = 'message-stack assistant-message';
-        var ab = document.createElement('div'); ab.className = 'abubble'; ab.appendChild(mdRender(seg.text, {codeKey: 'reply-'+(t.session_id||currentAgent.pane_id)+'-'+idx+'-'+k, session_id: t.session_id || currentAgent.session_id, home_id: currentAgent.home_id || ''})); as.appendChild(ab);
+        var ab = document.createElement('div'); ab.className = 'abubble'; ab.appendChild(mdRender(seg.text, {codeKey: 'reply-'+turnKey+'-'+k, session_id: t.session_id || currentAgent.session_id, home_id: currentAgent.home_id || ''})); as.appendChild(ab);
         as.appendChild(messageMeta(seg.text)); ar.appendChild(as); ct.appendChild(ar);
       }
       if (seg.steps && seg.steps.length) {
-        var key = idx + '-' + k;
+        var key = turnKey + '-' + k;
         ct.appendChild(toolStepsEl(seg.steps, !!expanded[key], function () {
           expanded[key] = !expanded[key];
           if (onUpdate) onUpdate(); else if (focused) drawChat(lastTurns);
@@ -3588,7 +3590,7 @@
     var preserved = snapshotToolState(t.body), mapState=t.conversationMapDispose && t.conversationMapDispose.snapshot && t.conversationMapDispose.snapshot();
     var old = t.body.querySelector('.tile-chat');
     var atBottom = !old || old.scrollHeight - old.scrollTop - old.clientHeight < 48;
-    var top = old ? old.scrollTop : 0, anchor=readingAnchor(old), prepended=hasPrependedTurns(old,turns);
+    var top = old ? old.scrollTop : 0, anchor=readingAnchor(old), prepended=hasPrependedTurns(old,turns,t.agent);
     var wrap = document.createElement('div'); wrap.className = 'tile-chat';
     if (!turns.length && !(pendingPrompts[t.id] || []).length) { var e = document.createElement('div'); e.className = 'chat-empty'; e.textContent = T('No conversation yet.', '还没有对话。'); wrap.appendChild(e); }
     var seps = sepLabels(turns);
@@ -3598,10 +3600,10 @@
     if(t.conversationMapDispose) t.conversationMapDispose();
     t.body.innerHTML = ''; t.body.appendChild(main);
     syncChatLive(main, t.agent || {}, function () { return WB.on && !t.removed && t.mode === 'chat' && t.agent.status === 'working'; });
+    restoreToolState(t.body, preserved);
     t.conversationMapDispose = window.GtmuxConversationMap ? window.GtmuxConversationMap.mount(main,wrap,turns,T,mdPreview,mapOptions(t.agent,mapState)) : null;
     wrap.scrollTop = atBottom && !prepended ? wrap.scrollHeight : top;
-    if(prepended)restoreReadingAnchor(wrap,anchor);
-    restoreToolState(t.body, preserved);
+    if(prepended || !atBottom)restoreReadingAnchor(wrap,anchor);
   }
   // drag-move (head) + resize (corner), with optional snap-to-grid.
   function dragMove(t, handle) {

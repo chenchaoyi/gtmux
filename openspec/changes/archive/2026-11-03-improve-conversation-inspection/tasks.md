@@ -10,6 +10,9 @@
 - [x] Complete targeted regressions, shared App/core gates and review rendered states; final candidate/main gates remain delivery evidence outside the feature checklist.
 - [x] Synchronize specifications and bilingual behavior documentation.
 
+- [x] Preserve Chat reading/disclosure state when a bounded history window rolls, retaining legacy per-row fallback.
+- [x] Capture independent bounded emulator diagnostics and stop dependent flows honestly after driver loss.
+
 ## Acceptance
 
 Synthetic browser/native/component fixtures are separate from actual installed-device acceptance. No real user pane input or restore is exercised. Live status timing measures read latency only, not complete screenshot delivery. Native touches/VoiceOver and a real WidgetKit gallery remain separate acceptance boundaries.

@@ -73,3 +73,5 @@ python3 scripts/test-publisher.py --platform android run \
 ```
 
 `--platform android` 默认选择 `gtmux-android` 及其独立配置，拒绝非 APK 或缺少验签回执的发布。访问链接仍为私有、默认 24 小时；版本可下载期限与签名有效性是两件事。
+
+模拟器测试独立保留最近 2 MiB 的设备日志，不依赖 Appium 截图或控件树读取成功。自动化连接丢失时保留首个失败，后续流程记为未执行，并以失败退出；不会静默重启会话或把后续流程记为通过。

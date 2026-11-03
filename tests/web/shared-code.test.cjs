@@ -39,6 +39,15 @@ for(const width of [320,768,1440]) for(const colorScheme of ['light','dark']) {
     await page.locator('#chat').getByText('A later progress record',{exact:true}).waitFor();
     assert.equal(await chat.getByRole('tab',{name:'Python · cmd 1'}).getAttribute('aria-selected'),'true');
     assert.equal(await chat.locator('pre').innerText(),python);
+    fixture.state.turns['%901'].unshift({session_id:'synthetic',record_id:'earlier-call',time:'2026-11-01T06:59:00Z',prompt:'An earlier tool call',segments:[{steps:[{title:'exec_command',operation:'command',input_kind:'command',input:'echo earlier'}]}]});
+    await page.waitForFunction(()=>document.querySelectorAll('#chat .cturn').length===2);
+    assert.equal(await page.locator('#chat .steps-toggle').first().getAttribute('aria-expanded'),'false','a newly loaded older turn must not inherit another turn disclosure');
+    assert.equal(await page.locator('#chat .steps-toggle').last().getAttribute('aria-expanded'),'true','original call group remains open after prepend');
+    assert.equal(await chat.getByRole('tab',{name:'Python · cmd 1'}).getAttribute('aria-selected'),'true','source selector follows its real turn');
+    assert.equal(await chat.locator('pre').innerText(),python);
+    fixture.state.turns['%901'].shift();
+    await page.waitForFunction(()=>document.querySelectorAll('#chat .cturn').length===1);
+    assert.equal(await chat.getByRole('tab',{name:'Python · cmd 1'}).getAttribute('aria-selected'),'true','source selector survives history window roll');
     await chat.getByRole('tab',{name:'Full call',exact:true}).click();
     assert.match(await chat.locator('pre').innerText(),/tools\.exec_command/);
     assert.equal(await chat.locator('pre').innerText(),source);

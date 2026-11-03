@@ -31,6 +31,16 @@ for(const width of [390,1440])scenario(`Long chat overview lens and navigation a
  await page.locator('#chat').getByText('Updated while this turn has keyboard focus',{exact:true}).waitFor();
  assert.equal(await page.locator('#chat .cturn').last().evaluate(e=>e===document.activeElement),true,'focused turn survives transcript refresh');
  const last=await page.locator('#chat .cturn').last().boundingBox(),reading=await scroll.boundingBox();assert.ok(last.y<reading.y+reading.height && last.y+last.height>reading.y);
+ await track.focus();await track.press('Home');
+ for(let i=0;i<19;i++)await track.press('ArrowDown');
+ await tip.getByRole('button',{name:'Go to turn',exact:true}).click();
+ const visible=page.locator('#chat .cturn').filter({hasText:'Question 170:'});
+ const anchored=await visible.evaluate(e=>e.getBoundingClientRect().top);
+ fixture.state.turns['%901'].shift();
+ fixture.state.turns['%901'].push({session_id:'long-session',record_id:'roll',turn_ordinal:212,prompt:'Rolled history window',response:'Still reading an earlier turn'});
+ await page.locator('#chat').getByText('Rolled history window',{exact:true}).waitFor();
+ assert.ok(Math.abs(await visible.evaluate(e=>e.getBoundingClientRect().top)-anchored)<2,'rolling recent-history window preserves the visible turn');
+
  if(process.env.GTMUX_WEB_EVIDENCE){await fs.mkdir(process.env.GTMUX_WEB_EVIDENCE,{recursive:true});await track.press('Home');await page.screenshot({path:path.join(process.env.GTMUX_WEB_EVIDENCE,`conversation-map-${width}.png`)});}
  assert.equal(fixture.state.sends.length,0);
 });
@@ -109,5 +119,16 @@ scenario('Overview bookmarks retain unsampled turns, isolate homes and handle cl
  await track.focus();await track.press('Home');
  await map.getByRole('button',{name:'Bookmark this turn',exact:true}).focus();
  await page.keyboard.press('Escape');assert.equal(await map.locator('.conversation-map-preview').isVisible(),false);
+ assert.equal(fixture.state.sends.length,0);
+});
+
+scenario('Legacy clockless repeated prompts keep separate call disclosures',{viewport:{width:390,height:900}},async(page,fixture)=>{
+ fixture.state.turns['%901']=[1,2].map(n=>({prompt:'Same legacy prompt',segments:[{steps:[{title:'exec_command',operation:'command',input_kind:'command',input:'echo legacy-'+n}]}]}));
+ await page.goto(fixture.url+'/#code=TEST-1234');
+ await page.locator('#radar').getByText('Investigate retries',{exact:true}).click();
+ await page.locator('#mode [data-mode="chat"]').click();
+ await page.locator('#chat .steps-toggle').first().click();
+ assert.equal(await page.locator('#chat .steps-toggle').first().getAttribute('aria-expanded'),'true');
+ assert.equal(await page.locator('#chat .steps-toggle').last().getAttribute('aria-expanded'),'false');
  assert.equal(fixture.state.sends.length,0);
 });

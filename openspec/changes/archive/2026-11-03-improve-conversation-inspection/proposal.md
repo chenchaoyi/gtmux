@@ -19,6 +19,8 @@ Readers need actionable formatted links and readable previews, stable bookmarks 
 - iPad: same RN readers and shared widget views, no second parsing implementation.
 - Web: Markdown preview, local bookmarks, stable earlier-history anchors, and generated shared command analysis for Chat/Trace. Native overview navigation has no equivalent map yet.
 
+Android validation also captures bounded device diagnostics independently of WebDriver and fails with honest not-run accounting if that connection is lost. It never restarts shared ADB.
+
 ## Boundaries
 
 No input is sent by previews/bookmarks. Bookmarks store opaque identities only within this browser credential namespace; authorization rejection clears local state. Static commands are submitted inputs, never proof of execution or success. No actual restore, service restart, signing, release, installation or private conversation export is required for implementation acceptance. Existing sessions and dirty workspaces remain untouched.

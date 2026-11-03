@@ -7,6 +7,7 @@ const assert = require('node:assert/strict');
 const {execFileSync, spawn} = require('node:child_process');
 const ts = require('typescript');
 const {remote} = require('webdriverio');
+const {logTail, automationDisconnected, captureIndependently} = require('./diagnostics.cjs');
 require.extensions['.ts'] = (module, file) => module._compile(ts.transpileModule(fs.readFileSync(file, 'utf8'), {
   compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true},
 }).outputText, file);
@@ -21,7 +22,9 @@ const port = Number(process.env.GTMUX_ANDROID_APPIUM_PORT || 14823);
 const results = [];
 const adb = (...args) => execFileSync(path.join(sdk, 'platform-tools/adb'), ['-s', serial, ...args], {encoding:'utf8', timeout:30000});
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
-let driver, appium, owner, guest;
+let driver, appium, owner, guest, logcat, automationLostAfter, logReady = false;
+const deviceLog = logTail();
+function flushDeviceLog() { if(!logReady)return;const file=path.join(output,'emulator-logcat.log'),temp=file+'.tmp';fs.writeFileSync(temp,deviceLog.text());fs.renameSync(temp,file); }
 const id = value => driver.$(`//*[@resource-id="${value}"]`);
 // A filename ending .png must stay an accessibility locator, not WebdriverIO's image-file selector.
 const label = value => driver.$(`//*[@content-desc=${JSON.stringify(value)}]`);
@@ -34,9 +37,12 @@ async function tapLink(text) {
 }
 async function source() { return driver.getPageSource(); }
 async function capture(name) {
-  await driver.saveScreenshot(path.join(output,name+'.png'));
-  if(name.endsWith('-failed')) {const fatal=adb('logcat','-d','-t','1500','-v','brief','-s','AndroidRuntime');fs.writeFileSync(path.join(output,name+'-crash.log'),fatal);if(fatal.includes('FATAL EXCEPTION')) console.error(fatal.slice(-12000));}
-  fs.writeFileSync(path.join(output,name+'.xml'), await source());
+  await captureIndependently([
+    flushDeviceLog,
+    () => driver.saveScreenshot(path.join(output,name+'.png')),
+    async () => fs.writeFileSync(path.join(output,name+'.xml'), await source()),
+    flushDeviceLog,
+  ]);
 }
 async function launch(extra = {}, fixture = owner) {
   await driver.terminateApp(app).catch(() => {});
@@ -73,9 +79,16 @@ async function tools(name) { await tap(id('session-tools')); await tap(label(nam
 async function check(name, action) {
   const only=process.env.GTMUX_ANDROID_E2E_ONLY?.split(',');
   if(only && !only.includes(name.slice(0,2))) {results.push({name,status:'not-run',reason:'Explicit local subset'});return;}
+  if(automationLostAfter) {results.push({name,status:'not-run',reason:'Automation connection lost after '+automationLostAfter});fs.writeFileSync(path.join(output,'RESULTS.json'),JSON.stringify({serial,package:app,results},null,2)+'\n');return;}
   const at = Date.now(); console.log('Start',name);
   try { await action(); await capture(name); results.push({name,status:'passed',seconds:(Date.now()-at)/1000}); }
-  catch (error) { console.error(name+': '+error.message);await capture(name+'-failed').catch(() => {}); await driver.hideKeyboard().catch(()=>{}); results.push({name,status:'failed',error:String(error.message),seconds:(Date.now()-at)/1000}); }
+  catch (error) {
+    console.error(name+': '+error.message);
+    if(automationDisconnected(error))automationLostAfter=name;
+    await capture(name+'-failed').catch(captureError => {if(automationDisconnected(captureError))automationLostAfter=name;});
+    if(!automationLostAfter)await driver.hideKeyboard().catch(()=>{});
+    results.push({name,status:'failed',error:String(error.message),seconds:(Date.now()-at)/1000});
+  }
   fs.writeFileSync(path.join(output,'RESULTS.json'),JSON.stringify({serial,package:app,results},null,2)+'\n');
 }
 // Keep the process lifecycle in one finally: no orphan Appium or fixture service.
@@ -87,6 +100,11 @@ async function run() {
   const badging = execFileSync(path.join(sdk,'build-tools/36.0.0/aapt'),['dump','badging',apk],{encoding:'utf8'});
   assert.ok(badging.includes("package: name='"+app+"'"),'Refuse any production or unrelated package');
   fs.mkdirSync(output,{recursive:true,mode:0o700});
+  logReady=true;
+  logcat=spawn(path.join(sdk,'platform-tools/adb'),['-s',serial,'logcat','-T','1','-v','threadtime'],{stdio:['ignore','pipe','pipe']});
+  logcat.stdout.on('data',chunk=>deviceLog.push(chunk));logcat.stderr.on('data',chunk=>deviceLog.push(chunk));
+  logcat.on('error',error=>deviceLog.push('logcat process error: '+error.message));
+  logcat.on('close',(code,signal)=>deviceLog.push('\nlogcat exited: '+code+' '+(signal||'')+'\n'));
   fs.writeFileSync(path.join(output,'APK.json'),JSON.stringify({file:path.basename(apk),bytes:fs.statSync(apk).size,sha256:createHash('sha256').update(fs.readFileSync(apk)).digest('hex')},null,2));
   adb('install','-r',apk);
   // Only this isolated QA app's synthetic data is reset.
@@ -274,6 +292,8 @@ let closing = false;
 async function cleanup() {
   if (closing) return; closing = true;
   await driver?.deleteSession().catch(()=>{});await owner?.close().catch(()=>{});await guest?.close().catch(()=>{});
+  try{flushDeviceLog();}catch{console.error('Emulator diagnostics could not be saved');process.exitCode=1;}
+  if(logcat?.pid){try{logcat.kill('SIGTERM');}catch{}}
   if(appium?.pid) {try{process.kill(appium.pid,'SIGTERM');}catch{}}
 }
 for (const signal of ['SIGINT','SIGTERM']) process.once(signal,()=>{void cleanup().finally(()=>process.exit(130));});
