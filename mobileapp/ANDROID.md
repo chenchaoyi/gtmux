@@ -135,3 +135,5 @@ it refuses a non-APK or a missing verification receipt. The service's scoped lin
 remains private and defaults to 24 hours. Availability is not signing expiry.
 
 The emulator runner keeps a bounded 2 MiB device-log tail independently of Appium screenshots and XML capture. If the automation connection is lost, it retains the first failure, records subsequent flows as not run, and exits unsuccessfully; it does not silently restart a session or count later flows as passed.
+
+Before preparing a new Android delivery, add that version’s English and Chinese notes to `release-notes/android.json`, newest first. Android’s What’s New reads this independent archive. `scripts/set-version.sh` updates the Apple archive, so it does not replace this step; keep Apple-only features out of Android notes. Signed-delivery preflight rejects a version without its own bilingual entry.
