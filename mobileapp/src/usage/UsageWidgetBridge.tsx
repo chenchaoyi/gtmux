@@ -40,7 +40,7 @@ export function useUsageWidgetContext() {
         if (live && usage && !abort.signal.aborted) await module.updateSnapshot({
           owner: selected, name: (name ?? 'gtmux').slice(0, 120),
           windows: (usage.limits?.windows ?? []).filter(w => Number.isFinite(w.pct_used) && !w.stale).slice(0, 6)
-            .map(w => ({label: `${w.agent_name ?? w.agent ?? ''} · ${quotaWindowLabel(w.label, lang === 'zh')}`.slice(0, 120), used: Math.min(100, Math.max(0, w.pct_used))})),
+            .map(w => ({label: [w.agent_name ?? w.agent, quotaWindowLabel(w.label, lang === 'zh')].filter(Boolean).join(' · ').slice(0, 120), used: Math.min(100, Math.max(0, w.pct_used))})),
         });
       } catch { /* Keep the dated last-seen snapshot; an offline request is never fresh data. */ }
       finally { clearTimeout(deadline); busy = false; }

@@ -3,6 +3,8 @@ import renderer, {act} from 'react-test-renderer';
 import {Linking, NativeModules, Platform} from 'react-native';
 import {isUsageWidgetLink, UsageWidgetBridge, useUsageWidgetContext} from './UsageWidgetBridge';
 import {UsageSheet} from '../screens/UsageSheet';
+import {GtmuxClient} from '../api/client';
+import {AppState} from 'react-native';
 
 let mockApp: any = {ready: true, mac: {url: 'https://studio.example', token: 'synthetic', scope: 'owner'}};
 const mockUsage = jest.fn();
@@ -98,4 +100,27 @@ test('changing a connection closes the old sheet and discards its late response'
   await act(async () => resolveOld({limits: {at: 1}}));
   expect(sheet().usage).toEqual({limits: {at: 2}});
   await act(async () => tree.unmount());
+});
+
+
+test('Android snapshot labels handle unnamed plans and contain no pairing credential', async () => {
+  const platform = Platform.OS, state = AppState.currentState;
+  const configure = jest.fn().mockResolvedValue(null), updateSnapshot = jest.fn().mockResolvedValue(null);
+  NativeModules.UsageWidgetsModule = {configure, updateSnapshot};
+  Object.defineProperty(Platform, 'OS', {configurable: true, value: 'android'});
+  AppState.currentState = 'active';
+  mockApp = {ready: true, lang: 'en', mac: {url: 'https://studio.example', token: 'synthetic-secret', scope: 'owner', name: 'Test host'}};
+  jest.spyOn(GtmuxClient.prototype, 'usage').mockResolvedValue({limits: {windows: [{label: 'session', pct_used: 24}, {label: 'weekly', agent: 'Codex', pct_used: 54}]}} as any);
+  let tree!: renderer.ReactTestRenderer;
+  try {
+    await act(async () => {tree = renderer.create(<Context />);});
+    const snapshot = updateSnapshot.mock.calls[0][0];
+    expect(snapshot.windows[0].label).toBe('session');
+    expect(snapshot.windows[1].label).toBe('Codex · weekly');
+    expect(JSON.stringify(snapshot)).not.toContain('synthetic-secret');
+    mockApp = {...mockApp, mac: {...mockApp.mac, scope: 'guest'}};
+    await act(async () => tree.update(<Context />));
+    expect(configure).toHaveBeenLastCalledWith(null);
+    expect(updateSnapshot).toHaveBeenCalledTimes(1);
+  } finally {if (tree) await act(async () => tree.unmount()); AppState.currentState = state; Object.defineProperty(Platform, 'OS', {configurable: true, value: platform});}
 });

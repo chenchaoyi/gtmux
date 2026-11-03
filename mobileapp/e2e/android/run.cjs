@@ -186,7 +186,7 @@ async function run() {
     await capture('20-system-file-picker');await wait(700);await driver.pressKeyCode(4);await wait(700);if(await driver.getCurrentPackage() !== app) {await driver.pressKeyCode(4);await wait(500);}await id('composer-input').waitForDisplayed({timeout:10000});
   });
   await check('21-camera-permission-denial',async()=>{
-    await launch();await open();await tap(id('composer-kbd'));await driver.hideKeyboard().catch(()=>{});await tap(id('composer-attach'));await wait(700);await tap(id('attach-1'));const deny=await driver.$('//*[@resource-id="com.android.permissioncontroller:id/permission_deny_button"]');await wait(700);await driver.execute('mobile: clickGesture',{elementId:deny.elementId});await driver.waitUntil(async()=>!await shown(deny),{timeout:10000});
+    await launch();await open();await tap(id('composer-kbd'));await driver.hideKeyboard().catch(()=>{});await tap(id('composer-attach'));await wait(700);await tap(id('attach-1'));const deny=await driver.$('//*[@resource-id="com.android.permissioncontroller:id/permission_deny_button"]');await wait(700);const settled=await driver.$('//*[@resource-id="com.android.permissioncontroller:id/permission_deny_button"]'),location=await settled.getLocation(),bounds=await settled.getSize();await driver.execute('mobile: clickGesture',{x:Math.round(location.x+bounds.width/2),y:Math.round(location.y+bounds.height/2)});await driver.waitUntil(async()=>!await shown(deny),{timeout:10000});
     await driver.$('//*[contains(@text,"Camera access is off")]').waitForDisplayed({timeout:30000});
   });
   await check('22-rotation-and-large-text',async()=>{
