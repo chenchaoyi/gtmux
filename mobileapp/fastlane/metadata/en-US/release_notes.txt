@@ -1,1 +1,3 @@
-• Usage widgets now use the colored gtmux logo, clearer provider icons and a more compact header.
+- Read commands in Chat and Trace with clearer source-language previews while keeping the complete original call available.
+- Fixed links wrapped in bold or other text styles displaying as raw Markdown.
+- Refined usage widgets so the current value, usage window and update time are easier to read.
