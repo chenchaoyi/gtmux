@@ -126,7 +126,8 @@ API 中的 job started_at 也可能包含审核等待，必须对照审核和真
 
 ## Mac runner 的可用性
 
-Mac CI 与签名构建使用标准 `macos-15-intel` 镜像。CI 仍为 arm64、x86_64 编译 App
+Mac CI 与签名构建使用标准 `macos-15-intel` 镜像，并显式选择已安装的 Xcode26.3，避免
+镜像默认旧工具链造成差异。CI 仍为 arm64、x86_64 编译 App
 及 Widget 宿主／扩展，在 runner 上运行全部原生测试，并核设计和资源。正式产物仍是
 双架构包，签名和公证门禁保留。iOS 继续使用已验证的 ARM runner，不随本次迁到 Intel。
 这一选择针对 ARM 作业尚未取得 runner 就失败的实际问题；不承诺排队时长，也不替代

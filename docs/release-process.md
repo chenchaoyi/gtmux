@@ -162,7 +162,8 @@ Before opening the first PR, audit both current user guides and design documents
 
 ## Mac runner availability
 
-Mac CI and signed Mac builds use the standard `macos-15-intel` image. CI still
+Mac CI and signed Mac builds use the standard `macos-15-intel` image and the
+explicit installed Xcode26.3 toolchain (the image default is older). CI still
 compiles the app and Widget host/extension for both arm64 and x86_64, runs the full
 native test suites on the runner, and checks design and bundled resources. Release
 artifacts remain universal and keep the same signature/notarization gates. iOS

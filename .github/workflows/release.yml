@@ -142,6 +142,8 @@ jobs:
   app:
     name: menu-bar app (macOS)
     runs-on: macos-15-intel
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
     permissions:
       contents: read
     outputs:
@@ -150,6 +152,12 @@ jobs:
       attempt: ${{ steps.stage.outputs.attempt }}
     steps:
       - uses: actions/checkout@v5
+
+      - name: Verify pinned Mac toolchain
+        run: |
+          test -d "$DEVELOPER_DIR"
+          xcodebuild -version
+          xcrun swift --version
 
       - uses: actions/setup-go@v6
         with:

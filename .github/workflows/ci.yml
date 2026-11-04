@@ -501,8 +501,16 @@ jobs:
     if: needs.scope.outputs.menubar == 'true'
     runs-on: macos-15-intel
     timeout-minutes: 25
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
     steps:
       - uses: actions/checkout@v5
+
+      - name: Verify pinned Mac toolchain
+        run: |
+          test -d "$DEVELOPER_DIR"
+          xcodebuild -version
+          xcrun swift --version
 
       # The menu-bar app is native Swift (macapp/); compile + unit-test it here so
       # a PR can't break it unnoticed. (Linux jobs above can't build Swift/AppKit.)
