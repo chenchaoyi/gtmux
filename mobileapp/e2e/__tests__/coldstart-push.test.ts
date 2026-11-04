@@ -25,8 +25,14 @@ let office: Fake;
 beforeAll(async () => {
   home = await startFake();
   office = await startFake();
-  for (const a of home.world.agents) a.session = `home-${a.session}`;
-  for (const a of office.world.agents) a.session = `office-${a.session}`;
+  for (const a of home.world.agents) {
+    a.session = `home-${a.session}`;
+    a.task = `home-${a.task || a.pane_id}`;
+  }
+  for (const a of office.world.agents) {
+    a.session = `office-${a.session}`;
+    a.task = `office-${a.task || a.pane_id}`;
+  }
 });
 afterAll(async () => {
   await home?.close();
