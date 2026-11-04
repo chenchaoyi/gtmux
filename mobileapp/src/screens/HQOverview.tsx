@@ -121,7 +121,7 @@ export function HQOverview({
       >
         <View style={styles.moreText}>
           <Text style={[s.buttonText, {color: pal.fg, fontWeight: '600'}]}>{label}</Text>
-          <Text style={[s.footnote, {color: pal.fg2}]}>
+          <Text style={[s.footnote, styles.moreCaption, {color: pal.fg2}]}>
             {t(`Showing ${group.items.length} of ${group.all.length} · ${group.title}`,
               `已显示 ${group.items.length} / ${group.all.length} 项 · ${group.title}`)}
           </Text>
@@ -201,5 +201,6 @@ const styles = StyleSheet.create({
   currentGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   more: {minHeight: 56, marginTop: 10, paddingVertical: 10, paddingHorizontal: 14, borderWidth: StyleSheet.hairlineWidth, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12},
   moreText: {flex: 1, gap: 3},
+  moreCaption: {textAlign: 'left', marginTop: 0},
   up: {transform: [{rotate: '180deg'}]},
 });

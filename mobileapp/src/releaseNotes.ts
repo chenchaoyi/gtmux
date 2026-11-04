@@ -14,7 +14,7 @@ export const RELEASE_NOTES: ReleaseNote[] = [
   {
     version: '1.0.171',
     en: [
-      '- HQ now shows how many matters are visible, with a clear expand/collapse control for the remaining cards on iPhone and iPad.',
+      '- HQ now shows how many matters are visible, with a clear, compact expand/collapse control for the remaining cards on iPhone and iPad.',
       '- Diff actions use a consistent file icon with addition and removal marks.',
     ],
     zh: [
