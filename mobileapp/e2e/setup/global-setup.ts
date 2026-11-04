@@ -69,22 +69,24 @@ export default async function globalSetup(): Promise<void> {
   writeFileSync(join(runDir, 'server.pid'), String(server.pid), 'utf8');
   globalThis.__E2E_SERVER_PID__ = server.pid;
 
-  await waitForServerReady(60_000);
-  // eslint-disable-next-line no-console
-  console.log('[e2e] Appium ready; opening session…');
-
-  // Baseline debug flags BEFORE the session's first app launch, so even that
-  // launch has NO_PUSH — otherwise it requests notification permission and the
-  // pending system prompt haunts every later launch, blocking UI interaction.
-  // Requires the app already installed (npm run e2e:build). Best-effort.
-  try {
-    writeDebugFlags({GTMUX_DEBUG_NO_PUSH: '1'});
-  } catch {
-    /* app not installed yet — tests will surface it */
-  }
-
   let driver;
   try {
+    // Hosted runners can spend over a minute loading the installed XCUITest
+    // driver before Appium listens. Keep a bounded wait and clean up on failure.
+    await waitForServerReady(process.env.GTMUX_E2E_SESSION_CI === '1' ? 180_000 : 60_000);
+    // eslint-disable-next-line no-console
+    console.log('[e2e] Appium ready; opening session…');
+
+    // Baseline debug flags BEFORE the session's first app launch, so even that
+    // launch has NO_PUSH — otherwise it requests notification permission and the
+    // pending system prompt haunts every later launch, blocking UI interaction.
+    // Requires the app already installed (npm run e2e:build). Best-effort.
+    try {
+      writeDebugFlags({GTMUX_DEBUG_NO_PUSH: '1'});
+    } catch {
+      /* app not installed yet — tests will surface it */
+    }
+
     driver = await remote({
       hostname: '127.0.0.1',
       port: appiumPort,
