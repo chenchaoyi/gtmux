@@ -178,3 +178,13 @@ the `.p8`), `GTMUX_NOTARY_KEY_ID` and `GTMUX_NOTARY_ISSUER`. `release.sh` prefer
 that complete triple over a profile; when calling `build.sh` directly, a supplied
 `GTMUX_NOTARY_PROFILE` takes precedence. Apple documents the authentication options
 in [the notarization workflow](https://developer.apple.com/documentation/security/customizing-the-notarization-workflow).
+
+### Complete a release after a Mac-only failure
+
+Normal tag releases still build CLI and Mac in parallel. If the current stable release has complete CLI assets but its Mac build failed, an owner can dispatch `release` on the reviewed, green `main` with `recovery_tag=vX.Y.Z`. This does not move or recreate the product tag, rebuild the CLI, or change the release audience.
+
+The resolver independently checks the annotated product tag, the latest successful main CI for both product and workflow definition, the latest failed exact-tag release and its successful CLI job, and the published CLI asset digests. It refuses another repository, actor or branch, a superseded release, or an already published Mac package. Both regular and recovery Mac releases use the qualified `macos-26` / Xcode 26.6 toolchain. Recovery builds the unchanged product in a separate clean checkout. The [upstream Intel runner ticket-transport issue](https://github.com/actions/runner-images/issues/14924) supports changing the host rather than repeatedly rebuilding on the affected network path; signing and stapling still require actual successful validation.
+
+Signing, Apple acceptance, stapling, independent staple validation, sealed source/definition/run/attempt/hash checks, cask publication and both signed download mirrors remain required. A failed recovery preserves only its submitted Mac ZIP in an authenticated, two-day diagnostic artifact; it is never a publishable Mac artifact. Identical already-uploaded bytes can be reused after a publisher interruption; differing bytes are never overwritten. The signed feed continues to identify the immutable product source, while the build receipt separately records the reviewed workflow definition.
+
+The original failed run remains failed. Report the successful recovery run separately from the original CLI run; a recovery does not turn either a failed build or an unverified local installation into a success. A recovery definition can later be reverted normally without rewriting the product tag.

@@ -192,6 +192,25 @@ func TestATagWithEverySecretIsSignedAndMustNotarize(t *testing.T) {
 	}
 }
 
+// Recovery dispatch runs on main, but its immutable product remains a formal release.
+func TestRecoveryDispatchRequiresEverySecretAndNotarization(t *testing.T) {
+	step := signingStep(t)
+	for _, missing := range []string{"MACOS_CERT_P12", "MACOS_CERT_PASSWORD", "MACOS_NOTARY_KEY_P8", "MACOS_NOTARY_KEY_ID", "MACOS_NOTARY_ISSUER"} {
+		env := secrets(missing)
+		env["GITHUB_REF_TYPE"], env["IS_RELEASE"] = "branch", "true"
+		r := runScript(t, step, env)
+		if r.code == 0 || strings.Contains(r.calls, "security") {
+			t.Errorf("recovery without %s must stop before the keychain", missing)
+		}
+	}
+	env := secrets()
+	env["GITHUB_REF_TYPE"], env["IS_RELEASE"] = "branch", "true"
+	r := runScript(t, step, env)
+	if r.code != 0 || !strings.Contains(r.env, "GTMUX_REQUIRE_NOTARIZE=1") {
+		t.Fatalf("recovery must require notarization: exit %d", r.code)
+	}
+}
+
 // Snapshot and dispatch builds keep their old freedom: ad-hoc without a cert, signed but
 // not notarized with an incomplete notary set (said as a warning), never required.
 func TestANonTagBuildMayBeAdHocOrSignedOnly(t *testing.T) {

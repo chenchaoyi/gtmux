@@ -6,23 +6,56 @@ name: release
 #
 # Trigger:
 #   - push of a tag matching `v*` (the real release)
-#   - manual workflow_dispatch (a snapshot build; artifacts only, no release)
+#   - manual workflow_dispatch without recovery_tag (snapshot artifacts only)
+#   - owner dispatch on reviewed main with recovery_tag (complete an immutable failed release)
 
 on:
   push:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      recovery_tag:
+        description: 'Complete the current stable release after a failed Mac build; source tag is immutable'
+        required: false
+        default: ''
+        type: string
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ inputs.recovery_tag && format('refs/tags/{0}', inputs.recovery_tag) || github.ref }}
   cancel-in-progress: false
 
 permissions:
   contents: write
 
 jobs:
+  source:
+    name: Resolve release source
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      source: ${{ steps.resolve.outputs.source }}
+      ref: ${{ steps.resolve.outputs.ref }}
+      tag: ${{ steps.resolve.outputs.tag }}
+      definition: ${{ steps.resolve.outputs.definition }}
+      recovery: ${{ steps.resolve.outputs.recovery }}
+      release: ${{ steps.resolve.outputs.release }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Validate immutable product and reviewed definition
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RECOVERY_TAG: ${{ inputs.recovery_tag }}
+        run: python3 scripts/macos_release_source.py
+
   goreleaser:
+    needs: source
+    if: needs.source.outputs.recovery != 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -141,9 +174,15 @@ jobs:
   # launch it and confirm the colored dot + count appears, and the popover opens.
   app:
     name: menu-bar app (macOS)
-    runs-on: macos-15-intel
+    needs: source
+    runs-on: macos-26
+    defaults:
+      run:
+        working-directory: product
     env:
-      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+      PRODUCT_TAG: ${{ needs.source.outputs.tag }}
+      IS_RELEASE: ${{ needs.source.outputs.release }}
     permissions:
       contents: read
     outputs:
@@ -151,7 +190,16 @@ jobs:
       sha256: ${{ steps.stage.outputs.sha256 }}
       attempt: ${{ steps.stage.outputs.attempt }}
     steps:
+      # Keep workflow tools outside the clean product checkout: Go VCS metadata must not become dirty.
       - uses: actions/checkout@v5
+        with:
+          path: workflow
+          persist-credentials: false
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.source.outputs.source }}
+          path: product
+          persist-credentials: false
 
       - name: Verify pinned Mac toolchain
         run: |
@@ -164,6 +212,7 @@ jobs:
           go-version: '1.27'
           check-latest: true
           cache: true
+          cache-dependency-path: product/go.sum
 
       # Import the Developer ID cert into a throwaway keychain and wire up
       # notarization — ONLY when the signing secrets are set. Without them the build
@@ -186,7 +235,8 @@ jobs:
           # source of truth now (no more local `make app-release`). Fail loudly rather
           # than silently shipping an ad-hoc build (Gatekeeper-blocked) or a release
           # with no app at all. Snapshot/dispatch builds may still be ad-hoc.
-          IS_TAG=false; [ "${GITHUB_REF_TYPE:-}" = "tag" ] && IS_TAG=true
+          IS_TAG=false
+          if [ "${IS_RELEASE:-}" = true ] || [ "${GITHUB_REF_TYPE:-}" = tag ]; then IS_TAG=true; fi
           # All five, checked before any keychain work. Checking only the cert and the .p8
           # let a tag with no key id or issuer sign, skip notarization in build.sh, and
           # upload the app anyway (%12, 2026-10-06).
@@ -237,7 +287,7 @@ jobs:
       # CLI to bundle alongside it, assembles Gtmux.app, and signs it — Developer ID
       # + notarize + staple when GTMUX_SIGN_ID/GTMUX_NOTARY_* are set (above), else ad-hoc.
       - name: build Gtmux.app (universal, signed)
-        run: GTMUX_UNIVERSAL=1 GTMUX_VERSION="${GITHUB_REF_NAME}" macapp/build.sh
+        run: GTMUX_UNIVERSAL=1 GTMUX_VERSION="${PRODUCT_TAG:-$GITHUB_REF_NAME}" macapp/build.sh
         env:
           GTMUX_TUNNEL_REG: ${{ secrets.GTMUX_TUNNEL_REG }}
           GTMUX_RELAY_TOKEN: ${{ secrets.GTMUX_RELAY_TOKEN }}
@@ -245,22 +295,33 @@ jobs:
       # The ticket itself, checked before anything is published: what reaches users is
       # what Gatekeeper will see, whatever the steps above believed.
       - name: verify the app is notarized and stapled (tag)
-        if: startsWith(github.ref, 'refs/tags/')
+        if: needs.source.outputs.release == 'true'
         run: xcrun stapler validate macapp/build/Gtmux.app
 
       - name: zip the bundle
         run: |
           set -euxo pipefail
           ZIP="Gtmux-snapshot-macos.zip"
-          if [ "$GITHUB_REF_TYPE" = tag ]; then ZIP="Gtmux-${GITHUB_REF_NAME#v}-macos.zip"; fi
+          if [ "$IS_RELEASE" = true ]; then ZIP="Gtmux-${PRODUCT_TAG#v}-macos.zip"; fi
           ditto -c -k --keepParent macapp/build/Gtmux.app "$ZIP"
           echo "ZIP=$ZIP" >> "$GITHUB_ENV"
 
       - name: Stage immutable Mac build
         id: stage
         run: |
-          python3 scripts/macos_release_artifact.py seal --directory "$RUNNER_TEMP/macos-release" --zip "$ZIP" \
-            --source "$GITHUB_SHA" --ref "$GITHUB_REF" --run "$GITHUB_RUN_ID" --attempt "$GITHUB_RUN_ATTEMPT"
+          python3 "$GITHUB_WORKSPACE/workflow/scripts/macos_release_artifact.py" seal --directory "$RUNNER_TEMP/macos-release" --zip "$ZIP" \
+            --source "${{ needs.source.outputs.source }}" --ref "${{ needs.source.outputs.ref }}" --run "$GITHUB_RUN_ID" --attempt "$GITHUB_RUN_ATTEMPT" \
+            --definition "${{ needs.source.outputs.definition }}"
+      # Preserve the exact submitted bytes after a recovery failure. This is authenticated
+      # diagnostic storage, never a publishable or validated Mac artifact.
+      - name: Preserve failed recovery submission
+        if: failure() && needs.source.outputs.recovery == 'true'
+        uses: actions/upload-artifact@v6
+        with:
+          name: unvalidated-mac-submission-${{ github.run_id }}-${{ github.run_attempt }}
+          path: product/macapp/Gtmux-notarize.zip
+          if-no-files-found: ignore
+          retention-days: 2
       - name: Keep run-scoped Mac artifact
         id: upload
         uses: actions/upload-artifact@v6
@@ -274,7 +335,14 @@ jobs:
   # A failed CLI gate or Mac build skips this entire job, including the cask.
   app-publish:
     name: publish notarized Mac app
-    needs: [goreleaser, app]
+    needs: [source, goreleaser, app]
+    if: >-
+      always() && needs.source.result == 'success' && needs.app.result == 'success' &&
+      ((needs.source.outputs.recovery == 'false' && needs.goreleaser.result == 'success') ||
+       (needs.source.outputs.recovery == 'true' && needs.goreleaser.result == 'skipped'))
+    env:
+      PRODUCT_TAG: ${{ needs.source.outputs.tag }}
+      PRODUCT_SOURCE: ${{ needs.source.outputs.source }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -295,19 +363,23 @@ jobs:
           BUILD_ATTEMPT: ${{ needs.app.outputs.attempt }}
         run: |
           python3 scripts/macos_release_artifact.py verify --directory "$RUNNER_TEMP/macos-release" \
-            --source "$GITHUB_SHA" --ref "$GITHUB_REF" --run "$GITHUB_RUN_ID" --attempt "$BUILD_ATTEMPT" \
+            --source "${{ needs.source.outputs.source }}" --ref "${{ needs.source.outputs.ref }}" --run "$GITHUB_RUN_ID" --attempt "$BUILD_ATTEMPT" \
+            --definition "${{ needs.source.outputs.definition }}" \
             --sha256 "$EXPECTED_SHA256"
       - name: attach Gtmux.app to the release (tag)
-        if: startsWith(github.ref, 'refs/tags/')
+        if: needs.source.outputs.release == 'true'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "${GITHUB_REF_NAME}" "$ZIP" --clobber
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TRUSTED_MAC_SHA: ${{ needs.app.outputs.sha256 }}
+        run: python3 scripts/macos_release_source.py attach
+        # The consumer already checked the trusted build hash; retries may reuse only identical bytes.
+
 
       # GoReleaser publishes the CLI cask (gtmux); the menu-bar app is built
       # here, outside GoReleaser, so publish its cask (gtmux-app) by hand to the
       # same tap. Needs the cross-repo PAT (HOMEBREW_TAP_TOKEN).
       - name: publish Gtmux.app cask to the tap (tag)
-        if: startsWith(github.ref, 'refs/tags/')
+        if: needs.source.outputs.release == 'true'
         env:
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
         run: |
@@ -316,7 +388,7 @@ jobs:
             echo "HOMEBREW_TAP_TOKEN not set; skipping app cask publish" >&2
             exit 0
           fi
-          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="${PRODUCT_TAG#v}"
           SHA="$(shasum -a 256 "$ZIP" | awk '{print $1}')"
           TAP="$(mktemp -d)"
           git clone --depth 1 "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/chenchaoyi/homebrew-tap.git" "$TAP"
@@ -354,8 +426,12 @@ jobs:
 
   mirror:
     name: publish signed official downloads
-    needs: [goreleaser, app, app-publish]
-    if: startsWith(github.ref, 'refs/tags/')
+    needs: [source, goreleaser, app, app-publish]
+    if: >-
+      always() && needs.source.result == 'success' && needs.source.outputs.release == 'true' &&
+      needs.app.result == 'success' && needs.app-publish.result == 'success' &&
+      ((needs.source.outputs.recovery == 'false' && needs.goreleaser.result == 'success') ||
+       (needs.source.outputs.recovery == 'true' && needs.goreleaser.result == 'skipped'))
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -373,7 +449,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GTMUX_RELEASE_SIGNING_KEY: ${{ secrets.GTMUX_RELEASE_SIGNING_KEY }}
           GTMUX_RELEASE_PUBLISH_TOKEN: ${{ secrets.GTMUX_RELEASE_PUBLISH_TOKEN }}
-          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_TAG: ${{ needs.source.outputs.tag }}
+          PRODUCT_SOURCE: ${{ needs.source.outputs.source }}
+          IS_RECOVERY: ${{ needs.source.outputs.recovery }}
         run: |
           set -euo pipefail
           test -n "$GTMUX_RELEASE_SIGNING_KEY"
@@ -382,5 +460,8 @@ jobs:
           trap 'rm -f "$GTMUX_RELEASE_SIGNING_KEY_FILE"' EXIT
           printf '%s\n' "$GTMUX_RELEASE_SIGNING_KEY" > "$GTMUX_RELEASE_SIGNING_KEY_FILE"
           unset GTMUX_RELEASE_SIGNING_KEY
-          source_commit="$(git rev-parse HEAD)"
-          python3 scripts/publish-release-feed.py --version "$RELEASE_TAG" --source "$source_commit" --run "$GITHUB_RUN_ID"
+          if [ "$IS_RECOVERY" = true ]; then
+            python3 scripts/publish-release-feed.py --version "$RELEASE_TAG" --source "$PRODUCT_SOURCE" --installer-source "$PRODUCT_SOURCE" --recovery-run "$GITHUB_RUN_ID"
+          else
+            python3 scripts/publish-release-feed.py --version "$RELEASE_TAG" --source "$PRODUCT_SOURCE" --run "$GITHUB_RUN_ID"
+          fi
