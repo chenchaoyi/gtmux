@@ -1803,11 +1803,13 @@ const staleBindingFresh = 2 * 60 * 60
 // neighbouring pane's output makes a month-idle agent look busy. An unclaimed newer
 // session in the same directory is the evidence; anything else is a proxy for it.
 func rowStaleBindings() dcheck {
+	return staleBindingsFor(radar.GatherPanes(), time.Now().Unix(), verifiedCodexChatBinding)
+}
+
+func staleBindingsFor(panes []radar.PaneRow, now int64, verify func(string, resume.Record) bool) dcheck {
 	label := i18n.Tr("chat binding", "会话绑定")
 	note := i18n.Tr("the chat is served from the log a pane is bound to",
 		"手机/网页的对话正是从 pane 绑定的那份记录里读出来的")
-	now := time.Now().Unix()
-
 	type bound struct {
 		pane string
 		rec  resume.Record
@@ -1815,8 +1817,9 @@ func rowStaleBindings() dcheck {
 		last int64
 	}
 	var bounds []bound
+	verified := 0
 	claimed := map[string]bool{} // every session id some pane already owns
-	for _, p := range radar.GatherPanes() {
+	for _, p := range panes {
 		if p.Tier != "agent" || p.Loc == "" {
 			continue
 		}
@@ -1825,6 +1828,12 @@ func rowStaleBindings() dcheck {
 			continue
 		}
 		claimed[rec.SessionID] = true
+		if rec.Agent == "codex" && verify(p.Loc, rec) {
+			verified++
+			// A newer file beside this conversation cannot contradict this
+			// exact live frontend. Codex threads share the date directory.
+			continue
+		}
 		path := transcript.LogPath(rec.Agent, rec.SessionID)
 		if path == "" {
 			continue
@@ -1844,16 +1853,21 @@ func rowStaleBindings() dcheck {
 		}
 	}
 	switch {
-	case len(bounds) == 0:
+	case len(bounds) == 0 && verified == 0:
 		return dcheck{stInfo, label, i18n.Tr("nothing bound yet", "暂无绑定"), note}
 	case len(stale) == 0:
 		return dcheck{stOK, label,
-			fmt.Sprintf(i18n.Tr("%d live", "%d 个在跟"), len(bounds)), note}
+			fmt.Sprintf(i18n.Tr("%d live", "%d 个在跟"), len(bounds)+verified), note}
 	default:
-		return dcheck{stRec, label, strings.Join(stale, " · "),
-			i18n.Tr("A newer, unbound conversation was found in the same transcript directory. Compare the pane's current session ID with its Chat history before changing the binding; the newer conversation may be unrelated.",
-				"同一记录目录中发现较新的未绑定对话。请先核对窗格当前的会话 ID 与对话历史，再决定是否调整绑定；新对话可能属于其他会话。")}
+		return dcheck{stInfo, label, i18n.Tr("Directory hint only · binding fault unconfirmed", "仅有目录线索，未确认绑定异常"),
+			i18n.Tr("Current managed frontends verify their own thread automatically. Nearby history alone does not establish a binding fault; no repair is proposed from directory recency.",
+				"受管客户端会自动确认当前线程。同目录下出现较新的历史不足以判定绑定错误，因此不据此要求修复或重新绑定。")}
 	}
+}
+
+func verifiedCodexChatBinding(loc string, rec resume.Record) bool {
+	f, ok := resume.CodexFrontendForThread(rec.HomeID, rec.SessionID)
+	return ok && f.Loc == loc && f.Instance == rec.Frontend
 }
 
 // newestUnclaimedSession returns the last-message time of the newest session in

@@ -116,6 +116,7 @@ func TestRotationProceedsOnAnEmptyBox(t *testing.T) {
 func testRotationRequest(t *testing.T, now time.Time) rotationRequest {
 	t.Helper()
 	t.Setenv("HOME", t.TempDir())
+	t.Setenv("GTMUX_HQ_BRIEF", "off")
 	r, ok, reason := queueHQRotation(rotationRequest{Pane: "%6", Agent: "codex",
 		Retiring: "old-session", Input: "/new", CreatedAt: now.Unix()})
 	if !ok {
@@ -167,7 +168,8 @@ func TestRotationWaitsForTaskEndAndConfirmsSuccessor(t *testing.T) {
 	if len(testRotationEvents(t)) != 1 { // request only; a pasted key is not success
 		t.Fatal("rotation claimed success before the new session ID")
 	}
-	advanceHQRotation(sent, "%6", "codex", "new-session", p.io(), complete, now.Add(2*time.Second))
+	writeRotationHistory(t, "new-session")
+	advanceHQRotation(sent, "%6", "codex", "new-session", p.io(), testBoundary("task_started", now.Add(time.Second)), now.Add(2*time.Second))
 	if _, exists, _ := readRotationRequest(); exists || len(p.pasted) != 1 {
 		t.Fatal("settled request was not cleared or reset was repeated")
 	}
@@ -294,8 +296,9 @@ func TestRotationConfirmsFromTheEventStream(t *testing.T) {
 				t.Fatal(err)
 			}
 			stubRotationEvents(t, events.Record{Ts: now.Unix() + 1, Event: ev, Pane: "%6", Agent: "Codex", AgentSession: "new-session"})
+			writeRotationHistory(t, "new-session")
 			p := &spyPane{screen: box("")}
-			advanceHQRotation(r, "%6", "codex", "old-session", p.io(), testBoundary("task_complete", now), now.Add(2*time.Second))
+			advanceHQRotation(r, "%6", "codex", "old-session", p.io(), testBoundary("task_started", now.Add(time.Second)), now.Add(2*time.Second))
 			if _, exists, _ := readRotationRequest(); exists {
 				t.Fatal("the rotation is still pending")
 			}

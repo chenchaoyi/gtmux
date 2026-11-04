@@ -8,6 +8,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/dsh"
 	"github.com/chenchaoyi/gtmux/internal/state"
+	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
 
 // Resolving a record against the agent's OWN transcript store, because the cwd we
@@ -80,14 +81,28 @@ func cwdFromTranscript(path string) string {
 // Resolve corrects a record so it can actually be resumed, and reports whether the
 // conversation still exists.
 //
-// For an agent whose store we can inspect (claude today) it rewrites Cwd to the
+// For an agent whose store we inspect it rewrites Cwd to the
 // directory the conversation is filed under — fixing the "agent cd'd mid-session"
 // failure — and returns alive=false when the conversation is gone, so the caller can
 // skip a doomed `--resume` instead of leaving an error on the user's screen.
 //
-// For any other agent it is a no-op returning alive=true: we can't verify their layout,
-// so behavior is unchanged.
+// Codex also requires matching durable metadata in its own home; an allocated
+// in-memory thread ID alone is not resumable. Other agents retain their contract.
 func Resolve(r Record) (Record, bool) {
+	if r.Agent == "codex" {
+		info := Recovery(r)
+		if info.State == transcript.RecoveryReady {
+			// Legacy records/launch arguments have no home ID. Pin the home we
+			// just verified so a fresh bridge can confirm the same target.
+			if r.HomeID == "" {
+				r.HomeID = transcript.CodexHomeID()
+			}
+			if info.Cwd != "" {
+				r.Cwd = info.Cwd
+			}
+		}
+		return r, info.State == transcript.RecoveryReady
+	}
 	if r.Agent == "dsh" {
 		if r.TerminalClient == "" || r.HomeID != dsh.HomeID() {
 			return r, false
@@ -110,4 +125,12 @@ func Resolve(r Record) (Record, bool) {
 		r.Cwd = cwd // resume from where the conversation actually lives
 	}
 	return r, true
+}
+
+// Recovery never substitutes an older checkpoint for the currently bound thread.
+func Recovery(r Record) transcript.RecoveryInfo {
+	if r.HomeID != "" && r.HomeID != transcript.CodexHomeID() {
+		return transcript.RecoveryInfo{State: "foreign-home"}
+	}
+	return transcript.CodexRecovery(r.SessionID)
 }

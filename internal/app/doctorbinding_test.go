@@ -7,8 +7,43 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/resume"
+	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
+
+func TestDoctorDoesNotOfferBindingRepairFromDirectoryRecency(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("CODEX_HOME", filepath.Join(home, ".codex"))
+	now := time.Now()
+	writeCodexSession(t, transcript.CodexHome(), "2026/01/01", "bound", "/example", now.Add(-8*time.Hour))
+	writeCodexSession(t, transcript.CodexHome(), "2026/01/01", "unrelated", "/example", now.Add(-time.Minute))
+	record := resume.Record{Agent: "codex", SessionID: "bound", Cwd: "/example", HomeID: transcript.CodexHomeID()}
+	if err := resume.Save("example:0.0", record); err != nil {
+		t.Fatal(err)
+	}
+	panes := []radar.PaneRow{{Tier: "agent", Loc: "example:0.0", PaneID: "%9"}}
+	for _, verified := range []bool{true, false} {
+		row := staleBindingsFor(panes, now.Unix(), func(loc string, r resume.Record) bool {
+			if loc != "example:0.0" || r.SessionID != "bound" {
+				t.Fatal("wrong identity checked", loc, r)
+			}
+			return verified
+		})
+		want := stInfo
+		if verified {
+			want = stOK
+		}
+		if row.status != want {
+			t.Fatalf("verified=%v: %+v", verified, row)
+		}
+		action, command := doctorFindingAction(row)
+		if action != "" || command != "" {
+			t.Fatal("unproven nearby history offered repair", action, command)
+		}
+	}
+}
 
 // writeSession lays down a Claude-shaped log whose LAST message is at `last`, and
 // stamps the FILE's mtime independently — the two are different facts, and telling

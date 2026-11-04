@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/agents"
@@ -14,8 +16,10 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqinput"
+	"github.com/chenchaoyi/gtmux/internal/hqnudge"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/state"
+	"github.com/chenchaoyi/gtmux/internal/tmux"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
 
@@ -23,19 +27,53 @@ import (
 // Codex will accept /new. The resident serve owns delivery and settlement; the
 // command only queues, and never calls a pasted slash command "success".
 type rotationRequest struct {
-	Pane      string `json:"pane"`
-	Agent     string `json:"agent"`
-	Retiring  string `json:"retiring"`
-	Input     string `json:"input"`
-	CreatedAt int64  `json:"createdAt"`
-	SentAt    int64  `json:"sentAt,omitempty"`
+	TargetStamp string `json:"targetStamp,omitempty"`
+	Successor   string `json:"successor,omitempty"`
+	SwitchedAt  int64  `json:"switchedAt,omitempty"`
+	BootstrapAt int64  `json:"bootstrapAt,omitempty"`
+	Pane        string `json:"pane"`
+	Agent       string `json:"agent"`
+	Retiring    string `json:"retiring"`
+	Input       string `json:"input"`
+	CreatedAt   int64  `json:"createdAt"`
+	SentAt      int64  `json:"sentAt,omitempty"`
 }
 
 const (
 	rotationReadyDelay = 3 * time.Second
 	rotationSettleWait = 45 * time.Second
 	rotationQueueLimit = 30 * time.Minute
+	rotationReadyWait  = 3 * time.Minute
 )
+
+// Use the existing guarded HQ startup channel, after releasing the shared input
+// lock. This is the rotation's handoff, not an invented user task or a second /new.
+var rotationBootstrap = func(pane, sid, stamp string) {
+	_, current := hqSessionRef(pane)
+	if current == sid && rotationTargetMatches(stamp, rotationTargetStamp(pane)) {
+		hqnudge.Deliver(pane, hqBriefingPrompt())
+	}
+}
+
+func rotationTargetStamp(pane string) string {
+	return strings.TrimSpace(tmux.Display(pane, "#{pid}:#{session_created}:#{pane_pid}"))
+}
+
+func rotationTargetMatches(expected, actual string) bool {
+	if expected == "" || actual != expected {
+		return false
+	}
+	parts := strings.Split(expected, ":")
+	if len(parts) != 3 {
+		return false
+	}
+	for _, part := range parts {
+		if n, err := strconv.ParseInt(part, 10, 64); err != nil || n <= 0 {
+			return false
+		}
+	}
+	return true
+}
 
 func rotationPendingPath() string { return filepath.Join(state.Dir(), "hqwake", "rotate-pending.json") }
 
@@ -103,7 +141,11 @@ func RequestHQRotation() (rotationRequest, bool, string) {
 	if input == "" {
 		return rotationRequest{}, false, "this HQ agent has no known reset command"
 	}
-	return queueHQRotation(rotationRequest{Pane: pane, Agent: agent, Retiring: sid, Input: input, CreatedAt: time.Now().Unix()})
+	stamp := rotationTargetStamp(pane)
+	if !rotationTargetMatches(stamp, stamp) {
+		return rotationRequest{}, false, "HQ process identity could not be verified"
+	}
+	return queueHQRotation(rotationRequest{Pane: pane, Agent: agent, Retiring: sid, Input: input, CreatedAt: time.Now().Unix(), TargetStamp: stamp})
 }
 
 func queueHQRotation(r rotationRequest) (rotationRequest, bool, string) {
@@ -140,6 +182,10 @@ func ProcessPendingHQRotation() {
 		failRotation(r, "HQ pane disappeared", time.Now().Unix())
 		return
 	}
+	if !rotationTargetMatches(r.TargetStamp, rotationTargetStamp(pane)) {
+		failRotation(r, "HQ target changed or its pre-reboot identity is unavailable; no input sent", time.Now().Unix())
+		return
+	}
 	agent, sid := hqSessionRef(pane)
 	advanceHQRotation(r, pane, agent, sid, dispatchbridge.DispatchIO(pane), transcript.CodexLastTurnBoundary, time.Now())
 }
@@ -154,7 +200,13 @@ func advanceHQRotation(r rotationRequest, pane, agent, sid string, io dispatch.I
 	if !acquired {
 		return // keep the durable request while another HQ input channel is active
 	}
-	defer release()
+	bootstrap := ""
+	defer func() {
+		release()
+		if bootstrap != "" {
+			rotationBootstrap(pane, bootstrap, r.TargetStamp)
+		}
+	}()
 	// A prior tick may have settled or sent this request while we waited for input.
 	// Never let an obsolete unsent snapshot repeat a reset or touch its successor.
 	current, exists, err := readRotationRequest()
@@ -166,21 +218,53 @@ func advanceHQRotation(r rotationRequest, pane, agent, sid string, io dispatch.I
 		return
 	}
 	r = current
+	if r.TargetStamp != "" && !rotationTargetMatches(r.TargetStamp, rotationTargetStamp(pane)) {
+		failRotation(r, "HQ target changed while waiting for input; no input sent", now.Unix())
+		return
+	}
 	if pane != r.Pane || agent != r.Agent {
 		failRotation(r, "HQ pane or agent changed", now.Unix())
 		return
 	}
 	if r.SentAt != 0 {
 		if sid == "" || sid == r.Retiring {
-			// The resume record names the new session only once that session has finished
-			// a turn (ownsPane wants a parseable conversation), which a fresh Codex session
-			// reaches after its first reply: on 2026-10-04 that was 81 s after the reset,
-			// past the 45 s window, and a rotation that had worked was audited as failed.
-			// Its SessionStart and first prompt reach the event stream at once, carrying
-			// the new id, so ask there too.
+			// Legacy hooks can precede the location record. Modern bridges also bind
+			// empty threads, so a changed ID alone is no durability acknowledgement.
 			sid = rotationSessionFromEvents(r, rotationEvents(now.Unix()-r.SentAt+5, now.Unix()))
 		}
 		if sid != "" && sid != r.Retiring {
+			if r.Successor != "" && sid != r.Successor {
+				failRotation(r, "HQ changed again before its successor became recoverable", now.Unix())
+				return
+			}
+			if r.Successor == "" {
+				r.Successor, r.SwitchedAt = sid, now.Unix()
+				if err := writeRotationFile(r, false); err != nil {
+					diag.ReportStoreFailure("hq-rotation", err)
+					return
+				}
+				diag.For("hq").Info("hq.rotation.switched", "HQ switched; waiting for durable handoff", "session", sid)
+			}
+			if r.Agent == "codex" {
+				kind, at := boundary(sid)
+				ready := transcript.CodexRecovery(sid).State == transcript.RecoveryReady && kind != "" && !at.Before(time.Unix(r.SentAt, 0)) && !at.After(now)
+				if !ready {
+					if now.Unix()-r.SwitchedAt >= int64(rotationReadyWait.Seconds()) {
+						failRotation(r, "HQ switched but its handoff/history was not confirmed; no reset will be retried", now.Unix())
+						return
+					}
+					if r.BootstrapAt == 0 && kind == "" && hqBriefingEnabled() &&
+						!state.Exists(state.ActivePath(pane)) && !state.Exists(state.WaitingPath(pane)) && dispatch.BoxEmpty(io) {
+						r.BootstrapAt = now.Unix()
+						if err := writeRotationFile(r, false); err != nil {
+							diag.ReportStoreFailure("hq-rotation", err)
+							return
+						}
+						bootstrap = sid
+					}
+					return
+				}
+			}
 			events.AuditRotateConfirmed(r.Agent, r.Retiring, sid, r.Input, now.Unix())
 			_ = os.Remove(rotationPendingPath())
 			return

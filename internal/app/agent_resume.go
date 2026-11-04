@@ -136,7 +136,15 @@ func resumeAgents() {
 	}
 
 	n := 0
+	var attempts []resumeAttempt
 	run := func(paneID string, rec resume.Record) bool {
+		loc := ""
+		for _, p := range panes {
+			if p.id == paneID {
+				loc = p.loc
+				break
+			}
+		}
 		if used[rec.SessionID] {
 			return false
 		}
@@ -147,6 +155,11 @@ func resumeAgents() {
 		// on the user's screen.
 		rec, alive := resume.Resolve(rec)
 		if !alive {
+			status := "missing"
+			if rec.Agent == "codex" {
+				status = resume.Recovery(rec).State
+			}
+			attempts = append(attempts, resumeAttempt{Pane: paneID, Loc: loc, Record: rec, State: status})
 			restoreLogf("restore.resume", "resume[skip] pane=%s session=%s — conversation not on disk (deleted/expired)", paneID, rec.SessionID)
 			return false
 		}
@@ -154,10 +167,18 @@ func resumeAgents() {
 		if !ok {
 			return false
 		}
+		before, _ := resume.Load(loc)
+		attempt := resumeAttempt{Pane: paneID, Loc: loc, Record: rec, Before: before, IssuedAt: time.Now().Unix(), State: "send-failed"}
 		if tmux.SendText(paneID, agentenv.Wrap(cmd), mode == resumeAuto) == nil {
+			attempt.State = "pending"
+			if mode == resumeType {
+				attempt.State = "prefilled"
+			}
+			attempts = append(attempts, attempt)
 			used[rec.SessionID] = true
 			return true
 		}
+		attempts = append(attempts, attempt)
 		return false
 	}
 
@@ -223,6 +244,22 @@ func resumeAgents() {
 
 	restoreLogf("restore.resume", "resumeAgents: done resumed=%d", n)
 	reportResume(mode, n)
+	if mode == resumeAuto && n > 0 {
+		// One bounded grace period for the whole fleet, never one wait per pane.
+		time.Sleep(1500 * time.Millisecond)
+	}
+	for i := range attempts {
+		if attempts[i].State != "pending" {
+			continue
+		}
+		current, live := resume.LoadLive(attempts[i].Loc)
+		if resumeAttemptConfirmed(attempts[i], current, live) {
+			attempts[i].State = "confirmed"
+			diag.For("restore").Act("act.resume.confirmed", diag.Caller(), attempts[i].Pane, diag.OK,
+				"confirmed the target conversation after its resume command", "conversation", current.SessionID)
+		}
+	}
+	fmt.Print(renderResumeAttempts(attempts, termWidth()))
 }
 
 // fallbackMaxAge bounds how old a record may be to be recovered by the CWD FALLBACK
@@ -304,7 +341,7 @@ func reportResume(mode resumeMode, n int) {
 		notify.Send(notify.Options{
 			Kind:    "done",
 			Title:   "gtmux",
-			Message: fmt.Sprintf("↻ 已接回 %d 个 agent 会话", n),
+			Message: fmt.Sprintf("已发送 %d 条恢复命令", n),
 		})
 	} else {
 		i18n.Say(fmt.Sprintf("↻ pre-filled %d agent resume command(s); press Enter in each pane to run.", n),
@@ -323,6 +360,6 @@ var isShellCommand = radar.IsShellCommand
 // actResumed records that restore typed a resume command into a pane: the act, where the
 // trace above it is the reasoning.
 func actResumed(pane string, rec resume.Record, match string) {
-	diag.For("restore").Act("act.resume", diag.Caller(), pane, diag.OK,
-		"resumed a conversation in a restored pane", "agent", rec.Agent, "conversation", rec.SessionID, "match", match)
+	diag.For("restore").Act("act.resume.command", diag.Caller(), pane, diag.OK,
+		"sent a conversation resume command; startup not yet confirmed", "agent", rec.Agent, "conversation", rec.SessionID, "match", match)
 }

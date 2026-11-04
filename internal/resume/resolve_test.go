@@ -56,7 +56,7 @@ func TestResolveReportsAMissingConversationDead(t *testing.T) {
 func TestResolveLeavesOtherAgentsAlone(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
-	in := Record{Agent: "codex", SessionID: "abc", Cwd: "/Users/x/whatever"}
+	in := Record{Agent: "cursor", SessionID: "abc", Cwd: "/Users/x/whatever"}
 	got, alive := Resolve(in)
 	if !alive || got != in {
 		t.Errorf("Resolve(%+v) = %+v alive=%v; want it unchanged and alive", in, got, alive)

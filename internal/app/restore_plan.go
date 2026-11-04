@@ -36,12 +36,14 @@ type restorePlanSession struct {
 }
 
 type restorePlanAgent struct {
-	Agent     string `json:"agent"`
-	Loc       string `json:"loc"`
-	Cwd       string `json:"cwd,omitempty"`
-	SessionID string `json:"sessionId"`
-	Goal      string `json:"goal,omitempty"`
-	Alive     bool   `json:"alive"` // the conversation is still on disk (resumable)
+	RecoveryState string `json:"recoveryState,omitempty"`
+	CheckpointID  string `json:"checkpointSessionId,omitempty"`
+	Agent         string `json:"agent"`
+	Loc           string `json:"loc"`
+	Cwd           string `json:"cwd,omitempty"`
+	SessionID     string `json:"sessionId"`
+	Goal          string `json:"goal,omitempty"`
+	Alive         bool   `json:"alive"` // the conversation is still on disk (resumable)
 }
 
 // buildRestorePlan reads the resurrect last save + resume records into a plan. Empty
@@ -97,9 +99,24 @@ func buildRestorePlanFrom(save string) restorePlan {
 			return
 		}
 		used[rec.SessionID] = true
-		_, alive := resume.Resolve(rec)
+		alive := false
+		recovery, checkpoint := "", ""
+		if rec.Agent == "codex" {
+			recovery = resume.Recovery(rec).State
+			alive = recovery == transcript.RecoveryReady
+			if !alive && rec.RecoverySessionID != "" && rec.RecoverySessionID != rec.SessionID {
+				prior := rec
+				prior.SessionID = rec.RecoverySessionID
+				if _, ready := resume.Resolve(prior); ready {
+					checkpoint = rec.RecoverySessionID
+				}
+			}
+		} else {
+			_, alive = resume.Resolve(rec)
+		}
 		i := at[sp.Session]
 		plan.Sessions[i].Agents = append(plan.Sessions[i].Agents, restorePlanAgent{
+			RecoveryState: recovery, CheckpointID: checkpoint,
 			Agent:     rec.Agent,
 			Loc:       sp.Loc,
 			Cwd:       rec.Cwd,
@@ -319,6 +336,12 @@ func renderRestorePlan(p restorePlan, width int, details bool) string {
 			}
 			line(fmt.Sprintf("    %s %s [%s]  %s", mark, restoreInline(a.Agent),
 				restoreInline(posSuffix(a.Loc)), restoreInline(goal)))
+			if !a.Alive && a.RecoveryState != "" {
+				line("      " + resumeStateLabel(a.RecoveryState))
+				if a.CheckpointID != "" {
+					line(i18n.Tr("      Previous saved thread (not resumed): ", "      上一恢复点（未自动恢复）：") + a.CheckpointID)
+				}
+			}
 		}
 	}
 	if !details {

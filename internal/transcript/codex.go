@@ -189,13 +189,9 @@ func resolveCodexLogPaths(sessionID string, candidates []string) []string {
 		return nil
 	}
 	var paths []string
-	baseSuffix := "-" + sessionID + ".jsonl"
-	continuationPrefix := "-" + sessionID + "_"
 	for _, path := range candidates {
 		name := filepath.Base(path)
-		stem := strings.TrimSuffix(name, ".jsonl")
-		isBase := strings.HasPrefix(name, "rollout-") && strings.HasSuffix(name, baseSuffix)
-		isContinuation := strings.HasPrefix(stem, "rollout-") && strings.Contains(stem, continuationPrefix) && !isBase
+		isBase, isContinuation := codexRolloutName(name, sessionID)
 		if !isBase && !isContinuation {
 			continue
 		}

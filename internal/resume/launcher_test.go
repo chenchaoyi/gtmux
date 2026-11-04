@@ -1,6 +1,9 @@
 package resume
 
-import "testing"
+import (
+	"path/filepath"
+	"testing"
+)
 
 // An agent is not always launched by its own name. A Codex session started through an
 // internal wrapper carries that wrapper's configuration and credentials; resuming it as
@@ -68,6 +71,10 @@ func contains(s, sub string) bool {
 // (which relocates a Claude conversation to where it is actually filed). A field added
 // to Record is only as good as its survival through that step.
 func TestResolveKeepsTheLauncher(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("CODEX_HOME", filepath.Join(home, ".codex"))
+	recoveryFile(t, filepath.Join(home, ".codex"), "abc")
 	in := Record{Agent: "codex", SessionID: "abc", Launcher: "agentwrap"}
 	out, ok := Resolve(in)
 	if !ok || out.Launcher != "agentwrap" {
