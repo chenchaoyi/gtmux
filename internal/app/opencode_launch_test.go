@@ -13,6 +13,7 @@ func TestOpenCodeStandaloneCompatibility(t *testing.T) {
 		{"opencode v2.2.5\n", []string{"--session", "ses_one"}, []string{"--standalone", "--session", "ses_one"}},
 		{"1.18.11", []string{"--session", "ses_one"}, []string{"--session", "ses_one"}},
 		{"unknown", []string{}, []string{}},
+		{"3.0.0", []string{"--session", "ses_one"}, []string{"--session", "ses_one"}},
 		{"2.2.5", []string{"--server", "http://localhost:123"}, []string{"--server", "http://localhost:123"}},
 		{"2.2.5", []string{"run", "hello"}, []string{"run", "hello"}},
 		{"2.2.5", []string{"--standalone"}, []string{"--standalone"}},

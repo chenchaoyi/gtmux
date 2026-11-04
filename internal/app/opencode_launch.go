@@ -25,7 +25,7 @@ func opencodeStandaloneArgs(args []string, version string) []string {
 		return args
 	}
 	major, _ := strconv.Atoi(strings.Split(strings.TrimPrefix(strings.TrimPrefix(strings.TrimSpace(version), "opencode "), "v"), ".")[0])
-	if major < 2 {
+	if major != 2 {
 		return args
 	}
 	return append([]string{"--standalone"}, args...)
