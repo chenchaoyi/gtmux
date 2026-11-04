@@ -17,6 +17,8 @@ these pages in the same window. **Knowledge → Import…** offers backup restor
 selective migration from another Mac and continuation of a staged migration.
 Linked conversations show agent, current pane and status; a saved pane without a
 current identity is marked **Last pane**. Click a card to read its original conversation.
+Mac and App summary cards show a repeated matter title/question once, keeping the
+reason visible. A different question and its full details remain available.
 
 ## Start HQ
 

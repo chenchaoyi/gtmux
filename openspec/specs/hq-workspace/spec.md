@@ -260,6 +260,11 @@ Removal, individual move, split and merge SHALL require confirmation naming the 
 ### Requirement: Human requests are explicit and distinct from operational reports
 HQ SHALL publish a bounded request containing one concrete prompt, its reason, scope and impact, and optional short choices. Only the verified HQ caller SHALL publish or withdraw these requests. New clients SHALL separate unanswered requests from unstructured historical records and saved replies awaiting HQ follow-up. Routine engineering work SHALL NOT be presented as a user decision.
 
+#### Scenario: A summary question repeats its matter title
+- **WHEN** a brief card already displays the same title as the current question, allowing only whitespace differences
+- **THEN** the card displays that text once while preserving its reason and source-opening action
+- **AND** a distinct question remains verbatim, and the complete question/choices and stored records are unchanged
+
 #### Scenario: Reports arrive after a request
 - **WHEN** HQ publishes a progress report while a question is unanswered
 - **THEN** the current question remains visible above the expandable history

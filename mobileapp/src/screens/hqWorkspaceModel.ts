@@ -81,6 +81,14 @@ export function matterState(state: MatterState, zh: boolean): string {
   };
   return names[state]?.[zh ? 1 : 0] ?? state;
 }
+
+// Summary cards already show the title. Retain a distinct question verbatim;
+// only identical whitespace-normalized text is omitted, never the reason/choices.
+export function distinctQuestionPrompt(title: string, prompt: string): string | undefined {
+  const normalize = (value: string) => value.replace(/\s+/g, ' ').trim();
+  const question = normalize(prompt);
+  return question && question !== normalize(title) ? prompt : undefined;
+}
 // A recycled pane is never sufficient to open a participant's current session.
 export function liveParticipant(
   association: HQAssociation,

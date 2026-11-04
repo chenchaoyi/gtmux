@@ -172,12 +172,12 @@ Before opening the first PR, audit both current user guides and design documents
 
 ## Mac runner availability
 
-Mac CI and signed Mac builds use the standard `macos-15-intel` image and the
-explicit installed Xcode26.3 toolchain (the image default is older). CI still
-compiles the app and Widget host/extension for both arm64 and x86_64, runs the full
-native test suites on the runner, and checks design and bundled resources. Release
-artifacts remain universal and keep the same signature/notarization gates. iOS
-stays ARM on the pinned standard `macos-15` image and Xcode26.3, validated separately
-through its full native compile and delivery; it is not moved to Intel.
-This host choice addresses observed ARM jobs failing before acquiring a runner;
-it does not guarantee queue time or replace actual next-release timing evidence.
+Native Mac CI uses the standard ARM `macos-26` image with explicit Xcode26.6.
+The Intel trial compiled and signed universal artifacts, but its SwiftUI render
+suite aborted in Metal; it is not an accepted native UI test host. CI still
+compiles the app and Widget host/extension for both arm64 and x86_64 and runs every
+native test, design and bundled-resource check. Signed release builds use
+`macos-15-intel` with explicit Xcode26.3, retaining universal artifacts and the same
+signature/notarization gates. iOS remains ARM on `macos-15` and Xcode26.3.
+Host availability does not guarantee queue time; report actual next-release
+measurements separately from build work and failed experiments.

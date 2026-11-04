@@ -64,6 +64,17 @@ private struct OverviewFixtureClient: HQWorkspaceServing {
 
 @MainActor
 final class HQOverviewTests: XCTestCase {
+    func testQuestionSummaryKeepsDistinctContentWithSharedFixtures() throws {
+        struct PromptCase: Decodable { var title: String; var prompt: String; var display: String? }
+        let fixture = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+            .appendingPathComponent("../../../tests/fixtures/hq-summary-prompts.json").standardizedFileURL
+        let cases = try JSONDecoder().decode([PromptCase].self, from: Data(contentsOf: fixture))
+        XCTAssertEqual(cases.count, 7)
+        for item in cases {
+            XCTAssertEqual(HQOverviewModel.distinctQuestionPrompt(title: item.title, prompt: item.prompt), item.display)
+        }
+    }
+
     func testExplicitProjectionAndIdentityDoNotInferTaskCompletionOrPaneOwnership() throws {
         var snapshot = try overviewFixture()
         XCTAssertEqual(HQOverviewModel.items(.needsInput, in: snapshot).count, 3)

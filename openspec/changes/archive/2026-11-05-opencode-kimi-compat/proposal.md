@@ -25,10 +25,11 @@ No account, shared-service restart, follow/input permission or access-policy cha
 ## Release reliability follow-through
 
 The prior exact-main Mac gate failed to acquire an ARM runner three times, without
-running code. Validate the standard Intel Mac host with both-architecture app and
-Widget builds and the unchanged native test/design/signing/notarization checks.
-iOS stays on ARM. A snapshot rehearsal must verify the actual staged universal
-artifact before using this host for the authorized release.
+running code. The standard Intel trial builds/signs universal app/Widget artifacts,
+but its native SwiftUI test process aborts in Metal. Keep the complete native UI
+suite on the standard macos-26 ARM image with Xcode26.6; retain both architectures
+and all tests. Signed releases use the separately validated Intel/Xcode26.3 build
+path and unchanged signature/notarization checks. iOS stays on ARM.
 
 The actual rehearsal compiled and signed both architectures and received Apple's
 Accepted status, then failed ticket retrieval with a CloudKit network loss. Add a
@@ -40,3 +41,13 @@ Repeated latest-image ARM acquisition failures also block iOS compilation. Valid
 the other documented standard ARM image, macos-15, with explicitly installed
 Xcode26.3 in both unsigned CI and protected delivery. Reject a non-ARM host, compile
 the same ARM64 app/extensions, and retain every signing/publication boundary.
+
+Visual HQ exploration found identical matter/question titles repeated in summary
+cards. Native Mac and React App cards suppress only whitespace-equivalent duplicate
+prompts, keep reasons and distinct questions, and leave full records/actions intact.
+Both presentation helpers use one seven-case fixture for matching behavior.
+
+Android tablet exploration found the attachment test leaving the app immediately
+after Appium hideKeyboard; that driver can send ESC then BACK from an earlier IME
+state. Exercise the actual visible + action directly, assert the QA app remains
+foreground, and retain all file/clipboard/permission/upload assertions on both sizes.

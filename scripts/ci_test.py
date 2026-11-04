@@ -162,8 +162,9 @@ class MacHostContractTests(unittest.TestCase):
         root = Path(__file__).resolve().parents[1]
         workflow = (root / ".github/workflows/ci.yml").read_text()
         block = workflow.split("  menubar:\n", 1)[1].split("\n  ci-required:", 1)[0]
-        self.assertIn("runs-on: macos-15-intel", block)
-        self.assertIn("DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer", block)
+        self.assertIn("runs-on: macos-26", block)
+        self.assertIn("DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer", block)
+        self.assertIn('test "$(uname -m)" = arm64', block)
         self.assertIn("swift build -c release --arch arm64 --arch x86_64", block)
         self.assertIn("GTMUX_UNIVERSAL: '1'", block)
         self.assertIn("swift test --package-path shared/UsageWidgets", block)

@@ -76,6 +76,14 @@ async function open(pane = '%12') {
   if(pane==='%12') await title.waitForDisplayed({timeout:15000});
 }
 async function tools(name) { await tap(id('session-tools')); await tap(label(name)); }
+async function attach() {
+  await tap(id('composer-kbd'));
+  // Tap the visible + just as a user does. Appium's hideKeyboard sends ESC, then
+  // BACK using a stale IME snapshot; on Android 36 tablets that can leave the app.
+  // The attach Modal takes focus itself; no navigation key is required here.
+  await tap(id('composer-attach'));
+  assert.equal(await driver.getCurrentPackage(), app, 'Attachment action must stay in the QA app');
+}
 async function check(name, action) {
   const only=process.env.GTMUX_ANDROID_E2E_ONLY?.split(',');
   if(only && !only.includes(name.slice(0,2))) {results.push({name,status:'not-run',reason:'Explicit local subset'});return;}
@@ -209,12 +217,12 @@ async function run() {
     await tap(id('trace-code-part-original'));if(await shown(id('trace-detail-close'))) await tap(id('trace-detail-close'));await tap(id('trace-close'));
   });
   await check('20-file-picker-and-cancel',async()=>{
-    await launch();await open();await tap(id('composer-kbd'));await driver.hideKeyboard().catch(()=>{});await tap(id('composer-attach'));await wait(700);await tap(id('attach-2'));
+    await launch();await open();await attach();await wait(700);await tap(id('attach-2'));
     await driver.waitUntil(async()=>['com.google.android.documentsui','com.android.documentsui'].includes(await driver.getCurrentPackage()),{timeout:15000});
     await capture('20-system-file-picker');await wait(700);await driver.pressKeyCode(4);await wait(700);if(await driver.getCurrentPackage() !== app) {await driver.pressKeyCode(4);await wait(500);}await id('composer-input').waitForDisplayed({timeout:10000});
   });
   await check('21-camera-permission-denial',async()=>{
-    await launch();await open();await tap(id('composer-kbd'));await driver.hideKeyboard().catch(()=>{});await tap(id('composer-attach'));await wait(700);await tap(id('attach-1'));const deny=await driver.$('//*[@resource-id="com.android.permissioncontroller:id/permission_deny_button"]');await wait(700);const settled=await driver.$('//*[@resource-id="com.android.permissioncontroller:id/permission_deny_button"]'),location=await settled.getLocation(),bounds=await settled.getSize();await driver.execute('mobile: clickGesture',{x:Math.round(location.x+bounds.width/2),y:Math.round(location.y+bounds.height/2)});await driver.waitUntil(async()=>!await shown(deny),{timeout:10000});
+    await launch();await open();await attach();await wait(700);await tap(id('attach-1'));const deny=await driver.$('//*[@resource-id="com.android.permissioncontroller:id/permission_deny_button"]');await wait(700);const settled=await driver.$('//*[@resource-id="com.android.permissioncontroller:id/permission_deny_button"]'),location=await settled.getLocation(),bounds=await settled.getSize();await driver.execute('mobile: clickGesture',{x:Math.round(location.x+bounds.width/2),y:Math.round(location.y+bounds.height/2)});await driver.waitUntil(async()=>!await shown(deny),{timeout:10000});
     await driver.$('//*[contains(@text,"Camera access is off")]').waitForDisplayed({timeout:30000});
   });
   await check('22-rotation-and-large-text',async()=>{
@@ -259,7 +267,7 @@ async function run() {
     const content='Synthetic Android attachment: no personal data.';fs.writeFileSync(local,content);
     execFileSync(path.join(sdk,'platform-tools/adb'),['-s',serial,'push',local,remote],{timeout:15000});
     try {
-      await launch();await open();await tap(id('composer-kbd'));await driver.hideKeyboard().catch(()=>{});await tap(id('composer-attach'));await wait(700);await tap(id('attach-2'));
+      await launch();await open();await attach();await wait(700);await tap(id('attach-2'));
       await label('Show roots').waitForDisplayed({timeout:15000});await wait(1000);const roots=await label('Show roots');await driver.execute('mobile: clickGesture',{elementId:roots.elementId});await wait(800);await capture('28-roots-open');const rootsList=driver.$('//*[contains(@resource-id,":id/roots_list")]');await tap(rootsList.$('.//*[@text="Downloads"]'));await driver.waitUntil(async()=>!await shown(rootsList),{timeout:10000});
       const file=driver.$('//*[@text="'+name+'"]');await seek(file);await tap(file);await id('composer-send').waitForDisplayed({timeout:15000});
       const before=owner.world.writesTo('/api/upload').length;await tap(id('composer-send'));
@@ -269,7 +277,7 @@ async function run() {
     } finally {adb('shell','rm','-f',remote);}
   });
   await check('29-clipboard-image-markup-and-upload',async()=>{
-    await launch({GTMUX_DEBUG_CLIPBOARD_IMAGE:'1'});await open();await tap(id('composer-kbd'));await driver.hideKeyboard().catch(()=>{});await tap(id('composer-attach'));await wait(700);await tap(id('attach-3'));
+    await launch({GTMUX_DEBUG_CLIPBOARD_IMAGE:'1'});await open();await attach();await wait(700);await tap(id('attach-3'));
     await id('markup-frame').waitForDisplayed({timeout:20000});await capture('29-markup-original');
     const position=await id('markup-viewport').getLocation(),size=await id('markup-viewport').getSize();
     await driver.execute('mobile: pinchOpenGesture',{left:position.x+20,top:position.y+20,width:size.width-40,height:size.height-40,percent:.6,speed:500});
