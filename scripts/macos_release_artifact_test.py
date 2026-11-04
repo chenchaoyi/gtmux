@@ -93,6 +93,9 @@ class WorkflowTests(unittest.TestCase):
     def test_builds_overlap_but_publication_and_mirror_wait_for_all_successes(self):
         text = (ROOT / '.github/workflows/release.yml').read_text()
         jobs = dict(re.findall(r'^  ([\w-]+):\n(.*?)(?=^  [\w-]+:|\Z)', text.split('jobs:\n', 1)[1], re.M | re.S))
+        self.assertIn('runs-on: macos-26', jobs['app'])
+        self.assertIn('DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer', jobs['app'])
+        self.assertNotIn('macos-15-intel', jobs['app'])
         self.assertIn('needs: source', jobs['app'])
         self.assertIn('needs: source', jobs['goreleaser'])
         self.assertNotIn('needs: goreleaser', jobs['app'])

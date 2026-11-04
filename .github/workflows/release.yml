@@ -175,12 +175,12 @@ jobs:
   app:
     name: menu-bar app (macOS)
     needs: source
-    runs-on: ${{ needs.source.outputs.recovery == 'true' && 'macos-26' || 'macos-15-intel' }}
+    runs-on: macos-26
     defaults:
       run:
         working-directory: product
     env:
-      DEVELOPER_DIR: ${{ needs.source.outputs.recovery == 'true' && '/Applications/Xcode_26.6.app/Contents/Developer' || '/Applications/Xcode_26.3.app/Contents/Developer' }}
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
       PRODUCT_TAG: ${{ needs.source.outputs.tag }}
       IS_RELEASE: ${{ needs.source.outputs.release }}
     permissions:
