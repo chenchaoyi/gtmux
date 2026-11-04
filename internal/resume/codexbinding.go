@@ -296,7 +296,7 @@ func completeCodexBinding(scope *transcript.CodexPathScope, intent CodexBindingI
 		return errors.New("codex binding intent is missing or changed")
 	}
 	current, _ := Load(live.Loc)
-	if current != intent.Incumbent && (current.Agent != "codex" || current.SessionID != sid) {
+	if !sameResumeOwner(current, intent.Incumbent) && (current.Agent != "codex" || current.SessionID != sid) {
 		return errors.New("codex binding target acquired another owner")
 	}
 	observation, found := native.Load(sid, transcript.CodexHomeID())
@@ -311,7 +311,8 @@ func completeCodexBinding(scope *transcript.CodexPathScope, intent CodexBindingI
 	if current.Agent == "codex" && current.HomeID == transcript.CodexHomeID() && current.SessionID == sid {
 		frontend = current.Frontend
 	}
-	if err := writeBindingJSON(fileFor(live.Loc), Record{Agent: "codex", HomeID: transcript.CodexHomeID(), SessionID: sid, Cwd: live.Cwd, UpdatedAt: now, Launcher: live.Launcher, Frontend: frontend}); err != nil {
+	record := withRecoveryCheckpoint(Record{Agent: "codex", HomeID: transcript.CodexHomeID(), SessionID: sid, Cwd: live.Cwd, UpdatedAt: now, Launcher: live.Launcher, Frontend: frontend}, current)
+	if err := writeBindingJSON(fileFor(live.Loc), record); err != nil {
 		return err
 	}
 	if err := native.ConfirmBinding(native.Binding{HomeID: receiptHome, ID: bindingSHA(intent.Token), SessionID: sid, Pane: live.Pane, Loc: live.Loc,

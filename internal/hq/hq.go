@@ -976,8 +976,8 @@ func CmdHQ(args []string) int {
 			i18n.Sae("gtmux hq --rotate: "+held, "gtmux hq --rotate: "+held)
 			return 1
 		}
-		i18n.Say("HQ rotation queued for session "+req.Retiring+"; it will run after this turn ends. Completion requires a new session ID.",
-			"已为 HQ 会话 "+req.Retiring+" 安排轮换；本回合结束后执行。只有出现新会话 ID 才算完成。")
+		i18n.Say("HQ rotation queued for session "+req.Retiring+"; it will run after this turn ends. Codex completion requires a recoverable successor and confirmed handoff.",
+			"已为 HQ 会话 "+req.Retiring+" 安排轮换；本回合结束后执行。Codex 需确认新会话已接棒且可恢复。")
 		return 0
 	}
 

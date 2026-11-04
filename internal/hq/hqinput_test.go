@@ -30,7 +30,8 @@ func TestRotationRetainsRequestBehindWorkspaceAndCannotReplayOldSnapshot(t *test
 	if len(p.pasted) != 1 || p.enters != 1 {
 		t.Fatal("old unsent snapshot repeated reset", p)
 	}
-	advanceHQRotation(r, "%6", "codex", "new-session", p.io(), complete, now.Add(2*time.Second))
+	writeRotationHistory(t, "new-session")
+	advanceHQRotation(r, "%6", "codex", "new-session", p.io(), testBoundary("task_started", now.Add(time.Second)), now.Add(2*time.Second))
 	advanceHQRotation(r, "%6", "codex", "old-session", p.io(), complete, now.Add(3*time.Second))
 	if _, exists, _ := readRotationRequest(); exists || len(p.pasted) != 1 {
 		t.Fatal("settled request was replayed", p)

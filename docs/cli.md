@@ -450,7 +450,8 @@ act.reap                reap
 act.reap.snooze         reap
 act.relay               relay
 act.restore             restore
-act.resume              restore
+act.resume.command      restore
+act.resume.confirmed    restore
 act.revoke              pair, devices, share, serve
 act.screenshot.capture  app
 act.screenshot.freeze   app
@@ -593,6 +594,16 @@ location is no longer present. Ambiguous matches are skipped with a receipt, and
 conversation already bound to a running pane is not resumed into another pane. The
 read-only plan describes the saved workspace; execution additionally checks live owners.
 
+Codex recovery requires a readable rollout whose metadata matches the exact thread in
+the same Codex home, including legacy, archived, continued and compressed histories.
+Plain `.jsonl` takes precedence over its `.jsonl.zst` sibling. A newly
+allocated empty thread is not a saved conversation. Live identity updates immediately;
+the last verified recovery checkpoint is kept separately and never silently substituted
+for the current thread. Preview and execution share this check. Unreadable, invalid and
+missing history are reported separately. The final startup table distinguishes a sent
+command, a fresh target-thread confirmation and a skipped/failed attempt; sending keys
+alone is not a successful recovery.
+
 Restore names its backup, for example "Using the layout backup saved at 09:57
 (37m ago)", and explains that later changes will not be restored. The autosave that writes that file hangs off tmux's status
 bar, so it only runs while a terminal is attached and redrawing: close the lid and it
@@ -618,13 +629,16 @@ in `gtmux logs --component restore --since 1d`, whose command is always printed 
 the warning. A successfully started agent resume command does not imply the layout
 was fully restored. tmux-resurrect discards its own layout errors.
 
-After loading the layout, a pane-ID receipt lists each saved session/window.
+After loading the layout, a compact pane-ID table lists each saved session/window on
+one row, with aligned columns and a session/pane total. Narrow terminals wrap the ID
+column without dropping identities.
 `%44 → %7` means the pane at the same layout position had ID `%44` in the backup
 and has ID `%7` now. Pairs are shown only for matching arrangements, or an unambiguous
 single-pane window. Changed multi-pane layouts list backup and current IDs separately;
 they never guess pairs by numeric ID or pane-index order. Older backups without IDs
 say so. This receipt is for inspection and never authorizes input, pane closure or
-automatic layout changes. The plan JSON is unchanged.
+automatic layout changes. Existing plan JSON fields remain stable; Codex rows add
+`recoveryState` and, when available, a distinct `checkpointSessionId`.
 
 A tmux pane id is a per-server sequence number: restart the server and `%25` is handed
 to a different pane. gtmux keys a lot of state by that number, so restore (and, every
@@ -959,7 +973,8 @@ home yet it still prints the path and exits non-zero.
 
 `gtmux hq --rotate` queues a rotation for the current HQ session. It reports pending
 until HQ's current turn ends; the resident service then checks the empty input box and
-sends that agent's reset command once. Only a different session ID confirms success.
+sends that agent's reset command once. Codex also requires successor activity and
+durable history before success is confirmed.
 Rejected or timed-out attempts leave a failure record in `gtmux events --all`.
 HQ's playbook runs it
 unprompted once the `self-rotate` knock says the session is worn out
@@ -1157,8 +1172,13 @@ Set any of them to 0 to switch that one criterion off without losing the other t
 `selfRotateRepeatSec` (default 1800 s) paces the re-knock, `selfRotateCheckSec` (default
 300 s) paces the evaluation.
 
-The debt clears only when the session actually rotates, observed as a new agent session
-id; delivering the wake does not clear it. Past `hqWake.selfRotateRepeatSec` a repeat
+The debt clears only when the session actually rotates. Codex also requires durable
+history and activity from the successor's first turn; an in-memory ID alone does not
+clear it. After a safe switch, the existing guarded startup briefing continues the
+handoff once unless `GTMUX_HQ_BRIEF=off`. Drafts remain protected; rotation does not
+enqueue another handoff or send a second reset. Existing wake-channel acknowledgement
+and stable-ID retry rules remain in force. Switching and a confirmed recoverable
+handoff are separate states. Past `hqWake.selfRotateRepeatSec` a repeat
 fires only when the breach set or session list has changed, and `hqWake.selfRotateFloorSec`
 (12 h) is the longest it can stay silent when nothing has changed at all. HQ's playbook
 tells it to do three things in order, without asking you first: bring `notes/board.md`
@@ -2004,8 +2024,9 @@ Save checks distinguish the last changed layout from the last successful fallbac
 save. Resurrect may keep an identical layout unchanged. Only recent server-scoped,
 matching save receipts can confirm execution; missing or invalid snapshots still
 need attention. An old snapshot without that evidence means saving is unconfirmed,
-not necessarily stopped. Suspected conversation bindings also require verification;
-a newer unbound conversation in the same directory may be unrelated.
+not necessarily stopped. Managed Codex frontends verify their current thread automatically;
+nearby newer history cannot contradict that direct evidence. Legacy attachments without
+independent proof are informational, with no repair or automatic rebind based on recency.
 
 The Mac report header and footer link directly to **Findings**.
 The information button explains the four result classes.

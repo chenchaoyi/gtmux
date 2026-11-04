@@ -63,6 +63,7 @@ func TestRestoreResumesThroughTheRecordedLauncher(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
+	writeRecoveryFixture(t, "sess-wrapper-1", home)
 
 	resumeAgents()
 
@@ -145,6 +146,9 @@ func TestRestoreManagedCodexBridge(t *testing.T) {
 	}
 	if err := os.WriteFile(save, []byte(strings.Join(lines, "\n")+"\n"), 0600); err != nil {
 		t.Fatal(err)
+	}
+	for _, name := range []string{"bridge", "fallback"} {
+		writeRecoveryFixture(t, name+"-thread", home)
 	}
 	for _, name := range []string{"bridge", "shell", "service", "headless"} {
 		rec := resume.Record{Agent: "codex", SessionID: name + "-thread", Cwd: home, UpdatedAt: time.Now().Unix()}

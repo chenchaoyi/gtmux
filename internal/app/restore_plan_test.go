@@ -48,6 +48,7 @@ func TestBuildRestorePlan(t *testing.T) {
 	_ = resume.Save("MP:0.0", resume.Record{Agent: "claude", SessionID: "s-00", Cwd: "/p/mp", UpdatedAt: 300})
 	_ = resume.Save("MP:1.0", resume.Record{Agent: "codex", SessionID: "s-10", Cwd: "/p/mp", UpdatedAt: 200})
 	_ = resume.Save("MP:0.2", resume.Record{Agent: "claude", SessionID: "s-stale", Cwd: "/p/mp", UpdatedAt: 100})
+	writeRecoveryFixture(t, "s-10", "/p/mp")
 
 	plan := buildRestorePlanFrom(save)
 
@@ -80,9 +81,7 @@ func TestBuildRestorePlan(t *testing.T) {
 	if plan.agentCount() != 2 {
 		t.Fatalf("agentCount = %d, want 2", plan.agentCount())
 	}
-	// s-00 is claude with NO transcript on disk → dead (×); s-10 is codex → always
-	// resumable (we can't inspect its store). So the headline should count 1 resumable
-	// and note 1 with-no-transcript, matching the eventual "resumed 1".
+	// Both agents require real history. Only s-10 has a verified rollout.
 	if got := plan.resumableCount(); got != 1 {
 		t.Fatalf("resumableCount = %d, want 1 (only the codex agent is resumable)", got)
 	}

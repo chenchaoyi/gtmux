@@ -101,6 +101,7 @@ func TestRestoreOutputPlanCommandIsReadOnlyAndJSONUnchanged(t *testing.T) {
 	if err := resume.Save("example:0.0", resume.Record{Agent: "codex", SessionID: "synthetic-session", Cwd: "/example"}); err != nil {
 		t.Fatal(err)
 	}
+	writeRecoveryFixture(t, "synthetic-session", "/example")
 	var rc int
 	out := captureStdout(t, func() { rc = cmdRestore([]string{"--plan"}) })
 	if rc != 0 || !strings.Contains(out, "↻ codex [0.0]  /example") {

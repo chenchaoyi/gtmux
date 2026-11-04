@@ -130,6 +130,7 @@ func BindCodexFrontend(f CodexFrontend, sid string, cwd ...string) (CodexFronten
 	}
 	r := Record{Agent: "codex", HomeID: f.HomeID, SessionID: sid, Cwd: f.ThreadCwd,
 		UpdatedAt: f.UpdatedAt / 1000, Frontend: f.Instance}
+	r = withRecoveryCheckpoint(r, previous)
 	if err := writeBindingJSON(fileFor(f.Loc), r); err != nil {
 		return f, err
 	}
@@ -152,6 +153,7 @@ func confirmFrontendStartup(f CodexFrontend) error {
 // RefreshCodexFrontend is a bounded liveness heartbeat from the bridge process.
 // It does not promote a different thread or reclaim an incumbent's location.
 func RefreshCodexFrontend(f CodexFrontend) (CodexFrontend, error) {
+	previousTick := f.UpdatedAt
 	f.UpdatedAt = time.Now().UnixMilli()
 	if !validFrontend(f) || f.BridgePID != os.Getpid() {
 		return f, errors.New("invalid frontend heartbeat")
@@ -164,6 +166,16 @@ func RefreshCodexFrontend(f CodexFrontend) (CodexFrontend, error) {
 		// Older hook binaries omit the additive field when publishing the SAME
 		// thread. Recover only from our own still-verified connection evidence.
 		return BindCodexFrontend(f, f.SessionID, f.ThreadCwd)
+	}
+	// New threads may acquire history after thread/start. Once promoted, normal
+	// heartbeats never enumerate history; empty threads are checked at most /10s.
+	if r.RecoverySessionID != r.SessionID && previousTick/10000 != f.UpdatedAt/10000 {
+		checked := withRecoveryCheckpoint(r, r)
+		if checked != r {
+			if err := writeBindingJSON(fileFor(f.Loc), checked); err != nil {
+				return f, err
+			}
+		}
 	}
 	if err := writeBindingJSON(frontendPath(f.Instance), f); err != nil {
 		return f, err

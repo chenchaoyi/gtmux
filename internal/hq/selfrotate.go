@@ -301,6 +301,12 @@ func selfRotateSensor(now int64) {
 		return
 	}
 	agent, sess := hqSessionRef(pane)
+	if agent == "codex" && sess != readRotateState().Session {
+		kind, at := transcript.CodexLastTurnBoundary(sess)
+		if transcript.CodexRecovery(sess).State != transcript.RecoveryReady || kind == "" || at.IsZero() {
+			return // live identity alone does not establish a durable working generation
+		}
+	}
 	selfRotateSensorForAgent(pane, agent, sess, ctxFracFor(agent, sess),
 		transcript.FirstMessageTime(agent, sess), now)
 }

@@ -113,7 +113,7 @@ func HelpText(width int, all bool) string {
 		for _, note := range [][2]string{
 			{"On first launch, choose an installed agent; HQ remembers your choice. GTMUX_HQ_AGENT overrides it.", "首次启动选择已安装的 agent，后续沿用；GTMUX_HQ_AGENT 可覆盖该选择。"},
 			{"--here, --pane and --new-pane are mutually exclusive and require HQ to be stopped. Target panes must contain an idle, empty shell.", "--here、--pane、--new-pane 互斥，且需先退出 HQ。目标窗格必须是无草稿的空闲 shell。"},
-			{"Before rotation, update the board and knowledge base and record the handoff. Success requires a verified new session ID.", "轮换前先更新态势板、知识库并记录交接；验证新会话 ID 后才算轮换成功。"},
+			{"Before rotation, update the board and knowledge base and record the handoff. Codex success requires durable successor history and first-turn activity.", "轮换前先更新态势板、知识库并记录交接；Codex 需确认新会话的持久历史与首轮活动。"},
 			{"Full restore includes the board and retains the current archive as a backup. Migration selects long-term content and excludes the old board.", "完整恢复包含态势板，当前档案保留为备份。换机迁移按需选择长期内容，不迁移旧态势板。"},
 			{"Passphrase: --passphrase-stdin, then GTMUX_HQ_PASSPHRASE, then a terminal prompt.", "备份口令依次从 --passphrase-stdin、GTMUX_HQ_PASSPHRASE、终端输入获取。"},
 			{"Personal settings belong in LOCAL.md in the HQ directory; knowledge writes must run there too. GTMUX_HQ_BRIEF=off disables the startup briefing.", "个性化设置写入 HQ 目录的 LOCAL.md；知识库写操作也需在该目录执行。GTMUX_HQ_BRIEF=off 可关闭启动简报。"},

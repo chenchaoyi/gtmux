@@ -80,6 +80,7 @@ func TestRestoreConversationOwnership(t *testing.T) {
 				t.Fatal(err)
 			}
 			record := func(loc, id string) {
+				writeRecoveryFixture(t, id, home)
 				if err := resume.Save(loc, resume.Record{Agent: "codex", SessionID: id, Cwd: home, UpdatedAt: time.Now().Unix()}); err != nil {
 					t.Fatal(err)
 				}
