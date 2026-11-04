@@ -34,6 +34,7 @@ const stream={ [Symbol.asyncIterator](){return this},next(){if(queue.length)retu
 const emit=(type,data)=>{const value={type,data};if(push){const r=push;push=undefined;r({value})}else queue.push(value)};
 const ctx={location:{directory:'/example'},session:{get:async({sessionID})=>{if(sessionID==='unknown')throw Error('unknown');return {id:sessionID,parentID:sessionID==='child'?'root':undefined,location:{directory:'/example'}}},hook:async(n,f)=>{hooks[n]=f}},tool:{hook:async(n,f)=>{toolHooks[n]=f}},event:{subscribe:()=>stream}};
 const cleanup=await mod.default.setup(ctx);
+const terminal=process.env.GTMUX_FIXTURE_TERMINAL;
 await hooks.prompt({sessionID:'child',prompt:{text:'ignore child'}});
 await hooks.prompt({sessionID:'root',prompt:{text:'work'}});
 emit('session.execution.started',{sessionID:'root'});
@@ -42,9 +43,13 @@ emit('session.tool.input.started',{sessionID:'root',id:'one',name:'read'});emit(
 emit('session.text.ended',{sessionID:'root',text:'done'});
 emit('session.text.ended',{sessionID:'child',text:'child-secret'});
 await hooks['experimental.idle']({sessionID:'root'});
+await hooks.prompt({sessionID:'root',prompt:{text:'failure'}});
+emit('session.execution.started',{sessionID:'root'});
+emit('session.execution.'+terminal,{sessionID:'root',error:{message:'provider failure'}});
 await cleanup();await new Promise(r=>setTimeout(r,10));
 const rows=fs.readFileSync(process.argv[3],'utf8').trim().split('\n').map(JSON.parse);
-assert.deepEqual(rows.map(r=>r.event),['Profile','UserPromptSubmit','TurnStarted','Transcript','Transcript','Stop']);
+assert.deepEqual(rows.map(r=>r.event),['Profile','UserPromptSubmit','TurnStarted','Transcript','Transcript','Stop','Profile','UserPromptSubmit','TurnStarted',terminal==='failed'?'StopFailure':'Interrupt']);
+assert.equal(rows.at(-1).data.error,'provider failure');
 assert.ok(rows.every(r=>r.data.session_id==='root'));assert.equal(rows.filter(r=>r.data.transcript?.kind==='tool').length,1);
 assert.equal(rows.find(r=>r.data.transcript?.kind==='text').data.transcript.text,'done');
 assert.ok(rows.every(r=>!r.pane));assert.ok(rows.every(r=>r.tmux===JSON.parse(process.argv[4])));
@@ -58,17 +63,19 @@ assert.ok(rows.every(r=>!r.pane));assert.ok(rows.every(r=>r.tmux===JSON.parse(pr
 		{"leased stdio", true, []string{"--stdio"}},
 		{"inline service", false, []string{"--stdio", "--service=true"}},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
-			if err := os.WriteFile(events, nil, 0600); err != nil {
-				t.Fatal(err)
-			}
-			args := append([]string{"--input-type=module", "-", module, events, strconv.FormatBool(tc.private)}, tc.args...)
-			cmd := exec.Command(node, args...)
-			cmd.Env = append(os.Environ(), "TMUX=synthetic-socket", "TMUX_PANE=%901")
-			cmd.Stdin = strings.NewReader(script)
-			if out, err := cmd.CombinedOutput(); err != nil {
-				t.Fatalf("V2 plugin: %v\n%s", err, out)
-			}
-		})
+		for _, terminal := range []string{"failed", "interrupted"} {
+			t.Run(tc.name+"/"+terminal, func(t *testing.T) {
+				if err := os.WriteFile(events, nil, 0600); err != nil {
+					t.Fatal(err)
+				}
+				args := append([]string{"--input-type=module", "-", module, events, strconv.FormatBool(tc.private)}, tc.args...)
+				cmd := exec.Command(node, args...)
+				cmd.Env = append(os.Environ(), "TMUX=synthetic-socket", "TMUX_PANE=%901", "GTMUX_FIXTURE_TERMINAL="+terminal)
+				cmd.Stdin = strings.NewReader(script)
+				if out, err := cmd.CombinedOutput(); err != nil {
+					t.Fatalf("V2 plugin: %v\n%s", err, out)
+				}
+			})
+		}
 	}
 }

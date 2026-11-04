@@ -198,9 +198,14 @@ export default {
       }
     };
     void consume().catch(() => {}); // observation failures must never fail the agent's execution
-    return () => {
+    return async () => {
+      // Failed/interrupted executions do not run experimental.idle. OpenCode
+      // awaits the plugin disposer; finish queued hooks before its private
+      // server lease (and verified terminal ancestry) disappears.
+      await new Promise((resolve) => setImmediate(resolve));
       closed = true;
-      void stream.return?.().catch(() => {});
+      await pending;
+      await stream.return?.().catch(() => {});
     };
   },
 };
