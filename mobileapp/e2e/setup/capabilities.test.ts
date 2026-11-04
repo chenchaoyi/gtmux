@@ -1,4 +1,15 @@
-import {alertCapabilities, alertMode, captureStartupCapabilities, headlessCapabilities, sessionConnectionOptions, storeCaptureTimeout} from './capabilities';
+import {alertCapabilities, alertMode, captureStartupCapabilities, cloudStartupCapabilities, headlessCapabilities, sessionConnectionOptions, storeCaptureTimeout} from './capabilities';
+
+test('cloud simulator session waits for a fresh WDA build without requiring a prebuilt product', () => {
+  const env = {GTMUX_E2E_SESSION_CI: '1'};
+  expect(cloudStartupCapabilities(env)).toEqual({
+    'appium:wdaLaunchTimeout': 240_000,
+    'appium:wdaStartupRetries': 1,
+    'appium:showXcodeLog': true,
+  });
+  expect(cloudStartupCapabilities(env)).not.toHaveProperty('appium:usePrebuiltWDA');
+  expect(sessionConnectionOptions(env)).toEqual({connectionRetryTimeout: 900_000, connectionRetryCount: 0});
+});
 
 // What a session does with an alert has to be the run's explicit choice. The default
 // (dismiss) also cancels the APP's own confirmations, which is how a Revoke that "did

@@ -446,6 +446,7 @@ jobs:
           GTMUX_E2E_SOFT_KEYBOARD: '1'
           GTMUX_E2E_HEADLESS: '1'
           GTMUX_E2E_ACCEPT_ALERTS: '1'
+          GTMUX_E2E_SESSION_CI: '1'
         run: |
           set -euo pipefail
           xcrun simctl list -j devices available > "$RUNNER_TEMP/duo-devices.json"
@@ -471,6 +472,7 @@ jobs:
             ${{ runner.temp }}/duo-devices.json
             mobileapp/.e2e-artifacts/**
           if-no-files-found: warn
+          include-hidden-files: true
           retention-days: 7
       - name: Native build failure evidence
         if: failure()
