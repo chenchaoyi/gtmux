@@ -417,6 +417,7 @@ jobs:
             -derivedDataPath "$RUNNER_TEMP/gtmux-ios-ci" ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO \
             build 2>&1 | tee "$RUNNER_TEMP/gtmux-ios-build.log"
       - name: Verify actual ARM64 app and extension products
+        id: ios_products
         run: |
           python3 - <<'PY'
           import os, pathlib, plistlib, subprocess
@@ -437,6 +438,14 @@ jobs:
         run: |
           xcrun swiftc ios/GtmuxMobile/NotificationResponsePayload.swift ios/tests/NotificationResponsePayloadChecks.swift -o "$RUNNER_TEMP/notification-response-check"
           "$RUNNER_TEMP/notification-response-check"
+      - name: Install isolated iOS automation driver
+        id: ios_driver
+        working-directory: mobileapp
+        env:
+          APPIUM_HOME: ${{ runner.temp }}/duo-appium
+        run: |
+          driver_version=$(node -p "require('./package-lock.json').packages['node_modules/appium-xcuitest-driver'].version")
+          npx appium driver install --source=npm "appium-xcuitest-driver@$driver_version"
       - name: Probe iPhone Duo runtime and run isolated simulator interaction
         working-directory: mobileapp
         env:
@@ -454,15 +463,32 @@ jobs:
           export GTMUX_E2E_UDID
           xcrun simctl bootstatus "$GTMUX_E2E_UDID" -b
           xcrun simctl install "$GTMUX_E2E_UDID" "$RUNNER_TEMP/gtmux-ios-ci/Build/Products/Release-iphonesimulator/gtmux.app"
-          driver_version=$(node -p "require('./package-lock.json').packages['node_modules/appium-xcuitest-driver'].version")
-          npx appium driver install --source=npm "appium-xcuitest-driver@$driver_version"
           npm run test:e2e -- --runInBand duo-window.test.ts notification-scene-actions.test.ts scene-usage-links.test.ts
-          xcrun simctl shutdown "$GTMUX_E2E_UDID"
-          GTMUX_E2E_UDID=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); matches=[x["udid"] for runtime, devices in d["devices"].items() if runtime.endswith("iOS-27-0") for x in devices if x["name"] == "iPhone 17" and x["isAvailable"]]; assert len(matches)==1, matches; print(matches[0])' "$RUNNER_TEMP/duo-devices.json")
+      - name: Ordinary iPhone and iPad simulator regression
+        if: ${{ !cancelled() && steps.ios_products.outcome == 'success' && steps.ios_driver.outcome == 'success' }}
+        working-directory: mobileapp
+        env:
+          APPIUM_HOME: ${{ runner.temp }}/duo-appium
+          GTMUX_E2E_SOFT_KEYBOARD: '1'
+          GTMUX_E2E_HEADLESS: '1'
+          GTMUX_E2E_ACCEPT_ALERTS: '1'
+          GTMUX_E2E_SESSION_CI: '1'
+        run: |
+          set -euo pipefail
+          xcrun simctl list -j devices available > "$RUNNER_TEMP/ordinary-devices.json"
+          duo_booted=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(" ".join(x["udid"] for runtime, devices in d["devices"].items() if runtime.endswith("iOS-27-1") for x in devices if x["name"] == "iPhone Duo" and x["state"] == "Booted"))' "$RUNNER_TEMP/ordinary-devices.json")
+          if [ -n "$duo_booted" ]; then xcrun simctl shutdown "$duo_booted"; fi
+          GTMUX_E2E_UDID=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); matches=[x["udid"] for runtime, devices in d["devices"].items() if runtime.endswith("iOS-27-0") for x in devices if x["name"] == "iPhone 17" and x["isAvailable"]]; assert len(matches)==1, matches; print(matches[0])' "$RUNNER_TEMP/ordinary-devices.json")
           export GTMUX_E2E_UDID GTMUX_E2E_DEVICE='iPhone 17' GTMUX_E2E_OS='27.0'
           xcrun simctl bootstatus "$GTMUX_E2E_UDID" -b
           xcrun simctl install "$GTMUX_E2E_UDID" "$RUNNER_TEMP/gtmux-ios-ci/Build/Products/Release-iphonesimulator/gtmux.app"
           npm run test:e2e -- --runInBand coldstart-push.test.ts
+          xcrun simctl shutdown "$GTMUX_E2E_UDID"
+          GTMUX_E2E_UDID=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); matches=[x["udid"] for runtime, devices in d["devices"].items() if runtime.endswith("iOS-27-0") for x in devices if x["name"] == "iPad Pro 13-inch (M5)" and x["isAvailable"]]; assert len(matches)==1, matches; print(matches[0])' "$RUNNER_TEMP/ordinary-devices.json")
+          export GTMUX_E2E_UDID GTMUX_E2E_DEVICE='iPad Pro 13-inch (M5)'
+          xcrun simctl bootstatus "$GTMUX_E2E_UDID" -b
+          xcrun simctl install "$GTMUX_E2E_UDID" "$RUNNER_TEMP/gtmux-ios-ci/Build/Products/Release-iphonesimulator/gtmux.app"
+          npm run test:e2e -- --runInBand ipad-adaptive.test.ts
       - name: Preserve Duo interaction evidence
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
@@ -470,6 +496,7 @@ jobs:
           name: duo-simulator-evidence
           path: |
             ${{ runner.temp }}/duo-devices.json
+            ${{ runner.temp }}/ordinary-devices.json
             mobileapp/.e2e-artifacts/**
           if-no-files-found: warn
           include-hidden-files: true

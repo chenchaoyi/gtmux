@@ -66,6 +66,9 @@ it('delivers a warm notification action exactly once', async () => {
   await settle(5000);
   fake.world.recorded = [];
   await driver.execute('mobile: pressButton', {name: 'home'});
+  // A Home gesture can return before the app has left the foreground. A push
+  // delivered during that transition is intentionally suppressed by the app.
+  await driver.waitUntil(async () => (await driver.queryAppState(BUNDLE)) !== 4, {timeout: 15000, interval: 250});
   const body = 'Duo warm action fixture';
   const payload = {aps: {alert: {title: 'Fixture Mac', body}, category: 'AGENT_WAITING_2', sound: 'default'}, pane: '%12', server: 'Fixture Mac'};
   const file = join(getArtifactsDir(), 'warm-action-push.json');
