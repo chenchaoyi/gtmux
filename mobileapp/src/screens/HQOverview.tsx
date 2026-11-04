@@ -1,10 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import type { HQWorkspace, HQOverviewItem } from '../api/hqWorkspace';
-import type { Palette } from '../ui/theme';
+import { BRAND, type Palette } from '../ui/theme';
 import { relTime } from './hqZones';
 import { recentChange, matterPreview } from './hqWorkspaceModel';
 import { HQBriefCard } from './HQBriefCard';
+import { SIcon } from '../ui/SettingsIcons';
 import { HQWorkspaceStyles as s } from './hqWorkspaceStyles';
 
 export function HQOverview({
@@ -59,15 +60,12 @@ export function HQOverview({
         ? m.state === 'needs-input' && !!m.user_input && !m.user_input.answer_id
         : m.state === group.key,
     );
-    const items: HQOverviewItem[] = expanded.has(group.key)
-      ? all.map(
-          m =>
-            group.items.find(i => i.matter_id === m.id) ?? { matter_id: m.id },
-        )
-      : group.items.length
-      ? group.items
-      : all.slice(0, 3).map(m => ({ matter_id: m.id }));
-    return { ...group, all, items, previewCount: group.items.length };
+    const preview: HQOverviewItem[] = group.items.filter(i => all.some(m => m.id === i.matter_id));
+    const initial = preview.length ? preview : all.slice(0, 3).map(m => ({ matter_id: m.id }));
+    const items = expanded.has(group.key)
+      ? all.map(m => preview.find(i => i.matter_id === m.id) ?? { matter_id: m.id })
+      : initial;
+    return { ...group, all, items, previewCount: initial.length };
   });
   const toggle = (key: string) =>
     setExpanded(prev => {
@@ -105,84 +103,55 @@ export function HQOverview({
       />
     );
   };
-  const more = (group: (typeof groups)[number]) =>
-    group.all.length > group.previewCount ? (
+  const more = (group: (typeof groups)[number]) => {
+    if (group.all.length <= group.previewCount) return null;
+    const open = expanded.has(group.key);
+    const label = open ? t('Show less', '收起') : t(
+      `Show ${group.all.length - group.items.length} more`,
+      `展开剩余 ${group.all.length - group.items.length} 项`,
+    );
+    return (
       <TouchableOpacity
-        key={group.key}
+        testID={`hq-overview-more-${group.key}`}
         accessibilityRole="button"
-        accessibilityLabel={`${
-          expanded.has(group.key)
-            ? t('Show less', '收起')
-            : t('View all', '查看全部')
-        } · ${group.title}`}
-        accessibilityState={{ expanded: expanded.has(group.key) }}
+        accessibilityLabel={`${label} · ${group.title}`}
+        accessibilityState={{ expanded: open }}
         onPress={() => toggle(group.key)}
-        style={s.more}
+        style={[styles.more, {backgroundColor: pal.surface, borderColor: pal.divider}]}
       >
-        <Text style={[s.buttonText, { color: pal.fg2 }]}>
-          {expanded.has(group.key)
-            ? t('Show less', '收起')
-            : wide
-            ? t(
-                `View all ${group.all.length} · ${group.title}`,
-                `查看全部 ${group.all.length} 项 · ${group.title}`,
-              )
-            : t(
-                `View all ${group.all.length}`,
-                `查看全部 ${group.all.length} 项`,
-              )}
-        </Text>
+        <View style={styles.moreText}>
+          <Text style={[s.buttonText, {color: pal.fg, fontWeight: '600'}]}>{label}</Text>
+          <Text style={[s.footnote, styles.moreCaption, {color: pal.fg2}]}>
+            {t(`Showing ${group.items.length} of ${group.all.length} · ${group.title}`,
+              `已显示 ${group.items.length} / ${group.all.length} 项 · ${group.title}`)}
+          </Text>
+        </View>
+        <View style={open ? styles.up : undefined}>
+          <SIcon name="chevronDown" size={22} color={BRAND} />
+        </View>
       </TouchableOpacity>
-    ) : null;
+    );
+  };
   return (
     <>
-      {wide ? (
-        <>
+      {wide && <View style={s.sectionHead}>
+        <Text accessibilityRole="header" style={[s.sectionTitle, {color: pal.fg}]}>
+          {t('Current matters', '当前事项')}
+        </Text>
+      </View>}
+      {groups.map(group => (
+        <View key={group.key}>
           <View style={s.sectionHead}>
-            <Text
-              accessibilityRole="header"
-              style={[s.sectionTitle, { color: pal.fg }]}
-            >
-              {t('Current matters', '当前事项')}
-            </Text>
-            <Text style={[s.count, { color: pal.fg2 }]}>
-              {groups.reduce((n, group) => n + group.all.length, 0)}
-            </Text>
+            <Text accessibilityRole="header" style={[s.sectionTitle, {color: pal.fg}]}>{group.title}</Text>
+            <Text style={[s.count, {color: pal.fg2}]}>{group.items.length} / {group.all.length}</Text>
           </View>
-          <View style={styles.currentGrid}>
-            {groups.flatMap(group => group.items.map(card))}
+          <View style={[styles.cards, wide && styles.currentGrid]}>
+            {group.items.length === 0 && <Text style={[s.empty, {color: pal.fg2}]}>{group.empty}</Text>}
+            {group.items.map(card)}
           </View>
-          {groups.every(group => group.all.length === 0) && (
-            <Text style={[s.empty, { color: pal.fg2 }]}>
-              {t('No ongoing matters.', '暂无正在跟进的事项。')}
-            </Text>
-          )}
-          <View style={styles.moreRow}>{groups.map(more)}</View>
-        </>
-      ) : (
-        groups.map(group => (
-          <View key={group.key}>
-            <View style={s.sectionHead}>
-              <Text
-                accessibilityRole="header"
-                style={[s.sectionTitle, { color: pal.fg }]}
-              >
-                {group.title}
-              </Text>
-              <Text style={[s.count, { color: pal.fg2 }]}>
-                {group.all.length}
-              </Text>
-            </View>
-            <View style={styles.cards}>
-              {group.items.length === 0 && (
-                <Text style={[s.empty, { color: pal.fg2 }]}>{group.empty}</Text>
-              )}
-              {group.items.map(card)}
-              {more(group)}
-            </View>
-          </View>
-        ))
-      )}
+          {more(group)}
+        </View>
+      ))}
       <View style={s.sectionHead}>
         <Text
           accessibilityRole="header"
@@ -230,5 +199,8 @@ export function HQOverview({
 const styles = StyleSheet.create({
   cards: { gap: 10 },
   currentGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  moreRow: { flexDirection: 'row', flexWrap: 'wrap' },
+  more: {minHeight: 56, marginTop: 10, paddingVertical: 10, paddingHorizontal: 14, borderWidth: StyleSheet.hairlineWidth, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12},
+  moreText: {flex: 1, gap: 3},
+  moreCaption: {textAlign: 'left', marginTop: 0},
+  up: {transform: [{rotate: '180deg'}]},
 });

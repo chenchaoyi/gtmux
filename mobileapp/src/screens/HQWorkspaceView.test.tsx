@@ -179,7 +179,9 @@ test('wide overviews flow current matters together while expansion remains rever
   );
   expect(text()).toContain('Current matters');
   expect(text()).not.toContain('Extra matter 4');
-  await press('View all 7 · Following');
+  expect(text()).toContain('Showing 1 of 7 · Following');
+  await press('Show 6 more');
+  expect(text()).toContain('Showing 7 of 7 · Following');
   expect(text()).toContain('Extra matter 4');
   await press('Show less');
   expect(text()).not.toContain('Extra matter 4');

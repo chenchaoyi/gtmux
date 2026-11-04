@@ -218,8 +218,9 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
             if !target.session.isEmpty {
                 self?.rememberTarget(ScreenshotTarget(paneID: target.paneID, session: target.session))
             }
-            // Close THIS editor, not whichever one is open 1.2 s from now.
-            self?.scheduleDeliveryClose(1.2) { [weak self, weak model] in
+            // The receipt is announced immediately; leave just one short visual beat.
+            // A late receipt must never dismiss a newer editor.
+            self?.scheduleDeliveryClose(0.18) { [weak self, weak model] in
                 guard let self, self.isCurrent(sentFrom), let model, self.model === model else { return }
                 self.close(discarding: true)
             }

@@ -68,7 +68,7 @@ function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
     document: {documentElement: {dataset:{}}, readyState: 'loading', getElementById: node, createElement: element, createElementNS: (_, name) => element(name), createDocumentFragment: () => element("fragment"),
       createTextNode: text => Object.assign(element("text"), {textContent: text}), addEventListener: (name, fn) => documentHandlers.set(name, fn),
       querySelector: sel => node('query:' + sel), querySelectorAll: () => []},
-    window: {addEventListener() {}, innerWidth: 1280, GtmuxActivity: require('./activity.js'), GtmuxPromptIdentity: require('./prompt-identity.js'),GtmuxCodeFormat:formattingContext.GtmuxCodeFormat,GtmuxCodeReading:require('./code-reading.js')},
+    window: {addEventListener() {}, innerWidth: 1280, GtmuxActivity: require('./activity.js'), GtmuxPromptIdentity: require('./prompt-identity.js'),GtmuxCodeFormat:formattingContext.GtmuxCodeFormat,GtmuxCodeReading:require('./code-reading.js'),GtmuxTrace:require('./trace-model.js')},
     navigator: {language, clipboard: {writeText: s => { copied.push(s); return Promise.resolve(); }}},
     ResizeObserver: class { constructor(cb) { context.__resized = cb; } observe(el) { context.__observed = el; } },
     setTimeout: (fn, ms) => setTimeout(fn, ms).unref(),
@@ -900,8 +900,9 @@ test('chat refreshes step details and segment text without a turn/count change',
 
 test('tile chat refreshes segments even when prompt and response stay unchanged', async () => {
   const turns = [{prompt: 'task', response: 'reply', segments: [{text: 'initial'}]}];
-  const h = harness({ok: true, json: async () => turns});
-  const t = {id: '%1', mode: 'chat', readEpoch: 1, body: h.node('tile-body')};
+  const h = harness({ok: true, headers: {get: () => null}, json: async () => turns});
+  h.api.workbench().on = true;
+  const t = {id: '%1', agent: {pane_id: '%1', agent: 'Codex'}, mode: 'chat', readEpoch: 1, body: h.node('tile-body')};
   h.api.tilePollChat(t); await flush();
   assert.match(descendants(t.body).map(n => n.textContent).join(' '), /initial/);
   turns[0].segments[0].text = 'updated'; h.api.tilePollChat(t); await flush();

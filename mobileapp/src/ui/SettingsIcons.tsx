@@ -42,7 +42,7 @@ export function SIcon({name, size = 22, color}: {name: IconName; size?: number; 
       case 'trace':
         return <><Path d="M4 5h16M4 12h16M4 19h16" {...s} /><Circle cx="8" cy="5" r="2" {...s} /><Circle cx="16" cy="12" r="2" {...s} /><Circle cx="10" cy="19" r="2" {...s} /></>;
       case 'diff':
-        return <Path d="M8 3v12m-3-3 3 3 3-3M16 21V9m-3 3 3-3 3 3" {...s} />;
+        return <Path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z M14 2v6h6 M9 12h6 M12 9v6 M9 18h6" {...s} />;
       case 'history':
         return <><Path d="M3 11a9 9 0 1 1 2.6 7" {...s} /><Path d="M3 5v6h6M12 7v5l3 2" {...s} /></>;
       case 'usage':

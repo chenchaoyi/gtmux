@@ -66,6 +66,7 @@
   }
   var term = null, fit = null, lastText = '', curPane = null, lastSig = '', theme = null;
   var curAgent = null, chatTimer = null, chatSig = '', lastTurns = [], chatExpanded = {};
+  var chatHistory = null;
   var chatLive = {}, serverClock = 0, serverClockAt = 0;
   var pendingPrompts = {};
   var lastAgents = [], optTimer = null; // for focus prev/next + the waiting reply bar
@@ -342,7 +343,7 @@
     ['identity', 'wb-identity', 'guest-scope'].forEach(function (id) { var n = $(id); if (n) n.hidden = true; });
     SHARE = {known: false, input: false, all: false, panes: {}};
     curPane = null; curAgent = null; lastAgents = [];
-    lastTurns = []; chatSig = ''; chatExpanded = {}; chatLive = {}; pendingPrompts = {}; if($('chat').conversationMapDispose){$('chat').conversationMapDispose();$('chat').conversationMapDispose=null;} $('chat').innerHTML = '';
+    lastTurns = []; chatSig = ''; chatHistory = null; chatExpanded = {}; chatLive = {}; pendingPrompts = {}; if($('chat').conversationMapDispose){$('chat').conversationMapDispose();$('chat').conversationMapDispose=null;} $('chat').innerHTML = '';
     if (paneComposer) paneComposer.reset();
     WB.agents = [];
     clearInterval(radarTimer); clearInterval(paneTimer); clearInterval(chatTimer); clearInterval(panesTimer);
@@ -1586,11 +1587,11 @@
   // sync; tileSendThen renders the post-send echo into the tile's own terminal.
   function tileInputSync(t) {
     if (!t) return;
-    var can = paneCanInput(t.id);
+    var can = hasPane(t.agent) && paneCanInput(t.agent.pane_id);
     if (t.inputEl) t.inputEl.hidden = !((t.mode === 'chat' || t.mode === 'term') && can);
     if (t.composer && !t.inputEl.hidden) t.composer.sync();
-    if (t.roEl) t.roEl.hidden = !((t.mode === 'chat' || t.mode === 'term') && SHARE.known && !can);
-    if (t.capEl) { t.capEl.hidden = !SHARE.known || can; setCapChip(t.capEl, can); }
+    if (t.roEl) t.roEl.hidden = !((t.mode === 'chat' || t.mode === 'term') && (SHARE.known || readableConversation(t.agent)) && !can);
+    if (t.capEl) { t.capEl.hidden = !SHARE.known && !readableConversation(t.agent) || can; setCapChip(t.capEl, can); }
   }
   function tileSendThen(t, pin) {
     return function (r) {
@@ -1969,6 +1970,7 @@
     $('panes-btn').hidden = true;
     $('title').textContent = primary(a) || a.agent;
     $('sub').textContent = nativeSourceLabel(a);
+    chatHistory = null;
     externalEtag = '';
     externalDropped = 0;
     externalSettings = null;
@@ -2001,7 +2003,7 @@
               return null;
             }
             if (r.status === 403 || r.status === 422) {
-              lastTurns = [];
+              chatHistory = null; lastTurns = [];
               externalEtag = '';
               drawChat([]);
               throw new Error('unavailable');
@@ -2165,7 +2167,7 @@
     syncModeButtons();
     if (paneMode !== 'term') {
       clearInterval(paneTimer); paneTimer = null;
-      show('chat'); chatSig = ''; lastTurns = []; chatExpanded = {}; curTurnIdx = 1e9;
+      show('chat'); chatSig = ''; lastTurns = []; chatHistory = null; chatExpanded = {}; curTurnIdx = 1e9;
       showChatLoader();
       showFocusChrome(false);
       pollChat(); clearInterval(chatTimer); chatTimer = setInterval(pollChat, 2500);
@@ -2213,7 +2215,63 @@
     }, 15000, function () { setConn(false); });
   }
 
+  // The same bounded history contract and stable merge as App/Trace. Each reader
+  // owns its window; background tail polls never discard explicitly loaded pages.
+  function chatScope(a) { return JSON.stringify([a && a.pane_id || '', a && a.home_id || '', a && a.session_id || '']); }
+  function transcriptPath(a) { return hasPane(a) ? '/api/transcript?id=' + encodeURIComponent(a.pane_id) : '/api/session/transcript' + conversationQuery(a); }
+  function historyState(state, a) {
+    return state && state.scope === chatScope(a) && state.credential === token ? state : {scope: chatScope(a), credential: token, held: [], latest: [], turns: [], busy: false, error: '', gap: false};
+  }
+  function chatTail(state, turns) {
+    state.latest = turns;
+    var merged = window.GtmuxTrace.mergeHistory(state.held, turns);
+    state.gap = merged.gap; state.turns = merged.turns;
+    if (state.held.length && !merged.gap) state.held = merged.turns;
+    return state.turns;
+  }
+  function chatHistoryControl(state, agent, repaint, valid) {
+    if (!state) return null;
+    var first = state.turns[0], before = first && first.history_before;
+    if (!before && !state.gap && !state.error) return null;
+    var bar = el('div', 'chat-history');
+    bar.setAttribute('role', 'region'); bar.setAttribute('aria-label', T('Conversation history', '对话历史'));
+    if (state.gap || state.error === 'changed') {
+      bar.appendChild(el('span', '', T('The source history changed. Your reading window is kept.', '历史记录已变化，当前阅读内容已保留。')));
+      var latest = el('button', '', T('Load latest messages', '读取最新对话')); latest.type = 'button';
+      latest.onclick = function () { state.held = []; state.gap = false; state.error = ''; state.turns = state.latest; repaint(); };
+      bar.appendChild(latest);
+    } else {
+      if (state.error) bar.appendChild(el('span', '', T('Could not load earlier messages.', '未能读取更早的对话。')));
+      var button = el('button', 'chat-history-earlier', state.busy ? T('Loading earlier messages…', '正在读取更早的对话…') : state.error ? T('Retry', '重试') : T('Load earlier messages', '加载更早的对话'));
+      button.type = 'button'; button.disabled = state.busy; button.setAttribute('aria-busy', String(state.busy));
+      button.onclick = function () {
+        if (state.busy || !before || !valid()) return;
+        state.busy = true; state.error = ''; repaint();
+        var lane = 'chat-history:' + state.scope;
+        runRead(lane, function (signal) {
+          var current = currentRead(lane, signal);
+          function active() { return current() && valid() && state.scope === chatScope(agent) && state.credential === token; }
+          return api(transcriptPath(agent) + '&before=' + encodeURIComponent(before), {signal: signal}).then(function (response) {
+            if (!active()) return null;
+            if (response.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
+            if (response.status === 403) { state.held=[];state.latest=[];state.turns=[];state.error='';repaint(); return null; }
+            if (!response.ok || response.headers.get('X-Gtmux-History-Page') !== '1') throw Object.assign(new Error('history unavailable'), {status: response.status});
+            return response.json();
+          }).then(function (page) {
+            if (!page || !active()) return;
+            state.held = window.GtmuxTrace.prependHistory(page, state.turns);
+            state.turns = state.held; state.gap = false;
+          }).catch(function (error) { if(active()) state.error = error.status === 409 ? 'changed' : 'failed'; })
+            .finally(function () { if(active()) {state.busy = false; repaint();} });
+        }, 15000, function () { if(valid()) {state.busy=false;state.error='failed';repaint();} });
+      };
+      bar.appendChild(button);
+    }
+    return bar;
+  }
   function renderChat(turns) {
+    chatHistory = historyState(chatHistory, curAgent);
+    turns = chatTail(chatHistory, turns);
     reconcilePendingPrompts(curPane, turns);
     lastTurns = turns;
     // only repaint when content changed (keeps scroll position + expanded steps)
@@ -2259,6 +2317,8 @@
         '暂无对话记录。可切换到「终端」查看当前屏幕。');
       col.appendChild(e);
     }
+    var history = chatHistoryControl(chatHistory, a, function () { lastTurns = chatHistory.turns; chatSig = JSON.stringify(lastTurns); drawChat(lastTurns); }, function () { return chatHistory && chatHistory.scope === chatScope(a) && chatScope(curAgent) === chatScope(a) && !$('chat').hidden; });
+    if(history) col.appendChild(history);
     var seps = sepLabels(turns);
     turns.forEach(function (t, idx) { col.appendChild(conversationTurn(t, a, idx, chatExpanded, seps[idx], true)); });
     appendPendingPrompts(col, curPane, a);
@@ -2763,7 +2823,7 @@
       "file": "<path d=\"M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z\"/><path d=\"M14 2v6h6M8 13h8M8 17h6\"/>",
       "tools": "<path d=\"M14 5a6 6 0 0 0-7 7l-5 5 5 5 5-5a6 6 0 0 0 7-7l-4 3-4-4 3-4Z\"/>",
       "trace": "<path d=\"M4 5h16M4 12h16M4 19h16\"/><circle cx=\"8\" cy=\"5\" r=\"2\"/><circle cx=\"16\" cy=\"12\" r=\"2\"/><circle cx=\"10\" cy=\"19\" r=\"2\"/>",
-      "diff": "<path d=\"M8 3v12m-3-3 3 3 3-3M16 21V9m-3 3 3-3 3 3\"/>",
+      "diff": "<path d=\"M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z M14 2v6h6 M9 12h6 M12 9v6 M9 18h6\"/>",
       "back": "<path d=\"m15 6-6 6 6 6\"/>",
       "collapseRight": "<path d=\"m9 6 6 6-6 6\"/>",
       "copy": "<rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\" /> <path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\" />",
@@ -2858,7 +2918,7 @@
       var next = JSON.stringify(value); if (signature === next) return; signature = next;
       if (state.kind === 'trace') {
         var roster = tile ? tile.agent : curAgent;
-        var view = traceView(value, state.trace, Object.assign({}, roster || agent, {width: sheet.body.clientWidth, dropped: readableConversation(agent) ? externalDropped : 0}));
+        var view = traceView(value, state.trace, Object.assign({}, roster || agent, {width: sheet.body.clientWidth, dropped: readableConversation(agent) ? tile ? tile.dropped || 0 : externalDropped : 0}));
         if (view.parentNode !== sheet.body) { sheet.body.replaceChildren(view); }
       } else renderDiff(sheet.body, value.diff || '');
     }
@@ -3277,7 +3337,7 @@
         if (WB.saved) { restoreTiles(agents); WB.saved = null; }
         renderTree(agents); fetchShare();
         // refresh each tile's header status + waiting border
-        WB.tiles.forEach(function (t) { var a = byId(agents, t.id); if (a) { t.agent = a; updateTileHead(t); } });
+        WB.tiles.forEach(function (t) { var a = byId(agents, t.id); if (a) { t.agent = a; updateTileHead(t); } else if (readableConversation(t.agent)) removeTile(t); });
       }).catch(function () { if (current()) setWbConn(false); });
     }, 15000, function () { setWbConn(false); });
   }
@@ -3287,7 +3347,8 @@
     try { t.el.scrollIntoView({block: 'nearest', behavior: 'smooth'}); } catch (e) {}
     setTimeout(function () { if (t.el) t.el.classList.remove('flash'); }, 1600);
   }
-  function byId(agents, id) { for (var i = 0; i < agents.length; i++) if (agents[i].pane_id === id) return agents[i]; return null; }
+  function tileKey(a) { return hasPane(a) ? a.pane_id : readableConversation(a) ? 'session:' + JSON.stringify([a.home_id || '', a.session_id]) : ''; }
+  function byId(agents, id) { for (var i = 0; i < agents.length; i++) if (tileKey(agents[i]) === id) return agents[i]; return null; }
   function restoreTiles(agents) {
     WB.saved.forEach(function (s) { var a = byId(agents, s.id); if (a) addTile(a, s); });
   }
@@ -3348,18 +3409,18 @@
   function treeRow(a, nested) {
     var st = COLORS[a.status] ? a.status : 'running';
     var row = document.createElement('div'); row.className = 'tree-row' + (nested ? ' nested' : '') + (st === 'waiting' ? ' waiting' : '');
-    row.draggable = hasPane(a);
+    row.draggable = !!tileKey(a);
     row.appendChild(avatarEl(a, 24, true));
     var tx = document.createElement('div'); tx.className = 'tr-text';
     var nm = document.createElement('div'); nm.className = 'tr-name'; nm.textContent = primary(a);
     var sb = document.createElement('div'); sb.className = 'tr-sub'; sb.textContent = secondary(a);
     rowSummary(a, sb);
     tx.appendChild(nm); tx.appendChild(sb); row.appendChild(tx);
-    if (!hasPane(a)) { row.classList.add('native'); if(readableConversation(a)){row.onclick=function(){openConversation(a);};row.tabIndex=0;row.setAttribute('role','button');row.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();openConversation(a);}};} return row; }
+    if (!hasPane(a)) { row.classList.add('native'); if(!readableConversation(a)) return row; }
     var g = document.createElement('span'); g.className = 'tr-grip'; g.innerHTML = uiIcon('grip'); row.appendChild(g);
-    row.addEventListener('dragstart', function (e) { e.dataTransfer.setData('text/pane', a.pane_id); e.dataTransfer.effectAllowed = 'copy'; });
+    row.addEventListener('dragstart', function (e) { e.dataTransfer.setData('text/pane', tileKey(a)); e.dataTransfer.effectAllowed = 'copy'; });
     row.ondblclick = function () { addTile(a); };
-    row.dataset.treePane = a.pane_id;
+    row.dataset.treePane = tileKey(a);
     keyboardLink(row, function () { var tile = addTile(a); if (tile) tile.el.querySelector('[data-action="focus"]').focus(); });
     return row;
   }
@@ -3420,13 +3481,13 @@
   var SNAP = 20;
   function snapv(v) { return WB.snap ? Math.round(v / SNAP) * SNAP : v; }
   function addTile(a, pos) {
-    if (!hasPane(a)) return null;
+    if (!tileKey(a)) return null;
     pos = pos || {};
-    var existing = null; WB.tiles.forEach(function (t) { if (t.id === a.pane_id) existing = t; });
+    var existing = null; WB.tiles.forEach(function (t) { if (t.id === tileKey(a)) existing = t; });
     if (existing) { existing.el.style.zIndex = ++zTop; return existing; }
     var board = $('board'), br = board.getBoundingClientRect();
     var t = {
-      id: a.pane_id, agent: a, mode: pos.mode === 'chat' || pos.mode === 'trace' ? 'chat' : 'term',
+      id: tileKey(a), agent: a, mode: readableConversation(a) || pos.mode === 'chat' || pos.mode === 'trace' ? 'chat' : 'term',
       x: pos.x != null ? Math.max(0, pos.x) : 14 + (WB.tiles.length % 4) * 28,
       y: pos.y != null ? Math.max(0, pos.y) : 14 + (WB.tiles.length % 4) * 28,
       w: pos.w || 560, h: pos.h || 480,
@@ -3440,6 +3501,8 @@
   function removeTile(t) {
     cancelRead('tile:' + t.id);
     cancelRead('live:' + t.id);
+    if(t.history) cancelRead('chat-history:' + t.history.scope);
+    if(activeSessionTool && activeSessionTool.tile === t) activeSessionTool.sheet.el.retire();
     t.removed = true;
     if(t.conversationMapDispose) t.conversationMapDispose();
     clearInterval(t.timer); if (t.inputDispose) t.inputDispose(); if (t.termBoundsDispose) { t.termBoundsDispose(); t.termBoundsDispose = null; } if (t.term) { try { disposeTerminal(t.term); } catch (e) {} }
@@ -3470,22 +3533,22 @@
     var identity = document.createElement('div'); identity.className = 'tile-identity'; head.appendChild(identity);
     var nm = document.createElement('span'); nm.className = 'tile-name'; nm.textContent = primary(t.agent); identity.appendChild(nm);
     var meta = document.createElement('div'); meta.className = 'tile-meta'; identity.appendChild(meta);
-    var id = document.createElement('span'); id.className = 'tile-id'; id.textContent = t.id; meta.appendChild(id);
+    var id = document.createElement('span'); id.className = 'tile-id'; id.textContent = hasPane(t.agent) ? t.agent.pane_id : nativeSourceLabel(t.agent); meta.appendChild(id);
     // Read-only capabilities remain visible when there is no composer.
     var cap = document.createElement('span'); cap.className = 'cap-chip'; cap.hidden = true; t.capEl = cap; meta.appendChild(cap);
     var controls = document.createElement('div'); controls.className = 'tile-controls';
     var modes = document.createElement('span'); modes.className = 'tile-modes';
     // "diff" stays a developer's word in both languages, as git and every review tool use
     // it; its tooltip says what it shows.
-    var choices = [['term', T('Terminal', '终端')]];
-    if (t.agent.agent) choices.unshift(['chat', T('Chat', '对话')]);
+    var choices = hasPane(t.agent) ? [['term', T('Terminal', '终端')]] : [];
+    if (t.agent.agent || readableConversation(t.agent)) choices.unshift(['chat', T('Chat', '对话')]);
     choices.forEach(function (m) {
       var b = document.createElement('button'); b.textContent = m[1]; b.setAttribute('data-m', m[0]); if (m[2]) b.title = m[2];
       b.onclick = function (e) { e.stopPropagation(); setTileMode(t, m[0]); }; modes.appendChild(b);
     });
     controls.appendChild(modes);
     var tools = document.createElement('div'); tools.className = 'session-actions';
-    (t.agent.agent ? ['trace', 'diff'] : ['diff']).forEach(function (kind) {
+    (readableConversation(t.agent) ? ['trace'] : t.agent.agent ? ['trace', 'diff'] : ['diff']).forEach(function (kind) {
       var label = kind === 'trace' ? T('Trace', '轨迹') : 'Diff';
       var button = elButton(label, kind, function () { showSessionTools(t.agent, t, kind); });
       button.dataset.tool = kind; button.appendChild(document.createTextNode(label)); tools.appendChild(button);
@@ -3499,12 +3562,14 @@
     var body = document.createElement('div'); body.className = 'tile-body'; t.body = body; el.appendChild(body);
     // shared-input row (web-shared-input): the SAME composer as the single-pane view,
     // in its compact variant — shown for a term-mode tile the host allowed.
-    var tc = makeComposer((function (tid) { return function () { return tid; }; })(t.id), function (text) { if (t.term) tileWrite(t, text); }, true);
-    tc.el.hidden = true; t.inputEl = tc.el; t.composer = tc; t.inputSync = tc.sync; t.inputDispose = tc.dispose;
-    el.appendChild(tc.el);
+    if (hasPane(t.agent)) {
+      var tc = makeComposer((function (tid) { return function () { return tid; }; })(t.agent.pane_id), function (text) { if (t.term) tileWrite(t, text); }, true);
+      tc.el.hidden = true; t.inputEl = tc.el; t.composer = tc; t.inputSync = tc.sync; t.inputDispose = tc.dispose;
+      el.appendChild(tc.el);
+    }
     // read-only note — states WHY there's no input row instead of leaving a gap
     var ro = document.createElement('div'); ro.className = 'tile-ro'; ro.hidden = true;
-    ro.textContent = T('🔒 Input is not allowed in this pane', '🔒 此窗格不允许输入'); t.roEl = ro; el.appendChild(ro);
+    ro.textContent = readableConversation(t.agent) ? T('Read-only conversation', '只读对话') : T('🔒 Input is not allowed in this pane', '🔒 此窗格不允许输入'); t.roEl = ro; el.appendChild(ro);
     var rz = document.createElement('div'); rz.className = 'tile-resize'; rz.textContent = '⌟'; el.appendChild(rz);
     el.addEventListener('mousedown', function () { el.style.zIndex = ++zTop; });
     dragMove(t, head); dragResize(t, rz);
@@ -3524,7 +3589,8 @@
   }
   function setTileMode(t, m) {
     if (m === t.mode && t.body && t.body.querySelector(m === 'term' ? '.xt' : '.tile-chat')) return;
-    if (m !== 'chat' || !t.agent.agent) m = 'term';
+    if(readableConversation(t.agent)) m = 'chat';
+    else if (m !== 'chat' || !t.agent.agent) m = 'term';
     t.mode = m;
     cancelRead('tile:' + t.id);
     cancelRead('live:' + t.id);
@@ -3577,12 +3643,21 @@
   }
 
   function tilePollChat(t) {
+    if (t.removed || !WB.on) return;
     if (t.mode === 'chat') { var host = t.body.querySelector('.conversation-main'); if (host) syncChatLive(host, t.agent, function () { return WB.on && !t.removed && t.mode === 'chat' && t.agent.status === 'working'; }); }
     runRead('tile:' + t.id, function (signal) {
-      var epoch = t.readEpoch;
-      return api('/api/transcript?id=' + encodeURIComponent(t.id), {signal: signal}).then(function (r) { return (r.status === 404) ? [] : (r.ok ? r.json() : null); })
-        .then(function (turns) { if (signal.aborted || turns === null || t.removed || epoch !== t.readEpoch || t.mode !== 'chat') return; var sig = JSON.stringify(turns || []); if (sig === t.chatSig) return; t.chatSig = sig; renderTileChat(t, turns || []); })
-        .catch(function () {});
+      var epoch = t.readEpoch, scope = chatScope(t.agent);
+      return api(transcriptPath(t.agent), {signal: signal}).then(function (r) {
+        if(signal.aborted || t.removed || epoch !== t.readEpoch || scope !== chatScope(t.agent)) return null;
+        if(r.status === 401) {token=null;localStorage.removeItem(TOKEN_KEY);gate('expired');return null;}
+        if(r.status === 403 || readableConversation(t.agent) && (r.status === 404 || r.status === 422)) {removeTile(t);return null;}
+        t.dropped = Number(r.headers.get('X-Gtmux-Turns-Dropped') || 0) || 0;
+        return r.status === 404 ? [] : r.ok ? r.json() : null;
+      }).then(function (turns) {
+        if (signal.aborted || turns === null || t.removed || epoch !== t.readEpoch || scope !== chatScope(t.agent) || t.mode !== 'chat') return;
+        t.history = historyState(t.history, t.agent); turns = chatTail(t.history, turns || []);
+        var sig = JSON.stringify([turns, t.dropped || 0]); if (sig === t.chatSig) return; t.chatSig = sig; renderTileChat(t, turns);
+      }).catch(function () {});
     });
   }
 
@@ -3594,6 +3669,9 @@
     var top = old ? old.scrollTop : 0, anchor=readingAnchor(old), prepended=hasPrependedTurns(old,turns,t.agent);
     var wrap = document.createElement('div'); wrap.className = 'tile-chat';
     if (!turns.length && !(pendingPrompts[t.id] || []).length) { var e = document.createElement('div'); e.className = 'chat-empty'; e.textContent = T('No conversation yet.', '还没有对话。'); wrap.appendChild(e); }
+    var history = chatHistoryControl(t.history, t.agent, function () { t.chatSig = JSON.stringify(t.history.turns); renderTileChat(t, t.history.turns); }, function () { return WB.on && !t.removed && t.mode === 'chat' && t.history && t.history.scope === chatScope(t.agent); });
+    if(history) wrap.appendChild(history);
+    if(readableConversation(t.agent) && t.dropped > 0 && !(turns[0] && turns[0].history_before)) wrap.appendChild(el('p', 'chat-source-note', T('Earlier messages omitted by the source: ', '源记录省略了更早消息：') + t.dropped));
     var seps = sepLabels(turns);
     turns.forEach(function (tn, idx) { wrap.appendChild(conversationTurn(tn, t.agent || {}, idx, t.expanded || (t.expanded = {}), seps[idx], false, function () { renderTileChat(t, t.lastTurns || []); })); });
     appendPendingPrompts(wrap, t.id, t.agent || {});

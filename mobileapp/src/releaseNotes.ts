@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.171',
+    en: [
+      '- HQ now shows how many matters are visible, with a clear, compact expand/collapse control for the remaining cards on iPhone and iPad.',
+      '- Diff actions use a consistent file icon with addition and removal marks.',
+    ],
+    zh: [
+      '- HQ 明确显示当前与全部事项数量，iPhone 和 iPad 都可清楚地展开或收起剩余卡片。',
+      '- 统一 Diff 入口图标，使用带加减标记的文件图形。',
+    ],
+  },
+  {
     version: '1.0.169',
     en: [
       '- Read commands in Chat and Trace with clearer source-language previews while keeping the complete original call available.',

@@ -1793,3 +1793,7 @@ Documents reuse the scoped artifact/parent-image protocol and a single generated
 ### Nested Markdown links and command inputs
 
 Supported emphasis preserves actionable links, including scoped local-document callbacks and native range selection. Literal code and unsafe schemes remain inert. Chat and Trace use the same CodePanel command-input outline and source selectors. Commands extracted from submitted code are inputs only: they do not add executed tool calls or success claims. The shared Apple medium usage widget keeps provider identity on one line, aligns value with its window, and reserves a footer for source and reading time.
+
+### HQ overview disclosures (2026-11-04)
+
+Phone and iPad share one grouped overview. Each section shows visible / total canonical matters. A full-width footer states the remaining count and Showing X of Y, exposes expanded accessibility state, and reverses to Show less. Missing or stale summary IDs fall back to the first three valid matters; no matter lifecycle state changes. Diff settings, session tools and action sheets share the file-plus/minus icon.

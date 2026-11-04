@@ -106,7 +106,7 @@ import XCTest
         var close: (() -> Void)?
         controller.deliver = { _, _, _, _, reply in finish = reply }
         controller.rememberTarget = { _ in }
-        controller.scheduleDeliveryClose = { delay, action in XCTAssertEqual(delay, 1.2); close = action }
+        controller.scheduleDeliveryClose = { delay, action in XCTAssertEqual(delay, 0.18); close = action }
         controller.show(doc: try document(), captureFile: folder.appendingPathComponent("capture.png"), target: "%original",
                         store: AgentStore(), l10n: .shared)
         let first = try XCTUnwrap(controller.window)

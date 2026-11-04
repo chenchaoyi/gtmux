@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.0.171",
+    "en": [
+      "HQ shows visible and total matters, with a clear control to expand the remaining cards.",
+      "Diff actions use the same file icon with addition and removal marks throughout the app."
+    ],
+    "zh": [
+      "HQ 显示当前与全部事项数量，并提供醒目的剩余卡片展开入口。",
+      "统一 App 各处 Diff 图标，使用带加减标记的文件图形。"
+    ]
+  },
+  {
     "version": "1.0.169",
     "en": [
       "Read commands in Chat and Trace with clearer source-language previews while keeping the complete original call available.",

@@ -172,7 +172,7 @@
     }
     function groupNode(row) {
       var turn = row.type === 'turn', group = turn ? row.group : null;
-      var text = turn ? [group.agent, turnLabel(group), current.sessions.length > 1 ? group.session : ''].filter(Boolean).join(' · ') : row.events.length + T(row.events.length === 1 ? ' tool call' : ' tool calls', ' 个工具调用');
+      var text = turn ? [turnLabel(group), current.sessions.length > 1 ? group.session : ''].filter(Boolean).join(' · ') : row.events.length + T(row.events.length === 1 ? ' tool call' : ' tool calls', ' 个工具调用');
       var node = button(turn ? 'trace-turn' : 'trace-calls', text, function () {
         follow = false; disclosureHold = true;
         if (turn) expandedTurns[group.key] = !row.open; else expandedCalls[row.key] = !row.open;

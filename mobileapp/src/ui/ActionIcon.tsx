@@ -10,10 +10,12 @@
 
 import React from 'react';
 import Svg, {Circle, Path, Rect} from 'react-native-svg';
+import {SIcon} from './SettingsIcons';
 
 export type ActionIconName = 'reply' | 'continue' | 'stop' | 'ask-hq' | 'diff' | 'jump';
 
 export function ActionIcon({name, color, size = 20}: {name: ActionIconName; color: string; size?: number}) {
+  if (name === 'diff') return <SIcon name="diff" size={size} color={color} />;
   const stroke = {stroke: color, strokeWidth: 1.7, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, fill: 'none'};
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
@@ -31,15 +33,6 @@ export function ActionIcon({name, color, size = 20}: {name: ActionIconName; colo
           {/* the supervisor: one mark standing over the others */}
           <Circle cx="12" cy="6.5" r="2.8" {...stroke} />
           <Path d="M4 19c0-3 3.6-5 8-5s8 2 8 5" {...stroke} />
-        </>
-      )}
-      {name === 'diff' && (
-        <>
-          {/* a fork: what changed against what it came from */}
-          <Circle cx="7" cy="6.5" r="2.2" {...stroke} />
-          <Circle cx="7" cy="17.5" r="2.2" {...stroke} />
-          <Circle cx="17" cy="6.5" r="2.2" {...stroke} />
-          <Path d="M7 8.7v6.6M9.2 6.5h2.3a3.3 3.3 0 0 1 3.3 3.3v.5" {...stroke} />
         </>
       )}
       {name === 'jump' && (

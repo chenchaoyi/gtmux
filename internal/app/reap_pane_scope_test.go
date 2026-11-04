@@ -103,8 +103,10 @@ func TestReapLive_BarePaneRejectsChangedAndMissingTarget(t *testing.T) {
 	}
 	ops := liveReapOps()
 	ops.killPane = func(string) error { return killVerifiedBarePane(expected, task) }
+	// After the last pane exits, tmux can return an empty identity before the
+	// server closes, or a command error afterwards. Both must refuse closure.
 	res := planAndReap(task, false, false, ops)
-	if res.ResourceClosed || len(res.Failed) != 1 || !strings.Contains(res.Failed[0], "no longer live") {
+	if res.ResourceClosed || len(res.Failed) != 1 || len(res.Actions) != 0 {
 		t.Fatalf("missing target must report failed closure: %+v", res)
 	}
 	if code := cmdReap([]string{pane, "--json"}); code != 1 {
@@ -162,7 +164,7 @@ func TestReapLive_BarePaneDisappearsAfterGatePreservesWorktree(t *testing.T) {
 		return killVerifiedBarePane(expected, task)
 	}
 	res := planAndReap(task, false, true, ops)
-	if res.ResourceClosed || len(res.Failed) != 1 || !strings.Contains(res.Failed[0], "no longer live") {
+	if res.ResourceClosed || len(res.Failed) != 1 || len(res.Actions) != 0 {
 		t.Fatalf("lost target must report failed closure: %+v", res)
 	}
 	if _, err := os.Stat(wt); err != nil || !branchExists(t, repo, "feat/x") {

@@ -1046,6 +1046,11 @@ button.appr-opt { width: 100%; background: transparent; color: inherit; text-ali
 .live-action { margin-left: auto; white-space: nowrap; }
 .live-chevron { flex: none; }
 .chat-live[open] .live-chevron { transform: rotate(180deg); }
+.chat-live[open] { background: var(--terminal-bg); color: #d6d6da; border-top-color: rgba(6,182,212,.35); }
+.chat-live[open] .live-summary { color: rgba(235,235,245,.65); }
+.chat-live[open] .live-summary strong, .chat-live[open] .live-action, .chat-live[open] .live-chevron { color: #27c7e6; }
+.chat-live[open] .live-summary:hover { background: rgba(255,255,255,.04); }
+.chat-live[open] .live-output { color: #d6d6da; line-height: 1.4; white-space: pre; overflow-wrap: normal; max-height: 220px; padding-bottom: 18px; tab-size: 4; }
 .live-output { margin: 0; padding: 12px 18px 16px; max-height: 210px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--fg); font: 12px/1.65 ui-monospace, Menlo, monospace; }
 .live-note { margin: 0; padding: 0 18px 12px; color: var(--amber); font-size: 12px; }
 @keyframes live-pulse { 50% { opacity: .45; } }
@@ -1439,7 +1444,7 @@ select:disabled { opacity: .55; cursor: not-allowed; }
 .profile-field dd { margin: 0; font-size: 16px; line-height: 1.5; overflow-wrap: anywhere; }
 .profile-process { border-left: 1px solid var(--divider); padding-left: 10px; margin: 12px 0; }
 .profile-command { display: flex; align-items: center; min-width: 0; }
-.profile-command pre { margin: 0; flex: 1; min-width: 0; overflow-x: auto; font-size: 12px; }
+.profile-command pre { margin: 0; flex: 1; min-width: 0; overflow-x: auto; font-size: 12px; padding-bottom: 14px; scrollbar-gutter: stable; }
 .profile-copy { display: grid; place-items: center; min-width: 44px; min-height: 44px; border: 0; background: transparent; color: var(--fg2); cursor: pointer; }
 .profile-copy svg { width: 18px; height: 18px; }
 @media (max-width: 350px) { .profile-grid { grid-template-columns: 1fr; } }
@@ -1525,6 +1530,10 @@ select:disabled { opacity: .55; cursor: not-allowed; }
 .code-panel-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0; padding-left: 12px; border-bottom: 1px solid var(--divider); }
 .code-language { flex: 1 1 60px; min-width: 0; color: var(--fg2); font-size: 12px; font-weight: 600; }
 .code-panel-toolbar button, .code-parts button { min-width: 44px; min-height: 44px; margin: 0; }
+.code-panel-toolbar .code-format { display: grid; place-items: center; border: 0; border-radius: 7px; padding: 0; color: var(--fg2); background: transparent; font: 600 18px/1 ui-monospace, Menlo, monospace; cursor: pointer; }
+.code-panel-toolbar .code-format:hover { background: var(--sel); color: var(--fg); }
+.code-panel-toolbar .code-format[aria-pressed="true"] { color: var(--accent-ink); }
+.code-panel-toolbar .code-format:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: -3px; }
 .code-panel pre, .trace-inspector .code-panel pre { margin: 0; border: 0; background: transparent; padding: 12px; white-space: pre-wrap; overflow-wrap: anywhere; min-width: 0; font-family: Menlo, monospace; font-size: max(12px, calc(var(--chat-text-size, 14px) - 1px)); line-height: 1.55; }
 .code-parts { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 10px 0; }
 .code-parts[hidden] { display: none; }
@@ -1590,3 +1599,11 @@ select:disabled { opacity: .55; cursor: not-allowed; }
 .code-call-command span { min-width: 0; overflow-wrap: anywhere; }
 .code-call-command .activity-icon { flex-shrink: 0; }
 @media (pointer: coarse) { .code-call-command { min-height: 44px; } }
+
+/* Earlier windows stay explicit; loading preserves the first visible message. */
+.chat-history { display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:8px 16px; padding:8px 4px 18px; color:var(--fg3); font-size:12px }
+.chat-history button { min-height:44px; padding:8px 16px; border:1px solid var(--divider); border-radius:10px; background:var(--surface); color:var(--accent-ink); font:inherit; font-size:13px; cursor:pointer }
+.chat-history button:disabled { opacity:.7; cursor:wait }
+.chat-history button:focus-visible { outline:2px solid var(--accent-ink); outline-offset:2px }
+
+.chat-source-note { margin:8px 0 16px; color:var(--fg3); font-size:12px; text-align:center; overflow-wrap:anywhere; }
