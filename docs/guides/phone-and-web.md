@@ -112,19 +112,21 @@ On iPhone and iPad, **Copy reply** below a reply copies the whole turn's text, i
 
 ### Browser controls
 
-On a wide screen, drag a tmux pane from the sidebar onto the board, or double-click to add it. Sessions outside tmux are marked **Status only** and cannot be opened as terminal panes. On a narrow screen, the toolbar wraps to keep its controls visible, including for ordinary shells.
+On a wide screen, double-click a session or drag it from the sidebar onto the board. Each panel can be moved, resized and viewed beside other sessions. Readable external conversations use the same layout with read-only Chat and Trace; they do not gain Terminal, Diff or input. Entries without a readable conversation remain **Status only**. On phones, tap a readable session to open it. The narrow toolbar keeps controls within the screen.
 
 In the Chat and Terminal composers, Enter starts a new line and Ctrl/Cmd+Enter sends. You can enable Return-to-send in Settings. When an input method is composing text, Enter confirms the word without sending. Chat refreshes intermediate reply text and tool details as they arrive.
 
 Chat shows agent avatars and the HQ role mark, with Copy icons on messages (hover for labels; a checkmark confirms copying) and expandable tool call summaries. Board tiles and focused conversations use the same presentation. Unsent drafts survive transcript refreshes and switching between Chat and Terminal; text drafts are saved separately for each pane in this browser, scoped to the server and access identity.
 
+Use **Load earlier messages** above Chat to read earlier recorded windows. Loading and live refresh keep the visible message in place; earlier pages stay loaded. Trace retains source turn numbers when available. If the source changes or a gap appears, the reader preserves the current window and offers **Load latest messages**.
+
 Copy icons sit below each message with its recorded time and sender. Layout actions and session rows support keyboard access; Escape closes layout and settings panels.
 
 While an agent is working, Chat shows a **Working** strip above the composer. Expand **Live output** to see the latest screen content, or collapse it to keep reading. It remembers your choice per pane and disappears when work stops. Runtime is shown when the server provides a known start time. Live updates preserve your draft and reading position; unavailable captures show a retry message.
 
-In the browser, select **Trace** beside Chat / Terminal; in the App, open **Session tools → Trace** to inspect the recorded sequence of user prompts, agent replies and tool calls. Search the contents, filter by event type, then select an event to read or copy its detail. The overview marks follow event order. Tool details are recorded argument summaries; this view does not contain model request timing, token counts, raw arguments or tool output.
+In the browser, select **Trace** beside Chat / Terminal; in the App, open **Session tools → Trace** to inspect the recorded sequence of user prompts, agent replies and tool calls. Search the contents, filter by event type, then select an event to read or copy its detail. The overview marks follow event order. Tool details show the recorded input when available, with a summary or partial label for limited records. Model request timing, token counts and tool output are not recorded here.
 
-On macOS, choose **Open local workspace** at the bottom of the menu bar panel. It opens `http://127.0.0.1:8765` directly, using a one-time pairing code. No tunnel is needed. If serve is not running, the app starts a loopback-only child that stops when the app quits; an existing remote service is reused without changing its settings. Switching remote access in the app releases that child before starting the managed service. Non-tmux sessions remain visible as status-only entries.
+On macOS, choose **Open local workspace** at the bottom of the menu bar panel. It opens `http://127.0.0.1:8765` directly, using a one-time pairing code. No tunnel is needed. If serve is not running, the app starts a loopback-only child that stops when the app quits; an existing remote service is reused without changing its settings. Switching remote access in the app releases that child before starting the managed service. Sessions without readable conversation records remain visible as status-only entries.
 
 If access is revoked, the browser returns to the access page and stops polling the old sessions. Enter a new pairing or share code to reconnect; only panes authorized by that credential are restored.
 

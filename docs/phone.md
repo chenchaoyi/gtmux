@@ -180,10 +180,12 @@ the available record provenance.
 
 HQ opens a matter overview on current servers: **Needs input**, **Following**, and changes from the last 24 hours. Open a matter to read its assessment, participants and saved updates. Participant links open only the same live agent/home/session; a historical pane number never selects a new occupant. **Ask HQ** prepares a message for review in the existing console. It does not send it.
 
+Each overview group shows visible / total matters. **Show N more** reveals the remaining cards; **Show less** restores the preview. The same grouped controls work on iPhone and iPad.
+
 **Talk to HQ** opens the conversation and its composer, Trace and Diff tools. Board, knowledge and usage lead the overview with readable summaries; closing a resource returns to the overview that opened it. Older servers keep the previous HQ page. Refresh failures retain the last overview with a retry; revoked access clears private content. Delivery receipts describe delivery, not task completion.
 
 HQ matters appear as individual briefing cards with their current state, latest recorded preview or labelled current assessment, and update time. Resource summaries use the same paired connection and models as their readers; failed refreshes mark retained readings. Trace uses the session name as its heading; selecting a call shows its complete recorded input with wrapping and exact copy.
 
 On current servers, Talk to HQ keeps one conversation surface. Use **Overview** to return to the same matters and pending count; waiting agent sessions no longer form a second attention tab. Tap the summary to show or hide board, knowledge, usage and HQ updates. Critical machine conditions remain visible in the compact headline, and expanded context can scroll.
 
-Tool-input details use a draggable horizontal handle beside copy; an information icon explains partial or summary-only input when needed. Diff scrollbars stay visible against the dark canvas, including while long lines are panned horizontally.
+Tool-input details wrap and highlight recorded code; Full call keeps the complete source, and language tabs make embedded scripts easier to read. Copy keeps the original input. Partial or summary-only records are explicitly marked. Diff scrollbars stay visible against the dark canvas, including while long lines are panned horizontally.
