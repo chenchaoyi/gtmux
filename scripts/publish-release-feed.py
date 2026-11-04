@@ -152,6 +152,7 @@ def main():
     parser.add_argument('--version', required=True)
     parser.add_argument('--source',required=True)
     parser.add_argument('--run',type=int)
+    parser.add_argument('--recovery-run',type=int,help='Reviewed recovery workflow; exact product tag remains unchanged')
     parser.add_argument('--prepare-only',action='store_true')
     parser.add_argument('--installer-source',help='Frozen recovery commit; installer bytes must equal this reviewed checkout')
     args=parser.parse_args()
@@ -169,7 +170,12 @@ def main():
     if (ROOT/'install.sh').read_bytes() != subprocess.check_output(['git','show',head+':install.sh'],cwd=ROOT):
         parser.error('installer differs from its recorded source commit')
     installer_source = installer_identity(head,args.installer_source,ROOT/'install.sh')
-    require_builds(args.source,args.run,version)
+    if args.recovery_run is not None:
+        if args.run is not None: parser.error('Choose one official publication route')
+        from macos_release_source import require_recovery_builds
+        require_recovery_builds(args.source,args.recovery_run,version,head)
+    else:
+        require_builds(args.source,args.run,version)
     metadata=gh(f'releases/tags/v{version}')
     key=Path(os.environ['GTMUX_RELEASE_SIGNING_KEY_FILE'])
     token=os.environ.get('GTMUX_RELEASE_PUBLISH_TOKEN','')

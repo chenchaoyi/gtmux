@@ -16,15 +16,19 @@ def require(ok, reason):
         raise ValueError(reason)
 
 
-def identity(source, ref, run, attempt):
+def identity(source, ref, run, attempt, definition=None):
     require(re.fullmatch(r'[0-9a-f]{40}', source) and run > 0 and attempt > 0,
             'Exact source, run and build attempt required')
     tag = ref.startswith('refs/tags/')
     require(re.fullmatch(r'refs/tags/v\d+\.\d+\.\d+', ref) if tag else
             ref.startswith('refs/heads/') and len(ref) > len('refs/heads/'), 'Invalid build ref')
     filename = f'Gtmux-{ref.removeprefix("refs/tags/v")}-macos.zip' if tag else 'Gtmux-snapshot-macos.zip'
-    return {'source': source, 'ref': ref, 'run': run, 'attempt': attempt,
-            'file': filename, 'notarized_tag': tag}
+    result = {'source': source, 'ref': ref, 'run': run, 'attempt': attempt,
+              'file': filename, 'notarized_tag': tag}
+    if definition is not None:
+        require(re.fullmatch(r'[0-9a-f]{40}', definition), 'Exact workflow definition required')
+        result['definition'] = definition
+    return result
 
 
 def digest(path):
@@ -71,13 +75,14 @@ def main():
     parser.add_argument('--directory', type=Path, required=True)
     parser.add_argument('--zip', type=Path)
     parser.add_argument('--sha256', default='')
+    parser.add_argument('--definition', help='Reviewed workflow commit; product source stays separate')
     parser.add_argument('--source', required=True)
     parser.add_argument('--ref', required=True)
     parser.add_argument('--run', type=int, required=True)
     parser.add_argument('--attempt', type=int, required=True)
     args = parser.parse_args()
     try:
-        expected = identity(args.source, args.ref, args.run, args.attempt)
+        expected = identity(args.source, args.ref, args.run, args.attempt, args.definition)
         if args.action == 'seal':
             require(args.zip is not None, 'Mac ZIP required')
             sha = seal(args.directory, args.zip, expected)

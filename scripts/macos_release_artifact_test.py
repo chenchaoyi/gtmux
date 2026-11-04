@@ -73,6 +73,17 @@ class ArtifactTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 artifact.identity('a' * 40, ref, 55, 1)
 
+    def test_definition_is_bound_separately_from_immutable_product(self):
+        expected = artifact.identity('a' * 40, 'refs/tags/v1.2.3', 55, 1, 'b' * 40)
+        with self.assertRaises(ValueError):
+            artifact.verify(self.directory, expected, self.sha)
+        other = self.root / 'recovery'
+        sha = artifact.seal(other, self.archive, expected)
+        artifact.verify(other, expected, sha)
+        with self.assertRaises(ValueError):
+            artifact.verify(other, {**expected, 'definition': 'c' * 40}, sha)
+        self.assertEqual(expected['source'], 'a' * 40)
+
     def test_staging_does_not_replace_an_existing_build(self):
         with self.assertRaises(FileExistsError):
             artifact.seal(self.directory, self.archive, self.expected)
@@ -82,20 +93,24 @@ class WorkflowTests(unittest.TestCase):
     def test_builds_overlap_but_publication_and_mirror_wait_for_all_successes(self):
         text = (ROOT / '.github/workflows/release.yml').read_text()
         jobs = dict(re.findall(r'^  ([\w-]+):\n(.*?)(?=^  [\w-]+:|\Z)', text.split('jobs:\n', 1)[1], re.M | re.S))
-        self.assertNotIn('needs:', jobs['app'])
+        self.assertIn('needs: source', jobs['app'])
+        self.assertIn('needs: source', jobs['goreleaser'])
+        self.assertNotIn('needs: goreleaser', jobs['app'])
         self.assertIn('contents: read', jobs['app'])
         self.assertNotIn('gh release upload', jobs['app'])
         self.assertNotIn('HOMEBREW_TAP_TOKEN', jobs['app'])
         self.assertIn('xcrun stapler validate macapp/build/Gtmux.app', jobs['app'])
-        self.assertIn('needs: [goreleaser, app]', jobs['app-publish'])
+        self.assertIn('needs: [source, goreleaser, app]', jobs['app-publish'])
         self.assertIn('needs.app.outputs.artifact', jobs['app-publish'])
         self.assertIn('needs.app.outputs.attempt', jobs['app-publish'])
         self.assertIn('needs.app.outputs.sha256', jobs['app-publish'])
-        self.assertIn('needs: [goreleaser, app, app-publish]', jobs['mirror'])
-        self.assertNotIn('always()', jobs['app-publish'])
+        self.assertIn('needs: [source, goreleaser, app, app-publish]', jobs['mirror'])
+        self.assertIn("needs.app.result == 'success'", jobs['app-publish'])
+        self.assertIn("needs.goreleaser.result == 'success'", jobs['app-publish'])
+        self.assertIn("needs.source.outputs.recovery == 'true' && needs.goreleaser.result == 'skipped'", jobs['app-publish'])
         self.assertNotIn('continue-on-error:', jobs['app-publish'])
         self.assertLess(jobs['app-publish'].index('Verify exact-source Mac artifact'),
-                        jobs['app-publish'].index('gh release upload'))
+                        jobs['app-publish'].index('python3 scripts/macos_release_source.py attach'))
         self.assertNotIn('MACOS_CERT_P12', jobs['app-publish'])
 
 
