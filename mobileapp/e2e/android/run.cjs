@@ -158,7 +158,13 @@ async function run() {
   await check('04-real-composer-send',async()=>{await tap(id('composer-kbd'));const input=id('composer-input');await tap(input);await input.setValue('Android synthetic message');await tap(id('composer-send'));await driver.waitUntil(async()=>owner.world.writesTo('/api/send').some(row=>row.id==='%12'&&row.text==='Android synthetic message'),{timeout:10000});await driver.hideKeyboard().catch(()=>{});});
   await check('05-display-size',async()=>{await tap(id('detail-chat-display'));await tap(id('detail-chat-bigger'));await tap(id('detail-chat-smaller'));await driver.back();});
   await check('06-trace-session-and-turns',async()=>{await tools('Trace');await id('trace-session-title').waitForDisplayed({timeout:15000});assert.ok((await source()).includes('knowledge on the phone'));assert.ok((await source()).includes('Turn 160'));});
-  await check('07-trace-expand-collapse',async()=>{await tap(id('trace-fold-turns'));assert.ok((await source()).includes('Android trace'));await tap(id('trace-fold-calls'));await tap(id('trace-fold-calls'));});
+  await check('07-trace-expand-collapse',async()=>{
+    await tap(id('trace-fold-turns'));
+    await driver.waitUntil(async()=>(await source()).includes('Android trace'),{
+      timeout:10000,timeoutMsg:'Expanded trace turn did not render its request',
+    });
+    await tap(id('trace-fold-calls'));await tap(id('trace-fold-calls'));
+  });
   await check('08-trace-earlier',async()=>{await tap(id('trace-fold-turns'));const earlier=id('trace-history-earlier');await tap(earlier);await driver.waitUntil(async()=>owner.world.writesTo('/api/transcript/history').length===1,{timeout:10000});await seek(driver.$('//*[contains(@text,\"Earlier request 150\")]'),'up','trace-list');});
   await check('09-trace-search',async()=>{await tap(id('trace-search-toggle'));await id('trace-search').setValue('response 160');assert.ok((await source()).includes('160'));await driver.hideKeyboard().catch(()=>{});await id('trace-search').clearValue();await tap(id('trace-close'));});
   await check('10-diff-wrap-and-back',async()=>{await tools('Diff');await id('diff-wrap').waitForDisplayed({timeout:10000});await tap(id('diff-wrap'));await tap(id('diff-wrap'));await driver.back();assert.equal(await shown(id('diff-wrap')),false);});
