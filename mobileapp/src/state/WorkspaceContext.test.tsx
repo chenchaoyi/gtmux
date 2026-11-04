@@ -68,3 +68,18 @@ test.each(['usage', 'knowledge'] as const)('HQ %s shortcut keeps the current ide
   const hq = agent('%hq'); const openResource = {page, at: 42};
   expect(routeFor({kind: 'hq', agent: hq, openResource})).toEqual(['HQ', {agent: hq, prefill: undefined, openResource}]);
 });
+
+test('inline workspace opens selection without pushing a second detail route', () => {
+  const navigate = jest.fn();
+  const showWorkspace = jest.fn();
+  let ws!: ReturnType<typeof useWorkspace>;
+  act(() => {
+    renderer.create(<WorkspaceProvider mode="compact" navigate={navigate} inlineSelection onInlineSelect={showWorkspace}>
+      <Probe onReady={value => { ws = value; }} />
+    </WorkspaceProvider>);
+  });
+  act(() => ws.select({kind: 'pane', agent: agent('%1')}));
+  expect(ws.selection).toEqual({kind: 'pane', agent: agent('%1')});
+  expect(showWorkspace).toHaveBeenCalledTimes(1);
+  expect(navigate).not.toHaveBeenCalled();
+});

@@ -1,8 +1,10 @@
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
+import {Dimensions} from 'react-native';
 import { DetailView } from './DetailScreen';
 import { ChatView } from '../ui/ChatView';
 import { TraceModal } from '../trace/TraceModal';
+import { DiffModal } from '../ui/DiffModal';
 import { SessionToolsMenu } from '../ui/SessionToolsMenu';
 import { useAgents } from '../state/AgentsContext';
 import { useApp } from '../state/AppContext';
@@ -15,6 +17,7 @@ jest.mock('../state/AgentsContext', () => ({
 jest.mock('../state/AppContext', () => ({ useApp: jest.fn() }));
 jest.mock('../ui/ChatView', () => ({ ChatView: () => null }));
 jest.mock('../trace/TraceModal', () => ({ TraceModal: () => null }));
+jest.mock('../ui/DiffModal', () => ({ DiffModal: () => null }));
 let tree: renderer.ReactTestRenderer;
 let client: any;
 let agent: any;
@@ -146,3 +149,34 @@ test.each([401, 403])(
     expect(tree.root.findByType(ChatView).props.turns).toEqual([]);
   },
 );
+
+test('Trace remains open with its current conversation while the window changes size', async () => {
+  const previous = Dimensions.get('window');
+  try {
+    await mount();
+    act(() => tree.root.findByType(SessionToolsMenu).props.onTrace());
+    expect(tree.root.findByType(TraceModal).props.visible).toBe(true);
+    act(() => Dimensions.set({window: {...previous, width: 900, height: 800}}));
+    expect(tree.root.findByType(TraceModal).props.visible).toBe(true);
+    expect(tree.root.findByType(TraceModal).props.agent.session_id).toBe('one');
+    act(() => Dimensions.set({window: {...previous, width: 390, height: 800}}));
+    expect(tree.root.findByType(TraceModal).props.visible).toBe(true);
+  } finally {
+    act(() => Dimensions.set({window: previous}));
+  }
+});
+
+test('a Diff request opens and remains open through a window resize', async () => {
+  const previous = Dimensions.get('window');
+  try {
+    await act(async () => { tree = renderer.create(<DetailView agent={agent} openDiffRequest={1} />); });
+    expect(tree.root.findByType(DiffModal).props.visible).toBe(true);
+    act(() => Dimensions.set({window: {...previous, width: 900, height: 800}}));
+    expect(tree.root.findByType(DiffModal).props.visible).toBe(true);
+    act(() => tree.root.findByType(DiffModal).props.onClose());
+    await act(async () => tree.update(<DetailView agent={agent} openDiffRequest={2} />));
+    expect(tree.root.findByType(DiffModal).props.visible).toBe(true);
+  } finally {
+    act(() => Dimensions.set({window: previous}));
+  }
+});

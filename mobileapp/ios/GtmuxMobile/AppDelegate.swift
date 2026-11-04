@@ -10,6 +10,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
 
   var reactNativeDelegate: ReactNativeDelegate?
   var reactNativeFactory: RCTReactNativeFactory?
+  var launchOptions: [UIApplication.LaunchOptionsKey: Any]?
 
   func application(
     _ application: UIApplication,
@@ -26,13 +27,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     UNUserNotificationCenter.current().delegate = self
     UsageWidgetRefresh.shared.register()
 
-    window = UIWindow(frame: UIScreen.main.bounds)
-
-    factory.startReactNative(
-      withModuleName: "GtmuxMobile",
-      in: window,
-      launchOptions: launchOptions
-    )
+    self.launchOptions = launchOptions
 
     return true
   }
@@ -114,5 +109,49 @@ class ReactNativeDelegate: RCTDefaultReactNativeFactoryDelegate {
 #else
     Bundle.main.url(forResource: "main", withExtension: "jsbundle")
 #endif
+  }
+}
+
+// A window belongs to its scene: the scene can change size while the app is running.
+// Keep the factory and delegate on AppDelegate for the lifetime of the React bridge.
+class SceneDelegate: UIResponder, UIWindowSceneDelegate {
+  var window: UIWindow?
+
+  func scene(_ scene: UIScene, willConnectTo session: UISceneSession,
+             options connectionOptions: UIScene.ConnectionOptions) {
+    guard let scene = scene as? UIWindowScene,
+          let app = UIApplication.shared.delegate as? AppDelegate,
+          let factory = app.reactNativeFactory else { return }
+    var options = app.launchOptions ?? [:]
+    // React Native and the push module read their cold-start data from launchOptions.
+    if let url = connectionOptions.urlContexts.first?.url { options[.url] = url }
+    if let activity = connectionOptions.userActivities.first {
+      options[.userActivityDictionary] = ["UIApplicationLaunchOptionsUserActivityKey": activity]
+    }
+    if let response = connectionOptions.notificationResponse {
+      options[.remoteNotification] = response.notification.request.content.userInfo
+    }
+    let sceneWindow = UIWindow(windowScene: scene)
+    window = sceneWindow
+    app.window = sceneWindow
+    // RCTDeviceInfo captures the key window when it initializes and observes its
+    // frame. Make the scene window key before creating the React root so resizing
+    // is observed even if the module initializes synchronously.
+    sceneWindow.rootViewController = UIViewController()
+    sceneWindow.makeKeyAndVisible()
+    factory.startReactNative(withModuleName: "GtmuxMobile", in: sceneWindow, launchOptions: options)
+  }
+
+  func scene(_ scene: UIScene, openURLContexts contexts: Set<UIOpenURLContext>) {
+    for context in contexts {
+      var options: [UIApplication.OpenURLOptionsKey: Any] = [:]
+      if let source = context.options.sourceApplication { options[.sourceApplication] = source }
+      if let annotation = context.options.annotation { options[.annotation] = annotation }
+      RCTLinkingManager.application(UIApplication.shared, open: context.url, options: options)
+    }
+  }
+
+  func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
+    RCTLinkingManager.application(UIApplication.shared, continue: userActivity, restorationHandler: { _ in })
   }
 }

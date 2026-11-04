@@ -311,7 +311,7 @@ export function ServersScreen({navigation}: {navigation?: any}) {
     ]);
 
   return (
-    <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']} testID={TestIds.servers.screen}>
+    <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top', 'left', 'right']} testID={TestIds.servers.screen}>
       {/* header: back (only when pushed) + title */}
       <ContentColumn>
         <View style={styles.header}>

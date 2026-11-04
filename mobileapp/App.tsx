@@ -6,6 +6,7 @@ import {
   DarkTheme,
   DefaultTheme,
   NavigationContainer,
+  StackActions,
   useNavigationContainerRef,
 } from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
@@ -28,7 +29,6 @@ import {RouteScreen} from './src/screens/RouteScreen';
 import {AccessHistoryScreen} from './src/screens/AccessHistoryScreen';
 import {DiagScreen} from './src/screens/DiagScreen';
 import {PaneBrowserScreen} from './src/screens/PaneBrowserScreen';
-import {RadarScreen} from './src/screens/RadarScreen';
 import {ServersScreen} from './src/screens/ServersScreen';
 import {SettingsScreen} from './src/screens/SettingsScreen';
 import {SplitShell} from './src/screens/SplitShell';
@@ -91,11 +91,10 @@ function WhatsNew() {
   );
 }
 
-// RadarRoute picks the SHELL by size class (MOBILE §5): the regular shell (sidebar +
-// main pane) on an iPad-sized window, else the phone's radar. The class is the one rule
-// in ui/layout; neither shell reads the window itself.
+// Keep one workspace mounted as the available window changes. The shell adapts its
+// frame without replacing the selected reader or its in-progress interaction.
 function RadarRoute() {
-  return useSizeClass() === 'regular' ? <SplitShell /> : <RadarScreen />;
+  return <SplitShell />;
 }
 
 // PushBridge handles APNs events and deep-links while a workspace is open.
@@ -226,6 +225,14 @@ function Root() {
     (navRef as any).navigate(route, params);
   }, [navRef]);
 
+  // A push or keyboard command can select a session while Settings or another
+  // stack page is visible. Return to the persistent workspace before showing it.
+  const showWorkspace = React.useCallback(() => {
+    if (navRef.isReady() && (navRef.getCurrentRoute() as {name: string} | undefined)?.name !== 'Radar') {
+      navRef.dispatch(StackActions.popTo('Radar'));
+    }
+  }, [navRef]);
+
   // Restore settings with the shared launch identity. The capture flag is only
   // supplied to an isolated UI-test app; ordinary startup has no minimum delay.
   if (!ready || Debug.showSplash) {
@@ -262,7 +269,7 @@ function Root() {
             }
           : undefined
       }>
-      <WorkspaceProvider mode={sizeClass} navigate={navigateSel}>
+      <WorkspaceProvider mode={sizeClass} navigate={navigateSel} inlineSelection onInlineSelect={showWorkspace}>
       <PushBridge navRef={navRef} />
       <KeyCommandBridge />
       <UsageWidgetBridge />
