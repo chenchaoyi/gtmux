@@ -29,3 +29,14 @@ running code. Validate the standard Intel Mac host with both-architecture app an
 Widget builds and the unchanged native test/design/signing/notarization checks.
 iOS stays on ARM. A snapshot rehearsal must verify the actual staged universal
 artifact before using this host for the authorized release.
+
+The actual rehearsal compiled and signed both architectures and received Apple's
+Accepted status, then failed ticket retrieval with a CloudKit network loss. Add a
+bounded retry for that exact transient lookup only, explicit Accepted JSON checking
+and mandatory final ticket validation. Submission, signing, permanent failures and
+publication permissions keep their existing boundaries.
+
+Repeated latest-image ARM acquisition failures also block iOS compilation. Validate
+the other documented standard ARM image, macos-15, with explicitly installed
+Xcode26.3 in both unsigned CI and protected delivery. Reject a non-ARM host, compile
+the same ARM64 app/extensions, and retain every signing/publication boundary.

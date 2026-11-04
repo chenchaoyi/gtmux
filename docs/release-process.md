@@ -57,6 +57,14 @@ and only then uploads it and updates the cask. The official mirror also waits fo
 that publisher. Failed-only reruns retain the successful build's artifact ID and
 build attempt; they do not substitute a ZIP from a newer or older run.
 
+The Mac notarization helper requires Apple's explicit `Accepted` JSON status before
+retrieving the ticket. An observed CloudKit connection loss (`stapler` exit68 with
+`NSURLErrorDomain Code=-1005`) retries only that lookup, at most three times with
+two- and five-second pauses. It never retries signing or submission, and permanent
+errors stop immediately. Stapled-ticket validation remains mandatory. This avoids
+rebuilding a valid app for a brief ticket download failure without treating a
+rejected or unstapled package as publishable.
+
 Start selected iOS and Android delivery workflows immediately after the authorized
 annotated tag push. iOS can prepare the exact green main source before the GitHub
 Release exists; its existing protected-environment review is unchanged. Before
@@ -65,7 +73,9 @@ main CI and latest successful CLI job. It waits up to fifteen minutes with GETs
 only if CLI is still building, and stops without uploading on failure. The original
 IPA/archive and failure diagnostics still go to encrypted recovery. No new tag,
 release, mobile build or Store submission is authorized by this optimization.
-Unsigned iOS CI retains its existing normal ARM host, explicitly compiles the ARM64
+Unsigned iOS CI uses the standard ARM `macos-15` image with explicit Xcode26.3,
+matching protected iOS delivery and avoiding the moving `macos-latest` image alias.
+Runner preflight rejects any other CPU architecture. CI explicitly compiles the ARM64
 Simulator target, and checks the actual app and both embedded extension binaries without
 signing secrets. Native compilation must actually pass on the candidate and main. A
 standard Intel trial exceeded 40 minutes and was not adopted as a default or configured
@@ -167,6 +177,7 @@ explicit installed Xcode26.3 toolchain (the image default is older). CI still
 compiles the app and Widget host/extension for both arm64 and x86_64, runs the full
 native test suites on the runner, and checks design and bundled resources. Release
 artifacts remain universal and keep the same signature/notarization gates. iOS
-continues on its validated ARM runner; it is not moved to Intel with this change.
+stays ARM on the pinned standard `macos-15` image and Xcode26.3, validated separately
+through its full native compile and delivery; it is not moved to Intel.
 This host choice addresses observed ARM jobs failing before acquiring a runner;
 it does not guarantee queue time or replace actual next-release timing evidence.

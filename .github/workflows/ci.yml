@@ -380,15 +380,18 @@ jobs:
     name: iOS app and extensions compile (unsigned)
     needs: scope
     if: needs.scope.outputs.ios == 'true'
-    runs-on: macos-latest
+    runs-on: macos-15
     timeout-minutes: 60
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
     steps:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
       - name: Runner space and SDK preflight
         run: |
-          uname -m
+          test "$(uname -m)" = arm64
+          test -d "$DEVELOPER_DIR"
           python3 -c 'import shutil; n=shutil.disk_usage(".").free; print(f"Available: {n/1024**3:.1f} GiB"); assert n >= 25*1024**3, "Insufficient space for native CI build"'
           xcodebuild -version
           xcodebuild -showsdks

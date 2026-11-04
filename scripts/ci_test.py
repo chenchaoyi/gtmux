@@ -102,7 +102,9 @@ class ScopeTests(unittest.TestCase):
     def test_unsigned_ios_preserves_arm64_target_and_verifies_products(self):
         text = (ROOT / ".github/workflows/ci.yml").read_text()
         block = text.split("  ios-native:\n", 1)[1].split("  relay-worker:\n", 1)[0]
-        self.assertIn("runs-on: macos-latest", block)
+        self.assertIn("runs-on: macos-15\n", block)
+        self.assertIn("DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer", block)
+        self.assertIn('test "$(uname -m)" = arm64', block)
         self.assertIn("Verify actual ARM64 app and extension products", block)
         self.assertIn("ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO", block)
         self.assertNotIn("ARCHS=\"$(uname -m)\"", block)
@@ -168,9 +170,21 @@ class MacHostContractTests(unittest.TestCase):
         self.assertIn("swift test --parallel --num-workers 1", block)
         self.assertIn("bash macapp/Widget/build-extension.sh", block)
         self.assertIn("./scripts/check-design.sh", block)
-        # iOS retains the validated ARM runner; this is not an Intel phone archive migration.
+        # The pinned standard iOS image remains ARM, never the Intel Mac host.
         ios = workflow.split("  ios-native:\n", 1)[1].split("\n  android-native:", 1)[0]
-        self.assertIn("runs-on: macos-latest", ios)
+        self.assertIn("runs-on: macos-15\n", ios)
+
+    def test_ios_delivery_pins_the_same_arm_toolchain_and_keeps_protection(self):
+        root = Path(__file__).resolve().parents[1]
+        text = (root / ".github/workflows/ios-test-delivery.yml").read_text()
+        block = text.split("  delivery:\n", 1)[1]
+        self.assertIn("runs-on: macos-15\n", block)
+        self.assertIn("DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer", block)
+        self.assertIn('test "$(uname -m)" = arm64', block)
+        self.assertIn("environment: ios-test-delivery", block)
+        self.assertIn("hosted-signing.rb", block)
+        self.assertIn("CODE_SIGN_IDENTITY='Apple Distribution'", block)
+        self.assertNotIn("continue-on-error:", block)
 
 
 if __name__ == "__main__":
