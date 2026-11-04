@@ -36,9 +36,9 @@ class ScopeTests(unittest.TestCase):
     def test_recognized_modules_include_consumers(self):
         self.assertEqual(ci.classify(["internal/radar/agents_test.go"])["selected"], ["test"])
         self.assertEqual(set(ci.classify(["mobileapp/src/components/Chat.tsx"])["selected"]),
-                         {"mobile", "web", "ios-native", "android-native", "android-emulator"})
+                         {"mobile", "web", "ios-native", "ios-duo", "android-native", "android-emulator"})
         self.assertEqual(set(ci.classify(["mobileapp/ios/GtmuxWidget/Widget.swift"])["selected"]),
-                         {"mobile", "ios-native"})
+                         {"mobile", "ios-native", "ios-duo"})
         self.assertEqual(set(ci.classify(["relay-worker/src/index.ts"])["selected"]),
                          {"relay-worker", "test", "mobile", "android-native", "android-emulator"})
 
@@ -102,8 +102,14 @@ class ScopeTests(unittest.TestCase):
     def test_unsigned_ios_preserves_arm64_target_and_verifies_products(self):
         text = (ROOT / ".github/workflows/ci.yml").read_text()
         block = text.split("  ios-native:\n", 1)[1].split("  relay-worker:\n", 1)[0]
-        self.assertIn("runs-on: xcode-27", block)
-        self.assertIn("Probe iPhone Duo runtime", block)
+        self.assertIn("runs-on: macos-15\n", block)
+        self.assertIn("DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer", block)
+        self.assertIn('test "$(uname -m)" = arm64', block)
+        duo = text.split("  ios-duo:\n", 1)[1].split("  relay-worker:\n", 1)[0]
+        self.assertIn("runs-on: xcode-27", duo)
+        self.assertIn("DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer", duo)
+        self.assertIn("Probe iPhone Duo runtime", duo)
+        self.assertIn("ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO", duo)
         self.assertIn("Verify actual ARM64 app and extension products", block)
         self.assertIn("ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO", block)
         self.assertNotIn("ARCHS=\"$(uname -m)\"", block)
@@ -152,6 +158,39 @@ class ResultTests(unittest.TestCase):
             self.assertTrue(ci.verdict(plan, self.results([])))
         needs = self.results([]); needs["web"]["result"] = "failure"
         self.assertTrue(ci.verdict(ci.classify(["README.md"]), needs))
+
+
+
+
+class MacHostContractTests(unittest.TestCase):
+    def test_mac_host_keeps_both_architectures_and_native_checks(self):
+        root = Path(__file__).resolve().parents[1]
+        workflow = (root / ".github/workflows/ci.yml").read_text()
+        block = workflow.split("  menubar:\n", 1)[1].split("\n  ci-required:", 1)[0]
+        self.assertIn("runs-on: macos-26", block)
+        self.assertIn("DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer", block)
+        self.assertIn('test "$(uname -m)" = arm64', block)
+        self.assertIn("swift build -c release --arch arm64 --arch x86_64", block)
+        self.assertIn("GTMUX_UNIVERSAL: '1'", block)
+        self.assertIn("swift test --package-path shared/UsageWidgets", block)
+        self.assertIn("swift test --parallel --num-workers 1", block)
+        self.assertIn("bash macapp/Widget/build-extension.sh", block)
+        self.assertIn("./scripts/check-design.sh", block)
+        # The pinned standard iOS image remains ARM, never the Intel Mac host.
+        ios = workflow.split("  ios-native:\n", 1)[1].split("\n  android-native:", 1)[0]
+        self.assertIn("runs-on: macos-15\n", ios)
+
+    def test_ios_delivery_pins_the_same_arm_toolchain_and_keeps_protection(self):
+        root = Path(__file__).resolve().parents[1]
+        text = (root / ".github/workflows/ios-test-delivery.yml").read_text()
+        block = text.split("  delivery:\n", 1)[1]
+        self.assertIn("runs-on: macos-15\n", block)
+        self.assertIn("DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer", block)
+        self.assertIn('test "$(uname -m)" = arm64', block)
+        self.assertIn("environment: ios-test-delivery", block)
+        self.assertIn("hosted-signing.rb", block)
+        self.assertIn("CODE_SIGN_IDENTITY='Apple Distribution'", block)
+        self.assertNotIn("continue-on-error:", block)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,3 @@
+- Chat and Trace show recorded file reads, edits, searches and other tool calls from current Codex, OpenCode and Kimi sessions.
+- Inspect recorded file changes with readable code and complete selected edit inputs, including empty replacements.
+- HQ summary cards avoid repeating the same question and keep the reason for your decision visible.

@@ -1,5 +1,5 @@
-// Generated from shared App trace analysis and presentation; SHA256 c631356902a55f8fdb3b5083d2bca68941c4f0f404006db25519dc3d7156ff35
-// Body SHA256 e30dc55888bb8c5bdfd5ed667e6d5e0cbdb5b19d0c223ac70df4cf3e305c3923
+// Generated from shared App trace analysis and presentation; SHA256 63de6f259358854745d6b1e19f2ac935174f284f9ca53e69a7f2facbee110603
+// Body SHA256 d9999c3ea1209c98a3e1fd9d85e9908fb06d4e4d0c4887d04c75d5e7d5ecc5fe
 (function(root){var modules={"model":function(exports,require){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -378,7 +378,7 @@ function timelineRows(groups, expanded, calls, searching = false, defaults = {})
 /** Reading transforms only; raw content and copy retain the recorded text. */
 function previewText(event) {
     if (event.kind === 'tool' &&
-        ['json', 'arguments'].includes(event.step?.inputKind || '')) {
+        ['json', 'arguments', 'changes'].includes(event.step?.inputKind || '')) {
         try {
             const value = JSON.parse(event.body);
             if (value !== null && typeof value === 'object')

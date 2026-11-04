@@ -51,11 +51,12 @@ type codexPayload struct {
 	Name             string          `json:"name"`               // response_item function_call
 	Input            string          `json:"input"`              // custom_tool_call freeform input
 	Arguments        string          `json:"arguments"`          // response_item function_call (JSON string)
-	SessionID        string          `json:"session_id"`         // session_meta (first line)
-	ID               string          `json:"id"`                 // current session_meta
-	Source           json.RawMessage `json:"source"`             // creation context; not current ownership
-	Originator       string          `json:"originator"`         // codex-tui | codex_work_desktop | Codex Desktop
-	Cwd              string          `json:"cwd"`                // session_meta (first line)
+	CallID           string          `json:"call_id"`
+	SessionID        string          `json:"session_id"` // session_meta (first line)
+	ID               string          `json:"id"`         // current session_meta
+	Source           json.RawMessage `json:"source"`     // creation context; not current ownership
+	Originator       string          `json:"originator"` // codex-tui | codex_work_desktop | Codex Desktop
+	Cwd              string          `json:"cwd"`        // session_meta (first line)
 }
 
 // CodexHome is where Codex keeps its sessions, for the packages that need to
@@ -394,6 +395,9 @@ func codexLastTurnBoundaryIn(path string) (string, time.Time) {
 // opens a turn; agent_message / task_complete set the (latest/authoritative)
 // reply; response_item function_call/custom_tool_call adds a tool step.
 func codexStep(line string, st *parseState) {
+	if codexNativeEvent(line, st) {
+		return
+	}
 	var e codexLine
 	if json.Unmarshal([]byte(line), &e) != nil || len(e.Payload) == 0 {
 		return
@@ -448,7 +452,7 @@ func codexStep(line string, st *parseState) {
 				st.addText(msg)
 			}
 		} else if p.Type == "function_call" && p.Name != "" {
-			st.addSteps([]Step{toolStep(p.Name, codexToolName(p.Name), json.RawMessage(p.Arguments), codexToolDetail(p.Arguments))})
+			st.addRecordedStep("codex", toolStep(p.Name, codexToolName(p.Name), json.RawMessage(p.Arguments), codexToolDetail(p.Arguments)), p.CallID)
 		} else if p.Type == "custom_tool_call" && p.Name != "" {
 			step := Step{Kind: "tool", Title: codexToolName(p.Name), Operation: toolOperation(p.Name)}
 			// exec's custom form is Codex code-mode, unlike legacy JSON exec commands.
@@ -465,7 +469,7 @@ func codexStep(line string, st *parseState) {
 				step.InputKind = "command"
 			}
 			step.Detail = clip(strings.Join(strings.Fields(step.Input), " "), 80)
-			st.addSteps([]Step{step})
+			st.addRecordedStep("codex", step, p.CallID)
 		}
 	}
 }

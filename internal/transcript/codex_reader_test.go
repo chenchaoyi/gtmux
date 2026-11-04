@@ -21,7 +21,12 @@ func TestCodexChatRecordHeaders(t *testing.T) {
 	}{
 		{`{"type":"compacted","payload":{"type":"message"`, false},
 		{`{"type":"response_item","payload":{"type":"custom_tool_call_output","output":"`, false},
-		{`{"type":"event_msg","payload":{"type":"item_completed","item":`, false},
+		{`{"type":"event_msg","payload":{"type":"item_completed","item":`, true},
+		{`{"type":"event_msg","payload":{"type":"item_completed","item":{"type":"FileChange"`, true},
+		{`{"type":"event_msg","payload":{"type":"item_completed","item":{"type":"CommandExecution"`, true},
+		{`{"type":"event_msg","payload":{"type":"item_completed","item":{"type":"McpToolCall"`, true},
+		{`{"type":"event_msg","payload":{"type":"item_completed","item":{"type":"Reasoning"`, false},
+		{`{"type":"event_msg","payload":{"type":"item_completed","item":{"type":"custom_tool_call"`, false},
 		{`{"type":"response_item","payload":{"type":"message","role":"user"`, true},
 		{`{"type":"response_item","payload":{"type":"custom_tool_call","name":"exec"`, true},
 		{`{"type":"event_msg","payload":{"message":"body","type":"agent_message"}}`, true},

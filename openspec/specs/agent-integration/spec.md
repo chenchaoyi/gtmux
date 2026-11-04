@@ -379,3 +379,39 @@ A saved direct dst or Node-hosted bin/dst launch MAY provide client liveness evi
 
 - **WHEN** the save records node /fixture/bin/dst and the locator has a verified DSH terminal resume record
 - **THEN** the restore plan lists that DSH conversation and the launch targets its exact session through dst
+
+### Requirement: Current OpenCode and Kimi recorded calls retain legacy compatibility
+
+The OpenCode bridge SHALL admit verified V1 server and V2 setup plugin contracts
+without loading both. Managed V2 terminal sessions SHALL use a leased private
+server, and hooks SHALL verify its live CLI ancestry before using a pane.
+Unconfirmed shared-service events SHALL NOT acquire a terminal through inherited
+environment values or collect session content. Explicit server/headless recipes,
+management commands and explicit private/shared boolean flags SHALL retain native
+semantics. Kimi SHALL read native loop tool.call events and
+legacy message toolCalls, deduplicating exact call identities within each turn.
+Selected tool inputs SHALL share byte budgets, operation labels and source-scoped
+full-input retrieval across Chat and Trace. Results and reasoning remain excluded.
+
+#### Scenario: Shared OpenCode service inherits an old pane
+
+- **WHEN** a V2 shared service emits a root lifecycle or tool event
+- **THEN** the old pane is not marked active or finished and no content is collected
+- **AND** only verified private-server ancestry may claim a managed terminal
+
+#### Scenario: OpenCode management and explicit server choices
+
+- **WHEN** the user invokes mcp list or explicitly disables standalone mode
+- **THEN** the native argument list is preserved without adding a private server
+- **AND** inline shared-service or external-server flags cannot establish private terminal ownership
+
+#### Scenario: Kimi records tools only as loop events
+
+- **WHEN** a Kimi 2.5 tool.call carries a name, object args and toolCallId
+- **THEN** the recorded file or command action appears in both Chat and Trace
+- **AND** an exact mirrored message call is shown once, without reading tool results
+
+#### Scenario: An edit deletes text
+
+- **WHEN** a recorded edit contains an empty replacement string
+- **THEN** the inspector retains that selected empty argument and the full original input remains session-scoped

@@ -12,7 +12,7 @@ import sys
 JOBS = {
     "test": "core", "cross-build": "cross", "mobile": "mobile", "web": "web",
     "menubar": "menubar", "relay-worker": "relay", "tunnel-worker": "tunnel",
-    "ios-native": "ios", "android-native": "android", "android-emulator": "android",
+    "ios-native": "ios", "ios-duo": "ios", "android-native": "android", "android-emulator": "android",
 }
 DOC_FILES = {"README.md", "README.zh.md", "CONTRIBUTING.md", "SECURITY.md", "LICENSE",
              "CLAUDE.md", ".github/pull_request_template.md"}
@@ -50,10 +50,10 @@ def classify(paths, force_reason=None):
             full = True
             reasons.append("Shared HTTP contract consumer: " + json.dumps(path))
         elif path.startswith(("mobileapp/src/", "mobileapp/e2e/")) and PurePosixPath(path).suffix in {".ts", ".tsx", ".js", ".cjs"}:
-            selected.update(("mobile", "web", "ios-native", "android-native", "android-emulator"))
+            selected.update(("mobile", "web", "ios-native", "ios-duo", "android-native", "android-emulator"))
             reasons.append("Phone/iPad code, native compile and shared Web presentation: " + json.dumps(path))
         elif path.startswith("mobileapp/ios/") and PurePosixPath(path).suffix in {".swift", ".m", ".mm", ".h"}:
-            selected.update(("mobile", "ios-native"))
+            selected.update(("mobile", "ios-native", "ios-duo"))
             reasons.append("iOS native code and phone consumers: " + json.dumps(path))
         elif path.startswith(("macapp/Sources/", "macapp/Tests/")) and PurePosixPath(path).suffix == ".swift":
             selected.add("menubar")

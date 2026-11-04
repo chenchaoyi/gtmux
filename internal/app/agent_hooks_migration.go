@@ -7,8 +7,17 @@ import (
 	"strings"
 )
 
+func opencodeConfigDir() string {
+	if dir := os.Getenv("OPENCODE_CONFIG_DIR"); dir != "" {
+		return dir
+	}
+	if dir := os.Getenv("XDG_CONFIG_HOME"); dir != "" {
+		return filepath.Join(dir, "opencode")
+	}
+	return filepath.Join(homeDir(), ".config", "opencode")
+}
 func legacyOpencodePluginPath() string {
-	return filepath.Join(homeDir(), ".config", "opencode", "plugin", "gtmux.js")
+	return filepath.Join(opencodeConfigDir(), "plugin", "gtmux.js")
 }
 
 func ownedOpencodePlugin(path string) bool {

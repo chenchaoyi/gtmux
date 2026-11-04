@@ -380,15 +380,85 @@ jobs:
     name: iOS app and extensions compile (unsigned)
     needs: scope
     if: needs.scope.outputs.ios == 'true'
-    runs-on: xcode-27
-    timeout-minutes: 90
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
     steps:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
       - name: Runner space and SDK preflight
         run: |
-          uname -m
+          test "$(uname -m)" = arm64
+          test -d "$DEVELOPER_DIR"
+          python3 -c 'import shutil; n=shutil.disk_usage(".").free; print(f"Available: {n/1024**3:.1f} GiB"); assert n >= 25*1024**3, "Insufficient space for native CI build"'
+          xcodebuild -version
+          xcodebuild -showsdks
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: mobileapp/package-lock.json
+      - uses: ruby/setup-ruby@e81a8fa391b11a595c1b7ed84177cc0fe02faf83 # v1
+        with:
+          working-directory: mobileapp
+          bundler-cache: true
+      - name: Dependencies (no signing setup)
+        working-directory: mobileapp
+        run: npm ci && (cd ios && bundle exec pod install)
+      - name: Widget target and shared-data boundaries
+        working-directory: mobileapp
+        run: bundle exec ruby ios/tests/usage_widget_targets_test.rb
+
+      - name: Compile app, Live Activity and notification extension
+        working-directory: mobileapp
+        run: |
+          set -o pipefail
+          xcodebuild -workspace ios/GtmuxMobile.xcworkspace -scheme GtmuxMobile \
+            -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -jobs 2 \
+            -derivedDataPath "$RUNNER_TEMP/gtmux-ios-ci" ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO \
+            build 2>&1 | tee "$RUNNER_TEMP/gtmux-ios-build.log"
+      - name: Verify actual ARM64 app and extension products
+        run: |
+          python3 - <<'PY'
+          import os, pathlib, plistlib, subprocess
+          products = pathlib.Path(os.environ['RUNNER_TEMP']) / 'gtmux-ios-ci/Build/Products/Release-iphonesimulator'
+          apps = list(products.glob('*.app'))
+          assert len(apps) == 1, 'Expected one complete Simulator app'
+          extensions = list((apps[0] / 'PlugIns').glob('*.appex'))
+          assert len(extensions) == 2, 'Both app extensions must be embedded'
+          for bundle in [apps[0], *extensions]:
+              info = plistlib.loads((bundle / 'Info.plist').read_bytes())
+              executable = bundle / info['CFBundleExecutable']
+              architectures = subprocess.check_output(['lipo', '-archs', str(executable)], text=True).split()
+              assert architectures == ['arm64'], 'Native product target differs from ARM64'
+          print('Unsigned app and both embedded extensions verified as ARM64')
+          PY
+      - name: Native build failure evidence
+        if: failure()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: ios-native-build-log
+          path: ${{ runner.temp }}/gtmux-ios-build.log
+          retention-days: 7
+
+  ios-duo:
+    name: iPhone Duo simulator acceptance (unsigned)
+    needs: scope
+    if: needs.scope.outputs.ios == 'true'
+    runs-on: xcode-27
+    timeout-minutes: 90
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Runner space and SDK preflight
+        run: |
+          test "$(uname -m)" = arm64
+          test -d "$DEVELOPER_DIR"
           python3 -c 'import shutil; n=shutil.disk_usage(".").free; print(f"Available: {n/1024**3:.1f} GiB"); assert n >= 25*1024**3, "Insufficient space for native CI build"'
           xcodebuild -version
           xcodebuild -showsdks
@@ -519,7 +589,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: ios-native-build-log
+          name: ios-duo-build-log
           path: ${{ runner.temp }}/gtmux-ios-build.log
           retention-days: 7
 
@@ -582,20 +652,31 @@ jobs:
     name: menu-bar app build (macOS)
     needs: scope
     if: needs.scope.outputs.menubar == 'true'
-    runs-on: macos-latest
+    runs-on: macos-26
     timeout-minutes: 25
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
     steps:
       - uses: actions/checkout@v5
+
+      - name: Verify pinned Mac toolchain
+        run: |
+          test "$(uname -m)" = arm64
+          test -d "$DEVELOPER_DIR"
+          xcodebuild -version
+          xcrun swift --version
 
       # The menu-bar app is native Swift (macapp/); compile + unit-test it here so
       # a PR can't break it unnoticed. (Linux jobs above can't build Swift/AppKit.)
       - name: swift build (release)
-        run: cd macapp && swift build -c release
+        run: cd macapp && swift build -c release --arch arm64 --arch x86_64
 
       - name: Usage widget snapshot and bounded native transport
         run: swift test --package-path shared/UsageWidgets
 
       - name: Native Mac host, WidgetKit metadata and bundled resources (unsigned)
+        env:
+          GTMUX_UNIVERSAL: '1'
         run: bash macapp/Widget/build-extension.sh
 
       - name: swift test (model + design conformance)
@@ -632,7 +713,7 @@ jobs:
 
   ci-required:
     if: always()
-    needs: [scope, quality, test, cross-build, mobile, web, ios-native, android-native, android-emulator, relay-worker, tunnel-worker, menubar]
+    needs: [scope, quality, test, cross-build, mobile, web, ios-native, ios-duo, android-native, android-emulator, relay-worker, tunnel-worker, menubar]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

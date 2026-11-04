@@ -51,6 +51,10 @@ import (
 // one part holding the finished text (measured), so each part is appended as it stands
 // rather than accumulated — accumulating would print the tail of the reply twice.
 //
+// Also verified against Kimi 2.5.0: loop tool.call records carry name,
+// toolCallId and object args; assistant append_message toolCalls are absent in
+// headless runs. Read these recorded calls as well, with exact-ID mirror dedup.
+//
 // Verified against kimi 0.41.0 (agent-core-v2, wire protocol 1.5) by running a real
 // session against a local stand-in provider.
 
@@ -131,6 +135,7 @@ func fileExists(p string) bool {
 // fifty-nine record types unmarshal into a Type that no case matches.
 type kimiWire struct {
 	Type    string `json:"type"`
+	AgentID string `json:"agentId"`
 	Time    int64  `json:"time"` // epoch ms
 	Message *struct {
 		Role    string          `json:"role"`
@@ -141,14 +146,18 @@ type kimiWire struct {
 			Text string `json:"text"`
 		} `json:"content"`
 		ToolCalls []struct {
+			ID        string `json:"id"`
 			Name      string `json:"name"`
 			Arguments string `json:"arguments"`
 		} `json:"toolCalls"`
 	} `json:"message"`
 	// The assistant side of a turn: `context.append_loop_event` with a `content.part`.
 	Event *struct {
-		Type string `json:"type"`
-		Part *struct {
+		Type       string          `json:"type"`
+		ToolCallID string          `json:"toolCallId"`
+		Name       string          `json:"name"`
+		Args       json.RawMessage `json:"args"`
+		Part       *struct {
 			Type string `json:"type"`
 			Text string `json:"text"`
 		} `json:"part"`
@@ -175,10 +184,13 @@ func (w *kimiWire) text() string {
 // kimiStep feeds one journal line to the parser.
 func kimiStep(line string, st *parseState) {
 	var w kimiWire
-	if json.Unmarshal([]byte(line), &w) != nil {
+	if json.Unmarshal([]byte(line), &w) != nil || (w.AgentID != "" && w.AgentID != "main") {
 		return
 	}
 	if w.Type == kimiLoopRecord {
+		if w.Event != nil && w.Event.Type == "tool.call" && w.Event.Name != "" {
+			st.addRecordedStep("kimi", toolStep(w.Event.Name, kimiToolName(w.Event.Name), w.Event.Args, kimiToolDetail(string(w.Event.Args))), w.Event.ToolCallID)
+		}
 		if w.Event != nil && w.Event.Type == "content.part" && w.Event.Part != nil && w.Event.Part.Type == "text" {
 			if t := strings.TrimSpace(w.Event.Part.Text); t != "" {
 				st.addText(t)
@@ -212,14 +224,12 @@ func kimiStep(line string, st *parseState) {
 		if t := w.text(); t != "" {
 			st.addText(t)
 		}
-		var steps []Step
 		for _, c := range w.Message.ToolCalls {
 			if c.Name == "" {
 				continue
 			}
-			steps = append(steps, toolStep(c.Name, kimiToolName(c.Name), json.RawMessage(c.Arguments), kimiToolDetail(c.Arguments)))
+			st.addRecordedStep("kimi", toolStep(c.Name, kimiToolName(c.Name), json.RawMessage(c.Arguments), kimiToolDetail(c.Arguments)), c.ID)
 		}
-		st.addSteps(steps)
 	}
 }
 

@@ -56,6 +56,39 @@ function mount(open: boolean) {
   });
   return tree;
 }
+
+test('native file changes are labeled as recorded changes and preserve complete copy', () => {
+  const input = JSON.stringify({
+    status: 'completed',
+    changes: { 'example.go': { type: 'update', unified_diff: '-old\n+new\n' } },
+  });
+  act(() => {
+    tree = renderer.create(
+      <ToolSteps
+        {...props(true)}
+        steps={[
+          {
+            kind: 'tool',
+            title: 'apply_patch',
+            operation: 'edit',
+            detail: 'example.go',
+            input,
+            input_kind: 'changes',
+          },
+        ]}
+      />,
+    );
+  });
+  act(() => byID('tool-step-toggle-0').props.onPress());
+  expect(
+    tree.root
+      .findAllByType(Text)
+      .some(n => [n.props.children].flat(Infinity).join('') === 'File changes'),
+  ).toBe(true);
+  expect(tree.root.findByType(CodeText).props.source).toBe(input);
+  act(() => byID('tool-input-copy').props.onPress());
+  expect(Clipboard.setString).toHaveBeenCalledWith(input);
+});
 const byID = (id: string) =>
   tree.root.findAll(
     n => typeof n.type !== 'string' && n.props.testID === id,

@@ -57,6 +57,14 @@ and only then uploads it and updates the cask. The official mirror also waits fo
 that publisher. Failed-only reruns retain the successful build's artifact ID and
 build attempt; they do not substitute a ZIP from a newer or older run.
 
+The Mac notarization helper requires Apple's explicit `Accepted` JSON status before
+retrieving the ticket. An observed CloudKit connection loss (`stapler` exit68 with
+`NSURLErrorDomain Code=-1005`) retries only that lookup, at most three times with
+two- and five-second pauses. It never retries signing or submission, and permanent
+errors stop immediately. Stapled-ticket validation remains mandatory. This avoids
+rebuilding a valid app for a brief ticket download failure without treating a
+rejected or unstapled package as publishable.
+
 Start selected iOS and Android delivery workflows immediately after the authorized
 annotated tag push. iOS can prepare the exact green main source before the GitHub
 Release exists; its existing protected-environment review is unchanged. Before
@@ -65,7 +73,9 @@ main CI and latest successful CLI job. It waits up to fifteen minutes with GETs
 only if CLI is still building, and stops without uploading on failure. The original
 IPA/archive and failure diagnostics still go to encrypted recovery. No new tag,
 release, mobile build or Store submission is authorized by this optimization.
-Unsigned iOS CI retains its existing normal ARM host, explicitly compiles the ARM64
+Unsigned iOS CI uses the standard ARM `macos-15` image with explicit Xcode26.3,
+matching protected iOS delivery and avoiding the moving `macos-latest` image alias.
+Runner preflight rejects any other CPU architecture. CI explicitly compiles the ARM64
 Simulator target, and checks the actual app and both embedded extension binaries without
 signing secrets. Native compilation must actually pass on the candidate and main. A
 standard Intel trial exceeded 40 minutes and was not adopted as a default or configured
@@ -159,3 +169,15 @@ configuration changes never authorize deletion of older protected archives.
 For browser changes, run `node --test internal/server/web/*.test.cjs` before `npm test --prefix tests/web`. The VM logic harness must load the same generated shared models as the real page; rendered-browser success does not cover a missing harness dependency. `make check` is the core gate and does not run either separate browser layer.
 
 Before opening the first PR, audit both current user guides and design documents for the changed interactions. Keeping only the design authority current can leave obsolete instructions in the published website and cause another CI cycle after the implementation is otherwise ready.
+
+## Mac runner availability
+
+Native Mac CI uses the standard ARM `macos-26` image with explicit Xcode26.6.
+The Intel trial compiled and signed universal artifacts, but its SwiftUI render
+suite aborted in Metal; it is not an accepted native UI test host. CI still
+compiles the app and Widget host/extension for both arm64 and x86_64 and runs every
+native test, design and bundled-resource check. Signed release builds use
+`macos-15-intel` with explicit Xcode26.3, retaining universal artifacts and the same
+signature/notarization gates. iOS remains ARM on `macos-15` and Xcode26.3.
+Host availability does not guarantee queue time; report actual next-release
+measurements separately from build work and failed experiments.

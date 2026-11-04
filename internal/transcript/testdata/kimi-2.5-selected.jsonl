@@ -1,0 +1,6 @@
+{"type":"metadata","protocol_version":"1.5"}
+{"type":"context.append_message","time":1793808403736,"agentId":"main","message":{"role":"user","content":[{"type":"text","text":"Read sample.txt, edit alpha to beta, then run the synthetic command."}],"toolCalls":[],"id":"msg_01M6KN038K4VE2EKXSNAA6MTAP","origin":{"kind":"user"}}}
+{"type":"context.append_loop_event","time":1793808403816,"agentId":"main","event":{"type":"tool.call","toolCallId":"fixture-call-0","name":"Read","args":{"path":"/example/sample.txt"}}}
+{"type":"context.append_loop_event","time":1793808403858,"agentId":"main","event":{"type":"tool.call","toolCallId":"fixture-call-1","name":"Edit","args":{"path":"/example/sample.txt","old_string":"alpha","new_string":"beta"}}}
+{"type":"context.append_loop_event","time":1793808403869,"agentId":"main","event":{"type":"tool.call","toolCallId":"fixture-call-2","name":"Bash","args":{"command":"printf synthetic-ok","description":"Synthetic fixture"}}}
+{"type":"context.append_loop_event","time":1793808403880,"agentId":"main","event":{"type":"content.part","part":{"type":"text","text":"Synthetic provider complete."}}}

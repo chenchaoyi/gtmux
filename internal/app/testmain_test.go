@@ -10,5 +10,8 @@ func TestMain(m *testing.M) {
 	// Identity scenarios set their own synthetic runtime IDs explicitly.
 	_ = os.Unsetenv("CODEX_THREAD_ID")
 	_ = os.Unsetenv("CODEX_SESSION_ID")
+	// Provider installer tests opt into their own disposable config overrides.
+	_ = os.Unsetenv("OPENCODE_CONFIG_DIR")
+	_ = os.Unsetenv("XDG_CONFIG_HOME")
 	os.Exit(m.Run())
 }

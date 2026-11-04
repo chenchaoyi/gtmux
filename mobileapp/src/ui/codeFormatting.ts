@@ -290,7 +290,7 @@ export function formatCode(source: string, hint = ''): string {
     ? 'babel-ts'
     : /^(?:js|jsx|javascript|code|exec)$/.test(kind)
     ? 'babel'
-    : /^(?:json|arguments|parameters)$/.test(kind)
+    : /^(?:json|arguments|parameters|changes)$/.test(kind)
     ? 'json'
     : /^(?:html|vue|angular)$/.test(kind)
     ? 'html'

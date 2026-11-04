@@ -17,6 +17,8 @@ Use an iPhone, iPad or browser to view agent status, read output and reply. The 
 
 **Pair is for your own devices. Send collaborators a Share link.**
 
+Tool calls include the agent’s recorded file reads, edits, searches and MCP calls, alongside any outer Run code wrapper. Chat and Trace use the same parsed records; a wrapper is not evidence that every command inside it executed.
+
 ## Connect your device
 
 Complete [the three-step setup](../../README.md#get-connected) first. It covers the host installation, doctor, network choice and the App Store app's **Add a server → Scan pairing QR** controls. The same app works on iPhone and iPad. A successful pairing saves the host in the server list; open it to see the radar.
