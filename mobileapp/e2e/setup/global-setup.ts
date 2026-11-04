@@ -2,7 +2,7 @@ import {spawn, ChildProcess} from 'child_process';
 import {existsSync, mkdirSync, symlinkSync, unlinkSync, writeFileSync} from 'fs';
 import {join, resolve} from 'path';
 import {remote} from 'webdriverio';
-import {alertMode, appiumPort, appiumServerUrl, iosCapabilities, sessionConnectionOptions} from './capabilities';
+import {alertMode, appiumPort, appiumServerTimeoutArgs, appiumServerUrl, iosCapabilities, sessionConnectionOptions} from './capabilities';
 import {writeDebugFlags} from './app';
 import {reclaimBefore} from './reclaim';
 
@@ -62,7 +62,7 @@ export default async function globalSetup(): Promise<void> {
   console.log(`[e2e] Spawning Appium server, log → ${appiumLogPath}`);
   const server: ChildProcess = spawn(
     'npx',
-    ['appium', '--port', String(appiumPort), '--log', appiumLogPath, '--log-level', 'info'],
+    ['appium', '--port', String(appiumPort), '--log', appiumLogPath, '--log-level', 'info', ...appiumServerTimeoutArgs()],
     {cwd: appRoot, detached: true, stdio: 'ignore'},
   );
   if (server.pid == null) throw new Error('[e2e] Appium failed to spawn (no PID)');

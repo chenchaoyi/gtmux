@@ -1,4 +1,4 @@
-import {alertCapabilities, alertMode, captureStartupCapabilities, cloudStartupCapabilities, headlessCapabilities, sessionConnectionOptions, storeCaptureTimeout} from './capabilities';
+import {alertCapabilities, alertMode, appiumServerTimeoutArgs, captureStartupCapabilities, cloudStartupCapabilities, headlessCapabilities, sessionConnectionOptions, storeCaptureTimeout} from './capabilities';
 
 test('cloud simulator session waits for a fresh WDA build without requiring a prebuilt product', () => {
   const env = {GTMUX_E2E_SESSION_CI: '1'};
@@ -9,6 +9,10 @@ test('cloud simulator session waits for a fresh WDA build without requiring a pr
   });
   expect(cloudStartupCapabilities(env)).not.toHaveProperty('appium:usePrebuiltWDA');
   expect(sessionConnectionOptions(env)).toEqual({connectionRetryTimeout: 900_000, connectionRetryCount: 0});
+  const args = appiumServerTimeoutArgs(env);
+  expect(args[0]).toBe('--keep-alive-timeout');
+  expect(Number(args[1]) * 1000).toBeGreaterThan(sessionConnectionOptions(env).connectionRetryTimeout);
+  expect(appiumServerTimeoutArgs({})).toEqual([]);
 });
 
 // What a session does with an alert has to be the run's explicit choice. The default
