@@ -499,7 +499,7 @@ jobs:
     name: menu-bar app build (macOS)
     needs: scope
     if: needs.scope.outputs.menubar == 'true'
-    runs-on: macos-latest
+    runs-on: macos-15-intel
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v5
@@ -507,12 +507,14 @@ jobs:
       # The menu-bar app is native Swift (macapp/); compile + unit-test it here so
       # a PR can't break it unnoticed. (Linux jobs above can't build Swift/AppKit.)
       - name: swift build (release)
-        run: cd macapp && swift build -c release
+        run: cd macapp && swift build -c release --arch arm64 --arch x86_64
 
       - name: Usage widget snapshot and bounded native transport
         run: swift test --package-path shared/UsageWidgets
 
       - name: Native Mac host, WidgetKit metadata and bundled resources (unsigned)
+        env:
+          GTMUX_UNIVERSAL: '1'
         run: bash macapp/Widget/build-extension.sh
 
       - name: swift test (model + design conformance)

@@ -123,3 +123,11 @@ API 中的 job started_at 也可能包含审核等待，必须对照审核和真
 浏览器改动先运行 `node --test internal/server/web/*.test.cjs`，再运行 `npm test --prefix tests/web`。VM 逻辑测试环境必须加载与真实页面相同的共享生成模型；浏览器渲染通过不代表测试环境的依赖完整。`make check` 是核心门禁，不包含这两层独立浏览器检查。
 
 首次打开 PR 前，同时核对当前用户指南与设计文档中的相关操作。只更新设计依据会让官网继续显示旧说明，也容易在实现已经就绪后追加提交、重跑整轮 CI。
+
+## Mac runner 的可用性
+
+Mac CI 与签名构建使用标准 `macos-15-intel` 镜像。CI 仍为 arm64、x86_64 编译 App
+及 Widget 宿主／扩展，在 runner 上运行全部原生测试，并核设计和资源。正式产物仍是
+双架构包，签名和公证门禁保留。iOS 继续使用已验证的 ARM runner，不随本次迁到 Intel。
+这一选择针对 ARM 作业尚未取得 runner 就失败的实际问题；不承诺排队时长，也不替代
+下一次正式发版的实测耗时。

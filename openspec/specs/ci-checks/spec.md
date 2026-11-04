@@ -179,3 +179,17 @@ serial releases SHALL remain eligible for exact-source mirror validation.
 - **WHEN** a failed publisher is rerun after its Mac build already succeeded
 - **THEN** it verifies the original successful build artifact ID and build attempt
 - **AND** a changed ZIP or artifact from another source/run is rejected
+
+### Requirement: Mac host selection preserves universal product checks
+
+Mac checks and release builds MAY use the standard Intel macOS host to avoid an
+unavailable ARM pool. CI SHALL compile the app and Widget host/extension for arm64
+and x86_64, run all native unit suites and design checks on that host, and retain
+existing signing/notarization requirements for release artifacts. iOS host
+selection and actual ARM64 product verification SHALL remain independent.
+
+#### Scenario: A Mac job changes hosted architecture
+
+- **WHEN** the Mac job uses the standard Intel host
+- **THEN** both product architectures are compiled and the native checks still run
+- **AND** official artifacts remain universal with the same publication gates

@@ -153,5 +153,24 @@ class ResultTests(unittest.TestCase):
         self.assertTrue(ci.verdict(ci.classify(["README.md"]), needs))
 
 
+
+
+class MacHostContractTests(unittest.TestCase):
+    def test_mac_host_keeps_both_architectures_and_native_checks(self):
+        root = Path(__file__).resolve().parents[1]
+        workflow = (root / ".github/workflows/ci.yml").read_text()
+        block = workflow.split("  menubar:\n", 1)[1].split("\n  ci-required:", 1)[0]
+        self.assertIn("runs-on: macos-15-intel", block)
+        self.assertIn("swift build -c release --arch arm64 --arch x86_64", block)
+        self.assertIn("GTMUX_UNIVERSAL: '1'", block)
+        self.assertIn("swift test --package-path shared/UsageWidgets", block)
+        self.assertIn("swift test --parallel --num-workers 1", block)
+        self.assertIn("bash macapp/Widget/build-extension.sh", block)
+        self.assertIn("./scripts/check-design.sh", block)
+        # iOS retains the validated ARM runner; this is not an Intel phone archive migration.
+        ios = workflow.split("  ios-native:\n", 1)[1].split("\n  android-native:", 1)[0]
+        self.assertIn("runs-on: macos-latest", ios)
+
+
 if __name__ == "__main__":
     unittest.main()

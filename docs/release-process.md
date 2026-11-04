@@ -159,3 +159,13 @@ configuration changes never authorize deletion of older protected archives.
 For browser changes, run `node --test internal/server/web/*.test.cjs` before `npm test --prefix tests/web`. The VM logic harness must load the same generated shared models as the real page; rendered-browser success does not cover a missing harness dependency. `make check` is the core gate and does not run either separate browser layer.
 
 Before opening the first PR, audit both current user guides and design documents for the changed interactions. Keeping only the design authority current can leave obsolete instructions in the published website and cause another CI cycle after the implementation is otherwise ready.
+
+## Mac runner availability
+
+Mac CI and signed Mac builds use the standard `macos-15-intel` image. CI still
+compiles the app and Widget host/extension for both arm64 and x86_64, runs the full
+native test suites on the runner, and checks design and bundled resources. Release
+artifacts remain universal and keep the same signature/notarization gates. iOS
+continues on its validated ARM runner; it is not moved to Intel with this change.
+This host choice addresses observed ARM jobs failing before acquiring a runner;
+it does not guarantee queue time or replace actual next-release timing evidence.

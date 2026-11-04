@@ -141,7 +141,7 @@ jobs:
   # launch it and confirm the colored dot + count appears, and the popover opens.
   app:
     name: menu-bar app (macOS)
-    runs-on: macos-latest
+    runs-on: macos-15-intel
     permissions:
       contents: read
     outputs:
