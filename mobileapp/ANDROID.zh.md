@@ -49,7 +49,7 @@ npm run test:e2e:android
 
 **Android private delivery build** 只接受 main 上的精确已审提交，该提交的最新 main CI 和安卓模拟器任务必须通过。云端构建生产模式的未签名 APK／AAB，核对 JS／原生库字节、两个 64 位架构、源码和 16 KB ELF 对齐，再只上传 age 加密产物。构建任务只接收公开的加密接收方，不接触应用或上传签名私钥。
 
-下载精确的成功流水线产物，独立核对整体摘要、源码回执和每个文件的 SHA。在本机的空输出目录中执行 `scripts/android-delivery.py sign --input UNSIGNED --output SIGNED --source SHA --sdk SDK`，签名输入只从私有环境读取：`GTMUX_ANDROID_KEYSTORE`、`GTMUX_ANDROID_STORE_PASSWORD`、`GTMUX_ANDROID_KEY_ALIAS`、`GTMUX_ANDROID_KEY_PASSWORD`。然后执行 `verify`，将 APK／AAB 与固定应用证书核对，包含签名、源码／版本、JS／原生字节、双架构、16 KB ELF／ZIP 和 Google bundle 校验。构建或下载成功不能当作安装回执。R8 映射、JS source map、原生符号和源码包随加密构建保存。上架准备见[商店清单](../docs/android/store.zh.md)。
+在仓库根目录用 `python3 mobileapp/scripts/fetch-delivery.py --platform android --run RUN_ID --attempt ATTEMPT --artifact ARTIFACT_ID --source FULL_COMMIT --output PRIVATE_RESULT_DIR` 取回精确成功源码/attempt 的加密产物，输出目录仅自己可读，解密另用私有目录。参见[发版准备](../docs/release-process.zh.md)。独立核对整体摘要、源码回执和每个文件的 SHA。在本机的空输出目录中执行 `scripts/android-delivery.py sign --input UNSIGNED --output SIGNED --source SHA --sdk SDK`，签名输入只从私有环境读取：`GTMUX_ANDROID_KEYSTORE`、`GTMUX_ANDROID_STORE_PASSWORD`、`GTMUX_ANDROID_KEY_ALIAS`、`GTMUX_ANDROID_KEY_PASSWORD`。然后执行 `verify`，将 APK／AAB 与固定应用证书核对，包含签名、源码／版本、JS／原生字节、双架构、16 KB ELF／ZIP 和 Google bundle 校验。构建或下载成功不能当作安装回执。R8 映射、JS source map、原生符号和源码包随加密构建保存。上架准备见[商店清单](../docs/android/store.zh.md)。
 
 可选 Firebase 客户端使用公开仓库变量 `ANDROID_FIREBASE_APP_ID`、`ANDROID_FIREBASE_SENDER_ID`、`ANDROID_FIREBASE_API_KEY`、`ANDROID_FIREBASE_PROJECT_ID`；服务端推送账号私钥不进入客户端或构建任务。本机已有签名输入时，也可不带 `--unsigned` 直接构建；缺少私钥时不会回退使用 QA 签名。
 

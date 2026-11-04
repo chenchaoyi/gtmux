@@ -86,7 +86,7 @@ checks bundled JS/native bytes, both 64-bit ABIs, source identity and 16 KB ELF
 alignment, then uploads only an age-encrypted result. It receives a public result
 recipient; application/upload private keys remain on the operator's machine.
 
-Download the exact successful run artifact and independently verify its SHA/digest,
+Use `python3 mobileapp/scripts/fetch-delivery.py --platform android --run RUN_ID --attempt ATTEMPT --artifact ARTIFACT_ID --source FULL_COMMIT --output PRIVATE_RESULT_DIR` from the repository root to retrieve the exact successful source/attempt into an owner-only directory. Keep decryption in a separate directory. See [release preparation](../docs/release-process.md). Independently verify its SHA/digest,
 source receipt and each file hash. In a clean local output directory, use
 `scripts/android-delivery.py sign --input UNSIGNED --output SIGNED --source SHA --sdk SDK`
 with `GTMUX_ANDROID_KEYSTORE`, `GTMUX_ANDROID_STORE_PASSWORD`, `GTMUX_ANDROID_KEY_ALIAS`

@@ -12,7 +12,7 @@ import sys
 JOBS = {
     "test": "core", "cross-build": "cross", "mobile": "mobile", "web": "web",
     "menubar": "menubar", "relay-worker": "relay", "tunnel-worker": "tunnel",
-    "ios-native": "ios", "android-native": "android",
+    "ios-native": "ios", "android-native": "android", "android-emulator": "android",
 }
 DOC_FILES = {"README.md", "README.zh.md", "CONTRIBUTING.md", "SECURITY.md", "LICENSE",
              "CLAUDE.md", ".github/pull_request_template.md"}
@@ -50,7 +50,7 @@ def classify(paths, force_reason=None):
             full = True
             reasons.append("Shared HTTP contract consumer: " + json.dumps(path))
         elif path.startswith(("mobileapp/src/", "mobileapp/e2e/")) and PurePosixPath(path).suffix in {".ts", ".tsx", ".js", ".cjs"}:
-            selected.update(("mobile", "web", "ios-native", "android-native"))
+            selected.update(("mobile", "web", "ios-native", "android-native", "android-emulator"))
             reasons.append("Phone/iPad code, native compile and shared Web presentation: " + json.dumps(path))
         elif path.startswith("mobileapp/ios/") and PurePosixPath(path).suffix in {".swift", ".m", ".mm", ".h"}:
             selected.update(("mobile", "ios-native"))
@@ -59,7 +59,7 @@ def classify(paths, force_reason=None):
             selected.add("menubar")
             reasons.append("Menu-bar implementation/tests: " + json.dumps(path))
         elif path.startswith(("relay-worker/src/", "relay-worker/test/")) and PurePosixPath(path).suffix == ".ts":
-            selected.update(("relay-worker", "test", "mobile", "android-native"))
+            selected.update(("relay-worker", "test", "mobile", "android-native", "android-emulator"))
             reasons.append("Push Worker, Go reference and phone consumer: " + json.dumps(path))
         else:
             # Core/API, tunnel control plane, dependencies, CI/build/install machinery,
@@ -113,6 +113,9 @@ def verdict(plan, needs):
     chosen = set(plan["selected"])
     if len(chosen) != len(plan["selected"]) or not chosen <= JOBS.keys() or (plan["full"] and chosen != JOBS.keys()):
         return ["Invalid CI plan"]
+    android = {"android-native", "android-emulator"}
+    if chosen & android and not android <= chosen:
+        return ["Android build and both emulator checks must be selected together"]
     errors = []
     for name in ("scope", "quality", *JOBS):
         job = needs.get(name)
@@ -153,8 +156,9 @@ def main():
     if output:
         with open(output, "a", encoding="utf-8") as f:
             f.write("plan=" + json.dumps(plan, separators=(",", ":")) + "\n")
-            for job, flag in JOBS.items():
-                f.write(flag + "=" + str(job in plan["selected"]).lower() + "\n")
+            for flag in sorted(set(JOBS.values())):
+                selected = any(job in plan["selected"] for job, value in JOBS.items() if value == flag)
+                f.write(flag + "=" + str(selected).lower() + "\n")
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary:
         with open(summary, "a", encoding="utf-8") as f:
