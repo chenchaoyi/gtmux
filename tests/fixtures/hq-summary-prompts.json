@@ -1,0 +1,9 @@
+[
+  {"title":"Review package","prompt":"Review package","display":null},
+  {"title":"核对发版候选","prompt":"核对发版候选","display":null},
+  {"title":"  Review\npackage ","prompt":"Review\t package","display":null},
+  {"title":"Review package","prompt":"Which\nphone should receive it?","display":"Which\nphone should receive it?"},
+  {"title":"Review package","prompt":"review package","display":"review package"},
+  {"title":"Review package","prompt":"  \n ","display":null},
+  {"title":"Review\u00a0package","prompt":"Review package","display":null}
+]

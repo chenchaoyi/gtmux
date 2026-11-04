@@ -109,6 +109,8 @@ func Run(argv []string) int {
 	switch sub {
 	case "codex":
 		return cmdCodex(args)
+	case "opencode":
+		return cmdOpencode(args)
 	case "", "-h", "--help", "help":
 		// `--help --json` is the same table as data; `help <command>` is that one
 		// command. Everything else is the screen.

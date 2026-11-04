@@ -2,6 +2,7 @@ package app
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -102,4 +103,33 @@ func hooksGoSource(t *testing.T) string {
 		t.Fatalf("read hooks.go: %v", err)
 	}
 	return string(b)
+}
+
+func TestOpencodeCustomConfigPreservesForeignFiles(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	custom := t.TempDir()
+	t.Setenv("OPENCODE_CONFIG_DIR", custom)
+	inst := agentInstallers["opencode"]
+	foreign := filepath.Join(custom, "plugins", "foreign.js")
+	if err := writeAgentPlugin(foreign, "// foreign plugin stays byte-identical\n"); err != nil {
+		t.Fatal(err)
+	}
+	if err := installOpencodePlugin(inst, "/opt/gtmux"); err != nil {
+		t.Fatal(err)
+	}
+	if inst.configPath() != filepath.Join(custom, "plugins", "gtmux.js") {
+		t.Fatal("custom root ignored")
+	}
+	if err := removeOpencodePlugins(inst); err != nil {
+		t.Fatal(err)
+	}
+	b, err := os.ReadFile(foreign)
+	if err != nil || string(b) != "// foreign plugin stays byte-identical\n" {
+		t.Fatal("foreign plugin changed")
+	}
+	t.Setenv("OPENCODE_CONFIG_DIR", "")
+	t.Setenv("XDG_CONFIG_HOME", custom)
+	if inst.configPath() != filepath.Join(custom, "opencode", "plugins", "gtmux.js") {
+		t.Fatal("XDG root ignored")
+	}
 }

@@ -2,12 +2,16 @@ package agents
 
 import "strings"
 
-// BridgeCommand wraps only a bare, direct interactive Codex recipe. Explicit
+// BridgeCommand wraps bare, direct interactive Codex and OpenCode recipes. Explicit
 // executable paths, opaque wrappers, environment recipes and headless modes
 // retain their existing launch semantics.
 func BridgeCommand(command, executable string) string {
 	f := strings.Fields(command)
-	if len(f) == 0 || (f[0] != "codex" && f[0] != "'codex'") || executable == "" {
+	if len(f) == 0 || (f[0] != "codex" && f[0] != "'codex'" && f[0] != "opencode" && f[0] != "'opencode'") || executable == "" {
+		return command
+	}
+	agent := strings.Trim(f[0], "'")
+	if agent == "opencode" && !OpenCodeInteractiveArgs(f[1:]) {
 		return command
 	}
 	for _, field := range f[1:] {
@@ -16,5 +20,5 @@ func BridgeCommand(command, executable string) string {
 		}
 	}
 	index := strings.Index(command, f[0])
-	return command[:index] + "'" + strings.ReplaceAll(executable, "'", `'\''`) + "' codex --" + command[index+len(f[0]):]
+	return command[:index] + "'" + strings.ReplaceAll(executable, "'", `'\''`) + "' " + agent + " --" + command[index+len(f[0]):]
 }

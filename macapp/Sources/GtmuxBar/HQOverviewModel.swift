@@ -44,6 +44,13 @@ struct HQOverviewChange: Decodable, Identifiable {
 }
 
 enum HQOverviewModel {
+    static func distinctQuestionPrompt(title: String, prompt: String) -> String? {
+        func normalize(_ value: String) -> String {
+            value.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
+        }
+        let question = normalize(prompt)
+        return !question.isEmpty && question != normalize(title) ? prompt : nil
+    }
     static func items(_ group: HQMatterGroup, in snapshot: HQWorkspaceSnapshot?) -> [HQOverviewItem] {
         let explicit = group.matters(in: snapshot)
         let records: [HQOverviewItem]?

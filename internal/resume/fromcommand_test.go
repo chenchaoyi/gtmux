@@ -93,3 +93,17 @@ func TestFromCommandRoundTripsBridgeCommand(t *testing.T) {
 		}
 	}
 }
+
+func TestOpenCodeV2ManagedRecipeRoundTrip(t *testing.T) {
+	cmd, ok := CommandWithBridge(Record{Agent: "opencode", SessionID: "ses_fixture"}, "/opt/gtmux")
+	if !ok {
+		t.Fatal("missing recipe")
+	}
+	agent, sid := FromCommand(cmd)
+	if agent != "opencode" || sid != "ses_fixture" {
+		t.Fatalf("bad recipe: %s => %s/%s", cmd, agent, sid)
+	}
+	if a, _ := FromCommand("gtmux opencode -- run --session ses_fixture"); a != "" {
+		t.Fatal("headless recipe counted as interactive")
+	}
+}

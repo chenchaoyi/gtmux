@@ -31,7 +31,7 @@ users should not need to register an attachment. See
 **gtmux** is a command center for tmux sessions and the agents in them. Two surfaces
 over one Go core (gtmux-core is the single data source):
 
-- **CLI** — `cmd/gtmux` (Go, **must stay cgo-free**). Commands: `agents`, `panes`,
+- **CLI** — `cmd/gtmux` (Go, **must stay cgo-free**). Commands: `opencode`, `agents`, `panes`,
   `digest`, `hq`, `quiet`, `capture`, `knowledge`, `advice`, `usage`, `limits`, `logs`, `events`, `resource`, `awake`, `overview`, `restore`, `focus`, `new`, `adopt`, `follow`, `transcript`, `spawn`, `codex`, `relay`, `tasks`, `reap`, `send`, `artifact`, `share`, `pair`, `attach`, `status`, `config`, `hook`,
   `serve`, `tunnel`, `devices`, `doctor`, `update`, `whatsnew`, `install`, `uninstall`. `attach` = the remote terminal client: `gtmux attach <host|pair-link|share-link>
   [%pane]` bridges a remote tmux pane's PTY to your local terminal over a WebSocket

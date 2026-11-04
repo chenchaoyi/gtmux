@@ -72,6 +72,16 @@ func FromCommand(cmdline string) (agent, sessionID string) {
 		return "", ""
 	}
 	if filepath.Base(toks[i]) == "gtmux" {
+		if i+1 < len(toks) && toks[i+1] == "opencode" {
+			args := toks[i+2:]
+			if len(args) > 0 && args[0] == "--" {
+				args = args[1:]
+			}
+			if !agents.OpenCodeInteractiveArgs(args) {
+				return "", ""
+			}
+			return "opencode", sessionIDFromArgs("opencode", args)
+		}
 		args, ok := codexBridgeArgs(toks[i+1:])
 		if !ok {
 			return "", ""

@@ -380,15 +380,18 @@ jobs:
     name: iOS app and extensions compile (unsigned)
     needs: scope
     if: needs.scope.outputs.ios == 'true'
-    runs-on: macos-latest
+    runs-on: macos-15
     timeout-minutes: 60
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
     steps:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
       - name: Runner space and SDK preflight
         run: |
-          uname -m
+          test "$(uname -m)" = arm64
+          test -d "$DEVELOPER_DIR"
           python3 -c 'import shutil; n=shutil.disk_usage(".").free; print(f"Available: {n/1024**3:.1f} GiB"); assert n >= 25*1024**3, "Insufficient space for native CI build"'
           xcodebuild -version
           xcodebuild -showsdks
@@ -499,20 +502,31 @@ jobs:
     name: menu-bar app build (macOS)
     needs: scope
     if: needs.scope.outputs.menubar == 'true'
-    runs-on: macos-latest
+    runs-on: macos-26
     timeout-minutes: 25
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
     steps:
       - uses: actions/checkout@v5
+
+      - name: Verify pinned Mac toolchain
+        run: |
+          test "$(uname -m)" = arm64
+          test -d "$DEVELOPER_DIR"
+          xcodebuild -version
+          xcrun swift --version
 
       # The menu-bar app is native Swift (macapp/); compile + unit-test it here so
       # a PR can't break it unnoticed. (Linux jobs above can't build Swift/AppKit.)
       - name: swift build (release)
-        run: cd macapp && swift build -c release
+        run: cd macapp && swift build -c release --arch arm64 --arch x86_64
 
       - name: Usage widget snapshot and bounded native transport
         run: swift test --package-path shared/UsageWidgets
 
       - name: Native Mac host, WidgetKit metadata and bundled resources (unsigned)
+        env:
+          GTMUX_UNIVERSAL: '1'
         run: bash macapp/Widget/build-extension.sh
 
       - name: swift test (model + design conformance)

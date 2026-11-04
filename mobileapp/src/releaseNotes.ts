@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.172',
+    en: [
+      '- Chat and Trace show recorded file reads, edits, searches and other tool calls from current Codex, OpenCode and Kimi sessions.',
+      '- Inspect recorded file changes with readable code and complete selected edit inputs, including empty replacements.',
+      '- HQ summary cards avoid repeating the same question and keep the reason for your decision visible.',
+    ],
+    zh: [
+      '- 对话与轨迹补齐新版 Codex、OpenCode 和 Kimi 实际记录的读文件、编辑、搜索等工具调用。',
+      '- 文件修改支持清晰的代码阅读和完整编辑参数，保留替换为空字符串等细节。',
+      '- HQ 摘要卡片去掉重复的问题标题，保留需要你处理的原因。',
+    ],
+  },
+  {
     version: '1.0.171',
     en: [
       '- HQ now shows how many matters are visible, with a clear, compact expand/collapse control for the remaining cards on iPhone and iPad.',

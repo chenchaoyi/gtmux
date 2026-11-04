@@ -31,6 +31,7 @@ const aliases: Record<string, CodeLanguage> = {
   json: 'json',
   arguments: 'json',
   parameters: 'json',
+  changes: 'json',
   sh: 'shell',
   bash: 'shell',
   zsh: 'shell',
@@ -87,7 +88,7 @@ export function toolCodeHint(
   inputKind = '',
   operation = '',
 ): string {
-  if (['json', 'arguments', 'parameters'].includes(inputKind)) return 'json';
+  if (['json', 'arguments', 'parameters', 'changes'].includes(inputKind)) return 'json';
   if (inputKind === 'code' || operation === 'code') {
     if (/python/i.test(title)) return 'python';
     if (/(?:^|[._])(?:exec|js|javascript)$/.test(title)) return 'javascript';

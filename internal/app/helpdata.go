@@ -64,6 +64,7 @@ var helpGroups = []cmdGroup{
 }
 
 var helpCommands = []command{
+	{Name: "opencode", Args: "[OpenCode arguments]", Group: "more", Writes: true, OwnHelp: true, EN: "launch OpenCode with terminal ownership (V1/V2)", ZH: "启动 OpenCode，兼容新旧版终端会话"},
 	{Name: "codex", Args: "[Codex arguments]", Group: "more", Writes: true, OwnHelp: true,
 		EN: "launch Codex with verified terminal identity", ZH: "启动 Codex 并核实终端会话归属"},
 	{Name: "artifact", Args: "add FILE --session-id ID | list | remove ID", Group: "more", Writes: true, OwnHelp: true, EN: "publish a document for your paired devices", ZH: "提供会话文件供本人设备预览", Flags: []cmdFlag{

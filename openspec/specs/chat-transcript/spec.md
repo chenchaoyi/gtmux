@@ -708,3 +708,29 @@ The system SHALL retain each turn's one-based position within its source session
 #### Scenario: Changed source or denied connection
 - **WHEN** the cursor's session, source identity or anchor no longer matches, or the connection cannot read that conversation
 - **THEN** the history page fails explicitly, existing displayed records remain available for retry, and the existing pane/home and guest context restrictions apply
+
+### Requirement: Codex native action records supplement code mode
+
+The shared transcript reader SHALL accept supported typed native item_completed
+CommandExecution, FileChange, McpToolCall and recorded web-search actions alongside
+original response calls. Explicit parsed command categories MAY supply unambiguous
+read/list/search operations. Mixed/unknown commands SHALL stay generic. File changes
+SHALL expose selected recorded change/status data with bounded previews and the
+existing scoped full-input reader, labeled as recorded changes rather than original
+patch arguments. Exact call ID plus normalized tool identity SHALL deduplicate
+mirrors across incremental reads. Different calls with identical text SHALL remain.
+The implementation SHALL NOT infer executed calls from JavaScript source or retain
+reasoning, generic extension telemetry, tool results, stdout/stderr or unrelated MCP
+configuration. Browser and native Chat/Trace SHALL reuse these core facts.
+
+#### Scenario: Code mode edits a file
+
+- **WHEN** an outer code call is followed by an actual FileChange record
+- **THEN** Chat and Trace expose the file change and its selected details
+- **AND** ordinary refresh does not add a duplicate row or lose its full-input identity
+
+#### Scenario: Native and response records mirror a call
+
+- **WHEN** records carry the same actual call ID and compatible tool identity
+- **THEN** they produce one tool row while retaining original recorded input
+- **AND** private result or reasoning text cannot create a file action

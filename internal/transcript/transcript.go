@@ -63,7 +63,7 @@ func messageTimeIn(agent, buf string, last bool) int64 {
 		for _, ln := range strings.Split(buf, "\n") {
 			// Both halves of a turn count: the prompt is an append_message, the reply
 			// is a loop event carrying a content.part.
-			if !strings.Contains(ln, kimiMessageRecord) && !strings.Contains(ln, "content.part") {
+			if !strings.Contains(ln, kimiMessageRecord) && !strings.Contains(ln, "content.part") && !strings.Contains(ln, "tool.call") {
 				continue
 			}
 			m := kimiMsTs.FindStringSubmatch(ln)
@@ -385,6 +385,7 @@ type Step struct {
 	InputRef         string `json:"input_ref,omitempty"` // source-position reader, never a file path or input capability
 	fullInput        string
 	fullWorkdir      string
+	recordedCallID   string // native/response mirrors; never an external identity or input capability
 }
 
 // Turn is one user instruction and what the agent ultimately answered, with the
@@ -553,13 +554,14 @@ func resolveLog(agent, sessionID string) (string, stepFn) {
 // parseState accumulates turns as a parser walks the log linearly, tracking the
 // byte offset at which each turn began so the cache can restart incrementally.
 type parseState struct {
-	nextOrdinal int
-	onTurn      func(Turn) bool
-	stop        bool
-	sourceID    string
-	fullTools   bool
-	stepOff     int64
-	stepOrdinal int
+	recordedSeen map[string]bool
+	nextOrdinal  int
+	onTurn       func(Turn) bool
+	stop         bool
+	sourceID     string
+	fullTools    bool
+	stepOff      int64
+	stepOrdinal  int
 
 	turns               []Turn
 	turnStarts          []int64 // turnStarts[i] = byte offset of turns[i]'s first line
@@ -577,6 +579,7 @@ type parseState struct {
 // flush commits the in-progress turn (if it carries any content) and records
 // where it started. Response is derived here from the segment texts.
 func (st *parseState) flush() {
+	st.recordedSeen = nil
 	if st.cur != nil && (st.cur.Prompt != "" || len(st.cur.Segments) > 0) {
 		var texts []string
 		for _, s := range st.cur.Segments {

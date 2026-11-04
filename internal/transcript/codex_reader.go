@@ -52,6 +52,9 @@ func codexChatRecord(prefix []byte) bool {
 					if kind == "response_item" {
 						return subtype == "message" || subtype == "function_call" || subtype == "custom_tool_call"
 					}
+					if subtype == "item_completed" {
+						return codexNativeHeader(d)
+					}
 					return subtype == "user_message" || subtype == "agent_message" || subtype == "task_complete"
 				}
 				var discard json.RawMessage

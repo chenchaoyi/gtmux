@@ -10,13 +10,9 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
-// opencode has NO readable on-disk conversation log — 1.18.x persists only a
-// session_diff, not messages — so its transcript is gtmux-OWNED. The opencode
-// plugin pipes each user prompt and the final assistant text through `gtmux hook`,
-// and the hook appends them here as {timestamp, role, text} JSONL, one file per
-// opencode session id. This is the ONE agent whose transcript gtmux writes itself;
-// every other parser reads a log the agent already keeps. The `"timestamp"` field
-// is RFC3339 so LastMessageTime/FirstMessageTime work over it unchanged.
+// OpenCode persists its native state in version-specific databases. The installed
+// bridge records a bounded, portable transcript for both V1 and V2 without
+// querying or migrating a live database. Legacy text records remain readable.
 
 // opencodeDir is where the gtmux-owned opencode transcripts live — a sibling of the
 // other state under ~/.local/share/gtmux (kept in sync with internal/state.Dir(),
@@ -52,6 +48,8 @@ type opencodeLine struct {
 	Timestamp string `json:"timestamp"`
 	Role      string `json:"role"` // "user" | "assistant"
 	Text      string `json:"text"`
+	Step      *Step  `json:"step,omitempty"`
+	CallID    string `json:"call_id,omitempty"`
 }
 
 // AppendOpencode records one opencode message — called by `gtmux hook` from the
@@ -65,15 +63,21 @@ func AppendOpencode(sessionID, role, text string) {
 	if role != "user" && role != "assistant" {
 		return
 	}
-	if err := state.MkdirAll(opencodeDir(), 0o755); err != nil {
+	appendOpencodeLine(sessionID, opencodeLine{Timestamp: time.Now().UTC().Format(time.RFC3339Nano), Role: role, Text: text})
+}
+
+func appendOpencodeLine(sessionID string, rec opencodeLine) {
+	if sessionID == "" {
 		return
 	}
-	rec := opencodeLine{Timestamp: time.Now().UTC().Format(time.RFC3339Nano), Role: role, Text: text}
+	if err := state.MkdirAll(opencodeDir(), 0o700); err != nil {
+		return
+	}
 	b, err := json.Marshal(rec)
 	if err != nil {
 		return
 	}
-	f, err := state.OpenFile(opencodeSessionFile(sessionID), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	f, err := state.OpenFile(opencodeSessionFile(sessionID), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
 	if err != nil {
 		return
 	}
@@ -89,6 +93,12 @@ func opencodeStep(line string, st *parseState) {
 		return
 	}
 	switch e.Role {
+	case "tool":
+		if e.Step != nil {
+			e.Step.fullInput, e.Step.fullWorkdir = e.Step.Input, e.Step.Workdir
+			e.Step.Input, e.Step.DetailsTruncated = boundedToolText(e.Step.Input, maxToolInputBytes)
+			st.addRecordedStep("opencode", *e.Step, e.CallID)
+		}
 	case "user":
 		if t := strings.TrimSpace(e.Text); t != "" {
 			st.open(t, e.Timestamp)
@@ -97,5 +107,30 @@ func opencodeStep(line string, st *parseState) {
 		if t := strings.TrimSpace(e.Text); t != "" {
 			st.addText(t)
 		}
+	}
+}
+
+// AppendOpencodeEvent admits selected inputs and text, never output, reasoning,
+// native metadata or arbitrary configuration. Full edit inputs use the same
+// scoped source-position reader as every other transcript adapter.
+func AppendOpencodeEvent(sessionID string, raw json.RawMessage) {
+	var event struct {
+		Kind, ID, Name, Text string
+		Input                json.RawMessage
+	}
+	if json.Unmarshal(raw, &event) != nil {
+		return
+	}
+	switch event.Kind {
+	case "text":
+		AppendOpencode(sessionID, "assistant", event.Text)
+	case "tool":
+		if event.Name == "" {
+			return
+		}
+		step := toolStep(event.Name, event.Name, event.Input, kimiToolDetail(string(event.Input)))
+		step.Input, step.Workdir = step.fullInput, step.fullWorkdir
+		step.DetailsTruncated = false
+		appendOpencodeLine(sessionID, opencodeLine{Timestamp: time.Now().UTC().Format(time.RFC3339Nano), Role: "tool", Step: &step, CallID: event.ID})
 	}
 }

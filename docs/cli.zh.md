@@ -374,6 +374,7 @@ act.awake.on            awake
 act.capture             capture
 act.cleanup             doctor, serve
 act.codex.launch        codex
+act.opencode.launch     opencode
 act.config.set          config, quiet
 act.doctor.bundle       doctor
 act.doctor.fix          doctor

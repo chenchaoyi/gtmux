@@ -8,6 +8,47 @@ import {
   sourceInfo,
 } from './model';
 
+test('native file activity and changes keep canonical operation and complete recorded data', () => {
+  const input = JSON.stringify({
+    changes: { 'example.go': { type: 'update', unified_diff: '-old\n+new\n' } },
+    status: 'completed',
+  });
+  const index = build([
+    {
+      session_id: 'synthetic-native',
+      prompt: 'Read and edit',
+      segments: [
+        {
+          steps: [
+            {
+              kind: 'tool',
+              title: 'exec',
+              operation: 'read',
+              detail: 'example.go',
+              input: '["bash","-lc","cat example.go"]',
+              input_kind: 'arguments',
+            },
+            {
+              kind: 'tool',
+              title: 'apply_patch',
+              operation: 'edit',
+              detail: 'example.go',
+              input,
+              input_kind: 'changes',
+            },
+          ],
+        },
+      ],
+    },
+  ]);
+  expect(
+    index.events.filter(e => e.kind === 'tool').map(e => e.step?.operation),
+  ).toEqual(['read', 'edit']);
+  const event = index.events.find(e => e.step?.inputKind === 'changes')!;
+  expect(JSON.parse(previewText(event))).toEqual(JSON.parse(input));
+  expect(event.body).toBe(input);
+});
+
 test.each(['codex', 'claude', 'kimi', 'opencode', 'dsh'])(
   '%s indexes recorded inputs without fabricating outcomes',
   agent => {
@@ -201,10 +242,30 @@ test('recorded context preserves prefix and interleaved order without becoming a
 });
 
 test('source positions disambiguate repeated prompts through prepend, append and streaming', () => {
-  const turn = (id: string, response = '') => ({record_id: id, session_id: 'same', prompt: 'Continue', response});
+  const turn = (id: string, response = '') => ({
+    record_id: id,
+    session_id: 'same',
+    prompt: 'Continue',
+    response,
+  });
   const before = build([turn('log:10'), turn('log:20')]).events;
-  const after = build([turn('log:0'), turn('log:10'), turn('log:20', 'Streamed'), turn('log:30')]).events;
-  expect(after.find(e => e.sourceIndex === 2 && e.kind === 'user')?.key).toBe(before[1].key);
-  const clockless = (response: string) => ({prompt: 'Continue', response});
-  expect(build([clockless('Older'), clockless('Current')]).events.at(-1)?.key).toBe(build([clockless('Oldest'), clockless('Older'), clockless('Current')]).events.at(-1)?.key);
+  const after = build([
+    turn('log:0'),
+    turn('log:10'),
+    turn('log:20', 'Streamed'),
+    turn('log:30'),
+  ]).events;
+  expect(after.find(e => e.sourceIndex === 2 && e.kind === 'user')?.key).toBe(
+    before[1].key,
+  );
+  const clockless = (response: string) => ({ prompt: 'Continue', response });
+  expect(
+    build([clockless('Older'), clockless('Current')]).events.at(-1)?.key,
+  ).toBe(
+    build([
+      clockless('Oldest'),
+      clockless('Older'),
+      clockless('Current'),
+    ]).events.at(-1)?.key,
+  );
 });

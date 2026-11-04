@@ -265,6 +265,7 @@ export const GtmuxHook = async ({ $, client, directory }) => {
   const roots = new Map();
   const active = new Set();
   const ended = new Map();
+  const recordedTools = new Set();
   const isRoot = async (sid, info) => {
     if (!sid) return false;
     if (info) roots.set(sid, !info.parentID);
@@ -302,6 +303,11 @@ export const GtmuxHook = async ({ $, client, directory }) => {
       }
       if (type === "message.part.updated") {
         const part = props.part;
+        if (part && part.type === "tool" && part.callID && part.tool && part.state && part.state.status !== "pending" && part.state.input && !recordedTools.has(sid + "/" + part.callID)) {
+          recordedTools.add(sid + "/" + part.callID);
+          if (recordedTools.size > 2048) recordedTools.delete(recordedTools.values().next().value);
+          await pipe("Transcript", { session_id: sid, cwd: directory, transcript: { kind: "tool", id: part.callID, name: part.tool, input: part.state.input } });
+        }
         if (part && part.type === "text" && part.messageID) {
           (partText[part.messageID] = partText[part.messageID] || {})[part.id] = part.text || "";
         }
@@ -355,11 +361,14 @@ export const GtmuxHook = async ({ $, client, directory }) => {
 `
 	js := strings.ReplaceAll(tmpl, "%BT%", "`")
 	js = strings.ReplaceAll(js, "%BIN%", strconv.Quote(bin))
-	return js
+	return js + strings.ReplaceAll(opencodeV2Plugin, strconv.Quote("__GTMUX_BIN__"), strconv.Quote(bin))
 }
 
 // configPath resolves where this agent's hooks file lives, honoring its env override.
 func (inst agentInstaller) configPath() string {
+	if inst.key == "opencode" {
+		return filepath.Join(opencodeConfigDir(), "plugins", inst.file)
+	}
 	if inst.envDir != "" {
 		if v := os.Getenv(inst.envDir); v != "" {
 			base := v

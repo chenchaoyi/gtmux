@@ -16,8 +16,10 @@ struct HQOverviewMatterRow: View {
                     Image(systemName: "chevron.right").font(HQTypography.caption).foregroundStyle(.tertiary)
                 }
                 if matter.state == "needs-input", let question = matter.userInput {
-                    Text(question.prompt).font(HQTypography.rowTitle).foregroundStyle(.primary)
-                        .lineLimit(3).multilineTextAlignment(.leading)
+                    if let prompt = HQOverviewModel.distinctQuestionPrompt(title: matter.title, prompt: question.prompt) {
+                        Text(prompt).font(HQTypography.rowTitle).foregroundStyle(.primary)
+                            .lineLimit(3).multilineTextAlignment(.leading)
+                    }
                     Text(question.answerId == nil ? question.why : l10n.tr("Your reply is saved. HQ will confirm the next step.", "答复已保存，接下来由 HQ 确认并跟进。"))
                         .font(HQTypography.body).foregroundStyle(.secondary).lineLimit(2)
                 } else if matter.state == "needs-input" {

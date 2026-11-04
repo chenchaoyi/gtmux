@@ -565,13 +565,21 @@ invocation; for other agents no claim is made rather than a wrong one.
 | `session_break` | object? | `{kind, at?}` on the first turn of a later session in a stitched HQ history |
 
 `segment` = `{"text":string?, "steps":[{step}]?, "context":{context}?}`; `step` =
-`{"kind":"tool", "title":"Edit|Bash|exec|…", "detail":"<short arg summary>"?, "operation":"read|list|search|command|edit|web|code|wait|agent|tool"?, "input":"<selected original input>"?, "input_kind":"command|arguments|code|path|query|url|description|prompt"?, "workdir":"<recorded directory>"?, "details_truncated":true?, "input_ref":"<opaque original-call reader>"?}`.
+`{"kind":"tool", "title":"Edit|Bash|exec|…", "detail":"<short arg summary>"?, "operation":"read|list|search|command|edit|web|code|wait|agent|tool"?, "input":"<selected original input>"?, "input_kind":"command|arguments|parameters|code|path|query|url|description|prompt|changes"?, "workdir":"<recorded directory>"?, "details_truncated":true?, "input_ref":"<opaque original-call reader>"?}`.
 
 `detail` remains a plain-text summary. For Codex, string `title` then `description`
 takes precedence over command/path fallbacks, with collapsed whitespace and at most
 80 Unicode code points plus an ellipsis. Optional richer fields are supplied by the
 Claude, Codex, Kimi and DSH parsers only when recorded. `operation` describes the
-exact known tool name, with unknown tools retaining their name and generic category.
+exact known tool name or Codex recorded command classification, with unknown or mixed
+commands retaining their generic category. Known typed Codex `item_completed` actions
+add file reads, directory listings/searches, file changes and MCP calls alongside the
+original code-mode envelope. Exact call ID plus normalized tool name deduplicates
+response/native mirrors; similar command text does not. Native file changes use
+`input_kind: changes` with selected recorded changes and status JSON, preserving
+add/update/delete content, diff and move paths. These are recorded changes, not a
+reconstruction of an original patch invocation or a success claim. Tool results,
+stdout/stderr, reasoning and unrelated MCP configuration remain excluded.
 
 `input` selects one known command/code/path/query/URL/description/prompt field;
 its whitespace and line breaks are preserved. It is not a dump of arbitrary arguments.

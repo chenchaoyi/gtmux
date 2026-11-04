@@ -4,7 +4,7 @@ import type { HQMatter } from '../api/hqWorkspace';
 import { DisclosureChevron } from '../ui/DisclosureChevron';
 import { SIcon } from '../ui/SettingsIcons';
 import { Palette, StatusColor } from '../ui/theme';
-import { matterPreview, matterStatus } from './hqWorkspaceModel';
+import { distinctQuestionPrompt, matterPreview, matterStatus } from './hqWorkspaceModel';
 
 // A matter's current state and a saved change are different facts. The stamp
 // always names the former; the byline dates the actual update, never a receipt.
@@ -31,7 +31,7 @@ export function HQBriefCard({
   const question =
     matter.state === 'needs-input' ? matter.user_input : undefined;
   const body = question
-    ? question.prompt
+    ? distinctQuestionPrompt(matter.title, question.prompt)
     : matter.state === 'needs-input'
     ? zh
       ? 'HQ 尚未写清当前问题，需要先核对这条旧记录。'

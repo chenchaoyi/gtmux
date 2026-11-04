@@ -1,4 +1,4 @@
-// Generated from mobileapp/src/ui/codeReading.ts; SHA256 f392d41d95fb80d3746ad6704ee0e99ea659eb27eb5d3dbd23e8e049c3e0d5d2
+// Generated from mobileapp/src/ui/codeReading.ts; SHA256 55910036887285b517b491da037c4779ebc0d9d572f340ea738735812d603201
 (function(root){var exports={};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -20,6 +20,7 @@ const aliases = {
     json: 'json',
     arguments: 'json',
     parameters: 'json',
+    changes: 'json',
     sh: 'shell',
     bash: 'shell',
     zsh: 'shell',
@@ -67,7 +68,7 @@ function codeLanguage(source, hint = '') {
     return 'text';
 }
 function toolCodeHint(title = '', inputKind = '', operation = '') {
-    if (['json', 'arguments', 'parameters'].includes(inputKind))
+    if (['json', 'arguments', 'parameters', 'changes'].includes(inputKind))
         return 'json';
     if (inputKind === 'code' || operation === 'code') {
         if (/python/i.test(title))

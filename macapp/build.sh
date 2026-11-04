@@ -100,10 +100,7 @@ if [ -n "$SIGN_ID" ]; then
   if [ -n "$NOTARY_ARGS" ]; then
     echo "==> notarizing (submit + wait, then staple)…"
     ditto -c -k --keepParent "$BUNDLE" Gtmux-notarize.zip
-    # shellcheck disable=SC2086
-    xcrun notarytool submit Gtmux-notarize.zip $NOTARY_ARGS --wait
-    xcrun stapler staple "$BUNDLE"
-    xcrun stapler validate "$BUNDLE"
+    python3 "$REPO_ROOT/macapp/notarize.py" --archive Gtmux-notarize.zip --bundle "$BUNDLE"
     rm -f Gtmux-notarize.zip
     echo "   notarized + stapled."
   else

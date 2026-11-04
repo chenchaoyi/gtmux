@@ -15,6 +15,16 @@ the existing pane/session transcript routes. DSH's model-request timing, token t
 private reasoning and tool output are not part of this contract. A useful trace must
 describe the records it actually has.
 
+
+Codex native completion records supplement code-mode wrappers. Supported actual
+CommandExecution, FileChange, McpToolCall and web-search extension records become
+shared core steps; clients do not infer execution by scanning JavaScript. Recorded
+command categories identify reads/listing/search only when unambiguous. File-change
+inspectors label their selected changes/status JSON as Recorded changes, not original
+patch input. Exact call ID and normalized tool name suppress mirrored rows across
+incremental refresh; different calls with identical text remain distinct. Result bodies,
+stdout/stderr, reasoning and unrelated MCP parameters stay outside the model.
+
 ## Browser interaction
 
 Open Trace from a pane's session-tools menu, search or filter its records, then select a message or call.

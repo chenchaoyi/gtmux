@@ -2,8 +2,29 @@ import React from 'react';
 import renderer, {act} from 'react-test-renderer';
 import {Text, TouchableOpacity} from 'react-native';
 import {HQOverview} from './HQOverview';
+import {HQBriefCard} from './HQBriefCard';
+import {distinctQuestionPrompt} from './hqWorkspaceModel';
+import promptCases from '../../../tests/fixtures/hq-summary-prompts.json';
 import {demoHQWorkspace} from '../ui/demoHQWorkspace';
 import {paletteFor} from '../ui/theme';
+
+test.each(promptCases)('HQ summary retains distinct question: $title / $prompt', item => {
+  expect(distinctQuestionPrompt(item.title, item.prompt)).toBe(item.display ?? undefined);
+});
+for (const zh of [false, true]) for (const mode of ['light','dark'] as const) {
+  test(`HQ card shows an identical question once and keeps its reason (${zh}/${mode})`, () => {
+    const matter = demoHQWorkspace(zh).matters.find(m => m.state === 'needs-input' && m.user_input)!;
+    matter.user_input = {...matter.user_input!, prompt: matter.title, why: 'Synthetic reason requiring a decision.'};
+    const open = jest.fn();
+    let tree!: renderer.ReactTestRenderer;
+    act(() => {tree=renderer.create(<HQBriefCard matter={matter} pal={paletteFor(mode)} zh={zh} onPress={open} />);});
+    const texts=tree.root.findAllByType(Text).map(n=>[n.props.children].flat(Infinity).join(''));
+    expect(texts.filter(t=>t===matter.title)).toHaveLength(1);
+    expect(texts).toContain('Synthetic reason requiring a decision.');
+    act(()=>tree.root.findByType(TouchableOpacity).props.onPress());expect(open).toHaveBeenCalledTimes(1);
+    act(()=>tree.unmount());
+  });
+}
 for (const wide of [false, true]) test(`HQ remaining cards stay discoverable with fallback preview (wide=${wide})`, () => {
   const data = demoHQWorkspace(false);
   const prototype = data.matters.find(m => m.state === 'open')!;
