@@ -42,3 +42,77 @@ test('a launch with no notification taps nothing', async () => {
   await setupPush(onTap, () => {}, () => {});
   expect(onTap).not.toHaveBeenCalled();
 });
+
+function response(id: string, action?: string) {
+  return {
+    getData: () => ({pane: '%5', server: 'fixture', gtmuxResponseId: id, userInteraction: true, userText: 'typed'}),
+    getActionIdentifier: () => action,
+    finish: jest.fn(),
+  };
+}
+
+test.each(['initial-first', 'event-first'] as const)(
+  'the same quick action arriving from scene and delegate sends once (%s)',
+  async order => {
+    const listeners: Record<string, (value: any) => void> = {};
+    (PushNotificationIOS.addEventListener as jest.Mock).mockImplementation((name, cb) => { listeners[name] = cb; });
+    const item = response('request-1', '2');
+    const tap = jest.fn(), reply = jest.fn();
+    if (order === 'initial-first') {
+      (PushNotificationIOS.getInitialNotification as jest.Mock).mockResolvedValue(item);
+      await setupPush(tap, () => {}, reply);
+      listeners.notification(item);
+    } else {
+      let resolve!: (value: any) => void;
+      (PushNotificationIOS.getInitialNotification as jest.Mock).mockReturnValue(new Promise(r => { resolve = r; }));
+      const setup = setupPush(tap, () => {}, reply);
+      await Promise.resolve();
+      listeners.notification(item);
+      resolve(item);
+      await setup;
+    }
+    expect(reply).toHaveBeenCalledTimes(1);
+    expect(reply).toHaveBeenCalledWith('%5', 'fixture', '2');
+    expect(tap).not.toHaveBeenCalled();
+  },
+);
+
+test('distinct notification responses are not deduplicated', async () => {
+  const listeners: Record<string, (value: any) => void> = {};
+  (PushNotificationIOS.addEventListener as jest.Mock).mockImplementation((name, cb) => { listeners[name] = cb; });
+  (PushNotificationIOS.getInitialNotification as jest.Mock).mockResolvedValue(response('one'));
+  const tap = jest.fn();
+  await setupPush(tap, () => {}, () => {});
+  listeners.notification(response('two'));
+  expect(tap).toHaveBeenCalledTimes(2);
+});
+
+test('an unknown action does not become a normal pane tap', async () => {
+  (PushNotificationIOS.getInitialNotification as jest.Mock).mockResolvedValue(response('one', 'unknown'));
+  const tap = jest.fn(), reply = jest.fn();
+  await setupPush(tap, () => {}, reply);
+  expect(tap).not.toHaveBeenCalled();
+  expect(reply).not.toHaveBeenCalled();
+});
+
+test('a foreground delivery or inherited action name cannot trigger a reply', async () => {
+  const listeners: Record<string, (value: any) => void> = {};
+  (PushNotificationIOS.addEventListener as jest.Mock).mockImplementation((name, cb) => { listeners[name] = cb; });
+  (PushNotificationIOS.getInitialNotification as jest.Mock).mockResolvedValue(null);
+  const tap = jest.fn(), reply = jest.fn();
+  await setupPush(tap, () => {}, reply);
+  listeners.notification({getData: () => ({pane: '%5'}), getActionIdentifier: () => '2'});
+  listeners.notification(response('other', 'toString'));
+  expect(tap).not.toHaveBeenCalled();
+  expect(reply).not.toHaveBeenCalled();
+});
+
+test('a legacy default action opens the pane once across repeated setup', async () => {
+  const item = response('body-one', 'com.apple.UNNotificationDefaultActionIdentifier');
+  (PushNotificationIOS.getInitialNotification as jest.Mock).mockResolvedValue(item);
+  const tap = jest.fn();
+  await setupPush(tap, () => {}, () => {});
+  await setupPush(tap, () => {}, () => {});
+  expect(tap).toHaveBeenCalledTimes(1);
+  expect(tap).toHaveBeenCalledWith('%5', 'fixture');
+});

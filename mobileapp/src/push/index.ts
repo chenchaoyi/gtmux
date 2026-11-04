@@ -39,10 +39,32 @@ export type Teardown = () => void;
 // phone back to the Mac that sent it and opened its pane, so tapping another Mac in the
 // server list landed on the first Mac's session instead (2026-10-05).
 let launchNotificationHandled = false;
+// A scene response can also arrive through the notification delegate. Bound the
+// short-lived receipt set so one tap or action cannot be dispatched twice.
+const responseReceipts = new Map<string, number>();
+const RESPONSE_RECEIPT_TTL_MS = 30_000;
+const RESPONSE_RECEIPT_LIMIT = 128;
+
+function firstResponse(id: unknown, action: string | undefined): boolean {
+  if (typeof id !== 'string' || !id) return true; // older native bridge
+  const now = Date.now();
+  for (const [key, at] of responseReceipts) {
+    if (now - at >= RESPONSE_RECEIPT_TTL_MS) responseReceipts.delete(key);
+  }
+  const key = JSON.stringify([id, action ?? '']);
+  if (responseReceipts.has(key)) return false;
+  if (responseReceipts.size >= RESPONSE_RECEIPT_LIMIT) {
+    const oldest = responseReceipts.keys().next().value;
+    if (oldest !== undefined) responseReceipts.delete(oldest);
+  }
+  responseReceipts.set(key, now);
+  return true;
+}
 
 /** For tests: forget that the launch notification was handled. */
 export function resetLaunchNotificationForTesting() {
   launchNotificationHandled = false;
+  responseReceipts.clear();
 }
 
 const QUICK_REPLY: Record<string, string> = {
@@ -119,14 +141,21 @@ export async function setupPush(
     onToken(token);
   };
 
-  const onNotification = (notification: any) => {
+  const onNotification = (notification: any, initial = false) => {
     const data = notification.getData?.() ?? {};
     const pane: string | undefined = data.pane;
-    const action: string | undefined = notification.getActionIdentifier?.();
+    const rawAction: string | undefined = notification.getActionIdentifier?.();
+    // Older native bridges forwarded UIKit's default identifier verbatim.
+    const action = rawAction === 'com.apple.UNNotificationDefaultActionIdentifier' ? undefined : rawAction;
+    const isInteraction = initial || !!data.userInteraction;
+    if (pane && isInteraction && !firstResponse(data.gtmuxResponseId, action)) {
+      notification.finish?.(PushNotificationIOS.FetchResult.NoData);
+      return;
+    }
 
     // A quick-reply action button was tapped: answer the waiting pane in the
     // background (no deep-link, no app foreground).
-    if (pane && action && QUICK_REPLY[action] !== undefined) {
+    if (pane && isInteraction && action && Object.prototype.hasOwnProperty.call(QUICK_REPLY, action)) {
       onQuickReply(pane, data.server, QUICK_REPLY[action]);
       notification.finish?.(PushNotificationIOS.FetchResult.NoData);
       return;
@@ -134,15 +163,15 @@ export async function setupPush(
 
     // Plain tap on the body → deep-link to the agent. Skip a foreground delivery
     // (those surface as the in-app SSE banner instead).
-    if (pane && data.userInteraction) {
+    if (pane && isInteraction && !action) {
       onTapPane(pane, data.server);
     }
     notification.finish?.(PushNotificationIOS.FetchResult.NoData);
   };
 
   PushNotificationIOS.addEventListener('register', onRegister);
-  PushNotificationIOS.addEventListener('notification', onNotification);
-  PushNotificationIOS.addEventListener('localNotification', onNotification);
+  PushNotificationIOS.addEventListener('notification', notification => onNotification(notification));
+  PushNotificationIOS.addEventListener('localNotification', notification => onNotification(notification));
 
   // Register the quick-reply actions iOS attaches to a `waiting` notification.
   PushNotificationIOS.setNotificationCategories?.(WAITING_CATEGORIES);
@@ -169,8 +198,7 @@ export async function setupPush(
       launchNotificationHandled = true;
       const initial = await PushNotificationIOS.getInitialNotification();
       if (initial) {
-        const data: any = initial.getData?.() ?? {};
-        if (data.pane) onTapPane(data.pane, data.server);
+        onNotification(initial, true);
       }
     }
     return teardown;

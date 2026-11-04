@@ -11,6 +11,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
   var reactNativeDelegate: ReactNativeDelegate?
   var reactNativeFactory: RCTReactNativeFactory?
   var launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+  private var headlessResponseStarted = false
 
   func application(
     _ application: UIApplication,
@@ -93,7 +94,21 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
   ) {
     // Delivers the tapped notification to JS (handled by the push module's
     // 'notification' listener), which deep-links to the agent's Detail.
-    RNCPushNotificationIOS.didReceive(response)
+    let payload = bridgeNotificationResponse(response)
+    // A background action can launch the process without connecting a UI scene.
+    // Start the existing RN host with the action as its launch notification so
+    // getInitialNotification can deliver it after JS listeners are installed.
+    if window == nil {
+      var options = launchOptions ?? [:]
+      options[.remoteNotification] = payload
+      launchOptions = options
+      if UIApplication.shared.applicationState == .background,
+         !headlessResponseStarted, let factory = reactNativeFactory {
+        headlessResponseStarted = true
+        factory.startReactNative(withModuleName: "GtmuxMobile", in: nil, launchOptions: options)
+      }
+    }
+    RNCPushNotificationIOS.didReceiveRemoteNotification(payload)
     completionHandler()
   }
 }
@@ -129,7 +144,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
       options[.userActivityDictionary] = ["UIApplicationLaunchOptionsUserActivityKey": activity]
     }
     if let response = connectionOptions.notificationResponse {
-      options[.remoteNotification] = response.notification.request.content.userInfo
+      options[.remoteNotification] = bridgeNotificationResponse(response)
     }
     let sceneWindow = UIWindow(windowScene: scene)
     window = sceneWindow
@@ -154,4 +169,15 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
   func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
     RCTLinkingManager.application(UIApplication.shared, continue: userActivity, restorationHandler: { _ in })
   }
+}
+
+// Both UIKit entry points must encode the same response identity and action.
+private func bridgeNotificationResponse(_ response: UNNotificationResponse) -> [AnyHashable: Any] {
+  let action = response.actionIdentifier == UNNotificationDefaultActionIdentifier ? nil : response.actionIdentifier
+  return notificationResponsePayload(
+    userInfo: response.notification.request.content.userInfo,
+    requestID: response.notification.request.identifier,
+    actionID: action,
+    userText: (response as? UNTextInputNotificationResponse)?.userText
+  )
 }
