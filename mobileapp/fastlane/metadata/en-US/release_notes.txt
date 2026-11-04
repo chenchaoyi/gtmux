@@ -1,3 +1,2 @@
-- Read commands in Chat and Trace with clearer source-language previews while keeping the complete original call available.
-- Fixed links wrapped in bold or other text styles displaying as raw Markdown.
-- Refined usage widgets so the current value, usage window and update time are easier to read.
+- HQ now shows how many matters are visible, with a clear expand/collapse control for the remaining cards on iPhone and iPad.
+- Diff actions use a consistent file icon with addition and removal marks.

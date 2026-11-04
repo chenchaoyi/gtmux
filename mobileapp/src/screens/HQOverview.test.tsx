@@ -1,0 +1,37 @@
+import React from 'react';
+import renderer, {act} from 'react-test-renderer';
+import {Text, TouchableOpacity} from 'react-native';
+import {HQOverview} from './HQOverview';
+import {demoHQWorkspace} from '../ui/demoHQWorkspace';
+import {paletteFor} from '../ui/theme';
+for (const wide of [false, true]) test(`HQ remaining cards stay discoverable with fallback preview (wide=${wide})`, () => {
+  const data = demoHQWorkspace(false);
+  const prototype = data.matters.find(m => m.state === 'open')!;
+  data.matters = Array.from({length: 8}, (_, i) => ({...prototype, id: `open-${i}`, title: `Matter ${i}`}));
+  data.overview.following = [];
+  data.overview.recent = [];
+  let tree!: renderer.ReactTestRenderer;
+  const words = () => tree.root.findAllByType(Text).map(n => n.props.children).flat().join(' ');
+  act(() => {tree=renderer.create(<HQOverview data={data} pal={paletteFor('light')} zh={false} wide={wide} onMatter={jest.fn()} />);});
+  expect(words()).toContain('Showing 3 of 8 · Following');
+  expect(words()).not.toContain('Matter 7');
+  const button = () => tree.root.findAllByType(TouchableOpacity).find(n=>n.props.testID==='hq-overview-more-open')!;
+  expect(button().props.accessibilityState.expanded).toBe(false);
+  act(() => button().props.onPress());
+  expect(words()).toContain('Showing 8 of 8 · Following');
+  expect(words()).toContain('Matter 7');
+  act(() => button().props.onPress());
+  expect(words()).toContain('Showing 3 of 8 · Following');
+  expect(words()).not.toContain('Matter 7');
+  act(() => tree.unmount());
+});
+test('stale overview IDs cannot hide canonical matters or inflate visible counts', () => {
+  const data=demoHQWorkspace(false), prototype=data.matters.find(m=>m.state==='open')!;
+  data.matters=Array.from({length:5},(_,i)=>({...prototype,id:`open-${i}`,title:`Matter ${i}`}));
+  data.overview.following=[{matter_id:'gone'}];data.overview.recent=[];
+  let tree!: renderer.ReactTestRenderer;
+  act(()=>{tree=renderer.create(<HQOverview data={data} pal={paletteFor('dark')} zh wide onMatter={jest.fn()} />);});
+  const words=tree.root.findAllByType(Text).map(n=>n.props.children).flat().join(' ');
+  expect(words).toContain('已显示 3 / 5 项 · 正在跟进');expect(words).toContain('展开剩余 2 项');
+  act(()=>tree.unmount());
+});

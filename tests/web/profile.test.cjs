@@ -91,9 +91,13 @@ scenario('A profile without message identity or owner access does not request cu
 });
 
 scenario('Agent profile grid and execution chain retain exact current conversation identity',{viewport:{width:390,height:844},locale:'en-US'},async(page,fixture)=>{
- setup(fixture);fixture.state.profiles['current-session@null'].execution_chain=[{name:'synthetic-client',path:'/fixture/client',arguments:['--mode','synthetic']}];
+ setup(fixture);fixture.state.profiles['current-session@null'].execution_chain=[{name:'synthetic-client',path:'/fixture/'+('long-directory/'.repeat(35))+'client',arguments:['--mode','synthetic']}];
  await openChat(page,fixture);await page.locator('#chat .chat-state .speaker-avatar').click();const dialog=page.locator('.participant-profile');await dialog.getByText('current-recorded-model',{exact:true}).waitFor();
  assert.equal(await dialog.locator('.profile-field').count(),1);await dialog.locator('.profile-chain summary').click();assert.match(await dialog.locator('.profile-chain').innerText(),/synthetic-client|Recorded launch ancestry/);
+ const command=dialog.locator('.profile-command pre');await command.evaluate(n=>{n.scrollLeft=n.scrollWidth;});
+ assert.ok(await command.evaluate(n=>n.scrollLeft>0));
+ assert.ok(await command.evaluate(n=>parseFloat(getComputedStyle(n).paddingBottom)>=14),'horizontal indicator has space below the executable path');
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth),390);
  assert.doesNotMatch(await dialog.innerText(),/Directory|Pane|Browser access/);
  if(process.env.GTMUX_WEB_EVIDENCE) await page.screenshot({path:require('node:path').join(process.env.GTMUX_WEB_EVIDENCE,'profile-agent-recorded.png')});
 });

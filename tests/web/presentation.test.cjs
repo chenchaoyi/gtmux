@@ -186,7 +186,7 @@ for(const [width,locale] of [[320,'zh-CN'],[390,'en-US'],[1440,'en-US']]) scenar
 scenario('External conversations share compact calls and preserve full input',{viewport:{width:1440,height:900},locale:'zh-CN'},async(page,fixture)=>{
  fixture.state.agents=[{pane_id:'',source:'native',agent:'DeepSeek Harness',session_id:'external-density',home_id:'fixture-home',current_client:'unconfirmed',can_read_conversation:true,status:'idle',task:'外部会话密度示例'}];
  fixture.state.externalSessions={'external-density\u0000fixture-home':[{session_id:'external-density',agent:'DeepSeek Harness',prompt:'检查示例报告',segments:[{text:'撰写分析报告',steps:Array.from({length:13},(_,i)=>({title:i%2?'read_file':'edit_file',operation:i%2?'read':'edit',input:'/fixture/analysis.md',input_kind:'path'}))},{text:'示例报告已完成'}]}]};
- await page.goto(fixture.url+'/#code=TEST-1234');await page.locator('#tree').getByText('外部会话密度示例',{exact:true}).click();
+ await page.goto(fixture.url+'/#code=TEST-1234');await page.locator('#tree').getByText('外部会话密度示例',{exact:true}).dblclick();await page.locator('.tile [data-action="focus"]').click();
  await page.locator('#chat .steps-toggle').click();const rows=page.locator('#chat .step-toggle');assert.equal(await rows.count(),13);
  for(const row of await rows.all())assert.ok((await row.boundingBox()).height<=46);
  await page.locator('#chat .conv-scroll').evaluate(e=>{e.scrollTop=0;});

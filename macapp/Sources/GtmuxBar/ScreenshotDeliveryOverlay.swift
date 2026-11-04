@@ -30,7 +30,9 @@ struct ScreenshotDeliveryOverlay: View {
     var body: some View {
         ZStack {
             if reduceTransparency { Color(nsColor: .windowBackgroundColor) }
-            else { Rectangle().fill(.ultraThinMaterial) }
+            // The editor underneath is already blurred. A full-window material
+            // concealed the capture; reserve material for the status card.
+            else { Color.primary.opacity(0.035) }
             VStack(spacing: 12) {
                 if status == .sending { BrandProgressMark(size: 40) }
                 else { GtmuxLogo(size: 40).accessibilityHidden(true) }

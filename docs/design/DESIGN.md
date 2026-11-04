@@ -1033,3 +1033,7 @@ Push relay and tunnel control-plane request bodies have a 64 KiB byte budget bef
 ### Restore invocation and screenshot preflight
 
 The menu-bar app explicitly identifies restore as an application invocation, so inherited TMUX markers cannot masquerade as a nested interactive terminal. Ordinary nested CLI restores stay refused; socket selection and additive restore semantics are retained. Detached sessions are described as opening in Terminal, with current sessions preserved. Restore runs off-main with bounded completion and visible failure feedback. Screenshot preflight and attachment guards reuse a fresh target-pane radar projection rather than repeatedly enumerating unrelated histories; waiting, draft and session-name protections remain.
+
+### Screenshot receipt timing (2026-11-04)
+
+After confirmed sent/queued delivery, announce the receipt and close that exact editor after 180ms instead of 1.2s. Failure or uncertain delivery keeps the recoverable editor. The existing blurred capture remains visible beneath a subtle translucent tint; only the centered status card uses material. Reduce Transparency retains an opaque fallback. No timer may dismiss a newer editor.
