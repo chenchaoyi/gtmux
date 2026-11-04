@@ -10,6 +10,19 @@ func TestOpencodePrivateProcessOwnership(t *testing.T) {
 		want   bool
 	}{
 		{"leased private server", func(map[int]opencodeProcess) {}, true},
+		{"inline private flag", func(m map[int]opencodeProcess) {
+			p := m[20]
+			p.args = []string{"opencode", "--standalone=true"}
+			m[20] = p
+		}, true},
+		{"explicit shared flag", func(m map[int]opencodeProcess) { p := m[20]; p.args = append(p.args, "--standalone=false"); m[20] = p }, false},
+		{"explicit negative flag", func(m map[int]opencodeProcess) { p := m[20]; p.args = append(p.args, "--no-standalone"); m[20] = p }, false},
+		{"inline external server", func(m map[int]opencodeProcess) {
+			p := m[20]
+			p.args = append(p.args, "--server=http://localhost:123")
+			m[20] = p
+		}, false},
+		{"inline service flag", func(m map[int]opencodeProcess) { p := m[10]; p.args = append(p.args, "--service=true"); m[10] = p }, false},
 		{"shared service", func(m map[int]opencodeProcess) {
 			p := m[10]
 			p.args = []string{"opencode", "serve", "--service"}

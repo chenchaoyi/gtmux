@@ -12,3 +12,4 @@
 - [x] Inspect synthetic HQ screenshots; remove repeated summary prompts with shared cross-client cases while preserving reasons, full details and actions.
 - [x] Reject the Intel native UI host after observed Metal aborts; retain every test on the pinned ARM host and both-architecture build coverage.
 - [x] Remove synthetic attachment setup navigation keys; use the visible attach action with foreground verification and retain the complete phone/tablet flows.
+- [x] Reproduce and correct management/explicit-boolean argument handling; reject inline service/external choices as private ownership evidence.

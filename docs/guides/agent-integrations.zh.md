@@ -220,7 +220,8 @@ execution、text、tool 与权限事件；V1 继续使用 event/chat hooks。子
 推理或任意配置字段。
 
 使用 `gtmux opencode` 启动终端会话；派发和恢复也使用这条入口。V2 会启动由该终端
-管理的私有服务器，V1 原样交给原 CLI。显式指定 `--server` 的命令保持原意。
+管理的私有服务器，V1 原样交给原 CLI。`mcp list` 等管理命令、显式的 `--server`
+以及 `--standalone=false` / `--no-standalone` 都原样透传。
 V2 共享服务继承的 pane 不能证明当前会话归属；未确认的共享会话只观察状态，不采集正文或开放输入。
 
 插件把**安装后实际观察到的**提示、回复和调用写进 gtmux 自己的

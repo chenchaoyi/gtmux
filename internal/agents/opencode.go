@@ -9,12 +9,18 @@ func OpenCodeInteractiveArgs(args []string) bool {
 		return true
 	}
 	switch args[0] {
-	case "run", "serve", "service", "api", "acp", "auth", "plugin", "upgrade", "update", "uninstall", "session", "models", "stats", "debug", "reload", "pair":
+	case "run", "serve", "service", "api", "acp", "auth", "mcp", "plugin", "upgrade", "update", "uninstall", "session", "models", "stats", "debug", "reload", "pair":
 		return false
 	}
 	for _, a := range args {
-		if a == "--server" || strings.HasPrefix(a, "--server=") || a == "--help" || a == "-h" || a == "--version" || a == "-v" {
+		name, value, _ := strings.Cut(a, "=")
+		switch name {
+		case "--server", "--no-standalone", "--help", "-h", "--version", "-v":
 			return false
+		case "--standalone":
+			if value == "false" {
+				return false
+			}
 		}
 	}
 	return true

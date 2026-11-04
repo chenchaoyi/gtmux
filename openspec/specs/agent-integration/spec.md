@@ -386,8 +386,9 @@ The OpenCode bridge SHALL admit verified V1 server and V2 setup plugin contracts
 without loading both. Managed V2 terminal sessions SHALL use a leased private
 server, and hooks SHALL verify its live CLI ancestry before using a pane.
 Unconfirmed shared-service events SHALL NOT acquire a terminal through inherited
-environment values or collect session content. Explicit server/headless recipes
-SHALL retain native semantics. Kimi SHALL read native loop tool.call events and
+environment values or collect session content. Explicit server/headless recipes,
+management commands and explicit private/shared boolean flags SHALL retain native
+semantics. Kimi SHALL read native loop tool.call events and
 legacy message toolCalls, deduplicating exact call identities within each turn.
 Selected tool inputs SHALL share byte budgets, operation labels and source-scoped
 full-input retrieval across Chat and Trace. Results and reasoning remain excluded.
@@ -397,6 +398,12 @@ full-input retrieval across Chat and Trace. Results and reasoning remain exclude
 - **WHEN** a V2 shared service emits a root lifecycle or tool event
 - **THEN** the old pane is not marked active or finished and no content is collected
 - **AND** only verified private-server ancestry may claim a managed terminal
+
+#### Scenario: OpenCode management and explicit server choices
+
+- **WHEN** the user invokes mcp list or explicitly disables standalone mode
+- **THEN** the native argument list is preserved without adding a private server
+- **AND** inline shared-service or external-server flags cannot establish private terminal ownership
 
 #### Scenario: Kimi records tools only as loop events
 

@@ -37,13 +37,22 @@ func opencodePrivateChain(pid int, read func(int) opencodeProcess) bool {
 				}
 				return false
 			}
+			option := func(flag string) bool {
+				for _, arg := range p.args {
+					if arg == flag || strings.HasPrefix(arg, flag+"=") {
+						return true
+					}
+				}
+				return false
+			}
 			if !server {
-				if !has("serve") || !has("--stdio") || has("--service") {
+				if !has("serve") || !has("--stdio") || option("--service") {
 					return false
 				}
 				server = true
 			} else {
-				return has("--standalone") && !has("serve") && !has("--server")
+				return (has("--standalone") || has("--standalone=true")) &&
+					!has("--standalone=false") && !option("--no-standalone") && !has("serve") && !option("--server")
 			}
 		} else if server && !isShellComm(filepath.Base(p.command)) {
 			return false

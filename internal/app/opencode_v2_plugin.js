@@ -12,7 +12,8 @@ export default {
     const active = new Set();
     let pending = Promise.resolve();
     const privateServer =
-      process.argv.includes("--stdio") && !process.argv.includes("--service");
+      process.argv.includes("--stdio") &&
+      !process.argv.some((arg) => arg === "--service" || arg.startsWith("--service="));
     const send = (event, obj) =>
       new Promise((resolve) => {
         const env = { ...process.env };

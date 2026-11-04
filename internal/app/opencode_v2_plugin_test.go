@@ -18,7 +18,7 @@ func TestOpenCodeV2PluginContract(t *testing.T) {
 	capture := filepath.Join(dir, "capture")
 	events := filepath.Join(dir, "events.jsonl")
 	module := filepath.Join(dir, "gtmux.mjs")
-	source := "#!" + node + "\nlet input='';process.stdin.on('data',d=>input+=d);process.stdin.on('end',async()=>{(await import('node:fs')).appendFileSync(" + strconv.Quote(events) + ",JSON.stringify({event:process.argv.at(-1),data:JSON.parse(input)})+'\\n')});\n"
+	source := "#!" + node + "\nlet input='';process.stdin.on('data',d=>input+=d);process.stdin.on('end',async()=>{(await import('node:fs')).appendFileSync(" + strconv.Quote(events) + ",JSON.stringify({event:process.argv.at(-1),data:JSON.parse(input),tmux:!!process.env.TMUX,pane:!!process.env.TMUX_PANE})+'\\n')});\n"
 	if err = os.WriteFile(capture, []byte(source), 0700); err != nil {
 		t.Fatal(err)
 	}
@@ -47,10 +47,28 @@ const rows=fs.readFileSync(process.argv[3],'utf8').trim().split('\n').map(JSON.p
 assert.deepEqual(rows.map(r=>r.event),['Profile','UserPromptSubmit','TurnStarted','Transcript','Transcript','Stop']);
 assert.ok(rows.every(r=>r.data.session_id==='root'));assert.equal(rows.filter(r=>r.data.transcript?.kind==='tool').length,1);
 assert.equal(rows.find(r=>r.data.transcript?.kind==='text').data.transcript.text,'done');
+assert.ok(rows.every(r=>!r.pane));assert.ok(rows.every(r=>r.tmux===JSON.parse(process.argv[4])));
 `
-	cmd := exec.Command(node, "--input-type=module", "-", module, events)
-	cmd.Stdin = strings.NewReader(script)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("V2 plugin: %v\n%s", err, out)
+	for _, tc := range []struct {
+		name    string
+		private bool
+		args    []string
+	}{
+		{"unconfirmed service", false, nil},
+		{"leased stdio", true, []string{"--stdio"}},
+		{"inline service", false, []string{"--stdio", "--service=true"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := os.WriteFile(events, nil, 0600); err != nil {
+				t.Fatal(err)
+			}
+			args := append([]string{"--input-type=module", "-", module, events, strconv.FormatBool(tc.private)}, tc.args...)
+			cmd := exec.Command(node, args...)
+			cmd.Env = append(os.Environ(), "TMUX=synthetic-socket", "TMUX_PANE=%901")
+			cmd.Stdin = strings.NewReader(script)
+			if out, err := cmd.CombinedOutput(); err != nil {
+				t.Fatalf("V2 plugin: %v\n%s", err, out)
+			}
+		})
 	}
 }

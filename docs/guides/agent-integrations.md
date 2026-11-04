@@ -278,7 +278,8 @@ reasoning and arbitrary configuration fields are excluded.
 
 Launch terminal sessions with `gtmux opencode`; spawn and restore use this entry
 point too. V2 uses a private server leased to that terminal; V1 passes through to
-the original CLI. Explicit `--server` commands keep their meaning. A shared V2
+the original CLI. Management commands such as `mcp list`, explicit `--server`, and
+`--standalone=false` / `--no-standalone` pass through unchanged. A shared V2
 service's inherited pane is not ownership evidence: unconfirmed shared sessions
 remain status-only, without content collection or input control.
 

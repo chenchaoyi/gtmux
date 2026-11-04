@@ -15,7 +15,9 @@ import (
 
 func opencodeStandaloneArgs(args []string, version string) []string {
 	for _, a := range args {
-		if a == "--standalone" || a == "--server" || strings.HasPrefix(a, "--server=") || a == "--help" || a == "-h" || a == "--version" {
+		name, _, _ := strings.Cut(a, "=")
+		switch name {
+		case "--standalone", "--no-standalone", "--server", "--help", "-h", "--version":
 			return args
 		}
 	}

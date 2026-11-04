@@ -16,6 +16,11 @@ func TestOpenCodeStandaloneCompatibility(t *testing.T) {
 		{"2.2.5", []string{"--server", "http://localhost:123"}, []string{"--server", "http://localhost:123"}},
 		{"2.2.5", []string{"run", "hello"}, []string{"run", "hello"}},
 		{"2.2.5", []string{"--standalone"}, []string{"--standalone"}},
+		{"2.2.5", []string{"mcp", "list"}, []string{"mcp", "list"}},
+		{"2.2.5", []string{"--standalone=false"}, []string{"--standalone=false"}},
+		{"2.2.5", []string{"--standalone=true"}, []string{"--standalone=true"}},
+		{"2.2.5", []string{"--no-standalone"}, []string{"--no-standalone"}},
+		{"2.2.5", []string{"--no-standalone=false"}, []string{"--no-standalone=false"}},
 	} {
 		if got := opencodeStandaloneArgs(tc.args, tc.version); !reflect.DeepEqual(got, tc.want) {
 			t.Fatalf("%s %v: %v", tc.version, tc.args, got)
