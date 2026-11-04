@@ -69,3 +69,19 @@ func TestCheckpointPromotionDoesNotChangeBindingOwner(t *testing.T) {
 		t.Fatal("different thread shared a binding owner")
 	}
 }
+
+func TestResolveLegacyCodexPinsTheVerifiedHome(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("CODEX_HOME", filepath.Join(home, ".codex"))
+	recoveryFile(t, transcript.CodexHome(), "legacy-thread")
+	legacy := Record{Agent: "codex", SessionID: "legacy-thread", Cwd: "/old"}
+	got, ok := Resolve(legacy)
+	if !ok || got.HomeID != transcript.CodexHomeID() || got.Cwd != "/project" {
+		t.Fatalf("verified legacy target was not normalized: %+v, %v", got, ok)
+	}
+	legacy.SessionID = "missing"
+	if got, ok := Resolve(legacy); ok || got.HomeID != "" {
+		t.Fatalf("unverified target acquired a home: %+v, %v", got, ok)
+	}
+}

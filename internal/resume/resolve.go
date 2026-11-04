@@ -91,8 +91,15 @@ func cwdFromTranscript(path string) string {
 func Resolve(r Record) (Record, bool) {
 	if r.Agent == "codex" {
 		info := Recovery(r)
-		if info.State == transcript.RecoveryReady && info.Cwd != "" {
-			r.Cwd = info.Cwd
+		if info.State == transcript.RecoveryReady {
+			// Legacy records/launch arguments have no home ID. Pin the home we
+			// just verified so a fresh bridge can confirm the same target.
+			if r.HomeID == "" {
+				r.HomeID = transcript.CodexHomeID()
+			}
+			if info.Cwd != "" {
+				r.Cwd = info.Cwd
+			}
 		}
 		return r, info.State == transcript.RecoveryReady
 	}
