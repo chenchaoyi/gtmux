@@ -59,8 +59,12 @@ Create the `ios-test-delivery` environment. Restrict deployments to `main`, requ
 maintainer approval, prevent self-review where appropriate, and review any admin
 bypass. Ordinary public/fork PR checks need none of these credentials. Do not put
 them in repository variables or committed files. The workflow is manually dispatched
-from `main` and independently rejects unpublished tags, commits outside main and
-release commits whose latest main CI has not passed. UI previews need no release
+from `main` and independently rejects lightweight tags, commits outside main and
+release commits whose latest main CI has not passed. A reviewed annotated tag can
+start a build while CLI publication is running. Before any installer upload, a
+second gate requires the stable published release, the unchanged remote tag, fresh
+main CI and the latest successful exact-source CLI job. A bounded GET-only wait
+handles a fast archive; failure retains encrypted recovery and performs no upload. UI previews need no release
 tag: they accept only an exact main commit whose latest main CI passed. Signing
 unreviewed feature branches or fork commits is outside this workflow.
 
@@ -133,15 +137,18 @@ choose a purpose and approve the environment deployment:
   GitHub Release, store notes stamp or ASC submission is created. The package uses
   the source App version, a distinct `run_number.run_attempt` build number, and a UI-preview label
   with the commit ID in its installation page/notes.
-- `release-test`: supply a published `vX.Y.Z` in `release_tag`; the App version must
-  already match. It uses the committed bilingual release notes.
+- `release-test`: supply the reviewed annotated `vX.Y.Z` in `release_tag`; the App
+  version must already match. Dispatch immediately after the authorized tag push,
+  alongside desktop and Android builds. It uses the committed bilingual release
+  notes. The protected-environment review stays required; publication waits for
+  the official release gate, not the other way around.
 
 Or:
 
 ```sh
 # UI validation without a release:
 gh workflow run ios-test-delivery.yml --ref main -f purpose=ui-preview
-# An already published release:
+# A reviewed annotated release tag (CLI publication may still be running):
 gh workflow run ios-test-delivery.yml --ref main -f purpose=release-test -f release_tag=vX.Y.Z
 gh run list --workflow ios-test-delivery.yml
 # Select the actual run ID; do not accidentally download another concurrent release.

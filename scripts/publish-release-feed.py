@@ -43,6 +43,11 @@ def require_builds(source, run, version):
         if not expected <= success:
             continue
         app = next(job for job in jobs if job['name'] == 'menu-bar app (macOS)' and job['conclusion'] == 'success')
+        # Legacy releases published inside the Mac job. Parallel releases stage
+        # an immutable ZIP first; neither a skipped nor a missing publisher is enough.
+        staged = any(step['name'] == 'Stage immutable Mac build' for step in app.get('steps', []))
+        if (staged or any(job['name'] == 'publish notarized Mac app' for job in jobs)) and 'publish notarized Mac app' not in success:
+            continue
         if not any(step['name'] == 'verify the app is notarized and stapled (tag)' and step['conclusion'] == 'success' for step in app.get('steps', [])):
             continue
         return item['id']

@@ -50,13 +50,43 @@ successful build output rather than guessing an artifact name from the new attem
 The Android delivery gate accepts either the complete older combined check or all
 three new checks, so previously reviewed sources remain usable.
 
-Mac CLI and App publication, protected iOS signing and production Android signing
-remain unchanged. Unsigned iOS CI retains its existing normal ARM host, explicitly compiles the ARM64
+Mac signing/notarization and protected mobile signing remain mandatory.
+Mac builds now overlap the CLI gate/build. A separate publisher waits for both,
+checks the immutable ZIP against the build job's source/ref/run/attempt and SHA256,
+and only then uploads it and updates the cask. The official mirror also waits for
+that publisher. Failed-only reruns retain the successful build's artifact ID and
+build attempt; they do not substitute a ZIP from a newer or older run.
+
+Start selected iOS and Android delivery workflows immediately after the authorized
+annotated tag push. iOS can prepare the exact green main source before the GitHub
+Release exists; its existing protected-environment review is unchanged. Before
+installer publication it rechecks the stable release, remote annotated tag, latest
+main CI and latest successful CLI job. It waits up to fifteen minutes with GETs
+only if CLI is still building, and stops without uploading on failure. The original
+IPA/archive and failure diagnostics still go to encrypted recovery. No new tag,
+release, mobile build or Store submission is authorized by this optimization.
+Unsigned iOS CI retains its existing normal ARM host, explicitly compiles the ARM64
 Simulator target, and checks the actual app and both embedded extension binaries without
 signing secrets. Native compilation must actually pass on the candidate and main. A
 standard Intel trial exceeded 40 minutes and was not adopted as a default or configured
 recovery path because it did not meet the latency goal. Do not skip latest-main CI
 or change protection rules, cache trust or signing identities to save time.
+
+## Expected savings and remaining limits
+
+Release 171 measured 6m07s for CLI, followed by 7m54s for Mac, then 39s for the
+mirror: 14m47s overall. Overlapping the builds removes roughly six minutes from
+that desktop path, less artifact transfer/publisher setup. iOS was dispatched
+6m32s after the tag and took 15m43s; early preparation can overlap most of that
+initial CLI wait. These savings overlap: do not add them into a twelve-minute
+end-to-end claim. They are scheduling estimates, not a measured new signed release.
+
+Native compilation (iOS archive/export 10m28s, Android release build 7m33s in 171),
+full phone/tablet automation, runner capacity and environment review remain real
+costs. Keep candidate and actual-main checks. Do not promote a QA APK as a
+production build or reuse signed archives across changed source/version/profile
+inputs. Any compilation cache needs explicit input and trust boundaries before
+adoption; a faster warm sample alone does not establish equivalence.
 
 ## Retrieve encrypted results consistently
 
