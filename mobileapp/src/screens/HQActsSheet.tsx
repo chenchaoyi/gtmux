@@ -22,9 +22,9 @@ import {
   Text,
   TextLayoutEventData,
   TouchableOpacity,
-  useWindowDimensions,
   View,
 } from 'react-native';
+import {useWindowDimensions} from '../ui/windowMetrics';
 import {ERRORED_COLOR, Palette} from '../ui/theme';
 import {useSizeClass} from '../ui/layout';
 import {

@@ -20,7 +20,7 @@
 // what it MEANS (one option per line — see optionsBody in serve.go), and the Mac picks
 // the category from the count so no phantom button is ever offered.
 
-import {Platform} from 'react-native';
+import {NativeModules, Platform} from 'react-native';
 import PushNotificationIOS from '@react-native-community/push-notification-ios';
 import * as Keychain from 'react-native-keychain';
 
@@ -148,6 +148,9 @@ export async function setupPush(
     // Older native bridges forwarded UIKit's default identifier verbatim.
     const action = rawAction === 'com.apple.UNNotificationDefaultActionIdentifier' ? undefined : rawAction;
     const isInteraction = initial || !!data.userInteraction;
+    if (typeof data.gtmuxResponseId === 'string' && data.gtmuxResponseId) {
+      NativeModules?.GtmuxNotificationResponses?.acknowledge?.(data.gtmuxResponseId, action ?? '');
+    }
     if (pane && isInteraction && !firstResponse(data.gtmuxResponseId, action)) {
       notification.finish?.(PushNotificationIOS.FetchResult.NoData);
       return;
@@ -183,6 +186,20 @@ export async function setupPush(
   };
 
   try {
+    // UIKit can deliver a response before React has a listener. Drain native
+    // receipts after listeners are attached; the shared identity also suppresses
+    // overlap with the bridge event or initial launch notification.
+    const nativeResponses = NativeModules?.GtmuxNotificationResponses;
+    if (nativeResponses?.drain) {
+      try {
+        const pending: Record<string, unknown>[] = await nativeResponses.drain();
+        for (const data of pending) {
+          onNotification({getData: () => data, getActionIdentifier: () => data.actionIdentifier}, true);
+        }
+      } catch {
+        // Keep the existing event and initial-notification paths available.
+      }
+    }
     // When the master switch is off, obtain a previously authorized token to
     // remove old registrations without showing a first-time permission prompt.
     if (askPermission) {

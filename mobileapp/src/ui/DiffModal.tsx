@@ -21,9 +21,9 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  useWindowDimensions,
   View,
 } from 'react-native';
+import {useWindowDimensions} from './windowMetrics';
 import { GtmuxClient } from '../api/client';
 import { Lang } from '../i18n';
 import { Palette } from './theme';

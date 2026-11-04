@@ -38,4 +38,48 @@ it('delivers a cold notification action exactly once', async () => {
   await settle(2000);
   expect(fake.world.writesTo('/api/send')).toEqual([expect.objectContaining({id: '%12', text: '2'})]);
   await screenshot('scene-action-after-tap');
+  // Bringing a headless-launched host to a scene must still track window changes.
+  await driver.activateApp(BUNDLE);
+  await driver.$('~radar-split').waitForExist({timeout: 20000});
+  const original = await driver.getOrientation();
+  const next = original === 'PORTRAIT' ? 'LANDSCAPE' : 'PORTRAIT';
+  try {
+    const before = await driver.getWindowSize();
+    await driver.setOrientation(next);
+    await settle(1500);
+    const after = await driver.getWindowSize();
+    expect(await driver.getOrientation()).toBe(next);
+    expect([after.width, after.height]).not.toEqual([before.width, before.height]);
+    expect(await driver.$('~radar-split').isExisting()).toBe(true);
+    await screenshot('scene-after-background-rotation');
+  } finally {
+    await driver.setOrientation(original);
+  }
+});
+
+it('delivers a warm notification action exactly once', async () => {
+  const udid = process.env.GTMUX_E2E_UDID;
+  if (!udid || process.env.GTMUX_E2E_ACCEPT_ALERTS !== '1') throw new Error('requires a named simulator and notification alerts');
+  const driver = getDriver();
+  const seed = JSON.stringify([{url: fake.url, token: fake.token, name: 'Fixture Mac'}]);
+  await launchWithFlags({GTMUX_DEBUG_SERVERS: seed, GTMUX_DEBUG_SHOT_MODE: '1', GTMUX_DEBUG_LANG: 'en'});
+  await settle(5000);
+  fake.world.recorded = [];
+  await driver.execute('mobile: pressButton', {name: 'home'});
+  const body = 'Duo warm action fixture';
+  const payload = {aps: {alert: {title: 'Fixture Mac', body}, category: 'AGENT_WAITING_2', sound: 'default'}, pane: '%12', server: 'Fixture Mac'};
+  const file = join(getArtifactsDir(), 'warm-action-push.json');
+  writeFileSync(file, JSON.stringify(payload));
+  execFileSync('xcrun', ['simctl', 'push', udid, BUNDLE, file]);
+  const banner = driver.$(`-ios predicate string:label CONTAINS "${body}"`);
+  await banner.waitForDisplayed({timeout: 15000});
+  await banner.longPress({duration: 1500});
+  const action = driver.$('-ios predicate string:label == "2"');
+  await action.waitForDisplayed({timeout: 10000});
+  await screenshot('warm-action-before-tap');
+  await action.click();
+  await driver.waitUntil(() => fake.world.writesTo('/api/send').length > 0, {timeout: 20000, interval: 500});
+  await settle(2000);
+  expect(fake.world.writesTo('/api/send')).toEqual([expect.objectContaining({id: '%12', text: '2'})]);
+  await screenshot('warm-action-after-tap');
 });

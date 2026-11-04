@@ -1,7 +1,8 @@
 import PushNotificationIOS from '@react-native-community/push-notification-ios';
 import {resetLaunchNotificationForTesting, setupPush} from './index';
+import {NativeModules} from 'react-native';
 
-jest.mock('react-native', () => ({Platform: {OS: 'ios'}}));
+jest.mock('react-native', () => ({Platform: {OS: 'ios'}, NativeModules: {GtmuxNotificationResponses: {drain: jest.fn(), acknowledge: jest.fn()}}}));
 jest.mock('react-native-keychain', () => ({setGenericPassword: jest.fn(() => Promise.resolve())}));
 jest.mock('@react-native-community/push-notification-ios', () => ({
   __esModule: true,
@@ -20,6 +21,8 @@ const launch = {getData: () => ({pane: '%5', server: 'ccy Home MBP2019'})};
 
 beforeEach(() => {
   resetLaunchNotificationForTesting();
+  (NativeModules.GtmuxNotificationResponses.drain as jest.Mock).mockResolvedValue([]);
+  (NativeModules.GtmuxNotificationResponses.acknowledge as jest.Mock).mockClear();
   (PushNotificationIOS.getInitialNotification as jest.Mock).mockResolvedValue(launch);
 });
 
@@ -115,4 +118,26 @@ test('a legacy default action opens the pane once across repeated setup', async 
   await setupPush(tap, () => {}, () => {});
   expect(tap).toHaveBeenCalledTimes(1);
   expect(tap).toHaveBeenCalledWith('%5', 'fixture');
+});
+
+
+test('a buffered native response and the launch copy dispatch one quick reply', async () => {
+  const data = {pane: '%5', server: 'fixture', gtmuxResponseId: 'buffered', userInteraction: true, actionIdentifier: '2', userText: 'typed'};
+  (NativeModules.GtmuxNotificationResponses.drain as jest.Mock).mockResolvedValue([data]);
+  (PushNotificationIOS.getInitialNotification as jest.Mock).mockResolvedValue(response('buffered', '2'));
+  const tap = jest.fn(), reply = jest.fn();
+  await setupPush(tap, () => {}, reply);
+  expect(reply).toHaveBeenCalledTimes(1);
+  expect(reply).toHaveBeenCalledWith('%5', 'fixture', '2');
+  expect(tap).not.toHaveBeenCalled();
+  expect(NativeModules.GtmuxNotificationResponses.acknowledge).toHaveBeenCalledWith('buffered', '2');
+});
+
+test('a native buffer failure still delivers the bridge launch notification', async () => {
+  (NativeModules.GtmuxNotificationResponses.drain as jest.Mock).mockRejectedValue(new Error('unavailable'));
+  (PushNotificationIOS.getInitialNotification as jest.Mock).mockResolvedValue(response('fallback', '1'));
+  const reply = jest.fn();
+  await setupPush(jest.fn(), () => {}, reply);
+  expect(reply).toHaveBeenCalledTimes(1);
+  expect(reply).toHaveBeenCalledWith('%5', 'fixture', '1');
 });

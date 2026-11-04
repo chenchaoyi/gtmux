@@ -12,6 +12,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
   var reactNativeFactory: RCTReactNativeFactory?
   var launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   private var headlessResponseStarted = false
+  var headlessRootView: UIView?
+  private var responseBackgroundTask: UIBackgroundTaskIdentifier = .invalid
 
   func application(
     _ application: UIApplication,
@@ -92,24 +94,43 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     didReceive response: UNNotificationResponse,
     withCompletionHandler completionHandler: @escaping () -> Void
   ) {
-    // Delivers the tapped notification to JS (handled by the push module's
-    // 'notification' listener), which deep-links to the agent's Detail.
-    let payload = bridgeNotificationResponse(response)
-    // A background action can launch the process without connecting a UI scene.
-    // Start the existing RN host with the action as its launch notification so
-    // getInitialNotification can deliver it after JS listeners are installed.
-    if window == nil {
-      var options = launchOptions ?? [:]
-      options[.remoteNotification] = payload
-      launchOptions = options
-      if UIApplication.shared.applicationState == .background,
-         !headlessResponseStarted, let factory = reactNativeFactory {
-        headlessResponseStarted = true
-        factory.startReactNative(withModuleName: "GtmuxMobile", in: nil, launchOptions: options)
+    // UIKit may deliver on a background queue; window and RN startup belong on main.
+    DispatchQueue.main.async {
+      let payload = bridgeNotificationResponse(response)
+      NotificationResponseBuffer.enqueue(payload)
+      if UIApplication.shared.applicationState == .background && self.responseBackgroundTask == .invalid {
+        self.responseBackgroundTask = UIApplication.shared.beginBackgroundTask(withName: "Notification response") { [weak self] in
+          DispatchQueue.main.async { self?.endResponseBackgroundTask() }
+        }
+        // Bound the grant even if JS never starts or the server is unreachable.
+        let task = self.responseBackgroundTask
+        DispatchQueue.main.asyncAfter(deadline: .now() + 20) { [weak self] in
+          guard let self = self, self.responseBackgroundTask == task else { return }
+          self.endResponseBackgroundTask()
+        }
       }
+      if self.window == nil {
+        var options = self.launchOptions ?? [:]
+        options[.remoteNotification] = payload
+        self.launchOptions = options
+        if !self.headlessResponseStarted, let factory = self.reactNativeFactory {
+          self.headlessResponseStarted = true
+          // Keep the surface alive until a scene attaches it. Passing nil to the
+        // factory's window helper would immediately release its root controller.
+        self.headlessRootView = factory.rootViewFactory.view(
+          withModuleName: "GtmuxMobile", initialProperties: nil, launchOptions: options
+        )
+        }
+      }
+      RNCPushNotificationIOS.didReceiveRemoteNotification(payload)
+      completionHandler()
     }
-    RNCPushNotificationIOS.didReceiveRemoteNotification(payload)
-    completionHandler()
+  }
+
+  private func endResponseBackgroundTask() {
+    guard responseBackgroundTask != .invalid else { return }
+    UIApplication.shared.endBackgroundTask(responseBackgroundTask)
+    responseBackgroundTask = .invalid
   }
 }
 
@@ -144,7 +165,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
       options[.userActivityDictionary] = ["UIApplicationLaunchOptionsUserActivityKey": activity]
     }
     if let response = connectionOptions.notificationResponse {
-      options[.remoteNotification] = bridgeNotificationResponse(response)
+      let payload = bridgeNotificationResponse(response)
+      NotificationResponseBuffer.enqueue(payload)
+      options[.remoteNotification] = payload
     }
     let sceneWindow = UIWindow(windowScene: scene)
     window = sceneWindow
@@ -154,7 +177,12 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     // is observed even if the module initializes synchronously.
     sceneWindow.rootViewController = UIViewController()
     sceneWindow.makeKeyAndVisible()
-    factory.startReactNative(withModuleName: "GtmuxMobile", in: sceneWindow, launchOptions: options)
+    if let headlessRoot = app.headlessRootView {
+      sceneWindow.rootViewController?.view = headlessRoot
+      app.headlessRootView = nil
+    } else {
+      factory.startReactNative(withModuleName: "GtmuxMobile", in: sceneWindow, launchOptions: options)
+    }
   }
 
   func scene(_ scene: UIScene, openURLContexts contexts: Set<UIOpenURLContext>) {

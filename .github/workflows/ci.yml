@@ -455,7 +455,7 @@ jobs:
           xcrun simctl install "$GTMUX_E2E_UDID" "$RUNNER_TEMP/gtmux-ios-ci/Build/Products/Release-iphonesimulator/gtmux.app"
           driver_version=$(node -p "require('./package-lock.json').packages['node_modules/appium-xcuitest-driver'].version")
           npx appium driver install --source=npm "appium-xcuitest-driver@$driver_version"
-          npm run test:e2e -- --runInBand duo-window.test.ts notification-scene-actions.test.ts
+          npm run test:e2e -- --runInBand duo-window.test.ts notification-scene-actions.test.ts scene-usage-links.test.ts
           xcrun simctl shutdown "$GTMUX_E2E_UDID"
           GTMUX_E2E_UDID=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); matches=[x["udid"] for runtime, devices in d["devices"].items() if runtime.endswith("iOS-27-0") for x in devices if x["name"] == "iPhone 17" and x["isAvailable"]]; assert len(matches)==1, matches; print(matches[0])' "$RUNNER_TEMP/duo-devices.json")
           export GTMUX_E2E_UDID GTMUX_E2E_DEVICE='iPhone 17' GTMUX_E2E_OS='27.0'

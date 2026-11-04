@@ -4,7 +4,8 @@
 
 import React, {useContext, useEffect, useRef, useState} from 'react';
 import {NavigationContext} from '@react-navigation/native';
-import {BackHandler, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions} from 'react-native';
+import {BackHandler, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {useWindowDimensions} from '../ui/windowMetrics';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {agentId, paneRowToAgent, sameAgent} from '../api/types';

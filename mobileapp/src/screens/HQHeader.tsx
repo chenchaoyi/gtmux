@@ -5,7 +5,8 @@
 
 import React from 'react';
 import {LoadingMark} from '../ui/LoadingMark';
-import {StyleSheet, Text, TouchableOpacity, View, ScrollView, useWindowDimensions} from 'react-native';
+import {StyleSheet, Text, TouchableOpacity, View, ScrollView} from 'react-native';
+import {useWindowDimensions} from '../ui/windowMetrics';
 import {ConnState} from '../state/AgentsContext';
 import {gradeLabel, HeaderModel, InlineSeg} from './hqHeaderModel';
 import {ERRORED_COLOR, StatusColor} from '../ui/theme';

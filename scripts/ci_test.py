@@ -102,7 +102,8 @@ class ScopeTests(unittest.TestCase):
     def test_unsigned_ios_preserves_arm64_target_and_verifies_products(self):
         text = (ROOT / ".github/workflows/ci.yml").read_text()
         block = text.split("  ios-native:\n", 1)[1].split("  relay-worker:\n", 1)[0]
-        self.assertIn("runs-on: macos-latest", block)
+        self.assertIn("runs-on: xcode-27", block)
+        self.assertIn("Probe iPhone Duo runtime", block)
         self.assertIn("Verify actual ARM64 app and extension products", block)
         self.assertIn("ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO", block)
         self.assertNotIn("ARCHS=\"$(uname -m)\"", block)

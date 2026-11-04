@@ -20,6 +20,7 @@ import {Splash} from './src/ui/Splash';
 import {WhatsNewModal} from './src/ui/WhatsNewModal';
 import {ReleaseNote} from './src/releaseNotes';
 import {useSizeClass} from './src/ui/layout';
+import {WindowMetricsProvider} from './src/ui/windowMetrics';
 import {setupPush} from './src/push';
 import {Debug} from './src/debug';
 import {DetailScreen} from './src/screens/DetailScreen';
@@ -303,10 +304,12 @@ function ThemedStatusBar() {
 export default function App() {
   return (
     <SafeAreaProvider>
+      <WindowMetricsProvider>
       <AppProvider>
         <ThemedStatusBar />
         <Root />
       </AppProvider>
+      </WindowMetricsProvider>
     </SafeAreaProvider>
   );
 }
