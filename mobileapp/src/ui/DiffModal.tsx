@@ -23,6 +23,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import {useWindowDimensions} from './windowMetrics';
 import { GtmuxClient } from '../api/client';
 import { Lang } from '../i18n';
@@ -339,7 +340,8 @@ export function DiffModal({
       onRequestClose={onClose}
     >
       <StatusBar hidden />
-      <View style={[styles.root, { backgroundColor: pal.bg }]}>
+      <SafeAreaProvider style={[styles.root, { backgroundColor: pal.bg }]}>
+      <SafeAreaView style={styles.root} edges={['top', 'bottom', 'left', 'right']}>
         <View style={[styles.bar, { borderBottomColor: pal.divider }]}>
           <ChromeText
             numberOfLines={2}
@@ -511,7 +513,8 @@ export function DiffModal({
             </View>
           </View>
         )}
-      </View>
+      </SafeAreaView>
+      </SafeAreaProvider>
       {reader && (
         <CodeReaderModal
           {...reader}

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
   Alert,
@@ -120,7 +121,8 @@ export function HQMatterSheet({
       supportedOrientations={MODAL_ORIENTATIONS}
       onRequestClose={onClose}
     >
-      <View style={[s.root, { backgroundColor: pal.bg }]}>
+      <SafeAreaProvider style={[s.root, { backgroundColor: pal.bg }]}>
+      <SafeAreaView style={s.root} edges={['top', 'bottom', 'left', 'right']}>
         <View style={[s.header, { borderBottomColor: pal.divider }]}>
           <Text
             accessibilityRole="header"
@@ -392,7 +394,8 @@ export function HQMatterSheet({
             </>
           )}
         </ScrollView>
-      </View>
+      </SafeAreaView>
+      </SafeAreaProvider>
     </Modal>
   );
 }
