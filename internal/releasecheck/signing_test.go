@@ -106,8 +106,14 @@ func runScript(t *testing.T, script string, env map[string]string) run {
 	stub(t, bin, "openssl", `echo 0123456789abcdef`)
 	stub(t, bin, "base64", `cat`)
 	stub(t, bin, "codesign", `exit 0`)
-	stub(t, bin, "ditto", `exit 0`)
-	stub(t, bin, "xcrun", `exit 0`)
+	stub(t, bin, "ditto", `: > Gtmux-notarize.zip`)
+	stub(t, bin, "xcrun", `
+if [ "$1" = notarytool ]; then printf '{"status":"%s"}\n' "${STUB_NOTARY_STATUS:-Accepted}"; fi
+if [ "$1" = stapler ] && [ "$2" = validate ]; then exit "${STUB_VALIDATE_EXIT:-0}"; fi
+exit 0`)
+	if err := os.Mkdir(filepath.Join(dir, "Gtmux.app"), 0o755); err != nil {
+		t.Fatal(err)
+	}
 	path := filepath.Join(dir, "step.sh")
 	if err := os.WriteFile(path, []byte(script), 0o755); err != nil {
 		t.Fatal(err)
@@ -122,6 +128,7 @@ func runScript(t *testing.T, script string, env map[string]string) run {
 		"GITHUB_ENV=" + envFile,
 		"GITHUB_OUTPUT=" + outFile,
 		"STUB_LOG=" + log,
+		"REPO_ROOT=" + repoRoot(t),
 	}
 	for k, v := range env {
 		cmd.Env = append(cmd.Env, k+"="+v)
@@ -226,6 +233,19 @@ func TestBuildRefusesToSkipARequiredNotarization(t *testing.T) {
 	}
 	if r := runScript(t, sec, map[string]string{"GTMUX_SIGN_ID": "Developer ID Application: Test", "GTMUX_NOTARY_PROFILE": "gtmux", "GTMUX_REQUIRE_NOTARIZE": "1"}); r.code != 0 || !strings.Contains(r.calls, "--keychain-profile gtmux") {
 		t.Errorf("keychain profile: exit %d calls:\n%s", r.code, r.calls)
+	}
+}
+
+func TestBuildPropagatesNotaryRejectionAndTicketValidationFailure(t *testing.T) {
+	sec := signingSection(t)
+	full := map[string]string{"GTMUX_SIGN_ID": "Developer ID Application: Test", "GTMUX_NOTARY_PROFILE": "synthetic", "GTMUX_REQUIRE_NOTARIZE": "1"}
+	rejected := runScript(t, sec, with(copyMap(full), "STUB_NOTARY_STATUS", "Invalid"))
+	if rejected.code == 0 || strings.Contains(rejected.calls, "xcrun stapler") || strings.Contains(rejected.out, "notarized + stapled.") {
+		t.Fatalf("rejected package escaped: exit %d calls:\n%s\n%s", rejected.code, rejected.calls, rejected.out)
+	}
+	invalidTicket := runScript(t, sec, with(copyMap(full), "STUB_VALIDATE_EXIT", "65"))
+	if invalidTicket.code == 0 || !strings.Contains(invalidTicket.calls, "xcrun stapler validate") || strings.Contains(invalidTicket.out, "notarized + stapled.") {
+		t.Fatalf("invalid ticket escaped: exit %d calls:\n%s\n%s", invalidTicket.code, invalidTicket.calls, invalidTicket.out)
 	}
 }
 

@@ -56,7 +56,11 @@ final class NewSessionControllerTests: XCTestCase {
                 XCTAssertEqual(content.frame.width, 380, accuracy: 1)
                 XCTAssertLessThan(content.frame.height, 140, "The form must not reserve a large empty area")
                 XCTAssertEqual(label.frame.midY, field.frame.midY, accuracy: 1)
-                XCTAssertEqual(field.frame.minY - create.frame.maxY, 20, accuracy: 1)
+                // Native focus/shadow outsets vary by OS. Auto Layout spaces
+                // controls by their alignment rectangles, not those outer frames.
+                let fieldAlignment = field.alignmentRect(forFrame: field.frame)
+                let createAlignment = create.alignmentRect(forFrame: create.frame)
+                XCTAssertEqual(fieldAlignment.minY - createAlignment.maxY, 20, accuracy: 1)
                 XCTAssertGreaterThan(field.frame.width, 240)
                 XCTAssertEqual(field.placeholderString, "work-preview")
                 XCTAssertEqual(field.stringValue, "work-preview")
@@ -68,7 +72,10 @@ final class NewSessionControllerTests: XCTestCase {
                 let rep = try XCTUnwrap(content.bitmapImageRepForCachingDisplay(in: content.bounds))
                 content.cacheDisplay(in: content.bounds, to: rep)
                 let png = try XCTUnwrap(rep.representation(using: .png, properties: [:]))
-                try png.write(to: URL(fileURLWithPath: "/private/tmp/gtmux-new-session-\(mode == .zh ? "zh" : "en")-\(dark ? "dark" : "light").png"))
+                let evidenceDirectory = ProcessInfo.processInfo.environment["GTMUX_WORKSPACE_PREVIEW_DIR"] ?? NSTemporaryDirectory()
+                let evidence = URL(fileURLWithPath: evidenceDirectory)
+                    .appendingPathComponent("gtmux-new-session-\(mode == .zh ? "zh" : "en")-\(dark ? "dark" : "light").png")
+                try png.write(to: evidence)
                 field.stringValue = "Project 中文"
                 create.performClick(nil)
                 XCTAssertEqual(names, ["Project 中文"])
