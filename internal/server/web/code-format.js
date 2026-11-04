@@ -1,4 +1,4 @@
-// Generated code formatter; source SHA256 1b3e6702782f071be771e7bc4a54438dc74944343ca51e2924e3a679d0853ad7
+// Generated code formatter; source SHA256 6facdf17cde497a5f6afbbdfa40b7922abe032de054699734043b0a7fa1caa4f
 // Includes @lezer/*, MIT; see vendor/lezer.LICENSE.
 (function(){
 var factories={},cache={};
@@ -4074,7 +4074,7 @@ function formatCode(source, hint = '') {
         ? 'babel-ts'
         : /^(?:js|jsx|javascript|code|exec)$/.test(kind)
             ? 'babel'
-            : /^(?:json|arguments|parameters)$/.test(kind)
+            : /^(?:json|arguments|parameters|changes)$/.test(kind)
                 ? 'json'
                 : /^(?:html|vue|angular)$/.test(kind)
                     ? 'html'

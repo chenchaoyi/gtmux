@@ -264,28 +264,41 @@ Source: [installer and event bindings](../../internal/app/agent_hooks.go).
 
 ## OpenCode — `opencode`
 
-Radar matches `opencode`. This integration uses **gtmux-authored JavaScript**, loaded
-through OpenCode's native plugin API. Installation writes
-`~/.config/opencode/plugins/gtmux.js`; OpenCode loads it on startup. Only gtmux's owned
-legacy `plugin/gtmux.js` is migrated. It is not a JSON command-hook installation.
+Verified with OpenCode 2.2.5 while retaining the 1.18.11/1.19.5 plugin contract.
+Run `gtmux install hooks --agent opencode`. The owned `plugins/gtmux.js` lives under
+`OPENCODE_CONFIG_DIR`, then `XDG_CONFIG_HOME/opencode`, or `~/.config/opencode`.
+Foreign plugins and configuration stay intact.
 
-The plugin observes `event` and `chat.message`, resolves session parentage through
-the supplied SDK client, and ignores child or unknown sessions. Busy starts work;
-permission/question results resume it. An abort remains interrupted, an error stays
-failed, and the following idle event cannot turn either into success. Hook
-subprocesses use a pipe or `/dev/null`, never the controlling terminal's stdin.
+One module exposes V1 `server()` and V2 `setup()`; each loader runs only its own
+entry point. V2 observes native execution, text, tool and permission events; V1
+retains its event/chat hooks. Children and unknown sessions cannot claim a root.
+Interruption, failure, waiting and completion remain distinct. Tool inputs use
+the same parser as Codex and Kimi, including recorded edit contents. Results,
+reasoning and arbitrary configuration fields are excluded.
 
-For this adapter, the plugin records future user prompts and final assistant text
-in **gtmux's own** `~/.local/share/gtmux/octrans/<session>.jsonl`. The reader consumes
-that file; it does not import OpenCode's entire prior history or query its storage
-database. Missing plugin traffic therefore also means missing recorded content.
-The resume recipe is `opencode --session ID`; input uses tmux, with no usage or
-one-shot driver. Knowledge uses `~/.config/opencode/AGENTS.md`.
+Launch terminal sessions with `gtmux opencode`; spawn and restore use this entry
+point too. V2 uses a private server leased to that terminal; V1 passes through to
+the original CLI. Explicit `--server` commands keep their meaning. A shared V2
+service's inherited pane is not ownership evidence: unconfirmed shared sessions
+remain status-only, without content collection or input control.
 
-Sources: [plugin generator](../../internal/app/agent_hooks.go),
-[owned transcript](../../internal/transcript/opencode.go).
+The plugin records prompts, replies and calls **actually observed after
+installation** in gtmux-owned `~/.local/share/gtmux/octrans/<session>.jsonl`.
+It does not import old databases or reconstruct missing calls. Hook subprocesses
+use pipes; OpenCode retains terminal stdin. There is no usage or one-shot adapter.
+
+Sources: [V1 generator](../../internal/app/agent_hooks.go), [V2 plugin](../../internal/app/opencode_v2_plugin.js),
+[shared transcript reader](../../internal/transcript/opencode.go).
 
 ## Kimi Code — `kimi`
+
+Verified with official Kimi Code 2.5.0 and a local synthetic provider: Read, Edit,
+Bash, the final reply and wire 1.5. Legacy 0.41 message records remain supported.
+New `context.append_loop_event/tool.call` and older `message.toolCalls` share the
+same input reader, deduplicate exact call IDs and exclude child-agent records.
+Edit inputs preserve original/replacement text, including empty strings for
+deletions. This adapter does not upgrade the installed CLI or invoke the archived
+`kimi-cli` installer.
 
 Radar recognises both the `kimi` launcher and `kimi-code` process. The installer
 maintains a marked `[[hooks]]` TOML block in `$KIMI_CODE_HOME/config.toml` (default

@@ -871,3 +871,28 @@ scenario('Clipboard images and dropped files stay staged until an explicit send'
   assert.match(fixture.state.sends[0].text, /clipboard-.*\.png/);
   assert.match(fixture.state.sends[0].text, /dropped\.txt/);
 });
+
+for (const width of [1280, 390]) scenario('Native file actions keep readable labels and recorded changes at ' + width, {viewport: {width, height: 850}, locale: 'en-US'}, async (page, fixture) => {
+  const input = JSON.stringify({status: 'completed', changes: {'sample.go': {type: 'update', unified_diff: '-old\n+new\n'}}});
+  fixture.state.turns['%901'] = [{prompt: 'Read and edit the synthetic file', response: 'Done', segments: [{text: 'Recorded file activity', steps: [
+    {kind: 'tool', title: 'exec', operation: 'read', detail: 'sample.go', input: '["bash","-lc","cat sample.go"]', input_kind: 'arguments'},
+    {kind: 'tool', title: 'apply_patch', operation: 'edit', detail: 'sample.go', input, input_kind: 'changes'},
+  ]}]}];
+  await page.goto(fixture.url + '/#code=TEST-1234');
+  if (width >= 1000) {
+    await page.locator('#tree').getByText('Investigate retries', {exact: true}).dblclick();
+    await page.locator('.tile-modes [data-m="chat"]').click();
+  } else {
+    await page.locator('#radar').getByText('Investigate retries', {exact: true}).click();
+    await page.locator('#mode [data-mode="chat"]').click();
+  }
+  await page.getByText('Recorded file activity', {exact: true}).waitFor();
+  await page.locator('.steps-toggle[aria-expanded="false"]').click();
+  assert.deepEqual(await page.locator('.step-label').allTextContents(), ['Read file', 'Edit file']);
+  await page.locator('.step-toggle').nth(1).click();
+  const changes = page.getByRole('region', {name: 'Recorded changes', exact: true});
+  await changes.waitFor();
+  assert.deepEqual(JSON.parse(await changes.textContent()), JSON.parse(input));
+  assert.equal(await page.locator('.step-inspector .code-language').textContent(), 'JSON');
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+});

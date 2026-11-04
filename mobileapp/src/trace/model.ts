@@ -502,7 +502,7 @@ export function timelineRows(
 export function previewText(event: TraceEvent): string {
   if (
     event.kind === 'tool' &&
-    ['json', 'arguments'].includes(event.step?.inputKind || '')
+    ['json', 'arguments', 'changes'].includes(event.step?.inputKind || '')
   ) {
     try {
       const value = JSON.parse(event.body);

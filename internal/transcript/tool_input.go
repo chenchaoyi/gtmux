@@ -21,7 +21,7 @@ func toolStep(name, title string, raw json.RawMessage, summary string) Step {
 	}
 	for _, field := range []struct{ key, kind string }{
 		{"cmd", "command"}, {"command", "command"}, {"code", "code"}, {"script", "code"},
-		{"file_path", "path"}, {"path", "path"}, {"pattern", "query"}, {"query", "query"},
+		{"file_path", "path"}, {"filePath", "path"}, {"path", "path"}, {"pattern", "query"}, {"query", "query"},
 		{"url", "url"}, {"description", "description"}, {"title", "description"}, {"prompt", "prompt"},
 	} {
 		value, ok := args[field.key].(string)
@@ -85,6 +85,12 @@ func toolParameters(operation string, args map[string]any) (string, bool) {
 func selectedToolParameters(operation string, args map[string]any, limit int) (string, bool) {
 	var keys []string
 	switch operation {
+	case "edit":
+		// Retain only recorded edit arguments, never arbitrary tool configuration.
+		if args["content"] == nil && args["old_string"] == nil && args["new_string"] == nil && args["patchText"] == nil && args["oldText"] == nil && args["newText"] == nil && args["oldString"] == nil && args["newString"] == nil {
+			return "", false
+		}
+		keys = []string{"path", "file_path", "content", "old_string", "new_string", "oldText", "newText", "filePath", "oldString", "newString", "replace_all", "patchText"}
 	case "agent":
 		keys = []string{"task_name", "description", "title", "message", "prompt", "agent_type", "subagent_type", "target", "agent_id", "resume", "model", "reasoning_effort", "fork_turns", "run_in_background"}
 	case "wait":
@@ -104,7 +110,7 @@ func selectedToolParameters(operation string, args map[string]any, limit int) (s
 		value := args[key]
 		switch v := value.(type) {
 		case string:
-			if strings.TrimSpace(v) != "" {
+			if strings.TrimSpace(v) != "" || operation == "edit" {
 				selected[key] = text(v)
 			}
 		case bool, float64:
@@ -158,7 +164,7 @@ func toolOperation(name string) string {
 		name = name[i+1:]
 	}
 	switch strings.ToLower(name) {
-	case "read", "readfile", "read_file", "read_text_file":
+	case "read", "readfile", "read_file", "read_text_file", "github_fetch_file", "github_fetch_blob":
 		return "read"
 	case "ls", "list", "list_files", "list_directory", "glob":
 		return "list"
@@ -168,13 +174,13 @@ func toolOperation(name string) string {
 		return "command"
 	case "edit", "write", "apply_patch", "patch", "write_file", "edit_file":
 		return "edit"
-	case "web_search", "webfetch", "web_fetch", "browse", "open_url", "fetch":
+	case "web_search", "webfetch", "web_fetch", "browse", "open_url", "fetch", "fetchurl":
 		return "web"
 	case "js", "python":
 		return "code"
 	case "wait", "wait_for", "waitfor", "sleep", "wait_agent", "taskoutput":
 		return "wait"
-	case "agent", "task", "spawn_agent", "delegate", "followup_task", "resume_agent":
+	case "agent", "agentswarm", "subagent", "task", "spawn_agent", "delegate", "followup_task", "resume_agent":
 		return "agent"
 	default:
 		return "tool"

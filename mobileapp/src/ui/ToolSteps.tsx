@@ -18,7 +18,7 @@ import { Chevron } from './Icons';
 import { CodeBlock } from './CodeBlock';
 import { toolCodeHint } from './codeReading';
 import { useToolInput } from './useToolInput';
-import {ChromeText} from './ChromeText';
+import { ChromeText } from './ChromeText';
 
 /** A call is evidence of an action, not evidence that it succeeded. */
 export function ToolSteps({
@@ -68,7 +68,10 @@ export function ToolSteps({
         style={styles.header}
       >
         <Chevron open={open} size={12} color="#A4A4AD" />
-        <ChromeText style={[styles.heading, { fontSize: size }]} numberOfLines={1}>
+        <ChromeText
+          style={[styles.heading, { fontSize: size }]}
+          numberOfLines={1}
+        >
           {open ? (lang === 'zh' ? '工具调用' : 'Tool calls') : heading} ·{' '}
           {steps.length}
         </ChromeText>
@@ -242,7 +245,11 @@ function ToolInput({
             fontScale > 1.3 && styles.toolStacked,
           ]}
         >
-          {step.title || 'tool'}
+          {step.input_kind === 'changes'
+            ? lang === 'zh'
+              ? '文件修改'
+              : 'File changes'
+            : step.title || 'tool'}
           {step.input_kind === 'arguments'
             ? ' · JSON'
             : step.input_kind === 'parameters'
@@ -271,7 +278,13 @@ function ToolInput({
           lang={lang}
           fontSize={Math.max(12, readerFontSize)}
           readerFontSize={Math.max(12, readerFontSize)}
-          title={step.title || 'tool'}
+          title={
+            step.input_kind === 'changes'
+              ? lang === 'zh'
+                ? '已记录修改'
+                : 'Recorded changes'
+              : step.title || 'tool'
+          }
           disabled={loading || !!step.details_truncated}
           maxHeight={220}
           testIDPrefix="tool-input"

@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.0.172",
+    "en": [
+      "Chat and Trace include recorded file, command and MCP calls from current Codex, OpenCode and Kimi sessions.",
+      "Inspect file changes and complete selected edit inputs with the shared code reader."
+    ],
+    "zh": [
+      "对话与轨迹补齐新版 Codex、OpenCode 和 Kimi 实际记录的文件、命令及 MCP 调用。",
+      "文件修改和完整编辑参数共用代码阅读器，保留删除等操作的细节。"
+    ]
+  },
+  {
     "version": "1.0.171",
     "en": [
       "HQ shows visible and total matters, with a clear control to expand the remaining cards.",

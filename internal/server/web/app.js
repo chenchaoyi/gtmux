@@ -2400,7 +2400,7 @@
           var meta = el('dl', 'step-meta'); meta.appendChild(el('dt', '', T('Tool', '工具'))); meta.appendChild(el('dd', 'step-name', s.title || 'tool'));
           if (s.workdir) { meta.appendChild(el('dt', '', T('Working directory', '工作目录'))); meta.appendChild(el('dd', '', s.workdir)); } inspector.appendChild(meta);
           var input = s.input || s.detail || '';
-          var inputLabel = !s.input ? T('Recorded detail','已记录详情') : s.input_kind === 'code' ? T('Recorded code','已记录代码') : s.input_kind === 'command' ? T('Recorded command','已记录命令') : ['parameters','arguments'].includes(s.input_kind) ? T('Recorded parameters','已记录参数') : T('Recorded input','已记录输入');
+          var inputLabel = !s.input ? T('Recorded detail','已记录详情') : s.input_kind === 'changes' ? T('Recorded changes','已记录修改') : s.input_kind === 'code' ? T('Recorded code','已记录代码') : s.input_kind === 'command' ? T('Recorded command','已记录命令') : ['parameters','arguments'].includes(s.input_kind) ? T('Recorded parameters','已记录参数') : T('Recorded input','已记录输入');
           var codePanel = codePanelEl(input, {hint: s.input_kind === 'code' || s.operation === 'code' ? 'javascript' : s.input_kind === 'command' ? 'shell' : s.input_kind,
             formatted: formatted, disabled: !loaded, label: inputLabel, focusKey: key + '-input'});
           inspector.appendChild(codePanel);

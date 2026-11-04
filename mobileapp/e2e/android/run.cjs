@@ -134,6 +134,10 @@ async function run() {
   doc('report.pdf','pdf','application/pdf',pdf);
   const links=`\n\n[Android HTML report](${folder}/report.html)\n\n[Android Markdown report](${folder}/report.md)\n\n[Android image](${folder}/logo.png)\n\n[Android PDF report](${folder}/report.pdf)`;
   turns[9].response+=links;turns[9].segments[0].text+=links;
+  turns[9].segments.push({steps:[
+    {kind:'tool',title:'exec',operation:'read',detail:'native-read.go',input:'cat native-read.go',input_kind:'command'},
+    {kind:'tool',title:'apply_patch',operation:'edit',detail:'native-change.go',input_kind:'changes',input:JSON.stringify({changes:{'native-change.go':{type:'update',unified_diff:'@@ -1 +1 @@\n-old\n+new'}},status:'completed'})},
+  ]});
   owner.world.transcripts.set('%12',turns);
   owner.world.diffs.set('%12','diff --git a/example.py b/example.py\n--- a/example.py\n+++ b/example.py\n@@ -1 +1,2 @@\n-print(1)\n+print(42)\n+print(\"Android synthetic diff\")\n');
   owner.world.historyPages.set('%12:synthetic-before-151',[{turn_ordinal:150,record_id:'synthetic-150',session_id:'synthetic-android-session',prompt:'Earlier request 150',response:'Earlier response 150'}]);
@@ -291,7 +295,16 @@ async function run() {
     await label('Page 1 of 2').waitForDisplayed({timeout:20000});await capture('30-pdf-first-page');
     await seek(label('Page 2 of 2'));await capture('30-pdf-second-page');await tap(label('Close document'));await id('detail-chat').waitForDisplayed({timeout:10000});
   });
-  assert.ok(results.length>=30);
+  await check('31-native-file-trace',async()=>{
+    await launch();await open();await tools('Trace');await tap(id('trace-search-toggle'));
+    await id('trace-search').setValue('native-read.go');await driver.hideKeyboard().catch(()=>{});
+    assert.ok((await source()).includes('Read file'),'Recorded read has a readable action label');
+    await id('trace-search').setValue('native-change.go');await driver.hideKeyboard().catch(()=>{});
+    await tap(driver.$('//*[starts-with(@resource-id,"trace-record-")]'));
+    await id('trace-code-panel').waitForDisplayed({timeout:10000});
+    const xml=await source();assert.ok(xml.includes('native-change.go'));assert.ok(xml.includes('unified_diff'));
+  });
+  assert.ok(results.length>=31);
   if(results.some(row=>row.status==='failed')) throw new Error(`${results.filter(row=>row.status==='failed').length} Android flows failed; inspect ${output}`);
 }
 let closing = false;

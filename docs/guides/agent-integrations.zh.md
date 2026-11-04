@@ -208,24 +208,34 @@ completed、aborted、error；Shell/MCP、工具结果、会话和压缩事件�
 
 ## OpenCode — `opencode`
 
-雷达匹配 `opencode`。接入采用 **gtmux 编写的 JavaScript 插件**，使用 OpenCode 原生
-插件 API。安装到 `~/.config/opencode/plugins/gtmux.js`，由 OpenCode 启动时加载；
-只迁移 gtmux 自己旧的 `plugin/gtmux.js`，不改其他插件。这条路径不使用 JSON 命令 hook。
+已验证 OpenCode 2.2.5，同时兼容 1.18.11/1.19.5 的插件接口。安装命令为
+`gtmux install hooks --agent opencode`；插件位于配置目录的 `plugins/gtmux.js`，优先使用
+`OPENCODE_CONFIG_DIR`，其次 `XDG_CONFIG_HOME/opencode`，默认 `~/.config/opencode`。
+只更新 gtmux 自己的文件，保留其他插件和配置。
 
-插件订阅 `event`、`chat.message`，用传入的 SDK client 确认会话父子关系，忽略子会话及
-身份不明的会话。Busy 表示开始工作，权限或提问结果表示恢复。中断保留为中断，错误保留为
-失败，后续 idle 不会把它们改成成功。子进程的 stdin 使用管道或 `/dev/null`，不读取终端。
+同一模块在 V1 使用 `server()`，在 V2 使用 `setup()`，各运行一次。V2 读取原生的
+execution、text、tool 与权限事件；V1 继续使用 event/chat hooks。子会话和无法确认的
+会话不会接管父会话。中断、错误、等待和完成分别保留，不把后续 idle 当成成功。
+工具参数使用与 Codex、Kimi 共用的读取器，编辑可查看原文/替换内容；不保留工具结果、
+推理或任意配置字段。
 
-这份适配器把**之后观察到的**用户提示和最终回复写进 **gtmux 自己的**
-`~/.local/share/gtmux/octrans/<session>.jsonl`，读取器再消费它；不导入 OpenCode 全部既有
-历史，也不查询它的存储数据库。插件没上报，就不会产生这份内容记录。恢复命令为
-`opencode --session ID`，输入走 tmux，没有用量或一次性执行适配器。
-知识写入 `~/.config/opencode/AGENTS.md`。
+使用 `gtmux opencode` 启动终端会话；派发和恢复也使用这条入口。V2 会启动由该终端
+管理的私有服务器，V1 原样交给原 CLI。显式指定 `--server` 的命令保持原意。
+V2 共享服务继承的 pane 不能证明当前会话归属；未确认的共享会话只观察状态，不采集正文或开放输入。
 
-实现：[插件生成器](../../internal/app/agent_hooks.go)、
-[gtmux 自有对话记录](../../internal/transcript/opencode.go)。
+插件把**安装后实际观察到的**提示、回复和调用写进 gtmux 自己的
+`~/.local/share/gtmux/octrans/<session>.jsonl`。不导入旧数据库，也不补造安装前缺失的调用。
+子进程使用管道，终端 stdin 仍由 OpenCode 管理；没有用量或一次性执行适配器。
+
+实现：[V1 生成器](../../internal/app/agent_hooks.go)、[V2 插件](../../internal/app/opencode_v2_plugin.js)、
+[共用记录读取器](../../internal/transcript/opencode.go)。
 
 ## Kimi Code — `kimi`
+
+已用官方 Kimi Code 2.5.0 和本机合成模型验证 Read、Edit、Bash、最终回复及 wire 1.5；
+旧 0.41 的消息记录继续支持。新版的 `context.append_loop_event/tool.call` 与旧
+`message.toolCalls` 复用同一工具解析，按真实调用 ID 去重，子 agent 的记录不会混入主会话。
+编辑参数保留原文/替换内容及空字符串，便于检查删除操作。此适配不升级本机 CLI，也不运行已归档的旧 `kimi-cli` 安装器。
 
 雷达同时识别启动器 `kimi` 和实际进程 `kimi-code`。安装器在
 `$KIMI_CODE_HOME/config.toml` 维护带边界标记的 `[[hooks]]` TOML 区块，默认目录

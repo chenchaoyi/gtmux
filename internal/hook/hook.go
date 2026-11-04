@@ -691,15 +691,18 @@ func Run(stdin io.Reader, args []string) int {
 		diag.For("hook").Warn("hook.payload.empty", "a detached hook worker read no payload", "agent", agentKey, "event", rawEvent)
 	}
 	var payload struct {
-		HookEventName    string `json:"hook_event_name"`
-		TurnID           string `json:"turn_id"`
-		SessionID        string `json:"session_id"` // the agent's session id (Claude); "" otherwise
-		TerminalClient   string `json:"terminal_client"`
-		ClientPID        int    `json:"client_pid"`
-		ClientInstance   string `json:"client_instance"`
-		ToolName         string `json:"tool_name"`         // the tool a PreToolUse refers to (Claude)
-		Cwd              string `json:"cwd"`               // the agent's working dir (Claude)
-		NotificationType string `json:"notification_type"` // Claude Notification kind (permission_prompt / idle_prompt / …)
+		HookEventName    string          `json:"hook_event_name"`
+		OpencodeV2       bool            `json:"opencode_v2"`
+		OpencodePrivate  bool            `json:"opencode_private"`
+		Transcript       json.RawMessage `json:"transcript"`
+		TurnID           string          `json:"turn_id"`
+		SessionID        string          `json:"session_id"` // the agent's session id (Claude); "" otherwise
+		TerminalClient   string          `json:"terminal_client"`
+		ClientPID        int             `json:"client_pid"`
+		ClientInstance   string          `json:"client_instance"`
+		ToolName         string          `json:"tool_name"`         // the tool a PreToolUse refers to (Claude)
+		Cwd              string          `json:"cwd"`               // the agent's working dir (Claude)
+		NotificationType string          `json:"notification_type"` // Claude Notification kind (permission_prompt / idle_prompt / …)
 		// Why a compaction ran (Claude's PreCompact/PostCompact): "auto" when the context
 		// filled mid-turn, "manual" when someone typed `/compact` at the prompt. Absent on
 		// agents that do not say → "" (read as the mid-turn case, the one the re-arm was
@@ -723,6 +726,18 @@ func Run(stdin io.Reader, args []string) int {
 		BackgroundTasks []backgroundTask `json:"background_tasks"`
 	}
 	_ = json.Unmarshal(raw, &payload)
+	opencodePane := ""
+	if agentKey == "opencode" && payload.OpencodeV2 && payload.OpencodePrivate {
+		opencodePane = opencodePrivatePane()
+	}
+	if agentKey == "opencode" && rawEvent == "Transcript" {
+		// A shared service cannot opt untracked desktop conversations into content
+		// collection. Terminal scope is proved from the private server's live ancestry.
+		if !payload.OpencodeV2 || payload.OpencodePrivate && opencodePane != "" {
+			transcript.AppendOpencodeEvent(payload.SessionID, payload.Transcript)
+		}
+		return 0
+	}
 	errorText := hookError(payload.Error, payload.ErrorMessage)
 	promptText := textOfPrompt(payload.Prompt)
 	if rawEvent == "" {
@@ -776,7 +791,7 @@ func Run(stdin io.Reader, args []string) int {
 	// text (Stop) alongside the session id, and we append them for the digest's
 	// goal/last/ask (Tier 2). Empty text/session is a no-op; other agents read their
 	// own logs and never take this path.
-	if agentKey == "opencode" && agentSession != "" {
+	if agentKey == "opencode" && agentSession != "" && (!payload.OpencodeV2 || payload.OpencodePrivate && opencodePane != "") {
 		switch rawEvent {
 		case "UserPromptSubmit":
 			transcript.AppendOpencode(agentSession, "user", promptText)
@@ -795,7 +810,13 @@ func Run(stdin io.Reader, args []string) int {
 	// is empty we ask the process tree instead — see paneidentity.go.
 	envPane := os.Getenv("TMUX_PANE")
 	pane := envPane
-	codexPaneChecked := agentKey == "dsh"
+	codexPaneChecked := agentKey == "dsh" || agentKey == "opencode" && payload.OpencodeV2
+	if agentKey == "opencode" && payload.OpencodeV2 {
+		pane = ""
+		if payload.OpencodePrivate {
+			pane = opencodePane
+		}
+	}
 	codexProcessBound := false
 	if agentKey == "dsh" {
 		pane = ""
@@ -1143,7 +1164,7 @@ func Run(stdin io.Reader, args []string) int {
 		goal = goalOf(promptText)
 	}
 	client := ""
-	if pane == "" && (agentKey == "codex" || agentKey == "dsh") {
+	if pane == "" && (agentKey == "codex" || agentKey == "dsh" || agentKey == "opencode" && payload.OpencodeV2) {
 		client = "unconfirmed"
 	}
 	var learning *bool
