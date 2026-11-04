@@ -157,3 +157,25 @@ Release preflight SHALL inspect the effective author and committer identities be
 
 - **WHEN** the effective author or committer uses an address outside the public identity policy
 - **THEN** preparation fails without printing that address or changing configuration
+
+### Requirement: Parallel desktop builds preserve publication ordering
+
+The CLI release gate/build and Mac signing/notarization build MAY run concurrently
+at the same official source. The Mac build SHALL have read-only repository access
+and SHALL NOT upload release assets or update casks. A separate publisher SHALL
+require both successful builds, consume only their run-scoped immutable Mac ZIP,
+and verify its source, ref, run, original build attempt, size and trusted SHA256
+before upload. It SHALL NOT rebuild or re-sign during transfer. The official signed
+mirror SHALL wait for successful Mac publication as well as both builds. Historical
+serial releases SHALL remain eligible for exact-source mirror validation.
+
+#### Scenario: CLI fails while Mac succeeds
+
+- **WHEN** the parallel Mac build passes but the CLI release gate fails
+- **THEN** no Mac release asset, cask or signed mirror is published by that run
+
+#### Scenario: Only publication is retried
+
+- **WHEN** a failed publisher is rerun after its Mac build already succeeded
+- **THEN** it verifies the original successful build artifact ID and build attempt
+- **AND** a changed ZIP or artifact from another source/run is rejected

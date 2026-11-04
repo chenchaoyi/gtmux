@@ -12,9 +12,11 @@ Two ways to do it. Both need the same one-time credentials (§1 cert + §2 API k
   fails with the missing names. It sets `GTMUX_REQUIRE_NOTARIZE=1`, so the build
   fails if notarization cannot run; `xcrun stapler validate` also checks the app
   before it is zipped and uploaded. The cask is updated when `HOMEBREW_TAP_TOKEN`
-  is configured. Supply the build gates below too. The app job depends on the CLI
-  job, so the CLI release may already exist when app signing fails; inspect both
-  jobs and the app artifact before calling the release complete.
+  is configured. Supply the build gates below too. The Mac build runs alongside the CLI gate/build. A separate publication job waits
+  for both to succeed, verifies the same run/source/build-attempt ZIP and SHA256,
+  then uploads the App and updates its cask. The official mirror waits for that
+  publication too. A CLI release can still exist if the Mac build fails; inspect
+  all build/publication jobs before calling the release complete.
   Before the 2026-10-06 gate fix, missing Key ID or Issuer could skip notarization;
   `internal/releasecheck` now exercises these failure paths with command stubs.
 - **Local (manual fallback):** notarize from your Mac with `make app-release` (see

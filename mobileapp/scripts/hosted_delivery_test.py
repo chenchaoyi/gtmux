@@ -40,7 +40,7 @@ class HostedDeliveryTests(unittest.TestCase):
     def setUp(self):
         self.now = datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc)
         self.commit = "a" * 40
-        self.release = {"tag_name": "v1.2.3", "draft": False, "prerelease": False}
+        self.release = {"tag_name": "v1.2.3", "draft": False, "prerelease": False, "published_at": "2026-01-01T00:00:00Z"}
         self.runs = [{"head_sha": self.commit, "head_branch": "main", "event": "push", "run_number": 1, "run_attempt": 1, "status": "completed", "conclusion": "success"}]
 
     def profile(self, bundle="com.gtmux.app"):
@@ -73,6 +73,97 @@ class HostedDeliveryTests(unittest.TestCase):
         newer = {**self.runs[0], "run_attempt": 2, "conclusion": "failure"}
         with self.assertRaises(delivery.DeliveryError):
             delivery.validate_release("v1.2.3", self.release, self.commit, [*self.runs, newer])
+
+    def test_preparation_accepts_only_a_real_annotated_tag_at_green_source(self):
+        with tempfile.TemporaryDirectory() as temp:
+            def git(*args):
+                return subprocess.check_output(['git', '-C', temp, *args], stderr=subprocess.DEVNULL).decode().strip()
+            git('init'); git('config', 'user.name', 'Synthetic'); git('config', 'user.email', 'test@example.invalid')
+            Path(temp, 'source').write_text('synthetic source')
+            git('add', '.'); git('commit', '-m', 'source')
+            commit = git('rev-parse', 'HEAD')
+            git('tag', '-a', 'v1.2.3', '-m', 'stable annotated tag')
+            git('tag', 'v1.2.4')
+            runs = [{**self.runs[0], 'head_sha': commit}]
+            delivery.validate_tag_build('v1.2.3', commit, runs, temp)
+            for tag, source, ci in [('v1.2.4', commit, runs), ('v1.2.3', 'b'*40, runs), ('v1.2.3', commit, [])]:
+                with self.subTest(tag=tag, source=source), self.assertRaises(delivery.DeliveryError):
+                    delivery.validate_tag_build(tag, source, ci, temp)
+
+    def publication(self, *, release=None, ci=None, run=None, jobs=None, tag=None):
+        metadata = {'id': 7, 'head_branch': 'v1.2.3', 'head_sha': self.commit, 'event': 'push',
+                    'path': '.github/workflows/release.yml', 'run_number': 3, 'run_attempt': 1,
+                    'repository': {'full_name': 'chenchaoyi/gtmux'}}
+        job = {'name': 'goreleaser', 'run_id': 7, 'head_sha': self.commit,
+               'status': 'completed', 'conclusion': 'success'}
+        delivery.validate_publication('v1.2.3', self.commit, release or self.release, ci or self.runs,
+                                      run or [metadata], jobs or [job],
+                                      tag or {'tag': 'v1.2.3', 'object': {'type': 'commit', 'sha': self.commit}})
+        return metadata, job
+
+    def test_upload_rechecks_publication_ci_cli_and_remote_tag(self):
+        run, job = self.publication()
+        for release in [{**self.release, 'published_at': None}, {**self.release, 'draft': True}]:
+            with self.assertRaises(delivery.DeliveryError):
+                self.publication(release=release)
+        for field, value in [('conclusion', 'failure'), ('status', 'in_progress'), ('head_sha', 'b'*40), ('run_id', 6)]:
+            with self.subTest(field=field), self.assertRaises(delivery.DeliveryError):
+                self.publication(jobs=[{**job, field: value}])
+        for newer in [{**run, 'id': 8, 'run_attempt': 2}, {**run, 'head_sha': 'b'*40}, {**run, 'repository': {'full_name': 'other/repo'}}]:
+            with self.assertRaises(delivery.DeliveryError):
+                self.publication(run=[run, {**newer, 'run_number': 4}], jobs=[job])
+        with self.assertRaises(delivery.DeliveryError):
+            self.publication(ci=[*self.runs, {**self.runs[0], 'run_attempt': 2, 'conclusion': 'failure'}])
+        with self.assertRaises(delivery.DeliveryError):
+            self.publication(tag={'tag': 'v1.2.3', 'object': {'type': 'commit', 'sha': 'b'*40}})
+
+    def test_workflow_moves_release_gate_before_upload_without_moving_protection(self):
+        text = (Path(__file__).resolve().parents[2] / '.github/workflows/ios-test-delivery.yml').read_text()
+        early, late = text.split('  delivery:\n', 1)
+        self.assertIn('mode=tagged-build', early)
+        self.assertNotIn('/releases/tags/$TAG', early)
+        self.assertIn('environment: ios-test-delivery', late)
+        self.assertLess(late.index('Archive and export the Ad Hoc IPA'), late.index('Recheck official release'))
+        self.assertLess(late.index('hosted-ios-delivery.py publication'), late.index('Publish with the existing service'))
+        self.assertIn("if: inputs.purpose == 'release-test'", late)
+        self.assertNotIn('continue-on-error:', late)
+
+    def test_fast_archive_waits_read_only_for_cli_without_rebuilding(self):
+        run, job = self.publication()
+        reads, pauses = [], []
+        def api(path):
+            reads.append(path)
+            if '/release.yml/runs' in path:
+                return {'workflow_runs': [{**run, 'status': 'in_progress'}]}
+            if '/jobs?' in path:
+                return {'jobs': [{**job, 'status': 'completed' if pauses else 'in_progress'}]}
+            if '/ci.yml/runs' in path:
+                return {'workflow_runs': self.runs}
+            if path.startswith('git/ref/'):
+                return {'object': {'type': 'tag', 'sha': 'c'*40}}
+            if path.startswith('git/tags/'):
+                return {'tag': 'v1.2.3', 'object': {'type': 'commit', 'sha': self.commit}}
+            if path.startswith('releases/tags/'):
+                return self.release
+            self.fail('Unexpected API read: ' + path)
+        result = delivery.await_publication('v1.2.3', self.commit, api, seconds=20,
+                                            clock=lambda: sum(pauses), pause=pauses.append)
+        self.assertEqual(result['release_run'], 7)
+        self.assertEqual(pauses, [10])
+        self.assertFalse(any('dispatch' in path or 'rerun' in path for path in reads))
+
+    def test_pending_and_failed_cli_do_not_publish_or_poll_forever(self):
+        run, job = self.publication()
+        for status, conclusion in [('in_progress', None), ('completed', 'failure'), ('completed', 'cancelled')]:
+            calls = []
+            def api(path):
+                calls.append(path)
+                if '/release.yml/runs' in path:
+                    return {'workflow_runs': [{**run, 'status': 'in_progress'}]}
+                return {'jobs': [{**job, 'status': status, 'conclusion': conclusion}]}
+            with self.subTest(status=status, conclusion=conclusion), self.assertRaises(delivery.DeliveryError):
+                delivery.await_publication('v1.2.3', self.commit, api, seconds=0)
+            self.assertEqual(len(calls), 2)
 
     def test_all_three_ad_hoc_profiles_supported(self):
         for bundle in delivery.BUNDLES:

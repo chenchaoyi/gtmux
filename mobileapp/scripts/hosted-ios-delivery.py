@@ -12,6 +12,7 @@ import shutil
 import subprocess
 import sys
 import tarfile
+import time
 
 BUNDLES = {
     "com.gtmux.app": "IOS_PROFILE_APP",
@@ -36,9 +37,77 @@ def run(command, log, **kwargs):
 def validate_release(tag, release, commit, ci_runs):
     if not re.fullmatch(r"v\d+\.\d+\.\d+", tag):
         raise DeliveryError("Use a stable release tag, not a branch or arbitrary ref.")
-    if release.get("tag_name") != tag or release.get("draft") or release.get("prerelease"):
+    if (release.get("tag_name") != tag or release.get("draft") is not False
+            or release.get("prerelease") is not False or not release.get("published_at")):
         raise DeliveryError("The release is not a published stable release.")
     validate_ci(commit, ci_runs)
+
+
+def validate_tag_build(tag, commit, ci_runs, repository):
+    """Preparation can overlap CLI publication; it never grants permission to upload."""
+    if not re.fullmatch(r"v\d+\.\d+\.\d+", tag):
+        raise DeliveryError("Use a stable annotated tag.")
+    ref = "refs/tags/" + tag
+    kind = subprocess.check_output(["git", "cat-file", "-t", ref], cwd=repository).decode().strip()
+    target = subprocess.check_output(["git", "rev-parse", ref + "^{commit}"], cwd=repository).decode().strip()
+    if kind != "tag" or target != commit:
+        raise DeliveryError("An annotated tag at the exact reviewed source is required.")
+    validate_ci(commit, ci_runs)
+
+
+def validate_publication(tag, commit, release, ci_runs, release_runs, jobs, tag_object):
+    """The latest CLI release must finish successfully before any installer upload."""
+    validate_release(tag, release, commit, ci_runs)
+    if (tag_object.get("tag") != tag or tag_object.get("object", {}).get("type") != "commit"
+            or tag_object.get("object", {}).get("sha") != commit):
+        raise DeliveryError("The remote annotated release tag changed or targets another source.")
+    runs = [r for r in release_runs if r.get("head_branch") == tag and r.get("event") == "push"]
+    latest = max(runs, key=lambda r: (r.get("run_number", 0), r.get("run_attempt", 0)), default={})
+    if (latest.get("head_sha") != commit or latest.get("path") != ".github/workflows/release.yml"
+            or latest.get("repository", {}).get("full_name") != "chenchaoyi/gtmux"):
+        raise DeliveryError("The exact official release workflow is required before publication.")
+    cli = [j for j in jobs if j.get("name") == "goreleaser"]
+    if len(cli) != 1 or any(cli[0].get(k) != v for k, v in {
+            "run_id": latest.get("id"), "head_sha": commit,
+            "status": "completed", "conclusion": "success"}.items()):
+        raise DeliveryError("The latest exact-source CLI release must succeed before publication.")
+
+
+def await_publication(tag, commit, api, *, seconds=900, clock=time.monotonic, pause=time.sleep):
+    """GET-only wait: a fast archive must not fail merely because CLI is still building."""
+    if not re.fullmatch(r"v\d+\.\d+\.\d+", tag) or not re.fullmatch(r"[0-9a-f]{40}", commit):
+        raise DeliveryError("Exact stable tag and commit required before publication.")
+    if not 0 <= seconds <= 900:
+        raise DeliveryError("Publication wait must be bounded to fifteen minutes.")
+    deadline = clock() + seconds
+    while True:
+        rows = api("actions/workflows/release.yml/runs?event=push&per_page=100")["workflow_runs"]
+        runs = [r for r in rows if r.get("head_branch") == tag and r.get("event") == "push"]
+        latest = max(runs, key=lambda r: (r.get("run_number", 0), r.get("run_attempt", 0)), default={})
+        if latest:
+            if (latest.get("head_sha") != commit or latest.get("path") != ".github/workflows/release.yml"
+                    or latest.get("repository", {}).get("full_name") != "chenchaoyi/gtmux"):
+                raise DeliveryError("Release source or workflow changed while building.")
+            jobs = api(f"actions/runs/{latest['id']}/jobs?per_page=100")["jobs"]
+            cli = [j for j in jobs if j.get("name") == "goreleaser"]
+            if len(cli) > 1:
+                raise DeliveryError("Ambiguous CLI release jobs.")
+            if cli and cli[0].get("status") == "completed":
+                if cli[0].get("conclusion") != "success":
+                    raise DeliveryError("CLI release failed; installer upload is blocked.")
+                ref = api("git/ref/tags/" + tag)["object"]
+                if ref.get("type") != "tag" or not re.fullmatch(r"[0-9a-f]{40}", ref.get("sha", "")):
+                    raise DeliveryError("Remote release tag is no longer annotated.")
+                validate_publication(tag, commit, api("releases/tags/" + tag),
+                    api(f"actions/workflows/ci.yml/runs?head_sha={commit}&event=push&per_page=100")["workflow_runs"],
+                    rows, jobs, api("git/tags/" + ref["sha"]))
+                return {"tag": tag, "source": commit, "release_run": latest['id'], "cli": "success"}
+            if latest.get("status") == "completed":
+                raise DeliveryError("Release completed without a successful CLI job.")
+        remaining = deadline - clock()
+        if remaining <= 0:
+            raise DeliveryError("CLI publication is still pending; package kept encrypted, no installer upload.")
+        pause(min(10, remaining))
 
 
 def profile_check(profile, bundle, team, now=None):
@@ -279,17 +348,33 @@ def seal(root, destination, recipient):
 def main():
     os.umask(0o077)
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("release", "preview", "preflight", "signing", "verify", "seal", "cleanup"))
+    parser.add_argument("action", choices=("release", "tagged-build", "publication", "preview", "preflight", "signing", "verify", "seal", "cleanup"))
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--tag")
     parser.add_argument("--commit")
     parser.add_argument("--version")
     parser.add_argument("--build")
+    parser.add_argument("--repository", type=Path, default=Path.cwd())
+    parser.add_argument("--wait-seconds", type=int, default=900)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     root = args.root
     if args.action == "release":
         validate_release(args.tag, json.loads((root / "release.json").read_text()), args.commit, json.loads((root / "ci.json").read_text())["workflow_runs"])
+    elif args.action == "tagged-build":
+        validate_tag_build(args.tag, args.commit, json.loads((root / "ci.json").read_text())["workflow_runs"], args.repository)
+    elif args.action == "publication":
+        deadline = time.monotonic() + args.wait_seconds
+        def api(path):
+            # Paths are made only from validated stable tags/SHA and fixed endpoints.
+            result = subprocess.run(["gh", "api", "repos/chenchaoyi/gtmux/" + path],
+                                    capture_output=True, timeout=max(0.1, min(30, deadline - time.monotonic())))
+            if result.returncode or len(result.stdout) > 2 * 1024**2:
+                raise DeliveryError("Publication metadata unavailable; no upload performed.")
+            return json.loads(result.stdout)
+        receipt = await_publication(args.tag, args.commit, api, seconds=args.wait_seconds)
+        root.mkdir(mode=0o700, exist_ok=True)
+        (root / "PUBLICATION-GATE.json").write_text(json.dumps(receipt) + "\n")
     elif args.action == "preview":
         validate_ci(args.commit, json.loads((root / "ci.json").read_text())["workflow_runs"])
     elif args.action == "preflight":
@@ -314,7 +399,7 @@ if __name__ == "__main__":
     except DeliveryError as error:
         print(str(error), file=sys.stderr)
         sys.exit(1)
-    except (OSError, ValueError, TypeError, KeyError, plistlib.InvalidFileException):
+    except (OSError, ValueError, TypeError, KeyError, subprocess.SubprocessError, plistlib.InvalidFileException):
         # Avoid echoing malformed credential contents or child process arguments.
         print("iOS delivery step failed. Check setup and encrypted diagnostics; no private output was printed.", file=sys.stderr)
         sys.exit(1)

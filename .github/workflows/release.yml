@@ -133,7 +133,7 @@ jobs:
 
   # The menu-bar app is cgo (Cocoa), so it builds on a macOS runner — separate
   # from the cgo-free CLI that goreleaser cross-compiles on Linux. It produces a
-  # universal, ad-hoc-signed Gtmux.app and attaches it to the same release.
+  # universal Gtmux.app independently; publication waits for BOTH build jobs.
   #
   # NOTE: this job only *builds* the app — it cannot see the menu bar. Status-item
   # rendering regressions (the menu bar is native AppKit now) are invisible to
@@ -141,10 +141,13 @@ jobs:
   # launch it and confirm the colored dot + count appears, and the popover opens.
   app:
     name: menu-bar app (macOS)
-    needs: goreleaser
     runs-on: macos-latest
     permissions:
-      contents: write
+      contents: read
+    outputs:
+      artifact: ${{ steps.upload.outputs.artifact-id }}
+      sha256: ${{ steps.stage.outputs.sha256 }}
+      attempt: ${{ steps.stage.outputs.attempt }}
     steps:
       - uses: actions/checkout@v5
 
@@ -240,17 +243,54 @@ jobs:
       - name: zip the bundle
         run: |
           set -euxo pipefail
-          ZIP="Gtmux-${GITHUB_REF_NAME#v}-macos.zip"
+          ZIP="Gtmux-snapshot-macos.zip"
+          if [ "$GITHUB_REF_TYPE" = tag ]; then ZIP="Gtmux-${GITHUB_REF_NAME#v}-macos.zip"; fi
           ditto -c -k --keepParent macapp/build/Gtmux.app "$ZIP"
           echo "ZIP=$ZIP" >> "$GITHUB_ENV"
 
-      # CI is the primary release path: with the signing secrets set, a tag push
-      # auto-signs+notarizes and publishes the app here. (The signing step above
-      # already FAILED the job on a tag if the secrets were missing, so on a tag this
-      # condition is always true.) `make app-release` from a Mac stays as a manual
-      # fallback (e.g. CI outage / hotfix) — see docs/release-signing.md.
+      - name: Stage immutable Mac build
+        id: stage
+        run: |
+          python3 scripts/macos_release_artifact.py seal --directory "$RUNNER_TEMP/macos-release" --zip "$ZIP" \
+            --source "$GITHUB_SHA" --ref "$GITHUB_REF" --run "$GITHUB_RUN_ID" --attempt "$GITHUB_RUN_ATTEMPT"
+      - name: Keep run-scoped Mac artifact
+        id: upload
+        uses: actions/upload-artifact@v6
+        with:
+          name: gtmux-macos-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/macos-release
+          if-no-files-found: error
+          retention-days: 7
+
+  # Linux publishes the exact zipped Mac bytes; it never rebuilds or re-signs.
+  # A failed CLI gate or Mac build skips this entire job, including the cask.
+  app-publish:
+    name: publish notarized Mac app
+    needs: [goreleaser, app]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v5
+        with:
+          artifact-ids: ${{ needs.app.outputs.artifact }}
+          path: ${{ runner.temp }}/macos-release
+          merge-multiple: true
+      - name: Verify exact-source Mac artifact
+        env:
+          EXPECTED_SHA256: ${{ needs.app.outputs.sha256 }}
+          BUILD_ATTEMPT: ${{ needs.app.outputs.attempt }}
+        run: |
+          python3 scripts/macos_release_artifact.py verify --directory "$RUNNER_TEMP/macos-release" \
+            --source "$GITHUB_SHA" --ref "$GITHUB_REF" --run "$GITHUB_RUN_ID" --attempt "$BUILD_ATTEMPT" \
+            --sha256 "$EXPECTED_SHA256"
       - name: attach Gtmux.app to the release (tag)
-        if: startsWith(github.ref, 'refs/tags/') && steps.signing.outputs.configured == 'true'
+        if: startsWith(github.ref, 'refs/tags/')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release upload "${GITHUB_REF_NAME}" "$ZIP" --clobber
@@ -259,7 +299,7 @@ jobs:
       # here, outside GoReleaser, so publish its cask (gtmux-app) by hand to the
       # same tap. Needs the cross-repo PAT (HOMEBREW_TAP_TOKEN).
       - name: publish Gtmux.app cask to the tap (tag)
-        if: startsWith(github.ref, 'refs/tags/') && steps.signing.outputs.configured == 'true'
+        if: startsWith(github.ref, 'refs/tags/')
         env:
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
         run: |
@@ -304,17 +344,9 @@ jobs:
             git push
           fi
 
-      - name: upload app artifact (dispatch only)
-        if: github.event_name == 'workflow_dispatch'
-        uses: actions/upload-artifact@v6
-        with:
-          name: gtmux-app
-          path: ${{ env.ZIP }}
-          retention-days: 14
-
   mirror:
     name: publish signed official downloads
-    needs: [goreleaser, app]
+    needs: [goreleaser, app, app-publish]
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     timeout-minutes: 20

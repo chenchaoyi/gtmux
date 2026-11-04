@@ -57,8 +57,13 @@ their scoped installation link, not publisher credentials.
 
 A hosted test-package workflow SHALL be manual and disabled until operator setup.
 It SHALL run from the default main branch. Release-test mode SHALL accept only a
-published stable tag whose resolved commit belongs to main and whose latest main
-CI passed. UI-preview mode SHALL accept an exact main commit with latest main CI
+stable annotated tag whose resolved commit belongs to main and whose latest main
+CI passed. Release-test archive/signing MAY overlap CLI release creation. Before
+any installer upload it SHALL independently recheck the published stable release,
+unchanged remote tag, latest main CI and successful CLI job in the latest exact-tag
+official workflow. Pending CLI work MAY be awaited using GETs for at most fifteen
+minutes; failed/cancelled CLI work, source drift and deadline expiry SHALL block
+upload while preserving encrypted package/recovery output. UI-preview mode SHALL accept an exact main commit with latest main CI
 passed without requiring or creating a release tag, GitHub Release or ASC submission.
 It SHALL retain the source App version, use a distinct workflow build number and
 label installation metadata/notes with UI-preview purpose and commit identity.
@@ -88,8 +93,14 @@ disabled debugger and production APNs checks SHALL remain required.
 
 #### Scenario: A fork or unapproved ref requests publication
 
-- **WHEN** hosted delivery is not enabled, runs from a non-main ref, or targets an unchecked commit or an unpublished release-test tag
+- **WHEN** hosted delivery is not enabled, runs from a non-main ref, or targets an unchecked commit or a lightweight/wrong-source release-test tag
 - **THEN** no signing, build or publication job proceeds
+
+#### Scenario: CLI is still building when a package is ready
+
+- **WHEN** a trusted release-test archive finishes before the matching CLI job
+- **THEN** publication waits within its bound without rebuilding or retrying a mutation
+- **AND** a failed latest CLI job or moved remote tag prevents installer upload
 
 #### Scenario: Publication or export fails
 

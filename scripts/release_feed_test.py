@@ -104,6 +104,19 @@ out.write_bytes(body)
         jobs={'jobs':[{'name':'goreleaser','conclusion':'success'},{'name':'menu-bar app (macOS)','conclusion':'success','steps':[{'name':'verify the app is notarized and stapled (tag)','conclusion':'success'}]}]}
         with patch.object(publisher,'gh',side_effect=[{'workflow_runs':[run]},jobs]):self.assertEqual(publisher.require_builds('a'*40,1,'1.2.3'),1)
 
+    def test_parallel_mac_must_be_published_before_promoting_downloads(self):
+        run={'id':1,'head_branch':'v1.2.3','head_sha':'a'*40,'event':'push','path':'.github/workflows/release.yml'}
+        build={'name':'menu-bar app (macOS)','conclusion':'success','steps':[
+            {'name':'verify the app is notarized and stapled (tag)','conclusion':'success'},
+            {'name':'Stage immutable Mac build','conclusion':'success'}]}
+        base=[{'name':'goreleaser','conclusion':'success'},build]
+        for result in (None,'failure','skipped','cancelled','success'):
+            jobs={'jobs':base+([] if result is None else [{'name':'publish notarized Mac app','conclusion':result}])}
+            with patch.object(publisher,'gh',side_effect=[{'workflow_runs':[run]},jobs]):
+                if result=='success':self.assertEqual(publisher.require_builds('a'*40,1,'1.2.3'),1)
+                else:
+                    with self.assertRaises(ValueError):publisher.require_builds('a'*40,1,'1.2.3')
+
 
 class PublicationRunSelectionTest(unittest.TestCase):
  def test_explicit_old_run_cannot_bypass_the_latest_failure(self):
