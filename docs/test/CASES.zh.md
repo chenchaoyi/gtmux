@@ -39,14 +39,14 @@
 | MC-HQ-OVERVIEW-STATE | Overview groups exclude completed/closed/merged matters even with stale projection IDs; a stage-result body never changes an open goal. Valid saved rows fill a bounded three-item preview and hidden counts match unique displayed records. |
 | MC-HQ-OVERVIEW-MORE | At the bottom of each truncated native HQ section an explicit remaining/total control opens all matters and can select a hidden record without writes; no extra control when all records fit. Complete minimum/wide light/dark bilingual fixtures preserve text/viewport geometry. |
 | MC-HQ-OVERVIEW-BRIEF | The native row presents canonical current assessment before historical receipt text, explicitly names the unfinished goal state and never treats unavailable source metadata as an idle/completed worker; no guessed human decision or completion from titles, Stop or report prose. |
-| DUO-001 | cold notification opens the correct server and selection routes to the selected server. Failed notification banner taps preserve the actual system screenshot and accessibility hierarchy. |
+| DUO-001 | cold notification opens the correct server and selection routes to the selected server. |
 | DUO-002 | selected session and draft survive a simulator orientation change. |
 | DUO-003 | iPad retains sidebar and selected session through rotation. |
 | DUO-004 | cold and warm notification actions send the selected response exactly once. |
 | DUO-005 | warm and cold scene links open the usage sheet. |
 | DUO-006 | first server selection and server switching follow the same observable route on main and candidate. |
 | DUO-007 | fake request diagnostics expose routing metadata without credentials or query values. |
-| DUO-008 | explicit hosted simulator configuration preserves local defaults and bounds driver startup. Hosted-only session idle lifetime remains bounded during slow simulator preparation; local behavior is unchanged. |
+| DUO-008 | explicit hosted simulator configuration preserves local defaults and bounds driver startup. |
 | DUO-009 | Unacknowledged responses remain retrievable; acknowledged responses disappear, duplicate identity/action is queued once, and only the newest 128 entries remain. |
 | DUO-010 | Initial fallback proceeds despite a stalled drain or permission request, foreground retry retrieves a retained response, and shared identity permits at most one reply. If the initial notification is absent and the first drain stalls, a later active transition delivers and acknowledges the retained response once. |
 | DUO-011 | Trace and Diff remain open with their current content across window resizing. |
