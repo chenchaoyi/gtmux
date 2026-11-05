@@ -21,6 +21,14 @@ command cp -f "$GITHUB_WORKSPACE/mobileapp/.bundle/config" "$base/mobileapp/.bun
 python3 "$GITHUB_WORKSPACE/mobileapp/e2e/instrument-baseline.py" "$base"
 ln -s "$GITHUB_WORKSPACE/mobileapp/node_modules" "$base/mobileapp/node_modules"
 ln -s "$GITHUB_WORKSPACE/mobileapp/vendor" "$base/mobileapp/vendor"
+# Metro only indexes files inside its project and watch folders. The isolated
+# baseline links the candidate's identical dependencies, so make that real
+# dependency directory visible to Metro without copying or reinstalling it.
+cat >> "$base/mobileapp/metro.config.js" <<'EOF'
+module.exports.watchFolders = [...(module.exports.watchFolders || []), process.env.GTMUX_COMPARE_NODE_MODULES];
+module.exports.resolver.nodeModulesPaths = [...(module.exports.resolver.nodeModulesPaths || []), process.env.GTMUX_COMPARE_NODE_MODULES];
+EOF
+export GTMUX_COMPARE_NODE_MODULES="$GITHUB_WORKSPACE/mobileapp/node_modules"
 rsync -a "$GITHUB_WORKSPACE/mobileapp/e2e/" "$base/mobileapp/e2e/"
 (cd "$base/mobileapp/ios" && bundle exec pod install)
 (cd "$base/mobileapp" && xcodebuild -workspace ios/GtmuxMobile.xcworkspace -scheme GtmuxMobile \
