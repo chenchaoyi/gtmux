@@ -56777,7 +56777,7 @@
       ]
     },
     "scripts/test_design_test.py": {
-      "sha256": "80793354d118938197407223d6b7a13d84056d21dc81d4871d7c99fe60bf856f",
+      "sha256": "68fdb3fbbf3dba605cb8c53cb1e962a16c6fb7f6f1fcd9859dd7b50abde07c71",
       "layer": "G",
       "stack": "CI / tooling",
       "cases": [
@@ -56819,7 +56819,7 @@
         },
         {
           "id": "TD-005-bb7e1e",
-          "line": 102,
+          "line": 103,
           "kind": "test",
           "name": "test_TD_005_removal_requires_rationale_and_absence",
           "dynamic": false,
@@ -56828,7 +56828,7 @@
         },
         {
           "id": "ND-003-bb7e1e",
-          "line": 127,
+          "line": 128,
           "kind": "test",
           "name": "test_ND_003_native_runner_uses_production_sources_and_propagates_failures",
           "dynamic": false,

@@ -478,8 +478,8 @@ TD-001-bb7e1e,G,CI / tooling,scripts/test_design_test.py,29,test,test_TD_001_val
 TD-002-bb7e1e,G,CI / tooling,scripts/test_design_test.py,41,test,test_TD_002_seal_required_fields_layers_paths,False,TD-002
 TD-003-bb7e1e,G,CI / tooling,scripts/test_design_test.py,54,test,test_TD_003_unlisted_test_missing_source_and_missing_case,False,TD-003
 TD-004-bb7e1e,G,CI / tooling,scripts/test_design_test.py,71,test,test_TD_004_history_rejects_same_commit_review_and_accepts_prior_review,False,TD-004
-TD-005-bb7e1e,G,CI / tooling,scripts/test_design_test.py,102,test,test_TD_005_removal_requires_rationale_and_absence,False,TD-005
-ND-003-bb7e1e,G,CI / tooling,scripts/test_design_test.py,127,test,test_ND_003_native_runner_uses_production_sources_and_propagates_failures,False,ND-003
+TD-005-bb7e1e,G,CI / tooling,scripts/test_design_test.py,103,test,test_TD_005_removal_requires_rationale_and_absence,False,TD-005
+ND-003-bb7e1e,G,CI / tooling,scripts/test_design_test.py,128,test,test_ND_003_native_runner_uses_production_sources_and_propagates_failures,False,ND-003
 LEG-96cb2ba94045,G,CI / tooling,scripts/vulncheck_test.py,24,unittest,test_execution_failure_even_with_partial_output_fails,False,legacy-not-retrospectively-reviewed
 LEG-fecadf66518e,G,CI / tooling,scripts/vulncheck_test.py,31,unittest,test_empty_malformed_or_missing_protocol_fails,True,legacy-not-retrospectively-reviewed
 LEG-b709631fda46,G,CI / tooling,scripts/vulncheck_test.py,36,unittest,test_valid_scan_without_findings_passes,False,legacy-not-retrospectively-reviewed

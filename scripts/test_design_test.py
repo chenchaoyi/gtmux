@@ -96,7 +96,8 @@ class TestDesignTests(unittest.TestCase):
         design.write_text(json.dumps(self.plan))
         (self.root / 'new-helper.cjs').write_text('case A helper')
         helper_head = self.commit()
-        self.assertTrue(td.history_errors(self.root, head, helper_head, {'new-helper.cjs':{'cases':['S-1'],'selectors':['case A']}}, {self.plan_name:self.plan}))
+        helper_errors = td.history_errors(self.root, head, helper_head, {'new-helper.cjs':{'cases':['S-1'],'selectors':['case A']}}, {self.plan_name:self.plan})
+        self.assertTrue(any('new-helper.cjs' in error and 'earlier commit' in error for error in helper_errors))
 
 
     def test_TD_005_removal_requires_rationale_and_absence(self):
