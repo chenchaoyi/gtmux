@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner (self-review, not independent approval)",
     "date": "2026-11-05",
     "decision": "Proceed with approved backlog 1, 2, 3 and 7",
-    "notes": "Reviewed real handler validation and independent fake routes, current React renderer mocks, sequential Android dependencies and browser lifecycle. Synthetic loopback only; retain original 31 UI checks and complete selected suites. No native/device acceptance inferred from component tests; no release/install/account changes. Measure same source/cases/environment before speed claims. CI narrowing requires proof that production cannot import affected tests. Scope proof will bind the entire Metro configuration hash and verify the actual resolver excludes test modules; unavailable or changed proof retains native checks."
+    "notes": "Reviewed real handler validation and independent fake routes, current React renderer mocks, sequential Android dependencies and browser lifecycle. Synthetic loopback only; retain original 31 UI checks and complete selected suites. No native/device acceptance inferred from component tests; no release/install/account changes. Measure same source/cases/environment before speed claims. CI narrowing requires proof that production cannot import affected tests. Scope proof will bind the entire Metro configuration hash and verify the actual resolver excludes test modules; unavailable or changed proof retains native checks. Self-review strengthens HQ coverage by executing workspaceHTTPRead and the production projection against an isolated store; only generated_at/since volatile clocks are fixed."
   },
   "cases": [
     {
@@ -23,7 +23,8 @@
         "tests/web/fixture.cjs",
         "mobileapp/e2e/fake-serve/backend-contract.test.ts",
         "mobileapp/e2e/fake-serve/server.ts",
-        "mobileapp/e2e/fake-serve/world.ts"
+        "mobileapp/e2e/fake-serve/world.ts",
+        "internal/app/client_contract_test.go"
       ],
       "surfaces": [
         "Go / RN / Web / Android / CI"
@@ -142,5 +143,5 @@
       ]
     }
   ],
-  "seal": "37ecc03f9f949511f8a17fa1dcae2698fa7e9637170184542a04cc0747d59351"
+  "seal": "88190db698c563f71a105a52c14741c733e245ae6960f0c6ce5994d063c638a7"
 }
