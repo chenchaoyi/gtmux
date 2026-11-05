@@ -246,7 +246,22 @@
         "RN iPhone/iPad/Android components",
         "Web browser DOM"
       ]
+    },
+    {
+      "id": "TD-006",
+      "layer": "G",
+      "description": "Known non-executable test records/indexes do not broaden product test scope; changed tests retain their ordinary suites and unknown metadata remains full.",
+      "setup": "Synthetic path lists fed to the existing conservative CI selector; quality remains always-on.",
+      "action": "Classify exact catalogue/design/CSV paths alone and mixed with Go tests; classify an unknown registry extension.",
+      "expected": "Known test documentation is policy-only; mixed Go test changes still select complete Go; unknown metadata still selects all.",
+      "planned_files": [
+        "scripts/ci_test.py",
+        "scripts/ci.py"
+      ],
+      "surfaces": [
+        "CI / test documentation"
+      ]
     }
   ],
-  "seal": "91c316736813d67fff7a42c8b8f5d100c6fe8674fe6ca92a686f8dd33229a3bd"
+  "seal": "a1805d936b0a12b2f6947586fbbb153f902c7c715c0aadfaccdab1ddd2d1f3da"
 }
