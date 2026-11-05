@@ -10,6 +10,7 @@ MAP-bf28343fb4c1,L2,reviewed implementation,internal/app/client_contract_test.go
 LEG-4c8a67259028,L2,Go core / CLI / server,internal/app/cloudflared_security_test.go,40,Test,TestCloudflaredMetricsTransportRefusesRedirectsAndOversizedBodies,False,legacy-not-retrospectively-reviewed
 LEG-ff081e20fac0,L2,Go core / CLI / server,internal/app/cloudflared_security_test.go,42,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-ba12d8af1486,L2,Go core / CLI / server,internal/app/devices_push_test.go,16,Test,TestListPush_ShowsEveryPausedToken,False,legacy-not-retrospectively-reviewed
+MAP-c746f11a537e,L2,reviewed implementation,internal/app/hqworkspace_stored_test.go,10,reviewed-selector,TestWorkspaceStoredCLILeavesDiscoveryAndRecordsUntouched,False,MC-HQ-READ
 LEG-0a1e3b761625,L2,Go core / CLI / server,internal/app/serve_startup_test.go,94,Test,TestExistingRadarRequiresIdentityAndSavedCredential,False,legacy-not-retrospectively-reviewed
 LEG-13803c4faffb,L2,Go core / CLI / server,internal/app/servememory_test.go,80,Test,TestMemoryDiagnosticsAbsentFromApplicationRoutes,False,legacy-not-retrospectively-reviewed
 LEG-05c78436c10b,L2,Go core / CLI / server,internal/app/tunnel_pairing_test.go,19,Test,TestPairingBlockSaysItGrantsControl,False,legacy-not-retrospectively-reviewed
@@ -403,6 +404,13 @@ LEG-450e8ae683ba,L2,Browser,internal/server/web/trace-model.test.cjs,58,test,emp
 LEG-48c1050764f9,L2,Browser,internal/server/web/trace-model.test.cjs,68,test,'shared native fixture: ' + fixture.name,True,legacy-not-retrospectively-reviewed
 LEG-9ba6285dc523,L2,Go core / CLI / server,internal/server/webui_test.go,16,Test,TestWebUIRouting,False,legacy-not-retrospectively-reviewed
 LEG-d0796bd9ffc4,L2,Go core / CLI / server,internal/server/webui_test.go,55,Test,TestWebHandlerCacheBusting,False,legacy-not-retrospectively-reviewed
+MAP-18b153c61e83,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceFixture.swift,12,reviewed-selector,class ChoiceFixture,False,"MC-HQ-CHOICE,MC-HQ-WINDOW,MC-HQ-READ"
+MAP-d6fdd79aba67,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceFixture.swift,60,reviewed-selector,enum HQChoiceTestSupport,False,"MC-HQ-CHOICE,MC-HQ-WINDOW,MC-HQ-READ"
+MAP-0143ada6d861,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceResponseTests.swift,8,reviewed-selector,testChoicePreparesFocusWithoutSendingAndPreservesEditedDraft,False,"MC-HQ-CHOICE,MC-HQ-READ"
+MAP-ae59716ae51d,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceResponseTests.swift,31,reviewed-selector,testSlowSourceDiscoveryCannotBlockReplyOrRollBackNewCanonicalData,False,"MC-HQ-CHOICE,MC-HQ-READ"
+MAP-fa1c60fa2d92,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceResponseTests.swift,62,reviewed-selector,testSourceTimeoutDoesNotBecomeTheQuestionOrDraftError,False,"MC-HQ-CHOICE,MC-HQ-READ"
+MAP-ed56b3b277a8,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceResponseTests.swift,79,reviewed-selector,testStoredClientUsesReadOnlyFlagAndOnlyLegacyUsageFallsBack,False,"MC-HQ-CHOICE,MC-HQ-READ"
+MAP-b135d4ac2897,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceResponseTests.swift,117,reviewed-selector,testUnavailableSourceMetadataNeverClaimsTheSessionIsGone,False,"MC-HQ-CHOICE,MC-HQ-READ"
 MAP-2fd3cafb008c,L2,reviewed implementation,mobileapp/e2e/fake-serve/backend-contract.test.ts,46,reviewed-selector,RN fake / Go contract:,False,CT-HTTP
 MAP-01cd8c62d09e,L2,reviewed implementation,mobileapp/e2e/fake-serve/backend-contract.test.ts,53,reviewed-selector,RN client consumes original ordinals,False,CT-HTTP
 MAP-f2ed2637baa9,L2,reviewed implementation,mobileapp/e2e/fake-serve/server.ts,95,reviewed-selector,startFake,False,CT-HTTP

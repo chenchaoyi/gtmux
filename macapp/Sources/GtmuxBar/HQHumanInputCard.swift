@@ -4,6 +4,7 @@ import SwiftUI
 struct HQHumanInputCard: View {
     let l10n: L10n
     let matter: HQMatter
+    var preparedChoice: String? = nil
     let prepare: (HQHumanInput, String) -> Void
     var body: some View {
         if matter.state == "needs-input" {
@@ -20,13 +21,22 @@ struct HQHumanInputCard: View {
                         }
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 150))], alignment: .leading, spacing: 6) {
                             ForEach(q.choices ?? [], id: \.self) { choice in
-                                Button(choice) { prepare(q, choice) }.buttonStyle(.bordered)
+                                Button { prepare(q, choice) } label: {
+                                    HStack {
+                                        if preparedChoice == choice { Image(systemName: "checkmark") }
+                                        Text(choice)
+                                    }
+                                }.buttonStyle(.bordered)
+                                    .tint(preparedChoice == choice ? .accentColor : nil)
+                                    .accessibilityValue(preparedChoice == choice ? l10n.tr("Prepared", "已填入输入框") : "")
                                     .accessibilityIdentifier("hq-human-choice-\(q.choices?.firstIndex(of: choice) ?? 0)")
                             }
                             Button(l10n.tr("Write a reply", "自行答复")) { prepare(q, "") }.buttonStyle(.bordered)
                                 .accessibilityIdentifier("hq-human-write-reply")
                         }
-                        Text(l10n.tr("Choose to prepare a reply, then send it below.", "选择后会填入下方输入框，由你确认发送。"))
+                        Text(preparedChoice == nil
+                             ? l10n.tr("Choose to prepare a reply, then send it below.", "选择后会填入下方输入框，由你确认发送。")
+                             : l10n.tr("Reply prepared below. Review it, then send.", "已填入下方输入框，确认后发送。"))
                             .font(HQTypography.caption).foregroundStyle(.secondary)
                     } else {
                         Text(l10n.tr("HQ will confirm receipt and follow up. Saving a reply does not mean the action has run.", "接下来由 HQ 确认并跟进；答复已保存不代表操作已执行。"))

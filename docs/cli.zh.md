@@ -2214,3 +2214,5 @@ gtmux artifact remove ID
 改为输出元数据。需指定真实的对话及目录身份。`list` 以 JSON 列出副本；`remove` 只移除
 已登记副本并停止后续下载，不触碰原文件，不能撤回设备已下载的文件。总上限为 256 份、
 240 MiB。支持格式及限制见[会话文件预览](design/conversation-documents.zh.md)。
+
+HQ 界面可使用 `gtmux hq workspace list --overview --stored --json` 读取存储中的权威事项，不发现会话；`sources_included:false` 表示没有附带可选会话元数据。普通 list 仍提供实时及历史来源。详见 [HQ 选项反馈](design/HQ-CHOICE-RESPONSE.zh.md)。

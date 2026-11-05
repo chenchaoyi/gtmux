@@ -29,6 +29,7 @@ type workspaceCandidate struct {
 }
 
 type workspaceList struct {
+	SourcesIncluded  *bool                 `json:"sources_included,omitempty"`
 	Overview         *hqworkspace.Overview `json:"overview,omitempty"`
 	ActivityRevision int64                 `json:"activity_revision"`
 	Schema           int                   `json:"schema"`
