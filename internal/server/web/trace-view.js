@@ -6,7 +6,7 @@
     var historyHeld = [], tailInput = [], historyLoading = false, historyError = false, historyChanged = false, historyEpoch = 0;
     var fullInputs = new Map(), inputPending = new Set(), inputFailed = new Set();
     var current = {events: [], sessions: []}, filtered = [], presented = [], context = {}, selected = '', page = 0;
-    var expandedTurns = {}, expandedCalls = {}, defaults = {turns: false, calls: true}, disclosureHold = false;
+    var expandedTurns = {}, expandedCalls = {}, defaults = {turns: false}, disclosureHold = false;
     var inspectorOpen = null, follow = true, inspecting = false, initialized = false, rowNodes = new Map(), lastDetail = '', lastDetailKey = '', deferred = null, lastInput = null, lastScope = '';
     var root = el('div', 'trace-view'), toolbar = el('div', 'trace-toolbar');
     var status = el('span', 'trace-status'); status.title = T('Current session status', '当前会话状态'); toolbar.appendChild(status);
@@ -19,6 +19,8 @@
     var session = el('select', 'trace-session'); session.setAttribute('aria-label', T('Conversation history', '历史会话')); toolbar.appendChild(session);
     var latest = button('trace-latest', T('Jump to latest', '回到最新记录'), function () { follow = true; inspecting = false; disclosureHold = false; selected = filtered.length ? filtered[filtered.length - 1].key : ''; reveal(filtered[filtered.length - 1]); page = Math.max(0, Math.floor((presented.length - 1) / pageSize)); if (compact()) panel(false); draw(true); list.scrollTop = list.scrollHeight; }); latest.innerHTML = options.icon('down');
     var toggle = button('trace-toggle', T('Show details', '查看详情'), function () { panel(!inspectorOpen); if (inspectorOpen) detail.focus(); }); toolbar.appendChild(toggle); root.appendChild(toolbar);
+    var progress = el('div', 'trace-progress'), progressHead = el('div', 'trace-progress-head'), progressTurn = el('strong', 'trace-progress-turn'), progressEvent = el('span', 'trace-progress-event'), progressSession = el('div', 'trace-progress-session');
+    progressHead.append(status, progressTurn, progressEvent); progress.append(progressHead, progressSession); root.insertBefore(progress, toolbar);
     var overview = el('div', 'trace-overview'), map = el('div', 'trace-map'); map.setAttribute('aria-hidden', 'true'); overview.appendChild(map);
     var scrub = el('input', 'trace-scrubber'); scrub.type = 'range'; scrub.min = '0'; scrub.step = '1'; scrub.setAttribute('aria-label', T('Locate a record', '定位记录')); overview.appendChild(scrub); root.appendChild(overview);
     var historyBar = el('div', 'trace-history-bar'), historyLabel = el('span'), historyLoad = button('trace-history-earlier', T('Load earlier records', '加载更早记录'), loadHistory), historyLatest = button('trace-history-latest', T('Records updated · View latest', '记录已更新 · 查看最新记录'), function () {historyHeld=[];follow=true;disclosureHold=false;historyError=false;historyChanged=false;lastInput=null;controller.update(tailInput,context);});
@@ -36,7 +38,7 @@
     }
     var body = el('div', 'trace-body'), list = el('div', 'trace-list'); list.setAttribute('aria-label', T('Trace events', '轨迹记录')); body.appendChild(list);
     var detail = el('section', 'trace-inspector'); detail.id = 'trace-detail-' + Math.random().toString(36).slice(2); detail.tabIndex = -1; detail.setAttribute('aria-label', T('Event details', '记录详情')); toggle.setAttribute('aria-controls', detail.id);
-    var head = el('div', 'trace-detail-head'), title = el('h3', 'trace-detail-title'); head.appendChild(title);
+    var head = el('div', 'trace-detail-head'), identity = el('span', 'trace-detail-identity'), title = el('h3', 'trace-detail-title'); head.append(identity, title);
     var actions = el('div', 'trace-detail-actions'); head.appendChild(actions);
     var close = button('trace-close', T('Back to trace', '返回轨迹'), function () { inspecting = false; panel(false); (selectedRow() || toggle).focus({preventScroll: true}); }); close.innerHTML = options.icon('back'); head.insertBefore(close,title); detail.appendChild(head);
     var metadata = el('p', 'trace-meta'); detail.appendChild(metadata);
@@ -63,6 +65,12 @@
       status.hidden = !historical && !presentation;
       status.textContent = historical ? T('History', '历史会话') : presentation ? presentation.text : '';
       status.style.setProperty('--trace-state', historical ? 'var(--fg3)' : presentation ? presentation.color : 'var(--fg3)');
+      var event = filtered[filtered.length - 1];
+      progress.hidden = !event;
+      progressTurn.textContent = event ? (searching() && !historical ? T('Filtered records', '筛选结果') + ' · ' : '') + turnLabel(event) : '';
+      progressEvent.textContent = event ? label(event) : '';
+      progressSession.textContent = options.sessionTitle ? options.sessionTitle(context) : '';
+      progressSession.hidden = !progressSession.textContent;
       latest.hidden = historical || !current.events.length || follow || compact() && inspectorOpen;
       latest.style.left = Math.max(12, list.offsetLeft + list.offsetWidth - 60) + 'px';
     }
@@ -95,7 +103,10 @@
       lastDetail = signature; lastDetailKey = event.key;
       var scroll = detail.scrollTop;
       title.textContent = label(event);
-      metadata.textContent = [event.agent, turnLabel(event), event.session, event.time && !isNaN(new Date(event.time).getTime()) ? T('Turn started ', '本轮开始于 ') + options.formatTime(new Date(event.time)) : ''].filter(Boolean).join(' · ');
+      identity.replaceChildren();
+      if (options.profileAvatar && event.kind !== 'context') identity.appendChild(options.profileAvatar(event, context));
+      identity.hidden = !identity.childNodes.length;
+      metadata.textContent = model.traceDetailMetadata(event, T('en','zh'), event.time && !isNaN(new Date(event.time).getTime()) ? options.formatTime(new Date(event.time)) : '');
       path.textContent = event.step && event.step.workdir ? T('Working directory: ', '工作目录：') + event.step.workdir : ''; path.hidden = !path.textContent;
       modes.hidden = false; [overviewTab, preview, source, origin].forEach(function (tab, i) { var active = detailMode === ['overview', 'preview', 'raw', 'origin'][i]; tab.setAttribute('aria-selected', String(active)); if (active) content.setAttribute('aria-labelledby', tab.id); tab.tabIndex = active ? 0 : -1; });
       warning.textContent = inputPending.has(inputKey) ? T('Loading full input…', '读取完整输入…') : inputFailed.has(inputKey) ? T('Could not load full input. Tap to retry.', '未能读取完整输入，点此重试。') : (event.context && event.context.truncated || event.step && event.step.truncated) ? T('Only the recorded portion is available.', '内容较长，仅展示已记录的部分。') : event.step && !event.step.input ? T('Only a call summary was recorded.', '此调用仅记录了摘要。') : ''; warning.hidden = !warning.textContent; warning.onclick = function () { if(inputFailed.has(inputKey)){inputFailed.delete(inputKey);renderDetail(true);} }; warning.setAttribute('role',inputFailed.has(inputKey)?'button':'status'); warning.tabIndex=inputFailed.has(inputKey)?0:-1; warning.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();warning.click();}};
@@ -113,7 +124,7 @@
       if (!event) return;
       selected = event.key;
       rowNodes.forEach(function (row, key) { row.classList.toggle('on', key === selected); row.setAttribute('aria-pressed', String(key === selected)); });
-      if (reveal) { follow = false; inspecting = true; panel(true); }
+      if (reveal) { follow = false; inspecting = true; detailMode = 'preview'; panel(true); }
       var position = filtered.findIndex(function (item) { return item.key === selected; });
       scrub.value = String(Math.max(0, position)); scrub.setAttribute('aria-valuetext', (position + 1) + ' / ' + filtered.length + ' · ' + turnLabel(event) + ' · ' + label(event));
       updateStatus(); renderDetail(!!reveal);
@@ -172,7 +183,8 @@
     }
     function groupNode(row) {
       var turn = row.type === 'turn', group = turn ? row.group : null;
-      var text = turn ? [turnLabel(group), current.sessions.length > 1 ? group.session : ''].filter(Boolean).join(' · ') : row.events.length + T(row.events.length === 1 ? ' tool call' : ' tool calls', ' 个工具调用');
+      var sessionNumber = turn ? current.sessions.findIndex(function (entry) { return entry.key === group.sessionKey; }) + 1 : 0;
+      var text = turn ? (current.sessions.length > 1 ? T('Session ', '会话 ') + sessionNumber + ' · ' : '') + turnLabel(group) : row.events.length + T(row.events.length === 1 ? ' tool call' : ' tool calls', ' 个工具调用');
       var node = button(turn ? 'trace-turn' : 'trace-calls', text, function () {
         follow = false; disclosureHold = true;
         if (turn) expandedTurns[group.key] = !row.open; else expandedCalls[row.key] = !row.open;
@@ -184,14 +196,19 @@
       node.disabled = searching(); node.setAttribute('aria-expanded', String(row.open)); node.dataset.rowKey = row.key;
       node.dataset.turnKey = turn ? group.key : row.events[0].turnKey;
       if (turn && group.events[0].boundary) node.classList.add('trace-session-break');
+      if (turn) {
+        var time = group.time && !isNaN(new Date(group.time).getTime()) ? new Date(group.time).toLocaleTimeString(T('en-US','zh-CN'), {hour:'2-digit', minute:'2-digit'}) : '';
+        node.appendChild(el('span', 'trace-group-meta', [current.sessions.length > 1 ? group.agent : '', time].filter(Boolean).join(' · ')));
+      }
       if (turn && !row.open) {
         var summary = group.prompt ? group.prompt.body : group.events[0].body;
-        node.appendChild(el('span', 'trace-group-summary', summary.replace(/\s+/g, ' ')));
-        node.appendChild(el('span', 'trace-group-count', group.calls + T(group.calls === 1 ? ' call' : ' calls', ' 次调用') + ' · ' + group.events.length + T(group.events.length === 1 ? ' record' : ' records', ' 条记录')));
+        node.appendChild(el('span', 'trace-group-summary', model.traceEventPreview(Object.assign({}, group.prompt || group.events[0], {body:summary}), T('en','zh'))));
       } else if (!turn) node.appendChild(el('span', 'trace-call-names', [...new Set(row.events.map(function (event) { return event.title; }))].join(', ')));
+      if (turn) node.appendChild(el('span', 'trace-group-count', model.traceTurnSummary(group.events, T('en','zh'))));
       return node;
     }
     function pager(text, action) { var node = button('trace-page', text, action); list.appendChild(node); }
+    function turnPage(delta) { follow = false; disclosureHold = true; page += delta; renderList(true); list.scrollTop = 0; updateStatus(); }
     function renderList(scrollToSelected) {
       var active = document.activeElement, focusedKey = active && active.dataset && active.dataset.rowKey;
       var top = list.scrollTop, anchor = null, listTop = list.getBoundingClientRect().top;
@@ -210,7 +227,7 @@
         list.appendChild(el('p', 'chat-empty', kind.value === 'context' && !current.events.some(function (event) { return event.kind === 'context'; }) ? T('No readable context was recorded in this conversation log.', '此会话记录未包含可读取的上下文。') : current.events.length ? T('No matching records.', '没有匹配的记录。') : T('No conversation records yet.', '暂无会话记录。')));
         if (current.events.length) pager(T('Clear filters', '清除筛选'), function () { search.value = ''; kind.value = session.value = 'all'; changedFilter(); });
       }
-      if (from > 0) pager(T('Previous ', '查看前 ') + pageSize + T(' records', ' 条'), function () { page--; renderList(true); list.scrollTop = 0; });
+      if (from > 0) pager(T('Previous ', '查看前 ') + pageSize + T(' records', ' 条'), function () { turnPage(-1); });
       var liveKeys = new Set();
       presented.slice(from, until).forEach(function (row) {
         var node;
@@ -218,7 +235,7 @@
         else node = groupNode(row);
         list.appendChild(node);
       });
-      if (until < presented.length) pager(T('Next ', '查看后 ') + pageSize + T(' records', ' 条'), function () { page++; renderList(true); list.scrollTop = 0; });
+      if (until < presented.length) pager(T('Next ', '查看后 ') + pageSize + T(' records', ' 条'), function () { turnPage(1); });
       function find(key) { return Array.from(list.children).find(function (node) { return node.dataset.rowKey === key; }); }
       list.scrollTop = top;
       if (anchor) {
@@ -239,8 +256,8 @@
       var position = filtered.findIndex(function (event) { return event.key === selected; });
       if (follow || scrollToSelected) page = Math.max(0, Math.floor(positionFor(filtered[position]) / pageSize));
       page = Math.min(page, Math.max(0, Math.floor((presented.length - 1) / pageSize)));
-      count.textContent = (filtered.length === current.events.length ? current.events.length : filtered.length + ' / ' + current.events.length) + T(current.events.length === 1 ? ' record' : ' records', ' 条');
-      count.title = current.turns + T(current.turns === 1 ? ' loaded turn' : ' loaded turns', ' 轮已载入会话');
+      count.textContent = model.traceWindowLabel(filtered, T('en','zh'));
+      count.title = T('Counts describe loaded records only. Load earlier records to see more.', '统计仅包含已加载记录，可加载更早记录查看更多。');
       var turnsOpen = model.groupTurns(filtered).every(function (group) { return expandedTurns[group.key] ?? defaults.turns; });
       var callsOpen = model.timelineRows(model.groupTurns(filtered), {}, expandedCalls, false, {turns: true, calls: defaults.calls}).filter(function (row) { return row.type === 'calls'; }).every(function (row) { return row.open; });
       [[foldTurns, turnsOpen, T('Turns', '轮次'), 'turns'], [foldCalls, callsOpen, T('Calls', '调用'), 'calls']].forEach(function (value) {
@@ -284,7 +301,7 @@
       context = nextContext || {};
       var scope = JSON.stringify([context.pane_id, context.session_id, context.home_id, context.agent]);
       if (lastInput === turns && lastScope === scope) { updateStatus(); return; }
-      if (lastScope && lastScope !== scope) { historyEpoch++;historyHeld=[];historyLoading=false;historyError=false;historyChanged=false; initialized = false; selected = ''; page = 0; expandedTurns = {}; expandedCalls = {}; defaults = {turns: false, calls: true}; disclosureHold = false; search.value = ''; kind.value = 'all'; session.value = 'all'; lastDetail = ''; lastDetailKey = ''; }
+      if (lastScope && lastScope !== scope) { historyEpoch++;historyHeld=[];historyLoading=false;historyError=false;historyChanged=false; initialized = false; selected = ''; page = 0; expandedTurns = {}; expandedCalls = {}; defaults = {turns: false}; disclosureHold = false; search.value = ''; kind.value = 'all'; session.value = 'all'; lastDetail = ''; lastDetailKey = ''; }
       lastInput = turns; lastScope = scope;
       tailInput=turns;
       var historyWindow=model.mergeHistory(historyHeld,turns), shown=historyWindow.turns, first=shown[0] || {}, remaining=first.turn_ordinal ? first.turn_ordinal-1 : context.dropped || 0;
@@ -296,11 +313,11 @@
       var priorSession = session.value || 'all', sessionSignature = JSON.stringify(current.sessions.map(function (entry) { return [entry.key, entry.agent, entry.session]; }));
       if (session.dataset.signature !== sessionSignature) {
         session.dataset.signature = sessionSignature; session.replaceChildren(option('all', T('All sessions', '全部会话')));
-        current.sessions.forEach(function (entry) { session.appendChild(option(entry.key, [entry.agent, entry.session].filter(Boolean).join(' · '))); });
+        current.sessions.forEach(function (entry, i) { session.appendChild(option(entry.key, [entry.agent, T('Session ', '会话 ') + (i+1)].filter(Boolean).join(' · '))); });
         session.value = current.sessions.some(function (entry) { return entry.key === priorSession; }) ? priorSession : 'all';
       }
       session.hidden = current.sessions.length < 2;
-      if (!initialized) { initialized = true; follow = true; inspecting = false; panel(!compact()); }
+      if (!initialized) { initialized = true; follow = true; inspecting = false; panel(false); }
       var present = new Set(current.events.map(function (event) { return event.key; })); rowNodes.forEach(function (row, key) { if (!present.has(key)) rowNodes.delete(key); });
       draw(follow || !selected);
     }, dispose: function () { historyEpoch++;clearTimeout(deferred); resize.disconnect(); rowNodes.clear(); fullInputs.clear(); inputPending.clear(); inputFailed.clear(); }};

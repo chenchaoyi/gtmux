@@ -264,7 +264,7 @@ export function build(
   return {
     events,
     sessions,
-    turns: Array.from(turnCounts.values()).reduce((a, b) => a + b, 0),
+    turns: new Set(events.map(event => event.turnKey)).size,
   };
 }
 

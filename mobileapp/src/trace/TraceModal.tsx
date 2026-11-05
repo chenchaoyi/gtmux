@@ -89,6 +89,8 @@ type Selection = { event: TraceEvent; turn: TranscriptTurn };
 import {
   traceKindLabels as kindLabels,
   traceDetailLabels,
+  traceWindowLabel,
+  traceDetailMetadata,
 } from './presentation';
 const NO_TURNS: TranscriptTurn[] = [];
 export function TraceModal(props: Props) {
@@ -655,10 +657,7 @@ export function TraceReader({
             testID="trace-count"
             style={[styles.caption, styles.flex, { color: pal.fg2 }]}
           >
-            {groups.length}
-            {zh ? ' 轮' : groups.length === 1 ? ' turn' : ' turns'} ·{' '}
-            {events.length}
-            {zh ? ' 条记录' : events.length === 1 ? ' record' : ' records'}
+            {traceWindowLabel(events, lang)}
           </ChromeText>
           {(['turns', 'calls'] as const).map(level => {
             const open = level === 'turns' ? allTurnsOpen : allCallsOpen;
@@ -1055,9 +1054,7 @@ export function TraceReader({
                 numberOfLines={2}
                 style={[styles.recordTitle, styles.flex, { color: pal.fg }]}
               >
-                {chosen.event.kind === 'context'
-                  ? traceEventLabel(chosen.event, lang)
-                  : chosen.event.title || (zh ? '用户消息' : 'User message')}
+                {traceEventLabel(chosen.event, lang)}
               </ChromeText>
               <TouchableOpacity
                 testID="trace-copy"
@@ -1112,17 +1109,7 @@ export function TraceReader({
               keyboardShouldPersistTaps="handled"
             >
               <Text selectable style={[styles.meta, { color: pal.fg2 }]}>
-                {[
-                  chosen.event.agent,
-                  zh
-                    ? '第 ' + chosen.event.turn + ' 轮'
-                    : 'Turn ' + chosen.event.turn,
-                  turnTime
-                    ? (zh ? '本轮开始于 ' : 'Turn started ') + turnTime
-                    : '',
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
+                {traceDetailMetadata(chosen.event, lang, turnTime)}
               </Text>
               {!!chosen.event.step?.workdir && (
                 <Text selectable style={[styles.meta, { color: pal.fg2 }]}>
