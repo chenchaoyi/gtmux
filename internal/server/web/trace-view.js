@@ -40,7 +40,7 @@
     var detail = el('section', 'trace-inspector'); detail.id = 'trace-detail-' + Math.random().toString(36).slice(2); detail.tabIndex = -1; detail.setAttribute('aria-label', T('Event details', '记录详情')); toggle.setAttribute('aria-controls', detail.id);
     var head = el('div', 'trace-detail-head'), identity = el('span', 'trace-detail-identity'), title = el('h3', 'trace-detail-title'); head.append(identity, title);
     var actions = el('div', 'trace-detail-actions'); head.appendChild(actions);
-    var close = button('trace-close', T('Back to trace', '返回轨迹'), function () { inspecting = false; panel(false); (selectedRow() || toggle).focus({preventScroll: true}); }); close.innerHTML = options.icon('back'); head.insertBefore(close,title); detail.appendChild(head);
+    var close = button('trace-close', T('Back to trace', '返回轨迹'), function () { inspecting = false; panel(false); (selectedRow() || toggle).focus({preventScroll: true}); }); close.innerHTML = options.icon('back'); head.insertBefore(close,identity); detail.appendChild(head);
     var metadata = el('p', 'trace-meta'); detail.appendChild(metadata);
     var path = el('div', 'trace-workdir'); detail.appendChild(path);
     var modes = el('div', 'trace-detail-modes'); modes.setAttribute('role', 'tablist'); modes.setAttribute('aria-label', T('Text presentation', '正文显示方式'));
@@ -74,7 +74,7 @@
       latest.hidden = historical || !current.events.length || follow || compact() && inspectorOpen;
       latest.style.left = Math.max(12, list.offsetLeft + list.offsetWidth - 60) + 'px';
     }
-    function syncCompact() { var narrow = compact(), covered = narrow && inspectorOpen; root.classList.toggle('trace-compact', narrow); list.hidden = covered; list.inert = covered; close.title = narrow ? T('Back to trace', '返回轨迹') : T('Hide details', '收起详情'); close.setAttribute('aria-label',close.title); close.innerHTML = options.icon(narrow ? 'back' : 'collapseRight'); if(narrow) head.insertBefore(close,title); else head.appendChild(close); updateStatus(); }
+    function syncCompact() { var narrow = compact(), covered = narrow && inspectorOpen; root.classList.toggle('trace-compact', narrow); list.hidden = covered; list.inert = covered; close.title = narrow ? T('Back to trace', '返回轨迹') : T('Hide details', '收起详情'); close.setAttribute('aria-label',close.title); close.innerHTML = options.icon(narrow ? 'back' : 'collapseRight'); if(narrow) head.insertBefore(close,head.firstChild); else head.appendChild(close); updateStatus(); }
     function panel(open) {
       inspectorOpen = !!open; detail.hidden = !inspectorOpen; root.classList.toggle('inspector-closed', !inspectorOpen); root.classList.toggle('inspector-open', inspectorOpen);
       toggle.textContent = inspectorOpen ? T('Hide details', '收起详情') : T('Show details', '查看详情'); toggle.title = toggle.textContent; toggle.setAttribute('aria-label', toggle.title); toggle.setAttribute('aria-expanded', String(inspectorOpen));

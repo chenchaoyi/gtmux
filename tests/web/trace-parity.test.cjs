@@ -66,6 +66,10 @@ for (const [width, locale] of [[390,'en-US'],[834,'en-US'],[1440,'en-US'],[1440,
     assert.equal(await trace.locator('.trace-detail-title').innerText(),zh?'Agent 回复':'Agent reply');
     assert.equal(await trace.locator('.trace-preview-mode').getAttribute('aria-selected'),'true','selecting a record starts with Preview like App');
     assert.equal(await trace.locator('.trace-prose').innerText(),'Inspection complete');
+    if(width<700){
+      assert.equal(await trace.locator('.trace-history-bar').isVisible(),false,'compact details keep the list history controls out of the reading area');
+      assert.equal(await trace.locator('.trace-detail-head').evaluate(n=>n.firstElementChild.classList.contains('trace-close')),true,'Back precedes the speaker avatar like App');
+    }
     if(width===1440&&!zh){
       await trace.locator('.trace-detail-identity button').click();
       await page.locator('.participant-profile').waitFor();

@@ -1275,7 +1275,9 @@ button.trace-turn { margin: 5px 0; padding: 10px 12px; border: 1px solid var(--d
 /* Compact detail reading gets the search/filter/overview space back until Close. */
 .trace-compact.inspector-open .trace-toolbar,
 .trace-compact.inspector-open .trace-overview,
-.trace-compact.inspector-open .trace-progress { display: none; }
+.trace-compact.inspector-open .trace-progress,
+.trace-compact.inspector-open .trace-history-bar,
+.trace-compact.inspector-open .trace-limits { display: none; }
 .profile-provenance { color: var(--fg2); margin-top: 12px; font-size: 12px; line-height: 1.7; }
 .profile-provenance summary { min-height: 44px; padding: 12px 0; cursor: pointer; }
 .profile-provenance p { margin: 8px 0; overflow-wrap: anywhere; }
