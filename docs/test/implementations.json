@@ -181,7 +181,8 @@
     ],
     "selectors": [
       "test_reviewed_test_records_are_policy_only_without_hiding_test_changes",
-      "test_unsigned_ios_preserves_arm64_target_and_verifies_products"
+      "test_unsigned_ios_preserves_arm64_target_and_verifies_products",
+      "test_recognized_modules_include_consumers"
     ]
   },
   "mobileapp/e2e/setup/global-setup-manual.ts": {
@@ -197,7 +198,8 @@
       "DUO-001"
     ],
     "selectors": [
-      "A: cold start with an active Mac, switches, background, a new warm tap"
+      "A: cold start with an active Mac, switches, background, a new warm tap",
+      "C: a launch with no notification switches where it is pointed"
     ]
   },
   "mobileapp/e2e/__tests__/duo-window.test.ts": {
@@ -221,7 +223,8 @@
       "DUO-004"
     ],
     "selectors": [
-      "delivers a cold notification action exactly once"
+      "delivers a cold notification action exactly once",
+      "delivers a warm notification action exactly once"
     ]
   },
   "mobileapp/e2e/__tests__/scene-usage-links.test.ts": {
@@ -237,7 +240,8 @@
       "DUO-006"
     ],
     "selectors": [
-      "selects a server after a clean launch"
+      "selects a server after a clean launch",
+      "switches between two saved servers"
     ]
   },
   "mobileapp/e2e/fake-serve/request-diagnostics.test.ts": {
@@ -269,7 +273,9 @@
       "DUO-010"
     ],
     "selectors": [
-      "a buffered native response and the launch copy dispatch one quick reply"
+      "a buffered native response and the launch copy dispatch one quick reply",
+      "a native buffer failure still delivers the bridge launch notification",
+      "the same quick action arriving from scene and delegate sends once"
     ]
   },
   "mobileapp/src/screens/DetailTrace.test.tsx": {
@@ -277,7 +283,8 @@
       "DUO-011"
     ],
     "selectors": [
-      "Trace remains open with its current conversation while the window changes size"
+      "Trace remains open with its current conversation while the window changes size",
+      "a Diff request opens and remains open through a window resize"
     ]
   },
   "mobileapp/src/screens/SplitShell.resize.test.tsx": {
@@ -285,7 +292,9 @@
       "DUO-012"
     ],
     "selectors": [
-      "resizing keeps the mounted detail state and back/reopen remains usable"
+      "resizing keeps the mounted detail state and back/reopen remains usable",
+      "folding after the wide workspace chooses its first session keeps that reader visible",
+      "a hidden workspace does not consume Android back on another stack page"
     ]
   },
   "mobileapp/src/screens/UsageSheet.test.tsx": {
