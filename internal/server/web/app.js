@@ -3036,7 +3036,11 @@
   function resetTrace(state) { if (state && state.view) state.view.dispose(); return {}; }
   function traceView(turns, state, context) {
     if (!state.view) {
-      state.view = window.GtmuxTraceView.create({T: T, markdown: mdRender, actions: bubbleActions, icon: uiIcon, activityIcon: activityIcon, senderAvatar: senderAvatarEl, formatTime: sepTime, toolInput: readToolInput, formatCode: formatToolInput, renderCode: renderCode, codePanel: codePanelEl, history: function (before, agent) {
+      state.view = window.GtmuxTraceView.create({T: T, markdown: mdRender, actions: bubbleActions, icon: uiIcon, activityIcon: activityIcon, senderAvatar: senderAvatarEl, sessionTitle: primary, profileAvatar: function (event, agent) {
+        var from = event.kind === 'user' ? event.from : null;
+        var source = from || Object.assign({}, agent, {agent:event.agent, session_id:event.session, profileTurn:true});
+        return speakerAvatar(event.kind === 'user' ? from ? from.kind : 'user' : 'agent', source, event.kind === 'user' ? from ? senderAvatarEl(from,28) : userAvatarEl(28) : avatarEl(source,28,false));
+      }, formatTime: sepTime, toolInput: readToolInput, formatCode: formatToolInput, renderCode: renderCode, codePanel: codePanelEl, history: function (before, agent) {
         var epoch = viewEpoch, credential = token;
         var path = hasPane(agent) ? '/api/transcript?id=' + encodeURIComponent(agent.pane_id) : '/api/session/transcript' + conversationQuery(agent);
         return api(path + '&context=1&before=' + encodeURIComponent(before)).then(function(r) {

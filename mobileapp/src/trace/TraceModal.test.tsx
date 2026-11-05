@@ -396,6 +396,26 @@ test('measured width enables two columns and closing detail restores full-width 
     ).position,
   ).toBe('absolute');
 });
+test('late source ordinals describe four loaded turns rather than the whole session', () => {
+  const turns = Array.from({ length: 4 }, (_, i) => ({
+    session_id: 'late-recorded',
+    turn_ordinal: 253 + i,
+    prompt: 'Coordination message ' + i,
+    response: 'Reply ' + i,
+  }));
+  mount({ turns }, false);
+  expect(tree.root.findByProps({ testID: 'trace-count' }).props.children).toBe(
+    '4 turns · 8 records',
+  );
+  const rows = tree.root.findByType(FlatList).props.data;
+  expect(rows.map((row: any) => [row.type, row.group.turn])).toEqual([
+    ['turn', 253],
+    ['turn', 254],
+    ['turn', 255],
+    ['turn', 256],
+  ]);
+});
+
 test('search covers all loaded records while the native list keeps a bounded initial render', () => {
   const turns = Array.from({ length: 2501 }, (_, i) => ({
     ...turn,
@@ -406,7 +426,7 @@ test('search covers all loaded records while the native list keeps a bounded ini
   mount({ turns });
   expect(data()).toHaveLength(2);
   expect(
-    tree.root.findByProps({ testID: 'trace-count' }).props.children.join(''),
+    tree.root.findByProps({ testID: 'trace-count' }).props.children,
   ).toContain('5002');
   expect(
     tree.root

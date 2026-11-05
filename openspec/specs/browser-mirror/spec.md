@@ -825,6 +825,18 @@ Browser Trace SHALL consume the same typed analysis, record labels, tool classif
 - **WHEN** a tool, message or context record is displayed
 - **THEN** its semantic label and summary match across clients without inventing output or timing data
 
+#### Scenario: A recent window starts at original turn 253
+- **WHEN** turns 253 through 256 each contain a request and reply without calls
+- **THEN** the loaded-window count is four turns and eight records
+- **AND** each turn reports zero calls and two messages, with context counted separately when present
+- **AND** original turn ordinals remain unchanged when earlier pages are loaded
+
+#### Scenario: Selecting a record uses the native detail conventions
+- **WHEN** a reader opens Trace and then selects a record
+- **THEN** the reader initially sees folded turns in a full-width list and selection opens Preview
+- **AND** the reply label, tool icon, speaker profile and detail metadata match the App
+- **AND** complete session identities remain available in Overview and Source without crowding ordinary headings
+
 ### Requirement: Terminal grids fit their actual host bounds
 Terminal padding and host size changes SHALL be accounted for by the terminal fit operation, including composer, maximization, font and viewport changes. Disposal SHALL cancel pending fitting observers.
 

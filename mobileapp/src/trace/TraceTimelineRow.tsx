@@ -21,6 +21,7 @@ import {
   traceEventLabel,
   traceEventPreview,
   traceRecordPaths,
+  traceTurnSummary,
 } from './presentation';
 export function TraceTimelineRow({
   row,
@@ -82,8 +83,9 @@ export function TraceTimelineRow({
             numberOfLines={1}
             style={[s.meta, s.flex, { color: pal.fg2 }]}
           >
-            {group.agent}
-            {time ? ' · ' + time : ''}
+            {[sessionNumber ? group.agent : '', time]
+              .filter(Boolean)
+              .join(' · ')}
           </ChromeText>
           <Chevron open={row.open} size={16} color={pal.fg2} />
         </View>
@@ -96,31 +98,7 @@ export function TraceTimelineRow({
           </Text>
         )}
         <ChromeText style={[s.meta, { color: pal.fg2 }]}>
-          {group.calls}
-          {zh ? ' 次调用' : group.calls === 1 ? ' call' : ' calls'} ·{' '}
-          {
-            group.events.filter(
-              event => event.kind === 'user' || event.kind === 'assistant',
-            ).length
-          }
-          {zh
-            ? ' 条消息'
-            : group.events.filter(
-                event => event.kind === 'user' || event.kind === 'assistant',
-              ).length === 1
-            ? ' message'
-            : ' messages'}
-          {group.events.some(event => event.kind === 'context') &&
-            ` · ${
-              group.events.filter(event => event.kind === 'context').length
-            }${
-              zh
-                ? ' 条上下文'
-                : group.events.filter(event => event.kind === 'context')
-                    .length === 1
-                ? ' context record'
-                : ' context records'
-            }`}
+          {traceTurnSummary(group.events, lang)}
         </ChromeText>
       </TouchableOpacity>
     );

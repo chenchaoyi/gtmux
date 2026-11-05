@@ -39,8 +39,64 @@ export function traceEventLabel(event: TraceEvent, lang: 'en' | 'zh') {
     : event.kind === 'user'
     ? event.from?.label || (lang === 'zh' ? '请求' : 'Request')
     : lang === 'zh'
-    ? '进展记录'
-    : 'Progress';
+    ? 'Agent 回复'
+    : 'Agent reply';
+}
+// Counts describe the loaded window, never a source ordinal or a whole session.
+// Both renderers use these labels so context cannot be counted as a message.
+export function traceCounts(events: TraceEvent[]) {
+  return {
+    turns: new Set(events.map(event => event.turnKey)).size,
+    calls: events.filter(event => event.kind === 'tool').length,
+    messages: events.filter(
+      event => event.kind === 'user' || event.kind === 'assistant',
+    ).length,
+    contexts: events.filter(event => event.kind === 'context').length,
+    records: events.length,
+  };
+}
+export function traceWindowLabel(events: TraceEvent[], lang: 'en' | 'zh') {
+  const counts = traceCounts(events);
+  return lang === 'zh'
+    ? `${counts.turns} 轮 · ${counts.records} 条记录`
+    : `${counts.turns} ${counts.turns === 1 ? 'turn' : 'turns'} · ${
+        counts.records
+      } ${counts.records === 1 ? 'record' : 'records'}`;
+}
+export function traceTurnSummary(events: TraceEvent[], lang: 'en' | 'zh') {
+  const counts = traceCounts(events);
+  const parts =
+    lang === 'zh'
+      ? [`${counts.calls} 次调用`, `${counts.messages} 条消息`]
+      : [
+          `${counts.calls} ${counts.calls === 1 ? 'call' : 'calls'}`,
+          `${counts.messages} ${
+            counts.messages === 1 ? 'message' : 'messages'
+          }`,
+        ];
+  if (counts.contexts) {
+    parts.push(
+      lang === 'zh'
+        ? `${counts.contexts} 条上下文`
+        : `${counts.contexts} context ${
+            counts.contexts === 1 ? 'record' : 'records'
+          }`,
+    );
+  }
+  return parts.join(' · ');
+}
+export function traceDetailMetadata(
+  event: TraceEvent,
+  lang: 'en' | 'zh',
+  time = '',
+) {
+  return [
+    event.agent,
+    lang === 'zh' ? `第 ${event.turn} 轮` : `Turn ${event.turn}`,
+    time ? (lang === 'zh' ? '本轮开始于 ' : 'Turn started ') + time : '',
+  ]
+    .filter(Boolean)
+    .join(' · ');
 }
 export function traceEventPreview(event: TraceEvent, lang: 'en' | 'zh') {
   return event.kind === 'tool'
