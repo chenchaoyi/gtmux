@@ -22,6 +22,7 @@
 // Placement rules live in knowledgeModel.ts and are tested there; this file draws.
 
 import React from 'react';
+import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import {knowledgeTopic, knowledgeUsage} from './knowledgePresentation';
 import {
   ActivityIndicator,
@@ -253,7 +254,8 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
 
   return (
     <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={[styles.root, {backgroundColor: pal.bg}]}>
+      <SafeAreaProvider style={[styles.root, {backgroundColor: pal.bg}]}>
+      <SafeAreaView style={styles.root} edges={['top', 'bottom', 'left', 'right']}>
         <View style={[styles.head, {borderBottomColor: pal.divider}]}>
           {pane.kind !== 'index' && !(regular && pane.kind === 'entry') ? (
             <TouchableOpacity accessibilityRole="button" testID="knowledge-back" accessibilityLabel={zh ? '返回' : 'Back'} onPress={goBack} hitSlop={hit}>
@@ -448,7 +450,8 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
             onSubmit={submit}
           />
         ) : null}
-      </View>
+      </SafeAreaView>
+      </SafeAreaProvider>
     </Modal>
   );
 }

@@ -14,7 +14,7 @@ import {writeFileSync} from 'fs';
 import {join} from 'path';
 import {getDriver, getArtifactsDir} from '../setup/driver';
 import {screenshot} from '../setup/screenshot';
-import {BUNDLE, launchWithFlags, settle, writeDebugFlags} from '../setup/app';
+import {BUNDLE, launchWithFlags, readDebugLog, settle, waitForNotificationAuthorization, writeDebugFlags} from '../setup/app';
 import {TestIds} from '../../src/constants/testIds';
 import {startFake, Fake} from '../fake-serve/server';
 
@@ -25,8 +25,14 @@ let office: Fake;
 beforeAll(async () => {
   home = await startFake();
   office = await startFake();
-  for (const a of home.world.agents) a.session = `home-${a.session}`;
-  for (const a of office.world.agents) a.session = `office-${a.session}`;
+  for (const a of home.world.agents) {
+    a.session = `home-${a.session}`;
+    a.task = `home-${a.task || a.pane_id}`;
+  }
+  for (const a of office.world.agents) {
+    a.session = `office-${a.session}`;
+    a.task = `office-${a.task || a.pane_id}`;
+  }
 });
 afterAll(async () => {
   await home?.close();
@@ -109,6 +115,8 @@ run('a cold-start push is handled once', () => {
     const w = await where();
     log.push(`${step}: ${JSON.stringify(w)}`);
     await dump(`c-${step}`);
+    writeFileSync(join(getArtifactsDir(), `debug-${step}.json`), JSON.stringify(readDebugLog(), null, 2));
+    writeFileSync(join(getArtifactsDir(), `requests-${step}.json`), JSON.stringify({home: home.requests, office: office.requests}, null, 2));
     return w;
   };
   // On a Mac's radar, showing that Mac's sessions and none of the other's.
@@ -137,6 +145,7 @@ run('a cold-start push is handled once', () => {
     await launchWithFlags(active);
     await settle(5000);
     onRadar(await note('A0-home-connected'), 'Home');
+    await waitForNotificationAuthorization();
     writeDebugFlags(active);
 
     await driver.terminateApp(BUNDLE);

@@ -1797,3 +1797,12 @@ Supported emphasis preserves actionable links, including scoped local-document c
 ### HQ overview disclosures (2026-11-04)
 
 Phone and iPad share one grouped overview. Each section shows visible / total canonical matters. A full-width footer states the remaining count and Showing X of Y, exposes expanded accessibility state, and reverses to Show less. Missing or stale summary IDs fall back to the first three valid matters; no matter lifecycle state changes. Diff settings, session tools and action sheets share the file-plus/minus icon.
+
+### Resizable iPhone windows
+
+The workspace keeps the selected reader mounted as available window dimensions cross
+its sidebar breakpoint. Compact windows show the radar or the selected reader; wider
+windows place them side by side. Returning to the radar keeps the reader until another
+selection replaces it. The scene owns the iOS window, and screen edges use the current
+safe area, including horizontal insets. Native iPhone Duo poses and accessibility still
+require device-specific acceptance; component tests are not that evidence.

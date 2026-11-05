@@ -1,5 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View} from 'react-native';
+import {ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {useWindowDimensions} from './windowMetrics';
 import type {PaneInteraction} from '../api/types';
 import type {Lang} from '../i18n';
 import {ApprovalCard} from './ApprovalCard';

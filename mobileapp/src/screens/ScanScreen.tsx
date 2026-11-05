@@ -3,7 +3,8 @@
 // camera; reads a gtmux pairing QR and hands the raw string to the pairing flow.
 
 import React, {useEffect, useRef, useState} from 'react';
-import {Animated, AppState, Linking, Platform, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View} from 'react-native';
+import {Animated, AppState, Linking, Platform, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {useWindowDimensions} from '../ui/windowMetrics';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import {Camera, CameraType} from 'react-native-camera-kit';
 import {useApp} from '../state/AppContext';

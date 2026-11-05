@@ -6,9 +6,9 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  useWindowDimensions,
   View,
 } from 'react-native';
+import {useWindowDimensions} from './windowMetrics';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import type {Palette} from './theme';
 import type {Lang} from '../i18n';

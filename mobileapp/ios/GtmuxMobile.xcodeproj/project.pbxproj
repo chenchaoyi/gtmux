@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D00100000000000000000003 /* NotificationResponses.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00100000000000000000004 /* NotificationResponses.swift */; };
+		D00100000000000000000005 /* NotificationResponses.m in Sources */ = {isa = PBXBuildFile; fileRef = D00100000000000000000006 /* NotificationResponses.m */; };
+		D00100000000000000000001 /* NotificationResponsePayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00100000000000000000002 /* NotificationResponsePayload.swift */; };
 		00A756D35516E95123103665 /* UsageWidgetViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB4EB65DA8FE5A7514B63165 /* UsageWidgetViews.swift */; };
 		079DDB2F5521E6812FA0D02F /* GtmuxActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1819D8849B51096E179E069 /* GtmuxActivityAttributes.swift */; };
 		093C8A7BF3C604829E356F61 /* CopyText.m in Sources */ = {isa = PBXBuildFile; fileRef = AE647AA99846EFD4CD81447D /* CopyText.m */; };
@@ -97,6 +100,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		D00100000000000000000004 /* NotificationResponses.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NotificationResponses.swift; path = GtmuxMobile/NotificationResponses.swift; sourceTree = "<group>"; };
+		D00100000000000000000006 /* NotificationResponses.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = NotificationResponses.m; path = GtmuxMobile/NotificationResponses.m; sourceTree = "<group>"; };
+		D00100000000000000000002 /* NotificationResponsePayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NotificationResponsePayload.swift; path = GtmuxMobile/NotificationResponsePayload.swift; sourceTree = "<group>"; };
 		03497385A8CDE336A262AE97 /* HQMemory.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = HQMemory.m; path = GtmuxMobile/HQMemory.m; sourceTree = "<group>"; };
 		093EDA5FAEFE3016E1CC45F3 /* Haptics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = Haptics.swift; path = GtmuxMobile/Haptics.swift; sourceTree = "<group>"; };
 		0B2317FBEDEE60A62CEA4AB6 /* CopyTextView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CopyTextView.swift; sourceTree = "<group>"; };
@@ -207,6 +213,9 @@
 			children = (
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				761780EC2CA45674006654EE /* AppDelegate.swift */,
+				D00100000000000000000002 /* NotificationResponsePayload.swift */,
+				D00100000000000000000004 /* NotificationResponses.swift */,
+				D00100000000000000000006 /* NotificationResponses.m */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
 				13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */,
@@ -700,6 +709,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				761780ED2CA45674006654EE /* AppDelegate.swift in Sources */,
+				D00100000000000000000001 /* NotificationResponsePayload.swift in Sources */,
+				D00100000000000000000003 /* NotificationResponses.swift in Sources */,
+				D00100000000000000000005 /* NotificationResponses.m in Sources */,
 				079DDB2F5521E6812FA0D02F /* GtmuxActivityAttributes.swift in Sources */,
 				31E3E4F233B77A8152F6210D /* LiveActivityModule.swift in Sources */,
 				A871636895EC61F9183130BE /* LiveActivityModule.m in Sources */,

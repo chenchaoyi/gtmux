@@ -3771,8 +3771,8 @@ LEG-6e4751cbc433,L4,RN / mobile harness,mobileapp/e2e/__tests__/answer-options.t
 LEG-2d3a6b1e37ba,M,RN / mobile harness,mobileapp/e2e/__tests__/appstore-shots-ipad.test.ts,53,it,"captures the split shell, HQ matters, the pane grid and the knowledge sheet",False,legacy-not-retrospectively-reviewed
 LEG-1b162166dec9,M,RN / mobile harness,mobileapp/e2e/__tests__/appstore-shots.test.ts,45,it,"captures the radar, the terminal, HQ, its work, usage and the Macs",False,legacy-not-retrospectively-reviewed
 LEG-ac7603c2bff5,L4,RN / mobile harness,mobileapp/e2e/__tests__/chat-fullscreen-collapse.test.ts,28,it,"opens chat, collapses/expands all, enters+exits full-screen",False,legacy-not-retrospectively-reviewed
-LEG-a5d63af936be,L4,RN / mobile harness,mobileapp/e2e/__tests__/coldstart-push.test.ts,130,it,"A: cold start with an active Mac, switches, background, a new warm tap",False,legacy-not-retrospectively-reviewed
-LEG-f3196e5f4ce2,L4,RN / mobile harness,mobileapp/e2e/__tests__/coldstart-push.test.ts,170,it,C: a launch with no notification switches where it is pointed,False,legacy-not-retrospectively-reviewed
+LEG-a5d63af936be,L4,RN / mobile harness,mobileapp/e2e/__tests__/coldstart-push.test.ts,138,it,"A: cold start with an active Mac, switches, background, a new warm tap",False,legacy-not-retrospectively-reviewed
+LEG-f3196e5f4ce2,L4,RN / mobile harness,mobileapp/e2e/__tests__/coldstart-push.test.ts,179,it,C: a launch with no notification switches where it is pointed,False,legacy-not-retrospectively-reviewed
 LEG-1c834aed07e9,L4,RN / mobile harness,mobileapp/e2e/__tests__/composer-camera-unavailable.test.ts,19,it,Camera with no camera says so instead of doing nothing,False,legacy-not-retrospectively-reviewed
 LEG-ecf828c0a4a6,L4,RN / mobile harness,mobileapp/e2e/__tests__/composer-keyrow.test.ts,32,it,"has no Space pill, orders ⏎ after ↑/↓, and ⌫ erases in the pane",False,legacy-not-retrospectively-reviewed
 LEG-07d49ef24147,L4,RN / mobile harness,mobileapp/e2e/__tests__/composer-photo-markup.test.ts,24,it,a library photo goes through markup and reaches the Mac with the message,False,legacy-not-retrospectively-reviewed
@@ -3781,6 +3781,7 @@ LEG-8da92748c6ca,L4,RN / mobile harness,mobileapp/e2e/__tests__/composer-return-
 LEG-cb21d0627bd2,M,RN / mobile harness,mobileapp/e2e/__tests__/composer-shots.test.ts,25,it,captures the composer input row + the attach sheet,False,legacy-not-retrospectively-reviewed
 LEG-63869acd3e2a,M,RN / mobile harness,mobileapp/e2e/__tests__/cursor.test.ts,41,it,opens a terminal pane and screenshots the cursor,False,legacy-not-retrospectively-reviewed
 LEG-094857d91ad5,L4,RN / mobile harness,mobileapp/e2e/__tests__/detail-chrome-textsize.test.ts,39,run,the top row keeps one line and stays on screen at the accessibility sizes,False,legacy-not-retrospectively-reviewed
+MAP-8cfa983c4bb1,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-window.test.ts,13,reviewed-selector,keeps the selected session and a draft through simulator rotation,False,DUO-002
 LEG-e23b5ce26880,L4,RN / mobile harness,mobileapp/e2e/__tests__/edge-stability.test.ts,22,it,traces the viewport around the live tail,False,legacy-not-retrospectively-reviewed
 LEG-242e71413ed1,L4,RN / mobile harness,mobileapp/e2e/__tests__/edge-states.test.ts,39,it,an empty fleet says so instead of showing an empty frame,False,legacy-not-retrospectively-reviewed
 LEG-e678143327ea,L4,RN / mobile harness,mobileapp/e2e/__tests__/edge-states.test.ts,48,it,a task with no spaces does not push the row off the screen,False,legacy-not-retrospectively-reviewed
@@ -3793,6 +3794,7 @@ LEG-48cc6a34e6d3,L4,RN / mobile harness,mobileapp/e2e/__tests__/hq-keyboard.test
 LEG-3e8dbc51d1ff,L4,RN / mobile harness,mobileapp/e2e/__tests__/hq-long-conversation.test.ts,43,it,"a long HQ conversation opens at the latest turn, reads back, and follows a new reply",False,legacy-not-retrospectively-reviewed
 LEG-018a72b313eb,L4,RN / mobile harness,mobileapp/e2e/__tests__/hq-shots.test.ts,25,it,"renders the HQ card (not a row), and tapping opens Detail in chat",False,legacy-not-retrospectively-reviewed
 LEG-5d9b553a6364,L4,RN / mobile harness,mobileapp/e2e/__tests__/hq-shots.test.ts,72,it,opens the board and captures it for review,False,legacy-not-retrospectively-reviewed
+MAP-b3419be992f8,L4,reviewed implementation,mobileapp/e2e/__tests__/ipad-adaptive.test.ts,11,reviewed-selector,keeps the iPad sidebar and selected session through rotation,False,DUO-003
 LEG-763c5ae68f6a,L4,RN / mobile harness,mobileapp/e2e/__tests__/ipad-demo.test.ts,25,it,is the regular shell over sample data,False,legacy-not-retrospectively-reviewed
 LEG-56070872eabb,L4,RN / mobile harness,mobileapp/e2e/__tests__/ipad-keys.test.ts,41,it,drives the shell from the keymap,False,legacy-not-retrospectively-reviewed
 LEG-4137e784fd6a,L4,RN / mobile harness,mobileapp/e2e/__tests__/jumpbottom.test.ts,29,it,"lands on the tail, not short of it",False,legacy-not-retrospectively-reviewed
@@ -3806,14 +3808,20 @@ LEG-33b6b494ed45,L4,RN / mobile harness,mobileapp/e2e/__tests__/message-fidelity
 LEG-61fe529a5267,L4,RN / mobile harness,mobileapp/e2e/__tests__/message-fidelity.test.ts,100,it,a second message into a working session does not displace the first,False,legacy-not-retrospectively-reviewed
 LEG-c7e731a2ecfd,L4,RN / mobile harness,mobileapp/e2e/__tests__/nativeterm.test.ts,31,it,tap / long-press / wrap on the native pane,False,legacy-not-retrospectively-reviewed
 LEG-c57e7b8b4fae,L4,RN / mobile harness,mobileapp/e2e/__tests__/new-session.test.ts,10,it,one keyboard-up tap reports a duplicate; another name creates and opens the exact terminal,False,legacy-not-retrospectively-reviewed
+MAP-af8f135844b0,L4,reviewed implementation,mobileapp/e2e/__tests__/notification-scene-actions.test.ts,35,reviewed-selector,delivers a cold notification action exactly once,False,DUO-004
+MAP-47786402e16b,L4,reviewed implementation,mobileapp/e2e/__tests__/notification-scene-actions.test.ts,80,reviewed-selector,delivers a warm notification action exactly once,False,DUO-004
 LEG-c7ceabc4e0f9,L4,RN / mobile harness,mobileapp/e2e/__tests__/radar-end.test.ts,18,it,closes the list where it ends,False,legacy-not-retrospectively-reviewed
 LEG-d1423a35ae7b,L4,RN / mobile harness,mobileapp/e2e/__tests__/radar-refresh-collapsed.test.ts,64,it,still refreshes when the list is shorter than the screen,False,legacy-not-retrospectively-reviewed
 LEG-8094dd3c9a7c,L4,RN / mobile harness,mobileapp/e2e/__tests__/radar.test.ts,29,it,"auto-pairs, opens a pane, and the network calls are recorded",False,legacy-not-retrospectively-reviewed
 LEG-6aa06fe97cdb,L4,RN / mobile harness,mobileapp/e2e/__tests__/revoked-phone.test.ts,27,it,"a phone revoked while the app was closed opens on ""access rejected"", and the server list agrees",False,legacy-not-retrospectively-reviewed
 LEG-7d7ce36e4772,L4,RN / mobile harness,mobileapp/e2e/__tests__/revoked-phone.test.ts,55,it,a pane open when the Mac revokes the phone says so in its header,False,legacy-not-retrospectively-reviewed
+MAP-3593077aab87,L4,reviewed implementation,mobileapp/e2e/__tests__/scene-usage-links.test.ts,24,reviewed-selector,opens the usage link on warm and cold scene entry,False,DUO-005
+MAP-ea87797d79bf,L4,reviewed implementation,mobileapp/e2e/__tests__/scene-usage-links.test.ts,33,reviewed-selector,opens a warm usage link through the scene,False,DUO-005
+MAP-b7d75b280b9d,L4,reviewed implementation,mobileapp/e2e/__tests__/scene-usage-links.test.ts,49,reviewed-selector,opens a cold usage link through the scene,False,DUO-005
 LEG-ce8589d51a98,M,RN / mobile harness,mobileapp/e2e/__tests__/screenshots.test.ts,33,it,"captures radar, detail, and the connection page",False,legacy-not-retrospectively-reviewed
 LEG-9d2138d1a1e7,L4,RN / mobile harness,mobileapp/e2e/__tests__/send-feedback.test.ts,38,it,a refusal names the pane someone is typing in,False,legacy-not-retrospectively-reviewed
 LEG-90d6e9b0fcce,L4,RN / mobile harness,mobileapp/e2e/__tests__/send-feedback.test.ts,61,it,"a send into a running session says it went, and that the agent may finish first",False,legacy-not-retrospectively-reviewed
+MAP-136dedeea639,L4,reviewed implementation,mobileapp/e2e/__tests__/server-switch-compare.test.ts,14,reviewed-selector,selects a server after a clean launch,False,DUO-006
 LEG-5511fce16704,L4,RN / mobile harness,mobileapp/e2e/__tests__/server-switch.test.ts,57,run,a launch from a notification does not pull a later server switch back,False,legacy-not-retrospectively-reviewed
 LEG-91512a46ffa3,L4,RN / mobile harness,mobileapp/e2e/__tests__/server-switch.test.ts,94,run,"without a launch notification, a switch goes where it is pointed",False,legacy-not-retrospectively-reviewed
 LEG-398163bb0c32,L4,RN / mobile harness,mobileapp/e2e/__tests__/settings-appearance-language.test.ts,55,it,Dark and 中文 apply at once and survive a relaunch,False,legacy-not-retrospectively-reviewed
@@ -3922,6 +3930,7 @@ LEG-bd3b5eb44399,L1,RN / mobile harness,mobileapp/e2e/fake-serve/mutations.test.
 LEG-2947a72dc560,L1,RN / mobile harness,mobileapp/e2e/fake-serve/mutations.test.ts,161,test,"a waiting pane offers its own words, an idle one offers nothing",False,legacy-not-retrospectively-reviewed
 LEG-c2fd7392e61c,L1,RN / mobile harness,mobileapp/e2e/fake-serve/mutations.test.ts,181,test,"both arrive, in order, each with its own idempotency token",False,legacy-not-retrospectively-reviewed
 LEG-a15118380df4,L1,RN / mobile harness,mobileapp/e2e/fake-serve/mutations.test.ts,189,test,"a retry of the SAME send reuses its token, which is what makes it a retry",False,legacy-not-retrospectively-reviewed
+MAP-b33db4631198,L1,reviewed implementation,mobileapp/e2e/fake-serve/request-diagnostics.test.ts,3,reviewed-selector,diagnostic request metadata shows routing without headers or query values,False,DUO-007
 LEG-e900a8017f31,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,27,test,"/api/addresses answers an empty list, not a 404",False,legacy-not-retrospectively-reviewed
 LEG-91d47fdea0cb,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,33,test,/api/tasks answers the owner with nothing in flight,False,legacy-not-retrospectively-reviewed
 LEG-67b548dee742,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,41,test,"every row is tiered, located and named the way PaneRow says",False,legacy-not-retrospectively-reviewed
@@ -3940,7 +3949,7 @@ LEG-6b1813f7509a,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,1
 LEG-d240b174d0df,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,156,test,the stock report is unchanged until a suite seeds the full one,False,legacy-not-retrospectively-reviewed
 LEG-01e2c0d8a07a,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,160,test,"the seeded plan groups by agent, under the names the usage sheet ids carry",False,legacy-not-retrospectively-reviewed
 LEG-e34f8145a818,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,173,test,back to the stock world,False,legacy-not-retrospectively-reviewed
-MAP-f2ed2637baa9,L2,reviewed implementation,mobileapp/e2e/fake-serve/server.ts,95,reviewed-selector,startFake,False,CT-HTTP
+MAP-f2ed2637baa9,L2,reviewed implementation,mobileapp/e2e/fake-serve/server.ts,97,reviewed-selector,startFake,False,CT-HTTP
 LEG-a314cc5be23f,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,8,test,"the stock fixture: one worker waiting, so needs_you, naming it",False,legacy-not-retrospectively-reviewed
 LEG-65bd4c2dfa5e,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,13,test,nothing waiting is normal; the supervisor mid-turn is working; the supervisor waiting is hq_call,False,legacy-not-retrospectively-reviewed
 LEG-5d182318c546,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,25,test,the longest waiting worker comes first,False,legacy-not-retrospectively-reviewed
@@ -3950,13 +3959,14 @@ LEG-4f90e4968cbd,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts
 MAP-f4f657590af5,L2,reviewed implementation,mobileapp/e2e/fake-serve/world.ts,111,reviewed-selector,export class World,False,CT-HTTP
 MAP-befb8569059f,G,reviewed implementation,mobileapp/e2e/jest.config.manual.js,2,reviewed-selector,manualMode(process.env),False,"DG-001,DG-002"
 MAP-a88b539daecf,G,reviewed implementation,mobileapp/e2e/jest.config.manual.js,3,reviewed-selector,sendTarget(process.env),False,"DG-001,DG-002"
-LEG-b6f73720d14b,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,8,test,manual handles nothing on the test’s behalf,False,legacy-not-retrospectively-reviewed
-LEG-7440419bbda7,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,14,test,"the default dismisses, and the older accept switch still accepts",False,legacy-not-retrospectively-reviewed
-LEG-9afe9479f18a,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,19,test,the explicit mode wins over the older switch,False,legacy-not-retrospectively-reviewed
-LEG-ff05befffbd7,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,23,test,a misspelt mode stops the run instead of falling back to dismiss,False,legacy-not-retrospectively-reviewed
-LEG-7201f98d96a5,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,28,test,headless capture is explicit and local GUI runs keep their behavior,False,legacy-not-retrospectively-reviewed
-LEG-16fab5a7cc96,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,34,test,only explicit hosted capture separates WDA build and readiness with one bounded connection,False,legacy-not-retrospectively-reviewed
-LEG-61bfa22d706f,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,50,test,only hosted multi-screen store captures receive the longer journey budget,False,legacy-not-retrospectively-reviewed
+LEG-b6f73720d14b,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,23,test,manual handles nothing on the test’s behalf,False,legacy-not-retrospectively-reviewed
+LEG-7440419bbda7,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,29,test,"the default dismisses, and the older accept switch still accepts",False,legacy-not-retrospectively-reviewed
+LEG-9afe9479f18a,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,34,test,the explicit mode wins over the older switch,False,legacy-not-retrospectively-reviewed
+LEG-ff05befffbd7,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,38,test,a misspelt mode stops the run instead of falling back to dismiss,False,legacy-not-retrospectively-reviewed
+LEG-7201f98d96a5,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,43,test,headless capture is explicit and local GUI runs keep their behavior,False,legacy-not-retrospectively-reviewed
+LEG-16fab5a7cc96,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,49,test,only explicit hosted capture separates WDA build and readiness with one bounded connection,False,legacy-not-retrospectively-reviewed
+LEG-61bfa22d706f,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,65,test,only hosted multi-screen store captures receive the longer journey budget,False,legacy-not-retrospectively-reviewed
+MAP-ad6f801c4c8b,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,3,reviewed-selector,cloud simulator session waits for a fresh WDA build without requiring a prebuilt product,False,DUO-008
 MAP-cb2da71006dd,G,reviewed implementation,mobileapp/e2e/setup/global-setup-manual.ts,6,reviewed-selector,"await setupManual(process.env, verifySendTarget, globalSetup)",False,DG-004
 MAP-c8767994a252,G,reviewed implementation,mobileapp/e2e/setup/manual-tools.cjs,2,reviewed-selector,function manualMode(,False,"DG-001,DG-002,DG-003"
 MAP-64142db61c66,G,reviewed implementation,mobileapp/e2e/setup/manual-tools.cjs,8,reviewed-selector,function sendTarget(,False,"DG-001,DG-002,DG-003"
@@ -3975,6 +3985,7 @@ LEG-72dc7db04494,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,106,
 LEG-2eb2e34b22ce,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,124,it,unscoped by default,False,legacy-not-retrospectively-reviewed
 ND-001,L1,iOS Swift,mobileapp/ios/tests/DocumentHTMLChecks.swift,2,native-procedural-oracle,DocumentHTML production Foundation checks,False,ND-001
 ND-002,L1,iOS Swift,mobileapp/ios/tests/DocumentMarkdownChecks.swift,3,native-procedural-oracle,DocumentMarkdown production Foundation checks,False,ND-002
+MAP-88eca3d41bfd,L1,reviewed implementation,mobileapp/ios/tests/NotificationResponsePayloadChecks.swift,32,reviewed-selector,notification response payload and queue checks passed,False,DUO-009
 MAP-40893b89cbd9,G,reviewed implementation,mobileapp/metro.config.js,11,reviewed-selector,const config =,False,CT-SCOPE
 LEG-8af4b5717085,G,RN / mobile harness,mobileapp/scripts/android_delivery_test.py,17,unittest,test_versions_are_monotonic_and_unambiguous,False,legacy-not-retrospectively-reviewed
 LEG-90cc6b5fa0bd,G,RN / mobile harness,mobileapp/scripts/android_delivery_test.py,33,unittest,test_elf_requires_real_16kb_load_alignment,False,legacy-not-retrospectively-reviewed
@@ -4439,8 +4450,13 @@ LEG-6f792759097e,L1,RN / mobile harness,mobileapp/src/pairing/store.test.ts,237,
 LEG-2f070febef58,L1,RN / mobile harness,mobileapp/src/platformReleaseNotes.test.ts,6,test,iOS keeps its archive; Android never inherits iPhone-only historical releases,False,legacy-not-retrospectively-reviewed
 LEG-83c398034235,L1,RN / mobile harness,mobileapp/src/push/android.test.ts,11,test,missing configuration does not create a fake registration,False,legacy-not-retrospectively-reviewed
 LEG-3410a0b99aa3,L1,RN / mobile harness,mobileapp/src/push/android.test.ts,15,test,"FCM token refresh, one-use cold tap and live tap share lifecycle without executing digits",False,legacy-not-retrospectively-reviewed
-LEG-c0039196e4f2,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,29,test,"the launch notification is acted on once, not on every server switch",False,legacy-not-retrospectively-reviewed
-LEG-a79023052203,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,39,test,a launch with no notification taps nothing,False,legacy-not-retrospectively-reviewed
+LEG-c0039196e4f2,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,32,test,"the launch notification is acted on once, not on every server switch",False,legacy-not-retrospectively-reviewed
+LEG-a79023052203,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,42,test,a launch with no notification taps nothing,False,legacy-not-retrospectively-reviewed
+MAP-43a5acb09524,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,124,reviewed-selector,a buffered native response and the launch copy dispatch one quick reply,False,DUO-010
+MAP-e583ab6da371,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,136,reviewed-selector,a native buffer failure still delivers the bridge launch notification,False,DUO-010
+MAP-f6ca99aeb79b,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,58,reviewed-selector,the same quick action arriving from scene and delegate sends once,False,DUO-010
+MAP-49ac3dbf1487,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,145,reviewed-selector,a stalled native drain leaves initial fallback and foreground recovery usable,False,DUO-010
+MAP-14fb52a6ba3b,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,167,reviewed-selector,the initial action does not wait for notification permission,False,DUO-010
 LEG-fbb65bc19bd8,L1,RN / mobile harness,mobileapp/src/push/sync.test.ts,9,it,"registers a selected Mac and unregisters a muted Mac, including silent badge pushes",False,legacy-not-retrospectively-reviewed
 LEG-c01ee8fb12d3,L1,RN / mobile harness,mobileapp/src/push/sync.test.ts,20,it,tries a reported alternate route and leaves a failed sync pending,False,legacy-not-retrospectively-reviewed
 LEG-7719b4cb3445,L1,RN / mobile harness,mobileapp/src/push/sync.test.ts,31,it,never registers a guest or an unknown token,False,legacy-not-retrospectively-reviewed
@@ -4530,9 +4546,10 @@ LEG-358ed9368a35,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.
 LEG-a55ca1449b8b,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,183,test,the matching transcript retires a working receipt before the next idle transition,False,legacy-not-retrospectively-reviewed
 LEG-f975c92f4762,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,196,test,a late send response cannot recreate its receipt after transcript confirmation,False,legacy-not-retrospectively-reviewed
 LEG-cf861ad50359,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,210,test,a newer success gets its own expiry instead of inheriting the old timer,False,legacy-not-retrospectively-reviewed
-LEG-3311f5104ff9,L2,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,82,test,opening and closing Trace shares Chat’s in-flight read without aborting or starting a second subscription,False,legacy-not-retrospectively-reviewed
-LEG-383eef0af50a,L2,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,109,test,the same pane and session in a different home cannot show or accept the old reply,False,legacy-not-retrospectively-reviewed
-LEG-27bb0cdcad2a,L2,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,135,test.each(),pane denial %s closes tools and clears old records,True,legacy-not-retrospectively-reviewed
+LEG-3311f5104ff9,L2,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,85,test,opening and closing Trace shares Chat’s in-flight read without aborting or starting a second subscription,False,legacy-not-retrospectively-reviewed
+LEG-383eef0af50a,L2,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,112,test,the same pane and session in a different home cannot show or accept the old reply,False,legacy-not-retrospectively-reviewed
+LEG-27bb0cdcad2a,L2,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,139,test.each(),pane denial %s closes tools and clears old records,True,legacy-not-retrospectively-reviewed
+MAP-0da81b09e45b,L2,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,153,reviewed-selector,Trace remains open with its current conversation while the window changes size,False,DUO-011
 LEG-bdaca444f3d6,L2,RN / mobile harness,mobileapp/src/screens/HQActsSheet.test.tsx,35,test,"lists what HQ did: what the list is for, the 24-hour tally, and every act",False,legacy-not-retrospectively-reviewed
 LEG-9439b91c1a3b,L2,RN / mobile harness,mobileapp/src/screens/HQActsSheet.test.tsx,43,test,"an act leads where it acted: the session, or the knowledge entry it wrote",False,legacy-not-retrospectively-reviewed
 LEG-06208debd045,L2,RN / mobile harness,mobileapp/src/screens/HQActsSheet.test.tsx,53,test,"nothing recent says so, and the sheet closes",False,legacy-not-retrospectively-reviewed
@@ -4701,26 +4718,28 @@ LEG-982cd11bec20,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test
 LEG-6a69d2b9722f,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,424,test,"a credential the server rejects says so, not that it is a share link",False,legacy-not-retrospectively-reviewed
 LEG-dab2495366f0,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,436,test,a Mac that refuses this phone reads Access rejected on the list,False,legacy-not-retrospectively-reviewed
 LEG-cd35d5d9def5,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,448,test,"a server-mode change on the server is read at once, not on the next poll",False,legacy-not-retrospectively-reviewed
-LEG-2aba97e994c5,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,46,it,"is called by its name, not by its registry key",False,legacy-not-retrospectively-reviewed
-LEG-f259cfaf2c4d,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,54,it,asks for an icon at all — the fallback used to carry no hint,False,legacy-not-retrospectively-reviewed
-LEG-450351da14b3,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,73,it,states ctx ONCE — two roundings of it used to sit side by side,False,legacy-not-retrospectively-reviewed
-LEG-5007c47dbdef,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,81,it,keeps a warned session on screen and counts only the quiet ones,False,legacy-not-retrospectively-reviewed
-LEG-9d5e4971c9f6,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,92,it,omits a duplicate ordinary quota while retaining a single warned window,False,legacy-not-retrospectively-reviewed
-LEG-ca6862d2e924,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,97,it,names the selected quota without internal window jargon,False,legacy-not-retrospectively-reviewed
-LEG-dc5d89c8d69b,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,101,it,lifts the machine warning out of the bottom of the page,False,legacy-not-retrospectively-reviewed
-LEG-dfdb96d9f479,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,107,it,draws nothing when there is neither,False,legacy-not-retrospectively-reviewed
-LEG-7c36e1b2d4bc,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,115,it,names each resource with an icon,False,legacy-not-retrospectively-reviewed
-LEG-775a63fcb598,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,120,it,"still encodes state three ways, so the icon can stay identity-only",False,legacy-not-retrospectively-reviewed
-LEG-4046c05b4431,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,128,it,opens the idle ones back up,False,legacy-not-retrospectively-reviewed
-LEG-d96598b1f49d,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,157,it,"draws the heatmap by default, with the figures, the stats and the chips",False,legacy-not-retrospectively-reviewed
-LEG-4b085d225971,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,168,it,switches to the weekly bars and the cumulative line,False,legacy-not-retrospectively-reviewed
-LEG-6e8e04740c2a,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,177,it,keeps the seven bars for a serve without activity,False,legacy-not-retrospectively-reviewed
-LEG-8daa26038fff,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,184,test,usage close announces an action rather than its test identifier,False,legacy-not-retrospectively-reviewed
-LEG-dfb0c59ba9e4,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,193,test,native DSH balance keeps exact money strings separate from percentage windows,False,legacy-not-retrospectively-reviewed
-LEG-794d8a2b1e69,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,216,it,keeps output visible while historical quotas and source gaps start folded,False,legacy-not-retrospectively-reviewed
-LEG-bab51363d152,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,230,it,still requests the built-in icon when a live row has no icon hint,False,legacy-not-retrospectively-reviewed
-LEG-c4e189276e48,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,236,it,can inspect and re-fold history and account limitations without changing current figures,False,legacy-not-retrospectively-reviewed
-LEG-6c6da13ec45f,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,253,it,"retains an unreadable provider inside the disclosure, without inventing a zero quota",False,legacy-not-retrospectively-reviewed
+MAP-dca558aadd46,L2,reviewed implementation,mobileapp/src/screens/SplitShell.resize.test.tsx,24,reviewed-selector,resizing keeps the mounted detail state and back/reopen remains usable,False,DUO-012
+LEG-2aba97e994c5,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,47,it,"is called by its name, not by its registry key",False,legacy-not-retrospectively-reviewed
+LEG-f259cfaf2c4d,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,55,it,asks for an icon at all — the fallback used to carry no hint,False,legacy-not-retrospectively-reviewed
+LEG-450351da14b3,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,74,it,states ctx ONCE — two roundings of it used to sit side by side,False,legacy-not-retrospectively-reviewed
+LEG-5007c47dbdef,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,82,it,keeps a warned session on screen and counts only the quiet ones,False,legacy-not-retrospectively-reviewed
+LEG-9d5e4971c9f6,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,93,it,omits a duplicate ordinary quota while retaining a single warned window,False,legacy-not-retrospectively-reviewed
+LEG-ca6862d2e924,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,98,it,names the selected quota without internal window jargon,False,legacy-not-retrospectively-reviewed
+LEG-dc5d89c8d69b,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,102,it,lifts the machine warning out of the bottom of the page,False,legacy-not-retrospectively-reviewed
+LEG-dfdb96d9f479,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,108,it,draws nothing when there is neither,False,legacy-not-retrospectively-reviewed
+LEG-7c36e1b2d4bc,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,116,it,names each resource with an icon,False,legacy-not-retrospectively-reviewed
+LEG-775a63fcb598,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,121,it,"still encodes state three ways, so the icon can stay identity-only",False,legacy-not-retrospectively-reviewed
+LEG-4046c05b4431,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,129,it,opens the idle ones back up,False,legacy-not-retrospectively-reviewed
+LEG-d96598b1f49d,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,158,it,"draws the heatmap by default, with the figures, the stats and the chips",False,legacy-not-retrospectively-reviewed
+LEG-4b085d225971,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,169,it,switches to the weekly bars and the cumulative line,False,legacy-not-retrospectively-reviewed
+LEG-6e8e04740c2a,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,178,it,keeps the seven bars for a serve without activity,False,legacy-not-retrospectively-reviewed
+LEG-8daa26038fff,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,185,test,usage close announces an action rather than its test identifier,False,legacy-not-retrospectively-reviewed
+LEG-dfb0c59ba9e4,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,201,test,native DSH balance keeps exact money strings separate from percentage windows,False,legacy-not-retrospectively-reviewed
+LEG-794d8a2b1e69,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,224,it,keeps output visible while historical quotas and source gaps start folded,False,legacy-not-retrospectively-reviewed
+LEG-bab51363d152,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,238,it,still requests the built-in icon when a live row has no icon hint,False,legacy-not-retrospectively-reviewed
+LEG-c4e189276e48,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,244,it,can inspect and re-fold history and account limitations without changing current figures,False,legacy-not-retrospectively-reviewed
+LEG-6c6da13ec45f,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,261,it,"retains an unreadable provider inside the disclosure, without inventing a zero quota",False,legacy-not-retrospectively-reviewed
+MAP-e79534c98d28,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,193,reviewed-selector,usage modal resolves all safe edges in its own native presentation,False,DUO-013
 LEG-8fa5ed148b52,L2,RN / mobile harness,mobileapp/src/screens/accessHistoryExploration.test.ts,4,test,"merges disjoint pages by full identity, sums counters and keeps the latest name",False,legacy-not-retrospectively-reviewed
 LEG-cfbaf865cec0,L2,RN / mobile harness,mobileapp/src/screens/accessHistoryExploration.test.ts,10,test,"drills into the exact ID, preserves operation/outcome and leaves summary mode",False,legacy-not-retrospectively-reviewed
 LEG-ea43bb282de3,L2,RN / mobile harness,mobileapp/src/screens/accessHistoryPresentation.test.ts,4,test,"groups by local date across UTC midnight, formats Chinese independently of system locale",False,legacy-not-retrospectively-reviewed
@@ -4944,9 +4963,9 @@ LEG-00edd2252ed1,L2,RN / mobile harness,mobileapp/src/screens/serverReachability
 LEG-dec9a4520bc9,L2,RN / mobile harness,mobileapp/src/screens/serverReachability.test.tsx,94,test,"a Mac not yet answered reads as checking, not as anything it may not be",False,legacy-not-retrospectively-reviewed
 LEG-e40be0a333eb,L2,RN / mobile harness,mobileapp/src/screens/shellDrift.test.ts,15,it,has no SplitScreen,False,legacy-not-retrospectively-reviewed
 LEG-69c55dfda2cf,L2,RN / mobile harness,mobileapp/src/screens/shellDrift.test.ts,19,it,renders the radar list in exactly one file,False,legacy-not-retrospectively-reviewed
-LEG-051c87e3b1b3,L2,RN / mobile harness,mobileapp/src/screens/shellDrift.test.ts,30,it,"has both shells render RadarPanel, with only props between them",False,legacy-not-retrospectively-reviewed
-LEG-63d236ec0387,G,RN / mobile harness,mobileapp/src/screens/shellDrift.test.ts,39,it,lets only the shell read the window to choose a layout,False,legacy-not-retrospectively-reviewed
-LEG-def4d240cd49,L2,RN / mobile harness,mobileapp/src/screens/shellDrift.test.ts,48,it,"opens things through the workspace, not a navigator",False,legacy-not-retrospectively-reviewed
+LEG-051c87e3b1b3,L2,RN / mobile harness,mobileapp/src/screens/shellDrift.test.ts,29,it,"has both shells render RadarPanel, with only props between them",False,legacy-not-retrospectively-reviewed
+LEG-63d236ec0387,G,RN / mobile harness,mobileapp/src/screens/shellDrift.test.ts,38,it,lets only the shell read the window to choose a layout,False,legacy-not-retrospectively-reviewed
+LEG-def4d240cd49,L2,RN / mobile harness,mobileapp/src/screens/shellDrift.test.ts,47,it,"opens things through the workspace, not a navigator",False,legacy-not-retrospectively-reviewed
 LEG-c489562d570d,L2,RN / mobile harness,mobileapp/src/screens/usageModel.test.ts,26,it,"carries the plan, the per-agent totals, the sessions and the machine",False,legacy-not-retrospectively-reviewed
 LEG-923d72b8d9b7,L2,RN / mobile harness,mobileapp/src/screens/usageModel.test.ts,34,it,survives an empty report rather than throwing,False,legacy-not-retrospectively-reviewed
 LEG-37ad79f5264e,L2,RN / mobile harness,mobileapp/src/screens/usageModel.test.ts,41,it,"puts what the core warned about first, however small it is",False,legacy-not-retrospectively-reviewed
@@ -5032,6 +5051,7 @@ LEG-c5b917b9c9fe,L1,RN / mobile harness,mobileapp/src/state/WorkspaceContext.tes
 LEG-a42deb38ffe3,L1,RN / mobile harness,mobileapp/src/state/WorkspaceContext.test.tsx,50,test,"the compact shell navigates, and keeps the selection too",False,legacy-not-retrospectively-reviewed
 LEG-d28a3d986db7,L1,RN / mobile harness,mobileapp/src/state/WorkspaceContext.test.tsx,57,test,the regular shell only records the selection,False,legacy-not-retrospectively-reviewed
 LEG-75daa035e2bc,L1,RN / mobile harness,mobileapp/src/state/WorkspaceContext.test.tsx,67,test.each(),HQ %s shortcut keeps the current identity and destination in compact navigation,True,legacy-not-retrospectively-reviewed
+MAP-f7ac1c2c09fa,L2,RN / mobile harness,mobileapp/src/state/WorkspaceContext.test.tsx,72,reviewed-selector,inline workspace opens selection without pushing a second detail route,False,DUO-015
 LEG-75b65933d631,L1,RN / mobile harness,mobileapp/src/state/activityItems.test.ts,21,it,"lists waiting first, then working, most-recent first, capped at 3 + more",False,legacy-not-retrospectively-reviewed
 LEG-aaf80031f5c9,L1,RN / mobile harness,mobileapp/src/state/activityItems.test.ts,37,it,falls back to session when task is empty,False,legacy-not-retrospectively-reviewed
 LEG-897ff1b3d6af,L1,RN / mobile harness,mobileapp/src/state/activityItems.test.ts,42,it,returns empty when nothing is in flight,False,legacy-not-retrospectively-reviewed
@@ -5988,6 +6008,7 @@ LEG-fe83c539204c,L2,RN / mobile harness,mobileapp/src/ui/time.test.ts,84,it,hold
 LEG-7e1e7c1d7954,L2,RN / mobile harness,mobileapp/src/ui/useKeyboardChrome.test.tsx,56,test,"keyboard timing folds the chrome, and dismissal preserves the current scroll state",False,legacy-not-retrospectively-reviewed
 LEG-bd6085e9a14d,L2,RN / mobile harness,mobileapp/src/ui/useKeyboardChrome.test.tsx,77,test,Reduce Motion folds and restores without animation,False,legacy-not-retrospectively-reviewed
 LEG-aab5aceea630,L2,RN / mobile harness,mobileapp/src/ui/useModalDismiss.test.tsx,6,test.each(),%s completes each modal lifecycle once,True,legacy-not-retrospectively-reviewed
+MAP-e3657e854bc3,L2,reviewed implementation,mobileapp/src/ui/windowMetrics.test.tsx,14,reviewed-selector,"root view resizes update the workspace even when native dimensions do not, without remounting the reader",False,DUO-016
 LEG-3de06c104722,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,22,test,"pairing lifecycle sends only the current owner URL, including same-address token rotation",False,legacy-not-retrospectively-reviewed
 LEG-abfa9a8366d0,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,46,test,"a widget opens usage without HQ, dismisses, and ignores guest links and private URL parameters",False,legacy-not-retrospectively-reviewed
 LEG-7419b6327ede,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,73,test,widget links cannot select a server or smuggle credentials,False,legacy-not-retrospectively-reviewed
@@ -6050,12 +6071,12 @@ LEG-30f2f4661935,G,CI / tooling,scripts/ci_test.py,79,unittest,test_actual_git_r
 LEG-a0a184955335,G,CI / tooling,scripts/ci_test.py,105,unittest,test_missing_refs_force_full_cli_outputs,False,legacy-not-retrospectively-reviewed
 LEG-513d57a7489a,G,CI / tooling,scripts/ci_test.py,116,unittest,test_workflow_jobs_cannot_grow_outside_aggregation,False,legacy-not-retrospectively-reviewed
 LEG-1f71c99fb4dc,G,CI / tooling,scripts/ci_test.py,128,unittest,test_unsigned_ios_preserves_arm64_target_and_verifies_products,False,legacy-not-retrospectively-reviewed
-LEG-2514a184abce,G,CI / tooling,scripts/ci_test.py,140,unittest,test_android_package_is_built_once_and_both_devices_use_its_output,False,legacy-not-retrospectively-reviewed
-LEG-76200ceafcf2,G,CI / tooling,scripts/ci_test.py,160,unittest,test_docs_can_skip_heavy_jobs_but_require_quality,False,legacy-not-retrospectively-reviewed
-LEG-ecfb4bf818ba,G,CI / tooling,scripts/ci_test.py,166,unittest,test_missing_skipped_failed_cancelled_required_job_never_green,True,legacy-not-retrospectively-reviewed
-LEG-252965413bf3,G,CI / tooling,scripts/ci_test.py,175,unittest,test_bad_plans_or_unselected_failure_are_rejected,False,legacy-not-retrospectively-reviewed
-LEG-8a6a845c7484,G,CI / tooling,scripts/ci_test.py,187,unittest,test_mac_host_keeps_both_architectures_and_native_checks,False,legacy-not-retrospectively-reviewed
-LEG-28f4d1551b14,G,CI / tooling,scripts/ci_test.py,204,unittest,test_ios_delivery_pins_the_same_arm_toolchain_and_keeps_protection,False,legacy-not-retrospectively-reviewed
+LEG-2514a184abce,G,CI / tooling,scripts/ci_test.py,146,unittest,test_android_package_is_built_once_and_both_devices_use_its_output,False,legacy-not-retrospectively-reviewed
+LEG-76200ceafcf2,G,CI / tooling,scripts/ci_test.py,166,unittest,test_docs_can_skip_heavy_jobs_but_require_quality,False,legacy-not-retrospectively-reviewed
+LEG-ecfb4bf818ba,G,CI / tooling,scripts/ci_test.py,172,unittest,test_missing_skipped_failed_cancelled_required_job_never_green,True,legacy-not-retrospectively-reviewed
+LEG-252965413bf3,G,CI / tooling,scripts/ci_test.py,181,unittest,test_bad_plans_or_unselected_failure_are_rejected,False,legacy-not-retrospectively-reviewed
+LEG-8a6a845c7484,G,CI / tooling,scripts/ci_test.py,193,unittest,test_mac_host_keeps_both_architectures_and_native_checks,False,legacy-not-retrospectively-reviewed
+LEG-28f4d1551b14,G,CI / tooling,scripts/ci_test.py,210,unittest,test_ios_delivery_pins_the_same_arm_toolchain_and_keeps_protection,False,legacy-not-retrospectively-reviewed
 MAP-349a1f57f0b7,G,CI / tooling,scripts/ci_test.py,43,reviewed-selector,test_reviewed_test_records_are_policy_only_without_hiding_test_changes,False,TD-006
 MAP-5f57607e8e0e,G,CI / tooling,scripts/ci_test.py,17,reviewed-selector,test_unit_test_scope_requires_immutable_product_exclusion,False,CT-SCOPE
 LEG-0a1ce627fdd1,G,CI / tooling,scripts/install_platform_test.py,70,unittest,test_linux_archives_install_without_any_mac_application,True,legacy-not-retrospectively-reviewed

@@ -51,6 +51,13 @@ export async function launchWithFlags(flags: Record<string, string>): Promise<vo
   await driver.activateApp(BUNDLE);
 }
 
+/** Wait for the app's existing notification prompt flow; do not mutate permissions. */
+export async function waitForNotificationAuthorization(): Promise<void> {
+  const driver = getDriver();
+  await driver.waitUntil(() => readDebugLog().some(e => e.event === 'push-permissions' && e.alert === true),
+    {timeout: 30000, interval: 500, timeoutMsg: 'notification authorization was not confirmed'});
+}
+
 /**
  * Tap the first agent row → Detail, returning true on success. Retries the
  * find→tap→assert as a unit: the radar re-renders every ~1.5s (SSE), which can

@@ -52,10 +52,24 @@ export function captureStartupCapabilities(env: NodeJS.ProcessEnv = process.env)
   };
 }
 
+// A fresh cloud runner must build WDA before the first session. Keep build
+// diagnostics and allow startup time without assuming a prebuilt WDA exists.
+export function cloudStartupCapabilities(env: NodeJS.ProcessEnv = process.env): Record<string, boolean | number> {
+  if (env.GTMUX_E2E_SESSION_CI !== '1') return {};
+  return {'appium:wdaLaunchTimeout': 240_000, 'appium:wdaStartupRetries': 1, 'appium:showXcodeLog': true};
+}
+
+// Appium's default socket timeout is ten minutes, shorter than the hosted
+// client's WDA build budget. Keep the server connection alive until that client
+// timeout expires, without changing local or store-capture runs.
+export function appiumServerTimeoutArgs(env: NodeJS.ProcessEnv = process.env): string[] {
+  return env.GTMUX_E2E_SESSION_CI === '1' ? ['--keep-alive-timeout', '960'] : [];
+}
+
 export function sessionConnectionOptions(env: NodeJS.ProcessEnv = process.env) {
   // A new runner builds WDA before its readiness clock starts. A single bounded
   // connection preserves its diagnostics instead of starting overlapping builds.
-  return env.GTMUX_E2E_CAPTURE_CI === '1'
+  return env.GTMUX_E2E_CAPTURE_CI === '1' || env.GTMUX_E2E_SESSION_CI === '1'
     ? {connectionRetryTimeout: 900_000, connectionRetryCount: 0}
     : {connectionRetryTimeout: 360_000};
 }
@@ -82,6 +96,7 @@ export const iosCapabilities = {
   ...alertCapabilities(alertMode()),
   ...headlessCapabilities(),
   ...captureStartupCapabilities(),
+  ...cloudStartupCapabilities(),
   // Two runs on one Mac each need their own WebDriverAgent port and build directory.
   ...(process.env.GTMUX_E2E_WDA_PORT ? {'appium:wdaLocalPort': Number(process.env.GTMUX_E2E_WDA_PORT)} : {}),
   ...(process.env.GTMUX_E2E_WDA_DERIVED ? {'appium:derivedDataPath': process.env.GTMUX_E2E_WDA_DERIVED} : {}),

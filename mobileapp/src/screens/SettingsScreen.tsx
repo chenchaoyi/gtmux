@@ -153,7 +153,7 @@ export function SettingsScreen({navigation}: any) {
     ]);
 
   return (
-    <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']}>
+    <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top', 'left', 'right']}>
       {/* The title rides in the same column as the rows: on iPad the page is centred,
           and a header outside the column sits alone at the far left of the screen. */}
       <ContentColumn>

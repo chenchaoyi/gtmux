@@ -825,7 +825,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   if (regular && !workspaceMode) {
     return (
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <SafeAreaView style={[styles.root, {backgroundColor: pal.bg}]} edges={['top', 'bottom']}>
+      <SafeAreaView style={[styles.root, {backgroundColor: pal.bg}]} edges={['top', 'bottom', 'left', 'right']}>
         {headerEl}
         <View style={styles.wide}>
           <View style={styles.flex}>
@@ -846,7 +846,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-    <SafeAreaView style={[styles.root, {backgroundColor: pal.bg}]} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.root, {backgroundColor: pal.bg}]} edges={['top', 'bottom', 'left', 'right']}>
       {/* The stack: the zone underneath, the floating chrome over it (drawn last, so it
           is on top). See the collapse driver above for why the chrome does not live in
           the column. */}

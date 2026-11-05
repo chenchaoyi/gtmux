@@ -7,8 +7,8 @@ import {
   Text,
   TouchableOpacity,
   View,
-  useWindowDimensions,
 } from 'react-native';
+import {useWindowDimensions} from './windowMetrics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Agent, nativeEvidenceLabel, primary, secondary } from '../api/types';
 import { Lang } from '../i18n';

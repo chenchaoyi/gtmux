@@ -10,6 +10,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
 
   var reactNativeDelegate: ReactNativeDelegate?
   var reactNativeFactory: RCTReactNativeFactory?
+  var launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+  private var headlessResponseStarted = false
+  var headlessRootView: UIView?
+  private var responseBackgroundTask: UIBackgroundTaskIdentifier = .invalid
 
   func application(
     _ application: UIApplication,
@@ -26,13 +30,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     UNUserNotificationCenter.current().delegate = self
     UsageWidgetRefresh.shared.register()
 
-    window = UIWindow(frame: UIScreen.main.bounds)
-
-    factory.startReactNative(
-      withModuleName: "GtmuxMobile",
-      in: window,
-      launchOptions: launchOptions
-    )
+    self.launchOptions = launchOptions
+    traceNotification("app-launch-finished")
 
     return true
   }
@@ -41,7 +40,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
 
   func application(_ app: UIApplication, open url: URL,
                    options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
-    RCTLinkingManager.application(app, open: url, options: options)
+    traceNotification("application-url")
+    return RCTLinkingManager.application(app, open: url, options: options)
   }
   // The responder chain ends here, so a command from any first responder reaches it.
 
@@ -96,10 +96,53 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     didReceive response: UNNotificationResponse,
     withCompletionHandler completionHandler: @escaping () -> Void
   ) {
-    // Delivers the tapped notification to JS (handled by the push module's
-    // 'notification' listener), which deep-links to the agent's Detail.
-    RNCPushNotificationIOS.didReceive(response)
-    completionHandler()
+    // UIKit may deliver on a background queue; window and RN startup belong on main.
+    DispatchQueue.main.async {
+      let payload = bridgeNotificationResponse(response)
+      traceNotification("delegate-response", action: response.actionIdentifier, hasText: response is UNTextInputNotificationResponse)
+      NotificationResponseBuffer.enqueue(payload)
+      traceNotification("delegate-app-state-\(UIApplication.shared.applicationState.rawValue)")
+      if UIApplication.shared.applicationState == .background && self.responseBackgroundTask == .invalid {
+        self.responseBackgroundTask = UIApplication.shared.beginBackgroundTask(withName: "Notification response") { [weak self] in
+          DispatchQueue.main.async { self?.endResponseBackgroundTask() }
+        }
+        traceNotification("delegate-background-task-\(self.responseBackgroundTask == .invalid ? "invalid" : "started")")
+        // Bound the grant even if JS never starts or the server is unreachable.
+        let task = self.responseBackgroundTask
+        DispatchQueue.main.asyncAfter(deadline: .now() + 20) { [weak self] in
+          guard let self = self, self.responseBackgroundTask == task else { return }
+          self.endResponseBackgroundTask()
+        }
+      }
+      traceNotification(self.window == nil ? "delegate-window-absent" : "delegate-window-present")
+      if self.window == nil {
+        var options = self.launchOptions ?? [:]
+        options[.remoteNotification] = payload
+        self.launchOptions = options
+        if !self.headlessResponseStarted, let factory = self.reactNativeFactory {
+          self.headlessResponseStarted = true
+          traceNotification("headless-root-start")
+          // Keep the surface alive until a scene attaches it. Passing nil to the
+        // factory's window helper would immediately release its root controller.
+        self.headlessRootView = factory.rootViewFactory.view(
+          withModuleName: "GtmuxMobile", initialProperties: nil, launchOptions: options
+        )
+          traceNotification("headless-root-created")
+        } else {
+          traceNotification(self.headlessResponseStarted ? "headless-root-already-started" : "headless-factory-unavailable")
+        }
+      }
+      RNCPushNotificationIOS.didReceiveRemoteNotification(payload)
+      traceNotification("delegate-forwarded-to-rn")
+      completionHandler()
+    }
+  }
+
+  private func endResponseBackgroundTask() {
+    guard responseBackgroundTask != .invalid else { return }
+    traceNotification("delegate-background-task-ended")
+    UIApplication.shared.endBackgroundTask(responseBackgroundTask)
+    responseBackgroundTask = .invalid
   }
 }
 
@@ -115,4 +158,72 @@ class ReactNativeDelegate: RCTDefaultReactNativeFactoryDelegate {
     Bundle.main.url(forResource: "main", withExtension: "jsbundle")
 #endif
   }
+}
+
+// A window belongs to its scene: the scene can change size while the app is running.
+// Keep the factory and delegate on AppDelegate for the lifetime of the React bridge.
+class SceneDelegate: UIResponder, UIWindowSceneDelegate {
+  var window: UIWindow?
+
+  func scene(_ scene: UIScene, willConnectTo session: UISceneSession,
+             options connectionOptions: UIScene.ConnectionOptions) {
+    traceNotification("scene-connect-start")
+    guard let scene = scene as? UIWindowScene,
+          let app = UIApplication.shared.delegate as? AppDelegate,
+          let factory = app.reactNativeFactory else { return }
+    var options = app.launchOptions ?? [:]
+    // React Native and the push module read their cold-start data from launchOptions.
+    if let url = connectionOptions.urlContexts.first?.url {
+      traceNotification("scene-url-cold")
+      options[.url] = url
+    }
+    if let activity = connectionOptions.userActivities.first {
+      options[.userActivityDictionary] = ["UIApplicationLaunchOptionsUserActivityKey": activity]
+    }
+    if let response = connectionOptions.notificationResponse {
+      let payload = bridgeNotificationResponse(response)
+      traceNotification("scene-response", action: response.actionIdentifier, hasText: response is UNTextInputNotificationResponse)
+      NotificationResponseBuffer.enqueue(payload)
+      options[.remoteNotification] = payload
+    }
+    let sceneWindow = UIWindow(windowScene: scene)
+    window = sceneWindow
+    app.window = sceneWindow
+    // RCTDeviceInfo captures the key window when it initializes and observes its
+    // frame. Make the scene window key before creating the React root so resizing
+    // is observed even if the module initializes synchronously.
+    sceneWindow.rootViewController = UIViewController()
+    sceneWindow.makeKeyAndVisible()
+    if let headlessRoot = app.headlessRootView {
+      sceneWindow.rootViewController?.view = headlessRoot
+      app.headlessRootView = nil
+    } else {
+      factory.startReactNative(withModuleName: "GtmuxMobile", in: sceneWindow, launchOptions: options)
+    }
+  }
+
+  func scene(_ scene: UIScene, openURLContexts contexts: Set<UIOpenURLContext>) {
+    for context in contexts {
+      traceNotification("scene-url")
+      var options: [UIApplication.OpenURLOptionsKey: Any] = [:]
+      if let source = context.options.sourceApplication { options[.sourceApplication] = source }
+      if let annotation = context.options.annotation { options[.annotation] = annotation }
+      RCTLinkingManager.application(UIApplication.shared, open: context.url, options: options)
+    }
+  }
+
+  func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
+    RCTLinkingManager.application(UIApplication.shared, continue: userActivity, restorationHandler: { _ in })
+  }
+}
+
+// Both UIKit entry points must encode the same response identity and action.
+private func bridgeNotificationResponse(_ response: UNNotificationResponse) -> [AnyHashable: Any] {
+  let action = response.actionIdentifier == UNNotificationDefaultActionIdentifier ? nil : response.actionIdentifier
+  return notificationResponsePayload(
+    userInfo: response.notification.request.content.userInfo,
+    requestID: response.notification.request.identifier,
+    actionID: action,
+    userText: (response as? UNTextInputNotificationResponse)?.userText
+  )
 }

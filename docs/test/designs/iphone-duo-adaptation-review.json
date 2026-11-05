@@ -1,0 +1,251 @@
+{
+  "id": "iphone-duo-adaptation-review",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review; not independent approval)",
+    "date": "2026-11-05",
+    "decision": "Review existing work and continue validation",
+    "notes": "This is a truthful retrospective review of work already implemented before main introduced this gate. It does not claim prior review or passing device behavior. Cold and warm actions, real fold and accessibility remain subject to recorded evidence. On 2026-11-05 the cold-action trace exposed drain-before-JS-ack loss; DUO-009 was reviewed before implementing acknowledgement-based retention. Earlier prototype tests remain honestly retrospective. DUO-010 was updated after observing a native drain Promise stall; its non-blocking fallback and foreground recovery are reviewed before implementation. Permission-wait ordering was implemented during diagnosis; its specific regression test was reviewed afterwards and must not be represented as a pre-implementation review."
+  },
+  "cases": [
+    {
+      "id": "DUO-001",
+      "layer": "L4",
+      "description": "cold notification opens the correct server and selection routes to the selected server",
+      "setup": "Isolated fixture and named simulator for device cases; existing mocked or rendered harness for code-level cases.",
+      "action": "Run the mapped selector in mobileapp/e2e/__tests__/coldstart-push.test.ts.",
+      "expected": "cold notification opens the correct server and selection routes to the selected server.",
+      "planned_files": [
+        "mobileapp/e2e/__tests__/coldstart-push.test.ts"
+      ],
+      "surfaces": [
+        "iOS Duo adaptation and ordinary-device regression"
+      ]
+    },
+    {
+      "id": "DUO-002",
+      "layer": "L4",
+      "description": "selected session and draft survive a simulator orientation change",
+      "setup": "Isolated fixture and named simulator for device cases; existing mocked or rendered harness for code-level cases.",
+      "action": "Run the mapped selector in mobileapp/e2e/__tests__/duo-window.test.ts.",
+      "expected": "selected session and draft survive a simulator orientation change.",
+      "planned_files": [
+        "mobileapp/e2e/__tests__/duo-window.test.ts"
+      ],
+      "surfaces": [
+        "iOS Duo adaptation and ordinary-device regression"
+      ]
+    },
+    {
+      "id": "DUO-003",
+      "layer": "L4",
+      "description": "iPad retains sidebar and selected session through rotation",
+      "setup": "Isolated fixture and named simulator for device cases; existing mocked or rendered harness for code-level cases.",
+      "action": "Run the mapped selector in mobileapp/e2e/__tests__/ipad-adaptive.test.ts.",
+      "expected": "iPad retains sidebar and selected session through rotation.",
+      "planned_files": [
+        "mobileapp/e2e/__tests__/ipad-adaptive.test.ts"
+      ],
+      "surfaces": [
+        "iOS Duo adaptation and ordinary-device regression"
+      ]
+    },
+    {
+      "id": "DUO-004",
+      "layer": "L4",
+      "description": "cold and warm notification actions send the selected response exactly once",
+      "setup": "Isolated fixture and named simulator for device cases; existing mocked or rendered harness for code-level cases.",
+      "action": "Run the mapped selector in mobileapp/e2e/__tests__/notification-scene-actions.test.ts.",
+      "expected": "cold and warm notification actions send the selected response exactly once.",
+      "planned_files": [
+        "mobileapp/e2e/__tests__/notification-scene-actions.test.ts"
+      ],
+      "surfaces": [
+        "iOS Duo adaptation and ordinary-device regression"
+      ]
+    },
+    {
+      "id": "DUO-005",
+      "layer": "L4",
+      "description": "warm and cold scene links open the usage sheet",
+      "setup": "Isolated fixture and named simulator for device cases; existing mocked or rendered harness for code-level cases.",
+      "action": "Run the mapped selector in mobileapp/e2e/__tests__/scene-usage-links.test.ts.",
+      "expected": "warm and cold scene links open the usage sheet.",
+      "planned_files": [
+        "mobileapp/e2e/__tests__/scene-usage-links.test.ts"
+      ],
+      "surfaces": [
+        "iOS Duo adaptation and ordinary-device regression"
+      ]
+    },
+    {
+      "id": "DUO-006",
+      "layer": "L4",
+      "description": "first server selection and server switching follow the same observable route on main and candidate",
+      "setup": "Isolated fixture and named simulator for device cases; existing mocked or rendered harness for code-level cases.",
+      "action": "Run the mapped selector in mobileapp/e2e/__tests__/server-switch-compare.test.ts.",
+      "expected": "first server selection and server switching follow the same observable route on main and candidate.",
+      "planned_files": [
+        "mobileapp/e2e/__tests__/server-switch-compare.test.ts"
+      ],
+      "surfaces": [
+        "iOS Duo adaptation and ordinary-device regression"
+      ]
+    },
+    {
+      "id": "DUO-007",
+      "layer": "L1",
+      "description": "fake request diagnostics expose routing metadata without credentials or query values",
+      "setup": "Isolated fixture and named simulator for device cases; existing mocked or rendered harness for code-level cases.",
+      "action": "Run the mapped selector in mobileapp/e2e/fake-serve/request-diagnostics.test.ts.",
+      "expected": "fake request diagnostics expose routing metadata without credentials or query values.",
+      "planned_files": [
+        "mobileapp/e2e/fake-serve/request-diagnostics.test.ts"
+      ],
+      "surfaces": [
+        "iOS Duo adaptation and ordinary-device regression"
+      ]
+    },
+    {
+      "id": "DUO-008",
+      "layer": "L1",
+      "description": "explicit hosted simulator configuration preserves local defaults and bounds driver startup",
+      "setup": "Isolated fixture and named simulator for device cases; existing mocked or rendered harness for code-level cases.",
+      "action": "Run the mapped selector in mobileapp/e2e/setup/capabilities.test.ts.",
+      "expected": "explicit hosted simulator configuration preserves local defaults and bounds driver startup.",
+      "planned_files": [
+        "mobileapp/e2e/setup/capabilities.test.ts"
+      ],
+      "surfaces": [
+        "iOS Duo adaptation and ordinary-device regression"
+      ]
+    },
+    {
+      "id": "DUO-009",
+      "layer": "L1",
+      "description": "native notification response queue retains a drained response until JS acknowledges it, while preserving identity, action, text, bounds and duplicate suppression",
+      "setup": "A Foundation-only native fixture with distinct response identifiers, numbered action and text; no user data or device connection.",
+      "action": "Enqueue duplicate and distinct responses, inspect the same pending response twice without acknowledgement, acknowledge it, then exceed the bounded queue capacity.",
+      "expected": "Unacknowledged responses remain retrievable; acknowledged responses disappear, duplicate identity/action is queued once, and only the newest 128 entries remain.",
+      "planned_files": [
+        "mobileapp/ios/tests/NotificationResponsePayloadChecks.swift"
+      ],
+      "surfaces": [
+        "iOS Duo adaptation and ordinary-device regression"
+      ]
+    },
+    {
+      "id": "DUO-010",
+      "layer": "L1",
+      "description": "a stalled native notification drain must not block the initial notification fallback, and foreground recovery retries retained responses without duplicate replies",
+      "setup": "Mock a native drain Promise that never resolves, an initial notification and an app-state listener; also hold a separate permission Promise pending. Use identified responses and a fake reply callback.",
+      "action": "Start push setup with the first drain pending, observe initial fallback, simulate foreground activation and a duplicate native response, and check a pending permission request separately.",
+      "expected": "Initial fallback proceeds despite a stalled drain or permission request, foreground retry retrieves a retained response, and shared identity permits at most one reply.",
+      "planned_files": [
+        "mobileapp/src/push/launchNotification.test.ts"
+      ],
+      "surfaces": [
+        "iOS Duo adaptation and ordinary-device regression"
+      ]
+    },
+    {
+      "id": "DUO-011",
+      "layer": "L2",
+      "description": "Trace and Diff remain open with their current content across window resizing",
+      "setup": "Isolated fixture and named simulator for device cases; existing mocked or rendered harness for code-level cases.",
+      "action": "Run the mapped selector in mobileapp/src/screens/DetailTrace.test.tsx.",
+      "expected": "Trace and Diff remain open with their current content across window resizing.",
+      "planned_files": [
+        "mobileapp/src/screens/DetailTrace.test.tsx"
+      ],
+      "surfaces": [
+        "iOS Duo adaptation and ordinary-device regression"
+      ]
+    },
+    {
+      "id": "DUO-012",
+      "layer": "L2",
+      "description": "resizing preserves mounted detail and selection while compact navigation remains usable",
+      "setup": "Isolated fixture and named simulator for device cases; existing mocked or rendered harness for code-level cases.",
+      "action": "Run the mapped selector in mobileapp/src/screens/SplitShell.resize.test.tsx.",
+      "expected": "resizing preserves mounted detail and selection while compact navigation remains usable.",
+      "planned_files": [
+        "mobileapp/src/screens/SplitShell.resize.test.tsx"
+      ],
+      "surfaces": [
+        "iOS Duo adaptation and ordinary-device regression"
+      ]
+    },
+    {
+      "id": "DUO-013",
+      "layer": "L2",
+      "description": "usage modal resolves all safe edges in its native presentation",
+      "setup": "Isolated fixture and named simulator for device cases; existing mocked or rendered harness for code-level cases.",
+      "action": "Run the mapped selector in mobileapp/src/screens/UsageSheet.test.tsx.",
+      "expected": "usage modal resolves all safe edges in its native presentation.",
+      "planned_files": [
+        "mobileapp/src/screens/UsageSheet.test.tsx"
+      ],
+      "surfaces": [
+        "iOS Duo adaptation and ordinary-device regression"
+      ]
+    },
+    {
+      "id": "DUO-014",
+      "layer": "G",
+      "description": "both adaptive shell modes compose the shared radar panel",
+      "setup": "Isolated fixture and named simulator for device cases; existing mocked or rendered harness for code-level cases.",
+      "action": "Run the mapped selector in mobileapp/src/screens/shellDrift.test.ts.",
+      "expected": "both adaptive shell modes compose the shared radar panel.",
+      "planned_files": [
+        "mobileapp/src/screens/shellDrift.test.ts"
+      ],
+      "surfaces": [
+        "iOS Duo adaptation and ordinary-device regression"
+      ]
+    },
+    {
+      "id": "DUO-015",
+      "layer": "L2",
+      "description": "inline workspace selection retains identity without pushing a second detail route",
+      "setup": "Isolated fixture and named simulator for device cases; existing mocked or rendered harness for code-level cases.",
+      "action": "Run the mapped selector in mobileapp/src/state/WorkspaceContext.test.tsx.",
+      "expected": "inline workspace selection retains identity without pushing a second detail route.",
+      "planned_files": [
+        "mobileapp/src/state/WorkspaceContext.test.tsx"
+      ],
+      "surfaces": [
+        "iOS Duo adaptation and ordinary-device regression"
+      ]
+    },
+    {
+      "id": "DUO-016",
+      "layer": "L2",
+      "description": "root layout updates available window size without remounting the reader",
+      "setup": "Isolated fixture and named simulator for device cases; existing mocked or rendered harness for code-level cases.",
+      "action": "Run the mapped selector in mobileapp/src/ui/windowMetrics.test.tsx.",
+      "expected": "root layout updates available window size without remounting the reader.",
+      "planned_files": [
+        "mobileapp/src/ui/windowMetrics.test.tsx"
+      ],
+      "surfaces": [
+        "iOS Duo adaptation and ordinary-device regression"
+      ]
+    },
+    {
+      "id": "DUO-017",
+      "layer": "G",
+      "description": "CI selects and verifies the bounded unsigned Duo simulator job",
+      "setup": "Isolated fixture and named simulator for device cases; existing mocked or rendered harness for code-level cases.",
+      "action": "Run the mapped selector in scripts/ci_test.py.",
+      "expected": "CI selects and verifies the bounded unsigned Duo simulator job.",
+      "planned_files": [
+        "scripts/ci_test.py"
+      ],
+      "surfaces": [
+        "iOS Duo adaptation and ordinary-device regression"
+      ]
+    }
+  ],
+  "seal": "3a27ac3b29e8b3814034202bf178700ce8f4109bd17b0f85449c6f35985ed7b5"
+}

@@ -16,13 +16,9 @@ import React, {useEffect, useMemo, useState} from 'react';
 import {Agent} from '../api/types';
 import {useApp} from '../state/AppContext';
 import {DemoAgentsProvider} from '../state/AgentsContext';
-import {HQResourceRequest, WorkspaceProvider} from '../state/WorkspaceContext';
+import {WorkspaceProvider} from '../state/WorkspaceContext';
 import {sampleAgents} from '../ui/demoData';
 import {makeDemoClient} from '../ui/demoClient';
-import {DetailView} from './DetailScreen';
-import {HQView} from './HQScreen';
-import {PaneBrowserView} from './PaneBrowserScreen';
-import {RadarPanel} from './RadarPanel';
 import {SplitShell} from './SplitShell';
 import {useSizeClass} from '../ui/layout';
 
@@ -41,35 +37,13 @@ export function DemoScreen({onExit, onPair}: {onExit: () => void; onPair: () => 
   // (sidebar + main pane) on an iPad-sized window, the phone's radar otherwise. It used
   // to carry its own radar, and fell behind the shipped one twice.
   const sizeClass = useSizeClass();
-  const [selected, setSelected] = useState<Agent | null>(null);
-  const [showHQ, setShowHQ] = useState(false);
-  const [openResource, setOpenResource] = useState<HQResourceRequest | undefined>();
-  const [showPanes, setShowPanes] = useState(false);
-  const hq = agents.find(a => a.role === 'supervisor');
   const demo = useMemo(() => ({onExit, onPair}), [onExit, onPair]);
-  // The compact shell's navigation, as demo state: a pane → its demo detail, HQ → the HQ
-  // page, All panes → the browser. Same contract as the app's compact shell.
-  const navigateSel = React.useCallback((route: string, params?: Record<string, unknown>) => {
-    setShowHQ(route === 'HQ');
-    setOpenResource(route === 'HQ' ? params?.openResource as HQResourceRequest | undefined : undefined);
-    setShowPanes(route === 'Panes');
-    if (route === 'Detail' && params?.agent) setSelected(params.agent as Agent);
-  }, []);
+  const navigateSel = React.useCallback(() => {}, []);
 
   return (
     <DemoAgentsProvider client={client} agents={agents}>
-      <WorkspaceProvider mode={sizeClass} navigate={navigateSel}>
-        {sizeClass === 'regular' ? (
-          <SplitShell demo={demo} />
-        ) : showPanes ? (
-          <PaneBrowserView onBack={() => setShowPanes(false)} />
-        ) : showHQ && hq ? (
-          <HQView agent={hq} openResource={openResource} onBack={() => setShowHQ(false)} />
-        ) : selected ? (
-          <DetailView agent={selected} onBack={() => setSelected(null)} />
-        ) : (
-          <RadarPanel variant="screen" demo={demo} />
-        )}
+      <WorkspaceProvider mode={sizeClass} navigate={navigateSel} inlineSelection>
+        <SplitShell demo={demo} />
       </WorkspaceProvider>
     </DemoAgentsProvider>
   );

@@ -1,5 +1,6 @@
 import React, {useContext, useId, useRef, useState} from 'react';
-import {NativeSyntheticEvent, requireNativeComponent, StyleSheet, TextProps, UIManager, useWindowDimensions, View} from 'react-native';
+import {NativeSyntheticEvent, requireNativeComponent, StyleSheet, TextProps, UIManager, View} from 'react-native';
+import {useWindowDimensions} from './windowMetrics';
 
 export const RangeSourceContext = React.createContext('');
 export const TextSelectionContext = React.createContext<(id: string, active: boolean) => void>(() => {});

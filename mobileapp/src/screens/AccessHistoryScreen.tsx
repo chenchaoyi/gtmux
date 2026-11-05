@@ -69,7 +69,7 @@ export function AccessHistoryScreen({navigation}: any) {
     : zh ? '无法载入访问历史，请重试。' : 'Could not load access history. Try again.';
   const lines = useMemo(() => accessLogLines(guest ? [] : entries, zh), [entries, guest, zh]);
   const rows: ({group: AccessGroup} | {line: AccessLogLine})[] = filter.group_by ? groups.map(group => ({group})) : lines.map(line => ({line}));
-  return <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']}>
+  return <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top', 'left', 'right']}>
     <ContentColumn><View style={styles.header}>
       <TouchableOpacity onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel={zh ? '返回' : 'Back'} style={styles.button}><Text style={[styles.backIcon, {color: pal.fg2}]}>‹</Text></TouchableOpacity>
       <Text style={[styles.title, {color: pal.fg}]} accessibilityRole="header">{zh ? '访问历史' : 'Access history'}</Text>

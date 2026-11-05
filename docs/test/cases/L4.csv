@@ -1,14 +1,15 @@
 id,layer,stack,file,line,kind,description,dynamic,design
 LEG-6e4751cbc433,L4,RN / mobile harness,mobileapp/e2e/__tests__/answer-options.test.ts,26,it,"renders the agent’s own words, sends the digit, and the session stops waiting",False,legacy-not-retrospectively-reviewed
 LEG-ac7603c2bff5,L4,RN / mobile harness,mobileapp/e2e/__tests__/chat-fullscreen-collapse.test.ts,28,it,"opens chat, collapses/expands all, enters+exits full-screen",False,legacy-not-retrospectively-reviewed
-LEG-a5d63af936be,L4,RN / mobile harness,mobileapp/e2e/__tests__/coldstart-push.test.ts,130,it,"A: cold start with an active Mac, switches, background, a new warm tap",False,legacy-not-retrospectively-reviewed
-LEG-f3196e5f4ce2,L4,RN / mobile harness,mobileapp/e2e/__tests__/coldstart-push.test.ts,170,it,C: a launch with no notification switches where it is pointed,False,legacy-not-retrospectively-reviewed
+LEG-a5d63af936be,L4,RN / mobile harness,mobileapp/e2e/__tests__/coldstart-push.test.ts,138,it,"A: cold start with an active Mac, switches, background, a new warm tap",False,legacy-not-retrospectively-reviewed
+LEG-f3196e5f4ce2,L4,RN / mobile harness,mobileapp/e2e/__tests__/coldstart-push.test.ts,179,it,C: a launch with no notification switches where it is pointed,False,legacy-not-retrospectively-reviewed
 LEG-1c834aed07e9,L4,RN / mobile harness,mobileapp/e2e/__tests__/composer-camera-unavailable.test.ts,19,it,Camera with no camera says so instead of doing nothing,False,legacy-not-retrospectively-reviewed
 LEG-ecf828c0a4a6,L4,RN / mobile harness,mobileapp/e2e/__tests__/composer-keyrow.test.ts,32,it,"has no Space pill, orders ⏎ after ↑/↓, and ⌫ erases in the pane",False,legacy-not-retrospectively-reviewed
 LEG-07d49ef24147,L4,RN / mobile harness,mobileapp/e2e/__tests__/composer-photo-markup.test.ts,24,it,a library photo goes through markup and reaches the Mac with the message,False,legacy-not-retrospectively-reviewed
 LEG-e731229baa6d,L4,RN / mobile harness,mobileapp/e2e/__tests__/composer-return-sends.test.ts,80,it,"off: Return makes a new line, the send button sends",False,legacy-not-retrospectively-reviewed
 LEG-8da92748c6ca,L4,RN / mobile harness,mobileapp/e2e/__tests__/composer-return-sends.test.ts,98,it,on: Return sends,False,legacy-not-retrospectively-reviewed
 LEG-094857d91ad5,L4,RN / mobile harness,mobileapp/e2e/__tests__/detail-chrome-textsize.test.ts,39,run,the top row keeps one line and stays on screen at the accessibility sizes,False,legacy-not-retrospectively-reviewed
+MAP-8cfa983c4bb1,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-window.test.ts,13,reviewed-selector,keeps the selected session and a draft through simulator rotation,False,DUO-002
 LEG-e23b5ce26880,L4,RN / mobile harness,mobileapp/e2e/__tests__/edge-stability.test.ts,22,it,traces the viewport around the live tail,False,legacy-not-retrospectively-reviewed
 LEG-242e71413ed1,L4,RN / mobile harness,mobileapp/e2e/__tests__/edge-states.test.ts,39,it,an empty fleet says so instead of showing an empty frame,False,legacy-not-retrospectively-reviewed
 LEG-e678143327ea,L4,RN / mobile harness,mobileapp/e2e/__tests__/edge-states.test.ts,48,it,a task with no spaces does not push the row off the screen,False,legacy-not-retrospectively-reviewed
@@ -21,6 +22,7 @@ LEG-48cc6a34e6d3,L4,RN / mobile harness,mobileapp/e2e/__tests__/hq-keyboard.test
 LEG-3e8dbc51d1ff,L4,RN / mobile harness,mobileapp/e2e/__tests__/hq-long-conversation.test.ts,43,it,"a long HQ conversation opens at the latest turn, reads back, and follows a new reply",False,legacy-not-retrospectively-reviewed
 LEG-018a72b313eb,L4,RN / mobile harness,mobileapp/e2e/__tests__/hq-shots.test.ts,25,it,"renders the HQ card (not a row), and tapping opens Detail in chat",False,legacy-not-retrospectively-reviewed
 LEG-5d9b553a6364,L4,RN / mobile harness,mobileapp/e2e/__tests__/hq-shots.test.ts,72,it,opens the board and captures it for review,False,legacy-not-retrospectively-reviewed
+MAP-b3419be992f8,L4,reviewed implementation,mobileapp/e2e/__tests__/ipad-adaptive.test.ts,11,reviewed-selector,keeps the iPad sidebar and selected session through rotation,False,DUO-003
 LEG-763c5ae68f6a,L4,RN / mobile harness,mobileapp/e2e/__tests__/ipad-demo.test.ts,25,it,is the regular shell over sample data,False,legacy-not-retrospectively-reviewed
 LEG-56070872eabb,L4,RN / mobile harness,mobileapp/e2e/__tests__/ipad-keys.test.ts,41,it,drives the shell from the keymap,False,legacy-not-retrospectively-reviewed
 LEG-4137e784fd6a,L4,RN / mobile harness,mobileapp/e2e/__tests__/jumpbottom.test.ts,29,it,"lands on the tail, not short of it",False,legacy-not-retrospectively-reviewed
@@ -34,13 +36,19 @@ LEG-33b6b494ed45,L4,RN / mobile harness,mobileapp/e2e/__tests__/message-fidelity
 LEG-61fe529a5267,L4,RN / mobile harness,mobileapp/e2e/__tests__/message-fidelity.test.ts,100,it,a second message into a working session does not displace the first,False,legacy-not-retrospectively-reviewed
 LEG-c7e731a2ecfd,L4,RN / mobile harness,mobileapp/e2e/__tests__/nativeterm.test.ts,31,it,tap / long-press / wrap on the native pane,False,legacy-not-retrospectively-reviewed
 LEG-c57e7b8b4fae,L4,RN / mobile harness,mobileapp/e2e/__tests__/new-session.test.ts,10,it,one keyboard-up tap reports a duplicate; another name creates and opens the exact terminal,False,legacy-not-retrospectively-reviewed
+MAP-af8f135844b0,L4,reviewed implementation,mobileapp/e2e/__tests__/notification-scene-actions.test.ts,35,reviewed-selector,delivers a cold notification action exactly once,False,DUO-004
+MAP-47786402e16b,L4,reviewed implementation,mobileapp/e2e/__tests__/notification-scene-actions.test.ts,80,reviewed-selector,delivers a warm notification action exactly once,False,DUO-004
 LEG-c7ceabc4e0f9,L4,RN / mobile harness,mobileapp/e2e/__tests__/radar-end.test.ts,18,it,closes the list where it ends,False,legacy-not-retrospectively-reviewed
 LEG-d1423a35ae7b,L4,RN / mobile harness,mobileapp/e2e/__tests__/radar-refresh-collapsed.test.ts,64,it,still refreshes when the list is shorter than the screen,False,legacy-not-retrospectively-reviewed
 LEG-8094dd3c9a7c,L4,RN / mobile harness,mobileapp/e2e/__tests__/radar.test.ts,29,it,"auto-pairs, opens a pane, and the network calls are recorded",False,legacy-not-retrospectively-reviewed
 LEG-6aa06fe97cdb,L4,RN / mobile harness,mobileapp/e2e/__tests__/revoked-phone.test.ts,27,it,"a phone revoked while the app was closed opens on ""access rejected"", and the server list agrees",False,legacy-not-retrospectively-reviewed
 LEG-7d7ce36e4772,L4,RN / mobile harness,mobileapp/e2e/__tests__/revoked-phone.test.ts,55,it,a pane open when the Mac revokes the phone says so in its header,False,legacy-not-retrospectively-reviewed
+MAP-3593077aab87,L4,reviewed implementation,mobileapp/e2e/__tests__/scene-usage-links.test.ts,24,reviewed-selector,opens the usage link on warm and cold scene entry,False,DUO-005
+MAP-ea87797d79bf,L4,reviewed implementation,mobileapp/e2e/__tests__/scene-usage-links.test.ts,33,reviewed-selector,opens a warm usage link through the scene,False,DUO-005
+MAP-b7d75b280b9d,L4,reviewed implementation,mobileapp/e2e/__tests__/scene-usage-links.test.ts,49,reviewed-selector,opens a cold usage link through the scene,False,DUO-005
 LEG-9d2138d1a1e7,L4,RN / mobile harness,mobileapp/e2e/__tests__/send-feedback.test.ts,38,it,a refusal names the pane someone is typing in,False,legacy-not-retrospectively-reviewed
 LEG-90d6e9b0fcce,L4,RN / mobile harness,mobileapp/e2e/__tests__/send-feedback.test.ts,61,it,"a send into a running session says it went, and that the agent may finish first",False,legacy-not-retrospectively-reviewed
+MAP-136dedeea639,L4,reviewed implementation,mobileapp/e2e/__tests__/server-switch-compare.test.ts,14,reviewed-selector,selects a server after a clean launch,False,DUO-006
 LEG-5511fce16704,L4,RN / mobile harness,mobileapp/e2e/__tests__/server-switch.test.ts,57,run,a launch from a notification does not pull a later server switch back,False,legacy-not-retrospectively-reviewed
 LEG-91512a46ffa3,L4,RN / mobile harness,mobileapp/e2e/__tests__/server-switch.test.ts,94,run,"without a launch notification, a switch goes where it is pointed",False,legacy-not-retrospectively-reviewed
 LEG-398163bb0c32,L4,RN / mobile harness,mobileapp/e2e/__tests__/settings-appearance-language.test.ts,55,it,Dark and 中文 apply at once and survive a relaunch,False,legacy-not-retrospectively-reviewed

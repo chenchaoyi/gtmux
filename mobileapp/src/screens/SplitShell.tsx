@@ -1,26 +1,20 @@
-// SplitShell — the regular shell (MOBILE §5, change ipad-universal-app): the radar as a
-// sidebar beside a main pane that shows whatever is selected — a pane's detail, the HQ
-// page or the All-panes browser. It composes the phone's screens and adds nothing of its
-// own but the frame: the sidebar IS `RadarPanel`, the main pane IS `DetailView` /
-// `HQView` / `PaneBrowserView`. `SplitScreen` (2026-07) was a copy of the radar's chrome
-// instead, and drifted from the phone in every radar change since; this file must never
-// grow a list, a banner or a header of its own — `shellDrift.test.ts` reads it.
-//
-// The sidebar can be hidden (the header's button, persisted): a Stage Manager window
-// between 768 and 1000 wide, or a reader who wants the whole width for a terminal. A
-// small floating button over the main pane brings it back.
+// Adaptive workspace: the same selected reader stays mounted as the radar changes
+// between a sidebar and the compact list. Selecting a different item intentionally
+// replaces the reader; resizing does not.
 
-import React, {useEffect, useState} from 'react';
-import {StyleSheet, Text, TouchableOpacity, View, useWindowDimensions} from 'react-native';
+import React, {useContext, useEffect, useRef, useState} from 'react';
+import {NavigationContext} from '@react-navigation/native';
+import {BackHandler, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {useWindowDimensions} from '../ui/windowMetrics';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {agentId, paneRowToAgent} from '../api/types';
+import {agentId, paneRowToAgent, sameAgent} from '../api/types';
 import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
 import {initialSelection, useWorkspace} from '../state/WorkspaceContext';
 import {BrandMark} from '../ui/BrandMark';
 import {SidebarIcon} from '../ui/Icons';
-import {hqInspectorFits, sidebarWidth} from '../ui/layout';
+import {hqInspectorFits, sidebarWidth, useSizeClass} from '../ui/layout';
 import {TestIds} from '../constants/testIds';
 import {KeyBus} from '../keys/bus';
 import {DetailView} from './DetailScreen';
@@ -31,9 +25,28 @@ import {DemoChrome, RadarPanel} from './RadarPanel';
 const SIDEBAR_KEY = 'workspace.sidebarHidden';
 
 export function SplitShell({demo}: {demo?: DemoChrome} = {}) {
+  const navigation = useContext(NavigationContext) as {push: (route: string, params: object) => void; isFocused: () => boolean} | undefined;
   const {agents} = useAgents();
   const {t, pal, lang} = useApp();
-  const {selection, select} = useWorkspace();
+  const {selection, selectionRevision, initialize, select} = useWorkspace();
+  const regular = useSizeClass() === 'regular';
+  const [showList, setShowList] = useState(!regular);
+  const wasRegular = useRef(regular);
+  useEffect(() => {
+    if (wasRegular.current && !regular) setShowList(!selection);
+    wasRegular.current = regular;
+  }, [regular, selection]);
+  useEffect(() => { if (selectionRevision) setShowList(false); }, [selectionRevision]);
+  useEffect(() => { if (!regular && !selection) setShowList(true); }, [regular, selection]);
+  useEffect(() => {
+    if (regular || showList || !selection) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (navigation && !navigation.isFocused()) return false;
+      setShowList(true);
+      return true;
+    });
+    return () => sub.remove();
+  }, [regular, showList, selection, navigation]);
   const {width} = useWindowDimensions();
   const [hidden, setHidden] = useState(false);
 
@@ -50,16 +63,16 @@ export function SplitShell({demo}: {demo?: DemoChrome} = {}) {
   // HQ, but HQ has a dedicated page; treating it as a generic pane makes the same HQ
   // look like two unrelated places. Once only — roster changes must not yank the reader.
   useEffect(() => {
-    if (!selection) {
+    if (regular && !selection) {
       const first = initialSelection(agents);
-      if (first) select(first);
+      if (first) initialize(first);
     }
-  }, [selection, agents, select]);
+  }, [regular, selection, agents, initialize]);
 
   // The selected pane, live: `selection.agent` is the snapshot the row was tapped with,
   // and the main pane's key follows the identity so a switch remounts the detail.
   const selectedPane =
-    selection?.kind === 'pane' ? agents.find(a => a.pane_id === selection.agent.pane_id) ?? selection.agent : undefined;
+    selection?.kind === 'pane' ? agents.find(a => sameAgent(a, selection.agent)) ?? selection.agent : undefined;
   const sidebarSelectedId =
     selection?.kind === 'pane' && selectedPane ? agentId(selectedPane) : undefined;
 
@@ -70,13 +83,23 @@ export function SplitShell({demo}: {demo?: DemoChrome} = {}) {
         key={agentId(selectedPane)}
         agent={selectedPane}
         initialMode={selection.mode}
-        onOpenPane={row => select({kind: 'pane', agent: paneRowToAgent(row)})}
+        openDiffRequest={selection.openDiff ? selectionRevision : undefined}
+        onBack={regular ? undefined : () => setShowList(true)}
+        onOpenTaskPane={agent => {
+          if (!regular && navigation) navigation.push('Detail', {agent});
+          else select({kind: 'pane', agent});
+        }}
+        onOpenPane={row => {
+          const agent = paneRowToAgent(row);
+          if (!regular && navigation) navigation.push('Detail', {agent});
+          else select({kind: 'pane', agent});
+        }}
       />
     );
   } else if (selection?.kind === 'hq') {
-    main = <HQView key="hq" agent={selection.agent} prefill={selection.prefill} openResource={selection.openResource} layout="regular" showInspector={hqInspectorFits(width, hidden)} />;
+    main = <HQView key="hq" agent={selection.agent} prefill={selection.prefill} openResource={selection.openResource} onBack={regular ? undefined : () => setShowList(true)} layout={regular ? "regular" : "compact"} showInspector={hqInspectorFits(width, hidden)} />;
   } else if (selection?.kind === 'panes') {
-    main = <PaneBrowserView key="panes" layout="regular" />;
+    main = <PaneBrowserView key="panes" onBack={regular ? undefined : () => setShowList(true)} layout={regular ? "regular" : "compact"} />;
   } else {
     main = (
       <View style={styles.mainEmpty}>
@@ -90,16 +113,14 @@ export function SplitShell({demo}: {demo?: DemoChrome} = {}) {
   }
 
   return (
-    <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']} testID={TestIds.radar.split}>
+    <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['left', 'right']} testID={TestIds.radar.split}>
       <View style={styles.row}>
-        {!hidden && (
-          <View style={[styles.sidebar, {width: sidebarWidth(width), borderRightColor: pal.divLoud}]}>
-            <RadarPanel variant="sidebar" selectedId={sidebarSelectedId} onHideSidebar={() => setSidebar(true)} demo={demo} />
-          </View>
-        )}
-        <View style={styles.main}>
+        <SafeAreaView testID="workspace-list" edges={regular ? ['top'] : []} style={[regular ? [styles.sidebar, {width: sidebarWidth(width), borderRightColor: pal.divLoud}] : styles.main, (regular ? hidden : !showList) && styles.hidden]}>
+          <RadarPanel variant={regular ? "sidebar" : "screen"} selectedId={sidebarSelectedId} onHideSidebar={() => setSidebar(true)} demo={demo} />
+        </SafeAreaView>
+        <View testID="workspace-reader" style={[styles.main, !regular && showList && styles.hidden]}>
           {main}
-          {hidden && (
+          {regular && hidden && (
             <TouchableOpacity
               testID={TestIds.radar.showSidebar}
               accessibilityLabel={lang === 'zh' ? '显示侧栏' : 'Show sidebar'}
@@ -119,6 +140,7 @@ const styles = StyleSheet.create({
   row: {flex: 1, flexDirection: 'row'},
   sidebar: {borderRightWidth: StyleSheet.hairlineWidth},
   main: {flex: 1},
+  hidden: {display: 'none'},
   showSidebar: {
     position: 'absolute', left: 10, top: 10, width: 36, height: 36, borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center', zIndex: 20,

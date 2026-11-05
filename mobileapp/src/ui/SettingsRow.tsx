@@ -5,7 +5,8 @@
 // opens a PickerSheet, instead of spilling a long inline radio list.
 
 import React, {useEffect, useRef, useState} from 'react';
-import {Animated, Easing, Modal, Pressable, StyleSheet, Switch, Text, TouchableOpacity, useWindowDimensions, View} from 'react-native';
+import {Animated, Easing, Modal, Pressable, StyleSheet, Switch, Text, TouchableOpacity, View} from 'react-native';
+import {useWindowDimensions} from './windowMetrics';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import {SIcon, IconName} from './SettingsIcons';
 import {TestIds} from '../constants/testIds';

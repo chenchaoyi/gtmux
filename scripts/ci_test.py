@@ -62,9 +62,9 @@ class ScopeTests(unittest.TestCase):
     def test_recognized_modules_include_consumers(self):
         self.assertEqual(ci.classify(["internal/radar/agents_test.go"])["selected"], ["test"])
         self.assertEqual(set(ci.classify(["mobileapp/src/components/Chat.tsx"])["selected"]),
-                         {"mobile", "web", "ios-native", "android-native", "android-emulator"})
+                         {"mobile", "web", "ios-native", "ios-duo", "android-native", "android-emulator"})
         self.assertEqual(set(ci.classify(["mobileapp/ios/GtmuxWidget/Widget.swift"])["selected"]),
-                         {"mobile", "ios-native"})
+                         {"mobile", "ios-native", "ios-duo"})
         self.assertEqual(set(ci.classify(["relay-worker/src/index.ts"])["selected"]),
                          {"relay-worker", "test", "mobile", "android-native", "android-emulator"})
 
@@ -131,6 +131,12 @@ class ScopeTests(unittest.TestCase):
         self.assertIn("runs-on: macos-15\n", block)
         self.assertIn("DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer", block)
         self.assertIn('test "$(uname -m)" = arm64', block)
+        duo = text.split("  ios-duo:\n", 1)[1].split("  relay-worker:\n", 1)[0]
+        self.assertIn("runs-on: xcode-27", duo)
+        self.assertIn("DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer", duo)
+        self.assertIn("Probe iPhone Duo runtime", duo)
+        self.assertIn("ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=-", duo)
+        self.assertIn("Signature=adhoc", duo)
         self.assertIn("Verify actual ARM64 app and extension products", block)
         self.assertIn("ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO", block)
         self.assertNotIn("ARCHS=\"$(uname -m)\"", block)

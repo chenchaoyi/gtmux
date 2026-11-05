@@ -20,9 +20,10 @@
 // what it MEANS (one option per line — see optionsBody in serve.go), and the Mac picks
 // the category from the count so no phantom button is ever offered.
 
-import {Platform} from 'react-native';
+import {AppState, NativeModules, Platform} from 'react-native';
 import PushNotificationIOS from '@react-native-community/push-notification-ios';
 import * as Keychain from 'react-native-keychain';
+import {Debug} from '../debug';
 
 export type Teardown = () => void;
 
@@ -39,10 +40,32 @@ export type Teardown = () => void;
 // phone back to the Mac that sent it and opened its pane, so tapping another Mac in the
 // server list landed on the first Mac's session instead (2026-10-05).
 let launchNotificationHandled = false;
+// A scene response can also arrive through the notification delegate. Bound the
+// short-lived receipt set so one tap or action cannot be dispatched twice.
+const responseReceipts = new Map<string, number>();
+const RESPONSE_RECEIPT_TTL_MS = 30_000;
+const RESPONSE_RECEIPT_LIMIT = 128;
+
+function firstResponse(id: unknown, action: string | undefined): boolean {
+  if (typeof id !== 'string' || !id) return true; // older native bridge
+  const now = Date.now();
+  for (const [key, at] of responseReceipts) {
+    if (now - at >= RESPONSE_RECEIPT_TTL_MS) responseReceipts.delete(key);
+  }
+  const key = JSON.stringify([id, action ?? '']);
+  if (responseReceipts.has(key)) return false;
+  if (responseReceipts.size >= RESPONSE_RECEIPT_LIMIT) {
+    const oldest = responseReceipts.keys().next().value;
+    if (oldest !== undefined) responseReceipts.delete(oldest);
+  }
+  responseReceipts.set(key, now);
+  return true;
+}
 
 /** For tests: forget that the launch notification was handled. */
 export function resetLaunchNotificationForTesting() {
   launchNotificationHandled = false;
+  responseReceipts.clear();
 }
 
 const QUICK_REPLY: Record<string, string> = {
@@ -119,14 +142,26 @@ export async function setupPush(
     onToken(token);
   };
 
-  const onNotification = (notification: any) => {
+  const onNotification = (notification: any, initial = false) => {
     const data = notification.getData?.() ?? {};
     const pane: string | undefined = data.pane;
-    const action: string | undefined = notification.getActionIdentifier?.();
+    const rawAction: string | undefined = notification.getActionIdentifier?.();
+    // Older native bridges forwarded UIKit's default identifier verbatim.
+    const action = rawAction === 'com.apple.UNNotificationDefaultActionIdentifier' ? undefined : rawAction;
+    const isInteraction = initial || !!data.userInteraction;
+    if (Debug.logNet) Debug.record({event: 'push-response', at: Date.now(), initial, isInteraction, hasPane: !!pane, action: action ?? '', hasText: typeof data.userText === 'string'});
+    if (typeof data.gtmuxResponseId === 'string' && data.gtmuxResponseId) {
+      NativeModules?.GtmuxNotificationResponses?.acknowledge?.(data.gtmuxResponseId, action ?? '');
+    }
+    if (pane && isInteraction && !firstResponse(data.gtmuxResponseId, action)) {
+      if (Debug.logNet) Debug.record({event: 'push-duplicate', at: Date.now()});
+      notification.finish?.(PushNotificationIOS.FetchResult.NoData);
+      return;
+    }
 
     // A quick-reply action button was tapped: answer the waiting pane in the
     // background (no deep-link, no app foreground).
-    if (pane && action && QUICK_REPLY[action] !== undefined) {
+    if (pane && isInteraction && action && Object.prototype.hasOwnProperty.call(QUICK_REPLY, action)) {
       onQuickReply(pane, data.server, QUICK_REPLY[action]);
       notification.finish?.(PushNotificationIOS.FetchResult.NoData);
       return;
@@ -134,45 +169,71 @@ export async function setupPush(
 
     // Plain tap on the body → deep-link to the agent. Skip a foreground delivery
     // (those surface as the in-app SSE banner instead).
-    if (pane && data.userInteraction) {
+    if (pane && isInteraction && !action) {
       onTapPane(pane, data.server);
     }
     notification.finish?.(PushNotificationIOS.FetchResult.NoData);
   };
 
   PushNotificationIOS.addEventListener('register', onRegister);
-  PushNotificationIOS.addEventListener('notification', onNotification);
-  PushNotificationIOS.addEventListener('localNotification', onNotification);
+  PushNotificationIOS.addEventListener('notification', notification => onNotification(notification));
+  PushNotificationIOS.addEventListener('localNotification', notification => onNotification(notification));
 
   // Register the quick-reply actions iOS attaches to a `waiting` notification.
   PushNotificationIOS.setNotificationCategories?.(WAITING_CATEGORIES);
 
+  let closed = false;
+  const nativeResponses = NativeModules?.GtmuxNotificationResponses;
+  const drainNative = async () => {
+    if (!nativeResponses?.drain || closed) return;
+    try {
+      if (Debug.logNet) Debug.record({event: 'push-drain-start', at: Date.now()});
+      const pending: Record<string, unknown>[] = await nativeResponses.drain();
+      if (Debug.logNet) Debug.record({event: 'push-drain-resolved', at: Date.now(), count: pending.length});
+      if (!closed) for (const data of pending) {
+        onNotification({getData: () => data, getActionIdentifier: () => data.actionIdentifier}, true);
+      }
+    } catch (error) {
+      if (Debug.logNet) Debug.record({event: 'push-drain-error', at: Date.now(), name: error instanceof Error ? error.name : typeof error});
+    }
+  };
+  // A bridge response may stall while launched in the background. Retained
+  // native receipts are retried when the app becomes active, without blocking
+  // the existing initial-notification fallback or processing after teardown.
+  const stateSubscription = AppState.addEventListener('change', state => {
+    if (state === 'active') void drainNative();
+  });
   const teardown = () => {
+    closed = true;
+    stateSubscription.remove();
     PushNotificationIOS.removeEventListener('register');
     PushNotificationIOS.removeEventListener('notification');
     PushNotificationIOS.removeEventListener('localNotification');
   };
 
   try {
+    // UIKit can deliver a response before React has a listener. Drain native
+    // receipts after listeners are attached; the shared identity also suppresses
+    // overlap with the bridge event or initial launch notification.
+    void drainNative();
+    // The launch action must not wait for the permission request to finish.
+    if (!launchNotificationHandled) {
+      launchNotificationHandled = true;
+      const initial = await PushNotificationIOS.getInitialNotification();
+      if (initial) {
+        onNotification(initial, true);
+      }
+    }
     // When the master switch is off, obtain a previously authorized token to
     // remove old registrations without showing a first-time permission prompt.
     if (askPermission) {
-      await PushNotificationIOS.requestPermissions();
+      const permissions = await PushNotificationIOS.requestPermissions();
+      if (Debug.logNet) Debug.record({event: 'push-permissions', at: Date.now(), alert: !!permissions?.alert});
     } else {
       const permissions: any = await new Promise(resolve => PushNotificationIOS.checkPermissions(resolve));
       if (permissions?.authorizationStatus >= 2) await PushNotificationIOS.requestPermissions();
     }
 
-    // Cold start: app launched by tapping a notification while it was killed. Once per
-    // process — see launchNotificationHandled.
-    if (!launchNotificationHandled) {
-      launchNotificationHandled = true;
-      const initial = await PushNotificationIOS.getInitialNotification();
-      if (initial) {
-        const data: any = initial.getData?.() ?? {};
-        if (data.pane) onTapPane(data.pane, data.server);
-      }
-    }
     return teardown;
   } catch (error) {
     teardown();

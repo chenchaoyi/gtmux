@@ -2,14 +2,14 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1031 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1040 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
-| L1 · 单元/纯逻辑 | 3724 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 1894 | [L2.csv](cases/L2.csv) |
+| L1 · 单元/纯逻辑 | 3732 | [L1.csv](cases/L1.csv) |
+| L2 · 组件/契约 | 1899 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 86 | [L3.csv](cases/L3.csv) |
-| L4 · 应用操作流程 | 93 | [L4.csv](cases/L4.csv) |
+| L4 · 应用操作流程 | 101 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 12 | [M.csv](cases/M.csv) |
 | G · 质量门禁 | 496 | [G.csv](cases/G.csv) |
 
@@ -39,6 +39,23 @@
 | MC-HQ-OVERVIEW-STATE | Overview groups exclude completed/closed/merged matters even with stale projection IDs; a stage-result body never changes an open goal. Valid saved rows fill a bounded three-item preview and hidden counts match unique displayed records. |
 | MC-HQ-OVERVIEW-MORE | At the bottom of each truncated native HQ section an explicit remaining/total control opens all matters and can select a hidden record without writes; no extra control when all records fit. Complete minimum/wide light/dark bilingual fixtures preserve text/viewport geometry. |
 | MC-HQ-OVERVIEW-BRIEF | The native row presents canonical current assessment before historical receipt text, explicitly names the unfinished goal state and never treats unavailable source metadata as an idle/completed worker; no guessed human decision or completion from titles, Stop or report prose. |
+| DUO-001 | cold notification opens the correct server and selection routes to the selected server. |
+| DUO-002 | selected session and draft survive a simulator orientation change. |
+| DUO-003 | iPad retains sidebar and selected session through rotation. |
+| DUO-004 | cold and warm notification actions send the selected response exactly once. |
+| DUO-005 | warm and cold scene links open the usage sheet. |
+| DUO-006 | first server selection and server switching follow the same observable route on main and candidate. |
+| DUO-007 | fake request diagnostics expose routing metadata without credentials or query values. |
+| DUO-008 | explicit hosted simulator configuration preserves local defaults and bounds driver startup. |
+| DUO-009 | Unacknowledged responses remain retrievable; acknowledged responses disappear, duplicate identity/action is queued once, and only the newest 128 entries remain. |
+| DUO-010 | Initial fallback proceeds despite a stalled drain or permission request, foreground retry retrieves a retained response, and shared identity permits at most one reply. |
+| DUO-011 | Trace and Diff remain open with their current content across window resizing. |
+| DUO-012 | resizing preserves mounted detail and selection while compact navigation remains usable. |
+| DUO-013 | usage modal resolves all safe edges in its native presentation. |
+| DUO-014 | both adaptive shell modes compose the shared radar panel. |
+| DUO-015 | inline workspace selection retains identity without pushing a second detail route. |
+| DUO-016 | root layout updates available window size without remounting the reader. |
+| DUO-017 | CI selects and verifies the bounded unsigned Duo simulator job. |
 | TD-001 | Reject a changed/new test without a reviewed design; accept a mapped implementation |
 | TD-002 | Reject a tampered review seal, missing assertion description, invalid layer or unsafe path |
 | TD-003 | Reject missing/changed catalogue files and missing named implementation selectors |
