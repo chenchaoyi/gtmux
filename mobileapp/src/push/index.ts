@@ -159,6 +159,10 @@ export async function setupPush(
     };
     if (pane && isInteraction && !firstResponse(data.gtmuxResponseId, action)) {
       if (Debug.logNet) Debug.record({event: 'push-duplicate', at: Date.now()});
+      const key = JSON.stringify([data.gtmuxResponseId, action ?? '']);
+      // A delegate copy can arrive after the first receipt was already
+      // acknowledged; release that new native completion once no send is pending.
+      if (!pendingReplies.has(key)) acknowledge();
       notification.finish?.(PushNotificationIOS.FetchResult.NoData);
       return;
     }

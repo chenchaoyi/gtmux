@@ -58320,7 +58320,7 @@
           "design": "DUO-030"
         }
       ],
-      "sha256": "7b631c7a7f45d87b0cb0b1ef791aafce7aa31c3584cf57a078c099a1d7569764"
+      "sha256": "3ced2b0c8b27468693a531b6d601269c688a07a4d00a8b69c6bcd7458a59a9dd"
     },
     "mobileapp/src/ui/WorkspaceSurface.sceneMetrics.test.tsx": {
       "layer": "L2",

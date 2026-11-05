@@ -34,7 +34,7 @@ test.each(['resolve', 'reject'] as const)('waits for a %s reply and suppresses a
   expect(finish).toHaveBeenCalledTimes(2);
   listeners.notification(item);
   expect(send).toHaveBeenCalledTimes(1);
-  expect(NativeModules.GtmuxNotificationResponses.acknowledge).toHaveBeenCalledTimes(1);
+  expect(NativeModules.GtmuxNotificationResponses.acknowledge).toHaveBeenCalledTimes(2);
   stop();
   now.mockRestore();
 });
