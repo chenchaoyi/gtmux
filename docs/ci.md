@@ -12,9 +12,9 @@ GitHub account; ordinary PR tests do not use the protected delivery environment.
 | Recognized docs, translations, spec Markdown and release-note text only | Policy/docs gate |
 | Menu-bar Swift source/tests | Policy/docs + Swift build/tests |
 | Embedded Web assets or browser tests | Policy/docs + complete Go + Web logic/browser |
-| Phone/iPad JS/TS source/tests | Policy/docs + RN typecheck/lint/Jest + Web + unsigned iOS build |
+| Phone/iPad JS/TS source/tests | Policy/docs + RN typecheck/lint/Jest + Web + unsigned iOS build + Android QA/native + phone/tablet emulator |
 | iOS Swift/Objective-C source | Policy/docs + RN + unsigned iOS build |
-| Push relay TS source/tests | Policy/docs + relay + complete Go + RN |
+| Push relay TS source/tests | Policy/docs + relay + complete Go + RN + Android QA/native + phone/tablet emulator |
 | Go test files only | Policy/docs + complete Go |
 | Core/API, dependencies, build configuration, CI/scripts, tunnel Worker, unknown paths | All checks |
 
@@ -89,3 +89,7 @@ APNs, signing, installation or runtime accessibility. Safari, real phone/iPad la
 VoiceOver, terminal focus and tmux-resurrect acceptance remain separately recorded tests.
 The mobile real-server contract suite still needs explicit `GTMUX_E2E_URL/TOKEN`; its
 skips are not passes. Linux Go checks do not prove macOS-only runtime behavior.
+
+## Test layers and reviewed cases
+
+See [the test system](test/TEST-PLAN.md) for layer definitions, the complete case index and PR/main/release/delivery matrix. [Test design review](test/DESIGN-WORKFLOW.md) must precede test edits; quality validates source hashes, review seals, mappings and PR commit order. Native iOS CI now runs the production HTML/Markdown Foundation oracles before compiling the app. These remain separate from device UI acceptance.

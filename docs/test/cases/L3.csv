@@ -1,0 +1,80 @@
+id,layer,stack,file,line,kind,description,dynamic,design
+LEG-4d0986af07f7,L3,Browser,tests/web/alignment.test.cjs,6,scenario,"`App-aligned roster status, summaries and persistent sections at ${width}`",True,legacy-not-retrospectively-reviewed
+LEG-d5140dc35e4a,L3,Browser,tests/web/alignment.test.cjs,26,scenario,"`Settings change actual Chat and Terminal typography, immediately and after reload at ${width}`",True,legacy-not-retrospectively-reviewed
+LEG-5eb3da408f2c,L3,Browser,tests/web/alignment.test.cjs,70,scenario,`Touch input tools follow input device at ${width} touch=${touch}`,True,legacy-not-retrospectively-reviewed
+LEG-ff43142292fd,L3,Browser,tests/web/alignment.test.cjs,82,scenario,Chat retains recorded code and wait calls in compact summaries and expanded detail,False,legacy-not-retrospectively-reviewed
+CP-001-f8c339,L3,Browser,tests/web/behavior-contract.test.cjs,13,test,CP-001 shared rendered Trace,True,CP-001
+CP-002-f8c339,L3,Browser,tests/web/behavior-contract.test.cjs,29,test,CP-002 CP-003 CP-004 shared HQ,True,CP-002
+LEG-9907208fe7df,L3,Browser,tests/web/client-consistency.test.cjs,13,scenario,`Client reading consistency ${width} ${colorScheme}`,True,legacy-not-retrospectively-reviewed
+LEG-32d1c6b37c52,L3,Browser,tests/web/client-consistency.test.cjs,27,scenario,`Chat earlier windows preserve reading and refresh in ${view}`,True,legacy-not-retrospectively-reviewed
+LEG-d2bf02df9c62,L3,Browser,tests/web/client-consistency.test.cjs,61,scenario,"External board tiles stay scoped, resize, restore and revoke without pane input",False,legacy-not-retrospectively-reviewed
+LEG-442537cf0526,L3,Browser,tests/web/client-consistency.test.cjs,82,scenario,Readable external conversations can be dragged into a board panel,False,legacy-not-retrospectively-reviewed
+LEG-1bc6a21bf12a,L3,Browser,tests/web/client-consistency.test.cjs,88,scenario,A late Chat history page cannot enter another conversation,False,legacy-not-retrospectively-reviewed
+LEG-53dd1b9dbd14,L3,Browser,tests/web/conversation-map.test.cjs,6,scenario,`Long chat overview lens and navigation at ${width}`,True,legacy-not-retrospectively-reviewed
+LEG-cb54ae23ca64,L3,Browser,tests/web/conversation-map.test.cjs,48,scenario,`Overview formatted preview and persistent bookmarks at ${width}`,True,legacy-not-retrospectively-reviewed
+LEG-4ea9a2309839,L3,Browser,tests/web/conversation-map.test.cjs,96,scenario,"Overview bookmarks retain unsampled turns, isolate homes and handle cleared storage",False,legacy-not-retrospectively-reviewed
+LEG-821ed12da1b2,L3,Browser,tests/web/conversation-map.test.cjs,125,scenario,Legacy clockless repeated prompts keep separate call disclosures,False,legacy-not-retrospectively-reviewed
+LEG-d361c87ff22e,L3,Browser,tests/web/conversation-map.test.cjs,136,scenario,`Overview keeps page-only bookmarks through refresh (read denied ${denyRead})`,True,legacy-not-retrospectively-reviewed
+LEG-c27b6d5dee1f,L3,Browser,tests/web/full-input.test.cjs,4,scenario,'Full tool input and compact formatting at '+width,True,legacy-not-retrospectively-reviewed
+LEG-e24c4d62b6eb,L3,Browser,tests/web/full-input.test.cjs,35,scenario,'Diff file cards and independent hunks at '+width,True,legacy-not-retrospectively-reviewed
+LEG-9543b7b6751c,L3,Browser,tests/web/presentation.test.cjs,5,scenario,`Session section casing matches App headings at ${width}`,True,legacy-not-retrospectively-reviewed
+LEG-ba614971d0a3,L3,Browser,tests/web/presentation.test.cjs,37,scenario,Empty workspace has a clear first action and a scene-specific attributed excerpt,False,legacy-not-retrospectively-reviewed
+LEG-54719aa9487c,L3,Browser,tests/web/presentation.test.cjs,49,scenario,Only the actual supervisor is pinned above status groups,False,legacy-not-retrospectively-reviewed
+LEG-ccf4aec2a770,L3,Browser,tests/web/presentation.test.cjs,59,scenario,`Focused Chat is a conversation with session tools at ${width}`,True,legacy-not-retrospectively-reviewed
+LEG-484beff325ff,L3,Browser,tests/web/presentation.test.cjs,96,scenario,Appearance selects keep a 44px target and inset arrows in both themes,False,legacy-not-retrospectively-reviewed
+LEG-7960cd756426,L3,Browser,tests/web/presentation.test.cjs,107,scenario,Conversation images reuse authenticated App document metadata and verified bytes,False,legacy-not-retrospectively-reviewed
+LEG-bf431df6774e,L3,Browser,tests/web/presentation.test.cjs,120,scenario,Legacy auto-open settings do not open panels when a session needs input,False,legacy-not-retrospectively-reviewed
+LEG-1e207c9becb9,L3,Browser,tests/web/presentation.test.cjs,130,scenario,`Browser title follows session tools and returns to Chat at ${width}`,True,legacy-not-retrospectively-reviewed
+LEG-fa3fc17abe22,L3,Browser,tests/web/presentation.test.cjs,143,scenario,Browser tool title returns to the workspace or Terminal without changing presentation,False,legacy-not-retrospectively-reviewed
+LEG-e465e544353f,L3,Browser,tests/web/presentation.test.cjs,159,scenario,`Compact settings expose direct appearance choices and bounded call rows at ${width}`,True,legacy-not-retrospectively-reviewed
+LEG-a56921dc9990,L3,Browser,tests/web/presentation.test.cjs,186,scenario,External conversations share compact calls and preserve full input,False,legacy-not-retrospectively-reviewed
+LEG-cf4609b8e9ec,L3,Browser,tests/web/profile.test.cjs,23,scenario,HQ roster avatars retain supervisor identity without a pane-browser tier,False,legacy-not-retrospectively-reviewed
+LEG-168611b7caf3,L3,Browser,tests/web/profile.test.cjs,37,scenario,Message profiles use recorded session/time instead of another same-agent live session,False,legacy-not-retrospectively-reviewed
+LEG-91ba6c97b7c6,L3,Browser,tests/web/profile.test.cjs,56,scenario,Closing a profile retires a delayed response before a different profile opens,False,legacy-not-retrospectively-reviewed
+LEG-5fb8e5b7a047,L3,Browser,tests/web/profile.test.cjs,75,scenario,A profile without message identity or owner access does not request current facts,False,legacy-not-retrospectively-reviewed
+LEG-6e18769ca32f,L3,Browser,tests/web/profile.test.cjs,93,scenario,Agent profile grid and execution chain retain exact current conversation identity,False,legacy-not-retrospectively-reviewed
+LEG-c7ce877293ae,L3,Browser,tests/web/profile.test.cjs,105,scenario,Historical profile reads current ancestry only on expansion and only for the same conversation,False,legacy-not-retrospectively-reviewed
+LEG-76a130aa8589,L3,Browser,tests/web/prompt-echo.test.cjs,5,scenario,'Recorded Codex image retires only its new sent echo at ' + width,True,legacy-not-retrospectively-reviewed
+LEG-b945c9c2c6ea,L3,Browser,tests/web/reading-controls.test.cjs,20,scenario,"`Diff preserves recorded layout, syntax and original copy at ${width}`",True,legacy-not-retrospectively-reviewed
+LEG-d86159318241,L3,Browser,tests/web/reading-controls.test.cjs,42,scenario,`Trace defaults to folded turns and preserves manual disclosure at ${width}`,True,legacy-not-retrospectively-reviewed
+LEG-053ee45ae83a,L3,Browser,tests/web/shared-code.test.cjs,9,scenario,`Shared code and nested trace calls ${width} ${colorScheme}`,True,legacy-not-retrospectively-reviewed
+LEG-3e130ccd4ec6,L3,Browser,tests/web/smoke.test.cjs,10,scenario,"Desktop enrollment, sidebar, restore and live chat",False,legacy-not-retrospectively-reviewed
+LEG-8d3affad6fad,L3,Browser,tests/web/smoke.test.cjs,46,scenario,Narrow Chinese read-only share and shell layout,False,legacy-not-retrospectively-reviewed
+LEG-ee4287aa5e63,L3,Browser,tests/web/smoke.test.cjs,69,scenario,Idle rows never date an unknown completion from window activity,False,legacy-not-retrospectively-reviewed
+LEG-27b4d64159e0,L3,Browser,tests/web/smoke.test.cjs,84,scenario,Revocation clears private content and permits re-enrollment,False,legacy-not-retrospectively-reviewed
+LEG-4fcea4cf4d89,L3,Browser,tests/web/smoke.test.cjs,102,scenario,Slow chat reads stay single and render when they finish,False,legacy-not-retrospectively-reviewed
+LEG-a839d9aac5bd,L3,Browser,tests/web/smoke.test.cjs,127,scenario,`DSH external reader and scoped follow ${viewport.width}`,True,legacy-not-retrospectively-reviewed
+LEG-5aa3406c3cf3,L3,Browser,tests/web/smoke.test.cjs,153,scenario,`Structured activity at ${width}px`,True,legacy-not-retrospectively-reviewed
+LEG-70493de6794f,L3,Browser,tests/web/smoke.test.cjs,199,scenario,`Activity inspector and clipboard at ${width}px`,True,legacy-not-retrospectively-reviewed
+LEG-56091c5b974d,L3,Browser,tests/web/smoke.test.cjs,271,scenario,`Compact tile controls stay readable in ${locale}`,True,legacy-not-retrospectively-reviewed
+LEG-9fb6fb4f5960,L3,Browser,tests/web/smoke.test.cjs,291,scenario,Chat operates an unparsed picker without visiting Terminal,False,legacy-not-retrospectively-reviewed
+LEG-3e1421f2c918,L3,Browser,tests/web/smoke.test.cjs,317,scenario,Chat shows choices only while waiting and folds an answered prompt,False,legacy-not-retrospectively-reviewed
+LEG-338a1654affd,L3,Browser,tests/web/smoke.test.cjs,334,scenario,`View question reveals the picker without submitting a draft at ${width}px`,True,legacy-not-retrospectively-reviewed
+LEG-e526198ccd27,L3,Browser,tests/web/smoke.test.cjs,353,scenario,"Workspace conversation keeps drafts, shows identities and inspectable calls",False,legacy-not-retrospectively-reviewed
+LEG-a88f9e388b83,L3,Browser,tests/web/smoke.test.cjs,438,scenario,Narrow chat supports input and touch copy while trace remains within viewport,False,legacy-not-retrospectively-reviewed
+LEG-eb05aa918933,L3,Browser,tests/web/smoke.test.cjs,472,scenario,Workspace controls support keyboard access and truthful copy feedback,False,legacy-not-retrospectively-reviewed
+LEG-b946e51a9044,L3,Browser,tests/web/smoke.test.cjs,527,scenario,"Live chat shows current work, retains disclosure state and clears after completion or revocation",False,legacy-not-retrospectively-reviewed
+LEG-fb1c9cc17ccb,L3,Browser,tests/web/smoke.test.cjs,604,scenario,Appearance follows the system and persists an explicit choice without recoloring terminals,False,legacy-not-retrospectively-reviewed
+LEG-b055e62dee7c,L3,Browser,tests/web/smoke.test.cjs,648,scenario,Trace tool closes details and returns to the original panel draft,False,legacy-not-retrospectively-reviewed
+LEG-f0e15e31d7c2,L3,Browser,tests/web/smoke.test.cjs,790,scenario,Mobile composer and speaker profiles expose identity without redundant writable badges,False,legacy-not-retrospectively-reviewed
+LEG-05c9e13ce4c2,L3,Browser,tests/web/smoke.test.cjs,875,scenario,'Native file actions keep readable labels and recorded changes at ' + width,True,legacy-not-retrospectively-reviewed
+LEG-245fb0545893,L3,Browser,tests/web/terminal-fit.test.cjs,23,scenario,`Terminal grid fits desktop tile and focus at DPR ${deviceScaleFactor}`,True,legacy-not-retrospectively-reviewed
+LEG-5fc1eee042c5,L3,Browser,tests/web/terminal-fit.test.cjs,41,scenario,Terminal grid fits narrow browser after rotation,False,legacy-not-retrospectively-reviewed
+LEG-a36e634d1bf3,L3,Browser,tests/web/trace-folding.test.cjs,28,scenario,"`Trace turn and call folds stay independent, survive refresh, and reveal context detail at ${width}`",True,legacy-not-retrospectively-reviewed
+LEG-87996649b4e7,L3,Browser,tests/web/trace-folding.test.cjs,68,scenario,`Settings categories and theme icons remain clear and keyboard accessible at ${width}`,True,legacy-not-retrospectively-reviewed
+LEG-f2a40296ac42,L3,Browser,tests/web/trace-history.test.cjs,7,scenario,'trace-history-'+width,True,legacy-not-retrospectively-reviewed
+LEG-8dd956a2c822,L3,Browser,tests/web/trace-parity.test.cjs,10,scenario,'Trace App parity for original turns 253–256 at '+width+' '+locale,True,legacy-not-retrospectively-reviewed
+LEG-60d56bbf8b66,L3,Browser,tests/web/trace.test.cjs,38,scenario,`Trace public calls for ${agent} at ${width}`,True,legacy-not-retrospectively-reviewed
+LEG-c5e1e3adb7c8,L3,Browser,tests/web/trace.test.cjs,64,scenario,"`Trace responsive controls, reading and empty filters at ${width}`",True,legacy-not-retrospectively-reviewed
+LEG-b5a2ce39c1e7,L3,Browser,tests/web/trace.test.cjs,83,scenario,"Trace preserves selected calls across history prepend, append and status changes",False,legacy-not-retrospectively-reviewed
+LEG-504d42637060,L3,Browser,tests/web/trace.test.cjs,104,scenario,Trace pauses a streamed detail while text is selected and resumes after selection clears,False,legacy-not-retrospectively-reviewed
+LEG-0b2426758606,L3,Browser,tests/web/trace.test.cjs,121,scenario,"Trace bounds long-history DOM, searches all records and reaches the final call with a keyboard",False,legacy-not-retrospectively-reviewed
+LEG-8d15a02a4ea4,L3,Browser,tests/web/trace.test.cjs,139,scenario,"Trace handles tools-only, old summaries, missing clocks and no records without invented data",False,legacy-not-retrospectively-reviewed
+LEG-67ba71fc983f,L3,Browser,tests/web/trace.test.cjs,152,scenario,"External DSH Trace stays read-only, scoped and clears on revocation",False,legacy-not-retrospectively-reviewed
+LEG-fdb6f613eae4,L3,Browser,tests/web/trace.test.cjs,172,scenario,A delayed Trace response cannot replace the next pane or its mode,False,legacy-not-retrospectively-reviewed
+LEG-fc8d640919de,L3,Browser,tests/web/trace.test.cjs,194,scenario,External Trace keeps same-ID conversations in different homes separate,False,legacy-not-retrospectively-reviewed
+LEG-6209b6cefceb,L3,Browser,tests/web/trace.test.cjs,220,scenario,`Trace replaces removed session detail even while old source is selected at ${width}`,True,legacy-not-retrospectively-reviewed
+LEG-8045fa8cae9a,L3,Browser,tests/web/trace.test.cjs,237,scenario,Idle Trace jumps to latest after expanding turns and preserves a historical viewport through refresh,False,legacy-not-retrospectively-reviewed
+LEG-db8aed8f1fc2,L3,Browser,tests/web/trace.test.cjs,268,scenario,`Trace preserves modified shortcuts at ${width}`,True,legacy-not-retrospectively-reviewed
+LEG-c8529da6a00a,L3,Browser,tests/web/trace.test.cjs,302,scenario,`Trace keeps repeated clockless calls on their original turn (record IDs ${recordIDs})`,True,legacy-not-retrospectively-reviewed
+LEG-e39e092eb399,L3,Browser,tests/web/trace.test.cjs,316,scenario,"iPad portrait, landscape and multitasking resize keep the selected tool and distinct navigation",False,legacy-not-retrospectively-reviewed

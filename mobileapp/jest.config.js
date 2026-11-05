@@ -7,7 +7,7 @@ module.exports = {
   // jest.config.e2e.js. Everything else under e2e/ is ordinary code — the harness's own
   // helpers — and is covered here: it had neither tests nor lint when it leaked a
   // WebDriverAgent for 25 hours (see e2e/setup/reclaim.ts).
-  testPathIgnorePatterns: ['/node_modules/', '/e2e/__tests__/'],
+  testPathIgnorePatterns: ['/node_modules/', '/e2e/__tests__/', '/e2e/diagnostics/', '/e2e/capture/'],
   // Transform the RN ecosystem + community/navigation packages (they ship ESM/Flow).
   transformIgnorePatterns: [
     // Execute the self-contained browser artifact as shipped. RN Babel would

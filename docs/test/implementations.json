@@ -1,0 +1,185 @@
+{
+  "scripts/test_design_test.py": {
+    "cases": [
+      "TD-001",
+      "TD-002",
+      "TD-003",
+      "TD-004",
+      "TD-005",
+      "ND-003"
+    ],
+    "selectors": [
+      "test_TD_001_valid_review_and_changed_source_guard",
+      "test_TD_002_seal_required_fields_layers_paths",
+      "test_TD_003_unlisted_test_missing_source_and_missing_case",
+      "test_TD_004_history_rejects_same_commit_review_and_accepts_prior_review",
+      "test_TD_005_removal_requires_rationale_and_absence",
+      "test_ND_003_native_runner_uses_production_sources_and_propagates_failures"
+    ]
+  },
+  "mobileapp/e2e/setup/manual-tools.test.ts": {
+    "cases": [
+      "DG-001",
+      "DG-002",
+      "DG-003"
+    ],
+    "selectors": [
+      "DG-001 ordinary discovery",
+      "DG-002 rejects missing target",
+      "DG-003 confirms one exact fixture pane"
+    ]
+  },
+  "mobileapp/src/ui/CrossClientContract.test.tsx": {
+    "cases": [
+      "CP-001",
+      "CP-002",
+      "CP-003"
+    ],
+    "selectors": [
+      "CP-001 %s renders",
+      "CP-002 HQ request",
+      "CP-003 document actions"
+    ]
+  },
+  "tests/web/behavior-contract.test.cjs": {
+    "cases": [
+      "CP-001",
+      "CP-002",
+      "CP-003",
+      "CP-004"
+    ],
+    "selectors": [
+      "CP-001 shared rendered Trace",
+      "CP-002 CP-003 CP-004 shared HQ"
+    ]
+  },
+  "mobileapp/e2e/__tests__/ipad-keys-probe.test.ts": {
+    "cases": [
+      "DG-001"
+    ],
+    "removed": true,
+    "reason": "Moved intact to an explicit manual-only entry; screenshot/probe capability retained."
+  },
+  "mobileapp/e2e/diagnostics/ipad-keys-probe.test.ts": {
+    "cases": [
+      "DG-001"
+    ],
+    "selectors": [
+      "gated("
+    ]
+  },
+  "mobileapp/e2e/__tests__/send-repro.test.ts": {
+    "cases": [
+      "DG-001"
+    ],
+    "removed": true,
+    "reason": "Moved intact to an explicit manual-only entry; screenshot/probe capability retained."
+  },
+  "mobileapp/e2e/diagnostics/send-repro.test.ts": {
+    "cases": [
+      "DG-002",
+      "DG-003"
+    ],
+    "selectors": [
+      "gated("
+    ]
+  },
+  "mobileapp/e2e/__tests__/hq-header-shot.test.ts": {
+    "cases": [
+      "DG-001"
+    ],
+    "removed": true,
+    "reason": "Moved intact to an explicit manual-only entry; screenshot/probe capability retained."
+  },
+  "mobileapp/e2e/capture/hq-header-shot.test.ts": {
+    "cases": [
+      "DG-001"
+    ],
+    "selectors": [
+      "gated("
+    ]
+  },
+  "mobileapp/e2e/__tests__/knowledge-shot.test.ts": {
+    "cases": [
+      "DG-001"
+    ],
+    "removed": true,
+    "reason": "Moved intact to an explicit manual-only entry; screenshot/probe capability retained."
+  },
+  "mobileapp/e2e/capture/knowledge-shot.test.ts": {
+    "cases": [
+      "DG-001"
+    ],
+    "selectors": [
+      "gated("
+    ]
+  },
+  "mobileapp/ios/tests/DocumentHTMLChecks.swift": {
+    "cases": [
+      "ND-001"
+    ],
+    "selectors": [
+      "@main struct DocumentHTMLChecks"
+    ]
+  },
+  "mobileapp/ios/tests/DocumentMarkdownChecks.swift": {
+    "cases": [
+      "ND-002"
+    ],
+    "selectors": [
+      "@main struct DocumentMarkdownChecks"
+    ]
+  },
+  "scripts/test_design.py": {
+    "cases": [
+      "TD-001",
+      "TD-002",
+      "TD-003",
+      "TD-004",
+      "TD-005"
+    ],
+    "selectors": [
+      "def validate(",
+      "def history_errors(",
+      "def refresh_catalogue("
+    ]
+  },
+  "mobileapp/scripts/check-native-documents.py": {
+    "cases": [
+      "ND-003"
+    ],
+    "selectors": [
+      "def run("
+    ]
+  },
+  "mobileapp/e2e/setup/manual-tools.cjs": {
+    "cases": [
+      "DG-001",
+      "DG-002",
+      "DG-003"
+    ],
+    "selectors": [
+      "function manualMode(",
+      "function sendTarget(",
+      "async function verifySendTarget("
+    ]
+  },
+  "mobileapp/e2e/jest.config.manual.js": {
+    "cases": [
+      "DG-001",
+      "DG-002"
+    ],
+    "selectors": [
+      "manualMode(process.env)",
+      "sendTarget(process.env)"
+    ]
+  },
+  "scripts/ci_test.py": {
+    "cases": [
+      "TD-006"
+    ],
+    "selectors": [
+      "test_reviewed_test_records_are_policy_only_without_hiding_test_changes"
+    ]
+  }
+}

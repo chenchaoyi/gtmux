@@ -1,0 +1,488 @@
+id,layer,stack,file,line,kind,description,dynamic,design
+LEG-9685a4b23887,G,Go core / CLI / server,cmd/gtmux/main_test.go,12,Test,TestMainSetsThePrivateUmaskFirst,False,legacy-not-retrospectively-reviewed
+LEG-2031eb28f256,G,Go core / CLI / server,deploy/self-tunnel/nginx_install_test.go,151,Test,TestAnEnabledFileComesBackAsAFile,False,legacy-not-retrospectively-reviewed
+LEG-4c54c34843ac,G,Worker,download-worker/test/routing.test.mjs,6,test,Pages handles certificate validation while downloads and publication stay behind the worker,False,legacy-not-retrospectively-reviewed
+LEG-e233551324cf,G,Go core / CLI / server,internal/advice/advice_test.go,54,Test,TestTheLastMarkWinsAndTheLogKeepsBoth,False,legacy-not-retrospectively-reviewed
+LEG-8d3866ad3aaa,G,Go core / CLI / server,internal/agentclient/lifecycle_store_test.go,89,Test,TestLifecycleExactWitnessAndBoundedOwnedRecord,False,legacy-not-retrospectively-reviewed
+LEG-489774a2ff54,G,Go core / CLI / server,internal/app/actcatalog_test.go,44,Test,TestTheActCatalogMatchesTheCode,False,legacy-not-retrospectively-reviewed
+LEG-a1963f676696,G,Go core / CLI / server,internal/app/agents_test.go,56,Test,TestREADMEAgentsSampleIsReal,False,legacy-not-retrospectively-reviewed
+LEG-ed07e6c8ae5c,G,Go core / CLI / server,internal/app/artifact_test.go,13,Test,TestArtifactCommandRequiresIdentityAndPreservesOriginal,False,legacy-not-retrospectively-reviewed
+LEG-02d8b275a09f,G,Go core / CLI / server,internal/app/codexterminal_setup_test.go,11,Test,TestCodexTerminalShellBlockPreservesAliasesFunctionsAndArguments,False,legacy-not-retrospectively-reviewed
+LEG-0c5589f341c7,G,Go core / CLI / server,internal/app/codexterminal_setup_test.go,79,Test,TestCodexTerminalSetupRefusesBrokenManagedBlock,False,legacy-not-retrospectively-reviewed
+LEG-b8de1c0ac00b,G,Go core / CLI / server,internal/app/codexterminal_setup_test.go,95,Test,TestCodexColdStartUsesOnlyOfficialStartAndPreservesForeignSocket,False,legacy-not-retrospectively-reviewed
+LEG-5f94fa4bf3a9,G,Go core / CLI / server,internal/app/codexterminal_setup_test.go,134,Test,TestCodexNativeFallbackPreservesOriginalArgv,False,legacy-not-retrospectively-reviewed
+LEG-1a179303cb74,G,Go core / CLI / server,internal/app/config_snapshots_test.go,11,Test,TestSnapshotSettingsPreserveOtherConfiguration,False,legacy-not-retrospectively-reviewed
+LEG-a2878da734c1,G,Go core / CLI / server,internal/app/desktoptranscript_test.go,95,Test,TestCodexReaderScopeAndForkDoNotAlias,False,legacy-not-retrospectively-reviewed
+LEG-a88d6e65f0a6,G,Go core / CLI / server,internal/app/doctor_agent_hooks_test.go,55,Test,TestKiroV3MigrationPreservesForeignHooksAndRemovesDuplicateProfile,False,legacy-not-retrospectively-reviewed
+LEG-35ef9e5c385c,G,Go core / CLI / server,internal/app/doctor_agent_hooks_test.go,95,Test,TestOpencodePluginMigrationAndDoctorFreshness,False,legacy-not-retrospectively-reviewed
+LEG-7c630285eaf3,G,Go core / CLI / server,internal/app/doctor_agent_hooks_test.go,123,Test,TestDoctorPreservesGlobalDisablePolicyAndMalformedHookShapes,False,legacy-not-retrospectively-reviewed
+LEG-557a69970f28,G,Go core / CLI / server,internal/app/doctor_agent_hooks_test.go,159,Test,TestKiroMigratedArrayForeignProfileSurvivesGlobalInstall,False,legacy-not-retrospectively-reviewed
+LEG-cdf7538cce1d,G,Go core / CLI / server,internal/app/doctor_claudetui_test.go,108,Test,TestFixPinsClassicRendererKeepingEverythingElse,False,legacy-not-retrospectively-reviewed
+LEG-53fd228c28b1,G,Go core / CLI / server,internal/app/doctor_claudetui_test.go,141,Test,TestFixLeavesTheFileAloneWithoutEvidenceOrAgainstAnExplicitChoice,False,legacy-not-retrospectively-reviewed
+LEG-3ff6c40b8fcc,G,Go core / CLI / server,internal/app/doctor_claudetui_test.go,212,Test,TestFixLeavesAnExplicitEnvChoiceAlone,False,legacy-not-retrospectively-reviewed
+LEG-4df32695b3cf,G,Go core / CLI / server,internal/app/doctor_claudetui_test.go,243,Test,TestClaudeTUIUnreadableSettings,False,legacy-not-retrospectively-reviewed
+LEG-f0e447d6d59b,G,Go core / CLI / server,internal/app/doctor_claudetui_test.go,296,Test,TestFixStopsWhenTheBackupCannotBeWritten,False,legacy-not-retrospectively-reviewed
+LEG-719a9427867d,G,Go core / CLI / server,internal/app/doctor_claudetui_test.go,334,Test,TestHookAndRendererStepsKeepTheOriginalBackup,False,legacy-not-retrospectively-reviewed
+LEG-660aed6940d9,G,Go core / CLI / server,internal/app/doctor_claudetui_test.go,356,Test,TestPinKeepsBigNumbersAndLiteralCharacters,False,legacy-not-retrospectively-reviewed
+LEG-57fb770dae38,G,Go core / CLI / server,internal/app/doctor_claudetui_test.go,388,Test,TestNullSettingsAreUnreadableNotACrash,False,legacy-not-retrospectively-reviewed
+LEG-2f59a298ff54,G,Go core / CLI / server,internal/app/doctor_test.go,395,Test,TestStoreWriteProbeChangesNothing,False,legacy-not-retrospectively-reviewed
+LEG-deda8e9d57bb,G,Go core / CLI / server,internal/app/doctorfix_hookgap_test.go,94,Test,TestFixLeavesACompleteClaudeHookAlone,False,legacy-not-retrospectively-reviewed
+LEG-dc309747ca0a,G,Go core / CLI / server,internal/app/doctorfix_test.go,26,Test,TestStepLocaleAppliesPlatformUTF8ToConfigAndServer,False,legacy-not-retrospectively-reviewed
+LEG-8214de06bd1c,G,Go core / CLI / server,internal/app/doctorfix_test.go,63,Test,TestDoctorUnreadableTmuxDoesNotRecommendConfigChanges,False,legacy-not-retrospectively-reviewed
+LEG-f5dc91f3d0a9,G,Go core / CLI / server,internal/app/doctorfix_test.go,101,Test,TestApplyConfReportsPartialLiveFailure,False,legacy-not-retrospectively-reviewed
+LEG-83f681a591ef,G,Go core / CLI / server,internal/app/doctorfix_test.go,207,Test,TestFixStepArmsResurrectAutoSave,False,legacy-not-retrospectively-reviewed
+LEG-ce1d8a156b93,G,Go core / CLI / server,internal/app/dsh_hooks_test.go,11,Test,TestDSHNativePluginAndOwnedOverlay,False,legacy-not-retrospectively-reviewed
+LEG-c07c01ccfbd2,G,Go core / CLI / server,internal/app/dsh_hooks_test.go,150,Test,TestDSHDoctorRepairsBothFilesWithoutOpenCodeMigration,False,legacy-not-retrospectively-reviewed
+LEG-39fc6179b4dc,G,Go core / CLI / server,internal/app/dsh_hooks_test.go,205,Test,TestDSHDoctorPreservesForeignOverlayAndUserProfile,False,legacy-not-retrospectively-reviewed
+LEG-94f430e0a191,G,Go core / CLI / server,internal/app/dsh_recovery_test.go,60,Test,TestOwnedDSHRefreshPreservesProfilesAndSkipsVersionOnlyDrift,False,legacy-not-retrospectively-reviewed
+LEG-0011fdb66668,G,Go core / CLI / server,internal/app/dsh_recovery_test.go,116,Test,TestOwnedDSHRefreshRefusesForeignFilesBeforeWriting,False,legacy-not-retrospectively-reviewed
+LEG-1ed9a789df9a,G,Go core / CLI / server,internal/app/dsh_recovery_test.go,152,Test,TestOwnedDSHRefreshRefusesLinksAndConcurrentChanges,False,legacy-not-retrospectively-reviewed
+LEG-f77bf015624b,G,Go core / CLI / server,internal/app/dsh_terminal_test.go,88,Test,TestDSHTerminalArtifactPreflightPreservesForeignFiles,False,legacy-not-retrospectively-reviewed
+LEG-d9c80714fb30,G,Go core / CLI / server,internal/app/dsh_transcript_test.go,20,Test,TestDSHReaderUsesHomeAndLeavesSourceAndConsentUnchanged,False,legacy-not-retrospectively-reviewed
+LEG-1852de415a12,G,Go core / CLI / server,internal/app/dsh_transcript_test.go,54,Test,TestDSHHistoryRetainsHQSenderWithoutLivePaneAndRefreshesETag,False,legacy-not-retrospectively-reviewed
+LEG-9cc9e8b441c1,G,Go core / CLI / server,internal/app/focusheadless_test.go,11,Test,TestHeadlessFocusRequiresInteractiveClientAndChecksSelection,False,legacy-not-retrospectively-reviewed
+LEG-03ff1b3ab31d,G,Go core / CLI / server,internal/app/hook_presence_test.go,163,Test,TestExplicitHookSelectionStillAllowsPreconfiguration,False,legacy-not-retrospectively-reviewed
+LEG-2782a5c94c22,G,Go core / CLI / server,internal/app/hooks_test.go,43,Test,TestUpdateSettingsInstallIsIdempotent,False,legacy-not-retrospectively-reviewed
+LEG-deb339d2e131,G,Go core / CLI / server,internal/app/hooks_test.go,132,Test,TestUpdateSettingsPreToolUseMatcher,False,legacy-not-retrospectively-reviewed
+LEG-8e6d96f80587,G,Go core / CLI / server,internal/app/logsstats_test.go,66,Test,TestConfigDebugWritesTheSwitchForEveryProcess,False,legacy-not-retrospectively-reviewed
+LEG-d3493512eb8f,G,Go core / CLI / server,internal/app/oneshotstage_test.go,19,Test,TestOneshotStagingFailureLaunchesNothing,False,legacy-not-retrospectively-reviewed
+LEG-0f97126fa532,G,Go core / CLI / server,internal/app/oneshotstage_test.go,54,Test,TestOneshotInlineGoalKeepsItsBytes,False,legacy-not-retrospectively-reviewed
+LEG-d60f90d2b186,G,Go core / CLI / server,internal/app/opencode_installer_test.go,17,Test,TestOpencodeInstallerWritesAndRemovesPlugin,False,legacy-not-retrospectively-reviewed
+LEG-8dbe6ca19f3c,G,Go core / CLI / server,internal/app/opencode_installer_test.go,108,Test,TestOpencodeCustomConfigPreservesForeignFiles,False,legacy-not-retrospectively-reviewed
+LEG-44c6b1ed2e50,G,Go core / CLI / server,internal/app/paneids_test.go,67,Test,TestFixStepPutsPaneIDsInTheWindowName,False,legacy-not-retrospectively-reviewed
+LEG-a57ba40e25ab,G,Go core / CLI / server,internal/app/paneids_test.go,168,Test,TestFixStepKeepsACustomFormatThatShowsTheCommand,False,legacy-not-retrospectively-reviewed
+LEG-77f77dd75cdb,G,Go core / CLI / server,internal/app/paneids_test.go,490,Test,TestFixStepEnablesHyperlinks,False,legacy-not-retrospectively-reviewed
+LEG-7b0d4db52a86,G,Go core / CLI / server,internal/app/privateio_test.go,13,Test,TestConfigurationAndCredentialsArePrivateOnRewrite,False,legacy-not-retrospectively-reviewed
+LEG-f6001be4c1f0,G,Go core / CLI / server,internal/app/releaseinstall_test.go,67,Test,TestNativeReleaseInstallTrustBoundary,False,legacy-not-retrospectively-reviewed
+LEG-d46e6d8e7b22,G,Go core / CLI / server,internal/app/releaseinstall_test.go,237,Test,TestReleaseAppRollbackPreservesOldBundle,False,legacy-not-retrospectively-reviewed
+LEG-9998a3a3aaa3,G,Go core / CLI / server,internal/app/releaseinstall_test.go,275,Test,TestAppLoginPlistHasNoKeepAlive,False,legacy-not-retrospectively-reviewed
+LEG-31de421ab675,G,Go core / CLI / server,internal/app/releaseinstall_test.go,304,Test,TestReleaseInstallerComponentSelection,False,legacy-not-retrospectively-reviewed
+LEG-98994f65a25c,G,Go core / CLI / server,internal/app/releaseinstall_test.go,379,Test,TestSignedMirrorArchivesRequireExactDigestAndSize,False,legacy-not-retrospectively-reviewed
+LEG-90d7d25461f8,G,Go core / CLI / server,internal/app/restore_app_env_test.go,11,Test,TestRestoreAppInheritedTmuxDoesNotTriggerNestedTerminalGuard,False,legacy-not-retrospectively-reviewed
+LEG-a642ae59bb06,G,Go core / CLI / server,internal/app/restore_output_test.go,167,Test,TestRestoreOutputFullLogSurvivesCompactWarning,False,legacy-not-retrospectively-reviewed
+LEG-e7d4d3e682b0,G,Go core / CLI / server,internal/app/restore_plan_test.go,291,Test,TestPendingRestoreCLIIsReadOnlyEvenInsideTmux,False,legacy-not-retrospectively-reviewed
+LEG-cdb3ca010e4f,G,Go core / CLI / server,internal/app/sendattach_test.go,278,Test,TestMenuBarKnowsWhenTheTextWasPasted,False,legacy-not-retrospectively-reviewed
+LEG-1a539a6df79d,G,Go core / CLI / server,internal/app/serve_startup_test.go,32,Test,TestServeBindFailurePreservesRunningStatus,False,legacy-not-retrospectively-reviewed
+LEG-ba136abccccf,G,Go core / CLI / server,internal/app/servememory_test.go,16,Test,TestMemoryDiagnosticsSignalCleanup,False,legacy-not-retrospectively-reviewed
+LEG-0445212abf14,G,Go core / CLI / server,internal/app/terminalkeys_pty_test.go,19,Test,TestTerminalKeyRawPTY,False,legacy-not-retrospectively-reviewed
+LEG-60debd862971,G,Go core / CLI / server,internal/app/terminalkeys_test.go,14,Test,TestTerminalKeyTransportValidation,False,legacy-not-retrospectively-reviewed
+LEG-d2aaf37a48e1,G,Go core / CLI / server,internal/app/tunnelrecovery_test.go,74,Test,TestAutomaticRecoveryRestoresPreviouslyDeletedDeviceWithoutRepairingPhonePairing,False,legacy-not-retrospectively-reviewed
+LEG-b4f2f1a769d2,G,Go core / CLI / server,internal/app/tunnelrecovery_test.go,112,Test,TestAutomaticRecoveryDoesNotRestartAHealthyUnchangedConnector,False,legacy-not-retrospectively-reviewed
+LEG-bde4cb76a241,G,Go core / CLI / server,internal/app/tunnelrecovery_test.go,127,Test,TestAutomaticRecoveryRefusesProviderFailureOrAddressRotation,False,legacy-not-retrospectively-reviewed
+LEG-ad532821c2d4,G,Go core / CLI / server,internal/app/tunnelrecovery_test.go,264,Test,TestAutomaticRecoveryRetriesInterruptedLocalReload,False,legacy-not-retrospectively-reviewed
+LEG-53f7d34be719,G,Go core / CLI / server,internal/app/tunnelservers_test.go,218,Test,TestMoveWritesTheNewServerAndKeepsTheAccount,False,legacy-not-retrospectively-reviewed
+LEG-f861b1d7c736,G,Go core / CLI / server,internal/app/tunnelstatus_test.go,68,Test,TestTheTunnelReporterRecordsTransitionsNotEveryProbe,False,legacy-not-retrospectively-reviewed
+LEG-27677f31f3d4,G,Go core / CLI / server,internal/app/turnsender_test.go,258,Test,TestEveryDeliveryPathJournalsIt,False,legacy-not-retrospectively-reviewed
+LEG-19cda7dc228e,G,Go core / CLI / server,internal/app/update_test.go,127,Test,TestInstallScriptRelaunchesAppWithOpenN,False,legacy-not-retrospectively-reviewed
+LEG-574d36b2a89b,G,Go core / CLI / server,internal/app/uploadprivacy_test.go,15,Test,TestUploadWritersKeepPrivateModes,False,legacy-not-retrospectively-reviewed
+LEG-77f52af6f569,G,Go core / CLI / server,internal/artifact/store_test.go,126,Test,TestRepublishingUsesExactReferencesAndNewestRegisteredPath,False,legacy-not-retrospectively-reviewed
+LEG-24f28a83daf7,G,Go core / CLI / server,internal/diag/access_test.go,93,Test,TestAccessRecordRejectsUnknownOperationsAndArbitraryTargets,False,legacy-not-retrospectively-reviewed
+LEG-73415a0352ca,G,Go core / CLI / server,internal/diag/access_test.go,155,Test,TestAccessSessionLocatorIsStructuredAndProjected,False,legacy-not-retrospectively-reviewed
+LEG-4be02b705e14,G,Go core / CLI / server,internal/diag/accessorigin_test.go,13,Test,TestHistoricalAccessOriginNeedsPositiveEvidenceAndDoesNotRewrite,False,legacy-not-retrospectively-reviewed
+LEG-91e2be830ae8,G,Go core / CLI / server,internal/diag/caller_test.go,99,Test,TestDebugFromConfig,False,legacy-not-retrospectively-reviewed
+LEG-01a57a910685,G,Go core / CLI / server,internal/diag/diag_test.go,115,Test,TestCredentialsNeverReachTheStore,False,legacy-not-retrospectively-reviewed
+LEG-66fe37480c48,G,Go core / CLI / server,internal/diag/diag_test.go,140,Test,TestEveryLinkFragmentIsRedactedUnregistered,False,legacy-not-retrospectively-reviewed
+LEG-15ef101600f0,G,Go core / CLI / server,internal/diag/diag_test.go,171,Test,TestAnEntryNeverExceedsOneAtomicWrite,False,legacy-not-retrospectively-reviewed
+LEG-a21bd69cbf81,G,Go core / CLI / server,internal/diag/diag_test.go,269,Test,TestPastTheDailyCeilingDebugIsDropped,False,legacy-not-retrospectively-reviewed
+LEG-465df798b412,G,Go core / CLI / server,internal/diag/diag_test.go,291,Test,TestDebugIsOffUnlessAsked,False,legacy-not-retrospectively-reviewed
+LEG-0b5ee0b6a36f,G,Go core / CLI / server,internal/diag/diag_test.go,348,Test,TestActiveSegmentIsWhereTheWriterAppends,False,legacy-not-retrospectively-reviewed
+LEG-a60e497f43ad,G,Go core / CLI / server,internal/docs/docs_test.go,124,Test,TestDocExamples,False,legacy-not-retrospectively-reviewed
+LEG-44c53f65394a,G,Go core / CLI / server,internal/docs/hqname_test.go,66,Test,TestHQIsCalledHQEverywhereAUserCanSeeIt,False,legacy-not-retrospectively-reviewed
+LEG-f8c373186ca6,G,Go core / CLI / server,internal/docs/mobilelaunch_test.go,15,Test,TestMobileLaunchMarkContrastAndSharedSource,False,legacy-not-retrospectively-reviewed
+LEG-979e12175628,G,Go core / CLI / server,internal/dsh/log_test.go,94,Test,TestCorruptionUnknownGenerationAndIdentityCannotBecomeEmptyHistory,False,legacy-not-retrospectively-reviewed
+LEG-b1a5587f82bb,G,Go core / CLI / server,internal/dshfeed/feed_test.go,57,Test,TestReconcileRestartPartialAppendAndExplicitReview,False,legacy-not-retrospectively-reviewed
+LEG-a5986a80422d,G,Go core / CLI / server,internal/dshfeed/feed_test.go,119,Test,TestReconcileDoesNotAdvanceOnDisabledJournalOrImportOlderWebMessages,False,legacy-not-retrospectively-reviewed
+LEG-6797b781996e,G,Go core / CLI / server,internal/events/auditlog_test.go,17,Test,TestAuditActsReachTheLogWithoutTheirText,False,legacy-not-retrospectively-reviewed
+LEG-f77d69f19ac2,G,Go core / CLI / server,internal/events/messagesenders_test.go,73,Test,TestMessageSendersFollowRotationRewriteAndMissingJournal,False,legacy-not-retrospectively-reviewed
+LEG-99659c74b7cc,G,Go core / CLI / server,internal/hook/detach_test.go,39,Test,TestDetachedWorkerGetsThePayloadAfterTheHookExits,False,legacy-not-retrospectively-reviewed
+LEG-4a64def14abd,G,Go core / CLI / server,internal/hook/launchhost_test.go,86,Test,TestDetachedWorkerReceivesFreshHostEnvironment,False,legacy-not-retrospectively-reviewed
+LEG-0a20f15d64cc,G,Go core / CLI / server,internal/hook/notifyicon_test.go,13,Test,TestNotifyAgentIcon,False,legacy-not-retrospectively-reviewed
+LEG-26f0c8142123,G,Go core / CLI / server,internal/hook/prompt_shape_test.go,44,Test,TestKimiPromptReachesTheGoalMarker,False,legacy-not-retrospectively-reviewed
+LEG-107086809561,G,Go core / CLI / server,internal/hook/run_test.go,255,Test,TestRunDebugLog,False,legacy-not-retrospectively-reviewed
+LEG-9e6368290a09,G,Go core / CLI / server,internal/hq/archive_small_records_test.go,38,Test,TestAutomaticManySmallNotesRoundTrip,False,legacy-not-retrospectively-reviewed
+LEG-54333359c31a,G,Go core / CLI / server,internal/hq/archive_small_records_test.go,72,Test,TestSmallRecordImportEntryBoundary,False,legacy-not-retrospectively-reviewed
+LEG-6171295fee9d,G,Go core / CLI / server,internal/hq/boardsize_test.go,73,Test,TestTheLiftedHeadingIsSpelledTheSameOnAllThreeSurfaces,False,legacy-not-retrospectively-reviewed
+LEG-62f056701ee0,G,Go core / CLI / server,internal/hq/diskhygiene_test.go,14,Test,TestTrimFileTail,False,legacy-not-retrospectively-reviewed
+LEG-72852ffb00e9,G,Go core / CLI / server,internal/hq/eventscmd_test.go,553,Test,TestEventsSinceSeqWarnsOnGap,False,legacy-not-retrospectively-reviewed
+LEG-30b0727f7dcc,G,Go core / CLI / server,internal/hq/housekeeping_test.go,15,Test,TestHousekeepRetiresWhatNothingReadsAndKeepsWhatDoctorDoes,False,legacy-not-retrospectively-reviewed
+LEG-18ecc83f6c01,G,Go core / CLI / server,internal/hq/hq_test.go,156,Test,TestSeedHQHomeIdempotent,False,legacy-not-retrospectively-reviewed
+LEG-2c17b411342c,G,Go core / CLI / server,internal/hq/hq_test.go,216,Test,TestSeedHQHome_UpgradesOnNewerVersion,False,legacy-not-retrospectively-reviewed
+LEG-de61585f4cc4,G,Go core / CLI / server,internal/hq/hq_test.go,252,Test,TestSeedHQHome_UpgradeLeavesMemoryUntouched,False,legacy-not-retrospectively-reviewed
+LEG-06c3846efb12,G,Go core / CLI / server,internal/hq/hq_test.go,291,Test,TestSeedHQHome_LegacyClaudeMigrates,False,legacy-not-retrospectively-reviewed
+LEG-a07d737d3644,G,Go core / CLI / server,internal/hq/hq_test.go,333,Test,TestSeedHQHome_AgentsOnlyAddsPointer,False,legacy-not-retrospectively-reviewed
+LEG-a472b5d72fd8,G,Go core / CLI / server,internal/hq/hq_test.go,384,Test,TestSeedHQKnowledge,False,legacy-not-retrospectively-reviewed
+LEG-78702eaa7fbe,G,Go core / CLI / server,internal/hq/hq_test.go,419,Test,TestHQPlaybookHardening,False,legacy-not-retrospectively-reviewed
+LEG-a2646b785cc5,G,Go core / CLI / server,internal/hq/hq_test.go,447,Test,TestHQPlaybookCharter,False,legacy-not-retrospectively-reviewed
+LEG-a365bdf9befc,G,Go core / CLI / server,internal/hq/hq_test.go,543,Test,TestSeedHQNotesBoard,False,legacy-not-retrospectively-reviewed
+LEG-b0ec249dbdfb,G,Go core / CLI / server,internal/hq/hq_test.go,568,Test,TestHQPlaybookChiefOfStaff,False,legacy-not-retrospectively-reviewed
+LEG-53c90b5faa6f,G,Go core / CLI / server,internal/hq/hq_test.go,625,Test,TestHQPlaybookWakeProtocol,False,legacy-not-retrospectively-reviewed
+LEG-98958ff1a4ed,G,Go core / CLI / server,internal/hq/hq_test.go,661,Test,TestHQPlaybookThreeReads,False,legacy-not-retrospectively-reviewed
+LEG-74a84fc207b8,G,Go core / CLI / server,internal/hq/hq_test.go,828,Test,TestShellLanguageNeverRewritesTheCharter,False,legacy-not-retrospectively-reviewed
+LEG-75f33c06f2f5,G,Go core / CLI / server,internal/hq/hq_test.go,867,Test,TestExplicitLangRewritesTheCharter,False,legacy-not-retrospectively-reviewed
+LEG-c14e7e44c775,G,Go core / CLI / server,internal/hq/hq_test.go,897,Test,TestVersionUpgradeKeepsTheCharterLanguage,False,legacy-not-retrospectively-reviewed
+LEG-73fed776ec92,G,Go core / CLI / server,internal/hq/hq_test.go,999,Test,TestLocalTemplateFollowsLanguage,False,legacy-not-retrospectively-reviewed
+LEG-62d8b7f2c722,G,Go core / CLI / server,internal/hq/legacybackup_test.go,39,Test,TestASecondMigrationKeepsTheFirstBackup,False,legacy-not-retrospectively-reviewed
+LEG-28e85d7c673a,G,Go core / CLI / server,internal/hq/legacybackup_test.go,75,Test,TestABackupNameInUseIsNotOverwritten,False,legacy-not-retrospectively-reviewed
+LEG-32fa410edc18,G,Go core / CLI / server,internal/hq/legacybackup_test.go,96,Test,TestNoBackupNoMigration,False,legacy-not-retrospectively-reviewed
+LEG-1100d138c48b,G,Go core / CLI / server,internal/hq/maintenance_test.go,264,Test,TestDistillMarkRoundTrip,False,legacy-not-retrospectively-reviewed
+LEG-0e2b35abb5f5,G,Go core / CLI / server,internal/hq/memory_test.go,44,Test,TestExportAndImportRoundTrip,False,legacy-not-retrospectively-reviewed
+LEG-514354338e76,G,Go core / CLI / server,internal/hq/memory_test.go,76,Test,TestImportMovesAnExistingMemoryAsideRatherThanOverwriting,False,legacy-not-retrospectively-reviewed
+LEG-82f825a7c632,G,Go core / CLI / server,internal/hq/memorycrypt_test.go,12,Test,TestEncryptedExportRoundTrip,False,legacy-not-retrospectively-reviewed
+LEG-b87264fe1d25,G,Go core / CLI / server,internal/hq/migration_test.go,22,Test,TestMigrationStageExcludesBoardAndControlState,False,legacy-not-retrospectively-reviewed
+LEG-d2e735c072d4,G,Go core / CLI / server,internal/hq/migration_test.go,89,Test,TestMigrationPersonalRequirementsRequireFreshReviewAndBackup,False,legacy-not-retrospectively-reviewed
+LEG-2993f4b10720,G,Go core / CLI / server,internal/hq/migration_test.go,119,Test,TestMemoryArchiveValidationCompletesBeforeMovingCurrent,False,legacy-not-retrospectively-reviewed
+LEG-daadeee0958b,G,Go core / CLI / server,internal/hq/migration_test.go,185,Test,TestMigrationRunningHQAndConcurrentWriteGuards,False,legacy-not-retrospectively-reviewed
+LEG-c515efeece62,G,Go core / CLI / server,internal/hq/migration_test.go,245,Test,TestMemoryPlainExportIsPrivateAndDoesNotTouchSharedPart,False,legacy-not-retrospectively-reviewed
+LEG-1a8e4159e1d8,G,Go core / CLI / server,internal/hq/migration_test.go,264,Test,TestMemoryRestorePreviewDoesNotDependOnDamagedDestination,False,legacy-not-retrospectively-reviewed
+LEG-cb74baaa16d0,G,Go core / CLI / server,internal/hq/snapshots_policy_test.go,41,Test,TestAutomaticScopeAndExplicitFullExport,False,legacy-not-retrospectively-reviewed
+LEG-5961a845361c,G,Go core / CLI / server,internal/hq/snapshots_policy_test.go,93,Test,TestAutomaticRetentionDoesNotAdoptLegacy,False,legacy-not-retrospectively-reviewed
+LEG-b933715accdc,G,Go core / CLI / server,internal/hq/snapshots_policy_test.go,127,Test,TestSnapshotFailureAndDisableKeepRecovery,False,legacy-not-retrospectively-reviewed
+LEG-756f6365e10d,G,Go core / CLI / server,internal/hq/snapshots_policy_test.go,181,Test,TestBudgetAndCorruptionPreserveOldPoints,False,legacy-not-retrospectively-reviewed
+LEG-03141e2f1ac4,G,Go core / CLI / server,internal/hq/snapshots_policy_test.go,254,Test,TestExportValidatesRestoredWorkspaceGrowth,False,legacy-not-retrospectively-reviewed
+LEG-9bd5cd8afd4f,G,Go core / CLI / server,internal/hqnudge/native_test.go,10,Test,TestNativeWakeAcceptanceAndUncertaintyNeverPasteOrReplay,False,legacy-not-retrospectively-reviewed
+LEG-4f261def63a3,G,Go core / CLI / server,internal/hqworkspace/register_test.go,12,Test,TestRegisterExistingGoalDoesNotReplayWorkOrRewriteSources,False,legacy-not-retrospectively-reviewed
+LEG-306bc45cf75a,G,Go core / CLI / server,internal/knowledge/axes_test.go,45,Test,TestLegacyRecordsAreMigratedAtReadOnly,False,legacy-not-retrospectively-reviewed
+LEG-088af8b27197,G,Go core / CLI / server,internal/knowledge/axes_test.go,116,Test,TestHypothesisIsShelvedNotDistributed,False,legacy-not-retrospectively-reviewed
+LEG-3c53d4af8a67,G,Go core / CLI / server,internal/knowledge/axes_test.go,148,Test,TestHitsAccumulateAndSurviveSupersede,False,legacy-not-retrospectively-reviewed
+LEG-a14d376fc38b,G,Go core / CLI / server,internal/knowledge/axes_test.go,179,Test,TestFirstV2WriteBacksUpTheV1Ledger,False,legacy-not-retrospectively-reviewed
+LEG-6fa8f54f1668,G,Go core / CLI / server,internal/knowledge/distribute_test.go,51,Test,TestBlockInstallRefreshAndRefusal,False,legacy-not-retrospectively-reviewed
+LEG-9bbf8a519df6,G,Go core / CLI / server,internal/knowledge/golden_test.go,105,Test,TestKnowledgeGolden,False,legacy-not-retrospectively-reviewed
+LEG-7ce264f75bde,G,Go core / CLI / server,internal/knowledge/knowledge_test.go,15,Test,TestKnowledgeMutationJoinsAllThreeStores,False,legacy-not-retrospectively-reviewed
+LEG-9d9dc23e2f04,G,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,43,Test,TestKnowledgeVerbChain,False,legacy-not-retrospectively-reviewed
+LEG-7d3af991f89a,G,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,103,Test,TestKnowledgeAddConsumesCaptureWithProvenance,False,legacy-not-retrospectively-reviewed
+LEG-d4f96f012a17,G,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,194,Test,TestKnowledgePromotionVerbChain,False,legacy-not-retrospectively-reviewed
+LEG-8fd703ae0981,G,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,289,Test,TestCustomTopicWholeLoop,False,legacy-not-retrospectively-reviewed
+LEG-51bee4543a4d,G,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,359,Test,TestPromotionBriefClosesWithTheAudienceExit,False,legacy-not-retrospectively-reviewed
+LEG-333701c648fc,G,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,491,Test,TestTheErrorNamesEveryVerb,False,legacy-not-retrospectively-reviewed
+LEG-a401726e3111,G,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,526,Test,TestPromoteRefusesAMissingAudience,False,legacy-not-retrospectively-reviewed
+LEG-cb2a5dab8378,G,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,563,Test,TestABlankReasonIsNoReason,False,legacy-not-retrospectively-reviewed
+LEG-8d95d0483386,G,Go core / CLI / server,internal/knowledge/knowledgerender_test.go,48,Test,TestMigrationPreservesHandWrittenBytes,False,legacy-not-retrospectively-reviewed
+LEG-6a42885843f5,G,Go core / CLI / server,internal/knowledge/lint_test.go,23,Test,TestLintFindsEachShape,False,legacy-not-retrospectively-reviewed
+LEG-e730c972a86a,G,Go core / CLI / server,internal/knowledge/lint_test.go,228,Test,TestRenderNeverTouchesTheLedger,False,legacy-not-retrospectively-reviewed
+LEG-d2c8e807a23b,G,Go core / CLI / server,internal/knowledge/migration_test.go,39,Test,TestMigrationPreservesHistoryAndResetsAudience,False,legacy-not-retrospectively-reviewed
+LEG-72016a7301ff,G,Go core / CLI / server,internal/knowledge/migration_test.go,97,Test,TestMigrationConflictAndInvalidInputKeepPriorBytes,False,legacy-not-retrospectively-reviewed
+LEG-fc98b9e6de41,G,Go core / CLI / server,internal/knowledge/migration_test.go,118,Test,TestMigrationFailedWriteAndCommittedRenderFailure,False,legacy-not-retrospectively-reviewed
+LEG-4f0f3e869b3a,G,Go core / CLI / server,internal/knowledge/receipts_test.go,35,Test,TestCaptureRejectedLedgerValidationKeepsPending,False,legacy-not-retrospectively-reviewed
+LEG-350a1b144332,G,Go core / CLI / server,internal/knowledge/receipts_test.go,68,Test,TestCaptureLedgerWriteFailureKeepsPriorBytes,False,legacy-not-retrospectively-reviewed
+LEG-797d90912c1f,G,Go core / CLI / server,internal/knowledge/receipts_test.go,98,Test,TestCaptureSourcesSurviveDetailHistoryAndRemainPrivate,False,legacy-not-retrospectively-reviewed
+LEG-f6599919d8d7,G,Go core / CLI / server,internal/knowledge/receipts_test.go,157,Test,TestCaptureLegacySourcesRetryAndNewFamilyObservation,False,legacy-not-retrospectively-reviewed
+LEG-66cc512dbdf3,G,Go core / CLI / server,internal/knowledge/receipts_test.go,326,Test,TestAtomicAppendFailureAndPartialLegacyTail,False,legacy-not-retrospectively-reviewed
+LEG-c5af1ca5c5e7,G,Go core / CLI / server,internal/knowledge/receipts_test.go,347,Test,TestCaptureDigestMismatchRefusesSettlement,False,legacy-not-retrospectively-reviewed
+LEG-c234a1ce7822,G,Go core / CLI / server,internal/launchhost/launchhost_test.go,120,Test,TestProcessReadOnlyRequestsNarrowMetadata,False,legacy-not-retrospectively-reviewed
+LEG-e8878c900ddb,G,Go core / CLI / server,internal/limits/limits_test.go,413,Test,TestTheLimitsCommandRunsInAnEmptyDirectoryOfItsOwn,False,legacy-not-retrospectively-reviewed
+LEG-794750637051,G,Go core / CLI / server,internal/limits/limits_test.go,923,Test,TestOnlyOneRefreshRunsAtATime,False,legacy-not-retrospectively-reviewed
+LEG-fda59f176539,G,Go core / CLI / server,internal/limits/limits_test.go,960,Test,TestAForcedRefreshTakesTheRunItWaitedFor,False,legacy-not-retrospectively-reviewed
+LEG-28048d8dbfea,G,Go core / CLI / server,internal/memdiag/server_test.go,162,Test,TestClosePreservesSubstitutedFile,False,legacy-not-retrospectively-reviewed
+LEG-1c90907f5eca,G,Go core / CLI / server,internal/mine/bounds_test.go,14,Test,TestTheLedgerBoundsItself,False,legacy-not-retrospectively-reviewed
+LEG-ab6d95a8dc5d,G,Go core / CLI / server,internal/mine/readers_test.go,53,Test,TestCodexReader,False,legacy-not-retrospectively-reviewed
+LEG-0cb5ecf22ac3,G,Go core / CLI / server,internal/native/binding_test.go,183,Test,TestCorruptBindingCannotBeSilentlyOverwritten,False,legacy-not-retrospectively-reviewed
+LEG-d15924ed3189,G,Go core / CLI / server,internal/native/binding_test.go,238,Test,TestNativeSaveIsAtomicAndBoundedUnderStoreLock,False,legacy-not-retrospectively-reviewed
+LEG-ef76b83b5c1a,G,Go core / CLI / server,internal/native/scope_test.go,10,Test,TestScopedObservationsAndRetirementDoNotCrossHomes,False,legacy-not-retrospectively-reviewed
+LEG-cfd039c07dcf,G,Go core / CLI / server,internal/notify/notify_test.go,14,Test,TestSendWritesQueueRequest,False,legacy-not-retrospectively-reviewed
+LEG-7b4b9e7154a3,G,Go core / CLI / server,internal/notify/queue_test.go,22,Test,TestQueueBoundsBacklogAndKeepsNewest,False,legacy-not-retrospectively-reviewed
+LEG-5e2e8c1270bc,G,Go core / CLI / server,internal/radar/agents_realframe_test.go,13,Test,TestClassifyStuck_CodexIdle_NotDraft,False,legacy-not-retrospectively-reviewed
+LEG-fc3118832f84,G,Go core / CLI / server,internal/radar/nativerow_test.go,249,Test,TestBuiltinIconHintIsAnOpenablePath,False,legacy-not-retrospectively-reviewed
+LEG-2e7299c617f5,G,Go core / CLI / server,internal/radar/nativerow_test.go,286,Test,TestBuiltinIconRefreshesWhenTheBytesChange,False,legacy-not-retrospectively-reviewed
+LEG-7d8484db7488,G,Go core / CLI / server,internal/radar/privateio_test.go,13,Test,TestIconWriterIsLocallyPrivateIncludingCacheHits,False,legacy-not-retrospectively-reviewed
+LEG-694ed0b251cf,G,Go core / CLI / server,internal/relay/relay_test.go,105,Test,TestCorruptRequestIsNeverOverwrittenOnRetry,False,legacy-not-retrospectively-reviewed
+LEG-b0ef2f4ddd8b,G,Go core / CLI / server,internal/resume/codexbinding_test.go,41,Test,TestCodexBindingRetirementFailureKeepsRetryWitnessAndHistory,False,legacy-not-retrospectively-reviewed
+LEG-9aebf1f7a549,G,Go core / CLI / server,internal/resume/codexbinding_test.go,84,Test,TestCodexBindingExactPayloadAndOneUse,False,legacy-not-retrospectively-reviewed
+LEG-9c92c698b394,G,Go core / CLI / server,internal/resume/codexprocess_test.go,121,Test,TestProcessRecoveryRefusesUnprovenOrChangedOwnership,False,legacy-not-retrospectively-reviewed
+LEG-7c6949a4cf98,G,Go core / CLI / server,internal/resume/codexwrapper_test.go,14,Test,TestWrappedCodexBindingUsesVerifiedClientAndLauncher,False,legacy-not-retrospectively-reviewed
+LEG-f6511a97c579,G,Go core / CLI / server,internal/server/attach_flow_test.go,146,Test,TestAttach_InputReachesTheProgramWhilePaused,False,legacy-not-retrospectively-reviewed
+LEG-bcd9a372e93c,G,Go core / CLI / server,internal/server/attach_flow_test.go,271,Test,TestAttach_AProgramThatEndsWhilePausedEndsTheSession,False,legacy-not-retrospectively-reviewed
+LEG-6216dc04765e,G,Go core / CLI / server,internal/server/attach_flow_test.go,345,Test,TestAttach_APauseWhileOutputWaitsForTheLockHoldsIt,False,legacy-not-retrospectively-reviewed
+LEG-9586890d355b,G,Go core / CLI / server,internal/server/attach_test.go,209,Test,TestAttach_LeavingAQuietPaneEndsItsTmuxClient,False,legacy-not-retrospectively-reviewed
+LEG-15be7b6d2905,G,Go core / CLI / server,internal/server/focusstatus_test.go,46,Test,TestUnsupportedFocusIsARefusalRatherThanAnOperationalError,False,legacy-not-retrospectively-reviewed
+LEG-6147f8559fe3,G,Browser,internal/server/web/activity.test.cjs,8,test,"browser activity tables match the phone labels, aliases and icon family",False,legacy-not-retrospectively-reviewed
+LEG-2775e91b17b6,G,Browser,internal/server/web/app.test.cjs,187,test,browser entry resolves every asset and API inside the same Mac path,False,legacy-not-retrospectively-reviewed
+LEG-f091ef91ee97,G,Browser,internal/server/web/app.test.cjs,457,test,the browser costs characters with the phone's tmux-measured widths,False,legacy-not-retrospectively-reviewed
+LEG-188a56d517ad,G,Browser,internal/server/web/app.test.cjs,518,test,"the bar is two real buttons, and each does its own thing",False,legacy-not-retrospectively-reviewed
+LEG-867e608e0fae,G,Browser,internal/server/web/app.test.cjs,714,test,focus HTML preserves Chat before Terminal alongside the real tile controls,False,legacy-not-retrospectively-reviewed
+LEG-a24ee8487c6a,G,Browser,internal/server/web/documents.test.cjs,7,test,browser document references and validation are generated from the App contract,False,legacy-not-retrospectively-reviewed
+LEG-dd62d73a080e,G,Browser,internal/server/web/reading.test.cjs,2,test,file+' follows its native model',True,legacy-not-retrospectively-reviewed
+LEG-25aecd2608d3,G,Browser,internal/server/web/reading.test.cjs,6,test,offline browser formatter and syntax reader retain complete inputs,False,legacy-not-retrospectively-reviewed
+LEG-beccbd42e1d4,G,Browser,internal/server/web/trace-model.test.cjs,74,test,the generated asset identifies the current canonical typed source,False,legacy-not-retrospectively-reviewed
+LEG-c815de5180bd,G,Go core / CLI / server,internal/server/webui_test.go,98,Test,TestWebChromeIsNotChineseOnly,False,legacy-not-retrospectively-reviewed
+LEG-8d452b57e7cd,G,Go core / CLI / server,internal/server/webui_test.go,210,Test,TestWebStatusBucketsCoverEverySection,False,legacy-not-retrospectively-reviewed
+LEG-05e3b0d8642f,G,Go core / CLI / server,internal/server/webui_test.go,246,Test,TestWebMarkupIsRelabelledForTheReader,False,legacy-not-retrospectively-reviewed
+LEG-7c8abc59a787,G,Go core / CLI / server,internal/server/webui_test.go,313,Test,TestWebStatusWordsFollowTheReader,False,legacy-not-retrospectively-reviewed
+LEG-69f8db02ec16,G,Go core / CLI / server,internal/servermode/guard_test.go,130,Test,TestGuardChargeFloor,False,legacy-not-retrospectively-reviewed
+LEG-354dcd4e833e,G,Go core / CLI / server,internal/servermode/guard_test.go,208,Test,TestGuardClearsTheOwnershipStampWhenItRestores,False,legacy-not-retrospectively-reviewed
+LEG-d23b417b1f12,G,Go core / CLI / server,internal/servermode/guard_test.go,304,Test,TestGuardKeepsEverythingWhenSleepIsNotBack,False,legacy-not-retrospectively-reviewed
+LEG-a0ab5111c4f5,G,Go core / CLI / server,internal/servermode/guard_test.go,342,Test,TestGuardCleansUpOnceSleepIsConfirmedBack,False,legacy-not-retrospectively-reviewed
+LEG-6c164e9f482f,G,Go core / CLI / server,internal/servermode/privileged_test.go,55,Test,TestInstallPayloadReproducesTheGuardExactly,False,legacy-not-retrospectively-reviewed
+LEG-1f3d71fb8aea,G,Go core / CLI / server,internal/state/privateappend_test.go,9,Test,TestPrivateAppendNarrowsOwnedFilesAndRejectsSymlinks,False,legacy-not-retrospectively-reviewed
+LEG-067c12754ea2,G,Go core / CLI / server,internal/state/privateio_test.go,48,Test,TestPrivateIOKeepsInodesFlagsAndForeignModes,False,legacy-not-retrospectively-reviewed
+LEG-cd86dfe66edf,G,Go core / CLI / server,internal/state/privatewrite_test.go,11,Test,TestPrivateWriteRefusesLinksAndSpecialTargets,False,legacy-not-retrospectively-reviewed
+LEG-cae3dab26188,G,Go core / CLI / server,internal/state/privatewrite_test.go,73,Test,TestPrivateWriteReplacesOnlyOwnedDestination,False,legacy-not-retrospectively-reviewed
+LEG-37fad2143d15,G,Go core / CLI / server,internal/state/privatewrite_test.go,132,Test,TestPrivateWritePublishesCompletePrivateBytes,False,legacy-not-retrospectively-reviewed
+LEG-71dff215cc33,G,Go core / CLI / server,internal/state/state_test.go,74,Test,TestLastFinishedRoundTrip,False,legacy-not-retrospectively-reviewed
+LEG-b285e117d09b,G,Go core / CLI / server,internal/state/state_test.go,152,Test,TestTabOrderRoundTrip,False,legacy-not-retrospectively-reviewed
+LEG-5711fae0e79f,G,Go core / CLI / server,internal/state/taborder_atomic_test.go,9,Test,TestSaveTabOrderPublishesReplacement,False,legacy-not-retrospectively-reviewed
+LEG-7da56919233c,G,Go core / CLI / server,internal/tabalert/tabalert_test.go,15,Test,TestEnablePrependsAndDisableRestores,False,legacy-not-retrospectively-reviewed
+LEG-adaf991c144d,G,Go core / CLI / server,internal/terminal/warp_test.go,99,Test,TestWarpSpawnTabs,False,legacy-not-retrospectively-reviewed
+LEG-90260c4d8bcf,G,Go core / CLI / server,internal/terminal/warp_test.go,143,Test,TestWarpOpenWindow,False,legacy-not-retrospectively-reviewed
+LEG-eba82111fac9,G,Go core / CLI / server,internal/terminalkeys/keys_test.go,64,Test,TestDemoCatalogTracksCore,False,legacy-not-retrospectively-reviewed
+LEG-67351073d0ac,G,Go core / CLI / server,internal/transcript/history_test.go,72,Test,TestHistoryRejectsWrongSessionReplacementAndCanceledRead,False,legacy-not-retrospectively-reviewed
+LEG-a91326b3bd41,G,Go core / CLI / server,internal/transcript/history_test.go,130,Test,TestHistoryOffsetCacheIsBoundedAndReusable,False,legacy-not-retrospectively-reviewed
+LEG-2c2d68d93d43,G,Go core / CLI / server,internal/transcript/provider_compat_test.go,10,Test,TestKimi25ActualLoopToolCalls,False,legacy-not-retrospectively-reviewed
+LEG-971902461a52,G,Go core / CLI / server,internal/transcript/provider_compat_test.go,46,Test,TestOpencodeRecordedToolsKeepFullScopedInput,False,legacy-not-retrospectively-reviewed
+LEG-0968521ff45b,G,Go core / CLI / server,internal/transcript/transcript_test.go,811,Test,TestLoadCodexCurrentSanitizedFixture,False,legacy-not-retrospectively-reviewed
+LEG-9e9f508dc69a,G,Go core / CLI / server,internal/userservice/service_test.go,54,Test,TestSystemdArgumentsAndRecoveryAreLiteralAndPrivate,False,legacy-not-retrospectively-reviewed
+LEG-b62962745e7c,G,Go core / CLI / server,internal/userservice/service_test.go,99,Test,TestLaunchdRetainsExistingPlistContract,False,legacy-not-retrospectively-reviewed
+LEG-cb98946c10d3,G,Go core / CLI / server,internal/userservice/service_test.go,137,Test,TestServiceDescriptorsPrepareManagedCapturePrivately,False,legacy-not-retrospectively-reviewed
+LEG-3bdc2df08ae7,G,Go core / CLI / server,internal/userservice/systemd_integration_test.go,15,Test,TestSystemdUserManagerLifecycle,False,legacy-not-retrospectively-reviewed
+LEG-8ef64b955024,G,RN / mobile harness,mobileapp/e2e/android/run.cjs,279,check,29-clipboard-image-markup-and-upload,False,legacy-not-retrospectively-reviewed
+MAP-38c67a93a00d,G,RN / mobile harness,mobileapp/e2e/capture/knowledge-shot.test.ts,13,reviewed-selector,gated(,False,DG-001
+LEG-6e50b6aefc3c,G,RN / mobile harness,mobileapp/e2e/fake-serve/icons.test.ts,42,test,"serves the repo's built-in PNG, by label or by key, as a real serve does",False,legacy-not-retrospectively-reviewed
+LEG-1a72cb709a2f,G,RN / mobile harness,mobileapp/e2e/fake-serve/icons.test.ts,101,test,is the Go registry's (internal/agents/registry.go),False,legacy-not-retrospectively-reviewed
+MAP-befb8569059f,G,reviewed implementation,mobileapp/e2e/jest.config.manual.js,2,reviewed-selector,manualMode(process.env),False,"DG-001,DG-002"
+MAP-a88b539daecf,G,reviewed implementation,mobileapp/e2e/jest.config.manual.js,3,reviewed-selector,sendTarget(process.env),False,"DG-001,DG-002"
+MAP-c8767994a252,G,reviewed implementation,mobileapp/e2e/setup/manual-tools.cjs,2,reviewed-selector,function manualMode(,False,"DG-001,DG-002,DG-003"
+MAP-64142db61c66,G,reviewed implementation,mobileapp/e2e/setup/manual-tools.cjs,8,reviewed-selector,function sendTarget(,False,"DG-001,DG-002,DG-003"
+MAP-ad9860024fc0,G,reviewed implementation,mobileapp/e2e/setup/manual-tools.cjs,19,reviewed-selector,async function verifySendTarget(,False,"DG-001,DG-002,DG-003"
+LEG-8af4b5717085,G,RN / mobile harness,mobileapp/scripts/android_delivery_test.py,17,unittest,test_versions_are_monotonic_and_unambiguous,False,legacy-not-retrospectively-reviewed
+LEG-90cc6b5fa0bd,G,RN / mobile harness,mobileapp/scripts/android_delivery_test.py,33,unittest,test_elf_requires_real_16kb_load_alignment,False,legacy-not-retrospectively-reviewed
+LEG-ee0a9077a22d,G,RN / mobile harness,mobileapp/scripts/android_delivery_test.py,40,unittest,test_package_inventory_rejects_missing_abis_path_confusion_and_secrets,False,legacy-not-retrospectively-reviewed
+LEG-51b6a3181397,G,RN / mobile harness,mobileapp/scripts/android_delivery_test.py,56,unittest,test_local_signing_refuses_incomplete_or_altered_delivery_before_using_a_key,False,legacy-not-retrospectively-reviewed
+LEG-3ddd30becca5,G,RN / mobile harness,mobileapp/scripts/asc_accessibility_test.py,13,unittest,test_readonly_review_and_publication_boundaries,False,legacy-not-retrospectively-reviewed
+LEG-6435ae7eb693,G,RN / mobile harness,mobileapp/scripts/asc_accessibility_test.py,47,unittest,test_assets_review_failure_blocks_writes_and_invalidates_old_ready_receipt,False,legacy-not-retrospectively-reviewed
+LEG-8d0118525b1b,G,RN / mobile harness,mobileapp/scripts/asc_accessibility_test.py,58,unittest,test_successful_cli_exit_does_not_invalidate_new_ready_receipt,False,legacy-not-retrospectively-reviewed
+LEG-fce50043392e,G,RN / mobile harness,mobileapp/scripts/asc_accessibility_test.rb,56,Minitest,test_template_is_unapproved_and_published_values_never_become_candidate_answers,False,legacy-not-retrospectively-reviewed
+LEG-27d2f0fd4093,G,RN / mobile harness,mobileapp/scripts/asc_accessibility_test.rb,65,Minitest,test_unchanged_review_passes_both_families_with_get_only,False,legacy-not-retrospectively-reviewed
+LEG-5dcaaa613611,G,RN / mobile harness,mobileapp/scripts/asc_accessibility_test.rb,69,Minitest,test_modern_version_state_is_preferred_to_deprecated_store_state,False,legacy-not-retrospectively-reviewed
+LEG-417fe3fb388f,G,RN / mobile harness,mobileapp/scripts/asc_accessibility_test.rb,81,Minitest,test_historical_ready_versions_and_unreleased_higher_versions_are_not_current,False,legacy-not-retrospectively-reviewed
+LEG-142c6be0e70b,G,RN / mobile harness,mobileapp/scripts/asc_accessibility_test.rb,95,Minitest,test_missing_or_malformed_review_and_missing_evidence_fail_closed,False,legacy-not-retrospectively-reviewed
+LEG-d0dfd0e72453,G,RN / mobile harness,mobileapp/scripts/asc_accessibility_test.rb,118,Minitest,test_version_build_and_package_bytes_bind_the_review,False,legacy-not-retrospectively-reviewed
+LEG-2dc7e129222f,G,RN / mobile harness,mobileapp/scripts/asc_accessibility_test.rb,127,Minitest,test_current_published_change_requires_reassessment_and_drafts_cannot_pass,False,legacy-not-retrospectively-reviewed
+LEG-e21568aa9129,G,RN / mobile harness,mobileapp/scripts/asc_accessibility_test.rb,136,Minitest,test_candidate_regression_is_not_hidden_by_a_followup_plan,False,legacy-not-retrospectively-reviewed
+LEG-86b98fb1b6bd,G,RN / mobile harness,mobileapp/scripts/asc_accessibility_test.rb,146,Minitest,test_future_claims_require_followup_and_do_not_publish,False,legacy-not-retrospectively-reviewed
+LEG-959ba47d00d3,G,RN / mobile harness,mobileapp/scripts/asc_accessibility_test.rb,159,Minitest,test_post_live_requires_exact_candidate_build_and_both_published_families,False,legacy-not-retrospectively-reviewed
+LEG-555d2c0eb97a,G,RN / mobile harness,mobileapp/scripts/asc_accessibility_test.rb,173,Minitest,test_pagination_is_read_completely_and_duplicates_or_unknown_fields_are_rejected,False,legacy-not-retrospectively-reviewed
+LEG-9caf8d6aff3c,G,RN / mobile harness,mobileapp/scripts/asc_accessibility_test.rb,193,Minitest,test_live_missing_build_first_release_and_api_failure_are_not_passes,False,legacy-not-retrospectively-reviewed
+LEG-ee4e0745185b,G,RN / mobile harness,mobileapp/scripts/asc_preparation_test.py,8,unittest,test_asc_progress_readback_and_upload_resume,False,legacy-not-retrospectively-reviewed
+LEG-125c9ed7cf67,G,RN / mobile harness,mobileapp/scripts/asc_preparation_test.py,12,unittest,test_fastlane_resolves_package_paths_before_upload_and_stops_when_gate_fails,False,legacy-not-retrospectively-reviewed
+LEG-e0e4e495f13b,G,RN / mobile harness,mobileapp/scripts/asc_preparation_test.rb,26,Minitest,test_ranged_search_spec_requires_its_ratio_and_refuses_ambiguous_groups,False,legacy-not-retrospectively-reviewed
+LEG-ad5c16332b44,G,RN / mobile harness,mobileapp/scripts/asc_preparation_test.rb,41,Minitest,test_header_and_search_resolve_different_files_and_content_names,False,legacy-not-retrospectively-reviewed
+LEG-8b48d11de015,G,RN / mobile harness,mobileapp/scripts/asc_preparation_test.rb,54,Minitest,test_long_processing_refreshes_auth_before_expiry_without_creating_a_key,False,legacy-not-retrospectively-reviewed
+LEG-226dd54b8ac9,G,RN / mobile harness,mobileapp/scripts/asc_preparation_test.rb,68,Minitest,test_processing_deadline_is_pending_and_journal_is_private,False,legacy-not-retrospectively-reviewed
+LEG-d9b7b087ddbd,G,RN / mobile harness,mobileapp/scripts/asc_preparation_test.rb,91,Minitest,test_wait_returns_actual_ready_or_failed_state_and_resume_does_not_reserve_again,False,legacy-not-retrospectively-reviewed
+LEG-709fda5f8777,G,RN / mobile harness,mobileapp/scripts/asc_preparation_test.rb,117,Minitest,test_processing_pending_keeps_existing_placements_and_does_not_upload,False,legacy-not-retrospectively-reviewed
+LEG-5b5a7bc3c5eb,G,RN / mobile harness,mobileapp/scripts/asc_preparation_test.rb,128,Minitest,test_same_file_does_not_accept_failed_or_changed_content_named_assets,False,legacy-not-retrospectively-reviewed
+LEG-46ccaa0a69bf,G,RN / mobile harness,mobileapp/scripts/asc_preparation_test.rb,174,Minitest,test_api_failure_invalidates_previous_ready_state,False,legacy-not-retrospectively-reviewed
+LEG-6788ed139f5d,G,RN / mobile harness,mobileapp/scripts/asc_preparation_test.rb,187,Minitest,test_each_incomplete_check_prevents_ready_and_state_is_replaced_by_fresh_readback,False,legacy-not-retrospectively-reviewed
+LEG-bcd2e3156a52,G,RN / mobile harness,mobileapp/scripts/capture_store_assets_test.py,29,unittest,test_wda_project_resolves_nested_and_hoisted_driver_dependencies,True,legacy-not-retrospectively-reviewed
+LEG-c884ea1dc873,G,RN / mobile harness,mobileapp/scripts/capture_store_assets_test.py,41,unittest,test_wda_prebuild_is_an_external_bounded_compiler_with_its_own_log,False,legacy-not-retrospectively-reviewed
+LEG-2345ee6390a0,G,RN / mobile harness,mobileapp/scripts/capture_store_assets_test.py,65,unittest,test_capture_uses_explicit_bounded_hosted_startup_for_each_locale,False,legacy-not-retrospectively-reviewed
+LEG-7dd68e20d3b5,G,RN / mobile harness,mobileapp/scripts/capture_store_assets_test.py,98,unittest,test_prebuild_failure_stops_before_appium_and_cleans_only_its_device,False,legacy-not-retrospectively-reviewed
+LEG-af3e523942d4,G,RN / mobile harness,mobileapp/scripts/capture_store_assets_test.py,116,unittest,test_harness_overlay_copies_only_allowlisted_test_files,False,legacy-not-retrospectively-reviewed
+LEG-fc654d1ce876,G,RN / mobile harness,mobileapp/scripts/capture_store_assets_test.py,135,unittest,test_incomplete_harness_is_rejected_before_any_overlay,False,legacy-not-retrospectively-reviewed
+LEG-9509a8e4c2c5,G,RN / mobile harness,mobileapp/scripts/capture_store_assets_test.py,143,unittest,test_resume_skips_completed_locale_and_failure_keeps_its_checkpoint,False,legacy-not-retrospectively-reviewed
+LEG-e23a94e21c06,G,RN / mobile harness,mobileapp/scripts/capture_store_assets_test.py,166,unittest,test_complete_device_does_not_create_or_boot_a_simulator,False,legacy-not-retrospectively-reviewed
+LEG-df4e79fd941b,G,RN / mobile harness,mobileapp/scripts/capture_store_assets_test.py,181,unittest,test_review_checkpoint_requires_complete_untampered_images_and_matching_context,False,legacy-not-retrospectively-reviewed
+LEG-a6bc597e54d3,G,RN / mobile harness,mobileapp/scripts/capture_store_assets_test.py,201,unittest,test_missing_review_is_recaptured_even_when_store_images_are_complete,False,legacy-not-retrospectively-reviewed
+LEG-027b7ff8a1ef,G,RN / mobile harness,mobileapp/scripts/capture_store_assets_test.py,231,unittest,test_review_rejects_stale_first_launch_even_when_other_images_differ,False,legacy-not-retrospectively-reviewed
+LEG-160406ca06fd,G,RN / mobile harness,mobileapp/scripts/capture_store_assets_test.py,245,unittest,test_each_appearance_is_selected_before_a_separate_cold_launch,False,legacy-not-retrospectively-reviewed
+LEG-642d409ba414,G,RN / mobile harness,mobileapp/scripts/capture_store_assets_test.py,280,unittest,test_uses_available_ios_runtime_and_required_devices,False,legacy-not-retrospectively-reviewed
+LEG-3a5a8a833e81,G,RN / mobile harness,mobileapp/scripts/capture_store_assets_test.py,289,unittest,test_refuses_missing_runtime_or_required_device,False,legacy-not-retrospectively-reviewed
+LEG-c8d385e93543,G,RN / mobile harness,mobileapp/scripts/capture_store_assets_test.py,295,unittest,test_boot_failure_cleans_only_the_device_it_created,False,legacy-not-retrospectively-reviewed
+MAP-8a0c52a03bf4,G,reviewed implementation,mobileapp/scripts/check-native-documents.py,8,reviewed-selector,def run(,False,ND-003
+LEG-ef8e55d38361,G,RN / mobile harness,mobileapp/scripts/creative-layout.test.mjs,5,test,both placement layouts keep their focal regions within the official templates,False,legacy-not-retrospectively-reviewed
+LEG-7e5ca2230859,G,RN / mobile harness,mobileapp/scripts/creative-layout.test.mjs,11,test,rejects horizontal clipping even when the old vertical safe band would pass,False,legacy-not-retrospectively-reviewed
+LEG-816929cbc666,G,RN / mobile harness,mobileapp/scripts/creative-layout.test.mjs,17,test,rejects text overflow beyond any edge and missing or empty measurements,False,legacy-not-retrospectively-reviewed
+LEG-44c5ee173835,G,RN / mobile harness,mobileapp/scripts/delivery_scope_test.py,41,unittest,test_version_only_release_skips_even_with_mac_docs_and_test_changes,False,legacy-not-retrospectively-reviewed
+LEG-cc49dd7fe71c,G,RN / mobile harness,mobileapp/scripts/delivery_scope_test.py,51,unittest,test_js_native_dependencies_notes_and_unknown_inputs_require_package,True,legacy-not-retrospectively-reviewed
+LEG-18d7969d97a6,G,RN / mobile harness,mobileapp/scripts/delivery_scope_test.py,58,unittest,test_native_setting_change_is_not_hidden_by_version_normalization,False,legacy-not-retrospectively-reviewed
+LEG-904b2b569c73,G,RN / mobile harness,mobileapp/scripts/delivery_scope_test.py,63,unittest,test_deletion_and_rename_out_of_shipping_tree_require_package,False,legacy-not-retrospectively-reviewed
+LEG-5f8ab7447c3b,G,RN / mobile harness,mobileapp/scripts/delivery_scope_test.py,68,unittest,test_baseline_is_numeric_published_stable_not_draft_future_or_preview,False,legacy-not-retrospectively-reviewed
+LEG-365c1bda99a3,G,RN / mobile harness,mobileapp/scripts/delivery_scope_test.py,73,unittest,test_missing_or_unrelated_baseline_and_mismatched_tag_fail_closed,False,legacy-not-retrospectively-reviewed
+LEG-35e28dc6bf4d,G,RN / mobile harness,mobileapp/scripts/delivery_scope_test.py,85,unittest,test_first_release_and_explicit_preview_can_build_without_diff,False,legacy-not-retrospectively-reviewed
+LEG-f932706c6934,G,RN / mobile harness,mobileapp/scripts/delivery_scope_test.py,90,unittest,test_workflow_checks_scope_before_protected_native_job,False,legacy-not-retrospectively-reviewed
+LEG-ab9a69bdeaaa,G,RN / mobile harness,mobileapp/scripts/delivery_source_test.py,9,unittest,test_legacy_and_parallel_sources,False,legacy-not-retrospectively-reviewed
+LEG-b646dc157b35,G,RN / mobile harness,mobileapp/scripts/delivery_source_test.py,13,unittest,test_no_missing_failed_duplicate_or_mixed_gate_can_pass,True,legacy-not-retrospectively-reviewed
+LEG-05dcc6f4e046,G,RN / mobile harness,mobileapp/scripts/fetch_delivery_test.py,67,unittest,test_verified_cache_reuse_and_no_plaintext,False,legacy-not-retrospectively-reviewed
+LEG-897681611aa6,G,RN / mobile harness,mobileapp/scripts/fetch_delivery_test.py,77,unittest,test_wrong_identity_missing_jobs_expiry_and_latest_ci_fail_before_download,True,legacy-not-retrospectively-reviewed
+LEG-e9ed94a1aca7,G,RN / mobile harness,mobileapp/scripts/fetch_delivery_test.py,92,unittest,test_corrupted_transfer_and_cache_are_not_accepted,False,legacy-not-retrospectively-reviewed
+LEG-156ab1d7fcf3,G,RN / mobile harness,mobileapp/scripts/fetch_delivery_test.py,101,unittest,test_unsafe_or_plaintext_archive_never_emits_a_verified_result,True,legacy-not-retrospectively-reviewed
+LEG-3772fd09c541,G,RN / mobile harness,mobileapp/scripts/fetch_delivery_test.py,110,unittest,test_shared_directory_and_symlink_outputs_rejected,False,legacy-not-retrospectively-reviewed
+LEG-08e1b94d2316,G,RN / mobile harness,mobileapp/scripts/fetch_delivery_test.py,119,unittest,test_get_retry_bound_and_safe_diagnostics,False,legacy-not-retrospectively-reviewed
+LEG-b2883658ac28,G,RN / mobile harness,mobileapp/scripts/fetch_delivery_test.py,132,unittest,test_authentication_is_never_forwarded_and_redirects_are_not_followed,True,legacy-not-retrospectively-reviewed
+LEG-6543102685f1,G,RN / mobile harness,mobileapp/scripts/hosted_delivery_test.py,49,unittest,test_published_release_exact_main_ci,False,legacy-not-retrospectively-reviewed
+LEG-6e0671efa462,G,RN / mobile harness,mobileapp/scripts/hosted_delivery_test.py,52,unittest,test_ui_preview_needs_green_exact_commit_but_no_release,True,legacy-not-retrospectively-reviewed
+LEG-046290c6383f,G,RN / mobile harness,mobileapp/scripts/hosted_delivery_test.py,58,unittest,test_ui_preview_cannot_bypass_missing_ci,False,legacy-not-retrospectively-reviewed
+LEG-d5d450244682,G,RN / mobile harness,mobileapp/scripts/hosted_delivery_test.py,62,unittest,test_arbitrary_ref_and_unpublished_release_refused,True,legacy-not-retrospectively-reviewed
+LEG-56c2c1f1dea7,G,RN / mobile harness,mobileapp/scripts/hosted_delivery_test.py,67,unittest,test_ci_from_other_commit_fork_or_pr_refused,True,legacy-not-retrospectively-reviewed
+LEG-33a0a88de46d,G,RN / mobile harness,mobileapp/scripts/hosted_delivery_test.py,72,unittest,test_latest_failed_rerun_cannot_reuse_old_pass,False,legacy-not-retrospectively-reviewed
+LEG-0edbc8948679,G,RN / mobile harness,mobileapp/scripts/hosted_delivery_test.py,77,unittest,test_preparation_accepts_only_a_real_annotated_tag_at_green_source,True,legacy-not-retrospectively-reviewed
+LEG-ef1a953aae6e,G,RN / mobile harness,mobileapp/scripts/hosted_delivery_test.py,104,unittest,test_upload_rechecks_publication_ci_cli_and_remote_tag,True,legacy-not-retrospectively-reviewed
+LEG-682222d4dc82,G,RN / mobile harness,mobileapp/scripts/hosted_delivery_test.py,120,unittest,test_workflow_moves_release_gate_before_upload_without_moving_protection,False,legacy-not-retrospectively-reviewed
+LEG-571dca2a56ba,G,RN / mobile harness,mobileapp/scripts/hosted_delivery_test.py,131,unittest,test_fast_archive_waits_read_only_for_cli_without_rebuilding,False,legacy-not-retrospectively-reviewed
+LEG-439c473e148a,G,RN / mobile harness,mobileapp/scripts/hosted_delivery_test.py,155,unittest,test_pending_and_failed_cli_do_not_publish_or_poll_forever,True,legacy-not-retrospectively-reviewed
+LEG-589e32e3d5bc,G,RN / mobile harness,mobileapp/scripts/hosted_delivery_test.py,168,unittest,test_all_three_ad_hoc_profiles_supported,False,legacy-not-retrospectively-reviewed
+LEG-f82907433506,G,RN / mobile harness,mobileapp/scripts/hosted_delivery_test.py,174,unittest,test_der_scalars_preserve_boolean_types_and_long_lengths,False,legacy-not-retrospectively-reviewed
+LEG-c14e84ceb5aa,G,RN / mobile harness,mobileapp/scripts/hosted_delivery_test.py,180,unittest,test_malformed_or_unknown_der_fails_without_echoing_payload,True,legacy-not-retrospectively-reviewed
+LEG-199899b2477d,G,RN / mobile harness,mobileapp/scripts/hosted_delivery_test.py,194,unittest,test_exported_app_groups_require_profile_authorization,True,legacy-not-retrospectively-reviewed
+LEG-7353e7301519,G,RN / mobile harness,mobileapp/scripts/hosted_delivery_test.py,208,unittest,test_export_reads_der_and_rejects_debuggable_signed_extensions,True,legacy-not-retrospectively-reviewed
+LEG-a329eed0559c,G,RN / mobile harness,mobileapp/scripts/hosted_delivery_test.py,252,unittest,test_wrong_team_bundle_or_expired_profile_rejected,True,legacy-not-retrospectively-reviewed
+LEG-4edda06f5522,G,RN / mobile harness,mobileapp/scripts/hosted_delivery_test.py,262,unittest,test_store_enterprise_or_empty_device_profiles_rejected,True,legacy-not-retrospectively-reviewed
+LEG-c5455c640f14,G,RN / mobile harness,mobileapp/scripts/hosted_delivery_test.py,267,unittest,test_preflight_missing_fields_has_names_not_values,False,legacy-not-retrospectively-reviewed
+LEG-e89c5f128526,G,RN / mobile harness,mobileapp/scripts/hosted_delivery_test.py,274,unittest,test_preflight_requires_dedicated_uploader_key,False,legacy-not-retrospectively-reviewed
+LEG-609dc934d9fa,G,RN / mobile harness,mobileapp/scripts/hosted_delivery_test.py,286,unittest,test_recovery_allowlist_excludes_credentials_profiles_and_symlinks,False,legacy-not-retrospectively-reviewed
+LEG-ac53f83ea401,G,RN / mobile harness,mobileapp/scripts/hosted_delivery_test.py,297,unittest,test_failed_child_output_never_echoed,False,legacy-not-retrospectively-reviewed
+LEG-9a046471ca6c,G,RN / mobile harness,mobileapp/scripts/hosted_delivery_test.py,304,unittest,test_sealing_uses_recipient_and_excludes_secret_files,False,legacy-not-retrospectively-reviewed
+LEG-abad73054d8d,G,RN / mobile harness,mobileapp/scripts/release_preflight_test.py,46,unittest,test_explicit_version_without_tag_and_independent_android_notes,False,legacy-not-retrospectively-reviewed
+LEG-cee15ef15a56,G,RN / mobile harness,mobileapp/scripts/release_preflight_test.py,59,unittest,test_legacy_tag_ignores_android_namespace,False,legacy-not-retrospectively-reviewed
+LEG-7a0303bf4920,G,RN / mobile harness,mobileapp/scripts/release_preflight_test.py,64,unittest,test_public_commit_identity_guard_redacts_rejected_addresses,True,legacy-not-retrospectively-reviewed
+LEG-eb7e13a79788,G,RN / mobile harness,mobileapp/scripts/release_preflight_test.py,78,unittest,test_invalid_arguments_do_not_write,False,legacy-not-retrospectively-reviewed
+LEG-df61479e7557,G,RN / mobile harness,mobileapp/scripts/release_preflight_test.py,84,unittest,test_preflight_detects_drift_without_writing,True,legacy-not-retrospectively-reviewed
+LEG-23ab7844de39,G,RN / mobile harness,mobileapp/scripts/store_artifacts_test.py,25,unittest,test_build_reuse_requires_exact_source_toolchain_and_content,True,legacy-not-retrospectively-reviewed
+LEG-5d13b15ded14,G,RN / mobile harness,mobileapp/scripts/store_artifacts_test.py,40,unittest,test_rejects_device_or_signed_app_and_external_link,False,legacy-not-retrospectively-reviewed
+LEG-f1ee7b3639ff,G,RN / mobile harness,mobileapp/scripts/store_artifacts_test.py,53,unittest,test_reuse_run_rejects_forks_prs_running_or_other_workflow,True,legacy-not-retrospectively-reviewed
+LEG-bbb5072ac59b,G,RN / mobile harness,mobileapp/scripts/store_artifacts_test.py,61,unittest,test_fetch_rejects_expired_and_fork_artifacts_before_download,False,legacy-not-retrospectively-reviewed
+LEG-788ef306a331,G,RN / mobile harness,mobileapp/scripts/store_artifacts_test.py,79,unittest,test_group_checkpoint_survives_later_failure_and_changed_harness_invalidates_it,False,legacy-not-retrospectively-reviewed
+LEG-64581adebb0c,G,RN / mobile harness,mobileapp/scripts/store_artifacts_test.py,96,unittest,test_render_requires_all_groups_and_rejects_wrong_release_even_with_valid_hashes,False,legacy-not-retrospectively-reviewed
+LEG-47722b2217b0,G,RN / mobile harness,mobileapp/scripts/store_artifacts_test.py,113,unittest,test_duplicate_or_wrong_orientation_does_not_complete_a_group,False,legacy-not-retrospectively-reviewed
+LEG-11549e2fcdd9,G,RN / mobile harness,mobileapp/scripts/store_artifacts_test.py,122,unittest,test_render_uses_current_renderer_and_released_widget_without_capture_or_build,False,legacy-not-retrospectively-reviewed
+LEG-ee29cd3b2ffa,G,RN / mobile harness,mobileapp/scripts/store_package_test.py,34,unittest,test_cli_saves_verified_receipt_privately_and_replaces_previous_result,False,legacy-not-retrospectively-reviewed
+LEG-4dee3aa457e7,G,RN / mobile harness,mobileapp/scripts/store_package_test.py,54,unittest,test_cli_failed_verification_preserves_existing_receipt,False,legacy-not-retrospectively-reviewed
+LEG-05f031bbb145,G,RN / mobile harness,mobileapp/scripts/store_package_test.py,80,unittest,test_entitlement_comparison_blocks_unwanted_keychain_groups_and_all_other_drift,True,legacy-not-retrospectively-reviewed
+LEG-62518d2dd87d,G,RN / mobile harness,mobileapp/scripts/store_package_test.py,89,unittest,test_store_profiles_reject_adhoc_enterprise_expired_wrong_identity,True,legacy-not-retrospectively-reviewed
+LEG-40fa8fe91564,G,RN / mobile harness,mobileapp/scripts/store_package_test.py,133,unittest,test_full_original_ipa_verification_checks_all_extensions_and_resources,False,legacy-not-retrospectively-reviewed
+LEG-8b7dd7678384,G,RN / mobile harness,mobileapp/scripts/store_package_test.py,150,unittest,test_archive_requires_matching_symbols_and_preserves_original,False,legacy-not-retrospectively-reviewed
+LEG-ac9e8d4b5a1d,G,RN / mobile harness,mobileapp/scripts/store_package_test.py,175,unittest,test_unsafe_zip_fails_before_extraction,False,legacy-not-retrospectively-reviewed
+LEG-5e689e79ed79,G,RN / mobile harness,mobileapp/scripts/test_publisher_test.py,31,unittest,test_another_home_and_xdg_and_explicit_location,False,legacy-not-retrospectively-reviewed
+LEG-4fa7b9182b1e,G,RN / mobile harness,mobileapp/scripts/test_publisher_test.py,37,unittest,test_missing_configuration_is_actionable_without_values,False,legacy-not-retrospectively-reviewed
+LEG-23f57bb74b4a,G,RN / mobile harness,mobileapp/scripts/test_publisher_test.py,43,unittest,test_complete_environment_does_not_require_file,False,legacy-not-retrospectively-reviewed
+LEG-686e372ed393,G,RN / mobile harness,mobileapp/scripts/test_publisher_test.py,50,unittest,test_environment_override_and_partial_file,False,legacy-not-retrospectively-reviewed
+LEG-91c5d758e920,G,RN / mobile harness,mobileapp/scripts/test_publisher_test.py,59,unittest,test_unsafe_file_permissions_and_symlink_refused,False,legacy-not-retrospectively-reviewed
+LEG-158c37f018e3,G,RN / mobile harness,mobileapp/scripts/test_publisher_test.py,69,unittest,test_wrong_owner_and_nonregular_file_refused,False,legacy-not-retrospectively-reviewed
+LEG-18419fe1a4e2,G,RN / mobile harness,mobileapp/scripts/test_publisher_test.py,79,unittest,test_malformed_json_does_not_echo_secret,False,legacy-not-retrospectively-reviewed
+LEG-207c26685880,G,RN / mobile harness,mobileapp/scripts/test_publisher_test.py,86,unittest,test_import_private_and_non_overwriting,False,legacy-not-retrospectively-reviewed
+LEG-922cbdcbaa6f,G,RN / mobile harness,mobileapp/scripts/test_publisher_test.py,94,unittest,test_empty_partial_and_oversized_import_creates_nothing,True,legacy-not-retrospectively-reviewed
+LEG-75158e13517b,G,RN / mobile harness,mobileapp/scripts/test_publisher_test.py,100,unittest,test_no_arbitrary_environment_fields_or_credential_urls,False,legacy-not-retrospectively-reviewed
+LEG-0d0a5b3edf26,G,RN / mobile harness,mobileapp/scripts/test_publisher_test.py,113,unittest,test_check_reports_readiness_without_secret_or_network,False,legacy-not-retrospectively-reviewed
+LEG-94900f02abc8,G,RN / mobile harness,mobileapp/scripts/test_publisher_test.py,120,unittest,test_missing_uploader_is_reported_before_execution,False,legacy-not-retrospectively-reviewed
+LEG-405c1ac66c60,G,RN / mobile harness,mobileapp/scripts/test_publisher_test.py,136,unittest,test_secrets_stay_in_environment_and_private_files,False,legacy-not-retrospectively-reviewed
+LEG-1d5aaf587264,G,RN / mobile harness,mobileapp/scripts/test_publisher_test.py,149,unittest,test_failed_uploader_preserves_receipt_results_and_exit_code,False,legacy-not-retrospectively-reviewed
+LEG-12bafcea2811,G,RN / mobile harness,mobileapp/scripts/test_publisher_test.py,157,unittest,test_existing_result_is_not_overwritten,False,legacy-not-retrospectively-reviewed
+LEG-8c37bfd93da8,G,RN / mobile harness,mobileapp/scripts/test_publisher_test.py,164,unittest,test_android_uses_its_separate_catalog_and_configuration_default,False,legacy-not-retrospectively-reviewed
+LEG-6bd89e8c3e9a,G,RN / mobile harness,mobileapp/scripts/test_publisher_test.py,172,unittest,test_android_refuses_unverified_or_non_apk_publication_before_execution,False,legacy-not-retrospectively-reviewed
+LEG-d831ea83c3d9,G,RN / mobile harness,mobileapp/src/screens/PairingScreen.demo.test.tsx,20,test.each(),capture selector matches the real %s demo button and visible action,True,legacy-not-retrospectively-reviewed
+LEG-6477e6b0e4c1,G,RN / mobile harness,mobileapp/src/screens/draftIdentity.test.ts,6,test.each(),%s scopes and remounts the live input target,True,legacy-not-retrospectively-reviewed
+LEG-8a47ddaa776b,G,RN / mobile harness,mobileapp/src/screens/serverModeReaders.test.ts,12,test,a screen that reads server mode follows serverModeRev,False,legacy-not-retrospectively-reviewed
+LEG-63d236ec0387,G,RN / mobile harness,mobileapp/src/screens/shellDrift.test.ts,39,it,lets only the shell read the window to choose a layout,False,legacy-not-retrospectively-reviewed
+LEG-7d9d736a19c0,G,RN / mobile harness,mobileapp/src/ui/ChatView.fullscreen.test.tsx,76,test,the detail screen hands the chat the chrome height and its slide,False,legacy-not-retrospectively-reviewed
+LEG-246bb7d75d82,G,RN / mobile harness,mobileapp/src/ui/SettingsRow.test.tsx,77,test,Needs you and Finished are inset under Push notifications,False,legacy-not-retrospectively-reviewed
+LEG-9912d4966a87,G,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,43,test,takes no palette,False,legacy-not-retrospectively-reviewed
+LEG-b0713c20fdb5,G,RN / mobile harness,mobileapp/src/ui/paneLines.test.ts,55,test,parseAnsi is called only where the renderer owns the normalization,False,legacy-not-retrospectively-reviewed
+LEG-d961adf7f844,G,Worker,relay-worker/src/index.test.ts,100,test,actual Worker requests match the shared Go/Worker APNs contract,False,legacy-not-retrospectively-reviewed
+LEG-ab574333cbac,G,Go core / CLI / server,relay/apns_contract_test.go,20,Test,TestSharedAPNSContract,False,legacy-not-retrospectively-reviewed
+LEG-4832b59a1b49,G,Go core / CLI / server,relay/fcm_test.go,22,Test,TestFCMContract,False,legacy-not-retrospectively-reviewed
+LEG-efd03aa8174a,G,CI / tooling,scripts/android_ci_package_test.py,18,unittest,test_same_package_and_failed_only_rerun,False,legacy-not-retrospectively-reviewed
+LEG-c0ea3c38a060,G,CI / tooling,scripts/android_ci_package_test.py,24,unittest,test_wrong_source_run_future_attempt_and_corruption,True,legacy-not-retrospectively-reviewed
+LEG-7ff6d4ffd479,G,CI / tooling,scripts/android_ci_package_test.py,33,unittest,test_missing_malformed_and_symlink,True,legacy-not-retrospectively-reviewed
+LEG-e408f7c2349a,G,CI / tooling,scripts/check_delivery_retention_test.py,17,unittest,test_valid_scope_and_no_payload_read_or_deletion,False,legacy-not-retrospectively-reviewed
+LEG-547bfb37ddbf,G,CI / tooling,scripts/check_delivery_retention_test.py,29,unittest,test_unknown_private_metadata_and_auto_delete_refused,False,legacy-not-retrospectively-reviewed
+LEG-ae9f8cf7bdd1,G,CI / tooling,scripts/check_delivery_retention_test.py,36,unittest,test_budget_failure_does_not_clean_data,False,legacy-not-retrospectively-reviewed
+LEG-dc070d2cd781,G,CI / tooling,scripts/check_go_security_test.py,12,unittest,test_only_patched_stable_toolchains_build,False,legacy-not-retrospectively-reviewed
+LEG-15c07c817323,G,CI / tooling,scripts/check_go_security_test.py,19,unittest,test_probe_failure_is_not_success,False,legacy-not-retrospectively-reviewed
+LEG-87e6782f49e7,G,CI / tooling,scripts/check_go_security_test.py,24,unittest,test_official_cli_and_bundled_cli_builds_use_the_gate,False,legacy-not-retrospectively-reviewed
+LEG-7fbe430b4339,G,CI / tooling,scripts/check_private_source_test.py,12,unittest,test_all_text_including_checker_and_fixtures_is_checked_without_echoing_values,False,legacy-not-retrospectively-reviewed
+LEG-5616ff2a9320,G,CI / tooling,scripts/check_private_source_test.py,26,unittest,test_private_file_configuration_preserves_case_insensitive_substring_policy,False,legacy-not-retrospectively-reviewed
+LEG-190230edb685,G,CI / tooling,scripts/check_private_source_test.py,33,unittest,test_missing_optional_policy_is_explicit_but_required_or_malformed_policy_fails,False,legacy-not-retrospectively-reviewed
+LEG-c2a9af5cee9b,G,CI / tooling,scripts/check_private_source_test.py,43,unittest,test_env_policy_wins_over_local_file_without_reading_that_file,False,legacy-not-retrospectively-reviewed
+LEG-c77bc44423da,G,CI / tooling,scripts/check_private_source_test.py,48,unittest,test_binary_and_external_symlink_are_not_read_as_text,False,legacy-not-retrospectively-reviewed
+LEG-3a0cbcd63152,G,CI / tooling,scripts/check_private_source_test.py,55,unittest,test_private_filenames_fail_without_repeating_the_name_in_diagnostics,False,legacy-not-retrospectively-reviewed
+LEG-36acddae2fe2,G,CI / tooling,scripts/check_private_source_test.py,63,unittest,test_unreadable_source_fails_and_exception_text_never_reaches_output,False,legacy-not-retrospectively-reviewed
+LEG-046c8bb3bdbc,G,CI / tooling,scripts/check_private_source_test.py,71,unittest,test_wrapper_clears_private_environment_before_build_or_spec_helpers,False,legacy-not-retrospectively-reviewed
+LEG-bb0f4dd7bc8b,G,CI / tooling,scripts/ci_test.py,17,unittest,test_docs_only_and_mixed_changes,False,legacy-not-retrospectively-reviewed
+LEG-5e8793132c96,G,CI / tooling,scripts/ci_test.py,33,unittest,test_shared_or_unknown_impact_is_full,True,legacy-not-retrospectively-reviewed
+LEG-7bbcfe8992be,G,CI / tooling,scripts/ci_test.py,44,unittest,test_recognized_modules_include_consumers,False,legacy-not-retrospectively-reviewed
+LEG-bbdfd85a9000,G,CI / tooling,scripts/ci_test.py,53,unittest,test_nul_parser_preserves_names_and_old_rename_path,True,legacy-not-retrospectively-reviewed
+LEG-30f2f4661935,G,CI / tooling,scripts/ci_test.py,61,unittest,test_actual_git_rename_deletion_and_symlink,False,legacy-not-retrospectively-reviewed
+LEG-a0a184955335,G,CI / tooling,scripts/ci_test.py,87,unittest,test_missing_refs_force_full_cli_outputs,False,legacy-not-retrospectively-reviewed
+LEG-513d57a7489a,G,CI / tooling,scripts/ci_test.py,98,unittest,test_workflow_jobs_cannot_grow_outside_aggregation,False,legacy-not-retrospectively-reviewed
+LEG-1f71c99fb4dc,G,CI / tooling,scripts/ci_test.py,110,unittest,test_unsigned_ios_preserves_arm64_target_and_verifies_products,False,legacy-not-retrospectively-reviewed
+LEG-2514a184abce,G,CI / tooling,scripts/ci_test.py,122,unittest,test_android_package_is_built_once_and_both_devices_use_its_output,False,legacy-not-retrospectively-reviewed
+LEG-76200ceafcf2,G,CI / tooling,scripts/ci_test.py,142,unittest,test_docs_can_skip_heavy_jobs_but_require_quality,False,legacy-not-retrospectively-reviewed
+LEG-ecfb4bf818ba,G,CI / tooling,scripts/ci_test.py,148,unittest,test_missing_skipped_failed_cancelled_required_job_never_green,True,legacy-not-retrospectively-reviewed
+LEG-252965413bf3,G,CI / tooling,scripts/ci_test.py,157,unittest,test_bad_plans_or_unselected_failure_are_rejected,False,legacy-not-retrospectively-reviewed
+LEG-8a6a845c7484,G,CI / tooling,scripts/ci_test.py,169,unittest,test_mac_host_keeps_both_architectures_and_native_checks,False,legacy-not-retrospectively-reviewed
+LEG-28f4d1551b14,G,CI / tooling,scripts/ci_test.py,186,unittest,test_ios_delivery_pins_the_same_arm_toolchain_and_keeps_protection,False,legacy-not-retrospectively-reviewed
+MAP-349a1f57f0b7,G,CI / tooling,scripts/ci_test.py,25,reviewed-selector,test_reviewed_test_records_are_policy_only_without_hiding_test_changes,False,TD-006
+LEG-0a1ce627fdd1,G,CI / tooling,scripts/install_platform_test.py,70,unittest,test_linux_archives_install_without_any_mac_application,True,legacy-not-retrospectively-reviewed
+LEG-8ccffb001b09,G,CI / tooling,scripts/install_platform_test.py,80,unittest,test_checksum_failure_never_installs,False,legacy-not-retrospectively-reviewed
+LEG-c81cb29009cc,G,CI / tooling,scripts/install_platform_test.py,86,unittest,test_existing_optional_client_is_updated_only_by_capable_release,True,legacy-not-retrospectively-reviewed
+LEG-d7e7f47e97bb,G,CI / tooling,scripts/install_platform_test.py,96,unittest,test_dependency_failure_preserves_installed_cli_and_reports_failure,False,legacy-not-retrospectively-reviewed
+LEG-0a6c8a046a0f,G,CI / tooling,scripts/install_platform_test.py,103,unittest,test_other_platform_is_refused_before_downloading,False,legacy-not-retrospectively-reviewed
+LEG-570b7a9ee467,G,CI / tooling,scripts/linux_ci_test.py,48,unittest,test_stopped_user_manager_does_not_mask_runtime_result,True,legacy-not-retrospectively-reviewed
+LEG-a53309dd85f9,G,CI / tooling,scripts/linux_ci_test.py,54,unittest,test_account_cleanup_failure_is_visible_without_hiding_test_failure,True,legacy-not-retrospectively-reviewed
+LEG-1c37868105a8,G,CI / tooling,scripts/mac_widget_test.py,12,unittest,test_only_parent_retains_automation_and_only_extension_is_sandboxed,False,legacy-not-retrospectively-reviewed
+LEG-febffd578225,G,CI / tooling,scripts/mac_widget_test.py,22,unittest,test_unsigned_build_cannot_claim_shared_access_and_invalid_team_is_rejected,False,legacy-not-retrospectively-reviewed
+LEG-d167c20547cb,G,CI / tooling,scripts/mac_widget_test.py,30,unittest,test_bundle_builder_signs_extension_before_parent_and_cli_has_no_group,False,legacy-not-retrospectively-reviewed
+LEG-9a3985909f06,G,CI / tooling,scripts/mac_widget_test.py,40,unittest,test_extension_has_no_cli_or_credentials_path,False,legacy-not-retrospectively-reviewed
+LEG-a511cc81c48e,G,CI / tooling,scripts/macos_notarize_test.py,28,unittest,test_success_submits_once_and_validates,False,legacy-not-retrospectively-reviewed
+LEG-41e8aec5acea,G,CI / tooling,scripts/macos_notarize_test.py,35,unittest,test_transport_loss_retries_only_ticket_not_submission,False,legacy-not-retrospectively-reviewed
+LEG-4fcafca53ce2,G,CI / tooling,scripts/macos_notarize_test.py,42,unittest,test_api_key_arguments_preserve_paths_without_shell_splitting,False,legacy-not-retrospectively-reviewed
+LEG-6b1c401e00c6,G,CI / tooling,scripts/macos_notarize_test.py,53,unittest,test_exhausted_transport_stops_without_validation_or_publication,False,legacy-not-retrospectively-reviewed
+LEG-c23ad5b901d1,G,CI / tooling,scripts/macos_notarize_test.py,58,unittest,test_rejection_bad_response_or_submission_failure_never_retries,True,legacy-not-retrospectively-reviewed
+LEG-b8645d94d3b9,G,CI / tooling,scripts/macos_notarize_test.py,65,unittest,test_permanent_staple_failure_and_other_codes_never_retry,True,legacy-not-retrospectively-reviewed
+LEG-82791f9b6114,G,CI / tooling,scripts/macos_notarize_test.py,72,unittest,test_validation_failure_stays_failure,False,legacy-not-retrospectively-reviewed
+LEG-6f88c9db880a,G,CI / tooling,scripts/macos_notarize_test.py,77,unittest,test_missing_credentials_fails_before_external_process,False,legacy-not-retrospectively-reviewed
+LEG-99eaab98d03e,G,CI / tooling,scripts/macos_notarize_test.py,83,unittest,test_native_timeout_is_bounded_and_not_silently_retried,False,legacy-not-retrospectively-reviewed
+LEG-79c33be64670,G,CI / tooling,scripts/macos_release_artifact_test.py,26,unittest,test_exact_bytes_and_original_successful_build_attempt,False,legacy-not-retrospectively-reviewed
+LEG-bf1b13d7d09d,G,CI / tooling,scripts/macos_release_artifact_test.py,37,unittest,test_corrupt_zip_even_with_modified_receipt_is_refused,False,legacy-not-retrospectively-reviewed
+LEG-7c5aef0c9def,G,CI / tooling,scripts/macos_release_artifact_test.py,46,unittest,test_other_source_ref_run_attempt_or_missing_trusted_hash_refused,True,legacy-not-retrospectively-reviewed
+LEG-1f167bb40fc5,G,CI / tooling,scripts/macos_release_artifact_test.py,53,unittest,test_extra_missing_and_symlink_files_refused,False,legacy-not-retrospectively-reviewed
+LEG-df41731a9f5a,G,CI / tooling,scripts/macos_release_artifact_test.py,68,unittest,test_snapshot_branch_is_never_a_notarized_tag,False,legacy-not-retrospectively-reviewed
+LEG-5b4f0466d8be,G,CI / tooling,scripts/macos_release_artifact_test.py,76,unittest,test_definition_is_bound_separately_from_immutable_product,False,legacy-not-retrospectively-reviewed
+LEG-00e8674df08f,G,CI / tooling,scripts/macos_release_artifact_test.py,87,unittest,test_staging_does_not_replace_an_existing_build,False,legacy-not-retrospectively-reviewed
+LEG-2c4103097c81,G,CI / tooling,scripts/macos_release_artifact_test.py,93,unittest,test_builds_overlap_but_publication_and_mirror_wait_for_all_successes,False,legacy-not-retrospectively-reviewed
+LEG-f25be4639f14,G,CI / tooling,scripts/macos_release_source_test.py,47,unittest,test_exact_product_is_separate_from_workflow_definition,False,legacy-not-retrospectively-reviewed
+LEG-df83a87677f8,G,CI / tooling,scripts/macos_release_source_test.py,52,unittest,test_normal_tag_and_snapshot_do_not_fetch_recovery_authority,False,legacy-not-retrospectively-reviewed
+LEG-024e8902532b,G,CI / tooling,scripts/macos_release_source_test.py,59,unittest,test_dispatch_identity_branch_and_tag_cannot_inject_source,True,legacy-not-retrospectively-reviewed
+LEG-3ec53d8da2ff,G,CI / tooling,scripts/macos_release_source_test.py,65,unittest,test_moved_main_lightweight_tag_or_wrong_annotated_target_refused,True,legacy-not-retrospectively-reviewed
+LEG-d287d08892e1,G,CI / tooling,scripts/macos_release_source_test.py,74,unittest,test_both_latest_product_and_definition_main_ci_required,True,legacy-not-retrospectively-reviewed
+LEG-7d91fb17352f,G,CI / tooling,scripts/macos_release_source_test.py,82,unittest,test_cli_assets_and_current_stable_release_required,True,legacy-not-retrospectively-reviewed
+LEG-0f5c2d90cdb7,G,CI / tooling,scripts/macos_release_source_test.py,90,unittest,test_existing_mac_is_not_rebuilt,False,legacy-not-retrospectively-reviewed
+LEG-6e59738888f6,G,CI / tooling,scripts/macos_release_source_test.py,95,unittest,test_newer_failed_cli_cannot_reuse_old_success,False,legacy-not-retrospectively-reviewed
+LEG-7398b7442e11,G,CI / tooling,scripts/macos_release_source_test.py,99,unittest,test_wrong_cli_source_run_failure_or_successful_mac_refused,True,legacy-not-retrospectively-reviewed
+LEG-4581141dbca6,G,CI / tooling,scripts/macos_release_source_test.py,106,unittest,test_recovery_publication_requires_independent_staple_and_all_jobs,True,legacy-not-retrospectively-reviewed
+LEG-5b769fb296e9,G,CI / tooling,scripts/macos_release_source_test.py,120,unittest,test_publication_is_bound_to_its_reviewed_definition_if_main_advances,False,legacy-not-retrospectively-reviewed
+LEG-5aad5158d068,G,CI / tooling,scripts/macos_release_source_test.py,125,unittest,test_definition_and_product_cannot_be_swapped_at_publication,False,legacy-not-retrospectively-reviewed
+LEG-49bb706f9b27,G,CI / tooling,scripts/macos_release_source_test.py,130,unittest,test_attach_is_idempotent_only_for_identical_published_bytes,False,legacy-not-retrospectively-reviewed
+LEG-a1d0c36f48c9,G,CI / tooling,scripts/openspec_check_test.py,17,unittest,test_invalid_spec_is_not_a_launcher_failure,False,legacy-not-retrospectively-reviewed
+LEG-9e2d16a12271,G,CI / tooling,scripts/openspec_check_test.py,21,unittest,test_cache_and_startup_errors_have_no_spec_verdict,False,legacy-not-retrospectively-reviewed
+LEG-205e9ec99a67,G,CI / tooling,scripts/openspec_check_test.py,26,unittest,test_false_green_mismatched_summary_and_other_checkout_fail_closed,False,legacy-not-retrospectively-reviewed
+LEG-4d8ee0062b9e,G,CI / tooling,scripts/openspec_check_test.py,33,unittest,test_missing_or_timed_out_launcher_reports_tool_failure,True,legacy-not-retrospectively-reviewed
+LEG-63da1be523e5,G,CI / tooling,scripts/openspec_check_test.py,40,unittest,test_success_requires_complete_machine_output,False,legacy-not-retrospectively-reviewed
+LEG-f2ba1da83c9d,G,CI / tooling,scripts/release_feed_test.py,46,unittest,test_bytes_and_source_scope,False,legacy-not-retrospectively-reviewed
+LEG-3b7e3cd270e7,G,CI / tooling,scripts/release_feed_test.py,52,unittest,test_wrong_github_digest_and_incomplete_release_stop,False,legacy-not-retrospectively-reviewed
+LEG-eeace491320a,G,CI / tooling,scripts/release_feed_test.py,81,unittest,test_bootstrap_verifies_and_pins_exact_installer,True,legacy-not-retrospectively-reviewed
+LEG-02cacadff09f,G,CI / tooling,scripts/release_feed_test.py,86,unittest,test_bad_signature_hash_and_pin_never_execute,True,legacy-not-retrospectively-reviewed
+LEG-52289bdb0a6b,G,CI / tooling,scripts/release_feed_test.py,91,unittest,test_unmirrored_pin_uses_authenticated_current_installer,False,legacy-not-retrospectively-reviewed
+LEG-1aadd40a1758,G,CI / tooling,scripts/release_feed_test.py,96,unittest,test_publisher_never_sends_credential_to_other_host,False,legacy-not-retrospectively-reviewed
+LEG-5f89540a4f8c,G,CI / tooling,scripts/release_feed_test.py,99,unittest,test_failed_or_unnotarized_builds_are_not_publishable,False,legacy-not-retrospectively-reviewed
+LEG-8b1f82e27846,G,CI / tooling,scripts/release_feed_test.py,107,unittest,test_parallel_mac_must_be_published_before_promoting_downloads,False,legacy-not-retrospectively-reviewed
+LEG-e7848c9d533e,G,CI / tooling,scripts/release_feed_test.py,122,unittest,test_explicit_old_run_cannot_bypass_the_latest_failure,False,legacy-not-retrospectively-reviewed
+LEG-3b2a0a11f0dd,G,CI / tooling,scripts/release_feed_test.py,128,unittest,test_publication_and_readback_identify_the_client_without_leaking_auth,False,legacy-not-retrospectively-reviewed
+LEG-3ec2e6ea4c71,G,CI / tooling,scripts/release_feed_test.py,144,unittest,test_latest_failed_build_cannot_reuse_an_old_pass,False,legacy-not-retrospectively-reviewed
+LEG-f96cb8fa1137,G,CI / tooling,scripts/release_feed_test.py,154,unittest,test_frozen_recovery_source_requires_identical_current_installer_bytes,False,legacy-not-retrospectively-reviewed
+LEG-a773f7b44f33,G,CI / tooling,scripts/release_feed_test.py,167,unittest,test_slow_trickling_public_readback_stops_at_total_deadline,False,legacy-not-retrospectively-reviewed
+MAP-253bbd74b924,G,reviewed implementation,scripts/test_design.py,51,reviewed-selector,def validate(,False,"TD-001,TD-002,TD-003,TD-004,TD-005"
+MAP-0fe56134bb6e,G,reviewed implementation,scripts/test_design.py,102,reviewed-selector,def history_errors(,False,"TD-001,TD-002,TD-003,TD-004,TD-005"
+MAP-c8a2197482da,G,reviewed implementation,scripts/test_design.py,174,reviewed-selector,def refresh_catalogue(,False,"TD-001,TD-002,TD-003,TD-004,TD-005"
+TD-001-bb7e1e,G,CI / tooling,scripts/test_design_test.py,29,test,test_TD_001_valid_review_and_changed_source_guard,False,TD-001
+TD-002-bb7e1e,G,CI / tooling,scripts/test_design_test.py,41,test,test_TD_002_seal_required_fields_layers_paths,False,TD-002
+TD-003-bb7e1e,G,CI / tooling,scripts/test_design_test.py,54,test,test_TD_003_unlisted_test_missing_source_and_missing_case,False,TD-003
+TD-004-bb7e1e,G,CI / tooling,scripts/test_design_test.py,71,test,test_TD_004_history_rejects_same_commit_review_and_accepts_prior_review,False,TD-004
+TD-005-bb7e1e,G,CI / tooling,scripts/test_design_test.py,95,test,test_TD_005_removal_requires_rationale_and_absence,False,TD-005
+ND-003-bb7e1e,G,CI / tooling,scripts/test_design_test.py,103,test,test_ND_003_native_runner_uses_production_sources_and_propagates_failures,False,ND-003
+LEG-96cb2ba94045,G,CI / tooling,scripts/vulncheck_test.py,24,unittest,test_execution_failure_even_with_partial_output_fails,False,legacy-not-retrospectively-reviewed
+LEG-fecadf66518e,G,CI / tooling,scripts/vulncheck_test.py,31,unittest,test_empty_malformed_or_missing_protocol_fails,True,legacy-not-retrospectively-reviewed
+LEG-b709631fda46,G,CI / tooling,scripts/vulncheck_test.py,36,unittest,test_valid_scan_without_findings_passes,False,legacy-not-retrospectively-reviewed
+LEG-6da01b5b6548,G,CI / tooling,scripts/vulncheck_test.py,39,unittest,test_reachable_fixable_fails_unfixed_or_unreachable_passes,False,legacy-not-retrospectively-reviewed
+LEG-630bd7aac308,G,Browser,tests/web/alignment.test.cjs,59,scenario,Human profiles share App identity and quote without irrelevant browser permissions,False,legacy-not-retrospectively-reviewed
+LEG-00a1f7cbea36,G,Browser,tests/web/smoke.test.cjs,671,scenario,"Composer stages files, annotates images, recalls input and matches app send controls",False,legacy-not-retrospectively-reviewed
+LEG-f81adc301549,G,Browser,tests/web/smoke.test.cjs,846,scenario,Clipboard images and dropped files stay staged until an explicit send,False,legacy-not-retrospectively-reviewed

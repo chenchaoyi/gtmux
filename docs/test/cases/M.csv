@@ -1,0 +1,5 @@
+id,layer,stack,file,line,kind,description,dynamic,design
+LEG-95b0bcda12ce,M,RN / mobile harness,mobileapp/e2e/capture/hq-header-shot.test.ts,15,it,opens the disclosure,False,legacy-not-retrospectively-reviewed
+LEG-490318c4a70a,M,RN / mobile harness,mobileapp/e2e/capture/knowledge-shot.test.ts,14,it,opens from the header and drills into an entry,False,legacy-not-retrospectively-reviewed
+LEG-34eb45b46408,M,RN / mobile harness,mobileapp/e2e/diagnostics/ipad-keys-probe.test.ts,12,it,types into the pane search with mobile: keys,False,legacy-not-retrospectively-reviewed
+LEG-f17f27ea8cb4,M,RN / mobile harness,mobileapp/e2e/diagnostics/send-repro.test.ts,21,it,types + sends 继续 and reports whether a failed-send bar appears,False,legacy-not-retrospectively-reviewed

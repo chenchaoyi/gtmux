@@ -1,96 +1,122 @@
-# gtmux 测试方案（Test Plan）
+# Test system
 
-> 本文是 gtmux 的测试策略与测试设计。每次功能迭代都要**回看本方案**，按需更新测试设计、补/改用例，
-> 并更新 [`DESIGN-TRACEABILITY.md`](DESIGN-TRACEABILITY.md)（设计完整跟随情况）。
+[中文](TEST-PLAN.zh.md) · [Case catalogue](CASES.md) · [Design workflow](DESIGN-WORKFLOW.md) · [Design traceability](DESIGN-TRACEABILITY.md)
 
-本文列的是测试要求，不是各平台已通过的验收记录。实际验收须另记版本、设备、场景与结果。
+Test **layers describe the boundary being exercised**. Go, React Native (RN), Swift
+and Cloudflare Workers describe implementations and runtimes; they are not parallel
+test layers. One technology can appear in several layers. Build success, static
+checks, screenshots and device interaction each prove different things.
 
-## 0. 目标与分层
+## Layers
 
-gtmux 有五个界面：终端 CLI、macOS 菜单栏、手机、iPad、Web。Go 核心提供状态与 API；
-React Native 同时承载手机和 iPad。测试从「机器可判定」走到「人工验收」：
-
-| 层 | 测什么 | 在哪 | 何时跑 |
+| Layer | Question and observable result | Examples in gtmux | Environment / limitation |
 | --- | --- | --- | --- |
-| L1 · Go 单元 | CLI 逻辑：agent 分类/排序、`agents --json` 契约、hook 状态机、ghostty 脚本、设置合并 | `internal/**/_test.go` | `make check` / CI（受影响或范围不确定） |
-| L2 · Swift 单元 | app 纯逻辑：**状态色=DESIGN 权威 hex**、相对时间、分组/过滤/搜索、JSON 解码、monogram | `macapp/Tests/` | `cd macapp && swift test` / CI（受影响或范围不确定，macOS） |
-| L2 · 移动端 JS | 配对、诊断、聊天、无障碍标签及手机/iPad 共用控件 | `mobileapp/src/**/*.test.ts(x)` | `cd mobileapp && npm run check` / CI（受影响或范围不确定） |
-| L2 · Web 交互 | 配对码、连接状态、发送失败恢复；另有真实 DOM/CSS 窄屏与桌面测试 | `internal/server/web/app.test.cjs`、`tests/web/` | Node 逻辑 + Chromium / CI（受影响或范围不确定） |
-| L2 · Worker | APNs 推送中继与隧道控制面的类型和行为（含 Direct） | `relay-worker/`、`tunnel-worker/` | 各目录 `npm run typecheck && npm test` / CI（受影响或范围不确定） |
-| L3 · 一致性自检 | **设计跟随 + 架构不变量**：状态色与 DESIGN §9 一致、app 不引入 systray、app 只消费不自探测、CLI cgo-free | `scripts/check-design.sh` | CI（每 PR） |
-| L4 · 人工验收 | 视觉与交互（无法机器判定）：DESIGN §13 矩阵、浅/深/着色菜单栏、键盘、i18n 即时切换、偏好设置 | 真机 macOS，对照 `docs/design/mockup/` | 发版前 + 收到设计变更时 |
+| L1 — unit / pure logic | Does an isolated parser, model or policy return the right result for normal, boundary and invalid input? | Go classification/history/restore policy; RN Trace models and formatters; Swift HTML/Markdown preprocessing; Android document policy | Synthetic data, clock/network injected as needed; does not prove a screen or native gesture |
+| L2 — component / contract | Does a component or boundary consume the right data and expose the right behavior? | RN rendered components with press callbacks; Go `httptest` route contracts; Worker request/response and APNs/FCM payloads; Swift stores with fake clients | RN renderer is not an installed app; Go route tests do not imply the whole daemon is running |
+| L3 — runtime integration | Do multiple pieces cooperate in an actual runtime? | Chromium loads real embedded HTML/JS/CSS against a synthetic API; Cloudflare runtime tests; native bridge integration when explicitly run | Browser fixtures are not real Go-server contracts. Foundation command-line oracles remain L1, not WKWebView interaction |
+| L4 — application journeys | Can a user complete an application flow through real compiled UI and a device driver? | Android phone/tablet emulator journey; explicitly enabled iOS Appium regression suites | Fixture-backed UI exercises the app, not production APNs, real agent input or all OS permissions |
+| M — manual / device acceptance | Is the actual layout, touch, focus, accessibility speech and OS integration usable? | Real iPhone/iPad, Safari, VoiceOver/TalkBack, hardware keyboard, rotation/split view, Ghostty focus | Record device, source/build, steps, result and limitations. Screenshot or AX tree alone is not interaction/speech proof |
+| G — qualification gates (orthogonal) | Is source/artifact policy satisfied? | Typecheck, lint, race/vulnerability checks, strict specs, bilingual/generated docs, source seals, architecture, signing/notarization/package validation | A gate may protect any layer. Compilation, regex or signature checks are not behavioral UI tests |
 
-L1–L3 在 CI 全自动。规范、文档示例、规格和 CI 自身回归检查每 PR 必跑；平台检查按
-[PR 检查规则](../ci.zh.md) 选择，影响不确定时全跑。Web 另有真实 Chromium 渲染测试，
-iOS 另有 App/扩展的无签名模拟器构建。它们不代替 L4；L4 需分别覆盖 Mac、手机、iPad、Web（见 §3）。
+Choose the lowest layer that detects the fault, then add a higher-layer regression
+when integration or presentation caused the real failure. Keep meaningful legacy
+provider compatibility and permission/ownership regressions. No fixed pyramid
+percentage or test-count target substitutes for an effective assertion.
 
-## 1. 测试设计原则
+## Where each product and technology fits
 
-- **设计即断言**：把 DESIGN.md 里**可量化**的规范变成断言（颜色 hex、分区顺序、徽章=色+形+字形的存在性、
-  相对时间格式、native/tmux 行为差异）。视觉细节（间距、材质观感）留给 L4。
-- **纯函数优先**：把可测逻辑抽成纯函数（`relativeTime(_:now:)`、`AgentStore.fuzzy`、`sections(...)`、
-  `Agent` 解码、`agentMonogram`），避开 AppKit/UI，单测稳定快。
-- **契约锁定**：`agents --json` 的字段（含 §7 的 `source/project/terminal/tab/activity_at`）有契约测试，
-  防止字段被悄悄改名/删除而打穿 app。
-- **架构不变量自检**：见 L3，把「app 是纯消费方」「CLI cgo-free」「不回退 systray」做成 CI 闸门。
+| Implementation / surface | Typical layers | Actual runners / sources |
+| --- | --- | --- |
+| Go core, CLI, HTTP server, HQ/restore | L1 + L2; isolated subprocess/service integration L3; G race/build/policy | `go test -race ./...`, `internal/**`, `cmd/**`, `relay/**`; Linux user-service acceptance owns a temporary account |
+| RN shared app (iPhone, iPad, Android phone/tablet) | Pure TS L1; React renderer L2; bridge integration L3; installed UI L4 | `mobileapp/src`, Jest; Android journey and opt-in Appium. RN is the shared framework, not an additional layer between UI and Go |
+| iOS Swift / Android Kotlin or C++ | Logic L1, platform/bridge L3 when run, app L4; build/package G | Foundation document oracles, Widget target checks, Android JUnit/lint/QA package, unsigned ARM64 app/extensions build |
+| macOS menu bar / Widgets | Models L1, stores/components L2, actual window/system operation L3/M; universal build G | `macapp/Tests`, `shared/UsageWidgets`; actual focus and UI acceptance separately recorded |
+| Browser | Models L1; DOM/browser runtime L3; real-host acceptance L4/M when explicitly run | Node tests in `internal/server/web`, Chromium in `tests/web` |
+| Workers (push relay, tunnel, download) | Handler/contract L2, Worker runtime L3, deployed smoke when separately authorized; type/policy G | `relay-worker`, `tunnel-worker`, `download-worker`, `shared/worker-json.test.mts`. A Worker is an edge service runtime, not a test level |
+| CI, delivery, docs and test infrastructure | L1/L2 tests of tooling; G for the policies those tools enforce | `scripts/*_test.py`, `mobileapp/scripts`, Ruby/Shell/native harnesses and `internal/docs` |
 
-## 2. 持续迭代要求（每次功能迭代必做）
+The browser and RN use the same semantic behavior fixture
+[`tests/contracts/client-behavior.json`](../../tests/contracts/client-behavior.json).
+Assertions execute each real renderer independently: five providers, original turn
+151, counts, initially folded turns, individual calls, HQ sender identity, Markdown
+and scoped file actions. Shared helpers alone do not prove final UI parity. These
+fixtures do not invent a browser HQ-workspace screen or native WK/gesture coverage.
 
-1. **回看测试设计**：本功能触及哪一层？是否需要新纯函数以便单测？
-2. **更新用例**：新增/调整 L1/L2 用例；若引入新的 DESIGN 可量化点，加进 L3。
-3. **更新跟随矩阵**：在 [`DESIGN-TRACEABILITY.md`](DESIGN-TRACEABILITY.md) 标注该 DESIGN 小节的实现/测试/状态。
-4. **架构合理性 review**：确认未破坏不变量（消费方、cgo-free、终端耦合只在 `internal/terminal`
-   的 `Terminal` 驱动里（ghostty / iterm2 / warp）、Theme 是唯一 token 权威）。
-   `scripts/check-design.sh` 守机器可判定的部分，其余在 PR 描述里自评。
-5. **跑相关闸门**：提交前仍跑 `make check`，并运行受影响的平台测试和
-   `./scripts/check-design.sh`；核对 CI 选择摘要，范围不确定时全部运行，CI 必绿。
+## CI stages
 
-## 3. 人工验收清单（L4，发版前）
+The authoritative entry points are [CI](../../.github/workflows/ci.yml),
+[scope selection](../../scripts/ci.py) and the six workflows listed below. The
+matrix describes what runs, not a claim that a particular revision passed.
 
-对照 `docs/design/mockup/` 与 DESIGN §13 矩阵，在真机逐项确认：
+| Stage | Tests / checks executed | What does not follow from success |
+| --- | --- | --- |
+| PR to main | Always scope + quality + `ci-required`; affected platform jobs below. Test-design history checks require the sealed review before the first test edit | No signing, deployment, installation or implicit human approval |
+| Actual main push | Same conservative selector and selected jobs; validate catalogue/design snapshot after squash; separate run bound to actual merge SHA | A PR pass is not this run; a squash cannot preserve pre-implementation commit order in its single resulting commit |
+| Manual `ci` dispatch | All platform suites plus quality and aggregate | Does not install or publish |
+| Tag / release (`release.yml`) | Resolve immutable source/definition; Go security and complete `make check`; cross-build CLI; universal signed Mac build, notarization/staple verification; publish only after required producers; signed feed/mirror checks | CLI/Mac publication does not mean an iOS/Android upgrade or actual installation |
+| iOS test delivery (`ios-test-delivery.yml`) | Exact reviewed main/tag and successful matching main CI; scope comparison can skip unchanged iOS inputs; protected signing/publisher preflight, build/archive/export and artifact checks; preview and release-test modes differ | No Store Submit; uploaded IPA or Safari link is not proof of installation/UI acceptance |
+| Android test delivery (`android-test-delivery.yml`) | Exact source on main, successful native **and both emulator** checks; build ordinal/input checks; unsigned production build and encrypted artifact; operator subsequently verifies/signs/publishes under its delivery procedure | QA APK is not a signed release; uploaded APK is not a physical-device pass or Play listing |
+| Store assets (`ios-store-assets.yml`) | Validate source; build/reuse validated simulator host; capture missing locale/device groups, checkpoint, render/verify assets | Capture is material production, not automatic functional/visual approval or Store submission |
+| Mirror recovery (`release-mirror.yml`) | Validate published version and frozen installer/source, signed feed/trust, sync existing immutable assets | No new product build; cannot substitute for original release or install evidence |
 
-- **状态项**：当前 `StatusItemGlyph` 始终画 gtmux pane 网格；waiting 红、working 青、idle 绿，空列表或仅 running 为中性色，计数由 `AppDelegate.renderIcon` 添加。
-  浅/深/**着色**菜单栏都应可辨；三种显示模式（点/点+数字/空闲隐藏）切换正确。色+形+字形的完整状态编码在行内徽章另验收；菜单栏网格在无计数的模式下只靠颜色区分状态，是与 DESIGN §2 非颜色编码要求的已知偏离，不能记为该要求已通过。
-- **popover**：分区 needs-you→working→idle→running、waiting 标题红+行淡红底；行=头像+状态徽章、session 主/
-  window 次、task 省略号、相对时间、跳转记号；hover=选中；`↑↓⏎⎋`；超长 task 与 CJK 不破行/溢出。
-- **跳转**：点行/⏎ → tmux 用 pane id 正确切；native 行只显示感知状态，不能直接跳转或输入。可恢复的 native 会话提供「转入 tmux」，另验收其新建 tmux 会话的恢复路径。
-- **空状态/首次运行**：文案平实无营销腔；权限卡步骤正确。
-- **偏好**：语言三态**即时生效**（状态项/popover 跟随）；刷新间隔、开机自启、显示模式、通知开关生效。
-- **动效**：按 DESIGN §10，行内 working 环仅在界面打开且未启用 Reduce Motion 时旋转，周期 2 秒；关闭界面后应换成静态视图。菜单栏网格不旋转；服务器模式的呼吸点另按 §17 验收。idle→waiting 单次脉冲仍是未实现要求，不计为已通过。
-- **真机工具**：按 [`REAL-DEVICE.zh.md`](../../mobileapp/e2e/REAL-DEVICE.zh.md) 选择可用入口；安装、截图、控件树、VoiceOver 实际播报分别记录。
-- **手机/iPad**：配对、切 Mac、HQ 对话与知识页、VoiceOver/TalkBack 标签；窄屏和分栏各走一遍。
-- **Web**：访客链接配对、权限受限、发送失败保留草稿；窄屏和宽屏各走一遍。
+There is no scheduled blanket UI/nightly workflow in this checkout. Longer exploratory
+and real-device runs require explicit recording; do not imply they run on every PR.
 
-### HQ 导航、搜索与输入
+### Selected CI jobs and commands
 
-- **Mac 旧记录与事项切换**：加载较早记录期间切换事项，新事项应立即发起读取；旧响应不能替换新事项，也不能等下一次定时刷新才恢复。界面关闭后不得因此追加读取。
-- **复制入口**：HQ 消息使用图标按钮；仍复制完整原文，保留成功反馈、失败说明和无障碍名称。
-- **手机/iPad 控件语义**：资源入口和卡片操作报告按钮角色，页签报告选中状态，展开控件报告展开状态；卡片选择不能将内部操作合并为一个无障碍元素。控件树检查不代替 VoiceOver 实际播报。
-- **知识搜索**：软件键盘显示时，第一次点击结果即可打开条目；分别检查手机单列和 iPad 分栏，并检查返回后保留搜索条件。
-- **iPad HQ 宽度**：竖屏与窄主区使用页签，足够宽时使用检视栏；旋转或开关侧栏时不把对话挤成窄列，并检查未发送草稿。
-- **HQ 软件键盘**：打开键盘时收起浮动头部及次要快捷行，保持输入框可见；关闭后恢复。以手机横屏和辅助功能大字号检查遮挡，并确认转屏保留草稿。`hq-keyboard.test.ts` 需显式指定测试 UDID 并设置 `GTMUX_HQ_KEYBOARD_LANDSCAPE=1`。
-- **发送与恢复**：用隔离 API 验证 HQ 消息的实际目标和正文；模拟拒绝或暂时故障，确认待重试内容保留，重试成功后提示消失。不向真实工作会话发送测试消息。
+| Job | Checks and test layer | Selection / environment |
+| --- | --- | --- |
+| `quality` | `make ci-test publisher-test`; actionlint; `check-design.sh --source-only` including test design/catalogue and bilingual pairs; strict OpenSpec; generated assets/docs; download-worker test/build; `go test ./internal/docs` | Every PR/main/manual run; private exact-term policy required for owned runs, explicitly unavailable to forks |
+| `test` | gofmt/vet/staticcheck, isolated tmux prerequisite; Go `-race -coverprofile`; Linux user-service acceptance; vulnerability protocol and design checks (L1/L2/L3 + G) | Go/core or affected Web/relay consumers; unknown/shared impact selects all |
+| `cross-build` | CGO-free CLI cross-compilation | Selected core/shared impact; build qualification, not runtime tests |
+| `mobile` | `npm ci`, tsc, eslint, complete Jest, delivery-helper tests, creative-layout checks (L1/L2 + G) | RN or downstream consumers; synthetic bridge mocks do not prove native UX |
+| `web` | Complete `internal/server/web/*.test.cjs` Node tests, Chromium rendered tests (`tests/web`) (L1/L3) | Embedded Web/browser/shared mobile presentation changes |
+| `ios-native` | Production Swift HTML/Markdown oracles via `check-native-documents.py` (L1); Ruby Widget boundary; unsigned Release ARM64 app + two embedded extensions compile/architecture (G) | iOS/RN/shared changes; no device boot, UI automation, signing or upload |
+| `android-native` | `assembleQa testQaUnitTest lintQa`; source seal, package/ABI/16KiB checks (L1 + G) | Android/RN/shared input changes |
+| `android-emulator` | Phone and tablet matrix consuming the exact source-sealed QA APK; actual UI journey (L4) | Always selected with Android build; no shared local emulator/ADB |
+| `menubar` | Swift universal build, UsageWidgets and menu-bar Swift tests, Widget build/design (L1/L2 + G) | Menu-bar or shared/uncertain changes; native visual/focus acceptance separate |
+| `relay-worker` | Typecheck, shared JSON/APNs/FCM payload and handler tests (L2 + G) | Push source/tests and downstream clients |
+| `tunnel-worker` | Typecheck, Node contract + Worker runtime Vitest tests (L2/L3 + G) | Tunnel/shared/uncertain changes |
+| `ci-required` | Fail-closed aggregation, including both Android matrix results | Every run; required skip/missing/failure/cancellation fails; intentional unselected skip is not a pass |
 
-自动回归入口包括 `HQWorkspaceTests`、`HQChatPresentationTests`、`HQHeader.test.tsx`、`HQScreen.poll.test.tsx` 和 `e2e/__tests__/knowledge-search.test.ts`。运行结果、设备、源码版本和未验项目仍须另记。
+Mixed changes take the union. Unknown paths, dependencies, workflow/build changes,
+invalid/unavailable diffs and symlink changes broaden to all. Renames include both
+paths. See [CI rules](../ci.md); do not manually narrow scope to obtain green checks.
 
-## 4. 怎么跑
+## Case lists and design-to-implementation rules
 
-```sh
-# 从仓库根目录运行；子目录命令用子 shell，后续命令仍在根目录。
-make check                       # L1 Go: fmt + vet + staticcheck + race tests
-(cd macapp && swift test)         # L2 Swift 单元
-./scripts/check-design.sh        # L3 设计/架构一致性
-(cd mobileapp && npm run check)   # 手机/iPad 共享逻辑与控件
-node --test internal/server/web/app.test.cjs  # Web 交互测试
-(cd relay-worker && npm run typecheck && npm test)
-(cd tunnel-worker && npm run typecheck && npm test)
-# L4：构建 app 真机验收
-make app                         # 产出 macapp/build/Gtmux.app；不自动安装
-```
+[`CASES.md`](CASES.md) explains the layer indexes; [`CASES.csv`](CASES.csv) lists
+every inventoried declaration/subtest/template with stable ID, layer, technology,
+source/line, description and review origin. [`catalogue.json`](catalogue.json)
+pins source hashes. Counts are **static declaration positions**, not expanded
+parameter instances, executed tests or passes. Legacy structural classification
+needs semantic review when touched; it is not retroactive design approval.
 
-先准备 Go、Node/npm 和各 JS 目录的依赖；Swift/AppKit 检查及 app 构建需要 macOS 和 Xcode 工具链。
-这些命令按所改范围选用；各平台的运行与视觉验收仍须分别完成。
+For any added, changed, moved or removed test: follow [the design workflow](DESIGN-WORKFLOW.md).
+Record intended observable behavior **first**, review and commit the sealed design,
+then implement and map concrete selectors. `make test-design` verifies the resulting
+snapshot; PR CI additionally verifies ordering. Keep design changes and implementation
+changes in separate commits until CI has evaluated them; do not squash locally first.
+The normal final GitHub squash is supported: main checks the final snapshot.
 
-CI（[`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)）：Linux 跑 Go 格式、vet、staticcheck、race/coverage、漏洞检查和设计检查；
-另以 `CGO_ENABLED=0` 交叉构建 darwin arm64/amd64 CLI。移动端 job 跑 TypeScript、ESLint、Jest 和 Web 交互测试，两个 Worker 各跑类型和行为检查。
-macOS job 跑 release `swift build`、`swift test` 和设计检查；这些检查不等于实际设备的视觉与交互验收。
+A review seal protects against accidental drift. It is not a cryptographic identity
+or proof that an assertion is useful. Reviewers still check requirements, failure
+oracles, mocking boundaries and scope, and rerun a deliberate negative example.
+
+## Manual acceptance and reporting
+
+Retain the [surface design matrix](DESIGN-TRACEABILITY.md). For Mac check state glyphs,
+light/dark/tinted menu bars, search, preferences, keyboard and exact pane focus. For
+phone/tablet check pairing, HQ/knowledge, input, native document previews, long Trace,
+rotation/split view and accessibility. For Web check narrow/wide, enrollment, revocation,
+failed-send draft retention, live refresh, history anchors and external sessions.
+
+Capture/probe tools live in `mobileapp/e2e/capture` and `diagnostics`; ordinary RN and
+Appium regression collection excludes them. Explicit `e2e:manual` requires the named
+tool opt-in. Send repro additionally verifies the exact pane and loopback fake-server
+identity before accessing a device; capture does not apply knowledge promotions.
+See [manual tools](../../mobileapp/e2e/MANUAL-TOOLS.md).
+
+Reports separate design reviewed, code implemented, tests run, deliberate skips,
+compile-only, actual simulator actions, real device/accessibility and installation.
+Do not inherit a prior report's passes or turn a screenshot into touch/VoiceOver proof.

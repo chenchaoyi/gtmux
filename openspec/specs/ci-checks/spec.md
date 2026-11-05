@@ -195,3 +195,55 @@ verification SHALL remain independent.
 - **WHEN** a standard Intel host builds a signed release and native CI uses ARM
 - **THEN** both product architectures are compiled and every native check runs on the qualified CI host
 - **AND** official artifacts remain universal with the same publication gates
+
+### Requirement: Reviewed test design and traceable case catalogue
+
+Test additions, changes, moves and removals SHALL record observable expected behavior,
+layer and planned sources in a reviewed design before implementation. The review SHALL
+state its actual author/type and SHALL NOT fabricate independent or user approval.
+PR CI SHALL verify that the sealed case design precedes test implementation commits.
+Snapshot gates SHALL verify source hashes, case indexes and implementation selectors;
+a normal final squash SHALL retain the reviewed record and snapshot checks. Legacy
+inventory SHALL NOT be labelled retrospective approval or runtime passes.
+
+#### Scenario: Implementation and design arrive together
+
+- **WHEN** a PR introduces its reviewed design in the same commit as its first test edit
+- **THEN** the test-design history gate fails even if snapshot hashes match
+
+#### Scenario: An implementation drifts from its record
+
+- **WHEN** a test source changes without updating its reviewed mapping and catalogue
+- **THEN** validation fails instead of silently claiming coverage
+
+### Requirement: Separate native oracles and manual tools
+
+Affected iOS CI SHALL execute the production Foundation HTML and Markdown procedural
+oracles with assertions enabled, separately from unsigned app compilation. Ordinary
+RN/Appium regression collection SHALL exclude manual captures and diagnostic probes.
+Explicit send diagnostics SHALL verify an owned loopback fake server and an exact,
+unambiguous pane before device access, and SHALL NOT choose the first live agent.
+Knowledge capture SHALL NOT perform knowledge promotion actions.
+
+#### Scenario: Native document behavior fails
+
+- **WHEN** the production parser fails a native document oracle
+- **THEN** the iOS job fails even if the application would compile
+
+#### Scenario: A diagnostic points at an ordinary service
+
+- **WHEN** URL/token are supplied but the endpoint lacks the synthetic fixture identity or exact target
+- **THEN** the send diagnostic refuses before accessing a device
+
+### Requirement: Independent cross-client behavior assertions
+
+Cross-client presentation regressions SHALL consume shared synthetic expectations
+but exercise actual RN components and browser DOM independently. Fixtures SHALL cover
+provider identities, source turn ordinals and record counts, HQ message provenance,
+Markdown/code and scoped document actions. Passing shared pure helpers alone SHALL NOT
+be reported as rendered parity or native device acceptance.
+
+#### Scenario: One renderer uses the wrong count or label
+
+- **WHEN** one renderer changes loaded-window counts, call labels or sender identity
+- **THEN** its component/browser test fails against the shared expectation fixture

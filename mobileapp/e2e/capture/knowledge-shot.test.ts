@@ -47,9 +47,8 @@ gated('knowledge sheet', () => {
         await cards[0].click();
         await settle(1500);
         await screenshot('kb-2-entry');
-        await driver.$('~knowledge-act-land').click();
-        await settle(600);
-        await screenshot('kb-3-act');
+        // Capture only: never apply a knowledge promotion from a screenshot tool.
+        await screenshot('kb-3-capture-only');
       }
     }
   });
