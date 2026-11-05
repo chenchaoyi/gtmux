@@ -51,6 +51,15 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Test design review precedes test implementation (PR history)
+        if: github.event_name == 'pull_request'
+        env:
+          DESIGN_BASE: ${{ github.event.pull_request.base.sha }}
+          DESIGN_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: python3 scripts/test_design.py --pr-history --base "$DESIGN_BASE" --head "$DESIGN_HEAD"
       - uses: actions/setup-go@v6
         with:
           go-version: '1.27'
@@ -407,6 +416,8 @@ jobs:
       - name: Dependencies (no signing setup)
         working-directory: mobileapp
         run: npm ci && (cd ios && bundle exec pod install)
+      - name: Native HTML and Markdown behavior (production Foundation modules)
+        run: python3 mobileapp/scripts/check-native-documents.py
       - name: Widget target and shared-data boundaries
         working-directory: mobileapp
         run: bundle exec ruby ios/tests/usage_widget_targets_test.rb

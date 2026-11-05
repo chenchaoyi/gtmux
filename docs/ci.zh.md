@@ -75,3 +75,7 @@ App、实时活动及通知扩展，但不验证
 APNs、签名、安装或运行时无障碍。Safari、手机/iPad 真机布局、VoiceOver、终端跳转、
 tmux-resurrect 仍需另记验收。移动端真实服务契约测试仍需显式配置
 `GTMUX_E2E_URL/TOKEN`，跳过不能算通过。Linux Go 测试也不证明 macOS 专属运行行为。
+
+## 测试分层与评审记录
+
+[测试体系](test/TEST-PLAN.zh.md)列出分层、完整用例目录和 PR/main/发版/交付矩阵。[测试设计评审](test/DESIGN-WORKFLOW.zh.md)须早于测试实现；quality 检查源码摘要、评审封印、映射和 PR 提交顺序。iOS CI 在 App 编译前执行生产 HTML/Markdown Foundation 断言，仍与真机 UI 验收分别记录。RN 与推送下游变更还会选择 Android QA/native 和手机/平板模拟器，实际选择以脚本和运行摘要为准。

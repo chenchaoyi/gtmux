@@ -158,3 +158,5 @@ For development, see [CONTRIBUTING.md](CONTRIBUTING.md) and the [design document
 ## License
 
 [MIT](LICENSE) © ccy
+
+[Maintainers: test layers, CI stages and case catalogue](docs/test/TEST-PLAN.md). Record and review test design before adding or changing tests.

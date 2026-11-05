@@ -19,6 +19,8 @@ esac
 if [ "$#" -ne 0 ]; then echo "Usage: $0 [--source-only]" >&2; exit 2; fi
 if $source_only; then echo "design-check: source-only; CLI build and transitive imports deferred to Go jobs"; fi
 
+python3 scripts/test_design.py || exit 1
+
 DESIGN=docs/design/DESIGN.md
 THEME=macapp/Sources/GtmuxBar/Theme.swift
 fail=0
@@ -390,8 +392,8 @@ fi
 # born single would ship single to the site as well. The glob is one level deep on purpose:
 # docs/guides/img/SOURCES.md is the screenshot provenance list, a maintainer record, and
 # stays out of the pairing.
-SOLO="docs/TROUBLESHOOTING.md docs/release-signing.md docs/appstore-shots.md docs/design/ITERATIONS-2026-06.md docs/design/AUDIT-2026-09-07.md docs/design/REVIEW-mobile-01.md docs/design/HANDOFF-mobile-2026-06.md docs/design/DECISIONS-FOR-CCY.md docs/design/RESEARCH-prior-art-2026-06.md"
-for f in README.md docs/*.md docs/design/*.md docs/guides/*.md; do
+SOLO="docs/test/AUDIT-2026-09-28.md docs/test/CODEX-SESSION-PATH-SCAN-2026-10-15.md docs/TROUBLESHOOTING.md docs/release-signing.md docs/appstore-shots.md docs/design/ITERATIONS-2026-06.md docs/design/AUDIT-2026-09-07.md docs/design/REVIEW-mobile-01.md docs/design/HANDOFF-mobile-2026-06.md docs/design/DECISIONS-FOR-CCY.md docs/design/RESEARCH-prior-art-2026-06.md"
+for f in README.md docs/*.md docs/design/*.md docs/guides/*.md docs/test/*.md; do
   [ -e "$f" ] || continue
   case "$f" in *.zh.md) continue ;; esac
   case " $SOLO " in *" $f "*) continue ;; esac
@@ -403,7 +405,7 @@ for f in README.md docs/*.md docs/design/*.md docs/guides/*.md; do
 done
 # And the other direction: a translation whose original was renamed or deleted is a doc
 # nobody will ever update again.
-for f in README.zh.md docs/*.zh.md docs/design/*.zh.md docs/guides/*.zh.md; do
+for f in README.zh.md docs/*.zh.md docs/design/*.zh.md docs/guides/*.zh.md docs/test/*.zh.md; do
   [ -e "$f" ] || continue
   base="${f%.zh.md}"
   [ -f "${base}.md" ] || { note "$f has no English original (${base}.md)"; fail=1; }

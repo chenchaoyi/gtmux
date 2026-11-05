@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "agents": ["Codex", "Claude Code", "Gemini CLI", "OpenCode", "Kimi Code"],
+  "trace": {
+    "turn": {"session_id":"contract-session","record_id":"contract-151","turn_ordinal":151,"prompt":"Inspect the report","agent":"Codex","segments":[{"context":{"title":"Workspace instructions","text":"Synthetic workspace rules","source":"fixture"}},{"steps":[{"kind":"tool","title":"Read","operation":"read","input_kind":"path","input":"reports/contract.md"}]},{"text":"Report inspected"}]},
+    "count": "1 turn · 4 records",
+    "summary": "1 call · 2 messages · 1 context record",
+    "toolLabel": "Read file",
+    "replyLabel": "Agent reply",
+    "input": "reports/contract.md"
+  },
+  "hq": {"prompt":"# Review required\n\nConfirm the **synthetic plan** before proceeding.\n\n- Scope: fixture only\n- Decision: keep the current access policy","response":"Waiting for the recorded decision","from":{"kind":"hq","label":"HQ","agent":"Codex"}},
+  "document": {"reference":"/private/tmp/gtmux-contract/report.md","name":"report.md","source":"# Contract report\n\n**Complete preview**\n\n```python\nprint(\"retained value\")\n```\n\n[Unsafe](javascript:alert)\n","heading":"Contract report","emphasis":"Complete preview","code":"print(\"retained value\")"}
+}

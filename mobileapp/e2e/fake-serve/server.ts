@@ -124,7 +124,7 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
     const q = url.searchParams;
     const owner = !opts.guest;
 
-    if (path === '/api/health') return json(res, 200, {ok: true});
+    if (path === '/api/health') return json(res, 200, {ok: true, fixture: 'gtmux-e2e-fake-serve'});
 
     // Every other endpoint is authenticated. An unauthenticated request must not reveal
     // whether the path exists.

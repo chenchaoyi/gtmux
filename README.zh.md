@@ -158,3 +158,5 @@ gtmux agent · 7 agent · 1 等输入 · 2 运行中 · 3 空闲 · 1 只有 she
 ## 许可
 
 [MIT](LICENSE) © ccy
+
+[维护者：测试分层、CI 阶段与用例目录](docs/test/TEST-PLAN.zh.md)。新增或调整测试前先记录并评审测试设计。

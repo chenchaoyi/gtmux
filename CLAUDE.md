@@ -374,6 +374,17 @@ Keep specs aligned with the code: when behavior changes, update the relevant
 existing features (agent-radar, terminal-jump, notifications, menu-bar-app,
 env-doctor, session-restore, remote-access, push-notifications, mobile-app).
 
+### Test design before test code
+
+Follow `docs/test/DESIGN-WORKFLOW.md` and `docs/test/TEST-PLAN.md`.
+Record observable cases and review them before implementing or changing tests. Commit
+sealed design records in `docs/test/designs/` first; only then change tests and map
+them in `docs/test/implementations.json`. Update the source catalogue and case index.
+PR CI checks commit order as well as seals and mappings; main validates the resulting
+snapshot after squash. These checks do not replace semantic review. Existing catalogue
+entries are a migration baseline, not invented historical review or pass evidence.
+Capture/diagnostic tools are explicit manual entries, not ordinary regression passes.
+
 ### RULE — spec ⇄ code ⇄ test consistency (REQUIRED; part of "done")
 
 A 2026-07-12 audit found docs/specs/tests drifting from the code (e.g. the
