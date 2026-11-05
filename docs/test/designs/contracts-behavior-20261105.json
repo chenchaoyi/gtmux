@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner (self-review, not independent approval)",
     "date": "2026-11-05",
     "decision": "Proceed with approved backlog 1, 2, 3 and 7",
-    "notes": "Reviewed real handler validation and independent fake routes, current React renderer mocks, sequential Android dependencies and browser lifecycle. Synthetic loopback only; retain original 31 UI checks and complete selected suites. No native/device acceptance inferred from component tests; no release/install/account changes. Measure same source/cases/environment before speed claims. CI narrowing requires proof that production cannot import affected tests."
+    "notes": "Reviewed real handler validation and independent fake routes, current React renderer mocks, sequential Android dependencies and browser lifecycle. Synthetic loopback only; retain original 31 UI checks and complete selected suites. No native/device acceptance inferred from component tests; no release/install/account changes. Measure same source/cases/environment before speed claims. CI narrowing requires proof that production cannot import affected tests. Scope proof will bind the entire Metro configuration hash and verify the actual resolver excludes test modules; unavailable or changed proof retains native checks."
   },
   "cases": [
     {
@@ -133,12 +133,14 @@
       "expected": "Only proven non-product RN unit test edits may omit native builds; mixed/shared/unknown paths, test fixtures consumed by journeys and production imports fail closed; all selected checks still aggregate.",
       "planned_files": [
         "scripts/ci.py",
-        "scripts/ci_test.py"
+        "scripts/ci_test.py",
+        "mobileapp/metro.config.js",
+        "mobileapp/scripts/test-boundary.test.ts"
       ],
       "surfaces": [
         "Go / RN / Web / Android / CI"
       ]
     }
   ],
-  "seal": "85db8ed5146acb1e4c5cf04451f80c36d9cb3638a42a40eac4d40914b2959553"
+  "seal": "37ecc03f9f949511f8a17fa1dcae2698fa7e9637170184542a04cc0747d59351"
 }
