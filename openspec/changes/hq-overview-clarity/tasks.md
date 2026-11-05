@@ -1,0 +1,4 @@
+- [x] Commit reviewed test design before implementation.
+- [ ] Improve bounded overview and full-list disclosure.
+- [ ] Reconcile goal/blocker summary guidance and bilingual specs.
+- [ ] Verify synthetic state and native action boundaries.

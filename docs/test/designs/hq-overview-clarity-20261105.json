@@ -1,0 +1,62 @@
+{
+  "id": "hq-overview-clarity-20261105",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-05",
+    "decision": "Proceed on user screenshot a7ff369370d8",
+    "notes": "Fresh main8da. Native Overview caps preview3 and only exposes View all in header, unlike existing RN remaining-count footer. Actual open records may have completed substeps and verbose cleanup receipts; explicit whole-goal completion/user-input must be reconciled by HQ, never inferred in UI. Distinguish source roster availability from goal status. Reuse canonical workspace grouping/multiline/AX fixture infrastructure; no new state enum or permission expansion. Ask HQ for verified live closure/blocker updates; no real answers, cleanup, runtime install, new release or workers. UI tests use synthetic data and actual in-process AX, separate physical mouse/VO/installed acceptance."
+  },
+  "cases": [
+    {
+      "id": "MC-HQ-OVERVIEW-STATE",
+      "layer": "L2",
+      "description": "Overview groups exclude completed/closed/merged matters even with stale projection IDs; a stage-result body never changes an open goal. Valid saved rows fill a bounded three-item preview and hidden counts match unique displayed records.",
+      "setup": "Synthetic workspace snapshots including 26 open goals, completed/closed/merged/stale IDs, a stage-result message and absent source discovery; independent native window at supported minimum/wide sizes.",
+      "action": "Overview groups exclude completed/closed/merged matters even with stale projection IDs; a stage-result body never changes an open goal. Valid saved rows fill a bounded three-item preview and hidden counts match unique displayed records.",
+      "expected": "Overview groups exclude completed/closed/merged matters even with stale projection IDs; a stage-result body never changes an open goal. Valid saved rows fill a bounded three-item preview and hidden counts match unique displayed records.",
+      "planned_files": [
+        "macapp/Tests/GtmuxBarTests/HQOverviewClarityTests.swift",
+        "macapp/Sources/GtmuxBar/HQOverviewModel.swift",
+        "macapp/Sources/GtmuxBar/HQWorkspacePresentation.swift"
+      ],
+      "surfaces": [
+        "macOS HQ; shared canonical workspace states; existing RN disclosure pattern"
+      ]
+    },
+    {
+      "id": "MC-HQ-OVERVIEW-MORE",
+      "layer": "L3",
+      "description": "At the bottom of each truncated native HQ section an explicit remaining/total control opens all matters and can select a hidden record without writes; no extra control when all records fit. Complete minimum/wide light/dark bilingual fixtures preserve text/viewport geometry.",
+      "setup": "Synthetic workspace snapshots including 26 open goals, completed/closed/merged/stale IDs, a stage-result message and absent source discovery; independent native window at supported minimum/wide sizes.",
+      "action": "At the bottom of each truncated native HQ section an explicit remaining/total control opens all matters and can select a hidden record without writes; no extra control when all records fit. Complete minimum/wide light/dark bilingual fixtures preserve text/viewport geometry.",
+      "expected": "At the bottom of each truncated native HQ section an explicit remaining/total control opens all matters and can select a hidden record without writes; no extra control when all records fit. Complete minimum/wide light/dark bilingual fixtures preserve text/viewport geometry.",
+      "planned_files": [
+        "macapp/Tests/GtmuxBarTests/HQOverviewMoreWindowTests.swift",
+        "macapp/Sources/GtmuxBar/HQWorkspaceOverview.swift",
+        "macapp/Sources/GtmuxBar/HQOverviewMatterRow.swift"
+      ],
+      "surfaces": [
+        "macOS HQ; shared canonical workspace states; existing RN disclosure pattern"
+      ]
+    },
+    {
+      "id": "MC-HQ-OVERVIEW-BRIEF",
+      "layer": "L2",
+      "description": "The native row presents canonical current assessment before historical receipt text, explicitly names the unfinished goal state and never treats unavailable source metadata as an idle/completed worker; no guessed human decision or completion from titles, Stop or report prose.",
+      "setup": "Synthetic workspace snapshots including 26 open goals, completed/closed/merged/stale IDs, a stage-result message and absent source discovery; independent native window at supported minimum/wide sizes.",
+      "action": "The native row presents canonical current assessment before historical receipt text, explicitly names the unfinished goal state and never treats unavailable source metadata as an idle/completed worker; no guessed human decision or completion from titles, Stop or report prose.",
+      "expected": "The native row presents canonical current assessment before historical receipt text, explicitly names the unfinished goal state and never treats unavailable source metadata as an idle/completed worker; no guessed human decision or completion from titles, Stop or report prose.",
+      "planned_files": [
+        "macapp/Tests/GtmuxBarTests/HQOverviewClarityTests.swift",
+        "macapp/Sources/GtmuxBar/HQOverviewModel.swift",
+        "macapp/Sources/GtmuxBar/HQOverviewMatterRow.swift",
+        "macapp/Sources/GtmuxBar/HQWorkspaceOverview.swift"
+      ],
+      "surfaces": [
+        "macOS HQ; shared canonical workspace states; existing RN disclosure pattern"
+      ]
+    }
+  ],
+  "seal": "18595c2e397247f6cb8a12e11de23da4316ad8ba9be332ce2b164b7bb1326ce4"
+}
