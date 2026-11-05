@@ -7,7 +7,7 @@ The catalogue covers 1045 test/harness source files. Each CSV row lists stable I
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3746 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 1903 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 1905 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 86 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 104 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 12 | [M.csv](cases/M.csv) |
@@ -65,6 +65,8 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | DUO-024 | Scene URLs remain pending until acknowledged, the consumer opens an authorized usage link once, guest-rejected links do not become later owner intents, and foreground retry can recover the retained link. A stalled first drain cannot block active-state recovery, and a later duplicate is suppressed. |
 | DUO-025 | The previously visible compact list returns after a round trip; an explicit expanded selection opens its reader, and a first wide automatic selection still shows its reader on folding. |
 | DUO-026 | A guest- or demo-rejected initial intent is consumed once; no sheet opens or usage request occurs after the owner transition. |
+| STOR-001 | Every carrier separates project-owned and task-temp output from gtmux configuration/runtime trees; no promoted entry required; user text and hand-edit protection preserved; second sync idempotent. |
+| STOR-002 | Both playbooks reserve gtmux-owned state and only reusable HQ knowledge tools for its home, direct project scripts/reports/builds to project/task storage, require external evidence references, and never grant automatic migration/deletion; upgrade backs up old charter, preserves LOCAL/notes and converges. |
 | TD-001 | Reject a changed/new test without a reviewed design; accept a mapped implementation |
 | TD-002 | Reject a tampered review seal, missing assertion description, invalid layer or unsafe path |
 | TD-003 | Reject missing/changed catalogue files and missing named implementation selectors |

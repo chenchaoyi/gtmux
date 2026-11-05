@@ -151,6 +151,8 @@ func machineIndex(live []knowledgeOp) string {
 	b.WriteString("Full text, with the reasons and examples: " + MachinePath() + "\n")
 	b.WriteString("gtmux pane: report progress with `gtmux relay report --body-file <file>`; ask HQ with `gtmux relay ask --body-file <file>`.\n")
 	b.WriteString("User decisions need `--for user`; HQ cannot approve for the user. Run `gtmux relay --help` for details.\n")
+	b.WriteString("Storage: `~/.config/gtmux/` and `~/.local/share/gtmux/` are for gtmux-managed configuration, state and archives, not project work. Keep project files and deliveries in project-owned storage; keep builds, fixtures, downloads and raw evidence in task temporary storage. HQ keeps concise coordination summaries and evidence references. Do not automatically move or delete existing material.\n")
+	b.WriteString("存储边界：`~/.config/gtmux/`、`~/.local/share/gtmux/` 只存 gtmux 自身管理的配置、状态和归档。项目文件与交付归项目；构建、fixture、下载和原始证据归任务临时目录。HQ 只留简短协作摘要和证据引用；不自动搬移或删除既有材料。\n")
 	n := 0
 	lang := machineLang(live)
 	for _, op := range live {

@@ -1,0 +1,41 @@
+{
+  "id": "project-storage-boundaries-20261105",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-05",
+    "decision": "Implement after explicit user request and scoped source review",
+    "notes": "Reviewed blanket HQ script wording, managed global carriers and seed/version upgrade path. Test only synthetic homes; never migrate/delete existing project or unique records, expand document permissions, or alter live HQ. Scope is shipped guidance and durable storage contract, not filesystem sandbox enforcement."
+  },
+  "cases": [
+    {
+      "id": "STOR-001",
+      "layer": "L2",
+      "description": "Every supported global agent carrier receives builtin project-storage boundaries even without promoted entries",
+      "setup": "Isolated HQ HOME; override Codex/Kimi/DSH instruction homes to empty synthetic defaults; no real ledger or global file writes.",
+      "action": "Sync empty knowledge into all carriers, verify bilingual builtin scope guidance; add user text and sync again.",
+      "expected": "Every carrier separates project-owned and task-temp output from gtmux configuration/runtime trees; no promoted entry required; user text and hand-edit protection preserved; second sync idempotent.",
+      "planned_files": [
+        "internal/knowledge/distribute_test.go"
+      ],
+      "surfaces": [
+        "All agent global instruction carriers"
+      ]
+    },
+    {
+      "id": "STOR-002",
+      "layer": "L2",
+      "description": "English and Chinese HQ managed playbooks delimit internal reusable tools and preserve local rules on upgrade",
+      "setup": "Synthetic HQ homes with a prior-version managed playbook plus LOCAL.md and existing note payloads.",
+      "action": "Render both languages and run version upgrade; compare preexisting LOCAL/note bytes and rerun.",
+      "expected": "Both playbooks reserve gtmux-owned state and only reusable HQ knowledge tools for its home, direct project scripts/reports/builds to project/task storage, require external evidence references, and never grant automatic migration/deletion; upgrade backs up old charter, preserves LOCAL/notes and converges.",
+      "planned_files": [
+        "internal/hq/hq_test.go"
+      ],
+      "surfaces": [
+        "HQ managed AGENTS.md English/Chinese"
+      ]
+    }
+  ],
+  "seal": "3466288e4ef1d67e6a01b86c14458abc1be9da05afb684009e1e2b72e92c9c56"
+}
