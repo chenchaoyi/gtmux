@@ -2198,6 +2198,9 @@ LEG-0bef1403145f,L1,Go core / CLI / server,internal/radar/agents_test.go,303,Tes
 LEG-afdda8c6ed08,L1,Go core / CLI / server,internal/radar/agents_test.go,313,Test,TestCodexReadyComposerContradictsMisroutedWait,False,legacy-not-retrospectively-reviewed
 LEG-c040c8f50d05,L1,Go core / CLI / server,internal/radar/agents_test.go,326,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-2b72c37f7d8b,L1,Go core / CLI / server,internal/radar/agents_test.go,335,Test,TestCodexScreenWaitRequiresLiveApprovalMenu,False,legacy-not-retrospectively-reviewed
+MAP-226227944e48,L3,reviewed implementation,internal/radar/codex_foreign_marker_gather_test.go,14,reviewed-selector,TestGatherDoesNotReviveAnotherSessionsOldMarkerFromWindowActivity,False,CORE-CODEX-FOREIGN-GATHER
+MAP-8c62d9a14381,L2,reviewed implementation,internal/radar/codex_foreign_marker_test.go,15,reviewed-selector,TestForeignActiveRequiresCurrentIdentityEndedTurnAndReadyFrame,False,CORE-CODEX-FOREIGN-ACTIVE
+MAP-d562c313395b,L2,reviewed implementation,internal/radar/codex_foreign_marker_test.go,107,reviewed-selector,TestForeignActiveProductionReaderRejectsLegacyResumeWithoutFrontend,False,CORE-CODEX-FOREIGN-ACTIVE
 LEG-4d993460939a,L1,Go core / CLI / server,internal/radar/codex_idle_time_test.go,14,Test,TestCodexIdleMaintenanceDoesNotPromoteOldCompletion,False,legacy-not-retrospectively-reviewed
 LEG-2e444dfc9c9d,L1,Go core / CLI / server,internal/radar/codex_idle_time_test.go,20,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-2e729e7c14cd,L1,Go core / CLI / server,internal/radar/codex_idle_time_test.go,72,Test,TestCodexIdleTimeCorrectionRequiresSettledMatchingSession,False,legacy-not-retrospectively-reviewed
@@ -3373,6 +3376,10 @@ LEG-206d9b93b229,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledge
 LEG-795d812d64c4,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,131,XCTest,testLookupStandingInstructionsAndUnknownLegacyRecordsStayDistinct,False,legacy-not-retrospectively-reviewed
 LEG-06a08e20f7a1,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,159,XCTest,testResolvesByTheReadersLanguage,False,legacy-not-retrospectively-reviewed
 LEG-5f8ace08940d,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,168,XCTest,testFallsBackToTheSourceWithATag,False,legacy-not-retrospectively-reviewed
+MAP-b4f647d0a506,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQOverviewClarityTests.swift,44,reviewed-selector,testCanonicalGroupsAndHiddenCountIgnoreEndedMergedStaleAndDuplicateRows,False,"MC-HQ-OVERVIEW-STATE,MC-HQ-OVERVIEW-BRIEF"
+MAP-67fdd9c30f6e,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQOverviewClarityTests.swift,63,reviewed-selector,testCurrentAssessmentTakesPriorityWithoutBorrowingReceiptOrMetadataTime,False,"MC-HQ-OVERVIEW-STATE,MC-HQ-OVERVIEW-BRIEF"
+MAP-80be9bb61842,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/HQOverviewMoreWindowTests.swift,27,reviewed-selector,testBottomRemainingControlOpensAllAndSelectsHiddenGoalWithoutSending,False,MC-HQ-OVERVIEW-MORE
+MAP-9a63f420f1ec,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/HQOverviewMoreWindowTests.swift,98,reviewed-selector,testFullyShownListHasNoRemainingControlAndUnknownRosterDoesNotSayIdle,False,MC-HQ-OVERVIEW-MORE
 LEG-aa6ce457a2ff,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQOverviewTests.swift,67,XCTest,testQuestionSummaryKeepsDistinctContentWithSharedFixtures,False,legacy-not-retrospectively-reviewed
 LEG-9e0d5a7bc26c,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQOverviewTests.swift,77,XCTest,testExplicitProjectionAndIdentityDoNotInferTaskCompletionOrPaneOwnership,False,legacy-not-retrospectively-reviewed
 LEG-f3daf6b0f9aa,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQOverviewTests.swift,99,XCTest,testNativeBriefRendersBoundedRowsAndOpensSourceWithoutSending,False,legacy-not-retrospectively-reviewed

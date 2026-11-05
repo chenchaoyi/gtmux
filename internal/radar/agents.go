@@ -1155,8 +1155,12 @@ func gatherAgentsScoped(codexScope *transcript.CodexPathScope, targetPane string
 			activityAt, _ = strconv.ParseInt(f[7], 10, 64)
 		}
 		codexError := ""
+		codexFrame := ""
+		foreignEnd := ""
+		var foreignEndAt time.Time
 		if agents.KeyForLabel(agent) == "codex" {
-			codexError = codexTerminalFailureForPane(id, paneCapture(id), now)
+			codexFrame = paneCapture(id)
+			codexError = codexTerminalFailureForPane(id, codexFrame, now)
 		}
 		if !nativeLifecycle {
 			// liveWorking reports whether the pane is DEMONSTRABLY working right now (screen
@@ -1167,7 +1171,7 @@ func gatherAgentsScoped(codexScope *transcript.CodexPathScope, targetPane string
 			// paid only when a fresh mark actually needs disambiguating.
 			liveWorking := func() bool {
 				if hfsCalled {
-					return status == "working"
+					return observedStatus == "working"
 				}
 				return hookFreeStatus(id, panePid) == "working"
 			}
@@ -1272,6 +1276,14 @@ func gatherAgentsScoped(codexScope *transcript.CodexPathScope, targetPane string
 					}
 				}
 			}
+			// Coarse window activity can revive an old active marker belonging
+			// to a different session after pane reuse. Its current live binding,
+			// own ended rollout and ready frame outweigh that foreign marker.
+			if status == "working" && codexError == "" && len(f) > 9 && agents.KeyForLabel(agent) == "codex" {
+				if kind, at := codexForeignActiveEndedTurn(id, fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3]), f[9], codexFrame, codexScope.CodexLastTurnBoundary); kind != "" {
+					status, foreignEnd, foreignEndAt = "idle", kind, at
+				}
+			}
 		}
 
 		// since = when the agent entered its CURRENT state, for a "working 7m" /
@@ -1330,7 +1342,11 @@ func gatherAgentsScoped(codexScope *transcript.CodexPathScope, targetPane string
 				if len(f) > 9 {
 					paneCwd = f[9]
 				}
-				if codexError == "" {
+				if foreignEnd != "" {
+					// The ended time is display evidence; do not refresh this pane's
+					// idle cache from another session's active-marker transition.
+					since = foreignEndAt.Unix()
+				} else if codexError == "" {
 					since = idleSince(id, fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3]), paneCwd, agent, activityAt, codexScope)
 				}
 				// errored-idle: did this session END on an API/tool error (last transcript
@@ -1348,8 +1364,15 @@ func gatherAgentsScoped(codexScope *transcript.CodexPathScope, targetPane string
 				}
 			}
 		}
-		endReason := failedTurnOutcome(state.ReadMarker(state.TurnOutcomePath(id)), errored)
-		latest := id == lastFinished && status != "working" && status != "waiting"
+		outcome := state.ReadMarker(state.TurnOutcomePath(id))
+		if foreignEnd != "" {
+			outcome = ""
+			if foreignEnd == "turn_aborted" {
+				outcome = "interrupted"
+			}
+		}
+		endReason := failedTurnOutcome(outcome, errored)
+		latest := foreignEnd == "" && id == lastFinished && status != "working" && status != "waiting"
 		if nativeLifecycle {
 			native := terminalStatus(terminal[id], time.Unix(now, 0))
 			status, since, endReason = native.status, native.since, native.reason
