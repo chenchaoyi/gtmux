@@ -2,10 +2,10 @@
   "id": "test-system-20261105",
   "status": "reviewed",
   "review": {
-    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "reviewer": "Codex integration owner; independent source and mapping review by gtmux %20",
     "date": "2026-11-05",
-    "decision": "Proceed after design review",
-    "notes": "Checked isolation, production-module execution, explicit live-write target, independent RN/Web assertions, failure cases and evidence boundaries. User requested these three priorities. No real-session writes, signing, release or installation."
+    "decision": "Reviewed for separate integration from the frozen source; device acceptance remains outstanding",
+    "notes": "Checked isolation, production-module execution, explicit live-write target, independent RN/Web assertions, failure cases and evidence boundaries. User requested these three priorities. No real-session writes, signing, release or installation. Integration preparation from PR1810-derived local source cae4c446f3a5cfc8d8cca899d6f7eb9e5aaaf846 onto main 50fd32738d5f5171629a16d1f93e55aedc5d6a4c; this draft is not a review or evidence that original implementation was reviewed in advance. Independent review of frozen Q cae4c446f3a5cfc8d8cca899d6f7eb9e5aaaf846 against B 50fd32738d5f5171629a16d1f93e55aedc5d6a4c concluded with relay c04db94cf9a846c4a2095d3feb0e56c2 after review of earlier source stages and the final delta. The original implementation predates this integration review; this record precedes its separate migration only. Device, candidate and main checks remain outstanding."
   },
   "cases": [
     {
@@ -280,5 +280,5 @@
       ]
     }
   ],
-  "seal": "83c5a15b8714f50e8c62a0b5c2028f943414571d9ac35e217578479e7a02036a"
+  "seal": "781879065c1b1959f4cc6e7cc247a233310b07d4d7ec787999424386429b1c08"
 }
