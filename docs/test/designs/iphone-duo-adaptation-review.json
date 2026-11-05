@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner (self-review; not independent approval)",
     "date": "2026-11-05",
     "decision": "Review existing work and continue validation",
-    "notes": "This is a truthful retrospective review of work already implemented before main introduced this gate. It does not claim prior review or passing device behavior. Cold and warm actions, real fold and accessibility remain subject to recorded evidence. On 2026-11-05 the cold-action trace exposed drain-before-JS-ack loss; DUO-009 was reviewed before implementing acknowledgement-based retention. Earlier prototype tests remain honestly retrospective."
+    "notes": "This is a truthful retrospective review of work already implemented before main introduced this gate. It does not claim prior review or passing device behavior. Cold and warm actions, real fold and accessibility remain subject to recorded evidence. On 2026-11-05 the cold-action trace exposed drain-before-JS-ack loss; DUO-009 was reviewed before implementing acknowledgement-based retention. Earlier prototype tests remain honestly retrospective. DUO-010 was updated after observing a native drain Promise stall; its non-blocking fallback and foreground recovery are reviewed before implementation."
   },
   "cases": [
     {
@@ -137,10 +137,10 @@
     {
       "id": "DUO-010",
       "layer": "L1",
-      "description": "duplicate launch and delegate responses dispatch a single action and preserve fallback",
-      "setup": "Isolated fixture and named simulator for device cases; existing mocked or rendered harness for code-level cases.",
-      "action": "Run the mapped selector in mobileapp/src/push/launchNotification.test.ts.",
-      "expected": "duplicate launch and delegate responses dispatch a single action and preserve fallback.",
+      "description": "a stalled native notification drain must not block the initial notification fallback, and foreground recovery retries retained responses without duplicate replies",
+      "setup": "Mock a native drain Promise that never resolves, an initial notification and an app-state listener; use identified responses and a fake reply callback.",
+      "action": "Start push setup with the first drain pending, observe initial fallback, then simulate foreground activation and a later duplicate native response.",
+      "expected": "Setup and initial fallback proceed despite a stalled drain, foreground retry retrieves a retained response, and shared identity permits at most one reply.",
       "planned_files": [
         "mobileapp/src/push/launchNotification.test.ts"
       ],
@@ -247,5 +247,5 @@
       ]
     }
   ],
-  "seal": "108359528f2976de251196e5e8b317161e8bd5f03e4f7e551aac19e1deedf4dd"
+  "seal": "b12f795be6b799e516a1d586f30ed0a80f102a188434ff58e00f07516a28570b"
 }
