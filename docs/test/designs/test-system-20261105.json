@@ -12,102 +12,126 @@
       "id": "TD-001",
       "layer": "G",
       "description": "Reject a changed/new test without a reviewed design; accept a mapped implementation",
-      "setup": "Synthetic data and isolated temporary files; existing native oracles use production pure Swift modules.",
-      "action": "Exercise the described behavior, including the negative branch where stated.",
+      "setup": "An isolated temporary repository, synthetic design and test source; no real branch or service mutations.",
+      "action": "Validate valid and deliberately damaged records; commit a design with/without a preceding review commit and compare the history verdict.",
       "expected": "Reject a changed/new test without a reviewed design; accept a mapped implementation",
       "planned_files": [
         "scripts/test_design.py",
         "scripts/test_design_test.py"
+      ],
+      "surfaces": [
+        "CI / test tooling"
       ]
     },
     {
       "id": "TD-002",
       "layer": "G",
       "description": "Reject a tampered review seal, missing assertion description, invalid layer or unsafe path",
-      "setup": "Synthetic data and isolated temporary files; existing native oracles use production pure Swift modules.",
-      "action": "Exercise the described behavior, including the negative branch where stated.",
+      "setup": "An isolated temporary repository, synthetic design and test source; no real branch or service mutations.",
+      "action": "Validate valid and deliberately damaged records; commit a design with/without a preceding review commit and compare the history verdict.",
       "expected": "Reject a tampered review seal, missing assertion description, invalid layer or unsafe path",
       "planned_files": [
         "scripts/test_design.py",
         "scripts/test_design_test.py"
+      ],
+      "surfaces": [
+        "CI / test tooling"
       ]
     },
     {
       "id": "TD-003",
       "layer": "G",
       "description": "Reject missing/changed catalogue files and missing named implementation selectors",
-      "setup": "Synthetic data and isolated temporary files; existing native oracles use production pure Swift modules.",
-      "action": "Exercise the described behavior, including the negative branch where stated.",
+      "setup": "An isolated temporary repository, synthetic design and test source; no real branch or service mutations.",
+      "action": "Validate valid and deliberately damaged records; commit a design with/without a preceding review commit and compare the history verdict.",
       "expected": "Reject missing/changed catalogue files and missing named implementation selectors",
       "planned_files": [
         "scripts/test_design.py",
         "scripts/test_design_test.py"
+      ],
+      "surfaces": [
+        "CI / test tooling"
       ]
     },
     {
       "id": "TD-004",
       "layer": "G",
       "description": "PR history requires the sealed design in an earlier commit than test edits; main validates the resulting snapshot after squash",
-      "setup": "Synthetic data and isolated temporary files; existing native oracles use production pure Swift modules.",
-      "action": "Exercise the described behavior, including the negative branch where stated.",
+      "setup": "An isolated temporary repository, synthetic design and test source; no real branch or service mutations.",
+      "action": "Validate valid and deliberately damaged records; commit a design with/without a preceding review commit and compare the history verdict.",
       "expected": "PR history requires the sealed design in an earlier commit than test edits; main validates the resulting snapshot after squash",
       "planned_files": [
         "scripts/test_design.py",
         "scripts/test_design_test.py"
+      ],
+      "surfaces": [
+        "CI / test tooling"
       ]
     },
     {
       "id": "TD-005",
       "layer": "G",
       "description": "Explicit removals and renames require reviewed rationale; legacy baseline does not imply historical review",
-      "setup": "Synthetic data and isolated temporary files; existing native oracles use production pure Swift modules.",
-      "action": "Exercise the described behavior, including the negative branch where stated.",
+      "setup": "An isolated temporary repository, synthetic design and test source; no real branch or service mutations.",
+      "action": "Validate valid and deliberately damaged records; commit a design with/without a preceding review commit and compare the history verdict.",
       "expected": "Explicit removals and renames require reviewed rationale; legacy baseline does not imply historical review",
       "planned_files": [
         "scripts/test_design.py",
         "scripts/test_design_test.py"
+      ],
+      "surfaces": [
+        "CI / test tooling"
       ]
     },
     {
       "id": "ND-001",
       "layer": "L1",
       "description": "Run existing Swift HTML oracle: local image/srcset/entity rewriting, deduplication, raw script/style/comment exclusion",
-      "setup": "Synthetic data and isolated temporary files; existing native oracles use production pure Swift modules.",
-      "action": "Exercise the described behavior, including the negative branch where stated.",
+      "setup": "Actual production Foundation DocumentHTML/DocumentMarkdown Swift modules and committed synthetic oracles; no app, signing, WKWebView or private report input.",
+      "action": "Compile with assertions enabled in a private temporary module cache, execute both oracles; substitute failing compiler/process outcomes to verify propagation.",
       "expected": "Run existing Swift HTML oracle: local image/srcset/entity rewriting, deduplication, raw script/style/comment exclusion",
       "planned_files": [
         "mobileapp/ios/tests/DocumentHTMLChecks.swift"
+      ],
+      "surfaces": [
+        "iOS Foundation"
       ]
     },
     {
       "id": "ND-002",
       "layer": "L1",
       "description": "Run existing Swift Markdown oracle: structures, unsafe links/images/scripts, scoped resources and font cap",
-      "setup": "Synthetic data and isolated temporary files; existing native oracles use production pure Swift modules.",
-      "action": "Exercise the described behavior, including the negative branch where stated.",
+      "setup": "Actual production Foundation DocumentHTML/DocumentMarkdown Swift modules and committed synthetic oracles; no app, signing, WKWebView or private report input.",
+      "action": "Compile with assertions enabled in a private temporary module cache, execute both oracles; substitute failing compiler/process outcomes to verify propagation.",
       "expected": "Run existing Swift Markdown oracle: structures, unsafe links/images/scripts, scoped resources and font cap",
       "planned_files": [
         "mobileapp/ios/tests/DocumentMarkdownChecks.swift"
+      ],
+      "surfaces": [
+        "iOS Foundation"
       ]
     },
     {
       "id": "ND-003",
       "layer": "G",
       "description": "Native runner compiles production Swift without -O and propagates compilation/oracle failures; CI calls it",
-      "setup": "Synthetic data and isolated temporary files; existing native oracles use production pure Swift modules.",
-      "action": "Exercise the described behavior, including the negative branch where stated.",
+      "setup": "Actual production Foundation DocumentHTML/DocumentMarkdown Swift modules and committed synthetic oracles; no app, signing, WKWebView or private report input.",
+      "action": "Compile with assertions enabled in a private temporary module cache, execute both oracles; substitute failing compiler/process outcomes to verify propagation.",
       "expected": "Native runner compiles production Swift without -O and propagates compilation/oracle failures; CI calls it",
       "planned_files": [
         "scripts/test_design_test.py",
         "mobileapp/scripts/check-native-documents.py"
+      ],
+      "surfaces": [
+        "iOS Foundation"
       ]
     },
     {
       "id": "DG-001",
       "layer": "G",
       "description": "Default Appium and RN discovery exclude manual diagnostics/capture; explicit tools retain failure reporting; knowledge capture does not perform promotion actions.",
-      "setup": "Synthetic data and isolated temporary files; existing native oracles use production pure Swift modules.",
-      "action": "Exercise the described behavior, including the negative branch where stated.",
+      "setup": "Synthetic environment maps, mocked HTTP responses and manual/default Jest configuration; no Appium session is started by unit checks.",
+      "action": "Try missing/invalid opt-ins and pane IDs, non-loopback and nonfixture endpoints, missing/duplicate exact targets; assert refusal before driver access and explicit exact-target wiring.",
       "expected": "Default Appium and RN discovery exclude manual diagnostics/capture; explicit tools retain failure reporting; knowledge capture does not perform promotion actions.",
       "planned_files": [
         "mobileapp/e2e/__tests__/hq-header-shot.test.ts",
@@ -120,84 +144,109 @@
         "mobileapp/e2e/setup/manual-tools.test.ts",
         "mobileapp/e2e/setup/manual-tools.cjs",
         "mobileapp/e2e/jest.config.manual.js"
+      ],
+      "surfaces": [
+        "CI / test tooling"
       ]
     },
     {
       "id": "DG-002",
       "layer": "L1",
       "description": "Send repro fails before device access without exact pane, owned-fixture declaration, loopback endpoint/token and a matching fake-server fixture identity; nonfixture endpoints are rejected.",
-      "setup": "Synthetic data and isolated temporary files; existing native oracles use production pure Swift modules.",
-      "action": "Exercise the described behavior, including the negative branch where stated.",
+      "setup": "Synthetic environment maps, mocked HTTP responses and manual/default Jest configuration; no Appium session is started by unit checks.",
+      "action": "Try missing/invalid opt-ins and pane IDs, non-loopback and nonfixture endpoints, missing/duplicate exact targets; assert refusal before driver access and explicit exact-target wiring.",
       "expected": "Send repro fails before device access without exact pane, owned-fixture declaration, loopback endpoint/token and a matching fake-server fixture identity; nonfixture endpoints are rejected.",
       "planned_files": [
         "mobileapp/e2e/diagnostics/send-repro.test.ts",
         "mobileapp/e2e/setup/manual-tools.test.ts",
         "mobileapp/e2e/setup/manual-tools.cjs",
         "mobileapp/e2e/jest.config.manual.js"
+      ],
+      "surfaces": [
+        "CI / test tooling"
       ]
     },
     {
       "id": "DG-003",
       "layer": "L2",
       "description": "Send repro selects the configured pane, never the first agent; absence/mismatch prevents sending",
-      "setup": "Synthetic data and isolated temporary files; existing native oracles use production pure Swift modules.",
-      "action": "Exercise the described behavior, including the negative branch where stated.",
+      "setup": "Synthetic environment maps, mocked HTTP responses and manual/default Jest configuration; no Appium session is started by unit checks.",
+      "action": "Try missing/invalid opt-ins and pane IDs, non-loopback and nonfixture endpoints, missing/duplicate exact targets; assert refusal before driver access and explicit exact-target wiring.",
       "expected": "Send repro selects the configured pane, never the first agent; absence/mismatch prevents sending",
       "planned_files": [
         "mobileapp/e2e/diagnostics/send-repro.test.ts",
         "mobileapp/e2e/setup/manual-tools.test.ts",
         "mobileapp/e2e/setup/manual-tools.cjs",
         "mobileapp/e2e/jest.config.manual.js"
+      ],
+      "surfaces": [
+        "CI / test tooling"
       ]
     },
     {
       "id": "CP-001",
       "layer": "L2",
       "description": "Five agent Trace fixtures render matching semantic counts, original ordinals and tool/context/reply labels in RN and browser DOM",
-      "setup": "Synthetic data and isolated temporary files; existing native oracles use production pure Swift modules.",
-      "action": "Exercise the described behavior, including the negative branch where stated.",
+      "setup": "The same synthetic five-provider, original-turn-151, HQ message and Markdown document fixture consumed by actual RN renderer and browser DOM with a loopback fake API.",
+      "action": "Mount/render each client; open the recorded turn and individual call, select replies, open HQ identity and file action; revoke browser access and inspect content/state. Native preview bridge is mocked; Swift preprocessing is separately exercised.",
       "expected": "Five agent Trace fixtures render matching semantic counts, original ordinals and tool/context/reply labels in RN and browser DOM",
       "planned_files": [
         "mobileapp/src/ui/CrossClientContract.test.tsx",
         "tests/web/behavior-contract.test.cjs"
+      ],
+      "surfaces": [
+        "RN iPhone/iPad/Android components",
+        "Web browser DOM"
       ]
     },
     {
       "id": "CP-002",
       "layer": "L2",
       "description": "HQ conversation provenance and full request remain readable in RN and browser Chat; opening HQ profile preserves sender identity. Workspace-only cards are not claimed equivalent to browser Chat.",
-      "setup": "Synthetic data and isolated temporary files; existing native oracles use production pure Swift modules.",
-      "action": "Exercise the described behavior, including the negative branch where stated.",
+      "setup": "The same synthetic five-provider, original-turn-151, HQ message and Markdown document fixture consumed by actual RN renderer and browser DOM with a loopback fake API.",
+      "action": "Mount/render each client; open the recorded turn and individual call, select replies, open HQ identity and file action; revoke browser access and inspect content/state. Native preview bridge is mocked; Swift preprocessing is separately exercised.",
       "expected": "HQ conversation provenance and full request remain readable in RN and browser Chat; opening HQ profile preserves sender identity. Workspace-only cards are not claimed equivalent to browser Chat.",
       "planned_files": [
         "mobileapp/src/ui/CrossClientContract.test.tsx",
         "tests/web/behavior-contract.test.cjs"
+      ],
+      "surfaces": [
+        "RN iPhone/iPad/Android components",
+        "Web browser DOM"
       ]
     },
     {
       "id": "CP-003",
       "layer": "L2",
       "description": "Markdown and code in document links and tool previews preserve content; local file actions use the paired preview adapter, not OS file or javascript navigation.",
-      "setup": "Synthetic data and isolated temporary files; existing native oracles use production pure Swift modules.",
-      "action": "Exercise the described behavior, including the negative branch where stated.",
+      "setup": "The same synthetic five-provider, original-turn-151, HQ message and Markdown document fixture consumed by actual RN renderer and browser DOM with a loopback fake API.",
+      "action": "Mount/render each client; open the recorded turn and individual call, select replies, open HQ identity and file action; revoke browser access and inspect content/state. Native preview bridge is mocked; Swift preprocessing is separately exercised.",
       "expected": "Markdown and code in document links and tool previews preserve content; local file actions use the paired preview adapter, not OS file or javascript navigation.",
       "planned_files": [
         "mobileapp/src/ui/CrossClientContract.test.tsx",
         "tests/web/behavior-contract.test.cjs"
+      ],
+      "surfaces": [
+        "RN iPhone/iPad/Android components",
+        "Web browser DOM"
       ]
     },
     {
       "id": "CP-004",
       "layer": "L2",
       "description": "Browser consumes the same synthetic expectation fixture as RN; granting no access does not expose content and no test sends real input.",
-      "setup": "Synthetic data and isolated temporary files; existing native oracles use production pure Swift modules.",
-      "action": "Exercise the described behavior, including the negative branch where stated.",
+      "setup": "The same synthetic five-provider, original-turn-151, HQ message and Markdown document fixture consumed by actual RN renderer and browser DOM with a loopback fake API.",
+      "action": "Mount/render each client; open the recorded turn and individual call, select replies, open HQ identity and file action; revoke browser access and inspect content/state. Native preview bridge is mocked; Swift preprocessing is separately exercised.",
       "expected": "Browser consumes the same synthetic expectation fixture as RN; granting no access does not expose content and no test sends real input.",
       "planned_files": [
         "mobileapp/src/ui/CrossClientContract.test.tsx",
         "tests/web/behavior-contract.test.cjs"
+      ],
+      "surfaces": [
+        "RN iPhone/iPad/Android components",
+        "Web browser DOM"
       ]
     }
   ],
-  "seal": "8d698fb9887c2a1d69922404faeb4d1e73a5c7b4704cab266a98dfcfc6e95281"
+  "seal": "91c316736813d67fff7a42c8b8f5d100c6fe8674fe6ca92a686f8dd33229a3bd"
 }
