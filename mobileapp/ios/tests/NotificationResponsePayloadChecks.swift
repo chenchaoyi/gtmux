@@ -1,5 +1,12 @@
 import Foundation
 
+final class SignalCounter: @unchecked Sendable {
+  private let lock = NSLock()
+  private var count = 0
+  func increment() { lock.lock(); count += 1; lock.unlock() }
+  func value() -> Int { lock.lock(); defer { lock.unlock() }; return count }
+}
+
 @main
 struct NotificationResponsePayloadChecks {
   static func main() {
@@ -19,6 +26,16 @@ struct NotificationResponsePayloadChecks {
     precondition(SceneLinkBuffer.drain().count == 1)
     SceneLinkBuffer.acknowledge(links[1]["id"]!)
     precondition(SceneLinkBuffer.drain().isEmpty)
+    let counter = SignalCounter()
+    let observer = NotificationCenter.default.addObserver(forName: sceneLinksAvailableNotification, object: nil, queue: nil) { _ in counter.increment() }
+    precondition(!retainWarmUsageSceneLink(URL(string: "gtmux://usage?token=private")!))
+    precondition(!retainWarmUsageSceneLink(URL(string: "https://example.test")!))
+    precondition(retainWarmUsageSceneLink(sceneURL))
+    precondition(retainWarmUsageSceneLink(sceneURL)) // distinct user intents
+    let warmLinks = SceneLinkBuffer.drain()
+    precondition(warmLinks.count == 2 && warmLinks[0]["id"] != warmLinks[1]["id"] && counter.value() == 2)
+    for link in warmLinks { SceneLinkBuffer.acknowledge(link["id"]!) }
+    NotificationCenter.default.removeObserver(observer)
     for n in 0..<40 { SceneLinkBuffer.enqueue(URL(string: "gtmux://usage/\(n)")!) }
     let boundedLinks = SceneLinkBuffer.drain()
     precondition(boundedLinks.count == 32 && boundedLinks.first?["url"] == "gtmux://usage/8")

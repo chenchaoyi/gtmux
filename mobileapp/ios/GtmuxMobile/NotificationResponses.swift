@@ -2,8 +2,21 @@ import Foundation
 import React
 
 @objc(GtmuxNotificationResponses)
-class GtmuxNotificationResponses: NSObject {
-  @objc static func requiresMainQueueSetup() -> Bool { false }
+class GtmuxNotificationResponses: RCTEventEmitter {
+  private var sceneObserver: NSObjectProtocol?
+  override static func requiresMainQueueSetup() -> Bool { false }
+  override func supportedEvents() -> [String]! { ["gtmuxSceneLinksAvailable"] }
+
+  override func startObserving() {
+    sceneObserver = NotificationCenter.default.addObserver(forName: sceneLinksAvailableNotification, object: nil, queue: nil) { [weak self] _ in
+      self?.sendEvent(withName: "gtmuxSceneLinksAvailable", body: nil)
+    }
+  }
+
+  override func stopObserving() {
+    if let observer = sceneObserver { NotificationCenter.default.removeObserver(observer) }
+    sceneObserver = nil
+  }
 
   @objc(drain:rejecter:)
   func drain(_ resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) {

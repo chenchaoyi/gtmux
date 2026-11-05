@@ -7,15 +7,19 @@ func sceneUserActivityPayload(_ activity: NSUserActivity, typeKey: String) -> [S
 
 // A scene can arrive after a background response has already started React.
 // Its launch options cannot be retroactively applied to that existing bridge.
+let sceneLinksAvailableNotification = Notification.Name("gtmuxSceneLinksAvailable")
+
 enum SceneLinkBuffer {
   private static let lock = NSLock()
   private static var pending: [[String: String]] = []
   private static let limit = 32
 
   static func enqueue(_ url: URL) {
-    lock.lock(); defer { lock.unlock() }
+    lock.lock()
     if pending.count >= limit { pending.removeFirst() }
     pending.append(["id": UUID().uuidString, "url": url.absoluteString])
+    lock.unlock()
+    NotificationCenter.default.post(name: sceneLinksAvailableNotification, object: nil)
   }
 
   static func drain() -> [[String: String]] {
@@ -27,6 +31,15 @@ enum SceneLinkBuffer {
     lock.lock(); defer { lock.unlock() }
     pending.removeAll { $0["id"] == id }
   }
+}
+
+// Usage links have one consumer and need acknowledgement if the RN listener is
+// not yet observing. Other URLs stay on React Native's normal Linking route.
+func retainWarmUsageSceneLink(_ url: URL) -> Bool {
+  let value = url.absoluteString.lowercased()
+  guard value == "gtmux://usage" || value == "gtmux://usage/" else { return false }
+  SceneLinkBuffer.enqueue(url)
+  return true
 }
 
 // Called only when an existing headless bridge is attached to a new scene.

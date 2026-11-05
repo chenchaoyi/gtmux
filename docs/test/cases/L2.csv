@@ -1820,6 +1820,7 @@ LEG-7e1e7c1d7954,L2,RN / mobile harness,mobileapp/src/ui/useKeyboardChrome.test.
 LEG-bd6085e9a14d,L2,RN / mobile harness,mobileapp/src/ui/useKeyboardChrome.test.tsx,77,test,Reduce Motion folds and restores without animation,False,legacy-not-retrospectively-reviewed
 LEG-aab5aceea630,L2,RN / mobile harness,mobileapp/src/ui/useModalDismiss.test.tsx,6,test.each(),%s completes each modal lifecycle once,True,legacy-not-retrospectively-reviewed
 MAP-e3657e854bc3,L2,reviewed implementation,mobileapp/src/ui/windowMetrics.test.tsx,14,reviewed-selector,"root view resizes update the workspace even when native dimensions do not, without remounting the reader",False,DUO-016
+MAP-2ec345b59070,L2,reviewed implementation,mobileapp/src/usage/UsageWidgetBridge.sceneEvents.test.tsx,14,reviewed-selector,retained scene availability delivers each permitted intent once and rejects guest replay,False,DUO-028
 LEG-18bbe205ead8,L2,Worker,relay-worker/src/fcm.test.ts,8,test,`FCM contract: ${row.name}`,True,legacy-not-retrospectively-reviewed
 LEG-71aba9531bf9,L2,Worker,relay-worker/src/fcm.test.ts,9,test,"Android never falls through to APNs, including missing FCM config",False,legacy-not-retrospectively-reviewed
 LEG-d69d7e5c069d,L2,Worker,relay-worker/src/fcm.test.ts,20,test,"unsupported activities, oversized bodies and malformed credentials fail closed",False,legacy-not-retrospectively-reviewed

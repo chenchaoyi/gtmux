@@ -215,6 +215,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
   func scene(_ scene: UIScene, openURLContexts contexts: Set<UIOpenURLContext>) {
     for context in contexts {
       traceNotification("scene-url")
+      if retainWarmUsageSceneLink(context.url) { continue }
       var options: [UIApplication.OpenURLOptionsKey: Any] = [:]
       if let source = context.options.sourceApplication { options[.sourceApplication] = source }
       if let annotation = context.options.annotation { options[.annotation] = annotation }

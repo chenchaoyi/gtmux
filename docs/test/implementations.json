@@ -541,6 +541,14 @@
       "a guest-rejected initial link cannot replay when the connection becomes owner"
     ]
   },
+  "mobileapp/src/usage/UsageWidgetBridge.sceneEvents.test.tsx": {
+    "cases": [
+      "DUO-028"
+    ],
+    "selectors": [
+      "retained scene availability delivers each permitted intent once and rejects guest replay"
+    ]
+  },
   "mobileapp/src/usage/UsageWidgetBridge.test.tsx": {
     "cases": [
       "DUO-019",

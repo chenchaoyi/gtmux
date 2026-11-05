@@ -3991,9 +3991,9 @@ LEG-72dc7db04494,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,106,
 LEG-2eb2e34b22ce,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,124,it,unscoped by default,False,legacy-not-retrospectively-reviewed
 ND-001,L1,iOS Swift,mobileapp/ios/tests/DocumentHTMLChecks.swift,2,native-procedural-oracle,DocumentHTML production Foundation checks,False,ND-001
 ND-002,L1,iOS Swift,mobileapp/ios/tests/DocumentMarkdownChecks.swift,3,native-procedural-oracle,DocumentMarkdown production Foundation checks,False,ND-002
-MAP-88eca3d41bfd,L1,reviewed implementation,mobileapp/ios/tests/NotificationResponsePayloadChecks.swift,53,reviewed-selector,notification response payload and queue checks passed,False,DUO-009
-MAP-2bf007ddc23d,L1,reviewed implementation,mobileapp/ios/tests/NotificationResponsePayloadChecks.swift,9,reviewed-selector,let activityPayload = sceneUserActivityPayload,False,"DUO-009,DUO-022"
-MAP-4eba460f385e,L1,reviewed implementation,mobileapp/ios/tests/NotificationResponsePayloadChecks.swift,13,reviewed-selector,"retainHeadlessSceneLinks(urls: [sceneURL], activities: [activity])",False,"DUO-009,DUO-022,DUO-024"
+MAP-88eca3d41bfd,L1,reviewed implementation,mobileapp/ios/tests/NotificationResponsePayloadChecks.swift,70,reviewed-selector,notification response payload and queue checks passed,False,DUO-009
+MAP-2bf007ddc23d,L1,reviewed implementation,mobileapp/ios/tests/NotificationResponsePayloadChecks.swift,16,reviewed-selector,let activityPayload = sceneUserActivityPayload,False,"DUO-009,DUO-022"
+MAP-4eba460f385e,L1,reviewed implementation,mobileapp/ios/tests/NotificationResponsePayloadChecks.swift,20,reviewed-selector,"retainHeadlessSceneLinks(urls: [sceneURL], activities: [activity])",False,"DUO-009,DUO-022,DUO-024"
 MAP-40893b89cbd9,G,reviewed implementation,mobileapp/metro.config.js,11,reviewed-selector,const config =,False,CT-SCOPE
 LEG-8af4b5717085,G,RN / mobile harness,mobileapp/scripts/android_delivery_test.py,17,unittest,test_versions_are_monotonic_and_unambiguous,False,legacy-not-retrospectively-reviewed
 LEG-90cc6b5fa0bd,G,RN / mobile harness,mobileapp/scripts/android_delivery_test.py,33,unittest,test_elf_requires_real_16kb_load_alignment,False,legacy-not-retrospectively-reviewed
@@ -6026,6 +6026,7 @@ LEG-aab5aceea630,L2,RN / mobile harness,mobileapp/src/ui/useModalDismiss.test.ts
 MAP-e3657e854bc3,L2,reviewed implementation,mobileapp/src/ui/windowMetrics.test.tsx,14,reviewed-selector,"root view resizes update the workspace even when native dimensions do not, without remounting the reader",False,DUO-016
 MAP-109f723286a2,L1,reviewed implementation,mobileapp/src/usage/UsageWidgetBridge.initialDemoLink.test.tsx,15,reviewed-selector,a demo-rejected initial link cannot replay when the connection becomes an owner,False,DUO-026
 MAP-cd8094a5d6ae,L1,reviewed implementation,mobileapp/src/usage/UsageWidgetBridge.initialLink.test.tsx,15,reviewed-selector,a guest-rejected initial link cannot replay when the connection becomes owner,False,DUO-026
+MAP-2ec345b59070,L2,reviewed implementation,mobileapp/src/usage/UsageWidgetBridge.sceneEvents.test.tsx,14,reviewed-selector,retained scene availability delivers each permitted intent once and rejects guest replay,False,DUO-028
 LEG-3de06c104722,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,22,test,"pairing lifecycle sends only the current owner URL, including same-address token rotation",False,legacy-not-retrospectively-reviewed
 LEG-abfa9a8366d0,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,46,test,"a widget opens usage without HQ, dismisses, and ignores guest links and private URL parameters",False,legacy-not-retrospectively-reviewed
 LEG-7419b6327ede,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,81,test,widget links cannot select a server or smuggle credentials,False,legacy-not-retrospectively-reviewed

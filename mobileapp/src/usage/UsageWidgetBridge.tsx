@@ -1,7 +1,7 @@
 // The native parent refreshes its widget using its existing private Keychain.
 // JS supplies only the current address, never a bearer or usage history.
 import React, {useEffect, useRef, useState} from 'react';
-import {AppState, Linking, NativeModules, Platform} from 'react-native';
+import {AppState, Linking, NativeEventEmitter, NativeModules, Platform} from 'react-native';
 import {useApp} from '../state/AppContext';
 import {useAgents} from '../state/AgentsContext';
 import {UsageSheet} from '../screens/UsageSheet';
@@ -100,9 +100,12 @@ export function UsageWidgetBridge() {
     const subscription = Linking.addEventListener('url', event => {
       open(event.url);
     });
+    const sceneEvents = native && typeof native.addListener === 'function' && typeof native.removeListeners === 'function'
+      ? new NativeEventEmitter(native).addListener('gtmuxSceneLinksAvailable', () => { void drain(); })
+      : undefined;
     const state = AppState.addEventListener('change', next => { if (next === 'active') void drain(); });
     void drain();
-    return () => { live = false; subscription.remove(); state.remove(); };
+    return () => { live = false; subscription.remove(); sceneEvents?.remove(); state.remove(); };
   }, []);
   useEffect(() => {
     let live = true;
