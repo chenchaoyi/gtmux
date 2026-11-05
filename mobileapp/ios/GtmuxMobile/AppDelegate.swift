@@ -161,7 +161,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
           let factory = app.reactNativeFactory else { return }
     var options = app.launchOptions ?? [:]
     // React Native and the push module read their cold-start data from launchOptions.
-    if let url = connectionOptions.urlContexts.first?.url { options[.url] = url }
+    if let url = connectionOptions.urlContexts.first?.url {
+      traceNotification("scene-url-cold")
+      options[.url] = url
+    }
     if let activity = connectionOptions.userActivities.first {
       options[.userActivityDictionary] = ["UIApplicationLaunchOptionsUserActivityKey": activity]
     }
@@ -189,6 +192,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
   func scene(_ scene: UIScene, openURLContexts contexts: Set<UIOpenURLContext>) {
     for context in contexts {
+      traceNotification("scene-url")
       var options: [UIApplication.OpenURLOptionsKey: Any] = [:]
       if let source = context.options.sourceApplication { options[.sourceApplication] = source }
       if let annotation = context.options.annotation { options[.annotation] = annotation }

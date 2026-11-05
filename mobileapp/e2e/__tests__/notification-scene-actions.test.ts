@@ -78,9 +78,10 @@ it('delivers a warm notification action exactly once', async () => {
   await launchWithFlags({GTMUX_DEBUG_SERVERS: seed, GTMUX_DEBUG_SHOT_MODE: '1', GTMUX_DEBUG_LANG: 'en', GTMUX_DEBUG_LOG_NET: '1'});
   await waitForNotificationAuthorization();
   fake.world.recorded = [];
-  await driver.execute('mobile: pressButton', {name: 'home'});
-  // A Home gesture can return before the app has left the foreground. A push
-  // delivered during that transition is intentionally suppressed by the app.
+  // The driver's supported background command does not rely on a simulated Home
+  // gesture being recognized by a particular device posture.
+  await driver.background(-1);
+  // A push delivered while still foregrounded is intentionally suppressed.
   await driver.waitUntil(async () => (await driver.queryAppState(BUNDLE)) !== 4, {timeout: 15000, interval: 250});
   const body = 'Duo warm action fixture';
   const payload = {aps: {alert: {title: 'Fixture Mac', body}, category: 'AGENT_WAITING_2', sound: 'default'}, pane: '%12', server: 'Fixture Mac'};
