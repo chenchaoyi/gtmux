@@ -78,6 +78,11 @@ async function tapBanner(body: string): Promise<boolean> {
     await banner.click();
     return true;
   } catch {
+    try {
+      await dump(`c-banner-${body}`);
+    } catch (error) {
+      console.error(`[e2e] failed to capture missing notification banner: ${error}`);
+    }
     return false;
   }
 }

@@ -56,7 +56,8 @@ export function captureStartupCapabilities(env: NodeJS.ProcessEnv = process.env)
 // diagnostics and allow startup time without assuming a prebuilt WDA exists.
 export function cloudStartupCapabilities(env: NodeJS.ProcessEnv = process.env): Record<string, boolean | number> {
   if (env.GTMUX_E2E_SESSION_CI !== '1') return {};
-  return {'appium:wdaLaunchTimeout': 240_000, 'appium:wdaStartupRetries': 1, 'appium:showXcodeLog': true};
+  return {'appium:wdaLaunchTimeout': 240_000, 'appium:wdaStartupRetries': 1, 'appium:showXcodeLog': true,
+    'appium:newCommandTimeout': 600};
 }
 
 // Appium's default socket timeout is ten minutes, shorter than the hosted

@@ -1,17 +1,17 @@
 id,layer,stack,file,line,kind,description,dynamic,design
 LEG-6e4751cbc433,L4,RN / mobile harness,mobileapp/e2e/__tests__/answer-options.test.ts,26,it,"renders the agent’s own words, sends the digit, and the session stops waiting",False,legacy-not-retrospectively-reviewed
 LEG-ac7603c2bff5,L4,RN / mobile harness,mobileapp/e2e/__tests__/chat-fullscreen-collapse.test.ts,28,it,"opens chat, collapses/expands all, enters+exits full-screen",False,legacy-not-retrospectively-reviewed
-LEG-a5d63af936be,L4,RN / mobile harness,mobileapp/e2e/__tests__/coldstart-push.test.ts,138,it,"A: cold start with an active Mac, switches, background, a new warm tap",False,legacy-not-retrospectively-reviewed
-LEG-f3196e5f4ce2,L4,RN / mobile harness,mobileapp/e2e/__tests__/coldstart-push.test.ts,179,it,C: a launch with no notification switches where it is pointed,False,legacy-not-retrospectively-reviewed
+LEG-a5d63af936be,L4,RN / mobile harness,mobileapp/e2e/__tests__/coldstart-push.test.ts,143,it,"A: cold start with an active Mac, switches, background, a new warm tap",False,legacy-not-retrospectively-reviewed
+LEG-f3196e5f4ce2,L4,RN / mobile harness,mobileapp/e2e/__tests__/coldstart-push.test.ts,184,it,C: a launch with no notification switches where it is pointed,False,legacy-not-retrospectively-reviewed
 LEG-1c834aed07e9,L4,RN / mobile harness,mobileapp/e2e/__tests__/composer-camera-unavailable.test.ts,19,it,Camera with no camera says so instead of doing nothing,False,legacy-not-retrospectively-reviewed
 LEG-ecf828c0a4a6,L4,RN / mobile harness,mobileapp/e2e/__tests__/composer-keyrow.test.ts,32,it,"has no Space pill, orders ⏎ after ↑/↓, and ⌫ erases in the pane",False,legacy-not-retrospectively-reviewed
 LEG-07d49ef24147,L4,RN / mobile harness,mobileapp/e2e/__tests__/composer-photo-markup.test.ts,24,it,a library photo goes through markup and reaches the Mac with the message,False,legacy-not-retrospectively-reviewed
 LEG-e731229baa6d,L4,RN / mobile harness,mobileapp/e2e/__tests__/composer-return-sends.test.ts,80,it,"off: Return makes a new line, the send button sends",False,legacy-not-retrospectively-reviewed
 LEG-8da92748c6ca,L4,RN / mobile harness,mobileapp/e2e/__tests__/composer-return-sends.test.ts,98,it,on: Return sends,False,legacy-not-retrospectively-reviewed
 LEG-094857d91ad5,L4,RN / mobile harness,mobileapp/e2e/__tests__/detail-chrome-textsize.test.ts,39,run,the top row keeps one line and stays on screen at the accessibility sizes,False,legacy-not-retrospectively-reviewed
-MAP-29b9b35673af,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,63,reviewed-selector,"retains the selected conversation, reading position and draft across simulator fold and unfold",False,DUO-020
-MAP-e33509324cc9,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,187,reviewed-selector,keeps Trace search and Diff open while the simulator folds and unfolds,False,"DUO-020,DUO-021"
-MAP-7bb91bd4c1ab,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,136,reviewed-selector,keeps the session entry usable at an accessibility text size on both panels,False,"DUO-020,DUO-021,DUO-023"
+MAP-29b9b35673af,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,66,reviewed-selector,"retains the selected conversation, reading position and draft across simulator fold and unfold",False,DUO-020
+MAP-e33509324cc9,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,190,reviewed-selector,keeps Trace search and Diff open while the simulator folds and unfolds,False,"DUO-020,DUO-021"
+MAP-7bb91bd4c1ab,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,139,reviewed-selector,keeps the session entry usable at an accessibility text size on both panels,False,"DUO-020,DUO-021,DUO-023"
 MAP-8cfa983c4bb1,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-window.test.ts,13,reviewed-selector,keeps the selected session and a draft through simulator rotation,False,DUO-002
 LEG-e23b5ce26880,L4,RN / mobile harness,mobileapp/e2e/__tests__/edge-stability.test.ts,22,it,traces the viewport around the live tail,False,legacy-not-retrospectively-reviewed
 LEG-242e71413ed1,L4,RN / mobile harness,mobileapp/e2e/__tests__/edge-states.test.ts,39,it,an empty fleet says so instead of showing an empty frame,False,legacy-not-retrospectively-reviewed

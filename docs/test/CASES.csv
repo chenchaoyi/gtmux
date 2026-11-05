@@ -3772,8 +3772,8 @@ LEG-6e4751cbc433,L4,RN / mobile harness,mobileapp/e2e/__tests__/answer-options.t
 LEG-2d3a6b1e37ba,M,RN / mobile harness,mobileapp/e2e/__tests__/appstore-shots-ipad.test.ts,53,it,"captures the split shell, HQ matters, the pane grid and the knowledge sheet",False,legacy-not-retrospectively-reviewed
 LEG-1b162166dec9,M,RN / mobile harness,mobileapp/e2e/__tests__/appstore-shots.test.ts,45,it,"captures the radar, the terminal, HQ, its work, usage and the Macs",False,legacy-not-retrospectively-reviewed
 LEG-ac7603c2bff5,L4,RN / mobile harness,mobileapp/e2e/__tests__/chat-fullscreen-collapse.test.ts,28,it,"opens chat, collapses/expands all, enters+exits full-screen",False,legacy-not-retrospectively-reviewed
-LEG-a5d63af936be,L4,RN / mobile harness,mobileapp/e2e/__tests__/coldstart-push.test.ts,138,it,"A: cold start with an active Mac, switches, background, a new warm tap",False,legacy-not-retrospectively-reviewed
-LEG-f3196e5f4ce2,L4,RN / mobile harness,mobileapp/e2e/__tests__/coldstart-push.test.ts,179,it,C: a launch with no notification switches where it is pointed,False,legacy-not-retrospectively-reviewed
+LEG-a5d63af936be,L4,RN / mobile harness,mobileapp/e2e/__tests__/coldstart-push.test.ts,143,it,"A: cold start with an active Mac, switches, background, a new warm tap",False,legacy-not-retrospectively-reviewed
+LEG-f3196e5f4ce2,L4,RN / mobile harness,mobileapp/e2e/__tests__/coldstart-push.test.ts,184,it,C: a launch with no notification switches where it is pointed,False,legacy-not-retrospectively-reviewed
 LEG-1c834aed07e9,L4,RN / mobile harness,mobileapp/e2e/__tests__/composer-camera-unavailable.test.ts,19,it,Camera with no camera says so instead of doing nothing,False,legacy-not-retrospectively-reviewed
 LEG-ecf828c0a4a6,L4,RN / mobile harness,mobileapp/e2e/__tests__/composer-keyrow.test.ts,32,it,"has no Space pill, orders ⏎ after ↑/↓, and ⌫ erases in the pane",False,legacy-not-retrospectively-reviewed
 LEG-07d49ef24147,L4,RN / mobile harness,mobileapp/e2e/__tests__/composer-photo-markup.test.ts,24,it,a library photo goes through markup and reaches the Mac with the message,False,legacy-not-retrospectively-reviewed
@@ -3782,9 +3782,9 @@ LEG-8da92748c6ca,L4,RN / mobile harness,mobileapp/e2e/__tests__/composer-return-
 LEG-cb21d0627bd2,M,RN / mobile harness,mobileapp/e2e/__tests__/composer-shots.test.ts,25,it,captures the composer input row + the attach sheet,False,legacy-not-retrospectively-reviewed
 LEG-63869acd3e2a,M,RN / mobile harness,mobileapp/e2e/__tests__/cursor.test.ts,41,it,opens a terminal pane and screenshots the cursor,False,legacy-not-retrospectively-reviewed
 LEG-094857d91ad5,L4,RN / mobile harness,mobileapp/e2e/__tests__/detail-chrome-textsize.test.ts,39,run,the top row keeps one line and stays on screen at the accessibility sizes,False,legacy-not-retrospectively-reviewed
-MAP-29b9b35673af,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,63,reviewed-selector,"retains the selected conversation, reading position and draft across simulator fold and unfold",False,DUO-020
-MAP-e33509324cc9,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,187,reviewed-selector,keeps Trace search and Diff open while the simulator folds and unfolds,False,"DUO-020,DUO-021"
-MAP-7bb91bd4c1ab,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,136,reviewed-selector,keeps the session entry usable at an accessibility text size on both panels,False,"DUO-020,DUO-021,DUO-023"
+MAP-29b9b35673af,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,66,reviewed-selector,"retains the selected conversation, reading position and draft across simulator fold and unfold",False,DUO-020
+MAP-e33509324cc9,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,190,reviewed-selector,keeps Trace search and Diff open while the simulator folds and unfolds,False,"DUO-020,DUO-021"
+MAP-7bb91bd4c1ab,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,139,reviewed-selector,keeps the session entry usable at an accessibility text size on both panels,False,"DUO-020,DUO-021,DUO-023"
 MAP-8cfa983c4bb1,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-window.test.ts,13,reviewed-selector,keeps the selected session and a draft through simulator rotation,False,DUO-002
 LEG-e23b5ce26880,L4,RN / mobile harness,mobileapp/e2e/__tests__/edge-stability.test.ts,22,it,traces the viewport around the live tail,False,legacy-not-retrospectively-reviewed
 LEG-242e71413ed1,L4,RN / mobile harness,mobileapp/e2e/__tests__/edge-states.test.ts,39,it,an empty fleet says so instead of showing an empty frame,False,legacy-not-retrospectively-reviewed
@@ -3963,13 +3963,13 @@ LEG-4f90e4968cbd,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts
 MAP-f4f657590af5,L2,reviewed implementation,mobileapp/e2e/fake-serve/world.ts,111,reviewed-selector,export class World,False,CT-HTTP
 MAP-befb8569059f,G,reviewed implementation,mobileapp/e2e/jest.config.manual.js,2,reviewed-selector,manualMode(process.env),False,"DG-001,DG-002"
 MAP-a88b539daecf,G,reviewed implementation,mobileapp/e2e/jest.config.manual.js,3,reviewed-selector,sendTarget(process.env),False,"DG-001,DG-002"
-LEG-b6f73720d14b,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,23,test,manual handles nothing on the test’s behalf,False,legacy-not-retrospectively-reviewed
-LEG-7440419bbda7,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,29,test,"the default dismisses, and the older accept switch still accepts",False,legacy-not-retrospectively-reviewed
-LEG-9afe9479f18a,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,34,test,the explicit mode wins over the older switch,False,legacy-not-retrospectively-reviewed
-LEG-ff05befffbd7,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,38,test,a misspelt mode stops the run instead of falling back to dismiss,False,legacy-not-retrospectively-reviewed
-LEG-7201f98d96a5,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,43,test,headless capture is explicit and local GUI runs keep their behavior,False,legacy-not-retrospectively-reviewed
-LEG-16fab5a7cc96,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,49,test,only explicit hosted capture separates WDA build and readiness with one bounded connection,False,legacy-not-retrospectively-reviewed
-LEG-61bfa22d706f,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,65,test,only hosted multi-screen store captures receive the longer journey budget,False,legacy-not-retrospectively-reviewed
+LEG-b6f73720d14b,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,25,test,manual handles nothing on the test’s behalf,False,legacy-not-retrospectively-reviewed
+LEG-7440419bbda7,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,31,test,"the default dismisses, and the older accept switch still accepts",False,legacy-not-retrospectively-reviewed
+LEG-9afe9479f18a,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,36,test,the explicit mode wins over the older switch,False,legacy-not-retrospectively-reviewed
+LEG-ff05befffbd7,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,40,test,a misspelt mode stops the run instead of falling back to dismiss,False,legacy-not-retrospectively-reviewed
+LEG-7201f98d96a5,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,45,test,headless capture is explicit and local GUI runs keep their behavior,False,legacy-not-retrospectively-reviewed
+LEG-16fab5a7cc96,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,51,test,only explicit hosted capture separates WDA build and readiness with one bounded connection,False,legacy-not-retrospectively-reviewed
+LEG-61bfa22d706f,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,67,test,only hosted multi-screen store captures receive the longer journey budget,False,legacy-not-retrospectively-reviewed
 MAP-ad6f801c4c8b,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,3,reviewed-selector,cloud simulator session waits for a fresh WDA build without requiring a prebuilt product,False,DUO-008
 MAP-cb2da71006dd,G,reviewed implementation,mobileapp/e2e/setup/global-setup-manual.ts,6,reviewed-selector,"await setupManual(process.env, verifySendTarget, globalSetup)",False,DG-004
 MAP-c8767994a252,G,reviewed implementation,mobileapp/e2e/setup/manual-tools.cjs,2,reviewed-selector,function manualMode(,False,"DG-001,DG-002,DG-003"

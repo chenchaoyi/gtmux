@@ -3182,13 +3182,13 @@ LEG-5d182318c546,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts
 LEG-9491a40f6875,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,33,test,"a suite can still pin one, and a reset unpins it",False,legacy-not-retrospectively-reviewed
 LEG-62967d6ba432,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,41,test,"no supervisor, no verdict",False,legacy-not-retrospectively-reviewed
 LEG-4f90e4968cbd,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,47,test,GET /api/digest carries it on the supervisor row,False,legacy-not-retrospectively-reviewed
-LEG-b6f73720d14b,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,23,test,manual handles nothing on the test’s behalf,False,legacy-not-retrospectively-reviewed
-LEG-7440419bbda7,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,29,test,"the default dismisses, and the older accept switch still accepts",False,legacy-not-retrospectively-reviewed
-LEG-9afe9479f18a,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,34,test,the explicit mode wins over the older switch,False,legacy-not-retrospectively-reviewed
-LEG-ff05befffbd7,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,38,test,a misspelt mode stops the run instead of falling back to dismiss,False,legacy-not-retrospectively-reviewed
-LEG-7201f98d96a5,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,43,test,headless capture is explicit and local GUI runs keep their behavior,False,legacy-not-retrospectively-reviewed
-LEG-16fab5a7cc96,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,49,test,only explicit hosted capture separates WDA build and readiness with one bounded connection,False,legacy-not-retrospectively-reviewed
-LEG-61bfa22d706f,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,65,test,only hosted multi-screen store captures receive the longer journey budget,False,legacy-not-retrospectively-reviewed
+LEG-b6f73720d14b,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,25,test,manual handles nothing on the test’s behalf,False,legacy-not-retrospectively-reviewed
+LEG-7440419bbda7,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,31,test,"the default dismisses, and the older accept switch still accepts",False,legacy-not-retrospectively-reviewed
+LEG-9afe9479f18a,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,36,test,the explicit mode wins over the older switch,False,legacy-not-retrospectively-reviewed
+LEG-ff05befffbd7,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,40,test,a misspelt mode stops the run instead of falling back to dismiss,False,legacy-not-retrospectively-reviewed
+LEG-7201f98d96a5,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,45,test,headless capture is explicit and local GUI runs keep their behavior,False,legacy-not-retrospectively-reviewed
+LEG-16fab5a7cc96,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,51,test,only explicit hosted capture separates WDA build and readiness with one bounded connection,False,legacy-not-retrospectively-reviewed
+LEG-61bfa22d706f,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,67,test,only hosted multi-screen store captures receive the longer journey budget,False,legacy-not-retrospectively-reviewed
 MAP-ad6f801c4c8b,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,3,reviewed-selector,cloud simulator session waits for a fresh WDA build without requiring a prebuilt product,False,DUO-008
 DG-001-f069a0,L1,RN / mobile harness,mobileapp/e2e/setup/manual-tools.test.ts,6,test,DG-001 ordinary discovery,False,DG-001
 DG-002-f069a0,L1,RN / mobile harness,mobileapp/e2e/setup/manual-tools.test.ts,19,test,DG-002 rejects missing target,False,DG-002

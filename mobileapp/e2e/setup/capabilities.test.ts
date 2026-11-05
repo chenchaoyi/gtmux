@@ -6,8 +6,10 @@ test('cloud simulator session waits for a fresh WDA build without requiring a pr
     'appium:wdaLaunchTimeout': 240_000,
     'appium:wdaStartupRetries': 1,
     'appium:showXcodeLog': true,
+    'appium:newCommandTimeout': 600,
   });
   expect(cloudStartupCapabilities(env)).not.toHaveProperty('appium:usePrebuiltWDA');
+  expect(cloudStartupCapabilities({})).not.toHaveProperty('appium:newCommandTimeout');
   expect(sessionConnectionOptions(env)).toEqual({connectionRetryTimeout: 900_000, connectionRetryCount: 0});
   const args = appiumServerTimeoutArgs(env);
   expect(args[0]).toBe('--keep-alive-timeout');

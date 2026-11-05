@@ -9,10 +9,13 @@ import {TestIds} from '../../src/constants/testIds';
 type Display = {id: number; metrics: {widthPixels: number; heightPixels: number}};
 let fake: Fake;
 beforeAll(async () => {
+  const started = Date.now();
+  console.log(`[e2e] Duo fixture begin ${started}`);
   fake = await startFake();
   fake.world.seedLongChat('%13', 12);
   fake.world.agents.find(agent => agent.pane_id === '%13')!.branch = 'main';
   fake.world.diffs.set('%13', 'diff --git a/duo.txt b/duo.txt\n--- a/duo.txt\n+++ b/duo.txt\n@@ -1 +1 @@\n-old\n+new\n');
+  console.log(`[e2e] Duo fixture ready after ${Date.now() - started}ms`);
 });
 afterAll(async () => { await fake?.close(); });
 
