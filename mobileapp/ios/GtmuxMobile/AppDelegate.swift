@@ -39,7 +39,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
 
   func application(_ app: UIApplication, open url: URL,
                    options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
-    RCTLinkingManager.application(app, open: url, options: options)
+    traceNotification("application-url")
+    return RCTLinkingManager.application(app, open: url, options: options)
   }
   // The responder chain ends here, so a command from any first responder reaches it.
 
