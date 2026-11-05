@@ -5,9 +5,11 @@ import SwiftUI
 struct HQParticipantPresentation {
     let participant: HQParticipant
     let current: HQCandidate?
-    init(participant: HQParticipant, current: HQCandidate?) {
+    var currentKnown: Bool
+    init(participant: HQParticipant, current: HQCandidate?, currentKnown: Bool = true) {
         self.participant = participant
-        self.current = current?.id == participant.conversation.id ? current : nil
+        self.current = currentKnown && current?.id == participant.conversation.id ? current : nil
+        self.currentKnown = currentKnown
     }
     var title: String {
         let name = current?.name ?? participant.conversation.name
@@ -33,7 +35,8 @@ struct HQParticipantPresentation {
     func state(_ l: L10n) -> String {
         let status =
             current.map { hqConversationStatus($0.status, l) }
-            ?? l.tr("Original record · no current session", "原始记录 · 无当前会话")
+            ?? (currentKnown ? l.tr("Original record · no current session", "原始记录 · 无当前会话")
+                : l.tr("Session status unavailable", "会话状态待刷新"))
         return participant.role == "reference"
             ? l.tr("Reference", "历史参考") + " · " + status : status
     }
@@ -44,8 +47,9 @@ struct HQParticipantLabel: View {
     let participant: HQParticipant
     let current: HQCandidate?
     var showTitle = true
+    var currentKnown = true
     var body: some View {
-        let info = HQParticipantPresentation(participant: participant, current: current)
+        let info = HQParticipantPresentation(participant: participant, current: current, currentKnown: currentKnown)
         VStack(alignment: .leading, spacing: 3) {
             if showTitle { Text(info.title).font(HQTypography.rowTitle).lineLimit(1).help(info.title) }
             Text(info.metadata(l10n)).font(HQTypography.caption).foregroundStyle(.secondary).lineLimit(1)

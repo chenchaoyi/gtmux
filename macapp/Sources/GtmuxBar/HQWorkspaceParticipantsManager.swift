@@ -27,6 +27,11 @@ struct HQWorkspaceParticipants: View {
     }
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
+            if store.sourcesLoading {
+                HStack { ProgressView().controlSize(.small); Text(l10n.tr("Loading session details…", "正在读取会话状态…")) }.font(HQTypography.caption)
+            } else if let error = store.sourcesError {
+                HStack { Text(error); Button(l10n.tr("Retry", "重试")) { store.refreshSources(force: true) } }.font(HQTypography.caption)
+            }
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title).font(HQTypography.title).accessibilityAddTraits(.isHeader)
@@ -62,7 +67,8 @@ struct HQWorkspaceParticipants: View {
             if store.acting { HQBrandLoading(label: l10n.tr("Saving…", "正在保存…")) }
         }.padding(20).frame(width: min(660, sheetSize.width), height: sheetSize.height)
             .font(HQTypography.body)
-            .sheet(item: $reading) { HQParticipantReader(l10n: l10n, store: store, participant: $0, matterID: current.id) }
+            .onAppear { if !store.sourcesKnown { store.refreshSources(force: true) } }
+        .sheet(item: $reading) { HQParticipantReader(l10n: l10n, store: store, participant: $0, matterID: current.id) }
             .alert(item: $flow.confirmation) { proposal in
                 Alert(title: Text(proposal.title), message: Text(proposal.detail), primaryButton: .default(Text(proposal.button)) {
                     store.perform(proposal.action) {
@@ -124,7 +130,7 @@ struct HQWorkspaceParticipants: View {
         }
     }
     private func saved(_ p: HQParticipant) -> HQCandidate? { store.snapshot?.references?.first { $0.id == p.conversation.id } }
-    private func candidate(_ p: HQParticipant) -> HQCandidate? { store.snapshot?.conversations.first { $0.id == p.conversation.id } }
+    private func candidate(_ p: HQParticipant) -> HQCandidate? { store.currentCandidate(for: p.conversation) }
     private func interval(_ p: HQParticipant) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             HQManagedConversationLabel(l10n: l10n, participant: p, current: candidate(p), saved: saved(p))

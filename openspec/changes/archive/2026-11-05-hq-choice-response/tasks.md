@@ -1,0 +1,4 @@
+- [x] Commit reviewed test design before implementation.
+- [x] Reproduce native full-window reply feedback/focus and layout.
+- [x] Separate stored data from optional source discovery; preserve compatibility.
+- [x] Local targeted/native/core checks and bilingual documentation; prepare final PR/main verification.

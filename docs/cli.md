@@ -2584,3 +2584,5 @@ identity. `list` prints JSON; `remove` revokes future downloads and removes only
 the registered copy. Total storage is bounded to 256 copies / 240 MiB. Originals
 and copies already downloaded by devices remain. See
 [document preview](design/conversation-documents.md) for supported formats and limits.
+
+HQ UI readers may use `gtmux hq workspace list --overview --stored --json` for authoritative stored matters without session discovery; `sources_included:false` denotes unavailable optional session metadata. Ordinary list retains live/historical sources. See [HQ choice response](design/HQ-CHOICE-RESPONSE.md).

@@ -7,11 +7,13 @@ struct HQWorkspaceView: View {
     @State private var rename = false
     @State private var titleDraft = ""
     @State private var columns: NavigationSplitViewVisibility = .all
+    @State private var headerHeight: CGFloat = 0
 
     var body: some View {
         GeometryReader { bounds in
         NavigationSplitView(columnVisibility: $columns) {
             HQWorkspaceSidebar(l10n: l10n, store: store)
+                .frame(minWidth: 220, idealWidth: 260, maxWidth: 340)
                 .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 340)
                 // Remove the default at its owning column so it does not duplicate the leading control.
                 .toolbar(removing: .sidebarToggle)
@@ -41,15 +43,16 @@ struct HQWorkspaceView: View {
                 } else if store.selection == .newTask {
                     newTask
                 } else {
-                    detailBody
+                    detailBody(headerLimit: max(140, bounds.size.height * 0.42))
                 }
                 if store.selection.showsComposer {
                     Divider()
                     HQWorkspaceComposer(l10n: l10n, store: store)
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
         }
+        .frame(width: bounds.size.width, height: bounds.size.height)
         .environment(\.locale, Locale(identifier: l10n.lang == "zh" ? "zh_CN" : "en_US"))
         .font(HQTypography.body)
         .environment(\.markdownTypography, .workspace)
@@ -90,8 +93,10 @@ struct HQWorkspaceView: View {
         }
     }
 
-    @ViewBuilder private var detailBody: some View {
+    private func detailBody(headerLimit: CGFloat) -> some View {
+        VStack(spacing: 0) {
         if let matter = store.currentMatter {
+            ScrollView(.vertical) {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 5) {
@@ -132,7 +137,7 @@ struct HQWorkspaceView: View {
                     }.menuStyle(.borderlessButton).frame(width: 32, height: 28)
                         .accessibilityLabel(l10n.tr("Matter actions", "事项操作"))
                 }
-                HQHumanInputCard(l10n: l10n, matter: matter) { question, choice in
+                HQHumanInputCard(l10n: l10n, matter: matter, preparedChoice: store.preparedHumanChoice) { question, choice in
                     store.prepareHumanReply(question, choice: choice)
                 }
                 HStack {
@@ -148,7 +153,14 @@ struct HQWorkspaceView: View {
                         store.select(.matter(parent))
                     }.buttonStyle(.borderless).font(HQTypography.caption)
                 }
-            }.padding(16)
+            }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
+                .background(GeometryReader { geometry in
+                    Color.clear.preference(key: HQMatterHeaderHeight.self, value: geometry.size.height)
+                })
+            }.frame(height: min(headerHeight > 0 ? headerHeight : headerLimit, headerLimit))
+                .onPreferenceChange(HQMatterHeaderHeight.self) { height in
+                    if abs(headerHeight - height) > 0.5 { headerHeight = height }
+                }
             Divider()
             HQWorkspaceConversationView(l10n: l10n, store: store)
         } else if case .matter = store.selection {
@@ -162,13 +174,14 @@ struct HQWorkspaceView: View {
                 if let supervisor = store.snapshot?.supervisor {
                     Text(hqConversationStatus(supervisor.status, l10n)).font(HQTypography.body).foregroundStyle(
                         .secondary)
-                } else if store.snapshot != nil {
+                } else if store.snapshot != nil && store.sourcesKnown {
                     Button(l10n.tr("Start HQ in Terminal", "在终端启动 HQ")) { GtmuxCLI.spawn(["hq"]) }
                 }
             }.padding(16)
             Divider()
             HQWorkspaceConversationView(l10n: l10n, store: store)
         }
+        }.frame(minHeight: 0, maxHeight: .infinity)
     }
 
     private var newTask: some View {
@@ -180,7 +193,7 @@ struct HQWorkspaceView: View {
                     "说明要解决的问题和执行范围，HQ 会组织跟进并向你汇报。")
             )
             .font(HQTypography.body).foregroundStyle(.secondary)
-            if store.snapshot != nil, store.snapshot?.supervisor == nil {
+            if store.sourcesKnown, store.snapshot != nil, store.snapshot?.supervisor == nil {
                 Label(
                     l10n.tr(
                         "HQ is not running. Your instruction will be saved pending delivery.",
@@ -193,4 +206,9 @@ struct HQWorkspaceView: View {
         }.padding(22).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
+}
+
+private struct HQMatterHeaderHeight: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
 }

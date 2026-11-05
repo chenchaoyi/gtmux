@@ -30,7 +30,7 @@ struct HQParticipantSummary: View {
                             HStack(spacing: 7) {
                                 HQConversationIcon(agent: p.conversation.agent, hint: candidate(p)?.icon)
                                     .frame(width: 22, height: 22)
-                                HQParticipantLabel(l10n: l10n, participant: p, current: candidate(p))
+                                HQParticipantLabel(l10n: l10n, participant: p, current: candidate(p), currentKnown: store.sourcesKnown)
                                     .frame(minWidth: 200, maxWidth: 330, alignment: .leading)
                             }.padding(8).background(
                                 Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 7))
@@ -43,7 +43,7 @@ struct HQParticipantSummary: View {
         }
     }
     private func candidate(_ p: HQParticipant) -> HQCandidate? {
-        store.snapshot?.conversations.first { $0.id == p.conversation.id }
+        store.currentCandidate(for: p.conversation)
     }
 }
 struct HQParticipantReader: View {
@@ -60,7 +60,7 @@ struct HQParticipantReader: View {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(participant.conversation.name).font(HQTypography.title).lineLimit(2)
-                    HQParticipantLabel(l10n: l10n, participant: participant, current: current, showTitle: false)
+                    HQParticipantLabel(l10n: l10n, participant: participant, current: current, showTitle: false, currentKnown: store.sourcesKnown)
                     Text(participant.conversation.sessionId).font(HQTypography.code).foregroundStyle(.secondary).lineLimit(1)
                         .textSelection(.enabled)
                         .accessibilityLabel(l10n.tr("Session ID", "会话 ID") + ": " + participant.conversation.sessionId)
@@ -110,7 +110,7 @@ struct HQParticipantReader: View {
         }
     }
     private var current: HQCandidate? {
-        store.snapshot?.conversations.first { $0.id == participant.conversation.id }
+        store.currentCandidate(for: participant.conversation)
     }
     private func load() {
         error = nil

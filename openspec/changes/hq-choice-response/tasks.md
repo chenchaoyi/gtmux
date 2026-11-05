@@ -1,4 +1,0 @@
-- [ ] Commit reviewed test design before implementation.
-- [ ] Reproduce native full-window reply feedback/focus and layout.
-- [ ] Separate stored data from optional source discovery; preserve compatibility.
-- [ ] Targeted/native and core gates, bilingual docs and final PR/main checks.
