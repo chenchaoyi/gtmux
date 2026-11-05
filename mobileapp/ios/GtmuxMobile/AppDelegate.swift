@@ -31,6 +31,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     UsageWidgetRefresh.shared.register()
 
     self.launchOptions = launchOptions
+    traceNotification("app-launch-finished")
 
     return true
   }
@@ -113,20 +114,26 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
           self.endResponseBackgroundTask()
         }
       }
+      traceNotification(self.window == nil ? "delegate-window-absent" : "delegate-window-present")
       if self.window == nil {
         var options = self.launchOptions ?? [:]
         options[.remoteNotification] = payload
         self.launchOptions = options
         if !self.headlessResponseStarted, let factory = self.reactNativeFactory {
           self.headlessResponseStarted = true
+          traceNotification("headless-root-start")
           // Keep the surface alive until a scene attaches it. Passing nil to the
         // factory's window helper would immediately release its root controller.
         self.headlessRootView = factory.rootViewFactory.view(
           withModuleName: "GtmuxMobile", initialProperties: nil, launchOptions: options
         )
+          traceNotification("headless-root-created")
+        } else {
+          traceNotification(self.headlessResponseStarted ? "headless-root-already-started" : "headless-factory-unavailable")
         }
       }
       RNCPushNotificationIOS.didReceiveRemoteNotification(payload)
+      traceNotification("delegate-forwarded-to-rn")
       completionHandler()
     }
   }
@@ -160,6 +167,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
   func scene(_ scene: UIScene, willConnectTo session: UISceneSession,
              options connectionOptions: UIScene.ConnectionOptions) {
+    traceNotification("scene-connect-start")
     guard let scene = scene as? UIWindowScene,
           let app = UIApplication.shared.delegate as? AppDelegate,
           let factory = app.reactNativeFactory else { return }
