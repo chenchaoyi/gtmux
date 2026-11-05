@@ -374,7 +374,21 @@
       "surfaces": [
         "iOS initial link and cross-connection state"
       ]
+    },
+    {
+      "id": "DUO-027",
+      "layer": "L2",
+      "description": "A history reader keeps a native visible-content anchor without changing live-tail following",
+      "setup": "Render a conversation at the live tail, then simulate a user drag into history and a return to the tail.",
+      "action": "Exercise the chat ScrollView scroll callbacks and inspect the native anchor configuration after each user state transition.",
+      "expected": "The native visible-content anchor is active only while reading history; live-tail following stays active at the tail. Actual reflow is separately verified on the Duo simulator.",
+      "planned_files": [
+        "mobileapp/src/ui/ChatView.follow.test.tsx"
+      ],
+      "surfaces": [
+        "iOS Duo adaptation and ordinary-device regression"
+      ]
     }
   ],
-  "seal": "c3415193b4fe8d2d3d77bda99310db24232d9bc519694a64098b186a1e8bc6b3"
+  "seal": "c032e32b0b03928ec365b3d70ee8b17e7a9e3c6a7cc063c30155c726a6faa25d"
 }
