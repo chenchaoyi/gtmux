@@ -153,6 +153,7 @@ LEG-d36b540ed269,L1,Go core / CLI / server,internal/app/changelog_test.go,172,Te
 LEG-b45933fe6cff,L1,Go core / CLI / server,internal/app/changelog_test.go,193,Test,TestBlocksTolerateEitherOrderAndNoSeparator,False,legacy-not-retrospectively-reviewed
 LEG-77965dd1546f,L1,Go core / CLI / server,internal/app/changelog_test.go,210,Test,TestZhMarkerLineCarriesInlineContent,False,legacy-not-retrospectively-reviewed
 LEG-378fcaff96c3,L1,Go core / CLI / server,internal/app/changelog_test.go,218,Test,TestUserLinesFollowsTheResolvedLanguage,False,legacy-not-retrospectively-reviewed
+MAP-bf28343fb4c1,L2,reviewed implementation,internal/app/client_contract_test.go,30,reviewed-selector,TestClientHTTPContracts,False,CT-HTTP
 LEG-8b6e06ad887c,L1,Go core / CLI / server,internal/app/cloudflared_security_test.go,15,Test,TestCloudflaredSecurityFloor,False,legacy-not-retrospectively-reviewed
 LEG-4c8a67259028,L2,Go core / CLI / server,internal/app/cloudflared_security_test.go,40,Test,TestCloudflaredMetricsTransportRefusesRedirectsAndOversizedBodies,False,legacy-not-retrospectively-reviewed
 LEG-ff081e20fac0,L2,Go core / CLI / server,internal/app/cloudflared_security_test.go,42,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
@@ -3818,6 +3819,13 @@ LEG-b299aa1923fd,L4,RN / mobile harness,mobileapp/e2e/__tests__/usage-sheet.test
 LEG-a4f8ad2fa819,L4,RN / mobile harness,mobileapp/e2e/android/diagnostics.test.ts,3,test,emulator logs retain a bounded tail across chunks and a single oversized write,False,legacy-not-retrospectively-reviewed
 LEG-b1cec21ac170,L4,RN / mobile harness,mobileapp/e2e/android/diagnostics.test.ts,8,test,driver loss is distinct from an application assertion or a missing UI element,False,legacy-not-retrospectively-reviewed
 LEG-fe63dcd3db05,L4,RN / mobile harness,mobileapp/e2e/android/diagnostics.test.ts,12,test,a broken screenshot still collects source and late independent device diagnostics,False,legacy-not-retrospectively-reviewed
+MAP-f84810b94765,L1,reviewed implementation,mobileapp/e2e/android/journey.cjs,37,reviewed-selector,function selection,False,"CT-ANDROID-POLICY,CT-TIMING"
+MAP-87d616e2f9f2,L1,reviewed implementation,mobileapp/e2e/android/journey.cjs,68,reviewed-selector,function createJourney,False,"CT-ANDROID-POLICY,CT-TIMING"
+MAP-845b52602a47,L1,reviewed implementation,mobileapp/e2e/android/journey.test.ts,2,reviewed-selector,full Android journey retains,False,"CT-ANDROID-POLICY,CT-TIMING"
+MAP-591fe2c43846,L1,reviewed implementation,mobileapp/e2e/android/journey.test.ts,14,reviewed-selector,setup failure blocks,False,"CT-ANDROID-POLICY,CT-TIMING"
+MAP-bd791291b35e,L1,reviewed implementation,mobileapp/e2e/android/journey.test.ts,39,reviewed-selector,first assertion and disconnect causes,False,"CT-ANDROID-POLICY,CT-TIMING"
+MAP-e9a3452907ab,L1,reviewed implementation,mobileapp/e2e/android/journey.test.ts,67,reviewed-selector,an out of order selected check,False,"CT-ANDROID-POLICY,CT-TIMING"
+MAP-fc216f83479b,L1,reviewed implementation,mobileapp/e2e/android/journey.test.ts,79,reviewed-selector,timing records setup action,False,"CT-ANDROID-POLICY,CT-TIMING"
 LEG-5aa4a01b8dbf,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,167,check,01-radar-owner,False,legacy-not-retrospectively-reviewed
 LEG-1b8288a84b0e,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,168,check,02-section-collapse,False,legacy-not-retrospectively-reviewed
 LEG-9c90c5870a40,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,169,check,03-chat-terminal,False,legacy-not-retrospectively-reviewed
@@ -3849,11 +3857,15 @@ LEG-33aeea4a70db,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,265,check,
 LEG-8ef64b955024,G,RN / mobile harness,mobileapp/e2e/android/run.cjs,279,check,29-clipboard-image-markup-and-upload,False,legacy-not-retrospectively-reviewed
 LEG-8a1dd3780a1b,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,301,check,30-native-pdf-pages-and-scroll,False,legacy-not-retrospectively-reviewed
 LEG-ee0968c7d8ff,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,306,check,31-native-file-trace,False,legacy-not-retrospectively-reviewed
+MAP-d4637161f816,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,97,reviewed-selector,async function check,False,"CT-ANDROID,CT-TIMING"
+MAP-c6dfe48e744e,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,103,reviewed-selector,async function run,False,"CT-ANDROID,CT-TIMING"
 LEG-95b0bcda12ce,M,RN / mobile harness,mobileapp/e2e/capture/hq-header-shot.test.ts,15,it,opens the disclosure,False,legacy-not-retrospectively-reviewed
 LEG-490318c4a70a,M,RN / mobile harness,mobileapp/e2e/capture/knowledge-shot.test.ts,14,it,opens from the header and drills into an entry,False,legacy-not-retrospectively-reviewed
 MAP-38c67a93a00d,G,RN / mobile harness,mobileapp/e2e/capture/knowledge-shot.test.ts,13,reviewed-selector,gated(,False,DG-001
 LEG-34eb45b46408,M,RN / mobile harness,mobileapp/e2e/diagnostics/ipad-keys-probe.test.ts,12,it,types into the pane search with mobile: keys,False,legacy-not-retrospectively-reviewed
 LEG-f17f27ea8cb4,M,RN / mobile harness,mobileapp/e2e/diagnostics/send-repro.test.ts,21,it,types + sends 继续 and reports whether a failed-send bar appears,False,legacy-not-retrospectively-reviewed
+MAP-2fd3cafb008c,L2,reviewed implementation,mobileapp/e2e/fake-serve/backend-contract.test.ts,46,reviewed-selector,RN fake / Go contract:,False,CT-HTTP
+MAP-01cd8c62d09e,L2,reviewed implementation,mobileapp/e2e/fake-serve/backend-contract.test.ts,53,reviewed-selector,RN client consumes original ordinals,False,CT-HTTP
 LEG-d05c42b92e77,L1,RN / mobile harness,mobileapp/e2e/fake-serve/contract.test.ts,93,test,`${path} ${what} carries what the app reads`,True,legacy-not-retrospectively-reviewed
 LEG-a66a8e0a7be6,L1,RN / mobile harness,mobileapp/e2e/fake-serve/contract.test.ts,104,test,`${path} carries what the app reads`,True,legacy-not-retrospectively-reviewed
 LEG-53ec5bfce43b,L1,RN / mobile harness,mobileapp/e2e/fake-serve/contract.test.ts,120,test,an owner-only surface refuses a guest,False,legacy-not-retrospectively-reviewed
@@ -3911,12 +3923,14 @@ LEG-6b1813f7509a,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,1
 LEG-d240b174d0df,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,156,test,the stock report is unchanged until a suite seeds the full one,False,legacy-not-retrospectively-reviewed
 LEG-01e2c0d8a07a,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,160,test,"the seeded plan groups by agent, under the names the usage sheet ids carry",False,legacy-not-retrospectively-reviewed
 LEG-e34f8145a818,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,173,test,back to the stock world,False,legacy-not-retrospectively-reviewed
+MAP-f2ed2637baa9,L2,reviewed implementation,mobileapp/e2e/fake-serve/server.ts,95,reviewed-selector,startFake,False,CT-HTTP
 LEG-a314cc5be23f,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,8,test,"the stock fixture: one worker waiting, so needs_you, naming it",False,legacy-not-retrospectively-reviewed
 LEG-65bd4c2dfa5e,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,13,test,nothing waiting is normal; the supervisor mid-turn is working; the supervisor waiting is hq_call,False,legacy-not-retrospectively-reviewed
 LEG-5d182318c546,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,25,test,the longest waiting worker comes first,False,legacy-not-retrospectively-reviewed
 LEG-9491a40f6875,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,33,test,"a suite can still pin one, and a reset unpins it",False,legacy-not-retrospectively-reviewed
 LEG-62967d6ba432,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,41,test,"no supervisor, no verdict",False,legacy-not-retrospectively-reviewed
 LEG-4f90e4968cbd,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,47,test,GET /api/digest carries it on the supervisor row,False,legacy-not-retrospectively-reviewed
+MAP-f4f657590af5,L2,reviewed implementation,mobileapp/e2e/fake-serve/world.ts,111,reviewed-selector,export class World,False,CT-HTTP
 MAP-befb8569059f,G,reviewed implementation,mobileapp/e2e/jest.config.manual.js,2,reviewed-selector,manualMode(process.env),False,"DG-001,DG-002"
 MAP-a88b539daecf,G,reviewed implementation,mobileapp/e2e/jest.config.manual.js,3,reviewed-selector,sendTarget(process.env),False,"DG-001,DG-002"
 LEG-b6f73720d14b,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,8,test,manual handles nothing on the test’s behalf,False,legacy-not-retrospectively-reviewed
@@ -3955,6 +3969,7 @@ MAP-516ec45d267c,L1,reviewed implementation,mobileapp/e2e/setup/simulator-target
 MAP-d350d716fefe,L1,reviewed implementation,mobileapp/e2e/setup/simulator-target.test.ts,73,reviewed-selector,unavailable or duplicate device records never become an ambiguous target,False,"SIM272-001,SIM272-002,SIM272-003,SIM272-004,SIM272-005,SIM272-006,SIM272-007,SIM272-008,SIM272-009"
 ND-001,L1,iOS Swift,mobileapp/ios/tests/DocumentHTMLChecks.swift,2,native-procedural-oracle,DocumentHTML production Foundation checks,False,ND-001
 ND-002,L1,iOS Swift,mobileapp/ios/tests/DocumentMarkdownChecks.swift,3,native-procedural-oracle,DocumentMarkdown production Foundation checks,False,ND-002
+MAP-40893b89cbd9,G,reviewed implementation,mobileapp/metro.config.js,11,reviewed-selector,const config =,False,CT-SCOPE
 LEG-8af4b5717085,G,RN / mobile harness,mobileapp/scripts/android_delivery_test.py,17,unittest,test_versions_are_monotonic_and_unambiguous,False,legacy-not-retrospectively-reviewed
 LEG-90cc6b5fa0bd,G,RN / mobile harness,mobileapp/scripts/android_delivery_test.py,33,unittest,test_elf_requires_real_16kb_load_alignment,False,legacy-not-retrospectively-reviewed
 LEG-ee0a9077a22d,G,RN / mobile harness,mobileapp/scripts/android_delivery_test.py,40,unittest,test_package_inventory_rejects_missing_abis_path_confusion_and_secrets,False,legacy-not-retrospectively-reviewed
@@ -4064,6 +4079,7 @@ LEG-62518d2dd87d,G,RN / mobile harness,mobileapp/scripts/store_package_test.py,8
 LEG-40fa8fe91564,G,RN / mobile harness,mobileapp/scripts/store_package_test.py,133,unittest,test_full_original_ipa_verification_checks_all_extensions_and_resources,False,legacy-not-retrospectively-reviewed
 LEG-8b7dd7678384,G,RN / mobile harness,mobileapp/scripts/store_package_test.py,150,unittest,test_archive_requires_matching_symbols_and_preserves_original,False,legacy-not-retrospectively-reviewed
 LEG-ac9e8d4b5a1d,G,RN / mobile harness,mobileapp/scripts/store_package_test.py,175,unittest,test_unsafe_zip_fails_before_extraction,False,legacy-not-retrospectively-reviewed
+MAP-bc30d081ec5f,G,reviewed implementation,mobileapp/scripts/test-boundary.test.ts,5,reviewed-selector,actual Metro resolver refuses,False,CT-SCOPE
 LEG-5e689e79ed79,G,RN / mobile harness,mobileapp/scripts/test_publisher_test.py,31,unittest,test_another_home_and_xdg_and_explicit_location,False,legacy-not-retrospectively-reviewed
 LEG-4fa7b9182b1e,G,RN / mobile harness,mobileapp/scripts/test_publisher_test.py,37,unittest,test_missing_configuration_is_actionable_without_values,False,legacy-not-retrospectively-reviewed
 LEG-23f57bb74b4a,G,RN / mobile harness,mobileapp/scripts/test_publisher_test.py,43,unittest,test_complete_environment_does_not_require_file,False,legacy-not-retrospectively-reviewed
@@ -4478,6 +4494,8 @@ LEG-ecb1f78b3e12,L2,RN / mobile harness,mobileapp/src/screens/DesktopConversatio
 LEG-5f6acf0682fd,L2,RN / mobile harness,mobileapp/src/screens/DesktopConversationView.test.tsx,115,test.each(),access denial %s clears the conversation and closes Trace,True,legacy-not-retrospectively-reviewed
 LEG-c637a06c99ec,L2,RN / mobile harness,mobileapp/src/screens/DesktopConversationView.test.tsx,131,test.each(),external header keeps secondary evidence behind details (%s),True,legacy-not-retrospectively-reviewed
 LEG-717f16a16975,L2,RN / mobile harness,mobileapp/src/screens/DesktopConversationView.test.tsx,159,test,switching external conversations closes details instead of carrying old metadata forward,False,legacy-not-retrospectively-reviewed
+MAP-418e70e2cded,L2,reviewed implementation,mobileapp/src/screens/DetailDraftSwitch.test.tsx,93,reviewed-selector,mounted Detail isolates drafts,False,CT-DRAFT
+MAP-9341e742825a,L2,reviewed implementation,mobileapp/src/screens/DetailDraftSwitch.test.tsx,129,reviewed-selector,late draft storage result,False,CT-DRAFT
 LEG-c5d8e6d12769,L2,RN / mobile harness,mobileapp/src/screens/DetailInteraction.test.tsx,25,test,"Codex permission choices appear in Chat without visiting Terminal, and a rapid second tap cannot answer the next prompt",False,legacy-not-retrospectively-reviewed
 LEG-9219b8dc4945,L2,RN / mobile harness,mobileapp/src/screens/DetailInteraction.test.tsx,34,test,ordinary conversations have no Interact mode or prompt polling; existing Keys remains available,False,legacy-not-retrospectively-reviewed
 LEG-f278c8821674,L2,RN / mobile harness,mobileapp/src/screens/DetailInteraction.test.tsx,42,test,"a waiting card shares the composer controller, folds after a choice, and leaves when work resumes",False,legacy-not-retrospectively-reviewed
@@ -4574,6 +4592,9 @@ LEG-9a31f6099f2a,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.te
 LEG-bac98f7862bc,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,391,test,overview previews share the Markdown parser without showing formatting syntax or link targets,False,legacy-not-retrospectively-reviewed
 LEG-d22e65fd05b5,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,399,test,a failed older page can return to latest without reopening the matter,False,legacy-not-retrospectively-reviewed
 LEG-a6d4bed85074,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,421,test,closing a resource returns to its originating overview; composing from it stays in HQ,False,legacy-not-retrospectively-reviewed
+MAP-f38035a7c2fe,L2,reviewed implementation,mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx,112,reviewed-selector,pending HQ question opens the original matter,False,"CT-DRAFT,CT-HQ"
+MAP-f119dbaabb64,L2,reviewed implementation,mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx,161,reviewed-selector,late HQ overview and matter responses,False,"CT-DRAFT,CT-HQ"
+MAP-acb5ed213eb0,L2,reviewed implementation,mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx,208,reviewed-selector,a prepared HQ question stays scoped,False,"CT-DRAFT,CT-HQ"
 LEG-22a168587a71,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,58,test,"the promotion queue leads, and an overdue one is marked",False,legacy-not-retrospectively-reviewed
 LEG-515eaf56d0e0,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,77,test,"a base nobody has written to says so once, with no sections",False,legacy-not-retrospectively-reviewed
 LEG-a37ada8694d8,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,83,test,an empty topic is not listed,False,legacy-not-retrospectively-reviewed
@@ -4647,6 +4668,8 @@ LEG-e3fa56652cd5,L2,RN / mobile harness,mobileapp/src/screens/PaneBrowserScreen.
 LEG-b897cb3494b1,L2,RN / mobile harness,mobileapp/src/screens/RadarPanel.shareStale.test.tsx,21,test.each(),%s shows localized expired access only to stale guests,True,legacy-not-retrospectively-reviewed
 LEG-387d5b0c6c01,L2,RN / mobile harness,mobileapp/src/screens/ScanScreen.repeat.test.tsx,13,test.each(),scan window leaves controls reachable at %i × %i,True,legacy-not-retrospectively-reviewed
 LEG-1cb0f6c7d8ad,L2,RN / mobile harness,mobileapp/src/screens/ScanScreen.repeat.test.tsx,24,test,native camera callbacks emit once; cancel makes a queued frame inert,False,legacy-not-retrospectively-reviewed
+MAP-00de085feb2a,L2,reviewed implementation,mobileapp/src/screens/ServerModeBehavior.test.tsx,85,reviewed-selector,awake and reconnect subscription events,False,CT-SUB
+MAP-32838a7dcdf1,L2,reviewed implementation,mobileapp/src/screens/ServerModeBehavior.test.tsx,104,reviewed-selector,late server mode response,False,CT-SUB
 LEG-6d9df3872034,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,60,test,connect and notification controls are independent; guests have no switch,False,legacy-not-retrospectively-reviewed
 LEG-e52712c4fb4d,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,73,test,"two layers: a check on the open Mac, and on every row whether it answers",False,legacy-not-retrospectively-reviewed
 LEG-5a967033a46f,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,88,test,"before the probe answers, a Mac reads as checking",False,legacy-not-retrospectively-reviewed
@@ -6012,21 +6035,23 @@ LEG-c77bc44423da,G,CI / tooling,scripts/check_private_source_test.py,48,unittest
 LEG-3a0cbcd63152,G,CI / tooling,scripts/check_private_source_test.py,55,unittest,test_private_filenames_fail_without_repeating_the_name_in_diagnostics,False,legacy-not-retrospectively-reviewed
 LEG-36acddae2fe2,G,CI / tooling,scripts/check_private_source_test.py,63,unittest,test_unreadable_source_fails_and_exception_text_never_reaches_output,False,legacy-not-retrospectively-reviewed
 LEG-046c8bb3bdbc,G,CI / tooling,scripts/check_private_source_test.py,71,unittest,test_wrapper_clears_private_environment_before_build_or_spec_helpers,False,legacy-not-retrospectively-reviewed
-LEG-bb0f4dd7bc8b,G,CI / tooling,scripts/ci_test.py,17,unittest,test_docs_only_and_mixed_changes,False,legacy-not-retrospectively-reviewed
-LEG-5e8793132c96,G,CI / tooling,scripts/ci_test.py,33,unittest,test_shared_or_unknown_impact_is_full,True,legacy-not-retrospectively-reviewed
-LEG-7bbcfe8992be,G,CI / tooling,scripts/ci_test.py,44,unittest,test_recognized_modules_include_consumers,False,legacy-not-retrospectively-reviewed
-LEG-bbdfd85a9000,G,CI / tooling,scripts/ci_test.py,53,unittest,test_nul_parser_preserves_names_and_old_rename_path,True,legacy-not-retrospectively-reviewed
-LEG-30f2f4661935,G,CI / tooling,scripts/ci_test.py,61,unittest,test_actual_git_rename_deletion_and_symlink,False,legacy-not-retrospectively-reviewed
-LEG-a0a184955335,G,CI / tooling,scripts/ci_test.py,87,unittest,test_missing_refs_force_full_cli_outputs,False,legacy-not-retrospectively-reviewed
-LEG-513d57a7489a,G,CI / tooling,scripts/ci_test.py,98,unittest,test_workflow_jobs_cannot_grow_outside_aggregation,False,legacy-not-retrospectively-reviewed
-LEG-1f71c99fb4dc,G,CI / tooling,scripts/ci_test.py,110,unittest,test_unsigned_ios_preserves_arm64_target_and_verifies_products,False,legacy-not-retrospectively-reviewed
-LEG-2514a184abce,G,CI / tooling,scripts/ci_test.py,122,unittest,test_android_package_is_built_once_and_both_devices_use_its_output,False,legacy-not-retrospectively-reviewed
-LEG-76200ceafcf2,G,CI / tooling,scripts/ci_test.py,142,unittest,test_docs_can_skip_heavy_jobs_but_require_quality,False,legacy-not-retrospectively-reviewed
-LEG-ecfb4bf818ba,G,CI / tooling,scripts/ci_test.py,148,unittest,test_missing_skipped_failed_cancelled_required_job_never_green,True,legacy-not-retrospectively-reviewed
-LEG-252965413bf3,G,CI / tooling,scripts/ci_test.py,157,unittest,test_bad_plans_or_unselected_failure_are_rejected,False,legacy-not-retrospectively-reviewed
-LEG-8a6a845c7484,G,CI / tooling,scripts/ci_test.py,169,unittest,test_mac_host_keeps_both_architectures_and_native_checks,False,legacy-not-retrospectively-reviewed
-LEG-28f4d1551b14,G,CI / tooling,scripts/ci_test.py,186,unittest,test_ios_delivery_pins_the_same_arm_toolchain_and_keeps_protection,False,legacy-not-retrospectively-reviewed
-MAP-349a1f57f0b7,G,CI / tooling,scripts/ci_test.py,25,reviewed-selector,test_reviewed_test_records_are_policy_only_without_hiding_test_changes,False,TD-006
+MAP-41a5bc78e4e8,G,reviewed implementation,scripts/ci.py,33,reviewed-selector,confirmed_unit_test_isolation,False,CT-SCOPE
+LEG-bb0f4dd7bc8b,G,CI / tooling,scripts/ci_test.py,35,unittest,test_docs_only_and_mixed_changes,False,legacy-not-retrospectively-reviewed
+LEG-5e8793132c96,G,CI / tooling,scripts/ci_test.py,51,unittest,test_shared_or_unknown_impact_is_full,True,legacy-not-retrospectively-reviewed
+LEG-7bbcfe8992be,G,CI / tooling,scripts/ci_test.py,62,unittest,test_recognized_modules_include_consumers,False,legacy-not-retrospectively-reviewed
+LEG-bbdfd85a9000,G,CI / tooling,scripts/ci_test.py,71,unittest,test_nul_parser_preserves_names_and_old_rename_path,True,legacy-not-retrospectively-reviewed
+LEG-30f2f4661935,G,CI / tooling,scripts/ci_test.py,79,unittest,test_actual_git_rename_deletion_and_symlink,False,legacy-not-retrospectively-reviewed
+LEG-a0a184955335,G,CI / tooling,scripts/ci_test.py,105,unittest,test_missing_refs_force_full_cli_outputs,False,legacy-not-retrospectively-reviewed
+LEG-513d57a7489a,G,CI / tooling,scripts/ci_test.py,116,unittest,test_workflow_jobs_cannot_grow_outside_aggregation,False,legacy-not-retrospectively-reviewed
+LEG-1f71c99fb4dc,G,CI / tooling,scripts/ci_test.py,128,unittest,test_unsigned_ios_preserves_arm64_target_and_verifies_products,False,legacy-not-retrospectively-reviewed
+LEG-2514a184abce,G,CI / tooling,scripts/ci_test.py,140,unittest,test_android_package_is_built_once_and_both_devices_use_its_output,False,legacy-not-retrospectively-reviewed
+LEG-76200ceafcf2,G,CI / tooling,scripts/ci_test.py,160,unittest,test_docs_can_skip_heavy_jobs_but_require_quality,False,legacy-not-retrospectively-reviewed
+LEG-ecfb4bf818ba,G,CI / tooling,scripts/ci_test.py,166,unittest,test_missing_skipped_failed_cancelled_required_job_never_green,True,legacy-not-retrospectively-reviewed
+LEG-252965413bf3,G,CI / tooling,scripts/ci_test.py,175,unittest,test_bad_plans_or_unselected_failure_are_rejected,False,legacy-not-retrospectively-reviewed
+LEG-8a6a845c7484,G,CI / tooling,scripts/ci_test.py,187,unittest,test_mac_host_keeps_both_architectures_and_native_checks,False,legacy-not-retrospectively-reviewed
+LEG-28f4d1551b14,G,CI / tooling,scripts/ci_test.py,204,unittest,test_ios_delivery_pins_the_same_arm_toolchain_and_keeps_protection,False,legacy-not-retrospectively-reviewed
+MAP-349a1f57f0b7,G,CI / tooling,scripts/ci_test.py,43,reviewed-selector,test_reviewed_test_records_are_policy_only_without_hiding_test_changes,False,TD-006
+MAP-5f57607e8e0e,G,CI / tooling,scripts/ci_test.py,17,reviewed-selector,test_unit_test_scope_requires_immutable_product_exclusion,False,CT-SCOPE
 LEG-0a1ce627fdd1,G,CI / tooling,scripts/install_platform_test.py,70,unittest,test_linux_archives_install_without_any_mac_application,True,legacy-not-retrospectively-reviewed
 LEG-8ccffb001b09,G,CI / tooling,scripts/install_platform_test.py,80,unittest,test_checksum_failure_never_installs,False,legacy-not-retrospectively-reviewed
 LEG-c81cb29009cc,G,CI / tooling,scripts/install_platform_test.py,86,unittest,test_existing_optional_client_is_updated_only_by_capable_release,True,legacy-not-retrospectively-reviewed
@@ -6123,13 +6148,19 @@ LEG-4463beacd55d,L1,Worker,shared/worker-json.test.mts,27,test,"malformed JSON, 
 LEG-0e456762b112,L1,Worker,shared/worker-json.test.mts,30,test,only an explicitly optional empty request becomes an empty object,False,legacy-not-retrospectively-reviewed
 LEG-0c717f4e72ec,L1,Worker,shared/worker-json.test.mts,36,test,invalid lengths fail without trusting the header as a read budget,False,legacy-not-retrospectively-reviewed
 LEG-e87190413922,L1,Worker,shared/worker-json.test.mts,41,test,a stricter caller budget keeps its boundary and nonblocking cancellation,False,legacy-not-retrospectively-reviewed
+MAP-2a8e1df3263e,L2,reviewed implementation,tests/contracts/http-contract.cjs,5,reviewed-selector,async function observe,False,CT-HTTP
+MAP-c856d62bb0c7,L2,reviewed implementation,tests/contracts/http-contract.cjs,36,reviewed-selector,function verify,False,CT-HTTP
 LEG-4d0986af07f7,L3,Browser,tests/web/alignment.test.cjs,6,scenario,"`App-aligned roster status, summaries and persistent sections at ${width}`",True,legacy-not-retrospectively-reviewed
 LEG-d5140dc35e4a,L3,Browser,tests/web/alignment.test.cjs,26,scenario,"`Settings change actual Chat and Terminal typography, immediately and after reload at ${width}`",True,legacy-not-retrospectively-reviewed
 LEG-630bd7aac308,G,Browser,tests/web/alignment.test.cjs,59,scenario,Human profiles share App identity and quote without irrelevant browser permissions,False,legacy-not-retrospectively-reviewed
 LEG-5eb3da408f2c,L3,Browser,tests/web/alignment.test.cjs,70,scenario,`Touch input tools follow input device at ${width} touch=${touch}`,True,legacy-not-retrospectively-reviewed
 LEG-ff43142292fd,L3,Browser,tests/web/alignment.test.cjs,82,scenario,Chat retains recorded code and wait calls in compact summaries and expanded detail,False,legacy-not-retrospectively-reviewed
+MAP-184f052913f1,L2,reviewed implementation,tests/web/backend-contract.test.cjs,34,reviewed-selector,Web fake / Go contract:,False,CT-HTTP
 CP-001-f8c339,L3,Browser,tests/web/behavior-contract.test.cjs,13,test,CP-001 shared rendered Trace,True,CP-001
 CP-002-f8c339,L3,Browser,tests/web/behavior-contract.test.cjs,30,test,CP-002 CP-003 CP-004 shared HQ,True,CP-002
+MAP-75f2ed302427,G,reviewed implementation,tests/web/browser-pool.cjs,2,reviewed-selector,function browserPool,False,"CT-BROWSER-POLICY,CT-TIMING"
+MAP-faa984b171bf,G,reviewed implementation,tests/web/browser-pool.test.cjs,4,reviewed-selector,concurrent borrowers share,False,"CT-BROWSER-POLICY,CT-TIMING"
+MAP-c7ca48106233,G,reviewed implementation,tests/web/browser-pool.test.cjs,30,reviewed-selector,failed launch propagates,False,"CT-BROWSER-POLICY,CT-TIMING"
 LEG-9907208fe7df,L3,Browser,tests/web/client-consistency.test.cjs,13,scenario,`Client reading consistency ${width} ${colorScheme}`,True,legacy-not-retrospectively-reviewed
 LEG-32d1c6b37c52,L3,Browser,tests/web/client-consistency.test.cjs,27,scenario,`Chat earlier windows preserve reading and refresh in ${view}`,True,legacy-not-retrospectively-reviewed
 LEG-d2bf02df9c62,L3,Browser,tests/web/client-consistency.test.cjs,61,scenario,"External board tiles stay scoped, resize, restore and revoke without pane input",False,legacy-not-retrospectively-reviewed
@@ -6140,8 +6171,13 @@ LEG-cb54ae23ca64,L3,Browser,tests/web/conversation-map.test.cjs,48,scenario,`Ove
 LEG-4ea9a2309839,L3,Browser,tests/web/conversation-map.test.cjs,96,scenario,"Overview bookmarks retain unsampled turns, isolate homes and handle cleared storage",False,legacy-not-retrospectively-reviewed
 LEG-821ed12da1b2,L3,Browser,tests/web/conversation-map.test.cjs,125,scenario,Legacy clockless repeated prompts keep separate call disclosures,False,legacy-not-retrospectively-reviewed
 LEG-d361c87ff22e,L3,Browser,tests/web/conversation-map.test.cjs,136,scenario,`Overview keeps page-only bookmarks through refresh (read denied ${denyRead})`,True,legacy-not-retrospectively-reviewed
+MAP-c9d3762e7230,L2,reviewed implementation,tests/web/fixture.cjs,18,reviewed-selector,async function start,False,CT-HTTP
 LEG-c27b6d5dee1f,L3,Browser,tests/web/full-input.test.cjs,4,scenario,'Full tool input and compact formatting at '+width,True,legacy-not-retrospectively-reviewed
 LEG-e24c4d62b6eb,L3,Browser,tests/web/full-input.test.cjs,35,scenario,'Diff file cards and independent hunks at '+width,True,legacy-not-retrospectively-reviewed
+MAP-31ae43976a8b,L3,reviewed implementation,tests/web/harness-isolation.test.cjs,4,reviewed-selector,shared browser first case,False,CT-BROWSER
+MAP-7fb866f795f7,L3,reviewed implementation,tests/web/harness-isolation.test.cjs,25,reviewed-selector,shared browser next case,False,CT-BROWSER
+MAP-eda764da861f,G,reviewed implementation,tests/web/harness.cjs,13,reviewed-selector,function scenario,False,"CT-TIMING,CT-BROWSER"
+MAP-e5604b1208c7,L2,reviewed implementation,tests/web/http-contract-validator.test.cjs,4,reviewed-selector,"wire contract rejects type, permission, ordinal, omission and security-header drift",False,CT-HTTP
 LEG-9543b7b6751c,L3,Browser,tests/web/presentation.test.cjs,5,scenario,`Session section casing matches App headings at ${width}`,True,legacy-not-retrospectively-reviewed
 LEG-ba614971d0a3,L3,Browser,tests/web/presentation.test.cjs,37,scenario,Empty workspace has a clear first action and a scene-specific attributed excerpt,False,legacy-not-retrospectively-reviewed
 LEG-54719aa9487c,L3,Browser,tests/web/presentation.test.cjs,49,scenario,Only the actual supervisor is pinned above status groups,False,legacy-not-retrospectively-reviewed

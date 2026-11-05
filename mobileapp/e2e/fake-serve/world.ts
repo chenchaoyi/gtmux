@@ -109,6 +109,9 @@ const CAPTURE_LINES = 2000;
 const now = () => Math.floor(Date.now() / 1000);
 
 export class World {
+  workspace?: import("../../src/api/hqWorkspace").HQWorkspace;
+  matters = new Map<string, import("../../src/api/hqWorkspace").HQMatterDetail>();
+  transcriptMeta = new Map<string, {etag?: string; dropped?: number}>();
   demoClient?: DemoClient;
   onDemoChange?: () => void;
   agents: FakeAgent[] = [];

@@ -6,6 +6,7 @@ LEG-f0de792d23c8,L2,Worker,download-worker/test/service.test.mjs,100,test,publis
 LEG-43437c4aac58,L2,Worker,download-worker/test/service.test.mjs,108,test,"GET/HEAD, conditional reads, ranges and If-Range are consistent",False,legacy-not-retrospectively-reviewed
 LEG-acf4b90662e1,L2,Worker,download-worker/test/service.test.mjs,125,test,stable promotion uses an atomic conditional write,False,legacy-not-retrospectively-reviewed
 LEG-e6e66ce49ff1,L2,Worker,download-worker/test/service.test.mjs,134,test,metadata and artifact publication is bounded,False,legacy-not-retrospectively-reviewed
+MAP-bf28343fb4c1,L2,reviewed implementation,internal/app/client_contract_test.go,30,reviewed-selector,TestClientHTTPContracts,False,CT-HTTP
 LEG-4c8a67259028,L2,Go core / CLI / server,internal/app/cloudflared_security_test.go,40,Test,TestCloudflaredMetricsTransportRefusesRedirectsAndOversizedBodies,False,legacy-not-retrospectively-reviewed
 LEG-ff081e20fac0,L2,Go core / CLI / server,internal/app/cloudflared_security_test.go,42,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-ba12d8af1486,L2,Go core / CLI / server,internal/app/devices_push_test.go,16,Test,TestListPush_ShowsEveryPausedToken,False,legacy-not-retrospectively-reviewed
@@ -402,6 +403,10 @@ LEG-450e8ae683ba,L2,Browser,internal/server/web/trace-model.test.cjs,58,test,emp
 LEG-48c1050764f9,L2,Browser,internal/server/web/trace-model.test.cjs,68,test,'shared native fixture: ' + fixture.name,True,legacy-not-retrospectively-reviewed
 LEG-9ba6285dc523,L2,Go core / CLI / server,internal/server/webui_test.go,16,Test,TestWebUIRouting,False,legacy-not-retrospectively-reviewed
 LEG-d0796bd9ffc4,L2,Go core / CLI / server,internal/server/webui_test.go,55,Test,TestWebHandlerCacheBusting,False,legacy-not-retrospectively-reviewed
+MAP-2fd3cafb008c,L2,reviewed implementation,mobileapp/e2e/fake-serve/backend-contract.test.ts,46,reviewed-selector,RN fake / Go contract:,False,CT-HTTP
+MAP-01cd8c62d09e,L2,reviewed implementation,mobileapp/e2e/fake-serve/backend-contract.test.ts,53,reviewed-selector,RN client consumes original ordinals,False,CT-HTTP
+MAP-f2ed2637baa9,L2,reviewed implementation,mobileapp/e2e/fake-serve/server.ts,95,reviewed-selector,startFake,False,CT-HTTP
+MAP-f4f657590af5,L2,reviewed implementation,mobileapp/e2e/fake-serve/world.ts,111,reviewed-selector,export class World,False,CT-HTTP
 MAP-140c1fc806e3,L2,reviewed implementation,mobileapp/e2e/setup/global-setup-target.test.ts,36,reviewed-selector,the actual E2E setup passes the discovered runtime and UDID to WebDriver,False,"SIM272-010,SIM272-011"
 MAP-effb65cbf6a7,L2,reviewed implementation,mobileapp/e2e/setup/global-setup-target.test.ts,48,reviewed-selector,ambiguous default selection fails before reclaiming processes or touching app data,False,"SIM272-010,SIM272-011"
 LEG-81cfbfd439f8,L2,RN / mobile harness,mobileapp/src/screens/AccessHistoryControls.test.tsx,21,test,same-name device choices expose full IDs and preserve the other filters,False,legacy-not-retrospectively-reviewed
@@ -452,6 +457,8 @@ LEG-ecb1f78b3e12,L2,RN / mobile harness,mobileapp/src/screens/DesktopConversatio
 LEG-5f6acf0682fd,L2,RN / mobile harness,mobileapp/src/screens/DesktopConversationView.test.tsx,115,test.each(),access denial %s clears the conversation and closes Trace,True,legacy-not-retrospectively-reviewed
 LEG-c637a06c99ec,L2,RN / mobile harness,mobileapp/src/screens/DesktopConversationView.test.tsx,131,test.each(),external header keeps secondary evidence behind details (%s),True,legacy-not-retrospectively-reviewed
 LEG-717f16a16975,L2,RN / mobile harness,mobileapp/src/screens/DesktopConversationView.test.tsx,159,test,switching external conversations closes details instead of carrying old metadata forward,False,legacy-not-retrospectively-reviewed
+MAP-418e70e2cded,L2,reviewed implementation,mobileapp/src/screens/DetailDraftSwitch.test.tsx,93,reviewed-selector,mounted Detail isolates drafts,False,CT-DRAFT
+MAP-9341e742825a,L2,reviewed implementation,mobileapp/src/screens/DetailDraftSwitch.test.tsx,129,reviewed-selector,late draft storage result,False,CT-DRAFT
 LEG-c5d8e6d12769,L2,RN / mobile harness,mobileapp/src/screens/DetailInteraction.test.tsx,25,test,"Codex permission choices appear in Chat without visiting Terminal, and a rapid second tap cannot answer the next prompt",False,legacy-not-retrospectively-reviewed
 LEG-9219b8dc4945,L2,RN / mobile harness,mobileapp/src/screens/DetailInteraction.test.tsx,34,test,ordinary conversations have no Interact mode or prompt polling; existing Keys remains available,False,legacy-not-retrospectively-reviewed
 LEG-f278c8821674,L2,RN / mobile harness,mobileapp/src/screens/DetailInteraction.test.tsx,42,test,"a waiting card shares the composer controller, folds after a choice, and leaves when work resumes",False,legacy-not-retrospectively-reviewed
@@ -548,6 +555,9 @@ LEG-9a31f6099f2a,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.te
 LEG-bac98f7862bc,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,391,test,overview previews share the Markdown parser without showing formatting syntax or link targets,False,legacy-not-retrospectively-reviewed
 LEG-d22e65fd05b5,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,399,test,a failed older page can return to latest without reopening the matter,False,legacy-not-retrospectively-reviewed
 LEG-a6d4bed85074,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,421,test,closing a resource returns to its originating overview; composing from it stays in HQ,False,legacy-not-retrospectively-reviewed
+MAP-f38035a7c2fe,L2,reviewed implementation,mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx,112,reviewed-selector,pending HQ question opens the original matter,False,"CT-DRAFT,CT-HQ"
+MAP-f119dbaabb64,L2,reviewed implementation,mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx,161,reviewed-selector,late HQ overview and matter responses,False,"CT-DRAFT,CT-HQ"
+MAP-acb5ed213eb0,L2,reviewed implementation,mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx,208,reviewed-selector,a prepared HQ question stays scoped,False,"CT-DRAFT,CT-HQ"
 LEG-22a168587a71,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,58,test,"the promotion queue leads, and an overdue one is marked",False,legacy-not-retrospectively-reviewed
 LEG-515eaf56d0e0,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,77,test,"a base nobody has written to says so once, with no sections",False,legacy-not-retrospectively-reviewed
 LEG-a37ada8694d8,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,83,test,an empty topic is not listed,False,legacy-not-retrospectively-reviewed
@@ -620,6 +630,8 @@ LEG-e3fa56652cd5,L2,RN / mobile harness,mobileapp/src/screens/PaneBrowserScreen.
 LEG-b897cb3494b1,L2,RN / mobile harness,mobileapp/src/screens/RadarPanel.shareStale.test.tsx,21,test.each(),%s shows localized expired access only to stale guests,True,legacy-not-retrospectively-reviewed
 LEG-387d5b0c6c01,L2,RN / mobile harness,mobileapp/src/screens/ScanScreen.repeat.test.tsx,13,test.each(),scan window leaves controls reachable at %i × %i,True,legacy-not-retrospectively-reviewed
 LEG-1cb0f6c7d8ad,L2,RN / mobile harness,mobileapp/src/screens/ScanScreen.repeat.test.tsx,24,test,native camera callbacks emit once; cancel makes a queued frame inert,False,legacy-not-retrospectively-reviewed
+MAP-00de085feb2a,L2,reviewed implementation,mobileapp/src/screens/ServerModeBehavior.test.tsx,85,reviewed-selector,awake and reconnect subscription events,False,CT-SUB
+MAP-32838a7dcdf1,L2,reviewed implementation,mobileapp/src/screens/ServerModeBehavior.test.tsx,104,reviewed-selector,late server mode response,False,CT-SUB
 LEG-6d9df3872034,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,60,test,connect and notification controls are independent; guests have no switch,False,legacy-not-retrospectively-reviewed
 LEG-e52712c4fb4d,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,73,test,"two layers: a check on the open Mac, and on every row whether it answers",False,legacy-not-retrospectively-reviewed
 LEG-5a967033a46f,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,88,test,"before the probe answers, a Mac reads as checking",False,legacy-not-retrospectively-reviewed
@@ -1809,6 +1821,11 @@ LEG-e04c0b1b373e,L2,Go core / CLI / server,relay/relay_test.go,44,Test,TestRelay
 LEG-830df1204b31,L2,Go core / CLI / server,relay/relay_test.go,124,Test,TestAPNSPush,False,legacy-not-retrospectively-reviewed
 LEG-3adbdca9096b,L2,Go core / CLI / server,relay/relay_test.go,155,Test,TestAPNSSilentBadge,False,legacy-not-retrospectively-reviewed
 LEG-72ab23403100,L2,Go core / CLI / server,relay/relay_test.go,189,Test,TestAPNSPushError,False,legacy-not-retrospectively-reviewed
+MAP-2a8e1df3263e,L2,reviewed implementation,tests/contracts/http-contract.cjs,5,reviewed-selector,async function observe,False,CT-HTTP
+MAP-c856d62bb0c7,L2,reviewed implementation,tests/contracts/http-contract.cjs,36,reviewed-selector,function verify,False,CT-HTTP
+MAP-184f052913f1,L2,reviewed implementation,tests/web/backend-contract.test.cjs,34,reviewed-selector,Web fake / Go contract:,False,CT-HTTP
+MAP-c9d3762e7230,L2,reviewed implementation,tests/web/fixture.cjs,18,reviewed-selector,async function start,False,CT-HTTP
+MAP-e5604b1208c7,L2,reviewed implementation,tests/web/http-contract-validator.test.cjs,4,reviewed-selector,"wire contract rejects type, permission, ordinal, omission and security-header drift",False,CT-HTTP
 LEG-69563fe32201,L2,Worker,tunnel-worker/src/direct.test.ts,36,test,the port formula is the client's: Go's crc32.ChecksumIEEE over the id,False,legacy-not-retrospectively-reviewed
 LEG-f3f8a76744ad,L2,Worker,tunnel-worker/src/direct.test.ts,49,test,"each device gets its own account, allowed its own port and nothing else",False,legacy-not-retrospectively-reviewed
 LEG-9986e056b831,L2,Worker,tunnel-worker/src/direct.test.ts,69,test,a device that redeems again gets the same account back,False,legacy-not-retrospectively-reviewed

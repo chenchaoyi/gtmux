@@ -3112,6 +3112,13 @@ LEG-43b35034f78d,L1,Android native,mobileapp/android/app/src/test/java/com/gtmux
 LEG-818e29919768,L1,Android native,mobileapp/android/app/src/test/java/com/gtmux/app/DocumentPolicyTest.kt,13,JUnit,resolverKeepsOriginAndRejectsCredentialOrQueryConfusion,False,legacy-not-retrospectively-reviewed
 LEG-8c6ac38aa254,L1,Android native,mobileapp/android/app/src/test/java/com/gtmux/app/DocumentPolicyTest.kt,19,JUnit,onlyParentLocalImagesUseAuthenticatedTransport,False,legacy-not-retrospectively-reviewed
 LEG-6035b476b108,L1,Android native,mobileapp/android/app/src/test/java/com/gtmux/app/DocumentPolicyTest.kt,23,JUnit,metadataMustMatchTheCompleteContentContract,False,legacy-not-retrospectively-reviewed
+MAP-f84810b94765,L1,reviewed implementation,mobileapp/e2e/android/journey.cjs,37,reviewed-selector,function selection,False,"CT-ANDROID-POLICY,CT-TIMING"
+MAP-87d616e2f9f2,L1,reviewed implementation,mobileapp/e2e/android/journey.cjs,68,reviewed-selector,function createJourney,False,"CT-ANDROID-POLICY,CT-TIMING"
+MAP-845b52602a47,L1,reviewed implementation,mobileapp/e2e/android/journey.test.ts,2,reviewed-selector,full Android journey retains,False,"CT-ANDROID-POLICY,CT-TIMING"
+MAP-591fe2c43846,L1,reviewed implementation,mobileapp/e2e/android/journey.test.ts,14,reviewed-selector,setup failure blocks,False,"CT-ANDROID-POLICY,CT-TIMING"
+MAP-bd791291b35e,L1,reviewed implementation,mobileapp/e2e/android/journey.test.ts,39,reviewed-selector,first assertion and disconnect causes,False,"CT-ANDROID-POLICY,CT-TIMING"
+MAP-e9a3452907ab,L1,reviewed implementation,mobileapp/e2e/android/journey.test.ts,67,reviewed-selector,an out of order selected check,False,"CT-ANDROID-POLICY,CT-TIMING"
+MAP-fc216f83479b,L1,reviewed implementation,mobileapp/e2e/android/journey.test.ts,79,reviewed-selector,timing records setup action,False,"CT-ANDROID-POLICY,CT-TIMING"
 LEG-d05c42b92e77,L1,RN / mobile harness,mobileapp/e2e/fake-serve/contract.test.ts,93,test,`${path} ${what} carries what the app reads`,True,legacy-not-retrospectively-reviewed
 LEG-a66a8e0a7be6,L1,RN / mobile harness,mobileapp/e2e/fake-serve/contract.test.ts,104,test,`${path} carries what the app reads`,True,legacy-not-retrospectively-reviewed
 LEG-53ec5bfce43b,L1,RN / mobile harness,mobileapp/e2e/fake-serve/contract.test.ts,120,test,an owner-only surface refuses a guest,False,legacy-not-retrospectively-reviewed

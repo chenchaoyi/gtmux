@@ -17,6 +17,8 @@ LEG-821ed12da1b2,L3,Browser,tests/web/conversation-map.test.cjs,125,scenario,Leg
 LEG-d361c87ff22e,L3,Browser,tests/web/conversation-map.test.cjs,136,scenario,`Overview keeps page-only bookmarks through refresh (read denied ${denyRead})`,True,legacy-not-retrospectively-reviewed
 LEG-c27b6d5dee1f,L3,Browser,tests/web/full-input.test.cjs,4,scenario,'Full tool input and compact formatting at '+width,True,legacy-not-retrospectively-reviewed
 LEG-e24c4d62b6eb,L3,Browser,tests/web/full-input.test.cjs,35,scenario,'Diff file cards and independent hunks at '+width,True,legacy-not-retrospectively-reviewed
+MAP-31ae43976a8b,L3,reviewed implementation,tests/web/harness-isolation.test.cjs,4,reviewed-selector,shared browser first case,False,CT-BROWSER
+MAP-7fb866f795f7,L3,reviewed implementation,tests/web/harness-isolation.test.cjs,25,reviewed-selector,shared browser next case,False,CT-BROWSER
 LEG-9543b7b6751c,L3,Browser,tests/web/presentation.test.cjs,5,scenario,`Session section casing matches App headings at ${width}`,True,legacy-not-retrospectively-reviewed
 LEG-ba614971d0a3,L3,Browser,tests/web/presentation.test.cjs,37,scenario,Empty workspace has a clear first action and a scene-specific attributed excerpt,False,legacy-not-retrospectively-reviewed
 LEG-54719aa9487c,L3,Browser,tests/web/presentation.test.cjs,49,scenario,Only the actual supervisor is pinned above status groups,False,legacy-not-retrospectively-reviewed

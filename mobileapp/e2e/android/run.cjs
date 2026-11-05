@@ -19,32 +19,41 @@ const apk = path.resolve(process.env.GTMUX_ANDROID_APK || path.join(root, 'andro
 const output = path.resolve(process.env.GTMUX_ANDROID_E2E_OUTPUT || path.join(root, '.e2e-artifacts', 'android-' + Date.now()));
 const app = 'com.gtmux.app.qa';
 const port = Number(process.env.GTMUX_ANDROID_APPIUM_PORT || 14823);
-const results = [];
+const {createJourney}=require('./journey.cjs');
+const journey=createJourney({only:process.env.GTMUX_ANDROID_E2E_ONLY,blocks:process.env.GTMUX_ANDROID_E2E_BLOCKS,
+ setup:async spec=>{
+   // Reset only the owned QA app. Each group can start from another group's final page.
+   if(['conversation','trace-history','diff','connection','settings'].includes(spec.group)) {
+     await launch();if(spec.group!=='settings')await open();
+   }
+ },capture,isDisconnected:automationDisconnected,onChange:snapshot=>fs.writeFileSync(path.join(output,'RESULTS.json'),JSON.stringify({serial,package:app,...snapshot},null,2)+'\n')});
+const results=journey.results;
 const adb = (...args) => execFileSync(path.join(sdk, 'platform-tools/adb'), ['-s', serial, ...args], {encoding:'utf8', timeout:30000});
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
-let driver, appium, owner, guest, logcat, automationLostAfter, logReady = false;
+let driver, appium, owner, guest, logcat, logReady = false;
 const deviceLog = logTail();
 function flushDeviceLog() { if(!logReady)return;const file=path.join(output,'emulator-logcat.log'),temp=file+'.tmp';fs.writeFileSync(temp,deviceLog.text());fs.renameSync(temp,file); }
 const id = value => driver.$(`//*[@resource-id="${value}"]`);
 // A filename ending .png must stay an accessibility locator, not WebdriverIO's image-file selector.
 const label = value => driver.$(`//*[@content-desc=${JSON.stringify(value)}]`);
 async function shown(element) { return element.isDisplayed().catch(() => false); }
-async function tap(element) { await element.waitForDisplayed({timeout:15000}); await element.click(); await wait(300); }
+async function tap(element) { await element.waitForDisplayed({timeout:15000}); await element.click(); await journey.measure('tap-settle',()=>wait(300)); }
 // Android exposes a whole paragraph as a text node; its center can lie beyond a short link span.
 async function tapLink(text) {
   const element=driver.$('//*[contains(@text,"'+text+'") ]');await element.waitForDisplayed({timeout:15000});
   const [position,size]=await Promise.all([element.getLocation(),element.getSize()]);const rect={...position,...size};await driver.execute('mobile: clickGesture',{x:Math.round(rect.x+Math.min(30,rect.width/4)),y:Math.round(rect.y+rect.height/2)});await wait(400);
 }
-async function source() { return driver.getPageSource(); }
+async function source() { return journey.measure('page-source',()=>driver.getPageSource()); }
 async function capture(name) {
-  await captureIndependently([
+  await journey.measure('evidence',()=>captureIndependently([
     flushDeviceLog,
     () => driver.saveScreenshot(path.join(output,name+'.png')),
     async () => fs.writeFileSync(path.join(output,name+'.xml'), await source()),
     flushDeviceLog,
-  ]);
+  ]));
 }
-async function launch(extra = {}, fixture = owner) {
+async function launch(extra = {}, fixture = owner) { return journey.measure('app-launch',()=>launchApp(extra,fixture)); }
+async function launchApp(extra, fixture) {
   await driver.terminateApp(app).catch(() => {});
   const flags = {GTMUX_DEBUG_PAIR_URL:`http://10.0.2.2:${fixture.port}`, GTMUX_DEBUG_PAIR_TOKEN:fixture.token,
     GTMUX_DEBUG_PAIR_NAME:'Test host', GTMUX_DEBUG_NO_PUSH:'1', GTMUX_DEBUG_SKIP_WHATS_NEW:'1', GTMUX_DEBUG_LANG:'en',
@@ -56,7 +65,8 @@ async function launch(extra = {}, fixture = owner) {
   await driver.waitUntil(async () => shown(id('radar-screen')).then(async ok => ok || await shown(id('radar-split'))),{timeout:30000,timeoutMsg:'Radar did not load'});
   await label('Connection: connected').waitForExist({timeout:25000});await wait(300);
 }
-async function seek(element, direction='down', scrollID) {
+async function seek(element, direction='down', scrollID) { return journey.measure('find-and-scroll',()=>seekElement(element,direction,scrollID)); }
+async function seekElement(element,direction,scrollID) {
   const rect=await driver.getWindowRect();
   for(let i=0;i<24;i++) {if(await shown(element)) return;await driver.execute('mobile: scrollGesture',scrollID?{elementId:(await id(scrollID)).elementId,direction,percent:.9}:{left:Math.round(rect.width*.08),top:Math.round(rect.height*.25),width:Math.round(rect.width*.84),height:Math.round(rect.height*.58),direction,percent:.8});}
   await element.waitForDisplayed({timeout:5000});
@@ -84,20 +94,10 @@ async function attach() {
   await tap(id('composer-attach'));
   assert.equal(await driver.getCurrentPackage(), app, 'Attachment action must stay in the QA app');
 }
-async function check(name, action) {
-  const only=process.env.GTMUX_ANDROID_E2E_ONLY?.split(',');
-  if(only && !only.includes(name.slice(0,2))) {results.push({name,status:'not-run',reason:'Explicit local subset'});return;}
-  if(automationLostAfter) {results.push({name,status:'not-run',reason:'Automation connection lost after '+automationLostAfter});fs.writeFileSync(path.join(output,'RESULTS.json'),JSON.stringify({serial,package:app,results},null,2)+'\n');return;}
-  const at = Date.now(); console.log('Start',name);
-  try { await action(); await capture(name); results.push({name,status:'passed',seconds:(Date.now()-at)/1000}); }
-  catch (error) {
-    console.error(name+': '+error.message);
-    if(automationDisconnected(error))automationLostAfter=name;
-    await capture(name+'-failed').catch(captureError => {if(automationDisconnected(captureError))automationLostAfter=name;});
-    if(!automationLostAfter)await driver.hideKeyboard().catch(()=>{});
-    results.push({name,status:'failed',error:String(error.message),seconds:(Date.now()-at)/1000});
-  }
-  fs.writeFileSync(path.join(output,'RESULTS.json'),JSON.stringify({serial,package:app,results},null,2)+'\n');
+async function check(name,action) {
+ console.log('Start',name);
+ const result=await journey.check(name,action);
+ if(result.status!=='passed')console.log(result.status,name,result.reason||result.error);
 }
 // Keep the process lifecycle in one finally: no orphan Appium or fixture service.
 async function run() {
@@ -114,7 +114,7 @@ async function run() {
   logcat.on('error',error=>deviceLog.push('logcat process error: '+error.message));
   logcat.on('close',(code,signal)=>deviceLog.push('\nlogcat exited: '+code+' '+(signal||'')+'\n'));
   fs.writeFileSync(path.join(output,'APK.json'),JSON.stringify({file:path.basename(apk),bytes:fs.statSync(apk).size,sha256:createHash('sha256').update(fs.readFileSync(apk)).digest('hex')},null,2));
-  adb('install','-r',apk);
+  await journey.measure('apk-install',async()=>adb('install','-r',apk));
   // Only this isolated QA app's synthetic data is reset.
   adb('shell','pm','clear',app);
   owner = await startFake(); guest = await startFake({guest:true});const hinted=owner.world.seedIcons();guest.world.seedIcons();fs.writeFileSync(path.join(output,'ICON-FIXTURE.json'),JSON.stringify({hinted,rows:owner.world.agents.map(row=>({id:row.pane_id,icon:!!row.icon}))}));
@@ -157,10 +157,10 @@ async function run() {
     while(Date.now()<until) {try {if((await fetch(`http://127.0.0.1:${port}/status`)).ok){resolve();return;}}catch{} await wait(300);}
     reject(new Error('Appium did not start'));
   });
-  driver = await remote({hostname:'127.0.0.1',port,path:'/',logLevel:'error',waitforTimeout:1000,waitforInterval:200,connectionRetryTimeout:180000,connectionRetryCount:0,capabilities:{
+  driver = await journey.measure('driver-session',()=>remote({hostname:'127.0.0.1',port,path:'/',logLevel:'error',waitforTimeout:1000,waitforInterval:200,connectionRetryTimeout:180000,connectionRetryCount:0,capabilities:{
     platformName:'Android','appium:automationName':'UiAutomator2','appium:udid':serial,'appium:appPackage':app,'appium:appActivity':'com.gtmux.app.MainActivity',
     'appium:settings[waitForIdleTimeout]':0,'appium:noReset':true,'appium:autoGrantPermissions':false,'appium:newCommandTimeout':120,'appium:systemPort':Number(process.env.GTMUX_ANDROID_UIAUTOMATOR_PORT || 18201),
-  }});
+  }}));
   fs.writeFileSync(path.join(output,'SESSION.json'),JSON.stringify({id:driver.sessionId,serial,package:app}));
   await driver.updateSettings({waitForIdleTimeout:0,waitForSelectorTimeout:1000});
   await setLayout(avd.includes('tablet'));adb('shell','settings','put','system','font_scale','1.0');
@@ -313,7 +313,7 @@ async function run() {
     const xml=await source();assert.ok(xml.includes('native-change.go'));assert.ok(xml.includes('unified_diff'));
   });
   assert.ok(results.length>=31);
-  if(results.some(row=>row.status==='failed')) throw new Error(`${results.filter(row=>row.status==='failed').length} Android flows failed; inspect ${output}`);
+  if(results.some(row=>['failed','blocked'].includes(row.status))) throw new Error(`${results.filter(row=>row.status==='failed').length} failed, ${results.filter(row=>row.status==='blocked').length} blocked Android flows; inspect ${output}`);
 }
 let closing = false;
 async function cleanup() {
