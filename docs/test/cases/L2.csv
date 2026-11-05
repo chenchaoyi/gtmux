@@ -424,8 +424,9 @@ MAP-f4f657590af5,L2,reviewed implementation,mobileapp/e2e/fake-serve/world.ts,11
 MAP-4d79dbb7ab50,L2,reviewed implementation,mobileapp/ios/tests/NotificationResponseCompletionChecks.swift,20,reviewed-selector,notification response completion checks passed,False,DUO-030
 MAP-4aec1b6dc3b7,L2,reviewed implementation,mobileapp/src/push/initialPermissionConcurrency.test.ts,14,reviewed-selector,"requests permission despite a stalled initial response, then delivers the late action once",False,DUO-032
 MAP-27c1f05fe1bb,L2,reviewed implementation,mobileapp/src/push/initialPermissionConcurrency.test.ts,28,reviewed-selector,ignores an initial response that arrives after teardown,False,DUO-032
-MAP-a29517909a3d,L2,reviewed implementation,mobileapp/src/push/initialPermissionConcurrency.test.ts,54,reviewed-selector,delivers an initial action without waiting for permission,False,DUO-032
+MAP-a29517909a3d,L2,reviewed implementation,mobileapp/src/push/initialPermissionConcurrency.test.ts,76,reviewed-selector,delivers an initial action without waiting for permission,False,DUO-032
 MAP-82e358ff5f58,L2,reviewed implementation,mobileapp/src/push/initialPermissionConcurrency.test.ts,39,reviewed-selector,hands a late initial response to the live bridge after a server switch,False,DUO-032
+MAP-40ca9ad91fa7,L2,reviewed implementation,mobileapp/src/push/initialPermissionConcurrency.test.ts,54,reviewed-selector,cancels a bridge immediately when permission is pending and hands the action to its replacement,False,DUO-032
 MAP-13e1cb6d9b1b,L2,reviewed implementation,mobileapp/src/push/responseCompletion.test.ts,14,reviewed-selector,waits for a %s reply and suppresses a duplicate while pending,False,DUO-030
 MAP-9ff3d70517f7,L2,reviewed implementation,mobileapp/src/push/responseCompletion.test.ts,42,reviewed-selector,a normal notification tap acknowledges without waiting for a reply,False,DUO-030
 LEG-81cfbfd439f8,L2,RN / mobile harness,mobileapp/src/screens/AccessHistoryControls.test.tsx,21,test,same-name device choices expose full IDs and preserve the other filters,False,legacy-not-retrospectively-reviewed

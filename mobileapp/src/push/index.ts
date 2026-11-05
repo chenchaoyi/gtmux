@@ -134,19 +134,23 @@ export async function setupPush(
   onToken: (token: string) => void,
   onQuickReply: (pane: string, server: string | undefined, text: string) => void | Promise<void>,
   askPermission = true,
+  lifecycle?: AbortSignal,
 ): Promise<Teardown> {
   if (Platform.OS !== 'ios') return () => {};
   if (!PushNotificationIOS || typeof PushNotificationIOS.addEventListener !== 'function') {
     throw new Error('PushNotificationIOS native module unavailable');
   }
 
+  let closed = false;
   const onRegister = (token: string) => {
+    if (closed) return;
     lastToken = token;
     Keychain.setGenericPassword('apns', token, {service: TOKEN_SERVICE}).catch(() => {});
     onToken(token);
   };
 
   const onNotification = (notification: any, initial = false) => {
+    if (closed) return;
     const data = notification.getData?.() ?? {};
     const pane: string | undefined = data.pane;
     const rawAction: string | undefined = notification.getActionIdentifier?.();
@@ -207,7 +211,6 @@ export async function setupPush(
   // Register the quick-reply actions iOS attaches to a `waiting` notification.
   PushNotificationIOS.setNotificationCategories?.(WAITING_CATEGORIES);
 
-  let closed = false;
   const nativeResponses = NativeModules?.GtmuxNotificationResponses;
   const drainNative = async () => {
     if (!nativeResponses?.drain || closed) return;
@@ -229,12 +232,17 @@ export async function setupPush(
     if (state === 'active') void drainNative();
   });
   const teardown = () => {
+    if (closed) return;
     closed = true;
+    lifecycle?.removeEventListener('abort', teardown);
     stateSubscription.remove();
     PushNotificationIOS.removeEventListener('register');
     PushNotificationIOS.removeEventListener('notification');
     PushNotificationIOS.removeEventListener('localNotification');
   };
+
+  if (lifecycle?.aborted) {teardown(); return teardown;}
+  lifecycle?.addEventListener('abort', teardown, {once: true});
 
   try {
     // UIKit can deliver a response before React has a listener. Drain native

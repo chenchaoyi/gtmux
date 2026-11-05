@@ -4461,8 +4461,9 @@ LEG-83c398034235,L1,RN / mobile harness,mobileapp/src/push/android.test.ts,11,te
 LEG-3410a0b99aa3,L1,RN / mobile harness,mobileapp/src/push/android.test.ts,15,test,"FCM token refresh, one-use cold tap and live tap share lifecycle without executing digits",False,legacy-not-retrospectively-reviewed
 MAP-4aec1b6dc3b7,L2,reviewed implementation,mobileapp/src/push/initialPermissionConcurrency.test.ts,14,reviewed-selector,"requests permission despite a stalled initial response, then delivers the late action once",False,DUO-032
 MAP-27c1f05fe1bb,L2,reviewed implementation,mobileapp/src/push/initialPermissionConcurrency.test.ts,28,reviewed-selector,ignores an initial response that arrives after teardown,False,DUO-032
-MAP-a29517909a3d,L2,reviewed implementation,mobileapp/src/push/initialPermissionConcurrency.test.ts,54,reviewed-selector,delivers an initial action without waiting for permission,False,DUO-032
+MAP-a29517909a3d,L2,reviewed implementation,mobileapp/src/push/initialPermissionConcurrency.test.ts,76,reviewed-selector,delivers an initial action without waiting for permission,False,DUO-032
 MAP-82e358ff5f58,L2,reviewed implementation,mobileapp/src/push/initialPermissionConcurrency.test.ts,39,reviewed-selector,hands a late initial response to the live bridge after a server switch,False,DUO-032
+MAP-40ca9ad91fa7,L2,reviewed implementation,mobileapp/src/push/initialPermissionConcurrency.test.ts,54,reviewed-selector,cancels a bridge immediately when permission is pending and hands the action to its replacement,False,DUO-032
 LEG-c0039196e4f2,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,32,test,"the launch notification is acted on once, not on every server switch",False,legacy-not-retrospectively-reviewed
 LEG-a79023052203,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,42,test,a launch with no notification taps nothing,False,legacy-not-retrospectively-reviewed
 MAP-43a5acb09524,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,124,reviewed-selector,a buffered native response and the launch copy dispatch one quick reply,False,DUO-010

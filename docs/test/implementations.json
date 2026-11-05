@@ -745,7 +745,8 @@
       "requests permission despite a stalled initial response, then delivers the late action once",
       "ignores an initial response that arrives after teardown",
       "delivers an initial action without waiting for permission",
-      "hands a late initial response to the live bridge after a server switch"
+      "hands a late initial response to the live bridge after a server switch",
+      "cancels a bridge immediately when permission is pending and hands the action to its replacement"
     ]
   },
   "mobileapp/src/ui/ChatView.promptReflow.test.tsx": {

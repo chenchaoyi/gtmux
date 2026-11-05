@@ -201,7 +201,8 @@ function PushBridge({navRef}: {navRef: any}) {
     if (Debug.noPush) return; // Debug.noPush keeps the auth prompt out of UI tests
     let teardown: (() => void) | undefined;
     let cancelled = false;
-    setupPush(onTap, setPushToken, onQuickReply, pushEnabled)
+    const lifecycle = new AbortController();
+    setupPush(onTap, setPushToken, onQuickReply, pushEnabled, lifecycle.signal)
       .then(t => {
         if (cancelled) t();
         else teardown = t;
@@ -210,7 +211,7 @@ function PushBridge({navRef}: {navRef: any}) {
         // Push is best-effort: a setup failure (e.g. the native module missing)
         // must not break the radar.
       });
-    return () => { cancelled = true; teardown?.(); };
+    return () => { cancelled = true; lifecycle.abort(); teardown?.(); };
     // agents/onTap intentionally omitted: re-subscribing on every refetch would
     // churn the native listeners; the handler reads live state via refs.
     // eslint-disable-next-line react-hooks/exhaustive-deps

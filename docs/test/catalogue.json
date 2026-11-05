@@ -58371,7 +58371,7 @@
         },
         {
           "id": "MAP-a29517909a3d",
-          "line": 54,
+          "line": 76,
           "kind": "reviewed-selector",
           "name": "delivers an initial action without waiting for permission",
           "dynamic": false,
@@ -58386,9 +58386,18 @@
           "dynamic": false,
           "layer": "L2",
           "design": "DUO-032"
+        },
+        {
+          "id": "MAP-40ca9ad91fa7",
+          "line": 54,
+          "kind": "reviewed-selector",
+          "name": "cancels a bridge immediately when permission is pending and hands the action to its replacement",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DUO-032"
         }
       ],
-      "sha256": "7f2bb000e6385fbf3f3bc9777789e54e960bb89f82b8d6c85d8f990082413236"
+      "sha256": "1f0dfa6533b7d4b54f2c470044500abd1cd38957dc22b49283d15160fe73b22b"
     },
     "mobileapp/src/ui/ChatView.promptReflow.test.tsx": {
       "layer": "L2",

@@ -51,6 +51,28 @@ test('hands a late initial response to the live bridge after a server switch', a
   stopCurrent();
 });
 
+test('cancels a bridge immediately when permission is pending and hands the action to its replacement', async () => {
+  let deliver!: (value: object) => void;
+  let allowOld!: (value: object) => void;
+  (PushNotificationIOS.getInitialNotification as jest.Mock).mockReturnValue(new Promise(resolve => {deliver = resolve;}));
+  (PushNotificationIOS.requestPermissions as jest.Mock).mockReturnValueOnce(new Promise(resolve => {allowOld = resolve;}));
+  const oldReply = jest.fn(), currentReply = jest.fn(), lifecycle = new AbortController();
+  const oldSetup = setupPush(jest.fn(), jest.fn(), oldReply, true, lifecycle.signal);
+  await Promise.resolve();
+  lifecycle.abort();
+  const removed = (PushNotificationIOS.removeEventListener as jest.Mock).mock.calls.length;
+  expect(removed).toBe(3);
+  const stopCurrent = await setupPush(jest.fn(), jest.fn(), currentReply);
+  deliver(response());
+  await Promise.resolve(); await Promise.resolve();
+  expect(oldReply).not.toHaveBeenCalled();
+  expect(currentReply).toHaveBeenCalledTimes(1);
+  allowOld({alert: true});
+  (await oldSetup)();
+  expect(PushNotificationIOS.removeEventListener).toHaveBeenCalledTimes(removed);
+  stopCurrent();
+});
+
 test('delivers an initial action without waiting for permission', async () => {
   let allow!: (value: object) => void;
   (PushNotificationIOS.getInitialNotification as jest.Mock).mockResolvedValue(response());
