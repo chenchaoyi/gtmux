@@ -19,6 +19,7 @@ export function resolveSimulatorTarget(inventory: SimulatorInventory, env: NodeJ
   const os = env.GTMUX_E2E_OS?.trim();
   const name = env.GTMUX_E2E_DEVICE?.trim();
   const types = new Map((inventory.devicetypes || []).map(type => [type.identifier, type.name]));
+  const hardwareNames = new Set(types.values());
   const available = inventory.runtimes.filter(runtime => runtime.isAvailable &&
     runtime.identifier.startsWith('com.apple.CoreSimulator.SimRuntime.iOS-'));
   const targets = available.flatMap(runtime => (inventory.devices[runtime.identifier] || [])
@@ -36,7 +37,9 @@ export function resolveSimulatorTarget(inventory: SimulatorInventory, env: NodeJ
   const matches = targets.filter(({runtime, device}) =>
     (udid ? device.udid === udid : device.state === 'Booted') &&
     (!os || sameVersion(runtime.version, os)) &&
-    (!name || device.name === name || types.get(device.deviceTypeIdentifier || '') === name));
+    (!name || (hardwareNames.has(name)
+      ? types.get(device.deviceTypeIdentifier || '') === name
+      : device.name === name)));
   if (matches.length !== 1) {
     throw new Error('No unique available iOS simulator matches GTMUX_E2E_UDID/OS/DEVICE; inspect xcrun simctl list -j.');
   }

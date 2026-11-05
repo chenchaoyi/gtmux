@@ -46,7 +46,7 @@ test('an unavailable requested runtime never silently falls forward to the new r
 
 test('a device named duo is not mistaken for the Duo hardware type', () => {
   const data = inventory();
-  data.devices[ios272][0].name = 'duo-accept-old';
+  data.devices[ios272][0].name = 'iPhone Duo';
   data.devices[ios272][0].deviceTypeIdentifier = proType;
   expect(() => resolveSimulatorTarget(data, {GTMUX_E2E_DEVICE: 'iPhone Duo'})).toThrow(/matches/);
 });
