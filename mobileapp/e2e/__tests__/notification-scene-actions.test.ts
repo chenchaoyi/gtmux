@@ -2,7 +2,7 @@ import {execFileSync} from 'child_process';
 import {existsSync, readFileSync, writeFileSync} from 'fs';
 import {join} from 'path';
 import {getArtifactsDir, getDriver} from '../setup/driver';
-import {BUNDLE, launchWithFlags, readDebugLog, settle, writeDebugFlags} from '../setup/app';
+import {BUNDLE, launchWithFlags, readDebugLog, settle, waitForNotificationAuthorization, writeDebugFlags} from '../setup/app';
 import {screenshot} from '../setup/screenshot';
 import {startFake, Fake} from '../fake-serve/server';
 
@@ -32,7 +32,7 @@ it('delivers a cold notification action exactly once', async () => {
   const seed = JSON.stringify([{url: fake.url, token: fake.token, name: 'Fixture Mac'}]);
   const flags = {GTMUX_DEBUG_SERVERS: seed, GTMUX_DEBUG_SHOT_MODE: '1', GTMUX_DEBUG_LANG: 'en', GTMUX_DEBUG_LOG_NET: '1'};
   await launchWithFlags(flags);
-  await settle(5000); // register the app's notification categories
+  await waitForNotificationAuthorization(); // categories are installed before authorization resolves
   writeDebugFlags(flags);
   await driver.terminateApp(BUNDLE);
   const body = 'Duo scene action fixture';
@@ -76,7 +76,7 @@ it('delivers a warm notification action exactly once', async () => {
   const driver = getDriver();
   const seed = JSON.stringify([{url: fake.url, token: fake.token, name: 'Fixture Mac'}]);
   await launchWithFlags({GTMUX_DEBUG_SERVERS: seed, GTMUX_DEBUG_SHOT_MODE: '1', GTMUX_DEBUG_LANG: 'en', GTMUX_DEBUG_LOG_NET: '1'});
-  await settle(5000);
+  await waitForNotificationAuthorization();
   fake.world.recorded = [];
   await driver.execute('mobile: pressButton', {name: 'home'});
   // A Home gesture can return before the app has left the foreground. A push

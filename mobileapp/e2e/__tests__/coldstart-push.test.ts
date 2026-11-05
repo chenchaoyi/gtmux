@@ -14,7 +14,7 @@ import {writeFileSync} from 'fs';
 import {join} from 'path';
 import {getDriver, getArtifactsDir} from '../setup/driver';
 import {screenshot} from '../setup/screenshot';
-import {BUNDLE, launchWithFlags, readDebugLog, settle, writeDebugFlags} from '../setup/app';
+import {BUNDLE, launchWithFlags, readDebugLog, settle, waitForNotificationAuthorization, writeDebugFlags} from '../setup/app';
 import {TestIds} from '../../src/constants/testIds';
 import {startFake, Fake} from '../fake-serve/server';
 
@@ -145,6 +145,7 @@ run('a cold-start push is handled once', () => {
     await launchWithFlags(active);
     await settle(5000);
     onRadar(await note('A0-home-connected'), 'Home');
+    await waitForNotificationAuthorization();
     writeDebugFlags(active);
 
     await driver.terminateApp(BUNDLE);

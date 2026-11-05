@@ -149,12 +149,12 @@ export async function setupPush(
     // Older native bridges forwarded UIKit's default identifier verbatim.
     const action = rawAction === 'com.apple.UNNotificationDefaultActionIdentifier' ? undefined : rawAction;
     const isInteraction = initial || !!data.userInteraction;
-    if (Debug.logNet) Debug.record({event: 'push-response', initial, isInteraction, hasPane: !!pane, action: action ?? '', hasText: typeof data.userText === 'string'});
+    if (Debug.logNet) Debug.record({event: 'push-response', at: Date.now(), initial, isInteraction, hasPane: !!pane, action: action ?? '', hasText: typeof data.userText === 'string'});
     if (typeof data.gtmuxResponseId === 'string' && data.gtmuxResponseId) {
       NativeModules?.GtmuxNotificationResponses?.acknowledge?.(data.gtmuxResponseId, action ?? '');
     }
     if (pane && isInteraction && !firstResponse(data.gtmuxResponseId, action)) {
-      if (Debug.logNet) Debug.record({event: 'push-duplicate'});
+      if (Debug.logNet) Debug.record({event: 'push-duplicate', at: Date.now()});
       notification.finish?.(PushNotificationIOS.FetchResult.NoData);
       return;
     }
@@ -206,7 +206,8 @@ export async function setupPush(
     // When the master switch is off, obtain a previously authorized token to
     // remove old registrations without showing a first-time permission prompt.
     if (askPermission) {
-      await PushNotificationIOS.requestPermissions();
+      const permissions = await PushNotificationIOS.requestPermissions();
+      if (Debug.logNet) Debug.record({event: 'push-permissions', at: Date.now(), alert: !!permissions?.alert});
     } else {
       const permissions: any = await new Promise(resolve => PushNotificationIOS.checkPermissions(resolve));
       if (permissions?.authorizationStatus >= 2) await PushNotificationIOS.requestPermissions();

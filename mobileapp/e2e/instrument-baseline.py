@@ -7,21 +7,21 @@ root = Path(sys.argv[1])
 changes = {
     'mobileapp/src/state/AppContext.tsx': (
         '      await saveServers(saved);\n      storeRef.current = saved;',
-        '''      if (Debug.logNet) Debug.record({event: 'server-persist-start', activeIndex: next.findIndex(s => s.url === active)});
+        '''      if (Debug.logNet) Debug.record({event: 'server-persist-start', at: Date.now(), activeIndex: next.findIndex(s => s.url === active)});
       try {
         await saveServers(saved);
       } catch (error) {
-        if (Debug.logNet) Debug.record({event: 'server-persist-failed', name: error instanceof Error ? error.name : typeof error,
+        if (Debug.logNet) Debug.record({event: 'server-persist-failed', at: Date.now(), name: error instanceof Error ? error.name : typeof error,
           code: typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : undefined});
         throw error;
       }
-      if (Debug.logNet) Debug.record({event: 'server-persist-saved'});
+      if (Debug.logNet) Debug.record({event: 'server-persist-saved', at: Date.now()});
       storeRef.current = saved;''',
     ),
     'mobileapp/src/screens/ServersScreen.tsx': (
         '  const onPick = async (url: string) => {\n    if (url === activeUrl) {',
         '''  const onPick = async (url: string) => {
-    if (Debug.logNet) Debug.record({event: 'server-pick', index: servers.findIndex(s => s.url === url), current: url === activeUrl});
+    if (Debug.logNet) Debug.record({event: 'server-pick', at: Date.now(), index: servers.findIndex(s => s.url === url), current: url === activeUrl});
     if (url === activeUrl) {''',
     ),
 }

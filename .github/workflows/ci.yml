@@ -527,7 +527,10 @@ jobs:
           GTMUX_E2E_HEADLESS: '1'
           GTMUX_E2E_ACCEPT_ALERTS: '1'
           GTMUX_E2E_SESSION_CI: '1'
-        run: bash mobileapp/e2e/ci-compare-servers.sh
+        run: |
+          set -o pipefail
+          mkdir -p mobileapp/.e2e-artifacts/comparison
+          bash mobileapp/e2e/ci-compare-servers.sh 2>&1 | tee mobileapp/.e2e-artifacts/comparison/setup.log
       - name: Preserve server comparison immediately
         if: ${{ !cancelled() && steps.server_compare.outcome != 'skipped' }}
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
@@ -561,7 +564,10 @@ jobs:
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: ios-notification-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
-          path: mobileapp/.e2e-artifacts/**/action-*
+          path: |
+            mobileapp/.e2e-artifacts/**/action-*
+            mobileapp/.e2e-artifacts/**/scene-action-*
+            mobileapp/.e2e-artifacts/**/warm-action-*
           include-hidden-files: true
           if-no-files-found: warn
           retention-days: 7
@@ -584,6 +590,19 @@ jobs:
           xcrun simctl bootstatus "$GTMUX_E2E_UDID" -b
           xcrun simctl install "$GTMUX_E2E_UDID" "$RUNNER_TEMP/gtmux-ios-ci/Build/Products/Release-iphonesimulator/gtmux.app"
           npm run test:e2e -- --runInBand coldstart-push.test.ts
+      - name: Preserve iPhone diagnostics immediately
+        if: ${{ !cancelled() && steps.ios_products.outcome == 'success' && steps.ios_driver.outcome == 'success' }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: ios-phone-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            mobileapp/.e2e-artifacts/**/debug-*
+            mobileapp/.e2e-artifacts/**/requests-*
+            mobileapp/.e2e-artifacts/**/c-*
+            mobileapp/.e2e-artifacts/**/cold-summary.txt
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 7
       - name: iPad simulator regression
         if: ${{ !cancelled() && steps.ios_products.outcome == 'success' && steps.ios_driver.outcome == 'success' }}
         working-directory: mobileapp

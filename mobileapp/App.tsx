@@ -175,11 +175,11 @@ function PushBridge({navRef}: {navRef: any}) {
   };
   const onQuickReply = (pane: string, server: string | undefined, value: string) => {
     const target = sourceForPush(serversRef.current, server ?? '');
-    if (Debug.logNet) Debug.record({event: 'push-quick-reply', matched: !!target});
+    if (Debug.logNet) Debug.record({event: 'push-quick-reply', at: Date.now(), matched: !!target});
     if (target) {
       new GtmuxClient(target.url, target.token).send(pane, {text: value}).then(() => {
-        if (Debug.logNet) Debug.record({event: 'push-send-ok'});
-      }).catch(() => { if (Debug.logNet) Debug.record({event: 'push-send-failed'}); });
+        if (Debug.logNet) Debug.record({event: 'push-send-ok', at: Date.now()});
+      }).catch(() => { if (Debug.logNet) Debug.record({event: 'push-send-failed', at: Date.now()}); });
     }
   };
 

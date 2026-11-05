@@ -9,9 +9,16 @@ base="$RUNNER_TEMP/duo-baseline-source"
 mkdir -p "$base" "$GITHUB_WORKSPACE/mobileapp/.e2e-artifacts/comparison"
 git archive "$GITHUB_BASE_SHA" | tar -x -C "$base"
 cmp "$base/mobileapp/package-lock.json" "$GITHUB_WORKSPACE/mobileapp/package-lock.json"
-cmp "$base/mobileapp/ios/Podfile.lock" "$GITHUB_WORKSPACE/mobileapp/ios/Podfile.lock"
+# CocoaPods may rewrite lock metadata during the candidate setup. Compare the
+# committed inputs, then use the same resolved lockfile for both builds.
+git -C "$GITHUB_WORKSPACE" show HEAD:mobileapp/ios/Podfile.lock > "$RUNNER_TEMP/duo-candidate-committed-pods.lock"
+cmp "$base/mobileapp/ios/Podfile.lock" "$RUNNER_TEMP/duo-candidate-committed-pods.lock"
+command cp -f "$GITHUB_WORKSPACE/mobileapp/ios/Podfile.lock" "$base/mobileapp/ios/Podfile.lock"
+cmp "$base/mobileapp/Gemfile.lock" "$GITHUB_WORKSPACE/mobileapp/Gemfile.lock"
+cmp "$base/mobileapp/.bundle/config" "$GITHUB_WORKSPACE/mobileapp/.bundle/config"
 python3 "$GITHUB_WORKSPACE/mobileapp/e2e/instrument-baseline.py" "$base"
 ln -s "$GITHUB_WORKSPACE/mobileapp/node_modules" "$base/mobileapp/node_modules"
+ln -s "$GITHUB_WORKSPACE/mobileapp/vendor" "$base/mobileapp/vendor"
 rsync -a "$GITHUB_WORKSPACE/mobileapp/e2e/" "$base/mobileapp/e2e/"
 (cd "$base/mobileapp/ios" && bundle exec pod install)
 (cd "$base/mobileapp" && xcodebuild -workspace ios/GtmuxMobile.xcworkspace -scheme GtmuxMobile \
