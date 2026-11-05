@@ -411,6 +411,8 @@ MAP-ae59716ae51d,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceR
 MAP-fa1c60fa2d92,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceResponseTests.swift,62,reviewed-selector,testSourceTimeoutDoesNotBecomeTheQuestionOrDraftError,False,"MC-HQ-CHOICE,MC-HQ-READ"
 MAP-ed56b3b277a8,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceResponseTests.swift,79,reviewed-selector,testStoredClientUsesReadOnlyFlagAndOnlyLegacyUsageFallsBack,False,"MC-HQ-CHOICE,MC-HQ-READ"
 MAP-b135d4ac2897,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceResponseTests.swift,117,reviewed-selector,testUnavailableSourceMetadataNeverClaimsTheSessionIsGone,False,"MC-HQ-CHOICE,MC-HQ-READ"
+MAP-b4f647d0a506,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQOverviewClarityTests.swift,44,reviewed-selector,testCanonicalGroupsAndHiddenCountIgnoreEndedMergedStaleAndDuplicateRows,False,"MC-HQ-OVERVIEW-STATE,MC-HQ-OVERVIEW-BRIEF"
+MAP-67fdd9c30f6e,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQOverviewClarityTests.swift,63,reviewed-selector,testCurrentAssessmentTakesPriorityWithoutBorrowingReceiptOrMetadataTime,False,"MC-HQ-OVERVIEW-STATE,MC-HQ-OVERVIEW-BRIEF"
 MAP-2fd3cafb008c,L2,reviewed implementation,mobileapp/e2e/fake-serve/backend-contract.test.ts,46,reviewed-selector,RN fake / Go contract:,False,CT-HTTP
 MAP-01cd8c62d09e,L2,reviewed implementation,mobileapp/e2e/fake-serve/backend-contract.test.ts,53,reviewed-selector,RN client consumes original ordinals,False,CT-HTTP
 MAP-f2ed2637baa9,L2,reviewed implementation,mobileapp/e2e/fake-serve/server.ts,95,reviewed-selector,startFake,False,CT-HTTP

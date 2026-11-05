@@ -419,5 +419,24 @@
       "class ChoiceFixture",
       "enum HQChoiceTestSupport"
     ]
+  },
+  "macapp/Tests/GtmuxBarTests/HQOverviewClarityTests.swift": {
+    "cases": [
+      "MC-HQ-OVERVIEW-STATE",
+      "MC-HQ-OVERVIEW-BRIEF"
+    ],
+    "selectors": [
+      "testCanonicalGroupsAndHiddenCountIgnoreEndedMergedStaleAndDuplicateRows",
+      "testCurrentAssessmentTakesPriorityWithoutBorrowingReceiptOrMetadataTime"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/HQOverviewMoreWindowTests.swift": {
+    "cases": [
+      "MC-HQ-OVERVIEW-MORE"
+    ],
+    "selectors": [
+      "testBottomRemainingControlOpensAllAndSelectsHiddenGoalWithoutSending",
+      "testFullyShownListHasNoRemainingControlAndUnknownRosterDoesNotSayIdle"
+    ]
   }
 }

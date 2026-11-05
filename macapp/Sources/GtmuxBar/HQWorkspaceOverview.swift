@@ -56,16 +56,14 @@ struct HQWorkspaceOverview: View {
     private func matterSection(_ group: HQMatterGroup) -> some View {
         let matters = group.matters(in: store.snapshot)
         let items = HQOverviewModel.items(group, in: store.snapshot)
+        let remaining = HQOverviewModel.remaining(group, in: store.snapshot)
         return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 7) {
                 StatusBadge(status: group.status, size: 17).accessibilityHidden(true)
                 Text(group.title(l10n)).font(HQTypography.section)
-                Text("\(matters.count)").font(HQTypography.body.monospacedDigit()).foregroundStyle(.secondary)
+                Text("\(items.count) / \(matters.count)").font(HQTypography.body.monospacedDigit()).foregroundStyle(.secondary)
+                    .accessibilityLabel(l10n.tr("Showing \(items.count) of \(matters.count)", "已显示 \(items.count) 项，共 \(matters.count) 项"))
                 Spacer(minLength: 4)
-                if matters.count > items.count {
-                    Button(l10n.tr("View all", "查看全部")) { allMatters = group }
-                        .font(HQTypography.caption).accessibilityIdentifier("hq-overview-all-\(group.rawValue)")
-                }
             }
             if matters.isEmpty {
                 Text(group == .needsInput
@@ -78,12 +76,35 @@ struct HQWorkspaceOverview: View {
                         if item.id != items.first?.id { Divider().padding(.horizontal, 12) }
                         if let matter = matters.first(where: { $0.id == item.matterId }) {
                             HQOverviewMatterRow(l10n: l10n, item: item, matter: matter,
-                                                workers: HQOverviewModel.workers(matter, in: store.snapshot)) {
+                                                workers: store.sourcesKnown ? HQOverviewModel.workers(matter, in: store.snapshot) : [],
+                                                sourcesKnown: store.sourcesKnown) {
                                 store.select(.matter(matter.id))
                             }
                         }
                     }
+                    if remaining > 0 {
+                        Divider()
+                        Button { allMatters = group } label: {
+                            HStack(spacing: 10) {
+                                Image(systemName: "rectangle.stack").font(HQTypography.body).foregroundStyle(Color.accentColor)
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(l10n.tr("View \(remaining) more",
+                                                 "查看其余 \(remaining) 项"))
+                                        .font(HQTypography.rowTitle)
+                                    Text(l10n.tr("Showing \(items.count) of \(matters.count)", "已显示 \(items.count) / \(matters.count) 项"))
+                                        .font(HQTypography.caption).foregroundStyle(.secondary)
+                                }
+                                Spacer(minLength: 4)
+                                Image(systemName: "chevron.right").font(HQTypography.caption).foregroundStyle(Color.accentColor)
+                            }.frame(maxWidth: .infinity, minHeight: 38, alignment: .leading)
+                                .padding(.horizontal, 12).padding(.vertical, 9).contentShape(Rectangle())
+                        }.buttonStyle(.plain).background(Color.accentColor.opacity(0.06))
+                            .accessibilityIdentifier("hq-overview-all-\(group.rawValue)")
+                            .accessibilityLabel(l10n.tr("View \(remaining) more · \(group.title(l10n))",
+                                                       "查看其余 \(remaining) 项 · \(group.title(l10n))"))
+                    }
                 }.background(Color.primary.opacity(0.025), in: RoundedRectangle(cornerRadius: 10))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
                     .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.primary.opacity(0.08)))
             }
         }.frame(maxWidth: .infinity, alignment: .leading)

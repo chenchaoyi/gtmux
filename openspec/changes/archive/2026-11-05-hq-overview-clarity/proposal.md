@@ -9,5 +9,10 @@ The native overview hides the remaining list behind a header action and shows st
 - Show current assessment and whole-goal status separately from session status.
 - Strengthen HQ closure/blocker summary guidance without inventing human decisions.
 
-## Impact
-CLI/Go: managed HQ instructions only, no protocol/state change. Mac: overview presentation and native tests. iPhone/iPad/Android: existing remaining footer is the interaction reference; no native adapters changed. Browser: no new workspace surface or protocol. Worker: no changes.
+## Surfaces
+- CLI / terminal: managed HQ instructions only, no protocol/state change.
+- menubar: overview presentation and native tests.
+- Web: no new workspace surface or protocol.
+- iPhone / phone: existing remaining footer is the interaction reference.
+- iPad / Android: shared RN unchanged; no native adapter changes.
+Worker behavior is unchanged.
