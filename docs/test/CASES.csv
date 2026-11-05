@@ -3801,7 +3801,8 @@ LEG-33b6b494ed45,L4,RN / mobile harness,mobileapp/e2e/__tests__/message-fidelity
 LEG-61fe529a5267,L4,RN / mobile harness,mobileapp/e2e/__tests__/message-fidelity.test.ts,100,it,a second message into a working session does not displace the first,False,legacy-not-retrospectively-reviewed
 LEG-c7e731a2ecfd,L4,RN / mobile harness,mobileapp/e2e/__tests__/nativeterm.test.ts,31,it,tap / long-press / wrap on the native pane,False,legacy-not-retrospectively-reviewed
 LEG-c57e7b8b4fae,L4,RN / mobile harness,mobileapp/e2e/__tests__/new-session.test.ts,10,it,one keyboard-up tap reports a duplicate; another name creates and opens the exact terminal,False,legacy-not-retrospectively-reviewed
-MAP-af8f135844b0,L4,reviewed implementation,mobileapp/e2e/__tests__/notification-scene-actions.test.ts,28,reviewed-selector,delivers a cold notification action exactly once,False,DUO-004
+MAP-af8f135844b0,L4,reviewed implementation,mobileapp/e2e/__tests__/notification-scene-actions.test.ts,35,reviewed-selector,delivers a cold notification action exactly once,False,DUO-004
+MAP-47786402e16b,L4,reviewed implementation,mobileapp/e2e/__tests__/notification-scene-actions.test.ts,80,reviewed-selector,delivers a warm notification action exactly once,False,DUO-004
 LEG-c7ceabc4e0f9,L4,RN / mobile harness,mobileapp/e2e/__tests__/radar-end.test.ts,18,it,closes the list where it ends,False,legacy-not-retrospectively-reviewed
 LEG-d1423a35ae7b,L4,RN / mobile harness,mobileapp/e2e/__tests__/radar-refresh-collapsed.test.ts,64,it,still refreshes when the list is shorter than the screen,False,legacy-not-retrospectively-reviewed
 LEG-8094dd3c9a7c,L4,RN / mobile harness,mobileapp/e2e/__tests__/radar.test.ts,29,it,"auto-pairs, opens a pane, and the network calls are recorded",False,legacy-not-retrospectively-reviewed

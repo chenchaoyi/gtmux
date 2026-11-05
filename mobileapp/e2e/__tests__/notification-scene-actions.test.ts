@@ -10,11 +10,18 @@ import {startFake, Fake} from '../fake-serve/server';
 // must send one digit once, even when UIKit delivers both scene and delegate paths.
 let fake: Fake;
 beforeAll(async () => { fake = await startFake(); });
-afterEach(() => {
+afterEach(async () => {
   const dir = getArtifactsDir();
   const label = expect.getState().currentTestName?.startsWith('delivers a cold') ? 'cold' : 'warm';
   writeFileSync(join(dir, `action-${label}-js.json`), JSON.stringify(readDebugLog(), null, 2));
   writeFileSync(join(dir, `action-${label}-fake.json`), JSON.stringify({requests: fake.requests, writes: fake.world.recorded}, null, 2));
+  // Capture the system surface even when banner/action lookup failed before a tap.
+  try {
+    await screenshot(`action-${label}-final`);
+    writeFileSync(join(dir, `action-${label}-final.xml`), await getDriver().getPageSource());
+  } catch (error) {
+    writeFileSync(join(dir, `action-${label}-surface-error.txt`), String(error));
+  }
   try {
     const container = execFileSync('xcrun', ['simctl', 'get_app_container', process.env.GTMUX_E2E_UDID!, BUNDLE, 'data'], {encoding: 'utf8'}).trim();
     const native = join(container, 'Documents', 'gtmux-native-notification-trace.jsonl');
