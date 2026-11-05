@@ -123,7 +123,7 @@ scenario('Trace bounds long-history DOM, searches all records and reaches the fi
   turns.at(-1).segments[0].steps[0].input='Final uniquely searchable command';
   agentFixture(fixture,'Codex',turns);
   const trace=await openTrace(page,fixture,1280);
-  assert.equal(await trace.locator('.trace-count').innerText(),'5002 records');
+  assert.equal(await trace.locator('.trace-count').innerText(),'2501 turns · 5002 records');
   assert.ok(await trace.locator('.trace-event').count()<=200);
   assert.ok(await trace.locator('.trace-mark').count()<=120);
   await trace.locator('.trace-scrubber').focus();await page.keyboard.press('Home');
@@ -133,7 +133,7 @@ scenario('Trace bounds long-history DOM, searches all records and reaches the fi
   assert.equal(await trace.locator('.trace-source').innerText(),'Final uniquely searchable command');
   await trace.getByRole('searchbox',{name:'Search trace',exact:true}).fill('uniquely searchable');
   assert.equal(await trace.locator('.trace-event').count(),1);
-  assert.equal(await trace.locator('.trace-count').innerText(),'1 / 5002 records');
+  assert.equal(await trace.locator('.trace-count').innerText(),'1 turn · 1 record');
 });
 
 scenario('Trace handles tools-only, old summaries, missing clocks and no records without invented data', {viewport:{width:390,height:844},locale:'en-US',hasTouch:true},async(page,fixture)=>{
@@ -225,7 +225,10 @@ for (const width of [390,1440]) scenario(`Trace replaces removed session detail 
   await page.evaluate(()=>{const source=document.querySelector('.session-tool .trace-source');const range=document.createRange();range.selectNodeContents(source);getSelection().removeAllRanges();getSelection().addRange(range);});
   const next=record('Codex','new-root','New root task');next.segments[0].steps[0].input='New root exact command';
   fixture.state.turns['%901']=[next];
-  await trace.locator('.trace-meta').filter({hasText:'new-root'}).waitFor();
+  await trace.locator('.trace-prose').getByText('Cancellation stops pending retries.').waitFor();
+  await trace.locator('.trace-origin-mode').click();
+  await trace.locator('.trace-origin').filter({hasText:'new-root'}).waitFor();
+  await trace.locator('.trace-preview-mode').click();
   assert.doesNotMatch(await trace.locator('.trace-inspector').innerText(),/old-root|retry-demo/);
   assert.equal(await trace.locator('.trace-prose').innerText(),'Review result\n\nCancellation stops pending retries.');
   assert.equal(fixture.state.sends.length,0);
@@ -250,8 +253,11 @@ scenario('Idle Trace jumps to latest after expanding turns and preserves a histo
   assert.ok(Math.abs(after.y-anchor.y)<=2,'refresh must retain the visible record pixel anchor');
   await trace.getByRole('button',{name:'Jump to latest',exact:true}).click();
   assert.equal(await trace.locator('.trace-latest').isVisible(),false);
-  await list.evaluate(el=>{el.scrollTop=el.scrollHeight*.6;el.dispatchEvent(new Event('scroll'));});
+  // The final page can fit on screen. Navigate an earlier page instead of
+  // assuming a percentage scroll is necessarily outside the live-edge inset.
+  await trace.locator('.trace-page').filter({hasText:'Previous'}).click();
   assert.equal(await trace.locator('.trace-latest').isVisible(),true);
+  await trace.getByRole('button',{name:'Jump to latest',exact:true}).click();
   await list.evaluate(el=>{el.scrollTop=el.scrollHeight;el.dispatchEvent(new Event('scroll'));});
   fixture.state.turns['%901']=[...fixture.state.turns['%901'],{...record('Codex','stable','TAIL APPEND'),segments:[{text:'TAIL FOLLOW ACCEPTED'}]}];
   await trace.locator('.trace-event.on').filter({hasText:'TAIL FOLLOW ACCEPTED'}).waitFor();

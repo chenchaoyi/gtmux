@@ -1,5 +1,5 @@
-// Generated from shared App trace analysis and presentation; SHA256 63de6f259358854745d6b1e19f2ac935174f284f9ca53e69a7f2facbee110603
-// Body SHA256 d9999c3ea1209c98a3e1fd9d85e9908fb06d4e4d0c4887d04c75d5e7d5ecc5fe
+// Generated from shared App trace analysis and presentation; SHA256 8b23cfe439b66af9d9a9f56608e9a661d99cb7afbf86777d713a486541990676
+// Body SHA256 679faeda3eff70e2d574f30993b95ff7e1cb3b01a4ec4bcfdeea77c35f0667de
 (function(root){var modules={"model":function(exports,require){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -202,7 +202,7 @@ function build(turns, context = {}) {
     return {
         events,
         sessions,
-        turns: Array.from(turnCounts.values()).reduce((a, b) => a + b, 0),
+        turns: new Set(events.map(event => event.turnKey)).size,
     };
 }
 /** Recorded provenance only. This is not the provider's original request JSON. */
@@ -541,6 +541,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.traceRecordPaths = exports.traceDetailLabels = exports.traceKindLabels = void 0;
 exports.recordedStep = recordedStep;
 exports.traceEventLabel = traceEventLabel;
+exports.traceCounts = traceCounts;
+exports.traceWindowLabel = traceWindowLabel;
+exports.traceTurnSummary = traceTurnSummary;
+exports.traceDetailMetadata = traceDetailMetadata;
 exports.traceEventPreview = traceEventPreview;
 exports.traceEventIcon = traceEventIcon;
 exports.conversationOutline = conversationOutline;
@@ -579,8 +583,49 @@ function traceEventLabel(event, lang) {
         : event.kind === 'user'
             ? event.from?.label || (lang === 'zh' ? '请求' : 'Request')
             : lang === 'zh'
-                ? '进展记录'
-                : 'Progress';
+                ? 'Agent 回复'
+                : 'Agent reply';
+}
+// Counts describe the loaded window, never a source ordinal or a whole session.
+// Both renderers use these labels so context cannot be counted as a message.
+function traceCounts(events) {
+    return {
+        turns: new Set(events.map(event => event.turnKey)).size,
+        calls: events.filter(event => event.kind === 'tool').length,
+        messages: events.filter(event => event.kind === 'user' || event.kind === 'assistant').length,
+        contexts: events.filter(event => event.kind === 'context').length,
+        records: events.length,
+    };
+}
+function traceWindowLabel(events, lang) {
+    const counts = traceCounts(events);
+    return lang === 'zh'
+        ? `${counts.turns} 轮 · ${counts.records} 条记录`
+        : `${counts.turns} ${counts.turns === 1 ? 'turn' : 'turns'} · ${counts.records} ${counts.records === 1 ? 'record' : 'records'}`;
+}
+function traceTurnSummary(events, lang) {
+    const counts = traceCounts(events);
+    const parts = lang === 'zh'
+        ? [`${counts.calls} 次调用`, `${counts.messages} 条消息`]
+        : [
+            `${counts.calls} ${counts.calls === 1 ? 'call' : 'calls'}`,
+            `${counts.messages} ${counts.messages === 1 ? 'message' : 'messages'}`,
+        ];
+    if (counts.contexts) {
+        parts.push(lang === 'zh'
+            ? `${counts.contexts} 条上下文`
+            : `${counts.contexts} context ${counts.contexts === 1 ? 'record' : 'records'}`);
+    }
+    return parts.join(' · ');
+}
+function traceDetailMetadata(event, lang, time = '') {
+    return [
+        event.agent,
+        lang === 'zh' ? `第 ${event.turn} 轮` : `Turn ${event.turn}`,
+        time ? (lang === 'zh' ? '本轮开始于 ' : 'Turn started ') + time : '',
+    ]
+        .filter(Boolean)
+        .join(' · ');
 }
 function traceEventPreview(event, lang) {
     return event.kind === 'tool'

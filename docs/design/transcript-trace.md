@@ -27,6 +27,17 @@ stdout/stderr, reasoning and unrelated MCP parameters stay outside the model.
 
 ## Browser interaction
 
+Browser and App share loaded-window counts, per-turn message/call/context summaries,
+reply labels, detail metadata and activity icons from the typed presentation module.
+Four loaded turns numbered 253–256 are four turns, not 256 loaded turns. A tool-free
+round reports zero calls and two messages; context remains a separate category.
+The compact status card shows the latest loaded turn and session name. Both readers
+start with the full-width list; a selected record opens details. They
+initially fold turns; three or more consecutive calls initially form a folded group,
+while the Calls control can also fold individual or two-call runs. Full session IDs
+remain in Overview/Source instead of the ordinary detail heading or session picker.
+Selecting a record starts at Preview; speaker profiles reuse the Chat profile entry.
+
 Open Trace from a pane's session-tools menu, search or filter its records, then select a message or call.
 The list identifies agent, loaded turn and history boundaries. Call details preserve
 recorded input whitespace, working directory and truncation notices. Details offer Overview, Preview, Raw content and Source. Preview formats prose and recorded JSON; Raw content preserves the recorded text. Source shows actual transcript provenance. Copy exports original content, or the displayed provenance JSON on Source.
