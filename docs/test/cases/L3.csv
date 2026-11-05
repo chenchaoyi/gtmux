@@ -4,7 +4,7 @@ LEG-d5140dc35e4a,L3,Browser,tests/web/alignment.test.cjs,26,scenario,"`Settings 
 LEG-5eb3da408f2c,L3,Browser,tests/web/alignment.test.cjs,70,scenario,`Touch input tools follow input device at ${width} touch=${touch}`,True,legacy-not-retrospectively-reviewed
 LEG-ff43142292fd,L3,Browser,tests/web/alignment.test.cjs,82,scenario,Chat retains recorded code and wait calls in compact summaries and expanded detail,False,legacy-not-retrospectively-reviewed
 CP-001-f8c339,L3,Browser,tests/web/behavior-contract.test.cjs,13,test,CP-001 shared rendered Trace,True,CP-001
-CP-002-f8c339,L3,Browser,tests/web/behavior-contract.test.cjs,29,test,CP-002 CP-003 CP-004 shared HQ,True,CP-002
+CP-002-f8c339,L3,Browser,tests/web/behavior-contract.test.cjs,30,test,CP-002 CP-003 CP-004 shared HQ,True,CP-002
 LEG-9907208fe7df,L3,Browser,tests/web/client-consistency.test.cjs,13,scenario,`Client reading consistency ${width} ${colorScheme}`,True,legacy-not-retrospectively-reviewed
 LEG-32d1c6b37c52,L3,Browser,tests/web/client-consistency.test.cjs,27,scenario,`Chat earlier windows preserve reading and refresh in ${view}`,True,legacy-not-retrospectively-reviewed
 LEG-d2bf02df9c62,L3,Browser,tests/web/client-consistency.test.cjs,61,scenario,"External board tiles stay scoped, resize, restore and revoke without pane input",False,legacy-not-retrospectively-reviewed

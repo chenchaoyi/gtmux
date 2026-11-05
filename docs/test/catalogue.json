@@ -56872,13 +56872,13 @@
       ]
     },
     "mobileapp/src/ui/CrossClientContract.test.tsx": {
-      "sha256": "5930c108a92868c93237aaadaa8ba3ba61d9b776c5d9b62514452fbaaca9c777",
+      "sha256": "b298744eb42d68d449c05464259dcd042f321cbc728ce1c40aa6472c0aaa8dc2",
       "layer": "L2",
       "stack": "RN / mobile harness",
       "cases": [
         {
           "id": "CP-001-8fc86a",
-          "line": 23,
+          "line": 24,
           "kind": "parameter-template",
           "name": "CP-001 %s renders",
           "dynamic": true,
@@ -56887,7 +56887,7 @@
         },
         {
           "id": "CP-002-8fc86a",
-          "line": 43,
+          "line": 46,
           "kind": "test",
           "name": "CP-002 HQ request",
           "dynamic": false,
@@ -56896,7 +56896,7 @@
         },
         {
           "id": "CP-003-8fc86a",
-          "line": 54,
+          "line": 57,
           "kind": "test",
           "name": "CP-003 document actions",
           "dynamic": false,
@@ -56906,7 +56906,7 @@
       ]
     },
     "tests/web/behavior-contract.test.cjs": {
-      "sha256": "9aa7e267fc1293630bccdad22eb72d9265a7da6d70f8e7fdfb67ee5e2e87cfd7",
+      "sha256": "efb9fc32596ac2392f2ad7c3d287a374b5b8f93827bd6d6a38f4a1b04f548706",
       "layer": "L3",
       "stack": "Browser",
       "cases": [
@@ -56921,7 +56921,7 @@
         },
         {
           "id": "CP-002-f8c339",
-          "line": 29,
+          "line": 30,
           "kind": "test",
           "name": "CP-002 CP-003 CP-004 shared HQ",
           "dynamic": true,

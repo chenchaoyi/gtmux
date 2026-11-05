@@ -4,6 +4,7 @@ import {FlatList, Text, TouchableOpacity, Linking} from 'react-native';
 import contract from '../../../tests/contracts/client-behavior.json';
 import {TraceReader} from '../trace/TraceModal';
 import {ChatView} from './ChatView';
+import {AgentAvatar} from './AgentAvatar';
 import {MarkdownView} from './MarkdownView';
 import {SenderAvatar} from './SenderAvatar';
 import {ParticipantProfileModal} from './ParticipantProfileModal';
@@ -34,6 +35,8 @@ test.each(contract.agents)('CP-001 %s renders the shared Trace contract, not jus
   expect(tool).toBeDefined();
   act(() => list.props.renderItem({item:tool}).props.onSelect(tool.event));
   expect(text(tree.root)).toContain(contract.trace.toolLabel);
+  expect(text(tree.root)).toContain(name + ' · Turn 151');
+  expect(tree.root.findAllByType(AgentAvatar).some(n => n.props.agent.agent === name)).toBe(true);
   expect(tree.root.findAllByProps({testID:'trace-source'})[0].props.source).toBe(contract.trace.input);
   const reply = list.props.data.find((r:any) => r.type==='event' && r.event.kind==='assistant');
   act(() => list.props.renderItem({item:reply}).props.onSelect(reply.event));

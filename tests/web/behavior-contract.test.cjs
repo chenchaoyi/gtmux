@@ -21,6 +21,7 @@ for(const width of [390,1440]){
   assert.match(await trace.locator('.trace-turn').innerText(),/Turn 151/);
   await trace.locator('.trace-turn').click();await trace.locator('.trace-event.tool').click();
   assert.equal(await trace.locator('.trace-detail-title').innerText(),contract.trace.toolLabel);
+  assert.equal(await trace.locator('.trace-meta').innerText(),agent+' · Turn 151');
   assert.equal(await trace.locator('.trace-source').innerText(),contract.trace.input);
   await trace.locator('.trace-detail-head .trace-close').click();await trace.locator('.trace-event.assistant').click();
   assert.equal(await trace.locator('.trace-detail-title').innerText(),contract.trace.replyLabel);

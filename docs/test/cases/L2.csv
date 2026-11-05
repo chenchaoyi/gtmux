@@ -1093,9 +1093,9 @@ LEG-30e4d7819427,L2,RN / mobile harness,mobileapp/src/ui/CopyableText.test.tsx,2
 LEG-e5fc93de4577,L2,RN / mobile harness,mobileapp/src/ui/CopyableText.test.tsx,36,test,the labelled accessibility action copies exactly the rendered block and keeps other actions,False,legacy-not-retrospectively-reviewed
 LEG-4e018f0c4ea7,L2,RN / mobile harness,mobileapp/src/ui/CopyableText.test.tsx,48,test,non-chat and non-selectable text keep the original renderer,False,legacy-not-retrospectively-reviewed
 LEG-06c2d30c28c9,L2,RN / mobile harness,mobileapp/src/ui/CopyableText.test.tsx,56,test,"every selectable Markdown block supplies its own copy scope, not the complete reply",False,legacy-not-retrospectively-reviewed
-CP-001-8fc86a,L2,RN / mobile harness,mobileapp/src/ui/CrossClientContract.test.tsx,23,parameter-template,CP-001 %s renders,True,CP-001
-CP-002-8fc86a,L2,RN / mobile harness,mobileapp/src/ui/CrossClientContract.test.tsx,43,test,CP-002 HQ request,False,CP-002
-CP-003-8fc86a,L2,RN / mobile harness,mobileapp/src/ui/CrossClientContract.test.tsx,54,test,CP-003 document actions,False,CP-003
+CP-001-8fc86a,L2,RN / mobile harness,mobileapp/src/ui/CrossClientContract.test.tsx,24,parameter-template,CP-001 %s renders,True,CP-001
+CP-002-8fc86a,L2,RN / mobile harness,mobileapp/src/ui/CrossClientContract.test.tsx,46,test,CP-002 HQ request,False,CP-002
+CP-003-8fc86a,L2,RN / mobile harness,mobileapp/src/ui/CrossClientContract.test.tsx,57,test,CP-003 document actions,False,CP-003
 LEG-d8b24286f7cc,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,18,test,large diffs mount only a window of native rows and retain the final line,False,legacy-not-retrospectively-reviewed
 LEG-6e9e4223d32d,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,36,test,"a failed read is an error with retry, not an empty repository",False,legacy-not-retrospectively-reviewed
 LEG-8bdd11a1e0bf,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,58,test,changing a pane retires an earlier read,False,legacy-not-retrospectively-reviewed
