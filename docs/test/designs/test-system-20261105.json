@@ -261,7 +261,24 @@
       "surfaces": [
         "CI / test documentation"
       ]
+    },
+    {
+      "id": "DG-004",
+      "layer": "G",
+      "description": "Manual diagnostics verify the synthetic endpoint before global Appium/device setup, not only before the test callback.",
+      "setup": "Explicit manual diagnostics configuration, mocked fixture verifier and boot function; no device connection.",
+      "action": "Run the manual global-setup wrapper with a rejected and accepted verification; observe boot invocation order and count.",
+      "expected": "Rejected verification never calls global device setup; successful verification calls setup exactly once afterwards. Existing DG-002 regressions cover the wrapper policy.",
+      "planned_files": [
+        "mobileapp/e2e/setup/global-setup-manual.ts"
+      ],
+      "surfaces": [
+        "Manual iOS diagnostic launcher"
+      ],
+      "supporting_case_ids": [
+        "DG-002"
+      ]
     }
   ],
-  "seal": "a1805d936b0a12b2f6947586fbbb153f902c7c715c0aadfaccdab1ddd2d1f3da"
+  "seal": "83c5a15b8714f50e8c62a0b5c2028f943414571d9ac35e217578479e7a02036a"
 }
