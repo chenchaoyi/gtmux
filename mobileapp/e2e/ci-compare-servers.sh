@@ -38,6 +38,9 @@ for variant in baseline candidate; do
   xcrun simctl erase "$GTMUX_E2E_UDID" || exit 1
   xcrun simctl bootstatus "$GTMUX_E2E_UDID" -b || exit 1
   if [ "$variant" = baseline ]; then root="$base/mobileapp"; app="$RUNNER_TEMP/duo-baseline-build/Build/Products/Release-iphonesimulator/gtmux.app"; else root="$GITHUB_WORKSPACE/mobileapp"; app="$RUNNER_TEMP/gtmux-ios-ci/Build/Products/Release-iphonesimulator/gtmux.app"; fi
+  # Inspect the built product, not the source entitlements file. This is read-only
+  # and records absent signatures as well as any actual simulator entitlements.
+  codesign -d --entitlements :- "$app" > "$GITHUB_WORKSPACE/mobileapp/.e2e-artifacts/comparison/$variant-entitlements.txt" 2>&1 || true
   xcrun simctl install "$GTMUX_E2E_UDID" "$app"
   install_status=$?
   if [ "$install_status" -eq 0 ]; then (cd "$root" && npm run test:e2e -- --runInBand server-switch-compare.test.ts); test_status=$?; else test_status=$install_status; fi
