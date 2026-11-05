@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner (self-review, not independent approval)",
     "date": "2026-11-05",
     "decision": "Proceed with approved backlog 1, 2, 3 and 7",
-    "notes": "Reviewed real handler validation and independent fake routes, current React renderer mocks, sequential Android dependencies and browser lifecycle. Synthetic loopback only; retain original 31 UI checks and complete selected suites. No native/device acceptance inferred from component tests; no release/install/account changes. Measure same source/cases/environment before speed claims. CI narrowing requires proof that production cannot import affected tests. Scope proof will bind the entire Metro configuration hash and verify the actual resolver excludes test modules; unavailable or changed proof retains native checks. Self-review strengthens HQ coverage by executing workspaceHTTPRead and the production projection against an isolated store; only generated_at/since volatile clocks are fixed."
+    "notes": "Reviewed real handler validation and independent fake routes, current React renderer mocks, sequential Android dependencies and browser lifecycle. Synthetic loopback only; retain original 31 UI checks and complete selected suites. No native/device acceptance inferred from component tests; no release/install/account changes. Measure same source/cases/environment before speed claims. CI narrowing requires proof that production cannot import affected tests. Scope proof will bind the entire Metro configuration hash and verify the actual resolver excludes test modules; unavailable or changed proof retains native checks. Self-review strengthens HQ coverage by executing workspaceHTTPRead and the production projection against an isolated store; only generated_at/since volatile clocks are fixed. Separate scheduler/process lifecycle unit assertions from installed/browser runtime layers. Review scoped HQ navigation so prepared replies cannot cross a server or session switch."
   },
   "cases": [
     {
@@ -39,7 +39,8 @@
       "expected": "Actual Detail and HQ composers isolate text across servers and reused panes/session identities, ignore delayed old draft loads, and persist/send to the current target only.",
       "planned_files": [
         "mobileapp/src/screens/DetailDraftSwitch.test.tsx",
-        "mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx"
+        "mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx",
+        "mobileapp/src/screens/HQWorkspaceView.tsx"
       ],
       "surfaces": [
         "Go / RN / Web / Android / CI"
@@ -81,7 +82,20 @@
       "action": "The unchanged 31 Android journey assertions run as a full journey or independent capability blocks with idempotent setup and dependency-aware blocked results; driver disconnect preserves the first cause.",
       "expected": "The unchanged 31 Android journey assertions run as a full journey or independent capability blocks with idempotent setup and dependency-aware blocked results; driver disconnect preserves the first cause.",
       "planned_files": [
-        "mobileapp/e2e/android/run.cjs",
+        "mobileapp/e2e/android/run.cjs"
+      ],
+      "surfaces": [
+        "Go / RN / Web / Android / CI"
+      ]
+    },
+    {
+      "id": "CT-ANDROID-POLICY",
+      "layer": "L1",
+      "description": "Scheduling policy expands prerequisites, blocks setup/dependency failures, preserves first automation cause and accounts action/evidence time.",
+      "setup": "Isolated synthetic handler/client/driver fixtures; no real agent, private home, network service or device input. Android L4 uses explicitly owned QA emulator only.",
+      "action": "The unchanged 31 Android journey assertions run as a full journey or independent capability blocks with idempotent setup and dependency-aware blocked results; driver disconnect preserves the first cause.",
+      "expected": "The unchanged 31 Android journey assertions run as a full journey or independent capability blocks with idempotent setup and dependency-aware blocked results; driver disconnect preserves the first cause.",
+      "planned_files": [
         "mobileapp/e2e/android/journey.cjs",
         "mobileapp/e2e/android/journey.test.ts"
       ],
@@ -109,6 +123,21 @@
       ]
     },
     {
+      "id": "CT-BROWSER-POLICY",
+      "layer": "L1",
+      "description": "Browser pool coalesces concurrent launch, exposes failure without retry, replaces disconnected instances and releases ownership.",
+      "setup": "Isolated synthetic handler/client/driver fixtures; no real agent, private home, network service or device input. Android L4 uses explicitly owned QA emulator only.",
+      "action": "Reuse one browser process per test worker while every case retains a fresh context/server and isolated storage/failure traces; closed browsers are replaced, resources close on setup/assertion failure.",
+      "expected": "Reuse one browser process per test worker while every case retains a fresh context/server and isolated storage/failure traces; closed browsers are replaced, resources close on setup/assertion failure.",
+      "planned_files": [
+        "tests/web/browser-pool.cjs",
+        "tests/web/browser-pool.test.cjs"
+      ],
+      "surfaces": [
+        "Go / RN / Web / Android / CI"
+      ]
+    },
+    {
       "id": "CT-BROWSER",
       "layer": "L3",
       "description": "Reuse one browser process per test worker while every case retains a fresh context/server and isolated storage/failure traces; closed browsers are replaced, resources close on setup/assertion failure.",
@@ -117,8 +146,6 @@
       "expected": "Reuse one browser process per test worker while every case retains a fresh context/server and isolated storage/failure traces; closed browsers are replaced, resources close on setup/assertion failure.",
       "planned_files": [
         "tests/web/harness.cjs",
-        "tests/web/browser-pool.cjs",
-        "tests/web/browser-pool.test.cjs",
         "tests/web/harness-isolation.test.cjs"
       ],
       "surfaces": [
@@ -143,5 +170,5 @@
       ]
     }
   ],
-  "seal": "88190db698c563f71a105a52c14741c733e245ae6960f0c6ce5994d063c638a7"
+  "seal": "064f6ca49fdf5c6aeca17482c9785ae287d272f0ba87d2c8b208f9b14d4b79eb"
 }
