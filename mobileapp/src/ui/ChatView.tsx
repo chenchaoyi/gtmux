@@ -418,7 +418,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
         ?? entries.find(([, frame]) => frame.y <= offRef.current && frame.y + frame.height > offRef.current);
       return turn ? {key: turn[0], y: turn[1].y, prompt: false} : null;
     })();
-    if (Debug.logNet) Debug.record({event: 'chat-reflow-capture', previousWidth, windowWidth, offset: offRef.current, viewport: viewportHeight.current, candidates: entries.length, anchorY: visible?.y ?? null, prompt: visible?.prompt ?? false});
+    if (Debug.logNet) Debug.record({event: 'chat-reflow-capture', previousWidth, windowWidth, offset: offRef.current, viewport: viewportHeight.current, candidates: entries.length, anchorY: visible?.y ?? null, prompt: visible?.prompt ?? false, anchorIndex: visible ? shown.findIndex((turn, index) => turnIdentity(turn, offset + index) === visible.key) : -1, frames: entries.map(([key, frame]) => ({index: shown.findIndex((turn, index) => turnIdentity(turn, offset + index) === key), y: frame.y, height: frame.height, promptY: promptOffsets.current.get(key) ?? null}))});
     if (visible) {
       reflowAnchor.current = {key: visible.key, viewportY: visible.y - offRef.current, prompt: visible.prompt, deadline: Date.now() + 8000};
       reflowTimer.current = setTimeout(() => {reflowAnchor.current = null; reflowTimer.current = null;}, 8000);
