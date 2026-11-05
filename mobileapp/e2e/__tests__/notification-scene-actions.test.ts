@@ -4,12 +4,14 @@ import {join} from 'path';
 import {getArtifactsDir, getDriver} from '../setup/driver';
 import {BUNDLE, launchWithFlags, readDebugLog, settle, waitForNotificationAuthorization, writeDebugFlags} from '../setup/app';
 import {screenshot} from '../setup/screenshot';
+import {selectUnfoldedInnerDisplay} from '../setup/duoDisplay';
 import {startFake, Fake} from '../fake-serve/server';
 
 // Real simulator notification response against an isolated fake server. An action
 // must send one digit once, even when UIKit delivers both scene and delegate paths.
 let fake: Fake;
 beforeAll(async () => { fake = await startFake(); });
+beforeEach(async () => { await selectUnfoldedInnerDisplay(); }, 60000);
 afterEach(async () => {
   const dir = getArtifactsDir();
   const label = expect.getState().currentTestName?.startsWith('delivers a cold') ? 'cold' : 'warm';

@@ -4,10 +4,12 @@ import {join} from 'path';
 import {getArtifactsDir, getDriver} from '../setup/driver';
 import {BUNDLE, launchWithFlags, readDebugLog, writeDebugFlags} from '../setup/app';
 import {captureOnFailure, screenshot} from '../setup/screenshot';
+import {selectUnfoldedInnerDisplay} from '../setup/duoDisplay';
 import {startFake, Fake} from '../fake-serve/server';
 
 let fake: Fake;
 beforeAll(async () => { fake = await startFake(); fake.world.seedUsage(); });
+beforeEach(async () => { await selectUnfoldedInnerDisplay(); }, 60000);
 afterAll(async () => { await fake?.close(); });
 afterEach(() => {
   const dir = getArtifactsDir();

@@ -21,6 +21,18 @@ function App() {
   return <WorkspaceProvider mode={mockWide ? 'regular' : 'compact'} navigate={jest.fn()} inlineSelection><SplitShell /></WorkspaceProvider>;
 }
 
+test('workspace leaves screen edge insets to the visible screen and protects the wide sidebar', () => {
+  mockWide = false;
+  let tree!: renderer.ReactTestRenderer;
+  act(() => { tree = renderer.create(<App />); });
+  expect(tree.root.findByProps({testID: 'radar-split'}).props.edges).toBeUndefined();
+  expect(tree.root.findByProps({testID: 'workspace-list'}).props.edges).toEqual([]);
+  mockWide = true;
+  act(() => tree.update(<App />));
+  expect(tree.root.findByProps({testID: 'workspace-list'}).props.edges).toEqual(['top', 'left']);
+  act(() => tree.unmount());
+});
+
 test('resizing keeps the mounted detail state and back/reopen remains usable', () => {
   let tree!: renderer.ReactTestRenderer;
   act(() => { tree = renderer.create(<App />); });

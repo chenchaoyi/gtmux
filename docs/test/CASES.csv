@@ -3783,9 +3783,9 @@ LEG-cb21d0627bd2,M,RN / mobile harness,mobileapp/e2e/__tests__/composer-shots.te
 LEG-63869acd3e2a,M,RN / mobile harness,mobileapp/e2e/__tests__/cursor.test.ts,41,it,opens a terminal pane and screenshots the cursor,False,legacy-not-retrospectively-reviewed
 LEG-094857d91ad5,L4,RN / mobile harness,mobileapp/e2e/__tests__/detail-chrome-textsize.test.ts,39,run,the top row keeps one line and stays on screen at the accessibility sizes,False,legacy-not-retrospectively-reviewed
 MAP-29b9b35673af,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,66,reviewed-selector,"retains the selected conversation, reading position and draft across simulator fold and unfold",False,DUO-020
-MAP-e33509324cc9,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,190,reviewed-selector,keeps Trace search and Diff open while the simulator folds and unfolds,False,"DUO-020,DUO-021"
-MAP-7bb91bd4c1ab,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,139,reviewed-selector,keeps the session entry usable at an accessibility text size on both panels,False,"DUO-020,DUO-021,DUO-023"
-MAP-8cfa983c4bb1,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-window.test.ts,13,reviewed-selector,keeps the selected session and a draft through simulator rotation,False,DUO-002
+MAP-e33509324cc9,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,198,reviewed-selector,keeps Trace search and Diff open while the simulator folds and unfolds,False,"DUO-020,DUO-021"
+MAP-7bb91bd4c1ab,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,145,reviewed-selector,keeps the session entry usable at an accessibility text size on both panels,False,"DUO-020,DUO-021,DUO-023"
+MAP-8cfa983c4bb1,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-window.test.ts,15,reviewed-selector,keeps the selected session and a draft through simulator rotation,False,DUO-002
 LEG-e23b5ce26880,L4,RN / mobile harness,mobileapp/e2e/__tests__/edge-stability.test.ts,22,it,traces the viewport around the live tail,False,legacy-not-retrospectively-reviewed
 LEG-242e71413ed1,L4,RN / mobile harness,mobileapp/e2e/__tests__/edge-states.test.ts,39,it,an empty fleet says so instead of showing an empty frame,False,legacy-not-retrospectively-reviewed
 LEG-e678143327ea,L4,RN / mobile harness,mobileapp/e2e/__tests__/edge-states.test.ts,48,it,a task with no spaces does not push the row off the screen,False,legacy-not-retrospectively-reviewed
@@ -3812,16 +3812,16 @@ LEG-33b6b494ed45,L4,RN / mobile harness,mobileapp/e2e/__tests__/message-fidelity
 LEG-61fe529a5267,L4,RN / mobile harness,mobileapp/e2e/__tests__/message-fidelity.test.ts,100,it,a second message into a working session does not displace the first,False,legacy-not-retrospectively-reviewed
 LEG-c7e731a2ecfd,L4,RN / mobile harness,mobileapp/e2e/__tests__/nativeterm.test.ts,31,it,tap / long-press / wrap on the native pane,False,legacy-not-retrospectively-reviewed
 LEG-c57e7b8b4fae,L4,RN / mobile harness,mobileapp/e2e/__tests__/new-session.test.ts,10,it,one keyboard-up tap reports a duplicate; another name creates and opens the exact terminal,False,legacy-not-retrospectively-reviewed
-MAP-af8f135844b0,L4,reviewed implementation,mobileapp/e2e/__tests__/notification-scene-actions.test.ts,35,reviewed-selector,delivers a cold notification action exactly once,False,DUO-004
-MAP-47786402e16b,L4,reviewed implementation,mobileapp/e2e/__tests__/notification-scene-actions.test.ts,80,reviewed-selector,delivers a warm notification action exactly once,False,DUO-004
+MAP-af8f135844b0,L4,reviewed implementation,mobileapp/e2e/__tests__/notification-scene-actions.test.ts,37,reviewed-selector,delivers a cold notification action exactly once,False,DUO-004
+MAP-47786402e16b,L4,reviewed implementation,mobileapp/e2e/__tests__/notification-scene-actions.test.ts,82,reviewed-selector,delivers a warm notification action exactly once,False,DUO-004
 LEG-c7ceabc4e0f9,L4,RN / mobile harness,mobileapp/e2e/__tests__/radar-end.test.ts,18,it,closes the list where it ends,False,legacy-not-retrospectively-reviewed
 LEG-d1423a35ae7b,L4,RN / mobile harness,mobileapp/e2e/__tests__/radar-refresh-collapsed.test.ts,64,it,still refreshes when the list is shorter than the screen,False,legacy-not-retrospectively-reviewed
 LEG-8094dd3c9a7c,L4,RN / mobile harness,mobileapp/e2e/__tests__/radar.test.ts,29,it,"auto-pairs, opens a pane, and the network calls are recorded",False,legacy-not-retrospectively-reviewed
 LEG-6aa06fe97cdb,L4,RN / mobile harness,mobileapp/e2e/__tests__/revoked-phone.test.ts,27,it,"a phone revoked while the app was closed opens on ""access rejected"", and the server list agrees",False,legacy-not-retrospectively-reviewed
 LEG-7d7ce36e4772,L4,RN / mobile harness,mobileapp/e2e/__tests__/revoked-phone.test.ts,55,it,a pane open when the Mac revokes the phone says so in its header,False,legacy-not-retrospectively-reviewed
 MAP-3593077aab87,L4,reviewed implementation,mobileapp/e2e/__tests__/scene-usage-links.test.ts,24,reviewed-selector,opens the usage link on warm and cold scene entry,False,DUO-005
-MAP-ea87797d79bf,L4,reviewed implementation,mobileapp/e2e/__tests__/scene-usage-links.test.ts,33,reviewed-selector,opens a warm usage link through the scene,False,DUO-005
-MAP-b7d75b280b9d,L4,reviewed implementation,mobileapp/e2e/__tests__/scene-usage-links.test.ts,49,reviewed-selector,opens a cold usage link through the scene,False,DUO-005
+MAP-ea87797d79bf,L4,reviewed implementation,mobileapp/e2e/__tests__/scene-usage-links.test.ts,35,reviewed-selector,opens a warm usage link through the scene,False,DUO-005
+MAP-b7d75b280b9d,L4,reviewed implementation,mobileapp/e2e/__tests__/scene-usage-links.test.ts,51,reviewed-selector,opens a cold usage link through the scene,False,DUO-005
 LEG-ce8589d51a98,M,RN / mobile harness,mobileapp/e2e/__tests__/screenshots.test.ts,33,it,"captures radar, detail, and the connection page",False,legacy-not-retrospectively-reviewed
 LEG-9d2138d1a1e7,L4,RN / mobile harness,mobileapp/e2e/__tests__/send-feedback.test.ts,38,it,a refusal names the pane someone is typing in,False,legacy-not-retrospectively-reviewed
 LEG-90d6e9b0fcce,L4,RN / mobile harness,mobileapp/e2e/__tests__/send-feedback.test.ts,61,it,"a send into a running session says it went, and that the agent may finish first",False,legacy-not-retrospectively-reviewed
@@ -4725,11 +4725,11 @@ LEG-982cd11bec20,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test
 LEG-6a69d2b9722f,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,424,test,"a credential the server rejects says so, not that it is a share link",False,legacy-not-retrospectively-reviewed
 LEG-dab2495366f0,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,436,test,a Mac that refuses this phone reads Access rejected on the list,False,legacy-not-retrospectively-reviewed
 LEG-cd35d5d9def5,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,448,test,"a server-mode change on the server is read at once, not on the next poll",False,legacy-not-retrospectively-reviewed
-MAP-dca558aadd46,L2,reviewed implementation,mobileapp/src/screens/SplitShell.resize.test.tsx,24,reviewed-selector,resizing keeps the mounted detail state and back/reopen remains usable,False,DUO-012
-MAP-8eb16689bb98,L2,reviewed implementation,mobileapp/src/screens/SplitShell.resize.test.tsx,42,reviewed-selector,folding after the wide workspace chooses its first session keeps that reader visible,False,"DUO-012,DUO-025"
-MAP-add4c7e8de77,L2,reviewed implementation,mobileapp/src/screens/SplitShell.resize.test.tsx,91,reviewed-selector,a hidden workspace does not consume Android back on another stack page,False,"DUO-012,DUO-025"
-MAP-e8645aa44039,L2,reviewed implementation,mobileapp/src/screens/SplitShell.resize.test.tsx,56,reviewed-selector,returning to the compact list survives expanding and folding the workspace,False,"DUO-012,DUO-025"
-MAP-84b478db0eea,L2,reviewed implementation,mobileapp/src/screens/SplitShell.resize.test.tsx,73,reviewed-selector,selecting a session while expanded returns to its reader when folded,False,"DUO-012,DUO-025"
+MAP-dca558aadd46,L2,reviewed implementation,mobileapp/src/screens/SplitShell.resize.test.tsx,36,reviewed-selector,resizing keeps the mounted detail state and back/reopen remains usable,False,DUO-012
+MAP-8eb16689bb98,L2,reviewed implementation,mobileapp/src/screens/SplitShell.resize.test.tsx,54,reviewed-selector,folding after the wide workspace chooses its first session keeps that reader visible,False,"DUO-012,DUO-025"
+MAP-add4c7e8de77,L2,reviewed implementation,mobileapp/src/screens/SplitShell.resize.test.tsx,103,reviewed-selector,a hidden workspace does not consume Android back on another stack page,False,"DUO-012,DUO-025"
+MAP-e8645aa44039,L2,reviewed implementation,mobileapp/src/screens/SplitShell.resize.test.tsx,68,reviewed-selector,returning to the compact list survives expanding and folding the workspace,False,"DUO-012,DUO-025"
+MAP-84b478db0eea,L2,reviewed implementation,mobileapp/src/screens/SplitShell.resize.test.tsx,85,reviewed-selector,selecting a session while expanded returns to its reader when folded,False,"DUO-012,DUO-025"
 LEG-2aba97e994c5,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,47,it,"is called by its name, not by its registry key",False,legacy-not-retrospectively-reviewed
 LEG-f259cfaf2c4d,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,55,it,asks for an icon at all — the fallback used to carry no hint,False,legacy-not-retrospectively-reviewed
 LEG-450351da14b3,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,74,it,states ctx ONCE — two roundings of it used to sit side by side,False,legacy-not-retrospectively-reviewed

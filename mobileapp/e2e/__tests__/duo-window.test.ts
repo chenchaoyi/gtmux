@@ -1,6 +1,7 @@
 import {getDriver} from '../setup/driver';
 import {launchWithFlags, settle} from '../setup/app';
 import {screenshot} from '../setup/screenshot';
+import {selectUnfoldedInnerDisplay} from '../setup/duoDisplay';
 import {startFake, Fake} from '../fake-serve/server';
 import {TestIds} from '../../src/constants/testIds';
 
@@ -8,6 +9,7 @@ import {TestIds} from '../../src/constants/testIds';
 // an open/close pose: Device Hub's fold controls need a separate observed test.
 let fake: Fake;
 beforeAll(async () => { fake = await startFake(); fake.world.seedLongChat('%13', 12); });
+beforeEach(async () => { await selectUnfoldedInnerDisplay(); }, 60000);
 afterAll(async () => { await fake?.close(); });
 
 it('keeps the selected session and a draft through simulator rotation', async () => {

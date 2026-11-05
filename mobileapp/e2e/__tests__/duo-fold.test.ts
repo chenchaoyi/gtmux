@@ -78,6 +78,12 @@ it('retains the selected conversation, reading position and draft across simulat
     await chat.click();
     const selected = driver.$('~Show full title, 整理这周的发布清单');
     await selected.waitForDisplayed({timeout: 10000});
+    const outerSize = await posture(0, 'outer', evidence);
+    const readerSize = await driver.$('~workspace-reader').getSize();
+    expect(Math.abs(readerSize.width - outerSize.width)).toBeLessThanOrEqual(1);
+    await selected.waitForDisplayed({timeout: 15000});
+    await posture(180, 'inner', evidence);
+    await selected.waitForDisplayed({timeout: 15000});
     const chatView = driver.$(`~${TestIds.detail.chat}`);
     await chatView.waitForDisplayed({timeout: 10000});
     const canvas = {...await chatView.getLocation(), ...await chatView.getSize()};
@@ -95,13 +101,13 @@ it('retains the selected conversation, reading position and draft across simulat
     const readingOuter = await posture(0, 'outer', evidence);
     expect([readingOuter.width, readingOuter.height]).not.toEqual([initialSize.width, initialSize.height]);
     await jump.waitForDisplayed({timeout: 15000});
-    expect(await selected.isDisplayed()).toBe(true);
     await anchoredPrompt().waitForDisplayed({timeout: 15000});
     await screenshot('duo-fold-reading-outer');
     await posture(180, 'inner', evidence);
     await jump.waitForDisplayed({timeout: 15000});
     await anchoredPrompt().waitForDisplayed({timeout: 15000});
     await jump.click();
+    await selected.waitForDisplayed({timeout: 15000});
     const keyboard = driver.$(`~${TestIds.composer.keyboard}`);
     await keyboard.waitForDisplayed({timeout: 10000});
     await keyboard.click();
@@ -148,6 +154,8 @@ it('keeps the session entry usable at an accessibility text size on both panels'
     await launchWithFlags({GTMUX_DEBUG_PAIR_URL: fake.url, GTMUX_DEBUG_PAIR_TOKEN: fake.token,
       GTMUX_DEBUG_NO_PUSH: '1', GTMUX_DEBUG_LANG: 'en'});
     await posture(0, 'outer', evidence);
+    const back = driver.$(`~${TestIds.detail.back}`);
+    if (await back.isDisplayed().catch(() => false)) await back.click();
     const row = driver.$('~agent-row-%13');
     await row.waitForDisplayed({timeout: 25000});
     await row.click();

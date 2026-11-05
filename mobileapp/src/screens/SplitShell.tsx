@@ -6,7 +6,7 @@ import React, {useContext, useEffect, useRef, useState} from 'react';
 import {NavigationContext} from '@react-navigation/native';
 import {BackHandler, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {useWindowDimensions} from '../ui/windowMetrics';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {agentId, paneRowToAgent, sameAgent} from '../api/types';
 import {useAgents} from '../state/AgentsContext';
@@ -52,6 +52,7 @@ export function SplitShell({demo}: {demo?: DemoChrome} = {}) {
     return () => sub.remove();
   }, [regular, showList, selection, navigation]);
   const {width} = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
@@ -117,9 +118,9 @@ export function SplitShell({demo}: {demo?: DemoChrome} = {}) {
   }
 
   return (
-    <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['left', 'right']} testID={TestIds.radar.split}>
+    <View style={[styles.safe, {backgroundColor: pal.bg}]} testID={TestIds.radar.split}>
       <View style={styles.row}>
-        <SafeAreaView testID="workspace-list" edges={regular ? ['top'] : []} style={[regular ? [styles.sidebar, {width: sidebarWidth(width), borderRightColor: pal.divLoud}] : styles.main, (regular ? hidden : !showList) && styles.hidden]}>
+        <SafeAreaView testID="workspace-list" edges={regular ? ['top', 'left'] : []} style={[regular ? [styles.sidebar, {width: sidebarWidth(width), borderRightColor: pal.divLoud}] : styles.main, (regular ? hidden : !showList) && styles.hidden]}>
           <RadarPanel variant={regular ? "sidebar" : "screen"} selectedId={sidebarSelectedId} onHideSidebar={() => setSidebar(true)} demo={demo} />
         </SafeAreaView>
         <View testID="workspace-reader" style={[styles.main, !regular && showList && styles.hidden]}>
@@ -129,13 +130,13 @@ export function SplitShell({demo}: {demo?: DemoChrome} = {}) {
               testID={TestIds.radar.showSidebar}
               accessibilityLabel={lang === 'zh' ? '显示侧栏' : 'Show sidebar'}
               onPress={() => setSidebar(false)}
-              style={[styles.showSidebar, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
+              style={[styles.showSidebar, {left: 10 + insets.left, backgroundColor: pal.surface, borderColor: pal.divider}]}>
               <SidebarIcon size={18} color={pal.fg2} />
             </TouchableOpacity>
           )}
         </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
