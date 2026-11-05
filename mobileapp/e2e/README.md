@@ -205,3 +205,5 @@ separate device acceptance; registration logs alone do not verify it.
 The e2e harness is Node/CommonJS and has its own `tsconfig.json`; it does not inherit React Native's bundler resolution or custom conditions. Check it with `npx tsc --project e2e/tsconfig.json --noEmit`. WebDriver's chainable arrays have asynchronous metadata: use `.getElements()` before synchronous length/index access, and await element IDs passed to lower-level commands.
 
 `new-session.test.ts` uses the fake Mac to check a keyboard-up single tap, duplicate-name recovery, one actual creation and navigation to the returned terminal. Do not hide the keyboard or retry the first tap to make this regression pass.
+
+Hermetic Go/RN/Web contracts and standalone Android capability blocks are described in [Contracts and execution](../../docs/test/CONTRACTS-EXECUTION.md) ([中文](../../docs/test/CONTRACTS-EXECUTION.zh.md)). The existing live shape suite remains separately gated.

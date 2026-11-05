@@ -176,10 +176,10 @@
   },
   "scripts/ci_test.py": {
     "cases": [
-      "TD-006"
+      "CT-SCOPE"
     ],
     "selectors": [
-      "test_reviewed_test_records_are_policy_only_without_hiding_test_changes"
+      "test_unit_test_scope_requires_immutable_product_exclusion"
     ]
   },
   "mobileapp/e2e/setup/global-setup-manual.ts": {
@@ -188,6 +188,195 @@
     ],
     "selectors": [
       "await setupManual(process.env, verifySendTarget, globalSetup)"
+    ]
+  },
+  "tests/contracts/http-contract.cjs": {
+    "cases": [
+      "CT-HTTP"
+    ],
+    "selectors": [
+      "async function observe",
+      "function verify"
+    ]
+  },
+  "tests/web/backend-contract.test.cjs": {
+    "cases": [
+      "CT-HTTP"
+    ],
+    "selectors": [
+      "Web fake / Go contract:"
+    ]
+  },
+  "tests/web/http-contract-validator.test.cjs": {
+    "cases": [
+      "CT-HTTP"
+    ],
+    "selectors": [
+      "wire contract rejects type, permission, ordinal, omission and security-header drift"
+    ]
+  },
+  "tests/web/fixture.cjs": {
+    "cases": [
+      "CT-HTTP"
+    ],
+    "selectors": [
+      "async function start"
+    ]
+  },
+  "mobileapp/e2e/fake-serve/backend-contract.test.ts": {
+    "cases": [
+      "CT-HTTP"
+    ],
+    "selectors": [
+      "RN fake / Go contract:",
+      "RN client consumes original ordinals"
+    ]
+  },
+  "mobileapp/e2e/fake-serve/server.ts": {
+    "cases": [
+      "CT-HTTP"
+    ],
+    "selectors": [
+      "startFake"
+    ]
+  },
+  "mobileapp/e2e/fake-serve/world.ts": {
+    "cases": [
+      "CT-HTTP"
+    ],
+    "selectors": [
+      "export class World"
+    ]
+  },
+  "mobileapp/src/screens/DetailDraftSwitch.test.tsx": {
+    "cases": [
+      "CT-DRAFT"
+    ],
+    "selectors": [
+      "mounted Detail isolates drafts",
+      "late draft storage result"
+    ]
+  },
+  "mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx": {
+    "cases": [
+      "CT-DRAFT",
+      "CT-HQ"
+    ],
+    "selectors": [
+      "pending HQ question opens the original matter",
+      "late HQ overview and matter responses",
+      "a prepared HQ question stays scoped"
+    ]
+  },
+  "mobileapp/src/screens/ServerModeBehavior.test.tsx": {
+    "cases": [
+      "CT-SUB"
+    ],
+    "selectors": [
+      "awake and reconnect subscription events",
+      "late server mode response"
+    ]
+  },
+  "mobileapp/e2e/android/run.cjs": {
+    "cases": [
+      "CT-ANDROID",
+      "CT-TIMING"
+    ],
+    "selectors": [
+      "async function check",
+      "async function run"
+    ]
+  },
+  "mobileapp/e2e/android/journey.cjs": {
+    "cases": [
+      "CT-ANDROID-POLICY",
+      "CT-TIMING"
+    ],
+    "selectors": [
+      "function selection",
+      "function createJourney"
+    ]
+  },
+  "mobileapp/e2e/android/journey.test.ts": {
+    "cases": [
+      "CT-ANDROID-POLICY",
+      "CT-TIMING"
+    ],
+    "selectors": [
+      "full Android journey retains",
+      "setup failure blocks",
+      "first assertion and disconnect causes",
+      "an out of order selected check",
+      "timing records setup action"
+    ]
+  },
+  "tests/web/harness.cjs": {
+    "cases": [
+      "CT-TIMING",
+      "CT-BROWSER"
+    ],
+    "selectors": [
+      "function scenario"
+    ]
+  },
+  "tests/web/browser-pool.cjs": {
+    "cases": [
+      "CT-BROWSER-POLICY",
+      "CT-TIMING"
+    ],
+    "selectors": [
+      "function browserPool"
+    ]
+  },
+  "tests/web/browser-pool.test.cjs": {
+    "cases": [
+      "CT-BROWSER-POLICY",
+      "CT-TIMING"
+    ],
+    "selectors": [
+      "concurrent borrowers share",
+      "failed launch propagates"
+    ]
+  },
+  "tests/web/harness-isolation.test.cjs": {
+    "cases": [
+      "CT-BROWSER"
+    ],
+    "selectors": [
+      "shared browser first case",
+      "shared browser next case"
+    ]
+  },
+  "scripts/ci.py": {
+    "cases": [
+      "CT-SCOPE"
+    ],
+    "selectors": [
+      "confirmed_unit_test_isolation"
+    ]
+  },
+  "mobileapp/metro.config.js": {
+    "cases": [
+      "CT-SCOPE"
+    ],
+    "selectors": [
+      "const config ="
+    ]
+  },
+  "mobileapp/scripts/test-boundary.test.ts": {
+    "cases": [
+      "CT-SCOPE"
+    ],
+    "selectors": [
+      "actual Metro resolver refuses"
+    ]
+  },
+  "internal/app/client_contract_test.go": {
+    "cases": [
+      "CT-HTTP"
+    ],
+    "selectors": [
+      "TestClientHTTPContracts"
     ]
   }
 }

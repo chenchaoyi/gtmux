@@ -90,3 +90,5 @@ LEG-f78442eb1f72,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,258,check,
 LEG-33aeea4a70db,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,265,check,28-file-upload-and-send,False,legacy-not-retrospectively-reviewed
 LEG-8a1dd3780a1b,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,301,check,30-native-pdf-pages-and-scroll,False,legacy-not-retrospectively-reviewed
 LEG-ee0968c7d8ff,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,306,check,31-native-file-trace,False,legacy-not-retrospectively-reviewed
+MAP-d4637161f816,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,97,reviewed-selector,async function check,False,"CT-ANDROID,CT-TIMING"
+MAP-c6dfe48e744e,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,103,reviewed-selector,async function run,False,"CT-ANDROID,CT-TIMING"

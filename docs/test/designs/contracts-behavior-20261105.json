@@ -1,0 +1,174 @@
+{
+  "id": "contracts-behavior-20261105",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-05",
+    "decision": "Proceed with approved backlog 1, 2, 3 and 7",
+    "notes": "Reviewed real handler validation and independent fake routes, current React renderer mocks, sequential Android dependencies and browser lifecycle. Synthetic loopback only; retain original 31 UI checks and complete selected suites. No native/device acceptance inferred from component tests; no release/install/account changes. Measure same source/cases/environment before speed claims. CI narrowing requires proof that production cannot import affected tests. Scope proof will bind the entire Metro configuration hash and verify the actual resolver excludes test modules; unavailable or changed proof retains native checks. Self-review strengthens HQ coverage by executing workspaceHTTPRead and the production projection against an isolated store; only generated_at/since volatile clocks are fixed. Separate scheduler/process lifecycle unit assertions from installed/browser runtime layers. Review scoped HQ navigation so prepared replies cannot cross a server or session switch."
+  },
+  "cases": [
+    {
+      "id": "CT-HTTP",
+      "layer": "L2",
+      "description": "Real Go handler responses agree with independent RN/Web fake servers for transcript history/context, HQ overview/detail/cursor, document metadata/download, null/empty and permission errors.",
+      "setup": "Isolated synthetic handler/client/driver fixtures; no real agent, private home, network service or device input. Android L4 uses explicitly owned QA emulator only.",
+      "action": "Real Go handler responses agree with independent RN/Web fake servers for transcript history/context, HQ overview/detail/cursor, document metadata/download, null/empty and permission errors.",
+      "expected": "Real Go handler responses agree with independent RN/Web fake servers for transcript history/context, HQ overview/detail/cursor, document metadata/download, null/empty and permission errors.",
+      "planned_files": [
+        "internal/server/client_contract_test.go",
+        "tests/contracts/http-contract.cjs",
+        "tests/web/backend-contract.test.cjs",
+        "tests/web/http-contract-validator.test.cjs",
+        "tests/web/fixture.cjs",
+        "mobileapp/e2e/fake-serve/backend-contract.test.ts",
+        "mobileapp/e2e/fake-serve/server.ts",
+        "mobileapp/e2e/fake-serve/world.ts",
+        "internal/app/client_contract_test.go"
+      ],
+      "surfaces": [
+        "Go / RN / Web / Android / CI"
+      ]
+    },
+    {
+      "id": "CT-DRAFT",
+      "layer": "L2",
+      "description": "Actual Detail and HQ composers isolate text across servers and reused panes/session identities, ignore delayed old draft loads, and persist/send to the current target only.",
+      "setup": "Isolated synthetic handler/client/driver fixtures; no real agent, private home, network service or device input. Android L4 uses explicitly owned QA emulator only.",
+      "action": "Actual Detail and HQ composers isolate text across servers and reused panes/session identities, ignore delayed old draft loads, and persist/send to the current target only.",
+      "expected": "Actual Detail and HQ composers isolate text across servers and reused panes/session identities, ignore delayed old draft loads, and persist/send to the current target only.",
+      "planned_files": [
+        "mobileapp/src/screens/DetailDraftSwitch.test.tsx",
+        "mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx",
+        "mobileapp/src/screens/HQWorkspaceView.tsx"
+      ],
+      "surfaces": [
+        "Go / RN / Web / Android / CI"
+      ]
+    },
+    {
+      "id": "CT-HQ",
+      "layer": "L2",
+      "description": "A current human question opens its original matter, prepares but does not auto-send a reply; an authoritative answer removes it from pending without completing the matter. Old client responses cannot replace current data.",
+      "setup": "Isolated synthetic handler/client/driver fixtures; no real agent, private home, network service or device input. Android L4 uses explicitly owned QA emulator only.",
+      "action": "A current human question opens its original matter, prepares but does not auto-send a reply; an authoritative answer removes it from pending without completing the matter. Old client responses cannot replace current data.",
+      "expected": "A current human question opens its original matter, prepares but does not auto-send a reply; an authoritative answer removes it from pending without completing the matter. Old client responses cannot replace current data.",
+      "planned_files": [
+        "mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx"
+      ],
+      "surfaces": [
+        "Go / RN / Web / Android / CI"
+      ]
+    },
+    {
+      "id": "CT-SUB",
+      "layer": "L2",
+      "description": "Mounted server mode consumers refresh after actual provider notifications and do not display late results from a retired client.",
+      "setup": "Isolated synthetic handler/client/driver fixtures; no real agent, private home, network service or device input. Android L4 uses explicitly owned QA emulator only.",
+      "action": "Mounted server mode consumers refresh after actual provider notifications and do not display late results from a retired client.",
+      "expected": "Mounted server mode consumers refresh after actual provider notifications and do not display late results from a retired client.",
+      "planned_files": [
+        "mobileapp/src/screens/ServerModeBehavior.test.tsx"
+      ],
+      "surfaces": [
+        "Go / RN / Web / Android / CI"
+      ]
+    },
+    {
+      "id": "CT-ANDROID",
+      "layer": "L4",
+      "description": "The unchanged 31 Android journey assertions run as a full journey or independent capability blocks with idempotent setup and dependency-aware blocked results; driver disconnect preserves the first cause.",
+      "setup": "Isolated synthetic handler/client/driver fixtures; no real agent, private home, network service or device input. Android L4 uses explicitly owned QA emulator only.",
+      "action": "The unchanged 31 Android journey assertions run as a full journey or independent capability blocks with idempotent setup and dependency-aware blocked results; driver disconnect preserves the first cause.",
+      "expected": "The unchanged 31 Android journey assertions run as a full journey or independent capability blocks with idempotent setup and dependency-aware blocked results; driver disconnect preserves the first cause.",
+      "planned_files": [
+        "mobileapp/e2e/android/run.cjs"
+      ],
+      "surfaces": [
+        "Go / RN / Web / Android / CI"
+      ]
+    },
+    {
+      "id": "CT-ANDROID-POLICY",
+      "layer": "L1",
+      "description": "Scheduling policy expands prerequisites, blocks setup/dependency failures, preserves first automation cause and accounts action/evidence time.",
+      "setup": "Isolated synthetic handler/client/driver fixtures; no real agent, private home, network service or device input. Android L4 uses explicitly owned QA emulator only.",
+      "action": "The unchanged 31 Android journey assertions run as a full journey or independent capability blocks with idempotent setup and dependency-aware blocked results; driver disconnect preserves the first cause.",
+      "expected": "The unchanged 31 Android journey assertions run as a full journey or independent capability blocks with idempotent setup and dependency-aware blocked results; driver disconnect preserves the first cause.",
+      "planned_files": [
+        "mobileapp/e2e/android/journey.cjs",
+        "mobileapp/e2e/android/journey.test.ts"
+      ],
+      "surfaces": [
+        "Go / RN / Web / Android / CI"
+      ]
+    },
+    {
+      "id": "CT-TIMING",
+      "layer": "G",
+      "description": "Stage and operation timing attributes setup/action/evidence cost separately, including failures and blocks; no silent rerun or suppressed assertions.",
+      "setup": "Isolated synthetic handler/client/driver fixtures; no real agent, private home, network service or device input. Android L4 uses explicitly owned QA emulator only.",
+      "action": "Stage and operation timing attributes setup/action/evidence cost separately, including failures and blocks; no silent rerun or suppressed assertions.",
+      "expected": "Stage and operation timing attributes setup/action/evidence cost separately, including failures and blocks; no silent rerun or suppressed assertions.",
+      "planned_files": [
+        "mobileapp/e2e/android/run.cjs",
+        "mobileapp/e2e/android/journey.cjs",
+        "mobileapp/e2e/android/journey.test.ts",
+        "tests/web/harness.cjs",
+        "tests/web/browser-pool.cjs",
+        "tests/web/browser-pool.test.cjs"
+      ],
+      "surfaces": [
+        "Go / RN / Web / Android / CI"
+      ]
+    },
+    {
+      "id": "CT-BROWSER-POLICY",
+      "layer": "L1",
+      "description": "Browser pool coalesces concurrent launch, exposes failure without retry, replaces disconnected instances and releases ownership.",
+      "setup": "Isolated synthetic handler/client/driver fixtures; no real agent, private home, network service or device input. Android L4 uses explicitly owned QA emulator only.",
+      "action": "Reuse one browser process per test worker while every case retains a fresh context/server and isolated storage/failure traces; closed browsers are replaced, resources close on setup/assertion failure.",
+      "expected": "Reuse one browser process per test worker while every case retains a fresh context/server and isolated storage/failure traces; closed browsers are replaced, resources close on setup/assertion failure.",
+      "planned_files": [
+        "tests/web/browser-pool.cjs",
+        "tests/web/browser-pool.test.cjs"
+      ],
+      "surfaces": [
+        "Go / RN / Web / Android / CI"
+      ]
+    },
+    {
+      "id": "CT-BROWSER",
+      "layer": "L3",
+      "description": "Reuse one browser process per test worker while every case retains a fresh context/server and isolated storage/failure traces; closed browsers are replaced, resources close on setup/assertion failure.",
+      "setup": "Isolated synthetic handler/client/driver fixtures; no real agent, private home, network service or device input. Android L4 uses explicitly owned QA emulator only.",
+      "action": "Reuse one browser process per test worker while every case retains a fresh context/server and isolated storage/failure traces; closed browsers are replaced, resources close on setup/assertion failure.",
+      "expected": "Reuse one browser process per test worker while every case retains a fresh context/server and isolated storage/failure traces; closed browsers are replaced, resources close on setup/assertion failure.",
+      "planned_files": [
+        "tests/web/harness.cjs",
+        "tests/web/harness-isolation.test.cjs"
+      ],
+      "surfaces": [
+        "Go / RN / Web / Android / CI"
+      ]
+    },
+    {
+      "id": "CT-SCOPE",
+      "layer": "G",
+      "description": "Only proven non-product RN unit test edits may omit native builds; mixed/shared/unknown paths, test fixtures consumed by journeys and production imports fail closed; all selected checks still aggregate.",
+      "setup": "Isolated synthetic handler/client/driver fixtures; no real agent, private home, network service or device input. Android L4 uses explicitly owned QA emulator only.",
+      "action": "Only proven non-product RN unit test edits may omit native builds; mixed/shared/unknown paths, test fixtures consumed by journeys and production imports fail closed; all selected checks still aggregate.",
+      "expected": "Only proven non-product RN unit test edits may omit native builds; mixed/shared/unknown paths, test fixtures consumed by journeys and production imports fail closed; all selected checks still aggregate.",
+      "planned_files": [
+        "scripts/ci.py",
+        "scripts/ci_test.py",
+        "mobileapp/metro.config.js",
+        "mobileapp/scripts/test-boundary.test.ts"
+      ],
+      "surfaces": [
+        "Go / RN / Web / Android / CI"
+      ]
+    }
+  ],
+  "seal": "064f6ca49fdf5c6aeca17482c9785ae287d272f0ba87d2c8b208f9b14d4b79eb"
+}
