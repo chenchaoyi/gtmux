@@ -53,6 +53,26 @@ for variant in baseline candidate; do
   install_status=$?
   if [ "$install_status" -eq 0 ]; then (cd "$root" && npm run test:e2e -- --runInBand server-switch-compare.test.ts); test_status=$?; else test_status=$install_status; fi
   printf '%s\n' "$test_status" > "$GITHUB_WORKSPACE/mobileapp/.e2e-artifacts/comparison/$variant-status.txt"
+  if [ "$test_status" -ne 0 ]; then
+    # A failed WDA session is not proof of an app crash. Capture a separate,
+    # time-bounded Simulator launch and error log before this CI device is erased.
+    python3 - "$GTMUX_E2E_UDID" "$GITHUB_WORKSPACE/mobileapp/.e2e-artifacts/comparison/$variant" <<'PY'
+import subprocess, sys
+udid, prefix = sys.argv[1:]
+commands = {
+    'launch': ['xcrun', 'simctl', 'launch', udid, 'com.gtmux.app'],
+    'errors': ['xcrun', 'simctl', 'spawn', udid, 'log', 'show', '--last', '2m', '--style', 'compact', '--predicate', 'process == "gtmux" AND (messageType == error OR messageType == fault)'],
+}
+for name, command in commands.items():
+    try:
+        result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+        output = 'exit=%s\n%s\n%s' % (result.returncode, result.stdout[-50000:], result.stderr[-5000:])
+    except subprocess.TimeoutExpired:
+        output = 'timed out after 30 seconds\n'
+    with open(prefix + '-' + name + '.txt', 'w') as file:
+        file.write(output)
+PY
+  fi
   mkdir -p "$GITHUB_WORKSPACE/mobileapp/.e2e-artifacts/comparison/$variant"
   if [ -d "$root/.e2e-artifacts/latest" ]; then command cp -R "$root/.e2e-artifacts/latest/." "$GITHUB_WORKSPACE/mobileapp/.e2e-artifacts/comparison/$variant/"; fi
   if [ "$variant" = candidate ]; then candidate_status=$test_status; fi
