@@ -11,6 +11,27 @@ let office: Fake;
 beforeAll(async () => { home = await startFake(); office = await startFake(); });
 afterAll(async () => { await home?.close(); await office?.close(); });
 
+it('selects a server after a clean launch', async () => {
+  const d = getDriver();
+  const seed = JSON.stringify([{url: home.url, token: home.token, name: 'Home'}, {url: office.url, token: office.token, name: 'Office'}]);
+  try {
+    await launchWithFlags({GTMUX_DEBUG_LOG_NET: '1', GTMUX_DEBUG_RESET_SERVERS: '1', GTMUX_DEBUG_SERVERS: seed});
+    await settle(3000);
+    const row = d.$('-ios predicate string:label BEGINSWITH "Home" AND visible == 1');
+    await row.waitForDisplayed({timeout: 15000});
+    await row.click();
+    await settle(6000);
+    const chip = d.$('~radar-server-chip');
+    await chip.waitForDisplayed({timeout: 15000});
+    expect(await chip.getAttribute('label')).toContain('Home');
+  } finally {
+    await screenshot('select-after');
+    writeFileSync(join(getArtifactsDir(), 'select.xml'), await d.getPageSource(), 'utf8');
+    writeFileSync(join(getArtifactsDir(), 'select-debug.json'), JSON.stringify(readDebugLog(), null, 2));
+    writeFileSync(join(getArtifactsDir(), 'select-fake.json'), JSON.stringify({home: home.requests, office: office.requests}, null, 2));
+  }
+});
+
 it('switches between two saved servers', async () => {
   const d = getDriver();
   const seed = JSON.stringify([{url: home.url, token: home.token, name: 'Home'}, {url: office.url, token: office.token, name: 'Office'}]);

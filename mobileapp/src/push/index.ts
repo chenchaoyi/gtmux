@@ -195,11 +195,14 @@ export async function setupPush(
     const nativeResponses = NativeModules?.GtmuxNotificationResponses;
     if (nativeResponses?.drain) {
       try {
+        if (Debug.logNet) Debug.record({event: 'push-drain-start', at: Date.now()});
         const pending: Record<string, unknown>[] = await nativeResponses.drain();
+        if (Debug.logNet) Debug.record({event: 'push-drain-resolved', at: Date.now(), count: pending.length});
         for (const data of pending) {
           onNotification({getData: () => data, getActionIdentifier: () => data.actionIdentifier}, true);
         }
-      } catch {
+      } catch (error) {
+        if (Debug.logNet) Debug.record({event: 'push-drain-error', at: Date.now(), name: error instanceof Error ? error.name : typeof error});
         // Keep the existing event and initial-notification paths available.
       }
     }
