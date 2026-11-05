@@ -1,8 +1,8 @@
 import PushNotificationIOS from '@react-native-community/push-notification-ios';
 import {resetLaunchNotificationForTesting, setupPush} from './index';
-import {NativeModules} from 'react-native';
+import {AppState, NativeModules} from 'react-native';
 
-jest.mock('react-native', () => ({Platform: {OS: 'ios'}, NativeModules: {GtmuxNotificationResponses: {drain: jest.fn(), acknowledge: jest.fn()}}}));
+jest.mock('react-native', () => ({Platform: {OS: 'ios'}, AppState: {addEventListener: jest.fn(() => ({remove: jest.fn()}))}, NativeModules: {GtmuxNotificationResponses: {drain: jest.fn(), acknowledge: jest.fn()}}}));
 jest.mock('react-native-keychain', () => ({setGenericPassword: jest.fn(() => Promise.resolve())}));
 jest.mock('@react-native-community/push-notification-ios', () => ({
   __esModule: true,
@@ -140,4 +140,39 @@ test('a native buffer failure still delivers the bridge launch notification', as
   await setupPush(jest.fn(), () => {}, reply);
   expect(reply).toHaveBeenCalledTimes(1);
   expect(reply).toHaveBeenCalledWith('%5', 'fixture', '1');
+});
+
+test('a stalled native drain leaves initial fallback and foreground recovery usable', async () => {
+  const data = {pane: '%5', server: 'fixture', gtmuxResponseId: 'stalled', userInteraction: true, actionIdentifier: '2'};
+  let resolveFirst!: (value: object[]) => void;
+  (NativeModules.GtmuxNotificationResponses.drain as jest.Mock)
+    .mockImplementationOnce(() => new Promise(resolve => { resolveFirst = resolve; }))
+    .mockResolvedValueOnce([data]);
+  (PushNotificationIOS.getInitialNotification as jest.Mock).mockResolvedValue(response('stalled', '2'));
+  const reply = jest.fn();
+  const teardown = await setupPush(jest.fn(), () => {}, reply);
+  expect(reply).toHaveBeenCalledTimes(1);
+  const calls = (AppState.addEventListener as jest.Mock).mock.calls;
+  calls[calls.length - 1][1]('active');
+  await Promise.resolve();
+  await Promise.resolve();
+  expect(reply).toHaveBeenCalledTimes(1);
+  expect(NativeModules.GtmuxNotificationResponses.acknowledge).toHaveBeenCalledWith('stalled', '2');
+  teardown();
+  resolveFirst([{...data, gtmuxResponseId: 'after-teardown'}]);
+  await Promise.resolve();
+  expect(reply).toHaveBeenCalledTimes(1);
+});
+
+test('the initial action does not wait for notification permission', async () => {
+  let resolvePermission!: (value: object) => void;
+  (PushNotificationIOS.requestPermissions as jest.Mock).mockReturnValueOnce(new Promise(resolve => { resolvePermission = resolve; }));
+  (PushNotificationIOS.getInitialNotification as jest.Mock).mockResolvedValue(response('permission-pending', '1'));
+  const reply = jest.fn();
+  const setup = setupPush(jest.fn(), () => {}, reply);
+  await Promise.resolve();
+  await Promise.resolve();
+  expect(reply).toHaveBeenCalledWith('%5', 'fixture', '1');
+  resolvePermission({});
+  (await setup)();
 });

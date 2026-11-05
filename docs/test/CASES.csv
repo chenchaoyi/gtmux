@@ -4417,6 +4417,10 @@ LEG-3410a0b99aa3,L1,RN / mobile harness,mobileapp/src/push/android.test.ts,15,te
 LEG-c0039196e4f2,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,32,test,"the launch notification is acted on once, not on every server switch",False,legacy-not-retrospectively-reviewed
 LEG-a79023052203,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,42,test,a launch with no notification taps nothing,False,legacy-not-retrospectively-reviewed
 MAP-43a5acb09524,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,124,reviewed-selector,a buffered native response and the launch copy dispatch one quick reply,False,DUO-010
+MAP-e583ab6da371,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,136,reviewed-selector,a native buffer failure still delivers the bridge launch notification,False,DUO-010
+MAP-f6ca99aeb79b,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,58,reviewed-selector,the same quick action arriving from scene and delegate sends once,False,DUO-010
+MAP-49ac3dbf1487,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,145,reviewed-selector,a stalled native drain leaves initial fallback and foreground recovery usable,False,DUO-010
+MAP-14fb52a6ba3b,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,167,reviewed-selector,the initial action does not wait for notification permission,False,DUO-010
 LEG-fbb65bc19bd8,L1,RN / mobile harness,mobileapp/src/push/sync.test.ts,9,it,"registers a selected Mac and unregisters a muted Mac, including silent badge pushes",False,legacy-not-retrospectively-reviewed
 LEG-c01ee8fb12d3,L1,RN / mobile harness,mobileapp/src/push/sync.test.ts,20,it,tries a reported alternate route and leaves a failed sync pending,False,legacy-not-retrospectively-reviewed
 LEG-7719b4cb3445,L1,RN / mobile harness,mobileapp/src/push/sync.test.ts,31,it,never registers a guest or an unknown token,False,legacy-not-retrospectively-reviewed

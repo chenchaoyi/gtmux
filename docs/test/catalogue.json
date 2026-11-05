@@ -40562,7 +40562,7 @@
       ]
     },
     "mobileapp/src/push/launchNotification.test.ts": {
-      "sha256": "cb16777d682743200d5e90dbd95fbcf1665696b9185afea99984f614d6d3a7fa",
+      "sha256": "0fcd39959a95c7fff787d46b676ace6c70b3f05b64f0409c496c18437bd6673a",
       "layer": "L1",
       "stack": "RN / mobile harness",
       "cases": [
@@ -40587,6 +40587,42 @@
           "line": 124,
           "kind": "reviewed-selector",
           "name": "a buffered native response and the launch copy dispatch one quick reply",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-010"
+        },
+        {
+          "id": "MAP-e583ab6da371",
+          "line": 136,
+          "kind": "reviewed-selector",
+          "name": "a native buffer failure still delivers the bridge launch notification",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-010"
+        },
+        {
+          "id": "MAP-f6ca99aeb79b",
+          "line": 58,
+          "kind": "reviewed-selector",
+          "name": "the same quick action arriving from scene and delegate sends once",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-010"
+        },
+        {
+          "id": "MAP-49ac3dbf1487",
+          "line": 145,
+          "kind": "reviewed-selector",
+          "name": "a stalled native drain leaves initial fallback and foreground recovery usable",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-010"
+        },
+        {
+          "id": "MAP-14fb52a6ba3b",
+          "line": 167,
+          "kind": "reviewed-selector",
+          "name": "the initial action does not wait for notification permission",
           "dynamic": false,
           "layer": "L1",
           "design": "DUO-010"

@@ -6,7 +6,7 @@
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
-| L1 · 单元/纯逻辑 | 3721 | [L1.csv](cases/L1.csv) |
+| L1 · 单元/纯逻辑 | 3725 | [L1.csv](cases/L1.csv) |
 | L2 · 组件/契约 | 1870 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 79 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 96 | [L4.csv](cases/L4.csv) |
@@ -30,7 +30,7 @@
 | DUO-007 | fake request diagnostics expose routing metadata without credentials or query values. |
 | DUO-008 | explicit hosted simulator configuration preserves local defaults and bounds driver startup. |
 | DUO-009 | Unacknowledged responses remain retrievable; acknowledged responses disappear, duplicate identity/action is queued once, and only the newest 128 entries remain. |
-| DUO-010 | duplicate launch and delegate responses dispatch a single action and preserve fallback. |
+| DUO-010 | Initial fallback proceeds despite a stalled drain or permission request, foreground retry retrieves a retained response, and shared identity permits at most one reply. |
 | DUO-011 | Trace and Diff remain open with their current content across window resizing. |
 | DUO-012 | resizing preserves mounted detail and selection while compact navigation remains usable. |
 | DUO-013 | usage modal resolves all safe edges in its native presentation. |

@@ -275,7 +275,9 @@
     "selectors": [
       "a buffered native response and the launch copy dispatch one quick reply",
       "a native buffer failure still delivers the bridge launch notification",
-      "the same quick action arriving from scene and delegate sends once"
+      "the same quick action arriving from scene and delegate sends once",
+      "a stalled native drain leaves initial fallback and foreground recovery usable",
+      "the initial action does not wait for notification permission"
     ]
   },
   "mobileapp/src/screens/DetailTrace.test.tsx": {

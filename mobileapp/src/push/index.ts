@@ -20,7 +20,7 @@
 // what it MEANS (one option per line — see optionsBody in serve.go), and the Mac picks
 // the category from the count so no phantom button is ever offered.
 
-import {NativeModules, Platform} from 'react-native';
+import {AppState, NativeModules, Platform} from 'react-native';
 import PushNotificationIOS from '@react-native-community/push-notification-ios';
 import * as Keychain from 'react-native-keychain';
 import {Debug} from '../debug';
@@ -182,7 +182,30 @@ export async function setupPush(
   // Register the quick-reply actions iOS attaches to a `waiting` notification.
   PushNotificationIOS.setNotificationCategories?.(WAITING_CATEGORIES);
 
+  let closed = false;
+  const nativeResponses = NativeModules?.GtmuxNotificationResponses;
+  const drainNative = async () => {
+    if (!nativeResponses?.drain || closed) return;
+    try {
+      if (Debug.logNet) Debug.record({event: 'push-drain-start', at: Date.now()});
+      const pending: Record<string, unknown>[] = await nativeResponses.drain();
+      if (Debug.logNet) Debug.record({event: 'push-drain-resolved', at: Date.now(), count: pending.length});
+      if (!closed) for (const data of pending) {
+        onNotification({getData: () => data, getActionIdentifier: () => data.actionIdentifier}, true);
+      }
+    } catch (error) {
+      if (Debug.logNet) Debug.record({event: 'push-drain-error', at: Date.now(), name: error instanceof Error ? error.name : typeof error});
+    }
+  };
+  // A bridge response may stall while launched in the background. Retained
+  // native receipts are retried when the app becomes active, without blocking
+  // the existing initial-notification fallback or processing after teardown.
+  const stateSubscription = AppState.addEventListener('change', state => {
+    if (state === 'active') void drainNative();
+  });
   const teardown = () => {
+    closed = true;
+    stateSubscription.remove();
     PushNotificationIOS.removeEventListener('register');
     PushNotificationIOS.removeEventListener('notification');
     PushNotificationIOS.removeEventListener('localNotification');
@@ -192,18 +215,13 @@ export async function setupPush(
     // UIKit can deliver a response before React has a listener. Drain native
     // receipts after listeners are attached; the shared identity also suppresses
     // overlap with the bridge event or initial launch notification.
-    const nativeResponses = NativeModules?.GtmuxNotificationResponses;
-    if (nativeResponses?.drain) {
-      try {
-        if (Debug.logNet) Debug.record({event: 'push-drain-start', at: Date.now()});
-        const pending: Record<string, unknown>[] = await nativeResponses.drain();
-        if (Debug.logNet) Debug.record({event: 'push-drain-resolved', at: Date.now(), count: pending.length});
-        for (const data of pending) {
-          onNotification({getData: () => data, getActionIdentifier: () => data.actionIdentifier}, true);
-        }
-      } catch (error) {
-        if (Debug.logNet) Debug.record({event: 'push-drain-error', at: Date.now(), name: error instanceof Error ? error.name : typeof error});
-        // Keep the existing event and initial-notification paths available.
+    void drainNative();
+    // The launch action must not wait for the permission request to finish.
+    if (!launchNotificationHandled) {
+      launchNotificationHandled = true;
+      const initial = await PushNotificationIOS.getInitialNotification();
+      if (initial) {
+        onNotification(initial, true);
       }
     }
     // When the master switch is off, obtain a previously authorized token to
@@ -216,15 +234,6 @@ export async function setupPush(
       if (permissions?.authorizationStatus >= 2) await PushNotificationIOS.requestPermissions();
     }
 
-    // Cold start: app launched by tapping a notification while it was killed. Once per
-    // process — see launchNotificationHandled.
-    if (!launchNotificationHandled) {
-      launchNotificationHandled = true;
-      const initial = await PushNotificationIOS.getInitialNotification();
-      if (initial) {
-        onNotification(initial, true);
-      }
-    }
     return teardown;
   } catch (error) {
     teardown();
