@@ -25,7 +25,7 @@ test('workspace leaves screen edge insets to the visible screen and protects the
   mockWide = false;
   let tree!: renderer.ReactTestRenderer;
   act(() => { tree = renderer.create(<App />); });
-  expect(tree.root.findByProps({testID: 'radar-split'}).props.edges).toBeUndefined();
+  expect(tree.root.findByProps({testID: 'radar-split'}).props.edges).toEqual([]);
   expect(tree.root.findByProps({testID: 'workspace-list'}).props.edges).toEqual([]);
   mockWide = true;
   act(() => tree.update(<App />));

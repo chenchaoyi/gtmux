@@ -1,7 +1,7 @@
 import {writeFileSync} from 'fs';
 import {join} from 'path';
 import {getArtifactsDir, getDriver} from '../setup/driver';
-import {launchWithFlags} from '../setup/app';
+import {launchWithFlags, typeInto} from '../setup/app';
 import {captureOnFailure, screenshot} from '../setup/screenshot';
 import {startFake, Fake} from '../fake-serve/server';
 import {TestIds} from '../../src/constants/testIds';
@@ -95,7 +95,7 @@ it('retains the selected conversation, reading position and draft across simulat
     await jump.waitForDisplayed({timeout: 10000});
     const prompts = await driver.$$('-ios predicate string:label BEGINSWITH "continue with part " AND visible == 1').getElements();
     expect(prompts.length).toBeGreaterThan(0);
-    const anchor = await prompts[prompts.length - 1].getAttribute('label');
+    const anchor = await prompts[0].getAttribute('label');
     const anchoredPrompt = () => driver.$(`-ios predicate string:label == "${anchor}" AND visible == 1`);
     await screenshot('duo-fold-reading-inner');
     const readingOuter = await posture(0, 'outer', evidence);
@@ -217,7 +217,8 @@ it('keeps Trace search and Diff open while the simulator folds and unfolds', asy
     await driver.$('~trace-search-toggle').click();
     const search = driver.$('~trace-search');
     await search.waitForDisplayed({timeout: 10000});
-    await search.setValue('part 12');
+    await typeInto('trace-search', 'part 12');
+    expect(await search.getValue()).toBe('part 12');
     await posture(0, 'outer', evidence, '~trace-session-title');
     expect(await driver.$('~trace-search').getValue()).toBe('part 12');
     expect(await driver.$('~trace-session-title').getText()).toContain('整理这周的发布清单');

@@ -489,6 +489,14 @@
       "inline workspace opens selection without pushing a second detail route"
     ]
   },
+  "mobileapp/src/ui/ChatView.follow.test.tsx": {
+    "cases": [
+      "DUO-027"
+    ],
+    "selectors": [
+      "history anchoring follows the reader rather than disturbing the live tail"
+    ]
+  },
   "mobileapp/src/ui/CrossClientContract.test.tsx": {
     "cases": [
       "CP-001",

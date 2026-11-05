@@ -1032,9 +1032,10 @@ LEG-e6e7b244f26a,L2,RN / mobile harness,mobileapp/src/ui/AttachSheet.test.tsx,43
 LEG-a2ee828f06f8,L2,RN / mobile harness,mobileapp/src/ui/AttachSheet.test.tsx,56,it,still slides when you dismiss it by the backdrop — there the motion IS the answer,False,legacy-not-retrospectively-reviewed
 LEG-9ebc3d2fb720,L2,RN / mobile harness,mobileapp/src/ui/AttachSheet.test.tsx,63,it,runs the chosen action only after the sheet has actually gone,False,legacy-not-retrospectively-reviewed
 LEG-8b9b6cbb1dad,L2,RN / mobile harness,mobileapp/src/ui/AttachSheet.test.tsx,76,it,slides again the next time it opens,False,legacy-not-retrospectively-reviewed
-LEG-10b2f4580849,L2,RN / mobile harness,mobileapp/src/ui/ChatView.follow.test.tsx,45,test,"a new turn does not drag a reader out of history, nor tell the host it did",False,legacy-not-retrospectively-reviewed
-LEG-067d2f8bfcb3,L2,RN / mobile harness,mobileapp/src/ui/ChatView.follow.test.tsx,71,test,a new turn DOES follow for a reader sitting at the tail,False,legacy-not-retrospectively-reviewed
-LEG-dc47da40588f,L2,RN / mobile harness,mobileapp/src/ui/ChatView.follow.test.tsx,89,test,the host revealing its chrome does not count as leaving the tail,False,legacy-not-retrospectively-reviewed
+LEG-10b2f4580849,L2,RN / mobile harness,mobileapp/src/ui/ChatView.follow.test.tsx,61,test,"a new turn does not drag a reader out of history, nor tell the host it did",False,legacy-not-retrospectively-reviewed
+LEG-067d2f8bfcb3,L2,RN / mobile harness,mobileapp/src/ui/ChatView.follow.test.tsx,87,test,a new turn DOES follow for a reader sitting at the tail,False,legacy-not-retrospectively-reviewed
+LEG-dc47da40588f,L2,RN / mobile harness,mobileapp/src/ui/ChatView.follow.test.tsx,105,test,the host revealing its chrome does not count as leaving the tail,False,legacy-not-retrospectively-reviewed
+MAP-ab3b1d2a54f1,L2,RN / mobile harness,mobileapp/src/ui/ChatView.follow.test.tsx,45,reviewed-selector,history anchoring follows the reader rather than disturbing the live tail,False,DUO-027
 LEG-a33ed9aea65f,L2,RN / mobile harness,mobileapp/src/ui/ChatView.fullscreen.test.tsx,11,test.each(),chat collapse control clears the safe top %s and still toggles,True,legacy-not-retrospectively-reviewed
 LEG-16b8800ca466,L2,RN / mobile harness,mobileapp/src/ui/ChatView.fullscreen.test.tsx,56,test,out of full screen the collapse bar sits under the chrome and moves with it,False,legacy-not-retrospectively-reviewed
 LEG-11abce5bfe4f,L2,RN / mobile harness,mobileapp/src/ui/ChatView.fullscreen.test.tsx,85,test,entering and leaving full screen keeps the transform array valid for Android Fabric,False,legacy-not-retrospectively-reviewed

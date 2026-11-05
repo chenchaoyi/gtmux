@@ -118,7 +118,7 @@ export function SplitShell({demo}: {demo?: DemoChrome} = {}) {
   }
 
   return (
-    <View style={[styles.safe, {backgroundColor: pal.bg}]} testID={TestIds.radar.split}>
+    <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={[]} testID={TestIds.radar.split}>
       <View style={styles.row}>
         <SafeAreaView testID="workspace-list" edges={regular ? ['top', 'left'] : []} style={[regular ? [styles.sidebar, {width: sidebarWidth(width), borderRightColor: pal.divLoud}] : styles.main, (regular ? hidden : !showList) && styles.hidden]}>
           <RadarPanel variant={regular ? "sidebar" : "screen"} selectedId={sidebarSelectedId} onHideSidebar={() => setSidebar(true)} demo={demo} />
@@ -136,7 +136,7 @@ export function SplitShell({demo}: {demo?: DemoChrome} = {}) {
           )}
         </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 

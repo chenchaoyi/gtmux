@@ -47318,13 +47318,13 @@
       ]
     },
     "mobileapp/src/ui/ChatView.follow.test.tsx": {
-      "sha256": "5b6aee0399fae3c6fad42e6980299a50f4b224fa8f5e628cb7c91292bed3e33a",
+      "sha256": "cff37dd8a917fb730d13fba4bbda9c7b4b53ad0a761186f68df1af774cc9b131",
       "layer": "L2",
       "stack": "RN / mobile harness",
       "cases": [
         {
           "id": "LEG-10b2f4580849",
-          "line": 45,
+          "line": 61,
           "kind": "test",
           "name": "a new turn does not drag a reader out of history, nor tell the host it did",
           "dynamic": false,
@@ -47332,7 +47332,7 @@
         },
         {
           "id": "LEG-067d2f8bfcb3",
-          "line": 71,
+          "line": 87,
           "kind": "test",
           "name": "a new turn DOES follow for a reader sitting at the tail",
           "dynamic": false,
@@ -47340,11 +47340,20 @@
         },
         {
           "id": "LEG-dc47da40588f",
-          "line": 89,
+          "line": 105,
           "kind": "test",
           "name": "the host revealing its chrome does not count as leaving the tail",
           "dynamic": false,
           "layer": "L2"
+        },
+        {
+          "id": "MAP-ab3b1d2a54f1",
+          "line": 45,
+          "kind": "reviewed-selector",
+          "name": "history anchoring follows the reader rather than disturbing the live tail",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DUO-027"
         }
       ]
     },
@@ -57949,7 +57958,7 @@
           "design": "DUO-012,DUO-025"
         }
       ],
-      "sha256": "0e2f19824fb786d820ea35a1f5c238a7e57d0f6cb679d9c0d13f37c47d983607"
+      "sha256": "34c8e0cf231cea9d197bfad2f0f0a747e5b0fdb7599db0199f8dd23734f30cd7"
     },
     "mobileapp/e2e/__tests__/ipad-adaptive.test.ts": {
       "layer": "L4",
@@ -58188,7 +58197,7 @@
           "design": "DUO-020,DUO-021,DUO-023"
         }
       ],
-      "sha256": "1952b8fc06cbe99dc41a852e49c123e4403c4e32a0aa7093123a955c3db7c032"
+      "sha256": "b5422362f7f94215cafc6759164a7ee3f9f0030a36ee9a618dbfc38cdecedea9"
     },
     "mobileapp/src/usage/UsageWidgetBridge.initialLink.test.tsx": {
       "layer": "L1",

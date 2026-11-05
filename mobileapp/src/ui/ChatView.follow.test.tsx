@@ -42,6 +42,22 @@ const scrollEvent = (gap: number) => ({
   },
 });
 
+test('history anchoring follows the reader rather than disturbing the live tail', () => {
+  let tree!: renderer.ReactTestRenderer;
+  act(() => { tree = renderer.create(view([turn(1), turn(2)], () => {})); });
+  const scroll = () => tree.root.findAllByType(ScrollView)[0];
+  expect(scroll().props.maintainVisibleContentPosition).toBeUndefined();
+  act(() => {
+    scroll().props.onScrollBeginDrag();
+    scroll().props.onScroll(scrollEvent(4000));
+    scroll().props.onScrollEndDrag();
+  });
+  expect(scroll().props.maintainVisibleContentPosition).toEqual({minIndexForVisible: 0});
+  act(() => scroll().props.onScroll(scrollEvent(0)));
+  expect(scroll().props.maintainVisibleContentPosition).toBeUndefined();
+  act(() => tree.unmount());
+});
+
 test('a new turn does not drag a reader out of history, nor tell the host it did', () => {
   const seen: number[] = [];
   let tree: renderer.ReactTestRenderer | undefined;

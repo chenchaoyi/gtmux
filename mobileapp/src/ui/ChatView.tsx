@@ -424,6 +424,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
       style={styles.body}
       contentContainerStyle={[styles.content, (topPad > 0 || controlsTop !== undefined) && {paddingTop: Math.max(topPad, controlsTop ?? 0) + (controlsTop !== undefined && turns.length > 0 ? 44 : 0)}, maxWidth ? {maxWidth, width: '100%', alignSelf: 'center'} : null]}
       onScroll={onScroll}
+      maintainVisibleContentPosition={atBottom ? undefined : {minIndexForVisible: 0}}
       onScrollBeginDrag={() => {
         dragging.current = true;
       }}
