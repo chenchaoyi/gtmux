@@ -14,10 +14,10 @@ afterAll(async () => { await fake?.close(); });
 
 it('keeps the selected session and a draft through simulator rotation', async () => {
   const driver = getDriver();
+  await launchWithFlags({GTMUX_DEBUG_PAIR_URL: fake.url, GTMUX_DEBUG_PAIR_TOKEN: fake.token,
+    GTMUX_DEBUG_NO_PUSH: '1', GTMUX_DEBUG_LANG: 'en'});
   const original = await driver.getOrientation();
   try {
-    await launchWithFlags({GTMUX_DEBUG_PAIR_URL: fake.url, GTMUX_DEBUG_PAIR_TOKEN: fake.token,
-      GTMUX_DEBUG_NO_PUSH: '1', GTMUX_DEBUG_LANG: 'en'});
     const row = driver.$('~agent-row-%13');
     await row.waitForDisplayed({timeout: 25000});
     await row.click();
