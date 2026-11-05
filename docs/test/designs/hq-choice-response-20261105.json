@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner (self-review, not independent approval)",
     "date": "2026-11-05",
     "decision": "Proceed on user screenshot report",
-    "notes": "Read-only installed172: full overview8.087s; current roster exceeded10s bounded probe; selected matter0.197s. Existing native button test mounts only the card, not complete window/composer; focusKey changes only on selection. Use synthetic native full-window AX/geometry, no real question answers or cleanup commands. Separate fast canonical data and optional live/historical metadata; preserve source availability semantics, old-core compatibility and fresh draft/identity boundaries. No release/install/shared restart."
+    "notes": "Read-only installed172: full overview8.087s; current roster exceeded10s bounded probe; selected matter0.197s. Existing native button test mounts only the card, not complete window/composer; focusKey changes only on selection. Use synthetic native full-window AX/geometry, no real question answers or cleanup commands. Separate fast canonical data and optional live/historical metadata; preserve source availability semantics, old-core compatibility and fresh draft/identity boundaries. No release/install/shared restart. Keep L2 model/client tests separate from L3 complete native-window tests; validate production minimum900-point and wide layouts in both appearances with real editor focus."
   },
   "cases": [
     {
@@ -19,7 +19,8 @@
         "macapp/Tests/GtmuxBarTests/HQChoiceResponseTests.swift",
         "macapp/Sources/GtmuxBar/HQWorkspaceStore.swift",
         "macapp/Sources/GtmuxBar/HQHumanInputCard.swift",
-        "macapp/Sources/GtmuxBar/HQWorkspaceComposer.swift"
+        "macapp/Sources/GtmuxBar/HQWorkspaceComposer.swift",
+        "macapp/Tests/GtmuxBarTests/HQChoiceFixture.swift"
       ],
       "surfaces": [
         "CLI / Go / macOS HQ"
@@ -33,10 +34,11 @@
       "action": "The complete native HQ window keeps a long question header, original conversation and composer inside narrow/wide viewports; AX choice activation updates the real NSTextView and focus, independent of read timeout.",
       "expected": "The complete native HQ window keeps a long question header, original conversation and composer inside narrow/wide viewports; AX choice activation updates the real NSTextView and focus, independent of read timeout.",
       "planned_files": [
-        "macapp/Tests/GtmuxBarTests/HQChoiceResponseTests.swift",
+        "macapp/Tests/GtmuxBarTests/HQChoiceWindowTests.swift",
         "macapp/Sources/GtmuxBar/HQWorkspaceView.swift",
         "macapp/Sources/GtmuxBar/HQWorkspaceComposer.swift",
-        "macapp/Sources/GtmuxBar/HQHumanInputCard.swift"
+        "macapp/Sources/GtmuxBar/HQHumanInputCard.swift",
+        "macapp/Tests/GtmuxBarTests/HQChoiceFixture.swift"
       ],
       "surfaces": [
         "CLI / Go / macOS HQ"
@@ -59,12 +61,13 @@
         "macapp/Sources/GtmuxBar/HQWorkspaceModels.swift",
         "macapp/Sources/GtmuxBar/HQWorkspaceParticipants.swift",
         "macapp/Sources/GtmuxBar/HQParticipantLabel.swift",
-        "macapp/Sources/GtmuxBar/HQWorkspaceParticipantsManager.swift"
+        "macapp/Sources/GtmuxBar/HQWorkspaceParticipantsManager.swift",
+        "macapp/Tests/GtmuxBarTests/HQChoiceFixture.swift"
       ],
       "surfaces": [
         "CLI / Go / macOS HQ"
       ]
     }
   ],
-  "seal": "95437f62f30213cd51fa9589dc1096063f9e83a7565ef5305ff53b63d913dc3c"
+  "seal": "7a693743b1409a119002f06fb74db247e84cd1344ca2d3e57eb7e4ee91ac22de"
 }
