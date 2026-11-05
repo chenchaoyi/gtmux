@@ -2,14 +2,14 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1003 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1012 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
-| L1 · 单元/纯逻辑 | 3717 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 1865 | [L2.csv](cases/L2.csv) |
+| L1 · 单元/纯逻辑 | 3721 | [L1.csv](cases/L1.csv) |
+| L2 · 组件/契约 | 1870 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 79 | [L3.csv](cases/L3.csv) |
-| L4 · 应用操作流程 | 91 | [L4.csv](cases/L4.csv) |
+| L4 · 应用操作流程 | 96 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 12 | [M.csv](cases/M.csv) |
 | G · 质量门禁 | 488 | [G.csv](cases/G.csv) |
 
@@ -21,6 +21,23 @@
 
 | ID | 预期行为（源码英文） |
 | --- | --- |
+| DUO-001 | cold notification opens the correct server and selection routes to the selected server. |
+| DUO-002 | selected session and draft survive a simulator orientation change. |
+| DUO-003 | iPad retains sidebar and selected session through rotation. |
+| DUO-004 | cold and warm notification actions send the selected response exactly once. |
+| DUO-005 | warm and cold scene links open the usage sheet. |
+| DUO-006 | first server selection and server switching follow the same observable route on main and candidate. |
+| DUO-007 | fake request diagnostics expose routing metadata without credentials or query values. |
+| DUO-008 | explicit hosted simulator configuration preserves local defaults and bounds driver startup. |
+| DUO-009 | native notification payload retains response identity, action and input while queue is bounded and deduplicated. |
+| DUO-010 | duplicate launch and delegate responses dispatch a single action and preserve fallback. |
+| DUO-011 | Trace and Diff remain open with their current content across window resizing. |
+| DUO-012 | resizing preserves mounted detail and selection while compact navigation remains usable. |
+| DUO-013 | usage modal resolves all safe edges in its native presentation. |
+| DUO-014 | both adaptive shell modes compose the shared radar panel. |
+| DUO-015 | inline workspace selection retains identity without pushing a second detail route. |
+| DUO-016 | root layout updates available window size without remounting the reader. |
+| DUO-017 | CI selects and verifies the bounded unsigned Duo simulator job. |
 | TD-001 | Reject a changed/new test without a reviewed design; accept a mapped implementation |
 | TD-002 | Reject a tampered review seal, missing assertion description, invalid layer or unsafe path |
 | TD-003 | Reject missing/changed catalogue files and missing named implementation selectors |

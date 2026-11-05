@@ -176,10 +176,12 @@
   },
   "scripts/ci_test.py": {
     "cases": [
-      "TD-006"
+      "TD-006",
+      "DUO-017"
     ],
     "selectors": [
-      "test_reviewed_test_records_are_policy_only_without_hiding_test_changes"
+      "test_reviewed_test_records_are_policy_only_without_hiding_test_changes",
+      "test_unsigned_ios_preserves_arm64_target_and_verifies_products"
     ]
   },
   "mobileapp/e2e/setup/global-setup-manual.ts": {
@@ -188,6 +190,134 @@
     ],
     "selectors": [
       "await setupManual(process.env, verifySendTarget, globalSetup)"
+    ]
+  },
+  "mobileapp/e2e/__tests__/coldstart-push.test.ts": {
+    "cases": [
+      "DUO-001"
+    ],
+    "selectors": [
+      "A: cold start with an active Mac, switches, background, a new warm tap"
+    ]
+  },
+  "mobileapp/e2e/__tests__/duo-window.test.ts": {
+    "cases": [
+      "DUO-002"
+    ],
+    "selectors": [
+      "keeps the selected session and a draft through simulator rotation"
+    ]
+  },
+  "mobileapp/e2e/__tests__/ipad-adaptive.test.ts": {
+    "cases": [
+      "DUO-003"
+    ],
+    "selectors": [
+      "keeps the iPad sidebar and selected session through rotation"
+    ]
+  },
+  "mobileapp/e2e/__tests__/notification-scene-actions.test.ts": {
+    "cases": [
+      "DUO-004"
+    ],
+    "selectors": [
+      "delivers a cold notification action exactly once"
+    ]
+  },
+  "mobileapp/e2e/__tests__/scene-usage-links.test.ts": {
+    "cases": [
+      "DUO-005"
+    ],
+    "selectors": [
+      "opens the usage link on warm and cold scene entry"
+    ]
+  },
+  "mobileapp/e2e/__tests__/server-switch-compare.test.ts": {
+    "cases": [
+      "DUO-006"
+    ],
+    "selectors": [
+      "selects a server after a clean launch"
+    ]
+  },
+  "mobileapp/e2e/fake-serve/request-diagnostics.test.ts": {
+    "cases": [
+      "DUO-007"
+    ],
+    "selectors": [
+      "diagnostic request metadata shows routing without headers or query values"
+    ]
+  },
+  "mobileapp/e2e/setup/capabilities.test.ts": {
+    "cases": [
+      "DUO-008"
+    ],
+    "selectors": [
+      "cloud simulator session waits for a fresh WDA build without requiring a prebuilt product"
+    ]
+  },
+  "mobileapp/ios/tests/NotificationResponsePayloadChecks.swift": {
+    "cases": [
+      "DUO-009"
+    ],
+    "selectors": [
+      "notification response payload and queue checks passed"
+    ]
+  },
+  "mobileapp/src/push/launchNotification.test.ts": {
+    "cases": [
+      "DUO-010"
+    ],
+    "selectors": [
+      "a buffered native response and the launch copy dispatch one quick reply"
+    ]
+  },
+  "mobileapp/src/screens/DetailTrace.test.tsx": {
+    "cases": [
+      "DUO-011"
+    ],
+    "selectors": [
+      "Trace remains open with its current conversation while the window changes size"
+    ]
+  },
+  "mobileapp/src/screens/SplitShell.resize.test.tsx": {
+    "cases": [
+      "DUO-012"
+    ],
+    "selectors": [
+      "resizing keeps the mounted detail state and back/reopen remains usable"
+    ]
+  },
+  "mobileapp/src/screens/UsageSheet.test.tsx": {
+    "cases": [
+      "DUO-013"
+    ],
+    "selectors": [
+      "usage modal resolves all safe edges in its own native presentation"
+    ]
+  },
+  "mobileapp/src/screens/shellDrift.test.ts": {
+    "cases": [
+      "DUO-014"
+    ],
+    "selectors": [
+      "has both shells render RadarPanel, with only props between them"
+    ]
+  },
+  "mobileapp/src/state/WorkspaceContext.test.tsx": {
+    "cases": [
+      "DUO-015"
+    ],
+    "selectors": [
+      "inline workspace opens selection without pushing a second detail route"
+    ]
+  },
+  "mobileapp/src/ui/windowMetrics.test.tsx": {
+    "cases": [
+      "DUO-016"
+    ],
+    "selectors": [
+      "root view resizes update the workspace even when native dimensions do not, without remounting the reader"
     ]
   }
 }
