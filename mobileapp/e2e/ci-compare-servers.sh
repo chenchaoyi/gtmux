@@ -57,11 +57,11 @@ for variant in baseline candidate; do
     # A failed WDA session is not proof of an app crash. Capture a separate,
     # time-bounded Simulator launch and error log before this CI device is erased.
     python3 - "$GTMUX_E2E_UDID" "$GITHUB_WORKSPACE/mobileapp/.e2e-artifacts/comparison/$variant" <<'PY'
-import subprocess, sys
+import glob, os, re, subprocess, sys, time
 udid, prefix = sys.argv[1:]
 commands = {
     'launch': ['xcrun', 'simctl', 'launch', udid, 'com.gtmux.app'],
-    'errors': ['xcrun', 'simctl', 'spawn', udid, 'log', 'show', '--last', '2m', '--style', 'compact', '--predicate', 'process == "gtmux" AND (messageType == error OR messageType == fault)'],
+    'errors': ['xcrun', 'simctl', 'spawn', udid, 'log', 'show', '--last', '2m', '--style', 'compact', '--predicate', 'process == "gtmux" OR ((process == "SpringBoard" OR process == "runningboardd") AND eventMessage CONTAINS[c] "com.gtmux.app")'],
 }
 for name, command in commands.items():
     try:
@@ -71,6 +71,19 @@ for name, command in commands.items():
         output = 'timed out after 30 seconds\n'
     with open(prefix + '-' + name + '.txt', 'w') as file:
         file.write(output)
+    if name == 'launch':
+        match = re.search(r'com\.gtmux\.app:\s*(\d+)', output)
+        if match:
+            time.sleep(5)
+            status = subprocess.run(['ps', '-p', match.group(1), '-o', 'pid=,stat=,command='], capture_output=True, text=True, timeout=10)
+            with open(prefix + '-process.txt', 'w') as file:
+                file.write('exit=%s\n%s\n%s' % (status.returncode, status.stdout, status.stderr))
+# Runner is ephemeral. Include only recent app-specific crash reports, bounded in size.
+reports = sorted(glob.glob(os.path.expanduser('~/Library/Logs/DiagnosticReports/gtmux*.ips')), key=os.path.getmtime, reverse=True)
+for index, report in enumerate(reports[:3]):
+    if time.time() - os.path.getmtime(report) < 900:
+        with open(report, 'rb') as source, open(prefix + '-crash-%s.ips' % index, 'wb') as dest:
+            dest.write(source.read(200_000))
 PY
   fi
   mkdir -p "$GITHUB_WORKSPACE/mobileapp/.e2e-artifacts/comparison/$variant"
