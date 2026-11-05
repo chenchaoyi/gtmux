@@ -31,9 +31,21 @@ EOF
 export GTMUX_COMPARE_NODE_MODULES="$GITHUB_WORKSPACE/mobileapp/node_modules"
 rsync -a "$GITHUB_WORKSPACE/mobileapp/e2e/" "$base/mobileapp/e2e/"
 (cd "$base/mobileapp/ios" && bundle exec pod install)
+# Test both products with the same Xcode simulator signing mode. This uses only
+# the existing target entitlements and no identity or provisioning credentials.
+signing=(CODE_SIGNING_ALLOWED=NO)
+candidate_app="$RUNNER_TEMP/gtmux-ios-ci/Build/Products/Release-iphonesimulator/gtmux.app"
+if [ "${GTMUX_COMPARE_ADHOC:-0}" = 1 ]; then
+  signing=(CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=-)
+  candidate_app="$RUNNER_TEMP/duo-candidate-adhoc/Build/Products/Release-iphonesimulator/gtmux.app"
+  (cd "$GITHUB_WORKSPACE/mobileapp" && xcodebuild -workspace ios/GtmuxMobile.xcworkspace -scheme GtmuxMobile \
+    -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -jobs 2 \
+    -derivedDataPath "$RUNNER_TEMP/duo-candidate-adhoc" ARCHS=arm64 ONLY_ACTIVE_ARCH=NO "${signing[@]}" build \
+    > "$GITHUB_WORKSPACE/mobileapp/.e2e-artifacts/comparison/candidate-build.log" 2>&1)
+fi
 (cd "$base/mobileapp" && xcodebuild -workspace ios/GtmuxMobile.xcworkspace -scheme GtmuxMobile \
   -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -jobs 2 \
-  -derivedDataPath "$RUNNER_TEMP/duo-baseline-build" ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO build \
+  -derivedDataPath "$RUNNER_TEMP/duo-baseline-build" ARCHS=arm64 ONLY_ACTIVE_ARCH=NO "${signing[@]}" build \
   > "$GITHUB_WORKSPACE/mobileapp/.e2e-artifacts/comparison/baseline-build.log" 2>&1)
 xcrun simctl list -j devices available > "$RUNNER_TEMP/compare-devices.json"
 compare_os=${GTMUX_COMPARE_OS:-27.0}
@@ -48,10 +60,11 @@ for variant in baseline candidate; do
   xcrun simctl shutdown "$GTMUX_E2E_UDID" >/dev/null 2>&1 || true
   xcrun simctl erase "$GTMUX_E2E_UDID" || exit 1
   xcrun simctl bootstatus "$GTMUX_E2E_UDID" -b || exit 1
-  if [ "$variant" = baseline ]; then root="$base/mobileapp"; app="$RUNNER_TEMP/duo-baseline-build/Build/Products/Release-iphonesimulator/gtmux.app"; else root="$GITHUB_WORKSPACE/mobileapp"; app="$RUNNER_TEMP/gtmux-ios-ci/Build/Products/Release-iphonesimulator/gtmux.app"; fi
+  if [ "$variant" = baseline ]; then root="$base/mobileapp"; app="$RUNNER_TEMP/duo-baseline-build/Build/Products/Release-iphonesimulator/gtmux.app"; else root="$GITHUB_WORKSPACE/mobileapp"; app="$candidate_app"; fi
   # Inspect the built product, not the source entitlements file. This is read-only
   # and records absent signatures as well as any actual simulator entitlements.
   codesign -d --entitlements :- "$app" > "$GITHUB_WORKSPACE/mobileapp/.e2e-artifacts/comparison/$variant-entitlements.txt" 2>&1 || true
+  codesign -dv "$app" > "$GITHUB_WORKSPACE/mobileapp/.e2e-artifacts/comparison/$variant-signature.txt" 2>&1 || true
   xcrun simctl install "$GTMUX_E2E_UDID" "$app"
   install_status=$?
   if [ "$install_status" -eq 0 ]; then (cd "$root" && npm run test:e2e -- --runInBand server-switch-compare.test.ts); test_status=$?; else test_status=$install_status; fi

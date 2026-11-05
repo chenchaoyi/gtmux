@@ -462,6 +462,7 @@ jobs:
           GITHUB_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           APPIUM_HOME: ${{ runner.temp }}/ios26-appium
           GTMUX_COMPARE_OS: '26.2'
+          GTMUX_COMPARE_ADHOC: '1'
           GTMUX_COMPARE_DEVICE: iPhone 17
           GTMUX_E2E_SOFT_KEYBOARD: '1'
           GTMUX_E2E_HEADLESS: '1'
