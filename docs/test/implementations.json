@@ -189,5 +189,39 @@
     "selectors": [
       "await setupManual(process.env, verifySendTarget, globalSetup)"
     ]
+  },
+  "mobileapp/e2e/setup/simulator-target.test.ts": {
+    "cases": [
+      "SIM272-001",
+      "SIM272-002",
+      "SIM272-003",
+      "SIM272-004",
+      "SIM272-005",
+      "SIM272-006",
+      "SIM272-007",
+      "SIM272-008",
+      "SIM272-009"
+    ],
+    "selectors": [
+      "a sole booted device supplies its real runtime, name and UDID after 26.5 removal",
+      "explicit UDID selects an available shutdown device even when another device is booted",
+      "an explicit older runtime remains usable when it is installed and requested",
+      "an unavailable requested runtime never silently falls forward to the new runtime",
+      "a device named duo is not mistaken for the Duo hardware type",
+      "unknown UDIDs and contradictory explicit device names fail before Appium starts",
+      "multiple booted devices require a UDID even if a name filter could narrow Appium",
+      "no booted device is not permission to pick and drive a random stored device",
+      "unavailable or duplicate device records never become an ambiguous target"
+    ]
+  },
+  "mobileapp/e2e/setup/global-setup-target.test.ts": {
+    "cases": [
+      "SIM272-010",
+      "SIM272-011"
+    ],
+    "selectors": [
+      "the actual E2E setup passes the discovered runtime and UDID to WebDriver",
+      "ambiguous default selection fails before reclaiming processes or touching app data"
+    ]
   }
 }

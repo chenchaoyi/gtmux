@@ -402,6 +402,8 @@ LEG-450e8ae683ba,L2,Browser,internal/server/web/trace-model.test.cjs,58,test,emp
 LEG-48c1050764f9,L2,Browser,internal/server/web/trace-model.test.cjs,68,test,'shared native fixture: ' + fixture.name,True,legacy-not-retrospectively-reviewed
 LEG-9ba6285dc523,L2,Go core / CLI / server,internal/server/webui_test.go,16,Test,TestWebUIRouting,False,legacy-not-retrospectively-reviewed
 LEG-d0796bd9ffc4,L2,Go core / CLI / server,internal/server/webui_test.go,55,Test,TestWebHandlerCacheBusting,False,legacy-not-retrospectively-reviewed
+MAP-140c1fc806e3,L2,reviewed implementation,mobileapp/e2e/setup/global-setup-target.test.ts,36,reviewed-selector,the actual E2E setup passes the discovered runtime and UDID to WebDriver,False,"SIM272-010,SIM272-011"
+MAP-effb65cbf6a7,L2,reviewed implementation,mobileapp/e2e/setup/global-setup-target.test.ts,48,reviewed-selector,ambiguous default selection fails before reclaiming processes or touching app data,False,"SIM272-010,SIM272-011"
 LEG-81cfbfd439f8,L2,RN / mobile harness,mobileapp/src/screens/AccessHistoryControls.test.tsx,21,test,same-name device choices expose full IDs and preserve the other filters,False,legacy-not-retrospectively-reviewed
 LEG-d880c9025607,L2,RN / mobile harness,mobileapp/src/screens/AccessHistoryControls.test.tsx,31,test,a full ID outside the discovered choices can be entered in a native prompt,False,legacy-not-retrospectively-reviewed
 LEG-f08efac25751,L2,RN / mobile harness,mobileapp/src/screens/AccessHistoryHelp.test.tsx,6,test.each(),recording rules are clickable and explain actual external coverage (Chinese=%s),True,legacy-not-retrospectively-reviewed

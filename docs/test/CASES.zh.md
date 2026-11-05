@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1003 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1005 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
-| L1 · 单元/纯逻辑 | 3717 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 1865 | [L2.csv](cases/L2.csv) |
+| L1 · 单元/纯逻辑 | 3726 | [L1.csv](cases/L1.csv) |
+| L2 · 组件/契约 | 1867 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 79 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 91 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 12 | [M.csv](cases/M.csv) |
@@ -21,6 +21,17 @@
 
 | ID | 预期行为（源码英文） |
 | --- | --- |
+| SIM272-001 | Return the actual Duo UDID/name/27.2, never historical defaults |
+| SIM272-002 | Pin requested real device; preserve compatible explicit OS/name values |
+| SIM272-003 | Use26.5 when genuinely available; migration is not a global support-policy change |
+| SIM272-004 | Throw before Appium; no substitute runtime |
+| SIM272-005 | Reject false Duo attribution |
+| SIM272-006 | Reject; container helpers and driver cannot receive inconsistent UDIDs |
+| SIM272-007 | Default rejects ambiguity globally; exact UDID succeeds |
+| SIM272-008 | Reject with explicit boot/UDID guidance; no device creation |
+| SIM272-009 | Reject nonunique/unavailable records |
+| SIM272-010 | remote receives resolved UDID/OS/name and noReset:true |
+| SIM272-011 | Reject before reclaimBefore, writeDebugFlags, Appium spawn or remote connection |
 | TD-001 | Reject a changed/new test without a reviewed design; accept a mapped implementation |
 | TD-002 | Reject a tampered review seal, missing assertion description, invalid layer or unsafe path |
 | TD-003 | Reject missing/changed catalogue files and missing named implementation selectors |

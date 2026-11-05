@@ -5,6 +5,7 @@ import {remote} from 'webdriverio';
 import {alertMode, appiumPort, appiumServerUrl, iosCapabilities, sessionConnectionOptions} from './capabilities';
 import {writeDebugFlags} from './app';
 import {reclaimBefore} from './reclaim';
+import {currentSimulatorTarget} from './simulator-target';
 
 /**
  * Boots an Appium server (its own process group so teardown can kill the
@@ -36,6 +37,7 @@ function ensureLoopbackNoProxy(): void {
 }
 
 export default async function globalSetup(): Promise<void> {
+  const target = currentSimulatorTarget();
   ensureLoopbackNoProxy();
   // An INTERRUPTED run (a killed jest, a tool timeout) never reaches teardown, so its
   // Appium keeps the port and its WebDriverAgent keeps driving the simulator — orphaned
@@ -89,7 +91,7 @@ export default async function globalSetup(): Promise<void> {
       hostname: '127.0.0.1',
       port: appiumPort,
       path: '/',
-      capabilities: iosCapabilities,
+      capabilities: {...iosCapabilities, ...target},
       logLevel: 'warn',
       ...sessionConnectionOptions(),
     });
