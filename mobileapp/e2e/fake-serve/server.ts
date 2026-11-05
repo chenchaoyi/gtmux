@@ -55,7 +55,7 @@ export interface Fake {
   token: string;
   world: World;
   /** Bounded request metadata for test diagnostics; never records headers or credentials. */
-  requests: Array<{method: string; path: string; authorized: boolean}>;
+  requests: Array<{method: string; path: string; authorized: boolean; at: number; body?: string; bodyAt?: number}>;
   /** Announce a fleet change to connected clients, as the real serve does on every one. */
   bumpAgents: () => void;
   /**
@@ -127,7 +127,13 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
     const q = url.searchParams;
     const owner = !opts.guest;
     if (requests.length >= 256) requests.shift();
-    requests.push({method: req.method ?? '', path, authorized: (req.headers.authorization ?? '') === `Bearer ${token}`});
+    const diagnostic: Fake['requests'][number] = {method: req.method ?? '', path, authorized: (req.headers.authorization ?? '') === `Bearer ${token}`, at: Date.now()};
+    requests.push(diagnostic);
+    if (req.method === 'POST') {
+      diagnostic.body = 'pending';
+      req.once('end', () => { diagnostic.body = 'complete'; diagnostic.bodyAt = Date.now(); });
+      req.once('aborted', () => { diagnostic.body = 'aborted'; diagnostic.bodyAt = Date.now(); });
+    }
 
     if (path === '/api/health') return json(res, 200, {ok: true, fixture: 'gtmux-e2e-fake-serve'});
 

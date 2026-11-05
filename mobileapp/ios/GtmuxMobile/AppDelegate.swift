@@ -132,6 +132,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
 
   private func endResponseBackgroundTask() {
     guard responseBackgroundTask != .invalid else { return }
+    traceNotification("delegate-background-task-ended")
     UIApplication.shared.endBackgroundTask(responseBackgroundTask)
     responseBackgroundTask = .invalid
   }
