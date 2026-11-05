@@ -99,10 +99,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
       let payload = bridgeNotificationResponse(response)
       traceNotification("delegate-response", action: response.actionIdentifier, hasText: response is UNTextInputNotificationResponse)
       NotificationResponseBuffer.enqueue(payload)
+      traceNotification("delegate-app-state-\(UIApplication.shared.applicationState.rawValue)")
       if UIApplication.shared.applicationState == .background && self.responseBackgroundTask == .invalid {
         self.responseBackgroundTask = UIApplication.shared.beginBackgroundTask(withName: "Notification response") { [weak self] in
           DispatchQueue.main.async { self?.endResponseBackgroundTask() }
         }
+        traceNotification("delegate-background-task-\(self.responseBackgroundTask == .invalid ? "invalid" : "started")")
         // Bound the grant even if JS never starts or the server is unreachable.
         let task = self.responseBackgroundTask
         DispatchQueue.main.asyncAfter(deadline: .now() + 20) { [weak self] in
