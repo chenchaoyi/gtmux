@@ -43,6 +43,7 @@ let launchNotificationHandled = false;
 // A scene response can also arrive through the notification delegate. Bound the
 // short-lived receipt set so one tap or action cannot be dispatched twice.
 const responseReceipts = new Map<string, number>();
+const pendingReplies = new Set<string>();
 const RESPONSE_RECEIPT_TTL_MS = 30_000;
 const RESPONSE_RECEIPT_LIMIT = 128;
 
@@ -53,7 +54,7 @@ function firstResponse(id: unknown, action: string | undefined): boolean {
     if (now - at >= RESPONSE_RECEIPT_TTL_MS) responseReceipts.delete(key);
   }
   const key = JSON.stringify([id, action ?? '']);
-  if (responseReceipts.has(key)) return false;
+  if (pendingReplies.has(key) || responseReceipts.has(key)) return false;
   if (responseReceipts.size >= RESPONSE_RECEIPT_LIMIT) {
     const oldest = responseReceipts.keys().next().value;
     if (oldest !== undefined) responseReceipts.delete(oldest);
@@ -66,6 +67,7 @@ function firstResponse(id: unknown, action: string | undefined): boolean {
 export function resetLaunchNotificationForTesting() {
   launchNotificationHandled = false;
   responseReceipts.clear();
+  pendingReplies.clear();
 }
 
 const QUICK_REPLY: Record<string, string> = {
@@ -128,7 +130,7 @@ export async function setupPush(
   // the RIGHT paired server before opening the pane.
   onTapPane: (pane: string, server?: string) => void,
   onToken: (token: string) => void,
-  onQuickReply: (pane: string, server: string | undefined, text: string) => void,
+  onQuickReply: (pane: string, server: string | undefined, text: string) => void | Promise<void>,
   askPermission = true,
 ): Promise<Teardown> {
   if (Platform.OS !== 'ios') return () => {};
@@ -150,9 +152,11 @@ export async function setupPush(
     const action = rawAction === 'com.apple.UNNotificationDefaultActionIdentifier' ? undefined : rawAction;
     const isInteraction = initial || !!data.userInteraction;
     if (Debug.logNet) Debug.record({event: 'push-response', at: Date.now(), initial, isInteraction, hasPane: !!pane, action: action ?? '', hasText: typeof data.userText === 'string'});
-    if (typeof data.gtmuxResponseId === 'string' && data.gtmuxResponseId) {
-      NativeModules?.GtmuxNotificationResponses?.acknowledge?.(data.gtmuxResponseId, action ?? '');
-    }
+    const acknowledge = () => {
+      if (typeof data.gtmuxResponseId === 'string' && data.gtmuxResponseId) {
+        NativeModules?.GtmuxNotificationResponses?.acknowledge?.(data.gtmuxResponseId, action ?? '');
+      }
+    };
     if (pane && isInteraction && !firstResponse(data.gtmuxResponseId, action)) {
       if (Debug.logNet) Debug.record({event: 'push-duplicate', at: Date.now()});
       notification.finish?.(PushNotificationIOS.FetchResult.NoData);
@@ -162,8 +166,22 @@ export async function setupPush(
     // A quick-reply action button was tapped: answer the waiting pane in the
     // background (no deep-link, no app foreground).
     if (pane && isInteraction && action && Object.prototype.hasOwnProperty.call(QUICK_REPLY, action)) {
-      onQuickReply(pane, data.server, QUICK_REPLY[action]);
-      notification.finish?.(PushNotificationIOS.FetchResult.NoData);
+      const replyKey = typeof data.gtmuxResponseId === 'string' && data.gtmuxResponseId
+        ? JSON.stringify([data.gtmuxResponseId, action]) : null;
+      if (replyKey) pendingReplies.add(replyKey);
+      const complete = () => {
+        if (replyKey) {
+          pendingReplies.delete(replyKey);
+          responseReceipts.set(replyKey, Date.now());
+        }
+        acknowledge();
+        notification.finish?.(PushNotificationIOS.FetchResult.NoData);
+      };
+      try {
+        const reply = onQuickReply(pane, data.server, QUICK_REPLY[action]);
+        if (reply && typeof reply.then === 'function') void reply.then(complete, complete);
+        else complete();
+      } catch { complete(); }
       return;
     }
 
@@ -172,6 +190,7 @@ export async function setupPush(
     if (pane && isInteraction && !action) {
       onTapPane(pane, data.server);
     }
+    acknowledge();
     notification.finish?.(PushNotificationIOS.FetchResult.NoData);
   };
 

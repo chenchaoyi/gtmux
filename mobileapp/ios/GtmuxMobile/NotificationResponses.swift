@@ -30,6 +30,9 @@ class GtmuxNotificationResponses: RCTEventEmitter {
   @objc(acknowledge:action:)
   func acknowledge(_ identifier: String, action: String) {
     NotificationResponseBuffer.acknowledge(id: identifier, action: action)
+    DispatchQueue.main.async {
+      NotificationResponseCompletions.finish(id: identifier, action: action)
+    }
   }
 
   @objc(pendingSceneLinks:rejecter:)

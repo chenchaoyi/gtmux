@@ -710,5 +710,22 @@
       "width reflow does not move a reader following the live tail",
       "does not anchor to a turn removed from the mounted conversation"
     ]
+  },
+  "mobileapp/src/push/responseCompletion.test.ts": {
+    "cases": [
+      "DUO-030"
+    ],
+    "selectors": [
+      "waits for a %s reply and suppresses a duplicate while pending",
+      "a normal notification tap acknowledges without waiting for a reply"
+    ]
+  },
+  "mobileapp/ios/tests/NotificationResponseCompletionChecks.swift": {
+    "cases": [
+      "DUO-030"
+    ],
+    "selectors": [
+      "notification response completion checks passed"
+    ]
   }
 }

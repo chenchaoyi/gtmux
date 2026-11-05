@@ -3991,6 +3991,7 @@ LEG-72dc7db04494,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,106,
 LEG-2eb2e34b22ce,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,124,it,unscoped by default,False,legacy-not-retrospectively-reviewed
 ND-001,L1,iOS Swift,mobileapp/ios/tests/DocumentHTMLChecks.swift,2,native-procedural-oracle,DocumentHTML production Foundation checks,False,ND-001
 ND-002,L1,iOS Swift,mobileapp/ios/tests/DocumentMarkdownChecks.swift,3,native-procedural-oracle,DocumentMarkdown production Foundation checks,False,ND-002
+MAP-4d79dbb7ab50,L2,reviewed implementation,mobileapp/ios/tests/NotificationResponseCompletionChecks.swift,20,reviewed-selector,notification response completion checks passed,False,DUO-030
 MAP-88eca3d41bfd,L1,reviewed implementation,mobileapp/ios/tests/NotificationResponsePayloadChecks.swift,70,reviewed-selector,notification response payload and queue checks passed,False,DUO-009
 MAP-2bf007ddc23d,L1,reviewed implementation,mobileapp/ios/tests/NotificationResponsePayloadChecks.swift,16,reviewed-selector,let activityPayload = sceneUserActivityPayload,False,"DUO-009,DUO-022"
 MAP-4eba460f385e,L1,reviewed implementation,mobileapp/ios/tests/NotificationResponsePayloadChecks.swift,20,reviewed-selector,"retainHeadlessSceneLinks(urls: [sceneURL], activities: [activity])",False,"DUO-009,DUO-022,DUO-024"
@@ -4466,6 +4467,8 @@ MAP-f6ca99aeb79b,L1,RN / mobile harness,mobileapp/src/push/launchNotification.te
 MAP-49ac3dbf1487,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,145,reviewed-selector,a stalled native drain leaves initial fallback and foreground recovery usable,False,DUO-010
 MAP-14fb52a6ba3b,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,192,reviewed-selector,the initial action does not wait for notification permission,False,DUO-010
 MAP-b3afaf2b1f68,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,167,reviewed-selector,foreground recovery first delivers a retained response after the initial drain stalls,False,DUO-010
+MAP-13e1cb6d9b1b,L2,reviewed implementation,mobileapp/src/push/responseCompletion.test.ts,14,reviewed-selector,waits for a %s reply and suppresses a duplicate while pending,False,DUO-030
+MAP-9ff3d70517f7,L2,reviewed implementation,mobileapp/src/push/responseCompletion.test.ts,42,reviewed-selector,a normal notification tap acknowledges without waiting for a reply,False,DUO-030
 LEG-fbb65bc19bd8,L1,RN / mobile harness,mobileapp/src/push/sync.test.ts,9,it,"registers a selected Mac and unregisters a muted Mac, including silent badge pushes",False,legacy-not-retrospectively-reviewed
 LEG-c01ee8fb12d3,L1,RN / mobile harness,mobileapp/src/push/sync.test.ts,20,it,tries a reported alternate route and leaves a failed sync pending,False,legacy-not-retrospectively-reviewed
 LEG-7719b4cb3445,L1,RN / mobile harness,mobileapp/src/push/sync.test.ts,31,it,never registers a guest or an unknown token,False,legacy-not-retrospectively-reviewed

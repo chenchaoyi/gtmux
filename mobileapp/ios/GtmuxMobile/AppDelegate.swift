@@ -100,6 +100,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     DispatchQueue.main.async {
       let payload = bridgeNotificationResponse(response)
       traceNotification("delegate-response", action: response.actionIdentifier, hasText: response is UNTextInputNotificationResponse)
+      let completionToken = NotificationResponseCompletions.retain(
+        id: payload["gtmuxResponseId"] as? String ?? "",
+        action: payload["actionIdentifier"] as? String ?? "",
+        completion: completionHandler
+      )
+      DispatchQueue.main.asyncAfter(deadline: .now() + 20) {
+        NotificationResponseCompletions.expire(token: completionToken)
+      }
       NotificationResponseBuffer.enqueue(payload)
       traceNotification("delegate-app-state-\(UIApplication.shared.applicationState.rawValue)")
       if UIApplication.shared.applicationState == .background && self.responseBackgroundTask == .invalid {
@@ -134,7 +142,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
       }
       RNCPushNotificationIOS.didReceiveRemoteNotification(payload)
       traceNotification("delegate-forwarded-to-rn")
-      completionHandler()
     }
   }
 

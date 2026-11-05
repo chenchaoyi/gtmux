@@ -98,3 +98,38 @@ enum NotificationResponseBuffer {
     return pending
   }
 }
+
+// UIKit's response callback must stay alive while an asynchronous quick reply
+// is being sent. A unique token makes timeout and acknowledgement race safely.
+enum NotificationResponseCompletions {
+  private struct Entry {
+    let id: String
+    let action: String
+    let completion: () -> Void
+  }
+  private static let lock = NSLock()
+  private static var entries: [String: Entry] = [:]
+
+  static func retain(id: String, action: String, completion: @escaping () -> Void) -> String {
+    let token = UUID().uuidString
+    lock.lock()
+    entries[token] = Entry(id: id, action: action, completion: completion)
+    lock.unlock()
+    return token
+  }
+
+  static func finish(id: String, action: String) {
+    lock.lock()
+    let tokens = entries.filter { $0.value.id == id && $0.value.action == action }.map(\.key)
+    let callbacks = tokens.compactMap { entries.removeValue(forKey: $0)?.completion }
+    lock.unlock()
+    callbacks.forEach { $0() }
+  }
+
+  static func expire(token: String) {
+    lock.lock()
+    let callback = entries.removeValue(forKey: token)?.completion
+    lock.unlock()
+    callback?()
+  }
+}
