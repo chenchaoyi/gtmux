@@ -16,6 +16,7 @@
       "action": "Exercise the described behavior, including the negative branch where stated.",
       "expected": "Reject a changed/new test without a reviewed design; accept a mapped implementation",
       "planned_files": [
+        "scripts/test_design.py",
         "scripts/test_design_test.py"
       ]
     },
@@ -27,6 +28,7 @@
       "action": "Exercise the described behavior, including the negative branch where stated.",
       "expected": "Reject a tampered review seal, missing assertion description, invalid layer or unsafe path",
       "planned_files": [
+        "scripts/test_design.py",
         "scripts/test_design_test.py"
       ]
     },
@@ -38,6 +40,7 @@
       "action": "Exercise the described behavior, including the negative branch where stated.",
       "expected": "Reject missing/changed catalogue files and missing named implementation selectors",
       "planned_files": [
+        "scripts/test_design.py",
         "scripts/test_design_test.py"
       ]
     },
@@ -49,6 +52,7 @@
       "action": "Exercise the described behavior, including the negative branch where stated.",
       "expected": "PR history requires the sealed design in an earlier commit than test edits; main validates the resulting snapshot after squash",
       "planned_files": [
+        "scripts/test_design.py",
         "scripts/test_design_test.py"
       ]
     },
@@ -60,6 +64,7 @@
       "action": "Exercise the described behavior, including the negative branch where stated.",
       "expected": "Explicit removals and renames require reviewed rationale; legacy baseline does not imply historical review",
       "planned_files": [
+        "scripts/test_design.py",
         "scripts/test_design_test.py"
       ]
     },
@@ -93,7 +98,8 @@
       "action": "Exercise the described behavior, including the negative branch where stated.",
       "expected": "Native runner compiles production Swift without -O and propagates compilation/oracle failures; CI calls it",
       "planned_files": [
-        "scripts/test_design_test.py"
+        "scripts/test_design_test.py",
+        "mobileapp/scripts/check-native-documents.py"
       ]
     },
     {
@@ -111,7 +117,9 @@
         "mobileapp/e2e/capture/hq-header-shot.test.ts",
         "mobileapp/e2e/capture/knowledge-shot.test.ts",
         "mobileapp/e2e/diagnostics/ipad-keys-probe.test.ts",
-        "mobileapp/e2e/setup/manual-tools.test.ts"
+        "mobileapp/e2e/setup/manual-tools.test.ts",
+        "mobileapp/e2e/setup/manual-tools.cjs",
+        "mobileapp/e2e/jest.config.manual.js"
       ]
     },
     {
@@ -123,7 +131,9 @@
       "expected": "Send repro fails before device access without exact pane, owned-fixture declaration, loopback endpoint/token and a matching fake-server fixture identity; nonfixture endpoints are rejected.",
       "planned_files": [
         "mobileapp/e2e/diagnostics/send-repro.test.ts",
-        "mobileapp/e2e/setup/manual-tools.test.ts"
+        "mobileapp/e2e/setup/manual-tools.test.ts",
+        "mobileapp/e2e/setup/manual-tools.cjs",
+        "mobileapp/e2e/jest.config.manual.js"
       ]
     },
     {
@@ -135,7 +145,9 @@
       "expected": "Send repro selects the configured pane, never the first agent; absence/mismatch prevents sending",
       "planned_files": [
         "mobileapp/e2e/diagnostics/send-repro.test.ts",
-        "mobileapp/e2e/setup/manual-tools.test.ts"
+        "mobileapp/e2e/setup/manual-tools.test.ts",
+        "mobileapp/e2e/setup/manual-tools.cjs",
+        "mobileapp/e2e/jest.config.manual.js"
       ]
     },
     {
@@ -187,5 +199,5 @@
       ]
     }
   ],
-  "seal": "67c8406806aa9ebc61e1cf2865a473a2e6529cdb1c023fe407202063027868c9"
+  "seal": "8d698fb9887c2a1d69922404faeb4d1e73a5c7b4704cab266a98dfcfc6e95281"
 }
