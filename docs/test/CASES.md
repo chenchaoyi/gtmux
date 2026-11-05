@@ -9,7 +9,7 @@ The catalogue covers 1036 test/harness source files. Each CSV row lists stable I
 | L1 · Unit / pure logic | 3732 | [L1.csv](cases/L1.csv) |
 | L2 · Component / contract | 1895 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 83 | [L3.csv](cases/L3.csv) |
-| L4 · Application journeys | 100 | [L4.csv](cases/L4.csv) |
+| L4 · Application journeys | 101 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 12 | [M.csv](cases/M.csv) |
 | G · Qualification guards | 496 | [G.csv](cases/G.csv) |
 
