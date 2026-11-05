@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "legacy_source": "4fad611907cb740412d05cc48376de0801dce1c2",
+  "legacy_source": "f187564fcfdab24d7750efbea108958e469cdded",
   "classification": "Legacy boundary labels are structural triage, not individual semantic review or runtime passes. Reviewed new designs take precedence.",
   "files": {
     "assets/icons_test.go": {
@@ -13386,13 +13386,13 @@
       ]
     },
     "internal/hq/archive_small_records_test.go": {
-      "sha256": "e94c20623d05102de518314ef0ce13b80130ee5064d7f9597e9105ef9e45cd04",
+      "sha256": "84d9c9e19aa04b01a49fe6e1203e70b4b956e85cdf2b577516a44f6367a80e48",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
         {
           "id": "LEG-881c76198edb",
-          "line": 12,
+          "line": 13,
           "kind": "Test",
           "name": "TestAutomaticGeneratedRelayVariants",
           "dynamic": false,
@@ -13400,7 +13400,7 @@
         },
         {
           "id": "LEG-9e6368290a09",
-          "line": 38,
+          "line": 45,
           "kind": "Test",
           "name": "TestAutomaticManySmallNotesRoundTrip",
           "dynamic": false,
@@ -13408,7 +13408,7 @@
         },
         {
           "id": "LEG-54333359c31a",
-          "line": 72,
+          "line": 79,
           "kind": "Test",
           "name": "TestSmallRecordImportEntryBoundary",
           "dynamic": false,
@@ -13437,6 +13437,15 @@
           "name": "BenchmarkSmallRecordArchive10000",
           "dynamic": false,
           "layer": "L1"
+        },
+        {
+          "id": "LEG-29886f95fa14",
+          "line": 138,
+          "kind": "Test",
+          "name": "TestArchivePreflightIncludesTarOverhead",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "legacy-upstream-PR1814"
         }
       ]
     },
@@ -15525,7 +15534,7 @@
       ]
     },
     "internal/hq/snapshots_policy_test.go": {
-      "sha256": "448022aa5a2c8c15dd4106fb2e7c20ecbc7d7f7acad6d82b46e3e396e578bc40",
+      "sha256": "a61aefe09f26ecf284cda11e0534734f332847e57ba4511c1cb0a8bab78f9ea0",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -15539,7 +15548,7 @@
         },
         {
           "id": "LEG-5961a845361c",
-          "line": 93,
+          "line": 95,
           "kind": "Test",
           "name": "TestAutomaticRetentionDoesNotAdoptLegacy",
           "dynamic": false,
@@ -15547,7 +15556,7 @@
         },
         {
           "id": "LEG-b933715accdc",
-          "line": 127,
+          "line": 129,
           "kind": "Test",
           "name": "TestSnapshotFailureAndDisableKeepRecovery",
           "dynamic": false,
@@ -15555,7 +15564,7 @@
         },
         {
           "id": "LEG-756f6365e10d",
-          "line": 181,
+          "line": 183,
           "kind": "Test",
           "name": "TestBudgetAndCorruptionPreserveOldPoints",
           "dynamic": false,
@@ -15563,7 +15572,7 @@
         },
         {
           "id": "LEG-76cacaa749e5",
-          "line": 218,
+          "line": 220,
           "kind": "Test",
           "name": "TestConcurrentSnapshotPublishesOnePoint",
           "dynamic": false,
@@ -15571,7 +15580,7 @@
         },
         {
           "id": "LEG-241a92c4cd3b",
-          "line": 241,
+          "line": 243,
           "kind": "Test",
           "name": "TestExportEntryAndDestinationBounds",
           "dynamic": false,
@@ -15579,7 +15588,7 @@
         },
         {
           "id": "LEG-03141e2f1ac4",
-          "line": 254,
+          "line": 256,
           "kind": "Test",
           "name": "TestExportValidatesRestoredWorkspaceGrowth",
           "dynamic": false,
@@ -57030,5 +57039,6 @@
       ],
       "sha256": "6ea5890fcca5e42f9c8c3b664c5d2707941938c55064f7120fb42da5d04ea5ed"
     }
-  }
+  },
+  "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2"
 }

@@ -99,8 +99,8 @@ LEG-4a64def14abd,G,Go core / CLI / server,internal/hook/launchhost_test.go,86,Te
 LEG-0a20f15d64cc,G,Go core / CLI / server,internal/hook/notifyicon_test.go,13,Test,TestNotifyAgentIcon,False,legacy-not-retrospectively-reviewed
 LEG-26f0c8142123,G,Go core / CLI / server,internal/hook/prompt_shape_test.go,44,Test,TestKimiPromptReachesTheGoalMarker,False,legacy-not-retrospectively-reviewed
 LEG-107086809561,G,Go core / CLI / server,internal/hook/run_test.go,255,Test,TestRunDebugLog,False,legacy-not-retrospectively-reviewed
-LEG-9e6368290a09,G,Go core / CLI / server,internal/hq/archive_small_records_test.go,38,Test,TestAutomaticManySmallNotesRoundTrip,False,legacy-not-retrospectively-reviewed
-LEG-54333359c31a,G,Go core / CLI / server,internal/hq/archive_small_records_test.go,72,Test,TestSmallRecordImportEntryBoundary,False,legacy-not-retrospectively-reviewed
+LEG-9e6368290a09,G,Go core / CLI / server,internal/hq/archive_small_records_test.go,45,Test,TestAutomaticManySmallNotesRoundTrip,False,legacy-not-retrospectively-reviewed
+LEG-54333359c31a,G,Go core / CLI / server,internal/hq/archive_small_records_test.go,79,Test,TestSmallRecordImportEntryBoundary,False,legacy-not-retrospectively-reviewed
 LEG-6171295fee9d,G,Go core / CLI / server,internal/hq/boardsize_test.go,73,Test,TestTheLiftedHeadingIsSpelledTheSameOnAllThreeSurfaces,False,legacy-not-retrospectively-reviewed
 LEG-62f056701ee0,G,Go core / CLI / server,internal/hq/diskhygiene_test.go,14,Test,TestTrimFileTail,False,legacy-not-retrospectively-reviewed
 LEG-72852ffb00e9,G,Go core / CLI / server,internal/hq/eventscmd_test.go,553,Test,TestEventsSinceSeqWarnsOnGap,False,legacy-not-retrospectively-reviewed
@@ -135,10 +135,10 @@ LEG-daadeee0958b,G,Go core / CLI / server,internal/hq/migration_test.go,185,Test
 LEG-c515efeece62,G,Go core / CLI / server,internal/hq/migration_test.go,245,Test,TestMemoryPlainExportIsPrivateAndDoesNotTouchSharedPart,False,legacy-not-retrospectively-reviewed
 LEG-1a8e4159e1d8,G,Go core / CLI / server,internal/hq/migration_test.go,264,Test,TestMemoryRestorePreviewDoesNotDependOnDamagedDestination,False,legacy-not-retrospectively-reviewed
 LEG-cb74baaa16d0,G,Go core / CLI / server,internal/hq/snapshots_policy_test.go,41,Test,TestAutomaticScopeAndExplicitFullExport,False,legacy-not-retrospectively-reviewed
-LEG-5961a845361c,G,Go core / CLI / server,internal/hq/snapshots_policy_test.go,93,Test,TestAutomaticRetentionDoesNotAdoptLegacy,False,legacy-not-retrospectively-reviewed
-LEG-b933715accdc,G,Go core / CLI / server,internal/hq/snapshots_policy_test.go,127,Test,TestSnapshotFailureAndDisableKeepRecovery,False,legacy-not-retrospectively-reviewed
-LEG-756f6365e10d,G,Go core / CLI / server,internal/hq/snapshots_policy_test.go,181,Test,TestBudgetAndCorruptionPreserveOldPoints,False,legacy-not-retrospectively-reviewed
-LEG-03141e2f1ac4,G,Go core / CLI / server,internal/hq/snapshots_policy_test.go,254,Test,TestExportValidatesRestoredWorkspaceGrowth,False,legacy-not-retrospectively-reviewed
+LEG-5961a845361c,G,Go core / CLI / server,internal/hq/snapshots_policy_test.go,95,Test,TestAutomaticRetentionDoesNotAdoptLegacy,False,legacy-not-retrospectively-reviewed
+LEG-b933715accdc,G,Go core / CLI / server,internal/hq/snapshots_policy_test.go,129,Test,TestSnapshotFailureAndDisableKeepRecovery,False,legacy-not-retrospectively-reviewed
+LEG-756f6365e10d,G,Go core / CLI / server,internal/hq/snapshots_policy_test.go,183,Test,TestBudgetAndCorruptionPreserveOldPoints,False,legacy-not-retrospectively-reviewed
+LEG-03141e2f1ac4,G,Go core / CLI / server,internal/hq/snapshots_policy_test.go,256,Test,TestExportValidatesRestoredWorkspaceGrowth,False,legacy-not-retrospectively-reviewed
 LEG-9bd5cd8afd4f,G,Go core / CLI / server,internal/hqnudge/native_test.go,10,Test,TestNativeWakeAcceptanceAndUncertaintyNeverPasteOrReplay,False,legacy-not-retrospectively-reviewed
 LEG-4f261def63a3,G,Go core / CLI / server,internal/hqworkspace/register_test.go,12,Test,TestRegisterExistingGoalDoesNotReplayWorkOrRewriteSources,False,legacy-not-retrospectively-reviewed
 LEG-306bc45cf75a,G,Go core / CLI / server,internal/knowledge/axes_test.go,45,Test,TestLegacyRecordsAreMigratedAtReadOnly,False,legacy-not-retrospectively-reviewed
