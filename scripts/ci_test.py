@@ -22,6 +22,14 @@ class ScopeTests(unittest.TestCase):
                                          "internal/server/web/style.css"])["selected"]),
                          {"menubar", "web", "test"})
 
+    def test_reviewed_test_records_are_policy_only_without_hiding_test_changes(self):
+        records = ["docs/test/catalogue.json", "docs/test/implementations.json", "docs/test/CASES.csv",
+                   "docs/test/cases/L1.csv", "docs/test/cases/M.csv", "docs/test/designs/example-20261105.json"]
+        self.assertEqual(ci.classify(records)["selected"], [])
+        self.assertEqual(ci.classify(records + ["internal/radar/agents_test.go"])["selected"], ["test"])
+        for path in ["docs/test/designs/script.py", "docs/test/catalogue.js", "docs/test/cases/unknown.csv"]:
+            self.assertTrue(ci.classify([path])["full"])
+
     def test_shared_or_unknown_impact_is_full(self):
         for path in ["internal/radar/agents.go", "api/contract.md", "go.mod", "go.sum",
                      ".github/workflows/ci.yml", "scripts/ci.py", "new-component/code.ts",

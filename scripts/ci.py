@@ -21,7 +21,8 @@ DOC_IMAGES = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 
 def document(path):
     p = PurePosixPath(path)
-    return (path in DOC_FILES or
+    test_record = bool(re.fullmatch(r'docs/test/(?:catalogue\.json|implementations\.json|CASES\.csv|cases/(?:L[1-4]|G|M)\.csv|designs/[a-z0-9][a-z0-9-]*\.json)', path))
+    return (test_record or path in DOC_FILES or
             (path.startswith(("docs/", "openspec/")) and
              (p.suffix == ".md" or (path.startswith("docs/") and p.suffix in DOC_IMAGES))) or
             (path.startswith(("mobileapp/", "macapp/", "relay-worker/", "tunnel-worker/")) and p.suffix == ".md") or

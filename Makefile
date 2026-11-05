@@ -1,5 +1,5 @@
 # Developer shortcuts. `make check` runs the core gate; CI adds scoped platform gates.
-.PHONY: build app app-release install test cover fmt vet lint check clean docs-fix publisher-test ci-test
+.PHONY: build app app-release install test cover fmt vet lint check clean docs-fix publisher-test ci-test test-design
 
 BIN      ?= gtmux
 PKG       = ./cmd/gtmux
@@ -56,7 +56,10 @@ publisher-test: ## Test the maintainer publisher adapter with synthetic credenti
 ci-test: ## Test change selection, result aggregation and scanner failure handling
 	python3 -m unittest discover -s scripts -p '*_test.py'
 
-check: fmt vet lint test publisher-test ci-test ## Run the core gate locally; platform gates run separately
+test-design: ## Check reviewed designs, test sources and the case index
+	python3 scripts/test_design.py
+
+check: fmt vet lint test publisher-test ci-test test-design ## Run the core gate locally; platform gates run separately
 
 clean: ## Remove build artifacts
 	rm -f $(BIN) coverage.out

@@ -1,24 +1,19 @@
 import {getDriver} from '../setup/driver';
 import {screenshot, captureOnFailure} from '../setup/screenshot';
-import {launchWithFlags, openFirstAgentDetail, settle, readDebugLog} from '../setup/app';
+import {launchWithFlags, openAgentDetail, settle, readDebugLog} from '../setup/app';
 import {TestIds} from '../../src/constants/testIds';
 
-/**
- * Live repro of the "app can't send — appears then disappears, stuck" report.
- * Targets the FIRST radar agent (arranged to be a throwaway %40 claude), types
- * "继续", taps send, and asserts NO send-failed bar. Dumps the app's own net log
- * so we can see the exact /api/send status the client received.
- *
- *   GTMUX_E2E_URL="${AUDIT_SERVE_URL:?the isolated fixture URL}" \
- *   GTMUX_E2E_TOKEN="${AUDIT_SERVE_TOKEN:?its synthetic token}" \
- *   GTMUX_E2E_UDID="${AUDIT_SIM_UDID:?the owned simulator UDID}" npm run test:e2e -- -t "send repro"
+/** Explicit manual diagnostic. Requires loopback fake-serve, owned-fixture opt-in,
+ * exact pane and synthetic fixture identity. Never chooses the first radar row.
  */
+const {verifySendTarget} = require('../setup/manual-tools.cjs');
 const url = process.env.GTMUX_E2E_URL;
 const token = process.env.GTMUX_E2E_TOKEN;
 const gated = url && token ? describe : describe.skip;
 
 gated('send repro (live, debug-driven)', () => {
   it('types + sends 继续 and reports whether a failed-send bar appears', async () => {
+    const target = await verifySendTarget(process.env);
     const driver = getDriver();
     await launchWithFlags({
       GTMUX_DEBUG_PAIR_URL: url!,
@@ -35,7 +30,7 @@ gated('send repro (live, debug-driven)', () => {
     }
     await screenshot('sr-0-radar');
 
-    if (!(await openFirstAgentDetail())) {
+    if (!(await openAgentDetail(target.pane))) {
       return captureOnFailure('sr-no-detail', new Error('could not reach Detail'));
     }
     await settle(1000);

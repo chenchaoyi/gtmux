@@ -15,7 +15,8 @@
     "e2e:build": "bash scripts/e2e-build-sim.sh",
     "android:qa": "cd android && ./gradlew assembleQa",
     "android:verify": "python3 scripts/android-delivery.py verify",
-    "test:e2e:android": "node e2e/android/run.cjs"
+    "test:e2e:android": "node e2e/android/run.cjs",
+    "e2e:manual": "jest --config e2e/jest.config.manual.js --runInBand"
   },
   "dependencies": {
     "@lezer/python": "1.1.19",

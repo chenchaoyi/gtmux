@@ -129,7 +129,7 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
     if (requests.length >= 256) requests.shift();
     requests.push({method: req.method ?? '', path, authorized: (req.headers.authorization ?? '') === `Bearer ${token}`});
 
-    if (path === '/api/health') return json(res, 200, {ok: true});
+    if (path === '/api/health') return json(res, 200, {ok: true, fixture: 'gtmux-e2e-fake-serve'});
 
     // Every other endpoint is authenticated. An unauthenticated request must not reveal
     // whether the path exists.
