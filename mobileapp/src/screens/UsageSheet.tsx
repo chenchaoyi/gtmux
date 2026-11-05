@@ -9,6 +9,7 @@
 
 import React, {useState} from 'react';
 import {ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import {UsageReport} from '../api/client';
 import {Agent} from '../api/types';
 import {AgentAvatar} from '../ui/AgentAvatar';
@@ -112,7 +113,8 @@ export function UsageSheet({
       animationType="slide"
       presentationStyle="pageSheet"
       onRequestClose={onClose}>
-      <View style={[styles.root, {backgroundColor: pal.bg}]}>
+      <SafeAreaProvider style={[styles.root, {backgroundColor: pal.bg}]}>
+      <SafeAreaView style={styles.root} edges={['top', 'bottom', 'left', 'right']}>
         <View style={[styles.head, {borderBottomColor: pal.divider}]}>
           <View style={styles.mid}>
             <Text style={[styles.title, {color: pal.fg}]}>{t('Usage', '用量')}</Text>
@@ -440,7 +442,8 @@ export function UsageSheet({
             </Text>
           )}
         </ScrollView>}
-      </View>
+      </SafeAreaView>
+      </SafeAreaProvider>
     </Modal>
   );
 }

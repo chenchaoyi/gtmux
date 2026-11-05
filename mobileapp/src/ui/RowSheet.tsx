@@ -21,7 +21,8 @@
 // ends a session — the heaviest interrupts a turn, which the next "carry on" undoes.
 
 import React from 'react';
-import {Animated, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View} from 'react-native';
+import {Animated, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {useWindowDimensions} from './windowMetrics';
 import {Agent, ReplyOption, agentId, secondary} from '../api/types';
 import {Lang} from '../i18n';
 import {AgentAvatar} from './AgentAvatar';

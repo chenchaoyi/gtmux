@@ -100,7 +100,7 @@ export function RouteScreen({navigation}: any) {
   };
 
   return (
-    <SafeAreaView style={[s.fill, {backgroundColor: pal.bg}]} edges={['top', 'bottom']}>
+    <SafeAreaView style={[s.fill, {backgroundColor: pal.bg}]} edges={['top', 'bottom', 'left', 'right']}>
       <ContentColumn>
         <View style={s.head}>
         <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>

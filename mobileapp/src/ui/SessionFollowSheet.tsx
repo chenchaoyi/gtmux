@@ -1,7 +1,8 @@
 // Immediate, revision-checked conversation settings shared by phone and iPad.
 // Rows stay mounted; child capabilities depend on confirmed HQ permission.
 import React from 'react';
-import {ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View, useWindowDimensions} from 'react-native';
+import {ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View} from 'react-native';
+import {useWindowDimensions} from './windowMetrics';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {Agent, SessionFollowSettings, primary} from '../api/types';
 import {ApiError, GtmuxClient} from '../api/client';

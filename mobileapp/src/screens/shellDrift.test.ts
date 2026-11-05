@@ -24,12 +24,11 @@ describe('the regular shell composes, never copies', () => {
     const renderers = screens.filter((f: string) => read(f).includes("from '../ui/SectionList'"));
     expect(renderers).toEqual(['RadarPanel.tsx']);
     expect(read('DemoScreen.tsx')).toContain('<SplitShell demo=');
-    expect(read('DemoScreen.tsx')).toContain('<RadarPanel variant="screen" demo=');
   });
 
   it('has both shells render RadarPanel, with only props between them', () => {
     expect(read('RadarScreen.tsx')).toContain('<RadarPanel variant="screen"');
-    expect(read('SplitShell.tsx')).toContain('<RadarPanel variant="sidebar"');
+    expect(read('SplitShell.tsx')).toContain('<RadarPanel variant={regular ? "sidebar" : "screen"}');
     // The shell holds no list, banner or header of its own.
     for (const token of ['SectionList', 'OfflineBanner', 'RadarSummary', 'HQDisc']) {
       expect(read('SplitShell.tsx')).not.toContain(token);

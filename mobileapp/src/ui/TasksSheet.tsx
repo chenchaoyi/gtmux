@@ -1,5 +1,6 @@
 import React, {useState} from 'react';
-import {Modal, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View} from 'react-native';
+import {Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {useWindowDimensions} from './windowMetrics';
 import {Lang} from '../i18n';
 import {useSizeClass} from './layout';
 import {Palette, StatusColor} from './theme';

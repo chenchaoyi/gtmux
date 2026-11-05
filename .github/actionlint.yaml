@@ -1,7 +1,6 @@
-# actionlint 1.7.7 predates this standard GitHub-hosted label. Admit only the
-# documented label; keep all other runner and workflow checks enabled.
-# https://docs.github.com/en/actions/reference/runners/github-hosted-runners
+# Labels not built into actionlint 1.7.7.
 self-hosted-runner:
   labels:
     - macos-15-intel
     - macos-26
+    - xcode-27

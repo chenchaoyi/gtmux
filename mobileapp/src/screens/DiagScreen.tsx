@@ -91,7 +91,7 @@ export function DiagScreen({navigation}: any) {
       : `${stats.count} entr${stats.count === 1 ? 'y' : 'ies'} · ${kb} KB. Stored on this device; shared only when you choose.`;
 
   return (
-    <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']}>
+    <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top', 'left', 'right']}>
       <ContentColumn>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={hit}>

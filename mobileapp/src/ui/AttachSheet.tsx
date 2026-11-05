@@ -5,6 +5,7 @@
 
 import React from 'react';
 import {Modal, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import {Lang} from '../i18n';
 import {TestIds} from '../constants/testIds';
 import {Palette} from './theme';
@@ -86,7 +87,9 @@ export function AttachSheet({
       animationType={instant ? 'none' : 'slide'}
       onRequestClose={onClose}
       onDismiss={dismissed}>
+      <SafeAreaProvider>
       <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose}>
+        <SafeAreaView style={styles.safe} edges={['left', 'right', 'bottom']} pointerEvents="box-none">
         <TouchableOpacity
           testID={TestIds.composer.attachSheet}
           accessibilityLabel={zh ? '添加附件' : 'Add attachment'}
@@ -114,13 +117,16 @@ export function AttachSheet({
             </TouchableOpacity>
           ))}
         </TouchableOpacity>
+        </SafeAreaView>
       </TouchableOpacity>
+      </SafeAreaProvider>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
   backdrop: {flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end'},
+  safe: {flex: 1, justifyContent: 'flex-end'},
   sheet: {borderTopLeftRadius: 18, borderTopRightRadius: 18, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 30},
   grabber: {width: 38, height: 5, borderRadius: 3, alignSelf: 'center', marginBottom: 14, opacity: 0.9},
   title: {fontSize: 22, fontWeight: '700', marginBottom: 14, marginLeft: 2},

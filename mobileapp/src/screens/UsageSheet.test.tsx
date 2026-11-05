@@ -6,6 +6,7 @@ import {Agent} from '../api/types';
 import {MachineIcon} from '../ui/MachineIcon';
 import {AgentAvatar} from '../ui/AgentAvatar';
 import {paletteFor} from '../ui/theme';
+import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 
 // Walk the rendered JSON for text: <Text> lands as a HOST node whose type is the string
 // 'Text', which a `typeof type !== 'string'` predicate silently excludes.
@@ -186,6 +187,13 @@ test('usage close announces an action rather than its test identifier', () => {
   const close = t.root.findByProps({testID: 'hq-usage-close'});
   expect(close.props.accessibilityRole).toBe('button');
   expect(close.props.accessibilityLabel).toBe('关闭用量');
+  act(() => t.unmount());
+});
+
+test('usage modal resolves all safe edges in its own native presentation', () => {
+  const t = render(null);
+  expect(t.root.findAllByType(SafeAreaProvider)).toHaveLength(1);
+  expect(t.root.findByType(SafeAreaView).props.edges).toEqual(['top', 'bottom', 'left', 'right']);
   act(() => t.unmount());
 });
 

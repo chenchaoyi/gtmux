@@ -1,7 +1,8 @@
 import {useModalEscape} from '../keys/useModalEscape';
 import presentation from './participantPresentation.json';
 import React, {useEffect, useState} from 'react';
-import {Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions} from 'react-native';
+import {Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {useWindowDimensions} from './windowMetrics';
 import type {GtmuxClient} from '../api/client';
 import type {Lang} from '../i18n';
 import {AgentAvatar} from './AgentAvatar';

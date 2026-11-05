@@ -282,7 +282,7 @@ export function ManageMacScreen({navigation}: any) {
   const scopeSummary = (g: GuestLink) => grantSummary(g, new Set(panes.map(p => p.pane_id)), zh);
 
   return (
-    <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']}>
+    <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top', 'left', 'right']}>
       <ContentColumn>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={hit}>

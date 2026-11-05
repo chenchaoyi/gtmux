@@ -323,7 +323,7 @@ export function PaneBrowserView({onBack, layout = 'compact'}: {onBack?: () => vo
     <BrowserPlaceholder loaded={loaded} failed={readFailed} q={q} isGuest={isGuest} macName={mac?.name} zh={lang === 'zh'} pal={pal} />
   );
   return (
-    <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']} testID={TestIds.panes.screen}>
+    <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top', 'left', 'right']} testID={TestIds.panes.screen}>
       {/* header: back · title · count · collapse-all */}
       <View style={[styles.header, {borderBottomColor: pal.divider}]}>
         {onBack && (

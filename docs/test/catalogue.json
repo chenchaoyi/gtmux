@@ -34626,13 +34626,13 @@
       ]
     },
     "mobileapp/e2e/__tests__/coldstart-push.test.ts": {
-      "sha256": "b844f7628300c24f916620e266681c8a1bd74f57feb2831df6b9b4b257d8e45c",
+      "sha256": "e034e8c58408e87bfdbfb6790439c7236a9b8b97e1650825ce48f8803d92598b",
       "layer": "L4",
       "stack": "RN / mobile harness",
       "cases": [
         {
           "id": "LEG-a5d63af936be",
-          "line": 130,
+          "line": 138,
           "kind": "it",
           "name": "A: cold start with an active Mac, switches, background, a new warm tap",
           "dynamic": false,
@@ -34640,7 +34640,7 @@
         },
         {
           "id": "LEG-f3196e5f4ce2",
-          "line": 170,
+          "line": 179,
           "kind": "it",
           "name": "C: a launch with no notification switches where it is pointed",
           "dynamic": false,
@@ -36363,13 +36363,13 @@
       ]
     },
     "mobileapp/e2e/setup/capabilities.test.ts": {
-      "sha256": "ba3d68a275f7261a1c1a553ce1da526b28c8083f0122ae25f72fe38a7b5c5022",
+      "sha256": "d7ac239239b0266fbbffa5726e5f0d47ea003f44228e512153430d843131446d",
       "layer": "L1",
       "stack": "RN / mobile harness",
       "cases": [
         {
           "id": "LEG-b6f73720d14b",
-          "line": 8,
+          "line": 23,
           "kind": "test",
           "name": "manual handles nothing on the test’s behalf",
           "dynamic": false,
@@ -36377,7 +36377,7 @@
         },
         {
           "id": "LEG-7440419bbda7",
-          "line": 14,
+          "line": 29,
           "kind": "test",
           "name": "the default dismisses, and the older accept switch still accepts",
           "dynamic": false,
@@ -36385,7 +36385,7 @@
         },
         {
           "id": "LEG-9afe9479f18a",
-          "line": 19,
+          "line": 34,
           "kind": "test",
           "name": "the explicit mode wins over the older switch",
           "dynamic": false,
@@ -36393,7 +36393,7 @@
         },
         {
           "id": "LEG-ff05befffbd7",
-          "line": 23,
+          "line": 38,
           "kind": "test",
           "name": "a misspelt mode stops the run instead of falling back to dismiss",
           "dynamic": false,
@@ -36401,7 +36401,7 @@
         },
         {
           "id": "LEG-7201f98d96a5",
-          "line": 28,
+          "line": 43,
           "kind": "test",
           "name": "headless capture is explicit and local GUI runs keep their behavior",
           "dynamic": false,
@@ -36409,7 +36409,7 @@
         },
         {
           "id": "LEG-16fab5a7cc96",
-          "line": 34,
+          "line": 49,
           "kind": "test",
           "name": "only explicit hosted capture separates WDA build and readiness with one bounded connection",
           "dynamic": false,
@@ -36417,11 +36417,20 @@
         },
         {
           "id": "LEG-61bfa22d706f",
-          "line": 50,
+          "line": 65,
           "kind": "test",
           "name": "only hosted multi-screen store captures receive the longer journey budget",
           "dynamic": false,
           "layer": "L1"
+        },
+        {
+          "id": "MAP-ad6f801c4c8b",
+          "line": 3,
+          "kind": "reviewed-selector",
+          "name": "cloud simulator session waits for a fresh WDA build without requiring a prebuilt product",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-008"
         }
       ]
     },
@@ -40571,13 +40580,13 @@
       ]
     },
     "mobileapp/src/push/launchNotification.test.ts": {
-      "sha256": "ba9f0f05894680fb220febaebd412e8818db9024e23d31f78384e6e2b92ae889",
+      "sha256": "80ac185b0718e90a4f8f9842deeb7778a35a30666a03db9845a02aa23348e6b8",
       "layer": "L1",
       "stack": "RN / mobile harness",
       "cases": [
         {
           "id": "LEG-c0039196e4f2",
-          "line": 29,
+          "line": 32,
           "kind": "test",
           "name": "the launch notification is acted on once, not on every server switch",
           "dynamic": false,
@@ -40585,11 +40594,65 @@
         },
         {
           "id": "LEG-a79023052203",
-          "line": 39,
+          "line": 42,
           "kind": "test",
           "name": "a launch with no notification taps nothing",
           "dynamic": false,
           "layer": "L1"
+        },
+        {
+          "id": "MAP-43a5acb09524",
+          "line": 124,
+          "kind": "reviewed-selector",
+          "name": "a buffered native response and the launch copy dispatch one quick reply",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-010"
+        },
+        {
+          "id": "MAP-e583ab6da371",
+          "line": 136,
+          "kind": "reviewed-selector",
+          "name": "a native buffer failure still delivers the bridge launch notification",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-010"
+        },
+        {
+          "id": "MAP-f6ca99aeb79b",
+          "line": 58,
+          "kind": "reviewed-selector",
+          "name": "the same quick action arriving from scene and delegate sends once",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-010"
+        },
+        {
+          "id": "MAP-49ac3dbf1487",
+          "line": 145,
+          "kind": "reviewed-selector",
+          "name": "a stalled native drain leaves initial fallback and foreground recovery usable",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-010"
+        },
+        {
+          "id": "MAP-14fb52a6ba3b",
+          "line": 192,
+          "kind": "reviewed-selector",
+          "name": "the initial action does not wait for notification permission",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-010"
+        },
+        {
+          "id": "MAP-b3afaf2b1f68",
+          "line": 167,
+          "kind": "reviewed-selector",
+          "name": "foreground recovery first delivers a retained response after the initial drain stalls",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-010"
         }
       ]
     },
@@ -41374,13 +41437,13 @@
       ]
     },
     "mobileapp/src/screens/DetailTrace.test.tsx": {
-      "sha256": "52d0f7c5f6baee5675d998ab3accec005374d50c6790303fcff63920769e2388",
+      "sha256": "9dd8a3870c42094e8a5608c495ee92123e8c47c4fe27e55fabee228e41ebf622",
       "layer": "L2",
       "stack": "RN / mobile harness",
       "cases": [
         {
           "id": "LEG-3311f5104ff9",
-          "line": 82,
+          "line": 85,
           "kind": "test",
           "name": "opening and closing Trace shares Chat’s in-flight read without aborting or starting a second subscription",
           "dynamic": false,
@@ -41388,7 +41451,7 @@
         },
         {
           "id": "LEG-383eef0af50a",
-          "line": 109,
+          "line": 112,
           "kind": "test",
           "name": "the same pane and session in a different home cannot show or accept the old reply",
           "dynamic": false,
@@ -41396,11 +41459,20 @@
         },
         {
           "id": "LEG-27bb0cdcad2a",
-          "line": 135,
+          "line": 139,
           "kind": "test.each()",
           "name": "pane denial %s closes tools and clears old records",
           "dynamic": true,
           "layer": "L2"
+        },
+        {
+          "id": "MAP-0da81b09e45b",
+          "line": 153,
+          "kind": "reviewed-selector",
+          "name": "Trace remains open with its current conversation while the window changes size",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DUO-011"
         }
       ]
     },
@@ -42849,13 +42921,13 @@
       ]
     },
     "mobileapp/src/screens/UsageSheet.test.tsx": {
-      "sha256": "58505b55bc43d3b243404a4d54b0dddd31db3edaef0318fb8846d3f56f262b46",
+      "sha256": "2824a432ea4d8cc5f97eb52cf1042c7fa5908626b0d5c233a6b994514ab67c80",
       "layer": "L2",
       "stack": "RN / mobile harness",
       "cases": [
         {
           "id": "LEG-2aba97e994c5",
-          "line": 46,
+          "line": 47,
           "kind": "it",
           "name": "is called by its name, not by its registry key",
           "dynamic": false,
@@ -42863,7 +42935,7 @@
         },
         {
           "id": "LEG-f259cfaf2c4d",
-          "line": 54,
+          "line": 55,
           "kind": "it",
           "name": "asks for an icon at all — the fallback used to carry no hint",
           "dynamic": false,
@@ -42871,7 +42943,7 @@
         },
         {
           "id": "LEG-450351da14b3",
-          "line": 73,
+          "line": 74,
           "kind": "it",
           "name": "states ctx ONCE — two roundings of it used to sit side by side",
           "dynamic": false,
@@ -42879,7 +42951,7 @@
         },
         {
           "id": "LEG-5007c47dbdef",
-          "line": 81,
+          "line": 82,
           "kind": "it",
           "name": "keeps a warned session on screen and counts only the quiet ones",
           "dynamic": false,
@@ -42887,7 +42959,7 @@
         },
         {
           "id": "LEG-9d5e4971c9f6",
-          "line": 92,
+          "line": 93,
           "kind": "it",
           "name": "omits a duplicate ordinary quota while retaining a single warned window",
           "dynamic": false,
@@ -42895,7 +42967,7 @@
         },
         {
           "id": "LEG-ca6862d2e924",
-          "line": 97,
+          "line": 98,
           "kind": "it",
           "name": "names the selected quota without internal window jargon",
           "dynamic": false,
@@ -42903,7 +42975,7 @@
         },
         {
           "id": "LEG-dc5d89c8d69b",
-          "line": 101,
+          "line": 102,
           "kind": "it",
           "name": "lifts the machine warning out of the bottom of the page",
           "dynamic": false,
@@ -42911,7 +42983,7 @@
         },
         {
           "id": "LEG-dfdb96d9f479",
-          "line": 107,
+          "line": 108,
           "kind": "it",
           "name": "draws nothing when there is neither",
           "dynamic": false,
@@ -42919,7 +42991,7 @@
         },
         {
           "id": "LEG-7c36e1b2d4bc",
-          "line": 115,
+          "line": 116,
           "kind": "it",
           "name": "names each resource with an icon",
           "dynamic": false,
@@ -42927,7 +42999,7 @@
         },
         {
           "id": "LEG-775a63fcb598",
-          "line": 120,
+          "line": 121,
           "kind": "it",
           "name": "still encodes state three ways, so the icon can stay identity-only",
           "dynamic": false,
@@ -42935,7 +43007,7 @@
         },
         {
           "id": "LEG-4046c05b4431",
-          "line": 128,
+          "line": 129,
           "kind": "it",
           "name": "opens the idle ones back up",
           "dynamic": false,
@@ -42943,7 +43015,7 @@
         },
         {
           "id": "LEG-d96598b1f49d",
-          "line": 157,
+          "line": 158,
           "kind": "it",
           "name": "draws the heatmap by default, with the figures, the stats and the chips",
           "dynamic": false,
@@ -42951,7 +43023,7 @@
         },
         {
           "id": "LEG-4b085d225971",
-          "line": 168,
+          "line": 169,
           "kind": "it",
           "name": "switches to the weekly bars and the cumulative line",
           "dynamic": false,
@@ -42959,7 +43031,7 @@
         },
         {
           "id": "LEG-6e8e04740c2a",
-          "line": 177,
+          "line": 178,
           "kind": "it",
           "name": "keeps the seven bars for a serve without activity",
           "dynamic": false,
@@ -42967,7 +43039,7 @@
         },
         {
           "id": "LEG-8daa26038fff",
-          "line": 184,
+          "line": 185,
           "kind": "test",
           "name": "usage close announces an action rather than its test identifier",
           "dynamic": false,
@@ -42975,7 +43047,7 @@
         },
         {
           "id": "LEG-dfb0c59ba9e4",
-          "line": 193,
+          "line": 201,
           "kind": "test",
           "name": "native DSH balance keeps exact money strings separate from percentage windows",
           "dynamic": false,
@@ -42983,7 +43055,7 @@
         },
         {
           "id": "LEG-794d8a2b1e69",
-          "line": 216,
+          "line": 224,
           "kind": "it",
           "name": "keeps output visible while historical quotas and source gaps start folded",
           "dynamic": false,
@@ -42991,7 +43063,7 @@
         },
         {
           "id": "LEG-bab51363d152",
-          "line": 230,
+          "line": 238,
           "kind": "it",
           "name": "still requests the built-in icon when a live row has no icon hint",
           "dynamic": false,
@@ -42999,7 +43071,7 @@
         },
         {
           "id": "LEG-c4e189276e48",
-          "line": 236,
+          "line": 244,
           "kind": "it",
           "name": "can inspect and re-fold history and account limitations without changing current figures",
           "dynamic": false,
@@ -43007,11 +43079,20 @@
         },
         {
           "id": "LEG-6c6da13ec45f",
-          "line": 253,
+          "line": 261,
           "kind": "it",
           "name": "retains an unreadable provider inside the disclosure, without inventing a zero quota",
           "dynamic": false,
           "layer": "L2"
+        },
+        {
+          "id": "MAP-e79534c98d28",
+          "line": 193,
+          "kind": "reviewed-selector",
+          "name": "usage modal resolves all safe edges in its own native presentation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DUO-013"
         }
       ]
     },
@@ -44931,7 +45012,7 @@
       ]
     },
     "mobileapp/src/screens/shellDrift.test.ts": {
-      "sha256": "bc567ee431036436d40c292ddae729e40e8ed00872e77faaa883ef84dd342870",
+      "sha256": "69ed095544867c29398f3cda8a5d26de27a050a4c15b68a93bc44992004b4ac4",
       "layer": "L2",
       "stack": "RN / mobile harness",
       "cases": [
@@ -44953,7 +45034,7 @@
         },
         {
           "id": "LEG-051c87e3b1b3",
-          "line": 30,
+          "line": 29,
           "kind": "it",
           "name": "has both shells render RadarPanel, with only props between them",
           "dynamic": false,
@@ -44961,7 +45042,7 @@
         },
         {
           "id": "LEG-63d236ec0387",
-          "line": 39,
+          "line": 38,
           "kind": "it",
           "name": "lets only the shell read the window to choose a layout",
           "dynamic": false,
@@ -44969,7 +45050,7 @@
         },
         {
           "id": "LEG-def4d240cd49",
-          "line": 48,
+          "line": 47,
           "kind": "it",
           "name": "opens things through the workspace, not a navigator",
           "dynamic": false,
@@ -45681,7 +45762,7 @@
       ]
     },
     "mobileapp/src/state/WorkspaceContext.test.tsx": {
-      "sha256": "51047ac4e1c8feda1b661e6ea6db32912b36c2a619a62d8da552c52a853723a1",
+      "sha256": "021186700f3be9ef92876f82eb5de60815c873b39fcc2235c629059caa711050",
       "layer": "L1",
       "stack": "RN / mobile harness",
       "cases": [
@@ -45724,6 +45805,15 @@
           "name": "HQ %s shortcut keeps the current identity and destination in compact navigation",
           "dynamic": true,
           "layer": "L1"
+        },
+        {
+          "id": "MAP-f7ac1c2c09fa",
+          "line": 72,
+          "kind": "reviewed-selector",
+          "name": "inline workspace opens selection without pushing a second detail route",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DUO-015"
         }
       ]
     },
@@ -54164,7 +54254,7 @@
       ]
     },
     "mobileapp/src/usage/UsageWidgetBridge.test.tsx": {
-      "sha256": "7e82bc7bddf5c255021efda617f4cde70e0160e939b3928842876155358d4ee6",
+      "sha256": "e5ddd8e826f6a9674635afc368e9fc211ae1a1a713ed4e907ad13150ef6f17ab",
       "layer": "L1",
       "stack": "RN / mobile harness",
       "cases": [
@@ -54186,7 +54276,7 @@
         },
         {
           "id": "LEG-7419b6327ede",
-          "line": 73,
+          "line": 81,
           "kind": "test",
           "name": "widget links cannot select a server or smuggle credentials",
           "dynamic": false,
@@ -54194,7 +54284,7 @@
         },
         {
           "id": "LEG-ba603cf68958",
-          "line": 81,
+          "line": 89,
           "kind": "test",
           "name": "changing a connection closes the old sheet and discards its late response",
           "dynamic": false,
@@ -54202,11 +54292,74 @@
         },
         {
           "id": "LEG-483418e96a4d",
-          "line": 106,
+          "line": 259,
           "kind": "test",
           "name": "Android snapshot labels handle unnamed plans and contain no pairing credential",
           "dynamic": false,
           "layer": "L1"
+        },
+        {
+          "id": "MAP-2e63515d4156",
+          "line": 46,
+          "kind": "reviewed-selector",
+          "name": "a widget opens usage without HQ",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-019"
+        },
+        {
+          "id": "MAP-2cb14bb98a8b",
+          "line": 89,
+          "kind": "reviewed-selector",
+          "name": "changing a connection closes the old sheet",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-019"
+        },
+        {
+          "id": "MAP-732a597f88bf",
+          "line": 118,
+          "kind": "reviewed-selector",
+          "name": "a headless scene link is retained until the visual consumer opens and acknowledges it",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-019,DUO-024"
+        },
+        {
+          "id": "MAP-3001d0088bec",
+          "line": 142,
+          "kind": "reviewed-selector",
+          "name": "a queued scene link rejected for a guest cannot open after switching to owner",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-019,DUO-024"
+        },
+        {
+          "id": "MAP-3fba88d7af6d",
+          "line": 167,
+          "kind": "reviewed-selector",
+          "name": "a retained scene link is retried when the app becomes active",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-019,DUO-024"
+        },
+        {
+          "id": "MAP-25be587027d6",
+          "line": 195,
+          "kind": "reviewed-selector",
+          "name": "an active transition during a failed drain still retries the retained link",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-019,DUO-024"
+        },
+        {
+          "id": "MAP-68bf80153330",
+          "line": 224,
+          "kind": "reviewed-selector",
+          "name": "foreground recovery bypasses a stalled scene-link drain and suppresses its late copy",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-019,DUO-024"
         }
       ]
     },
@@ -54665,7 +54818,7 @@
       ]
     },
     "scripts/ci_test.py": {
-      "sha256": "e43020b01b551df7dcd03432cfda64a38d8ca7d585f52edc919b8f3bb2af0aca",
+      "sha256": "f913f704c61660c686e6427ec63130c2c4b0c52a3bcfa421a2d7961b2b34cd04",
       "layer": "G",
       "stack": "CI / tooling",
       "cases": [
@@ -54735,7 +54888,7 @@
         },
         {
           "id": "LEG-2514a184abce",
-          "line": 140,
+          "line": 150,
           "kind": "unittest",
           "name": "test_android_package_is_built_once_and_both_devices_use_its_output",
           "dynamic": false,
@@ -54743,7 +54896,7 @@
         },
         {
           "id": "LEG-76200ceafcf2",
-          "line": 160,
+          "line": 170,
           "kind": "unittest",
           "name": "test_docs_can_skip_heavy_jobs_but_require_quality",
           "dynamic": false,
@@ -54751,7 +54904,7 @@
         },
         {
           "id": "LEG-ecfb4bf818ba",
-          "line": 166,
+          "line": 176,
           "kind": "unittest",
           "name": "test_missing_skipped_failed_cancelled_required_job_never_green",
           "dynamic": true,
@@ -54759,7 +54912,7 @@
         },
         {
           "id": "LEG-252965413bf3",
-          "line": 175,
+          "line": 185,
           "kind": "unittest",
           "name": "test_bad_plans_or_unselected_failure_are_rejected",
           "dynamic": false,
@@ -54767,7 +54920,7 @@
         },
         {
           "id": "LEG-8a6a845c7484",
-          "line": 187,
+          "line": 197,
           "kind": "unittest",
           "name": "test_mac_host_keeps_both_architectures_and_native_checks",
           "dynamic": false,
@@ -54775,7 +54928,7 @@
         },
         {
           "id": "LEG-28f4d1551b14",
-          "line": 204,
+          "line": 214,
           "kind": "unittest",
           "name": "test_ios_delivery_pins_the_same_arm_toolchain_and_keeps_protection",
           "dynamic": false,
@@ -57113,7 +57266,7 @@
       "cases": [
         {
           "id": "MAP-f2ed2637baa9",
-          "line": 95,
+          "line": 97,
           "kind": "reviewed-selector",
           "name": "startFake",
           "dynamic": false,
@@ -57121,7 +57274,7 @@
           "design": "CT-HTTP"
         }
       ],
-      "sha256": "79d8be5f47afc60d6725ac9b4c72c04d329ffd08d10aa46d92c9f69ba054d5ef"
+      "sha256": "cf77b721e6c2c822d05789fa203130b6dda9da2e7654411aa625159fbaab7b84"
     },
     "mobileapp/e2e/fake-serve/world.ts": {
       "layer": "L2",
@@ -57269,7 +57422,7 @@
           "design": "CT-SCOPE"
         }
       ],
-      "sha256": "b62e0024676d64ec379b69b502e913a83e69abd4d0a514696aacaa84d3d01a0f"
+      "sha256": "dd4f5c0206077bec70013300fa14e4fe5ec25b8bb40ad6bd3b39af684e5304ec"
     },
     "tests/contracts/http-contract.cjs": {
       "layer": "L2",
@@ -57727,6 +57880,329 @@
         }
       ],
       "sha256": "c6ce22a2cfa598de96de46e10d9065324d94ca13ba94ef3fdf6491e37e54a71a"
+    },
+    "mobileapp/src/screens/SplitShell.resize.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-dca558aadd46",
+          "line": 24,
+          "kind": "reviewed-selector",
+          "name": "resizing keeps the mounted detail state and back/reopen remains usable",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DUO-012"
+        },
+        {
+          "id": "MAP-8eb16689bb98",
+          "line": 42,
+          "kind": "reviewed-selector",
+          "name": "folding after the wide workspace chooses its first session keeps that reader visible",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DUO-012,DUO-025"
+        },
+        {
+          "id": "MAP-add4c7e8de77",
+          "line": 91,
+          "kind": "reviewed-selector",
+          "name": "a hidden workspace does not consume Android back on another stack page",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DUO-012,DUO-025"
+        },
+        {
+          "id": "MAP-e8645aa44039",
+          "line": 56,
+          "kind": "reviewed-selector",
+          "name": "returning to the compact list survives expanding and folding the workspace",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DUO-012,DUO-025"
+        },
+        {
+          "id": "MAP-84b478db0eea",
+          "line": 73,
+          "kind": "reviewed-selector",
+          "name": "selecting a session while expanded returns to its reader when folded",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DUO-012,DUO-025"
+        }
+      ],
+      "sha256": "f8c7ff7d45493597bb85aab097aa8b3913406944acf7c4bfc82a71789300302a"
+    },
+    "mobileapp/e2e/__tests__/ipad-adaptive.test.ts": {
+      "layer": "L4",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-b3419be992f8",
+          "line": 11,
+          "kind": "reviewed-selector",
+          "name": "keeps the iPad sidebar and selected session through rotation",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "DUO-003"
+        }
+      ],
+      "sha256": "8e98ace2fbece2bd0c710bde78fb9672f8d68a4757f5ace2bfecbebb142cae79"
+    },
+    "mobileapp/e2e/__tests__/server-switch-compare.test.ts": {
+      "layer": "L4",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-136dedeea639",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "selects a server after a clean launch",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "DUO-006"
+        }
+      ],
+      "sha256": "e6f9e14a11b03df3ce89b43933bee4d93c823d4247010ffe2ef14ede8d6fcd69"
+    },
+    "mobileapp/ios/tests/NotificationResponsePayloadChecks.swift": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-88eca3d41bfd",
+          "line": 53,
+          "kind": "reviewed-selector",
+          "name": "notification response payload and queue checks passed",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-009"
+        },
+        {
+          "id": "MAP-2bf007ddc23d",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "let activityPayload = sceneUserActivityPayload",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-009,DUO-022"
+        },
+        {
+          "id": "MAP-4eba460f385e",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "retainHeadlessSceneLinks(urls: [sceneURL], activities: [activity])",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-009,DUO-022,DUO-024"
+        }
+      ],
+      "sha256": "d4c0cfae765516c63b3347cf39568008510950f1fa5907f8b4d86f0327236590"
+    },
+    "mobileapp/e2e/__tests__/duo-window.test.ts": {
+      "layer": "L4",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-8cfa983c4bb1",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "keeps the selected session and a draft through simulator rotation",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "DUO-002"
+        }
+      ],
+      "sha256": "53b26b76dda1388c0a5ed6b769ef3b172aad6e892add82942e06dad6c5ffd1c2"
+    },
+    "mobileapp/e2e/fake-serve/request-diagnostics.test.ts": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-b33db4631198",
+          "line": 3,
+          "kind": "reviewed-selector",
+          "name": "diagnostic request metadata shows routing without headers or query values",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-007"
+        }
+      ],
+      "sha256": "be0dfc4346dd242da534804bae24ecbaef3cf537e6ae42183f8bee6d68b257e7"
+    },
+    "mobileapp/e2e/__tests__/scene-usage-links.test.ts": {
+      "layer": "L4",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-3593077aab87",
+          "line": 24,
+          "kind": "reviewed-selector",
+          "name": "opens the usage link on warm and cold scene entry",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "DUO-005"
+        },
+        {
+          "id": "MAP-ea87797d79bf",
+          "line": 33,
+          "kind": "reviewed-selector",
+          "name": "opens a warm usage link through the scene",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "DUO-005"
+        },
+        {
+          "id": "MAP-b7d75b280b9d",
+          "line": 49,
+          "kind": "reviewed-selector",
+          "name": "opens a cold usage link through the scene",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "DUO-005"
+        }
+      ],
+      "sha256": "85c5a1d23516882fbd8fd824a49d5ef7370e20520b6be97e8b174c64385ac5a0"
+    },
+    "mobileapp/src/ui/windowMetrics.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e3657e854bc3",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "root view resizes update the workspace even when native dimensions do not, without remounting the reader",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DUO-016"
+        }
+      ],
+      "sha256": "b2468a18c89550f02c4a7006e7b36ba378fee51a11803f75604c12a1da04a04a"
+    },
+    "mobileapp/e2e/__tests__/notification-scene-actions.test.ts": {
+      "layer": "L4",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-af8f135844b0",
+          "line": 35,
+          "kind": "reviewed-selector",
+          "name": "delivers a cold notification action exactly once",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "DUO-004"
+        },
+        {
+          "id": "MAP-47786402e16b",
+          "line": 80,
+          "kind": "reviewed-selector",
+          "name": "delivers a warm notification action exactly once",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "DUO-004"
+        }
+      ],
+      "sha256": "692f98894e134a9ba5e89aa772ba0afd6ab4a58df90c8a7f3856f91d69bcacc3"
+    },
+    "mobileapp/src/ui/WorkspaceSurface.test.tsx": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-6e69e9ec9b41",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "starts background handling before native insets",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-018"
+        }
+      ],
+      "sha256": "c8cb42eb3d0044d2f4897fdd46aec96b96614cb93db76e261b37e500efc3cba0"
+    },
+    "mobileapp/__tests__/App.notificationBootstrap.test.tsx": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f8347ec463eb",
+          "line": 34,
+          "kind": "reviewed-selector",
+          "name": "starts the actual notification bridge",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-018"
+        }
+      ],
+      "sha256": "3a98a8e35f00415edabb653e372133c111c9466b6605047109dd07f741162e85"
+    },
+    "mobileapp/e2e/__tests__/duo-fold.test.ts": {
+      "layer": "L4",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-29b9b35673af",
+          "line": 63,
+          "kind": "reviewed-selector",
+          "name": "retains the selected conversation, reading position and draft across simulator fold and unfold",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "DUO-020"
+        },
+        {
+          "id": "MAP-e33509324cc9",
+          "line": 187,
+          "kind": "reviewed-selector",
+          "name": "keeps Trace search and Diff open while the simulator folds and unfolds",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "DUO-020,DUO-021"
+        },
+        {
+          "id": "MAP-7bb91bd4c1ab",
+          "line": 136,
+          "kind": "reviewed-selector",
+          "name": "keeps the session entry usable at an accessibility text size on both panels",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "DUO-020,DUO-021,DUO-023"
+        }
+      ],
+      "sha256": "c4abdcf4ab0348db6854cd4f47afa4528fc98294547ff16c113baa527cdea003"
+    },
+    "mobileapp/src/usage/UsageWidgetBridge.initialLink.test.tsx": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-cd8094a5d6ae",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "a guest-rejected initial link cannot replay when the connection becomes owner",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-026"
+        }
+      ],
+      "sha256": "ddc625eb949dc560cbfd23059f6f5e73fa1cff4054125c28461c00e8b812002d"
+    },
+    "mobileapp/src/usage/UsageWidgetBridge.initialDemoLink.test.tsx": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-109f723286a2",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "a demo-rejected initial link cannot replay when the connection becomes an owner",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-026"
+        }
+      ],
+      "sha256": "292eeb7794625d47463e0373e6c72553c6f4ed6b922d289ba5eef8579f3e1977"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2"

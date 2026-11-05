@@ -33,7 +33,8 @@
 // alignment + CJK width rely on the system monospace (Menlo → PingFang fallback).
 
 import React, {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
-import {Linking, NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, StyleProp, StyleSheet, Text, View, ViewStyle, requireNativeComponent, useWindowDimensions} from 'react-native';
+import {Linking, NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, StyleProp, StyleSheet, Text, View, ViewStyle, requireNativeComponent} from 'react-native';
+import {useWindowDimensions} from './windowMetrics';
 import {Lang} from '../i18n';
 import {LoadingMark} from './LoadingMark';
 import {useTermReflow, TermReflowViewport} from './useTermReflow';

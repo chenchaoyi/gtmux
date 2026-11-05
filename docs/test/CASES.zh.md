@@ -2,14 +2,14 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1031 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1045 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
-| L1 · 单元/纯逻辑 | 3724 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 1894 | [L2.csv](cases/L2.csv) |
+| L1 · 单元/纯逻辑 | 3746 | [L1.csv](cases/L1.csv) |
+| L2 · 组件/契约 | 1903 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 86 | [L3.csv](cases/L3.csv) |
-| L4 · 应用操作流程 | 93 | [L4.csv](cases/L4.csv) |
+| L4 · 应用操作流程 | 104 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 12 | [M.csv](cases/M.csv) |
 | G · 质量门禁 | 496 | [G.csv](cases/G.csv) |
 
@@ -32,13 +32,39 @@
 | CT-TIMING | Stage and operation timing attributes setup/action/evidence cost separately, including failures and blocks; no silent rerun or suppressed assertions. |
 | CT-BROWSER-POLICY | Reuse one browser process per test worker while every case retains a fresh context/server and isolated storage/failure traces; closed browsers are replaced, resources close on setup/assertion failure. |
 | CT-BROWSER | Reuse one browser process per test worker while every case retains a fresh context/server and isolated storage/failure traces; closed browsers are replaced, resources close on setup/assertion failure. |
-| CT-SCOPE | Only proven non-product RN unit test edits may omit native builds; mixed/shared/unknown paths, test fixtures consumed by journeys and production imports fail closed; all selected checks still aggregate. |
+| CT-SCOPE | Only proven non-product RN unit test edits may omit native builds; mixed/shared/unknown paths, test fixtures consumed by journeys and production imports fail closed; all selected checks still aggregate. The Duo candidate also selects the iOS native and Duo simulator jobs for iOS application changes while retaining conservative selection for mixed and unknown paths. |
 | MC-HQ-CHOICE | Choosing a current HQ option immediately prepares and focuses the same-matter draft without IPC or auto-send; edited text is preserved and stale questions have explicit feedback. |
 | MC-HQ-WINDOW | The complete native HQ window keeps a long question header, original conversation and composer inside narrow/wide viewports; AX choice activation updates the real NSTextView and focus, independent of read timeout. |
 | MC-HQ-READ | Stored matter/overview reads do not perform roster or historical discovery. Slow or failed optional source enrichment cannot block selection/preparing replies or replace newer matters/drafts. Legacy CLI fallback is bounded to explicit unsupported flags. |
 | MC-HQ-OVERVIEW-STATE | Overview groups exclude completed/closed/merged matters even with stale projection IDs; a stage-result body never changes an open goal. Valid saved rows fill a bounded three-item preview and hidden counts match unique displayed records. |
 | MC-HQ-OVERVIEW-MORE | At the bottom of each truncated native HQ section an explicit remaining/total control opens all matters and can select a hidden record without writes; no extra control when all records fit. Complete minimum/wide light/dark bilingual fixtures preserve text/viewport geometry. |
 | MC-HQ-OVERVIEW-BRIEF | The native row presents canonical current assessment before historical receipt text, explicitly names the unfinished goal state and never treats unavailable source metadata as an idle/completed worker; no guessed human decision or completion from titles, Stop or report prose. |
+| DUO-001 | cold notification opens the correct server and selection routes to the selected server. |
+| DUO-002 | selected session and draft survive a simulator orientation change. |
+| DUO-003 | iPad retains sidebar and selected session through rotation. |
+| DUO-004 | cold and warm notification actions send the selected response exactly once. |
+| DUO-005 | warm and cold scene links open the usage sheet. |
+| DUO-006 | first server selection and server switching follow the same observable route on main and candidate. |
+| DUO-007 | fake request diagnostics expose routing metadata without credentials or query values. |
+| DUO-008 | explicit hosted simulator configuration preserves local defaults and bounds driver startup. |
+| DUO-009 | Unacknowledged responses remain retrievable; acknowledged responses disappear, duplicate identity/action is queued once, and only the newest 128 entries remain. |
+| DUO-010 | Initial fallback proceeds despite a stalled drain or permission request, foreground retry retrieves a retained response, and shared identity permits at most one reply. If the initial notification is absent and the first drain stalls, a later active transition delivers and acknowledges the retained response once. |
+| DUO-011 | Trace and Diff remain open with their current content across window resizing. |
+| DUO-012 | resizing preserves mounted detail and selection while compact navigation remains usable. |
+| DUO-013 | usage modal resolves all safe edges in its native presentation. |
+| DUO-014 | both adaptive shell modes compose the shared radar panel. |
+| DUO-015 | inline workspace selection retains identity without pushing a second detail route. |
+| DUO-016 | root layout updates available window size without remounting the reader. |
+| DUO-017 | Duo acceptance verifies ad-hoc simulator signatures while native compilation remains unsigned and no production signing credentials are used. The isolated Duo job installs and verifies published driver 12.20.0 and WDA 16.17.1 for simulator hinge/display commands. |
+| DUO-018 | Background handling starts before the event; the visual tree starts after it without remounting background handling. |
+| DUO-019 | One listener stays active, uses current owner state, and guest or parameterized links remain rejected. Changing the client retains one listener and uses its latest client; a guest-rejected link cannot open after switching to owner. |
+| DUO-020 | Measured hinge reaches open and closed positions, the application window changes, the selected conversation and the same visible reading prompt survive, and the typed draft remains after fold and unfold. |
+| DUO-021 | Trace keeps its selected session and search text; Diff remains open and both can be exited after posture changes. |
+| DUO-022 | The dictionary includes the browsing activity type under the supplied UIKit key and retains the original activity and URL; actual UIKit delivery remains a device test. |
+| DUO-023 | The size setting reports accessibility-large and the selected session and tools are reachable on both panels; save actual audit findings without claiming a VoiceOver or physical-device pass. |
+| DUO-024 | Scene URLs remain pending until acknowledged, the consumer opens an authorized usage link once, guest-rejected links do not become later owner intents, and foreground retry can recover the retained link. A stalled first drain cannot block active-state recovery, and a later duplicate is suppressed. |
+| DUO-025 | The previously visible compact list returns after a round trip; an explicit expanded selection opens its reader, and a first wide automatic selection still shows its reader on folding. |
+| DUO-026 | A guest- or demo-rejected initial intent is consumed once; no sheet opens or usage request occurs after the owner transition. |
 | TD-001 | Reject a changed/new test without a reviewed design; accept a mapped implementation |
 | TD-002 | Reject a tampered review seal, missing assertion description, invalid layer or unsafe path |
 | TD-003 | Reject missing/changed catalogue files and missing named implementation selectors |

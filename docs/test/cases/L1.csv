@@ -3107,6 +3107,7 @@ LEG-ee3efcf0121e,L1,macOS / Widgets Swift,macapp/Tests/MacUsageWidgetSupportTest
 LEG-5fde771eaebb,L1,macOS / Widgets Swift,macapp/Tests/MacUsageWidgetSupportTests/MacUsageWidgetSupportTests.swift,66,XCTest,testOnlySignerScopedMacContainerIsAccepted,False,legacy-not-retrospectively-reviewed
 LEG-450dbd890cc5,L1,macOS / Widgets Swift,macapp/Tests/MacUsageWidgetSupportTests/MacUsageWidgetSupportTests.swift,73,XCTest,testUsageShortcutCannotCarryAnAlternateActionOrCredentials,False,legacy-not-retrospectively-reviewed
 LEG-fbddf3db8aa3,L1,macOS / Widgets Swift,macapp/Tests/MacUsageWidgetSupportTests/MacUsageWidgetSupportTests.swift,80,XCTest,testNoPollingWithoutWidgetNoOverlapAndBoundedReloads,False,legacy-not-retrospectively-reviewed
+MAP-f8347ec463eb,L1,reviewed implementation,mobileapp/__tests__/App.notificationBootstrap.test.tsx,34,reviewed-selector,starts the actual notification bridge,False,DUO-018
 LEG-a93ae72a5022,L1,RN / mobile harness,mobileapp/__tests__/App.test.tsx,9,test,renders correctly,False,legacy-not-retrospectively-reviewed
 LEG-43b35034f78d,L1,Android native,mobileapp/android/app/src/test/java/com/gtmux/app/DocumentPolicyTest.kt,7,JUnit,imageBoundsAreSharedByDocumentAndClipboardReaders,False,legacy-not-retrospectively-reviewed
 LEG-818e29919768,L1,Android native,mobileapp/android/app/src/test/java/com/gtmux/app/DocumentPolicyTest.kt,13,JUnit,resolverKeepsOriginAndRejectsCredentialOrQueryConfusion,False,legacy-not-retrospectively-reviewed
@@ -3156,6 +3157,7 @@ LEG-bd3b5eb44399,L1,RN / mobile harness,mobileapp/e2e/fake-serve/mutations.test.
 LEG-2947a72dc560,L1,RN / mobile harness,mobileapp/e2e/fake-serve/mutations.test.ts,161,test,"a waiting pane offers its own words, an idle one offers nothing",False,legacy-not-retrospectively-reviewed
 LEG-c2fd7392e61c,L1,RN / mobile harness,mobileapp/e2e/fake-serve/mutations.test.ts,181,test,"both arrive, in order, each with its own idempotency token",False,legacy-not-retrospectively-reviewed
 LEG-a15118380df4,L1,RN / mobile harness,mobileapp/e2e/fake-serve/mutations.test.ts,189,test,"a retry of the SAME send reuses its token, which is what makes it a retry",False,legacy-not-retrospectively-reviewed
+MAP-b33db4631198,L1,reviewed implementation,mobileapp/e2e/fake-serve/request-diagnostics.test.ts,3,reviewed-selector,diagnostic request metadata shows routing without headers or query values,False,DUO-007
 LEG-e900a8017f31,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,27,test,"/api/addresses answers an empty list, not a 404",False,legacy-not-retrospectively-reviewed
 LEG-91d47fdea0cb,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,33,test,/api/tasks answers the owner with nothing in flight,False,legacy-not-retrospectively-reviewed
 LEG-67b548dee742,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,41,test,"every row is tiered, located and named the way PaneRow says",False,legacy-not-retrospectively-reviewed
@@ -3180,13 +3182,14 @@ LEG-5d182318c546,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts
 LEG-9491a40f6875,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,33,test,"a suite can still pin one, and a reset unpins it",False,legacy-not-retrospectively-reviewed
 LEG-62967d6ba432,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,41,test,"no supervisor, no verdict",False,legacy-not-retrospectively-reviewed
 LEG-4f90e4968cbd,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,47,test,GET /api/digest carries it on the supervisor row,False,legacy-not-retrospectively-reviewed
-LEG-b6f73720d14b,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,8,test,manual handles nothing on the test’s behalf,False,legacy-not-retrospectively-reviewed
-LEG-7440419bbda7,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,14,test,"the default dismisses, and the older accept switch still accepts",False,legacy-not-retrospectively-reviewed
-LEG-9afe9479f18a,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,19,test,the explicit mode wins over the older switch,False,legacy-not-retrospectively-reviewed
-LEG-ff05befffbd7,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,23,test,a misspelt mode stops the run instead of falling back to dismiss,False,legacy-not-retrospectively-reviewed
-LEG-7201f98d96a5,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,28,test,headless capture is explicit and local GUI runs keep their behavior,False,legacy-not-retrospectively-reviewed
-LEG-16fab5a7cc96,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,34,test,only explicit hosted capture separates WDA build and readiness with one bounded connection,False,legacy-not-retrospectively-reviewed
-LEG-61bfa22d706f,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,50,test,only hosted multi-screen store captures receive the longer journey budget,False,legacy-not-retrospectively-reviewed
+LEG-b6f73720d14b,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,23,test,manual handles nothing on the test’s behalf,False,legacy-not-retrospectively-reviewed
+LEG-7440419bbda7,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,29,test,"the default dismisses, and the older accept switch still accepts",False,legacy-not-retrospectively-reviewed
+LEG-9afe9479f18a,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,34,test,the explicit mode wins over the older switch,False,legacy-not-retrospectively-reviewed
+LEG-ff05befffbd7,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,38,test,a misspelt mode stops the run instead of falling back to dismiss,False,legacy-not-retrospectively-reviewed
+LEG-7201f98d96a5,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,43,test,headless capture is explicit and local GUI runs keep their behavior,False,legacy-not-retrospectively-reviewed
+LEG-16fab5a7cc96,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,49,test,only explicit hosted capture separates WDA build and readiness with one bounded connection,False,legacy-not-retrospectively-reviewed
+LEG-61bfa22d706f,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,65,test,only hosted multi-screen store captures receive the longer journey budget,False,legacy-not-retrospectively-reviewed
+MAP-ad6f801c4c8b,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,3,reviewed-selector,cloud simulator session waits for a fresh WDA build without requiring a prebuilt product,False,DUO-008
 DG-001-f069a0,L1,RN / mobile harness,mobileapp/e2e/setup/manual-tools.test.ts,6,test,DG-001 ordinary discovery,False,DG-001
 DG-002-f069a0,L1,RN / mobile harness,mobileapp/e2e/setup/manual-tools.test.ts,19,test,DG-002 rejects missing target,False,DG-002
 DG-003-f069a0,L1,RN / mobile harness,mobileapp/e2e/setup/manual-tools.test.ts,39,test,DG-003 confirms one exact fixture pane,False,DG-003
@@ -3201,6 +3204,9 @@ LEG-72dc7db04494,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,106,
 LEG-2eb2e34b22ce,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,124,it,unscoped by default,False,legacy-not-retrospectively-reviewed
 ND-001,L1,iOS Swift,mobileapp/ios/tests/DocumentHTMLChecks.swift,2,native-procedural-oracle,DocumentHTML production Foundation checks,False,ND-001
 ND-002,L1,iOS Swift,mobileapp/ios/tests/DocumentMarkdownChecks.swift,3,native-procedural-oracle,DocumentMarkdown production Foundation checks,False,ND-002
+MAP-88eca3d41bfd,L1,reviewed implementation,mobileapp/ios/tests/NotificationResponsePayloadChecks.swift,53,reviewed-selector,notification response payload and queue checks passed,False,DUO-009
+MAP-2bf007ddc23d,L1,reviewed implementation,mobileapp/ios/tests/NotificationResponsePayloadChecks.swift,9,reviewed-selector,let activityPayload = sceneUserActivityPayload,False,"DUO-009,DUO-022"
+MAP-4eba460f385e,L1,reviewed implementation,mobileapp/ios/tests/NotificationResponsePayloadChecks.swift,13,reviewed-selector,"retainHeadlessSceneLinks(urls: [sceneURL], activities: [activity])",False,"DUO-009,DUO-022,DUO-024"
 LEG-917bba954652,L1,RN / mobile harness,mobileapp/src/api/backgroundTasks.test.ts,13,it,"counts waiting as running, not as finished",False,legacy-not-retrospectively-reviewed
 LEG-c7d9f4d079ae,L1,RN / mobile harness,mobileapp/src/api/backgroundTasks.test.ts,20,it,tallies the three buckets,False,legacy-not-retrospectively-reviewed
 LEG-c5e62f5e8b3f,L1,RN / mobile harness,mobileapp/src/api/backgroundTasks.test.ts,27,it,is not rendered when nothing is running,False,legacy-not-retrospectively-reviewed
@@ -3537,8 +3543,14 @@ LEG-6f792759097e,L1,RN / mobile harness,mobileapp/src/pairing/store.test.ts,237,
 LEG-2f070febef58,L1,RN / mobile harness,mobileapp/src/platformReleaseNotes.test.ts,6,test,iOS keeps its archive; Android never inherits iPhone-only historical releases,False,legacy-not-retrospectively-reviewed
 LEG-83c398034235,L1,RN / mobile harness,mobileapp/src/push/android.test.ts,11,test,missing configuration does not create a fake registration,False,legacy-not-retrospectively-reviewed
 LEG-3410a0b99aa3,L1,RN / mobile harness,mobileapp/src/push/android.test.ts,15,test,"FCM token refresh, one-use cold tap and live tap share lifecycle without executing digits",False,legacy-not-retrospectively-reviewed
-LEG-c0039196e4f2,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,29,test,"the launch notification is acted on once, not on every server switch",False,legacy-not-retrospectively-reviewed
-LEG-a79023052203,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,39,test,a launch with no notification taps nothing,False,legacy-not-retrospectively-reviewed
+LEG-c0039196e4f2,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,32,test,"the launch notification is acted on once, not on every server switch",False,legacy-not-retrospectively-reviewed
+LEG-a79023052203,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,42,test,a launch with no notification taps nothing,False,legacy-not-retrospectively-reviewed
+MAP-43a5acb09524,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,124,reviewed-selector,a buffered native response and the launch copy dispatch one quick reply,False,DUO-010
+MAP-e583ab6da371,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,136,reviewed-selector,a native buffer failure still delivers the bridge launch notification,False,DUO-010
+MAP-f6ca99aeb79b,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,58,reviewed-selector,the same quick action arriving from scene and delegate sends once,False,DUO-010
+MAP-49ac3dbf1487,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,145,reviewed-selector,a stalled native drain leaves initial fallback and foreground recovery usable,False,DUO-010
+MAP-14fb52a6ba3b,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,192,reviewed-selector,the initial action does not wait for notification permission,False,DUO-010
+MAP-b3afaf2b1f68,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,167,reviewed-selector,foreground recovery first delivers a retained response after the initial drain stalls,False,DUO-010
 LEG-fbb65bc19bd8,L1,RN / mobile harness,mobileapp/src/push/sync.test.ts,9,it,"registers a selected Mac and unregisters a muted Mac, including silent badge pushes",False,legacy-not-retrospectively-reviewed
 LEG-c01ee8fb12d3,L1,RN / mobile harness,mobileapp/src/push/sync.test.ts,20,it,tries a reported alternate route and leaves a failed sync pending,False,legacy-not-retrospectively-reviewed
 LEG-7719b4cb3445,L1,RN / mobile harness,mobileapp/src/push/sync.test.ts,31,it,never registers a guest or an unknown token,False,legacy-not-retrospectively-reviewed
@@ -3689,11 +3701,21 @@ LEG-88486f8eeb41,L1,RN / mobile harness,mobileapp/src/trace/timeline.test.ts,15,
 LEG-39add4eb8ec5,L1,RN / mobile harness,mobileapp/src/trace/timeline.test.ts,53,test,search reveals matching individual calls regardless of collapsed history,False,legacy-not-retrospectively-reviewed
 LEG-4386362cb604,L1,RN / mobile harness,mobileapp/src/trace/timeline.test.ts,62,test,only recognized image envelopes are removed from a preview; source remains literal,False,legacy-not-retrospectively-reviewed
 LEG-4b5a90342a0d,L1,RN / mobile harness,mobileapp/src/trace/timeline.test.ts,78,test,bulk call folding includes single/two-call runs and stays independent of turns,False,legacy-not-retrospectively-reviewed
+MAP-6e69e9ec9b41,L1,reviewed implementation,mobileapp/src/ui/WorkspaceSurface.test.tsx,12,reviewed-selector,starts background handling before native insets,False,DUO-018
+MAP-109f723286a2,L1,reviewed implementation,mobileapp/src/usage/UsageWidgetBridge.initialDemoLink.test.tsx,15,reviewed-selector,a demo-rejected initial link cannot replay when the connection becomes an owner,False,DUO-026
+MAP-cd8094a5d6ae,L1,reviewed implementation,mobileapp/src/usage/UsageWidgetBridge.initialLink.test.tsx,15,reviewed-selector,a guest-rejected initial link cannot replay when the connection becomes owner,False,DUO-026
 LEG-3de06c104722,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,22,test,"pairing lifecycle sends only the current owner URL, including same-address token rotation",False,legacy-not-retrospectively-reviewed
 LEG-abfa9a8366d0,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,46,test,"a widget opens usage without HQ, dismisses, and ignores guest links and private URL parameters",False,legacy-not-retrospectively-reviewed
-LEG-7419b6327ede,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,73,test,widget links cannot select a server or smuggle credentials,False,legacy-not-retrospectively-reviewed
-LEG-ba603cf68958,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,81,test,changing a connection closes the old sheet and discards its late response,False,legacy-not-retrospectively-reviewed
-LEG-483418e96a4d,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,106,test,Android snapshot labels handle unnamed plans and contain no pairing credential,False,legacy-not-retrospectively-reviewed
+LEG-7419b6327ede,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,81,test,widget links cannot select a server or smuggle credentials,False,legacy-not-retrospectively-reviewed
+LEG-ba603cf68958,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,89,test,changing a connection closes the old sheet and discards its late response,False,legacy-not-retrospectively-reviewed
+LEG-483418e96a4d,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,259,test,Android snapshot labels handle unnamed plans and contain no pairing credential,False,legacy-not-retrospectively-reviewed
+MAP-2e63515d4156,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,46,reviewed-selector,a widget opens usage without HQ,False,DUO-019
+MAP-2cb14bb98a8b,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,89,reviewed-selector,changing a connection closes the old sheet,False,DUO-019
+MAP-732a597f88bf,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,118,reviewed-selector,a headless scene link is retained until the visual consumer opens and acknowledges it,False,"DUO-019,DUO-024"
+MAP-3001d0088bec,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,142,reviewed-selector,a queued scene link rejected for a guest cannot open after switching to owner,False,"DUO-019,DUO-024"
+MAP-3fba88d7af6d,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,167,reviewed-selector,a retained scene link is retried when the app becomes active,False,"DUO-019,DUO-024"
+MAP-25be587027d6,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,195,reviewed-selector,an active transition during a failed drain still retries the retained link,False,"DUO-019,DUO-024"
+MAP-68bf80153330,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,224,reviewed-selector,foreground recovery bypasses a stalled scene-link drain and suppresses its late copy,False,"DUO-019,DUO-024"
 LEG-e694b8d31044,L1,Go core / CLI / server,relay/apns_contract_test.go,36,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-de09a2af7303,L1,Go core / CLI / server,relay/fcm_test.go,36,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-9437d12d0839,L1,Go core / CLI / server,relay/fcm_test.go,128,Test,TestFCMRejectsUnsupportedOrOverlongIntents,False,legacy-not-retrospectively-reviewed

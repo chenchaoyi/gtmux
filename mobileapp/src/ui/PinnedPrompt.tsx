@@ -3,7 +3,7 @@
 
 import React, {useEffect, useRef, useState} from 'react';
 import {LayoutChangeEvent, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import {MODAL_ORIENTATIONS} from './modalOrientations';
 import {ContentColumn} from './ContentColumn';
 import {CHROME_MAX_SCALE} from './textScale';
@@ -74,7 +74,8 @@ export function PinnedPrompt({prompt, pal, lang, onHeight}: {
       </TouchableOpacity>
       {open && (
         <Modal supportedOrientations={MODAL_ORIENTATIONS} visible animationType="slide" presentationStyle="pageSheet" allowSwipeDismissal onRequestClose={() => setOpen(false)}>
-          <SafeAreaView style={[styles.reader, {backgroundColor: pal.bg}]}>
+          <SafeAreaProvider style={[styles.reader, {backgroundColor: pal.bg}]}>
+          <SafeAreaView style={styles.reader} edges={['top', 'bottom', 'left', 'right']}>
             <ContentColumn style={styles.readerColumn}>
               <View style={[styles.readerBar, {borderBottomColor: pal.divider}]}>
                 <Text maxFontSizeMultiplier={CHROME_MAX_SCALE} accessibilityRole="header" style={[styles.title, {color: pal.fg}]}>{zh ? '本轮指令' : 'Instruction'}</Text>
@@ -90,6 +91,7 @@ export function PinnedPrompt({prompt, pal, lang, onHeight}: {
               </ScrollView>
             </ContentColumn>
           </SafeAreaView>
+          </SafeAreaProvider>
         </Modal>
       )}
     </>

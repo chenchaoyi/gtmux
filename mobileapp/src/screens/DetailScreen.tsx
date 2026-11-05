@@ -128,6 +128,7 @@ export function DetailScreen({route, navigation}: any) {
     <DetailView
       agent={route.params.agent}
       initialMode={route.params.mode}
+      openDiffRequest={route.params.openDiff ? 1 : undefined}
       onBack={() => navigation.goBack()}
       onOpenPane={row => navigation.push('Detail', {agent: paneRowToAgent(row)})}
       onOpenTaskPane={a => navigation.push('Detail', {agent: a})}
@@ -144,12 +145,14 @@ function PaneDetailView({
   agent,
   onBack,
   initialMode,
+  openDiffRequest,
   onOpenPane,
   onOpenTaskPane,
 }: {
   agent: Agent;
   onBack?: () => void;
   initialMode?: DetailMode;
+  openDiffRequest?: number;
   onOpenPane?: (row: PaneRow) => void;
   /** Go to a task's pane from the background-tasks sheet (chat-background-tasks). */
   onOpenTaskPane?: (agent: Agent) => void;
@@ -159,9 +162,8 @@ function PaneDetailView({
   const insets = useSafeAreaInsets();
   const {client, agents, conn, isGuest, inputPanes, demo} = useAgents();
   const {pal, lang, fontPref, mac, returnSends, defaultDetailMode} = useApp();
-  // The regular shell means we're the iPad's main pane (never a phone, in either
-  // orientation — see ui/layout). The chat caps at a reading width there, and the
-  // connection chip the sidebar already shows is dropped.
+  // A regular window has room for the sidebar and a reading-width main pane.
+  // The connection chip is already visible in the sidebar.
   const isWide = useSizeClass() === 'regular';
   // `agent` is a static snapshot from the navigation params; resolve the LIVE agent
   // from the polled store (by pane, or a native row by its conversation id) so the header
@@ -632,6 +634,7 @@ function PaneDetailView({
   const etagIdentity = useRef(chatIdentity);
   if (etagIdentity.current !== chatIdentity) {etagIdentity.current = chatIdentity; etagRef.current = undefined;}
   useEffect(() => {setChatRecord({identity: chatIdentity, turns: [], dropped: 0, loaded: false}); setTraceOpen(false); setDiffOpen(false);}, [chatIdentity]);
+  useEffect(() => { if (openDiffRequest) setDiffOpen(true); }, [openDiffRequest, chatIdentity]);
   // The latest loader and when it last ran, for the Codex refresh below.
   const loadTurnsRef = useRef<() => void>(() => {});
   const turnsAtRef = useRef(0);

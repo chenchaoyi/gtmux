@@ -390,13 +390,14 @@ jobs:
     needs: scope
     if: needs.scope.outputs.ios == 'true'
     runs-on: macos-15
-    timeout-minutes: 60
+    timeout-minutes: 90
     env:
       DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
     steps:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
+          fetch-depth: 0
       - name: Runner space and SDK preflight
         run: |
           test "$(uname -m)" = arm64
@@ -446,11 +447,242 @@ jobs:
               assert architectures == ['arm64'], 'Native product target differs from ARM64'
           print('Unsigned app and both embedded extensions verified as ARM64')
           PY
+      - name: Install isolated iOS comparison driver
+        if: github.event_name == 'pull_request' && (github.head_ref == 'feat/iphone-duo-adaptation' || github.head_ref == 'feat/iphone-duo-reviewed-integration')
+        working-directory: mobileapp
+        env:
+          APPIUM_HOME: ${{ runner.temp }}/ios26-appium
+        run: |
+          driver_version=$(node -p "require('./package-lock.json').packages['node_modules/appium-xcuitest-driver'].version")
+          npx appium driver install --source=npm "appium-xcuitest-driver@$driver_version"
+      - name: Compare unmodified main and candidate on iOS 26
+        id: server_compare26
+        if: github.event_name == 'pull_request' && (github.head_ref == 'feat/iphone-duo-adaptation' || github.head_ref == 'feat/iphone-duo-reviewed-integration')
+        env:
+          GITHUB_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          APPIUM_HOME: ${{ runner.temp }}/ios26-appium
+          GTMUX_COMPARE_OS: '26.2'
+          GTMUX_COMPARE_ADHOC: '1'
+          GTMUX_COMPARE_DEVICE: iPhone 17
+          GTMUX_E2E_SOFT_KEYBOARD: '1'
+          GTMUX_E2E_HEADLESS: '1'
+          GTMUX_E2E_ACCEPT_ALERTS: '1'
+          GTMUX_E2E_SESSION_CI: '1'
+        run: |
+          set -o pipefail
+          mkdir -p mobileapp/.e2e-artifacts/comparison
+          bash mobileapp/e2e/ci-compare-servers.sh 2>&1 | tee mobileapp/.e2e-artifacts/comparison/setup.log
+      - name: Preserve iOS 26 server comparison
+        if: ${{ !cancelled() && steps.server_compare26.outcome != 'skipped' }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: ios26-server-comparison-${{ github.run_id }}-${{ github.run_attempt }}
+          path: mobileapp/.e2e-artifacts/comparison/**
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
       - name: Native build failure evidence
         if: failure()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: ios-native-build-log
+          path: ${{ runner.temp }}/gtmux-ios-build.log
+          retention-days: 7
+
+  ios-duo:
+    name: iPhone Duo simulator acceptance (ad-hoc)
+    needs: scope
+    if: needs.scope.outputs.ios == 'true'
+    runs-on: xcode-27
+    timeout-minutes: 120
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Runner space and SDK preflight
+        run: |
+          test "$(uname -m)" = arm64
+          test -d "$DEVELOPER_DIR"
+          python3 -c 'import shutil; n=shutil.disk_usage(".").free; print(f"Available: {n/1024**3:.1f} GiB"); assert n >= 25*1024**3, "Insufficient space for native CI build"'
+          xcodebuild -version
+          xcodebuild -showsdks
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: mobileapp/package-lock.json
+      - uses: ruby/setup-ruby@e81a8fa391b11a595c1b7ed84177cc0fe02faf83 # v1
+        with:
+          working-directory: mobileapp
+          bundler-cache: true
+      - name: Dependencies (no signing setup)
+        working-directory: mobileapp
+        run: npm ci && (cd ios && bundle exec pod install)
+      - name: Widget target and shared-data boundaries
+        working-directory: mobileapp
+        run: bundle exec ruby ios/tests/usage_widget_targets_test.rb
+
+      - name: Compile app, Live Activity and notification extension
+        working-directory: mobileapp
+        run: |
+          set -o pipefail
+          xcodebuild -workspace ios/GtmuxMobile.xcworkspace -scheme GtmuxMobile \
+            -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -jobs 2 \
+            -derivedDataPath "$RUNNER_TEMP/gtmux-ios-ci" ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- \
+            build 2>&1 | tee "$RUNNER_TEMP/gtmux-ios-build.log"
+      - name: Verify actual ARM64 app and extension products
+        id: ios_products
+        run: |
+          python3 - <<'PY'
+          import os, pathlib, plistlib, subprocess
+          products = pathlib.Path(os.environ['RUNNER_TEMP']) / 'gtmux-ios-ci/Build/Products/Release-iphonesimulator'
+          apps = list(products.glob('*.app'))
+          assert len(apps) == 1, 'Expected one complete Simulator app'
+          extensions = list((apps[0] / 'PlugIns').glob('*.appex'))
+          assert len(extensions) == 2, 'Both app extensions must be embedded'
+          for bundle in [apps[0], *extensions]:
+              info = plistlib.loads((bundle / 'Info.plist').read_bytes())
+              executable = bundle / info['CFBundleExecutable']
+              architectures = subprocess.check_output(['lipo', '-archs', str(executable)], text=True).split()
+              assert architectures == ['arm64'], 'Native product target differs from ARM64'
+              signature = subprocess.run(['codesign', '-dv', str(bundle)], capture_output=True, text=True, check=True).stderr
+              assert 'Signature=adhoc' in signature, 'Expected an ad-hoc Simulator signature'
+              print(signature)
+          print('Ad-hoc signed app and both embedded extensions verified as ARM64')
+          PY
+      - name: Check native notification response encoding
+        working-directory: mobileapp
+        run: |
+          xcrun swiftc ios/GtmuxMobile/NotificationResponsePayload.swift ios/tests/NotificationResponsePayloadChecks.swift -o "$RUNNER_TEMP/notification-response-check"
+          "$RUNNER_TEMP/notification-response-check"
+      - name: Install isolated iOS automation driver
+        id: ios_driver
+        working-directory: mobileapp
+        env:
+          APPIUM_HOME: ${{ runner.temp }}/duo-appium
+        run: |
+          # Duo hinge/display control requires the published Duo-capable WDA.
+          # This isolated runner driver does not change local or production dependencies.
+          npx appium driver install --source=npm 'appium-xcuitest-driver@12.20.0'
+          python3 - <<'PY'
+          import json, os, pathlib
+          versions = {}
+          for package in pathlib.Path(os.environ['APPIUM_HOME']).rglob('package.json'):
+              try:
+                  info = json.loads(package.read_text())
+              except (OSError, ValueError):
+                  continue
+              if info.get('name') in ('appium-xcuitest-driver', 'appium-webdriveragent'):
+                  versions.setdefault(info['name'], set()).add(info.get('version'))
+          assert '12.20.0' in versions.get('appium-xcuitest-driver', set()), versions
+          assert '16.17.1' in versions.get('appium-webdriveragent', set()), versions
+          print('Verified isolated Duo driver 12.20.0 and WDA 16.17.1')
+          PY
+      - name: Probe iPhone Duo runtime and run isolated simulator interaction
+        if: ${{ !cancelled() && steps.ios_products.outcome == 'success' && steps.ios_driver.outcome == 'success' }}
+        working-directory: mobileapp
+        env:
+          APPIUM_HOME: ${{ runner.temp }}/duo-appium
+          GTMUX_E2E_DEVICE: iPhone Duo
+          GTMUX_E2E_OS: '27.1'
+          GTMUX_E2E_SOFT_KEYBOARD: '1'
+          GTMUX_E2E_HEADLESS: '1'
+          GTMUX_E2E_ACCEPT_ALERTS: '1'
+          GTMUX_E2E_SESSION_CI: '1'
+        run: |
+          set -euo pipefail
+          xcrun simctl list -j devices available > "$RUNNER_TEMP/duo-devices.json"
+          GTMUX_E2E_UDID=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); matches=[x["udid"] for runtime, devices in d["devices"].items() if runtime.endswith("iOS-27-1") for x in devices if x["name"] == "iPhone Duo" and x["isAvailable"]]; assert len(matches)==1, matches; print(matches[0])' "$RUNNER_TEMP/duo-devices.json")
+          export GTMUX_E2E_UDID
+          xcrun simctl bootstatus "$GTMUX_E2E_UDID" -b
+          xcrun simctl install "$GTMUX_E2E_UDID" "$RUNNER_TEMP/gtmux-ios-ci/Build/Products/Release-iphonesimulator/gtmux.app"
+          npm run test:e2e -- --runInBand duo-window.test.ts duo-fold.test.ts notification-scene-actions.test.ts scene-usage-links.test.ts
+      - name: Preserve notification diagnostics immediately
+        if: ${{ !cancelled() && steps.ios_products.outcome == 'success' && steps.ios_driver.outcome == 'success' }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: ios-notification-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            mobileapp/.e2e-artifacts/**/action-*
+            mobileapp/.e2e-artifacts/**/scene-action-*
+            mobileapp/.e2e-artifacts/**/warm-action-*
+            mobileapp/.e2e-artifacts/**/usage-link-*
+            mobileapp/.e2e-artifacts/**/fail-scene-*-usage-link-failed.*
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Ordinary iPhone simulator regression
+        if: ${{ !cancelled() && steps.ios_products.outcome == 'success' && steps.ios_driver.outcome == 'success' }}
+        working-directory: mobileapp
+        env:
+          APPIUM_HOME: ${{ runner.temp }}/duo-appium
+          GTMUX_E2E_SOFT_KEYBOARD: '1'
+          GTMUX_E2E_HEADLESS: '1'
+          GTMUX_E2E_ACCEPT_ALERTS: '1'
+          GTMUX_E2E_SESSION_CI: '1'
+        run: |
+          set -euo pipefail
+          xcrun simctl list -j devices available > "$RUNNER_TEMP/ordinary-devices.json"
+          duo_booted=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(" ".join(x["udid"] for runtime, devices in d["devices"].items() if runtime.endswith("iOS-27-1") for x in devices if x["name"] == "iPhone Duo" and x["state"] == "Booted"))' "$RUNNER_TEMP/ordinary-devices.json")
+          if [ -n "$duo_booted" ]; then xcrun simctl shutdown "$duo_booted"; fi
+          GTMUX_E2E_UDID=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); matches=[x["udid"] for runtime, devices in d["devices"].items() if runtime.endswith("iOS-27-0") for x in devices if x["name"] == "iPhone 17" and x["isAvailable"]]; assert len(matches)==1, matches; print(matches[0])' "$RUNNER_TEMP/ordinary-devices.json")
+          export GTMUX_E2E_UDID GTMUX_E2E_DEVICE='iPhone 17' GTMUX_E2E_OS='27.0'
+          xcrun simctl bootstatus "$GTMUX_E2E_UDID" -b
+          xcrun simctl install "$GTMUX_E2E_UDID" "$RUNNER_TEMP/gtmux-ios-ci/Build/Products/Release-iphonesimulator/gtmux.app"
+          npm run test:e2e -- --runInBand coldstart-push.test.ts
+      - name: Preserve iPhone diagnostics immediately
+        if: ${{ !cancelled() && steps.ios_products.outcome == 'success' && steps.ios_driver.outcome == 'success' }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: ios-phone-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            mobileapp/.e2e-artifacts/**/debug-*
+            mobileapp/.e2e-artifacts/**/requests-*
+            mobileapp/.e2e-artifacts/**/c-*
+            mobileapp/.e2e-artifacts/**/cold-summary.txt
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 7
+      - name: iPad simulator regression
+        if: ${{ !cancelled() && steps.ios_products.outcome == 'success' && steps.ios_driver.outcome == 'success' }}
+        working-directory: mobileapp
+        env:
+          APPIUM_HOME: ${{ runner.temp }}/duo-appium
+          GTMUX_E2E_SOFT_KEYBOARD: '1'
+          GTMUX_E2E_HEADLESS: '1'
+          GTMUX_E2E_ACCEPT_ALERTS: '1'
+          GTMUX_E2E_SESSION_CI: '1'
+        run: |
+          set -euo pipefail
+          xcrun simctl list -j devices available > "$RUNNER_TEMP/ipad-devices.json"
+          phone_booted=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(" ".join(x["udid"] for runtime, devices in d["devices"].items() if runtime.endswith("iOS-27-0") for x in devices if x["name"] == "iPhone 17" and x["state"] == "Booted"))' "$RUNNER_TEMP/ipad-devices.json")
+          if [ -n "$phone_booted" ]; then xcrun simctl shutdown "$phone_booted"; fi
+          GTMUX_E2E_UDID=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); matches=[x["udid"] for runtime, devices in d["devices"].items() if runtime.endswith("iOS-27-0") for x in devices if x["name"] == "iPad Pro 13-inch (M5)" and x["isAvailable"]]; assert len(matches)==1, matches; print(matches[0])' "$RUNNER_TEMP/ipad-devices.json")
+          export GTMUX_E2E_UDID GTMUX_E2E_DEVICE='iPad Pro 13-inch (M5)' GTMUX_E2E_OS='27.0'
+          xcrun simctl bootstatus "$GTMUX_E2E_UDID" -b
+          xcrun simctl install "$GTMUX_E2E_UDID" "$RUNNER_TEMP/gtmux-ios-ci/Build/Products/Release-iphonesimulator/gtmux.app"
+          npm run test:e2e -- --runInBand ipad-adaptive.test.ts
+      - name: Preserve Duo interaction evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: duo-simulator-evidence
+          path: |
+            ${{ runner.temp }}/duo-devices.json
+            ${{ runner.temp }}/ordinary-devices.json
+            ${{ runner.temp }}/ipad-devices.json
+            mobileapp/.e2e-artifacts/**
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 7
+      - name: Native build failure evidence
+        if: failure()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: ios-duo-build-log
           path: ${{ runner.temp }}/gtmux-ios-build.log
           retention-days: 7
 
@@ -574,7 +806,7 @@ jobs:
 
   ci-required:
     if: always()
-    needs: [scope, quality, test, cross-build, mobile, web, ios-native, android-native, android-emulator, relay-worker, tunnel-worker, menubar]
+    needs: [scope, quality, test, cross-build, mobile, web, ios-native, ios-duo, android-native, android-emulator, relay-worker, tunnel-worker, menubar]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

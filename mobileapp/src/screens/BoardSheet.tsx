@@ -22,6 +22,7 @@
 // covering for a render nobody asked for.
 
 import React, {useEffect, useRef, useState} from 'react';
+import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import {Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {MarkdownView, MdColors} from '../ui/MarkdownView';
 import {AskItem, askItems, boardOutline} from './boardSections';
@@ -100,7 +101,8 @@ export function BoardSheet({
 
   return (
     <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={[styles.root, {backgroundColor: pal.bg}]}>
+      <SafeAreaProvider style={[styles.root, {backgroundColor: pal.bg}]}>
+      <SafeAreaView style={styles.root} edges={['top', 'bottom', 'left', 'right']}>
         <View style={[styles.head, {borderBottomColor: pal.divider}]}>
           <View style={styles.mid}>
             <Text style={[styles.title, {color: pal.fg}]}>{t('Situation board', '态势板')}</Text>
@@ -262,7 +264,8 @@ export function BoardSheet({
             );
           })}
         </ScrollView>
-      </View>
+      </SafeAreaView>
+      </SafeAreaProvider>
     </Modal>
   );
 }
