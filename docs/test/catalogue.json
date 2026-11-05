@@ -54746,7 +54746,7 @@
       ]
     },
     "scripts/ci_test.py": {
-      "sha256": "a9161e8ff1eb5b9525db4dde3d133c1eecd15a63cc3848481756c82f21ba0485",
+      "sha256": "c3c2d6a4d5679359140d5b1229175f6a9f4cb94c699b2d1bcb7dc1a9773d1a55",
       "layer": "G",
       "stack": "CI / tooling",
       "cases": [
@@ -54816,7 +54816,7 @@
         },
         {
           "id": "LEG-2514a184abce",
-          "line": 145,
+          "line": 146,
           "kind": "unittest",
           "name": "test_android_package_is_built_once_and_both_devices_use_its_output",
           "dynamic": false,
@@ -54824,7 +54824,7 @@
         },
         {
           "id": "LEG-76200ceafcf2",
-          "line": 165,
+          "line": 166,
           "kind": "unittest",
           "name": "test_docs_can_skip_heavy_jobs_but_require_quality",
           "dynamic": false,
@@ -54832,7 +54832,7 @@
         },
         {
           "id": "LEG-ecfb4bf818ba",
-          "line": 171,
+          "line": 172,
           "kind": "unittest",
           "name": "test_missing_skipped_failed_cancelled_required_job_never_green",
           "dynamic": true,
@@ -54840,7 +54840,7 @@
         },
         {
           "id": "LEG-252965413bf3",
-          "line": 180,
+          "line": 181,
           "kind": "unittest",
           "name": "test_bad_plans_or_unselected_failure_are_rejected",
           "dynamic": false,
@@ -54848,7 +54848,7 @@
         },
         {
           "id": "LEG-8a6a845c7484",
-          "line": 192,
+          "line": 193,
           "kind": "unittest",
           "name": "test_mac_host_keeps_both_architectures_and_native_checks",
           "dynamic": false,
@@ -54856,7 +54856,7 @@
         },
         {
           "id": "LEG-28f4d1551b14",
-          "line": 209,
+          "line": 210,
           "kind": "unittest",
           "name": "test_ios_delivery_pins_the_same_arm_toolchain_and_keeps_protection",
           "dynamic": false,

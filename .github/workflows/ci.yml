@@ -490,7 +490,7 @@ jobs:
           retention-days: 7
 
   ios-duo:
-    name: iPhone Duo simulator acceptance (unsigned)
+    name: iPhone Duo simulator acceptance (ad-hoc)
     needs: scope
     if: needs.scope.outputs.ios == 'true'
     runs-on: xcode-27
@@ -531,7 +531,7 @@ jobs:
           set -o pipefail
           xcodebuild -workspace ios/GtmuxMobile.xcworkspace -scheme GtmuxMobile \
             -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -jobs 2 \
-            -derivedDataPath "$RUNNER_TEMP/gtmux-ios-ci" ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO \
+            -derivedDataPath "$RUNNER_TEMP/gtmux-ios-ci" ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- \
             build 2>&1 | tee "$RUNNER_TEMP/gtmux-ios-build.log"
       - name: Verify actual ARM64 app and extension products
         id: ios_products
@@ -548,7 +548,10 @@ jobs:
               executable = bundle / info['CFBundleExecutable']
               architectures = subprocess.check_output(['lipo', '-archs', str(executable)], text=True).split()
               assert architectures == ['arm64'], 'Native product target differs from ARM64'
-          print('Unsigned app and both embedded extensions verified as ARM64')
+              signature = subprocess.run(['codesign', '-dv', str(bundle)], capture_output=True, text=True, check=True).stderr
+              assert 'Signature=adhoc' in signature, 'Expected an ad-hoc Simulator signature'
+              print(signature)
+          print('Ad-hoc signed app and both embedded extensions verified as ARM64')
           PY
       - name: Check native notification response encoding
         working-directory: mobileapp
