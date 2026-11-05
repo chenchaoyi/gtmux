@@ -34582,7 +34582,7 @@
     },
     "mobileapp/e2e/__tests__/appstore-shots-ipad.test.ts": {
       "sha256": "627afa7a525125cf9b5e41d7c65d4cbbfcbbbf8b4710ae59aa2a2edf267450f5",
-      "layer": "L4",
+      "layer": "M",
       "stack": "RN / mobile harness",
       "cases": [
         {
@@ -34591,13 +34591,13 @@
           "kind": "it",
           "name": "captures the split shell, HQ matters, the pane grid and the knowledge sheet",
           "dynamic": false,
-          "layer": "L4"
+          "layer": "M"
         }
       ]
     },
     "mobileapp/e2e/__tests__/appstore-shots.test.ts": {
       "sha256": "c9f03b2945fc6a7bfd1832ebb8cd51de866faaa5980900a2b48bec5c0c7372f6",
-      "layer": "L4",
+      "layer": "M",
       "stack": "RN / mobile harness",
       "cases": [
         {
@@ -34606,7 +34606,7 @@
           "kind": "it",
           "name": "captures the radar, the terminal, HQ, its work, usage and the Macs",
           "dynamic": false,
-          "layer": "L4"
+          "layer": "M"
         }
       ]
     },
@@ -34718,7 +34718,7 @@
     },
     "mobileapp/e2e/__tests__/composer-shots.test.ts": {
       "sha256": "4437c23b7e1039459b50e2e835c438785fcdff9cb0dc6dae5dd95420b7698e66",
-      "layer": "L4",
+      "layer": "M",
       "stack": "RN / mobile harness",
       "cases": [
         {
@@ -34727,13 +34727,13 @@
           "kind": "it",
           "name": "captures the composer input row + the attach sheet",
           "dynamic": false,
-          "layer": "L4"
+          "layer": "M"
         }
       ]
     },
     "mobileapp/e2e/__tests__/cursor.test.ts": {
       "sha256": "47884ad0ef511ecb091515472704c69bceaefecb2412fb5b946a17aa8bf9a96c",
-      "layer": "L4",
+      "layer": "M",
       "stack": "RN / mobile harness",
       "cases": [
         {
@@ -34742,7 +34742,7 @@
           "kind": "it",
           "name": "opens a terminal pane and screenshots the cursor",
           "dynamic": false,
-          "layer": "L4"
+          "layer": "M"
         }
       ]
     },
@@ -35204,7 +35204,7 @@
     },
     "mobileapp/e2e/__tests__/screenshots.test.ts": {
       "sha256": "a1b2cf52c60a8524b5c118762c9afc83b82478e7f0e9d6629cc49c2b35232ed3",
-      "layer": "L4",
+      "layer": "M",
       "stack": "RN / mobile harness",
       "cases": [
         {
@@ -35213,7 +35213,7 @@
           "kind": "it",
           "name": "captures radar, detail, and the connection page",
           "dynamic": false,
-          "layer": "L4"
+          "layer": "M"
         }
       ]
     },
@@ -35341,7 +35341,7 @@
     },
     "mobileapp/e2e/__tests__/site-shots.test.ts": {
       "sha256": "997d7ac7d9cbd9eaebb8c27447cdda3459666cc63601d131b935c7a8795edc48",
-      "layer": "L4",
+      "layer": "M",
       "stack": "RN / mobile harness",
       "cases": [
         {
@@ -35350,7 +35350,7 @@
           "kind": "it",
           "name": "captures every store frame, the radar to the Macs, with real marks",
           "dynamic": false,
-          "layer": "L4"
+          "layer": "M"
         },
         {
           "id": "LEG-c93e0d283c40",
@@ -35358,7 +35358,7 @@
           "kind": "it",
           "name": "captures every store frame, the split shell to the knowledge sheet, with real marks",
           "dynamic": false,
-          "layer": "L4"
+          "layer": "M"
         }
       ]
     },
@@ -35432,7 +35432,7 @@
     },
     "mobileapp/e2e/__tests__/states-shot.test.ts": {
       "sha256": "35da6e1272d1594710adbf8409281bee274f045f044fae7e2c937149610324de",
-      "layer": "L4",
+      "layer": "M",
       "stack": "RN / mobile harness",
       "cases": [
         {
@@ -35441,7 +35441,7 @@
           "kind": "it",
           "name": "renders the radar, a waiting pane and the HQ page",
           "dynamic": false,
-          "layer": "L4"
+          "layer": "M"
         }
       ]
     },

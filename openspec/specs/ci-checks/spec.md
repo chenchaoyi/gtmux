@@ -220,7 +220,10 @@ inventory SHALL NOT be labelled retrospective approval or runtime passes.
 
 Affected iOS CI SHALL execute the production Foundation HTML and Markdown procedural
 oracles with assertions enabled, separately from unsigned app compilation. Ordinary
-RN/Appium regression collection SHALL exclude manual captures and diagnostic probes.
+RN/Appium regression collection SHALL exclude the audited HQ-header/knowledge captures,
+keyboard probe and send-reproduction tools. Existing separately gated Store/site/visual
+capture workflows MAY retain their dedicated entry points and SHALL NOT count as
+functional acceptance merely because capture completed.
 Explicit send diagnostics SHALL verify an owned loopback fake server and an exact,
 unambiguous pane before device access, and SHALL NOT choose the first live agent.
 Knowledge capture SHALL NOT perform knowledge promotion actions.

@@ -111,7 +111,7 @@ phone/tablet check pairing, HQ/knowledge, input, native document previews, long 
 rotation/split view and accessibility. For Web check narrow/wide, enrollment, revocation,
 failed-send draft retention, live refresh, history anchors and external sessions.
 
-Capture/probe tools live in `mobileapp/e2e/capture` and `diagnostics`; ordinary RN and
+The four audited capture/probe tools now live in `mobileapp/e2e/capture` and `diagnostics`; ordinary RN and
 Appium regression collection excludes them. Explicit `e2e:manual` requires the named
 tool opt-in. Send repro additionally verifies the exact pane and loopback fake-server
 identity before accessing a device; capture does not apply knowledge promotions.
@@ -120,3 +120,5 @@ See [manual tools](../../mobileapp/e2e/MANUAL-TOOLS.md).
 Reports separate design reviewed, code implemented, tests run, deliberate skips,
 compile-only, actual simulator actions, real device/accessibility and installation.
 Do not inherit a prior report's passes or turn a screenshot into touch/VoiceOver proof.
+
+Existing Store/site screenshot production, explicit visual probes and synthetic state captures retain their original entries/flags; some remain under `__tests__`. This change does not restructure those material workflows. Their catalogue role is M, not functional acceptance from capture completion or conditional skips.

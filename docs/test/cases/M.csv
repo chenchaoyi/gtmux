@@ -1,4 +1,12 @@
 id,layer,stack,file,line,kind,description,dynamic,design
+LEG-2d3a6b1e37ba,M,RN / mobile harness,mobileapp/e2e/__tests__/appstore-shots-ipad.test.ts,53,it,"captures the split shell, HQ matters, the pane grid and the knowledge sheet",False,legacy-not-retrospectively-reviewed
+LEG-1b162166dec9,M,RN / mobile harness,mobileapp/e2e/__tests__/appstore-shots.test.ts,45,it,"captures the radar, the terminal, HQ, its work, usage and the Macs",False,legacy-not-retrospectively-reviewed
+LEG-cb21d0627bd2,M,RN / mobile harness,mobileapp/e2e/__tests__/composer-shots.test.ts,25,it,captures the composer input row + the attach sheet,False,legacy-not-retrospectively-reviewed
+LEG-63869acd3e2a,M,RN / mobile harness,mobileapp/e2e/__tests__/cursor.test.ts,41,it,opens a terminal pane and screenshots the cursor,False,legacy-not-retrospectively-reviewed
+LEG-ce8589d51a98,M,RN / mobile harness,mobileapp/e2e/__tests__/screenshots.test.ts,33,it,"captures radar, detail, and the connection page",False,legacy-not-retrospectively-reviewed
+LEG-1edbdfb14040,M,RN / mobile harness,mobileapp/e2e/__tests__/site-shots.test.ts,140,it,"captures every store frame, the radar to the Macs, with real marks",False,legacy-not-retrospectively-reviewed
+LEG-c93e0d283c40,M,RN / mobile harness,mobileapp/e2e/__tests__/site-shots.test.ts,230,it,"captures every store frame, the split shell to the knowledge sheet, with real marks",False,legacy-not-retrospectively-reviewed
+LEG-7e90de8212fb,M,RN / mobile harness,mobileapp/e2e/__tests__/states-shot.test.ts,20,it,"renders the radar, a waiting pane and the HQ page",False,legacy-not-retrospectively-reviewed
 LEG-95b0bcda12ce,M,RN / mobile harness,mobileapp/e2e/capture/hq-header-shot.test.ts,15,it,opens the disclosure,False,legacy-not-retrospectively-reviewed
 LEG-490318c4a70a,M,RN / mobile harness,mobileapp/e2e/capture/knowledge-shot.test.ts,14,it,opens from the header and drills into an entry,False,legacy-not-retrospectively-reviewed
 LEG-34eb45b46408,M,RN / mobile harness,mobileapp/e2e/diagnostics/ipad-keys-probe.test.ts,12,it,types into the pane search with mobile: keys,False,legacy-not-retrospectively-reviewed

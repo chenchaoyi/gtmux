@@ -1,7 +1,5 @@
 id,layer,stack,file,line,kind,description,dynamic,design
 LEG-6e4751cbc433,L4,RN / mobile harness,mobileapp/e2e/__tests__/answer-options.test.ts,26,it,"renders the agent’s own words, sends the digit, and the session stops waiting",False,legacy-not-retrospectively-reviewed
-LEG-2d3a6b1e37ba,L4,RN / mobile harness,mobileapp/e2e/__tests__/appstore-shots-ipad.test.ts,53,it,"captures the split shell, HQ matters, the pane grid and the knowledge sheet",False,legacy-not-retrospectively-reviewed
-LEG-1b162166dec9,L4,RN / mobile harness,mobileapp/e2e/__tests__/appstore-shots.test.ts,45,it,"captures the radar, the terminal, HQ, its work, usage and the Macs",False,legacy-not-retrospectively-reviewed
 LEG-ac7603c2bff5,L4,RN / mobile harness,mobileapp/e2e/__tests__/chat-fullscreen-collapse.test.ts,28,it,"opens chat, collapses/expands all, enters+exits full-screen",False,legacy-not-retrospectively-reviewed
 LEG-a5d63af936be,L4,RN / mobile harness,mobileapp/e2e/__tests__/coldstart-push.test.ts,130,it,"A: cold start with an active Mac, switches, background, a new warm tap",False,legacy-not-retrospectively-reviewed
 LEG-f3196e5f4ce2,L4,RN / mobile harness,mobileapp/e2e/__tests__/coldstart-push.test.ts,170,it,C: a launch with no notification switches where it is pointed,False,legacy-not-retrospectively-reviewed
@@ -10,8 +8,6 @@ LEG-ecf828c0a4a6,L4,RN / mobile harness,mobileapp/e2e/__tests__/composer-keyrow.
 LEG-07d49ef24147,L4,RN / mobile harness,mobileapp/e2e/__tests__/composer-photo-markup.test.ts,24,it,a library photo goes through markup and reaches the Mac with the message,False,legacy-not-retrospectively-reviewed
 LEG-e731229baa6d,L4,RN / mobile harness,mobileapp/e2e/__tests__/composer-return-sends.test.ts,80,it,"off: Return makes a new line, the send button sends",False,legacy-not-retrospectively-reviewed
 LEG-8da92748c6ca,L4,RN / mobile harness,mobileapp/e2e/__tests__/composer-return-sends.test.ts,98,it,on: Return sends,False,legacy-not-retrospectively-reviewed
-LEG-cb21d0627bd2,L4,RN / mobile harness,mobileapp/e2e/__tests__/composer-shots.test.ts,25,it,captures the composer input row + the attach sheet,False,legacy-not-retrospectively-reviewed
-LEG-63869acd3e2a,L4,RN / mobile harness,mobileapp/e2e/__tests__/cursor.test.ts,41,it,opens a terminal pane and screenshots the cursor,False,legacy-not-retrospectively-reviewed
 LEG-094857d91ad5,L4,RN / mobile harness,mobileapp/e2e/__tests__/detail-chrome-textsize.test.ts,39,run,the top row keeps one line and stays on screen at the accessibility sizes,False,legacy-not-retrospectively-reviewed
 LEG-e23b5ce26880,L4,RN / mobile harness,mobileapp/e2e/__tests__/edge-stability.test.ts,22,it,traces the viewport around the live tail,False,legacy-not-retrospectively-reviewed
 LEG-242e71413ed1,L4,RN / mobile harness,mobileapp/e2e/__tests__/edge-states.test.ts,39,it,an empty fleet says so instead of showing an empty frame,False,legacy-not-retrospectively-reviewed
@@ -43,7 +39,6 @@ LEG-d1423a35ae7b,L4,RN / mobile harness,mobileapp/e2e/__tests__/radar-refresh-co
 LEG-8094dd3c9a7c,L4,RN / mobile harness,mobileapp/e2e/__tests__/radar.test.ts,29,it,"auto-pairs, opens a pane, and the network calls are recorded",False,legacy-not-retrospectively-reviewed
 LEG-6aa06fe97cdb,L4,RN / mobile harness,mobileapp/e2e/__tests__/revoked-phone.test.ts,27,it,"a phone revoked while the app was closed opens on ""access rejected"", and the server list agrees",False,legacy-not-retrospectively-reviewed
 LEG-7d7ce36e4772,L4,RN / mobile harness,mobileapp/e2e/__tests__/revoked-phone.test.ts,55,it,a pane open when the Mac revokes the phone says so in its header,False,legacy-not-retrospectively-reviewed
-LEG-ce8589d51a98,L4,RN / mobile harness,mobileapp/e2e/__tests__/screenshots.test.ts,33,it,"captures radar, detail, and the connection page",False,legacy-not-retrospectively-reviewed
 LEG-9d2138d1a1e7,L4,RN / mobile harness,mobileapp/e2e/__tests__/send-feedback.test.ts,38,it,a refusal names the pane someone is typing in,False,legacy-not-retrospectively-reviewed
 LEG-90d6e9b0fcce,L4,RN / mobile harness,mobileapp/e2e/__tests__/send-feedback.test.ts,61,it,"a send into a running session says it went, and that the agent may finish first",False,legacy-not-retrospectively-reviewed
 LEG-5511fce16704,L4,RN / mobile harness,mobileapp/e2e/__tests__/server-switch.test.ts,57,run,a launch from a notification does not pull a later server switch back,False,legacy-not-retrospectively-reviewed
@@ -53,14 +48,11 @@ LEG-88587d9a0028,L4,RN / mobile harness,mobileapp/e2e/__tests__/share-delivery-s
 LEG-c80d14946a66,L4,RN / mobile harness,mobileapp/e2e/__tests__/share-delivery-shot.test.ts,101,it,still fits when the link is a long one,False,legacy-not-retrospectively-reviewed
 LEG-e84922a05923,L4,RN / mobile harness,mobileapp/e2e/__tests__/share-delivery-shot.test.ts,117,it,shows them in Chinese too,False,legacy-not-retrospectively-reviewed
 LEG-d7710de65486,L4,RN / mobile harness,mobileapp/e2e/__tests__/share-revoke-confirm.test.ts,34,run,"Revoke asks first: Cancel revokes nothing, Revoke revokes that link",False,legacy-not-retrospectively-reviewed
-LEG-1edbdfb14040,L4,RN / mobile harness,mobileapp/e2e/__tests__/site-shots.test.ts,140,it,"captures every store frame, the radar to the Macs, with real marks",False,legacy-not-retrospectively-reviewed
-LEG-c93e0d283c40,L4,RN / mobile harness,mobileapp/e2e/__tests__/site-shots.test.ts,230,it,"captures every store frame, the split shell to the knowledge sheet, with real marks",False,legacy-not-retrospectively-reviewed
 LEG-98b56f9859ca,L4,RN / mobile harness,mobileapp/e2e/__tests__/smoke.test.ts,17,it,launches to the connection page and rejects an unreachable server,False,legacy-not-retrospectively-reviewed
 LEG-00d7b33727c0,L4,RN / mobile harness,mobileapp/e2e/__tests__/smoke.test.ts,53,live,pairs with a live server and reaches the radar,False,legacy-not-retrospectively-reviewed
 LEG-68e773245ca6,L4,RN / mobile harness,mobileapp/e2e/__tests__/split-shell.test.ts,41,it,"shows the sidebar beside the main pane, and opens everything in place",False,legacy-not-retrospectively-reviewed
 LEG-b28df398091a,L4,RN / mobile harness,mobileapp/e2e/__tests__/sse-reconnect.test.ts,43,it,comes back to connected without a relaunch,False,legacy-not-retrospectively-reviewed
 LEG-03b63117b1fe,L4,RN / mobile harness,mobileapp/e2e/__tests__/sse-serve-restart.test.ts,50,it,"reconnects on its own, without a relaunch",False,legacy-not-retrospectively-reviewed
-LEG-7e90de8212fb,L4,RN / mobile harness,mobileapp/e2e/__tests__/states-shot.test.ts,20,it,"renders the radar, a waiting pane and the HQ page",False,legacy-not-retrospectively-reviewed
 LEG-df21ce4f58ef,L4,RN / mobile harness,mobileapp/e2e/__tests__/terminal-scroll-collapse.test.ts,28,it,"hides Chat/Terminal tabs while browsing scrollback, restores at the tail",False,legacy-not-retrospectively-reviewed
 LEG-afa6f8e5d33c,L4,RN / mobile harness,mobileapp/e2e/__tests__/urltap.test.ts,27,it,"open the url pane, screenshot, optionally tap",False,legacy-not-retrospectively-reviewed
 LEG-9c272d9ca025,L4,RN / mobile harness,mobileapp/e2e/__tests__/usage-clarity.test.ts,39,it,`keeps historical capacity inspectable and output separate (${lang}/${appearance})`,True,legacy-not-retrospectively-reviewed
