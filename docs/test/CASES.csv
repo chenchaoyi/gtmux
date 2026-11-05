@@ -4459,6 +4459,10 @@ LEG-6f792759097e,L1,RN / mobile harness,mobileapp/src/pairing/store.test.ts,237,
 LEG-2f070febef58,L1,RN / mobile harness,mobileapp/src/platformReleaseNotes.test.ts,6,test,iOS keeps its archive; Android never inherits iPhone-only historical releases,False,legacy-not-retrospectively-reviewed
 LEG-83c398034235,L1,RN / mobile harness,mobileapp/src/push/android.test.ts,11,test,missing configuration does not create a fake registration,False,legacy-not-retrospectively-reviewed
 LEG-3410a0b99aa3,L1,RN / mobile harness,mobileapp/src/push/android.test.ts,15,test,"FCM token refresh, one-use cold tap and live tap share lifecycle without executing digits",False,legacy-not-retrospectively-reviewed
+MAP-4aec1b6dc3b7,L2,reviewed implementation,mobileapp/src/push/initialPermissionConcurrency.test.ts,14,reviewed-selector,"requests permission despite a stalled initial response, then delivers the late action once",False,DUO-032
+MAP-27c1f05fe1bb,L2,reviewed implementation,mobileapp/src/push/initialPermissionConcurrency.test.ts,28,reviewed-selector,ignores an initial response that arrives after teardown,False,DUO-032
+MAP-a29517909a3d,L2,reviewed implementation,mobileapp/src/push/initialPermissionConcurrency.test.ts,54,reviewed-selector,delivers an initial action without waiting for permission,False,DUO-032
+MAP-82e358ff5f58,L2,reviewed implementation,mobileapp/src/push/initialPermissionConcurrency.test.ts,39,reviewed-selector,hands a late initial response to the live bridge after a server switch,False,DUO-032
 LEG-c0039196e4f2,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,32,test,"the launch notification is acted on once, not on every server switch",False,legacy-not-retrospectively-reviewed
 LEG-a79023052203,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,42,test,a launch with no notification taps nothing,False,legacy-not-retrospectively-reviewed
 MAP-43a5acb09524,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,124,reviewed-selector,a buffered native response and the launch copy dispatch one quick reply,False,DUO-010
@@ -5263,6 +5267,7 @@ LEG-17bcf63fd7e8,L2,RN / mobile harness,mobileapp/src/ui/ChatView.markdown.test.
 LEG-62da14bfdb16,L2,RN / mobile harness,mobileapp/src/ui/ChatView.markdown.test.tsx,36,test,copy from a collapsed reply includes all segments without prompt or tools,False,legacy-not-retrospectively-reviewed
 LEG-acfa5e4f58f6,L2,RN / mobile harness,mobileapp/src/ui/ChatView.markdown.test.tsx,44,test,share opens the system sheet with full reply; tool-only turns have no actions,False,legacy-not-retrospectively-reviewed
 LEG-a9597d6f59dc,L2,RN / mobile harness,mobileapp/src/ui/ChatView.markdown.test.tsx,53,test,"local references use the preview adapter, never an OS file URL or script",False,legacy-not-retrospectively-reviewed
+MAP-176942c2cdcb,L2,reviewed implementation,mobileapp/src/ui/ChatView.promptReflow.test.tsx,16,reviewed-selector,anchors the first visible prompt while the earlier turn is partly visible and layout settles,False,DUO-033
 MAP-9334b7863ee5,L2,reviewed implementation,mobileapp/src/ui/ChatView.reflow.test.tsx,17,reviewed-selector,preserves a visible history turn through width reflow until the user drags,False,DUO-029
 MAP-a50b02308194,L2,reviewed implementation,mobileapp/src/ui/ChatView.reflow.test.tsx,46,reviewed-selector,width reflow does not move a reader following the live tail,False,DUO-029
 MAP-c0d2b29e39b1,L2,reviewed implementation,mobileapp/src/ui/ChatView.reflow.test.tsx,62,reviewed-selector,does not anchor to a turn removed from the mounted conversation,False,DUO-029

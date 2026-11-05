@@ -40,6 +40,7 @@ export type Teardown = () => void;
 // phone back to the Mac that sent it and opened its pane, so tapping another Mac in the
 // server list landed on the first Mac's session instead (2026-10-05).
 let launchNotificationHandled = false;
+let initialNotificationRequest: Promise<any> | null = null;
 // A scene response can also arrive through the notification delegate. Bound the
 // short-lived receipt set so one tap or action cannot be dispatched twice.
 const responseReceipts = new Map<string, number>();
@@ -66,6 +67,7 @@ function firstResponse(id: unknown, action: string | undefined): boolean {
 /** For tests: forget that the launch notification was handled. */
 export function resetLaunchNotificationForTesting() {
   launchNotificationHandled = false;
+  initialNotificationRequest = null;
   responseReceipts.clear();
   pendingReplies.clear();
 }
@@ -241,15 +243,26 @@ export async function setupPush(
     void drainNative();
     // The launch action must not wait for the permission request to finish.
     if (!launchNotificationHandled) {
-      launchNotificationHandled = true;
-      const initial = await PushNotificationIOS.getInitialNotification();
-      if (initial) {
-        onNotification(initial, true);
-      }
+      // Neither native startup promise may block the other: on some scene
+      // launches the initial-notification bridge can remain unresolved. Share
+      // the request so a remounted bridge can consume a late result.
+      if (Debug.logNet) Debug.record({event: 'push-initial-start', at: Date.now()});
+      const request = initialNotificationRequest ?? PushNotificationIOS.getInitialNotification();
+      initialNotificationRequest = request;
+      void request.then(initial => {
+        if (Debug.logNet) Debug.record({event: 'push-initial-resolved', at: Date.now(), present: !!initial});
+        if (closed || launchNotificationHandled) return;
+        launchNotificationHandled = true;
+        if (initial) onNotification(initial, true);
+      }).catch(() => {
+        if (initialNotificationRequest === request) initialNotificationRequest = null;
+        if (Debug.logNet) Debug.record({event: 'push-initial-error', at: Date.now()});
+      });
     }
     // When the master switch is off, obtain a previously authorized token to
     // remove old registrations without showing a first-time permission prompt.
     if (askPermission) {
+      if (Debug.logNet) Debug.record({event: 'push-permission-start', at: Date.now()});
       const permissions = await PushNotificationIOS.requestPermissions();
       if (Debug.logNet) Debug.record({event: 'push-permissions', at: Date.now(), alert: !!permissions?.alert});
     } else {

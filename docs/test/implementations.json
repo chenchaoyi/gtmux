@@ -736,5 +736,24 @@
       "keeps background active until a current scene exists, then follows native inset changes",
       "rejects a zero-sized scene instead of seeding fake metrics"
     ]
+  },
+  "mobileapp/src/push/initialPermissionConcurrency.test.ts": {
+    "cases": [
+      "DUO-032"
+    ],
+    "selectors": [
+      "requests permission despite a stalled initial response, then delivers the late action once",
+      "ignores an initial response that arrives after teardown",
+      "delivers an initial action without waiting for permission",
+      "hands a late initial response to the live bridge after a server switch"
+    ]
+  },
+  "mobileapp/src/ui/ChatView.promptReflow.test.tsx": {
+    "cases": [
+      "DUO-033"
+    ],
+    "selectors": [
+      "anchors the first visible prompt while the earlier turn is partly visible and layout settles"
+    ]
   }
 }

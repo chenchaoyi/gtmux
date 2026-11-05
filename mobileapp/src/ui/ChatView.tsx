@@ -195,12 +195,14 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   const offRef = React.useRef(0);
   const viewportHeight = React.useRef(0);
   const turnFrames = React.useRef(new Map<string, {y: number; height: number}>());
-  const reflowAnchor = React.useRef<{key: string; viewportY: number} | null>(null);
+  const promptOffsets = React.useRef(new Map<string, number>());
+  const reflowAnchor = React.useRef<{key: string; viewportY: number; prompt: boolean; deadline: number} | null>(null);
   const reflowTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const {width: windowWidth} = useWindowDimensions();
   const lastWindowWidth = React.useRef(windowWidth);
   React.useLayoutEffect(() => {
     turnFrames.current.clear();
+    promptOffsets.current.clear();
     reflowAnchor.current = null;
   }, [liveScope]);
   const frames = React.useRef<Set<number>>(new Set());
@@ -251,18 +253,30 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   // had never left the bottom.
   const stick = React.useRef(true);
   const dragging = React.useRef(false);
-  const measureTurn = (key: string, y: number, height: number) => {
-    turnFrames.current.set(key, {y, height});
+  const restoreAnchor = (key: string) => {
     const anchor = reflowAnchor.current;
     if (!anchor || anchor.key !== key || stick.current || dragging.current || selectedText.current.size) return;
+    const frame = turnFrames.current.get(key);
+    const promptY = promptOffsets.current.get(key);
+    if (!frame || (anchor.prompt && promptY === undefined)) return;
+    const y = frame.y + (anchor.prompt ? promptY! : 0);
     const target = Math.max(0, y - anchor.viewportY);
-    if (Debug.logNet) Debug.record({event: 'chat-reflow-measure', y, target, previousOffset: offRef.current});
+    if (Debug.logNet) Debug.record({event: 'chat-reflow-measure', y, target, previousOffset: offRef.current, prompt: anchor.prompt});
     if (Math.abs(target - offRef.current) > 0.5) {
       offRef.current = target;
       scrollRef.current?.scrollTo({y: target, animated: false});
     }
     if (reflowTimer.current !== null) clearTimeout(reflowTimer.current);
-    reflowTimer.current = setTimeout(() => {reflowAnchor.current = null; reflowTimer.current = null;}, 500);
+    const remaining = Math.max(0, anchor.deadline - Date.now());
+    reflowTimer.current = setTimeout(() => {reflowAnchor.current = null; reflowTimer.current = null;}, Math.min(2000, remaining));
+  };
+  const measureTurn = (key: string, y: number, height: number) => {
+    turnFrames.current.set(key, {y, height});
+    restoreAnchor(key);
+  };
+  const measurePrompt = (key: string, y: number) => {
+    promptOffsets.current.set(key, y);
+    restoreAnchor(key);
   };
   // The last reported distance from the tail, so a re-publish (below) can repeat it.
   const gapRef = React.useRef(0);
@@ -395,14 +409,19 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
       return;
     }
     const mounted = new Set(shown.map((turn, index) => turnIdentity(turn, offset + index)));
-    for (const key of turnFrames.current.keys()) if (!mounted.has(key)) turnFrames.current.delete(key);
+    for (const key of turnFrames.current.keys()) if (!mounted.has(key)) {turnFrames.current.delete(key); promptOffsets.current.delete(key);}
     const entries = [...turnFrames.current.entries()].sort((a, b) => a[1].y - b[1].y);
-    const visible = entries.find(([, frame]) => frame.y >= offRef.current && frame.y < offRef.current + viewportHeight.current)
-      ?? entries.find(([, frame]) => frame.y <= offRef.current && frame.y + frame.height > offRef.current);
-    if (Debug.logNet) Debug.record({event: 'chat-reflow-capture', previousWidth, windowWidth, offset: offRef.current, viewport: viewportHeight.current, candidates: entries.length, anchorY: visible?.[1].y ?? null});
+    const prompt = entries.map(([key, frame]) => ({key, y: frame.y + (promptOffsets.current.get(key) ?? 0), measured: promptOffsets.current.has(key)}))
+      .find(item => item.measured && item.y >= offRef.current && item.y < offRef.current + viewportHeight.current);
+    const visible = prompt ? {key: prompt.key, y: prompt.y, prompt: true} : (() => {
+      const turn = entries.find(([, frame]) => frame.y >= offRef.current && frame.y < offRef.current + viewportHeight.current)
+        ?? entries.find(([, frame]) => frame.y <= offRef.current && frame.y + frame.height > offRef.current);
+      return turn ? {key: turn[0], y: turn[1].y, prompt: false} : null;
+    })();
+    if (Debug.logNet) Debug.record({event: 'chat-reflow-capture', previousWidth, windowWidth, offset: offRef.current, viewport: viewportHeight.current, candidates: entries.length, anchorY: visible?.y ?? null, prompt: visible?.prompt ?? false});
     if (visible) {
-      reflowAnchor.current = {key: visible[0], viewportY: visible[1].y - offRef.current};
-      reflowTimer.current = setTimeout(() => {reflowAnchor.current = null; reflowTimer.current = null;}, 2000);
+      reflowAnchor.current = {key: visible.key, viewportY: visible.y - offRef.current, prompt: visible.prompt, deadline: Date.now() + 8000};
+      reflowTimer.current = setTimeout(() => {reflowAnchor.current = null; reflowTimer.current = null;}, 8000);
     }
   }, [windowWidth, shown, offset]);
   // The recorded acts, placed against the MOUNTED turns (an act older than the oldest
@@ -614,7 +633,8 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
               const collapsed = long && !promptOpen[i];
               return (
                 <>
-                  <View testID="chat-user-row" style={styles.userRow}>
+                  <View testID="chat-user-row" style={styles.userRow}
+                    onLayout={event => measurePrompt(turnKey, event.nativeEvent.layout.y)}>
                     <View testID="chat-user-bubble" style={styles.userBubble}>
                       {collapsed ? (
                         <CopyableText lang={lang} selectable selectionColor={SEL_COLOR} numberOfLines={8}
