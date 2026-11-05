@@ -58,12 +58,13 @@
         "macapp/Sources/GtmuxBar/HQWorkspaceStore.swift",
         "macapp/Sources/GtmuxBar/HQWorkspaceModels.swift",
         "macapp/Sources/GtmuxBar/HQWorkspaceParticipants.swift",
-        "macapp/Sources/GtmuxBar/HQParticipantPresentation.swift"
+        "macapp/Sources/GtmuxBar/HQParticipantLabel.swift",
+        "macapp/Sources/GtmuxBar/HQWorkspaceParticipantsManager.swift"
       ],
       "surfaces": [
         "CLI / Go / macOS HQ"
       ]
     }
   ],
-  "seal": "81d4199e63358eb3371ca5b00473e736ade9f2a08716f4d6b4d62f0192a73092"
+  "seal": "95437f62f30213cd51fa9589dc1096063f9e83a7565ef5305ff53b63d913dc3c"
 }
