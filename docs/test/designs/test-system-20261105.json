@@ -99,10 +99,10 @@
     {
       "id": "DG-001",
       "layer": "G",
-      "description": "Default Appium discovery excludes diagnostics and capture; explicit tools retain normal failure reporting",
+      "description": "Default Appium and RN discovery exclude manual diagnostics/capture; explicit tools retain failure reporting; knowledge capture does not perform promotion actions.",
       "setup": "Synthetic data and isolated temporary files; existing native oracles use production pure Swift modules.",
       "action": "Exercise the described behavior, including the negative branch where stated.",
-      "expected": "Default Appium discovery excludes diagnostics and capture; explicit tools retain normal failure reporting",
+      "expected": "Default Appium and RN discovery exclude manual diagnostics/capture; explicit tools retain failure reporting; knowledge capture does not perform promotion actions.",
       "planned_files": [
         "mobileapp/e2e/setup/manual-tools.test.ts"
       ]
@@ -110,10 +110,10 @@
     {
       "id": "DG-002",
       "layer": "L1",
-      "description": "Send repro fails before UI/device access unless exact pane, owned synthetic fixture declaration and endpoint/token are provided",
+      "description": "Send repro fails before device access without exact pane, owned-fixture declaration, loopback endpoint/token and a matching fake-server fixture identity; nonfixture endpoints are rejected.",
       "setup": "Synthetic data and isolated temporary files; existing native oracles use production pure Swift modules.",
       "action": "Exercise the described behavior, including the negative branch where stated.",
-      "expected": "Send repro fails before UI/device access unless exact pane, owned synthetic fixture declaration and endpoint/token are provided",
+      "expected": "Send repro fails before device access without exact pane, owned-fixture declaration, loopback endpoint/token and a matching fake-server fixture identity; nonfixture endpoints are rejected.",
       "planned_files": [
         "mobileapp/e2e/setup/manual-tools.test.ts"
       ]
@@ -137,42 +137,46 @@
       "action": "Exercise the described behavior, including the negative branch where stated.",
       "expected": "Five agent Trace fixtures render matching semantic counts, original ordinals and tool/context/reply labels in RN and browser DOM",
       "planned_files": [
-        "mobileapp/src/components/CrossClientContract.test.tsx"
+        "mobileapp/src/ui/CrossClientContract.test.tsx",
+        "tests/web/behavior-contract.test.cjs"
       ]
     },
     {
       "id": "CP-002",
       "layer": "L2",
-      "description": "HQ attention fixture shows the same actionable prompt, pending count and resolved state in RN and browser DOM",
+      "description": "HQ conversation provenance and full request remain readable in RN and browser Chat; opening HQ profile preserves sender identity. Workspace-only cards are not claimed equivalent to browser Chat.",
       "setup": "Synthetic data and isolated temporary files; existing native oracles use production pure Swift modules.",
       "action": "Exercise the described behavior, including the negative branch where stated.",
-      "expected": "HQ attention fixture shows the same actionable prompt, pending count and resolved state in RN and browser DOM",
+      "expected": "HQ conversation provenance and full request remain readable in RN and browser Chat; opening HQ profile preserves sender identity. Workspace-only cards are not claimed equivalent to browser Chat.",
       "planned_files": [
-        "mobileapp/src/components/CrossClientContract.test.tsx"
+        "mobileapp/src/ui/CrossClientContract.test.tsx",
+        "tests/web/behavior-contract.test.cjs"
       ]
     },
     {
       "id": "CP-003",
       "layer": "L2",
-      "description": "File preview fixture preserves Markdown/code text and preview/raw modes in RN and browser DOM",
+      "description": "Markdown and code in document links and tool previews preserve content; local file actions use the paired preview adapter, not OS file or javascript navigation.",
       "setup": "Synthetic data and isolated temporary files; existing native oracles use production pure Swift modules.",
       "action": "Exercise the described behavior, including the negative branch where stated.",
-      "expected": "File preview fixture preserves Markdown/code text and preview/raw modes in RN and browser DOM",
+      "expected": "Markdown and code in document links and tool previews preserve content; local file actions use the paired preview adapter, not OS file or javascript navigation.",
       "planned_files": [
-        "mobileapp/src/components/CrossClientContract.test.tsx"
+        "mobileapp/src/ui/CrossClientContract.test.tsx",
+        "tests/web/behavior-contract.test.cjs"
       ]
     },
     {
       "id": "CP-004",
       "layer": "L2",
-      "description": "Browser runs the same expectation fixture as RN; unavailable or revoked content remains unavailable",
+      "description": "Browser consumes the same synthetic expectation fixture as RN; granting no access does not expose content and no test sends real input.",
       "setup": "Synthetic data and isolated temporary files; existing native oracles use production pure Swift modules.",
       "action": "Exercise the described behavior, including the negative branch where stated.",
-      "expected": "Browser runs the same expectation fixture as RN; unavailable or revoked content remains unavailable",
+      "expected": "Browser consumes the same synthetic expectation fixture as RN; granting no access does not expose content and no test sends real input.",
       "planned_files": [
+        "mobileapp/src/ui/CrossClientContract.test.tsx",
         "tests/web/behavior-contract.test.cjs"
       ]
     }
   ],
-  "seal": "c6a378cb6494286380aa464c4babcb056b216204058a5b993f50852455ed08c1"
+  "seal": "e94c8a345bf8b49ae205e9ca524d2c9c9639d22237befed10926b35145c7a9c7"
 }
