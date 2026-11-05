@@ -96,6 +96,7 @@ private struct ClarityClient: HQWorkspaceServing {
         }
     }
     func testFullyShownListHasNoRemainingControlAndUnknownRosterDoesNotSayIdle() async throws {
+        NativeUIProbe.prepareAccessibility()
         var snapshot = try overviewClaritySnapshot(count: 2)
         snapshot.sourcesIncluded = false
         let conversation = HQConversation(
@@ -123,7 +124,9 @@ private struct ClarityClient: HQWorkspaceServing {
             window.close()
             store.stop()
         }
-        try await Task.sleep(nanoseconds: 100_000_000)
+        try await HQChoiceTestSupport.waitUntil {
+            NativeUIProbe.find("hq-overview-matter-open-0", in: host) != nil
+        }
         XCTAssertNil(NativeUIProbe.find("hq-overview-all-following", in: host))
         XCTAssertFalse(store.sourcesKnown)
         XCTAssertTrue(HQMatterGroup.needsInput.matters(in: store.snapshot).isEmpty)
