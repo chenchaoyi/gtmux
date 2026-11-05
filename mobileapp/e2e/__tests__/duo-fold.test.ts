@@ -146,6 +146,18 @@ it('keeps the session entry usable at an accessibility text size on both panels'
   const driver = getDriver();
   const evidence: object[] = [];
   let original: string | undefined;
+  const auditErrors: string[] = [];
+  const audit = async (panel: string) => {
+    try {
+      const issues = await driver.execute('mobile: performAccessibilityAudit');
+      if (!Array.isArray(issues)) throw new Error('accessibility audit did not return an array');
+      writeFileSync(join(getArtifactsDir(), `duo-a11y-${panel}.json`), JSON.stringify(issues, null, 2));
+    } catch (error) {
+      const message = `${panel}: ${String(error)}`;
+      auditErrors.push(message);
+      writeFileSync(join(getArtifactsDir(), `duo-a11y-${panel}-error.txt`), message);
+    }
+  };
   try {
     original = await driver.execute('mobile: contentSize') as string;
     expect(original).not.toMatch(/^(unknown|unsupported)$/);
@@ -169,20 +181,17 @@ it('keeps the session entry usable at an accessibility text size on both panels'
     await driver.$('~Close').click();
     await tools.waitForDisplayed({timeout: 10000});
     await screenshot('duo-large-text-outer');
-    const outerIssues = await driver.execute('mobile: performAccessibilityAudit');
-    expect(Array.isArray(outerIssues)).toBe(true);
-    writeFileSync(join(getArtifactsDir(), 'duo-a11y-outer.json'), JSON.stringify(outerIssues, null, 2));
+    await audit('outer');
     await posture(180, 'inner', evidence);
     await selected.waitForDisplayed({timeout: 15000});
     await tools.waitForDisplayed({timeout: 10000});
     await tools.click();
     await driver.$('~session-tools-menu-trace').waitForDisplayed({timeout: 10000});
     await screenshot('duo-large-text-inner-menu');
-    const innerIssues = await driver.execute('mobile: performAccessibilityAudit');
-    expect(Array.isArray(innerIssues)).toBe(true);
-    writeFileSync(join(getArtifactsDir(), 'duo-a11y-inner.json'), JSON.stringify(innerIssues, null, 2));
+    await audit('inner');
     await driver.$('~Close').click();
     await tools.waitForDisplayed({timeout: 10000});
+    if (auditErrors.length) throw new Error(`Duo accessibility audit failed: ${auditErrors.join('; ')}`);
   } catch (error) {
     await captureOnFailure('duo-large-text-failed', error);
   } finally {

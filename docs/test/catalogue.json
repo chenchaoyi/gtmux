@@ -58040,7 +58040,7 @@
           "design": "DUO-002"
         }
       ],
-      "sha256": "f27229c593a7b776c42f85e67fc479d7f0cd9a8438c4dbeae852e6178638fc0e"
+      "sha256": "5b1de424b7e9ce5ad6bfc2ec9b420ee65158686f3f049e03bed0f601c233c5e9"
     },
     "mobileapp/e2e/fake-serve/request-diagnostics.test.ts": {
       "layer": "L1",
@@ -58180,7 +58180,7 @@
         },
         {
           "id": "MAP-e33509324cc9",
-          "line": 198,
+          "line": 207,
           "kind": "reviewed-selector",
           "name": "keeps Trace search and Diff open while the simulator folds and unfolds",
           "dynamic": false,
@@ -58197,7 +58197,7 @@
           "design": "DUO-020,DUO-021,DUO-023"
         }
       ],
-      "sha256": "b5422362f7f94215cafc6759164a7ee3f9f0030a36ee9a618dbfc38cdecedea9"
+      "sha256": "1c7ea410d5ab1dacf3a13be3b0ee6556e7e94367bd12d870b1691151802f8a80"
     },
     "mobileapp/src/usage/UsageWidgetBridge.initialLink.test.tsx": {
       "layer": "L1",

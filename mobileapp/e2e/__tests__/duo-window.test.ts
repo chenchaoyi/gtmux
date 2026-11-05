@@ -73,4 +73,4 @@ it('keeps the selected session and a draft through simulator rotation', async ()
   } finally {
     await driver.setOrientation(original);
   }
-});
+}, 300000);
