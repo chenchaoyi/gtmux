@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner (self-review; not independent approval)",
     "date": "2026-11-05",
     "decision": "Review existing work and continue validation",
-    "notes": "This is a truthful retrospective review of work already implemented before main introduced this gate. It does not claim prior review or passing device behavior. Cold and warm actions, real fold and accessibility remain subject to recorded evidence."
+    "notes": "This is a truthful retrospective review of work already implemented before main introduced this gate. It does not claim prior review or passing device behavior. Cold and warm actions, real fold and accessibility remain subject to recorded evidence. On 2026-11-05 the cold-action trace exposed drain-before-JS-ack loss; DUO-009 was reviewed before implementing acknowledgement-based retention. Earlier prototype tests remain honestly retrospective."
   },
   "cases": [
     {
@@ -123,10 +123,10 @@
     {
       "id": "DUO-009",
       "layer": "L1",
-      "description": "native notification payload retains response identity, action and input while queue is bounded and deduplicated",
-      "setup": "Isolated fixture and named simulator for device cases; existing mocked or rendered harness for code-level cases.",
-      "action": "Run the mapped selector in mobileapp/ios/tests/NotificationResponsePayloadChecks.swift.",
-      "expected": "native notification payload retains response identity, action and input while queue is bounded and deduplicated.",
+      "description": "native notification response queue retains a drained response until JS acknowledges it, while preserving identity, action, text, bounds and duplicate suppression",
+      "setup": "A Foundation-only native fixture with distinct response identifiers, numbered action and text; no user data or device connection.",
+      "action": "Enqueue duplicate and distinct responses, inspect the same pending response twice without acknowledgement, acknowledge it, then exceed the bounded queue capacity.",
+      "expected": "Unacknowledged responses remain retrievable; acknowledged responses disappear, duplicate identity/action is queued once, and only the newest 128 entries remain.",
       "planned_files": [
         "mobileapp/ios/tests/NotificationResponsePayloadChecks.swift"
       ],
@@ -247,5 +247,5 @@
       ]
     }
   ],
-  "seal": "7e37823b84cf2605e27715c944aeaea2af7d4c0528ac0b05e69d74e8afebc1a0"
+  "seal": "108359528f2976de251196e5e8b317161e8bd5f03e4f7e551aac19e1deedf4dd"
 }
