@@ -14139,7 +14139,7 @@
       ]
     },
     "internal/hq/hq_test.go": {
-      "sha256": "650ddb7e2be73f44cdd99d6d403f0c7daaed35453cf0f81e25901993163f3aea",
+      "sha256": "59dc2fe891fe4e763846931611038dabc831efe56b75ed4caa7a02e990393aae",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -14201,7 +14201,7 @@
         },
         {
           "id": "LEG-2c17b411342c",
-          "line": 216,
+          "line": 264,
           "kind": "Test",
           "name": "TestSeedHQHome_UpgradesOnNewerVersion",
           "dynamic": false,
@@ -14209,7 +14209,7 @@
         },
         {
           "id": "LEG-de61585f4cc4",
-          "line": 252,
+          "line": 300,
           "kind": "Test",
           "name": "TestSeedHQHome_UpgradeLeavesMemoryUntouched",
           "dynamic": false,
@@ -14217,7 +14217,7 @@
         },
         {
           "id": "LEG-d5ecf68e6e0d",
-          "line": 273,
+          "line": 321,
           "kind": "Test",
           "name": "TestParsePlaybookVersion",
           "dynamic": false,
@@ -14225,7 +14225,7 @@
         },
         {
           "id": "LEG-06c3846efb12",
-          "line": 291,
+          "line": 339,
           "kind": "Test",
           "name": "TestSeedHQHome_LegacyClaudeMigrates",
           "dynamic": false,
@@ -14233,7 +14233,7 @@
         },
         {
           "id": "LEG-a07d737d3644",
-          "line": 333,
+          "line": 381,
           "kind": "Test",
           "name": "TestSeedHQHome_AgentsOnlyAddsPointer",
           "dynamic": false,
@@ -14241,7 +14241,7 @@
         },
         {
           "id": "LEG-3d9a954ba61a",
-          "line": 354,
+          "line": 402,
           "kind": "Test",
           "name": "TestHQPolicyWarning",
           "dynamic": false,
@@ -14249,7 +14249,7 @@
         },
         {
           "id": "LEG-a472b5d72fd8",
-          "line": 384,
+          "line": 432,
           "kind": "Test",
           "name": "TestSeedHQKnowledge",
           "dynamic": false,
@@ -14257,7 +14257,7 @@
         },
         {
           "id": "LEG-78702eaa7fbe",
-          "line": 419,
+          "line": 467,
           "kind": "Test",
           "name": "TestHQPlaybookHardening",
           "dynamic": false,
@@ -14265,7 +14265,7 @@
         },
         {
           "id": "LEG-a2646b785cc5",
-          "line": 447,
+          "line": 495,
           "kind": "Test",
           "name": "TestHQPlaybookCharter",
           "dynamic": false,
@@ -14273,7 +14273,7 @@
         },
         {
           "id": "LEG-2d3528c57ca7",
-          "line": 487,
+          "line": 535,
           "kind": "Test",
           "name": "TestHQBriefingPrompt",
           "dynamic": false,
@@ -14281,7 +14281,7 @@
         },
         {
           "id": "LEG-2c7d3e52f9ef",
-          "line": 522,
+          "line": 570,
           "kind": "Test",
           "name": "TestHQBriefingEnabled",
           "dynamic": false,
@@ -14289,7 +14289,7 @@
         },
         {
           "id": "LEG-a365bdf9befc",
-          "line": 543,
+          "line": 591,
           "kind": "Test",
           "name": "TestSeedHQNotesBoard",
           "dynamic": false,
@@ -14297,7 +14297,7 @@
         },
         {
           "id": "LEG-b0ec249dbdfb",
-          "line": 568,
+          "line": 616,
           "kind": "Test",
           "name": "TestHQPlaybookChiefOfStaff",
           "dynamic": false,
@@ -14305,7 +14305,7 @@
         },
         {
           "id": "LEG-f8087baa3f2d",
-          "line": 611,
+          "line": 659,
           "kind": "Test",
           "name": "TestHQAgentCommand",
           "dynamic": false,
@@ -14313,7 +14313,7 @@
         },
         {
           "id": "LEG-53c90b5faa6f",
-          "line": 625,
+          "line": 673,
           "kind": "Test",
           "name": "TestHQPlaybookWakeProtocol",
           "dynamic": false,
@@ -14321,7 +14321,7 @@
         },
         {
           "id": "LEG-98958ff1a4ed",
-          "line": 661,
+          "line": 709,
           "kind": "Test",
           "name": "TestHQPlaybookThreeReads",
           "dynamic": false,
@@ -14329,7 +14329,7 @@
         },
         {
           "id": "LEG-a44a4950d716",
-          "line": 697,
+          "line": 745,
           "kind": "Test",
           "name": "TestAgentAliveByCmd",
           "dynamic": false,
@@ -14337,7 +14337,7 @@
         },
         {
           "id": "LEG-be97b228bfc7",
-          "line": 727,
+          "line": 775,
           "kind": "Test",
           "name": "TestSeedsAndPlaybookCarryNoAuthorLeakage",
           "dynamic": false,
@@ -14345,7 +14345,7 @@
         },
         {
           "id": "LEG-deaead4c014f",
-          "line": 760,
+          "line": 808,
           "kind": "Test",
           "name": "TestBoardSeedFollowsLanguage",
           "dynamic": false,
@@ -14353,7 +14353,7 @@
         },
         {
           "id": "LEG-1919417fcf78",
-          "line": 784,
+          "line": 832,
           "kind": "Test",
           "name": "TestPlaybookDropsRetiredPerceptionVocabulary",
           "dynamic": false,
@@ -14361,7 +14361,7 @@
         },
         {
           "id": "LEG-cc52ed61de30",
-          "line": 802,
+          "line": 850,
           "kind": "Test",
           "name": "TestGeneratedPlaybookFollowsLanguage",
           "dynamic": false,
@@ -14369,7 +14369,7 @@
         },
         {
           "id": "LEG-74a84fc207b8",
-          "line": 828,
+          "line": 876,
           "kind": "Test",
           "name": "TestShellLanguageNeverRewritesTheCharter",
           "dynamic": false,
@@ -14377,7 +14377,7 @@
         },
         {
           "id": "LEG-75f33c06f2f5",
-          "line": 867,
+          "line": 915,
           "kind": "Test",
           "name": "TestExplicitLangRewritesTheCharter",
           "dynamic": false,
@@ -14385,7 +14385,7 @@
         },
         {
           "id": "LEG-c14e7e44c775",
-          "line": 897,
+          "line": 945,
           "kind": "Test",
           "name": "TestVersionUpgradeKeepsTheCharterLanguage",
           "dynamic": false,
@@ -14393,7 +14393,7 @@
         },
         {
           "id": "LEG-a7757e9edc9b",
-          "line": 936,
+          "line": 984,
           "kind": "Test",
           "name": "TestMismatchNoticeSaysNothingChangedAndHow",
           "dynamic": false,
@@ -14401,7 +14401,7 @@
         },
         {
           "id": "LEG-06f3f97b807c",
-          "line": 952,
+          "line": 1000,
           "kind": "Test",
           "name": "TestChartersShareSkeletonAndAnchors",
           "dynamic": false,
@@ -14409,7 +14409,7 @@
         },
         {
           "id": "LEG-73fed776ec92",
-          "line": 999,
+          "line": 1047,
           "kind": "Test",
           "name": "TestLocalTemplateFollowsLanguage",
           "dynamic": false,
@@ -14417,7 +14417,7 @@
         },
         {
           "id": "LEG-14efba6eb225",
-          "line": 1032,
+          "line": 1080,
           "kind": "Test",
           "name": "TestExplicitSwitchNoticeSaysItWasAskedFor",
           "dynamic": false,
@@ -14425,11 +14425,20 @@
         },
         {
           "id": "LEG-4acd5eceac53",
-          "line": 1054,
+          "line": 1102,
           "kind": "Test",
           "name": "TestPlaybookTeachesDispatchToChooseAgentAndModel",
           "dynamic": false,
           "layer": "L1"
+        },
+        {
+          "id": "MAP-d6cd13ff80b3",
+          "line": 194,
+          "kind": "reviewed-selector",
+          "name": "TestStorageBoundaryUpgradePreservesLocalRulesAndExistingRecords",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "STOR-002"
         }
       ]
     },
@@ -17556,7 +17565,7 @@
       ]
     },
     "internal/knowledge/distribute_test.go": {
-      "sha256": "678050756cd5320239ec752b3ec36c3eacd7c0323b51d739ba7f314a5f85f925",
+      "sha256": "bc833819a8095a6ab47855b0ea5edd4ed77fb99402774723d1a0c066a0acb588",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -17586,7 +17595,7 @@
         },
         {
           "id": "LEG-b2439d5b16b0",
-          "line": 161,
+          "line": 198,
           "kind": "Test",
           "name": "TestRepoCarrierPrefersWhatExists",
           "dynamic": false,
@@ -17594,7 +17603,7 @@
         },
         {
           "id": "LEG-c8340ac94855",
-          "line": 176,
+          "line": 213,
           "kind": "Test",
           "name": "TestLandCarriesByAudience",
           "dynamic": false,
@@ -17602,7 +17611,7 @@
         },
         {
           "id": "LEG-133a79e07b8d",
-          "line": 250,
+          "line": 287,
           "kind": "Test",
           "name": "TestWithdrawAndTheEveryoneExemption",
           "dynamic": false,
@@ -17610,11 +17619,20 @@
         },
         {
           "id": "LEG-130c95843839",
-          "line": 280,
+          "line": 317,
           "kind": "Test",
           "name": "TestMachineIndexKeepsTheTitleOnItsOwnLine",
           "dynamic": false,
           "layer": "L1"
+        },
+        {
+          "id": "MAP-259bfbcda714",
+          "line": 161,
+          "kind": "reviewed-selector",
+          "name": "TestBuiltinStorageBoundariesReachEveryCarrierWithoutPromotions",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "STOR-001"
         }
       ]
     },

@@ -191,6 +191,54 @@ func TestSeedHQHomeIdempotent(t *testing.T) {
 	}
 }
 
+func TestStorageBoundaryUpgradePreservesLocalRulesAndExistingRecords(t *testing.T) {
+	for _, lang := range []string{"en", "zh"} {
+		t.Run(lang, func(t *testing.T) {
+			t.Setenv("HOME", t.TempDir())
+			if err := os.MkdirAll(filepath.Join(state.HQHome(), "notes"), 0700); err != nil {
+				t.Fatal(err)
+			}
+			prior := playbookMarker(hqPlaybookVersion-1, lang) + "\nprevious managed charter\n"
+			local := []byte("personal operator rules\n")
+			note := filepath.Join(state.HQHome(), "notes", "unique-existing.txt")
+			for path, data := range map[string][]byte{hqInstructionsPath(): []byte(prior), hqLocalPath(): local, note: []byte("unique existing record")} {
+				if err := os.WriteFile(path, data, 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			var result seedResult
+			if err := upgradePlaybookIfNewer(&result, ""); err != nil || !result.Upgraded {
+				t.Fatalf("upgrade: %+v %v", result, err)
+			}
+			body, err := os.ReadFile(hqInstructionsPath())
+			if err != nil || parsePlaybookLang(string(body)) != lang {
+				t.Fatal("upgrade lost the charter language", err)
+			}
+			wants := []string{"~/.config/gtmux/", "~/.local/share/gtmux/", "knowledge/tools/"}
+			if lang == "en" {
+				wants = append(wants, "Only reusable HQ knowledge tools", "project-owned storage", "task temporary storage", "evidence references", "not automatically moved or deleted")
+			} else {
+				wants = append(wants, "只有可复用的 HQ 知识工具", "项目自有目录", "任务临时目录", "证据引用", "既有材料不自动搬移或删除")
+			}
+			for _, want := range wants {
+				if !strings.Contains(string(body), want) {
+					t.Errorf("%s: missing storage boundary %q", lang, want)
+				}
+			}
+			for path, expected := range map[string]string{hqLocalPath(): string(local), note: "unique existing record", result.BackupPath: prior} {
+				got, err := os.ReadFile(path)
+				if err != nil || string(got) != expected {
+					t.Errorf("upgrade changed preserved material: %v", err)
+				}
+			}
+			var again seedResult
+			if err := upgradePlaybookIfNewer(&again, ""); err != nil || again.Upgraded {
+				t.Fatalf("upgrade did not converge: %+v %v", again, err)
+			}
+		})
+	}
+}
+
 // itoa is a tiny helper so the test doesn't import strconv just for one call.
 func itoa(n int) string {
 	if n == 0 {

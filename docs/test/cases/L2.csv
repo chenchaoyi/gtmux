@@ -30,6 +30,8 @@ LEG-a148094d1182,L2,Go core / CLI / server,internal/app/tunnelstatus_test.go,33,
 LEG-31e32aaa4339,L2,Go core / CLI / server,internal/app/tunnelstatus_test.go,45,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-5eb1eb0e8cd5,L2,Go core / CLI / server,internal/connect/remotes_test.go,38,Test,TestAHostThatMovedIsFoundThroughTheAddressesItGave,False,legacy-not-retrospectively-reviewed
 LEG-953eea56e22d,L2,Go core / CLI / server,internal/connect/remotes_test.go,85,Test,TestAnAddressThatAnswersToSomeoneElseIsNotThisHost,False,legacy-not-retrospectively-reviewed
+MAP-d6cd13ff80b3,L2,Go core / CLI / server,internal/hq/hq_test.go,194,reviewed-selector,TestStorageBoundaryUpgradePreservesLocalRulesAndExistingRecords,False,STOR-002
+MAP-259bfbcda714,L2,Go core / CLI / server,internal/knowledge/distribute_test.go,161,reviewed-selector,TestBuiltinStorageBoundariesReachEveryCarrierWithoutPromotions,False,STOR-001
 LEG-c41c1a54df5d,L2,Go core / CLI / server,internal/memdiag/server_test.go,224,Test,TestRequestBoundaries,False,legacy-not-retrospectively-reviewed
 LEG-6d1949576208,L2,Go core / CLI / server,internal/memdiag/server_test.go,243,Test,TestProfileBudgetsFailureCancellationAndConcurrency,False,legacy-not-retrospectively-reviewed
 LEG-55882c09c2ba,L2,Go core / CLI / server,internal/memdiag/server_test.go,284,subtest,cancel and busy,False,legacy-not-retrospectively-reviewed

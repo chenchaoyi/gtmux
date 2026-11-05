@@ -7,7 +7,7 @@ The catalogue covers 1031 test/harness source files. Each CSV row lists stable I
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3724 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 1894 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 1896 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 86 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 93 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 12 | [M.csv](cases/M.csv) |
@@ -39,6 +39,8 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | MC-HQ-OVERVIEW-STATE | Overview groups exclude completed/closed/merged matters even with stale projection IDs; a stage-result body never changes an open goal. Valid saved rows fill a bounded three-item preview and hidden counts match unique displayed records. |
 | MC-HQ-OVERVIEW-MORE | At the bottom of each truncated native HQ section an explicit remaining/total control opens all matters and can select a hidden record without writes; no extra control when all records fit. Complete minimum/wide light/dark bilingual fixtures preserve text/viewport geometry. |
 | MC-HQ-OVERVIEW-BRIEF | The native row presents canonical current assessment before historical receipt text, explicitly names the unfinished goal state and never treats unavailable source metadata as an idle/completed worker; no guessed human decision or completion from titles, Stop or report prose. |
+| STOR-001 | Every carrier separates project-owned and task-temp output from gtmux configuration/runtime trees; no promoted entry required; user text and hand-edit protection preserved; second sync idempotent. |
+| STOR-002 | Both playbooks reserve gtmux-owned state and only reusable HQ knowledge tools for its home, direct project scripts/reports/builds to project/task storage, require external evidence references, and never grant automatic migration/deletion; upgrade backs up old charter, preserves LOCAL/notes and converges. |
 | TD-001 | Reject a changed/new test without a reviewed design; accept a mapped implementation |
 | TD-002 | Reject a tampered review seal, missing assertion description, invalid layer or unsafe path |
 | TD-003 | Reject missing/changed catalogue files and missing named implementation selectors |
