@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner (self-review; not independent approval)",
     "date": "2026-11-05",
     "decision": "Review existing work and continue validation",
-    "notes": "This is a truthful retrospective review of work already implemented before main introduced this gate. It does not claim prior review or passing device behavior. Cold and warm actions, real fold and accessibility remain subject to recorded evidence. On 2026-11-05 the cold-action trace exposed drain-before-JS-ack loss; DUO-009 was reviewed before implementing acknowledgement-based retention. Earlier prototype tests remain honestly retrospective. DUO-010 was updated after observing a native drain Promise stall; its non-blocking fallback and foreground recovery are reviewed before implementation."
+    "notes": "This is a truthful retrospective review of work already implemented before main introduced this gate. It does not claim prior review or passing device behavior. Cold and warm actions, real fold and accessibility remain subject to recorded evidence. On 2026-11-05 the cold-action trace exposed drain-before-JS-ack loss; DUO-009 was reviewed before implementing acknowledgement-based retention. Earlier prototype tests remain honestly retrospective. DUO-010 was updated after observing a native drain Promise stall; its non-blocking fallback and foreground recovery are reviewed before implementation. Permission-wait ordering was implemented during diagnosis; its specific regression test was reviewed afterwards and must not be represented as a pre-implementation review."
   },
   "cases": [
     {
@@ -138,9 +138,9 @@
       "id": "DUO-010",
       "layer": "L1",
       "description": "a stalled native notification drain must not block the initial notification fallback, and foreground recovery retries retained responses without duplicate replies",
-      "setup": "Mock a native drain Promise that never resolves, an initial notification and an app-state listener; use identified responses and a fake reply callback.",
-      "action": "Start push setup with the first drain pending, observe initial fallback, then simulate foreground activation and a later duplicate native response.",
-      "expected": "Setup and initial fallback proceed despite a stalled drain, foreground retry retrieves a retained response, and shared identity permits at most one reply.",
+      "setup": "Mock a native drain Promise that never resolves, an initial notification and an app-state listener; also hold a separate permission Promise pending. Use identified responses and a fake reply callback.",
+      "action": "Start push setup with the first drain pending, observe initial fallback, simulate foreground activation and a duplicate native response, and check a pending permission request separately.",
+      "expected": "Initial fallback proceeds despite a stalled drain or permission request, foreground retry retrieves a retained response, and shared identity permits at most one reply.",
       "planned_files": [
         "mobileapp/src/push/launchNotification.test.ts"
       ],
@@ -247,5 +247,5 @@
       ]
     }
   ],
-  "seal": "b12f795be6b799e516a1d586f30ed0a80f102a188434ff58e00f07516a28570b"
+  "seal": "3a27ac3b29e8b3814034202bf178700ce8f4109bd17b0f85449c6f35985ed7b5"
 }
