@@ -36,9 +36,12 @@ rsync -a "$GITHUB_WORKSPACE/mobileapp/e2e/" "$base/mobileapp/e2e/"
   -derivedDataPath "$RUNNER_TEMP/duo-baseline-build" ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO build \
   > "$GITHUB_WORKSPACE/mobileapp/.e2e-artifacts/comparison/baseline-build.log" 2>&1)
 xcrun simctl list -j devices available > "$RUNNER_TEMP/compare-devices.json"
-GTMUX_E2E_UDID=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); m=[x["udid"] for r,ds in d["devices"].items() if r.endswith("iOS-27-0") for x in ds if x["name"]=="iPhone 17" and x["isAvailable"]]; assert len(m)==1, m; print(m[0])' "$RUNNER_TEMP/compare-devices.json")
-export GTMUX_E2E_UDID GTMUX_E2E_DEVICE='iPhone 17' GTMUX_E2E_OS='27.0' GTMUX_COMPARE_MANUAL_LAUNCH='1'
+compare_os=${GTMUX_COMPARE_OS:-27.0}
+compare_device=${GTMUX_COMPARE_DEVICE:-iPhone 17}
+GTMUX_E2E_UDID=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); os,device=sys.argv[2:]; suffix="iOS-"+os.replace(".","-"); m=[x["udid"] for r,ds in d["devices"].items() if r.endswith(suffix) for x in ds if x["name"]==device and x["isAvailable"]]; assert len(m)==1, m; print(m[0])' "$RUNNER_TEMP/compare-devices.json" "$compare_os" "$compare_device")
+export GTMUX_E2E_UDID GTMUX_E2E_DEVICE="$compare_device" GTMUX_E2E_OS="$compare_os" GTMUX_COMPARE_MANUAL_LAUNCH='1'
 set +e
+overall_status=0
 for variant in baseline candidate; do
   # The hosted runner is ephemeral; reset only this explicitly selected CI device
   # so app data and simulator Keychain do not leak from the previous variant.
@@ -88,7 +91,7 @@ PY
   fi
   mkdir -p "$GITHUB_WORKSPACE/mobileapp/.e2e-artifacts/comparison/$variant"
   if [ -d "$root/.e2e-artifacts/latest" ]; then command cp -R "$root/.e2e-artifacts/latest/." "$GITHUB_WORKSPACE/mobileapp/.e2e-artifacts/comparison/$variant/"; fi
-  if [ "$variant" = candidate ]; then candidate_status=$test_status; fi
+  if [ "$test_status" -ne 0 ]; then overall_status=1; fi
 done
 xcrun simctl shutdown "$GTMUX_E2E_UDID"
-exit "$candidate_status"
+exit "$overall_status"

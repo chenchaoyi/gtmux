@@ -390,13 +390,14 @@ jobs:
     needs: scope
     if: needs.scope.outputs.ios == 'true'
     runs-on: macos-15
-    timeout-minutes: 60
+    timeout-minutes: 90
     env:
       DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
     steps:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
+          fetch-depth: 0
       - name: Runner space and SDK preflight
         run: |
           test "$(uname -m)" = arm64
@@ -446,6 +447,39 @@ jobs:
               assert architectures == ['arm64'], 'Native product target differs from ARM64'
           print('Unsigned app and both embedded extensions verified as ARM64')
           PY
+      - name: Install isolated iOS comparison driver
+        if: github.event_name == 'pull_request' && github.head_ref == 'feat/iphone-duo-adaptation'
+        working-directory: mobileapp
+        env:
+          APPIUM_HOME: ${{ runner.temp }}/ios26-appium
+        run: |
+          driver_version=$(node -p "require('./package-lock.json').packages['node_modules/appium-xcuitest-driver'].version")
+          npx appium driver install --source=npm "appium-xcuitest-driver@$driver_version"
+      - name: Compare unmodified main and candidate on iOS 26
+        id: server_compare26
+        if: github.event_name == 'pull_request' && github.head_ref == 'feat/iphone-duo-adaptation'
+        env:
+          GITHUB_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          APPIUM_HOME: ${{ runner.temp }}/ios26-appium
+          GTMUX_COMPARE_OS: '26.2'
+          GTMUX_COMPARE_DEVICE: iPhone 17
+          GTMUX_E2E_SOFT_KEYBOARD: '1'
+          GTMUX_E2E_HEADLESS: '1'
+          GTMUX_E2E_ACCEPT_ALERTS: '1'
+          GTMUX_E2E_SESSION_CI: '1'
+        run: |
+          set -o pipefail
+          mkdir -p mobileapp/.e2e-artifacts/comparison
+          bash mobileapp/e2e/ci-compare-servers.sh 2>&1 | tee mobileapp/.e2e-artifacts/comparison/setup.log
+      - name: Preserve iOS 26 server comparison
+        if: ${{ !cancelled() && steps.server_compare26.outcome != 'skipped' }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: ios26-server-comparison-${{ github.run_id }}-${{ github.run_attempt }}
+          path: mobileapp/.e2e-artifacts/comparison/**
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
       - name: Native build failure evidence
         if: failure()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
@@ -528,29 +562,6 @@ jobs:
         run: |
           driver_version=$(node -p "require('./package-lock.json').packages['node_modules/appium-xcuitest-driver'].version")
           npx appium driver install --source=npm "appium-xcuitest-driver@$driver_version"
-      - name: Compare main and candidate server switching
-        id: server_compare
-        if: github.event_name == 'pull_request' && github.head_ref == 'feat/iphone-duo-adaptation'
-        env:
-          GITHUB_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          APPIUM_HOME: ${{ runner.temp }}/duo-appium
-          GTMUX_E2E_SOFT_KEYBOARD: '1'
-          GTMUX_E2E_HEADLESS: '1'
-          GTMUX_E2E_ACCEPT_ALERTS: '1'
-          GTMUX_E2E_SESSION_CI: '1'
-        run: |
-          set -o pipefail
-          mkdir -p mobileapp/.e2e-artifacts/comparison
-          bash mobileapp/e2e/ci-compare-servers.sh 2>&1 | tee mobileapp/.e2e-artifacts/comparison/setup.log
-      - name: Preserve server comparison immediately
-        if: ${{ !cancelled() && steps.server_compare.outcome != 'skipped' }}
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
-        with:
-          name: ios-server-comparison-${{ github.run_id }}-${{ github.run_attempt }}
-          path: mobileapp/.e2e-artifacts/comparison/**
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 7
       - name: Probe iPhone Duo runtime and run isolated simulator interaction
         if: ${{ !cancelled() && steps.ios_products.outcome == 'success' && steps.ios_driver.outcome == 'success' }}
         working-directory: mobileapp
