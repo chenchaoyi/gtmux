@@ -17,7 +17,7 @@ import (
 // Generated observation exports include a relays phase suffix. Conclusions and
 // ordinary structured notes do not share this naming contract; an include
 // override still protects an explicitly retained export.
-var generatedRelayObservation = regexp.MustCompile(`^[a-z][a-z0-9-]*-relays-(before|after|final(-check)?|verified|closed|current|follow|first|second|latest|next|[0-9]+)\.json$`)
+var generatedRelayObservation = regexp.MustCompile(`^[a-z][a-z0-9-]*-relays-(before|after|final(-check)?|verified|closed|closeout|closure|current|follow|first|second|latest|next|[0-9]+)\.json$`)
 
 type archiveEntry struct {
 	path, name string

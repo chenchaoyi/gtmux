@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -16,6 +17,8 @@ func TestAutomaticGeneratedRelayVariants(t *testing.T) {
 		"notes/rotate-abcd1234-relays-after.json",
 		"notes/asks-abcdef01-relays-current.json",
 		"notes/demo-followup-relays-verified.json",
+		"notes/demo-closeout-relays-closeout.json",
+		"notes/demo-closure-relays-closure.json",
 	} {
 		if automaticFile(name, nil) {
 			t.Errorf("generated bulk observation was included: %s", name)
@@ -28,6 +31,10 @@ func TestAutomaticGeneratedRelayVariants(t *testing.T) {
 		"notes/relay-plan.json", "notes/custom-relays-summary.json",
 		"notes/project-abcdef12-relays-analysis.json",
 		"notes/done-abcdef12-relays-final.md", "knowledge/relays-final.json",
+		"notes/custom-relays-closure-summary.json", "notes/custom-relays-closeout-analysis.json",
+		"notes/custom-relays-unknown.json", "notes/custom-relays-closure.md",
+		"notes/custom-relays-closeout.txt", "knowledge/demo-relays-closure.json",
+		"workspace/demo-relays-closeout.json",
 	} {
 		if !automaticFile(name, nil) {
 			t.Errorf("ordinary structured note or conclusion was dropped: %s", name)
@@ -126,3 +133,58 @@ func benchmarkSmallRecords(b *testing.B, count int) {
 func BenchmarkSmallRecordArchive4800(b *testing.B)  { benchmarkSmallRecords(b, 4800) }
 func BenchmarkSmallRecordArchive7000(b *testing.B)  { benchmarkSmallRecords(b, 7000) }
 func BenchmarkSmallRecordArchive10000(b *testing.B) { benchmarkSmallRecords(b, 10000) }
+
+// Sparse fixtures exercise the real byte caps without writing large payloads.
+func TestArchivePreflightIncludesTarOverhead(t *testing.T) {
+	for _, tc := range []struct {
+		name           string
+		perFile, extra int64
+		wantError      bool
+	}{
+		{"at_preflight_limit", archiveFileMaxBytes - 1024, 0, false},
+		{"one_byte_over_preflight_limit", archiveFileMaxBytes - 1024, 1, true},
+		{"tar_minimum_over_limit_with_payload_below_limit", archiveFileMaxBytes - 512, 0, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root := t.TempDir()
+			var payload, tarMinimum int64 = 0, 1024
+			for i := 0; i < 4; i++ {
+				size := tc.perFile
+				if i == 3 {
+					size += tc.extra
+				}
+				if size > archiveFileMaxBytes {
+					t.Fatal("fixture exceeded single-file limit")
+				}
+				f, err := os.Create(filepath.Join(root, fmt.Sprintf("%d.txt", i)))
+				if err != nil {
+					t.Fatal(err)
+				}
+				truncateErr := f.Truncate(size)
+				closeErr := f.Close()
+				if truncateErr != nil {
+					t.Fatal(truncateErr)
+				}
+				if closeErr != nil {
+					t.Fatal(closeErr)
+				}
+				payload += size
+				tarMinimum += 512 + ((size+511)/512)*512
+			}
+			if payload >= archiveMaxBytes {
+				t.Fatal("fixture must fit the payload-only bound")
+			}
+			if strings.HasPrefix(tc.name, "tar_minimum") && tarMinimum <= archiveMaxBytes {
+				t.Fatal("fixture did not cross the actual minimum tar bound")
+			}
+			entries, err := selectArchive(root, true, nil)
+			if tc.wantError {
+				if err == nil || !strings.Contains(err.Error(), "HQ records exceed restore limits") {
+					t.Fatalf("tar overhead not rejected: %v", err)
+				}
+			} else if err != nil || len(entries) != 4 {
+				t.Fatalf("inclusive preflight bound rejected: %d entries, %v", len(entries), err)
+			}
+		})
+	}
+}
