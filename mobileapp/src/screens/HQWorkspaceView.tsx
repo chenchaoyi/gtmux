@@ -17,6 +17,7 @@ import { useAgents } from '../state/AgentsContext';
 import { useApp } from '../state/AppContext';
 import type { HQResourceRequest } from '../state/WorkspaceContext';
 import { createReadTask, startReadPolling } from '../state/readTask';
+import { draftKeyFor } from '../state/drafts';
 import { HQAvatar } from '../ui/HQAvatar';
 import { ChromeText } from '../ui/ChromeText';
 import type { SizeClass } from '../ui/layout';
@@ -42,6 +43,13 @@ export function HQWorkspaceView(
   props: Props & { renderConsole: (props: Props) => React.ReactNode },
 ) {
   const { client, isGuest } = useAgents();
+  const navigationIdentity = draftKeyFor(
+    client.base,
+    props.agent.pane_id,
+    props.agent.session_id,
+  );
+  const [navigationOwner, setNavigationOwner] = useState(navigationIdentity);
+  const navigationCurrent = navigationOwner === navigationIdentity;
   const { pal, lang } = useApp();
   const { fontScale } = useWindowDimensions();
   const zh = lang === 'zh',
@@ -86,7 +94,13 @@ export function HQWorkspaceView(
   useEffect(() => {
     setSelected(null);
     setFailed(false);
-  }, [client]);
+    if (!navigationCurrent) {
+      setNavigationOwner(navigationIdentity);
+      setPage('overview');
+      setPrefill(undefined);
+      setResource(undefined);
+    }
+  }, [client, navigationCurrent, navigationIdentity]);
   useEffect(() => {
     if (!supported) return;
     const task = createReadTask(
@@ -111,32 +125,36 @@ export function HQWorkspaceView(
     retireWorkspace.current = task.invalidate;
     return startReadPolling(task, unavailable ? 60000 : 10000);
   }, [client, supported, unavailable]);
-  if (!supported || data === null || page === 'console')
-    return props.renderConsole({
-      ...props,
-      workspaceMode: supported && data !== null,
-      matterSummary: data ? workspaceCounts(data) : undefined,
-      prefill,
-      openResource: resource,
-      onResourceExit:
-        resource && supported && data !== null
-          ? destination => {
-              setResource(undefined);
-              if (destination === 'overview') {
-                setPage('overview');
-                setPrefill(undefined);
-              }
-            }
-          : undefined,
-      onBack:
-        supported && data !== null
-          ? () => {
-              setPage('overview');
-              setPrefill(undefined);
-              setResource(undefined);
-            }
-          : props.onBack,
-    });
+  if (!supported || data === null || (navigationCurrent && page === 'console'))
+    return (
+      <React.Fragment key={navigationIdentity}>
+        {props.renderConsole({
+          ...props,
+          workspaceMode: supported && data !== null,
+          matterSummary: data ? workspaceCounts(data) : undefined,
+          prefill: navigationCurrent ? prefill : undefined,
+          openResource: navigationCurrent ? resource : undefined,
+          onResourceExit:
+            resource && supported && data !== null
+              ? destination => {
+                  setResource(undefined);
+                  if (destination === 'overview') {
+                    setPage('overview');
+                    setPrefill(undefined);
+                  }
+                }
+              : undefined,
+          onBack:
+            supported && data !== null
+              ? () => {
+                  setPage('overview');
+                  setPrefill(undefined);
+                  setResource(undefined);
+                }
+              : props.onBack,
+        })}
+      </React.Fragment>
+    );
   const talk = (text?: string, door?: HQResourceRequest['page']) => {
     setPrefill(text);
     setResource(door ? { page: door, at: Date.now() } : undefined);

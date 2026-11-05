@@ -243,6 +243,7 @@ MAP-cb2da71006dd,G,reviewed implementation,mobileapp/e2e/setup/global-setup-manu
 MAP-c8767994a252,G,reviewed implementation,mobileapp/e2e/setup/manual-tools.cjs,2,reviewed-selector,function manualMode(,False,"DG-001,DG-002,DG-003"
 MAP-64142db61c66,G,reviewed implementation,mobileapp/e2e/setup/manual-tools.cjs,8,reviewed-selector,function sendTarget(,False,"DG-001,DG-002,DG-003"
 MAP-ad9860024fc0,G,reviewed implementation,mobileapp/e2e/setup/manual-tools.cjs,19,reviewed-selector,async function verifySendTarget(,False,"DG-001,DG-002,DG-003"
+MAP-40893b89cbd9,G,reviewed implementation,mobileapp/metro.config.js,11,reviewed-selector,const config =,False,CT-SCOPE
 LEG-8af4b5717085,G,RN / mobile harness,mobileapp/scripts/android_delivery_test.py,17,unittest,test_versions_are_monotonic_and_unambiguous,False,legacy-not-retrospectively-reviewed
 LEG-90cc6b5fa0bd,G,RN / mobile harness,mobileapp/scripts/android_delivery_test.py,33,unittest,test_elf_requires_real_16kb_load_alignment,False,legacy-not-retrospectively-reviewed
 LEG-ee0a9077a22d,G,RN / mobile harness,mobileapp/scripts/android_delivery_test.py,40,unittest,test_package_inventory_rejects_missing_abis_path_confusion_and_secrets,False,legacy-not-retrospectively-reviewed
@@ -352,6 +353,7 @@ LEG-62518d2dd87d,G,RN / mobile harness,mobileapp/scripts/store_package_test.py,8
 LEG-40fa8fe91564,G,RN / mobile harness,mobileapp/scripts/store_package_test.py,133,unittest,test_full_original_ipa_verification_checks_all_extensions_and_resources,False,legacy-not-retrospectively-reviewed
 LEG-8b7dd7678384,G,RN / mobile harness,mobileapp/scripts/store_package_test.py,150,unittest,test_archive_requires_matching_symbols_and_preserves_original,False,legacy-not-retrospectively-reviewed
 LEG-ac9e8d4b5a1d,G,RN / mobile harness,mobileapp/scripts/store_package_test.py,175,unittest,test_unsafe_zip_fails_before_extraction,False,legacy-not-retrospectively-reviewed
+MAP-bc30d081ec5f,G,reviewed implementation,mobileapp/scripts/test-boundary.test.ts,5,reviewed-selector,actual Metro resolver refuses,False,CT-SCOPE
 LEG-5e689e79ed79,G,RN / mobile harness,mobileapp/scripts/test_publisher_test.py,31,unittest,test_another_home_and_xdg_and_explicit_location,False,legacy-not-retrospectively-reviewed
 LEG-4fa7b9182b1e,G,RN / mobile harness,mobileapp/scripts/test_publisher_test.py,37,unittest,test_missing_configuration_is_actionable_without_values,False,legacy-not-retrospectively-reviewed
 LEG-23f57bb74b4a,G,RN / mobile harness,mobileapp/scripts/test_publisher_test.py,43,unittest,test_complete_environment_does_not_require_file,False,legacy-not-retrospectively-reviewed
@@ -397,21 +399,23 @@ LEG-c77bc44423da,G,CI / tooling,scripts/check_private_source_test.py,48,unittest
 LEG-3a0cbcd63152,G,CI / tooling,scripts/check_private_source_test.py,55,unittest,test_private_filenames_fail_without_repeating_the_name_in_diagnostics,False,legacy-not-retrospectively-reviewed
 LEG-36acddae2fe2,G,CI / tooling,scripts/check_private_source_test.py,63,unittest,test_unreadable_source_fails_and_exception_text_never_reaches_output,False,legacy-not-retrospectively-reviewed
 LEG-046c8bb3bdbc,G,CI / tooling,scripts/check_private_source_test.py,71,unittest,test_wrapper_clears_private_environment_before_build_or_spec_helpers,False,legacy-not-retrospectively-reviewed
-LEG-bb0f4dd7bc8b,G,CI / tooling,scripts/ci_test.py,17,unittest,test_docs_only_and_mixed_changes,False,legacy-not-retrospectively-reviewed
-LEG-5e8793132c96,G,CI / tooling,scripts/ci_test.py,33,unittest,test_shared_or_unknown_impact_is_full,True,legacy-not-retrospectively-reviewed
-LEG-7bbcfe8992be,G,CI / tooling,scripts/ci_test.py,44,unittest,test_recognized_modules_include_consumers,False,legacy-not-retrospectively-reviewed
-LEG-bbdfd85a9000,G,CI / tooling,scripts/ci_test.py,53,unittest,test_nul_parser_preserves_names_and_old_rename_path,True,legacy-not-retrospectively-reviewed
-LEG-30f2f4661935,G,CI / tooling,scripts/ci_test.py,61,unittest,test_actual_git_rename_deletion_and_symlink,False,legacy-not-retrospectively-reviewed
-LEG-a0a184955335,G,CI / tooling,scripts/ci_test.py,87,unittest,test_missing_refs_force_full_cli_outputs,False,legacy-not-retrospectively-reviewed
-LEG-513d57a7489a,G,CI / tooling,scripts/ci_test.py,98,unittest,test_workflow_jobs_cannot_grow_outside_aggregation,False,legacy-not-retrospectively-reviewed
-LEG-1f71c99fb4dc,G,CI / tooling,scripts/ci_test.py,110,unittest,test_unsigned_ios_preserves_arm64_target_and_verifies_products,False,legacy-not-retrospectively-reviewed
-LEG-2514a184abce,G,CI / tooling,scripts/ci_test.py,127,unittest,test_android_package_is_built_once_and_both_devices_use_its_output,False,legacy-not-retrospectively-reviewed
-LEG-76200ceafcf2,G,CI / tooling,scripts/ci_test.py,147,unittest,test_docs_can_skip_heavy_jobs_but_require_quality,False,legacy-not-retrospectively-reviewed
-LEG-ecfb4bf818ba,G,CI / tooling,scripts/ci_test.py,153,unittest,test_missing_skipped_failed_cancelled_required_job_never_green,True,legacy-not-retrospectively-reviewed
-LEG-252965413bf3,G,CI / tooling,scripts/ci_test.py,162,unittest,test_bad_plans_or_unselected_failure_are_rejected,False,legacy-not-retrospectively-reviewed
-LEG-8a6a845c7484,G,CI / tooling,scripts/ci_test.py,174,unittest,test_mac_host_keeps_both_architectures_and_native_checks,False,legacy-not-retrospectively-reviewed
-LEG-28f4d1551b14,G,CI / tooling,scripts/ci_test.py,191,unittest,test_ios_delivery_pins_the_same_arm_toolchain_and_keeps_protection,False,legacy-not-retrospectively-reviewed
-MAP-349a1f57f0b7,G,CI / tooling,scripts/ci_test.py,25,reviewed-selector,test_reviewed_test_records_are_policy_only_without_hiding_test_changes,False,TD-006
+MAP-41a5bc78e4e8,G,reviewed implementation,scripts/ci.py,33,reviewed-selector,confirmed_unit_test_isolation,False,CT-SCOPE
+LEG-bb0f4dd7bc8b,G,CI / tooling,scripts/ci_test.py,35,unittest,test_docs_only_and_mixed_changes,False,legacy-not-retrospectively-reviewed
+LEG-5e8793132c96,G,CI / tooling,scripts/ci_test.py,51,unittest,test_shared_or_unknown_impact_is_full,True,legacy-not-retrospectively-reviewed
+LEG-7bbcfe8992be,G,CI / tooling,scripts/ci_test.py,62,unittest,test_recognized_modules_include_consumers,False,legacy-not-retrospectively-reviewed
+LEG-bbdfd85a9000,G,CI / tooling,scripts/ci_test.py,71,unittest,test_nul_parser_preserves_names_and_old_rename_path,True,legacy-not-retrospectively-reviewed
+LEG-30f2f4661935,G,CI / tooling,scripts/ci_test.py,79,unittest,test_actual_git_rename_deletion_and_symlink,False,legacy-not-retrospectively-reviewed
+LEG-a0a184955335,G,CI / tooling,scripts/ci_test.py,105,unittest,test_missing_refs_force_full_cli_outputs,False,legacy-not-retrospectively-reviewed
+LEG-513d57a7489a,G,CI / tooling,scripts/ci_test.py,116,unittest,test_workflow_jobs_cannot_grow_outside_aggregation,False,legacy-not-retrospectively-reviewed
+LEG-1f71c99fb4dc,G,CI / tooling,scripts/ci_test.py,128,unittest,test_unsigned_ios_preserves_arm64_target_and_verifies_products,False,legacy-not-retrospectively-reviewed
+LEG-2514a184abce,G,CI / tooling,scripts/ci_test.py,145,unittest,test_android_package_is_built_once_and_both_devices_use_its_output,False,legacy-not-retrospectively-reviewed
+LEG-76200ceafcf2,G,CI / tooling,scripts/ci_test.py,165,unittest,test_docs_can_skip_heavy_jobs_but_require_quality,False,legacy-not-retrospectively-reviewed
+LEG-ecfb4bf818ba,G,CI / tooling,scripts/ci_test.py,171,unittest,test_missing_skipped_failed_cancelled_required_job_never_green,True,legacy-not-retrospectively-reviewed
+LEG-252965413bf3,G,CI / tooling,scripts/ci_test.py,180,unittest,test_bad_plans_or_unselected_failure_are_rejected,False,legacy-not-retrospectively-reviewed
+LEG-8a6a845c7484,G,CI / tooling,scripts/ci_test.py,192,unittest,test_mac_host_keeps_both_architectures_and_native_checks,False,legacy-not-retrospectively-reviewed
+LEG-28f4d1551b14,G,CI / tooling,scripts/ci_test.py,209,unittest,test_ios_delivery_pins_the_same_arm_toolchain_and_keeps_protection,False,legacy-not-retrospectively-reviewed
+MAP-349a1f57f0b7,G,CI / tooling,scripts/ci_test.py,43,reviewed-selector,test_reviewed_test_records_are_policy_only_without_hiding_test_changes,False,TD-006
+MAP-5f57607e8e0e,G,CI / tooling,scripts/ci_test.py,17,reviewed-selector,test_unit_test_scope_requires_immutable_product_exclusion,False,CT-SCOPE
 LEG-0a1ce627fdd1,G,CI / tooling,scripts/install_platform_test.py,70,unittest,test_linux_archives_install_without_any_mac_application,True,legacy-not-retrospectively-reviewed
 LEG-8ccffb001b09,G,CI / tooling,scripts/install_platform_test.py,80,unittest,test_checksum_failure_never_installs,False,legacy-not-retrospectively-reviewed
 LEG-c81cb29009cc,G,CI / tooling,scripts/install_platform_test.py,86,unittest,test_existing_optional_client_is_updated_only_by_capable_release,True,legacy-not-retrospectively-reviewed
@@ -485,5 +489,9 @@ LEG-fecadf66518e,G,CI / tooling,scripts/vulncheck_test.py,31,unittest,test_empty
 LEG-b709631fda46,G,CI / tooling,scripts/vulncheck_test.py,36,unittest,test_valid_scan_without_findings_passes,False,legacy-not-retrospectively-reviewed
 LEG-6da01b5b6548,G,CI / tooling,scripts/vulncheck_test.py,39,unittest,test_reachable_fixable_fails_unfixed_or_unreachable_passes,False,legacy-not-retrospectively-reviewed
 LEG-630bd7aac308,G,Browser,tests/web/alignment.test.cjs,59,scenario,Human profiles share App identity and quote without irrelevant browser permissions,False,legacy-not-retrospectively-reviewed
+MAP-75f2ed302427,G,reviewed implementation,tests/web/browser-pool.cjs,2,reviewed-selector,function browserPool,False,"CT-BROWSER-POLICY,CT-TIMING"
+MAP-faa984b171bf,G,reviewed implementation,tests/web/browser-pool.test.cjs,4,reviewed-selector,concurrent borrowers share,False,"CT-BROWSER-POLICY,CT-TIMING"
+MAP-c7ca48106233,G,reviewed implementation,tests/web/browser-pool.test.cjs,30,reviewed-selector,failed launch propagates,False,"CT-BROWSER-POLICY,CT-TIMING"
+MAP-eda764da861f,G,reviewed implementation,tests/web/harness.cjs,13,reviewed-selector,function scenario,False,"CT-TIMING,CT-BROWSER"
 LEG-00a1f7cbea36,G,Browser,tests/web/smoke.test.cjs,671,scenario,"Composer stages files, annotates images, recalls input and matches app send controls",False,legacy-not-retrospectively-reviewed
 LEG-f81adc301549,G,Browser,tests/web/smoke.test.cjs,846,scenario,Clipboard images and dropped files stay staged until an explicit send,False,legacy-not-retrospectively-reviewed

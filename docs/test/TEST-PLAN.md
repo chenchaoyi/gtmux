@@ -122,3 +122,5 @@ compile-only, actual simulator actions, real device/accessibility and installati
 Do not inherit a prior report's passes or turn a screenshot into touch/VoiceOver proof.
 
 Existing Store/site screenshot production, explicit visual probes and synthetic state captures retain their original entries/flags; some remain under `__tests__`. This change does not restructure those material workflows. Their catalogue role is M, not functional acceptance from capture completion or conditional skips.
+
+[Real-handler contracts, mounted interactions, Android blocks and measured execution](CONTRACTS-EXECUTION.md) describes the new execution boundaries.

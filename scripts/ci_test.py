@@ -14,6 +14,24 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class ScopeTests(unittest.TestCase):
+    def test_unit_test_scope_requires_immutable_product_exclusion(self):
+        path = "mobileapp/src/screens/HQ.test.tsx"
+        self.assertIn("android-emulator", ci.classify([path])["selected"])
+        self.assertEqual(ci.classify([path], unit_test_isolation=True)["selected"], ["mobile", "web"])
+        for extra in ["mobileapp/e2e/fake-serve/server.ts", "mobileapp/src/ui/Composer.tsx"]:
+            self.assertIn("android-emulator", ci.classify([path, extra], unit_test_isolation=True)["selected"])
+        for extra in ["tests/contracts/http-contract.json", "mobileapp/metro.config.js", "mobileapp/package-lock.json"]:
+            self.assertTrue(ci.classify([path, extra], unit_test_isolation=True)["full"])
+        self.assertFalse(ci.confirmed_unit_test_isolation("bad-ref"))
+        with patch("ci.subprocess.run", side_effect=OSError("unavailable")):
+            self.assertFalse(ci.confirmed_unit_test_isolation("a" * 40))
+        with patch("ci.subprocess.run") as read:
+            read.return_value.stdout = (ROOT / "mobileapp/metro.config.js").read_bytes()
+            self.assertTrue(ci.confirmed_unit_test_isolation("a" * 40))
+            self.assertEqual(read.call_args.args[0], ["git", "show", "a" * 40 + ":mobileapp/metro.config.js"])
+            read.return_value.stdout = b"resolver proof was changed"
+            self.assertFalse(ci.confirmed_unit_test_isolation("a" * 40))
+
     def test_docs_only_and_mixed_changes(self):
         self.assertEqual(ci.classify(["docs/phone.zh.md", "README.md"])["selected"], [])
         plan = ci.classify(["docs/phone.md", "macapp/Sources/GtmuxBar/MenuView.swift"])

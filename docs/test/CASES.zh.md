@@ -2,16 +2,16 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1012 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1032 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
-| L1 · 单元/纯逻辑 | 3725 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 1870 | [L2.csv](cases/L2.csv) |
-| L3 · 运行时集成 | 79 | [L3.csv](cases/L3.csv) |
-| L4 · 应用操作流程 | 96 | [L4.csv](cases/L4.csv) |
+| L1 · 单元/纯逻辑 | 3732 | [L1.csv](cases/L1.csv) |
+| L2 · 组件/契约 | 1887 | [L2.csv](cases/L2.csv) |
+| L3 · 运行时集成 | 81 | [L3.csv](cases/L3.csv) |
+| L4 · 应用操作流程 | 98 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 12 | [M.csv](cases/M.csv) |
-| G · 质量门禁 | 488 | [G.csv](cases/G.csv) |
+| G · 质量门禁 | 496 | [G.csv](cases/G.csv) |
 
 数字不是通过数。存量 6,223 个位置来自 4fad6119 盘点（声明、子测试、动态模板），另加明确的新用例、原生过程入口和评审映射入口；动态实例不展开。没有具名用例的辅助文件仍保留摘要。存量层次是结构分类，混合边界在触及时需语义复核，不补造历史评审/运行结果。`reviewed-selector` 也不冒充框架发现的声明。源码/目录/映射漂移由门禁拦截，但测试名不能自动证明断言质量。
 
@@ -21,6 +21,16 @@
 
 | ID | 预期行为（源码英文） |
 | --- | --- |
+| CT-HTTP | Real Go handler responses agree with independent RN/Web fake servers for transcript history/context, HQ overview/detail/cursor, document metadata/download, null/empty and permission errors. |
+| CT-DRAFT | Actual Detail and HQ composers isolate text across servers and reused panes/session identities, ignore delayed old draft loads, and persist/send to the current target only. |
+| CT-HQ | A current human question opens its original matter, prepares but does not auto-send a reply; an authoritative answer removes it from pending without completing the matter. Old client responses cannot replace current data. |
+| CT-SUB | Mounted server mode consumers refresh after actual provider notifications and do not display late results from a retired client. |
+| CT-ANDROID | The unchanged 31 Android journey assertions run as a full journey or independent capability blocks with idempotent setup and dependency-aware blocked results; driver disconnect preserves the first cause. |
+| CT-ANDROID-POLICY | The unchanged 31 Android journey assertions run as a full journey or independent capability blocks with idempotent setup and dependency-aware blocked results; driver disconnect preserves the first cause. |
+| CT-TIMING | Stage and operation timing attributes setup/action/evidence cost separately, including failures and blocks; no silent rerun or suppressed assertions. |
+| CT-BROWSER-POLICY | Reuse one browser process per test worker while every case retains a fresh context/server and isolated storage/failure traces; closed browsers are replaced, resources close on setup/assertion failure. |
+| CT-BROWSER | Reuse one browser process per test worker while every case retains a fresh context/server and isolated storage/failure traces; closed browsers are replaced, resources close on setup/assertion failure. |
+| CT-SCOPE | Only proven non-product RN unit test edits may omit native builds; mixed/shared/unknown paths, test fixtures consumed by journeys and production imports fail closed; all selected checks still aggregate. |
 | DUO-001 | cold notification opens the correct server and selection routes to the selected server. |
 | DUO-002 | selected session and draft survive a simulator orientation change. |
 | DUO-003 | iPad retains sidebar and selected session through rotation. |

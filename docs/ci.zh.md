@@ -11,9 +11,10 @@
 | 仅已识别的文档、翻译、规格 Markdown 或更新说明文本 | 规范与文档检查 |
 | 菜单栏 Swift 源码或测试 | 规范与文档 + Swift 构建与测试 |
 | 内嵌 Web 资源或浏览器测试 | 规范与文档 + 完整 Go + Web 逻辑与浏览器测试 |
-| 手机/iPad JS/TS 源码或测试 | 规范与文档 + RN 类型、lint、Jest + Web + iOS 无签名构建 |
+| 已由完整 Metro 配置摘要证明不进入产品包的 `mobileapp/src/**/*.test.ts(x)` | 规范与文档 + 完整 RN + Web；证明缺失则保留原生检查 |
+| 其他手机/iPad JS/TS 源码或测试 | 规范与文档 + RN 类型、lint、Jest + Web + iOS 无签名构建 + Android QA/原生 + 手机/平板模拟器 |
 | iOS Swift/Objective-C 源码 | 规范与文档 + RN + iOS 无签名构建 |
-| 推送中继 TS 源码或测试 | 规范与文档 + 中继 + 完整 Go + RN |
+| 推送中继 TS 源码或测试 | 规范与文档 + 中继 + 完整 Go + RN + Android QA/原生 + 手机/平板模拟器 |
 | 仅 Go 测试文件 | 规范与文档 + 完整 Go |
 | 核心/API、依赖、构建配置、CI/脚本、隧道 Worker、未知路径 | 全部检查 |
 
@@ -70,7 +71,7 @@ Web 可运行 `node --test internal/server/web/app.test.cjs`，再进入 `tests/
 `GTMUX_TEST_CHROMIUM`，无需重复下载。
 
 浏览器使用仓库真实 HTML/JS/CSS/xterm 和模拟 HTTP 数据，不会向真实窗格发送信息，
-也不替代真实服务的契约测试。无签名原生构建使用 runner 对应的模拟器架构，包含
+另有隔离的真实 Go handler 与 RN/Web 假服务契约对照。无签名原生构建使用 runner 对应的模拟器架构，包含
 App、实时活动及通知扩展，但不验证
 APNs、签名、安装或运行时无障碍。Safari、手机/iPad 真机布局、VoiceOver、终端跳转、
 tmux-resurrect 仍需另记验收。移动端真实服务契约测试仍需显式配置
@@ -79,3 +80,5 @@ tmux-resurrect 仍需另记验收。移动端真实服务契约测试仍需显�
 ## 测试分层与评审记录
 
 [测试体系](test/TEST-PLAN.zh.md)列出分层、完整用例目录和 PR/main/发版/交付矩阵。[测试设计评审](test/DESIGN-WORKFLOW.zh.md)须早于测试实现；quality 检查源码摘要、评审封印、映射和 PR 提交顺序。iOS CI 在 App 编译前执行生产 HTML/Markdown Foundation 断言，仍与真机 UI 验收分别记录。RN 与推送下游变更还会选择 Android QA/native 和手机/平板模拟器，实际选择以脚本和运行摘要为准。
+
+仅修改由完整 Metro 配置摘要证明确认排除出产品包的 `mobileapp/src/**/*.test.ts(x)` 时，运行完整 RN、Web 和策略门禁；证明缺失或混入产品、E2E、夹具及配置变化时保留更广范围。隔离的真实 Go handler 与 RN/Web 假服务契约、Android 分块及浏览器复用见[契约与执行](test/CONTRACTS-EXECUTION.zh.md)。

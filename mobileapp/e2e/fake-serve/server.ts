@@ -148,26 +148,49 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
       return false;
     };
 
+    if (path === '/api/hq/workspace') {
+      res.setHeader('Cache-Control','no-store');
+      if (!ownerOnly()) return;
+      if (req.method !== 'GET') {res.setHeader('Allow','GET');return json(res,405,{error:'GET required'});}
+      const matter=q.get('matter') ?? '', before=q.get('before');
+      if (matter.length>80 || /[/\\\u0000]/.test(matter) || ['global','activity'].includes(matter)) return json(res,400,{error:'invalid matter'});
+      if (before !== null && (!matter || !/^\d+$/.test(before) || BigInt(before)>18446744073709551615n)) return json(res,400,{error:'invalid cursor'});
+      if (!world.workspace) return json(res,501,{error:'workspace unavailable'});
+      if (!matter) {
+        const value=JSON.parse(JSON.stringify(world.workspace)) as typeof world.workspace;
+        for(const group of [value.overview.human_input,value.overview.needs_input])for(const item of group||[]) {
+          const input=value.matters.find(m=>m.id===item.matter_id)?.user_input;
+          if(input && !input.answer_id)item.preview={message_id:input.id,kind:'question',body:input.prompt,at:input.at};
+        }
+        return json(res,200,value);
+      }
+      const detail=world.matters.get(matter);
+      return json(res,detail?200:404,detail || {error:'matter not found'});
+    }
+
     if (path.startsWith('/api/artifacts/')) {
       if (!ownerOnly()) return;
       if (req.method === 'POST' && path === '/api/artifacts/resolve') {
         const body = await readBody(req); world.record(path, body);
+        if (Object.keys(body).some(key=>!['reference','session_id','home_id','parent_id'].includes(key)) || typeof body.session_id!=='string' || !body.session_id || /[\r\n/\\]/.test(body.session_id) || body.parent_id && !/^[a-f0-9]{32}$/.test(String(body.parent_id))) return json(res,400,{error:'valid document reference required'});
         let reference = String(body.reference ?? '');
         const parent = body.parent_id ? [...world.documents.entries()].find(([, value]) => value.id === body.parent_id) : undefined;
         if (body.parent_id && (!parent || parent[1].session !== body.session_id || parent[1].home !== (body.home_id ?? ''))) return json(res, 403, {error:'wrong parent scope'});
         if (reference.startsWith('gtmux-file:')) reference = [...world.documents.entries()].find(([, value]) => value.id === reference.slice(11))?.[0] ?? '';
         else if (parent && !reference.startsWith('/')) reference = posix.resolve(posix.dirname(parent[0]), reference);
         const document = world.documents.get(reference);
-        if (!document || document.session !== body.session_id || document.home !== (body.home_id ?? '')) return json(res, 404, {error:'document unavailable'});
-        return json(res, 200, {id:document.id, name:posix.basename(reference), source:reference, kind:document.kind, media_type:document.media,
+        if (!document || document.session !== body.session_id || document.home !== (body.home_id ?? '')) return json(res, 404, {error:'file is unavailable for this conversation',code:'document_unpublished'});
+        res.setHeader('Cache-Control','no-store');
+        return json(res, 200, {sequence:0,id:document.id, name:posix.basename(reference), source:reference, kind:document.kind, media_type:document.media,
           bytes:document.body.length, sha256:createHash('sha256').update(document.body).digest('hex'), created_at:1700000000,
-          session_id:document.session, home_id:document.home});
+          session_id:document.session, ...(document.home ? {home_id:document.home} : {})});
       }
       if (req.method === 'GET' && path === '/api/artifacts/content') {
         const document = [...world.documents.values()].find(value => value.id === q.get('id'));
         if (!document || document.session !== q.get('session_id') || document.home !== (q.get('home_id') ?? '')) return json(res, 404, {error:'document unavailable'});
         world.record(path, {id:document.id});
-        res.writeHead(200, {'Content-Type':document.media,'Content-Length':document.body.length});res.end(document.body);return;
+        const digest=createHash('sha256').update(document.body).digest('hex');
+        res.writeHead(200, {'Content-Type':'application/octet-stream','Content-Length':document.body.length,'Content-Disposition':`attachment; filename=${posix.basename([...world.documents.entries()].find(([,v])=>v===document)![0])}`,'Content-Security-Policy':"sandbox; default-src 'none'",'X-Content-Type-Options':'nosniff','Cache-Control':'no-store','X-Gtmux-SHA256':digest,ETag:'"'+digest+'"'});res.end(document.body);return;
       }
       return json(res,404,{error:'unsupported document endpoint'});
     }
@@ -266,18 +289,26 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
         }
         case '/api/transcript': {
           const id = q.get('id') ?? '';
+          if (!id) return json(res,400,{error:'missing id'});
           if (!mayReach('view', id)) return json(res, 403, {error: 'forbidden: pane not shared'});
+          const visibleTurns = (rows: import('../../src/api/client').TranscriptTurn[]) => owner && q.get('context')==='1' ? rows : rows.map(turn=>({...turn, ...(turn.segments ? {segments:turn.segments.flatMap(segment=>{const {context:_,...publicPart}=segment;return Object.keys(publicPart).length?[publicPart]:[];})} : {})}));
           // A suite that needs a particular conversation sets it per pane.
           const before = q.get('before');
           if (before) {
             world.record('/api/transcript/history', {id,before});
             const page = world.historyPages.get(`${id}:${before}`);
-            if (!page) return json(res, 400, {error: 'unknown history cursor'});
-            res.setHeader('X-Gtmux-History-Page', '1');
-            return json(res, 200, owner ? page : page.map(turn => ({...turn, segments: turn.segments?.filter(segment => !segment.context)})));
+            if (!page) return json(res, 409, {error: 'history page unavailable; refresh and retry'});
+            res.setHeader('X-Gtmux-History-Page', '1');res.setHeader('Cache-Control','no-store');
+            return json(res,200,visibleTurns(page));
           }
           const set = world.transcripts.get(id);
-          if (set) return json(res, 200, owner ? set : set.map(turn => ({...turn, segments: turn.segments?.filter(segment => !segment.context)})));
+          if (set) {
+            const meta=world.transcriptMeta.get(id);let etag=meta?.etag;
+            if (meta?.dropped)res.setHeader('X-Gtmux-Turns-Dropped',String(meta.dropped));
+            if(etag && JSON.stringify(set).includes('"context"')) etag='W/"'+createHash('sha256').update((owner && q.get('context')==='1'?'context-v1-reader:':'context-v1-public:')+etag).digest('hex')+'"';
+            if(etag) {res.setHeader('ETag',etag);if(req.headers['if-none-match']===etag){res.writeHead(304);res.end();return;}}
+            return json(res,200,visibleTurns(set));
+          }
           // A conversation with REAL gaps in it, so a surface can show where it broke
           // (chat-time-separator): two turns minutes apart carry no separator, the ones
           // after a night and after a pause do.
