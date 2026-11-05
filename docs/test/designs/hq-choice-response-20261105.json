@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner (self-review, not independent approval)",
     "date": "2026-11-05",
     "decision": "Proceed on user screenshot report",
-    "notes": "Read-only installed172: full overview8.087s; current roster exceeded10s bounded probe; selected matter0.197s. Existing native button test mounts only the card, not complete window/composer; focusKey changes only on selection. Use synthetic native full-window AX/geometry, no real question answers or cleanup commands. Separate fast canonical data and optional live/historical metadata; preserve source availability semantics, old-core compatibility and fresh draft/identity boundaries. No release/install/shared restart. Keep L2 model/client tests separate from L3 complete native-window tests; validate production minimum900-point and wide layouts in both appearances with real editor focus."
+    "notes": "Read-only installed172: full overview8.087s; current roster exceeded10s bounded probe; selected matter0.197s. Existing native button test mounts only the card, not complete window/composer; focusKey changes only on selection. Use synthetic native full-window AX/geometry, no real question answers or cleanup commands. Separate fast canonical data and optional live/historical metadata; preserve source availability semantics, old-core compatibility and fresh draft/identity boundaries. No release/install/shared restart. Keep L2 model/client tests separate from L3 complete native-window tests; validate production minimum900-point and wide layouts in both appearances with real editor focus. When a stored question is usable before conversation history, render a history loading/unavailable state rather than claiming the conversation is empty."
   },
   "cases": [
     {
@@ -62,12 +62,13 @@
         "macapp/Sources/GtmuxBar/HQWorkspaceParticipants.swift",
         "macapp/Sources/GtmuxBar/HQParticipantLabel.swift",
         "macapp/Sources/GtmuxBar/HQWorkspaceParticipantsManager.swift",
-        "macapp/Tests/GtmuxBarTests/HQChoiceFixture.swift"
+        "macapp/Tests/GtmuxBarTests/HQChoiceFixture.swift",
+        "macapp/Sources/GtmuxBar/HQWorkspaceConversation.swift"
       ],
       "surfaces": [
         "CLI / Go / macOS HQ"
       ]
     }
   ],
-  "seal": "7a693743b1409a119002f06fb74db247e84cd1344ca2d3e57eb7e4ee91ac22de"
+  "seal": "0f5f4532e61e20ba5af890f96a9a4830d2402eada24a01ef8009e29e6039de2a"
 }
