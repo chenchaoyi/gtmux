@@ -37,7 +37,7 @@ rsync -a "$GITHUB_WORKSPACE/mobileapp/e2e/" "$base/mobileapp/e2e/"
   > "$GITHUB_WORKSPACE/mobileapp/.e2e-artifacts/comparison/baseline-build.log" 2>&1)
 xcrun simctl list -j devices available > "$RUNNER_TEMP/compare-devices.json"
 GTMUX_E2E_UDID=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); m=[x["udid"] for r,ds in d["devices"].items() if r.endswith("iOS-27-0") for x in ds if x["name"]=="iPhone 17" and x["isAvailable"]]; assert len(m)==1, m; print(m[0])' "$RUNNER_TEMP/compare-devices.json")
-export GTMUX_E2E_UDID GTMUX_E2E_DEVICE='iPhone 17' GTMUX_E2E_OS='27.0'
+export GTMUX_E2E_UDID GTMUX_E2E_DEVICE='iPhone 17' GTMUX_E2E_OS='27.0' GTMUX_COMPARE_MANUAL_LAUNCH='1'
 set +e
 for variant in baseline candidate; do
   # The hosted runner is ephemeral; reset only this explicitly selected CI device

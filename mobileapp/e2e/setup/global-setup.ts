@@ -91,7 +91,9 @@ export default async function globalSetup(): Promise<void> {
       hostname: '127.0.0.1',
       port: appiumPort,
       path: '/',
-      capabilities: iosCapabilities,
+      // The main/candidate comparison opens a neutral WDA session first and
+      // launches both installed apps explicitly through the same test path.
+      capabilities: {...iosCapabilities, ...(process.env.GTMUX_COMPARE_MANUAL_LAUNCH === '1' ? {'appium:autoLaunch': false} : {})},
       logLevel: 'warn',
       ...sessionConnectionOptions(),
     });
