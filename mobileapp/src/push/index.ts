@@ -280,6 +280,7 @@ export async function setupPush(
 
     return teardown;
   } catch (error) {
+    if (Debug.logNet) Debug.record({event: 'push-setup-error', at: Date.now(), name: error instanceof Error ? error.name : typeof error});
     teardown();
     throw error;
   }

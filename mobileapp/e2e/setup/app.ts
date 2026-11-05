@@ -1,7 +1,8 @@
 import {execFileSync} from 'child_process';
 import {existsSync, mkdirSync, readFileSync, writeFileSync} from 'fs';
 import {join} from 'path';
-import {getDriver} from './driver';
+import {getArtifactsDir, getDriver} from './driver';
+import {screenshot} from './screenshot';
 import {TestIds} from '../../src/constants/testIds';
 
 export const BUNDLE = 'com.gtmux.app';
@@ -57,8 +58,19 @@ export async function launchWithFlags(flags: Record<string, string>): Promise<vo
 /** Wait for the app's existing notification prompt flow; do not mutate permissions. */
 export async function waitForNotificationAuthorization(): Promise<void> {
   const driver = getDriver();
-  await driver.waitUntil(() => readDebugLog().some(e => e.event === 'push-permissions' && e.alert === true),
-    {timeout: 30000, interval: 500, timeoutMsg: 'notification authorization was not confirmed'});
+  try {
+    await driver.waitUntil(() => readDebugLog().some(e => e.event === 'push-permissions' && e.alert === true),
+      {timeout: 30000, interval: 500, timeoutMsg: 'notification authorization was not confirmed'});
+  } catch (error) {
+    try {
+      writeFileSync(join(getArtifactsDir(), 'debug-notification-authorization.json'), JSON.stringify(readDebugLog(), null, 2));
+      await screenshot('c-notification-authorization');
+      writeFileSync(join(getArtifactsDir(), 'c-notification-authorization.xml'), await driver.getPageSource());
+    } catch (captureError) {
+      console.error(`[e2e] failed to capture notification authorization: ${captureError}`);
+    }
+    throw error;
+  }
 }
 
 /**
