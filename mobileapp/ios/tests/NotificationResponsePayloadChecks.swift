@@ -21,6 +21,8 @@ struct NotificationResponsePayloadChecks {
     NotificationResponseBuffer.acknowledge(id: "request-2", action: "")
     let pending = NotificationResponseBuffer.drain()
     precondition(pending.count == 1 && pending[0]["gtmuxResponseId"] as? String == "request-1")
+    precondition(NotificationResponseBuffer.drain().count == 1) // retry until JS acknowledges
+    NotificationResponseBuffer.acknowledge(id: "request-1", action: "2")
     precondition(NotificationResponseBuffer.drain().isEmpty)
     for n in 0..<140 {
       NotificationResponseBuffer.enqueue(notificationResponsePayload(userInfo: [:], requestID: "bounded-\(n)", actionID: nil, userText: nil))

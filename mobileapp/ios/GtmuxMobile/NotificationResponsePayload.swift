@@ -43,8 +43,8 @@ enum NotificationResponseBuffer {
 
   static func drain() -> [[AnyHashable: Any]] {
     lock.lock(); defer { lock.unlock() }
-    let result = pending
-    pending.removeAll()
-    return result
+    // Delivery across the bridge is asynchronous. Keep each response until JS
+    // explicitly acknowledges it, so a failed or suspended bridge can retry.
+    return pending
   }
 }

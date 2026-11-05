@@ -9,7 +9,9 @@ class GtmuxNotificationResponses: NSObject {
   func drain(_ resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) {
     let pending = NotificationResponseBuffer.drain()
     traceNotification("native-drain-\(pending.count)")
+    traceNotification("native-drain-json-\(JSONSerialization.isValidJSONObject(pending) ? "valid" : "invalid")")
     resolve(pending)
+    traceNotification("native-drain-resolve-called")
   }
 
   @objc(acknowledge:action:)

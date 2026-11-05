@@ -29,7 +29,7 @@
 | DUO-006 | first server selection and server switching follow the same observable route on main and candidate. |
 | DUO-007 | fake request diagnostics expose routing metadata without credentials or query values. |
 | DUO-008 | explicit hosted simulator configuration preserves local defaults and bounds driver startup. |
-| DUO-009 | native notification payload retains response identity, action and input while queue is bounded and deduplicated. |
+| DUO-009 | Unacknowledged responses remain retrievable; acknowledged responses disappear, duplicate identity/action is queued once, and only the newest 128 entries remain. |
 | DUO-010 | duplicate launch and delegate responses dispatch a single action and preserve fallback. |
 | DUO-011 | Trace and Diff remain open with their current content across window resizing. |
 | DUO-012 | resizing preserves mounted detail and selection while compact navigation remains usable. |
