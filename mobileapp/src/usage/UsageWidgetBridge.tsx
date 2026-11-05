@@ -66,9 +66,12 @@ export function UsageWidgetBridge() {
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
+    if (Debug.logNet) Debug.record({event: 'usage-sheet-visibility', at: Date.now(), visible, isGuest, demo: !!demo});
+  }, [visible, isGuest, demo]);
+  useEffect(() => {
     let live = true;
     const open = (url: string | null) => {
-      if (Debug.logNet) Debug.record({event: 'usage-link', at: Date.now(), matches: !!url && isUsageWidgetLink(url), isGuest, demo});
+      if (Debug.logNet) Debug.record({event: 'usage-link', at: Date.now(), matches: !!url && isUsageWidgetLink(url), live, isGuest, demo: !!demo});
       if (live && url && isUsageWidgetLink(url) && !isGuest && !demo) setOpenedFor(client);
     };
     void Linking.getInitialURL().then(url => {
