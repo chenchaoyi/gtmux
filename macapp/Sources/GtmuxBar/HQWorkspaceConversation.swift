@@ -65,9 +65,15 @@ struct HQWorkspaceConversationView: View {
                                     .disabled(store.loading).frame(maxWidth: .infinity)
                             }
                             if rows.isEmpty {
-                                Text(l10n.tr("No conversation yet.", "还没有对话。"))
-                                    .font(HQTypography.body).foregroundStyle(.secondary).padding(.vertical, 40)
-                                    .frame(maxWidth: .infinity)
+                                if store.detail == nil && store.loading {
+                                    HQBrandLoading(label: l10n.tr("Loading conversation…", "正在载入对话…"))
+                                } else {
+                                    Text(store.detail == nil
+                                         ? l10n.tr("Conversation unavailable. You can still answer the current question.", "暂时无法读取对话，仍可答复当前问题。")
+                                         : l10n.tr("No conversation yet.", "还没有对话。"))
+                                        .font(HQTypography.body).foregroundStyle(.secondary).padding(.vertical, 40)
+                                        .frame(maxWidth: .infinity)
+                                }
                             }
                             ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
                                 VStack(alignment: .leading, spacing: 20) {

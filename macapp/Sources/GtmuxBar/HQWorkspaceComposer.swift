@@ -17,7 +17,7 @@ struct HQWorkspaceComposer: View {
                         text: $store.draft, label: scopeLabel,
                         help: l10n.tr("Return for a new line; ⌘Return to send", "回车换行，⌘回车发送"),
                         canSend: { store.canSend }, onSend: { store.send() },
-                        focusKey: store.selection.scope ?? "new-task", fontSize: HQTypography.Role.body.size)
+                        focusKey: "\(store.selection.scope ?? "new-task")/\(store.composerFocusSerial)", fontSize: HQTypography.Role.body.size)
                 }.frame(height: 76).background(
                     Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 8)
                 )
@@ -42,6 +42,9 @@ struct HQWorkspaceComposer: View {
                     .secondary)
             }
         }.padding(12)
+            .fixedSize(horizontal: false, vertical: true)
+            .layoutPriority(1)
+            .accessibilityIdentifier("hq-composer")
 
     }
     private var scopeLabel: String {
