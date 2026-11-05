@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Conservative change selection and fail-closed CI result aggregation."""
 import argparse
+import hashlib
 import json
 import os
 from pathlib import PurePosixPath
@@ -29,7 +30,24 @@ def document(path):
             (path.startswith(("mobileapp/fastlane/metadata/", "mobileapp/release-notes/")) and p.suffix == ".txt"))
 
 
-def classify(paths, force_reason=None):
+def confirmed_unit_test_isolation(head):
+    """Proof is immutable source, not a PR label or filename-only assumption.
+
+    Metro refuses these tests even if product code tries to import one. A changed
+    resolver (or unreadable revision) cannot silently inherit this exemption.
+    E2E/fake servers, shared fixtures, dependencies and configs never qualify.
+    """
+    if not re.fullmatch(r"[0-9a-f]{40}", head or ""):
+        return False
+    try:
+        source = subprocess.run(["git", "show", head + ":mobileapp/metro.config.js"],
+                                check=True, capture_output=True).stdout
+    except (OSError, subprocess.CalledProcessError):
+        return False
+    return hashlib.sha256(source).hexdigest() == "5c8073c6156d2a6db9c795705f70f82c21df119475c02f0f86dab7765bb29d1f"
+
+
+def classify(paths, force_reason=None, unit_test_isolation=False):
     selected, reasons = set(), []
     full = bool(force_reason) or not paths
     if full:
@@ -47,6 +65,10 @@ def classify(paths, force_reason=None):
         elif path.startswith(("cmd/", "internal/", "relay/")) and path.endswith("_test.go"):
             selected.add("test")
             reasons.append("Go tests only: " + json.dumps(path))
+        elif (unit_test_isolation and
+              re.fullmatch(r"mobileapp/src/(?:[\w-]+/)*[\w.-]+\.test\.tsx?", path)):
+            selected.update(("mobile", "web"))
+            reasons.append("Jest-only source excluded by pinned Metro resolver; full RN/Web checks: " + json.dumps(path))
         elif path.startswith("mobileapp/src/api/"):
             full = True
             reasons.append("Shared HTTP contract consumer: " + json.dumps(path))
@@ -149,7 +171,8 @@ def main():
         if args.force_full or args.event not in {"push", "pull_request"}:
             plan = classify([], "Manual or unsupported event; run everything.")
         else:
-            plan = classify(changed_files(args.base, args.head, args.event))
+            plan = classify(changed_files(args.base, args.head, args.event),
+                            unit_test_isolation=confirmed_unit_test_isolation(args.head))
     except (ValueError, UnicodeError, OSError, subprocess.CalledProcessError) as error:
         plan = classify([], "Cannot confirm diff; run everything (" + type(error).__name__ + ").")
     print(json.dumps(plan, indent=2))

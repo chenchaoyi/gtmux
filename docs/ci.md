@@ -12,7 +12,8 @@ GitHub account; ordinary PR tests do not use the protected delivery environment.
 | Recognized docs, translations, spec Markdown and release-note text only | Policy/docs gate |
 | Menu-bar Swift source/tests | Policy/docs + Swift build/tests |
 | Embedded Web assets or browser tests | Policy/docs + complete Go + Web logic/browser |
-| Phone/iPad JS/TS source/tests | Policy/docs + RN typecheck/lint/Jest + Web + unsigned iOS build + Android QA/native + phone/tablet emulator |
+| Proven Jest-only `mobileapp/src/**/*.test.ts(x)` excluded by the pinned Metro resolver | Policy/docs + complete RN + Web; unavailable proof retains native checks |
+| Other phone/iPad JS/TS source/tests | Policy/docs + RN typecheck/lint/Jest + Web + unsigned iOS build + Android QA/native + phone/tablet emulator |
 | iOS Swift/Objective-C source | Policy/docs + RN + unsigned iOS build |
 | Push relay TS source/tests | Policy/docs + relay + complete Go + RN + Android QA/native + phone/tablet emulator |
 | Go test files only | Policy/docs + complete Go |
@@ -82,7 +83,7 @@ platform suites too. For Web: `node --test internal/server/web/app.test.cjs`, th
 compatible Chromium can be supplied through `GTMUX_TEST_CHROMIUM`.
 
 The browser fixture uses real repository HTML/JS/CSS/xterm with synthetic HTTP data and
-never sends to a real pane. It is not a real-server contract test. The unsigned native
+never sends to a real pane. Separate hermetic contracts execute real Go HTTP handlers and independently compare both client fakes; see [contract and execution checks](test/CONTRACTS-EXECUTION.md). The unsigned native
 build uses the runner's simulator architecture and includes the app, Live Activity
 and notification extensions; it does not exercise
 APNs, signing, installation or runtime accessibility. Safari, real phone/iPad layouts,

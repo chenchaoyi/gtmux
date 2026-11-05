@@ -35537,7 +35537,7 @@
       ]
     },
     "mobileapp/e2e/android/run.cjs": {
-      "sha256": "0ba81122b9483fee473d5157a8c73aedf3a0363156d1d66eae6a3e3fdc0118da",
+      "sha256": "d7799cdd9ea4019ef2a852bb0d123c5258974f3b122d7c135025bc680c98cfd2",
       "layer": "L4",
       "stack": "RN / mobile harness",
       "cases": [
@@ -35788,6 +35788,24 @@
           "name": "31-native-file-trace",
           "dynamic": false,
           "layer": "L4"
+        },
+        {
+          "id": "MAP-d4637161f816",
+          "line": 97,
+          "kind": "reviewed-selector",
+          "name": "async function check",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "CT-ANDROID,CT-TIMING"
+        },
+        {
+          "id": "MAP-c6dfe48e744e",
+          "line": 103,
+          "kind": "reviewed-selector",
+          "name": "async function run",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "CT-ANDROID,CT-TIMING"
         }
       ]
     },
@@ -54647,13 +54665,13 @@
       ]
     },
     "scripts/ci_test.py": {
-      "sha256": "2d5e5efcb95511482ccaeed45f7a50c18a363c7ba7a2976f301b418756cd6437",
+      "sha256": "e43020b01b551df7dcd03432cfda64a38d8ca7d585f52edc919b8f3bb2af0aca",
       "layer": "G",
       "stack": "CI / tooling",
       "cases": [
         {
           "id": "LEG-bb0f4dd7bc8b",
-          "line": 17,
+          "line": 35,
           "kind": "unittest",
           "name": "test_docs_only_and_mixed_changes",
           "dynamic": false,
@@ -54661,7 +54679,7 @@
         },
         {
           "id": "LEG-5e8793132c96",
-          "line": 33,
+          "line": 51,
           "kind": "unittest",
           "name": "test_shared_or_unknown_impact_is_full",
           "dynamic": true,
@@ -54669,7 +54687,7 @@
         },
         {
           "id": "LEG-7bbcfe8992be",
-          "line": 44,
+          "line": 62,
           "kind": "unittest",
           "name": "test_recognized_modules_include_consumers",
           "dynamic": false,
@@ -54677,7 +54695,7 @@
         },
         {
           "id": "LEG-bbdfd85a9000",
-          "line": 53,
+          "line": 71,
           "kind": "unittest",
           "name": "test_nul_parser_preserves_names_and_old_rename_path",
           "dynamic": true,
@@ -54685,7 +54703,7 @@
         },
         {
           "id": "LEG-30f2f4661935",
-          "line": 61,
+          "line": 79,
           "kind": "unittest",
           "name": "test_actual_git_rename_deletion_and_symlink",
           "dynamic": false,
@@ -54693,7 +54711,7 @@
         },
         {
           "id": "LEG-a0a184955335",
-          "line": 87,
+          "line": 105,
           "kind": "unittest",
           "name": "test_missing_refs_force_full_cli_outputs",
           "dynamic": false,
@@ -54701,7 +54719,7 @@
         },
         {
           "id": "LEG-513d57a7489a",
-          "line": 98,
+          "line": 116,
           "kind": "unittest",
           "name": "test_workflow_jobs_cannot_grow_outside_aggregation",
           "dynamic": false,
@@ -54709,7 +54727,7 @@
         },
         {
           "id": "LEG-1f71c99fb4dc",
-          "line": 110,
+          "line": 128,
           "kind": "unittest",
           "name": "test_unsigned_ios_preserves_arm64_target_and_verifies_products",
           "dynamic": false,
@@ -54717,7 +54735,7 @@
         },
         {
           "id": "LEG-2514a184abce",
-          "line": 122,
+          "line": 140,
           "kind": "unittest",
           "name": "test_android_package_is_built_once_and_both_devices_use_its_output",
           "dynamic": false,
@@ -54725,7 +54743,7 @@
         },
         {
           "id": "LEG-76200ceafcf2",
-          "line": 142,
+          "line": 160,
           "kind": "unittest",
           "name": "test_docs_can_skip_heavy_jobs_but_require_quality",
           "dynamic": false,
@@ -54733,7 +54751,7 @@
         },
         {
           "id": "LEG-ecfb4bf818ba",
-          "line": 148,
+          "line": 166,
           "kind": "unittest",
           "name": "test_missing_skipped_failed_cancelled_required_job_never_green",
           "dynamic": true,
@@ -54741,7 +54759,7 @@
         },
         {
           "id": "LEG-252965413bf3",
-          "line": 157,
+          "line": 175,
           "kind": "unittest",
           "name": "test_bad_plans_or_unselected_failure_are_rejected",
           "dynamic": false,
@@ -54749,7 +54767,7 @@
         },
         {
           "id": "LEG-8a6a845c7484",
-          "line": 169,
+          "line": 187,
           "kind": "unittest",
           "name": "test_mac_host_keeps_both_architectures_and_native_checks",
           "dynamic": false,
@@ -54757,7 +54775,7 @@
         },
         {
           "id": "LEG-28f4d1551b14",
-          "line": 186,
+          "line": 204,
           "kind": "unittest",
           "name": "test_ios_delivery_pins_the_same_arm_toolchain_and_keeps_protection",
           "dynamic": false,
@@ -54765,12 +54783,21 @@
         },
         {
           "id": "MAP-349a1f57f0b7",
-          "line": 25,
+          "line": 43,
           "kind": "reviewed-selector",
           "name": "test_reviewed_test_records_are_policy_only_without_hiding_test_changes",
           "dynamic": false,
           "layer": "G",
           "design": "TD-006"
+        },
+        {
+          "id": "MAP-5f57607e8e0e",
+          "line": 17,
+          "kind": "reviewed-selector",
+          "name": "test_unit_test_scope_requires_immutable_product_exclusion",
+          "dynamic": false,
+          "layer": "G",
+          "design": "CT-SCOPE"
         }
       ]
     },
@@ -57054,6 +57081,443 @@
         }
       ],
       "sha256": "bde1a92584ba4e0029f4bf326642fa116f1806c7cdac493bacc21443cce77c82"
+    },
+    "mobileapp/e2e/fake-serve/backend-contract.test.ts": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-2fd3cafb008c",
+          "line": 46,
+          "kind": "reviewed-selector",
+          "name": "RN fake / Go contract:",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CT-HTTP"
+        },
+        {
+          "id": "MAP-01cd8c62d09e",
+          "line": 53,
+          "kind": "reviewed-selector",
+          "name": "RN client consumes original ordinals",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CT-HTTP"
+        }
+      ],
+      "sha256": "111c3c26ceb13c0cc7a2226f2600aea6c9dc39cca14aaeb5574dc93c985be9fe"
+    },
+    "mobileapp/e2e/fake-serve/server.ts": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f2ed2637baa9",
+          "line": 95,
+          "kind": "reviewed-selector",
+          "name": "startFake",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CT-HTTP"
+        }
+      ],
+      "sha256": "79d8be5f47afc60d6725ac9b4c72c04d329ffd08d10aa46d92c9f69ba054d5ef"
+    },
+    "mobileapp/e2e/fake-serve/world.ts": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f4f657590af5",
+          "line": 111,
+          "kind": "reviewed-selector",
+          "name": "export class World",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CT-HTTP"
+        }
+      ],
+      "sha256": "e969f4c7051c2748d9dfbfdb800724351df2f78d4b1a62a0935c32e2d61d6711"
+    },
+    "mobileapp/metro.config.js": {
+      "layer": "G",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-40893b89cbd9",
+          "line": 11,
+          "kind": "reviewed-selector",
+          "name": "const config =",
+          "dynamic": false,
+          "layer": "G",
+          "design": "CT-SCOPE"
+        }
+      ],
+      "sha256": "5c8073c6156d2a6db9c795705f70f82c21df119475c02f0f86dab7765bb29d1f"
+    },
+    "mobileapp/scripts/test-boundary.test.ts": {
+      "layer": "G",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-bc30d081ec5f",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "actual Metro resolver refuses",
+          "dynamic": false,
+          "layer": "G",
+          "design": "CT-SCOPE"
+        }
+      ],
+      "sha256": "88630b9166bd08480bc6d706845bb9bdc46564a09a016fdfb881636adaacb71d"
+    },
+    "mobileapp/src/screens/DetailDraftSwitch.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-418e70e2cded",
+          "line": 93,
+          "kind": "reviewed-selector",
+          "name": "mounted Detail isolates drafts",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CT-DRAFT"
+        },
+        {
+          "id": "MAP-9341e742825a",
+          "line": 129,
+          "kind": "reviewed-selector",
+          "name": "late draft storage result",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CT-DRAFT"
+        }
+      ],
+      "sha256": "183243065aa35c57dd4c4d691f37c2bd514b965b76d830a94bcc9f69544a8200"
+    },
+    "mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f38035a7c2fe",
+          "line": 112,
+          "kind": "reviewed-selector",
+          "name": "pending HQ question opens the original matter",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CT-DRAFT,CT-HQ"
+        },
+        {
+          "id": "MAP-f119dbaabb64",
+          "line": 161,
+          "kind": "reviewed-selector",
+          "name": "late HQ overview and matter responses",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CT-DRAFT,CT-HQ"
+        },
+        {
+          "id": "MAP-acb5ed213eb0",
+          "line": 208,
+          "kind": "reviewed-selector",
+          "name": "a prepared HQ question stays scoped",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CT-DRAFT,CT-HQ"
+        }
+      ],
+      "sha256": "107da128c440e1fee3714ecca5bfb76ccc53bf221f378c8ac0944e0588373047"
+    },
+    "mobileapp/src/screens/ServerModeBehavior.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-00de085feb2a",
+          "line": 85,
+          "kind": "reviewed-selector",
+          "name": "awake and reconnect subscription events",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CT-SUB"
+        },
+        {
+          "id": "MAP-32838a7dcdf1",
+          "line": 104,
+          "kind": "reviewed-selector",
+          "name": "late server mode response",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CT-SUB"
+        }
+      ],
+      "sha256": "0d0db6ccaec91d3d9c3052ad9be51c9ae2d006d1a9d139238574279d245c32c4"
+    },
+    "scripts/ci.py": {
+      "layer": "G",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-41a5bc78e4e8",
+          "line": 33,
+          "kind": "reviewed-selector",
+          "name": "confirmed_unit_test_isolation",
+          "dynamic": false,
+          "layer": "G",
+          "design": "CT-SCOPE"
+        }
+      ],
+      "sha256": "b62e0024676d64ec379b69b502e913a83e69abd4d0a514696aacaa84d3d01a0f"
+    },
+    "tests/contracts/http-contract.cjs": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-2a8e1df3263e",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "async function observe",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CT-HTTP"
+        },
+        {
+          "id": "MAP-c856d62bb0c7",
+          "line": 36,
+          "kind": "reviewed-selector",
+          "name": "function verify",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CT-HTTP"
+        }
+      ],
+      "sha256": "416a7359f4fd1d778bc176bd15693e9a59cfff1e1a0ae48e2ca5913364bc031d"
+    },
+    "tests/web/backend-contract.test.cjs": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-184f052913f1",
+          "line": 34,
+          "kind": "reviewed-selector",
+          "name": "Web fake / Go contract:",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CT-HTTP"
+        }
+      ],
+      "sha256": "99bd6f0656c0261bfc980d5f9bec2edf9fcbcede4274b0672d1d91a4f6be545e"
+    },
+    "tests/web/fixture.cjs": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-c9d3762e7230",
+          "line": 18,
+          "kind": "reviewed-selector",
+          "name": "async function start",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CT-HTTP"
+        }
+      ],
+      "sha256": "e5680209e52d0d592b794015230823527b9d35ac4d1aa9a5d6774dd62ed247af"
+    },
+    "tests/web/harness-isolation.test.cjs": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-31ae43976a8b",
+          "line": 4,
+          "kind": "reviewed-selector",
+          "name": "shared browser first case",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "CT-BROWSER"
+        },
+        {
+          "id": "MAP-7fb866f795f7",
+          "line": 25,
+          "kind": "reviewed-selector",
+          "name": "shared browser next case",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "CT-BROWSER"
+        }
+      ],
+      "sha256": "4c4a70bcbe2f385c4800637b001bcba870fb31aa9a61d6b09f015b8e50c7b994"
+    },
+    "tests/web/harness.cjs": {
+      "layer": "G",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-eda764da861f",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "function scenario",
+          "dynamic": false,
+          "layer": "G",
+          "design": "CT-TIMING,CT-BROWSER"
+        }
+      ],
+      "sha256": "66df285c37dae227f2d2e74c6670203de76863587b9760d2a9728f6954ff29ca"
+    },
+    "tests/web/http-contract-validator.test.cjs": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e5604b1208c7",
+          "line": 4,
+          "kind": "reviewed-selector",
+          "name": "wire contract rejects type, permission, ordinal, omission and security-header drift",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CT-HTTP"
+        }
+      ],
+      "sha256": "a620ff866d1e1f4786f1402bce978987ad8b1dc9c6920e2d073157e296f1b969"
+    },
+    "internal/app/client_contract_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-bf28343fb4c1",
+          "line": 30,
+          "kind": "reviewed-selector",
+          "name": "TestClientHTTPContracts",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CT-HTTP"
+        }
+      ],
+      "sha256": "fa696ba17a2fd2935e8b3ca825f74cf8eea19036aace4793e1035b83674ccb5a"
+    },
+    "mobileapp/e2e/android/journey.cjs": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f84810b94765",
+          "line": 37,
+          "kind": "reviewed-selector",
+          "name": "function selection",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "CT-ANDROID-POLICY,CT-TIMING"
+        },
+        {
+          "id": "MAP-87d616e2f9f2",
+          "line": 68,
+          "kind": "reviewed-selector",
+          "name": "function createJourney",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "CT-ANDROID-POLICY,CT-TIMING"
+        }
+      ],
+      "sha256": "063d7263848872ef43d3b13fa4205cd9e0ea8899d51a5318eeeac3658da15c46"
+    },
+    "mobileapp/e2e/android/journey.test.ts": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-845b52602a47",
+          "line": 2,
+          "kind": "reviewed-selector",
+          "name": "full Android journey retains",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "CT-ANDROID-POLICY,CT-TIMING"
+        },
+        {
+          "id": "MAP-591fe2c43846",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "setup failure blocks",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "CT-ANDROID-POLICY,CT-TIMING"
+        },
+        {
+          "id": "MAP-bd791291b35e",
+          "line": 39,
+          "kind": "reviewed-selector",
+          "name": "first assertion and disconnect causes",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "CT-ANDROID-POLICY,CT-TIMING"
+        },
+        {
+          "id": "MAP-e9a3452907ab",
+          "line": 67,
+          "kind": "reviewed-selector",
+          "name": "an out of order selected check",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "CT-ANDROID-POLICY,CT-TIMING"
+        },
+        {
+          "id": "MAP-fc216f83479b",
+          "line": 79,
+          "kind": "reviewed-selector",
+          "name": "timing records setup action",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "CT-ANDROID-POLICY,CT-TIMING"
+        }
+      ],
+      "sha256": "cc1947840a1550e77fa0cfff2c043e54f58a1bf26150ee7089e5e05fe2d486aa"
+    },
+    "tests/web/browser-pool.cjs": {
+      "layer": "G",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-75f2ed302427",
+          "line": 2,
+          "kind": "reviewed-selector",
+          "name": "function browserPool",
+          "dynamic": false,
+          "layer": "G",
+          "design": "CT-BROWSER-POLICY,CT-TIMING"
+        }
+      ],
+      "sha256": "8cdff69f77a199fb4a7e6b9c110dd66de0d70916099267a9116ed0b08675c5cf"
+    },
+    "tests/web/browser-pool.test.cjs": {
+      "layer": "G",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-faa984b171bf",
+          "line": 4,
+          "kind": "reviewed-selector",
+          "name": "concurrent borrowers share",
+          "dynamic": false,
+          "layer": "G",
+          "design": "CT-BROWSER-POLICY,CT-TIMING"
+        },
+        {
+          "id": "MAP-c7ca48106233",
+          "line": 30,
+          "kind": "reviewed-selector",
+          "name": "failed launch propagates",
+          "dynamic": false,
+          "layer": "G",
+          "design": "CT-BROWSER-POLICY,CT-TIMING"
+        }
+      ],
+      "sha256": "cb594d5a470c76cef3c41987213ac5029380e1dae114dcda297a20b17fd9e960"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2"

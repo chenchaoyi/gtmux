@@ -16,7 +16,7 @@ const turns = () => [{prompt: 'Check **retries**', response: 'Initial finding',
   segments: [{text: 'Initial finding', steps: [{title: 'Read logs', detail: 'Synthetic detail'}]}]}];
 
 async function start() {
-  const state = {follow:{hq:false,notify:false,knowledge:false,revision:0}, deny: false, agents: agents.map(a => ({...a})), screens: {}, uploads: [], uploadStatus: 200, expectedHttpErrors: [], share: {input: true, all: true, panes: [], view_panes: []}, turns: {}, sends: []};
+  const state = {follow:{hq:false,notify:false,knowledge:false,revision:0}, deny: false, agents: agents.map(a => ({...a})), screens: {}, uploads: [], uploadStatus: 200, expectedHttpErrors: [], share: {input: true, all: true, panes: [], view_panes: []}, turns: {}, historyPages: {}, transcriptMeta: {}, matters: {}, sends: []};
   const json = (res, status, body) => {
     res.writeHead(status, {'Content-Type': 'application/json', 'Cache-Control': 'no-store'});
     res.end(JSON.stringify(body));
@@ -36,6 +36,7 @@ async function start() {
           return json(res, input.enrollCode === 'WRONG-1234' ? 401 : 200,
             input.enrollCode === 'WRONG-1234' ? {error: 'invalid'} : {token: 'synthetic-token'});
         }
+        if (state.requireAuth && req.headers.authorization !== 'Bearer '+state.requireAuth) return json(res,401,{error:'unauthorized'});
         if (state.deny) return json(res, 401, {error: 'unauthorized'});
         if (p === '/api/upload') {
           const chunks = []; for await (const chunk of req) chunks.push(chunk);
@@ -44,7 +45,40 @@ async function start() {
           return json(res, state.uploadStatus, state.uploadStatus === 200 ? {path: '/tmp/gtmux-test-uploads/' + name} : {error: 'synthetic upload refusal'});
         }
         const id = url.searchParams.get('id');
-        if (['/api/pane', '/api/transcript', '/api/diff'].includes(p) && !id) return json(res, 400, {error: 'id required'});
+        if (['/api/pane', '/api/transcript', '/api/diff'].includes(p) && !id) return json(res, 400, {error: 'missing id'});
+        if (p === '/api/hq/workspace') {
+          res.setHeader('Cache-Control','no-store');
+          if(!state.share.all)return json(res,403,{error:'forbidden: not shared'});
+          if(req.method!=='GET'){res.setHeader('Allow','GET');return json(res,405,{error:'GET required'});}
+          const matter=url.searchParams.get('matter')||'', before=url.searchParams.get('before');
+          if(matter.length>80 || /[/\\\u0000]/.test(matter) || ['global','activity'].includes(matter)) return json(res,400,{error:'invalid matter'});
+          if(before!==null && (!matter || !/^\d+$/.test(before) || BigInt(before)>18446744073709551615n)) return json(res,400,{error:'invalid cursor'});
+          if(!state.workspace)return json(res,501,{error:'workspace unavailable'});
+          if(!matter){
+            const snapshot=structuredClone(state.workspace);
+            for(const key of ['human_input','needs_input'])for(const item of snapshot.overview[key]||[]) {
+              const question=snapshot.matters.find(row=>row.id===item.matter_id)?.user_input;
+              if(question&&!question.answer_id)item.preview={message_id:question.id,kind:'question',body:question.prompt,at:question.at};
+            }
+            return json(res,200,snapshot);
+          }
+          return json(res,state.matters[matter]?200:404,state.matters[matter]||{error:'matter not found'});
+        }
+        if (state.documents && (p === '/api/artifacts/resolve' || p === '/api/artifacts/content')) {
+          if(!state.share.all)return json(res,403,{error:'forbidden: not shared'});
+          if(p.endsWith('/resolve')){
+            const input=await body(req);
+            if(Object.keys(input).some(k=>!['reference','session_id','home_id','parent_id'].includes(k)) || !input.session_id)return json(res,400,{error:'valid document reference required'});
+            const doc=state.documents[input.reference];
+            if(!doc || doc.session!==input.session_id || doc.home!==(input.home_id||''))return json(res,404,{error:'file is unavailable for this conversation',code:'document_unpublished'});
+            res.setHeader('Cache-Control','no-store');
+            return json(res,200,{id:doc.id,name:path.basename(input.reference),kind:doc.kind,media_type:doc.media,bytes:Buffer.byteLength(doc.body),sha256:crypto.createHash('sha256').update(doc.body).digest('hex'),created_at:1700000000,sequence:0,session_id:doc.session,...(doc.home?{home_id:doc.home}:{}),source:input.reference});
+          }
+          const doc=Object.values(state.documents).find(d=>d.id===url.searchParams.get('id'));
+          if(!doc || doc.session!==url.searchParams.get('session_id') || doc.home!==(url.searchParams.get('home_id')||''))return json(res,404,{error:'document unavailable'});
+          const digest=crypto.createHash('sha256').update(doc.body).digest('hex');
+          res.writeHead(200,{'Content-Type':'application/octet-stream','Content-Disposition':'attachment; filename=report.md','Content-Security-Policy':"sandbox; default-src 'none'",'X-Content-Type-Options':'nosniff','Cache-Control':'no-store','X-Gtmux-SHA256':digest,ETag:'"'+digest+'"'});return res.end(doc.body);
+        }
         if (p === '/api/artifacts/resolve' || p === '/api/artifacts/content') {
           state.documentReads = (state.documentReads || 0) + 1;
           if (!state.share.all) return json(res,403,{error:'forbidden'});
@@ -62,7 +96,18 @@ async function start() {
         if (p === '/api/panes') return json(res, 200, [...state.agents.filter(a => a.pane_id).map(a => ({...a, tier: 'agent', window: '0', command: a.agent})),
           {pane_id: '%904', session: 'Shell', tier: 'plain', command: 'bash', window: '0', cwd: '/tmp/synthetic'}]);
         if (p === '/api/pane') return json(res, 200, {id, text: state.screens[id] ?? 'Synthetic terminal\n› Ready', cols: 90});
-        if (p === '/api/transcript') return json(res, 200, state.turns[id] || turns());
+        if (p === '/api/transcript') {
+          if(!state.share.all && !state.share.view_panes.includes(id))return json(res,403,{error:'forbidden: pane not shared'});
+          const before=url.searchParams.get('before');
+          let rows=state.turns[id]||turns(), meta=state.transcriptMeta[id];
+          if(before){rows=state.historyPages[id+':'+before];if(!rows)return json(res,409,{error:'history page unavailable; refresh and retry'});res.setHeader('X-Gtmux-History-Page','1');res.setHeader('Cache-Control','no-store');meta=null;}
+          const context=state.share.all && url.searchParams.get('context')==='1';
+          let etag=meta?.etag;
+          if(etag && JSON.stringify(rows).includes('"context"'))etag='W/"'+crypto.createHash('sha256').update((context?'context-v1-reader:':'context-v1-public:')+etag).digest('hex')+'"';
+          if(meta?.dropped)res.setHeader('X-Gtmux-Turns-Dropped',String(meta.dropped));
+          if(etag){res.setHeader('ETag',etag);if(req.headers['if-none-match']===etag){res.writeHead(304);return res.end();}}
+          return json(res,200,context?rows:rows.map(turn=>({...turn,...(turn.segments?{segments:turn.segments.flatMap(({context:_,...rest})=>Object.keys(rest).length?[rest]:[])}:{})})));
+        }
         if (p === '/api/session/transcript') {
           if (state.externalSessions) {
             const record=state.externalSessions[url.searchParams.get('session_id')+'\u0000'+url.searchParams.get('home_id')];

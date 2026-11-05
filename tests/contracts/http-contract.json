@@ -1,0 +1,646 @@
+{
+  "schema": 1,
+  "seed": {
+    "pane": "%12",
+    "session": "contract-session",
+    "home": "",
+    "turns": [
+      {
+        "turn_ordinal": 151,
+        "record_id": "contract-151",
+        "session_id": "contract-session",
+        "prompt": "Inspect synthetic input",
+        "response": "Ready",
+        "history_before": "before-151",
+        "segments": [
+          {
+            "text": "Ready"
+          },
+          {
+            "context": {
+              "text": "private context",
+              "source": "fixture"
+            }
+          }
+        ]
+      }
+    ],
+    "history": [
+      {
+        "turn_ordinal": 150,
+        "record_id": "contract-150",
+        "session_id": "contract-session",
+        "prompt": "Inspect synthetic input",
+        "response": "Ready",
+        "history_before": "",
+        "segments": [
+          {
+            "text": "Ready"
+          },
+          {
+            "context": {
+              "text": "private context",
+              "source": "fixture"
+            }
+          }
+        ]
+      }
+    ],
+    "workspace": {
+      "schema": 1,
+      "revision": 7,
+      "matters": [
+        {
+          "id": "contract-matter",
+          "title": "Verify compatibility",
+          "state": "needs-input",
+          "updated_at": 1700000000,
+          "revision": 7,
+          "participants": [],
+          "user_input": {
+            "id": "contract-question",
+            "kind": "decision",
+            "prompt": "Which scope?",
+            "why": "Choose test scope",
+            "impact": "Synthetic only",
+            "choices": [
+              "All",
+              "Focused"
+            ],
+            "at": 1700000000
+          },
+          "created_at": 0
+        }
+      ],
+      "overview": {
+        "generated_at": 1700000000,
+        "since": 1699913600,
+        "human_input": [
+          {
+            "matter_id": "contract-matter"
+          }
+        ],
+        "awaiting_hq": [],
+        "needs_input": [
+          {
+            "matter_id": "contract-matter"
+          }
+        ],
+        "following": [],
+        "recent": [],
+        "recent_total": 0
+      }
+    },
+    "document": {
+      "reference": "/tmp/gtmux-contract/report.md",
+      "body": "# Contract\n\nSynthetic **Markdown**.\n",
+      "id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kind": "markdown",
+      "media": "text/markdown"
+    }
+  },
+  "cases": [
+    {
+      "name": "trace-owner-context",
+      "path": "/api/transcript?id=%2512\u0026context=1",
+      "method": "GET",
+      "role": "owner",
+      "expected": {
+        "body": [
+          {
+            "history_before": "before-151",
+            "prompt": "Inspect synthetic input",
+            "record_id": "contract-151",
+            "response": "Ready",
+            "segments": [
+              {
+                "text": "Ready"
+              },
+              {
+                "context": {
+                  "source": "fixture",
+                  "text": "private context"
+                }
+              }
+            ],
+            "session_id": "contract-session",
+            "turn_ordinal": 151
+          }
+        ],
+        "headers": {
+          "content-type": "application/json",
+          "etag": "W/\"f1464a6746497833d8b2d3d965eb9a238b0013cbb6f3b3c70d9600f8210a9a20\"",
+          "x-gtmux-turns-dropped": "150"
+        },
+        "status": 200
+      }
+    },
+    {
+      "name": "trace-public-context",
+      "path": "/api/transcript?id=%2512",
+      "method": "GET",
+      "role": "owner",
+      "expected": {
+        "body": [
+          {
+            "history_before": "before-151",
+            "prompt": "Inspect synthetic input",
+            "record_id": "contract-151",
+            "response": "Ready",
+            "segments": [
+              {
+                "text": "Ready"
+              }
+            ],
+            "session_id": "contract-session",
+            "turn_ordinal": 151
+          }
+        ],
+        "headers": {
+          "content-type": "application/json",
+          "etag": "W/\"c05b701b28ac6d59d77181634643452e208bab8f00b4ea96de6de956274f2249\"",
+          "x-gtmux-turns-dropped": "150"
+        },
+        "status": 200
+      }
+    },
+    {
+      "name": "trace-guest-redaction",
+      "path": "/api/transcript?id=%2512\u0026context=1",
+      "method": "GET",
+      "role": "guest",
+      "expected": {
+        "body": [
+          {
+            "history_before": "before-151",
+            "prompt": "Inspect synthetic input",
+            "record_id": "contract-151",
+            "response": "Ready",
+            "segments": [
+              {
+                "text": "Ready"
+              }
+            ],
+            "session_id": "contract-session",
+            "turn_ordinal": 151
+          }
+        ],
+        "headers": {
+          "content-type": "application/json",
+          "etag": "W/\"c05b701b28ac6d59d77181634643452e208bab8f00b4ea96de6de956274f2249\"",
+          "x-gtmux-turns-dropped": "150"
+        },
+        "status": 200
+      }
+    },
+    {
+      "name": "trace-empty",
+      "path": "/api/transcript?id=%2513",
+      "method": "GET",
+      "role": "owner",
+      "expected": {
+        "body": [],
+        "headers": {
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "name": "trace-missing-id",
+      "path": "/api/transcript",
+      "method": "GET",
+      "role": "owner",
+      "expected": {
+        "body": {
+          "error": "missing id"
+        },
+        "headers": {
+          "content-type": "application/json"
+        },
+        "status": 400
+      }
+    },
+    {
+      "name": "trace-denied-pane",
+      "path": "/api/transcript?id=%2599",
+      "method": "GET",
+      "role": "guest",
+      "expected": {
+        "body": {
+          "error": "forbidden: pane not shared"
+        },
+        "headers": {
+          "content-type": "application/json"
+        },
+        "status": 403
+      }
+    },
+    {
+      "name": "trace-history",
+      "path": "/api/transcript?id=%2512\u0026context=1\u0026before=before-151",
+      "method": "GET",
+      "role": "owner",
+      "expected": {
+        "body": [
+          {
+            "history_before": "",
+            "prompt": "Inspect synthetic input",
+            "record_id": "contract-150",
+            "response": "Ready",
+            "segments": [
+              {
+                "text": "Ready"
+              },
+              {
+                "context": {
+                  "source": "fixture",
+                  "text": "private context"
+                }
+              }
+            ],
+            "session_id": "contract-session",
+            "turn_ordinal": 150
+          }
+        ],
+        "headers": {
+          "cache-control": "no-store",
+          "content-type": "application/json",
+          "x-gtmux-history-page": "1"
+        },
+        "status": 200
+      }
+    },
+    {
+      "name": "trace-stale-history",
+      "path": "/api/transcript?id=%2512\u0026before=stale",
+      "method": "GET",
+      "role": "owner",
+      "expected": {
+        "body": {
+          "error": "history page unavailable; refresh and retry"
+        },
+        "headers": {
+          "content-type": "application/json"
+        },
+        "status": 409
+      }
+    },
+    {
+      "name": "trace-conditional",
+      "path": "/api/transcript?id=%2512\u0026context=1",
+      "method": "GET",
+      "role": "owner",
+      "headers": {
+        "If-None-Match": "W/\"f1464a6746497833d8b2d3d965eb9a238b0013cbb6f3b3c70d9600f8210a9a20\""
+      },
+      "expected": {
+        "body": null,
+        "headers": {
+          "etag": "W/\"f1464a6746497833d8b2d3d965eb9a238b0013cbb6f3b3c70d9600f8210a9a20\"",
+          "x-gtmux-turns-dropped": "150"
+        },
+        "status": 304
+      }
+    },
+    {
+      "name": "hq-overview",
+      "path": "/api/hq/workspace",
+      "method": "GET",
+      "role": "owner",
+      "expected": {
+        "body": {
+          "matters": [
+            {
+              "created_at": 0,
+              "id": "contract-matter",
+              "participants": [],
+              "revision": 7,
+              "state": "needs-input",
+              "title": "Verify compatibility",
+              "updated_at": 1700000000,
+              "user_input": {
+                "at": 1700000000,
+                "choices": [
+                  "All",
+                  "Focused"
+                ],
+                "id": "contract-question",
+                "impact": "Synthetic only",
+                "kind": "decision",
+                "prompt": "Which scope?",
+                "why": "Choose test scope"
+              }
+            }
+          ],
+          "overview": {
+            "awaiting_hq": [],
+            "following": [],
+            "generated_at": 1700000000,
+            "human_input": [
+              {
+                "matter_id": "contract-matter",
+                "preview": {
+                  "at": 1700000000,
+                  "body": "Which scope?",
+                  "kind": "question",
+                  "message_id": "contract-question"
+                }
+              }
+            ],
+            "needs_input": [
+              {
+                "matter_id": "contract-matter",
+                "preview": {
+                  "at": 1700000000,
+                  "body": "Which scope?",
+                  "kind": "question",
+                  "message_id": "contract-question"
+                }
+              }
+            ],
+            "recent": [],
+            "recent_total": 0,
+            "since": 1699913600
+          },
+          "revision": 7,
+          "schema": 1
+        },
+        "headers": {
+          "cache-control": "no-store",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "name": "hq-detail-page",
+      "path": "/api/hq/workspace?matter=contract-matter\u0026before=2",
+      "method": "GET",
+      "role": "owner",
+      "expected": {
+        "body": {
+          "changes": [],
+          "earlier_available": false,
+          "events": [],
+          "matter": {
+            "created_at": 0,
+            "id": "contract-matter",
+            "participants": [],
+            "revision": 7,
+            "state": "needs-input",
+            "title": "Verify compatibility",
+            "updated_at": 1700000000,
+            "user_input": {
+              "at": 1700000000,
+              "choices": [
+                "All",
+                "Focused"
+              ],
+              "id": "contract-question",
+              "impact": "Synthetic only",
+              "kind": "decision",
+              "prompt": "Which scope?",
+              "why": "Choose test scope"
+            }
+          },
+          "message_earlier_available": false,
+          "messages": [],
+          "schema": 1,
+          "transcript_earlier_available": false,
+          "turns": [],
+          "warnings": []
+        },
+        "headers": {
+          "cache-control": "no-store",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "name": "hq-missing",
+      "path": "/api/hq/workspace?matter=missing",
+      "method": "GET",
+      "role": "owner",
+      "expected": {
+        "body": {
+          "error": "matter not found"
+        },
+        "headers": {
+          "cache-control": "no-store",
+          "content-type": "application/json"
+        },
+        "status": 404
+      }
+    },
+    {
+      "name": "hq-invalid-cursor",
+      "path": "/api/hq/workspace?before=2",
+      "method": "GET",
+      "role": "owner",
+      "expected": {
+        "body": {
+          "error": "invalid cursor"
+        },
+        "headers": {
+          "cache-control": "no-store",
+          "content-type": "application/json"
+        },
+        "status": 400
+      }
+    },
+    {
+      "name": "hq-forbidden",
+      "path": "/api/hq/workspace",
+      "method": "GET",
+      "role": "guest",
+      "expected": {
+        "body": {
+          "error": "forbidden: not shared"
+        },
+        "headers": {
+          "cache-control": "no-store",
+          "content-type": "application/json"
+        },
+        "status": 403
+      }
+    },
+    {
+      "name": "hq-method",
+      "path": "/api/hq/workspace",
+      "method": "POST",
+      "role": "owner",
+      "body": {},
+      "expected": {
+        "body": {
+          "error": "GET required"
+        },
+        "headers": {
+          "allow": "GET",
+          "cache-control": "no-store",
+          "content-type": "application/json"
+        },
+        "status": 405
+      }
+    },
+    {
+      "name": "document-resolve",
+      "path": "/api/artifacts/resolve",
+      "method": "POST",
+      "role": "owner",
+      "body": {
+        "reference": "/tmp/gtmux-contract/report.md",
+        "session_id": "contract-session",
+        "home_id": ""
+      },
+      "expected": {
+        "body": {
+          "bytes": 36,
+          "created_at": 1700000000,
+          "id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "kind": "markdown",
+          "media_type": "text/markdown",
+          "name": "report.md",
+          "sequence": 0,
+          "session_id": "contract-session",
+          "sha256": "392c29e0dc857969f10706c10daa88eaa962b1f18e8ea8ddb10f674024d77df6",
+          "source": "/tmp/gtmux-contract/report.md"
+        },
+        "headers": {
+          "cache-control": "no-store",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "name": "document-missing",
+      "path": "/api/artifacts/resolve",
+      "method": "POST",
+      "role": "owner",
+      "body": {
+        "reference": "/tmp/absent.md",
+        "session_id": "contract-session",
+        "home_id": ""
+      },
+      "expected": {
+        "body": {
+          "code": "document_unpublished",
+          "error": "file is unavailable for this conversation"
+        },
+        "headers": {
+          "content-type": "application/json"
+        },
+        "status": 404
+      }
+    },
+    {
+      "name": "document-invalid-body",
+      "path": "/api/artifacts/resolve",
+      "method": "POST",
+      "role": "owner",
+      "body": {
+        "reference": "/tmp/gtmux-contract/report.md",
+        "session_id": "contract-session",
+        "home_id": "",
+        "unexpected": true
+      },
+      "expected": {
+        "body": {
+          "error": "valid document reference required"
+        },
+        "headers": {
+          "content-type": "application/json"
+        },
+        "status": 400
+      }
+    },
+    {
+      "name": "document-forbidden",
+      "path": "/api/artifacts/resolve",
+      "method": "POST",
+      "role": "guest",
+      "body": {
+        "reference": "/tmp/gtmux-contract/report.md",
+        "session_id": "contract-session",
+        "home_id": ""
+      },
+      "expected": {
+        "body": {
+          "error": "forbidden: not shared"
+        },
+        "headers": {
+          "content-type": "application/json"
+        },
+        "status": 403
+      }
+    },
+    {
+      "name": "document-download",
+      "path": "/api/artifacts/content?id=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\u0026session_id=contract-session\u0026home_id=",
+      "method": "GET",
+      "role": "owner",
+      "expected": {
+        "body": "# Contract\n\nSynthetic **Markdown**.\n",
+        "headers": {
+          "cache-control": "no-store",
+          "content-disposition": "attachment; filename=report.md",
+          "content-security-policy": "sandbox; default-src 'none'",
+          "content-type": "application/octet-stream",
+          "etag": "\"392c29e0dc857969f10706c10daa88eaa962b1f18e8ea8ddb10f674024d77df6\"",
+          "x-content-type-options": "nosniff",
+          "x-gtmux-sha256": "392c29e0dc857969f10706c10daa88eaa962b1f18e8ea8ddb10f674024d77df6"
+        },
+        "status": 200
+      }
+    },
+    {
+      "name": "unauthenticated",
+      "path": "/api/hq/workspace",
+      "method": "GET",
+      "role": "unauthenticated",
+      "expected": {
+        "body": {
+          "error": "unauthorized"
+        },
+        "headers": {
+          "content-type": "application/json"
+        },
+        "status": 401
+      }
+    },
+    {
+      "name": "invalid-token",
+      "path": "/api/hq/workspace",
+      "method": "GET",
+      "role": "invalid",
+      "expected": {
+        "body": {
+          "error": "unauthorized"
+        },
+        "headers": {
+          "content-type": "application/json"
+        },
+        "status": 401
+      }
+    },
+    {
+      "capability": "no-workspace",
+      "name": "hq-legacy-unavailable",
+      "path": "/api/hq/workspace",
+      "method": "GET",
+      "role": "owner",
+      "expected": {
+        "body": {
+          "error": "workspace unavailable"
+        },
+        "headers": {
+          "cache-control": "no-store",
+          "content-type": "application/json"
+        },
+        "status": 501
+      }
+    }
+  ]
+}
