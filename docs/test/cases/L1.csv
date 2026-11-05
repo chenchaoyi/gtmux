@@ -3182,7 +3182,7 @@ LEG-16fab5a7cc96,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts
 LEG-61bfa22d706f,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,50,test,only hosted multi-screen store captures receive the longer journey budget,False,legacy-not-retrospectively-reviewed
 DG-001-f069a0,L1,RN / mobile harness,mobileapp/e2e/setup/manual-tools.test.ts,6,test,DG-001 ordinary discovery,False,DG-001
 DG-002-f069a0,L1,RN / mobile harness,mobileapp/e2e/setup/manual-tools.test.ts,19,test,DG-002 rejects missing target,False,DG-002
-DG-003-f069a0,L1,RN / mobile harness,mobileapp/e2e/setup/manual-tools.test.ts,28,test,DG-003 confirms one exact fixture pane,False,DG-003
+DG-003-f069a0,L1,RN / mobile harness,mobileapp/e2e/setup/manual-tools.test.ts,39,test,DG-003 confirms one exact fixture pane,False,DG-003
 LEG-b16afa2cc4a9,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,26,test,an ORPHANED match still dies,False,legacy-not-retrospectively-reviewed
 LEG-0338a4b52122,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,47,test,"a failed pgrep is said aloud, not mistaken for no match",False,legacy-not-retrospectively-reviewed
 LEG-13c0b7c93b98,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,63,test,no match is not an error,False,legacy-not-retrospectively-reviewed

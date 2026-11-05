@@ -1,6 +1,6 @@
 import {readFileSync} from 'fs';
 import {resolve} from 'path';
-const {manualMode, sendTarget, verifySendTarget} = require('./manual-tools.cjs');
+const {manualMode, sendTarget, verifySendTarget, setupManual} = require('./manual-tools.cjs');
 const env = {GTMUX_E2E_MANUAL:'1', GTMUX_E2E_TOOL:'diagnostics', GTMUX_E2E_OWNED_FIXTURE:'1', GTMUX_E2E_PANE:'%901', GTMUX_E2E_URL:'http://127.0.0.1:19234', GTMUX_E2E_TOKEN:'synthetic'};
 
 test('DG-001 ordinary discovery excludes all four manual tools without discarding them', () => {
@@ -23,6 +23,17 @@ test('DG-002 rejects missing target, opt-in, foreign origin and real nonfixture 
     expect(request).not.toHaveBeenCalled();
   }
   await expect(verifySendTarget(env,jest.fn().mockResolvedValue({ok:true,json:async()=>({ok:true})}))).rejects.toThrow('not the synthetic');
+  const boot=jest.fn();
+  const reject=jest.fn().mockRejectedValue(new Error('not a fixture'));
+  await expect(setupManual(env,reject,boot)).rejects.toThrow('not a fixture');
+  expect(boot).not.toHaveBeenCalled();
+  const order:string[]=[];
+  await setupManual(env,async()=>{order.push('verify');},async()=>{order.push('boot');});
+  expect(order).toEqual(['verify','boot']);
+  const config=readFileSync(resolve(__dirname,'../jest.config.manual.js'),'utf8');
+  expect(config).toContain("globalSetup: '<rootDir>/e2e/setup/global-setup-manual.ts'");
+  const wrapper=readFileSync(resolve(__dirname,'global-setup-manual.ts'),'utf8');
+  expect(wrapper).toContain('setupManual(process.env, verifySendTarget, globalSetup)');
 });
 
 test('DG-003 confirms one exact fixture pane, rejects absence/ambiguity, and send repro selects that pane', async () => {

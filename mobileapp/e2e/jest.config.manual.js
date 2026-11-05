@@ -3,5 +3,6 @@ const mode = manualMode(process.env); // Validate before globalSetup touches a s
 if (mode === 'diagnostics') sendTarget(process.env);
 module.exports = {
   ...require('./jest.config.e2e.js'),
+  globalSetup: '<rootDir>/e2e/setup/global-setup-manual.ts',
   testMatch: [`<rootDir>/e2e/${mode}/**/*.test.ts`],
 };

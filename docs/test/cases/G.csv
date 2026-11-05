@@ -239,6 +239,7 @@ LEG-6e50b6aefc3c,G,RN / mobile harness,mobileapp/e2e/fake-serve/icons.test.ts,42
 LEG-1a72cb709a2f,G,RN / mobile harness,mobileapp/e2e/fake-serve/icons.test.ts,101,test,is the Go registry's (internal/agents/registry.go),False,legacy-not-retrospectively-reviewed
 MAP-befb8569059f,G,reviewed implementation,mobileapp/e2e/jest.config.manual.js,2,reviewed-selector,manualMode(process.env),False,"DG-001,DG-002"
 MAP-a88b539daecf,G,reviewed implementation,mobileapp/e2e/jest.config.manual.js,3,reviewed-selector,sendTarget(process.env),False,"DG-001,DG-002"
+MAP-cb2da71006dd,G,reviewed implementation,mobileapp/e2e/setup/global-setup-manual.ts,6,reviewed-selector,"await setupManual(process.env, verifySendTarget, globalSetup)",False,DG-004
 MAP-c8767994a252,G,reviewed implementation,mobileapp/e2e/setup/manual-tools.cjs,2,reviewed-selector,function manualMode(,False,"DG-001,DG-002,DG-003"
 MAP-64142db61c66,G,reviewed implementation,mobileapp/e2e/setup/manual-tools.cjs,8,reviewed-selector,function sendTarget(,False,"DG-001,DG-002,DG-003"
 MAP-ad9860024fc0,G,reviewed implementation,mobileapp/e2e/setup/manual-tools.cjs,19,reviewed-selector,async function verifySendTarget(,False,"DG-001,DG-002,DG-003"
@@ -477,8 +478,8 @@ TD-001-bb7e1e,G,CI / tooling,scripts/test_design_test.py,29,test,test_TD_001_val
 TD-002-bb7e1e,G,CI / tooling,scripts/test_design_test.py,41,test,test_TD_002_seal_required_fields_layers_paths,False,TD-002
 TD-003-bb7e1e,G,CI / tooling,scripts/test_design_test.py,54,test,test_TD_003_unlisted_test_missing_source_and_missing_case,False,TD-003
 TD-004-bb7e1e,G,CI / tooling,scripts/test_design_test.py,71,test,test_TD_004_history_rejects_same_commit_review_and_accepts_prior_review,False,TD-004
-TD-005-bb7e1e,G,CI / tooling,scripts/test_design_test.py,95,test,test_TD_005_removal_requires_rationale_and_absence,False,TD-005
-ND-003-bb7e1e,G,CI / tooling,scripts/test_design_test.py,120,test,test_ND_003_native_runner_uses_production_sources_and_propagates_failures,False,ND-003
+TD-005-bb7e1e,G,CI / tooling,scripts/test_design_test.py,102,test,test_TD_005_removal_requires_rationale_and_absence,False,TD-005
+ND-003-bb7e1e,G,CI / tooling,scripts/test_design_test.py,127,test,test_ND_003_native_runner_uses_production_sources_and_propagates_failures,False,ND-003
 LEG-96cb2ba94045,G,CI / tooling,scripts/vulncheck_test.py,24,unittest,test_execution_failure_even_with_partial_output_fails,False,legacy-not-retrospectively-reviewed
 LEG-fecadf66518e,G,CI / tooling,scripts/vulncheck_test.py,31,unittest,test_empty_malformed_or_missing_protocol_fails,True,legacy-not-retrospectively-reviewed
 LEG-b709631fda46,G,CI / tooling,scripts/vulncheck_test.py,36,unittest,test_valid_scan_without_findings_passes,False,legacy-not-retrospectively-reviewed

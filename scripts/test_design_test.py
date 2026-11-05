@@ -91,6 +91,13 @@ class TestDesignTests(unittest.TestCase):
         self.assertTrue(td.history_errors(self.root, head, reused, self.mappings, {self.plan_name:self.plan}))
         self.assertTrue(td.history_errors(self.root, 'bad', head, self.mappings, {self.plan_name: self.plan}))
         self.assertTrue(td.history_errors(self.root, reviewed, head, {}, {self.plan_name: self.plan}))
+        self.plan['cases'][0]['planned_files'].append('new-helper.cjs')
+        self.plan['seal'] = td.seal(self.plan)
+        design.write_text(json.dumps(self.plan))
+        (self.root / 'new-helper.cjs').write_text('case A helper')
+        helper_head = self.commit()
+        self.assertTrue(td.history_errors(self.root, head, helper_head, {'new-helper.cjs':{'cases':['S-1'],'selectors':['case A']}}, {self.plan_name:self.plan}))
+
 
     def test_TD_005_removal_requires_rationale_and_absence(self):
         self.mappings[self.path] = {'cases': ['S-1'], 'removed': True}

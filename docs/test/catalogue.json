@@ -56777,7 +56777,7 @@
       ]
     },
     "scripts/test_design_test.py": {
-      "sha256": "097e7543cc0efc77c14703bda86745ca32887f284abee1534cf745c7a5f870f7",
+      "sha256": "80793354d118938197407223d6b7a13d84056d21dc81d4871d7c99fe60bf856f",
       "layer": "G",
       "stack": "CI / tooling",
       "cases": [
@@ -56819,7 +56819,7 @@
         },
         {
           "id": "TD-005-bb7e1e",
-          "line": 95,
+          "line": 102,
           "kind": "test",
           "name": "test_TD_005_removal_requires_rationale_and_absence",
           "dynamic": false,
@@ -56828,7 +56828,7 @@
         },
         {
           "id": "ND-003-bb7e1e",
-          "line": 120,
+          "line": 127,
           "kind": "test",
           "name": "test_ND_003_native_runner_uses_production_sources_and_propagates_failures",
           "dynamic": false,
@@ -56838,7 +56838,7 @@
       ]
     },
     "mobileapp/e2e/setup/manual-tools.test.ts": {
-      "sha256": "5086bb96f9c8a8bf038f72d659b2ea52912f4448b9320e6f0bab71eac2eafb7d",
+      "sha256": "0798f66366fdec526266b30167ec30bc902f7bdb2a5b39cf667c9b4a8886850f",
       "layer": "L1",
       "stack": "RN / mobile harness",
       "cases": [
@@ -56862,7 +56862,7 @@
         },
         {
           "id": "DG-003-f069a0",
-          "line": 28,
+          "line": 39,
           "kind": "test",
           "name": "DG-003 confirms one exact fixture pane",
           "dynamic": false,
@@ -56953,7 +56953,7 @@
           "design": "DG-001,DG-002"
         }
       ],
-      "sha256": "3ae5b0be30780ec711d4ae0bc6804de1db04f5d74bfd074f5eff0d0d60e3d604"
+      "sha256": "563af7937735b01d1de6733f1ccca324ab625069cc0add0b97f06209cbddccdc"
     },
     "mobileapp/e2e/setup/manual-tools.cjs": {
       "layer": "G",
@@ -56987,7 +56987,7 @@
           "design": "DG-001,DG-002,DG-003"
         }
       ],
-      "sha256": "f7d40c349c8e7c5c817b583a0a2566a0ac116f2e628bcdfe854f536b9466c85e"
+      "sha256": "6daa5d322a46b8137d49b8061d2b134d252b457e045e86e77f5259ec7339a021"
     },
     "mobileapp/scripts/check-native-documents.py": {
       "layer": "G",
@@ -57037,7 +57037,23 @@
           "design": "TD-001,TD-002,TD-003,TD-004,TD-005"
         }
       ],
-      "sha256": "78164de15a4971306cbc7a1c792fdeaefe5f3a6ab66ad4de2a2845a68c17de42"
+      "sha256": "9b204d3c0f2b4bc06a1b40c2e6df822ca594837b140854f9a4b043c7b12cae72"
+    },
+    "mobileapp/e2e/setup/global-setup-manual.ts": {
+      "layer": "G",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-cb2da71006dd",
+          "line": 6,
+          "kind": "reviewed-selector",
+          "name": "await setupManual(process.env, verifySendTarget, globalSetup)",
+          "dynamic": false,
+          "layer": "G",
+          "design": "DG-004"
+        }
+      ],
+      "sha256": "bde1a92584ba4e0029f4bf326642fa116f1806c7cdac493bacc21443cce77c82"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2"

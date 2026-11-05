@@ -106,7 +106,7 @@ def history_errors(root, base, head, mappings, plans):
     old = json.loads(subprocess.check_output(['git', 'show', base + ':' + CATALOGUE], cwd=root)) if subprocess.run(['git', 'cat-file', '-e', base + ':' + CATALOGUE], cwd=root, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0 else {'files': {}}
     errors = []
     for path in changed:
-        if not is_test(path) and path not in old['files']:
+        if not is_test(path) and path not in old['files'] and path not in mappings:
             continue
         mapping = mappings.get(path)
         if not mapping:

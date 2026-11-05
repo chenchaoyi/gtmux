@@ -181,5 +181,13 @@
     "selectors": [
       "test_reviewed_test_records_are_policy_only_without_hiding_test_changes"
     ]
+  },
+  "mobileapp/e2e/setup/global-setup-manual.ts": {
+    "cases": [
+      "DG-004"
+    ],
+    "selectors": [
+      "await setupManual(process.env, verifySendTarget, globalSetup)"
+    ]
   }
 }

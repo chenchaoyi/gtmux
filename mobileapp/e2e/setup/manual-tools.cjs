@@ -26,4 +26,9 @@ async function verifySendTarget(env, request = fetch) {
   if (!agentsResponse.ok || !Array.isArray(agents) || agents.filter(a=>a.pane_id===target.pane).length!==1) throw new Error('Exact diagnostic pane is absent or ambiguous');
   return target;
 }
-module.exports = {manualMode, sendTarget, verifySendTarget};
+async function setupManual(env, verify, boot) {
+  const mode = manualMode(env);
+  if (mode === 'diagnostics') await verify(env);
+  return boot();
+}
+module.exports = {manualMode, sendTarget, verifySendTarget, setupManual};

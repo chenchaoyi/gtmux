@@ -3926,12 +3926,13 @@ LEG-ff05befffbd7,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts
 LEG-7201f98d96a5,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,28,test,headless capture is explicit and local GUI runs keep their behavior,False,legacy-not-retrospectively-reviewed
 LEG-16fab5a7cc96,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,34,test,only explicit hosted capture separates WDA build and readiness with one bounded connection,False,legacy-not-retrospectively-reviewed
 LEG-61bfa22d706f,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,50,test,only hosted multi-screen store captures receive the longer journey budget,False,legacy-not-retrospectively-reviewed
+MAP-cb2da71006dd,G,reviewed implementation,mobileapp/e2e/setup/global-setup-manual.ts,6,reviewed-selector,"await setupManual(process.env, verifySendTarget, globalSetup)",False,DG-004
 MAP-c8767994a252,G,reviewed implementation,mobileapp/e2e/setup/manual-tools.cjs,2,reviewed-selector,function manualMode(,False,"DG-001,DG-002,DG-003"
 MAP-64142db61c66,G,reviewed implementation,mobileapp/e2e/setup/manual-tools.cjs,8,reviewed-selector,function sendTarget(,False,"DG-001,DG-002,DG-003"
 MAP-ad9860024fc0,G,reviewed implementation,mobileapp/e2e/setup/manual-tools.cjs,19,reviewed-selector,async function verifySendTarget(,False,"DG-001,DG-002,DG-003"
 DG-001-f069a0,L1,RN / mobile harness,mobileapp/e2e/setup/manual-tools.test.ts,6,test,DG-001 ordinary discovery,False,DG-001
 DG-002-f069a0,L1,RN / mobile harness,mobileapp/e2e/setup/manual-tools.test.ts,19,test,DG-002 rejects missing target,False,DG-002
-DG-003-f069a0,L1,RN / mobile harness,mobileapp/e2e/setup/manual-tools.test.ts,28,test,DG-003 confirms one exact fixture pane,False,DG-003
+DG-003-f069a0,L1,RN / mobile harness,mobileapp/e2e/setup/manual-tools.test.ts,39,test,DG-003 confirms one exact fixture pane,False,DG-003
 LEG-b16afa2cc4a9,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,26,test,an ORPHANED match still dies,False,legacy-not-retrospectively-reviewed
 LEG-0338a4b52122,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,47,test,"a failed pgrep is said aloud, not mistaken for no match",False,legacy-not-retrospectively-reviewed
 LEG-13c0b7c93b98,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,63,test,no match is not an error,False,legacy-not-retrospectively-reviewed
@@ -6081,8 +6082,8 @@ TD-001-bb7e1e,G,CI / tooling,scripts/test_design_test.py,29,test,test_TD_001_val
 TD-002-bb7e1e,G,CI / tooling,scripts/test_design_test.py,41,test,test_TD_002_seal_required_fields_layers_paths,False,TD-002
 TD-003-bb7e1e,G,CI / tooling,scripts/test_design_test.py,54,test,test_TD_003_unlisted_test_missing_source_and_missing_case,False,TD-003
 TD-004-bb7e1e,G,CI / tooling,scripts/test_design_test.py,71,test,test_TD_004_history_rejects_same_commit_review_and_accepts_prior_review,False,TD-004
-TD-005-bb7e1e,G,CI / tooling,scripts/test_design_test.py,95,test,test_TD_005_removal_requires_rationale_and_absence,False,TD-005
-ND-003-bb7e1e,G,CI / tooling,scripts/test_design_test.py,120,test,test_ND_003_native_runner_uses_production_sources_and_propagates_failures,False,ND-003
+TD-005-bb7e1e,G,CI / tooling,scripts/test_design_test.py,102,test,test_TD_005_removal_requires_rationale_and_absence,False,TD-005
+ND-003-bb7e1e,G,CI / tooling,scripts/test_design_test.py,127,test,test_ND_003_native_runner_uses_production_sources_and_propagates_failures,False,ND-003
 LEG-96cb2ba94045,G,CI / tooling,scripts/vulncheck_test.py,24,unittest,test_execution_failure_even_with_partial_output_fails,False,legacy-not-retrospectively-reviewed
 LEG-fecadf66518e,G,CI / tooling,scripts/vulncheck_test.py,31,unittest,test_empty_malformed_or_missing_protocol_fails,True,legacy-not-retrospectively-reviewed
 LEG-b709631fda46,G,CI / tooling,scripts/vulncheck_test.py,36,unittest,test_valid_scan_without_findings_passes,False,legacy-not-retrospectively-reviewed
