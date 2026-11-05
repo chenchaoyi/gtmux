@@ -1,0 +1,45 @@
+{
+  "id": "codex-foreign-active-20261105",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-05",
+    "decision": "Proceed on proven user false-working screenshot",
+    "notes": "Read-only target current binding stays correct; named active marker belongs to a different live-resume location. Target own rollout ends task_complete, visible ready composer has no work signature, old marker remains. turnInProgress only uses existence and recent coarse window activity, so an unrelated mark resurrects working and prevents normal completion reconciliation. Origin of old marker unproven. Fix display using existing strict live binding/home/cwd and own boundary, never reassign/delete marker, read another thread body, fabricate Stop/completion, or weaken queued/start/approval/legacy handling. Synthetic tests first; no actual input, marker edits, release/install or workers."
+  },
+  "cases": [
+    {
+      "id": "CORE-CODEX-FOREIGN-ACTIVE",
+      "layer": "L2",
+      "description": "Only a verified current Codex home/session/cwd, a named foreign active marker, a completed/aborted own rollout and a ready nonworking nonapproval frame can contradict false working. Own/empty/unknown/stale binding or actual start/work/wait remains conservative. Reads never remove a foreign marker or mint a completion.",
+      "setup": "Isolated HOME/CODEX_HOME, synthetic resume/active/rollout records and mocked terminal/process adapters; no live pane writes.",
+      "action": "Only a verified current Codex home/session/cwd, a named foreign active marker, a completed/aborted own rollout and a ready nonworking nonapproval frame can contradict false working. Own/empty/unknown/stale binding or actual start/work/wait remains conservative. Reads never remove a foreign marker or mint a completion.",
+      "expected": "Only a verified current Codex home/session/cwd, a named foreign active marker, a completed/aborted own rollout and a ready nonworking nonapproval frame can contradict false working. Own/empty/unknown/stale binding or actual start/work/wait remains conservative. Reads never remove a foreign marker or mint a completion.",
+      "planned_files": [
+        "internal/radar/codex_foreign_marker_test.go",
+        "internal/radar/codexforeign.go",
+        "internal/radar/agents.go"
+      ],
+      "surfaces": [
+        "Go radar shared by CLI/Mac/Web/RN; no protocol or input authority change"
+      ]
+    },
+    {
+      "id": "CORE-CODEX-FOREIGN-GATHER",
+      "layer": "L3",
+      "description": "The real radar gather with isolated HOME, a completed own rollout, another session marker and recent window activity reports idle without changing marker content/mtime, binding or completion records; genuine own turns, approvals and legacy unknown ownership still work.",
+      "setup": "Isolated HOME/CODEX_HOME, synthetic resume/active/rollout records and mocked terminal/process adapters; no live pane writes.",
+      "action": "The real radar gather with isolated HOME, a completed own rollout, another session marker and recent window activity reports idle without changing marker content/mtime, binding or completion records; genuine own turns, approvals and legacy unknown ownership still work.",
+      "expected": "The real radar gather with isolated HOME, a completed own rollout, another session marker and recent window activity reports idle without changing marker content/mtime, binding or completion records; genuine own turns, approvals and legacy unknown ownership still work.",
+      "planned_files": [
+        "internal/radar/codex_foreign_marker_gather_test.go",
+        "internal/radar/codexforeign.go",
+        "internal/radar/agents.go"
+      ],
+      "surfaces": [
+        "Go radar shared by CLI/Mac/Web/RN; no protocol or input authority change"
+      ]
+    }
+  ],
+  "seal": "d8af054298e60e3c66373189f9a63973048bf579bebf96c04d6a2d6ff9306ed3"
+}
