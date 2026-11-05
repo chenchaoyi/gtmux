@@ -727,5 +727,14 @@
     "selectors": [
       "notification response completion checks passed"
     ]
+  },
+  "mobileapp/src/ui/WorkspaceSurface.sceneMetrics.test.tsx": {
+    "cases": [
+      "DUO-031"
+    ],
+    "selectors": [
+      "keeps background active until a current scene exists, then follows native inset changes",
+      "rejects a zero-sized scene instead of seeding fake metrics"
+    ]
   }
 }

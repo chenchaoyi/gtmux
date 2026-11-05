@@ -1,5 +1,6 @@
 import Foundation
 import React
+import UIKit
 
 @objc(GtmuxNotificationResponses)
 class GtmuxNotificationResponses: RCTEventEmitter {
@@ -43,5 +44,24 @@ class GtmuxNotificationResponses: RCTEventEmitter {
   @objc(acknowledgeSceneLink:)
   func acknowledgeSceneLink(_ identifier: String) {
     SceneLinkBuffer.acknowledge(identifier)
+  }
+
+  @objc(currentSceneMetrics:rejecter:)
+  func currentSceneMetrics(_ resolve: @escaping RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) {
+    DispatchQueue.main.async {
+      guard let app = UIApplication.shared.delegate as? AppDelegate,
+            let window = app.window, window.isKeyWindow, window.windowScene != nil,
+            window.rootViewController?.view.window === window,
+            window.bounds.width > 0, window.bounds.height > 0 else {
+        resolve(nil)
+        return
+      }
+      let bounds = window.bounds
+      let insets = window.safeAreaInsets
+      resolve([
+        "frame": ["x": bounds.origin.x, "y": bounds.origin.y, "width": bounds.width, "height": bounds.height],
+        "insets": ["top": insets.top, "right": insets.right, "bottom": insets.bottom, "left": insets.left],
+      ])
+    }
   }
 }

@@ -1409,6 +1409,8 @@ LEG-c1dcae648f3a,L2,RN / mobile harness,mobileapp/src/ui/WhatsNewModal.test.tsx,
 LEG-bde490778c31,L2,RN / mobile harness,mobileapp/src/ui/WhatsNewModal.test.tsx,91,test,no Pressable wraps the ScrollView,False,legacy-not-retrospectively-reviewed
 LEG-147ace8d3cd1,L2,RN / mobile harness,mobileapp/src/ui/WhatsNewModal.test.tsx,103,test,tapping the backdrop closes,False,legacy-not-retrospectively-reviewed
 LEG-f8eb4ad15194,L2,RN / mobile harness,mobileapp/src/ui/WhatsNewModal.test.tsx,121,test,the newest version opens even when the entries arrive after mount,False,legacy-not-retrospectively-reviewed
+MAP-20f88ab9ada6,L2,reviewed implementation,mobileapp/src/ui/WorkspaceSurface.sceneMetrics.test.tsx,17,reviewed-selector,"keeps background active until a current scene exists, then follows native inset changes",False,DUO-031
+MAP-2535f52a828e,L2,reviewed implementation,mobileapp/src/ui/WorkspaceSurface.sceneMetrics.test.tsx,42,reviewed-selector,rejects a zero-sized scene instead of seeding fake metrics,False,DUO-031
 LEG-c8dea3de822d,L2,RN / mobile harness,mobileapp/src/ui/activity.test.ts,6,test,delegation previews the purpose instead of JSON or an internal task key,False,legacy-not-retrospectively-reviewed
 LEG-6e25f30d9b2c,L2,RN / mobile harness,mobileapp/src/ui/activity.test.ts,13,test.each(),%s previews recorded timing without claiming elapsed time or a result,True,legacy-not-retrospectively-reviewed
 LEG-68925287819f,L2,RN / mobile harness,mobileapp/src/ui/activity.test.ts,22,test,old object arguments work and unknown units are never inferred,False,legacy-not-retrospectively-reviewed

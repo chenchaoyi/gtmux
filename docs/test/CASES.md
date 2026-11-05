@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1049 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1050 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3746 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 1913 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 1915 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 86 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 104 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 12 | [M.csv](cases/M.csv) |
@@ -69,6 +69,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | DUO-028 | Each queued intent is acknowledged once, a repeated availability event cannot reopen a consumed intent, guest rejection does not replay on owner, and unrelated URLs keep their normal routing. Native signal and actual scene delivery require separate checks. |
 | DUO-029 | A fully visible turn remains at its prior viewport position across measured reflow; user gestures and active selection are not overridden and the tail continues following. Actual fold remains independently verified on Duo. |
 | DUO-030 | Only one reply starts; receipt and native completion remain pending until settlement or deadline; default taps finish normally and an ambiguous send is never automatically replayed. |
+| DUO-031 | Background work starts without a scene, no fake metrics are supplied, visual work opens with actual current measurements and updates when native insets change, and old native shells retain their normal provider behavior. Device cold-link startup remains separately verified. |
 | STOR-001 | Every carrier separates project-owned and task-temp output from gtmux configuration/runtime trees; no promoted entry required; user text and hand-edit protection preserved; second sync idempotent. |
 | STOR-002 | Both playbooks reserve gtmux-owned state and only reusable HQ knowledge tools for its home, direct project scripts/reports/builds to project/task storage, require external evidence references, and never grant automatic migration/deletion; upgrade backs up old charter, preserves LOCAL/notes and converges. |
 | TD-001 | Reject a changed/new test without a reviewed design; accept a mapped implementation |
