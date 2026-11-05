@@ -158,6 +158,43 @@ func TestMachineSyncWritesIndexNotText(t *testing.T) {
 	}
 }
 
+func TestBuiltinStorageBoundariesReachEveryCarrierWithoutPromotions(t *testing.T) {
+	asHQ(t)
+	for _, key := range []string{"CODEX_HOME", "KIMI_CODE_HOME", "DSH_HOME"} {
+		t.Setenv(key, "")
+	}
+	for _, carrier := range Carriers() {
+		if !strings.HasPrefix(carrier.Path, os.Getenv("HOME")+string(filepath.Separator)) {
+			t.Fatal("carrier escaped synthetic home")
+		}
+		if err := os.MkdirAll(filepath.Dir(carrier.Path), 0700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(carrier.Path, []byte("# User instructions\nkeep project conventions\n"), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	report, err := SyncMachine(false)
+	if err != nil || len(report.Written) != len(Carriers()) || len(report.Refused) != 0 {
+		t.Fatalf("empty-ledger sync: %+v, %v", report, err)
+	}
+	for _, carrier := range Carriers() {
+		body := string(mustReadFile(t, carrier.Path))
+		for _, want := range []string{"keep project conventions", "~/.config/gtmux/", "~/.local/share/gtmux/", "project-owned storage", "task temporary storage", "任务临时目录", "Do not automatically move or delete"} {
+			if !strings.Contains(body, want) {
+				t.Errorf("%s: missing %q", carrier.Agent, want)
+			}
+		}
+		if strings.Count(body, blockBeginPrefix) != 1 {
+			t.Errorf("%s: duplicate managed guidance", carrier.Agent)
+		}
+	}
+	report, err = SyncMachine(false)
+	if err != nil || len(report.Written) != 0 || len(report.Kept) != len(Carriers()) {
+		t.Fatalf("storage guidance must converge: %+v, %v", report, err)
+	}
+}
+
 func TestRepoCarrierPrefersWhatExists(t *testing.T) {
 	repo := t.TempDir()
 	if got := RepoCarrierPath(repo); got != filepath.Join(repo, "AGENTS.md") {

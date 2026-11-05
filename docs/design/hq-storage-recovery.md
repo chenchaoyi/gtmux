@@ -24,6 +24,25 @@ Exports are staged privately, completely validated, then atomically published; t
 
 ## Stored deliverables
 
+The default gtmux configuration and data trees (`~/.config/gtmux/` and
+`~/.local/share/gtmux/`) are reserved for gtmux-managed configuration, runtime
+state and its own archives. They are not a general project workspace or delivery
+store, even when developing gtmux itself. Project code, scripts, documents and
+deliveries belong to project-owned storage; builds, fixtures, downloads and raw
+evidence belong to task temporary storage. A retained delivery outside a worktree
+uses a project-owned archive with the policy below, not a new folder in gtmux's
+application data. HQ notes keep concise coordination summaries and references to
+the evidence rather than another copy of project payloads. Only reusable HQ
+knowledge tools belong in `knowledge/tools/`.
+
+This boundary is built into every agent's managed global instruction block and
+HQ playbook version 60. Knowledge sync preserves user text and hand-edited block
+protection; normal HQ upgrades preserve LOCAL.md and existing records. The rule
+does not migrate or delete old material. Existing `reports`, `reviews` and release
+groups remain visible in storage accounting; their presence does not authorize
+new general-purpose project storage there. User-facing report links use the
+project delivery path: the protected configuration tree is not remotely readable.
+
 Build intermediates, downloaded test copies and one-off unpacked validation directories belong to task/build storage and end with the task. A public release channel is the primary source for reproducible release assets. Cross-task retention is exceptional: use an explicit delivery archive, separate from application runtime state, with `retention.json` describing purpose, source/build/channel, byte budget, minimum retention, review date and responsible reviewer. A review date does not authorize deletion. The schema is `delivery-retention.schema.json`; validate it with `scripts/check_delivery_retention.py`.
 
 Retain unique signing/recovery material, required symbols and concise final acceptance evidence. Do not retain multiple package transports/unpacked validation copies by default. Do not copy private credentials into a manifest. Keep current/previous deliveries, active Store submissions/distributions and any uniquely required recovery evidence protected until their actual replacement and restore path have been verified. Older artifacts need an exact reviewed retirement plan; age, similar size, expiring CI artifacts or a new copy alone are insufficient.

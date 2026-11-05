@@ -455,5 +455,21 @@
     "selectors": [
       "TestGatherDoesNotReviveAnotherSessionsOldMarkerFromWindowActivity"
     ]
+  },
+  "internal/knowledge/distribute_test.go": {
+    "cases": [
+      "STOR-001"
+    ],
+    "selectors": [
+      "TestBuiltinStorageBoundariesReachEveryCarrierWithoutPromotions"
+    ]
+  },
+  "internal/hq/hq_test.go": {
+    "cases": [
+      "STOR-002"
+    ],
+    "selectors": [
+      "TestStorageBoundaryUpgradePreservesLocalRulesAndExistingRecords"
+    ]
   }
 }

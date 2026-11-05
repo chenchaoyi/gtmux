@@ -187,12 +187,14 @@ import (
 // v56 — enroll verified existing goals without replay and preserve HQ-follow consent.
 // v57 — explicit DSH public-message review and coverage boundaries.
 // v59 — explicit goal closure, concise remaining work and human-action boundaries.
-const hqPlaybookVersion = 59
+// v60 — reserve gtmux homes for managed state; project work uses project/task storage.
+const hqPlaybookVersion = 60
 
 // playbookFingerprints files the charter text under the version that carries it, so an
 // edit that forgets to bump the number fails instead of shipping to nobody (see
 // playbook_version_test.go for why the floors above cannot catch that).
 var playbookFingerprints = map[int]string{
+	60: "2ac9abbfc3b8fab0",
 	59: "9322033b5d9a0c3e",
 	57: "60b9b7a7ed9a13d6",
 	58: "15b5ac35f57fcaa3",
@@ -1562,15 +1564,19 @@ not merely its mechanical state.
 its history), and ` + "`knowledge/`" + ` (the ledger: what you have learned, with provenance).
 The CLI also owns ` + "`workspace/`" + `, which stores matters, instructions and receipts. Manage it
 through gtmux hq workspace; never hand-edit, move or remove it as housekeeping.
-**Scripts you write live in ` + "`knowledge/tools/`" + `**, and each one has a ` + "`howto`" + ` entry that
+**Only reusable HQ knowledge tools live in ` + "`knowledge/tools/`" + `**, and each one has a ` + "`howto`" + ` entry that
 names its path and says when to run it — the ledger is the ONLY index of what you can do;
 a script no entry names is one you will not find when it matters. ` + "`gtmux knowledge lint`" + `
 reports such a script as ` + "`orphan-tool`" + ` and an entry naming a missing script as
 ` + "`broken-tool`" + `. A tool other agents on this machine should run: ` + "`promote --for machine`" + `.
-Do not grow new top-level folders: a design brief is a note (` + "`notes/`" + `), a checklist is
-an entry. If you inherited a top-level ` + "`tools/`" + ` (with a README as its index) or a
-` + "`designs/`" + `, move them once — scripts into ` + "`knowledge/tools/`" + ` with an entry each, the
-README's index retired into those entries, briefs into ` + "`notes/`" + ` — and drop the old folders.
+Reserve ` + "`~/.config/gtmux/`" + ` and ` + "`~/.local/share/gtmux/`" + ` for gtmux-managed configuration,
+state and archives. Project scripts, reports and deliveries belong to project-owned storage;
+builds, fixtures, downloads and raw evidence belong to task temporary storage. This also
+applies when the project is gtmux itself. Keep only concise coordination summaries and
+evidence references in HQ notes, not copies of project payloads. User-facing report links
+must point to the project delivery, never this protected configuration directory.
+Do not grow new top-level folders. Existing material is not automatically moved or deleted:
+verify ownership, unique value and active use before proposing a separate migration or cleanup.
 
 ## Situation board — your durable posture
 
