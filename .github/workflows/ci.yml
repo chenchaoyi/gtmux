@@ -448,12 +448,13 @@ jobs:
     needs: scope
     if: needs.scope.outputs.ios == 'true'
     runs-on: xcode-27
-    timeout-minutes: 90
+    timeout-minutes: 120
     env:
       DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
     steps:
       - uses: actions/checkout@v5
         with:
+          fetch-depth: 0
           persist-credentials: false
       - name: Runner space and SDK preflight
         run: |
@@ -516,7 +517,28 @@ jobs:
         run: |
           driver_version=$(node -p "require('./package-lock.json').packages['node_modules/appium-xcuitest-driver'].version")
           npx appium driver install --source=npm "appium-xcuitest-driver@$driver_version"
+      - name: Compare main and candidate server switching
+        id: server_compare
+        if: github.event_name == 'pull_request' && github.head_ref == 'feat/iphone-duo-adaptation'
+        env:
+          GITHUB_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          APPIUM_HOME: ${{ runner.temp }}/duo-appium
+          GTMUX_E2E_SOFT_KEYBOARD: '1'
+          GTMUX_E2E_HEADLESS: '1'
+          GTMUX_E2E_ACCEPT_ALERTS: '1'
+          GTMUX_E2E_SESSION_CI: '1'
+        run: bash mobileapp/e2e/ci-compare-servers.sh
+      - name: Preserve server comparison immediately
+        if: ${{ !cancelled() && steps.server_compare.outcome != 'skipped' }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: ios-server-comparison-${{ github.run_id }}-${{ github.run_attempt }}
+          path: mobileapp/.e2e-artifacts/comparison/**
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
       - name: Probe iPhone Duo runtime and run isolated simulator interaction
+        if: ${{ !cancelled() && steps.ios_products.outcome == 'success' && steps.ios_driver.outcome == 'success' }}
         working-directory: mobileapp
         env:
           APPIUM_HOME: ${{ runner.temp }}/duo-appium
@@ -534,6 +556,15 @@ jobs:
           xcrun simctl bootstatus "$GTMUX_E2E_UDID" -b
           xcrun simctl install "$GTMUX_E2E_UDID" "$RUNNER_TEMP/gtmux-ios-ci/Build/Products/Release-iphonesimulator/gtmux.app"
           npm run test:e2e -- --runInBand duo-window.test.ts notification-scene-actions.test.ts scene-usage-links.test.ts
+      - name: Preserve notification diagnostics immediately
+        if: ${{ !cancelled() && steps.ios_products.outcome == 'success' && steps.ios_driver.outcome == 'success' }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: ios-notification-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: mobileapp/.e2e-artifacts/**/action-*
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 7
       - name: Ordinary iPhone simulator regression
         if: ${{ !cancelled() && steps.ios_products.outcome == 'success' && steps.ios_driver.outcome == 'success' }}
         working-directory: mobileapp

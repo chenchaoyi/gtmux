@@ -23,6 +23,7 @@
 import {NativeModules, Platform} from 'react-native';
 import PushNotificationIOS from '@react-native-community/push-notification-ios';
 import * as Keychain from 'react-native-keychain';
+import {Debug} from '../debug';
 
 export type Teardown = () => void;
 
@@ -148,10 +149,12 @@ export async function setupPush(
     // Older native bridges forwarded UIKit's default identifier verbatim.
     const action = rawAction === 'com.apple.UNNotificationDefaultActionIdentifier' ? undefined : rawAction;
     const isInteraction = initial || !!data.userInteraction;
+    if (Debug.logNet) Debug.record({event: 'push-response', initial, isInteraction, hasPane: !!pane, action: action ?? '', hasText: typeof data.userText === 'string'});
     if (typeof data.gtmuxResponseId === 'string' && data.gtmuxResponseId) {
       NativeModules?.GtmuxNotificationResponses?.acknowledge?.(data.gtmuxResponseId, action ?? '');
     }
     if (pane && isInteraction && !firstResponse(data.gtmuxResponseId, action)) {
+      if (Debug.logNet) Debug.record({event: 'push-duplicate'});
       notification.finish?.(PushNotificationIOS.FetchResult.NoData);
       return;
     }

@@ -269,7 +269,15 @@ export function AppProvider({children}: {children: React.ReactNode}) {
     const persist = async (next: PairedMac[], active: string | null) => {
       for (const sv of next) Diag.secret(sv.token);
       const saved = {servers: next, activeUrl: active};
-      await saveServers(saved);
+      if (Debug.logNet) Debug.record({event: 'server-persist-start', activeIndex: next.findIndex(s => s.url === active)});
+      try {
+        await saveServers(saved);
+      } catch (error) {
+        if (Debug.logNet) Debug.record({event: 'server-persist-failed', name: error instanceof Error ? error.name : typeof error,
+          code: typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : undefined});
+        throw error;
+      }
+      if (Debug.logNet) Debug.record({event: 'server-persist-saved'});
       storeRef.current = saved;
       setServers(next);
       setActiveUrl(active);

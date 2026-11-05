@@ -57,3 +57,24 @@ class DebugSettings: NSObject {
     try? FileManager.default.removeItem(at: url)
   }
 }
+
+// Test-only lifecycle breadcrumbs: no notification contents, credentials or text.
+private let notificationTraceLock = NSLock()
+func traceNotification(_ event: String, action: String? = nil, hasText: Bool = false) {
+  guard let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first,
+        let data = try? Data(contentsOf: docs.appendingPathComponent("gtmux-debug-flags.json")),
+        let flags = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+        flags["GTMUX_DEBUG_LOG_NET"] as? String == "1" else { return }
+  notificationTraceLock.lock()
+  defer { notificationTraceLock.unlock() }
+  let line: [String: Any] = ["event": event, "action": action ?? "", "hasText": hasText, "time": Date().timeIntervalSince1970]
+  guard var bytes = try? JSONSerialization.data(withJSONObject: line) else { return }
+  bytes.append(10)
+  let url = docs.appendingPathComponent("gtmux-native-notification-trace.jsonl")
+  if !FileManager.default.fileExists(atPath: url.path) { FileManager.default.createFile(atPath: url.path, contents: nil) }
+  if let file = try? FileHandle(forWritingTo: url) {
+    defer { try? file.close() }
+    _ = try? file.seekToEnd()
+    try? file.write(contentsOf: bytes)
+  }
+}

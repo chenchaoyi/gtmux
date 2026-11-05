@@ -54,6 +54,8 @@ export interface Fake {
   port: number;
   token: string;
   world: World;
+  /** Bounded request metadata for test diagnostics; never records headers or credentials. */
+  requests: Array<{method: string; path: string; authorized: boolean}>;
   /** Announce a fleet change to connected clients, as the real serve does on every one. */
   bumpAgents: () => void;
   /**
@@ -94,6 +96,7 @@ async function readBody(req: IncomingMessage): Promise<Record<string, unknown>> 
  */
 export async function startFake(opts: {guest?: boolean; port?: number; token?: string} = {}): Promise<Fake> {
   const world = new World();
+  const requests: Fake['requests'] = [];
   // A test that runs two Macs gives each its own token: one Mac's token is not another's.
   const token = opts.token ?? 'fake-token';
   const streams = new Set<ServerResponse>();
@@ -123,6 +126,8 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
     const path = url.pathname;
     const q = url.searchParams;
     const owner = !opts.guest;
+    if (requests.length >= 256) requests.shift();
+    requests.push({method: req.method ?? '', path, authorized: (req.headers.authorization ?? '') === `Bearer ${token}`});
 
     if (path === '/api/health') return json(res, 200, {ok: true});
 
@@ -485,6 +490,7 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
     url: `http://127.0.0.1:${port}`,
     port,
     token,
+    requests,
     world,
     bumpAgents,
     activeStreams: () => streams.size,

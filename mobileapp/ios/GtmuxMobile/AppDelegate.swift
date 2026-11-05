@@ -97,6 +97,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     // UIKit may deliver on a background queue; window and RN startup belong on main.
     DispatchQueue.main.async {
       let payload = bridgeNotificationResponse(response)
+      traceNotification("delegate-response", action: response.actionIdentifier, hasText: response is UNTextInputNotificationResponse)
       NotificationResponseBuffer.enqueue(payload)
       if UIApplication.shared.applicationState == .background && self.responseBackgroundTask == .invalid {
         self.responseBackgroundTask = UIApplication.shared.beginBackgroundTask(withName: "Notification response") { [weak self] in
@@ -166,6 +167,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
     if let response = connectionOptions.notificationResponse {
       let payload = bridgeNotificationResponse(response)
+      traceNotification("scene-response", action: response.actionIdentifier, hasText: response is UNTextInputNotificationResponse)
       NotificationResponseBuffer.enqueue(payload)
       options[.remoteNotification] = payload
     }

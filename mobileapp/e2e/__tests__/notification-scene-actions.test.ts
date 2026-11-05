@@ -1,8 +1,8 @@
 import {execFileSync} from 'child_process';
-import {writeFileSync} from 'fs';
+import {existsSync, readFileSync, writeFileSync} from 'fs';
 import {join} from 'path';
 import {getArtifactsDir, getDriver} from '../setup/driver';
-import {BUNDLE, launchWithFlags, settle, writeDebugFlags} from '../setup/app';
+import {BUNDLE, launchWithFlags, readDebugLog, settle, writeDebugFlags} from '../setup/app';
 import {screenshot} from '../setup/screenshot';
 import {startFake, Fake} from '../fake-serve/server';
 
@@ -10,6 +10,19 @@ import {startFake, Fake} from '../fake-serve/server';
 // must send one digit once, even when UIKit delivers both scene and delegate paths.
 let fake: Fake;
 beforeAll(async () => { fake = await startFake(); });
+afterEach(() => {
+  const dir = getArtifactsDir();
+  const label = expect.getState().currentTestName?.startsWith('delivers a cold') ? 'cold' : 'warm';
+  writeFileSync(join(dir, `action-${label}-js.json`), JSON.stringify(readDebugLog(), null, 2));
+  writeFileSync(join(dir, `action-${label}-fake.json`), JSON.stringify({requests: fake.requests, writes: fake.world.recorded}, null, 2));
+  try {
+    const container = execFileSync('xcrun', ['simctl', 'get_app_container', process.env.GTMUX_E2E_UDID!, BUNDLE, 'data'], {encoding: 'utf8'}).trim();
+    const native = join(container, 'Documents', 'gtmux-native-notification-trace.jsonl');
+    if (existsSync(native)) writeFileSync(join(dir, `action-${label}-native.jsonl`), readFileSync(native));
+  } catch (error) {
+    writeFileSync(join(dir, `action-${label}-native-error.txt`), String(error));
+  }
+});
 afterAll(async () => { await fake?.close(); });
 
 it('delivers a cold notification action exactly once', async () => {
@@ -17,7 +30,7 @@ it('delivers a cold notification action exactly once', async () => {
   if (!udid || process.env.GTMUX_E2E_ACCEPT_ALERTS !== '1') throw new Error('requires a named simulator and notification alerts');
   const driver = getDriver();
   const seed = JSON.stringify([{url: fake.url, token: fake.token, name: 'Fixture Mac'}]);
-  const flags = {GTMUX_DEBUG_SERVERS: seed, GTMUX_DEBUG_SHOT_MODE: '1', GTMUX_DEBUG_LANG: 'en'};
+  const flags = {GTMUX_DEBUG_SERVERS: seed, GTMUX_DEBUG_SHOT_MODE: '1', GTMUX_DEBUG_LANG: 'en', GTMUX_DEBUG_LOG_NET: '1'};
   await launchWithFlags(flags);
   await settle(5000); // register the app's notification categories
   writeDebugFlags(flags);
@@ -62,7 +75,7 @@ it('delivers a warm notification action exactly once', async () => {
   if (!udid || process.env.GTMUX_E2E_ACCEPT_ALERTS !== '1') throw new Error('requires a named simulator and notification alerts');
   const driver = getDriver();
   const seed = JSON.stringify([{url: fake.url, token: fake.token, name: 'Fixture Mac'}]);
-  await launchWithFlags({GTMUX_DEBUG_SERVERS: seed, GTMUX_DEBUG_SHOT_MODE: '1', GTMUX_DEBUG_LANG: 'en'});
+  await launchWithFlags({GTMUX_DEBUG_SERVERS: seed, GTMUX_DEBUG_SHOT_MODE: '1', GTMUX_DEBUG_LANG: 'en', GTMUX_DEBUG_LOG_NET: '1'});
   await settle(5000);
   fake.world.recorded = [];
   await driver.execute('mobile: pressButton', {name: 'home'});

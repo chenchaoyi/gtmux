@@ -103,6 +103,7 @@ export function ServersScreen({navigation}: {navigation?: any}) {
   const [demo, setDemo] = useState(false);
 
   const onPick = async (url: string) => {
+    if (Debug.logNet) Debug.record({event: 'server-pick', index: servers.findIndex(s => s.url === url), current: url === activeUrl});
     if (url === activeUrl) {
       navigation?.goBack?.(); // already connected → just dismiss
       return;
