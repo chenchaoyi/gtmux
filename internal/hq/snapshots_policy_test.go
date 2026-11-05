@@ -41,11 +41,11 @@ func snapshotTime() time.Time { return time.Date(2026, 11, 2, 10, 0, 0, 0, time.
 func TestAutomaticScopeAndExplicitFullExport(t *testing.T) {
 	root := seedMemory(t)
 	db, _ := json.Marshal(hqworkspace.Empty())
-	for n, b := range map[string][]byte{"PERSONAL.md": []byte("personal rules"), "workspace/records.json": db, "notes/custom.json": []byte(`{"unique":true}`), "notes/reports/run/FINAL.md": []byte("key conclusion"), "notes/reports/run/SUMMARY.json": []byte(`{"result":"passed"}`), "notes/reports/run/raw.json": []byte(`{"raw":true}`), "notes/scan-relays.json": []byte(`[]`), "notes/image.png": []byte("synthetic attachment")} {
+	for n, b := range map[string][]byte{"PERSONAL.md": []byte("personal rules"), "workspace/records.json": db, "notes/custom.json": []byte(`{"unique":true}`), "notes/reports/run/FINAL.md": []byte("key conclusion"), "notes/reports/run/SUMMARY.json": []byte(`{"result":"passed"}`), "notes/reports/run/raw.json": []byte(`{"raw":true}`), "notes/scan-relays.json": []byte(`[]`), "notes/demo-relays-closeout.json": []byte(`[]`), "notes/demo-relays-closure.json": []byte(`[]`), "notes/retained-relays-closure.json": []byte(`[]`), "notes/image.png": []byte("synthetic attachment")} {
 		putRecord(t, root, n, b)
 	}
 	c := DefaultSnapshotPolicy()
-	c.Include = []string{"notes/reports/run/raw.json"}
+	c.Include = []string{"notes/reports/run/raw.json", "notes/retained-relays-closure.json"}
 	setSnapshotPolicy(t, c)
 	p, w, e := Snapshot(snapshotTime())
 	if e != nil || !w {
@@ -55,12 +55,12 @@ func TestAutomaticScopeAndExplicitFullExport(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	for _, n := range []string{"PERSONAL.md", "workspace/records.json", "notes/custom.json", "notes/board.md", "notes/reports/run/FINAL.md", "notes/reports/run/SUMMARY.json", "notes/reports/run/raw.json"} {
+	for _, n := range []string{"PERSONAL.md", "workspace/records.json", "notes/custom.json", "notes/board.md", "notes/reports/run/FINAL.md", "notes/reports/run/SUMMARY.json", "notes/reports/run/raw.json", "notes/retained-relays-closure.json"} {
 		if _, ok := a.files[n]; !ok {
 			t.Errorf("unique record missing: %s", n)
 		}
 	}
-	for _, n := range []string{"notes/scan-relays.json", "notes/image.png"} {
+	for _, n := range []string{"notes/scan-relays.json", "notes/image.png", "notes/demo-relays-closeout.json", "notes/demo-relays-closure.json"} {
 		if _, ok := a.files[n]; ok {
 			t.Errorf("process item in automatic recovery: %s", n)
 		}
@@ -73,8 +73,10 @@ func TestAutomaticScopeAndExplicitFullExport(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	if _, ok := all.files["notes/image.png"]; !ok {
-		t.Fatal("explicit full export silently filtered attachment")
+	for _, name := range []string{"notes/image.png", "notes/demo-relays-closeout.json", "notes/demo-relays-closure.json"} {
+		if _, ok := all.files[name]; !ok {
+			t.Fatalf("explicit full export silently filtered %s", name)
+		}
 	}
 	putRecord(t, root, "notes/board.md", []byte("new live board"))
 	moved, e := ImportMemory(p)

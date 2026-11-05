@@ -8,7 +8,7 @@
 
 JSON 配置为 `hqSnapshots`：`enabled`、`keep`（1–30）、`maxMB`（1–2048）、`intervalMinutes`（0–1440），以及可选的 `include` 精确相对文件/目录路径。配置损坏时拒绝生成和裁剪；缺项使用共用默认值。
 
-核心范围保护指令与个性化规则、全部知识库文件、事项记录及普通笔记，未知结构化笔记也保留。符号链接不跟随，workspace 隐藏运行文件继续排除。notes 中的图片、视频、PDF/归档包和原始日志属于过程附件；命名的全量 relay JSON 列表，以及 `*-relays-final.json`、`*-relays-verified.json` 等明确的生成观测阶段转储，属于过程材料；不匹配该规则的 summary/analysis 笔记继续保留。notes/reports 中保留文字结论及 SUMMARY/FINAL/INDEX/OWNER/RETAINED/retention JSON，其余为过程报告。若其中某文件或子树有独有价值，可用 `include` 明确纳入。声明过程范围之外的未知笔记不会仅凭体积被丢弃；独有文件超限时，整个新备份失败。
+核心范围保护指令与个性化规则、全部知识库文件、事项记录及普通笔记，未知结构化笔记也保留。符号链接不跟随，workspace 隐藏运行文件继续排除。notes 中的图片、视频、PDF/归档包和原始日志属于过程附件；命名的全量 relay JSON 列表，以及 `*-relays-final.json`、`*-relays-verified.json`、`*-relays-closeout.json`、`*-relays-closure.json` 等明确的生成观测阶段转储，属于过程材料；不匹配该规则的 summary/analysis 笔记继续保留。notes/reports 中保留文字结论及 SUMMARY/FINAL/INDEX/OWNER/RETAINED/retention JSON，其余为过程报告。若其中某文件或子树有独有价值，可用 `include` 明确纳入。声明过程范围之外的未知笔记不会仅凭体积被丢弃；独有文件超限时，整个新备份失败。
 
 新点存于 `hq-snapshots/automatic-v1`，与父目录的旧包分开。包仍为标准 tar/gzip，旁边的私有版本回执登记内容摘要、包SHA、大小和验收时间。内容及所有者权限摘要不依赖修改时间或日期，跨日内容不变不会再存一份；同日的不同状态可以保留为不同恢复点。
 
