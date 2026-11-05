@@ -379,14 +379,45 @@
       "TestClientHTTPContracts"
     ]
   },
-  "mobileapp/e2e/setup/global-setup-target.test.ts": {
+  "internal/app/hqworkspace_stored_test.go": {
     "cases": [
-      "SIM272-010",
-      "SIM272-011"
+      "MC-HQ-READ"
     ],
     "selectors": [
-      "the actual E2E setup passes the discovered runtime and UDID to WebDriver",
-      "ambiguous default selection fails before reclaiming processes or touching app data"
+      "TestWorkspaceStoredCLILeavesDiscoveryAndRecordsUntouched"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/HQChoiceResponseTests.swift": {
+    "cases": [
+      "MC-HQ-CHOICE",
+      "MC-HQ-READ"
+    ],
+    "selectors": [
+      "testChoicePreparesFocusWithoutSendingAndPreservesEditedDraft",
+      "testSlowSourceDiscoveryCannotBlockReplyOrRollBackNewCanonicalData",
+      "testSourceTimeoutDoesNotBecomeTheQuestionOrDraftError",
+      "testStoredClientUsesReadOnlyFlagAndOnlyLegacyUsageFallsBack",
+      "testUnavailableSourceMetadataNeverClaimsTheSessionIsGone"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/HQChoiceWindowTests.swift": {
+    "cases": [
+      "MC-HQ-WINDOW"
+    ],
+    "selectors": [
+      "testCompleteWindowPinsComposerAndNativeChoiceUpdatesAndFocusesEditor",
+      "testCurrentQuestionRemainsUsableWhileConversationReadWaits"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/HQChoiceFixture.swift": {
+    "cases": [
+      "MC-HQ-CHOICE",
+      "MC-HQ-WINDOW",
+      "MC-HQ-READ"
+    ],
+    "selectors": [
+      "class ChoiceFixture",
+      "enum HQChoiceTestSupport"
     ]
   },
   "mobileapp/e2e/setup/simulator-target.test.ts": {
@@ -411,6 +442,16 @@
       "multiple booted devices require a UDID even if a name filter could narrow Appium",
       "no booted device is not permission to pick and drive a random stored device",
       "unavailable or duplicate device records never become an ambiguous target"
+    ]
+  },
+  "mobileapp/e2e/setup/global-setup-target.test.ts": {
+    "cases": [
+      "SIM272-010",
+      "SIM272-011"
+    ],
+    "selectors": [
+      "the actual E2E setup passes the discovered runtime and UDID to WebDriver",
+      "ambiguous default selection fails before reclaiming processes or touching app data"
     ]
   }
 }

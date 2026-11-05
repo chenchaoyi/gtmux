@@ -41,13 +41,14 @@ type workspaceAction struct {
 func workspaceStore() *hqworkspace.Store { return hqworkspace.New(state.HQHome()) }
 
 func workspaceHelp() int {
-	fmt.Println(`gtmux hq workspace list [--overview] --json
+	fmt.Println(`gtmux hq workspace list [--overview] [--stored] --json
 gtmux hq workspace show <matter-id|global|activity> [--before SEQ] [--earlier N] --json
 gtmux hq workspace participant <matter-id> <association-id> --json
 gtmux hq workspace act --stdin --json
 gtmux hq workspace drain --json
 
 The workspace keeps explicit goals, conversation membership and instruction receipts.
+list --stored reads only saved matters/overview, without live or historical session discovery.
 act reads ONE JSON object from stdin. Operations: create, register, send, report, request-input, clear-input, update,
 associate, unlink, move, interval, merge, split, cancel, retry, focus.
 create needs id/title/body (one new goal and first instruction); send needs id/body
@@ -73,12 +74,15 @@ func cmdHQWorkspace(args []string) int {
 	earlier := 0
 	stdin := false
 	overview := false
+	stored := false
 	rest := []string{}
 	for i := 1; i < len(args); i++ {
 		switch args[i] {
 		case "--json":
 		case "--overview":
 			overview = true
+		case "--stored":
+			stored = true
 		case "--stdin":
 			stdin = true
 		case "--before", "--earlier":
@@ -107,7 +111,7 @@ func cmdHQWorkspace(args []string) int {
 		}
 	}
 	var result any
-	if overview && verb != "list" {
+	if (overview || stored) && verb != "list" {
 		return 2
 	}
 	var err error
@@ -117,7 +121,18 @@ func cmdHQWorkspace(args []string) int {
 		if len(rest) != 0 || stdin {
 			return 2
 		}
-		result, err = workspaceSnapshot(s, overview, time.Now().Unix())
+		if stored {
+			var data hqworkspace.Database
+			data, err = s.Read()
+			if err == nil {
+				value := workspaceStoredSnapshot(data, overview, time.Now().Unix())
+				included := false
+				value.SourcesIncluded = &included
+				result = value
+			}
+		} else {
+			result, err = workspaceSnapshot(s, overview, time.Now().Unix())
+		}
 	case "show":
 		if len(rest) != 1 || stdin {
 			return 2

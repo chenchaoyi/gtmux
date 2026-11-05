@@ -373,6 +373,7 @@ LEG-7d78fb6a41eb,L1,Go core / CLI / server,internal/app/hqtranscript_agent_test.
 LEG-150db10da0b7,L1,Go core / CLI / server,internal/app/hqtranscript_agent_test.go,45,Test,TestTranscriptOnlyStitchesSupervisorHistory,False,legacy-not-retrospectively-reviewed
 LEG-4658791c9323,L1,Go core / CLI / server,internal/app/hqworkspace_overview_test.go,10,Test,TestWorkspaceOverviewIsExplicitlyRequestedAndDoesNotEnlargeSidebarMatters,False,legacy-not-retrospectively-reviewed
 LEG-dc50bad5be70,L1,Go core / CLI / server,internal/app/hqworkspace_overview_test.go,41,Test,TestWorkspaceHTTPReadReusesExplicitStateWithoutWriting,False,legacy-not-retrospectively-reviewed
+MAP-c746f11a537e,L2,reviewed implementation,internal/app/hqworkspace_stored_test.go,10,reviewed-selector,TestWorkspaceStoredCLILeavesDiscoveryAndRecordsUntouched,False,MC-HQ-READ
 LEG-70b4e7561792,L1,Go core / CLI / server,internal/app/hqworkspace_test.go,15,Test,TestWorkspaceWorkingHQAcceptsInputWithoutOverwritingDrafts,False,legacy-not-retrospectively-reviewed
 LEG-e447f9a32c69,L1,Go core / CLI / server,internal/app/hqworkspace_test.go,25,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-1e582bc51119,L1,Go core / CLI / server,internal/app/hqworkspace_test.go,79,Test,TestWorkspaceHoldsBeforeResolvingOrTypingWhenWakeOwnsInput,False,legacy-not-retrospectively-reviewed
@@ -3335,6 +3336,15 @@ LEG-4b94f6b95bf0,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQChatPrese
 LEG-f2657f3a6fbf,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQChatPresentationTests.swift,27,XCTest,testMidnightCreatesSeparatorWithoutInventingClocksForUnknownRows,False,legacy-not-retrospectively-reviewed
 LEG-377de6fd68df,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQChatPresentationTests.swift,38,XCTest,testCopyPreservesFullMarkdownAndFeedbackResetsAndReportsFailure,False,legacy-not-retrospectively-reviewed
 LEG-b74031d1aa2d,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQChatPresentationTests.swift,65,XCTest,testSeamTurnRetainsPublicTextAndSourceClockInTimeline,False,legacy-not-retrospectively-reviewed
+MAP-18b153c61e83,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceFixture.swift,12,reviewed-selector,class ChoiceFixture,False,"MC-HQ-CHOICE,MC-HQ-WINDOW,MC-HQ-READ"
+MAP-d6fdd79aba67,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceFixture.swift,60,reviewed-selector,enum HQChoiceTestSupport,False,"MC-HQ-CHOICE,MC-HQ-WINDOW,MC-HQ-READ"
+MAP-0143ada6d861,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceResponseTests.swift,8,reviewed-selector,testChoicePreparesFocusWithoutSendingAndPreservesEditedDraft,False,"MC-HQ-CHOICE,MC-HQ-READ"
+MAP-ae59716ae51d,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceResponseTests.swift,31,reviewed-selector,testSlowSourceDiscoveryCannotBlockReplyOrRollBackNewCanonicalData,False,"MC-HQ-CHOICE,MC-HQ-READ"
+MAP-fa1c60fa2d92,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceResponseTests.swift,62,reviewed-selector,testSourceTimeoutDoesNotBecomeTheQuestionOrDraftError,False,"MC-HQ-CHOICE,MC-HQ-READ"
+MAP-ed56b3b277a8,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceResponseTests.swift,79,reviewed-selector,testStoredClientUsesReadOnlyFlagAndOnlyLegacyUsageFallsBack,False,"MC-HQ-CHOICE,MC-HQ-READ"
+MAP-b135d4ac2897,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceResponseTests.swift,117,reviewed-selector,testUnavailableSourceMetadataNeverClaimsTheSessionIsGone,False,"MC-HQ-CHOICE,MC-HQ-READ"
+MAP-d731318cd969,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceWindowTests.swift,8,reviewed-selector,testCompleteWindowPinsComposerAndNativeChoiceUpdatesAndFocusesEditor,False,MC-HQ-WINDOW
+MAP-a11ab8aaa94d,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceWindowTests.swift,92,reviewed-selector,testCurrentQuestionRemainsUsableWhileConversationReadWaits,False,MC-HQ-WINDOW
 LEG-6e929902f26c,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQConversationScrollIntentTests.swift,6,XCTest,testGestureAndLegacyMouseEventsInvalidateTheSameStableIntent,False,legacy-not-retrospectively-reviewed
 LEG-4f22d960533b,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQConversationScrollIntentTests.swift,16,XCTest,testObservationDoesNotRetainAnExitedReader,False,legacy-not-retrospectively-reviewed
 LEG-491ed8b1ad6e,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQConversationTailRevealTests.swift,5,XCTest,testDelayedMeasurementNeedsTwoConsecutiveVisibleSamples,False,legacy-not-retrospectively-reviewed

@@ -15,12 +15,18 @@ final class HQWorkspaceStore: ObservableObject {
     @Published private(set) var delivering = false
     @Published private(set) var refreshSerial = 0
     @Published private(set) var conversationRevealSerial = 0
+    @Published private(set) var composerFocusSerial = 0
+    @Published private(set) var sourcesKnown = false
+    @Published private(set) var sourcesLoading = false
+    @Published private(set) var sourcesError: String?
     @Published private(set) var collapsedSections: Set<HQSidebarSection> = []
     let resources: HQResourceStore
     private let client: HQWorkspaceServing
     private let queue = DispatchQueue(label: "gtmux.hq-workspace", qos: .userInitiated)
     private let actionQueue = DispatchQueue(label: "gtmux.hq-workspace.actions", qos: .userInitiated)
     private let deliveryQueue = DispatchQueue(label: "gtmux.hq-workspace.delivery", qos: .userInitiated)
+    private let sourcesQueue = DispatchQueue(label: "gtmux.hq-workspace.sources", qos: .utility)
+    private var lastSourcesAttempt: Date?
     private var timer: Timer?
     private var visible = false
     private var generation = 0
@@ -33,7 +39,7 @@ final class HQWorkspaceStore: ObservableObject {
     private var historyBefore: UInt64?
     private var retrySubmission: (selection: HQWorkspaceSelection, body: String, action: HQWorkspaceAction)?
     var readPhase: HQReadPhase {
-        let loaded = selection.scope == nil ? snapshot != nil : detail != nil
+        let loaded = selection.scope == nil ? snapshot != nil : detail != nil || currentMatter != nil
         return HQReadPhase(loaded: loaded, failed: error != nil && !loading)
     }
 
@@ -44,10 +50,17 @@ final class HQWorkspaceStore: ObservableObject {
 
     var currentMatter: HQMatter? {
         if case .matter(let id) = selection {
-            if let matter = detail?.matter, matter.id == id { return matter }
-            return snapshot?.matters.first { $0.id == id }
+            let saved = snapshot?.matters.first { $0.id == id }
+            if let matter = detail?.matter, matter.id == id {
+                return (saved?.revision ?? 0) > matter.revision ? saved : matter
+            }
+            return saved
         }
         return nil
+    }
+    func currentCandidate(for conversation: HQConversation) -> HQCandidate? {
+        guard sourcesKnown else { return nil }
+        return snapshot?.conversations.first { $0.id == conversation.id }
     }
     var canSend: Bool {
         if case .matter = selection, currentMatter == nil || currentMatter?.state == "closed" { return false }
@@ -133,11 +146,17 @@ final class HQWorkspaceStore: ObservableObject {
         let previousDetail = detail
         queue.async { [weak self] in
             let result = Result { () -> (HQWorkspaceSnapshot, HQWorkspaceDetail?) in
-                let snapshot = try service.snapshot()
+                let snapshot = try service.summary()
+                // Canonical questions do not wait for history rendering or optional
+                // session discovery. Publication remains bound to this selection.
+                DispatchQueue.main.async {
+                    guard let self, self.generation == token, self.selection == expected else { return }
+                    self.acceptSummary(snapshot)
+                }
                 let activityUnchanged =
                     expected != .activity || previousSnapshot?.activityRevision == snapshot.activityRevision
                 let unchanged =
-                    quiet && activityUnchanged && previousSnapshot?.revision == snapshot.revision
+                    quiet && snapshot.sourcesIncluded != false && activityUnchanged && previousSnapshot?.revision == snapshot.revision
                     && previousSnapshot?.sourceRevision == snapshot.sourceRevision && previousDetail != nil
                 let detail =
                     unchanged
@@ -154,11 +173,59 @@ final class HQWorkspaceStore: ObservableObject {
                 }
                 switch result {
                 case .success(let (snapshot, detail)):
-                    self.snapshot = snapshot
+                    self.acceptSummary(snapshot)
                     self.detail = self.mergeHistory(detail)
                     self.error = nil
                     self.refreshSerial += 1
                 case .failure(let failure): self.error = failure.localizedDescription
+                }
+            }
+        }
+    }
+
+    private func acceptSummary(_ value: HQWorkspaceSnapshot) {
+        var value = value
+        if value.sourcesIncluded == false {
+            value.conversations = snapshot?.conversations ?? []
+            value.references = snapshot?.references
+            value.supervisor = snapshot?.supervisor
+        } else {
+            sourcesKnown = true
+        }
+        snapshot = value
+        if value.sourcesIncluded == false { refreshSources() }
+    }
+
+    // Only source metadata is merged back. A slow old full snapshot must never
+    // roll back newer questions, answers, revisions or the user's local draft.
+    func refreshSources(force: Bool = false) {
+        guard !sourcesLoading, visible || force,
+              force || lastSourcesAttempt.map({ Date().timeIntervalSince($0) >= 60 }) ?? true else { return }
+        sourcesLoading = true
+        sourcesError = nil
+        lastSourcesAttempt = Date()
+        let service = client
+        sourcesQueue.async { [weak self] in
+            let result = Result {
+                let value = try service.snapshot()
+                guard value.sourcesIncluded != false else { throw HQWorkspaceError.command("Session source metadata unavailable") }
+                return value
+            }
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.sourcesLoading = false
+                switch result {
+                case .success(let sources):
+                    guard var current = self.snapshot else { return }
+                    current.conversations = sources.conversations
+                    current.references = sources.references
+                    current.supervisor = sources.supervisor
+                    self.snapshot = current
+                    self.sourcesKnown = true
+                    self.sourcesError = nil
+                case .failure:
+                    self.sourcesKnown = false
+                    self.sourcesError = L10n.shared.tr("Session details are temporarily unavailable. Your reply is unaffected.", "会话状态暂时无法读取，不影响答复。")
                 }
             }
         }
@@ -219,7 +286,10 @@ final class HQWorkspaceStore: ObservableObject {
     // Choosing an option only prepares a draft. Preserve existing user text;
     // the Send action still performs the normal durable submission.
     func prepareHumanReply(_ question: HQHumanInput, choice: String) {
-        guard let active = currentMatter?.userInput, active.id == question.id, active.answerId == nil else { return }
+        guard let active = currentMatter?.userInput, active.id == question.id, active.answerId == nil else {
+            error = L10n.shared.tr("This question has changed. Reload it before replying.", "问题已更新，请重新读取后答复。")
+            return
+        }
         let response = question.prompt + "\n" + choice
         guard draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || draft == preparedHumanDrafts[selection] else {
             error = L10n.shared.tr("Keep or send your current draft before choosing a reply.", "请先处理当前草稿，再选择答复。")
@@ -228,6 +298,14 @@ final class HQWorkspaceStore: ObservableObject {
         draft = response
         preparedHumanDrafts[selection] = response
         replyTargets[selection] = question.id
+        composerFocusSerial &+= 1
+    }
+
+    var preparedHumanChoice: String? {
+        guard let question = currentMatter?.userInput, replyTargets[selection] == question.id,
+              draft == preparedHumanDrafts[selection] else { return nil }
+        let prefix = question.prompt + "\n"
+        return draft.hasPrefix(prefix) ? String(draft.dropFirst(prefix.count)) : nil
     }
 
     func send() {
