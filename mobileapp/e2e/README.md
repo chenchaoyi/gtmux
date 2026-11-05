@@ -11,16 +11,35 @@ WebDriverAgent), so it works where raw synthetic clicks don't.
 
 ## Prerequisites
 
-- A booted iOS simulator. Default target: **iPhone 17 Pro / iOS 26.5**
-  (`e2e/setup/capabilities.ts`; override with `GTMUX_E2E_DEVICE` / `GTMUX_E2E_OS`
-  / `GTMUX_E2E_UDID`).
-- **Node 22.11+ within the 22.x line.** `package.json` requires at least 22.11;
+- A dedicated iOS simulator. With no UDID override, exactly one device must be
+  booted; setup reads its actual OS, name and UDID from `simctl`, rather than
+  assuming an installed runtime such as 26.5. Use `GTMUX_E2E_UDID` for parallel
+  runs or to select an available shutdown device. `GTMUX_E2E_DEVICE` (device name
+  or hardware type) and `GTMUX_E2E_OS` remain explicit constraints; a missing
+  runtime or conflicting override fails before Appium starts.
+- Real iPhone Duo testing requires its actual device type and iOS 27.1 or later.
+  A renamed ordinary iPhone is not Duo acceptance. The
+  [XCUITest Duo guide](https://appium.github.io/appium-xcuitest-driver/latest/guides/duo/)
+  requires driver 12.17.0 / WebDriverAgent 16.14.2 or later. Runtime installation
+  alone does not upgrade the automation driver or prove folding/display capture.
+- **Node 22.12+ within the 22.x line.** `package.json` requires at least 22.12;
   Node 20 does not satisfy it. The harness has a recorded Node 26 failure: webdriverio's request
   fails inside undici before it leaves the client (`UND_ERR_INVALID_ARG` on
   `POST /session`, with nothing in the Appium log but the `/status` probe). Use
   `nvm use 22` (or prefix `PATH`) for `test:e2e`. The toolchain is in devDependencies (`appium`,
-  `appium-xcuitest-driver`, `webdriverio`, `ts-jest`). One-time, idempotent:
-  `npx appium driver install xcuitest`.
+  `appium-xcuitest-driver`, `webdriverio`, `ts-jest`).
+- **Install the pinned driver in an isolated Appium home.** `npm ci` installs the
+  project packages; Appium loads its registered drivers from `APPIUM_HOME`, which
+  can still contain an older driver. Use the same exported value for installation,
+  `test:e2e` and any ad-hoc Appium server. Do not update another run's shared home:
+
+  ```sh
+  export APPIUM_HOME="$HOME/Library/Caches/gtmux-e2e/appium-xcuitest-12.17.0"
+  npx appium driver list --installed
+  # Once for this dedicated home, if xcuitest 12.17.0 is not registered:
+  npx appium driver install xcuitest@12.17.0
+  npx appium driver list --installed
+  ```
 - **Software keyboard for typing tests.** Set `GTMUX_E2E_SOFT_KEYBOARD=1` for the
   session; the harness sets `connectHardwareKeyboard:false` and
   `forceTurnOnSoftwareKeyboardSimulator:true`. Verify text entry after focusing

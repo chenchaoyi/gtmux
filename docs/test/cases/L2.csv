@@ -415,6 +415,8 @@ MAP-2fd3cafb008c,L2,reviewed implementation,mobileapp/e2e/fake-serve/backend-con
 MAP-01cd8c62d09e,L2,reviewed implementation,mobileapp/e2e/fake-serve/backend-contract.test.ts,53,reviewed-selector,RN client consumes original ordinals,False,CT-HTTP
 MAP-f2ed2637baa9,L2,reviewed implementation,mobileapp/e2e/fake-serve/server.ts,95,reviewed-selector,startFake,False,CT-HTTP
 MAP-f4f657590af5,L2,reviewed implementation,mobileapp/e2e/fake-serve/world.ts,111,reviewed-selector,export class World,False,CT-HTTP
+MAP-140c1fc806e3,L2,reviewed implementation,mobileapp/e2e/setup/global-setup-target.test.ts,36,reviewed-selector,the actual E2E setup passes the discovered runtime and UDID to WebDriver,False,"SIM272-010,SIM272-011"
+MAP-effb65cbf6a7,L2,reviewed implementation,mobileapp/e2e/setup/global-setup-target.test.ts,48,reviewed-selector,ambiguous default selection fails before reclaiming processes or touching app data,False,"SIM272-010,SIM272-011"
 LEG-81cfbfd439f8,L2,RN / mobile harness,mobileapp/src/screens/AccessHistoryControls.test.tsx,21,test,same-name device choices expose full IDs and preserve the other filters,False,legacy-not-retrospectively-reviewed
 LEG-d880c9025607,L2,RN / mobile harness,mobileapp/src/screens/AccessHistoryControls.test.tsx,31,test,a full ID outside the discovered choices can be entered in a native prompt,False,legacy-not-retrospectively-reviewed
 LEG-f08efac25751,L2,RN / mobile harness,mobileapp/src/screens/AccessHistoryHelp.test.tsx,6,test.each(),recording rules are clickable and explain actual external coverage (Chinese=%s),True,legacy-not-retrospectively-reviewed
