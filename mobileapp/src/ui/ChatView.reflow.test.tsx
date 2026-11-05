@@ -10,7 +10,7 @@ let mockWidth = 950;
 jest.mock('./windowMetrics', () => ({useWindowDimensions: () => ({width: mockWidth, height: 700, fontScale: 1, scale: 3})}));
 const agent = {pane_id: '%1', agent: 'Codex', status: 'working'} as Agent;
 const turns = [1, 2].map(n => ({prompt: `prompt ${n}`, response: `response ${n}`, time: ''} as TranscriptTurn));
-const view = () => <ChatView agent={agent} lines={[]} status="working" fontSize={13} pal={paletteFor('dark')} lang="en" turns={turns} loading={false} />;
+const view = (data = turns) => <ChatView agent={agent} lines={[]} status="working" fontSize={13} pal={paletteFor('dark')} lang="en" turns={data} loading={false} />;
 const layout = (y: number, height = 300) => ({nativeEvent: {layout: {x: 0, y, width: 400, height}}});
 const scroll = (y: number, gap: number) => ({nativeEvent: {contentOffset: {x: 0, y}, contentSize: {width: 400, height: y + 700 + gap}, layoutMeasurement: {width: 400, height: 700}}});
 
@@ -55,6 +55,29 @@ test('width reflow does not move a reader following the live tail', () => {
   act(() => tree.update(view()));
   act(() => turnView().props.onLayout(layout(400)));
   expect(scrollTo).not.toHaveBeenCalled();
+  act(() => tree.unmount());
+  scrollTo.mockRestore();
+});
+
+test('does not anchor to a turn removed from the mounted conversation', () => {
+  mockWidth = 950;
+  let tree!: renderer.ReactTestRenderer;
+  act(() => { tree = renderer.create(view(), {createNodeMock: () => ({scrollTo: jest.fn(), scrollToEnd: jest.fn()})}); });
+  const sv = () => tree.root.findAllByType(ScrollView)[0];
+  const scrollTo = jest.spyOn(sv().instance as ScrollView, 'scrollTo').mockImplementation(() => {});
+  const measured = () => tree.root.findAllByType(View).filter(node => node.props.testID === 'chat-turn-anchor');
+  act(() => {
+    measured()[0].props.onLayout(layout(150));
+    measured()[1].props.onLayout(layout(250));
+    sv().props.onScrollBeginDrag();
+    sv().props.onScroll(scroll(100, 1500));
+    sv().props.onScrollEndDrag();
+  });
+  act(() => tree.update(view([turns[1]])));
+  mockWidth = 466;
+  act(() => tree.update(view([turns[1]])));
+  act(() => measured()[0].props.onLayout(layout(550)));
+  expect(scrollTo).toHaveBeenLastCalledWith({y: 400, animated: false});
   act(() => tree.unmount());
   scrollTo.mockRestore();
 });

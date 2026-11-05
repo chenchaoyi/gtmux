@@ -256,6 +256,8 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
     reflowAnchor.current = null;
     if (reflowTimer.current !== null) clearTimeout(reflowTimer.current);
     if (stick.current || dragging.current || selectedText.current.size || !viewportHeight.current) return;
+    const mounted = new Set(shown.map((turn, index) => turnIdentity(turn, offset + index)));
+    for (const key of turnFrames.current.keys()) if (!mounted.has(key)) turnFrames.current.delete(key);
     const entries = [...turnFrames.current.entries()].sort((a, b) => a[1].y - b[1].y);
     const visible = entries.find(([, frame]) => frame.y >= offRef.current && frame.y < offRef.current + viewportHeight.current)
       ?? entries.find(([, frame]) => frame.y <= offRef.current && frame.y + frame.height > offRef.current);

@@ -707,7 +707,8 @@
     ],
     "selectors": [
       "preserves a visible history turn through width reflow until the user drags",
-      "width reflow does not move a reader following the live tail"
+      "width reflow does not move a reader following the live tail",
+      "does not anchor to a turn removed from the mounted conversation"
     ]
   }
 }

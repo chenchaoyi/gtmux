@@ -1062,6 +1062,7 @@ LEG-acfa5e4f58f6,L2,RN / mobile harness,mobileapp/src/ui/ChatView.markdown.test.
 LEG-a9597d6f59dc,L2,RN / mobile harness,mobileapp/src/ui/ChatView.markdown.test.tsx,53,test,"local references use the preview adapter, never an OS file URL or script",False,legacy-not-retrospectively-reviewed
 MAP-9334b7863ee5,L2,reviewed implementation,mobileapp/src/ui/ChatView.reflow.test.tsx,17,reviewed-selector,preserves a visible history turn through width reflow until the user drags,False,DUO-029
 MAP-a50b02308194,L2,reviewed implementation,mobileapp/src/ui/ChatView.reflow.test.tsx,46,reviewed-selector,width reflow does not move a reader following the live tail,False,DUO-029
+MAP-c0d2b29e39b1,L2,reviewed implementation,mobileapp/src/ui/ChatView.reflow.test.tsx,62,reviewed-selector,does not anchor to a turn removed from the mounted conversation,False,DUO-029
 LEG-24dc79367b63,L2,RN / mobile harness,mobileapp/src/ui/ChatView.seam.test.tsx,33,test,no seam under the session-start line when the break is on the first shown turn,False,legacy-not-retrospectively-reviewed
 LEG-203affee0cef,L2,RN / mobile harness,mobileapp/src/ui/ChatView.seam.test.tsx,37,test,a seam between two shown turns when the later one began a session,False,legacy-not-retrospectively-reviewed
 LEG-b2b057903399,L2,RN / mobile harness,mobileapp/src/ui/ChatView.seam.test.tsx,41,test,HQ history keeps Claude and Codex replies under their own agents,False,legacy-not-retrospectively-reviewed
