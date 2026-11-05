@@ -99,6 +99,23 @@ class TestDesignTests(unittest.TestCase):
         self.catalogue['files'].clear()
         self.mappings[self.path]['reason'] = 'Moved to explicit manual tools; capability retained'
         self.assertEqual(td.validate(self.root, self.catalogue, self.mappings, {self.plan_name: self.plan}, set()), [])
+        # A rename must account for the deleted name, even when Git would detect
+        # an exact rename and otherwise report only the destination.
+        (self.root / self.path).write_text('case A')
+        self.git('init', '-q')
+        (self.root / 'README').write_text('fixture')
+        base = self.commit()
+        self.plan['cases'][0]['planned_files'].append('renamed.test.ts')
+        self.plan['seal'] = td.seal(self.plan)
+        design = self.root / self.plan_name
+        design.parent.mkdir(parents=True)
+        design.write_text(json.dumps(self.plan))
+        self.commit()
+        (self.root / self.path).rename(self.root / 'renamed.test.ts')
+        head = self.commit()
+        errors = td.history_errors(self.root, base, head, {'renamed.test.ts': {'cases':['S-1'], 'selectors':['case A']}}, {self.plan_name:self.plan})
+        self.assertIn('Changed test lacks reviewed mapping: ' + self.path, errors)
+
 
     def test_ND_003_native_runner_uses_production_sources_and_propagates_failures(self):
         path = td.ROOT / 'mobileapp/scripts/check-native-documents.py'

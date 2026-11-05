@@ -102,7 +102,7 @@ def validate(root, catalogue, mappings, plans, paths):
 def history_errors(root, base, head, mappings, plans):
     if not all(re.fullmatch('[0-9a-f]{40}', x or '') for x in (base, head)):
         return ['PR history requires exact base and head commits']
-    changed = subprocess.check_output(['git', 'diff', '--name-only', '-z', base + '...' + head], cwd=root).decode().rstrip('\0').split('\0')
+    changed = subprocess.check_output(['git', 'diff', '--name-only', '--no-renames', '-z', base + '...' + head], cwd=root).decode().rstrip('\0').split('\0')
     old = json.loads(subprocess.check_output(['git', 'show', base + ':' + CATALOGUE], cwd=root)) if subprocess.run(['git', 'cat-file', '-e', base + ':' + CATALOGUE], cwd=root, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0 else {'files': {}}
     errors = []
     for path in changed:
