@@ -251,27 +251,6 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   // had never left the bottom.
   const stick = React.useRef(true);
   const dragging = React.useRef(false);
-  React.useLayoutEffect(() => {
-    if (lastWindowWidth.current === windowWidth) return;
-    const previousWidth = lastWindowWidth.current;
-    lastWindowWidth.current = windowWidth;
-    reflowAnchor.current = null;
-    if (reflowTimer.current !== null) clearTimeout(reflowTimer.current);
-    if (stick.current || dragging.current || selectedText.current.size || !viewportHeight.current) {
-      if (Debug.logNet) Debug.record({event: 'chat-reflow-skip', previousWidth, windowWidth, stick: stick.current, dragging: dragging.current, selecting: selectedText.current.size > 0, viewport: viewportHeight.current});
-      return;
-    }
-    const mounted = new Set(shown.map((turn, index) => turnIdentity(turn, offset + index)));
-    for (const key of turnFrames.current.keys()) if (!mounted.has(key)) turnFrames.current.delete(key);
-    const entries = [...turnFrames.current.entries()].sort((a, b) => a[1].y - b[1].y);
-    const visible = entries.find(([, frame]) => frame.y >= offRef.current && frame.y < offRef.current + viewportHeight.current)
-      ?? entries.find(([, frame]) => frame.y <= offRef.current && frame.y + frame.height > offRef.current);
-    if (Debug.logNet) Debug.record({event: 'chat-reflow-capture', previousWidth, windowWidth, offset: offRef.current, viewport: viewportHeight.current, candidates: entries.length, anchorY: visible?.[1].y ?? null});
-    if (visible) {
-      reflowAnchor.current = {key: visible[0], viewportY: visible[1].y - offRef.current};
-      reflowTimer.current = setTimeout(() => {reflowAnchor.current = null; reflowTimer.current = null;}, 2000);
-    }
-  }, [windowWidth]);
   const measureTurn = (key: string, y: number, height: number) => {
     turnFrames.current.set(key, {y, height});
     const anchor = reflowAnchor.current;
@@ -405,6 +384,27 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   // the per-turn state maps (turnOpen / promptOpen / timeLabels) stay correct.
   const {shown, hiddenHere} = windowedTurns(turns, windowSize);
   const offset = turns.length - shown.length;
+  React.useLayoutEffect(() => {
+    if (lastWindowWidth.current === windowWidth) return;
+    const previousWidth = lastWindowWidth.current;
+    lastWindowWidth.current = windowWidth;
+    reflowAnchor.current = null;
+    if (reflowTimer.current !== null) clearTimeout(reflowTimer.current);
+    if (stick.current || dragging.current || selectedText.current.size || !viewportHeight.current) {
+      if (Debug.logNet) Debug.record({event: 'chat-reflow-skip', previousWidth, windowWidth, stick: stick.current, dragging: dragging.current, selecting: selectedText.current.size > 0, viewport: viewportHeight.current});
+      return;
+    }
+    const mounted = new Set(shown.map((turn, index) => turnIdentity(turn, offset + index)));
+    for (const key of turnFrames.current.keys()) if (!mounted.has(key)) turnFrames.current.delete(key);
+    const entries = [...turnFrames.current.entries()].sort((a, b) => a[1].y - b[1].y);
+    const visible = entries.find(([, frame]) => frame.y >= offRef.current && frame.y < offRef.current + viewportHeight.current)
+      ?? entries.find(([, frame]) => frame.y <= offRef.current && frame.y + frame.height > offRef.current);
+    if (Debug.logNet) Debug.record({event: 'chat-reflow-capture', previousWidth, windowWidth, offset: offRef.current, viewport: viewportHeight.current, candidates: entries.length, anchorY: visible?.[1].y ?? null});
+    if (visible) {
+      reflowAnchor.current = {key: visible[0], viewportY: visible[1].y - offRef.current};
+      reflowTimer.current = setTimeout(() => {reflowAnchor.current = null; reflowTimer.current = null;}, 2000);
+    }
+  }, [windowWidth, shown, offset]);
   // The recorded acts, placed against the MOUNTED turns (an act older than the oldest
   // mounted turn waits with the history it belongs to).
   const placed = useMemo(() => placeActs(shown, acts ?? [], actsSince), [shown, acts, actsSince]);
