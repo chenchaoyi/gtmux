@@ -1,0 +1,167 @@
+{
+  "id": "ios272-local-simulator-20261105",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex disk-reuse worker (self-review; not independent/user approval)",
+    "date": "2026-11-05",
+    "decision": "Proceed with reviewed selector and consumer-boundary cases",
+    "notes": "Reviewed wrong-device risks, actual metadata origin, explicit overrides, unavailable/duplicate records, global boot ambiguity and process/app-data side effects. Initial uncommitted prototype tests were explored before reading the new design-first workflow; they were retained outside the implementation tree and removed from its test sources before this formal review. This does not claim that the exploratory prototype had prior approval. Commit this sealed record before reimplementing reviewed test sources. L1/L2 use synthetic metadata/mocked drivers and prove no native UI; real runtime install, boot, screenshot, app build and Duo interactions are separate evidence. Do not replace cloud27.1 matrix, old screenshot provenance, noReset, notifications or Keychain behavior."
+  },
+  "cases": [
+    {
+      "id": "SIM272-001",
+      "layer": "L1",
+      "description": "Derive one real booted iOS device and runtime after 26.5 removal",
+      "setup": "One booted Duo27.2, unavailable legacy26.5; synthetic simctl inventory",
+      "action": "Resolve without overrides",
+      "expected": "Return the actual Duo UDID/name/27.2, never historical defaults",
+      "planned_files": [
+        "mobileapp/e2e/setup/simulator-target.test.ts"
+      ],
+      "surfaces": [
+        "iOS simulator / phone and iPad test harness"
+      ]
+    },
+    {
+      "id": "SIM272-002",
+      "layer": "L1",
+      "description": "Preserve explicit UDID, OS and hardware-name constraints",
+      "setup": "Available shutdown Duo and another booted iOS device",
+      "action": "Resolve explicit UDID plus equivalent27.2.0 version and Duo hardware type",
+      "expected": "Pin requested real device; preserve compatible explicit OS/name values",
+      "planned_files": [
+        "mobileapp/e2e/setup/simulator-target.test.ts"
+      ],
+      "surfaces": [
+        "iOS simulator / phone and iPad test harness"
+      ]
+    },
+    {
+      "id": "SIM272-003",
+      "layer": "L1",
+      "description": "Retain an explicitly requested older installed runtime",
+      "setup": "Available26.5 ordinary phone and27.2 device",
+      "action": "Resolve26.5 by explicit real UDID/OS/device type",
+      "expected": "Use26.5 when genuinely available; migration is not a global support-policy change",
+      "planned_files": [
+        "mobileapp/e2e/setup/simulator-target.test.ts"
+      ],
+      "surfaces": [
+        "iOS simulator / phone and iPad test harness"
+      ]
+    },
+    {
+      "id": "SIM272-004",
+      "layer": "L1",
+      "description": "Fail a missing requested OS instead of silently upgrading",
+      "setup": "Only27.2 available;26.5 requested",
+      "action": "Resolve explicit26.5",
+      "expected": "Throw before Appium; no substitute runtime",
+      "planned_files": [
+        "mobileapp/e2e/setup/simulator-target.test.ts"
+      ],
+      "surfaces": [
+        "iOS simulator / phone and iPad test harness"
+      ]
+    },
+    {
+      "id": "SIM272-005",
+      "layer": "L1",
+      "description": "Do not equate a Duo-like device name with Duo hardware",
+      "setup": "Ordinary iPhone17Pro named duo-accept",
+      "action": "Constrain hardware type to iPhone Duo",
+      "expected": "Reject false Duo attribution",
+      "planned_files": [
+        "mobileapp/e2e/setup/simulator-target.test.ts"
+      ],
+      "surfaces": [
+        "iOS simulator / phone and iPad test harness"
+      ]
+    },
+    {
+      "id": "SIM272-006",
+      "layer": "L1",
+      "description": "Reject unknown or inconsistent explicit target identity",
+      "setup": "Synthetic real Duo record",
+      "action": "Use missing/padded UDID or conflicting ordinary-phone type",
+      "expected": "Reject; container helpers and driver cannot receive inconsistent UDIDs",
+      "planned_files": [
+        "mobileapp/e2e/setup/simulator-target.test.ts"
+      ],
+      "surfaces": [
+        "iOS simulator / phone and iPad test harness"
+      ]
+    },
+    {
+      "id": "SIM272-007",
+      "layer": "L1",
+      "description": "Require a UDID for multiple booted devices",
+      "setup": "Two booted devices; optional name filter",
+      "action": "Resolve without then with explicit UDID",
+      "expected": "Default rejects ambiguity globally; exact UDID succeeds",
+      "planned_files": [
+        "mobileapp/e2e/setup/simulator-target.test.ts"
+      ],
+      "surfaces": [
+        "iOS simulator / phone and iPad test harness"
+      ]
+    },
+    {
+      "id": "SIM272-008",
+      "layer": "L1",
+      "description": "Do not select a random stored device by default",
+      "setup": "Available shutdown iOS device; no booted target",
+      "action": "Resolve without UDID",
+      "expected": "Reject with explicit boot/UDID guidance; no device creation",
+      "planned_files": [
+        "mobileapp/e2e/setup/simulator-target.test.ts"
+      ],
+      "surfaces": [
+        "iOS simulator / phone and iPad test harness"
+      ]
+    },
+    {
+      "id": "SIM272-009",
+      "layer": "L1",
+      "description": "Fail unavailable and duplicate device records",
+      "setup": "Synthetic unavailable or duplicate UDID records",
+      "action": "Resolve exact requested UDID",
+      "expected": "Reject nonunique/unavailable records",
+      "planned_files": [
+        "mobileapp/e2e/setup/simulator-target.test.ts"
+      ],
+      "surfaces": [
+        "iOS simulator / phone and iPad test harness"
+      ]
+    },
+    {
+      "id": "SIM272-010",
+      "layer": "L2",
+      "description": "Wire actual E2E setup to the resolved target",
+      "setup": "Mock simctl, WebDriver, process and filesystem boundaries; no native service",
+      "action": "Run real globalSetup against sole Duo27.2 metadata",
+      "expected": "remote receives resolved UDID/OS/name and noReset:true",
+      "planned_files": [
+        "mobileapp/e2e/setup/global-setup-target.test.ts"
+      ],
+      "surfaces": [
+        "iOS simulator / phone and iPad test harness"
+      ]
+    },
+    {
+      "id": "SIM272-011",
+      "layer": "L2",
+      "description": "Reject ambiguous target before potentially destructive setup",
+      "setup": "Two booted devices; mock reclaim, app data, spawn and remote",
+      "action": "Run actual globalSetup",
+      "expected": "Reject before reclaimBefore, writeDebugFlags, Appium spawn or remote connection",
+      "planned_files": [
+        "mobileapp/e2e/setup/global-setup-target.test.ts"
+      ],
+      "surfaces": [
+        "iOS simulator / phone and iPad test harness"
+      ]
+    }
+  ],
+  "seal": "0c868796e1338ebbe35ec961956eb7ae49fbc3fd5c578b6a6bbb239f531eb4fd"
+}
