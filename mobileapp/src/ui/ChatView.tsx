@@ -45,6 +45,7 @@ import {ConsoleRow, placeActs} from './consoleActs';
 import {TestIds} from '../constants/testIds';
 import {CHAT_WINDOW, SessionReset, canLoadMore, earlierLabel, nextWindow, windowedTurns} from './chatWindow';
 import {edgeDistance} from './liveEdge';
+import {useWindowDimensions} from './windowMetrics';
 
 interface Props {
   client?: GtmuxClient;
@@ -191,6 +192,16 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({}); // per step-group
   const scrollRef = React.useRef<ScrollView>(null);
   const offRef = React.useRef(0);
+  const viewportHeight = React.useRef(0);
+  const turnFrames = React.useRef(new Map<string, {y: number; height: number}>());
+  const reflowAnchor = React.useRef<{key: string; viewportY: number} | null>(null);
+  const reflowTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const {width: windowWidth} = useWindowDimensions();
+  const lastWindowWidth = React.useRef(windowWidth);
+  React.useLayoutEffect(() => {
+    turnFrames.current.clear();
+    reflowAnchor.current = null;
+  }, [liveScope]);
   const frames = React.useRef<Set<number>>(new Set());
   const busyTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const scheduleFrame = (callback: () => void) => {
@@ -204,10 +215,12 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
     for (const id of frames.current) cancelAnimationFrame(id);
     frames.current.clear();
     if (busyTimer.current !== null) clearTimeout(busyTimer.current);
+    if (reflowTimer.current !== null) clearTimeout(reflowTimer.current);
   }, []);
 
   const selectedText = React.useRef(new Set<string>());
   const trackSelection = React.useCallback((id: string, active: boolean) => {
+    if (active) reflowAnchor.current = null;
     if (active) selectedText.current.add(id); else selectedText.current.delete(id);
   }, []);
   useAndroidTextSelection(active => trackSelection('android-system-selection', active));
@@ -237,11 +250,38 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   // had never left the bottom.
   const stick = React.useRef(true);
   const dragging = React.useRef(false);
+  React.useLayoutEffect(() => {
+    if (lastWindowWidth.current === windowWidth) return;
+    lastWindowWidth.current = windowWidth;
+    reflowAnchor.current = null;
+    if (reflowTimer.current !== null) clearTimeout(reflowTimer.current);
+    if (stick.current || dragging.current || selectedText.current.size || !viewportHeight.current) return;
+    const entries = [...turnFrames.current.entries()].sort((a, b) => a[1].y - b[1].y);
+    const visible = entries.find(([, frame]) => frame.y >= offRef.current && frame.y < offRef.current + viewportHeight.current)
+      ?? entries.find(([, frame]) => frame.y <= offRef.current && frame.y + frame.height > offRef.current);
+    if (visible) {
+      reflowAnchor.current = {key: visible[0], viewportY: visible[1].y - offRef.current};
+      reflowTimer.current = setTimeout(() => {reflowAnchor.current = null; reflowTimer.current = null;}, 2000);
+    }
+  }, [windowWidth]);
+  const measureTurn = (key: string, y: number, height: number) => {
+    turnFrames.current.set(key, {y, height});
+    const anchor = reflowAnchor.current;
+    if (!anchor || anchor.key !== key || stick.current || dragging.current || selectedText.current.size) return;
+    const target = Math.max(0, y - anchor.viewportY);
+    if (Math.abs(target - offRef.current) > 0.5) {
+      offRef.current = target;
+      scrollRef.current?.scrollTo({y: target, animated: false});
+    }
+    if (reflowTimer.current !== null) clearTimeout(reflowTimer.current);
+    reflowTimer.current = setTimeout(() => {reflowAnchor.current = null; reflowTimer.current = null;}, 500);
+  };
   // The last reported distance from the tail, so a re-publish (below) can repeat it.
   const gapRef = React.useRef(0);
   const onScroll = (e: any) => {
     const {contentOffset, contentSize, layoutMeasurement} = e.nativeEvent;
     offRef.current = contentOffset.y;
+    viewportHeight.current = layoutMeasurement.height;
     const gap = contentSize.height - contentOffset.y - layoutMeasurement.height;
     // What the host's chrome hears is the distance from the nearer edge it belongs at —
     // the tail, or the padding band at the top (ui/liveEdge.edgeDistance). Following the
@@ -426,6 +466,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
       onScroll={onScroll}
       maintainVisibleContentPosition={atBottom ? undefined : {minIndexForVisible: 0}}
       onScrollBeginDrag={() => {
+        reflowAnchor.current = null;
         dragging.current = true;
       }}
       onScrollEndDrag={() => {
@@ -546,7 +587,8 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
             })()
           : '';
         return (
-          <View key={turnKey} style={styles.turn}>
+          <View key={turnKey} testID="chat-turn-anchor" style={styles.turn}
+            onLayout={event => measureTurn(turnKey, event.nativeEvent.layout.y, event.nativeEvent.layout.height)}>
             {actRows(placed.before[w])}
             {!!seam && (
               <View testID="chat-session-seam" style={styles.seamRow}>

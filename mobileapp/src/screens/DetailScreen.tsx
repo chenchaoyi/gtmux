@@ -1227,7 +1227,7 @@ const styles = StyleSheet.create({
     paddingBottom: 6,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  back: {paddingRight: 6},
+  back: {minWidth: 44, minHeight: 44, justifyContent: 'center', paddingRight: 6},
   backText: {fontSize: 28, fontWeight: '300', lineHeight: 28},
   avatarWrap: {marginHorizontal: 8, marginLeft: 4},
   headerBadge: {position: 'absolute', right: -3, bottom: -3},

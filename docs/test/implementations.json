@@ -700,5 +700,14 @@
     "selectors": [
       "wire contract rejects type, permission, ordinal, omission and security-header drift"
     ]
+  },
+  "mobileapp/src/ui/ChatView.reflow.test.tsx": {
+    "cases": [
+      "DUO-029"
+    ],
+    "selectors": [
+      "preserves a visible history turn through width reflow until the user drags",
+      "width reflow does not move a reader following the live tail"
+    ]
   }
 }
