@@ -57718,6 +57718,97 @@
       ],
       "sha256": "49ac2114150d419318aac3909df2cdae53a516130b5283b952390626d7120cb5"
     },
+    "macapp/Tests/GtmuxBarTests/HQOverviewClarityTests.swift": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-b4f647d0a506",
+          "line": 44,
+          "kind": "reviewed-selector",
+          "name": "testCanonicalGroupsAndHiddenCountIgnoreEndedMergedStaleAndDuplicateRows",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MC-HQ-OVERVIEW-STATE,MC-HQ-OVERVIEW-BRIEF"
+        },
+        {
+          "id": "MAP-67fdd9c30f6e",
+          "line": 63,
+          "kind": "reviewed-selector",
+          "name": "testCurrentAssessmentTakesPriorityWithoutBorrowingReceiptOrMetadataTime",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MC-HQ-OVERVIEW-STATE,MC-HQ-OVERVIEW-BRIEF"
+        }
+      ],
+      "sha256": "7762a7adc56b442a3f9847aea6abba94556e3b079f5198827fb5e0a61add651d"
+    },
+    "macapp/Tests/GtmuxBarTests/HQOverviewMoreWindowTests.swift": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-80be9bb61842",
+          "line": 27,
+          "kind": "reviewed-selector",
+          "name": "testBottomRemainingControlOpensAllAndSelectsHiddenGoalWithoutSending",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "MC-HQ-OVERVIEW-MORE"
+        },
+        {
+          "id": "MAP-9a63f420f1ec",
+          "line": 98,
+          "kind": "reviewed-selector",
+          "name": "testFullyShownListHasNoRemainingControlAndUnknownRosterDoesNotSayIdle",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "MC-HQ-OVERVIEW-MORE"
+        }
+      ],
+      "sha256": "6b9678313b56e9d142eac9e64eda3bf820454858426bb977ad1f8e71418ec7af"
+    },
+    "internal/radar/codex_foreign_marker_gather_test.go": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-226227944e48",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestGatherDoesNotReviveAnotherSessionsOldMarkerFromWindowActivity",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "CORE-CODEX-FOREIGN-GATHER"
+        }
+      ],
+      "sha256": "d0abb6fe93bcb80b3f3742be1652c0377235718a5ad0254834dc9f98ac9d0cb7"
+    },
+    "internal/radar/codex_foreign_marker_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-8c62d9a14381",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "TestForeignActiveRequiresCurrentIdentityEndedTurnAndReadyFrame",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CORE-CODEX-FOREIGN-ACTIVE"
+        },
+        {
+          "id": "MAP-d562c313395b",
+          "line": 107,
+          "kind": "reviewed-selector",
+          "name": "TestForeignActiveProductionReaderRejectsLegacyResumeWithoutFrontend",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CORE-CODEX-FOREIGN-ACTIVE"
+        }
+      ],
+      "sha256": "c6ce22a2cfa598de96de46e10d9065324d94ca13ba94ef3fdf6491e37e54a71a"
+    },
     "mobileapp/src/screens/SplitShell.resize.test.tsx": {
       "layer": "L2",
       "stack": "reviewed implementation",

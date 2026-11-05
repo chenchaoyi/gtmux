@@ -35,7 +35,7 @@ enum HQMatterGroup: String, CaseIterable, Hashable, Identifiable {
         }
     }
     func matters(in snapshot: HQWorkspaceSnapshot?) -> [HQMatter] {
-        (snapshot?.matters ?? []).filter { Self.of($0) == self }.sorted {
+        (snapshot?.matters ?? []).filter { ($0.mergedInto ?? "").isEmpty && Self.of($0) == self }.sorted {
             $0.updatedAt == $1.updatedAt ? $0.id < $1.id : $0.updatedAt > $1.updatedAt
         }
     }

@@ -1,0 +1,4 @@
+- [x] Review synthetic ownership and runtime gather cases before implementation.
+- [x] Correct only the verified foreign-marker display contradiction.
+- [x] Verify legacy/start/approval and nonmutation boundaries.
+- [x] Synchronize bilingual documentation and current specs.

@@ -5,10 +5,14 @@ struct HQOverviewMatterRow: View {
     let item: HQOverviewItem
     let matter: HQMatter
     let workers: [HQCandidate]
+    var sourcesKnown = true
     let open: () -> Void
     var body: some View {
         Button(action: open) {
             VStack(alignment: .leading, spacing: 7) {
+                Text(matter.state == "open" ? l10n.tr("Not yet delivered", "待交付") : matter.stateLabel(l10n))
+                    .font(HQTypography.caption).foregroundStyle(.secondary)
+                    .accessibilityIdentifier("hq-overview-state-\(matter.id)")
                 HStack(alignment: .top, spacing: 8) {
                     Text(matter.title).font(HQTypography.rowTitle).foregroundStyle(.primary)
                         .lineLimit(2).multilineTextAlignment(.leading)
@@ -25,13 +29,13 @@ struct HQOverviewMatterRow: View {
                 } else if matter.state == "needs-input" {
                     Text(l10n.tr("HQ has not specified a current question. No action to take from this record yet.", "HQ 尚未写清当前问题，这条记录暂时无法操作。"))
                         .font(HQTypography.body).foregroundStyle(.secondary).lineLimit(3)
-                } else if let preview = item.preview {
+                } else if let preview = HQOverviewModel.currentPreview(item, matter: matter) {
                     Text(HQOverviewModel.snippet(preview.body))
                         .font(HQTypography.body).foregroundStyle(.secondary).lineLimit(3)
                         .multilineTextAlignment(.leading)
                     HStack(spacing: 5) {
                         Text(preview.kind == "assessment"
-                             ? l10n.tr("Saved assessment", "已存评估")
+                             ? l10n.tr("Current assessment", "当前进展")
                              : hqActivityTitle("hq-" + preview.kind, l10n))
                         if let at = preview.at, at > 0 {
                             Text("· " + HQChatTimeline.label(Date(timeIntervalSince1970: TimeInterval(at)), zh: l10n.lang == "zh"))
@@ -42,18 +46,37 @@ struct HQOverviewMatterRow: View {
                     Text(l10n.tr("Open the conversation for context.", "打开对话查看具体背景。"))
                         .font(HQTypography.body).foregroundStyle(.secondary)
                 }
-                if let worker = workers.first {
+                if sourcesKnown, let worker = workers.first {
                     HStack(spacing: 6) {
                         StatusBadge(status: Status(rawValue: worker.status) ?? .running, size: 12).accessibilityHidden(true)
                         Text(worker.name.isEmpty ? worker.agent : worker.name).lineLimit(1)
                         Text("· " + hqConversationStatus(worker.status, l10n)).fixedSize()
                         if workers.count > 1 { Text(l10n.tr("+\(workers.count - 1) more", "另 \(workers.count - 1) 个")) }
                     }.font(HQTypography.caption).foregroundStyle(.secondary).lineLimit(1)
+                } else if !sourcesKnown && matter.activeParticipants.contains(where: { $0.role == "execution" && ($0.until ?? 0) == 0 }) {
+                    Text(l10n.tr("Session status unavailable", "会话状态待刷新"))
+                        .font(HQTypography.caption).foregroundStyle(.secondary)
+                        .accessibilityIdentifier("hq-overview-source-\(matter.id)")
                 }
             }.frame(maxWidth: .infinity, alignment: .leading).padding(12).contentShape(Rectangle())
         }.buttonStyle(.plain)
             .accessibilityIdentifier("hq-overview-matter-\(matter.id)")
             .accessibilityLabel(matter.title + ", " + matter.stateLabel(l10n))
+            .accessibilityValue(accessibilitySummary)
+    }
+    private var accessibilitySummary: String {
+        var parts: [String] = []
+        if matter.state == "needs-input", let question = matter.userInput {
+            parts = [question.prompt, question.why]
+        } else if let preview = HQOverviewModel.currentPreview(item, matter: matter) {
+            parts = [preview.body]
+        }
+        if sourcesKnown, let worker = workers.first {
+            parts.append(worker.name + ": " + hqConversationStatus(worker.status, l10n))
+        } else if !sourcesKnown && matter.activeParticipants.contains(where: { $0.role == "execution" && ($0.until ?? 0) == 0 }) {
+            parts.append(l10n.tr("Session status unavailable", "会话状态待刷新"))
+        }
+        return parts.joined(separator: ". ")
     }
 }
 
@@ -79,7 +102,15 @@ struct HQOverviewMatterPicker: View {
                         Button { pick(matter.id) } label: {
                             HStack(spacing: 10) {
                                 StatusBadge(status: group.status, size: 16).accessibilityHidden(true)
-                                Text(matter.title).font(HQTypography.body).multilineTextAlignment(.leading)
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(matter.title).font(HQTypography.body).multilineTextAlignment(.leading)
+                                    Text(matter.state == "open" ? l10n.tr("Not yet delivered", "待交付") : matter.stateLabel(l10n))
+                                        .font(HQTypography.caption).foregroundStyle(.secondary)
+                                    if let assessment = matter.assessment, !assessment.isEmpty {
+                                        Text(HQOverviewModel.snippet(assessment)).font(HQTypography.caption)
+                                            .foregroundStyle(.secondary).lineLimit(2)
+                                    }
+                                }.frame(maxWidth: .infinity, alignment: .leading)
                                 Spacer(minLength: 8)
                                 Image(systemName: "chevron.right").foregroundStyle(.secondary)
                             }.padding(14).frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())

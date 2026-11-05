@@ -59,9 +59,28 @@ enum HQOverviewModel {
         case .awaitingHQ: records = snapshot?.overview?.awaitingHq
         default: records = snapshot?.overview?.following
         }
-        guard let records else { return explicit.prefix(3).map { HQOverviewItem(matterId: $0.id) } }
         let ids = Set(explicit.map(\.id))
-        return Array(records.filter { ids.contains($0.matterId) }.prefix(3))
+        var seen = Set<String>()
+        var items: [HQOverviewItem] = []
+        for item in records ?? [] where ids.contains(item.matterId) && seen.insert(item.matterId).inserted {
+            items.append(item)
+            if items.count == 3 { return items }
+        }
+        for matter in explicit where seen.insert(matter.id).inserted {
+            items.append(HQOverviewItem(matterId: matter.id))
+            if items.count == 3 { break }
+        }
+        return items
+    }
+    static func currentPreview(_ item: HQOverviewItem, matter: HQMatter) -> HQOverviewPreview? {
+        if let assessment = matter.assessment, !assessment.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            // Metadata edits also change UpdatedAt; it is not an assessment date.
+            return HQOverviewPreview(kind: "assessment", body: assessment)
+        }
+        return item.preview
+    }
+    static func remaining(_ group: HQMatterGroup, in snapshot: HQWorkspaceSnapshot?) -> Int {
+        max(0, group.matters(in: snapshot).count - Set(items(group, in: snapshot).map(\.matterId)).count)
     }
     static func workers(_ matter: HQMatter, in snapshot: HQWorkspaceSnapshot?) -> [HQCandidate] {
         let ids = Set(matter.activeParticipants.filter {
