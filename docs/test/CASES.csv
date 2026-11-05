@@ -2198,6 +2198,9 @@ LEG-0bef1403145f,L1,Go core / CLI / server,internal/radar/agents_test.go,303,Tes
 LEG-afdda8c6ed08,L1,Go core / CLI / server,internal/radar/agents_test.go,313,Test,TestCodexReadyComposerContradictsMisroutedWait,False,legacy-not-retrospectively-reviewed
 LEG-c040c8f50d05,L1,Go core / CLI / server,internal/radar/agents_test.go,326,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-2b72c37f7d8b,L1,Go core / CLI / server,internal/radar/agents_test.go,335,Test,TestCodexScreenWaitRequiresLiveApprovalMenu,False,legacy-not-retrospectively-reviewed
+MAP-226227944e48,L3,reviewed implementation,internal/radar/codex_foreign_marker_gather_test.go,14,reviewed-selector,TestGatherDoesNotReviveAnotherSessionsOldMarkerFromWindowActivity,False,CORE-CODEX-FOREIGN-GATHER
+MAP-8c62d9a14381,L2,reviewed implementation,internal/radar/codex_foreign_marker_test.go,15,reviewed-selector,TestForeignActiveRequiresCurrentIdentityEndedTurnAndReadyFrame,False,CORE-CODEX-FOREIGN-ACTIVE
+MAP-d562c313395b,L2,reviewed implementation,internal/radar/codex_foreign_marker_test.go,107,reviewed-selector,TestForeignActiveProductionReaderRejectsLegacyResumeWithoutFrontend,False,CORE-CODEX-FOREIGN-ACTIVE
 LEG-4d993460939a,L1,Go core / CLI / server,internal/radar/codex_idle_time_test.go,14,Test,TestCodexIdleMaintenanceDoesNotPromoteOldCompletion,False,legacy-not-retrospectively-reviewed
 LEG-2e444dfc9c9d,L1,Go core / CLI / server,internal/radar/codex_idle_time_test.go,20,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-2e729e7c14cd,L1,Go core / CLI / server,internal/radar/codex_idle_time_test.go,72,Test,TestCodexIdleTimeCorrectionRequiresSettledMatchingSession,False,legacy-not-retrospectively-reviewed

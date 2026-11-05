@@ -22,7 +22,8 @@ struct HQWorkspaceOverview: View {
                     if store.snapshot?.matters.isEmpty == true {
                         HQWorkspaceEmptyMatters(l10n: l10n, store: store)
                     } else {
-                        if bounds.size.width >= 780 {
+                        if bounds.size.width >= 780 && !HQMatterGroup.needsInput.matters(in: store.snapshot).isEmpty
+                            && !HQMatterGroup.following.matters(in: store.snapshot).isEmpty {
                             HStack(alignment: .top, spacing: 20) {
                                 matterSection(.needsInput)
                                 matterSection(.following)

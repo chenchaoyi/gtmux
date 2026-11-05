@@ -438,5 +438,22 @@
       "testBottomRemainingControlOpensAllAndSelectsHiddenGoalWithoutSending",
       "testFullyShownListHasNoRemainingControlAndUnknownRosterDoesNotSayIdle"
     ]
+  },
+  "internal/radar/codex_foreign_marker_test.go": {
+    "cases": [
+      "CORE-CODEX-FOREIGN-ACTIVE"
+    ],
+    "selectors": [
+      "TestForeignActiveRequiresCurrentIdentityEndedTurnAndReadyFrame",
+      "TestForeignActiveProductionReaderRejectsLegacyResumeWithoutFrontend"
+    ]
+  },
+  "internal/radar/codex_foreign_marker_gather_test.go": {
+    "cases": [
+      "CORE-CODEX-FOREIGN-GATHER"
+    ],
+    "selectors": [
+      "TestGatherDoesNotReviveAnotherSessionsOldMarkerFromWindowActivity"
+    ]
   }
 }
