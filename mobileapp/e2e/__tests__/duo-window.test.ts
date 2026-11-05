@@ -1,6 +1,6 @@
 import {getDriver} from '../setup/driver';
 import {launchWithFlags, settle} from '../setup/app';
-import {screenshot} from '../setup/screenshot';
+import {captureOnFailure, screenshot} from '../setup/screenshot';
 import {selectUnfoldedInnerDisplay} from '../setup/duoDisplay';
 import {startFake, Fake} from '../fake-serve/server';
 import {TestIds} from '../../src/constants/testIds';
@@ -67,9 +67,19 @@ it('keeps the selected session and a draft through simulator rotation', async ()
     await settle(1500);
     expect(await driver.getOrientation()).toBe(next);
     expect(await driver.$(`~${TestIds.composer.input}`).getValue()).toBe('Duo draft fixture');
-    expect(await driver.$(`~${TestIds.detail.modeChat}`).isExisting()).toBe(true);
-    expect(await selected.isDisplayed()).toBe(true);
+    // The chrome is intentionally hidden from accessibility while the keyboard
+    // is open. Close it to inspect the actual selected mode and session, then
+    // reopen the composer and verify the draft survived the round trip.
+    await driver.$(`~${TestIds.composer.keyboard}`).click();
+    await driver.$(`~${TestIds.detail.modeChat}`).waitForDisplayed({timeout: 10000});
+    await driver.$(`~${TestIds.detail.chat}`).waitForDisplayed({timeout: 10000});
+    await selected.waitForDisplayed({timeout: 10000});
+    await driver.$(`~${TestIds.composer.keyboard}`).click();
+    await driver.$(`~${TestIds.composer.input}`).waitForDisplayed({timeout: 10000});
+    expect(await driver.$(`~${TestIds.composer.input}`).getValue()).toBe('Duo draft fixture');
     await screenshot('duo-draft-after-rotation');
+  } catch (error) {
+    return captureOnFailure('duo-rotation-failed', error);
   } finally {
     await driver.setOrientation(original);
   }

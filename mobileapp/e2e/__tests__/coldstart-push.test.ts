@@ -179,7 +179,7 @@ run('a cold-start push is handled once', () => {
     inDetail(await note('A6-after-warm-tap-office13'), 'Office');
     await toServer('Home');
     onRadar(await note('A7-switch-home-after-warm'), 'Home');
-  }, 300000); // This multi-stage journey includes cold launch, four switches and a warm tap.
+  }, 420000); // The hosted journey includes cold launch, four switches and a warm tap.
 
   it('C: a launch with no notification switches where it is pointed', async () => {
     await launchWithFlags({GTMUX_DEBUG_LOG_NET: '1', GTMUX_DEBUG_RESET_SERVERS: '1', GTMUX_DEBUG_SERVERS: SEED()});

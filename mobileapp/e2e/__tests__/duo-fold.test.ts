@@ -1,7 +1,7 @@
 import {writeFileSync} from 'fs';
 import {join} from 'path';
 import {getArtifactsDir, getDriver} from '../setup/driver';
-import {launchWithFlags, typeInto} from '../setup/app';
+import {launchWithFlags, readDebugLog, typeInto} from '../setup/app';
 import {captureOnFailure, screenshot} from '../setup/screenshot';
 import {startFake, Fake} from '../fake-serve/server';
 import {TestIds} from '../../src/constants/testIds';
@@ -68,7 +68,7 @@ it('retains the selected conversation, reading position and draft across simulat
   const evidence: object[] = [];
   try {
     await launchWithFlags({GTMUX_DEBUG_PAIR_URL: fake.url, GTMUX_DEBUG_PAIR_TOKEN: fake.token,
-      GTMUX_DEBUG_NO_PUSH: '1', GTMUX_DEBUG_LANG: 'en'});
+      GTMUX_DEBUG_NO_PUSH: '1', GTMUX_DEBUG_LANG: 'en', GTMUX_DEBUG_LOG_NET: '1'});
     const initialSize = await posture(180, 'inner', evidence);
     const row = driver.$('~agent-row-%13');
     await row.waitForDisplayed({timeout: 25000});
@@ -137,6 +137,7 @@ it('retains the selected conversation, reading position and draft across simulat
     await captureOnFailure('duo-fold-failed', error);
   } finally {
     writeFileSync(join(getArtifactsDir(), 'duo-fold-postures.json'), JSON.stringify(evidence, null, 2));
+    writeFileSync(join(getArtifactsDir(), 'duo-fold-reflow-debug.json'), JSON.stringify(readDebugLog().filter(item => String(item.event).startsWith('chat-reflow-')), null, 2));
     await driver.execute('mobile: setSimulatedHingeAngle', {angle: 180}).catch(() => {});
     await driver.updateSettings({currentDisplayId: null}).catch(() => {});
   }

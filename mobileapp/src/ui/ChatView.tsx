@@ -46,6 +46,7 @@ import {TestIds} from '../constants/testIds';
 import {CHAT_WINDOW, SessionReset, canLoadMore, earlierLabel, nextWindow, windowedTurns} from './chatWindow';
 import {edgeDistance} from './liveEdge';
 import {useWindowDimensions} from './windowMetrics';
+import {Debug} from '../debug';
 
 interface Props {
   client?: GtmuxClient;
@@ -252,15 +253,20 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   const dragging = React.useRef(false);
   React.useLayoutEffect(() => {
     if (lastWindowWidth.current === windowWidth) return;
+    const previousWidth = lastWindowWidth.current;
     lastWindowWidth.current = windowWidth;
     reflowAnchor.current = null;
     if (reflowTimer.current !== null) clearTimeout(reflowTimer.current);
-    if (stick.current || dragging.current || selectedText.current.size || !viewportHeight.current) return;
+    if (stick.current || dragging.current || selectedText.current.size || !viewportHeight.current) {
+      if (Debug.logNet) Debug.record({event: 'chat-reflow-skip', previousWidth, windowWidth, stick: stick.current, dragging: dragging.current, selecting: selectedText.current.size > 0, viewport: viewportHeight.current});
+      return;
+    }
     const mounted = new Set(shown.map((turn, index) => turnIdentity(turn, offset + index)));
     for (const key of turnFrames.current.keys()) if (!mounted.has(key)) turnFrames.current.delete(key);
     const entries = [...turnFrames.current.entries()].sort((a, b) => a[1].y - b[1].y);
     const visible = entries.find(([, frame]) => frame.y >= offRef.current && frame.y < offRef.current + viewportHeight.current)
       ?? entries.find(([, frame]) => frame.y <= offRef.current && frame.y + frame.height > offRef.current);
+    if (Debug.logNet) Debug.record({event: 'chat-reflow-capture', previousWidth, windowWidth, offset: offRef.current, viewport: viewportHeight.current, candidates: entries.length, anchorY: visible?.[1].y ?? null});
     if (visible) {
       reflowAnchor.current = {key: visible[0], viewportY: visible[1].y - offRef.current};
       reflowTimer.current = setTimeout(() => {reflowAnchor.current = null; reflowTimer.current = null;}, 2000);
@@ -271,6 +277,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
     const anchor = reflowAnchor.current;
     if (!anchor || anchor.key !== key || stick.current || dragging.current || selectedText.current.size) return;
     const target = Math.max(0, y - anchor.viewportY);
+    if (Debug.logNet) Debug.record({event: 'chat-reflow-measure', y, target, previousOffset: offRef.current});
     if (Math.abs(target - offRef.current) > 0.5) {
       offRef.current = target;
       scrollRef.current?.scrollTo({y: target, animated: false});

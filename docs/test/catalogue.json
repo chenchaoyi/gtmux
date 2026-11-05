@@ -34644,7 +34644,7 @@
       ]
     },
     "mobileapp/e2e/__tests__/coldstart-push.test.ts": {
-      "sha256": "ddbf480ef9287c2d41f1f5c10c35023763400814c1c74e1f33cd874fc10b3df7",
+      "sha256": "65fbc7521a90e6ca82a56554e75898b31843385d9c25fe42a35dead637f2bf4c",
       "layer": "L4",
       "stack": "RN / mobile harness",
       "cases": [
@@ -58040,7 +58040,7 @@
           "design": "DUO-002"
         }
       ],
-      "sha256": "cfe26e45c48cfa752c385c70c888806c169bfc83dca151ee80e77b6e26c27733"
+      "sha256": "183963678ddd7149c6154d3968e75e10f42170e8479f87f0dcc404c1743628b1"
     },
     "mobileapp/e2e/fake-serve/request-diagnostics.test.ts": {
       "layer": "L1",
@@ -58180,7 +58180,7 @@
         },
         {
           "id": "MAP-e33509324cc9",
-          "line": 207,
+          "line": 208,
           "kind": "reviewed-selector",
           "name": "keeps Trace search and Diff open while the simulator folds and unfolds",
           "dynamic": false,
@@ -58189,7 +58189,7 @@
         },
         {
           "id": "MAP-7bb91bd4c1ab",
-          "line": 145,
+          "line": 146,
           "kind": "reviewed-selector",
           "name": "keeps the session entry usable at an accessibility text size on both panels",
           "dynamic": false,
@@ -58197,7 +58197,7 @@
           "design": "DUO-020,DUO-021,DUO-023"
         }
       ],
-      "sha256": "1c7ea410d5ab1dacf3a13be3b0ee6556e7e94367bd12d870b1691151802f8a80"
+      "sha256": "1d5773b6fca423bd025e3d8d0c59971e708ef59d742adf4f3416967f521e47db"
     },
     "mobileapp/src/usage/UsageWidgetBridge.initialLink.test.tsx": {
       "layer": "L1",
