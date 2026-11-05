@@ -499,7 +499,8 @@
       "DUO-005"
     ],
     "selectors": [
-      "opens the usage link on warm and cold scene entry"
+      "opens a warm usage link through the scene",
+      "opens a cold usage link through the scene"
     ]
   },
   "mobileapp/src/ui/CrossClientContract.test.tsx": {

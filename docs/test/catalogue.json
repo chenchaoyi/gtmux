@@ -57826,9 +57826,27 @@
           "dynamic": false,
           "layer": "L4",
           "design": "DUO-005"
+        },
+        {
+          "id": "MAP-ea87797d79bf",
+          "line": 33,
+          "kind": "reviewed-selector",
+          "name": "opens a warm usage link through the scene",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "DUO-005"
+        },
+        {
+          "id": "MAP-b7d75b280b9d",
+          "line": 49,
+          "kind": "reviewed-selector",
+          "name": "opens a cold usage link through the scene",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "DUO-005"
         }
       ],
-      "sha256": "7a36025736546ad13d6a0139545faeeff578b9dd6107dfc473498489eadaa290"
+      "sha256": "85c5a1d23516882fbd8fd824a49d5ef7370e20520b6be97e8b174c64385ac5a0"
     },
     "mobileapp/src/ui/windowMetrics.test.tsx": {
       "layer": "L2",

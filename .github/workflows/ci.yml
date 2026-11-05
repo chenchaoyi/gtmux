@@ -580,7 +580,7 @@ jobs:
             mobileapp/.e2e-artifacts/**/scene-action-*
             mobileapp/.e2e-artifacts/**/warm-action-*
             mobileapp/.e2e-artifacts/**/usage-link-*
-            mobileapp/.e2e-artifacts/**/fail-scene-warm-usage-link-failed.*
+            mobileapp/.e2e-artifacts/**/fail-scene-*-usage-link-failed.*
           include-hidden-files: true
           if-no-files-found: warn
           retention-days: 7
