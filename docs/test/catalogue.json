@@ -58131,7 +58131,7 @@
           "design": "DUO-004"
         }
       ],
-      "sha256": "13b461cf6c2343bc7c3d58f4446b9126c9b15fd332d17339802273b6fe9051bd"
+      "sha256": "ebcb5d43212b4286904075298d3ffe41f93fb402a176d23812f0289d1e16b674"
     },
     "mobileapp/src/ui/WorkspaceSurface.test.tsx": {
       "layer": "L1",
