@@ -514,7 +514,8 @@
       "a real anchored menu stays inside a new narrow root while RN width remains stale",
       "retained DiffModal follows its actual viewport layout and keeps wrap and close usable with stale RN dimensions",
       "real HQ inspector follows root resize and sidebar hiding while RN remains stale",
-      "real menu position and height follow a second root resize with nonzero safe-area edges"
+      "real menu position and height follow a second root resize with nonzero safe-area edges",
+      "real App keeps safe-area ownership while startup resolves from Splash to unpaired Servers"
     ]
   },
   "mobileapp/ios/tests/NotificationResponsePayloadChecks.swift": {

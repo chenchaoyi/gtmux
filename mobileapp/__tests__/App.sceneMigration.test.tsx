@@ -7,6 +7,8 @@ import App from '../App';
 import {Debug} from '../src/debug';
 import {HQView} from '../src/screens/HQScreen';
 import {RadarPanel} from '../src/screens/RadarPanel';
+import {ServersScreen} from '../src/screens/ServersScreen';
+import {Splash} from '../src/ui/Splash';
 import {WorkspaceProvider} from '../src/state/WorkspaceContext';
 import {AnchoredMenu} from '../src/ui/AnchoredMenu';
 import {DiffModal} from '../src/ui/DiffModal';
@@ -159,4 +161,20 @@ test('real menu position and height follow a second root resize with nonzero saf
   expect(resized.left).toBeGreaterThanOrEqual(18); expect(resized.left + resized.width).toBeLessThanOrEqual(278);
   expect(resized.top).toBe(200 - 4 - 100); expect(resized.top + 100).toBeLessThanOrEqual(292);
   expect(Dimensions.get('window').width).toBe(393);
+});
+
+
+test('real App keeps safe-area ownership while startup resolves from Splash to unpaired Servers', async () => {
+  let restore: (value: false) => void;
+  (Keychain.getGenericPassword as jest.Mock).mockReturnValue(new Promise<false>(resolve => {restore = resolve;}));
+  await act(async () => {tree = renderer.create(<App />);});
+  const splashProvider = tree!.root.findAllByType(SafeAreaProvider).find(n => n.props.children?.type === Splash);
+  expect(splashProvider).toBeDefined();
+  const host = tree!.root.findByType('NativeSafeAreaProvider' as never);
+  await act(async () => host.props.onInsetsChange({nativeEvent: scene(393, 852)}));
+  expect(tree!.root.findAll(n => n.props.testID === 'launch-mark').length).toBeGreaterThan(0);
+  await act(async () => restore!(false));
+  expect(tree!.root.findAllByType(SafeAreaProvider).some(n => n.props.children?.type === ServersScreen)).toBe(true);
+  expect(tree!.root.findAll(n => n.props.testID === 'servers-screen').length).toBeGreaterThan(0);
+  expect(tree!.root.findAllByType(RadarPanel)).toHaveLength(0);
 });

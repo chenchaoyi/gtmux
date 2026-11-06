@@ -57912,7 +57912,7 @@
       "cases": [
         {
           "id": "MAP-3a38d5e64c65",
-          "line": 64,
+          "line": 66,
           "kind": "reviewed-selector",
           "name": "main App keeps compact navigation props and a fresh root changes its real shell",
           "dynamic": false,
@@ -57921,7 +57921,7 @@
         },
         {
           "id": "MAP-da46dbb93884",
-          "line": 73,
+          "line": 75,
           "kind": "reviewed-selector",
           "name": "main App sidebar geometry follows the new root even when RN retains its old phone width",
           "dynamic": false,
@@ -57930,7 +57930,7 @@
         },
         {
           "id": "MAP-b8c8470d4954",
-          "line": 85,
+          "line": 87,
           "kind": "reviewed-selector",
           "name": "a real anchored menu stays inside a new narrow root while RN width remains stale",
           "dynamic": false,
@@ -57939,7 +57939,7 @@
         },
         {
           "id": "MAP-cfca889ee705",
-          "line": 104,
+          "line": 106,
           "kind": "reviewed-selector",
           "name": "retained DiffModal follows its actual viewport layout and keeps wrap and close usable with stale RN dimensions",
           "dynamic": false,
@@ -57948,7 +57948,7 @@
         },
         {
           "id": "MAP-9ba95c850181",
-          "line": 131,
+          "line": 133,
           "kind": "reviewed-selector",
           "name": "real HQ inspector follows root resize and sidebar hiding while RN remains stale",
           "dynamic": false,
@@ -57957,15 +57957,24 @@
         },
         {
           "id": "MAP-52fc7bb9aa93",
-          "line": 144,
+          "line": 146,
           "kind": "reviewed-selector",
           "name": "real menu position and height follow a second root resize with nonzero safe-area edges",
           "dynamic": false,
           "layer": "L2",
           "design": "SCENE-MIG-005"
+        },
+        {
+          "id": "MAP-4a4a0d853ca2",
+          "line": 167,
+          "kind": "reviewed-selector",
+          "name": "real App keeps safe-area ownership while startup resolves from Splash to unpaired Servers",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SCENE-MIG-005"
         }
       ],
-      "sha256": "92a971c8153735234234b6587cfdb2d03494b2650289deb3da33e94e80708961"
+      "sha256": "1da837019802de8ff53d97372eab41fe8691f83abb5bfe1f1b57436a7a890a09"
     },
     "mobileapp/__tests__/App.notificationBootstrap.test.tsx": {
       "layer": "L1",
