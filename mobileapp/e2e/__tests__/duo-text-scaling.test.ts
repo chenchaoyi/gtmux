@@ -28,8 +28,11 @@ async function verifyNativeTextLayout(panel: string, evidence: object[]) {
   const views = await driver.$$('-ios predicate string:type == "XCUIElementTypeTextView" AND value != nil AND value != ""');
   const frames: Array<TextRect & {identifier: string}> = [];
   for (const view of views) {
-    if (await view.isDisplayed()) frames.push({...await driver.getElementRect(await view.elementId),
-      identifier: await view.getAttribute('name')});
+    if (await view.isDisplayed()) {
+      const identifier = await view.getAttribute('name');
+      if (!identifier) throw new Error('visible native text has no diagnostic identifier');
+      frames.push({...await driver.getElementRect(await view.elementId), identifier});
+    }
   }
   expect(frames.length).toBeGreaterThanOrEqual(3);
   let last = '', stable = 0;
