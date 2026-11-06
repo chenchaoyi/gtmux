@@ -236,7 +236,7 @@ class SceneExecutionTests(unittest.TestCase):
                     cleanup.assert_called_once()
                     self.assertEqual(json.loads((paths['evidence'] / 'result.json').read_text())['testExit'], status)
 
-    def controlled_execute(self, toolchain='27', event_name='pull_request', status=0, fault=None):
+    def controlled_execute(self, toolchain='27', event_name='pull_request', status=0, fault=None, cleanup_raw=None):
         # Execute the production coordinator, Runner and run_unit. Only external
         # Git/native/SDK/Jest commands become tiny real children, not a Runner mock.
         root = self.root / f'execute-{len(list(self.root.iterdir()))}'; root.mkdir()
@@ -250,18 +250,45 @@ class SceneExecutionTests(unittest.TestCase):
                'RUNNER_TEMP': str(root), 'GITHUB_RUN_ID': '1', 'GITHUB_RUN_ATTEMPT': '1', 'GITHUB_JOB': 'test'}
         builds, readable = [], []
         real_popen, real_write, real_record = scene.subprocess.Popen, scene.write_once, scene.file_record
+        real_stat = Path.stat
+        post_wait, stat_faults = set(), []
+        cleanup_fault = fault in {'last-shutdown', 'cleanup-data', 'query-exit', 'query-timeout', 'query-io', 'cleanup-exception'}
         def child(args, **kwargs):
             script = 'pass'
             if args[0] == 'git':
                 readable.append(args[-1][:40])
                 if fault == 'unreadable-base' and args[-1].startswith(B): script = 'raise SystemExit(1)'
             if args[0] == 'npm': script = f'raise SystemExit({status})'
-            if fault == 'last-shutdown':
+            if cleanup_fault:
                 if args[:3] == ['xcrun', 'simctl', 'shutdown'] and '/ipad/' in kwargs['stdout'].name and kwargs['stdout'].name.endswith('-shutdown-after.log'):
                     script = 'raise SystemExit(7)'
                 if args[:4] == ['xcrun', 'simctl', 'list', '-j']:
-                    script = 'print(\'{"devices":{"runtime":[{"udid":"pad","state":"Booted"}]}}\')'
-            return real_popen([sys.executable, '-c', script], **kwargs)
+                    if fault in {'query-timeout', 'query-io'}:
+                        if fault == 'query-timeout': raise subprocess.TimeoutExpired(args, 1)
+                        raise OSError('injected query IO')
+                    if fault == 'query-exit': script = 'raise SystemExit(7)'
+                    else: script = 'print(' + repr(cleanup_raw if fault == 'cleanup-data' else '{"devices":{"runtime":[{"udid":"pad","state":"Booted"}]}}') + ')'
+            process = real_popen([sys.executable, '-c', script], **kwargs)
+            if fault == 'wait-stat' or cleanup_fault:
+                # Fast, actual completed child; Runner still calls the real wait.
+                process.wait(timeout=5)
+            if args[0] == 'npm' and fault == 'wait-stat':
+                original_wait = process.wait
+                def wait(*a, **k):
+                    code = original_wait(*a, **k)
+                    post_wait.add(kwargs['stdout'].name)
+                    return code
+                process.wait = wait
+            return process
+        def stat(path, *a, **k):
+            if str(path) in post_wait:
+                post_wait.remove(str(path)); stat_faults.append(str(path))
+                raise OSError('injected post-wait log.stat')
+            return real_stat(path, *a, **k)
+        actual_cleanup = scene.cleanup_unit
+        def cleanup(*a):
+            if fault == 'cleanup-exception' and '/ipad' in str(a[1]): raise AttributeError('injected cleanup boundary')
+            return actual_cleanup(*a) if cleanup_fault else []
         def archive(repository, sha, destination):
             (destination / 'mobileapp').mkdir(parents=True)
             for name in ('package-lock.json', 'package.json', 'Gemfile.lock'): (destination / 'mobileapp' / name).write_text('{}')
@@ -283,17 +310,64 @@ class SceneExecutionTests(unittest.TestCase):
             if fault == 'artifact' and Path(path).name.endswith('-journey.log'): raise OSError('injected artifact read/hash')
             return real_record(path, relative_to)
         stderr = io.StringIO()
-        with mock.patch.object(scene.subprocess, 'Popen', side_effect=child), \
+        with mock.patch.object(Path, 'stat', new=stat), mock.patch.object(scene.subprocess, 'Popen', side_effect=child), \
                 mock.patch.object(scene, 'preflight', return_value={'devices': {'phone': {'udid': 'fixture', 'name': 'phone'}, 'ipad': {'udid': 'pad', 'name': 'pad'}}}), \
                 mock.patch.object(scene, 'archive_source', side_effect=archive), mock.patch.object(scene, 'prepare_source', side_effect=prepare), \
                 mock.patch.object(scene, 'build_product', side_effect=build), mock.patch.object(scene, 'prepare_work', side_effect=work), \
                 mock.patch.object(scene, 'parse_jest', return_value=[]), mock.patch.object(scene, 'collect_identity', return_value={}), \
-                mock.patch.object(scene, 'cleanup_unit', side_effect=scene.cleanup_unit if fault == 'last-shutdown' else lambda *args: []), mock.patch.object(scene, 'write_once', side_effect=write), \
+                mock.patch.object(scene, 'cleanup_unit', side_effect=cleanup), mock.patch.object(scene, 'write_once', side_effect=write), \
                 mock.patch.object(scene, 'file_record', side_effect=record), contextlib.redirect_stderr(stderr), contextlib.redirect_stdout(io.StringIO()):
             code = scene.execute(toolchain, repo, env)
+        if fault == 'wait-stat': self.assertEqual(len(stat_faults), 4)
         job = root / 'scene-migration/1-1-test'
         payload = json.loads((job / 'acceptance.json').read_text()) if (job / 'acceptance.json').exists() else None
         return code, builds, readable, payload, stderr.getvalue()
+
+    def test_real_runner_wait_then_stat_failure_preserves_unit_and_aggregate(self):
+        for status in (0, 7):
+            with self.subTest(status=status):
+                code, _, _, payload, _ = self.controlled_execute(status=status, fault='wait-stat')
+                self.assertEqual(code, 1); self.assertEqual(len(payload['results']), 4)
+                for result in payload['results']:
+                    self.assertEqual((result['testExit'], result['state']), (status, 'completed'))
+                    self.assertTrue(any('post-wait log.stat' in p for p in result['problems']))
+
+    def test_cleanup_bad_query_shapes_and_errors_keep_final_executed_unit(self):
+        malformed = [None, [], {'devices': None}, {'devices': []}, {'devices': {'r': None}},
+                     {'devices': {'r': {}}}, {'devices': {'r': [None]}}, {'devices': {'r': [1]}},
+                     {'devices': {'r': [{}]}}, {'devices': {'r': [{'udid': 1, 'state': 'Shutdown'}]}},
+                     {'devices': {'r': [{'udid': 'pad', 'state': None}]}}]
+        cases = [('cleanup-data', json.dumps(x), False) for x in malformed]
+        cases += [('cleanup-data', '{', False), ('query-exit', None, False), ('query-timeout', None, False),
+                  ('query-io', None, False), ('cleanup-exception', None, False),
+                  ('cleanup-data', json.dumps({'devices': {'r': [{'udid': 'pad', 'state': 'Shutdown'}]}}), True),
+                  ('last-shutdown', None, False)]
+        for status in (0, 7):
+            for fault, raw, allowed in cases:
+                with self.subTest(status=status, fault=fault, raw=raw):
+                    code, _, _, payload, _ = self.controlled_execute(status=status, fault=fault, cleanup_raw=raw)
+                    self.assertEqual(code, 1)  # missing synthetic case identity also keeps acceptance red
+                    self.assertEqual(len(payload['results']), 4)
+                    final = payload['results'][-1]
+                    self.assertEqual((final['testExit'], final['state']), (status, 'completed'))
+                    self.assertEqual(any('cleanup' in p for p in final['problems']), not allowed)
+                    self.assertFalse(any('cleanup' in p for row in payload['results'][:-1] for p in row['problems']))
+
+    def test_runner_distinguishes_not_started_from_started_evidence_failure(self):
+        runner = scene.Runner(self.root, dict(os.environ))
+        with mock.patch.object(scene.subprocess, 'Popen', side_effect=OSError('spawn unavailable')):
+            with self.assertRaises(scene.CommandFailure) as stopped:
+                runner.command(['unused'], cwd=self.root, label='not-started', timeout=1)
+        self.assertEqual((stopped.exception.outcome['state'], stopped.exception.outcome['exit']), ('not-started', None))
+        real_stat = Path.stat
+        def stat(path, *a, **k):
+            if path.name.endswith('-started.log'): raise OSError('polling evidence unreadable')
+            return real_stat(path, *a, **k)
+        with mock.patch.object(Path, 'stat', new=stat):
+            with self.assertRaises(scene.CommandFailure) as stopped:
+                runner.command([sys.executable, '-c', 'import time; time.sleep(5)'], cwd=self.root, label='started', timeout=1)
+        self.assertEqual(stopped.exception.outcome['state'], 'error')
+        self.assertEqual(stopped.exception.outcome['exit'], -9)
 
     def test_executor_builds_only_expected_sources_but_checks_real_base(self):
         for chain, event, wanted in [('26', 'pull_request', [P, B]), ('27', 'pull_request', [P]),

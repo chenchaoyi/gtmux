@@ -272,35 +272,47 @@ class Runner:
         self.sequence += 1
         stem = self.root / f'{self.sequence:03d}-{label}'
         log = stem.with_suffix('.log')
-        started = now()
-        state, code = 'completed', None
-        with log.open('xb') as output:
-            child = subprocess.Popen([str(x) for x in args], cwd=cwd, env=self.env,
-                                     stdout=output, stderr=subprocess.STDOUT, start_new_session=True)
-            deadline = time.monotonic() + timeout
-            try:
-                while child.poll() is None:
-                    if time.monotonic() >= deadline or log.stat().st_size > limit:
-                        state = 'timeout' if time.monotonic() >= deadline else 'output-limit'
+        outcome = {'command': [str(x) for x in args], 'cwd': str(cwd), 'startedAt': now(),
+                   'state': 'not-started', 'exit': None, 'log': str(log)}
+        problems = []
+        state = 'completed'
+        try:
+            with log.open('xb') as output:
+                child = subprocess.Popen([str(x) for x in args], cwd=cwd, env=self.env,
+                                         stdout=output, stderr=subprocess.STDOUT, start_new_session=True)
+                outcome['state'] = 'running'
+                deadline = time.monotonic() + timeout
+                try:
+                    while child.poll() is None:
+                        if time.monotonic() >= deadline or log.stat().st_size > limit:
+                            state = 'timeout' if time.monotonic() >= deadline else 'output-limit'
+                            os.killpg(child.pid, signal.SIGKILL)
+                            break
+                        time.sleep(.1)
+                    code = child.wait(timeout=10)
+                    # Record execution before any fallible log/diagnostic work.
+                    outcome.update(state=state, exit=code)
+                    outcome['completedAt'] = now()
+                    if state == 'completed' and log.stat().st_size > limit: state = 'output-limit'
+                    if state == 'completed' and time.monotonic() > deadline: state = 'timeout'
+                    outcome['state'] = state
+                finally:
+                    if child.poll() is None:
                         os.killpg(child.pid, signal.SIGKILL)
-                        break
-                    time.sleep(.1)
-                code = child.wait(timeout=10)
-                if state == 'completed' and log.stat().st_size > limit: state = 'output-limit'
-                if state == 'completed' and time.monotonic() > deadline: state = 'timeout'
-            finally:
-                if child.poll() is None:
-                    os.killpg(child.pid, signal.SIGKILL)
-                    child.wait(timeout=10)
-        outcome = {'command': [str(x) for x in args], 'cwd': str(cwd),
-                   'startedAt': started, 'completedAt': now(), 'state': state, 'exit': code, 'log': str(log)}
+                        cleanup_code = child.wait(timeout=10)
+                        if outcome['exit'] is None: outcome['exit'] = cleanup_code
+        except (OSError, RuntimeError, subprocess.SubprocessError) as error:
+            problems.append(f'{label}: execution/log evidence: {error}')
+            if outcome['state'] == 'running': outcome['state'] = 'error'
+        outcome.setdefault('completedAt', now())
+        outcome['problems'] = problems
         try:
             write_once(stem.with_suffix('.json'), outcome)
         except OSError as error:
-            raise CommandFailure(f'{label}: command evidence: {error}', outcome) from error
-        if state != 'completed' or (check and code != 0):
-            raise CommandFailure(f'{label}: {state}, exit={code}; see {log}', outcome)
-        return code, log
+            problems.append(f'{label}: command evidence: {error}')
+        if problems or outcome['state'] != 'completed' or (check and outcome['exit'] != 0):
+            raise CommandFailure('; '.join(problems) or f"{label}: {outcome['state']}, exit={outcome['exit']}; see {log}", outcome)
+        return outcome['exit'], log
 
     def text(self, args, *, cwd, label, timeout=30, check=True):
         code, log = self.command(args, cwd=cwd, label=label, timeout=timeout, check=check, limit=4 * 1024 * 1024)
@@ -525,7 +537,17 @@ def cleanup_unit(runner, evidence, derived, udid):
             if remaining <= 0: raise RuntimeError('shutdown verification exceeded the 30s cleanup budget')
             _, raw = runner.text(['xcrun', 'simctl', 'list', '-j', 'devices'], cwd=evidence,
                                  label='shutdown-state', timeout=remaining)
-            matches = [d for group in json.loads(raw)['devices'].values() for d in group if d.get('udid') == udid]
+            data = json.loads(raw)
+            if not isinstance(data, dict) or not isinstance(data.get('devices'), dict):
+                raise ValueError('device query requires an object with a devices object')
+            matches = []
+            for group in data['devices'].values():
+                if not isinstance(group, list): raise ValueError('device query group is not an array')
+                for device in group:
+                    if (not isinstance(device, dict) or not isinstance(device.get('udid'), str)
+                            or not device['udid'] or not isinstance(device.get('state'), str) or not device['state']):
+                        raise ValueError('device query record lacks a string UDID/state')
+                    if device['udid'] == udid: matches.append(device)
             if len(matches) != 1 or matches[0].get('state') != 'Shutdown':
                 raise ValueError(f'shutdown exit={code}; exact device is not verified Shutdown')
     except (OSError, ValueError, KeyError, TypeError, RuntimeError, subprocess.SubprocessError) as error:
@@ -578,7 +600,11 @@ def run_unit(unit, paths, harness_source, dependencies, product, preflight_data,
     except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError) as error:
         problems.append(str(error))
     finally:
-        problems.extend(cleanup_unit(runner, evidence, derived, device['udid']))
+        try:
+            problems.extend(cleanup_unit(runner, evidence, derived, device['udid']))
+        except Exception as error:
+            # Cleanup is evidence, never authority to erase an executed unit.
+            problems.append(f'cleanup error: {type(error).__name__}: {error}')
     result['problems'] = problems
     try:
         for path in sorted(evidence.rglob('*')):
