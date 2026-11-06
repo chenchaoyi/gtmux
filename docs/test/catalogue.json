@@ -54845,7 +54845,7 @@
       ]
     },
     "scripts/ci_test.py": {
-      "sha256": "5aaddb38f483816e911f18381b41f6aefc49af040c3ce64c55cf8e80aace2582",
+      "sha256": "f218603de3c9e6fab11e02130ced8f3154d008279b8587dc45389abf7d99cad3",
       "layer": "G",
       "stack": "CI / tooling",
       "cases": [
@@ -54915,7 +54915,7 @@
         },
         {
           "id": "LEG-2514a184abce",
-          "line": 151,
+          "line": 152,
           "kind": "unittest",
           "name": "test_android_package_is_built_once_and_both_devices_use_its_output",
           "dynamic": false,
@@ -54923,7 +54923,7 @@
         },
         {
           "id": "LEG-76200ceafcf2",
-          "line": 171,
+          "line": 172,
           "kind": "unittest",
           "name": "test_docs_can_skip_heavy_jobs_but_require_quality",
           "dynamic": false,
@@ -54931,7 +54931,7 @@
         },
         {
           "id": "LEG-ecfb4bf818ba",
-          "line": 177,
+          "line": 178,
           "kind": "unittest",
           "name": "test_missing_skipped_failed_cancelled_required_job_never_green",
           "dynamic": true,
@@ -54939,7 +54939,7 @@
         },
         {
           "id": "LEG-252965413bf3",
-          "line": 186,
+          "line": 187,
           "kind": "unittest",
           "name": "test_bad_plans_or_unselected_failure_are_rejected",
           "dynamic": false,
@@ -54947,7 +54947,7 @@
         },
         {
           "id": "LEG-8a6a845c7484",
-          "line": 198,
+          "line": 199,
           "kind": "unittest",
           "name": "test_mac_host_keeps_both_architectures_and_native_checks",
           "dynamic": false,
@@ -54955,7 +54955,7 @@
         },
         {
           "id": "LEG-28f4d1551b14",
-          "line": 215,
+          "line": 216,
           "kind": "unittest",
           "name": "test_ios_delivery_pins_the_same_arm_toolchain_and_keeps_protection",
           "dynamic": false,
@@ -58491,6 +58491,22 @@
         }
       ],
       "sha256": "3658dae0520533325e552ffb2423ed5f67db7b9555773881ab1720612e3bca7d"
+    },
+    "mobileapp/e2e/__tests__/duo-voiceover.test.ts": {
+      "layer": "L4",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-5c8eef2b06d5",
+          "line": 17,
+          "kind": "reviewed-selector",
+          "name": "speaks the selected session and tools on both Duo panels with VoiceOver",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "DUO-037"
+        }
+      ],
+      "sha256": "36eb451b93a81b0f90762c5652bb8628988ea813a2116e826234eb9d2158412c"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2"

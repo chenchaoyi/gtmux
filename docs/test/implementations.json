@@ -785,5 +785,13 @@
       "the detail screen hands the chat the chrome height and its slide",
       "entering and leaving full screen keeps the transform array valid for Android Fabric"
     ]
+  },
+  "mobileapp/e2e/__tests__/duo-voiceover.test.ts": {
+    "cases": [
+      "DUO-037"
+    ],
+    "selectors": [
+      "speaks the selected session and tools on both Duo panels with VoiceOver"
+    ]
   }
 }
