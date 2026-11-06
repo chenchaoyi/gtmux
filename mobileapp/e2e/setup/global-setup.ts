@@ -1,5 +1,5 @@
 import {spawn, ChildProcess} from 'child_process';
-import {existsSync, mkdirSync, symlinkSync, unlinkSync, writeFileSync} from 'fs';
+import {closeSync, existsSync, mkdirSync, openSync, symlinkSync, unlinkSync, writeFileSync} from 'fs';
 import {join, resolve} from 'path';
 import {remote} from 'webdriverio';
 import {alertMode, appiumPort, appiumServerTimeoutArgs, appiumServerUrl, iosCapabilities, sessionConnectionOptions} from './capabilities';
@@ -60,11 +60,18 @@ export default async function globalSetup(): Promise<void> {
   const appiumLogPath = join(runDir, 'appium.log');
   // eslint-disable-next-line no-console
   console.log(`[e2e] Spawning Appium server, log → ${appiumLogPath}`);
-  const server: ChildProcess = spawn(
-    'npx',
-    ['appium', '--port', String(appiumPort), '--log', appiumLogPath, '--log-level', 'info', ...appiumServerTimeoutArgs()],
-    {cwd: appRoot, detached: true, stdio: 'ignore'},
-  );
+  // Appium may fail before its own --log file is created; retain that early output.
+  const startupLog = openSync(join(runDir, 'appium-startup.log'), 'a');
+  let server: ChildProcess;
+  try {
+    server = spawn(
+      'npx',
+      ['appium', '--port', String(appiumPort), '--log', appiumLogPath, '--log-level', 'info', ...appiumServerTimeoutArgs()],
+      {cwd: appRoot, detached: true, stdio: ['ignore', startupLog, startupLog]},
+    );
+  } finally {
+    closeSync(startupLog);
+  }
   if (server.pid == null) throw new Error('[e2e] Appium failed to spawn (no PID)');
   writeFileSync(join(runDir, 'server.pid'), String(server.pid), 'utf8');
   globalThis.__E2E_SERVER_PID__ = server.pid;

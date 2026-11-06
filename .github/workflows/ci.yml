@@ -648,6 +648,7 @@ jobs:
             mobileapp/.e2e-artifacts/**/requests-*
             mobileapp/.e2e-artifacts/**/c-*
             mobileapp/.e2e-artifacts/**/cold-summary.txt
+            mobileapp/.e2e-artifacts/**/appium-startup.log
           include-hidden-files: true
           if-no-files-found: warn
           retention-days: 7
