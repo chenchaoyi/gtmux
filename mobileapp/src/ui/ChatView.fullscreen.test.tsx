@@ -34,6 +34,11 @@ test.each([undefined, 59, 0])('chat collapse control clears the safe top %s and 
       expect(style.borderWidth ?? 0).toBe(0);
     }
     const control = () => tree.root.findAll(n => n.props.testID === TestIds.detail.collapseAll && typeof n.props.onPress === 'function')[0];
+    const controlStyle = StyleSheet.flatten(control().props.style);
+    expect(controlStyle.backgroundColor).toBe('#141416');
+    expect(controlStyle.borderWidth).toBeGreaterThan(0);
+    expect(controlStyle.minWidth).toBeGreaterThanOrEqual(44);
+    expect(controlStyle.minHeight).toBeGreaterThanOrEqual(44);
     expect(control().props.accessibilityLabel).toBe('Collapse all');
     expect(control().findByType(Text).props.children).toBe('Collapse all');
     expect(control().findByType(Text).props.maxFontSizeMultiplier).toBe(1.35);

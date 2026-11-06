@@ -375,7 +375,7 @@ LEG-d831ea83c3d9,G,RN / mobile harness,mobileapp/src/screens/PairingScreen.demo.
 LEG-6477e6b0e4c1,G,RN / mobile harness,mobileapp/src/screens/draftIdentity.test.ts,6,test.each(),%s scopes and remounts the live input target,True,legacy-not-retrospectively-reviewed
 LEG-8a47ddaa776b,G,RN / mobile harness,mobileapp/src/screens/serverModeReaders.test.ts,12,test,a screen that reads server mode follows serverModeRev,False,legacy-not-retrospectively-reviewed
 LEG-63d236ec0387,G,RN / mobile harness,mobileapp/src/screens/shellDrift.test.ts,38,it,lets only the shell read the window to choose a layout,False,legacy-not-retrospectively-reviewed
-LEG-7d9d736a19c0,G,RN / mobile harness,mobileapp/src/ui/ChatView.fullscreen.test.tsx,76,test,the detail screen hands the chat the chrome height and its slide,False,legacy-not-retrospectively-reviewed
+LEG-7d9d736a19c0,G,RN / mobile harness,mobileapp/src/ui/ChatView.fullscreen.test.tsx,81,test,the detail screen hands the chat the chrome height and its slide,False,legacy-not-retrospectively-reviewed
 LEG-246bb7d75d82,G,RN / mobile harness,mobileapp/src/ui/SettingsRow.test.tsx,77,test,Needs you and Finished are inset under Push notifications,False,legacy-not-retrospectively-reviewed
 LEG-9912d4966a87,G,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,43,test,takes no palette,False,legacy-not-retrospectively-reviewed
 LEG-b0713c20fdb5,G,RN / mobile harness,mobileapp/src/ui/paneLines.test.ts,55,test,parseAnsi is called only where the renderer owns the normalization,False,legacy-not-retrospectively-reviewed

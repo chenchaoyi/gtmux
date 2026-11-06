@@ -771,7 +771,10 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
 const styles = StyleSheet.create({
   root: {flex: 1, backgroundColor: '#0D0D0F'},
   avatarButton: {width: 44, height: 44, alignItems: 'center', justifyContent: 'center'},
-  globalFold: {minWidth: 44, minHeight: 44, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center'},
+  // A floating action must supply its own contrast over conversation glyphs.
+  globalFold: {minWidth: 44, minHeight: 44, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#141416', borderColor: '#54545C', borderWidth: 1, borderRadius: 10,
+    shadowColor: '#000', shadowOffset: {width: 0, height: 2}, shadowOpacity: 0.3, shadowRadius: 4, elevation: 3},
   body: {flex: 1, backgroundColor: '#0D0D0F'},
   content: {padding: 12, gap: 10},
   center: {paddingVertical: 24, alignItems: 'center'},

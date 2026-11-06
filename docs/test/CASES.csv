@@ -5250,9 +5250,9 @@ LEG-067d2f8bfcb3,L2,RN / mobile harness,mobileapp/src/ui/ChatView.follow.test.ts
 LEG-dc47da40588f,L2,RN / mobile harness,mobileapp/src/ui/ChatView.follow.test.tsx,105,test,the host revealing its chrome does not count as leaving the tail,False,legacy-not-retrospectively-reviewed
 MAP-ab3b1d2a54f1,L2,RN / mobile harness,mobileapp/src/ui/ChatView.follow.test.tsx,45,reviewed-selector,history anchoring follows the reader rather than disturbing the live tail,False,DUO-027
 LEG-a33ed9aea65f,L2,RN / mobile harness,mobileapp/src/ui/ChatView.fullscreen.test.tsx,11,test.each(),chat collapse control clears the safe top %s and still toggles,True,legacy-not-retrospectively-reviewed
-LEG-16b8800ca466,L2,RN / mobile harness,mobileapp/src/ui/ChatView.fullscreen.test.tsx,56,test,out of full screen the collapse bar sits under the chrome and moves with it,False,legacy-not-retrospectively-reviewed
-LEG-7d9d736a19c0,G,RN / mobile harness,mobileapp/src/ui/ChatView.fullscreen.test.tsx,76,test,the detail screen hands the chat the chrome height and its slide,False,legacy-not-retrospectively-reviewed
-LEG-11abce5bfe4f,L2,RN / mobile harness,mobileapp/src/ui/ChatView.fullscreen.test.tsx,85,test,entering and leaving full screen keeps the transform array valid for Android Fabric,False,legacy-not-retrospectively-reviewed
+LEG-16b8800ca466,L2,RN / mobile harness,mobileapp/src/ui/ChatView.fullscreen.test.tsx,61,test,out of full screen the collapse bar sits under the chrome and moves with it,False,legacy-not-retrospectively-reviewed
+LEG-7d9d736a19c0,G,RN / mobile harness,mobileapp/src/ui/ChatView.fullscreen.test.tsx,81,test,the detail screen hands the chat the chrome height and its slide,False,legacy-not-retrospectively-reviewed
+LEG-11abce5bfe4f,L2,RN / mobile harness,mobileapp/src/ui/ChatView.fullscreen.test.tsx,90,test,entering and leaving full screen keeps the transform array valid for Android Fabric,False,legacy-not-retrospectively-reviewed
 LEG-da97057cf6cc,L2,RN / mobile harness,mobileapp/src/ui/ChatView.history.test.tsx,33,test,"draws the seam where a later session began, with its clock and command",False,legacy-not-retrospectively-reviewed
 LEG-9949b8acfc09,L2,RN / mobile harness,mobileapp/src/ui/ChatView.history.test.tsx,40,test,"offers the earlier session while the serve says one exists, and asks for it on tap",False,legacy-not-retrospectively-reviewed
 LEG-dadf2965627f,L2,RN / mobile harness,mobileapp/src/ui/ChatView.history.test.tsx,51,test,"draws the recorded acts between the turns, and folds a run",False,legacy-not-retrospectively-reviewed

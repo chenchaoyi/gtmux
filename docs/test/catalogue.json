@@ -47358,7 +47358,7 @@
       ]
     },
     "mobileapp/src/ui/ChatView.fullscreen.test.tsx": {
-      "sha256": "d3e50c88687ec66bcb892fee77a1e906dc9c85c2aeac2cefefc0f93f43e0dafc",
+      "sha256": "fda59e3ea3909a41aaf28403f7aec1adbb86c42f473f3b51e9d9f59231992132",
       "layer": "L2",
       "stack": "RN / mobile harness",
       "cases": [
@@ -47372,7 +47372,7 @@
         },
         {
           "id": "LEG-16b8800ca466",
-          "line": 56,
+          "line": 61,
           "kind": "test",
           "name": "out of full screen the collapse bar sits under the chrome and moves with it",
           "dynamic": false,
@@ -47380,7 +47380,7 @@
         },
         {
           "id": "LEG-7d9d736a19c0",
-          "line": 76,
+          "line": 81,
           "kind": "test",
           "name": "the detail screen hands the chat the chrome height and its slide",
           "dynamic": false,
@@ -47388,7 +47388,7 @@
         },
         {
           "id": "LEG-11abce5bfe4f",
-          "line": 85,
+          "line": 90,
           "kind": "test",
           "name": "entering and leaving full screen keeps the transform array valid for Android Fabric",
           "dynamic": false,

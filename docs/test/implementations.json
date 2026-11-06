@@ -774,5 +774,16 @@
     "selectors": [
       "keeps the session entry usable at an accessibility text size on both panels"
     ]
+  },
+  "mobileapp/src/ui/ChatView.fullscreen.test.tsx": {
+    "cases": [
+      "DUO-036"
+    ],
+    "selectors": [
+      "chat collapse control clears the safe top %s and still toggles",
+      "out of full screen the collapse bar sits under the chrome and moves with it",
+      "the detail screen hands the chat the chrome height and its slide",
+      "entering and leaving full screen keeps the transform array valid for Android Fabric"
+    ]
   }
 }
