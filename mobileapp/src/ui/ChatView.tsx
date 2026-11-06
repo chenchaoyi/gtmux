@@ -196,6 +196,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   const viewportHeight = React.useRef(0);
   const turnFrames = React.useRef(new Map<string, {y: number; height: number}>());
   const promptOffsets = React.useRef(new Map<string, number>());
+  const readingSnapshot = React.useRef<{key: string; viewportY: number; prompt: boolean} | null>(null);
   const reflowAnchor = React.useRef<{key: string; viewportY: number; prompt: boolean; deadline: number} | null>(null);
   const reflowTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const {width: windowWidth} = useWindowDimensions();
@@ -203,6 +204,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   React.useLayoutEffect(() => {
     turnFrames.current.clear();
     promptOffsets.current.clear();
+    readingSnapshot.current = null;
     reflowAnchor.current = null;
   }, [liveScope]);
   const frames = React.useRef<Set<number>>(new Set());
@@ -398,6 +400,24 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   // the per-turn state maps (turnOpen / promptOpen / timeLabels) stay correct.
   const {shown, hiddenHere} = windowedTurns(turns, windowSize);
   const offset = turns.length - shown.length;
+  const visibleReading = (scrollY: number, height: number) => {
+    const entries = [...turnFrames.current.entries()].sort((a, b) => a[1].y - b[1].y);
+    const prompt = entries.map(([key, frame]) => ({key, y: frame.y + (promptOffsets.current.get(key) ?? 0), measured: promptOffsets.current.has(key)}))
+      .find(item => item.measured && item.y >= scrollY && item.y < scrollY + height);
+    if (prompt) return {key: prompt.key, viewportY: prompt.y - scrollY, prompt: true};
+    const turn = entries.find(([, frame]) => frame.y >= scrollY && frame.y < scrollY + height)
+      ?? entries.find(([, frame]) => frame.y <= scrollY && frame.y + frame.height > scrollY);
+    return turn ? {key: turn[0], viewportY: turn[1].y - scrollY, prompt: false} : null;
+  };
+  const rememberReading = (event: any) => {
+    if (stick.current || selectedText.current.size) {readingSnapshot.current = null; return;}
+    const y = event?.nativeEvent?.contentOffset?.y ?? offRef.current;
+    const height = event?.nativeEvent?.layoutMeasurement?.height ?? viewportHeight.current;
+    if (height > 0) {
+      readingSnapshot.current = visibleReading(y, height);
+      if (Debug.logNet) Debug.record({event: 'chat-reflow-snapshot', offset: y, viewport: height, anchorIndex: readingSnapshot.current ? shown.findIndex((turn, index) => turnIdentity(turn, offset + index) === readingSnapshot.current?.key) : -1, viewportY: readingSnapshot.current?.viewportY ?? null});
+    }
+  };
   React.useLayoutEffect(() => {
     if (lastWindowWidth.current === windowWidth) return;
     const previousWidth = lastWindowWidth.current;
@@ -411,16 +431,12 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
     const mounted = new Set(shown.map((turn, index) => turnIdentity(turn, offset + index)));
     for (const key of turnFrames.current.keys()) if (!mounted.has(key)) {turnFrames.current.delete(key); promptOffsets.current.delete(key);}
     const entries = [...turnFrames.current.entries()].sort((a, b) => a[1].y - b[1].y);
-    const prompt = entries.map(([key, frame]) => ({key, y: frame.y + (promptOffsets.current.get(key) ?? 0), measured: promptOffsets.current.has(key)}))
-      .find(item => item.measured && item.y >= offRef.current && item.y < offRef.current + viewportHeight.current);
-    const visible = prompt ? {key: prompt.key, y: prompt.y, prompt: true} : (() => {
-      const turn = entries.find(([, frame]) => frame.y >= offRef.current && frame.y < offRef.current + viewportHeight.current)
-        ?? entries.find(([, frame]) => frame.y <= offRef.current && frame.y + frame.height > offRef.current);
-      return turn ? {key: turn[0], y: turn[1].y, prompt: false} : null;
-    })();
+    const snapshot = readingSnapshot.current;
+    const reading = snapshot && mounted.has(snapshot.key) ? snapshot : visibleReading(offRef.current, viewportHeight.current);
+    const visible = reading ? {key: reading.key, y: offRef.current + reading.viewportY, prompt: reading.prompt} : null;
     if (Debug.logNet) Debug.record({event: 'chat-reflow-capture', previousWidth, windowWidth, offset: offRef.current, viewport: viewportHeight.current, candidates: entries.length, anchorY: visible?.y ?? null, prompt: visible?.prompt ?? false, anchorIndex: visible ? shown.findIndex((turn, index) => turnIdentity(turn, offset + index) === visible.key) : -1, frames: entries.map(([key, frame]) => ({index: shown.findIndex((turn, index) => turnIdentity(turn, offset + index) === key), y: frame.y, height: frame.height, promptY: promptOffsets.current.get(key) ?? null}))});
     if (visible) {
-      reflowAnchor.current = {key: visible.key, viewportY: visible.y - offRef.current, prompt: visible.prompt, deadline: Date.now() + 8000};
+      reflowAnchor.current = {key: visible.key, viewportY: reading!.viewportY, prompt: visible.prompt, deadline: Date.now() + 8000};
       reflowTimer.current = setTimeout(() => {reflowAnchor.current = null; reflowTimer.current = null;}, 8000);
     }
   }, [windowWidth, shown, offset]);
@@ -495,15 +511,18 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
       maintainVisibleContentPosition={atBottom ? undefined : {minIndexForVisible: 0}}
       onScrollBeginDrag={() => {
         reflowAnchor.current = null;
+        readingSnapshot.current = null;
         dragging.current = true;
       }}
-      onScrollEndDrag={() => {
+      onScrollEndDrag={event => {
         // Momentum needs no special case any more: the chrome floats, so a fold during
         // the glide moves nothing that the glide is also moving.
         dragging.current = false;
+        rememberReading(event);
         onLiveEdge?.(gapRef.current); // no other scroll event will carry the answer
       }}
-      onMomentumScrollEnd={() => {
+      onMomentumScrollEnd={event => {
+        rememberReading(event);
         onLiveEdge?.(gapRef.current);
       }}
       onLayout={onBodyLayout}

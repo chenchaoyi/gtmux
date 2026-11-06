@@ -1069,6 +1069,7 @@ LEG-62da14bfdb16,L2,RN / mobile harness,mobileapp/src/ui/ChatView.markdown.test.
 LEG-acfa5e4f58f6,L2,RN / mobile harness,mobileapp/src/ui/ChatView.markdown.test.tsx,44,test,share opens the system sheet with full reply; tool-only turns have no actions,False,legacy-not-retrospectively-reviewed
 LEG-a9597d6f59dc,L2,RN / mobile harness,mobileapp/src/ui/ChatView.markdown.test.tsx,53,test,"local references use the preview adapter, never an OS file URL or script",False,legacy-not-retrospectively-reviewed
 MAP-176942c2cdcb,L2,reviewed implementation,mobileapp/src/ui/ChatView.promptReflow.test.tsx,16,reviewed-selector,anchors the first visible prompt while the earlier turn is partly visible and layout settles,False,DUO-033
+MAP-d11e2d00c91e,L2,reviewed implementation,mobileapp/src/ui/ChatView.promptReflow.test.tsx,45,reviewed-selector,keeps the user reading anchor when a late system scroll races a resize and replaces it after a new drag,False,DUO-033
 MAP-9334b7863ee5,L2,reviewed implementation,mobileapp/src/ui/ChatView.reflow.test.tsx,17,reviewed-selector,preserves a visible history turn through width reflow until the user drags,False,DUO-029
 MAP-a50b02308194,L2,reviewed implementation,mobileapp/src/ui/ChatView.reflow.test.tsx,46,reviewed-selector,width reflow does not move a reader following the live tail,False,DUO-029
 MAP-c0d2b29e39b1,L2,reviewed implementation,mobileapp/src/ui/ChatView.reflow.test.tsx,62,reviewed-selector,does not anchor to a turn removed from the mounted conversation,False,DUO-029

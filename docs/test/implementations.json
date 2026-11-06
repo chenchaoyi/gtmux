@@ -754,7 +754,8 @@
       "DUO-033"
     ],
     "selectors": [
-      "anchors the first visible prompt while the earlier turn is partly visible and layout settles"
+      "anchors the first visible prompt while the earlier turn is partly visible and layout settles",
+      "keeps the user reading anchor when a late system scroll races a resize and replaces it after a new drag"
     ]
   }
 }
