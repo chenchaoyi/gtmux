@@ -45,6 +45,8 @@ import {ConsoleRow, placeActs} from './consoleActs';
 import {TestIds} from '../constants/testIds';
 import {CHAT_WINDOW, SessionReset, canLoadMore, earlierLabel, nextWindow, windowedTurns} from './chatWindow';
 import {edgeDistance} from './liveEdge';
+import {useWindowDimensions} from './windowMetrics';
+import {Debug} from '../debug';
 
 interface Props {
   client?: GtmuxClient;
@@ -191,6 +193,20 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({}); // per step-group
   const scrollRef = React.useRef<ScrollView>(null);
   const offRef = React.useRef(0);
+  const viewportHeight = React.useRef(0);
+  const turnFrames = React.useRef(new Map<string, {y: number; height: number}>());
+  const promptOffsets = React.useRef(new Map<string, number>());
+  const readingSnapshot = React.useRef<{key: string; viewportY: number; prompt: boolean} | null>(null);
+  const reflowAnchor = React.useRef<{key: string; viewportY: number; prompt: boolean; deadline: number} | null>(null);
+  const reflowTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const {width: windowWidth} = useWindowDimensions();
+  const lastWindowWidth = React.useRef(windowWidth);
+  React.useLayoutEffect(() => {
+    turnFrames.current.clear();
+    promptOffsets.current.clear();
+    readingSnapshot.current = null;
+    reflowAnchor.current = null;
+  }, [liveScope]);
   const frames = React.useRef<Set<number>>(new Set());
   const busyTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const scheduleFrame = (callback: () => void) => {
@@ -204,10 +220,12 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
     for (const id of frames.current) cancelAnimationFrame(id);
     frames.current.clear();
     if (busyTimer.current !== null) clearTimeout(busyTimer.current);
+    if (reflowTimer.current !== null) clearTimeout(reflowTimer.current);
   }, []);
 
   const selectedText = React.useRef(new Set<string>());
   const trackSelection = React.useCallback((id: string, active: boolean) => {
+    if (active) reflowAnchor.current = null;
     if (active) selectedText.current.add(id); else selectedText.current.delete(id);
   }, []);
   useAndroidTextSelection(active => trackSelection('android-system-selection', active));
@@ -237,11 +255,37 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   // had never left the bottom.
   const stick = React.useRef(true);
   const dragging = React.useRef(false);
+  const restoreAnchor = (key: string) => {
+    const anchor = reflowAnchor.current;
+    if (!anchor || anchor.key !== key || stick.current || dragging.current || selectedText.current.size) return;
+    const frame = turnFrames.current.get(key);
+    const promptY = promptOffsets.current.get(key);
+    if (!frame || (anchor.prompt && promptY === undefined)) return;
+    const y = frame.y + (anchor.prompt ? promptY! : 0);
+    const target = Math.max(0, y - anchor.viewportY);
+    if (Debug.logNet) Debug.record({event: 'chat-reflow-measure', y, target, previousOffset: offRef.current, prompt: anchor.prompt});
+    if (Math.abs(target - offRef.current) > 0.5) {
+      offRef.current = target;
+      scrollRef.current?.scrollTo({y: target, animated: false});
+    }
+    if (reflowTimer.current !== null) clearTimeout(reflowTimer.current);
+    const remaining = Math.max(0, anchor.deadline - Date.now());
+    reflowTimer.current = setTimeout(() => {reflowAnchor.current = null; reflowTimer.current = null;}, Math.min(2000, remaining));
+  };
+  const measureTurn = (key: string, y: number, height: number) => {
+    turnFrames.current.set(key, {y, height});
+    restoreAnchor(key);
+  };
+  const measurePrompt = (key: string, y: number) => {
+    promptOffsets.current.set(key, y);
+    restoreAnchor(key);
+  };
   // The last reported distance from the tail, so a re-publish (below) can repeat it.
   const gapRef = React.useRef(0);
   const onScroll = (e: any) => {
     const {contentOffset, contentSize, layoutMeasurement} = e.nativeEvent;
     offRef.current = contentOffset.y;
+    viewportHeight.current = layoutMeasurement.height;
     const gap = contentSize.height - contentOffset.y - layoutMeasurement.height;
     // What the host's chrome hears is the distance from the nearer edge it belongs at —
     // the tail, or the padding band at the top (ui/liveEdge.edgeDistance). Following the
@@ -356,6 +400,46 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   // the per-turn state maps (turnOpen / promptOpen / timeLabels) stay correct.
   const {shown, hiddenHere} = windowedTurns(turns, windowSize);
   const offset = turns.length - shown.length;
+  const visibleReading = (scrollY: number, height: number) => {
+    const entries = [...turnFrames.current.entries()].sort((a, b) => a[1].y - b[1].y);
+    const prompt = entries.map(([key, frame]) => ({key, y: frame.y + (promptOffsets.current.get(key) ?? 0), measured: promptOffsets.current.has(key)}))
+      .find(item => item.measured && item.y >= scrollY && item.y < scrollY + height);
+    if (prompt) return {key: prompt.key, viewportY: prompt.y - scrollY, prompt: true};
+    const turn = entries.find(([, frame]) => frame.y >= scrollY && frame.y < scrollY + height)
+      ?? entries.find(([, frame]) => frame.y <= scrollY && frame.y + frame.height > scrollY);
+    return turn ? {key: turn[0], viewportY: turn[1].y - scrollY, prompt: false} : null;
+  };
+  const rememberReading = (event: any) => {
+    if (stick.current || selectedText.current.size) {readingSnapshot.current = null; return;}
+    const y = event?.nativeEvent?.contentOffset?.y ?? offRef.current;
+    const height = event?.nativeEvent?.layoutMeasurement?.height ?? viewportHeight.current;
+    if (height > 0) {
+      readingSnapshot.current = visibleReading(y, height);
+      if (Debug.logNet) Debug.record({event: 'chat-reflow-snapshot', offset: y, viewport: height, anchorIndex: readingSnapshot.current ? shown.findIndex((turn, index) => turnIdentity(turn, offset + index) === readingSnapshot.current?.key) : -1, viewportY: readingSnapshot.current?.viewportY ?? null});
+    }
+  };
+  React.useLayoutEffect(() => {
+    if (lastWindowWidth.current === windowWidth) return;
+    const previousWidth = lastWindowWidth.current;
+    lastWindowWidth.current = windowWidth;
+    reflowAnchor.current = null;
+    if (reflowTimer.current !== null) clearTimeout(reflowTimer.current);
+    if (stick.current || dragging.current || selectedText.current.size || !viewportHeight.current) {
+      if (Debug.logNet) Debug.record({event: 'chat-reflow-skip', previousWidth, windowWidth, stick: stick.current, dragging: dragging.current, selecting: selectedText.current.size > 0, viewport: viewportHeight.current});
+      return;
+    }
+    const mounted = new Set(shown.map((turn, index) => turnIdentity(turn, offset + index)));
+    for (const key of turnFrames.current.keys()) if (!mounted.has(key)) {turnFrames.current.delete(key); promptOffsets.current.delete(key);}
+    const entries = [...turnFrames.current.entries()].sort((a, b) => a[1].y - b[1].y);
+    const snapshot = readingSnapshot.current;
+    const reading = snapshot && mounted.has(snapshot.key) ? snapshot : visibleReading(offRef.current, viewportHeight.current);
+    const visible = reading ? {key: reading.key, y: offRef.current + reading.viewportY, prompt: reading.prompt} : null;
+    if (Debug.logNet) Debug.record({event: 'chat-reflow-capture', previousWidth, windowWidth, offset: offRef.current, viewport: viewportHeight.current, candidates: entries.length, anchorY: visible?.y ?? null, prompt: visible?.prompt ?? false, anchorIndex: visible ? shown.findIndex((turn, index) => turnIdentity(turn, offset + index) === visible.key) : -1, frames: entries.map(([key, frame]) => ({index: shown.findIndex((turn, index) => turnIdentity(turn, offset + index) === key), y: frame.y, height: frame.height, promptY: promptOffsets.current.get(key) ?? null}))});
+    if (visible) {
+      reflowAnchor.current = {key: visible.key, viewportY: reading!.viewportY, prompt: visible.prompt, deadline: Date.now() + 8000};
+      reflowTimer.current = setTimeout(() => {reflowAnchor.current = null; reflowTimer.current = null;}, 8000);
+    }
+  }, [windowWidth, shown, offset]);
   // The recorded acts, placed against the MOUNTED turns (an act older than the oldest
   // mounted turn waits with the history it belongs to).
   const placed = useMemo(() => placeActs(shown, acts ?? [], actsSince), [shown, acts, actsSince]);
@@ -424,16 +508,21 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
       style={styles.body}
       contentContainerStyle={[styles.content, (topPad > 0 || controlsTop !== undefined) && {paddingTop: Math.max(topPad, controlsTop ?? 0) + (controlsTop !== undefined && turns.length > 0 ? 44 : 0)}, maxWidth ? {maxWidth, width: '100%', alignSelf: 'center'} : null]}
       onScroll={onScroll}
+      maintainVisibleContentPosition={atBottom ? undefined : {minIndexForVisible: 0}}
       onScrollBeginDrag={() => {
+        reflowAnchor.current = null;
+        readingSnapshot.current = null;
         dragging.current = true;
       }}
-      onScrollEndDrag={() => {
+      onScrollEndDrag={event => {
         // Momentum needs no special case any more: the chrome floats, so a fold during
         // the glide moves nothing that the glide is also moving.
         dragging.current = false;
+        rememberReading(event);
         onLiveEdge?.(gapRef.current); // no other scroll event will carry the answer
       }}
-      onMomentumScrollEnd={() => {
+      onMomentumScrollEnd={event => {
+        rememberReading(event);
         onLiveEdge?.(gapRef.current);
       }}
       onLayout={onBodyLayout}
@@ -545,7 +634,8 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
             })()
           : '';
         return (
-          <View key={turnKey} style={styles.turn}>
+          <View key={turnKey} testID="chat-turn-anchor" style={styles.turn}
+            onLayout={event => measureTurn(turnKey, event.nativeEvent.layout.y, event.nativeEvent.layout.height)}>
             {actRows(placed.before[w])}
             {!!seam && (
               <View testID="chat-session-seam" style={styles.seamRow}>
@@ -562,7 +652,8 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
               const collapsed = long && !promptOpen[i];
               return (
                 <>
-                  <View testID="chat-user-row" style={styles.userRow}>
+                  <View testID="chat-user-row" style={styles.userRow}
+                    onLayout={event => measurePrompt(turnKey, event.nativeEvent.layout.y)}>
                     <View testID="chat-user-bubble" style={styles.userBubble}>
                       {collapsed ? (
                         <CopyableText lang={lang} selectable selectionColor={SEL_COLOR} numberOfLines={8}
@@ -680,7 +771,10 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
 const styles = StyleSheet.create({
   root: {flex: 1, backgroundColor: '#0D0D0F'},
   avatarButton: {width: 44, height: 44, alignItems: 'center', justifyContent: 'center'},
-  globalFold: {minWidth: 44, minHeight: 44, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center'},
+  // A floating action must supply its own contrast over conversation glyphs.
+  globalFold: {minWidth: 44, minHeight: 44, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#141416', borderColor: '#54545C', borderWidth: 1, borderRadius: 10,
+    shadowColor: '#000', shadowOffset: {width: 0, height: 2}, shadowOpacity: 0.3, shadowRadius: 4, elevation: 3},
   body: {flex: 1, backgroundColor: '#0D0D0F'},
   content: {padding: 12, gap: 10},
   center: {paddingVertical: 24, alignItems: 'center'},

@@ -14,7 +14,7 @@ import {writeFileSync} from 'fs';
 import {join} from 'path';
 import {getDriver, getArtifactsDir} from '../setup/driver';
 import {screenshot} from '../setup/screenshot';
-import {BUNDLE, launchWithFlags, settle, writeDebugFlags} from '../setup/app';
+import {BUNDLE, launchWithFlags, readDebugLog, settle, waitForNotificationAuthorization, writeDebugFlags} from '../setup/app';
 import {TestIds} from '../../src/constants/testIds';
 import {startFake, Fake} from '../fake-serve/server';
 
@@ -25,8 +25,14 @@ let office: Fake;
 beforeAll(async () => {
   home = await startFake();
   office = await startFake();
-  for (const a of home.world.agents) a.session = `home-${a.session}`;
-  for (const a of office.world.agents) a.session = `office-${a.session}`;
+  for (const a of home.world.agents) {
+    a.session = `home-${a.session}`;
+    a.task = `home-${a.task || a.pane_id}`;
+  }
+  for (const a of office.world.agents) {
+    a.session = `office-${a.session}`;
+    a.task = `office-${a.task || a.pane_id}`;
+  }
 });
 afterAll(async () => {
   await home?.close();
@@ -72,6 +78,11 @@ async function tapBanner(body: string): Promise<boolean> {
     await banner.click();
     return true;
   } catch {
+    try {
+      await dump(`c-banner-${body}`);
+    } catch (error) {
+      console.error(`[e2e] failed to capture missing notification banner: ${error}`);
+    }
     return false;
   }
 }
@@ -109,6 +120,8 @@ run('a cold-start push is handled once', () => {
     const w = await where();
     log.push(`${step}: ${JSON.stringify(w)}`);
     await dump(`c-${step}`);
+    writeFileSync(join(getArtifactsDir(), `debug-${step}.json`), JSON.stringify(readDebugLog(), null, 2));
+    writeFileSync(join(getArtifactsDir(), `requests-${step}.json`), JSON.stringify({home: home.requests, office: office.requests}, null, 2));
     return w;
   };
   // On a Mac's radar, showing that Mac's sessions and none of the other's.
@@ -130,13 +143,14 @@ run('a cold-start push is handled once', () => {
   it('A: cold start with an active Mac, switches, background, a new warm tap', async () => {
     const driver = getDriver();
     // Seed two Macs and connect Home: the first workspace asks for push permission (accepted).
-    // An unsigned simulator build cannot keep servers in the Keychain, so "a saved, active
-    // Mac at launch" is set up by the debug layer: both Macs seeded, the first (Home) made
-    // active (SHOT_MODE's only effect here). Every launch below starts that way.
+    // Set up "a saved, active Mac at launch" deterministically: both Macs are
+    // seeded and Home is active (SHOT_MODE's only effect here). The ad-hoc main
+    // and candidate comparison uses these same flags without changing Keychain.
     const active = {GTMUX_DEBUG_LOG_NET: '1', GTMUX_DEBUG_SERVERS: SEED(), GTMUX_DEBUG_SHOT_MODE: '1'};
     await launchWithFlags(active);
     await settle(5000);
     onRadar(await note('A0-home-connected'), 'Home');
+    await waitForNotificationAuthorization();
     writeDebugFlags(active);
 
     await driver.terminateApp(BUNDLE);
@@ -144,6 +158,12 @@ run('a cold-start push is handled once', () => {
     push('Home', '%12', 'cold-A');
     expect(await tapBanner('cold-A')).toBe(true);
     await settle(7000);
+    try {
+      await driver.$(`~${TestIds.detail.back}`).waitForDisplayed({timeout: 30000});
+    } catch (error) {
+      await note('A1-cold-not-ready');
+      throw error;
+    }
     inDetail(await note('A1-after-cold-tap'), 'Home');
 
     await toServer('Office');
@@ -159,13 +179,23 @@ run('a cold-start push is handled once', () => {
 
     await driver.execute('mobile: pressButton', {name: 'home'});
     await settle(1500);
+    const backgroundStates: number[] = [];
+    try {
+      await driver.waitUntil(async () => {
+        const state = await driver.queryAppState(BUNDLE);
+        if (backgroundStates.at(-1) !== state) backgroundStates.push(state);
+        return state !== 4;
+      }, {timeout: 15000, interval: 250, timeoutMsg: 'app did not leave the foreground before the warm push'});
+    } finally {
+      writeFileSync(join(getArtifactsDir(), 'c-warm-app-states.json'), JSON.stringify(backgroundStates));
+    }
     push('Office', '%13', 'warm-A');
     expect(await tapBanner('warm-A')).toBe(true);
     await settle(7000);
     inDetail(await note('A6-after-warm-tap-office13'), 'Office');
     await toServer('Home');
     onRadar(await note('A7-switch-home-after-warm'), 'Home');
-  });
+  }, 420000); // The hosted journey includes cold launch, four switches and a warm tap.
 
   it('C: a launch with no notification switches where it is pointed', async () => {
     await launchWithFlags({GTMUX_DEBUG_LOG_NET: '1', GTMUX_DEBUG_RESET_SERVERS: '1', GTMUX_DEBUG_SERVERS: SEED()});

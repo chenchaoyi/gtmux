@@ -1,87 +1,139 @@
 {
-  "scripts/test_design_test.py": {
+  "internal/app/client_contract_test.go": {
     "cases": [
-      "TD-001",
-      "TD-002",
-      "TD-003",
-      "TD-004",
-      "TD-005",
-      "ND-003"
+      "CT-HTTP"
     ],
     "selectors": [
-      "test_TD_001_valid_review_and_changed_source_guard",
-      "test_TD_002_seal_required_fields_layers_paths",
-      "test_TD_003_unlisted_test_missing_source_and_missing_case",
-      "test_TD_004_history_rejects_same_commit_review_and_accepts_prior_review",
-      "test_TD_005_removal_requires_rationale_and_absence",
-      "test_ND_003_native_runner_uses_production_sources_and_propagates_failures"
+      "TestClientHTTPContracts"
     ]
   },
-  "mobileapp/e2e/setup/manual-tools.test.ts": {
+  "internal/app/hqworkspace_stored_test.go": {
     "cases": [
-      "DG-001",
-      "DG-002",
-      "DG-003"
+      "MC-HQ-READ"
     ],
     "selectors": [
-      "DG-001 ordinary discovery",
-      "DG-002 rejects missing target",
-      "DG-003 confirms one exact fixture pane"
+      "TestWorkspaceStoredCLILeavesDiscoveryAndRecordsUntouched"
     ]
   },
-  "mobileapp/src/ui/CrossClientContract.test.tsx": {
+  "internal/hq/hq_test.go": {
     "cases": [
-      "CP-001",
-      "CP-002",
-      "CP-003"
+      "STOR-002"
     ],
     "selectors": [
-      "CP-001 %s renders",
-      "CP-002 HQ request",
-      "CP-003 document actions"
+      "TestStorageBoundaryUpgradePreservesLocalRulesAndExistingRecords"
     ]
   },
-  "tests/web/behavior-contract.test.cjs": {
+  "internal/knowledge/distribute_test.go": {
     "cases": [
-      "CP-001",
-      "CP-002",
-      "CP-003",
-      "CP-004"
+      "STOR-001"
     ],
     "selectors": [
-      "CP-001 shared rendered Trace",
-      "CP-002 CP-003 CP-004 shared HQ"
+      "TestBuiltinStorageBoundariesReachEveryCarrierWithoutPromotions"
     ]
   },
-  "mobileapp/e2e/__tests__/ipad-keys-probe.test.ts": {
+  "internal/radar/codex_foreign_marker_gather_test.go": {
     "cases": [
-      "DG-001"
-    ],
-    "removed": true,
-    "reason": "Moved intact to an explicit manual-only entry; screenshot/probe capability retained."
-  },
-  "mobileapp/e2e/diagnostics/ipad-keys-probe.test.ts": {
-    "cases": [
-      "DG-001"
+      "CORE-CODEX-FOREIGN-GATHER"
     ],
     "selectors": [
-      "gated("
+      "TestGatherDoesNotReviveAnotherSessionsOldMarkerFromWindowActivity"
     ]
   },
-  "mobileapp/e2e/__tests__/send-repro.test.ts": {
+  "internal/radar/codex_foreign_marker_test.go": {
     "cases": [
-      "DG-001"
-    ],
-    "removed": true,
-    "reason": "Moved intact to an explicit manual-only entry; screenshot/probe capability retained."
-  },
-  "mobileapp/e2e/diagnostics/send-repro.test.ts": {
-    "cases": [
-      "DG-002",
-      "DG-003"
+      "CORE-CODEX-FOREIGN-ACTIVE"
     ],
     "selectors": [
-      "gated("
+      "TestForeignActiveRequiresCurrentIdentityEndedTurnAndReadyFrame",
+      "TestForeignActiveProductionReaderRejectsLegacyResumeWithoutFrontend"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/HQChoiceFixture.swift": {
+    "cases": [
+      "MC-HQ-CHOICE",
+      "MC-HQ-WINDOW",
+      "MC-HQ-READ"
+    ],
+    "selectors": [
+      "class ChoiceFixture",
+      "enum HQChoiceTestSupport"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/HQChoiceResponseTests.swift": {
+    "cases": [
+      "MC-HQ-CHOICE",
+      "MC-HQ-READ"
+    ],
+    "selectors": [
+      "testChoicePreparesFocusWithoutSendingAndPreservesEditedDraft",
+      "testSlowSourceDiscoveryCannotBlockReplyOrRollBackNewCanonicalData",
+      "testSourceTimeoutDoesNotBecomeTheQuestionOrDraftError",
+      "testStoredClientUsesReadOnlyFlagAndOnlyLegacyUsageFallsBack",
+      "testUnavailableSourceMetadataNeverClaimsTheSessionIsGone"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/HQChoiceWindowTests.swift": {
+    "cases": [
+      "MC-HQ-WINDOW"
+    ],
+    "selectors": [
+      "testCompleteWindowPinsComposerAndNativeChoiceUpdatesAndFocusesEditor",
+      "testCurrentQuestionRemainsUsableWhileConversationReadWaits"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/HQOverviewClarityTests.swift": {
+    "cases": [
+      "MC-HQ-OVERVIEW-STATE",
+      "MC-HQ-OVERVIEW-BRIEF"
+    ],
+    "selectors": [
+      "testCanonicalGroupsAndHiddenCountIgnoreEndedMergedStaleAndDuplicateRows",
+      "testCurrentAssessmentTakesPriorityWithoutBorrowingReceiptOrMetadataTime"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/HQOverviewMoreWindowTests.swift": {
+    "cases": [
+      "MC-HQ-OVERVIEW-MORE"
+    ],
+    "selectors": [
+      "testBottomRemainingControlOpensAllAndSelectsHiddenGoalWithoutSending",
+      "testFullyShownListHasNoRemainingControlAndUnknownRosterDoesNotSayIdle"
+    ]
+  },
+  "mobileapp/__tests__/App.notificationBootstrap.test.tsx": {
+    "cases": [
+      "DUO-018"
+    ],
+    "selectors": [
+      "starts the actual notification bridge while the visual safe area has no metrics"
+    ]
+  },
+  "mobileapp/e2e/__tests__/coldstart-push.test.ts": {
+    "cases": [
+      "DUO-001"
+    ],
+    "selectors": [
+      "A: cold start with an active Mac, switches, background, a new warm tap",
+      "C: a launch with no notification switches where it is pointed"
+    ]
+  },
+  "mobileapp/e2e/__tests__/duo-fold.test.ts": {
+    "cases": [
+      "DUO-020",
+      "DUO-021"
+    ],
+    "selectors": [
+      "retains the selected conversation and reading position across simulator fold and unfold",
+      "retains the selected conversation and keyboard draft across simulator fold and unfold",
+      "keeps Trace search and Diff open while the simulator folds and unfolds"
+    ]
+  },
+  "mobileapp/e2e/__tests__/duo-window.test.ts": {
+    "cases": [
+      "DUO-002"
+    ],
+    "selectors": [
+      "keeps the selected session and a draft through simulator rotation"
     ]
   },
   "mobileapp/e2e/__tests__/hq-header-shot.test.ts": {
@@ -91,13 +143,20 @@
     "removed": true,
     "reason": "Moved intact to an explicit manual-only entry; screenshot/probe capability retained."
   },
-  "mobileapp/e2e/capture/hq-header-shot.test.ts": {
+  "mobileapp/e2e/__tests__/ipad-adaptive.test.ts": {
+    "cases": [
+      "DUO-003"
+    ],
+    "selectors": [
+      "keeps the iPad sidebar and selected session through rotation"
+    ]
+  },
+  "mobileapp/e2e/__tests__/ipad-keys-probe.test.ts": {
     "cases": [
       "DG-001"
     ],
-    "selectors": [
-      "gated("
-    ]
+    "removed": true,
+    "reason": "Moved intact to an explicit manual-only entry; screenshot/probe capability retained."
   },
   "mobileapp/e2e/__tests__/knowledge-shot.test.ts": {
     "cases": [
@@ -106,185 +165,38 @@
     "removed": true,
     "reason": "Moved intact to an explicit manual-only entry; screenshot/probe capability retained."
   },
-  "mobileapp/e2e/capture/knowledge-shot.test.ts": {
+  "mobileapp/e2e/__tests__/notification-scene-actions.test.ts": {
+    "cases": [
+      "DUO-004"
+    ],
+    "selectors": [
+      "delivers a cold notification action exactly once",
+      "delivers a warm notification action exactly once"
+    ]
+  },
+  "mobileapp/e2e/__tests__/scene-usage-links.test.ts": {
+    "cases": [
+      "DUO-005"
+    ],
+    "selectors": [
+      "opens a warm usage link through the scene",
+      "opens a cold usage link through the scene"
+    ]
+  },
+  "mobileapp/e2e/__tests__/send-repro.test.ts": {
     "cases": [
       "DG-001"
     ],
-    "selectors": [
-      "gated("
-    ]
+    "removed": true,
+    "reason": "Moved intact to an explicit manual-only entry; screenshot/probe capability retained."
   },
-  "mobileapp/ios/tests/DocumentHTMLChecks.swift": {
+  "mobileapp/e2e/__tests__/server-switch-compare.test.ts": {
     "cases": [
-      "ND-001"
+      "DUO-006"
     ],
     "selectors": [
-      "@main struct DocumentHTMLChecks"
-    ]
-  },
-  "mobileapp/ios/tests/DocumentMarkdownChecks.swift": {
-    "cases": [
-      "ND-002"
-    ],
-    "selectors": [
-      "@main struct DocumentMarkdownChecks"
-    ]
-  },
-  "scripts/test_design.py": {
-    "cases": [
-      "TD-001",
-      "TD-002",
-      "TD-003",
-      "TD-004",
-      "TD-005"
-    ],
-    "selectors": [
-      "def validate(",
-      "def history_errors(",
-      "def refresh_catalogue("
-    ]
-  },
-  "mobileapp/scripts/check-native-documents.py": {
-    "cases": [
-      "ND-003"
-    ],
-    "selectors": [
-      "def run("
-    ]
-  },
-  "mobileapp/e2e/setup/manual-tools.cjs": {
-    "cases": [
-      "DG-001",
-      "DG-002",
-      "DG-003"
-    ],
-    "selectors": [
-      "function manualMode(",
-      "function sendTarget(",
-      "async function verifySendTarget("
-    ]
-  },
-  "mobileapp/e2e/jest.config.manual.js": {
-    "cases": [
-      "DG-001",
-      "DG-002"
-    ],
-    "selectors": [
-      "manualMode(process.env)",
-      "sendTarget(process.env)"
-    ]
-  },
-  "scripts/ci_test.py": {
-    "cases": [
-      "CT-SCOPE"
-    ],
-    "selectors": [
-      "test_unit_test_scope_requires_immutable_product_exclusion"
-    ]
-  },
-  "mobileapp/e2e/setup/global-setup-manual.ts": {
-    "cases": [
-      "DG-004"
-    ],
-    "selectors": [
-      "await setupManual(process.env, verifySendTarget, globalSetup)"
-    ]
-  },
-  "tests/contracts/http-contract.cjs": {
-    "cases": [
-      "CT-HTTP"
-    ],
-    "selectors": [
-      "async function observe",
-      "function verify"
-    ]
-  },
-  "tests/web/backend-contract.test.cjs": {
-    "cases": [
-      "CT-HTTP"
-    ],
-    "selectors": [
-      "Web fake / Go contract:"
-    ]
-  },
-  "tests/web/http-contract-validator.test.cjs": {
-    "cases": [
-      "CT-HTTP"
-    ],
-    "selectors": [
-      "wire contract rejects type, permission, ordinal, omission and security-header drift"
-    ]
-  },
-  "tests/web/fixture.cjs": {
-    "cases": [
-      "CT-HTTP"
-    ],
-    "selectors": [
-      "async function start"
-    ]
-  },
-  "mobileapp/e2e/fake-serve/backend-contract.test.ts": {
-    "cases": [
-      "CT-HTTP"
-    ],
-    "selectors": [
-      "RN fake / Go contract:",
-      "RN client consumes original ordinals"
-    ]
-  },
-  "mobileapp/e2e/fake-serve/server.ts": {
-    "cases": [
-      "CT-HTTP"
-    ],
-    "selectors": [
-      "startFake"
-    ]
-  },
-  "mobileapp/e2e/fake-serve/world.ts": {
-    "cases": [
-      "CT-HTTP"
-    ],
-    "selectors": [
-      "export class World"
-    ]
-  },
-  "mobileapp/src/screens/DetailDraftSwitch.test.tsx": {
-    "cases": [
-      "CT-DRAFT"
-    ],
-    "selectors": [
-      "mounted Detail isolates drafts",
-      "late draft storage result"
-    ]
-  },
-  "mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx": {
-    "cases": [
-      "CT-DRAFT",
-      "CT-HQ"
-    ],
-    "selectors": [
-      "pending HQ question opens the original matter",
-      "late HQ overview and matter responses",
-      "a prepared HQ question stays scoped"
-    ]
-  },
-  "mobileapp/src/screens/ServerModeBehavior.test.tsx": {
-    "cases": [
-      "CT-SUB"
-    ],
-    "selectors": [
-      "awake and reconnect subscription events",
-      "late server mode response"
-    ]
-  },
-  "mobileapp/e2e/android/run.cjs": {
-    "cases": [
-      "CT-ANDROID",
-      "CT-TIMING"
-    ],
-    "selectors": [
-      "async function check",
-      "async function run"
+      "selects a server after a clean launch",
+      "switches between two saved servers"
     ]
   },
   "mobileapp/e2e/android/journey.cjs": {
@@ -310,13 +222,429 @@
       "timing records setup action"
     ]
   },
-  "tests/web/harness.cjs": {
+  "mobileapp/e2e/android/run.cjs": {
     "cases": [
-      "CT-TIMING",
-      "CT-BROWSER"
+      "CT-ANDROID",
+      "CT-TIMING"
     ],
     "selectors": [
-      "function scenario"
+      "async function check",
+      "async function run"
+    ]
+  },
+  "mobileapp/e2e/capture/hq-header-shot.test.ts": {
+    "cases": [
+      "DG-001"
+    ],
+    "selectors": [
+      "gated("
+    ]
+  },
+  "mobileapp/e2e/capture/knowledge-shot.test.ts": {
+    "cases": [
+      "DG-001"
+    ],
+    "selectors": [
+      "gated("
+    ]
+  },
+  "mobileapp/e2e/diagnostics/ipad-keys-probe.test.ts": {
+    "cases": [
+      "DG-001"
+    ],
+    "selectors": [
+      "gated("
+    ]
+  },
+  "mobileapp/e2e/diagnostics/send-repro.test.ts": {
+    "cases": [
+      "DG-002",
+      "DG-003"
+    ],
+    "selectors": [
+      "gated("
+    ]
+  },
+  "mobileapp/e2e/fake-serve/backend-contract.test.ts": {
+    "cases": [
+      "CT-HTTP"
+    ],
+    "selectors": [
+      "RN fake / Go contract:",
+      "RN client consumes original ordinals"
+    ]
+  },
+  "mobileapp/e2e/fake-serve/request-diagnostics.test.ts": {
+    "cases": [
+      "DUO-007"
+    ],
+    "selectors": [
+      "diagnostic request metadata shows routing without headers or query values"
+    ]
+  },
+  "mobileapp/e2e/fake-serve/server.ts": {
+    "cases": [
+      "CT-HTTP"
+    ],
+    "selectors": [
+      "startFake"
+    ]
+  },
+  "mobileapp/e2e/fake-serve/world.ts": {
+    "cases": [
+      "CT-HTTP"
+    ],
+    "selectors": [
+      "export class World"
+    ]
+  },
+  "mobileapp/e2e/jest.config.manual.js": {
+    "cases": [
+      "DG-001",
+      "DG-002"
+    ],
+    "selectors": [
+      "manualMode(process.env)",
+      "sendTarget(process.env)"
+    ]
+  },
+  "mobileapp/e2e/setup/capabilities.test.ts": {
+    "cases": [
+      "DUO-008"
+    ],
+    "selectors": [
+      "cloud simulator session waits for a fresh WDA build without requiring a prebuilt product"
+    ]
+  },
+  "mobileapp/e2e/setup/global-setup-manual.ts": {
+    "cases": [
+      "DG-004"
+    ],
+    "selectors": [
+      "await setupManual(process.env, verifySendTarget, globalSetup)"
+    ]
+  },
+  "mobileapp/e2e/setup/manual-tools.cjs": {
+    "cases": [
+      "DG-001",
+      "DG-002",
+      "DG-003"
+    ],
+    "selectors": [
+      "function manualMode(",
+      "function sendTarget(",
+      "async function verifySendTarget("
+    ]
+  },
+  "mobileapp/e2e/setup/manual-tools.test.ts": {
+    "cases": [
+      "DG-001",
+      "DG-002",
+      "DG-003"
+    ],
+    "selectors": [
+      "DG-001 ordinary discovery",
+      "DG-002 rejects missing target",
+      "DG-003 confirms one exact fixture pane"
+    ]
+  },
+  "mobileapp/ios/tests/DocumentHTMLChecks.swift": {
+    "cases": [
+      "ND-001"
+    ],
+    "selectors": [
+      "@main struct DocumentHTMLChecks"
+    ]
+  },
+  "mobileapp/ios/tests/DocumentMarkdownChecks.swift": {
+    "cases": [
+      "ND-002"
+    ],
+    "selectors": [
+      "@main struct DocumentMarkdownChecks"
+    ]
+  },
+  "mobileapp/ios/tests/NotificationResponsePayloadChecks.swift": {
+    "cases": [
+      "DUO-009",
+      "DUO-022",
+      "DUO-024"
+    ],
+    "selectors": [
+      "notification response payload and queue checks passed",
+      "let activityPayload = sceneUserActivityPayload",
+      "retainHeadlessSceneLinks(urls: [sceneURL], activities: [activity])"
+    ]
+  },
+  "mobileapp/metro.config.js": {
+    "cases": [
+      "CT-SCOPE"
+    ],
+    "selectors": [
+      "const config ="
+    ]
+  },
+  "mobileapp/scripts/check-native-documents.py": {
+    "cases": [
+      "ND-003"
+    ],
+    "selectors": [
+      "def run("
+    ]
+  },
+  "mobileapp/scripts/test-boundary.test.ts": {
+    "cases": [
+      "CT-SCOPE"
+    ],
+    "selectors": [
+      "actual Metro resolver refuses"
+    ]
+  },
+  "mobileapp/src/push/launchNotification.test.ts": {
+    "cases": [
+      "DUO-010"
+    ],
+    "selectors": [
+      "a buffered native response and the launch copy dispatch one quick reply",
+      "a native buffer failure still delivers the bridge launch notification",
+      "the same quick action arriving from scene and delegate sends once",
+      "a stalled native drain leaves initial fallback and foreground recovery usable",
+      "the initial action does not wait for notification permission",
+      "foreground recovery first delivers a retained response after the initial drain stalls"
+    ]
+  },
+  "mobileapp/src/screens/DetailDraftSwitch.test.tsx": {
+    "cases": [
+      "CT-DRAFT"
+    ],
+    "selectors": [
+      "mounted Detail isolates drafts",
+      "late draft storage result"
+    ]
+  },
+  "mobileapp/src/screens/DetailTrace.test.tsx": {
+    "cases": [
+      "DUO-011"
+    ],
+    "selectors": [
+      "Trace remains open with its current conversation while the window changes size",
+      "a Diff request opens and remains open through a window resize"
+    ]
+  },
+  "mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx": {
+    "cases": [
+      "CT-DRAFT",
+      "CT-HQ"
+    ],
+    "selectors": [
+      "pending HQ question opens the original matter",
+      "late HQ overview and matter responses",
+      "a prepared HQ question stays scoped"
+    ]
+  },
+  "mobileapp/src/screens/ServerModeBehavior.test.tsx": {
+    "cases": [
+      "CT-SUB"
+    ],
+    "selectors": [
+      "awake and reconnect subscription events",
+      "late server mode response"
+    ]
+  },
+  "mobileapp/src/screens/SplitShell.resize.test.tsx": {
+    "cases": [
+      "DUO-012",
+      "DUO-025"
+    ],
+    "selectors": [
+      "resizing keeps the mounted detail state and back/reopen remains usable",
+      "folding after the wide workspace chooses its first session keeps that reader visible",
+      "a hidden workspace does not consume Android back on another stack page",
+      "returning to the compact list survives expanding and folding the workspace",
+      "selecting a session while expanded returns to its reader when folded"
+    ]
+  },
+  "mobileapp/src/screens/UsageSheet.test.tsx": {
+    "cases": [
+      "DUO-013"
+    ],
+    "selectors": [
+      "usage modal resolves all safe edges in its own native presentation"
+    ]
+  },
+  "mobileapp/src/screens/shellDrift.test.ts": {
+    "cases": [
+      "DUO-014"
+    ],
+    "selectors": [
+      "has both shells render RadarPanel, with only props between them"
+    ]
+  },
+  "mobileapp/src/state/WorkspaceContext.test.tsx": {
+    "cases": [
+      "DUO-015"
+    ],
+    "selectors": [
+      "inline workspace opens selection without pushing a second detail route"
+    ]
+  },
+  "mobileapp/src/ui/ChatView.follow.test.tsx": {
+    "cases": [
+      "DUO-027"
+    ],
+    "selectors": [
+      "history anchoring follows the reader rather than disturbing the live tail"
+    ]
+  },
+  "mobileapp/src/ui/CrossClientContract.test.tsx": {
+    "cases": [
+      "CP-001",
+      "CP-002",
+      "CP-003"
+    ],
+    "selectors": [
+      "CP-001 %s renders",
+      "CP-002 HQ request",
+      "CP-003 document actions"
+    ]
+  },
+  "mobileapp/src/ui/WorkspaceSurface.test.tsx": {
+    "cases": [
+      "DUO-018"
+    ],
+    "selectors": [
+      "starts background handling before native insets and mounts the visual tree after measurement"
+    ]
+  },
+  "mobileapp/src/ui/windowMetrics.test.tsx": {
+    "cases": [
+      "DUO-016"
+    ],
+    "selectors": [
+      "root view resizes update the workspace even when native dimensions do not, without remounting the reader"
+    ]
+  },
+  "mobileapp/src/usage/UsageWidgetBridge.initialDemoLink.test.tsx": {
+    "cases": [
+      "DUO-026"
+    ],
+    "selectors": [
+      "a demo-rejected initial link cannot replay when the connection becomes an owner"
+    ]
+  },
+  "mobileapp/src/usage/UsageWidgetBridge.initialLink.test.tsx": {
+    "cases": [
+      "DUO-026"
+    ],
+    "selectors": [
+      "a guest-rejected initial link cannot replay when the connection becomes owner"
+    ]
+  },
+  "mobileapp/src/usage/UsageWidgetBridge.sceneEvents.test.tsx": {
+    "cases": [
+      "DUO-028"
+    ],
+    "selectors": [
+      "retained scene availability delivers each permitted intent once and rejects guest replay"
+    ]
+  },
+  "mobileapp/src/usage/UsageWidgetBridge.test.tsx": {
+    "cases": [
+      "DUO-019",
+      "DUO-024"
+    ],
+    "selectors": [
+      "a widget opens usage without HQ, dismisses, and ignores guest links and private URL parameters",
+      "changing a connection closes the old sheet and discards its late response",
+      "a headless scene link is retained until the visual consumer opens and acknowledges it",
+      "a queued scene link rejected for a guest cannot open after switching to owner",
+      "a retained scene link is retried when the app becomes active",
+      "an active transition during a failed drain still retries the retained link",
+      "foreground recovery bypasses a stalled scene-link drain and suppresses its late copy"
+    ]
+  },
+  "scripts/ci.py": {
+    "cases": [
+      "CT-SCOPE"
+    ],
+    "selectors": [
+      "JOBS = {",
+      "def classify(",
+      "def confirmed_unit_test_isolation("
+    ]
+  },
+  "scripts/ci_test.py": {
+    "cases": [
+      "CT-SCOPE",
+      "TD-006",
+      "DUO-017"
+    ],
+    "selectors": [
+      "test_unit_test_scope_requires_immutable_product_exclusion",
+      "test_reviewed_test_records_are_policy_only_without_hiding_test_changes",
+      "test_unsigned_ios_preserves_arm64_target_and_verifies_products",
+      "test_recognized_modules_include_consumers"
+    ]
+  },
+  "scripts/test_design.py": {
+    "cases": [
+      "TD-001",
+      "TD-002",
+      "TD-003",
+      "TD-004",
+      "TD-005"
+    ],
+    "selectors": [
+      "def validate(",
+      "def history_errors(",
+      "def refresh_catalogue("
+    ]
+  },
+  "scripts/test_design_test.py": {
+    "cases": [
+      "TD-001",
+      "TD-002",
+      "TD-003",
+      "TD-004",
+      "TD-005",
+      "ND-003"
+    ],
+    "selectors": [
+      "test_TD_001_valid_review_and_changed_source_guard",
+      "test_TD_002_seal_required_fields_layers_paths",
+      "test_TD_003_unlisted_test_missing_source_and_missing_case",
+      "test_TD_004_history_rejects_same_commit_review_and_accepts_prior_review",
+      "test_TD_005_removal_requires_rationale_and_absence",
+      "test_ND_003_native_runner_uses_production_sources_and_propagates_failures"
+    ]
+  },
+  "tests/contracts/http-contract.cjs": {
+    "cases": [
+      "CT-HTTP"
+    ],
+    "selectors": [
+      "async function observe",
+      "function verify"
+    ]
+  },
+  "tests/web/backend-contract.test.cjs": {
+    "cases": [
+      "CT-HTTP"
+    ],
+    "selectors": [
+      "Web fake / Go contract:"
+    ]
+  },
+  "tests/web/behavior-contract.test.cjs": {
+    "cases": [
+      "CP-001",
+      "CP-002",
+      "CP-003",
+      "CP-004"
+    ],
+    "selectors": [
+      "CP-001 shared rendered Trace",
+      "CP-002 CP-003 CP-004 shared HQ"
     ]
   },
   "tests/web/browser-pool.cjs": {
@@ -338,6 +666,14 @@
       "failed launch propagates"
     ]
   },
+  "tests/web/fixture.cjs": {
+    "cases": [
+      "CT-HTTP"
+    ],
+    "selectors": [
+      "async function start"
+    ]
+  },
   "tests/web/harness-isolation.test.cjs": {
     "cases": [
       "CT-BROWSER"
@@ -347,129 +683,161 @@
       "shared browser next case"
     ]
   },
-  "scripts/ci.py": {
+  "tests/web/harness.cjs": {
     "cases": [
-      "CT-SCOPE"
+      "CT-TIMING",
+      "CT-BROWSER"
     ],
     "selectors": [
-      "confirmed_unit_test_isolation"
+      "function scenario"
     ]
   },
-  "mobileapp/metro.config.js": {
-    "cases": [
-      "CT-SCOPE"
-    ],
-    "selectors": [
-      "const config ="
-    ]
-  },
-  "mobileapp/scripts/test-boundary.test.ts": {
-    "cases": [
-      "CT-SCOPE"
-    ],
-    "selectors": [
-      "actual Metro resolver refuses"
-    ]
-  },
-  "internal/app/client_contract_test.go": {
+  "tests/web/http-contract-validator.test.cjs": {
     "cases": [
       "CT-HTTP"
     ],
     "selectors": [
-      "TestClientHTTPContracts"
+      "wire contract rejects type, permission, ordinal, omission and security-header drift"
     ]
   },
-  "internal/app/hqworkspace_stored_test.go": {
+  "mobileapp/src/ui/ChatView.reflow.test.tsx": {
     "cases": [
-      "MC-HQ-READ"
+      "DUO-029"
     ],
     "selectors": [
-      "TestWorkspaceStoredCLILeavesDiscoveryAndRecordsUntouched"
+      "preserves a visible history turn through width reflow until the user drags",
+      "width reflow does not move a reader following the live tail",
+      "does not anchor to a turn removed from the mounted conversation"
     ]
   },
-  "macapp/Tests/GtmuxBarTests/HQChoiceResponseTests.swift": {
+  "mobileapp/src/push/responseCompletion.test.ts": {
     "cases": [
-      "MC-HQ-CHOICE",
-      "MC-HQ-READ"
+      "DUO-030"
     ],
     "selectors": [
-      "testChoicePreparesFocusWithoutSendingAndPreservesEditedDraft",
-      "testSlowSourceDiscoveryCannotBlockReplyOrRollBackNewCanonicalData",
-      "testSourceTimeoutDoesNotBecomeTheQuestionOrDraftError",
-      "testStoredClientUsesReadOnlyFlagAndOnlyLegacyUsageFallsBack",
-      "testUnavailableSourceMetadataNeverClaimsTheSessionIsGone"
+      "waits for a %s reply and suppresses a duplicate while pending",
+      "a normal notification tap acknowledges without waiting for a reply"
     ]
   },
-  "macapp/Tests/GtmuxBarTests/HQChoiceWindowTests.swift": {
+  "mobileapp/ios/tests/NotificationResponseCompletionChecks.swift": {
     "cases": [
-      "MC-HQ-WINDOW"
+      "DUO-030"
     ],
     "selectors": [
-      "testCompleteWindowPinsComposerAndNativeChoiceUpdatesAndFocusesEditor",
-      "testCurrentQuestionRemainsUsableWhileConversationReadWaits"
+      "notification response completion checks passed"
     ]
   },
-  "macapp/Tests/GtmuxBarTests/HQChoiceFixture.swift": {
+  "mobileapp/src/ui/WorkspaceSurface.sceneMetrics.test.tsx": {
     "cases": [
-      "MC-HQ-CHOICE",
-      "MC-HQ-WINDOW",
-      "MC-HQ-READ"
+      "DUO-031"
     ],
     "selectors": [
-      "class ChoiceFixture",
-      "enum HQChoiceTestSupport"
+      "keeps background active until a current scene exists, then follows native inset changes",
+      "rejects a zero-sized scene instead of seeding fake metrics"
     ]
   },
-  "macapp/Tests/GtmuxBarTests/HQOverviewClarityTests.swift": {
+  "mobileapp/src/push/initialPermissionConcurrency.test.ts": {
     "cases": [
-      "MC-HQ-OVERVIEW-STATE",
-      "MC-HQ-OVERVIEW-BRIEF"
+      "DUO-032"
     ],
     "selectors": [
-      "testCanonicalGroupsAndHiddenCountIgnoreEndedMergedStaleAndDuplicateRows",
-      "testCurrentAssessmentTakesPriorityWithoutBorrowingReceiptOrMetadataTime"
+      "requests permission despite a stalled initial response, then delivers the late action once",
+      "ignores an initial response that arrives after teardown",
+      "delivers an initial action without waiting for permission",
+      "hands a late initial response to the live bridge after a server switch",
+      "cancels a bridge immediately when permission is pending and hands the action to its replacement",
+      "reads authorization settings only for a pending debug request and stops on teardown"
     ]
   },
-  "macapp/Tests/GtmuxBarTests/HQOverviewMoreWindowTests.swift": {
+  "mobileapp/src/ui/ChatView.promptReflow.test.tsx": {
     "cases": [
-      "MC-HQ-OVERVIEW-MORE"
+      "DUO-033"
     ],
     "selectors": [
-      "testBottomRemainingControlOpensAllAndSelectsHiddenGoalWithoutSending",
-      "testFullyShownListHasNoRemainingControlAndUnknownRosterDoesNotSayIdle"
+      "anchors the first visible prompt while the earlier turn is partly visible and layout settles",
+      "keeps the user reading anchor when a late system scroll races a resize and replaces it after a new drag"
     ]
   },
-  "internal/radar/codex_foreign_marker_test.go": {
+  "mobileapp/e2e/setup/journeyGuard.test.ts": {
     "cases": [
-      "CORE-CODEX-FOREIGN-ACTIVE"
+      "DUO-034"
     ],
     "selectors": [
-      "TestForeignActiveRequiresCurrentIdentityEndedTurnAndReadyFrame",
-      "TestForeignActiveProductionReaderRejectsLegacyResumeWithoutFrontend"
+      "wait holds the next journey until outstanding cleanup completes",
+      "a failed journey releases the guard without concealing its error"
     ]
   },
-  "internal/radar/codex_foreign_marker_gather_test.go": {
+  "mobileapp/e2e/__tests__/duo-text-scaling.test.ts": {
     "cases": [
-      "CORE-CODEX-FOREIGN-GATHER"
+      "DUO-035"
     ],
     "selectors": [
-      "TestGatherDoesNotReviveAnotherSessionsOldMarkerFromWindowActivity"
+      "keeps the session entry usable at an accessibility text size on both panels (%s)"
     ]
   },
-  "internal/knowledge/distribute_test.go": {
+  "mobileapp/src/ui/ChatView.fullscreen.test.tsx": {
     "cases": [
-      "STOR-001"
+      "DUO-036"
     ],
     "selectors": [
-      "TestBuiltinStorageBoundariesReachEveryCarrierWithoutPromotions"
+      "chat collapse control clears the safe top %s and still toggles",
+      "out of full screen the collapse bar sits under the chrome and moves with it",
+      "the detail screen hands the chat the chrome height and its slide",
+      "entering and leaving full screen keeps the transform array valid for Android Fabric"
     ]
   },
-  "internal/hq/hq_test.go": {
+  "mobileapp/e2e/__tests__/duo-voiceover.test.ts": {
     "cases": [
-      "STOR-002"
+      "DUO-037"
     ],
     "selectors": [
-      "TestStorageBoundaryUpgradePreservesLocalRulesAndExistingRecords"
+      "speaks the selected session and tools on both Duo panels with VoiceOver"
+    ]
+  },
+  "mobileapp/e2e/setup/duoVoiceOverJourney.test.ts": {
+    "cases": [
+      "DUO-038"
+    ],
+    "selectors": [
+      "evidence %s failure still restores VoiceOver and the fixture",
+      "a late %s result cannot satisfy the panel budget",
+      "on-budget real journey control observes both panels and restores VoiceOver",
+      "stale initial speech cannot replace new focus moves",
+      "missing inner reader control %s fails before inner speech",
+      "retained initial reader returns to the list before selecting the VoiceOver session"
+    ]
+  },
+  "mobileapp/e2e/setup/nativeTextLayout.ts": {
+    "cases": [
+      "DUO-039"
+    ],
+    "selectors": [
+      "waitForNativeTextLayout"
+    ]
+  },
+  "mobileapp/e2e/setup/nativeTextLayout.test.ts": {
+    "cases": [
+      "DUO-039"
+    ],
+    "selectors": [
+      "a stale sample is discarded before fresh complete native layouts settle",
+      "unresolved %s evidence fails within the original budget",
+      "a missing diagnostic identity is an error, not an invisible view to skip",
+      "a permanent driver failure is not retried as reflow",
+      "a stable sample returned after the budget cannot pass",
+      "one coherent eight-view snapshot settles three observations inside the same budget",
+      "malformed %s is not silently skipped",
+      "unresolved rendering %s fails without calling selection bounds glyph evidence",
+      "conservative rendering surface overflow remains evidence rather than a cleared accessibility finding",
+      "unresolved glyph ink %s fails even with complete layout coverage"
+    ]
+  },
+  "mobileapp/e2e/fake-serve/transcript-identity.test.ts": {
+    "cases": [
+      "DUO-040"
+    ],
+    "selectors": [
+      "default transcript identity survives polling while new fixtures and explicit transcripts remain independent"
     ]
   },
   "internal/ghostty/session_identity_test.go": {
@@ -480,6 +848,95 @@
     "selectors": [
       "TestTitleMatchesSessionPreservesLeadingSymbols",
       "TestSessionTabPrefersLiteralIdentity"
+    ]
+  },
+  "mobileapp/e2e/setup/duoDraftEvidence.test.ts": {
+    "cases": [
+      "DUO-041"
+    ],
+    "selectors": [
+      "normal draft evidence is saved before posture restoration",
+      "a child ignoring SIGTERM is killed within the evidence budget without hiding the original failure",
+      "excessive diagnostic output fails an otherwise successful journey and restores posture",
+      "evidence write failure restores posture with prior failure=%s",
+      "invalid current keyboard x=%s rejects without sending a keyboard touch"
+    ]
+  },
+  "scripts/duo_diagnostics_test.py": {
+    "cases": [
+      "DUO-042"
+    ],
+    "selectors": [
+      "test_diagnostic_failures_preserve_the_original_phone_exit_status"
+    ]
+  },
+  "scripts/duo_comparison_test.py": {
+    "cases": [
+      "DUO-043"
+    ],
+    "selectors": [
+      "test_push_comparison_reuses_candidate_with_identical_runtime_and_launch_policy",
+      "test_default_server_control_preserves_its_two_builds_and_manual_launch",
+      "test_each_original_variant_failure_stays_red_and_both_variants_run",
+      "test_reuse_rejects_unsigned_product_before_any_build_or_device_command",
+      "test_baseline_permission_breadcrumbs_are_idempotent_and_do_not_add_a_request",
+      "test_unknown_baseline_permission_source_fails_closed",
+      "test_real_archive_preserves_repository_paths_from_root_and_mobileapp"
+    ]
+  },
+  "mobileapp/ios/tests/TextInkEvidenceChecks.swift": {
+    "cases": [
+      "DUO-044"
+    ],
+    "selectors": [
+      "static func main()"
+    ]
+  },
+  "mobileapp/ios/tests/build-conversation-fixture.sh": {
+    "cases": [
+      "DUO-044"
+    ],
+    "selectors": [
+      "xcrun --sdk iphonesimulator swiftc"
+    ]
+  },
+  "mobileapp/e2e/setup/appLaunchFiles.test.ts": {
+    "cases": [
+      "DUO-045"
+    ],
+    "selectors": [
+      "each launch returns the freshly resolved path containing its own flags",
+      "failed activation exposes no successful launch path",
+      "lookup failure does not write flags or activate the app"
+    ]
+  },
+  "mobileapp/e2e/setup/duoTypographyJourney.test.ts": {
+    "cases": [
+      "DUO-045"
+    ],
+    "selectors": [
+      "both panels use the successful launch path at %s without another child lookup",
+      "missing launch evidence remains a failure and still restores size, display and fixture"
+    ]
+  },
+  "mobileapp/src/api/client.sendTrace.test.ts": {
+    "cases": [
+      "DUO-046"
+    ],
+    "selectors": [
+      "a pending send exposes fetch call and return without pretending the request completed",
+      "a fetch %s preserves the original failure and its actual boundary",
+      "normal logging-off sends have no new diagnostic records"
+    ]
+  },
+  "mobileapp/src/push/permissionTrace.test.ts": {
+    "cases": [
+      "DUO-046"
+    ],
+    "selectors": [
+      "probe entry distinguishes a pending native settings callback from a timer that never ran",
+      "abort before the probe records closure and cancels the existing timer",
+      "logging off adds neither a probe nor teardown records"
     ]
   }
 }

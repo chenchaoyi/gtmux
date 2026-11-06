@@ -103,6 +103,7 @@ export function ServersScreen({navigation}: {navigation?: any}) {
   const [demo, setDemo] = useState(false);
 
   const onPick = async (url: string) => {
+    if (Debug.logNet) Debug.record({event: 'server-pick', at: Date.now(), index: servers.findIndex(s => s.url === url), current: url === activeUrl});
     if (url === activeUrl) {
       navigation?.goBack?.(); // already connected → just dismiss
       return;
@@ -311,7 +312,7 @@ export function ServersScreen({navigation}: {navigation?: any}) {
     ]);
 
   return (
-    <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']} testID={TestIds.servers.screen}>
+    <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top', 'left', 'right']} testID={TestIds.servers.screen}>
       {/* header: back (only when pushed) + title */}
       <ContentColumn>
         <View style={styles.header}>

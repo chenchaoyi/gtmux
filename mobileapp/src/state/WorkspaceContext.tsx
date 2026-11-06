@@ -30,9 +30,10 @@ export function initialSelection(agents: Agent[]): Selection | null {
 
 interface Workspace {
   mode: SizeClass;
-  /** The current selection on the regular shell; the compact shell keeps it too, so a
-   * rotation that crosses the size line lands on what was open. */
+  /** The selected workspace item, independent of the current window size. */
   selection: Selection | null;
+  selectionRevision: number;
+  initialize: (sel: Selection) => void;
   select: (sel: Selection) => void;
   /** The keyboard's cursor over the radar (a row id), on the compact shell where moving
    * it must not open anything. Null when the keyboard has not moved it. */
@@ -60,26 +61,34 @@ export function routeFor(sel: Selection): [Parameters<Navigate>[0], Record<strin
 export function WorkspaceProvider({
   mode,
   navigate,
+  inlineSelection = false,
+  onInlineSelect,
   children,
 }: {
   mode: SizeClass;
   /** How the compact shell opens a selection (the navigator's `navigate`). */
   navigate: Navigate;
+  inlineSelection?: boolean;
+  onInlineSelect?: () => void;
   children: React.ReactNode;
 }) {
   const [selection, setSelection] = useState<Selection | null>(null);
+  const [selectionRevision, setSelectionRevision] = useState(0);
   const [cursor, setCursor] = useState<string | null>(null);
+  const initialize = useCallback((sel: Selection) => setSelection(current => current ?? sel), []);
   const select = useCallback(
     (sel: Selection) => {
       setSelection(sel);
-      if (mode === 'compact') {
+      setSelectionRevision(n => n + 1);
+      if (inlineSelection) onInlineSelect?.();
+      if (!inlineSelection && mode === 'compact') {
         const [route, params] = routeFor(sel);
         navigate(route, params);
       }
     },
-    [mode, navigate],
+    [mode, navigate, inlineSelection, onInlineSelect],
   );
-  const value = useMemo(() => ({mode, selection, select, cursor, setCursor}), [mode, selection, select, cursor]);
+  const value = useMemo(() => ({mode, selection, selectionRevision, initialize, select, cursor, setCursor}), [mode, selection, selectionRevision, initialize, select, cursor]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 

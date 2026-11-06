@@ -15,6 +15,11 @@ final class ConversationTextView: UIView, UITextViewDelegate, UIGestureRecognize
   private var lastRevision = ""
   private var naturalWidth: CGFloat = 1
   private var outsideTap: UITapGestureRecognizer?
+#if targetEnvironment(simulator)
+  private var lastDiagnostic: Data?
+  private var renderingCacheKey = ""
+  private var renderingCache: [String: Any] = [:]
+#endif
 
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -30,6 +35,9 @@ final class ConversationTextView: UIView, UITextViewDelegate, UIGestureRecognize
     textView.delegate = self
     textView.onResign = { [weak self] in self?.updateSelection(false) }
     addSubview(textView)
+#if targetEnvironment(simulator)
+    if TextLayoutEvidence.enabled { textView.accessibilityIdentifier = "duo-text-" + UUID().uuidString }
+#endif
   }
 
   required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
@@ -74,7 +82,109 @@ final class ConversationTextView: UIView, UITextViewDelegate, UIGestureRecognize
       lastRevision = revision
       onSize?(["height": height, "width": naturalWidth, "revision": revision])
     }
+#if targetEnvironment(simulator)
+    recordTextLayout(measuredHeight: height)
+#endif
   }
+
+#if targetEnvironment(simulator)
+  // Opt-in fixture evidence only. UITextInput geometry keeps the active TextKit
+  // engine and selection untouched; no conversation content enters this file.
+  private func recordTextLayout(measuredHeight: CGFloat) {
+    guard TextLayoutEvidence.enabled, let identifier = textView.accessibilityIdentifier, let window, !isHidden,
+          let range = textView.textRange(from: textView.beginningOfDocument, to: textView.endOfDocument),
+          let attributed = textView.attributedText, attributed.length > 0 else { return }
+    func rect(_ r: CGRect) -> [String: CGFloat] {
+      ["x": r.origin.x, "y": r.origin.y, "width": r.width, "height": r.height]
+    }
+    let rectangles = textView.selectionRects(for: range).map { textView.convert($0.rect, from: textView.textInputView) }
+    let union = rectangles.reduce(CGRect.null) { $0.union($1) }
+    let last = (attributed.string as NSString).rangeOfComposedCharacterSequence(at: attributed.length - 1)
+    guard let start = textView.position(from: textView.beginningOfDocument, offset: last.location),
+          let end = textView.position(from: start, offset: last.length),
+          let tail = textView.textRange(from: start, to: end) else { return }
+    let lastRect = textView.convert(textView.firstRect(for: tail), from: textView.textInputView)
+    var points = Set<CGFloat>()
+    attributed.enumerateAttribute(.font, in: NSRange(location: 0, length: attributed.length)) { font, _, _ in
+      if let font = font as? UIFont { points.insert(font.pointSize) }
+    }
+    let record: [String: Any] = [
+      "identifier": identifier, "revision": revision, "scale": displayed["scale"] ?? 1,
+      "selectionActive": selectionActive, "queued": queued != nil,
+      "fontPoints": points.sorted(), "utf16Length": attributed.length,
+      "frame": rect(textView.convert(textView.bounds, to: window)),
+      "bounds": rect(textView.bounds), "measuredHeight": measuredHeight,
+      "selectionRectCount": rectangles.count, "selectionBounds": rect(union),
+      "lastCharacterRect": rect(lastRect),
+      "rendering": renderingEvidence(length: attributed.length),
+    ]
+    guard JSONSerialization.isValidJSONObject(record),
+          let bytes = try? JSONSerialization.data(withJSONObject: record, options: [.sortedKeys]), bytes != lastDiagnostic else { return }
+    lastDiagnostic = bytes
+    TextLayoutEvidence.record(identifier, record)
+  }
+
+  // Read the active engine: accessing layoutManager first would permanently
+  // switch TextKit 2 to compatibility mode and invalidate this experiment.
+  // These conservative rendering surfaces are not selection rectangles or a
+  // claim that every pixel inside the surface contains a visible glyph.
+  private func renderingEvidence(length: Int) -> [String: Any] {
+    let key = "\(revision):\(textView.bounds.size):\(window?.screen.scale ?? 1)"
+    if key == renderingCacheKey { return renderingCache }
+    func rect(_ r: CGRect) -> [String: CGFloat] {
+      ["x": r.origin.x, "y": r.origin.y, "width": r.width, "height": r.height]
+    }
+    let inset = textView.textContainerInset
+    if #available(iOS 16.0, *), let manager = textView.textLayoutManager {
+      guard let content = manager.textContentManager else {
+        return ["engine": "TextKit2", "complete": false, "utf16Coverage": 0]
+      }
+      var fragments: [[String: Any]] = []
+      var surface = CGRect.null
+      var covered = 0
+      var complete = true
+      var activeFragments: [NSTextLayoutFragment] = []
+      manager.enumerateTextLayoutFragments(from: nil, options: [.ensuresLayout]) { fragment in
+        let start = content.offset(from: content.documentRange.location, to: fragment.rangeInElement.location)
+        let end = content.offset(from: content.documentRange.location, to: fragment.rangeInElement.endLocation)
+        complete = complete && start == covered && end >= start && fragment.state == .layoutAvailable
+        covered = end
+        let frame = fragment.layoutFragmentFrame
+        let render = fragment.renderingSurfaceBounds.offsetBy(dx: frame.minX + inset.left, dy: frame.minY + inset.top)
+        surface = surface.union(render)
+        fragments.append(["start": start, "end": end, "state": fragment.state.rawValue,
+                          "layout": rect(frame), "rendering": rect(render)])
+        activeFragments.append(fragment)
+        return true
+      }
+      var result: [String: Any] = ["engine": "TextKit2", "complete": complete && covered == length && !fragments.isEmpty,
+                                   "utf16Coverage": covered, "fragments": fragments]
+      if !surface.isNull { result["bounds"] = rect(surface) }
+      // Draw the existing fragments into a padded reference surface, without
+      // the UITextView clip. Conservative surface bounds alone are not ink.
+      let ink = TextInkEvidence.capture(surface: surface, scale: window?.screen.scale ?? 1) { context in
+        for fragment in activeFragments {
+          let frame = fragment.layoutFragmentFrame
+          fragment.draw(at: CGPoint(x: frame.minX + inset.left, y: frame.minY + inset.top), in: context)
+        }
+      }
+      result["ink"] = ink.json
+      if complete && covered == length && ink.complete {
+        renderingCacheKey = key
+        renderingCache = result
+      }
+      return result
+    }
+    // Legacy access is safe only when no TextKit 2 manager is present.
+    let manager = textView.layoutManager
+    let glyphs = manager.glyphRange(for: textView.textContainer)
+    let characters = manager.characterRange(forGlyphRange: glyphs, actualGlyphRange: nil)
+    let surface = manager.boundingRect(forGlyphRange: glyphs, in: textView.textContainer)
+      .offsetBy(dx: inset.left, dy: inset.top)
+    return ["engine": "TextKit1", "complete": characters.location == 0 && characters.length == length,
+            "utf16Coverage": characters.length, "glyphCount": glyphs.length, "bounds": rect(surface)]
+  }
+#endif
 
   override func didMoveToWindow() {
     super.didMoveToWindow()
@@ -183,3 +293,23 @@ final class ConversationSelectionTextView: UITextView {
     return resigned
   }
 }
+
+#if targetEnvironment(simulator)
+private enum TextLayoutEvidence {
+  private static let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+  static let enabled: Bool = {
+    guard let url = docs?.appendingPathComponent("gtmux-debug-flags.json"),
+          let data = try? Data(contentsOf: url),
+          let flags = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { return false }
+    return flags["GTMUX_DEBUG_TEXT_LAYOUT"] as? String == "1"
+  }()
+  private static var records: [String: [String: Any]] = [:]
+  static func record(_ id: String, _ value: [String: Any]) {
+    if records[id] == nil && records.count >= 128 { return }
+    records[id] = value
+    guard let url = docs?.appendingPathComponent("gtmux-text-layout.json"),
+          let data = try? JSONSerialization.data(withJSONObject: records, options: [.sortedKeys]) else { return }
+    try? data.write(to: url, options: .atomic)
+  }
+}
+#endif

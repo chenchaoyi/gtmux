@@ -1,5 +1,6 @@
 import React, {useEffect, useReducer, useRef, useState} from 'react';
-import {Animated, Easing, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View} from 'react-native';
+import {Animated, Easing, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View} from 'react-native';
+import {useWindowDimensions} from './windowMetrics';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {GtmuxClient, SessionCreated, SessionCreateError} from '../api/client';
 import {SizeClass} from './layout';

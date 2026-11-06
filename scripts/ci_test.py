@@ -62,9 +62,9 @@ class ScopeTests(unittest.TestCase):
     def test_recognized_modules_include_consumers(self):
         self.assertEqual(ci.classify(["internal/radar/agents_test.go"])["selected"], ["test"])
         self.assertEqual(set(ci.classify(["mobileapp/src/components/Chat.tsx"])["selected"]),
-                         {"mobile", "web", "ios-native", "android-native", "android-emulator"})
+                         {"mobile", "web", "ios-native", "ios-duo", "android-native", "android-emulator"})
         self.assertEqual(set(ci.classify(["mobileapp/ios/GtmuxWidget/Widget.swift"])["selected"]),
-                         {"mobile", "ios-native"})
+                         {"mobile", "ios-native", "ios-duo"})
         self.assertEqual(set(ci.classify(["relay-worker/src/index.ts"])["selected"]),
                          {"relay-worker", "test", "mobile", "android-native", "android-emulator"})
 
@@ -131,6 +131,30 @@ class ScopeTests(unittest.TestCase):
         self.assertIn("runs-on: macos-15\n", block)
         self.assertIn("DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer", block)
         self.assertIn('test "$(uname -m)" = arm64', block)
+        duo = text.split("  ios-duo:\n", 1)[1].split("  relay-worker:\n", 1)[0]
+        self.assertIn("runs-on: xcode-27", duo)
+        self.assertIn("DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer", duo)
+        self.assertIn("Probe iPhone Duo runtime", duo)
+        self.assertIn("ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=-", duo)
+        self.assertIn("Signature=adhoc", duo)
+        self.assertIn("appium-xcuitest-driver@12.20.0", duo)
+        self.assertIn("16.17.1", duo)
+        probe = duo.split("      - name: Probe iPhone Duo runtime and run isolated simulator interaction\n", 1)[1].split("      - name:", 1)[0]
+        commands = re.findall(r"^          npm run test:e2e -- --runInBand (.+)$", probe, re.M)
+        self.assertEqual(len(commands), 1)
+        self.assertEqual(commands[0].split(), [
+            "duo-window.test.ts", "duo-fold.test.ts", "duo-text-scaling.test.ts",
+            "duo-voiceover.test.ts", "notification-scene-actions.test.ts", "scene-usage-links.test.ts",
+        ])
+        phone = duo.split("      - name: Ordinary iPhone simulator regression\n", 1)[1].split("      - name:", 1)[0]
+        self.assertIn("GITHUB_BASE_SHA: ${{ github.event.pull_request.base.sha }}", phone)
+        self.assertIn('if [ -n "$GITHUB_BASE_SHA" ]; then', phone)
+        self.assertIn("GTMUX_COMPARE_JOURNEY=push GTMUX_COMPARE_ADHOC=1 GTMUX_COMPARE_REUSE_CANDIDATE=1", phone)
+        self.assertIn("GTMUX_COMPARE_OS=27.0 GTMUX_COMPARE_DEVICE='iPhone 17'", phone)
+        self.assertIn('bash e2e/ci-compare-servers.sh || phone_status=$?', phone)
+        self.assertIn('npm run test:e2e -- --runInBand coldstart-push.test.ts || phone_status=$?', phone)
+        self.assertIn('exit "$phone_status"', phone)
+        self.assertEqual(block.count("github.head_ref == 'feat/iphone-duo-reviewed-integration'"), 2)
         self.assertIn("Verify actual ARM64 app and extension products", block)
         self.assertIn("ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO", block)
         self.assertNotIn("ARCHS=\"$(uname -m)\"", block)

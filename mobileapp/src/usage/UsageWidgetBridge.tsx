@@ -1,13 +1,14 @@
 // The native parent refreshes its widget using its existing private Keychain.
 // JS supplies only the current address, never a bearer or usage history.
-import React, {useEffect, useState} from 'react';
-import {AppState, Linking, NativeModules, Platform} from 'react-native';
+import React, {useEffect, useRef, useState} from 'react';
+import {AppState, Linking, NativeEventEmitter, NativeModules, Platform} from 'react-native';
 import {useApp} from '../state/AppContext';
 import {useAgents} from '../state/AgentsContext';
 import {UsageSheet} from '../screens/UsageSheet';
 import {GtmuxClient, UsageReport} from '../api/client';
 import {quotaWindowLabel} from '../screens/usageModel';
 import {useSizeClass} from '../ui/layout';
+import {Debug} from '../debug';
 
 let consumedInitialLink = false;
 
@@ -64,17 +65,59 @@ export function UsageWidgetBridge() {
   const usage = result?.client === client ? result.usage : null;
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
+  const current = useRef({client, isGuest, demo});
+  current.current = {client, isGuest, demo};
+  useEffect(() => {
+    if (Debug.logNet) Debug.record({event: 'usage-sheet-visibility', at: Date.now(), visible, isGuest, demo: !!demo});
+  }, [visible, isGuest, demo]);
   useEffect(() => {
     let live = true;
     const open = (url: string | null) => {
-      if (live && url && isUsageWidgetLink(url) && !isGuest && !demo) setOpenedFor(client);
+      const state = current.current;
+      if (Debug.logNet) Debug.record({event: 'usage-link', at: Date.now(), matches: !!url && isUsageWidgetLink(url), live, isGuest: state.isGuest, demo: !!state.demo});
+      if (live && url && isUsageWidgetLink(url) && !state.isGuest && !state.demo) setOpenedFor(state.client);
     };
+    // A scene attached to an already-started headless bridge cannot update RN's
+    // initial URL. Native retains those scene links until this consumer is ready.
+    const native = NativeModules.GtmuxNotificationResponses;
+    const handled = new Set<string>();
+    const drain = async () => {
+      if (!native?.pendingSceneLinks || !native?.acknowledgeSceneLink) return;
+      try {
+        const pending: Array<{id: string; url: string}> = await native.pendingSceneLinks();
+        if (!live) return;
+        for (const item of pending) {
+          if (!item?.id || typeof item.url !== 'string') continue;
+          if (!handled.has(item.id)) {
+            handled.add(item.id);
+            if (handled.size > 128) handled.delete(handled.values().next().value!);
+            open(item.url);
+          }
+          native.acknowledgeSceneLink(item.id);
+        }
+      } catch { /* native retains unacknowledged links for the next active transition */ }
+    };
+    const subscription = Linking.addEventListener('url', event => {
+      open(event.url);
+    });
+    const sceneEvents = native && typeof native.addListener === 'function' && typeof native.removeListeners === 'function'
+      ? new NativeEventEmitter(native).addListener('gtmuxSceneLinksAvailable', () => { void drain(); })
+      : undefined;
+    const state = AppState.addEventListener('change', next => { if (next === 'active') void drain(); });
+    void drain();
+    return () => { live = false; subscription.remove(); sceneEvents?.remove(); state.remove(); };
+  }, []);
+  useEffect(() => {
+    let live = true;
     void Linking.getInitialURL().then(url => {
-      if (!live || consumedInitialLink || !url || !isUsageWidgetLink(url) || isGuest || demo) return;
-      consumedInitialLink = true; open(url);
+      if (Debug.logNet) Debug.record({event: 'usage-link-initial', at: Date.now(), present: !!url, matches: !!url && isUsageWidgetLink(url), consumed: consumedInitialLink});
+      if (!live || consumedInitialLink || !url || !isUsageWidgetLink(url)) return;
+      // Consume the intent even when this connection must reject it. Otherwise a
+      // later owner connection can reopen a link delivered to a guest/demo view.
+      consumedInitialLink = true;
+      if (!isGuest && !demo) setOpenedFor(client);
     }).catch(() => {});
-    const subscription = Linking.addEventListener('url', event => open(event.url));
-    return () => { live = false; subscription.remove(); };
+    return () => { live = false; };
   }, [client, isGuest, demo]);
   useEffect(() => {
     if (!visible || isGuest || demo) return;

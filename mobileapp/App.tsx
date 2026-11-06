@@ -6,6 +6,7 @@ import {
   DarkTheme,
   DefaultTheme,
   NavigationContainer,
+  StackActions,
   useNavigationContainerRef,
 } from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
@@ -19,6 +20,8 @@ import {Splash} from './src/ui/Splash';
 import {WhatsNewModal} from './src/ui/WhatsNewModal';
 import {ReleaseNote} from './src/releaseNotes';
 import {useSizeClass} from './src/ui/layout';
+import {WindowMetricsProvider} from './src/ui/windowMetrics';
+import {WorkspaceSurface} from './src/ui/WorkspaceSurface';
 import {setupPush} from './src/push';
 import {Debug} from './src/debug';
 import {DetailScreen} from './src/screens/DetailScreen';
@@ -28,7 +31,6 @@ import {RouteScreen} from './src/screens/RouteScreen';
 import {AccessHistoryScreen} from './src/screens/AccessHistoryScreen';
 import {DiagScreen} from './src/screens/DiagScreen';
 import {PaneBrowserScreen} from './src/screens/PaneBrowserScreen';
-import {RadarScreen} from './src/screens/RadarScreen';
 import {ServersScreen} from './src/screens/ServersScreen';
 import {SettingsScreen} from './src/screens/SettingsScreen';
 import {SplitShell} from './src/screens/SplitShell';
@@ -91,11 +93,10 @@ function WhatsNew() {
   );
 }
 
-// RadarRoute picks the SHELL by size class (MOBILE §5): the regular shell (sidebar +
-// main pane) on an iPad-sized window, else the phone's radar. The class is the one rule
-// in ui/layout; neither shell reads the window itself.
+// Keep one workspace mounted as the available window changes. The shell adapts its
+// frame without replacing the selected reader or its in-progress interaction.
 function RadarRoute() {
-  return useSizeClass() === 'regular' ? <SplitShell /> : <RadarScreen />;
+  return <SplitShell />;
 }
 
 // PushBridge handles APNs events and deep-links while a workspace is open.
@@ -175,8 +176,11 @@ function PushBridge({navRef}: {navRef: any}) {
   };
   const onQuickReply = (pane: string, server: string | undefined, value: string) => {
     const target = sourceForPush(serversRef.current, server ?? '');
+    if (Debug.logNet) Debug.record({event: 'push-quick-reply', at: Date.now(), matched: !!target});
     if (target) {
-      new GtmuxClient(target.url, target.token).send(pane, {text: value}).catch(() => {});
+      return new GtmuxClient(target.url, target.token).send(pane, {text: value}).then(() => {
+        if (Debug.logNet) Debug.record({event: 'push-send-ok', at: Date.now()});
+      }).catch(() => { if (Debug.logNet) Debug.record({event: 'push-send-failed', at: Date.now()}); });
     }
   };
 
@@ -197,7 +201,8 @@ function PushBridge({navRef}: {navRef: any}) {
     if (Debug.noPush) return; // Debug.noPush keeps the auth prompt out of UI tests
     let teardown: (() => void) | undefined;
     let cancelled = false;
-    setupPush(onTap, setPushToken, onQuickReply, pushEnabled)
+    const lifecycle = new AbortController();
+    setupPush(onTap, setPushToken, onQuickReply, pushEnabled, lifecycle.signal)
       .then(t => {
         if (cancelled) t();
         else teardown = t;
@@ -206,7 +211,7 @@ function PushBridge({navRef}: {navRef: any}) {
         // Push is best-effort: a setup failure (e.g. the native module missing)
         // must not break the radar.
       });
-    return () => { cancelled = true; teardown?.(); };
+    return () => { cancelled = true; lifecycle.abort(); teardown?.(); };
     // agents/onTap intentionally omitted: re-subscribing on every refetch would
     // churn the native listeners; the handler reads live state via refs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -226,15 +231,23 @@ function Root() {
     (navRef as any).navigate(route, params);
   }, [navRef]);
 
+  // A push or keyboard command can select a session while Settings or another
+  // stack page is visible. Return to the persistent workspace before showing it.
+  const showWorkspace = React.useCallback(() => {
+    if (navRef.isReady() && (navRef.getCurrentRoute() as {name: string} | undefined)?.name !== 'Radar') {
+      navRef.dispatch(StackActions.popTo('Radar'));
+    }
+  }, [navRef]);
+
   // Restore settings with the shared launch identity. The capture flag is only
   // supplied to an isolated UI-test app; ordinary startup has no minimum delay.
   if (!ready || Debug.showSplash) {
-    return <Splash pal={pal} lang={lang} />;
+    return <SafeAreaProvider><Splash pal={pal} lang={lang} /></SafeAreaProvider>;
   }
 
   // No active server → the connection page (it lists saved Macs + lets you add).
   if (!mac) {
-    return <ServersScreen />;
+    return <SafeAreaProvider><ServersScreen /></SafeAreaProvider>;
   }
 
   // key={mac.url}: switching to another Mac fully remounts the agent store +
@@ -262,8 +275,8 @@ function Root() {
             }
           : undefined
       }>
-      <WorkspaceProvider mode={sizeClass} navigate={navigateSel}>
-      <PushBridge navRef={navRef} />
+      <WorkspaceProvider mode={sizeClass} navigate={navigateSel} inlineSelection onInlineSelect={showWorkspace}>
+      <WorkspaceSurface background={<PushBridge navRef={navRef} />}>
       <KeyCommandBridge />
       <UsageWidgetBridge />
       <WhatsNew />
@@ -281,6 +294,7 @@ function Root() {
           <Stack.Screen name="Diag" component={DiagScreen} />
         </Stack.Navigator>
       </NavigationContainer>
+      </WorkspaceSurface>
       </WorkspaceProvider>
     </AgentsProvider>
   );
@@ -295,11 +309,11 @@ function ThemedStatusBar() {
 
 export default function App() {
   return (
-    <SafeAreaProvider>
+    <WindowMetricsProvider>
       <AppProvider>
         <ThemedStatusBar />
         <Root />
       </AppProvider>
-    </SafeAreaProvider>
+    </WindowMetricsProvider>
   );
 }

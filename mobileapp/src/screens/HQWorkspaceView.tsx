@@ -164,7 +164,7 @@ export function HQWorkspaceView(
     <SafeAreaView
       onLayout={event => setContentWidth(event.nativeEvent.layout.width)}
       style={[s.root, { backgroundColor: pal.bg }]}
-      edges={['top', 'bottom']}
+      edges={['top', 'bottom', 'left', 'right']}
     >
       <View style={[s.header, { borderBottomColor: pal.divider }]}>
         {props.onBack && (

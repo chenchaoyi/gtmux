@@ -200,6 +200,28 @@ keys, and a failure still needs diagnosis. Physical-keyboard dispatch requires
 separate device acceptance; registration logs alone do not verify it.
 
 
+### Hosted Duo controls and text evidence
+
+Hosted Duo acceptance uses the isolated `ios-duo` job and its pinned driver. Its
+ordinary iPhone PR control runs `coldstart-push.test.ts` on both the actual PR base
+and candidate with the same iOS 27.0 device, alert handling, automatic launch and
+ad-hoc Simulator signature. `GTMUX_COMPARE_JOURNEY=push` selects that control in
+`ci-compare-servers.sh`; `GTMUX_COMPARE_REUSE_CANDIDATE=1` reuses the product already
+built in the job. The default journey remains the iOS 26 server comparison.
+Comparison artifacts retain each variant's status, signature, test evidence and
+baseline build log. Actual main runs its ordinary-phone regression without a
+self-comparison. These scripts are for disposable hosted runners, not shared
+local simulators.
+
+`GTMUX_DEBUG_TEXT_LAYOUT=1` records numeric text evidence only in Simulator builds.
+It reads the active TextKit engine's rendering surfaces and character coverage,
+alongside revision, scale and selection geometry. A surface extending outside a
+view is diagnostic evidence; it is not by itself proof of clipped glyphs. A
+passing sampling test also does not dismiss `DynamicType` or `TextClipped` audit
+findings. Preserve the raw body audits and screenshots for review. The engine
+access follows [Apple's TextKit compatibility guidance](https://developer.apple.com/videos/play/wwdc2022/10090/),
+so diagnostics do not force a TextKit 2 view into compatibility mode.
+
 ### Test-only TypeScript configuration
 
 The e2e harness is Node/CommonJS and has its own `tsconfig.json`; it does not inherit React Native's bundler resolution or custom conditions. Check it with `npx tsc --project e2e/tsconfig.json --noEmit`. WebDriver's chainable arrays have asynchronous metadata: use `.getElements()` before synchronous length/index access, and await element IDs passed to lower-level commands.

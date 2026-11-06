@@ -2,10 +2,10 @@
   "id": "contracts-behavior-20261105",
   "status": "reviewed",
   "review": {
-    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "reviewer": "Codex integration owner; independent source and mapping review by gtmux %20",
     "date": "2026-11-05",
-    "decision": "Proceed with approved backlog 1, 2, 3 and 7",
-    "notes": "Reviewed real handler validation and independent fake routes, current React renderer mocks, sequential Android dependencies and browser lifecycle. Synthetic loopback only; retain original 31 UI checks and complete selected suites. No native/device acceptance inferred from component tests; no release/install/account changes. Measure same source/cases/environment before speed claims. CI narrowing requires proof that production cannot import affected tests. Scope proof will bind the entire Metro configuration hash and verify the actual resolver excludes test modules; unavailable or changed proof retains native checks. Self-review strengthens HQ coverage by executing workspaceHTTPRead and the production projection against an isolated store; only generated_at/since volatile clocks are fixed. Separate scheduler/process lifecycle unit assertions from installed/browser runtime layers. Review scoped HQ navigation so prepared replies cannot cross a server or session switch."
+    "decision": "Reviewed for separate integration from the frozen source; device acceptance remains outstanding",
+    "notes": "Reviewed real handler validation and independent fake routes, current React renderer mocks, sequential Android dependencies and browser lifecycle. Synthetic loopback only; retain original 31 UI checks and complete selected suites. No native/device acceptance inferred from component tests; no release/install/account changes. Measure same source/cases/environment before speed claims. CI narrowing requires proof that production cannot import affected tests. Scope proof will bind the entire Metro configuration hash and verify the actual resolver excludes test modules; unavailable or changed proof retains native checks. Self-review strengthens HQ coverage by executing workspaceHTTPRead and the production projection against an isolated store; only generated_at/since volatile clocks are fixed. Separate scheduler/process lifecycle unit assertions from installed/browser runtime layers. Review scoped HQ navigation so prepared replies cannot cross a server or session switch. The Duo-specific CI selection addition was recorded retrospectively in the WIP and requires review before its separate integration. Integration preparation from PR1810-derived local source cae4c446f3a5cfc8d8cca899d6f7eb9e5aaaf846 onto main 50fd32738d5f5171629a16d1f93e55aedc5d6a4c; this draft is not a review or evidence that original implementation was reviewed in advance. Independent review of frozen Q cae4c446f3a5cfc8d8cca899d6f7eb9e5aaaf846 against B 50fd32738d5f5171629a16d1f93e55aedc5d6a4c concluded with relay c04db94cf9a846c4a2095d3feb0e56c2 after review of earlier source stages and the final delta. The original implementation predates this integration review; this record precedes its separate migration only. Device, candidate and main checks remain outstanding. Owner review after 1101 cloud evidence, before fixture correction: CT-HTTP shared server retains route authorization, explicit world.transcripts and DUO-007 request diagnostics. Default transcript times must derive from one per-startFake epoch, matching an unchanged conversation across polls rather than fabricating new message identities. New DUO-040 HTTP assertions verify clock advance, independent fixture epoch and explicit override; no production permissions or endpoints change."
   },
   "cases": [
     {
@@ -158,7 +158,7 @@
       "description": "Only proven non-product RN unit test edits may omit native builds; mixed/shared/unknown paths, test fixtures consumed by journeys and production imports fail closed; all selected checks still aggregate.",
       "setup": "Isolated synthetic handler/client/driver fixtures; no real agent, private home, network service or device input. Android L4 uses explicitly owned QA emulator only.",
       "action": "Only proven non-product RN unit test edits may omit native builds; mixed/shared/unknown paths, test fixtures consumed by journeys and production imports fail closed; all selected checks still aggregate.",
-      "expected": "Only proven non-product RN unit test edits may omit native builds; mixed/shared/unknown paths, test fixtures consumed by journeys and production imports fail closed; all selected checks still aggregate.",
+      "expected": "Only proven non-product RN unit test edits may omit native builds; mixed/shared/unknown paths, test fixtures consumed by journeys and production imports fail closed; all selected checks still aggregate. The Duo candidate also selects the iOS native and Duo simulator jobs for iOS application changes while retaining conservative selection for mixed and unknown paths.",
       "planned_files": [
         "scripts/ci.py",
         "scripts/ci_test.py",
@@ -170,5 +170,5 @@
       ]
     }
   ],
-  "seal": "064f6ca49fdf5c6aeca17482c9785ae287d272f0ba87d2c8b208f9b14d4b79eb"
+  "seal": "9cd60a3354cdd9fa308900c77a170cb4682c04d10ed3ddc48be3ba7eedd22ebe"
 }

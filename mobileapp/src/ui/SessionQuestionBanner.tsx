@@ -1,5 +1,6 @@
 import React from 'react';
-import {StyleSheet, Text, TouchableOpacity, View, useWindowDimensions} from 'react-native';
+import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {useWindowDimensions} from './windowMetrics';
 import type {Lang} from '../i18n';
 import type {KeyAction, TerminalKeyController} from './terminalKeys';
 import {BRAND, type Palette} from './theme';

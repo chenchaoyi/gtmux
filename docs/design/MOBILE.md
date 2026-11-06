@@ -1643,7 +1643,7 @@ Short landscape windows use a 44-point minimum single-line card, retaining the a
 
 Pending-question control labels use the existing `CHROME_MAX_SCALE` limit, retaining full spoken labels and separate unrestricted conversation text. Recreate only these native text nodes when font scale changes so their measured bounds follow the new glyph size.
 
-Floating Collapse all occupies a plain 44pt strip matching the conversation background, with no border, rounded box or button fill. Reserve that strip above the first message, and cap its fixed control text with `CHROME_MAX_SCALE`; scrolling messages pass behind the strip rather than overprinting the action. It still follows header translation and clears the full-screen safe top.
+The floating Collapse all outer container stays transparent, preserving scrolling and touches outside the action. The individual 44pt-minimum action supplies its own opaque fill, visible border, rounded corners and shadow so conversation glyphs cannot show through its label. It retains `CHROME_MAX_SCALE`, header translation, full-screen safe-top positioning and the existing content padding. Horizontal button padding increases from 4pt to 8pt, slightly increasing its natural width; the scrolling viewport is unchanged.
 
 ### Repeated pairing (2026-10-25)
 
@@ -1797,3 +1797,12 @@ Supported emphasis preserves actionable links, including scoped local-document c
 ### HQ overview disclosures (2026-11-04)
 
 Phone and iPad share one grouped overview. Each section shows visible / total canonical matters. A full-width footer states the remaining count and Showing X of Y, exposes expanded accessibility state, and reverses to Show less. Missing or stale summary IDs fall back to the first three valid matters; no matter lifecycle state changes. Diff settings, session tools and action sheets share the file-plus/minus icon.
+
+### Resizable iPhone windows
+
+The workspace keeps the selected reader mounted as available window dimensions cross
+its sidebar breakpoint. Compact windows show the radar or the selected reader; wider
+windows place them side by side. Returning to the radar keeps the reader until another
+selection replaces it. The scene owns the iOS window, and screen edges use the current
+safe area, including horizontal insets. Native iPhone Duo poses and accessibility still
+require device-specific acceptance; component tests are not that evidence.

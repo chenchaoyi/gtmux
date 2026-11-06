@@ -314,7 +314,7 @@ export function RadarPanel({
 
   // The screen owns its safe area; the sidebar sits inside the shell's.
   const Root: React.ComponentType<any> = sidebar ? View : SafeAreaView;
-  const rootProps = sidebar ? {} : {edges: ['top']};
+  const rootProps = sidebar ? {} : {edges: ['top', 'left', 'right']};
   return (
     <Root style={[styles.safe, {backgroundColor: pal.bg}]} {...rootProps} testID={TestIds.radar.screen}>
       {banner && <Banner alert={banner} t={t} onClose={dismissBanner} />}
