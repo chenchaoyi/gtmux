@@ -121,7 +121,8 @@
     "cases": [
       "DUO-020",
       "DUO-021",
-      "DUO-023"
+      "DUO-023",
+      "DUO-035"
     ],
     "selectors": [
       "retains the selected conversation and reading position across simulator fold and unfold",

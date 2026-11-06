@@ -15,6 +15,9 @@ final class ConversationTextView: UIView, UITextViewDelegate, UIGestureRecognize
   private var lastRevision = ""
   private var naturalWidth: CGFloat = 1
   private var outsideTap: UITapGestureRecognizer?
+#if targetEnvironment(simulator)
+  private var lastDiagnostic: Data?
+#endif
 
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -74,7 +77,47 @@ final class ConversationTextView: UIView, UITextViewDelegate, UIGestureRecognize
       lastRevision = revision
       onSize?(["height": height, "width": naturalWidth, "revision": revision])
     }
+#if targetEnvironment(simulator)
+    recordTextLayout(measuredHeight: height)
+#endif
   }
+
+#if targetEnvironment(simulator)
+  // Opt-in fixture evidence only. UITextInput geometry keeps the active TextKit
+  // engine and selection untouched; no conversation content enters this file.
+  private func recordTextLayout(measuredHeight: CGFloat) {
+    guard TextLayoutEvidence.enabled, let window, !isHidden,
+          let range = textView.textRange(from: textView.beginningOfDocument, to: textView.endOfDocument),
+          let attributed = textView.attributedText, attributed.length > 0 else { return }
+    func rect(_ r: CGRect) -> [String: CGFloat] {
+      ["x": r.origin.x, "y": r.origin.y, "width": r.width, "height": r.height]
+    }
+    let rectangles = textView.selectionRects(for: range).map { textView.convert($0.rect, from: textView.textInputView) }
+    let union = rectangles.reduce(CGRect.null) { $0.union($1) }
+    let last = (attributed.string as NSString).rangeOfComposedCharacterSequence(at: attributed.length - 1)
+    guard let start = textView.position(from: textView.beginningOfDocument, offset: last.location),
+          let end = textView.position(from: start, offset: last.length),
+          let tail = textView.textRange(from: start, to: end) else { return }
+    let lastRect = textView.convert(textView.firstRect(for: tail), from: textView.textInputView)
+    var points = Set<CGFloat>()
+    attributed.enumerateAttribute(.font, in: NSRange(location: 0, length: attributed.length)) { font, _, _ in
+      if let font = font as? UIFont { points.insert(font.pointSize) }
+    }
+    let record: [String: Any] = [
+      "revision": revision, "scale": displayed["scale"] ?? 1,
+      "selectionActive": selectionActive, "queued": queued != nil,
+      "fontPoints": points.sorted(), "utf16Length": attributed.length,
+      "frame": rect(textView.convert(textView.bounds, to: window)),
+      "bounds": rect(textView.bounds), "measuredHeight": measuredHeight,
+      "selectionRectCount": rectangles.count, "selectionBounds": rect(union),
+      "lastCharacterRect": rect(lastRect),
+    ]
+    guard JSONSerialization.isValidJSONObject(record),
+          let bytes = try? JSONSerialization.data(withJSONObject: record, options: [.sortedKeys]), bytes != lastDiagnostic else { return }
+    lastDiagnostic = bytes
+    TextLayoutEvidence.record(String(describing: ObjectIdentifier(self)), record)
+  }
+#endif
 
   override func didMoveToWindow() {
     super.didMoveToWindow()
@@ -183,3 +226,23 @@ final class ConversationSelectionTextView: UITextView {
     return resigned
   }
 }
+
+#if targetEnvironment(simulator)
+private enum TextLayoutEvidence {
+  private static let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+  static let enabled: Bool = {
+    guard let url = docs?.appendingPathComponent("gtmux-debug-flags.json"),
+          let data = try? Data(contentsOf: url),
+          let flags = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { return false }
+    return flags["GTMUX_DEBUG_TEXT_LAYOUT"] as? String == "1"
+  }()
+  private static var records: [String: [String: Any]] = [:]
+  static func record(_ id: String, _ value: [String: Any]) {
+    if records[id] == nil && records.count >= 128 { return }
+    records[id] = value
+    guard let url = docs?.appendingPathComponent("gtmux-text-layout.json"),
+          let data = try? JSONSerialization.data(withJSONObject: records, options: [.sortedKeys]) else { return }
+    try? data.write(to: url, options: .atomic)
+  }
+}
+#endif
