@@ -3246,6 +3246,9 @@ LEG-bfc34e88e748,L1,RN / mobile harness,mobileapp/src/api/client.interaction.tes
 LEG-985a4a6d5d1e,L1,RN / mobile harness,mobileapp/src/api/client.interaction.test.ts,21,test.each(),read failures (%s) never fall back to stale options,True,legacy-not-retrospectively-reviewed
 LEG-04563099ab0a,L1,RN / mobile harness,mobileapp/src/api/client.interaction.test.ts,26,test,a disappeared pane is not treated as an old server,False,legacy-not-retrospectively-reviewed
 LEG-253ae1d6d664,L1,RN / mobile harness,mobileapp/src/api/client.interaction.test.ts,31,test.each(),rejects malformed current prompts,True,legacy-not-retrospectively-reviewed
+MAP-8db5e8955f3b,L1,reviewed implementation,mobileapp/src/api/client.sendTrace.test.ts,13,reviewed-selector,a pending send exposes fetch call and return without pretending the request completed,False,DUO-046
+MAP-556a78500944,L1,reviewed implementation,mobileapp/src/api/client.sendTrace.test.ts,31,reviewed-selector,a fetch %s preserves the original failure and its actual boundary,False,DUO-046
+MAP-74b50cb130c7,L1,reviewed implementation,mobileapp/src/api/client.sendTrace.test.ts,39,reviewed-selector,normal logging-off sends have no new diagnostic records,False,DUO-046
 LEG-8618f9a380b9,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,78,it,preserves stale separately from token rejection and defaults old servers to current,False,legacy-not-retrospectively-reviewed
 LEG-fd9d36bb24c0,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,89,it,GETs /api/health (no auth header) and returns r.ok,False,legacy-not-retrospectively-reviewed
 LEG-6f67520aa9f4,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,99,it,returns false when the response is not ok,False,legacy-not-retrospectively-reviewed
@@ -3571,6 +3574,9 @@ MAP-f6ca99aeb79b,L1,RN / mobile harness,mobileapp/src/push/launchNotification.te
 MAP-49ac3dbf1487,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,145,reviewed-selector,a stalled native drain leaves initial fallback and foreground recovery usable,False,DUO-010
 MAP-14fb52a6ba3b,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,192,reviewed-selector,the initial action does not wait for notification permission,False,DUO-010
 MAP-b3afaf2b1f68,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,167,reviewed-selector,foreground recovery first delivers a retained response after the initial drain stalls,False,DUO-010
+MAP-f3c8f4404ee8,L1,reviewed implementation,mobileapp/src/push/permissionTrace.test.ts,24,reviewed-selector,probe entry distinguishes a pending native settings callback from a timer that never ran,False,DUO-046
+MAP-88ba30480bfb,L1,reviewed implementation,mobileapp/src/push/permissionTrace.test.ts,39,reviewed-selector,abort before the probe records closure and cancels the existing timer,False,DUO-046
+MAP-550ae988375a,L1,reviewed implementation,mobileapp/src/push/permissionTrace.test.ts,48,reviewed-selector,logging off adds neither a probe nor teardown records,False,DUO-046
 LEG-fbb65bc19bd8,L1,RN / mobile harness,mobileapp/src/push/sync.test.ts,9,it,"registers a selected Mac and unregisters a muted Mac, including silent badge pushes",False,legacy-not-retrospectively-reviewed
 LEG-c01ee8fb12d3,L1,RN / mobile harness,mobileapp/src/push/sync.test.ts,20,it,tries a reported alternate route and leaves a failed sync pending,False,legacy-not-retrospectively-reviewed
 LEG-7719b4cb3445,L1,RN / mobile harness,mobileapp/src/push/sync.test.ts,31,it,never registers a guest or an unknown token,False,legacy-not-retrospectively-reviewed

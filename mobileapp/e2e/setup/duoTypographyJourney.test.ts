@@ -32,7 +32,7 @@ jest.mock('../fake-serve/server', () => ({startFake: async () => ({url: 'http://
 
 async function registeredJourney(size: string) {
   let run: ((size: string) => Promise<void>) | undefined;
-  const spies = [jest.spyOn(it, 'each').mockImplementation((() => (_name: string, work: typeof run) => {run = work;}) as typeof it.each),
+  const spies = [jest.spyOn(it, 'each').mockImplementation((() => (_name: string, work: typeof run) => {run = work;}) as unknown as typeof it.each),
     jest.spyOn(global, 'beforeEach').mockImplementation(() => {}), jest.spyOn(global, 'afterEach').mockImplementation(() => {})];
   try {jest.isolateModules(() => {require('../__tests__/duo-text-scaling.test');});}
   finally {spies.forEach(spy => spy.mockRestore());}

@@ -503,7 +503,11 @@ async function tfetch(url: string, init?: RequestInit): Promise<Response> {
   const t0 = Date.now();
   let r: Response;
   try {
-    r = await fetch(url, init);
+    const traceSend = Debug.logNet && route === 'POST /api/send';
+    if (traceSend) Debug.record({event: 'send-fetch-call', at: Date.now()});
+    const pending = fetch(url, init);
+    if (traceSend) Debug.record({event: 'send-fetch-returned', at: Date.now()});
+    r = await pending;
   } catch (e: any) {
     const abort = requestAbortKind(init?.signal);
     if (abort !== 'cancelled') {

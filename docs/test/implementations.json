@@ -918,5 +918,25 @@
       "both panels use the successful launch path at %s without another child lookup",
       "missing launch evidence remains a failure and still restores size, display and fixture"
     ]
+  },
+  "mobileapp/src/api/client.sendTrace.test.ts": {
+    "cases": [
+      "DUO-046"
+    ],
+    "selectors": [
+      "a pending send exposes fetch call and return without pretending the request completed",
+      "a fetch %s preserves the original failure and its actual boundary",
+      "normal logging-off sends have no new diagnostic records"
+    ]
+  },
+  "mobileapp/src/push/permissionTrace.test.ts": {
+    "cases": [
+      "DUO-046"
+    ],
+    "selectors": [
+      "probe entry distinguishes a pending native settings callback from a timer that never ran",
+      "abort before the probe records closure and cancels the existing timer",
+      "logging off adds neither a probe nor teardown records"
+    ]
   }
 }

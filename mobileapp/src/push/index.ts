@@ -235,6 +235,7 @@ export async function setupPush(
   const teardown = () => {
     if (closed) return;
     closed = true;
+    if (Debug.logNet) Debug.record({event: 'push-subscription-closed', at: Date.now()});
     if (permissionProbe) clearTimeout(permissionProbe);
     lifecycle?.removeEventListener('abort', teardown);
     stateSubscription.remove();
@@ -275,6 +276,7 @@ export async function setupPush(
       if (Debug.logNet) {
         Debug.record({event: 'push-permission-start', at: Date.now()});
         if (typeof PushNotificationIOS.checkPermissions === 'function') permissionProbe = setTimeout(() => {
+          Debug.record({event: 'push-permission-probe-start', at: Date.now()});
           try {
             PushNotificationIOS.checkPermissions((settings: any) => {
               if (!closed) Debug.record({event: 'push-permission-settings', at: Date.now(), status: settings?.authorizationStatus, alert: !!settings?.alert});
