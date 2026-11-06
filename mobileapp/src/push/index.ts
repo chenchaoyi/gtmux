@@ -142,6 +142,7 @@ export async function setupPush(
   }
 
   let closed = false;
+  let permissionProbe: ReturnType<typeof setTimeout> | undefined;
   const onRegister = (token: string) => {
     if (closed) return;
     lastToken = token;
@@ -234,6 +235,7 @@ export async function setupPush(
   const teardown = () => {
     if (closed) return;
     closed = true;
+    if (permissionProbe) clearTimeout(permissionProbe);
     lifecycle?.removeEventListener('abort', teardown);
     stateSubscription.remove();
     PushNotificationIOS.removeEventListener('register');
@@ -270,8 +272,21 @@ export async function setupPush(
     // When the master switch is off, obtain a previously authorized token to
     // remove old registrations without showing a first-time permission prompt.
     if (askPermission) {
-      if (Debug.logNet) Debug.record({event: 'push-permission-start', at: Date.now()});
-      const permissions = await PushNotificationIOS.requestPermissions();
+      if (Debug.logNet) {
+        Debug.record({event: 'push-permission-start', at: Date.now()});
+        if (typeof PushNotificationIOS.checkPermissions === 'function') permissionProbe = setTimeout(() => {
+          try {
+            PushNotificationIOS.checkPermissions((settings: any) => {
+              if (!closed) Debug.record({event: 'push-permission-settings', at: Date.now(), status: settings?.authorizationStatus, alert: !!settings?.alert});
+            });
+          } catch (error) {
+            if (!closed) Debug.record({event: 'push-permission-settings-error', at: Date.now(), name: error instanceof Error ? error.name : typeof error});
+          }
+        }, 5000);
+      }
+      let permissions;
+      try { permissions = await PushNotificationIOS.requestPermissions(); }
+      finally { if (permissionProbe) clearTimeout(permissionProbe); }
       if (Debug.logNet) Debug.record({event: 'push-permissions', at: Date.now(), alert: !!permissions?.alert});
     } else {
       const permissions: any = await new Promise(resolve => PushNotificationIOS.checkPermissions(resolve));

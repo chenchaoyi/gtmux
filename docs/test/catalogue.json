@@ -58353,7 +58353,7 @@
       "cases": [
         {
           "id": "MAP-4aec1b6dc3b7",
-          "line": 14,
+          "line": 15,
           "kind": "reviewed-selector",
           "name": "requests permission despite a stalled initial response, then delivers the late action once",
           "dynamic": false,
@@ -58362,7 +58362,7 @@
         },
         {
           "id": "MAP-27c1f05fe1bb",
-          "line": 28,
+          "line": 29,
           "kind": "reviewed-selector",
           "name": "ignores an initial response that arrives after teardown",
           "dynamic": false,
@@ -58371,7 +58371,7 @@
         },
         {
           "id": "MAP-a29517909a3d",
-          "line": 76,
+          "line": 77,
           "kind": "reviewed-selector",
           "name": "delivers an initial action without waiting for permission",
           "dynamic": false,
@@ -58380,7 +58380,7 @@
         },
         {
           "id": "MAP-82e358ff5f58",
-          "line": 39,
+          "line": 40,
           "kind": "reviewed-selector",
           "name": "hands a late initial response to the live bridge after a server switch",
           "dynamic": false,
@@ -58389,15 +58389,24 @@
         },
         {
           "id": "MAP-40ca9ad91fa7",
-          "line": 54,
+          "line": 55,
           "kind": "reviewed-selector",
           "name": "cancels a bridge immediately when permission is pending and hands the action to its replacement",
           "dynamic": false,
           "layer": "L2",
           "design": "DUO-032"
+        },
+        {
+          "id": "MAP-c60f9dfaa54a",
+          "line": 90,
+          "kind": "reviewed-selector",
+          "name": "reads authorization settings only for a pending debug request and stops on teardown",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DUO-032"
         }
       ],
-      "sha256": "1f0dfa6533b7d4b54f2c470044500abd1cd38957dc22b49283d15160fe73b22b"
+      "sha256": "152ad5073d7cf3bcab157175a7da7d4ddbbf854520d5b82830224c078dca6dbb"
     },
     "mobileapp/src/ui/ChatView.promptReflow.test.tsx": {
       "layer": "L2",

@@ -746,7 +746,8 @@
       "ignores an initial response that arrives after teardown",
       "delivers an initial action without waiting for permission",
       "hands a late initial response to the live bridge after a server switch",
-      "cancels a bridge immediately when permission is pending and hands the action to its replacement"
+      "cancels a bridge immediately when permission is pending and hands the action to its replacement",
+      "reads authorization settings only for a pending debug request and stops on teardown"
     ]
   },
   "mobileapp/src/ui/ChatView.promptReflow.test.tsx": {

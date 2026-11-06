@@ -1,11 +1,12 @@
 import PushNotificationIOS from '@react-native-community/push-notification-ios';
 import {resetLaunchNotificationForTesting, setupPush} from './index';
+import {Debug} from '../debug';
 
 jest.mock('react-native', () => ({Platform: {OS: 'ios'}, AppState: {addEventListener: jest.fn(() => ({remove: jest.fn()}))}, NativeModules: {}}));
 jest.mock('react-native-keychain', () => ({setGenericPassword: jest.fn(async () => {})}));
 jest.mock('@react-native-community/push-notification-ios', () => ({__esModule: true, default: {
   addEventListener: jest.fn(), removeEventListener: jest.fn(), setNotificationCategories: jest.fn(),
-  requestPermissions: jest.fn(async () => ({alert: true})), getInitialNotification: jest.fn(), FetchResult: {NoData: 'noData'},
+  requestPermissions: jest.fn(async () => ({alert: true})), checkPermissions: jest.fn(), getInitialNotification: jest.fn(), FetchResult: {NoData: 'noData'},
 }}));
 
 beforeEach(() => {resetLaunchNotificationForTesting(); jest.clearAllMocks();});
@@ -83,4 +84,36 @@ test('delivers an initial action without waiting for permission', async () => {
   expect(reply).toHaveBeenCalledTimes(1);
   allow({alert: true});
   (await setup)();
+});
+
+
+test('reads authorization settings only for a pending debug request and stops on teardown', async () => {
+  jest.useFakeTimers();
+  const previous = Debug.logNet;
+  Debug.logNet = true;
+  const record = jest.spyOn(Debug, 'record').mockImplementation(() => {});
+  let allow!: (value: object) => void;
+  (PushNotificationIOS.getInitialNotification as jest.Mock).mockResolvedValue(null);
+  (PushNotificationIOS.requestPermissions as jest.Mock).mockReturnValue(new Promise(resolve => {allow = resolve;}));
+  (PushNotificationIOS.checkPermissions as jest.Mock).mockImplementation(callback => callback({authorizationStatus: 2, alert: true}));
+  const lifecycle = new AbortController();
+  const pending = setupPush(jest.fn(), jest.fn(), jest.fn(), true, lifecycle.signal);
+  jest.advanceTimersByTime(5000);
+  expect(PushNotificationIOS.checkPermissions).toHaveBeenCalledTimes(1);
+  expect(record).toHaveBeenCalledWith(expect.objectContaining({event: 'push-permission-settings', status: 2, alert: true}));
+  lifecycle.abort();
+  allow({alert: true});
+  (await pending)();
+  let allowSecond!: (value: object) => void;
+  (PushNotificationIOS.requestPermissions as jest.Mock).mockReturnValue(new Promise(resolve => {allowSecond = resolve;}));
+  const second = new AbortController();
+  const pendingSecond = setupPush(jest.fn(), jest.fn(), jest.fn(), true, second.signal);
+  second.abort();
+  jest.advanceTimersByTime(5000);
+  expect(PushNotificationIOS.checkPermissions).toHaveBeenCalledTimes(1);
+  allowSecond({alert: true});
+  (await pendingSecond)();
+  record.mockRestore();
+  Debug.logNet = previous;
+  jest.useRealTimers();
 });
