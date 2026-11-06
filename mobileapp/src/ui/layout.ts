@@ -1,20 +1,11 @@
-// Layout breakpoints (MOBILE §5). One place to answer "can this canvas hold two
 import {useWindowDimensions} from './windowMetrics';
-// columns?", because the answer was being spelled out as `width >= 768` in three files
-// and they must never disagree about what device they are on.
+
+// Central layout rules for the available workspace (MOBILE §5).
 
 export const splitMinWidth = 768;
 
-/**
- * splitMinHeight is the half of the test that was missing.
- *
- * A modern iPhone in LANDSCAPE is 852-932pt wide — comfortably past the width
- * breakpoint — and 393-430pt tall. Width alone therefore handed a phone the iPad's
- * sidebar-plus-detail layout on a canvas barely taller than the keyboard, which is the
- * inverse of the rule §5 opens with: an iPad is not a big phone, and a phone in landscape
- * is not a small iPad. 600 clears every iPad orientation (the shortest is 768pt) and no
- * phone in either.
- */
+/** A two-column workspace also needs enough vertical room for its controls and reader.
+ * Decide from the current window, not from device family or physical orientation. */
 export const splitMinHeight = 600;
 
 /** isSplitCanvas reports whether the window can carry the two-column layout. */
@@ -23,10 +14,9 @@ export function isSplitCanvas(width: number, height: number): boolean {
 }
 
 /**
- * The two shells (MOBILE §5, change ipad-universal-app). `regular` is a sidebar beside a
- * main pane; `compact` is the phone's stack. This is the ONLY place a layout decision is
- * made from the window: screens receive the class (or a prop derived from it) and never
- * read the window size to pick a layout themselves — `shellDrift.test.ts` enforces it.
+ * The workspace modes (MOBILE §5): `regular` shows a sidebar beside the reader;
+ * `compact` shows the list or reader. The choice follows available space on any device.
+ * `shellDrift.test.ts` guards against screens introducing divergent shell decisions.
  */
 export type SizeClass = 'regular' | 'compact';
 
