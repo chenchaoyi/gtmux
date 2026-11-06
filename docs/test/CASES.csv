@@ -3791,8 +3791,8 @@ MAP-e33509324cc9,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.tes
 MAP-7bb91bd4c1ab,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,236,reviewed-selector,keeps the session entry usable at an accessibility text size on both panels,False,"DUO-020,DUO-021,DUO-023"
 MAP-a27d63cdf4d6,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,57,reviewed-selector,retains the selected conversation and reading position across simulator fold and unfold,False,"DUO-020,DUO-021,DUO-023"
 MAP-f369d9080a71,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,99,reviewed-selector,retains the selected conversation and keyboard draft across simulator fold and unfold,False,"DUO-020,DUO-021,DUO-023"
-MAP-5fa147a200d6,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-text-scaling.test.ts,31,reviewed-selector,keeps the session entry usable at an accessibility text size on both panels,False,DUO-035
-MAP-e15965308269,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-text-scaling.test.ts,31,reviewed-selector,keeps the session entry usable at an accessibility text size on both panels (%s),False,DUO-035
+MAP-5fa147a200d6,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-text-scaling.test.ts,29,reviewed-selector,keeps the session entry usable at an accessibility text size on both panels,False,DUO-035
+MAP-e15965308269,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-text-scaling.test.ts,29,reviewed-selector,keeps the session entry usable at an accessibility text size on both panels (%s),False,DUO-035
 MAP-5c8eef2b06d5,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-voiceover.test.ts,18,reviewed-selector,speaks the selected session and tools on both Duo panels with VoiceOver,False,DUO-037
 MAP-8cfa983c4bb1,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-window.test.ts,15,reviewed-selector,keeps the selected session and a draft through simulator rotation,False,DUO-002
 LEG-e23b5ce26880,L4,RN / mobile harness,mobileapp/e2e/__tests__/edge-stability.test.ts,22,it,traces the viewport around the live tail,False,legacy-not-retrospectively-reviewed
@@ -3973,6 +3973,9 @@ LEG-4f90e4968cbd,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts
 MAP-f4f657590af5,L2,reviewed implementation,mobileapp/e2e/fake-serve/world.ts,111,reviewed-selector,export class World,False,CT-HTTP
 MAP-befb8569059f,G,reviewed implementation,mobileapp/e2e/jest.config.manual.js,2,reviewed-selector,manualMode(process.env),False,"DG-001,DG-002"
 MAP-a88b539daecf,G,reviewed implementation,mobileapp/e2e/jest.config.manual.js,3,reviewed-selector,sendTarget(process.env),False,"DG-001,DG-002"
+MAP-2444a23694a2,L1,reviewed implementation,mobileapp/e2e/setup/appLaunchFiles.test.ts,14,reviewed-selector,each launch returns the freshly resolved path containing its own flags,False,DUO-045
+MAP-f758152f6a60,L1,reviewed implementation,mobileapp/e2e/setup/appLaunchFiles.test.ts,29,reviewed-selector,failed activation exposes no successful launch path,False,DUO-045
+MAP-692a5e080ea9,L1,reviewed implementation,mobileapp/e2e/setup/appLaunchFiles.test.ts,36,reviewed-selector,lookup failure does not write flags or activate the app,False,DUO-045
 LEG-b6f73720d14b,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,25,test,manual handles nothing on the test’s behalf,False,legacy-not-retrospectively-reviewed
 LEG-7440419bbda7,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,31,test,"the default dismisses, and the older accept switch still accepts",False,legacy-not-retrospectively-reviewed
 LEG-9afe9479f18a,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,36,test,the explicit mode wins over the older switch,False,legacy-not-retrospectively-reviewed
@@ -3986,6 +3989,8 @@ MAP-f2c072236f56,L2,reviewed implementation,mobileapp/e2e/setup/duoDraftEvidence
 MAP-a7137fdb210b,L2,reviewed implementation,mobileapp/e2e/setup/duoDraftEvidence.test.ts,87,reviewed-selector,excessive diagnostic output fails an otherwise successful journey and restores posture,False,DUO-041
 MAP-8682bc284869,L2,reviewed implementation,mobileapp/e2e/setup/duoDraftEvidence.test.ts,97,reviewed-selector,evidence write failure restores posture with prior failure=%s,False,DUO-041
 MAP-32ffcf66e15b,L2,reviewed implementation,mobileapp/e2e/setup/duoDraftEvidence.test.ts,105,reviewed-selector,invalid current keyboard x=%s rejects without sending a keyboard touch,False,DUO-041
+MAP-31cb69c47256,L1,reviewed implementation,mobileapp/e2e/setup/duoTypographyJourney.test.ts,57,reviewed-selector,both panels use the successful launch path at %s without another child lookup,False,DUO-045
+MAP-625c4d17a066,L1,reviewed implementation,mobileapp/e2e/setup/duoTypographyJourney.test.ts,68,reviewed-selector,"missing launch evidence remains a failure and still restores size, display and fixture",False,DUO-045
 MAP-afca37581308,L2,reviewed implementation,mobileapp/e2e/setup/duoVoiceOverJourney.test.ts,71,reviewed-selector,evidence %s failure still restores VoiceOver and the fixture,False,DUO-038
 MAP-b0fd8cd81545,L2,reviewed implementation,mobileapp/e2e/setup/duoVoiceOverJourney.test.ts,78,reviewed-selector,a late %s result cannot satisfy the panel budget,False,DUO-038
 MAP-5a3253c27607,L2,reviewed implementation,mobileapp/e2e/setup/duoVoiceOverJourney.test.ts,90,reviewed-selector,on-budget real journey control observes both panels and restores VoiceOver,False,DUO-038

@@ -31,20 +31,23 @@ const FILE_RESET_TOKEN = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
  * session and applies unreliably on relaunch. Keys are the full GTMUX_DEBUG_*
  * names (e.g. {GTMUX_DEBUG_NO_PUSH: '1'}).
  */
-export function writeDebugFlags(flags: Record<string, string>): void {
-  const docs = join(dataContainer(), 'Documents');
+export function writeDebugFlags(flags: Record<string, string>): string {
+  const container = dataContainer();
+  const docs = join(container, 'Documents');
   mkdirSync(docs, {recursive: true});
   const all = {GTMUX_DEBUG_RESET_UI_STATE: FILE_RESET_TOKEN, ...flags};
   writeFileSync(join(docs, 'gtmux-debug-flags.json'), JSON.stringify(all), 'utf8');
+  return container;
 }
 
-export async function launchWithFlags(flags: Record<string, string>): Promise<void> {
+/** The returned data path belongs to this launch only; resolve afresh after any reinstall/relaunch. */
+export async function launchWithFlags(flags: Record<string, string>): Promise<string> {
   // The What's New popup is skipped unless a suite asks for it with
   // GTMUX_DEBUG_SKIP_WHATS_NEW: '0': after a version bump it covered every suite's first
   // screen (findings F8). The app records the version as seen, as a fresh install does.
   const started = Date.now();
   if (process.env.GTMUX_E2E_SESSION_CI === '1') console.log(`[e2e] launch flags begin ${started}`);
-  writeDebugFlags({GTMUX_DEBUG_SKIP_WHATS_NEW: '1', ...flags});
+  const container = writeDebugFlags({GTMUX_DEBUG_SKIP_WHATS_NEW: '1', ...flags});
   if (process.env.GTMUX_E2E_SESSION_CI === '1') console.log(`[e2e] launch flags written after ${Date.now() - started}ms`);
   const driver = getDriver();
   try {
@@ -53,6 +56,7 @@ export async function launchWithFlags(flags: Record<string, string>): Promise<vo
     /* not running */
   }
   await driver.activateApp(BUNDLE);
+  return container;
 }
 
 /** Wait for the app's existing notification prompt flow; do not mutate permissions. */

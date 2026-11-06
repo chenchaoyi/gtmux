@@ -1,4 +1,3 @@
-import {execFileSync} from 'child_process';
 import {existsSync, readFileSync, writeFileSync} from 'fs';
 import {join} from 'path';
 import {getArtifactsDir, getDriver} from '../setup/driver';
@@ -15,8 +14,7 @@ const guard = createJourneyGuard();
 beforeEach(selectUnfoldedInnerDisplay, 60000);
 afterEach(guard.wait, 930000);
 
-async function verifyNativeTextLayout(panel: string, evidence: object[]) {
-  const container = execFileSync('xcrun', ['simctl', 'get_app_container', process.env.GTMUX_E2E_UDID!, 'com.gtmux.app', 'data'], {encoding: 'utf8', timeout: 5000, maxBuffer: 16 * 1024, killSignal: 'SIGKILL'}).trim();
+async function verifyNativeTextLayout(container: string, panel: string, evidence: object[]) {
   const file = join(container, 'Documents', 'gtmux-text-layout.json');
   try {
     const result = await waitForNativeTextLayout(panel, () => existsSync(file)
@@ -36,11 +34,12 @@ it.each(['accessibility-large', 'accessibility-extra-extra-extra-large'])('keeps
   let primaryError: unknown;
   const auditErrors: string[] = [];
   const currentScales = new Map<string, number>();
+  let container: string;
   const suffix = size === 'accessibility-large' ? '' : '-maximum';
   const label = (panel: string) => panel + suffix;
   const verify = async (panel: string) => {
     try {
-      const result = await verifyNativeTextLayout(label(panel), evidence);
+      const result = await verifyNativeTextLayout(container, label(panel), evidence);
       currentScales.set(panel, result.nativeTextLayouts[0].scale);
     }
     catch (error) {
@@ -83,7 +82,7 @@ it.each(['accessibility-large', 'accessibility-extra-extra-extra-large'])('keeps
     expect(original).not.toMatch(/^(unknown|unsupported)$/);
     await driver.execute('mobile: setContentSize', {size: 'large'});
     expect(await driver.execute('mobile: contentSize')).toBe('large');
-    await launchWithFlags({GTMUX_DEBUG_PAIR_URL: auditFake.url, GTMUX_DEBUG_PAIR_TOKEN: auditFake.token,
+    container = await launchWithFlags({GTMUX_DEBUG_PAIR_URL: auditFake.url, GTMUX_DEBUG_PAIR_TOKEN: auditFake.token,
       GTMUX_DEBUG_NO_PUSH: '1', GTMUX_DEBUG_LANG: 'en', GTMUX_DEBUG_TEXT_LAYOUT: '1'});
     await posture(0, 'outer', evidence);
     const back = driver.$(`~${TestIds.detail.back}`);

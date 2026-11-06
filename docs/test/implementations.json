@@ -899,5 +899,24 @@
     "selectors": [
       "xcrun --sdk iphonesimulator swiftc"
     ]
+  },
+  "mobileapp/e2e/setup/appLaunchFiles.test.ts": {
+    "cases": [
+      "DUO-045"
+    ],
+    "selectors": [
+      "each launch returns the freshly resolved path containing its own flags",
+      "failed activation exposes no successful launch path",
+      "lookup failure does not write flags or activate the app"
+    ]
+  },
+  "mobileapp/e2e/setup/duoTypographyJourney.test.ts": {
+    "cases": [
+      "DUO-045"
+    ],
+    "selectors": [
+      "both panels use the successful launch path at %s without another child lookup",
+      "missing launch evidence remains a failure and still restores size, display and fixture"
+    ]
   }
 }

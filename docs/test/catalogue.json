@@ -58492,7 +58492,7 @@
       "cases": [
         {
           "id": "MAP-5fa147a200d6",
-          "line": 31,
+          "line": 29,
           "kind": "reviewed-selector",
           "name": "keeps the session entry usable at an accessibility text size on both panels",
           "dynamic": false,
@@ -58501,7 +58501,7 @@
         },
         {
           "id": "MAP-e15965308269",
-          "line": 31,
+          "line": 29,
           "kind": "reviewed-selector",
           "name": "keeps the session entry usable at an accessibility text size on both panels (%s)",
           "dynamic": false,
@@ -58509,7 +58509,7 @@
           "design": "DUO-035"
         }
       ],
-      "sha256": "5d486d817b578225a8928c5cc18b3349b0240f1ad7f2a47b9beb7cb99fa8ab08"
+      "sha256": "eaf7866f004c3f4e18e18bc270f3a8089c0b8d8ddb65b76075328bf65c2512eb"
     },
     "mobileapp/e2e/__tests__/duo-voiceover.test.ts": {
       "layer": "L4",
@@ -58895,6 +58895,65 @@
         }
       ],
       "sha256": "a7a65e31dc53285fb36dddaa9d3ceecf18d9a3cf1412cca01499f26b8bf89384"
+    },
+    "mobileapp/e2e/setup/appLaunchFiles.test.ts": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-2444a23694a2",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "each launch returns the freshly resolved path containing its own flags",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-045"
+        },
+        {
+          "id": "MAP-f758152f6a60",
+          "line": 29,
+          "kind": "reviewed-selector",
+          "name": "failed activation exposes no successful launch path",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-045"
+        },
+        {
+          "id": "MAP-692a5e080ea9",
+          "line": 36,
+          "kind": "reviewed-selector",
+          "name": "lookup failure does not write flags or activate the app",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-045"
+        }
+      ],
+      "sha256": "87d5b60bfae1d9c67c0cc1b65ed347ada166436e064a6bae22f3b9003fa566b5"
+    },
+    "mobileapp/e2e/setup/duoTypographyJourney.test.ts": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-31cb69c47256",
+          "line": 57,
+          "kind": "reviewed-selector",
+          "name": "both panels use the successful launch path at %s without another child lookup",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-045"
+        },
+        {
+          "id": "MAP-625c4d17a066",
+          "line": 68,
+          "kind": "reviewed-selector",
+          "name": "missing launch evidence remains a failure and still restores size, display and fixture",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-045"
+        }
+      ],
+      "sha256": "775163d95691a1305e75976102362ddd415f88707782bac1bcb1b3f86233b058"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2"

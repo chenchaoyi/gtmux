@@ -2,11 +2,11 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1064 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1066 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
-| L1 · Unit / pure logic | 3761 | [L1.csv](cases/L1.csv) |
+| L1 · Unit / pure logic | 3766 | [L1.csv](cases/L1.csv) |
 | L2 · Component / contract | 1937 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 86 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 109 | [L4.csv](cases/L4.csv) |
@@ -85,6 +85,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | DUO-042 | Every run exits the original test status; diagnostic failures remain visible on stderr and do not turn failed tests green or successful tests into unrelated diagnostic failures. |
 | DUO-043 | Both variants use the same chosen test and launch policy, one baseline native build with reused candidate, exact selected runtime/device and ad-hoc configuration; failures stay failures, unexpected source/signature fails closed, original default comparison remains intact. |
 | DUO-044 | Exact ink bounds and pixel count preserve orientation and scale, nonzero alpha is retained, edge contact and actual view overflow stay observable, empty/oversized evidence cannot pass as complete. |
+| DUO-045 | Successful path matches written flags; each launch resolves afresh with existing startup semantics, no cross-launch cache or redundant panel lookup; lookup and activation errors propagate; missing evidence cannot pass and original restoration remains. |
 | STOR-001 | Every carrier separates project-owned and task-temp output from gtmux configuration/runtime trees; no promoted entry required; user text and hand-edit protection preserved; second sync idempotent. |
 | STOR-002 | Both playbooks reserve gtmux-owned state and only reusable HQ knowledge tools for its home, direct project scripts/reports/builds to project/task storage, require external evidence references, and never grant automatic migration/deletion; upgrade backs up old charter, preserves LOCAL/notes and converges. |
 | TD-001 | Reject a changed/new test without a reviewed design; accept a mapped implementation |
