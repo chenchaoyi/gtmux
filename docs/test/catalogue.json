@@ -57301,7 +57301,7 @@
           "design": "CT-HTTP"
         }
       ],
-      "sha256": "cf77b721e6c2c822d05789fa203130b6dda9da2e7654411aa625159fbaab7b84"
+      "sha256": "bf2f97c00fae3de26cc1b4e61f32eb226d5fd51e349b17e20aec21d3f4b810c9"
     },
     "mobileapp/e2e/fake-serve/world.ts": {
       "layer": "L2",
@@ -58215,7 +58215,7 @@
           "design": "DUO-020,DUO-021,DUO-023"
         }
       ],
-      "sha256": "78a0ae36f14a4a520a54d7618403f21cd019ab1a229b271b8ff8e62adc94159a"
+      "sha256": "42e040c008cbfee114ed1aa0418e13e94ce9a65c125b7c1a973b52b3e99cf80a"
     },
     "mobileapp/src/usage/UsageWidgetBridge.initialLink.test.tsx": {
       "layer": "L1",
@@ -58498,7 +58498,7 @@
       "cases": [
         {
           "id": "MAP-5c8eef2b06d5",
-          "line": 17,
+          "line": 18,
           "kind": "reviewed-selector",
           "name": "speaks the selected session and tools on both Duo panels with VoiceOver",
           "dynamic": false,
@@ -58506,7 +58506,7 @@
           "design": "DUO-037"
         }
       ],
-      "sha256": "c48aeaa9d01bc528b616feb38eec1375d33752970ffc52fd35dfa697c0730746"
+      "sha256": "65dd4780ba9bcf2cdd9278a241e10dfeb7fb0bc992391e2dd0c087806ec95509"
     },
     "mobileapp/e2e/setup/duoVoiceOverJourney.test.ts": {
       "layer": "L2",
@@ -58514,7 +58514,7 @@
       "cases": [
         {
           "id": "MAP-afca37581308",
-          "line": 64,
+          "line": 71,
           "kind": "reviewed-selector",
           "name": "evidence %s failure still restores VoiceOver and the fixture",
           "dynamic": false,
@@ -58523,7 +58523,7 @@
         },
         {
           "id": "MAP-b0fd8cd81545",
-          "line": 71,
+          "line": 78,
           "kind": "reviewed-selector",
           "name": "a late %s result cannot satisfy the panel budget",
           "dynamic": false,
@@ -58532,7 +58532,7 @@
         },
         {
           "id": "MAP-5a3253c27607",
-          "line": 83,
+          "line": 90,
           "kind": "reviewed-selector",
           "name": "on-budget real journey control observes both panels and restores VoiceOver",
           "dynamic": false,
@@ -58541,7 +58541,7 @@
         },
         {
           "id": "MAP-8324fcc1537e",
-          "line": 93,
+          "line": 108,
           "kind": "reviewed-selector",
           "name": "stale initial speech cannot replace new focus moves",
           "dynamic": false,
@@ -58550,15 +58550,24 @@
         },
         {
           "id": "MAP-0631add5ba88",
-          "line": 101,
+          "line": 116,
           "kind": "reviewed-selector",
           "name": "missing inner reader control %s fails before inner speech",
           "dynamic": false,
           "layer": "L2",
           "design": "DUO-038"
+        },
+        {
+          "id": "MAP-2fa20c20c4a4",
+          "line": 99,
+          "kind": "reviewed-selector",
+          "name": "retained initial reader returns to the list before selecting the VoiceOver session",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DUO-038"
         }
       ],
-      "sha256": "bacf6d46eff199745e19d076be92c833e6209aed5e24bce4539942cf8e73edfd"
+      "sha256": "3da33f92afd076875133998ac1504c2d905d657dde8d61e917c934e46ad08121"
     },
     "mobileapp/e2e/setup/nativeTextLayout.test.ts": {
       "layer": "L1",
@@ -58627,6 +58636,22 @@
         }
       ],
       "sha256": "24840950080e06f96f84b83878304536a671efc322c3c13ebe33316880e7d610"
+    },
+    "mobileapp/e2e/fake-serve/transcript-identity.test.ts": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-10a263ace6db",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "default transcript identity survives polling while new fixtures and explicit transcripts remain independent",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DUO-040"
+        }
+      ],
+      "sha256": "b6a5236006a2cbb0139e5b80552e871e687f3eb7d3ac0298db38b937ef9d00d6"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2"

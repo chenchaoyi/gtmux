@@ -3,7 +3,12 @@ const mockWrite = jest.fn();
 const mockVisibility = jest.fn();
 const mockPosture = jest.fn();
 const mockDriver = {execute: jest.fn(), $: jest.fn((selector: string) => ({
-  waitForDisplayed: async () => mockVisibility(selector), click: jest.fn(),
+  waitForDisplayed: async () => {
+    if (selector === '~agent-row-%13' && mockReaderOpen) throw new Error('list hidden by retained reader');
+    return mockVisibility(selector);
+  },
+  isDisplayed: async () => selector === '~detail-back' && mockReaderOpen,
+  click: async () => {if (selector === '~detail-back') {mockReaderOpen = false; mockCommands.push('back-to-list');}},
 })), updateSettings: jest.fn()};
 const mockArtifacts = jest.fn(() => '/fixture-evidence');
 const mockClose = jest.fn();
@@ -11,6 +16,7 @@ const mockSpeech = jest.fn();
 let mockEnabled = false;
 let mockNow = 0;
 let mockPanel = 'outer';
+let mockReaderOpen = false;
 
 jest.mock('fs', () => ({...jest.requireActual('fs'), writeFileSync: (...args: unknown[]) => mockWrite(...args)}));
 jest.mock('./driver', () => ({getDriver: () => mockDriver, getArtifactsDir: () => mockArtifacts()}));
@@ -36,6 +42,7 @@ beforeEach(() => {
   mockEnabled = false;
   mockNow = 0;
   mockPanel = 'outer';
+  mockReaderOpen = false;
   mockVisibility.mockReset().mockResolvedValue(undefined);
   mockPosture.mockReset().mockImplementation(async (_angle: number, panel: string) => {mockPanel = panel;});
   jest.spyOn(Date, 'now').mockImplementation(() => mockNow);
@@ -86,6 +93,14 @@ test('on-budget real journey control observes both panels and restores VoiceOver
     'mobile: voiceOverCurrentSpeech', 'mobile: voiceOverMove',
     'mobile: voiceOverCurrentSpeech', 'mobile: voiceOverMove',
   ]);
+  expectRestored();
+});
+
+test('retained initial reader returns to the list before selecting the VoiceOver session', async () => {
+  mockReaderOpen = true;
+  await expect(registeredJourney()()).resolves.toBeUndefined();
+  expect(mockCommands.indexOf('back-to-list')).toBeGreaterThan(-1);
+  expect(mockCommands.indexOf('back-to-list')).toBeLessThan(mockCommands.indexOf('mobile: enableVoiceOver'));
   expectRestored();
 });
 

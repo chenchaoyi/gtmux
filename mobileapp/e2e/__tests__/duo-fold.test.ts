@@ -106,7 +106,7 @@ it('retains the selected conversation and keyboard draft across simulator fold a
     await keyboard.click();
     const input = driver.$(`~${TestIds.composer.input}`);
     await input.waitForDisplayed({timeout: 10000});
-    await input.setValue('Duo fold draft');
+    await typeInto(TestIds.composer.input, 'Duo fold draft');
     expect(await input.getValue()).toBe('Duo fold draft');
     expect(await driver.$$('XCUIElementTypeKeyboard')).not.toHaveLength(0);
     const inner = await driver.$('~window-metrics-root').getSize();

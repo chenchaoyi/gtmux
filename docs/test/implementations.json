@@ -803,7 +803,8 @@
       "a late %s result cannot satisfy the panel budget",
       "on-budget real journey control observes both panels and restores VoiceOver",
       "stale initial speech cannot replace new focus moves",
-      "missing inner reader control %s fails before inner speech"
+      "missing inner reader control %s fails before inner speech",
+      "retained initial reader returns to the list before selecting the VoiceOver session"
     ]
   },
   "mobileapp/e2e/setup/nativeTextLayout.ts": {
@@ -824,6 +825,14 @@
       "a missing diagnostic identity is an error, not an invisible view to skip",
       "a permanent driver failure is not retried as reflow",
       "a stable sample returned after the budget cannot pass"
+    ]
+  },
+  "mobileapp/e2e/fake-serve/transcript-identity.test.ts": {
+    "cases": [
+      "DUO-040"
+    ],
+    "selectors": [
+      "default transcript identity survives polling while new fixtures and explicit transcripts remain independent"
     ]
   }
 }

@@ -6,6 +6,7 @@ import {posture} from '../setup/duoPosture';
 import {captureOnFailure, screenshot} from '../setup/screenshot';
 import {createJourneyGuard} from '../setup/journeyGuard';
 import {startFake, Fake} from '../fake-serve/server';
+import {TestIds} from '../../src/constants/testIds';
 
 const guard = createJourneyGuard();
 afterEach(guard.wait, 930000);
@@ -57,6 +58,8 @@ it('speaks the selected session and tools on both Duo panels with VoiceOver', ()
     await launchWithFlags({GTMUX_DEBUG_PAIR_URL: fake.url, GTMUX_DEBUG_PAIR_TOKEN: fake.token,
       GTMUX_DEBUG_NO_PUSH: '1', GTMUX_DEBUG_LANG: 'en'});
     await posture(0, 'outer', evidence);
+    const back = driver.$(`~${TestIds.detail.back}`);
+    if (await back.isDisplayed().catch(() => false)) await back.click();
     await driver.$('~agent-row-%13').waitForDisplayed({timeout: 25000});
     await driver.$('~agent-row-%13').click();
     enabled = true; // Restore even if the enable command fails after changing state.

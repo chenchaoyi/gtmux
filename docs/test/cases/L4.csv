@@ -15,7 +15,7 @@ MAP-7bb91bd4c1ab,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.tes
 MAP-a27d63cdf4d6,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,57,reviewed-selector,retains the selected conversation and reading position across simulator fold and unfold,False,"DUO-020,DUO-021,DUO-023"
 MAP-f369d9080a71,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,99,reviewed-selector,retains the selected conversation and keyboard draft across simulator fold and unfold,False,"DUO-020,DUO-021,DUO-023"
 MAP-5fa147a200d6,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-text-scaling.test.ts,29,reviewed-selector,keeps the session entry usable at an accessibility text size on both panels,False,DUO-035
-MAP-5c8eef2b06d5,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-voiceover.test.ts,17,reviewed-selector,speaks the selected session and tools on both Duo panels with VoiceOver,False,DUO-037
+MAP-5c8eef2b06d5,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-voiceover.test.ts,18,reviewed-selector,speaks the selected session and tools on both Duo panels with VoiceOver,False,DUO-037
 MAP-8cfa983c4bb1,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-window.test.ts,15,reviewed-selector,keeps the selected session and a draft through simulator rotation,False,DUO-002
 LEG-e23b5ce26880,L4,RN / mobile harness,mobileapp/e2e/__tests__/edge-stability.test.ts,22,it,traces the viewport around the live tail,False,legacy-not-retrospectively-reviewed
 LEG-242e71413ed1,L4,RN / mobile harness,mobileapp/e2e/__tests__/edge-states.test.ts,39,it,an empty fleet says so instead of showing an empty frame,False,legacy-not-retrospectively-reviewed

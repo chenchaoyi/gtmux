@@ -96,6 +96,8 @@ async function readBody(req: IncomingMessage): Promise<Record<string, unknown>> 
  */
 export async function startFake(opts: {guest?: boolean; port?: number; token?: string} = {}): Promise<Fake> {
   const world = new World();
+  // Polling an unchanged conversation must preserve its message identities.
+  const transcriptEpoch = Date.now();
   const requests: Fake['requests'] = [];
   // A test that runs two Macs gives each its own token: one Mac's token is not another's.
   const token = opts.token ?? 'fake-token';
@@ -318,7 +320,7 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
           // A conversation with REAL gaps in it, so a surface can show where it broke
           // (chat-time-separator): two turns minutes apart carry no separator, the ones
           // after a night and after a pause do.
-          const ago = (mins: number) => new Date(Date.now() - mins * 60_000).toISOString();
+          const ago = (mins: number) => new Date(transcriptEpoch - mins * 60_000).toISOString();
           return json(res, 200, [
             {prompt: '把知识库接到手机上', response: '⟣ 已经接好了,三个端点都在。', time: ago(60 * 26)},
             {prompt: '再确认一下端点', response: '⟣ 三个都通。', time: ago(60 * 26 - 3)},

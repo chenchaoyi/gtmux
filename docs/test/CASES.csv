@@ -3790,7 +3790,7 @@ MAP-7bb91bd4c1ab,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.tes
 MAP-a27d63cdf4d6,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,57,reviewed-selector,retains the selected conversation and reading position across simulator fold and unfold,False,"DUO-020,DUO-021,DUO-023"
 MAP-f369d9080a71,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,99,reviewed-selector,retains the selected conversation and keyboard draft across simulator fold and unfold,False,"DUO-020,DUO-021,DUO-023"
 MAP-5fa147a200d6,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-text-scaling.test.ts,29,reviewed-selector,keeps the session entry usable at an accessibility text size on both panels,False,DUO-035
-MAP-5c8eef2b06d5,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-voiceover.test.ts,17,reviewed-selector,speaks the selected session and tools on both Duo panels with VoiceOver,False,DUO-037
+MAP-5c8eef2b06d5,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-voiceover.test.ts,18,reviewed-selector,speaks the selected session and tools on both Duo panels with VoiceOver,False,DUO-037
 MAP-8cfa983c4bb1,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-window.test.ts,15,reviewed-selector,keeps the selected session and a draft through simulator rotation,False,DUO-002
 LEG-e23b5ce26880,L4,RN / mobile harness,mobileapp/e2e/__tests__/edge-stability.test.ts,22,it,traces the viewport around the live tail,False,legacy-not-retrospectively-reviewed
 LEG-242e71413ed1,L4,RN / mobile harness,mobileapp/e2e/__tests__/edge-states.test.ts,39,it,an empty fleet says so instead of showing an empty frame,False,legacy-not-retrospectively-reviewed
@@ -3960,6 +3960,7 @@ LEG-d240b174d0df,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,1
 LEG-01e2c0d8a07a,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,160,test,"the seeded plan groups by agent, under the names the usage sheet ids carry",False,legacy-not-retrospectively-reviewed
 LEG-e34f8145a818,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,173,test,back to the stock world,False,legacy-not-retrospectively-reviewed
 MAP-f2ed2637baa9,L2,reviewed implementation,mobileapp/e2e/fake-serve/server.ts,97,reviewed-selector,startFake,False,CT-HTTP
+MAP-10a263ace6db,L2,reviewed implementation,mobileapp/e2e/fake-serve/transcript-identity.test.ts,10,reviewed-selector,default transcript identity survives polling while new fixtures and explicit transcripts remain independent,False,DUO-040
 LEG-a314cc5be23f,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,8,test,"the stock fixture: one worker waiting, so needs_you, naming it",False,legacy-not-retrospectively-reviewed
 LEG-65bd4c2dfa5e,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,13,test,nothing waiting is normal; the supervisor mid-turn is working; the supervisor waiting is hq_call,False,legacy-not-retrospectively-reviewed
 LEG-5d182318c546,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,25,test,the longest waiting worker comes first,False,legacy-not-retrospectively-reviewed
@@ -3977,11 +3978,12 @@ LEG-7201f98d96a5,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts
 LEG-16fab5a7cc96,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,51,test,only explicit hosted capture separates WDA build and readiness with one bounded connection,False,legacy-not-retrospectively-reviewed
 LEG-61bfa22d706f,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,67,test,only hosted multi-screen store captures receive the longer journey budget,False,legacy-not-retrospectively-reviewed
 MAP-ad6f801c4c8b,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,3,reviewed-selector,cloud simulator session waits for a fresh WDA build without requiring a prebuilt product,False,DUO-008
-MAP-afca37581308,L2,reviewed implementation,mobileapp/e2e/setup/duoVoiceOverJourney.test.ts,64,reviewed-selector,evidence %s failure still restores VoiceOver and the fixture,False,DUO-038
-MAP-b0fd8cd81545,L2,reviewed implementation,mobileapp/e2e/setup/duoVoiceOverJourney.test.ts,71,reviewed-selector,a late %s result cannot satisfy the panel budget,False,DUO-038
-MAP-5a3253c27607,L2,reviewed implementation,mobileapp/e2e/setup/duoVoiceOverJourney.test.ts,83,reviewed-selector,on-budget real journey control observes both panels and restores VoiceOver,False,DUO-038
-MAP-8324fcc1537e,L2,reviewed implementation,mobileapp/e2e/setup/duoVoiceOverJourney.test.ts,93,reviewed-selector,stale initial speech cannot replace new focus moves,False,DUO-038
-MAP-0631add5ba88,L2,reviewed implementation,mobileapp/e2e/setup/duoVoiceOverJourney.test.ts,101,reviewed-selector,missing inner reader control %s fails before inner speech,False,DUO-038
+MAP-afca37581308,L2,reviewed implementation,mobileapp/e2e/setup/duoVoiceOverJourney.test.ts,71,reviewed-selector,evidence %s failure still restores VoiceOver and the fixture,False,DUO-038
+MAP-b0fd8cd81545,L2,reviewed implementation,mobileapp/e2e/setup/duoVoiceOverJourney.test.ts,78,reviewed-selector,a late %s result cannot satisfy the panel budget,False,DUO-038
+MAP-5a3253c27607,L2,reviewed implementation,mobileapp/e2e/setup/duoVoiceOverJourney.test.ts,90,reviewed-selector,on-budget real journey control observes both panels and restores VoiceOver,False,DUO-038
+MAP-8324fcc1537e,L2,reviewed implementation,mobileapp/e2e/setup/duoVoiceOverJourney.test.ts,108,reviewed-selector,stale initial speech cannot replace new focus moves,False,DUO-038
+MAP-0631add5ba88,L2,reviewed implementation,mobileapp/e2e/setup/duoVoiceOverJourney.test.ts,116,reviewed-selector,missing inner reader control %s fails before inner speech,False,DUO-038
+MAP-2fa20c20c4a4,L2,reviewed implementation,mobileapp/e2e/setup/duoVoiceOverJourney.test.ts,99,reviewed-selector,retained initial reader returns to the list before selecting the VoiceOver session,False,DUO-038
 MAP-cb2da71006dd,G,reviewed implementation,mobileapp/e2e/setup/global-setup-manual.ts,6,reviewed-selector,"await setupManual(process.env, verifySendTarget, globalSetup)",False,DG-004
 MAP-a6a52139caeb,L2,reviewed implementation,mobileapp/e2e/setup/journeyGuard.test.ts,3,reviewed-selector,wait holds the next journey until outstanding cleanup completes,False,DUO-034
 MAP-3a80ec28bf00,L2,reviewed implementation,mobileapp/e2e/setup/journeyGuard.test.ts,20,reviewed-selector,a failed journey releases the guard without concealing its error,False,DUO-034

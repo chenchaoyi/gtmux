@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1058 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1059 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3752 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 1930 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 1932 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 86 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 108 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 12 | [M.csv](cases/M.csv) |
@@ -78,6 +78,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | DUO-037 | VoiceOver reports enabled, speaks the selected session title and Session tools within 48 focus moves and 90 seconds on each panel, and reports disabled after cleanup. Missing/unsupported behavior fails rather than counts as a pass; physical and subjective speech quality remain unverified. |
 | DUO-038 | Every evidence failure still attempts VoiceOver disable and disabled-state verification plus hinge/display/fake restoration. Initial speech and late successful moves cannot pass outside the same panel budget; no detached driver command remains. On-budget target speech succeeds. |
 | DUO-039 | A transient stale frame causes the whole observation to be discarded; fresh complete stable frames and layouts pass; permanent failures, absent identities, missing/clipped layouts and results outside the fixed budget fail. |
+| DUO-040 | The same fixture returns identical messages and times across polls; a new fixture captures its own epoch; explicit world.transcripts is returned unchanged. |
 | STOR-001 | Every carrier separates project-owned and task-temp output from gtmux configuration/runtime trees; no promoted entry required; user text and hand-edit protection preserved; second sync idempotent. |
 | STOR-002 | Both playbooks reserve gtmux-owned state and only reusable HQ knowledge tools for its home, direct project scripts/reports/builds to project/task storage, require external evidence references, and never grant automatic migration/deletion; upgrade backs up old charter, preserves LOCAL/notes and converges. |
 | TD-001 | Reject a changed/new test without a reviewed design; accept a mapped implementation |
