@@ -33,6 +33,9 @@ final class ConversationTextView: UIView, UITextViewDelegate, UIGestureRecognize
     textView.delegate = self
     textView.onResign = { [weak self] in self?.updateSelection(false) }
     addSubview(textView)
+#if targetEnvironment(simulator)
+    if TextLayoutEvidence.enabled { textView.accessibilityIdentifier = "duo-text-" + UUID().uuidString }
+#endif
   }
 
   required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
@@ -86,7 +89,7 @@ final class ConversationTextView: UIView, UITextViewDelegate, UIGestureRecognize
   // Opt-in fixture evidence only. UITextInput geometry keeps the active TextKit
   // engine and selection untouched; no conversation content enters this file.
   private func recordTextLayout(measuredHeight: CGFloat) {
-    guard TextLayoutEvidence.enabled, let window, !isHidden,
+    guard TextLayoutEvidence.enabled, let identifier = textView.accessibilityIdentifier, let window, !isHidden,
           let range = textView.textRange(from: textView.beginningOfDocument, to: textView.endOfDocument),
           let attributed = textView.attributedText, attributed.length > 0 else { return }
     func rect(_ r: CGRect) -> [String: CGFloat] {
@@ -104,7 +107,7 @@ final class ConversationTextView: UIView, UITextViewDelegate, UIGestureRecognize
       if let font = font as? UIFont { points.insert(font.pointSize) }
     }
     let record: [String: Any] = [
-      "revision": revision, "scale": displayed["scale"] ?? 1,
+      "identifier": identifier, "revision": revision, "scale": displayed["scale"] ?? 1,
       "selectionActive": selectionActive, "queued": queued != nil,
       "fontPoints": points.sorted(), "utf16Length": attributed.length,
       "frame": rect(textView.convert(textView.bounds, to: window)),
@@ -115,7 +118,7 @@ final class ConversationTextView: UIView, UITextViewDelegate, UIGestureRecognize
     guard JSONSerialization.isValidJSONObject(record),
           let bytes = try? JSONSerialization.data(withJSONObject: record, options: [.sortedKeys]), bytes != lastDiagnostic else { return }
     lastDiagnostic = bytes
-    TextLayoutEvidence.record(String(describing: ObjectIdentifier(self)), record)
+    TextLayoutEvidence.record(identifier, record)
   }
 #endif
 

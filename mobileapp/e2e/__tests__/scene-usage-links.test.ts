@@ -29,7 +29,7 @@ function fixture() {
   if (!udid) throw new Error('requires a named simulator');
   const seed = JSON.stringify([{url: fake.url, token: fake.token, name: 'Fixture Mac'}]);
   const flags = {GTMUX_DEBUG_SERVERS: seed, GTMUX_DEBUG_SHOT_MODE: '1', GTMUX_DEBUG_NO_PUSH: '1', GTMUX_DEBUG_LANG: 'en', GTMUX_DEBUG_LOG_NET: '1'};
-  return {flags, open: () => execFileSync('xcrun', ['simctl', 'openurl', udid, 'gtmux://usage'])};
+  return {flags};
 }
 
 async function waitForUsageWithSystemConfirmation(timeout: number) {
@@ -49,10 +49,10 @@ function nativeSceneTrace() {
   return join(container, 'Documents', 'gtmux-native-notification-trace.jsonl');
 }
 
-function sceneURLCount(path: string): number {
+function sceneURLCount(path: string, event = 'scene-url'): number {
   if (!existsSync(path)) return 0;
   return readFileSync(path, 'utf8').split('\n').filter(line => {
-    try { return JSON.parse(line).event === 'scene-url'; } catch { return false; }
+    try { return JSON.parse(line).event === event; } catch { return false; }
   }).length;
 }
 
@@ -72,8 +72,8 @@ it('opens a warm usage link through the scene', async () => {
   const previous = sceneURLCount(trace);
   const timing: {opened: number; delivered?: number; visible?: number} = {opened: Date.now()};
   try {
-    // XCTest opens the real URL in the specified app. Cold coverage below still
-    // exercises default system URL association through simctl.
+    // XCTest opens the real URL in the specified app. Cold coverage below
+    // omits bundleId to exercise the default system URL association.
     await driver.execute('mobile: deepLink', {url: 'gtmux://usage', bundleId: BUNDLE});
     await waitForSceneDelivery(trace, previous);
     timing.delivered = Date.now();
@@ -88,18 +88,29 @@ it('opens a warm usage link through the scene', async () => {
 });
 
 it('opens a cold usage link through the scene', async () => {
-  const {flags, open} = fixture();
+  const {flags} = fixture();
   const driver = getDriver();
   // Install startup flags in the real app container before cold scene creation.
   await launchWithFlags(flags);
   await driver.$('~radar-split').waitForExist({timeout: 25000});
   writeDebugFlags(flags);
   await driver.terminateApp(BUNDLE);
-  open();
+  expect(await driver.queryAppState(BUNDLE)).toBe(1); // NotRunning
+  const trace = nativeSceneTrace();
+  const previous = sceneURLCount(trace, 'scene-url-cold');
+  const timing: {opened: number; commandReturned?: number; visible?: number} = {opened: Date.now()};
   try {
+    // No bundle override: XCTest must resolve the registered URL handler and
+    // launch its scene. A pre-existing warm scene cannot satisfy this case.
+    await driver.execute('mobile: deepLink', {url: 'gtmux://usage'});
+    timing.commandReturned = Date.now();
     await waitForUsageWithSystemConfirmation(20000);
+    expect(sceneURLCount(trace, 'scene-url-cold')).toBeGreaterThan(previous);
+    timing.visible = Date.now();
+    await screenshot('scene-cold-usage-link');
   } catch (error) {
     return captureOnFailure('scene-cold-usage-link-failed', error);
+  } finally {
+    writeFileSync(join(getArtifactsDir(), 'usage-link-cold-timing.json'), JSON.stringify(timing, null, 2));
   }
-  await screenshot('scene-cold-usage-link');
 });

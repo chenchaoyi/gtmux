@@ -16,7 +16,7 @@ afterEach(guard.wait, 930000);
 
 type TextRect = {x: number; y: number; width: number; height: number};
 type NativeTextLayout = {
-  revision: string; scale: number; selectionActive: boolean; queued: boolean;
+  identifier: string; revision: string; scale: number; selectionActive: boolean; queued: boolean;
   fontPoints: number[]; frame: TextRect; bounds: TextRect; measuredHeight: number;
   selectionRectCount: number; selectionBounds: TextRect; lastCharacterRect: TextRect;
 };
@@ -26,20 +26,23 @@ async function verifyNativeTextLayout(panel: string, evidence: object[]) {
   const container = execFileSync('xcrun', ['simctl', 'get_app_container', process.env.GTMUX_E2E_UDID!, 'com.gtmux.app', 'data'], {encoding: 'utf8'}).trim();
   const file = join(container, 'Documents', 'gtmux-text-layout.json');
   const views = await driver.$$('-ios predicate string:type == "XCUIElementTypeTextView" AND value != nil AND value != ""');
-  const frames: TextRect[] = [];
+  const frames: Array<TextRect & {identifier: string}> = [];
   for (const view of views) {
-    if (await view.isDisplayed()) frames.push(await driver.getElementRect(await view.elementId));
+    if (await view.isDisplayed()) frames.push({...await driver.getElementRect(await view.elementId),
+      identifier: await view.getAttribute('name')});
   }
   expect(frames.length).toBeGreaterThanOrEqual(3);
   let last = '', stable = 0;
   let matched: NativeTextLayout[] = [];
-  const sameFrame = (a: TextRect, b: TextRect) => ['x', 'y', 'width', 'height'].every(key =>
+  // Scrolling changes window coordinates without a new child layout. Match the
+  // opt-in identity and actual dimensions, retaining observed frames separately.
+  const sameSize = (a: TextRect, b: TextRect) => ['width', 'height'].every(key =>
     Math.abs(a[key as keyof TextRect] - b[key as keyof TextRect]) <= 2);
   try {
     await driver.waitUntil(() => {
       if (!existsSync(file)) return false;
       const records = Object.values(JSON.parse(readFileSync(file, 'utf8'))) as NativeTextLayout[];
-      matched = frames.map(frame => records.find(record => sameFrame(record.frame, frame) && record.scale > 1))
+      matched = frames.map(frame => records.find(record => record.identifier === frame.identifier && sameSize(record.bounds, frame) && record.scale > 1))
         .filter((record): record is NativeTextLayout => !!record);
       if (matched.length !== frames.length) return false;
       const current = JSON.stringify(matched);
@@ -53,7 +56,7 @@ async function verifyNativeTextLayout(panel: string, evidence: object[]) {
         record.selectionBounds.y >= record.bounds.y - 1 &&
         record.selectionBounds.y + record.selectionBounds.height <= record.bounds.y + record.bounds.height + 1);
     }, {timeout: 20000, interval: 500, timeoutMsg: `${panel} native text did not settle into an unclipped current-scale layout`});
-    evidence.push({panel, nativeTextLayouts: matched});
+    evidence.push({panel, observedTextFrames: frames, nativeTextLayouts: matched});
   } finally {
     if (existsSync(file)) writeFileSync(join(getArtifactsDir(), `duo-text-layout-${panel}.json`), readFileSync(file));
   }
@@ -65,6 +68,15 @@ it('keeps the session entry usable at an accessibility text size on both panels'
   let original: string | undefined;
   let auditFake: Fake | undefined;
   const auditErrors: string[] = [];
+  const verify = async (panel: string) => {
+    try { await verifyNativeTextLayout(panel, evidence); }
+    catch (error) {
+      // Preserve the failure, but still collect both body audits for diagnosis.
+      const message = `${panel}: ${String(error)}`;
+      auditErrors.push(message);
+      writeFileSync(join(getArtifactsDir(), `duo-text-layout-${panel}-error.txt`), message);
+    }
+  };
   const audit = async (panel: string) => {
     try {
       const issues = await driver.execute('mobile: performAccessibilityAudit');
@@ -113,7 +125,7 @@ it('keeps the session entry usable at an accessibility text size on both panels'
     await driver.$('~Close').click();
     await tools.waitForDisplayed({timeout: 10000});
     await screenshot('duo-large-text-outer');
-    await verifyNativeTextLayout('outer', evidence);
+    await verify('outer');
     await audit('outer');
     await posture(180, 'inner', evidence);
     await selected.waitForDisplayed({timeout: 15000});
@@ -124,7 +136,7 @@ it('keeps the session entry usable at an accessibility text size on both panels'
     await driver.$('~Close').click();
     await tools.waitForDisplayed({timeout: 10000});
     await screenshot('duo-large-text-inner');
-    await verifyNativeTextLayout('inner', evidence);
+    await verify('inner');
     await audit('inner');
     if (auditErrors.length) throw new Error(`Duo accessibility audit failed: ${auditErrors.join('; ')}`);
   } catch (error) {
