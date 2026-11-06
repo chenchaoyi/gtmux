@@ -481,5 +481,15 @@
       "TestTitleMatchesSessionPreservesLeadingSymbols",
       "TestSessionTabPrefersLiteralIdentity"
     ]
+  },
+  "mobileapp/__tests__/App.sceneMigration.test.tsx": {
+    "cases": [
+      "SCENE-MIG-005"
+    ],
+    "selectors": [
+      "main App keeps compact navigation props and a fresh root changes its real shell",
+      "main App sidebar geometry follows the new root even when RN retains its old phone width",
+      "a real anchored menu stays inside a new narrow root while RN width remains stale"
+    ]
   }
 }
