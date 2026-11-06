@@ -32,6 +32,17 @@ function fixture() {
   return {flags, open: () => execFileSync('xcrun', ['simctl', 'openurl', udid, 'gtmux://usage'])};
 }
 
+async function waitForUsageWithSystemConfirmation(timeout: number) {
+  const driver = getDriver();
+  const close = driver.$('~hq-usage-close');
+  await driver.waitUntil(async () => {
+    if (await close.isDisplayed().catch(() => false)) return true;
+    const alert = await driver.getAlertText().catch(() => '');
+    if (/^Open in [“"]gtmux[”"]\?$/.test(alert.trim())) await driver.acceptAlert();
+    return false;
+  }, {timeout, interval: 500, timeoutMsg: 'usage sheet did not become visible'});
+}
+
 it('opens a warm usage link through the scene', async () => {
   const {flags, open} = fixture();
   const driver = getDriver();
@@ -41,7 +52,7 @@ it('opens a warm usage link through the scene', async () => {
   await driver.$('-ios predicate string:label BEGINSWITH "Connection: connected"').waitForExist({timeout: 25000});
   open();
   try {
-    await driver.$('~hq-usage-close').waitForDisplayed({timeout: 15000});
+    await waitForUsageWithSystemConfirmation(15000);
   } catch (error) {
     return captureOnFailure('scene-warm-usage-link-failed', error);
   }
@@ -58,7 +69,7 @@ it('opens a cold usage link through the scene', async () => {
   await driver.terminateApp(BUNDLE);
   open();
   try {
-    await driver.$('~hq-usage-close').waitForDisplayed({timeout: 20000});
+    await waitForUsageWithSystemConfirmation(20000);
   } catch (error) {
     return captureOnFailure('scene-cold-usage-link-failed', error);
   }

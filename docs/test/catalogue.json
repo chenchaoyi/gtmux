@@ -58073,7 +58073,7 @@
         },
         {
           "id": "MAP-ea87797d79bf",
-          "line": 35,
+          "line": 46,
           "kind": "reviewed-selector",
           "name": "opens a warm usage link through the scene",
           "dynamic": false,
@@ -58082,7 +58082,7 @@
         },
         {
           "id": "MAP-b7d75b280b9d",
-          "line": 51,
+          "line": 62,
           "kind": "reviewed-selector",
           "name": "opens a cold usage link through the scene",
           "dynamic": false,
@@ -58090,7 +58090,7 @@
           "design": "DUO-005"
         }
       ],
-      "sha256": "730ae78301096deb1d250ead9feaaa3367770b3d25b49fce5952e379e458018a"
+      "sha256": "20ddaaf3b465f191a61cfcdd39990e7a6b61d375984649dde43fc2034d14c55d"
     },
     "mobileapp/src/ui/windowMetrics.test.tsx": {
       "layer": "L2",
