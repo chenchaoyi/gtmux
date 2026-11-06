@@ -34644,13 +34644,13 @@
       ]
     },
     "mobileapp/e2e/__tests__/coldstart-push.test.ts": {
-      "sha256": "b844f7628300c24f916620e266681c8a1bd74f57feb2831df6b9b4b257d8e45c",
+      "sha256": "62d2b17db01241a9a30ff6c9f239126f5f2b31d7657e7092b05594ac85c5265b",
       "layer": "L4",
       "stack": "RN / mobile harness",
       "cases": [
         {
           "id": "LEG-a5d63af936be",
-          "line": 130,
+          "line": 146,
           "kind": "it",
           "name": "A: cold start with an active Mac, switches, background, a new warm tap",
           "dynamic": false,
@@ -34658,7 +34658,7 @@
         },
         {
           "id": "LEG-f3196e5f4ce2",
-          "line": 170,
+          "line": 211,
           "kind": "it",
           "name": "C: a launch with no notification switches where it is pointed",
           "dynamic": false,
@@ -36381,13 +36381,13 @@
       ]
     },
     "mobileapp/e2e/setup/capabilities.test.ts": {
-      "sha256": "ba3d68a275f7261a1c1a553ce1da526b28c8083f0122ae25f72fe38a7b5c5022",
+      "sha256": "b8162e2e9c0b7c5f39e67ef566ab7a372012797496b0950a81ae9bdd55dce855",
       "layer": "L1",
       "stack": "RN / mobile harness",
       "cases": [
         {
           "id": "LEG-b6f73720d14b",
-          "line": 8,
+          "line": 25,
           "kind": "test",
           "name": "manual handles nothing on the test’s behalf",
           "dynamic": false,
@@ -36395,7 +36395,7 @@
         },
         {
           "id": "LEG-7440419bbda7",
-          "line": 14,
+          "line": 31,
           "kind": "test",
           "name": "the default dismisses, and the older accept switch still accepts",
           "dynamic": false,
@@ -36403,7 +36403,7 @@
         },
         {
           "id": "LEG-9afe9479f18a",
-          "line": 19,
+          "line": 36,
           "kind": "test",
           "name": "the explicit mode wins over the older switch",
           "dynamic": false,
@@ -36411,7 +36411,7 @@
         },
         {
           "id": "LEG-ff05befffbd7",
-          "line": 23,
+          "line": 40,
           "kind": "test",
           "name": "a misspelt mode stops the run instead of falling back to dismiss",
           "dynamic": false,
@@ -36419,7 +36419,7 @@
         },
         {
           "id": "LEG-7201f98d96a5",
-          "line": 28,
+          "line": 45,
           "kind": "test",
           "name": "headless capture is explicit and local GUI runs keep their behavior",
           "dynamic": false,
@@ -36427,7 +36427,7 @@
         },
         {
           "id": "LEG-16fab5a7cc96",
-          "line": 34,
+          "line": 51,
           "kind": "test",
           "name": "only explicit hosted capture separates WDA build and readiness with one bounded connection",
           "dynamic": false,
@@ -36435,11 +36435,20 @@
         },
         {
           "id": "LEG-61bfa22d706f",
-          "line": 50,
+          "line": 67,
           "kind": "test",
           "name": "only hosted multi-screen store captures receive the longer journey budget",
           "dynamic": false,
           "layer": "L1"
+        },
+        {
+          "id": "MAP-ad6f801c4c8b",
+          "line": 3,
+          "kind": "reviewed-selector",
+          "name": "cloud simulator session waits for a fresh WDA build without requiring a prebuilt product",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-010"
         }
       ]
     },
@@ -57230,7 +57239,7 @@
       "cases": [
         {
           "id": "MAP-f2ed2637baa9",
-          "line": 95,
+          "line": 97,
           "kind": "reviewed-selector",
           "name": "startFake",
           "dynamic": false,
@@ -57238,7 +57247,7 @@
           "design": "CT-HTTP"
         }
       ],
-      "sha256": "79d8be5f47afc60d6725ac9b4c72c04d329ffd08d10aa46d92c9f69ba054d5ef"
+      "sha256": "bf2f97c00fae3de26cc1b4e61f32eb226d5fd51e349b17e20aec21d3f4b810c9"
     },
     "mobileapp/e2e/fake-serve/world.ts": {
       "layer": "L2",
@@ -57876,7 +57885,7 @@
       "cases": [
         {
           "id": "MAP-3a38d5e64c65",
-          "line": 61,
+          "line": 64,
           "kind": "reviewed-selector",
           "name": "main App keeps compact navigation props and a fresh root changes its real shell",
           "dynamic": false,
@@ -57885,7 +57894,7 @@
         },
         {
           "id": "MAP-da46dbb93884",
-          "line": 70,
+          "line": 73,
           "kind": "reviewed-selector",
           "name": "main App sidebar geometry follows the new root even when RN retains its old phone width",
           "dynamic": false,
@@ -57894,7 +57903,7 @@
         },
         {
           "id": "MAP-b8c8470d4954",
-          "line": 79,
+          "line": 85,
           "kind": "reviewed-selector",
           "name": "a real anchored menu stays inside a new narrow root while RN width remains stale",
           "dynamic": false,
@@ -57903,15 +57912,33 @@
         },
         {
           "id": "MAP-cfca889ee705",
-          "line": 98,
+          "line": 104,
           "kind": "reviewed-selector",
           "name": "retained DiffModal follows its actual viewport layout and keeps wrap and close usable with stale RN dimensions",
           "dynamic": false,
           "layer": "L2",
           "design": "SCENE-MIG-005"
+        },
+        {
+          "id": "MAP-9ba95c850181",
+          "line": 131,
+          "kind": "reviewed-selector",
+          "name": "real HQ inspector follows root resize and sidebar hiding while RN remains stale",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SCENE-MIG-005"
+        },
+        {
+          "id": "MAP-52fc7bb9aa93",
+          "line": 144,
+          "kind": "reviewed-selector",
+          "name": "real menu position and height follow a second root resize with nonzero safe-area edges",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SCENE-MIG-005"
         }
       ],
-      "sha256": "d54bb7e6711e8784477125080163934d79f127bc80cd9d924b356a23d2ddfdb3"
+      "sha256": "92a971c8153735234234b6587cfdb2d03494b2650289deb3da33e94e80708961"
     },
     "mobileapp/__tests__/App.notificationBootstrap.test.tsx": {
       "layer": "L1",
@@ -58152,9 +58179,18 @@
           "dynamic": false,
           "layer": "L1",
           "design": "SCENE-MIG-002"
+        },
+        {
+          "id": "MAP-a4267ab4a51b",
+          "line": 29,
+          "kind": "reviewed-selector",
+          "name": "native fallback and scale stay current while only valid root width and height override dimensions",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
         }
       ],
-      "sha256": "b2468a18c89550f02c4a7006e7b36ba378fee51a11803f75604c12a1da04a04a"
+      "sha256": "8b4067d46ac3ec593d72912a157291b0bc0054ca00350f963da3ed4b7eae4b39"
     },
     "mobileapp/src/usage/UsageWidgetBridge.initialDemoLink.test.tsx": {
       "layer": "L1",
@@ -58263,7 +58299,7 @@
           "design": "SCENE-MIG-008"
         }
       ],
-      "sha256": "03c23737aec0c468c610f33048fca641f883f044648252108b7a3bbb88d381e3"
+      "sha256": "253d496f3625a85c4bb4b6a64a8b6db677e4b2fd3dd791d7a1de0d147e4a4015"
     },
     "scripts/scene_migration_test.py": {
       "layer": "G",
@@ -58343,6 +58379,464 @@
         }
       ],
       "sha256": "c0965f4a6d9a9dcb02b688d27ddced667a86717d708d17766db167b3e5b7f1d8"
+    },
+    "mobileapp/e2e/__tests__/ipad-adaptive.test.ts": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-b3419be992f8",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "keeps the iPad sidebar and selected session through rotation",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-007"
+        }
+      ],
+      "sha256": "5a64acbdccd650e13b6591c1b267d3c0db0989916922dfcc8946db82060f070a"
+    },
+    "mobileapp/e2e/__tests__/scene-migration-actions.test.ts": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-5f9af003b179",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "delivers a cold notification action exactly once",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006"
+        },
+        {
+          "id": "MAP-542ef487bb26",
+          "line": 16,
+          "kind": "reviewed-selector",
+          "name": "delivers a warm notification action exactly once",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006"
+        }
+      ],
+      "sha256": "39fd5b3f8a3b574a004f205f2a5dd979094f7ab78e04273cec2137cdc6150255"
+    },
+    "mobileapp/e2e/__tests__/scene-migration-links.test.ts": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-da368bf98131",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "opens a cold usage link through the scene",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006"
+        },
+        {
+          "id": "MAP-2eb13c4361fd",
+          "line": 16,
+          "kind": "reviewed-selector",
+          "name": "opens a warm usage link through the scene",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006"
+        }
+      ],
+      "sha256": "8cc84e23435fc375c8c32266b85fc2f056444d8aad69186234cbfa1b9efe9c18"
+    },
+    "mobileapp/e2e/__tests__/server-switch-compare.test.ts": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-136dedeea639",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "selects a server after a clean launch",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-007"
+        },
+        {
+          "id": "MAP-f4698467762a",
+          "line": 36,
+          "kind": "reviewed-selector",
+          "name": "switches between two saved servers",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-007"
+        }
+      ],
+      "sha256": "abe8d2b40213b245e7772e9ab9b7a31cba24a3e744d5e9276affa92cad233285"
+    },
+    "mobileapp/e2e/fake-serve/request-diagnostics.test.ts": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-b33db4631198",
+          "line": 3,
+          "kind": "reviewed-selector",
+          "name": "diagnostic request metadata shows routing without headers or query values",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SCENE-MIG-011"
+        }
+      ],
+      "sha256": "be0dfc4346dd242da534804bae24ecbaef3cf537e6ae42183f8bee6d68b257e7"
+    },
+    "mobileapp/e2e/fake-serve/transcript-identity.test.ts": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-10a263ace6db",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "default transcript identity survives polling while new fixtures and explicit transcripts remain independent",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SCENE-MIG-011"
+        }
+      ],
+      "sha256": "b6a5236006a2cbb0139e5b80552e871e687f3eb7d3ac0298db38b937ef9d00d6"
+    },
+    "mobileapp/e2e/setup/app.ts": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-66952beb74f5",
+          "line": 44,
+          "kind": "reviewed-selector",
+          "name": "launchWithFlags",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-514c674c6429",
+          "line": 34,
+          "kind": "reviewed-selector",
+          "name": "writeDebugFlags",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-8108cc25d72e",
+          "line": 63,
+          "kind": "reviewed-selector",
+          "name": "waitForNotificationAuthorization",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-010"
+        }
+      ],
+      "sha256": "d1035ba92563296a113e1b5500f0e4aa23c39627d8f5d7fe894c7798030c366b"
+    },
+    "mobileapp/e2e/setup/appLaunchFiles.test.ts": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-2444a23694a2",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "each launch returns the freshly resolved path containing its own flags",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-f758152f6a60",
+          "line": 29,
+          "kind": "reviewed-selector",
+          "name": "failed activation exposes no successful launch path",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-692a5e080ea9",
+          "line": 36,
+          "kind": "reviewed-selector",
+          "name": "lookup failure does not write flags or activate the app",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-010"
+        }
+      ],
+      "sha256": "87d5b60bfae1d9c67c0cc1b65ed347ada166436e064a6bae22f3b9003fa566b5"
+    },
+    "mobileapp/e2e/setup/capabilities.ts": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-fe0c5bc5423c",
+          "line": 57,
+          "kind": "reviewed-selector",
+          "name": "cloudStartupCapabilities",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-24bf73c18fbb",
+          "line": 70,
+          "kind": "reviewed-selector",
+          "name": "sessionConnectionOptions",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-16ffab634a71",
+          "line": 66,
+          "kind": "reviewed-selector",
+          "name": "appiumServerTimeoutArgs",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-010"
+        }
+      ],
+      "sha256": "ed44e7d7a4d4bc04d92764d9eeb48f72880ff17b56426f5b2140cc746a90528b"
+    },
+    "mobileapp/e2e/setup/driver.ts": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f430bab330eb",
+          "line": 36,
+          "kind": "reviewed-selector",
+          "name": "allocateArtifacts",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-b187c45616bf",
+          "line": 70,
+          "kind": "reviewed-selector",
+          "name": "recordSceneStep",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-010"
+        }
+      ],
+      "sha256": "d8ce4ec8ebe98575c00629259b5bc8726b6f06998ff444fbedf5799884556fe7"
+    },
+    "mobileapp/e2e/setup/global-setup.ts": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-6f6d6acb4163",
+          "line": 39,
+          "kind": "reviewed-selector",
+          "name": "globalSetup",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-010"
+        }
+      ],
+      "sha256": "9804487dd50a50cbe443677d41b8a3071a5642531a1cc77a693e1aba4fa96dd3"
+    },
+    "mobileapp/e2e/setup/journeyGuard.ts": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d36a8e3caa71",
+          "line": 2,
+          "kind": "reviewed-selector",
+          "name": "createJourneyGuard",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-010"
+        }
+      ],
+      "sha256": "6f0bd29b427882b38ea8900cd1cf31c4e2638c84dbf85b6c993b2720accdecbb"
+    },
+    "mobileapp/e2e/setup/sceneJourneys.test.ts": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-6b3e30547470",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "separate source and journey artifacts never replace the earlier result",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006,SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-a1cfca64d49e",
+          "line": 27,
+          "kind": "reviewed-selector",
+          "name": "missing identity and unowned or linked artifact destinations fail without fallback",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006,SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-9277f4714d3a",
+          "line": 51,
+          "kind": "reviewed-selector",
+          "name": "content geometry rejects stale or zero native frames and an unsafe menu",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006,SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-1d42c431a366",
+          "line": 63,
+          "kind": "reviewed-selector",
+          "name": "ordinary surface never accepts a split root as a substitute",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006,SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-9ba33894e098",
+          "line": 160,
+          "kind": "reviewed-selector",
+          "name": "both action registrations are present and own guarded setup and cleanup",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006,SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-757a23bb3377",
+          "line": 190,
+          "kind": "reviewed-selector",
+          "name": "headless-host",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006,SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-2c19a2596e68",
+          "line": 196,
+          "kind": "reviewed-selector",
+          "name": "scene-host-attached",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006,SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-25f6e747061f",
+          "line": 202,
+          "kind": "reviewed-selector",
+          "name": "scene-host-updated",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006,SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-e581fffb0464",
+          "line": 121,
+          "kind": "reviewed-selector",
+          "name": "link helper requires new native delivery as well as visible usage (cold=%s)",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006,SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-16d8061f552b",
+          "line": 154,
+          "kind": "reviewed-selector",
+          "name": "actual link registration executes the shared native and UI contract (cold=%s)",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006,SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-b3b2f740d29d",
+          "line": 234,
+          "kind": "reviewed-selector",
+          "name": "registered action executes tap and exact fake delivery, missing tap fails (cold=%s)",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006,SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-d6d4cdb5f402",
+          "line": 238,
+          "kind": "reviewed-selector",
+          "name": "registered cold action rejects %s and restores rotation",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006,SCENE-MIG-010"
+        }
+      ],
+      "sha256": "326e18199b0b5c81a9dbed46d299858bf840448ac1c498f2a6a7f5b139e6c40a"
+    },
+    "mobileapp/e2e/setup/sceneJourneys.ts": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-16d6bf431e39",
+          "line": 107,
+          "kind": "reviewed-selector",
+          "name": "coldSceneAction",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006"
+        },
+        {
+          "id": "MAP-94b1215d1e59",
+          "line": 153,
+          "kind": "reviewed-selector",
+          "name": "warmSceneAction",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006"
+        },
+        {
+          "id": "MAP-b60285dcd5b7",
+          "line": 182,
+          "kind": "reviewed-selector",
+          "name": "usageSceneLink",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006"
+        },
+        {
+          "id": "MAP-5d33e58ccb39",
+          "line": 201,
+          "kind": "reviewed-selector",
+          "name": "captureSceneJourney",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006"
+        },
+        {
+          "id": "MAP-c3eefc5f5890",
+          "line": 52,
+          "kind": "reviewed-selector",
+          "name": "observeGeometry",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006"
+        },
+        {
+          "id": "MAP-db5a088f15bb",
+          "line": 77,
+          "kind": "reviewed-selector",
+          "name": "readerToolsAndDraft",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006"
+        }
+      ],
+      "sha256": "a2afb87b121013b25db3e3f4f180d6f5cdf9c87e6baf74d03ae634cef9bc3415"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2"

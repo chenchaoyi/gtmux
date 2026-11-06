@@ -234,7 +234,8 @@
   },
   "mobileapp/e2e/fake-serve/server.ts": {
     "cases": [
-      "CT-HTTP"
+      "CT-HTTP",
+      "SCENE-MIG-011"
     ],
     "selectors": [
       "startFake"
@@ -490,7 +491,9 @@
       "main App keeps compact navigation props and a fresh root changes its real shell",
       "main App sidebar geometry follows the new root even when RN retains its old phone width",
       "a real anchored menu stays inside a new narrow root while RN width remains stale",
-      "retained DiffModal follows its actual viewport layout and keeps wrap and close usable with stale RN dimensions"
+      "retained DiffModal follows its actual viewport layout and keeps wrap and close usable with stale RN dimensions",
+      "real HQ inspector follows root resize and sidebar hiding while RN remains stale",
+      "real menu position and height follow a second root resize with nonzero safe-area edges"
     ]
   },
   "mobileapp/ios/tests/NotificationResponsePayloadChecks.swift": {
@@ -541,7 +544,8 @@
       "SCENE-MIG-002"
     ],
     "selectors": [
-      "root view resizes update the workspace even when native dimensions do not, without remounting the reader"
+      "root view resizes update the workspace even when native dimensions do not, without remounting the reader",
+      "native fallback and scale stay current while only valid root width and height override dimensions"
     ]
   },
   "mobileapp/src/push/launchNotification.test.ts": {
@@ -653,6 +657,169 @@
       "test_missing_skipped_failed_cancelled_case_or_early_return_never_passes",
       "test_wrong_or_missing_toolchain_WDA_signature_and_product_identity_fail",
       "test_evidence_byte_changes_and_escape_are_rejected"
+    ]
+  },
+  "mobileapp/e2e/setup/appLaunchFiles.test.ts": {
+    "cases": [
+      "SCENE-MIG-010"
+    ],
+    "selectors": [
+      "each launch returns the freshly resolved path containing its own flags",
+      "failed activation exposes no successful launch path",
+      "lookup failure does not write flags or activate the app"
+    ]
+  },
+  "mobileapp/e2e/setup/capabilities.test.ts": {
+    "cases": [
+      "SCENE-MIG-010"
+    ],
+    "selectors": [
+      "cloud simulator session waits for a fresh WDA build without requiring a prebuilt product",
+      "manual handles nothing on the test’s behalf",
+      "the default dismisses, and the older accept switch still accepts",
+      "the explicit mode wins over the older switch",
+      "a misspelt mode stops the run instead of falling back to dismiss",
+      "headless capture is explicit and local GUI runs keep their behavior",
+      "only explicit hosted capture separates WDA build and readiness with one bounded connection",
+      "only hosted multi-screen store captures receive the longer journey budget"
+    ]
+  },
+  "mobileapp/e2e/setup/sceneJourneys.test.ts": {
+    "cases": [
+      "SCENE-MIG-006",
+      "SCENE-MIG-010"
+    ],
+    "selectors": [
+      "separate source and journey artifacts never replace the earlier result",
+      "missing identity and unowned or linked artifact destinations fail without fallback",
+      "content geometry rejects stale or zero native frames and an unsafe menu",
+      "ordinary surface never accepts a split root as a substitute",
+      "both action registrations are present and own guarded setup and cleanup",
+      "headless-host",
+      "scene-host-attached",
+      "scene-host-updated",
+      "link helper requires new native delivery as well as visible usage (cold=%s)",
+      "actual link registration executes the shared native and UI contract (cold=%s)",
+      "registered action executes tap and exact fake delivery, missing tap fails (cold=%s)",
+      "registered cold action rejects %s and restores rotation"
+    ]
+  },
+  "mobileapp/e2e/fake-serve/request-diagnostics.test.ts": {
+    "cases": [
+      "SCENE-MIG-011"
+    ],
+    "selectors": [
+      "diagnostic request metadata shows routing without headers or query values"
+    ]
+  },
+  "mobileapp/e2e/fake-serve/transcript-identity.test.ts": {
+    "cases": [
+      "SCENE-MIG-011"
+    ],
+    "selectors": [
+      "default transcript identity survives polling while new fixtures and explicit transcripts remain independent"
+    ]
+  },
+  "mobileapp/e2e/setup/app.ts": {
+    "cases": [
+      "SCENE-MIG-010"
+    ],
+    "selectors": [
+      "launchWithFlags",
+      "writeDebugFlags",
+      "waitForNotificationAuthorization"
+    ]
+  },
+  "mobileapp/e2e/setup/capabilities.ts": {
+    "cases": [
+      "SCENE-MIG-010"
+    ],
+    "selectors": [
+      "cloudStartupCapabilities",
+      "sessionConnectionOptions",
+      "appiumServerTimeoutArgs"
+    ]
+  },
+  "mobileapp/e2e/setup/driver.ts": {
+    "cases": [
+      "SCENE-MIG-010"
+    ],
+    "selectors": [
+      "allocateArtifacts",
+      "recordSceneStep"
+    ]
+  },
+  "mobileapp/e2e/setup/global-setup.ts": {
+    "cases": [
+      "SCENE-MIG-010"
+    ],
+    "selectors": [
+      "globalSetup"
+    ]
+  },
+  "mobileapp/e2e/setup/journeyGuard.ts": {
+    "cases": [
+      "SCENE-MIG-010"
+    ],
+    "selectors": [
+      "createJourneyGuard"
+    ]
+  },
+  "mobileapp/e2e/setup/sceneJourneys.ts": {
+    "cases": [
+      "SCENE-MIG-006"
+    ],
+    "selectors": [
+      "coldSceneAction",
+      "warmSceneAction",
+      "usageSceneLink",
+      "captureSceneJourney",
+      "observeGeometry",
+      "readerToolsAndDraft"
+    ]
+  },
+  "mobileapp/e2e/__tests__/scene-migration-actions.test.ts": {
+    "cases": [
+      "SCENE-MIG-006"
+    ],
+    "selectors": [
+      "delivers a cold notification action exactly once",
+      "delivers a warm notification action exactly once"
+    ]
+  },
+  "mobileapp/e2e/__tests__/scene-migration-links.test.ts": {
+    "cases": [
+      "SCENE-MIG-006"
+    ],
+    "selectors": [
+      "opens a cold usage link through the scene",
+      "opens a warm usage link through the scene"
+    ]
+  },
+  "mobileapp/e2e/__tests__/coldstart-push.test.ts": {
+    "cases": [
+      "SCENE-MIG-007"
+    ],
+    "selectors": [
+      "A: cold start with an active Mac, switches, background, a new warm tap",
+      "C: a launch with no notification switches where it is pointed"
+    ]
+  },
+  "mobileapp/e2e/__tests__/server-switch-compare.test.ts": {
+    "cases": [
+      "SCENE-MIG-007"
+    ],
+    "selectors": [
+      "selects a server after a clean launch",
+      "switches between two saved servers"
+    ]
+  },
+  "mobileapp/e2e/__tests__/ipad-adaptive.test.ts": {
+    "cases": [
+      "SCENE-MIG-007"
+    ],
+    "selectors": [
+      "keeps the iPad sidebar and selected session through rotation"
     ]
   }
 }

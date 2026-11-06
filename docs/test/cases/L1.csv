@@ -3183,13 +3183,27 @@ LEG-5d182318c546,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts
 LEG-9491a40f6875,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,33,test,"a suite can still pin one, and a reset unpins it",False,legacy-not-retrospectively-reviewed
 LEG-62967d6ba432,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,41,test,"no supervisor, no verdict",False,legacy-not-retrospectively-reviewed
 LEG-4f90e4968cbd,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,47,test,GET /api/digest carries it on the supervisor row,False,legacy-not-retrospectively-reviewed
-LEG-b6f73720d14b,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,8,test,manual handles nothing on the test’s behalf,False,legacy-not-retrospectively-reviewed
-LEG-7440419bbda7,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,14,test,"the default dismisses, and the older accept switch still accepts",False,legacy-not-retrospectively-reviewed
-LEG-9afe9479f18a,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,19,test,the explicit mode wins over the older switch,False,legacy-not-retrospectively-reviewed
-LEG-ff05befffbd7,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,23,test,a misspelt mode stops the run instead of falling back to dismiss,False,legacy-not-retrospectively-reviewed
-LEG-7201f98d96a5,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,28,test,headless capture is explicit and local GUI runs keep their behavior,False,legacy-not-retrospectively-reviewed
-LEG-16fab5a7cc96,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,34,test,only explicit hosted capture separates WDA build and readiness with one bounded connection,False,legacy-not-retrospectively-reviewed
-LEG-61bfa22d706f,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,50,test,only hosted multi-screen store captures receive the longer journey budget,False,legacy-not-retrospectively-reviewed
+MAP-66952beb74f5,L1,reviewed implementation,mobileapp/e2e/setup/app.ts,44,reviewed-selector,launchWithFlags,False,SCENE-MIG-010
+MAP-514c674c6429,L1,reviewed implementation,mobileapp/e2e/setup/app.ts,34,reviewed-selector,writeDebugFlags,False,SCENE-MIG-010
+MAP-8108cc25d72e,L1,reviewed implementation,mobileapp/e2e/setup/app.ts,63,reviewed-selector,waitForNotificationAuthorization,False,SCENE-MIG-010
+MAP-2444a23694a2,L1,reviewed implementation,mobileapp/e2e/setup/appLaunchFiles.test.ts,14,reviewed-selector,each launch returns the freshly resolved path containing its own flags,False,SCENE-MIG-010
+MAP-f758152f6a60,L1,reviewed implementation,mobileapp/e2e/setup/appLaunchFiles.test.ts,29,reviewed-selector,failed activation exposes no successful launch path,False,SCENE-MIG-010
+MAP-692a5e080ea9,L1,reviewed implementation,mobileapp/e2e/setup/appLaunchFiles.test.ts,36,reviewed-selector,lookup failure does not write flags or activate the app,False,SCENE-MIG-010
+LEG-b6f73720d14b,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,25,test,manual handles nothing on the test’s behalf,False,legacy-not-retrospectively-reviewed
+LEG-7440419bbda7,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,31,test,"the default dismisses, and the older accept switch still accepts",False,legacy-not-retrospectively-reviewed
+LEG-9afe9479f18a,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,36,test,the explicit mode wins over the older switch,False,legacy-not-retrospectively-reviewed
+LEG-ff05befffbd7,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,40,test,a misspelt mode stops the run instead of falling back to dismiss,False,legacy-not-retrospectively-reviewed
+LEG-7201f98d96a5,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,45,test,headless capture is explicit and local GUI runs keep their behavior,False,legacy-not-retrospectively-reviewed
+LEG-16fab5a7cc96,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,51,test,only explicit hosted capture separates WDA build and readiness with one bounded connection,False,legacy-not-retrospectively-reviewed
+LEG-61bfa22d706f,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,67,test,only hosted multi-screen store captures receive the longer journey budget,False,legacy-not-retrospectively-reviewed
+MAP-ad6f801c4c8b,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,3,reviewed-selector,cloud simulator session waits for a fresh WDA build without requiring a prebuilt product,False,SCENE-MIG-010
+MAP-fe0c5bc5423c,L1,reviewed implementation,mobileapp/e2e/setup/capabilities.ts,57,reviewed-selector,cloudStartupCapabilities,False,SCENE-MIG-010
+MAP-24bf73c18fbb,L1,reviewed implementation,mobileapp/e2e/setup/capabilities.ts,70,reviewed-selector,sessionConnectionOptions,False,SCENE-MIG-010
+MAP-16ffab634a71,L1,reviewed implementation,mobileapp/e2e/setup/capabilities.ts,66,reviewed-selector,appiumServerTimeoutArgs,False,SCENE-MIG-010
+MAP-f430bab330eb,L1,reviewed implementation,mobileapp/e2e/setup/driver.ts,36,reviewed-selector,allocateArtifacts,False,SCENE-MIG-010
+MAP-b187c45616bf,L1,reviewed implementation,mobileapp/e2e/setup/driver.ts,70,reviewed-selector,recordSceneStep,False,SCENE-MIG-010
+MAP-6f6d6acb4163,L1,reviewed implementation,mobileapp/e2e/setup/global-setup.ts,39,reviewed-selector,globalSetup,False,SCENE-MIG-010
+MAP-d36a8e3caa71,L1,reviewed implementation,mobileapp/e2e/setup/journeyGuard.ts,2,reviewed-selector,createJourneyGuard,False,SCENE-MIG-010
 DG-001-f069a0,L1,RN / mobile harness,mobileapp/e2e/setup/manual-tools.test.ts,6,test,DG-001 ordinary discovery,False,DG-001
 DG-002-f069a0,L1,RN / mobile harness,mobileapp/e2e/setup/manual-tools.test.ts,19,test,DG-002 rejects missing target,False,DG-002
 DG-003-f069a0,L1,RN / mobile harness,mobileapp/e2e/setup/manual-tools.test.ts,39,test,DG-003 confirms one exact fixture pane,False,DG-003
@@ -3717,6 +3731,7 @@ MAP-20f88ab9ada6,L1,reviewed implementation,mobileapp/src/ui/WorkspaceSurface.sc
 MAP-2535f52a828e,L1,reviewed implementation,mobileapp/src/ui/WorkspaceSurface.sceneMetrics.test.tsx,42,reviewed-selector,rejects a zero-sized scene instead of seeding fake metrics,False,SCENE-MIG-002
 MAP-501a6457c760,L1,reviewed implementation,mobileapp/src/ui/WorkspaceSurface.test.tsx,12,reviewed-selector,starts background handling before native insets and mounts the visual tree after measurement,False,SCENE-MIG-002
 MAP-e3657e854bc3,L1,reviewed implementation,mobileapp/src/ui/windowMetrics.test.tsx,14,reviewed-selector,"root view resizes update the workspace even when native dimensions do not, without remounting the reader",False,SCENE-MIG-002
+MAP-a4267ab4a51b,L1,reviewed implementation,mobileapp/src/ui/windowMetrics.test.tsx,29,reviewed-selector,native fallback and scale stay current while only valid root width and height override dimensions,False,SCENE-MIG-002
 MAP-109f723286a2,L1,reviewed implementation,mobileapp/src/usage/UsageWidgetBridge.initialDemoLink.test.tsx,15,reviewed-selector,a demo-rejected initial link cannot replay when the connection becomes an owner,False,SCENE-MIG-004
 MAP-cd8094a5d6ae,L1,reviewed implementation,mobileapp/src/usage/UsageWidgetBridge.initialLink.test.tsx,15,reviewed-selector,a guest-rejected initial link cannot replay when the connection becomes owner,False,SCENE-MIG-004
 MAP-2ec345b59070,L1,reviewed implementation,mobileapp/src/usage/UsageWidgetBridge.sceneEvents.test.tsx,14,reviewed-selector,retained scene availability delivers each permitted intent once and rejects guest replay,False,SCENE-MIG-004

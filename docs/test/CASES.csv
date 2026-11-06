@@ -3767,10 +3767,12 @@ LEG-5fde771eaebb,L1,macOS / Widgets Swift,macapp/Tests/MacUsageWidgetSupportTest
 LEG-450dbd890cc5,L1,macOS / Widgets Swift,macapp/Tests/MacUsageWidgetSupportTests/MacUsageWidgetSupportTests.swift,73,XCTest,testUsageShortcutCannotCarryAnAlternateActionOrCredentials,False,legacy-not-retrospectively-reviewed
 LEG-fbddf3db8aa3,L1,macOS / Widgets Swift,macapp/Tests/MacUsageWidgetSupportTests/MacUsageWidgetSupportTests.swift,80,XCTest,testNoPollingWithoutWidgetNoOverlapAndBoundedReloads,False,legacy-not-retrospectively-reviewed
 MAP-265918ac6bc3,L1,reviewed implementation,mobileapp/__tests__/App.notificationBootstrap.test.tsx,34,reviewed-selector,starts the actual notification bridge while the visual safe area has no metrics,False,SCENE-MIG-002
-MAP-3a38d5e64c65,L2,reviewed implementation,mobileapp/__tests__/App.sceneMigration.test.tsx,61,reviewed-selector,main App keeps compact navigation props and a fresh root changes its real shell,False,SCENE-MIG-005
-MAP-da46dbb93884,L2,reviewed implementation,mobileapp/__tests__/App.sceneMigration.test.tsx,70,reviewed-selector,main App sidebar geometry follows the new root even when RN retains its old phone width,False,SCENE-MIG-005
-MAP-b8c8470d4954,L2,reviewed implementation,mobileapp/__tests__/App.sceneMigration.test.tsx,79,reviewed-selector,a real anchored menu stays inside a new narrow root while RN width remains stale,False,SCENE-MIG-005
-MAP-cfca889ee705,L2,reviewed implementation,mobileapp/__tests__/App.sceneMigration.test.tsx,98,reviewed-selector,retained DiffModal follows its actual viewport layout and keeps wrap and close usable with stale RN dimensions,False,SCENE-MIG-005
+MAP-3a38d5e64c65,L2,reviewed implementation,mobileapp/__tests__/App.sceneMigration.test.tsx,64,reviewed-selector,main App keeps compact navigation props and a fresh root changes its real shell,False,SCENE-MIG-005
+MAP-da46dbb93884,L2,reviewed implementation,mobileapp/__tests__/App.sceneMigration.test.tsx,73,reviewed-selector,main App sidebar geometry follows the new root even when RN retains its old phone width,False,SCENE-MIG-005
+MAP-b8c8470d4954,L2,reviewed implementation,mobileapp/__tests__/App.sceneMigration.test.tsx,85,reviewed-selector,a real anchored menu stays inside a new narrow root while RN width remains stale,False,SCENE-MIG-005
+MAP-cfca889ee705,L2,reviewed implementation,mobileapp/__tests__/App.sceneMigration.test.tsx,104,reviewed-selector,retained DiffModal follows its actual viewport layout and keeps wrap and close usable with stale RN dimensions,False,SCENE-MIG-005
+MAP-9ba95c850181,L2,reviewed implementation,mobileapp/__tests__/App.sceneMigration.test.tsx,131,reviewed-selector,real HQ inspector follows root resize and sidebar hiding while RN remains stale,False,SCENE-MIG-005
+MAP-52fc7bb9aa93,L2,reviewed implementation,mobileapp/__tests__/App.sceneMigration.test.tsx,144,reviewed-selector,real menu position and height follow a second root resize with nonzero safe-area edges,False,SCENE-MIG-005
 LEG-a93ae72a5022,L1,RN / mobile harness,mobileapp/__tests__/App.test.tsx,9,test,renders correctly,False,legacy-not-retrospectively-reviewed
 LEG-43b35034f78d,L1,Android native,mobileapp/android/app/src/test/java/com/gtmux/app/DocumentPolicyTest.kt,7,JUnit,imageBoundsAreSharedByDocumentAndClipboardReaders,False,legacy-not-retrospectively-reviewed
 LEG-818e29919768,L1,Android native,mobileapp/android/app/src/test/java/com/gtmux/app/DocumentPolicyTest.kt,13,JUnit,resolverKeepsOriginAndRejectsCredentialOrQueryConfusion,False,legacy-not-retrospectively-reviewed
@@ -3780,8 +3782,8 @@ LEG-6e4751cbc433,L4,RN / mobile harness,mobileapp/e2e/__tests__/answer-options.t
 LEG-2d3a6b1e37ba,M,RN / mobile harness,mobileapp/e2e/__tests__/appstore-shots-ipad.test.ts,53,it,"captures the split shell, HQ matters, the pane grid and the knowledge sheet",False,legacy-not-retrospectively-reviewed
 LEG-1b162166dec9,M,RN / mobile harness,mobileapp/e2e/__tests__/appstore-shots.test.ts,45,it,"captures the radar, the terminal, HQ, its work, usage and the Macs",False,legacy-not-retrospectively-reviewed
 LEG-ac7603c2bff5,L4,RN / mobile harness,mobileapp/e2e/__tests__/chat-fullscreen-collapse.test.ts,28,it,"opens chat, collapses/expands all, enters+exits full-screen",False,legacy-not-retrospectively-reviewed
-LEG-a5d63af936be,L4,RN / mobile harness,mobileapp/e2e/__tests__/coldstart-push.test.ts,130,it,"A: cold start with an active Mac, switches, background, a new warm tap",False,legacy-not-retrospectively-reviewed
-LEG-f3196e5f4ce2,L4,RN / mobile harness,mobileapp/e2e/__tests__/coldstart-push.test.ts,170,it,C: a launch with no notification switches where it is pointed,False,legacy-not-retrospectively-reviewed
+LEG-a5d63af936be,L4,RN / mobile harness,mobileapp/e2e/__tests__/coldstart-push.test.ts,146,it,"A: cold start with an active Mac, switches, background, a new warm tap",False,legacy-not-retrospectively-reviewed
+LEG-f3196e5f4ce2,L4,RN / mobile harness,mobileapp/e2e/__tests__/coldstart-push.test.ts,211,it,C: a launch with no notification switches where it is pointed,False,legacy-not-retrospectively-reviewed
 LEG-1c834aed07e9,L4,RN / mobile harness,mobileapp/e2e/__tests__/composer-camera-unavailable.test.ts,19,it,Camera with no camera says so instead of doing nothing,False,legacy-not-retrospectively-reviewed
 LEG-ecf828c0a4a6,L4,RN / mobile harness,mobileapp/e2e/__tests__/composer-keyrow.test.ts,32,it,"has no Space pill, orders ⏎ after ↑/↓, and ⌫ erases in the pane",False,legacy-not-retrospectively-reviewed
 LEG-07d49ef24147,L4,RN / mobile harness,mobileapp/e2e/__tests__/composer-photo-markup.test.ts,24,it,a library photo goes through markup and reaches the Mac with the message,False,legacy-not-retrospectively-reviewed
@@ -3802,6 +3804,7 @@ LEG-48cc6a34e6d3,L4,RN / mobile harness,mobileapp/e2e/__tests__/hq-keyboard.test
 LEG-3e8dbc51d1ff,L4,RN / mobile harness,mobileapp/e2e/__tests__/hq-long-conversation.test.ts,43,it,"a long HQ conversation opens at the latest turn, reads back, and follows a new reply",False,legacy-not-retrospectively-reviewed
 LEG-018a72b313eb,L4,RN / mobile harness,mobileapp/e2e/__tests__/hq-shots.test.ts,25,it,"renders the HQ card (not a row), and tapping opens Detail in chat",False,legacy-not-retrospectively-reviewed
 LEG-5d9b553a6364,L4,RN / mobile harness,mobileapp/e2e/__tests__/hq-shots.test.ts,72,it,opens the board and captures it for review,False,legacy-not-retrospectively-reviewed
+MAP-b3419be992f8,L3,reviewed implementation,mobileapp/e2e/__tests__/ipad-adaptive.test.ts,12,reviewed-selector,keeps the iPad sidebar and selected session through rotation,False,SCENE-MIG-007
 LEG-763c5ae68f6a,L4,RN / mobile harness,mobileapp/e2e/__tests__/ipad-demo.test.ts,25,it,is the regular shell over sample data,False,legacy-not-retrospectively-reviewed
 LEG-56070872eabb,L4,RN / mobile harness,mobileapp/e2e/__tests__/ipad-keys.test.ts,41,it,drives the shell from the keymap,False,legacy-not-retrospectively-reviewed
 LEG-4137e784fd6a,L4,RN / mobile harness,mobileapp/e2e/__tests__/jumpbottom.test.ts,29,it,"lands on the tail, not short of it",False,legacy-not-retrospectively-reviewed
@@ -3820,9 +3823,15 @@ LEG-d1423a35ae7b,L4,RN / mobile harness,mobileapp/e2e/__tests__/radar-refresh-co
 LEG-8094dd3c9a7c,L4,RN / mobile harness,mobileapp/e2e/__tests__/radar.test.ts,29,it,"auto-pairs, opens a pane, and the network calls are recorded",False,legacy-not-retrospectively-reviewed
 LEG-6aa06fe97cdb,L4,RN / mobile harness,mobileapp/e2e/__tests__/revoked-phone.test.ts,27,it,"a phone revoked while the app was closed opens on ""access rejected"", and the server list agrees",False,legacy-not-retrospectively-reviewed
 LEG-7d7ce36e4772,L4,RN / mobile harness,mobileapp/e2e/__tests__/revoked-phone.test.ts,55,it,a pane open when the Mac revokes the phone says so in its header,False,legacy-not-retrospectively-reviewed
+MAP-5f9af003b179,L3,reviewed implementation,mobileapp/e2e/__tests__/scene-migration-actions.test.ts,15,reviewed-selector,delivers a cold notification action exactly once,False,SCENE-MIG-006
+MAP-542ef487bb26,L3,reviewed implementation,mobileapp/e2e/__tests__/scene-migration-actions.test.ts,16,reviewed-selector,delivers a warm notification action exactly once,False,SCENE-MIG-006
+MAP-da368bf98131,L3,reviewed implementation,mobileapp/e2e/__tests__/scene-migration-links.test.ts,15,reviewed-selector,opens a cold usage link through the scene,False,SCENE-MIG-006
+MAP-2eb13c4361fd,L3,reviewed implementation,mobileapp/e2e/__tests__/scene-migration-links.test.ts,16,reviewed-selector,opens a warm usage link through the scene,False,SCENE-MIG-006
 LEG-ce8589d51a98,M,RN / mobile harness,mobileapp/e2e/__tests__/screenshots.test.ts,33,it,"captures radar, detail, and the connection page",False,legacy-not-retrospectively-reviewed
 LEG-9d2138d1a1e7,L4,RN / mobile harness,mobileapp/e2e/__tests__/send-feedback.test.ts,38,it,a refusal names the pane someone is typing in,False,legacy-not-retrospectively-reviewed
 LEG-90d6e9b0fcce,L4,RN / mobile harness,mobileapp/e2e/__tests__/send-feedback.test.ts,61,it,"a send into a running session says it went, and that the agent may finish first",False,legacy-not-retrospectively-reviewed
+MAP-136dedeea639,L3,reviewed implementation,mobileapp/e2e/__tests__/server-switch-compare.test.ts,14,reviewed-selector,selects a server after a clean launch,False,SCENE-MIG-007
+MAP-f4698467762a,L3,reviewed implementation,mobileapp/e2e/__tests__/server-switch-compare.test.ts,36,reviewed-selector,switches between two saved servers,False,SCENE-MIG-007
 LEG-5511fce16704,L4,RN / mobile harness,mobileapp/e2e/__tests__/server-switch.test.ts,57,run,a launch from a notification does not pull a later server switch back,False,legacy-not-retrospectively-reviewed
 LEG-91512a46ffa3,L4,RN / mobile harness,mobileapp/e2e/__tests__/server-switch.test.ts,94,run,"without a launch notification, a switch goes where it is pointed",False,legacy-not-retrospectively-reviewed
 LEG-398163bb0c32,L4,RN / mobile harness,mobileapp/e2e/__tests__/settings-appearance-language.test.ts,55,it,Dark and 中文 apply at once and survive a relaunch,False,legacy-not-retrospectively-reviewed
@@ -3937,6 +3946,7 @@ LEG-bd3b5eb44399,L1,RN / mobile harness,mobileapp/e2e/fake-serve/mutations.test.
 LEG-2947a72dc560,L1,RN / mobile harness,mobileapp/e2e/fake-serve/mutations.test.ts,161,test,"a waiting pane offers its own words, an idle one offers nothing",False,legacy-not-retrospectively-reviewed
 LEG-c2fd7392e61c,L1,RN / mobile harness,mobileapp/e2e/fake-serve/mutations.test.ts,181,test,"both arrive, in order, each with its own idempotency token",False,legacy-not-retrospectively-reviewed
 LEG-a15118380df4,L1,RN / mobile harness,mobileapp/e2e/fake-serve/mutations.test.ts,189,test,"a retry of the SAME send reuses its token, which is what makes it a retry",False,legacy-not-retrospectively-reviewed
+MAP-b33db4631198,L2,reviewed implementation,mobileapp/e2e/fake-serve/request-diagnostics.test.ts,3,reviewed-selector,diagnostic request metadata shows routing without headers or query values,False,SCENE-MIG-011
 LEG-e900a8017f31,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,27,test,"/api/addresses answers an empty list, not a 404",False,legacy-not-retrospectively-reviewed
 LEG-91d47fdea0cb,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,33,test,/api/tasks answers the owner with nothing in flight,False,legacy-not-retrospectively-reviewed
 LEG-67b548dee742,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,41,test,"every row is tiered, located and named the way PaneRow says",False,legacy-not-retrospectively-reviewed
@@ -3955,7 +3965,8 @@ LEG-6b1813f7509a,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,1
 LEG-d240b174d0df,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,156,test,the stock report is unchanged until a suite seeds the full one,False,legacy-not-retrospectively-reviewed
 LEG-01e2c0d8a07a,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,160,test,"the seeded plan groups by agent, under the names the usage sheet ids carry",False,legacy-not-retrospectively-reviewed
 LEG-e34f8145a818,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,173,test,back to the stock world,False,legacy-not-retrospectively-reviewed
-MAP-f2ed2637baa9,L2,reviewed implementation,mobileapp/e2e/fake-serve/server.ts,95,reviewed-selector,startFake,False,CT-HTTP
+MAP-f2ed2637baa9,L2,reviewed implementation,mobileapp/e2e/fake-serve/server.ts,97,reviewed-selector,startFake,False,CT-HTTP
+MAP-10a263ace6db,L2,reviewed implementation,mobileapp/e2e/fake-serve/transcript-identity.test.ts,10,reviewed-selector,default transcript identity survives polling while new fixtures and explicit transcripts remain independent,False,SCENE-MIG-011
 LEG-a314cc5be23f,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,8,test,"the stock fixture: one worker waiting, so needs_you, naming it",False,legacy-not-retrospectively-reviewed
 LEG-65bd4c2dfa5e,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,13,test,nothing waiting is normal; the supervisor mid-turn is working; the supervisor waiting is hq_call,False,legacy-not-retrospectively-reviewed
 LEG-5d182318c546,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,25,test,the longest waiting worker comes first,False,legacy-not-retrospectively-reviewed
@@ -3965,14 +3976,28 @@ LEG-4f90e4968cbd,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts
 MAP-f4f657590af5,L2,reviewed implementation,mobileapp/e2e/fake-serve/world.ts,111,reviewed-selector,export class World,False,CT-HTTP
 MAP-befb8569059f,G,reviewed implementation,mobileapp/e2e/jest.config.manual.js,2,reviewed-selector,manualMode(process.env),False,"DG-001,DG-002"
 MAP-a88b539daecf,G,reviewed implementation,mobileapp/e2e/jest.config.manual.js,3,reviewed-selector,sendTarget(process.env),False,"DG-001,DG-002"
-LEG-b6f73720d14b,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,8,test,manual handles nothing on the test’s behalf,False,legacy-not-retrospectively-reviewed
-LEG-7440419bbda7,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,14,test,"the default dismisses, and the older accept switch still accepts",False,legacy-not-retrospectively-reviewed
-LEG-9afe9479f18a,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,19,test,the explicit mode wins over the older switch,False,legacy-not-retrospectively-reviewed
-LEG-ff05befffbd7,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,23,test,a misspelt mode stops the run instead of falling back to dismiss,False,legacy-not-retrospectively-reviewed
-LEG-7201f98d96a5,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,28,test,headless capture is explicit and local GUI runs keep their behavior,False,legacy-not-retrospectively-reviewed
-LEG-16fab5a7cc96,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,34,test,only explicit hosted capture separates WDA build and readiness with one bounded connection,False,legacy-not-retrospectively-reviewed
-LEG-61bfa22d706f,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,50,test,only hosted multi-screen store captures receive the longer journey budget,False,legacy-not-retrospectively-reviewed
+MAP-66952beb74f5,L1,reviewed implementation,mobileapp/e2e/setup/app.ts,44,reviewed-selector,launchWithFlags,False,SCENE-MIG-010
+MAP-514c674c6429,L1,reviewed implementation,mobileapp/e2e/setup/app.ts,34,reviewed-selector,writeDebugFlags,False,SCENE-MIG-010
+MAP-8108cc25d72e,L1,reviewed implementation,mobileapp/e2e/setup/app.ts,63,reviewed-selector,waitForNotificationAuthorization,False,SCENE-MIG-010
+MAP-2444a23694a2,L1,reviewed implementation,mobileapp/e2e/setup/appLaunchFiles.test.ts,14,reviewed-selector,each launch returns the freshly resolved path containing its own flags,False,SCENE-MIG-010
+MAP-f758152f6a60,L1,reviewed implementation,mobileapp/e2e/setup/appLaunchFiles.test.ts,29,reviewed-selector,failed activation exposes no successful launch path,False,SCENE-MIG-010
+MAP-692a5e080ea9,L1,reviewed implementation,mobileapp/e2e/setup/appLaunchFiles.test.ts,36,reviewed-selector,lookup failure does not write flags or activate the app,False,SCENE-MIG-010
+LEG-b6f73720d14b,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,25,test,manual handles nothing on the test’s behalf,False,legacy-not-retrospectively-reviewed
+LEG-7440419bbda7,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,31,test,"the default dismisses, and the older accept switch still accepts",False,legacy-not-retrospectively-reviewed
+LEG-9afe9479f18a,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,36,test,the explicit mode wins over the older switch,False,legacy-not-retrospectively-reviewed
+LEG-ff05befffbd7,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,40,test,a misspelt mode stops the run instead of falling back to dismiss,False,legacy-not-retrospectively-reviewed
+LEG-7201f98d96a5,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,45,test,headless capture is explicit and local GUI runs keep their behavior,False,legacy-not-retrospectively-reviewed
+LEG-16fab5a7cc96,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,51,test,only explicit hosted capture separates WDA build and readiness with one bounded connection,False,legacy-not-retrospectively-reviewed
+LEG-61bfa22d706f,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,67,test,only hosted multi-screen store captures receive the longer journey budget,False,legacy-not-retrospectively-reviewed
+MAP-ad6f801c4c8b,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,3,reviewed-selector,cloud simulator session waits for a fresh WDA build without requiring a prebuilt product,False,SCENE-MIG-010
+MAP-fe0c5bc5423c,L1,reviewed implementation,mobileapp/e2e/setup/capabilities.ts,57,reviewed-selector,cloudStartupCapabilities,False,SCENE-MIG-010
+MAP-24bf73c18fbb,L1,reviewed implementation,mobileapp/e2e/setup/capabilities.ts,70,reviewed-selector,sessionConnectionOptions,False,SCENE-MIG-010
+MAP-16ffab634a71,L1,reviewed implementation,mobileapp/e2e/setup/capabilities.ts,66,reviewed-selector,appiumServerTimeoutArgs,False,SCENE-MIG-010
+MAP-f430bab330eb,L1,reviewed implementation,mobileapp/e2e/setup/driver.ts,36,reviewed-selector,allocateArtifacts,False,SCENE-MIG-010
+MAP-b187c45616bf,L1,reviewed implementation,mobileapp/e2e/setup/driver.ts,70,reviewed-selector,recordSceneStep,False,SCENE-MIG-010
 MAP-cb2da71006dd,G,reviewed implementation,mobileapp/e2e/setup/global-setup-manual.ts,6,reviewed-selector,"await setupManual(process.env, verifySendTarget, globalSetup)",False,DG-004
+MAP-6f6d6acb4163,L1,reviewed implementation,mobileapp/e2e/setup/global-setup.ts,39,reviewed-selector,globalSetup,False,SCENE-MIG-010
+MAP-d36a8e3caa71,L1,reviewed implementation,mobileapp/e2e/setup/journeyGuard.ts,2,reviewed-selector,createJourneyGuard,False,SCENE-MIG-010
 MAP-c8767994a252,G,reviewed implementation,mobileapp/e2e/setup/manual-tools.cjs,2,reviewed-selector,function manualMode(,False,"DG-001,DG-002,DG-003"
 MAP-64142db61c66,G,reviewed implementation,mobileapp/e2e/setup/manual-tools.cjs,8,reviewed-selector,function sendTarget(,False,"DG-001,DG-002,DG-003"
 MAP-ad9860024fc0,G,reviewed implementation,mobileapp/e2e/setup/manual-tools.cjs,19,reviewed-selector,async function verifySendTarget(,False,"DG-001,DG-002,DG-003"
@@ -3988,6 +4013,24 @@ LEG-225a080b8593,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,94,i
 LEG-5beea2682a41,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,100,it,"without a directory, the simulator scopes it",False,legacy-not-retrospectively-reviewed
 LEG-72dc7db04494,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,106,it,"a scoped WDA pattern selects through pgrep itself, not only as a regex",False,legacy-not-retrospectively-reviewed
 LEG-2eb2e34b22ce,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,124,it,unscoped by default,False,legacy-not-retrospectively-reviewed
+MAP-6b3e30547470,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,15,reviewed-selector,separate source and journey artifacts never replace the earlier result,False,"SCENE-MIG-006,SCENE-MIG-010"
+MAP-a1cfca64d49e,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,27,reviewed-selector,missing identity and unowned or linked artifact destinations fail without fallback,False,"SCENE-MIG-006,SCENE-MIG-010"
+MAP-9277f4714d3a,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,51,reviewed-selector,content geometry rejects stale or zero native frames and an unsafe menu,False,"SCENE-MIG-006,SCENE-MIG-010"
+MAP-1d42c431a366,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,63,reviewed-selector,ordinary surface never accepts a split root as a substitute,False,"SCENE-MIG-006,SCENE-MIG-010"
+MAP-9ba33894e098,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,160,reviewed-selector,both action registrations are present and own guarded setup and cleanup,False,"SCENE-MIG-006,SCENE-MIG-010"
+MAP-757a23bb3377,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,190,reviewed-selector,headless-host,False,"SCENE-MIG-006,SCENE-MIG-010"
+MAP-2c19a2596e68,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,196,reviewed-selector,scene-host-attached,False,"SCENE-MIG-006,SCENE-MIG-010"
+MAP-25f6e747061f,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,202,reviewed-selector,scene-host-updated,False,"SCENE-MIG-006,SCENE-MIG-010"
+MAP-e581fffb0464,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,121,reviewed-selector,link helper requires new native delivery as well as visible usage (cold=%s),False,"SCENE-MIG-006,SCENE-MIG-010"
+MAP-16d8061f552b,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,154,reviewed-selector,actual link registration executes the shared native and UI contract (cold=%s),False,"SCENE-MIG-006,SCENE-MIG-010"
+MAP-b3b2f740d29d,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,234,reviewed-selector,"registered action executes tap and exact fake delivery, missing tap fails (cold=%s)",False,"SCENE-MIG-006,SCENE-MIG-010"
+MAP-d6d4cdb5f402,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,238,reviewed-selector,registered cold action rejects %s and restores rotation,False,"SCENE-MIG-006,SCENE-MIG-010"
+MAP-16d6bf431e39,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,107,reviewed-selector,coldSceneAction,False,SCENE-MIG-006
+MAP-94b1215d1e59,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,153,reviewed-selector,warmSceneAction,False,SCENE-MIG-006
+MAP-b60285dcd5b7,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,182,reviewed-selector,usageSceneLink,False,SCENE-MIG-006
+MAP-5d33e58ccb39,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,201,reviewed-selector,captureSceneJourney,False,SCENE-MIG-006
+MAP-c3eefc5f5890,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,52,reviewed-selector,observeGeometry,False,SCENE-MIG-006
+MAP-db5a088f15bb,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,77,reviewed-selector,readerToolsAndDraft,False,SCENE-MIG-006
 ND-001,L1,iOS Swift,mobileapp/ios/tests/DocumentHTMLChecks.swift,2,native-procedural-oracle,DocumentHTML production Foundation checks,False,ND-001
 ND-002,L1,iOS Swift,mobileapp/ios/tests/DocumentMarkdownChecks.swift,3,native-procedural-oracle,DocumentMarkdown production Foundation checks,False,ND-002
 MAP-4d79dbb7ab50,L1,reviewed implementation,mobileapp/ios/tests/NotificationResponseCompletionChecks.swift,20,reviewed-selector,notification response completion checks passed,False,SCENE-MIG-001
@@ -6028,6 +6071,7 @@ LEG-7e1e7c1d7954,L2,RN / mobile harness,mobileapp/src/ui/useKeyboardChrome.test.
 LEG-bd6085e9a14d,L2,RN / mobile harness,mobileapp/src/ui/useKeyboardChrome.test.tsx,77,test,Reduce Motion folds and restores without animation,False,legacy-not-retrospectively-reviewed
 LEG-aab5aceea630,L2,RN / mobile harness,mobileapp/src/ui/useModalDismiss.test.tsx,6,test.each(),%s completes each modal lifecycle once,True,legacy-not-retrospectively-reviewed
 MAP-e3657e854bc3,L1,reviewed implementation,mobileapp/src/ui/windowMetrics.test.tsx,14,reviewed-selector,"root view resizes update the workspace even when native dimensions do not, without remounting the reader",False,SCENE-MIG-002
+MAP-a4267ab4a51b,L1,reviewed implementation,mobileapp/src/ui/windowMetrics.test.tsx,29,reviewed-selector,native fallback and scale stay current while only valid root width and height override dimensions,False,SCENE-MIG-002
 MAP-109f723286a2,L1,reviewed implementation,mobileapp/src/usage/UsageWidgetBridge.initialDemoLink.test.tsx,15,reviewed-selector,a demo-rejected initial link cannot replay when the connection becomes an owner,False,SCENE-MIG-004
 MAP-cd8094a5d6ae,L1,reviewed implementation,mobileapp/src/usage/UsageWidgetBridge.initialLink.test.tsx,15,reviewed-selector,a guest-rejected initial link cannot replay when the connection becomes owner,False,SCENE-MIG-004
 MAP-2ec345b59070,L1,reviewed implementation,mobileapp/src/usage/UsageWidgetBridge.sceneEvents.test.tsx,14,reviewed-selector,retained scene availability delivers each permitted intent once and rejects guest replay,False,SCENE-MIG-004

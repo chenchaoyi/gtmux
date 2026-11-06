@@ -36,7 +36,7 @@ STEPS = {
                 'draft-keyboard-retained', 'returned-to-list', 'warm-background', 'warm-fake-once'),
     'links': ('cold-not-running', 'cold-native-new-scene-url', 'cold-usage-visible',
               'warm-native-new-scene-url', 'warm-usage-visible'),
-    'ipad': ('sidebar-reader-landscape', 'trace-used', 'diff-used', 'draft-entered',
+    'ipad': ('sidebar-reader-landscape', 'reader-selected', 'trace-used', 'diff-used', 'draft-entered',
              'sidebar-reader-portrait', 'draft-keyboard-retained'),
 }
 TOOLS = {

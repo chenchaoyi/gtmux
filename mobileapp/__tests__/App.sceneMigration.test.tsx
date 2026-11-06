@@ -5,6 +5,7 @@ import {SafeAreaProvider} from 'react-native-safe-area-context';
 import * as Keychain from 'react-native-keychain';
 import App from '../App';
 import {Debug} from '../src/debug';
+import {HQView} from '../src/screens/HQScreen';
 import {RadarPanel} from '../src/screens/RadarPanel';
 import {WorkspaceProvider} from '../src/state/WorkspaceContext';
 import {AnchoredMenu} from '../src/ui/AnchoredMenu';
@@ -12,9 +13,9 @@ import {DiffModal} from '../src/ui/DiffModal';
 import {WindowMetricsProvider} from '../src/ui/windowMetrics';
 import {paletteFor} from '../src/ui/theme';
 
-// Only the native stack host is substituted. It mounts the real initial Radar
-// component, including its actual size-class decision. This is a geometry test,
-// not evidence for native stack transitions or UIKit hit testing.
+// In addition to the shared Jest native/navigation/storage boundaries, the
+// native stack host below mounts the real initial Radar and size-class decision.
+// Real consumers remain; this is not native stack or UIKit hit-testing evidence.
 jest.mock('@react-navigation/native-stack', () => ({
   createNativeStackNavigator: () => ({
     Navigator: ({children}: any) => children,
@@ -32,6 +33,7 @@ const originalNative = NativeModules.GtmuxNotificationResponses;
 const originalWindow = Dimensions.get('window');
 const originalDebug = {...Debug};
 let tree: renderer.ReactTestRenderer | undefined;
+let agents: any[] = [];
 const scene = (width: number, height: number) => ({frame: {x: 0, y: 0, width, height}, insets: {top: 24, bottom: 20, left: 0, right: 0}});
 function setNativeWindow(width: number, height: number) {
   Dimensions.set({window: {...originalWindow, width, height}, screen: {...originalWindow, width, height}});
@@ -42,11 +44,12 @@ async function rootLayout(width: number, height: number) {
   });
 }
 beforeEach(() => {
+  agents = [];
   setNativeWindow(393, 852);
   Debug.skipWhatsNew = true;
   NativeModules.GtmuxNotificationResponses = {currentSceneMetrics: jest.fn().mockResolvedValue(scene(1024, 768)), drain: jest.fn().mockResolvedValue([]), drainSceneLinks: jest.fn().mockResolvedValue([])};
   (Keychain.getGenericPassword as jest.Mock).mockResolvedValue({username: 'servers', password: JSON.stringify({servers: [{url: 'https://fixture.test', token: 'synthetic', name: 'Fixture'}], activeUrl: 'https://fixture.test'})});
-  global.fetch = jest.fn(async (url: any) => ({ok: true, status: 200, headers: {get: () => null}, json: async () => String(url).endsWith('/api/agents') ? [] : String(url).endsWith('/api/share') ? {all: true, input: true} : {}, text: async () => ''})) as any;
+  global.fetch = jest.fn(async (url: any) => ({ok: true, status: 200, headers: {get: () => null}, json: async () => String(url).endsWith('/api/agents') ? agents : String(url).endsWith('/api/share') ? {all: true, input: true} : {}, text: async () => ''})) as any;
 });
 afterEach(async () => {
   await act(async () => tree?.unmount());
@@ -74,6 +77,9 @@ test('main App sidebar geometry follows the new root even when RN retains its ol
   const sidebar = panel.parent!;
   expect(Dimensions.get('window').width).toBe(393);
   expect(StyleSheet.flatten(sidebar.props.style).width).toBe(300);
+  await rootLayout(900, 768);
+  expect(StyleSheet.flatten(tree!.root.findAllByType(RadarPanel).find(n => n.props.variant === 'sidebar')!.parent!.props.style).width).toBe(280);
+  expect(Dimensions.get('window').width).toBe(393);
 });
 
 test('a real anchored menu stays inside a new narrow root while RN width remains stale', async () => {
@@ -119,4 +125,38 @@ test('retained DiffModal follows its actual viewport layout and keeps wrap and c
   await act(async () => closeButton.props.onPress());
   expect(close).toHaveBeenCalledTimes(1);
   expect(diff).toHaveBeenCalledTimes(1);
+});
+
+
+test('real HQ inspector follows root resize and sidebar hiding while RN remains stale', async () => {
+  agents = [{role: 'supervisor', agent: 'Codex', pane_id: '%6', session_id: 'fixture-hq', session: 'fixture', status: 'idle'}];
+  await act(async () => {tree = renderer.create(<App />);});
+  await rootLayout(1180, 768);
+  expect(tree!.root.findByType(HQView).props.showInspector).toBe(true);
+  await rootLayout(900, 768);
+  expect(tree!.root.findByType(HQView).props.showInspector).toBe(false);
+  const panel = tree!.root.findAllByType(RadarPanel).find(n => n.props.variant === 'sidebar')!;
+  await act(async () => panel.props.onHideSidebar());
+  expect(tree!.root.findByType(HQView).props.showInspector).toBe(true);
+  expect(Dimensions.get('window').width).toBe(393);
+});
+
+test('real menu position and height follow a second root resize with nonzero safe-area edges', async () => {
+  const metrics = {...scene(400, 500), insets: {top: 24, bottom: 20, left: 10, right: 14}};
+  await act(async () => {tree = renderer.create(<WindowMetricsProvider><SafeAreaProvider initialMetrics={metrics}>
+    <AnchoredMenu visible anchor={{x: 235, y: 200, width: 44, height: 44}} title="Fixture" subtitle={[]}
+      sections={[[{key: 'open', label: 'Open', icon: 'info', onPress: jest.fn()}]]}
+      pal={paletteFor('light')} closeLabel="Close" onClose={jest.fn()} testID="resize-menu" />
+  </SafeAreaProvider></WindowMetricsProvider>);});
+  await rootLayout(400, 500);
+  const box = () => tree!.root.findAllByType(View).find(n => n.props.testID === 'resize-menu')!;
+  await act(async () => box().props.onLayout({nativeEvent: {layout: {height: 100}}}));
+  const initial = StyleSheet.flatten(box().props.style);
+  expect(initial.maxHeight).toBe(440); expect(initial.top).toBe(200 + 44 + 4);
+  await rootLayout(300, 320);
+  const resized = StyleSheet.flatten(box().props.style);
+  expect(resized.width).toBe(250); expect(resized.maxHeight).toBe(260);
+  expect(resized.left).toBeGreaterThanOrEqual(18); expect(resized.left + resized.width).toBeLessThanOrEqual(278);
+  expect(resized.top).toBe(200 - 4 - 100); expect(resized.top + 100).toBeLessThanOrEqual(292);
+  expect(Dimensions.get('window').width).toBe(393);
 });
