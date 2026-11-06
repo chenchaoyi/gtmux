@@ -5,6 +5,11 @@ set -euo pipefail
 : "${RUNNER_TEMP:?}" "${GITHUB_WORKSPACE:?}" "${GITHUB_BASE_SHA:?}"
 case "$GITHUB_BASE_SHA" in *[!0-9a-f]*|'') exit 2;; esac
 [ "${#GITHUB_BASE_SHA}" = 40 ]
+case "${GTMUX_COMPARE_JOURNEY:-servers}" in
+  servers) test_file=server-switch-compare.test.ts; export GTMUX_COMPARE_MANUAL_LAUNCH=1;;
+  push) test_file=coldstart-push.test.ts; unset GTMUX_COMPARE_MANUAL_LAUNCH;;
+  *) echo 'Unknown comparison journey' >&2; exit 2;;
+esac
 base="$RUNNER_TEMP/duo-baseline-source"
 mkdir -p "$base" "$GITHUB_WORKSPACE/mobileapp/.e2e-artifacts/comparison"
 git archive "$GITHUB_BASE_SHA" | tar -x -C "$base"
@@ -37,11 +42,19 @@ signing=(CODE_SIGNING_ALLOWED=NO)
 candidate_app="$RUNNER_TEMP/gtmux-ios-ci/Build/Products/Release-iphonesimulator/gtmux.app"
 if [ "${GTMUX_COMPARE_ADHOC:-0}" = 1 ]; then
   signing=(CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=-)
-  candidate_app="$RUNNER_TEMP/duo-candidate-adhoc/Build/Products/Release-iphonesimulator/gtmux.app"
-  (cd "$GITHUB_WORKSPACE/mobileapp" && xcodebuild -workspace ios/GtmuxMobile.xcworkspace -scheme GtmuxMobile \
-    -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -jobs 2 \
-    -derivedDataPath "$RUNNER_TEMP/duo-candidate-adhoc" ARCHS=arm64 ONLY_ACTIVE_ARCH=NO "${signing[@]}" build \
-    > "$GITHUB_WORKSPACE/mobileapp/.e2e-artifacts/comparison/candidate-build.log" 2>&1)
+  if [ "${GTMUX_COMPARE_REUSE_CANDIDATE:-0}" = 1 ]; then
+    # This exact product was already built and verified in the same hosted job.
+    signature=$(codesign -dv "$candidate_app" 2>&1)
+    [[ "$signature" == *'Signature=adhoc'* ]] || { echo 'Reused candidate is not ad-hoc signed' >&2; exit 2; }
+  else
+    candidate_app="$RUNNER_TEMP/duo-candidate-adhoc/Build/Products/Release-iphonesimulator/gtmux.app"
+    (cd "$GITHUB_WORKSPACE/mobileapp" && xcodebuild -workspace ios/GtmuxMobile.xcworkspace -scheme GtmuxMobile \
+      -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -jobs 2 \
+      -derivedDataPath "$RUNNER_TEMP/duo-candidate-adhoc" ARCHS=arm64 ONLY_ACTIVE_ARCH=NO "${signing[@]}" build \
+      > "$GITHUB_WORKSPACE/mobileapp/.e2e-artifacts/comparison/candidate-build.log" 2>&1)
+  fi
+elif [ "${GTMUX_COMPARE_REUSE_CANDIDATE:-0}" = 1 ]; then
+  echo 'Candidate reuse requires the verified ad-hoc build mode' >&2; exit 2
 fi
 (cd "$base/mobileapp" && xcodebuild -workspace ios/GtmuxMobile.xcworkspace -scheme GtmuxMobile \
   -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -jobs 2 \
@@ -51,7 +64,7 @@ xcrun simctl list -j devices available > "$RUNNER_TEMP/compare-devices.json"
 compare_os=${GTMUX_COMPARE_OS:-27.0}
 compare_device=${GTMUX_COMPARE_DEVICE:-iPhone 17}
 GTMUX_E2E_UDID=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); os,device=sys.argv[2:]; suffix="iOS-"+os.replace(".","-"); m=[x["udid"] for r,ds in d["devices"].items() if r.endswith(suffix) for x in ds if x["name"]==device and x["isAvailable"]]; assert len(m)==1, m; print(m[0])' "$RUNNER_TEMP/compare-devices.json" "$compare_os" "$compare_device")
-export GTMUX_E2E_UDID GTMUX_E2E_DEVICE="$compare_device" GTMUX_E2E_OS="$compare_os" GTMUX_COMPARE_MANUAL_LAUNCH='1'
+export GTMUX_E2E_UDID GTMUX_E2E_DEVICE="$compare_device" GTMUX_E2E_OS="$compare_os"
 set +e
 overall_status=0
 for variant in baseline candidate; do
@@ -67,7 +80,7 @@ for variant in baseline candidate; do
   codesign -dv "$app" > "$GITHUB_WORKSPACE/mobileapp/.e2e-artifacts/comparison/$variant-signature.txt" 2>&1 || true
   xcrun simctl install "$GTMUX_E2E_UDID" "$app"
   install_status=$?
-  if [ "$install_status" -eq 0 ]; then (cd "$root" && npm run test:e2e -- --runInBand server-switch-compare.test.ts); test_status=$?; else test_status=$install_status; fi
+  if [ "$install_status" -eq 0 ]; then (cd "$root" && npm run test:e2e -- --runInBand "$test_file"); test_status=$?; else test_status=$install_status; fi
   printf '%s\n' "$test_status" > "$GITHUB_WORKSPACE/mobileapp/.e2e-artifacts/comparison/$variant-status.txt"
   if [ "$test_status" -ne 0 ]; then
     # A failed WDA session is not proof of an app crash. Capture a separate,

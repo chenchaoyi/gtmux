@@ -625,6 +625,7 @@ jobs:
         if: ${{ !cancelled() && steps.ios_products.outcome == 'success' && steps.ios_driver.outcome == 'success' }}
         working-directory: mobileapp
         env:
+          GITHUB_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           APPIUM_HOME: ${{ runner.temp }}/duo-appium
           GTMUX_E2E_SOFT_KEYBOARD: '1'
           GTMUX_E2E_HEADLESS: '1'
@@ -637,10 +638,18 @@ jobs:
           if [ -n "$duo_booted" ]; then xcrun simctl shutdown "$duo_booted"; fi
           GTMUX_E2E_UDID=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); matches=[x["udid"] for runtime, devices in d["devices"].items() if runtime.endswith("iOS-27-0") for x in devices if x["name"] == "iPhone 17" and x["isAvailable"]]; assert len(matches)==1, matches; print(matches[0])' "$RUNNER_TEMP/ordinary-devices.json")
           export GTMUX_E2E_UDID GTMUX_E2E_DEVICE='iPhone 17' GTMUX_E2E_OS='27.0'
-          xcrun simctl bootstatus "$GTMUX_E2E_UDID" -b
-          xcrun simctl install "$GTMUX_E2E_UDID" "$RUNNER_TEMP/gtmux-ios-ci/Build/Products/Release-iphonesimulator/gtmux.app"
           phone_status=0
-          npm run test:e2e -- --runInBand coldstart-push.test.ts || phone_status=$?
+          if [ -n "$GITHUB_BASE_SHA" ]; then
+            # One baseline build, the existing candidate product, the same 27.0
+            # device/test/driver/alert/signature settings for both versions.
+            GTMUX_COMPARE_JOURNEY=push GTMUX_COMPARE_ADHOC=1 GTMUX_COMPARE_REUSE_CANDIDATE=1 \
+              GTMUX_COMPARE_OS=27.0 GTMUX_COMPARE_DEVICE='iPhone 17' \
+              bash e2e/ci-compare-servers.sh || phone_status=$?
+          else
+            xcrun simctl bootstatus "$GTMUX_E2E_UDID" -b
+            xcrun simctl install "$GTMUX_E2E_UDID" "$RUNNER_TEMP/gtmux-ios-ci/Build/Products/Release-iphonesimulator/gtmux.app"
+            npm run test:e2e -- --runInBand coldstart-push.test.ts || phone_status=$?
+          fi
           if ! python3 - <<'PY'
           import os, pathlib, subprocess
           evidence = pathlib.Path('.e2e-artifacts/phone-notification-system')
@@ -667,6 +676,7 @@ jobs:
         with:
           name: ios-phone-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
+            mobileapp/.e2e-artifacts/comparison/**
             mobileapp/.e2e-artifacts/phone-notification-system/**
             mobileapp/.e2e-artifacts/**/debug-*
             mobileapp/.e2e-artifacts/**/requests-*

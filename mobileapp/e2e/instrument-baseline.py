@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Apply the same opt-in, credential-free breadcrumbs to a baseline checkout."""
 from pathlib import Path
+import os
 import sys
 
 root = Path(sys.argv[1])
@@ -28,6 +29,28 @@ changes = {
 for name, (before, after) in changes.items():
     path = root / name
     text = path.read_text()
+    if text.count(after) == 1:
+        continue
     if text.count(before) != 1:
         raise SystemExit(f'baseline instrumentation does not match {name}')
     path.write_text(text.replace(before, after, 1))
+
+if os.environ.get('GTMUX_COMPARE_JOURNEY') == 'push':
+    path = root / 'mobileapp/src/push/index.ts'
+    text = path.read_text()
+    if "import {Debug} from '../debug';" not in text:
+        text = "import {Debug} from '../debug';\n" + text
+    # Current main after integration already has these opt-in diagnostics. Do
+    # not add another request, alter its scheduling or touch the returned state.
+    start = "event: 'push-permission-start'"
+    result = "event: 'push-permissions'"
+    if text.count(start) == 1 and text.count(result) == 1:
+        path.write_text(text)
+    else:
+        before = '      await PushNotificationIOS.requestPermissions();'
+        if start in text or result in text or text.count(before) != 1:
+            raise SystemExit('baseline permission instrumentation does not match')
+        after = """      if (Debug.logNet) Debug.record({event: 'push-permission-start', at: Date.now()});
+      const permissions = await PushNotificationIOS.requestPermissions();
+      if (Debug.logNet) Debug.record({event: 'push-permissions', at: Date.now(), alert: !!permissions?.alert});"""
+        path.write_text(text.replace(before, after, 1))

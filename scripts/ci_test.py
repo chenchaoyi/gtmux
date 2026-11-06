@@ -146,6 +146,14 @@ class ScopeTests(unittest.TestCase):
             "duo-window.test.ts", "duo-fold.test.ts", "duo-text-scaling.test.ts",
             "duo-voiceover.test.ts", "notification-scene-actions.test.ts", "scene-usage-links.test.ts",
         ])
+        phone = duo.split("      - name: Ordinary iPhone simulator regression\n", 1)[1].split("      - name:", 1)[0]
+        self.assertIn("GITHUB_BASE_SHA: ${{ github.event.pull_request.base.sha }}", phone)
+        self.assertIn('if [ -n "$GITHUB_BASE_SHA" ]; then', phone)
+        self.assertIn("GTMUX_COMPARE_JOURNEY=push GTMUX_COMPARE_ADHOC=1 GTMUX_COMPARE_REUSE_CANDIDATE=1", phone)
+        self.assertIn("GTMUX_COMPARE_OS=27.0 GTMUX_COMPARE_DEVICE='iPhone 17'", phone)
+        self.assertIn('bash e2e/ci-compare-servers.sh || phone_status=$?', phone)
+        self.assertIn('npm run test:e2e -- --runInBand coldstart-push.test.ts || phone_status=$?', phone)
+        self.assertIn('exit "$phone_status"', phone)
         self.assertEqual(block.count("github.head_ref == 'feat/iphone-duo-reviewed-integration'"), 2)
         self.assertIn("Verify actual ARM64 app and extension products", block)
         self.assertIn("ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO", block)

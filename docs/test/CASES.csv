@@ -4000,14 +4000,16 @@ MAP-ad9860024fc0,G,reviewed implementation,mobileapp/e2e/setup/manual-tools.cjs,
 DG-001-f069a0,L1,RN / mobile harness,mobileapp/e2e/setup/manual-tools.test.ts,6,test,DG-001 ordinary discovery,False,DG-001
 DG-002-f069a0,L1,RN / mobile harness,mobileapp/e2e/setup/manual-tools.test.ts,19,test,DG-002 rejects missing target,False,DG-002
 DG-003-f069a0,L1,RN / mobile harness,mobileapp/e2e/setup/manual-tools.test.ts,39,test,DG-003 confirms one exact fixture pane,False,DG-003
-MAP-3702c4062f44,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.test.ts,27,reviewed-selector,a stale sample is discarded before fresh complete native layouts settle,False,DUO-039
-MAP-911ba907a3ea,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.test.ts,35,reviewed-selector,unresolved %s evidence fails within the original budget,False,DUO-039
-MAP-b9ad8b33d1aa,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.test.ts,48,reviewed-selector,"a missing diagnostic identity is an error, not an invisible view to skip",False,DUO-039
-MAP-1b80ee0aed76,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.test.ts,53,reviewed-selector,a permanent driver failure is not retried as reflow,False,DUO-039
-MAP-b70e938fbbba,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.test.ts,59,reviewed-selector,a stable sample returned after the budget cannot pass,False,DUO-039
-MAP-29e41b83b4cc,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.test.ts,65,reviewed-selector,one coherent eight-view snapshot settles three observations inside the same budget,False,DUO-039
-MAP-2603074a2b80,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.test.ts,75,reviewed-selector,malformed %s is not silently skipped,False,DUO-039
-MAP-5623bb87b474,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.ts,42,reviewed-selector,waitForNativeTextLayout,False,DUO-039
+MAP-3702c4062f44,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.test.ts,28,reviewed-selector,a stale sample is discarded before fresh complete native layouts settle,False,DUO-039
+MAP-911ba907a3ea,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.test.ts,36,reviewed-selector,unresolved %s evidence fails within the original budget,False,DUO-039
+MAP-b9ad8b33d1aa,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.test.ts,49,reviewed-selector,"a missing diagnostic identity is an error, not an invisible view to skip",False,DUO-039
+MAP-1b80ee0aed76,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.test.ts,54,reviewed-selector,a permanent driver failure is not retried as reflow,False,DUO-039
+MAP-b70e938fbbba,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.test.ts,60,reviewed-selector,a stable sample returned after the budget cannot pass,False,DUO-039
+MAP-29e41b83b4cc,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.test.ts,66,reviewed-selector,one coherent eight-view snapshot settles three observations inside the same budget,False,DUO-039
+MAP-2603074a2b80,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.test.ts,76,reviewed-selector,malformed %s is not silently skipped,False,DUO-039
+MAP-8179306f4d27,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.test.ts,86,reviewed-selector,unresolved rendering %s fails without calling selection bounds glyph evidence,False,DUO-039
+MAP-622b1c9ee835,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.test.ts,98,reviewed-selector,conservative rendering surface overflow remains evidence rather than a cleared accessibility finding,False,DUO-039
+MAP-5623bb87b474,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.ts,44,reviewed-selector,waitForNativeTextLayout,False,DUO-039
 LEG-b16afa2cc4a9,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,26,test,an ORPHANED match still dies,False,legacy-not-retrospectively-reviewed
 LEG-0338a4b52122,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,47,test,"a failed pgrep is said aloud, not mistaken for no match",False,legacy-not-retrospectively-reviewed
 LEG-13c0b7c93b98,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,63,test,no match is not an error,False,legacy-not-retrospectively-reviewed
@@ -6140,15 +6142,21 @@ LEG-30f2f4661935,G,CI / tooling,scripts/ci_test.py,79,unittest,test_actual_git_r
 LEG-a0a184955335,G,CI / tooling,scripts/ci_test.py,105,unittest,test_missing_refs_force_full_cli_outputs,False,legacy-not-retrospectively-reviewed
 LEG-513d57a7489a,G,CI / tooling,scripts/ci_test.py,116,unittest,test_workflow_jobs_cannot_grow_outside_aggregation,False,legacy-not-retrospectively-reviewed
 LEG-1f71c99fb4dc,G,CI / tooling,scripts/ci_test.py,128,unittest,test_unsigned_ios_preserves_arm64_target_and_verifies_products,False,legacy-not-retrospectively-reviewed
-LEG-2514a184abce,G,CI / tooling,scripts/ci_test.py,156,unittest,test_android_package_is_built_once_and_both_devices_use_its_output,False,legacy-not-retrospectively-reviewed
-LEG-76200ceafcf2,G,CI / tooling,scripts/ci_test.py,176,unittest,test_docs_can_skip_heavy_jobs_but_require_quality,False,legacy-not-retrospectively-reviewed
-LEG-ecfb4bf818ba,G,CI / tooling,scripts/ci_test.py,182,unittest,test_missing_skipped_failed_cancelled_required_job_never_green,True,legacy-not-retrospectively-reviewed
-LEG-252965413bf3,G,CI / tooling,scripts/ci_test.py,191,unittest,test_bad_plans_or_unselected_failure_are_rejected,False,legacy-not-retrospectively-reviewed
-LEG-8a6a845c7484,G,CI / tooling,scripts/ci_test.py,203,unittest,test_mac_host_keeps_both_architectures_and_native_checks,False,legacy-not-retrospectively-reviewed
-LEG-28f4d1551b14,G,CI / tooling,scripts/ci_test.py,220,unittest,test_ios_delivery_pins_the_same_arm_toolchain_and_keeps_protection,False,legacy-not-retrospectively-reviewed
+LEG-2514a184abce,G,CI / tooling,scripts/ci_test.py,164,unittest,test_android_package_is_built_once_and_both_devices_use_its_output,False,legacy-not-retrospectively-reviewed
+LEG-76200ceafcf2,G,CI / tooling,scripts/ci_test.py,184,unittest,test_docs_can_skip_heavy_jobs_but_require_quality,False,legacy-not-retrospectively-reviewed
+LEG-ecfb4bf818ba,G,CI / tooling,scripts/ci_test.py,190,unittest,test_missing_skipped_failed_cancelled_required_job_never_green,True,legacy-not-retrospectively-reviewed
+LEG-252965413bf3,G,CI / tooling,scripts/ci_test.py,199,unittest,test_bad_plans_or_unselected_failure_are_rejected,False,legacy-not-retrospectively-reviewed
+LEG-8a6a845c7484,G,CI / tooling,scripts/ci_test.py,211,unittest,test_mac_host_keeps_both_architectures_and_native_checks,False,legacy-not-retrospectively-reviewed
+LEG-28f4d1551b14,G,CI / tooling,scripts/ci_test.py,228,unittest,test_ios_delivery_pins_the_same_arm_toolchain_and_keeps_protection,False,legacy-not-retrospectively-reviewed
 MAP-349a1f57f0b7,G,CI / tooling,scripts/ci_test.py,43,reviewed-selector,test_reviewed_test_records_are_policy_only_without_hiding_test_changes,False,TD-006
 MAP-5f57607e8e0e,G,CI / tooling,scripts/ci_test.py,17,reviewed-selector,test_unit_test_scope_requires_immutable_product_exclusion,False,CT-SCOPE
-MAP-4e1dfa09df0f,G,reviewed implementation,scripts/duo_diagnostics_test.py,14,reviewed-selector,test_diagnostic_failures_preserve_the_original_phone_exit_status,False,DUO-042
+MAP-ff5101e39b59,G,reviewed implementation,scripts/duo_comparison_test.py,101,reviewed-selector,test_push_comparison_reuses_candidate_with_identical_runtime_and_launch_policy,False,DUO-043
+MAP-de15c1225b2d,G,reviewed implementation,scripts/duo_comparison_test.py,120,reviewed-selector,test_default_server_control_preserves_its_two_builds_and_manual_launch,False,DUO-043
+MAP-c39fa13749cd,G,reviewed implementation,scripts/duo_comparison_test.py,131,reviewed-selector,test_each_original_variant_failure_stays_red_and_both_variants_run,False,DUO-043
+MAP-3d53fe128e51,G,reviewed implementation,scripts/duo_comparison_test.py,140,reviewed-selector,test_reuse_rejects_unsigned_product_before_any_build_or_device_command,False,DUO-043
+MAP-20e5d177982d,G,reviewed implementation,scripts/duo_comparison_test.py,147,reviewed-selector,test_baseline_permission_breadcrumbs_are_idempotent_and_do_not_add_a_request,False,DUO-043
+MAP-ffa00600e579,G,reviewed implementation,scripts/duo_comparison_test.py,161,reviewed-selector,test_unknown_baseline_permission_source_fails_closed,False,DUO-043
+MAP-4e1dfa09df0f,G,reviewed implementation,scripts/duo_diagnostics_test.py,15,reviewed-selector,test_diagnostic_failures_preserve_the_original_phone_exit_status,False,DUO-042
 LEG-0a1ce627fdd1,G,CI / tooling,scripts/install_platform_test.py,70,unittest,test_linux_archives_install_without_any_mac_application,True,legacy-not-retrospectively-reviewed
 LEG-8ccffb001b09,G,CI / tooling,scripts/install_platform_test.py,80,unittest,test_checksum_failure_never_installs,False,legacy-not-retrospectively-reviewed
 LEG-c81cb29009cc,G,CI / tooling,scripts/install_platform_test.py,86,unittest,test_existing_optional_client_is_updated_only_by_capable_release,True,legacy-not-retrospectively-reviewed

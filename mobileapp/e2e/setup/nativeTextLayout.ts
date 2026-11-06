@@ -5,6 +5,8 @@ export type NativeTextLayout = {
   identifier: string; revision: string; scale: number; selectionActive: boolean; queued: boolean;
   fontPoints: number[]; frame: TextRect; bounds: TextRect; measuredHeight: number;
   selectionRectCount: number; selectionBounds: TextRect; lastCharacterRect: TextRect;
+  utf16Length: number;
+  rendering: {engine: string; complete: boolean; utf16Coverage: number; bounds?: TextRect};
 };
 
 // One WDA snapshot supplies names, visibility and frames together. Per-element
@@ -64,6 +66,10 @@ export async function waitForNativeTextLayout(panel: string, read: () => NativeT
     stable = current === last ? stable + 1 : 0;
     last = current;
     const settled = stable >= 2 && matched.every(record => !record.selectionActive && !record.queued &&
+      ['TextKit1', 'TextKit2'].includes(record.rendering?.engine) && record.rendering.complete &&
+      record.rendering.utf16Coverage === record.utf16Length && record.utf16Length > 0 &&
+      !!record.rendering.bounds && Object.values(record.rendering.bounds).every(Number.isFinite) &&
+      record.rendering.bounds.width > 0 && record.rendering.bounds.height > 0 &&
       !!record.revision && record.fontPoints.length > 0 && record.fontPoints.every(point => point > 0) &&
       record.selectionRectCount > 0 && record.measuredHeight <= record.bounds.height + 1 &&
       record.lastCharacterRect.height > 0 && record.lastCharacterRect.y >= record.bounds.y - 1 &&

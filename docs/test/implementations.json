@@ -826,7 +826,9 @@
       "a permanent driver failure is not retried as reflow",
       "a stable sample returned after the budget cannot pass",
       "one coherent eight-view snapshot settles three observations inside the same budget",
-      "malformed %s is not silently skipped"
+      "malformed %s is not silently skipped",
+      "unresolved rendering %s fails without calling selection bounds glyph evidence",
+      "conservative rendering surface overflow remains evidence rather than a cleared accessibility finding"
     ]
   },
   "mobileapp/e2e/fake-serve/transcript-identity.test.ts": {
@@ -865,6 +867,19 @@
     ],
     "selectors": [
       "test_diagnostic_failures_preserve_the_original_phone_exit_status"
+    ]
+  },
+  "scripts/duo_comparison_test.py": {
+    "cases": [
+      "DUO-043"
+    ],
+    "selectors": [
+      "test_push_comparison_reuses_candidate_with_identical_runtime_and_launch_policy",
+      "test_default_server_control_preserves_its_two_builds_and_manual_launch",
+      "test_each_original_variant_failure_stays_red_and_both_variants_run",
+      "test_reuse_rejects_unsigned_product_before_any_build_or_device_command",
+      "test_baseline_permission_breadcrumbs_are_idempotent_and_do_not_add_a_request",
+      "test_unknown_baseline_permission_source_fails_closed"
     ]
   }
 }

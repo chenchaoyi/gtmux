@@ -143,9 +143,9 @@ run('a cold-start push is handled once', () => {
   it('A: cold start with an active Mac, switches, background, a new warm tap', async () => {
     const driver = getDriver();
     // Seed two Macs and connect Home: the first workspace asks for push permission (accepted).
-    // An unsigned simulator build cannot keep servers in the Keychain, so "a saved, active
-    // Mac at launch" is set up by the debug layer: both Macs seeded, the first (Home) made
-    // active (SHOT_MODE's only effect here). Every launch below starts that way.
+    // Set up "a saved, active Mac at launch" deterministically: both Macs are
+    // seeded and Home is active (SHOT_MODE's only effect here). The ad-hoc main
+    // and candidate comparison uses these same flags without changing Keychain.
     const active = {GTMUX_DEBUG_LOG_NET: '1', GTMUX_DEBUG_SERVERS: SEED(), GTMUX_DEBUG_SHOT_MODE: '1'};
     await launchWithFlags(active);
     await settle(5000);

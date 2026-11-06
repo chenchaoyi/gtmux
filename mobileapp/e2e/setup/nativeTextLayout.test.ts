@@ -6,6 +6,7 @@ let now = 0;
 const rect = {x: 0, y: 0, width: 200, height: 80};
 const record = (identifier: string): NativeTextLayout => ({identifier, revision: 'current', scale: 2,
   selectionActive: false, queued: false, fontPoints: [28], frame: rect, bounds: rect, measuredHeight: 80,
+  utf16Length: 10, rendering: {engine: 'TextKit2', complete: true, utf16Coverage: 10, bounds: rect},
   selectionRectCount: 2, selectionBounds: rect, lastCharacterRect: {...rect, y: 40, height: 40}});
 const source = (prefix = 'fresh', count = 3) => ({type: 'Application', children: Array.from({length: count}, (_, index) => ({
   type: 'TextView', value: 'fixture text', name: `${prefix}${index + 1}`, isVisible: '1', rect,
@@ -80,4 +81,22 @@ test.each(['duplicate identity', 'invalid geometry', 'missing visibility'])('mal
   mockDriver.execute.mockResolvedValue(tree);
   await expect(waitForNativeTextLayout('inner', records)).rejects.toThrow();
   expect(mockDriver.execute).toHaveBeenCalledTimes(1);
+});
+
+test.each(['missing', 'incomplete', 'old coverage', 'invalid bounds'])('unresolved rendering %s fails without calling selection bounds glyph evidence', async fault => {
+  const read = () => {
+    const values = records();
+    if (fault === 'missing') values[0].rendering = undefined as unknown as NativeTextLayout['rendering'];
+    if (fault === 'incomplete') values[0].rendering.complete = false;
+    if (fault === 'old coverage') values[0].rendering.utf16Coverage = 8;
+    if (fault === 'invalid bounds') values[0].rendering.bounds = {...rect, height: NaN};
+    return values;
+  };
+  await expect(waitForNativeTextLayout('outer', read)).rejects.toThrow('did not settle');
+});
+
+test('conservative rendering surface overflow remains evidence rather than a cleared accessibility finding', async () => {
+  const read = () => records().map(value => ({...value, rendering: {...value.rendering, bounds: {...rect, y: -2, height: 84}}}));
+  const result = await waitForNativeTextLayout('outer', read);
+  expect(result.nativeTextLayouts[0].rendering.bounds).toEqual({...rect, y: -2, height: 84});
 });

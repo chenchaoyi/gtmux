@@ -114,11 +114,56 @@ final class ConversationTextView: UIView, UITextViewDelegate, UIGestureRecognize
       "bounds": rect(textView.bounds), "measuredHeight": measuredHeight,
       "selectionRectCount": rectangles.count, "selectionBounds": rect(union),
       "lastCharacterRect": rect(lastRect),
+      "rendering": renderingEvidence(length: attributed.length),
     ]
     guard JSONSerialization.isValidJSONObject(record),
           let bytes = try? JSONSerialization.data(withJSONObject: record, options: [.sortedKeys]), bytes != lastDiagnostic else { return }
     lastDiagnostic = bytes
     TextLayoutEvidence.record(identifier, record)
+  }
+
+  // Read the active engine: accessing layoutManager first would permanently
+  // switch TextKit 2 to compatibility mode and invalidate this experiment.
+  // These conservative rendering surfaces are not selection rectangles or a
+  // claim that every pixel inside the surface contains a visible glyph.
+  private func renderingEvidence(length: Int) -> [String: Any] {
+    func rect(_ r: CGRect) -> [String: CGFloat] {
+      ["x": r.origin.x, "y": r.origin.y, "width": r.width, "height": r.height]
+    }
+    let inset = textView.textContainerInset
+    if #available(iOS 16.0, *), let manager = textView.textLayoutManager {
+      guard let content = manager.textContentManager else {
+        return ["engine": "TextKit2", "complete": false, "utf16Coverage": 0]
+      }
+      var fragments: [[String: Any]] = []
+      var surface = CGRect.null
+      var covered = 0
+      var complete = true
+      manager.enumerateTextLayoutFragments(from: nil, options: [.ensuresLayout]) { fragment in
+        let start = content.offset(from: content.documentRange.location, to: fragment.rangeInElement.location)
+        let end = content.offset(from: content.documentRange.location, to: fragment.rangeInElement.endLocation)
+        complete = complete && start == covered && end >= start && fragment.state == .layoutAvailable
+        covered = end
+        let frame = fragment.layoutFragmentFrame
+        let render = fragment.renderingSurfaceBounds.offsetBy(dx: frame.minX + inset.left, dy: frame.minY + inset.top)
+        surface = surface.union(render)
+        fragments.append(["start": start, "end": end, "state": fragment.state.rawValue,
+                          "layout": rect(frame), "rendering": rect(render)])
+        return true
+      }
+      var result: [String: Any] = ["engine": "TextKit2", "complete": complete && covered == length && !fragments.isEmpty,
+                                   "utf16Coverage": covered, "fragments": fragments]
+      if !surface.isNull { result["bounds"] = rect(surface) }
+      return result
+    }
+    // Legacy access is safe only when no TextKit 2 manager is present.
+    let manager = textView.layoutManager
+    let glyphs = manager.glyphRange(for: textView.textContainer)
+    let characters = manager.characterRange(forGlyphRange: glyphs, actualGlyphRange: nil)
+    let surface = manager.boundingRect(forGlyphRange: glyphs, in: textView.textContainer)
+      .offsetBy(dx: inset.left, dy: inset.top)
+    return ["engine": "TextKit1", "complete": characters.location == 0 && characters.length == length,
+            "utf16Coverage": characters.length, "glyphCount": glyphs.length, "bounds": rect(surface)]
   }
 #endif
 

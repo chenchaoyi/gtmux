@@ -1,5 +1,6 @@
 """Execute the actual phone diagnostic shell tail with no simulator access."""
 import os
+from itertools import product
 from pathlib import Path
 import subprocess
 import sys
@@ -17,9 +18,9 @@ class PhoneDiagnosticTests(unittest.TestCase):
         step = step.split('      - name: Preserve iPhone diagnostics immediately\n', 1)[0]
         tail = '          phone_status=0\n' + step.split('          phone_status=0\n', 1)[1]
         script = 'set -euo pipefail\n' + textwrap.dedent(tail)
-        for status in (0, 7):
+        for status, base in product((0, 7), ('', 'b' * 40)):
             for fault in ('none', 'mkdir', 'write'):
-                with self.subTest(status=status, fault=fault), tempfile.TemporaryDirectory(prefix='duo-diagnostics-') as tmp:
+                with self.subTest(status=status, fault=fault, base=bool(base)), tempfile.TemporaryDirectory(prefix='duo-diagnostics-') as tmp:
                     root = Path(tmp)
                     binary = root / 'bin'
                     binary.mkdir()
@@ -28,6 +29,8 @@ class PhoneDiagnosticTests(unittest.TestCase):
                     (binary / 'xcrun').write_text('#!/bin/sh\nprintf "%s\\n" "$FIXTURE_CONTAINER"\n')
                     for name in ('npm', 'xcrun'):
                         (binary / name).chmod(0o700)
+                    (root / 'e2e').mkdir()
+                    (root / 'e2e/ci-compare-servers.sh').write_text('exit "$FIXTURE_PHONE_STATUS"\n')
                     evidence = root / '.e2e-artifacts/phone-notification-system'
                     if fault == 'mkdir':
                         (root / '.e2e-artifacts').write_text('block directory creation')
@@ -36,7 +39,7 @@ class PhoneDiagnosticTests(unittest.TestCase):
                         (evidence / 'system.log').mkdir()
                         (evidence / 'diagnostic-error.txt').mkdir()
                     env = {**os.environ, 'PATH': str(binary) + os.pathsep + os.environ['PATH'],
-                           'GTMUX_E2E_UDID': 'fixture-only', 'FIXTURE_PHONE_STATUS': str(status),
+                           'GTMUX_E2E_UDID': 'fixture-only', 'GITHUB_BASE_SHA': base, 'RUNNER_TEMP': str(root), 'FIXTURE_PHONE_STATUS': str(status),
                            'FIXTURE_CONTAINER': str(root / 'app')}
                     result = subprocess.run(['bash', '-c', script], cwd=root, env=env, capture_output=True, text=True, timeout=10)
                     self.assertEqual(result.returncode, status, result.stderr)
