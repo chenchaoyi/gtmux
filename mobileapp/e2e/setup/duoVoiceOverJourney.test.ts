@@ -1,17 +1,21 @@
 const mockCommands: string[] = [];
 const mockWrite = jest.fn();
-const mockElement = {waitForDisplayed: jest.fn(), click: jest.fn()};
-const mockDriver = {execute: jest.fn(), $: jest.fn(() => mockElement), updateSettings: jest.fn()};
+const mockVisibility = jest.fn();
+const mockPosture = jest.fn();
+const mockDriver = {execute: jest.fn(), $: jest.fn((selector: string) => ({
+  waitForDisplayed: async () => mockVisibility(selector), click: jest.fn(),
+})), updateSettings: jest.fn()};
 const mockArtifacts = jest.fn(() => '/fixture-evidence');
 const mockClose = jest.fn();
 const mockSpeech = jest.fn();
 let mockEnabled = false;
 let mockNow = 0;
+let mockPanel = 'outer';
 
 jest.mock('fs', () => ({...jest.requireActual('fs'), writeFileSync: (...args: unknown[]) => mockWrite(...args)}));
 jest.mock('./driver', () => ({getDriver: () => mockDriver, getArtifactsDir: () => mockArtifacts()}));
 jest.mock('./app', () => ({launchWithFlags: jest.fn()}));
-jest.mock('./duoPosture', () => ({posture: jest.fn()}));
+jest.mock('./duoPosture', () => ({posture: (...args: unknown[]) => mockPosture(...args)}));
 jest.mock('./screenshot', () => ({screenshot: jest.fn(), captureOnFailure: async (_label: string, error: unknown) => {throw error;}}));
 jest.mock('../fake-serve/server', () => ({startFake: async () => ({url: 'http://fixture', token: 'fixture', close: mockClose})}));
 
@@ -31,6 +35,9 @@ beforeEach(() => {
   mockCommands.length = 0;
   mockEnabled = false;
   mockNow = 0;
+  mockPanel = 'outer';
+  mockVisibility.mockReset().mockResolvedValue(undefined);
+  mockPosture.mockReset().mockImplementation(async (_angle: number, panel: string) => {mockPanel = panel;});
   jest.spyOn(Date, 'now').mockImplementation(() => mockNow);
   mockWrite.mockReset().mockImplementation(() => {});
   mockArtifacts.mockReset().mockReturnValue('/fixture-evidence');
@@ -75,6 +82,27 @@ test.each(['initial speech', 'focus move'])('a late %s result cannot satisfy the
 
 test('on-budget real journey control observes both panels and restores VoiceOver', async () => {
   await expect(registeredJourney()()).resolves.toBeUndefined();
-  expect(mockSpeech).toHaveBeenCalledTimes(2);
+  expect(mockSpeech.mock.calls.map(call => call[0])).toEqual([
+    'mobile: voiceOverCurrentSpeech', 'mobile: voiceOverMove',
+    'mobile: voiceOverCurrentSpeech', 'mobile: voiceOverMove',
+  ]);
+  expectRestored();
+});
+
+
+test('stale initial speech cannot replace new focus moves', async () => {
+  mockSpeech.mockImplementation(async (command: string) => ({utterance: command === 'mobile: voiceOverCurrentSpeech'
+    ? '整理这周的发布清单, Session tools' : 'unrelated list item'}));
+  await expect(registeredJourney()()).rejects.toThrow();
+  expect(mockSpeech.mock.calls.filter(call => call[0] === 'mobile: voiceOverMove')).toHaveLength(48);
+  expectRestored();
+});
+
+test.each(['~Show full title, 整理这周的发布清单', '~session-tools'])('missing inner reader control %s fails before inner speech', async missing => {
+  mockVisibility.mockImplementation(async (selector: string) => {
+    if (mockPanel === 'inner' && selector === missing) throw new Error('inner reader is missing');
+  });
+  await expect(registeredJourney()()).rejects.toThrow('inner reader is missing');
+  expect(mockSpeech.mock.calls.map(call => call[0])).toEqual(['mobile: voiceOverCurrentSpeech', 'mobile: voiceOverMove']);
   expectRestored();
 });

@@ -421,9 +421,11 @@ MAP-2fd3cafb008c,L2,reviewed implementation,mobileapp/e2e/fake-serve/backend-con
 MAP-01cd8c62d09e,L2,reviewed implementation,mobileapp/e2e/fake-serve/backend-contract.test.ts,53,reviewed-selector,RN client consumes original ordinals,False,CT-HTTP
 MAP-f2ed2637baa9,L2,reviewed implementation,mobileapp/e2e/fake-serve/server.ts,97,reviewed-selector,startFake,False,CT-HTTP
 MAP-f4f657590af5,L2,reviewed implementation,mobileapp/e2e/fake-serve/world.ts,111,reviewed-selector,export class World,False,CT-HTTP
-MAP-afca37581308,L2,reviewed implementation,mobileapp/e2e/setup/duoVoiceOverJourney.test.ts,57,reviewed-selector,evidence %s failure still restores VoiceOver and the fixture,False,DUO-038
-MAP-b0fd8cd81545,L2,reviewed implementation,mobileapp/e2e/setup/duoVoiceOverJourney.test.ts,64,reviewed-selector,a late %s result cannot satisfy the panel budget,False,DUO-038
-MAP-5a3253c27607,L2,reviewed implementation,mobileapp/e2e/setup/duoVoiceOverJourney.test.ts,76,reviewed-selector,on-budget real journey control observes both panels and restores VoiceOver,False,DUO-038
+MAP-afca37581308,L2,reviewed implementation,mobileapp/e2e/setup/duoVoiceOverJourney.test.ts,64,reviewed-selector,evidence %s failure still restores VoiceOver and the fixture,False,DUO-038
+MAP-b0fd8cd81545,L2,reviewed implementation,mobileapp/e2e/setup/duoVoiceOverJourney.test.ts,71,reviewed-selector,a late %s result cannot satisfy the panel budget,False,DUO-038
+MAP-5a3253c27607,L2,reviewed implementation,mobileapp/e2e/setup/duoVoiceOverJourney.test.ts,83,reviewed-selector,on-budget real journey control observes both panels and restores VoiceOver,False,DUO-038
+MAP-8324fcc1537e,L2,reviewed implementation,mobileapp/e2e/setup/duoVoiceOverJourney.test.ts,93,reviewed-selector,stale initial speech cannot replace new focus moves,False,DUO-038
+MAP-0631add5ba88,L2,reviewed implementation,mobileapp/e2e/setup/duoVoiceOverJourney.test.ts,101,reviewed-selector,missing inner reader control %s fails before inner speech,False,DUO-038
 MAP-a6a52139caeb,L2,reviewed implementation,mobileapp/e2e/setup/journeyGuard.test.ts,3,reviewed-selector,wait holds the next journey until outstanding cleanup completes,False,DUO-034
 MAP-3a80ec28bf00,L2,reviewed implementation,mobileapp/e2e/setup/journeyGuard.test.ts,20,reviewed-selector,a failed journey releases the guard without concealing its error,False,DUO-034
 MAP-4d79dbb7ab50,L2,reviewed implementation,mobileapp/ios/tests/NotificationResponseCompletionChecks.swift,20,reviewed-selector,notification response completion checks passed,False,DUO-030

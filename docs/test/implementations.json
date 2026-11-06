@@ -801,7 +801,9 @@
     "selectors": [
       "evidence %s failure still restores VoiceOver and the fixture",
       "a late %s result cannot satisfy the panel budget",
-      "on-budget real journey control observes both panels and restores VoiceOver"
+      "on-budget real journey control observes both panels and restores VoiceOver",
+      "stale initial speech cannot replace new focus moves",
+      "missing inner reader control %s fails before inner speech"
     ]
   }
 }

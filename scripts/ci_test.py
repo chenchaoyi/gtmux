@@ -139,9 +139,13 @@ class ScopeTests(unittest.TestCase):
         self.assertIn("Signature=adhoc", duo)
         self.assertIn("appium-xcuitest-driver@12.20.0", duo)
         self.assertIn("16.17.1", duo)
-        self.assertIn("duo-fold.test.ts", duo)
-        self.assertIn("duo-text-scaling.test.ts", duo)
-        self.assertIn("duo-voiceover.test.ts", duo)
+        probe = duo.split("      - name: Probe iPhone Duo runtime and run isolated simulator interaction\n", 1)[1].split("      - name:", 1)[0]
+        commands = re.findall(r"^          npm run test:e2e -- --runInBand (.+)$", probe, re.M)
+        self.assertEqual(len(commands), 1)
+        self.assertEqual(commands[0].split(), [
+            "duo-window.test.ts", "duo-fold.test.ts", "duo-text-scaling.test.ts",
+            "duo-voiceover.test.ts", "notification-scene-actions.test.ts", "scene-usage-links.test.ts",
+        ])
         self.assertEqual(block.count("github.head_ref == 'feat/iphone-duo-reviewed-integration'"), 2)
         self.assertIn("Verify actual ARM64 app and extension products", block)
         self.assertIn("ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO", block)

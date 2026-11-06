@@ -12,7 +12,7 @@ afterEach(guard.wait, 930000);
 
 type Speech = {utterance: string | null};
 type VoiceOverState = {enabled: boolean};
-type PanelSpeech = {panel: string; startedAt: number; elapsedMs: number; utterances: Speech[]; title: boolean; tools: boolean};
+type PanelSpeech = {panel: string; startedAt: number; elapsedMs: number; initialSpeech?: Speech; utterances: Speech[]; title: boolean; tools: boolean};
 
 it('speaks the selected session and tools on both Duo panels with VoiceOver', () => guard.run(async () => {
   const driver = getDriver();
@@ -35,7 +35,13 @@ it('speaks the selected session and tools on both Duo panels with VoiceOver', ()
       spoken.title ||= result.utterance?.includes('整理这周的发布清单') ?? false;
       spoken.tools ||= result.utterance?.includes('Session tools') ?? false;
     };
-    observe(await driver.execute('mobile: voiceOverCurrentSpeech') as Speech);
+    // Display selection alone does not identify VoiceOver's focus. First prove
+    // this panel still shows the selected reader, then require fresh moves.
+    await driver.$('~Show full title, 整理这周的发布清单').waitForDisplayed({timeout: 15000});
+    await driver.$('~session-tools').waitForDisplayed({timeout: 10000});
+    withinBudget();
+    spoken.initialSpeech = await driver.execute('mobile: voiceOverCurrentSpeech') as Speech;
+    withinBudget(); // Diagnostic only: speech retained from the other panel cannot pass.
     for (let moves = 0; moves < 48 && !(spoken.title && spoken.tools); moves++) {
       withinBudget();
       observe(await driver.execute('mobile: voiceOverMove', {direction: 'forward'}) as Speech);
@@ -53,8 +59,6 @@ it('speaks the selected session and tools on both Duo panels with VoiceOver', ()
     await posture(0, 'outer', evidence);
     await driver.$('~agent-row-%13').waitForDisplayed({timeout: 25000});
     await driver.$('~agent-row-%13').click();
-    await driver.$('~Show full title, 整理这周的发布清单').waitForDisplayed({timeout: 15000});
-    await driver.$('~session-tools').waitForDisplayed({timeout: 10000});
     enabled = true; // Restore even if the enable command fails after changing state.
     await driver.execute('mobile: enableVoiceOver');
     expect((await driver.execute('mobile: isVoiceOverEnabled') as VoiceOverState).enabled).toBe(true);
