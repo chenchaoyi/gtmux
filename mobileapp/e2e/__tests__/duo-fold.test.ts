@@ -151,32 +151,32 @@ it('retains the selected conversation and keyboard draft across simulator fold a
     await input.waitForDisplayed({timeout: 10000});
     await input.setValue('Duo fold draft');
     expect(await input.getValue()).toBe('Duo fold draft');
-    expect(await driver.$('XCUIElementTypeKeyboard').isExisting()).toBe(true);
+    expect(await driver.$$('XCUIElementTypeKeyboard')).not.toHaveLength(0);
     const inner = await driver.$('~window-metrics-root').getSize();
     await screenshot('duo-fold-inner-draft');
 
     const outer = await posture(0, 'outer', evidence);
     expect([outer.width, outer.height]).not.toEqual([inner.width, inner.height]);
-    await driver.$(`~${TestIds.composer.input}`).waitForDisplayed({timeout: 15000});
-    expect(await driver.$(`~${TestIds.composer.input}`).getValue()).toBe('Duo fold draft');
-    expect(await driver.$('XCUIElementTypeKeyboard').isExisting()).toBe(true);
+    await input.waitForDisplayed({timeout: 15000});
+    expect(await input.getValue()).toBe('Duo fold draft');
+    expect(await driver.$$('XCUIElementTypeKeyboard')).not.toHaveLength(0);
     await screenshot('duo-fold-outer-draft');
 
     // Keyboard presentation deliberately hides the header from accessibility.
     // Close it to verify the actual session and mode, then reopen the same draft.
-    await driver.$(`~${TestIds.composer.keyboard}`).click();
+    await keyboard.click();
     await selected.waitForDisplayed({timeout: 15000});
     await driver.$(`~${TestIds.detail.modeChat}`).waitForDisplayed({timeout: 15000});
-    await driver.$(`~${TestIds.composer.keyboard}`).click();
-    await driver.$(`~${TestIds.composer.input}`).waitForDisplayed({timeout: 15000});
-    expect(await driver.$(`~${TestIds.composer.input}`).getValue()).toBe('Duo fold draft');
-    expect(await driver.$('XCUIElementTypeKeyboard').isExisting()).toBe(true);
+    await keyboard.click();
+    await input.waitForDisplayed({timeout: 15000});
+    expect(await input.getValue()).toBe('Duo fold draft');
+    expect(await driver.$$('XCUIElementTypeKeyboard')).not.toHaveLength(0);
     await posture(180, 'inner', evidence);
-    await driver.$(`~${TestIds.composer.input}`).waitForDisplayed({timeout: 15000});
-    expect(await driver.$(`~${TestIds.composer.input}`).getValue()).toBe('Duo fold draft');
-    expect(await driver.$('XCUIElementTypeKeyboard').isExisting()).toBe(true);
+    await input.waitForDisplayed({timeout: 15000});
+    expect(await input.getValue()).toBe('Duo fold draft');
+    expect(await driver.$$('XCUIElementTypeKeyboard')).not.toHaveLength(0);
     await screenshot('duo-fold-inner-restored');
-    await driver.$(`~${TestIds.composer.keyboard}`).click();
+    await keyboard.click();
     await selected.waitForDisplayed({timeout: 15000});
     await driver.$(`~${TestIds.detail.modeChat}`).waitForDisplayed({timeout: 15000});
   } catch (error) {
@@ -208,8 +208,8 @@ it('keeps the session entry usable at an accessibility text size on both panels'
     auditFake = await startFake();
     original = await driver.execute('mobile: contentSize') as string;
     expect(original).not.toMatch(/^(unknown|unsupported)$/);
-    await driver.execute('mobile: setContentSize', {size: 'accessibility-large'});
-    expect(await driver.execute('mobile: contentSize')).toBe('accessibility-large');
+    await driver.execute('mobile: setContentSize', {size: 'large'});
+    expect(await driver.execute('mobile: contentSize')).toBe('large');
     await launchWithFlags({GTMUX_DEBUG_PAIR_URL: auditFake.url, GTMUX_DEBUG_PAIR_TOKEN: auditFake.token,
       GTMUX_DEBUG_NO_PUSH: '1', GTMUX_DEBUG_LANG: 'en'});
     await posture(0, 'outer', evidence);
@@ -220,6 +220,19 @@ it('keeps the session entry usable at an accessibility text size on both panels'
     await row.click();
     const selected = driver.$('~Show full title, 整理这周的发布清单');
     await selected.waitForDisplayed({timeout: 15000});
+    // Exercise RN's live font-scale propagation into the native rich-text view;
+    // a successful audit invocation alone does not prove that text scales.
+    const message = '发版后本地也更新一下';
+    const text = driver.$(`-ios predicate string:type == "XCUIElementTypeTextView" AND value == "${message}"`);
+    await text.waitForDisplayed({timeout: 15000});
+    const normalText = await text.getSize();
+    await screenshot('duo-text-normal');
+    await driver.execute('mobile: setContentSize', {size: 'accessibility-large'});
+    expect(await driver.execute('mobile: contentSize')).toBe('accessibility-large');
+    await driver.waitUntil(async () => (await text.getSize()).height > normalText.height,
+      {timeout: 20000, interval: 500, timeoutMsg: 'native conversation text did not grow after live font-size change'});
+    expect(await text.getValue()).toBe(message);
+    evidence.push({textScaling: {normal: normalText, large: await text.getSize(), textPreserved: true}});
     const tools = driver.$('~session-tools');
     await tools.waitForDisplayed({timeout: 10000});
     await tools.click();

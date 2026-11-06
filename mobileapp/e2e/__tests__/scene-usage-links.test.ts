@@ -57,17 +57,12 @@ function sceneURLCount(path: string): number {
 }
 
 async function waitForSceneDelivery(path: string, previous: number) {
-  const driver = getDriver();
-  await driver.waitUntil(async () => {
-    if (sceneURLCount(path) > previous) return true;
-    const alert = await driver.getAlertText().catch(() => '');
-    if (/^Open in [“"]gtmux[”"]\?$/.test(alert.trim())) await driver.acceptAlert().catch(() => {});
-    return false;
-  }, {timeout: 20000, interval: 500, timeoutMsg: 'native scene did not receive the warm URL'});
+  await getDriver().waitUntil(() => sceneURLCount(path) > previous,
+    {timeout: 20000, interval: 500, timeoutMsg: 'native scene did not receive the warm URL'});
 }
 
 it('opens a warm usage link through the scene', async () => {
-  const {flags, open} = fixture();
+  const {flags} = fixture();
   const driver = getDriver();
   await launchWithFlags(flags);
   await driver.$('~radar-split').waitForExist({timeout: 25000});
@@ -76,8 +71,10 @@ it('opens a warm usage link through the scene', async () => {
   const trace = nativeSceneTrace();
   const previous = sceneURLCount(trace);
   const timing: {opened: number; delivered?: number; visible?: number} = {opened: Date.now()};
-  open();
   try {
+    // XCTest opens the real URL in the specified app. Cold coverage below still
+    // exercises default system URL association through simctl.
+    await driver.execute('mobile: deepLink', {url: 'gtmux://usage', bundleId: BUNDLE});
     await waitForSceneDelivery(trace, previous);
     timing.delivered = Date.now();
     await waitForUsageWithSystemConfirmation(15000);

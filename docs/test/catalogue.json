@@ -58073,7 +58073,7 @@
         },
         {
           "id": "MAP-ea87797d79bf",
-          "line": 69,
+          "line": 64,
           "kind": "reviewed-selector",
           "name": "opens a warm usage link through the scene",
           "dynamic": false,
@@ -58082,7 +58082,7 @@
         },
         {
           "id": "MAP-b7d75b280b9d",
-          "line": 93,
+          "line": 90,
           "kind": "reviewed-selector",
           "name": "opens a cold usage link through the scene",
           "dynamic": false,
@@ -58090,7 +58090,7 @@
           "design": "DUO-005"
         }
       ],
-      "sha256": "05303733a671b9e21663a119708e4cdf0d2c179da133bdeb2fba2256f165fbd3"
+      "sha256": "9d7fabd5c2b306bc40e98c5639dae108b0277898b1ee6d4514dc35497d9d6b7d"
     },
     "mobileapp/src/ui/windowMetrics.test.tsx": {
       "layer": "L2",
@@ -58180,7 +58180,7 @@
         },
         {
           "id": "MAP-e33509324cc9",
-          "line": 255,
+          "line": 268,
           "kind": "reviewed-selector",
           "name": "keeps Trace search and Diff open while the simulator folds and unfolds",
           "dynamic": false,
@@ -58215,7 +58215,7 @@
           "design": "DUO-020,DUO-021,DUO-023"
         }
       ],
-      "sha256": "38f670dbc92b930495e7af6738323767f08fff3d8edddd70fa0fff95b3474d5a"
+      "sha256": "3d9da984f44004091e8c5eb2815741142998dd08298485ff2b04c7aa2c24c4f4"
     },
     "mobileapp/src/usage/UsageWidgetBridge.initialLink.test.tsx": {
       "layer": "L1",
