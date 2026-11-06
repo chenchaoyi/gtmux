@@ -51,7 +51,7 @@ it('delivers a cold notification action exactly once', async () => {
   execFileSync('xcrun', ['simctl', 'push', udid, BUNDLE, file]);
   const banner = driver.$(`-ios predicate string:label CONTAINS "${body}"`);
   await banner.waitForDisplayed({timeout: 15000});
-  await driver.execute('mobile: touchAndHold', {elementId: banner.elementId, duration: 1.5});
+  await driver.execute('mobile: touchAndHold', {elementId: await banner.elementId, duration: 1.5});
   const action = driver.$('-ios predicate string:label == "2"');
   await action.waitForDisplayed({timeout: 10000});
   await screenshot('scene-action-before-tap');
@@ -99,7 +99,7 @@ it('delivers a warm notification action exactly once', async () => {
   execFileSync('xcrun', ['simctl', 'push', udid, BUNDLE, file]);
   const banner = driver.$(`-ios predicate string:label CONTAINS "${body}"`);
   await banner.waitForDisplayed({timeout: 15000});
-  await driver.execute('mobile: touchAndHold', {elementId: banner.elementId, duration: 1.5});
+  await driver.execute('mobile: touchAndHold', {elementId: await banner.elementId, duration: 1.5});
   const action = driver.$('-ios predicate string:label == "2"');
   await action.waitForDisplayed({timeout: 10000});
   await screenshot('warm-action-before-tap');
