@@ -453,7 +453,18 @@ jobs:
         working-directory: mobileapp
         env:
           APPIUM_HOME: ${{ runner.temp }}/scene-migration-driver-26
-        run: npx appium driver install --source=local "$PWD/node_modules/appium-xcuitest-driver"
+        run: |
+          mkdir -p "$APPIUM_HOME"
+          node - <<'JS'
+          const fs = require('fs');
+          const path = require('path');
+          // Keep the reviewed WDA version when installing the published driver.
+          fs.writeFileSync(path.join(process.env.APPIUM_HOME, 'package.json'), JSON.stringify({
+            private: true,
+            overrides: {'appium-xcuitest-driver': {'appium-webdriveragent': '15.0.0'}},
+          }), {flag: 'wx'});
+          JS
+          npx appium driver install --source=npm appium-xcuitest-driver@11.14.0
       - name: Scene migration same-toolchain baseline and candidate (26)
         env:
           APPIUM_HOME: ${{ runner.temp }}/scene-migration-driver-26

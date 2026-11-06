@@ -334,7 +334,9 @@ def file_record(path, relative_to=None):
 
 
 def exact_device(devices, runtimes, runtime_version, name):
-    runtime = [r for r in runtimes['runtimes'] if r.get('version') == runtime_version and r.get('isAvailable')]
+    runtime_id = 'com.apple.CoreSimulator.SimRuntime.iOS-' + runtime_version.replace('.', '-')
+    runtime = [r for r in runtimes['runtimes'] if r.get('identifier') == runtime_id
+               and r.get('version') == runtime_version and r.get('isAvailable')]
     if len(runtime) != 1:
         raise ValueError('Required available runtime is not unique')
     selected = [d for d in devices['devices'].get(runtime[0]['identifier'], []) if d.get('name') == name and d.get('isAvailable')]

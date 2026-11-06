@@ -197,7 +197,8 @@
       "test_missing_skipped_failed_cancelled_required_job_never_green",
       "test_bad_plans_or_unselected_failure_are_rejected",
       "test_mac_host_keeps_both_architectures_and_native_checks",
-      "test_ios_delivery_pins_the_same_arm_toolchain_and_keeps_protection"
+      "test_ios_delivery_pins_the_same_arm_toolchain_and_keeps_protection",
+      "test_scene_driver_setup_preserves_pins_errors_and_existing_isolation"
     ]
   },
   "mobileapp/e2e/setup/global-setup-manual.ts": {
@@ -702,7 +703,8 @@
       "test_shutdown_failure_or_timeout_of_final_unit_cannot_pass",
       "test_real_runner_wait_then_stat_failure_preserves_unit_and_aggregate",
       "test_cleanup_bad_query_shapes_and_errors_keep_final_executed_unit",
-      "test_runner_distinguishes_not_started_from_started_evidence_failure"
+      "test_runner_distinguishes_not_started_from_started_evidence_failure",
+      "test_device_lookup_separates_same_version_platforms_without_fallback"
     ]
   },
   "mobileapp/e2e/setup/appLaunchFiles.test.ts": {
@@ -721,7 +723,7 @@
     ],
     "selectors": [
       "cloud simulator session waits for a fresh WDA build without requiring a prebuilt product",
-      "manual handles nothing on the test’s behalf",
+      "manual handles nothing on the test\u2019s behalf",
       "the default dismisses, and the older accept switch still accepts",
       "the explicit mode wins over the older switch",
       "a misspelt mode stops the run instead of falling back to dismiss",

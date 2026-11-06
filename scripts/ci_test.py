@@ -5,6 +5,8 @@ from pathlib import Path
 import re
 import subprocess
 import tempfile
+import sys
+import textwrap
 import unittest
 from unittest.mock import patch
 
@@ -81,6 +83,7 @@ class ScopeTests(unittest.TestCase):
         self.assertIn('runs-on: xcode-27', scene); self.assertIn('timeout-minutes: 60', scene)
         self.assertIn('timeout-minutes: 60', native)
         self.assertIn('appium-xcuitest-driver@12.20.0', scene)
+        self.assertIn('npx appium driver install --source=npm appium-xcuitest-driver@11.14.0', native)
         self.assertIn('--execute 27 --repository "$GITHUB_WORKSPACE"', scene)
         self.assertIn('--execute 26 --repository "$GITHUB_WORKSPACE"', native)
         for block in (scene, native):
@@ -90,6 +93,38 @@ class ScopeTests(unittest.TestCase):
         self.assertEqual(text.count('  ios-scene:\n'), 1)
         labels = (ROOT / '.github/actionlint.yaml').read_text()
         self.assertIn('    - xcode-27\n', labels)
+
+    def test_scene_driver_setup_preserves_pins_errors_and_existing_isolation(self):
+        text = (ROOT / '.github/workflows/ci.yml').read_text()
+        step = text.split('      - name: Install isolated migration driver (26)\n', 1)[1].split('\n      - name:', 1)[0]
+        self.assertIn('APPIUM_HOME: ${{ runner.temp }}/scene-migration-driver-26', step)
+        run = step.split('        run: ', 1)[1]
+        command = textwrap.dedent(run.split('\n', 1)[1]) if run.startswith('|') else run.splitlines()[0]
+        for status, collision in ((0, False), (7, False), (0, True)):
+            with self.subTest(status=status, collision=collision), tempfile.TemporaryDirectory(prefix='scene-driver-setup-') as temp:
+                root = Path(temp); home = root / 'isolated'; home.mkdir()
+                package = home / 'package.json'; capture = root / 'npx.json'
+                if collision: package.write_text('{"private":true,"sentinel":"keep"}')
+                original = package.read_bytes() if collision else None
+                shim = root / 'npx'
+                shim.write_text('#!' + sys.executable + '\nimport json,os,sys\nfrom pathlib import Path\n'
+                                'Path(os.environ["CAPTURE"]).write_text(json.dumps(sys.argv[1:]))\n'
+                                'raise SystemExit(int(os.environ["INSTALL_EXIT"]))\n')
+                shim.chmod(0o755)
+                env = {**os.environ, 'PATH': str(root) + os.pathsep + os.environ['PATH'],
+                       'APPIUM_HOME': str(home), 'CAPTURE': str(capture), 'INSTALL_EXIT': str(status)}
+                completed = subprocess.run(['bash', '-e', '-c', command], cwd=root, env=env,
+                                           capture_output=True, text=True, timeout=10)
+                if collision:
+                    self.assertNotEqual(completed.returncode, 0)
+                    self.assertEqual(package.read_bytes(), original)
+                    self.assertFalse(capture.exists())
+                else:
+                    self.assertEqual(completed.returncode, status, completed.stderr)
+                    self.assertEqual(json.loads(capture.read_text()),
+                                     ['appium', 'driver', 'install', '--source=npm', 'appium-xcuitest-driver@11.14.0'])
+                    self.assertEqual(json.loads(package.read_text()), {'private': True, 'overrides': {
+                        'appium-xcuitest-driver': {'appium-webdriveragent': '15.0.0'}}})
 
     def test_nul_parser_preserves_names_and_old_rename_path(self):
         names = ci.parse_diff(b"R100\0internal/radar/a.go\0docs/a.md\0D\0docs/deleted.md\0M\0docs/\xe4\xb8\xad\xe6\x96\x87\n$(oops).md\0")

@@ -205,13 +205,36 @@ class SceneExecutionTests(unittest.TestCase):
         self.assertEqual({r['state'] for r in records}, {'completed', 'timeout', 'output-limit'})
 
     def test_device_lookup_requires_actual_runtime_and_unique_hardware(self):
-        runtime = {'runtimes': [{'identifier': 'ios-26', 'version': '26.2', 'buildversion': 'fixture', 'isAvailable': True}]}
+        runtime = {'runtimes': [{'identifier': 'com.apple.CoreSimulator.SimRuntime.iOS-26-2', 'version': '26.2', 'buildversion': 'fixture', 'isAvailable': True}]}
         device = {'udid': 'fixture-device', 'deviceTypeIdentifier': 'phone-type', 'name': 'iPhone 17', 'isAvailable': True}
-        devices = {'devices': {'ios-26': [device]}}
+        devices = {'devices': {'com.apple.CoreSimulator.SimRuntime.iOS-26-2': [device]}}
         self.assertEqual(scene.exact_device(devices, runtime, '26.2', 'iPhone 17')['runtimeBuild'], 'fixture')
         with self.assertRaises(ValueError): scene.exact_device(devices, runtime, '26.3', 'iPhone 17')
-        devices['devices']['ios-26'].append(device)
+        devices['devices']['com.apple.CoreSimulator.SimRuntime.iOS-26-2'].append(device)
         with self.assertRaises(ValueError): scene.exact_device(devices, runtime, '26.2', 'iPhone 17')
+
+    def test_device_lookup_separates_same_version_platforms_without_fallback(self):
+        ios_id = 'com.apple.CoreSimulator.SimRuntime.iOS-27-0'
+        ios = {'identifier': ios_id, 'version': '27.0', 'isAvailable': True, 'buildversion': '24A434'}
+        foreign = [{**ios, 'identifier': ios_id.replace('iOS-', family + '-')}
+                   for family in ('tvOS', 'watchOS', 'xrOS')]
+        devices = {'devices': {ios_id: [
+            {'name': name, 'udid': name, 'deviceTypeIdentifier': kind, 'isAvailable': True}
+            for name, kind in [('iPhone 17', 'phone'), ('iPad Pro 13-inch (M5)', 'ipad')]]}}
+        # Foreign runtimes first: selecting the first version match is not valid.
+        runtimes = {'runtimes': [*foreign, ios]}
+        for name in ('iPhone 17', 'iPad Pro 13-inch (M5)'):
+            selected = scene.exact_device(devices, runtimes, '27.0', name)
+            self.assertEqual((selected['runtimeID'], selected['runtimeBuild'], selected['udid']),
+                             (ios_id, '24A434', name))
+        invalid = [foreign, [*foreign, {**ios, 'isAvailable': False}],
+                   [*foreign, {**ios, 'version': '27.1'}], [*foreign, ios, ios],
+                   [*foreign, {**ios, 'identifier': ios_id + '-different-device'}]]
+        for values in invalid:
+            with self.subTest(runtimes=values), self.assertRaises(ValueError):
+                scene.exact_device(devices, {'runtimes': values}, '27.0', 'iPhone 17')
+        self.assertEqual(scene.TOOLS['27']['runtime'], '27.0')
+        self.assertEqual(scene.TOOLS['26']['runtime'], '26.2')
 
     def test_missing_diagnostic_evidence_keeps_original_test_zero_or_seven_and_cleans(self):
         for status in (0, 7):
