@@ -471,5 +471,15 @@
     "selectors": [
       "TestStorageBoundaryUpgradePreservesLocalRulesAndExistingRecords"
     ]
+  },
+  "internal/ghostty/session_identity_test.go": {
+    "cases": [
+      "FOCUS-001",
+      "FOCUS-002"
+    ],
+    "selectors": [
+      "TestTitleMatchesSessionPreservesLeadingSymbols",
+      "TestSessionTabPrefersLiteralIdentity"
+    ]
   }
 }

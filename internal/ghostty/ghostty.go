@@ -55,33 +55,55 @@ func SessionsFromTitles(s string) []string {
 	return out
 }
 
-// StripDecoration removes the leading decoration a tab title can carry before the
-// session name.
-//
-// TWO sources put something there, and neither is a mistake to be avoided:
-// the TERMINAL does it (Ghostty prefixes a background tab that rang the bell), and
-// GTMUX does it (`tab-alert` marks a session with an agent waiting — internal/tabalert).
-// So matching a tab to a session must tolerate a prefix by construction rather than know
-// about any particular glyph.
-//
-// It trims leading runes that cannot start a session name — anything that is not a letter
-// or a digit. A tmux session name may CONTAIN punctuation, but a leading glyph plus space
-// is never part of one.
-//
-// Shipped v0.51.0 without this on the FOCUS path, which broke exactly the sessions a user
-// clicks: `tab-alert` marks only the waiting ones, so only those failed to jump.
+// StripDecoration heuristically extracts a name from a title when no session
+// identity is available. Both terminal bell alerts and gtmux tab-alert can add
+// leading symbols. A real name can also start with symbols, so known-session
+// matching must use TitleMatchesSession instead of this lossy extraction.
 func StripDecoration(title string) string {
 	return strings.TrimSpace(strings.TrimLeftFunc(title, func(r rune) bool {
 		return !unicode.IsLetter(r) && !unicode.IsDigit(r)
 	}))
 }
 
-// TitleMatchesSession reports whether a tab TITLE belongs to `session`, tolerating any
-// leading decoration. The separator must match set-titles-string exactly: space, em-dash,
-// space.
+// TitleMatchesSession preserves the complete known session name, including
+// leading punctuation. Try it before skipping each possible decoration rune;
+// stripping the whole prefix first would erase quotes belonging to the name.
+// The session/window separator remains exactly space, em-dash, space.
 func TitleMatchesSession(title, session string) bool {
-	t := StripDecoration(title)
-	return t == session || strings.HasPrefix(t, session+" — ")
+	if session == "" {
+		return false
+	}
+	for i, r := range title {
+		candidate := title[i:]
+		if literalSessionTitle(candidate, session) || strings.TrimSpace(candidate) == session {
+			return true
+		}
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			break
+		}
+	}
+	return false
+}
+
+func literalSessionTitle(title, session string) bool {
+	return session != "" && (title == session || strings.HasPrefix(title, session+" — "))
+}
+
+// Prefer a literal name across all tabs before accepting decoration: "● work"
+// may be a different real session rather than an alerted "work" tab. Return the
+// raw record unchanged so AppleScript receives every original title byte.
+func sessionTab(titles []tabTitle, session string) (tabTitle, bool) {
+	for _, t := range titles {
+		if literalSessionTitle(t.name, session) {
+			return t, true
+		}
+	}
+	for _, t := range titles {
+		if TitleMatchesSession(t.name, session) {
+			return t, true
+		}
+	}
+	return tabTitle{}, false
 }
 
 // osascript strips only record terminators. A terminal's exact title may end in
@@ -111,15 +133,12 @@ func ShellQuote(s string) string {
 func FocusTab(session string) (string, error) {
 	// The match happens HERE, not inside the AppleScript, so there is ONE matcher and it
 	// is testable. The script used to compare `tn starts with "<session> — "` directly,
-	// which a decorated title never satisfies — see StripDecoration.
+	// which a decorated title never satisfies — see TitleMatchesSession.
 	titles, err := tabTitles()
 	if err != nil {
 		return "", err
 	}
-	for _, t := range titles {
-		if !TitleMatchesSession(t.name, session) {
-			continue
-		}
+	if t, ok := sessionTab(titles, session); ok {
 		// Select by the tab's EXACT raw title, through the same `repeat … select tab t`
 		// form that has always worked. Addressing it as `tab N of window W` is invalid in
 		// Ghostty's dictionary ("Can't get 8 of window 1. Access not allowed. (-1723)"),
