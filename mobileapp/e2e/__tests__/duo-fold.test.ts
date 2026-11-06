@@ -100,11 +100,25 @@ it('retains the selected conversation and keyboard draft across simulator fold a
   const driver = getDriver();
   const evidence: object[] = [];
   let journeyFailed = false;
+  const tapKeyboard = async () => {
+    const button = driver.$(`~${TestIds.composer.keyboard}`);
+    const frame = await driver.getElementRect(await button.elementId);
+    const bounds = await driver.$('~window-metrics-root').getSize();
+    expect([frame.x, frame.y, frame.width, frame.height, bounds.width, bounds.height].every(Number.isFinite)).toBe(true);
+    expect(frame.width).toBeGreaterThan(0);
+    expect(frame.height).toBeGreaterThan(0);
+    expect(frame.x).toBeGreaterThanOrEqual(0);
+    expect(frame.y).toBeGreaterThanOrEqual(0);
+    expect(frame.x + frame.width).toBeLessThanOrEqual(bounds.width);
+    expect(frame.y + frame.height).toBeLessThanOrEqual(bounds.height);
+    evidence.push({keyboardTap: frame, bounds});
+    await driver.execute('mobile: tap', {x: frame.x + frame.width / 2, y: frame.y + frame.height / 2});
+  };
   try {
     const {selected} = await selectLongChat(evidence);
     const keyboard = driver.$(`~${TestIds.composer.keyboard}`);
     await keyboard.waitForDisplayed({timeout: 10000});
-    await keyboard.click();
+    await tapKeyboard();
     const input = driver.$(`~${TestIds.composer.input}`);
     await input.waitForDisplayed({timeout: 10000});
     await typeInto(TestIds.composer.input, 'Duo fold draft');
@@ -122,10 +136,10 @@ it('retains the selected conversation and keyboard draft across simulator fold a
 
     // Keyboard presentation deliberately hides the header from accessibility.
     // Close it to verify the actual session and mode, then reopen the same draft.
-    await keyboard.click();
+    await tapKeyboard();
     await selected.waitForDisplayed({timeout: 15000});
     await driver.$(`~${TestIds.detail.modeChat}`).waitForDisplayed({timeout: 15000});
-    await keyboard.click();
+    await tapKeyboard();
     await input.waitForDisplayed({timeout: 15000});
     expect(await input.getValue()).toBe('Duo fold draft');
     expect(await driver.$$('XCUIElementTypeKeyboard')).not.toHaveLength(0);
@@ -134,7 +148,7 @@ it('retains the selected conversation and keyboard draft across simulator fold a
     expect(await input.getValue()).toBe('Duo fold draft');
     expect(await driver.$$('XCUIElementTypeKeyboard')).not.toHaveLength(0);
     await screenshot('duo-fold-inner-restored');
-    await keyboard.click();
+    await tapKeyboard();
     await selected.waitForDisplayed({timeout: 15000});
     await driver.$(`~${TestIds.detail.modeChat}`).waitForDisplayed({timeout: 15000});
   } catch (error) {

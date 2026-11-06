@@ -3,11 +3,13 @@ const mockWrite = jest.fn();
 const mockLaunch = jest.fn();
 const mockCommands: string[] = [];
 let mockPanel = 'inner';
+const mockTaps: unknown[] = [];
+let mockKeyboardFrame = {x: 0, y: 0, width: 100, height: 40};
 const mockDriver = {
-  $: () => ({waitForExist: jest.fn(), waitForDisplayed: jest.fn(), click: jest.fn(), elementId: 'fixture',
+  $: (selector: string) => ({waitForExist: jest.fn(), waitForDisplayed: jest.fn(), click: jest.fn(), elementId: selector,
     getValue: async () => 'Duo fold draft', getSize: async () => ({width: mockPanel === 'inner' ? 800 : 400, height: 600})}),
-  $$: async () => [{}], getElementRect: async () => ({x: 0, y: 0, width: 100, height: 40}),
-  execute: async (command: string) => {if (command === 'mobile: setSimulatedHingeAngle') mockCommands.push('hinge-restore');},
+  $$: async () => [{}], getElementRect: async (identifier: string) => identifier === '~composer-kbd' ? mockKeyboardFrame : ({x: 0, y: 0, width: 100, height: 40}),
+  execute: async (command: string, args: unknown) => {if (command === 'mobile: setSimulatedHingeAngle') mockCommands.push('hinge-restore'); if (command === 'mobile: tap') mockTaps.push(args);},
   updateSettings: async () => {mockCommands.push('display-restore');},
 };
 
@@ -42,7 +44,8 @@ async function registeredJourney() {
 }
 
 beforeEach(() => {
-  mockCommands.length = 0; mockPanel = 'inner';
+  mockCommands.length = 0; mockPanel = 'inner'; mockTaps.length = 0;
+  mockKeyboardFrame = {x: 0, y: 0, width: 100, height: 40};
   mockExec.mockReset().mockReturnValue('/fixture-container');
   mockWrite.mockReset(); mockLaunch.mockReset().mockResolvedValue(undefined);
   jest.spyOn(console, 'log').mockImplementation(() => {});
@@ -54,6 +57,8 @@ const restored = () => expect(mockCommands).toEqual(['hinge-restore', 'display-r
 test('normal draft evidence is saved before posture restoration', async () => {
   await expect(registeredJourney()).resolves.toBeUndefined();
   expect(mockWrite).toHaveBeenCalledWith('/fixture-evidence/duo-fold-draft-keyboard.json', Buffer.from('[]'));
+  expect(mockTaps).toHaveLength(5); // One row tap plus four keyboard toggles.
+  expect(mockTaps.slice(1)).toEqual(Array(4).fill({x: 50, y: 20}));
   restored();
 });
 
@@ -92,5 +97,12 @@ test.each([false, true])('evidence write failure restores posture with prior fai
   if (priorFailure) mockLaunch.mockRejectedValue(original);
   mockWrite.mockImplementation(() => {throw writeError;});
   await expect(registeredJourney()).rejects.toBe(priorFailure ? original : writeError);
+  restored();
+});
+
+test.each([-1, NaN, 900])('invalid current keyboard x=%s rejects without sending a keyboard touch', async x => {
+  mockKeyboardFrame = {...mockKeyboardFrame, x};
+  await expect(registeredJourney()).rejects.toThrow();
+  expect(mockTaps).toHaveLength(1); // Only the earlier session-row touch.
   restored();
 });

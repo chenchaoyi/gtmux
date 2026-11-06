@@ -7,8 +7,38 @@ export type NativeTextLayout = {
   selectionRectCount: number; selectionBounds: TextRect; lastCharacterRect: TextRect;
 };
 
-// A snapshot's handles can expire during live reflow. Discard that entire sample;
-// never pair a fresh native record with dimensions from an earlier view instance.
+// One WDA snapshot supplies names, visibility and frames together. Per-element
+// queries can consume the whole budget before three complete samples are read.
+function snapshotTextFrames(source: unknown): Array<TextRect & {identifier: string}> {
+  const frames: Array<TextRect & {identifier: string}> = [];
+  const identifiers = new Set<string>();
+  const visit = (value: unknown) => {
+    if (!value || typeof value !== 'object') throw new Error('invalid native source node');
+    const node = value as Record<string, unknown>;
+    if (node.type === 'TextView' && typeof node.value === 'string' && node.value !== '') {
+      if (![true, false, 1, 0, '1', '0'].includes(node.isVisible as string)) throw new Error('native text visibility is missing');
+      if ([true, 1, '1'].includes(node.isVisible as string)) {
+        const identifier = node.name;
+        if (typeof identifier !== 'string' || !identifier) throw new Error('visible native text has no diagnostic identifier');
+        if (identifiers.has(identifier)) throw new Error('duplicate native text diagnostic identifier');
+        const rect = node.rect as TextRect | undefined;
+        if (!rect || ![rect.x, rect.y, rect.width, rect.height].every(Number.isFinite) || rect.width <= 0 || rect.height <= 0) {
+          throw new Error('visible native text has invalid geometry');
+        }
+        identifiers.add(identifier);
+        frames.push({identifier, x: rect.x, y: rect.y, width: rect.width, height: rect.height});
+      }
+    }
+    if (node.children !== undefined) {
+      if (!Array.isArray(node.children)) throw new Error('invalid native source children');
+      node.children.forEach(visit);
+    }
+  };
+  visit(typeof source === 'string' ? JSON.parse(source) : source);
+  return frames;
+}
+
+// Discard a transiently stale whole observation; never combine old and new sets.
 export async function waitForNativeTextLayout(panel: string, read: () => NativeTextLayout[]) {
   const driver = getDriver();
   const deadline = Date.now() + 20000;
@@ -18,15 +48,9 @@ export async function waitForNativeTextLayout(panel: string, read: () => NativeT
   const sameSize = (a: TextRect, b: TextRect) => Math.abs(a.width - b.width) <= 2 && Math.abs(a.height - b.height) <= 2;
   await driver.waitUntil(async () => {
     if (Date.now() > deadline) return false;
-    const frames: typeof observedTextFrames = [];
+    let frames: typeof observedTextFrames;
     try {
-      const views = await driver.$$('-ios predicate string:type == "XCUIElementTypeTextView" AND value != nil AND value != ""');
-      for (const view of views) {
-        if (!await view.isDisplayed()) continue;
-        const identifier = await view.getAttribute('name');
-        if (!identifier) throw new Error('visible native text has no diagnostic identifier');
-        frames.push({...await driver.getElementRect(await view.elementId), identifier});
-      }
+      frames = snapshotTextFrames(await driver.execute('mobile: source', {format: 'json'}));
     } catch (error) {
       if (!/stale element reference/i.test(String(error))) throw error;
       last = ''; stable = 0;

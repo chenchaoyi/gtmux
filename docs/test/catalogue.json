@@ -58180,7 +58180,7 @@
         },
         {
           "id": "MAP-e33509324cc9",
-          "line": 160,
+          "line": 174,
           "kind": "reviewed-selector",
           "name": "keeps Trace search and Diff open while the simulator folds and unfolds",
           "dynamic": false,
@@ -58215,7 +58215,7 @@
           "design": "DUO-020,DUO-021,DUO-023"
         }
       ],
-      "sha256": "62c5a6c2329556dd68012ce7235b435ad79a57dd840dc84ee15cc6db60ca3fcd"
+      "sha256": "d9a5a889c1f4ccf2776d7bad525b3aea7e548ba5097da0accebb132d0fc318ce"
     },
     "mobileapp/src/usage/UsageWidgetBridge.initialLink.test.tsx": {
       "layer": "L1",
@@ -58584,7 +58584,7 @@
         },
         {
           "id": "MAP-911ba907a3ea",
-          "line": 36,
+          "line": 35,
           "kind": "reviewed-selector",
           "name": "unresolved %s evidence fails within the original budget",
           "dynamic": false,
@@ -58593,7 +58593,7 @@
         },
         {
           "id": "MAP-b9ad8b33d1aa",
-          "line": 49,
+          "line": 48,
           "kind": "reviewed-selector",
           "name": "a missing diagnostic identity is an error, not an invisible view to skip",
           "dynamic": false,
@@ -58602,7 +58602,7 @@
         },
         {
           "id": "MAP-1b80ee0aed76",
-          "line": 54,
+          "line": 53,
           "kind": "reviewed-selector",
           "name": "a permanent driver failure is not retried as reflow",
           "dynamic": false,
@@ -58611,15 +58611,33 @@
         },
         {
           "id": "MAP-b70e938fbbba",
-          "line": 60,
+          "line": 59,
           "kind": "reviewed-selector",
           "name": "a stable sample returned after the budget cannot pass",
           "dynamic": false,
           "layer": "L1",
           "design": "DUO-039"
+        },
+        {
+          "id": "MAP-29e41b83b4cc",
+          "line": 65,
+          "kind": "reviewed-selector",
+          "name": "one coherent eight-view snapshot settles three observations inside the same budget",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-039"
+        },
+        {
+          "id": "MAP-2603074a2b80",
+          "line": 75,
+          "kind": "reviewed-selector",
+          "name": "malformed %s is not silently skipped",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-039"
         }
       ],
-      "sha256": "512b1c0642a82f2a4899383e70d6cab0b5c7445a8d8dcab84cd3fe83c1ba59f7"
+      "sha256": "32b134f0bb54cdf781ee85474c6bdf224933f9d3aa66d82c56173ec337caee28"
     },
     "mobileapp/e2e/setup/nativeTextLayout.ts": {
       "layer": "L1",
@@ -58627,7 +58645,7 @@
       "cases": [
         {
           "id": "MAP-5623bb87b474",
-          "line": 12,
+          "line": 42,
           "kind": "reviewed-selector",
           "name": "waitForNativeTextLayout",
           "dynamic": false,
@@ -58635,7 +58653,7 @@
           "design": "DUO-039"
         }
       ],
-      "sha256": "24840950080e06f96f84b83878304536a671efc322c3c13ebe33316880e7d610"
+      "sha256": "a9a7caf253bf2357a107ba465459491a09e30f7c35e0b0a7d6b98eb29720b022"
     },
     "mobileapp/e2e/fake-serve/transcript-identity.test.ts": {
       "layer": "L2",
@@ -58684,7 +58702,7 @@
       "cases": [
         {
           "id": "MAP-35d1ad83fce5",
-          "line": 54,
+          "line": 57,
           "kind": "reviewed-selector",
           "name": "normal draft evidence is saved before posture restoration",
           "dynamic": false,
@@ -58693,7 +58711,7 @@
         },
         {
           "id": "MAP-f2c072236f56",
-          "line": 60,
+          "line": 65,
           "kind": "reviewed-selector",
           "name": "a child ignoring SIGTERM is killed within the evidence budget without hiding the original failure",
           "dynamic": false,
@@ -58702,7 +58720,7 @@
         },
         {
           "id": "MAP-a7137fdb210b",
-          "line": 80,
+          "line": 85,
           "kind": "reviewed-selector",
           "name": "excessive diagnostic output fails an otherwise successful journey and restores posture",
           "dynamic": false,
@@ -58711,15 +58729,24 @@
         },
         {
           "id": "MAP-8682bc284869",
-          "line": 90,
+          "line": 95,
           "kind": "reviewed-selector",
           "name": "evidence write failure restores posture with prior failure=%s",
           "dynamic": false,
           "layer": "L2",
           "design": "DUO-041"
+        },
+        {
+          "id": "MAP-32ffcf66e15b",
+          "line": 103,
+          "kind": "reviewed-selector",
+          "name": "invalid current keyboard x=%s rejects without sending a keyboard touch",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DUO-041"
         }
       ],
-      "sha256": "d646731112de33ff7d5a10d3c0337753bf322f6b70deb8553d63d64250b9f4c8"
+      "sha256": "8693263e1e531792e73acece647e310fbaa925f8551e4f9ca0510ff2b3bb04ae"
     },
     "scripts/duo_diagnostics_test.py": {
       "layer": "G",

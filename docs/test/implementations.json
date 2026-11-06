@@ -824,7 +824,9 @@
       "unresolved %s evidence fails within the original budget",
       "a missing diagnostic identity is an error, not an invisible view to skip",
       "a permanent driver failure is not retried as reflow",
-      "a stable sample returned after the budget cannot pass"
+      "a stable sample returned after the budget cannot pass",
+      "one coherent eight-view snapshot settles three observations inside the same budget",
+      "malformed %s is not silently skipped"
     ]
   },
   "mobileapp/e2e/fake-serve/transcript-identity.test.ts": {
@@ -853,7 +855,8 @@
       "normal draft evidence is saved before posture restoration",
       "a child ignoring SIGTERM is killed within the evidence budget without hiding the original failure",
       "excessive diagnostic output fails an otherwise successful journey and restores posture",
-      "evidence write failure restores posture with prior failure=%s"
+      "evidence write failure restores posture with prior failure=%s",
+      "invalid current keyboard x=%s rejects without sending a keyboard touch"
     ]
   },
   "scripts/duo_diagnostics_test.py": {
