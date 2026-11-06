@@ -3785,10 +3785,11 @@ LEG-cb21d0627bd2,M,RN / mobile harness,mobileapp/e2e/__tests__/composer-shots.te
 LEG-63869acd3e2a,M,RN / mobile harness,mobileapp/e2e/__tests__/cursor.test.ts,41,it,opens a terminal pane and screenshots the cursor,False,legacy-not-retrospectively-reviewed
 LEG-094857d91ad5,L4,RN / mobile harness,mobileapp/e2e/__tests__/detail-chrome-textsize.test.ts,39,run,the top row keeps one line and stays on screen at the accessibility sizes,False,legacy-not-retrospectively-reviewed
 MAP-29b9b35673af,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,66,reviewed-selector,"retains the selected conversation, reading position and draft across simulator fold and unfold",False,DUO-020
-MAP-e33509324cc9,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,317,reviewed-selector,keeps Trace search and Diff open while the simulator folds and unfolds,False,"DUO-020,DUO-021"
+MAP-e33509324cc9,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,147,reviewed-selector,keeps Trace search and Diff open while the simulator folds and unfolds,False,"DUO-020,DUO-021"
 MAP-7bb91bd4c1ab,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,236,reviewed-selector,keeps the session entry usable at an accessibility text size on both panels,False,"DUO-020,DUO-021,DUO-023"
-MAP-a27d63cdf4d6,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,101,reviewed-selector,retains the selected conversation and reading position across simulator fold and unfold,False,"DUO-020,DUO-021,DUO-023"
-MAP-f369d9080a71,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,143,reviewed-selector,retains the selected conversation and keyboard draft across simulator fold and unfold,False,"DUO-020,DUO-021,DUO-023"
+MAP-a27d63cdf4d6,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,56,reviewed-selector,retains the selected conversation and reading position across simulator fold and unfold,False,"DUO-020,DUO-021,DUO-023"
+MAP-f369d9080a71,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,98,reviewed-selector,retains the selected conversation and keyboard draft across simulator fold and unfold,False,"DUO-020,DUO-021,DUO-023"
+MAP-5fa147a200d6,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-text-scaling.test.ts,62,reviewed-selector,keeps the session entry usable at an accessibility text size on both panels,False,DUO-035
 MAP-8cfa983c4bb1,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-window.test.ts,15,reviewed-selector,keeps the selected session and a draft through simulator rotation,False,DUO-002
 LEG-e23b5ce26880,L4,RN / mobile harness,mobileapp/e2e/__tests__/edge-stability.test.ts,22,it,traces the viewport around the live tail,False,legacy-not-retrospectively-reviewed
 LEG-242e71413ed1,L4,RN / mobile harness,mobileapp/e2e/__tests__/edge-states.test.ts,39,it,an empty fleet says so instead of showing an empty frame,False,legacy-not-retrospectively-reviewed
@@ -6116,12 +6117,12 @@ LEG-30f2f4661935,G,CI / tooling,scripts/ci_test.py,79,unittest,test_actual_git_r
 LEG-a0a184955335,G,CI / tooling,scripts/ci_test.py,105,unittest,test_missing_refs_force_full_cli_outputs,False,legacy-not-retrospectively-reviewed
 LEG-513d57a7489a,G,CI / tooling,scripts/ci_test.py,116,unittest,test_workflow_jobs_cannot_grow_outside_aggregation,False,legacy-not-retrospectively-reviewed
 LEG-1f71c99fb4dc,G,CI / tooling,scripts/ci_test.py,128,unittest,test_unsigned_ios_preserves_arm64_target_and_verifies_products,False,legacy-not-retrospectively-reviewed
-LEG-2514a184abce,G,CI / tooling,scripts/ci_test.py,150,unittest,test_android_package_is_built_once_and_both_devices_use_its_output,False,legacy-not-retrospectively-reviewed
-LEG-76200ceafcf2,G,CI / tooling,scripts/ci_test.py,170,unittest,test_docs_can_skip_heavy_jobs_but_require_quality,False,legacy-not-retrospectively-reviewed
-LEG-ecfb4bf818ba,G,CI / tooling,scripts/ci_test.py,176,unittest,test_missing_skipped_failed_cancelled_required_job_never_green,True,legacy-not-retrospectively-reviewed
-LEG-252965413bf3,G,CI / tooling,scripts/ci_test.py,185,unittest,test_bad_plans_or_unselected_failure_are_rejected,False,legacy-not-retrospectively-reviewed
-LEG-8a6a845c7484,G,CI / tooling,scripts/ci_test.py,197,unittest,test_mac_host_keeps_both_architectures_and_native_checks,False,legacy-not-retrospectively-reviewed
-LEG-28f4d1551b14,G,CI / tooling,scripts/ci_test.py,214,unittest,test_ios_delivery_pins_the_same_arm_toolchain_and_keeps_protection,False,legacy-not-retrospectively-reviewed
+LEG-2514a184abce,G,CI / tooling,scripts/ci_test.py,151,unittest,test_android_package_is_built_once_and_both_devices_use_its_output,False,legacy-not-retrospectively-reviewed
+LEG-76200ceafcf2,G,CI / tooling,scripts/ci_test.py,171,unittest,test_docs_can_skip_heavy_jobs_but_require_quality,False,legacy-not-retrospectively-reviewed
+LEG-ecfb4bf818ba,G,CI / tooling,scripts/ci_test.py,177,unittest,test_missing_skipped_failed_cancelled_required_job_never_green,True,legacy-not-retrospectively-reviewed
+LEG-252965413bf3,G,CI / tooling,scripts/ci_test.py,186,unittest,test_bad_plans_or_unselected_failure_are_rejected,False,legacy-not-retrospectively-reviewed
+LEG-8a6a845c7484,G,CI / tooling,scripts/ci_test.py,198,unittest,test_mac_host_keeps_both_architectures_and_native_checks,False,legacy-not-retrospectively-reviewed
+LEG-28f4d1551b14,G,CI / tooling,scripts/ci_test.py,215,unittest,test_ios_delivery_pins_the_same_arm_toolchain_and_keeps_protection,False,legacy-not-retrospectively-reviewed
 MAP-349a1f57f0b7,G,CI / tooling,scripts/ci_test.py,43,reviewed-selector,test_reviewed_test_records_are_policy_only_without_hiding_test_changes,False,TD-006
 MAP-5f57607e8e0e,G,CI / tooling,scripts/ci_test.py,17,reviewed-selector,test_unit_test_scope_requires_immutable_product_exclusion,False,CT-SCOPE
 LEG-0a1ce627fdd1,G,CI / tooling,scripts/install_platform_test.py,70,unittest,test_linux_archives_install_without_any_mac_application,True,legacy-not-retrospectively-reviewed

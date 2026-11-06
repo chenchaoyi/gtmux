@@ -140,6 +140,7 @@ class ScopeTests(unittest.TestCase):
         self.assertIn("appium-xcuitest-driver@12.20.0", duo)
         self.assertIn("16.17.1", duo)
         self.assertIn("duo-fold.test.ts", duo)
+        self.assertIn("duo-text-scaling.test.ts", duo)
         self.assertEqual(block.count("github.head_ref == 'feat/iphone-duo-reviewed-integration'"), 2)
         self.assertIn("Verify actual ARM64 app and extension products", block)
         self.assertIn("ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO", block)

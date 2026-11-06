@@ -2,14 +2,14 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1053 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1054 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3746 | [L1.csv](cases/L1.csv) |
 | L2 · Component / contract | 1925 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 86 | [L3.csv](cases/L3.csv) |
-| L4 · Application journeys | 106 | [L4.csv](cases/L4.csv) |
+| L4 · Application journeys | 107 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 12 | [M.csv](cases/M.csv) |
 | G · Qualification guards | 496 | [G.csv](cases/G.csv) |
 
@@ -73,7 +73,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | DUO-032 | Permission progresses despite a stalled initial response, the initial action is still processed exactly once without waiting for permission, and late callbacks after teardown are ignored. |
 | DUO-033 | The first visible prompt retains its viewport offset as parent and nested layout settle; a new drag stops correction, and promptless histories fall back to a visible turn. Real fold remains separately tested. |
 | DUO-034 | Teardown remains pending until the original operation settles; later execution cannot race it, and rejected journeys release the guard without concealing their failure. |
-| DUO-035 | Current revision/scale records exist for visible text, UIFont points are positive, measured height and final character rectangle fit internal bounds, and raw audits retain every finding; normal parent scrolling is not mistaken for internal clipping. |
+| DUO-035 | Current revision/scale records exist for visible text, UIFont points are positive, measured height and final character rectangle fit internal bounds, and raw audits retain every finding; normal parent scrolling is not mistaken for internal clipping. The selected session and tools remain reachable on both panels at accessibility-large, preserving the entire previous DUO-023 journey. |
 | STOR-001 | Every carrier separates project-owned and task-temp output from gtmux configuration/runtime trees; no promoted entry required; user text and hand-edit protection preserved; second sync idempotent. |
 | STOR-002 | Both playbooks reserve gtmux-owned state and only reusable HQ knowledge tools for its home, direct project scripts/reports/builds to project/task storage, require external evidence references, and never grant automatic migration/deletion; upgrade backs up old charter, preserves LOCAL/notes and converges. |
 | TD-001 | Reject a changed/new test without a reviewed design; accept a mapped implementation |

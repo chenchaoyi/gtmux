@@ -120,15 +120,12 @@
   "mobileapp/e2e/__tests__/duo-fold.test.ts": {
     "cases": [
       "DUO-020",
-      "DUO-021",
-      "DUO-023",
-      "DUO-035"
+      "DUO-021"
     ],
     "selectors": [
       "retains the selected conversation and reading position across simulator fold and unfold",
       "retains the selected conversation and keyboard draft across simulator fold and unfold",
-      "keeps Trace search and Diff open while the simulator folds and unfolds",
-      "keeps the session entry usable at an accessibility text size on both panels"
+      "keeps Trace search and Diff open while the simulator folds and unfolds"
     ]
   },
   "mobileapp/e2e/__tests__/duo-window.test.ts": {
@@ -768,6 +765,14 @@
     "selectors": [
       "wait holds the next journey until outstanding cleanup completes",
       "a failed journey releases the guard without concealing its error"
+    ]
+  },
+  "mobileapp/e2e/__tests__/duo-text-scaling.test.ts": {
+    "cases": [
+      "DUO-035"
+    ],
+    "selectors": [
+      "keeps the session entry usable at an accessibility text size on both panels"
     ]
   }
 }

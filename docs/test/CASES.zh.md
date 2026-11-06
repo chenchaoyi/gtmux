@@ -2,14 +2,14 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1053 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1054 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3746 | [L1.csv](cases/L1.csv) |
 | L2 · 组件/契约 | 1925 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 86 | [L3.csv](cases/L3.csv) |
-| L4 · 应用操作流程 | 106 | [L4.csv](cases/L4.csv) |
+| L4 · 应用操作流程 | 107 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 12 | [M.csv](cases/M.csv) |
 | G · 质量门禁 | 496 | [G.csv](cases/G.csv) |
 
@@ -73,7 +73,7 @@
 | DUO-032 | Permission progresses despite a stalled initial response, the initial action is still processed exactly once without waiting for permission, and late callbacks after teardown are ignored. |
 | DUO-033 | The first visible prompt retains its viewport offset as parent and nested layout settle; a new drag stops correction, and promptless histories fall back to a visible turn. Real fold remains separately tested. |
 | DUO-034 | Teardown remains pending until the original operation settles; later execution cannot race it, and rejected journeys release the guard without concealing their failure. |
-| DUO-035 | Current revision/scale records exist for visible text, UIFont points are positive, measured height and final character rectangle fit internal bounds, and raw audits retain every finding; normal parent scrolling is not mistaken for internal clipping. |
+| DUO-035 | Current revision/scale records exist for visible text, UIFont points are positive, measured height and final character rectangle fit internal bounds, and raw audits retain every finding; normal parent scrolling is not mistaken for internal clipping. The selected session and tools remain reachable on both panels at accessibility-large, preserving the entire previous DUO-023 journey. |
 | STOR-001 | Every carrier separates project-owned and task-temp output from gtmux configuration/runtime trees; no promoted entry required; user text and hand-edit protection preserved; second sync idempotent. |
 | STOR-002 | Both playbooks reserve gtmux-owned state and only reusable HQ knowledge tools for its home, direct project scripts/reports/builds to project/task storage, require external evidence references, and never grant automatic migration/deletion; upgrade backs up old charter, preserves LOCAL/notes and converges. |
 | TD-001 | Reject a changed/new test without a reviewed design; accept a mapped implementation |

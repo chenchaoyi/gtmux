@@ -601,7 +601,7 @@ jobs:
           export GTMUX_E2E_UDID
           xcrun simctl bootstatus "$GTMUX_E2E_UDID" -b
           xcrun simctl install "$GTMUX_E2E_UDID" "$RUNNER_TEMP/gtmux-ios-ci/Build/Products/Release-iphonesimulator/gtmux.app"
-          npm run test:e2e -- --runInBand duo-window.test.ts duo-fold.test.ts notification-scene-actions.test.ts scene-usage-links.test.ts
+          npm run test:e2e -- --runInBand duo-window.test.ts duo-fold.test.ts duo-text-scaling.test.ts notification-scene-actions.test.ts scene-usage-links.test.ts
       - name: Preserve notification diagnostics immediately
         if: ${{ !cancelled() && steps.ios_products.outcome == 'success' && steps.ios_driver.outcome == 'success' }}
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
@@ -614,6 +614,7 @@ jobs:
             mobileapp/.e2e-artifacts/**/usage-link-*
             mobileapp/.e2e-artifacts/**/fail-scene-*-usage-link-failed.*
             mobileapp/.e2e-artifacts/**/duo-fold-*
+            mobileapp/.e2e-artifacts/**/duo-text-*
             mobileapp/.e2e-artifacts/**/fail-duo-fold*-failed.*
             mobileapp/.e2e-artifacts/**/fail-duo-large-text-failed.*
             mobileapp/.e2e-artifacts/**/fail-duo-rotation-failed.*
