@@ -132,15 +132,27 @@ class TestDesignTests(unittest.TestCase):
         spec.loader.exec_module(module)
         execute = Mock()
         module.run(Path('/synthetic/mobileapp'), execute)
-        self.assertEqual(execute.call_count, 4)
+        self.assertEqual(execute.call_count, 8)
         for call in (execute.call_args_list[0], execute.call_args_list[2]):
             argv = call.args[0]
             self.assertIn('-Onone', argv)
             self.assertIn('-module-cache-path', argv)
             self.assertTrue(any('/ios/Documents/' in a for a in argv))
             self.assertEqual(call.kwargs, {'check': True})
-        for fail_at in (0, 1, 2, 3):
-            calls = [None]*4
+        for index, name in ((4, 'NotificationResponsePayload'), (6, 'NotificationResponseCompletion')):
+            call = execute.call_args_list[index]
+            self.assertIn('/synthetic/mobileapp/ios/GtmuxMobile/NotificationResponsePayload.swift', call.args[0])
+            self.assertIn('/synthetic/mobileapp/ios/tests/' + name + 'Checks.swift', call.args[0])
+            self.assertIn('-Onone', call.args[0])
+            self.assertEqual(call.kwargs, {'check': True})
+            self.assertEqual(execute.call_args_list[index + 1].args[0], [call.args[0][-1]])
+        for call in execute.call_args_list[::2]:
+            for argument in call.args[0]:
+                if argument.endswith('.swift'):
+                    actual = td.ROOT / argument.removeprefix('/synthetic/')
+                    self.assertTrue(actual.is_file(), str(actual))
+        for fail_at in range(8):
+            calls = [None]*8
             calls[fail_at] = subprocess.CalledProcessError(1, ['synthetic'])
             with self.assertRaises(subprocess.CalledProcessError):
                 module.run(Path('/synthetic/mobileapp'), Mock(side_effect=calls))

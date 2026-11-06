@@ -1,4 +1,6 @@
-import {getDriver, recordSceneStep} from '../setup/driver';
+import {writeFileSync} from 'fs';
+import {join} from 'path';
+import {getArtifactsDir, getDriver, recordSceneStep} from '../setup/driver';
 import {launchWithFlags} from '../setup/app';
 import {screenshot} from '../setup/screenshot';
 import {startFake, Fake} from '../fake-serve/server';
@@ -31,6 +33,7 @@ it('keeps the iPad sidebar and selected session through rotation', async () => {
     await driver.setOrientation('PORTRAIT');
     const after = await observeGeometry(ctx, rotatedAt, before.native.geometry);
     expect(after.window).not.toEqual(before.window);
+    writeFileSync(join(getArtifactsDir(), 'ipad-host-geometry.json'), JSON.stringify({before, after}, null, 2));
     expect(await split.isDisplayed()).toBe(true);
     expect(await driver.$(`~${TestIds.detail.modeChat}`).isExisting()).toBe(true);
     expect(await identity.isDisplayed()).toBe(true);

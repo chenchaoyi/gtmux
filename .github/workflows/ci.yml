@@ -31,6 +31,7 @@ jobs:
       relay: ${{ steps.plan.outputs.relay }}
       tunnel: ${{ steps.plan.outputs.tunnel }}
       ios: ${{ steps.plan.outputs.ios }}
+      scene: ${{ steps.plan.outputs.scene }}
       android: ${{ steps.plan.outputs.android }}
     steps:
       - uses: actions/checkout@v5
@@ -67,7 +68,8 @@ jobs:
         with:
           node-version: '22'
       - name: Scope, aggregation and scanner failure regression tests
-        run: make ci-test publisher-test
+        run: |
+          make ci-test publisher-test
       - name: Validate every workflow (no signing secrets)
         run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 -shellcheck='' .github/workflows/*.yml
       - name: Source design, bilingual docs and strict specs
@@ -397,6 +399,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
+          fetch-depth: 0
       - name: Runner space and SDK preflight
         run: |
           test "$(uname -m)" = arm64
@@ -416,7 +419,7 @@ jobs:
       - name: Dependencies (no signing setup)
         working-directory: mobileapp
         run: npm ci && (cd ios && bundle exec pod install)
-      - name: Native HTML and Markdown behavior (production Foundation modules)
+      - name: Native document and notification behavior (production Foundation modules)
         run: python3 mobileapp/scripts/check-native-documents.py
       - name: Widget target and shared-data boundaries
         working-directory: mobileapp
@@ -446,12 +449,90 @@ jobs:
               assert architectures == ['arm64'], 'Native product target differs from ARM64'
           print('Unsigned app and both embedded extensions verified as ARM64')
           PY
+      - name: Install isolated migration driver (26)
+        working-directory: mobileapp
+        env:
+          APPIUM_HOME: ${{ runner.temp }}/scene-migration-driver-26
+        run: npx appium driver install --source=local "$PWD/node_modules/appium-xcuitest-driver"
+      - name: Scene migration same-toolchain baseline and candidate (26)
+        env:
+          APPIUM_HOME: ${{ runner.temp }}/scene-migration-driver-26
+        run: python3 mobileapp/e2e/ci-scene-migration.py --execute 26 --repository "$GITHUB_WORKSPACE"
+      - name: Preserve scene migration 26 evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: scene-migration-26-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/scene-migration/*/evidence/
+            ${{ runner.temp }}/scene-migration/*/commands/
+            ${{ runner.temp }}/scene-migration/*/*.json
+            ${{ runner.temp }}/scene-migration/*/source/*/instrumentation.json
+            ${{ runner.temp }}/scene-migration/*/source/*/product.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
       - name: Native build failure evidence
         if: failure()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: ios-native-build-log
           path: ${{ runner.temp }}/gtmux-ios-build.log
+          retention-days: 7
+
+  ios-scene:
+    name: iOS scene migration acceptance (ad-hoc)
+    needs: scope
+    if: needs.scope.outputs.scene == 'true'
+    runs-on: xcode-27
+    timeout-minutes: 60
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Runner space and SDK preflight
+        run: |
+          test "$(uname -m)" = arm64
+          test -d "$DEVELOPER_DIR"
+          python3 -c 'import shutil; n=shutil.disk_usage(".").free; print(f"Available: {n/1024**3:.1f} GiB"); assert n >= 25*1024**3, "Insufficient space for native CI build"'
+          xcodebuild -version
+          xcodebuild -showsdks
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: mobileapp/package-lock.json
+      - uses: ruby/setup-ruby@e81a8fa391b11a595c1b7ed84177cc0fe02faf83
+        with:
+          working-directory: mobileapp
+          bundler-cache: true
+      - name: Dependencies and isolated migration driver (27)
+        working-directory: mobileapp
+        env:
+          APPIUM_HOME: ${{ runner.temp }}/scene-migration-driver-27
+        run: |
+          npm ci
+          npx appium driver install --source=npm appium-xcuitest-driver@12.20.0
+      - name: Scene migration phone and iPad candidate (27)
+        env:
+          APPIUM_HOME: ${{ runner.temp }}/scene-migration-driver-27
+        run: python3 mobileapp/e2e/ci-scene-migration.py --execute 27 --repository "$GITHUB_WORKSPACE"
+      - name: Preserve scene migration 27 evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: scene-migration-27-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/scene-migration/*/evidence/
+            ${{ runner.temp }}/scene-migration/*/commands/
+            ${{ runner.temp }}/scene-migration/*/*.json
+            ${{ runner.temp }}/scene-migration/*/source/*/instrumentation.json
+            ${{ runner.temp }}/scene-migration/*/source/*/product.json
+          include-hidden-files: true
+          if-no-files-found: error
           retention-days: 7
 
   relay-worker:
@@ -574,7 +655,7 @@ jobs:
 
   ci-required:
     if: always()
-    needs: [scope, quality, test, cross-build, mobile, web, ios-native, android-native, android-emulator, relay-worker, tunnel-worker, menubar]
+    needs: [scope, quality, test, cross-build, mobile, web, ios-native, ios-scene, android-native, android-emulator, relay-worker, tunnel-worker, menubar]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

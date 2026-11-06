@@ -62,11 +62,34 @@ class ScopeTests(unittest.TestCase):
     def test_recognized_modules_include_consumers(self):
         self.assertEqual(ci.classify(["internal/radar/agents_test.go"])["selected"], ["test"])
         self.assertEqual(set(ci.classify(["mobileapp/src/components/Chat.tsx"])["selected"]),
-                         {"mobile", "web", "ios-native", "android-native", "android-emulator"})
+                         {"mobile", "web", "ios-native", "ios-scene", "android-native", "android-emulator"})
         self.assertEqual(set(ci.classify(["mobileapp/ios/GtmuxWidget/Widget.swift"])["selected"]),
-                         {"mobile", "ios-native"})
+                         {"mobile", "ios-native", "ios-scene"})
         self.assertEqual(set(ci.classify(["relay-worker/src/index.ts"])["selected"]),
                          {"relay-worker", "test", "mobile", "android-native", "android-emulator"})
+
+    def test_scene_migration_selection_is_not_branch_dependent_and_keeps_old_gates(self):
+        for path in ('mobileapp/App.tsx', 'mobileapp/src/ui/windowMetrics.tsx', 'mobileapp/src/push/index.ts',
+                     'mobileapp/src/usage/UsageWidgetBridge.tsx', 'mobileapp/e2e/setup/sceneJourneys.ts',
+                     'mobileapp/ios/GtmuxMobile/AppDelegate.swift', 'mobileapp/ios/GtmuxMobile/Info.plist'):
+            with self.subTest(path=path):
+                selected = ci.classify([path])["selected"]
+                self.assertIn('ios-scene', selected); self.assertIn('ios-native', selected)
+        text = (ROOT / '.github/workflows/ci.yml').read_text()
+        scene = re.split(r"\n  \S", text.split('  ios-scene:\n', 1)[1], maxsplit=1)[0]
+        native = re.split(r"\n  \S", text.split('  ios-native:\n', 1)[1], maxsplit=1)[0]
+        self.assertIn('runs-on: xcode-27', scene); self.assertIn('timeout-minutes: 60', scene)
+        self.assertIn('timeout-minutes: 60', native)
+        self.assertIn('appium-xcuitest-driver@12.20.0', scene)
+        self.assertIn('--execute 27 --repository "$GITHUB_WORKSPACE"', scene)
+        self.assertIn('--execute 26 --repository "$GITHUB_WORKSPACE"', native)
+        for block in (scene, native):
+            self.assertIn('fetch-depth: 0', block)
+            self.assertNotIn('head_ref', block); self.assertNotIn('continue-on-error', block)
+            self.assertIn('if: always()', block); self.assertIn('if-no-files-found: error', block)
+        self.assertEqual(text.count('  ios-scene:\n'), 1)
+        labels = (ROOT / '.github/actionlint.yaml').read_text()
+        self.assertIn('    - xcode-27\n', labels)
 
     def test_nul_parser_preserves_names_and_old_rename_path(self):
         names = ci.parse_diff(b"R100\0internal/radar/a.go\0docs/a.md\0D\0docs/deleted.md\0M\0docs/\xe4\xb8\xad\xe6\x96\x87\n$(oops).md\0")

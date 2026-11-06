@@ -73,11 +73,11 @@ export default async function globalSetup(): Promise<void> {
     closeSync(startupLog);
   }
   if (server.pid == null) throw new Error('[e2e] Appium failed to spawn (no PID)');
-  writeFileSync(join(runDir, 'server.pid'), String(server.pid), 'utf8');
   globalThis.__E2E_SERVER_PID__ = server.pid;
 
   let driver;
   try {
+    writeFileSync(join(runDir, 'server.pid'), String(server.pid), 'utf8');
     // Hosted runners can spend over a minute loading the installed XCUITest
     // driver before Appium listens. Keep a bounded wait and clean up on failure.
     await waitForServerReady(process.env.GTMUX_E2E_SESSION_CI === '1' ? 180_000 : 60_000);
@@ -104,6 +104,7 @@ export default async function globalSetup(): Promise<void> {
       logLevel: 'warn',
       ...sessionConnectionOptions(),
     });
+    if (isolated) writeFileSync(join(runDir, 'session.json'), JSON.stringify({sessionID: driver.sessionId, capabilities: driver.capabilities, openedAt: new Date().toISOString()}, null, 2));
   } catch (err) {
     // If opening the session fails, jest SKIPS globalTeardown — so the Appium
     // server we just spawned would leak and hold :4723, breaking the next run.
@@ -116,7 +117,6 @@ export default async function globalSetup(): Promise<void> {
     throw err;
   }
   globalThis.__E2E_DRIVER__ = driver;
-  if (isolated) writeFileSync(join(runDir, 'session.json'), JSON.stringify({sessionID: driver.sessionId, capabilities: driver.capabilities, openedAt: new Date().toISOString()}, null, 2));
   // eslint-disable-next-line no-console
   console.log('[e2e] Session ready:', driver.sessionId, `(alerts: ${alertMode()})`);
 }

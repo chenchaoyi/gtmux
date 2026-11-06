@@ -238,3 +238,37 @@ test.each([true, false])('registered action executes tap and exact fake delivery
 test.each(['replaced-host', 'stale-geometry'] as const)('registered cold action rejects %s and restores rotation', async fault => {
   await expect(controlledAction(true, fault)).rejects.toThrow(fault === 'replaced-host' ? 'Headless root was replaced' : 'bounded action condition missing');
 });
+
+// A setup artifact failure occurs before Jest installs globalTeardown. Exercise
+// that real failure path without spawning Appium, contacting a device or killing
+// a real process.
+test.each(['server.pid', 'session.json'])('setup cleans its own server when %s evidence cannot be written', async filename => {
+  const original = new Error(`fixture write failed: ${filename}`);
+  const kill = jest.spyOn(process, 'kill').mockReturnValue(true);
+  const remote = jest.fn().mockResolvedValue({sessionId: 'fixture-session', capabilities: {}});
+  const fetchBefore = globalThis.fetch;
+  globalThis.fetch = jest.fn().mockResolvedValue({ok: true});
+  let setup: () => Promise<void>;
+  try {
+    jest.isolateModules(() => {
+      jest.doMock('fs', () => ({...jest.requireActual('fs'),
+        openSync: () => 123, closeSync: () => {},
+        writeFileSync: (path: string) => {if (path.endsWith(filename)) throw original;},
+      }));
+      jest.doMock('child_process', () => ({spawn: () => ({pid: 12345})}));
+      jest.doMock('webdriverio', () => ({remote}));
+      jest.doMock('./driver', () => ({allocateArtifacts: () => ({runDir: root, isolated: true})}));
+      jest.doMock('./app', () => ({writeDebugFlags: () => root}));
+      jest.doMock('./reclaim', () => ({reclaimBefore: () => {}}));
+      setup = require('./global-setup').default;
+    });
+    await expect(setup!()).rejects.toBe(original);
+    expect(kill).toHaveBeenCalledTimes(1);
+    expect(kill).toHaveBeenCalledWith(-12345, 'SIGKILL');
+    expect(remote).toHaveBeenCalledTimes(filename === 'server.pid' ? 0 : 1);
+  } finally {
+    for (const module of ['fs', 'child_process', 'webdriverio', './driver', './app', './reclaim']) jest.dontMock(module);
+    globalThis.fetch = fetchBefore; kill.mockRestore();
+    globalThis.__E2E_SERVER_PID__ = undefined; globalThis.__E2E_DRIVER__ = undefined;
+  }
+});

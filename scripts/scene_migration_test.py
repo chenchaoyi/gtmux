@@ -2,6 +2,10 @@ import copy
 import hashlib
 import importlib.util
 import json
+import os
+import sys
+import time
+from unittest import mock
 from pathlib import Path
 import subprocess
 import tempfile
@@ -26,20 +30,22 @@ class SceneMigrationTests(unittest.TestCase):
         root = self.root / scene.tuple_key(unit)
         root.mkdir(parents=True, exist_ok=True)
         data = b'isolated synthetic acceptance evidence\n'
-        (root / 'evidence.txt').write_bytes(data)
+        names = ['evidence.txt', 'jest.json', 'harness.json', 'session/session.json', 'session/behavior-steps.jsonl', 'session/view.png', 'session/view.xml', 'session/journey-fake.json', 'session/journey-native.jsonl', 'session/host-geometry.json']
+        for name in names:
+            (root / name).parent.mkdir(parents=True, exist_ok=True); (root / name).write_bytes(data)
         identity = {**scene.TOOLS[unit['toolchain']], 'source': unit['source'], 'signature': 'adhoc',
                     'pid': 123, 'runtimeID': 'runtime', 'runtimeBuild': 'build', 'udid': 'test-udid',
                     'deviceType': 'test-phone', 'sdkroot': 'iphonesimulator' + scene.TOOLS[unit['toolchain']]['sdk'], 'linkSysroot': '/SDK/iPhoneSimulator' + scene.TOOLS[unit['toolchain']]['sdk'] + '.sdk',
-                    'developerDir': 'xcode', 'wdaDeployment': '15.0', 'wdaBinarySHA': 'd' * 64,
+                    'developerDir': 'xcode', 'wdaDeployment': '15.0', 'wdaTargetDeployment': '15.0', 'wdaBinarySHA': 'd' * 64,
                     'sessionID': 'session', 'installedAt': 'time1', 'launchedAt': 'time2',
                     'products': [{'kind': kind, 'architectures': ['arm64'], 'signature': 'adhoc',
-                                  'sha256': 'e' * 64, 'uuid': 'uuid', 'deployment': '15.1', 'entitlements': {}}
+                                  'sha256': 'e' * 64, 'sdk': 'iphonesimulator' + scene.TOOLS[unit['toolchain']]['sdk'], 'uuid': 'uuid', 'deployment': '15.1', 'entitlements': {}}
                                  for kind in ('app', 'liveActivity', 'notificationExtension')]}
         return {'unit': unit, 'state': 'completed', 'testExit': 0, 'identity': identity,
                 'cases': [{'name': n, 'status': 'passed', 'startedAt': 'time1', 'completedAt': 'time2'}
                           for n in scene.CASES[unit['journey']]],
                 'steps': list(scene.STEPS[unit['journey']]),
-                'artifacts': [{'path': 'evidence.txt', 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()}]}
+                'artifacts': [{'path': name, 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()} for name in names]}
 
     def test_real_event_sources_and_fixed_PR15_main11_instances(self):
         event = {'pull_request': {'base': {'sha': B}, 'head': {'sha': P}}}
@@ -106,6 +112,19 @@ class SceneMigrationTests(unittest.TestCase):
         self.assertTrue(scene.verify_all(units, bad, self.root))
         self.assertEqual(results[-1]['testExit'], 0)  # a later green does not clear7
 
+    def test_offline_verifier_retains_preparation_failure_with_complete_case_results(self):
+        units = scene.units({'candidate': P}, '26')
+        results = [self.result(u) for u in units]
+        report = self.root / 'acceptance.json'
+        payload = {'eventName': 'push', 'event': {'ref': 'refs/heads/main', 'after': P},
+                   'githubSHA': P, 'toolchain': '26', 'results': results, 'preparationErrors': []}
+        arguments = ['scene', '--verify', str(report), '--evidence-root', str(self.root)]
+        report.write_text(json.dumps(payload))
+        with mock.patch.object(sys, 'argv', arguments): self.assertEqual(scene.main(), 0)
+        payload['preparationErrors'] = ['source verification failed']
+        report.write_text(json.dumps(payload))
+        with mock.patch.object(sys, 'argv', arguments): self.assertEqual(scene.main(), 1)
+
     def test_missing_skipped_failed_cancelled_case_or_early_return_never_passes(self):
         unit = scene.units({'candidate': P}, '27')[1]
         original = self.result(unit)
@@ -114,7 +133,7 @@ class SceneMigrationTests(unittest.TestCase):
             with self.subTest(status=status):
                 self.assertTrue(scene.unit_errors(unit, bad, self.root / scene.tuple_key(unit)))
         for field in ('cases', 'steps', 'artifacts'):
-            bad = copy.deepcopy(original); bad[field] = bad[field][1:]
+            bad = copy.deepcopy(original); bad[field] = [] if field == 'artifacts' else bad[field][1:]
             with self.subTest(field=field):
                 self.assertTrue(scene.unit_errors(unit, bad, self.root / scene.tuple_key(unit)))
         bad = copy.deepcopy(original); bad['cases'][0].pop('completedAt')
@@ -153,6 +172,100 @@ class SceneMigrationTests(unittest.TestCase):
         result['artifacts'][0]['path'] = '../outside.txt'
         self.assertTrue(scene.unit_errors(unit, result, root))
 
+
+
+
+class SceneExecutionTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(prefix='scene-execution-controls-')
+        self.root = Path(self.temp.name)
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def test_execute_refuses_local_environment_before_any_native_command(self):
+        with mock.patch.object(scene, 'preflight') as preflight:
+            with self.assertRaisesRegex(ValueError, 'restricted'):
+                scene.execute('27', self.root, {'CI': 'false'})
+            preflight.assert_not_called()
+
+    def test_real_small_child_exit_timeout_and_output_cap_are_bounded(self):
+        runner = scene.Runner(self.root, dict(os.environ))
+        code, _ = runner.command([sys.executable, '-c', 'raise SystemExit(7)'], cwd=self.root, label='exit7', timeout=5, check=False)
+        self.assertEqual(code, 7)
+        started = time.monotonic()
+        with self.assertRaisesRegex(RuntimeError, 'timeout'):
+            runner.command([sys.executable, '-c', 'import time; time.sleep(30)'], cwd=self.root, label='timeout', timeout=.2)
+        self.assertLess(time.monotonic() - started, 3)
+        with self.assertRaisesRegex(RuntimeError, 'output-limit'):
+            runner.command([sys.executable, '-c', 'print("x" * 2048)'], cwd=self.root, label='output', timeout=5, limit=1024)
+        records = [json.loads(p.read_text()) for p in self.root.glob('*.json')]
+        self.assertEqual({r['state'] for r in records}, {'completed', 'timeout', 'output-limit'})
+
+    def test_device_lookup_requires_actual_runtime_and_unique_hardware(self):
+        runtime = {'runtimes': [{'identifier': 'ios-26', 'version': '26.2', 'buildversion': 'fixture', 'isAvailable': True}]}
+        device = {'udid': 'fixture-device', 'deviceTypeIdentifier': 'phone-type', 'name': 'iPhone 17', 'isAvailable': True}
+        devices = {'devices': {'ios-26': [device]}}
+        self.assertEqual(scene.exact_device(devices, runtime, '26.2', 'iPhone 17')['runtimeBuild'], 'fixture')
+        with self.assertRaises(ValueError): scene.exact_device(devices, runtime, '26.3', 'iPhone 17')
+        devices['devices']['ios-26'].append(device)
+        with self.assertRaises(ValueError): scene.exact_device(devices, runtime, '26.2', 'iPhone 17')
+
+    def test_missing_diagnostic_evidence_keeps_original_test_zero_or_seven_and_cleans(self):
+        for status in (0, 7):
+            for error in (OSError('mkdir failed'), OSError('write failed')):
+                with self.subTest(status=status, error=error):
+                    root = self.root / str(status) / str(error); root.mkdir(parents=True)
+                    unit = scene.units({'candidate': P}, '27')[0]
+                    paths = {k: root / k for k in ('work', 'evidence')}
+                    for p in paths.values(): p.mkdir()
+                    (paths['work'] / 'harness.json').write_text('[]')
+                    class FakeRunner:
+                        def __init__(self, *args): pass
+                        def command(self, args, **kwargs):
+                            return (status if kwargs['label'] == 'journey' else 0), root / 'synthetic.log'
+                    with mock.patch.object(scene, 'Runner', FakeRunner), mock.patch.object(scene, 'prepare_work', return_value=paths['work']), \
+                         mock.patch.object(scene, 'parse_jest', return_value=[]), mock.patch.object(scene, 'collect_identity', side_effect=error), \
+                         mock.patch.object(scene, 'cleanup_unit', return_value=[]) as cleanup:
+                        result = scene.run_unit(unit, paths, root, root, {'app': '/synthetic/app'},
+                              {'devices': {'phone': {'udid': 'fixture', 'name': 'iPhone 17'}}}, {})
+                    self.assertEqual(result['testExit'], status)
+                    self.assertTrue(any(str(error) in p for p in result['problems']))
+                    cleanup.assert_called_once()
+                    self.assertEqual(json.loads((paths['evidence'] / 'result.json').read_text())['testExit'], status)
+
+    def test_harness_journeys_share_only_verified_dependencies_and_keep_source_bytes(self):
+        source = self.root / 'harness/mobileapp'; (source / 'e2e').mkdir(parents=True)
+        (source / 'e2e/case.ts').write_text('frozen fixture source')
+        (source / 'package-lock.json').write_text('frozen dependency input')
+        dependencies = self.root / 'dependencies'; (dependencies / 'node_modules').mkdir(parents=True)
+        first = self.root / 'one'; first.mkdir()
+        second = self.root / 'two'; second.mkdir()
+        one = scene.prepare_work(source.parent, first, dependencies)
+        two = scene.prepare_work(source.parent, second, dependencies)
+        self.assertEqual((one / 'node_modules').resolve(), (two / 'node_modules').resolve())
+        self.assertEqual(json.loads((first / 'harness.json').read_text()), json.loads((second / 'harness.json').read_text()))
+        (one / 'e2e/case.ts').write_text('one journey temporary state')
+        self.assertEqual((two / 'e2e/case.ts').read_text(), 'frozen fixture source')
+        self.assertEqual((source / 'e2e/case.ts').read_text(), 'frozen fixture source')
+        (source / 'e2e/linked.ts').symlink_to(source / 'e2e/case.ts')
+        bad = self.root / 'bad'; bad.mkdir()
+        with self.assertRaisesRegex(ValueError, 'Unexpected link'):
+            scene.prepare_work(source.parent, bad, dependencies)
+
+    def test_cleanup_targets_only_saved_matching_server_and_exact_unit_wda(self):
+        (self.root / 'session').mkdir(); (self.root / 'session/server.pid').write_text('41')
+        derived = self.root / 'unit-wda'
+        fake = mock.Mock()
+        fake.text.return_value = (0, f'41 node appium --port 4723\n42 xcodebuild -derivedDataPath {derived} test\n43 xcodebuild -derivedDataPath {derived}-other test\n44 appium --port 4730')
+        with mock.patch.object(scene.os, 'killpg') as groups, mock.patch.object(scene.os, 'kill') as singles:
+            self.assertEqual(scene.cleanup_unit(fake, self.root, derived, 'fixture-device'), [])
+            groups.assert_called_once_with(41, scene.signal.SIGKILL); singles.assert_called_once_with(42, scene.signal.SIGKILL)
+        fake.text.return_value = (0, '41 unrelated-process')
+        with mock.patch.object(scene.os, 'killpg') as groups:
+            self.assertTrue(scene.cleanup_unit(fake, self.root, derived, 'fixture-device'))
+            groups.assert_not_called()
+        self.assertEqual(fake.command.call_args.args[0][-1], 'fixture-device')
 
 if __name__ == '__main__':
     unittest.main()

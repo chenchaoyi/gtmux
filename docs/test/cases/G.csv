@@ -235,14 +235,24 @@ LEG-cb98946c10d3,G,Go core / CLI / server,internal/userservice/service_test.go,1
 LEG-3bdc2df08ae7,G,Go core / CLI / server,internal/userservice/systemd_integration_test.go,15,Test,TestSystemdUserManagerLifecycle,False,legacy-not-retrospectively-reviewed
 LEG-8ef64b955024,G,RN / mobile harness,mobileapp/e2e/android/run.cjs,279,check,29-clipboard-image-markup-and-upload,False,legacy-not-retrospectively-reviewed
 MAP-38c67a93a00d,G,RN / mobile harness,mobileapp/e2e/capture/knowledge-shot.test.ts,13,reviewed-selector,gated(,False,DG-001
-MAP-d455cb51bba1,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,54,reviewed-selector,def sources(,False,SCENE-MIG-008
-MAP-bb550a403768,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,68,reviewed-selector,def units(,False,SCENE-MIG-008
-MAP-ea5937ab5244,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,117,reviewed-selector,def archive_source(,False,SCENE-MIG-008
-MAP-38d95bd6046c,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,109,reviewed-selector,def allocate_unit(,False,SCENE-MIG-008
-MAP-d8d576f98a52,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,173,reviewed-selector,def unit_errors(,False,SCENE-MIG-008
-MAP-e0657dd9a16c,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,213,reviewed-selector,def verify_all(,False,SCENE-MIG-008
+MAP-d455cb51bba1,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,61,reviewed-selector,def sources(,False,SCENE-MIG-008
+MAP-bb550a403768,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,75,reviewed-selector,def units(,False,SCENE-MIG-008
+MAP-ea5937ab5244,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,124,reviewed-selector,def archive_source(,False,SCENE-MIG-008
+MAP-38d95bd6046c,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,116,reviewed-selector,def allocate_unit(,False,SCENE-MIG-008
+MAP-d8d576f98a52,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,181,reviewed-selector,def unit_errors(,False,SCENE-MIG-008
+MAP-e0657dd9a16c,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,230,reviewed-selector,def verify_all(,False,SCENE-MIG-008
+MAP-5e8a9b948e24,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,323,reviewed-selector,def preflight(,False,SCENE-MIG-008
+MAP-686096fccf36,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,350,reviewed-selector,def prepare_source(,False,SCENE-MIG-008
+MAP-e317c36e87b4,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,378,reviewed-selector,def prepare_work(,False,SCENE-MIG-008
+MAP-48f5d7e71933,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,398,reviewed-selector,def build_product(,False,SCENE-MIG-008
+MAP-eddc7dcee0b0,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,439,reviewed-selector,def collect_identity(,False,SCENE-MIG-008
+MAP-af21af8be44f,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,512,reviewed-selector,def run_unit(,False,SCENE-MIG-008
+MAP-89aaee2a9ed7,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,481,reviewed-selector,def cleanup_unit(,False,SCENE-MIG-008
+MAP-15d5d6c17883,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,560,reviewed-selector,def execute(,False,SCENE-MIG-008
 LEG-6e50b6aefc3c,G,RN / mobile harness,mobileapp/e2e/fake-serve/icons.test.ts,42,test,"serves the repo's built-in PNG, by label or by key, as a real serve does",False,legacy-not-retrospectively-reviewed
 LEG-1a72cb709a2f,G,RN / mobile harness,mobileapp/e2e/fake-serve/icons.test.ts,101,test,is the Go registry's (internal/agents/registry.go),False,legacy-not-retrospectively-reviewed
+MAP-0546794d3dea,G,reviewed implementation,mobileapp/e2e/instrument-baseline.py,8,reviewed-selector,changes =,False,SCENE-MIG-008
+MAP-5c6d0f4dc09d,G,reviewed implementation,mobileapp/e2e/instrument-baseline.py,38,reviewed-selector,GTMUX_COMPARE_JOURNEY,False,SCENE-MIG-008
 MAP-befb8569059f,G,reviewed implementation,mobileapp/e2e/jest.config.manual.js,2,reviewed-selector,manualMode(process.env),False,"DG-001,DG-002"
 MAP-a88b539daecf,G,reviewed implementation,mobileapp/e2e/jest.config.manual.js,3,reviewed-selector,sendTarget(process.env),False,"DG-001,DG-002"
 MAP-cb2da71006dd,G,reviewed implementation,mobileapp/e2e/setup/global-setup-manual.ts,6,reviewed-selector,"await setupManual(process.env, verifySendTarget, globalSetup)",False,DG-004
@@ -406,22 +416,25 @@ LEG-3a0cbcd63152,G,CI / tooling,scripts/check_private_source_test.py,55,unittest
 LEG-36acddae2fe2,G,CI / tooling,scripts/check_private_source_test.py,63,unittest,test_unreadable_source_fails_and_exception_text_never_reaches_output,False,legacy-not-retrospectively-reviewed
 LEG-046c8bb3bdbc,G,CI / tooling,scripts/check_private_source_test.py,71,unittest,test_wrapper_clears_private_environment_before_build_or_spec_helpers,False,legacy-not-retrospectively-reviewed
 MAP-41a5bc78e4e8,G,reviewed implementation,scripts/ci.py,33,reviewed-selector,confirmed_unit_test_isolation,False,CT-SCOPE
+MAP-7b2e9e5dc72d,G,reviewed implementation,scripts/ci.py,50,reviewed-selector,def classify(,False,"CT-SCOPE,SCENE-MIG-009"
+MAP-03a19d975ce6,G,reviewed implementation,scripts/ci.py,133,reviewed-selector,def verdict(,False,"CT-SCOPE,SCENE-MIG-009"
 LEG-bb0f4dd7bc8b,G,CI / tooling,scripts/ci_test.py,35,unittest,test_docs_only_and_mixed_changes,False,legacy-not-retrospectively-reviewed
 LEG-5e8793132c96,G,CI / tooling,scripts/ci_test.py,51,unittest,test_shared_or_unknown_impact_is_full,True,legacy-not-retrospectively-reviewed
 LEG-7bbcfe8992be,G,CI / tooling,scripts/ci_test.py,62,unittest,test_recognized_modules_include_consumers,False,legacy-not-retrospectively-reviewed
-LEG-bbdfd85a9000,G,CI / tooling,scripts/ci_test.py,71,unittest,test_nul_parser_preserves_names_and_old_rename_path,True,legacy-not-retrospectively-reviewed
-LEG-30f2f4661935,G,CI / tooling,scripts/ci_test.py,79,unittest,test_actual_git_rename_deletion_and_symlink,False,legacy-not-retrospectively-reviewed
-LEG-a0a184955335,G,CI / tooling,scripts/ci_test.py,105,unittest,test_missing_refs_force_full_cli_outputs,False,legacy-not-retrospectively-reviewed
-LEG-513d57a7489a,G,CI / tooling,scripts/ci_test.py,116,unittest,test_workflow_jobs_cannot_grow_outside_aggregation,False,legacy-not-retrospectively-reviewed
-LEG-1f71c99fb4dc,G,CI / tooling,scripts/ci_test.py,128,unittest,test_unsigned_ios_preserves_arm64_target_and_verifies_products,False,legacy-not-retrospectively-reviewed
-LEG-2514a184abce,G,CI / tooling,scripts/ci_test.py,140,unittest,test_android_package_is_built_once_and_both_devices_use_its_output,False,legacy-not-retrospectively-reviewed
-LEG-76200ceafcf2,G,CI / tooling,scripts/ci_test.py,160,unittest,test_docs_can_skip_heavy_jobs_but_require_quality,False,legacy-not-retrospectively-reviewed
-LEG-ecfb4bf818ba,G,CI / tooling,scripts/ci_test.py,166,unittest,test_missing_skipped_failed_cancelled_required_job_never_green,True,legacy-not-retrospectively-reviewed
-LEG-252965413bf3,G,CI / tooling,scripts/ci_test.py,175,unittest,test_bad_plans_or_unselected_failure_are_rejected,False,legacy-not-retrospectively-reviewed
-LEG-8a6a845c7484,G,CI / tooling,scripts/ci_test.py,187,unittest,test_mac_host_keeps_both_architectures_and_native_checks,False,legacy-not-retrospectively-reviewed
-LEG-28f4d1551b14,G,CI / tooling,scripts/ci_test.py,204,unittest,test_ios_delivery_pins_the_same_arm_toolchain_and_keeps_protection,False,legacy-not-retrospectively-reviewed
+LEG-bbdfd85a9000,G,CI / tooling,scripts/ci_test.py,94,unittest,test_nul_parser_preserves_names_and_old_rename_path,True,legacy-not-retrospectively-reviewed
+LEG-30f2f4661935,G,CI / tooling,scripts/ci_test.py,102,unittest,test_actual_git_rename_deletion_and_symlink,False,legacy-not-retrospectively-reviewed
+LEG-a0a184955335,G,CI / tooling,scripts/ci_test.py,128,unittest,test_missing_refs_force_full_cli_outputs,False,legacy-not-retrospectively-reviewed
+LEG-513d57a7489a,G,CI / tooling,scripts/ci_test.py,139,unittest,test_workflow_jobs_cannot_grow_outside_aggregation,False,legacy-not-retrospectively-reviewed
+LEG-1f71c99fb4dc,G,CI / tooling,scripts/ci_test.py,151,unittest,test_unsigned_ios_preserves_arm64_target_and_verifies_products,False,legacy-not-retrospectively-reviewed
+LEG-2514a184abce,G,CI / tooling,scripts/ci_test.py,163,unittest,test_android_package_is_built_once_and_both_devices_use_its_output,False,legacy-not-retrospectively-reviewed
+LEG-76200ceafcf2,G,CI / tooling,scripts/ci_test.py,183,unittest,test_docs_can_skip_heavy_jobs_but_require_quality,False,legacy-not-retrospectively-reviewed
+LEG-ecfb4bf818ba,G,CI / tooling,scripts/ci_test.py,189,unittest,test_missing_skipped_failed_cancelled_required_job_never_green,True,legacy-not-retrospectively-reviewed
+LEG-252965413bf3,G,CI / tooling,scripts/ci_test.py,198,unittest,test_bad_plans_or_unselected_failure_are_rejected,False,legacy-not-retrospectively-reviewed
+LEG-8a6a845c7484,G,CI / tooling,scripts/ci_test.py,210,unittest,test_mac_host_keeps_both_architectures_and_native_checks,False,legacy-not-retrospectively-reviewed
+LEG-28f4d1551b14,G,CI / tooling,scripts/ci_test.py,227,unittest,test_ios_delivery_pins_the_same_arm_toolchain_and_keeps_protection,False,legacy-not-retrospectively-reviewed
 MAP-349a1f57f0b7,G,CI / tooling,scripts/ci_test.py,43,reviewed-selector,test_reviewed_test_records_are_policy_only_without_hiding_test_changes,False,TD-006
 MAP-5f57607e8e0e,G,CI / tooling,scripts/ci_test.py,17,reviewed-selector,test_unit_test_scope_requires_immutable_product_exclusion,False,CT-SCOPE
+MAP-7f9c2774f706,G,CI / tooling,scripts/ci_test.py,71,reviewed-selector,test_scene_migration_selection_is_not_branch_dependent_and_keeps_old_gates,False,"CT-SCOPE,SCENE-MIG-009"
 LEG-0a1ce627fdd1,G,CI / tooling,scripts/install_platform_test.py,70,unittest,test_linux_archives_install_without_any_mac_application,True,legacy-not-retrospectively-reviewed
 LEG-8ccffb001b09,G,CI / tooling,scripts/install_platform_test.py,80,unittest,test_checksum_failure_never_installs,False,legacy-not-retrospectively-reviewed
 LEG-c81cb29009cc,G,CI / tooling,scripts/install_platform_test.py,86,unittest,test_existing_optional_client_is_updated_only_by_capable_release,True,legacy-not-retrospectively-reviewed
@@ -481,14 +494,21 @@ LEG-3b2a0a11f0dd,G,CI / tooling,scripts/release_feed_test.py,128,unittest,test_p
 LEG-3ec2e6ea4c71,G,CI / tooling,scripts/release_feed_test.py,144,unittest,test_latest_failed_build_cannot_reuse_an_old_pass,False,legacy-not-retrospectively-reviewed
 LEG-f96cb8fa1137,G,CI / tooling,scripts/release_feed_test.py,154,unittest,test_frozen_recovery_source_requires_identical_current_installer_bytes,False,legacy-not-retrospectively-reviewed
 LEG-a773f7b44f33,G,CI / tooling,scripts/release_feed_test.py,167,unittest,test_slow_trickling_public_readback_stops_at_total_deadline,False,legacy-not-retrospectively-reviewed
-MAP-4dbebfdd920d,G,reviewed implementation,scripts/scene_migration_test.py,44,reviewed-selector,test_real_event_sources_and_fixed_PR15_main11_instances,False,SCENE-MIG-008
-MAP-7290dcb68a36,G,reviewed implementation,scripts/scene_migration_test.py,58,reviewed-selector,test_missing_bad_base_and_actualmain_mismatch_fail,False,SCENE-MIG-008
-MAP-b5a28e6d73ba,G,reviewed implementation,scripts/scene_migration_test.py,67,reviewed-selector,test_each_source_and_journey_has_exclusive_work_and_evidence,False,SCENE-MIG-008
-MAP-5b087f7ffc6a,G,reviewed implementation,scripts/scene_migration_test.py,84,reviewed-selector,test_real_git_archive_from_root_and_mobileapp_rejects_unreadable_base,False,SCENE-MIG-008
-MAP-2e1022e71af6,G,reviewed implementation,scripts/scene_migration_test.py,99,reviewed-selector,test_complete_synthetic_matrix_and_missing_unit_fail_closed,False,SCENE-MIG-008
-MAP-be9aec3dcf49,G,reviewed implementation,scripts/scene_migration_test.py,109,reviewed-selector,test_missing_skipped_failed_cancelled_case_or_early_return_never_passes,False,SCENE-MIG-008
-MAP-c5286b224e73,G,reviewed implementation,scripts/scene_migration_test.py,125,reviewed-selector,test_wrong_or_missing_toolchain_WDA_signature_and_product_identity_fail,False,SCENE-MIG-008
-MAP-6bc9a8ea1bd1,G,reviewed implementation,scripts/scene_migration_test.py,141,reviewed-selector,test_evidence_byte_changes_and_escape_are_rejected,False,SCENE-MIG-008
+MAP-4dbebfdd920d,G,reviewed implementation,scripts/scene_migration_test.py,50,reviewed-selector,test_real_event_sources_and_fixed_PR15_main11_instances,False,SCENE-MIG-008
+MAP-7290dcb68a36,G,reviewed implementation,scripts/scene_migration_test.py,64,reviewed-selector,test_missing_bad_base_and_actualmain_mismatch_fail,False,SCENE-MIG-008
+MAP-b5a28e6d73ba,G,reviewed implementation,scripts/scene_migration_test.py,73,reviewed-selector,test_each_source_and_journey_has_exclusive_work_and_evidence,False,SCENE-MIG-008
+MAP-5b087f7ffc6a,G,reviewed implementation,scripts/scene_migration_test.py,90,reviewed-selector,test_real_git_archive_from_root_and_mobileapp_rejects_unreadable_base,False,SCENE-MIG-008
+MAP-2e1022e71af6,G,reviewed implementation,scripts/scene_migration_test.py,105,reviewed-selector,test_complete_synthetic_matrix_and_missing_unit_fail_closed,False,SCENE-MIG-008
+MAP-be9aec3dcf49,G,reviewed implementation,scripts/scene_migration_test.py,128,reviewed-selector,test_missing_skipped_failed_cancelled_case_or_early_return_never_passes,False,SCENE-MIG-008
+MAP-c5286b224e73,G,reviewed implementation,scripts/scene_migration_test.py,144,reviewed-selector,test_wrong_or_missing_toolchain_WDA_signature_and_product_identity_fail,False,SCENE-MIG-008
+MAP-6bc9a8ea1bd1,G,reviewed implementation,scripts/scene_migration_test.py,160,reviewed-selector,test_evidence_byte_changes_and_escape_are_rejected,False,SCENE-MIG-008
+MAP-a5b156b2b518,G,reviewed implementation,scripts/scene_migration_test.py,115,reviewed-selector,test_offline_verifier_retains_preparation_failure_with_complete_case_results,False,SCENE-MIG-008
+MAP-a7808f64414b,G,reviewed implementation,scripts/scene_migration_test.py,186,reviewed-selector,test_execute_refuses_local_environment_before_any_native_command,False,SCENE-MIG-008
+MAP-45d57ce1727c,G,reviewed implementation,scripts/scene_migration_test.py,192,reviewed-selector,test_real_small_child_exit_timeout_and_output_cap_are_bounded,False,SCENE-MIG-008
+MAP-c78c647692bc,G,reviewed implementation,scripts/scene_migration_test.py,205,reviewed-selector,test_device_lookup_requires_actual_runtime_and_unique_hardware,False,SCENE-MIG-008
+MAP-ca6db00c6d3b,G,reviewed implementation,scripts/scene_migration_test.py,214,reviewed-selector,test_missing_diagnostic_evidence_keeps_original_test_zero_or_seven_and_cleans,False,SCENE-MIG-008
+MAP-80e5de561924,G,reviewed implementation,scripts/scene_migration_test.py,237,reviewed-selector,test_harness_journeys_share_only_verified_dependencies_and_keep_source_bytes,False,SCENE-MIG-008
+MAP-d485b529b3a4,G,reviewed implementation,scripts/scene_migration_test.py,256,reviewed-selector,test_cleanup_targets_only_saved_matching_server_and_exact_unit_wda,False,SCENE-MIG-008
 MAP-253bbd74b924,G,reviewed implementation,scripts/test_design.py,51,reviewed-selector,def validate(,False,"TD-001,TD-002,TD-003,TD-004,TD-005"
 MAP-0fe56134bb6e,G,reviewed implementation,scripts/test_design.py,102,reviewed-selector,def history_errors(,False,"TD-001,TD-002,TD-003,TD-004,TD-005"
 MAP-c8a2197482da,G,reviewed implementation,scripts/test_design.py,174,reviewed-selector,def refresh_catalogue(,False,"TD-001,TD-002,TD-003,TD-004,TD-005"

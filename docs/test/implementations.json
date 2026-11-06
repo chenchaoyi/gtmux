@@ -146,7 +146,8 @@
   },
   "mobileapp/scripts/check-native-documents.py": {
     "cases": [
-      "ND-003"
+      "ND-003",
+      "SCENE-MIG-001"
     ],
     "selectors": [
       "def run("
@@ -176,10 +177,27 @@
   },
   "scripts/ci_test.py": {
     "cases": [
-      "CT-SCOPE"
+      "CT-SCOPE",
+      "SCENE-MIG-009"
     ],
     "selectors": [
-      "test_unit_test_scope_requires_immutable_product_exclusion"
+      "test_unit_test_scope_requires_immutable_product_exclusion",
+      "test_docs_only_and_mixed_changes",
+      "test_reviewed_test_records_are_policy_only_without_hiding_test_changes",
+      "test_shared_or_unknown_impact_is_full",
+      "test_recognized_modules_include_consumers",
+      "test_scene_migration_selection_is_not_branch_dependent_and_keeps_old_gates",
+      "test_nul_parser_preserves_names_and_old_rename_path",
+      "test_actual_git_rename_deletion_and_symlink",
+      "test_missing_refs_force_full_cli_outputs",
+      "test_workflow_jobs_cannot_grow_outside_aggregation",
+      "test_unsigned_ios_preserves_arm64_target_and_verifies_products",
+      "test_android_package_is_built_once_and_both_devices_use_its_output",
+      "test_docs_can_skip_heavy_jobs_but_require_quality",
+      "test_missing_skipped_failed_cancelled_required_job_never_green",
+      "test_bad_plans_or_unselected_failure_are_rejected",
+      "test_mac_host_keeps_both_architectures_and_native_checks",
+      "test_ios_delivery_pins_the_same_arm_toolchain_and_keeps_protection"
     ]
   },
   "mobileapp/e2e/setup/global-setup-manual.ts": {
@@ -350,10 +368,13 @@
   },
   "scripts/ci.py": {
     "cases": [
-      "CT-SCOPE"
+      "CT-SCOPE",
+      "SCENE-MIG-009"
     ],
     "selectors": [
-      "confirmed_unit_test_isolation"
+      "confirmed_unit_test_isolation",
+      "def classify(",
+      "def verdict("
     ]
   },
   "mobileapp/metro.config.js": {
@@ -641,7 +662,15 @@
       "def archive_source(",
       "def allocate_unit(",
       "def unit_errors(",
-      "def verify_all("
+      "def verify_all(",
+      "def preflight(",
+      "def prepare_source(",
+      "def prepare_work(",
+      "def build_product(",
+      "def collect_identity(",
+      "def run_unit(",
+      "def cleanup_unit(",
+      "def execute("
     ]
   },
   "scripts/scene_migration_test.py": {
@@ -654,9 +683,16 @@
       "test_each_source_and_journey_has_exclusive_work_and_evidence",
       "test_real_git_archive_from_root_and_mobileapp_rejects_unreadable_base",
       "test_complete_synthetic_matrix_and_missing_unit_fail_closed",
+      "test_offline_verifier_retains_preparation_failure_with_complete_case_results",
       "test_missing_skipped_failed_cancelled_case_or_early_return_never_passes",
       "test_wrong_or_missing_toolchain_WDA_signature_and_product_identity_fail",
-      "test_evidence_byte_changes_and_escape_are_rejected"
+      "test_evidence_byte_changes_and_escape_are_rejected",
+      "test_execute_refuses_local_environment_before_any_native_command",
+      "test_real_small_child_exit_timeout_and_output_cap_are_bounded",
+      "test_device_lookup_requires_actual_runtime_and_unique_hardware",
+      "test_missing_diagnostic_evidence_keeps_original_test_zero_or_seven_and_cleans",
+      "test_harness_journeys_share_only_verified_dependencies_and_keep_source_bytes",
+      "test_cleanup_targets_only_saved_matching_server_and_exact_unit_wda"
     ]
   },
   "mobileapp/e2e/setup/appLaunchFiles.test.ts": {
@@ -701,7 +737,8 @@
       "link helper requires new native delivery as well as visible usage (cold=%s)",
       "actual link registration executes the shared native and UI contract (cold=%s)",
       "registered action executes tap and exact fake delivery, missing tap fails (cold=%s)",
-      "registered cold action rejects %s and restores rotation"
+      "registered cold action rejects %s and restores rotation",
+      "setup cleans its own server when %s evidence cannot be written"
     ]
   },
   "mobileapp/e2e/fake-serve/request-diagnostics.test.ts": {
@@ -820,6 +857,15 @@
     ],
     "selectors": [
       "keeps the iPad sidebar and selected session through rotation"
+    ]
+  },
+  "mobileapp/e2e/instrument-baseline.py": {
+    "cases": [
+      "SCENE-MIG-008"
+    ],
+    "selectors": [
+      "changes =",
+      "GTMUX_COMPARE_JOURNEY"
     ]
   }
 }

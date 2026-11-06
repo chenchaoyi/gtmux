@@ -13,7 +13,7 @@ import sys
 JOBS = {
     "test": "core", "cross-build": "cross", "mobile": "mobile", "web": "web",
     "menubar": "menubar", "relay-worker": "relay", "tunnel-worker": "tunnel",
-    "ios-native": "ios", "android-native": "android", "android-emulator": "android",
+    "ios-native": "ios", "ios-scene": "scene", "android-native": "android", "android-emulator": "android",
 }
 DOC_FILES = {"README.md", "README.zh.md", "CONTRIBUTING.md", "SECURITY.md", "LICENSE",
              "CLAUDE.md", ".github/pull_request_template.md"}
@@ -89,6 +89,8 @@ def classify(paths, force_reason=None, unit_test_isolation=False):
             # shared assets, new directories and unknown file types all reach this path.
             full = True
             reasons.append("Shared or uncertain impact; run everything: " + json.dumps(path))
+    if "ios-native" in selected:
+        selected.add("ios-scene")
     if full:
         selected = set(JOBS)
     # A Go-only test edit still runs the complete Go suite. Web/relay changes also
@@ -136,6 +138,8 @@ def verdict(plan, needs):
     chosen = set(plan["selected"])
     if len(chosen) != len(plan["selected"]) or not chosen <= JOBS.keys() or (plan["full"] and chosen != JOBS.keys()):
         return ["Invalid CI plan"]
+    if ("ios-native" in chosen) != ("ios-scene" in chosen):
+        return ["iOS compile and scene acceptance must be selected together"]
     android = {"android-native", "android-emulator"}
     if chosen & android and not android <= chosen:
         return ["Android build and both emulator checks must be selected together"]

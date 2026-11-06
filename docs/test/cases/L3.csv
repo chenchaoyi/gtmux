@@ -4,7 +4,7 @@ MAP-d731318cd969,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceW
 MAP-a11ab8aaa94d,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceWindowTests.swift,92,reviewed-selector,testCurrentQuestionRemainsUsableWhileConversationReadWaits,False,MC-HQ-WINDOW
 MAP-80be9bb61842,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/HQOverviewMoreWindowTests.swift,27,reviewed-selector,testBottomRemainingControlOpensAllAndSelectsHiddenGoalWithoutSending,False,MC-HQ-OVERVIEW-MORE
 MAP-9a63f420f1ec,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/HQOverviewMoreWindowTests.swift,98,reviewed-selector,testFullyShownListHasNoRemainingControlAndUnknownRosterDoesNotSayIdle,False,MC-HQ-OVERVIEW-MORE
-MAP-b3419be992f8,L3,reviewed implementation,mobileapp/e2e/__tests__/ipad-adaptive.test.ts,12,reviewed-selector,keeps the iPad sidebar and selected session through rotation,False,SCENE-MIG-007
+MAP-b3419be992f8,L3,reviewed implementation,mobileapp/e2e/__tests__/ipad-adaptive.test.ts,14,reviewed-selector,keeps the iPad sidebar and selected session through rotation,False,SCENE-MIG-007
 MAP-5f9af003b179,L3,reviewed implementation,mobileapp/e2e/__tests__/scene-migration-actions.test.ts,15,reviewed-selector,delivers a cold notification action exactly once,False,SCENE-MIG-006
 MAP-542ef487bb26,L3,reviewed implementation,mobileapp/e2e/__tests__/scene-migration-actions.test.ts,16,reviewed-selector,delivers a warm notification action exactly once,False,SCENE-MIG-006
 MAP-da368bf98131,L3,reviewed implementation,mobileapp/e2e/__tests__/scene-migration-links.test.ts,15,reviewed-selector,opens a cold usage link through the scene,False,SCENE-MIG-006
@@ -23,6 +23,7 @@ MAP-e581fffb0464,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.te
 MAP-16d8061f552b,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,154,reviewed-selector,actual link registration executes the shared native and UI contract (cold=%s),False,"SCENE-MIG-006,SCENE-MIG-010"
 MAP-b3b2f740d29d,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,234,reviewed-selector,"registered action executes tap and exact fake delivery, missing tap fails (cold=%s)",False,"SCENE-MIG-006,SCENE-MIG-010"
 MAP-d6d4cdb5f402,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,238,reviewed-selector,registered cold action rejects %s and restores rotation,False,"SCENE-MIG-006,SCENE-MIG-010"
+MAP-c0ebb52b423a,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,245,reviewed-selector,setup cleans its own server when %s evidence cannot be written,False,"SCENE-MIG-006,SCENE-MIG-010"
 MAP-16d6bf431e39,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,107,reviewed-selector,coldSceneAction,False,SCENE-MIG-006
 MAP-94b1215d1e59,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,153,reviewed-selector,warmSceneAction,False,SCENE-MIG-006
 MAP-b60285dcd5b7,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,182,reviewed-selector,usageSceneLink,False,SCENE-MIG-006
