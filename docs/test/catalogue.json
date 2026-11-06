@@ -58406,7 +58406,7 @@
           "design": "DUO-032"
         }
       ],
-      "sha256": "152ad5073d7cf3bcab157175a7da7d4ddbbf854520d5b82830224c078dca6dbb"
+      "sha256": "05b011876824bb643553a724dff9729f4897c0e8fe2b5fba6967188acf3d5c50"
     },
     "mobileapp/src/ui/ChatView.promptReflow.test.tsx": {
       "layer": "L2",
