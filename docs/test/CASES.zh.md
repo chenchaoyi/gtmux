@@ -9,7 +9,7 @@
 | L1 · 单元/纯逻辑 | 3746 | [L1.csv](cases/L1.csv) |
 | L2 · 组件/契约 | 1923 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 86 | [L3.csv](cases/L3.csv) |
-| L4 · 应用操作流程 | 104 | [L4.csv](cases/L4.csv) |
+| L4 · 应用操作流程 | 106 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 12 | [M.csv](cases/M.csv) |
 | G · 质量门禁 | 496 | [G.csv](cases/G.csv) |
 

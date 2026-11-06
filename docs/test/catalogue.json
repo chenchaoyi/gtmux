@@ -58180,7 +58180,7 @@
         },
         {
           "id": "MAP-e33509324cc9",
-          "line": 215,
+          "line": 258,
           "kind": "reviewed-selector",
           "name": "keeps Trace search and Diff open while the simulator folds and unfolds",
           "dynamic": false,
@@ -58189,15 +58189,33 @@
         },
         {
           "id": "MAP-7bb91bd4c1ab",
-          "line": 153,
+          "line": 196,
           "kind": "reviewed-selector",
           "name": "keeps the session entry usable at an accessibility text size on both panels",
           "dynamic": false,
           "layer": "L4",
           "design": "DUO-020,DUO-021,DUO-023"
+        },
+        {
+          "id": "MAP-a27d63cdf4d6",
+          "line": 106,
+          "kind": "reviewed-selector",
+          "name": "retains the selected conversation and reading position across simulator fold and unfold",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "DUO-020,DUO-021,DUO-023"
+        },
+        {
+          "id": "MAP-f369d9080a71",
+          "line": 148,
+          "kind": "reviewed-selector",
+          "name": "retains the selected conversation and keyboard draft across simulator fold and unfold",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "DUO-020,DUO-021,DUO-023"
         }
       ],
-      "sha256": "199f713659058053823ceb06f13924bc392d467c46c962c09db0b9d68a092a98"
+      "sha256": "abf457f259a45af5e73f0e285478f3f0a188d3508f045e84cc0f091feeadf559"
     },
     "mobileapp/src/usage/UsageWidgetBridge.initialLink.test.tsx": {
       "layer": "L1",

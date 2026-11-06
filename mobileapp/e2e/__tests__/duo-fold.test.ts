@@ -63,28 +63,51 @@ async function posture(angle: number, panel: 'inner' | 'outer', evidence: object
     return size;
 }
 
-it('retains the selected conversation, reading position and draft across simulator fold and unfold', async () => {
+// Jest may time out while a WebDriver command is still running. Keep the next
+// journey from changing the same simulator until this one has finished cleanup.
+let activeJourney: Promise<void> | undefined;
+function journey(work: () => Promise<void>): Promise<void> {
+  const pending = work();
+  activeJourney = pending;
+  void pending.finally(() => { if (activeJourney === pending) activeJourney = undefined; }).catch(() => {});
+  return pending;
+}
+afterEach(async () => { if (activeJourney) await activeJourney.catch(() => {}); }, 930000);
+
+async function selectLongChat(evidence: object[]) {
+  const driver = getDriver();
+  await launchWithFlags({GTMUX_DEBUG_PAIR_URL: fake.url, GTMUX_DEBUG_PAIR_TOKEN: fake.token,
+    GTMUX_DEBUG_NO_PUSH: '1', GTMUX_DEBUG_LANG: 'en', GTMUX_DEBUG_LOG_NET: '1'});
+  const initialSize = await posture(180, 'inner', evidence);
+  const row = driver.$('~agent-row-%13');
+  await row.waitForExist({timeout: 25000});
+  const rowFrame = await driver.getElementRect(await row.elementId);
+  expect(rowFrame.width).toBeGreaterThan(0);
+  expect(rowFrame.height).toBeGreaterThan(0);
+  expect(rowFrame.x).toBeGreaterThanOrEqual(0);
+  expect(rowFrame.y).toBeGreaterThanOrEqual(0);
+  expect(rowFrame.x + rowFrame.width).toBeLessThanOrEqual(initialSize.width);
+  expect(rowFrame.y + rowFrame.height).toBeLessThanOrEqual(initialSize.height);
+  await driver.execute('mobile: tap', {x: rowFrame.x + rowFrame.width / 2, y: rowFrame.y + rowFrame.height / 2});
+  const chat = driver.$(`~${TestIds.detail.modeChat}`);
+  await chat.waitForDisplayed({timeout: 10000});
+  await chat.click();
+  const selected = driver.$('~Show full title, 整理这周的发布清单');
+  await selected.waitForDisplayed({timeout: 10000});
+  return {initialSize, selected};
+}
+
+async function restorePosture() {
+  const driver = getDriver();
+  await driver.execute('mobile: setSimulatedHingeAngle', {angle: 180}).catch(() => {});
+  await driver.updateSettings({currentDisplayId: null}).catch(() => {});
+}
+
+it('retains the selected conversation and reading position across simulator fold and unfold', () => journey(async () => {
   const driver = getDriver();
   const evidence: object[] = [];
   try {
-    await launchWithFlags({GTMUX_DEBUG_PAIR_URL: fake.url, GTMUX_DEBUG_PAIR_TOKEN: fake.token,
-      GTMUX_DEBUG_NO_PUSH: '1', GTMUX_DEBUG_LANG: 'en', GTMUX_DEBUG_LOG_NET: '1'});
-    const initialSize = await posture(180, 'inner', evidence);
-    const row = driver.$('~agent-row-%13');
-    await row.waitForExist({timeout: 25000});
-    const rowFrame = await driver.getElementRect(await row.elementId);
-    expect(rowFrame.width).toBeGreaterThan(0);
-    expect(rowFrame.height).toBeGreaterThan(0);
-    expect(rowFrame.x).toBeGreaterThanOrEqual(0);
-    expect(rowFrame.y).toBeGreaterThanOrEqual(0);
-    expect(rowFrame.x + rowFrame.width).toBeLessThanOrEqual(initialSize.width);
-    expect(rowFrame.y + rowFrame.height).toBeLessThanOrEqual(initialSize.height);
-    await driver.execute('mobile: tap', {x: rowFrame.x + rowFrame.width / 2, y: rowFrame.y + rowFrame.height / 2});
-    const chat = driver.$(`~${TestIds.detail.modeChat}`);
-    await chat.waitForDisplayed({timeout: 10000});
-    await chat.click();
-    const selected = driver.$('~Show full title, 整理这周的发布清单');
-    await selected.waitForDisplayed({timeout: 10000});
+    const {initialSize, selected} = await selectLongChat(evidence);
     const outerSize = await posture(0, 'outer', evidence);
     const readerSize = await driver.$('~workspace-reader').getSize();
     expect(Math.abs(readerSize.width - outerSize.width)).toBeLessThanOrEqual(1);
@@ -113,8 +136,20 @@ it('retains the selected conversation, reading position and draft across simulat
     await posture(180, 'inner', evidence);
     await jump.waitForDisplayed({timeout: 15000});
     await anchoredPrompt().waitForDisplayed({timeout: 15000});
-    await jump.click();
-    await selected.waitForDisplayed({timeout: 15000});
+  } catch (error) {
+    await captureOnFailure('duo-fold-failed', error);
+  } finally {
+    writeFileSync(join(getArtifactsDir(), 'duo-fold-postures.json'), JSON.stringify(evidence, null, 2));
+    writeFileSync(join(getArtifactsDir(), 'duo-fold-reflow-debug.json'), JSON.stringify(readDebugLog().filter(item => String(item.event).startsWith('chat-reflow-')), null, 2));
+    await restorePosture();
+  }
+}), 300000);
+
+it('retains the selected conversation and keyboard draft across simulator fold and unfold', () => journey(async () => {
+  const driver = getDriver();
+  const evidence: object[] = [];
+  try {
+    const {selected} = await selectLongChat(evidence);
     const keyboard = driver.$(`~${TestIds.composer.keyboard}`);
     await keyboard.waitForDisplayed({timeout: 10000});
     await keyboard.click();
@@ -130,25 +165,33 @@ it('retains the selected conversation, reading position and draft across simulat
     expect([outer.width, outer.height]).not.toEqual([inner.width, inner.height]);
     await driver.$(`~${TestIds.composer.input}`).waitForDisplayed({timeout: 15000});
     expect(await driver.$(`~${TestIds.composer.input}`).getValue()).toBe('Duo fold draft');
-    expect(await driver.$(`~${TestIds.detail.modeChat}`).isExisting()).toBe(true);
-    expect(await selected.isDisplayed()).toBe(true);
+    expect(await driver.$('XCUIElementTypeKeyboard').isExisting()).toBe(true);
     await screenshot('duo-fold-outer-draft');
 
+    // Keyboard presentation deliberately hides the header from accessibility.
+    // Close it to verify the actual session and mode, then reopen the same draft.
+    await driver.$(`~${TestIds.composer.keyboard}`).click();
+    await selected.waitForDisplayed({timeout: 15000});
+    await driver.$(`~${TestIds.detail.modeChat}`).waitForDisplayed({timeout: 15000});
+    await driver.$(`~${TestIds.composer.keyboard}`).click();
+    await driver.$(`~${TestIds.composer.input}`).waitForDisplayed({timeout: 15000});
+    expect(await driver.$(`~${TestIds.composer.input}`).getValue()).toBe('Duo fold draft');
+    expect(await driver.$('XCUIElementTypeKeyboard').isExisting()).toBe(true);
     await posture(180, 'inner', evidence);
     await driver.$(`~${TestIds.composer.input}`).waitForDisplayed({timeout: 15000});
     expect(await driver.$(`~${TestIds.composer.input}`).getValue()).toBe('Duo fold draft');
-    expect(await driver.$(`~${TestIds.detail.modeChat}`).isExisting()).toBe(true);
-    expect(await selected.isDisplayed()).toBe(true);
+    expect(await driver.$('XCUIElementTypeKeyboard').isExisting()).toBe(true);
     await screenshot('duo-fold-inner-restored');
+    await driver.$(`~${TestIds.composer.keyboard}`).click();
+    await selected.waitForDisplayed({timeout: 15000});
+    await driver.$(`~${TestIds.detail.modeChat}`).waitForDisplayed({timeout: 15000});
   } catch (error) {
-    await captureOnFailure('duo-fold-failed', error);
+    await captureOnFailure('duo-fold-draft-failed', error);
   } finally {
-    writeFileSync(join(getArtifactsDir(), 'duo-fold-postures.json'), JSON.stringify(evidence, null, 2));
-    writeFileSync(join(getArtifactsDir(), 'duo-fold-reflow-debug.json'), JSON.stringify(readDebugLog().filter(item => String(item.event).startsWith('chat-reflow-')), null, 2));
-    await driver.execute('mobile: setSimulatedHingeAngle', {angle: 180}).catch(() => {});
-    await driver.updateSettings({currentDisplayId: null}).catch(() => {});
+    writeFileSync(join(getArtifactsDir(), 'duo-fold-draft-postures.json'), JSON.stringify(evidence, null, 2));
+    await restorePosture();
   }
-}, 300000);
+}), 300000);
 
 it('keeps the session entry usable at an accessibility text size on both panels', async () => {
   const driver = getDriver();
