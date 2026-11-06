@@ -1,0 +1,42 @@
+{
+  "id": "ghostty-session-identity-20261106",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-06",
+    "decision": "Implement the known-session identity fix and regression tests",
+    "notes": "Reproduced an attached Ghostty tab being missed because the real tmux session starts with punctuation. Preserve the requested name byte-for-byte, try literal identity before skipping leading decoration, and prefer a literal tab over a decorated lookalike. Keep the existing strict session/window separator and exact raw AppleScript title including trailing spaces. Do not rename live sessions, change restore parsing, expand terminal permissions, or send agent input. Synthetic pure tests cover matching/selection; a bounded live focus of the user-requested pane separately checks Ghostty integration. No claim of native menu-click or other-terminal UI acceptance from pure tests."
+  },
+  "cases": [
+    {
+      "id": "FOCUS-001",
+      "layer": "L1",
+      "description": "Known-session matching preserves legal leading punctuation and Unicode while tolerating terminal alert decoration",
+      "setup": "Synthetic bare/windowed titles with curly or ASCII quotes, dashes, emoji and symbol-only names; repeated alert markers and whitespace; unrelated or prefix-sharing names.",
+      "action": "Call the shared TitleMatchesSession matcher with the complete unchanged session identity for positive and negative tables.",
+      "expected": "Literal and decorated versions of the complete session match; differently quoted, truncated, unrelated, wrong-separator and empty identities do not. Existing ordinary/decorated titles and bare trailing-whitespace tolerance remain supported.",
+      "planned_files": [
+        "internal/ghostty/session_identity_test.go"
+      ],
+      "surfaces": [
+        "CLI/menu-bar tmux focus",
+        "Shared terminal title matching and notification visibility"
+      ]
+    },
+    {
+      "id": "FOCUS-002",
+      "layer": "L1",
+      "description": "Ghostty tab selection prefers literal identity and preserves the exact raw title used to focus",
+      "setup": "Ordered synthetic tab records with an earlier decorated lookalike, a later literal match, quoted session identities and raw titles ending in spaces/tabs; empty or unrelated lists.",
+      "action": "Resolve the requested session through the same pure tab-selection helper used by FocusTab.",
+      "expected": "A literal match wins across all tabs before tolerant decoration fallback. With only a decorated match it is selected. The chosen record, indices and trailing title bytes remain unchanged; no match and empty session return false. Multiple literal tabs retain first-match order.",
+      "planned_files": [
+        "internal/ghostty/session_identity_test.go"
+      ],
+      "surfaces": [
+        "Ghostty tab focus"
+      ]
+    }
+  ],
+  "seal": "85a2b5e0e0a5969a55c0e4542a9bfec4815d4b1831f68b5cdc5a6b77f2c75468"
+}

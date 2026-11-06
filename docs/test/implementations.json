@@ -834,5 +834,15 @@
     "selectors": [
       "default transcript identity survives polling while new fixtures and explicit transcripts remain independent"
     ]
+  },
+  "internal/ghostty/session_identity_test.go": {
+    "cases": [
+      "FOCUS-001",
+      "FOCUS-002"
+    ],
+    "selectors": [
+      "TestTitleMatchesSessionPreservesLeadingSymbols",
+      "TestSessionTabPrefersLiteralIdentity"
+    ]
   }
 }

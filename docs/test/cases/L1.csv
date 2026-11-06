@@ -1136,6 +1136,8 @@ LEG-6c486c5ff6b9,L1,Go core / CLI / server,internal/ghostty/pure_test.go,129,Tes
 LEG-34f23e54cf0f,L1,Go core / CLI / server,internal/ghostty/pure_test.go,165,Test,TestSpawnTabsEmpty,False,legacy-not-retrospectively-reviewed
 LEG-8084177fc80d,L1,Go core / CLI / server,internal/ghostty/pure_test.go,181,Test,TestDriverName,False,legacy-not-retrospectively-reviewed
 LEG-4f5f60df6fb3,L1,Go core / CLI / server,internal/ghostty/pure_test.go,190,Test,TestSessionsFromTitlesStripsBellGlyph,False,legacy-not-retrospectively-reviewed
+MAP-d3cfa449d61c,L1,reviewed implementation,internal/ghostty/session_identity_test.go,7,reviewed-selector,TestTitleMatchesSessionPreservesLeadingSymbols,False,"FOCUS-001,FOCUS-002"
+MAP-761073fd4439,L1,reviewed implementation,internal/ghostty/session_identity_test.go,39,reviewed-selector,TestSessionTabPrefersLiteralIdentity,False,"FOCUS-001,FOCUS-002"
 LEG-3fd2d5bc3b83,L1,Go core / CLI / server,internal/ghostty/taborder_test.go,12,Test,TestTabOrderBulkAndLegacyShareDeadline,False,legacy-not-retrospectively-reviewed
 LEG-7a9e86509981,L1,Go core / CLI / server,internal/ghostty/taborder_test.go,34,Test,TestTabOrderDoesNotRetryDeniedOrTimedOutRead,False,legacy-not-retrospectively-reviewed
 LEG-cb6e250f7ce7,L1,Go core / CLI / server,internal/ghostty/taborder_test.go,44,Test,TestTabOrderOwnScriptProcessHonorsDeadline,False,legacy-not-retrospectively-reviewed
