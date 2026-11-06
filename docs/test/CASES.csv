@@ -3766,6 +3766,7 @@ LEG-ee3efcf0121e,L1,macOS / Widgets Swift,macapp/Tests/MacUsageWidgetSupportTest
 LEG-5fde771eaebb,L1,macOS / Widgets Swift,macapp/Tests/MacUsageWidgetSupportTests/MacUsageWidgetSupportTests.swift,66,XCTest,testOnlySignerScopedMacContainerIsAccepted,False,legacy-not-retrospectively-reviewed
 LEG-450dbd890cc5,L1,macOS / Widgets Swift,macapp/Tests/MacUsageWidgetSupportTests/MacUsageWidgetSupportTests.swift,73,XCTest,testUsageShortcutCannotCarryAnAlternateActionOrCredentials,False,legacy-not-retrospectively-reviewed
 LEG-fbddf3db8aa3,L1,macOS / Widgets Swift,macapp/Tests/MacUsageWidgetSupportTests/MacUsageWidgetSupportTests.swift,80,XCTest,testNoPollingWithoutWidgetNoOverlapAndBoundedReloads,False,legacy-not-retrospectively-reviewed
+MAP-265918ac6bc3,L1,reviewed implementation,mobileapp/__tests__/App.notificationBootstrap.test.tsx,34,reviewed-selector,starts the actual notification bridge while the visual safe area has no metrics,False,SCENE-MIG-002
 MAP-3a38d5e64c65,L2,reviewed implementation,mobileapp/__tests__/App.sceneMigration.test.tsx,60,reviewed-selector,main App keeps compact navigation props and a fresh root changes its real shell,False,SCENE-MIG-005
 MAP-da46dbb93884,L2,reviewed implementation,mobileapp/__tests__/App.sceneMigration.test.tsx,69,reviewed-selector,main App sidebar geometry follows the new root even when RN retains its old phone width,False,SCENE-MIG-005
 MAP-b8c8470d4954,L2,reviewed implementation,mobileapp/__tests__/App.sceneMigration.test.tsx,78,reviewed-selector,a real anchored menu stays inside a new narrow root while RN width remains stale,False,SCENE-MIG-005
@@ -3982,6 +3983,10 @@ LEG-72dc7db04494,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,106,
 LEG-2eb2e34b22ce,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,124,it,unscoped by default,False,legacy-not-retrospectively-reviewed
 ND-001,L1,iOS Swift,mobileapp/ios/tests/DocumentHTMLChecks.swift,2,native-procedural-oracle,DocumentHTML production Foundation checks,False,ND-001
 ND-002,L1,iOS Swift,mobileapp/ios/tests/DocumentMarkdownChecks.swift,3,native-procedural-oracle,DocumentMarkdown production Foundation checks,False,ND-002
+MAP-4d79dbb7ab50,L1,reviewed implementation,mobileapp/ios/tests/NotificationResponseCompletionChecks.swift,20,reviewed-selector,notification response completion checks passed,False,SCENE-MIG-001
+MAP-88eca3d41bfd,L1,reviewed implementation,mobileapp/ios/tests/NotificationResponsePayloadChecks.swift,70,reviewed-selector,notification response payload and queue checks passed,False,SCENE-MIG-001
+MAP-2bf007ddc23d,L1,reviewed implementation,mobileapp/ios/tests/NotificationResponsePayloadChecks.swift,16,reviewed-selector,let activityPayload = sceneUserActivityPayload,False,SCENE-MIG-001
+MAP-4eba460f385e,L1,reviewed implementation,mobileapp/ios/tests/NotificationResponsePayloadChecks.swift,20,reviewed-selector,"retainHeadlessSceneLinks(urls: [sceneURL], activities: [activity])",False,SCENE-MIG-001
 MAP-40893b89cbd9,G,reviewed implementation,mobileapp/metro.config.js,11,reviewed-selector,const config =,False,CT-SCOPE
 LEG-8af4b5717085,G,RN / mobile harness,mobileapp/scripts/android_delivery_test.py,17,unittest,test_versions_are_monotonic_and_unambiguous,False,legacy-not-retrospectively-reviewed
 LEG-90cc6b5fa0bd,G,RN / mobile harness,mobileapp/scripts/android_delivery_test.py,33,unittest,test_elf_requires_real_16kb_load_alignment,False,legacy-not-retrospectively-reviewed
@@ -4446,8 +4451,25 @@ LEG-6f792759097e,L1,RN / mobile harness,mobileapp/src/pairing/store.test.ts,237,
 LEG-2f070febef58,L1,RN / mobile harness,mobileapp/src/platformReleaseNotes.test.ts,6,test,iOS keeps its archive; Android never inherits iPhone-only historical releases,False,legacy-not-retrospectively-reviewed
 LEG-83c398034235,L1,RN / mobile harness,mobileapp/src/push/android.test.ts,11,test,missing configuration does not create a fake registration,False,legacy-not-retrospectively-reviewed
 LEG-3410a0b99aa3,L1,RN / mobile harness,mobileapp/src/push/android.test.ts,15,test,"FCM token refresh, one-use cold tap and live tap share lifecycle without executing digits",False,legacy-not-retrospectively-reviewed
-LEG-c0039196e4f2,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,29,test,"the launch notification is acted on once, not on every server switch",False,legacy-not-retrospectively-reviewed
-LEG-a79023052203,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,39,test,a launch with no notification taps nothing,False,legacy-not-retrospectively-reviewed
+MAP-4aec1b6dc3b7,L1,reviewed implementation,mobileapp/src/push/initialPermissionConcurrency.test.ts,15,reviewed-selector,"requests permission despite a stalled initial response, then delivers the late action once",False,SCENE-MIG-003
+MAP-27c1f05fe1bb,L1,reviewed implementation,mobileapp/src/push/initialPermissionConcurrency.test.ts,29,reviewed-selector,ignores an initial response that arrives after teardown,False,SCENE-MIG-003
+MAP-a29517909a3d,L1,reviewed implementation,mobileapp/src/push/initialPermissionConcurrency.test.ts,77,reviewed-selector,delivers an initial action without waiting for permission,False,SCENE-MIG-003
+MAP-82e358ff5f58,L1,reviewed implementation,mobileapp/src/push/initialPermissionConcurrency.test.ts,40,reviewed-selector,hands a late initial response to the live bridge after a server switch,False,SCENE-MIG-003
+MAP-40ca9ad91fa7,L1,reviewed implementation,mobileapp/src/push/initialPermissionConcurrency.test.ts,55,reviewed-selector,cancels a bridge immediately when permission is pending and hands the action to its replacement,False,SCENE-MIG-003
+MAP-c60f9dfaa54a,L1,reviewed implementation,mobileapp/src/push/initialPermissionConcurrency.test.ts,90,reviewed-selector,reads authorization settings only for a pending debug request and stops on teardown,False,SCENE-MIG-003
+LEG-c0039196e4f2,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,32,test,"the launch notification is acted on once, not on every server switch",False,legacy-not-retrospectively-reviewed
+LEG-a79023052203,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,42,test,a launch with no notification taps nothing,False,legacy-not-retrospectively-reviewed
+MAP-43a5acb09524,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,124,reviewed-selector,a buffered native response and the launch copy dispatch one quick reply,False,SCENE-MIG-003
+MAP-e583ab6da371,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,136,reviewed-selector,a native buffer failure still delivers the bridge launch notification,False,SCENE-MIG-003
+MAP-f6ca99aeb79b,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,58,reviewed-selector,the same quick action arriving from scene and delegate sends once,False,SCENE-MIG-003
+MAP-49ac3dbf1487,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,145,reviewed-selector,a stalled native drain leaves initial fallback and foreground recovery usable,False,SCENE-MIG-003
+MAP-14fb52a6ba3b,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,192,reviewed-selector,the initial action does not wait for notification permission,False,SCENE-MIG-003
+MAP-b3afaf2b1f68,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,167,reviewed-selector,foreground recovery first delivers a retained response after the initial drain stalls,False,SCENE-MIG-003
+MAP-f3c8f4404ee8,L1,reviewed implementation,mobileapp/src/push/permissionTrace.test.ts,24,reviewed-selector,probe entry distinguishes a pending native settings callback from a timer that never ran,False,SCENE-MIG-003
+MAP-88ba30480bfb,L1,reviewed implementation,mobileapp/src/push/permissionTrace.test.ts,39,reviewed-selector,abort before the probe records closure and cancels the existing timer,False,SCENE-MIG-003
+MAP-550ae988375a,L1,reviewed implementation,mobileapp/src/push/permissionTrace.test.ts,48,reviewed-selector,logging off adds neither a probe nor teardown records,False,SCENE-MIG-003
+MAP-13e1cb6d9b1b,L1,reviewed implementation,mobileapp/src/push/responseCompletion.test.ts,14,reviewed-selector,waits for a %s reply and suppresses a duplicate while pending,False,SCENE-MIG-003
+MAP-9ff3d70517f7,L1,reviewed implementation,mobileapp/src/push/responseCompletion.test.ts,42,reviewed-selector,a normal notification tap acknowledges without waiting for a reply,False,SCENE-MIG-003
 LEG-fbb65bc19bd8,L1,RN / mobile harness,mobileapp/src/push/sync.test.ts,9,it,"registers a selected Mac and unregisters a muted Mac, including silent badge pushes",False,legacy-not-retrospectively-reviewed
 LEG-c01ee8fb12d3,L1,RN / mobile harness,mobileapp/src/push/sync.test.ts,20,it,tries a reported alternate route and leaves a failed sync pending,False,legacy-not-retrospectively-reviewed
 LEG-7719b4cb3445,L1,RN / mobile harness,mobileapp/src/push/sync.test.ts,31,it,never registers a guest or an unknown token,False,legacy-not-retrospectively-reviewed
@@ -5578,6 +5600,9 @@ LEG-c1dcae648f3a,L2,RN / mobile harness,mobileapp/src/ui/WhatsNewModal.test.tsx,
 LEG-bde490778c31,L2,RN / mobile harness,mobileapp/src/ui/WhatsNewModal.test.tsx,91,test,no Pressable wraps the ScrollView,False,legacy-not-retrospectively-reviewed
 LEG-147ace8d3cd1,L2,RN / mobile harness,mobileapp/src/ui/WhatsNewModal.test.tsx,103,test,tapping the backdrop closes,False,legacy-not-retrospectively-reviewed
 LEG-f8eb4ad15194,L2,RN / mobile harness,mobileapp/src/ui/WhatsNewModal.test.tsx,121,test,the newest version opens even when the entries arrive after mount,False,legacy-not-retrospectively-reviewed
+MAP-20f88ab9ada6,L1,reviewed implementation,mobileapp/src/ui/WorkspaceSurface.sceneMetrics.test.tsx,17,reviewed-selector,"keeps background active until a current scene exists, then follows native inset changes",False,SCENE-MIG-002
+MAP-2535f52a828e,L1,reviewed implementation,mobileapp/src/ui/WorkspaceSurface.sceneMetrics.test.tsx,42,reviewed-selector,rejects a zero-sized scene instead of seeding fake metrics,False,SCENE-MIG-002
+MAP-501a6457c760,L1,reviewed implementation,mobileapp/src/ui/WorkspaceSurface.test.tsx,12,reviewed-selector,starts background handling before native insets and mounts the visual tree after measurement,False,SCENE-MIG-002
 LEG-c8dea3de822d,L2,RN / mobile harness,mobileapp/src/ui/activity.test.ts,6,test,delegation previews the purpose instead of JSON or an internal task key,False,legacy-not-retrospectively-reviewed
 LEG-6e25f30d9b2c,L2,RN / mobile harness,mobileapp/src/ui/activity.test.ts,13,test.each(),%s previews recorded timing without claiming elapsed time or a result,True,legacy-not-retrospectively-reviewed
 LEG-68925287819f,L2,RN / mobile harness,mobileapp/src/ui/activity.test.ts,22,test,old object arguments work and unknown units are never inferred,False,legacy-not-retrospectively-reviewed
@@ -5995,11 +6020,20 @@ LEG-fe83c539204c,L2,RN / mobile harness,mobileapp/src/ui/time.test.ts,84,it,hold
 LEG-7e1e7c1d7954,L2,RN / mobile harness,mobileapp/src/ui/useKeyboardChrome.test.tsx,56,test,"keyboard timing folds the chrome, and dismissal preserves the current scroll state",False,legacy-not-retrospectively-reviewed
 LEG-bd6085e9a14d,L2,RN / mobile harness,mobileapp/src/ui/useKeyboardChrome.test.tsx,77,test,Reduce Motion folds and restores without animation,False,legacy-not-retrospectively-reviewed
 LEG-aab5aceea630,L2,RN / mobile harness,mobileapp/src/ui/useModalDismiss.test.tsx,6,test.each(),%s completes each modal lifecycle once,True,legacy-not-retrospectively-reviewed
+MAP-e3657e854bc3,L1,reviewed implementation,mobileapp/src/ui/windowMetrics.test.tsx,14,reviewed-selector,"root view resizes update the workspace even when native dimensions do not, without remounting the reader",False,SCENE-MIG-002
+MAP-109f723286a2,L1,reviewed implementation,mobileapp/src/usage/UsageWidgetBridge.initialDemoLink.test.tsx,15,reviewed-selector,a demo-rejected initial link cannot replay when the connection becomes an owner,False,SCENE-MIG-004
+MAP-cd8094a5d6ae,L1,reviewed implementation,mobileapp/src/usage/UsageWidgetBridge.initialLink.test.tsx,15,reviewed-selector,a guest-rejected initial link cannot replay when the connection becomes owner,False,SCENE-MIG-004
+MAP-2ec345b59070,L1,reviewed implementation,mobileapp/src/usage/UsageWidgetBridge.sceneEvents.test.tsx,14,reviewed-selector,retained scene availability delivers each permitted intent once and rejects guest replay,False,SCENE-MIG-004
 LEG-3de06c104722,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,22,test,"pairing lifecycle sends only the current owner URL, including same-address token rotation",False,legacy-not-retrospectively-reviewed
 LEG-abfa9a8366d0,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,46,test,"a widget opens usage without HQ, dismisses, and ignores guest links and private URL parameters",False,legacy-not-retrospectively-reviewed
-LEG-7419b6327ede,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,73,test,widget links cannot select a server or smuggle credentials,False,legacy-not-retrospectively-reviewed
-LEG-ba603cf68958,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,81,test,changing a connection closes the old sheet and discards its late response,False,legacy-not-retrospectively-reviewed
-LEG-483418e96a4d,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,106,test,Android snapshot labels handle unnamed plans and contain no pairing credential,False,legacy-not-retrospectively-reviewed
+LEG-7419b6327ede,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,81,test,widget links cannot select a server or smuggle credentials,False,legacy-not-retrospectively-reviewed
+LEG-ba603cf68958,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,89,test,changing a connection closes the old sheet and discards its late response,False,legacy-not-retrospectively-reviewed
+LEG-483418e96a4d,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,259,test,Android snapshot labels handle unnamed plans and contain no pairing credential,False,legacy-not-retrospectively-reviewed
+MAP-732a597f88bf,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,118,reviewed-selector,a headless scene link is retained until the visual consumer opens and acknowledges it,False,SCENE-MIG-004
+MAP-3001d0088bec,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,142,reviewed-selector,a queued scene link rejected for a guest cannot open after switching to owner,False,SCENE-MIG-004
+MAP-3fba88d7af6d,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,167,reviewed-selector,a retained scene link is retried when the app becomes active,False,SCENE-MIG-004
+MAP-25be587027d6,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,195,reviewed-selector,an active transition during a failed drain still retries the retained link,False,SCENE-MIG-004
+MAP-68bf80153330,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,224,reviewed-selector,foreground recovery bypasses a stalled scene-link drain and suppresses its late copy,False,SCENE-MIG-004
 LEG-18bbe205ead8,L2,Worker,relay-worker/src/fcm.test.ts,8,test,`FCM contract: ${row.name}`,True,legacy-not-retrospectively-reviewed
 LEG-71aba9531bf9,L2,Worker,relay-worker/src/fcm.test.ts,9,test,"Android never falls through to APNs, including missing FCM config",False,legacy-not-retrospectively-reviewed
 LEG-d69d7e5c069d,L2,Worker,relay-worker/src/fcm.test.ts,20,test,"unsupported activities, oversized bodies and malformed credentials fail closed",False,legacy-not-retrospectively-reviewed

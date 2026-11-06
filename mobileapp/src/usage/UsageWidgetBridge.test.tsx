@@ -50,9 +50,10 @@ test('a widget opens usage without HQ, dismisses, and ignores guest links and pr
   jest.spyOn(Linking, 'getInitialURL').mockResolvedValue('gtmux://usage');
   let onURL: any;
   const remove = jest.fn();
-  jest.spyOn(Linking, 'addEventListener').mockImplementation((_, callback) => {
+  const subscribe = jest.spyOn(Linking, 'addEventListener').mockImplementation((_, callback) => {
     onURL = callback; return {remove} as unknown as ReturnType<typeof Linking.addEventListener>;
   });
+  subscribe.mockClear();
   let tree!: renderer.ReactTestRenderer;
   await act(async () => { tree = renderer.create(<UsageWidgetBridge />); });
   expect(sheet().visible).toBe(true);
@@ -64,10 +65,17 @@ test('a widget opens usage without HQ, dismisses, and ignores guest links and pr
   expect(sheet().visible).toBe(false);
   mockAgents = {...mockAgents, isGuest: true};
   await act(async () => tree.update(<UsageWidgetBridge />));
+  expect(subscribe).toHaveBeenCalledTimes(1);
+  expect(remove).not.toHaveBeenCalled();
   await act(async () => onURL({url: 'gtmux://usage'}));
   expect(sheet().visible).toBe(false);
+  const beforeOwner = mockUsage.mock.calls.length;
+  mockAgents = {...mockAgents, isGuest: false};
+  await act(async () => tree.update(<UsageWidgetBridge />));
+  expect(sheet().visible).toBe(false);
+  expect(mockUsage).toHaveBeenCalledTimes(beforeOwner);
   await act(async () => tree.unmount());
-  expect(remove).toHaveBeenCalled();
+  expect(remove).toHaveBeenCalledTimes(1);
 });
 
 test('widget links cannot select a server or smuggle credentials', () => {
@@ -85,21 +93,166 @@ test('changing a connection closes the old sheet and discards its late response'
   mockAgents = {client: {usage: old}, agents: [], isGuest: false};
   jest.spyOn(Linking, 'getInitialURL').mockResolvedValue(null);
   let onURL: any;
-  jest.spyOn(Linking, 'addEventListener').mockImplementation((_, callback) => {
-    onURL = callback; return {remove: jest.fn()} as unknown as ReturnType<typeof Linking.addEventListener>;
+  const remove = jest.fn();
+  const subscribe = jest.spyOn(Linking, 'addEventListener').mockImplementation((_, callback) => {
+    onURL = callback; return {remove} as unknown as ReturnType<typeof Linking.addEventListener>;
   });
+  subscribe.mockClear();
   let tree!: renderer.ReactTestRenderer;
   await act(async () => { tree = renderer.create(<UsageWidgetBridge />); });
   await act(async () => onURL({url: 'gtmux://usage'}));
   expect(sheet().visible).toBe(true);
   mockAgents = {...mockAgents, client: {usage: jest.fn().mockResolvedValue({limits: {at: 2}})}};
   await act(async () => tree.update(<UsageWidgetBridge />));
+  expect(subscribe).toHaveBeenCalledTimes(1);
+  expect(remove).not.toHaveBeenCalled();
   expect(sheet().visible).toBe(false);
   await act(async () => onURL({url: 'gtmux://usage'}));
   expect(sheet().usage).toEqual({limits: {at: 2}});
   await act(async () => resolveOld({limits: {at: 1}}));
   expect(sheet().usage).toEqual({limits: {at: 2}});
   await act(async () => tree.unmount());
+  expect(remove).toHaveBeenCalledTimes(1);
+});
+
+test('a headless scene link is retained until the visual consumer opens and acknowledges it', async () => {
+  mockApp = {ready: true, pal: {}, lang: 'en'};
+  const usage = jest.fn().mockResolvedValue({limits: {windows: []}});
+  mockAgents = {client: {usage}, agents: [], isGuest: false};
+  const previous = NativeModules.GtmuxNotificationResponses;
+  let pending = [{id: 'scene-1', url: 'gtmux://usage'}];
+  const acknowledgeSceneLink = jest.fn((id: string) => { pending = pending.filter(item => item.id !== id); });
+  NativeModules.GtmuxNotificationResponses = {pendingSceneLinks: jest.fn(async () => pending), acknowledgeSceneLink};
+  jest.spyOn(Linking, 'getInitialURL').mockResolvedValue(null);
+  let tree!: renderer.ReactTestRenderer;
+  try {
+    await act(async () => { tree = renderer.create(<UsageWidgetBridge />); });
+    expect(sheet().visible).toBe(true);
+    expect(usage).toHaveBeenCalledTimes(1);
+    expect(acknowledgeSceneLink).toHaveBeenCalledWith('scene-1');
+    await act(async () => sheet().onClose());
+    await act(async () => tree.update(<UsageWidgetBridge />));
+    expect(sheet().visible).toBe(false);
+  } finally {
+    if (tree) await act(async () => tree.unmount());
+    NativeModules.GtmuxNotificationResponses = previous;
+  }
+});
+
+test('a queued scene link rejected for a guest cannot open after switching to owner', async () => {
+  mockApp = {ready: true, pal: {}, lang: 'en'};
+  const usage = jest.fn().mockResolvedValue({limits: {windows: []}});
+  mockAgents = {client: {usage}, agents: [], isGuest: true};
+  const previous = NativeModules.GtmuxNotificationResponses;
+  const acknowledgeSceneLink = jest.fn();
+  NativeModules.GtmuxNotificationResponses = {
+    pendingSceneLinks: jest.fn(async () => [{id: 'guest-scene', url: 'gtmux://usage'}]), acknowledgeSceneLink,
+  };
+  jest.spyOn(Linking, 'getInitialURL').mockResolvedValue(null);
+  let tree!: renderer.ReactTestRenderer;
+  try {
+    await act(async () => { tree = renderer.create(<UsageWidgetBridge />); });
+    expect(acknowledgeSceneLink).toHaveBeenCalledWith('guest-scene');
+    expect(sheet().visible).toBe(false);
+    mockAgents = {...mockAgents, isGuest: false};
+    await act(async () => tree.update(<UsageWidgetBridge />));
+    expect(sheet().visible).toBe(false);
+    expect(usage).not.toHaveBeenCalled();
+  } finally {
+    if (tree) await act(async () => tree.unmount());
+    NativeModules.GtmuxNotificationResponses = previous;
+  }
+});
+
+test('a retained scene link is retried when the app becomes active', async () => {
+  mockApp = {ready: true, pal: {}, lang: 'en'};
+  const usage = jest.fn().mockResolvedValue({limits: {windows: []}});
+  mockAgents = {client: {usage}, agents: [], isGuest: false};
+  const previous = NativeModules.GtmuxNotificationResponses;
+  const acknowledgeSceneLink = jest.fn();
+  const pendingSceneLinks = jest.fn().mockRejectedValueOnce(new Error('not ready'))
+    .mockResolvedValue([{id: 'retry-scene', url: 'gtmux://usage'}]);
+  NativeModules.GtmuxNotificationResponses = {pendingSceneLinks, acknowledgeSceneLink};
+  jest.spyOn(Linking, 'getInitialURL').mockResolvedValue(null);
+  let onState: any;
+  jest.spyOn(AppState, 'addEventListener').mockImplementation((_, callback) => {
+    onState = callback; return {remove: jest.fn()} as any;
+  });
+  let tree!: renderer.ReactTestRenderer;
+  try {
+    await act(async () => { tree = renderer.create(<UsageWidgetBridge />); });
+    expect(sheet().visible).toBe(false);
+    await act(async () => onState('active'));
+    expect(sheet().visible).toBe(true);
+    expect(usage).toHaveBeenCalledTimes(1);
+    expect(acknowledgeSceneLink).toHaveBeenCalledWith('retry-scene');
+  } finally {
+    if (tree) await act(async () => tree.unmount());
+    NativeModules.GtmuxNotificationResponses = previous;
+  }
+});
+
+test('an active transition during a failed drain still retries the retained link', async () => {
+  mockApp = {ready: true, pal: {}, lang: 'en'};
+  const usage = jest.fn().mockResolvedValue({limits: {windows: []}});
+  mockAgents = {client: {usage}, agents: [], isGuest: false};
+  const previous = NativeModules.GtmuxNotificationResponses;
+  let rejectFirst!: (reason: Error) => void;
+  const acknowledgeSceneLink = jest.fn();
+  const pendingSceneLinks = jest.fn()
+    .mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectFirst = reject; }))
+    .mockResolvedValue([{id: 'active-race', url: 'gtmux://usage'}]);
+  NativeModules.GtmuxNotificationResponses = {pendingSceneLinks, acknowledgeSceneLink};
+  jest.spyOn(Linking, 'getInitialURL').mockResolvedValue(null);
+  let onState: any;
+  jest.spyOn(AppState, 'addEventListener').mockImplementation((_, callback) => {
+    onState = callback; return {remove: jest.fn()} as any;
+  });
+  let tree!: renderer.ReactTestRenderer;
+  try {
+    await act(async () => { tree = renderer.create(<UsageWidgetBridge />); });
+    await act(async () => { onState('active'); rejectFirst(new Error('not ready')); });
+    expect(sheet().visible).toBe(true);
+    expect(usage).toHaveBeenCalledTimes(1);
+    expect(acknowledgeSceneLink).toHaveBeenCalledWith('active-race');
+  } finally {
+    if (tree) await act(async () => tree.unmount());
+    NativeModules.GtmuxNotificationResponses = previous;
+  }
+});
+
+test('foreground recovery bypasses a stalled scene-link drain and suppresses its late copy', async () => {
+  mockApp = {ready: true, pal: {}, lang: 'en'};
+  const usage = jest.fn().mockResolvedValue({limits: {windows: []}});
+  mockAgents = {client: {usage}, agents: [], isGuest: false};
+  const previous = NativeModules.GtmuxNotificationResponses;
+  const item = {id: 'stalled-link', url: 'gtmux://usage'};
+  let resolveFirst!: (value: Array<typeof item>) => void;
+  const acknowledgeSceneLink = jest.fn();
+  const pendingSceneLinks = jest.fn()
+    .mockImplementationOnce(() => new Promise(resolve => { resolveFirst = resolve; }))
+    .mockResolvedValue([item]);
+  NativeModules.GtmuxNotificationResponses = {pendingSceneLinks, acknowledgeSceneLink};
+  jest.spyOn(Linking, 'getInitialURL').mockResolvedValue(null);
+  let onState: any;
+  jest.spyOn(AppState, 'addEventListener').mockImplementation((_, callback) => {
+    onState = callback; return {remove: jest.fn()} as any;
+  });
+  let tree!: renderer.ReactTestRenderer;
+  try {
+    await act(async () => { tree = renderer.create(<UsageWidgetBridge />); });
+    expect(sheet().visible).toBe(false);
+    await act(async () => onState('active'));
+    expect(sheet().visible).toBe(true);
+    expect(acknowledgeSceneLink).toHaveBeenCalledWith('stalled-link');
+    await act(async () => sheet().onClose());
+    await act(async () => resolveFirst([item]));
+    expect(sheet().visible).toBe(false);
+    expect(usage).toHaveBeenCalledTimes(1);
+  } finally {
+    if (tree) await act(async () => tree.unmount());
+    NativeModules.GtmuxNotificationResponses = previous;
+  }
 });
 
 

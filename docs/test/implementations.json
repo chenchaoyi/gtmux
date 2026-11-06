@@ -491,5 +491,139 @@
       "main App sidebar geometry follows the new root even when RN retains its old phone width",
       "a real anchored menu stays inside a new narrow root while RN width remains stale"
     ]
+  },
+  "mobileapp/ios/tests/NotificationResponsePayloadChecks.swift": {
+    "cases": [
+      "SCENE-MIG-001"
+    ],
+    "selectors": [
+      "notification response payload and queue checks passed",
+      "let activityPayload = sceneUserActivityPayload",
+      "retainHeadlessSceneLinks(urls: [sceneURL], activities: [activity])"
+    ]
+  },
+  "mobileapp/ios/tests/NotificationResponseCompletionChecks.swift": {
+    "cases": [
+      "SCENE-MIG-001"
+    ],
+    "selectors": [
+      "notification response completion checks passed"
+    ]
+  },
+  "mobileapp/__tests__/App.notificationBootstrap.test.tsx": {
+    "cases": [
+      "SCENE-MIG-002"
+    ],
+    "selectors": [
+      "starts the actual notification bridge while the visual safe area has no metrics"
+    ]
+  },
+  "mobileapp/src/ui/WorkspaceSurface.test.tsx": {
+    "cases": [
+      "SCENE-MIG-002"
+    ],
+    "selectors": [
+      "starts background handling before native insets and mounts the visual tree after measurement"
+    ]
+  },
+  "mobileapp/src/ui/WorkspaceSurface.sceneMetrics.test.tsx": {
+    "cases": [
+      "SCENE-MIG-002"
+    ],
+    "selectors": [
+      "keeps background active until a current scene exists, then follows native inset changes",
+      "rejects a zero-sized scene instead of seeding fake metrics"
+    ]
+  },
+  "mobileapp/src/ui/windowMetrics.test.tsx": {
+    "cases": [
+      "SCENE-MIG-002"
+    ],
+    "selectors": [
+      "root view resizes update the workspace even when native dimensions do not, without remounting the reader"
+    ]
+  },
+  "mobileapp/src/push/launchNotification.test.ts": {
+    "cases": [
+      "SCENE-MIG-003"
+    ],
+    "selectors": [
+      "a buffered native response and the launch copy dispatch one quick reply",
+      "a native buffer failure still delivers the bridge launch notification",
+      "the same quick action arriving from scene and delegate sends once",
+      "a stalled native drain leaves initial fallback and foreground recovery usable",
+      "the initial action does not wait for notification permission",
+      "foreground recovery first delivers a retained response after the initial drain stalls"
+    ]
+  },
+  "mobileapp/src/push/initialPermissionConcurrency.test.ts": {
+    "cases": [
+      "SCENE-MIG-003"
+    ],
+    "selectors": [
+      "requests permission despite a stalled initial response, then delivers the late action once",
+      "ignores an initial response that arrives after teardown",
+      "delivers an initial action without waiting for permission",
+      "hands a late initial response to the live bridge after a server switch",
+      "cancels a bridge immediately when permission is pending and hands the action to its replacement",
+      "reads authorization settings only for a pending debug request and stops on teardown"
+    ]
+  },
+  "mobileapp/src/push/responseCompletion.test.ts": {
+    "cases": [
+      "SCENE-MIG-003"
+    ],
+    "selectors": [
+      "waits for a %s reply and suppresses a duplicate while pending",
+      "a normal notification tap acknowledges without waiting for a reply"
+    ]
+  },
+  "mobileapp/src/push/permissionTrace.test.ts": {
+    "cases": [
+      "SCENE-MIG-003"
+    ],
+    "selectors": [
+      "probe entry distinguishes a pending native settings callback from a timer that never ran",
+      "abort before the probe records closure and cancels the existing timer",
+      "logging off adds neither a probe nor teardown records"
+    ]
+  },
+  "mobileapp/src/usage/UsageWidgetBridge.test.tsx": {
+    "cases": [
+      "SCENE-MIG-004"
+    ],
+    "selectors": [
+      "a widget opens usage without HQ, dismisses, and ignores guest links and private URL parameters",
+      "changing a connection closes the old sheet and discards its late response",
+      "a headless scene link is retained until the visual consumer opens and acknowledges it",
+      "a queued scene link rejected for a guest cannot open after switching to owner",
+      "a retained scene link is retried when the app becomes active",
+      "an active transition during a failed drain still retries the retained link",
+      "foreground recovery bypasses a stalled scene-link drain and suppresses its late copy"
+    ]
+  },
+  "mobileapp/src/usage/UsageWidgetBridge.initialLink.test.tsx": {
+    "cases": [
+      "SCENE-MIG-004"
+    ],
+    "selectors": [
+      "a guest-rejected initial link cannot replay when the connection becomes owner"
+    ]
+  },
+  "mobileapp/src/usage/UsageWidgetBridge.initialDemoLink.test.tsx": {
+    "cases": [
+      "SCENE-MIG-004"
+    ],
+    "selectors": [
+      "a demo-rejected initial link cannot replay when the connection becomes an owner"
+    ]
+  },
+  "mobileapp/src/usage/UsageWidgetBridge.sceneEvents.test.tsx": {
+    "cases": [
+      "SCENE-MIG-004"
+    ],
+    "selectors": [
+      "retained scene availability delivers each permitted intent once and rejects guest replay"
+    ]
   }
 }

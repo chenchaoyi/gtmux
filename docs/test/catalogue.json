@@ -40589,13 +40589,13 @@
       ]
     },
     "mobileapp/src/push/launchNotification.test.ts": {
-      "sha256": "ba9f0f05894680fb220febaebd412e8818db9024e23d31f78384e6e2b92ae889",
+      "sha256": "80ac185b0718e90a4f8f9842deeb7778a35a30666a03db9845a02aa23348e6b8",
       "layer": "L1",
       "stack": "RN / mobile harness",
       "cases": [
         {
           "id": "LEG-c0039196e4f2",
-          "line": 29,
+          "line": 32,
           "kind": "test",
           "name": "the launch notification is acted on once, not on every server switch",
           "dynamic": false,
@@ -40603,11 +40603,65 @@
         },
         {
           "id": "LEG-a79023052203",
-          "line": 39,
+          "line": 42,
           "kind": "test",
           "name": "a launch with no notification taps nothing",
           "dynamic": false,
           "layer": "L1"
+        },
+        {
+          "id": "MAP-43a5acb09524",
+          "line": 124,
+          "kind": "reviewed-selector",
+          "name": "a buffered native response and the launch copy dispatch one quick reply",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-003"
+        },
+        {
+          "id": "MAP-e583ab6da371",
+          "line": 136,
+          "kind": "reviewed-selector",
+          "name": "a native buffer failure still delivers the bridge launch notification",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-003"
+        },
+        {
+          "id": "MAP-f6ca99aeb79b",
+          "line": 58,
+          "kind": "reviewed-selector",
+          "name": "the same quick action arriving from scene and delegate sends once",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-003"
+        },
+        {
+          "id": "MAP-49ac3dbf1487",
+          "line": 145,
+          "kind": "reviewed-selector",
+          "name": "a stalled native drain leaves initial fallback and foreground recovery usable",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-003"
+        },
+        {
+          "id": "MAP-14fb52a6ba3b",
+          "line": 192,
+          "kind": "reviewed-selector",
+          "name": "the initial action does not wait for notification permission",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-003"
+        },
+        {
+          "id": "MAP-b3afaf2b1f68",
+          "line": 167,
+          "kind": "reviewed-selector",
+          "name": "foreground recovery first delivers a retained response after the initial drain stalls",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-003"
         }
       ]
     },
@@ -54182,7 +54236,7 @@
       ]
     },
     "mobileapp/src/usage/UsageWidgetBridge.test.tsx": {
-      "sha256": "7e82bc7bddf5c255021efda617f4cde70e0160e939b3928842876155358d4ee6",
+      "sha256": "e5ddd8e826f6a9674635afc368e9fc211ae1a1a713ed4e907ad13150ef6f17ab",
       "layer": "L1",
       "stack": "RN / mobile harness",
       "cases": [
@@ -54204,7 +54258,7 @@
         },
         {
           "id": "LEG-7419b6327ede",
-          "line": 73,
+          "line": 81,
           "kind": "test",
           "name": "widget links cannot select a server or smuggle credentials",
           "dynamic": false,
@@ -54212,7 +54266,7 @@
         },
         {
           "id": "LEG-ba603cf68958",
-          "line": 81,
+          "line": 89,
           "kind": "test",
           "name": "changing a connection closes the old sheet and discards its late response",
           "dynamic": false,
@@ -54220,11 +54274,56 @@
         },
         {
           "id": "LEG-483418e96a4d",
-          "line": 106,
+          "line": 259,
           "kind": "test",
           "name": "Android snapshot labels handle unnamed plans and contain no pairing credential",
           "dynamic": false,
           "layer": "L1"
+        },
+        {
+          "id": "MAP-732a597f88bf",
+          "line": 118,
+          "kind": "reviewed-selector",
+          "name": "a headless scene link is retained until the visual consumer opens and acknowledges it",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-004"
+        },
+        {
+          "id": "MAP-3001d0088bec",
+          "line": 142,
+          "kind": "reviewed-selector",
+          "name": "a queued scene link rejected for a guest cannot open after switching to owner",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-004"
+        },
+        {
+          "id": "MAP-3fba88d7af6d",
+          "line": 167,
+          "kind": "reviewed-selector",
+          "name": "a retained scene link is retried when the app becomes active",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-004"
+        },
+        {
+          "id": "MAP-25be587027d6",
+          "line": 195,
+          "kind": "reviewed-selector",
+          "name": "an active transition during a failed drain still retries the retained link",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-004"
+        },
+        {
+          "id": "MAP-68bf80153330",
+          "line": 224,
+          "kind": "reviewed-selector",
+          "name": "foreground recovery bypasses a stalled scene-link drain and suppresses its late copy",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-004"
         }
       ]
     },
@@ -57804,6 +57903,297 @@
         }
       ],
       "sha256": "cb53e5281e335867ed98e49b392d1f93069f66096142fc969b41f48a84fa3238"
+    },
+    "mobileapp/__tests__/App.notificationBootstrap.test.tsx": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-265918ac6bc3",
+          "line": 34,
+          "kind": "reviewed-selector",
+          "name": "starts the actual notification bridge while the visual safe area has no metrics",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        }
+      ],
+      "sha256": "3a98a8e35f00415edabb653e372133c111c9466b6605047109dd07f741162e85"
+    },
+    "mobileapp/ios/tests/NotificationResponseCompletionChecks.swift": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-4d79dbb7ab50",
+          "line": 20,
+          "kind": "reviewed-selector",
+          "name": "notification response completion checks passed",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-001"
+        }
+      ],
+      "sha256": "a361ca5785afb429111ebf8deebcb4f831cb0b7b8b5cb4d2499ef27921667dc8"
+    },
+    "mobileapp/ios/tests/NotificationResponsePayloadChecks.swift": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-88eca3d41bfd",
+          "line": 70,
+          "kind": "reviewed-selector",
+          "name": "notification response payload and queue checks passed",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-001"
+        },
+        {
+          "id": "MAP-2bf007ddc23d",
+          "line": 16,
+          "kind": "reviewed-selector",
+          "name": "let activityPayload = sceneUserActivityPayload",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-001"
+        },
+        {
+          "id": "MAP-4eba460f385e",
+          "line": 20,
+          "kind": "reviewed-selector",
+          "name": "retainHeadlessSceneLinks(urls: [sceneURL], activities: [activity])",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-001"
+        }
+      ],
+      "sha256": "bcefc518eb97a830a83f34cc2d5402f6621cee2d18a36aeadb8d188b1264bcf5"
+    },
+    "mobileapp/src/push/initialPermissionConcurrency.test.ts": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-4aec1b6dc3b7",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "requests permission despite a stalled initial response, then delivers the late action once",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-003"
+        },
+        {
+          "id": "MAP-27c1f05fe1bb",
+          "line": 29,
+          "kind": "reviewed-selector",
+          "name": "ignores an initial response that arrives after teardown",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-003"
+        },
+        {
+          "id": "MAP-a29517909a3d",
+          "line": 77,
+          "kind": "reviewed-selector",
+          "name": "delivers an initial action without waiting for permission",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-003"
+        },
+        {
+          "id": "MAP-82e358ff5f58",
+          "line": 40,
+          "kind": "reviewed-selector",
+          "name": "hands a late initial response to the live bridge after a server switch",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-003"
+        },
+        {
+          "id": "MAP-40ca9ad91fa7",
+          "line": 55,
+          "kind": "reviewed-selector",
+          "name": "cancels a bridge immediately when permission is pending and hands the action to its replacement",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-003"
+        },
+        {
+          "id": "MAP-c60f9dfaa54a",
+          "line": 90,
+          "kind": "reviewed-selector",
+          "name": "reads authorization settings only for a pending debug request and stops on teardown",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-003"
+        }
+      ],
+      "sha256": "05b011876824bb643553a724dff9729f4897c0e8fe2b5fba6967188acf3d5c50"
+    },
+    "mobileapp/src/push/permissionTrace.test.ts": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f3c8f4404ee8",
+          "line": 24,
+          "kind": "reviewed-selector",
+          "name": "probe entry distinguishes a pending native settings callback from a timer that never ran",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-003"
+        },
+        {
+          "id": "MAP-88ba30480bfb",
+          "line": 39,
+          "kind": "reviewed-selector",
+          "name": "abort before the probe records closure and cancels the existing timer",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-003"
+        },
+        {
+          "id": "MAP-550ae988375a",
+          "line": 48,
+          "kind": "reviewed-selector",
+          "name": "logging off adds neither a probe nor teardown records",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-003"
+        }
+      ],
+      "sha256": "7be6c7be8bb7d01c8d46adfb7b4729c8e2a025db98f2561ffab4400f26a69b1d"
+    },
+    "mobileapp/src/push/responseCompletion.test.ts": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-13e1cb6d9b1b",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "waits for a %s reply and suppresses a duplicate while pending",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-003"
+        },
+        {
+          "id": "MAP-9ff3d70517f7",
+          "line": 42,
+          "kind": "reviewed-selector",
+          "name": "a normal notification tap acknowledges without waiting for a reply",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-003"
+        }
+      ],
+      "sha256": "3ced2b0c8b27468693a531b6d601269c688a07a4d00a8b69c6bcd7458a59a9dd"
+    },
+    "mobileapp/src/ui/WorkspaceSurface.sceneMetrics.test.tsx": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-20f88ab9ada6",
+          "line": 17,
+          "kind": "reviewed-selector",
+          "name": "keeps background active until a current scene exists, then follows native inset changes",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        },
+        {
+          "id": "MAP-2535f52a828e",
+          "line": 42,
+          "kind": "reviewed-selector",
+          "name": "rejects a zero-sized scene instead of seeding fake metrics",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        }
+      ],
+      "sha256": "a3c7141ebdbb7694f5af599bae676d2195c63e01c11124c06e4496d9aff757fb"
+    },
+    "mobileapp/src/ui/WorkspaceSurface.test.tsx": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-501a6457c760",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "starts background handling before native insets and mounts the visual tree after measurement",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        }
+      ],
+      "sha256": "c8cb42eb3d0044d2f4897fdd46aec96b96614cb93db76e261b37e500efc3cba0"
+    },
+    "mobileapp/src/ui/windowMetrics.test.tsx": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e3657e854bc3",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "root view resizes update the workspace even when native dimensions do not, without remounting the reader",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        }
+      ],
+      "sha256": "b2468a18c89550f02c4a7006e7b36ba378fee51a11803f75604c12a1da04a04a"
+    },
+    "mobileapp/src/usage/UsageWidgetBridge.initialDemoLink.test.tsx": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-109f723286a2",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "a demo-rejected initial link cannot replay when the connection becomes an owner",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-004"
+        }
+      ],
+      "sha256": "292eeb7794625d47463e0373e6c72553c6f4ed6b922d289ba5eef8579f3e1977"
+    },
+    "mobileapp/src/usage/UsageWidgetBridge.initialLink.test.tsx": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-cd8094a5d6ae",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "a guest-rejected initial link cannot replay when the connection becomes owner",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-004"
+        }
+      ],
+      "sha256": "ddc625eb949dc560cbfd23059f6f5e73fa1cff4054125c28461c00e8b812002d"
+    },
+    "mobileapp/src/usage/UsageWidgetBridge.sceneEvents.test.tsx": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-2ec345b59070",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "retained scene availability delivers each permitted intent once and rejects guest replay",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-004"
+        }
+      ],
+      "sha256": "1e888dc02aab7e5032db0a9e9db493d6b17490afc7e6454c7e43a6cf93b76d29"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2"

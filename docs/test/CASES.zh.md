@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1032 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1045 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
-| L1 · 单元/纯逻辑 | 3726 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 1896 | [L2.csv](cases/L2.csv) |
+| L1 · 单元/纯逻辑 | 3760 | [L1.csv](cases/L1.csv) |
+| L2 · 组件/契约 | 1899 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 86 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 93 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 12 | [M.csv](cases/M.csv) |
@@ -43,6 +43,17 @@
 | MC-HQ-OVERVIEW-BRIEF | The native row presents canonical current assessment before historical receipt text, explicitly names the unfinished goal state and never treats unavailable source metadata as an idle/completed worker; no guessed human decision or completion from titles, Stop or report prose. |
 | STOR-001 | Every carrier separates project-owned and task-temp output from gtmux configuration/runtime trees; no promoted entry required; user text and hand-edit protection preserved; second sync idempotent. |
 | STOR-002 | Both playbooks reserve gtmux-owned state and only reusable HQ knowledge tools for its home, direct project scripts/reports/builds to project/task storage, require external evidence references, and never grant automatic migration/deletion; upgrade backs up old charter, preserves LOCAL/notes and converges. |
+| SCENE-MIG-001 | Action identifier/text survive; 128 response/32 link bounds, exactly-once completion and retained unacked inputs; late duplicate completes safely; Foundation controls are not UIKit acceptance. |
+| SCENE-MIG-002 | Push can start without visual insets; zero metrics do not render a fake canvas; actual scene initializes correct insets; native changes propagate; cleanup rejects late values without duplicate subscriptions. |
+| SCENE-MIG-003 | 30s device authorization is unchanged; initial and listener setup are independent; correct action/text delivers once; active-first response not hidden by prior reply; abort removes listeners/timers, no payload logged. |
+| SCENE-MIG-004 | Stable subscribe1/remove0 until unmount remove1; latest client used; guest/demo initial URL consumed before authorization and never opens on owner change without a new link. |
+| SCENE-MIG-005 | Main compact RadarScreen vs regular SplitShell, main navigation props and pre-workspace SafeAreaProviders remain. Sidebar/menu/Diff follow new root under stale RN; real wrong geometry fails. No persistent SplitShell/inlineSelection/popTo. Zero/late/unmount/drop-draft mutants fail. Failure outside13 product paths is reported with exact minimal delta, not weakened or silently migrated. JS layout is not UIKit evidence. |
+| SCENE-MIG-006 | Two action and two link cases, original20s send/30s auth/300s action budgets, %12/text2 exactly once; foreground recovery cannot pass failed background; same actual PID/host object and new native/WDA geometry in point coordinates within1pt; unique session/draft/focus and actual interactions. Wrong shell, omitted tap/native delivery, early return/skip/missing case fail. |
+| SCENE-MIG-007 | PR15 instances:26 M/P each4 and27 candidate6+pad1. Main11:26 candidate4 and27 candidate6+pad1. A420s and other original deadlines; missing UDID/alert/skip is failure. Preserve behavior not only counts;27 old baseline remains historical failure, not expected-negative. |
+| SCENE-MIG-008 | No reused writable roots/status overwrite; original test status kept even diagnostics fail but missing evidence makes acceptance red. SDK26.2 vsXcode26.3 distinct;27.1/runtime27.0;WDA/target/signature/binary/PID identity required. Real unreadable base fails. Build once per source/toolchain/signature, never unsigned as ad-hoc. PR15/main11 exact names/steps, all selected old gates AND new gate. Bounded cleanup, no retries/deadline changes. |
+| SCENE-MIG-009 | All relevant paths select ios-scene, old quality/gates unchanged; fail closed for missing execution or cancelled; PR event base and actualmain candidate route run, no branch whitelist. actionlint1.7.7 original labels plus only xcode-27. |
+| SCENE-MIG-010 | Fresh per-launch path, no global cache; failures propagate; per-source/journey artifacts cannot overwrite others or escape assigned root; existing startup deadline not arbitrarily shortened and original failure/cleanup retained. |
+| SCENE-MIG-011 | Stable default epoch for one fake instance, explicit transcripts/permissions/CT-HTTP unchanged; diagnostics do not replace product behavior and each journey gets separate fixture state. |
 | TD-001 | Reject a changed/new test without a reviewed design; accept a mapped implementation |
 | TD-002 | Reject a tampered review seal, missing assertion description, invalid layer or unsafe path |
 | TD-003 | Reject missing/changed catalogue files and missing named implementation selectors |

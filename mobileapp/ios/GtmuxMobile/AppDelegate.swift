@@ -136,6 +136,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
           withModuleName: "GtmuxMobile", initialProperties: nil, launchOptions: options
         )
           traceNotification("headless-root-created")
+#if targetEnvironment(simulator)
+          if let root = self.headlessRootView { traceSceneHost("headless-host", root: root, window: nil) }
+#endif
         } else {
           traceNotification(self.headlessResponseStarted ? "headless-root-already-started" : "headless-factory-unavailable")
         }
@@ -217,7 +220,31 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     } else {
       factory.startReactNative(withModuleName: "GtmuxMobile", in: sceneWindow, launchOptions: options)
     }
+#if targetEnvironment(simulator)
+    if let root = sceneWindow.rootViewController?.view {
+      traceSceneHost("scene-host-attached", root: root, window: sceneWindow)
+    }
+#endif
   }
+
+#if targetEnvironment(simulator)
+  func sceneDidBecomeActive(_ scene: UIScene) {
+    if let window, let root = window.rootViewController?.view {
+      traceSceneHost("scene-host-active", root: root, window: window)
+    }
+  }
+
+  func windowScene(_ windowScene: UIWindowScene, didUpdate previousCoordinateSpace: UICoordinateSpace,
+                   interfaceOrientation previousInterfaceOrientation: UIInterfaceOrientation,
+                   traitCollection previousTraitCollection: UITraitCollection) {
+    // Read after this UIKit callback returns; do not force layout or change focus.
+    DispatchQueue.main.async { [weak self] in
+      guard let window = self?.window, window.windowScene === windowScene,
+            let root = window.rootViewController?.view else { return }
+      traceSceneHost("scene-host-updated", root: root, window: window)
+    }
+  }
+#endif
 
   func scene(_ scene: UIScene, openURLContexts contexts: Set<UIOpenURLContext>) {
     for context in contexts {
