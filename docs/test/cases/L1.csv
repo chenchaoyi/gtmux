@@ -3193,6 +3193,12 @@ MAP-ad6f801c4c8b,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts
 DG-001-f069a0,L1,RN / mobile harness,mobileapp/e2e/setup/manual-tools.test.ts,6,test,DG-001 ordinary discovery,False,DG-001
 DG-002-f069a0,L1,RN / mobile harness,mobileapp/e2e/setup/manual-tools.test.ts,19,test,DG-002 rejects missing target,False,DG-002
 DG-003-f069a0,L1,RN / mobile harness,mobileapp/e2e/setup/manual-tools.test.ts,39,test,DG-003 confirms one exact fixture pane,False,DG-003
+MAP-3702c4062f44,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.test.ts,27,reviewed-selector,a stale sample is discarded before fresh complete native layouts settle,False,DUO-039
+MAP-911ba907a3ea,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.test.ts,36,reviewed-selector,unresolved %s evidence fails within the original budget,False,DUO-039
+MAP-b9ad8b33d1aa,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.test.ts,49,reviewed-selector,"a missing diagnostic identity is an error, not an invisible view to skip",False,DUO-039
+MAP-1b80ee0aed76,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.test.ts,54,reviewed-selector,a permanent driver failure is not retried as reflow,False,DUO-039
+MAP-b70e938fbbba,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.test.ts,60,reviewed-selector,a stable sample returned after the budget cannot pass,False,DUO-039
+MAP-5623bb87b474,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.ts,12,reviewed-selector,waitForNativeTextLayout,False,DUO-039
 LEG-b16afa2cc4a9,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,26,test,an ORPHANED match still dies,False,legacy-not-retrospectively-reviewed
 LEG-0338a4b52122,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,47,test,"a failed pgrep is said aloud, not mistaken for no match",False,legacy-not-retrospectively-reviewed
 LEG-13c0b7c93b98,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,63,test,no match is not an error,False,legacy-not-retrospectively-reviewed

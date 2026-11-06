@@ -3785,11 +3785,11 @@ LEG-cb21d0627bd2,M,RN / mobile harness,mobileapp/e2e/__tests__/composer-shots.te
 LEG-63869acd3e2a,M,RN / mobile harness,mobileapp/e2e/__tests__/cursor.test.ts,41,it,opens a terminal pane and screenshots the cursor,False,legacy-not-retrospectively-reviewed
 LEG-094857d91ad5,L4,RN / mobile harness,mobileapp/e2e/__tests__/detail-chrome-textsize.test.ts,39,run,the top row keeps one line and stays on screen at the accessibility sizes,False,legacy-not-retrospectively-reviewed
 MAP-29b9b35673af,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,66,reviewed-selector,"retains the selected conversation, reading position and draft across simulator fold and unfold",False,DUO-020
-MAP-e33509324cc9,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,147,reviewed-selector,keeps Trace search and Diff open while the simulator folds and unfolds,False,"DUO-020,DUO-021"
+MAP-e33509324cc9,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,154,reviewed-selector,keeps Trace search and Diff open while the simulator folds and unfolds,False,"DUO-020,DUO-021"
 MAP-7bb91bd4c1ab,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,236,reviewed-selector,keeps the session entry usable at an accessibility text size on both panels,False,"DUO-020,DUO-021,DUO-023"
-MAP-a27d63cdf4d6,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,56,reviewed-selector,retains the selected conversation and reading position across simulator fold and unfold,False,"DUO-020,DUO-021,DUO-023"
-MAP-f369d9080a71,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,98,reviewed-selector,retains the selected conversation and keyboard draft across simulator fold and unfold,False,"DUO-020,DUO-021,DUO-023"
-MAP-5fa147a200d6,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-text-scaling.test.ts,68,reviewed-selector,keeps the session entry usable at an accessibility text size on both panels,False,DUO-035
+MAP-a27d63cdf4d6,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,57,reviewed-selector,retains the selected conversation and reading position across simulator fold and unfold,False,"DUO-020,DUO-021,DUO-023"
+MAP-f369d9080a71,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,99,reviewed-selector,retains the selected conversation and keyboard draft across simulator fold and unfold,False,"DUO-020,DUO-021,DUO-023"
+MAP-5fa147a200d6,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-text-scaling.test.ts,29,reviewed-selector,keeps the session entry usable at an accessibility text size on both panels,False,DUO-035
 MAP-5c8eef2b06d5,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-voiceover.test.ts,17,reviewed-selector,speaks the selected session and tools on both Duo panels with VoiceOver,False,DUO-037
 MAP-8cfa983c4bb1,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-window.test.ts,15,reviewed-selector,keeps the selected session and a draft through simulator rotation,False,DUO-002
 LEG-e23b5ce26880,L4,RN / mobile harness,mobileapp/e2e/__tests__/edge-stability.test.ts,22,it,traces the viewport around the live tail,False,legacy-not-retrospectively-reviewed
@@ -3827,7 +3827,7 @@ LEG-6aa06fe97cdb,L4,RN / mobile harness,mobileapp/e2e/__tests__/revoked-phone.te
 LEG-7d7ce36e4772,L4,RN / mobile harness,mobileapp/e2e/__tests__/revoked-phone.test.ts,55,it,a pane open when the Mac revokes the phone says so in its header,False,legacy-not-retrospectively-reviewed
 MAP-3593077aab87,L4,reviewed implementation,mobileapp/e2e/__tests__/scene-usage-links.test.ts,24,reviewed-selector,opens the usage link on warm and cold scene entry,False,DUO-005
 MAP-ea87797d79bf,L4,reviewed implementation,mobileapp/e2e/__tests__/scene-usage-links.test.ts,64,reviewed-selector,opens a warm usage link through the scene,False,DUO-005
-MAP-b7d75b280b9d,L4,reviewed implementation,mobileapp/e2e/__tests__/scene-usage-links.test.ts,90,reviewed-selector,opens a cold usage link through the scene,False,DUO-005
+MAP-b7d75b280b9d,L4,reviewed implementation,mobileapp/e2e/__tests__/scene-usage-links.test.ts,91,reviewed-selector,opens a cold usage link through the scene,False,DUO-005
 LEG-ce8589d51a98,M,RN / mobile harness,mobileapp/e2e/__tests__/screenshots.test.ts,33,it,"captures radar, detail, and the connection page",False,legacy-not-retrospectively-reviewed
 LEG-9d2138d1a1e7,L4,RN / mobile harness,mobileapp/e2e/__tests__/send-feedback.test.ts,38,it,a refusal names the pane someone is typing in,False,legacy-not-retrospectively-reviewed
 LEG-90d6e9b0fcce,L4,RN / mobile harness,mobileapp/e2e/__tests__/send-feedback.test.ts,61,it,"a send into a running session says it went, and that the agent may finish first",False,legacy-not-retrospectively-reviewed
@@ -3991,6 +3991,12 @@ MAP-ad9860024fc0,G,reviewed implementation,mobileapp/e2e/setup/manual-tools.cjs,
 DG-001-f069a0,L1,RN / mobile harness,mobileapp/e2e/setup/manual-tools.test.ts,6,test,DG-001 ordinary discovery,False,DG-001
 DG-002-f069a0,L1,RN / mobile harness,mobileapp/e2e/setup/manual-tools.test.ts,19,test,DG-002 rejects missing target,False,DG-002
 DG-003-f069a0,L1,RN / mobile harness,mobileapp/e2e/setup/manual-tools.test.ts,39,test,DG-003 confirms one exact fixture pane,False,DG-003
+MAP-3702c4062f44,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.test.ts,27,reviewed-selector,a stale sample is discarded before fresh complete native layouts settle,False,DUO-039
+MAP-911ba907a3ea,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.test.ts,36,reviewed-selector,unresolved %s evidence fails within the original budget,False,DUO-039
+MAP-b9ad8b33d1aa,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.test.ts,49,reviewed-selector,"a missing diagnostic identity is an error, not an invisible view to skip",False,DUO-039
+MAP-1b80ee0aed76,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.test.ts,54,reviewed-selector,a permanent driver failure is not retried as reflow,False,DUO-039
+MAP-b70e938fbbba,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.test.ts,60,reviewed-selector,a stable sample returned after the budget cannot pass,False,DUO-039
+MAP-5623bb87b474,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.ts,12,reviewed-selector,waitForNativeTextLayout,False,DUO-039
 LEG-b16afa2cc4a9,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,26,test,an ORPHANED match still dies,False,legacy-not-retrospectively-reviewed
 LEG-0338a4b52122,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,47,test,"a failed pgrep is said aloud, not mistaken for no match",False,legacy-not-retrospectively-reviewed
 LEG-13c0b7c93b98,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,63,test,no match is not an error,False,legacy-not-retrospectively-reviewed

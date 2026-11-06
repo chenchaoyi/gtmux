@@ -32,6 +32,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
 
     self.launchOptions = launchOptions
     traceNotification("app-launch-finished")
+#if targetEnvironment(simulator)
+    KeyboardEvidence.start()
+#endif
 
     return true
   }
@@ -218,6 +221,14 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
       factory.startReactNative(withModuleName: "GtmuxMobile", in: sceneWindow, launchOptions: options)
     }
   }
+
+#if targetEnvironment(simulator)
+  func windowScene(_ windowScene: UIWindowScene, didUpdate previousCoordinateSpace: UICoordinateSpace,
+                   interfaceOrientation previousInterfaceOrientation: UIInterfaceOrientation,
+                   traitCollection previousTraitCollection: UITraitCollection) {
+    KeyboardEvidence.record("scene-geometry")
+  }
+#endif
 
   func scene(_ scene: UIScene, openURLContexts contexts: Set<UIOpenURLContext>) {
     for context in contexts {

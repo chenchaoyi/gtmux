@@ -805,5 +805,25 @@
       "stale initial speech cannot replace new focus moves",
       "missing inner reader control %s fails before inner speech"
     ]
+  },
+  "mobileapp/e2e/setup/nativeTextLayout.ts": {
+    "cases": [
+      "DUO-039"
+    ],
+    "selectors": [
+      "waitForNativeTextLayout"
+    ]
+  },
+  "mobileapp/e2e/setup/nativeTextLayout.test.ts": {
+    "cases": [
+      "DUO-039"
+    ],
+    "selectors": [
+      "a stale sample is discarded before fresh complete native layouts settle",
+      "unresolved %s evidence fails within the original budget",
+      "a missing diagnostic identity is an error, not an invisible view to skip",
+      "a permanent driver failure is not retried as reflow",
+      "a stable sample returned after the budget cannot pass"
+    ]
   }
 }

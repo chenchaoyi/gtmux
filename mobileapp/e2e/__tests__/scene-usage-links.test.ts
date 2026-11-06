@@ -64,14 +64,15 @@ async function waitForSceneDelivery(path: string, previous: number) {
 it('opens a warm usage link through the scene', async () => {
   const {flags} = fixture();
   const driver = getDriver();
-  await launchWithFlags(flags);
-  await driver.$('~radar-split').waitForExist({timeout: 25000});
-  // Wait for the bridge and live server before UIKit delivers the warm link.
-  await driver.$('-ios predicate string:label BEGINSWITH "Connection: connected"').waitForExist({timeout: 25000});
-  const trace = nativeSceneTrace();
-  const previous = sceneURLCount(trace);
-  const timing: {opened: number; delivered?: number; visible?: number} = {opened: Date.now()};
+  const timing: {setup: number; opened?: number; delivered?: number; visible?: number} = {setup: Date.now()};
   try {
+    await launchWithFlags(flags);
+    await driver.$('~radar-split').waitForExist({timeout: 25000});
+    // Wait for the bridge and live server before UIKit delivers the warm link.
+    await driver.$('-ios predicate string:label BEGINSWITH "Connection: connected"').waitForExist({timeout: 25000});
+    const trace = nativeSceneTrace();
+    const previous = sceneURLCount(trace);
+    timing.opened = Date.now();
     // XCTest opens the real URL in the specified app. Cold coverage below
     // omits bundleId to exercise the default system URL association.
     await driver.execute('mobile: deepLink', {url: 'gtmux://usage', bundleId: BUNDLE});

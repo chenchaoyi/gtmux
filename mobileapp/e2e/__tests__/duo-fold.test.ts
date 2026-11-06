@@ -1,4 +1,5 @@
-import {writeFileSync} from 'fs';
+import {existsSync, readFileSync, writeFileSync} from 'fs';
+import {execFileSync} from 'child_process';
 import {join} from 'path';
 import {getArtifactsDir, getDriver} from '../setup/driver';
 import {launchWithFlags, readDebugLog, typeInto} from '../setup/app';
@@ -27,7 +28,7 @@ afterEach(guard.wait, 930000);
 async function selectLongChat(evidence: object[]) {
   const driver = getDriver();
   await launchWithFlags({GTMUX_DEBUG_PAIR_URL: fake.url, GTMUX_DEBUG_PAIR_TOKEN: fake.token,
-    GTMUX_DEBUG_NO_PUSH: '1', GTMUX_DEBUG_LANG: 'en', GTMUX_DEBUG_LOG_NET: '1'});
+    GTMUX_DEBUG_NO_PUSH: '1', GTMUX_DEBUG_LANG: 'en', GTMUX_DEBUG_LOG_NET: '1', GTMUX_DEBUG_KEYBOARD: '1'});
   const initialSize = await posture(180, 'inner', evidence);
   const row = driver.$('~agent-row-%13');
   await row.waitForExist({timeout: 25000});
@@ -138,8 +139,14 @@ it('retains the selected conversation and keyboard draft across simulator fold a
   } catch (error) {
     await captureOnFailure('duo-fold-draft-failed', error);
   } finally {
-    writeFileSync(join(getArtifactsDir(), 'duo-fold-draft-postures.json'), JSON.stringify(evidence, null, 2));
-    await restorePosture();
+    try {
+      writeFileSync(join(getArtifactsDir(), 'duo-fold-draft-postures.json'), JSON.stringify(evidence, null, 2));
+      const container = execFileSync('xcrun', ['simctl', 'get_app_container', process.env.GTMUX_E2E_UDID!, 'com.gtmux.app', 'data'], {encoding: 'utf8'}).trim();
+      const file = join(container, 'Documents', 'gtmux-keyboard-evidence.json');
+      if (existsSync(file)) writeFileSync(join(getArtifactsDir(), 'duo-fold-draft-keyboard.json'), readFileSync(file));
+    } finally {
+      await restorePosture();
+    }
   }
 }), 300000);
 

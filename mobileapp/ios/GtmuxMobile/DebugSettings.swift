@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 import React
 
 // DebugSettings — a launch-time debug channel for UI automation, gated entirely by
@@ -78,3 +79,62 @@ func traceNotification(_ event: String, action: String? = nil, hasText: Bool = f
     try? file.write(contentsOf: bytes)
   }
 }
+
+#if targetEnvironment(simulator)
+// Opt-in numeric diagnostics for display migration. Never restores focus, changes
+// keyboard state or records input contents; the ordinary app has no observers.
+enum KeyboardEvidence {
+  private static var observers: [NSObjectProtocol] = []
+  private static var records: [[String: Any]] = []
+  private static let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+  private static let enabled: Bool = {
+    guard let url = docs?.appendingPathComponent("gtmux-debug-flags.json"),
+          let data = try? Data(contentsOf: url),
+          let flags = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { return false }
+    return flags["GTMUX_DEBUG_KEYBOARD"] as? String == "1"
+  }()
+
+  static func start() {
+    guard enabled, observers.isEmpty else { return }
+    let names: [Notification.Name] = [
+      UIResponder.keyboardWillShowNotification, UIResponder.keyboardDidShowNotification,
+      UIResponder.keyboardWillHideNotification, UIResponder.keyboardDidHideNotification,
+      UIResponder.keyboardDidChangeFrameNotification,
+      UITextView.textDidBeginEditingNotification, UITextView.textDidEndEditingNotification,
+      UIWindow.didBecomeKeyNotification, UIWindow.didResignKeyNotification,
+      UIScene.didActivateNotification, UIScene.willDeactivateNotification,
+    ]
+    observers = names.map { name in
+      NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { notification in
+        record(name.rawValue, keyboard: (notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue)
+      }
+    }
+  }
+
+  static func record(_ event: String, keyboard: CGRect? = nil) {
+    guard enabled, records.count < 128 else { return }
+    func rect(_ value: CGRect) -> [String: CGFloat] {
+      ["x": value.minX, "y": value.minY, "width": value.width, "height": value.height]
+    }
+    func firstResponder(_ view: UIView) -> UIView? {
+      if view.isFirstResponder { return view }
+      for child in view.subviews { if let result = firstResponder(child) { return result } }
+      return nil
+    }
+    let windows = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.flatMap(\.windows)
+    var value: [String: Any] = ["event": event, "time": Date().timeIntervalSince1970,
+      "windows": windows.prefix(8).map { window -> [String: Any] in
+        let responder = firstResponder(window)
+        return ["bounds": rect(window.bounds), "key": window.isKeyWindow,
+          "sceneState": window.windowScene?.activationState.rawValue ?? -1,
+          "firstResponderClass": responder.map { String(describing: type(of: $0)) } ?? "",
+          "firstResponderFrame": responder.map { rect($0.convert($0.bounds, to: window)) } ?? [:]]
+      }]
+    if let keyboard { value["keyboardFrame"] = rect(keyboard) }
+    records.append(value)
+    guard let url = docs?.appendingPathComponent("gtmux-keyboard-evidence.json"),
+          let bytes = try? JSONSerialization.data(withJSONObject: records, options: [.sortedKeys]) else { return }
+    try? bytes.write(to: url, options: .atomic)
+  }
+}
+#endif

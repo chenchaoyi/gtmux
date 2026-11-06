@@ -9,57 +9,18 @@ import {TestIds} from '../../src/constants/testIds';
 import {posture} from '../setup/duoPosture';
 import {selectUnfoldedInnerDisplay} from '../setup/duoDisplay';
 import {createJourneyGuard} from '../setup/journeyGuard';
+import {NativeTextLayout, waitForNativeTextLayout} from '../setup/nativeTextLayout';
 
 const guard = createJourneyGuard();
 beforeEach(selectUnfoldedInnerDisplay, 60000);
 afterEach(guard.wait, 930000);
 
-type TextRect = {x: number; y: number; width: number; height: number};
-type NativeTextLayout = {
-  identifier: string; revision: string; scale: number; selectionActive: boolean; queued: boolean;
-  fontPoints: number[]; frame: TextRect; bounds: TextRect; measuredHeight: number;
-  selectionRectCount: number; selectionBounds: TextRect; lastCharacterRect: TextRect;
-};
-
 async function verifyNativeTextLayout(panel: string, evidence: object[]) {
-  const driver = getDriver();
   const container = execFileSync('xcrun', ['simctl', 'get_app_container', process.env.GTMUX_E2E_UDID!, 'com.gtmux.app', 'data'], {encoding: 'utf8'}).trim();
   const file = join(container, 'Documents', 'gtmux-text-layout.json');
-  const views = await driver.$$('-ios predicate string:type == "XCUIElementTypeTextView" AND value != nil AND value != ""');
-  const frames: Array<TextRect & {identifier: string}> = [];
-  for (const view of views) {
-    if (await view.isDisplayed()) {
-      const identifier = await view.getAttribute('name');
-      if (!identifier) throw new Error('visible native text has no diagnostic identifier');
-      frames.push({...await driver.getElementRect(await view.elementId), identifier});
-    }
-  }
-  expect(frames.length).toBeGreaterThanOrEqual(3);
-  let last = '', stable = 0;
-  let matched: NativeTextLayout[] = [];
-  // Scrolling changes window coordinates without a new child layout. Match the
-  // opt-in identity and actual dimensions, retaining observed frames separately.
-  const sameSize = (a: TextRect, b: TextRect) => ['width', 'height'].every(key =>
-    Math.abs(a[key as keyof TextRect] - b[key as keyof TextRect]) <= 2);
   try {
-    await driver.waitUntil(() => {
-      if (!existsSync(file)) return false;
-      const records = Object.values(JSON.parse(readFileSync(file, 'utf8'))) as NativeTextLayout[];
-      matched = frames.map(frame => records.find(record => record.identifier === frame.identifier && sameSize(record.bounds, frame) && record.scale > 1))
-        .filter((record): record is NativeTextLayout => !!record);
-      if (matched.length !== frames.length) return false;
-      const current = JSON.stringify(matched);
-      stable = current === last ? stable + 1 : 0;
-      last = current;
-      return stable >= 2 && matched.every(record => !record.selectionActive && !record.queued &&
-        !!record.revision && record.fontPoints.length > 0 && record.fontPoints.every(point => point > 0) &&
-        record.selectionRectCount > 0 && record.measuredHeight <= record.bounds.height + 1 &&
-        record.lastCharacterRect.height > 0 && record.lastCharacterRect.y >= record.bounds.y - 1 &&
-        record.lastCharacterRect.y + record.lastCharacterRect.height <= record.bounds.y + record.bounds.height + 1 &&
-        record.selectionBounds.y >= record.bounds.y - 1 &&
-        record.selectionBounds.y + record.selectionBounds.height <= record.bounds.y + record.bounds.height + 1);
-    }, {timeout: 20000, interval: 500, timeoutMsg: `${panel} native text did not settle into an unclipped current-scale layout`});
-    evidence.push({panel, observedTextFrames: frames, nativeTextLayouts: matched});
+    evidence.push(await waitForNativeTextLayout(panel, () => existsSync(file)
+      ? Object.values(JSON.parse(readFileSync(file, 'utf8'))) as NativeTextLayout[] : []));
   } finally {
     if (existsSync(file)) writeFileSync(join(getArtifactsDir(), `duo-text-layout-${panel}.json`), readFileSync(file));
   }
