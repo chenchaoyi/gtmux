@@ -8,10 +8,10 @@
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3775 | [L1.csv](cases/L1.csv) |
 | L2 · 组件/契约 | 1905 | [L2.csv](cases/L2.csv) |
-| L3 · 运行时集成 | 112 | [L3.csv](cases/L3.csv) |
+| L3 · 运行时集成 | 116 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 93 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 12 | [M.csv](cases/M.csv) |
-| G · 质量门禁 | 530 | [G.csv](cases/G.csv) |
+| G · 质量门禁 | 536 | [G.csv](cases/G.csv) |
 
 数字不是通过数。存量 6,223 个位置来自 4fad6119 盘点（声明、子测试、动态模板），另加明确的新用例、原生过程入口和评审映射入口；动态实例不展开。没有具名用例的辅助文件仍保留摘要。存量层次是结构分类，混合边界在触及时需语义复核，不补造历史评审/运行结果。`reviewed-selector` 也不冒充框架发现的声明。源码/目录/映射漂移由门禁拦截，但测试名不能自动证明断言质量。
 
@@ -54,6 +54,10 @@
 | SCENE-MIG-009 | All relevant paths select ios-scene, old quality/gates unchanged; fail closed for missing execution or cancelled; PR event base and actualmain candidate route run, no branch whitelist. actionlint1.7.7 original labels plus only xcode-27. |
 | SCENE-MIG-010 | Fresh per-launch path, no global cache; failures propagate; per-source/journey artifacts cannot overwrite others or escape assigned root; existing startup deadline not arbitrarily shortened and original failure/cleanup retained. |
 | SCENE-MIG-011 | Stable default epoch for one fake instance, explicit transcripts/permissions/CT-HTTP unchanged; diagnostics do not replace product behavior and each journey gets separate fixture state. |
+| SCENE-MIG-012 | 26 PR buildsP/B once each;27PR andmain build onlycandidate once. Every event base/head object remains cat-file checked even if not built; unreadablebase fails before builds. No job budget increase. |
+| SCENE-MIG-013 | Original testExit0/7 andcompleted state remain in unit and aggregate; diagnostics/archival errors make acceptance red. Failed artifact does not drop remaining artifacts or unit. All-writes-fail emits original result and storage error to stderr, no invented durable receipt. No mock replacement ofRunner for metadata fault. |
+| SCENE-MIG-014 | Only verifiedShutdown is an acceptable nonzero idempotent result. Unknown/nonzero/timeout recordsproblem, originaltestExit retained, final aggregate red despite earlier greens. Existingprocessownership and30s cleanup budget remain. |
+| SCENE-MIG-015 | Bothpanel contentrects safe/positive/above keyboard andreader abovecomposer; newrotationrects differ frombefore, stale/unsafe/keyboardoverlap rejected evenrootgood. Retaineddraft thennewinputappends exactly once andkeyboard remains. Missingfixture/no-scroll/lostfocus rejectactualregisteredjourneys. Savebefore/aftercontent+diff evidence underexistingartifacts; finallyrestorerotation; no30/20/300deadline increase or headlesscontract weakening. Controllednegativecases are notUIKit/deviceproof. |
 | TD-001 | Reject a changed/new test without a reviewed design; accept a mapped implementation |
 | TD-002 | Reject a tampered review seal, missing assertion description, invalid layer or unsafe path |
 | TD-003 | Reject missing/changed catalogue files and missing named implementation selectors |

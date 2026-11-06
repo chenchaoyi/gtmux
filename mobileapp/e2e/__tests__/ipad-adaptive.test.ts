@@ -5,7 +5,7 @@ import {launchWithFlags} from '../setup/app';
 import {screenshot} from '../setup/screenshot';
 import {startFake, Fake} from '../fake-serve/server';
 import {TestIds} from '../../src/constants/testIds';
-import {captureSceneJourney, observeGeometry, readerToolsAndDraft, SceneJourney} from '../setup/sceneJourneys';
+import {captureSceneJourney, continueDraftAfterRotation, observeGeometry, readerToolsAndDraft, SceneJourney} from '../setup/sceneJourneys';
 
 let fake: Fake;
 beforeAll(async () => { fake = await startFake(); });
@@ -25,23 +25,23 @@ it('keeps the iPad sidebar and selected session through rotation', async () => {
     const before = await observeGeometry(ctx, launchedAt);
     expect(await driver.$('~agent-row-%13').isDisplayed()).toBe(true);
     recordSceneStep('sidebar-reader-landscape');
-    await readerToolsAndDraft(ctx, before.native.geometry!);
+    const contentBefore = await readerToolsAndDraft(ctx, before.native.geometry!);
     const identity = driver.$('-ios predicate string:label == "Show full title, 整理这周的发布清单"');
     expect(await identity.isDisplayed()).toBe(true);
     await screenshot('ipad-adaptive-landscape');
     const rotatedAt = Date.now() / 1000;
     await driver.setOrientation('PORTRAIT');
-    const after = await observeGeometry(ctx, rotatedAt, before.native.geometry);
+    const after = await observeGeometry(ctx, rotatedAt, before.native.geometry, true, contentBefore.content);
     expect(after.window).not.toEqual(before.window);
-    writeFileSync(join(getArtifactsDir(), 'ipad-host-geometry.json'), JSON.stringify({before, after}, null, 2));
+    writeFileSync(join(getArtifactsDir(), 'ipad-host-geometry.json'), JSON.stringify({before, contentBefore, after}, null, 2));
     expect(await split.isDisplayed()).toBe(true);
     expect(await driver.$(`~${TestIds.detail.modeChat}`).isExisting()).toBe(true);
     expect(await identity.isDisplayed()).toBe(true);
     expect(await driver.$(`~${TestIds.detail.back}`).isExisting()).toBe(false);
     expect(await driver.$('~agent-row-%13').isDisplayed()).toBe(true);
     recordSceneStep('sidebar-reader-portrait');
-    expect(await driver.$('~composer-input').getValue()).toBe('scene migration draft');
-    expect((await driver.$$('XCUIElementTypeKeyboard')).length).toBeGreaterThan(0);
+    await continueDraftAfterRotation();
+    recordSceneStep('rotated-input-edited');
     recordSceneStep('draft-keyboard-retained');
     await screenshot('ipad-adaptive-portrait');
   } finally {

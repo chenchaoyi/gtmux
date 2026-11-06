@@ -1,5 +1,7 @@
 import copy
 import hashlib
+import contextlib
+import io
 import importlib.util
 import json
 import os
@@ -234,6 +236,133 @@ class SceneExecutionTests(unittest.TestCase):
                     cleanup.assert_called_once()
                     self.assertEqual(json.loads((paths['evidence'] / 'result.json').read_text())['testExit'], status)
 
+    def controlled_execute(self, toolchain='27', event_name='pull_request', status=0, fault=None):
+        # Execute the production coordinator, Runner and run_unit. Only external
+        # Git/native/SDK/Jest commands become tiny real children, not a Runner mock.
+        root = self.root / f'execute-{len(list(self.root.iterdir()))}'; root.mkdir()
+        repo = root / 'repository'; mobile = repo / 'mobileapp'; mobile.mkdir(parents=True)
+        for name in ('package-lock.json', 'package.json', 'Gemfile.lock'): (mobile / name).write_text('{}')
+        for name in ('node_modules', 'vendor'): (mobile / name).mkdir()
+        event = {'pull_request': {'base': {'sha': B}, 'head': {'sha': P}}} if event_name == 'pull_request' else {'ref': 'refs/heads/main', 'after': P}
+        event_path = root / 'event.json'; event_path.write_text(json.dumps(event))
+        env = {**os.environ, 'CI': 'true', 'RUNNER_OS': 'macOS', 'RUNNER_ARCH': 'ARM64',
+               'GITHUB_EVENT_NAME': event_name, 'GITHUB_EVENT_PATH': str(event_path), 'GITHUB_SHA': MERGE if event_name == 'pull_request' else P,
+               'RUNNER_TEMP': str(root), 'GITHUB_RUN_ID': '1', 'GITHUB_RUN_ATTEMPT': '1', 'GITHUB_JOB': 'test'}
+        builds, readable = [], []
+        real_popen, real_write, real_record = scene.subprocess.Popen, scene.write_once, scene.file_record
+        def child(args, **kwargs):
+            script = 'pass'
+            if args[0] == 'git':
+                readable.append(args[-1][:40])
+                if fault == 'unreadable-base' and args[-1].startswith(B): script = 'raise SystemExit(1)'
+            if args[0] == 'npm': script = f'raise SystemExit({status})'
+            if fault == 'last-shutdown':
+                if args[:3] == ['xcrun', 'simctl', 'shutdown'] and '/ipad/' in kwargs['stdout'].name and kwargs['stdout'].name.endswith('-shutdown-after.log'):
+                    script = 'raise SystemExit(7)'
+                if args[:4] == ['xcrun', 'simctl', 'list', '-j']:
+                    script = 'print(\'{"devices":{"runtime":[{"udid":"pad","state":"Booted"}]}}\')'
+            return real_popen([sys.executable, '-c', script], **kwargs)
+        def archive(repository, sha, destination):
+            (destination / 'mobileapp').mkdir(parents=True)
+            for name in ('package-lock.json', 'package.json', 'Gemfile.lock'): (destination / 'mobileapp' / name).write_text('{}')
+            return destination
+        def prepare(repository, sha, harness, job, deps, runner):
+            target = job / 'source' / sha / 'mobileapp'; target.mkdir(parents=True); return target
+        def build(runner, target, sha, job):
+            builds.append(sha); return {'app': '/synthetic/app', 'resolvedPods': {'sha256': 'same'}}
+        def work(harness, destination, deps):
+            scene.write_once(destination / 'harness.json', []); return destination
+        def write(path, value):
+            if ((fault == 'metadata' and Path(path).name.endswith('-journey.json'))
+                    or (fault == 'result' and Path(path).name == 'result.json')
+                    or (fault == 'acceptance' and Path(path).name == 'acceptance.json')
+                    or (fault == 'archives' and Path(path).name in {'result.json', 'acceptance.json', 'verdict.json'})):
+                raise OSError('injected ' + fault)
+            return real_write(path, value)
+        def record(path, relative_to=None):
+            if fault == 'artifact' and Path(path).name.endswith('-journey.log'): raise OSError('injected artifact read/hash')
+            return real_record(path, relative_to)
+        stderr = io.StringIO()
+        with mock.patch.object(scene.subprocess, 'Popen', side_effect=child), \
+                mock.patch.object(scene, 'preflight', return_value={'devices': {'phone': {'udid': 'fixture', 'name': 'phone'}, 'ipad': {'udid': 'pad', 'name': 'pad'}}}), \
+                mock.patch.object(scene, 'archive_source', side_effect=archive), mock.patch.object(scene, 'prepare_source', side_effect=prepare), \
+                mock.patch.object(scene, 'build_product', side_effect=build), mock.patch.object(scene, 'prepare_work', side_effect=work), \
+                mock.patch.object(scene, 'parse_jest', return_value=[]), mock.patch.object(scene, 'collect_identity', return_value={}), \
+                mock.patch.object(scene, 'cleanup_unit', side_effect=scene.cleanup_unit if fault == 'last-shutdown' else lambda *args: []), mock.patch.object(scene, 'write_once', side_effect=write), \
+                mock.patch.object(scene, 'file_record', side_effect=record), contextlib.redirect_stderr(stderr), contextlib.redirect_stdout(io.StringIO()):
+            code = scene.execute(toolchain, repo, env)
+        job = root / 'scene-migration/1-1-test'
+        payload = json.loads((job / 'acceptance.json').read_text()) if (job / 'acceptance.json').exists() else None
+        return code, builds, readable, payload, stderr.getvalue()
+
+    def test_executor_builds_only_expected_sources_but_checks_real_base(self):
+        for chain, event, wanted in [('26', 'pull_request', [P, B]), ('27', 'pull_request', [P]),
+                                     ('26', 'push', [P]), ('27', 'push', [P])]:
+            with self.subTest(chain=chain, event=event):
+                _, builds, readable, payload, _ = self.controlled_execute(chain, event)
+                self.assertEqual(builds, wanted)
+                self.assertEqual(set(readable), {P, B} if event == 'pull_request' else {P})
+                self.assertEqual(len(payload['results']), len(scene.units(scene.sources(event, payload['event'], payload['githubSHA']), chain)))
+        code, builds, readable, payload, _ = self.controlled_execute(fault='unreadable-base')
+        self.assertEqual(code, 1); self.assertEqual(builds, []); self.assertIn(B, readable)
+        self.assertTrue(payload['preparationErrors'])
+
+    def test_real_runner_metadata_and_archival_failures_preserve_executed_units(self):
+        for status in (0, 7):
+            for fault in ('metadata', 'artifact', 'result', 'acceptance', 'archives'):
+                with self.subTest(status=status, fault=fault):
+                    code, _, _, payload, stderr = self.controlled_execute(status=status, fault=fault)
+                    self.assertEqual(code, 1)
+                    if fault in {'acceptance', 'archives'}:
+                        line = next(line for line in stderr.splitlines() if line.startswith('scene acceptance archive failed: '))
+                        payload = json.loads(line.split(': ', 1)[1])
+                        self.assertIn('acceptance archive: injected ' + fault, payload['preparationErrors'])
+                    self.assertEqual(len(payload['results']), 4)
+                    for result in payload['results']:
+                        self.assertEqual((result['testExit'], result['state']), (status, 'completed'))
+                        if fault != 'acceptance': self.assertTrue(any('injected ' + fault in p for p in result['problems']))
+                        if fault == 'artifact': self.assertTrue(any(a['path'].endswith('-journey.json') for a in result['artifacts']))
+                    if fault == 'result': self.assertIn('scene unit archive failed:', stderr)
+
+    def test_real_executor_keeps_last_shutdown_failure_and_original_exit(self):
+        for status in (0, 7):
+            code, _, _, payload, _ = self.controlled_execute(status=status, fault='last-shutdown')
+            self.assertEqual(code, 1)
+            self.assertEqual(len(payload['results']), 4)
+            self.assertFalse(any('device cleanup:' in p for r in payload['results'][:-1] for p in r['problems']))
+            self.assertTrue(any('device cleanup:' in p for p in payload['results'][-1]['problems']))
+            self.assertEqual(payload['results'][-1]['testExit'], status)
+
+    def test_shutdown_failure_or_timeout_of_final_unit_cannot_pass(self):
+        # Existing full acceptance fixture makes every other criterion green.
+        units = scene.units({'candidate': P}, '27')
+        results = [SceneMigrationTests.result(self, u) for u in units]
+        for state, code, timeout, accepted in [('Shutdown', 1, False, True), ('Booted', 1, False, False),
+                                              ('missing', 1, False, False), ('duplicate', 1, False, False),
+                                              ('Shutdown', 1, True, False), ('Booted', 0, False, True)]:
+            with self.subTest(state=state, code=code, timeout=timeout):
+                runner = mock.Mock()
+                devices = [] if state == 'missing' else [{'udid': 'fixture', 'state': state}]
+                if state == 'duplicate': devices *= 2
+                runner.text.side_effect = [(0, ''), (0, json.dumps({'devices': {'runtime': devices}}))]
+                if timeout: runner.command.side_effect = scene.CommandFailure('timeout', {'state': 'timeout', 'exit': -9})
+                else: runner.command.return_value = (code, self.root / 'shutdown.log')
+                problems = scene.cleanup_unit(runner, self.root, self.root / 'wda', 'fixture')
+                self.assertEqual(not problems, accepted)
+                for status in (0, 7):
+                    final = copy.deepcopy(results); final[-1]['problems'] = problems; final[-1]['testExit'] = status
+                    errors = scene.verify_all(units, final, self.root)
+                    self.assertEqual(not errors, accepted and status == 0)
+                    self.assertEqual(final[-1]['testExit'], status)
+        for elapsed, accepted in [(29.5, True), (30, False)]:
+            runner = mock.Mock(); runner.command.return_value = (1, self.root / 'shutdown.log')
+            runner.text.side_effect = [(0, ''), (0, json.dumps({'devices': {'runtime': [{'udid': 'fixture', 'state': 'Shutdown'}]}}))]
+            with mock.patch.object(scene.time, 'monotonic', side_effect=[100, 100 + elapsed]):
+                problems = scene.cleanup_unit(runner, self.root, self.root / 'wda', 'fixture')
+            self.assertEqual(not problems, accepted)
+            if accepted: self.assertEqual(runner.text.call_args.kwargs['timeout'], .5)
+            else: self.assertEqual(runner.text.call_count, 1)  # process query only, no late device probe
+
     def test_harness_journeys_share_only_verified_dependencies_and_keep_source_bytes(self):
         source = self.root / 'harness/mobileapp'; (source / 'e2e').mkdir(parents=True)
         (source / 'e2e/case.ts').write_text('frozen fixture source')
@@ -257,6 +386,7 @@ class SceneExecutionTests(unittest.TestCase):
         (self.root / 'session').mkdir(); (self.root / 'session/server.pid').write_text('41')
         derived = self.root / 'unit-wda'
         fake = mock.Mock()
+        fake.command.return_value = (0, self.root / 'shutdown.log')
         fake.text.return_value = (0, f'41 node appium --port 4723\n42 xcodebuild -derivedDataPath {derived} test\n43 xcodebuild -derivedDataPath {derived}-other test\n44 appium --port 4730')
         with mock.patch.object(scene.os, 'killpg') as groups, mock.patch.object(scene.os, 'kill') as singles:
             self.assertEqual(scene.cleanup_unit(fake, self.root, derived, 'fixture-device'), [])

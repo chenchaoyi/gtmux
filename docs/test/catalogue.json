@@ -58282,7 +58282,7 @@
       "cases": [
         {
           "id": "MAP-d455cb51bba1",
-          "line": 61,
+          "line": 62,
           "kind": "reviewed-selector",
           "name": "def sources(",
           "dynamic": false,
@@ -58291,7 +58291,7 @@
         },
         {
           "id": "MAP-bb550a403768",
-          "line": 75,
+          "line": 76,
           "kind": "reviewed-selector",
           "name": "def units(",
           "dynamic": false,
@@ -58300,7 +58300,7 @@
         },
         {
           "id": "MAP-ea5937ab5244",
-          "line": 124,
+          "line": 125,
           "kind": "reviewed-selector",
           "name": "def archive_source(",
           "dynamic": false,
@@ -58309,7 +58309,7 @@
         },
         {
           "id": "MAP-38d95bd6046c",
-          "line": 116,
+          "line": 117,
           "kind": "reviewed-selector",
           "name": "def allocate_unit(",
           "dynamic": false,
@@ -58318,7 +58318,7 @@
         },
         {
           "id": "MAP-d8d576f98a52",
-          "line": 181,
+          "line": 182,
           "kind": "reviewed-selector",
           "name": "def unit_errors(",
           "dynamic": false,
@@ -58327,7 +58327,7 @@
         },
         {
           "id": "MAP-e0657dd9a16c",
-          "line": 230,
+          "line": 231,
           "kind": "reviewed-selector",
           "name": "def verify_all(",
           "dynamic": false,
@@ -58336,7 +58336,7 @@
         },
         {
           "id": "MAP-5e8a9b948e24",
-          "line": 323,
+          "line": 335,
           "kind": "reviewed-selector",
           "name": "def preflight(",
           "dynamic": false,
@@ -58345,7 +58345,7 @@
         },
         {
           "id": "MAP-686096fccf36",
-          "line": 350,
+          "line": 362,
           "kind": "reviewed-selector",
           "name": "def prepare_source(",
           "dynamic": false,
@@ -58354,7 +58354,7 @@
         },
         {
           "id": "MAP-e317c36e87b4",
-          "line": 378,
+          "line": 390,
           "kind": "reviewed-selector",
           "name": "def prepare_work(",
           "dynamic": false,
@@ -58363,7 +58363,7 @@
         },
         {
           "id": "MAP-48f5d7e71933",
-          "line": 398,
+          "line": 410,
           "kind": "reviewed-selector",
           "name": "def build_product(",
           "dynamic": false,
@@ -58372,7 +58372,7 @@
         },
         {
           "id": "MAP-eddc7dcee0b0",
-          "line": 439,
+          "line": 451,
           "kind": "reviewed-selector",
           "name": "def collect_identity(",
           "dynamic": false,
@@ -58381,7 +58381,7 @@
         },
         {
           "id": "MAP-af21af8be44f",
-          "line": 512,
+          "line": 536,
           "kind": "reviewed-selector",
           "name": "def run_unit(",
           "dynamic": false,
@@ -58390,7 +58390,7 @@
         },
         {
           "id": "MAP-89aaee2a9ed7",
-          "line": 481,
+          "line": 493,
           "kind": "reviewed-selector",
           "name": "def cleanup_unit(",
           "dynamic": false,
@@ -58399,15 +58399,33 @@
         },
         {
           "id": "MAP-15d5d6c17883",
-          "line": 560,
+          "line": 600,
           "kind": "reviewed-selector",
           "name": "def execute(",
           "dynamic": false,
           "layer": "G",
           "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-73f0d22945c8",
+          "line": 259,
+          "kind": "reviewed-selector",
+          "name": "class CommandFailure(RuntimeError):",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008,SCENE-MIG-012,SCENE-MIG-013,SCENE-MIG-014"
+        },
+        {
+          "id": "MAP-2c39e5b64866",
+          "line": 271,
+          "kind": "reviewed-selector",
+          "name": "def command(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008,SCENE-MIG-012,SCENE-MIG-013,SCENE-MIG-014"
         }
       ],
-      "sha256": "a39b25a2ea1780b6ba0b38705a3f1b2cd5989bc59ccee9fef200e2087784e053"
+      "sha256": "8b97dc826742160128e5ebca33c3d637811d4ecf578160ecd5e7f260c96824c7"
     },
     "scripts/scene_migration_test.py": {
       "layer": "G",
@@ -58415,7 +58433,7 @@
       "cases": [
         {
           "id": "MAP-4dbebfdd920d",
-          "line": 50,
+          "line": 52,
           "kind": "reviewed-selector",
           "name": "test_real_event_sources_and_fixed_PR15_main11_instances",
           "dynamic": false,
@@ -58424,7 +58442,7 @@
         },
         {
           "id": "MAP-7290dcb68a36",
-          "line": 64,
+          "line": 66,
           "kind": "reviewed-selector",
           "name": "test_missing_bad_base_and_actualmain_mismatch_fail",
           "dynamic": false,
@@ -58433,7 +58451,7 @@
         },
         {
           "id": "MAP-b5a28e6d73ba",
-          "line": 73,
+          "line": 75,
           "kind": "reviewed-selector",
           "name": "test_each_source_and_journey_has_exclusive_work_and_evidence",
           "dynamic": false,
@@ -58442,7 +58460,7 @@
         },
         {
           "id": "MAP-5b087f7ffc6a",
-          "line": 90,
+          "line": 92,
           "kind": "reviewed-selector",
           "name": "test_real_git_archive_from_root_and_mobileapp_rejects_unreadable_base",
           "dynamic": false,
@@ -58451,7 +58469,7 @@
         },
         {
           "id": "MAP-2e1022e71af6",
-          "line": 105,
+          "line": 107,
           "kind": "reviewed-selector",
           "name": "test_complete_synthetic_matrix_and_missing_unit_fail_closed",
           "dynamic": false,
@@ -58460,7 +58478,7 @@
         },
         {
           "id": "MAP-be9aec3dcf49",
-          "line": 128,
+          "line": 130,
           "kind": "reviewed-selector",
           "name": "test_missing_skipped_failed_cancelled_case_or_early_return_never_passes",
           "dynamic": false,
@@ -58469,7 +58487,7 @@
         },
         {
           "id": "MAP-c5286b224e73",
-          "line": 144,
+          "line": 146,
           "kind": "reviewed-selector",
           "name": "test_wrong_or_missing_toolchain_WDA_signature_and_product_identity_fail",
           "dynamic": false,
@@ -58478,7 +58496,7 @@
         },
         {
           "id": "MAP-6bc9a8ea1bd1",
-          "line": 160,
+          "line": 162,
           "kind": "reviewed-selector",
           "name": "test_evidence_byte_changes_and_escape_are_rejected",
           "dynamic": false,
@@ -58487,7 +58505,7 @@
         },
         {
           "id": "MAP-a5b156b2b518",
-          "line": 115,
+          "line": 117,
           "kind": "reviewed-selector",
           "name": "test_offline_verifier_retains_preparation_failure_with_complete_case_results",
           "dynamic": false,
@@ -58496,7 +58514,7 @@
         },
         {
           "id": "MAP-a7808f64414b",
-          "line": 186,
+          "line": 188,
           "kind": "reviewed-selector",
           "name": "test_execute_refuses_local_environment_before_any_native_command",
           "dynamic": false,
@@ -58505,7 +58523,7 @@
         },
         {
           "id": "MAP-45d57ce1727c",
-          "line": 192,
+          "line": 194,
           "kind": "reviewed-selector",
           "name": "test_real_small_child_exit_timeout_and_output_cap_are_bounded",
           "dynamic": false,
@@ -58514,7 +58532,7 @@
         },
         {
           "id": "MAP-c78c647692bc",
-          "line": 205,
+          "line": 207,
           "kind": "reviewed-selector",
           "name": "test_device_lookup_requires_actual_runtime_and_unique_hardware",
           "dynamic": false,
@@ -58523,7 +58541,7 @@
         },
         {
           "id": "MAP-ca6db00c6d3b",
-          "line": 214,
+          "line": 216,
           "kind": "reviewed-selector",
           "name": "test_missing_diagnostic_evidence_keeps_original_test_zero_or_seven_and_cleans",
           "dynamic": false,
@@ -58532,7 +58550,7 @@
         },
         {
           "id": "MAP-80e5de561924",
-          "line": 237,
+          "line": 366,
           "kind": "reviewed-selector",
           "name": "test_harness_journeys_share_only_verified_dependencies_and_keep_source_bytes",
           "dynamic": false,
@@ -58541,15 +58559,51 @@
         },
         {
           "id": "MAP-d485b529b3a4",
-          "line": 256,
+          "line": 385,
           "kind": "reviewed-selector",
           "name": "test_cleanup_targets_only_saved_matching_server_and_exact_unit_wda",
           "dynamic": false,
           "layer": "G",
           "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-7cb3bff30a24",
+          "line": 298,
+          "kind": "reviewed-selector",
+          "name": "test_executor_builds_only_expected_sources_but_checks_real_base",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008,SCENE-MIG-012,SCENE-MIG-013,SCENE-MIG-014"
+        },
+        {
+          "id": "MAP-9fcc5cafe672",
+          "line": 310,
+          "kind": "reviewed-selector",
+          "name": "test_real_runner_metadata_and_archival_failures_preserve_executed_units",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008,SCENE-MIG-012,SCENE-MIG-013,SCENE-MIG-014"
+        },
+        {
+          "id": "MAP-ec565820041a",
+          "line": 327,
+          "kind": "reviewed-selector",
+          "name": "test_real_executor_keeps_last_shutdown_failure_and_original_exit",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008,SCENE-MIG-012,SCENE-MIG-013,SCENE-MIG-014"
+        },
+        {
+          "id": "MAP-2258d0570d1d",
+          "line": 336,
+          "kind": "reviewed-selector",
+          "name": "test_shutdown_failure_or_timeout_of_final_unit_cannot_pass",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008,SCENE-MIG-012,SCENE-MIG-013,SCENE-MIG-014"
         }
       ],
-      "sha256": "16bc4c2d39f826de2f2c97ac49ae6fc7bd5523deeca974aa39e153f88bb50746"
+      "sha256": "deb2141ebdbc152f1af8c392ff45455301729f81ac921c1dd52746434bdacc7a"
     },
     "mobileapp/e2e/__tests__/ipad-adaptive.test.ts": {
       "layer": "L3",
@@ -58565,7 +58619,7 @@
           "design": "SCENE-MIG-007"
         }
       ],
-      "sha256": "043b6449eacd430b0d2575859ccc2948586d7c62b63f4d78b2e9a788f0caab6c"
+      "sha256": "c299ff227666de6457e806644dbaef550df6283850b3e640c90cfe066178566c"
     },
     "mobileapp/e2e/__tests__/scene-migration-actions.test.ts": {
       "layer": "L3",
@@ -58884,7 +58938,7 @@
         },
         {
           "id": "MAP-757a23bb3377",
-          "line": 190,
+          "line": 211,
           "kind": "reviewed-selector",
           "name": "headless-host",
           "dynamic": false,
@@ -58893,7 +58947,7 @@
         },
         {
           "id": "MAP-2c19a2596e68",
-          "line": 196,
+          "line": 221,
           "kind": "reviewed-selector",
           "name": "scene-host-attached",
           "dynamic": false,
@@ -58902,7 +58956,7 @@
         },
         {
           "id": "MAP-25f6e747061f",
-          "line": 202,
+          "line": 229,
           "kind": "reviewed-selector",
           "name": "scene-host-updated",
           "dynamic": false,
@@ -58929,7 +58983,7 @@
         },
         {
           "id": "MAP-b3b2f740d29d",
-          "line": 234,
+          "line": 262,
           "kind": "reviewed-selector",
           "name": "registered action executes tap and exact fake delivery, missing tap fails (cold=%s)",
           "dynamic": false,
@@ -58938,7 +58992,7 @@
         },
         {
           "id": "MAP-d6d4cdb5f402",
-          "line": 238,
+          "line": 266,
           "kind": "reviewed-selector",
           "name": "registered cold action rejects %s and restores rotation",
           "dynamic": false,
@@ -58947,15 +59001,33 @@
         },
         {
           "id": "MAP-c0ebb52b423a",
-          "line": 245,
+          "line": 287,
           "kind": "reviewed-selector",
           "name": "setup cleans its own server when %s evidence cannot be written",
           "dynamic": false,
           "layer": "L3",
           "design": "SCENE-MIG-006,SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-9be18c53df39",
+          "line": 270,
+          "kind": "reviewed-selector",
+          "name": "registered content rotation measures and edits the actual reader (ipad=%s)",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006,SCENE-MIG-010,SCENE-MIG-015"
+        },
+        {
+          "id": "MAP-8eef81ad47b9",
+          "line": 280,
+          "kind": "reviewed-selector",
+          "name": "registered phone and iPad journeys reject %s on ipad=%s despite fresh root geometry",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006,SCENE-MIG-010,SCENE-MIG-015"
         }
       ],
-      "sha256": "b7f1352e69803c498b36a18c0db53a0fba0751986413fe7d413df55bc4abd154"
+      "sha256": "1fa42d451da1e4a58caebf262abb26a99a8d412808a982fa0f2354beaa72a987"
     },
     "mobileapp/e2e/setup/sceneJourneys.ts": {
       "layer": "L3",
@@ -58963,7 +59035,7 @@
       "cases": [
         {
           "id": "MAP-16d6bf431e39",
-          "line": 107,
+          "line": 161,
           "kind": "reviewed-selector",
           "name": "coldSceneAction",
           "dynamic": false,
@@ -58972,7 +59044,7 @@
         },
         {
           "id": "MAP-94b1215d1e59",
-          "line": 153,
+          "line": 208,
           "kind": "reviewed-selector",
           "name": "warmSceneAction",
           "dynamic": false,
@@ -58981,7 +59053,7 @@
         },
         {
           "id": "MAP-b60285dcd5b7",
-          "line": 182,
+          "line": 237,
           "kind": "reviewed-selector",
           "name": "usageSceneLink",
           "dynamic": false,
@@ -58990,7 +59062,7 @@
         },
         {
           "id": "MAP-5d33e58ccb39",
-          "line": 201,
+          "line": 256,
           "kind": "reviewed-selector",
           "name": "captureSceneJourney",
           "dynamic": false,
@@ -58999,7 +59071,7 @@
         },
         {
           "id": "MAP-c3eefc5f5890",
-          "line": 52,
+          "line": 61,
           "kind": "reviewed-selector",
           "name": "observeGeometry",
           "dynamic": false,
@@ -59008,15 +59080,33 @@
         },
         {
           "id": "MAP-db5a088f15bb",
-          "line": 77,
+          "line": 112,
           "kind": "reviewed-selector",
           "name": "readerToolsAndDraft",
           "dynamic": false,
           "layer": "L3",
           "design": "SCENE-MIG-006"
+        },
+        {
+          "id": "MAP-5fd8d42575d0",
+          "line": 53,
+          "kind": "reviewed-selector",
+          "name": "contentGeometryMatches",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006,SCENE-MIG-015"
+        },
+        {
+          "id": "MAP-195f9776ba27",
+          "line": 102,
+          "kind": "reviewed-selector",
+          "name": "continueDraftAfterRotation",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006,SCENE-MIG-015"
         }
       ],
-      "sha256": "a2afb87b121013b25db3e3f4f180d6f5cdf9c87e6baf74d03ae634cef9bc3415"
+      "sha256": "e9a9b386856862a138c613a0ac228455c536b80222d7ef18a97f1768618c5d3b"
     },
     "mobileapp/e2e/instrument-baseline.py": {
       "layer": "G",

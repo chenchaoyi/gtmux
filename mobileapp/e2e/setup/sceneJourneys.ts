@@ -11,6 +11,7 @@ export type SceneJourney = {fake: Fake; surface: SceneSurface; container?: strin
 type Rect = {x: number; y: number; width: number; height: number};
 type Geometry = {pid: number; host: number; rootAttached: boolean; scenePresent: boolean;
   windowBounds: Rect; rootBounds: Rect; rootInWindow: Rect; insets: {top: number; right: number; bottom: number; left: number}};
+type ContentGeometry = {reader: Rect; composer: Rect; keyboard: Rect};
 type NativeEntry = {event: string; time: number; geometry?: Geometry};
 
 function record(ctx: SceneJourney, step: string) {ctx.steps.push(step); recordSceneStep(step);}
@@ -49,10 +50,19 @@ export function geometryMatches(g: Geometry, root: Rect, size: {width: number; h
     [g.rootInWindow.x, root.x], [g.rootInWindow.y, root.y], [g.rootInWindow.width, root.width], [g.rootInWindow.height, root.height]];
   return pairs.every(([a, b]) => Math.abs(a - b) <= 1);
 }
-export async function observeGeometry(ctx: SceneJourney, since: number, host?: {pid: number; host: number}) {
+export function contentGeometryMatches(g: Geometry, content: ContentGeometry): boolean {
+  const {reader, composer, keyboard} = content;
+  return insideSceneSafeArea(g, reader) && insideSceneSafeArea(g, composer) && rectValid(keyboard)
+    && keyboard.x >= -1 && keyboard.x + keyboard.width <= g.windowBounds.width + 1
+    && keyboard.y >= 0 && keyboard.y + keyboard.height <= g.windowBounds.height + 1
+    && reader.y + reader.height <= composer.y + 1
+    && composer.y + composer.height <= keyboard.y + 1;
+}
+export async function observeGeometry(ctx: SceneJourney, since: number, host?: {pid: number; host: number},
+  contentRequired = false, previousContent?: ContentGeometry) {
   const d = getDriver();
   let previous = '', stable = 0;
-  let result: {native: NativeEntry; root: Rect; window: {width: number; height: number}} | undefined;
+  let result: {native: NativeEntry; root: Rect; window: {width: number; height: number}; content?: ContentGeometry} | undefined;
   await d.waitUntil(async () => {
     const native = nativeEntries(ctx).filter(e => e.time > since && e.geometry?.rootAttached).at(-1);
     if (!native?.geometry) return false;
@@ -60,10 +70,25 @@ export async function observeGeometry(ctx: SceneJourney, since: number, host?: {
     const root = await d.getElementRect(await d.$('~window-metrics-root').elementId);
     const window = await d.getWindowSize();
     if (!geometryMatches(native.geometry, root, window)) {stable = 0; return false;}
-    const signature = JSON.stringify({root, window, host: native.geometry.host, pid: native.geometry.pid});
+    let content: ContentGeometry | undefined;
+    if (contentRequired) {
+      const reader = d.$('~detail-chat'), composer = d.$('~composer-input');
+      if (!await reader.isDisplayed() || !await composer.isDisplayed()) {stable = 0; return false;}
+      const keyboards = await d.$$('XCUIElementTypeKeyboard');
+      const visible = [];
+      for (const keyboard of keyboards) if (await keyboard.isDisplayed()) visible.push(keyboard);
+      if (visible.length !== 1) {stable = 0; return false;}
+      content = {reader: await d.getElementRect(await reader.elementId),
+        composer: await d.getElementRect(await composer.elementId),
+        keyboard: await d.getElementRect(await visible[0].elementId)};
+      if (!contentGeometryMatches(native.geometry, content)
+          || (previousContent && (JSON.stringify(content.reader) === JSON.stringify(previousContent.reader)
+            || JSON.stringify(content.composer) === JSON.stringify(previousContent.composer)))) {stable = 0; return false;}
+    }
+    const signature = JSON.stringify({root, window, content, host: native.geometry.host, pid: native.geometry.pid});
     stable = previous === signature ? stable + 1 : 1;
     previous = signature;
-    result = {native, root, window};
+    result = {native, root, window, content};
     return stable >= 2;
   }, {timeout: 20000, interval: 500, timeoutMsg: 'fresh native and WDA content geometry did not agree'});
   return result!;
@@ -73,6 +98,16 @@ export function insideSceneSafeArea(g: Geometry, frame: Rect): boolean {
   return rectValid(frame) && frame.x >= g.insets.left - 1 && frame.y >= g.insets.top - 1
     && frame.x + frame.width <= g.windowBounds.width - g.insets.right + 1
     && frame.y + frame.height <= g.windowBounds.height - g.insets.bottom + 1;
+}
+export async function continueDraftAfterRotation() {
+  const d = getDriver(), input = d.$('~composer-input');
+  expect(await input.getValue()).toBe('scene migration draft');
+  // Global keyboard input proves the retained field still owns focus. Do not
+  // click/refocus, clear or setValue: those could hide a lost-focus regression.
+  await d.execute('mobile: keys', {keys: [{key: 'x'}]});
+  await d.waitUntil(async () => await input.getValue() === 'scene migration draftx',
+    {timeout: 10000, interval: 500, timeoutMsg: 'rotated composer did not receive focused input'});
+  expect((await d.$$('XCUIElementTypeKeyboard')).length).toBeGreaterThan(0);
 }
 export async function readerToolsAndDraft(ctx: SceneJourney, geometry: Geometry) {
   const d = getDriver();
@@ -92,16 +127,35 @@ export async function readerToolsAndDraft(ctx: SceneJourney, geometry: Geometry)
   expect(await d.$('~trace-search').getValue()).toBe('part 12');
   await d.$('~trace-close').click(); record(ctx, 'trace-used');
   await tools.waitForDisplayed({timeout: 10000}); await tools.click();
+  ctx.fake.world.diffs.set('%13', ['diff --git a/scene-fixture.txt b/scene-fixture.txt',
+    '--- a/scene-fixture.txt', '+++ b/scene-fixture.txt', '@@ -0,0 +1,120 @@',
+    ...Array.from({length: 120}, (_, i) => `+scene_diff_line_${String(i).padStart(3, '0')}`)].join('\n'));
   const diffAction = d.$('~session-tools-menu-diff'); await diffAction.waitForDisplayed({timeout: 10000}); await diffAction.click();
   const wrap = d.$('~diff-wrap'); await wrap.waitForDisplayed({timeout: 15000});
   expect(insideSceneSafeArea(geometry, await d.getElementRect(await wrap.elementId))).toBe(true); await wrap.click();
   const lines = d.$('~diff-lines'); await lines.waitForExist({timeout: 10000});
-  await d.execute('mobile: scroll', {elementId: await lines.elementId, direction: 'down'});
+  const first = d.$('-ios predicate string:label CONTAINS "scene_diff_line_000"');
+  const last = d.$('-ios predicate string:label CONTAINS "scene_diff_line_119"');
+  await first.waitForDisplayed({timeout: 10000});
+  expect(await last.isDisplayed()).toBe(false);
+  const firstBefore = await d.getElementRect(await first.elementId);
+  await screenshot('scene-diff-before-scroll');
+  await d.waitUntil(async () => {
+    await d.execute('mobile: scroll', {elementId: await lines.elementId, direction: 'down'});
+    return await last.isDisplayed() && !await first.isDisplayed();
+  }, {timeout: 10000, interval: 500, timeoutMsg: 'Diff fixture did not scroll to its final line'});
+  expect(await last.getText()).toContain('scene_diff_line_119');
+  await screenshot('scene-diff-after-scroll');
+  writeFileSync(join(getArtifactsDir(), 'scene-diff-content.json'), JSON.stringify({firstBefore,
+    lastAfter: await d.getElementRect(await last.elementId), firstVisibleAfter: await first.isDisplayed()}, null, 2));
   await d.$('~Close changes').click(); record(ctx, 'diff-used');
   await d.$('~detail-mode-chat').click();
   await typeInto('composer-input', 'scene migration draft');
   expect(await d.$('~composer-input').getValue()).toBe('scene migration draft');
   record(ctx, 'draft-entered');
+  const content = await observeGeometry(ctx, 0, geometry, true);
+  writeFileSync(join(getArtifactsDir(), 'scene-reader-before-geometry.json'), JSON.stringify(content, null, 2));
+  return content;
 }
 
 export async function coldSceneAction(ctx: SceneJourney) {
@@ -131,22 +185,23 @@ export async function coldSceneAction(ctx: SceneJourney) {
   const attachAt = Date.now() / 1000; await d.activateApp(BUNDLE); await assertSceneSurface(ctx.surface);
   const before = await observeGeometry(ctx, attachAt, headless);
   record(ctx, 'same-host-attached'); record(ctx, 'fresh-root-before');
-  await readerToolsAndDraft(ctx, before.native.geometry!);
+  const contentBefore = await readerToolsAndDraft(ctx, before.native.geometry!);
   const original = await d.getOrientation();
   try {
     const next = original === 'PORTRAIT' ? 'LANDSCAPE' : 'PORTRAIT';
     const rotateAt = Date.now() / 1000; await d.setOrientation(next);
-    const after = await observeGeometry(ctx, rotateAt, headless);
+    const after = await observeGeometry(ctx, rotateAt, headless, true, contentBefore.content);
     expect(after.window).not.toEqual(before.window); expect(await d.getOrientation()).toBe(next);
     record(ctx, 'fresh-root-rotated');
+    writeFileSync(join(getArtifactsDir(), 'scene-host-geometry.json'), JSON.stringify({headless, before, contentBefore, after}, null, 2));
+
     await d.$('-ios predicate string:label == "Show full title, 整理这周的发布清单"').waitForDisplayed({timeout: 10000});
-    expect(await d.$('~composer-input').getValue()).toBe('scene migration draft');
-    expect((await d.$$('XCUIElementTypeKeyboard')).length).toBeGreaterThan(0);
+    await continueDraftAfterRotation();
+    record(ctx, 'rotated-input-edited');
     record(ctx, 'draft-keyboard-retained');
     await screenshot('scene-host-rotated');
     if (ctx.surface === 'ordinary-phone') {await d.$('~detail-back').click(); await assertSceneSurface(ctx.surface);}
     record(ctx, 'returned-to-list');
-    writeFileSync(join(getArtifactsDir(), 'scene-host-geometry.json'), JSON.stringify({headless, before, after}, null, 2));
   } finally {await d.setOrientation(original);}
 }
 

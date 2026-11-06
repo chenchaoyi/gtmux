@@ -18,6 +18,7 @@ import hashlib
 import json
 import re
 import subprocess
+import sys
 
 SHA = re.compile(r'^[0-9a-f]{40}$')
 CASES = {
@@ -40,11 +41,11 @@ STEPS = {
                   'A7-switch-home-after-warm', 'C1-home', 'C2-office'),
     'actions': ('cold-native-headless', 'cold-fake-once', 'same-host-attached', 'fresh-root-before',
                 'reader-selected', 'trace-used', 'diff-used', 'draft-entered', 'fresh-root-rotated',
-                'draft-keyboard-retained', 'returned-to-list', 'warm-background', 'warm-fake-once'),
+                'draft-keyboard-retained', 'rotated-input-edited', 'returned-to-list', 'warm-background', 'warm-fake-once'),
     'links': ('cold-not-running', 'cold-native-new-scene-url', 'cold-usage-visible',
               'warm-native-new-scene-url', 'warm-usage-visible'),
     'ipad': ('sidebar-reader-landscape', 'reader-selected', 'trace-used', 'diff-used', 'draft-entered',
-             'sidebar-reader-portrait', 'draft-keyboard-retained'),
+             'sidebar-reader-portrait', 'draft-keyboard-retained', 'rotated-input-edited'),
 }
 TOOLS = {
     '26': {'xcode': '26.3', 'sdk': '26.2', 'runtime': '26.2', 'driver': '11.14.0', 'wda': '15.0.0'},
@@ -255,6 +256,13 @@ def verify_all(expected_units, results, root):
 
 # Execution is confined to an ephemeral hosted runner. Local controls exercise
 # these functions with small synthetic commands and files, never a simulator.
+class CommandFailure(RuntimeError):
+    """A completed child outcome survives a later diagnostic write failure."""
+    def __init__(self, message, outcome):
+        super().__init__(message)
+        self.outcome = outcome
+
+
 class Runner:
     def __init__(self, root, env):
         self.root, self.env = Path(root), dict(env)
@@ -284,10 +292,14 @@ class Runner:
                 if child.poll() is None:
                     os.killpg(child.pid, signal.SIGKILL)
                     child.wait(timeout=10)
-        write_once(stem.with_suffix('.json'), {'command': [str(x) for x in args], 'cwd': str(cwd),
-                   'startedAt': started, 'completedAt': now(), 'state': state, 'exit': code, 'log': str(log)})
+        outcome = {'command': [str(x) for x in args], 'cwd': str(cwd),
+                   'startedAt': started, 'completedAt': now(), 'state': state, 'exit': code, 'log': str(log)}
+        try:
+            write_once(stem.with_suffix('.json'), outcome)
+        except OSError as error:
+            raise CommandFailure(f'{label}: command evidence: {error}', outcome) from error
         if state != 'completed' or (check and code != 0):
-            raise RuntimeError(f'{label}: {state}, exit={code}; see {log}')
+            raise CommandFailure(f'{label}: {state}, exit={code}; see {log}', outcome)
         return code, log
 
     def text(self, args, *, cwd, label, timeout=30, check=True):
@@ -504,8 +516,20 @@ def cleanup_unit(runner, evidence, derived, udid):
                 except ProcessLookupError: pass
     except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
         problems.append('process cleanup: ' + str(error))
-    try: runner.command(['xcrun', 'simctl', 'shutdown', udid], cwd=evidence, label='shutdown-after', timeout=30, check=False)
-    except (OSError, RuntimeError, subprocess.SubprocessError) as error: problems.append('device cleanup: ' + str(error))
+    try:
+        deadline = time.monotonic() + 30
+        code, _ = runner.command(['xcrun', 'simctl', 'shutdown', udid], cwd=evidence,
+                                 label='shutdown-after', timeout=30, check=False)
+        if code != 0:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0: raise RuntimeError('shutdown verification exceeded the 30s cleanup budget')
+            _, raw = runner.text(['xcrun', 'simctl', 'list', '-j', 'devices'], cwd=evidence,
+                                 label='shutdown-state', timeout=remaining)
+            matches = [d for group in json.loads(raw)['devices'].values() for d in group if d.get('udid') == udid]
+            if len(matches) != 1 or matches[0].get('state') != 'Shutdown':
+                raise ValueError(f'shutdown exit={code}; exact device is not verified Shutdown')
+    except (OSError, ValueError, KeyError, TypeError, RuntimeError, subprocess.SubprocessError) as error:
+        problems.append('device cleanup: ' + str(error))
     return problems
 
 
@@ -534,10 +558,14 @@ def run_unit(unit, paths, harness_source, dependencies, product, preflight_data,
         runner.command(['xcrun', 'simctl', 'bootstatus', device['udid'], '-b'], cwd=work, label='boot', timeout=180)
         runner.command(['xcrun', 'simctl', 'install', device['udid'], product['app']], cwd=work, label='install', timeout=60)
         installed = now(); launched = now()
-        status, _ = runner.command(['npm', 'run', 'test:e2e', '--', '--runInBand', TEST_FILES[unit['journey']],
-                                    '--json', '--outputFile', str(evidence / 'jest.json')],
-                                   cwd=work, label='journey', timeout=2100, check=False)
-        result['testExit'] = status; result['state'] = 'completed'
+        try:
+            status, _ = runner.command(['npm', 'run', 'test:e2e', '--', '--runInBand', TEST_FILES[unit['journey']],
+                                        '--json', '--outputFile', str(evidence / 'jest.json')],
+                                       cwd=work, label='journey', timeout=2100, check=False)
+            result['testExit'] = status; result['state'] = 'completed'
+        except CommandFailure as error:
+            result['testExit'] = error.outcome['exit']; result['state'] = error.outcome['state']
+            problems.append(str(error))
         # Post-test evidence is isolated from the original test status. Any absent
         # evidence still makes acceptance red; never replace a test's exit7 with0.
         for label, collect in [
@@ -552,8 +580,20 @@ def run_unit(unit, paths, harness_source, dependencies, product, preflight_data,
     finally:
         problems.extend(cleanup_unit(runner, evidence, derived, device['udid']))
     result['problems'] = problems
-    result['artifacts'] = [file_record(p, evidence) for p in sorted(evidence.rglob('*')) if p.is_file() and not p.is_symlink()]
-    write_once(evidence / 'result.json', result)
+    try:
+        for path in sorted(evidence.rglob('*')):
+            try:
+                if path.is_file() and not path.is_symlink():
+                    result['artifacts'].append(file_record(path, evidence))
+            except OSError as error:
+                problems.append(f'artifact {path}: {error}')
+    except OSError as error:
+        problems.append(f'artifact enumeration: {error}')
+    try:
+        write_once(evidence / 'result.json', result)
+    except OSError as error:
+        problems.append(f'result archive: {error}')
+        print('scene unit archive failed: ' + json.dumps(result), file=sys.stderr)
     return result
 
 
@@ -567,6 +607,11 @@ def execute(toolchain, repository, env):
     results, errors = [], []
     expected = units(ids, toolchain)
     try:
+        # A PR base remains a required readable object even when SDK27 only
+        # executes the candidate. Do not pay for an unused baseline native build.
+        for sha in dict.fromkeys(ids.values()):
+            runner.command(['git', '-C', str(repository), 'cat-file', '-e', sha + '^{commit}'],
+                           cwd=repository, label='source-readable', timeout=15)
         data = preflight(runner, toolchain, repository)
         write_once(root / 'preflight.json', data)
         harness = archive_source(repository, ids['candidate'], root / 'harness')
@@ -581,7 +626,7 @@ def execute(toolchain, repository, env):
             (dependencies / name).symlink_to((checkout_mobile / name).resolve(), target_is_directory=True)
         runner.env.update({'GTMUX_COMPARE_NODE_MODULES': str(dependencies / 'node_modules'), 'GTMUX_COMPARE_JOURNEY': 'push'})
         products = {}
-        for sha in dict.fromkeys([ids['candidate'], *ids.values()]):
+        for sha in dict.fromkeys(u['source'] for u in sorted(expected, key=lambda u: u['variant'] != 'candidate')):
             mobile = prepare_source(repository, sha, harness, root, dependencies, runner)
             product = build_product(runner, mobile, sha, root)
             products[sha] = product
@@ -595,9 +640,16 @@ def execute(toolchain, repository, env):
         errors.append(str(error))
     payload = {'eventName': env['GITHUB_EVENT_NAME'], 'event': event, 'githubSHA': env['GITHUB_SHA'],
                'toolchain': toolchain, 'results': results, 'preparationErrors': errors}
-    write_once(root / 'acceptance.json', payload)
+    try:
+        write_once(root / 'acceptance.json', payload)
+    except OSError as error:
+        errors.append('acceptance archive: ' + str(error))
+        print('scene acceptance archive failed: ' + json.dumps(payload), file=sys.stderr)
     errors.extend(verify_all(expected, results, root / 'evidence'))
-    write_once(root / 'verdict.json', {'errors': errors, 'passed': not errors})
+    try:
+        write_once(root / 'verdict.json', {'errors': errors, 'passed': not errors})
+    except OSError as error:
+        errors.append('verdict archive: ' + str(error))
     for error in errors: print('scene acceptance failed:', error)
     print('Scene evidence:', root)
     return int(bool(errors))

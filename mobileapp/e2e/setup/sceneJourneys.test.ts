@@ -165,8 +165,9 @@ test('both action registrations are present and own guarded setup and cleanup', 
 });
 
 import * as childProcess from 'child_process';
-async function controlledAction(cold: boolean, fault?: 'no-tap' | 'replaced-host' | 'stale-geometry') {
-  const container = join(root, `action-${cold}-${fault || 'pass'}`);
+type ContentFault = 'stale-content' | 'unsafe-reader' | 'keyboard-overlap' | 'lost-focus' | 'missing-diff' | 'no-scroll';
+async function controlledAction(cold: boolean, fault?: 'no-tap' | 'replaced-host' | 'stale-geometry' | ContentFault, ipad = false) {
+  const container = join(root, `action-${ipad}-${cold}-${fault || 'pass'}`);
   mkdirSync(join(container, 'Documents'), {recursive: true});
   const trace = join(container, 'Documents/gtmux-native-notification-trace.jsonl');
   writeFileSync(trace, '');
@@ -176,32 +177,58 @@ async function controlledAction(cold: boolean, fault?: 'no-tap' | 'replaced-host
   globalThis.__E2E_ARTIFACTS_DIR__ = root;
   const writes: unknown[] = [], commands: string[] = [];
   let orientation = 'PORTRAIT', current = geometry;
+  let draft = '', scrolled = false, rotations = 0;
+  const beforeFrames = new Map<string, {x: number; y: number; width: number; height: number}>();
+  const frame = (id: string) => {
+    const {width, height} = current.windowBounds;
+    const left = ipad ? (orientation === 'LANDSCAPE' ? 300 : 280) : 0;
+    const keyboard = {x: 0, y: height - 120, width, height: 120};
+    const reader = {x: left, y: 59, width: width - left, height: keyboard.y - 149};
+    const composer = {x: left + 16, y: keyboard.y - 60, width: width - left - 32, height: 40};
+    const result = id === '~detail-chat' ? reader : id === '~composer-input' ? composer : keyboard;
+    const rotated = rotations > (ipad ? 1 : 0);
+    if (!rotated) beforeFrames.set(id, result);
+    if (rotated && fault === 'stale-content' && id !== 'keyboard') return beforeFrames.get(id)!;
+    if (rotated && fault === 'unsafe-reader' && id === '~detail-chat') return {...reader, x: -8};
+    if (rotated && fault === 'keyboard-overlap' && id === '~composer-input') return {...composer, y: keyboard.y - 10};
+    return result;
+  };
   const emit = (event: string, g: typeof geometry) => {
     const data = readFileSync(trace, 'utf8');
     writeFileSync(trace, data + JSON.stringify({event, time: Date.now() / 1000 + 0.01, geometry: g}) + '\n');
   };
   const fake = {url: 'http://fixture', token: 'synthetic', requests: [], close: jest.fn(async () => {}),
-    world: {recorded: [], writesTo: () => writes}} as unknown as Fake;
+    world: {recorded: [], diffs: new Map(), writesTo: () => writes}} as unknown as Fake;
   globalThis.__E2E_DRIVER__ = {
-    $: (selector: string) => ({elementId: selector, waitForDisplayed: async () => {}, waitForExist: async () => {},
-      isExisting: async () => selector !== '~radar-split', isDisplayed: async () => true,
-      getText: async () => '整理这周的发布清单', getValue: async () => selector === '~trace-search' ? 'part 12' : 'scene migration draft',
+    $: (selector: string) => ({elementId: selector, waitForDisplayed: async () => {
+      if (fault === 'missing-diff' && selector.includes('scene_diff_line_000')) throw new Error('missing Diff fixture');
+    }, waitForExist: async () => {},
+      isExisting: async () => selector === '~radar-split' ? ipad : selector !== '~detail-back' || !ipad,
+      isDisplayed: async () => selector.includes('scene_diff_line_000') ? !scrolled : selector.includes('scene_diff_line_119') ? scrolled : true,
+      getText: async () => selector.includes('scene_diff_line_119') ? 'scene_diff_line_119' : '整理这周的发布清单',
+      getValue: async () => selector === '~trace-search' ? 'part 12' : draft,
       click: async () => {commands.push(selector); if (selector.includes('label == "2"') && fault !== 'no-tap') {
         writes.push({id: '%12', text: '2'}); emit('headless-host', {...geometry, rootAttached: false, scenePresent: false});
       }},
     }),
-    $$: async () => [{}],
+    $$: async () => [{elementId: 'keyboard', isDisplayed: async () => true}],
     terminateApp: async () => {}, queryAppState: async () => 1, background: async () => {},
-    execute: async (command: string) => {commands.push(command);},
+    execute: async (command: string) => {
+      commands.push(command);
+      if (command === 'mobile: keys' && fault !== 'lost-focus') draft += 'x';
+      if (command === 'mobile: scroll' && fault !== 'no-scroll') scrolled = true;
+    },
     activateApp: async () => {emit('scene-host-attached', {...geometry, host: fault === 'replaced-host' ? 2 : 1});},
     getOrientation: async () => orientation,
     setOrientation: async (next: string) => {
-      orientation = next;
-      current = next === 'LANDSCAPE' ? {...geometry, windowBounds: {x: 0, y: 0, width: 852, height: 393},
+      orientation = next; rotations++;
+      current = ipad ? {...geometry, windowBounds: {x: 0, y: 0, width: next === 'LANDSCAPE' ? 1366 : 1024, height: next === 'LANDSCAPE' ? 1024 : 1366},
+        rootBounds: {x: 0, y: 0, width: next === 'LANDSCAPE' ? 1366 : 1024, height: next === 'LANDSCAPE' ? 1024 : 1366},
+        rootInWindow: {x: 0, y: 0, width: next === 'LANDSCAPE' ? 1366 : 1024, height: next === 'LANDSCAPE' ? 1024 : 1366}} : next === 'LANDSCAPE' ? {...geometry, windowBounds: {x: 0, y: 0, width: 852, height: 393},
         rootBounds: {x: 0, y: 0, width: 852, height: 393}, rootInWindow: {x: 0, y: 0, width: 852, height: 393}} : geometry;
       emit('scene-host-updated', fault === 'stale-geometry' ? geometry : current);
     },
-    getElementRect: async (id: string) => id === '~window-metrics-root' ? current.rootInWindow : {x: 8, y: 60, width: 250, height: 150},
+    getElementRect: async (id: string) => id === '~window-metrics-root' ? current.rootInWindow : ['~detail-chat', '~composer-input', 'keyboard'].includes(id) ? frame(id) : {x: 8, y: 60, width: 250, height: 150},
     getWindowSize: async () => ({width: current.windowBounds.width, height: current.windowBounds.height}),
     waitUntil: async (check: () => Promise<boolean>) => {
       for (let i = 0; i < 3; i++) if (await check()) return;
@@ -209,18 +236,19 @@ async function controlledAction(cold: boolean, fault?: 'no-tap' | 'replaced-host
     },
     saveScreenshot: async () => {}, getPageSource: async () => '<fixture/>',
   } as never;
-  const mocks = [jest.spyOn(app, 'launchWithFlags').mockResolvedValue(container),
+  const mocks = [jest.spyOn(app, 'launchWithFlags').mockImplementation(async () => {if (ipad) emit('scene-host-attached', current); return container;}),
     jest.spyOn(app, 'writeDebugFlags').mockReturnValue(container), jest.spyOn(app, 'settle').mockResolvedValue(),
-    jest.spyOn(app, 'waitForNotificationAuthorization').mockResolvedValue(), jest.spyOn(app, 'typeInto').mockResolvedValue(),
+    jest.spyOn(app, 'waitForNotificationAuthorization').mockResolvedValue(), jest.spyOn(app, 'typeInto').mockImplementation(async (id, text) => {if (id === 'composer-input') draft = text;}),
     jest.spyOn(childProcess, 'execFileSync').mockReturnValue(Buffer.from(''))];
-  const suite = loadSceneRegistration('../__tests__/scene-migration-actions.test', fake);
+  const suite = loadSceneRegistration(ipad ? '../__tests__/ipad-adaptive.test' : '../__tests__/scene-migration-actions.test', fake);
   try {
     for (const hook of suite.beforeAll) await hook();
     for (const hook of suite.beforeEach) await hook();
-    try {await suite.cases[cold ? 0 : 1].run();}
+    try {await suite.cases[ipad || cold ? 0 : 1].run();}
     finally {for (const hook of suite.afterEach) await hook();}
-    expect(commands).toContain('-ios predicate string:label == "2"');
-    if (cold) {expect(commands).toContain('~session-tools-menu-trace'); expect(commands).toContain('~session-tools-menu-diff'); expect(commands).toContain('~detail-back');}
+    if (!ipad) expect(commands).toContain('-ios predicate string:label == "2"');
+    if ((ipad || cold) && !fault) {expect(commands).toContain('mobile: keys'); expect(draft).toBe('scene migration draftx');}
+    if (cold && !ipad) {expect(commands).toContain('~session-tools-menu-trace'); expect(commands).toContain('~session-tools-menu-diff'); expect(commands).toContain('~detail-back');}
     return writes;
   } finally {
     for (const hook of suite.afterAll) await hook();
@@ -238,6 +266,20 @@ test.each([true, false])('registered action executes tap and exact fake delivery
 test.each(['replaced-host', 'stale-geometry'] as const)('registered cold action rejects %s and restores rotation', async fault => {
   await expect(controlledAction(true, fault)).rejects.toThrow(fault === 'replaced-host' ? 'Headless root was replaced' : 'bounded action condition missing');
 });
+
+test.each([false, true])('registered content rotation measures and edits the actual reader (ipad=%s)', async ipad => {
+  await controlledAction(true, undefined, ipad);
+  const data = JSON.parse(readFileSync(join(root, ipad ? 'ipad-host-geometry.json' : 'scene-host-geometry.json'), 'utf8'));
+  expect(data.contentBefore.content.reader).not.toEqual(data.after.content.reader);
+  expect(data.contentBefore.content.composer).not.toEqual(data.after.content.composer);
+  const diff = JSON.parse(readFileSync(join(root, 'scene-diff-content.json'), 'utf8'));
+  expect(diff.firstVisibleAfter).toBe(false);
+});
+test.each((['stale-content', 'unsafe-reader', 'keyboard-overlap', 'lost-focus', 'missing-diff', 'no-scroll'] as const)
+  .flatMap(fault => [false, true].map(ipad => [fault, ipad] as const)))(
+  'registered phone and iPad journeys reject %s on ipad=%s despite fresh root geometry', async (fault, ipad) => {
+    await expect(controlledAction(true, fault, ipad)).rejects.toThrow();
+  });
 
 // A setup artifact failure occurs before Jest installs globalTeardown. Exercise
 // that real failure path without spawning Appium, contacting a device or killing
