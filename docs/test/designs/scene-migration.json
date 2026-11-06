@@ -1,0 +1,196 @@
+{
+  "id": "scene-migration",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner34 (case translation self-review); independent v2 plan review by49 recorded separately",
+    "date": "2026-11-07",
+    "decision": "Implement the bounded migration and test closure, not a device or merge approval",
+    "notes": "Before any P implementation, translated and self-reviewed the independently reviewed v2 plan SHA1b561116206f9419ba7520bc5db1e10820587f6050895ca94b0c652a9171c640, sourceQ4714012977fbe95e9fc7f998c8a6e29d911952de/base650f1ec1a415551a547db10886181666572c8768. Reviewer49 REPORT SHAa8df88c055e031030e05e0e01113227b48f59fbb2607263a02ec6637c6d84f04 conditionally recommends design; did not review these JSON bytes, implementation or execute tests. Product13path cap, native object-bound Simulator+LOG_NET observation only, no client fetch trace/persistent SplitShell. New cases preserve v2 expectations. StageP lacks SDK27 oldmain positive control; historicalstatus1 retained. Actual product failures/13path geometry failure remain hard blockers and exact dependencies go back to review. No local simulator/native large build/runtime installation, no second heavy cloud while471 runs. Real review/seal commit precedes this separate migration; no claim original Duo implementation had prior review."
+  },
+  "cases": [
+    {
+      "id": "SCENE-MIG-001",
+      "layer": "L1",
+      "description": "Native response, completion and pending scene input preserve delivery identity",
+      "setup": "Production Foundation queue/payload code, synthetic action/text and duplicate/expiry inputs.",
+      "action": "Invoke scene and delegate paths, drain before acknowledgement, acknowledge and expire; hand off URL/activity from headless root.",
+      "expected": "Action identifier/text survive; 128 response/32 link bounds, exactly-once completion and retained unacked inputs; late duplicate completes safely; Foundation controls are not UIKit acceptance.",
+      "planned_files": [
+        "mobileapp/ios/tests/NotificationResponsePayloadChecks.swift",
+        "mobileapp/ios/tests/NotificationResponseCompletionChecks.swift",
+        "mobileapp/scripts/check-native-documents.py"
+      ],
+      "surfaces": [
+        "iOS scene migration; ordinary iPhone and iPad; no Duo acceptance claim"
+      ]
+    },
+    {
+      "id": "SCENE-MIG-002",
+      "layer": "L1",
+      "description": "Safe-area gate separates nonvisual initialization from the live visual scene",
+      "setup": "Actual SafeAreaProvider, WorkspaceSurface and root metrics with native boundaries controlled; null/zero/current scene then unmount/late callback.",
+      "action": "Deliver valid onLayout/currentSceneMetrics, inset change, active retry or late completion.",
+      "expected": "Push can start without visual insets; zero metrics do not render a fake canvas; actual scene initializes correct insets; native changes propagate; cleanup rejects late values without duplicate subscriptions.",
+      "planned_files": [
+        "mobileapp/__tests__/App.notificationBootstrap.test.tsx",
+        "mobileapp/src/ui/WorkspaceSurface.test.tsx",
+        "mobileapp/src/ui/WorkspaceSurface.sceneMetrics.test.tsx",
+        "mobileapp/src/ui/windowMetrics.test.tsx"
+      ],
+      "surfaces": [
+        "iOS scene migration; ordinary iPhone and iPad; no Duo acceptance claim"
+      ]
+    },
+    {
+      "id": "SCENE-MIG-003",
+      "layer": "L1",
+      "description": "Permission wait does not lose initial/foreground actions or duplicate replies",
+      "setup": "Actual setupPush with delayed native requests, abort and duplicate native/legacy notification boundaries.",
+      "action": "Hold permission; deliver initial/active-first response; await pending reply and acknowledge; abort before probe.",
+      "expected": "30s device authorization is unchanged; initial and listener setup are independent; correct action/text delivers once; active-first response not hidden by prior reply; abort removes listeners/timers, no payload logged.",
+      "planned_files": [
+        "mobileapp/src/push/launchNotification.test.ts",
+        "mobileapp/src/push/initialPermissionConcurrency.test.ts",
+        "mobileapp/src/push/responseCompletion.test.ts",
+        "mobileapp/src/push/permissionTrace.test.ts"
+      ],
+      "surfaces": [
+        "iOS scene migration; ordinary iPhone and iPad; no Duo acceptance claim"
+      ]
+    },
+    {
+      "id": "SCENE-MIG-004",
+      "layer": "L1",
+      "description": "Scene links retain intent until consumer is ready but rejected guest/demo initial intent never replays",
+      "setup": "Actual UsageWidgetBridge, fresh module initialURL and pending native link queue; latest client boundary.",
+      "action": "Deliver warm/cold/pending link; change client/owner without new link; unmount.",
+      "expected": "Stable subscribe1/remove0 until unmount remove1; latest client used; guest/demo initial URL consumed before authorization and never opens on owner change without a new link.",
+      "planned_files": [
+        "mobileapp/src/usage/UsageWidgetBridge.test.tsx",
+        "mobileapp/src/usage/UsageWidgetBridge.initialLink.test.tsx",
+        "mobileapp/src/usage/UsageWidgetBridge.initialDemoLink.test.tsx",
+        "mobileapp/src/usage/UsageWidgetBridge.sceneEvents.test.tsx"
+      ],
+      "surfaces": [
+        "iOS scene migration; ordinary iPhone and iPad; no Duo acceptance claim"
+      ]
+    },
+    {
+      "id": "SCENE-MIG-005",
+      "layer": "L2",
+      "description": "Filtered main App and real geometry consumers close over stale RN/new root dimensions",
+      "setup": "Real App/Root/Workspace/size-class/screens/SplitShell/AnchoredMenu/DiffModal/SafeArea gate, controlled network/storage/native host boundaries only. RN kept0/393x852/1024x768 while root and native scene change.",
+      "action": "Exercise Splash, no-server and paired branches; root phone rotation and pad rotation; sidebar, menu, Diff, selection/draft/focus. Inspect filtered App against main.",
+      "expected": "Main compact RadarScreen vs regular SplitShell, main navigation props and pre-workspace SafeAreaProviders remain. Sidebar/menu/Diff follow new root under stale RN; real wrong geometry fails. No persistent SplitShell/inlineSelection/popTo. Zero/late/unmount/drop-draft mutants fail. Failure outside13 product paths is reported with exact minimal delta, not weakened or silently migrated. JS layout is not UIKit evidence.",
+      "planned_files": [
+        "mobileapp/__tests__/App.sceneMigration.test.tsx"
+      ],
+      "surfaces": [
+        "iOS scene migration; ordinary iPhone and iPad; no Duo acceptance claim"
+      ]
+    },
+    {
+      "id": "SCENE-MIG-006",
+      "layer": "L3",
+      "description": "Ordinary scene action and link registrations use strict surfaces and complete shared behaviors",
+      "setup": "Named isolated simulator; ordinary-phone radar-screen, regular-iPad radar-split/sidebar/reader. Shared sceneJourneys; no Duo posture claims.",
+      "action": "Cold/warm native action and cold/warm URL; exact fake write, native delivery then UI; cold action attach same host, rotate and use reader/tools/Trace/Diff/input.",
+      "expected": "Two action and two link cases, original20s send/30s auth/300s action budgets, %12/text2 exactly once; foreground recovery cannot pass failed background; same actual PID/host object and new native/WDA geometry in point coordinates within1pt; unique session/draft/focus and actual interactions. Wrong shell, omitted tap/native delivery, early return/skip/missing case fail.",
+      "planned_files": [
+        "mobileapp/e2e/setup/sceneJourneys.ts",
+        "mobileapp/e2e/setup/sceneJourneys.test.ts",
+        "mobileapp/e2e/__tests__/scene-migration-actions.test.ts",
+        "mobileapp/e2e/__tests__/scene-migration-links.test.ts"
+      ],
+      "surfaces": [
+        "iOS scene migration; ordinary iPhone and iPad; no Duo acceptance claim"
+      ]
+    },
+    {
+      "id": "SCENE-MIG-007",
+      "layer": "L3",
+      "description": "Full A/C notification and server baseline/candidate contracts plus iPad content rotation",
+      "setup": "Same26.2 SDK/runtime M/P products, same harness/flags/driver/signature;27 P-only candidate; isolated device per journey.",
+      "action": "Original A cold tap, server switches, background warm tap; C no-notification switch; two server journeys; iPad sidebar/chat/session and tools/Diff/input rotation.",
+      "expected": "PR15 instances:26 M/P each4 and27 candidate6+pad1. Main11:26 candidate4 and27 candidate6+pad1. A420s and other original deadlines; missing UDID/alert/skip is failure. Preserve behavior not only counts;27 old baseline remains historical failure, not expected-negative.",
+      "planned_files": [
+        "mobileapp/e2e/__tests__/coldstart-push.test.ts",
+        "mobileapp/e2e/__tests__/server-switch-compare.test.ts",
+        "mobileapp/e2e/__tests__/ipad-adaptive.test.ts"
+      ],
+      "surfaces": [
+        "iOS scene migration; ordinary iPhone and iPad; no Duo acceptance claim"
+      ]
+    },
+    {
+      "id": "SCENE-MIG-008",
+      "layer": "G",
+      "description": "One coordinator isolates product, source, journey and evidence and fails closed",
+      "setup": "Temporary real git repository from root and child CWD; synthetic subprocess/toolchain/product/results fixtures, no real simulator.",
+      "action": "Prepare real event base/head or main after, isolate tuple roots; two journeys/variants; inject wrong/missing identity, read/write/timeout failures, skip/early-return and cancellation.",
+      "expected": "No reused writable roots/status overwrite; original test status kept even diagnostics fail but missing evidence makes acceptance red. SDK26.2 vsXcode26.3 distinct;27.1/runtime27.0;WDA/target/signature/binary/PID identity required. Real unreadable base fails. Build once per source/toolchain/signature, never unsigned as ad-hoc. PR15/main11 exact names/steps, all selected old gates AND new gate. Bounded cleanup, no retries/deadline changes.",
+      "planned_files": [
+        "mobileapp/e2e/ci-scene-migration.py",
+        "mobileapp/e2e/instrument-baseline.py",
+        "scripts/scene_migration_test.py"
+      ],
+      "surfaces": [
+        "iOS scene migration; ordinary iPhone and iPad; no Duo acceptance claim"
+      ]
+    },
+    {
+      "id": "SCENE-MIG-009",
+      "layer": "G",
+      "description": "CI selection and aggregation include scene for relevant native/App/UI/push/usage/e2e paths and main",
+      "setup": "Real scope/verdict functions and workflow commands, synthetic PR/main contexts.",
+      "action": "Select each relevant path; inject selected job missing/skipped/failure/cancelled, new job green with old failure and bad base.",
+      "expected": "All relevant paths select ios-scene, old quality/gates unchanged; fail closed for missing execution or cancelled; PR event base and actualmain candidate route run, no branch whitelist. actionlint1.7.7 original labels plus only xcode-27.",
+      "planned_files": [
+        "scripts/ci.py",
+        "scripts/ci_test.py"
+      ],
+      "surfaces": [
+        "iOS scene migration; ordinary iPhone and iPad; no Duo acceptance claim"
+      ]
+    },
+    {
+      "id": "SCENE-MIG-010",
+      "layer": "L1",
+      "description": "Per-launch container and artifact identity avoid repeated retrieval and evidence collision",
+      "setup": "Real setup helper with temporary filesystem and controlled child/driver boundaries, two distinct launches and tuple artifact roots.",
+      "action": "Launch to returned container after activation; lookup/write/activation failure; independent journey roots and invalid artifact path.",
+      "expected": "Fresh per-launch path, no global cache; failures propagate; per-source/journey artifacts cannot overwrite others or escape assigned root; existing startup deadline not arbitrarily shortened and original failure/cleanup retained.",
+      "planned_files": [
+        "mobileapp/e2e/setup/app.ts",
+        "mobileapp/e2e/setup/appLaunchFiles.test.ts",
+        "mobileapp/e2e/setup/capabilities.ts",
+        "mobileapp/e2e/setup/capabilities.test.ts",
+        "mobileapp/e2e/setup/global-setup.ts",
+        "mobileapp/e2e/setup/global-teardown.ts",
+        "mobileapp/e2e/setup/driver.ts",
+        "mobileapp/e2e/setup/journeyGuard.ts",
+        "mobileapp/e2e/setup/sceneJourneys.test.ts"
+      ],
+      "surfaces": [
+        "iOS scene migration; ordinary iPhone and iPad; no Duo acceptance claim"
+      ]
+    },
+    {
+      "id": "SCENE-MIG-011",
+      "layer": "L2",
+      "description": "Fake request diagnostics and stable transcript identity do not change the HTTP contract",
+      "setup": "Real existing fake server, explicit or default world.transcripts, isolated network endpoints.",
+      "action": "Consecutive HTTP reads/writes and explicit transcript override; collect diagnostic request and write snapshots.",
+      "expected": "Stable default epoch for one fake instance, explicit transcripts/permissions/CT-HTTP unchanged; diagnostics do not replace product behavior and each journey gets separate fixture state.",
+      "planned_files": [
+        "mobileapp/e2e/fake-serve/server.ts",
+        "mobileapp/e2e/fake-serve/request-diagnostics.test.ts",
+        "mobileapp/e2e/fake-serve/transcript-identity.test.ts"
+      ],
+      "surfaces": [
+        "iOS scene migration; ordinary iPhone and iPad; no Duo acceptance claim"
+      ]
+    }
+  ],
+  "seal": "505184d26789218b0a11c13ffe0d71f417b995c656719c06be4879768ee79ce1"
+}
