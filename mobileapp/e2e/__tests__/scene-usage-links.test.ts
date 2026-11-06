@@ -43,6 +43,29 @@ async function waitForUsageWithSystemConfirmation(timeout: number) {
   }, {timeout, interval: 500, timeoutMsg: 'usage sheet did not become visible'});
 }
 
+// Native delivery and JS presentation are distinct; retain bounded checks for both.
+function nativeSceneTrace() {
+  const container = execFileSync('xcrun', ['simctl', 'get_app_container', process.env.GTMUX_E2E_UDID!, BUNDLE, 'data'], {encoding: 'utf8'}).trim();
+  return join(container, 'Documents', 'gtmux-native-notification-trace.jsonl');
+}
+
+function sceneURLCount(path: string): number {
+  if (!existsSync(path)) return 0;
+  return readFileSync(path, 'utf8').split('\n').filter(line => {
+    try { return JSON.parse(line).event === 'scene-url'; } catch { return false; }
+  }).length;
+}
+
+async function waitForSceneDelivery(path: string, previous: number) {
+  const driver = getDriver();
+  await driver.waitUntil(async () => {
+    if (sceneURLCount(path) > previous) return true;
+    const alert = await driver.getAlertText().catch(() => '');
+    if (/^Open in [“"]gtmux[”"]\?$/.test(alert.trim())) await driver.acceptAlert().catch(() => {});
+    return false;
+  }, {timeout: 20000, interval: 500, timeoutMsg: 'native scene did not receive the warm URL'});
+}
+
 it('opens a warm usage link through the scene', async () => {
   const {flags, open} = fixture();
   const driver = getDriver();
@@ -50,13 +73,21 @@ it('opens a warm usage link through the scene', async () => {
   await driver.$('~radar-split').waitForExist({timeout: 25000});
   // Wait for the bridge and live server before UIKit delivers the warm link.
   await driver.$('-ios predicate string:label BEGINSWITH "Connection: connected"').waitForExist({timeout: 25000});
+  const trace = nativeSceneTrace();
+  const previous = sceneURLCount(trace);
+  const timing: {opened: number; delivered?: number; visible?: number} = {opened: Date.now()};
   open();
   try {
+    await waitForSceneDelivery(trace, previous);
+    timing.delivered = Date.now();
     await waitForUsageWithSystemConfirmation(15000);
+    timing.visible = Date.now();
+    await screenshot('scene-warm-usage-link');
   } catch (error) {
     return captureOnFailure('scene-warm-usage-link-failed', error);
+  } finally {
+    writeFileSync(join(getArtifactsDir(), 'usage-link-warm-timing.json'), JSON.stringify(timing, null, 2));
   }
-  await screenshot('scene-warm-usage-link');
 });
 
 it('opens a cold usage link through the scene', async () => {

@@ -6,13 +6,16 @@ import {BUNDLE, launchWithFlags, readDebugLog, settle, waitForNotificationAuthor
 import {screenshot} from '../setup/screenshot';
 import {selectUnfoldedInnerDisplay} from '../setup/duoDisplay';
 import {startFake, Fake} from '../fake-serve/server';
+import {createJourneyGuard} from '../setup/journeyGuard';
 
 // Real simulator notification response against an isolated fake server. An action
 // must send one digit once, even when UIKit delivers both scene and delegate paths.
 let fake: Fake;
+const guard = createJourneyGuard();
 beforeAll(async () => { fake = await startFake(); });
 beforeEach(async () => { await selectUnfoldedInnerDisplay(); }, 60000);
 afterEach(async () => {
+  await guard.wait();
   const dir = getArtifactsDir();
   const label = expect.getState().currentTestName?.startsWith('delivers a cold') ? 'cold' : 'warm';
   writeFileSync(join(dir, `action-${label}-js.json`), JSON.stringify(readDebugLog(), null, 2));
@@ -31,10 +34,10 @@ afterEach(async () => {
   } catch (error) {
     writeFileSync(join(dir, `action-${label}-native-error.txt`), String(error));
   }
-});
+}, 930000);
 afterAll(async () => { await fake?.close(); });
 
-it('delivers a cold notification action exactly once', async () => {
+it('delivers a cold notification action exactly once', () => guard.run(async () => {
   const udid = process.env.GTMUX_E2E_UDID;
   if (!udid || process.env.GTMUX_E2E_ACCEPT_ALERTS !== '1') throw new Error('requires a named simulator and notification alerts');
   const driver = getDriver();
@@ -77,9 +80,9 @@ it('delivers a cold notification action exactly once', async () => {
   } finally {
     await driver.setOrientation(original);
   }
-});
+}), 300000);
 
-it('delivers a warm notification action exactly once', async () => {
+it('delivers a warm notification action exactly once', () => guard.run(async () => {
   const udid = process.env.GTMUX_E2E_UDID;
   if (!udid || process.env.GTMUX_E2E_ACCEPT_ALERTS !== '1') throw new Error('requires a named simulator and notification alerts');
   const driver = getDriver();
@@ -104,8 +107,20 @@ it('delivers a warm notification action exactly once', async () => {
   await action.waitForDisplayed({timeout: 10000});
   await screenshot('warm-action-before-tap');
   await action.click();
-  await driver.waitUntil(() => fake.world.writesTo('/api/send').length > 0, {timeout: 20000, interval: 500});
+  try {
+    await driver.waitUntil(() => fake.world.writesTo('/api/send').length > 0, {timeout: 20000, interval: 500});
+  } catch (error) {
+    // Record recovery separately; a foreground send never makes the background check pass.
+    const before = fake.world.writesTo('/api/send').length;
+    let recoveryError: string | undefined;
+    try {
+      await driver.activateApp(BUNDLE);
+      await driver.waitUntil(() => fake.world.writesTo('/api/send').length > before, {timeout: 15000, interval: 500});
+    } catch (recovery) { recoveryError = String(recovery); }
+    writeFileSync(join(getArtifactsDir(), 'action-warm-recovery.json'), JSON.stringify({before, after: fake.world.writesTo('/api/send'), recoveryError}, null, 2));
+    throw error;
+  }
   await settle(2000);
   expect(fake.world.writesTo('/api/send')).toEqual([expect.objectContaining({id: '%12', text: '2'})]);
   await screenshot('warm-action-after-tap');
-});
+}), 300000);

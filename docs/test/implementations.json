@@ -759,5 +759,14 @@
       "anchors the first visible prompt while the earlier turn is partly visible and layout settles",
       "keeps the user reading anchor when a late system scroll races a resize and replaces it after a new drag"
     ]
+  },
+  "mobileapp/e2e/setup/journeyGuard.test.ts": {
+    "cases": [
+      "DUO-034"
+    ],
+    "selectors": [
+      "wait holds the next journey until outstanding cleanup completes",
+      "a failed journey releases the guard without concealing its error"
+    ]
   }
 }

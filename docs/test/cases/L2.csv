@@ -421,6 +421,8 @@ MAP-2fd3cafb008c,L2,reviewed implementation,mobileapp/e2e/fake-serve/backend-con
 MAP-01cd8c62d09e,L2,reviewed implementation,mobileapp/e2e/fake-serve/backend-contract.test.ts,53,reviewed-selector,RN client consumes original ordinals,False,CT-HTTP
 MAP-f2ed2637baa9,L2,reviewed implementation,mobileapp/e2e/fake-serve/server.ts,97,reviewed-selector,startFake,False,CT-HTTP
 MAP-f4f657590af5,L2,reviewed implementation,mobileapp/e2e/fake-serve/world.ts,111,reviewed-selector,export class World,False,CT-HTTP
+MAP-a6a52139caeb,L2,reviewed implementation,mobileapp/e2e/setup/journeyGuard.test.ts,3,reviewed-selector,wait holds the next journey until outstanding cleanup completes,False,DUO-034
+MAP-3a80ec28bf00,L2,reviewed implementation,mobileapp/e2e/setup/journeyGuard.test.ts,20,reviewed-selector,a failed journey releases the guard without concealing its error,False,DUO-034
 MAP-4d79dbb7ab50,L2,reviewed implementation,mobileapp/ios/tests/NotificationResponseCompletionChecks.swift,20,reviewed-selector,notification response completion checks passed,False,DUO-030
 MAP-4aec1b6dc3b7,L2,reviewed implementation,mobileapp/src/push/initialPermissionConcurrency.test.ts,15,reviewed-selector,"requests permission despite a stalled initial response, then delivers the late action once",False,DUO-032
 MAP-27c1f05fe1bb,L2,reviewed implementation,mobileapp/src/push/initialPermissionConcurrency.test.ts,29,reviewed-selector,ignores an initial response that arrives after teardown,False,DUO-032

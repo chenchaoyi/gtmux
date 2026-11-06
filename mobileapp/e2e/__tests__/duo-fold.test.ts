@@ -5,6 +5,7 @@ import {launchWithFlags, readDebugLog, typeInto} from '../setup/app';
 import {captureOnFailure, screenshot} from '../setup/screenshot';
 import {startFake, Fake} from '../fake-serve/server';
 import {TestIds} from '../../src/constants/testIds';
+import {createJourneyGuard} from '../setup/journeyGuard';
 
 type Display = {id: number; metrics: {widthPixels: number; heightPixels: number}};
 let fake: Fake;
@@ -63,16 +64,9 @@ async function posture(angle: number, panel: 'inner' | 'outer', evidence: object
     return size;
 }
 
-// Jest may time out while a WebDriver command is still running. Keep the next
-// journey from changing the same simulator until this one has finished cleanup.
-let activeJourney: Promise<void> | undefined;
-function journey(work: () => Promise<void>): Promise<void> {
-  const pending = work();
-  activeJourney = pending;
-  void pending.finally(() => { if (activeJourney === pending) activeJourney = undefined; }).catch(() => {});
-  return pending;
-}
-afterEach(async () => { if (activeJourney) await activeJourney.catch(() => {}); }, 930000);
+// A timed-out driver operation must finish cleanup before another case starts.
+const guard = createJourneyGuard();
+afterEach(guard.wait, 930000);
 
 async function selectLongChat(evidence: object[]) {
   const driver = getDriver();
@@ -103,7 +97,7 @@ async function restorePosture() {
   await driver.updateSettings({currentDisplayId: null}).catch(() => {});
 }
 
-it('retains the selected conversation and reading position across simulator fold and unfold', () => journey(async () => {
+it('retains the selected conversation and reading position across simulator fold and unfold', () => guard.run(async () => {
   const driver = getDriver();
   const evidence: object[] = [];
   try {
@@ -145,7 +139,7 @@ it('retains the selected conversation and reading position across simulator fold
   }
 }), 300000);
 
-it('retains the selected conversation and keyboard draft across simulator fold and unfold', () => journey(async () => {
+it('retains the selected conversation and keyboard draft across simulator fold and unfold', () => guard.run(async () => {
   const driver = getDriver();
   const evidence: object[] = [];
   try {
@@ -197,6 +191,7 @@ it('keeps the session entry usable at an accessibility text size on both panels'
   const driver = getDriver();
   const evidence: object[] = [];
   let original: string | undefined;
+  let auditFake: Fake | undefined;
   const auditErrors: string[] = [];
   const audit = async (panel: string) => {
     try {
@@ -210,11 +205,12 @@ it('keeps the session entry usable at an accessibility text size on both panels'
     }
   };
   try {
+    auditFake = await startFake();
     original = await driver.execute('mobile: contentSize') as string;
     expect(original).not.toMatch(/^(unknown|unsupported)$/);
     await driver.execute('mobile: setContentSize', {size: 'accessibility-large'});
     expect(await driver.execute('mobile: contentSize')).toBe('accessibility-large');
-    await launchWithFlags({GTMUX_DEBUG_PAIR_URL: fake.url, GTMUX_DEBUG_PAIR_TOKEN: fake.token,
+    await launchWithFlags({GTMUX_DEBUG_PAIR_URL: auditFake.url, GTMUX_DEBUG_PAIR_TOKEN: auditFake.token,
       GTMUX_DEBUG_NO_PUSH: '1', GTMUX_DEBUG_LANG: 'en'});
     await posture(0, 'outer', evidence);
     const back = driver.$(`~${TestIds.detail.back}`);
@@ -252,6 +248,7 @@ it('keeps the session entry usable at an accessibility text size on both panels'
     }
     await driver.execute('mobile: setSimulatedHingeAngle', {angle: 180}).catch(() => {});
     await driver.updateSettings({currentDisplayId: null}).catch(() => {});
+    await auditFake?.close();
   }
 }, 300000);
 
