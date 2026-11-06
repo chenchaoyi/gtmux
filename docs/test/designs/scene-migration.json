@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner34 (case translation self-review); independent v2 plan review by49 recorded separately",
     "date": "2026-11-07",
     "decision": "Implement the bounded migration and test closure, not a device or merge approval",
-    "notes": "Before any P implementation, translated and self-reviewed the independently reviewed v2 plan SHA1b561116206f9419ba7520bc5db1e10820587f6050895ca94b0c652a9171c640, sourceQ4714012977fbe95e9fc7f998c8a6e29d911952de/base650f1ec1a415551a547db10886181666572c8768. Reviewer49 REPORT SHAa8df88c055e031030e05e0e01113227b48f59fbb2607263a02ec6637c6d84f04 conditionally recommends design; did not review these JSON bytes, implementation or execute tests. Product13path cap, native object-bound Simulator+LOG_NET observation only, no client fetch trace/persistent SplitShell. New cases preserve v2 expectations. StageP lacks SDK27 oldmain positive control; historicalstatus1 retained. Actual product failures/13path geometry failure remain hard blockers and exact dependencies go back to review. No local simulator/native large build/runtime installation, no second heavy cloud while471 runs. Real review/seal commit precedes this separate migration; no claim original Duo implementation had prior review."
+    "notes": "Before any P implementation, translated and self-reviewed the independently reviewed v2 plan SHA1b561116206f9419ba7520bc5db1e10820587f6050895ca94b0c652a9171c640, sourceQ4714012977fbe95e9fc7f998c8a6e29d911952de/base650f1ec1a415551a547db10886181666572c8768. Reviewer49 REPORT SHAa8df88c055e031030e05e0e01113227b48f59fbb2607263a02ec6637c6d84f04 conditionally recommends design; did not review these JSON bytes, implementation or execute tests. Product13path cap, native object-bound Simulator+LOG_NET observation only, no client fetch trace/persistent SplitShell. New cases preserve v2 expectations. StageP lacks SDK27 oldmain positive control; historicalstatus1 retained. Actual product failures/13path geometry failure remain hard blockers and exact dependencies go back to review. No local simulator/native large build/runtime installation, no second heavy cloud while471 runs. Real review/seal commit precedes this separate migration; no claim original Duo implementation had prior review. Actual closure failures289dda97 and independent49 scope review REPORT SHA85638ccb28452a69d5ca07bd8df10f0764378d9ef335a2c0317c6afed34ce144 plus HQ5ca2 coordination now permit exactly two hook imports (SplitShell/AnchoredMenu) in frozen patch SHAbb3db06e306b0ceefa90650a4673833654be5441af754290f26fb0c601411e0a; product cap15, no body/style/nav changes or16th path. Self-reviewed this case revision before applying patch/new assertions. Existing root393->1024 sidebar300 and menu213->197 expectations stay; add subsequent resize/HQ inspector and nonzero-inset/menu-height checks, restore each old import negative then exact new SHA. Native/completeP/merge not approved."
   },
   "cases": [
     {
@@ -81,7 +81,7 @@
       "description": "Filtered main App and real geometry consumers close over stale RN/new root dimensions",
       "setup": "Real App/Root/Workspace/size-class/screens/SplitShell/AnchoredMenu/DiffModal/SafeArea gate, controlled network/storage/native host boundaries only. RN kept0/393x852/1024x768 while root and native scene change.",
       "action": "Exercise Splash, no-server and paired branches; root phone rotation and pad rotation; sidebar, menu, Diff, selection/draft/focus. Inspect filtered App against main.",
-      "expected": "Main compact RadarScreen vs regular SplitShell, main navigation props and pre-workspace SafeAreaProviders remain. Sidebar/menu/Diff follow new root under stale RN; real wrong geometry fails. No persistent SplitShell/inlineSelection/popTo. Zero/late/unmount/drop-draft mutants fail. Failure outside13 product paths is reported with exact minimal delta, not weakened or silently migrated. JS layout is not UIKit evidence.",
+      "expected": "Main compact RadarScreen vs regular SplitShell, main navigation props and pre-workspace SafeAreaProviders remain. Sidebar/menu/Diff follow new root under stale RN; real wrong geometry fails. No persistent SplitShell/inlineSelection/popTo. Zero/late/unmount/drop-draft mutants fail. After independently reviewed exact two import closure delta, failure outside15 product paths is reported with exact minimal delta, not weakened or silently migrated. JS layout is not UIKit evidence. Subsequent root resize must change sidebar/HQ inspector using unchanged formulas; nonzero safe-area menu top/left/maxHeight must use current height. Exact individual old-import negatives fail and new bytes are restored.",
       "planned_files": [
         "mobileapp/__tests__/App.sceneMigration.test.tsx"
       ],
@@ -192,5 +192,5 @@
       ]
     }
   ],
-  "seal": "505184d26789218b0a11c13ffe0d71f417b995c656719c06be4879768ee79ce1"
+  "seal": "fc2bbd06ae11cf2db30e442cc42f1b29e031a6b1f668e77e79234d8438d06236"
 }
