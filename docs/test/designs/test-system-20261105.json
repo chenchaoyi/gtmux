@@ -5,7 +5,7 @@
     "reviewer": "Codex integration owner; independent source and mapping review by gtmux %20",
     "date": "2026-11-05",
     "decision": "Reviewed for separate integration from the frozen source; device acceptance remains outstanding",
-    "notes": "Checked isolation, production-module execution, explicit live-write target, independent RN/Web assertions, failure cases and evidence boundaries. User requested these three priorities. No real-session writes, signing, release or installation. Integration preparation from PR1810-derived local source cae4c446f3a5cfc8d8cca899d6f7eb9e5aaaf846 onto main 50fd32738d5f5171629a16d1f93e55aedc5d6a4c; this draft is not a review or evidence that original implementation was reviewed in advance. Independent review of frozen Q cae4c446f3a5cfc8d8cca899d6f7eb9e5aaaf846 against B 50fd32738d5f5171629a16d1f93e55aedc5d6a4c concluded with relay c04db94cf9a846c4a2095d3feb0e56c2 after review of earlier source stages and the final delta. The original implementation predates this integration review; this record precedes its separate migration only. Device, candidate and main checks remain outstanding. Pre-implementation follow-up review for the existing CI selector checks: assert that the same Duo device job includes duo-text-scaling.test.ts after its reviewed extraction, preventing a skipped native text-geometry journey without adding another runner or lowering assertions."
+    "notes": "Checked isolation, production-module execution, explicit live-write target, independent RN/Web assertions, failure cases and evidence boundaries. User requested these three priorities. No real-session writes, signing, release or installation. Integration preparation from PR1810-derived local source cae4c446f3a5cfc8d8cca899d6f7eb9e5aaaf846 onto main 50fd32738d5f5171629a16d1f93e55aedc5d6a4c; this draft is not a review or evidence that original implementation was reviewed in advance. Independent review of frozen Q cae4c446f3a5cfc8d8cca899d6f7eb9e5aaaf846 against B 50fd32738d5f5171629a16d1f93e55aedc5d6a4c concluded with relay c04db94cf9a846c4a2095d3feb0e56c2 after review of earlier source stages and the final delta. The original implementation predates this integration review; this record precedes its separate migration only. Device, candidate and main checks remain outstanding. Pre-implementation follow-up review for the existing CI selector checks: assert that the same Duo device job includes duo-text-scaling.test.ts after its reviewed extraction, preventing a skipped native text-geometry journey without adding another runner or lowering assertions. Pre-implementation owner review: add the new reviewed Duo VoiceOver file to the same existing 27.1 job and assert its exact selector in the existing CI guard. Preserve all prior suites, driver pins, timeouts, artifact collection and ordinary-device regressions; do not add a runner or mark unsupported VoiceOver as skip."
   },
   "cases": [
     {
@@ -280,5 +280,5 @@
       ]
     }
   ],
-  "seal": "289dd554833feefd4b8fbe797cdbba5bce38b2a8212469f9134b8a8bd1a9a452"
+  "seal": "13bfe6bbead5e299abb8bf1d87099e0225afea24a2dc3e952d9874f87a1839ad"
 }
