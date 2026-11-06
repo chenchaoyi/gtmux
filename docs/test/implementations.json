@@ -655,10 +655,7 @@
   },
   "mobileapp/e2e/ci-scene-migration.py": {
     "cases": [
-      "SCENE-MIG-008",
-      "SCENE-MIG-012",
-      "SCENE-MIG-013",
-      "SCENE-MIG-014"
+      "SCENE-MIG-008"
     ],
     "selectors": [
       "def sources(",
@@ -681,10 +678,7 @@
   },
   "scripts/scene_migration_test.py": {
     "cases": [
-      "SCENE-MIG-008",
-      "SCENE-MIG-012",
-      "SCENE-MIG-013",
-      "SCENE-MIG-014"
+      "SCENE-MIG-008"
     ],
     "selectors": [
       "test_real_event_sources_and_fixed_PR15_main11_instances",
@@ -736,8 +730,7 @@
   "mobileapp/e2e/setup/sceneJourneys.test.ts": {
     "cases": [
       "SCENE-MIG-006",
-      "SCENE-MIG-010",
-      "SCENE-MIG-015"
+      "SCENE-MIG-010"
     ],
     "selectors": [
       "separate source and journey artifacts never replace the earlier result",
@@ -820,8 +813,7 @@
   },
   "mobileapp/e2e/setup/sceneJourneys.ts": {
     "cases": [
-      "SCENE-MIG-006",
-      "SCENE-MIG-015"
+      "SCENE-MIG-006"
     ],
     "selectors": [
       "coldSceneAction",
@@ -872,8 +864,7 @@
   },
   "mobileapp/e2e/__tests__/ipad-adaptive.test.ts": {
     "cases": [
-      "SCENE-MIG-007",
-      "SCENE-MIG-015"
+      "SCENE-MIG-007"
     ],
     "selectors": [
       "keeps the iPad sidebar and selected session through rotation"
