@@ -71,8 +71,15 @@ it('retains the selected conversation, reading position and draft across simulat
       GTMUX_DEBUG_NO_PUSH: '1', GTMUX_DEBUG_LANG: 'en', GTMUX_DEBUG_LOG_NET: '1'});
     const initialSize = await posture(180, 'inner', evidence);
     const row = driver.$('~agent-row-%13');
-    await row.waitForDisplayed({timeout: 25000});
-    await row.click();
+    await row.waitForExist({timeout: 25000});
+    const rowFrame = await driver.getElementRect(await row.elementId);
+    expect(rowFrame.width).toBeGreaterThan(0);
+    expect(rowFrame.height).toBeGreaterThan(0);
+    expect(rowFrame.x).toBeGreaterThanOrEqual(0);
+    expect(rowFrame.y).toBeGreaterThanOrEqual(0);
+    expect(rowFrame.x + rowFrame.width).toBeLessThanOrEqual(initialSize.width);
+    expect(rowFrame.y + rowFrame.height).toBeLessThanOrEqual(initialSize.height);
+    await driver.execute('mobile: tap', {x: rowFrame.x + rowFrame.width / 2, y: rowFrame.y + rowFrame.height / 2});
     const chat = driver.$(`~${TestIds.detail.modeChat}`);
     await chat.waitForDisplayed({timeout: 10000});
     await chat.click();
