@@ -89,6 +89,16 @@ requires `set-titles on` with `set-titles-string '#S — #W'`.
 - **THEN** focus matches it by that prefix (absorbing terminal-specific suffixes
   such as iTerm2's ` (tmux)`)
 
+#### Scenario: A session name starts with punctuation
+
+- **WHEN** the real tmux session name starts with quotes, symbols or emoji
+- **THEN** known-session matching preserves the complete name before tolerating
+  leading terminal bell or gtmux alert decoration, and still requires an exact
+  session name or the ` — ` session/window separator
+- **AND** Ghostty focus prefers a literal title match over a decorated lookalike
+  across its tabs, passing the selected raw title, including trailing whitespace,
+  unchanged to AppleScript
+
 ### Requirement: Restore tabs after the terminal quits
 
 The system SHALL, via the default `gtmux restore`, open a new terminal tab (or cmux
