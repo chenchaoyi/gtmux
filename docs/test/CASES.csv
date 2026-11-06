@@ -3980,11 +3980,11 @@ LEG-7201f98d96a5,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts
 LEG-16fab5a7cc96,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,51,test,only explicit hosted capture separates WDA build and readiness with one bounded connection,False,legacy-not-retrospectively-reviewed
 LEG-61bfa22d706f,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,67,test,only hosted multi-screen store captures receive the longer journey budget,False,legacy-not-retrospectively-reviewed
 MAP-ad6f801c4c8b,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,3,reviewed-selector,cloud simulator session waits for a fresh WDA build without requiring a prebuilt product,False,DUO-008
-MAP-35d1ad83fce5,L2,reviewed implementation,mobileapp/e2e/setup/duoDraftEvidence.test.ts,57,reviewed-selector,normal draft evidence is saved before posture restoration,False,DUO-041
-MAP-f2c072236f56,L2,reviewed implementation,mobileapp/e2e/setup/duoDraftEvidence.test.ts,65,reviewed-selector,a child ignoring SIGTERM is killed within the evidence budget without hiding the original failure,False,DUO-041
-MAP-a7137fdb210b,L2,reviewed implementation,mobileapp/e2e/setup/duoDraftEvidence.test.ts,85,reviewed-selector,excessive diagnostic output fails an otherwise successful journey and restores posture,False,DUO-041
-MAP-8682bc284869,L2,reviewed implementation,mobileapp/e2e/setup/duoDraftEvidence.test.ts,95,reviewed-selector,evidence write failure restores posture with prior failure=%s,False,DUO-041
-MAP-32ffcf66e15b,L2,reviewed implementation,mobileapp/e2e/setup/duoDraftEvidence.test.ts,103,reviewed-selector,invalid current keyboard x=%s rejects without sending a keyboard touch,False,DUO-041
+MAP-35d1ad83fce5,L2,reviewed implementation,mobileapp/e2e/setup/duoDraftEvidence.test.ts,59,reviewed-selector,normal draft evidence is saved before posture restoration,False,DUO-041
+MAP-f2c072236f56,L2,reviewed implementation,mobileapp/e2e/setup/duoDraftEvidence.test.ts,67,reviewed-selector,a child ignoring SIGTERM is killed within the evidence budget without hiding the original failure,False,DUO-041
+MAP-a7137fdb210b,L2,reviewed implementation,mobileapp/e2e/setup/duoDraftEvidence.test.ts,87,reviewed-selector,excessive diagnostic output fails an otherwise successful journey and restores posture,False,DUO-041
+MAP-8682bc284869,L2,reviewed implementation,mobileapp/e2e/setup/duoDraftEvidence.test.ts,97,reviewed-selector,evidence write failure restores posture with prior failure=%s,False,DUO-041
+MAP-32ffcf66e15b,L2,reviewed implementation,mobileapp/e2e/setup/duoDraftEvidence.test.ts,105,reviewed-selector,invalid current keyboard x=%s rejects without sending a keyboard touch,False,DUO-041
 MAP-afca37581308,L2,reviewed implementation,mobileapp/e2e/setup/duoVoiceOverJourney.test.ts,71,reviewed-selector,evidence %s failure still restores VoiceOver and the fixture,False,DUO-038
 MAP-b0fd8cd81545,L2,reviewed implementation,mobileapp/e2e/setup/duoVoiceOverJourney.test.ts,78,reviewed-selector,a late %s result cannot satisfy the panel budget,False,DUO-038
 MAP-5a3253c27607,L2,reviewed implementation,mobileapp/e2e/setup/duoVoiceOverJourney.test.ts,90,reviewed-selector,on-budget real journey control observes both panels and restores VoiceOver,False,DUO-038

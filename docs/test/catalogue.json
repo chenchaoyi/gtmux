@@ -58720,7 +58720,7 @@
       "cases": [
         {
           "id": "MAP-35d1ad83fce5",
-          "line": 57,
+          "line": 59,
           "kind": "reviewed-selector",
           "name": "normal draft evidence is saved before posture restoration",
           "dynamic": false,
@@ -58729,7 +58729,7 @@
         },
         {
           "id": "MAP-f2c072236f56",
-          "line": 65,
+          "line": 67,
           "kind": "reviewed-selector",
           "name": "a child ignoring SIGTERM is killed within the evidence budget without hiding the original failure",
           "dynamic": false,
@@ -58738,7 +58738,7 @@
         },
         {
           "id": "MAP-a7137fdb210b",
-          "line": 85,
+          "line": 87,
           "kind": "reviewed-selector",
           "name": "excessive diagnostic output fails an otherwise successful journey and restores posture",
           "dynamic": false,
@@ -58747,7 +58747,7 @@
         },
         {
           "id": "MAP-8682bc284869",
-          "line": 95,
+          "line": 97,
           "kind": "reviewed-selector",
           "name": "evidence write failure restores posture with prior failure=%s",
           "dynamic": false,
@@ -58756,7 +58756,7 @@
         },
         {
           "id": "MAP-32ffcf66e15b",
-          "line": 103,
+          "line": 105,
           "kind": "reviewed-selector",
           "name": "invalid current keyboard x=%s rejects without sending a keyboard touch",
           "dynamic": false,
@@ -58764,7 +58764,7 @@
           "design": "DUO-041"
         }
       ],
-      "sha256": "8693263e1e531792e73acece647e310fbaa925f8551e4f9ca0510ff2b3bb04ae"
+      "sha256": "d48058efe3f233660e62b5f2871ea9289cc61b09145e404c3f4bf656c0eeb7ef"
     },
     "scripts/duo_diagnostics_test.py": {
       "layer": "G",

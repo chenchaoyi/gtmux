@@ -422,11 +422,11 @@ MAP-01cd8c62d09e,L2,reviewed implementation,mobileapp/e2e/fake-serve/backend-con
 MAP-f2ed2637baa9,L2,reviewed implementation,mobileapp/e2e/fake-serve/server.ts,97,reviewed-selector,startFake,False,CT-HTTP
 MAP-10a263ace6db,L2,reviewed implementation,mobileapp/e2e/fake-serve/transcript-identity.test.ts,10,reviewed-selector,default transcript identity survives polling while new fixtures and explicit transcripts remain independent,False,DUO-040
 MAP-f4f657590af5,L2,reviewed implementation,mobileapp/e2e/fake-serve/world.ts,111,reviewed-selector,export class World,False,CT-HTTP
-MAP-35d1ad83fce5,L2,reviewed implementation,mobileapp/e2e/setup/duoDraftEvidence.test.ts,57,reviewed-selector,normal draft evidence is saved before posture restoration,False,DUO-041
-MAP-f2c072236f56,L2,reviewed implementation,mobileapp/e2e/setup/duoDraftEvidence.test.ts,65,reviewed-selector,a child ignoring SIGTERM is killed within the evidence budget without hiding the original failure,False,DUO-041
-MAP-a7137fdb210b,L2,reviewed implementation,mobileapp/e2e/setup/duoDraftEvidence.test.ts,85,reviewed-selector,excessive diagnostic output fails an otherwise successful journey and restores posture,False,DUO-041
-MAP-8682bc284869,L2,reviewed implementation,mobileapp/e2e/setup/duoDraftEvidence.test.ts,95,reviewed-selector,evidence write failure restores posture with prior failure=%s,False,DUO-041
-MAP-32ffcf66e15b,L2,reviewed implementation,mobileapp/e2e/setup/duoDraftEvidence.test.ts,103,reviewed-selector,invalid current keyboard x=%s rejects without sending a keyboard touch,False,DUO-041
+MAP-35d1ad83fce5,L2,reviewed implementation,mobileapp/e2e/setup/duoDraftEvidence.test.ts,59,reviewed-selector,normal draft evidence is saved before posture restoration,False,DUO-041
+MAP-f2c072236f56,L2,reviewed implementation,mobileapp/e2e/setup/duoDraftEvidence.test.ts,67,reviewed-selector,a child ignoring SIGTERM is killed within the evidence budget without hiding the original failure,False,DUO-041
+MAP-a7137fdb210b,L2,reviewed implementation,mobileapp/e2e/setup/duoDraftEvidence.test.ts,87,reviewed-selector,excessive diagnostic output fails an otherwise successful journey and restores posture,False,DUO-041
+MAP-8682bc284869,L2,reviewed implementation,mobileapp/e2e/setup/duoDraftEvidence.test.ts,97,reviewed-selector,evidence write failure restores posture with prior failure=%s,False,DUO-041
+MAP-32ffcf66e15b,L2,reviewed implementation,mobileapp/e2e/setup/duoDraftEvidence.test.ts,105,reviewed-selector,invalid current keyboard x=%s rejects without sending a keyboard touch,False,DUO-041
 MAP-afca37581308,L2,reviewed implementation,mobileapp/e2e/setup/duoVoiceOverJourney.test.ts,71,reviewed-selector,evidence %s failure still restores VoiceOver and the fixture,False,DUO-038
 MAP-b0fd8cd81545,L2,reviewed implementation,mobileapp/e2e/setup/duoVoiceOverJourney.test.ts,78,reviewed-selector,a late %s result cannot satisfy the panel budget,False,DUO-038
 MAP-5a3253c27607,L2,reviewed implementation,mobileapp/e2e/setup/duoVoiceOverJourney.test.ts,90,reviewed-selector,on-budget real journey control observes both panels and restores VoiceOver,False,DUO-038
