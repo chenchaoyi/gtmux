@@ -3912,8 +3912,8 @@ MAP-eddc7dcee0b0,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,4
 MAP-af21af8be44f,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,536,reviewed-selector,def run_unit(,False,SCENE-MIG-008
 MAP-89aaee2a9ed7,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,493,reviewed-selector,def cleanup_unit(,False,SCENE-MIG-008
 MAP-15d5d6c17883,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,600,reviewed-selector,def execute(,False,SCENE-MIG-008
-MAP-73f0d22945c8,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,259,reviewed-selector,class CommandFailure(RuntimeError):,False,"SCENE-MIG-008,SCENE-MIG-012,SCENE-MIG-013,SCENE-MIG-014"
-MAP-2c39e5b64866,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,271,reviewed-selector,def command(,False,"SCENE-MIG-008,SCENE-MIG-012,SCENE-MIG-013,SCENE-MIG-014"
+MAP-73f0d22945c8,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,259,reviewed-selector,class CommandFailure(RuntimeError):,False,SCENE-MIG-008
+MAP-2c39e5b64866,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,271,reviewed-selector,def command(,False,SCENE-MIG-008
 LEG-34eb45b46408,M,RN / mobile harness,mobileapp/e2e/diagnostics/ipad-keys-probe.test.ts,12,it,types into the pane search with mobile: keys,False,legacy-not-retrospectively-reviewed
 LEG-f17f27ea8cb4,M,RN / mobile harness,mobileapp/e2e/diagnostics/send-repro.test.ts,21,it,types + sends 继续 and reports whether a failed-send bar appears,False,legacy-not-retrospectively-reviewed
 MAP-2fd3cafb008c,L2,reviewed implementation,mobileapp/e2e/fake-serve/backend-contract.test.ts,46,reviewed-selector,RN fake / Go contract:,False,CT-HTTP
@@ -4039,16 +4039,16 @@ MAP-16d8061f552b,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.te
 MAP-b3b2f740d29d,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,262,reviewed-selector,"registered action executes tap and exact fake delivery, missing tap fails (cold=%s)",False,"SCENE-MIG-006,SCENE-MIG-010"
 MAP-d6d4cdb5f402,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,266,reviewed-selector,registered cold action rejects %s and restores rotation,False,"SCENE-MIG-006,SCENE-MIG-010"
 MAP-c0ebb52b423a,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,287,reviewed-selector,setup cleans its own server when %s evidence cannot be written,False,"SCENE-MIG-006,SCENE-MIG-010"
-MAP-9be18c53df39,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,270,reviewed-selector,registered content rotation measures and edits the actual reader (ipad=%s),False,"SCENE-MIG-006,SCENE-MIG-010,SCENE-MIG-015"
-MAP-8eef81ad47b9,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,280,reviewed-selector,registered phone and iPad journeys reject %s on ipad=%s despite fresh root geometry,False,"SCENE-MIG-006,SCENE-MIG-010,SCENE-MIG-015"
+MAP-9be18c53df39,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,270,reviewed-selector,registered content rotation measures and edits the actual reader (ipad=%s),False,"SCENE-MIG-006,SCENE-MIG-010"
+MAP-8eef81ad47b9,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,280,reviewed-selector,registered phone and iPad journeys reject %s on ipad=%s despite fresh root geometry,False,"SCENE-MIG-006,SCENE-MIG-010"
 MAP-16d6bf431e39,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,161,reviewed-selector,coldSceneAction,False,SCENE-MIG-006
 MAP-94b1215d1e59,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,208,reviewed-selector,warmSceneAction,False,SCENE-MIG-006
 MAP-b60285dcd5b7,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,237,reviewed-selector,usageSceneLink,False,SCENE-MIG-006
 MAP-5d33e58ccb39,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,256,reviewed-selector,captureSceneJourney,False,SCENE-MIG-006
 MAP-c3eefc5f5890,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,61,reviewed-selector,observeGeometry,False,SCENE-MIG-006
 MAP-db5a088f15bb,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,112,reviewed-selector,readerToolsAndDraft,False,SCENE-MIG-006
-MAP-5fd8d42575d0,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,53,reviewed-selector,contentGeometryMatches,False,"SCENE-MIG-006,SCENE-MIG-015"
-MAP-195f9776ba27,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,102,reviewed-selector,continueDraftAfterRotation,False,"SCENE-MIG-006,SCENE-MIG-015"
+MAP-5fd8d42575d0,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,53,reviewed-selector,contentGeometryMatches,False,SCENE-MIG-006
+MAP-195f9776ba27,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,102,reviewed-selector,continueDraftAfterRotation,False,SCENE-MIG-006
 ND-001,L1,iOS Swift,mobileapp/ios/tests/DocumentHTMLChecks.swift,2,native-procedural-oracle,DocumentHTML production Foundation checks,False,ND-001
 ND-002,L1,iOS Swift,mobileapp/ios/tests/DocumentMarkdownChecks.swift,3,native-procedural-oracle,DocumentMarkdown production Foundation checks,False,ND-002
 MAP-4d79dbb7ab50,L1,reviewed implementation,mobileapp/ios/tests/NotificationResponseCompletionChecks.swift,20,reviewed-selector,notification response completion checks passed,False,SCENE-MIG-001
@@ -6245,10 +6245,10 @@ MAP-c78c647692bc,G,reviewed implementation,scripts/scene_migration_test.py,207,r
 MAP-ca6db00c6d3b,G,reviewed implementation,scripts/scene_migration_test.py,216,reviewed-selector,test_missing_diagnostic_evidence_keeps_original_test_zero_or_seven_and_cleans,False,SCENE-MIG-008
 MAP-80e5de561924,G,reviewed implementation,scripts/scene_migration_test.py,366,reviewed-selector,test_harness_journeys_share_only_verified_dependencies_and_keep_source_bytes,False,SCENE-MIG-008
 MAP-d485b529b3a4,G,reviewed implementation,scripts/scene_migration_test.py,385,reviewed-selector,test_cleanup_targets_only_saved_matching_server_and_exact_unit_wda,False,SCENE-MIG-008
-MAP-7cb3bff30a24,G,reviewed implementation,scripts/scene_migration_test.py,298,reviewed-selector,test_executor_builds_only_expected_sources_but_checks_real_base,False,"SCENE-MIG-008,SCENE-MIG-012,SCENE-MIG-013,SCENE-MIG-014"
-MAP-9fcc5cafe672,G,reviewed implementation,scripts/scene_migration_test.py,310,reviewed-selector,test_real_runner_metadata_and_archival_failures_preserve_executed_units,False,"SCENE-MIG-008,SCENE-MIG-012,SCENE-MIG-013,SCENE-MIG-014"
-MAP-ec565820041a,G,reviewed implementation,scripts/scene_migration_test.py,327,reviewed-selector,test_real_executor_keeps_last_shutdown_failure_and_original_exit,False,"SCENE-MIG-008,SCENE-MIG-012,SCENE-MIG-013,SCENE-MIG-014"
-MAP-2258d0570d1d,G,reviewed implementation,scripts/scene_migration_test.py,336,reviewed-selector,test_shutdown_failure_or_timeout_of_final_unit_cannot_pass,False,"SCENE-MIG-008,SCENE-MIG-012,SCENE-MIG-013,SCENE-MIG-014"
+MAP-7cb3bff30a24,G,reviewed implementation,scripts/scene_migration_test.py,298,reviewed-selector,test_executor_builds_only_expected_sources_but_checks_real_base,False,SCENE-MIG-008
+MAP-9fcc5cafe672,G,reviewed implementation,scripts/scene_migration_test.py,310,reviewed-selector,test_real_runner_metadata_and_archival_failures_preserve_executed_units,False,SCENE-MIG-008
+MAP-ec565820041a,G,reviewed implementation,scripts/scene_migration_test.py,327,reviewed-selector,test_real_executor_keeps_last_shutdown_failure_and_original_exit,False,SCENE-MIG-008
+MAP-2258d0570d1d,G,reviewed implementation,scripts/scene_migration_test.py,336,reviewed-selector,test_shutdown_failure_or_timeout_of_final_unit_cannot_pass,False,SCENE-MIG-008
 MAP-253bbd74b924,G,reviewed implementation,scripts/test_design.py,51,reviewed-selector,def validate(,False,"TD-001,TD-002,TD-003,TD-004,TD-005"
 MAP-0fe56134bb6e,G,reviewed implementation,scripts/test_design.py,102,reviewed-selector,def history_errors(,False,"TD-001,TD-002,TD-003,TD-004,TD-005"
 MAP-c8a2197482da,G,reviewed implementation,scripts/test_design.py,174,reviewed-selector,def refresh_catalogue(,False,"TD-001,TD-002,TD-003,TD-004,TD-005"

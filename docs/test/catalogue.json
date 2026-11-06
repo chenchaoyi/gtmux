@@ -58413,7 +58413,7 @@
           "name": "class CommandFailure(RuntimeError):",
           "dynamic": false,
           "layer": "G",
-          "design": "SCENE-MIG-008,SCENE-MIG-012,SCENE-MIG-013,SCENE-MIG-014"
+          "design": "SCENE-MIG-008"
         },
         {
           "id": "MAP-2c39e5b64866",
@@ -58422,7 +58422,7 @@
           "name": "def command(",
           "dynamic": false,
           "layer": "G",
-          "design": "SCENE-MIG-008,SCENE-MIG-012,SCENE-MIG-013,SCENE-MIG-014"
+          "design": "SCENE-MIG-008"
         }
       ],
       "sha256": "8b97dc826742160128e5ebca33c3d637811d4ecf578160ecd5e7f260c96824c7"
@@ -58573,7 +58573,7 @@
           "name": "test_executor_builds_only_expected_sources_but_checks_real_base",
           "dynamic": false,
           "layer": "G",
-          "design": "SCENE-MIG-008,SCENE-MIG-012,SCENE-MIG-013,SCENE-MIG-014"
+          "design": "SCENE-MIG-008"
         },
         {
           "id": "MAP-9fcc5cafe672",
@@ -58582,7 +58582,7 @@
           "name": "test_real_runner_metadata_and_archival_failures_preserve_executed_units",
           "dynamic": false,
           "layer": "G",
-          "design": "SCENE-MIG-008,SCENE-MIG-012,SCENE-MIG-013,SCENE-MIG-014"
+          "design": "SCENE-MIG-008"
         },
         {
           "id": "MAP-ec565820041a",
@@ -58591,7 +58591,7 @@
           "name": "test_real_executor_keeps_last_shutdown_failure_and_original_exit",
           "dynamic": false,
           "layer": "G",
-          "design": "SCENE-MIG-008,SCENE-MIG-012,SCENE-MIG-013,SCENE-MIG-014"
+          "design": "SCENE-MIG-008"
         },
         {
           "id": "MAP-2258d0570d1d",
@@ -58600,7 +58600,7 @@
           "name": "test_shutdown_failure_or_timeout_of_final_unit_cannot_pass",
           "dynamic": false,
           "layer": "G",
-          "design": "SCENE-MIG-008,SCENE-MIG-012,SCENE-MIG-013,SCENE-MIG-014"
+          "design": "SCENE-MIG-008"
         }
       ],
       "sha256": "deb2141ebdbc152f1af8c392ff45455301729f81ac921c1dd52746434bdacc7a"
@@ -59015,7 +59015,7 @@
           "name": "registered content rotation measures and edits the actual reader (ipad=%s)",
           "dynamic": false,
           "layer": "L3",
-          "design": "SCENE-MIG-006,SCENE-MIG-010,SCENE-MIG-015"
+          "design": "SCENE-MIG-006,SCENE-MIG-010"
         },
         {
           "id": "MAP-8eef81ad47b9",
@@ -59024,7 +59024,7 @@
           "name": "registered phone and iPad journeys reject %s on ipad=%s despite fresh root geometry",
           "dynamic": false,
           "layer": "L3",
-          "design": "SCENE-MIG-006,SCENE-MIG-010,SCENE-MIG-015"
+          "design": "SCENE-MIG-006,SCENE-MIG-010"
         }
       ],
       "sha256": "1fa42d451da1e4a58caebf262abb26a99a8d412808a982fa0f2354beaa72a987"
@@ -59094,7 +59094,7 @@
           "name": "contentGeometryMatches",
           "dynamic": false,
           "layer": "L3",
-          "design": "SCENE-MIG-006,SCENE-MIG-015"
+          "design": "SCENE-MIG-006"
         },
         {
           "id": "MAP-195f9776ba27",
@@ -59103,7 +59103,7 @@
           "name": "continueDraftAfterRotation",
           "dynamic": false,
           "layer": "L3",
-          "design": "SCENE-MIG-006,SCENE-MIG-015"
+          "design": "SCENE-MIG-006"
         }
       ],
       "sha256": "e9a9b386856862a138c613a0ac228455c536b80222d7ef18a97f1768618c5d3b"

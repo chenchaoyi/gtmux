@@ -24,16 +24,16 @@ MAP-16d8061f552b,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.te
 MAP-b3b2f740d29d,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,262,reviewed-selector,"registered action executes tap and exact fake delivery, missing tap fails (cold=%s)",False,"SCENE-MIG-006,SCENE-MIG-010"
 MAP-d6d4cdb5f402,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,266,reviewed-selector,registered cold action rejects %s and restores rotation,False,"SCENE-MIG-006,SCENE-MIG-010"
 MAP-c0ebb52b423a,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,287,reviewed-selector,setup cleans its own server when %s evidence cannot be written,False,"SCENE-MIG-006,SCENE-MIG-010"
-MAP-9be18c53df39,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,270,reviewed-selector,registered content rotation measures and edits the actual reader (ipad=%s),False,"SCENE-MIG-006,SCENE-MIG-010,SCENE-MIG-015"
-MAP-8eef81ad47b9,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,280,reviewed-selector,registered phone and iPad journeys reject %s on ipad=%s despite fresh root geometry,False,"SCENE-MIG-006,SCENE-MIG-010,SCENE-MIG-015"
+MAP-9be18c53df39,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,270,reviewed-selector,registered content rotation measures and edits the actual reader (ipad=%s),False,"SCENE-MIG-006,SCENE-MIG-010"
+MAP-8eef81ad47b9,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,280,reviewed-selector,registered phone and iPad journeys reject %s on ipad=%s despite fresh root geometry,False,"SCENE-MIG-006,SCENE-MIG-010"
 MAP-16d6bf431e39,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,161,reviewed-selector,coldSceneAction,False,SCENE-MIG-006
 MAP-94b1215d1e59,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,208,reviewed-selector,warmSceneAction,False,SCENE-MIG-006
 MAP-b60285dcd5b7,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,237,reviewed-selector,usageSceneLink,False,SCENE-MIG-006
 MAP-5d33e58ccb39,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,256,reviewed-selector,captureSceneJourney,False,SCENE-MIG-006
 MAP-c3eefc5f5890,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,61,reviewed-selector,observeGeometry,False,SCENE-MIG-006
 MAP-db5a088f15bb,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,112,reviewed-selector,readerToolsAndDraft,False,SCENE-MIG-006
-MAP-5fd8d42575d0,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,53,reviewed-selector,contentGeometryMatches,False,"SCENE-MIG-006,SCENE-MIG-015"
-MAP-195f9776ba27,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,102,reviewed-selector,continueDraftAfterRotation,False,"SCENE-MIG-006,SCENE-MIG-015"
+MAP-5fd8d42575d0,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,53,reviewed-selector,contentGeometryMatches,False,SCENE-MIG-006
+MAP-195f9776ba27,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,102,reviewed-selector,continueDraftAfterRotation,False,SCENE-MIG-006
 LEG-4d0986af07f7,L3,Browser,tests/web/alignment.test.cjs,6,scenario,"`App-aligned roster status, summaries and persistent sections at ${width}`",True,legacy-not-retrospectively-reviewed
 LEG-d5140dc35e4a,L3,Browser,tests/web/alignment.test.cjs,26,scenario,"`Settings change actual Chat and Terminal typography, immediately and after reload at ${width}`",True,legacy-not-retrospectively-reviewed
 LEG-5eb3da408f2c,L3,Browser,tests/web/alignment.test.cjs,70,scenario,`Touch input tools follow input device at ${width} touch=${touch}`,True,legacy-not-retrospectively-reviewed
