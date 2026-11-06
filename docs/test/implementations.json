@@ -844,5 +844,24 @@
       "TestTitleMatchesSessionPreservesLeadingSymbols",
       "TestSessionTabPrefersLiteralIdentity"
     ]
+  },
+  "mobileapp/e2e/setup/duoDraftEvidence.test.ts": {
+    "cases": [
+      "DUO-041"
+    ],
+    "selectors": [
+      "normal draft evidence is saved before posture restoration",
+      "a child ignoring SIGTERM is killed within the evidence budget without hiding the original failure",
+      "excessive diagnostic output fails an otherwise successful journey and restores posture",
+      "evidence write failure restores posture with prior failure=%s"
+    ]
+  },
+  "scripts/duo_diagnostics_test.py": {
+    "cases": [
+      "DUO-042"
+    ],
+    "selectors": [
+      "test_diagnostic_failures_preserve_the_original_phone_exit_status"
+    ]
   }
 }

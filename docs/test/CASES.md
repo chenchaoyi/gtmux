@@ -2,16 +2,16 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1060 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1062 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3754 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 1932 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 1936 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 86 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 108 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 12 | [M.csv](cases/M.csv) |
-| G · Qualification guards | 496 | [G.csv](cases/G.csv) |
+| G · Qualification guards | 497 | [G.csv](cases/G.csv) |
 
 Numbers are not passes. The legacy 6,223 positions came from the 4fad6119 inventory (declarations, subtests, dynamic templates); explicit new cases, native oracles and reviewed selectors are indexed separately. Dynamic instances are not expanded. Harnesses without named cases retain their hashes. Legacy layers are structural triage; mixed boundaries need semantic review when touched, not fictional historical review/results. A reviewed-selector is not a framework-discovered declaration. Gates catch source/index/mapping drift; names cannot prove assertion quality.
 
@@ -81,6 +81,8 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | DUO-038 | Every evidence failure still attempts VoiceOver disable and disabled-state verification plus hinge/display/fake restoration. Initial speech and late successful moves cannot pass outside the same panel budget; no detached driver command remains. On-budget target speech succeeds. |
 | DUO-039 | A transient stale frame causes the whole observation to be discarded; fresh complete stable frames and layouts pass; permanent failures, absent identities, missing/clipped layouts and results outside the fixed budget fail. |
 | DUO-040 | The same fixture returns identical messages and times across polls; a new fixture captures its own epoch; explicit world.transcripts is returned unchanged. |
+| DUO-041 | The command has5000ms/16KiB/SIGKILL bounds, posture/display cleanup runs, the original journey error survives secondary evidence failure, and an evidence failure after a successful journey still rejects. |
+| DUO-042 | Every run exits the original test status; diagnostic failures remain visible on stderr and do not turn failed tests green or successful tests into unrelated diagnostic failures. |
 | STOR-001 | Every carrier separates project-owned and task-temp output from gtmux configuration/runtime trees; no promoted entry required; user text and hand-edit protection preserved; second sync idempotent. |
 | STOR-002 | Both playbooks reserve gtmux-owned state and only reusable HQ knowledge tools for its home, direct project scripts/reports/builds to project/task storage, require external evidence references, and never grant automatic migration/deletion; upgrade backs up old charter, preserves LOCAL/notes and converges. |
 | TD-001 | Reject a changed/new test without a reviewed design; accept a mapped implementation |

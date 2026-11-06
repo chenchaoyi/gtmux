@@ -641,7 +641,7 @@ jobs:
           xcrun simctl install "$GTMUX_E2E_UDID" "$RUNNER_TEMP/gtmux-ios-ci/Build/Products/Release-iphonesimulator/gtmux.app"
           phone_status=0
           npm run test:e2e -- --runInBand coldstart-push.test.ts || phone_status=$?
-          python3 - <<'PY'
+          if ! python3 - <<'PY'
           import os, pathlib, subprocess
           evidence = pathlib.Path('.e2e-artifacts/phone-notification-system')
           evidence.mkdir(parents=True, exist_ok=True)
@@ -657,6 +657,9 @@ jobs:
           except Exception as error:
               (evidence / 'diagnostic-error.txt').write_text(repr(error))
           PY
+          then
+            echo 'phone notification diagnostics failed; preserving original test status' >&2
+          fi
           exit "$phone_status"
       - name: Preserve iPhone diagnostics immediately
         if: ${{ !cancelled() && steps.ios_products.outcome == 'success' && steps.ios_driver.outcome == 'success' }}

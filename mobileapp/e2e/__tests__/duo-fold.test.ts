@@ -99,6 +99,7 @@ it('retains the selected conversation and reading position across simulator fold
 it('retains the selected conversation and keyboard draft across simulator fold and unfold', () => guard.run(async () => {
   const driver = getDriver();
   const evidence: object[] = [];
+  let journeyFailed = false;
   try {
     const {selected} = await selectLongChat(evidence);
     const keyboard = driver.$(`~${TestIds.composer.keyboard}`);
@@ -137,13 +138,18 @@ it('retains the selected conversation and keyboard draft across simulator fold a
     await selected.waitForDisplayed({timeout: 15000});
     await driver.$(`~${TestIds.detail.modeChat}`).waitForDisplayed({timeout: 15000});
   } catch (error) {
+    journeyFailed = true;
     await captureOnFailure('duo-fold-draft-failed', error);
   } finally {
     try {
       writeFileSync(join(getArtifactsDir(), 'duo-fold-draft-postures.json'), JSON.stringify(evidence, null, 2));
-      const container = execFileSync('xcrun', ['simctl', 'get_app_container', process.env.GTMUX_E2E_UDID!, 'com.gtmux.app', 'data'], {encoding: 'utf8'}).trim();
+      const container = execFileSync('xcrun', ['simctl', 'get_app_container', process.env.GTMUX_E2E_UDID!, 'com.gtmux.app', 'data'],
+        {encoding: 'utf8', timeout: 5000, maxBuffer: 16384, killSignal: 'SIGKILL'}).trim();
       const file = join(container, 'Documents', 'gtmux-keyboard-evidence.json');
       if (existsSync(file)) writeFileSync(join(getArtifactsDir(), 'duo-fold-draft-keyboard.json'), readFileSync(file));
+    } catch (error) {
+      console.error('[e2e] keyboard evidence collection failed', error);
+      if (!journeyFailed) throw error;
     } finally {
       await restorePosture();
     }

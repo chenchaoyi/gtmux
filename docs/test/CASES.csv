@@ -3787,7 +3787,7 @@ LEG-cb21d0627bd2,M,RN / mobile harness,mobileapp/e2e/__tests__/composer-shots.te
 LEG-63869acd3e2a,M,RN / mobile harness,mobileapp/e2e/__tests__/cursor.test.ts,41,it,opens a terminal pane and screenshots the cursor,False,legacy-not-retrospectively-reviewed
 LEG-094857d91ad5,L4,RN / mobile harness,mobileapp/e2e/__tests__/detail-chrome-textsize.test.ts,39,run,the top row keeps one line and stays on screen at the accessibility sizes,False,legacy-not-retrospectively-reviewed
 MAP-29b9b35673af,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,66,reviewed-selector,"retains the selected conversation, reading position and draft across simulator fold and unfold",False,DUO-020
-MAP-e33509324cc9,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,154,reviewed-selector,keeps Trace search and Diff open while the simulator folds and unfolds,False,"DUO-020,DUO-021"
+MAP-e33509324cc9,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,160,reviewed-selector,keeps Trace search and Diff open while the simulator folds and unfolds,False,"DUO-020,DUO-021"
 MAP-7bb91bd4c1ab,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,236,reviewed-selector,keeps the session entry usable at an accessibility text size on both panels,False,"DUO-020,DUO-021,DUO-023"
 MAP-a27d63cdf4d6,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,57,reviewed-selector,retains the selected conversation and reading position across simulator fold and unfold,False,"DUO-020,DUO-021,DUO-023"
 MAP-f369d9080a71,L4,reviewed implementation,mobileapp/e2e/__tests__/duo-fold.test.ts,99,reviewed-selector,retains the selected conversation and keyboard draft across simulator fold and unfold,False,"DUO-020,DUO-021,DUO-023"
@@ -3980,6 +3980,10 @@ LEG-7201f98d96a5,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts
 LEG-16fab5a7cc96,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,51,test,only explicit hosted capture separates WDA build and readiness with one bounded connection,False,legacy-not-retrospectively-reviewed
 LEG-61bfa22d706f,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,67,test,only hosted multi-screen store captures receive the longer journey budget,False,legacy-not-retrospectively-reviewed
 MAP-ad6f801c4c8b,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,3,reviewed-selector,cloud simulator session waits for a fresh WDA build without requiring a prebuilt product,False,DUO-008
+MAP-35d1ad83fce5,L2,reviewed implementation,mobileapp/e2e/setup/duoDraftEvidence.test.ts,54,reviewed-selector,normal draft evidence is saved before posture restoration,False,DUO-041
+MAP-f2c072236f56,L2,reviewed implementation,mobileapp/e2e/setup/duoDraftEvidence.test.ts,60,reviewed-selector,a child ignoring SIGTERM is killed within the evidence budget without hiding the original failure,False,DUO-041
+MAP-a7137fdb210b,L2,reviewed implementation,mobileapp/e2e/setup/duoDraftEvidence.test.ts,80,reviewed-selector,excessive diagnostic output fails an otherwise successful journey and restores posture,False,DUO-041
+MAP-8682bc284869,L2,reviewed implementation,mobileapp/e2e/setup/duoDraftEvidence.test.ts,90,reviewed-selector,evidence write failure restores posture with prior failure=%s,False,DUO-041
 MAP-afca37581308,L2,reviewed implementation,mobileapp/e2e/setup/duoVoiceOverJourney.test.ts,71,reviewed-selector,evidence %s failure still restores VoiceOver and the fixture,False,DUO-038
 MAP-b0fd8cd81545,L2,reviewed implementation,mobileapp/e2e/setup/duoVoiceOverJourney.test.ts,78,reviewed-selector,a late %s result cannot satisfy the panel budget,False,DUO-038
 MAP-5a3253c27607,L2,reviewed implementation,mobileapp/e2e/setup/duoVoiceOverJourney.test.ts,90,reviewed-selector,on-budget real journey control observes both panels and restores VoiceOver,False,DUO-038
@@ -6141,6 +6145,7 @@ LEG-8a6a845c7484,G,CI / tooling,scripts/ci_test.py,203,unittest,test_mac_host_ke
 LEG-28f4d1551b14,G,CI / tooling,scripts/ci_test.py,220,unittest,test_ios_delivery_pins_the_same_arm_toolchain_and_keeps_protection,False,legacy-not-retrospectively-reviewed
 MAP-349a1f57f0b7,G,CI / tooling,scripts/ci_test.py,43,reviewed-selector,test_reviewed_test_records_are_policy_only_without_hiding_test_changes,False,TD-006
 MAP-5f57607e8e0e,G,CI / tooling,scripts/ci_test.py,17,reviewed-selector,test_unit_test_scope_requires_immutable_product_exclusion,False,CT-SCOPE
+MAP-4e1dfa09df0f,G,reviewed implementation,scripts/duo_diagnostics_test.py,14,reviewed-selector,test_diagnostic_failures_preserve_the_original_phone_exit_status,False,DUO-042
 LEG-0a1ce627fdd1,G,CI / tooling,scripts/install_platform_test.py,70,unittest,test_linux_archives_install_without_any_mac_application,True,legacy-not-retrospectively-reviewed
 LEG-8ccffb001b09,G,CI / tooling,scripts/install_platform_test.py,80,unittest,test_checksum_failure_never_installs,False,legacy-not-retrospectively-reviewed
 LEG-c81cb29009cc,G,CI / tooling,scripts/install_platform_test.py,86,unittest,test_existing_optional_client_is_updated_only_by_capable_release,True,legacy-not-retrospectively-reviewed
