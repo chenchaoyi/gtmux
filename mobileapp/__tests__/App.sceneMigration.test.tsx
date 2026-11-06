@@ -1,6 +1,6 @@
 import React from 'react';
 import renderer, {act} from 'react-test-renderer';
-import {Dimensions, NativeModules, StyleSheet, View} from 'react-native';
+import {Dimensions, FlatList, NativeModules, ScrollView, StyleSheet, TouchableOpacity, View} from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import * as Keychain from 'react-native-keychain';
 import App from '../App';
@@ -8,6 +8,7 @@ import {Debug} from '../src/debug';
 import {RadarPanel} from '../src/screens/RadarPanel';
 import {WorkspaceProvider} from '../src/state/WorkspaceContext';
 import {AnchoredMenu} from '../src/ui/AnchoredMenu';
+import {DiffModal} from '../src/ui/DiffModal';
 import {WindowMetricsProvider} from '../src/ui/windowMetrics';
 import {paletteFor} from '../src/ui/theme';
 
@@ -91,4 +92,31 @@ test('a real anchored menu stays inside a new narrow root while RN width remains
   expect(Dimensions.get('window').width).toBe(393);
   expect(style.width).toBe(197); // 213pt canvas minus the existing two8pt edges.
   expect(style.left + style.width).toBeLessThanOrEqual(205);
+});
+
+
+test('retained DiffModal follows its actual viewport layout and keeps wrap and close usable with stale RN dimensions', async () => {
+  const close = jest.fn();
+  const diff = jest.fn(async () => 'diff --git a/a.txt b/a.txt\n--- a/a.txt\n+++ b/a.txt\n@@ -1 +1 @@\n-old\n+new');
+  await act(async () => {tree = renderer.create(
+    <WindowMetricsProvider><SafeAreaProvider initialMetrics={scene(1024, 768)}>
+      <DiffModal visible paneId="%13" client={{diff} as any} pal={paletteFor('light')} lang="en" onClose={close} />
+    </SafeAreaProvider></WindowMetricsProvider>,
+  );});
+  await rootLayout(1024, 768);
+  const viewport = tree!.root.findAllByType(ScrollView).find(n => n.props.testID === 'diff-horizontal')!;
+  await act(async () => viewport.props.onLayout({nativeEvent: {layout: {width: 960, height: 500}}}));
+  const list = tree!.root.findByType(FlatList);
+  expect(Dimensions.get('window').width).toBe(393);
+  expect(StyleSheet.flatten(list.props.style).width).toBe(960);
+  expect(list.props.data.some((line: string) => line.includes('new'))).toBe(true);
+  const wrap = tree!.root.findAllByType(TouchableOpacity).find(n => n.props.testID === 'diff-wrap')!;
+  await act(async () => {wrap.props.onPress(); wrap.props.onPress();});
+  await rootLayout(768, 1024);
+  await act(async () => viewport.props.onLayout({nativeEvent: {layout: {width: 704, height: 700}}}));
+  expect(StyleSheet.flatten(tree!.root.findByType(FlatList).props.style).width).toBe(704);
+  const closeButton = tree!.root.findAllByType(TouchableOpacity).find(n => n.props.accessibilityLabel === 'Close changes')!;
+  await act(async () => closeButton.props.onPress());
+  expect(close).toHaveBeenCalledTimes(1);
+  expect(diff).toHaveBeenCalledTimes(1);
 });

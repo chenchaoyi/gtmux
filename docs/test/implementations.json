@@ -489,7 +489,8 @@
     "selectors": [
       "main App keeps compact navigation props and a fresh root changes its real shell",
       "main App sidebar geometry follows the new root even when RN retains its old phone width",
-      "a real anchored menu stays inside a new narrow root while RN width remains stale"
+      "a real anchored menu stays inside a new narrow root while RN width remains stale",
+      "retained DiffModal follows its actual viewport layout and keeps wrap and close usable with stale RN dimensions"
     ]
   },
   "mobileapp/ios/tests/NotificationResponsePayloadChecks.swift": {
@@ -624,6 +625,34 @@
     ],
     "selectors": [
       "retained scene availability delivers each permitted intent once and rejects guest replay"
+    ]
+  },
+  "mobileapp/e2e/ci-scene-migration.py": {
+    "cases": [
+      "SCENE-MIG-008"
+    ],
+    "selectors": [
+      "def sources(",
+      "def units(",
+      "def archive_source(",
+      "def allocate_unit(",
+      "def unit_errors(",
+      "def verify_all("
+    ]
+  },
+  "scripts/scene_migration_test.py": {
+    "cases": [
+      "SCENE-MIG-008"
+    ],
+    "selectors": [
+      "test_real_event_sources_and_fixed_PR15_main11_instances",
+      "test_missing_bad_base_and_actualmain_mismatch_fail",
+      "test_each_source_and_journey_has_exclusive_work_and_evidence",
+      "test_real_git_archive_from_root_and_mobileapp_rejects_unreadable_base",
+      "test_complete_synthetic_matrix_and_missing_unit_fail_closed",
+      "test_missing_skipped_failed_cancelled_case_or_early_return_never_passes",
+      "test_wrong_or_missing_toolchain_WDA_signature_and_product_identity_fail",
+      "test_evidence_byte_changes_and_escape_are_rejected"
     ]
   }
 }

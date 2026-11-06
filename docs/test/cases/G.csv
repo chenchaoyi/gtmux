@@ -235,6 +235,12 @@ LEG-cb98946c10d3,G,Go core / CLI / server,internal/userservice/service_test.go,1
 LEG-3bdc2df08ae7,G,Go core / CLI / server,internal/userservice/systemd_integration_test.go,15,Test,TestSystemdUserManagerLifecycle,False,legacy-not-retrospectively-reviewed
 LEG-8ef64b955024,G,RN / mobile harness,mobileapp/e2e/android/run.cjs,279,check,29-clipboard-image-markup-and-upload,False,legacy-not-retrospectively-reviewed
 MAP-38c67a93a00d,G,RN / mobile harness,mobileapp/e2e/capture/knowledge-shot.test.ts,13,reviewed-selector,gated(,False,DG-001
+MAP-d455cb51bba1,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,54,reviewed-selector,def sources(,False,SCENE-MIG-008
+MAP-bb550a403768,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,68,reviewed-selector,def units(,False,SCENE-MIG-008
+MAP-ea5937ab5244,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,117,reviewed-selector,def archive_source(,False,SCENE-MIG-008
+MAP-38d95bd6046c,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,109,reviewed-selector,def allocate_unit(,False,SCENE-MIG-008
+MAP-d8d576f98a52,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,173,reviewed-selector,def unit_errors(,False,SCENE-MIG-008
+MAP-e0657dd9a16c,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,213,reviewed-selector,def verify_all(,False,SCENE-MIG-008
 LEG-6e50b6aefc3c,G,RN / mobile harness,mobileapp/e2e/fake-serve/icons.test.ts,42,test,"serves the repo's built-in PNG, by label or by key, as a real serve does",False,legacy-not-retrospectively-reviewed
 LEG-1a72cb709a2f,G,RN / mobile harness,mobileapp/e2e/fake-serve/icons.test.ts,101,test,is the Go registry's (internal/agents/registry.go),False,legacy-not-retrospectively-reviewed
 MAP-befb8569059f,G,reviewed implementation,mobileapp/e2e/jest.config.manual.js,2,reviewed-selector,manualMode(process.env),False,"DG-001,DG-002"
@@ -475,6 +481,14 @@ LEG-3b2a0a11f0dd,G,CI / tooling,scripts/release_feed_test.py,128,unittest,test_p
 LEG-3ec2e6ea4c71,G,CI / tooling,scripts/release_feed_test.py,144,unittest,test_latest_failed_build_cannot_reuse_an_old_pass,False,legacy-not-retrospectively-reviewed
 LEG-f96cb8fa1137,G,CI / tooling,scripts/release_feed_test.py,154,unittest,test_frozen_recovery_source_requires_identical_current_installer_bytes,False,legacy-not-retrospectively-reviewed
 LEG-a773f7b44f33,G,CI / tooling,scripts/release_feed_test.py,167,unittest,test_slow_trickling_public_readback_stops_at_total_deadline,False,legacy-not-retrospectively-reviewed
+MAP-4dbebfdd920d,G,reviewed implementation,scripts/scene_migration_test.py,44,reviewed-selector,test_real_event_sources_and_fixed_PR15_main11_instances,False,SCENE-MIG-008
+MAP-7290dcb68a36,G,reviewed implementation,scripts/scene_migration_test.py,58,reviewed-selector,test_missing_bad_base_and_actualmain_mismatch_fail,False,SCENE-MIG-008
+MAP-b5a28e6d73ba,G,reviewed implementation,scripts/scene_migration_test.py,67,reviewed-selector,test_each_source_and_journey_has_exclusive_work_and_evidence,False,SCENE-MIG-008
+MAP-5b087f7ffc6a,G,reviewed implementation,scripts/scene_migration_test.py,84,reviewed-selector,test_real_git_archive_from_root_and_mobileapp_rejects_unreadable_base,False,SCENE-MIG-008
+MAP-2e1022e71af6,G,reviewed implementation,scripts/scene_migration_test.py,99,reviewed-selector,test_complete_synthetic_matrix_and_missing_unit_fail_closed,False,SCENE-MIG-008
+MAP-be9aec3dcf49,G,reviewed implementation,scripts/scene_migration_test.py,109,reviewed-selector,test_missing_skipped_failed_cancelled_case_or_early_return_never_passes,False,SCENE-MIG-008
+MAP-c5286b224e73,G,reviewed implementation,scripts/scene_migration_test.py,125,reviewed-selector,test_wrong_or_missing_toolchain_WDA_signature_and_product_identity_fail,False,SCENE-MIG-008
+MAP-6bc9a8ea1bd1,G,reviewed implementation,scripts/scene_migration_test.py,141,reviewed-selector,test_evidence_byte_changes_and_escape_are_rejected,False,SCENE-MIG-008
 MAP-253bbd74b924,G,reviewed implementation,scripts/test_design.py,51,reviewed-selector,def validate(,False,"TD-001,TD-002,TD-003,TD-004,TD-005"
 MAP-0fe56134bb6e,G,reviewed implementation,scripts/test_design.py,102,reviewed-selector,def history_errors(,False,"TD-001,TD-002,TD-003,TD-004,TD-005"
 MAP-c8a2197482da,G,reviewed implementation,scripts/test_design.py,174,reviewed-selector,def refresh_catalogue(,False,"TD-001,TD-002,TD-003,TD-004,TD-005"

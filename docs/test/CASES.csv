@@ -3767,9 +3767,10 @@ LEG-5fde771eaebb,L1,macOS / Widgets Swift,macapp/Tests/MacUsageWidgetSupportTest
 LEG-450dbd890cc5,L1,macOS / Widgets Swift,macapp/Tests/MacUsageWidgetSupportTests/MacUsageWidgetSupportTests.swift,73,XCTest,testUsageShortcutCannotCarryAnAlternateActionOrCredentials,False,legacy-not-retrospectively-reviewed
 LEG-fbddf3db8aa3,L1,macOS / Widgets Swift,macapp/Tests/MacUsageWidgetSupportTests/MacUsageWidgetSupportTests.swift,80,XCTest,testNoPollingWithoutWidgetNoOverlapAndBoundedReloads,False,legacy-not-retrospectively-reviewed
 MAP-265918ac6bc3,L1,reviewed implementation,mobileapp/__tests__/App.notificationBootstrap.test.tsx,34,reviewed-selector,starts the actual notification bridge while the visual safe area has no metrics,False,SCENE-MIG-002
-MAP-3a38d5e64c65,L2,reviewed implementation,mobileapp/__tests__/App.sceneMigration.test.tsx,60,reviewed-selector,main App keeps compact navigation props and a fresh root changes its real shell,False,SCENE-MIG-005
-MAP-da46dbb93884,L2,reviewed implementation,mobileapp/__tests__/App.sceneMigration.test.tsx,69,reviewed-selector,main App sidebar geometry follows the new root even when RN retains its old phone width,False,SCENE-MIG-005
-MAP-b8c8470d4954,L2,reviewed implementation,mobileapp/__tests__/App.sceneMigration.test.tsx,78,reviewed-selector,a real anchored menu stays inside a new narrow root while RN width remains stale,False,SCENE-MIG-005
+MAP-3a38d5e64c65,L2,reviewed implementation,mobileapp/__tests__/App.sceneMigration.test.tsx,61,reviewed-selector,main App keeps compact navigation props and a fresh root changes its real shell,False,SCENE-MIG-005
+MAP-da46dbb93884,L2,reviewed implementation,mobileapp/__tests__/App.sceneMigration.test.tsx,70,reviewed-selector,main App sidebar geometry follows the new root even when RN retains its old phone width,False,SCENE-MIG-005
+MAP-b8c8470d4954,L2,reviewed implementation,mobileapp/__tests__/App.sceneMigration.test.tsx,79,reviewed-selector,a real anchored menu stays inside a new narrow root while RN width remains stale,False,SCENE-MIG-005
+MAP-cfca889ee705,L2,reviewed implementation,mobileapp/__tests__/App.sceneMigration.test.tsx,98,reviewed-selector,retained DiffModal follows its actual viewport layout and keeps wrap and close usable with stale RN dimensions,False,SCENE-MIG-005
 LEG-a93ae72a5022,L1,RN / mobile harness,mobileapp/__tests__/App.test.tsx,9,test,renders correctly,False,legacy-not-retrospectively-reviewed
 LEG-43b35034f78d,L1,Android native,mobileapp/android/app/src/test/java/com/gtmux/app/DocumentPolicyTest.kt,7,JUnit,imageBoundsAreSharedByDocumentAndClipboardReaders,False,legacy-not-retrospectively-reviewed
 LEG-818e29919768,L1,Android native,mobileapp/android/app/src/test/java/com/gtmux/app/DocumentPolicyTest.kt,13,JUnit,resolverKeepsOriginAndRejectsCredentialOrQueryConfusion,False,legacy-not-retrospectively-reviewed
@@ -3887,6 +3888,12 @@ MAP-c6dfe48e744e,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,103,review
 LEG-95b0bcda12ce,M,RN / mobile harness,mobileapp/e2e/capture/hq-header-shot.test.ts,15,it,opens the disclosure,False,legacy-not-retrospectively-reviewed
 LEG-490318c4a70a,M,RN / mobile harness,mobileapp/e2e/capture/knowledge-shot.test.ts,14,it,opens from the header and drills into an entry,False,legacy-not-retrospectively-reviewed
 MAP-38c67a93a00d,G,RN / mobile harness,mobileapp/e2e/capture/knowledge-shot.test.ts,13,reviewed-selector,gated(,False,DG-001
+MAP-d455cb51bba1,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,54,reviewed-selector,def sources(,False,SCENE-MIG-008
+MAP-bb550a403768,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,68,reviewed-selector,def units(,False,SCENE-MIG-008
+MAP-ea5937ab5244,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,117,reviewed-selector,def archive_source(,False,SCENE-MIG-008
+MAP-38d95bd6046c,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,109,reviewed-selector,def allocate_unit(,False,SCENE-MIG-008
+MAP-d8d576f98a52,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,173,reviewed-selector,def unit_errors(,False,SCENE-MIG-008
+MAP-e0657dd9a16c,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,213,reviewed-selector,def verify_all(,False,SCENE-MIG-008
 LEG-34eb45b46408,M,RN / mobile harness,mobileapp/e2e/diagnostics/ipad-keys-probe.test.ts,12,it,types into the pane search with mobile: keys,False,legacy-not-retrospectively-reviewed
 LEG-f17f27ea8cb4,M,RN / mobile harness,mobileapp/e2e/diagnostics/send-repro.test.ts,21,it,types + sends 继续 and reports whether a failed-send bar appears,False,legacy-not-retrospectively-reviewed
 MAP-2fd3cafb008c,L2,reviewed implementation,mobileapp/e2e/fake-serve/backend-contract.test.ts,46,reviewed-selector,RN fake / Go contract:,False,CT-HTTP
@@ -6158,6 +6165,14 @@ LEG-3b2a0a11f0dd,G,CI / tooling,scripts/release_feed_test.py,128,unittest,test_p
 LEG-3ec2e6ea4c71,G,CI / tooling,scripts/release_feed_test.py,144,unittest,test_latest_failed_build_cannot_reuse_an_old_pass,False,legacy-not-retrospectively-reviewed
 LEG-f96cb8fa1137,G,CI / tooling,scripts/release_feed_test.py,154,unittest,test_frozen_recovery_source_requires_identical_current_installer_bytes,False,legacy-not-retrospectively-reviewed
 LEG-a773f7b44f33,G,CI / tooling,scripts/release_feed_test.py,167,unittest,test_slow_trickling_public_readback_stops_at_total_deadline,False,legacy-not-retrospectively-reviewed
+MAP-4dbebfdd920d,G,reviewed implementation,scripts/scene_migration_test.py,44,reviewed-selector,test_real_event_sources_and_fixed_PR15_main11_instances,False,SCENE-MIG-008
+MAP-7290dcb68a36,G,reviewed implementation,scripts/scene_migration_test.py,58,reviewed-selector,test_missing_bad_base_and_actualmain_mismatch_fail,False,SCENE-MIG-008
+MAP-b5a28e6d73ba,G,reviewed implementation,scripts/scene_migration_test.py,67,reviewed-selector,test_each_source_and_journey_has_exclusive_work_and_evidence,False,SCENE-MIG-008
+MAP-5b087f7ffc6a,G,reviewed implementation,scripts/scene_migration_test.py,84,reviewed-selector,test_real_git_archive_from_root_and_mobileapp_rejects_unreadable_base,False,SCENE-MIG-008
+MAP-2e1022e71af6,G,reviewed implementation,scripts/scene_migration_test.py,99,reviewed-selector,test_complete_synthetic_matrix_and_missing_unit_fail_closed,False,SCENE-MIG-008
+MAP-be9aec3dcf49,G,reviewed implementation,scripts/scene_migration_test.py,109,reviewed-selector,test_missing_skipped_failed_cancelled_case_or_early_return_never_passes,False,SCENE-MIG-008
+MAP-c5286b224e73,G,reviewed implementation,scripts/scene_migration_test.py,125,reviewed-selector,test_wrong_or_missing_toolchain_WDA_signature_and_product_identity_fail,False,SCENE-MIG-008
+MAP-6bc9a8ea1bd1,G,reviewed implementation,scripts/scene_migration_test.py,141,reviewed-selector,test_evidence_byte_changes_and_escape_are_rejected,False,SCENE-MIG-008
 MAP-253bbd74b924,G,reviewed implementation,scripts/test_design.py,51,reviewed-selector,def validate(,False,"TD-001,TD-002,TD-003,TD-004,TD-005"
 MAP-0fe56134bb6e,G,reviewed implementation,scripts/test_design.py,102,reviewed-selector,def history_errors(,False,"TD-001,TD-002,TD-003,TD-004,TD-005"
 MAP-c8a2197482da,G,reviewed implementation,scripts/test_design.py,174,reviewed-selector,def refresh_catalogue(,False,"TD-001,TD-002,TD-003,TD-004,TD-005"
