@@ -47,8 +47,8 @@ LEG-8094dd3c9a7c,L4,RN / mobile harness,mobileapp/e2e/__tests__/radar.test.ts,29
 LEG-6aa06fe97cdb,L4,RN / mobile harness,mobileapp/e2e/__tests__/revoked-phone.test.ts,27,it,"a phone revoked while the app was closed opens on ""access rejected"", and the server list agrees",False,legacy-not-retrospectively-reviewed
 LEG-7d7ce36e4772,L4,RN / mobile harness,mobileapp/e2e/__tests__/revoked-phone.test.ts,55,it,a pane open when the Mac revokes the phone says so in its header,False,legacy-not-retrospectively-reviewed
 MAP-3593077aab87,L4,reviewed implementation,mobileapp/e2e/__tests__/scene-usage-links.test.ts,24,reviewed-selector,opens the usage link on warm and cold scene entry,False,DUO-005
-MAP-ea87797d79bf,L4,reviewed implementation,mobileapp/e2e/__tests__/scene-usage-links.test.ts,35,reviewed-selector,opens a warm usage link through the scene,False,DUO-005
-MAP-b7d75b280b9d,L4,reviewed implementation,mobileapp/e2e/__tests__/scene-usage-links.test.ts,51,reviewed-selector,opens a cold usage link through the scene,False,DUO-005
+MAP-ea87797d79bf,L4,reviewed implementation,mobileapp/e2e/__tests__/scene-usage-links.test.ts,46,reviewed-selector,opens a warm usage link through the scene,False,DUO-005
+MAP-b7d75b280b9d,L4,reviewed implementation,mobileapp/e2e/__tests__/scene-usage-links.test.ts,62,reviewed-selector,opens a cold usage link through the scene,False,DUO-005
 LEG-9d2138d1a1e7,L4,RN / mobile harness,mobileapp/e2e/__tests__/send-feedback.test.ts,38,it,a refusal names the pane someone is typing in,False,legacy-not-retrospectively-reviewed
 LEG-90d6e9b0fcce,L4,RN / mobile harness,mobileapp/e2e/__tests__/send-feedback.test.ts,61,it,"a send into a running session says it went, and that the agent may finish first",False,legacy-not-retrospectively-reviewed
 MAP-136dedeea639,L4,reviewed implementation,mobileapp/e2e/__tests__/server-switch-compare.test.ts,14,reviewed-selector,selects a server after a clean launch,False,DUO-006
