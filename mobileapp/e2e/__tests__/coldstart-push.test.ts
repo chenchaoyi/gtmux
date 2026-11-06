@@ -158,6 +158,12 @@ run('a cold-start push is handled once', () => {
     push('Home', '%12', 'cold-A');
     expect(await tapBanner('cold-A')).toBe(true);
     await settle(7000);
+    try {
+      await driver.$(`~${TestIds.detail.back}`).waitForDisplayed({timeout: 30000});
+    } catch (error) {
+      await note('A1-cold-not-ready');
+      throw error;
+    }
     inDetail(await note('A1-after-cold-tap'), 'Home');
 
     await toServer('Office');
