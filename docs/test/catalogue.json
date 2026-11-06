@@ -34644,7 +34644,7 @@
       ]
     },
     "mobileapp/e2e/__tests__/coldstart-push.test.ts": {
-      "sha256": "65fbc7521a90e6ca82a56554e75898b31843385d9c25fe42a35dead637f2bf4c",
+      "sha256": "1269daec195e7592d3797b5d55b12e71c6454b6ae49960557e9fae0994a85948",
       "layer": "L4",
       "stack": "RN / mobile harness",
       "cases": [
@@ -34658,7 +34658,7 @@
         },
         {
           "id": "LEG-f3196e5f4ce2",
-          "line": 184,
+          "line": 194,
           "kind": "it",
           "name": "C: a launch with no notification switches where it is pointed",
           "dynamic": false,

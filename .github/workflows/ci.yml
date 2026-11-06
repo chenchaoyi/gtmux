@@ -614,7 +614,8 @@ jobs:
             mobileapp/.e2e-artifacts/**/usage-link-*
             mobileapp/.e2e-artifacts/**/fail-scene-*-usage-link-failed.*
             mobileapp/.e2e-artifacts/**/duo-fold-*
-            mobileapp/.e2e-artifacts/**/fail-duo-fold-failed.*
+            mobileapp/.e2e-artifacts/**/fail-duo-fold*-failed.*
+            mobileapp/.e2e-artifacts/**/fail-duo-large-text-failed.*
             mobileapp/.e2e-artifacts/**/fail-duo-rotation-failed.*
           include-hidden-files: true
           if-no-files-found: warn

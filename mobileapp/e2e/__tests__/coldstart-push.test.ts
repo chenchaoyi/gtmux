@@ -173,6 +173,16 @@ run('a cold-start push is handled once', () => {
 
     await driver.execute('mobile: pressButton', {name: 'home'});
     await settle(1500);
+    const backgroundStates: number[] = [];
+    try {
+      await driver.waitUntil(async () => {
+        const state = await driver.queryAppState(BUNDLE);
+        if (backgroundStates.at(-1) !== state) backgroundStates.push(state);
+        return state !== 4;
+      }, {timeout: 15000, interval: 250, timeoutMsg: 'app did not leave the foreground before the warm push'});
+    } finally {
+      writeFileSync(join(getArtifactsDir(), 'c-warm-app-states.json'), JSON.stringify(backgroundStates));
+    }
     push('Office', '%13', 'warm-A');
     expect(await tapBanner('warm-A')).toBe(true);
     await settle(7000);
