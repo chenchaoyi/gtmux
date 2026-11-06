@@ -12,7 +12,7 @@ case "${GTMUX_COMPARE_JOURNEY:-servers}" in
 esac
 base="$RUNNER_TEMP/duo-baseline-source"
 mkdir -p "$base" "$GITHUB_WORKSPACE/mobileapp/.e2e-artifacts/comparison"
-git archive "$GITHUB_BASE_SHA" | tar -x -C "$base"
+git -C "$GITHUB_WORKSPACE" archive "$GITHUB_BASE_SHA" | tar -x -C "$base"
 cmp "$base/mobileapp/package-lock.json" "$GITHUB_WORKSPACE/mobileapp/package-lock.json"
 # CocoaPods may rewrite lock metadata during the candidate setup. Compare the
 # committed inputs, then use the same resolved lockfile for both builds.

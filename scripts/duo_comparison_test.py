@@ -3,6 +3,7 @@ import io
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -26,7 +27,9 @@ with open(os.environ['FIXTURE_CALLS'], 'a') as out:
         'os': os.environ.get('GTMUX_E2E_OS'), 'device': os.environ.get('GTMUX_E2E_DEVICE'),
         'udid': os.environ.get('GTMUX_E2E_UDID')}) + '\n')
 if name == 'git':
-    if args[0] == 'archive':
+    if 'archive' in args:
+        if os.environ.get('FIXTURE_REAL_GIT'):
+            os.execv(os.environ['FIXTURE_REAL_GIT'], [os.environ['FIXTURE_REAL_GIT'], *args])
         sys.stdout.buffer.write((workspace / 'baseline.tar').read_bytes())
     elif 'show' in args:
         sys.stdout.buffer.write((workspace / args[-1].split(':', 1)[1]).read_bytes())
@@ -127,6 +130,37 @@ class DuoComparisonTests(unittest.TestCase):
             for call in tests:
                 self.assertEqual(call['args'][-1], 'server-switch-compare.test.ts')
                 self.assertEqual((call['manual'], call['os']), ('1', '26.2'))
+
+    def test_real_archive_preserves_repository_paths_from_root_and_mobileapp(self):
+        real_git = shutil.which('git')
+        self.assertIsNotNone(real_git)
+        for caller in ('.', 'mobileapp'):
+            with self.subTest(caller=caller), tempfile.TemporaryDirectory(prefix='duo-archive-cwd-') as tmp:
+                root = Path(tmp)
+                workspace, env = self.fixture(root)
+                # Use an actual committed tree: Git archive changes its prefix based
+                # on CWD. Native build/device commands remain the owned stubs above.
+                git = [real_git, '-c', 'core.hooksPath=/dev/null', '-c', 'commit.gpgsign=false']
+                git_env = {**os.environ, 'GIT_AUTHOR_NAME': 'Archive fixture',
+                           'GIT_AUTHOR_EMAIL': 'fixture@example.invalid',
+                           'GIT_COMMITTER_NAME': 'Archive fixture',
+                           'GIT_COMMITTER_EMAIL': 'fixture@example.invalid'}
+                for args in (['init', '--quiet'], ['add', 'mobileapp'], ['commit', '--quiet', '-m', 'fixture']):
+                    subprocess.run([*git, *args], cwd=workspace, env=git_env,
+                                   check=True, capture_output=True, timeout=10)
+                base_sha = subprocess.check_output([*git, 'rev-parse', 'HEAD'], cwd=workspace,
+                                                   env=git_env, text=True, timeout=10).strip()
+                env.update(FIXTURE_REAL_GIT=real_git, GITHUB_BASE_SHA=base_sha,
+                           GTMUX_COMPARE_JOURNEY='push', GTMUX_COMPARE_REUSE_CANDIDATE='1')
+                result = subprocess.run(['bash', str(ROOT / 'mobileapp/e2e/ci-compare-servers.sh')],
+                                        cwd=workspace / caller, env=env, text=True,
+                                        capture_output=True, timeout=20)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                baseline = root / 'runner/duo-baseline-source/mobileapp/package-lock.json'
+                self.assertEqual(baseline.read_bytes(), (workspace / 'mobileapp/package-lock.json').read_bytes())
+                calls = [json.loads(line) for line in (root / 'calls.jsonl').read_text().splitlines()]
+                self.assertEqual([call['variant'] for call in calls if call['command'] == 'npm'],
+                                 ['baseline', 'candidate'])
 
     def test_each_original_variant_failure_stays_red_and_both_variants_run(self):
         for variant in ('baseline', 'candidate'):

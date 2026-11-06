@@ -11,7 +11,7 @@
 | L3 · 运行时集成 | 86 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 108 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 12 | [M.csv](cases/M.csv) |
-| G · 质量门禁 | 503 | [G.csv](cases/G.csv) |
+| G · 质量门禁 | 504 | [G.csv](cases/G.csv) |
 
 数字不是通过数。存量 6,223 个位置来自 4fad6119 盘点（声明、子测试、动态模板），另加明确的新用例、原生过程入口和评审映射入口；动态实例不展开。没有具名用例的辅助文件仍保留摘要。存量层次是结构分类，混合边界在触及时需语义复核，不补造历史评审/运行结果。`reviewed-selector` 也不冒充框架发现的声明。源码/目录/映射漂移由门禁拦截，但测试名不能自动证明断言质量。
 
@@ -83,7 +83,7 @@
 | DUO-040 | The same fixture returns identical messages and times across polls; a new fixture captures its own epoch; explicit world.transcripts is returned unchanged. |
 | DUO-041 | The command has5000ms/16KiB/SIGKILL bounds, posture/display cleanup runs, the original journey error survives secondary evidence failure, and an evidence failure after a successful journey still rejects. |
 | DUO-042 | Every run exits the original test status; diagnostic failures remain visible on stderr and do not turn failed tests green or successful tests into unrelated diagnostic failures. |
-| DUO-043 | Both variants use the same chosen test and launch policy, one baseline native build with reused candidate, exact selected runtime/device and ad-hoc configuration; failures stay failures, unexpected source/signature fails closed, original default comparison remains intact. |
+| DUO-043 | Both variants use the same chosen test and launch policy, one baseline native build with reused candidate, exact selected runtime/device and ad-hoc configuration; failures stay failures, unexpected source/signature fails closed, original default comparison remains intact. Baseline retains mobileapp/package-lock.json at either caller CWD and both variants run; an unanchored archive fails the mobileapp control before device commands. |
 | STOR-001 | Every carrier separates project-owned and task-temp output from gtmux configuration/runtime trees; no promoted entry required; user text and hand-edit protection preserved; second sync idempotent. |
 | STOR-002 | Both playbooks reserve gtmux-owned state and only reusable HQ knowledge tools for its home, direct project scripts/reports/builds to project/task storage, require external evidence references, and never grant automatic migration/deletion; upgrade backs up old charter, preserves LOCAL/notes and converges. |
 | TD-001 | Reject a changed/new test without a reviewed design; accept a mapped implementation |

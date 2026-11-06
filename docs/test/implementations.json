@@ -879,7 +879,8 @@
       "test_each_original_variant_failure_stays_red_and_both_variants_run",
       "test_reuse_rejects_unsigned_product_before_any_build_or_device_command",
       "test_baseline_permission_breadcrumbs_are_idempotent_and_do_not_add_a_request",
-      "test_unknown_baseline_permission_source_fails_closed"
+      "test_unknown_baseline_permission_source_fails_closed",
+      "test_real_archive_preserves_repository_paths_from_root_and_mobileapp"
     ]
   }
 }

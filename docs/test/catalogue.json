@@ -58788,7 +58788,7 @@
       "cases": [
         {
           "id": "MAP-ff5101e39b59",
-          "line": 101,
+          "line": 104,
           "kind": "reviewed-selector",
           "name": "test_push_comparison_reuses_candidate_with_identical_runtime_and_launch_policy",
           "dynamic": false,
@@ -58797,7 +58797,7 @@
         },
         {
           "id": "MAP-de15c1225b2d",
-          "line": 120,
+          "line": 123,
           "kind": "reviewed-selector",
           "name": "test_default_server_control_preserves_its_two_builds_and_manual_launch",
           "dynamic": false,
@@ -58806,7 +58806,7 @@
         },
         {
           "id": "MAP-c39fa13749cd",
-          "line": 131,
+          "line": 165,
           "kind": "reviewed-selector",
           "name": "test_each_original_variant_failure_stays_red_and_both_variants_run",
           "dynamic": false,
@@ -58815,7 +58815,7 @@
         },
         {
           "id": "MAP-3d53fe128e51",
-          "line": 140,
+          "line": 174,
           "kind": "reviewed-selector",
           "name": "test_reuse_rejects_unsigned_product_before_any_build_or_device_command",
           "dynamic": false,
@@ -58824,7 +58824,7 @@
         },
         {
           "id": "MAP-20e5d177982d",
-          "line": 147,
+          "line": 181,
           "kind": "reviewed-selector",
           "name": "test_baseline_permission_breadcrumbs_are_idempotent_and_do_not_add_a_request",
           "dynamic": false,
@@ -58833,15 +58833,24 @@
         },
         {
           "id": "MAP-ffa00600e579",
-          "line": 161,
+          "line": 195,
           "kind": "reviewed-selector",
           "name": "test_unknown_baseline_permission_source_fails_closed",
           "dynamic": false,
           "layer": "G",
           "design": "DUO-043"
+        },
+        {
+          "id": "MAP-e4c9e570c7f6",
+          "line": 134,
+          "kind": "reviewed-selector",
+          "name": "test_real_archive_preserves_repository_paths_from_root_and_mobileapp",
+          "dynamic": false,
+          "layer": "G",
+          "design": "DUO-043"
         }
       ],
-      "sha256": "d014e9b77b3ea92bf0327f202d2d7197664aa4e850fd528d2c601fdf0fae509c"
+      "sha256": "4496bbb114f1d96b4adc60150ce55ee56c2aeb3f50cb67e27627de32e2563a3f"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2"
