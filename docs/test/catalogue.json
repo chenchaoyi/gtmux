@@ -58197,7 +58197,7 @@
           "design": "DUO-020,DUO-021,DUO-023"
         }
       ],
-      "sha256": "1d5773b6fca423bd025e3d8d0c59971e708ef59d742adf4f3416967f521e47db"
+      "sha256": "768619ad4353094a707ea5e183294a38c025c4ff6828a0422b9a260a0cb7cfcc"
     },
     "mobileapp/src/usage/UsageWidgetBridge.initialLink.test.tsx": {
       "layer": "L1",

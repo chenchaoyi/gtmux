@@ -47,7 +47,7 @@ async function posture(angle: number, panel: 'inner' | 'outer', evidence: object
     let size = {width: 0, height: 0};
     await driver.waitUntil(async () => {
       if (modalTarget && !await target.isDisplayed()) return false;
-      const frame = {...await target.getLocation(), ...await target.getSize()};
+      const frame = await driver.getElementRect(await target.elementId);
       const bounds = modalTarget ? await driver.getWindowSize() : frame;
       observation.lastFrame = {frame, bounds};
       size = {width: bounds.width, height: bounds.height};
