@@ -6,8 +6,19 @@ export type NativeTextLayout = {
   fontPoints: number[]; frame: TextRect; bounds: TextRect; measuredHeight: number;
   selectionRectCount: number; selectionBounds: TextRect; lastCharacterRect: TextRect;
   utf16Length: number;
-  rendering: {engine: string; complete: boolean; utf16Coverage: number; bounds?: TextRect};
+  rendering: {engine: string; complete: boolean; utf16Coverage: number; bounds?: TextRect;
+    ink?: {complete: boolean; pixels: number; touchesEdge: boolean; bounds?: TextRect; reason?: string}};
 };
+
+export function hasContainedInk(record: NativeTextLayout): boolean {
+  const ink = record.rendering?.ink;
+  const r = ink?.bounds, b = record.bounds;
+  const epsilon = 0.0001; // UIKit frame floating-point noise, below one pixel.
+  return !!ink?.complete && ink.pixels > 0 && !ink.touchesEdge && !!r &&
+    [r.x, r.y, r.width, r.height].every(Number.isFinite) && r.width > 0 && r.height > 0 &&
+    r.x >= b.x - epsilon && r.y >= b.y - epsilon &&
+    r.x + r.width <= b.x + b.width + epsilon && r.y + r.height <= b.y + b.height + epsilon;
+}
 
 // One WDA snapshot supplies names, visibility and frames together. Per-element
 // queries can consume the whole budget before three complete samples are read.
@@ -70,6 +81,7 @@ export async function waitForNativeTextLayout(panel: string, read: () => NativeT
       record.rendering.utf16Coverage === record.utf16Length && record.utf16Length > 0 &&
       !!record.rendering.bounds && Object.values(record.rendering.bounds).every(Number.isFinite) &&
       record.rendering.bounds.width > 0 && record.rendering.bounds.height > 0 &&
+      hasContainedInk(record) &&
       !!record.revision && record.fontPoints.length > 0 && record.fontPoints.every(point => point > 0) &&
       record.selectionRectCount > 0 && record.measuredHeight <= record.bounds.height + 1 &&
       record.lastCharacterRect.height > 0 && record.lastCharacterRect.y >= record.bounds.y - 1 &&

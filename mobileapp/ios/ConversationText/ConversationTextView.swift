@@ -17,6 +17,8 @@ final class ConversationTextView: UIView, UITextViewDelegate, UIGestureRecognize
   private var outsideTap: UITapGestureRecognizer?
 #if targetEnvironment(simulator)
   private var lastDiagnostic: Data?
+  private var renderingCacheKey = ""
+  private var renderingCache: [String: Any] = [:]
 #endif
 
   override init(frame: CGRect) {
@@ -127,6 +129,8 @@ final class ConversationTextView: UIView, UITextViewDelegate, UIGestureRecognize
   // These conservative rendering surfaces are not selection rectangles or a
   // claim that every pixel inside the surface contains a visible glyph.
   private func renderingEvidence(length: Int) -> [String: Any] {
+    let key = "\(revision):\(textView.bounds.size):\(window?.screen.scale ?? 1)"
+    if key == renderingCacheKey { return renderingCache }
     func rect(_ r: CGRect) -> [String: CGFloat] {
       ["x": r.origin.x, "y": r.origin.y, "width": r.width, "height": r.height]
     }
@@ -139,6 +143,7 @@ final class ConversationTextView: UIView, UITextViewDelegate, UIGestureRecognize
       var surface = CGRect.null
       var covered = 0
       var complete = true
+      var activeFragments: [NSTextLayoutFragment] = []
       manager.enumerateTextLayoutFragments(from: nil, options: [.ensuresLayout]) { fragment in
         let start = content.offset(from: content.documentRange.location, to: fragment.rangeInElement.location)
         let end = content.offset(from: content.documentRange.location, to: fragment.rangeInElement.endLocation)
@@ -149,11 +154,25 @@ final class ConversationTextView: UIView, UITextViewDelegate, UIGestureRecognize
         surface = surface.union(render)
         fragments.append(["start": start, "end": end, "state": fragment.state.rawValue,
                           "layout": rect(frame), "rendering": rect(render)])
+        activeFragments.append(fragment)
         return true
       }
       var result: [String: Any] = ["engine": "TextKit2", "complete": complete && covered == length && !fragments.isEmpty,
                                    "utf16Coverage": covered, "fragments": fragments]
       if !surface.isNull { result["bounds"] = rect(surface) }
+      // Draw the existing fragments into a padded reference surface, without
+      // the UITextView clip. Conservative surface bounds alone are not ink.
+      let ink = TextInkEvidence.capture(surface: surface, scale: window?.screen.scale ?? 1) { context in
+        for fragment in activeFragments {
+          let frame = fragment.layoutFragmentFrame
+          fragment.draw(at: CGPoint(x: frame.minX + inset.left, y: frame.minY + inset.top), in: context)
+        }
+      }
+      result["ink"] = ink.json
+      if complete && covered == length && ink.complete {
+        renderingCacheKey = key
+        renderingCache = result
+      }
       return result
     }
     // Legacy access is safe only when no TextKit 2 manager is present.

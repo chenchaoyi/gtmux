@@ -560,6 +560,8 @@ jobs:
           "$RUNNER_TEMP/notification-response-check"
           xcrun swiftc ios/GtmuxMobile/NotificationResponsePayload.swift ios/tests/NotificationResponseCompletionChecks.swift -o "$RUNNER_TEMP/notification-completion-check"
           "$RUNNER_TEMP/notification-completion-check"
+          xcrun swiftc -D GTMUX_TEXT_INK_CHECKS ios/ConversationText/TextInkEvidence.swift ios/tests/TextInkEvidenceChecks.swift -o "$RUNNER_TEMP/text-ink-check"
+          "$RUNNER_TEMP/text-ink-check"
       - name: Install isolated iOS automation driver
         id: ios_driver
         working-directory: mobileapp

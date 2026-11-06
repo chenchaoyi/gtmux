@@ -36588,10 +36588,20 @@
       "cases": []
     },
     "mobileapp/ios/tests/build-conversation-fixture.sh": {
-      "sha256": "9d6a90879371f4f51c3b17cbd7a85d96f2ef37942bdd2d5170317b76cc57b52a",
+      "sha256": "7ae2d0258aab644d2ea94995ec2eb834b438ec66ec73e0a4c80c944c26e159f9",
       "layer": "L1",
       "stack": "iOS Swift",
-      "cases": []
+      "cases": [
+        {
+          "id": "MAP-fdf5e2319046",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "xcrun --sdk iphonesimulator swiftc",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-044"
+        }
+      ]
     },
     "mobileapp/ios/tests/build-usage-widget-fixture.rb": {
       "sha256": "e68a29737175336c1af545a684afd58ce8d3d838669dc6d32b6be7a497b2842b",
@@ -58482,15 +58492,24 @@
       "cases": [
         {
           "id": "MAP-5fa147a200d6",
-          "line": 29,
+          "line": 31,
           "kind": "reviewed-selector",
           "name": "keeps the session entry usable at an accessibility text size on both panels",
           "dynamic": false,
           "layer": "L4",
           "design": "DUO-035"
+        },
+        {
+          "id": "MAP-e15965308269",
+          "line": 31,
+          "kind": "reviewed-selector",
+          "name": "keeps the session entry usable at an accessibility text size on both panels (%s)",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "DUO-035"
         }
       ],
-      "sha256": "3be7c1a75b50c94564b1606a6cbe98bfdc7616c403a5ffe9c9a4f70f602b1e1b"
+      "sha256": "5d486d817b578225a8928c5cc18b3349b0240f1ad7f2a47b9beb7cb99fa8ab08"
     },
     "mobileapp/e2e/__tests__/duo-voiceover.test.ts": {
       "layer": "L4",
@@ -58653,9 +58672,18 @@
           "dynamic": false,
           "layer": "L1",
           "design": "DUO-039"
+        },
+        {
+          "id": "MAP-4d5aff87073f",
+          "line": 105,
+          "kind": "reviewed-selector",
+          "name": "unresolved glyph ink %s fails even with complete layout coverage",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-039"
         }
       ],
-      "sha256": "0d8ff24fa2c9fbf2a3541278b48c6924683c58abd6dd98abbb47512898b79ff6"
+      "sha256": "e210b136efa798e1dc7a69ab087e9dee40b0fca1db935ae8f99968d9978e43d9"
     },
     "mobileapp/e2e/setup/nativeTextLayout.ts": {
       "layer": "L1",
@@ -58663,7 +58691,7 @@
       "cases": [
         {
           "id": "MAP-5623bb87b474",
-          "line": 44,
+          "line": 55,
           "kind": "reviewed-selector",
           "name": "waitForNativeTextLayout",
           "dynamic": false,
@@ -58671,7 +58699,7 @@
           "design": "DUO-039"
         }
       ],
-      "sha256": "eb78f416870529f5b01f4ee1aea22cc6dae095d96e21817ddef79a1ea51050d3"
+      "sha256": "f165481bbe8d826bb471f5266e2131c08fda7aa4dd77a8cb74a4f820c5a9dc8d"
     },
     "mobileapp/e2e/fake-serve/transcript-identity.test.ts": {
       "layer": "L2",
@@ -58851,6 +58879,22 @@
         }
       ],
       "sha256": "4496bbb114f1d96b4adc60150ce55ee56c2aeb3f50cb67e27627de32e2563a3f"
+    },
+    "mobileapp/ios/tests/TextInkEvidenceChecks.swift": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-4456866e7979",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "static func main()",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DUO-044"
+        }
+      ],
+      "sha256": "a7a65e31dc53285fb36dddaa9d3ceecf18d9a3cf1412cca01499f26b8bf89384"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2"

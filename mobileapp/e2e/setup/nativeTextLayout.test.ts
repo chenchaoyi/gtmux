@@ -1,4 +1,4 @@
-import {NativeTextLayout, waitForNativeTextLayout} from './nativeTextLayout';
+import {hasContainedInk, NativeTextLayout, waitForNativeTextLayout} from './nativeTextLayout';
 
 const mockDriver = {execute: jest.fn(), waitUntil: jest.fn()};
 jest.mock('./driver', () => ({getDriver: () => mockDriver}));
@@ -6,7 +6,7 @@ let now = 0;
 const rect = {x: 0, y: 0, width: 200, height: 80};
 const record = (identifier: string): NativeTextLayout => ({identifier, revision: 'current', scale: 2,
   selectionActive: false, queued: false, fontPoints: [28], frame: rect, bounds: rect, measuredHeight: 80,
-  utf16Length: 10, rendering: {engine: 'TextKit2', complete: true, utf16Coverage: 10, bounds: rect},
+  utf16Length: 10, rendering: {engine: 'TextKit2', complete: true, utf16Coverage: 10, bounds: rect, ink: {complete: true, pixels: 10, touchesEdge: false, bounds: rect}},
   selectionRectCount: 2, selectionBounds: rect, lastCharacterRect: {...rect, y: 40, height: 40}});
 const source = (prefix = 'fresh', count = 3) => ({type: 'Application', children: Array.from({length: count}, (_, index) => ({
   type: 'TextView', value: 'fixture text', name: `${prefix}${index + 1}`, isVisible: '1', rect,
@@ -99,4 +99,22 @@ test('conservative rendering surface overflow remains evidence rather than a cle
   const read = () => records().map(value => ({...value, rendering: {...value.rendering, bounds: {...rect, y: -2, height: 84}}}));
   const result = await waitForNativeTextLayout('outer', read);
   expect(result.nativeTextLayouts[0].rendering.bounds).toEqual({...rect, y: -2, height: 84});
+});
+
+// Reference paint is independent of selection geometry and conservative surfaces.
+test.each(['missing', 'blank', 'edge', 'incomplete', 'left', 'top', 'right', 'bottom'])('unresolved glyph ink %s fails even with complete layout coverage', async fault => {
+  const read = () => {
+    const values = records(), ink = values[0].rendering.ink!;
+    if (fault === 'missing') values[0].rendering.ink = undefined;
+    if (fault === 'blank') ink.pixels = 0;
+    if (fault === 'edge') ink.touchesEdge = true;
+    if (fault === 'incomplete') ink.complete = false;
+    if (fault === 'left') ink.bounds = {...rect, x: -0.5};
+    if (fault === 'top') ink.bounds = {...rect, y: -0.5};
+    if (fault === 'right') ink.bounds = {...rect, width: 200.5};
+    if (fault === 'bottom') ink.bounds = {...rect, height: 80.5};
+    expect(hasContainedInk(values[0])).toBe(false);
+    return values;
+  };
+  await expect(waitForNativeTextLayout('outer', read)).rejects.toThrow('did not settle');
 });

@@ -3204,7 +3204,8 @@ MAP-29e41b83b4cc,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout
 MAP-2603074a2b80,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.test.ts,76,reviewed-selector,malformed %s is not silently skipped,False,DUO-039
 MAP-8179306f4d27,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.test.ts,86,reviewed-selector,unresolved rendering %s fails without calling selection bounds glyph evidence,False,DUO-039
 MAP-622b1c9ee835,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.test.ts,98,reviewed-selector,conservative rendering surface overflow remains evidence rather than a cleared accessibility finding,False,DUO-039
-MAP-5623bb87b474,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.ts,44,reviewed-selector,waitForNativeTextLayout,False,DUO-039
+MAP-4d5aff87073f,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.test.ts,105,reviewed-selector,unresolved glyph ink %s fails even with complete layout coverage,False,DUO-039
+MAP-5623bb87b474,L1,reviewed implementation,mobileapp/e2e/setup/nativeTextLayout.ts,55,reviewed-selector,waitForNativeTextLayout,False,DUO-039
 LEG-b16afa2cc4a9,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,26,test,an ORPHANED match still dies,False,legacy-not-retrospectively-reviewed
 LEG-0338a4b52122,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,47,test,"a failed pgrep is said aloud, not mistaken for no match",False,legacy-not-retrospectively-reviewed
 LEG-13c0b7c93b98,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,63,test,no match is not an error,False,legacy-not-retrospectively-reviewed
@@ -3219,6 +3220,8 @@ ND-002,L1,iOS Swift,mobileapp/ios/tests/DocumentMarkdownChecks.swift,3,native-pr
 MAP-88eca3d41bfd,L1,reviewed implementation,mobileapp/ios/tests/NotificationResponsePayloadChecks.swift,70,reviewed-selector,notification response payload and queue checks passed,False,DUO-009
 MAP-2bf007ddc23d,L1,reviewed implementation,mobileapp/ios/tests/NotificationResponsePayloadChecks.swift,16,reviewed-selector,let activityPayload = sceneUserActivityPayload,False,"DUO-009,DUO-022"
 MAP-4eba460f385e,L1,reviewed implementation,mobileapp/ios/tests/NotificationResponsePayloadChecks.swift,20,reviewed-selector,"retainHeadlessSceneLinks(urls: [sceneURL], activities: [activity])",False,"DUO-009,DUO-022,DUO-024"
+MAP-4456866e7979,L1,reviewed implementation,mobileapp/ios/tests/TextInkEvidenceChecks.swift,5,reviewed-selector,static func main(),False,DUO-044
+MAP-fdf5e2319046,L1,iOS Swift,mobileapp/ios/tests/build-conversation-fixture.sh,12,reviewed-selector,xcrun --sdk iphonesimulator swiftc,False,DUO-044
 LEG-917bba954652,L1,RN / mobile harness,mobileapp/src/api/backgroundTasks.test.ts,13,it,"counts waiting as running, not as finished",False,legacy-not-retrospectively-reviewed
 LEG-c7d9f4d079ae,L1,RN / mobile harness,mobileapp/src/api/backgroundTasks.test.ts,20,it,tallies the three buckets,False,legacy-not-retrospectively-reviewed
 LEG-c5e62f5e8b3f,L1,RN / mobile harness,mobileapp/src/api/backgroundTasks.test.ts,27,it,is not rendered when nothing is running,False,legacy-not-retrospectively-reviewed

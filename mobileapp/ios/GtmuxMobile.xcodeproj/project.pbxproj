@@ -65,6 +65,7 @@
 		F1E1182EA981A547C85A1095 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = F602BC5F68D10C3077EE7820 /* Localizable.xcstrings */; };
 		FAC4748F8A785D0DA183BA3F /* DocumentHTML.swift in Sources */ = {isa = PBXBuildFile; fileRef = 284BEFFAA1ACA363220BC6BB /* DocumentHTML.swift */; };
 		FD4F3E492F1B10AEEA7F3873 /* DocumentStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC4C83C073F7BD1C59E30FB5 /* DocumentStatusView.swift */; };
+		D04400000000000000000001 /* TextInkEvidence.swift in Sources */ = {isa = PBXBuildFile; fileRef = D04400000000000000000002 /* TextInkEvidence.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -178,6 +179,7 @@
 		F614C1FAF7A8DE3E89DABBDB /* KeyCommands.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = KeyCommands.swift; path = GtmuxMobile/KeyCommands.swift; sourceTree = "<group>"; };
 		F72C64B2FB140D5F0520CA0D /* TermSelectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TermSelectionView.swift; sourceTree = "<group>"; };
 		FBF358E511BE2CA9AC18615D /* GtmuxDocuments.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = GtmuxDocuments.m; sourceTree = "<group>"; };
+		D04400000000000000000002 /* TextInkEvidence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextInkEvidence.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -286,6 +288,7 @@
 			isa = PBXGroup;
 			children = (
 				D63D39FD6CE1D201A21F8F0C /* ConversationTextView.swift */,
+				D04400000000000000000002 /* TextInkEvidence.swift */,
 				EE42CD0E5372A89A937EB43B /* ConversationTextManager.swift */,
 				C754CD8C96EE1CEA9E247527 /* ConversationText.m */,
 			);
@@ -730,6 +733,7 @@
 				90337D0D47584D8ED7702B27 /* CopyTextManager.swift in Sources */,
 				093C8A7BF3C604829E356F61 /* CopyText.m in Sources */,
 				F0ECE9F715E0351FE5619846 /* ConversationTextView.swift in Sources */,
+				D04400000000000000000001 /* TextInkEvidence.swift in Sources */,
 				46048267AEAEEC3DEF2F00A2 /* ConversationTextManager.swift in Sources */,
 				C905FC3DD655271F2CDBBA9A /* ConversationText.m in Sources */,
 				227FD57BE2327862D4B7D365 /* DocumentTransport.swift in Sources */,

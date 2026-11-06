@@ -772,7 +772,7 @@
       "DUO-035"
     ],
     "selectors": [
-      "keeps the session entry usable at an accessibility text size on both panels"
+      "keeps the session entry usable at an accessibility text size on both panels (%s)"
     ]
   },
   "mobileapp/src/ui/ChatView.fullscreen.test.tsx": {
@@ -828,7 +828,8 @@
       "one coherent eight-view snapshot settles three observations inside the same budget",
       "malformed %s is not silently skipped",
       "unresolved rendering %s fails without calling selection bounds glyph evidence",
-      "conservative rendering surface overflow remains evidence rather than a cleared accessibility finding"
+      "conservative rendering surface overflow remains evidence rather than a cleared accessibility finding",
+      "unresolved glyph ink %s fails even with complete layout coverage"
     ]
   },
   "mobileapp/e2e/fake-serve/transcript-identity.test.ts": {
@@ -881,6 +882,22 @@
       "test_baseline_permission_breadcrumbs_are_idempotent_and_do_not_add_a_request",
       "test_unknown_baseline_permission_source_fails_closed",
       "test_real_archive_preserves_repository_paths_from_root_and_mobileapp"
+    ]
+  },
+  "mobileapp/ios/tests/TextInkEvidenceChecks.swift": {
+    "cases": [
+      "DUO-044"
+    ],
+    "selectors": [
+      "static func main()"
+    ]
+  },
+  "mobileapp/ios/tests/build-conversation-fixture.sh": {
+    "cases": [
+      "DUO-044"
+    ],
+    "selectors": [
+      "xcrun --sdk iphonesimulator swiftc"
     ]
   }
 }
