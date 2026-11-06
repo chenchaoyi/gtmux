@@ -12,7 +12,7 @@ afterEach(guard.wait, 930000);
 
 type Speech = {utterance: string | null};
 type VoiceOverState = {enabled: boolean};
-type PanelSpeech = {panel: string; utterances: Speech[]; title: boolean; tools: boolean};
+type PanelSpeech = {panel: string; startedAt: number; elapsedMs: number; utterances: Speech[]; title: boolean; tools: boolean};
 
 it('speaks the selected session and tools on both Duo panels with VoiceOver', () => guard.run(async () => {
   const driver = getDriver();
@@ -20,20 +20,27 @@ it('speaks the selected session and tools on both Duo panels with VoiceOver', ()
   let fake: Fake | undefined;
   let enabled = false;
   const inspectFocus = async (panel: string) => {
-    const spoken: PanelSpeech = {panel, utterances: [], title: false, tools: false};
+    const startedAt = Date.now();
+    const spoken: PanelSpeech = {panel, startedAt, elapsedMs: 0, utterances: [], title: false, tools: false};
     evidence.push(spoken);
+    const withinBudget = () => {
+      spoken.elapsedMs = Date.now() - startedAt;
+      if (spoken.elapsedMs > 90000) throw new Error(`${panel} VoiceOver focus exceeded its 90s budget`);
+    };
     const observe = (result: Speech) => {
       expect(result).toHaveProperty('utterance');
       expect(result.utterance === null || typeof result.utterance === 'string').toBe(true);
       spoken.utterances.push(result);
+      withinBudget();
       spoken.title ||= result.utterance?.includes('整理这周的发布清单') ?? false;
       spoken.tools ||= result.utterance?.includes('Session tools') ?? false;
     };
     observe(await driver.execute('mobile: voiceOverCurrentSpeech') as Speech);
-    const deadline = Date.now() + 90000;
-    for (let moves = 0; moves < 48 && Date.now() < deadline && !(spoken.title && spoken.tools); moves++) {
+    for (let moves = 0; moves < 48 && !(spoken.title && spoken.tools); moves++) {
+      withinBudget();
       observe(await driver.execute('mobile: voiceOverMove', {direction: 'forward'}) as Speech);
     }
+    withinBudget();
     expect(spoken.title).toBe(true);
     expect(spoken.tools).toBe(true);
     await screenshot(`duo-voiceover-${panel}`);
@@ -58,16 +65,19 @@ it('speaks the selected session and tools on both Duo panels with VoiceOver', ()
   } catch (error) {
     await captureOnFailure('duo-voiceover-failed', error);
   } finally {
-    writeFileSync(join(getArtifactsDir(), 'duo-voiceover.json'), JSON.stringify(evidence, null, 2));
     try {
-      if (enabled) {
-        await driver.execute('mobile: disableVoiceOver');
-        expect((await driver.execute('mobile: isVoiceOverEnabled') as VoiceOverState).enabled).toBe(false);
-      }
+      writeFileSync(join(getArtifactsDir(), 'duo-voiceover.json'), JSON.stringify(evidence, null, 2));
     } finally {
-      await driver.execute('mobile: setSimulatedHingeAngle', {angle: 180}).catch(() => {});
-      await driver.updateSettings({currentDisplayId: null}).catch(() => {});
-      await fake?.close();
+      try {
+        if (enabled) {
+          await driver.execute('mobile: disableVoiceOver');
+          expect((await driver.execute('mobile: isVoiceOverEnabled') as VoiceOverState).enabled).toBe(false);
+        }
+      } finally {
+        await driver.execute('mobile: setSimulatedHingeAngle', {angle: 180}).catch(() => {});
+        await driver.updateSettings({currentDisplayId: null}).catch(() => {});
+        await fake?.close();
+      }
     }
   }
 }), 300000);

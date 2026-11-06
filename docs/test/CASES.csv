@@ -3977,6 +3977,9 @@ LEG-7201f98d96a5,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts
 LEG-16fab5a7cc96,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,51,test,only explicit hosted capture separates WDA build and readiness with one bounded connection,False,legacy-not-retrospectively-reviewed
 LEG-61bfa22d706f,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,67,test,only hosted multi-screen store captures receive the longer journey budget,False,legacy-not-retrospectively-reviewed
 MAP-ad6f801c4c8b,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,3,reviewed-selector,cloud simulator session waits for a fresh WDA build without requiring a prebuilt product,False,DUO-008
+MAP-afca37581308,L2,reviewed implementation,mobileapp/e2e/setup/duoVoiceOverJourney.test.ts,57,reviewed-selector,evidence %s failure still restores VoiceOver and the fixture,False,DUO-038
+MAP-b0fd8cd81545,L2,reviewed implementation,mobileapp/e2e/setup/duoVoiceOverJourney.test.ts,64,reviewed-selector,a late %s result cannot satisfy the panel budget,False,DUO-038
+MAP-5a3253c27607,L2,reviewed implementation,mobileapp/e2e/setup/duoVoiceOverJourney.test.ts,76,reviewed-selector,on-budget real journey control observes both panels and restores VoiceOver,False,DUO-038
 MAP-cb2da71006dd,G,reviewed implementation,mobileapp/e2e/setup/global-setup-manual.ts,6,reviewed-selector,"await setupManual(process.env, verifySendTarget, globalSetup)",False,DG-004
 MAP-a6a52139caeb,L2,reviewed implementation,mobileapp/e2e/setup/journeyGuard.test.ts,3,reviewed-selector,wait holds the next journey until outstanding cleanup completes,False,DUO-034
 MAP-3a80ec28bf00,L2,reviewed implementation,mobileapp/e2e/setup/journeyGuard.test.ts,20,reviewed-selector,a failed journey releases the guard without concealing its error,False,DUO-034

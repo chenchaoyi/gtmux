@@ -793,5 +793,15 @@
     "selectors": [
       "speaks the selected session and tools on both Duo panels with VoiceOver"
     ]
+  },
+  "mobileapp/e2e/setup/duoVoiceOverJourney.test.ts": {
+    "cases": [
+      "DUO-038"
+    ],
+    "selectors": [
+      "evidence %s failure still restores VoiceOver and the fixture",
+      "a late %s result cannot satisfy the panel budget",
+      "on-budget real journey control observes both panels and restores VoiceOver"
+    ]
   }
 }
