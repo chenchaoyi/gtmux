@@ -58498,7 +58498,7 @@
         },
         {
           "id": "MAP-5e8a9b948e24",
-          "line": 445,
+          "line": 654,
           "kind": "reviewed-selector",
           "name": "def preflight(",
           "dynamic": false,
@@ -58507,7 +58507,7 @@
         },
         {
           "id": "MAP-686096fccf36",
-          "line": 493,
+          "line": 702,
           "kind": "reviewed-selector",
           "name": "def prepare_source(",
           "dynamic": false,
@@ -58516,7 +58516,7 @@
         },
         {
           "id": "MAP-e317c36e87b4",
-          "line": 521,
+          "line": 730,
           "kind": "reviewed-selector",
           "name": "def prepare_work(",
           "dynamic": false,
@@ -58525,7 +58525,7 @@
         },
         {
           "id": "MAP-48f5d7e71933",
-          "line": 541,
+          "line": 750,
           "kind": "reviewed-selector",
           "name": "def build_product(",
           "dynamic": false,
@@ -58534,7 +58534,7 @@
         },
         {
           "id": "MAP-eddc7dcee0b0",
-          "line": 582,
+          "line": 791,
           "kind": "reviewed-selector",
           "name": "def collect_identity(",
           "dynamic": false,
@@ -58543,7 +58543,7 @@
         },
         {
           "id": "MAP-af21af8be44f",
-          "line": 697,
+          "line": 906,
           "kind": "reviewed-selector",
           "name": "def run_unit(",
           "dynamic": false,
@@ -58552,7 +58552,7 @@
         },
         {
           "id": "MAP-89aaee2a9ed7",
-          "line": 624,
+          "line": 833,
           "kind": "reviewed-selector",
           "name": "def cleanup_unit(",
           "dynamic": false,
@@ -58561,7 +58561,7 @@
         },
         {
           "id": "MAP-15d5d6c17883",
-          "line": 770,
+          "line": 979,
           "kind": "reviewed-selector",
           "name": "def execute(",
           "dynamic": false,
@@ -58579,7 +58579,7 @@
         },
         {
           "id": "MAP-2c39e5b64866",
-          "line": 351,
+          "line": 528,
           "kind": "reviewed-selector",
           "name": "def command(",
           "dynamic": false,
@@ -58588,7 +58588,7 @@
         },
         {
           "id": "MAP-d837c2f06ed6",
-          "line": 677,
+          "line": 886,
           "kind": "reviewed-selector",
           "name": "def preparation_diagnostics(",
           "dynamic": false,
@@ -58597,7 +58597,7 @@
         },
         {
           "id": "MAP-51359dac4146",
-          "line": 846,
+          "line": 1062,
           "kind": "reviewed-selector",
           "name": "def trusted_context(",
           "dynamic": false,
@@ -58606,7 +58606,7 @@
         },
         {
           "id": "MAP-c3f467f74efe",
-          "line": 869,
+          "line": 1085,
           "kind": "reviewed-selector",
           "name": "def role_units(",
           "dynamic": false,
@@ -58615,7 +58615,7 @@
         },
         {
           "id": "MAP-078dd820d920",
-          "line": 887,
+          "line": 1103,
           "kind": "reviewed-selector",
           "name": "def publish_role(",
           "dynamic": false,
@@ -58624,7 +58624,7 @@
         },
         {
           "id": "MAP-53fc737849d5",
-          "line": 908,
+          "line": 1124,
           "kind": "reviewed-selector",
           "name": "def comparable_identity(",
           "dynamic": false,
@@ -58633,15 +58633,33 @@
         },
         {
           "id": "MAP-597c536af5c3",
-          "line": 960,
+          "line": 1176,
           "kind": "reviewed-selector",
           "name": "def verify_union(",
           "dynamic": false,
           "layer": "G",
           "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-37edded9b733",
+          "line": 267,
+          "kind": "reviewed-selector",
+          "name": "class CommandClock:",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-013509623433",
+          "line": 289,
+          "kind": "reviewed-selector",
+          "name": "class InstallStream:",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
         }
       ],
-      "sha256": "37b2489aec425fc4d560f6301f8ab7a5a13ce17206286b109a231d5a2d283a8d"
+      "sha256": "188f55e76977fc1f0dc2a07cb951bb3e06e86a79fa07904f8e8f4796d84dae5e"
     },
     "scripts/scene_migration_test.py": {
       "layer": "G",
@@ -58766,7 +58784,7 @@
         },
         {
           "id": "MAP-80e5de561924",
-          "line": 832,
+          "line": 844,
           "kind": "reviewed-selector",
           "name": "test_harness_journeys_share_only_verified_dependencies_and_keep_source_bytes",
           "dynamic": false,
@@ -58775,7 +58793,7 @@
         },
         {
           "id": "MAP-d485b529b3a4",
-          "line": 851,
+          "line": 863,
           "kind": "reviewed-selector",
           "name": "test_cleanup_targets_only_saved_matching_server_and_exact_unit_wda",
           "dynamic": false,
@@ -58784,7 +58802,7 @@
         },
         {
           "id": "MAP-7cb3bff30a24",
-          "line": 760,
+          "line": 772,
           "kind": "reviewed-selector",
           "name": "test_executor_builds_only_expected_sources_but_checks_real_base",
           "dynamic": false,
@@ -58793,7 +58811,7 @@
         },
         {
           "id": "MAP-9fcc5cafe672",
-          "line": 776,
+          "line": 788,
           "kind": "reviewed-selector",
           "name": "test_real_runner_metadata_and_archival_failures_preserve_executed_units",
           "dynamic": false,
@@ -58802,7 +58820,7 @@
         },
         {
           "id": "MAP-ec565820041a",
-          "line": 793,
+          "line": 805,
           "kind": "reviewed-selector",
           "name": "test_real_executor_keeps_last_shutdown_failure_and_original_exit",
           "dynamic": false,
@@ -58811,7 +58829,7 @@
         },
         {
           "id": "MAP-2258d0570d1d",
-          "line": 802,
+          "line": 814,
           "kind": "reviewed-selector",
           "name": "test_shutdown_failure_or_timeout_of_final_unit_cannot_pass",
           "dynamic": false,
@@ -58820,7 +58838,7 @@
         },
         {
           "id": "MAP-c475771ec211",
-          "line": 714,
+          "line": 726,
           "kind": "reviewed-selector",
           "name": "test_real_runner_wait_then_stat_failure_preserves_unit_and_aggregate",
           "dynamic": false,
@@ -58829,7 +58847,7 @@
         },
         {
           "id": "MAP-e82c5bb79bde",
-          "line": 723,
+          "line": 735,
           "kind": "reviewed-selector",
           "name": "test_cleanup_bad_query_shapes_and_errors_keep_final_executed_unit",
           "dynamic": false,
@@ -58838,7 +58856,7 @@
         },
         {
           "id": "MAP-7bb970863c77",
-          "line": 744,
+          "line": 756,
           "kind": "reviewed-selector",
           "name": "test_runner_distinguishes_not_started_from_started_evidence_failure",
           "dynamic": false,
@@ -58856,7 +58874,7 @@
         },
         {
           "id": "MAP-e3f93d5376ca",
-          "line": 696,
+          "line": 708,
           "kind": "reviewed-selector",
           "name": "test_physical_dependency_root_reaches_builds_and_real_journey_children",
           "dynamic": false,
@@ -58901,7 +58919,7 @@
         },
         {
           "id": "MAP-d045f33494e3",
-          "line": 665,
+          "line": 677,
           "kind": "reviewed-selector",
           "name": "test_final_preparation_failure_keeps_original_outcome_and_bounds_diagnostics",
           "dynamic": false,
@@ -58910,7 +58928,7 @@
         },
         {
           "id": "MAP-1fb1faf2289a",
-          "line": 690,
+          "line": 702,
           "kind": "reviewed-selector",
           "name": "test_successful_preparation_does_not_collect_failure_diagnostics",
           "dynamic": false,
@@ -58919,7 +58937,7 @@
         },
         {
           "id": "MAP-6da83960d9ce",
-          "line": 524,
+          "line": 527,
           "kind": "reviewed-selector",
           "name": "test_install_sample_observes_owned_live_child_once_without_changing_exit",
           "dynamic": false,
@@ -58928,7 +58946,7 @@
         },
         {
           "id": "MAP-1b2d605388dd",
-          "line": 556,
+          "line": 563,
           "kind": "reviewed-selector",
           "name": "test_install_sample_faults_keep_primary_outcome_and_reap_observer",
           "dynamic": false,
@@ -58937,7 +58955,7 @@
         },
         {
           "id": "MAP-b2d2c97751dd",
-          "line": 645,
+          "line": 657,
           "kind": "reviewed-selector",
           "name": "test_actual_units_keep_install_sample_diagnostics_separate_from_journey_exit",
           "dynamic": false,
@@ -58946,7 +58964,7 @@
         },
         {
           "id": "MAP-298563a79d34",
-          "line": 615,
+          "line": 627,
           "kind": "reviewed-selector",
           "name": "test_install_exit_during_observation_keeps_completion_and_reaps_on_wait_error",
           "dynamic": false,
@@ -58955,7 +58973,7 @@
         },
         {
           "id": "MAP-7236c099b439",
-          "line": 929,
+          "line": 1183,
           "kind": "reviewed-selector",
           "name": "test_union_real_cli_PR15_main11_and_trusted_current_event",
           "dynamic": false,
@@ -58964,7 +58982,7 @@
         },
         {
           "id": "MAP-266b88906e0e",
-          "line": 945,
+          "line": 1199,
           "kind": "reviewed-selector",
           "name": "test_union_rejects_missing_duplicate_wrong_binding_hash_and_cases",
           "dynamic": false,
@@ -58973,7 +58991,7 @@
         },
         {
           "id": "MAP-43a5008d89b5",
-          "line": 980,
+          "line": 1234,
           "kind": "reviewed-selector",
           "name": "test_union_cross_host_identity_and_resolved_pods_are_required",
           "dynamic": false,
@@ -58982,15 +59000,87 @@
         },
         {
           "id": "MAP-238347d3b887",
-          "line": 999,
+          "line": 1253,
           "kind": "reviewed-selector",
           "name": "test_trusted_sources_require_readable_base_and_exact_coordinator_bytes",
           "dynamic": false,
           "layer": "G",
           "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-354b0eb44a2c",
+          "line": 968,
+          "kind": "reviewed-selector",
+          "name": "test_stream_independent_exit_clocks_stop_before_sample_and_primary_deadline",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-f9286a745173",
+          "line": 1009,
+          "kind": "reviewed-selector",
+          "name": "test_stream_timeout_has_absolute_deadline_and_owned_kill",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-82d26f6b8c15",
+          "line": 1021,
+          "kind": "reviewed-selector",
+          "name": "test_stream_failures_do_not_replace_primary_zero_seven_or_start_failure",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-ee0ed968f48f",
+          "line": 1043,
+          "kind": "reviewed-selector",
+          "name": "test_stream_empty_late_early_and_eof_are_not_successful_coverage",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-28d7e2ec9574",
+          "line": 1058,
+          "kind": "reviewed-selector",
+          "name": "test_stream_shared_hard_cap_exact_cross_and_terminal_metadata",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-575b559d1c4a",
+          "line": 1081,
+          "kind": "reviewed-selector",
+          "name": "test_stream_spawn_overhead_visible_without_resetting_primary_budget",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-dbd2dc2a273d",
+          "line": 1089,
+          "kind": "reviewed-selector",
+          "name": "test_stream_real_execute_selects_only_first_27_install_and_never_failed_boot",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-b18136291fc5",
+          "line": 999,
+          "kind": "reviewed-selector",
+          "name": "test_stream_first_observed_primary_exit_survives_later_poll_failure",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
         }
       ],
-      "sha256": "b033c455548fd6110e3b20b0da06faefd044bf682214abb41ec98a683456934f"
+      "sha256": "f8fd169dfefac031fc9f595a66f585f49cc6af210560eef4b497d588f0bcea6b"
     },
     "mobileapp/e2e/__tests__/ipad-adaptive.test.ts": {
       "layer": "L3",

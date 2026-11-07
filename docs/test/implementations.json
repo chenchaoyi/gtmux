@@ -696,7 +696,9 @@
       "def role_units(",
       "def publish_role(",
       "def comparable_identity(",
-      "def verify_union("
+      "def verify_union(",
+      "class CommandClock:",
+      "class InstallStream:"
     ]
   },
   "scripts/scene_migration_test.py": {
@@ -741,7 +743,15 @@
       "test_union_real_cli_PR15_main11_and_trusted_current_event",
       "test_union_rejects_missing_duplicate_wrong_binding_hash_and_cases",
       "test_union_cross_host_identity_and_resolved_pods_are_required",
-      "test_trusted_sources_require_readable_base_and_exact_coordinator_bytes"
+      "test_trusted_sources_require_readable_base_and_exact_coordinator_bytes",
+      "test_stream_independent_exit_clocks_stop_before_sample_and_primary_deadline",
+      "test_stream_timeout_has_absolute_deadline_and_owned_kill",
+      "test_stream_failures_do_not_replace_primary_zero_seven_or_start_failure",
+      "test_stream_empty_late_early_and_eof_are_not_successful_coverage",
+      "test_stream_shared_hard_cap_exact_cross_and_terminal_metadata",
+      "test_stream_spawn_overhead_visible_without_resetting_primary_budget",
+      "test_stream_real_execute_selects_only_first_27_install_and_never_failed_boot",
+      "test_stream_first_observed_primary_exit_survives_later_poll_failure"
     ]
   },
   "mobileapp/e2e/setup/appLaunchFiles.test.ts": {

@@ -420,6 +420,9 @@ class SceneExecutionTests(unittest.TestCase):
         cleanup_fault = fault in {'last-shutdown', 'cleanup-data', 'query-exit', 'query-timeout', 'query-io', 'cleanup-exception'}
         def child(args, **kwargs):
             script = 'pass'
+            stdout_name = getattr(kwargs['stdout'], 'name', '')
+            if fault == 'first-boot' and args[:3] == ['xcrun','simctl','bootstatus'] and '/coldstart/' in stdout_name:
+                script = 'raise SystemExit(7)'
             if args[0] == 'git':
                 readable.append(args[-1][:40])
                 if fault == 'unreadable-base' and args[-1].startswith(B): script = 'raise SystemExit(1)'
@@ -432,9 +435,9 @@ class SceneExecutionTests(unittest.TestCase):
                               "p=Path(os.environ['GTMUX_COMPARE_NODE_MODULES']); "
                               "print(json.dumps({'root': str(p), 'proof': (p/'proof.txt').read_text()})); "
                               f"raise SystemExit({status})")
-                    dependency_observations['child_logs'].append(kwargs['stdout'].name)
+                    dependency_observations['child_logs'].append(stdout_name)
             if cleanup_fault:
-                if args[:3] == ['xcrun', 'simctl', 'shutdown'] and '/ipad/' in kwargs['stdout'].name and kwargs['stdout'].name.endswith('-shutdown-after.log'):
+                if args[:3] == ['xcrun', 'simctl', 'shutdown'] and '/ipad/' in stdout_name and stdout_name.endswith('-shutdown-after.log'):
                     script = 'raise SystemExit(7)'
                 if args[:4] == ['xcrun', 'simctl', 'list', '-j']:
                     if fault in {'query-timeout', 'query-io'}:
@@ -443,9 +446,9 @@ class SceneExecutionTests(unittest.TestCase):
                     if fault == 'query-exit': script = 'raise SystemExit(7)'
                     else: script = 'print(' + repr(cleanup_raw if fault == 'cleanup-data' else '{"devices":{"runtime":[{"udid":"pad","state":"Booted"}]}}') + ')'
             if fault in {'last-install', 'last-install-diagnostic-exit', 'last-install-diagnostic-write', 'last-install-diagnostic-cap'}:
-                if args[:3] == ['xcrun', 'simctl', 'install'] and '/ipad/' in kwargs['stdout'].name:
+                if args[:3] == ['xcrun', 'simctl', 'install'] and '/ipad/' in stdout_name:
                     script = 'raise SystemExit(7)'
-                if '-prep-host-disk.log' in kwargs['stdout'].name:
+                if '-prep-host-disk.log' in stdout_name:
                     if fault == 'last-install-diagnostic-exit': script = 'raise SystemExit(9)'
                     if fault == 'last-install-diagnostic-cap': script = 'print("x" * (600 * 1024))'
             if install_observations is not None:
@@ -469,7 +472,7 @@ class SceneExecutionTests(unittest.TestCase):
                 original_wait = process.wait
                 def wait(*a, **k):
                     code = original_wait(*a, **k)
-                    post_wait.add(kwargs['stdout'].name)
+                    post_wait.add(stdout_name)
                     return code
                 process.wait = wait
             return process
@@ -492,7 +495,7 @@ class SceneExecutionTests(unittest.TestCase):
         def build(runner, target, sha, job):
             if dependency_observations is not None:
                 dependency_observations['builds'].append({'source': sha, 'root': runner.env['GTMUX_COMPARE_NODE_MODULES']})
-            builds.append(sha); return {'app': '/synthetic/app', 'resolvedPods': {'sha256': 'same'}}
+            builds.append(sha); return {'app': '/synthetic/app', 'products':[{'kind':'app','sha256':'d'*64}], 'resolvedPods': {'sha256': 'same'}}
         def work(harness, destination, deps):
             scene.write_once(destination / 'harness.json', []); return destination
         def write(path, value):
@@ -546,6 +549,10 @@ class SceneExecutionTests(unittest.TestCase):
                 self.assertEqual((record['primaryPID'], record['observerPID'], record['state'], record['exit']),
                                  (primary[0].pid, observers[0].pid, 'completed', 0))
                 self.assertEqual(Path(record['stack']).read_text(), 'controlled stack')
+                events = record['clock']['events']
+                self.assertLessEqual(events['commandRequested']['monotonic'],events['popenReturned']['monotonic'])
+                self.assertLessEqual(events['exitObserved']['monotonic'],events['reaped']['monotonic'])
+                self.assertLessEqual(events['reaped']['monotonic'],events['archived']['monotonic'])
                 self.assertEqual(json.loads((root / '001-install.json').read_text())['exit'], status)
         runner = scene.Runner(self.root, os.environ)
         with mock.patch.object(scene.subprocess, 'Popen', wraps=subprocess.Popen) as spawn:
@@ -598,6 +605,11 @@ class SceneExecutionTests(unittest.TestCase):
                                     'stat': 'error', 'startup': 'error', 'stop': 'error'}[fault]
                         self.assertEqual(record['state'], expected)
                         if fault == 'exit': self.assertEqual(record['exit'], 9)
+                        if fault == 'hang':
+                            events = record['clock']['events']
+                            self.assertLessEqual(events['deadlineObserved']['monotonic'],events['killRequested']['monotonic'])
+                            self.assertLessEqual(events['killRequested']['monotonic'],events['exitObserved']['monotonic'])
+                            self.assertLessEqual(events['exitObserved']['monotonic'],events['reaped']['monotonic'])
                     self.assertTrue(all(c.poll() is not None for c in observers), 'no observer survives Runner')
         root = self.root / 'primary-timeout'; root.mkdir()
         runner = scene.Runner(root, os.environ)
@@ -862,6 +874,248 @@ class SceneExecutionTests(unittest.TestCase):
             self.assertTrue(scene.cleanup_unit(fake, self.root, derived, 'fixture-device'))
             groups.assert_not_called()
         self.assertEqual(fake.command.call_args.args[0][-1], 'fixture-device')
+
+
+class InstallStreamControls(unittest.TestCase):
+    setUp = SceneMigrationTests.setUp
+    tearDown = SceneMigrationTests.tearDown
+
+    def run_child(self, primary='import time; time.sleep(.35)', observer='import time; print("event", flush=True); time.sleep(30)',
+                  timeout=2, fault=None, binding=None, sample=False):
+        root = self.root / str(len(list(self.root.iterdir()))); root.mkdir()
+        runner = scene.Runner(root, os.environ)
+        children, kills = [], []
+        real_spawn, real_open, real_kill, real_read = subprocess.Popen, Path.open, os.killpg, os.read
+        def spawn(args, **kwargs):
+            is_observer = args[:3] == ['xcrun', 'simctl', 'spawn']
+            if is_observer:
+                self.assertEqual(args[3:], ['fixture', '/usr/bin/log', 'stream', '--style', 'compact', '--level', 'info',
+                                           '--timeout', '60', '--predicate', 'process == "installd" OR process == "SpringBoard"'])
+                if fault == 'startup': raise OSError('controlled startup')
+                if fault == 'spawn-delay': time.sleep(.15)
+                script = observer
+            else:
+                if fault == 'primary-startup': raise OSError('controlled primary Popen')
+                script = primary
+            child = real_spawn([sys.executable, '-c', script], **kwargs)
+            children.append((is_observer, child))
+            if fault == 'primary-poll' and not is_observer:
+                poll = child.poll; first = [True]
+                def failed_poll():
+                    if first:
+                        first.pop()
+                        raise OSError('controlled primary poll')
+                    return poll()
+                child.poll = failed_poll
+            if fault == 'after-exit-poll' and not is_observer:
+                poll = child.poll; saw_exit = [False]; failed = [False]
+                def after_exit_poll():
+                    if saw_exit[0] and not failed[0]:
+                        failed[0] = True
+                        raise OSError('controlled poll after known exit')
+                    code = poll()
+                    if code is not None: saw_exit[0] = True
+                    return code
+                child.poll = after_exit_poll
+            def cleanup_owned_fixture():
+                if child.poll() is None:
+                    real_kill(child.pid, 9)
+                    child.wait(timeout=2)
+            self.addCleanup(cleanup_owned_fixture)
+            if is_observer and fault in ('reap', 'slow-reap'):
+                wait = child.wait
+                def delayed_wait(*a, **k):
+                    code = wait(*a, **k)
+                    if fault == 'reap': raise subprocess.TimeoutExpired('owned observer', 1)
+                    time.sleep(.4)
+                    return code
+                child.wait = delayed_wait
+            return child
+        def opened(path, *a, **k):
+            if fault == 'open' and str(path).endswith('install-stream.stderr.log'): raise OSError('controlled stream open')
+            if fault == 'archive' and str(path).endswith('install-stream.json'): raise OSError('controlled stream archive')
+            output = real_open(path, *a, **k)
+            if fault == 'write' and str(path).endswith('install-stream.stdout.log'):
+                class FailingOutput:
+                    def write(self, data): raise OSError('controlled stream write')
+                    def close(self): output.close()
+                return FailingOutput()
+            return output
+        def kill(pid, sig):
+            self.assertIn(pid, [c.pid for _, c in children], 'only actual owned children')
+            kills.append((pid, time.monotonic()))
+            if fault == 'kill' and children and pid == children[0][1].pid:
+                # Actual signal still occurs; a raced OS error must be recorded, not hidden.
+                real_kill(pid, sig); raise OSError('controlled kill acknowledgement')
+            return real_kill(pid, sig)
+        def read(fd, size):
+            if fault == 'read' and any(owned and fd in (child.stdout.fileno(),child.stderr.fileno()) for owned,child in children):
+                raise OSError('controlled observer read')
+            return real_read(fd,size)
+        result = None
+        with mock.patch.object(scene.subprocess, 'Popen', side_effect=spawn), mock.patch.object(Path, 'open', new=opened), \
+                mock.patch.object(scene.os, 'killpg', side_effect=kill), mock.patch.object(scene.os, 'read', side_effect=read):
+            try:
+                result = runner.command(['controlled-primary'], cwd=root, label='install', timeout=timeout, check=False,
+                                        install_stream=binding or {'udid': 'fixture'}, sample_install=sample)
+            except scene.CommandFailure as error: result = error.outcome
+        self.assertTrue(all(c.poll() is not None for _, c in children), 'own children reaped or actual exit observed')
+        primary_record = json.loads((root / '001-install.json').read_text())
+        meta = root / '001-install.install-stream.json'
+        observer_record = json.loads(meta.read_text()) if meta.exists() else None
+        return runner, primary_record, observer_record, root, children, kills, result
+
+    def test_stream_independent_exit_clocks_stop_before_sample_and_primary_deadline(self):
+        for status in (0, 7):
+            runner, primary, record, root, children, kills, result = self.run_child(
+                primary=f'import time; time.sleep(.35); raise SystemExit({status})')
+            self.assertEqual((primary['state'], primary['exit']), ('completed', status))
+            self.assertEqual(runner.observation_problems, [])
+            self.assertEqual(record['state'], 'primary-ended')
+            self.assertEqual(record['exit'], -9)
+            events = record['clock']['events']; main = primary['clock']['events']
+            self.assertLessEqual(events['popenReturned']['monotonic'], main['popenReturned']['monotonic'])
+            self.assertEqual(record['clock']['deadlineMonotonic'], primary['clock']['deadlineMonotonic'])
+            self.assertAlmostEqual(primary['clock']['deadlineMonotonic']-main['popenReturned']['monotonic'], 2)
+            self.assertLessEqual(main['exitObserved']['monotonic'], events['killRequested']['monotonic'])
+            self.assertLessEqual(events['killRequested']['monotonic'], events['exitObserved']['monotonic'])
+            self.assertLessEqual(events['exitObserved']['monotonic'], events['reaped']['monotonic'])
+            self.assertLessEqual(events['reaped']['monotonic'], events['archived']['monotonic'])
+            self.assertIsNone(events['deadlineObserved'])
+            self.assertLessEqual(len(events), 32)
+            self.assertTrue(kills)
+            self.assertEqual(record['retainedBytes']['stdout'], (root/'001-install.install-stream.stdout.log').stat().st_size)
+        original_finish = scene.InstallSample.finish
+        def finish(sample, child):
+            stream = json.loads(sample.stem.with_suffix('.install-stream.json').read_text())
+            self.assertIsNotNone(stream['clock']['events']['reaped'])
+            return original_finish(sample, child)
+        with mock.patch.object(scene.InstallSample, 'finish', new=finish): self.run_child(sample=True)
+        # Slow observer reap cannot retroactively timeout a completed primary.
+        _, primary, record, _, _, _, _ = self.run_child(timeout=.5, fault='slow-reap')
+        self.assertEqual((primary['state'], primary['exit']), ('completed', 0))
+        self.assertGreater(record['clock']['events']['archived']['monotonic'], primary['clock']['deadlineMonotonic'])
+
+    def test_stream_first_observed_primary_exit_survives_later_poll_failure(self):
+        for status in (0, 7):
+            _, primary, stream, _, _, _, result = self.run_child(
+                primary=f'import time; time.sleep(.35); raise SystemExit({status})', fault='after-exit-poll')
+            self.assertEqual((primary['state'], primary['exit']), ('completed', status))
+            self.assertIsNotNone(primary['clock']['events']['exitObserved'])
+            self.assertIsNotNone(stream['clock']['events']['reaped'])
+            self.assertTrue(any('after known exit' in p for p in primary['problems']))
+            self.assertIsInstance(result, dict)  # diagnostic failure still raises CommandFailure
+
+    def test_stream_timeout_has_absolute_deadline_and_owned_kill(self):
+        began = time.monotonic()
+        _, primary, record, _, children, kills, _ = self.run_child(primary='import time; time.sleep(30)', timeout=.3)
+        self.assertLess(time.monotonic()-began, 2)
+        self.assertEqual((primary['state'], primary['exit']), ('timeout', -9))
+        self.assertEqual(record['clock']['deadlineMonotonic'], primary['clock']['deadlineMonotonic'])
+        self.assertIsNotNone(record['clock']['events']['deadlineObserved'])
+        self.assertIsNotNone(primary['clock']['events']['deadlineObserved'])
+        self.assertEqual({pid for pid, _ in kills}, {c.pid for _, c in children})
+        self.assertLess(record['clock']['events']['killRequested']['monotonic']-primary['clock']['deadlineMonotonic'], .4)
+        self.assertLess(record['clock']['maxPollGap'], .4)
+
+    def test_stream_failures_do_not_replace_primary_zero_seven_or_start_failure(self):
+        for fault in ('startup', 'open', 'archive', 'write', 'read', 'kill', 'reap'):
+            for status in (0, 7):
+                with self.subTest(fault=fault, status=status):
+                    runner, primary, record, _, _, _, _ = self.run_child(
+                        primary=f'import time; time.sleep(.35); raise SystemExit({status})', fault=fault)
+                    self.assertEqual((primary['state'], primary['exit']), ('completed', status))
+                    self.assertTrue(runner.observation_problems)
+                    if fault == 'reap': self.assertIsNone(record['clock']['events']['reaped'])
+        _, failed, observed, _, _, _, _ = self.run_child(fault='primary-poll')
+        self.assertEqual((failed['state'],failed['exit']),('error',-9))
+        self.assertIsNotNone(observed['clock']['events']['reaped'])
+        runner, primary, record, _, children, _, _ = self.run_child(fault='primary-startup')
+        self.assertEqual((primary['state'], primary['exit']), ('not-started', None))
+        self.assertEqual(len(children), 1)
+        self.assertIsNone(record['clock']['deadlineMonotonic'])
+        self.assertIsNone(primary['clock']['events']['popenReturned'])
+        self.assertIsNotNone(record['clock']['events']['reaped'])
+        runner, primary, _, _, _, _, _ = self.run_child(primary='import time; time.sleep(30)', timeout=.3, fault='startup')
+        self.assertEqual((primary['state'], primary['exit']), ('timeout', -9))
+        self.assertTrue(runner.observation_problems)
+
+    def test_stream_empty_late_early_and_eof_are_not_successful_coverage(self):
+        for script, expected in [('import time; time.sleep(30)', 'empty'),
+                                 ('import time; time.sleep(2); print("late", flush=True)', 'empty'),
+                                 ('print("early", flush=True)', 'ended before'),
+                                 ('raise SystemExit(9)', 'ended before')]:
+            with self.subTest(script=script):
+                runner, primary, record, _, _, _, _ = self.run_child(observer=script)
+                self.assertEqual(primary['exit'], 0)
+                self.assertTrue(any(expected in p for p in runner.observation_problems), runner.observation_problems)
+        runner, _, record, _, _, _, _ = self.run_child(observer='import os,time; os.close(1); os.write(2,b"stderr event"); time.sleep(30)')
+        self.assertEqual(record['retainedBytes']['stdout'], 0)
+        self.assertGreater(record['retainedBytes']['stderr'], 0)
+        self.assertTrue(record['eof']['stdout'])
+        self.assertEqual(runner.observation_problems, [])
+
+    def test_stream_shared_hard_cap_exact_cross_and_terminal_metadata(self):
+        self.assertEqual((scene.InstallStream.LIMIT, scene.InstallStream.READ_QUOTA, scene.InstallStream.METADATA_LIMIT), (262144,16384,16384))
+        for count in (2500, 5000):
+            with self.subTest(bytes_per_pipe=count), mock.patch.object(scene.InstallStream, 'LIMIT', 5000), \
+                    mock.patch.object(scene.InstallStream, 'READ_QUOTA', 2048):
+                script=f'import os,time; os.write(1,b"a"*{count}); os.write(2,b"b"*{count}); time.sleep(30)'
+                runner, primary, record, root, _, _, _ = self.run_child(primary='import time; time.sleep(1)', observer=script)
+                retained = sum((root/('001-install.install-stream.'+name+'.log')).stat().st_size for name in ('stdout','stderr'))
+                self.assertEqual(retained, 5000)
+                self.assertEqual(sum(record['retainedBytes'].values()), retained)
+                self.assertGreater(record['retainedBytes']['stderr'], 0)
+                self.assertEqual(record['state'], 'output-limit')
+                self.assertTrue(record['truncated']); self.assertIsNone(record['droppedBytes'])
+                self.assertEqual(primary['exit'], 0); self.assertTrue(runner.observation_problems)
+                self.assertLess(record['clock']['events']['killRequested']['monotonic'],primary['clock']['events']['exitObserved']['monotonic'])
+        runner, primary, record, root, _, _, _ = self.run_child(binding={'udid':'fixture','long':'\"\\\n'*20000})
+        self.assertLessEqual((root/'001-install.install-stream.json').stat().st_size, 16384)
+        self.assertTrue(record['metadataTruncated'])
+        self.assertEqual(record['exit'], -9)
+        self.assertIsNotNone(record['clock']['events']['reaped'])
+        self.assertIsNotNone(record['clock']['events']['archived'])
+        self.assertTrue(runner.observation_problems); self.assertEqual(primary['exit'],0)
+
+    def test_stream_spawn_overhead_visible_without_resetting_primary_budget(self):
+        _, primary, record, _, _, _, _ = self.run_child(fault='spawn-delay')
+        observer = record['clock']['events']; main = primary['clock']['events']
+        self.assertGreaterEqual(observer['popenReturned']['monotonic']-observer['commandRequested']['monotonic'], .15)
+        self.assertGreaterEqual(main['popenReturned']['monotonic']-main['commandRequested']['monotonic'], .15)
+        self.assertAlmostEqual(record['clock']['deadlineMonotonic']-main['popenReturned']['monotonic'],2)
+        self.assertEqual(primary['state'],'completed')
+
+    def test_stream_real_execute_selects_only_first_27_install_and_never_failed_boot(self):
+        control = SceneExecutionTests(); control.root = self.root
+        actual_command = scene.Runner.command
+        for chain, event, role, fault in [('26','pull_request','ios-native',None),
+                ('26','pull_request','ios-scene-baseline-26',None),('27','pull_request','ios-scene',None),
+                ('27','push','ios-scene',None),('27','pull_request','ios-scene','first-boot')]:
+            with self.subTest(chain=chain,fault=fault), mock.patch.object(scene.Runner,'command',autospec=True,side_effect=actual_command) as calls:
+                _, _, _, payload, _ = control.controlled_execute(chain, event_name=event, role=role, fault=fault)
+            streams = [c for c in calls.call_args_list if c.kwargs.get('install_stream') is not None]
+            self.assertEqual(len(streams), 1 if chain=='27' and fault is None else 0)
+            if streams:
+                binding = streams[0].kwargs['install_stream']
+                self.assertEqual(binding['unit']['journey'],'coldstart')
+                self.assertEqual(binding['unit']['source'],P)
+                self.assertEqual(binding['context'],payload['binding'])
+                self.assertEqual(binding['role'],'ios-scene')
+                self.assertEqual(binding['udid'],'fixture')
+                self.assertEqual(binding['products'][0]['sha256'],'d'*64)
+                self.assertEqual(streams[0].kwargs['timeout'],60)
+            self.assertEqual(len(payload['results']),len(scene.role_units(payload['binding'],payload['role'])))
+            if fault:
+                self.assertEqual(payload['results'][0]['preparationFailure']['exit'],7)
+                self.assertEqual(payload['results'][0]['testExit'],None)
+            else:
+                self.assertTrue(all(r['testExit']==0 for r in payload['results']))
+                if chain=='27':
+                    r=payload['results'][0]
+                    self.assertTrue(any(a['path'].endswith('install-stream.json') for a in r['artifacts']))
+                    self.assertTrue(any('stream' in p for p in r['problems']))
+                    self.assertIn('execution evidence or cleanup failed',scene.unit_errors(r['unit'],r, self.root))
 
 
 class SceneRoleUnionTests(unittest.TestCase):

@@ -264,6 +264,166 @@ class CommandFailure(RuntimeError):
         self.outcome = outcome
 
 
+class CommandClock:
+    """Fixed event slots: observations, not inferred kernel exit times."""
+    EVENTS = ('commandRequested', 'popenReturned', 'deadlineObserved', 'killRequested',
+              'exitObserved', 'reaped', 'archived', 'firstByte')
+
+    def __init__(self):
+        self.data = {'events': {name: None for name in self.EVENTS},
+                     'deadlineMonotonic': None, 'maxPollGap': 0}
+        self.last_poll = None
+
+    def mark(self, name):
+        if self.data['events'][name] is None:
+            self.data['events'][name] = {'at': now(), 'monotonic': time.monotonic()}
+        return self.data['events'][name]['monotonic']
+
+    def poll(self):
+        current = time.monotonic()
+        if self.last_poll is not None:
+            self.data['maxPollGap'] = max(self.data['maxPollGap'], current - self.last_poll)
+        self.last_poll = current
+
+
+class InstallStream:
+    """One owned same-device observer; bounded pipes never gate primary startup."""
+    LIMIT = 256 * 1024
+    READ_QUOTA = 16 * 1024
+    METADATA_LIMIT = 16 * 1024
+
+    def __init__(self, stem, env, cwd, binding):
+        self.stem, self.env, self.cwd = stem, env, cwd
+        self.child = None
+        self.outputs, self.pipes = {}, {}
+        self.problems = []
+        self.clock = CommandClock()
+        self.turn = 0
+        self.finished = False
+        self.record = {'binding': binding, 'state': 'not-started', 'exit': None, 'observerPID': None,
+                       'primaryPID': None, 'retainedBytes': {'stdout': 0, 'stderr': 0},
+                       'eof': {'stdout': False, 'stderr': False}, 'truncated': False,
+                       'droppedBytes': None, 'clock': self.clock.data}
+
+    def problem(self, label, error=''):
+        # Fixed failure sites and bounded text; metadata serialization is checked too.
+        self.problems.append((label + ': ' + str(error))[:512])
+
+    def start(self):
+        args = ['xcrun', 'simctl', 'spawn', self.record['binding']['udid'], '/usr/bin/log', 'stream',
+                '--style', 'compact', '--level', 'info', '--timeout', '60',
+                '--predicate', 'process == "installd" OR process == "SpringBoard"']
+        self.record['command'] = args
+        self.clock.mark('commandRequested')
+        try:
+            for name in ('stdout', 'stderr'):
+                self.outputs[name] = self.stem.with_suffix('.install-stream.' + name + '.log').open('xb', buffering=0)
+            self.child = subprocess.Popen(args, cwd=self.cwd, env=self.env, stdout=subprocess.PIPE,
+                                          stderr=subprocess.PIPE, start_new_session=True)
+            self.clock.mark('popenReturned')
+            self.record.update(state='running', observerPID=self.child.pid)
+            self.pipes = {'stdout': self.child.stdout, 'stderr': self.child.stderr}
+            for pipe in self.pipes.values(): os.set_blocking(pipe.fileno(), False)
+        except Exception as error:
+            self.record['state'] = 'error'
+            self.problem('stream startup', error)
+            self.stop('error')
+
+    def bind_primary(self, child, deadline):
+        self.record['primaryPID'] = child.pid
+        self.clock.data['deadlineMonotonic'] = deadline
+
+    def observe_exit(self):
+        if self.child is None: return None
+        code = self.child.poll()
+        if code is not None:
+            self.record['exit'] = code
+            self.clock.mark('exitObserved')
+        return code
+
+    def stop(self, reason):
+        if self.record['state'] == 'running': self.record['state'] = reason
+        if self.child is None: return
+        try:
+            if self.observe_exit() is None:
+                self.clock.mark('killRequested')
+                os.killpg(self.child.pid, signal.SIGKILL)
+        except Exception as error:
+            self.problem('stream stop', error)
+
+    def poll(self):
+        if self.child is None or self.record['state'] != 'running': return
+        self.clock.poll()
+        try:
+            deadline = self.clock.data['deadlineMonotonic']
+            if deadline is not None and time.monotonic() >= deadline:
+                self.clock.mark('deadlineObserved')
+                self.stop('deadline')
+                return
+            code = self.observe_exit()
+            # At most one shared quota, alternating the first serviced pipe.
+            names = ('stdout', 'stderr') if self.turn % 2 == 0 else ('stderr', 'stdout')
+            self.turn += 1
+            budget = self.READ_QUOTA
+            for name in names:
+                if self.record['eof'][name]: continue
+                remaining = self.LIMIT - sum(self.record['retainedBytes'].values())
+                if remaining <= 0: break
+                size = min(budget, self.READ_QUOTA // 2, remaining)
+                try: data = os.read(self.pipes[name].fileno(), size)
+                except BlockingIOError: continue
+                budget -= len(data)
+                if not data:
+                    self.record['eof'][name] = True
+                    continue
+                self.clock.mark('firstByte')
+                written = self.outputs[name].write(data)
+                self.record['retainedBytes'][name] += written
+                if written != len(data): raise OSError('partial stream write')
+            # Exact capacity stops, with unknown dropped total; never probe/drain forever.
+            if sum(self.record['retainedBytes'].values()) >= self.LIMIT:
+                self.record['truncated'] = True
+                self.problem('stream capacity reached')
+                self.stop('output-limit')
+            elif code is not None:
+                self.problem('stream ended before primary', code)
+                self.record['state'] = 'early-exit'
+        except Exception as error:
+            self.problem('stream observation', error)
+            self.stop('error')
+
+    def finish(self):
+        if self.finished: return list(self.problems)
+        self.finished = True
+        self.stop('primary-ended')
+        if self.child is not None:
+            try:
+                self.record['exit'] = self.child.wait(timeout=1)
+                self.clock.mark('exitObserved')
+                self.clock.mark('reaped')
+            except Exception as error: self.problem('stream reap unconfirmed', error)
+        for output in [*self.pipes.values(), *self.outputs.values()]:
+            try: output.close()
+            except Exception as error: self.problem('stream close', error)
+        if not sum(self.record['retainedBytes'].values()): self.problem('stream empty/inconclusive')
+        self.record['problems'] = self.problems
+        self.clock.mark('archived')
+        try:
+            raw = (json.dumps(self.record, indent=2) + '\n').encode()
+            if len(raw) > self.METADATA_LIMIT:
+                self.problem('stream metadata capacity reached')
+                # Preserve all fixed terminal slots and counters; never silently truncate identity.
+                self.record = {k: self.record[k] for k in ('state', 'exit', 'observerPID', 'primaryPID',
+                    'retainedBytes', 'eof', 'truncated', 'droppedBytes', 'clock')}
+                self.record.update(metadataTruncated=True, omittedSHA256=hashlib.sha256(raw).hexdigest(),
+                                   omittedBytes=len(raw), problems=[p[:160] for p in self.problems[:16]])
+                raw = (json.dumps(self.record, indent=2) + '\n').encode()
+            if len(raw) > self.METADATA_LIMIT: raise ValueError('fixed terminal metadata exceeds cap')
+            with self.stem.with_suffix('.install-stream.json').open('xb') as output: output.write(raw)
+        except Exception as error: self.problem('stream archive', error)
+        return list(self.problems)
+
+
 class InstallSample:
     """One bounded observation of this command's child, never a process search."""
     AFTER = 15
@@ -274,6 +434,7 @@ class InstallSample:
         self.stem, self.env, self.cwd = stem, env, cwd
         self.child = self.output = None
         self.record = None
+        self.clock = CommandClock()
         self.problems = []
         self.stack = stem.with_suffix('.sample.txt')
         self.log = stem.with_suffix('.sample.log')
@@ -285,12 +446,16 @@ class InstallSample:
             args = ['/usr/bin/sample', str(primary.pid), '1', '10', '-file', str(self.stack)]
             self.record = {'primaryPID': primary.pid, 'command': args, 'startedAt': now(),
                            'state': 'not-started', 'exit': None, 'stack': str(self.stack), 'log': str(self.log)}
+            self.clock.mark('commandRequested')
+            self.record['clock'] = self.clock.data
             self.deadline = time.monotonic() + self.TIMEOUT
+            self.clock.data['deadlineMonotonic'] = self.deadline
             try:
                 if self.stack.exists(): raise ValueError('Sample destination already exists')
                 self.output = self.log.open('xb')
                 self.child = subprocess.Popen(args, cwd=self.cwd, env=self.env, stdout=self.output,
                                               stderr=subprocess.STDOUT, start_new_session=True)
+                self.clock.mark('popenReturned')
                 self.record.update(state='running', observerPID=self.child.pid)
             except (OSError, ValueError, subprocess.SubprocessError) as error:
                 self.record['state'] = 'error'
@@ -298,11 +463,14 @@ class InstallSample:
         if self.child is None or self.record['state'] != 'running':
             return
         try:
+            self.clock.poll()
             size = sum(path.stat().st_size for path in (self.stack, self.log) if path.exists())
             code = self.child.poll()
+            if code is not None: self.clock.mark('exitObserved')
             if size > self.LIMIT:
                 self.record['state'] = 'output-limit'
             elif time.monotonic() >= self.deadline:
+                self.clock.mark('deadlineObserved')
                 self.record['state'] = 'timeout'
             elif code is not None:
                 self.record.update(state='completed', exit=code)
@@ -310,12 +478,16 @@ class InstallSample:
                     self.problems.append('sample did not produce a successful stack')
             if self.record['state'] in ('output-limit', 'timeout'):
                 self.problems.append('sample ' + self.record['state'])
-                if code is None: os.killpg(self.child.pid, signal.SIGKILL)
+                if code is None:
+                    self.clock.mark('killRequested')
+                    os.killpg(self.child.pid, signal.SIGKILL)
         except (OSError, ValueError, subprocess.SubprocessError) as error:
             self.record['state'] = 'error'
             self.problems.append('sample observation: ' + str(error))
             try:
-                if self.child.poll() is None: os.killpg(self.child.pid, signal.SIGKILL)
+                if self.child.poll() is None:
+                    self.clock.mark('killRequested')
+                    os.killpg(self.child.pid, signal.SIGKILL)
             except OSError as stop_error: self.problems.append('sample stop: ' + str(stop_error))
 
     def finish(self, primary):
@@ -329,13 +501,18 @@ class InstallSample:
             # Even observer evidence failures cannot leave a background driver.
             if self.child is not None:
                 try:
-                    if self.child.poll() is None: os.killpg(self.child.pid, signal.SIGKILL)
+                    if self.child.poll() is None:
+                        self.clock.mark('killRequested')
+                        os.killpg(self.child.pid, signal.SIGKILL)
                     self.record['exit'] = self.child.wait(timeout=1)
+                    self.clock.mark('exitObserved')
+                    self.clock.mark('reaped')
                 except (OSError, subprocess.SubprocessError) as error:
                     self.problems.append('sample reap: ' + str(error))
             if self.output is not None:
                 try: self.output.close()
                 except OSError as error: self.problems.append('sample log close: ' + str(error))
+            self.clock.mark('archived')
             self.record.update(completedAt=now(), problems=self.problems)
             try: write_once(self.stem.with_suffix('.sample.json'), self.record)
             except OSError as error: self.problems.append('sample archive: ' + str(error))
@@ -348,13 +525,17 @@ class Runner:
         self.sequence = 0
         self.observation_problems = []
 
-    def command(self, args, *, cwd, label, timeout, check=True, limit=64 * 1024 * 1024, separate_stderr=False, sample_install=False):
+    def command(self, args, *, cwd, label, timeout, check=True, limit=64 * 1024 * 1024, separate_stderr=False, sample_install=False, install_stream=None):
         self.sequence += 1
         stem = self.root / f'{self.sequence:03d}-{label}'
         log = stem.with_suffix('.log')
         outcome = {'command': [str(x) for x in args], 'cwd': str(cwd), 'startedAt': now(),
                    'state': 'not-started', 'exit': None, 'log': str(log)}
+        clock = CommandClock()
+        clock.mark('commandRequested')
+        outcome['clock'] = clock.data
         sample = InstallSample(stem, self.env, cwd) if sample_install else None
+        observer = InstallStream(stem, self.env, cwd, install_stream) if install_stream is not None else None
         stderr_log = stem.with_suffix('.stderr.log') if separate_stderr else None
         if stderr_log is not None: outcome['stderrLog'] = str(stderr_log)
         # Structured output must not contain diagnostics. Both files still share
@@ -367,40 +548,68 @@ class Runner:
             with contextlib.ExitStack() as streams:
                 output = streams.enter_context(log.open('xb'))
                 error_output = streams.enter_context(stderr_log.open('xb')) if stderr_log is not None else subprocess.STDOUT
+                if observer is not None: observer.start()
                 child = subprocess.Popen([str(x) for x in args], cwd=cwd, env=self.env,
                                          stdout=output, stderr=error_output, start_new_session=True)
                 outcome['state'] = 'running'
-                started = time.monotonic()
+                started = clock.mark('popenReturned')
                 deadline = started + timeout
+                clock.data['deadlineMonotonic'] = deadline
+                if observer is not None: observer.bind_primary(child, deadline)
                 try:
-                    while child.poll() is None:
+                    while True:
+                        clock.poll()
+                        observed_code = child.poll()
+                        if observed_code is not None:
+                            outcome.update(state=state, exit=observed_code)
+                            clock.mark('exitObserved')
+                            break
                         if time.monotonic() >= deadline or output_size() > limit:
                             state = 'timeout' if time.monotonic() >= deadline else 'output-limit'
+                            outcome['state'] = state
+                            if state == 'timeout': clock.mark('deadlineObserved')
+                            clock.mark('killRequested')
                             os.killpg(child.pid, signal.SIGKILL)
+                            if observer is not None:
+                                if state == 'timeout': observer.clock.mark('deadlineObserved')
+                                observer.stop('deadline' if state == 'timeout' else 'primary-ended')
                             break
+                        if observer is not None: observer.poll()
                         if sample is not None: sample.poll(child, time.monotonic() - started)
                         time.sleep(.1)
                     code = child.wait(timeout=10)
+                    clock.mark('exitObserved')
+                    clock.mark('reaped')
                     # Record execution before any fallible log/diagnostic work.
                     outcome.update(state=state, exit=code)
                     outcome['completedAt'] = now()
+                    primary_finished = time.monotonic()
                     if state == 'completed' and output_size() > limit: state = 'output-limit'
-                    if state == 'completed' and time.monotonic() > deadline: state = 'timeout'
+                    if state == 'completed' and primary_finished > deadline: state = 'timeout'
                     outcome['state'] = state
                 finally:
                     try:
                         if child.poll() is None:
+                            clock.mark('killRequested')
                             os.killpg(child.pid, signal.SIGKILL)
                             cleanup_code = child.wait(timeout=10)
+                            clock.mark('exitObserved')
+                            clock.mark('reaped')
                             if outcome['exit'] is None: outcome['exit'] = cleanup_code
                     finally:
+                        if observer is not None and not observer.finished:
+                            self.observation_problems.extend(observer.finish())
                         if sample is not None:
                             try: self.observation_problems.extend(sample.finish(child))
                             except Exception as error: self.observation_problems.append('sample finalization: ' + str(error))
         except (OSError, RuntimeError, subprocess.SubprocessError) as error:
             problems.append(f'{label}: execution/log evidence: {error}')
             if outcome['state'] == 'running': outcome['state'] = 'error'
+        finally:
+            if observer is not None and not observer.finished:
+                self.observation_problems.extend(observer.finish())
         outcome.setdefault('completedAt', now())
+        clock.mark('archived')
         outcome['problems'] = problems
         try:
             write_once(stem.with_suffix('.json'), outcome)
@@ -694,7 +903,7 @@ def preparation_diagnostics(runner, evidence, udid):
     return problems
 
 
-def run_unit(unit, paths, harness_source, dependencies, product, preflight_data, env):
+def run_unit(unit, paths, harness_source, dependencies, product, preflight_data, env, install_observation=None):
     evidence = paths['evidence']; command_root = evidence / 'commands'; command_root.mkdir()
     local_env = dict(env)
     device = preflight_data['devices']['ipad' if unit['journey'] == 'ipad' else 'phone']
@@ -718,7 +927,7 @@ def run_unit(unit, paths, harness_source, dependencies, product, preflight_data,
         runner.command(['xcrun', 'simctl', 'erase', device['udid']], cwd=work, label='erase', timeout=60)
         runner.command(['xcrun', 'simctl', 'bootstatus', device['udid'], '-b'], cwd=work, label='boot', timeout=180)
         runner.command(['xcrun', 'simctl', 'install', device['udid'], product['app']], cwd=work, label='install', timeout=60,
-                       sample_install=unit['toolchain'] == '27')
+                       sample_install=unit['toolchain'] == '27', install_stream=install_observation)
         installed = now(); launched = now()
         try:
             status, _ = runner.command(['npm', 'run', 'test:e2e', '--', '--runInBand', TEST_FILES[unit['journey']],
@@ -808,8 +1017,15 @@ def execute(toolchain, repository, env):
             write_once(root / 'source' / sha / 'product.json', product)
         if len({p['resolvedPods']['sha256'] for p in products.values()}) != 1:
             raise ValueError('Resolved Pods differ between compared sources')
-        for unit in expected:
-            result = run_unit(unit, allocate_unit(root, unit), harness, dependencies, products[unit['source']], data, runner.env)
+        for index, unit in enumerate(expected):
+            observation = None
+            if role == 'ios-scene' and index == 0 and unit['journey'] == 'coldstart':
+                product = products[unit['source']]
+                observation = {'context': context, 'role': role, 'unit': unit,
+                               'udid': data['devices']['phone']['udid'], 'app': product['app'],
+                               'products': product['products']}
+            result = run_unit(unit, allocate_unit(root, unit), harness, dependencies, products[unit['source']], data, runner.env,
+                              install_observation=observation)
             results.append(result)
     except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError) as error:
         errors.append(str(error))
