@@ -1,0 +1,27 @@
+{
+  "id": "scene-wda-streams-20261107",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner34; self-review before implementation, independent review pending",
+    "date": "2026-11-07",
+    "decision": "Implement only the confirmed WDA JSON stream boundary",
+    "rationale": "Exact09fe/run42320071447 four26 identity collections receive22707 bytes of destination warnings before valid xcodebuild JSON because Runner merges stderr. Separate opt-in structured stdout from a retained stderr file; keep existing default combined logs (codesign uses stderr), command failures, original budgets and all PR15/main11 identity gates. The offline tail decode is diagnostic only, not device acceptance. Product15 paths unchanged. No assumption about27 install timeout or26 notification navigation."
+  },
+  "cases": [
+    {
+      "id": "SCENE-MIG-016",
+      "layer": "G",
+      "description": "WDA identity uses strict stdout JSON while retaining bounded stderr and original child outcomes",
+      "surfaces": [
+        "iOS scene acceptance coordinator; no native/UI behavior claim"
+      ],
+      "setup": "Real Runner child processes in task temporary directories; exact collect_identity with synthetic session, WDA plist/binary and native argv translated only at Popen to controlled small children. No installed native tool invocation.",
+      "action": "Valid stdout JSON plus destination warnings on stderr through collect_identity; invalid stdout prefix or JSON only on stderr; original exit0/7; timeout; output cap from stderr or combined stdout+stderr; default combined text remains unchanged.",
+      "expected": "Identity reads strict stdout and retains target deployment, session/PID/actual-launch/binary SHA. Both complete stream files and command metadata remain evidence. Malformed/absent stdout or nonzero child cannot pass. Split capture has the same timeout and aggregate byte budget as the original command; output/timeout/fault failures preserve acquired original exit and remain red. Default commands preserve codesign stderr behavior. Tests must fail against09fe or omitted split call; no prefix-stripping acceptance. These are local execution controls, not app/WDA/device validation.",
+      "planned_files": [
+        "mobileapp/e2e/ci-scene-migration.py",
+        "scripts/scene_migration_test.py"
+      ]
+    }
+  ]
+}
