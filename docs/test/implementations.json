@@ -198,7 +198,9 @@
       "test_bad_plans_or_unselected_failure_are_rejected",
       "test_mac_host_keeps_both_architectures_and_native_checks",
       "test_ios_delivery_pins_the_same_arm_toolchain_and_keeps_protection",
-      "test_scene_driver_setup_preserves_pins_errors_and_existing_isolation"
+      "test_scene_driver_setup_preserves_pins_errors_and_existing_isolation",
+      "test_scene_roles_follow_event_and_require_complete_union_plus_old_gates",
+      "test_scene_workflow_sequential_role_and_full_union_wiring"
     ]
   },
   "mobileapp/e2e/setup/global-setup-manual.ts": {
@@ -689,7 +691,12 @@
       "def execute(",
       "class CommandFailure(RuntimeError):",
       "def command(",
-      "def preparation_diagnostics("
+      "def preparation_diagnostics(",
+      "def trusted_context(",
+      "def role_units(",
+      "def publish_role(",
+      "def comparable_identity(",
+      "def verify_union("
     ]
   },
   "scripts/scene_migration_test.py": {
@@ -730,7 +737,11 @@
       "test_install_sample_observes_owned_live_child_once_without_changing_exit",
       "test_install_sample_faults_keep_primary_outcome_and_reap_observer",
       "test_actual_units_keep_install_sample_diagnostics_separate_from_journey_exit",
-      "test_install_exit_during_observation_keeps_completion_and_reaps_on_wait_error"
+      "test_install_exit_during_observation_keeps_completion_and_reaps_on_wait_error",
+      "test_union_real_cli_PR15_main11_and_trusted_current_event",
+      "test_union_rejects_missing_duplicate_wrong_binding_hash_and_cases",
+      "test_union_cross_host_identity_and_resolved_pods_are_required",
+      "test_trusted_sources_require_readable_base_and_exact_coordinator_bytes"
     ]
   },
   "mobileapp/e2e/setup/appLaunchFiles.test.ts": {

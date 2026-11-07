@@ -6,6 +6,7 @@ import importlib.util
 import json
 import os
 import plistlib
+import shutil
 import sys
 import time
 from unittest import mock
@@ -334,10 +335,12 @@ class SceneExecutionTests(unittest.TestCase):
             runtimes = {'runtimes': [{'identifier': runtime_id, 'version': expected['runtime'], 'buildversion': 'fixture', 'isAvailable': True}]}
             devices = {'devices': {runtime_id: [{'name': name, 'udid': name, 'deviceTypeIdentifier': 'fixture-hardware', 'isAvailable': True}
                                                for name in ('iPhone 17', 'iPad Pro 13-inch (M5)')]}}
-            outputs = {('xcodebuild', '-version'): 'Xcode ' + expected['xcode'],
+            outputs = {('xcodebuild', '-version'): 'Xcode ' + expected['xcode'] + '\nBuild version 17C100',
                        ('xcrun', '--sdk', 'iphonesimulator', '--show-sdk-version'): expected['sdk'],
                        ('xcrun', '--sdk', 'iphonesimulator', '--show-sdk-path'): '/fixture/sdk',
                        ('xcode-select', '-p'): str(root),
+                       ('sw_vers', '-productVersion'): '15.8.2', ('sw_vers', '-buildVersion'): '24H232',
+                       ('uname', '-m'): 'arm64', ('hostname',): 'fixture-host', ('ruby', '--version'): 'ruby 3.3.0',
                        ('xcrun', 'simctl', 'list', '-j', 'runtimes'): json.dumps(runtimes),
                        ('xcrun', 'simctl', 'list', '-j', 'devices', 'available'): json.dumps(devices)}
             real_popen = subprocess.Popen
@@ -356,12 +359,12 @@ class SceneExecutionTests(unittest.TestCase):
                     else:
                         package.write_text(content if isinstance(content, str) else json.dumps(content))
                     logs = root / str(index); logs.mkdir()
-                    runner = scene.Runner(logs, {**os.environ, 'APPIUM_HOME': str(home), 'DEVELOPER_DIR': str(root)})
+                    runner = scene.Runner(logs, {**os.environ, 'APPIUM_HOME': str(home), 'DEVELOPER_DIR': str(root), 'ImageOS': 'macos15', 'ImageVersion': '20261104.0514.1'})
                     with mock.patch.object(scene.subprocess, 'Popen', side_effect=child):
                         if label == 'valid':
                             data = scene.preflight(runner, chain, root)
                             self.assertEqual(data['appiumRootContents'], valid)
-                            self.assertEqual(data['appiumRootPackage'], scene.file_record(package))
+                            self.assertEqual(data['appiumRootPackage'], scene.content_record(package))
                             self.assertEqual((data['driver'], data['wda']), (expected['driver'], expected['wda']))
                         else:
                             with self.assertRaises((ValueError, OSError)):
@@ -390,7 +393,7 @@ class SceneExecutionTests(unittest.TestCase):
                     cleanup.assert_called_once()
                     self.assertEqual(json.loads((paths['evidence'] / 'result.json').read_text())['testExit'], status)
 
-    def controlled_execute(self, toolchain='27', event_name='pull_request', status=0, fault=None, cleanup_raw=None, dependency_observations=None, install_observations=None):
+    def controlled_execute(self, toolchain='27', event_name='pull_request', status=0, fault=None, cleanup_raw=None, dependency_observations=None, install_observations=None, role=None):
         # Execute the production coordinator, Runner and run_unit. Only external
         # Git/native/SDK/Jest commands become tiny real children, not a Runner mock.
         root = self.root / f'execute-{len(list(self.root.iterdir()))}'; root.mkdir()
@@ -409,7 +412,7 @@ class SceneExecutionTests(unittest.TestCase):
         event_path = root / 'event.json'; event_path.write_text(json.dumps(event))
         env = {**os.environ, 'CI': 'true', 'RUNNER_OS': 'macOS', 'RUNNER_ARCH': 'ARM64',
                'GITHUB_EVENT_NAME': event_name, 'GITHUB_EVENT_PATH': str(event_path), 'GITHUB_SHA': MERGE if event_name == 'pull_request' else P,
-               'RUNNER_TEMP': str(root), 'GITHUB_RUN_ID': '1', 'GITHUB_RUN_ATTEMPT': '1', 'GITHUB_JOB': 'test'}
+               'RUNNER_TEMP': str(root), 'GITHUB_RUN_ID': '1', 'GITHUB_RUN_ATTEMPT': '1', 'GITHUB_JOB': role or ('ios-native' if toolchain == '26' else 'ios-scene')}
         builds, readable = [], []
         real_popen, real_write, real_record = scene.subprocess.Popen, scene.write_once, scene.file_record
         real_stat = Path.stat
@@ -481,7 +484,8 @@ class SceneExecutionTests(unittest.TestCase):
             return actual_cleanup(*a) if cleanup_fault or str(fault).startswith('last-install') else []
         def archive(repository, sha, destination):
             (destination / 'mobileapp').mkdir(parents=True)
-            for name in ('package-lock.json', 'package.json', 'Gemfile.lock'): (destination / 'mobileapp' / name).write_text('{}')
+            for name in scene.INPUTS:
+                path = destination / 'mobileapp' / name; path.parent.mkdir(parents=True, exist_ok=True); path.write_text('{}')
             return destination
         def prepare(repository, sha, harness, job, deps, runner):
             target = job / 'source' / sha / 'mobileapp'; target.mkdir(parents=True); return target
@@ -503,7 +507,8 @@ class SceneExecutionTests(unittest.TestCase):
             if fault == 'artifact' and Path(path).name.endswith('-journey.log'): raise OSError('injected artifact read/hash')
             return real_record(path, relative_to)
         stderr = io.StringIO()
-        with mock.patch.object(Path, 'stat', new=stat), mock.patch.object(scene.subprocess, 'Popen', side_effect=child), \
+        with mock.patch.object(scene, 'trusted_context', return_value={'sources': scene.sources(event_name, event, env['GITHUB_SHA'])}), \
+                mock.patch.object(Path, 'stat', new=stat), mock.patch.object(scene.subprocess, 'Popen', side_effect=child), \
                 mock.patch.object(scene, 'preflight', return_value={'devices': {'phone': {'udid': 'fixture', 'name': 'phone'}, 'ipad': {'udid': 'pad', 'name': 'pad'}}}), \
                 mock.patch.object(scene, 'archive_source', side_effect=archive), mock.patch.object(scene, 'prepare_source', side_effect=prepare), \
                 mock.patch.object(scene, 'build_product', side_effect=build), mock.patch.object(scene, 'prepare_work', side_effect=work), \
@@ -512,7 +517,7 @@ class SceneExecutionTests(unittest.TestCase):
                 mock.patch.object(scene, 'file_record', side_effect=record), contextlib.redirect_stderr(stderr), contextlib.redirect_stdout(io.StringIO()):
             code = scene.execute(toolchain, repo, env)
         if fault == 'wait-stat': self.assertEqual(len(stat_faults), 4)
-        job = root / 'scene-migration/1-1-test'
+        job = root / ('scene-migration/1-1-' + env['GITHUB_JOB'])
         payload = json.loads((job / 'acceptance.json').read_text()) if (job / 'acceptance.json').exists() else None
         return code, builds, readable, payload, stderr.getvalue()
 
@@ -646,7 +651,7 @@ class SceneExecutionTests(unittest.TestCase):
             with self.subTest(toolchain=toolchain, fault=fault, status=status), mock.patch.object(observer_type, 'AFTER', .05):
                 code, _, _, payload, _ = self.controlled_execute(toolchain=toolchain, fault=fault, status=status, install_observations=observations)
             self.assertEqual(code, 1)  # Synthetic identity/behavior is intentionally incomplete.
-            self.assertEqual(len(payload['results']), 4)
+            self.assertEqual(len(payload['results']), len(scene.role_units(payload['binding'], payload['role'])))
             self.assertEqual(len(observations['calls']), 4 if toolchain == '27' else 0)
             self.assertTrue(all(c.poll() is not None for c in observations['children']))
             for result in payload['results']:
@@ -663,7 +668,7 @@ class SceneExecutionTests(unittest.TestCase):
             with self.subTest(fault=fault), mock.patch.object(scene.Runner, 'command', autospec=True, side_effect=actual_command) as commands:
                 code, _, _, payload, _ = self.controlled_execute(fault=fault, status=7)
                 self.assertEqual(code, 1)
-                self.assertEqual(len(payload['results']), 4)
+                self.assertEqual(len(payload['results']), len(scene.role_units(payload['binding'], payload['role'])))
                 self.assertTrue(all(r['testExit'] == 7 for r in payload['results'][:-1]))
                 final = payload['results'][-1]
                 self.assertEqual((final['state'], final['testExit']), ('not-started', None))
@@ -689,12 +694,13 @@ class SceneExecutionTests(unittest.TestCase):
         self.assertTrue(all('preparationFailure' not in r for r in payload['results']))
 
     def test_physical_dependency_root_reaches_builds_and_real_journey_children(self):
-        for chain, event in [('26', 'pull_request'), ('27', 'pull_request'), ('26', 'push'), ('27', 'push')]:
-            with self.subTest(toolchain=chain, event=event):
+        for chain, event, role in [('26', 'pull_request', 'ios-native'), ('26', 'pull_request', 'ios-scene-baseline-26'),
+                                   ('27', 'pull_request', 'ios-scene'), ('26', 'push', 'ios-native'), ('27', 'push', 'ios-scene')]:
+            with self.subTest(toolchain=chain, event=event, role=role):
                 observed = {}
-                _, built, _, payload, _ = self.controlled_execute(chain, event, dependency_observations=observed)
+                _, built, _, payload, _ = self.controlled_execute(chain, event, dependency_observations=observed, role=role)
                 ids = {'baseline': B, 'candidate': P} if event == 'pull_request' else {'candidate': P}
-                expected = scene.units(ids, chain)
+                expected = scene.role_units(payload['binding'], role)
                 self.assertEqual(set(built), {unit['source'] for unit in expected})
                 self.assertEqual(len(observed['builds']), len(set(built)))
                 self.assertEqual(len(payload['results']), len(expected))
@@ -709,7 +715,7 @@ class SceneExecutionTests(unittest.TestCase):
         for status in (0, 7):
             with self.subTest(status=status):
                 code, _, _, payload, _ = self.controlled_execute(status=status, fault='wait-stat')
-                self.assertEqual(code, 1); self.assertEqual(len(payload['results']), 4)
+                self.assertEqual(code, 1); self.assertEqual(len(payload['results']), len(scene.role_units(payload['binding'], payload['role'])))
                 for result in payload['results']:
                     self.assertEqual((result['testExit'], result['state']), (status, 'completed'))
                     self.assertTrue(any('post-wait log.stat' in p for p in result['problems']))
@@ -729,7 +735,7 @@ class SceneExecutionTests(unittest.TestCase):
                 with self.subTest(status=status, fault=fault, raw=raw):
                     code, _, _, payload, _ = self.controlled_execute(status=status, fault=fault, cleanup_raw=raw)
                     self.assertEqual(code, 1)  # missing synthetic case identity also keeps acceptance red
-                    self.assertEqual(len(payload['results']), 4)
+                    self.assertEqual(len(payload['results']), len(scene.role_units(payload['binding'], payload['role'])))
                     final = payload['results'][-1]
                     self.assertEqual((final['testExit'], final['state']), (status, 'completed'))
                     self.assertEqual(any('cleanup' in p for p in final['problems']), not allowed)
@@ -752,13 +758,17 @@ class SceneExecutionTests(unittest.TestCase):
         self.assertEqual(stopped.exception.outcome['exit'], -9)
 
     def test_executor_builds_only_expected_sources_but_checks_real_base(self):
-        for chain, event, wanted in [('26', 'pull_request', [P, B]), ('27', 'pull_request', [P]),
+        for chain, event, wanted in [('26', 'pull_request', [P]), ('27', 'pull_request', [P]),
                                      ('26', 'push', [P]), ('27', 'push', [P])]:
             with self.subTest(chain=chain, event=event):
                 _, builds, readable, payload, _ = self.controlled_execute(chain, event)
                 self.assertEqual(builds, wanted)
                 self.assertEqual(set(readable), {P, B} if event == 'pull_request' else {P})
-                self.assertEqual(len(payload['results']), len(scene.units(scene.sources(event, payload['event'], payload['githubSHA']), chain)))
+                self.assertEqual(len(payload['results']), len(scene.role_units(payload['binding'], payload['role'])))
+        _, builds, readable, payload, _ = self.controlled_execute('26', role='ios-scene-baseline-26')
+        self.assertEqual(builds, [B]); self.assertEqual(set(readable), {P, B})
+        self.assertEqual(len(payload['results']), 2)
+        self.assertTrue(all(r['unit']['variant'] == 'baseline' for r in payload['results']))
         code, builds, readable, payload, _ = self.controlled_execute(fault='unreadable-base')
         self.assertEqual(code, 1); self.assertEqual(builds, []); self.assertIn(B, readable)
         self.assertTrue(payload['preparationErrors'])
@@ -773,7 +783,7 @@ class SceneExecutionTests(unittest.TestCase):
                         line = next(line for line in stderr.splitlines() if line.startswith('scene acceptance archive failed: '))
                         payload = json.loads(line.split(': ', 1)[1])
                         self.assertIn('acceptance archive: injected ' + fault, payload['preparationErrors'])
-                    self.assertEqual(len(payload['results']), 4)
+                    self.assertEqual(len(payload['results']), len(scene.role_units(payload['binding'], payload['role'])))
                     for result in payload['results']:
                         self.assertEqual((result['testExit'], result['state']), (status, 'completed'))
                         if fault != 'acceptance': self.assertTrue(any('injected ' + fault in p for p in result['problems']))
@@ -784,7 +794,7 @@ class SceneExecutionTests(unittest.TestCase):
         for status in (0, 7):
             code, _, _, payload, _ = self.controlled_execute(status=status, fault='last-shutdown')
             self.assertEqual(code, 1)
-            self.assertEqual(len(payload['results']), 4)
+            self.assertEqual(len(payload['results']), len(scene.role_units(payload['binding'], payload['role'])))
             self.assertFalse(any('device cleanup:' in p for r in payload['results'][:-1] for p in r['problems']))
             self.assertTrue(any('device cleanup:' in p for p in payload['results'][-1]['problems']))
             self.assertEqual(payload['results'][-1]['testExit'], status)
@@ -852,6 +862,148 @@ class SceneExecutionTests(unittest.TestCase):
             self.assertTrue(scene.cleanup_unit(fake, self.root, derived, 'fixture-device'))
             groups.assert_not_called()
         self.assertEqual(fake.command.call_args.args[0][-1], 'fixture-device')
+
+
+class SceneRoleUnionTests(unittest.TestCase):
+    setUp = SceneMigrationTests.setUp
+    tearDown = SceneMigrationTests.tearDown
+    result = SceneMigrationTests.result
+    def fixture(self, event_name='pull_request'):
+        repo = self.root / 'repo'; (repo / 'mobileapp/e2e').mkdir(parents=True)
+        (repo / 'mobileapp/e2e/ci-scene-migration.py').write_bytes(PATH.read_bytes())
+        def git(*args):
+            return subprocess.check_output(['git', '-C', str(repo), '-c', 'user.name=fixture',
+                '-c', 'user.email=fixture@example.test', '-c', 'core.hooksPath=/dev/null', *args], stderr=subprocess.STDOUT).decode().strip()
+        git('init', '-q'); git('add', '.'); git('commit', '-qm', 'base'); baseline = git('rev-parse', 'HEAD')
+        (repo / 'identity.txt').write_text('candidate'); git('add', '.'); git('commit', '-qm', 'candidate'); candidate = git('rev-parse', 'HEAD')
+        event = {'pull_request': {'base': {'sha': baseline}, 'head': {'sha': candidate}}} if event_name == 'pull_request' else {'ref': 'refs/heads/main', 'after': candidate}
+        event_path = self.root / 'event.json'; event_path.write_text(json.dumps(event))
+        env = {**os.environ, 'GITHUB_EVENT_NAME': event_name, 'GITHUB_EVENT_PATH': str(event_path),
+               'GITHUB_REF': 'refs/pull/1825/merge' if event_name == 'pull_request' else 'refs/heads/main',
+               'GITHUB_RUN_ID': '123', 'GITHUB_RUN_ATTEMPT': '2', 'GITHUB_SHA': candidate}
+        context = scene.trusted_context(repo, env)
+        artifacts = self.root / 'download'; artifacts.mkdir()
+        for role in scene.selected_roles(context):
+            root = artifacts / f'scene-migration-{role}-123-2' / f'123-2-{role}'; root.mkdir(parents=True)
+            expected = scene.role_units(context, role); chain = expected[0]['toolchain']; source = expected[0]['source']
+            results = [self.result(u) for u in expected]
+            for u in expected:
+                destination = root / 'evidence' / scene.tuple_key(u); destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(self.root / scene.tuple_key(u)), destination)
+            device = {'runtimeID': 'runtime', 'runtimeBuild': 'build', 'runtime': scene.TOOLS[chain]['runtime'],
+                      'deviceTypeIdentifier': 'test-phone', 'udid': 'test-udid'}
+            def content(raw, path):
+                raw = raw if isinstance(raw, str) else json.dumps(raw)
+                return {'path': path, 'raw': raw, 'bytes': len(raw.encode()), 'sha256': hashlib.sha256(raw.encode()).hexdigest()}
+            root_package = {'private': True, 'overrides': {'appium-xcuitest-driver': {'appium-webdriveragent': scene.TOOLS[chain]['wda']}}}
+            preflight = {**scene.TOOLS[chain], 'osVersion': '15.8.2', 'osBuild': '24H232', 'architecture': 'arm64',
+                'imageOS': 'macos15', 'imageVersion': '20261104.0514.1', 'xcodeBuild': '17C100',
+                'nodeVersion': 'v22.20.0', 'rubyVersion': 'ruby 3.3.0', 'host': role, 'appiumHome': '/isolated',
+                'sdkroot': 'iphonesimulator'+scene.TOOLS[chain]['sdk'], 'developerDir': 'xcode',
+                'driverPackage': content({'version': scene.TOOLS[chain]['driver']}, '/isolated/driver/package.json'),
+                'wdaPackageRecord': content({'version': scene.TOOLS[chain]['wda']}, '/isolated/wda/package.json'),
+                'wdaPackage': '/isolated/wda/package.json', 'appiumRootContents': root_package,
+                'appiumRootPackage': content(root_package, '/isolated/package.json'),
+                'devices': {'phone': device, **({'ipad': device} if chain == '27' else {})}}
+            scene.write_once(root / 'preflight.json', preflight)
+            scene.write_once(root / 'inputs.json', {n: content('committed-lock', '/source/'+n) for n in scene.INPUTS})
+            product_root = root / 'source' / source; product_root.mkdir(parents=True)
+            scene.write_once(product_root / 'product.json', {'products': results[0]['identity']['products'],
+                'linkSysroot': results[0]['identity']['linkSysroot'], 'resolvedPods': content('actual-resolved-lock', '/source/Podfile.lock')})
+            scene.write_once(product_root / 'instrumentation.json', {'source': source, 'edits': [{'path': n} for n in
+                ('src/state/AppContext.tsx', 'src/screens/ServersScreen.tsx', 'src/push/index.ts', 'metro.config.js')]})
+            scene.write_once(root / 'acceptance.json', {'binding': context, 'role': role, 'toolchain': chain,
+                'flags': scene.FLAGS, 'results': results, 'preparationErrors': []})
+            scene.write_once(root / 'verdict.json', {'errors': [], 'passed': True})
+            scene.publish_role(root, context, role)
+        return repo, artifacts, env, context
+
+    def cli(self, repo, artifacts, env):
+        return subprocess.run([sys.executable, str(PATH), '--verify-union', str(artifacts), '--repository', str(repo)],
+                              env=env, capture_output=True, text=True, timeout=15)
+
+    def republish(self, root, context, role):
+        (root / 'publication.json').unlink()  # This test's own tiny fixture only.
+        scene.publish_role(root, context, role)
+
+    def test_union_real_cli_PR15_main11_and_trusted_current_event(self):
+        for event in ('pull_request', 'push'):
+            with tempfile.TemporaryDirectory(prefix='scene-union-') as temp, self.subTest(event=event):
+                saved = self.root; self.root = Path(temp)
+                try:
+                    repo, artifacts, env, ctx = self.fixture(event)
+                    result = self.cli(repo, artifacts, env); self.assertEqual(result.returncode, 0, result.stdout+result.stderr)
+                    expected = [u for r in scene.selected_roles(ctx) for u in scene.role_units(ctx, r)]
+                    self.assertEqual(len(expected), 8 if event == 'pull_request' else 6)
+                    self.assertEqual(sum(len(scene.CASES[u['journey']]) for u in expected), 15 if event == 'pull_request' else 11)
+                    for key, value in [('GITHUB_RUN_ATTEMPT', '3'), ('GITHUB_RUN_ID', '999'), ('GITHUB_SHA', 'f'*40),
+                                       ('GITHUB_REF', 'refs/heads/foreign'), ('GITHUB_EVENT_NAME', 'workflow_dispatch')]:
+                        damaged = self.cli(repo, artifacts, {**env, key: value})
+                        self.assertNotEqual(damaged.returncode, 0, key)
+                finally: self.root = saved
+
+    def test_union_rejects_missing_duplicate_wrong_binding_hash_and_cases(self):
+        repo, artifacts, env, ctx = self.fixture()
+        role = 'ios-scene-baseline-26'; artifact = artifacts / f'scene-migration-{role}-123-2'; root = artifact / f'123-2-{role}'
+        self.assertEqual(scene.verify_union(artifacts, ctx), [])
+        for name in ('acceptance.json', 'publication.json', 'verdict.json'):
+            path = root / name; raw = path.read_bytes(); path.unlink()
+            try: self.assertTrue(scene.verify_union(artifacts, ctx), name)
+            finally: path.write_bytes(raw)
+        acceptance = root / 'acceptance.json'; original = acceptance.read_bytes()
+        mutations = [lambda d: d['results'].pop(), lambda d: d['results'].append(d['results'][0]),
+            lambda d: d['results'][0]['cases'].pop(), lambda d: d['results'][0].update(testExit=7),
+            lambda d: d['results'][0].update(state='cancelled'), lambda d: d['results'][0].update(problems=['cleanup']),
+            lambda d: d['results'][0]['unit'].update(variant='candidate'),
+            lambda d: d['results'][0]['identity'].update(pid=None), lambda d: d.update(preparationErrors=['archive failure']),
+            lambda d: d['binding'].update(attempt='1')]
+        for mutate in mutations:
+            data = json.loads(original); mutate(data); acceptance.write_text(json.dumps(data)); self.republish(root, ctx, role)
+            self.assertTrue(scene.verify_union(artifacts, ctx))
+        changed_context = {**ctx, 'githubSHA': 'f'*40}
+        data = json.loads(original); data['binding'] = changed_context
+        acceptance.write_text(json.dumps(data)); self.republish(root, changed_context, role)
+        self.assertTrue(scene.verify_union(artifacts, ctx), 'self-consistent foreign binding is not trusted')
+        acceptance.write_bytes(original); self.republish(root, ctx, role)
+        metadata = root / 'preflight.json'; metadata_raw = metadata.read_bytes(); metadata.write_bytes(metadata_raw+b'\n')
+        self.assertTrue(scene.verify_union(artifacts, ctx), 'metadata byte changes without new manifest must fail')
+        metadata.write_bytes(metadata_raw)
+        binary = next((root / 'evidence').rglob('*.png')); raw = binary.read_bytes(); binary.write_bytes(raw+b'changed')
+        self.assertTrue(scene.verify_union(artifacts, ctx)); binary.write_bytes(raw)
+        (artifacts / 'duplicate').mkdir(); self.assertTrue(scene.verify_union(artifacts, ctx)); (artifacts / 'duplicate').rmdir()
+        publication = root / 'publication.json'; data = json.loads(publication.read_text()); data['files'].append(data['files'][0])
+        publication.write_text(json.dumps(data)); self.assertTrue(scene.verify_union(artifacts, ctx)); self.republish(root, ctx, role)
+        with mock.patch.object(scene, 'write_once', side_effect=OSError('upload manifest write failure')):
+            with self.assertRaises(OSError): self.republish(root, ctx, role)
+        self.assertTrue(scene.verify_union(artifacts, ctx))
+
+    def test_union_cross_host_identity_and_resolved_pods_are_required(self):
+        repo, artifacts, env, ctx = self.fixture(); role = 'ios-scene-baseline-26'
+        root = artifacts / f'scene-migration-{role}-123-2' / f'123-2-{role}'
+        preflight = root / 'preflight.json'; original = preflight.read_bytes()
+        for key in ('osVersion', 'osBuild', 'imageOS', 'imageVersion', 'xcodeBuild', 'rubyVersion', 'nodeVersion', 'developerDir'):
+            for value in ('', 'different'):
+                with self.subTest(key=key, value=value):
+                    data = json.loads(original); data[key] = value; preflight.write_text(json.dumps(data)); self.republish(root, ctx, role)
+                    self.assertTrue(scene.verify_union(artifacts, ctx))
+        preflight.write_bytes(original); self.republish(root, ctx, role)
+        for name in ('inputs.json', f'source/{ctx["sources"]["baseline"]}/product.json'):
+            path = root / name; raw = path.read_bytes(); data = json.loads(raw)
+            record = data['resolvedPods'] if name.endswith('product.json') else data['Gemfile.lock']
+            record.update(raw='changed-lock', bytes=12, sha256=hashlib.sha256(b'changed-lock').hexdigest())
+            path.write_text(json.dumps(data)); self.republish(root, ctx, role)
+            self.assertTrue(scene.verify_union(artifacts, ctx), name)
+            path.write_bytes(raw); self.republish(root, ctx, role)
+        self.assertEqual(scene.verify_union(artifacts, ctx), [])
+
+    def test_trusted_sources_require_readable_base_and_exact_coordinator_bytes(self):
+        repo, artifacts, env, _ = self.fixture()
+        path = Path(env['GITHUB_EVENT_PATH']); data = json.loads(path.read_text()); original = path.read_bytes()
+        data['pull_request']['base']['sha'] = 'f'*40; path.write_text(json.dumps(data))
+        self.assertNotEqual(self.cli(repo, artifacts, env).returncode, 0); path.write_bytes(original)
+        with mock.patch.object(scene.Path, 'read_bytes', return_value=b'foreign verifier'):
+            with self.assertRaises(ValueError): scene.trusted_context(repo, env)
+
 
 if __name__ == '__main__':
     unittest.main()

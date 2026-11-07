@@ -13,7 +13,7 @@ import sys
 JOBS = {
     "test": "core", "cross-build": "cross", "mobile": "mobile", "web": "web",
     "menubar": "menubar", "relay-worker": "relay", "tunnel-worker": "tunnel",
-    "ios-native": "ios", "ios-scene": "scene", "android-native": "android", "android-emulator": "android",
+    "ios-native": "ios", "ios-scene": "scene", "ios-scene-baseline-26": "ios", "android-native": "android", "android-emulator": "android",
 }
 DOC_FILES = {"README.md", "README.zh.md", "CONTRIBUTING.md", "SECURITY.md", "LICENSE",
              "CLAUDE.md", ".github/pull_request_template.md"}
@@ -47,7 +47,8 @@ def confirmed_unit_test_isolation(head):
     return hashlib.sha256(source).hexdigest() == "5c8073c6156d2a6db9c795705f70f82c21df119475c02f0f86dab7765bb29d1f"
 
 
-def classify(paths, force_reason=None, unit_test_isolation=False):
+def classify(paths, force_reason=None, unit_test_isolation=False, event="pull_request"):
+    if event not in {"pull_request", "push", "workflow_dispatch"}: raise ValueError("Unsupported CI event")
     selected, reasons = set(), []
     full = bool(force_reason) or not paths
     if full:
@@ -93,9 +94,13 @@ def classify(paths, force_reason=None, unit_test_isolation=False):
         selected.add("ios-scene")
     if full:
         selected = set(JOBS)
+    if event == "pull_request" and "ios-native" in selected:
+        selected.add("ios-scene-baseline-26")
+    else:
+        selected.discard("ios-scene-baseline-26")
     # A Go-only test edit still runs the complete Go suite. Web/relay changes also
     # use that suite: dependency/package guesses must never hide a backend failure.
-    return {"selected": sorted(selected), "full": full, "files": len(paths), "reasons": reasons[:30]}
+    return {"event": event, "selected": sorted(selected), "full": full, "files": len(paths), "reasons": reasons[:30]}
 
 
 def parse_diff(data):
@@ -130,20 +135,27 @@ def changed_files(base, head, event):
     return parse_diff(data)
 
 
-def verdict(plan, needs):
+def verdict(plan, needs, event="pull_request", scene_union="missing", scene_download="missing"):
     if not isinstance(plan, dict) or not isinstance(plan.get("selected"), list) or not isinstance(needs, dict):
         return ["Missing or malformed CI plan"]
     if not all(isinstance(name, str) for name in plan["selected"]) or not isinstance(plan.get("full"), bool):
         return ["Invalid CI plan"]
+    if event not in {"pull_request", "push", "workflow_dispatch"} or plan.get("event") != event:
+        return ["CI plan event mismatch"]
+    available = set(JOBS) - ({"ios-scene-baseline-26"} if event != "pull_request" else set())
     chosen = set(plan["selected"])
-    if len(chosen) != len(plan["selected"]) or not chosen <= JOBS.keys() or (plan["full"] and chosen != JOBS.keys()):
+    if len(chosen) != len(plan["selected"]) or not chosen <= available or (plan["full"] and chosen != available):
         return ["Invalid CI plan"]
     if ("ios-native" in chosen) != ("ios-scene" in chosen):
         return ["iOS compile and scene acceptance must be selected together"]
+    if ("ios-scene-baseline-26" in chosen) != (event == "pull_request" and "ios-native" in chosen):
+        return ["SDK26 baseline selection disagrees with event"]
     android = {"android-native", "android-emulator"}
     if chosen & android and not android <= chosen:
         return ["Android build and both emulator checks must be selected together"]
     errors = []
+    if "ios-scene" in chosen and (scene_union != "success" or scene_download != "success"):
+        errors.append("Complete scene union/download did not succeed")
     for name in ("scope", "quality", *JOBS):
         job = needs.get(name)
         result = job.get("result") if isinstance(job, dict) else None
@@ -165,20 +177,25 @@ def main():
     args = parser.parse_args()
     if args.command == "verify":
         try:
-            errors = verdict(json.loads(os.environ.get("CI_PLAN", "")), json.loads(os.environ.get("CI_RESULTS", "")))
+            errors = verdict(json.loads(os.environ.get("CI_PLAN", "")), json.loads(os.environ.get("CI_RESULTS", "")),
+                             os.environ.get("CI_EVENT", ""), os.environ.get("CI_SCENE_UNION", "missing"),
+                             os.environ.get("CI_SCENE_DOWNLOAD", "missing"))
         except (ValueError, TypeError, AttributeError):
             errors = ["Could not read CI plan/results"]
         for error in errors:
             print("CI failed: " + error, file=sys.stderr)
         return int(bool(errors))
+    if args.event not in {"push", "pull_request", "workflow_dispatch"}:
+        print("Unsupported CI event", file=sys.stderr)
+        return 1
     try:
         if args.force_full or args.event not in {"push", "pull_request"}:
-            plan = classify([], "Manual or unsupported event; run everything.")
+            plan = classify([], "Manual event; run everything.", event=args.event)
         else:
             plan = classify(changed_files(args.base, args.head, args.event),
-                            unit_test_isolation=confirmed_unit_test_isolation(args.head))
+                            unit_test_isolation=confirmed_unit_test_isolation(args.head), event=args.event)
     except (ValueError, UnicodeError, OSError, subprocess.CalledProcessError) as error:
-        plan = classify([], "Cannot confirm diff; run everything (" + type(error).__name__ + ").")
+        plan = classify([], "Cannot confirm diff; run everything (" + type(error).__name__ + ").", event=args.event)
     print(json.dumps(plan, indent=2))
     output = os.environ.get("GITHUB_OUTPUT")
     if output:

@@ -465,7 +465,7 @@ jobs:
           }), {flag: 'wx'});
           JS
           npx appium driver install --source=npm appium-xcuitest-driver@11.14.0
-      - name: Scene migration same-toolchain baseline and candidate (26)
+      - name: Scene migration candidate (26)
         env:
           APPIUM_HOME: ${{ runner.temp }}/scene-migration-driver-26
         run: python3 mobileapp/e2e/ci-scene-migration.py --execute 26 --repository "$GITHUB_WORKSPACE"
@@ -473,7 +473,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
-          name: scene-migration-26-${{ github.run_id }}-${{ github.run_attempt }}
+          name: scene-migration-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             ${{ runner.temp }}/scene-migration/*/evidence/
             ${{ runner.temp }}/scene-migration/*/commands/
@@ -489,6 +489,73 @@ jobs:
         with:
           name: ios-native-build-log
           path: ${{ runner.temp }}/gtmux-ios-build.log
+          retention-days: 7
+
+  ios-scene-baseline-26:
+    name: iOS scene migration SDK26 baseline (sequential)
+    needs: [scope, ios-native]
+    if: always() && !cancelled() && github.event_name == 'pull_request' && needs.scope.result == 'success' && needs.scope.outputs.ios == 'true'
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Runner space and SDK preflight
+        run: |
+          test "$(uname -m)" = arm64
+          test -d "$DEVELOPER_DIR"
+          python3 -c 'import shutil; n=shutil.disk_usage(".").free; print(f"Available: {n/1024**3:.1f} GiB"); assert n >= 25*1024**3, "Insufficient space for native CI build"'
+          xcodebuild -version
+          xcodebuild -showsdks
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: mobileapp/package-lock.json
+      - uses: ruby/setup-ruby@e81a8fa391b11a595c1b7ed84177cc0fe02faf83 # v1
+        with:
+          working-directory: mobileapp
+          bundler-cache: true
+      - name: Candidate harness dependencies (isolated baseline build follows)
+        working-directory: mobileapp
+        run: npm ci
+      - name: Install isolated migration driver (26)
+        working-directory: mobileapp
+        env:
+          APPIUM_HOME: ${{ runner.temp }}/scene-migration-driver-26
+        run: |
+          mkdir -p "$APPIUM_HOME"
+          node - <<'JS'
+          const fs = require('fs');
+          const path = require('path');
+          // Keep the reviewed WDA version when installing the published driver.
+          fs.writeFileSync(path.join(process.env.APPIUM_HOME, 'package.json'), JSON.stringify({
+            private: true,
+            overrides: {'appium-xcuitest-driver': {'appium-webdriveragent': '15.0.0'}},
+          }), {flag: 'wx'});
+          JS
+          npx appium driver install --source=npm appium-xcuitest-driver@11.14.0
+      - name: Scene migration baseline (26)
+        env:
+          APPIUM_HOME: ${{ runner.temp }}/scene-migration-driver-26
+        run: python3 mobileapp/e2e/ci-scene-migration.py --execute 26 --repository "$GITHUB_WORKSPACE"
+      - name: Preserve scene migration baseline 26 evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: scene-migration-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/scene-migration/*/evidence/
+            ${{ runner.temp }}/scene-migration/*/commands/
+            ${{ runner.temp }}/scene-migration/*/*.json
+            ${{ runner.temp }}/scene-migration/*/source/*/instrumentation.json
+            ${{ runner.temp }}/scene-migration/*/source/*/product.json
+          include-hidden-files: true
+          if-no-files-found: error
           retention-days: 7
 
   ios-scene:
@@ -535,7 +602,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
-          name: scene-migration-27-${{ github.run_id }}-${{ github.run_attempt }}
+          name: scene-migration-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             ${{ runner.temp }}/scene-migration/*/evidence/
             ${{ runner.temp }}/scene-migration/*/commands/
@@ -666,13 +733,32 @@ jobs:
 
   ci-required:
     if: always()
-    needs: [scope, quality, test, cross-build, mobile, web, ios-native, ios-scene, android-native, android-emulator, relay-worker, tunnel-worker, menubar]
+    needs: [scope, quality, test, cross-build, mobile, web, ios-native, ios-scene-baseline-26, ios-scene, android-native, android-emulator, relay-worker, tunnel-worker, menubar]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Download exact scene role artifacts
+        id: scene-download
+        if: always() && needs.scope.outputs.scene == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          pattern: scene-migration-*-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/scene-role-artifacts
+          merge-multiple: false
+      - name: Verify complete current-event scene union
+        id: scene-union
+        if: always() && needs.scope.outputs.scene == 'true'
+        run: python3 mobileapp/e2e/ci-scene-migration.py --verify-union "$RUNNER_TEMP/scene-role-artifacts" --repository "$GITHUB_WORKSPACE"
       - name: Require successful selected checks
+        if: always()
         env:
           CI_PLAN: ${{ needs.scope.outputs.plan }}
           CI_RESULTS: ${{ toJSON(needs) }}
+          CI_EVENT: ${{ github.event_name }}
+          CI_SCENE_DOWNLOAD: ${{ steps.scene-download.outcome }}
+          CI_SCENE_UNION: ${{ steps.scene-union.outcome }}
         run: python3 scripts/ci.py verify

@@ -64,9 +64,9 @@ class ScopeTests(unittest.TestCase):
     def test_recognized_modules_include_consumers(self):
         self.assertEqual(ci.classify(["internal/radar/agents_test.go"])["selected"], ["test"])
         self.assertEqual(set(ci.classify(["mobileapp/src/components/Chat.tsx"])["selected"]),
-                         {"mobile", "web", "ios-native", "ios-scene", "android-native", "android-emulator"})
+                         {"mobile", "web", "ios-native", "ios-scene", "ios-scene-baseline-26", "android-native", "android-emulator"})
         self.assertEqual(set(ci.classify(["mobileapp/ios/GtmuxWidget/Widget.swift"])["selected"]),
-                         {"mobile", "ios-native", "ios-scene"})
+                         {"mobile", "ios-native", "ios-scene", "ios-scene-baseline-26"})
         self.assertEqual(set(ci.classify(["relay-worker/src/index.ts"])["selected"]),
                          {"relay-worker", "test", "mobile", "android-native", "android-emulator"})
 
@@ -223,12 +223,12 @@ class ResultTests(unittest.TestCase):
 
     def test_missing_skipped_failed_cancelled_required_job_never_green(self):
         plan = ci.classify(["internal/radar/agents.go"])
-        self.assertEqual(ci.verdict(plan, self.results(ci.JOBS)), [])
+        self.assertEqual(ci.verdict(plan, self.results(ci.JOBS), scene_union="success", scene_download="success"), [])
         for name in ("scope", "quality", *ci.JOBS):
             for result in (None, "skipped", "failure", "cancelled"):
                 with self.subTest(name=name, result=result):
                     needs = self.results(ci.JOBS); needs[name] = {"result": result}
-                    self.assertTrue(ci.verdict(plan, needs))
+                    self.assertTrue(ci.verdict(plan, needs, scene_union="success", scene_download="success"))
 
     def test_bad_plans_or_unselected_failure_are_rejected(self):
         for plan in (None, {}, {"selected": ["unknown"], "full": False},
@@ -238,7 +238,65 @@ class ResultTests(unittest.TestCase):
         needs = self.results([]); needs["web"]["result"] = "failure"
         self.assertTrue(ci.verdict(ci.classify(["README.md"]), needs))
 
+    def test_scene_roles_follow_event_and_require_complete_union_plus_old_gates(self):
+        for event in ('pull_request', 'push', 'workflow_dispatch'):
+            plan = ci.classify(['mobileapp/App.tsx'], event=event)
+            chosen = set(plan['selected'])
+            self.assertEqual('ios-scene-baseline-26' in chosen, event == 'pull_request')
+            needs = self.results(chosen)
+            env = {**os.environ, 'CI_PLAN': json.dumps(plan), 'CI_RESULTS': json.dumps(needs), 'CI_EVENT': event,
+                   'CI_SCENE_UNION': 'success', 'CI_SCENE_DOWNLOAD': 'success'}
+            def run(overrides):
+                return subprocess.run([sys.executable, str(ROOT/'scripts/ci.py'), 'verify'],
+                    env={**env, **overrides}, capture_output=True, text=True, timeout=10)
+            self.assertEqual(run({}).returncode, 0)
+            for field in ('CI_SCENE_UNION', 'CI_SCENE_DOWNLOAD'):
+                for bad in ('', 'skipped', 'failure', 'cancelled'):
+                    self.assertNotEqual(run({field: bad}).returncode, 0, (event, field, bad))
+            for job in chosen | {'quality', 'scope'}:
+                for status in ('skipped', 'failure', 'cancelled', None):
+                    changed = {k: dict(v) for k,v in needs.items()}; changed[job]['result'] = status
+                    self.assertTrue(ci.verdict(plan, changed, event, 'success', 'success'), (event, job, status))
+            wrong = dict(plan); wrong['event'] = 'push' if event == 'pull_request' else 'pull_request'
+            self.assertNotEqual(run({'CI_PLAN': json.dumps(wrong)}).returncode, 0)
+            wrong = dict(plan); wrong['selected'] = sorted(chosen ^ {'ios-scene-baseline-26'})
+            self.assertNotEqual(run({'CI_PLAN': json.dumps(wrong)}).returncode, 0)
+            docs = ci.classify(['README.md'], event=event)
+            self.assertEqual(ci.verdict(docs, self.results([]), event), [])
+        with self.assertRaises(ValueError): ci.classify(['mobileapp/App.tsx'], event='unknown')
 
+    def test_scene_workflow_sequential_role_and_full_union_wiring(self):
+        text = (ROOT/'.github/workflows/ci.yml').read_text()
+        def block(job): return re.split(r'\n  \S', text.split('  '+job+':\n',1)[1],maxsplit=1)[0]
+        baseline, native, scene = (block(n) for n in ('ios-scene-baseline-26', 'ios-native', 'ios-scene'))
+        self.assertEqual(text.count('  ios-scene-baseline-26:\n'), 1)
+        self.assertIn('needs: [scope, ios-native]', baseline)
+        self.assertIn("if: always() && !cancelled() && github.event_name == 'pull_request' && needs.scope.result == 'success' && needs.scope.outputs.ios == 'true'", baseline)
+        for role in (native, baseline):
+            self.assertIn('runs-on: macos-15\n', role); self.assertIn('timeout-minutes: 60\n', role)
+            self.assertEqual(role.count('--execute 26'), 1)
+            self.assertNotIn('matrix:', role); self.assertNotIn('continue-on-error:', role)
+        self.assertNotIn('CODE_SIGNING_ALLOWED=NO', baseline)
+        self.assertIn('CODE_SIGNING_ALLOWED=NO', native)
+        self.assertEqual(scene.count('--execute 27'), 1)
+        for role in (native, baseline, scene):
+            self.assertIn('name: scene-migration-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}', role)
+            self.assertIn('if-no-files-found: error', role)
+        gate = block('ci-required')
+        self.assertIn('ios-scene-baseline-26', gate.split('steps:',1)[0])
+        download = gate.split('- name: Download exact scene role artifacts\n',1)[1].split('      - name:',1)[0]
+        self.assertIn("if: always() && needs.scope.outputs.scene == 'true'", download)
+        self.assertIn('pattern: scene-migration-*-${{ github.run_id }}-${{ github.run_attempt }}', download)
+        self.assertIn('merge-multiple: false', download)
+        self.assertIn('path: ${{ runner.temp }}/scene-role-artifacts', download)
+        union = gate.split('- name: Verify complete current-event scene union\n',1)[1].split('      - name:',1)[0]
+        self.assertIn("if: always() && needs.scope.outputs.scene == 'true'", union)
+        self.assertIn('run: python3 mobileapp/e2e/ci-scene-migration.py --verify-union "$RUNNER_TEMP/scene-role-artifacts" --repository "$GITHUB_WORKSPACE"', union)
+        final = gate.split('- name: Require successful selected checks\n',1)[1]
+        for text in ('if: always()', 'CI_EVENT: ${{ github.event_name }}',
+                     'CI_SCENE_DOWNLOAD: ${{ steps.scene-download.outcome }}',
+                     'CI_SCENE_UNION: ${{ steps.scene-union.outcome }}', 'run: python3 scripts/ci.py verify'):
+            self.assertIn(text, final)
 
 
 class MacHostContractTests(unittest.TestCase):

@@ -472,11 +472,21 @@ def preflight(runner, toolchain, cwd):
     if toolchain == '26' and (root_package.get('private') is not True or root_package.get('overrides') != {
             'appium-xcuitest-driver': {'appium-webdriveragent': expected['wda']}}):
         raise ValueError('Installed isolated Appium root differs from reviewed override')
+    host = {'imageOS': runner.env.get('ImageOS'), 'imageVersion': runner.env.get('ImageVersion'),
+            'appiumHome': str(Path(runner.env['APPIUM_HOME']).resolve())}
+    for key, command in {'osVersion': ['sw_vers', '-productVersion'], 'osBuild': ['sw_vers', '-buildVersion'],
+                         'architecture': ['uname', '-m'], 'host': ['hostname'],
+                         'nodeVersion': ['node', '--version'], 'rubyVersion': ['ruby', '--version']}.items():
+        _, value = runner.text(command, cwd=cwd, label='host-' + key)
+        host[key] = value.strip()
+    match = re.search(r'^Build version (\S+)$', version, re.M)
+    if not match or not all(host.values()): raise ValueError('Actual host/image/Xcode build identity missing')
+    host['xcodeBuild'] = match[1]
     return {**expected, 'sdkroot': sdkroot.strip(), 'developerDir': developer, 'devices': devices,
-            'wdaPackage': packages['wdaPackage'], 'driverPackage': file_record(package),
-            'wdaPackageRecord': file_record(packages['wdaPackage']),
+            **host, 'wdaPackage': packages['wdaPackage'], 'driverPackage': content_record(package),
+            'wdaPackageRecord': content_record(packages['wdaPackage']),
             'appiumRootPackage': {'path': str(root_package_path), 'bytes': len(root_package_bytes),
-                                  'sha256': hashlib.sha256(root_package_bytes).hexdigest()},
+                                  'sha256': hashlib.sha256(root_package_bytes).hexdigest(), 'raw': root_package_bytes.decode()},
             'appiumRootContents': root_package}
 
 
@@ -555,7 +565,7 @@ def build_product(runner, mobile, source, root):
     if not sysroots:
         raise ValueError('No actual compiler sysroot in build log')
     return {'app': str(app), 'products': products, 'linkSysroot': sysroots[0], 'buildLog': file_record(log),
-            'resolvedPods': file_record(mobile / 'ios/Podfile.lock')}
+            'resolvedPods': content_record(mobile / 'ios/Podfile.lock')}
 
 
 def parse_jest(path):
@@ -765,7 +775,10 @@ def execute(toolchain, repository, env):
     root = create_job_root(env['RUNNER_TEMP'], env['GITHUB_RUN_ID'], env['GITHUB_RUN_ATTEMPT'], env['GITHUB_JOB'])
     logs = root / 'commands'; logs.mkdir(); runner = Runner(logs, env)
     results, errors = [], []
-    expected = units(ids, toolchain)
+    context = trusted_context(repository, env)
+    role = env['GITHUB_JOB']
+    if role not in ROLES or ROLES[role][0] != toolchain: raise ValueError('Unexpected execution role')
+    expected = role_units(context, role)
     try:
         # A PR base remains a required readable object even when SDK27 only
         # executes the candidate. Do not pay for an unused baseline native build.
@@ -779,6 +792,7 @@ def execute(toolchain, repository, env):
         for name in ('package-lock.json', 'package.json', 'Gemfile.lock'):
             if (checkout_mobile / name).read_bytes() != (harness / 'mobileapp' / name).read_bytes():
                 raise ValueError('Runner dependencies are not from the exact harness source')
+        write_once(root / 'inputs.json', {name: content_record(harness / 'mobileapp' / name) for name in INPUTS})
         lock = file_record(harness / 'mobileapp/package-lock.json')['sha256']
         dependencies = root / 'deps' / lock; dependencies.mkdir(parents=True)
         for name in ('node_modules', 'vendor'):
@@ -800,6 +814,7 @@ def execute(toolchain, repository, env):
     except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError) as error:
         errors.append(str(error))
     payload = {'eventName': env['GITHUB_EVENT_NAME'], 'event': event, 'githubSHA': env['GITHUB_SHA'],
+               'binding': context, 'role': role, 'flags': FLAGS,
                'toolchain': toolchain, 'results': results, 'preparationErrors': errors}
     try:
         write_once(root / 'acceptance.json', payload)
@@ -811,18 +826,208 @@ def execute(toolchain, repository, env):
         write_once(root / 'verdict.json', {'errors': errors, 'passed': not errors})
     except OSError as error:
         errors.append('verdict archive: ' + str(error))
+    try:
+        publish_role(root, context, role)
+    except (OSError, ValueError) as error:
+        errors.append('publication archive: ' + str(error))
     for error in errors: print('scene acceptance failed:', error)
     print('Scene evidence:', root)
     return int(bool(errors))
 
 
+# Fixed job names are roles, not a caller-supplied reduced acceptance matrix.
+ROLES = {'ios-native': ('26', 'candidate'), 'ios-scene-baseline-26': ('26', 'baseline'),
+         'ios-scene': ('27', 'candidate')}
+INPUTS = ('package.json', 'package-lock.json', 'Gemfile.lock', 'ios/Podfile.lock', '.bundle/config')
+FLAGS = {'configuration': 'Release', 'arch': 'arm64', 'signature': 'adhoc', 'jobs': 2,
+         'instrumentation': 'instrument-baseline.py+physical-metro-v1'}
+
+
+def trusted_context(repository, env):
+    event = json.loads(Path(env['GITHUB_EVENT_PATH']).read_text())
+    ids = sources(env['GITHUB_EVENT_NAME'], event, env['GITHUB_SHA'])
+    ref = env['GITHUB_REF']
+    if ((env['GITHUB_EVENT_NAME'] == 'pull_request' and not re.fullmatch(r'refs/pull/[1-9][0-9]*/merge', ref))
+            or (env['GITHUB_EVENT_NAME'] == 'push' and ref != 'refs/heads/main')):
+        raise ValueError('Unexpected workflow ref')
+    for name in ('GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT'):
+        if not re.fullmatch(r'[1-9][0-9]*', env[name]): raise ValueError('Invalid run identity')
+    def git(*args):
+        return subprocess.check_output(['git', '-C', str(repository), *args], timeout=15)
+    if git('rev-parse', 'HEAD').decode().strip() != env['GITHUB_SHA']:
+        raise ValueError('Checkout does not match trusted workflow SHA')
+    # Validate every immutable source, including PR base even in candidate-only jobs.
+    for sha in ids.values(): git('cat-file', '-e', sha + '^{commit}')
+    blob = git('show', ids['candidate'] + ':mobileapp/e2e/ci-scene-migration.py')
+    if blob != Path(__file__).read_bytes(): raise ValueError('Coordinator is not the exact candidate verifier')
+    return {'eventName': env['GITHUB_EVENT_NAME'], 'ref': ref, 'runID': env['GITHUB_RUN_ID'],
+            'attempt': env['GITHUB_RUN_ATTEMPT'], 'githubSHA': env['GITHUB_SHA'], 'sources': ids,
+            'harnessTree': git('rev-parse', ids['candidate'] + ':mobileapp').decode().strip(),
+            'coordinatorSHA256': hashlib.sha256(blob).hexdigest()}
+
+
+def role_units(context, role):
+    chain, variant = ROLES[role]
+    if variant not in context['sources']: raise ValueError('Role is not selected for this event')
+    return [u for u in units(context['sources'], chain) if u['variant'] == variant]
+
+
+def selected_roles(context):
+    return [role for role, (_, variant) in ROLES.items() if variant in context['sources']]
+
+
+def published_files(root):
+    root = Path(root)
+    files = list(root.glob('*.json')) + list((root / 'commands').rglob('*')) + list((root / 'evidence').rglob('*'))
+    for name in ('instrumentation.json', 'product.json'):
+        files += list((root / 'source').glob('*/' + name))
+    return sorted(p for p in files if p.is_file() and p.name != 'publication.json')
+
+
+def publish_role(root, context, role):
+    # Uploaded bytes, not Actions' warning-only digest, form the immutable inventory.
+    records = [file_record(p, root) for p in published_files(root)]
+    write_once(Path(root) / 'publication.json', {'binding': context, 'role': role,
+               'job': role, 'toolchain': ROLES[role][0], 'files': records})
+
+
+def content_record(path):
+    path = Path(path); raw = path.read_bytes()
+    return {'path': str(path), 'bytes': len(raw), 'sha256': hashlib.sha256(raw).hexdigest(), 'raw': raw.decode()}
+
+
+def checked_content(record):
+    if not isinstance(record, dict) or not isinstance(record.get('raw'), str) or not record.get('path'):
+        raise ValueError('Missing captured dependency contents')
+    raw = record['raw'].encode()
+    if not raw or record['bytes'] != len(raw) or record['sha256'] != hashlib.sha256(raw).hexdigest():
+        raise ValueError('Captured dependency bytes/hash mismatch')
+    return record['sha256']
+
+
+def comparable_identity(preflight_data, product, inputs, results):
+    """Check each host before comparing stable fields. Host/PID/path identities stay independent."""
+    p = preflight_data
+    chain = results[0]['unit']['toolchain']
+    for key, value in TOOLS[chain].items():
+        if p.get(key) != value: raise ValueError('Preflight matrix mismatch: ' + key)
+    required = ('osVersion', 'osBuild', 'imageOS', 'imageVersion', 'architecture', 'xcodeBuild',
+                'nodeVersion', 'rubyVersion', 'sdkroot', 'developerDir', 'host', 'appiumHome')
+    if any(not isinstance(p.get(k), str) or not p[k].strip() for k in required):
+        raise ValueError('Host/toolchain identity missing')
+    if p['architecture'] != 'arm64' or not p['nodeVersion'].startswith('v22.'):
+        raise ValueError('Unreviewed architecture/Node major')
+    if p['imageOS'] != ('macos15' if chain == '26' else p['imageOS']):
+        raise ValueError('Unexpected SDK26 image OS')
+    if not re.fullmatch(r'\d+\.\d+\.\d+', p['osVersion']): raise ValueError('Invalid actual OS version')
+    if not re.fullmatch(r'\d+[A-Z]\w+', p['osBuild']): raise ValueError('Invalid actual OS build')
+    if not re.fullmatch(r'\d+[A-Z]\w+', p['xcodeBuild']): raise ValueError('Invalid Xcode build')
+    compare = {k: p[k] for k in required if k not in {'host', 'appiumHome'}}
+    compare.update({k: p[k] for k in TOOLS[chain]})
+    for key in ('driverPackage', 'wdaPackageRecord', 'appiumRootPackage'):
+        record = p[key]; compare[key] = checked_content(record)
+        Path(record['path']).relative_to(Path(p['appiumHome']))
+    if p['wdaPackage'] != p['wdaPackageRecord']['path']: raise ValueError('Resolved WDA path mismatch')
+    if json.loads(p['driverPackage']['raw'])['version'] != p['driver']: raise ValueError('Installed driver version mismatch')
+    if json.loads(p['wdaPackageRecord']['raw'])['version'] != p['wda']: raise ValueError('Installed WDA version mismatch')
+    root_package = json.loads(p['appiumRootPackage']['raw'])
+    if root_package != p['appiumRootContents'] or not isinstance(root_package, dict): raise ValueError('Installed root content mismatch')
+    if chain == '26' and (root_package.get('private') is not True or root_package.get('overrides') != {
+            'appium-xcuitest-driver': {'appium-webdriveragent': p['wda']}}):
+        raise ValueError('Installed root override mismatch')
+    compare['inputs'] = {name: checked_content(inputs[name]) for name in INPUTS}
+    compare['resolvedPods'] = checked_content(product['resolvedPods'])
+    compare['flags'] = FLAGS
+    compare['linkSysroot'] = product['linkSysroot']
+    wda_deployments = {(r['identity']['wdaDeployment'], r['identity']['wdaTargetDeployment']) for r in results}
+    if len(wda_deployments) != 1: raise ValueError('WDA deployment differs between journeys')
+    compare['wdaDeployments'] = sorted(wda_deployments)
+    compare['deployments'] = sorted((x['kind'], x['deployment']) for x in product['products'])
+    device_fields = ('runtimeID', 'runtimeBuild', 'runtime', 'deviceTypeIdentifier')
+    compare['devices'] = {k: {f: v[f] for f in device_fields} for k, v in p['devices'].items()}
+    for result in results:
+        identity = result['identity']; device = p['devices']['ipad' if result['unit']['journey'] == 'ipad' else 'phone']
+        for key in ('runtimeID', 'runtimeBuild', 'runtime', 'udid'):
+            if not device.get(key) or identity[key] != device[key]: raise ValueError('Session/device mismatch: ' + key)
+        if identity['deviceType'] != device['deviceTypeIdentifier']: raise ValueError('Session hardware mismatch')
+        for key in ('sdkroot', 'developerDir', *TOOLS[chain]):
+            if identity[key] != p[key]: raise ValueError('Session/preflight mismatch: ' + key)
+        if identity['products'] != product['products'] or identity['linkSysroot'] != product['linkSysroot']:
+            raise ValueError('Session/product mismatch')
+    return compare
+
+
+def verify_union(directory, context):
+    """Trusted current-event expectation AND every exact role, file and original unit oracle."""
+    errors, compared = [], {}
+    directory = Path(directory)
+    roles = selected_roles(context)
+    expected_names = {f'scene-migration-{role}-{context["runID"]}-{context["attempt"]}' for role in roles}
+    if not directory.is_dir() or {p.name for p in directory.iterdir()} != expected_names:
+        return ['Missing, unexpected or duplicate role artifact']
+    for role in roles:
+        try:
+            artifact = directory / f'scene-migration-{role}-{context["runID"]}-{context["attempt"]}'
+            roots = list(artifact.iterdir())
+            expected_root = f'{context["runID"]}-{context["attempt"]}-{role}'
+            if len(roots) != 1 or roots[0].name != expected_root or not roots[0].is_dir():
+                raise ValueError('Ambiguous job artifact root')
+            root = roots[0]
+            if any(p.is_symlink() for p in [artifact, root, *root.rglob('*')]): raise ValueError('Linked artifact')
+            publication = json.loads((root / 'publication.json').read_text())
+            if (publication['binding'] != context or publication['role'] != role or publication['job'] != role
+                    or publication['toolchain'] != ROLES[role][0]): raise ValueError('Untrusted role/run/source binding')
+            files = publication['files']
+            paths = [r['path'] for r in files]
+            actual = {str(p.relative_to(root)) for p in root.rglob('*') if p.is_file() and p != root / 'publication.json'}
+            if len(set(paths)) != len(paths) or set(paths) != actual: raise ValueError('Incomplete/duplicate artifact inventory')
+            for record in files:
+                path = Path(record['path'])
+                if path.is_absolute() or '..' in path.parts: raise ValueError('Unsafe inventory path')
+                if record != file_record(root / path, root): raise ValueError('Artifact bytes/hash mismatch')
+            payload = json.loads((root / 'acceptance.json').read_text())
+            verdict = json.loads((root / 'verdict.json').read_text())
+            if payload['binding'] != context or payload['role'] != role or payload['toolchain'] != ROLES[role][0]:
+                raise ValueError('Acceptance binding mismatch')
+            if payload['preparationErrors'] or verdict != {'errors': [], 'passed': True}:
+                raise ValueError('Role preparation/execution/diagnostic failed')
+            expected = role_units(context, role)
+            role_errors = verify_all(expected, payload['results'], root / 'evidence')
+            if role_errors: raise ValueError('; '.join(role_errors))
+            source = expected[0]['source']
+            product = json.loads((root / 'source' / source / 'product.json').read_text())
+            instrument = json.loads((root / 'source' / source / 'instrumentation.json').read_text())
+            if instrument['source'] != source or payload['flags'] != FLAGS: raise ValueError('Instrumentation/source mismatch')
+            if {e['path'] for e in instrument['edits']} != {'src/state/AppContext.tsx', 'src/screens/ServersScreen.tsx', 'src/push/index.ts', 'metro.config.js'}:
+                raise ValueError('Instrumentation edits missing')
+            compared[role] = comparable_identity(json.loads((root / 'preflight.json').read_text()), product,
+                                                  json.loads((root / 'inputs.json').read_text()), payload['results'])
+        except (OSError, ValueError, KeyError, TypeError, IndexError, AttributeError) as error:
+            errors.append(role + ': ' + str(error))
+    if 'ios-scene-baseline-26' in roles:
+        if not all(r in compared for r in ('ios-native', 'ios-scene-baseline-26')):
+            errors.append('Cross-host SDK26 comparison incomplete')
+        elif compared['ios-native'] != compared['ios-scene-baseline-26']:
+            errors.append('Cross-host SDK26 identity/inputs/resolved Pods mismatch')
+    return errors
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--verify', type=Path)
+    parser.add_argument('--verify-union', type=Path)
     parser.add_argument('--execute', choices=tuple(TOOLS))
     parser.add_argument('--repository', type=Path, default=Path.cwd())
     parser.add_argument('--evidence-root', type=Path)
     args = parser.parse_args()
+    if args.verify_union:
+        if args.execute or args.verify or args.evidence_root: parser.error('Union verification is separate')
+        try:
+            errors = verify_union(args.verify_union, trusted_context(args.repository.resolve(), os.environ))
+        except (OSError, ValueError, KeyError, subprocess.SubprocessError) as error:
+            errors = [str(error)]
+        for error in errors: print('scene union failed:', error)
+        return int(bool(errors))
     if args.execute:
         if args.verify or args.evidence_root: parser.error('Execution and verification are separate')
         return execute(args.execute, args.repository.resolve(), os.environ)
