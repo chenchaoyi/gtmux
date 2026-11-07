@@ -729,7 +729,8 @@
       "test_successful_preparation_does_not_collect_failure_diagnostics",
       "test_install_sample_observes_owned_live_child_once_without_changing_exit",
       "test_install_sample_faults_keep_primary_outcome_and_reap_observer",
-      "test_actual_units_keep_install_sample_diagnostics_separate_from_journey_exit"
+      "test_actual_units_keep_install_sample_diagnostics_separate_from_journey_exit",
+      "test_install_exit_during_observation_keeps_completion_and_reaps_on_wait_error"
     ]
   },
   "mobileapp/e2e/setup/appLaunchFiles.test.ts": {

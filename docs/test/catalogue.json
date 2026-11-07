@@ -58703,7 +58703,7 @@
         },
         {
           "id": "MAP-80e5de561924",
-          "line": 792,
+          "line": 822,
           "kind": "reviewed-selector",
           "name": "test_harness_journeys_share_only_verified_dependencies_and_keep_source_bytes",
           "dynamic": false,
@@ -58712,7 +58712,7 @@
         },
         {
           "id": "MAP-d485b529b3a4",
-          "line": 811,
+          "line": 841,
           "kind": "reviewed-selector",
           "name": "test_cleanup_targets_only_saved_matching_server_and_exact_unit_wda",
           "dynamic": false,
@@ -58721,7 +58721,7 @@
         },
         {
           "id": "MAP-7cb3bff30a24",
-          "line": 724,
+          "line": 754,
           "kind": "reviewed-selector",
           "name": "test_executor_builds_only_expected_sources_but_checks_real_base",
           "dynamic": false,
@@ -58730,7 +58730,7 @@
         },
         {
           "id": "MAP-9fcc5cafe672",
-          "line": 736,
+          "line": 766,
           "kind": "reviewed-selector",
           "name": "test_real_runner_metadata_and_archival_failures_preserve_executed_units",
           "dynamic": false,
@@ -58739,7 +58739,7 @@
         },
         {
           "id": "MAP-ec565820041a",
-          "line": 753,
+          "line": 783,
           "kind": "reviewed-selector",
           "name": "test_real_executor_keeps_last_shutdown_failure_and_original_exit",
           "dynamic": false,
@@ -58748,7 +58748,7 @@
         },
         {
           "id": "MAP-2258d0570d1d",
-          "line": 762,
+          "line": 792,
           "kind": "reviewed-selector",
           "name": "test_shutdown_failure_or_timeout_of_final_unit_cannot_pass",
           "dynamic": false,
@@ -58757,7 +58757,7 @@
         },
         {
           "id": "MAP-c475771ec211",
-          "line": 678,
+          "line": 708,
           "kind": "reviewed-selector",
           "name": "test_real_runner_wait_then_stat_failure_preserves_unit_and_aggregate",
           "dynamic": false,
@@ -58766,7 +58766,7 @@
         },
         {
           "id": "MAP-e82c5bb79bde",
-          "line": 687,
+          "line": 717,
           "kind": "reviewed-selector",
           "name": "test_cleanup_bad_query_shapes_and_errors_keep_final_executed_unit",
           "dynamic": false,
@@ -58775,7 +58775,7 @@
         },
         {
           "id": "MAP-7bb970863c77",
-          "line": 708,
+          "line": 738,
           "kind": "reviewed-selector",
           "name": "test_runner_distinguishes_not_started_from_started_evidence_failure",
           "dynamic": false,
@@ -58793,7 +58793,7 @@
         },
         {
           "id": "MAP-e3f93d5376ca",
-          "line": 661,
+          "line": 691,
           "kind": "reviewed-selector",
           "name": "test_physical_dependency_root_reaches_builds_and_real_journey_children",
           "dynamic": false,
@@ -58838,7 +58838,7 @@
         },
         {
           "id": "MAP-d045f33494e3",
-          "line": 630,
+          "line": 660,
           "kind": "reviewed-selector",
           "name": "test_final_preparation_failure_keeps_original_outcome_and_bounds_diagnostics",
           "dynamic": false,
@@ -58847,7 +58847,7 @@
         },
         {
           "id": "MAP-1fb1faf2289a",
-          "line": 655,
+          "line": 685,
           "kind": "reviewed-selector",
           "name": "test_successful_preparation_does_not_collect_failure_diagnostics",
           "dynamic": false,
@@ -58874,15 +58874,24 @@
         },
         {
           "id": "MAP-b2d2c97751dd",
-          "line": 610,
+          "line": 640,
           "kind": "reviewed-selector",
           "name": "test_actual_units_keep_install_sample_diagnostics_separate_from_journey_exit",
           "dynamic": false,
           "layer": "G",
           "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-298563a79d34",
+          "line": 610,
+          "kind": "reviewed-selector",
+          "name": "test_install_exit_during_observation_keeps_completion_and_reaps_on_wait_error",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
         }
       ],
-      "sha256": "0a45f4c02b2264b3fc6aec79d2705a2c1d2226b9cd23767a4c347edadeee6dc8"
+      "sha256": "576095a352388c4ca1dc0bedb8863231191e095907927d639c4705616ae5c68e"
     },
     "mobileapp/e2e/__tests__/ipad-adaptive.test.ts": {
       "layer": "L3",

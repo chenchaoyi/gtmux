@@ -562,7 +562,7 @@ class SceneExecutionTests(unittest.TestCase):
                         script = 'from pathlib import Path; Path(' + repr(args[5]) + ').write_text("controlled stack")'
                         if fault == 'exit': script += '; raise SystemExit(9)'
                         if fault in ('hang', 'stop', 'stat'): script += '; import time; time.sleep(30)'
-                        if fault == 'cap': script += '; print("x" * 4096); import time; time.sleep(30)'
+                        if fault == 'cap': script += '; print("x" * 4096, flush=True); import time; time.sleep(30)'
                         child = real_popen([sys.executable, '-c', script], **kwargs); observers.append(child); return child
                     def write(path, value):
                         if fault == 'archive' and str(path).endswith('.sample.json'): raise OSError('sample archive failure')
@@ -574,7 +574,7 @@ class SceneExecutionTests(unittest.TestCase):
                         if fault == 'stop' and observers and pid == observers[0].pid and not stop_errors:
                             stop_errors.append(pid); raise OSError('injected sample stop failure')
                         return real_kill(pid, sig)
-                    with mock.patch.object(scene.InstallSample, 'AFTER', .05), mock.patch.object(scene.InstallSample, 'TIMEOUT', .15), \
+                    with mock.patch.object(scene.InstallSample, 'AFTER', .05), mock.patch.object(scene.InstallSample, 'TIMEOUT', .2 if fault in ('hang', 'stop') else 3), \
                             mock.patch.object(scene.InstallSample, 'LIMIT', 1024), mock.patch.object(scene.subprocess, 'Popen', side_effect=spawn), \
                             mock.patch.object(scene, 'write_once', side_effect=write), mock.patch.object(Path, 'stat', new=stat), \
                             mock.patch.object(scene.os, 'killpg', side_effect=kill):
@@ -606,6 +606,36 @@ class SceneExecutionTests(unittest.TestCase):
                 runner.command([sys.executable, '-c', 'import time; time.sleep(30)'], cwd=root, label='install', timeout=.25, sample_install=True)
         self.assertEqual((caught.exception.outcome['state'], caught.exception.outcome['exit']), ('timeout', -9))
         self.assertTrue(runner.observation_problems)
+
+    def test_install_exit_during_observation_keeps_completion_and_reaps_on_wait_error(self):
+        for wait_error in (False, True):
+            root = self.root / str(wait_error); root.mkdir()
+            runner = scene.Runner(root, os.environ)
+            real_popen = subprocess.Popen
+            observers = []
+            def spawn(args, **kwargs):
+                if args[0] != '/usr/bin/sample': return real_popen(args, **kwargs)
+                script = 'from pathlib import Path; Path(' + repr(args[5]) + ').write_text("controlled stack"); import time; time.sleep(.25)'
+                child = real_popen([sys.executable, '-c', script], **kwargs)
+                observers.append(child)
+                if wait_error:
+                    original_wait = child.wait
+                    def wait(*a, **k):
+                        original_wait(*a, **k)
+                        raise subprocess.TimeoutExpired(args, 1)
+                    child.wait = wait
+                return child
+            with self.subTest(wait_error=wait_error), mock.patch.object(scene.InstallSample, 'AFTER', .05), \
+                    mock.patch.object(scene.InstallSample, 'TIMEOUT', .6), mock.patch.object(scene.subprocess, 'Popen', side_effect=spawn):
+                code, _ = runner.command([sys.executable, '-c', 'import time; time.sleep(.15)'],
+                                         cwd=root, label='install', timeout=2, sample_install=True)
+            primary = json.loads((root / '001-install.json').read_text())
+            sample = json.loads((root / '001-install.sample.json').read_text())
+            self.assertEqual((code, primary['exit'], primary['state']), (0, 0, 'completed'))
+            self.assertLess(primary['completedAt'], sample['completedAt'])
+            self.assertEqual(len(observers), 1)
+            self.assertIsNotNone(observers[0].poll())
+            self.assertEqual(any('sample reap' in p for p in runner.observation_problems), wait_error)
 
     def test_actual_units_keep_install_sample_diagnostics_separate_from_journey_exit(self):
         for toolchain, fault, status in (('27', None, 0), ('27', 'sample-exit', 0), ('27', 'sample-exit', 7), ('26', None, 0)):
