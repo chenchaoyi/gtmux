@@ -819,6 +819,11 @@ extension HQWorkspaceTests {
     }
 
     func testCachedConversationOpensAtLatestAndReselectionReturnsFromHistory() async throws {
+        HQConversationTrace.begin()
+        defer {
+            do { try HQConversationTrace.finish() }
+            catch { XCTFail("Cache-tail trace export failed: \(error)") }
+        }
         let fake = WorkspaceFake()
         var count = 50
         fake.page = { _, _, _ in
@@ -831,6 +836,7 @@ extension HQWorkspaceTests {
         }
         let store = HQWorkspaceStore(client: fake)
         store.select(.conversation); try await settled(store)
+        HQConversationTrace.record("store-ready", ["count": String(count), "serial": String(store.conversationRevealSerial)])
         var navigation: ScrollViewProxy?
         var tailIsVisible = false
         var entrySettled = false
@@ -838,13 +844,18 @@ extension HQWorkspaceTests {
         let host = NSHostingView(rootView: HQWorkspaceConversationView(l10n: .shared, store: store, scrollObserver: { proxy, visible, settled in
             navigation = proxy; tailIsVisible = visible; entrySettled = settled
             if !settled { revealsStarted += 1 }
+            HQConversationTrace.record("observer", ["visible": String(visible), "settled": String(settled), "starts": String(revealsStarted)])
         })
             .font(HQTypography.body).environment(\.markdownTypography, .workspace))
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 800, height: 480), styleMask: [.borderless], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false; window.contentView = host; window.orderFront(nil)
+        HQConversationTrace.record("window-open", ["window": HQConversationTrace.identity(window), "frame": String(describing: window.frame)])
+        HQConversationTrace.record("resize-scheduled", ["delayNs": "25000000"])
         let resizeDuringEntry = Task { @MainActor in
             do { try await Task.sleep(nanoseconds: 25_000_000) } catch { return }
+            HQConversationTrace.record("resize-before", ["frame": String(describing: window.frame)])
             window.setContentSize(NSSize(width: 760, height: 430))
+            HQConversationTrace.record("resize-applied", ["frame": String(describing: window.frame), "contentFrame": String(describing: host.frame)])
         }
         defer { resizeDuringEntry.cancel(); window.close(); store.stop() }
         func scrollView(_ view: NSView) -> NSScrollView? {
@@ -853,14 +864,21 @@ extension HQWorkspaceTests {
             return nil
         }
         var scroll: NSScrollView?
-        for _ in 0..<100 {
+        for iteration in 0..<100 {
             host.layoutSubtreeIfNeeded(); scroll = scrollView(host)
+            HQConversationTrace.record("entry-poll", ["iteration": String(iteration), "visible": String(tailIsVisible), "settled": String(entrySettled),
+                "scroller": HQConversationTrace.identity(scroll), "clip": String(describing: scroll?.contentView.bounds),
+                "document": String(describing: scroll?.documentView?.bounds)])
             if scroll != nil, tailIsVisible, entrySettled { break }
             try await Task.sleep(nanoseconds: 20_000_000)
         }
+        HQConversationTrace.record("entry-assertion", ["visible": String(tailIsVisible), "settled": String(entrySettled),
+            "scroller": HQConversationTrace.identity(scroll)])
         let scroller = try XCTUnwrap(scroll)
         XCTAssertTrue(tailIsVisible, "Already-loaded content must reveal the actual tail marker")
         XCTAssertTrue(entrySettled, "Entry must stop positioning before testing deliberate history reading")
+        if !tailIsVisible || !entrySettled { HQConversationTrace.captureFailure(host) }
+        HQConversationTrace.setPhase("history")
         // A SwiftUI-hosted scroll view owns a virtual document. Navigate by record ID
         // rather than mutating the clip origin behind that owner.
         try XCTUnwrap(navigation).scrollTo("message-0", anchor: .top)
@@ -893,6 +911,7 @@ extension HQWorkspaceTests {
         let pixels = try XCTUnwrap(bitmap.bitmapData)
         XCTAssertGreaterThan(Set(Data(bytes: pixels, count: bitmap.bytesPerRow * bitmap.pixelsHigh)).count, 8,
             "A blank capture cannot prove reading-position preservation")
+        HQConversationTrace.setPhase("refresh")
         count += 1; fake.snapshotValue.revision += 1
         store.refresh(); try await settled(store)
         var after: Data?
@@ -910,6 +929,7 @@ extension HQWorkspaceTests {
         // A live user scroll cancels a pending explicit reveal, including legacy mouse
         // events that do not have a willStart/didEnd notification pair.
         entrySettled = false
+        HQConversationTrace.setPhase("cancel")
         let previousStarts = revealsStarted
         store.select(.conversation)
         for _ in 0..<100 {
@@ -917,6 +937,7 @@ extension HQWorkspaceTests {
             try await Task.sleep(nanoseconds: 5_000_000)
         }
         XCTAssertGreaterThan(revealsStarted, previousStarts, "The cancellation must exercise an active entry request")
+        HQConversationTrace.record("synthetic-scroll-post", ["scroller": HQConversationTrace.identity(scroller)])
         NotificationCenter.default.post(name: NSScrollView.didLiveScrollNotification, object: scroller)
         try XCTUnwrap(navigation).scrollTo("message-0", anchor: .top)
         for _ in 0..<100 {
@@ -927,6 +948,7 @@ extension HQWorkspaceTests {
         XCTAssertFalse(tailIsVisible, "A live scroll cannot be undone by the entry stabilizer")
         XCTAssertTrue(entrySettled, "The cancelled entry request must finish")
         entrySettled = false
+        HQConversationTrace.setPhase("reselect")
         store.select(.conversation); try await settled(store)
         for _ in 0..<100 {
             host.layoutSubtreeIfNeeded()
