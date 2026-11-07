@@ -545,7 +545,6 @@
       "starts the actual notification bridge while the visual safe area has no metrics",
       "a cold same-server tap waits beyond the inset gate then opens the latest agent exactly once",
       "a warm tap navigates immediately and a new response is not mistaken for a replay",
-      "a cross-server tap survives only its intended remount and waits for that navigator",
       "a user server change discards a queued old-workspace tap and unsubscribes on unmount",
       "a guest or ambiguous notification source cannot leave a future navigation intent"
     ]
@@ -895,6 +894,23 @@
     "selectors": [
       "changes =",
       "GTMUX_COMPARE_JOURNEY"
+    ]
+  },
+  "mobileapp/__tests__/App.notificationHandoff.test.tsx": {
+    "cases": [
+      "SCENE-MIG-002"
+    ],
+    "selectors": [
+      "real persistence gap never routes a cross-server tap on the old ready workspace",
+      "real persistence gap preserves a cross-server tap past old headless bridge teardown",
+      "new cross-server generation survives an older selection completion and opens only its target",
+      "a new same-origin tap orders its selection after an outstanding foreign write",
+      "failed selection is discarded and cannot replay when the user later visits its server",
+      "an older rejected write cannot clear a newer generation",
+      "a committed manual departure cancels an unshown target intent even after revisiting",
+      "disconnect clears a waiting intent before a later reconnect",
+      "root unmount rejects late selection completion and old ready callbacks",
+      "same-server taps still wait for readiness then deliver fresh responses once without saving"
     ]
   }
 }

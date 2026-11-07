@@ -129,22 +129,6 @@ it('a warm tap navigates immediately and a new response is not mistaken for a re
   expect(mockNavigate).toHaveBeenLastCalledWith('Detail', expect.objectContaining({agent: expect.objectContaining({pane_id: '%13'})}));
 });
 
-it('a cross-server tap survives only its intended remount and waits for that navigator', async () => {
-  await mount();
-  await receive(response('office-cold', 'Office', '%13'));
-  expect(mockApp.selectServer).toHaveBeenCalledWith(office.url);
-  expect(mockApp.pendingPane).toBe('%13');
-  expect(mockNavigate).not.toHaveBeenCalled();
-  mockApp.mac = office; mockApp.activeUrl = office.url;
-  await act(async () => tree!.update(<App />));
-  expect(mockApp.pendingPane).toBeNull();
-  await act(async () => {jest.advanceTimersByTime(3000);});
-  expect(mockNavigate).not.toHaveBeenCalled();
-  await showVisual(); await readyAgain();
-  expect(mockNavigate).toHaveBeenCalledTimes(1);
-  expect(mockNavigate).toHaveBeenCalledWith('Detail', expect.objectContaining({agent: expect.objectContaining({pane_id: '%13'})}));
-});
-
 it('a user server change discards a queued old-workspace tap and unsubscribes on unmount', async () => {
   await mount(); await receive(response('abandoned'));
   mockApp.mac = office; mockApp.activeUrl = office.url;

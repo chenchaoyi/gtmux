@@ -100,11 +100,64 @@ function RadarRoute() {
   return useSizeClass() === 'regular' ? <SplitShell /> : <RadarScreen />;
 }
 
+type PaneIntent = {generation: number; target: string; pane: string; settled: boolean};
+
+// Notification ownership outlives the mac.url-keyed workspace. Selection is
+// persisted asynchronously: neither the old bridge nor a stale completion may
+// spend a new server's intent during that interval.
+function usePaneIntent() {
+  const app = useApp();
+  const appRef = useRef(app);
+  appRef.current = app;
+  const [pending, setPending] = React.useState<PaneIntent | null>(null);
+  const current = useRef<PaneIntent | null>(null);
+  const generation = useRef(0);
+  const selections = useRef(0);
+  const live = useRef(true);
+  const publish = React.useCallback((next: PaneIntent | null) => {
+    current.current = next;
+    setPending(next);
+  }, []);
+  useEffect(() => {
+    live.current = true;
+    return () => {live.current = false; current.current = null;};
+  }, []);
+  const request = React.useCallback((pane: string, target: string) => {
+    if (!live.current) return;
+    // A newer tap for the current server must still queue behind an older
+    // foreign selection, otherwise that write would switch away underneath it.
+    const switching = target !== appRef.current.activeUrl || selections.current > 0;
+    const intent = {generation: ++generation.current, target, pane, settled: !switching};
+    publish(intent);
+    if (!switching) return;
+    selections.current++;
+    void appRef.current.selectServer(target).then(() => {
+      if (live.current && current.current?.generation === intent.generation) {
+        publish({...intent, settled: true});
+      }
+    }, () => {
+      if (live.current && current.current?.generation === intent.generation) publish(null);
+    }).finally(() => {selections.current--;});
+  }, [publish]);
+  const take = React.useCallback((intent: PaneIntent, workspace: string | null) => {
+    if (!live.current || current.current?.generation !== intent.generation ||
+        !current.current.settled || intent.target !== workspace || appRef.current.activeUrl !== workspace) return false;
+    publish(null); // clear before navigation/ready can re-enter
+    return true;
+  }, [publish]);
+  React.useLayoutEffect(() => {
+    // Observe committed user departure/disconnect; do not resurrect on revisit.
+    // In-flight selectServer writes retain their original AppContext ordering.
+    if (current.current?.settled && current.current.target !== app.activeUrl) publish(null);
+  }, [app.activeUrl, pending, publish]);
+  return {pending, request, take};
+}
+
 // PushBridge handles APNs events and deep-links while a workspace is open.
 // Renders nothing.
-function PushBridge({navRef}: {navRef: any}) {
+function PushBridge({navRef, handoff}: {navRef: any; handoff: ReturnType<typeof usePaneIntent>}) {
   const {agents} = useAgents();
-  const {pushEnabled, servers, activeUrl, selectServer, pendingPane, setPendingPane, setPushToken, lang} = useApp();
+  const {pushEnabled, servers, activeUrl, setPushToken, lang} = useApp();
   const {select} = useWorkspace();
   const selectRef = useRef(select);
   selectRef.current = select;
@@ -148,51 +201,34 @@ function PushBridge({navRef}: {navRef: any}) {
     // inconsistent rather than as a layer.
     selectRef.current(agent.role === 'supervisor' ? {kind: 'hq', agent} : {kind: 'pane', agent});
   };
-  // The background bridge may receive a tap before native insets allow a
-  // navigator to mount. Keep that workspace's latest intent until real readiness,
-  // rather than spending it on an unmounted navigator or a short polling window.
-  const queuedPane = useRef<string | null>(null);
+  // Read the current root-owned generation from readiness callbacks without
+  // resubscribing native push listeners on every render.
+  const handoffRef = useRef(handoff);
+  handoffRef.current = handoff;
   const bridgeLive = useRef(true);
   const openPaneRef = useRef(openPane);
   openPaneRef.current = openPane;
   const flushPane = React.useCallback(() => {
-    if (!bridgeLive.current || !navRef.isReady() || queuedPane.current === null) return;
-    const pane = queuedPane.current;
-    queuedPane.current = null;
-    openPaneRef.current(pane);
+    const intent = handoffRef.current.pending;
+    if (!bridgeLive.current || !navRef.isReady() || !intent) return;
+    if (handoffRef.current.take(intent, activeUrlRef.current)) openPaneRef.current(intent.pane);
   }, [navRef]);
-  const openPaneWhenReady = React.useCallback((pane: string) => {
-    if (!bridgeLive.current) return;
-    queuedPane.current = pane;
-    flushPane();
-  }, [flushPane]);
   useEffect(() => {
     bridgeLive.current = true;
     const unsubscribe = navRef.addListener('ready', flushPane);
     flushPane();
-    return () => {
-      bridgeLive.current = false;
-      queuedPane.current = null;
-      unsubscribe();
-    };
+    return () => {bridgeLive.current = false; unsubscribe();};
   }, [navRef, flushPane]);
+  useEffect(() => {flushPane();}, [handoff.pending, flushPane]);
 
-  // A tapped push may belong to a DIFFERENT paired server than the active one. If
-  // so, switch to it (identified by the Mac name the push carries) and stash the
-  // pane in AppContext — it survives the server-switch remount, and the freshly
-  // mounted bridge opens it (below). Otherwise deep-link on the active server now.
   const onTap = (pane: string, server?: string) => {
+    if (!bridgeLive.current) return;
     const source = sourceForPush(serversRef.current, server ?? '');
     if (!source) {
       Alert.alert(lang === 'zh' ? '无法确定通知来自哪台 Mac' : 'Cannot identify the Mac that sent this notification');
       return;
     }
-    if (source.url !== activeUrlRef.current) {
-      setPendingPane(pane);
-      void selectServer(source.url);
-      return;
-    }
-    openPaneWhenReady(pane);
+    handoffRef.current.request(pane, source.url);
   };
   const onQuickReply = (pane: string, server: string | undefined, value: string) => {
     const target = sourceForPush(serversRef.current, server ?? '');
@@ -203,17 +239,6 @@ function PushBridge({navRef}: {navRef: any}) {
       }).catch(() => { if (Debug.logNet) Debug.record({event: 'push-send-failed', at: Date.now()}); });
     }
   };
-
-  // Consume a pending deep-link left by a cross-server tap: this bridge instance
-  // mounted AFTER the switch, now connected to the right server.
-  useEffect(() => {
-    if (pendingPane) {
-      const p = pendingPane;
-      setPendingPane(null);
-      openPaneWhenReady(p);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingPane]);
 
   useEffect(() => {
     // Listening while viewing a guest connection still handles notifications
@@ -243,6 +268,7 @@ function PushBridge({navRef}: {navRef: any}) {
 function Root() {
   const {ready, mac, pal, lang, scheme, rememberAddresses, followMove, removeServer, t, pushEnabled, pushKinds} = useApp();
   const navRef = useNavigationContainerRef();
+  const paneIntent = usePaneIntent();
   const sizeClass = useSizeClass();
   useUsageWidgetContext();
   // The compact shell opens a selection by navigating; the navigator ref is the one
@@ -288,7 +314,7 @@ function Root() {
           : undefined
       }>
       <WorkspaceProvider mode={sizeClass} navigate={navigateSel}>
-      <WorkspaceSurface background={<PushBridge navRef={navRef} />}>
+      <WorkspaceSurface background={<PushBridge navRef={navRef} handoff={paneIntent} />}>
       <KeyCommandBridge />
       <UsageWidgetBridge />
       <WhatsNew />
