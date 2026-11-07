@@ -291,6 +291,12 @@ class InstallStream:
     LIMIT = 256 * 1024
     READ_QUOTA = 16 * 1024
     METADATA_LIMIT = 16 * 1024
+    LINE_LIMIT = 4096
+    # log(1) default has an explicit offset; naive/unknown formats stay unknown.
+    EVENT = re.compile(r'^(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}\.\d{1,6}(?:Z|[+-]\d{2}:?\d{2}))\s+'
+                       r'0x[0-9a-fA-F]+\s+(?:Default|Info|Debug|Error|Fault)\s+0x[0-9a-fA-F]+\s+'
+                       r'\d+\s+(?:\d+\s+)?(installd|SpringBoard):\s+(.+)$')
+    APP = re.compile(r'(?<![\w.-])com\.gtmux\.app(?![\w.-])')
 
     def __init__(self, stem, env, cwd, binding):
         self.stem, self.env, self.cwd = stem, env, cwd
@@ -300,10 +306,15 @@ class InstallStream:
         self.clock = CommandClock()
         self.turn = 0
         self.finished = False
+        self.line = b''
+        self.discard_line = False
         self.record = {'binding': binding, 'state': 'not-started', 'exit': None, 'observerPID': None,
                        'primaryPID': None, 'retainedBytes': {'stdout': 0, 'stderr': 0},
                        'eof': {'stdout': False, 'stderr': False}, 'truncated': False,
-                       'droppedBytes': None, 'clock': self.clock.data}
+                       'droppedBytes': None, 'clock': self.clock.data,
+                       'stopObservedExit': None, 'stopSignalReturned': False, 'termination': 'unconfirmed',
+                       'window': {'primaryStart': None, 'qualifiedEvents': 0, 'first': None, 'last': None,
+                                  'ignored': {'format': 0, 'app': 0, 'time': 0, 'clock': 0, 'oversize': 0}}}
 
     def problem(self, label, error=''):
         # Fixed failure sites and bounded text; metadata serialization is checked too.
@@ -311,7 +322,7 @@ class InstallStream:
 
     def start(self):
         args = ['xcrun', 'simctl', 'spawn', self.record['binding']['udid'], '/usr/bin/log', 'stream',
-                '--style', 'compact', '--level', 'info', '--timeout', '60',
+                '--style', 'default', '--level', 'info', '--timeout', '60',
                 '--predicate', 'process == "installd" OR process == "SpringBoard"']
         self.record['command'] = args
         self.clock.mark('commandRequested')
@@ -329,9 +340,10 @@ class InstallStream:
             self.problem('stream startup', error)
             self.stop('error')
 
-    def bind_primary(self, child, deadline):
+    def bind_primary(self, child, deadline, started_event):
         self.record['primaryPID'] = child.pid
         self.clock.data['deadlineMonotonic'] = deadline
+        self.record['window']['primaryStart'] = dict(started_event)
 
     def observe_exit(self):
         if self.child is None: return None
@@ -345,11 +357,65 @@ class InstallStream:
         if self.record['state'] == 'running': self.record['state'] = reason
         if self.child is None: return
         try:
-            if self.observe_exit() is None:
+            code = self.observe_exit()
+            if code is None:
                 self.clock.mark('killRequested')
                 os.killpg(self.child.pid, signal.SIGKILL)
+                self.record['stopSignalReturned'] = True
+            else:
+                self.record['stopObservedExit'] = code
         except Exception as error:
             self.problem('stream stop', error)
+
+    def inspect_stdout(self, data):
+        """Bounded recognition of a point in the primary interval, not full coverage."""
+        receipt = {'at': now(), 'monotonic': time.monotonic()}
+        window = self.record['window']
+        for part in data.splitlines(keepends=True):
+            ended = part.endswith(b'\n')
+            if self.discard_line:
+                if ended: self.discard_line = False
+                continue
+            if len(self.line) + len(part) > self.LINE_LIMIT:
+                self.line = b''; self.discard_line = not ended
+                window['ignored']['oversize'] += 1
+                continue
+            self.line += part
+            if not ended: continue
+            raw, self.line = self.line, b''
+            try:
+                match = self.EVENT.fullmatch(raw.decode('utf-8').rstrip('\r\n'))
+                if match is None:
+                    window['ignored']['format'] += 1; continue
+                if not self.APP.search(match[3]):
+                    window['ignored']['app'] += 1; continue
+                event = datetime.datetime.fromisoformat(match[1].replace('Z', '+00:00'))
+                start = window['primaryStart']
+                if start is None: raise ValueError('primary clock unavailable')
+                first = datetime.datetime.fromisoformat(start['at'])
+                received = datetime.datetime.fromisoformat(receipt['at'])
+                if any(value.utcoffset() is None for value in (event, first, received)):
+                    raise ValueError('unknown timezone')
+                elapsed = receipt['monotonic'] - start['monotonic']
+                if abs((received-first).total_seconds()-elapsed) > .001:
+                    raise ValueError('wall/monotonic discontinuity')
+                if not (0 <= elapsed and receipt['monotonic'] <= self.clock.data['deadlineMonotonic']
+                        and first <= event <= received):
+                    window['ignored']['time'] += 1; continue
+                point = {'eventAt': match[1], 'process': match[2], 'received': receipt}
+                window['qualifiedEvents'] += 1
+                if window['first'] is None: window['first'] = point
+                window['last'] = point
+            except (ValueError, TypeError, UnicodeError):
+                window['ignored']['clock'] += 1
+
+    def check_terminal_exit(self):
+        # A successful signal syscall is a fact, not proof it caused the exit.
+        if self.record['stopSignalReturned'] and self.record['exit'] == -signal.SIGKILL:
+            self.record['termination'] = 'requested-sigkill'
+        else:
+            self.record['termination'] = 'natural-or-unexpected'
+            self.problem('stream terminal exit inconclusive', self.record['exit'])
 
     def poll(self):
         if self.child is None or self.record['state'] != 'running': return
@@ -380,6 +446,7 @@ class InstallStream:
                 written = self.outputs[name].write(data)
                 self.record['retainedBytes'][name] += written
                 if written != len(data): raise OSError('partial stream write')
+                if name == 'stdout': self.inspect_stdout(data)
             # Exact capacity stops, with unknown dropped total; never probe/drain forever.
             if sum(self.record['retainedBytes'].values()) >= self.LIMIT:
                 self.record['truncated'] = True
@@ -401,11 +468,14 @@ class InstallStream:
                 self.record['exit'] = self.child.wait(timeout=1)
                 self.clock.mark('exitObserved')
                 self.clock.mark('reaped')
+                self.check_terminal_exit()
             except Exception as error: self.problem('stream reap unconfirmed', error)
         for output in [*self.pipes.values(), *self.outputs.values()]:
             try: output.close()
             except Exception as error: self.problem('stream close', error)
         if not sum(self.record['retainedBytes'].values()): self.problem('stream empty/inconclusive')
+        if not self.record['window']['qualifiedEvents']:
+            self.problem('stream window inconclusive: no qualified app/service event')
         self.record['problems'] = self.problems
         self.clock.mark('archived')
         try:
@@ -414,7 +484,8 @@ class InstallStream:
                 self.problem('stream metadata capacity reached')
                 # Preserve all fixed terminal slots and counters; never silently truncate identity.
                 self.record = {k: self.record[k] for k in ('state', 'exit', 'observerPID', 'primaryPID',
-                    'retainedBytes', 'eof', 'truncated', 'droppedBytes', 'clock')}
+                    'retainedBytes', 'eof', 'truncated', 'droppedBytes', 'clock', 'window',
+                    'stopObservedExit', 'stopSignalReturned', 'termination')}
                 self.record.update(metadataTruncated=True, omittedSHA256=hashlib.sha256(raw).hexdigest(),
                                    omittedBytes=len(raw), problems=[p[:160] for p in self.problems[:16]])
                 raw = (json.dumps(self.record, indent=2) + '\n').encode()
@@ -555,7 +626,7 @@ class Runner:
                 started = clock.mark('popenReturned')
                 deadline = started + timeout
                 clock.data['deadlineMonotonic'] = deadline
-                if observer is not None: observer.bind_primary(child, deadline)
+                if observer is not None: observer.bind_primary(child, deadline, clock.data['events']['popenReturned'])
                 try:
                     while True:
                         clock.poll()

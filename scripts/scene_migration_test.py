@@ -393,7 +393,7 @@ class SceneExecutionTests(unittest.TestCase):
                     cleanup.assert_called_once()
                     self.assertEqual(json.loads((paths['evidence'] / 'result.json').read_text())['testExit'], status)
 
-    def controlled_execute(self, toolchain='27', event_name='pull_request', status=0, fault=None, cleanup_raw=None, dependency_observations=None, install_observations=None, role=None):
+    def controlled_execute(self, toolchain='27', event_name='pull_request', status=0, fault=None, cleanup_raw=None, dependency_observations=None, install_observations=None, role=None, stream_observations=None):
         # Execute the production coordinator, Runner and run_unit. Only external
         # Git/native/SDK/Jest commands become tiny real children, not a Runner mock.
         root = self.root / f'execute-{len(list(self.root.iterdir()))}'; root.mkdir()
@@ -414,6 +414,14 @@ class SceneExecutionTests(unittest.TestCase):
                'GITHUB_EVENT_NAME': event_name, 'GITHUB_EVENT_PATH': str(event_path), 'GITHUB_SHA': MERGE if event_name == 'pull_request' else P,
                'RUNNER_TEMP': str(root), 'GITHUB_RUN_ID': '1', 'GITHUB_RUN_ATTEMPT': '1', 'GITHUB_JOB': role or ('ios-native' if toolchain == '26' else 'ios-scene')}
         builds, readable = [], []
+        ready, release = root/'stream-bound', root/'stream-release'
+        original_bind, original_finish = scene.InstallStream.bind_primary, scene.InstallStream.finish
+        def bind(stream,*args):
+            original_bind(stream,*args); ready.write_text('bound')
+        def finish(stream):
+            if stream_observations and stream_observations['mode']=='final-exit' and stream.child is not None:
+                release.write_text('exit now'); stream.child.wait(timeout=2)
+            return original_finish(stream)
         real_popen, real_write, real_record = scene.subprocess.Popen, scene.write_once, scene.file_record
         real_stat = Path.stat
         post_wait, stat_faults = set(), []
@@ -461,6 +469,18 @@ class SceneExecutionTests(unittest.TestCase):
                     install_observations['calls'].append(list(args))
                     script = 'from pathlib import Path; Path(' + repr(args[5]) + ').write_text("controlled stack")'
                     if fault == 'sample-exit': script += '; raise SystemExit(9)'
+            if stream_observations is not None:
+                if args[0]=='npm':
+                    # Isolate diagnostic propagation; empty synthetic steps remain
+                    # insufficient for the actual behavior gate, but are readable.
+                    script=("import os; from pathlib import Path; p=Path(os.environ['GTMUX_SCENE_EVIDENCE_ROOT'])/'session'; "
+                            "p.mkdir(exist_ok=True); (p/'behavior-steps.jsonl').write_text(''); "+script)
+                if args[:3]==['xcrun','simctl','install'] and '/coldstart/' in stdout_name:
+                    script='import time; time.sleep(.4)'
+                if args[:3]==['xcrun','simctl','spawn'] and '/usr/bin/log' in args:
+                    mode=stream_observations['mode']
+                    script=synthetic_stream_script('valid' if mode=='final-exit' else mode,ready,
+                                                   release if mode=='final-exit' else None)
             process = real_popen([sys.executable, '-c', script], **kwargs)
             if install_observations is not None:
                 if args[:3] == ['xcrun', 'simctl', 'install']: install_observations['primary'][process.pid] = process
@@ -517,7 +537,8 @@ class SceneExecutionTests(unittest.TestCase):
                 mock.patch.object(scene, 'build_product', side_effect=build), mock.patch.object(scene, 'prepare_work', side_effect=work), \
                 mock.patch.object(scene, 'parse_jest', return_value=[]), mock.patch.object(scene, 'collect_identity', return_value={}), \
                 mock.patch.object(scene, 'cleanup_unit', side_effect=cleanup), mock.patch.object(scene, 'write_once', side_effect=write), \
-                mock.patch.object(scene, 'file_record', side_effect=record), contextlib.redirect_stderr(stderr), contextlib.redirect_stdout(io.StringIO()):
+                mock.patch.object(scene, 'file_record', side_effect=record), \
+                mock.patch.object(scene.InstallStream,'bind_primary',new=bind), mock.patch.object(scene.InstallStream,'finish',new=finish), contextlib.redirect_stderr(stderr), contextlib.redirect_stdout(io.StringIO()):
             code = scene.execute(toolchain, repo, env)
         if fault == 'wait-stat': self.assertEqual(len(stat_faults), 4)
         job = root / ('scene-migration/1-1-' + env['GITHUB_JOB'])
@@ -876,20 +897,67 @@ class SceneExecutionTests(unittest.TestCase):
         self.assertEqual(fake.command.call_args.args[0][-1], 'fixture-device')
 
 
+def synthetic_stream_script(mode='valid', ready=None, release=None):
+    # Deliberately synthetic log(1) text, never reported as captured UIKit evidence.
+    return f'''
+import datetime, os, time
+from pathlib import Path
+mode={mode!r}; ready={str(ready) if ready else None!r}; release={str(release) if release else None!r}
+if ready:
+    limit=time.monotonic()+2
+    while not Path(ready).exists() and time.monotonic()<limit: time.sleep(.005)
+    if not Path(ready).exists(): raise RuntimeError('controlled primary clock was not bound')
+stamp=datetime.datetime.now(datetime.timezone.utc)
+if mode=='outside': stamp-=datetime.timedelta(seconds=60)
+if mode=='future': stamp+=datetime.timedelta(seconds=60)
+if mode=='offset': stamp=stamp.astimezone(datetime.timezone(datetime.timedelta(hours=8)))
+text=stamp.strftime('%Y-%m-%d %H:%M:%S.%f%z')
+if mode=='naive': text=stamp.strftime('%Y-%m-%d %H:%M:%S.%f')
+service='other' if mode=='service' else 'installd'
+app='com.gtmux.app.other' if mode=='app' else 'com.gtmux.app'
+line=text+' 0x123 Default 0x0 42 0 '+service+': synthetic install '+app+'\\n'
+if mode=='header': print('Filtering the log data using predicate',flush=True)
+elif mode=='stderr': os.write(2,line.encode())
+elif mode=='late':
+    print('Filtering the log data using predicate',flush=True); time.sleep(2); print(line,end='',flush=True)
+elif mode=='oversize': print(line.rstrip()+'x'*5000,flush=True)
+elif mode=='unterminated': print(line.rstrip(),end='',flush=True)
+elif mode=='fragment':
+    data=line.encode(); os.write(1,data[:30]); time.sleep(.15); os.write(1,data[30:])
+else: print(line,end='',flush=True)
+if release:
+    limit=time.monotonic()+3
+    while not Path(release).exists() and time.monotonic()<limit: time.sleep(.005)
+    raise SystemExit(0 if mode=='exit-zero' else 9)
+time.sleep(30)
+'''
+
+
 class InstallStreamControls(unittest.TestCase):
     setUp = SceneMigrationTests.setUp
     tearDown = SceneMigrationTests.tearDown
 
-    def run_child(self, primary='import time; time.sleep(.35)', observer='import time; print("event", flush=True); time.sleep(30)',
-                  timeout=2, fault=None, binding=None, sample=False):
+    def run_child(self, primary='import time; time.sleep(.35)', observer=None,
+                  timeout=2, fault=None, binding=None, sample=False, legacy_style=False, stream_mode='valid'):
         root = self.root / str(len(list(self.root.iterdir()))); root.mkdir()
         runner = scene.Runner(root, os.environ)
+        ready, release = root/'primary-bound', root/'observer-release'
+        observer = observer or synthetic_stream_script(stream_mode, ready=ready, release=release if fault in ('final-exit','stop-race') else None)
+        original_bind, original_finish = scene.InstallStream.bind_primary, scene.InstallStream.finish
+        def bind(stream, *args):
+            original_bind(stream,*args); ready.write_text('bound')
+        def finish(stream):
+            if fault=='final-exit' and stream.child is not None:
+                release.write_text('exit now'); stream.child.wait(timeout=2)
+            return original_finish(stream)
         children, kills = [], []
         real_spawn, real_open, real_kill, real_read = subprocess.Popen, Path.open, os.killpg, os.read
         def spawn(args, **kwargs):
             is_observer = args[:3] == ['xcrun', 'simctl', 'spawn']
             if is_observer:
-                self.assertEqual(args[3:], ['fixture', '/usr/bin/log', 'stream', '--style', 'compact', '--level', 'info',
+                if not legacy_style: self.assertEqual(args[7], 'default')
+                self.assertIn(args[7],('compact','default'))
+                self.assertEqual(args[3:], ['fixture', '/usr/bin/log', 'stream', '--style', args[7], '--level', 'info',
                                            '--timeout', '60', '--predicate', 'process == "installd" OR process == "SpringBoard"'])
                 if fault == 'startup': raise OSError('controlled startup')
                 if fault == 'spawn-delay': time.sleep(.15)
@@ -944,6 +1012,10 @@ class InstallStreamControls(unittest.TestCase):
         def kill(pid, sig):
             self.assertIn(pid, [c.pid for _, c in children], 'only actual owned children')
             kills.append((pid, time.monotonic()))
+            if fault == 'stop-race' and children and pid == children[0][1].pid:
+                release.write_text('exit before signal acknowledgement')
+                children[0][1].wait(timeout=2)
+                return None  # controlled syscall acknowledgement; real child exits9
             if fault == 'kill' and children and pid == children[0][1].pid:
                 # Actual signal still occurs; a raced OS error must be recorded, not hidden.
                 real_kill(pid, sig); raise OSError('controlled kill acknowledgement')
@@ -954,7 +1026,8 @@ class InstallStreamControls(unittest.TestCase):
             return real_read(fd,size)
         result = None
         with mock.patch.object(scene.subprocess, 'Popen', side_effect=spawn), mock.patch.object(Path, 'open', new=opened), \
-                mock.patch.object(scene.os, 'killpg', side_effect=kill), mock.patch.object(scene.os, 'read', side_effect=read):
+                mock.patch.object(scene.os, 'killpg', side_effect=kill), mock.patch.object(scene.os, 'read', side_effect=read), \
+                mock.patch.object(scene.InstallStream,'bind_primary',new=bind), mock.patch.object(scene.InstallStream,'finish',new=finish):
             try:
                 result = runner.command(['controlled-primary'], cwd=root, label='install', timeout=timeout, check=False,
                                         install_stream=binding or {'udid': 'fixture'}, sample_install=sample)
@@ -1053,7 +1126,7 @@ class InstallStreamControls(unittest.TestCase):
         self.assertEqual(record['retainedBytes']['stdout'], 0)
         self.assertGreater(record['retainedBytes']['stderr'], 0)
         self.assertTrue(record['eof']['stdout'])
-        self.assertEqual(runner.observation_problems, [])
+        self.assertTrue(any('window inconclusive' in p for p in runner.observation_problems))
 
     def test_stream_shared_hard_cap_exact_cross_and_terminal_metadata(self):
         self.assertEqual((scene.InstallStream.LIMIT, scene.InstallStream.READ_QUOTA, scene.InstallStream.METADATA_LIMIT), (262144,16384,16384))
@@ -1116,6 +1189,84 @@ class InstallStreamControls(unittest.TestCase):
                     self.assertTrue(any(a['path'].endswith('install-stream.json') for a in r['artifacts']))
                     self.assertTrue(any('stream' in p for p in r['problems']))
                     self.assertIn('execution evidence or cleanup failed',scene.unit_errors(r['unit'],r, self.root))
+
+
+    def test_stream_final_exit_race_keeps_primary_and_reports_terminal_failure(self):
+        for fault, observer_exit in (('final-exit',9),('final-exit',0),('stop-race',9)):
+            for status in (0,7):
+                with self.subTest(fault=fault,status=status):
+                    runner, primary, stream, _, _, _, _ = self.run_child(
+                        primary=f'import time; time.sleep(.35); raise SystemExit({status})',fault=fault,legacy_style=True,
+                        stream_mode='exit-zero' if observer_exit==0 else 'valid')
+                    self.assertEqual((primary['state'],primary['exit']),('completed',status))
+                    self.assertEqual(stream['exit'],observer_exit)
+                    self.assertTrue(any('terminal exit inconclusive' in p for p in runner.observation_problems),
+                                    'final wait9 must become an independent unit problem')
+                    self.assertEqual(stream['termination'],'natural-or-unexpected')
+                    self.assertEqual(stream['stopSignalReturned'],fault=='stop-race')
+                    self.assertEqual(stream['stopObservedExit'],observer_exit if fault=='final-exit' else None)
+                    self.assertGreater(stream['window']['qualifiedEvents'],0)
+                    self.assertIsNotNone(stream['clock']['events']['reaped'])
+        runner, primary, stream, _, _, _, _ = self.run_child()
+        self.assertEqual(primary['exit'],0)
+        self.assertEqual((stream['exit'],stream['termination']),(-9,'requested-sigkill'))
+        self.assertEqual(runner.observation_problems,[])
+
+    def test_stream_requires_qualified_event_not_headers_diagnostics_or_outside_window(self):
+        for mode in ('header','stderr','outside','future','naive','app','service','late','oversize','unterminated',
+                     'valid','offset','fragment'):
+            with self.subTest(mode=mode):
+                runner, primary, stream, _, _, _, _ = self.run_child(stream_mode=mode,legacy_style=True)
+                valid = mode in ('valid','offset','fragment')
+                self.assertEqual((primary['state'],primary['exit']),('completed',0))
+                self.assertGreater(sum(stream['retainedBytes'].values()),0)
+                inconclusive=any('window inconclusive' in p for p in runner.observation_problems)
+                self.assertEqual(inconclusive,not valid, f'{mode}: bytes are not window evidence')
+                self.assertEqual(stream['window']['qualifiedEvents']>0,valid)
+                if valid:
+                    first=stream['window']['first']
+                    self.assertEqual(first['process'],'installd')
+                    self.assertGreaterEqual(first['received']['monotonic'],stream['window']['primaryStart']['monotonic'])
+                    self.assertLessEqual(first['received']['monotonic'],stream['clock']['deadlineMonotonic'])
+                    self.assertEqual(runner.observation_problems,[])
+                else: self.assertIsNone(stream['window']['first'])
+                if mode=='oversize':self.assertEqual(stream['window']['ignored']['oversize'],1)
+
+    def test_stream_receipt_clock_discontinuity_stays_unknown(self):
+        inspect = scene.InstallStream.inspect_stdout
+        def skew(stream,data):
+            # Controlled parent clock boundary, not a claim about device clocks.
+            future=(scene.datetime.datetime.now(scene.datetime.timezone.utc)+scene.datetime.timedelta(seconds=2)).isoformat()
+            with mock.patch.object(scene,'now',return_value=future):inspect(stream,data)
+        with mock.patch.object(scene.InstallStream,'inspect_stdout',new=skew):
+            runner, primary, stream, _, _, _, _ = self.run_child()
+        self.assertEqual(primary['exit'],0)
+        self.assertEqual(stream['window']['qualifiedEvents'],0)
+        self.assertGreater(stream['window']['ignored']['clock'],0)
+        self.assertTrue(any('window inconclusive' in p for p in runner.observation_problems))
+
+    def test_stream_final_failure_and_window_inconclusive_reach_real_unit_and_aggregate(self):
+        control=SceneExecutionTests();control.root=self.root
+        for mode in ('valid','header','stderr','outside','final-exit'):
+            for status in (0,7):
+                with self.subTest(mode=mode,status=status):
+                    code,_,_,payload,_=control.controlled_execute(status=status,stream_observations={'mode':mode})
+                    first=payload['results'][0]
+                    self.assertEqual((first['state'],first['testExit']),('completed',status))
+                    expected='terminal exit inconclusive' if mode=='final-exit' else 'window inconclusive'
+                    self.assertEqual(any(expected in p for p in first['problems']),mode!='valid')
+                    if mode=='valid':self.assertEqual(first['problems'],[])
+                    commands=[a for a in first['artifacts'] if a['path'].endswith('install-stream.json')]
+                    self.assertEqual(len(commands),1)
+                    expected_units=scene.role_units(payload['binding'],payload['role'])
+                    self.assertEqual(len(payload['results']),len(expected_units))
+                    # Other synthetic identities are deliberately incomplete; assert
+                    # the observer's own failure term rather than just overall red.
+                    root=next(self.root.glob(f'execute-{len(list(self.root.iterdir()))-1}'))/'scene-migration/1-1-ios-scene'
+                    errors=scene.verify_all(expected_units,payload['results'],root/'evidence')
+                    term=scene.tuple_key(first['unit'])+': execution evidence or cleanup failed'
+                    self.assertEqual(term in errors,mode!='valid')
+                    self.assertEqual(code,1)  # No synthetic identity fixture becomes device acceptance.
 
 
 class SceneRoleUnionTests(unittest.TestCase):

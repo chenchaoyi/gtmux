@@ -58498,7 +58498,7 @@
         },
         {
           "id": "MAP-5e8a9b948e24",
-          "line": 654,
+          "line": 725,
           "kind": "reviewed-selector",
           "name": "def preflight(",
           "dynamic": false,
@@ -58507,7 +58507,7 @@
         },
         {
           "id": "MAP-686096fccf36",
-          "line": 702,
+          "line": 773,
           "kind": "reviewed-selector",
           "name": "def prepare_source(",
           "dynamic": false,
@@ -58516,7 +58516,7 @@
         },
         {
           "id": "MAP-e317c36e87b4",
-          "line": 730,
+          "line": 801,
           "kind": "reviewed-selector",
           "name": "def prepare_work(",
           "dynamic": false,
@@ -58525,7 +58525,7 @@
         },
         {
           "id": "MAP-48f5d7e71933",
-          "line": 750,
+          "line": 821,
           "kind": "reviewed-selector",
           "name": "def build_product(",
           "dynamic": false,
@@ -58534,7 +58534,7 @@
         },
         {
           "id": "MAP-eddc7dcee0b0",
-          "line": 791,
+          "line": 862,
           "kind": "reviewed-selector",
           "name": "def collect_identity(",
           "dynamic": false,
@@ -58543,7 +58543,7 @@
         },
         {
           "id": "MAP-af21af8be44f",
-          "line": 906,
+          "line": 977,
           "kind": "reviewed-selector",
           "name": "def run_unit(",
           "dynamic": false,
@@ -58552,7 +58552,7 @@
         },
         {
           "id": "MAP-89aaee2a9ed7",
-          "line": 833,
+          "line": 904,
           "kind": "reviewed-selector",
           "name": "def cleanup_unit(",
           "dynamic": false,
@@ -58561,7 +58561,7 @@
         },
         {
           "id": "MAP-15d5d6c17883",
-          "line": 979,
+          "line": 1050,
           "kind": "reviewed-selector",
           "name": "def execute(",
           "dynamic": false,
@@ -58579,7 +58579,7 @@
         },
         {
           "id": "MAP-2c39e5b64866",
-          "line": 528,
+          "line": 599,
           "kind": "reviewed-selector",
           "name": "def command(",
           "dynamic": false,
@@ -58588,7 +58588,7 @@
         },
         {
           "id": "MAP-d837c2f06ed6",
-          "line": 886,
+          "line": 957,
           "kind": "reviewed-selector",
           "name": "def preparation_diagnostics(",
           "dynamic": false,
@@ -58597,7 +58597,7 @@
         },
         {
           "id": "MAP-51359dac4146",
-          "line": 1062,
+          "line": 1133,
           "kind": "reviewed-selector",
           "name": "def trusted_context(",
           "dynamic": false,
@@ -58606,7 +58606,7 @@
         },
         {
           "id": "MAP-c3f467f74efe",
-          "line": 1085,
+          "line": 1156,
           "kind": "reviewed-selector",
           "name": "def role_units(",
           "dynamic": false,
@@ -58615,7 +58615,7 @@
         },
         {
           "id": "MAP-078dd820d920",
-          "line": 1103,
+          "line": 1174,
           "kind": "reviewed-selector",
           "name": "def publish_role(",
           "dynamic": false,
@@ -58624,7 +58624,7 @@
         },
         {
           "id": "MAP-53fc737849d5",
-          "line": 1124,
+          "line": 1195,
           "kind": "reviewed-selector",
           "name": "def comparable_identity(",
           "dynamic": false,
@@ -58633,7 +58633,7 @@
         },
         {
           "id": "MAP-597c536af5c3",
-          "line": 1176,
+          "line": 1247,
           "kind": "reviewed-selector",
           "name": "def verify_union(",
           "dynamic": false,
@@ -58657,9 +58657,27 @@
           "dynamic": false,
           "layer": "G",
           "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-29f4d506325e",
+          "line": 370,
+          "kind": "reviewed-selector",
+          "name": "def inspect_stdout(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-6e2684872a4b",
+          "line": 412,
+          "kind": "reviewed-selector",
+          "name": "def check_terminal_exit(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
         }
       ],
-      "sha256": "188f55e76977fc1f0dc2a07cb951bb3e06e86a79fa07904f8e8f4796d84dae5e"
+      "sha256": "baa981ce7e6968409cf2c04cafd6359bf981fca84488dcc814f923decac853cb"
     },
     "scripts/scene_migration_test.py": {
       "layer": "G",
@@ -58784,7 +58802,7 @@
         },
         {
           "id": "MAP-80e5de561924",
-          "line": 844,
+          "line": 865,
           "kind": "reviewed-selector",
           "name": "test_harness_journeys_share_only_verified_dependencies_and_keep_source_bytes",
           "dynamic": false,
@@ -58793,7 +58811,7 @@
         },
         {
           "id": "MAP-d485b529b3a4",
-          "line": 863,
+          "line": 884,
           "kind": "reviewed-selector",
           "name": "test_cleanup_targets_only_saved_matching_server_and_exact_unit_wda",
           "dynamic": false,
@@ -58802,7 +58820,7 @@
         },
         {
           "id": "MAP-7cb3bff30a24",
-          "line": 772,
+          "line": 793,
           "kind": "reviewed-selector",
           "name": "test_executor_builds_only_expected_sources_but_checks_real_base",
           "dynamic": false,
@@ -58811,7 +58829,7 @@
         },
         {
           "id": "MAP-9fcc5cafe672",
-          "line": 788,
+          "line": 809,
           "kind": "reviewed-selector",
           "name": "test_real_runner_metadata_and_archival_failures_preserve_executed_units",
           "dynamic": false,
@@ -58820,7 +58838,7 @@
         },
         {
           "id": "MAP-ec565820041a",
-          "line": 805,
+          "line": 826,
           "kind": "reviewed-selector",
           "name": "test_real_executor_keeps_last_shutdown_failure_and_original_exit",
           "dynamic": false,
@@ -58829,7 +58847,7 @@
         },
         {
           "id": "MAP-2258d0570d1d",
-          "line": 814,
+          "line": 835,
           "kind": "reviewed-selector",
           "name": "test_shutdown_failure_or_timeout_of_final_unit_cannot_pass",
           "dynamic": false,
@@ -58838,7 +58856,7 @@
         },
         {
           "id": "MAP-c475771ec211",
-          "line": 726,
+          "line": 747,
           "kind": "reviewed-selector",
           "name": "test_real_runner_wait_then_stat_failure_preserves_unit_and_aggregate",
           "dynamic": false,
@@ -58847,7 +58865,7 @@
         },
         {
           "id": "MAP-e82c5bb79bde",
-          "line": 735,
+          "line": 756,
           "kind": "reviewed-selector",
           "name": "test_cleanup_bad_query_shapes_and_errors_keep_final_executed_unit",
           "dynamic": false,
@@ -58856,7 +58874,7 @@
         },
         {
           "id": "MAP-7bb970863c77",
-          "line": 756,
+          "line": 777,
           "kind": "reviewed-selector",
           "name": "test_runner_distinguishes_not_started_from_started_evidence_failure",
           "dynamic": false,
@@ -58874,7 +58892,7 @@
         },
         {
           "id": "MAP-e3f93d5376ca",
-          "line": 708,
+          "line": 729,
           "kind": "reviewed-selector",
           "name": "test_physical_dependency_root_reaches_builds_and_real_journey_children",
           "dynamic": false,
@@ -58919,7 +58937,7 @@
         },
         {
           "id": "MAP-d045f33494e3",
-          "line": 677,
+          "line": 698,
           "kind": "reviewed-selector",
           "name": "test_final_preparation_failure_keeps_original_outcome_and_bounds_diagnostics",
           "dynamic": false,
@@ -58928,7 +58946,7 @@
         },
         {
           "id": "MAP-1fb1faf2289a",
-          "line": 702,
+          "line": 723,
           "kind": "reviewed-selector",
           "name": "test_successful_preparation_does_not_collect_failure_diagnostics",
           "dynamic": false,
@@ -58937,7 +58955,7 @@
         },
         {
           "id": "MAP-6da83960d9ce",
-          "line": 527,
+          "line": 548,
           "kind": "reviewed-selector",
           "name": "test_install_sample_observes_owned_live_child_once_without_changing_exit",
           "dynamic": false,
@@ -58946,7 +58964,7 @@
         },
         {
           "id": "MAP-1b2d605388dd",
-          "line": 563,
+          "line": 584,
           "kind": "reviewed-selector",
           "name": "test_install_sample_faults_keep_primary_outcome_and_reap_observer",
           "dynamic": false,
@@ -58955,7 +58973,7 @@
         },
         {
           "id": "MAP-b2d2c97751dd",
-          "line": 657,
+          "line": 678,
           "kind": "reviewed-selector",
           "name": "test_actual_units_keep_install_sample_diagnostics_separate_from_journey_exit",
           "dynamic": false,
@@ -58964,7 +58982,7 @@
         },
         {
           "id": "MAP-298563a79d34",
-          "line": 627,
+          "line": 648,
           "kind": "reviewed-selector",
           "name": "test_install_exit_during_observation_keeps_completion_and_reaps_on_wait_error",
           "dynamic": false,
@@ -58973,7 +58991,7 @@
         },
         {
           "id": "MAP-7236c099b439",
-          "line": 1183,
+          "line": 1334,
           "kind": "reviewed-selector",
           "name": "test_union_real_cli_PR15_main11_and_trusted_current_event",
           "dynamic": false,
@@ -58982,7 +59000,7 @@
         },
         {
           "id": "MAP-266b88906e0e",
-          "line": 1199,
+          "line": 1350,
           "kind": "reviewed-selector",
           "name": "test_union_rejects_missing_duplicate_wrong_binding_hash_and_cases",
           "dynamic": false,
@@ -58991,7 +59009,7 @@
         },
         {
           "id": "MAP-43a5008d89b5",
-          "line": 1234,
+          "line": 1385,
           "kind": "reviewed-selector",
           "name": "test_union_cross_host_identity_and_resolved_pods_are_required",
           "dynamic": false,
@@ -59000,7 +59018,7 @@
         },
         {
           "id": "MAP-238347d3b887",
-          "line": 1253,
+          "line": 1404,
           "kind": "reviewed-selector",
           "name": "test_trusted_sources_require_readable_base_and_exact_coordinator_bytes",
           "dynamic": false,
@@ -59009,7 +59027,7 @@
         },
         {
           "id": "MAP-354b0eb44a2c",
-          "line": 968,
+          "line": 1041,
           "kind": "reviewed-selector",
           "name": "test_stream_independent_exit_clocks_stop_before_sample_and_primary_deadline",
           "dynamic": false,
@@ -59018,7 +59036,7 @@
         },
         {
           "id": "MAP-f9286a745173",
-          "line": 1009,
+          "line": 1082,
           "kind": "reviewed-selector",
           "name": "test_stream_timeout_has_absolute_deadline_and_owned_kill",
           "dynamic": false,
@@ -59027,7 +59045,7 @@
         },
         {
           "id": "MAP-82d26f6b8c15",
-          "line": 1021,
+          "line": 1094,
           "kind": "reviewed-selector",
           "name": "test_stream_failures_do_not_replace_primary_zero_seven_or_start_failure",
           "dynamic": false,
@@ -59036,7 +59054,7 @@
         },
         {
           "id": "MAP-ee0ed968f48f",
-          "line": 1043,
+          "line": 1116,
           "kind": "reviewed-selector",
           "name": "test_stream_empty_late_early_and_eof_are_not_successful_coverage",
           "dynamic": false,
@@ -59045,7 +59063,7 @@
         },
         {
           "id": "MAP-28d7e2ec9574",
-          "line": 1058,
+          "line": 1131,
           "kind": "reviewed-selector",
           "name": "test_stream_shared_hard_cap_exact_cross_and_terminal_metadata",
           "dynamic": false,
@@ -59054,7 +59072,7 @@
         },
         {
           "id": "MAP-575b559d1c4a",
-          "line": 1081,
+          "line": 1154,
           "kind": "reviewed-selector",
           "name": "test_stream_spawn_overhead_visible_without_resetting_primary_budget",
           "dynamic": false,
@@ -59063,7 +59081,7 @@
         },
         {
           "id": "MAP-dbd2dc2a273d",
-          "line": 1089,
+          "line": 1162,
           "kind": "reviewed-selector",
           "name": "test_stream_real_execute_selects_only_first_27_install_and_never_failed_boot",
           "dynamic": false,
@@ -59072,15 +59090,51 @@
         },
         {
           "id": "MAP-b18136291fc5",
-          "line": 999,
+          "line": 1072,
           "kind": "reviewed-selector",
           "name": "test_stream_first_observed_primary_exit_survives_later_poll_failure",
           "dynamic": false,
           "layer": "G",
           "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-a4f0cf523d66",
+          "line": 1194,
+          "kind": "reviewed-selector",
+          "name": "test_stream_final_exit_race_keeps_primary_and_reports_terminal_failure",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-33fbf379ef88",
+          "line": 1215,
+          "kind": "reviewed-selector",
+          "name": "test_stream_requires_qualified_event_not_headers_diagnostics_or_outside_window",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-1a69bd08a36b",
+          "line": 1235,
+          "kind": "reviewed-selector",
+          "name": "test_stream_receipt_clock_discontinuity_stays_unknown",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-0d8899da3c5a",
+          "line": 1248,
+          "kind": "reviewed-selector",
+          "name": "test_stream_final_failure_and_window_inconclusive_reach_real_unit_and_aggregate",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
         }
       ],
-      "sha256": "f8fd169dfefac031fc9f595a66f585f49cc6af210560eef4b497d588f0bcea6b"
+      "sha256": "0378014f255778c05be183358d4b5487ff76452b69e1d40590213dd368b3d637"
     },
     "mobileapp/e2e/__tests__/ipad-adaptive.test.ts": {
       "layer": "L3",

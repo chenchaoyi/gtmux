@@ -698,7 +698,9 @@
       "def comparable_identity(",
       "def verify_union(",
       "class CommandClock:",
-      "class InstallStream:"
+      "class InstallStream:",
+      "def inspect_stdout(",
+      "def check_terminal_exit("
     ]
   },
   "scripts/scene_migration_test.py": {
@@ -751,7 +753,11 @@
       "test_stream_shared_hard_cap_exact_cross_and_terminal_metadata",
       "test_stream_spawn_overhead_visible_without_resetting_primary_budget",
       "test_stream_real_execute_selects_only_first_27_install_and_never_failed_boot",
-      "test_stream_first_observed_primary_exit_survives_later_poll_failure"
+      "test_stream_first_observed_primary_exit_survives_later_poll_failure",
+      "test_stream_final_exit_race_keeps_primary_and_reports_terminal_failure",
+      "test_stream_requires_qualified_event_not_headers_diagnostics_or_outside_window",
+      "test_stream_receipt_clock_discontinuity_stays_unknown",
+      "test_stream_final_failure_and_window_inconclusive_reach_real_unit_and_aggregate"
     ]
   },
   "mobileapp/e2e/setup/appLaunchFiles.test.ts": {
