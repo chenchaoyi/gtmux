@@ -9,16 +9,28 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      mode:
+        description: Full gates or one frozen cache-tail diagnostic (not a merge gate)
+        type: choice
+        options: [full, cache-tail-trace]
+        default: full
+      trace_sha:
+        description: Full reviewed instrumentation commit SHA, directly on 650f (diagnostic mode only)
+        type: string
+        default: ''
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}${{ inputs.mode == 'cache-tail-trace' && '-cache-tail-trace' || '' }}
+  cancel-in-progress: ${{ inputs.mode != 'cache-tail-trace' }}
 
 jobs:
   scope:
+    name: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'cache-tail-trace' && 'cache-tail-diagnostic / scope' || 'scope' }}
+    if: github.event_name != 'workflow_dispatch' || inputs.mode != 'cache-tail-trace'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -46,7 +58,8 @@ jobs:
         run: python3 scripts/ci.py plan
 
   quality:
-    name: policy, docs and CI guards
+    name: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'cache-tail-trace' && 'cache-tail-diagnostic / policy, docs and CI guards' || 'policy, docs and CI guards' }}
+    if: github.event_name != 'workflow_dispatch' || inputs.mode != 'cache-tail-trace'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -85,6 +98,7 @@ jobs:
         run: go test ./internal/docs
 
   test:
+    name: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'cache-tail-trace' && 'cache-tail-diagnostic / test' || 'test' }}
     needs: scope
     if: needs.scope.outputs.core == 'true'
     runs-on: ubuntu-latest
@@ -179,6 +193,7 @@ jobs:
         run: ./scripts/check-design.sh
 
   cross-build:
+    name: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'cache-tail-trace' && 'cache-tail-diagnostic / cross-build' || 'cross-build' }}
     needs: scope
     if: needs.scope.outputs.cross == 'true'
     runs-on: ubuntu-latest
@@ -201,7 +216,7 @@ jobs:
           CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /dev/null ./cmd/gtmux
 
   mobile:
-    name: mobile app (tsc + eslint + jest)
+    name: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'cache-tail-trace' && 'cache-tail-diagnostic / mobile app (tsc + eslint + jest)' || 'mobile app (tsc + eslint + jest)' }}
     needs: scope
     if: needs.scope.outputs.mobile == 'true'
     runs-on: ubuntu-latest
@@ -235,7 +250,7 @@ jobs:
           node --test mobileapp/scripts/creative-layout.test.mjs
 
   android-native:
-    name: Android QA build and native policies
+    name: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'cache-tail-trace' && 'cache-tail-diagnostic / Android QA build and native policies' || 'Android QA build and native policies' }}
     needs: scope
     if: needs.scope.outputs.android == 'true'
     runs-on: ubuntu-latest
@@ -289,7 +304,7 @@ jobs:
           retention-days: 7
 
   android-emulator:
-    name: Android ${{ matrix.device }} emulator flows
+    name: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'cache-tail-trace' && 'cache-tail-diagnostic / ' || '' }}Android ${{ matrix.device }} emulator flows
     needs: [scope, android-native]
     if: needs.scope.outputs.android == 'true'
     runs-on: ubuntu-latest
@@ -357,7 +372,7 @@ jobs:
           retention-days: 7
 
   web:
-    name: Web logic and rendered browser flows
+    name: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'cache-tail-trace' && 'cache-tail-diagnostic / Web logic and rendered browser flows' || 'Web logic and rendered browser flows' }}
     needs: scope
     if: needs.scope.outputs.web == 'true'
     runs-on: ubuntu-latest
@@ -386,7 +401,7 @@ jobs:
           retention-days: 7
 
   ios-native:
-    name: iOS app and extensions compile (unsigned)
+    name: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'cache-tail-trace' && 'cache-tail-diagnostic / iOS app and extensions compile (unsigned)' || 'iOS app and extensions compile (unsigned)' }}
     needs: scope
     if: needs.scope.outputs.ios == 'true'
     runs-on: macos-15
@@ -455,7 +470,7 @@ jobs:
           retention-days: 7
 
   relay-worker:
-    name: push relay worker (typecheck + golden payload)
+    name: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'cache-tail-trace' && 'cache-tail-diagnostic / push relay worker (typecheck + golden payload)' || 'push relay worker (typecheck + golden payload)' }}
     needs: scope
     if: needs.scope.outputs.relay == 'true'
     runs-on: ubuntu-latest
@@ -483,7 +498,7 @@ jobs:
         run: cd relay-worker && npm test
 
   tunnel-worker:
-    name: tunnel worker (typecheck + lifecycle tests)
+    name: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'cache-tail-trace' && 'cache-tail-diagnostic / tunnel worker (typecheck + lifecycle tests)' || 'tunnel worker (typecheck + lifecycle tests)' }}
     needs: scope
     if: needs.scope.outputs.tunnel == 'true'
     runs-on: ubuntu-latest
@@ -510,7 +525,7 @@ jobs:
         run: cd tunnel-worker && npm test
 
   menubar:
-    name: menu-bar app build (macOS)
+    name: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'cache-tail-trace' && 'cache-tail-diagnostic / menu-bar app build (macOS)' || 'menu-bar app build (macOS)' }}
     needs: scope
     if: needs.scope.outputs.menubar == 'true'
     runs-on: macos-26
@@ -572,8 +587,35 @@ jobs:
       - name: design + architecture conformance
         run: ./scripts/check-design.sh
 
+  # Reuse the registered manual workflow; no new automatic trigger or release path.
+  cache-tail-trace:
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'cache-tail-trace'
+    name: frozen cache-tail observation (not a merge gate)
+    runs-on: macos-26
+    timeout-minutes: 15
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+      TRACE_EXPECTED_SHA: ${{ inputs.trace_sha }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Require exact environment and run one bounded method
+        run: python3 scripts/macos_cache_tail_trace.py
+      - name: Preserve environment, source delta and bounded synthetic trace
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: macos-cache-tail-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/macos-cache-tail/evidence/
+          retention-days: 7
+          if-no-files-found: error
+
   ci-required:
-    if: always()
+    name: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'cache-tail-trace' && 'cache-tail-diagnostic / ci-required' || 'ci-required' }}
+    if: always() && (github.event_name != 'workflow_dispatch' || inputs.mode != 'cache-tail-trace')
     needs: [scope, quality, test, cross-build, mobile, web, ios-native, android-native, android-emulator, relay-worker, tunnel-worker, menubar]
     runs-on: ubuntu-latest
     timeout-minutes: 5

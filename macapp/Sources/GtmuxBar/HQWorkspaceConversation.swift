@@ -106,25 +106,58 @@ struct HQWorkspaceConversationView: View {
                             let selection = store.selection
                             let scrollIntent = self.scrollIntent
                             let intent = scrollIntent.generation
+                            let attempt = HQConversationTrace.nextAttempt()
+                            HQConversationTrace.record("task-begin", ["attempt": String(attempt),
+                                "serial": String(store.conversationRevealSerial), "selection": String(describing: selection),
+                                "owner": HQConversationTrace.identity(scrollIntent), "intent": String(intent),
+                                "tailObserved": String(tailObserved), "atTail": String(atTail), "positioning": String(positioning)])
                             scrollObserver?(proxy, atTail, false)
                             let revealed = await HQConversationTailReveal.run(
-                                isCurrent: { selection == store.selection && intent == scrollIntent.generation },
+                                isCurrent: {
+                                    let current = selection == store.selection && intent == scrollIntent.generation
+                                    HQConversationTrace.record("current-check", ["attempt": String(attempt), "current": String(current),
+                                        "selection": String(describing: store.selection), "serial": String(store.conversationRevealSerial),
+                                        "intent": String(scrollIntent.generation)])
+                                    return current
+                                },
                                 reveal: { proxy.scrollTo("tail", anchor: .bottom) },
-                                isVisible: { tailObserved && atTail })
-                            guard !Task.isCancelled else { return }
+                                isVisible: {
+                                    let visible = tailObserved && atTail
+                                    HQConversationTrace.record("visible-check", ["attempt": String(attempt),
+                                        "tailObserved": String(tailObserved), "atTail": String(atTail),
+                                        "geometrySequence": HQConversationTrace.geometrySequence(scrollIntent)])
+                                    return visible
+                                }, traceAttempt: attempt)
+                            guard !Task.isCancelled else {
+                                HQConversationTrace.record("task-end", ["attempt": String(attempt), "reason": "owner-cancelled", "revealed": String(revealed)])
+                                return
+                            }
                             positioning = false
                             if !revealed { newContent = !(tailObserved && atTail) }
                             scrollObserver?(proxy, atTail, true)
+                            HQConversationTrace.record("task-end", ["attempt": String(attempt), "reason": "settled", "revealed": String(revealed),
+                                "tailObserved": String(tailObserved), "atTail": String(atTail), "positioning": String(positioning)])
                         }
                         .onChange(of: store.selection) { _, _ in
                             atTail = true
                             newContent = false
                         }
                         .onPreferenceChange(HQTailPreference.self) { y in
+                            let previouslyObserved = tailObserved
+                            let previousAtTail = atTail
                             tailObserved = y < .greatestFiniteMagnitude
                             atTail = y <= bounds.size.height + 36
                             if atTail { newContent = false }
+                            HQConversationTrace.observeGeometry(owner: scrollIntent, fields: ["owner": HQConversationTrace.identity(scrollIntent),
+                                "tailY": String(describing: y), "viewportHeight": String(describing: bounds.size.height),
+                                "threshold": String(describing: bounds.size.height + 36), "tailObserved": String(tailObserved),
+                                "atTail": String(atTail), "previouslyObserved": String(previouslyObserved), "previousAtTail": String(previousAtTail),
+                                "positioning": String(positioning), "intent": String(scrollIntent.generation)])
                             scrollObserver?(proxy, atTail, !positioning)
+                        }
+                        .onChange(of: bounds.size) { old, new in
+                            HQConversationTrace.record("viewport-size", ["old": String(describing: old), "new": String(describing: new),
+                                "owner": HQConversationTrace.identity(scrollIntent), "geometrySequence": HQConversationTrace.geometrySequence(scrollIntent)])
                         }
                         .onChange(of: rows.map(\.changeToken)) { old, new in
                             guard old != new else { return }
