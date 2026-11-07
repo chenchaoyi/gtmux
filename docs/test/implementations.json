@@ -542,7 +542,12 @@
       "SCENE-MIG-002"
     ],
     "selectors": [
-      "starts the actual notification bridge while the visual safe area has no metrics"
+      "starts the actual notification bridge while the visual safe area has no metrics",
+      "a cold same-server tap waits beyond the inset gate then opens the latest agent exactly once",
+      "a warm tap navigates immediately and a new response is not mistaken for a replay",
+      "a cross-server tap survives only its intended remount and waits for that navigator",
+      "a user server change discards a queued old-workspace tap and unsubscribes on unmount",
+      "a guest or ambiguous notification source cannot leave a future navigation intent"
     ]
   },
   "mobileapp/src/ui/WorkspaceSurface.test.tsx": {

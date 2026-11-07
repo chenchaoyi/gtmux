@@ -6,7 +6,7 @@
 // Navigation: render children directly and stub screens — sidesteps the native
 // react-native-screens stack entirely for a lightweight App smoke test.
 jest.mock('@react-navigation/native', () => {
-  const ref = {isReady: () => false, navigate: jest.fn(), current: null, resetRoot: jest.fn()};
+  const ref = {isReady: () => false, navigate: jest.fn(), current: null, resetRoot: jest.fn(), addListener: jest.fn(() => () => {})};
   return {
     NavigationContainer: ({children}) => children,
     NavigationContext: require('react').createContext(undefined),

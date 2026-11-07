@@ -148,15 +148,34 @@ function PushBridge({navRef}: {navRef: any}) {
     // inconsistent rather than as a layer.
     selectRef.current(agent.role === 'supervisor' ? {kind: 'hq', agent} : {kind: 'pane', agent});
   };
-  // navRef isn't ready until NavigationContainer mounts (this bridge renders
-  // first), so a deep-link consumed on mount retries briefly until it is.
-  const openPaneWhenReady = (pane: string, tries = 0) => {
-    if (navRef.isReady?.()) {
-      openPane(pane);
-    } else if (tries < 40) {
-      setTimeout(() => openPaneWhenReady(pane, tries + 1), 50); // up to ~2s
-    }
-  };
+  // The background bridge may receive a tap before native insets allow a
+  // navigator to mount. Keep that workspace's latest intent until real readiness,
+  // rather than spending it on an unmounted navigator or a short polling window.
+  const queuedPane = useRef<string | null>(null);
+  const bridgeLive = useRef(true);
+  const openPaneRef = useRef(openPane);
+  openPaneRef.current = openPane;
+  const flushPane = React.useCallback(() => {
+    if (!bridgeLive.current || !navRef.isReady() || queuedPane.current === null) return;
+    const pane = queuedPane.current;
+    queuedPane.current = null;
+    openPaneRef.current(pane);
+  }, [navRef]);
+  const openPaneWhenReady = React.useCallback((pane: string) => {
+    if (!bridgeLive.current) return;
+    queuedPane.current = pane;
+    flushPane();
+  }, [flushPane]);
+  useEffect(() => {
+    bridgeLive.current = true;
+    const unsubscribe = navRef.addListener('ready', flushPane);
+    flushPane();
+    return () => {
+      bridgeLive.current = false;
+      queuedPane.current = null;
+      unsubscribe();
+    };
+  }, [navRef, flushPane]);
 
   // A tapped push may belong to a DIFFERENT paired server than the active one. If
   // so, switch to it (identified by the Mac name the push carries) and stash the
@@ -173,7 +192,7 @@ function PushBridge({navRef}: {navRef: any}) {
       void selectServer(source.url);
       return;
     }
-    openPane(pane);
+    openPaneWhenReady(pane);
   };
   const onQuickReply = (pane: string, server: string | undefined, value: string) => {
     const target = sourceForPush(serversRef.current, server ?? '');

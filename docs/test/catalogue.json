@@ -57991,15 +57991,60 @@
       "cases": [
         {
           "id": "MAP-265918ac6bc3",
-          "line": 34,
+          "line": 98,
           "kind": "reviewed-selector",
           "name": "starts the actual notification bridge while the visual safe area has no metrics",
           "dynamic": false,
           "layer": "L1",
           "design": "SCENE-MIG-002"
+        },
+        {
+          "id": "MAP-ebe62334eafa",
+          "line": 104,
+          "kind": "reviewed-selector",
+          "name": "a cold same-server tap waits beyond the inset gate then opens the latest agent exactly once",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        },
+        {
+          "id": "MAP-c5dd1f1057fc",
+          "line": 122,
+          "kind": "reviewed-selector",
+          "name": "a warm tap navigates immediately and a new response is not mistaken for a replay",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        },
+        {
+          "id": "MAP-1adcb155177c",
+          "line": 132,
+          "kind": "reviewed-selector",
+          "name": "a cross-server tap survives only its intended remount and waits for that navigator",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        },
+        {
+          "id": "MAP-6d53db4c23be",
+          "line": 148,
+          "kind": "reviewed-selector",
+          "name": "a user server change discards a queued old-workspace tap and unsubscribes on unmount",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        },
+        {
+          "id": "MAP-9140513ae8fb",
+          "line": 160,
+          "kind": "reviewed-selector",
+          "name": "a guest or ambiguous notification source cannot leave a future navigation intent",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
         }
       ],
-      "sha256": "3a98a8e35f00415edabb653e372133c111c9466b6605047109dd07f741162e85"
+      "sha256": "7b8b3ac645b302450fd556f57c9227e7c144de154329d5285748c4070cf77e3a"
     },
     "mobileapp/ios/tests/NotificationResponseCompletionChecks.swift": {
       "layer": "L1",
