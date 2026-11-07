@@ -577,6 +577,26 @@ def cleanup_unit(runner, evidence, derived, udid):
     return problems
 
 
+def preparation_diagnostics(runner, evidence, udid):
+    """Read only, after a failed simctl preparation, while its state still exists."""
+    commands = [
+        ('prep-host-disk', ['/bin/df', '-k', str(evidence)], 3),
+        ('prep-host-processes', ['/bin/ps', '-axo', 'pid,ppid,%cpu,%mem,rss,etime,stat,comm'], 3),
+        ('prep-host-log', ['/usr/bin/log', 'show', '--last', '2m', '--style', 'compact', '--predicate',
+                           'process == "CoreSimulatorService" OR process == "simdiskimaged" OR process == "installd"'], 8),
+        ('prep-device-log', ['xcrun', 'simctl', 'spawn', udid, 'log', 'show', '--last', '2m', '--style', 'compact',
+                            '--predicate', 'process == "installd" OR process == "SpringBoard"'], 8),
+    ]
+    problems = []
+    for label, args, timeout in commands:
+        try:
+            runner.command(args, cwd=evidence, label=label, timeout=timeout, limit=512 * 1024)
+        except Exception as error:
+            # Diagnostic failure must not erase the first failure or skip finally.
+            problems.append(f'{label}: {type(error).__name__}: {error}')
+    return problems
+
+
 def run_unit(unit, paths, harness_source, dependencies, product, preflight_data, env):
     evidence = paths['evidence']; command_root = evidence / 'commands'; command_root.mkdir()
     local_env = dict(env)
@@ -621,6 +641,9 @@ def run_unit(unit, paths, harness_source, dependencies, product, preflight_data,
             except (OSError, ValueError, KeyError, RuntimeError) as error: problems.append(f'{label}: {error}')
     except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError) as error:
         problems.append(str(error))
+        if isinstance(error, CommandFailure) and error.outcome['command'][:2] == ['xcrun', 'simctl']:
+            result['preparationFailure'] = error.outcome
+            problems.extend(preparation_diagnostics(runner, evidence, device['udid']))
     finally:
         try:
             problems.extend(cleanup_unit(runner, evidence, derived, device['udid']))

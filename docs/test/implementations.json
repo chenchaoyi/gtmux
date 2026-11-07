@@ -679,7 +679,8 @@
       "def cleanup_unit(",
       "def execute(",
       "class CommandFailure(RuntimeError):",
-      "def command("
+      "def command(",
+      "def preparation_diagnostics("
     ]
   },
   "scripts/scene_migration_test.py": {
@@ -714,7 +715,9 @@
       "test_preflight_preserves_installed_appium_root_and_rejects_missing_or_changed_override",
       "test_collect_identity_parses_only_stdout_with_retained_real_child_diagnostics",
       "test_split_stream_runner_preserves_exit_and_combined_default",
-      "test_split_stream_runner_bounds_total_bytes_and_timeout"
+      "test_split_stream_runner_bounds_total_bytes_and_timeout",
+      "test_final_preparation_failure_keeps_original_outcome_and_bounds_diagnostics",
+      "test_successful_preparation_does_not_collect_failure_diagnostics"
     ]
   },
   "mobileapp/e2e/setup/appLaunchFiles.test.ts": {

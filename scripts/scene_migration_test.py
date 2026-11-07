@@ -439,6 +439,12 @@ class SceneExecutionTests(unittest.TestCase):
                         raise OSError('injected query IO')
                     if fault == 'query-exit': script = 'raise SystemExit(7)'
                     else: script = 'print(' + repr(cleanup_raw if fault == 'cleanup-data' else '{"devices":{"runtime":[{"udid":"pad","state":"Booted"}]}}') + ')'
+            if fault in {'last-install', 'last-install-diagnostic-exit', 'last-install-diagnostic-write', 'last-install-diagnostic-cap'}:
+                if args[:3] == ['xcrun', 'simctl', 'install'] and '/ipad/' in kwargs['stdout'].name:
+                    script = 'raise SystemExit(7)'
+                if '-prep-host-disk.log' in kwargs['stdout'].name:
+                    if fault == 'last-install-diagnostic-exit': script = 'raise SystemExit(9)'
+                    if fault == 'last-install-diagnostic-cap': script = 'print("x" * (600 * 1024))'
             process = real_popen([sys.executable, '-c', script], **kwargs)
             if fault == 'wait-stat' or cleanup_fault:
                 # Fast, actual completed child; Runner still calls the real wait.
@@ -459,7 +465,7 @@ class SceneExecutionTests(unittest.TestCase):
         actual_cleanup = scene.cleanup_unit
         def cleanup(*a):
             if fault == 'cleanup-exception' and '/ipad' in str(a[1]): raise AttributeError('injected cleanup boundary')
-            return actual_cleanup(*a) if cleanup_fault else []
+            return actual_cleanup(*a) if cleanup_fault or str(fault).startswith('last-install') else []
         def archive(repository, sha, destination):
             (destination / 'mobileapp').mkdir(parents=True)
             for name in ('package-lock.json', 'package.json', 'Gemfile.lock'): (destination / 'mobileapp' / name).write_text('{}')
@@ -476,7 +482,8 @@ class SceneExecutionTests(unittest.TestCase):
             if ((fault == 'metadata' and Path(path).name.endswith('-journey.json'))
                     or (fault == 'result' and Path(path).name == 'result.json')
                     or (fault == 'acceptance' and Path(path).name == 'acceptance.json')
-                    or (fault == 'archives' and Path(path).name in {'result.json', 'acceptance.json', 'verdict.json'})):
+                    or (fault == 'archives' and Path(path).name in {'result.json', 'acceptance.json', 'verdict.json'})
+                    or (fault == 'last-install-diagnostic-write' and Path(path).name.endswith('-prep-host-disk.json'))):
                 raise OSError('injected ' + fault)
             return real_write(path, value)
         def record(path, relative_to=None):
@@ -495,6 +502,37 @@ class SceneExecutionTests(unittest.TestCase):
         job = root / 'scene-migration/1-1-test'
         payload = json.loads((job / 'acceptance.json').read_text()) if (job / 'acceptance.json').exists() else None
         return code, builds, readable, payload, stderr.getvalue()
+
+    def test_final_preparation_failure_keeps_original_outcome_and_bounds_diagnostics(self):
+        actual_command = scene.Runner.command
+        for fault in ('last-install', 'last-install-diagnostic-exit', 'last-install-diagnostic-write', 'last-install-diagnostic-cap'):
+            with self.subTest(fault=fault), mock.patch.object(scene.Runner, 'command', autospec=True, side_effect=actual_command) as commands:
+                code, _, _, payload, _ = self.controlled_execute(fault=fault, status=7)
+                self.assertEqual(code, 1)
+                self.assertEqual(len(payload['results']), 4)
+                self.assertTrue(all(r['testExit'] == 7 for r in payload['results'][:-1]))
+                final = payload['results'][-1]
+                self.assertEqual((final['state'], final['testExit']), ('not-started', None))
+                self.assertEqual(final['preparationFailure']['exit'], 7)
+                self.assertEqual(final['preparationFailure']['state'], 'completed')
+                self.assertEqual(final['preparationFailure']['command'][:3], ['xcrun', 'simctl', 'install'])
+                diagnostic = [c for c in commands.call_args_list if c.kwargs['label'].startswith('prep-')]
+                self.assertEqual([c.kwargs['label'] for c in diagnostic], ['prep-host-disk', 'prep-host-processes', 'prep-host-log', 'prep-device-log'])
+                self.assertEqual([c.kwargs['timeout'] for c in diagnostic], [3, 3, 8, 8])
+                self.assertTrue(all(c.kwargs['limit'] == 512 * 1024 for c in diagnostic))
+                self.assertEqual(diagnostic[-1].args[1][:4], ['xcrun', 'simctl', 'spawn', 'pad'])
+                self.assertIn('comm', diagnostic[1].args[1][-1]); self.assertNotIn('command', diagnostic[1].args[1][-1])
+                after = [c for c in commands.call_args_list if c.kwargs['label'] == 'shutdown-after']
+                self.assertEqual(after[-1].args[1][-1], 'pad')
+                self.assertLessEqual(after[-1].kwargs['timeout'], 30)
+                self.assertEqual(any('prep-host-disk:' in p for p in final['problems']), fault != 'last-install')
+                self.assertTrue(any(a['path'].endswith('-prep-device-log.log') for a in final['artifacts']))
+
+    def test_successful_preparation_does_not_collect_failure_diagnostics(self):
+        with mock.patch.object(scene, 'preparation_diagnostics') as diagnostic:
+            _, _, _, payload, _ = self.controlled_execute()
+        diagnostic.assert_not_called()
+        self.assertTrue(all('preparationFailure' not in r for r in payload['results']))
 
     def test_physical_dependency_root_reaches_builds_and_real_journey_children(self):
         for chain, event in [('26', 'pull_request'), ('27', 'pull_request'), ('26', 'push'), ('27', 'push')]:
