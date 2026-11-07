@@ -57991,7 +57991,7 @@
       "cases": [
         {
           "id": "MAP-265918ac6bc3",
-          "line": 98,
+          "line": 186,
           "kind": "reviewed-selector",
           "name": "starts the actual notification bridge while the visual safe area has no metrics",
           "dynamic": false,
@@ -58000,7 +58000,7 @@
         },
         {
           "id": "MAP-ebe62334eafa",
-          "line": 104,
+          "line": 192,
           "kind": "reviewed-selector",
           "name": "a cold same-server tap waits beyond the inset gate then opens the latest agent exactly once",
           "dynamic": false,
@@ -58009,7 +58009,7 @@
         },
         {
           "id": "MAP-c5dd1f1057fc",
-          "line": 122,
+          "line": 210,
           "kind": "reviewed-selector",
           "name": "a warm tap navigates immediately and a new response is not mistaken for a replay",
           "dynamic": false,
@@ -58027,7 +58027,7 @@
         },
         {
           "id": "MAP-6d53db4c23be",
-          "line": 132,
+          "line": 218,
           "kind": "reviewed-selector",
           "name": "a user server change discards a queued old-workspace tap and unsubscribes on unmount",
           "dynamic": false,
@@ -58036,15 +58036,105 @@
         },
         {
           "id": "MAP-9140513ae8fb",
-          "line": 144,
+          "line": 228,
           "kind": "reviewed-selector",
           "name": "a guest or ambiguous notification source cannot leave a future navigation intent",
           "dynamic": false,
           "layer": "L1",
           "design": "SCENE-MIG-002"
+        },
+        {
+          "id": "MAP-630df4efdc51",
+          "line": 115,
+          "kind": "reviewed-selector",
+          "name": "real persistence gap never routes a cross-server tap on the old ready workspace",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        },
+        {
+          "id": "MAP-4e68b372f93a",
+          "line": 129,
+          "kind": "reviewed-selector",
+          "name": "real persistence gap preserves a cross-server tap past old headless bridge teardown",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        },
+        {
+          "id": "MAP-ccb6e8b76ca6",
+          "line": 139,
+          "kind": "reviewed-selector",
+          "name": "new cross-server generation survives an older selection completion and opens only its target",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        },
+        {
+          "id": "MAP-75a6ec2ee2e0",
+          "line": 146,
+          "kind": "reviewed-selector",
+          "name": "a new same-origin tap orders its selection after an outstanding foreign write",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        },
+        {
+          "id": "MAP-11cd737b84e9",
+          "line": 152,
+          "kind": "reviewed-selector",
+          "name": "failed selection is discarded and cannot replay when the user later visits its server",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        },
+        {
+          "id": "MAP-54d840310a88",
+          "line": 158,
+          "kind": "reviewed-selector",
+          "name": "an older rejected write cannot clear a newer generation",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        },
+        {
+          "id": "MAP-cfb8099f0f2b",
+          "line": 163,
+          "kind": "reviewed-selector",
+          "name": "a committed manual departure cancels an unshown target intent even after revisiting",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        },
+        {
+          "id": "MAP-069ad263e19e",
+          "line": 168,
+          "kind": "reviewed-selector",
+          "name": "disconnect clears a waiting intent before a later reconnect",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        },
+        {
+          "id": "MAP-a6b3b5eb534d",
+          "line": 173,
+          "kind": "reviewed-selector",
+          "name": "root unmount rejects late selection completion and old ready callbacks",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        },
+        {
+          "id": "MAP-e0b12ada276c",
+          "line": 178,
+          "kind": "reviewed-selector",
+          "name": "same-server taps still wait for readiness then deliver fresh responses once without saving",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
         }
       ],
-      "sha256": "f3fb7df3893b339390fd326c311ff35c225b407b2c688ea8b230080ad8cb2987"
+      "sha256": "09e20d52908d1ed60f92e21265dcd308863b9aaa553a9a2126886b499978bc04"
     },
     "mobileapp/ios/tests/NotificationResponseCompletionChecks.swift": {
       "layer": "L1",
@@ -59294,103 +59384,6 @@
         }
       ],
       "sha256": "1d21fa939d21d72d4c2dc1f5f9b411af1ae4ae3ac25b5ba361c37c50b1472401"
-    },
-    "mobileapp/__tests__/App.notificationHandoff.test.tsx": {
-      "layer": "L1",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-ff43bb99227e",
-          "line": 112,
-          "kind": "reviewed-selector",
-          "name": "real persistence gap never routes a cross-server tap on the old ready workspace",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "SCENE-MIG-002"
-        },
-        {
-          "id": "MAP-d3b87c752f7b",
-          "line": 126,
-          "kind": "reviewed-selector",
-          "name": "real persistence gap preserves a cross-server tap past old headless bridge teardown",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "SCENE-MIG-002"
-        },
-        {
-          "id": "MAP-8ad398e90003",
-          "line": 136,
-          "kind": "reviewed-selector",
-          "name": "new cross-server generation survives an older selection completion and opens only its target",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "SCENE-MIG-002"
-        },
-        {
-          "id": "MAP-c85ea84b610b",
-          "line": 143,
-          "kind": "reviewed-selector",
-          "name": "a new same-origin tap orders its selection after an outstanding foreign write",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "SCENE-MIG-002"
-        },
-        {
-          "id": "MAP-67c8d8c734e8",
-          "line": 149,
-          "kind": "reviewed-selector",
-          "name": "failed selection is discarded and cannot replay when the user later visits its server",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "SCENE-MIG-002"
-        },
-        {
-          "id": "MAP-855d56d48a5c",
-          "line": 155,
-          "kind": "reviewed-selector",
-          "name": "an older rejected write cannot clear a newer generation",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "SCENE-MIG-002"
-        },
-        {
-          "id": "MAP-081f17dadb33",
-          "line": 160,
-          "kind": "reviewed-selector",
-          "name": "a committed manual departure cancels an unshown target intent even after revisiting",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "SCENE-MIG-002"
-        },
-        {
-          "id": "MAP-fa8c9269e0ef",
-          "line": 165,
-          "kind": "reviewed-selector",
-          "name": "disconnect clears a waiting intent before a later reconnect",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "SCENE-MIG-002"
-        },
-        {
-          "id": "MAP-3a1e9b4b901c",
-          "line": 170,
-          "kind": "reviewed-selector",
-          "name": "root unmount rejects late selection completion and old ready callbacks",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "SCENE-MIG-002"
-        },
-        {
-          "id": "MAP-7745fa7d673e",
-          "line": 175,
-          "kind": "reviewed-selector",
-          "name": "same-server taps still wait for readiness then deliver fresh responses once without saving",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "SCENE-MIG-002"
-        }
-      ],
-      "sha256": "8ef33c96d5b26b0e998097ce9f6131ba010f23075307acec95381c94528504a0"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2"
