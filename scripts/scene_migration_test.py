@@ -236,6 +236,54 @@ class SceneExecutionTests(unittest.TestCase):
         self.assertEqual(scene.TOOLS['27']['runtime'], '27.0')
         self.assertEqual(scene.TOOLS['26']['runtime'], '26.2')
 
+    def test_preflight_preserves_installed_appium_root_and_rejects_missing_or_changed_override(self):
+        for chain in ('26', '27'):
+            expected = scene.TOOLS[chain]
+            root = self.root / ('appium-' + chain); root.mkdir()
+            home = root / 'isolated'; driver = home / 'node_modules/appium-xcuitest-driver'
+            wda = driver / 'node_modules/appium-webdriveragent'; wda.mkdir(parents=True)
+            (driver / 'package.json').write_text(json.dumps({'name': 'appium-xcuitest-driver', 'version': expected['driver']}))
+            (wda / 'package.json').write_text(json.dumps({'name': 'appium-webdriveragent', 'version': expected['wda']}))
+            package = home / 'package.json'
+            valid = {'private': True, 'overrides': {'appium-xcuitest-driver': {'appium-webdriveragent': expected['wda']}},
+                     'dependencies': {'appium-xcuitest-driver': expected['driver']}}
+            runtime_id = 'com.apple.CoreSimulator.SimRuntime.iOS-' + expected['runtime'].replace('.', '-')
+            runtimes = {'runtimes': [{'identifier': runtime_id, 'version': expected['runtime'], 'buildversion': 'fixture', 'isAvailable': True}]}
+            devices = {'devices': {runtime_id: [{'name': name, 'udid': name, 'deviceTypeIdentifier': 'fixture-hardware', 'isAvailable': True}
+                                               for name in ('iPhone 17', 'iPad Pro 13-inch (M5)')]}}
+            outputs = {('xcodebuild', '-version'): 'Xcode ' + expected['xcode'],
+                       ('xcrun', '--sdk', 'iphonesimulator', '--show-sdk-version'): expected['sdk'],
+                       ('xcrun', '--sdk', 'iphonesimulator', '--show-sdk-path'): '/fixture/sdk',
+                       ('xcode-select', '-p'): str(root),
+                       ('xcrun', 'simctl', 'list', '-j', 'runtimes'): json.dumps(runtimes),
+                       ('xcrun', 'simctl', 'list', '-j', 'devices', 'available'): json.dumps(devices)}
+            real_popen = subprocess.Popen
+            def child(args, **kwargs):
+                if args[0] == 'node':
+                    return real_popen(args, **kwargs)  # Actual createRequire and installed fixture package resolution.
+                return real_popen([sys.executable, '-c', 'print(' + repr(outputs[tuple(args)]) + ')'], **kwargs)
+            variants = [('valid', valid), ('missing', None), ('malformed', '{'), ('null', 'null'), ('array', '[]')]
+            if chain == '26':
+                variants += [('wrong-wda', {**valid, 'overrides': {'appium-xcuitest-driver': {'appium-webdriveragent': '15.1.0'}}}),
+                             ('not-private', {**valid, 'private': False})]
+            for index, (label, content) in enumerate(variants):
+                with self.subTest(chain=chain, fault=label):
+                    if content is None:
+                        package.unlink()  # Owned temporary fixture only.
+                    else:
+                        package.write_text(content if isinstance(content, str) else json.dumps(content))
+                    logs = root / str(index); logs.mkdir()
+                    runner = scene.Runner(logs, {**os.environ, 'APPIUM_HOME': str(home), 'DEVELOPER_DIR': str(root)})
+                    with mock.patch.object(scene.subprocess, 'Popen', side_effect=child):
+                        if label == 'valid':
+                            data = scene.preflight(runner, chain, root)
+                            self.assertEqual(data['appiumRootContents'], valid)
+                            self.assertEqual(data['appiumRootPackage'], scene.file_record(package))
+                            self.assertEqual((data['driver'], data['wda']), (expected['driver'], expected['wda']))
+                        else:
+                            with self.assertRaises((ValueError, OSError)):
+                                scene.preflight(runner, chain, root)
+
     def test_missing_diagnostic_evidence_keeps_original_test_zero_or_seven_and_cleans(self):
         for status in (0, 7):
             for error in (OSError('mkdir failed'), OSError('write failed')):
@@ -259,13 +307,21 @@ class SceneExecutionTests(unittest.TestCase):
                     cleanup.assert_called_once()
                     self.assertEqual(json.loads((paths['evidence'] / 'result.json').read_text())['testExit'], status)
 
-    def controlled_execute(self, toolchain='27', event_name='pull_request', status=0, fault=None, cleanup_raw=None):
+    def controlled_execute(self, toolchain='27', event_name='pull_request', status=0, fault=None, cleanup_raw=None, dependency_observations=None):
         # Execute the production coordinator, Runner and run_unit. Only external
         # Git/native/SDK/Jest commands become tiny real children, not a Runner mock.
         root = self.root / f'execute-{len(list(self.root.iterdir()))}'; root.mkdir()
         repo = root / 'repository'; mobile = repo / 'mobileapp'; mobile.mkdir(parents=True)
         for name in ('package-lock.json', 'package.json', 'Gemfile.lock'): (mobile / name).write_text('{}')
-        for name in ('node_modules', 'vendor'): (mobile / name).mkdir()
+        (mobile / 'vendor').mkdir()
+        if dependency_observations is None:
+            (mobile / 'node_modules').mkdir()
+        else:
+            physical = root / 'physical-dependencies'; physical.mkdir()
+            (physical / 'proof.txt').write_text('verified fixture dependency')
+            link = root / 'dependency-link'; link.symlink_to(physical, target_is_directory=True)
+            (mobile / 'node_modules').symlink_to(link, target_is_directory=True)
+            dependency_observations.update(physical=str(physical.resolve()), builds=[], child_logs=[])
         event = {'pull_request': {'base': {'sha': B}, 'head': {'sha': P}}} if event_name == 'pull_request' else {'ref': 'refs/heads/main', 'after': P}
         event_path = root / 'event.json'; event_path.write_text(json.dumps(event))
         env = {**os.environ, 'CI': 'true', 'RUNNER_OS': 'macOS', 'RUNNER_ARCH': 'ARM64',
@@ -281,7 +337,16 @@ class SceneExecutionTests(unittest.TestCase):
             if args[0] == 'git':
                 readable.append(args[-1][:40])
                 if fault == 'unreadable-base' and args[-1].startswith(B): script = 'raise SystemExit(1)'
-            if args[0] == 'npm': script = f'raise SystemExit({status})'
+            if args[0] == 'npm':
+                script = f'raise SystemExit({status})'
+                if dependency_observations is not None:
+                    # This reads the environment in the actual child spawned by
+                    # Runner, after run_unit's per-journey environment handling.
+                    script = ("import json, os; from pathlib import Path; "
+                              "p=Path(os.environ['GTMUX_COMPARE_NODE_MODULES']); "
+                              "print(json.dumps({'root': str(p), 'proof': (p/'proof.txt').read_text()})); "
+                              f"raise SystemExit({status})")
+                    dependency_observations['child_logs'].append(kwargs['stdout'].name)
             if cleanup_fault:
                 if args[:3] == ['xcrun', 'simctl', 'shutdown'] and '/ipad/' in kwargs['stdout'].name and kwargs['stdout'].name.endswith('-shutdown-after.log'):
                     script = 'raise SystemExit(7)'
@@ -319,6 +384,8 @@ class SceneExecutionTests(unittest.TestCase):
         def prepare(repository, sha, harness, job, deps, runner):
             target = job / 'source' / sha / 'mobileapp'; target.mkdir(parents=True); return target
         def build(runner, target, sha, job):
+            if dependency_observations is not None:
+                dependency_observations['builds'].append({'source': sha, 'root': runner.env['GTMUX_COMPARE_NODE_MODULES']})
             builds.append(sha); return {'app': '/synthetic/app', 'resolvedPods': {'sha256': 'same'}}
         def work(harness, destination, deps):
             scene.write_once(destination / 'harness.json', []); return destination
@@ -345,6 +412,23 @@ class SceneExecutionTests(unittest.TestCase):
         job = root / 'scene-migration/1-1-test'
         payload = json.loads((job / 'acceptance.json').read_text()) if (job / 'acceptance.json').exists() else None
         return code, builds, readable, payload, stderr.getvalue()
+
+    def test_physical_dependency_root_reaches_builds_and_real_journey_children(self):
+        for chain, event in [('26', 'pull_request'), ('27', 'pull_request'), ('26', 'push'), ('27', 'push')]:
+            with self.subTest(toolchain=chain, event=event):
+                observed = {}
+                _, built, _, payload, _ = self.controlled_execute(chain, event, dependency_observations=observed)
+                ids = {'baseline': B, 'candidate': P} if event == 'pull_request' else {'candidate': P}
+                expected = scene.units(ids, chain)
+                self.assertEqual(set(built), {unit['source'] for unit in expected})
+                self.assertEqual(len(observed['builds']), len(set(built)))
+                self.assertEqual(len(payload['results']), len(expected))
+                self.assertEqual(len(observed['child_logs']), len(expected))
+                for build in observed['builds']:
+                    self.assertEqual(build['root'], observed['physical'])
+                for name in observed['child_logs']:
+                    child = json.loads(Path(name).read_text())
+                    self.assertEqual(child, {'root': observed['physical'], 'proof': 'verified fixture dependency'})
 
     def test_real_runner_wait_then_stat_failure_preserves_unit_and_aggregate(self):
         for status in (0, 7):

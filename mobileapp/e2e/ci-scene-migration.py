@@ -368,9 +368,20 @@ def preflight(runner, toolchain, cwd):
     packages = json.loads(packages)
     if any(packages[k] != expected[k] for k in ('driver', 'wda')):
         raise ValueError('Actual isolated driver/WDA differs from reviewed matrix')
+    root_package_path = Path(runner.env['APPIUM_HOME']) / 'package.json'
+    root_package_bytes = root_package_path.read_bytes()
+    root_package = json.loads(root_package_bytes)
+    if not isinstance(root_package, dict):
+        raise ValueError('Installed isolated Appium root package must be an object')
+    if toolchain == '26' and (root_package.get('private') is not True or root_package.get('overrides') != {
+            'appium-xcuitest-driver': {'appium-webdriveragent': expected['wda']}}):
+        raise ValueError('Installed isolated Appium root differs from reviewed override')
     return {**expected, 'sdkroot': sdkroot.strip(), 'developerDir': developer, 'devices': devices,
             'wdaPackage': packages['wdaPackage'], 'driverPackage': file_record(package),
-            'wdaPackageRecord': file_record(packages['wdaPackage'])}
+            'wdaPackageRecord': file_record(packages['wdaPackage']),
+            'appiumRootPackage': {'path': str(root_package_path), 'bytes': len(root_package_bytes),
+                                  'sha256': hashlib.sha256(root_package_bytes).hexdigest()},
+            'appiumRootContents': root_package}
 
 
 def prepare_source(repository, source, harness_source, root, dependency_root, runner):
@@ -652,7 +663,8 @@ def execute(toolchain, repository, env):
         for name in ('node_modules', 'vendor'):
             if not (checkout_mobile / name).is_dir(): raise ValueError('Missing preinstalled job dependency ' + name)
             (dependencies / name).symlink_to((checkout_mobile / name).resolve(), target_is_directory=True)
-        runner.env.update({'GTMUX_COMPARE_NODE_MODULES': str(dependencies / 'node_modules'), 'GTMUX_COMPARE_JOURNEY': 'push'})
+        # Metro must see physical symlink targets, not only the dependency alias.
+        runner.env.update({'GTMUX_COMPARE_NODE_MODULES': str((dependencies / 'node_modules').resolve(strict=True)), 'GTMUX_COMPARE_JOURNEY': 'push'})
         products = {}
         for sha in dict.fromkeys(u['source'] for u in sorted(expected, key=lambda u: u['variant'] != 'candidate')):
             mobile = prepare_source(repository, sha, harness, root, dependencies, runner)

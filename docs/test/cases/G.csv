@@ -242,13 +242,13 @@ MAP-38d95bd6046c,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,1
 MAP-d8d576f98a52,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,182,reviewed-selector,def unit_errors(,False,SCENE-MIG-008
 MAP-e0657dd9a16c,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,231,reviewed-selector,def verify_all(,False,SCENE-MIG-008
 MAP-5e8a9b948e24,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,349,reviewed-selector,def preflight(,False,SCENE-MIG-008
-MAP-686096fccf36,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,376,reviewed-selector,def prepare_source(,False,SCENE-MIG-008
-MAP-e317c36e87b4,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,404,reviewed-selector,def prepare_work(,False,SCENE-MIG-008
-MAP-48f5d7e71933,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,424,reviewed-selector,def build_product(,False,SCENE-MIG-008
-MAP-eddc7dcee0b0,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,465,reviewed-selector,def collect_identity(,False,SCENE-MIG-008
-MAP-af21af8be44f,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,560,reviewed-selector,def run_unit(,False,SCENE-MIG-008
-MAP-89aaee2a9ed7,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,507,reviewed-selector,def cleanup_unit(,False,SCENE-MIG-008
-MAP-15d5d6c17883,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,628,reviewed-selector,def execute(,False,SCENE-MIG-008
+MAP-686096fccf36,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,387,reviewed-selector,def prepare_source(,False,SCENE-MIG-008
+MAP-e317c36e87b4,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,415,reviewed-selector,def prepare_work(,False,SCENE-MIG-008
+MAP-48f5d7e71933,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,435,reviewed-selector,def build_product(,False,SCENE-MIG-008
+MAP-eddc7dcee0b0,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,476,reviewed-selector,def collect_identity(,False,SCENE-MIG-008
+MAP-af21af8be44f,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,571,reviewed-selector,def run_unit(,False,SCENE-MIG-008
+MAP-89aaee2a9ed7,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,518,reviewed-selector,def cleanup_unit(,False,SCENE-MIG-008
+MAP-15d5d6c17883,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,639,reviewed-selector,def execute(,False,SCENE-MIG-008
 MAP-73f0d22945c8,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,259,reviewed-selector,class CommandFailure(RuntimeError):,False,SCENE-MIG-008
 MAP-2c39e5b64866,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,271,reviewed-selector,def command(,False,SCENE-MIG-008
 LEG-6e50b6aefc3c,G,RN / mobile harness,mobileapp/e2e/fake-serve/icons.test.ts,42,test,"serves the repo's built-in PNG, by label or by key, as a real serve does",False,legacy-not-retrospectively-reviewed
@@ -509,17 +509,19 @@ MAP-a5b156b2b518,G,reviewed implementation,scripts/scene_migration_test.py,117,r
 MAP-a7808f64414b,G,reviewed implementation,scripts/scene_migration_test.py,188,reviewed-selector,test_execute_refuses_local_environment_before_any_native_command,False,SCENE-MIG-008
 MAP-45d57ce1727c,G,reviewed implementation,scripts/scene_migration_test.py,194,reviewed-selector,test_real_small_child_exit_timeout_and_output_cap_are_bounded,False,SCENE-MIG-008
 MAP-c78c647692bc,G,reviewed implementation,scripts/scene_migration_test.py,207,reviewed-selector,test_device_lookup_requires_actual_runtime_and_unique_hardware,False,SCENE-MIG-008
-MAP-ca6db00c6d3b,G,reviewed implementation,scripts/scene_migration_test.py,239,reviewed-selector,test_missing_diagnostic_evidence_keeps_original_test_zero_or_seven_and_cleans,False,SCENE-MIG-008
-MAP-80e5de561924,G,reviewed implementation,scripts/scene_migration_test.py,463,reviewed-selector,test_harness_journeys_share_only_verified_dependencies_and_keep_source_bytes,False,SCENE-MIG-008
-MAP-d485b529b3a4,G,reviewed implementation,scripts/scene_migration_test.py,482,reviewed-selector,test_cleanup_targets_only_saved_matching_server_and_exact_unit_wda,False,SCENE-MIG-008
-MAP-7cb3bff30a24,G,reviewed implementation,scripts/scene_migration_test.py,395,reviewed-selector,test_executor_builds_only_expected_sources_but_checks_real_base,False,SCENE-MIG-008
-MAP-9fcc5cafe672,G,reviewed implementation,scripts/scene_migration_test.py,407,reviewed-selector,test_real_runner_metadata_and_archival_failures_preserve_executed_units,False,SCENE-MIG-008
-MAP-ec565820041a,G,reviewed implementation,scripts/scene_migration_test.py,424,reviewed-selector,test_real_executor_keeps_last_shutdown_failure_and_original_exit,False,SCENE-MIG-008
-MAP-2258d0570d1d,G,reviewed implementation,scripts/scene_migration_test.py,433,reviewed-selector,test_shutdown_failure_or_timeout_of_final_unit_cannot_pass,False,SCENE-MIG-008
-MAP-c475771ec211,G,reviewed implementation,scripts/scene_migration_test.py,349,reviewed-selector,test_real_runner_wait_then_stat_failure_preserves_unit_and_aggregate,False,SCENE-MIG-008
-MAP-e82c5bb79bde,G,reviewed implementation,scripts/scene_migration_test.py,358,reviewed-selector,test_cleanup_bad_query_shapes_and_errors_keep_final_executed_unit,False,SCENE-MIG-008
-MAP-7bb970863c77,G,reviewed implementation,scripts/scene_migration_test.py,379,reviewed-selector,test_runner_distinguishes_not_started_from_started_evidence_failure,False,SCENE-MIG-008
+MAP-ca6db00c6d3b,G,reviewed implementation,scripts/scene_migration_test.py,287,reviewed-selector,test_missing_diagnostic_evidence_keeps_original_test_zero_or_seven_and_cleans,False,SCENE-MIG-008
+MAP-80e5de561924,G,reviewed implementation,scripts/scene_migration_test.py,547,reviewed-selector,test_harness_journeys_share_only_verified_dependencies_and_keep_source_bytes,False,SCENE-MIG-008
+MAP-d485b529b3a4,G,reviewed implementation,scripts/scene_migration_test.py,566,reviewed-selector,test_cleanup_targets_only_saved_matching_server_and_exact_unit_wda,False,SCENE-MIG-008
+MAP-7cb3bff30a24,G,reviewed implementation,scripts/scene_migration_test.py,479,reviewed-selector,test_executor_builds_only_expected_sources_but_checks_real_base,False,SCENE-MIG-008
+MAP-9fcc5cafe672,G,reviewed implementation,scripts/scene_migration_test.py,491,reviewed-selector,test_real_runner_metadata_and_archival_failures_preserve_executed_units,False,SCENE-MIG-008
+MAP-ec565820041a,G,reviewed implementation,scripts/scene_migration_test.py,508,reviewed-selector,test_real_executor_keeps_last_shutdown_failure_and_original_exit,False,SCENE-MIG-008
+MAP-2258d0570d1d,G,reviewed implementation,scripts/scene_migration_test.py,517,reviewed-selector,test_shutdown_failure_or_timeout_of_final_unit_cannot_pass,False,SCENE-MIG-008
+MAP-c475771ec211,G,reviewed implementation,scripts/scene_migration_test.py,433,reviewed-selector,test_real_runner_wait_then_stat_failure_preserves_unit_and_aggregate,False,SCENE-MIG-008
+MAP-e82c5bb79bde,G,reviewed implementation,scripts/scene_migration_test.py,442,reviewed-selector,test_cleanup_bad_query_shapes_and_errors_keep_final_executed_unit,False,SCENE-MIG-008
+MAP-7bb970863c77,G,reviewed implementation,scripts/scene_migration_test.py,463,reviewed-selector,test_runner_distinguishes_not_started_from_started_evidence_failure,False,SCENE-MIG-008
 MAP-7ea709c3a533,G,reviewed implementation,scripts/scene_migration_test.py,216,reviewed-selector,test_device_lookup_separates_same_version_platforms_without_fallback,False,SCENE-MIG-008
+MAP-e3f93d5376ca,G,reviewed implementation,scripts/scene_migration_test.py,416,reviewed-selector,test_physical_dependency_root_reaches_builds_and_real_journey_children,False,SCENE-MIG-008
+MAP-d52c082f6324,G,reviewed implementation,scripts/scene_migration_test.py,239,reviewed-selector,test_preflight_preserves_installed_appium_root_and_rejects_missing_or_changed_override,False,SCENE-MIG-008
 MAP-253bbd74b924,G,reviewed implementation,scripts/test_design.py,51,reviewed-selector,def validate(,False,"TD-001,TD-002,TD-003,TD-004,TD-005"
 MAP-0fe56134bb6e,G,reviewed implementation,scripts/test_design.py,102,reviewed-selector,def history_errors(,False,"TD-001,TD-002,TD-003,TD-004,TD-005"
 MAP-c8a2197482da,G,reviewed implementation,scripts/test_design.py,174,reviewed-selector,def refresh_catalogue(,False,"TD-001,TD-002,TD-003,TD-004,TD-005"
