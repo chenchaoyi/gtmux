@@ -5,6 +5,7 @@ import io
 import importlib.util
 import json
 import os
+import plistlib
 import sys
 import time
 from unittest import mock
@@ -203,6 +204,88 @@ class SceneExecutionTests(unittest.TestCase):
             runner.command([sys.executable, '-c', 'print("x" * 2048)'], cwd=self.root, label='output', timeout=5, limit=1024)
         records = [json.loads(p.read_text()) for p in self.root.glob('*.json')]
         self.assertEqual({r['state'] for r in records}, {'completed', 'timeout', 'output-limit'})
+
+
+    def test_collect_identity_parses_only_stdout_with_retained_real_child_diagnostics(self):
+        unit = scene.units({'candidate': P}, '26')[0]
+        evidence = self.root / 'identity'; (evidence / 'session').mkdir(parents=True)
+        (evidence / 'session/session.json').write_text(json.dumps({'sessionID': 'session-123', 'capabilities': {'udid': 'device-123'}}))
+        derived = self.root / 'derived'
+        app = derived / 'Build/Products/Debug-iphonesimulator/WebDriverAgentRunner-Runner.app'
+        bundle = app / 'PlugIns/WebDriverAgentRunner.xctest'; bundle.mkdir(parents=True)
+        (app / 'Info.plist').write_bytes(plistlib.dumps({'MinimumOSVersion': '15.0'}))
+        (bundle / 'Info.plist').write_bytes(plistlib.dumps({'CFBundleExecutable': 'WDA'}))
+        binary = b'controlled WDA binary'; (bundle / 'WDA').write_bytes(binary)
+        device = {'runtimeID': 'runtime26', 'runtimeBuild': 'build26', 'udid': 'device-123', 'deviceTypeIdentifier': 'phone'}
+        product = {'products': ['app', 'extension', 'widget'], 'linkSysroot': 'sdk26.2'}
+        preflight = {**scene.TOOLS['26'], 'sdkroot': 'sdk26.2', 'developerDir': 'xcode26', 'wdaPackage': str(self.root / 'wda/package.json')}
+        payload = json.dumps([{'target': 'WebDriverAgentRunner', 'buildSettings': {'IPHONEOS_DEPLOYMENT_TARGET': '15.0'}}])
+        warning = 'xcodebuild: WARNING: Using the first of multiple matching destinations\n'
+        real_popen = subprocess.Popen
+        for name, stdout, stderr, exit_code, error in (
+                ('valid', payload, warning, 0, None),
+                ('prefix', warning + payload, '', 0, json.JSONDecodeError),
+                ('stderr-only', '', payload, 0, json.JSONDecodeError),
+                ('exit7', payload, warning, 7, scene.CommandFailure)):
+            with self.subTest(name=name):
+                commands = self.root / name; commands.mkdir()
+                runner = scene.Runner(commands, os.environ)
+                def native_boundary(args, **kwargs):
+                    if args[0] == 'xcodebuild':
+                        self.assertEqual(args[-2:], ['-showBuildSettings', '-json'])
+                        out, err, code = stdout, stderr, exit_code
+                    elif args[0] == 'ps': out, err, code = 'Fri Nov 7 00:00:00 2026', '', 0
+                    else:
+                        self.assertEqual(args[:4], ['xcrun', 'simctl', 'spawn', 'device-123'])
+                        out, err, code = '123 0 UIKitApplication:com.gtmux.app[fixture]\n', '', 0
+                    child_code = 'import sys; sys.stdout.write(' + repr(out) + '); sys.stderr.write(' + repr(err) + '); sys.exit(' + str(code) + ')'
+                    return real_popen([sys.executable, '-c', child_code], **kwargs)
+                with mock.patch.object(scene.subprocess, 'Popen', side_effect=native_boundary):
+                    if error:
+                        with self.assertRaises(error):
+                            scene.collect_identity(runner, unit, evidence, device, product, preflight, 'installed', 'journey', derived)
+                    else:
+                        actual = scene.collect_identity(runner, unit, evidence, device, product, preflight, 'installed', 'journey', derived)
+                        self.assertEqual(actual['wdaTargetDeployment'], '15.0')
+                        self.assertEqual(actual['sessionID'], 'session-123')
+                        self.assertEqual(actual['pid'], 123)
+                        self.assertEqual(actual['launchedAt'], 'Fri Nov 7 00:00:00 2026')
+                        self.assertEqual(actual['wdaBinarySHA'], hashlib.sha256(binary).hexdigest())
+                record = json.loads((commands / '003-wda-build-settings.json').read_text())
+                self.assertEqual(record['exit'], exit_code)
+                self.assertEqual(record['state'], 'completed')
+                self.assertEqual(Path(record['log']).read_text(), stdout)
+                self.assertEqual(Path(record['stderrLog']).read_text(), stderr)
+
+    def test_split_stream_runner_preserves_exit_and_combined_default(self):
+        runner = scene.Runner(self.root, os.environ)
+        for code in (0, 7):
+            program = 'import sys; print("stdout"); print("warning",file=sys.stderr); sys.exit(' + str(code) + ')'
+            got, text = runner.text([sys.executable, '-c', program], cwd=self.root, label='split-' + str(code),
+                                    check=False, separate_stderr=True)
+            self.assertEqual(got, code); self.assertEqual(text, 'stdout\n')
+            record = json.loads((self.root / f'{runner.sequence:03d}-split-{code}.json').read_text())
+            self.assertEqual(record['exit'], code)
+            self.assertEqual(Path(record['stderrLog']).read_text(), 'warning\n')
+        _, combined = runner.text([sys.executable, '-c', program.replace('sys.exit(7)', 'sys.exit(0)')], cwd=self.root, label='default')
+        self.assertIn('stdout\n', combined); self.assertIn('warning\n', combined)
+        self.assertNotIn('stderrLog', json.loads((self.root / '003-default.json').read_text()))
+
+    def test_split_stream_runner_bounds_total_bytes_and_timeout(self):
+        runner = scene.Runner(self.root, os.environ)
+        for name, program, limit, timeout, state in (
+                ('stderr-cap', 'import os; os.write(2,b"x"*256)', 128, 5, 'output-limit'),
+                ('total-cap', 'import os; os.write(1,b"x"*96); os.write(2,b"y"*96)', 128, 5, 'output-limit'),
+                ('timeout', 'import time; time.sleep(5)', 128, .15, 'timeout')):
+            with self.subTest(name=name):
+                start = time.monotonic()
+                with self.assertRaises(scene.CommandFailure) as raised:
+                    runner.command([sys.executable, '-c', program], cwd=self.root, label=name, timeout=timeout,
+                                   limit=limit, separate_stderr=True)
+                self.assertLess(time.monotonic() - start, 3)
+                self.assertEqual(raised.exception.outcome['state'], state)
+                self.assertIsInstance(raised.exception.outcome['exit'], int)
+                self.assertTrue(Path(raised.exception.outcome['stderrLog']).is_file())
 
     def test_device_lookup_requires_actual_runtime_and_unique_hardware(self):
         runtime = {'runtimes': [{'identifier': 'com.apple.CoreSimulator.SimRuntime.iOS-26-2', 'version': '26.2', 'buildversion': 'fixture', 'isAvailable': True}]}

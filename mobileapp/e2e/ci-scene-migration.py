@@ -7,6 +7,7 @@ command-line verifier can independently check already captured evidence.
 """
 from pathlib import Path
 import argparse
+import contextlib
 import datetime
 import difflib
 import os
@@ -268,23 +269,31 @@ class Runner:
         self.root, self.env = Path(root), dict(env)
         self.sequence = 0
 
-    def command(self, args, *, cwd, label, timeout, check=True, limit=64 * 1024 * 1024):
+    def command(self, args, *, cwd, label, timeout, check=True, limit=64 * 1024 * 1024, separate_stderr=False):
         self.sequence += 1
         stem = self.root / f'{self.sequence:03d}-{label}'
         log = stem.with_suffix('.log')
         outcome = {'command': [str(x) for x in args], 'cwd': str(cwd), 'startedAt': now(),
                    'state': 'not-started', 'exit': None, 'log': str(log)}
+        stderr_log = stem.with_suffix('.stderr.log') if separate_stderr else None
+        if stderr_log is not None: outcome['stderrLog'] = str(stderr_log)
+        # Structured output must not contain diagnostics. Both files still share
+        # the original byte budget; default text retains combined stderr (codesign).
+        def output_size():
+            return log.stat().st_size + (stderr_log.stat().st_size if stderr_log is not None else 0)
         problems = []
         state = 'completed'
         try:
-            with log.open('xb') as output:
+            with contextlib.ExitStack() as streams:
+                output = streams.enter_context(log.open('xb'))
+                error_output = streams.enter_context(stderr_log.open('xb')) if stderr_log is not None else subprocess.STDOUT
                 child = subprocess.Popen([str(x) for x in args], cwd=cwd, env=self.env,
-                                         stdout=output, stderr=subprocess.STDOUT, start_new_session=True)
+                                         stdout=output, stderr=error_output, start_new_session=True)
                 outcome['state'] = 'running'
                 deadline = time.monotonic() + timeout
                 try:
                     while child.poll() is None:
-                        if time.monotonic() >= deadline or log.stat().st_size > limit:
+                        if time.monotonic() >= deadline or output_size() > limit:
                             state = 'timeout' if time.monotonic() >= deadline else 'output-limit'
                             os.killpg(child.pid, signal.SIGKILL)
                             break
@@ -293,7 +302,7 @@ class Runner:
                     # Record execution before any fallible log/diagnostic work.
                     outcome.update(state=state, exit=code)
                     outcome['completedAt'] = now()
-                    if state == 'completed' and log.stat().st_size > limit: state = 'output-limit'
+                    if state == 'completed' and output_size() > limit: state = 'output-limit'
                     if state == 'completed' and time.monotonic() > deadline: state = 'timeout'
                     outcome['state'] = state
                 finally:
@@ -314,8 +323,8 @@ class Runner:
             raise CommandFailure('; '.join(problems) or f"{label}: {outcome['state']}, exit={outcome['exit']}; see {log}", outcome)
         return outcome['exit'], log
 
-    def text(self, args, *, cwd, label, timeout=30, check=True):
-        code, log = self.command(args, cwd=cwd, label=label, timeout=timeout, check=check, limit=4 * 1024 * 1024)
+    def text(self, args, *, cwd, label, timeout=30, check=True, separate_stderr=False):
+        code, log = self.command(args, cwd=cwd, label=label, timeout=timeout, check=check, limit=4 * 1024 * 1024, separate_stderr=separate_stderr)
         return code, log.read_text(errors='replace')
 
 
@@ -503,7 +512,7 @@ def collect_identity(runner, unit, evidence, device, product, preflight_data, in
     identity['wdaDeployment'] = info.get('MinimumOSVersion')
     project = Path(preflight_data['wdaPackage']).parent / 'WebDriverAgent.xcodeproj'
     _, settings = runner.text(['xcodebuild', '-project', str(project), '-scheme', 'WebDriverAgentRunner', '-sdk', 'iphonesimulator',
-                    '-showBuildSettings', '-json'], cwd=evidence, label='wda-build-settings', timeout=60)
+                    '-showBuildSettings', '-json'], cwd=evidence, label='wda-build-settings', timeout=60, separate_stderr=True)
     targets = json.loads(settings)
     actual = [t['buildSettings']['IPHONEOS_DEPLOYMENT_TARGET'] for t in targets if t.get('target') == 'WebDriverAgentRunner']
     if len(actual) != 1 or not actual[0]: raise ValueError('Actual WDA target deployment is missing')

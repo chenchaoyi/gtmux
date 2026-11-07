@@ -11,7 +11,7 @@ The catalogue covers 1062 test/harness source files. Each CSV row lists stable I
 | L3 · Runtime integration | 116 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 93 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 12 | [M.csv](cases/M.csv) |
-| G · Qualification guards | 543 | [G.csv](cases/G.csv) |
+| G · Qualification guards | 546 | [G.csv](cases/G.csv) |
 
 Numbers are not passes. The legacy 6,223 positions came from the 4fad6119 inventory (declarations, subtests, dynamic templates); explicit new cases, native oracles and reviewed selectors are indexed separately. Dynamic instances are not expanded. Harnesses without named cases retain their hashes. Legacy layers are structural triage; mixed boundaries need semantic review when touched, not fictional historical review/results. A reviewed-selector is not a framework-discovered declaration. Gates catch source/index/mapping drift; names cannot prove assertion quality.
 

@@ -706,7 +706,10 @@
       "test_runner_distinguishes_not_started_from_started_evidence_failure",
       "test_device_lookup_separates_same_version_platforms_without_fallback",
       "test_physical_dependency_root_reaches_builds_and_real_journey_children",
-      "test_preflight_preserves_installed_appium_root_and_rejects_missing_or_changed_override"
+      "test_preflight_preserves_installed_appium_root_and_rejects_missing_or_changed_override",
+      "test_collect_identity_parses_only_stdout_with_retained_real_child_diagnostics",
+      "test_split_stream_runner_preserves_exit_and_combined_default",
+      "test_split_stream_runner_bounds_total_bytes_and_timeout"
     ]
   },
   "mobileapp/e2e/setup/appLaunchFiles.test.ts": {
