@@ -919,6 +919,14 @@ regular 壳把它渲染进主区。推送深链、HQ 页的「打开会话」、
 画布第二页记着另外两个方向及其代价：B 把两个分区叠在对话区上方（一眼全见，但对话区每屏少 150pt，两个分区
 一起滚）；C 保留手机的 tab 只是变宽（不用新养布局，但 1194pt 的屏只显示一个分区，该你拍板的事照样藏在 tab 后）。
 
+### 共用的 scene 生命周期
+
+iOS 窗口绑定当前 `UIWindowScene`，不再以固定主屏幕矩形初始化。后台通知处理及随后出现的界面复用同一个 React host；原生响应和链接队列保留尚未确认的输入，等现有 JS 消费者就绪。动作标识、回复正文、完成回调和去重沿用推送契约；guest/demo 拒绝的链接意图当次消费，不留到身份改变后重放。
+
+通知初始化位于安全区门槛之外。工作区界面等待真实 scene 度量，启动页与服务器设置页保留原有 SafeAreaProvider。根视图 `onLayout` 向共用布局 hook 提供宽高，scale 和 fontScale 仍跟随 RN。壳、侧栏、HQ inspector 与锚定菜单取共用宽高，Diff 继续测量自身视口。紧凑界面保留手机 stack 导航，regular 界面保留侧栏和阅读区。此先决迁移不新增机型平台，也不声称已解决跨壳切换的状态保持。
+
+验收区分 Foundation/JS 检查与真实 UIKit、冷热通知/链接、键盘和旋转操作。仅模拟器启用的 host 观察记录实际进程与 React 视图，并须与 WDA 几何对应；编译成功或单条诊断标记不能代替操作证据。普通 iPhone/iPad 矩阵见 [E2E 说明](../../mobileapp/e2e/README.md)，不抵销 Duo 折合、文字裁切、VoiceOver 或实体机未验项。
+
 ### iPad extras
 
 - 硬件键盘：一个原生桥（`UIKeyCommand`）+ 一张表（`src/keys/keymap.ts`）。↑↓ 移动雷达选中、⏎ 打开、
@@ -927,7 +935,7 @@ regular 壳把它渲染进主区。推送深链、HQ 页的「打开会话」、
   模拟器验不了派发：XCTest 的按键注入只会打字、不派发 UIKeyCommand，桥是否收到只能接键盘按一次。
 - 指针：行和按钮悬停用 `rowSelected` 着色；不做自定义光标。
 - 多任务：不声明 `UIRequiresFullScreen`，Split View / Slide Over / Stage Manager 都允许，壳跟着窗口走。
-  多窗口（scene）和 Apple Pencil 圈画不在这次范围。
+  单个 App 窗口由 UIKit scene 生命周期管理；多个并存窗口与 Apple Pencil 圈画仍不在范围内。
 - 方向：四个方向都支持，不锁。
 - 商店：13" iPad 截图组（横屏 2752×2064，`frame-shots.mjs --slot ipad`）由手机那条 demo 模式管线在 iPad Pro 13"
   模拟器上画出来，两种语言（`GTMUX_DEBUG_LANG` 强制语言）；锁屏那张只有手机有（Live Activity 没有 iPad 呈现）。

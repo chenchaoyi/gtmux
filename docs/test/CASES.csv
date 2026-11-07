@@ -3766,6 +3766,29 @@ LEG-ee3efcf0121e,L1,macOS / Widgets Swift,macapp/Tests/MacUsageWidgetSupportTest
 LEG-5fde771eaebb,L1,macOS / Widgets Swift,macapp/Tests/MacUsageWidgetSupportTests/MacUsageWidgetSupportTests.swift,66,XCTest,testOnlySignerScopedMacContainerIsAccepted,False,legacy-not-retrospectively-reviewed
 LEG-450dbd890cc5,L1,macOS / Widgets Swift,macapp/Tests/MacUsageWidgetSupportTests/MacUsageWidgetSupportTests.swift,73,XCTest,testUsageShortcutCannotCarryAnAlternateActionOrCredentials,False,legacy-not-retrospectively-reviewed
 LEG-fbddf3db8aa3,L1,macOS / Widgets Swift,macapp/Tests/MacUsageWidgetSupportTests/MacUsageWidgetSupportTests.swift,80,XCTest,testNoPollingWithoutWidgetNoOverlapAndBoundedReloads,False,legacy-not-retrospectively-reviewed
+MAP-265918ac6bc3,L1,reviewed implementation,mobileapp/__tests__/App.notificationBootstrap.test.tsx,186,reviewed-selector,starts the actual notification bridge while the visual safe area has no metrics,False,SCENE-MIG-002
+MAP-ebe62334eafa,L1,reviewed implementation,mobileapp/__tests__/App.notificationBootstrap.test.tsx,192,reviewed-selector,a cold same-server tap waits beyond the inset gate then opens the latest agent exactly once,False,SCENE-MIG-002
+MAP-c5dd1f1057fc,L1,reviewed implementation,mobileapp/__tests__/App.notificationBootstrap.test.tsx,210,reviewed-selector,a warm tap navigates immediately and a new response is not mistaken for a replay,False,SCENE-MIG-002
+MAP-1adcb155177c,L1,reviewed implementation,mobileapp/__tests__/App.notificationBootstrap.test.tsx,132,reviewed-selector,a cross-server tap survives only its intended remount and waits for that navigator,False,SCENE-MIG-002
+MAP-6d53db4c23be,L1,reviewed implementation,mobileapp/__tests__/App.notificationBootstrap.test.tsx,218,reviewed-selector,a user server change discards a queued old-workspace tap and unsubscribes on unmount,False,SCENE-MIG-002
+MAP-9140513ae8fb,L1,reviewed implementation,mobileapp/__tests__/App.notificationBootstrap.test.tsx,228,reviewed-selector,a guest or ambiguous notification source cannot leave a future navigation intent,False,SCENE-MIG-002
+MAP-630df4efdc51,L1,reviewed implementation,mobileapp/__tests__/App.notificationBootstrap.test.tsx,115,reviewed-selector,real persistence gap never routes a cross-server tap on the old ready workspace,False,SCENE-MIG-002
+MAP-4e68b372f93a,L1,reviewed implementation,mobileapp/__tests__/App.notificationBootstrap.test.tsx,129,reviewed-selector,real persistence gap preserves a cross-server tap past old headless bridge teardown,False,SCENE-MIG-002
+MAP-ccb6e8b76ca6,L1,reviewed implementation,mobileapp/__tests__/App.notificationBootstrap.test.tsx,139,reviewed-selector,new cross-server generation survives an older selection completion and opens only its target,False,SCENE-MIG-002
+MAP-75a6ec2ee2e0,L1,reviewed implementation,mobileapp/__tests__/App.notificationBootstrap.test.tsx,146,reviewed-selector,a new same-origin tap orders its selection after an outstanding foreign write,False,SCENE-MIG-002
+MAP-11cd737b84e9,L1,reviewed implementation,mobileapp/__tests__/App.notificationBootstrap.test.tsx,152,reviewed-selector,failed selection is discarded and cannot replay when the user later visits its server,False,SCENE-MIG-002
+MAP-54d840310a88,L1,reviewed implementation,mobileapp/__tests__/App.notificationBootstrap.test.tsx,158,reviewed-selector,an older rejected write cannot clear a newer generation,False,SCENE-MIG-002
+MAP-cfb8099f0f2b,L1,reviewed implementation,mobileapp/__tests__/App.notificationBootstrap.test.tsx,163,reviewed-selector,a committed manual departure cancels an unshown target intent even after revisiting,False,SCENE-MIG-002
+MAP-069ad263e19e,L1,reviewed implementation,mobileapp/__tests__/App.notificationBootstrap.test.tsx,168,reviewed-selector,disconnect clears a waiting intent before a later reconnect,False,SCENE-MIG-002
+MAP-a6b3b5eb534d,L1,reviewed implementation,mobileapp/__tests__/App.notificationBootstrap.test.tsx,173,reviewed-selector,root unmount rejects late selection completion and old ready callbacks,False,SCENE-MIG-002
+MAP-e0b12ada276c,L1,reviewed implementation,mobileapp/__tests__/App.notificationBootstrap.test.tsx,178,reviewed-selector,same-server taps still wait for readiness then deliver fresh responses once without saving,False,SCENE-MIG-002
+MAP-3a38d5e64c65,L2,reviewed implementation,mobileapp/__tests__/App.sceneMigration.test.tsx,66,reviewed-selector,main App keeps compact navigation props and a fresh root changes its real shell,False,SCENE-MIG-005
+MAP-da46dbb93884,L2,reviewed implementation,mobileapp/__tests__/App.sceneMigration.test.tsx,75,reviewed-selector,main App sidebar geometry follows the new root even when RN retains its old phone width,False,SCENE-MIG-005
+MAP-b8c8470d4954,L2,reviewed implementation,mobileapp/__tests__/App.sceneMigration.test.tsx,87,reviewed-selector,a real anchored menu stays inside a new narrow root while RN width remains stale,False,SCENE-MIG-005
+MAP-cfca889ee705,L2,reviewed implementation,mobileapp/__tests__/App.sceneMigration.test.tsx,106,reviewed-selector,retained DiffModal follows its actual viewport layout and keeps wrap and close usable with stale RN dimensions,False,SCENE-MIG-005
+MAP-9ba95c850181,L2,reviewed implementation,mobileapp/__tests__/App.sceneMigration.test.tsx,133,reviewed-selector,real HQ inspector follows root resize and sidebar hiding while RN remains stale,False,SCENE-MIG-005
+MAP-52fc7bb9aa93,L2,reviewed implementation,mobileapp/__tests__/App.sceneMigration.test.tsx,146,reviewed-selector,real menu position and height follow a second root resize with nonzero safe-area edges,False,SCENE-MIG-005
+MAP-4a4a0d853ca2,L2,reviewed implementation,mobileapp/__tests__/App.sceneMigration.test.tsx,167,reviewed-selector,real App keeps safe-area ownership while startup resolves from Splash to unpaired Servers,False,SCENE-MIG-005
 LEG-a93ae72a5022,L1,RN / mobile harness,mobileapp/__tests__/App.test.tsx,9,test,renders correctly,False,legacy-not-retrospectively-reviewed
 LEG-43b35034f78d,L1,Android native,mobileapp/android/app/src/test/java/com/gtmux/app/DocumentPolicyTest.kt,7,JUnit,imageBoundsAreSharedByDocumentAndClipboardReaders,False,legacy-not-retrospectively-reviewed
 LEG-818e29919768,L1,Android native,mobileapp/android/app/src/test/java/com/gtmux/app/DocumentPolicyTest.kt,13,JUnit,resolverKeepsOriginAndRejectsCredentialOrQueryConfusion,False,legacy-not-retrospectively-reviewed
@@ -3775,8 +3798,8 @@ LEG-6e4751cbc433,L4,RN / mobile harness,mobileapp/e2e/__tests__/answer-options.t
 LEG-2d3a6b1e37ba,M,RN / mobile harness,mobileapp/e2e/__tests__/appstore-shots-ipad.test.ts,53,it,"captures the split shell, HQ matters, the pane grid and the knowledge sheet",False,legacy-not-retrospectively-reviewed
 LEG-1b162166dec9,M,RN / mobile harness,mobileapp/e2e/__tests__/appstore-shots.test.ts,45,it,"captures the radar, the terminal, HQ, its work, usage and the Macs",False,legacy-not-retrospectively-reviewed
 LEG-ac7603c2bff5,L4,RN / mobile harness,mobileapp/e2e/__tests__/chat-fullscreen-collapse.test.ts,28,it,"opens chat, collapses/expands all, enters+exits full-screen",False,legacy-not-retrospectively-reviewed
-LEG-a5d63af936be,L4,RN / mobile harness,mobileapp/e2e/__tests__/coldstart-push.test.ts,130,it,"A: cold start with an active Mac, switches, background, a new warm tap",False,legacy-not-retrospectively-reviewed
-LEG-f3196e5f4ce2,L4,RN / mobile harness,mobileapp/e2e/__tests__/coldstart-push.test.ts,170,it,C: a launch with no notification switches where it is pointed,False,legacy-not-retrospectively-reviewed
+LEG-a5d63af936be,L4,RN / mobile harness,mobileapp/e2e/__tests__/coldstart-push.test.ts,146,it,"A: cold start with an active Mac, switches, background, a new warm tap",False,legacy-not-retrospectively-reviewed
+LEG-f3196e5f4ce2,L4,RN / mobile harness,mobileapp/e2e/__tests__/coldstart-push.test.ts,211,it,C: a launch with no notification switches where it is pointed,False,legacy-not-retrospectively-reviewed
 LEG-1c834aed07e9,L4,RN / mobile harness,mobileapp/e2e/__tests__/composer-camera-unavailable.test.ts,19,it,Camera with no camera says so instead of doing nothing,False,legacy-not-retrospectively-reviewed
 LEG-ecf828c0a4a6,L4,RN / mobile harness,mobileapp/e2e/__tests__/composer-keyrow.test.ts,32,it,"has no Space pill, orders ⏎ after ↑/↓, and ⌫ erases in the pane",False,legacy-not-retrospectively-reviewed
 LEG-07d49ef24147,L4,RN / mobile harness,mobileapp/e2e/__tests__/composer-photo-markup.test.ts,24,it,a library photo goes through markup and reaches the Mac with the message,False,legacy-not-retrospectively-reviewed
@@ -3797,6 +3820,7 @@ LEG-48cc6a34e6d3,L4,RN / mobile harness,mobileapp/e2e/__tests__/hq-keyboard.test
 LEG-3e8dbc51d1ff,L4,RN / mobile harness,mobileapp/e2e/__tests__/hq-long-conversation.test.ts,43,it,"a long HQ conversation opens at the latest turn, reads back, and follows a new reply",False,legacy-not-retrospectively-reviewed
 LEG-018a72b313eb,L4,RN / mobile harness,mobileapp/e2e/__tests__/hq-shots.test.ts,25,it,"renders the HQ card (not a row), and tapping opens Detail in chat",False,legacy-not-retrospectively-reviewed
 LEG-5d9b553a6364,L4,RN / mobile harness,mobileapp/e2e/__tests__/hq-shots.test.ts,72,it,opens the board and captures it for review,False,legacy-not-retrospectively-reviewed
+MAP-b3419be992f8,L3,reviewed implementation,mobileapp/e2e/__tests__/ipad-adaptive.test.ts,14,reviewed-selector,keeps the iPad sidebar and selected session through rotation,False,SCENE-MIG-007
 LEG-763c5ae68f6a,L4,RN / mobile harness,mobileapp/e2e/__tests__/ipad-demo.test.ts,25,it,is the regular shell over sample data,False,legacy-not-retrospectively-reviewed
 LEG-56070872eabb,L4,RN / mobile harness,mobileapp/e2e/__tests__/ipad-keys.test.ts,41,it,drives the shell from the keymap,False,legacy-not-retrospectively-reviewed
 LEG-4137e784fd6a,L4,RN / mobile harness,mobileapp/e2e/__tests__/jumpbottom.test.ts,29,it,"lands on the tail, not short of it",False,legacy-not-retrospectively-reviewed
@@ -3815,9 +3839,15 @@ LEG-d1423a35ae7b,L4,RN / mobile harness,mobileapp/e2e/__tests__/radar-refresh-co
 LEG-8094dd3c9a7c,L4,RN / mobile harness,mobileapp/e2e/__tests__/radar.test.ts,29,it,"auto-pairs, opens a pane, and the network calls are recorded",False,legacy-not-retrospectively-reviewed
 LEG-6aa06fe97cdb,L4,RN / mobile harness,mobileapp/e2e/__tests__/revoked-phone.test.ts,27,it,"a phone revoked while the app was closed opens on ""access rejected"", and the server list agrees",False,legacy-not-retrospectively-reviewed
 LEG-7d7ce36e4772,L4,RN / mobile harness,mobileapp/e2e/__tests__/revoked-phone.test.ts,55,it,a pane open when the Mac revokes the phone says so in its header,False,legacy-not-retrospectively-reviewed
+MAP-5f9af003b179,L3,reviewed implementation,mobileapp/e2e/__tests__/scene-migration-actions.test.ts,15,reviewed-selector,delivers a cold notification action exactly once,False,SCENE-MIG-006
+MAP-542ef487bb26,L3,reviewed implementation,mobileapp/e2e/__tests__/scene-migration-actions.test.ts,16,reviewed-selector,delivers a warm notification action exactly once,False,SCENE-MIG-006
+MAP-da368bf98131,L3,reviewed implementation,mobileapp/e2e/__tests__/scene-migration-links.test.ts,15,reviewed-selector,opens a cold usage link through the scene,False,SCENE-MIG-006
+MAP-2eb13c4361fd,L3,reviewed implementation,mobileapp/e2e/__tests__/scene-migration-links.test.ts,16,reviewed-selector,opens a warm usage link through the scene,False,SCENE-MIG-006
 LEG-ce8589d51a98,M,RN / mobile harness,mobileapp/e2e/__tests__/screenshots.test.ts,33,it,"captures radar, detail, and the connection page",False,legacy-not-retrospectively-reviewed
 LEG-9d2138d1a1e7,L4,RN / mobile harness,mobileapp/e2e/__tests__/send-feedback.test.ts,38,it,a refusal names the pane someone is typing in,False,legacy-not-retrospectively-reviewed
 LEG-90d6e9b0fcce,L4,RN / mobile harness,mobileapp/e2e/__tests__/send-feedback.test.ts,61,it,"a send into a running session says it went, and that the agent may finish first",False,legacy-not-retrospectively-reviewed
+MAP-136dedeea639,L3,reviewed implementation,mobileapp/e2e/__tests__/server-switch-compare.test.ts,14,reviewed-selector,selects a server after a clean launch,False,SCENE-MIG-007
+MAP-f4698467762a,L3,reviewed implementation,mobileapp/e2e/__tests__/server-switch-compare.test.ts,36,reviewed-selector,switches between two saved servers,False,SCENE-MIG-007
 LEG-5511fce16704,L4,RN / mobile harness,mobileapp/e2e/__tests__/server-switch.test.ts,57,run,a launch from a notification does not pull a later server switch back,False,legacy-not-retrospectively-reviewed
 LEG-91512a46ffa3,L4,RN / mobile harness,mobileapp/e2e/__tests__/server-switch.test.ts,94,run,"without a launch notification, a switch goes where it is pointed",False,legacy-not-retrospectively-reviewed
 LEG-398163bb0c32,L4,RN / mobile harness,mobileapp/e2e/__tests__/settings-appearance-language.test.ts,55,it,Dark and 中文 apply at once and survive a relaunch,False,legacy-not-retrospectively-reviewed
@@ -3883,6 +3913,32 @@ MAP-c6dfe48e744e,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,103,review
 LEG-95b0bcda12ce,M,RN / mobile harness,mobileapp/e2e/capture/hq-header-shot.test.ts,15,it,opens the disclosure,False,legacy-not-retrospectively-reviewed
 LEG-490318c4a70a,M,RN / mobile harness,mobileapp/e2e/capture/knowledge-shot.test.ts,14,it,opens from the header and drills into an entry,False,legacy-not-retrospectively-reviewed
 MAP-38c67a93a00d,G,RN / mobile harness,mobileapp/e2e/capture/knowledge-shot.test.ts,13,reviewed-selector,gated(,False,DG-001
+MAP-d455cb51bba1,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,63,reviewed-selector,def sources(,False,SCENE-MIG-008
+MAP-bb550a403768,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,77,reviewed-selector,def units(,False,SCENE-MIG-008
+MAP-ea5937ab5244,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,126,reviewed-selector,def archive_source(,False,SCENE-MIG-008
+MAP-38d95bd6046c,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,118,reviewed-selector,def allocate_unit(,False,SCENE-MIG-008
+MAP-d8d576f98a52,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,183,reviewed-selector,def unit_errors(,False,SCENE-MIG-008
+MAP-e0657dd9a16c,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,232,reviewed-selector,def verify_all(,False,SCENE-MIG-008
+MAP-5e8a9b948e24,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,725,reviewed-selector,def preflight(,False,SCENE-MIG-008
+MAP-686096fccf36,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,773,reviewed-selector,def prepare_source(,False,SCENE-MIG-008
+MAP-e317c36e87b4,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,801,reviewed-selector,def prepare_work(,False,SCENE-MIG-008
+MAP-48f5d7e71933,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,821,reviewed-selector,def build_product(,False,SCENE-MIG-008
+MAP-eddc7dcee0b0,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,862,reviewed-selector,def collect_identity(,False,SCENE-MIG-008
+MAP-af21af8be44f,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,977,reviewed-selector,def run_unit(,False,SCENE-MIG-008
+MAP-89aaee2a9ed7,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,904,reviewed-selector,def cleanup_unit(,False,SCENE-MIG-008
+MAP-15d5d6c17883,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,1050,reviewed-selector,def execute(,False,SCENE-MIG-008
+MAP-73f0d22945c8,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,260,reviewed-selector,class CommandFailure(RuntimeError):,False,SCENE-MIG-008
+MAP-2c39e5b64866,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,599,reviewed-selector,def command(,False,SCENE-MIG-008
+MAP-d837c2f06ed6,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,957,reviewed-selector,def preparation_diagnostics(,False,SCENE-MIG-008
+MAP-51359dac4146,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,1133,reviewed-selector,def trusted_context(,False,SCENE-MIG-008
+MAP-c3f467f74efe,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,1156,reviewed-selector,def role_units(,False,SCENE-MIG-008
+MAP-078dd820d920,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,1174,reviewed-selector,def publish_role(,False,SCENE-MIG-008
+MAP-53fc737849d5,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,1195,reviewed-selector,def comparable_identity(,False,SCENE-MIG-008
+MAP-597c536af5c3,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,1247,reviewed-selector,def verify_union(,False,SCENE-MIG-008
+MAP-37edded9b733,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,267,reviewed-selector,class CommandClock:,False,SCENE-MIG-008
+MAP-013509623433,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,289,reviewed-selector,class InstallStream:,False,SCENE-MIG-008
+MAP-29f4d506325e,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,370,reviewed-selector,def inspect_stdout(,False,SCENE-MIG-008
+MAP-6e2684872a4b,G,reviewed implementation,mobileapp/e2e/ci-scene-migration.py,412,reviewed-selector,def check_terminal_exit(,False,SCENE-MIG-008
 LEG-34eb45b46408,M,RN / mobile harness,mobileapp/e2e/diagnostics/ipad-keys-probe.test.ts,12,it,types into the pane search with mobile: keys,False,legacy-not-retrospectively-reviewed
 LEG-f17f27ea8cb4,M,RN / mobile harness,mobileapp/e2e/diagnostics/send-repro.test.ts,21,it,types + sends 继续 and reports whether a failed-send bar appears,False,legacy-not-retrospectively-reviewed
 MAP-2fd3cafb008c,L2,reviewed implementation,mobileapp/e2e/fake-serve/backend-contract.test.ts,46,reviewed-selector,RN fake / Go contract:,False,CT-HTTP
@@ -3926,6 +3982,7 @@ LEG-bd3b5eb44399,L1,RN / mobile harness,mobileapp/e2e/fake-serve/mutations.test.
 LEG-2947a72dc560,L1,RN / mobile harness,mobileapp/e2e/fake-serve/mutations.test.ts,161,test,"a waiting pane offers its own words, an idle one offers nothing",False,legacy-not-retrospectively-reviewed
 LEG-c2fd7392e61c,L1,RN / mobile harness,mobileapp/e2e/fake-serve/mutations.test.ts,181,test,"both arrive, in order, each with its own idempotency token",False,legacy-not-retrospectively-reviewed
 LEG-a15118380df4,L1,RN / mobile harness,mobileapp/e2e/fake-serve/mutations.test.ts,189,test,"a retry of the SAME send reuses its token, which is what makes it a retry",False,legacy-not-retrospectively-reviewed
+MAP-b33db4631198,L2,reviewed implementation,mobileapp/e2e/fake-serve/request-diagnostics.test.ts,3,reviewed-selector,diagnostic request metadata shows routing without headers or query values,False,SCENE-MIG-011
 LEG-e900a8017f31,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,27,test,"/api/addresses answers an empty list, not a 404",False,legacy-not-retrospectively-reviewed
 LEG-91d47fdea0cb,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,33,test,/api/tasks answers the owner with nothing in flight,False,legacy-not-retrospectively-reviewed
 LEG-67b548dee742,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,41,test,"every row is tiered, located and named the way PaneRow says",False,legacy-not-retrospectively-reviewed
@@ -3944,7 +4001,8 @@ LEG-6b1813f7509a,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,1
 LEG-d240b174d0df,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,156,test,the stock report is unchanged until a suite seeds the full one,False,legacy-not-retrospectively-reviewed
 LEG-01e2c0d8a07a,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,160,test,"the seeded plan groups by agent, under the names the usage sheet ids carry",False,legacy-not-retrospectively-reviewed
 LEG-e34f8145a818,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,173,test,back to the stock world,False,legacy-not-retrospectively-reviewed
-MAP-f2ed2637baa9,L2,reviewed implementation,mobileapp/e2e/fake-serve/server.ts,95,reviewed-selector,startFake,False,CT-HTTP
+MAP-f2ed2637baa9,L2,reviewed implementation,mobileapp/e2e/fake-serve/server.ts,97,reviewed-selector,startFake,False,CT-HTTP
+MAP-10a263ace6db,L2,reviewed implementation,mobileapp/e2e/fake-serve/transcript-identity.test.ts,10,reviewed-selector,default transcript identity survives polling while new fixtures and explicit transcripts remain independent,False,SCENE-MIG-011
 LEG-a314cc5be23f,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,8,test,"the stock fixture: one worker waiting, so needs_you, naming it",False,legacy-not-retrospectively-reviewed
 LEG-65bd4c2dfa5e,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,13,test,nothing waiting is normal; the supervisor mid-turn is working; the supervisor waiting is hq_call,False,legacy-not-retrospectively-reviewed
 LEG-5d182318c546,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,25,test,the longest waiting worker comes first,False,legacy-not-retrospectively-reviewed
@@ -3952,16 +4010,32 @@ LEG-9491a40f6875,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts
 LEG-62967d6ba432,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,41,test,"no supervisor, no verdict",False,legacy-not-retrospectively-reviewed
 LEG-4f90e4968cbd,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,47,test,GET /api/digest carries it on the supervisor row,False,legacy-not-retrospectively-reviewed
 MAP-f4f657590af5,L2,reviewed implementation,mobileapp/e2e/fake-serve/world.ts,111,reviewed-selector,export class World,False,CT-HTTP
+MAP-0546794d3dea,G,reviewed implementation,mobileapp/e2e/instrument-baseline.py,8,reviewed-selector,changes =,False,SCENE-MIG-008
+MAP-5c6d0f4dc09d,G,reviewed implementation,mobileapp/e2e/instrument-baseline.py,38,reviewed-selector,GTMUX_COMPARE_JOURNEY,False,SCENE-MIG-008
 MAP-befb8569059f,G,reviewed implementation,mobileapp/e2e/jest.config.manual.js,2,reviewed-selector,manualMode(process.env),False,"DG-001,DG-002"
 MAP-a88b539daecf,G,reviewed implementation,mobileapp/e2e/jest.config.manual.js,3,reviewed-selector,sendTarget(process.env),False,"DG-001,DG-002"
-LEG-b6f73720d14b,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,8,test,manual handles nothing on the test’s behalf,False,legacy-not-retrospectively-reviewed
-LEG-7440419bbda7,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,14,test,"the default dismisses, and the older accept switch still accepts",False,legacy-not-retrospectively-reviewed
-LEG-9afe9479f18a,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,19,test,the explicit mode wins over the older switch,False,legacy-not-retrospectively-reviewed
-LEG-ff05befffbd7,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,23,test,a misspelt mode stops the run instead of falling back to dismiss,False,legacy-not-retrospectively-reviewed
-LEG-7201f98d96a5,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,28,test,headless capture is explicit and local GUI runs keep their behavior,False,legacy-not-retrospectively-reviewed
-LEG-16fab5a7cc96,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,34,test,only explicit hosted capture separates WDA build and readiness with one bounded connection,False,legacy-not-retrospectively-reviewed
-LEG-61bfa22d706f,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,50,test,only hosted multi-screen store captures receive the longer journey budget,False,legacy-not-retrospectively-reviewed
+MAP-66952beb74f5,L1,reviewed implementation,mobileapp/e2e/setup/app.ts,44,reviewed-selector,launchWithFlags,False,SCENE-MIG-010
+MAP-514c674c6429,L1,reviewed implementation,mobileapp/e2e/setup/app.ts,34,reviewed-selector,writeDebugFlags,False,SCENE-MIG-010
+MAP-8108cc25d72e,L1,reviewed implementation,mobileapp/e2e/setup/app.ts,63,reviewed-selector,waitForNotificationAuthorization,False,SCENE-MIG-010
+MAP-2444a23694a2,L1,reviewed implementation,mobileapp/e2e/setup/appLaunchFiles.test.ts,14,reviewed-selector,each launch returns the freshly resolved path containing its own flags,False,SCENE-MIG-010
+MAP-f758152f6a60,L1,reviewed implementation,mobileapp/e2e/setup/appLaunchFiles.test.ts,29,reviewed-selector,failed activation exposes no successful launch path,False,SCENE-MIG-010
+MAP-692a5e080ea9,L1,reviewed implementation,mobileapp/e2e/setup/appLaunchFiles.test.ts,36,reviewed-selector,lookup failure does not write flags or activate the app,False,SCENE-MIG-010
+LEG-b6f73720d14b,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,25,test,manual handles nothing on the test’s behalf,False,legacy-not-retrospectively-reviewed
+LEG-7440419bbda7,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,31,test,"the default dismisses, and the older accept switch still accepts",False,legacy-not-retrospectively-reviewed
+LEG-9afe9479f18a,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,36,test,the explicit mode wins over the older switch,False,legacy-not-retrospectively-reviewed
+LEG-ff05befffbd7,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,40,test,a misspelt mode stops the run instead of falling back to dismiss,False,legacy-not-retrospectively-reviewed
+LEG-7201f98d96a5,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,45,test,headless capture is explicit and local GUI runs keep their behavior,False,legacy-not-retrospectively-reviewed
+LEG-16fab5a7cc96,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,51,test,only explicit hosted capture separates WDA build and readiness with one bounded connection,False,legacy-not-retrospectively-reviewed
+LEG-61bfa22d706f,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,67,test,only hosted multi-screen store captures receive the longer journey budget,False,legacy-not-retrospectively-reviewed
+MAP-ad6f801c4c8b,L1,RN / mobile harness,mobileapp/e2e/setup/capabilities.test.ts,3,reviewed-selector,cloud simulator session waits for a fresh WDA build without requiring a prebuilt product,False,SCENE-MIG-010
+MAP-fe0c5bc5423c,L1,reviewed implementation,mobileapp/e2e/setup/capabilities.ts,57,reviewed-selector,cloudStartupCapabilities,False,SCENE-MIG-010
+MAP-24bf73c18fbb,L1,reviewed implementation,mobileapp/e2e/setup/capabilities.ts,70,reviewed-selector,sessionConnectionOptions,False,SCENE-MIG-010
+MAP-16ffab634a71,L1,reviewed implementation,mobileapp/e2e/setup/capabilities.ts,66,reviewed-selector,appiumServerTimeoutArgs,False,SCENE-MIG-010
+MAP-f430bab330eb,L1,reviewed implementation,mobileapp/e2e/setup/driver.ts,36,reviewed-selector,allocateArtifacts,False,SCENE-MIG-010
+MAP-b187c45616bf,L1,reviewed implementation,mobileapp/e2e/setup/driver.ts,70,reviewed-selector,recordSceneStep,False,SCENE-MIG-010
 MAP-cb2da71006dd,G,reviewed implementation,mobileapp/e2e/setup/global-setup-manual.ts,6,reviewed-selector,"await setupManual(process.env, verifySendTarget, globalSetup)",False,DG-004
+MAP-6f6d6acb4163,L1,reviewed implementation,mobileapp/e2e/setup/global-setup.ts,39,reviewed-selector,globalSetup,False,SCENE-MIG-010
+MAP-d36a8e3caa71,L1,reviewed implementation,mobileapp/e2e/setup/journeyGuard.ts,2,reviewed-selector,createJourneyGuard,False,SCENE-MIG-010
 MAP-c8767994a252,G,reviewed implementation,mobileapp/e2e/setup/manual-tools.cjs,2,reviewed-selector,function manualMode(,False,"DG-001,DG-002,DG-003"
 MAP-64142db61c66,G,reviewed implementation,mobileapp/e2e/setup/manual-tools.cjs,8,reviewed-selector,function sendTarget(,False,"DG-001,DG-002,DG-003"
 MAP-ad9860024fc0,G,reviewed implementation,mobileapp/e2e/setup/manual-tools.cjs,19,reviewed-selector,async function verifySendTarget(,False,"DG-001,DG-002,DG-003"
@@ -3977,8 +4051,35 @@ LEG-225a080b8593,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,94,i
 LEG-5beea2682a41,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,100,it,"without a directory, the simulator scopes it",False,legacy-not-retrospectively-reviewed
 LEG-72dc7db04494,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,106,it,"a scoped WDA pattern selects through pgrep itself, not only as a regex",False,legacy-not-retrospectively-reviewed
 LEG-2eb2e34b22ce,L1,RN / mobile harness,mobileapp/e2e/setup/reclaim.test.ts,124,it,unscoped by default,False,legacy-not-retrospectively-reviewed
+MAP-6b3e30547470,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,15,reviewed-selector,separate source and journey artifacts never replace the earlier result,False,"SCENE-MIG-006,SCENE-MIG-010"
+MAP-a1cfca64d49e,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,27,reviewed-selector,missing identity and unowned or linked artifact destinations fail without fallback,False,"SCENE-MIG-006,SCENE-MIG-010"
+MAP-9277f4714d3a,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,51,reviewed-selector,content geometry rejects stale or zero native frames and an unsafe menu,False,"SCENE-MIG-006,SCENE-MIG-010"
+MAP-1d42c431a366,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,63,reviewed-selector,ordinary surface never accepts a split root as a substitute,False,"SCENE-MIG-006,SCENE-MIG-010"
+MAP-9ba33894e098,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,160,reviewed-selector,both action registrations are present and own guarded setup and cleanup,False,"SCENE-MIG-006,SCENE-MIG-010"
+MAP-757a23bb3377,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,211,reviewed-selector,headless-host,False,"SCENE-MIG-006,SCENE-MIG-010"
+MAP-2c19a2596e68,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,221,reviewed-selector,scene-host-attached,False,"SCENE-MIG-006,SCENE-MIG-010"
+MAP-25f6e747061f,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,229,reviewed-selector,scene-host-updated,False,"SCENE-MIG-006,SCENE-MIG-010"
+MAP-e581fffb0464,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,121,reviewed-selector,link helper requires new native delivery as well as visible usage (cold=%s),False,"SCENE-MIG-006,SCENE-MIG-010"
+MAP-16d8061f552b,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,154,reviewed-selector,actual link registration executes the shared native and UI contract (cold=%s),False,"SCENE-MIG-006,SCENE-MIG-010"
+MAP-b3b2f740d29d,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,262,reviewed-selector,"registered action executes tap and exact fake delivery, missing tap fails (cold=%s)",False,"SCENE-MIG-006,SCENE-MIG-010"
+MAP-d6d4cdb5f402,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,266,reviewed-selector,registered cold action rejects %s and restores rotation,False,"SCENE-MIG-006,SCENE-MIG-010"
+MAP-c0ebb52b423a,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,287,reviewed-selector,setup cleans its own server when %s evidence cannot be written,False,"SCENE-MIG-006,SCENE-MIG-010"
+MAP-9be18c53df39,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,270,reviewed-selector,registered content rotation measures and edits the actual reader (ipad=%s),False,"SCENE-MIG-006,SCENE-MIG-010"
+MAP-8eef81ad47b9,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.test.ts,280,reviewed-selector,registered phone and iPad journeys reject %s on ipad=%s despite fresh root geometry,False,"SCENE-MIG-006,SCENE-MIG-010"
+MAP-16d6bf431e39,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,161,reviewed-selector,coldSceneAction,False,SCENE-MIG-006
+MAP-94b1215d1e59,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,208,reviewed-selector,warmSceneAction,False,SCENE-MIG-006
+MAP-b60285dcd5b7,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,237,reviewed-selector,usageSceneLink,False,SCENE-MIG-006
+MAP-5d33e58ccb39,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,256,reviewed-selector,captureSceneJourney,False,SCENE-MIG-006
+MAP-c3eefc5f5890,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,61,reviewed-selector,observeGeometry,False,SCENE-MIG-006
+MAP-db5a088f15bb,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,112,reviewed-selector,readerToolsAndDraft,False,SCENE-MIG-006
+MAP-5fd8d42575d0,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,53,reviewed-selector,contentGeometryMatches,False,SCENE-MIG-006
+MAP-195f9776ba27,L3,reviewed implementation,mobileapp/e2e/setup/sceneJourneys.ts,102,reviewed-selector,continueDraftAfterRotation,False,SCENE-MIG-006
 ND-001,L1,iOS Swift,mobileapp/ios/tests/DocumentHTMLChecks.swift,2,native-procedural-oracle,DocumentHTML production Foundation checks,False,ND-001
 ND-002,L1,iOS Swift,mobileapp/ios/tests/DocumentMarkdownChecks.swift,3,native-procedural-oracle,DocumentMarkdown production Foundation checks,False,ND-002
+MAP-4d79dbb7ab50,L1,reviewed implementation,mobileapp/ios/tests/NotificationResponseCompletionChecks.swift,20,reviewed-selector,notification response completion checks passed,False,SCENE-MIG-001
+MAP-88eca3d41bfd,L1,reviewed implementation,mobileapp/ios/tests/NotificationResponsePayloadChecks.swift,70,reviewed-selector,notification response payload and queue checks passed,False,SCENE-MIG-001
+MAP-2bf007ddc23d,L1,reviewed implementation,mobileapp/ios/tests/NotificationResponsePayloadChecks.swift,16,reviewed-selector,let activityPayload = sceneUserActivityPayload,False,SCENE-MIG-001
+MAP-4eba460f385e,L1,reviewed implementation,mobileapp/ios/tests/NotificationResponsePayloadChecks.swift,20,reviewed-selector,"retainHeadlessSceneLinks(urls: [sceneURL], activities: [activity])",False,SCENE-MIG-001
 MAP-40893b89cbd9,G,reviewed implementation,mobileapp/metro.config.js,11,reviewed-selector,const config =,False,CT-SCOPE
 LEG-8af4b5717085,G,RN / mobile harness,mobileapp/scripts/android_delivery_test.py,17,unittest,test_versions_are_monotonic_and_unambiguous,False,legacy-not-retrospectively-reviewed
 LEG-90cc6b5fa0bd,G,RN / mobile harness,mobileapp/scripts/android_delivery_test.py,33,unittest,test_elf_requires_real_16kb_load_alignment,False,legacy-not-retrospectively-reviewed
@@ -4443,8 +4544,25 @@ LEG-6f792759097e,L1,RN / mobile harness,mobileapp/src/pairing/store.test.ts,237,
 LEG-2f070febef58,L1,RN / mobile harness,mobileapp/src/platformReleaseNotes.test.ts,6,test,iOS keeps its archive; Android never inherits iPhone-only historical releases,False,legacy-not-retrospectively-reviewed
 LEG-83c398034235,L1,RN / mobile harness,mobileapp/src/push/android.test.ts,11,test,missing configuration does not create a fake registration,False,legacy-not-retrospectively-reviewed
 LEG-3410a0b99aa3,L1,RN / mobile harness,mobileapp/src/push/android.test.ts,15,test,"FCM token refresh, one-use cold tap and live tap share lifecycle without executing digits",False,legacy-not-retrospectively-reviewed
-LEG-c0039196e4f2,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,29,test,"the launch notification is acted on once, not on every server switch",False,legacy-not-retrospectively-reviewed
-LEG-a79023052203,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,39,test,a launch with no notification taps nothing,False,legacy-not-retrospectively-reviewed
+MAP-4aec1b6dc3b7,L1,reviewed implementation,mobileapp/src/push/initialPermissionConcurrency.test.ts,15,reviewed-selector,"requests permission despite a stalled initial response, then delivers the late action once",False,SCENE-MIG-003
+MAP-27c1f05fe1bb,L1,reviewed implementation,mobileapp/src/push/initialPermissionConcurrency.test.ts,29,reviewed-selector,ignores an initial response that arrives after teardown,False,SCENE-MIG-003
+MAP-a29517909a3d,L1,reviewed implementation,mobileapp/src/push/initialPermissionConcurrency.test.ts,77,reviewed-selector,delivers an initial action without waiting for permission,False,SCENE-MIG-003
+MAP-82e358ff5f58,L1,reviewed implementation,mobileapp/src/push/initialPermissionConcurrency.test.ts,40,reviewed-selector,hands a late initial response to the live bridge after a server switch,False,SCENE-MIG-003
+MAP-40ca9ad91fa7,L1,reviewed implementation,mobileapp/src/push/initialPermissionConcurrency.test.ts,55,reviewed-selector,cancels a bridge immediately when permission is pending and hands the action to its replacement,False,SCENE-MIG-003
+MAP-c60f9dfaa54a,L1,reviewed implementation,mobileapp/src/push/initialPermissionConcurrency.test.ts,90,reviewed-selector,reads authorization settings only for a pending debug request and stops on teardown,False,SCENE-MIG-003
+LEG-c0039196e4f2,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,32,test,"the launch notification is acted on once, not on every server switch",False,legacy-not-retrospectively-reviewed
+LEG-a79023052203,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,42,test,a launch with no notification taps nothing,False,legacy-not-retrospectively-reviewed
+MAP-43a5acb09524,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,124,reviewed-selector,a buffered native response and the launch copy dispatch one quick reply,False,SCENE-MIG-003
+MAP-e583ab6da371,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,136,reviewed-selector,a native buffer failure still delivers the bridge launch notification,False,SCENE-MIG-003
+MAP-f6ca99aeb79b,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,58,reviewed-selector,the same quick action arriving from scene and delegate sends once,False,SCENE-MIG-003
+MAP-49ac3dbf1487,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,145,reviewed-selector,a stalled native drain leaves initial fallback and foreground recovery usable,False,SCENE-MIG-003
+MAP-14fb52a6ba3b,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,192,reviewed-selector,the initial action does not wait for notification permission,False,SCENE-MIG-003
+MAP-b3afaf2b1f68,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,167,reviewed-selector,foreground recovery first delivers a retained response after the initial drain stalls,False,SCENE-MIG-003
+MAP-f3c8f4404ee8,L1,reviewed implementation,mobileapp/src/push/permissionTrace.test.ts,24,reviewed-selector,probe entry distinguishes a pending native settings callback from a timer that never ran,False,SCENE-MIG-003
+MAP-88ba30480bfb,L1,reviewed implementation,mobileapp/src/push/permissionTrace.test.ts,39,reviewed-selector,abort before the probe records closure and cancels the existing timer,False,SCENE-MIG-003
+MAP-550ae988375a,L1,reviewed implementation,mobileapp/src/push/permissionTrace.test.ts,48,reviewed-selector,logging off adds neither a probe nor teardown records,False,SCENE-MIG-003
+MAP-13e1cb6d9b1b,L1,reviewed implementation,mobileapp/src/push/responseCompletion.test.ts,14,reviewed-selector,waits for a %s reply and suppresses a duplicate while pending,False,SCENE-MIG-003
+MAP-9ff3d70517f7,L1,reviewed implementation,mobileapp/src/push/responseCompletion.test.ts,42,reviewed-selector,a normal notification tap acknowledges without waiting for a reply,False,SCENE-MIG-003
 LEG-fbb65bc19bd8,L1,RN / mobile harness,mobileapp/src/push/sync.test.ts,9,it,"registers a selected Mac and unregisters a muted Mac, including silent badge pushes",False,legacy-not-retrospectively-reviewed
 LEG-c01ee8fb12d3,L1,RN / mobile harness,mobileapp/src/push/sync.test.ts,20,it,tries a reported alternate route and leaves a failed sync pending,False,legacy-not-retrospectively-reviewed
 LEG-7719b4cb3445,L1,RN / mobile harness,mobileapp/src/push/sync.test.ts,31,it,never registers a guest or an unknown token,False,legacy-not-retrospectively-reviewed
@@ -5575,6 +5693,9 @@ LEG-c1dcae648f3a,L2,RN / mobile harness,mobileapp/src/ui/WhatsNewModal.test.tsx,
 LEG-bde490778c31,L2,RN / mobile harness,mobileapp/src/ui/WhatsNewModal.test.tsx,91,test,no Pressable wraps the ScrollView,False,legacy-not-retrospectively-reviewed
 LEG-147ace8d3cd1,L2,RN / mobile harness,mobileapp/src/ui/WhatsNewModal.test.tsx,103,test,tapping the backdrop closes,False,legacy-not-retrospectively-reviewed
 LEG-f8eb4ad15194,L2,RN / mobile harness,mobileapp/src/ui/WhatsNewModal.test.tsx,121,test,the newest version opens even when the entries arrive after mount,False,legacy-not-retrospectively-reviewed
+MAP-20f88ab9ada6,L1,reviewed implementation,mobileapp/src/ui/WorkspaceSurface.sceneMetrics.test.tsx,17,reviewed-selector,"keeps background active until a current scene exists, then follows native inset changes",False,SCENE-MIG-002
+MAP-2535f52a828e,L1,reviewed implementation,mobileapp/src/ui/WorkspaceSurface.sceneMetrics.test.tsx,42,reviewed-selector,rejects a zero-sized scene instead of seeding fake metrics,False,SCENE-MIG-002
+MAP-501a6457c760,L1,reviewed implementation,mobileapp/src/ui/WorkspaceSurface.test.tsx,12,reviewed-selector,starts background handling before native insets and mounts the visual tree after measurement,False,SCENE-MIG-002
 LEG-c8dea3de822d,L2,RN / mobile harness,mobileapp/src/ui/activity.test.ts,6,test,delegation previews the purpose instead of JSON or an internal task key,False,legacy-not-retrospectively-reviewed
 LEG-6e25f30d9b2c,L2,RN / mobile harness,mobileapp/src/ui/activity.test.ts,13,test.each(),%s previews recorded timing without claiming elapsed time or a result,True,legacy-not-retrospectively-reviewed
 LEG-68925287819f,L2,RN / mobile harness,mobileapp/src/ui/activity.test.ts,22,test,old object arguments work and unknown units are never inferred,False,legacy-not-retrospectively-reviewed
@@ -5992,11 +6113,21 @@ LEG-fe83c539204c,L2,RN / mobile harness,mobileapp/src/ui/time.test.ts,84,it,hold
 LEG-7e1e7c1d7954,L2,RN / mobile harness,mobileapp/src/ui/useKeyboardChrome.test.tsx,56,test,"keyboard timing folds the chrome, and dismissal preserves the current scroll state",False,legacy-not-retrospectively-reviewed
 LEG-bd6085e9a14d,L2,RN / mobile harness,mobileapp/src/ui/useKeyboardChrome.test.tsx,77,test,Reduce Motion folds and restores without animation,False,legacy-not-retrospectively-reviewed
 LEG-aab5aceea630,L2,RN / mobile harness,mobileapp/src/ui/useModalDismiss.test.tsx,6,test.each(),%s completes each modal lifecycle once,True,legacy-not-retrospectively-reviewed
+MAP-e3657e854bc3,L1,reviewed implementation,mobileapp/src/ui/windowMetrics.test.tsx,14,reviewed-selector,"root view resizes update the workspace even when native dimensions do not, without remounting the reader",False,SCENE-MIG-002
+MAP-a4267ab4a51b,L1,reviewed implementation,mobileapp/src/ui/windowMetrics.test.tsx,29,reviewed-selector,native fallback and scale stay current while only valid root width and height override dimensions,False,SCENE-MIG-002
+MAP-109f723286a2,L1,reviewed implementation,mobileapp/src/usage/UsageWidgetBridge.initialDemoLink.test.tsx,15,reviewed-selector,a demo-rejected initial link cannot replay when the connection becomes an owner,False,SCENE-MIG-004
+MAP-cd8094a5d6ae,L1,reviewed implementation,mobileapp/src/usage/UsageWidgetBridge.initialLink.test.tsx,15,reviewed-selector,a guest-rejected initial link cannot replay when the connection becomes owner,False,SCENE-MIG-004
+MAP-2ec345b59070,L1,reviewed implementation,mobileapp/src/usage/UsageWidgetBridge.sceneEvents.test.tsx,14,reviewed-selector,retained scene availability delivers each permitted intent once and rejects guest replay,False,SCENE-MIG-004
 LEG-3de06c104722,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,22,test,"pairing lifecycle sends only the current owner URL, including same-address token rotation",False,legacy-not-retrospectively-reviewed
 LEG-abfa9a8366d0,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,46,test,"a widget opens usage without HQ, dismisses, and ignores guest links and private URL parameters",False,legacy-not-retrospectively-reviewed
-LEG-7419b6327ede,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,73,test,widget links cannot select a server or smuggle credentials,False,legacy-not-retrospectively-reviewed
-LEG-ba603cf68958,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,81,test,changing a connection closes the old sheet and discards its late response,False,legacy-not-retrospectively-reviewed
-LEG-483418e96a4d,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,106,test,Android snapshot labels handle unnamed plans and contain no pairing credential,False,legacy-not-retrospectively-reviewed
+LEG-7419b6327ede,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,81,test,widget links cannot select a server or smuggle credentials,False,legacy-not-retrospectively-reviewed
+LEG-ba603cf68958,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,89,test,changing a connection closes the old sheet and discards its late response,False,legacy-not-retrospectively-reviewed
+LEG-483418e96a4d,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,259,test,Android snapshot labels handle unnamed plans and contain no pairing credential,False,legacy-not-retrospectively-reviewed
+MAP-732a597f88bf,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,118,reviewed-selector,a headless scene link is retained until the visual consumer opens and acknowledges it,False,SCENE-MIG-004
+MAP-3001d0088bec,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,142,reviewed-selector,a queued scene link rejected for a guest cannot open after switching to owner,False,SCENE-MIG-004
+MAP-3fba88d7af6d,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,167,reviewed-selector,a retained scene link is retried when the app becomes active,False,SCENE-MIG-004
+MAP-25be587027d6,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,195,reviewed-selector,an active transition during a failed drain still retries the retained link,False,SCENE-MIG-004
+MAP-68bf80153330,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,224,reviewed-selector,foreground recovery bypasses a stalled scene-link drain and suppresses its late copy,False,SCENE-MIG-004
 LEG-18bbe205ead8,L2,Worker,relay-worker/src/fcm.test.ts,8,test,`FCM contract: ${row.name}`,True,legacy-not-retrospectively-reviewed
 LEG-71aba9531bf9,L2,Worker,relay-worker/src/fcm.test.ts,9,test,"Android never falls through to APNs, including missing FCM config",False,legacy-not-retrospectively-reviewed
 LEG-d69d7e5c069d,L2,Worker,relay-worker/src/fcm.test.ts,20,test,"unsupported activities, oversized bodies and malformed credentials fail closed",False,legacy-not-retrospectively-reviewed
@@ -6046,22 +6177,28 @@ LEG-3a0cbcd63152,G,CI / tooling,scripts/check_private_source_test.py,55,unittest
 LEG-36acddae2fe2,G,CI / tooling,scripts/check_private_source_test.py,63,unittest,test_unreadable_source_fails_and_exception_text_never_reaches_output,False,legacy-not-retrospectively-reviewed
 LEG-046c8bb3bdbc,G,CI / tooling,scripts/check_private_source_test.py,71,unittest,test_wrapper_clears_private_environment_before_build_or_spec_helpers,False,legacy-not-retrospectively-reviewed
 MAP-41a5bc78e4e8,G,reviewed implementation,scripts/ci.py,33,reviewed-selector,confirmed_unit_test_isolation,False,CT-SCOPE
-LEG-bb0f4dd7bc8b,G,CI / tooling,scripts/ci_test.py,35,unittest,test_docs_only_and_mixed_changes,False,legacy-not-retrospectively-reviewed
-LEG-5e8793132c96,G,CI / tooling,scripts/ci_test.py,51,unittest,test_shared_or_unknown_impact_is_full,True,legacy-not-retrospectively-reviewed
-LEG-7bbcfe8992be,G,CI / tooling,scripts/ci_test.py,62,unittest,test_recognized_modules_include_consumers,False,legacy-not-retrospectively-reviewed
-LEG-bbdfd85a9000,G,CI / tooling,scripts/ci_test.py,71,unittest,test_nul_parser_preserves_names_and_old_rename_path,True,legacy-not-retrospectively-reviewed
-LEG-30f2f4661935,G,CI / tooling,scripts/ci_test.py,79,unittest,test_actual_git_rename_deletion_and_symlink,False,legacy-not-retrospectively-reviewed
-LEG-a0a184955335,G,CI / tooling,scripts/ci_test.py,105,unittest,test_missing_refs_force_full_cli_outputs,False,legacy-not-retrospectively-reviewed
-LEG-513d57a7489a,G,CI / tooling,scripts/ci_test.py,116,unittest,test_workflow_jobs_cannot_grow_outside_aggregation,False,legacy-not-retrospectively-reviewed
-LEG-1f71c99fb4dc,G,CI / tooling,scripts/ci_test.py,128,unittest,test_unsigned_ios_preserves_arm64_target_and_verifies_products,False,legacy-not-retrospectively-reviewed
-LEG-2514a184abce,G,CI / tooling,scripts/ci_test.py,140,unittest,test_android_package_is_built_once_and_both_devices_use_its_output,False,legacy-not-retrospectively-reviewed
-LEG-76200ceafcf2,G,CI / tooling,scripts/ci_test.py,160,unittest,test_docs_can_skip_heavy_jobs_but_require_quality,False,legacy-not-retrospectively-reviewed
-LEG-ecfb4bf818ba,G,CI / tooling,scripts/ci_test.py,166,unittest,test_missing_skipped_failed_cancelled_required_job_never_green,True,legacy-not-retrospectively-reviewed
-LEG-252965413bf3,G,CI / tooling,scripts/ci_test.py,175,unittest,test_bad_plans_or_unselected_failure_are_rejected,False,legacy-not-retrospectively-reviewed
-LEG-8a6a845c7484,G,CI / tooling,scripts/ci_test.py,187,unittest,test_mac_host_keeps_both_architectures_and_native_checks,False,legacy-not-retrospectively-reviewed
-LEG-28f4d1551b14,G,CI / tooling,scripts/ci_test.py,204,unittest,test_ios_delivery_pins_the_same_arm_toolchain_and_keeps_protection,False,legacy-not-retrospectively-reviewed
-MAP-349a1f57f0b7,G,CI / tooling,scripts/ci_test.py,43,reviewed-selector,test_reviewed_test_records_are_policy_only_without_hiding_test_changes,False,TD-006
-MAP-5f57607e8e0e,G,CI / tooling,scripts/ci_test.py,17,reviewed-selector,test_unit_test_scope_requires_immutable_product_exclusion,False,CT-SCOPE
+MAP-7b2e9e5dc72d,G,reviewed implementation,scripts/ci.py,50,reviewed-selector,def classify(,False,"CT-SCOPE,SCENE-MIG-009"
+MAP-03a19d975ce6,G,reviewed implementation,scripts/ci.py,138,reviewed-selector,def verdict(,False,"CT-SCOPE,SCENE-MIG-009"
+LEG-bb0f4dd7bc8b,G,CI / tooling,scripts/ci_test.py,37,unittest,test_docs_only_and_mixed_changes,False,legacy-not-retrospectively-reviewed
+LEG-5e8793132c96,G,CI / tooling,scripts/ci_test.py,53,unittest,test_shared_or_unknown_impact_is_full,True,legacy-not-retrospectively-reviewed
+LEG-7bbcfe8992be,G,CI / tooling,scripts/ci_test.py,64,unittest,test_recognized_modules_include_consumers,False,legacy-not-retrospectively-reviewed
+LEG-bbdfd85a9000,G,CI / tooling,scripts/ci_test.py,129,unittest,test_nul_parser_preserves_names_and_old_rename_path,True,legacy-not-retrospectively-reviewed
+LEG-30f2f4661935,G,CI / tooling,scripts/ci_test.py,137,unittest,test_actual_git_rename_deletion_and_symlink,False,legacy-not-retrospectively-reviewed
+LEG-a0a184955335,G,CI / tooling,scripts/ci_test.py,163,unittest,test_missing_refs_force_full_cli_outputs,False,legacy-not-retrospectively-reviewed
+LEG-513d57a7489a,G,CI / tooling,scripts/ci_test.py,174,unittest,test_workflow_jobs_cannot_grow_outside_aggregation,False,legacy-not-retrospectively-reviewed
+LEG-1f71c99fb4dc,G,CI / tooling,scripts/ci_test.py,186,unittest,test_unsigned_ios_preserves_arm64_target_and_verifies_products,False,legacy-not-retrospectively-reviewed
+LEG-2514a184abce,G,CI / tooling,scripts/ci_test.py,198,unittest,test_android_package_is_built_once_and_both_devices_use_its_output,False,legacy-not-retrospectively-reviewed
+LEG-76200ceafcf2,G,CI / tooling,scripts/ci_test.py,218,unittest,test_docs_can_skip_heavy_jobs_but_require_quality,False,legacy-not-retrospectively-reviewed
+LEG-ecfb4bf818ba,G,CI / tooling,scripts/ci_test.py,224,unittest,test_missing_skipped_failed_cancelled_required_job_never_green,True,legacy-not-retrospectively-reviewed
+LEG-252965413bf3,G,CI / tooling,scripts/ci_test.py,233,unittest,test_bad_plans_or_unselected_failure_are_rejected,False,legacy-not-retrospectively-reviewed
+LEG-8a6a845c7484,G,CI / tooling,scripts/ci_test.py,303,unittest,test_mac_host_keeps_both_architectures_and_native_checks,False,legacy-not-retrospectively-reviewed
+LEG-28f4d1551b14,G,CI / tooling,scripts/ci_test.py,320,unittest,test_ios_delivery_pins_the_same_arm_toolchain_and_keeps_protection,False,legacy-not-retrospectively-reviewed
+MAP-349a1f57f0b7,G,CI / tooling,scripts/ci_test.py,45,reviewed-selector,test_reviewed_test_records_are_policy_only_without_hiding_test_changes,False,TD-006
+MAP-5f57607e8e0e,G,CI / tooling,scripts/ci_test.py,19,reviewed-selector,test_unit_test_scope_requires_immutable_product_exclusion,False,CT-SCOPE
+MAP-7f9c2774f706,G,CI / tooling,scripts/ci_test.py,73,reviewed-selector,test_scene_migration_selection_is_not_branch_dependent_and_keeps_old_gates,False,"CT-SCOPE,SCENE-MIG-009"
+MAP-a41d394b7a28,G,CI / tooling,scripts/ci_test.py,97,reviewed-selector,test_scene_driver_setup_preserves_pins_errors_and_existing_isolation,False,"CT-SCOPE,SCENE-MIG-009"
+MAP-8100c254e1b8,G,CI / tooling,scripts/ci_test.py,241,reviewed-selector,test_scene_roles_follow_event_and_require_complete_union_plus_old_gates,False,"CT-SCOPE,SCENE-MIG-009"
+MAP-8e1795e1f232,G,CI / tooling,scripts/ci_test.py,268,reviewed-selector,test_scene_workflow_sequential_role_and_full_union_wiring,False,"CT-SCOPE,SCENE-MIG-009"
 LEG-0a1ce627fdd1,G,CI / tooling,scripts/install_platform_test.py,70,unittest,test_linux_archives_install_without_any_mac_application,True,legacy-not-retrospectively-reviewed
 LEG-8ccffb001b09,G,CI / tooling,scripts/install_platform_test.py,80,unittest,test_checksum_failure_never_installs,False,legacy-not-retrospectively-reviewed
 LEG-c81cb29009cc,G,CI / tooling,scripts/install_platform_test.py,86,unittest,test_existing_optional_client_is_updated_only_by_capable_release,True,legacy-not-retrospectively-reviewed
@@ -6121,6 +6258,56 @@ LEG-3b2a0a11f0dd,G,CI / tooling,scripts/release_feed_test.py,128,unittest,test_p
 LEG-3ec2e6ea4c71,G,CI / tooling,scripts/release_feed_test.py,144,unittest,test_latest_failed_build_cannot_reuse_an_old_pass,False,legacy-not-retrospectively-reviewed
 LEG-f96cb8fa1137,G,CI / tooling,scripts/release_feed_test.py,154,unittest,test_frozen_recovery_source_requires_identical_current_installer_bytes,False,legacy-not-retrospectively-reviewed
 LEG-a773f7b44f33,G,CI / tooling,scripts/release_feed_test.py,167,unittest,test_slow_trickling_public_readback_stops_at_total_deadline,False,legacy-not-retrospectively-reviewed
+MAP-4dbebfdd920d,G,reviewed implementation,scripts/scene_migration_test.py,54,reviewed-selector,test_real_event_sources_and_fixed_PR15_main11_instances,False,SCENE-MIG-008
+MAP-7290dcb68a36,G,reviewed implementation,scripts/scene_migration_test.py,68,reviewed-selector,test_missing_bad_base_and_actualmain_mismatch_fail,False,SCENE-MIG-008
+MAP-b5a28e6d73ba,G,reviewed implementation,scripts/scene_migration_test.py,77,reviewed-selector,test_each_source_and_journey_has_exclusive_work_and_evidence,False,SCENE-MIG-008
+MAP-5b087f7ffc6a,G,reviewed implementation,scripts/scene_migration_test.py,94,reviewed-selector,test_real_git_archive_from_root_and_mobileapp_rejects_unreadable_base,False,SCENE-MIG-008
+MAP-2e1022e71af6,G,reviewed implementation,scripts/scene_migration_test.py,109,reviewed-selector,test_complete_synthetic_matrix_and_missing_unit_fail_closed,False,SCENE-MIG-008
+MAP-be9aec3dcf49,G,reviewed implementation,scripts/scene_migration_test.py,132,reviewed-selector,test_missing_skipped_failed_cancelled_case_or_early_return_never_passes,False,SCENE-MIG-008
+MAP-c5286b224e73,G,reviewed implementation,scripts/scene_migration_test.py,148,reviewed-selector,test_wrong_or_missing_toolchain_WDA_signature_and_product_identity_fail,False,SCENE-MIG-008
+MAP-6bc9a8ea1bd1,G,reviewed implementation,scripts/scene_migration_test.py,164,reviewed-selector,test_evidence_byte_changes_and_escape_are_rejected,False,SCENE-MIG-008
+MAP-a5b156b2b518,G,reviewed implementation,scripts/scene_migration_test.py,119,reviewed-selector,test_offline_verifier_retains_preparation_failure_with_complete_case_results,False,SCENE-MIG-008
+MAP-a7808f64414b,G,reviewed implementation,scripts/scene_migration_test.py,190,reviewed-selector,test_execute_refuses_local_environment_before_any_native_command,False,SCENE-MIG-008
+MAP-45d57ce1727c,G,reviewed implementation,scripts/scene_migration_test.py,196,reviewed-selector,test_real_small_child_exit_timeout_and_output_cap_are_bounded,False,SCENE-MIG-008
+MAP-c78c647692bc,G,reviewed implementation,scripts/scene_migration_test.py,291,reviewed-selector,test_device_lookup_requires_actual_runtime_and_unique_hardware,False,SCENE-MIG-008
+MAP-ca6db00c6d3b,G,reviewed implementation,scripts/scene_migration_test.py,373,reviewed-selector,test_missing_diagnostic_evidence_keeps_original_test_zero_or_seven_and_cleans,False,SCENE-MIG-008
+MAP-80e5de561924,G,reviewed implementation,scripts/scene_migration_test.py,865,reviewed-selector,test_harness_journeys_share_only_verified_dependencies_and_keep_source_bytes,False,SCENE-MIG-008
+MAP-d485b529b3a4,G,reviewed implementation,scripts/scene_migration_test.py,884,reviewed-selector,test_cleanup_targets_only_saved_matching_server_and_exact_unit_wda,False,SCENE-MIG-008
+MAP-7cb3bff30a24,G,reviewed implementation,scripts/scene_migration_test.py,793,reviewed-selector,test_executor_builds_only_expected_sources_but_checks_real_base,False,SCENE-MIG-008
+MAP-9fcc5cafe672,G,reviewed implementation,scripts/scene_migration_test.py,809,reviewed-selector,test_real_runner_metadata_and_archival_failures_preserve_executed_units,False,SCENE-MIG-008
+MAP-ec565820041a,G,reviewed implementation,scripts/scene_migration_test.py,826,reviewed-selector,test_real_executor_keeps_last_shutdown_failure_and_original_exit,False,SCENE-MIG-008
+MAP-2258d0570d1d,G,reviewed implementation,scripts/scene_migration_test.py,835,reviewed-selector,test_shutdown_failure_or_timeout_of_final_unit_cannot_pass,False,SCENE-MIG-008
+MAP-c475771ec211,G,reviewed implementation,scripts/scene_migration_test.py,747,reviewed-selector,test_real_runner_wait_then_stat_failure_preserves_unit_and_aggregate,False,SCENE-MIG-008
+MAP-e82c5bb79bde,G,reviewed implementation,scripts/scene_migration_test.py,756,reviewed-selector,test_cleanup_bad_query_shapes_and_errors_keep_final_executed_unit,False,SCENE-MIG-008
+MAP-7bb970863c77,G,reviewed implementation,scripts/scene_migration_test.py,777,reviewed-selector,test_runner_distinguishes_not_started_from_started_evidence_failure,False,SCENE-MIG-008
+MAP-7ea709c3a533,G,reviewed implementation,scripts/scene_migration_test.py,300,reviewed-selector,test_device_lookup_separates_same_version_platforms_without_fallback,False,SCENE-MIG-008
+MAP-e3f93d5376ca,G,reviewed implementation,scripts/scene_migration_test.py,729,reviewed-selector,test_physical_dependency_root_reaches_builds_and_real_journey_children,False,SCENE-MIG-008
+MAP-d52c082f6324,G,reviewed implementation,scripts/scene_migration_test.py,323,reviewed-selector,test_preflight_preserves_installed_appium_root_and_rejects_missing_or_changed_override,False,SCENE-MIG-008
+MAP-b327e47f84c2,G,reviewed implementation,scripts/scene_migration_test.py,210,reviewed-selector,test_collect_identity_parses_only_stdout_with_retained_real_child_diagnostics,False,SCENE-MIG-008
+MAP-3e209bbe710b,G,reviewed implementation,scripts/scene_migration_test.py,261,reviewed-selector,test_split_stream_runner_preserves_exit_and_combined_default,False,SCENE-MIG-008
+MAP-cecede2e754f,G,reviewed implementation,scripts/scene_migration_test.py,275,reviewed-selector,test_split_stream_runner_bounds_total_bytes_and_timeout,False,SCENE-MIG-008
+MAP-d045f33494e3,G,reviewed implementation,scripts/scene_migration_test.py,698,reviewed-selector,test_final_preparation_failure_keeps_original_outcome_and_bounds_diagnostics,False,SCENE-MIG-008
+MAP-1fb1faf2289a,G,reviewed implementation,scripts/scene_migration_test.py,723,reviewed-selector,test_successful_preparation_does_not_collect_failure_diagnostics,False,SCENE-MIG-008
+MAP-6da83960d9ce,G,reviewed implementation,scripts/scene_migration_test.py,548,reviewed-selector,test_install_sample_observes_owned_live_child_once_without_changing_exit,False,SCENE-MIG-008
+MAP-1b2d605388dd,G,reviewed implementation,scripts/scene_migration_test.py,584,reviewed-selector,test_install_sample_faults_keep_primary_outcome_and_reap_observer,False,SCENE-MIG-008
+MAP-b2d2c97751dd,G,reviewed implementation,scripts/scene_migration_test.py,678,reviewed-selector,test_actual_units_keep_install_sample_diagnostics_separate_from_journey_exit,False,SCENE-MIG-008
+MAP-298563a79d34,G,reviewed implementation,scripts/scene_migration_test.py,648,reviewed-selector,test_install_exit_during_observation_keeps_completion_and_reaps_on_wait_error,False,SCENE-MIG-008
+MAP-7236c099b439,G,reviewed implementation,scripts/scene_migration_test.py,1334,reviewed-selector,test_union_real_cli_PR15_main11_and_trusted_current_event,False,SCENE-MIG-008
+MAP-266b88906e0e,G,reviewed implementation,scripts/scene_migration_test.py,1350,reviewed-selector,test_union_rejects_missing_duplicate_wrong_binding_hash_and_cases,False,SCENE-MIG-008
+MAP-43a5008d89b5,G,reviewed implementation,scripts/scene_migration_test.py,1385,reviewed-selector,test_union_cross_host_identity_and_resolved_pods_are_required,False,SCENE-MIG-008
+MAP-238347d3b887,G,reviewed implementation,scripts/scene_migration_test.py,1404,reviewed-selector,test_trusted_sources_require_readable_base_and_exact_coordinator_bytes,False,SCENE-MIG-008
+MAP-354b0eb44a2c,G,reviewed implementation,scripts/scene_migration_test.py,1041,reviewed-selector,test_stream_independent_exit_clocks_stop_before_sample_and_primary_deadline,False,SCENE-MIG-008
+MAP-f9286a745173,G,reviewed implementation,scripts/scene_migration_test.py,1082,reviewed-selector,test_stream_timeout_has_absolute_deadline_and_owned_kill,False,SCENE-MIG-008
+MAP-82d26f6b8c15,G,reviewed implementation,scripts/scene_migration_test.py,1094,reviewed-selector,test_stream_failures_do_not_replace_primary_zero_seven_or_start_failure,False,SCENE-MIG-008
+MAP-ee0ed968f48f,G,reviewed implementation,scripts/scene_migration_test.py,1116,reviewed-selector,test_stream_empty_late_early_and_eof_are_not_successful_coverage,False,SCENE-MIG-008
+MAP-28d7e2ec9574,G,reviewed implementation,scripts/scene_migration_test.py,1131,reviewed-selector,test_stream_shared_hard_cap_exact_cross_and_terminal_metadata,False,SCENE-MIG-008
+MAP-575b559d1c4a,G,reviewed implementation,scripts/scene_migration_test.py,1154,reviewed-selector,test_stream_spawn_overhead_visible_without_resetting_primary_budget,False,SCENE-MIG-008
+MAP-dbd2dc2a273d,G,reviewed implementation,scripts/scene_migration_test.py,1162,reviewed-selector,test_stream_real_execute_selects_only_first_27_install_and_never_failed_boot,False,SCENE-MIG-008
+MAP-b18136291fc5,G,reviewed implementation,scripts/scene_migration_test.py,1072,reviewed-selector,test_stream_first_observed_primary_exit_survives_later_poll_failure,False,SCENE-MIG-008
+MAP-a4f0cf523d66,G,reviewed implementation,scripts/scene_migration_test.py,1194,reviewed-selector,test_stream_final_exit_race_keeps_primary_and_reports_terminal_failure,False,SCENE-MIG-008
+MAP-33fbf379ef88,G,reviewed implementation,scripts/scene_migration_test.py,1215,reviewed-selector,test_stream_requires_qualified_event_not_headers_diagnostics_or_outside_window,False,SCENE-MIG-008
+MAP-1a69bd08a36b,G,reviewed implementation,scripts/scene_migration_test.py,1235,reviewed-selector,test_stream_receipt_clock_discontinuity_stays_unknown,False,SCENE-MIG-008
+MAP-0d8899da3c5a,G,reviewed implementation,scripts/scene_migration_test.py,1248,reviewed-selector,test_stream_final_failure_and_window_inconclusive_reach_real_unit_and_aggregate,False,SCENE-MIG-008
 MAP-253bbd74b924,G,reviewed implementation,scripts/test_design.py,51,reviewed-selector,def validate(,False,"TD-001,TD-002,TD-003,TD-004,TD-005"
 MAP-0fe56134bb6e,G,reviewed implementation,scripts/test_design.py,102,reviewed-selector,def history_errors(,False,"TD-001,TD-002,TD-003,TD-004,TD-005"
 MAP-c8a2197482da,G,reviewed implementation,scripts/test_design.py,174,reviewed-selector,def refresh_catalogue(,False,"TD-001,TD-002,TD-003,TD-004,TD-005"

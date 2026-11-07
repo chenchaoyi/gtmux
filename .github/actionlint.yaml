@@ -5,3 +5,4 @@ self-hosted-runner:
   labels:
     - macos-15-intel
     - macos-26
+    - xcode-27

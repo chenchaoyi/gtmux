@@ -2,16 +2,16 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1032 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1062 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
-| L1 · Unit / pure logic | 3726 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 1896 | [L2.csv](cases/L2.csv) |
-| L3 · Runtime integration | 86 | [L3.csv](cases/L3.csv) |
+| L1 · Unit / pure logic | 3790 | [L1.csv](cases/L1.csv) |
+| L2 · Component / contract | 1905 | [L2.csv](cases/L2.csv) |
+| L3 · Runtime integration | 116 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 93 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 12 | [M.csv](cases/M.csv) |
-| G · Qualification guards | 496 | [G.csv](cases/G.csv) |
+| G · Qualification guards | 580 | [G.csv](cases/G.csv) |
 
 Numbers are not passes. The legacy 6,223 positions came from the 4fad6119 inventory (declarations, subtests, dynamic templates); explicit new cases, native oracles and reviewed selectors are indexed separately. Dynamic instances are not expanded. Harnesses without named cases retain their hashes. Legacy layers are structural triage; mixed boundaries need semantic review when touched, not fictional historical review/results. A reviewed-selector is not a framework-discovered declaration. Gates catch source/index/mapping drift; names cannot prove assertion quality.
 
@@ -43,6 +43,17 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | MC-HQ-OVERVIEW-BRIEF | The native row presents canonical current assessment before historical receipt text, explicitly names the unfinished goal state and never treats unavailable source metadata as an idle/completed worker; no guessed human decision or completion from titles, Stop or report prose. |
 | STOR-001 | Every carrier separates project-owned and task-temp output from gtmux configuration/runtime trees; no promoted entry required; user text and hand-edit protection preserved; second sync idempotent. |
 | STOR-002 | Both playbooks reserve gtmux-owned state and only reusable HQ knowledge tools for its home, direct project scripts/reports/builds to project/task storage, require external evidence references, and never grant automatic migration/deletion; upgrade backs up old charter, preserves LOCAL/notes and converges. |
+| SCENE-MIG-001 | Action identifier/text survive; 128 response/32 link bounds, exactly-once completion and retained unacked inputs; late duplicate completes safely; Foundation controls are not UIKit acceptance. |
+| SCENE-MIG-002 | Push can start without visual insets; zero metrics do not render a fake canvas; actual scene initializes correct insets; native changes propagate; cleanup rejects late values without duplicate subscriptions. |
+| SCENE-MIG-003 | 30s device authorization is unchanged; initial and listener setup are independent; correct action/text delivers once; active-first response not hidden by prior reply; abort removes listeners/timers, no payload logged. |
+| SCENE-MIG-004 | Stable subscribe1/remove0 until unmount remove1; latest client used; guest/demo initial URL consumed before authorization and never opens on owner change without a new link. |
+| SCENE-MIG-005 | Main compact RadarScreen vs regular SplitShell, main navigation props and pre-workspace SafeAreaProviders remain. Sidebar/menu/Diff follow new root under stale RN; real wrong geometry fails. No persistent SplitShell/inlineSelection/popTo. Zero/late/unmount/drop-draft mutants fail. Failure outside13 product paths is reported with exact minimal delta, not weakened or silently migrated. JS layout is not UIKit evidence. |
+| SCENE-MIG-006 | Two action and two link cases, original20s send/30s auth/300s action budgets, %12/text2 exactly once; foreground recovery cannot pass failed background; same actual PID/host object and new native/WDA geometry in point coordinates within1pt; unique session/draft/focus and actual interactions. Wrong shell, omitted tap/native delivery, early return/skip/missing case fail. |
+| SCENE-MIG-007 | PR15 instances:26 M/P each4 and27 candidate6+pad1. Main11:26 candidate4 and27 candidate6+pad1. A420s and other original deadlines; missing UDID/alert/skip is failure. Preserve behavior not only counts;27 old baseline remains historical failure, not expected-negative. |
+| SCENE-MIG-008 | No reused writable roots/status overwrite; original test status kept even diagnostics fail but missing evidence makes acceptance red. SDK26.2 vsXcode26.3 distinct;27.1/runtime27.0;WDA/target/signature/binary/PID identity required. Real unreadable base fails. Build once per source/toolchain/signature, never unsigned as ad-hoc. PR15/main11 exact names/steps, all selected old gates AND new gate. Bounded cleanup, no retries/deadline changes. |
+| SCENE-MIG-009 | All relevant paths select ios-scene, old quality/gates unchanged; fail closed for missing execution or cancelled; PR event base and actualmain candidate route run, no branch whitelist. actionlint1.7.7 original labels plus only xcode-27. |
+| SCENE-MIG-010 | Fresh per-launch path, no global cache; failures propagate; per-source/journey artifacts cannot overwrite others or escape assigned root; existing startup deadline not arbitrarily shortened and original failure/cleanup retained. |
+| SCENE-MIG-011 | Stable default epoch for one fake instance, explicit transcripts/permissions/CT-HTTP unchanged; diagnostics do not replace product behavior and each journey gets separate fixture state. |
 | TD-001 | Reject a changed/new test without a reviewed design; accept a mapped implementation |
 | TD-002 | Reject a tampered review seal, missing assertion description, invalid layer or unsafe path |
 | TD-003 | Reject missing/changed catalogue files and missing named implementation selectors |

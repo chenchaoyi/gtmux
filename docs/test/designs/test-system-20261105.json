@@ -2,10 +2,10 @@
   "id": "test-system-20261105",
   "status": "reviewed",
   "review": {
-    "reviewer": "Codex implementation owner (self-review, not independent approval)",
-    "date": "2026-11-05",
-    "decision": "Proceed after design review",
-    "notes": "Checked isolation, production-module execution, explicit live-write target, independent RN/Web assertions, failure cases and evidence boundaries. User requested these three priorities. No real-session writes, signing, release or installation."
+    "reviewer": "Codex implementation owner34 (self-review; not independent approval)",
+    "date": "2026-11-07",
+    "decision": "Preserve existing document and policy expectations while extending the native oracle runner",
+    "notes": "Fresh review before the first P edit of scripts/test_design_test.py and check-native-documents.py. ND-003 retains both production document oracles, assertion-enabled compilation and failure propagation. Already reviewed SCENE-MIG-001 adds the production notification payload/queue and completion Foundation oracles to the same runner and CI invocation. Verify all four compile/execute pairs and each compiler/process failure; no UIKit, scene lifecycle or device approval follows from Foundation execution. Stable TD/ND/CP/DG case objects remain unchanged. Existing f5e48cd4 review for shared TD-006/CI edits stays in history; this review does not rewrite that chronology."
   },
   "cases": [
     {
@@ -280,5 +280,5 @@
       ]
     }
   ],
-  "seal": "83c5a15b8714f50e8c62a0b5c2028f943414571d9ac35e217578479e7a02036a"
+  "seal": "b68236de48245b73e46d0a56247bbecefa3e6ec4be80f0111c58e206ecb81d08"
 }

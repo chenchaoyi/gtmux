@@ -11,7 +11,8 @@
 // small floating button over the main pane brings it back.
 
 import React, {useEffect, useState} from 'react';
-import {StyleSheet, Text, TouchableOpacity, View, useWindowDimensions} from 'react-native';
+import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {useWindowDimensions} from '../ui/windowMetrics';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {agentId, paneRowToAgent} from '../api/types';
