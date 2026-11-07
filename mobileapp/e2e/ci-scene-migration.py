@@ -264,17 +264,97 @@ class CommandFailure(RuntimeError):
         self.outcome = outcome
 
 
+class InstallSample:
+    """One bounded observation of this command's child, never a process search."""
+    AFTER = 15
+    TIMEOUT = 3
+    LIMIT = 256 * 1024
+
+    def __init__(self, stem, env, cwd):
+        self.stem, self.env, self.cwd = stem, env, cwd
+        self.child = self.output = None
+        self.record = None
+        self.problems = []
+        self.stack = stem.with_suffix('.sample.txt')
+        self.log = stem.with_suffix('.sample.log')
+
+    def poll(self, primary, elapsed):
+        if self.record is None:
+            if elapsed < self.AFTER or primary.poll() is not None:
+                return
+            args = ['/usr/bin/sample', str(primary.pid), '1', '10', '-file', str(self.stack)]
+            self.record = {'primaryPID': primary.pid, 'command': args, 'startedAt': now(),
+                           'state': 'not-started', 'exit': None, 'stack': str(self.stack), 'log': str(self.log)}
+            self.deadline = time.monotonic() + self.TIMEOUT
+            try:
+                if self.stack.exists(): raise ValueError('Sample destination already exists')
+                self.output = self.log.open('xb')
+                self.child = subprocess.Popen(args, cwd=self.cwd, env=self.env, stdout=self.output,
+                                              stderr=subprocess.STDOUT, start_new_session=True)
+                self.record.update(state='running', observerPID=self.child.pid)
+            except (OSError, ValueError, subprocess.SubprocessError) as error:
+                self.record['state'] = 'error'
+                self.problems.append('sample startup: ' + str(error))
+        if self.child is None or self.record['state'] != 'running':
+            return
+        try:
+            size = sum(path.stat().st_size for path in (self.stack, self.log) if path.exists())
+            code = self.child.poll()
+            if size > self.LIMIT:
+                self.record['state'] = 'output-limit'
+            elif time.monotonic() >= self.deadline:
+                self.record['state'] = 'timeout'
+            elif code is not None:
+                self.record.update(state='completed', exit=code)
+                if code != 0 or not self.stack.is_file() or self.stack.stat().st_size == 0:
+                    self.problems.append('sample did not produce a successful stack')
+            if self.record['state'] in ('output-limit', 'timeout'):
+                self.problems.append('sample ' + self.record['state'])
+                if code is None: os.killpg(self.child.pid, signal.SIGKILL)
+        except (OSError, ValueError, subprocess.SubprocessError) as error:
+            self.record['state'] = 'error'
+            self.problems.append('sample observation: ' + str(error))
+            try:
+                if self.child.poll() is None: os.killpg(self.child.pid, signal.SIGKILL)
+            except OSError as stop_error: self.problems.append('sample stop: ' + str(stop_error))
+
+    def finish(self, primary):
+        if self.record is None:
+            return []  # Install completed before the observation threshold.
+        try:
+            while self.record['state'] == 'running':
+                self.poll(primary, self.AFTER)
+                if self.record['state'] == 'running': time.sleep(.05)
+        finally:
+            # Even observer evidence failures cannot leave a background driver.
+            if self.child is not None:
+                try:
+                    if self.child.poll() is None: os.killpg(self.child.pid, signal.SIGKILL)
+                    self.record['exit'] = self.child.wait(timeout=1)
+                except (OSError, subprocess.SubprocessError) as error:
+                    self.problems.append('sample reap: ' + str(error))
+            if self.output is not None:
+                try: self.output.close()
+                except OSError as error: self.problems.append('sample log close: ' + str(error))
+            self.record.update(completedAt=now(), problems=self.problems)
+            try: write_once(self.stem.with_suffix('.sample.json'), self.record)
+            except OSError as error: self.problems.append('sample archive: ' + str(error))
+        return list(self.problems)
+
+
 class Runner:
     def __init__(self, root, env):
         self.root, self.env = Path(root), dict(env)
         self.sequence = 0
+        self.observation_problems = []
 
-    def command(self, args, *, cwd, label, timeout, check=True, limit=64 * 1024 * 1024, separate_stderr=False):
+    def command(self, args, *, cwd, label, timeout, check=True, limit=64 * 1024 * 1024, separate_stderr=False, sample_install=False):
         self.sequence += 1
         stem = self.root / f'{self.sequence:03d}-{label}'
         log = stem.with_suffix('.log')
         outcome = {'command': [str(x) for x in args], 'cwd': str(cwd), 'startedAt': now(),
                    'state': 'not-started', 'exit': None, 'log': str(log)}
+        sample = InstallSample(stem, self.env, cwd) if sample_install else None
         stderr_log = stem.with_suffix('.stderr.log') if separate_stderr else None
         if stderr_log is not None: outcome['stderrLog'] = str(stderr_log)
         # Structured output must not contain diagnostics. Both files still share
@@ -290,13 +370,15 @@ class Runner:
                 child = subprocess.Popen([str(x) for x in args], cwd=cwd, env=self.env,
                                          stdout=output, stderr=error_output, start_new_session=True)
                 outcome['state'] = 'running'
-                deadline = time.monotonic() + timeout
+                started = time.monotonic()
+                deadline = started + timeout
                 try:
                     while child.poll() is None:
                         if time.monotonic() >= deadline or output_size() > limit:
                             state = 'timeout' if time.monotonic() >= deadline else 'output-limit'
                             os.killpg(child.pid, signal.SIGKILL)
                             break
+                        if sample is not None: sample.poll(child, time.monotonic() - started)
                         time.sleep(.1)
                     code = child.wait(timeout=10)
                     # Record execution before any fallible log/diagnostic work.
@@ -306,10 +388,15 @@ class Runner:
                     if state == 'completed' and time.monotonic() > deadline: state = 'timeout'
                     outcome['state'] = state
                 finally:
-                    if child.poll() is None:
-                        os.killpg(child.pid, signal.SIGKILL)
-                        cleanup_code = child.wait(timeout=10)
-                        if outcome['exit'] is None: outcome['exit'] = cleanup_code
+                    try:
+                        if child.poll() is None:
+                            os.killpg(child.pid, signal.SIGKILL)
+                            cleanup_code = child.wait(timeout=10)
+                            if outcome['exit'] is None: outcome['exit'] = cleanup_code
+                    finally:
+                        if sample is not None:
+                            try: self.observation_problems.extend(sample.finish(child))
+                            except Exception as error: self.observation_problems.append('sample finalization: ' + str(error))
         except (OSError, RuntimeError, subprocess.SubprocessError) as error:
             problems.append(f'{label}: execution/log evidence: {error}')
             if outcome['state'] == 'running': outcome['state'] = 'error'
@@ -620,7 +707,8 @@ def run_unit(unit, paths, harness_source, dependencies, product, preflight_data,
         runner.command(['xcrun', 'simctl', 'shutdown', device['udid']], cwd=work, label='shutdown-before', timeout=30, check=False)
         runner.command(['xcrun', 'simctl', 'erase', device['udid']], cwd=work, label='erase', timeout=60)
         runner.command(['xcrun', 'simctl', 'bootstatus', device['udid'], '-b'], cwd=work, label='boot', timeout=180)
-        runner.command(['xcrun', 'simctl', 'install', device['udid'], product['app']], cwd=work, label='install', timeout=60)
+        runner.command(['xcrun', 'simctl', 'install', device['udid'], product['app']], cwd=work, label='install', timeout=60,
+                       sample_install=unit['toolchain'] == '27')
         installed = now(); launched = now()
         try:
             status, _ = runner.command(['npm', 'run', 'test:e2e', '--', '--runInBand', TEST_FILES[unit['journey']],
@@ -650,6 +738,7 @@ def run_unit(unit, paths, harness_source, dependencies, product, preflight_data,
         except Exception as error:
             # Cleanup is evidence, never authority to erase an executed unit.
             problems.append(f'cleanup error: {type(error).__name__}: {error}')
+    problems.extend(runner.observation_problems)
     result['problems'] = problems
     try:
         for path in sorted(evidence.rglob('*')):

@@ -726,7 +726,10 @@
       "test_split_stream_runner_preserves_exit_and_combined_default",
       "test_split_stream_runner_bounds_total_bytes_and_timeout",
       "test_final_preparation_failure_keeps_original_outcome_and_bounds_diagnostics",
-      "test_successful_preparation_does_not_collect_failure_diagnostics"
+      "test_successful_preparation_does_not_collect_failure_diagnostics",
+      "test_install_sample_observes_owned_live_child_once_without_changing_exit",
+      "test_install_sample_faults_keep_primary_outcome_and_reap_observer",
+      "test_actual_units_keep_install_sample_diagnostics_separate_from_journey_exit"
     ]
   },
   "mobileapp/e2e/setup/appLaunchFiles.test.ts": {
@@ -745,7 +748,7 @@
     ],
     "selectors": [
       "cloud simulator session waits for a fresh WDA build without requiring a prebuilt product",
-      "manual handles nothing on the test\u2019s behalf",
+      "manual handles nothing on the test’s behalf",
       "the default dismisses, and the older accept switch still accepts",
       "the explicit mode wins over the older switch",
       "a misspelt mode stops the run instead of falling back to dismiss",

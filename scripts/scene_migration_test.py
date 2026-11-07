@@ -377,7 +377,7 @@ class SceneExecutionTests(unittest.TestCase):
                     for p in paths.values(): p.mkdir()
                     (paths['work'] / 'harness.json').write_text('[]')
                     class FakeRunner:
-                        def __init__(self, *args): pass
+                        def __init__(self, *args): self.observation_problems = []
                         def command(self, args, **kwargs):
                             return (status if kwargs['label'] == 'journey' else 0), root / 'synthetic.log'
                     with mock.patch.object(scene, 'Runner', FakeRunner), mock.patch.object(scene, 'prepare_work', return_value=paths['work']), \
@@ -390,7 +390,7 @@ class SceneExecutionTests(unittest.TestCase):
                     cleanup.assert_called_once()
                     self.assertEqual(json.loads((paths['evidence'] / 'result.json').read_text())['testExit'], status)
 
-    def controlled_execute(self, toolchain='27', event_name='pull_request', status=0, fault=None, cleanup_raw=None, dependency_observations=None):
+    def controlled_execute(self, toolchain='27', event_name='pull_request', status=0, fault=None, cleanup_raw=None, dependency_observations=None, install_observations=None):
         # Execute the production coordinator, Runner and run_unit. Only external
         # Git/native/SDK/Jest commands become tiny real children, not a Runner mock.
         root = self.root / f'execute-{len(list(self.root.iterdir()))}'; root.mkdir()
@@ -445,7 +445,20 @@ class SceneExecutionTests(unittest.TestCase):
                 if '-prep-host-disk.log' in kwargs['stdout'].name:
                     if fault == 'last-install-diagnostic-exit': script = 'raise SystemExit(9)'
                     if fault == 'last-install-diagnostic-cap': script = 'print("x" * (600 * 1024))'
+            if install_observations is not None:
+                if args[:3] == ['xcrun', 'simctl', 'install']:
+                    script = 'import time; time.sleep(.4)'
+                elif args[0] == '/usr/bin/sample':
+                    target = install_observations['primary'][int(args[1])]
+                    self.assertIsNone(target.poll(), 'sample must target the still-live install child')
+                    self.assertEqual(args[2:5], ['1', '10', '-file'])
+                    install_observations['calls'].append(list(args))
+                    script = 'from pathlib import Path; Path(' + repr(args[5]) + ').write_text("controlled stack")'
+                    if fault == 'sample-exit': script += '; raise SystemExit(9)'
             process = real_popen([sys.executable, '-c', script], **kwargs)
+            if install_observations is not None:
+                if args[:3] == ['xcrun', 'simctl', 'install']: install_observations['primary'][process.pid] = process
+                if args[0] == '/usr/bin/sample': install_observations['children'].append(process)
             if fault == 'wait-stat' or cleanup_fault:
                 # Fast, actual completed child; Runner still calls the real wait.
                 process.wait(timeout=5)
@@ -502,6 +515,117 @@ class SceneExecutionTests(unittest.TestCase):
         job = root / 'scene-migration/1-1-test'
         payload = json.loads((job / 'acceptance.json').read_text()) if (job / 'acceptance.json').exists() else None
         return code, builds, readable, payload, stderr.getvalue()
+
+    def test_install_sample_observes_owned_live_child_once_without_changing_exit(self):
+        for status in (0, 7):
+            with self.subTest(status=status), mock.patch.object(scene.InstallSample, 'AFTER', .05):
+                root = self.root / str(status); root.mkdir()
+                runner = scene.Runner(root, os.environ)
+                real_popen = subprocess.Popen
+                primary, observers = [], []
+                def spawn(args, **kwargs):
+                    if args[0] == '/usr/bin/sample':
+                        self.assertEqual(args[1], str(primary[0].pid))
+                        self.assertIsNone(primary[0].poll())
+                        self.assertEqual(args[2:5], ['1', '10', '-file'])
+                        child = real_popen([sys.executable, '-c', 'from pathlib import Path; Path(' + repr(args[5]) + ').write_text("controlled stack")'], **kwargs)
+                        observers.append(child); return child
+                    child = real_popen(args, **kwargs); primary.append(child); return child
+                with mock.patch.object(scene.subprocess, 'Popen', side_effect=spawn):
+                    code, _ = runner.command([sys.executable, '-c', f'import time; time.sleep(.4); raise SystemExit({status})'],
+                                             cwd=root, label='install', timeout=2, check=False, sample_install=True)
+                self.assertEqual(code, status); self.assertEqual(len(observers), 1)
+                self.assertTrue(all(c.poll() is not None for c in observers + primary))
+                self.assertEqual(runner.observation_problems, [])
+                record = json.loads((root / '001-install.sample.json').read_text())
+                self.assertEqual((record['primaryPID'], record['observerPID'], record['state'], record['exit']),
+                                 (primary[0].pid, observers[0].pid, 'completed', 0))
+                self.assertEqual(Path(record['stack']).read_text(), 'controlled stack')
+                self.assertEqual(json.loads((root / '001-install.json').read_text())['exit'], status)
+        runner = scene.Runner(self.root, os.environ)
+        with mock.patch.object(scene.subprocess, 'Popen', wraps=subprocess.Popen) as spawn:
+            runner.command([sys.executable, '-c', 'pass'], cwd=self.root, label='quick', timeout=3, sample_install=True)
+        self.assertEqual(spawn.call_count, 1)
+        self.assertFalse((self.root / '001-quick.sample.json').exists())
+
+    def test_install_sample_faults_keep_primary_outcome_and_reap_observer(self):
+        for fault in ('exit', 'hang', 'cap', 'archive', 'stat', 'startup', 'stop'):
+            for status in (0, 7):
+                with self.subTest(fault=fault, status=status):
+                    root = self.root / f'{fault}-{status}'; root.mkdir()
+                    runner = scene.Runner(root, os.environ)
+                    real_popen, real_write, real_stat, real_kill = subprocess.Popen, scene.write_once, Path.stat, os.killpg
+                    observers, stop_errors = [], []
+                    def spawn(args, **kwargs):
+                        if args[0] != '/usr/bin/sample': return real_popen(args, **kwargs)
+                        if fault == 'startup': raise OSError('sample startup failure')
+                        script = 'from pathlib import Path; Path(' + repr(args[5]) + ').write_text("controlled stack")'
+                        if fault == 'exit': script += '; raise SystemExit(9)'
+                        if fault in ('hang', 'stop', 'stat'): script += '; import time; time.sleep(30)'
+                        if fault == 'cap': script += '; print("x" * 4096); import time; time.sleep(30)'
+                        child = real_popen([sys.executable, '-c', script], **kwargs); observers.append(child); return child
+                    def write(path, value):
+                        if fault == 'archive' and str(path).endswith('.sample.json'): raise OSError('sample archive failure')
+                        return real_write(path, value)
+                    def stat(path, *a, **k):
+                        if fault == 'stat' and str(path).endswith('.sample.txt'): raise OSError('sample stat failure')
+                        return real_stat(path, *a, **k)
+                    def kill(pid, sig):
+                        if fault == 'stop' and observers and pid == observers[0].pid and not stop_errors:
+                            stop_errors.append(pid); raise OSError('injected sample stop failure')
+                        return real_kill(pid, sig)
+                    with mock.patch.object(scene.InstallSample, 'AFTER', .05), mock.patch.object(scene.InstallSample, 'TIMEOUT', .15), \
+                            mock.patch.object(scene.InstallSample, 'LIMIT', 1024), mock.patch.object(scene.subprocess, 'Popen', side_effect=spawn), \
+                            mock.patch.object(scene, 'write_once', side_effect=write), mock.patch.object(Path, 'stat', new=stat), \
+                            mock.patch.object(scene.os, 'killpg', side_effect=kill):
+                        code, _ = runner.command([sys.executable, '-c', f'import time; time.sleep(.4); raise SystemExit({status})'],
+                                                 cwd=root, label='install', timeout=2, check=False, sample_install=True)
+                    self.assertEqual(code, status)
+                    self.assertEqual(json.loads((root / '001-install.json').read_text())['exit'], status)
+                    self.assertTrue(runner.observation_problems)
+                    record_path = root / '001-install.sample.json'
+                    if fault == 'archive':
+                        self.assertFalse(record_path.exists())
+                        self.assertTrue(any('sample archive failure' in p for p in runner.observation_problems))
+                    else:
+                        record = json.loads(record_path.read_text())
+                        expected = {'exit': 'completed', 'hang': 'timeout', 'cap': 'output-limit',
+                                    'stat': 'error', 'startup': 'error', 'stop': 'error'}[fault]
+                        self.assertEqual(record['state'], expected)
+                        if fault == 'exit': self.assertEqual(record['exit'], 9)
+                    self.assertTrue(all(c.poll() is not None for c in observers), 'no observer survives Runner')
+        root = self.root / 'primary-timeout'; root.mkdir()
+        runner = scene.Runner(root, os.environ)
+        # An observer that cannot start must not replace the primary timeout/-9.
+        real_popen = subprocess.Popen
+        def spawn(args, **kwargs):
+            if args[0] == '/usr/bin/sample': raise OSError('controlled observation unavailable')
+            return real_popen(args, **kwargs)
+        with mock.patch.object(scene.InstallSample, 'AFTER', .05), mock.patch.object(scene.subprocess, 'Popen', side_effect=spawn):
+            with self.assertRaises(scene.CommandFailure) as caught:
+                runner.command([sys.executable, '-c', 'import time; time.sleep(30)'], cwd=root, label='install', timeout=.25, sample_install=True)
+        self.assertEqual((caught.exception.outcome['state'], caught.exception.outcome['exit']), ('timeout', -9))
+        self.assertTrue(runner.observation_problems)
+
+    def test_actual_units_keep_install_sample_diagnostics_separate_from_journey_exit(self):
+        for toolchain, fault, status in (('27', None, 0), ('27', 'sample-exit', 0), ('27', 'sample-exit', 7), ('26', None, 0)):
+            observations = {'primary': {}, 'children': [], 'calls': []}
+            # The exact pre-change module has no sampler; this inert timing knob
+            # lets its actual run_unit execute and fail the missing-evidence oracle.
+            observer_type = getattr(scene, 'InstallSample', type('AbsentObserver', (), {'AFTER': 15}))
+            with self.subTest(toolchain=toolchain, fault=fault, status=status), mock.patch.object(observer_type, 'AFTER', .05):
+                code, _, _, payload, _ = self.controlled_execute(toolchain=toolchain, fault=fault, status=status, install_observations=observations)
+            self.assertEqual(code, 1)  # Synthetic identity/behavior is intentionally incomplete.
+            self.assertEqual(len(payload['results']), 4)
+            self.assertEqual(len(observations['calls']), 4 if toolchain == '27' else 0)
+            self.assertTrue(all(c.poll() is not None for c in observations['children']))
+            for result in payload['results']:
+                self.assertEqual((result['state'], result['testExit']), ('completed', status))
+                self.assertEqual(any('sample did not produce' in p for p in result['problems']), fault == 'sample-exit')
+                samples = [a for a in result['artifacts'] if a['path'].endswith('.sample.json')]
+                self.assertEqual(len(samples), 1 if toolchain == '27' else 0)
+            # Last-unit observation failure stays in the acceptance aggregate.
+            if fault: self.assertTrue(any('sample did not produce' in p for p in payload['results'][-1]['problems']))
 
     def test_final_preparation_failure_keeps_original_outcome_and_bounds_diagnostics(self):
         actual_command = scene.Runner.command
