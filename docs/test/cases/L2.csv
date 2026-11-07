@@ -417,9 +417,18 @@ MAP-ed56b3b277a8,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceR
 MAP-b135d4ac2897,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceResponseTests.swift,117,reviewed-selector,testUnavailableSourceMetadataNeverClaimsTheSessionIsGone,False,"MC-HQ-CHOICE,MC-HQ-READ"
 MAP-b4f647d0a506,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQOverviewClarityTests.swift,44,reviewed-selector,testCanonicalGroupsAndHiddenCountIgnoreEndedMergedStaleAndDuplicateRows,False,"MC-HQ-OVERVIEW-STATE,MC-HQ-OVERVIEW-BRIEF"
 MAP-67fdd9c30f6e,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQOverviewClarityTests.swift,63,reviewed-selector,testCurrentAssessmentTakesPriorityWithoutBorrowingReceiptOrMetadataTime,False,"MC-HQ-OVERVIEW-STATE,MC-HQ-OVERVIEW-BRIEF"
+MAP-3a38d5e64c65,L2,reviewed implementation,mobileapp/__tests__/App.sceneMigration.test.tsx,66,reviewed-selector,main App keeps compact navigation props and a fresh root changes its real shell,False,SCENE-MIG-005
+MAP-da46dbb93884,L2,reviewed implementation,mobileapp/__tests__/App.sceneMigration.test.tsx,75,reviewed-selector,main App sidebar geometry follows the new root even when RN retains its old phone width,False,SCENE-MIG-005
+MAP-b8c8470d4954,L2,reviewed implementation,mobileapp/__tests__/App.sceneMigration.test.tsx,87,reviewed-selector,a real anchored menu stays inside a new narrow root while RN width remains stale,False,SCENE-MIG-005
+MAP-cfca889ee705,L2,reviewed implementation,mobileapp/__tests__/App.sceneMigration.test.tsx,106,reviewed-selector,retained DiffModal follows its actual viewport layout and keeps wrap and close usable with stale RN dimensions,False,SCENE-MIG-005
+MAP-9ba95c850181,L2,reviewed implementation,mobileapp/__tests__/App.sceneMigration.test.tsx,133,reviewed-selector,real HQ inspector follows root resize and sidebar hiding while RN remains stale,False,SCENE-MIG-005
+MAP-52fc7bb9aa93,L2,reviewed implementation,mobileapp/__tests__/App.sceneMigration.test.tsx,146,reviewed-selector,real menu position and height follow a second root resize with nonzero safe-area edges,False,SCENE-MIG-005
+MAP-4a4a0d853ca2,L2,reviewed implementation,mobileapp/__tests__/App.sceneMigration.test.tsx,167,reviewed-selector,real App keeps safe-area ownership while startup resolves from Splash to unpaired Servers,False,SCENE-MIG-005
 MAP-2fd3cafb008c,L2,reviewed implementation,mobileapp/e2e/fake-serve/backend-contract.test.ts,46,reviewed-selector,RN fake / Go contract:,False,CT-HTTP
 MAP-01cd8c62d09e,L2,reviewed implementation,mobileapp/e2e/fake-serve/backend-contract.test.ts,53,reviewed-selector,RN client consumes original ordinals,False,CT-HTTP
-MAP-f2ed2637baa9,L2,reviewed implementation,mobileapp/e2e/fake-serve/server.ts,95,reviewed-selector,startFake,False,CT-HTTP
+MAP-b33db4631198,L2,reviewed implementation,mobileapp/e2e/fake-serve/request-diagnostics.test.ts,3,reviewed-selector,diagnostic request metadata shows routing without headers or query values,False,SCENE-MIG-011
+MAP-f2ed2637baa9,L2,reviewed implementation,mobileapp/e2e/fake-serve/server.ts,97,reviewed-selector,startFake,False,CT-HTTP
+MAP-10a263ace6db,L2,reviewed implementation,mobileapp/e2e/fake-serve/transcript-identity.test.ts,10,reviewed-selector,default transcript identity survives polling while new fixtures and explicit transcripts remain independent,False,SCENE-MIG-011
 MAP-f4f657590af5,L2,reviewed implementation,mobileapp/e2e/fake-serve/world.ts,111,reviewed-selector,export class World,False,CT-HTTP
 LEG-81cfbfd439f8,L2,RN / mobile harness,mobileapp/src/screens/AccessHistoryControls.test.tsx,21,test,same-name device choices expose full IDs and preserve the other filters,False,legacy-not-retrospectively-reviewed
 LEG-d880c9025607,L2,RN / mobile harness,mobileapp/src/screens/AccessHistoryControls.test.tsx,31,test,a full ID outside the discovered choices can be entered in a native prompt,False,legacy-not-retrospectively-reviewed

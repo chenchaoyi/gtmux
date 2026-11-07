@@ -34644,13 +34644,13 @@
       ]
     },
     "mobileapp/e2e/__tests__/coldstart-push.test.ts": {
-      "sha256": "b844f7628300c24f916620e266681c8a1bd74f57feb2831df6b9b4b257d8e45c",
+      "sha256": "62d2b17db01241a9a30ff6c9f239126f5f2b31d7657e7092b05594ac85c5265b",
       "layer": "L4",
       "stack": "RN / mobile harness",
       "cases": [
         {
           "id": "LEG-a5d63af936be",
-          "line": 130,
+          "line": 146,
           "kind": "it",
           "name": "A: cold start with an active Mac, switches, background, a new warm tap",
           "dynamic": false,
@@ -34658,7 +34658,7 @@
         },
         {
           "id": "LEG-f3196e5f4ce2",
-          "line": 170,
+          "line": 211,
           "kind": "it",
           "name": "C: a launch with no notification switches where it is pointed",
           "dynamic": false,
@@ -36381,13 +36381,13 @@
       ]
     },
     "mobileapp/e2e/setup/capabilities.test.ts": {
-      "sha256": "ba3d68a275f7261a1c1a553ce1da526b28c8083f0122ae25f72fe38a7b5c5022",
+      "sha256": "b8162e2e9c0b7c5f39e67ef566ab7a372012797496b0950a81ae9bdd55dce855",
       "layer": "L1",
       "stack": "RN / mobile harness",
       "cases": [
         {
           "id": "LEG-b6f73720d14b",
-          "line": 8,
+          "line": 25,
           "kind": "test",
           "name": "manual handles nothing on the test’s behalf",
           "dynamic": false,
@@ -36395,7 +36395,7 @@
         },
         {
           "id": "LEG-7440419bbda7",
-          "line": 14,
+          "line": 31,
           "kind": "test",
           "name": "the default dismisses, and the older accept switch still accepts",
           "dynamic": false,
@@ -36403,7 +36403,7 @@
         },
         {
           "id": "LEG-9afe9479f18a",
-          "line": 19,
+          "line": 36,
           "kind": "test",
           "name": "the explicit mode wins over the older switch",
           "dynamic": false,
@@ -36411,7 +36411,7 @@
         },
         {
           "id": "LEG-ff05befffbd7",
-          "line": 23,
+          "line": 40,
           "kind": "test",
           "name": "a misspelt mode stops the run instead of falling back to dismiss",
           "dynamic": false,
@@ -36419,7 +36419,7 @@
         },
         {
           "id": "LEG-7201f98d96a5",
-          "line": 28,
+          "line": 45,
           "kind": "test",
           "name": "headless capture is explicit and local GUI runs keep their behavior",
           "dynamic": false,
@@ -36427,7 +36427,7 @@
         },
         {
           "id": "LEG-16fab5a7cc96",
-          "line": 34,
+          "line": 51,
           "kind": "test",
           "name": "only explicit hosted capture separates WDA build and readiness with one bounded connection",
           "dynamic": false,
@@ -36435,11 +36435,20 @@
         },
         {
           "id": "LEG-61bfa22d706f",
-          "line": 50,
+          "line": 67,
           "kind": "test",
           "name": "only hosted multi-screen store captures receive the longer journey budget",
           "dynamic": false,
           "layer": "L1"
+        },
+        {
+          "id": "MAP-ad6f801c4c8b",
+          "line": 3,
+          "kind": "reviewed-selector",
+          "name": "cloud simulator session waits for a fresh WDA build without requiring a prebuilt product",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-010"
         }
       ]
     },
@@ -40589,13 +40598,13 @@
       ]
     },
     "mobileapp/src/push/launchNotification.test.ts": {
-      "sha256": "ba9f0f05894680fb220febaebd412e8818db9024e23d31f78384e6e2b92ae889",
+      "sha256": "80ac185b0718e90a4f8f9842deeb7778a35a30666a03db9845a02aa23348e6b8",
       "layer": "L1",
       "stack": "RN / mobile harness",
       "cases": [
         {
           "id": "LEG-c0039196e4f2",
-          "line": 29,
+          "line": 32,
           "kind": "test",
           "name": "the launch notification is acted on once, not on every server switch",
           "dynamic": false,
@@ -40603,11 +40612,65 @@
         },
         {
           "id": "LEG-a79023052203",
-          "line": 39,
+          "line": 42,
           "kind": "test",
           "name": "a launch with no notification taps nothing",
           "dynamic": false,
           "layer": "L1"
+        },
+        {
+          "id": "MAP-43a5acb09524",
+          "line": 124,
+          "kind": "reviewed-selector",
+          "name": "a buffered native response and the launch copy dispatch one quick reply",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-003"
+        },
+        {
+          "id": "MAP-e583ab6da371",
+          "line": 136,
+          "kind": "reviewed-selector",
+          "name": "a native buffer failure still delivers the bridge launch notification",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-003"
+        },
+        {
+          "id": "MAP-f6ca99aeb79b",
+          "line": 58,
+          "kind": "reviewed-selector",
+          "name": "the same quick action arriving from scene and delegate sends once",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-003"
+        },
+        {
+          "id": "MAP-49ac3dbf1487",
+          "line": 145,
+          "kind": "reviewed-selector",
+          "name": "a stalled native drain leaves initial fallback and foreground recovery usable",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-003"
+        },
+        {
+          "id": "MAP-14fb52a6ba3b",
+          "line": 192,
+          "kind": "reviewed-selector",
+          "name": "the initial action does not wait for notification permission",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-003"
+        },
+        {
+          "id": "MAP-b3afaf2b1f68",
+          "line": 167,
+          "kind": "reviewed-selector",
+          "name": "foreground recovery first delivers a retained response after the initial drain stalls",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-003"
         }
       ]
     },
@@ -54182,7 +54245,7 @@
       ]
     },
     "mobileapp/src/usage/UsageWidgetBridge.test.tsx": {
-      "sha256": "7e82bc7bddf5c255021efda617f4cde70e0160e939b3928842876155358d4ee6",
+      "sha256": "e5ddd8e826f6a9674635afc368e9fc211ae1a1a713ed4e907ad13150ef6f17ab",
       "layer": "L1",
       "stack": "RN / mobile harness",
       "cases": [
@@ -54204,7 +54267,7 @@
         },
         {
           "id": "LEG-7419b6327ede",
-          "line": 73,
+          "line": 81,
           "kind": "test",
           "name": "widget links cannot select a server or smuggle credentials",
           "dynamic": false,
@@ -54212,7 +54275,7 @@
         },
         {
           "id": "LEG-ba603cf68958",
-          "line": 81,
+          "line": 89,
           "kind": "test",
           "name": "changing a connection closes the old sheet and discards its late response",
           "dynamic": false,
@@ -54220,11 +54283,56 @@
         },
         {
           "id": "LEG-483418e96a4d",
-          "line": 106,
+          "line": 259,
           "kind": "test",
           "name": "Android snapshot labels handle unnamed plans and contain no pairing credential",
           "dynamic": false,
           "layer": "L1"
+        },
+        {
+          "id": "MAP-732a597f88bf",
+          "line": 118,
+          "kind": "reviewed-selector",
+          "name": "a headless scene link is retained until the visual consumer opens and acknowledges it",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-004"
+        },
+        {
+          "id": "MAP-3001d0088bec",
+          "line": 142,
+          "kind": "reviewed-selector",
+          "name": "a queued scene link rejected for a guest cannot open after switching to owner",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-004"
+        },
+        {
+          "id": "MAP-3fba88d7af6d",
+          "line": 167,
+          "kind": "reviewed-selector",
+          "name": "a retained scene link is retried when the app becomes active",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-004"
+        },
+        {
+          "id": "MAP-25be587027d6",
+          "line": 195,
+          "kind": "reviewed-selector",
+          "name": "an active transition during a failed drain still retries the retained link",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-004"
+        },
+        {
+          "id": "MAP-68bf80153330",
+          "line": 224,
+          "kind": "reviewed-selector",
+          "name": "foreground recovery bypasses a stalled scene-link drain and suppresses its late copy",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-004"
         }
       ]
     },
@@ -54683,13 +54791,13 @@
       ]
     },
     "scripts/ci_test.py": {
-      "sha256": "e43020b01b551df7dcd03432cfda64a38d8ca7d585f52edc919b8f3bb2af0aca",
+      "sha256": "487a2ab8d32bb842bb9cce1003f180c82ddb894c1fda50a37c0e96e7af33d2e0",
       "layer": "G",
       "stack": "CI / tooling",
       "cases": [
         {
           "id": "LEG-bb0f4dd7bc8b",
-          "line": 35,
+          "line": 37,
           "kind": "unittest",
           "name": "test_docs_only_and_mixed_changes",
           "dynamic": false,
@@ -54697,7 +54805,7 @@
         },
         {
           "id": "LEG-5e8793132c96",
-          "line": 51,
+          "line": 53,
           "kind": "unittest",
           "name": "test_shared_or_unknown_impact_is_full",
           "dynamic": true,
@@ -54705,7 +54813,7 @@
         },
         {
           "id": "LEG-7bbcfe8992be",
-          "line": 62,
+          "line": 64,
           "kind": "unittest",
           "name": "test_recognized_modules_include_consumers",
           "dynamic": false,
@@ -54713,7 +54821,7 @@
         },
         {
           "id": "LEG-bbdfd85a9000",
-          "line": 71,
+          "line": 129,
           "kind": "unittest",
           "name": "test_nul_parser_preserves_names_and_old_rename_path",
           "dynamic": true,
@@ -54721,7 +54829,7 @@
         },
         {
           "id": "LEG-30f2f4661935",
-          "line": 79,
+          "line": 137,
           "kind": "unittest",
           "name": "test_actual_git_rename_deletion_and_symlink",
           "dynamic": false,
@@ -54729,7 +54837,7 @@
         },
         {
           "id": "LEG-a0a184955335",
-          "line": 105,
+          "line": 163,
           "kind": "unittest",
           "name": "test_missing_refs_force_full_cli_outputs",
           "dynamic": false,
@@ -54737,7 +54845,7 @@
         },
         {
           "id": "LEG-513d57a7489a",
-          "line": 116,
+          "line": 174,
           "kind": "unittest",
           "name": "test_workflow_jobs_cannot_grow_outside_aggregation",
           "dynamic": false,
@@ -54745,7 +54853,7 @@
         },
         {
           "id": "LEG-1f71c99fb4dc",
-          "line": 128,
+          "line": 186,
           "kind": "unittest",
           "name": "test_unsigned_ios_preserves_arm64_target_and_verifies_products",
           "dynamic": false,
@@ -54753,7 +54861,7 @@
         },
         {
           "id": "LEG-2514a184abce",
-          "line": 140,
+          "line": 198,
           "kind": "unittest",
           "name": "test_android_package_is_built_once_and_both_devices_use_its_output",
           "dynamic": false,
@@ -54761,7 +54869,7 @@
         },
         {
           "id": "LEG-76200ceafcf2",
-          "line": 160,
+          "line": 218,
           "kind": "unittest",
           "name": "test_docs_can_skip_heavy_jobs_but_require_quality",
           "dynamic": false,
@@ -54769,7 +54877,7 @@
         },
         {
           "id": "LEG-ecfb4bf818ba",
-          "line": 166,
+          "line": 224,
           "kind": "unittest",
           "name": "test_missing_skipped_failed_cancelled_required_job_never_green",
           "dynamic": true,
@@ -54777,7 +54885,7 @@
         },
         {
           "id": "LEG-252965413bf3",
-          "line": 175,
+          "line": 233,
           "kind": "unittest",
           "name": "test_bad_plans_or_unselected_failure_are_rejected",
           "dynamic": false,
@@ -54785,7 +54893,7 @@
         },
         {
           "id": "LEG-8a6a845c7484",
-          "line": 187,
+          "line": 303,
           "kind": "unittest",
           "name": "test_mac_host_keeps_both_architectures_and_native_checks",
           "dynamic": false,
@@ -54793,7 +54901,7 @@
         },
         {
           "id": "LEG-28f4d1551b14",
-          "line": 204,
+          "line": 320,
           "kind": "unittest",
           "name": "test_ios_delivery_pins_the_same_arm_toolchain_and_keeps_protection",
           "dynamic": false,
@@ -54801,7 +54909,7 @@
         },
         {
           "id": "MAP-349a1f57f0b7",
-          "line": 43,
+          "line": 45,
           "kind": "reviewed-selector",
           "name": "test_reviewed_test_records_are_policy_only_without_hiding_test_changes",
           "dynamic": false,
@@ -54810,12 +54918,48 @@
         },
         {
           "id": "MAP-5f57607e8e0e",
-          "line": 17,
+          "line": 19,
           "kind": "reviewed-selector",
           "name": "test_unit_test_scope_requires_immutable_product_exclusion",
           "dynamic": false,
           "layer": "G",
           "design": "CT-SCOPE"
+        },
+        {
+          "id": "MAP-7f9c2774f706",
+          "line": 73,
+          "kind": "reviewed-selector",
+          "name": "test_scene_migration_selection_is_not_branch_dependent_and_keeps_old_gates",
+          "dynamic": false,
+          "layer": "G",
+          "design": "CT-SCOPE,SCENE-MIG-009"
+        },
+        {
+          "id": "MAP-a41d394b7a28",
+          "line": 97,
+          "kind": "reviewed-selector",
+          "name": "test_scene_driver_setup_preserves_pins_errors_and_existing_isolation",
+          "dynamic": false,
+          "layer": "G",
+          "design": "CT-SCOPE,SCENE-MIG-009"
+        },
+        {
+          "id": "MAP-8100c254e1b8",
+          "line": 241,
+          "kind": "reviewed-selector",
+          "name": "test_scene_roles_follow_event_and_require_complete_union_plus_old_gates",
+          "dynamic": false,
+          "layer": "G",
+          "design": "CT-SCOPE,SCENE-MIG-009"
+        },
+        {
+          "id": "MAP-8e1795e1f232",
+          "line": 268,
+          "kind": "reviewed-selector",
+          "name": "test_scene_workflow_sequential_role_and_full_union_wiring",
+          "dynamic": false,
+          "layer": "G",
+          "design": "CT-SCOPE,SCENE-MIG-009"
         }
       ]
     },
@@ -56822,7 +56966,7 @@
       ]
     },
     "scripts/test_design_test.py": {
-      "sha256": "68fdb3fbbf3dba605cb8c53cb1e962a16c6fb7f6f1fcd9859dd7b50abde07c71",
+      "sha256": "3234a7100a588a94d2d914f899836f270baa6e5a5b009db55ef4723259256213",
       "layer": "G",
       "stack": "CI / tooling",
       "cases": [
@@ -57048,7 +57192,7 @@
           "design": "ND-003"
         }
       ],
-      "sha256": "39c3ab7a862f23dea5cbee340251ea4260c68ede5fb1ec4825c3a2c74ce21aa7"
+      "sha256": "85d2b1ebc283288fea914bf7512cab5f215df100b2f86876a9d47c053e5f0f7e"
     },
     "scripts/test_design.py": {
       "layer": "G",
@@ -57131,7 +57275,7 @@
       "cases": [
         {
           "id": "MAP-f2ed2637baa9",
-          "line": 95,
+          "line": 97,
           "kind": "reviewed-selector",
           "name": "startFake",
           "dynamic": false,
@@ -57139,7 +57283,7 @@
           "design": "CT-HTTP"
         }
       ],
-      "sha256": "79d8be5f47afc60d6725ac9b4c72c04d329ffd08d10aa46d92c9f69ba054d5ef"
+      "sha256": "bf2f97c00fae3de26cc1b4e61f32eb226d5fd51e349b17e20aec21d3f4b810c9"
     },
     "mobileapp/e2e/fake-serve/world.ts": {
       "layer": "L2",
@@ -57285,9 +57429,27 @@
           "dynamic": false,
           "layer": "G",
           "design": "CT-SCOPE"
+        },
+        {
+          "id": "MAP-7b2e9e5dc72d",
+          "line": 50,
+          "kind": "reviewed-selector",
+          "name": "def classify(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "CT-SCOPE,SCENE-MIG-009"
+        },
+        {
+          "id": "MAP-03a19d975ce6",
+          "line": 138,
+          "kind": "reviewed-selector",
+          "name": "def verdict(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "CT-SCOPE,SCENE-MIG-009"
         }
       ],
-      "sha256": "b62e0024676d64ec379b69b502e913a83e69abd4d0a514696aacaa84d3d01a0f"
+      "sha256": "727fbec92b4ecf9faf62b134b11e049baacbc4b9ea08e58308cce66c48dfea99"
     },
     "tests/contracts/http-contract.cjs": {
       "layer": "L2",
@@ -57770,6 +57932,1593 @@
         }
       ],
       "sha256": "d39497db4173b773bb881661cc075fbe055efd574686b21c8f03b0f0c6f30bdd"
+    },
+    "mobileapp/__tests__/App.sceneMigration.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-3a38d5e64c65",
+          "line": 66,
+          "kind": "reviewed-selector",
+          "name": "main App keeps compact navigation props and a fresh root changes its real shell",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SCENE-MIG-005"
+        },
+        {
+          "id": "MAP-da46dbb93884",
+          "line": 75,
+          "kind": "reviewed-selector",
+          "name": "main App sidebar geometry follows the new root even when RN retains its old phone width",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SCENE-MIG-005"
+        },
+        {
+          "id": "MAP-b8c8470d4954",
+          "line": 87,
+          "kind": "reviewed-selector",
+          "name": "a real anchored menu stays inside a new narrow root while RN width remains stale",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SCENE-MIG-005"
+        },
+        {
+          "id": "MAP-cfca889ee705",
+          "line": 106,
+          "kind": "reviewed-selector",
+          "name": "retained DiffModal follows its actual viewport layout and keeps wrap and close usable with stale RN dimensions",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SCENE-MIG-005"
+        },
+        {
+          "id": "MAP-9ba95c850181",
+          "line": 133,
+          "kind": "reviewed-selector",
+          "name": "real HQ inspector follows root resize and sidebar hiding while RN remains stale",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SCENE-MIG-005"
+        },
+        {
+          "id": "MAP-52fc7bb9aa93",
+          "line": 146,
+          "kind": "reviewed-selector",
+          "name": "real menu position and height follow a second root resize with nonzero safe-area edges",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SCENE-MIG-005"
+        },
+        {
+          "id": "MAP-4a4a0d853ca2",
+          "line": 167,
+          "kind": "reviewed-selector",
+          "name": "real App keeps safe-area ownership while startup resolves from Splash to unpaired Servers",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SCENE-MIG-005"
+        }
+      ],
+      "sha256": "1da837019802de8ff53d97372eab41fe8691f83abb5bfe1f1b57436a7a890a09"
+    },
+    "mobileapp/__tests__/App.notificationBootstrap.test.tsx": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-265918ac6bc3",
+          "line": 186,
+          "kind": "reviewed-selector",
+          "name": "starts the actual notification bridge while the visual safe area has no metrics",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        },
+        {
+          "id": "MAP-ebe62334eafa",
+          "line": 192,
+          "kind": "reviewed-selector",
+          "name": "a cold same-server tap waits beyond the inset gate then opens the latest agent exactly once",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        },
+        {
+          "id": "MAP-c5dd1f1057fc",
+          "line": 210,
+          "kind": "reviewed-selector",
+          "name": "a warm tap navigates immediately and a new response is not mistaken for a replay",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        },
+        {
+          "id": "MAP-1adcb155177c",
+          "line": 132,
+          "kind": "reviewed-selector",
+          "name": "a cross-server tap survives only its intended remount and waits for that navigator",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        },
+        {
+          "id": "MAP-6d53db4c23be",
+          "line": 218,
+          "kind": "reviewed-selector",
+          "name": "a user server change discards a queued old-workspace tap and unsubscribes on unmount",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        },
+        {
+          "id": "MAP-9140513ae8fb",
+          "line": 228,
+          "kind": "reviewed-selector",
+          "name": "a guest or ambiguous notification source cannot leave a future navigation intent",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        },
+        {
+          "id": "MAP-630df4efdc51",
+          "line": 115,
+          "kind": "reviewed-selector",
+          "name": "real persistence gap never routes a cross-server tap on the old ready workspace",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        },
+        {
+          "id": "MAP-4e68b372f93a",
+          "line": 129,
+          "kind": "reviewed-selector",
+          "name": "real persistence gap preserves a cross-server tap past old headless bridge teardown",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        },
+        {
+          "id": "MAP-ccb6e8b76ca6",
+          "line": 139,
+          "kind": "reviewed-selector",
+          "name": "new cross-server generation survives an older selection completion and opens only its target",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        },
+        {
+          "id": "MAP-75a6ec2ee2e0",
+          "line": 146,
+          "kind": "reviewed-selector",
+          "name": "a new same-origin tap orders its selection after an outstanding foreign write",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        },
+        {
+          "id": "MAP-11cd737b84e9",
+          "line": 152,
+          "kind": "reviewed-selector",
+          "name": "failed selection is discarded and cannot replay when the user later visits its server",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        },
+        {
+          "id": "MAP-54d840310a88",
+          "line": 158,
+          "kind": "reviewed-selector",
+          "name": "an older rejected write cannot clear a newer generation",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        },
+        {
+          "id": "MAP-cfb8099f0f2b",
+          "line": 163,
+          "kind": "reviewed-selector",
+          "name": "a committed manual departure cancels an unshown target intent even after revisiting",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        },
+        {
+          "id": "MAP-069ad263e19e",
+          "line": 168,
+          "kind": "reviewed-selector",
+          "name": "disconnect clears a waiting intent before a later reconnect",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        },
+        {
+          "id": "MAP-a6b3b5eb534d",
+          "line": 173,
+          "kind": "reviewed-selector",
+          "name": "root unmount rejects late selection completion and old ready callbacks",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        },
+        {
+          "id": "MAP-e0b12ada276c",
+          "line": 178,
+          "kind": "reviewed-selector",
+          "name": "same-server taps still wait for readiness then deliver fresh responses once without saving",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        }
+      ],
+      "sha256": "09e20d52908d1ed60f92e21265dcd308863b9aaa553a9a2126886b499978bc04"
+    },
+    "mobileapp/ios/tests/NotificationResponseCompletionChecks.swift": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-4d79dbb7ab50",
+          "line": 20,
+          "kind": "reviewed-selector",
+          "name": "notification response completion checks passed",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-001"
+        }
+      ],
+      "sha256": "a361ca5785afb429111ebf8deebcb4f831cb0b7b8b5cb4d2499ef27921667dc8"
+    },
+    "mobileapp/ios/tests/NotificationResponsePayloadChecks.swift": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-88eca3d41bfd",
+          "line": 70,
+          "kind": "reviewed-selector",
+          "name": "notification response payload and queue checks passed",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-001"
+        },
+        {
+          "id": "MAP-2bf007ddc23d",
+          "line": 16,
+          "kind": "reviewed-selector",
+          "name": "let activityPayload = sceneUserActivityPayload",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-001"
+        },
+        {
+          "id": "MAP-4eba460f385e",
+          "line": 20,
+          "kind": "reviewed-selector",
+          "name": "retainHeadlessSceneLinks(urls: [sceneURL], activities: [activity])",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-001"
+        }
+      ],
+      "sha256": "bcefc518eb97a830a83f34cc2d5402f6621cee2d18a36aeadb8d188b1264bcf5"
+    },
+    "mobileapp/src/push/initialPermissionConcurrency.test.ts": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-4aec1b6dc3b7",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "requests permission despite a stalled initial response, then delivers the late action once",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-003"
+        },
+        {
+          "id": "MAP-27c1f05fe1bb",
+          "line": 29,
+          "kind": "reviewed-selector",
+          "name": "ignores an initial response that arrives after teardown",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-003"
+        },
+        {
+          "id": "MAP-a29517909a3d",
+          "line": 77,
+          "kind": "reviewed-selector",
+          "name": "delivers an initial action without waiting for permission",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-003"
+        },
+        {
+          "id": "MAP-82e358ff5f58",
+          "line": 40,
+          "kind": "reviewed-selector",
+          "name": "hands a late initial response to the live bridge after a server switch",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-003"
+        },
+        {
+          "id": "MAP-40ca9ad91fa7",
+          "line": 55,
+          "kind": "reviewed-selector",
+          "name": "cancels a bridge immediately when permission is pending and hands the action to its replacement",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-003"
+        },
+        {
+          "id": "MAP-c60f9dfaa54a",
+          "line": 90,
+          "kind": "reviewed-selector",
+          "name": "reads authorization settings only for a pending debug request and stops on teardown",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-003"
+        }
+      ],
+      "sha256": "05b011876824bb643553a724dff9729f4897c0e8fe2b5fba6967188acf3d5c50"
+    },
+    "mobileapp/src/push/permissionTrace.test.ts": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f3c8f4404ee8",
+          "line": 24,
+          "kind": "reviewed-selector",
+          "name": "probe entry distinguishes a pending native settings callback from a timer that never ran",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-003"
+        },
+        {
+          "id": "MAP-88ba30480bfb",
+          "line": 39,
+          "kind": "reviewed-selector",
+          "name": "abort before the probe records closure and cancels the existing timer",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-003"
+        },
+        {
+          "id": "MAP-550ae988375a",
+          "line": 48,
+          "kind": "reviewed-selector",
+          "name": "logging off adds neither a probe nor teardown records",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-003"
+        }
+      ],
+      "sha256": "7be6c7be8bb7d01c8d46adfb7b4729c8e2a025db98f2561ffab4400f26a69b1d"
+    },
+    "mobileapp/src/push/responseCompletion.test.ts": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-13e1cb6d9b1b",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "waits for a %s reply and suppresses a duplicate while pending",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-003"
+        },
+        {
+          "id": "MAP-9ff3d70517f7",
+          "line": 42,
+          "kind": "reviewed-selector",
+          "name": "a normal notification tap acknowledges without waiting for a reply",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-003"
+        }
+      ],
+      "sha256": "3ced2b0c8b27468693a531b6d601269c688a07a4d00a8b69c6bcd7458a59a9dd"
+    },
+    "mobileapp/src/ui/WorkspaceSurface.sceneMetrics.test.tsx": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-20f88ab9ada6",
+          "line": 17,
+          "kind": "reviewed-selector",
+          "name": "keeps background active until a current scene exists, then follows native inset changes",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        },
+        {
+          "id": "MAP-2535f52a828e",
+          "line": 42,
+          "kind": "reviewed-selector",
+          "name": "rejects a zero-sized scene instead of seeding fake metrics",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        }
+      ],
+      "sha256": "a3c7141ebdbb7694f5af599bae676d2195c63e01c11124c06e4496d9aff757fb"
+    },
+    "mobileapp/src/ui/WorkspaceSurface.test.tsx": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-501a6457c760",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "starts background handling before native insets and mounts the visual tree after measurement",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        }
+      ],
+      "sha256": "c8cb42eb3d0044d2f4897fdd46aec96b96614cb93db76e261b37e500efc3cba0"
+    },
+    "mobileapp/src/ui/windowMetrics.test.tsx": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e3657e854bc3",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "root view resizes update the workspace even when native dimensions do not, without remounting the reader",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        },
+        {
+          "id": "MAP-a4267ab4a51b",
+          "line": 29,
+          "kind": "reviewed-selector",
+          "name": "native fallback and scale stay current while only valid root width and height override dimensions",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-002"
+        }
+      ],
+      "sha256": "8b4067d46ac3ec593d72912a157291b0bc0054ca00350f963da3ed4b7eae4b39"
+    },
+    "mobileapp/src/usage/UsageWidgetBridge.initialDemoLink.test.tsx": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-109f723286a2",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "a demo-rejected initial link cannot replay when the connection becomes an owner",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-004"
+        }
+      ],
+      "sha256": "292eeb7794625d47463e0373e6c72553c6f4ed6b922d289ba5eef8579f3e1977"
+    },
+    "mobileapp/src/usage/UsageWidgetBridge.initialLink.test.tsx": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-cd8094a5d6ae",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "a guest-rejected initial link cannot replay when the connection becomes owner",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-004"
+        }
+      ],
+      "sha256": "ddc625eb949dc560cbfd23059f6f5e73fa1cff4054125c28461c00e8b812002d"
+    },
+    "mobileapp/src/usage/UsageWidgetBridge.sceneEvents.test.tsx": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-2ec345b59070",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "retained scene availability delivers each permitted intent once and rejects guest replay",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-004"
+        }
+      ],
+      "sha256": "1e888dc02aab7e5032db0a9e9db493d6b17490afc7e6454c7e43a6cf93b76d29"
+    },
+    "mobileapp/e2e/ci-scene-migration.py": {
+      "layer": "G",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d455cb51bba1",
+          "line": 63,
+          "kind": "reviewed-selector",
+          "name": "def sources(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-bb550a403768",
+          "line": 77,
+          "kind": "reviewed-selector",
+          "name": "def units(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-ea5937ab5244",
+          "line": 126,
+          "kind": "reviewed-selector",
+          "name": "def archive_source(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-38d95bd6046c",
+          "line": 118,
+          "kind": "reviewed-selector",
+          "name": "def allocate_unit(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-d8d576f98a52",
+          "line": 183,
+          "kind": "reviewed-selector",
+          "name": "def unit_errors(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-e0657dd9a16c",
+          "line": 232,
+          "kind": "reviewed-selector",
+          "name": "def verify_all(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-5e8a9b948e24",
+          "line": 445,
+          "kind": "reviewed-selector",
+          "name": "def preflight(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-686096fccf36",
+          "line": 493,
+          "kind": "reviewed-selector",
+          "name": "def prepare_source(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-e317c36e87b4",
+          "line": 521,
+          "kind": "reviewed-selector",
+          "name": "def prepare_work(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-48f5d7e71933",
+          "line": 541,
+          "kind": "reviewed-selector",
+          "name": "def build_product(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-eddc7dcee0b0",
+          "line": 582,
+          "kind": "reviewed-selector",
+          "name": "def collect_identity(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-af21af8be44f",
+          "line": 697,
+          "kind": "reviewed-selector",
+          "name": "def run_unit(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-89aaee2a9ed7",
+          "line": 624,
+          "kind": "reviewed-selector",
+          "name": "def cleanup_unit(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-15d5d6c17883",
+          "line": 770,
+          "kind": "reviewed-selector",
+          "name": "def execute(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-73f0d22945c8",
+          "line": 260,
+          "kind": "reviewed-selector",
+          "name": "class CommandFailure(RuntimeError):",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-2c39e5b64866",
+          "line": 351,
+          "kind": "reviewed-selector",
+          "name": "def command(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-d837c2f06ed6",
+          "line": 677,
+          "kind": "reviewed-selector",
+          "name": "def preparation_diagnostics(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-51359dac4146",
+          "line": 846,
+          "kind": "reviewed-selector",
+          "name": "def trusted_context(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-c3f467f74efe",
+          "line": 869,
+          "kind": "reviewed-selector",
+          "name": "def role_units(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-078dd820d920",
+          "line": 887,
+          "kind": "reviewed-selector",
+          "name": "def publish_role(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-53fc737849d5",
+          "line": 908,
+          "kind": "reviewed-selector",
+          "name": "def comparable_identity(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-597c536af5c3",
+          "line": 960,
+          "kind": "reviewed-selector",
+          "name": "def verify_union(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        }
+      ],
+      "sha256": "37b2489aec425fc4d560f6301f8ab7a5a13ce17206286b109a231d5a2d283a8d"
+    },
+    "scripts/scene_migration_test.py": {
+      "layer": "G",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-4dbebfdd920d",
+          "line": 54,
+          "kind": "reviewed-selector",
+          "name": "test_real_event_sources_and_fixed_PR15_main11_instances",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-7290dcb68a36",
+          "line": 68,
+          "kind": "reviewed-selector",
+          "name": "test_missing_bad_base_and_actualmain_mismatch_fail",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-b5a28e6d73ba",
+          "line": 77,
+          "kind": "reviewed-selector",
+          "name": "test_each_source_and_journey_has_exclusive_work_and_evidence",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-5b087f7ffc6a",
+          "line": 94,
+          "kind": "reviewed-selector",
+          "name": "test_real_git_archive_from_root_and_mobileapp_rejects_unreadable_base",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-2e1022e71af6",
+          "line": 109,
+          "kind": "reviewed-selector",
+          "name": "test_complete_synthetic_matrix_and_missing_unit_fail_closed",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-be9aec3dcf49",
+          "line": 132,
+          "kind": "reviewed-selector",
+          "name": "test_missing_skipped_failed_cancelled_case_or_early_return_never_passes",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-c5286b224e73",
+          "line": 148,
+          "kind": "reviewed-selector",
+          "name": "test_wrong_or_missing_toolchain_WDA_signature_and_product_identity_fail",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-6bc9a8ea1bd1",
+          "line": 164,
+          "kind": "reviewed-selector",
+          "name": "test_evidence_byte_changes_and_escape_are_rejected",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-a5b156b2b518",
+          "line": 119,
+          "kind": "reviewed-selector",
+          "name": "test_offline_verifier_retains_preparation_failure_with_complete_case_results",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-a7808f64414b",
+          "line": 190,
+          "kind": "reviewed-selector",
+          "name": "test_execute_refuses_local_environment_before_any_native_command",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-45d57ce1727c",
+          "line": 196,
+          "kind": "reviewed-selector",
+          "name": "test_real_small_child_exit_timeout_and_output_cap_are_bounded",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-c78c647692bc",
+          "line": 291,
+          "kind": "reviewed-selector",
+          "name": "test_device_lookup_requires_actual_runtime_and_unique_hardware",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-ca6db00c6d3b",
+          "line": 373,
+          "kind": "reviewed-selector",
+          "name": "test_missing_diagnostic_evidence_keeps_original_test_zero_or_seven_and_cleans",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-80e5de561924",
+          "line": 832,
+          "kind": "reviewed-selector",
+          "name": "test_harness_journeys_share_only_verified_dependencies_and_keep_source_bytes",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-d485b529b3a4",
+          "line": 851,
+          "kind": "reviewed-selector",
+          "name": "test_cleanup_targets_only_saved_matching_server_and_exact_unit_wda",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-7cb3bff30a24",
+          "line": 760,
+          "kind": "reviewed-selector",
+          "name": "test_executor_builds_only_expected_sources_but_checks_real_base",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-9fcc5cafe672",
+          "line": 776,
+          "kind": "reviewed-selector",
+          "name": "test_real_runner_metadata_and_archival_failures_preserve_executed_units",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-ec565820041a",
+          "line": 793,
+          "kind": "reviewed-selector",
+          "name": "test_real_executor_keeps_last_shutdown_failure_and_original_exit",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-2258d0570d1d",
+          "line": 802,
+          "kind": "reviewed-selector",
+          "name": "test_shutdown_failure_or_timeout_of_final_unit_cannot_pass",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-c475771ec211",
+          "line": 714,
+          "kind": "reviewed-selector",
+          "name": "test_real_runner_wait_then_stat_failure_preserves_unit_and_aggregate",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-e82c5bb79bde",
+          "line": 723,
+          "kind": "reviewed-selector",
+          "name": "test_cleanup_bad_query_shapes_and_errors_keep_final_executed_unit",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-7bb970863c77",
+          "line": 744,
+          "kind": "reviewed-selector",
+          "name": "test_runner_distinguishes_not_started_from_started_evidence_failure",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-7ea709c3a533",
+          "line": 300,
+          "kind": "reviewed-selector",
+          "name": "test_device_lookup_separates_same_version_platforms_without_fallback",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-e3f93d5376ca",
+          "line": 696,
+          "kind": "reviewed-selector",
+          "name": "test_physical_dependency_root_reaches_builds_and_real_journey_children",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-d52c082f6324",
+          "line": 323,
+          "kind": "reviewed-selector",
+          "name": "test_preflight_preserves_installed_appium_root_and_rejects_missing_or_changed_override",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-b327e47f84c2",
+          "line": 210,
+          "kind": "reviewed-selector",
+          "name": "test_collect_identity_parses_only_stdout_with_retained_real_child_diagnostics",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-3e209bbe710b",
+          "line": 261,
+          "kind": "reviewed-selector",
+          "name": "test_split_stream_runner_preserves_exit_and_combined_default",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-cecede2e754f",
+          "line": 275,
+          "kind": "reviewed-selector",
+          "name": "test_split_stream_runner_bounds_total_bytes_and_timeout",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-d045f33494e3",
+          "line": 665,
+          "kind": "reviewed-selector",
+          "name": "test_final_preparation_failure_keeps_original_outcome_and_bounds_diagnostics",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-1fb1faf2289a",
+          "line": 690,
+          "kind": "reviewed-selector",
+          "name": "test_successful_preparation_does_not_collect_failure_diagnostics",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-6da83960d9ce",
+          "line": 524,
+          "kind": "reviewed-selector",
+          "name": "test_install_sample_observes_owned_live_child_once_without_changing_exit",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-1b2d605388dd",
+          "line": 556,
+          "kind": "reviewed-selector",
+          "name": "test_install_sample_faults_keep_primary_outcome_and_reap_observer",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-b2d2c97751dd",
+          "line": 645,
+          "kind": "reviewed-selector",
+          "name": "test_actual_units_keep_install_sample_diagnostics_separate_from_journey_exit",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-298563a79d34",
+          "line": 615,
+          "kind": "reviewed-selector",
+          "name": "test_install_exit_during_observation_keeps_completion_and_reaps_on_wait_error",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-7236c099b439",
+          "line": 929,
+          "kind": "reviewed-selector",
+          "name": "test_union_real_cli_PR15_main11_and_trusted_current_event",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-266b88906e0e",
+          "line": 945,
+          "kind": "reviewed-selector",
+          "name": "test_union_rejects_missing_duplicate_wrong_binding_hash_and_cases",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-43a5008d89b5",
+          "line": 980,
+          "kind": "reviewed-selector",
+          "name": "test_union_cross_host_identity_and_resolved_pods_are_required",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-238347d3b887",
+          "line": 999,
+          "kind": "reviewed-selector",
+          "name": "test_trusted_sources_require_readable_base_and_exact_coordinator_bytes",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        }
+      ],
+      "sha256": "b033c455548fd6110e3b20b0da06faefd044bf682214abb41ec98a683456934f"
+    },
+    "mobileapp/e2e/__tests__/ipad-adaptive.test.ts": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-b3419be992f8",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "keeps the iPad sidebar and selected session through rotation",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-007"
+        }
+      ],
+      "sha256": "c299ff227666de6457e806644dbaef550df6283850b3e640c90cfe066178566c"
+    },
+    "mobileapp/e2e/__tests__/scene-migration-actions.test.ts": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-5f9af003b179",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "delivers a cold notification action exactly once",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006"
+        },
+        {
+          "id": "MAP-542ef487bb26",
+          "line": 16,
+          "kind": "reviewed-selector",
+          "name": "delivers a warm notification action exactly once",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006"
+        }
+      ],
+      "sha256": "39fd5b3f8a3b574a004f205f2a5dd979094f7ab78e04273cec2137cdc6150255"
+    },
+    "mobileapp/e2e/__tests__/scene-migration-links.test.ts": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-da368bf98131",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "opens a cold usage link through the scene",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006"
+        },
+        {
+          "id": "MAP-2eb13c4361fd",
+          "line": 16,
+          "kind": "reviewed-selector",
+          "name": "opens a warm usage link through the scene",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006"
+        }
+      ],
+      "sha256": "8cc84e23435fc375c8c32266b85fc2f056444d8aad69186234cbfa1b9efe9c18"
+    },
+    "mobileapp/e2e/__tests__/server-switch-compare.test.ts": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-136dedeea639",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "selects a server after a clean launch",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-007"
+        },
+        {
+          "id": "MAP-f4698467762a",
+          "line": 36,
+          "kind": "reviewed-selector",
+          "name": "switches between two saved servers",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-007"
+        }
+      ],
+      "sha256": "abe8d2b40213b245e7772e9ab9b7a31cba24a3e744d5e9276affa92cad233285"
+    },
+    "mobileapp/e2e/fake-serve/request-diagnostics.test.ts": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-b33db4631198",
+          "line": 3,
+          "kind": "reviewed-selector",
+          "name": "diagnostic request metadata shows routing without headers or query values",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SCENE-MIG-011"
+        }
+      ],
+      "sha256": "be0dfc4346dd242da534804bae24ecbaef3cf537e6ae42183f8bee6d68b257e7"
+    },
+    "mobileapp/e2e/fake-serve/transcript-identity.test.ts": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-10a263ace6db",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "default transcript identity survives polling while new fixtures and explicit transcripts remain independent",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SCENE-MIG-011"
+        }
+      ],
+      "sha256": "b6a5236006a2cbb0139e5b80552e871e687f3eb7d3ac0298db38b937ef9d00d6"
+    },
+    "mobileapp/e2e/setup/app.ts": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-66952beb74f5",
+          "line": 44,
+          "kind": "reviewed-selector",
+          "name": "launchWithFlags",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-514c674c6429",
+          "line": 34,
+          "kind": "reviewed-selector",
+          "name": "writeDebugFlags",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-8108cc25d72e",
+          "line": 63,
+          "kind": "reviewed-selector",
+          "name": "waitForNotificationAuthorization",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-010"
+        }
+      ],
+      "sha256": "d1035ba92563296a113e1b5500f0e4aa23c39627d8f5d7fe894c7798030c366b"
+    },
+    "mobileapp/e2e/setup/appLaunchFiles.test.ts": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-2444a23694a2",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "each launch returns the freshly resolved path containing its own flags",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-f758152f6a60",
+          "line": 29,
+          "kind": "reviewed-selector",
+          "name": "failed activation exposes no successful launch path",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-692a5e080ea9",
+          "line": 36,
+          "kind": "reviewed-selector",
+          "name": "lookup failure does not write flags or activate the app",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-010"
+        }
+      ],
+      "sha256": "87d5b60bfae1d9c67c0cc1b65ed347ada166436e064a6bae22f3b9003fa566b5"
+    },
+    "mobileapp/e2e/setup/capabilities.ts": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-fe0c5bc5423c",
+          "line": 57,
+          "kind": "reviewed-selector",
+          "name": "cloudStartupCapabilities",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-24bf73c18fbb",
+          "line": 70,
+          "kind": "reviewed-selector",
+          "name": "sessionConnectionOptions",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-16ffab634a71",
+          "line": 66,
+          "kind": "reviewed-selector",
+          "name": "appiumServerTimeoutArgs",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-010"
+        }
+      ],
+      "sha256": "ed44e7d7a4d4bc04d92764d9eeb48f72880ff17b56426f5b2140cc746a90528b"
+    },
+    "mobileapp/e2e/setup/driver.ts": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f430bab330eb",
+          "line": 36,
+          "kind": "reviewed-selector",
+          "name": "allocateArtifacts",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-b187c45616bf",
+          "line": 70,
+          "kind": "reviewed-selector",
+          "name": "recordSceneStep",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-010"
+        }
+      ],
+      "sha256": "d8ce4ec8ebe98575c00629259b5bc8726b6f06998ff444fbedf5799884556fe7"
+    },
+    "mobileapp/e2e/setup/global-setup.ts": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-6f6d6acb4163",
+          "line": 39,
+          "kind": "reviewed-selector",
+          "name": "globalSetup",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-010"
+        }
+      ],
+      "sha256": "0f1ee9a09ca56e49d5a93381ab04bbda394e42574ee3ed207815a89c7f3f1ad9"
+    },
+    "mobileapp/e2e/setup/journeyGuard.ts": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d36a8e3caa71",
+          "line": 2,
+          "kind": "reviewed-selector",
+          "name": "createJourneyGuard",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCENE-MIG-010"
+        }
+      ],
+      "sha256": "6f0bd29b427882b38ea8900cd1cf31c4e2638c84dbf85b6c993b2720accdecbb"
+    },
+    "mobileapp/e2e/setup/sceneJourneys.test.ts": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-6b3e30547470",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "separate source and journey artifacts never replace the earlier result",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006,SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-a1cfca64d49e",
+          "line": 27,
+          "kind": "reviewed-selector",
+          "name": "missing identity and unowned or linked artifact destinations fail without fallback",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006,SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-9277f4714d3a",
+          "line": 51,
+          "kind": "reviewed-selector",
+          "name": "content geometry rejects stale or zero native frames and an unsafe menu",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006,SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-1d42c431a366",
+          "line": 63,
+          "kind": "reviewed-selector",
+          "name": "ordinary surface never accepts a split root as a substitute",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006,SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-9ba33894e098",
+          "line": 160,
+          "kind": "reviewed-selector",
+          "name": "both action registrations are present and own guarded setup and cleanup",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006,SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-757a23bb3377",
+          "line": 211,
+          "kind": "reviewed-selector",
+          "name": "headless-host",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006,SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-2c19a2596e68",
+          "line": 221,
+          "kind": "reviewed-selector",
+          "name": "scene-host-attached",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006,SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-25f6e747061f",
+          "line": 229,
+          "kind": "reviewed-selector",
+          "name": "scene-host-updated",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006,SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-e581fffb0464",
+          "line": 121,
+          "kind": "reviewed-selector",
+          "name": "link helper requires new native delivery as well as visible usage (cold=%s)",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006,SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-16d8061f552b",
+          "line": 154,
+          "kind": "reviewed-selector",
+          "name": "actual link registration executes the shared native and UI contract (cold=%s)",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006,SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-b3b2f740d29d",
+          "line": 262,
+          "kind": "reviewed-selector",
+          "name": "registered action executes tap and exact fake delivery, missing tap fails (cold=%s)",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006,SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-d6d4cdb5f402",
+          "line": 266,
+          "kind": "reviewed-selector",
+          "name": "registered cold action rejects %s and restores rotation",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006,SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-c0ebb52b423a",
+          "line": 287,
+          "kind": "reviewed-selector",
+          "name": "setup cleans its own server when %s evidence cannot be written",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006,SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-9be18c53df39",
+          "line": 270,
+          "kind": "reviewed-selector",
+          "name": "registered content rotation measures and edits the actual reader (ipad=%s)",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006,SCENE-MIG-010"
+        },
+        {
+          "id": "MAP-8eef81ad47b9",
+          "line": 280,
+          "kind": "reviewed-selector",
+          "name": "registered phone and iPad journeys reject %s on ipad=%s despite fresh root geometry",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006,SCENE-MIG-010"
+        }
+      ],
+      "sha256": "1fa42d451da1e4a58caebf262abb26a99a8d412808a982fa0f2354beaa72a987"
+    },
+    "mobileapp/e2e/setup/sceneJourneys.ts": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-16d6bf431e39",
+          "line": 161,
+          "kind": "reviewed-selector",
+          "name": "coldSceneAction",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006"
+        },
+        {
+          "id": "MAP-94b1215d1e59",
+          "line": 208,
+          "kind": "reviewed-selector",
+          "name": "warmSceneAction",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006"
+        },
+        {
+          "id": "MAP-b60285dcd5b7",
+          "line": 237,
+          "kind": "reviewed-selector",
+          "name": "usageSceneLink",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006"
+        },
+        {
+          "id": "MAP-5d33e58ccb39",
+          "line": 256,
+          "kind": "reviewed-selector",
+          "name": "captureSceneJourney",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006"
+        },
+        {
+          "id": "MAP-c3eefc5f5890",
+          "line": 61,
+          "kind": "reviewed-selector",
+          "name": "observeGeometry",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006"
+        },
+        {
+          "id": "MAP-db5a088f15bb",
+          "line": 112,
+          "kind": "reviewed-selector",
+          "name": "readerToolsAndDraft",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006"
+        },
+        {
+          "id": "MAP-5fd8d42575d0",
+          "line": 53,
+          "kind": "reviewed-selector",
+          "name": "contentGeometryMatches",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006"
+        },
+        {
+          "id": "MAP-195f9776ba27",
+          "line": 102,
+          "kind": "reviewed-selector",
+          "name": "continueDraftAfterRotation",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SCENE-MIG-006"
+        }
+      ],
+      "sha256": "e9a9b386856862a138c613a0ac228455c536b80222d7ef18a97f1768618c5d3b"
+    },
+    "mobileapp/e2e/instrument-baseline.py": {
+      "layer": "G",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-0546794d3dea",
+          "line": 8,
+          "kind": "reviewed-selector",
+          "name": "changes =",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        },
+        {
+          "id": "MAP-5c6d0f4dc09d",
+          "line": 38,
+          "kind": "reviewed-selector",
+          "name": "GTMUX_COMPARE_JOURNEY",
+          "dynamic": false,
+          "layer": "G",
+          "design": "SCENE-MIG-008"
+        }
+      ],
+      "sha256": "1d21fa939d21d72d4c2dc1f5f9b411af1ae4ae3ac25b5ba361c37c50b1472401"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2"

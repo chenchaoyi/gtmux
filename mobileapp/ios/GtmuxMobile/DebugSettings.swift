@@ -1,5 +1,8 @@
 import Foundation
 import React
+#if targetEnvironment(simulator)
+import UIKit
+#endif
 
 // DebugSettings — a launch-time debug channel for UI automation, gated entirely by
 // `GTMUX_DEBUG_*` flags from two places: Documents/gtmux-debug-flags.json, which the e2e
@@ -57,3 +60,67 @@ class DebugSettings: NSObject {
     try? FileManager.default.removeItem(at: url)
   }
 }
+
+// Test-only lifecycle breadcrumbs: no notification contents, credentials or text.
+private let notificationTraceLock = NSLock()
+func traceNotification(_ event: String, action: String? = nil, hasText: Bool = false, geometry: [String: Any]? = nil) {
+  guard let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first,
+        let data = try? Data(contentsOf: docs.appendingPathComponent("gtmux-debug-flags.json")),
+        let flags = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+        flags["GTMUX_DEBUG_LOG_NET"] as? String == "1" else { return }
+  notificationTraceLock.lock()
+  defer { notificationTraceLock.unlock() }
+  var line: [String: Any] = ["event": event, "action": action ?? "", "hasText": hasText, "time": Date().timeIntervalSince1970]
+  if let geometry { line["geometry"] = geometry }
+  guard var bytes = try? JSONSerialization.data(withJSONObject: line) else { return }
+  bytes.append(10)
+  let url = docs.appendingPathComponent("gtmux-native-notification-trace.jsonl")
+  if !FileManager.default.fileExists(atPath: url.path) { FileManager.default.createFile(atPath: url.path, contents: nil) }
+  if let file = try? FileHandle(forWritingTo: url) {
+    defer { try? file.close() }
+    _ = try? file.seekToEnd()
+    try? file.write(contentsOf: bytes)
+  }
+}
+
+#if targetEnvironment(simulator)
+// Weak keys bind the identifier to the actual UIView, not a scene or a cached
+// "last host" number. Replacing a root must get a new number, even in one scene.
+private let sceneHostIDs = NSMapTable<UIView, NSNumber>(keyOptions: [.weakMemory, .objectPointerPersonality], valueOptions: .strongMemory)
+private var nextSceneHostID = 0
+
+func traceSceneHost(_ event: String, root: UIView, window: UIWindow?) {
+  guard Thread.isMainThread,
+        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first,
+        let data = try? Data(contentsOf: docs.appendingPathComponent("gtmux-debug-flags.json")),
+        let flags = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+        flags["GTMUX_DEBUG_LOG_NET"] as? String == "1" else { return }
+  let host: NSNumber
+  if let existing = sceneHostIDs.object(forKey: root) {
+    host = existing
+  } else {
+    nextSceneHostID += 1
+    host = NSNumber(value: nextSceneHostID)
+    sceneHostIDs.setObject(host, forKey: root)
+  }
+  func rect(_ value: CGRect) -> [String: Double] {
+    ["x": Double(value.origin.x), "y": Double(value.origin.y),
+     "width": Double(value.width), "height": Double(value.height)]
+  }
+  var geometry: [String: Any] = [
+    "pid": ProcessInfo.processInfo.processIdentifier, "host": host,
+    "rootBounds": rect(root.bounds), "hasWindow": window != nil,
+    "rootAttached": window != nil && root.window === window,
+    "scenePresent": window?.windowScene != nil,
+    "sceneState": window?.windowScene?.activationState.rawValue ?? -1,
+  ]
+  if let window {
+    geometry["windowBounds"] = rect(window.bounds)
+    geometry["rootInWindow"] = rect(root.convert(root.bounds, to: window))
+    let insets = window.safeAreaInsets
+    geometry["insets"] = ["top": Double(insets.top), "right": Double(insets.right),
+                          "bottom": Double(insets.bottom), "left": Double(insets.left)]
+  }
+  traceNotification(event, geometry: geometry)
+}
+#endif

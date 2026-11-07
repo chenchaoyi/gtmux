@@ -18,7 +18,8 @@ import {useModalEscape} from '../keys/useModalEscape';
 // Details a sheet, Remove an alert.
 
 import React, {useEffect, useRef, useState} from 'react';
-import {Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View} from 'react-native';
+import {Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {useWindowDimensions} from './windowMetrics';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {IconName, SIcon} from './SettingsIcons';
 import {MODAL_ORIENTATIONS} from './modalOrientations';

@@ -876,6 +876,14 @@ The report header (verdict sentence, standing line, three doors) spans the main 
 The canvas's second page records the two other directions and their cost: B stacks both sections above the conversation (everything visible at once, but the conversation loses 150pt per screen and the two sections
 scroll together); C keeps the phone's tabs, just wider (no new layout to maintain, but a 1194pt screen shows one section, and the things needing your call stay hidden behind a tab).
 
+### Shared scene lifecycle
+
+The iOS window attaches to its current `UIWindowScene`; it is not initialized from a fixed main-screen rectangle. One React host serves background notification work and its later visible scene. Native response and link queues retain unacknowledged inputs until the existing JS consumers are ready. Action identifiers, reply text, completion and duplicate suppression follow the same push contract; guest/demo link rejection consumes that intent.
+
+Nonvisual notification initialization sits outside the safe-area gate. The visual workspace waits for real scene metrics; Splash and server setup keep their existing safe-area providers. Root `onLayout` supplies width and height to the shared layout hook, while RN continues to supply scale and font scale. The shell, sidebar, HQ inspector and anchored menu use those dimensions; Diff still measures its own viewport. Compact navigation remains the main phone stack and regular navigation remains sidebar plus reader. This prerequisite does not introduce a separate device platform or promise state preservation across a shell replacement.
+
+Acceptance separates Foundation/JS checks from actual UIKit, cold/warm notification and URL delivery, keyboard and rotation. Simulator-only host observations identify the actual process and React view and must agree with WDA geometry. A successful compile or a diagnostic marker alone is insufficient. The prerequisite's ordinary iPhone/iPad matrix is documented in [the E2E harness](../../mobileapp/e2e/README.md); it does not close Duo fold, text clipping, VoiceOver or physical-device acceptance.
+
 ### iPad extras
 
 - Hardware keyboard: one native bridge (`UIKeyCommand`) + one table (`src/keys/keymap.ts`). ↑↓ move the radar selection, ⏎ opens,
@@ -884,7 +892,7 @@ scroll together); C keeps the phone's tabs, just wider (no new layout to maintai
   The simulator cannot verify dispatch: XCTest's key injection only types, it does not dispatch UIKeyCommand; whether the bridge receives anything can only be checked by pressing a real keyboard once.
 - Pointer: rows and buttons tint with `rowSelected` on hover; no custom cursor.
 - Multitasking: `UIRequiresFullScreen` is not declared; Split View / Slide Over / Stage Manager are all allowed, and the shell follows the window.
-  Multiple windows (scenes) and Apple Pencil markup are out of scope this time.
+  UIKit scene lifecycle owns the single app window; multiple simultaneous windows and Apple Pencil markup remain out of scope.
 - Orientation: all four supported; none is locked out.
 - Store: the 13" iPad screenshot set (landscape 2752×2064, `frame-shots.mjs --slot ipad`) is drawn by the phone's demo-mode pipeline on an iPad Pro 13"
   simulator, in both languages (`GTMUX_DEBUG_LANG` forces the language); the lock-screen shot exists only for the phone (a Live Activity has no iPad presentation).

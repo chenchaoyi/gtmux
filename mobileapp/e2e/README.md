@@ -207,3 +207,56 @@ The e2e harness is Node/CommonJS and has its own `tsconfig.json`; it does not in
 `new-session.test.ts` uses the fake Mac to check a keyboard-up single tap, duplicate-name recovery, one actual creation and navigation to the returned terminal. Do not hide the keyboard or retry the first tap to make this regression pass.
 
 Hermetic Go/RN/Web contracts and standalone Android capability blocks are described in [Contracts and execution](../../docs/test/CONTRACTS-EXECUTION.md) ([中文](../../docs/test/CONTRACTS-EXECUTION.zh.md)). The existing live shape suite remains separately gated.
+
+
+## Scene migration acceptance (hosted CI)
+
+`ci-scene-migration.py` is the single coordinator for the scene prerequisite. It
+uses exact PR base/head objects, or the actual main push `after` object; branch
+names and a PR merge checkout are not substitutes for those product sources.
+The existing iOS native job retains its unsigned compile gate and adds an
+isolated ad-hoc comparison. One additional `ios-scene` job runs the candidate on
+27. All selected pre-existing gates and the new scene gate are required.
+
+| Job | Xcode / Simulator SDK / runtime | Driver / WDA | Executed cases |
+| --- | --- | --- | --- |
+| `ios-native` | 26.3 / 26.2 / 26.2 | 11.14.0 / 15.0.0 | Two server cases and complete A/C notification journeys, for base and candidate |
+| `ios-scene` | 27.1 / 27.1 / 27.0 | 12.20.0 / 16.17.1 | Candidate A/C, two scene actions, two scene links, one iPad content/rotation case |
+
+This is 15 instances on a PR and 11 on actual main. Toolchain, runtime, hardware,
+app/extension binary and signing identity, WDA target/binary, process and session
+identity come from that execution; absence or mismatch fails. Dependency inputs
+and instrumentation are checked for both sources. Each source is built once per
+toolchain/signature, with fresh writable work and evidence directories for each
+journey. The only shared dependencies are the verified job-installed packages.
+No production credentials, pairing, runtime download or release step is involved.
+
+The legacy base without scene adoption cannot provide a positive SDK27 control.
+That historical rejection stays a failure outside this prerequisite's positive
+matrix, not an expected-negative green. SDK26 A/C and SDK27 candidate coverage
+remain mandatory. After the prerequisite's normal candidate/main gates and merge,
+the Duo candidate must integrate actual main and restore its complete SDK27
+base/candidate comparison and Duo-specific gates. These results are not Duo fold,
+text clipping, VoiceOver or physical-device acceptance.
+
+Artifacts live at `RUNNER_TEMP/scene-migration/<run>-<attempt>-<job>/`, separated by
+SDK/runtime/source/journey, with no `latest` alias. `acceptance.json` records raw
+results and `verdict.json` records the conjunction. Missing, skipped, cancelled,
+failed, duplicated or partially executed cases cannot pass. Expected behavior
+steps supplement the actual assertions rather than replace them. A diagnostic
+failure keeps the original Jest exit code and independently fails evidence
+acceptance. Cleanup is restricted to the unit's simulator and process handles.
+
+The coordinator refuses local execution. Previously captured evidence can be
+checked without a device:
+
+```sh
+python3 mobileapp/e2e/ci-scene-migration.py --verify /path/to/acceptance.json \
+  --evidence-root /path/to/evidence
+```
+
+Foundation notification oracles run through the existing
+`mobileapp/scripts/check-native-documents.py`; their queue/completion results do
+not demonstrate UIKit forwarding. React tests use controlled native boundaries;
+the device journeys separately require an actual headless host attached to a
+visible scene, fresh root geometry, reader tools, draft and keyboard preservation.

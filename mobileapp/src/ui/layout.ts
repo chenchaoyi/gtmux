@@ -1,5 +1,5 @@
 // Layout breakpoints (MOBILE §5). One place to answer "can this canvas hold two
-import {useWindowDimensions} from 'react-native';
+import {useWindowDimensions} from './windowMetrics';
 // columns?", because the answer was being spelled out as `width >= 768` in three files
 // and they must never disagree about what device they are on.
 

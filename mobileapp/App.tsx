@@ -19,6 +19,8 @@ import {Splash} from './src/ui/Splash';
 import {WhatsNewModal} from './src/ui/WhatsNewModal';
 import {ReleaseNote} from './src/releaseNotes';
 import {useSizeClass} from './src/ui/layout';
+import {WindowMetricsProvider} from './src/ui/windowMetrics';
+import {WorkspaceSurface} from './src/ui/WorkspaceSurface';
 import {setupPush} from './src/push';
 import {Debug} from './src/debug';
 import {DetailScreen} from './src/screens/DetailScreen';
@@ -98,11 +100,64 @@ function RadarRoute() {
   return useSizeClass() === 'regular' ? <SplitShell /> : <RadarScreen />;
 }
 
+type PaneIntent = {generation: number; target: string; pane: string; settled: boolean};
+
+// Notification ownership outlives the mac.url-keyed workspace. Selection is
+// persisted asynchronously: neither the old bridge nor a stale completion may
+// spend a new server's intent during that interval.
+function usePaneIntent() {
+  const app = useApp();
+  const appRef = useRef(app);
+  appRef.current = app;
+  const [pending, setPending] = React.useState<PaneIntent | null>(null);
+  const current = useRef<PaneIntent | null>(null);
+  const generation = useRef(0);
+  const selections = useRef(0);
+  const live = useRef(true);
+  const publish = React.useCallback((next: PaneIntent | null) => {
+    current.current = next;
+    setPending(next);
+  }, []);
+  useEffect(() => {
+    live.current = true;
+    return () => {live.current = false; current.current = null;};
+  }, []);
+  const request = React.useCallback((pane: string, target: string) => {
+    if (!live.current) return;
+    // A newer tap for the current server must still queue behind an older
+    // foreign selection, otherwise that write would switch away underneath it.
+    const switching = target !== appRef.current.activeUrl || selections.current > 0;
+    const intent = {generation: ++generation.current, target, pane, settled: !switching};
+    publish(intent);
+    if (!switching) return;
+    selections.current++;
+    void appRef.current.selectServer(target).then(() => {
+      if (live.current && current.current?.generation === intent.generation) {
+        publish({...intent, settled: true});
+      }
+    }, () => {
+      if (live.current && current.current?.generation === intent.generation) publish(null);
+    }).finally(() => {selections.current--;});
+  }, [publish]);
+  const take = React.useCallback((intent: PaneIntent, workspace: string | null) => {
+    if (!live.current || current.current?.generation !== intent.generation ||
+        !current.current.settled || intent.target !== workspace || appRef.current.activeUrl !== workspace) return false;
+    publish(null); // clear before navigation/ready can re-enter
+    return true;
+  }, [publish]);
+  React.useLayoutEffect(() => {
+    // Observe committed user departure/disconnect; do not resurrect on revisit.
+    // In-flight selectServer writes retain their original AppContext ordering.
+    if (current.current?.settled && current.current.target !== app.activeUrl) publish(null);
+  }, [app.activeUrl, pending, publish]);
+  return {pending, request, take};
+}
+
 // PushBridge handles APNs events and deep-links while a workspace is open.
 // Renders nothing.
-function PushBridge({navRef}: {navRef: any}) {
+function PushBridge({navRef, handoff}: {navRef: any; handoff: ReturnType<typeof usePaneIntent>}) {
   const {agents} = useAgents();
-  const {pushEnabled, servers, activeUrl, selectServer, pendingPane, setPendingPane, setPushToken, lang} = useApp();
+  const {pushEnabled, servers, activeUrl, setPushToken, lang} = useApp();
   const {select} = useWorkspace();
   const selectRef = useRef(select);
   selectRef.current = select;
@@ -146,50 +201,44 @@ function PushBridge({navRef}: {navRef: any}) {
     // inconsistent rather than as a layer.
     selectRef.current(agent.role === 'supervisor' ? {kind: 'hq', agent} : {kind: 'pane', agent});
   };
-  // navRef isn't ready until NavigationContainer mounts (this bridge renders
-  // first), so a deep-link consumed on mount retries briefly until it is.
-  const openPaneWhenReady = (pane: string, tries = 0) => {
-    if (navRef.isReady?.()) {
-      openPane(pane);
-    } else if (tries < 40) {
-      setTimeout(() => openPaneWhenReady(pane, tries + 1), 50); // up to ~2s
-    }
-  };
+  // Read the current root-owned generation from readiness callbacks without
+  // resubscribing native push listeners on every render.
+  const handoffRef = useRef(handoff);
+  handoffRef.current = handoff;
+  const bridgeLive = useRef(true);
+  const openPaneRef = useRef(openPane);
+  openPaneRef.current = openPane;
+  const flushPane = React.useCallback(() => {
+    const intent = handoffRef.current.pending;
+    if (!bridgeLive.current || !navRef.isReady() || !intent) return;
+    if (handoffRef.current.take(intent, activeUrlRef.current)) openPaneRef.current(intent.pane);
+  }, [navRef]);
+  useEffect(() => {
+    bridgeLive.current = true;
+    const unsubscribe = navRef.addListener('ready', flushPane);
+    flushPane();
+    return () => {bridgeLive.current = false; unsubscribe();};
+  }, [navRef, flushPane]);
+  useEffect(() => {flushPane();}, [handoff.pending, flushPane]);
 
-  // A tapped push may belong to a DIFFERENT paired server than the active one. If
-  // so, switch to it (identified by the Mac name the push carries) and stash the
-  // pane in AppContext — it survives the server-switch remount, and the freshly
-  // mounted bridge opens it (below). Otherwise deep-link on the active server now.
   const onTap = (pane: string, server?: string) => {
+    if (!bridgeLive.current) return;
     const source = sourceForPush(serversRef.current, server ?? '');
     if (!source) {
       Alert.alert(lang === 'zh' ? '无法确定通知来自哪台 Mac' : 'Cannot identify the Mac that sent this notification');
       return;
     }
-    if (source.url !== activeUrlRef.current) {
-      setPendingPane(pane);
-      void selectServer(source.url);
-      return;
-    }
-    openPane(pane);
+    handoffRef.current.request(pane, source.url);
   };
   const onQuickReply = (pane: string, server: string | undefined, value: string) => {
     const target = sourceForPush(serversRef.current, server ?? '');
+    if (Debug.logNet) Debug.record({event: 'push-quick-reply', at: Date.now(), matched: !!target});
     if (target) {
-      new GtmuxClient(target.url, target.token).send(pane, {text: value}).catch(() => {});
+      return new GtmuxClient(target.url, target.token).send(pane, {text: value}).then(() => {
+        if (Debug.logNet) Debug.record({event: 'push-send-ok', at: Date.now()});
+      }).catch(() => { if (Debug.logNet) Debug.record({event: 'push-send-failed', at: Date.now()}); });
     }
   };
-
-  // Consume a pending deep-link left by a cross-server tap: this bridge instance
-  // mounted AFTER the switch, now connected to the right server.
-  useEffect(() => {
-    if (pendingPane) {
-      const p = pendingPane;
-      setPendingPane(null);
-      openPaneWhenReady(p);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingPane]);
 
   useEffect(() => {
     // Listening while viewing a guest connection still handles notifications
@@ -197,7 +246,8 @@ function PushBridge({navRef}: {navRef: any}) {
     if (Debug.noPush) return; // Debug.noPush keeps the auth prompt out of UI tests
     let teardown: (() => void) | undefined;
     let cancelled = false;
-    setupPush(onTap, setPushToken, onQuickReply, pushEnabled)
+    const lifecycle = new AbortController();
+    setupPush(onTap, setPushToken, onQuickReply, pushEnabled, lifecycle.signal)
       .then(t => {
         if (cancelled) t();
         else teardown = t;
@@ -206,7 +256,7 @@ function PushBridge({navRef}: {navRef: any}) {
         // Push is best-effort: a setup failure (e.g. the native module missing)
         // must not break the radar.
       });
-    return () => { cancelled = true; teardown?.(); };
+    return () => { cancelled = true; lifecycle.abort(); teardown?.(); };
     // agents/onTap intentionally omitted: re-subscribing on every refetch would
     // churn the native listeners; the handler reads live state via refs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -218,6 +268,7 @@ function PushBridge({navRef}: {navRef: any}) {
 function Root() {
   const {ready, mac, pal, lang, scheme, rememberAddresses, followMove, removeServer, t, pushEnabled, pushKinds} = useApp();
   const navRef = useNavigationContainerRef();
+  const paneIntent = usePaneIntent();
   const sizeClass = useSizeClass();
   useUsageWidgetContext();
   // The compact shell opens a selection by navigating; the navigator ref is the one
@@ -229,12 +280,12 @@ function Root() {
   // Restore settings with the shared launch identity. The capture flag is only
   // supplied to an isolated UI-test app; ordinary startup has no minimum delay.
   if (!ready || Debug.showSplash) {
-    return <Splash pal={pal} lang={lang} />;
+    return <SafeAreaProvider><Splash pal={pal} lang={lang} /></SafeAreaProvider>;
   }
 
   // No active server → the connection page (it lists saved Macs + lets you add).
   if (!mac) {
-    return <ServersScreen />;
+    return <SafeAreaProvider><ServersScreen /></SafeAreaProvider>;
   }
 
   // key={mac.url}: switching to another Mac fully remounts the agent store +
@@ -263,7 +314,7 @@ function Root() {
           : undefined
       }>
       <WorkspaceProvider mode={sizeClass} navigate={navigateSel}>
-      <PushBridge navRef={navRef} />
+      <WorkspaceSurface background={<PushBridge navRef={navRef} handoff={paneIntent} />}>
       <KeyCommandBridge />
       <UsageWidgetBridge />
       <WhatsNew />
@@ -281,6 +332,7 @@ function Root() {
           <Stack.Screen name="Diag" component={DiagScreen} />
         </Stack.Navigator>
       </NavigationContainer>
+      </WorkspaceSurface>
       </WorkspaceProvider>
     </AgentsProvider>
   );
@@ -295,11 +347,11 @@ function ThemedStatusBar() {
 
 export default function App() {
   return (
-    <SafeAreaProvider>
+    <WindowMetricsProvider>
       <AppProvider>
         <ThemedStatusBar />
         <Root />
       </AppProvider>
-    </SafeAreaProvider>
+    </WindowMetricsProvider>
   );
 }
