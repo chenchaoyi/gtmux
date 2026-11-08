@@ -1,0 +1,2 @@
+• Usage keeps slow reads alive and retains the last good figures after a failure, with clearer retry and access-error messages.
+• Browser and app Trace views now agree on loaded history, turn summaries, call details and original numbering.

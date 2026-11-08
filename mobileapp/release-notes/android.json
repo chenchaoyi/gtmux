@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.0.173",
+    "en": [
+      "Usage keeps slow reads alive and retains the last good figures after a failure, with clearer retry and access-error messages.",
+      "Browser and app Trace views now agree on loaded history, turn summaries, call details and original numbering."
+    ],
+    "zh": [
+      "Usage 支持较慢的读取，失败时保留上次有效数据，并明确显示重试、超时及访问错误。",
+      "浏览器与 App 的 Trace 统一已加载历史、轮次摘要和调用详情，保留原始编号。"
+    ]
+  },
+  {
     "version": "1.0.172",
     "en": [
       "Chat and Trace include recorded file, command and MCP calls from current Codex, OpenCode and Kimi sessions.",
