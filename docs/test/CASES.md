@@ -7,7 +7,7 @@ The catalogue covers 1038 test/harness source files. Each CSV row lists stable I
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3728 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 1920 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 1921 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 87 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 93 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 12 | [M.csv](cases/M.csv) |
@@ -26,6 +26,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | CET-003 | Only verified same-session exact-ended-turn ready evidence overrides working. Real waiting/start/work survives, missing identity follows existing legacy behavior; no input authority or real marker mutation. |
 | CET-004 | An explicit callback matching structured completion and current turn is ignored without clearing completion or minting events. Actual next start and unknown/missing legacy IDs are not fenced; approvals are preserved. |
 | CET-005 | Continuation leaves marker start intact; actual new prompt/turn start and ownership change still refresh active time. |
+| CET-006 | A real manual PostCompact receipt is recorded once, active stays absent and exact completion/current turn remain intact. Only actual rearm decisions are eligible for the completed-turn fence. |
 | CORE-CODEX-FOREIGN-ACTIVE | Only a verified current Codex home/session/cwd, a named foreign active marker, a completed/aborted own rollout and a ready nonworking nonapproval frame can contradict false working. Own/empty/unknown/stale binding or actual start/work/wait remains conservative. Reads never remove a foreign marker or mint a completion. |
 | CORE-CODEX-FOREIGN-GATHER | The real radar gather with isolated HOME, a completed own rollout, another session marker and recent window activity reports idle without changing marker content/mtime, binding or completion records; genuine own turns, approvals and legacy unknown ownership still work. |
 | CT-HTTP | Real Go handler responses agree with independent RN/Web fake servers for transcript history/context, HQ overview/detail/cursor, document metadata/download, null/empty and permission errors. |

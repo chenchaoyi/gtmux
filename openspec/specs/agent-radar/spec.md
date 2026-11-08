@@ -832,3 +832,4 @@ Radar SHALL use the shared bounded rollout metadata parser to identify a current
 - **THEN** it cannot reactivate that turn or clear its completion
 - **AND** continuing own-turn callbacks preserve the original active start time, while an actual new prompt/turn or ownership change refreshes it
 - **AND** callbacks without explicit turn identity retain existing compatibility behavior
+- **AND** a state-neutral manual compaction still records its real lifecycle receipt without restarting work or clearing the completed turn

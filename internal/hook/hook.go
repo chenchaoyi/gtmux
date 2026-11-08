@@ -920,7 +920,8 @@ func Run(stdin io.Reader, args []string) int {
 
 	// Reject explicit late same-turn repair before saving resume/native observations
 	// or mutating markers. A genuine new start and legacy unknown IDs remain usable.
-	if agentKey == "codex" && completedCodexRearm(event, pane, agentSession, payload.TurnID) {
+	if agentKey == "codex" && decide(event, false, false, payload.Trigger).setActive &&
+		completedCodexRearm(event, pane, agentSession, payload.TurnID) {
 		return 0
 	}
 

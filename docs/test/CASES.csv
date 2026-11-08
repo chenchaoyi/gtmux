@@ -1292,6 +1292,7 @@ LEG-ff77dc5f196d,L1,Go core / CLI / server,internal/hook/classify_test.go,142,Te
 MAP-7bf0b97f95d1,L2,reviewed implementation,internal/hook/codex_completed_turn_test.go,38,reviewed-selector,TestCompletedCodexTurnRejectsExplicitLateRearm,False,"CET-004,CET-005"
 MAP-6752a622a3e4,L2,reviewed implementation,internal/hook/codex_completed_turn_test.go,72,reviewed-selector,TestCompletedCodexTurnKeepsLegacyAndUncertainCallbacks,False,"CET-004,CET-005"
 MAP-2dd42a3caeb8,L2,reviewed implementation,internal/hook/codex_completed_turn_test.go,114,reviewed-selector,TestCodexContinuationPreservesActiveStart,False,"CET-004,CET-005"
+MAP-f1f0b5ad2d4d,L2,reviewed implementation,internal/hook/codex_completed_turn_test.go,147,reviewed-selector,TestCompletedCodexTurnPreservesManualCompactReceipt,False,"CET-004,CET-005,CET-006"
 LEG-4a73b3d376d2,L1,Go core / CLI / server,internal/hook/codexbinding_test.go,21,Test,TestCodexSubmitWitnessCorrectsSharedServerPane,False,legacy-not-retrospectively-reviewed
 LEG-070f0322588b,L1,Go core / CLI / server,internal/hook/codexbinding_test.go,35,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-259154033f4a,L1,Go core / CLI / server,internal/hook/codexbinding_test.go,149,Test,TestNativeCodexTurnKeepsConsentBoundaryAfterRecordRemoval,False,legacy-not-retrospectively-reviewed
