@@ -6022,10 +6022,10 @@ LEG-ac99204d2c70,L2,RN / mobile harness,mobileapp/src/ui/time.test.ts,68,it,"mea
 LEG-8581910a0160,L2,RN / mobile harness,mobileapp/src/ui/time.test.ts,74,it,is invisible to a turn with no usable clock,False,legacy-not-retrospectively-reviewed
 LEG-a7b4039749f8,L2,RN / mobile harness,mobileapp/src/ui/time.test.ts,79,it,speaks the reader’s language and honours the gap it is given,False,legacy-not-retrospectively-reviewed
 LEG-fe83c539204c,L2,RN / mobile harness,mobileapp/src/ui/time.test.ts,84,it,holds its own on an empty conversation,False,legacy-not-retrospectively-reviewed
-MAP-47222e9f745a,L2,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,27,reviewed-selector,"query details show named parameters, structured results, provenance and complete raw",False,TCV-003
-MAP-3813fdfe8df1,L2,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,75,reviewed-selector,"command, file changes, waits, text/errors and missing/empty results stay distinct",False,TCV-003
-MAP-f94f19b784ef,L2,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,152,reviewed-selector,full reads preserve original command and distinct native result references,False,TCV-003
-MAP-aedc42ce6351,L2,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,190,reviewed-selector,large rendering pages disclose bounds and preserve all characters,False,TCV-003
+MAP-47222e9f745a,L1,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,27,reviewed-selector,"query details show named parameters, structured results, provenance and complete raw",False,TCV-003
+MAP-3813fdfe8df1,L1,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,75,reviewed-selector,"command, file changes, waits, text/errors and missing/empty results stay distinct",False,TCV-003
+MAP-f94f19b784ef,L1,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,152,reviewed-selector,full reads preserve original command and distinct native result references,False,TCV-003
+MAP-aedc42ce6351,L1,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,190,reviewed-selector,large rendering pages disclose bounds and preserve all characters,False,TCV-003
 LEG-7e1e7c1d7954,L2,RN / mobile harness,mobileapp/src/ui/useKeyboardChrome.test.tsx,56,test,"keyboard timing folds the chrome, and dismissal preserves the current scroll state",False,legacy-not-retrospectively-reviewed
 LEG-bd6085e9a14d,L2,RN / mobile harness,mobileapp/src/ui/useKeyboardChrome.test.tsx,77,test,Reduce Motion folds and restores without animation,False,legacy-not-retrospectively-reviewed
 LEG-aab5aceea630,L2,RN / mobile harness,mobileapp/src/ui/useModalDismiss.test.tsx,6,test.each(),%s completes each modal lifecycle once,True,legacy-not-retrospectively-reviewed
@@ -6270,8 +6270,8 @@ LEG-f81adc301549,G,Browser,tests/web/smoke.test.cjs,846,scenario,Clipboard image
 LEG-05c9e13ce4c2,L3,Browser,tests/web/smoke.test.cjs,875,scenario,'Native file actions keep readable labels and recorded changes at ' + width,True,legacy-not-retrospectively-reviewed
 LEG-245fb0545893,L3,Browser,tests/web/terminal-fit.test.cjs,23,scenario,`Terminal grid fits desktop tile and focus at DPR ${deviceScaleFactor}`,True,legacy-not-retrospectively-reviewed
 LEG-5fc1eee042c5,L3,Browser,tests/web/terminal-fit.test.cjs,41,scenario,Terminal grid fits narrow browser after rotation,False,legacy-not-retrospectively-reviewed
-MAP-8fceb6b39ede,L2,reviewed implementation,tests/web/tool-call-detail.test.cjs,6,reviewed-selector,Typed query details in Chat and Trace ,False,TCV-005
-MAP-e962ab9f86bc,L2,reviewed implementation,tests/web/tool-call-detail.test.cjs,20,reviewed-selector,Recorded query failure retries and large results page without losing full copy,False,TCV-005
+MAP-8fceb6b39ede,L3,reviewed implementation,tests/web/tool-call-detail.test.cjs,6,reviewed-selector,Typed query details in Chat and Trace ,False,TCV-005
+MAP-e962ab9f86bc,L3,reviewed implementation,tests/web/tool-call-detail.test.cjs,20,reviewed-selector,Recorded query failure retries and large results page without losing full copy,False,TCV-005
 LEG-a36e634d1bf3,L3,Browser,tests/web/trace-folding.test.cjs,28,scenario,"`Trace turn and call folds stay independent, survive refresh, and reveal context detail at ${width}`",True,legacy-not-retrospectively-reviewed
 LEG-87996649b4e7,L3,Browser,tests/web/trace-folding.test.cjs,68,scenario,`Settings categories and theme icons remain clear and keyboard accessible at ${width}`,True,legacy-not-retrospectively-reviewed
 LEG-f2a40296ac42,L3,Browser,tests/web/trace-history.test.cjs,7,scenario,'trace-history-'+width,True,legacy-not-retrospectively-reviewed

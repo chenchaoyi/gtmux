@@ -3696,6 +3696,10 @@ LEG-88486f8eeb41,L1,RN / mobile harness,mobileapp/src/trace/timeline.test.ts,15,
 LEG-39add4eb8ec5,L1,RN / mobile harness,mobileapp/src/trace/timeline.test.ts,53,test,search reveals matching individual calls regardless of collapsed history,False,legacy-not-retrospectively-reviewed
 LEG-4386362cb604,L1,RN / mobile harness,mobileapp/src/trace/timeline.test.ts,62,test,only recognized image envelopes are removed from a preview; source remains literal,False,legacy-not-retrospectively-reviewed
 LEG-4b5a90342a0d,L1,RN / mobile harness,mobileapp/src/trace/timeline.test.ts,78,test,bulk call folding includes single/two-call runs and stays independent of turns,False,legacy-not-retrospectively-reviewed
+MAP-47222e9f745a,L1,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,27,reviewed-selector,"query details show named parameters, structured results, provenance and complete raw",False,TCV-003
+MAP-3813fdfe8df1,L1,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,75,reviewed-selector,"command, file changes, waits, text/errors and missing/empty results stay distinct",False,TCV-003
+MAP-f94f19b784ef,L1,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,152,reviewed-selector,full reads preserve original command and distinct native result references,False,TCV-003
+MAP-aedc42ce6351,L1,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,190,reviewed-selector,large rendering pages disclose bounds and preserve all characters,False,TCV-003
 LEG-3de06c104722,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,22,test,"pairing lifecycle sends only the current owner URL, including same-address token rotation",False,legacy-not-retrospectively-reviewed
 LEG-abfa9a8366d0,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,46,test,"a widget opens usage without HQ, dismisses, and ignores guest links and private URL parameters",False,legacy-not-retrospectively-reviewed
 LEG-7419b6327ede,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,73,test,widget links cannot select a server or smuggle credentials,False,legacy-not-retrospectively-reviewed
