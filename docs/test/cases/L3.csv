@@ -68,6 +68,8 @@ LEG-f0e15e31d7c2,L3,Browser,tests/web/smoke.test.cjs,790,scenario,Mobile compose
 LEG-05c9e13ce4c2,L3,Browser,tests/web/smoke.test.cjs,875,scenario,'Native file actions keep readable labels and recorded changes at ' + width,True,legacy-not-retrospectively-reviewed
 LEG-245fb0545893,L3,Browser,tests/web/terminal-fit.test.cjs,23,scenario,`Terminal grid fits desktop tile and focus at DPR ${deviceScaleFactor}`,True,legacy-not-retrospectively-reviewed
 LEG-5fc1eee042c5,L3,Browser,tests/web/terminal-fit.test.cjs,41,scenario,Terminal grid fits narrow browser after rotation,False,legacy-not-retrospectively-reviewed
+MAP-8fceb6b39ede,L3,reviewed implementation,tests/web/tool-call-detail.test.cjs,6,reviewed-selector,Typed query details in Chat and Trace ,False,TCV-005
+MAP-e962ab9f86bc,L3,reviewed implementation,tests/web/tool-call-detail.test.cjs,20,reviewed-selector,Recorded query failure retries and large results page without losing full copy,False,TCV-005
 LEG-a36e634d1bf3,L3,Browser,tests/web/trace-folding.test.cjs,28,scenario,"`Trace turn and call folds stay independent, survive refresh, and reveal context detail at ${width}`",True,legacy-not-retrospectively-reviewed
 LEG-87996649b4e7,L3,Browser,tests/web/trace-folding.test.cjs,68,scenario,`Settings categories and theme icons remain clear and keyboard accessible at ${width}`,True,legacy-not-retrospectively-reviewed
 LEG-f2a40296ac42,L3,Browser,tests/web/trace-history.test.cjs,7,scenario,'trace-history-'+width,True,legacy-not-retrospectively-reviewed

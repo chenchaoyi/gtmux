@@ -4,8 +4,8 @@
   "review": {
     "reviewer": "Codex implementation owner (self-review, not independent approval)",
     "date": "2026-11-09",
-    "decision": "Implement lazy recorded tool details and shared typed presentation",
-    "notes": "The supplied GitHub call has arguments/result/status in the native completion but selected-key parsing drops the query arguments and ignores its result. Retain existing session/home/guest policy and 32MiB exact-record reader. No result bodies enter transcript polls/cache. Full reads redact structured credentials and label redaction, not claim byte-for-byte raw when normalized. Command source remains unchanged. Shared TS presentation is generated for Web and used by RN Chat/Trace. Browser synthetic rendering and RN actions are evidence at their own layers, not installed iOS touch/VoiceOver. No release/install or real-session mutation."
+    "decision": "Correct classification of existing unchanged tests; original functional expectations remain",
+    "notes": "The supplied GitHub call has arguments/result/status in the native completion but selected-key parsing drops the query arguments and ignores its result. Retain existing session/home/guest policy and 32MiB exact-record reader. No result bodies enter transcript polls/cache. Full reads redact structured credentials and label redaction, not claim byte-for-byte raw when normalized. Command source remains unchanged. Shared TS presentation is generated for Web and used by RN Chat/Trace. Browser synthetic rendering and RN actions are evidence at their own layers, not installed iOS touch/VoiceOver. No release/install or real-session mutation. Post-implementation classification correction on 2026-11-09: TCV-003 is pure shared-model logic (L1); TCV-005 runs Chromium against a synthetic API (L3). This review changes labels only, not tests or expectations, and does not claim the correction predates implementation. The original pre-test review and its successful PR history check remain in PR1830/source recovery history."
   },
   "cases": [
     {
@@ -32,7 +32,7 @@
     },
     {
       "id": "TCV-003",
-      "layer": "L2",
+      "layer": "L1",
       "description": "Shared typed presentation distinguishes tool information and empty states",
       "setup": "Synthetic query, command, file change, wait/agent, empty/error/missing results and old-server steps.",
       "action": "Build shared presentation and inspect Preview/Raw/labels.",
@@ -54,7 +54,7 @@
     },
     {
       "id": "TCV-005",
-      "layer": "L2",
+      "layer": "L3",
       "description": "Web uses shared analysis and readable constrained detail layout",
       "setup": "Synthetic desktop and mobile-width Trace/Chat with recorded MCP query, command and missing/failed results.",
       "action": "Open details/Preview/Raw, switch calls, retry and resize.",
@@ -64,5 +64,5 @@
       ]
     }
   ],
-  "seal": "441e7a521588d60144712cf3aae5dfa39525b8429dfed69a27278bbc3eceaa62"
+  "seal": "4c42607be94330223addd7e79b0898fb8d70bc29447f1f815032dcfe8f80f315"
 }

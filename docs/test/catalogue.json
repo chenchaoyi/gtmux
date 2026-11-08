@@ -58132,7 +58132,7 @@
       "sha256": "d6aa4c04d75db6b4f437b4b52301138e8543ef9fbf6d4be1a56652966834eb4d"
     },
     "mobileapp/src/ui/toolPresentation.test.ts": {
-      "layer": "L2",
+      "layer": "L1",
       "stack": "reviewed implementation",
       "cases": [
         {
@@ -58141,7 +58141,7 @@
           "kind": "reviewed-selector",
           "name": "query details show named parameters, structured results, provenance and complete raw",
           "dynamic": false,
-          "layer": "L2",
+          "layer": "L1",
           "design": "TCV-003"
         },
         {
@@ -58150,7 +58150,7 @@
           "kind": "reviewed-selector",
           "name": "command, file changes, waits, text/errors and missing/empty results stay distinct",
           "dynamic": false,
-          "layer": "L2",
+          "layer": "L1",
           "design": "TCV-003"
         },
         {
@@ -58159,7 +58159,7 @@
           "kind": "reviewed-selector",
           "name": "full reads preserve original command and distinct native result references",
           "dynamic": false,
-          "layer": "L2",
+          "layer": "L1",
           "design": "TCV-003"
         },
         {
@@ -58168,14 +58168,14 @@
           "kind": "reviewed-selector",
           "name": "large rendering pages disclose bounds and preserve all characters",
           "dynamic": false,
-          "layer": "L2",
+          "layer": "L1",
           "design": "TCV-003"
         }
       ],
       "sha256": "9a55da56d2ea9698610193f912be434d501af18d100d11ce5e34f19cfb2cd92a"
     },
     "tests/web/tool-call-detail.test.cjs": {
-      "layer": "L2",
+      "layer": "L3",
       "stack": "reviewed implementation",
       "cases": [
         {
@@ -58184,7 +58184,7 @@
           "kind": "reviewed-selector",
           "name": "Typed query details in Chat and Trace ",
           "dynamic": false,
-          "layer": "L2",
+          "layer": "L3",
           "design": "TCV-005"
         },
         {
@@ -58193,7 +58193,7 @@
           "kind": "reviewed-selector",
           "name": "Recorded query failure retries and large results page without losing full copy",
           "dynamic": false,
-          "layer": "L2",
+          "layer": "L3",
           "design": "TCV-005"
         }
       ],
