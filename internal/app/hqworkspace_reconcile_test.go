@@ -95,7 +95,7 @@ func TestPhase1WorkspaceIngestionRecoveryAndReadIndependence(t *testing.T) {
 		t.Fatal(e)
 	}
 	after, _ = s.Read()
-	if after.ObservationCursors["events"] != 15 || len(after.Reconciliations) != 4 {
+	if after.ObservationCursors["events"] != 13 || len(after.Reconciliations) != 4 {
 		t.Fatal("source gap lost", after)
 	}
 	t.Log("isolated records:", filepath.Join(home, "workspace", "records.json"))

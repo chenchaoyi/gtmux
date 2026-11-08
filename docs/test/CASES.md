@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1034 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1035 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3726 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 1913 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 1917 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 86 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 93 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 12 | [M.csv](cases/M.csv) |
@@ -41,6 +41,10 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | MC-HQ-OVERVIEW-STATE | Overview groups exclude completed/closed/merged matters even with stale projection IDs; a stage-result body never changes an open goal. Valid saved rows fill a bounded three-item preview and hidden counts match unique displayed records. |
 | MC-HQ-OVERVIEW-MORE | At the bottom of each truncated native HQ section an explicit remaining/total control opens all matters and can select a hidden record without writes; no extra control when all records fit. Complete minimum/wide light/dark bilingual fixtures preserve text/viewport geometry. |
 | MC-HQ-OVERVIEW-BRIEF | The native row presents canonical current assessment before historical receipt text, explicitly names the unfinished goal state and never treats unavailable source metadata as an idle/completed worker; no guessed human decision or completion from titles, Stop or report prose. |
+| HQP1-F1-001 | The empty read leaves cursor 10 and persists the gap notice. The next read durably queues exact event-11 with its own type/body/conversation, then cursor 11. Repeated reads leave the database byte-for-byte unchanged. Old code must fail without source mutation or sleeps. |
+| HQP1-F1-002 | Activation does not ingest history and writes an explicit events cursor even at zero. The new event at boundary+1 is queued with its actual identity, persists across reopen, and is never treated as historical on a second activation. |
+| HQP1-F1-003 | The empty gap keeps cursor 10 and one stable gap record; retry changes no bytes. Actual retained event 16 is queued atomically with cursor 16, and neither gaps nor duplicate reads erase it. Source epoch-reset repair remains out of scope. |
+| HQP1-F1-004 | First pass advances to 510, creates no prohibited or unregistered observations and does not claim sequence 511. Next pass queues event-511 and advances to 511; repeat has identical stored bytes. No policy broadening or hidden replay occurs. |
 | HQP1-001 | Late/duplicate reports cannot reopen completed matters or erase the current question; observation saved exactly once. |
 | HQP1-002 | State transitions require the current matter revision; wrong targets, stale and unversioned writes fail visibly; explicit current user transitions work. |
 | HQP1-003 | Question resolution matches immutable question identity and current revision; old replies cannot remove newer questions; legacy exact-ID replies remain supported. |

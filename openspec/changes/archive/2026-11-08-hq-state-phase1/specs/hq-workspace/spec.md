@@ -13,3 +13,7 @@ The workspace SHALL persist a reconciliation queue independently of event consum
 #### Scenario: Supervisor replacement
 - **WHEN** a lease expires and a new supervisor claims the observation
 - **THEN** the old lease cannot commit and the new assessment is durable and idempotent
+
+#### Scenario: Concurrent append after an empty read
+- **WHEN** a source read returns no rows and a concurrent append raises the sequence counter before the next checkpoint is saved
+- **THEN** ingestion retains its previous cursor and any gap notice, and the next read durably queues the retained event before advancing past it

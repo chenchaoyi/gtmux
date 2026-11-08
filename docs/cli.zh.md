@@ -777,6 +777,8 @@ JSON
 revision 和核实依据。旧客户端仍可用当前问题的不可复用 ID 作答；`send` 也支持
 `request_revision`。
 
+事件读取为空时保留原游标，即使序号计数因并发追加而增加，也不会越过未读取的结果。只有本次实际处理的来源条目才能推进游标；来源缺口提醒不代表结果已被消费。
+
 HQ 先读 `gtmux hq workspace reconcile --json`，再通过 `act` 的 `op:"claim"` 和
 `observation_id` 领取。提交 `op:"assess"` 时提供唯一 `id`、`observation_id`、领取
 回执的 `generation`、精确 `matter`、当前 `revision`、`decision` 和说明依据/下一

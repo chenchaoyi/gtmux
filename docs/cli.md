@@ -878,6 +878,8 @@ revision. It cannot clear a human request: use HQ-only `clear-input` with the ex
 question ID, current revision and resolution receipt. Legacy replies with an exact,
 current question ID still work; `send` may additionally provide `request_revision`.
 
+An empty event read keeps its existing cursor, even if the sequence counter increases concurrently. Only source rows actually processed advance that checkpoint; a source-gap notice does not consume unread results.
+
 HQ reads `gtmux hq workspace reconcile --json`, then uses `act` with `op:"claim"`
 and `observation_id`. Submit `op:"assess"` with a unique `id`, `observation_id`,
 returned `generation`, exact `matter` and current `revision`, `decision` and a

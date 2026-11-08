@@ -57884,7 +57884,7 @@
           "design": "HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
         }
       ],
-      "sha256": "19332b6d81e7060744c8ff39245d4a3baee5722b504403439bfdc43d29cd8796"
+      "sha256": "55091bb335148ed8c88de08ba3ed603b8ce8c2c960c0bf617a1d79af873bd012"
     },
     "internal/hqworkspace/phase1_test.go": {
       "layer": "L2",
@@ -57937,6 +57937,49 @@
         }
       ],
       "sha256": "23f843d99f339eb8b4f94bcf125e319fdee1e25c058d0053ad896080eeb4caad"
+    },
+    "internal/app/hqworkspace_cursor_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-9931f487fae1",
+          "line": 109,
+          "kind": "reviewed-selector",
+          "name": "TestPhase1CursorEmptyScanConcurrentAppend",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
+        },
+        {
+          "id": "MAP-479200cd9eee",
+          "line": 142,
+          "kind": "reviewed-selector",
+          "name": "TestPhase1CursorProspectiveActivation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
+        },
+        {
+          "id": "MAP-b0e7a04d99c5",
+          "line": 179,
+          "kind": "reviewed-selector",
+          "name": "TestPhase1CursorEmptyRetentionGap",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
+        },
+        {
+          "id": "MAP-ec07edd88479",
+          "line": 203,
+          "kind": "reviewed-selector",
+          "name": "TestPhase1CursorFilteredPageBoundary",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
+        }
+      ],
+      "sha256": "9574464057f0fddd502bc4ad81f2b83fba58bdf10a57197033fc3600ca749e4d"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2"

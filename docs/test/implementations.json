@@ -579,5 +579,19 @@
       "TestPhase1WorkspaceActionAuthorizationAndCompatibility",
       "TestPhase1HQCanClaimDryRunAndCommit"
     ]
+  },
+  "internal/app/hqworkspace_cursor_test.go": {
+    "cases": [
+      "HQP1-F1-001",
+      "HQP1-F1-002",
+      "HQP1-F1-003",
+      "HQP1-F1-004"
+    ],
+    "selectors": [
+      "TestPhase1CursorEmptyScanConcurrentAppend",
+      "TestPhase1CursorProspectiveActivation",
+      "TestPhase1CursorEmptyRetentionGap",
+      "TestPhase1CursorFilteredPageBoundary"
+    ]
   }
 }

@@ -85,9 +85,9 @@ func ingestWorkspaceObservations(s *hqworkspace.Store, now int64) error {
 	}
 	if gap || workspaceEventSequence() < cursor {
 		observations = append(observations, hqworkspace.Observation{ID: fmt.Sprintf("event-gap-%d-%d", cursor, last), Kind: "source-gap", Ref: fmt.Sprintf("events after %d through %d", cursor, last)})
-		if len(rows) == 0 && workspaceEventSequence() > last {
-			last = workspaceEventSequence()
-		}
+		// A sequence sampled after an empty scan may include a concurrent
+		// append that this read never returned. Preserve the cursor until an
+		// actual processed row supplies a safe checkpoint, including on gaps.
 	}
 	if err = s.Ingest("events", cursor, last, observations, now); err != nil {
 		return err

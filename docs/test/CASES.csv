@@ -371,6 +371,10 @@ LEG-b4c53a66c7ba,L1,Go core / CLI / server,internal/app/hooksilence_test.go,56,T
 LEG-22c10bb33192,L1,Go core / CLI / server,internal/app/hqmemory_row_test.go,30,Test,TestHQMemoryRowReadsItsThreeStates,False,legacy-not-retrospectively-reviewed
 LEG-7d78fb6a41eb,L1,Go core / CLI / server,internal/app/hqtranscript_agent_test.go,15,Test,TestStitchEarlierKeepsEachHQAgentsIdentity,False,legacy-not-retrospectively-reviewed
 LEG-150db10da0b7,L1,Go core / CLI / server,internal/app/hqtranscript_agent_test.go,45,Test,TestTranscriptOnlyStitchesSupervisorHistory,False,legacy-not-retrospectively-reviewed
+MAP-9931f487fae1,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,109,reviewed-selector,TestPhase1CursorEmptyScanConcurrentAppend,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
+MAP-479200cd9eee,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,142,reviewed-selector,TestPhase1CursorProspectiveActivation,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
+MAP-b0e7a04d99c5,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,179,reviewed-selector,TestPhase1CursorEmptyRetentionGap,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
+MAP-ec07edd88479,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,203,reviewed-selector,TestPhase1CursorFilteredPageBoundary,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
 LEG-4658791c9323,L1,Go core / CLI / server,internal/app/hqworkspace_overview_test.go,10,Test,TestWorkspaceOverviewIsExplicitlyRequestedAndDoesNotEnlargeSidebarMatters,False,legacy-not-retrospectively-reviewed
 LEG-dc50bad5be70,L1,Go core / CLI / server,internal/app/hqworkspace_overview_test.go,41,Test,TestWorkspaceHTTPReadReusesExplicitStateWithoutWriting,False,legacy-not-retrospectively-reviewed
 MAP-9a346dda931b,L2,reviewed implementation,internal/app/hqworkspace_reconcile_test.go,15,reviewed-selector,TestPhase1WorkspaceIngestionRecoveryAndReadIndependence,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
