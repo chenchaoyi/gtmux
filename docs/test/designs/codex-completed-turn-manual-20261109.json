@@ -1,0 +1,28 @@
+{
+  "id": "codex-completed-turn-manual-20261109",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-09",
+    "decision": "Preserve manual compaction while fencing actual rearm decisions",
+    "notes": "Self-review found b530 fences PostCompact before checking whether its trigger actually rearms. A manual compact is state-neutral but must still record its real lifecycle receipt. This addendum preserves original CET expectations and adds a real Run regression. Design is sealed/committed before editing the existing new test source; exact b530 old failure and new green will be recorded. Source review of b530 remains accurate to that Q, not extended to this necessary delta."
+  },
+  "cases": [
+    {
+      "id": "CET-006",
+      "layer": "L2",
+      "description": "Manual PostCompact after a completed explicit turn remains observable without reactivating work.",
+      "setup": "Use the existing hermetic Codex frontend fixture and production Run. Submit and complete a synthetic turn; no real pane, native compact or service.",
+      "action": "Invoke PostCompact with trigger=manual and the same completed turn ID; compare actual event journal, active/turn/finished markers before and after. Existing automatic/unknown rearm fences still run.",
+      "expected": "A real manual PostCompact receipt is recorded once, active stays absent and exact completion/current turn remain intact. Only actual rearm decisions are eligible for the completed-turn fence.",
+      "planned_files": [
+        "internal/hook/codex_completed_turn_test.go",
+        "internal/hook/hook.go"
+      ],
+      "surfaces": [
+        "Shared Go hook lifecycle"
+      ]
+    }
+  ],
+  "seal": "8604700b332cd288f1978ecab79bdd381e85bd2a2aac652537eb0c07ab0ac3cd"
+}
