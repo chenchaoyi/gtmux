@@ -40,7 +40,45 @@ export function callFacts(step: TranscriptStep, lang: 'en' | 'zh') {
     });
   return facts;
 }
+function hasLossyJSONNumber(value: string) {
+  // Scan JSON tokens linearly, with no decoded body or regex over large strings.
+  // Preserve opaque 64-bit IDs and decimal values that Number would change.
+  for (let i = 0; i < value.length; i++) {
+    if (value[i] === '"') {
+      for (i++; i < value.length; i++) {
+        if (value[i] === '\\') i++;
+        else if (value[i] === '"') break;
+      }
+      continue;
+    }
+    if (value[i] !== '-' && !(value[i] >= '0' && value[i] <= '9')) continue;
+    const start = i;
+    while (i + 1 < value.length && '0123456789.eE+-'.includes(value[i + 1]))
+      i++;
+    const token = value.slice(start, i + 1),
+      n = Number(token);
+    if (
+      Object.is(n, -0) ||
+      !Number.isFinite(n) ||
+      (Number.isInteger(n) && !Number.isSafeInteger(n))
+    )
+      return true;
+    const canonical = (text: string) => {
+      const [mantissa, exp = '0'] = text.toLowerCase().split('e');
+      const dot = mantissa.indexOf('.');
+      let power = Number(exp) - (dot < 0 ? 0 : mantissa.length - dot - 1);
+      let digits = mantissa.replace('.', '').replace(/^(-?)0+/, '$1');
+      const trimmed = digits.replace(/0+$/, '');
+      power += digits.length - trimmed.length;
+      digits = trimmed;
+      return digits === '' || digits === '-' ? '0' : digits + 'e' + power;
+    };
+    if (canonical(token) !== canonical(String(n))) return true;
+  }
+  return false;
+}
 function json(value: string) {
+  if (hasLossyJSONNumber(value)) return undefined;
   try {
     return JSON.parse(value);
   } catch {
@@ -52,6 +90,7 @@ export type CallSection = {
   label: string;
   source: string;
   hint: string;
+  verbatim?: boolean;
   rows?: { label: string; value: string }[];
 };
 export function callSections(
@@ -80,7 +119,14 @@ export function callSections(
             value: typeof v === 'string' ? v : JSON.stringify(v, null, 2),
           }))
         : undefined;
-    sections.push({ id, label, source, hint, rows });
+    sections.push({
+      id,
+      label,
+      source,
+      hint,
+      rows,
+      verbatim: hint === 'json' && hasLossyJSONNumber(source),
+    });
   };
   const argv =
     step.input_kind === 'arguments' &&

@@ -2438,7 +2438,7 @@
         if(section.rows) { var rows=el('dl','call-parameters'); section.rows.forEach(function(row){rows.appendChild(el('dt','',row.label));rows.appendChild(el('dd','',row.value));}); body.appendChild(rows); return; }
         if(section.hint==='notice') {body.appendChild(el('p','call-notice',section.source));return;}
         var view=model.callPage(section.source,page);
-        body.appendChild(codePanelEl(view.source,{hint:section.hint,copy:false,allowFormat:!raw&&view.pages===1,formatted:!raw&&view.pages===1,embedded:section.id==='input',disabled:disabled}));
+        body.appendChild(codePanelEl(view.source,{hint:section.hint,copy:false,allowFormat:!raw&&view.pages===1&&!section.verbatim,formatted:!raw&&view.pages===1&&!section.verbatim,embedded:section.id==='input',disabled:disabled}));
         if(view.pages>1) {var nav=el('div','call-pages'), prev=el('button','','‹'), next=el('button','','›');prev.type=next.type='button';prev.setAttribute('aria-label',T('Previous page','上一页'));next.setAttribute('aria-label',T('Next page','下一页'));prev.disabled=view.page===0;next.disabled=view.page===view.pages-1;prev.onclick=function(){page--;draw();};next.onclick=function(){page++;draw();};nav.append(prev,el('span','',(view.page+1)+' / '+view.pages),next);body.appendChild(nav);}
       } draw();
     }); return root;

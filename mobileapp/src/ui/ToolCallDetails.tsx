@@ -155,8 +155,12 @@ function Section({
           dark={dark}
           fontSize={fontSize}
           allowEmbedded={section.id === 'input'}
-          allowFormat={section.id !== 'raw' && view.pages === 1}
-          initialFormatted={section.id !== 'raw' && view.pages === 1}
+          allowFormat={
+            section.id !== 'raw' && view.pages === 1 && !section.verbatim
+          }
+          initialFormatted={
+            section.id !== 'raw' && view.pages === 1 && !section.verbatim
+          }
           maxHeight={360}
           disabled={disabled}
           showCopy={false}

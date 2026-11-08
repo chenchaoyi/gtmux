@@ -1,5 +1,5 @@
-// Generated from shared App trace analysis and presentation; SHA256 dd470c09d0a4a05e580dcf9247483f0dd48a318147fe795009ef44a554efc7fa
-// Body SHA256 cbb14ce1a3bce808bf8905cd7dd23178d2b3ccd2942f35031848f16b01b53c50
+// Generated from shared App trace analysis and presentation; SHA256 e58e67ef299faae3445ae353a0b406a462f7dfc58e1c061fad1809c9b902894d
+// Body SHA256 e429b113ff7382335d67843aba293fe49ae08d1381fe491da5b5967d7473052d
 (function(root){var modules={"model":function(exports,require){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -737,7 +737,47 @@ function callFacts(step, lang) {
         });
     return facts;
 }
+function hasLossyJSONNumber(value) {
+    // Scan JSON tokens linearly, with no decoded body or regex over large strings.
+    // Preserve opaque 64-bit IDs and decimal values that Number would change.
+    for (let i = 0; i < value.length; i++) {
+        if (value[i] === '"') {
+            for (i++; i < value.length; i++) {
+                if (value[i] === '\\')
+                    i++;
+                else if (value[i] === '"')
+                    break;
+            }
+            continue;
+        }
+        if (value[i] !== '-' && !(value[i] >= '0' && value[i] <= '9'))
+            continue;
+        const start = i;
+        while (i + 1 < value.length && '0123456789.eE+-'.includes(value[i + 1]))
+            i++;
+        const token = value.slice(start, i + 1), n = Number(token);
+        if (Object.is(n, -0) ||
+            !Number.isFinite(n) ||
+            (Number.isInteger(n) && !Number.isSafeInteger(n)))
+            return true;
+        const canonical = (text) => {
+            const [mantissa, exp = '0'] = text.toLowerCase().split('e');
+            const dot = mantissa.indexOf('.');
+            let power = Number(exp) - (dot < 0 ? 0 : mantissa.length - dot - 1);
+            let digits = mantissa.replace('.', '').replace(/^(-?)0+/, '$1');
+            const trimmed = digits.replace(/0+$/, '');
+            power += digits.length - trimmed.length;
+            digits = trimmed;
+            return digits === '' || digits === '-' ? '0' : digits + 'e' + power;
+        };
+        if (canonical(token) !== canonical(String(n)))
+            return true;
+    }
+    return false;
+}
 function json(value) {
+    if (hasLossyJSONNumber(value))
+        return undefined;
     try {
         return JSON.parse(value);
     }
@@ -759,7 +799,14 @@ function callSections(step, lang) {
                 value: typeof v === 'string' ? v : JSON.stringify(v, null, 2),
             }))
             : undefined;
-        sections.push({ id, label, source, hint, rows });
+        sections.push({
+            id,
+            label,
+            source,
+            hint,
+            rows,
+            verbatim: hint === 'json' && hasLossyJSONNumber(source),
+        });
     };
     const argv = step.input_kind === 'arguments' &&
         ['command', 'read', 'list', 'search'].includes(step.operation || '');

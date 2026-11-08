@@ -72,12 +72,8 @@ func safeRecordedJSON(raw []byte) (string, bool) {
 		return "", false
 	}
 	redacted := false
-	var clean func(any, int) any
-	clean = func(value any, depth int) any {
-		if depth > 128 {
-			redacted = true
-			return "[nesting limit]"
-		}
+	var clean func(any) any
+	clean = func(value any) any {
 		switch v := value.(type) {
 		case map[string]any:
 			binary := v["type"] == "image" || v["type"] == "audio"
@@ -94,16 +90,16 @@ func safeRecordedJSON(raw []byte) (string, bool) {
 					redacted = true
 					continue
 				}
-				v[k] = clean(item, depth+1)
+				v[k] = clean(item)
 			}
 		case []any:
 			for i, item := range v {
-				v[i] = clean(item, depth+1)
+				v[i] = clean(item)
 			}
 		}
 		return value
 	}
-	value = clean(value, 0)
+	value = clean(value)
 	encoded, err := json.Marshal(value)
 	if err != nil {
 		return "", false

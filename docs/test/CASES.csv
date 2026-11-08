@@ -3095,8 +3095,8 @@ LEG-e4a2949ee7df,L1,Go core / CLI / server,internal/transcript/sessionbinding_te
 LEG-e83034b94b32,L1,Go core / CLI / server,internal/transcript/titles_test.go,10,Test,TestSessionTitles,False,legacy-not-retrospectively-reviewed
 LEG-31e07de7e8be,L1,Go core / CLI / server,internal/transcript/titles_test.go,44,Test,TestSessionTitlesBoundedTail,False,legacy-not-retrospectively-reviewed
 MAP-d8d563bbd03e,L1,reviewed implementation,internal/transcript/tool_call_detail_test.go,11,reviewed-selector,TestNativeCallDetailsAreLazyScopedAndRedacted,False,"TCV-001,TCV-002"
-MAP-78516b06d8fd,L1,reviewed implementation,internal/transcript/tool_call_detail_test.go,57,reviewed-selector,TestNativeCallMirrorPreservesOriginalInputAndResultReference,False,"TCV-001,TCV-002"
-MAP-4895957e9e8f,L1,reviewed implementation,internal/transcript/tool_call_detail_test.go,90,reviewed-selector,TestNativeCallMissingResultIsNotAnEmptyResult,False,"TCV-001,TCV-002"
+MAP-78516b06d8fd,L1,reviewed implementation,internal/transcript/tool_call_detail_test.go,64,reviewed-selector,TestNativeCallMirrorPreservesOriginalInputAndResultReference,False,"TCV-001,TCV-002"
+MAP-4895957e9e8f,L1,reviewed implementation,internal/transcript/tool_call_detail_test.go,97,reviewed-selector,TestNativeCallMissingResultIsNotAnEmptyResult,False,"TCV-001,TCV-002"
 LEG-8857dd599043,L1,Go core / CLI / server,internal/transcript/tool_detail_test.go,9,Test,TestCodexDescriptiveToolDetail,False,legacy-not-retrospectively-reviewed
 LEG-59b26a7137fb,L1,Go core / CLI / server,internal/transcript/tool_detail_test.go,18,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-54836ef761d0,L1,Go core / CLI / server,internal/transcript/tool_full_test.go,11,Test,TestFullToolInputOutlivesBothPreviewBudgets,False,legacy-not-retrospectively-reviewed
@@ -6023,9 +6023,9 @@ LEG-8581910a0160,L2,RN / mobile harness,mobileapp/src/ui/time.test.ts,74,it,is i
 LEG-a7b4039749f8,L2,RN / mobile harness,mobileapp/src/ui/time.test.ts,79,it,speaks the reader’s language and honours the gap it is given,False,legacy-not-retrospectively-reviewed
 LEG-fe83c539204c,L2,RN / mobile harness,mobileapp/src/ui/time.test.ts,84,it,holds its own on an empty conversation,False,legacy-not-retrospectively-reviewed
 MAP-47222e9f745a,L2,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,27,reviewed-selector,"query details show named parameters, structured results, provenance and complete raw",False,TCV-003
-MAP-3813fdfe8df1,L2,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,45,reviewed-selector,"command, file changes, waits, text/errors and missing/empty results stay distinct",False,TCV-003
-MAP-f94f19b784ef,L2,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,122,reviewed-selector,full reads preserve original command and distinct native result references,False,TCV-003
-MAP-aedc42ce6351,L2,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,160,reviewed-selector,large rendering pages disclose bounds and preserve all characters,False,TCV-003
+MAP-3813fdfe8df1,L2,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,75,reviewed-selector,"command, file changes, waits, text/errors and missing/empty results stay distinct",False,TCV-003
+MAP-f94f19b784ef,L2,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,152,reviewed-selector,full reads preserve original command and distinct native result references,False,TCV-003
+MAP-aedc42ce6351,L2,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,190,reviewed-selector,large rendering pages disclose bounds and preserve all characters,False,TCV-003
 LEG-7e1e7c1d7954,L2,RN / mobile harness,mobileapp/src/ui/useKeyboardChrome.test.tsx,56,test,"keyboard timing folds the chrome, and dismissal preserves the current scroll state",False,legacy-not-retrospectively-reviewed
 LEG-bd6085e9a14d,L2,RN / mobile harness,mobileapp/src/ui/useKeyboardChrome.test.tsx,77,test,Reduce Motion folds and restores without animation,False,legacy-not-retrospectively-reviewed
 LEG-aab5aceea630,L2,RN / mobile harness,mobileapp/src/ui/useModalDismiss.test.tsx,6,test.each(),%s completes each modal lifecycle once,True,legacy-not-retrospectively-reviewed

@@ -26,6 +26,36 @@ const query: TranscriptStep = {
 };
 test('query details show named parameters, structured results, provenance and complete raw', () => {
   expect(callTitle(query)).toBe('GitHub · Fetch commit workflow runs');
+  const precise =
+    '{"id":9223372036854775807,"decimal":0.123456789012345678901}';
+  for (const number of [
+    '9223372036854775807',
+    '0.123456789012345678901',
+    '1e309',
+    '-0',
+  ]) {
+    const raw = '{"value":' + number + '}';
+    expect(
+      callSections(
+        { ...query, call: { ...query.call, result: raw } },
+        'en',
+      ).find(part => part.id === 'result'),
+    ).toMatchObject({ source: raw, verbatim: true });
+  }
+  const exact = callSections(
+    { ...query, call: { ...query.call, arguments: precise, result: precise } },
+    'en',
+  );
+  expect(exact.find(s => s.id === 'arguments')).toMatchObject({
+    source: precise,
+    verbatim: true,
+  });
+  expect(exact.find(s => s.id === 'arguments')?.rows).toBeUndefined();
+  expect(exact.find(s => s.id === 'result')).toMatchObject({
+    source: precise,
+    verbatim: true,
+  });
+
   const sections = callSections(query, 'en');
   expect(sections.find(s => s.id === 'arguments')?.rows).toEqual([
     { label: 'repo full name', value: 'example/project' },

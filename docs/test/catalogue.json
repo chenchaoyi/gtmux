@@ -58087,7 +58087,7 @@
         },
         {
           "id": "MAP-78516b06d8fd",
-          "line": 57,
+          "line": 64,
           "kind": "reviewed-selector",
           "name": "TestNativeCallMirrorPreservesOriginalInputAndResultReference",
           "dynamic": false,
@@ -58096,7 +58096,7 @@
         },
         {
           "id": "MAP-4895957e9e8f",
-          "line": 90,
+          "line": 97,
           "kind": "reviewed-selector",
           "name": "TestNativeCallMissingResultIsNotAnEmptyResult",
           "dynamic": false,
@@ -58104,7 +58104,7 @@
           "design": "TCV-001,TCV-002"
         }
       ],
-      "sha256": "d0364713a38fce70d284024679086bd9faa8f18e2cb62ad69f39d971889bb45e"
+      "sha256": "d8492eb786c580d8fbb1d92da6c901a4ea1674eb15c0d9d8344b10262e73cb57"
     },
     "mobileapp/src/trace/TraceModal.toolCall.test.tsx": {
       "layer": "L2",
@@ -58146,7 +58146,7 @@
         },
         {
           "id": "MAP-3813fdfe8df1",
-          "line": 45,
+          "line": 75,
           "kind": "reviewed-selector",
           "name": "command, file changes, waits, text/errors and missing/empty results stay distinct",
           "dynamic": false,
@@ -58155,7 +58155,7 @@
         },
         {
           "id": "MAP-f94f19b784ef",
-          "line": 122,
+          "line": 152,
           "kind": "reviewed-selector",
           "name": "full reads preserve original command and distinct native result references",
           "dynamic": false,
@@ -58164,7 +58164,7 @@
         },
         {
           "id": "MAP-aedc42ce6351",
-          "line": 160,
+          "line": 190,
           "kind": "reviewed-selector",
           "name": "large rendering pages disclose bounds and preserve all characters",
           "dynamic": false,
@@ -58172,7 +58172,7 @@
           "design": "TCV-003"
         }
       ],
-      "sha256": "0fe34e9a836495ab28466cb77f5c518e3f3fb88adadf819115d815d1a39982aa"
+      "sha256": "9a55da56d2ea9698610193f912be434d501af18d100d11ce5e34f19cfb2cd92a"
     },
     "tests/web/tool-call-detail.test.cjs": {
       "layer": "L2",

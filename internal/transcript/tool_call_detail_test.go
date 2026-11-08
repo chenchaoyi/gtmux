@@ -9,7 +9,11 @@ import (
 )
 
 func TestNativeCallDetailsAreLazyScopedAndRedacted(t *testing.T) {
-	for _, result := range []any{map[string]any{"structuredContent": map[string]any{"workflow_runs": []any{map[string]string{"status": "success"}}, "authorization": "PRIVATE"}, "content": []any{map[string]string{"type": "text", "text": "recorded response"}}, "isError": false}, "", nil, strings.Repeat("large result ", 30000)} {
+	var nested any = map[string]any{"leaf": "retained deep value", "token": "PRIVATE"}
+	for i := 0; i < 256; i++ {
+		nested = map[string]any{"next": nested}
+	}
+	for _, result := range []any{map[string]any{"structuredContent": map[string]any{"workflow_runs": []any{map[string]string{"status": "success"}}, "authorization": "PRIVATE"}, "content": []any{map[string]string{"type": "text", "text": "recorded response"}}, "isError": false}, "", nil, strings.Repeat("large result ", 30000), nested} {
 		row := nativeTestRecord("McpToolCall", map[string]any{"id": "query-1", "tool": "github.fetch_commit_workflow_runs", "appName": "GitHub", "status": "completed", "arguments": map[string]any{"repo_full_name": "example/project", "commit_sha": "abc123", "token": "PRIVATE", "options": map[string]string{"api_key": "PRIVATE"}}, "duration": map[string]int{"secs": 1, "nanos": 250000000}, "result": result})
 		path := filepath.Join(t.TempDir(), "record.jsonl")
 		if err := os.WriteFile(path, []byte(row), 0600); err != nil {
@@ -31,6 +35,9 @@ func TestNativeCallDetailsAreLazyScopedAndRedacted(t *testing.T) {
 		}
 		if !full.Call.Loaded || !full.Call.Redacted || !strings.Contains(full.Call.Arguments, "example/project") || strings.Contains(full.Call.Arguments, "PRIVATE") || strings.Contains(full.Call.Result, "PRIVATE") {
 			t.Fatal("details unavailable or credentials exposed", full.Call)
+		}
+		if strings.Contains(row, "retained deep value") && (!strings.Contains(full.Call.Result, "retained deep value") || strings.Contains(full.Call.Result, "nesting limit")) {
+			t.Fatal("deep recorded content was cut")
 		}
 		if _, err = readToolInput(path, codexStep, 1, step.Call.Ref); err == nil {
 			t.Fatal("accepted wrong offset")
