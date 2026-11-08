@@ -60,9 +60,9 @@
       "action": "Open details/Preview/Raw, switch calls, retry and resize.",
       "expected": "Both surfaces show the same facts and nonempty recorded values; controls remain reachable, no horizontal document overflow or console errors, pending/error states are actionable and old-server fallback remains meaningful.",
       "planned_files": [
-        "tests/web/tool-call-detail.spec.js"
+        "tests/web/tool-call-detail.test.cjs"
       ]
     }
   ],
-  "seal": "df03a7414365a076f6ecfde37ac0b90e04e668efb99b51c92b6aad654c41f1ae"
+  "seal": "441e7a521588d60144712cf3aae5dfa39525b8429dfed69a27278bbc3eceaa62"
 }
