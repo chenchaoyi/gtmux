@@ -16,6 +16,8 @@ import {
 } from './activity';
 import { Chevron } from './Icons';
 import { CodeBlock } from './CodeBlock';
+import { ToolCallDetails } from './ToolCallDetails';
+import { callTitle } from './toolPresentation';
 import { toolCodeHint } from './codeReading';
 import { useToolInput } from './useToolInput';
 import { ChromeText } from './ChromeText';
@@ -90,6 +92,7 @@ export function ToolSteps({
               step.input ||
               step.workdir ||
               step.details_truncated ||
+              step.call ||
               (step.detail &&
                 step.detail.trim().toLowerCase() !==
                   (step.title || '').trim().toLowerCase())
@@ -101,7 +104,11 @@ export function ToolSteps({
                   style={[styles.rowText, { fontSize: size }]}
                   numberOfLines={2}
                 >
-                  {operation === 'tool' ? step.title || label : label}
+                  {step.call
+                    ? callTitle(step)
+                    : operation === 'tool'
+                    ? step.title || label
+                    : label}
                   {showPreview && (
                     <Text
                       style={[
@@ -217,7 +224,7 @@ function ToolInput({
     ? lang === 'zh'
       ? '部分'
       : 'Partial'
-    : !step.input
+    : !step.input && !step.call
     ? lang === 'zh'
       ? '摘要'
       : 'Summary'
@@ -271,25 +278,34 @@ function ToolInput({
           {lang === 'zh' ? '目录' : 'Directory'} · {step.workdir}
         </Text>
       )}
-      {!!input && (
-        <CodeBlock
-          source={input}
-          hint={hint}
+      {step.call ? (
+        <ToolCallDetails
+          step={step}
           lang={lang}
           fontSize={Math.max(12, readerFontSize)}
-          readerFontSize={Math.max(12, readerFontSize)}
-          title={
-            step.input_kind === 'changes'
-              ? lang === 'zh'
-                ? '已记录修改'
-                : 'Recorded changes'
-              : step.title || 'tool'
-          }
-          disabled={loading || !!step.details_truncated}
-          maxHeight={220}
-          testIDPrefix="tool-input"
-          textTestID="tool-input-text"
+          disabled={loading || failed || !step.call.loaded}
         />
+      ) : (
+        !!input && (
+          <CodeBlock
+            source={input}
+            hint={hint}
+            lang={lang}
+            fontSize={Math.max(12, readerFontSize)}
+            readerFontSize={Math.max(12, readerFontSize)}
+            title={
+              step.input_kind === 'changes'
+                ? lang === 'zh'
+                  ? '已记录修改'
+                  : 'Recorded changes'
+                : step.title || 'tool'
+            }
+            disabled={loading || !!step.details_truncated}
+            maxHeight={220}
+            testIDPrefix="tool-input"
+            textTestID="tool-input-text"
+          />
+        )
       )}
     </View>
   );

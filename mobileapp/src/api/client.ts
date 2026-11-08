@@ -415,7 +415,13 @@ export interface UsageReport {
 
 // A chat-history turn (GET /api/transcript): one user instruction, the agent's
 // final text reply, and the intermediate tool calls folded into collapsible steps.
+export interface TranscriptToolCall {
+  provider?: string; name?: string; status?: string; duration_ms?: number;
+  has_arguments?: boolean; has_result?: boolean; ref?: string; loaded?: boolean;
+  arguments?: string; result?: string; redacted?: boolean;
+}
 export interface TranscriptStep {
+  call?: TranscriptToolCall;
   kind: string; // "tool"
   title: string; // tool name (Edit, Bash, exec…)
   detail?: string; // short arg summary (path / command head)

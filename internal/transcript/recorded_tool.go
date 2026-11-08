@@ -34,6 +34,17 @@ func (st *parseState) addRecordedStep(provider string, step Step, id string) {
 			}
 		}
 		if st.recordedSeen[id] {
+			if step.Call != nil && st.sourceID != "" {
+				step.Call.Ref = toolInputRef(st.sourceID, st.off, 0, step)
+				for si := range st.cur.Segments {
+					for ti := range st.cur.Segments[si].Steps {
+						old := &st.cur.Segments[si].Steps[ti]
+						if old.recordedCallID == id && (old.Call == nil || !old.Call.HasResult || step.Call.HasResult) {
+							old.Call = step.Call
+						}
+					}
+				}
+			}
 			// A native command may add a recorded read/search classification to
 			// an earlier generic shell call. Keep its original full-input ref.
 			if step.Operation == "read" || step.Operation == "list" || step.Operation == "search" {

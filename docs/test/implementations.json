@@ -630,5 +630,45 @@
     "selectors": [
       "TestCompletedCodexTurnPreservesManualCompactReceipt"
     ]
+  },
+  "internal/transcript/tool_call_detail_test.go": {
+    "cases": [
+      "TCV-001",
+      "TCV-002"
+    ],
+    "selectors": [
+      "TestNativeCallDetailsAreLazyScopedAndRedacted",
+      "TestNativeCallMirrorPreservesOriginalInputAndResultReference",
+      "TestNativeCallMissingResultIsNotAnEmptyResult"
+    ]
+  },
+  "mobileapp/src/ui/toolPresentation.test.ts": {
+    "cases": [
+      "TCV-003"
+    ],
+    "selectors": [
+      "query details show named parameters, structured results, provenance and complete raw",
+      "command, file changes, waits, text/errors and missing/empty results stay distinct",
+      "full reads preserve original command and distinct native result references",
+      "large rendering pages disclose bounds and preserve all characters"
+    ]
+  },
+  "mobileapp/src/trace/TraceModal.toolCall.test.tsx": {
+    "cases": [
+      "TCV-004"
+    ],
+    "selectors": [
+      "Trace loads recorded query details and both Preview and Raw are useful",
+      "Chat reuses the same query details, failure retries and late reads retire on home change"
+    ]
+  },
+  "tests/web/tool-call-detail.test.cjs": {
+    "cases": [
+      "TCV-005"
+    ],
+    "selectors": [
+      "Typed query details in Chat and Trace ",
+      "Recorded query failure retries and large results page without losing full copy"
+    ]
   }
 }

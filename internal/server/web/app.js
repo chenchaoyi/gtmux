@@ -2383,34 +2383,34 @@
       steps.forEach(function (s, i) {
         var row = el('li', 'step-row');
         var op = activity.operation(s), key = 'step-' + stateKey + '-' + i;
-        var inspectable = !!(s.input || s.workdir || s.details_truncated);
+        var inspectable = !!(s.input || s.workdir || s.details_truncated || s.call);
         var details = el(inspectable ? 'details' : 'div', 'step-inspect'); if (inspectable) details.open = !!detailState[key];
         details.saveOpenState = function () { detailState[key] = details.open; };
         details.ontoggle = function () { if (details.isConnected) detailState[key] = details.open; };
         var summary = el(inspectable ? 'summary' : 'div', 'step-toggle' + (inspectable ? '' : ' step-static')); summary.dataset.chatFocus = key;
         summary.appendChild(activityIcon(op));
         var body = el('span', 'step-body');
-        body.appendChild(el('span', 'step-label', activity.label(op, lang)));
+        body.appendChild(el('span', 'step-label', s.call ? window.GtmuxTrace.callTitle(s) : activity.label(op, lang)));
         body.appendChild(el('span', 'step-detail' + (op === 'agent' || op === 'wait' ? ' step-prose' : ''), activity.preview(s, lang)));
         summary.appendChild(body); details.appendChild(summary);
         if (!inspectable) { row.appendChild(details); list.appendChild(row); return; }
-        var inspector = el('div', 'step-inspector'), pending = false, loaded = !s.details_truncated, formatted = true, rendered = false;
+        var inspector = el('div', 'step-inspector'), pending = false, loaded = !window.GtmuxTrace.toolDetailRefs(s).length, formatted = true, rendered = false;
         function renderInput(message) {
           rendered = true; inspector.replaceChildren();
           var meta = el('dl', 'step-meta'); meta.appendChild(el('dt', '', T('Tool', '工具'))); meta.appendChild(el('dd', 'step-name', s.title || 'tool'));
           if (s.workdir) { meta.appendChild(el('dt', '', T('Working directory', '工作目录'))); meta.appendChild(el('dd', '', s.workdir)); } inspector.appendChild(meta);
           var input = s.input || s.detail || '';
           var inputLabel = !s.input ? T('Recorded detail','已记录详情') : s.input_kind === 'changes' ? T('Recorded changes','已记录修改') : s.input_kind === 'code' ? T('Recorded code','已记录代码') : s.input_kind === 'command' ? T('Recorded command','已记录命令') : ['parameters','arguments'].includes(s.input_kind) ? T('Recorded parameters','已记录参数') : T('Recorded input','已记录输入');
-          var codePanel = codePanelEl(input, {hint: s.input_kind === 'code' || s.operation === 'code' ? 'javascript' : s.input_kind === 'command' ? 'shell' : s.input_kind,
+          var codePanel = s.call ? toolDetailsEl(s,false,!loaded) : codePanelEl(input, {hint: s.input_kind === 'code' || s.operation === 'code' ? 'javascript' : s.input_kind === 'command' ? 'shell' : s.input_kind,
             formatted: formatted, disabled: !loaded, label: inputLabel, focusKey: key + '-input'});
           inspector.appendChild(codePanel);
           if (message) { var notice = el('p', 'step-truncated', message); notice.setAttribute('role', 'status'); inspector.appendChild(notice); }
-          if (s.details_truncated && s.input_ref && inputScope && !pending) { var retry = el('button', 'step-load-full', T('Load full input', '读取完整输入')); retry.type = 'button'; retry.onclick = loadInput; inspector.appendChild(retry); }
+          if (!loaded && window.GtmuxTrace.toolDetailRefs(s).length && inputScope && !pending) { var retry = el('button', 'step-load-full', T('Load full input', '读取完整输入')); retry.type = 'button'; retry.onclick = loadInput; inspector.appendChild(retry); }
         }
         function loadInput() {
-          if (pending || loaded || !s.input_ref || !inputScope || !inputScope.session_id) return;
+          if (pending || loaded || !window.GtmuxTrace.toolDetailRefs(s).length || !inputScope || !inputScope.session_id) return;
           pending = true; renderInput(T('Loading full input…', '读取完整输入…'));
-          readToolInput(inputScope.session_id, inputScope.home_id || '', s.input_ref).then(function (full) { pending = false; if (!details.isConnected) return; s = full; loaded = true; renderInput(); }).catch(function () { pending = false; if (details.isConnected) renderInput(T('Could not load full input. Retry or refresh the conversation.', '未能读取完整输入，请重试或刷新会话。')); });
+          window.GtmuxTrace.loadToolDetails(s,function(ref){return readToolInput(inputScope.session_id,inputScope.home_id || '',ref);}).then(function (full) { pending = false; if (!details.isConnected) return; s = full; loaded = true; renderInput(); }).catch(function () { pending = false; if (details.isConnected) renderInput(T('Could not load full input. Retry or refresh the conversation.', '未能读取完整输入，请重试或刷新会话。')); });
         }
         function firstInput() { if(!rendered)renderInput(s.details_truncated && !s.input_ref ? T('Refresh this conversation after updating the server to read full input.', '更新服务端并刷新会话后可读取完整输入。') : ''); }
         summary.onclick = function () { if(!details.open)firstInput(); };
@@ -2424,6 +2424,26 @@
     return card;
   }
 
+  // Shared interpretation with RN; browser-only code creates safe text nodes.
+  function toolDetailsEl(step, raw, disabled) {
+    var model=window.GtmuxTrace, lang=ZH?'zh':'en', root=el('div','tool-call-details');
+    var sections=raw?[{id:'raw',label:T('Recorded content','原始记录'),source:model.callRaw(step),hint:'json'}]:model.callSections(step,lang);
+    sections.forEach(function(section) {
+      var part=el('section','call-section'), head=el('div','call-section-head'), body=el('div','call-section-body'), page=0;
+      part.dataset.callSection=section.id; head.appendChild(el('h4','',section.label));
+      if(section.hint!=='notice' && !disabled) head.appendChild(clipboardAction(T('Copy full ','复制完整')+section.label,'copy',section.source));
+      part.appendChild(head); part.appendChild(body); root.appendChild(part);
+      function draw() {
+        body.replaceChildren();
+        if(section.rows) { var rows=el('dl','call-parameters'); section.rows.forEach(function(row){rows.appendChild(el('dt','',row.label));rows.appendChild(el('dd','',row.value));}); body.appendChild(rows); return; }
+        if(section.hint==='notice') {body.appendChild(el('p','call-notice',section.source));return;}
+        var view=model.callPage(section.source,page);
+        body.appendChild(codePanelEl(view.source,{hint:section.hint,copy:false,allowFormat:!raw&&view.pages===1&&!section.verbatim,formatted:!raw&&view.pages===1&&!section.verbatim,embedded:section.id==='input',disabled:disabled}));
+        if(view.pages>1) {var nav=el('div','call-pages'), prev=el('button','','‹'), next=el('button','','›');prev.type=next.type='button';prev.setAttribute('aria-label',T('Previous page','上一页'));next.setAttribute('aria-label',T('Next page','下一页'));prev.disabled=view.page===0;next.disabled=view.page===view.pages-1;prev.onclick=function(){page--;draw();};next.onclick=function(){page++;draw();};nav.append(prev,el('span','',(view.page+1)+' / '+view.pages),next);body.appendChild(nav);}
+      } draw();
+    }); return root;
+  }
+
   function formatToolInput(input, step) {
     var hint = step.input_kind === 'code' || step.operation === 'code' ? 'javascript' : ['parameters', 'arguments'].includes(step.input_kind) ? 'json' : step.input_kind;
     return window.GtmuxCodeFormat.formatCode(input, hint);
@@ -2434,7 +2454,7 @@
     if (fullInputCache.has(key)) return fullInputCache.get(key);
     var request = api('/api/tool-input?session_id=' + encodeURIComponent(session) + '&home_id=' + encodeURIComponent(home) + '&ref=' + encodeURIComponent(ref)).then(function (r) {
       if (!r.ok || token !== credential) throw new Error('full input unavailable'); return r.json();
-    }).then(function (step) { if (step.input === undefined) step.input = ''; if (step.input_ref !== ref || step.details_truncated || typeof step.input !== 'string') throw new Error('incomplete input'); if(step.input.length > 256000) fullInputCache.delete(key); return step; }).catch(function (e) { fullInputCache.delete(key); throw e; });
+    }).then(function (step) { if (step.input === undefined) step.input = ''; if (step.input_ref !== ref || step.details_truncated || typeof step.input !== 'string') throw new Error('incomplete input'); if(step.input.length + (step.call && ((step.call.arguments || '').length + (step.call.result || '').length) || 0) > 256000) fullInputCache.delete(key); return step; }).catch(function (e) { fullInputCache.delete(key); throw e; });
     fullInputCache.set(key, request); while (fullInputCache.size > 8) fullInputCache.delete(fullInputCache.keys().next().value); return request;
   }
   function activityIcon(operation) {
@@ -3040,7 +3060,7 @@
         var from = event.kind === 'user' ? event.from : null;
         var source = from || Object.assign({}, agent, {agent:event.agent, session_id:event.session, profileTurn:true});
         return speakerAvatar(event.kind === 'user' ? from ? from.kind : 'user' : 'agent', source, event.kind === 'user' ? from ? senderAvatarEl(from,28) : userAvatarEl(28) : avatarEl(source,28,false));
-      }, formatTime: sepTime, toolInput: readToolInput, formatCode: formatToolInput, renderCode: renderCode, codePanel: codePanelEl, history: function (before, agent) {
+      }, formatTime: sepTime, toolInput: readToolInput, toolDetails: toolDetailsEl, formatCode: formatToolInput, renderCode: renderCode, codePanel: codePanelEl, history: function (before, agent) {
         var epoch = viewEpoch, credential = token;
         var path = hasPane(agent) ? '/api/transcript?id=' + encodeURIComponent(agent.pane_id) : '/api/session/transcript' + conversationQuery(agent);
         return api(path + '&context=1&before=' + encodeURIComponent(before)).then(function(r) {

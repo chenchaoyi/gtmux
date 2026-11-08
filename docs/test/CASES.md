@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1039 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1043 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
-| L1 · Unit / pure logic | 3728 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 1921 | [L2.csv](cases/L2.csv) |
+| L1 · Unit / pure logic | 3731 | [L1.csv](cases/L1.csv) |
+| L2 · Component / contract | 1929 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 87 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 93 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 12 | [M.csv](cases/M.csv) |
@@ -78,6 +78,11 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | CP-004 | Browser consumes the same synthetic expectation fixture as RN; granting no access does not expose content and no test sends real input. |
 | TD-006 | Known test documentation is policy-only; mixed Go test changes still select complete Go; unknown metadata still selects all. |
 | DG-004 | Rejected verification never calls global device setup; successful verification calls setup exactly once afterwards. Existing DG-002 regressions cover the wrapper policy. |
+| TCV-001 | Polls contain only bounded selected inputs and call metadata, never result bodies; owner reads recover recorded arguments/results, reject rewritten/foreign/oversized records and redact structured credentials. |
+| TCV-002 | One call remains, original input/ref stays intact, result and status remain available by exact native ref; unrelated IDs are distinct. |
+| TCV-003 | Queries expose named parameters and readable structured/text results; commands keep original source, files retain changes, unknown tools have factual fallback; pending/failed/empty/unrecorded are distinct, raw contains recorded sanitized fields and does not silently truncate. |
+| TCV-004 | Tool-specific name, provider/status/duration, parameters/results are visible; no false summary-only warning, stale responses cannot cross sessions, original source remains verbatim, copy is complete and disabled while incomplete. |
+| TCV-005 | Both surfaces show the same facts and nonempty recorded values; controls remain reachable, no horizontal document overflow or console errors, pending/error states are actionable and old-server fallback remains meaningful. |
 | UR-001 | The 34-second HTTP-200-equivalent report is shown; the stalled read is classified as timeout, the next valid report is shown, and the late old report cannot overwrite it. |
 | UR-002 | Valid empty reports remain data, 404 is unsupported, other failures throw typed causes; no failure becomes zero usage or a fabricated report. |
 | UR-003 | Loading and empty are distinct; retry is available only where it can help; prior usage remains visibly labelled; technical details begin folded; actions and alerts have accessible roles/labels. |

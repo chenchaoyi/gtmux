@@ -6,6 +6,7 @@ import {
   activityLabel,
   activityPreview,
 } from '../ui/activity';
+import { callTitle } from '../ui/toolPresentation';
 import { tracePreview, tracePreviewSource } from './timeline';
 
 export const traceKindLabels = {
@@ -25,6 +26,10 @@ export function recordedStep(event: TraceEvent) {
   const step = event.step as TraceStep;
   return {
     kind: 'tool',
+    call: step.call,
+    workdir: step.workdir,
+    input_ref: step.inputRef,
+    details_truncated: step.truncated,
     title: event.title,
     input: step.input,
     detail: step.summary,
@@ -35,7 +40,9 @@ export function recordedStep(event: TraceEvent) {
 export function traceEventLabel(event: TraceEvent, lang: 'en' | 'zh') {
   if (event.kind === 'context') return contextLabel(event, lang);
   return event.kind === 'tool'
-    ? activityLabel(activityOperation(recordedStep(event)), lang)
+    ? event.step?.call
+      ? callTitle(recordedStep(event))
+      : activityLabel(activityOperation(recordedStep(event)), lang)
     : event.kind === 'user'
     ? event.from?.label || (lang === 'zh' ? '请求' : 'Request')
     : lang === 'zh'

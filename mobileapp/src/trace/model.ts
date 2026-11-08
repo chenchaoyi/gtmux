@@ -1,5 +1,11 @@
 // One public-transcript index for native readers and the generated browser asset.
-import type { TranscriptSender, TranscriptTurn } from '../api/client';
+import type {
+  TranscriptToolCall,
+  TranscriptSender,
+  TranscriptTurn,
+} from '../api/client';
+
+import { callFacts } from '../ui/toolPresentation';
 
 export type TraceKind = 'user' | 'assistant' | 'tool' | 'context';
 export interface TraceContext {
@@ -9,6 +15,7 @@ export interface TraceContext {
   agent?: string;
 }
 export interface TraceStep {
+  call?: TranscriptToolCall;
   summary: string;
   input: string;
   inputKind: string;
@@ -67,13 +74,31 @@ function digest(value: string): string {
 /* eslint-enable no-bitwise */
 // Persist only a real session and source identity, never a loaded row index or
 // streaming reply body. Legacy records without either remain navigable, unmarked.
-export function turnBookmarkKey(value: unknown, context: TraceContext = {}): string | undefined {
-  const turn=object(value);if(!turn)return undefined;
-  const session=string(turn.session_id)||string(context.session_id);
-  const record=string(turn.record_id), time=string(turn.time);
-  const ordinal=Number.isSafeInteger(turn.turn_ordinal)&&(turn.turn_ordinal as number)>0 ? turn.turn_ordinal : null;
-  if(!session||!record&&!time&&!ordinal)return undefined;
-  return digest(JSON.stringify([string(context.home_id),session,record?['record',record]:time?['time',time]:['ordinal',ordinal]]));
+export function turnBookmarkKey(
+  value: unknown,
+  context: TraceContext = {},
+): string | undefined {
+  const turn = object(value);
+  if (!turn) return undefined;
+  const session = string(turn.session_id) || string(context.session_id);
+  const record = string(turn.record_id),
+    time = string(turn.time);
+  const ordinal =
+    Number.isSafeInteger(turn.turn_ordinal) && (turn.turn_ordinal as number) > 0
+      ? turn.turn_ordinal
+      : null;
+  if (!session || (!record && !time && !ordinal)) return undefined;
+  return digest(
+    JSON.stringify([
+      string(context.home_id),
+      session,
+      record
+        ? ['record', record]
+        : time
+        ? ['time', time]
+        : ['ordinal', ordinal],
+    ]),
+  );
 }
 export function agentName(value: unknown): string {
   const name = string(value).trim();
@@ -256,6 +281,7 @@ export function build(
             operation: string(step.operation),
             truncated: step.details_truncated === true,
             inputRef: string(step.input_ref),
+            call: object(step.call) as TranscriptToolCall | undefined,
           },
         );
       });
@@ -336,6 +362,13 @@ export function overviewFacts(
     { label: 'Agent', value: event.agent },
     { label: zh ? '会话' : 'Session', value: event.session },
   ];
+  if (event.step?.call)
+    facts.unshift(
+      ...callFacts(
+        { kind: 'tool', title: event.title, call: event.step.call },
+        lang,
+      ),
+    );
   if (event.context?.time)
     facts.push({
       label: zh ? '记录时间' : 'Recorded at',
@@ -531,7 +564,11 @@ export function mergeHistory(
   if (!held.length) return { turns: latest, gap: false };
   if (!latest.length) return { turns: held, gap: false };
   const key = (t: TranscriptTurn) =>
-    t.record_id ? `${t.session_id || ''}\x00${t.record_id}\x00${t.turn_ordinal || ''}\x00${digest((t.time || '')+'\x00'+t.prompt)}` : '';
+    t.record_id
+      ? `${t.session_id || ''}\x00${t.record_id}\x00${
+          t.turn_ordinal || ''
+        }\x00${digest((t.time || '') + '\x00' + t.prompt)}`
+      : '';
   const keys = new Set(latest.map(key).filter(Boolean));
   const overlap = held.findIndex(t => keys.has(key(t)));
   if (overlap >= 0)
