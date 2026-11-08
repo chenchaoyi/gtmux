@@ -41,6 +41,7 @@ MAP-7bf0b97f95d1,L2,reviewed implementation,internal/hook/codex_completed_turn_t
 MAP-6752a622a3e4,L2,reviewed implementation,internal/hook/codex_completed_turn_test.go,72,reviewed-selector,TestCompletedCodexTurnKeepsLegacyAndUncertainCallbacks,False,"CET-004,CET-005"
 MAP-2dd42a3caeb8,L2,reviewed implementation,internal/hook/codex_completed_turn_test.go,114,reviewed-selector,TestCodexContinuationPreservesActiveStart,False,"CET-004,CET-005"
 MAP-f1f0b5ad2d4d,L2,reviewed implementation,internal/hook/codex_completed_turn_test.go,147,reviewed-selector,TestCompletedCodexTurnPreservesManualCompactReceipt,False,"CET-004,CET-005,CET-006"
+MAP-cce8e70a6d32,L2,reviewed implementation,internal/hook/codex_manual_compact_test.go,11,reviewed-selector,TestCompletedCodexTurnPreservesManualCompactReceipt,False,CET-006
 MAP-d6cd13ff80b3,L2,Go core / CLI / server,internal/hq/hq_test.go,194,reviewed-selector,TestStorageBoundaryUpgradePreservesLocalRulesAndExistingRecords,False,STOR-002
 MAP-a9132845f95d,L2,reviewed implementation,internal/hqworkspace/phase1_test.go,45,reviewed-selector,TestPhase1ReportsPreserveCompletedAndQuestion,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
 MAP-8d3525e25015,L2,reviewed implementation,internal/hqworkspace/phase1_test.go,82,reviewed-selector,TestPhase1TransitionCASAndQuestionIdentity,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"

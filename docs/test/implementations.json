@@ -615,13 +615,19 @@
   "internal/hook/codex_completed_turn_test.go": {
     "cases": [
       "CET-004",
-      "CET-005",
-      "CET-006"
+      "CET-005"
     ],
     "selectors": [
       "TestCompletedCodexTurnRejectsExplicitLateRearm",
       "TestCompletedCodexTurnKeepsLegacyAndUncertainCallbacks",
-      "TestCodexContinuationPreservesActiveStart",
+      "TestCodexContinuationPreservesActiveStart"
+    ]
+  },
+  "internal/hook/codex_manual_compact_test.go": {
+    "cases": [
+      "CET-006"
+    ],
+    "selectors": [
       "TestCompletedCodexTurnPreservesManualCompactReceipt"
     ]
   }
