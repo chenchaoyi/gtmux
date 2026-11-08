@@ -2,10 +2,10 @@
   "id": "hq-state-phase1-20261108",
   "status": "reviewed",
   "review": {
-    "reviewer": "Codex implementation owner (self-review; independent code review pending HQ)",
+    "reviewer": "Codex continuation implementation owner (self-review; independent F1 finding supplied by review-hq-state)",
     "date": "2026-11-08",
-    "decision": "Proceed with P0 implementation",
-    "notes": "Reviewed against approved DESIGN P0 and VALIDATION 2,7-12,16-18,21-24,26-27,31-32. All fixtures use explicit temporary Store directories; process/service calls replaced with bounded synthetic adapters. No real HQ state, user authorization, message delivery, deployment or historical correction. Tests assert persisted observable state/receipts and failures, not mirrored branches. Full goal/attempt model and device acceptance excluded."
+    "decision": "Proceed with the bounded F1 cursor correction and deterministic regressions; independent delta review required before push",
+    "notes": "Follow-up design review is scoped to HQP1-006: an empty event read cannot advance from a later sequence sample. Correct the existing empty-gap expectation to keep the observed cursor; other case definitions are unchanged. The original design/implementation commits remain intact. New deterministic source interleavings, activation, retention/filtering, page boundary, duplicate and Store-reopen expectations are separately recorded in hq-state-cursor-f1-20261108.json. No device, deployed service, real HQ data, source epoch reset or historical recovery claim."
   },
   "cases": [
     {
@@ -201,5 +201,5 @@
       ]
     }
   ],
-  "seal": "66c18b0dd3e2cced5a86b2b4ebeeac3cc479f9d0fdd98f7febcadc1da1618019"
+  "seal": "b00a81f2ba3ca2455bb1c8e6254238190582c3c3876ba5d5ed4b026e181d3473"
 }
