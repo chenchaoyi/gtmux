@@ -52,10 +52,10 @@ func (s *Store) Update(id, title, state, assessment string, revision uint64, at 
 			m.Title = title
 		}
 		if state != "" {
-			m.State = state
-			if state != "needs-input" {
-				m.UserInput = nil
+			if err := validateTransition(m, state, revision); err != nil {
+				return err
 			}
+			m.State = state
 		}
 		if assessment != "" {
 			m.Assessment = assessment

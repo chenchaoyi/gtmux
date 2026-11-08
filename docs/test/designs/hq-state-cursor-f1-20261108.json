@@ -1,0 +1,73 @@
+{
+  "id": "hq-state-cursor-f1-20261108",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex continuation implementation owner (self-review; based on independent P1/F1 evidence at exact 9062f9a2)",
+    "date": "2026-11-08",
+    "decision": "Implement deterministic L2 regressions before the smallest production correction; obtain independent delta review before push",
+    "notes": "Inspected production ingestWorkspaceObservations, events.ReadSince, Store.Ingest/ActivateObservations and the independent retained-event counterexample. Source adapters impose an explicit empty-snapshot then append then sequence-check ordering; no sleep or scheduler lottery. Tests execute the real app ingester and on-disk Store, not a copied algorithm. All adapters restored and all Stores under task temporary storage. This proves the consumer contract under a valid read/append interleaving, not full production event-log scheduling or crash/fsync behavior."
+  },
+  "cases": [
+    {
+      "id": "HQP1-F1-001",
+      "layer": "L2",
+      "description": "An event retained after an empty scan is not skipped by a later sequence sample.",
+      "setup": "Temporary Store with exact synthetic conversation association and events cursor 10. Source adapter snapshots empty rows, then appends sequence 11 before its gap check. Run separate Stop, StopFailure and instruction UserPromptSubmit cases.",
+      "action": "Execute the production ingester, reopen the persisted Store and read the retained tail; ingest again and repeat after another reopen.",
+      "expected": "The empty read leaves cursor 10 and persists the gap notice. The next read durably queues exact event-11 with its own type/body/conversation, then cursor 11. Repeated reads leave the database byte-for-byte unchanged. Old code must fail without source mutation or sleeps.",
+      "planned_files": [
+        "internal/app/hqworkspace_cursor_test.go"
+      ],
+      "surfaces": [
+        "Go core",
+        "HQ reconciliation ingestion"
+      ]
+    },
+    {
+      "id": "HQP1-F1-002",
+      "layer": "L2",
+      "description": "Prospective activation records zero as an initialized cursor and never skips a new event after the initial boundary sample.",
+      "setup": "Fresh isolated Store; source initially empty at sequence 0 or historical sequence 10. Adapter injects the first new eligible record immediately after the activation boundary is sampled.",
+      "action": "Activate prospectively, reopen Store, then ingest the retained next event and repeat.",
+      "expected": "Activation does not ingest history and writes an explicit events cursor even at zero. The new event at boundary+1 is queued with its actual identity, persists across reopen, and is never treated as historical on a second activation.",
+      "planned_files": [
+        "internal/app/hqworkspace_cursor_test.go"
+      ],
+      "surfaces": [
+        "Go core",
+        "HQ reconciliation ingestion"
+      ]
+    },
+    {
+      "id": "HQP1-F1-003",
+      "layer": "L2",
+      "description": "An empty retained tail with a higher counter records a gap without inventing consumption.",
+      "setup": "Activated Store cursor 10, counter 15 and no retained records; later a real retained eligible event 16 becomes visible.",
+      "action": "Ingest the empty gap twice across a Store reopen; later ingest the real retained tail with its leading gap.",
+      "expected": "The empty gap keeps cursor 10 and one stable gap record; retry changes no bytes. Actual retained event 16 is queued atomically with cursor 16, and neither gaps nor duplicate reads erase it. Source epoch-reset repair remains out of scope.",
+      "planned_files": [
+        "internal/app/hqworkspace_cursor_test.go"
+      ],
+      "surfaces": [
+        "Go core",
+        "HQ reconciliation ingestion"
+      ]
+    },
+    {
+      "id": "HQP1-F1-004",
+      "layer": "L2",
+      "description": "Filtered records and the 500-row page limit advance only through the processed source page.",
+      "setup": "Synthetic ordered 501-record retained tail after cursor 10. The first page includes denied-session Stop, non-instruction prompt, unregistered conversation and irrelevant records; the eligible associated Stop is the 501st record.",
+      "action": "Ingest first page, reopen Store, ingest remaining tail, then repeat.",
+      "expected": "First pass advances to 510, creates no prohibited or unregistered observations and does not claim sequence 511. Next pass queues event-511 and advances to 511; repeat has identical stored bytes. No policy broadening or hidden replay occurs.",
+      "planned_files": [
+        "internal/app/hqworkspace_cursor_test.go"
+      ],
+      "surfaces": [
+        "Go core",
+        "HQ reconciliation ingestion"
+      ]
+    }
+  ],
+  "seal": "fbfda0d1cc7771659db6a7545e09fd3ec9da95c589273edb4919d77434b31aab"
+}

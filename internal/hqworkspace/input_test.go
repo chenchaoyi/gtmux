@@ -37,7 +37,7 @@ func TestHumanQuestionRemainsSeparateFromReportsAndGoal(t *testing.T) {
 	if e = s.ClearInput("goal-id", "wrong-id", "clear-id", "Verified synthetic receipt", 0, 108); e == nil {
 		t.Fatal("stale question cleared")
 	}
-	if e = s.ClearInput("goal-id", q.ID, "clear-id", "Verified synthetic receipt", 0, 108); e != nil {
+	if e = s.ClearInput("goal-id", q.ID, "clear-id", "Verified synthetic receipt", d.Matters["goal-id"].Revision, 108); e != nil {
 		t.Fatal(e)
 	}
 	d, _ = s.Read()

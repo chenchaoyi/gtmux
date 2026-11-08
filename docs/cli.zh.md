@@ -771,6 +771,30 @@ JSON
 问题，不把持续目标直接标完成。用户的 `send` 可用 `reply_to` 关联当前问题；
 选择选项仅准备草稿，已保存答复不代表工作已执行。见[工作台阅读设计](design/workspace-reading.zh.md)。
 
+报告保存内容并返回 `projection:"pending-reconciliation"`；其中的 `state` 只是提案，
+不会直接改变生命周期。可带 `revision` 标明报告针对的事项版本。显式 `update` 状态
+必须带当前 revision，且不能顺手清问题：HQ 用 `clear-input` 提交精确问题 ID、当前
+revision 和核实依据。旧客户端仍可用当前问题的不可复用 ID 作答；`send` 也支持
+`request_revision`。
+
+事件读取为空时保留原游标，即使序号计数因并发追加而增加，也不会越过未读取的结果。只有本次实际处理的来源条目才能推进游标；来源缺口提醒不代表结果已被消费。
+
+HQ 先读 `gtmux hq workspace reconcile --json`，再通过 `act` 的 `op:"claim"` 和
+`observation_id` 领取。提交 `op:"assess"` 时提供唯一 `id`、`observation_id`、领取
+回执的 `generation`、精确 `matter`、当前 `revision`、`decision` 和说明依据/下一
+动作的 `body`。结论可为 `noted`、`transition`（另带 `state`）、`deferred`（另带
+未来 Unix 秒数 `next_check`）或 `conflict`。`dry_run:true` 只验证。只有目标版本
+匹配的观测能转移状态；旧版或未带版本的结果只作证据，重新核实后另行显式 update。
+读事件或推进已读水位不会清掉核对责任。租约五分钟到期，新 HQ 可重新领取，不重跑任务。
+
+serve 每 30 秒检查已关联工作台会话的新 Stop/错误/指令事件及新 relay 请求，待核
+责任到期时提醒 HQ。首次启用从当前时点开始，不批量导入历史结果。来源断档和归属歧义
+保留为待核事实；原始 Stop/relay 没有目标版本，不能直接转移事项。核对不投递指令、
+不代用户批准、不执行任务。存储快照在下一次写入时从 schema 1 升到 2，对外读取仍为
+schema 1，兼容现有客户端。旧二进制会拒绝 schema 2；回退时保留新快照并使用兼容版本，
+不能用旧快照覆盖。备份保留观测和处理回执。
+
+
 ## `gtmux digest` + `gtmux hq`：HQ，也就是中控会话
 
 `gtmux digest` 以表格列出各 agent 的目标、最近回复、等待原因和用量：

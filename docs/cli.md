@@ -871,6 +871,36 @@ the question without completing its goal. A user `send` may include `reply_to`
 for the current question. A choice only prepares a draft; saving a reply never
 means the requested work ran. See [workspace reading](design/workspace-reading.md).
 
+Reports save content and return `projection:"pending-reconciliation"`; an optional
+`state` is a proposal, never a lifecycle write. Include `revision` to bind a report
+to the version you observed. Explicit `update` state requires the current matter
+revision. It cannot clear a human request: use HQ-only `clear-input` with the exact
+question ID, current revision and resolution receipt. Legacy replies with an exact,
+current question ID still work; `send` may additionally provide `request_revision`.
+
+An empty event read keeps its existing cursor, even if the sequence counter increases concurrently. Only source rows actually processed advance that checkpoint; a source-gap notice does not consume unread results.
+
+HQ reads `gtmux hq workspace reconcile --json`, then uses `act` with `op:"claim"`
+and `observation_id`. Submit `op:"assess"` with a unique `id`, `observation_id`,
+returned `generation`, exact `matter` and current `revision`, `decision` and a
+concise evidence/next-action `body`. Decisions are `noted`, `transition` (also
+`state`), `deferred` (also future Unix-seconds `next_check`) or `conflict`.
+`dry_run:true` validates without writing. Only version-matched observations can
+transition; old or unversioned results remain evidence for a separately verified
+explicit update. Reading/acknowledging events does not discharge this queue.
+Leases expire after five minutes; replacement HQs reclaim them, never replay tasks.
+
+Serve checks new Stop/error/instruction events for known workspace sessions and
+new relay requests every 30 seconds, reminding HQ while assessments remain due.
+Activation is prospective, without importing historical results. Source gaps and
+ambiguous associations remain explicit. Raw Stop/relay records have no goal version
+and cannot directly transition a matter. No reconciliation operation delivers an
+instruction, approves a permission or executes a task. The durable snapshot upgrades
+from schema 1 to 2 on the next write; read responses retain schema 1 for existing
+clients. Old binaries refuse schema 2: do not roll back by replacing the snapshot;
+retain it and run a compatible binary. Backups retain observations and receipts.
+
+
 ## `gtmux digest` + `gtmux hq`: HQ, the supervisor session
 
 `gtmux digest` lists agent goals, recent replies, wait reasons and usage in a table:

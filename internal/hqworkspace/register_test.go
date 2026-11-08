@@ -55,7 +55,8 @@ func TestRegisterRetryAfterProgressPreservesCurrentMatterAndRejectsChangedIntent
 	if _, err := s.Register("goal-one", "Original", "Verified assignment", "open", o, 100); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.Update("goal-one", "Renamed", "needs-input", "New assessment", 0, 101); err != nil {
+	current, _ := s.Read()
+	if err := s.Update("goal-one", "Renamed", "needs-input", "New assessment", current.Matters["goal-one"].Revision, 101); err != nil {
 		t.Fatal(err)
 	}
 	before, _ := s.Read()

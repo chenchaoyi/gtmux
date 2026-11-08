@@ -1,0 +1,205 @@
+{
+  "id": "hq-state-phase1-20261108",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex continuation implementation owner (self-review; independent F1 finding supplied by review-hq-state)",
+    "date": "2026-11-08",
+    "decision": "Proceed with the bounded F1 cursor correction and deterministic regressions; independent delta review required before push",
+    "notes": "Follow-up design review is scoped to HQP1-006: an empty event read cannot advance from a later sequence sample. Correct the existing empty-gap expectation to keep the observed cursor; other case definitions are unchanged. The original design/implementation commits remain intact. New deterministic source interleavings, activation, retention/filtering, page boundary, duplicate and Store-reopen expectations are separately recorded in hq-state-cursor-f1-20261108.json. No device, deployed service, real HQ data, source epoch reset or historical recovery claim."
+  },
+  "cases": [
+    {
+      "id": "HQP1-001",
+      "layer": "L2",
+      "description": "Late/duplicate reports cannot reopen completed matters or erase the current question; observation saved exactly once.",
+      "setup": "Explicit t.TempDir Store with synthetic identities/messages, reopen the same on-disk directory, injected source records and clock. Assert actual records.json path is under test temporary storage.",
+      "action": "Exercise public Store and CLI adapter APIs including duplicate/conflicting writes, late inputs, restart and lease turnover.",
+      "expected": "Late/duplicate reports cannot reopen completed matters or erase the current question; observation saved exactly once.",
+      "planned_files": [
+        "internal/hqworkspace/phase1_test.go",
+        "internal/hqworkspace/input_test.go",
+        "internal/hqworkspace/workspace_test.go",
+        "internal/app/hqworkspace_reconcile_test.go",
+        "internal/hq/workspace_playbook_test.go",
+        "internal/hq/playbook_version_test.go",
+        "internal/hqworkspace/register_test.go",
+        "internal/app/hqworkspace_test.go",
+        "internal/hqworkspace/restore_validation_test.go"
+      ],
+      "surfaces": [
+        "Go core",
+        "CLI",
+        "HQ workspace"
+      ]
+    },
+    {
+      "id": "HQP1-002",
+      "layer": "L2",
+      "description": "State transitions require the current matter revision; wrong targets, stale and unversioned writes fail visibly; explicit current user transitions work.",
+      "setup": "Explicit t.TempDir Store with synthetic identities/messages, reopen the same on-disk directory, injected source records and clock. Assert actual records.json path is under test temporary storage.",
+      "action": "Exercise public Store and CLI adapter APIs including duplicate/conflicting writes, late inputs, restart and lease turnover.",
+      "expected": "State transitions require the current matter revision; wrong targets, stale and unversioned writes fail visibly; explicit current user transitions work.",
+      "planned_files": [
+        "internal/hqworkspace/phase1_test.go",
+        "internal/hqworkspace/input_test.go",
+        "internal/hqworkspace/workspace_test.go",
+        "internal/app/hqworkspace_reconcile_test.go",
+        "internal/hq/workspace_playbook_test.go",
+        "internal/hq/playbook_version_test.go",
+        "internal/hqworkspace/register_test.go",
+        "internal/app/hqworkspace_test.go",
+        "internal/hqworkspace/restore_validation_test.go"
+      ],
+      "surfaces": [
+        "Go core",
+        "CLI",
+        "HQ workspace"
+      ]
+    },
+    {
+      "id": "HQP1-003",
+      "layer": "L2",
+      "description": "Question resolution matches immutable question identity and current revision; old replies cannot remove newer questions; legacy exact-ID replies remain supported.",
+      "setup": "Explicit t.TempDir Store with synthetic identities/messages, reopen the same on-disk directory, injected source records and clock. Assert actual records.json path is under test temporary storage.",
+      "action": "Exercise public Store and CLI adapter APIs including duplicate/conflicting writes, late inputs, restart and lease turnover.",
+      "expected": "Question resolution matches immutable question identity and current revision; old replies cannot remove newer questions; legacy exact-ID replies remain supported.",
+      "planned_files": [
+        "internal/hqworkspace/phase1_test.go",
+        "internal/hqworkspace/input_test.go",
+        "internal/hqworkspace/workspace_test.go",
+        "internal/app/hqworkspace_reconcile_test.go",
+        "internal/hq/workspace_playbook_test.go",
+        "internal/hq/playbook_version_test.go",
+        "internal/hqworkspace/register_test.go",
+        "internal/app/hqworkspace_test.go",
+        "internal/hqworkspace/restore_validation_test.go"
+      ],
+      "surfaces": [
+        "Go core",
+        "CLI",
+        "HQ workspace"
+      ]
+    },
+    {
+      "id": "HQP1-004",
+      "layer": "L2",
+      "description": "Durable queue survives Store reopen and event-read watermark; expired lease can be reclaimed and old generation cannot assess.",
+      "setup": "Explicit t.TempDir Store with synthetic identities/messages, reopen the same on-disk directory, injected source records and clock. Assert actual records.json path is under test temporary storage.",
+      "action": "Exercise public Store and CLI adapter APIs including duplicate/conflicting writes, late inputs, restart and lease turnover.",
+      "expected": "Durable queue survives Store reopen and event-read watermark; expired lease can be reclaimed and old generation cannot assess.",
+      "planned_files": [
+        "internal/hqworkspace/phase1_test.go",
+        "internal/hqworkspace/input_test.go",
+        "internal/hqworkspace/workspace_test.go",
+        "internal/app/hqworkspace_reconcile_test.go",
+        "internal/hq/workspace_playbook_test.go",
+        "internal/hq/playbook_version_test.go",
+        "internal/hqworkspace/register_test.go",
+        "internal/app/hqworkspace_test.go",
+        "internal/hqworkspace/restore_validation_test.go"
+      ],
+      "surfaces": [
+        "Go core",
+        "CLI",
+        "HQ workspace"
+      ]
+    },
+    {
+      "id": "HQP1-005",
+      "layer": "L2",
+      "description": "Assessment receipt and projection commit together; repeated command converges, changed payload conflicts; dry-run writes nothing and no instructions are replayed.",
+      "setup": "Explicit t.TempDir Store with synthetic identities/messages, reopen the same on-disk directory, injected source records and clock. Assert actual records.json path is under test temporary storage.",
+      "action": "Exercise public Store and CLI adapter APIs including duplicate/conflicting writes, late inputs, restart and lease turnover.",
+      "expected": "Assessment receipt and projection commit together; repeated command converges, changed payload conflicts; dry-run writes nothing and no instructions are replayed.",
+      "planned_files": [
+        "internal/hqworkspace/phase1_test.go",
+        "internal/hqworkspace/input_test.go",
+        "internal/hqworkspace/workspace_test.go",
+        "internal/app/hqworkspace_reconcile_test.go",
+        "internal/hq/workspace_playbook_test.go",
+        "internal/hq/playbook_version_test.go",
+        "internal/hqworkspace/register_test.go",
+        "internal/app/hqworkspace_test.go",
+        "internal/hqworkspace/restore_validation_test.go"
+      ],
+      "surfaces": [
+        "Go core",
+        "CLI",
+        "HQ workspace"
+      ]
+    },
+    {
+      "id": "HQP1-006",
+      "layer": "L2",
+      "description": "Source ingestion uses exact conversation/time attribution, records ambiguous/unassigned observations and source gaps; cursor advances only with durable inbox.",
+      "setup": "Explicit t.TempDir Store with synthetic identities/messages, reopen the same on-disk directory, injected source records and clock. Assert actual records.json path is under test temporary storage.",
+      "action": "Exercise public Store and CLI adapter APIs including duplicate/conflicting writes, late inputs, restart and lease turnover.",
+      "expected": "Source ingestion uses exact conversation/time attribution, records ambiguous/unassigned observations and source gaps; cursor advances only with durable inbox.",
+      "planned_files": [
+        "internal/hqworkspace/phase1_test.go",
+        "internal/hqworkspace/input_test.go",
+        "internal/hqworkspace/workspace_test.go",
+        "internal/app/hqworkspace_reconcile_test.go",
+        "internal/hq/workspace_playbook_test.go",
+        "internal/hq/playbook_version_test.go",
+        "internal/hqworkspace/register_test.go",
+        "internal/app/hqworkspace_test.go",
+        "internal/hqworkspace/restore_validation_test.go"
+      ],
+      "surfaces": [
+        "Go core",
+        "CLI",
+        "HQ workspace"
+      ]
+    },
+    {
+      "id": "HQP1-007",
+      "layer": "L2",
+      "description": "CLI operations enforce HQ authority and expose pending reconciliation; periodic ingestion/wake is independent from delivery and restart-safe.",
+      "setup": "Explicit t.TempDir Store with synthetic identities/messages, reopen the same on-disk directory, injected source records and clock. Assert actual records.json path is under test temporary storage.",
+      "action": "Exercise public Store and CLI adapter APIs including duplicate/conflicting writes, late inputs, restart and lease turnover.",
+      "expected": "CLI operations enforce HQ authority and expose pending reconciliation; periodic ingestion/wake is independent from delivery and restart-safe.",
+      "planned_files": [
+        "internal/hqworkspace/phase1_test.go",
+        "internal/hqworkspace/input_test.go",
+        "internal/hqworkspace/workspace_test.go",
+        "internal/app/hqworkspace_reconcile_test.go",
+        "internal/hq/workspace_playbook_test.go",
+        "internal/hq/playbook_version_test.go",
+        "internal/hqworkspace/register_test.go",
+        "internal/app/hqworkspace_test.go",
+        "internal/hqworkspace/restore_validation_test.go"
+      ],
+      "surfaces": [
+        "Go core",
+        "CLI",
+        "HQ workspace"
+      ]
+    },
+    {
+      "id": "HQP1-008",
+      "layer": "L2",
+      "description": "Schema 1 reads migrate without invented history, schema 2 prevents old writer loss, and seeded bilingual playbook explains safe processing.",
+      "setup": "Explicit t.TempDir Store with synthetic identities/messages, reopen the same on-disk directory, injected source records and clock. Assert actual records.json path is under test temporary storage.",
+      "action": "Exercise public Store and CLI adapter APIs including duplicate/conflicting writes, late inputs, restart and lease turnover.",
+      "expected": "Schema 1 reads migrate without invented history, schema 2 prevents old writer loss, and seeded bilingual playbook explains safe processing.",
+      "planned_files": [
+        "internal/hqworkspace/phase1_test.go",
+        "internal/hqworkspace/input_test.go",
+        "internal/hqworkspace/workspace_test.go",
+        "internal/app/hqworkspace_reconcile_test.go",
+        "internal/hq/workspace_playbook_test.go",
+        "internal/hq/playbook_version_test.go",
+        "internal/hqworkspace/register_test.go",
+        "internal/app/hqworkspace_test.go",
+        "internal/hqworkspace/restore_validation_test.go"
+      ],
+      "surfaces": [
+        "Go core",
+        "CLI",
+        "HQ workspace"
+      ]
+    }
+  ],
+  "seal": "b00a81f2ba3ca2455bb1c8e6254238190582c3c3876ba5d5ed4b026e181d3473"
+}

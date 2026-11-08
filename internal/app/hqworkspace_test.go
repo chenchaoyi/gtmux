@@ -174,7 +174,10 @@ func TestSpawnMatterValidationBeforeAnyLaunch(t *testing.T) {
 	if err := validateSpawnMatter(s, "matter-a"); err != nil {
 		t.Fatal(err)
 	}
-	_ = s.Update("matter-a", "", "closed", "", 0, 101)
+	current, _ := s.Read()
+	if err := s.Update("matter-a", "", "closed", "", current.Matters["matter-a"].Revision, 101); err != nil {
+		t.Fatal(err)
+	}
 	if err := validateSpawnMatter(s, "matter-a"); err == nil {
 		t.Fatal("closed goal accepted")
 	}

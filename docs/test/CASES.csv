@@ -371,8 +371,15 @@ LEG-b4c53a66c7ba,L1,Go core / CLI / server,internal/app/hooksilence_test.go,56,T
 LEG-22c10bb33192,L1,Go core / CLI / server,internal/app/hqmemory_row_test.go,30,Test,TestHQMemoryRowReadsItsThreeStates,False,legacy-not-retrospectively-reviewed
 LEG-7d78fb6a41eb,L1,Go core / CLI / server,internal/app/hqtranscript_agent_test.go,15,Test,TestStitchEarlierKeepsEachHQAgentsIdentity,False,legacy-not-retrospectively-reviewed
 LEG-150db10da0b7,L1,Go core / CLI / server,internal/app/hqtranscript_agent_test.go,45,Test,TestTranscriptOnlyStitchesSupervisorHistory,False,legacy-not-retrospectively-reviewed
+MAP-9931f487fae1,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,109,reviewed-selector,TestPhase1CursorEmptyScanConcurrentAppend,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
+MAP-479200cd9eee,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,142,reviewed-selector,TestPhase1CursorProspectiveActivation,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
+MAP-b0e7a04d99c5,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,179,reviewed-selector,TestPhase1CursorEmptyRetentionGap,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
+MAP-ec07edd88479,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,203,reviewed-selector,TestPhase1CursorFilteredPageBoundary,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
 LEG-4658791c9323,L1,Go core / CLI / server,internal/app/hqworkspace_overview_test.go,10,Test,TestWorkspaceOverviewIsExplicitlyRequestedAndDoesNotEnlargeSidebarMatters,False,legacy-not-retrospectively-reviewed
 LEG-dc50bad5be70,L1,Go core / CLI / server,internal/app/hqworkspace_overview_test.go,41,Test,TestWorkspaceHTTPReadReusesExplicitStateWithoutWriting,False,legacy-not-retrospectively-reviewed
+MAP-9a346dda931b,L2,reviewed implementation,internal/app/hqworkspace_reconcile_test.go,15,reviewed-selector,TestPhase1WorkspaceIngestionRecoveryAndReadIndependence,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
+MAP-4a6d3760f38d,L2,reviewed implementation,internal/app/hqworkspace_reconcile_test.go,104,reviewed-selector,TestPhase1WorkspaceActionAuthorizationAndCompatibility,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
+MAP-c7c7feed6e2a,L2,reviewed implementation,internal/app/hqworkspace_reconcile_test.go,148,reviewed-selector,TestPhase1HQCanClaimDryRunAndCommit,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
 MAP-c746f11a537e,L2,reviewed implementation,internal/app/hqworkspace_stored_test.go,10,reviewed-selector,TestWorkspaceStoredCLILeavesDiscoveryAndRecordsUntouched,False,MC-HQ-READ
 LEG-70b4e7561792,L1,Go core / CLI / server,internal/app/hqworkspace_test.go,15,Test,TestWorkspaceWorkingHQAcceptsInputWithoutOverwritingDrafts,False,legacy-not-retrospectively-reviewed
 LEG-e447f9a32c69,L1,Go core / CLI / server,internal/app/hqworkspace_test.go,25,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
@@ -382,10 +389,10 @@ LEG-919e23a3b7cb,L1,Go core / CLI / server,internal/app/hqworkspace_test.go,124,
 LEG-521345bf1533,L1,Go core / CLI / server,internal/app/hqworkspace_test.go,140,Test,TestWorkspaceReplyRequiresExactSavedInputNotTitleOrQuotedMarker,False,legacy-not-retrospectively-reviewed
 LEG-e62f2d3aa89c,L1,Go core / CLI / server,internal/app/hqworkspace_test.go,156,Test,TestWorkspaceOnlyFoldsConfirmedWakePayload,False,legacy-not-retrospectively-reviewed
 LEG-3b9dcef4560a,L1,Go core / CLI / server,internal/app/hqworkspace_test.go,168,Test,TestSpawnMatterValidationBeforeAnyLaunch,False,legacy-not-retrospectively-reviewed
-LEG-a59c31c5a07b,L1,Go core / CLI / server,internal/app/hqworkspace_test.go,183,Test,TestWorkspaceSourceBudgetWarnsInsteadOfTruncatingAReply,False,legacy-not-retrospectively-reviewed
-LEG-b12010762948,L1,Go core / CLI / server,internal/app/hqworkspace_test.go,191,Test,TestStructuredProgressDoesNotHideLaterPublicCommentary,False,legacy-not-retrospectively-reviewed
-LEG-ecada2e2e335,L1,Go core / CLI / server,internal/app/hqworkspace_test.go,203,Test,TestWorkspaceDispatchCannotAdoptLaterOccupantOfItsOldPane,False,legacy-not-retrospectively-reviewed
-LEG-618dafffee1a,L1,Go core / CLI / server,internal/app/hqworkspace_test.go,223,Test,TestWorkspaceDeliveryDoesNotBlockFeedTickOrStartConcurrentWorkers,False,legacy-not-retrospectively-reviewed
+LEG-a59c31c5a07b,L1,Go core / CLI / server,internal/app/hqworkspace_test.go,186,Test,TestWorkspaceSourceBudgetWarnsInsteadOfTruncatingAReply,False,legacy-not-retrospectively-reviewed
+LEG-b12010762948,L1,Go core / CLI / server,internal/app/hqworkspace_test.go,194,Test,TestStructuredProgressDoesNotHideLaterPublicCommentary,False,legacy-not-retrospectively-reviewed
+LEG-ecada2e2e335,L1,Go core / CLI / server,internal/app/hqworkspace_test.go,206,Test,TestWorkspaceDispatchCannotAdoptLaterOccupantOfItsOldPane,False,legacy-not-retrospectively-reviewed
+LEG-618dafffee1a,L1,Go core / CLI / server,internal/app/hqworkspace_test.go,226,Test,TestWorkspaceDeliveryDoesNotBlockFeedTickOrStartConcurrentWorkers,False,legacy-not-retrospectively-reviewed
 LEG-eb2db2f832b5,L1,Go core / CLI / server,internal/app/install_selection_test.go,13,Test,TestAutoHookSelectionPreservesExplicitScopeAndDisabledPolicy,False,legacy-not-retrospectively-reviewed
 LEG-48a2a40df323,L1,Go core / CLI / server,internal/app/install_selection_test.go,32,Test,TestDSHBinaryDetectionDoesNotEnableTUI,False,legacy-not-retrospectively-reviewed
 LEG-ea2ca368e422,L1,Go core / CLI / server,internal/app/install_selection_test.go,53,Test,TestExplicitDSHInstallUsesBundledWriter,False,legacy-not-retrospectively-reviewed
@@ -1838,10 +1845,15 @@ LEG-d64fe147b19b,L1,Go core / CLI / server,internal/hqworkspace/overview_test.go
 LEG-52ccc10179be,L1,Go core / CLI / server,internal/hqworkspace/overview_test.go,40,Test,TestOverviewRecentUsesExplicitChangesAndDeduplicatesCanonicalMatters,False,legacy-not-retrospectively-reviewed
 LEG-5fa55eec0fb5,L1,Go core / CLI / server,internal/hqworkspace/overview_test.go,66,Test,TestOverviewAssessmentAndMissingSourcesDoNotInventClocks,False,legacy-not-retrospectively-reviewed
 LEG-b60ca4d6ac42,L1,Go core / CLI / server,internal/hqworkspace/overview_test.go,88,Test,TestOverviewDoesNotResurfaceResolvedDeliveryAsUnconfirmed,False,legacy-not-retrospectively-reviewed
+MAP-a9132845f95d,L2,reviewed implementation,internal/hqworkspace/phase1_test.go,45,reviewed-selector,TestPhase1ReportsPreserveCompletedAndQuestion,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
+MAP-8d3525e25015,L2,reviewed implementation,internal/hqworkspace/phase1_test.go,82,reviewed-selector,TestPhase1TransitionCASAndQuestionIdentity,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
+MAP-8c722e686be5,L2,reviewed implementation,internal/hqworkspace/phase1_test.go,151,reviewed-selector,TestPhase1RecoveryFencingAtomicAssessment,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
+MAP-6cde1202d0f1,L2,reviewed implementation,internal/hqworkspace/phase1_test.go,220,reviewed-selector,TestPhase1OldObservationDeferralAndSchemaMigration,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
+MAP-05f8c00db7ff,L2,reviewed implementation,internal/hqworkspace/phase1_test.go,281,reviewed-selector,TestPhase1ExactAttributionAndAmbiguity,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
 LEG-4f261def63a3,G,Go core / CLI / server,internal/hqworkspace/register_test.go,12,Test,TestRegisterExistingGoalDoesNotReplayWorkOrRewriteSources,False,legacy-not-retrospectively-reviewed
 LEG-7f0c627f10c9,L1,Go core / CLI / server,internal/hqworkspace/register_test.go,52,Test,TestRegisterRetryAfterProgressPreservesCurrentMatterAndRejectsChangedIntent,False,legacy-not-retrospectively-reviewed
-LEG-498451dfc525,L1,Go core / CLI / server,internal/hqworkspace/register_test.go,85,Test,TestRegistrationRejectsMissingEvidenceAndStorageFailure,False,legacy-not-retrospectively-reviewed
-LEG-aec323f89f08,L1,Go core / CLI / server,internal/hqworkspace/register_test.go,109,Test,TestConcurrentRegistrationConverges,False,legacy-not-retrospectively-reviewed
+LEG-498451dfc525,L1,Go core / CLI / server,internal/hqworkspace/register_test.go,86,Test,TestRegistrationRejectsMissingEvidenceAndStorageFailure,False,legacy-not-retrospectively-reviewed
+LEG-aec323f89f08,L1,Go core / CLI / server,internal/hqworkspace/register_test.go,110,Test,TestConcurrentRegistrationConverges,False,legacy-not-retrospectively-reviewed
 LEG-3bfa85a6bb8c,L1,Go core / CLI / server,internal/hqworkspace/restore_validation_test.go,8,Test,TestRestoreValidationIsPureAndUsesCurrentSchema,False,legacy-not-retrospectively-reviewed
 LEG-80b00c7a4c36,L1,Go core / CLI / server,internal/hqworkspace/retry_transport_test.go,5,Test,TestAcknowledgedRetryGetsNewTransportIdentity,False,legacy-not-retrospectively-reviewed
 LEG-488627f45c93,L1,Go core / CLI / server,internal/hqworkspace/workspace_test.go,25,Test,TestReadDoesNotCreateOrHideCorruption,False,legacy-not-retrospectively-reviewed
@@ -1857,9 +1869,9 @@ LEG-ea6ea8393539,L1,Go core / CLI / server,internal/hqworkspace/workspace_test.g
 LEG-fe71eaa0f29b,L1,Go core / CLI / server,internal/hqworkspace/workspace_test.go,335,Test,TestConcurrentPumpsKeepOneSenderEvenAfterTimeout,False,legacy-not-retrospectively-reviewed
 LEG-0b501a3c6aae,L1,Go core / CLI / server,internal/hqworkspace/workspace_test.go,362,Test,TestMergedPendingDeliveryAndReportsUseCanonicalMatter,False,legacy-not-retrospectively-reviewed
 LEG-cf7a710a653d,L1,Go core / CLI / server,internal/hqworkspace/workspace_test.go,387,Test,TestClosedMatterHoldsInstructionButDoesNotBlockOtherGoals,False,legacy-not-retrospectively-reviewed
-LEG-100bbd4246df,L1,Go core / CLI / server,internal/hqworkspace/workspace_test.go,409,Test,TestRestoredSnapshotNeverReplaysPreviousPendingAuthorization,False,legacy-not-retrospectively-reviewed
-LEG-ca3ffe7a5f00,L1,Go core / CLI / server,internal/hqworkspace/workspace_test.go,428,Test,TestMalformedAndOversizedSnapshotCannotBecomeEmptySuccess,False,legacy-not-retrospectively-reviewed
-LEG-303c9a9fbebe,L1,Go core / CLI / server,internal/hqworkspace/workspace_test.go,448,Test,TestStableInstructionReceiptSurvivesRenameAndChangedReportIntentIsRejected,False,legacy-not-retrospectively-reviewed
+LEG-100bbd4246df,L1,Go core / CLI / server,internal/hqworkspace/workspace_test.go,412,Test,TestRestoredSnapshotNeverReplaysPreviousPendingAuthorization,False,legacy-not-retrospectively-reviewed
+LEG-ca3ffe7a5f00,L1,Go core / CLI / server,internal/hqworkspace/workspace_test.go,431,Test,TestMalformedAndOversizedSnapshotCannotBecomeEmptySuccess,False,legacy-not-retrospectively-reviewed
+LEG-303c9a9fbebe,L1,Go core / CLI / server,internal/hqworkspace/workspace_test.go,451,Test,TestStableInstructionReceiptSurvivesRenameAndChangedReportIntentIsRejected,False,legacy-not-retrospectively-reviewed
 LEG-e904dbdd6eff,L1,Go core / CLI / server,internal/i18n/i18n_test.go,8,Test,TestTrAndSetLang,False,legacy-not-retrospectively-reviewed
 LEG-71fc051e8db4,L1,Go core / CLI / server,internal/i18n/i18n_test.go,26,Test,TestDispWidth,False,legacy-not-retrospectively-reviewed
 LEG-415a5bb3d910,L1,Go core / CLI / server,internal/i18n/i18n_test.go,45,Test,TestPadRight,False,legacy-not-retrospectively-reviewed

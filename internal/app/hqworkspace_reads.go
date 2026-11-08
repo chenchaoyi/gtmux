@@ -64,7 +64,7 @@ func workspaceStoredSnapshot(d hqworkspace.Database, include bool, now int64) wo
 	for i := range matters {
 		matters[i].Assessment = ""
 	} // Assessment is a selected-detail read, not sidebar payload.
-	out := workspaceList{Schema: hqworkspace.Schema, Revision: d.Revision, Matters: matters, Conversations: []workspaceCandidate{}, References: []workspaceCandidate{}}
+	out := workspaceList{Schema: hqworkspace.WireSchema, Revision: d.Revision, Matters: matters, Conversations: []workspaceCandidate{}, References: []workspaceCandidate{}}
 	if include {
 		brief := hqworkspace.BuildOverview(d, now)
 		out.Overview = &brief
@@ -180,7 +180,7 @@ func workspaceDetail(s *hqworkspace.Store, scope string, before uint64, earlier 
 	if err != nil {
 		return workspaceDetailReport{}, err
 	}
-	out := workspaceDetailReport{Schema: hqworkspace.Schema, Messages: []workspaceMessage{}, Turns: []workspaceTurn{}, Changes: []hqworkspace.Change{}, Events: []events.Record{}, Warnings: []string{}}
+	out := workspaceDetailReport{Schema: hqworkspace.WireSchema, Messages: []workspaceMessage{}, Turns: []workspaceTurn{}, Changes: []hqworkspace.Change{}, Events: []events.Record{}, Warnings: []string{}}
 	if scope == "activity" {
 		out.MatterTitles = map[string]string{}
 		for id, m := range d.Matters {
@@ -370,7 +370,7 @@ func workspaceParticipant(s *hqworkspace.Store, matter, id string) (workspaceDet
 		if err != nil {
 			return workspaceDetailReport{}, err
 		}
-		out := workspaceDetailReport{Schema: hqworkspace.Schema, Matter: &m, Messages: []workspaceMessage{}, Turns: []workspaceTurn{}, Changes: []hqworkspace.Change{}, Events: []events.Record{}, Warnings: []string{}}
+		out := workspaceDetailReport{Schema: hqworkspace.WireSchema, Matter: &m, Messages: []workspaceMessage{}, Turns: []workspaceTurn{}, Changes: []hqworkspace.Change{}, Events: []events.Record{}, Warnings: []string{}}
 		for _, t := range turns {
 			at, err := time.Parse(time.RFC3339Nano, t.Time)
 			if err != nil {

@@ -40,7 +40,7 @@ func (s *Store) Start(id, title, messageID, body string, at int64) (Matter, erro
 		out = d.Matters[id]
 		changed(d, at, "instruction", id, messageID, "")
 		d.Messages[messageID] = Message{ID: messageID, MatterID: id, Speaker: "user", Kind: "instruction", Subject: title, Body: body, At: at, Seq: d.Revision, Delivery: "pending"}
-		return nil
+		return recordObservation(d, Observation{ID: "message-" + messageID, Kind: "instruction", MatterID: id, MatterRevision: out.Revision, Body: body, Ref: messageID, OccurredAt: at}, at)
 	})
 	return out, err
 }
@@ -52,6 +52,10 @@ func (s *Store) Submit(id, matter, body string, at int64) (Message, error) {
 }
 
 func (s *Store) SubmitReply(id, matter, body, replyTo string, at int64) (Message, error) {
+	return s.SubmitReplyVersion(id, matter, body, replyTo, 0, at)
+}
+
+func (s *Store) SubmitReplyVersion(id, matter, body, replyTo string, requestRevision uint64, at int64) (Message, error) {
 	var out Message
 	if !validID(id) {
 		return out, errors.New("invalid message ID")
@@ -62,7 +66,7 @@ func (s *Store) SubmitReply(id, matter, body, replyTo string, at int64) (Message
 	}
 	err = s.transaction(func(d *Database) error {
 		if old, exists := d.Messages[id]; exists {
-			if old.Speaker != "user" || old.MatterID != matter || old.Body != body || old.ReplyTo != replyTo {
+			if old.Speaker != "user" || old.MatterID != matter || old.Body != body || old.ReplyTo != replyTo || old.RequestRevision != requestRevision {
 				return ErrConflict
 			}
 			out = old
@@ -73,12 +77,13 @@ func (s *Store) SubmitReply(id, matter, body, replyTo string, at int64) (Message
 				return err
 			}
 		}
+		changed(d, at, "instruction", matter, id, "")
 		if replyTo != "" {
 			m, err := getMatter(d, matter, 0)
 			if err != nil {
 				return err
 			}
-			if m.UserInput == nil || m.UserInput.ID != replyTo || m.UserInput.AnswerID != "" || m.State != "needs-input" {
+			if m.UserInput == nil || m.UserInput.ID != replyTo || m.UserInput.AnswerID != "" || m.State != "needs-input" || requestRevision != 0 && requestRevision != m.UserInput.Revision {
 				return ErrConflict
 			}
 			q := *m.UserInput
@@ -86,15 +91,24 @@ func (s *Store) SubmitReply(id, matter, body, replyTo string, at int64) (Message
 			m.UserInput = &q
 			saveMatter(d, m, at)
 		}
-		changed(d, at, "instruction", matter, id, "")
-		out = Message{ID: id, MatterID: matter, Speaker: "user", Kind: "instruction", Body: body, At: at, Seq: d.Revision, Delivery: "pending", ReplyTo: replyTo}
+		out = Message{RequestRevision: requestRevision, ID: id, MatterID: matter, Speaker: "user", Kind: "instruction", Body: body, At: at, Seq: d.Revision, Delivery: "pending", ReplyTo: replyTo}
 		d.Messages[id] = out
-		return nil
+		var revision uint64
+		if matter != "" {
+			m := d.Matters[matter]
+			saveMatter(d, m, at)
+			revision = d.Revision
+		}
+		return recordObservation(d, Observation{ID: "message-" + id, Kind: "instruction", MatterID: matter, MatterRevision: revision, Body: body, Ref: id, OccurredAt: at}, at)
 	})
 	return out, err
 }
 
 func (s *Store) Publish(id, matter, replyTo, kind, body, state string, at int64) (Message, error) {
+	return s.PublishVersion(id, matter, replyTo, kind, body, state, 0, at)
+}
+
+func (s *Store) PublishVersion(id, matter, replyTo, kind, body, state string, revision uint64, at int64) (Message, error) {
 	var out Message
 	if !validID(id) || !validKind(kind) {
 		return out, errors.New("invalid report ID or kind")
@@ -115,15 +129,14 @@ func (s *Store) Publish(id, matter, replyTo, kind, body, state string, at int64)
 			}
 		}
 		if old, exists := d.Messages[id]; exists {
-			if old.Speaker != "hq" || (old.MatterID != matter && !resolvesTo(*d, old.MatterID, matter)) || old.MatterState != state || old.Kind != kind || old.Body != body || old.ReplyTo != replyTo {
+			if old.Speaker != "hq" || (old.MatterID != matter && !resolvesTo(*d, old.MatterID, matter)) || old.MatterState != state || old.Kind != kind || old.Body != body || old.ReplyTo != replyTo || old.TargetRevision != revision {
 				return ErrConflict
 			}
 			out = old
 			return nil
 		}
-		var m Matter
 		if matter != "" {
-			m, err = getMatter(d, matter, 0)
+			_, err = getMatter(d, matter, 0)
 			if err != nil {
 				return err
 			}
@@ -135,19 +148,10 @@ func (s *Store) Publish(id, matter, replyTo, kind, body, state string, at int64)
 			}
 		}
 		changed(d, at, "hq-"+kind, matter, id, "")
-		out = Message{ID: id, MatterID: matter, Speaker: "hq", Kind: kind, MatterState: state, Body: body, At: at, Seq: d.Revision, ReplyTo: replyTo}
+		out = Message{TargetRevision: revision, ID: id, MatterID: matter, Speaker: "hq", Kind: kind, MatterState: state, Body: body, At: at, Seq: d.Revision, ReplyTo: replyTo}
+		out.Projection = "pending-reconciliation"
 		d.Messages[id] = out
-		if matter != "" {
-			m.Assessment = body
-			if state != "" {
-				m.State = state
-				if state != "needs-input" {
-					m.UserInput = nil
-				}
-			} // Never infer completed from kind=result or a turn ending.
-			saveMatter(d, m, at)
-		}
-		return nil
+		return recordObservation(d, Observation{ID: "message-" + id, Kind: kind, MatterID: matter, MatterRevision: revision, Body: body, Ref: id, OccurredAt: at}, at)
 	})
 	return out, err
 }
@@ -164,6 +168,7 @@ func (s *Store) Cancel(id string, at int64) error {
 		if m.Delivery != "pending" {
 			return errors.New("only an unattempted pending instruction can be cancelled")
 		}
+		changed(d, at, "cancel", m.MatterID, id, "")
 		if m.ReplyTo != "" {
 			if goal, ok := d.Matters[CanonicalMatter(*d, m.MatterID)]; ok && goal.UserInput != nil && goal.UserInput.ID == m.ReplyTo && goal.UserInput.AnswerID == m.ID {
 				q := *goal.UserInput
@@ -173,7 +178,6 @@ func (s *Store) Cancel(id string, at int64) error {
 			}
 		}
 		m.Delivery, m.Reason = "cancelled", ""
-		changed(d, at, "cancel", m.MatterID, id, "")
 		d.Messages[id] = m
 		return nil
 	})
