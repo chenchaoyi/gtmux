@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"sort"
-	"strings"
 	"sync"
 	"time"
 )
@@ -14,7 +13,7 @@ import (
 // FirstPromptRecords finds source identities, never sender identities. The caller
 // supplies independently verified delivery text and its earliest possible time.
 // Full history is streamed once so paging cannot make a later human copy the
-// first match. Only requested prompts and opaque record IDs enter the bounded cache.
+// first match. Only prompt digests and opaque record IDs enter the bounded cache.
 func FirstPromptRecords(ctx context.Context, agent, session string, prompts map[string]int64) map[string]string {
 	if ctx.Err() != nil || normalizeAgent(agent) != "codex" || len(prompts) == 0 {
 		return nil
@@ -43,16 +42,17 @@ func FirstPromptRecords(ctx context.Context, agent, session string, prompts map[
 	cached, ok := promptWitnessCache.entries[key]
 	promptWitnessCache.Unlock()
 	if ok && validPromptWitness(cached, paths, files, len(prompts)) {
-		return clonePromptRecords(cached.records)
+		return promptRecordsFor(cached.records, prompts)
 	}
-	records := map[string]string{}
+	records := map[[32]byte]string{}
 	for _, path := range paths {
 		err := scanHistory(ctx, path, agent, session, 0, func(t Turn) bool {
 			lower, wanted := prompts[t.Prompt]
-			if wanted && records[t.Prompt] == "" && t.RecordID != "" {
+			digest := sha256.Sum256([]byte(t.Prompt))
+			if wanted && records[digest] == "" && t.RecordID != "" {
 				at, e := time.Parse(time.RFC3339Nano, t.Time)
 				if e == nil && at.Unix() >= lower {
-					records[t.Prompt] = t.RecordID
+					records[digest] = t.RecordID
 				}
 			}
 			return len(records) < len(prompts)
@@ -90,13 +90,13 @@ func FirstPromptRecords(ctx context.Context, agent, session string, prompts map[
 	}
 	promptWitnessCache.entries[key] = entry
 	promptWitnessCache.Unlock()
-	return clonePromptRecords(records)
+	return promptRecordsFor(records, prompts)
 }
 
 type promptWitnessEntry struct {
 	paths   []string
 	files   []os.FileInfo
-	records map[string]string
+	records map[[32]byte]string
 }
 
 var promptWitnessCache struct {
@@ -122,10 +122,12 @@ func validPromptWitness(e promptWitnessEntry, paths []string, files []os.FileInf
 	}
 	return true
 }
-func clonePromptRecords(in map[string]string) map[string]string {
+func promptRecordsFor(in map[[32]byte]string, prompts map[string]int64) map[string]string {
 	out := make(map[string]string, len(in))
-	for k, v := range in {
-		out[strings.Clone(k)] = v
+	for prompt := range prompts {
+		if record := in[sha256.Sum256([]byte(prompt))]; record != "" {
+			out[prompt] = record
+		}
 	}
 	return out
 }
