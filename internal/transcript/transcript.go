@@ -374,15 +374,17 @@ func errorSummary(content json.RawMessage) string {
 // Step is one collapsed middle action in a turn (a tool call). The chat view
 // shows turns as prompt → (N steps, collapsed) → final response.
 type Step struct {
-	Kind             string `json:"kind"`             // "tool" for now
-	Title            string `json:"title"`            // tool name (Edit, Bash, exec_command…)
-	Detail           string `json:"detail,omitempty"` // a short arg summary (path / command head)
-	Operation        string `json:"operation,omitempty"`
-	Input            string `json:"input,omitempty"` // selected original input, with whitespace preserved
-	InputKind        string `json:"input_kind,omitempty"`
-	Workdir          string `json:"workdir,omitempty"`
-	DetailsTruncated bool   `json:"details_truncated,omitempty"`
-	InputRef         string `json:"input_ref,omitempty"` // source-position reader, never a file path or input capability
+	Kind             string    `json:"kind"`             // "tool" for now
+	Title            string    `json:"title"`            // tool name (Edit, Bash, exec_command…)
+	Detail           string    `json:"detail,omitempty"` // a short arg summary (path / command head)
+	Operation        string    `json:"operation,omitempty"`
+	Input            string    `json:"input,omitempty"` // selected original input, with whitespace preserved
+	InputKind        string    `json:"input_kind,omitempty"`
+	Workdir          string    `json:"workdir,omitempty"`
+	DetailsTruncated bool      `json:"details_truncated,omitempty"`
+	InputRef         string    `json:"input_ref,omitempty"` // source-position reader, never a file path or input capability
+	Call             *ToolCall `json:"call,omitempty"`      // metadata in polls; bodies only on explicit scoped detail read
+	detailIdentity   string
 	fullInput        string
 	fullWorkdir      string
 	recordedCallID   string // native/response mirrors; never an external identity or input capability
@@ -655,6 +657,9 @@ func (st *parseState) addSteps(steps []Step) {
 		}
 		if st.sourceID != "" {
 			step.InputRef = toolInputRef(st.sourceID, st.off, st.stepOrdinal, *step)
+			if step.Call != nil {
+				step.Call.Ref = step.InputRef
+			}
 		}
 		st.stepOrdinal++
 		if st.fullTools {

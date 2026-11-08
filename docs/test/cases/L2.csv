@@ -1015,6 +1015,8 @@ LEG-e432f090bc56,L2,RN / mobile harness,mobileapp/src/trace/TraceModal.test.tsx,
 LEG-fb88b2a8b152,L2,RN / mobile harness,mobileapp/src/trace/TraceModal.test.tsx,826,test,"loads an earlier trace page, preserves folds and keeps it through a live update",False,legacy-not-retrospectively-reviewed
 LEG-eabb49c764a1,L2,RN / mobile harness,mobileapp/src/trace/TraceModal.test.tsx,866,test,failed or late history pages cannot replace records from a different session,False,legacy-not-retrospectively-reviewed
 LEG-f6468f1c708a,L2,RN / mobile harness,mobileapp/src/trace/TraceModal.test.tsx,905,test,a changed history source offers an explicit latest refresh while retaining the reader,False,legacy-not-retrospectively-reviewed
+MAP-6249b500ee15,L2,reviewed implementation,mobileapp/src/trace/TraceModal.toolCall.test.tsx,104,reviewed-selector,Trace loads recorded query details and both Preview and Raw are useful,False,TCV-004
+MAP-d46d85f17b03,L2,reviewed implementation,mobileapp/src/trace/TraceModal.toolCall.test.tsx,139,reviewed-selector,"Chat reuses the same query details, failure retries and late reads retire on home change",False,TCV-004
 LEG-a6e4b2a53ee9,L2,RN / mobile harness,mobileapp/src/ui/AgentAvatar.test.tsx,11,test,renders without an AgentsProvider (Demo screen path),False,legacy-not-retrospectively-reviewed
 LEG-108d77318755,L2,RN / mobile harness,mobileapp/src/ui/AgentAvatar.test.tsx,39,test.each(),the official %s whale has a white margin without shrinking the avatar,True,legacy-not-retrospectively-reviewed
 LEG-82adc3f63fd0,L2,RN / mobile harness,mobileapp/src/ui/AgentAvatar.test.tsx,48,test,"other agents retain their image size, and an unavailable whale retains the normal fallback",False,legacy-not-retrospectively-reviewed
@@ -1832,6 +1834,10 @@ LEG-ac99204d2c70,L2,RN / mobile harness,mobileapp/src/ui/time.test.ts,68,it,"mea
 LEG-8581910a0160,L2,RN / mobile harness,mobileapp/src/ui/time.test.ts,74,it,is invisible to a turn with no usable clock,False,legacy-not-retrospectively-reviewed
 LEG-a7b4039749f8,L2,RN / mobile harness,mobileapp/src/ui/time.test.ts,79,it,speaks the reader’s language and honours the gap it is given,False,legacy-not-retrospectively-reviewed
 LEG-fe83c539204c,L2,RN / mobile harness,mobileapp/src/ui/time.test.ts,84,it,holds its own on an empty conversation,False,legacy-not-retrospectively-reviewed
+MAP-47222e9f745a,L2,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,27,reviewed-selector,"query details show named parameters, structured results, provenance and complete raw",False,TCV-003
+MAP-3813fdfe8df1,L2,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,45,reviewed-selector,"command, file changes, waits, text/errors and missing/empty results stay distinct",False,TCV-003
+MAP-f94f19b784ef,L2,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,122,reviewed-selector,full reads preserve original command and distinct native result references,False,TCV-003
+MAP-aedc42ce6351,L2,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,160,reviewed-selector,large rendering pages disclose bounds and preserve all characters,False,TCV-003
 LEG-7e1e7c1d7954,L2,RN / mobile harness,mobileapp/src/ui/useKeyboardChrome.test.tsx,56,test,"keyboard timing folds the chrome, and dismissal preserves the current scroll state",False,legacy-not-retrospectively-reviewed
 LEG-bd6085e9a14d,L2,RN / mobile harness,mobileapp/src/ui/useKeyboardChrome.test.tsx,77,test,Reduce Motion folds and restores without animation,False,legacy-not-retrospectively-reviewed
 LEG-aab5aceea630,L2,RN / mobile harness,mobileapp/src/ui/useModalDismiss.test.tsx,6,test.each(),%s completes each modal lifecycle once,True,legacy-not-retrospectively-reviewed
@@ -1863,6 +1869,8 @@ MAP-c856d62bb0c7,L2,reviewed implementation,tests/contracts/http-contract.cjs,36
 MAP-184f052913f1,L2,reviewed implementation,tests/web/backend-contract.test.cjs,34,reviewed-selector,Web fake / Go contract:,False,CT-HTTP
 MAP-c9d3762e7230,L2,reviewed implementation,tests/web/fixture.cjs,18,reviewed-selector,async function start,False,CT-HTTP
 MAP-e5604b1208c7,L2,reviewed implementation,tests/web/http-contract-validator.test.cjs,4,reviewed-selector,"wire contract rejects type, permission, ordinal, omission and security-header drift",False,CT-HTTP
+MAP-8fceb6b39ede,L2,reviewed implementation,tests/web/tool-call-detail.test.cjs,6,reviewed-selector,Typed query details in Chat and Trace ,False,TCV-005
+MAP-e962ab9f86bc,L2,reviewed implementation,tests/web/tool-call-detail.test.cjs,20,reviewed-selector,Recorded query failure retries and large results page without losing full copy,False,TCV-005
 LEG-69563fe32201,L2,Worker,tunnel-worker/src/direct.test.ts,36,test,the port formula is the client's: Go's crc32.ChecksumIEEE over the id,False,legacy-not-retrospectively-reviewed
 LEG-f3f8a76744ad,L2,Worker,tunnel-worker/src/direct.test.ts,49,test,"each device gets its own account, allowed its own port and nothing else",False,legacy-not-retrospectively-reviewed
 LEG-9986e056b831,L2,Worker,tunnel-worker/src/direct.test.ts,69,test,a device that redeems again gets the same account back,False,legacy-not-retrospectively-reviewed

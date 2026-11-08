@@ -2438,6 +2438,9 @@ LEG-a28b4888288e,L1,Go core / CLI / server,internal/transcript/sessionbinding_te
 LEG-e4a2949ee7df,L1,Go core / CLI / server,internal/transcript/sessionbinding_test.go,41,Test,TestCodexBindingReadsBoundedRolloutTail,False,legacy-not-retrospectively-reviewed
 LEG-e83034b94b32,L1,Go core / CLI / server,internal/transcript/titles_test.go,10,Test,TestSessionTitles,False,legacy-not-retrospectively-reviewed
 LEG-31e07de7e8be,L1,Go core / CLI / server,internal/transcript/titles_test.go,44,Test,TestSessionTitlesBoundedTail,False,legacy-not-retrospectively-reviewed
+MAP-d8d563bbd03e,L1,reviewed implementation,internal/transcript/tool_call_detail_test.go,11,reviewed-selector,TestNativeCallDetailsAreLazyScopedAndRedacted,False,"TCV-001,TCV-002"
+MAP-78516b06d8fd,L1,reviewed implementation,internal/transcript/tool_call_detail_test.go,57,reviewed-selector,TestNativeCallMirrorPreservesOriginalInputAndResultReference,False,"TCV-001,TCV-002"
+MAP-4895957e9e8f,L1,reviewed implementation,internal/transcript/tool_call_detail_test.go,90,reviewed-selector,TestNativeCallMissingResultIsNotAnEmptyResult,False,"TCV-001,TCV-002"
 LEG-8857dd599043,L1,Go core / CLI / server,internal/transcript/tool_detail_test.go,9,Test,TestCodexDescriptiveToolDetail,False,legacy-not-retrospectively-reviewed
 LEG-59b26a7137fb,L1,Go core / CLI / server,internal/transcript/tool_detail_test.go,18,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-54836ef761d0,L1,Go core / CLI / server,internal/transcript/tool_full_test.go,11,Test,TestFullToolInputOutlivesBothPreviewBudgets,False,legacy-not-retrospectively-reviewed

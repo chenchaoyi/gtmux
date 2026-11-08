@@ -16,13 +16,18 @@ import (
 var ErrToolUnavailable = errors.New("tool input unavailable; reload the conversation")
 
 func toolInputRef(source string, off int64, ordinal int, s Step) string {
-	sum := sha256.Sum256([]byte(s.Title + "\x00" + s.fullInput + "\x00" + s.fullWorkdir))
+	identity := s.Title + "\x00" + s.fullInput + "\x00" + s.fullWorkdir
+	if s.detailIdentity != "" {
+		identity += "\x00" + s.detailIdentity
+	}
+	sum := sha256.Sum256([]byte(identity))
 	return fmt.Sprintf("%s:%d:%d:%x", source, off, ordinal, sum[:12])
 }
 
 // ToolInput reads one original call on demand. Normal transcript polls/cache retain
 // bounded previews. A reference is scoped to the resolved session's source files;
-// it cannot select a path, a result, context, or a record from another session.
+// it cannot select a path, context, or a record from another session. Recorded call
+// arguments/results are available only through this existing owner-scoped reader.
 func ToolInput(agent, sessionID, ref string) (Step, error) {
 	if len(ref) > 160 {
 		return Step{}, ErrToolUnavailable

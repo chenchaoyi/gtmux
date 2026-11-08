@@ -51,7 +51,7 @@
     var detailMode = 'preview', warning = el('p', 'trace-truncated'); detail.appendChild(warning);
     var content = el('div', 'trace-detail-content'); content.id = detail.id + '-content'; content.setAttribute('role', 'tabpanel'); [overviewTab, preview, source, origin].forEach(function (tab, i) { tab.id = detail.id + '-tab-' + i; tab.setAttribute('aria-controls', content.id); }); detail.appendChild(content); body.appendChild(detail); body.appendChild(latest); root.appendChild(body);
     var footer = el('details', 'trace-limits'), summary = el('summary', '', T('About these records', '记录范围')); footer.appendChild(summary);
-    footer.appendChild(el('p', '', T('Conversation text, recorded context and tool input. Tool output, call timing and token usage are not recorded. Turn numbers keep their positions in the source session when available.', '展示会话正文、已记录的上下文与调用参数，不含工具输出、调用耗时或 Token 用量。轮次保留源会话中的编号（需服务端支持）。'))); root.appendChild(footer);
+    footer.appendChild(el('p', '', T('Conversation text, recorded context and tool calls. Results and timing appear when included in the source record; token usage is not inferred. Turn numbers keep their source positions when available.', '展示会话正文、已记录的上下文与工具调用。结果和耗时以源记录为准，不推算 Token 用量。轮次尽量保留源会话中的编号。'))); root.appendChild(footer);
 
     function el(tag, name, text) { var node = document.createElement(tag); if (name) node.className = name; if (text !== undefined) node.textContent = text; return node; }
     function option(value, label) { var node = el('option', '', label); node.value = value; return node; }
@@ -87,14 +87,16 @@
     function renderDetail(force) {
       var event = filtered.find(function (item) { return item.key === selected; });
       if (!event) { detail.hidden = true; toggle.disabled = true; return; }
-      var originalEvent = event, inputKey = event.step && event.step.inputRef ? JSON.stringify([event.session,context.home_id,event.step.inputRef]) : '';
-      if (inputKey && fullInputs.has(inputKey)) { var full = fullInputs.get(inputKey); event = Object.assign({},event,{body:full.input,step:Object.assign({},event.step,{input:full.input,workdir:full.workdir || '',truncated:false})}); }
-      if (inspectorOpen && inputKey && event.step.truncated && options.toolInput && !inputPending.has(inputKey) && !inputFailed.has(inputKey)) {
-        inputPending.add(inputKey);
-        options.toolInput(event.session, context.home_id || '', event.step.inputRef).then(function(full) { inputPending.delete(inputKey); if(root.isConnected && selected===originalEvent.key) { fullInputs.clear(); fullInputs.set(inputKey,full); renderDetail(true); } }).catch(function() { inputPending.delete(inputKey); inputFailed.add(inputKey); if(root.isConnected && selected===originalEvent.key) renderDetail(true); });
+      var originalEvent = event, recorded=event.step?model.recordedStep(event):null;
+      var refs=recorded?model.toolDetailRefs(recorded):[], inputKey=recorded?JSON.stringify([event.session,context.home_id,event.step.inputRef,event.step.call && event.step.call.ref]):'';
+      if (inputKey && fullInputs.has(inputKey)) { var full = fullInputs.get(inputKey); event = Object.assign({},event,{body:full.input || '',step:Object.assign({},event.step,{input:full.input || '',workdir:full.workdir || '',truncated:false,call:full.call})}); }
+      if (inspectorOpen && inputKey && refs.length && !fullInputs.has(inputKey) && options.toolInput && !inputPending.has(inputKey) && !inputFailed.has(inputKey)) {
+        inputPending.add(inputKey); var requestScope=lastScope;
+        model.loadToolDetails(recorded,function(ref){return options.toolInput(event.session,context.home_id || '',ref);}).then(function(full) { inputPending.delete(inputKey); if(root.isConnected && lastScope===requestScope && selected===originalEvent.key) { fullInputs.clear(); fullInputs.set(inputKey,full); renderDetail(true); } }).catch(function() { inputPending.delete(inputKey); inputFailed.add(inputKey); if(root.isConnected && lastScope===requestScope && selected===originalEvent.key) renderDetail(true); });
       }
       toggle.disabled = false; detail.hidden = !inspectorOpen;
-      var signature = JSON.stringify([event, detailMode]);
+      // Loaded bodies are immutable under the exact record ref. Never serialize a large result on every transcript poll.
+      var signature = JSON.stringify([originalEvent, detailMode, fullInputs.has(inputKey), inputPending.has(inputKey), inputFailed.has(inputKey)]);
       if (!force && signature === lastDetail) return;
       if (!force && event.key === lastDetailKey && selectionHeld()) {
         if (!deferred) deferred = setTimeout(function flush() { deferred = null; if (!root.isConnected) return; if (selectionHeld()) deferred = setTimeout(flush, 250); else renderDetail(false); }, 250);
@@ -109,16 +111,17 @@
       metadata.textContent = model.traceDetailMetadata(event, T('en','zh'), event.time && !isNaN(new Date(event.time).getTime()) ? options.formatTime(new Date(event.time)) : '');
       path.textContent = event.step && event.step.workdir ? T('Working directory: ', '工作目录：') + event.step.workdir : ''; path.hidden = !path.textContent;
       modes.hidden = false; [overviewTab, preview, source, origin].forEach(function (tab, i) { var active = detailMode === ['overview', 'preview', 'raw', 'origin'][i]; tab.setAttribute('aria-selected', String(active)); if (active) content.setAttribute('aria-labelledby', tab.id); tab.tabIndex = active ? 0 : -1; });
-      warning.textContent = inputPending.has(inputKey) ? T('Loading full input…', '读取完整输入…') : inputFailed.has(inputKey) ? T('Could not load full input. Tap to retry.', '未能读取完整输入，点此重试。') : (event.context && event.context.truncated || event.step && event.step.truncated) ? T('Only the recorded portion is available.', '内容较长，仅展示已记录的部分。') : event.step && !event.step.input ? T('Only a call summary was recorded.', '此调用仅记录了摘要。') : ''; warning.hidden = !warning.textContent; warning.onclick = function () { if(inputFailed.has(inputKey)){inputFailed.delete(inputKey);renderDetail(true);} }; warning.setAttribute('role',inputFailed.has(inputKey)?'button':'status'); warning.tabIndex=inputFailed.has(inputKey)?0:-1; warning.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();warning.click();}};
+      warning.textContent = inputPending.has(inputKey) ? T('Loading full input…', '读取完整输入…') : inputFailed.has(inputKey) ? T('Could not load full input. Tap to retry.', '未能读取完整输入，点此重试。') : (event.context && event.context.truncated || event.step && event.step.truncated) ? T('Only the recorded portion is available.', '内容较长，仅展示已记录的部分。') : event.step && !event.step.input && !event.step.call ? T('Only a call summary was recorded.', '此调用仅记录了摘要。') : ''; warning.hidden = !warning.textContent; warning.onclick = function () { if(inputFailed.has(inputKey)){inputFailed.delete(inputKey);renderDetail(true);} }; warning.setAttribute('role',inputFailed.has(inputKey)?'button':'status'); warning.tabIndex=inputFailed.has(inputKey)?0:-1; warning.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();warning.click();}};
       content.replaceChildren();
       if (detailMode === 'overview') {
         var facts = el('dl', 'trace-facts'); model.overviewFacts(event, T('en', 'zh')).forEach(function (fact) { facts.appendChild(el('dt', '', fact.label)); facts.appendChild(el('dd', '', fact.value)); }); content.appendChild(facts); content.appendChild(el('p', 'trace-excerpt', event.body.replace(/\s+/g, ' ').slice(0, 240)));
       } else if (detailMode === 'origin') {
         content.appendChild(el('p', 'trace-origin-note', T('Source information from the conversation record.', '会话记录中的来源信息。'))); var originText = el('pre', 'trace-origin', JSON.stringify(model.sourceInfo(event), null, 2)); originText.tabIndex = 0; content.appendChild(originText);
       } else if (event.kind !== 'tool' && !(event.kind === 'context' && event.title === 'Environment') && detailMode === 'preview') { var prose = el('div', 'trace-prose'); prose.appendChild(options.markdown(model.previewText(event), {session_id: event.session, home_id: context.home_id || ''})); content.appendChild(prose); }
+      else if (event.step && event.step.call && options.toolDetails) {content.appendChild(options.toolDetails(model.recordedStep(event), detailMode==='raw', inputPending.has(inputKey) || inputFailed.has(inputKey) || !event.step.call.loaded));}
       else if (options.codePanel) { content.appendChild(options.codePanel(event.body, {className:'trace-source', copy:false, hint: detailMode === 'raw' ? 'text' : event.step && event.step.inputKind === 'code' ? 'javascript' : event.step && event.step.inputKind === 'command' ? 'shell' : event.step && event.step.inputKind, formatted: detailMode === 'preview', allowFormat: detailMode === 'preview', embedded: detailMode === 'preview', disabled: inputPending.has(inputKey) || !!(event.step && event.step.truncated)})); }
       else { var code = el('pre', 'trace-source' + (event.step && !event.step.input ? ' trace-summary' : ''), (detailMode === 'preview' ? options.formatCode ? options.formatCode(model.previewText(event), {input_kind:event.step && event.step.inputKind,operation:event.step && event.step.operation}) : model.previewText(event) : event.body) || T('No detail recorded.', '未记录详情。')); if(options.renderCode) options.renderCode(code, code.textContent, event.step && event.step.inputKind === 'code' ? 'javascript' : event.step && event.step.inputKind); code.tabIndex = 0; content.appendChild(code); }
-      actions.replaceChildren(...(event.step && event.step.truncated ? [] : [options.actions(detailMode === 'origin' ? JSON.stringify(model.sourceInfo(event), null, 2) : event.body || label(event))])); detail.scrollTop = scroll;
+      actions.replaceChildren(...(inputPending.has(inputKey) || inputFailed.has(inputKey) || event.step && (event.step.truncated || event.step.call && !event.step.call.loaded) ? [] : [options.actions(detailMode === 'origin' ? JSON.stringify(model.sourceInfo(event), null, 2) : event.step && event.step.call ? model.callRaw(model.recordedStep(event)) : event.body || label(event))])); detail.scrollTop = scroll;
     }
     function inspect(event, reveal) {
       if (!event) return;

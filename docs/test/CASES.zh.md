@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1039 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1043 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
-| L1 · 单元/纯逻辑 | 3728 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 1921 | [L2.csv](cases/L2.csv) |
+| L1 · 单元/纯逻辑 | 3731 | [L1.csv](cases/L1.csv) |
+| L2 · 组件/契约 | 1929 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 87 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 93 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 12 | [M.csv](cases/M.csv) |
@@ -78,6 +78,11 @@
 | CP-004 | Browser consumes the same synthetic expectation fixture as RN; granting no access does not expose content and no test sends real input. |
 | TD-006 | Known test documentation is policy-only; mixed Go test changes still select complete Go; unknown metadata still selects all. |
 | DG-004 | Rejected verification never calls global device setup; successful verification calls setup exactly once afterwards. Existing DG-002 regressions cover the wrapper policy. |
+| TCV-001 | Polls contain only bounded selected inputs and call metadata, never result bodies; owner reads recover recorded arguments/results, reject rewritten/foreign/oversized records and redact structured credentials. |
+| TCV-002 | One call remains, original input/ref stays intact, result and status remain available by exact native ref; unrelated IDs are distinct. |
+| TCV-003 | Queries expose named parameters and readable structured/text results; commands keep original source, files retain changes, unknown tools have factual fallback; pending/failed/empty/unrecorded are distinct, raw contains recorded sanitized fields and does not silently truncate. |
+| TCV-004 | Tool-specific name, provider/status/duration, parameters/results are visible; no false summary-only warning, stale responses cannot cross sessions, original source remains verbatim, copy is complete and disabled while incomplete. |
+| TCV-005 | Both surfaces show the same facts and nonempty recorded values; controls remain reachable, no horizontal document overflow or console errors, pending/error states are actionable and old-server fallback remains meaningful. |
 | UR-001 | The 34-second HTTP-200-equivalent report is shown; the stalled read is classified as timeout, the next valid report is shown, and the late old report cannot overwrite it. |
 | UR-002 | Valid empty reports remain data, 404 is unsupported, other failures throw typed causes; no failure becomes zero usage or a fabricated report. |
 | UR-003 | Loading and empty are distinct; retry is available only where it can help; prior usage remains visibly labelled; technical details begin folded; actions and alerts have accessible roles/labels. |

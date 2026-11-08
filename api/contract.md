@@ -578,8 +578,7 @@ original code-mode envelope. Exact call ID plus normalized tool name deduplicate
 response/native mirrors; similar command text does not. Native file changes use
 `input_kind: changes` with selected recorded changes and status JSON, preserving
 add/update/delete content, diff and move paths. These are recorded changes, not a
-reconstruction of an original patch invocation or a success claim. Tool results,
-stdout/stderr, reasoning and unrelated MCP configuration remain excluded.
+reconstruction of an original patch invocation or a success claim. Tool result bodies, stdout/stderr, reasoning and unrelated MCP configuration remain excluded from transcript polls. Recorded Codex native MCP/command completions additionally carry optional `call` metadata; their argument/result bodies are read only on demand.
 
 `input` selects one known command/code/path/query/URL/description/prompt field;
 its whitespace and line breaks are preserved. It is not a dump of arbitrary arguments.
@@ -596,12 +595,17 @@ original input as a `step`, bypassing preview budgets without expanding transcri
 `input_ref` identifies the resolved source record and call ordinal, with a content hash;
 rewritten, incomplete or missing records return 404, never a summary labelled complete.
 It is an authenticated, no-store owner/full-paired read, denied to guests. Session/home
-identity is independently verified; references cannot choose file paths, tool results or
-context. Readers parse at most one 32 MiB source record (DSH retains its source limits),
+identity is independently verified; references cannot choose file paths, context or another session. Readers parse at most one 32 MiB source record (DSH retains its source limits),
 rejecting oversized records explicitly. Older servers may omit `input_ref` or return 503;
 clients retain an honest preview and retry affordance. Formatting is read-only presentation;
-Raw content and Copy preserve the selected original input. Formatting parser work is
+Original command/code section Copy preserves its selected source. For recorded native calls, Raw content is a normalized, credential-filtered JSON envelope of the recorded arguments and result; it is not a byte-for-byte source-log dump. Formatting parser work is
 bounded independently; unusually large input falls back verbatim without cutting content.
+
+Optional `step.call` is `{provider?,name?,status?,duration_ms?,has_arguments?,has_result?,ref?}` in transcript polls. This bounded metadata does not retain any result body. `call.ref` addresses the native completion; it can differ from `input_ref` when a legacy/native mirror enriches an earlier call. The earlier selected input/ref and chronological identity remain unchanged. Cache accounting includes call metadata.
+
+The same owner/full-paired `/api/tool-input` reader accepts `call.ref`. Its response adds `call.loaded:true` and recorded `arguments` / `result` JSON strings when present, plus `redacted` when recognized structured credential fields or binary MCP data were hidden. It does not claim arbitrary free text is secret-free. Missing result, recorded null/empty result, tool error, loading and transport failure remain distinct. Results are never inferred from names or command contents. The existing exact-source fingerprint, 32 MiB record bound, home/session validation, guest denial and no-store policy apply. Older records retain selected-input/summary behavior.
+
+App and Web use one shared presentation model: commands/code retain the existing code reader, file changes retain recorded change JSON/diffs, parameter calls show named fields and structured/text results, and unknown tools use a factual fallback. Large detail sections page the visible text without cutting the complete Copy source.
 
 `context` is an optional explicitly recorded harness input:
 `{"title":string,"text":string,"source":string,"time":string?,"truncated":true?,"before_prompt":true?}`.

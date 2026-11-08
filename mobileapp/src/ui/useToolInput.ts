@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { GtmuxClient, TranscriptStep } from '../api/client';
+import { loadToolDetails, toolDetailRefs } from './toolPresentation';
 
 export function useToolInput(
   step?: TranscriptStep,
@@ -7,7 +8,8 @@ export function useToolInput(
   session = '',
   home = '',
 ) {
-  const ref = step?.details_truncated ? step.input_ref : '';
+  const ref = JSON.stringify(step ? toolDetailRefs(step) : []);
+  const needed = ref !== '[]';
   const [attempt, setAttempt] = useState(0);
   const [result, setResult] = useState<{
     key: string;
@@ -17,11 +19,12 @@ export function useToolInput(
   } | null>(null);
   const key = JSON.stringify([ref, session, home, attempt]);
   useEffect(() => {
-    if (!ref || !client || !session) return;
+    if (!needed || !client || !session || !step) return;
     const controller = new AbortController();
     setResult(null);
-    client
-      .toolInput(session, home, ref, controller.signal)
+    loadToolDetails(step, value =>
+      client.toolInput(session, home, value, controller.signal),
+    )
       .then(value => {
         if (!controller.signal.aborted) setResult({ key, client, step: value });
       })
@@ -30,12 +33,14 @@ export function useToolInput(
           setResult({ key, client, failed: true });
       });
     return () => controller.abort();
-  }, [client, ref, session, home, key]);
+    // Source identity is the immutable ref, not an object recreated by render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [client, ref, needed, session, home, key]);
   const current =
     result?.key === key && result.client === client ? result : null;
   return {
     step: current?.step ?? step,
-    loading: !!(ref && client && session && !current),
+    loading: !!(needed && client && session && !current),
     failed: !!current?.failed,
     retry: () => setAttempt(n => n + 1),
   };

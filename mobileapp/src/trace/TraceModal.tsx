@@ -40,6 +40,9 @@ import { ProfileTarget } from '../ui/participantProfile';
 import { MarkdownView } from '../ui/MarkdownView';
 import { CodeText } from '../ui/CodeText';
 import { CodeBlock } from '../ui/CodeBlock';
+import { ToolCallDetails } from '../ui/ToolCallDetails';
+import { callRaw } from '../ui/toolPresentation';
+import { recordedStep } from './presentation';
 import { useToolInput } from '../ui/useToolInput';
 import { darkCodeBackground, toolCodeHint } from '../ui/codeReading';
 import { CopyFeedbackContext } from '../ui/CopyableText';
@@ -366,6 +369,7 @@ export function TraceReader({
           input_ref: selectedStep.inputRef,
           workdir: selectedStep.workdir,
           operation: selectedStep.operation,
+          call: selectedStep.call,
         }
       : undefined,
     detailsOpen ? client : undefined,
@@ -373,7 +377,10 @@ export function TraceReader({
     agent.home_id,
   );
   const selectedFull =
-    fullStep && !fullStep.details_truncated && selectedStep?.truncated
+    fullStep &&
+    selectedStep &&
+    !fullStep.details_truncated &&
+    (selectedStep?.truncated || fullStep.call?.loaded)
       ? {
           ...selection!,
           event: {
@@ -384,6 +391,7 @@ export function TraceReader({
               input: fullStep.input || '',
               workdir: fullStep.workdir || '',
               truncated: false,
+              call: fullStep.call,
             },
           },
         }
@@ -472,6 +480,8 @@ export function TraceReader({
     const value =
       detailTab === 'origin'
         ? JSON.stringify(sourceInfo(chosen.event), null, 2)
+        : chosen.event.kind === 'tool' && chosen.event.step?.call?.loaded
+        ? callRaw(recordedStep(chosen.event))
         : chosen.event.body || chosen.event.title;
     if (!value) return;
     try {
@@ -1058,7 +1068,12 @@ export function TraceReader({
               </ChromeText>
               <TouchableOpacity
                 testID="trace-copy"
-                disabled={inputLoading || !!chosen.event.step?.truncated}
+                disabled={
+                  inputLoading ||
+                  inputFailed ||
+                  !!chosen.event.step?.truncated ||
+                  !!(chosen.event.step?.call && !chosen.event.step.call.loaded)
+                }
                 accessibilityRole="button"
                 accessibilityLabel={zh ? '复制' : 'Copy'}
                 onPress={copy}
@@ -1128,7 +1143,8 @@ export function TraceReader({
                 )}
               {(detailTab === 'overview' || detailTab === 'origin') &&
                 chosen.event.step &&
-                !chosen.event.step.input && (
+                !chosen.event.step.input &&
+                !chosen.event.step.call && (
                   <ChromeText style={[styles.notice, { color: pal.fg2 }]}>
                     {zh
                       ? '此调用仅记录了摘要。'
@@ -1191,6 +1207,20 @@ export function TraceReader({
                       fontSize={Math.max(12, fontSize - 1)}
                     />
                   </View>
+                ) : chosen.event.kind === 'tool' && chosen.event.step?.call ? (
+                  <ToolCallDetails
+                    key={chosen.event.key}
+                    step={recordedStep(chosen.event)}
+                    lang={lang}
+                    dark={darkCodeBackground(pal.surface)}
+                    fontSize={Math.max(12, fontSize - 1)}
+                    raw={detailTab === 'raw'}
+                    disabled={
+                      inputLoading ||
+                      inputFailed ||
+                      !chosen.event.step.call.loaded
+                    }
+                  />
                 ) : chosen.event.kind === 'tool' ||
                   (chosen.event.kind === 'context' &&
                     chosen.event.title === 'Environment') ||
@@ -1211,7 +1241,15 @@ export function TraceReader({
                     dark={darkCodeBackground(pal.surface)}
                     lang={lang}
                     fontSize={Math.max(12, fontSize - 1)}
-                    disabled={inputLoading || !!chosen.event.step?.truncated}
+                    disabled={
+                      inputLoading ||
+                      inputFailed ||
+                      !!chosen.event.step?.truncated ||
+                      !!(
+                        chosen.event.step?.call &&
+                        !chosen.event.step.call.loaded
+                      )
+                    }
                     allowFormat={detailTab === 'preview'}
                     allowEmbedded={detailTab === 'preview'}
                     initialFormatted={detailTab === 'preview'}

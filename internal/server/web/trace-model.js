@@ -1,5 +1,5 @@
-// Generated from shared App trace analysis and presentation; SHA256 8b23cfe439b66af9d9a9f56608e9a661d99cb7afbf86777d713a486541990676
-// Body SHA256 679faeda3eff70e2d574f30993b95ff7e1cb3b01a4ec4bcfdeea77c35f0667de
+// Generated from shared App trace analysis and presentation; SHA256 dd470c09d0a4a05e580dcf9247483f0dd48a318147fe795009ef44a554efc7fa
+// Body SHA256 cbb14ce1a3bce808bf8905cd7dd23178d2b3ccd2942f35031848f16b01b53c50
 (function(root){var modules={"model":function(exports,require){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -16,6 +16,7 @@ exports.timelineRows = timelineRows;
 exports.previewText = previewText;
 exports.mergeHistory = mergeHistory;
 exports.prependHistory = prependHistory;
+const toolPresentation_1 = require("../ui/toolPresentation");
 const string = (value) => typeof value === 'string' ? value : '';
 const list = (value) => (Array.isArray(value) ? value : []);
 function object(value) {
@@ -41,10 +42,20 @@ function turnBookmarkKey(value, context = {}) {
         return undefined;
     const session = string(turn.session_id) || string(context.session_id);
     const record = string(turn.record_id), time = string(turn.time);
-    const ordinal = Number.isSafeInteger(turn.turn_ordinal) && turn.turn_ordinal > 0 ? turn.turn_ordinal : null;
-    if (!session || !record && !time && !ordinal)
+    const ordinal = Number.isSafeInteger(turn.turn_ordinal) && turn.turn_ordinal > 0
+        ? turn.turn_ordinal
+        : null;
+    if (!session || (!record && !time && !ordinal))
         return undefined;
-    return digest(JSON.stringify([string(context.home_id), session, record ? ['record', record] : time ? ['time', time] : ['ordinal', ordinal]]));
+    return digest(JSON.stringify([
+        string(context.home_id),
+        session,
+        record
+            ? ['record', record]
+            : time
+                ? ['time', time]
+                : ['ordinal', ordinal],
+    ]));
 }
 function agentName(value) {
     const name = string(value).trim();
@@ -195,6 +206,7 @@ function build(turns, context = {}) {
                     operation: string(step.operation),
                     truncated: step.details_truncated === true,
                     inputRef: string(step.input_ref),
+                    call: object(step.call),
                 });
             });
         });
@@ -264,6 +276,8 @@ function overviewFacts(event, lang) {
         { label: 'Agent', value: event.agent },
         { label: zh ? '会话' : 'Session', value: event.session },
     ];
+    if (event.step?.call)
+        facts.unshift(...(0, toolPresentation_1.callFacts)({ kind: 'tool', title: event.title, call: event.step.call }, lang));
     if (event.context?.time)
         facts.push({
             label: zh ? '记录时间' : 'Recorded at',
@@ -402,7 +416,9 @@ function mergeHistory(held, latest) {
         return { turns: latest, gap: false };
     if (!latest.length)
         return { turns: held, gap: false };
-    const key = (t) => t.record_id ? `${t.session_id || ''}\x00${t.record_id}\x00${t.turn_ordinal || ''}\x00${digest((t.time || '') + '\x00' + t.prompt)}` : '';
+    const key = (t) => t.record_id
+        ? `${t.session_id || ''}\x00${t.record_id}\x00${t.turn_ordinal || ''}\x00${digest((t.time || '') + '\x00' + t.prompt)}`
+        : '';
     const keys = new Set(latest.map(key).filter(Boolean));
     const overlap = held.findIndex(t => keys.has(key(t)));
     if (overlap >= 0)
@@ -550,6 +566,7 @@ exports.traceEventIcon = traceEventIcon;
 exports.conversationOutline = conversationOutline;
 const model_1 = require("./model");
 const activity_1 = require("../ui/activity");
+const toolPresentation_1 = require("../ui/toolPresentation");
 const timeline_1 = require("./timeline");
 exports.traceKindLabels = {
     all: ['All records', '全部记录'],
@@ -568,6 +585,10 @@ function recordedStep(event) {
     const step = event.step;
     return {
         kind: 'tool',
+        call: step.call,
+        workdir: step.workdir,
+        input_ref: step.inputRef,
+        details_truncated: step.truncated,
         title: event.title,
         input: step.input,
         detail: step.summary,
@@ -579,7 +600,9 @@ function traceEventLabel(event, lang) {
     if (event.kind === 'context')
         return (0, model_1.contextLabel)(event, lang);
     return event.kind === 'tool'
-        ? (0, activity_1.activityLabel)((0, activity_1.activityOperation)(recordedStep(event)), lang)
+        ? event.step?.call
+            ? (0, toolPresentation_1.callTitle)(recordedStep(event))
+            : (0, activity_1.activityLabel)((0, activity_1.activityOperation)(recordedStep(event)), lang)
         : event.kind === 'user'
             ? event.from?.label || (lang === 'zh' ? '请求' : 'Request')
             : lang === 'zh'
@@ -662,5 +685,248 @@ function conversationOutline(turns, lang = 'en', context) {
     }));
 }
 
-}},cache={};function load(key){if(cache[key])return cache[key];var exports={};cache[key]=exports;modules[key](exports,function(name){var id={"./model":"model","../ui/activity":"activity","./timeline":"timeline"}[name];if(!id)throw new Error("Unknown shared trace module");return load(id);});return exports;}var api=Object.assign({},load("model"),load("presentation"));
+},
+"toolPresentation":function(exports,require){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.callTitle = callTitle;
+exports.callFacts = callFacts;
+exports.callSections = callSections;
+exports.callRaw = callRaw;
+exports.toolDetailRefs = toolDetailRefs;
+exports.loadToolDetails = loadToolDetails;
+exports.callPage = callPage;
+// Canonical Chat/Trace interpretation, also generated for the browser. These
+// fields describe recorded evidence; never infer success from a tool name.
+function callTitle(step) {
+    const call = step.call;
+    if (!call)
+        return step.title;
+    const name = call.name || step.title;
+    const action = name.split(/__|\./).at(-1) || name;
+    const words = action.replace(/[_-]+/g, ' ');
+    return [call.provider, words.charAt(0).toUpperCase() + words.slice(1)]
+        .filter(Boolean)
+        .join(' · ');
+}
+function callFacts(step, lang) {
+    const c = step.call;
+    if (!c)
+        return [];
+    const zh = lang === 'zh';
+    const statuses = {
+        completed: ['Completed', '已完成'],
+        failed: ['Failed', '失败'],
+        in_progress: ['Running', '进行中'],
+        cancelled: ['Cancelled', '已取消'],
+    };
+    const facts = [{ label: zh ? '工具' : 'Tool', value: c.name || step.title }];
+    if (c.provider)
+        facts.push({ label: zh ? '服务' : 'Provider', value: c.provider });
+    if (c.status)
+        facts.push({
+            label: zh ? '状态' : 'Status',
+            value: statuses[c.status]?.[zh ? 1 : 0] || c.status,
+        });
+    if (typeof c.duration_ms === 'number')
+        facts.push({
+            label: zh ? '耗时' : 'Duration',
+            value: c.duration_ms < 1000
+                ? c.duration_ms + ' ms'
+                : (c.duration_ms / 1000).toFixed(2) + ' s',
+        });
+    return facts;
+}
+function json(value) {
+    try {
+        return JSON.parse(value);
+    }
+    catch {
+        return undefined;
+    }
+}
+function callSections(step, lang) {
+    const zh = lang === 'zh', c = step.call, sections = [];
+    const add = (id, label, source, hint = 'text', parameters = false) => {
+        const value = source.length <= 16000 ? json(source) : undefined;
+        const rows = parameters &&
+            value &&
+            typeof value === 'object' &&
+            !Array.isArray(value) &&
+            Object.keys(value).length <= 24
+            ? Object.entries(value).map(([key, v]) => ({
+                label: key.replace(/_/g, ' '),
+                value: typeof v === 'string' ? v : JSON.stringify(v, null, 2),
+            }))
+            : undefined;
+        sections.push({ id, label, source, hint, rows });
+    };
+    const argv = step.input_kind === 'arguments' &&
+        ['command', 'read', 'list', 'search'].includes(step.operation || '');
+    if (step.input &&
+        step.input_kind !== 'parameters' &&
+        (step.input_kind !== 'arguments' || argv)) {
+        add('input', argv
+            ? zh
+                ? '命令参数'
+                : 'Command arguments'
+            : step.input_kind === 'changes'
+                ? zh
+                    ? '文件变更'
+                    : 'File changes'
+                : step.input_kind === 'command'
+                    ? zh
+                        ? '命令'
+                        : 'Command'
+                    : step.input_kind === 'code'
+                        ? zh
+                            ? '代码'
+                            : 'Code'
+                        : zh
+                            ? '输入'
+                            : 'Input', step.input, argv
+            ? 'json'
+            : step.input_kind === 'code'
+                ? 'javascript'
+                : step.input_kind === 'command'
+                    ? 'shell'
+                    : step.input_kind === 'changes'
+                        ? 'json'
+                        : 'text');
+    }
+    const args = c?.arguments ||
+        (['parameters', 'arguments'].includes(step.input_kind || '')
+            ? step.input || ''
+            : '');
+    if (args &&
+        !argv &&
+        (!step.input ||
+            ['parameters', 'arguments'].includes(step.input_kind || '') ||
+            step.operation === 'tool'))
+        add('arguments', zh ? '参数' : 'Parameters', args, 'json', true);
+    if (c?.has_result && c.loaded) {
+        const result = (c.result?.length || 0) < 262144 ? json(c.result || '') : undefined;
+        // Prefer structured data, otherwise preserve every MCP text block. Raw keeps
+        // the entire sanitized recorded envelope, including error/type metadata.
+        if (result === null ||
+            result === '' ||
+            (Array.isArray(result?.content) &&
+                result.content.length === 0 &&
+                result.structuredContent == null))
+            add('empty', zh ? '结果' : 'Result', zh ? '调用已返回，没有内容。' : 'The call returned no content.', 'notice');
+        else if (result &&
+            typeof result === 'object' &&
+            result.structuredContent != null)
+            add('result', zh ? '结果' : 'Result', JSON.stringify(result.structuredContent, null, 2), 'json');
+        else if (result && Array.isArray(result.content)) {
+            const blocks = result.content.filter((v) => !!v &&
+                typeof v === 'object' &&
+                v.type === 'text' &&
+                typeof v.text === 'string');
+            if (blocks.length)
+                blocks.forEach((block, i) => add('result-' + i, zh ? '结果' : 'Result', block.text, json(block.text) !== undefined ? 'json' : 'text'));
+            else
+                add('result', zh ? '结果' : 'Result', c.result || 'null', 'json');
+        }
+        else
+            add('result', zh ? '结果' : 'Result', typeof result === 'string' ? result : c.result || 'null', typeof result === 'string' ? 'text' : 'json');
+        if (result?.isError === true)
+            sections.unshift({
+                id: 'error',
+                label: zh ? '工具返回错误' : 'Tool returned an error',
+                source: zh
+                    ? '以下为工具记录的错误结果。'
+                    : 'The tool recorded an error result.',
+                hint: 'notice',
+            });
+    }
+    if (c && !c.loaded && (c.has_arguments || c.has_result))
+        add('pending', zh ? '详情' : 'Details', zh
+            ? '打开详情以读取已记录的参数和结果。'
+            : 'Open details to load recorded parameters and results.', 'notice');
+    else if (c && !c.has_result)
+        add('unrecorded', zh ? '结果' : 'Result', zh
+            ? '此记录未包含工具结果。'
+            : 'No tool result is included in this record.', 'notice');
+    if (!sections.length)
+        add('summary', zh ? '已记录摘要' : 'Recorded summary', step.detail ||
+            (zh
+                ? '此记录未包含详细输入。'
+                : 'No detailed input is included in this record.'), 'notice');
+    if (c?.redacted)
+        add('redacted', zh ? '隐私保护' : 'Privacy', zh
+            ? '凭据字段和二进制数据已隐藏。'
+            : 'Credential fields and binary data are hidden.', 'notice');
+    return sections;
+}
+function callRaw(step) {
+    const c = step.call;
+    if (!c?.loaded)
+        return (step.input ||
+            step.detail ||
+            (c
+                ? JSON.stringify({
+                    tool: c.name || step.title,
+                    status: c.status || '',
+                    details: 'not loaded',
+                }, null, 2)
+                : ''));
+    // Raw describes the sanitized recorded structure, not formatted command source.
+    return ('{\n  "tool": ' +
+        JSON.stringify(c.name || step.title) +
+        ',\n  "status": ' +
+        JSON.stringify(c.status || '') +
+        (step.input ? ',\n  "input": ' + JSON.stringify(step.input) : '') +
+        (c.has_arguments ? ',\n  "arguments": ' + (c.arguments || 'null') : '') +
+        (c.has_result ? ',\n  "result": ' + (c.result || 'null') : '') +
+        '\n}');
+}
+function toolDetailRefs(step) {
+    return [
+        ...new Set([
+            step.details_truncated ? step.input_ref : '',
+            step.call && !step.call.loaded ? step.call.ref : '',
+        ].filter((v) => !!v)),
+    ];
+}
+async function loadToolDetails(step, read) {
+    const refs = toolDetailRefs(step), values = await Promise.all(refs.map(read));
+    let merged = { ...step };
+    for (let i = 0; i < refs.length; i++) {
+        const value = values[i];
+        if (value.input_ref !== refs[i] || value.details_truncated)
+            throw new Error('Incomplete tool details');
+        if (step.details_truncated && step.input_ref === refs[i])
+            merged = {
+                ...merged,
+                input: value.input,
+                workdir: value.workdir,
+                details_truncated: false,
+            };
+        if (step.call?.ref === refs[i]) {
+            if (!value.call?.loaded ||
+                value.call.ref !== refs[i] ||
+                (value.call.has_arguments &&
+                    typeof value.call.arguments !== 'string') ||
+                (value.call.has_result && typeof value.call.result !== 'string'))
+                throw new Error('Incomplete recorded call');
+            merged = { ...merged, call: value.call };
+        }
+    }
+    return merged;
+}
+// Bound rendering cost, never the stored/copyable source. Page labels disclose
+// the visual window; UTF-16 surrogate pairs are kept intact across boundaries.
+function callPage(source, page) {
+    const size = 16000, pages = Math.max(1, Math.ceil(source.length / size));
+    const index = Math.max(0, Math.min(pages - 1, page));
+    const boundary = (n) => n > 0 && /[\uDC00-\uDFFF]/.test(source.charAt(n)) ? n - 1 : n;
+    return {
+        source: source.slice(boundary(index * size), boundary(Math.min(source.length, (index + 1) * size))),
+        page: index,
+        pages,
+    };
+}
+
+}},cache={};function load(key){if(cache[key])return cache[key];var exports={};cache[key]=exports;modules[key](exports,function(name){var id={"./model":"model","../ui/activity":"activity","./timeline":"timeline","../ui/toolPresentation":"toolPresentation"}[name];if(!id)throw new Error("Unknown shared trace module");return load(id);});return exports;}var api=Object.assign({},load("model"),load("presentation"),load("toolPresentation"));
 if(typeof module==="object"&&module.exports)module.exports=api;else root.GtmuxTrace=api;})(typeof window!=="undefined"?window:globalThis);

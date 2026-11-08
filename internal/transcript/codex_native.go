@@ -66,6 +66,13 @@ type codexNativeItem struct {
 	Kind      string          `json:"kind"`
 	Query     string          `json:"query"`
 	Status    string          `json:"status"`
+	AppName   string          `json:"appName"`
+	Result    recordedValue   `json:"result"`
+	Output    recordedValue   `json:"aggregated_output"`
+	Duration  struct {
+		Secs  int64 `json:"secs"`
+		Nanos int64 `json:"nanos"`
+	} `json:"duration"`
 	ParsedCmd []struct {
 		Type string `json:"type"`
 		Path string `json:"path"`
@@ -79,8 +86,8 @@ type codexNativeItem struct {
 	} `json:"changes"`
 }
 
-// Decode directly into selected input fields, without allocating RawMessages for
-// the entire payload/item or retaining aggregated_output, result, stdout or stderr.
+// Polls retain selected input and bounded metadata only. Large result/output values
+// are fingerprinted without a retained copy; only the scoped full reader captures them.
 
 func codexNativeEvent(line string, st *parseState) bool {
 	if !strings.Contains(line, `"item_completed"`) {
@@ -93,6 +100,8 @@ func codexNativeEvent(line string, st *parseState) bool {
 			Item codexNativeItem `json:"item"`
 		} `json:"payload"`
 	}
+	record.Payload.Item.Result.capture = st.fullTools
+	record.Payload.Item.Output.capture = st.fullTools
 	if json.Unmarshal([]byte(line), &record) != nil || record.Type != "event_msg" || record.Payload.Type != "item_completed" {
 		return false
 	}
@@ -167,6 +176,14 @@ func codexNativeEvent(line string, st *parseState) bool {
 			// elapsed duration is not a requested input; unknown extensions stay out.
 			return true
 		}
+	}
+	if item.Type == "McpToolCall" || item.Type == "CommandExecution" {
+		args, result := item.Arguments, item.Result
+		if item.Type == "CommandExecution" {
+			args, _ = json.Marshal(map[string]any{"command": item.Command, "cwd": item.Cwd})
+			result = item.Output
+		}
+		step.Call, step.detailIdentity = recordedCall(item.AppName, item.Tool, item.Status, item.Duration.Secs, item.Duration.Nanos, args, result, st.fullTools)
 	}
 	st.addRecordedStep("codex", step, item.ID)
 	return true

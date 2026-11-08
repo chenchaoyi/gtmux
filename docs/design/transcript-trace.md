@@ -12,7 +12,7 @@ conversation reading in `ui/ChatView.tsx` and native-session polling in
 The basic App feature needs no new server endpoint. Both clients already receive
 ordered prompts, assistant segments, session identity and recorded tool input through
 the existing pane/session transcript routes. DSH's model-request timing, token totals,
-private reasoning and tool output are not part of this contract. A useful trace must
+private reasoning are not part of this contract. Recorded native tool output/timing is available only through the scoped detail reader described below. A useful trace must
 describe the records it actually has.
 
 
@@ -22,8 +22,7 @@ shared core steps; clients do not infer execution by scanning JavaScript. Record
 command categories identify reads/listing/search only when unambiguous. File-change
 inspectors label their selected changes/status JSON as Recorded changes, not original
 patch input. Exact call ID and normalized tool name suppress mirrored rows across
-incremental refresh; different calls with identical text remain distinct. Result bodies,
-stdout/stderr, reasoning and unrelated MCP parameters stay outside the model.
+incremental refresh; different calls with identical text remain distinct. Result bodies, stdout/stderr and reasoning stay outside transcript polls/cache; native MCP/command details can load recorded arguments/results on demand.
 
 ## Browser interaction
 
@@ -106,7 +105,7 @@ Native details freeze the selected text and historical speaker together. Streami
 explicit Update details action; it never silently replaces a selected revision. Historical
 files use that record’s session and the selected home through the existing document bridge.
 The status badge describes the roster session, not a tool result. Missing clocks are omitted.
-The record-scope disclosure explains missing output/timing/token fields only when opened.
+The record-scope disclosure distinguishes recorded native results/timing from unavailable or inferred fields.
 
 HQ also offers Load earlier sessions through its existing history reader. Loading is
 explicit and disables repeat taps; history joins the same session filters and frozen
@@ -173,3 +172,9 @@ or the original text is retained. The browser consumes these same pure transform
 Expanded call groups indent their child records and retain a connecting parent rail;
 request/progress siblings return to the outer rail. Native and browser flat projections
 keep their existing stable keys, virtualization and refresh anchors.
+
+## Recorded tool details
+
+Codex native MCP and command completions retain compact provider/tool/status/duration and presence metadata in the ordinary transcript. Arguments/results are loaded from one fingerprinted source record through the existing owner/full-paired reader when details open; guests remain denied. Native mirrors enrich the earlier invocation without replacing its original input or creating another row. No result body enters the transcript cache.
+
+The canonical `toolPresentation.ts` is used by App Chat/Trace and generated into the browser trace asset. Preview shows command/code, named parameters, recorded changes or structured/text output as appropriate. Raw is the normalized filtered record envelope; command section Copy preserves the original selected source. Missing, empty, failed and pending results are distinct. Large sections page 16,000 UTF-16 units with surrogate-safe boundaries; Copy retains the full section. Recognized structured credential keys and binary blocks are filtered and labelled, without claiming arbitrary prose has been anonymized.
