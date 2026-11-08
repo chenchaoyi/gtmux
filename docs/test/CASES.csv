@@ -1289,6 +1289,10 @@ LEG-fff0ba15075f,L1,Go core / CLI / server,internal/hook/classify_test.go,95,Tes
 LEG-436f6bf7b6e2,L1,Go core / CLI / server,internal/hook/classify_test.go,108,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-e46c66c95bd7,L1,Go core / CLI / server,internal/hook/classify_test.go,119,Test,TestIsAskKind,False,legacy-not-retrospectively-reviewed
 LEG-ff77dc5f196d,L1,Go core / CLI / server,internal/hook/classify_test.go,142,Test,TestEveryHookWaitKindIsAnAskKind,False,legacy-not-retrospectively-reviewed
+MAP-7bf0b97f95d1,L2,reviewed implementation,internal/hook/codex_completed_turn_test.go,38,reviewed-selector,TestCompletedCodexTurnRejectsExplicitLateRearm,False,"CET-004,CET-005"
+MAP-6752a622a3e4,L2,reviewed implementation,internal/hook/codex_completed_turn_test.go,72,reviewed-selector,TestCompletedCodexTurnKeepsLegacyAndUncertainCallbacks,False,"CET-004,CET-005"
+MAP-2dd42a3caeb8,L2,reviewed implementation,internal/hook/codex_completed_turn_test.go,114,reviewed-selector,TestCodexContinuationPreservesActiveStart,False,"CET-004,CET-005"
+MAP-cce8e70a6d32,L2,reviewed implementation,internal/hook/codex_manual_compact_test.go,11,reviewed-selector,TestCompletedCodexTurnPreservesManualCompactReceipt,False,CET-006
 LEG-4a73b3d376d2,L1,Go core / CLI / server,internal/hook/codexbinding_test.go,21,Test,TestCodexSubmitWitnessCorrectsSharedServerPane,False,legacy-not-retrospectively-reviewed
 LEG-070f0322588b,L1,Go core / CLI / server,internal/hook/codexbinding_test.go,35,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-259154033f4a,L1,Go core / CLI / server,internal/hook/codexbinding_test.go,149,Test,TestNativeCodexTurnKeepsConsentBoundaryAfterRecordRemoval,False,legacy-not-retrospectively-reviewed
@@ -2214,6 +2218,7 @@ LEG-0bef1403145f,L1,Go core / CLI / server,internal/radar/agents_test.go,303,Tes
 LEG-afdda8c6ed08,L1,Go core / CLI / server,internal/radar/agents_test.go,313,Test,TestCodexReadyComposerContradictsMisroutedWait,False,legacy-not-retrospectively-reviewed
 LEG-c040c8f50d05,L1,Go core / CLI / server,internal/radar/agents_test.go,326,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-2b72c37f7d8b,L1,Go core / CLI / server,internal/radar/agents_test.go,335,Test,TestCodexScreenWaitRequiresLiveApprovalMenu,False,legacy-not-retrospectively-reviewed
+MAP-c49705115ac9,L3,reviewed implementation,internal/radar/codex_completed_marker_test.go,15,reviewed-selector,TestGatherCompletedOwnTurnSurvivesLateActiveMarker,False,"CET-002,CET-003"
 MAP-226227944e48,L3,reviewed implementation,internal/radar/codex_foreign_marker_gather_test.go,14,reviewed-selector,TestGatherDoesNotReviveAnotherSessionsOldMarkerFromWindowActivity,False,CORE-CODEX-FOREIGN-GATHER
 MAP-8c62d9a14381,L2,reviewed implementation,internal/radar/codex_foreign_marker_test.go,15,reviewed-selector,TestForeignActiveRequiresCurrentIdentityEndedTurnAndReadyFrame,False,CORE-CODEX-FOREIGN-ACTIVE
 MAP-d562c313395b,L2,reviewed implementation,internal/radar/codex_foreign_marker_test.go,107,reviewed-selector,TestForeignActiveProductionReaderRejectsLegacyResumeWithoutFrontend,False,CORE-CODEX-FOREIGN-ACTIVE
@@ -3040,6 +3045,8 @@ LEG-b298e746f141,L1,Go core / CLI / server,internal/transcript/codex_recovery_te
 LEG-aa12c2119436,L1,Go core / CLI / server,internal/transcript/codex_recovery_test.go,43,Test,TestCodexRecoveryCompressedHistory,False,legacy-not-retrospectively-reviewed
 LEG-55f1d5bffbf6,L1,Go core / CLI / server,internal/transcript/codex_recovery_test.go,54,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-9bb90f653732,L1,Go core / CLI / server,internal/transcript/codex_recovery_test.go,93,Test,TestCodexRecoveryRefusesSymlinkAndOtherHome,False,legacy-not-retrospectively-reviewed
+MAP-cfb5148b253b,L1,reviewed implementation,internal/transcript/codex_turn_event_test.go,12,reviewed-selector,TestCodexTurnEventIdentityAndFreshness,False,CET-001
+MAP-d042219d39df,L1,reviewed implementation,internal/transcript/codex_turn_event_test.go,68,reviewed-selector,TestCodexTurnEventTailBudget,False,CET-001
 LEG-837a1fc84f90,L1,Go core / CLI / server,internal/transcript/dsh_test.go,14,Test,TestDSHCurrentPublicTranscriptIsIncrementalAndPrivateFieldsStayPrivate,False,legacy-not-retrospectively-reviewed
 LEG-deb044f79ab0,L1,Go core / CLI / server,internal/transcript/dsh_test.go,86,Test,TestDSHFullToolInputReadsBothDurableFormats,False,legacy-not-retrospectively-reviewed
 LEG-67ed34e34554,L1,Go core / CLI / server,internal/transcript/dsh_test.go,88,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed

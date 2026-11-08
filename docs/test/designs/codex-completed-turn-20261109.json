@@ -1,0 +1,91 @@
+{
+  "id": "codex-completed-turn-20261109",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-09",
+    "decision": "Proceed with bounded same-turn correction and producer fences",
+    "notes": "Reviewed against exact same-SID completed-turn false-working evidence. The historical writer is unknown. Do not use marker age as completion. Share existing bounded metadata parsing; require exact turn/current verified frontend plus ready nonworking/nonapproval frame for display correction. Do not mutate real markers or fabricate completion. Producer fence only with explicit incoming/current/completion identity; no-ID callbacks remain conservative. Preserve continuation mtime, but refresh actual starts. New tests precede source fix and include deterministic old-code failure; run affected race and core checks. No deployment, restart or private state migration."
+  },
+  "cases": [
+    {
+      "id": "CET-001",
+      "layer": "L1",
+      "description": "Read bounded Codex lifecycle metadata with turn identity while preserving legacy boundary callers.",
+      "setup": "Synthetic HOME/CODEX_HOME, rollout JSONL, marker timestamps and verified-frontend adapter; real production parser/gather/hook entry points. No real pane/state/body collection or timing sleeps.",
+      "action": "Read complete/abort/start records, append a next start within the same path scope, exercise missing IDs, malformed/oversized tails and equally dated conflicting files.",
+      "expected": "Return the latest kind, time and explicit turn ID; tied conflicting metadata is unusable as exact completion proof. Legacy kind/time callers still work and scoped facts stay fresh.",
+      "planned_files": [
+        "internal/transcript/codex_turn_event_test.go",
+        "internal/transcript/codex.go"
+      ],
+      "surfaces": [
+        "Shared Go status for CLI, Mac, Web and mobile"
+      ]
+    },
+    {
+      "id": "CET-002",
+      "layer": "L3",
+      "description": "A late same-session active marker cannot revive a verified ended turn on window repaint.",
+      "setup": "Synthetic HOME/CODEX_HOME, rollout JSONL, marker timestamps and verified-frontend adapter; real production parser/gather/hook entry points. No real pane/state/body collection or timing sleeps.",
+      "action": "Gather twice with a ready current frontend, active timestamp after rollout end and matching turn marker; test completion and abort.",
+      "expected": "Idle since actual boundary; active content/mtime and turn ID remain untouched; no fabricated completion, latest flag or done notification evidence.",
+      "planned_files": [
+        "internal/radar/codex_completed_marker_test.go",
+        "internal/radar/agents.go",
+        "internal/radar/codexforeign.go"
+      ],
+      "surfaces": [
+        "Shared Go status for CLI, Mac, Web and mobile"
+      ]
+    },
+    {
+      "id": "CET-003",
+      "layer": "L3",
+      "description": "Keep genuine newer turns, approvals and uncertain legacy ownership conservative.",
+      "setup": "Synthetic HOME/CODEX_HOME, rollout JSONL, marker timestamps and verified-frontend adapter; real production parser/gather/hook entry points. No real pane/state/body collection or timing sleeps.",
+      "action": "Vary current/payload turn IDs, latest start, frame busy/queued, approval marker/menu, frontend/home/cwd, future/conflicting metadata and missing IDs.",
+      "expected": "Only verified same-session exact-ended-turn ready evidence overrides working. Real waiting/start/work survives, missing identity follows existing legacy behavior; no input authority or real marker mutation.",
+      "planned_files": [
+        "internal/radar/codex_completed_marker_test.go",
+        "internal/radar/agents.go",
+        "internal/radar/codexforeign.go"
+      ],
+      "surfaces": [
+        "Shared Go status for CLI, Mac, Web and mobile"
+      ]
+    },
+    {
+      "id": "CET-004",
+      "layer": "L2",
+      "description": "Explicit late same-turn callbacks cannot resurrect a completed Codex turn.",
+      "setup": "Synthetic HOME/CODEX_HOME, rollout JSONL, marker timestamps and verified-frontend adapter; real production parser/gather/hook entry points. No real pane/state/body collection or timing sleeps.",
+      "action": "Invoke real hook Run with a verified synthetic frontend through prompt, Stop then delayed PostToolUse/automatic PostCompact; snapshot state; start a new explicit or legacy no-ID turn. Also vary completion session/turn and approval.",
+      "expected": "An explicit callback matching structured completion and current turn is ignored without clearing completion or minting events. Actual next start and unknown/missing legacy IDs are not fenced; approvals are preserved.",
+      "planned_files": [
+        "internal/hook/codex_completed_turn_test.go",
+        "internal/hook/hook.go",
+        "internal/hook/lifecycle.go"
+      ],
+      "surfaces": [
+        "Shared Go status for CLI, Mac, Web and mobile"
+      ]
+    },
+    {
+      "id": "CET-005",
+      "layer": "L2",
+      "description": "A continuing Codex callback preserves the real active-marker start time.",
+      "setup": "Synthetic HOME/CODEX_HOME, rollout JSONL, marker timestamps and verified-frontend adapter; real production parser/gather/hook entry points. No real pane/state/body collection or timing sleeps.",
+      "action": "Invoke Run on an existing own active marker for PostToolUse and automatic PostCompact; compare nanosecond mtime. Submit a real new prompt and switch session.",
+      "expected": "Continuation leaves marker start intact; actual new prompt/turn start and ownership change still refresh active time.",
+      "planned_files": [
+        "internal/hook/codex_completed_turn_test.go",
+        "internal/hook/hook.go"
+      ],
+      "surfaces": [
+        "Shared Go status for CLI, Mac, Web and mobile"
+      ]
+    }
+  ],
+  "seal": "dd7fb41429b51d304f9f1e10ebc60979e24035bda7518d1b94fa6f7126b98a48"
+}

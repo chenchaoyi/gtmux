@@ -335,38 +335,62 @@ func (s *CodexPathScope) CodexLastTurnBoundary(sessionID string) (string, time.T
 	return codexLastTurnBoundary(s, sessionID)
 }
 
-func codexLastTurnBoundary(resolver codexPathResolver, sessionID string) (string, time.Time) {
-	var latestKind string
-	var latestAt time.Time
-	for _, path := range resolver.paths(sessionID) {
-		kind, at := codexLastTurnBoundaryIn(path)
-		if at.After(latestAt) {
-			latestKind, latestAt = kind, at
-		}
-	}
-	return latestKind, latestAt
+// CodexTurnEvent is bounded lifecycle metadata, never conversation content.
+// Ambiguous means equally dated rollout files disagree; it is not exact-turn proof.
+type CodexTurnEvent struct {
+	Kind      string
+	TurnID    string
+	At        time.Time
+	Ambiguous bool
 }
 
-func codexLastTurnBoundaryIn(path string) (string, time.Time) {
+func CodexLastTurnEvent(sessionID string) CodexTurnEvent {
+	return codexLastTurnEvent(directCodexPathResolver{}, sessionID)
+}
+
+// CodexLastTurnEvent shares path discovery but reads facts fresh, like the legacy API.
+func (s *CodexPathScope) CodexLastTurnEvent(sessionID string) CodexTurnEvent {
+	return codexLastTurnEvent(s, sessionID)
+}
+
+func codexLastTurnBoundary(resolver codexPathResolver, sessionID string) (string, time.Time) {
+	event := codexLastTurnEvent(resolver, sessionID)
+	return event.Kind, event.At
+}
+
+func codexLastTurnEvent(resolver codexPathResolver, sessionID string) CodexTurnEvent {
+	var latest CodexTurnEvent
+	for _, path := range resolver.paths(sessionID) {
+		event := codexLastTurnEventIn(path)
+		if event.At.After(latest.At) {
+			latest = event
+		} else if !event.At.IsZero() && event.At.Equal(latest.At) && (event.Kind != latest.Kind || event.TurnID != latest.TurnID) {
+			latest.Ambiguous = true
+		}
+	}
+	return latest
+}
+
+func codexLastTurnEventIn(path string) CodexTurnEvent {
 	f, err := os.Open(path)
 	if err != nil {
-		return "", time.Time{}
+		return CodexTurnEvent{}
 	}
 	defer f.Close()
 	info, err := f.Stat()
 	if err != nil {
-		return "", time.Time{}
+		return CodexTurnEvent{}
 	}
 	const tailBytes int64 = 256 << 10
 	start := max(int64(0), info.Size()-tailBytes)
 	buf := make([]byte, info.Size()-start)
 	if _, err := f.ReadAt(buf, start); err != nil && err != io.EOF {
-		return "", time.Time{}
+		return CodexTurnEvent{}
 	}
 	if start > 0 {
 		i := bytes.IndexByte(buf, '\n')
 		if i < 0 {
-			return "", time.Time{}
+			return CodexTurnEvent{}
 		}
 		buf = buf[i+1:]
 	}
@@ -377,18 +401,18 @@ func codexLastTurnBoundaryIn(path string) (string, time.Time) {
 			continue
 		}
 		var payload struct {
-			Type string `json:"type"`
+			Type   string `json:"type"`
+			TurnID string `json:"turn_id"`
 		}
-		if json.Unmarshal(line.Payload, &payload) != nil ||
-			(payload.Type != "task_started" && payload.Type != "task_complete" && payload.Type != "turn_aborted") {
+		if json.Unmarshal(line.Payload, &payload) != nil || (payload.Type != "task_started" && payload.Type != "task_complete" && payload.Type != "turn_aborted") {
 			continue
 		}
 		at, err := time.Parse(time.RFC3339Nano, line.Timestamp)
 		if err == nil {
-			return payload.Type, at
+			return CodexTurnEvent{Kind: payload.Type, TurnID: payload.TurnID, At: at}
 		}
 	}
-	return "", time.Time{}
+	return CodexTurnEvent{}
 }
 
 // codexStep folds one Codex log line into the parse state: event_msg user_message

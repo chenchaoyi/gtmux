@@ -12,25 +12,45 @@ import (
 
 var foreignCodexFrontend = resume.CodexFrontendForPane
 
-// A named marker for another thread is not evidence that this bound thread
-// started work. Correct only an explicitly ended, visibly ready current thread;
-// keep unknown/legacy ownership and genuine work or approval conservative.
-// This is a display correction, never a marker deletion or completion event.
+// Keep the legacy boundary adapter for callers that lack turn IDs. Such callers
+// can only contradict a foreign marker, never an own marker with uncertain turns.
 func codexForeignActiveEndedTurn(pane, loc, cwd, frame string, boundary func(string) (string, time.Time)) (string, time.Time) {
-	other := state.ReadMarker(state.ActivePath(pane))
-	if other == "" || state.Exists(state.WaitingPath(pane)) || !prompt.IsComposerReady(frame, "codex") || codexScreenWorking(frame) {
+	return codexActiveEndedTurn(pane, loc, cwd, frame, func(sid string) transcript.CodexTurnEvent {
+		kind, at := boundary(sid)
+		return transcript.CodexTurnEvent{Kind: kind, At: at}
+	})
+}
+
+// A named foreign marker, or a delayed marker for an explicitly ended own turn,
+// cannot outweigh a verified current frontend and ready nonworking frame. One
+// shared check reads the binding and bounded rollout metadata once. This only
+// corrects display: markers and completion receipts are never written here.
+func codexActiveEndedTurn(pane, loc, cwd, frame string, boundary func(string) transcript.CodexTurnEvent) (string, time.Time) {
+	sid := state.ReadMarker(state.ActivePath(pane))
+	if sid == "" || state.Exists(state.WaitingPath(pane)) ||
+		!prompt.IsComposerReady(frame, "codex") || prompt.WaitingOptions(frame) != nil || codexScreenWorking(frame) {
 		return "", time.Time{}
 	}
 	rec, ok := foreignCodexFrontend(pane)
 	// A legacy saved resume row alone is not exclusive current-thread proof.
 	// The production reader rechecks the frontend's kernel/TTY/pane identity.
 	if !ok || rec.Pane != pane || rec.Loc != loc || rec.HomeID != transcript.CodexHomeID() ||
-		rec.SessionID == "" || rec.SessionID == other || !hqpane.SameDir(rec.Cwd, cwd) {
+		rec.SessionID == "" || !hqpane.SameDir(rec.Cwd, cwd) {
 		return "", time.Time{}
 	}
-	kind, at := boundary(rec.SessionID)
-	if (kind == "task_complete" || kind == "turn_aborted") && !at.IsZero() && !at.After(time.Now().Add(time.Second)) {
-		return kind, at
+	turn := state.ReadMarker(state.TurnIDPath(pane))
+	event := boundary(rec.SessionID)
+	if event.Ambiguous || (event.Kind != "task_complete" && event.Kind != "turn_aborted") ||
+		event.At.IsZero() || event.At.After(time.Now().Add(time.Second)) {
+		return "", time.Time{}
 	}
-	return "", time.Time{}
+	// Own markers require exact current turn proof, regardless of marker age.
+	if rec.SessionID == sid && (turn == "" || event.TurnID != turn) {
+		return "", time.Time{}
+	}
+	// A prompt accepted during the read wins over the older observation.
+	if state.ReadMarker(state.TurnIDPath(pane)) != turn || state.ReadMarker(state.ActivePath(pane)) != sid || state.Exists(state.WaitingPath(pane)) {
+		return "", time.Time{}
+	}
+	return event.Kind, event.At
 }
