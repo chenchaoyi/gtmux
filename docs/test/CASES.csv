@@ -520,6 +520,9 @@ LEG-0cc13e334eb1,L1,Go core / CLI / server,internal/app/reap_test.go,253,Test,Te
 LEG-8b3719fc6024,L1,Go core / CLI / server,internal/app/reap_test.go,269,Test,TestReap_FailedStepIsReportedNotSwallowed,False,legacy-not-retrospectively-reviewed
 LEG-bd49be230ba3,L1,Go core / CLI / server,internal/app/reap_test.go,285,Test,TestReap_BarePane_PaneOnly,False,legacy-not-retrospectively-reviewed
 LEG-549c5db99316,L1,Go core / CLI / server,internal/app/reap_test.go,297,Test,TestReap_BarePane_MissingIdentityCannotClaimSuccess,False,legacy-not-retrospectively-reviewed
+MAP-93c5d85ec366,L2,reviewed implementation,internal/app/relay_sender_contract_test.go,52,reviewed-selector,TestHRS003ReceiptAwareSharedTranscript,False,HRS-003
+MAP-d400cc0846af,L2,reviewed implementation,internal/app/relay_sender_contract_test.go,89,reviewed-selector,TestHRS003EarlierPagesKeepFirstAttribution,False,HRS-003
+MAP-0905ae049942,L1,reviewed implementation,internal/app/relay_sender_test.go,15,reviewed-selector,TestHRS002TrustedReceiptAndFirstSourceOnly,False,HRS-002
 LEG-d7cc465944da,L1,Go core / CLI / server,internal/app/relay_test.go,11,Test,TestRelayAttentionAndAttribution,False,legacy-not-retrospectively-reviewed
 LEG-1ad70e7c7f4d,L1,Go core / CLI / server,internal/app/relay_test.go,32,Test,TestRelayReplyStaysWithOriginalPaneLifetime,False,legacy-not-retrospectively-reviewed
 LEG-f4dd711d8b93,L1,Go core / CLI / server,internal/app/relay_test.go,44,Test,TestSpawnMentionsRelayAndCodexPermission,False,legacy-not-retrospectively-reviewed
@@ -3078,6 +3081,7 @@ LEG-7f72ce9dddcc,L1,Go core / CLI / server,internal/transcript/kimi_test.go,468,
 LEG-b9602a110b02,L1,Go core / CLI / server,internal/transcript/pasted_test.go,12,Test,TestAWrappedWakeBatchIsStillNotAUserPrompt,False,legacy-not-retrospectively-reviewed
 LEG-83e1c8f321e0,L1,Go core / CLI / server,internal/transcript/pasted_test.go,19,Test,TestAWrappedHumanPasteKeepsItsTextWithoutTags,False,legacy-not-retrospectively-reviewed
 LEG-39d05c47a465,L1,Go core / CLI / server,internal/transcript/pasted_test.go,27,Test,TestUnwrapPastedLeavesUnwrappedTextAlone,False,legacy-not-retrospectively-reviewed
+MAP-13e8ea24978b,L1,reviewed implementation,internal/transcript/prompt_witness_test.go,28,reviewed-selector,TestHRS001FirstPromptWitnesses,False,HRS-001
 LEG-0a6ec0ee60a9,L1,Go core / CLI / server,internal/transcript/promptmedia_test.go,8,Test,TestPromptImageEnvelopeIsOneSharedMarkdownLink,False,legacy-not-retrospectively-reviewed
 LEG-d709f173a2b0,L1,Go core / CLI / server,internal/transcript/promptmedia_test.go,24,Test,TestSplitCodexImageEnvelopeKeepsReferenceAndHumanText,False,legacy-not-retrospectively-reviewed
 LEG-2c2d68d93d43,G,Go core / CLI / server,internal/transcript/provider_compat_test.go,10,Test,TestKimi25ActualLoopToolCalls,False,legacy-not-retrospectively-reviewed

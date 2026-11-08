@@ -309,6 +309,14 @@ This SHALL change nothing about what is owed or shown: the delivery trail stays 
 consumption debt and stays hidden from the default view. It is read for the answer, not
 for display.
 
+#### Scenario: A native Codex HQ reply is shown in Chat or Trace
+
+- **WHEN** a prompt has the complete canonical text of a replied, accepted HQ relay receipt in the same Codex home and thread
+- **THEN** App and browser readers use the existing HQ sender identity for the first matching source record after request creation, independent of the current pane number
+- **AND** earlier history pages use the same source-record association; a later human copy, changed body, missing receipt or wrong home/thread remains unattributed
+- **AND** a header alone grants no identity or authority; receipt acceptance is not evidence of agent execution or task completion
+- **AND** receipt changes invalidate cached sender presentation without changing the underlying conversation or granting observation/input permissions
+
 #### Scenario: The supervisor's own words
 
 - **WHEN** the supervisor delivers an instruction into a pane and then reads the delta

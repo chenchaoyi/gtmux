@@ -912,7 +912,11 @@ func transcriptForPane(id string, earlier int) ([]byte, server.TranscriptMeta, e
 				return nil, server.TranscriptMeta{}, transcript.ErrHistoryChanged
 			}
 		}
-		return transcriptHistoryPage(ctx, agent, sid, before, func(ts []transcript.Turn) []transcript.Turn { return stampSenders(ts, id, time.Now().Unix()) })
+		return transcriptHistoryPage(ctx, agent, sid, before, func(ts []transcript.Turn) []transcript.Turn {
+			ts = stampSenders(ts, id, time.Now().Unix())
+			ts, _ = stampRelaySenders(ts, rec.HomeID)
+			return ts
+		})
 	}
 	// Read BEFORE the turns and report it even when there are none: a session cleared a
 	// moment ago has an empty transcript, and that is exactly when the reader most needs
@@ -954,6 +958,9 @@ func transcriptForPane(id string, earlier int) ([]byte, server.TranscriptMeta, e
 		by, revision := events.Sends.MessageSenders(rec.Agent, rec.HomeID, rec.SessionID)
 		turns, senderRevision = stampMessageSenders(turns, by), revision
 	}
+	var relayRevision string
+	turns, relayRevision = stampRelaySenders(turns, rec.HomeID)
+	senderRevision += relayRevision
 	if revision := transcript.LogRevision(rec.Agent, rec.SessionID); revision != "" {
 		meta.Etag = fmt.Sprintf("W/%q", fmt.Sprintf("profile-v4-trace-history-%s-%s-%s-%s", rec.SessionID, revision, oldest, senderRevision))
 	}

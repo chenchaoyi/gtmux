@@ -34,7 +34,9 @@ func desktopTranscriptRead(id, etag string, homes ...string) ([]byte, server.Tra
 	meta.History = func(ctx context.Context, before string) ([]byte, server.TranscriptMeta, error) {
 		return transcriptHistoryPage(ctx, ref.Agent, id, before, func(ts []transcript.Turn) []transcript.Turn {
 			by, _ := events.Sends.MessageSenders(ref.Agent, ref.HomeID, id)
-			return stampMessageSenders(ts, by)
+			ts = stampMessageSenders(ts, by)
+			ts, _ = stampRelaySenders(ts, ref.HomeID)
+			return ts
 		})
 	}
 	var senders map[int64]events.MessageSender
@@ -47,7 +49,7 @@ func desktopTranscriptRead(id, etag string, homes ...string) ([]byte, server.Tra
 	if revision := transcript.LogRevision(ref.Agent, id); revision != "" {
 		meta.Etag = fmt.Sprintf("W/%q", "profile-v4-trace-history-"+ref.HomeID+"-"+id+"-"+revision+"-"+senderRevision)
 	}
-	if etag != "" && meta.Etag == etag {
+	if ref.Agent != "codex" && etag != "" && meta.Etag == etag {
 		return nil, meta, nil
 	}
 	var turns []transcript.Turn
@@ -67,6 +69,14 @@ func desktopTranscriptRead(id, etag string, homes ...string) ([]byte, server.Tra
 		turns[i].SessionID = id
 	}
 	turns = stampMessageSenders(turns, senders)
+	if ref.Agent == "codex" {
+		var revision string
+		turns, revision = stampRelaySenders(turns, ref.HomeID)
+		meta.Etag = fmt.Sprintf("W/%q", "profile-v5-relay-"+ref.HomeID+"-"+id+"-"+transcript.LogRevision(ref.Agent, id)+"-"+revision)
+		if etag != "" && etag == meta.Etag {
+			return nil, meta, nil
+		}
+	}
 	kept, dropped := turnsWithinBudget(turns, transcriptByteBudget)
 	if kept == nil {
 		kept = []transcript.Turn{}
