@@ -1,3 +1,2 @@
-- Chat and Trace show recorded file reads, edits, searches and other tool calls from current Codex, OpenCode and Kimi sessions.
-- Inspect recorded file changes with readable code and complete selected edit inputs, including empty replacements.
-- HQ summary cards avoid repeating the same question and keep the reason for your decision visible.
+• Usage keeps slow reads alive and retains the last good figures after a failure, with clearer retry and access-error messages.
+• Browser and app Trace views now agree on loaded history, turn summaries, call details and original numbering.
