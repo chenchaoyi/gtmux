@@ -42,8 +42,19 @@ func decodeRecords(b []byte) (Database, error) {
 	if err := json.Unmarshal(b, &d); err != nil {
 		return Database{}, fmt.Errorf("workspace records: %w", err)
 	}
-	if d.Schema != Schema || d.Matters == nil || d.Messages == nil {
+	if (d.Schema != 1 && d.Schema != Schema) || d.Matters == nil || d.Messages == nil {
 		return Database{}, errors.New("unsupported or incomplete workspace schema")
+	}
+	// Schema 1 is upgraded in memory only; the next mutation commits schema 2.
+	// Older binaries reject schema 2 instead of silently dropping new obligations.
+	if d.Schema == 1 {
+		d.Schema = Schema
+		d.Reconciliations = map[string]Reconciliation{}
+		d.Assessments = map[string]AssessmentReceipt{}
+		d.ObservationCursors = map[string]int64{}
+	}
+	if d.Reconciliations == nil || d.Assessments == nil || d.ObservationCursors == nil {
+		return Database{}, errors.New("incomplete reconciliation schema")
 	}
 	if d.Changes == nil {
 		d.Changes = []Change{}

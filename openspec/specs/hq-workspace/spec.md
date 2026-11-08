@@ -281,7 +281,6 @@ HQ SHALL publish a bounded request containing one concrete prompt, its reason, s
 - **WHEN** a verified answer or superseding fact resolves a request
 - **THEN** HQ records the explanation and withdraws that request without completing the continuing goal or deleting history
 
-
 ### Requirement: Reply choices provide immediate local feedback
 Selecting a current human-input choice SHALL prepare the same matter composer, reveal a prepared state and request input focus without waiting for CLI reads or sending an answer. Existing edited text SHALL be preserved, and obsolete questions SHALL produce explicit feedback. The complete native window SHALL keep the composer reachable when question details are long.
 
@@ -304,3 +303,17 @@ The native HQ overview SHALL expose the exact remaining count at the bottom of e
 #### Scenario: A stage result arrives
 - **WHEN** a goal remains open after a stage result
 - **THEN** the overview keeps its unfinished status and does not infer whole-goal completion
+
+### Requirement: Reports retain reconciliation responsibility
+Reports SHALL persist observations without changing matter lifecycle or clearing user requests. Explicit state transitions SHALL validate the exact current matter revision. Question resolution SHALL match the current immutable question identity and revision. Legacy exact-ID replies MAY use that immutable identity as their question version.
+
+#### Scenario: Late progress
+- **WHEN** an old open report arrives after completion or a human question
+- **THEN** the report is retained for reconciliation without reopening the matter or removing the question
+
+### Requirement: Durable assessment receipts
+The workspace SHALL persist a reconciliation queue independently of event consumption, fence expired lease holders, and atomically commit version-checked assessments with their receipts. Recovery and dry-run SHALL NOT send instructions or execute tasks. Source gaps and ambiguous ownership SHALL remain explicit.
+
+#### Scenario: Supervisor replacement
+- **WHEN** a lease expires and a new supervisor claims the observation
+- **THEN** the old lease cannot commit and the new assessment is durable and idempotent

@@ -10,6 +10,9 @@ MAP-bf28343fb4c1,L2,reviewed implementation,internal/app/client_contract_test.go
 LEG-4c8a67259028,L2,Go core / CLI / server,internal/app/cloudflared_security_test.go,40,Test,TestCloudflaredMetricsTransportRefusesRedirectsAndOversizedBodies,False,legacy-not-retrospectively-reviewed
 LEG-ff081e20fac0,L2,Go core / CLI / server,internal/app/cloudflared_security_test.go,42,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-ba12d8af1486,L2,Go core / CLI / server,internal/app/devices_push_test.go,16,Test,TestListPush_ShowsEveryPausedToken,False,legacy-not-retrospectively-reviewed
+MAP-9a346dda931b,L2,reviewed implementation,internal/app/hqworkspace_reconcile_test.go,15,reviewed-selector,TestPhase1WorkspaceIngestionRecoveryAndReadIndependence,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
+MAP-4a6d3760f38d,L2,reviewed implementation,internal/app/hqworkspace_reconcile_test.go,104,reviewed-selector,TestPhase1WorkspaceActionAuthorizationAndCompatibility,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
+MAP-c7c7feed6e2a,L2,reviewed implementation,internal/app/hqworkspace_reconcile_test.go,148,reviewed-selector,TestPhase1HQCanClaimDryRunAndCommit,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
 MAP-c746f11a537e,L2,reviewed implementation,internal/app/hqworkspace_stored_test.go,10,reviewed-selector,TestWorkspaceStoredCLILeavesDiscoveryAndRecordsUntouched,False,MC-HQ-READ
 LEG-0a1e3b761625,L2,Go core / CLI / server,internal/app/serve_startup_test.go,94,Test,TestExistingRadarRequiresIdentityAndSavedCredential,False,legacy-not-retrospectively-reviewed
 LEG-13803c4faffb,L2,Go core / CLI / server,internal/app/servememory_test.go,80,Test,TestMemoryDiagnosticsAbsentFromApplicationRoutes,False,legacy-not-retrospectively-reviewed
@@ -31,6 +34,11 @@ LEG-31e32aaa4339,L2,Go core / CLI / server,internal/app/tunnelstatus_test.go,45,
 LEG-5eb1eb0e8cd5,L2,Go core / CLI / server,internal/connect/remotes_test.go,38,Test,TestAHostThatMovedIsFoundThroughTheAddressesItGave,False,legacy-not-retrospectively-reviewed
 LEG-953eea56e22d,L2,Go core / CLI / server,internal/connect/remotes_test.go,85,Test,TestAnAddressThatAnswersToSomeoneElseIsNotThisHost,False,legacy-not-retrospectively-reviewed
 MAP-d6cd13ff80b3,L2,Go core / CLI / server,internal/hq/hq_test.go,194,reviewed-selector,TestStorageBoundaryUpgradePreservesLocalRulesAndExistingRecords,False,STOR-002
+MAP-a9132845f95d,L2,reviewed implementation,internal/hqworkspace/phase1_test.go,45,reviewed-selector,TestPhase1ReportsPreserveCompletedAndQuestion,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
+MAP-8d3525e25015,L2,reviewed implementation,internal/hqworkspace/phase1_test.go,82,reviewed-selector,TestPhase1TransitionCASAndQuestionIdentity,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
+MAP-8c722e686be5,L2,reviewed implementation,internal/hqworkspace/phase1_test.go,151,reviewed-selector,TestPhase1RecoveryFencingAtomicAssessment,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
+MAP-6cde1202d0f1,L2,reviewed implementation,internal/hqworkspace/phase1_test.go,220,reviewed-selector,TestPhase1OldObservationDeferralAndSchemaMigration,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
+MAP-05f8c00db7ff,L2,reviewed implementation,internal/hqworkspace/phase1_test.go,281,reviewed-selector,TestPhase1ExactAttributionAndAmbiguity,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
 MAP-259bfbcda714,L2,Go core / CLI / server,internal/knowledge/distribute_test.go,161,reviewed-selector,TestBuiltinStorageBoundariesReachEveryCarrierWithoutPromotions,False,STOR-001
 LEG-c41c1a54df5d,L2,Go core / CLI / server,internal/memdiag/server_test.go,224,Test,TestRequestBoundaries,False,legacy-not-retrospectively-reviewed
 LEG-6d1949576208,L2,Go core / CLI / server,internal/memdiag/server_test.go,243,Test,TestProfileBudgetsFailureCancellationAndConcurrency,False,legacy-not-retrospectively-reviewed

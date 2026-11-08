@@ -18,6 +18,13 @@ import (
 // workspaceAction is shared by the local CLI and its native consumer. Message
 // bodies travel over stdin, never shell interpolation or process arguments.
 type workspaceAction struct {
+	RequestRevision uint64 `json:"request_revision,omitempty"`
+	ObservationID   string `json:"observation_id,omitempty"`
+	Generation      uint64 `json:"generation,omitempty"`
+	Decision        string `json:"decision,omitempty"`
+	NextCheck       int64  `json:"next_check,omitempty"`
+	DryRun          bool   `json:"dry_run,omitempty"`
+
 	UserInput            *hqworkspace.UserInput  `json:"user_input,omitempty"`
 	Op                   string                  `json:"op"`
 	ID                   string                  `json:"id"`
@@ -46,13 +53,21 @@ gtmux hq workspace show <matter-id|global|activity> [--before SEQ] [--earlier N]
 gtmux hq workspace participant <matter-id> <association-id> --json
 gtmux hq workspace act --stdin --json
 gtmux hq workspace drain --json
+gtmux hq workspace reconcile --json
 
 The workspace keeps explicit goals, conversation membership and instruction receipts.
 list --stored reads only saved matters/overview, without live or historical session discovery.
 act reads ONE JSON object from stdin. Operations: create, register, send, report, request-input, clear-input, update,
-associate, unlink, move, interval, merge, split, cancel, retry, focus.
+associate, unlink, move, interval, merge, split, cancel, retry, focus, claim, assess.
 create needs id/title/body (one new goal and first instruction); send needs id/body
 and optional matter; report needs id/kind/body and optional matter/reply_to/state.
+Reports return projection:pending-reconciliation; state is a proposal, never a transition.
+update with state requires the current matter revision; resolve current questions explicitly first.
+reconcile lists due observations and assessment receipts without consuming or executing them.
+claim needs observation_id; assess needs id/observation_id/generation/matter/revision/decision/body.
+Decision is noted|transition|deferred|conflict; transition needs state, deferred needs future next_check.
+Both are HQ-only. assess accepts dry_run:true. A stale observation cannot transition a newer matter.
+send may include request_revision with reply_to; legacy exact question IDs remain supported.
 register needs id/title/body/state/origin {kind: board|task|conversation, ref: citation}.
 request-input needs matter/revision/user_input {id,kind:decision|manual|information,prompt,why,impact,choices?}.
 clear-input needs matter/revision/id/reply_to (question ID)/body (verified resolution).
@@ -133,6 +148,11 @@ func cmdHQWorkspace(args []string) int {
 		} else {
 			result, err = workspaceSnapshot(s, overview, time.Now().Unix())
 		}
+	case "reconcile":
+		if len(rest) != 0 || stdin {
+			return 2
+		}
+		result, err = workspaceReconciliationJSON(s, time.Now().Unix())
 	case "show":
 		if len(rest) != 1 || stdin {
 			return 2
@@ -209,12 +229,12 @@ func applyWorkspaceAction(s *hqworkspace.Store, a workspaceAction, now int64) (a
 		}
 		result, err = s.Register(a.ID, a.Title, a.Body, a.State, a.Origin, now)
 	case "send":
-		result, err = s.SubmitReply(a.ID, a.Matter, a.Body, a.ReplyTo, now)
+		result, err = s.SubmitReplyVersion(a.ID, a.Matter, a.Body, a.ReplyTo, a.RequestRevision, now)
 	case "report":
 		if !workspaceIsHQCaller() {
 			return nil, errors.New("only the verified current HQ pane may publish an HQ report")
 		}
-		result, err = s.Publish(a.ID, a.Matter, a.ReplyTo, a.Kind, a.Body, a.State, now)
+		result, err = s.PublishVersion(a.ID, a.Matter, a.ReplyTo, a.Kind, a.Body, a.State, a.Revision, now)
 	case "request-input":
 		if !workspaceIsHQCaller() {
 			return nil, errors.New("only the verified current HQ pane may request human input")
@@ -228,6 +248,19 @@ func applyWorkspaceAction(s *hqworkspace.Store, a workspaceAction, now int64) (a
 			return nil, errors.New("only the verified current HQ pane may withdraw a human request")
 		}
 		err = s.ClearInput(a.Matter, a.ReplyTo, a.ID, a.Body, a.Revision, now)
+	case "claim", "assess":
+		if !workspaceIsHQCaller() {
+			return nil, errors.New("only the verified current HQ may assess observations")
+		}
+		owner := workspaceAssessmentOwner()
+		if owner == "" {
+			return nil, errors.New("verified current HQ conversation required")
+		}
+		if a.Op == "claim" {
+			result, err = s.ClaimObservation(a.ObservationID, owner, now)
+		} else {
+			result, err = s.Assess(hqworkspace.Assessment{ID: a.ID, ObservationID: a.ObservationID, Owner: owner, Generation: a.Generation, MatterID: a.Matter, Revision: a.Revision, Decision: a.Decision, State: a.State, Reason: a.Body, NextCheck: a.NextCheck}, now, a.DryRun)
+		}
 	case "update":
 		err = s.Update(a.Matter, a.Title, a.State, a.Body, a.Revision, now)
 	case "associate":

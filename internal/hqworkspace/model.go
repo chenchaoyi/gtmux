@@ -10,7 +10,10 @@ import (
 	"unicode/utf8"
 )
 
-const Schema = 1
+const Schema = 2
+
+// WireSchema preserves existing consumers; storage schema is independently fenced.
+const WireSchema = 1
 
 var (
 	ErrNotFound = errors.New("workspace record not found")
@@ -18,6 +21,10 @@ var (
 )
 
 type Database struct {
+	Reconciliations    map[string]Reconciliation    `json:"reconciliations"`
+	Assessments        map[string]AssessmentReceipt `json:"assessments"`
+	ObservationCursors map[string]int64             `json:"observation_cursors"`
+
 	Schema   int                `json:"schema"`
 	Revision uint64             `json:"revision"`
 	Matters  map[string]Matter  `json:"matters"`
@@ -71,6 +78,10 @@ type Association struct {
 }
 
 type Message struct {
+	TargetRevision  uint64 `json:"target_revision,omitempty"`
+	Projection      string `json:"projection,omitempty"`
+	RequestRevision uint64 `json:"request_revision,omitempty"`
+
 	UserInput       *UserInput   `json:"user_input,omitempty"`
 	RetryGeneration uint64       `json:"retry_generation,omitempty"`
 	Subject         string       `json:"subject,omitempty"`
@@ -132,5 +143,5 @@ func validState(s string) bool {
 }
 
 func Empty() Database {
-	return Database{Schema: Schema, Matters: map[string]Matter{}, Messages: map[string]Message{}, Changes: []Change{}}
+	return Database{Reconciliations: map[string]Reconciliation{}, Assessments: map[string]AssessmentReceipt{}, ObservationCursors: map[string]int64{}, Schema: Schema, Matters: map[string]Matter{}, Messages: map[string]Message{}, Changes: []Change{}}
 }

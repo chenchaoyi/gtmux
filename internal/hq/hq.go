@@ -188,12 +188,13 @@ import (
 // v57 — explicit DSH public-message review and coverage boundaries.
 // v59 — explicit goal closure, concise remaining work and human-action boundaries.
 // v60 — reserve gtmux homes for managed state; project work uses project/task storage.
-const hqPlaybookVersion = 60
+const hqPlaybookVersion = 61
 
 // playbookFingerprints files the charter text under the version that carries it, so an
 // edit that forgets to bump the number fails instead of shipping to nobody (see
 // playbook_version_test.go for why the floors above cannot catch that).
 var playbookFingerprints = map[int]string{
+	61: "c40ff19d752452f0",
 	60: "2ac9abbfc3b8fab0",
 	59: "9322033b5d9a0c3e",
 	57: "60b9b7a7ed9a13d6",

@@ -369,6 +369,7 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		OnFastTick: func() {
 			dshfeed.Schedule()
 			scheduleWorkspaceWork()
+			scheduleWorkspaceReconciliation()
 			hq.DrainHQNudges()
 		},
 		// The approval card's options are gated on the agent having ASKED — the hook's

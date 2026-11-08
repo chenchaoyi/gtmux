@@ -9,6 +9,7 @@ import (
 // UserInput is a concrete human request, separate from goal state and reports.
 // Choices are proposed replies, never permissions or executable actions.
 type UserInput struct {
+	Revision uint64   `json:"revision,omitempty"`
 	AnswerID string   `json:"answer_id,omitempty"`
 	ID       string   `json:"id"`
 	Kind     string   `json:"kind"` // decision | manual | information
@@ -66,6 +67,7 @@ func (s *Store) RequestInput(matter string, q UserInput, revision uint64, at int
 			expected := q
 			if old.UserInput != nil {
 				expected.At = old.UserInput.At
+				expected.Revision = old.UserInput.Revision
 			}
 			if old.MatterID == matter && reflect.DeepEqual(old.UserInput, &expected) {
 				return nil
@@ -76,7 +78,14 @@ func (s *Store) RequestInput(matter string, q UserInput, revision uint64, at int
 		if err != nil {
 			return err
 		}
+		if m.State == "completed" || m.State == "closed" {
+			return ErrConflict
+		}
+		if m.UserInput != nil {
+			return errors.New("resolve the current question before replacing it")
+		}
 		changed(d, at, "hq-decision", matter, q.ID, "")
+		q.Revision = d.Revision
 		d.Messages[q.ID] = Message{ID: q.ID, MatterID: matter, Speaker: "hq", Kind: "decision", MatterState: "needs-input", Body: q.body(), At: at, Seq: d.Revision, UserInput: &q}
 		m.State = "needs-input"
 		m.UserInput = &q
@@ -96,7 +105,7 @@ func (s *Store) ClearInput(matter, requestID, messageID, reason string, revision
 	}
 	return s.transaction(func(d *Database) error {
 		if old, ok := d.Messages[messageID]; ok {
-			if old.Speaker == "hq" && old.Kind == "progress" && old.MatterID == matter && old.ReplyTo == requestID && old.Body == reason {
+			if old.Speaker == "hq" && old.Kind == "progress" && old.MatterID == matter && old.ReplyTo == requestID && old.Body == reason && old.TargetRevision == revision {
 				return nil
 			}
 			return ErrConflict
@@ -105,11 +114,11 @@ func (s *Store) ClearInput(matter, requestID, messageID, reason string, revision
 		if err != nil {
 			return err
 		}
-		if m.UserInput == nil || m.UserInput.ID != requestID {
+		if revision == 0 || m.UserInput == nil || m.UserInput.ID != requestID {
 			return ErrConflict
 		}
 		changed(d, at, "hq-progress", matter, messageID, "")
-		d.Messages[messageID] = Message{ID: messageID, MatterID: matter, Speaker: "hq", Kind: "progress", Body: reason, At: at, Seq: d.Revision, ReplyTo: requestID}
+		d.Messages[messageID] = Message{TargetRevision: revision, ID: messageID, MatterID: matter, Speaker: "hq", Kind: "progress", Body: reason, At: at, Seq: d.Revision, ReplyTo: requestID}
 		m.UserInput = nil
 		if m.State == "needs-input" {
 			m.State = "open"

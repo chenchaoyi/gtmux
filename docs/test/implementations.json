@@ -511,5 +511,73 @@
       "usage failure guidance follows the actual refusal or transport",
       "the shared regular sheet keeps the error card bounded and names retry in Chinese"
     ]
+  },
+  "internal/hqworkspace/phase1_test.go": {
+    "cases": [
+      "HQP1-001",
+      "HQP1-002",
+      "HQP1-003",
+      "HQP1-004",
+      "HQP1-005",
+      "HQP1-006",
+      "HQP1-007",
+      "HQP1-008"
+    ],
+    "selectors": [
+      "TestPhase1ReportsPreserveCompletedAndQuestion",
+      "TestPhase1TransitionCASAndQuestionIdentity",
+      "TestPhase1RecoveryFencingAtomicAssessment",
+      "TestPhase1OldObservationDeferralAndSchemaMigration",
+      "TestPhase1ExactAttributionAndAmbiguity"
+    ]
+  },
+  "internal/hqworkspace/input_test.go": {
+    "cases": [
+      "HQP1-003"
+    ],
+    "selectors": [
+      "TestHumanQuestionRemainsSeparateFromReportsAndGoal"
+    ]
+  },
+  "internal/hqworkspace/workspace_test.go": {
+    "cases": [
+      "HQP1-002"
+    ],
+    "selectors": [
+      "TestClosedMatterHoldsInstructionButDoesNotBlockOtherGoals"
+    ]
+  },
+  "internal/hqworkspace/register_test.go": {
+    "cases": [
+      "HQP1-002"
+    ],
+    "selectors": [
+      "TestRegisterRetryAfterProgressPreservesCurrentMatterAndRejectsChangedIntent"
+    ]
+  },
+  "internal/app/hqworkspace_test.go": {
+    "cases": [
+      "HQP1-007"
+    ],
+    "selectors": [
+      "TestSpawnMatterValidationBeforeAnyLaunch"
+    ]
+  },
+  "internal/app/hqworkspace_reconcile_test.go": {
+    "cases": [
+      "HQP1-001",
+      "HQP1-002",
+      "HQP1-003",
+      "HQP1-004",
+      "HQP1-005",
+      "HQP1-006",
+      "HQP1-007",
+      "HQP1-008"
+    ],
+    "selectors": [
+      "TestPhase1WorkspaceIngestionRecoveryAndReadIndependence",
+      "TestPhase1WorkspaceActionAuthorizationAndCompatibility",
+      "TestPhase1HQCanClaimDryRunAndCommit"
+    ]
   }
 }

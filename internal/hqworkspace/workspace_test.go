@@ -389,7 +389,10 @@ func TestClosedMatterHoldsInstructionButDoesNotBlockOtherGoals(t *testing.T) {
 	_, _ = s.Create("matter-b", "Other", 100)
 	_, _ = s.Submit("request-one", "matter-a", "one", 101)
 	_, _ = s.Submit("request-two", "matter-b", "two", 102)
-	_ = s.Update("matter-a", "", "closed", "", 0, 103)
+	current, _ := s.Read()
+	if err := s.Update("matter-a", "", "closed", "", current.Matters["matter-a"].Revision, 103); err != nil {
+		t.Fatal(err)
+	}
 	io := DeliveryIO{Resolve: func() (Conversation, string) { return Conversation{Agent: "codex", SessionID: "hq"}, "" }, Send: func(_ Conversation, wire string) Delivery {
 		if strings.Contains(wire, "request-one") {
 			t.Error("closed goal executed")

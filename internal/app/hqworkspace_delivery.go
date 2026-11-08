@@ -71,9 +71,7 @@ func workspaceHQTarget() (hqworkspace.Conversation, string) {
 	return hqworkspace.Conversation{}, "hq-offline"
 }
 
-func workspaceIsHQCaller() bool {
-	return currentCallerIsHQ()
-}
+var workspaceIsHQCaller = currentCallerIsHQ
 
 func pumpWorkspace(s *hqworkspace.Store, now int64) (bool, error) {
 	d, err := s.Read()
