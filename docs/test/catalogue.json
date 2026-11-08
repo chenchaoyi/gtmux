@@ -58011,15 +58011,6 @@
           "dynamic": false,
           "layer": "L2",
           "design": "CET-004,CET-005"
-        },
-        {
-          "id": "MAP-f1f0b5ad2d4d",
-          "line": 147,
-          "kind": "reviewed-selector",
-          "name": "TestCompletedCodexTurnPreservesManualCompactReceipt",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CET-004,CET-005,CET-006"
         }
       ],
       "sha256": "f1a148ff3a362baefca2c295316c95eab1d55257d5c1c6e25907f4ef35af69f9"
