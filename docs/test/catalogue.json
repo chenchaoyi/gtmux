@@ -37892,7 +37892,7 @@
       ]
     },
     "mobileapp/src/api/client.test.ts": {
-      "sha256": "79b6e783614436c0cb33397b0ca040cbdae8b8e47cf5d4982922250d81b9d9b9",
+      "sha256": "2dd1b30cf9752ffade7368945659e32f9b14bdd5d7752b53289437a7b1ff9c3e",
       "layer": "L1",
       "stack": "RN / mobile harness",
       "cases": [
@@ -37970,7 +37970,7 @@
         },
         {
           "id": "LEG-ab4513d5b0fc",
-          "line": 161,
+          "line": 136,
           "kind": "it",
           "name": "throws on a non-ok response",
           "dynamic": false,
@@ -38154,7 +38154,7 @@
         },
         {
           "id": "LEG-ba621f386840",
-          "line": 426,
+          "line": 234,
           "kind": "it",
           "name": "returns false when not ok",
           "dynamic": false,
@@ -38178,7 +38178,7 @@
         },
         {
           "id": "LEG-6f823110582b",
-          "line": 454,
+          "line": 234,
           "kind": "it",
           "name": "returns false when not ok",
           "dynamic": false,
@@ -38298,7 +38298,7 @@
         },
         {
           "id": "LEG-4cb060004322",
-          "line": 630,
+          "line": 629,
           "kind": "test.each()",
           "name": "%s throws on 500, 502, 503 and a non-JSON 200",
           "dynamic": true,
@@ -38306,7 +38306,7 @@
         },
         {
           "id": "LEG-2e01274e68ea",
-          "line": 638,
+          "line": 637,
           "kind": "test.each()",
           "name": "%s reads 404 (no endpoint) and 401/403 (refused) as nothing there",
           "dynamic": true,
@@ -38314,7 +38314,7 @@
         },
         {
           "id": "LEG-54d6ee5cc541",
-          "line": 644,
+          "line": 643,
           "kind": "test",
           "name": "a real answer is passed through",
           "dynamic": false,
@@ -38322,7 +38322,7 @@
         },
         {
           "id": "LEG-ba055ce2a03b",
-          "line": 657,
+          "line": 678,
           "kind": "test",
           "name": "an answer is passed through",
           "dynamic": false,
@@ -38330,7 +38330,7 @@
         },
         {
           "id": "LEG-c99d4a022339",
-          "line": 662,
+          "line": 683,
           "kind": "test.each()",
           "name": "HTTP %i reads as %s",
           "dynamic": true,
@@ -38338,7 +38338,7 @@
         },
         {
           "id": "LEG-2e7031d71aa7",
-          "line": 666,
+          "line": 687,
           "kind": "test",
           "name": "no answer at all is unreachable",
           "dynamic": false,
@@ -38346,7 +38346,7 @@
         },
         {
           "id": "LEG-ad962a5e541b",
-          "line": 675,
+          "line": 696,
           "kind": "test",
           "name": "a list is returned as it came",
           "dynamic": false,
@@ -38354,7 +38354,7 @@
         },
         {
           "id": "LEG-910386fefd8f",
-          "line": 679,
+          "line": 700,
           "kind": "test",
           "name": "a non-OK answer throws an ApiError with its status",
           "dynamic": false,
@@ -38362,7 +38362,7 @@
         },
         {
           "id": "LEG-6dce04ac4548",
-          "line": 685,
+          "line": 706,
           "kind": "test",
           "name": "a body that is not a list throws",
           "dynamic": false,
@@ -38370,7 +38370,7 @@
         },
         {
           "id": "LEG-c7c5dc59fb9b",
-          "line": 692,
+          "line": 713,
           "kind": "it",
           "name": "reads exact desktop identity with validators and cancellation",
           "dynamic": false,
@@ -38378,7 +38378,7 @@
         },
         {
           "id": "LEG-96892c51033d",
-          "line": 702,
+          "line": 723,
           "kind": "it",
           "name": "does not disguise denied, unavailable or malformed reads as empty history",
           "dynamic": false,
@@ -38386,7 +38386,7 @@
         },
         {
           "id": "LEG-976f9309bebf",
-          "line": 713,
+          "line": 734,
           "kind": "it.each()",
           "name": "preserves pane transcript denial %s for cache retirement",
           "dynamic": true,
@@ -38394,7 +38394,7 @@
         },
         {
           "id": "LEG-91bbb203b611",
-          "line": 718,
+          "line": 739,
           "kind": "it.each()",
           "name": "%s does not turn 503 into an empty snapshot",
           "dynamic": true,
@@ -38402,7 +38402,7 @@
         },
         {
           "id": "LEG-8550a44008d5",
-          "line": 724,
+          "line": 745,
           "kind": "it",
           "name": "forwards a pane read abort signal",
           "dynamic": false,
@@ -38410,7 +38410,7 @@
         },
         {
           "id": "LEG-385f675bad92",
-          "line": 733,
+          "line": 754,
           "kind": "it",
           "name": "keeps 304 transcript validation out of failure logs and marks recovery",
           "dynamic": false,
@@ -38418,7 +38418,7 @@
         },
         {
           "id": "LEG-c4fc7dfe019a",
-          "line": 749,
+          "line": 770,
           "kind": "it",
           "name": "distinguishes lifecycle cancellation from a marked request deadline",
           "dynamic": false,
@@ -38426,7 +38426,7 @@
         },
         {
           "id": "LEG-cb6f2b3b89b0",
-          "line": 765,
+          "line": 786,
           "kind": "it",
           "name": "retains real HTTP and network failures",
           "dynamic": false,
@@ -38434,7 +38434,7 @@
         },
         {
           "id": "LEG-afc18c7de6c8",
-          "line": 780,
+          "line": 801,
           "kind": "it",
           "name": "passes the opaque cursor and abort signal without changing the credential",
           "dynamic": false,
@@ -38442,7 +38442,7 @@
         },
         {
           "id": "LEG-6f24e96b6c95",
-          "line": 792,
+          "line": 813,
           "kind": "it",
           "name": "encodes full IDs and checks the server applied every requested filter",
           "dynamic": false,
@@ -38450,7 +38450,7 @@
         },
         {
           "id": "LEG-086c48859c1b",
-          "line": 806,
+          "line": 827,
           "kind": "test",
           "name": "rejects malformed access summaries rather than displaying impossible counts",
           "dynamic": false,
@@ -38458,7 +38458,7 @@
         },
         {
           "id": "LEG-cfa6c83eb160",
-          "line": 814,
+          "line": 835,
           "kind": "test",
           "name": "baseline access history requires external provenance even without user filters",
           "dynamic": false,
@@ -38466,7 +38466,7 @@
         },
         {
           "id": "LEG-6a7c237f80a9",
-          "line": 831,
+          "line": 852,
           "kind": "it",
           "name": "records repeated failed push registration through one sampled request lane",
           "dynamic": false,
@@ -38474,7 +38474,7 @@
         },
         {
           "id": "LEG-2f3b0eeda951",
-          "line": 847,
+          "line": 868,
           "kind": "it",
           "name": "keeps one origin failure open while another push registration succeeds",
           "dynamic": false,
@@ -38482,7 +38482,7 @@
         },
         {
           "id": "LEG-8ccb7662710b",
-          "line": 870,
+          "line": 891,
           "kind": "test",
           "name": "participant profile encodes message identity and guards optional chain shape",
           "dynamic": false,
@@ -38490,7 +38490,7 @@
         },
         {
           "id": "LEG-304c34b359cb",
-          "line": 880,
+          "line": 901,
           "kind": "test",
           "name": "HQ workspace distinguishes old servers, unread responses and revoked credentials",
           "dynamic": false,
@@ -38498,11 +38498,20 @@
         },
         {
           "id": "LEG-962740acbb95",
-          "line": 889,
+          "line": 910,
           "kind": "test",
           "name": "trace history requires a page response and distinguishes pane from external session",
           "dynamic": false,
           "layer": "L1"
+        },
+        {
+          "id": "MAP-0d65b1b0bf00",
+          "line": 651,
+          "kind": "reviewed-selector",
+          "name": "usage accepts a real empty report but keeps refusals, bad bodies and network failures",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "UR-002"
         }
       ]
     },
@@ -41737,7 +41746,7 @@
       ]
     },
     "mobileapp/src/screens/HQScreen.poll.test.tsx": {
-      "sha256": "a9cc73c1240c84ce5bca83ec0eca06f921f7bf0fff308df443ec954ced20ee6e",
+      "sha256": "4cedc32d06f75784ab0480316da8352187891c0315004ef3adc6d3cbab6ee5b6",
       "layer": "L2",
       "stack": "RN / mobile harness",
       "cases": [
@@ -41775,7 +41784,7 @@
         },
         {
           "id": "LEG-9f961df44df5",
-          "line": 191,
+          "line": 192,
           "kind": "test.each()",
           "name": "%s: a new reply arrives with no status change",
           "dynamic": true,
@@ -41807,7 +41816,7 @@
         },
         {
           "id": "LEG-f1a1d6bffc3e",
-          "line": 259,
+          "line": 260,
           "kind": "test.each()",
           "name": "shortcut opens only %s and can be requested again on an existing HQ view",
           "dynamic": true,
@@ -41815,7 +41824,7 @@
         },
         {
           "id": "LEG-a05453cae3da",
-          "line": 291,
+          "line": 292,
           "kind": "test.each()",
           "name": "%s shortcut distinguishes loading and failed reads from an empty resource",
           "dynamic": true,
@@ -41831,7 +41840,7 @@
         },
         {
           "id": "LEG-d449ecd3adde",
-          "line": 363,
+          "line": 384,
           "kind": "test",
           "name": "HQ Trace shares the existing transcript and preserves it when closed",
           "dynamic": false,
@@ -41839,7 +41848,7 @@
         },
         {
           "id": "LEG-e3123164a4d4",
-          "line": 383,
+          "line": 405,
           "kind": "test.each()",
           "name": "HQ denial %s closes Trace and clears cached records",
           "dynamic": true,
@@ -41847,7 +41856,7 @@
         },
         {
           "id": "LEG-c9dff54f6859",
-          "line": 405,
+          "line": 426,
           "kind": "test",
           "name": "HQ can load an earlier session from Trace through the existing read lane",
           "dynamic": false,
@@ -41855,11 +41864,47 @@
         },
         {
           "id": "LEG-59f95e7c83e4",
-          "line": 440,
+          "line": 461,
           "kind": "test",
           "name": "workspace-backed conversations use the same matters and keep them current without legacy tabs",
           "dynamic": false,
           "layer": "L2"
+        },
+        {
+          "id": "MAP-70f5d7f57ea0",
+          "line": 328,
+          "kind": "reviewed-selector",
+          "name": "a slow HQ usage answer is kept when the Mac takes longer than 15 seconds",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "UR-001"
+        },
+        {
+          "id": "MAP-8a3e8378dfee",
+          "line": 354,
+          "kind": "reviewed-selector",
+          "name": "a stalled usage read retires at its own deadline, then a new read recovers",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "UR-001"
+        },
+        {
+          "id": "MAP-517de42c0dfa",
+          "line": 292,
+          "kind": "reviewed-selector",
+          "name": "shortcut distinguishes loading and failed reads from an empty resource",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "UR-001"
+        },
+        {
+          "id": "MAP-ec30d4e015f6",
+          "line": 369,
+          "kind": "reviewed-selector",
+          "name": "the Usage sheet retry action starts a new read immediately after failure",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "UR-001"
         }
       ]
     },
@@ -42867,13 +42912,13 @@
       ]
     },
     "mobileapp/src/screens/UsageSheet.test.tsx": {
-      "sha256": "58505b55bc43d3b243404a4d54b0dddd31db3edaef0318fb8846d3f56f262b46",
+      "sha256": "050fc408424a88a3c0953888b3ab62b5af7798e143b5586f59185ba8c365166f",
       "layer": "L2",
       "stack": "RN / mobile harness",
       "cases": [
         {
           "id": "LEG-2aba97e994c5",
-          "line": 46,
+          "line": 106,
           "kind": "it",
           "name": "is called by its name, not by its registry key",
           "dynamic": false,
@@ -42881,7 +42926,7 @@
         },
         {
           "id": "LEG-f259cfaf2c4d",
-          "line": 54,
+          "line": 114,
           "kind": "it",
           "name": "asks for an icon at all — the fallback used to carry no hint",
           "dynamic": false,
@@ -42889,7 +42934,7 @@
         },
         {
           "id": "LEG-450351da14b3",
-          "line": 73,
+          "line": 133,
           "kind": "it",
           "name": "states ctx ONCE — two roundings of it used to sit side by side",
           "dynamic": false,
@@ -42897,7 +42942,7 @@
         },
         {
           "id": "LEG-5007c47dbdef",
-          "line": 81,
+          "line": 141,
           "kind": "it",
           "name": "keeps a warned session on screen and counts only the quiet ones",
           "dynamic": false,
@@ -42905,7 +42950,7 @@
         },
         {
           "id": "LEG-9d5e4971c9f6",
-          "line": 92,
+          "line": 152,
           "kind": "it",
           "name": "omits a duplicate ordinary quota while retaining a single warned window",
           "dynamic": false,
@@ -42913,7 +42958,7 @@
         },
         {
           "id": "LEG-ca6862d2e924",
-          "line": 97,
+          "line": 157,
           "kind": "it",
           "name": "names the selected quota without internal window jargon",
           "dynamic": false,
@@ -42921,7 +42966,7 @@
         },
         {
           "id": "LEG-dc5d89c8d69b",
-          "line": 101,
+          "line": 161,
           "kind": "it",
           "name": "lifts the machine warning out of the bottom of the page",
           "dynamic": false,
@@ -42929,7 +42974,7 @@
         },
         {
           "id": "LEG-dfdb96d9f479",
-          "line": 107,
+          "line": 167,
           "kind": "it",
           "name": "draws nothing when there is neither",
           "dynamic": false,
@@ -42937,7 +42982,7 @@
         },
         {
           "id": "LEG-7c36e1b2d4bc",
-          "line": 115,
+          "line": 175,
           "kind": "it",
           "name": "names each resource with an icon",
           "dynamic": false,
@@ -42945,7 +42990,7 @@
         },
         {
           "id": "LEG-775a63fcb598",
-          "line": 120,
+          "line": 180,
           "kind": "it",
           "name": "still encodes state three ways, so the icon can stay identity-only",
           "dynamic": false,
@@ -42953,7 +42998,7 @@
         },
         {
           "id": "LEG-4046c05b4431",
-          "line": 128,
+          "line": 188,
           "kind": "it",
           "name": "opens the idle ones back up",
           "dynamic": false,
@@ -42961,7 +43006,7 @@
         },
         {
           "id": "LEG-d96598b1f49d",
-          "line": 157,
+          "line": 217,
           "kind": "it",
           "name": "draws the heatmap by default, with the figures, the stats and the chips",
           "dynamic": false,
@@ -42969,7 +43014,7 @@
         },
         {
           "id": "LEG-4b085d225971",
-          "line": 168,
+          "line": 228,
           "kind": "it",
           "name": "switches to the weekly bars and the cumulative line",
           "dynamic": false,
@@ -42977,7 +43022,7 @@
         },
         {
           "id": "LEG-6e8e04740c2a",
-          "line": 177,
+          "line": 237,
           "kind": "it",
           "name": "keeps the seven bars for a serve without activity",
           "dynamic": false,
@@ -42985,7 +43030,7 @@
         },
         {
           "id": "LEG-8daa26038fff",
-          "line": 184,
+          "line": 244,
           "kind": "test",
           "name": "usage close announces an action rather than its test identifier",
           "dynamic": false,
@@ -42993,7 +43038,7 @@
         },
         {
           "id": "LEG-dfb0c59ba9e4",
-          "line": 193,
+          "line": 253,
           "kind": "test",
           "name": "native DSH balance keeps exact money strings separate from percentage windows",
           "dynamic": false,
@@ -43001,7 +43046,7 @@
         },
         {
           "id": "LEG-794d8a2b1e69",
-          "line": 216,
+          "line": 276,
           "kind": "it",
           "name": "keeps output visible while historical quotas and source gaps start folded",
           "dynamic": false,
@@ -43009,7 +43054,7 @@
         },
         {
           "id": "LEG-bab51363d152",
-          "line": 230,
+          "line": 290,
           "kind": "it",
           "name": "still requests the built-in icon when a live row has no icon hint",
           "dynamic": false,
@@ -43017,7 +43062,7 @@
         },
         {
           "id": "LEG-c4e189276e48",
-          "line": 236,
+          "line": 296,
           "kind": "it",
           "name": "can inspect and re-fold history and account limitations without changing current figures",
           "dynamic": false,
@@ -43025,11 +43070,47 @@
         },
         {
           "id": "LEG-6c6da13ec45f",
-          "line": 253,
+          "line": 313,
           "kind": "it",
           "name": "retains an unreadable provider inside the disclosure, without inventing a zero quota",
           "dynamic": false,
           "layer": "L2"
+        },
+        {
+          "id": "MAP-91a05cef488e",
+          "line": 44,
+          "kind": "reviewed-selector",
+          "name": "usage states distinguish loading, a valid empty report and an older server",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "UR-003"
+        },
+        {
+          "id": "MAP-0c19bc621fef",
+          "line": 56,
+          "kind": "reviewed-selector",
+          "name": "a timeout keeps the previous report, offers retry, and folds technical detail",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "UR-003"
+        },
+        {
+          "id": "MAP-911abd5d651c",
+          "line": 72,
+          "kind": "reviewed-selector",
+          "name": "usage failure guidance follows the actual refusal or transport",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "UR-003"
+        },
+        {
+          "id": "MAP-9e1cb875a273",
+          "line": 86,
+          "kind": "reviewed-selector",
+          "name": "the shared regular sheet keeps the error card bounded and names retry in Chinese",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "UR-003"
         }
       ]
     },

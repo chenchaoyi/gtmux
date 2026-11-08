@@ -3231,7 +3231,7 @@ LEG-50ee490d1022,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,131,it,
 LEG-a9bdc1fc36bd,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,136,it,throws on a non-ok response,False,legacy-not-retrospectively-reviewed
 LEG-07f9af5b78a6,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,141,it,"a 401/403 is an auth error (→ re-pair, not ""offline""); a 500 is not",False,legacy-not-retrospectively-reviewed
 LEG-4acb344668f3,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,151,it,"encodeURIComponent escapes ""%12"" → ""%2512"" in the query",False,legacy-not-retrospectively-reviewed
-LEG-ab4513d5b0fc,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,161,it,throws on a non-ok response,False,legacy-not-retrospectively-reviewed
+LEG-ab4513d5b0fc,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,136,it,throws on a non-ok response,False,legacy-not-retrospectively-reviewed
 LEG-940ebfeb8973,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,168,it,GETs /api/transcript?id=… and returns the turns array,False,legacy-not-retrospectively-reviewed
 LEG-150cc4197e4c,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,182,it,revalidates with the ETag and reports 304 as unchanged,False,legacy-not-retrospectively-reviewed
 LEG-1146e70208b7,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,197,it,does not return turns on a 304,False,legacy-not-retrospectively-reviewed
@@ -3254,10 +3254,10 @@ LEG-2c513624474c,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,381,it,
 LEG-dc2518a40e4a,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,391,it,builds an authed image source with the agent escaped,False,legacy-not-retrospectively-reviewed
 LEG-547015cec002,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,401,it,"POSTs JSON with platform ""ios"" and kinds defaulting to []",False,legacy-not-retrospectively-reviewed
 LEG-0953ac654885,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,419,it,passes through an explicit kinds array,False,legacy-not-retrospectively-reviewed
-LEG-ba621f386840,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,426,it,returns false when not ok,False,legacy-not-retrospectively-reviewed
+LEG-ba621f386840,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,234,it,returns false when not ok,False,legacy-not-retrospectively-reviewed
 LEG-1a3153081e32,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,433,it,POSTs the token to /api/push/unregister (no activity token by default),False,legacy-not-retrospectively-reviewed
 LEG-fcd8524a0299,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,447,it,includes the Live Activity token when given,False,legacy-not-retrospectively-reviewed
-LEG-6f823110582b,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,454,it,returns false when not ok,False,legacy-not-retrospectively-reviewed
+LEG-6f823110582b,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,234,it,returns false when not ok,False,legacy-not-retrospectively-reviewed
 LEG-21b9e9d05499,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,463,it,shareConfig GETs /api/share/config with bearer and defaults missing fields,False,legacy-not-retrospectively-reviewed
 LEG-efdb2d6336a9,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,474,it,setShareEnabled POSTs {enabled} and returns r.ok,False,legacy-not-retrospectively-reviewed
 LEG-7185040d1798,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,484,it,devices splits the roster into guest LINKS and paired DEVICES by scope,False,legacy-not-retrospectively-reviewed
@@ -3272,32 +3272,32 @@ LEG-96976654de67,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,569,it,
 LEG-7c60e8a3d5e9,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,585,it,sends only a name and stable request id to the authenticated owner endpoint,False,legacy-not-retrospectively-reviewed
 LEG-65c02b6a15c7,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,594,it,bounds a stalled request and reports uncertainty without automatic replay,False,legacy-not-retrospectively-reviewed
 LEG-8b01e7cd666a,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,608,it,"distinguishes unsupported, unauthorized, duplicate and uncertain outcomes",False,legacy-not-retrospectively-reviewed
-LEG-4cb060004322,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,630,test.each(),"%s throws on 500, 502, 503 and a non-JSON 200",True,legacy-not-retrospectively-reviewed
-LEG-2e01274e68ea,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,638,test.each(),%s reads 404 (no endpoint) and 401/403 (refused) as nothing there,True,legacy-not-retrospectively-reviewed
-LEG-54d6ee5cc541,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,644,test,a real answer is passed through,False,legacy-not-retrospectively-reviewed
-LEG-ba055ce2a03b,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,657,test,an answer is passed through,False,legacy-not-retrospectively-reviewed
-LEG-c99d4a022339,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,662,test.each(),HTTP %i reads as %s,True,legacy-not-retrospectively-reviewed
-LEG-2e7031d71aa7,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,666,test,no answer at all is unreachable,False,legacy-not-retrospectively-reviewed
-LEG-ad962a5e541b,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,675,test,a list is returned as it came,False,legacy-not-retrospectively-reviewed
-LEG-910386fefd8f,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,679,test,a non-OK answer throws an ApiError with its status,False,legacy-not-retrospectively-reviewed
-LEG-6dce04ac4548,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,685,test,a body that is not a list throws,False,legacy-not-retrospectively-reviewed
-LEG-c7c5dc59fb9b,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,692,it,reads exact desktop identity with validators and cancellation,False,legacy-not-retrospectively-reviewed
-LEG-96892c51033d,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,702,it,"does not disguise denied, unavailable or malformed reads as empty history",False,legacy-not-retrospectively-reviewed
-LEG-976f9309bebf,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,713,it.each(),preserves pane transcript denial %s for cache retirement,True,legacy-not-retrospectively-reviewed
-LEG-91bbb203b611,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,718,it.each(),%s does not turn 503 into an empty snapshot,True,legacy-not-retrospectively-reviewed
-LEG-8550a44008d5,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,724,it,forwards a pane read abort signal,False,legacy-not-retrospectively-reviewed
-LEG-385f675bad92,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,733,it,keeps 304 transcript validation out of failure logs and marks recovery,False,legacy-not-retrospectively-reviewed
-LEG-c4fc7dfe019a,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,749,it,distinguishes lifecycle cancellation from a marked request deadline,False,legacy-not-retrospectively-reviewed
-LEG-cb6f2b3b89b0,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,765,it,retains real HTTP and network failures,False,legacy-not-retrospectively-reviewed
-LEG-afc18c7de6c8,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,780,it,passes the opaque cursor and abort signal without changing the credential,False,legacy-not-retrospectively-reviewed
-LEG-6f24e96b6c95,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,792,it,encodes full IDs and checks the server applied every requested filter,False,legacy-not-retrospectively-reviewed
-LEG-086c48859c1b,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,806,test,rejects malformed access summaries rather than displaying impossible counts,False,legacy-not-retrospectively-reviewed
-LEG-cfa6c83eb160,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,814,test,baseline access history requires external provenance even without user filters,False,legacy-not-retrospectively-reviewed
-LEG-6a7c237f80a9,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,831,it,records repeated failed push registration through one sampled request lane,False,legacy-not-retrospectively-reviewed
-LEG-2f3b0eeda951,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,847,it,keeps one origin failure open while another push registration succeeds,False,legacy-not-retrospectively-reviewed
-LEG-8ccb7662710b,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,870,test,participant profile encodes message identity and guards optional chain shape,False,legacy-not-retrospectively-reviewed
-LEG-304c34b359cb,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,880,test,"HQ workspace distinguishes old servers, unread responses and revoked credentials",False,legacy-not-retrospectively-reviewed
-LEG-962740acbb95,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,889,test,trace history requires a page response and distinguishes pane from external session,False,legacy-not-retrospectively-reviewed
+LEG-4cb060004322,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,629,test.each(),"%s throws on 500, 502, 503 and a non-JSON 200",True,legacy-not-retrospectively-reviewed
+LEG-2e01274e68ea,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,637,test.each(),%s reads 404 (no endpoint) and 401/403 (refused) as nothing there,True,legacy-not-retrospectively-reviewed
+LEG-54d6ee5cc541,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,643,test,a real answer is passed through,False,legacy-not-retrospectively-reviewed
+LEG-ba055ce2a03b,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,678,test,an answer is passed through,False,legacy-not-retrospectively-reviewed
+LEG-c99d4a022339,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,683,test.each(),HTTP %i reads as %s,True,legacy-not-retrospectively-reviewed
+LEG-2e7031d71aa7,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,687,test,no answer at all is unreachable,False,legacy-not-retrospectively-reviewed
+LEG-ad962a5e541b,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,696,test,a list is returned as it came,False,legacy-not-retrospectively-reviewed
+LEG-910386fefd8f,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,700,test,a non-OK answer throws an ApiError with its status,False,legacy-not-retrospectively-reviewed
+LEG-6dce04ac4548,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,706,test,a body that is not a list throws,False,legacy-not-retrospectively-reviewed
+LEG-c7c5dc59fb9b,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,713,it,reads exact desktop identity with validators and cancellation,False,legacy-not-retrospectively-reviewed
+LEG-96892c51033d,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,723,it,"does not disguise denied, unavailable or malformed reads as empty history",False,legacy-not-retrospectively-reviewed
+LEG-976f9309bebf,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,734,it.each(),preserves pane transcript denial %s for cache retirement,True,legacy-not-retrospectively-reviewed
+LEG-91bbb203b611,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,739,it.each(),%s does not turn 503 into an empty snapshot,True,legacy-not-retrospectively-reviewed
+LEG-8550a44008d5,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,745,it,forwards a pane read abort signal,False,legacy-not-retrospectively-reviewed
+LEG-385f675bad92,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,754,it,keeps 304 transcript validation out of failure logs and marks recovery,False,legacy-not-retrospectively-reviewed
+LEG-c4fc7dfe019a,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,770,it,distinguishes lifecycle cancellation from a marked request deadline,False,legacy-not-retrospectively-reviewed
+LEG-cb6f2b3b89b0,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,786,it,retains real HTTP and network failures,False,legacy-not-retrospectively-reviewed
+LEG-afc18c7de6c8,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,801,it,passes the opaque cursor and abort signal without changing the credential,False,legacy-not-retrospectively-reviewed
+LEG-6f24e96b6c95,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,813,it,encodes full IDs and checks the server applied every requested filter,False,legacy-not-retrospectively-reviewed
+LEG-086c48859c1b,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,827,test,rejects malformed access summaries rather than displaying impossible counts,False,legacy-not-retrospectively-reviewed
+LEG-cfa6c83eb160,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,835,test,baseline access history requires external provenance even without user filters,False,legacy-not-retrospectively-reviewed
+LEG-6a7c237f80a9,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,852,it,records repeated failed push registration through one sampled request lane,False,legacy-not-retrospectively-reviewed
+LEG-2f3b0eeda951,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,868,it,keeps one origin failure open while another push registration succeeds,False,legacy-not-retrospectively-reviewed
+LEG-8ccb7662710b,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,891,test,participant profile encodes message identity and guards optional chain shape,False,legacy-not-retrospectively-reviewed
+LEG-304c34b359cb,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,901,test,"HQ workspace distinguishes old servers, unread responses and revoked credentials",False,legacy-not-retrospectively-reviewed
+LEG-962740acbb95,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,910,test,trace history requires a page response and distinguishes pane from external session,False,legacy-not-retrospectively-reviewed
 LEG-080a6b0ff26f,L1,RN / mobile harness,mobileapp/src/api/clientTag.test.ts,4,test.each(),native iOS client tag keeps the %s idiom independently of the display name,True,legacy-not-retrospectively-reviewed
 LEG-075585592b6c,L1,RN / mobile harness,mobileapp/src/api/clock.test.ts,13,test,"with no response seen yet, the server clock IS the local clock",False,legacy-not-retrospectively-reviewed
 LEG-4cb2832ee3d5,L1,RN / mobile harness,mobileapp/src/api/clock.test.ts,18,test,a phone running fast no longer inflates the duration,False,legacy-not-retrospectively-reviewed

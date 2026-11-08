@@ -537,6 +537,20 @@ export class ApiError extends Error {
   }
 }
 
+export class UsageNetworkError extends Error {
+  constructor() {
+    super('usage request could not reach the server');
+    this.name = 'UsageNetworkError';
+  }
+}
+
+export class UsageResponseError extends Error {
+  constructor() {
+    super('usage response is not a report');
+    this.name = 'UsageResponseError';
+  }
+}
+
 // isAuthError reports whether a caught error is an auth rejection (revoked/wrong token).
 export function isAuthError(e: unknown): boolean {
   return e instanceof ApiError && e.isAuth;
@@ -1069,12 +1083,26 @@ export class GtmuxClient {
 
   // usage: token accounting + real subscription-window limits (GET /api/usage) —
   // HQ shows the week/plan % in its status strip. null when the serve has no such
-  // endpoint (404) or refuses the caller (401/403); any other failure throws (see hqBoard), so the strip keeps its
-  // last figures instead of vanishing.
+  // endpoint (404); failures and refusals throw so callers retain the last good
+  // reading instead of showing an empty or zero report.
   async usage(signal?: AbortSignal): Promise<UsageReport | null> {
-    const r = await tfetch(`${this.base}/api/usage`, {headers: this.h(), ...(signal ? {signal} : {})});
-    if (definitelyNone(r)) return null;
-    return (await unreadAnswer(r, 'usage')) as UsageReport | null;
+    let r: Response;
+    try {
+      r = await tfetch(`${this.base}/api/usage`, {headers: this.h(), ...(signal ? {signal} : {})});
+    } catch {
+      throw new UsageNetworkError();
+    }
+    if (r.status === 404) return null;
+    if (!r.ok) throw new ApiError(r.status, 'usage');
+    const answer = await r.json().catch(() => null);
+    // Older/fake servers can return a thin limits/resource report. Go also
+    // marshals nil slices as null. Reject an unrelated or malformed body, but
+    // do not turn a valid partial report into a failed read.
+    if (!answer || typeof answer !== 'object' ||
+      !('sessions' in answer || 'types' in answer || 'limits' in answer || 'resource' in answer || 'history' in answer) ||
+      ((answer as UsageReport).sessions != null && !Array.isArray((answer as UsageReport).sessions)) ||
+      ((answer as UsageReport).types != null && !Array.isArray((answer as UsageReport).types))) throw new UsageResponseError();
+    return answer as UsageReport;
   }
 
   // send types into a pane (a WRITE): a named control key, or literal text (+Enter).

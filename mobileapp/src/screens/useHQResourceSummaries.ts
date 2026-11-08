@@ -7,6 +7,7 @@ import {
   isAuthError,
 } from '../api/client';
 import { createReadTask, startReadPolling } from '../state/readTask';
+import { USAGE_READ_TIMEOUT_MS } from './usageFailure';
 
 export type ResourceReading<T> = { value?: T; failed?: boolean };
 export type HQResourceReadings = {
@@ -82,7 +83,7 @@ export function useHQResourceSummaries(
       createReadTask(
         signal => client.usage(signal),
         value => update('usage', { value }),
-        { onError: error => failed('usage', error) },
+        { timeoutMs: USAGE_READ_TIMEOUT_MS, onError: error => failed('usage', error) },
       ),
     ];
     refresh.current = () => tasks.forEach(task => task.run());

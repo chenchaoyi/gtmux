@@ -481,5 +481,35 @@
       "TestTitleMatchesSessionPreservesLeadingSymbols",
       "TestSessionTabPrefersLiteralIdentity"
     ]
+  },
+  "mobileapp/src/api/client.test.ts": {
+    "cases": [
+      "UR-002"
+    ],
+    "selectors": [
+      "usage accepts a real empty report but keeps refusals, bad bodies and network failures"
+    ]
+  },
+  "mobileapp/src/screens/HQScreen.poll.test.tsx": {
+    "cases": [
+      "UR-001"
+    ],
+    "selectors": [
+      "a slow HQ usage answer is kept when the Mac takes longer than 15 seconds",
+      "a stalled usage read retires at its own deadline, then a new read recovers",
+      "shortcut distinguishes loading and failed reads from an empty resource",
+      "the Usage sheet retry action starts a new read immediately after failure"
+    ]
+  },
+  "mobileapp/src/screens/UsageSheet.test.tsx": {
+    "cases": [
+      "UR-003"
+    ],
+    "selectors": [
+      "usage states distinguish loading, a valid empty report and an older server",
+      "a timeout keeps the previous report, offers retry, and folds technical detail",
+      "usage failure guidance follows the actual refusal or transport",
+      "the shared regular sheet keeps the error card bounded and names retry in Chinese"
+    ]
   }
 }

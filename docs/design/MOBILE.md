@@ -1251,6 +1251,13 @@ this page is the missing half.
   and by design it is dropped when the machine goes red, exactly when those readings matter most.
   So the door into this page stands on its own rather than hanging on that row.
 - The rules live in `usageModel.ts` (testable); the view `UsageSheet.tsx` only draws.
+- A live usage read on a Mac with many panes can take over 30 seconds. The phone's
+  Usage read uses its own longer deadline, while other resource reads keep their normal
+  cadence. Loading explains the wait. A failed read is a compact card below the sheet
+  header with a specific next step and an explicit Retry where useful; technical
+  details start folded. A refresh failure leaves the last successful figures visible
+  and labels them as previous. A valid empty report, an older serve's 404, and an
+  access refusal are separate states; none becomes a zero-usage figure.
 
 **Knowledge base (KnowledgeSheet) · §17.1**: entered from the header's expansion (row 5 of the table, `KNOWLEDGE  353 条 · 7 待带走`, 353 entries · 7 to take,
 adjacent to the board: working memory and long-term memory side by side). On a real device it is 330 entries / 7 topics; the phone answers three questions in order and does not try to be a browser:

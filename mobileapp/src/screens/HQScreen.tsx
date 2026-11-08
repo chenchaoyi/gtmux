@@ -44,6 +44,7 @@ import {HQHeader} from './HQHeader';
 import {consoleHeaderModel, type HQMatterCounts} from './hqWorkspaceModel';
 import {ResourceState, WindowPct, headerModel, usageDoorValue} from './hqHeaderModel';
 import {machineWarn} from './usageModel';
+import {usageFailure, USAGE_READ_TIMEOUT_MS, type UsageFailure} from './usageFailure';
 import {
   Zone,
   running,
@@ -92,6 +93,10 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   const [week, setWeek] = useState<WindowPct[]>([]);
   const [tokens, setTokens] = useState<{today_out?: number; week_out?: number} | null>(null);
   const [usageFull, setUsageFull] = useState<UsageReport | null>(null);
+  const [usageProblem, setUsageProblem] = useState<UsageFailure | null>(null);
+  const [usageUnsupported, setUsageUnsupported] = useState(false);
+  const [usageReadAt, setUsageReadAt] = useState(0);
+  const retryUsage = useRef<() => void>(() => {});
   const [usageOpen, setUsageOpen] = useState(openResource?.page === 'usage');
   const [res, setRes] = useState<ResourceState | null>(null);
   const [board, setBoard] = useState<HQBoard>({exists: false});
@@ -237,16 +242,28 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   // Each resource owns one read lane. A slow usage request must not block the
   // board, nor let an interval start another request for the same resource.
   useEffect(() => {
+    const usageTask = createReadTask(signal => client.usage(signal), u => {
+      setDoorsFailed(p => ({...p, usage: false}));
+      setUsageProblem(null);
+      setUsageUnsupported(u === null);
+      setUsageFull(u);
+      if (u) setUsageReadAt(Date.now());
+      setWeek((u?.limits?.windows ?? []).filter(x => !x.stale).map(x => ({label: x.label, pct: x.pct_used, agent: x.agent})));
+      setTokens(u?.history ? {today_out: u.history.today_out, week_out: u.history.week_out} : null);
+      const m = u?.resource?.machine;
+      setRes(m ? {warn: machineWarn(m, zh) || m.warn, diskGB: m.disk_free_gb, memTier: m.mem_tier, tier: m.tier} : null);
+    }, {timeoutMs: USAGE_READ_TIMEOUT_MS,
+      onError: error => {setUsageProblem(usageFailure(error)); setDoorsFailed(p => ({...p, usage: true}));},
+      onSettled: () => settle('usage')});
+    retryUsage.current = () => {
+      setUsageProblem(null);
+      setDoorsFailed(p => ({...p, usage: false}));
+      setDoorsPending(p => ({...p, usage: true}));
+      usageTask.run();
+    };
     const tasks = [
       createReadTask(signal => client.digest(signal), setDigest),
-      createReadTask(signal => client.usage(signal), u => {
-        setDoorsFailed(p => ({...p, usage: false}));
-        setUsageFull(u ?? null);
-        setWeek((u?.limits?.windows ?? []).filter(x => !x.stale).map(x => ({label: x.label, pct: x.pct_used, agent: x.agent})));
-        setTokens(u?.history ? {today_out: u.history.today_out, week_out: u.history.week_out} : null);
-        const m = u?.resource?.machine;
-        setRes(m ? {warn: machineWarn(m, zh) || m.warn, diskGB: m.disk_free_gb, memTier: m.mem_tier, tier: m.tier} : null);
-      }, {onError: () => setDoorsFailed(p => ({...p, usage: true})), onSettled: () => settle('usage')}),
+      usageTask,
       createReadTask(signal => client.hqBoard(signal), setBoard, {onSettled: () => settle('board')}),
       createReadTask(signal => client.hqKnowledge(signal), k => {
         setKnowledge(k);
@@ -256,7 +273,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
     ];
     const stops = tasks.map(task => startReadPolling(task, 3000));
     const clock = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 3000);
-    return () => {stops.forEach(stop => stop()); clearInterval(clock);};
+    return () => {retryUsage.current = () => {}; stops.forEach(stop => stop()); clearInterval(clock);};
   }, [client, zh]);
 
   useEffect(() => {
@@ -766,7 +783,11 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
         visible={usageOpen}
         usage={usageFull}
         loading={doorsPending.usage}
-        loadError={doorsFailed.usage && !usageFull}
+        loadError={doorsFailed.usage}
+        failure={usageProblem}
+        unsupported={usageUnsupported}
+        lastReadAt={usageReadAt}
+        onRetry={() => retryUsage.current()}
         agents={agents}
         pal={pal}
         lang={lang}

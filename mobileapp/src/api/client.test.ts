@@ -625,7 +625,6 @@ describe('HQ reads tell a failure from an empty answer', () => {
   const reads: [string, (c: GtmuxClient) => Promise<unknown>, unknown][] = [
     ['hqBoard', c => c.hqBoard(), {exists: false}],
     ['hqKnowledge', c => c.hqKnowledge(), {entries: [], topics: [], promotions: {pending: 0}, candidates: {pending: 0}}],
-    ['usage', c => c.usage(), null],
   ];
   test.each(reads)('%s throws on 500, 502, 503 and a non-JSON 200', async (_name, read) => {
     for (const status of [500, 502, 503]) {
@@ -646,9 +645,31 @@ describe('HQ reads tell a failure from an empty answer', () => {
     await expect(client().hqBoard()).resolves.toEqual({exists: true, text: 'board'});
     fetchMock.mockResolvedValueOnce(okJson({exists: false}));
     await expect(client().hqBoard()).resolves.toEqual({exists: false});
-    fetchMock.mockResolvedValueOnce(okJson({limits: {windows: []}}));
-    await expect(client().usage()).resolves.toEqual({limits: {windows: []}});
   });
+});
+
+test('usage accepts a real empty report but keeps refusals, bad bodies and network failures distinct', async () => {
+  const report = {sessions: [], types: [], limits: {windows: []}};
+  fetchMock.mockResolvedValueOnce(okJson(report));
+  await expect(client().usage()).resolves.toEqual(report);
+  const noRows = {sessions: null, types: null, limits: {windows: null}};
+  fetchMock.mockResolvedValueOnce(okJson(noRows));
+  await expect(client().usage()).resolves.toEqual(noRows);
+  const thin = {limits: {windows: []}, resource: {}};
+  fetchMock.mockResolvedValueOnce(okJson(thin));
+  await expect(client().usage()).resolves.toEqual(thin);
+  fetchMock.mockResolvedValueOnce(okJson({}, false, 404));
+  await expect(client().usage()).resolves.toBeNull();
+  for (const status of [401, 403, 503]) {
+    fetchMock.mockResolvedValueOnce(okJson({}, false, status));
+    await expect(client().usage()).rejects.toMatchObject({status});
+  }
+  fetchMock.mockResolvedValueOnce(okJson({}));
+  await expect(client().usage()).rejects.toHaveProperty('name', 'UsageResponseError');
+  fetchMock.mockResolvedValueOnce(okJson({sessions: 'bad'}));
+  await expect(client().usage()).rejects.toHaveProperty('name', 'UsageResponseError');
+  fetchMock.mockRejectedValueOnce(new Error('private URL'));
+  await expect(client().usage()).rejects.toHaveProperty('name', 'UsageNetworkError');
 });
 
 // GET /api/host for the server details: the details, or WHY there are none.

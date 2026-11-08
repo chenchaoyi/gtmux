@@ -1400,6 +1400,34 @@ The block SHALL be absent when the serve carries no `history`.
 - **THEN** the sheet shows "12.4M today · 69.0M this week", seven bars with today's
   labelled, and one row per agent with its week total
 
+### Requirement: The usage sheet distinguishes slow reads and failed reads from no usage
+
+The phone and iPad SHALL give the owner usage read enough time for a live Mac with many
+sessions to answer, without holding another resource's read lane. A valid report with
+no sessions SHALL show a no-data state; a 404 SHALL say that the connected Mac does
+not provide Usage. A timeout, network failure, server error, invalid report or access
+refusal SHALL NOT be displayed as zero usage. The sheet SHALL explain the applicable
+next step, keep a prior successful report visibly marked as a previous reading,
+offer an explicit retry where retry can help, and keep bounded technical details
+collapsed until opened. A late answer from a retired read SHALL NOT replace newer data.
+
+#### Scenario: A slow but successful fleet read
+
+- **WHEN** the Mac returns a valid usage report after more than 15 seconds
+- **THEN** the sheet shows that report without turning it into a timeout or zero usage
+
+#### Scenario: A failed refresh with a prior report
+
+- **WHEN** a later usage request times out after a successful read
+- **THEN** the previous figures remain visible and labelled as a previous reading, with
+  a Retry action and collapsed technical details
+
+#### Scenario: No sessions or an old endpoint
+
+- **WHEN** a valid report carries no sessions, or the connected Mac answers 404
+- **THEN** the first shows the no-data explanation and the second explains endpoint
+  unavailability; neither invents zero usage
+
 ### Requirement: A decision on the board can be given to HQ from the item itself
 
 The situation board sheet SHALL render the commander's section (「还等你定的」 / "Still
@@ -1434,8 +1462,9 @@ sheet behind it.
 While a door's first fetch is still out, its tile SHALL be drawn in place with the
 brand-mark loading placeholder where the value will be (not tappable); the tiles SHALL
 NOT appear one by one as their fetches land. A door whose fetch settled with nothing to
-show SHALL leave no tile. "Nothing to show" is an answer: an empty result, a serve
-without the endpoint (404), or a refusal (401/403). A fetch that failed (a 5xx, a
+show SHALL leave no tile. "Nothing to show" is an answer: an empty result or a serve
+without the endpoint (404); the existing board and knowledge readers also treat a
+refusal (401/403) as absent. Usage treats a refusal as an access failure. A fetch that failed (a 5xx, a
 tunnel's 502, a body that is not JSON, or no response) is not one: the door SHALL keep
 what it last showed.
 
