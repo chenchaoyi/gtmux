@@ -1,0 +1,46 @@
+{
+  "id": "hq-relay-sender-20261109",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-09",
+    "decision": "proceed",
+    "notes": "Native Codex queue replies have durable accepted relay receipts but bypass pane-send attribution. Join only canonical complete reply text against a replied HQ-target request, accepted receipt, exact Codex home/thread, and first matching source turn after creation. Header alone is a lookup hint, never authority. A receipt attributes at most one source record across newest/history pages; later copied text remains human. Use an append-safe bounded witness cache; rewrite/replacement or continuation-list changes invalidate. Historical accepted records need no migration; missing/ambiguous evidence stays unattributed. Both App/Web consume existing from.kind=hq; no client heuristics, no delivery/status/input permission change, no live session writes or release."
+  },
+  "cases": [
+    {
+      "id": "HRS-001",
+      "layer": "L1",
+      "description": "Canonical first-prompt witnesses survive pagination and append, reject stale source identity",
+      "setup": "Synthetic Codex rollouts with same text before/after request time, duplicates, >300 turns, continuation files and partial/rewritten records",
+      "action": "Find first matching source records, repeat after append and replacement; cancel read",
+      "expected": "Only first exact prompt after lower bound matches. First record remains stable across append; rewrite/replacement/continuation changes invalidate. Complete lines only; no result bodies retained. Cancelled/error reads do not grant attribution.",
+      "planned_files": [
+        "internal/transcript/prompt_witness_test.go"
+      ]
+    },
+    {
+      "id": "HRS-002",
+      "layer": "L1",
+      "description": "HQ relay attribution uses receipt and exact home/thread/body rather than pane or header",
+      "setup": "Synthetic relay ledger, accepted/replied/pending/refused/user-target records and human copies; source witnesses injected",
+      "action": "Stamp turns with correct/wrong identities, copied or modified bodies, old/new pane and preexisting from",
+      "expected": "Only accepted exact canonical HQ reply in correct Codex home/thread at its first source record gets from.kind=hq. Wrong identity, receipt state, body, missing clock/record or later human copy remains unattributed; existing sender preserved; no new sends or ledger writes.",
+      "planned_files": [
+        "internal/app/relay_sender_test.go"
+      ]
+    },
+    {
+      "id": "HRS-003",
+      "layer": "L2",
+      "description": "Read-only shared transcript contracts attribute native HQ replies in snapshots and history with receipt-aware validators",
+      "setup": "Synthetic Codex desktop transcript and durable relay receipt; own HOME/CODEX_HOME, no tmux/device",
+      "action": "Read snapshot, record acceptance without changing log, poll prior ETag, load earlier page and inspect JSON/ledger/policy",
+      "expected": "App/Web API turn JSON exposes identical HQ sender; new receipt invalidates prior human snapshot, unchanged snapshot is cacheable; old pages keep correct first-only attribution; policy/ledger/source unchanged by reads; CLI-origin and desktop-origin both work.",
+      "planned_files": [
+        "internal/app/relay_sender_contract_test.go"
+      ]
+    }
+  ],
+  "seal": "d8495ae61aa2ce88f0a1cc3b73da1fe37dedd21c01a0018d55b96cf0da7eecbb"
+}
