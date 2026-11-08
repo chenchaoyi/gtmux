@@ -6,6 +6,9 @@ import {Agent} from '../api/types';
 import {MachineIcon} from '../ui/MachineIcon';
 import {AgentAvatar} from '../ui/AgentAvatar';
 import {paletteFor} from '../ui/theme';
+import {ApiError, UsageNetworkError, UsageResponseError} from '../api/client';
+import {ReadDeadlineError} from '../state/readTask';
+import {usageFailure} from './usageFailure';
 
 // Walk the rendered JSON for text: <Text> lands as a HOST node whose type is the string
 // 'Text', which a `typeof type !== 'string'` predicate silently excludes.
@@ -30,6 +33,63 @@ const render = (usage: UsageReport | null, agents: React.ComponentProps<typeof U
   });
   return t;
 };
+
+const renderState = (props: Partial<React.ComponentProps<typeof UsageSheet>> = {}) => {
+  const onRetry = jest.fn();
+  let tree!: renderer.ReactTestRenderer;
+  act(() => {tree = renderer.create(<UsageSheet visible usage={null} pal={paletteFor('light')} lang="en" onClose={() => {}} onRetry={onRetry} {...props} />);});
+  return {tree, onRetry};
+};
+
+test('usage states distinguish loading, a valid empty report and an older server', () => {
+  const loading = renderState({loading: true});
+  expect(texts(loading.tree).join(' ')).toContain('Reading usage');
+  expect(loading.tree.root.findAllByProps({testID: 'usage-retry'})).toHaveLength(0);
+  const empty = renderState({usage: {sessions: [], types: []}});
+  expect(texts(empty.tree).join(' ')).toContain('No usage reported yet');
+  const old = renderState({unsupported: true});
+  expect(texts(old.tree).join(' ')).toContain('Usage is unavailable on this Mac');
+  expect(texts(old.tree).join(' ')).not.toContain('No usage reported yet');
+  expect(old.tree.root.findAllByProps({testID: 'usage-retry'})).toHaveLength(0);
+});
+
+test('a timeout keeps the previous report, offers retry, and folds technical detail', () => {
+  const previous = {sessions: [{agent: 'Codex', agent_key: 'codex', loc: 'kept:0.0', tok: 12, rate: 10}], types: [], history: {today_out: 12, week_out: 32}};
+  const {tree, onRetry} = renderState({usage: previous, loadError: true, failure: usageFailure(new ReadDeadlineError(90_000)), lastReadAt: 1000});
+  const said = texts(tree).join(' ');
+  expect(said).toContain('Usage is taking too long');
+  expect(said).toContain('Showing the last successful reading');
+  expect(said).toContain('kept:0.0');
+  expect(said).not.toContain('90s read deadline');
+  const retry = tree.root.findByProps({testID: 'usage-retry'});
+  expect(retry.props.accessibilityLabel).toBe('Retry reading usage');
+  act(() => retry.props.onPress());
+  expect(onRetry).toHaveBeenCalledTimes(1);
+  act(() => tree.root.findByProps({testID: 'usage-error-details'}).props.onPress());
+  expect(texts(tree).join(' ')).toContain('90s read deadline');
+});
+
+test('usage failure guidance follows the actual refusal or transport', () => {
+  for (const [error, phrase, retry] of [
+    [new ApiError(401, 'usage'), 'Pairing is no longer accepted', false],
+    [new ApiError(403, 'usage'), 'Usage needs an owner connection', false],
+    [new ApiError(503, 'usage'), 'The Mac could not read usage', true],
+    [new UsageNetworkError(), 'Could not reach the Mac', true],
+    [new UsageResponseError(), 'Usage response is unreadable', true],
+  ] as const) {
+    const {tree} = renderState({loadError: true, failure: usageFailure(error)});
+    expect(texts(tree).join(' ')).toContain(phrase);
+    expect(tree.root.findAllByProps({testID: 'usage-retry'}).length > 0).toBe(retry);
+  }
+});
+
+test('the shared regular sheet keeps the error card bounded and names retry in Chinese', () => {
+  const {tree} = renderState({layout: 'regular', lang: 'zh', pal: paletteFor('dark'), loadError: true, failure: usageFailure(new UsageNetworkError())});
+  expect(texts(tree).join(' ')).toContain('无法连接到 Mac');
+  expect(tree.root.findByProps({testID: 'usage-retry'}).props.accessibilityLabel).toBe('重试读取用量');
+  const card = tree.root.findByProps({testID: 'usage-load-state'});
+  expect(card.props.style).toEqual(expect.arrayContaining([expect.objectContaining({maxWidth: 520})]));
+});
 
 // An agent with a plan and no live session: Codex on a Claude-only day.
 const codexOnly: UsageReport = {

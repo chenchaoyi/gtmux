@@ -1,0 +1,55 @@
+{
+  "id": "usage-read-error-20261108",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-08",
+    "decision": "Proceed with a phone Usage read and error-state repair",
+    "notes": "The supplied iPhone screenshot shows a blank Usage sheet with only Retrying. The actual 12:07 phone request reached GET /api/usage and returned HTTP 200 after 33.889 seconds; the phone retired the read at 15 seconds. A local phase probe attributed 14-24 seconds to full agent discovery, not limits, resource or daily history. Keep the established report semantics and allow this particular read to finish. Test the transport and RN component with synthetic responses. No installed phone/simulator, touch, VoiceOver, network route or release claim follows from these tests."
+  },
+  "cases": [
+    {
+      "id": "UR-001",
+      "layer": "L2",
+      "description": "iPhone/iPad Usage accepts a slow successful Mac report and rejects only a truly stalled read; late retired responses cannot replace a newer result.",
+      "setup": "An HQ Usage read resolves at 34 seconds, then a separate read ignores its abort until after the Usage-specific deadline.",
+      "action": "Open Usage, advance the clock, deliver responses and let the polling lane retry.",
+      "expected": "The 34-second HTTP-200-equivalent report is shown; the stalled read is classified as timeout, the next valid report is shown, and the late old report cannot overwrite it.",
+      "planned_files": [
+        "mobileapp/src/screens/HQScreen.poll.test.tsx"
+      ],
+      "surfaces": [
+        "iPhone and iPad shared Usage reader"
+      ]
+    },
+    {
+      "id": "UR-002",
+      "layer": "L2",
+      "description": "The Usage API boundary separates a real empty report and unsupported old serve from HTTP refusals, server failures, malformed bodies and network failures.",
+      "setup": "Synthetic GET /api/usage responses including empty arrays, Go null slices, 404, 401, 403, 503, an incomplete 200 body and a rejected fetch.",
+      "action": "Read each response through the production client method.",
+      "expected": "Valid empty reports remain data, 404 is unsupported, other failures throw typed causes; no failure becomes zero usage or a fabricated report.",
+      "planned_files": [
+        "mobileapp/src/api/client.test.ts"
+      ],
+      "surfaces": [
+        "iPhone and iPad shared API client"
+      ]
+    },
+    {
+      "id": "UR-003",
+      "layer": "L2",
+      "description": "The Usage sheet gives a clear, accessible recovery path and preserves prior readings without exposing raw transport details by default.",
+      "setup": "Render the shared light/dark Usage sheet with loading, valid empty, old serve, timeout, network, HTTP refusal/server error and malformed response states.",
+      "action": "Inspect visible text, press Retry and expand technical details in the RN component renderer.",
+      "expected": "Loading and empty are distinct; retry is available only where it can help; prior usage remains visibly labelled; technical details begin folded; actions and alerts have accessible roles/labels.",
+      "planned_files": [
+        "mobileapp/src/screens/UsageSheet.test.tsx"
+      ],
+      "surfaces": [
+        "iPhone and iPad shared Usage sheet"
+      ]
+    }
+  ],
+  "seal": "e8e191d3fe1bba1bcb0d5b31b784be98f48b94d5bdcf496fca8c04651bdda772"
+}

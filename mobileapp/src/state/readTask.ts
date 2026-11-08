@@ -1,6 +1,13 @@
 import {AppState} from 'react-native';
 import {abortAtDeadline} from '../api/requestAbort';
 
+export class ReadDeadlineError extends Error {
+  constructor(public timeoutMs: number) {
+    super('read deadline exceeded');
+    this.name = 'ReadDeadlineError';
+  }
+}
+
 /** One read lane per resource and scope. Mutations must not use this helper. */
 export function createReadTask<T>(
   read: (signal: AbortSignal) => Promise<T>,
@@ -18,7 +25,7 @@ export function createReadTask<T>(
       cancel = () => {controller.abort(); reject(new Error('read cancelled'));};
       timer = setTimeout(() => {
         abortAtDeadline(controller, options.timeoutMs ?? 15_000);
-        reject(new Error('read deadline exceeded'));
+        reject(new ReadDeadlineError(options.timeoutMs ?? 15_000));
       }, options.timeoutMs ?? 15_000);
     });
     const operation = {controller, cancel};

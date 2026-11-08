@@ -316,13 +316,16 @@ test.each(['usage', 'knowledge'] as const)(
     ).toBeGreaterThan(0);
     await act(async () => jest.advanceTimersByTime(3000));
     expect(sheet().props[error]).toBe(false);
-    expect(
-      tree!.root.findAllByProps({ testID: `${page}-load-state` }),
-    ).toHaveLength(0);
+    if (page === 'usage') {
+      expect(sheet().props.unsupported).toBe(true);
+      expect(tree!.root.findAllByProps({testID: 'usage-load-state'}).length).toBeGreaterThan(0);
+    } else {
+      expect(tree!.root.findAllByProps({testID: 'knowledge-load-state'})).toHaveLength(0);
+    }
   },
 );
 
-test('slow HQ usage is coalesced, deadline recovers, and its late reply cannot replace the new reading', async () => {
+test('a slow HQ usage answer is kept when the Mac takes longer than 15 seconds', async () => {
   let answerOld!: (value: any) => void;
   const old = new Promise<any>(resolve => {
     answerOld = resolve;
@@ -337,25 +340,43 @@ test('slow HQ usage is coalesced, deadline recovers, and its late reply cannot r
   mockClient.usage.mockReturnValueOnce(old).mockResolvedValue(fresh as any);
   mockClient.transcript.mockResolvedValue({ turns: [] });
   await mount('idle', 'compact');
-  await act(async () => {
-    jest.advanceTimersByTime(6000);
-  });
+  await act(async () => {jest.advanceTimersByTime(34_000);});
   expect(mockClient.usage).toHaveBeenCalledTimes(1);
-  await act(async () => {
-    jest.advanceTimersByTime(9000);
-  });
-  await act(async () => {
-    jest.advanceTimersByTime(3000);
-  });
+  await act(async () => answerOld(fresh));
   expect(tree!.root.findByType(UsageSheet).props.usage).toEqual(fresh);
   const signal = (
     mockClient.usage.mock.calls as unknown as [AbortSignal][]
   )[0][0];
-  expect(signal.aborted).toBe(true);
-  await act(async () => {
-    answerOld({ history: { today_out: 1 } });
-  });
-  expect(tree!.root.findByType(UsageSheet).props.usage).toEqual(fresh);
+  expect(signal.aborted).toBe(false);
+  mockClient.usage.mockReset().mockResolvedValue(null);
+});
+
+test('a stalled usage read retires at its own deadline, then a new read recovers', async () => {
+  let answerOld!: (value: any) => void;
+  mockClient.usage.mockReset().mockImplementationOnce(() => new Promise(resolve => {answerOld = resolve;}))
+    .mockResolvedValue({sessions: [], types: [], history: {today_out: 42}} as any);
+  mockClient.transcript.mockResolvedValue({turns: []});
+  await mount('idle', 'compact');
+  await act(async () => {jest.advanceTimersByTime(90_000);});
+  expect(tree!.root.findByType(UsageSheet).props.failure?.kind).toBe('timeout');
+  await act(async () => {jest.advanceTimersByTime(3000);});
+  expect(tree!.root.findByType(UsageSheet).props.usage?.history?.today_out).toBe(42);
+  await act(async () => answerOld({sessions: [], types: [], history: {today_out: 1}}));
+  expect(tree!.root.findByType(UsageSheet).props.usage?.history?.today_out).toBe(42);
+  mockClient.usage.mockReset().mockResolvedValue(null);
+});
+
+test('the Usage sheet retry action starts a new read immediately after failure', async () => {
+  const fresh = {sessions: [], types: [], limits: {windows: []}};
+  mockClient.usage.mockReset().mockRejectedValueOnce(new Error('offline')).mockResolvedValue(fresh as any);
+  mockClient.transcript.mockResolvedValue({turns: []});
+  await mount('idle', 'compact', {page: 'usage', at: 1});
+  const sheet = () => tree!.root.findByType(UsageSheet);
+  expect(sheet().props.loadError).toBe(true);
+  await act(async () => sheet().props.onRetry());
+  expect(mockClient.usage).toHaveBeenCalledTimes(2);
+  expect(sheet().props.usage).toEqual(fresh);
+  expect(sheet().props.loadError).toBe(false);
   mockClient.usage.mockReset().mockResolvedValue(null);
 });
 

@@ -421,6 +421,7 @@ MAP-2fd3cafb008c,L2,reviewed implementation,mobileapp/e2e/fake-serve/backend-con
 MAP-01cd8c62d09e,L2,reviewed implementation,mobileapp/e2e/fake-serve/backend-contract.test.ts,53,reviewed-selector,RN client consumes original ordinals,False,CT-HTTP
 MAP-f2ed2637baa9,L2,reviewed implementation,mobileapp/e2e/fake-serve/server.ts,95,reviewed-selector,startFake,False,CT-HTTP
 MAP-f4f657590af5,L2,reviewed implementation,mobileapp/e2e/fake-serve/world.ts,111,reviewed-selector,export class World,False,CT-HTTP
+MAP-0d65b1b0bf00,L2,RN / mobile harness,mobileapp/src/api/client.test.ts,651,reviewed-selector,"usage accepts a real empty report but keeps refusals, bad bodies and network failures",False,UR-002
 LEG-81cfbfd439f8,L2,RN / mobile harness,mobileapp/src/screens/AccessHistoryControls.test.tsx,21,test,same-name device choices expose full IDs and preserve the other filters,False,legacy-not-retrospectively-reviewed
 LEG-d880c9025607,L2,RN / mobile harness,mobileapp/src/screens/AccessHistoryControls.test.tsx,31,test,a full ID outside the discovered choices can be entered in a native prompt,False,legacy-not-retrospectively-reviewed
 LEG-f08efac25751,L2,RN / mobile harness,mobileapp/src/screens/AccessHistoryHelp.test.tsx,6,test.each(),recording rules are clickable and explain actual external coverage (Chinese=%s),True,legacy-not-retrospectively-reviewed
@@ -540,17 +541,21 @@ LEG-99bcff10d6bb,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test
 LEG-23fa02d36e37,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,111,test,"the software keyboard hides HQ chrome and secondary composer rows, then restores them",False,legacy-not-retrospectively-reviewed
 LEG-075f3c52f53f,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,146,test,HQ zone tabs expose their selected state and change the active zone,False,legacy-not-retrospectively-reviewed
 LEG-3d2fa1e7243b,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,158,test,a waiting card keeps its selection and two actions as separate buttons,False,legacy-not-retrospectively-reviewed
-LEG-9f961df44df5,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,191,test.each(),%s: a new reply arrives with no status change,True,legacy-not-retrospectively-reviewed
+LEG-9f961df44df5,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,192,test.each(),%s: a new reply arrives with no status change,True,legacy-not-retrospectively-reviewed
 LEG-a4d364d801ca,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,210,test,"an unchanged conversation keeps its turns, and the next request carries the ETag",False,legacy-not-retrospectively-reviewed
 LEG-c3df8c71c705,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,230,test,a slow request is not stacked: one at a time,False,legacy-not-retrospectively-reviewed
 LEG-876a8b37b9ec,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,244,test,nothing is asked or set after the console goes away,False,legacy-not-retrospectively-reviewed
-LEG-f1a1d6bffc3e,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,259,test.each(),shortcut opens only %s and can be requested again on an existing HQ view,True,legacy-not-retrospectively-reviewed
-LEG-a05453cae3da,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,291,test.each(),%s shortcut distinguishes loading and failed reads from an empty resource,True,legacy-not-retrospectively-reviewed
+LEG-f1a1d6bffc3e,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,260,test.each(),shortcut opens only %s and can be requested again on an existing HQ view,True,legacy-not-retrospectively-reviewed
+LEG-a05453cae3da,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,292,test.each(),%s shortcut distinguishes loading and failed reads from an empty resource,True,legacy-not-retrospectively-reviewed
 LEG-58f9e03c6e20,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,325,test,"slow HQ usage is coalesced, deadline recovers, and its late reply cannot replace the new reading",False,legacy-not-retrospectively-reviewed
-LEG-d449ecd3adde,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,363,test,HQ Trace shares the existing transcript and preserves it when closed,False,legacy-not-retrospectively-reviewed
-LEG-e3123164a4d4,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,383,test.each(),HQ denial %s closes Trace and clears cached records,True,legacy-not-retrospectively-reviewed
-LEG-c9dff54f6859,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,405,test,HQ can load an earlier session from Trace through the existing read lane,False,legacy-not-retrospectively-reviewed
-LEG-59f95e7c83e4,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,440,test,workspace-backed conversations use the same matters and keep them current without legacy tabs,False,legacy-not-retrospectively-reviewed
+LEG-d449ecd3adde,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,384,test,HQ Trace shares the existing transcript and preserves it when closed,False,legacy-not-retrospectively-reviewed
+LEG-e3123164a4d4,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,405,test.each(),HQ denial %s closes Trace and clears cached records,True,legacy-not-retrospectively-reviewed
+LEG-c9dff54f6859,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,426,test,HQ can load an earlier session from Trace through the existing read lane,False,legacy-not-retrospectively-reviewed
+LEG-59f95e7c83e4,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,461,test,workspace-backed conversations use the same matters and keep them current without legacy tabs,False,legacy-not-retrospectively-reviewed
+MAP-70f5d7f57ea0,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,328,reviewed-selector,a slow HQ usage answer is kept when the Mac takes longer than 15 seconds,False,UR-001
+MAP-8a3e8378dfee,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,354,reviewed-selector,"a stalled usage read retires at its own deadline, then a new read recovers",False,UR-001
+MAP-517de42c0dfa,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,292,reviewed-selector,shortcut distinguishes loading and failed reads from an empty resource,False,UR-001
+MAP-ec30d4e015f6,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,369,reviewed-selector,the Usage sheet retry action starts a new read immediately after failure,False,UR-001
 LEG-b6b3543d24b4,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,99,test,"overview opens a matter, distinguishes delivery from completion and only prefills input",False,legacy-not-retrospectively-reviewed
 LEG-3eb43796d7e1,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,126,test,resource summaries lead the overview with real facts and keep resource navigation,False,legacy-not-retrospectively-reviewed
 LEG-d8c2e0716810,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,143,test,an unavailable workspace in the conversation stays unknown instead of becoming an empty legacy queue,False,legacy-not-retrospectively-reviewed
@@ -669,26 +674,30 @@ LEG-982cd11bec20,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test
 LEG-6a69d2b9722f,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,424,test,"a credential the server rejects says so, not that it is a share link",False,legacy-not-retrospectively-reviewed
 LEG-dab2495366f0,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,436,test,a Mac that refuses this phone reads Access rejected on the list,False,legacy-not-retrospectively-reviewed
 LEG-cd35d5d9def5,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,448,test,"a server-mode change on the server is read at once, not on the next poll",False,legacy-not-retrospectively-reviewed
-LEG-2aba97e994c5,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,46,it,"is called by its name, not by its registry key",False,legacy-not-retrospectively-reviewed
-LEG-f259cfaf2c4d,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,54,it,asks for an icon at all — the fallback used to carry no hint,False,legacy-not-retrospectively-reviewed
-LEG-450351da14b3,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,73,it,states ctx ONCE — two roundings of it used to sit side by side,False,legacy-not-retrospectively-reviewed
-LEG-5007c47dbdef,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,81,it,keeps a warned session on screen and counts only the quiet ones,False,legacy-not-retrospectively-reviewed
-LEG-9d5e4971c9f6,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,92,it,omits a duplicate ordinary quota while retaining a single warned window,False,legacy-not-retrospectively-reviewed
-LEG-ca6862d2e924,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,97,it,names the selected quota without internal window jargon,False,legacy-not-retrospectively-reviewed
-LEG-dc5d89c8d69b,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,101,it,lifts the machine warning out of the bottom of the page,False,legacy-not-retrospectively-reviewed
-LEG-dfdb96d9f479,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,107,it,draws nothing when there is neither,False,legacy-not-retrospectively-reviewed
-LEG-7c36e1b2d4bc,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,115,it,names each resource with an icon,False,legacy-not-retrospectively-reviewed
-LEG-775a63fcb598,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,120,it,"still encodes state three ways, so the icon can stay identity-only",False,legacy-not-retrospectively-reviewed
-LEG-4046c05b4431,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,128,it,opens the idle ones back up,False,legacy-not-retrospectively-reviewed
-LEG-d96598b1f49d,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,157,it,"draws the heatmap by default, with the figures, the stats and the chips",False,legacy-not-retrospectively-reviewed
-LEG-4b085d225971,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,168,it,switches to the weekly bars and the cumulative line,False,legacy-not-retrospectively-reviewed
-LEG-6e8e04740c2a,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,177,it,keeps the seven bars for a serve without activity,False,legacy-not-retrospectively-reviewed
-LEG-8daa26038fff,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,184,test,usage close announces an action rather than its test identifier,False,legacy-not-retrospectively-reviewed
-LEG-dfb0c59ba9e4,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,193,test,native DSH balance keeps exact money strings separate from percentage windows,False,legacy-not-retrospectively-reviewed
-LEG-794d8a2b1e69,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,216,it,keeps output visible while historical quotas and source gaps start folded,False,legacy-not-retrospectively-reviewed
-LEG-bab51363d152,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,230,it,still requests the built-in icon when a live row has no icon hint,False,legacy-not-retrospectively-reviewed
-LEG-c4e189276e48,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,236,it,can inspect and re-fold history and account limitations without changing current figures,False,legacy-not-retrospectively-reviewed
-LEG-6c6da13ec45f,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,253,it,"retains an unreadable provider inside the disclosure, without inventing a zero quota",False,legacy-not-retrospectively-reviewed
+LEG-2aba97e994c5,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,106,it,"is called by its name, not by its registry key",False,legacy-not-retrospectively-reviewed
+LEG-f259cfaf2c4d,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,114,it,asks for an icon at all — the fallback used to carry no hint,False,legacy-not-retrospectively-reviewed
+LEG-450351da14b3,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,133,it,states ctx ONCE — two roundings of it used to sit side by side,False,legacy-not-retrospectively-reviewed
+LEG-5007c47dbdef,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,141,it,keeps a warned session on screen and counts only the quiet ones,False,legacy-not-retrospectively-reviewed
+LEG-9d5e4971c9f6,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,152,it,omits a duplicate ordinary quota while retaining a single warned window,False,legacy-not-retrospectively-reviewed
+LEG-ca6862d2e924,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,157,it,names the selected quota without internal window jargon,False,legacy-not-retrospectively-reviewed
+LEG-dc5d89c8d69b,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,161,it,lifts the machine warning out of the bottom of the page,False,legacy-not-retrospectively-reviewed
+LEG-dfdb96d9f479,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,167,it,draws nothing when there is neither,False,legacy-not-retrospectively-reviewed
+LEG-7c36e1b2d4bc,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,175,it,names each resource with an icon,False,legacy-not-retrospectively-reviewed
+LEG-775a63fcb598,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,180,it,"still encodes state three ways, so the icon can stay identity-only",False,legacy-not-retrospectively-reviewed
+LEG-4046c05b4431,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,188,it,opens the idle ones back up,False,legacy-not-retrospectively-reviewed
+LEG-d96598b1f49d,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,217,it,"draws the heatmap by default, with the figures, the stats and the chips",False,legacy-not-retrospectively-reviewed
+LEG-4b085d225971,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,228,it,switches to the weekly bars and the cumulative line,False,legacy-not-retrospectively-reviewed
+LEG-6e8e04740c2a,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,237,it,keeps the seven bars for a serve without activity,False,legacy-not-retrospectively-reviewed
+LEG-8daa26038fff,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,244,test,usage close announces an action rather than its test identifier,False,legacy-not-retrospectively-reviewed
+LEG-dfb0c59ba9e4,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,253,test,native DSH balance keeps exact money strings separate from percentage windows,False,legacy-not-retrospectively-reviewed
+LEG-794d8a2b1e69,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,276,it,keeps output visible while historical quotas and source gaps start folded,False,legacy-not-retrospectively-reviewed
+LEG-bab51363d152,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,290,it,still requests the built-in icon when a live row has no icon hint,False,legacy-not-retrospectively-reviewed
+LEG-c4e189276e48,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,296,it,can inspect and re-fold history and account limitations without changing current figures,False,legacy-not-retrospectively-reviewed
+LEG-6c6da13ec45f,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,313,it,"retains an unreadable provider inside the disclosure, without inventing a zero quota",False,legacy-not-retrospectively-reviewed
+MAP-91a05cef488e,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,44,reviewed-selector,"usage states distinguish loading, a valid empty report and an older server",False,UR-003
+MAP-0c19bc621fef,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,56,reviewed-selector,"a timeout keeps the previous report, offers retry, and folds technical detail",False,UR-003
+MAP-911abd5d651c,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,72,reviewed-selector,usage failure guidance follows the actual refusal or transport,False,UR-003
+MAP-9e1cb875a273,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,86,reviewed-selector,the shared regular sheet keeps the error card bounded and names retry in Chinese,False,UR-003
 LEG-8fa5ed148b52,L2,RN / mobile harness,mobileapp/src/screens/accessHistoryExploration.test.ts,4,test,"merges disjoint pages by full identity, sums counters and keeps the latest name",False,legacy-not-retrospectively-reviewed
 LEG-cfbaf865cec0,L2,RN / mobile harness,mobileapp/src/screens/accessHistoryExploration.test.ts,10,test,"drills into the exact ID, preserves operation/outcome and leaves summary mode",False,legacy-not-retrospectively-reviewed
 LEG-ea43bb282de3,L2,RN / mobile harness,mobileapp/src/screens/accessHistoryPresentation.test.ts,4,test,"groups by local date across UTC midnight, formats Chinese independently of system locale",False,legacy-not-retrospectively-reviewed

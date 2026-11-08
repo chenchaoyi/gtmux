@@ -36,6 +36,7 @@ import {
 import {UsageAccounts} from './UsageAccounts';
 import {MachineIcon, machineKind} from '../ui/MachineIcon';
 import {MODAL_ORIENTATIONS} from '../ui/modalOrientations';
+import {type UsageFailure} from './usageFailure';
 
 const hit = {top: 10, bottom: 10, left: 10, right: 10};
 
@@ -49,10 +50,18 @@ export function UsageSheet({
   layout = 'compact',
   loading = false,
   loadError = false,
+  failure = null,
+  unsupported = false,
+  lastReadAt = 0,
+  onRetry,
 }: {
   visible: boolean;
   loading?: boolean;
   loadError?: boolean;
+  failure?: UsageFailure | null;
+  unsupported?: boolean;
+  lastReadAt?: number;
+  onRetry?: () => void;
   usage: UsageReport | null;
   /** The regular shell has room for a year of columns; a phone for five months. */
   layout?: SizeClass;
@@ -90,6 +99,44 @@ export function UsageSheet({
   // Folding the quiet ones is a SUMMARY, not a deletion: they were all on screen before,
   // and a count with no way back would lose them.
   const [restOpen, setRestOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const problem = loadError ? failure ?? {kind: 'unknown' as const, detail: 'Usage read failed'}
+    : unsupported ? {kind: 'unsupported' as const, detail: 'HTTP 404'} : null;
+  const problemText = (() => {
+    switch (problem?.kind) {
+      case 'timeout': return [t('Usage is taking too long', '读取用量耗时过长'), t('The Mac did not finish this read in time. Try again; your usage has not been reset.', 'Mac 未能及时完成读取。可以重试；用量数据并未重置。')];
+      case 'network': return [t('Could not reach the Mac', '无法连接到 Mac'), t('Check this phone’s connection to the Mac, then try again.', '检查手机与 Mac 的连接后重试。')];
+      case 'auth': return [t('Pairing is no longer accepted', '配对已失效'), t('Open connection settings and pair this phone with the Mac again.', '请在连接设置中重新配对这台手机与 Mac。')];
+      case 'owner': return [t('Usage needs an owner connection', '用量需要所有者连接'), t('Open Usage from a phone paired as an owner.', '请通过以所有者身份配对的手机查看用量。')];
+      case 'server': return [t('The Mac could not read usage', 'Mac 无法读取用量'), t('Try again. If this keeps happening, run gtmux usage on the Mac to check its source.', '请重试。如果持续失败，可在 Mac 上运行 gtmux usage 检查数据源。')];
+      case 'invalid': return [t('Usage response is unreadable', '用量响应无法读取'), t('The Mac returned a response this app could not use. Try again.', 'Mac 返回了此 App 无法使用的响应。请重试。')];
+      case 'unsupported': return [t('Usage is unavailable on this Mac', '这台 Mac 不支持用量读取'), t('Check the gtmux version on the connected Mac.', '请检查所连接 Mac 上的 gtmux 版本。')];
+      default: return [t('Could not read usage', '无法读取用量'), t('Try again. If this keeps happening, check the connection to the Mac.', '请重试。如果持续失败，请检查与 Mac 的连接。')];
+    }
+  })();
+  const notice = (previous: boolean) => (
+    <View testID="usage-load-state" style={[styles.loadCard, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
+      <View style={styles.loadHead}>
+        <Text style={[styles.loadGlyph, {color: ERRORED_COLOR}]}>!</Text>
+        <Text accessibilityRole="alert" style={[styles.loadTitle, {color: pal.fg}]}>{problemText[0]}</Text>
+      </View>
+      <Text style={[styles.loadBody, {color: pal.fg2}]}>{problemText[1]}</Text>
+      {previous && <Text style={[styles.loadPrevious, {color: pal.fg3}]}>
+        {t('Showing the last successful reading', '正在显示上次成功读取的结果')}
+        {lastReadAt ? ` · ${new Date(lastReadAt).toLocaleTimeString(zh ? 'zh-CN' : 'en-US', {hour: 'numeric', minute: '2-digit'})}` : ''}
+      </Text>}
+      {onRetry && problem?.kind !== 'auth' && problem?.kind !== 'owner' && problem?.kind !== 'unsupported' &&
+        <TouchableOpacity testID="usage-retry" accessibilityRole="button" accessibilityLabel={t('Retry reading usage', '重试读取用量')}
+          onPress={onRetry} style={[styles.loadAction, {borderColor: pal.divider, backgroundColor: pal.raised}]}>
+          <Text style={[styles.loadActionText, {color: pal.fg}]}>{t('Try again', '重试')}</Text>
+        </TouchableOpacity>}
+      <TouchableOpacity testID="usage-error-details" accessibilityRole="button" accessibilityState={{expanded: detailsOpen}}
+        onPress={() => setDetailsOpen(x => !x)} style={styles.loadDetailsButton}>
+        <Text style={[styles.loadDetailsText, {color: pal.fg3}]}>{t('Technical details', '技术详情')} {detailsOpen ? '⌃' : '⌄'}</Text>
+      </TouchableOpacity>
+      {detailsOpen && <Text selectable style={[styles.loadDetail, {color: pal.fg3}]}>{problem?.detail}</Text>}
+    </View>
+  );
   // The radar's row when we have it (real icon), else just enough for the neutral
   // monogram — never a blank square.
   const agentOf = (paneId: string, label: string): Agent =>
@@ -128,10 +175,12 @@ export function UsageSheet({
           </TouchableOpacity>
         </View>
 
-        {loading || loadError ? <View testID="usage-load-state" style={styles.loadState}>
-          {loading && <ActivityIndicator color={pal.fg2} />}
-          <Text accessibilityRole={loadError ? 'alert' : undefined} style={{color: pal.fg2}}>{loading ? t('Loading usage…', '正在加载用量…') : t('Could not load usage. Retrying…', '无法加载用量，正在重试…')}</Text>
-        </View> : <ScrollView contentContainerStyle={styles.pad}>
+        {!usage && loading && !problem ? <View testID="usage-load-state" style={styles.loadState}>
+          <ActivityIndicator color={pal.fg2} />
+          <Text style={[styles.loadTitle, {color: pal.fg}]}>{t('Reading usage', '正在读取用量')}</Text>
+          <Text style={[styles.loadBody, {color: pal.fg2, textAlign: 'center'}]}>{t('Collecting usage from this Mac can take a while when many sessions are open.', '打开的会话较多时，从 Mac 收集用量可能需要一些时间。')}</Text>
+        </View> : !usage && problem ? <View style={styles.loadState}>{notice(false)}</View> : <ScrollView contentContainerStyle={styles.pad}>
+          {problem ? notice(true) : loading ? <Text style={[styles.refreshNote, {color: pal.fg3}]}>{t('Refreshing usage…', '正在更新用量…')}</Text> : null}
           {/* What you came for, before the sections. Which window is tightest, and
               whether the machine is about to stop all of it — those sat at row 3 and row
               25, and on 2026-09-10 an amber disk warning was 18 session rows below the
@@ -460,7 +509,19 @@ const styles = StyleSheet.create({
   tokenLabel: {fontSize: 12, flexShrink: 1},
   tokenNumber: {width: 76, textAlign: 'right', fontSize: 12, fontVariant: ['tabular-nums']},
   tokenCaption: {fontSize: 11},
-  loadState: {flex: 1, padding: 24, alignItems: 'center', justifyContent: 'center', gap: 12},
+  loadState: {flex: 1, paddingHorizontal: 14, paddingTop: 24, alignItems: 'center', gap: 12},
+  loadCard: {width: '100%', maxWidth: 520, alignSelf: 'center', marginTop: 12, padding: 16, borderWidth: StyleSheet.hairlineWidth, borderRadius: 12, gap: 9},
+  loadHead: {flexDirection: 'row', alignItems: 'center', gap: 9},
+  loadGlyph: {fontSize: 15, fontWeight: '800', width: 18, textAlign: 'center'},
+  loadTitle: {fontSize: 16, fontWeight: '700', flexShrink: 1},
+  loadBody: {fontSize: 13, lineHeight: 19},
+  loadPrevious: {fontSize: 11.5, lineHeight: 16},
+  loadAction: {minHeight: 44, alignSelf: 'flex-start', justifyContent: 'center', borderWidth: StyleSheet.hairlineWidth, borderRadius: 8, paddingHorizontal: 16, marginTop: 4},
+  loadActionText: {fontSize: 13, fontWeight: '600'},
+  loadDetailsButton: {minHeight: 36, alignSelf: 'flex-start', justifyContent: 'center', marginTop: 2},
+  loadDetailsText: {fontSize: 11.5},
+  loadDetail: {fontSize: 11, lineHeight: 15},
+  refreshNote: {fontSize: 11.5, marginHorizontal: 14, marginTop: 12},
   root: {flex: 1},
   lead: {
     marginHorizontal: 14,
