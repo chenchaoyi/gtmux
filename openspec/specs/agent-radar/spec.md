@@ -813,3 +813,22 @@ Radar SHALL correct a false working display only after validating the current th
 #### Scenario: Ownership or readiness is uncertain
 - **WHEN** binding is unavailable, the marker is unnamed/current, or current work/approval evidence exists
 - **THEN** the foreign-marker correction does not suppress that evidence
+
+
+### Requirement: Completed Codex turns resist late activity callbacks
+Radar SHALL use the shared bounded rollout metadata parser to identify a current turn's explicit completion or abort. A named active marker for that same turn, even when written after the end, SHALL NOT make a verified live frontend working while its terminal is ready and has no work or approval evidence. This is display correction only, without marker deletion, new completion evidence or input authority changes.
+
+#### Scenario: A callback writes active after its own turn ended
+- **WHEN** the current frontend's home/session/pane/cwd is verified, its current explicit turn ID matches the last completed or aborted rollout turn, and its frame is ready
+- **THEN** window activity does not revive working, and idle duration uses the actual end
+- **AND** the marker and completion records are preserved
+
+#### Scenario: New work, waiting or insufficient identity
+- **WHEN** a newer turn/start, working or queued frame, approval, missing turn ID, ambiguous rollout or unverified frontend prevents exact completion proof
+- **THEN** the correction preserves the existing conservative status and legacy timestamp-based reconciliation
+
+#### Scenario: Late callback and real next prompt
+- **WHEN** a Codex rearm callback explicitly matches the current turn and its structured completion, without a waiting marker
+- **THEN** it cannot reactivate that turn or clear its completion
+- **AND** continuing own-turn callbacks preserve the original active start time, while an actual new prompt/turn or ownership change refreshes it
+- **AND** callbacks without explicit turn identity retain existing compatibility behavior

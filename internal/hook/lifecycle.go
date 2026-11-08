@@ -116,3 +116,18 @@ func acceptPaneTurn(event, pane, turnID string, sameSessionTurn bool) bool {
 	}
 	return true
 }
+
+// Only explicit same-turn completion proof fences a late Codex rearm. Legacy
+// callbacks without a turn ID stay conservative; a real new prompt clears the
+// old identity/completion through acceptPaneTurn/applyState as before.
+func completedCodexRearm(event, pane, sid, turn string) bool {
+	if (event != "Resumed" && event != "PostCompact") || pane == "" || sid == "" || turn == "" ||
+		state.ReadMarker(state.TurnIDPath(pane)) != turn || state.Exists(state.WaitingPath(pane)) {
+		return false
+	}
+	if active := state.ReadMarker(state.ActivePath(pane)); active != "" && active != sid {
+		return false
+	}
+	completed, ok := state.ReadCompletion(pane)
+	return ok && completed.Agent == "codex" && completed.SessionID == sid && completed.TurnID == turn
+}

@@ -1276,11 +1276,11 @@ func gatherAgentsScoped(codexScope *transcript.CodexPathScope, targetPane string
 					}
 				}
 			}
-			// Coarse window activity can revive an old active marker belonging
-			// to a different session after pane reuse. Its current live binding,
-			// own ended rollout and ready frame outweigh that foreign marker.
+			// Window activity must not revive a foreign marker or the current
+			// explicitly ended turn. Exact live ownership and readiness win;
+			// this display correction creates no new lifecycle completion.
 			if status == "working" && codexError == "" && len(f) > 9 && agents.KeyForLabel(agent) == "codex" {
-				if kind, at := codexForeignActiveEndedTurn(id, fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3]), f[9], codexFrame, codexScope.CodexLastTurnBoundary); kind != "" {
+				if kind, at := codexActiveEndedTurn(id, fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3]), f[9], codexFrame, codexScope.CodexLastTurnEvent); kind != "" {
 					status, foreignEnd, foreignEndAt = "idle", kind, at
 				}
 			}

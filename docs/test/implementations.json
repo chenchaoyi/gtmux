@@ -593,5 +593,34 @@
       "TestPhase1CursorEmptyRetentionGap",
       "TestPhase1CursorFilteredPageBoundary"
     ]
+  },
+  "internal/transcript/codex_turn_event_test.go": {
+    "cases": [
+      "CET-001"
+    ],
+    "selectors": [
+      "TestCodexTurnEventIdentityAndFreshness",
+      "TestCodexTurnEventTailBudget"
+    ]
+  },
+  "internal/radar/codex_completed_marker_test.go": {
+    "cases": [
+      "CET-002",
+      "CET-003"
+    ],
+    "selectors": [
+      "TestGatherCompletedOwnTurnSurvivesLateActiveMarker"
+    ]
+  },
+  "internal/hook/codex_completed_turn_test.go": {
+    "cases": [
+      "CET-004",
+      "CET-005"
+    ],
+    "selectors": [
+      "TestCompletedCodexTurnRejectsExplicitLateRearm",
+      "TestCompletedCodexTurnKeepsLegacyAndUncertainCallbacks",
+      "TestCodexContinuationPreservesActiveStart"
+    ]
   }
 }

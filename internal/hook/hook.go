@@ -918,6 +918,12 @@ func Run(stdin io.Reader, args []string) int {
 		pane = terminalAttachment.Pane
 	}
 
+	// Reject explicit late same-turn repair before saving resume/native observations
+	// or mutating markers. A genuine new start and legacy unknown IDs remain usable.
+	if agentKey == "codex" && completedCodexRearm(event, pane, agentSession, payload.TurnID) {
+		return 0
+	}
+
 	session := ""
 	if pane != "" {
 		session = tmux.Display(pane, "#{session_name}")
@@ -1109,7 +1115,10 @@ func Run(stdin io.Reader, args []string) int {
 		}
 		// Record the agent session on the active marker so a later superseded Stop
 		// can be told apart (#5908). No session id → plain marker, unchanged.
-		if d.setActive && agentSession != "" {
+		// Touch preserves a continuation's start, but rewriting the same payload
+		// would undo that by replacing its mtime. Actual starts still refresh it.
+		continuingCodex := agentKey == "codex" && sameSessionTurn && (event == "Resumed" || event == "PostCompact")
+		if d.setActive && agentSession != "" && !continuingCodex {
 			_ = state.WriteMarker(state.ActivePath(pane), agentSession)
 		}
 		// The waiting marker carries the KIND (permission/plan/question) so the

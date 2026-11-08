@@ -2393,6 +2393,8 @@ LEG-b298e746f141,L1,Go core / CLI / server,internal/transcript/codex_recovery_te
 LEG-aa12c2119436,L1,Go core / CLI / server,internal/transcript/codex_recovery_test.go,43,Test,TestCodexRecoveryCompressedHistory,False,legacy-not-retrospectively-reviewed
 LEG-55f1d5bffbf6,L1,Go core / CLI / server,internal/transcript/codex_recovery_test.go,54,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-9bb90f653732,L1,Go core / CLI / server,internal/transcript/codex_recovery_test.go,93,Test,TestCodexRecoveryRefusesSymlinkAndOtherHome,False,legacy-not-retrospectively-reviewed
+MAP-cfb5148b253b,L1,reviewed implementation,internal/transcript/codex_turn_event_test.go,12,reviewed-selector,TestCodexTurnEventIdentityAndFreshness,False,CET-001
+MAP-d042219d39df,L1,reviewed implementation,internal/transcript/codex_turn_event_test.go,68,reviewed-selector,TestCodexTurnEventTailBudget,False,CET-001
 LEG-837a1fc84f90,L1,Go core / CLI / server,internal/transcript/dsh_test.go,14,Test,TestDSHCurrentPublicTranscriptIsIncrementalAndPrivateFieldsStayPrivate,False,legacy-not-retrospectively-reviewed
 LEG-deb044f79ab0,L1,Go core / CLI / server,internal/transcript/dsh_test.go,86,Test,TestDSHFullToolInputReadsBothDurableFormats,False,legacy-not-retrospectively-reviewed
 LEG-67ed34e34554,L1,Go core / CLI / server,internal/transcript/dsh_test.go,88,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
