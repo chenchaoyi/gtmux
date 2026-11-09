@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner (self-review, not independent approval)",
     "date": "2026-11-09",
     "decision": "add bounded active-turn image delivery and truthful receipts",
-    "notes": "Two exact screenshot receipts were accepted into target backend queue with image inputs but remained pending while a long turn continued. Existing overlay calls queued receipt received by terminal. Current installed schema provides metadata-only thread/read, turns/list itemsView=notLoaded/limit1 and steer expectedTurnId. Read-only live metadata is evidence only, not input acceptance. Restrict new path to already authorized uploads images; preserve text/HQ queue semantics and old Codex compatibility. Reuse verified existing backend, explicit home/thread/peer checks and durable claim. No resume, queue consumption/deletion/reordering, mutation of existing messages, interrupt or raw keys. Only explicit protocol unsupported can use queue; no replays after uncertain writes. Actual App/CLI runtime stays unchanged until separately authorized update. Unit/wire/native model checks do not prove live screenshot arrival."
+    "notes": "Two exact screenshot receipts were accepted into target backend queue with image inputs but remained pending while a long turn continued. Existing overlay calls queued receipt received by terminal. Current installed schema provides metadata-only thread/read, turns/list itemsView=notLoaded/limit1 and steer expectedTurnId. Read-only live metadata is evidence only, not input acceptance. Restrict new path to already authorized uploads images; preserve text/HQ queue semantics and old Codex compatibility. Reuse verified existing backend, explicit home/thread/peer checks and durable claim. No resume, queue consumption/deletion/reordering, mutation of existing messages, interrupt or raw keys. Only explicit protocol unsupported can use queue; no replays after uncertain writes. Actual App/CLI runtime stays unchanged until separately authorized update. Unit/wire/native model checks do not prove live screenshot arrival. Post-implementation owner review: body text alone must not opt in to active delivery, because an HQ report can quote an existing upload path. Gate the new path on explicit CLI --attach intent as well as the recognized upload image; a quoted image path in ordinary/HQ input must retain the queue. Add that negative case within SSI-002. Also distinguish read-only input metadata failure from genuine pending confirmation in the Mac receipt interpreter; preserve refusal and editable draft, do not label a transport failure as a human decision. Case identities and original observable expectations are unchanged; this review note is committed before the strengthening regressions."
   },
   "cases": [
     {
@@ -42,5 +42,5 @@
       ]
     }
   ],
-  "seal": "512ec939a653709105074b178600311e40b5d5fcf318db76a7a746fcbd6e7457"
+  "seal": "1662de05ddbe12956907fe001ec30f3477a352ef27497b754b4ffd1902bf822d"
 }
