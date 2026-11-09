@@ -776,5 +776,30 @@
     "selectors": [
       "ARGV-003 Trace argv scripts"
     ]
+  },
+  "internal/radar/energy_snapshot_test.go": {
+    "cases": [
+      "PWR-001"
+    ],
+    "selectors": [
+      "TestPWR001ProducerSharesFreshSnapshotAndKeepsBoundaries",
+      "TestPWR001ConcurrentProducerCannotBeOverwrittenByOlderREST"
+    ]
+  },
+  "internal/radar/energy_gather_test.go": {
+    "cases": [
+      "PWR-002"
+    ],
+    "selectors": [
+      "TestPWR002GatherSharesFramesOnlyInsideOnePass"
+    ]
+  },
+  "internal/app/serve_energy_snapshot_test.go": {
+    "cases": [
+      "PWR-003"
+    ],
+    "selectors": [
+      "TestPWR003SSEPublishesItsActualNativeObservationForREST"
+    ]
   }
 }

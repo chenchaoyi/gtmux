@@ -1423,7 +1423,7 @@ func serveHostInfo() any {
 // stream (%12, 2026-10-06). With no server the radar scans no panes, and its orphan-marker
 // sweep does not run on an empty scan.
 func serveAgentStatuses() []server.AgentStatus {
-	panes := radar.GatherAgents()
+	panes := radar.RefreshAgentsSnapshot()
 	out := make([]server.AgentStatus, 0, len(panes))
 	for _, p := range panes {
 		revision := int64(0)

@@ -1009,6 +1009,7 @@ func identifiedAgentPanes() []Pane {
 	terminal := terminalAttachments()
 	procs := procSnapshot()
 	children := processChildren(procs)
+
 	hostname, _ := os.Hostname()
 	var panes []Pane
 	hqStamps := map[string]string{}
@@ -1080,6 +1081,17 @@ func gatherAgentsScoped(codexScope *transcript.CodexPathScope, targetPane string
 	procs := procSnapshot()
 	hostname, _ := os.Hostname() // for stripDefaultTitle (tmux's default pane_title)
 	children := processChildren(procs)
+	// Ordinary status probes share one frame per pane in this gather. Never
+	// retain it across polls. Final checks before withdrawing a wait stay fresh.
+	frames := map[string]string{}
+	capture := func(id string) string {
+		if frame, ok := frames[id]; ok {
+			return frame
+		}
+		frame := paneCapture(id)
+		frames[id] = frame
+		return frame
+	}
 
 	var panes []Pane
 	hqStamps := map[string]string{}         // pane id → its @gtmux_hq_home stamp (role precedence)
@@ -1121,7 +1133,7 @@ func gatherAgentsScoped(codexScope *transcript.CodexPathScope, targetPane string
 		hfsCalled := false // whether the frame/CPU signal was sampled for this pane
 		hookFreeStatus := func(paneID string, panePid int) string {
 			hfsCalled = true
-			frameW := state.PaneFrameWorking(paneID, paneCapture(paneID), now)
+			frameW := state.PaneFrameWorking(paneID, capture(paneID), now)
 			cpuW := state.PaneCPUWorking(paneID, subtreeCPU(panePid, procs, children), now)
 			if frameW || cpuW {
 				return "working"
@@ -1159,7 +1171,7 @@ func gatherAgentsScoped(codexScope *transcript.CodexPathScope, targetPane string
 		foreignEnd := ""
 		var foreignEndAt time.Time
 		if agents.KeyForLabel(agent) == "codex" {
-			codexFrame = paneCapture(id)
+			codexFrame = capture(id)
 			codexError = codexTerminalFailureForPane(id, codexFrame, now)
 		}
 		if !nativeLifecycle {
@@ -1244,7 +1256,7 @@ func gatherAgentsScoped(codexScope *transcript.CodexPathScope, targetPane string
 			// A Codex approval with no session/cwd is deliberately left pane-less by
 			// the hook. Once its menu appears in a pane, the screen itself supplies
 			// the missing identity. The slow tick persists this as a normal wait.
-			if status != "waiting" && CodexScreenWaitKind(id, agent) != "" {
+			if status != "waiting" && agents.KeyForLabel(agent) == "codex" && codexScreenWaitKind(agent, capture(id)) != "" {
 				status = "waiting"
 			}
 			// STUCK-DISPATCH GUARD: a dispatched worker blocked BEFORE running a turn (a
@@ -1267,7 +1279,7 @@ func gatherAgentsScoped(codexScope *transcript.CodexPathScope, targetPane string
 			if status == "working" && observedStatus == "working" && agents.KeyForLabel(agent) == "codex" && len(f) > 9 {
 				loc := fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3])
 				if codexCompletedTurnContradictsFrame(id, loc, f[9], codexScope.CodexLastTurnBoundary) ||
-					codexIdleComposerContradictsFrame(id, paneCapture(id)) {
+					codexIdleComposerContradictsFrame(id, capture(id)) {
 					status = "idle"
 					if rec, ok := resume.LoadLive(loc); ok && rec.Agent == "codex" && resume.CodexCwdMatches(id, rec, f[9]) {
 						if kind, _ := codexScope.CodexLastTurnBoundary(rec.SessionID); kind == "turn_aborted" {

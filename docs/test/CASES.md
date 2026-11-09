@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1054 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1057 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
-| L1 · Unit / pure logic | 3753 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 1931 | [L2.csv](cases/L2.csv) |
+| L1 · Unit / pure logic | 3755 | [L1.csv](cases/L1.csv) |
+| L2 · Component / contract | 1933 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 90 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 94 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 12 | [M.csv](cases/M.csv) |
@@ -70,6 +70,9 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | HQP1-008 | Schema 1 reads migrate without invented history, schema 2 prevents old writer loss, and seeded bilingual playbook explains safe processing. |
 | STOR-001 | Every carrier separates project-owned and task-temp output from gtmux configuration/runtime trees; no promoted entry required; user text and hand-edit protection preserved; second sync idempotent. |
 | STOR-002 | Both playbooks reserve gtmux-owned state and only reusable HQ knowledge tools for its home, direct project scripts/reports/builds to project/task storage, require external evidence references, and never grant automatic migration/deletion; upgrade backs up old charter, preserves LOCAL/notes and converges. |
+| PWR-001 | One production collection per producer tick, no extra REST collections within freshness; explicit next producer bypasses TTL; clone ownership preserved; failure/oversize never turns stale bytes into success; scopes never cross |
+| PWR-002 | Frame probes within one pass share exact text; each pane is captured at most once, no frame survives into next gather; new approval becomes waiting without invented done; unrelated non-Codex states retained |
+| PWR-003 | SSE uses fresh producer, REST reads its cache rather than second gather; role/completion/follow/native identity unchanged; no real services/power settings touched |
 | TD-001 | Reject a changed/new test without a reviewed design; accept a mapped implementation |
 | TD-002 | Reject a tampered review seal, missing assertion description, invalid layer or unsafe path |
 | TD-003 | Reject missing/changed catalogue files and missing named implementation selectors |
