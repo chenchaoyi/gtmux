@@ -57809,7 +57809,7 @@
           "design": "CORE-CODEX-FOREIGN-GATHER"
         }
       ],
-      "sha256": "9d64f63ebb6a371e57ab3efbafff7e6d5ff272a079353210772d54b5dd537ab8"
+      "sha256": "d0abb6fe93bcb80b3f3742be1652c0377235718a5ad0254834dc9f98ac9d0cb7"
     },
     "internal/radar/codex_foreign_marker_test.go": {
       "layer": "L2",
@@ -58038,7 +58038,7 @@
           "design": "CET-002,CET-003"
         }
       ],
-      "sha256": "e296d37d96a292594d5bdc6798b73fb687bd2ab3360fe6f3a37426dbc1846b2c"
+      "sha256": "b44f3bc0774a92005a869f4417a7acc01cbbca23e9ee9231530af573aa29ad2c"
     },
     "internal/transcript/codex_turn_event_test.go": {
       "layer": "L1",

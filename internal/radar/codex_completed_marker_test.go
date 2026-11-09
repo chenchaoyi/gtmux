@@ -105,13 +105,7 @@ func TestGatherCompletedOwnTurnSurvivesLateActiveMarker(t *testing.T) {
 			}
 			capture := paneCapture
 			t.Cleanup(func() { paneCapture = capture })
-			paneCapture = func(string) string {
-				// A real approval is not a ready composer with a separate wait marker.
-				if tc.wait {
-					return "Would you like to run this command?\n› 1. Yes, proceed\n  2. No, tell Codex what to do\nPress enter to confirm\n"
-				}
-				return tc.frame + "› Ask Codex to do anything\n model · /work"
-			}
+			paneCapture = func(string) string { return tc.frame + "› Ask Codex to do anything\n model · /work" }
 			withFixture(t, []string{paneLine(pane, "synthetic", "0", "0", "Codex", "codex", time.Now().Unix(), 900017, "/work")}, func() {
 				for i := 0; i < 2; i++ {
 					rows := GatherAgents()

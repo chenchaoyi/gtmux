@@ -1081,8 +1081,8 @@ func gatherAgentsScoped(codexScope *transcript.CodexPathScope, targetPane string
 	procs := procSnapshot()
 	hostname, _ := os.Hostname() // for stripDefaultTitle (tmux's default pane_title)
 	children := processChildren(procs)
-	// Every consumer in this gather sees one frame per pane. Never retain it
-	// across polls: permission menus and error/completion evidence must stay fresh.
+	// Ordinary status probes share one frame per pane in this gather. Never
+	// retain it across polls. Final checks before withdrawing a wait stay fresh.
 	frames := map[string]string{}
 	capture := func(id string) string {
 		if frame, ok := frames[id]; ok {
@@ -1210,7 +1210,7 @@ func gatherAgentsScoped(codexScope *transcript.CodexPathScope, targetPane string
 			// askOnScreen: is the agent's numbered question still up? Lazy — only the narrow
 			// "fresh mark over a live-working pane" branch pays for the capture.
 			askOnScreen := func() bool {
-				frame := capture(id)
+				frame := tmux.CapturePane(id)
 				if agents.KeyForLabel(agent) == "codex" {
 					return prompt.WaitingOptions(frame) != nil
 				}
@@ -1227,7 +1227,7 @@ func gatherAgentsScoped(codexScope *transcript.CodexPathScope, targetPane string
 			// marker to the innocent pane. A quiet Codex pane displaying its ready
 			// composer contradicts the marker; clear the false wait (and its orphan
 			// active marker) rather than keep telling the user to answer it.
-			if codexReadyContradictsWait(agent, status, observedStatus, capture, id) {
+			if codexReadyContradictsWait(agent, status, observedStatus, tmux.CapturePane, id) {
 				state.Remove(state.WaitingPath(id))
 				state.Remove(state.ActivePath(id))
 				delete(waiting, id)

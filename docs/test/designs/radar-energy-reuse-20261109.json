@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner (self-review, not independent approval)",
     "date": "2026-11-09",
     "decision": "reduce repeated reads without changing polling or notification cadence",
-    "notes": "Read-only four-sample live baseline suggests serve and tmux rather than the SwiftUI menu process dominate this product CPU. Static source confirms SSE GatherAgents bypasses the REST snapshot and a single Codex gather can capture frames more than once. Fix only reuse: force fresh producer on every existing SSE tick while atomically publishing its bounded JSON under the existing lock; keep REST fallback/TTL/scoping/failure semantics. Memoize frame locally per gather, never persist across polls or suppress permissions. Tests count actual producer/capture calls and preserve changed-frame behavior, not timing-dependent sleeps. No claimed battery percentage from synthetic counts or un-symbolicated live sample; no deployed-service restart. Production CPU comparison needs a later installed version under equivalent load. Full core found two existing approval fixtures that set a waiting marker while paneCapture returns a ready composer and tmux capture is disabled/empty. They previously survived because the contradictory screen probes used different sources. Under one authoritative frame, the ready composer correctly invalidates that marker. Review fixture-only correction: real-approval branches must supply an actual numbered approval frame; all original expected states, marker ownership/timestamp and completion assertions remain unchanged. Add the two touched existing fixtures to PWR-002 coverage before editing. This is not a relaxation of actual approval protection."
+    "notes": "Read-only four-sample live baseline suggests serve and tmux rather than the SwiftUI menu process dominate this product CPU. Static source confirms SSE GatherAgents bypasses the REST snapshot and a single Codex gather can capture frames more than once. Fix only reuse: force fresh producer on every existing SSE tick while atomically publishing its bounded JSON under the existing lock; keep REST fallback/TTL/scoping/failure semantics. Memoize frame locally per gather, never persist across polls or suppress permissions. Tests count actual producer/capture calls and preserve changed-frame behavior, not timing-dependent sleeps. No claimed battery percentage from synthetic counts or un-symbolicated live sample; no deployed-service restart. Production CPU comparison needs a later installed version under equivalent load. Full-core review decision: preserve the independent fresh screen check before withdrawing an existing wait and the active-wait confirmation probe. They protect permission timing and intentionally remain outside ordinary per-pass frame reuse. An attempted fixture alignment was abandoned rather than altering legacy approval assertions; both original fixture files and their original mappings are restored byte-for-byte. The original PWR-002 cases describe ordinary unmarked panes, including next-pass approval detection, and remain identical to the pre-implementation design. Old failed check and abandoned fixture/design attempt are retained honestly; not counted as green. This favors stability over eliminating every last capture."
   },
   "cases": [
     {
@@ -27,9 +27,7 @@
       "action": "Run full gather and repeat with numbered permission menu; verify counts and statuses",
       "expected": "Frame probes within one pass share exact text; each pane is captured at most once, no frame survives into next gather; new approval becomes waiting without invented done; unrelated non-Codex states retained",
       "planned_files": [
-        "internal/radar/energy_gather_test.go",
-        "internal/radar/codex_completed_marker_test.go",
-        "internal/radar/codex_foreign_marker_gather_test.go"
+        "internal/radar/energy_gather_test.go"
       ]
     },
     {
@@ -44,5 +42,5 @@
       ]
     }
   ],
-  "seal": "82e481e2646bcb3d9f953cb6d373ecb451284f39a13fe0061640e993d88e9848"
+  "seal": "1b30c4061dec63ec50b07889bac63d917789403056684fe3a5ef0967ea2f6f12"
 }
