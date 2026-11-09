@@ -742,5 +742,39 @@
     "selectors": [
       "function fixture("
     ]
+  },
+  "mobileapp/src/ui/commandArgv.test.ts": {
+    "cases": [
+      "ARGV-001"
+    ],
+    "selectors": [
+      "ARGV-001 shell argv",
+      "ARGV-001 cmd fields",
+      "ARGV-001 ordinary argv"
+    ]
+  },
+  "mobileapp/src/ui/CommandArgvPanel.test.tsx": {
+    "cases": [
+      "ARGV-002"
+    ],
+    "selectors": [
+      "ARGV-002 shared readers"
+    ]
+  },
+  "internal/server/web/argv-reading.test.cjs": {
+    "cases": [
+      "ARGV-001"
+    ],
+    "selectors": [
+      "ARGV-001 browser uses"
+    ]
+  },
+  "tests/web/command-argv.test.cjs": {
+    "cases": [
+      "ARGV-003"
+    ],
+    "selectors": [
+      "ARGV-003 Trace argv scripts"
+    ]
   }
 }

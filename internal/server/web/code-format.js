@@ -1,4 +1,4 @@
-// Generated code formatter; source SHA256 6facdf17cde497a5f6afbbdfa40b7922abe032de054699734043b0a7fa1caa4f
+// Generated code formatter; source SHA256 443f3a278a62ecbb4f9052a6f783defb9c04e73b18d7ffabef422788ecf48677
 // Includes @lezer/*, MIT; see vendor/lezer.LICENSE.
 (function(){
 var factories={},cache={};
@@ -3970,6 +3970,58 @@ function codeParts(source, hint = '') {
         return [original];
     const found = [];
     let fields = 0;
+    function literalArgv(value) {
+        if (Array.isArray(value))
+            return value.length > 0 &&
+                value.length <= 64 &&
+                value.every(item => typeof item === 'string')
+                ? value
+                : null;
+        if (!value || typeof value !== 'object')
+            return null;
+        const node = value;
+        if (node.type !== 'ArrayExpression' || !Array.isArray(node.elements))
+            return null;
+        const elements = node.elements;
+        return elements.length > 0 &&
+            elements.length <= 64 &&
+            elements.every(item => item &&
+                /^(?:StringLiteral|Literal)$/.test(String(item.type)) &&
+                typeof item.value === 'string')
+            ? elements.map(item => item.value)
+            : null;
+    }
+    function argv(value, name) {
+        const args = literalArgv(value);
+        if (!args)
+            return false;
+        const interpreter = args[0].split('/').pop() || '';
+        if (/^(?:bash|sh|zsh)$/.test(interpreter) &&
+            /^(?:-c|-lc|-cl|--command)$/.test(args[1]) &&
+            args.length >= 3) {
+            script(args[2], name + ' ' + ++fields);
+            return true;
+        }
+        const python = /^python(?:\d(?:\.\d+)?)?$/.test(interpreter);
+        const node = /^(?:node|nodejs)$/.test(interpreter);
+        let index = 1;
+        if (python)
+            while (/^-(?:u|B|I|E|s|S|O|OO)$/.test(args[index]))
+                index++;
+        if (((python && args[index] === '-c') ||
+            (node && /^(?:-e|--eval)$/.test(args[index]))) &&
+            args.length > index + 1) {
+            const path = name + ' ' + ++fields;
+            found.push({
+                id: path + ':script',
+                source: args[index + 1],
+                hint: python ? 'python' : 'javascript',
+                path,
+            });
+            return true;
+        }
+        return false;
+    }
     function script(command, path) {
         const lines = command.split('\n');
         const scripts = [];
@@ -4005,7 +4057,7 @@ function codeParts(source, hint = '') {
         found.push(...scripts);
     }
     try {
-        if (/^(?:shell|sh|bash|zsh|command)$/.test(hint))
+        if (/^(?:shell|sh|bash|zsh|command)$/.test(hint) && !/^\s*\[/.test(source))
             script(source, '');
         else {
             const parser = plugins[0].parsers.babel;
@@ -4016,6 +4068,9 @@ function codeParts(source, hint = '') {
             catch {
                 ast = parser.parse(source, {}, {});
             }
+            // A recorded command_execution may be the argv itself, rather than a
+            // cmd string inside a tool object. Decode only explicit interpreter slots.
+            argv(ast, 'command');
             let visited = 0;
             function walk(value, path, depth) {
                 if (++visited > 20000 || depth > 100)
@@ -4029,7 +4084,10 @@ function codeParts(source, hint = '') {
                     const name = key?.name || key?.value;
                     const val = node.value;
                     if (/^(?:cmd|command)$/.test(String(name)) && val) {
-                        if (typeof val.value === 'string' &&
+                        if (argv(val, String(name))) {
+                            // The full array remains in the original call; do not concatenate argv.
+                        }
+                        else if (typeof val.value === 'string' &&
                             /^(?:StringLiteral|Literal)$/.test(String(val.type)))
                             script(val.value, String(name) + ' ' + ++fields);
                         else if (val.type === 'TemplateLiteral' &&
@@ -4045,6 +4103,8 @@ function codeParts(source, hint = '') {
                         continue;
                     if (/^(?:cmd|command)$/.test(key) && typeof child === 'string')
                         script(child, key + ' ' + ++fields);
+                    else if (/^(?:cmd|command)$/.test(key) && Array.isArray(child))
+                        argv(child, key);
                     else if (typeof child === 'object' && child)
                         walk(child, path, depth + 1);
                 }
@@ -4060,11 +4120,21 @@ function codeParts(source, hint = '') {
 }
 /** Static input outline, never an execution trace or a success receipt. */
 function commandOutline(parts) {
-    return parts.filter(part => /^(?:cmd|command) \d+$/.test(part.id)).map(part => {
-        const line = part.source.trim().split('\n')[0].slice(0, 160).replace(/[\uD800-\uDBFF]$/, '');
-        const operation = /^(?:cat|head|tail|sed)\s/.test(line) ? 'read' :
-            /^(?:ls|find)\b|^rg\s+--files\b/.test(line) ? 'list' :
-                /^(?:rg|grep)\s/.test(line) ? 'search' : 'command';
+    return parts
+        .filter(part => /^(?:cmd|command) \d+$/.test(part.id))
+        .map(part => {
+        const line = part.source
+            .trim()
+            .split('\n')[0]
+            .slice(0, 160)
+            .replace(/[\uD800-\uDBFF]$/, '');
+        const operation = /^(?:cat|head|tail|sed)\s/.test(line)
+            ? 'read'
+            : /^(?:ls|find)\b|^rg\s+--files\b/.test(line)
+                ? 'list'
+                : /^(?:rg|grep)\s/.test(line)
+                    ? 'search'
+                    : 'command';
         return { partID: part.id, operation, preview: line };
     });
 }
