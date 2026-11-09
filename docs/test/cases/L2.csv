@@ -56,6 +56,7 @@ MAP-259bfbcda714,L2,Go core / CLI / server,internal/knowledge/distribute_test.go
 LEG-c41c1a54df5d,L2,Go core / CLI / server,internal/memdiag/server_test.go,224,Test,TestRequestBoundaries,False,legacy-not-retrospectively-reviewed
 LEG-6d1949576208,L2,Go core / CLI / server,internal/memdiag/server_test.go,243,Test,TestProfileBudgetsFailureCancellationAndConcurrency,False,legacy-not-retrospectively-reviewed
 LEG-55882c09c2ba,L2,Go core / CLI / server,internal/memdiag/server_test.go,284,subtest,cancel and busy,False,legacy-not-retrospectively-reviewed
+MAP-ef51509f7325,L2,reviewed implementation,internal/native/closed_frontend_reuse_test.go,9,reviewed-selector,TestClosedFrontendObservationSurvivesPositivePIDReuseOnly,False,HXF-003
 MAP-1176b6e7ceff,L2,reviewed implementation,internal/native/closed_frontend_test.go,10,reviewed-selector,TestClosedFrontendObservationRequiresExactSnapshotAndGoneProcess,False,HXF-001
 MAP-e88c0ded5ae1,L2,reviewed implementation,internal/radar/closed_frontend_test.go,18,reviewed-selector,TestClosedBoundResumedWorkerHistoryAndPreservation,False,HXF-002
 MAP-8c62d9a14381,L2,reviewed implementation,internal/radar/codex_foreign_marker_test.go,15,reviewed-selector,TestForeignActiveRequiresCurrentIdentityEndedTurnAndReadyFrame,False,CORE-CODEX-FOREIGN-ACTIVE

@@ -281,6 +281,8 @@ A late `Resumed` can be newer than its own completed turn. The core reconciles t
 record to idle/history only with the exact unchanged observation saved in a verified
 frontend binding, matching home/thread/backend incarnation, positive frontend process
 exit, and a non-ambiguous completed/aborted turn with no conflicting explicit turn ID.
+Frontend exit also includes a PID now born after binding publication beyond the
+existing process-time tolerance; PID reuse cannot revive the former frontend.
 The observation and binding are re-read after the exit probe; a newer generation wins,
 even within the same second. Fresh submit/start/wait, live or uncheckable frontends,
 missing proof and unknown backend roles keep their existing behavior. Future or

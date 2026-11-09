@@ -846,5 +846,13 @@
     "selectors": [
       "TestClosedBoundResumedWorkerHistoryAndPreservation"
     ]
+  },
+  "internal/native/closed_frontend_reuse_test.go": {
+    "cases": [
+      "HXF-003"
+    ],
+    "selectors": [
+      "TestClosedFrontendObservationSurvivesPositivePIDReuseOnly"
+    ]
   }
 }

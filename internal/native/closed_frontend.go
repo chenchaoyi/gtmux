@@ -21,7 +21,7 @@ func ClosedFrontendObservation(r Record) bool {
 		b.Cwd != r.Cwd || b.PID <= 1 || b.PID == r.PID || b.BoundAt < r.UpdatedAt || b.BoundAt > time.Now().Unix()+1 {
 		return false
 	}
-	if probeClosedFrontend(b.PID) != syscall.ESRCH {
+	if !frontendIncarnationGone(b) {
 		return false
 	}
 	current, ok := Load(r.SessionID, r.HomeID)
@@ -30,4 +30,19 @@ func ClosedFrontendObservation(r Record) bool {
 	}
 	latest, ok := BindingFor(r.SessionID, r.HomeID)
 	return ok && latest == b
+}
+
+func frontendIncarnationGone(b Binding) bool {
+	err := probeClosedFrontend(b.PID)
+	if err == syscall.ESRCH {
+		return true
+	}
+	if err != nil {
+		return false
+	}
+	// A later process cannot be the frontend that published this binding. Keep
+	// the existing ps rounding tolerance; an overlapping/unknown birth proves
+	// nothing. This prevents PID reuse from reviving an already closed worker.
+	start, ok := procStart(b.PID)
+	return ok && start > b.BoundAt+startSlack && start <= time.Now().Unix()+1
 }

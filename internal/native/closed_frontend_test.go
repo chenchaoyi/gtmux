@@ -8,12 +8,13 @@ import (
 )
 
 func TestClosedFrontendObservationRequiresExactSnapshotAndGoneProcess(t *testing.T) {
-	old := probeClosedFrontend
-	t.Cleanup(func() { probeClosedFrontend = old })
-	for _, name := range []string{"exact closed", "alive", "unknown", "missing", "corrupt", "wrong home", "legacy", "other backend", "other birth", "before observation", "future binding", "no generation", "terminal evidence", "new observation", "update during probe", "rebind during probe"} {
+	old, oldStart := probeClosedFrontend, procStart
+	t.Cleanup(func() { probeClosedFrontend, procStart = old, oldStart })
+	for _, name := range []string{"exact closed", "alive", "unknown", "missing", "corrupt", "wrong home", "wrong thread", "legacy", "other backend", "other birth", "before observation", "future binding", "no generation", "terminal evidence", "new observation", "update during probe", "rebind during probe"} {
 		t.Run(name, func(t *testing.T) {
 			t.Setenv("HOME", t.TempDir())
 			now := time.Now().Unix()
+			procStart = func(int) (int64, bool) { return now - 60, true }
 			r := Record{Agent: "codex", HomeID: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", SessionID: "worker", Cwd: "/synthetic", State: "working", Event: "Resumed", PID: 100, Comm: "codex", ProcessStart: "backend-birth", UpdatedAt: now - 5}
 			if name == "terminal evidence" {
 				r.Terminal = "Synthetic Terminal"
@@ -26,6 +27,8 @@ func TestClosedFrontendObservationRequiresExactSnapshotAndGoneProcess(t *testing
 			switch name {
 			case "wrong home":
 				b.HomeID = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+			case "wrong thread":
+				b.SessionID = "other-thread"
 			case "legacy":
 				b.Kind = ""
 			case "other backend":
