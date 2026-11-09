@@ -1,0 +1,4 @@
+• HQ replies show their HQ identity, with more reliable matter and session status.
+• Chat and Trace display recorded tool inputs and results, with previews suited to each tool.
+• Read embedded Shell, Python and JavaScript in command calls while keeping the complete original call available.
+• Reduce repeated background collection while preserving current state and approval checks.

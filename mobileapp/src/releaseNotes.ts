@@ -12,6 +12,21 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.174',
+    en: [
+      'HQ replies show their HQ identity, with more reliable matter and session status.',
+      'Chat and Trace display recorded tool inputs and results, with previews suited to each tool.',
+      'Read embedded Shell, Python and JavaScript in command calls while keeping the complete original call available.',
+      'Reduce repeated background collection while preserving current state and approval checks.',
+    ],
+    zh: [
+      'HQ 回信明确显示 HQ 身份，优化事项与会话状态判断。',
+      '对话与 Trace 展示实际记录的工具输入和结果，按工具类型提供适合的预览。',
+      '命令调用中的 Shell、Python 和 JavaScript 支持代码阅读，同时保留完整调用原文。',
+      '减少重复后台采集，保留实时状态及审批检查。',
+    ],
+  },
+  {
     version: '1.0.173',
     en: [
       'Usage keeps slow reads alive and retains the last good figures after a failure, with clearer retry and access-error messages.',
