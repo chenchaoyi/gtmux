@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner (self-review, not independent approval)",
     "date": "2026-11-09",
     "decision": "Reconcile only an exact historical frontend observation with a completed turn and positively gone frontend; preserve new work and unknown ownership",
-    "notes": "Observed defect: a late ID-less Resumed is newer than its task_complete, leaving working in the native store after the exact managed frontend has exited. A live shared backend alone is not a new external client. Use the existing frontend binding receipt and exact full observation generation, home/thread/backend incarnation, bound-time ordering, ESRCH for its frontend PID, then re-read receipt and observation so a concurrent new binding/update defeats the proof. Never delete the observation, change consent or use title/cwd/PID alone as ownership. Radar reconciles only working Resumed with a latest non-ambiguous past completed/aborted boundary, no conflicting explicit turn ID, and independently verified shared backend role. Per-gather backend-role memoization is shared with the existing completed-history filter. Fresh submit/start/wait, changed same-second generation, no/mismatched binding, live/unknown frontend, legacy nonshared process, different home, new task_started and ambiguous/future evidence retain existing visibility. Explicit HQ follow retains an idle history row. No hook rearming, reap mechanism, real state mutation, installed runtime update or authority changes. Kernel/process and store seams are exercised independently; actual assembled radar tests use an isolated HOME, real exited child and actual persisted binding/rollout. Tests are not real-device/UI acceptance. Old exact radar assembly/status code must fail the new closed-worker visibility case; preserve negative controls and restore source bytes. The normal newer-completion path also consumes the same typed lifecycle fact and rejects future or ambiguous facts; otherwise that path could preempt the new conservative preservation controls. This is a bounded safety correction, not a new ownership heuristic."
+    "notes": "Observed defect: a late ID-less Resumed is newer than its task_complete, leaving working in the native store after the exact managed frontend has exited. A live shared backend alone is not a new external client. Use the existing frontend binding receipt and exact full observation generation, home/thread/backend incarnation, bound-time ordering, ESRCH for its frontend PID, then re-read receipt and observation so a concurrent new binding/update defeats the proof. Never delete the observation, change consent or use title/cwd/PID alone as ownership. Radar reconciles only working Resumed with a latest non-ambiguous past completed/aborted boundary, no conflicting explicit turn ID, and independently verified shared backend role. Per-gather backend-role memoization is shared with the existing completed-history filter. Fresh submit/start/wait, changed same-second generation, no/mismatched binding, live/unknown frontend, legacy nonshared process, different home, new task_started and ambiguous/future evidence retain existing visibility. Explicit HQ follow retains an idle history row. No hook rearming, reap mechanism, real state mutation, installed runtime update or authority changes. Kernel/process and store seams are exercised independently; actual assembled radar tests use an isolated HOME, real exited child and actual persisted binding/rollout. Tests are not real-device/UI acceptance. Old exact radar assembly/status code must fail the new closed-worker visibility case; preserve negative controls and restore source bytes. The normal newer-completion path also consumes the same typed lifecycle fact and rejects future or ambiguous facts; otherwise that path could preempt the new conservative preservation controls. This is a bounded safety correction, not a new ownership heuristic. Follow-up owner review: ESRCH-only proof would lose its historical conclusion when an unrelated process later reuses the old frontend PID. Also accept a current process born strictly after binding publication plus the existing 120-second ps tolerance, only after a successful live PID probe and a known nonfuture start. Unknown/EPERM, old or tolerance-overlapping starts retain visibility. Add an independently mapped case before this follow-up implementation; existing HXF-001/HXF-002 case objects remain unchanged."
   },
   "cases": [
     {
@@ -29,7 +29,18 @@
       "planned_files": [
         "internal/radar/closed_frontend_test.go"
       ]
+    },
+    {
+      "id": "HXF-003",
+      "layer": "L2",
+      "description": "A reused frontend PID cannot revive the old bound observation",
+      "setup": "Isolated actual native record/binding and controlled PID/start probes; binding published well before the current time",
+      "action": "Vary ESRCH, live original incarnation, known replacement born beyond the binding tolerance, unknown/EPERM, within-tolerance and future starts; replace the observation during the birth read",
+      "expected": "ESRCH or a positively later nonfuture process birth proves only the old frontend is gone; every unknown/original/overlapping/future case remains conservative, and a newly written observation wins; no native state is deleted or rewritten. The previous ESRCH-only implementation fails the replacement-incarnation case",
+      "planned_files": [
+        "internal/native/closed_frontend_reuse_test.go"
+      ]
     }
   ],
-  "seal": "eb6e0d0be495d1dab18c318aeb6e2583687d1b2318274553a04d04d6ca9baf06"
+  "seal": "b3fdcdae7c30b3c1b076f547741a92857fabd9306ae390c4abe58612dbeb9f04"
 }
