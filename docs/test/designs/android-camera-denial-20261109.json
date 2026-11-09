@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner (self-review, not independent approval)",
     "date": "2026-11-09",
     "decision": "proceed with bounded test-driver correction",
-    "notes": "Main7e3dc151 attempt2 records 30/31 passed, one case21 action timeout: one successful coordinate gesture leaves the original system camera dialog visible. Attempt1 screenshot transport failure is separate, not replayed as this cause. Product sources/permissions/CI matrix remain unchanged. Limit to owned QA emulator, system controller packages, exact camera prompt, never Allow/settings. Replace fixed sleep/raw coordinates with fresh enabled native elements, at most two explicit denial clicks and an unchanged ten-second action deadline. No implicit retry of the whole case or swallowing driver errors. Keep original App denial alert/30s oracle and add read-only granted=false native-package assertion. Source-registered callback runs under fault-injection, not just a toy helper. Fake-clock component results are not real device acceptance; complete cloud phone/tablet journeys remain required. Inventory refinement only: register the production test helper and synthetic driver source alongside their originally reviewed unit behavior; original substantive design 0b20f544 predates their implementation. No new behavioral expectation is introduced by naming these auxiliary source paths."
+    "notes": "Main7e3dc151 attempt2 records 30/31 passed, one case21 action timeout: one successful coordinate gesture leaves the original system camera dialog visible. Attempt1 screenshot transport failure is separate, not replayed as this cause. Product sources/permissions/CI matrix remain unchanged. Limit to owned QA emulator, system controller packages, exact camera prompt, never Allow/settings. Replace fixed sleep/raw coordinates with fresh enabled native elements, at most two explicit denial clicks and an unchanged ten-second action deadline. No implicit retry of the whole case or swallowing driver errors. Keep original App denial alert/30s oracle and add read-only granted=false native-package assertion. Source-registered callback runs under fault-injection, not just a toy helper. Fake-clock component results are not real device acceptance; complete cloud phone/tablet journeys remain required. Inventory refinement only: register the production test helper and synthetic driver source alongside their originally reviewed unit behavior; original substantive design 0b20f544 predates their implementation. No new behavioral expectation is introduced by naming these auxiliary source paths. Post-implementation self-review found a zero-action edge: a disabled dialog disappearing could otherwise return attempts=0. The reviewed denial interaction must actually occur; extend the existing absent-dialog guard regression so spontaneous closure before any Deny fails. This is a strengthening of ACP-001, not device evidence or a whole-case replay."
   },
   "cases": [
     {
@@ -44,5 +44,5 @@
       ]
     }
   ],
-  "seal": "f8b4ac52e7bfe3ebadddf4484ccac99b1de898e381376e529577c784159b6c89"
+  "seal": "72b9210077e1099fac0d2e57cc691127bad5236ce6ac67847ce3a8d419faf850"
 }
