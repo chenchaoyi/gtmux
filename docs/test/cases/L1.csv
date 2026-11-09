@@ -2208,6 +2208,7 @@ LEG-b0a1825d3753,L1,Go core / CLI / server,internal/resume/resume_test.go,82,Tes
 LEG-ae717c54896f,L1,Go core / CLI / server,internal/resume/resume_test.go,95,Test,TestCommandNotResumable,False,legacy-not-retrospectively-reviewed
 LEG-8901edae106c,L1,Go core / CLI / server,internal/resume/resume_test.go,107,Test,TestCommandQuoteEscape,False,legacy-not-retrospectively-reviewed
 LEG-0c7cae9aa015,L1,Go core / CLI / server,internal/resume/resume_test.go,117,Test,TestAllLocatedRecoversLocator,False,legacy-not-retrospectively-reviewed
+MAP-3bd1a5cb9551,L1,reviewed implementation,internal/server/web/argv-reading.test.cjs,2,reviewed-selector,ARGV-001 browser uses,False,ARGV-001
 LEG-5c1b521b41b1,L1,Go core / CLI / server,internal/servermode/guard_test.go,16,Test,TestGuardHasNoPathThatDisablesSleep,False,legacy-not-retrospectively-reviewed
 LEG-c214b1666d5f,L1,Go core / CLI / server,internal/servermode/guard_test.go,36,Test,TestGuardOnlyRunsSystemBinaries,False,legacy-not-retrospectively-reviewed
 LEG-57a8b20839ff,L1,Go core / CLI / server,internal/servermode/guard_test.go,56,Test,TestGuardScriptIsValidShell,False,legacy-not-retrospectively-reviewed
@@ -3712,6 +3713,9 @@ LEG-88486f8eeb41,L1,RN / mobile harness,mobileapp/src/trace/timeline.test.ts,15,
 LEG-39add4eb8ec5,L1,RN / mobile harness,mobileapp/src/trace/timeline.test.ts,53,test,search reveals matching individual calls regardless of collapsed history,False,legacy-not-retrospectively-reviewed
 LEG-4386362cb604,L1,RN / mobile harness,mobileapp/src/trace/timeline.test.ts,62,test,only recognized image envelopes are removed from a preview; source remains literal,False,legacy-not-retrospectively-reviewed
 LEG-4b5a90342a0d,L1,RN / mobile harness,mobileapp/src/trace/timeline.test.ts,78,test,bulk call folding includes single/two-call runs and stays independent of turns,False,legacy-not-retrospectively-reviewed
+MAP-b958aa95a388,L1,reviewed implementation,mobileapp/src/ui/commandArgv.test.ts,5,reviewed-selector,ARGV-001 shell argv,False,ARGV-001
+MAP-952a93df29d6,L1,reviewed implementation,mobileapp/src/ui/commandArgv.test.ts,20,reviewed-selector,ARGV-001 cmd fields,False,ARGV-001
+MAP-c8ee897131ac,L1,reviewed implementation,mobileapp/src/ui/commandArgv.test.ts,40,reviewed-selector,ARGV-001 ordinary argv,False,ARGV-001
 MAP-47222e9f745a,L1,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,27,reviewed-selector,"query details show named parameters, structured results, provenance and complete raw",False,TCV-003
 MAP-3813fdfe8df1,L1,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,75,reviewed-selector,"command, file changes, waits, text/errors and missing/empty results stay distinct",False,TCV-003
 MAP-f94f19b784ef,L1,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,152,reviewed-selector,full reads preserve original command and distinct native result references,False,TCV-003

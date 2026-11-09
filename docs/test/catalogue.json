@@ -58446,6 +58446,88 @@
       ],
       "sha256": "d2116d6fc0061a1cd5d4010bfb1d0110680d676f9683dee85f2d184bf97e0bc1"
     },
+    "internal/server/web/argv-reading.test.cjs": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-3bd1a5cb9551",
+          "line": 2,
+          "kind": "reviewed-selector",
+          "name": "ARGV-001 browser uses",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ARGV-001"
+        }
+      ],
+      "sha256": "100124e5653ba8932cf89f80608f880406635d803aed92cc042e623924bf6e83"
+    },
+    "mobileapp/src/ui/CommandArgvPanel.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-9027d26c2a63",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "ARGV-002 shared readers",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ARGV-002"
+        }
+      ],
+      "sha256": "b43432176610aec219c2dae775d0502f10335e1b0a074ae13af2562d9fee22dc"
+    },
+    "mobileapp/src/ui/commandArgv.test.ts": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-b958aa95a388",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "ARGV-001 shell argv",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ARGV-001"
+        },
+        {
+          "id": "MAP-952a93df29d6",
+          "line": 20,
+          "kind": "reviewed-selector",
+          "name": "ARGV-001 cmd fields",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ARGV-001"
+        },
+        {
+          "id": "MAP-c8ee897131ac",
+          "line": 40,
+          "kind": "reviewed-selector",
+          "name": "ARGV-001 ordinary argv",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ARGV-001"
+        }
+      ],
+      "sha256": "de7cb1d658a21ea55fa8de57e97820f6aa821b83b53e660f3c80d4d20a328e45"
+    },
+    "tests/web/command-argv.test.cjs": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-23fe7f83abc2",
+          "line": 4,
+          "kind": "reviewed-selector",
+          "name": "ARGV-003 Trace argv scripts",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "ARGV-003"
+        }
+      ],
+      "sha256": "4406c38a3cf63286e5a66b4b7c107b2ae327cf758d3717a15749023c0139fa3b"
+    },
     "internal/app/serve_energy_snapshot_test.go": {
       "layer": "L2",
       "stack": "reviewed implementation",
