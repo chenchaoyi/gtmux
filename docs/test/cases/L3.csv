@@ -16,6 +16,7 @@ LEG-32d1c6b37c52,L3,Browser,tests/web/client-consistency.test.cjs,27,scenario,`C
 LEG-d2bf02df9c62,L3,Browser,tests/web/client-consistency.test.cjs,61,scenario,"External board tiles stay scoped, resize, restore and revoke without pane input",False,legacy-not-retrospectively-reviewed
 LEG-442537cf0526,L3,Browser,tests/web/client-consistency.test.cjs,82,scenario,Readable external conversations can be dragged into a board panel,False,legacy-not-retrospectively-reviewed
 LEG-1bc6a21bf12a,L3,Browser,tests/web/client-consistency.test.cjs,88,scenario,A late Chat history page cannot enter another conversation,False,legacy-not-retrospectively-reviewed
+MAP-23fe7f83abc2,L3,reviewed implementation,tests/web/command-argv.test.cjs,4,reviewed-selector,ARGV-003 Trace argv scripts,False,ARGV-003
 LEG-53dd1b9dbd14,L3,Browser,tests/web/conversation-map.test.cjs,6,scenario,`Long chat overview lens and navigation at ${width}`,True,legacy-not-retrospectively-reviewed
 LEG-cb54ae23ca64,L3,Browser,tests/web/conversation-map.test.cjs,48,scenario,`Overview formatted preview and persistent bookmarks at ${width}`,True,legacy-not-retrospectively-reviewed
 LEG-4ea9a2309839,L3,Browser,tests/web/conversation-map.test.cjs,96,scenario,"Overview bookmarks retain unsampled turns, isolate homes and handle cleared storage",False,legacy-not-retrospectively-reviewed

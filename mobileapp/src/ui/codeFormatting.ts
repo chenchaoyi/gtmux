@@ -160,6 +160,61 @@ export function codeParts(source: string, hint = ''): CodePart[] {
   if (source.length > 256000) return [original];
   const found: CodePart[] = [];
   let fields = 0;
+  function literalArgv(value: unknown): string[] | null {
+    if (Array.isArray(value))
+      return value.length > 0 &&
+        value.length <= 64 &&
+        value.every(item => typeof item === 'string')
+        ? value
+        : null;
+    if (!value || typeof value !== 'object') return null;
+    const node = value as Record<string, unknown>;
+    if (node.type !== 'ArrayExpression' || !Array.isArray(node.elements))
+      return null;
+    const elements = node.elements as Record<string, unknown>[];
+    return elements.length > 0 &&
+      elements.length <= 64 &&
+      elements.every(
+        item =>
+          item &&
+          /^(?:StringLiteral|Literal)$/.test(String(item.type)) &&
+          typeof item.value === 'string',
+      )
+      ? elements.map(item => item.value as string)
+      : null;
+  }
+  function argv(value: unknown, name: string): boolean {
+    const args = literalArgv(value);
+    if (!args) return false;
+    const interpreter = args[0].split('/').pop() || '';
+    if (
+      /^(?:bash|sh|zsh)$/.test(interpreter) &&
+      /^(?:-c|-lc|-cl|--command)$/.test(args[1]) &&
+      args.length >= 3
+    ) {
+      script(args[2], name + ' ' + ++fields);
+      return true;
+    }
+    const python = /^python(?:\d(?:\.\d+)?)?$/.test(interpreter);
+    const node = /^(?:node|nodejs)$/.test(interpreter);
+    let index = 1;
+    if (python) while (/^-(?:u|B|I|E|s|S|O|OO)$/.test(args[index])) index++;
+    if (
+      ((python && args[index] === '-c') ||
+        (node && /^(?:-e|--eval)$/.test(args[index]))) &&
+      args.length > index + 1
+    ) {
+      const path = name + ' ' + ++fields;
+      found.push({
+        id: path + ':script',
+        source: args[index + 1],
+        hint: python ? 'python' : 'javascript',
+        path,
+      });
+      return true;
+    }
+    return false;
+  }
   function script(command: string, path: string) {
     const lines = command.split('\n');
     const scripts: CodePart[] = [];
@@ -201,7 +256,8 @@ export function codeParts(source: string, hint = ''): CodePart[] {
     found.push(...scripts);
   }
   try {
-    if (/^(?:shell|sh|bash|zsh|command)$/.test(hint)) script(source, '');
+    if (/^(?:shell|sh|bash|zsh|command)$/.test(hint) && !/^\s*\[/.test(source))
+      script(source, '');
     else {
       const parser = (
         plugins[0] as {
@@ -222,6 +278,9 @@ export function codeParts(source: string, hint = ''): CodePart[] {
       } catch {
         ast = parser.parse(source, {}, {});
       }
+      // A recorded command_execution may be the argv itself, rather than a
+      // cmd string inside a tool object. Decode only explicit interpreter slots.
+      argv(ast, 'command');
       let visited = 0;
       function walk(value: unknown, path: string, depth: number) {
         if (++visited > 20000 || depth > 100) throw new Error('Large wrapper');
@@ -235,7 +294,9 @@ export function codeParts(source: string, hint = ''): CodePart[] {
           const name = key?.name || key?.value;
           const val = node.value as Record<string, unknown>;
           if (/^(?:cmd|command)$/.test(String(name)) && val) {
-            if (
+            if (argv(val, String(name))) {
+              // The full array remains in the original call; do not concatenate argv.
+            } else if (
               typeof val.value === 'string' &&
               /^(?:StringLiteral|Literal)$/.test(String(val.type))
             )
@@ -259,6 +320,8 @@ export function codeParts(source: string, hint = ''): CodePart[] {
           if (/^(?:loc|range|tokens|comments|extra)$/.test(key)) continue;
           if (/^(?:cmd|command)$/.test(key) && typeof child === 'string')
             script(child, key + ' ' + ++fields);
+          else if (/^(?:cmd|command)$/.test(key) && Array.isArray(child))
+            argv(child, key);
           else if (typeof child === 'object' && child)
             walk(child, path, depth + 1);
         }
@@ -274,14 +337,24 @@ export function codeParts(source: string, hint = ''): CodePart[] {
 
 /** Static input outline, never an execution trace or a success receipt. */
 export function commandOutline(parts: CodePart[]) {
-  return parts.filter(part => /^(?:cmd|command) \d+$/.test(part.id)).map(part => {
-    const line = part.source.trim().split('\n')[0].slice(0, 160).replace(/[\uD800-\uDBFF]$/, '');
-    const operation: 'read' | 'list' | 'search' | 'command' =
-      /^(?:cat|head|tail|sed)\s/.test(line) ? 'read' :
-      /^(?:ls|find)\b|^rg\s+--files\b/.test(line) ? 'list' :
-      /^(?:rg|grep)\s/.test(line) ? 'search' : 'command';
-    return {partID: part.id, operation, preview: line};
-  });
+  return parts
+    .filter(part => /^(?:cmd|command) \d+$/.test(part.id))
+    .map(part => {
+      const line = part.source
+        .trim()
+        .split('\n')[0]
+        .slice(0, 160)
+        .replace(/[\uD800-\uDBFF]$/, '');
+      const operation: 'read' | 'list' | 'search' | 'command' =
+        /^(?:cat|head|tail|sed)\s/.test(line)
+          ? 'read'
+          : /^(?:ls|find)\b|^rg\s+--files\b/.test(line)
+          ? 'list'
+          : /^(?:rg|grep)\s/.test(line)
+          ? 'search'
+          : 'command';
+      return { partID: part.id, operation, preview: line };
+    });
 }
 
 export function formatCode(source: string, hint = ''): string {

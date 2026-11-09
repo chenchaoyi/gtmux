@@ -800,6 +800,12 @@ Chat and Trace SHALL share code presentation and pure reading transforms. Static
 - **THEN** Preview offers Python syntax and compact formatting alongside Full call
 - **AND** original-copy and Raw content preserve the complete recorded wrapper
 
+#### Scenario: Read an interpreter argument array recorded by Run command
+- **WHEN** a recorded JSON argv array, or static command field array, explicitly identifies a shell command or interpreter inline script
+- **THEN** Chat and Trace on browser and App offer the same derived language views after the complete original call
+- **AND** unknown executables, script paths, dynamic expressions and incomplete wrappers remain original rather than guessed as Python
+- **AND** Copy and Raw content preserve the original array and arguments without execution
+
 #### Scenario: Expand five consecutive tool calls
 - **WHEN** a counted tool group expands
 - **THEN** its five calls have a visible nested relationship and recorded group positions
