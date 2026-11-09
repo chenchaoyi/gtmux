@@ -361,3 +361,19 @@ core projection; no client SHALL guess ownership by title, cwd, originator or sh
 - **WHEN** an idle record belongs to a legacy frontend or its command/birth cannot be positively revalidated
 - **THEN** the existing visibility/liveness behavior remains in effect
 - **AND** one collection probes each exact process incarnation at most once for the presentation decision
+
+#### Scenario: Delayed Resumed is newer than a closed worker's completion
+- **WHEN** a working Resumed observation exactly matches the unchanged snapshot in its verified frontend binding, that frontend incarnation is positively gone, and the latest non-ambiguous past turn is completed or aborted without a conflicting explicit turn ID
+- **AND** the binding matches the same home, thread and backend process incarnation, and the backend role is positively verified
+- **THEN** core reconciles the observation to idle/history for display and applies the existing explicit-follow policy
+- **AND** record/history/consent remain unchanged; no new owner, input route or authority is inferred
+
+#### Scenario: New activity or uncertain evidence defeats historical reconciliation
+- **WHEN** the observation or binding changes during the exit probe, a new turn starts, an explicit different turn ID exists, or frontend exit/backend role/completion evidence is missing, future or ambiguous
+- **THEN** the historical reconciliation is not applied and genuine fresh activity retains its existing visibility
+- **AND** a same-second newer observation is preserved by its full generation identity
+
+#### Scenario: A replacement process reuses the closed frontend PID
+- **WHEN** the PID now exists but its current process started strictly after binding publication plus the established process-time tolerance
+- **THEN** it does not revive the former frontend or its completed worker observation
+- **AND** unknown, future or overlapping process births and permission failures do not establish exit

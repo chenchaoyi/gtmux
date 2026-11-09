@@ -1679,6 +1679,15 @@ func nativePanesScoped(tmuxPanes []Pane, profiles []agentProfile, now int64, cod
 		comm, start string
 	}
 	backends := map[processKey]bool{}
+	isSharedBackend := func(r native.Record) bool {
+		key := processKey{r.PID, r.Comm, r.ProcessStart}
+		backend, known := backends[key]
+		if !known {
+			backend = sharedCodexBackend(r)
+			backends[key] = backend
+		}
+		return backend
+	}
 	for _, r := range recs {
 		if inTmux[r.HomeID+"\x00"+r.SessionID] {
 			continue
@@ -1752,16 +1761,15 @@ func nativePanesScoped(tmuxPanes []Pane, profiles []agentProfile, now int64, cod
 		// A live shared daemon is not a live frontend. Completed unfollowed
 		// observations remain history, including late callbacks after worker reap.
 		// Preserve the record/consent and fresh work, waits, legacy CLI processes.
+		if status == "working" {
+			if at, closed := closedFrontendTurn(codexScope, r, now); closed && isSharedBackend(r) {
+				status, since = "idle", at
+			}
+		}
 		if (r.Agent == "codex" || r.Agent == "dsh") && status == "idle" && (follow == nil || !follow.HQ) {
 			noFrontend := r.PID <= 0
 			if r.Agent == "codex" && !noFrontend {
-				key := processKey{r.PID, r.Comm, r.ProcessStart}
-				backend, known := backends[key]
-				if !known {
-					backend = sharedCodexBackend(r)
-					backends[key] = backend
-				}
-				noFrontend = backend
+				noFrontend = isSharedBackend(r)
 			}
 			if noFrontend {
 				continue
@@ -1820,12 +1828,14 @@ func NativeStatus(r native.Record) (status string, since int64) {
 func nativeStatus(scope *transcript.CodexPathScope, r native.Record) (status string, since int64) {
 	status, since = r.State, r.UpdatedAt
 	if status == "working" && r.Agent == "codex" && nativeReadableScope(r) {
-		boundaryReader := transcript.CodexLastTurnBoundary
+		boundaryReader := transcript.CodexLastTurnEvent
 		if scope != nil {
-			boundaryReader = scope.CodexLastTurnBoundary
+			boundaryReader = scope.CodexLastTurnEvent
 		}
-		if boundary, at := boundaryReader(r.SessionID); (boundary == "task_complete" || boundary == "turn_aborted") && at.Unix() > r.UpdatedAt {
-			status, since = "idle", at.Unix()
+		e := boundaryReader(r.SessionID)
+		if !e.Ambiguous && !e.At.IsZero() && !e.At.After(time.Now().Add(time.Second)) &&
+			(e.Kind == "task_complete" || e.Kind == "turn_aborted") && e.At.Unix() > r.UpdatedAt {
+			status, since = "idle", e.At.Unix()
 		}
 	}
 	return status, since

@@ -276,3 +276,15 @@ and consent remain. Fresh working/waiting records, explicitly followed history a
 legacy CLI frontend processes retain their existing behavior. Other threads on the
 backend are untouched. CLI, menubar, phone, iPad and Web all read this core decision;
 no surface relabels history as an active HQ pane or infers a new owner from originator.
+
+A late `Resumed` can be newer than its own completed turn. The core reconciles that
+record to idle/history only with the exact unchanged observation saved in a verified
+frontend binding, matching home/thread/backend incarnation, positive frontend process
+exit, and a non-ambiguous completed/aborted turn with no conflicting explicit turn ID.
+Frontend exit also includes a PID now born after binding publication beyond the
+existing process-time tolerance; PID reuse cannot revive the former frontend.
+The observation and binding are re-read after the exit probe; a newer generation wins,
+even within the same second. Fresh submit/start/wait, live or uncheckable frontends,
+missing proof and unknown backend roles keep their existing behavior. Future or
+ambiguous completion facts cannot make a working native row idle. Explicit follow
+retains the reconciled idle history row without adding input or knowledge authority.

@@ -2142,6 +2142,8 @@ LEG-a5cc5eda19ce,L1,Go core / CLI / server,internal/native/binding_test.go,203,T
 LEG-f4bbfae3d5d3,L1,Go core / CLI / server,internal/native/binding_test.go,218,Test,TestLiveReconcilesInterruptedRetirementButNotFreshActivity,False,legacy-not-retrospectively-reviewed
 LEG-d15924ed3189,G,Go core / CLI / server,internal/native/binding_test.go,238,Test,TestNativeSaveIsAtomicAndBoundedUnderStoreLock,False,legacy-not-retrospectively-reviewed
 LEG-cc6c6f13379f,L1,Go core / CLI / server,internal/native/binding_test.go,269,Test,TestBindingReceiptRetentionIsBounded,False,legacy-not-retrospectively-reviewed
+MAP-ef51509f7325,L2,reviewed implementation,internal/native/closed_frontend_reuse_test.go,9,reviewed-selector,TestClosedFrontendObservationSurvivesPositivePIDReuseOnly,False,HXF-003
+MAP-1176b6e7ceff,L2,reviewed implementation,internal/native/closed_frontend_test.go,10,reviewed-selector,TestClosedFrontendObservationRequiresExactSnapshotAndGoneProcess,False,HXF-001
 LEG-03f47fef4da8,L1,Go core / CLI / server,internal/native/native_test.go,11,Test,TestSaveLoadRemove,False,legacy-not-retrospectively-reviewed
 LEG-4f392385e7cd,L1,Go core / CLI / server,internal/native/native_test.go,28,Test,TestLivePrunesStale,False,legacy-not-retrospectively-reviewed
 LEG-9a608f0f83cf,L1,Go core / CLI / server,internal/native/native_test.go,45,Test,TestLivePrunesDeadProcess,False,legacy-not-retrospectively-reviewed
@@ -2228,6 +2230,7 @@ LEG-0bef1403145f,L1,Go core / CLI / server,internal/radar/agents_test.go,303,Tes
 LEG-afdda8c6ed08,L1,Go core / CLI / server,internal/radar/agents_test.go,313,Test,TestCodexReadyComposerContradictsMisroutedWait,False,legacy-not-retrospectively-reviewed
 LEG-c040c8f50d05,L1,Go core / CLI / server,internal/radar/agents_test.go,326,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-2b72c37f7d8b,L1,Go core / CLI / server,internal/radar/agents_test.go,335,Test,TestCodexScreenWaitRequiresLiveApprovalMenu,False,legacy-not-retrospectively-reviewed
+MAP-e88c0ded5ae1,L2,reviewed implementation,internal/radar/closed_frontend_test.go,18,reviewed-selector,TestClosedBoundResumedWorkerHistoryAndPreservation,False,HXF-002
 MAP-c49705115ac9,L3,reviewed implementation,internal/radar/codex_completed_marker_test.go,15,reviewed-selector,TestGatherCompletedOwnTurnSurvivesLateActiveMarker,False,"CET-002,CET-003"
 MAP-226227944e48,L3,reviewed implementation,internal/radar/codex_foreign_marker_gather_test.go,14,reviewed-selector,TestGatherDoesNotReviveAnotherSessionsOldMarkerFromWindowActivity,False,CORE-CODEX-FOREIGN-GATHER
 MAP-8c62d9a14381,L2,reviewed implementation,internal/radar/codex_foreign_marker_test.go,15,reviewed-selector,TestForeignActiveRequiresCurrentIdentityEndedTurnAndReadyFrame,False,CORE-CODEX-FOREIGN-ACTIVE

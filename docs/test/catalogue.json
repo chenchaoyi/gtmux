@@ -58677,6 +58677,54 @@
         }
       ],
       "sha256": "1a0e1a096238bc3ec520c8ec36299d2a70a59e4ef0c3effa62d8a922c486617f"
+    },
+    "internal/native/closed_frontend_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-1176b6e7ceff",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestClosedFrontendObservationRequiresExactSnapshotAndGoneProcess",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HXF-001"
+        }
+      ],
+      "sha256": "1174caa3e91be9e8fd55a9ffa4c83861dc5d8e81cdede465d7824e9ceac473e6"
+    },
+    "internal/radar/closed_frontend_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e88c0ded5ae1",
+          "line": 18,
+          "kind": "reviewed-selector",
+          "name": "TestClosedBoundResumedWorkerHistoryAndPreservation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HXF-002"
+        }
+      ],
+      "sha256": "38055d72ccdeead07a52b7cd4a122317dab84417c6e223dc47bd41523c7c1893"
+    },
+    "internal/native/closed_frontend_reuse_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-ef51509f7325",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "TestClosedFrontendObservationSurvivesPositivePIDReuseOnly",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HXF-003"
+        }
+      ],
+      "sha256": "a2047f16ba4d9d5da401986dceb58577e8028bb8f52481fd2c093744f2cef3f7"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2"
