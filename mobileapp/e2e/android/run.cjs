@@ -8,6 +8,7 @@ const {execFileSync, spawn} = require('node:child_process');
 const ts = require('typescript');
 const {remote} = require('webdriverio');
 const {logTail, automationDisconnected, captureIndependently} = require('./diagnostics.cjs');
+const {denyCameraPermission} = require('./permission.cjs');
 require.extensions['.ts'] = (module, file) => module._compile(ts.transpileModule(fs.readFileSync(file, 'utf8'), {
   compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true},
 }).outputText, file);
@@ -222,8 +223,11 @@ async function run() {
     await capture('20-system-file-picker');await wait(700);await driver.pressKeyCode(4);await wait(700);if(await driver.getCurrentPackage() !== app) {await driver.pressKeyCode(4);await wait(500);}await id('composer-input').waitForDisplayed({timeout:10000});
   });
   await check('21-camera-permission-denial',async()=>{
-    await launch();await open();await attach();await wait(700);await tap(id('attach-1'));const deny=await driver.$('//*[@resource-id="com.android.permissioncontroller:id/permission_deny_button"]');await wait(700);const settled=await driver.$('//*[@resource-id="com.android.permissioncontroller:id/permission_deny_button"]'),location=await settled.getLocation(),bounds=await settled.getSize();await driver.execute('mobile: clickGesture',{x:Math.round(location.x+bounds.width/2),y:Math.round(location.y+bounds.height/2)});await driver.waitUntil(async()=>!await shown(deny),{timeout:10000});
+    await launch();await open();await attach();await tap(id('attach-1'));
+    const denial=await journey.measure('camera-denial',()=>denyCameraPermission(driver,{onAttempt:number=>console.log('Camera Deny interaction',number)}));
+    assert.match(adb('shell','dumpsys','package',app),/android\.permission\.CAMERA:\s+granted=false(?:,|\s|$)/,'Owned QA CAMERA permission must remain denied');
     await driver.$('//*[contains(@text,"Camera access is off")]').waitForDisplayed({timeout:30000});
+    fs.writeFileSync(path.join(output,'CAMERA-DENIAL.json'),JSON.stringify(denial,null,2)+'\n');
   });
   await check('22-rotation-and-large-text',async()=>{
     const wide=avd.includes('tablet');
