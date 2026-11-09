@@ -149,3 +149,5 @@ Open the **Settings** gear in the browser's top-right corner, then **Appearance*
 ### Read code on phone and iPad
 
 Tool details and Trace Preview color code syntax and wrap long lines. Open a tool input in its reader to use the full screen; Copy preserves its recorded text. A short Partial or Summary label identifies limited records. Reading controls do not use a sideways drag handle, and back navigation starts at the screen edge.
+
+HQ replies in Codex conversations retain the HQ sender in App and Web, including older history pages and after a pane moves. This uses gtmux's accepted relay receipt, the original home/thread and matching source record. Merely typing or quoting an HQ header does not establish a sender; unknown origins remain unlabelled. Reading does not enable HQ follow-up or input permissions.

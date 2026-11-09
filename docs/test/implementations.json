@@ -670,5 +670,30 @@
       "Typed query details in Chat and Trace ",
       "Recorded query failure retries and large results page without losing full copy"
     ]
+  },
+  "internal/transcript/prompt_witness_test.go": {
+    "cases": [
+      "HRS-001"
+    ],
+    "selectors": [
+      "TestHRS001FirstPromptWitnesses"
+    ]
+  },
+  "internal/app/relay_sender_test.go": {
+    "cases": [
+      "HRS-002"
+    ],
+    "selectors": [
+      "TestHRS002TrustedReceiptAndFirstSourceOnly"
+    ]
+  },
+  "internal/app/relay_sender_contract_test.go": {
+    "cases": [
+      "HRS-003"
+    ],
+    "selectors": [
+      "TestHRS003ReceiptAwareSharedTranscript",
+      "TestHRS003EarlierPagesKeepFirstAttribution"
+    ]
   }
 }

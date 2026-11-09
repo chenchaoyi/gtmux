@@ -18,6 +18,8 @@ MAP-9a346dda931b,L2,reviewed implementation,internal/app/hqworkspace_reconcile_t
 MAP-4a6d3760f38d,L2,reviewed implementation,internal/app/hqworkspace_reconcile_test.go,104,reviewed-selector,TestPhase1WorkspaceActionAuthorizationAndCompatibility,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
 MAP-c7c7feed6e2a,L2,reviewed implementation,internal/app/hqworkspace_reconcile_test.go,148,reviewed-selector,TestPhase1HQCanClaimDryRunAndCommit,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
 MAP-c746f11a537e,L2,reviewed implementation,internal/app/hqworkspace_stored_test.go,10,reviewed-selector,TestWorkspaceStoredCLILeavesDiscoveryAndRecordsUntouched,False,MC-HQ-READ
+MAP-93c5d85ec366,L2,reviewed implementation,internal/app/relay_sender_contract_test.go,52,reviewed-selector,TestHRS003ReceiptAwareSharedTranscript,False,HRS-003
+MAP-d400cc0846af,L2,reviewed implementation,internal/app/relay_sender_contract_test.go,89,reviewed-selector,TestHRS003EarlierPagesKeepFirstAttribution,False,HRS-003
 LEG-0a1e3b761625,L2,Go core / CLI / server,internal/app/serve_startup_test.go,94,Test,TestExistingRadarRequiresIdentityAndSavedCredential,False,legacy-not-retrospectively-reviewed
 LEG-13803c4faffb,L2,Go core / CLI / server,internal/app/servememory_test.go,80,Test,TestMemoryDiagnosticsAbsentFromApplicationRoutes,False,legacy-not-retrospectively-reviewed
 LEG-05c78436c10b,L2,Go core / CLI / server,internal/app/tunnel_pairing_test.go,19,Test,TestPairingBlockSaysItGrantsControl,False,legacy-not-retrospectively-reviewed
