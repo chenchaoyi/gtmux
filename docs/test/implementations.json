@@ -830,5 +830,21 @@
       "testSSI003ActiveQueueAndDeliveryReceiptsStayDistinct",
       "testSSI003BothLanguagesDescribeQueuedAndActiveInputTruthfully"
     ]
+  },
+  "internal/native/closed_frontend_test.go": {
+    "cases": [
+      "HXF-001"
+    ],
+    "selectors": [
+      "TestClosedFrontendObservationRequiresExactSnapshotAndGoneProcess"
+    ]
+  },
+  "internal/radar/closed_frontend_test.go": {
+    "cases": [
+      "HXF-002"
+    ],
+    "selectors": [
+      "TestClosedBoundResumedWorkerHistoryAndPreservation"
+    ]
   }
 }

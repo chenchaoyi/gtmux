@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1060 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1062 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3759 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 1937 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 1939 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 90 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 94 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 12 | [M.csv](cases/M.csv) |
@@ -27,6 +27,8 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | ARGV-001 | Complete original first; only explicit interpreter script arguments or complete heredocs become previews; literal escapes decode once, no guess from prose/paths, dynamic/unsupported wrappers stay raw; repeated extraction stable and bounded |
 | ARGV-002 | Actual shared CodeText receives the exact script and language, formatting toggles; selected script never replaces original copy; raw reader has no derived tabs |
 | ARGV-003 | Typed derived tabs and compact syntax rendering visible, original JSON copy and Raw unchanged; no API sends or nested execution; existing layout can scroll without clipping |
+| HXF-001 | Only the exact original backend observation tied to a positively gone verified frontend matches; every incomplete/changed/unknown case returns false; later generation wins even within one second; no observation, history or binding is removed or rewritten |
+| HXF-002 | Only completed exact closed-backend observations become idle/history; unfollowed history is absent, explicit follow remains idle and status-only without new input/read/knowledge authority. New starts/submits/waits, different turns/homes, changed generations and uncertain evidence remain visible with their existing states. Observation/history/consent bytes persist unchanged; backend role is evaluated once per process in a gather. The exact old radar code fails the new historical-worker visibility assertion while preservation controls pass |
 | CET-001 | Return the latest kind, time and explicit turn ID; tied conflicting metadata is unusable as exact completion proof. Legacy kind/time callers still work and scoped facts stay fresh. |
 | CET-002 | Idle since actual boundary; active content/mtime and turn ID remain untouched; no fabricated completion, latest flag or done notification evidence. |
 | CET-003 | Only verified same-session exact-ended-turn ready evidence overrides working. Real waiting/start/work survives, missing identity follows existing legacy behavior; no input authority or real marker mutation. |
