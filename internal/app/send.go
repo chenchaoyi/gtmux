@@ -228,7 +228,9 @@ func cmdSend(args []string) int {
 		if len(attached) > 0 {
 			dio.Hold = func() string { return attachHold(paneID) }
 		}
-		res := dispatch.Deliver(dio, dispatchbridge.DeliverOpts(paneID, agentCmd, force, tune), text)
+		opts := dispatchbridge.DeliverOpts(paneID, agentCmd, force, tune)
+		opts.ActiveImageInput = len(attached) > 0
+		res := dispatch.Deliver(dio, opts, text)
 		if res.State == dispatch.StateRefusedWaiting {
 			return refusedWaiting(paneID, text, res.Evidence, attached, asJSON)
 		}

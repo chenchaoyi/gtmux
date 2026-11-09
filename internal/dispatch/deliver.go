@@ -15,7 +15,7 @@ type State string
 
 const (
 	StateLanded     State = "landed"            // confirmed in the conversation
-	StateQueued     State = "queued"            // accepted, but behind the current turn
+	StateQueued     State = "queued"            // accepted input, not yet confirmed in the conversation
 	StateFailed     State = "failed"            // not confirmed within the timeout
 	StateRefusedDup State = "refused-duplicate" // identical payload re-sent inside the window
 	// StateRefusedDraft: the pane's input box already held UNSUBMITTED text that is not
@@ -122,10 +122,11 @@ func held(io IO) string {
 
 // Opts configures a delivery.
 type Opts struct {
-	DeliveryID   string // caller idempotency key for an addressed native transport
-	Pane         string
-	HookEquipped bool // prefer the deterministic event stream over the screen
-	Force        bool // override the re-send interlock
+	DeliveryID       string // caller idempotency key for an addressed native transport
+	ActiveImageInput bool   // explicit attachment ingress; never inferred from message text
+	Pane             string
+	HookEquipped     bool // prefer the deterministic event stream over the screen
+	Force            bool // override the re-send interlock
 	// ClobberDraft overrides the DRAFT guard — deliver even when the input box holds
 	// someone else's unsubmitted text. Deliberately NOT folded into Force: the phone sets
 	// Force on every send (it carries its own sendID idempotency), and letting that also

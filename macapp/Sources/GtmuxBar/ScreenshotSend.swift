@@ -63,6 +63,7 @@ enum ScreenshotTargets {
 
 enum ScreenshotSendResult: Equatable {
     case delivered(queued: Bool)
+    case activeTurnAccepted
     case refusedWaiting
     /// Refused as waiting AFTER the paste: the Enter was withheld, so the note and the image
     /// path may still be in the agent's input box.
@@ -76,8 +77,18 @@ enum ScreenshotSendResult: Equatable {
     case failed(String)
 
     var isSuccess: Bool {
+        if case .activeTurnAccepted = self { return true }
         if case .delivered = self { return true }
         return false
+    }
+
+    var receiptState: String {
+        switch self {
+        case .activeTurnAccepted: return "active-turn-accepted"
+        case .delivered(queued: true): return "queued"
+        case .delivered(queued: false): return "delivered"
+        default: return "not-delivered"
+        }
     }
 }
 
@@ -111,13 +122,23 @@ enum ScreenshotSender {
         if let line = stdout.split(separator: "\n").last,
            let reply = try? JSONDecoder().decode(Reply.self, from: Data(line.utf8)) {
             let evidence = reply.evidence ?? ""
+            if status != 0 && ["landed", "sent", "queued"].contains(reply.state) { return .notConfirmed("inconsistent send receipt") }
+            if reply.state == "queued" && reply.delivered || ["landed", "sent"].contains(reply.state) && !reply.delivered { return .notConfirmed("inconsistent send receipt") }
             switch reply.state {
             case "landed", "sent": return .delivered(queued: false)
-            case "queued": return .delivered(queued: true)
+            case "queued":
+                if evidence.hasPrefix("codex-active-accepted:") {
+                    guard evidence.count > "codex-active-accepted:".count else { return .notConfirmed("missing active turn receipt") }
+                    return .activeTurnAccepted
+                }
+                if evidence == "codex-active-already-accepted" { return .activeTurnAccepted }
+                return .delivered(queued: true)
             case "refused-draft": return .refusedDraft(evidence)
             case "refused-duplicate": return .duplicate
-            case "refused-waiting": return pastedFirst(evidence) ? .heldAfterPaste : .refusedWaiting
-            default: return reply.delivered ? .delivered(queued: false) : .notConfirmed(evidence.isEmpty ? reply.state : evidence)
+            case "refused-waiting":
+                if evidence.hasPrefix("input-") && evidence != "input-awaiting-confirmation" { return .notConfirmed(evidence) }
+                return pastedFirst(evidence) ? .heldAfterPaste : .refusedWaiting
+            default: return .notConfirmed(evidence.isEmpty ? reply.state : evidence)
             }
         }
         let message = stderr.isEmpty ? "gtmux send exited \(status)" : stderr
@@ -147,7 +168,7 @@ enum ScreenshotSender {
                 result = interpret(status: r.status, stdout: r.stdout, stderr: r.stderr)
             }
             DiagLog.act("act.screenshot.send", target: pane, outcome: result.isSuccess ? "ok" : "refused",
-                        "sent a screenshot to a pane")
+                        "screenshot input receipt", ["receipt_state": result.receiptState])
             DispatchQueue.main.async { completion(result) }
         }
     }

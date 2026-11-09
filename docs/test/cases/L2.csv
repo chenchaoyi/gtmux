@@ -40,6 +40,8 @@ LEG-a148094d1182,L2,Go core / CLI / server,internal/app/tunnelstatus_test.go,33,
 LEG-31e32aaa4339,L2,Go core / CLI / server,internal/app/tunnelstatus_test.go,45,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-5eb1eb0e8cd5,L2,Go core / CLI / server,internal/connect/remotes_test.go,38,Test,TestAHostThatMovedIsFoundThroughTheAddressesItGave,False,legacy-not-retrospectively-reviewed
 LEG-953eea56e22d,L2,Go core / CLI / server,internal/connect/remotes_test.go,85,Test,TestAnAddressThatAnswersToSomeoneElseIsNotThisHost,False,legacy-not-retrospectively-reviewed
+MAP-95475cf33bca,L2,reviewed implementation,internal/dispatchbridge/screenshot_input_test.go,19,reviewed-selector,TestSSI002NativeImageAcceptanceAndUncertainRetryKeepIdentity,False,SSI-002
+MAP-8691ea4c02c8,L2,reviewed implementation,internal/dispatchbridge/screenshot_input_test.go,103,reviewed-selector,TestSSI002OrdinaryTextKeepsExistingQueueSemantics,False,SSI-002
 MAP-7bf0b97f95d1,L2,reviewed implementation,internal/hook/codex_completed_turn_test.go,38,reviewed-selector,TestCompletedCodexTurnRejectsExplicitLateRearm,False,"CET-004,CET-005"
 MAP-6752a622a3e4,L2,reviewed implementation,internal/hook/codex_completed_turn_test.go,72,reviewed-selector,TestCompletedCodexTurnKeepsLegacyAndUncertainCallbacks,False,"CET-004,CET-005"
 MAP-2dd42a3caeb8,L2,reviewed implementation,internal/hook/codex_completed_turn_test.go,114,reviewed-selector,TestCodexContinuationPreservesActiveStart,False,"CET-004,CET-005"
@@ -437,6 +439,8 @@ MAP-ed56b3b277a8,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceR
 MAP-b135d4ac2897,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceResponseTests.swift,117,reviewed-selector,testUnavailableSourceMetadataNeverClaimsTheSessionIsGone,False,"MC-HQ-CHOICE,MC-HQ-READ"
 MAP-b4f647d0a506,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQOverviewClarityTests.swift,44,reviewed-selector,testCanonicalGroupsAndHiddenCountIgnoreEndedMergedStaleAndDuplicateRows,False,"MC-HQ-OVERVIEW-STATE,MC-HQ-OVERVIEW-BRIEF"
 MAP-67fdd9c30f6e,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQOverviewClarityTests.swift,63,reviewed-selector,testCurrentAssessmentTakesPriorityWithoutBorrowingReceiptOrMetadataTime,False,"MC-HQ-OVERVIEW-STATE,MC-HQ-OVERVIEW-BRIEF"
+MAP-a968227ee19e,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotActiveInputTests.swift,7,reviewed-selector,testSSI003ActiveQueueAndDeliveryReceiptsStayDistinct,False,SSI-003
+MAP-f5d04607e020,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotActiveInputTests.swift,30,reviewed-selector,testSSI003BothLanguagesDescribeQueuedAndActiveInputTruthfully,False,SSI-003
 MAP-435d839b0a83,L2,reviewed implementation,mobileapp/e2e/android/permissionJourney.test.ts,63,reviewed-selector,ACP-002 registered journey survives,False,ACP-002
 MAP-255b356248a5,L2,reviewed implementation,mobileapp/e2e/android/permissionJourney.test.ts,70,reviewed-selector,ACP-002 registered journey still fails,False,ACP-002
 MAP-04ea0e0d7ec3,L2,reviewed implementation,mobileapp/e2e/android/permissionJourney.test.ts,76,reviewed-selector,ACP-002 registered journey cannot pass,False,ACP-002

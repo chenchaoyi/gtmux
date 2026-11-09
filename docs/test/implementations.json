@@ -801,5 +801,34 @@
     "selectors": [
       "TestPWR003SSEPublishesItsActualNativeObservationForREST"
     ]
+  },
+  "internal/codexrpc/screenshot_input_test.go": {
+    "cases": [
+      "SSI-001"
+    ],
+    "selectors": [
+      "TestSSI001ActiveScreenshotUsesExactTurnAndMetadataOnly",
+      "TestSSI001OnlyExplicitUnsupportedOrIdleUsesLegacyQueue",
+      "TestSSI001RefusalsAndUncertaintyNeverMutateOrReplay",
+      "TestSSI001LastMomentHoldStopsActiveInput"
+    ]
+  },
+  "internal/dispatchbridge/screenshot_input_test.go": {
+    "cases": [
+      "SSI-002"
+    ],
+    "selectors": [
+      "TestSSI002NativeImageAcceptanceAndUncertainRetryKeepIdentity",
+      "TestSSI002OrdinaryTextKeepsExistingQueueSemantics"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotActiveInputTests.swift": {
+    "cases": [
+      "SSI-003"
+    ],
+    "selectors": [
+      "testSSI003ActiveQueueAndDeliveryReceiptsStayDistinct",
+      "testSSI003BothLanguagesDescribeQueuedAndActiveInputTruthfully"
+    ]
   }
 }

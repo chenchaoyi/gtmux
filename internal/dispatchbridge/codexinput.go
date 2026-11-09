@@ -17,6 +17,7 @@ import (
 
 var codexInputTarget = resume.CodexFrontendForPane
 var codexQueueInputs = codexrpc.QueueInputs
+var codexImageInputs = codexrpc.ImageInputs
 
 func codexNativeSubmit(pane string) func(dispatch.Opts, string, func() string) dispatch.Result {
 	return func(opts dispatch.Opts, text string, hold func() string) dispatch.Result {
@@ -32,26 +33,41 @@ func codexNativeSubmit(pane string) func(dispatch.Opts, string, func() string) d
 			return dispatch.Result{State: dispatch.StateFailed, Evidence: "codex-input-retry-held: " + err.Error()}
 		}
 		if receipt, known := agentclient.ReadReceipt(r); known && receipt.State == "accepted" {
+			if receipt.Delivery == "active-turn" {
+				return dispatch.Result{State: dispatch.StateQueued, JudgedBy: dispatch.JudgedByDriver, Evidence: "codex-active-already-accepted"}
+			}
 			return dispatch.Result{State: dispatch.StateQueued, JudgedBy: dispatch.JudgedByDriver, Evidence: "codex-queue-already-accepted"}
 		}
 		claimed := false
 		check := func() bool {
 			current, valid := codexInputTarget(pane)
-			if !valid || current.Instance != f.Instance || current.HomeID != f.HomeID || current.SessionID != f.SessionID || (hold != nil && hold() != "") {
+			if !valid || current.Instance != f.Instance || current.HomeID != f.HomeID || current.SessionID != f.SessionID || current.PID != f.PID || current.StartedAt != f.StartedAt || current.RootStart != f.RootStart || current.BackendPID != f.BackendPID || current.BackendStart != f.BackendStart || (hold != nil && hold() != "") {
 				return false
 			}
+			if claimed {
+				return true
+			} // only an explicit unsupported method may retry via queue
 			if agentclient.ClaimNative(r) != nil {
 				return false
 			}
 			claimed = true
 			return true
 		}
-		outcome := codexQueueInputs(context.Background(), codexrpc.Target{HomeID: f.HomeID, ThreadID: f.SessionID, BackendPID: f.BackendPID, BackendStart: f.BackendStart}, r.ID, codexInputs(text), check)
+		inputs := codexInputs(text)
+		submit := codexQueueInputs
+		if opts.ActiveImageInput && len(inputs) > 1 {
+			submit = codexImageInputs
+		}
+		outcome := submit(context.Background(), codexrpc.Target{HomeID: f.HomeID, ThreadID: f.SessionID, BackendPID: f.BackendPID, BackendStart: f.BackendStart}, r.ID, inputs, check)
 		if outcome.Accepted {
-			if err := agentclient.FinishNative(r, "accepted", ""); err != nil {
+			delivery, evidence := "", "codex-queue-accepted:"+outcome.QueueID
+			if outcome.ActiveTurnID != "" {
+				delivery, evidence = "active-turn", "codex-active-accepted:"+outcome.ActiveTurnID
+			}
+			if err := agentclient.FinishNativeDelivery(r, "accepted", "", delivery); err != nil {
 				return dispatch.Result{State: dispatch.StateFailed, Evidence: "codex-input-receipt-unconfirmed"}
 			}
-			return dispatch.Result{State: dispatch.StateQueued, JudgedBy: dispatch.JudgedByDriver, Evidence: "codex-queue-accepted:" + outcome.QueueID, Attempts: 1}
+			return dispatch.Result{State: dispatch.StateQueued, JudgedBy: dispatch.JudgedByDriver, Evidence: evidence, Attempts: 1}
 		}
 		if claimed {
 			verdict := "uncertain"

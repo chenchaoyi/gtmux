@@ -42,6 +42,7 @@ type Receipt struct {
 	SessionID string `json:"session_id"`
 	PID       int    `json:"pid"`
 	State     string `json:"state"`
+	Delivery  string `json:"delivery,omitempty"`
 	Error     string `json:"error"`
 	CreatedAt int64  `json:"created_at"`
 }
