@@ -1110,6 +1110,7 @@ LEG-7c44bb4fb1eb,L2,RN / mobile harness,mobileapp/src/ui/CodePanel.test.tsx,28,t
 LEG-59ecbb80b549,L2,RN / mobile harness,mobileapp/src/ui/CodePanel.test.tsx,70,test,full-screen reading freezes the complete selected call while sharing its code panel,False,legacy-not-retrospectively-reviewed
 LEG-a930bc288732,L2,RN / mobile harness,mobileapp/src/ui/CodePanel.test.tsx,91,test,raw readers retain the complete wrapper without formatting or script selectors,False,legacy-not-retrospectively-reviewed
 LEG-b7b65d78db64,L2,RN / mobile harness,mobileapp/src/ui/CodePanel.test.tsx,105,test,shared Chat and Trace code panel outlines command inputs and selects the original command,False,legacy-not-retrospectively-reviewed
+MAP-9027d26c2a63,L2,reviewed implementation,mobileapp/src/ui/CommandArgvPanel.test.tsx,9,reviewed-selector,ARGV-002 shared readers,False,ARGV-002
 LEG-176158c811e0,L2,RN / mobile harness,mobileapp/src/ui/Composer.attach.test.tsx,71,test,composer action labels are readable while test ids stay stable,False,legacy-not-retrospectively-reviewed
 LEG-a4c289fefd41,L2,RN / mobile harness,mobileapp/src/ui/Composer.attach.test.tsx,110,it,"opens the editor on the picked photo, before anything is staged",False,legacy-not-retrospectively-reviewed
 LEG-e7cdaf2ca7e3,L2,RN / mobile harness,mobileapp/src/ui/Composer.attach.test.tsx,119,it,stages the edited image when the editor finishes,False,legacy-not-retrospectively-reviewed

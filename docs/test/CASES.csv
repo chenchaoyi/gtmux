@@ -2825,6 +2825,7 @@ LEG-4fd9f327715a,L2,Browser,internal/server/web/app.test.cjs,1276,test,Return se
 LEG-3eddecec9a49,L2,Browser,internal/server/web/app.test.cjs,1289,test,"pending prompts require a newly recorded occurrence, including identical messages without clocks",False,legacy-not-retrospectively-reviewed
 LEG-46dcc46b1b27,L2,Browser,internal/server/web/app.test.cjs,1299,test,an unchanged retry keeps its send id while a new acknowledged message gets a new id,False,legacy-not-retrospectively-reviewed
 LEG-1307ca617db3,L2,Browser,internal/server/web/app.test.cjs,1313,test,radar keyboard selection skips rows inside a collapsed section,False,legacy-not-retrospectively-reviewed
+MAP-3bd1a5cb9551,L1,reviewed implementation,internal/server/web/argv-reading.test.cjs,2,reviewed-selector,ARGV-001 browser uses,False,ARGV-001
 LEG-a24ee8487c6a,G,Browser,internal/server/web/documents.test.cjs,7,test,browser document references and validation are generated from the App contract,False,legacy-not-retrospectively-reviewed
 LEG-dd62d73a080e,G,Browser,internal/server/web/reading.test.cjs,2,test,file+' follows its native model',True,legacy-not-retrospectively-reviewed
 LEG-25aecd2608d3,G,Browser,internal/server/web/reading.test.cjs,6,test,offline browser formatter and syntax reader retain complete inputs,False,legacy-not-retrospectively-reviewed
@@ -5314,6 +5315,7 @@ LEG-7c44bb4fb1eb,L2,RN / mobile harness,mobileapp/src/ui/CodePanel.test.tsx,28,t
 LEG-59ecbb80b549,L2,RN / mobile harness,mobileapp/src/ui/CodePanel.test.tsx,70,test,full-screen reading freezes the complete selected call while sharing its code panel,False,legacy-not-retrospectively-reviewed
 LEG-a930bc288732,L2,RN / mobile harness,mobileapp/src/ui/CodePanel.test.tsx,91,test,raw readers retain the complete wrapper without formatting or script selectors,False,legacy-not-retrospectively-reviewed
 LEG-b7b65d78db64,L2,RN / mobile harness,mobileapp/src/ui/CodePanel.test.tsx,105,test,shared Chat and Trace code panel outlines command inputs and selects the original command,False,legacy-not-retrospectively-reviewed
+MAP-9027d26c2a63,L2,reviewed implementation,mobileapp/src/ui/CommandArgvPanel.test.tsx,9,reviewed-selector,ARGV-002 shared readers,False,ARGV-002
 LEG-176158c811e0,L2,RN / mobile harness,mobileapp/src/ui/Composer.attach.test.tsx,71,test,composer action labels are readable while test ids stay stable,False,legacy-not-retrospectively-reviewed
 LEG-a4c289fefd41,L2,RN / mobile harness,mobileapp/src/ui/Composer.attach.test.tsx,110,it,"opens the editor on the picked photo, before anything is staged",False,legacy-not-retrospectively-reviewed
 LEG-e7cdaf2ca7e3,L2,RN / mobile harness,mobileapp/src/ui/Composer.attach.test.tsx,119,it,stages the edited image when the editor finishes,False,legacy-not-retrospectively-reviewed
@@ -5755,6 +5757,9 @@ LEG-d3ee2d342519,L2,RN / mobile harness,mobileapp/src/ui/codexPinned.test.ts,133
 LEG-15c3763fe2d1,L2,RN / mobile harness,mobileapp/src/ui/codexPinned.test.ts,138,test,a symbol paneLines gives a variation selector still matches,False,legacy-not-retrospectively-reviewed
 LEG-dc0a3481de78,L2,RN / mobile harness,mobileapp/src/ui/codexPinned.test.ts,150,test,a prompt opening with wide emoji is still recognised,False,legacy-not-retrospectively-reviewed
 LEG-567602ca174a,L2,RN / mobile harness,mobileapp/src/ui/codexPinned.test.ts,163,test.each(),%s,True,legacy-not-retrospectively-reviewed
+MAP-b958aa95a388,L1,reviewed implementation,mobileapp/src/ui/commandArgv.test.ts,5,reviewed-selector,ARGV-001 shell argv,False,ARGV-001
+MAP-952a93df29d6,L1,reviewed implementation,mobileapp/src/ui/commandArgv.test.ts,20,reviewed-selector,ARGV-001 cmd fields,False,ARGV-001
+MAP-c8ee897131ac,L1,reviewed implementation,mobileapp/src/ui/commandArgv.test.ts,40,reviewed-selector,ARGV-001 ordinary argv,False,ARGV-001
 LEG-398d7533f96e,L2,RN / mobile harness,mobileapp/src/ui/consoleActs.test.ts,10,it,"puts each act above the first turn that came after it, the rest after the last",False,legacy-not-retrospectively-reviewed
 LEG-0e5bc007a6eb,L2,RN / mobile harness,mobileapp/src/ui/consoleActs.test.ts,19,it,"gives a clockless turn no acts, and keeps them for the tail",False,legacy-not-retrospectively-reviewed
 LEG-29f3c3ddc592,L2,RN / mobile harness,mobileapp/src/ui/consoleActs.test.ts,24,it,"floors the acts at the session start, and at a dozen when nothing is known",False,legacy-not-retrospectively-reviewed
@@ -6243,6 +6248,7 @@ LEG-32d1c6b37c52,L3,Browser,tests/web/client-consistency.test.cjs,27,scenario,`C
 LEG-d2bf02df9c62,L3,Browser,tests/web/client-consistency.test.cjs,61,scenario,"External board tiles stay scoped, resize, restore and revoke without pane input",False,legacy-not-retrospectively-reviewed
 LEG-442537cf0526,L3,Browser,tests/web/client-consistency.test.cjs,82,scenario,Readable external conversations can be dragged into a board panel,False,legacy-not-retrospectively-reviewed
 LEG-1bc6a21bf12a,L3,Browser,tests/web/client-consistency.test.cjs,88,scenario,A late Chat history page cannot enter another conversation,False,legacy-not-retrospectively-reviewed
+MAP-23fe7f83abc2,L3,reviewed implementation,tests/web/command-argv.test.cjs,4,reviewed-selector,ARGV-003 Trace argv scripts,False,ARGV-003
 LEG-53dd1b9dbd14,L3,Browser,tests/web/conversation-map.test.cjs,6,scenario,`Long chat overview lens and navigation at ${width}`,True,legacy-not-retrospectively-reviewed
 LEG-cb54ae23ca64,L3,Browser,tests/web/conversation-map.test.cjs,48,scenario,`Overview formatted preview and persistent bookmarks at ${width}`,True,legacy-not-retrospectively-reviewed
 LEG-4ea9a2309839,L3,Browser,tests/web/conversation-map.test.cjs,96,scenario,"Overview bookmarks retain unsampled turns, isolate homes and handle cleared storage",False,legacy-not-retrospectively-reviewed
