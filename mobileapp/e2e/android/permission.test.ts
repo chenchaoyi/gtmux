@@ -78,6 +78,17 @@ test('ACP-001 absent dialog is not confused with a successful denial', async () 
   expect(f.clicks).toBe(0);
 });
 
+test('ACP-001 closing before any Deny interaction cannot pass', async () => {
+  const f = fixture();
+  let reads = 0;
+  f.button.isDisplayed = async () => ++reads === 1;
+  f.button.isEnabled = async () => false;
+  await expect(denyCameraPermission(f.driver, options(f))).rejects.toThrow(
+    'before any Deny',
+  );
+  expect(f.clicks).toBe(0);
+});
+
 test('ACP-001 a newly repeated camera prompt is not mistaken for a lost click', async () => {
   const f = fixture({ ignored: Infinity });
   const click = f.button.click;

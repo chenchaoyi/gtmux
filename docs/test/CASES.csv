@@ -3883,7 +3883,8 @@ MAP-beb32ac8514d,L1,reviewed implementation,mobileapp/e2e/android/permission.tes
 MAP-35b873f04f0a,L1,reviewed implementation,mobileapp/e2e/android/permission.test.ts,54,reviewed-selector,ACP-001 late readiness,False,ACP-001
 MAP-84e63684ac34,L1,reviewed implementation,mobileapp/e2e/android/permission.test.ts,61,reviewed-selector,ACP-001 a slow read,False,ACP-001
 MAP-28799ec04e66,L1,reviewed implementation,mobileapp/e2e/android/permission.test.ts,72,reviewed-selector,ACP-001 absent dialog,False,ACP-001
-MAP-34da68cfb864,L1,reviewed implementation,mobileapp/e2e/android/permission.test.ts,81,reviewed-selector,ACP-001 a newly repeated camera prompt,False,ACP-001
+MAP-34da68cfb864,L1,reviewed implementation,mobileapp/e2e/android/permission.test.ts,92,reviewed-selector,ACP-001 a newly repeated camera prompt,False,ACP-001
+MAP-9f336e94e7b3,L1,reviewed implementation,mobileapp/e2e/android/permission.test.ts,81,reviewed-selector,ACP-001 closing before any Deny,False,ACP-001
 MAP-435d839b0a83,L2,reviewed implementation,mobileapp/e2e/android/permissionJourney.test.ts,63,reviewed-selector,ACP-002 registered journey survives,False,ACP-002
 MAP-255b356248a5,L2,reviewed implementation,mobileapp/e2e/android/permissionJourney.test.ts,70,reviewed-selector,ACP-002 registered journey still fails,False,ACP-002
 MAP-04ea0e0d7ec3,L2,reviewed implementation,mobileapp/e2e/android/permissionJourney.test.ts,76,reviewed-selector,ACP-002 registered journey cannot pass,False,ACP-002

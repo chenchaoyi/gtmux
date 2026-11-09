@@ -58343,15 +58343,24 @@
         },
         {
           "id": "MAP-34da68cfb864",
-          "line": 81,
+          "line": 92,
           "kind": "reviewed-selector",
           "name": "ACP-001 a newly repeated camera prompt",
           "dynamic": false,
           "layer": "L1",
           "design": "ACP-001"
+        },
+        {
+          "id": "MAP-9f336e94e7b3",
+          "line": 81,
+          "kind": "reviewed-selector",
+          "name": "ACP-001 closing before any Deny",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ACP-001"
         }
       ],
-      "sha256": "fd43048926acf1af4b13e44823ec489ba6be5988351217c85f7b8910869271da"
+      "sha256": "96b5496ae6d9ba44e0504bc16b2f2c2c52018c7d0703d8d0563f5e27f1b9a2ee"
     },
     "mobileapp/e2e/android/permissionJourney.test.ts": {
       "layer": "L2",
@@ -58419,7 +58428,7 @@
           "design": "ACP-001"
         }
       ],
-      "sha256": "0282542594850f0244cd4a1ea26d0f8b2a46f0eaaea314634a867e4b8a32ac28"
+      "sha256": "da48f2283128e300fccad5447456e0b3a7979a7876dfb770fc2b4f80bddb0cb0"
     },
     "mobileapp/e2e/android/permission.fixture.cjs": {
       "layer": "L1",

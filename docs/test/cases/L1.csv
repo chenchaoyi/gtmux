@@ -3138,7 +3138,8 @@ MAP-beb32ac8514d,L1,reviewed implementation,mobileapp/e2e/android/permission.tes
 MAP-35b873f04f0a,L1,reviewed implementation,mobileapp/e2e/android/permission.test.ts,54,reviewed-selector,ACP-001 late readiness,False,ACP-001
 MAP-84e63684ac34,L1,reviewed implementation,mobileapp/e2e/android/permission.test.ts,61,reviewed-selector,ACP-001 a slow read,False,ACP-001
 MAP-28799ec04e66,L1,reviewed implementation,mobileapp/e2e/android/permission.test.ts,72,reviewed-selector,ACP-001 absent dialog,False,ACP-001
-MAP-34da68cfb864,L1,reviewed implementation,mobileapp/e2e/android/permission.test.ts,81,reviewed-selector,ACP-001 a newly repeated camera prompt,False,ACP-001
+MAP-34da68cfb864,L1,reviewed implementation,mobileapp/e2e/android/permission.test.ts,92,reviewed-selector,ACP-001 a newly repeated camera prompt,False,ACP-001
+MAP-9f336e94e7b3,L1,reviewed implementation,mobileapp/e2e/android/permission.test.ts,81,reviewed-selector,ACP-001 closing before any Deny,False,ACP-001
 LEG-d05c42b92e77,L1,RN / mobile harness,mobileapp/e2e/fake-serve/contract.test.ts,93,test,`${path} ${what} carries what the app reads`,True,legacy-not-retrospectively-reviewed
 LEG-a66a8e0a7be6,L1,RN / mobile harness,mobileapp/e2e/fake-serve/contract.test.ts,104,test,`${path} carries what the app reads`,True,legacy-not-retrospectively-reviewed
 LEG-53ec5bfce43b,L1,RN / mobile harness,mobileapp/e2e/fake-serve/contract.test.ts,120,test,an owner-only surface refuses a guest,False,legacy-not-retrospectively-reviewed

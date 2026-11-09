@@ -711,7 +711,8 @@
       "ACP-001 late readiness",
       "ACP-001 a slow read",
       "ACP-001 absent dialog",
-      "ACP-001 a newly repeated camera prompt"
+      "ACP-001 a newly repeated camera prompt",
+      "ACP-001 closing before any Deny"
     ]
   },
   "mobileapp/e2e/android/permissionJourney.test.ts": {

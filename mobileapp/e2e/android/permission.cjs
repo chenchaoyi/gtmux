@@ -50,7 +50,13 @@ async function denyCameraPermission(
     }
     within();
     if (!visible) {
-      if (observed) return { attempts, elapsed_ms: now() - started };
+      if (observed) {
+        if (attempts === 0)
+          throw new Error(
+            'Camera permission dialog closed before any Deny interaction',
+          );
+        return { attempts, elapsed_ms: now() - started };
+      }
       await pause(100);
       continue;
     }
