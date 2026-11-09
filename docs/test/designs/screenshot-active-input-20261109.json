@@ -1,0 +1,46 @@
+{
+  "id": "screenshot-active-input-20261109",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-09",
+    "decision": "add bounded active-turn image delivery and truthful receipts",
+    "notes": "Two exact screenshot receipts were accepted into target backend queue with image inputs but remained pending while a long turn continued. Existing overlay calls queued receipt received by terminal. Current installed schema provides metadata-only thread/read, turns/list itemsView=notLoaded/limit1 and steer expectedTurnId. Read-only live metadata is evidence only, not input acceptance. Restrict new path to already authorized uploads images; preserve text/HQ queue semantics and old Codex compatibility. Reuse verified existing backend, explicit home/thread/peer checks and durable claim. No resume, queue consumption/deletion/reordering, mutation of existing messages, interrupt or raw keys. Only explicit protocol unsupported can use queue; no replays after uncertain writes. Actual App/CLI runtime stays unchanged until separately authorized update. Unit/wire/native model checks do not prove live screenshot arrival."
+  },
+  "cases": [
+    {
+      "id": "SSI-001",
+      "layer": "L1",
+      "description": "Screenshot native transport chooses exact active turn without large history or unsafe fallback",
+      "setup": "Synthetic verified backend wire, home/thread metadata, notLoaded one-turn response, approval flags, older unsupported methods and dropped/malformed/rejected mutation receipts",
+      "action": "Run production image submission; inspect every RPC method, destination, user-message ID and native image entry",
+      "expected": "Active eligible thread uses turn/steer with exact expectedTurnId; no queue/start, interrupt, full-history read or duplicate accepted input. Only explicitly unsupported read/steer methods can fall back to original queue behavior; generic errors/uncertain write never replay. Waiting flags and target/home/peer mismatch refuse before input. Byte/deadline bounds remain.",
+      "planned_files": [
+        "internal/codexrpc/screenshot_input_test.go"
+      ]
+    },
+    {
+      "id": "SSI-002",
+      "layer": "L2",
+      "description": "Real native dispatcher selects active image input and persists delivery identity at most once",
+      "setup": "Synthetic strict frontend binding, private synthetic PNG in fixture uploads, actual Prepare/ClaimNative/FinishNative and injected addressed RPC",
+      "action": "Submit image twice under same action ID; contrast text-only/unknown/unsupported/uncertain/changed binding/approval hold",
+      "expected": "Only existing authorized image inputs request active submission; ordinary text stays existing queue. Exact target and image survive, accepted mode persists, retry does not resubmit, uncertain never enters queue or alternate pane; receipt mode backward compatible.",
+      "planned_files": [
+        "internal/dispatchbridge/screenshot_input_test.go"
+      ]
+    },
+    {
+      "id": "SSI-003",
+      "layer": "L2",
+      "description": "Mac screenshot feedback distinguishes active acceptance, queued follow-up and actual delivery",
+      "setup": "Actual ScreenshotSender.interpret, Overlay/StatusText and editor model, both languages; synthetic receipts only",
+      "action": "Interpret active/queued/landed/uncertain/conflicting nonzero exit and inspect visible/accessible title/detail/model state",
+      "expected": "Queued never claims terminal receipt; active acceptance says current task, never task completion. Nonzero/unrecognized receipt cannot falsely succeed; accepted receipts keep existing fast-close semantics and failure preserves editable draft. Logs distinguish accepted queue from immediate input without content.",
+      "planned_files": [
+        "macapp/Tests/GtmuxBarTests/ScreenshotActiveInputTests.swift"
+      ]
+    }
+  ],
+  "seal": "512ec939a653709105074b178600311e40b5d5fcf318db76a7a746fcbd6e7457"
+}
