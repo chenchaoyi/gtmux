@@ -72,7 +72,7 @@ func TestSSI002NativeImageAcceptanceAndUncertainRetryKeepIdentity(t *testing.T) 
 			}
 			text := "Inspect screenshot\n" + png
 			send := codexNativeSubmit("%901")
-			opts := dispatch.Opts{DeliveryID: "synthetic-user-action"}
+			opts := dispatch.Opts{DeliveryID: "synthetic-user-action", ActiveImageInput: true}
 			first := send(opts, text, hold)
 			if mode == "active" || mode == "queue" {
 				second := send(opts, text, hold)
@@ -112,8 +112,9 @@ func TestSSI002OrdinaryTextKeepsExistingQueueSemantics(t *testing.T) {
 		t.Fatal("ordinary text changed to steer")
 		return codexrpc.Outcome{}
 	}
+	expectedInputs := 1
 	codexQueueInputs = func(_ context.Context, _ codexrpc.Target, _ string, input []codexrpc.Input, check func() bool) codexrpc.Outcome {
-		if len(input) != 1 || !check() {
+		if len(input) != expectedInputs || !check() {
 			t.Fatal(input)
 		}
 		return codexrpc.Outcome{Accepted: true, Attempted: true, QueueID: "text-q"}
@@ -121,5 +122,18 @@ func TestSSI002OrdinaryTextKeepsExistingQueueSemantics(t *testing.T) {
 	got := codexNativeSubmit("%902")(dispatch.Opts{}, "plain HQ coordination", nil)
 	if got.State != dispatch.StateQueued || !strings.HasPrefix(got.Evidence, "codex-queue-accepted:") {
 		t.Fatal(got)
+	}
+	root := filepath.Join(state.Dir(), "uploads")
+	if err := os.MkdirAll(root, 0700); err != nil {
+		t.Fatal(err)
+	}
+	png := filepath.Join(root, "quoted.png")
+	if err := os.WriteFile(png, []byte{137, 80, 78, 71, 13, 10, 26, 10}, 0600); err != nil {
+		t.Fatal(err)
+	}
+	expectedInputs = 2
+	got = codexNativeSubmit("%902")(dispatch.Opts{}, "HQ references an existing image\n"+png, nil)
+	if got.State != dispatch.StateQueued || !strings.HasPrefix(got.Evidence, "codex-queue-accepted:") {
+		t.Fatal("quoted path opted in to active input", got)
 	}
 }

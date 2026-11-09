@@ -135,7 +135,9 @@ enum ScreenshotSender {
                 return .delivered(queued: true)
             case "refused-draft": return .refusedDraft(evidence)
             case "refused-duplicate": return .duplicate
-            case "refused-waiting": return pastedFirst(evidence) ? .heldAfterPaste : .refusedWaiting
+            case "refused-waiting":
+                if evidence.hasPrefix("input-") && evidence != "input-awaiting-confirmation" { return .notConfirmed(evidence) }
+                return pastedFirst(evidence) ? .heldAfterPaste : .refusedWaiting
             default: return .notConfirmed(evidence.isEmpty ? reply.state : evidence)
             }
         }

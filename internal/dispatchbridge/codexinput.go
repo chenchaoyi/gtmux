@@ -55,7 +55,7 @@ func codexNativeSubmit(pane string) func(dispatch.Opts, string, func() string) d
 		}
 		inputs := codexInputs(text)
 		submit := codexQueueInputs
-		if len(inputs) > 1 {
+		if opts.ActiveImageInput && len(inputs) > 1 {
 			submit = codexImageInputs
 		}
 		outcome := submit(context.Background(), codexrpc.Target{HomeID: f.HomeID, ThreadID: f.SessionID, BackendPID: f.BackendPID, BackendStart: f.BackendStart}, r.ID, inputs, check)

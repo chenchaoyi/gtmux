@@ -155,6 +155,6 @@ HQ replies in Codex conversations retain the HQ sender in App and Web, including
 
 ### Menu-bar screenshot delivery
 
-For a working Codex session, gtmux supplements the current task only when the verified backend explicitly supports direct input and identifies the exact active turn. Ordinary text and HQ coordination retain their queue semantics; older servers and idle sessions keep the queue path. Existing pending screenshots are not automatically replayed or removed.
+For an explicit menu-bar screenshot attachment to a working Codex session, gtmux supplements the current task only when the verified backend explicitly supports direct input and identifies the exact active turn. Ordinary text and HQ coordination retain their queue semantics; older servers and idle sessions keep the queue path. Existing pending screenshots are not automatically replayed or removed.
 
 Feedback distinguishes **Added to the current task**, **Screenshot queued**, and **Screenshot sent**. Queued means waiting for the next turn, not confirmed appearance in the terminal. Pending approvals still refuse input; uncertain receipts preserve editing and prevent duplicate delivery. Prompt closing after acceptance and translucent feedback remain.

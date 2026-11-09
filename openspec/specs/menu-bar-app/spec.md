@@ -1547,7 +1547,7 @@ their existing recovery behavior and SHALL NOT be reported as delivered.
 
 
 ### Requirement: Screenshot receipts distinguish active input from next-turn queues
-The screenshot sender SHALL offer native image inputs to the exact active Codex turn only when its verified existing backend exposes direct-input capability, no pending input/approval flags and a bounded metadata-only active turn ID. It SHALL retain the addressed home/thread/backend checks and revalidate the destination immediately before mutation. Ordinary text and HQ input SHALL retain queue semantics. Older unsupported backends MAY use the original queue; uncertain or rejected mutations SHALL NOT be replayed through another path. No queued input SHALL be deleted, reordered, started or resubmitted by this operation.
+The screenshot sender SHALL require explicit attachment ingress rather than infer intent from a quoted upload path. It SHALL offer native image inputs to the exact active Codex turn only when its verified existing backend exposes direct-input capability, no pending input/approval flags and a bounded metadata-only active turn ID. It SHALL retain the addressed home/thread/backend checks and revalidate the destination immediately before mutation. Ordinary text and HQ input SHALL retain queue semantics. Older unsupported backends MAY use the original queue; uncertain or rejected mutations SHALL NOT be replayed through another path. No queued input SHALL be deleted, reordered, started or resubmitted by this operation.
 
 #### Scenario: Supplement a long-running task
 - **WHEN** the owner sends a new screenshot to an eligible working Codex session

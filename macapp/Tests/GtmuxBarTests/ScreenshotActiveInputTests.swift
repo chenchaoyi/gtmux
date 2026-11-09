@@ -23,6 +23,8 @@ import XCTest
         XCTAssertEqual(ScreenshotSendResult.activeTurnAccepted.receiptState, "active-turn-accepted")
         XCTAssertEqual(ScreenshotSendResult.delivered(queued: true).receiptState, "queued")
         XCTAssertEqual(ScreenshotSendResult.delivered(queued: false).receiptState, "delivered")
+        XCTAssertEqual(ScreenshotSender.interpret(status: 1, stdout: #"{"state":"refused-waiting","delivered":false,"evidence":"input-metadata-unavailable"}"#, stderr: ""), .notConfirmed("input-metadata-unavailable"))
+        XCTAssertEqual(ScreenshotSender.interpret(status: 1, stdout: #"{"state":"refused-waiting","delivered":false,"evidence":"input-awaiting-confirmation"}"#, stderr: ""), .refusedWaiting)
     }
 
     func testSSI003BothLanguagesDescribeQueuedAndActiveInputTruthfully() {
