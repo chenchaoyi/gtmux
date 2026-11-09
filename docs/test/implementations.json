@@ -452,7 +452,8 @@
   },
   "internal/radar/codex_foreign_marker_gather_test.go": {
     "cases": [
-      "CORE-CODEX-FOREIGN-GATHER"
+      "CORE-CODEX-FOREIGN-GATHER",
+      "PWR-002"
     ],
     "selectors": [
       "TestGatherDoesNotReviveAnotherSessionsOldMarkerFromWindowActivity"
@@ -608,7 +609,8 @@
   "internal/radar/codex_completed_marker_test.go": {
     "cases": [
       "CET-002",
-      "CET-003"
+      "CET-003",
+      "PWR-002"
     ],
     "selectors": [
       "TestGatherCompletedOwnTurnSurvivesLateActiveMarker"

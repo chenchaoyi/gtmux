@@ -72,7 +72,13 @@ func TestGatherDoesNotReviveAnotherSessionsOldMarkerFromWindowActivity(t *testin
 				t.Fatal(err)
 			}
 			capture := paneCapture
-			paneCapture = func(string) string { return tc.frame + "› Ask Codex to do anything\n model · /work" }
+			paneCapture = func(string) string {
+				// A real approval is not a ready composer with a separate wait marker.
+				if tc.waiting {
+					return "Would you like to run this command?\n› 1. Yes, proceed\n  2. No, tell Codex what to do\nPress enter to confirm\n"
+				}
+				return tc.frame + "› Ask Codex to do anything\n model · /work"
+			}
 			defer func() { paneCapture = capture }()
 			lines := []string{paneLine(pane, "synthetic", "0", "0", "Codex", "codex", time.Now().Unix(), 900017, "/work")}
 			withFixture(t, lines, func() {
