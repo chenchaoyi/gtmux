@@ -1,0 +1,46 @@
+{
+  "id": "radar-energy-reuse-20261109",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-09",
+    "decision": "reduce repeated reads without changing polling or notification cadence",
+    "notes": "Read-only four-sample live baseline suggests serve and tmux rather than the SwiftUI menu process dominate this product CPU. Static source confirms SSE GatherAgents bypasses the REST snapshot and a single Codex gather can capture frames more than once. Fix only reuse: force fresh producer on every existing SSE tick while atomically publishing its bounded JSON under the existing lock; keep REST fallback/TTL/scoping/failure semantics. Memoize frame locally per gather, never persist across polls or suppress permissions. Tests count actual producer/capture calls and preserve changed-frame behavior, not timing-dependent sleeps. No claimed battery percentage from synthetic counts or un-symbolicated live sample; no deployed-service restart. Production CPU comparison needs a later installed version under equivalent load. Full-core review decision: preserve the independent fresh screen check before withdrawing an existing wait and the active-wait confirmation probe. They protect permission timing and intentionally remain outside ordinary per-pass frame reuse. An attempted fixture alignment was abandoned rather than altering legacy approval assertions; both original fixture files and their original mappings are restored byte-for-byte. The original PWR-002 cases describe ordinary unmarked panes, including next-pass approval detection, and remain identical to the pre-implementation design. Old failed check and abandoned fixture/design attempt are retained honestly; not counted as green. This favors stability over eliminating every last capture."
+  },
+  "cases": [
+    {
+      "id": "PWR-001",
+      "layer": "L1",
+      "description": "Producer publishes one bounded immutable REST snapshot without suppressing fresh SSE scans",
+      "setup": "Isolated snapshotCache, fake clock/load counters and concurrent callers; two scope homes; oversized and failed publication",
+      "action": "Refresh producer then read REST concurrently, advance time, force next producer update, change scope and fail/oversize loader",
+      "expected": "One production collection per producer tick, no extra REST collections within freshness; explicit next producer bypasses TTL; clone ownership preserved; failure/oversize never turns stale bytes into success; scopes never cross",
+      "planned_files": [
+        "internal/radar/energy_snapshot_test.go"
+      ]
+    },
+    {
+      "id": "PWR-002",
+      "layer": "L2",
+      "description": "One frame per pane per gather preserves approval/status behavior and reloads next pass",
+      "setup": "Actual GatherAgents under existing synthetic HOME/pane/process seams; multiple Codex panes; synthetic capture counter and changed next frame",
+      "action": "Run full gather and repeat with numbered permission menu; verify counts and statuses",
+      "expected": "Frame probes within one pass share exact text; each pane is captured at most once, no frame survives into next gather; new approval becomes waiting without invented done; unrelated non-Codex states retained",
+      "planned_files": [
+        "internal/radar/energy_gather_test.go"
+      ]
+    },
+    {
+      "id": "PWR-003",
+      "layer": "L2",
+      "description": "Actual SSE adapter publishes the same full roster for REST including role and native identity",
+      "setup": "Actual serveAgentStatuses plus producer seam/cache fixture, synthetic records and no real tmux",
+      "action": "Invoke exact adapter, then concurrent REST dependency; inspect projection and collection counts",
+      "expected": "SSE uses fresh producer, REST reads its cache rather than second gather; role/completion/follow/native identity unchanged; no real services/power settings touched",
+      "planned_files": [
+        "internal/app/serve_energy_snapshot_test.go"
+      ]
+    }
+  ],
+  "seal": "1b30c4061dec63ec50b07889bac63d917789403056684fe3a5ef0967ea2f6f12"
+}

@@ -2033,6 +2033,8 @@ LEG-ad9cc6481d8b,L1,Go core / CLI / server,internal/radar/dsh_test.go,16,Test,Te
 LEG-0b170bd7069d,L1,Go core / CLI / server,internal/radar/dsh_test.go,47,Test,TestVerifiedTerminalIdentityAndExternalDedup,False,legacy-not-retrospectively-reviewed
 LEG-9332e607dcbe,L1,Go core / CLI / server,internal/radar/dsh_test.go,91,Test,TestDSHExternalHistoryDoesNotReappearWithoutActivityOrFollow,False,legacy-not-retrospectively-reviewed
 LEG-000ae331abbb,L1,Go core / CLI / server,internal/radar/dsh_test.go,97,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
+MAP-0670bffd7c6c,L1,reviewed implementation,internal/radar/energy_snapshot_test.go,12,reviewed-selector,TestPWR001ProducerSharesFreshSnapshotAndKeepsBoundaries,False,PWR-001
+MAP-e4331da4fa54,L1,reviewed implementation,internal/radar/energy_snapshot_test.go,62,reviewed-selector,TestPWR001ConcurrentProducerCannotBeOverwrittenByOlderREST,False,PWR-001
 LEG-9f0692cf9b21,L1,Go core / CLI / server,internal/radar/gather_test.go,52,Test,TestGatherAgentsFixture,False,legacy-not-retrospectively-reviewed
 LEG-bea59f311606,L1,Go core / CLI / server,internal/radar/gather_test.go,104,Test,TestGatherAgentsSharesOneCodexPathDiscovery,False,legacy-not-retrospectively-reviewed
 LEG-02002b43132f,L1,Go core / CLI / server,internal/radar/gather_test.go,247,Test,TestScopedLastMessageHelpersRecognizeCodexKeyAndLabel,False,legacy-not-retrospectively-reviewed

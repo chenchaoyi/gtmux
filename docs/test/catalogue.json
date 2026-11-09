@@ -58528,6 +58528,63 @@
       ],
       "sha256": "4406c38a3cf63286e5a66b4b7c107b2ae327cf758d3717a15749023c0139fa3b"
     },
+    "internal/app/serve_energy_snapshot_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-59b391120a04",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestPWR003SSEPublishesItsActualNativeObservationForREST",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "PWR-003"
+        }
+      ],
+      "sha256": "31ff63621a5723178bbe21086bd8e1f73f6366f6ef234fd36fdf2a9e93092dac"
+    },
+    "internal/radar/energy_gather_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-981c45e6de6f",
+          "line": 8,
+          "kind": "reviewed-selector",
+          "name": "TestPWR002GatherSharesFramesOnlyInsideOnePass",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "PWR-002"
+        }
+      ],
+      "sha256": "25d6cbfcfe8242182d4310e4ac012a0f60ed358107790092195f761e1baac6ff"
+    },
+    "internal/radar/energy_snapshot_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-0670bffd7c6c",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestPWR001ProducerSharesFreshSnapshotAndKeepsBoundaries",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "PWR-001"
+        },
+        {
+          "id": "MAP-e4331da4fa54",
+          "line": 62,
+          "kind": "reviewed-selector",
+          "name": "TestPWR001ConcurrentProducerCannotBeOverwrittenByOlderREST",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "PWR-001"
+        }
+      ],
+      "sha256": "c1b68825831e08167c1d904d4fe561780a5e91680b4cda099f0bdc45a0fcc9fe"
+    },
     "internal/codexrpc/screenshot_input_test.go": {
       "layer": "L1",
       "stack": "reviewed implementation",
