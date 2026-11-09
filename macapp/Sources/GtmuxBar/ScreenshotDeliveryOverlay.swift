@@ -8,8 +8,9 @@ struct ScreenshotDeliveryOverlay: View {
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var title: String {
+        if case .result(.activeTurnAccepted) = status { return l10n.tr("Added to the current task", "已补充到当前任务") }
         if case .result(.delivered(let queued)) = status {
-            return queued ? l10n.tr("Screenshot queued", "截图已提交") : l10n.tr("Screenshot sent", "截图已发送")
+            return queued ? l10n.tr("Screenshot queued", "截图已排队") : l10n.tr("Screenshot sent", "截图已发送")
         }
         return l10n.tr("Sending screenshot…", "正在发送截图…")
     }
@@ -22,9 +23,12 @@ struct ScreenshotDeliveryOverlay: View {
         return parts.joined(separator: " · ")
     }
     var detail: String {
-        status == .sending
-            ? l10n.tr("Waiting for terminal confirmation", "正在确认终端接收")
-            : l10n.tr("Received by the terminal", "终端已接收")
+        switch status {
+        case .sending: return l10n.tr("Confirming input delivery", "正在确认投递")
+        case .result(.activeTurnAccepted): return l10n.tr("The agent will read it while working", "Agent 将在工作中读取")
+        case .result(.delivered(queued: true)): return l10n.tr("Waiting for the agent's next turn", "等待 Agent 下一轮处理")
+        default: return l10n.tr("Received by the terminal", "终端已接收")
+        }
     }
 
     var body: some View {

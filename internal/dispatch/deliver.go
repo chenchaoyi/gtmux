@@ -15,7 +15,7 @@ type State string
 
 const (
 	StateLanded     State = "landed"            // confirmed in the conversation
-	StateQueued     State = "queued"            // accepted, but behind the current turn
+	StateQueued     State = "queued"            // accepted input, not yet confirmed in the conversation
 	StateFailed     State = "failed"            // not confirmed within the timeout
 	StateRefusedDup State = "refused-duplicate" // identical payload re-sent inside the window
 	// StateRefusedDraft: the pane's input box already held UNSUBMITTED text that is not

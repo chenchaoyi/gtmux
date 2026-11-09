@@ -30,10 +30,18 @@ func ClaimNative(r Request) error {
 }
 
 func FinishNative(r Request, outcome, reason string) error {
+	return FinishNativeDelivery(r, outcome, reason, "")
+}
+
+// Delivery is optional acceptance metadata, not proof of model execution.
+func FinishNativeDelivery(r Request, outcome, reason, delivery string) error {
 	if !instancePattern.MatchString(r.ID) || (outcome != "accepted" && outcome != "uncertain" && outcome != "refused") {
 		return errors.New("invalid native input outcome")
 	}
-	result := Receipt{Version: ProtocolVersion, ID: r.ID, Instance: r.Instance, HomeID: r.HomeID, SessionID: r.SessionID, PID: r.PID, State: outcome, Error: reason, CreatedAt: time.Now().UnixMilli()}
+	if delivery != "" && (outcome != "accepted" || delivery != "active-turn") {
+		return errors.New("invalid native delivery metadata")
+	}
+	result := Receipt{Version: ProtocolVersion, ID: r.ID, Instance: r.Instance, HomeID: r.HomeID, SessionID: r.SessionID, PID: r.PID, State: outcome, Delivery: delivery, Error: reason, CreatedAt: time.Now().UnixMilli()}
 	b, err := json.Marshal(result)
 	if err != nil {
 		return err

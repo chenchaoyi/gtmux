@@ -632,7 +632,7 @@ struct ScreenshotEditorView: View {
         switch model.status {
         case .sending:
             ProgressView().controlSize(.mini)
-        case .copied, .saved, .result(.delivered):
+        case .copied, .saved, .result(.delivered), .result(.activeTurnAccepted):
             Image(systemName: "checkmark").font(.system(size: 12, weight: .semibold)).foregroundStyle(.secondary)
         case .result(.refusedWaiting), .result(.heldAfterPaste):
             StatusBadge(status: .waiting, size: 13)
@@ -844,6 +844,7 @@ enum ScreenshotStatusText {
         case .error(let m): return l10n.tr("Operation failed: \(m)", "操作失败：\(m)")
         case .result(let r):
             switch r {
+            case .activeTurnAccepted: return l10n.tr("Added to \(who)'s current task.", "已补充到 \(who) 的当前任务。")
             case .delivered(queued: false): return l10n.tr("Sent to \(who).", "已发送至 \(who)。")
             case .delivered(queued: true):
                 return l10n.tr("Queued for \(who).", "已加入 \(who) 的输入队列。")

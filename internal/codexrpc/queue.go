@@ -30,6 +30,7 @@ type Input struct {
 type Outcome struct {
 	Accepted, Attempted, Unsupported bool
 	QueueID, Reason                  string
+	ActiveTurnID                     string
 }
 
 type wireResponse struct {
@@ -63,6 +64,17 @@ func QueueChecked(ctx context.Context, target Target, messageID, text string, ch
 }
 
 func QueueInputs(ctx context.Context, target Target, messageID string, inputs []Input, check func() bool) Outcome {
+	return submitInputs(ctx, target, messageID, inputs, check, false)
+}
+
+// ImageInputs supplements an exact active turn when the loaded server explicitly
+// supports it. Older servers keep their queue semantics. Existing queue entries
+// are never consumed, deleted or resubmitted by this path.
+func ImageInputs(ctx context.Context, target Target, messageID string, inputs []Input, check func() bool) Outcome {
+	return submitInputs(ctx, target, messageID, inputs, check, true)
+}
+
+func submitInputs(ctx context.Context, target Target, messageID string, inputs []Input, check func() bool, preferActive bool) Outcome {
 	bytes := 0
 	valid := len(inputs) > 0 && len(inputs) <= 17
 	for _, input := range inputs {
@@ -91,7 +103,7 @@ func QueueInputs(ctx context.Context, target Target, messageID string, inputs []
 		return Outcome{Reason: "backend-changed"}
 	}
 	enc := json.NewEncoder(c.writer)
-	// These two addressed responses are small; no catalog or history is read.
+	// Addressed metadata is bounded; never request conversation items or a catalog.
 	dec := json.NewDecoder(io.LimitReader(c.reader, 2<<20))
 	send := func(id int, method string, params any) error {
 		return enc.Encode(map[string]any{"id": id, "method": method, "params": params})
@@ -127,17 +139,52 @@ func QueueInputs(ctx context.Context, target Target, messageID string, inputs []
 	if enc.Encode(map[string]any{"method": "initialized", "params": map[string]any{}}) != nil {
 		return Outcome{Reason: "initialize-unavailable"}
 	}
+	id, turnID := 2, ""
+	if preferActive {
+		var why string
+		turnID, id, why = activeInputTurn(target.ThreadID, id, send, read)
+		if why != "" {
+			return Outcome{Reason: why}
+		}
+	}
 	if check != nil && !check() {
 		return Outcome{Reason: "target-changed"}
 	}
 	result := Outcome{Attempted: true, Reason: "acceptance-unconfirmed"}
-	if send(2, "thread/queue/add", map[string]any{
+	if turnID != "" {
+		if send(id, "turn/steer", map[string]any{"threadId": target.ThreadID, "expectedTurnId": turnID, "clientUserMessageId": messageID, "input": inputs}) != nil {
+			return result
+		}
+		r, err = read(id)
+		if err != nil {
+			return result
+		}
+		if r.Error == nil {
+			var accepted struct {
+				TurnID string `json:"turnId"`
+			}
+			if json.Unmarshal(r.Result, &accepted) != nil || accepted.TurnID != turnID {
+				return result
+			}
+			return Outcome{Accepted: true, Attempted: true, ActiveTurnID: turnID}
+		}
+		// Only a definitive unknown-method response permits legacy queue fallback.
+		// A timeout, rejection or generic error must never duplicate this input.
+		if r.Error.Code != -32601 {
+			return result
+		}
+		id++
+		if check != nil && !check() {
+			return Outcome{Reason: "target-changed"}
+		}
+	}
+	if send(id, "thread/queue/add", map[string]any{
 		"threadId": target.ThreadID, "clientUserMessageId": messageID,
 		"input": inputs,
 	}) != nil {
 		return result
 	}
-	r, err = read(2)
+	r, err = read(id)
 	if err != nil {
 		return result
 	}
