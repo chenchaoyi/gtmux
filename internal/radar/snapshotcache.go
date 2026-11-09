@@ -26,9 +26,20 @@ var sharedSnapshot = &snapshotCache{load: AgentsJSONBytes, now: time.Now, scope:
 // CachedAgentsJSONBytes is the serve's one producer snapshot, shared by SSE and
 // authenticated HTTP readers. Standalone CLI reads keep their fresh path.
 func CachedAgentsJSONBytes() ([]byte, error) { return sharedSnapshot.read() }
-func (c *snapshotCache) read() ([]byte, error) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+
+// RefreshAgentsSnapshot keeps the SSE producer fresh on every existing tick and
+// publishes that same observation for REST readers. It never reuses the REST TTL
+// for notifications, nor lets an older concurrent REST load overwrite this scan.
+func RefreshAgentsSnapshot() []Pane {
+	var panes []Pane
+	_, _ = sharedSnapshot.refresh(func() ([]byte, error) {
+		panes = GatherAgents()
+		return agentsJSONBytes(panes)
+	})
+	return panes
+}
+
+func (c *snapshotCache) resetScope() {
 	if c.scope != nil {
 		key := c.scope()
 		if key != c.scopeKey {
@@ -36,11 +47,29 @@ func (c *snapshotCache) read() ([]byte, error) {
 			c.scopeKey = key
 		}
 	}
+}
+
+func (c *snapshotCache) read() ([]byte, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.resetScope()
 	if c.body != nil && c.now().Sub(c.at) < snapshotTTL {
 		return bytes.Clone(c.body), nil
 	}
-	body, err := c.load()
+	return c.loadSnapshot(c.load)
+}
+
+func (c *snapshotCache) refresh(load func() ([]byte, error)) ([]byte, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.resetScope()
+	return c.loadSnapshot(load)
+}
+
+func (c *snapshotCache) loadSnapshot(load func() ([]byte, error)) ([]byte, error) {
+	body, err := load()
 	if err != nil {
+		c.body = nil
 		return nil, err
 	}
 	if len(body) <= snapshotByteCap {

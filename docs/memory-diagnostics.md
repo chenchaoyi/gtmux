@@ -103,3 +103,10 @@ own socket and run directory. The supplied directory and exported files remain.
 A substituted file is preserved. SIGKILL/crash may leave a stale run directory;
 the next run always uses a fresh one. Remove a stale directory only after verifying
 its process is gone and that it contains no evidence to retain.
+
+
+## CPU and energy use
+
+Separate the menu-bar process, `serve`, tunnel and terminal CPU costs first. Activity Monitor energy impact is not a CPU percentage; compare equal session counts, connections and workloads. A short CPU sample does not establish battery-life improvement.
+
+The server collects fresh state on the existing 1.5-second cadence and publishes that same observation to its list-read cache. The REST TTL never suppresses an SSE producer tick; readers retain bounded expiry and standalone fallback. Each pane uses one frame within a gather and a fresh frame on the next pass, preserving new permission and error states. This removes repeated work without disabling notifications, remote access or reducing refresh frequency.
