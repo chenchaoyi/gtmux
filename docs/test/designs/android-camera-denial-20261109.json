@@ -1,0 +1,46 @@
+{
+  "id": "android-camera-denial-20261109",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-09",
+    "decision": "proceed with bounded test-driver correction",
+    "notes": "Main7e3dc151 attempt2 records 30/31 passed, one case21 action timeout: one successful coordinate gesture leaves the original system camera dialog visible. Attempt1 screenshot transport failure is separate, not replayed as this cause. Product sources/permissions/CI matrix remain unchanged. Limit to owned QA emulator, system controller packages, exact camera prompt, never Allow/settings. Replace fixed sleep/raw coordinates with fresh enabled native elements, at most two explicit denial clicks and an unchanged ten-second action deadline. No implicit retry of the whole case or swallowing driver errors. Keep original App denial alert/30s oracle and add read-only granted=false native-package assertion. Source-registered callback runs under fault-injection, not just a toy helper. Fake-clock component results are not real device acceptance; complete cloud phone/tablet journeys remain required."
+  },
+  "cases": [
+    {
+      "id": "ACP-001",
+      "layer": "L1",
+      "description": "Camera decline driver is identity-scoped, bounded and preserves first errors",
+      "setup": "Fake driver/monotonic clock with delayed readiness, first click ignored, wrong package/prompt, stuck dialog, slow read and transport failure",
+      "action": "Run production denial helper and observe native click targets/counts, elapsed time and thrown identity",
+      "expected": "Fresh enabled Deny elements only; ignored first click can use one further explicit click in the same camera dialog, maximum two; no click starts after 10s; no unrelated permission acted upon; original command error preserved; no permission grant or settings mutation.",
+      "planned_files": [
+        "mobileapp/e2e/android/permission.test.ts"
+      ]
+    },
+    {
+      "id": "ACP-002",
+      "layer": "L2",
+      "description": "Actual registered camera-denial journey retains all product/native assertions under missed touch",
+      "setup": "Parse exact check21 callback from production run.cjs using TypeScript AST; inject synthetic driver/ADB/clock; no test-only replacement callback",
+      "action": "Invoke callback with first denial ignored, missing App alert, granted permission and stuck system dialog; run same assertions on frozen old callback as negative control",
+      "expected": "New case survives a single lost OS denial touch; old frozen callback fails. Missing alert, grant=true, wrong/stuck system dialog still fail. Original App alert 30s remains; read-only QA CAMERA granted=false is required. Other 30 journeys and case orchestration unchanged.",
+      "planned_files": [
+        "mobileapp/e2e/android/permissionJourney.test.ts"
+      ]
+    },
+    {
+      "id": "ACP-003",
+      "layer": "L4",
+      "description": "Owned Android phone/tablet actually deny camera and show actionable App feedback",
+      "setup": "Exactly verified QA APK and explicit disposable CI emulator, existing full 31-case selection",
+      "action": "Open attachment camera, use guarded denial, assert native permission false and App denial alert, preserve gesture metadata and normal failure evidence",
+      "expected": "Both sizes retain complete suite and existing expectations; no denied permission granted, hidden blocked results or inflated timing budget. Failed driver evidence remains separate from product assertions.",
+      "planned_files": [
+        "mobileapp/e2e/android/run.cjs"
+      ]
+    }
+  ],
+  "seal": "8123002b77add5ef6ea73eca6629596f3dbbb9d62c569fe9237ab972593b3a8f"
+}
