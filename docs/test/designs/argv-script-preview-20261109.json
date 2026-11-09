@@ -1,0 +1,47 @@
+{
+  "id": "argv-script-preview-20261109",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-09",
+    "decision": "implement bounded shared static argv decoding",
+    "notes": "The supplied Run command Preview is a JSON argv array rather than a cmd string; existing shared codeParts misses that shape. Decode only literal root/command/cmd argv, known shell -c/-lc and explicit python -c/node -e interpreters; no eval, shell expansion, dynamic interpolation, filesystem reads or command execution. Preserve the original first and copy/raw verbatim; outer commands precede explicitly bounded heredoc scripts. Ordinary text/path arguments never imply Python. Reuse RN TypeScript source and generated browser bundle; retained size/node/depth/tab bounds apply. Negative old-source controls must demonstrate the actual screenshot-shaped omission. Component/browser fixtures are synthetic; do not claim actual iPhone/VoiceOver/installed-service acceptance."
+  },
+  "cases": [
+    {
+      "id": "ARGV-001",
+      "layer": "L1",
+      "description": "Static argv wrappers expose correctly typed script views without altering original content",
+      "setup": "Synthetic JSON/JS arrays, shell command flags, Python/Node eval, mixed heredocs, dynamic AST values, incomplete and oversized input",
+      "action": "Run production codeParts/formatCode and inspect exact source slices, order and hints",
+      "expected": "Complete original first; only explicit interpreter script arguments or complete heredocs become previews; literal escapes decode once, no guess from prose/paths, dynamic/unsupported wrappers stay raw; repeated extraction stable and bounded",
+      "planned_files": [
+        "mobileapp/src/ui/commandArgv.test.ts",
+        "internal/server/web/argv-reading.test.cjs"
+      ]
+    },
+    {
+      "id": "ARGV-002",
+      "layer": "L2",
+      "description": "RN Chat/Trace shared code readers select typed argv scripts and copy original",
+      "setup": "Synthetic argv containing Python heredoc with a trailing shell command, light/dark props",
+      "action": "Render actual CodeBlock/CodePanel; select original/Shell/Python, toggle formatting, copy from selected script",
+      "expected": "Actual shared CodeText receives the exact script and language, formatting toggles; selected script never replaces original copy; raw reader has no derived tabs",
+      "planned_files": [
+        "mobileapp/src/ui/CommandArgvPanel.test.tsx"
+      ]
+    },
+    {
+      "id": "ARGV-003",
+      "layer": "L3",
+      "description": "Browser Trace command Preview exposes the same script reading as Chat at desktop/mobile widths",
+      "setup": "Synthetic pane transcript with command_execution JSON argv, 390/1440 viewport; no real session",
+      "action": "Open real Trace, expand turn/tool, select Preview Shell/Python and copy; inspect Raw",
+      "expected": "Typed derived tabs and compact syntax rendering visible, original JSON copy and Raw unchanged; no API sends or nested execution; existing layout can scroll without clipping",
+      "planned_files": [
+        "tests/web/command-argv.test.cjs"
+      ]
+    }
+  ],
+  "seal": "25f7f6a594f69d46ae22ef382d2cdf8559bdb35f09a9cacca469fdaa504ae439"
+}
