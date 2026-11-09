@@ -35555,13 +35555,13 @@
       ]
     },
     "mobileapp/e2e/android/run.cjs": {
-      "sha256": "d7799cdd9ea4019ef2a852bb0d123c5258974f3b122d7c135025bc680c98cfd2",
+      "sha256": "7c4e8057da35d28a4883133ed4dd2a2f525053fe927df8f089309a63c377fefd",
       "layer": "L4",
       "stack": "RN / mobile harness",
       "cases": [
         {
           "id": "LEG-5aa4a01b8dbf",
-          "line": 167,
+          "line": 168,
           "kind": "check",
           "name": "01-radar-owner",
           "dynamic": false,
@@ -35569,7 +35569,7 @@
         },
         {
           "id": "LEG-1b8288a84b0e",
-          "line": 168,
+          "line": 169,
           "kind": "check",
           "name": "02-section-collapse",
           "dynamic": false,
@@ -35577,7 +35577,7 @@
         },
         {
           "id": "LEG-9c90c5870a40",
-          "line": 169,
+          "line": 170,
           "kind": "check",
           "name": "03-chat-terminal",
           "dynamic": false,
@@ -35585,7 +35585,7 @@
         },
         {
           "id": "LEG-9d8c31dba1cc",
-          "line": 170,
+          "line": 171,
           "kind": "check",
           "name": "04-real-composer-send",
           "dynamic": false,
@@ -35593,7 +35593,7 @@
         },
         {
           "id": "LEG-a483badd098f",
-          "line": 171,
+          "line": 172,
           "kind": "check",
           "name": "05-display-size",
           "dynamic": false,
@@ -35601,7 +35601,7 @@
         },
         {
           "id": "LEG-f48f9d418dd0",
-          "line": 172,
+          "line": 173,
           "kind": "check",
           "name": "06-trace-session-and-turns",
           "dynamic": false,
@@ -35609,7 +35609,7 @@
         },
         {
           "id": "LEG-08efe37f8bec",
-          "line": 173,
+          "line": 174,
           "kind": "check",
           "name": "07-trace-expand-collapse",
           "dynamic": false,
@@ -35617,7 +35617,7 @@
         },
         {
           "id": "LEG-f43ef9fc0de4",
-          "line": 180,
+          "line": 181,
           "kind": "check",
           "name": "08-trace-earlier",
           "dynamic": false,
@@ -35625,7 +35625,7 @@
         },
         {
           "id": "LEG-6236f9538633",
-          "line": 181,
+          "line": 182,
           "kind": "check",
           "name": "09-trace-search",
           "dynamic": false,
@@ -35633,7 +35633,7 @@
         },
         {
           "id": "LEG-c0726a329e04",
-          "line": 182,
+          "line": 183,
           "kind": "check",
           "name": "10-diff-wrap-and-back",
           "dynamic": false,
@@ -35641,7 +35641,7 @@
         },
         {
           "id": "LEG-121d1daa04df",
-          "line": 183,
+          "line": 184,
           "kind": "check",
           "name": "11-fullscreen-tools",
           "dynamic": false,
@@ -35649,7 +35649,7 @@
         },
         {
           "id": "LEG-7dcd48a83338",
-          "line": 184,
+          "line": 185,
           "kind": "check",
           "name": "12-offline-reconnect",
           "dynamic": false,
@@ -35657,7 +35657,7 @@
         },
         {
           "id": "LEG-37bf442adb03",
-          "line": 185,
+          "line": 186,
           "kind": "check",
           "name": "13-guest-scope",
           "dynamic": false,
@@ -35665,7 +35665,7 @@
         },
         {
           "id": "LEG-75efedb5a994",
-          "line": 186,
+          "line": 187,
           "kind": "check",
           "name": "14-owner-reconnect-persisted",
           "dynamic": false,
@@ -35673,7 +35673,7 @@
         },
         {
           "id": "LEG-f5c656156930",
-          "line": 187,
+          "line": 188,
           "kind": "check",
           "name": "15-settings-and-honest-push",
           "dynamic": false,
@@ -35681,7 +35681,7 @@
         },
         {
           "id": "LEG-94f757a96cc8",
-          "line": 188,
+          "line": 189,
           "kind": "check",
           "name": "16-html-native-local-image-and-consent",
           "dynamic": false,
@@ -35689,7 +35689,7 @@
         },
         {
           "id": "LEG-591b3f60f92c",
-          "line": 198,
+          "line": 199,
           "kind": "check",
           "name": "17-markdown-native-share-and-back",
           "dynamic": false,
@@ -35697,7 +35697,7 @@
         },
         {
           "id": "LEG-a98a53dfe8d6",
-          "line": 205,
+          "line": 206,
           "kind": "check",
           "name": "18-image-native-zoom-and-back",
           "dynamic": false,
@@ -35705,7 +35705,7 @@
         },
         {
           "id": "LEG-b6fd80008736",
-          "line": 211,
+          "line": 212,
           "kind": "check",
           "name": "19-trace-nested-code",
           "dynamic": false,
@@ -35713,7 +35713,7 @@
         },
         {
           "id": "LEG-4899bd3fa44a",
-          "line": 219,
+          "line": 220,
           "kind": "check",
           "name": "20-file-picker-and-cancel",
           "dynamic": false,
@@ -35721,7 +35721,7 @@
         },
         {
           "id": "LEG-cee1718f3aee",
-          "line": 224,
+          "line": 225,
           "kind": "check",
           "name": "21-camera-permission-denial",
           "dynamic": false,
@@ -35729,7 +35729,7 @@
         },
         {
           "id": "LEG-be0d4167aa8c",
-          "line": 228,
+          "line": 232,
           "kind": "check",
           "name": "22-rotation-and-large-text",
           "dynamic": false,
@@ -35737,7 +35737,7 @@
         },
         {
           "id": "LEG-f19d42fea98d",
-          "line": 235,
+          "line": 239,
           "kind": "check",
           "name": "23-create-session-and-open",
           "dynamic": false,
@@ -35745,7 +35745,7 @@
         },
         {
           "id": "LEG-c9afceeeeb2e",
-          "line": 240,
+          "line": 244,
           "kind": "check",
           "name": "24-appearance-light-dark-system",
           "dynamic": false,
@@ -35753,7 +35753,7 @@
         },
         {
           "id": "LEG-afc3b4e79446",
-          "line": 246,
+          "line": 250,
           "kind": "check",
           "name": "25-hq-chat-and-routing",
           "dynamic": false,
@@ -35761,7 +35761,7 @@
         },
         {
           "id": "LEG-598d11c4ae0c",
-          "line": 253,
+          "line": 257,
           "kind": "check",
           "name": "26-emulated-hardware-keys",
           "dynamic": false,
@@ -35769,7 +35769,7 @@
         },
         {
           "id": "LEG-f78442eb1f72",
-          "line": 258,
+          "line": 262,
           "kind": "check",
           "name": "27-authenticated-agent-icons",
           "dynamic": false,
@@ -35777,7 +35777,7 @@
         },
         {
           "id": "LEG-33aeea4a70db",
-          "line": 265,
+          "line": 269,
           "kind": "check",
           "name": "28-file-upload-and-send",
           "dynamic": false,
@@ -35785,7 +35785,7 @@
         },
         {
           "id": "LEG-8ef64b955024",
-          "line": 279,
+          "line": 283,
           "kind": "check",
           "name": "29-clipboard-image-markup-and-upload",
           "dynamic": false,
@@ -35793,7 +35793,7 @@
         },
         {
           "id": "LEG-8a1dd3780a1b",
-          "line": 301,
+          "line": 305,
           "kind": "check",
           "name": "30-native-pdf-pages-and-scroll",
           "dynamic": false,
@@ -35801,7 +35801,7 @@
         },
         {
           "id": "LEG-ee0968c7d8ff",
-          "line": 306,
+          "line": 310,
           "kind": "check",
           "name": "31-native-file-trace",
           "dynamic": false,
@@ -35809,7 +35809,7 @@
         },
         {
           "id": "MAP-d4637161f816",
-          "line": 97,
+          "line": 98,
           "kind": "reviewed-selector",
           "name": "async function check",
           "dynamic": false,
@@ -35818,12 +35818,21 @@
         },
         {
           "id": "MAP-c6dfe48e744e",
-          "line": 103,
+          "line": 104,
           "kind": "reviewed-selector",
           "name": "async function run",
           "dynamic": false,
           "layer": "L4",
           "design": "CT-ANDROID,CT-TIMING"
+        },
+        {
+          "id": "MAP-24f51091f511",
+          "line": 225,
+          "kind": "reviewed-selector",
+          "name": "await check('21-camera-permission-denial'",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "CT-ANDROID,CT-TIMING,ACP-003"
         }
       ]
     },
@@ -58255,6 +58264,187 @@
         }
       ],
       "sha256": "a81ad565e63d7b10cf13bd1264a02efa2e60a284ae952c34b5efd6d7812bf725"
+    },
+    "mobileapp/e2e/android/permission.test.ts": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f136a33c6b39",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "ACP-001 enabled camera dialog",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ACP-001"
+        },
+        {
+          "id": "MAP-4d0201e65f7a",
+          "line": 18,
+          "kind": "reviewed-selector",
+          "name": "ACP-001 one ignored interaction",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ACP-001"
+        },
+        {
+          "id": "MAP-8136ad9cefc9",
+          "line": 25,
+          "kind": "reviewed-selector",
+          "name": "ACP-001 unchanged dialog",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ACP-001"
+        },
+        {
+          "id": "MAP-56833c4f4204",
+          "line": 37,
+          "kind": "reviewed-selector",
+          "name": "ACP-001 another permission owner",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ACP-001"
+        },
+        {
+          "id": "MAP-beb32ac8514d",
+          "line": 46,
+          "kind": "reviewed-selector",
+          "name": "ACP-001 original driver failure",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ACP-001"
+        },
+        {
+          "id": "MAP-35b873f04f0a",
+          "line": 54,
+          "kind": "reviewed-selector",
+          "name": "ACP-001 late readiness",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ACP-001"
+        },
+        {
+          "id": "MAP-84e63684ac34",
+          "line": 61,
+          "kind": "reviewed-selector",
+          "name": "ACP-001 a slow read",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ACP-001"
+        },
+        {
+          "id": "MAP-28799ec04e66",
+          "line": 72,
+          "kind": "reviewed-selector",
+          "name": "ACP-001 absent dialog",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ACP-001"
+        },
+        {
+          "id": "MAP-34da68cfb864",
+          "line": 92,
+          "kind": "reviewed-selector",
+          "name": "ACP-001 a newly repeated camera prompt",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ACP-001"
+        },
+        {
+          "id": "MAP-9f336e94e7b3",
+          "line": 81,
+          "kind": "reviewed-selector",
+          "name": "ACP-001 closing before any Deny",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ACP-001"
+        }
+      ],
+      "sha256": "96b5496ae6d9ba44e0504bc16b2f2c2c52018c7d0703d8d0563f5e27f1b9a2ee"
+    },
+    "mobileapp/e2e/android/permissionJourney.test.ts": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-435d839b0a83",
+          "line": 63,
+          "kind": "reviewed-selector",
+          "name": "ACP-002 registered journey survives",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ACP-002"
+        },
+        {
+          "id": "MAP-255b356248a5",
+          "line": 70,
+          "kind": "reviewed-selector",
+          "name": "ACP-002 registered journey still fails",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ACP-002"
+        },
+        {
+          "id": "MAP-04ea0e0d7ec3",
+          "line": 76,
+          "kind": "reviewed-selector",
+          "name": "ACP-002 registered journey cannot pass",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ACP-002"
+        },
+        {
+          "id": "MAP-5c6662fed7bd",
+          "line": 80,
+          "kind": "reviewed-selector",
+          "name": "ACP-002 registered journey cannot click",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ACP-002"
+        },
+        {
+          "id": "MAP-2ba0c888b1bb",
+          "line": 85,
+          "kind": "reviewed-selector",
+          "name": "ACP-002 registered journey preserves",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ACP-002"
+        }
+      ],
+      "sha256": "36d69a913e5c4703cbb329d3948d521de3d35273227029bb7527ddf6bf48f9be"
+    },
+    "mobileapp/e2e/android/permission.cjs": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-bc82a09365cb",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "async function denyCameraPermission(",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ACP-001"
+        }
+      ],
+      "sha256": "da48f2283128e300fccad5447456e0b3a7979a7876dfb770fc2b4f80bddb0cb0"
+    },
+    "mobileapp/e2e/android/permission.fixture.cjs": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-9aff6c097646",
+          "line": 3,
+          "kind": "reviewed-selector",
+          "name": "function fixture(",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ACP-001"
+        }
+      ],
+      "sha256": "d2116d6fc0061a1cd5d4010bfb1d0110680d676f9683dee85f2d184bf97e0bc1"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2"

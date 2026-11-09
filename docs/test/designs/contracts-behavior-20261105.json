@@ -3,9 +3,9 @@
   "status": "reviewed",
   "review": {
     "reviewer": "Codex implementation owner (self-review, not independent approval)",
-    "date": "2026-11-05",
+    "date": "2026-11-09",
     "decision": "Proceed with approved backlog 1, 2, 3 and 7",
-    "notes": "Reviewed real handler validation and independent fake routes, current React renderer mocks, sequential Android dependencies and browser lifecycle. Synthetic loopback only; retain original 31 UI checks and complete selected suites. No native/device acceptance inferred from component tests; no release/install/account changes. Measure same source/cases/environment before speed claims. CI narrowing requires proof that production cannot import affected tests. Scope proof will bind the entire Metro configuration hash and verify the actual resolver excludes test modules; unavailable or changed proof retains native checks. Self-review strengthens HQ coverage by executing workspaceHTTPRead and the production projection against an isolated store; only generated_at/since volatile clocks are fixed. Separate scheduler/process lifecycle unit assertions from installed/browser runtime layers. Review scoped HQ navigation so prepared replies cannot cross a server or session switch."
+    "notes": "Reviewed real handler validation and independent fake routes, current React renderer mocks, sequential Android dependencies and browser lifecycle. Synthetic loopback only; retain original 31 UI checks and complete selected suites. No native/device acceptance inferred from component tests; no release/install/account changes. Measure same source/cases/environment before speed claims. CI narrowing requires proof that production cannot import affected tests. Scope proof will bind the entire Metro configuration hash and verify the actual resolver excludes test modules; unavailable or changed proof retains native checks. Self-review strengthens HQ coverage by executing workspaceHTTPRead and the production projection against an isolated store; only generated_at/since volatile clocks are fixed. Separate scheduler/process lifecycle unit assertions from installed/browser runtime layers. Review scoped HQ navigation so prepared replies cannot cross a server or session switch. Fresh self-review before Android case21 driver refinement: preserve all 31 journey assertions, original denial alert and timing/error accounting. A missed system denial gesture may be retried only twice against the same explicitly verified QA camera dialog; no whole-case replay, grant, settings mutation or driver-disconnect recovery. Ten-second monotonic action deadline prevents further clicks after expiry; existing in-flight WebDriver transport bounds remain and are drained serially. Add read-only QA CAMERA granted=false assertion. Other cases/helpers/CI selection are unchanged."
   },
   "cases": [
     {
@@ -170,5 +170,5 @@
       ]
     }
   ],
-  "seal": "064f6ca49fdf5c6aeca17482c9785ae287d272f0ba87d2c8b208f9b14d4b79eb"
+  "seal": "4d3280b16d366bc6b905309c544682518db8f4dd10975e734890c3c47d4ff605"
 }

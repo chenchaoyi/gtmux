@@ -3128,6 +3128,18 @@ MAP-591fe2c43846,L1,reviewed implementation,mobileapp/e2e/android/journey.test.t
 MAP-bd791291b35e,L1,reviewed implementation,mobileapp/e2e/android/journey.test.ts,39,reviewed-selector,first assertion and disconnect causes,False,"CT-ANDROID-POLICY,CT-TIMING"
 MAP-e9a3452907ab,L1,reviewed implementation,mobileapp/e2e/android/journey.test.ts,67,reviewed-selector,an out of order selected check,False,"CT-ANDROID-POLICY,CT-TIMING"
 MAP-fc216f83479b,L1,reviewed implementation,mobileapp/e2e/android/journey.test.ts,79,reviewed-selector,timing records setup action,False,"CT-ANDROID-POLICY,CT-TIMING"
+MAP-bc82a09365cb,L1,reviewed implementation,mobileapp/e2e/android/permission.cjs,13,reviewed-selector,async function denyCameraPermission(,False,ACP-001
+MAP-9aff6c097646,L1,reviewed implementation,mobileapp/e2e/android/permission.fixture.cjs,3,reviewed-selector,function fixture(,False,ACP-001
+MAP-f136a33c6b39,L1,reviewed implementation,mobileapp/e2e/android/permission.test.ts,9,reviewed-selector,ACP-001 enabled camera dialog,False,ACP-001
+MAP-4d0201e65f7a,L1,reviewed implementation,mobileapp/e2e/android/permission.test.ts,18,reviewed-selector,ACP-001 one ignored interaction,False,ACP-001
+MAP-8136ad9cefc9,L1,reviewed implementation,mobileapp/e2e/android/permission.test.ts,25,reviewed-selector,ACP-001 unchanged dialog,False,ACP-001
+MAP-56833c4f4204,L1,reviewed implementation,mobileapp/e2e/android/permission.test.ts,37,reviewed-selector,ACP-001 another permission owner,False,ACP-001
+MAP-beb32ac8514d,L1,reviewed implementation,mobileapp/e2e/android/permission.test.ts,46,reviewed-selector,ACP-001 original driver failure,False,ACP-001
+MAP-35b873f04f0a,L1,reviewed implementation,mobileapp/e2e/android/permission.test.ts,54,reviewed-selector,ACP-001 late readiness,False,ACP-001
+MAP-84e63684ac34,L1,reviewed implementation,mobileapp/e2e/android/permission.test.ts,61,reviewed-selector,ACP-001 a slow read,False,ACP-001
+MAP-28799ec04e66,L1,reviewed implementation,mobileapp/e2e/android/permission.test.ts,72,reviewed-selector,ACP-001 absent dialog,False,ACP-001
+MAP-34da68cfb864,L1,reviewed implementation,mobileapp/e2e/android/permission.test.ts,92,reviewed-selector,ACP-001 a newly repeated camera prompt,False,ACP-001
+MAP-9f336e94e7b3,L1,reviewed implementation,mobileapp/e2e/android/permission.test.ts,81,reviewed-selector,ACP-001 closing before any Deny,False,ACP-001
 LEG-d05c42b92e77,L1,RN / mobile harness,mobileapp/e2e/fake-serve/contract.test.ts,93,test,`${path} ${what} carries what the app reads`,True,legacy-not-retrospectively-reviewed
 LEG-a66a8e0a7be6,L1,RN / mobile harness,mobileapp/e2e/fake-serve/contract.test.ts,104,test,`${path} carries what the app reads`,True,legacy-not-retrospectively-reviewed
 LEG-53ec5bfce43b,L1,RN / mobile harness,mobileapp/e2e/fake-serve/contract.test.ts,120,test,an owner-only surface refuses a guest,False,legacy-not-retrospectively-reviewed

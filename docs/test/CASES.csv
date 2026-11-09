@@ -3873,39 +3873,57 @@ MAP-591fe2c43846,L1,reviewed implementation,mobileapp/e2e/android/journey.test.t
 MAP-bd791291b35e,L1,reviewed implementation,mobileapp/e2e/android/journey.test.ts,39,reviewed-selector,first assertion and disconnect causes,False,"CT-ANDROID-POLICY,CT-TIMING"
 MAP-e9a3452907ab,L1,reviewed implementation,mobileapp/e2e/android/journey.test.ts,67,reviewed-selector,an out of order selected check,False,"CT-ANDROID-POLICY,CT-TIMING"
 MAP-fc216f83479b,L1,reviewed implementation,mobileapp/e2e/android/journey.test.ts,79,reviewed-selector,timing records setup action,False,"CT-ANDROID-POLICY,CT-TIMING"
-LEG-5aa4a01b8dbf,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,167,check,01-radar-owner,False,legacy-not-retrospectively-reviewed
-LEG-1b8288a84b0e,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,168,check,02-section-collapse,False,legacy-not-retrospectively-reviewed
-LEG-9c90c5870a40,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,169,check,03-chat-terminal,False,legacy-not-retrospectively-reviewed
-LEG-9d8c31dba1cc,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,170,check,04-real-composer-send,False,legacy-not-retrospectively-reviewed
-LEG-a483badd098f,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,171,check,05-display-size,False,legacy-not-retrospectively-reviewed
-LEG-f48f9d418dd0,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,172,check,06-trace-session-and-turns,False,legacy-not-retrospectively-reviewed
-LEG-08efe37f8bec,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,173,check,07-trace-expand-collapse,False,legacy-not-retrospectively-reviewed
-LEG-f43ef9fc0de4,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,180,check,08-trace-earlier,False,legacy-not-retrospectively-reviewed
-LEG-6236f9538633,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,181,check,09-trace-search,False,legacy-not-retrospectively-reviewed
-LEG-c0726a329e04,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,182,check,10-diff-wrap-and-back,False,legacy-not-retrospectively-reviewed
-LEG-121d1daa04df,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,183,check,11-fullscreen-tools,False,legacy-not-retrospectively-reviewed
-LEG-7dcd48a83338,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,184,check,12-offline-reconnect,False,legacy-not-retrospectively-reviewed
-LEG-37bf442adb03,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,185,check,13-guest-scope,False,legacy-not-retrospectively-reviewed
-LEG-75efedb5a994,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,186,check,14-owner-reconnect-persisted,False,legacy-not-retrospectively-reviewed
-LEG-f5c656156930,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,187,check,15-settings-and-honest-push,False,legacy-not-retrospectively-reviewed
-LEG-94f757a96cc8,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,188,check,16-html-native-local-image-and-consent,False,legacy-not-retrospectively-reviewed
-LEG-591b3f60f92c,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,198,check,17-markdown-native-share-and-back,False,legacy-not-retrospectively-reviewed
-LEG-a98a53dfe8d6,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,205,check,18-image-native-zoom-and-back,False,legacy-not-retrospectively-reviewed
-LEG-b6fd80008736,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,211,check,19-trace-nested-code,False,legacy-not-retrospectively-reviewed
-LEG-4899bd3fa44a,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,219,check,20-file-picker-and-cancel,False,legacy-not-retrospectively-reviewed
-LEG-cee1718f3aee,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,224,check,21-camera-permission-denial,False,legacy-not-retrospectively-reviewed
-LEG-be0d4167aa8c,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,228,check,22-rotation-and-large-text,False,legacy-not-retrospectively-reviewed
-LEG-f19d42fea98d,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,235,check,23-create-session-and-open,False,legacy-not-retrospectively-reviewed
-LEG-c9afceeeeb2e,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,240,check,24-appearance-light-dark-system,False,legacy-not-retrospectively-reviewed
-LEG-afc3b4e79446,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,246,check,25-hq-chat-and-routing,False,legacy-not-retrospectively-reviewed
-LEG-598d11c4ae0c,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,253,check,26-emulated-hardware-keys,False,legacy-not-retrospectively-reviewed
-LEG-f78442eb1f72,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,258,check,27-authenticated-agent-icons,False,legacy-not-retrospectively-reviewed
-LEG-33aeea4a70db,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,265,check,28-file-upload-and-send,False,legacy-not-retrospectively-reviewed
-LEG-8ef64b955024,G,RN / mobile harness,mobileapp/e2e/android/run.cjs,279,check,29-clipboard-image-markup-and-upload,False,legacy-not-retrospectively-reviewed
-LEG-8a1dd3780a1b,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,301,check,30-native-pdf-pages-and-scroll,False,legacy-not-retrospectively-reviewed
-LEG-ee0968c7d8ff,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,306,check,31-native-file-trace,False,legacy-not-retrospectively-reviewed
-MAP-d4637161f816,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,97,reviewed-selector,async function check,False,"CT-ANDROID,CT-TIMING"
-MAP-c6dfe48e744e,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,103,reviewed-selector,async function run,False,"CT-ANDROID,CT-TIMING"
+MAP-bc82a09365cb,L1,reviewed implementation,mobileapp/e2e/android/permission.cjs,13,reviewed-selector,async function denyCameraPermission(,False,ACP-001
+MAP-9aff6c097646,L1,reviewed implementation,mobileapp/e2e/android/permission.fixture.cjs,3,reviewed-selector,function fixture(,False,ACP-001
+MAP-f136a33c6b39,L1,reviewed implementation,mobileapp/e2e/android/permission.test.ts,9,reviewed-selector,ACP-001 enabled camera dialog,False,ACP-001
+MAP-4d0201e65f7a,L1,reviewed implementation,mobileapp/e2e/android/permission.test.ts,18,reviewed-selector,ACP-001 one ignored interaction,False,ACP-001
+MAP-8136ad9cefc9,L1,reviewed implementation,mobileapp/e2e/android/permission.test.ts,25,reviewed-selector,ACP-001 unchanged dialog,False,ACP-001
+MAP-56833c4f4204,L1,reviewed implementation,mobileapp/e2e/android/permission.test.ts,37,reviewed-selector,ACP-001 another permission owner,False,ACP-001
+MAP-beb32ac8514d,L1,reviewed implementation,mobileapp/e2e/android/permission.test.ts,46,reviewed-selector,ACP-001 original driver failure,False,ACP-001
+MAP-35b873f04f0a,L1,reviewed implementation,mobileapp/e2e/android/permission.test.ts,54,reviewed-selector,ACP-001 late readiness,False,ACP-001
+MAP-84e63684ac34,L1,reviewed implementation,mobileapp/e2e/android/permission.test.ts,61,reviewed-selector,ACP-001 a slow read,False,ACP-001
+MAP-28799ec04e66,L1,reviewed implementation,mobileapp/e2e/android/permission.test.ts,72,reviewed-selector,ACP-001 absent dialog,False,ACP-001
+MAP-34da68cfb864,L1,reviewed implementation,mobileapp/e2e/android/permission.test.ts,92,reviewed-selector,ACP-001 a newly repeated camera prompt,False,ACP-001
+MAP-9f336e94e7b3,L1,reviewed implementation,mobileapp/e2e/android/permission.test.ts,81,reviewed-selector,ACP-001 closing before any Deny,False,ACP-001
+MAP-435d839b0a83,L2,reviewed implementation,mobileapp/e2e/android/permissionJourney.test.ts,63,reviewed-selector,ACP-002 registered journey survives,False,ACP-002
+MAP-255b356248a5,L2,reviewed implementation,mobileapp/e2e/android/permissionJourney.test.ts,70,reviewed-selector,ACP-002 registered journey still fails,False,ACP-002
+MAP-04ea0e0d7ec3,L2,reviewed implementation,mobileapp/e2e/android/permissionJourney.test.ts,76,reviewed-selector,ACP-002 registered journey cannot pass,False,ACP-002
+MAP-5c6662fed7bd,L2,reviewed implementation,mobileapp/e2e/android/permissionJourney.test.ts,80,reviewed-selector,ACP-002 registered journey cannot click,False,ACP-002
+MAP-2ba0c888b1bb,L2,reviewed implementation,mobileapp/e2e/android/permissionJourney.test.ts,85,reviewed-selector,ACP-002 registered journey preserves,False,ACP-002
+LEG-5aa4a01b8dbf,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,168,check,01-radar-owner,False,legacy-not-retrospectively-reviewed
+LEG-1b8288a84b0e,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,169,check,02-section-collapse,False,legacy-not-retrospectively-reviewed
+LEG-9c90c5870a40,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,170,check,03-chat-terminal,False,legacy-not-retrospectively-reviewed
+LEG-9d8c31dba1cc,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,171,check,04-real-composer-send,False,legacy-not-retrospectively-reviewed
+LEG-a483badd098f,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,172,check,05-display-size,False,legacy-not-retrospectively-reviewed
+LEG-f48f9d418dd0,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,173,check,06-trace-session-and-turns,False,legacy-not-retrospectively-reviewed
+LEG-08efe37f8bec,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,174,check,07-trace-expand-collapse,False,legacy-not-retrospectively-reviewed
+LEG-f43ef9fc0de4,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,181,check,08-trace-earlier,False,legacy-not-retrospectively-reviewed
+LEG-6236f9538633,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,182,check,09-trace-search,False,legacy-not-retrospectively-reviewed
+LEG-c0726a329e04,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,183,check,10-diff-wrap-and-back,False,legacy-not-retrospectively-reviewed
+LEG-121d1daa04df,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,184,check,11-fullscreen-tools,False,legacy-not-retrospectively-reviewed
+LEG-7dcd48a83338,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,185,check,12-offline-reconnect,False,legacy-not-retrospectively-reviewed
+LEG-37bf442adb03,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,186,check,13-guest-scope,False,legacy-not-retrospectively-reviewed
+LEG-75efedb5a994,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,187,check,14-owner-reconnect-persisted,False,legacy-not-retrospectively-reviewed
+LEG-f5c656156930,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,188,check,15-settings-and-honest-push,False,legacy-not-retrospectively-reviewed
+LEG-94f757a96cc8,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,189,check,16-html-native-local-image-and-consent,False,legacy-not-retrospectively-reviewed
+LEG-591b3f60f92c,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,199,check,17-markdown-native-share-and-back,False,legacy-not-retrospectively-reviewed
+LEG-a98a53dfe8d6,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,206,check,18-image-native-zoom-and-back,False,legacy-not-retrospectively-reviewed
+LEG-b6fd80008736,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,212,check,19-trace-nested-code,False,legacy-not-retrospectively-reviewed
+LEG-4899bd3fa44a,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,220,check,20-file-picker-and-cancel,False,legacy-not-retrospectively-reviewed
+LEG-cee1718f3aee,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,225,check,21-camera-permission-denial,False,legacy-not-retrospectively-reviewed
+LEG-be0d4167aa8c,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,232,check,22-rotation-and-large-text,False,legacy-not-retrospectively-reviewed
+LEG-f19d42fea98d,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,239,check,23-create-session-and-open,False,legacy-not-retrospectively-reviewed
+LEG-c9afceeeeb2e,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,244,check,24-appearance-light-dark-system,False,legacy-not-retrospectively-reviewed
+LEG-afc3b4e79446,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,250,check,25-hq-chat-and-routing,False,legacy-not-retrospectively-reviewed
+LEG-598d11c4ae0c,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,257,check,26-emulated-hardware-keys,False,legacy-not-retrospectively-reviewed
+LEG-f78442eb1f72,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,262,check,27-authenticated-agent-icons,False,legacy-not-retrospectively-reviewed
+LEG-33aeea4a70db,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,269,check,28-file-upload-and-send,False,legacy-not-retrospectively-reviewed
+LEG-8ef64b955024,G,RN / mobile harness,mobileapp/e2e/android/run.cjs,283,check,29-clipboard-image-markup-and-upload,False,legacy-not-retrospectively-reviewed
+LEG-8a1dd3780a1b,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,305,check,30-native-pdf-pages-and-scroll,False,legacy-not-retrospectively-reviewed
+LEG-ee0968c7d8ff,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,310,check,31-native-file-trace,False,legacy-not-retrospectively-reviewed
+MAP-d4637161f816,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,98,reviewed-selector,async function check,False,"CT-ANDROID,CT-TIMING"
+MAP-c6dfe48e744e,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,104,reviewed-selector,async function run,False,"CT-ANDROID,CT-TIMING"
+MAP-24f51091f511,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,225,reviewed-selector,await check('21-camera-permission-denial',False,"CT-ANDROID,CT-TIMING,ACP-003"
 LEG-95b0bcda12ce,M,RN / mobile harness,mobileapp/e2e/capture/hq-header-shot.test.ts,15,it,opens the disclosure,False,legacy-not-retrospectively-reviewed
 LEG-490318c4a70a,M,RN / mobile harness,mobileapp/e2e/capture/knowledge-shot.test.ts,14,it,opens from the header and drills into an entry,False,legacy-not-retrospectively-reviewed
 MAP-38c67a93a00d,G,RN / mobile harness,mobileapp/e2e/capture/knowledge-shot.test.ts,13,reviewed-selector,gated(,False,DG-001

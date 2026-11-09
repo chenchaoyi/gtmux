@@ -280,11 +280,13 @@
   "mobileapp/e2e/android/run.cjs": {
     "cases": [
       "CT-ANDROID",
-      "CT-TIMING"
+      "CT-TIMING",
+      "ACP-003"
     ],
     "selectors": [
       "async function check",
-      "async function run"
+      "async function run",
+      "await check('21-camera-permission-denial'"
     ]
   },
   "mobileapp/e2e/android/journey.cjs": {
@@ -694,6 +696,51 @@
     "selectors": [
       "TestHRS003ReceiptAwareSharedTranscript",
       "TestHRS003EarlierPagesKeepFirstAttribution"
+    ]
+  },
+  "mobileapp/e2e/android/permission.test.ts": {
+    "cases": [
+      "ACP-001"
+    ],
+    "selectors": [
+      "ACP-001 enabled camera dialog",
+      "ACP-001 one ignored interaction",
+      "ACP-001 unchanged dialog",
+      "ACP-001 another permission owner",
+      "ACP-001 original driver failure",
+      "ACP-001 late readiness",
+      "ACP-001 a slow read",
+      "ACP-001 absent dialog",
+      "ACP-001 a newly repeated camera prompt",
+      "ACP-001 closing before any Deny"
+    ]
+  },
+  "mobileapp/e2e/android/permissionJourney.test.ts": {
+    "cases": [
+      "ACP-002"
+    ],
+    "selectors": [
+      "ACP-002 registered journey survives",
+      "ACP-002 registered journey still fails",
+      "ACP-002 registered journey cannot pass",
+      "ACP-002 registered journey cannot click",
+      "ACP-002 registered journey preserves"
+    ]
+  },
+  "mobileapp/e2e/android/permission.cjs": {
+    "cases": [
+      "ACP-001"
+    ],
+    "selectors": [
+      "async function denyCameraPermission("
+    ]
+  },
+  "mobileapp/e2e/android/permission.fixture.cjs": {
+    "cases": [
+      "ACP-001"
+    ],
+    "selectors": [
+      "function fixture("
     ]
   }
 }

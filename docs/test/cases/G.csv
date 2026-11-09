@@ -233,7 +233,7 @@ LEG-9e9f508dc69a,G,Go core / CLI / server,internal/userservice/service_test.go,5
 LEG-b62962745e7c,G,Go core / CLI / server,internal/userservice/service_test.go,99,Test,TestLaunchdRetainsExistingPlistContract,False,legacy-not-retrospectively-reviewed
 LEG-cb98946c10d3,G,Go core / CLI / server,internal/userservice/service_test.go,137,Test,TestServiceDescriptorsPrepareManagedCapturePrivately,False,legacy-not-retrospectively-reviewed
 LEG-3bdc2df08ae7,G,Go core / CLI / server,internal/userservice/systemd_integration_test.go,15,Test,TestSystemdUserManagerLifecycle,False,legacy-not-retrospectively-reviewed
-LEG-8ef64b955024,G,RN / mobile harness,mobileapp/e2e/android/run.cjs,279,check,29-clipboard-image-markup-and-upload,False,legacy-not-retrospectively-reviewed
+LEG-8ef64b955024,G,RN / mobile harness,mobileapp/e2e/android/run.cjs,283,check,29-clipboard-image-markup-and-upload,False,legacy-not-retrospectively-reviewed
 MAP-38c67a93a00d,G,RN / mobile harness,mobileapp/e2e/capture/knowledge-shot.test.ts,13,reviewed-selector,gated(,False,DG-001
 LEG-6e50b6aefc3c,G,RN / mobile harness,mobileapp/e2e/fake-serve/icons.test.ts,42,test,"serves the repo's built-in PNG, by label or by key, as a real serve does",False,legacy-not-retrospectively-reviewed
 LEG-1a72cb709a2f,G,RN / mobile harness,mobileapp/e2e/fake-serve/icons.test.ts,101,test,is the Go registry's (internal/agents/registry.go),False,legacy-not-retrospectively-reviewed
