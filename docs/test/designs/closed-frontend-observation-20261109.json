@@ -1,0 +1,35 @@
+{
+  "id": "closed-frontend-observation-20261109",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-09",
+    "decision": "Reconcile only an exact historical frontend observation with a completed turn and positively gone frontend; preserve new work and unknown ownership",
+    "notes": "Observed defect: a late ID-less Resumed is newer than its task_complete, leaving working in the native store after the exact managed frontend has exited. A live shared backend alone is not a new external client. Use the existing frontend binding receipt and exact full observation generation, home/thread/backend incarnation, bound-time ordering, ESRCH for its frontend PID, then re-read receipt and observation so a concurrent new binding/update defeats the proof. Never delete the observation, change consent or use title/cwd/PID alone as ownership. Radar reconciles only working Resumed with a latest non-ambiguous past completed/aborted boundary, no conflicting explicit turn ID, and independently verified shared backend role. Per-gather backend-role memoization is shared with the existing completed-history filter. Fresh submit/start/wait, changed same-second generation, no/mismatched binding, live/unknown frontend, legacy nonshared process, different home, new task_started and ambiguous/future evidence retain existing visibility. Explicit HQ follow retains an idle history row. No hook rearming, reap mechanism, real state mutation, installed runtime update or authority changes. Kernel/process and store seams are exercised independently; actual assembled radar tests use an isolated HOME, real exited child and actual persisted binding/rollout. Tests are not real-device/UI acceptance. Old exact radar assembly/status code must fail the new closed-worker visibility case; preserve negative controls and restore source bytes."
+  },
+  "cases": [
+    {
+      "id": "HXF-001",
+      "layer": "L2",
+      "description": "Exact closed frontend observation proof is read-only, identity scoped and race conservative",
+      "setup": "Isolated native store, actual Save/ConfirmBinding receipts and controlled frontend PID probe; original/new observation and receipt generations",
+      "action": "Probe original snapshot under ESRCH, alive, EPERM, missing/corrupt receipt, wrong home/thread/backend, wrong era, then replace record or binding during the probe",
+      "expected": "Only the exact original backend observation tied to a positively gone verified frontend matches; every incomplete/changed/unknown case returns false; later generation wins even within one second; no observation, history or binding is removed or rewritten",
+      "planned_files": [
+        "internal/native/closed_frontend_test.go"
+      ]
+    },
+    {
+      "id": "HXF-002",
+      "layer": "L2",
+      "description": "Actual radar excludes a completed managed worker revived only by a late Resumed while retaining genuine external work",
+      "setup": "Actual nativePanes assembly with isolated native Save/ConfirmBinding and Codex rollout metadata, exact real process birth, real exited frontend child, controlled shared-backend role and explicit follow",
+      "action": "Render completed and aborted old workers after late Resumed, then vary explicit turn ID, newer observation/start/submit/wait, live frontend, unknown/mismatched proof, backend role, future/ambiguous boundary and explicit follow; inspect persistent record and output JSON",
+      "expected": "Only completed exact closed-backend observations become idle/history; unfollowed history is absent, explicit follow remains idle and status-only without new input/read/knowledge authority. New starts/submits/waits, different turns/homes, changed generations and uncertain evidence remain visible with their existing states. Observation/history/consent bytes persist unchanged; backend role is evaluated once per process in a gather. The exact old radar code fails the new historical-worker visibility assertion while preservation controls pass",
+      "planned_files": [
+        "internal/radar/closed_frontend_test.go"
+      ]
+    }
+  ],
+  "seal": "db0749c1829a1af20737b51b4d0f057e71ba8a5ae24e5068e1452774f58d7447"
+}
