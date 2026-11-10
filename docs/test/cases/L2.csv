@@ -469,9 +469,12 @@ MAP-165be0cea83d,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/Screensho
 MAP-54aacd7dd432,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotAgentLifecycleTests.swift,97,reviewed-selector,testASC010QuarantinedSDKDoesNotBlockCapabilitiesOrOversubscribeAfterHostRestart,False,ASC-010
 MAP-5c9188dc266b,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotAgentWorkTests.swift,6,reviewed-selector,testASC010CancelledCallbacksRemainBoundedUntilActualCompletion,False,ASC-010
 MAP-2917de6a2699,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotAgentWorkTests.swift,50,reviewed-selector,testASC010BackgroundWorkOwnsBoundedDuplicatesAndCannotReuseClosedDescriptors,False,ASC-010
+MAP-0a3b7055a31c,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotPreviewAspectTests.swift,54,reviewed-selector,testASC012OddAspectImageAndPreviewCoordinatesCoverBothAxes,False,ASC-012
+MAP-196ea6b01422,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotPreviewAspectTests.swift,69,reviewed-selector,testASC012CroppedSourceRegionRetainsOpaquePreviewCoverageAndTransforms,False,ASC-012
 MAP-ef73ff4b694c,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotRedactionCoverageTests.swift,20,reviewed-selector,testASC008FractionalRedactionOverwritesEveryIntersectedDevicePixel,False,ASC-008
 MAP-eb6d9f0a3446,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotRedactionCoverageTests.swift,53,reviewed-selector,testASC008DerivedArtifactPreviewKeepsSmallRedactionsOpaque,False,ASC-008
 MAP-6e2c5d1a0073,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotSourceMappingTests.swift,6,reviewed-selector,testASC011ChangedDisplayMappingAndScaleRefuseBeforeAndAfterCapture,False,ASC-011
+MAP-e7b5f07e2603,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotWorkCompletionOrderTests.swift,20,reviewed-selector,testASC013SuccessAndErrorCloseActualDuplicatesBeforeAdmissionReturn,False,ASC-013
 MAP-435d839b0a83,L2,reviewed implementation,mobileapp/e2e/android/permissionJourney.test.ts,63,reviewed-selector,ACP-002 registered journey survives,False,ACP-002
 MAP-255b356248a5,L2,reviewed implementation,mobileapp/e2e/android/permissionJourney.test.ts,70,reviewed-selector,ACP-002 registered journey still fails,False,ACP-002
 MAP-04ea0e0d7ec3,L2,reviewed implementation,mobileapp/e2e/android/permissionJourney.test.ts,76,reviewed-selector,ACP-002 registered journey cannot pass,False,ACP-002

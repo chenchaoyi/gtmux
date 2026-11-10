@@ -66,14 +66,15 @@ final class ScreenshotAgentCancellation: @unchecked Sendable {
 final class ScreenshotAgentAdmission: @unchecked Sendable {
     private let lock = NSLock()
     private let limit: Int
+    private let onRelease: () -> Void
     private var count = 0
-    init(limit: Int) { self.limit = limit }
+    init(limit: Int, onRelease: @escaping () -> Void = {}) { self.limit = limit; self.onRelease = onRelease }
     func take() -> Bool {
         lock.lock(); defer { lock.unlock() }
         guard count < limit else { return false }
         count += 1; return true
     }
-    func release() { lock.lock(); count -= 1; lock.unlock() }
+    func release() { onRelease(); lock.lock(); count -= 1; lock.unlock() }
     var outstanding: Int { lock.lock(); defer { lock.unlock() }; return count }
 }
 
@@ -171,14 +172,20 @@ enum ScreenshotAgentWork {
     }
 
     static func run<Value>(context: ScreenshotAgentCancellation, files: ScreenshotAgentFiles, indices: [Int],
+                           admission: ScreenshotAgentAdmission = ioAdmission,
                            body: @escaping ([Int32], ScreenshotAgentBudget) throws -> Value) async throws -> Value {
-        try await callback(context: context, admission: ioAdmission) { done in
+        try await callback(context: context, admission: admission) { done in
             DispatchQueue.global(qos: .utility).async {
                 do {
                     try context.check()
-                    let owned = try files.duplicate(indices); defer { owned.close() }
-                    let value = try body(owned.values(), context.budget)
-                    try context.check()
+                    let value: Value
+                    do {
+                        let owned = try files.duplicate(indices)
+                        defer { owned.close() }
+                        value = try body(owned.values(), context.budget)
+                        try context.check()
+                    }
+                    // Actual duplicates close before callback returns the permit.
                     done(.success(value))
                 } catch { done(.failure(error)) }
             }

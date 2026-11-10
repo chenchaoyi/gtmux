@@ -1024,5 +1024,22 @@
       "testASC010CancelledCallbacksRemainBoundedUntilActualCompletion",
       "testASC010BackgroundWorkOwnsBoundedDuplicatesAndCannotReuseClosedDescriptors"
     ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotPreviewAspectTests.swift": {
+    "cases": [
+      "ASC-012"
+    ],
+    "selectors": [
+      "testASC012OddAspectImageAndPreviewCoordinatesCoverBothAxes",
+      "testASC012CroppedSourceRegionRetainsOpaquePreviewCoverageAndTransforms"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotWorkCompletionOrderTests.swift": {
+    "cases": [
+      "ASC-013"
+    ],
+    "selectors": [
+      "testASC013SuccessAndErrorCloseActualDuplicatesBeforeAdmissionReturn"
+    ]
   }
 }

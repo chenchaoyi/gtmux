@@ -201,7 +201,8 @@ enum ScreenshotAgentRendering {
         else {
             // Resampling a flattened image mixes edge pixels with neighbors.
             // Reapply only opaque privacy masks at the preview's device scale.
-            guard let covered = AnnotationRenderer.flatten(image: thumbnail, pointSize: pointSize, items: redactions) else {
+            guard let covered = AnnotationRenderer.flatten(image: thumbnail, pointSize: pointSize, items: redactions,
+                pixelScaleY: CGFloat(thumbnail.height)/pointSize.height) else {
                 throw ScreenshotAgentFailure.refused("render-failed", "Could not preserve redactions in the preview")
             }
             small = covered

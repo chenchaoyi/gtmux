@@ -183,9 +183,9 @@ enum AnnotationRenderer {
         flatten(image: doc.image, pointSize: doc.pointSize, items: doc.items)
     }
 
-    static func flatten(image: CGImage, pointSize: CGSize, items: [Annotation]) -> CGImage? {
+    static func flatten(image: CGImage, pointSize: CGSize, items: [Annotation], pixelScaleY: CGFloat? = nil) -> CGImage? {
         let w = image.width, h = image.height
-        guard w > 0, h > 0, pointSize.width > 0,
+        guard w > 0, h > 0, pointSize.width > 0, pointSize.height > 0,
               let space = CGColorSpace(name: CGColorSpace.sRGB),
               let ctx = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: 0,
                                   space: space, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
@@ -193,8 +193,11 @@ enum AnnotationRenderer {
         ctx.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h))
         // Top-left origin, in points, like the editor: flip and scale once for every mark.
         let scale = CGFloat(w) / pointSize.width
+        // A rounded thumbnail can have different scales on its two axes.
+        let scaleY = pixelScaleY ?? scale
+        guard scale.isFinite, scale > 0, scaleY.isFinite, scaleY > 0 else { return nil }
         ctx.translateBy(x: 0, y: CGFloat(h))
-        ctx.scaleBy(x: scale, y: -scale)
+        ctx.scaleBy(x: scale, y: -scaleY)
         let source = Source(image: image, scale: scale)
         for a in items { draw(a, in: ctx, source: source) }
         return ctx.makeImage()
