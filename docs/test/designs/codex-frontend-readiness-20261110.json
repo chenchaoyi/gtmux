@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner (self-review, not independent approval)",
     "date": "2026-11-10",
     "decision": "Preserve exact frontend authentication while separating transient observation gaps and diagnosing bounded startup admission",
-    "notes": "User authorized diagnostics/startup readiness; no real restore or live input. A local frontend handshake currently coalesces missing process/TTY evidence and hard mismatches into 403 without diagnostic reason. Admit only kernel peer tied to this controlled child launch, stable pane/root/client birth and foreground TTY. Wait for cmd.Start identity publication before evaluating an early connection. Use a single 4s admission context, at most 4 attempts and cancellable pauses only for unavailable observations; peer/home/pane/TTY/birth/ambiguity conflicts refuse without retry. Inspect direct child launches with two snapshots of exact pane/bridge/client PIDs; generic launchers retain full ancestry resolution and ambiguity protection. Reuse the existing terminal verifier and legacy Resolve contract, preserve excluded/native modes and no relaunch/fallback after child starts. Emit value-free stage/cause/attempt/timing diagnostics and an actionable local error without prompt/argv/credentials. Record old-red/new-green using isolated deterministic inspector/gate seams; no production daemon, user thread, permissions or installed services. Runtime/real reboot acceptance is separate. Planned source changes may add context-aware inspection and ReadAgent while legacy wrappers retain budgets."
+    "notes": "User authorized diagnostics/startup readiness; no real restore or live input. A local frontend handshake currently coalesces missing process/TTY evidence and hard mismatches into 403 without diagnostic reason. Admit only kernel peer tied to this controlled child launch, stable pane/root/client birth and foreground TTY. Wait for cmd.Start identity publication before evaluating an early connection. Use a single 4s admission context, at most 4 attempts and cancellable pauses only for unavailable observations; peer/home/pane/TTY/birth/ambiguity conflicts refuse without retry. Inspect direct child launches with two snapshots of exact pane/bridge/client PIDs; generic launchers retain full ancestry resolution and ambiguity protection. Reuse the existing terminal verifier and legacy Resolve contract, preserve excluded/native modes and no relaunch/fallback after child starts. Emit value-free stage/cause/attempt/timing diagnostics and an actionable local error without prompt/argv/credentials. Record old-red/new-green using isolated deterministic inspector/gate seams; no production daemon, user thread, permissions or installed services. Runtime/real reboot acceptance is separate. Planned source changes may add context-aware inspection and ReadAgent while legacy wrappers retain budgets. Follow-up owner review at frozen 81e800cb: the original active sequence advances before admission/upgrade, so a rejected or pending reconnect can silence the valid incumbent. Keep a separate monotonic issued counter and activate only successful upgraded connections; late older successes must not replace a newer active connection. Add CFR-004 before implementing this delta; original CFR-001..003 objects remain unchanged. Bound WebSocket upgrade by the remainder of the same admission deadline, then clear transport deadlines for a long-lived accepted client."
   },
   "cases": [
     {
@@ -40,7 +40,18 @@
       "planned_files": [
         "internal/codexbridge/readiness_test.go"
       ]
+    },
+    {
+      "id": "CFR-004",
+      "layer": "L1",
+      "description": "Rejected or out-of-order connection attempts cannot retire a verified active frontend",
+      "setup": "Actual production connection epoch allocator and activation/current predicates; deterministic reservation/activation order, no sleeps or real sockets",
+      "action": "Activate A, reserve failed/in-flight B, activate C before late B; try zero, unreserved and repeated activation; inspect incumbent ownership after every step",
+      "expected": "Reservation does not change active authority. Only a successfully upgraded reserved connection can activate; a failed or older connection cannot suppress incumbent heartbeat/binding. A newer successful connection retires only the prior active epoch. Original pre-admission sequence-guard semantics fail the failed-reservation assertion. One admission deadline includes the WebSocket upgrade; no deadline is retained on the accepted interactive transport.",
+      "planned_files": [
+        "internal/codexbridge/connection_epoch_test.go"
+      ]
     }
   ],
-  "seal": "63f2c1129b21d6317f925168cd30ad2ebfbf8272bb13af94a9e2e34470426f0a"
+  "seal": "a6ed6e7970c08a351a9dfbdde9e6809f01292d164461f950e2fd92c06cc7a096"
 }
