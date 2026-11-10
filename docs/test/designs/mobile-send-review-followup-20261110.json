@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner (self-review; independent reviewer findings are evidence, not approval of this design)",
     "date": "2026-11-10",
     "decision": "Address four confirmed exact-Q review findings before merge",
-    "notes": "Review 53dab0f produced deterministic pending retarget, HQ missing receipt/ID, HQ late failure and stale Detail screen counterexamples. New cases live in new files to preserve prior design chronology. Preserve exact target, draft/menu/approval checks, stable retry, unknown no-replay and old accepted receipt compatibility. Isolated fixtures only; do not replay real queues, resume sessions, deploy or release. Existing full-core/cloud results apply only to old Q; new revision gets appropriate fresh gates and bounded independent delta review."
+    "notes": "Review 53dab0f produced deterministic pending retarget, HQ missing receipt/ID, HQ late failure and stale Detail screen counterexamples. New cases live in new files to preserve prior design chronology. Preserve exact target, draft/menu/approval checks, stable retry, unknown no-replay and old accepted receipt compatibility. Isolated fixtures only; do not replay real queues, resume sessions, deploy or release. Existing full-core/cloud results apply only to old Q; new revision gets appropriate fresh gates and bounded independent delta review. Fresh self-review 2026-11-10 after exact-R independent review: unresolved durable IDs must not age into another request while an earlier handler can still continue. Add MSD011 in new files; preserve MSD006..010 objects. Reuse pending durable identity beyond 15s and after retention sweeps; retain unresolved records under existing hard spool cap. Native claim takes the same input lease and requires the matching pending request, so completed/pruned or replaced requests cannot regain mutation authority. Historical completed receipt retention and accepted/unknown guards remain unchanged. Deterministic logical time and nested real bridge claim, no sleeps or live input."
   },
   "cases": [
     {
@@ -64,7 +64,19 @@
         "mobileapp/src/screens/HQScreen.attach.test.tsx",
         "mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx"
       ]
+    },
+    {
+      "id": "MSD-011",
+      "layer": "L2",
+      "description": "Durable pending identity survives delayed retries and stale handlers cannot reclaim retired authority",
+      "setup": "Real Prepare/prune/ClaimNative/FinishNative state in isolated HOME; logical creation times and production bridge with controlled RPC-boundary interleaving",
+      "action": "Retry same target/body/sendID at +21s, +minute and +48h; interleave old handler with same-ID Retry; change target/body; retain unknown claim; expire settled metadata then try old claim",
+      "expected": "Unresolved durable retries reuse one requestID regardless of age and remain protected at the existing spool cap. Only one nested handler may claim/mutate. Matching pending proof and input lease are required before native claim; pruned/settled/replaced old requests cannot regain authority. Changed target/body, claimed/uncertain and historical accepted results retain their safeguards; completed retention is unchanged. No real queue or RPC is accessed.",
+      "planned_files": [
+        "internal/agentclient/pending_retry_lifetime_test.go",
+        "internal/dispatchbridge/pending_retry_overlap_test.go"
+      ]
     }
   ],
-  "seal": "734c0ea62aac92b90430b0ac5df20e30d9e06a6a673cbb20f7b08c6d0a3ed606"
+  "seal": "04b06f58d4fe514f20a27cbd6361e05de2e3c8a468c113c487b5f6408d4b50b6"
 }
