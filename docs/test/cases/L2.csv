@@ -38,6 +38,9 @@ LEG-463c4daa87c6,L2,Go core / CLI / server,internal/app/tunnelservers_test.go,20
 LEG-82215133e21d,L2,Go core / CLI / server,internal/app/tunnelservers_test.go,321,Test,TestAProvisionerWithNoServerListIsNotAnError,False,legacy-not-retrospectively-reviewed
 LEG-a148094d1182,L2,Go core / CLI / server,internal/app/tunnelstatus_test.go,33,Test,TestStandardTunnelCountsRegisteredConnectionsNotDials,False,legacy-not-retrospectively-reviewed
 LEG-31e32aaa4339,L2,Go core / CLI / server,internal/app/tunnelstatus_test.go,45,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
+MAP-a35414decb85,L2,reviewed implementation,internal/codexbridge/trust_alias_policy_test.go,17,reviewed-selector,TestWTR005CanonicalProjectDecisionsKeepResponseUnchanged,False,WTR-005
+MAP-092a68c52730,L2,reviewed implementation,internal/codexbridge/trust_alias_policy_test.go,86,reviewed-selector,TestWTR005ActualUnixForwardingKeepsCanonicalDenyAndSameHomeGuards,False,WTR-005
+MAP-8c496a3dd18b,L2,reviewed implementation,internal/codexbridge/trust_alias_policy_test.go,150,reviewed-selector,TestWTR005CanonicalObservationsAreStableAndBounded,False,WTR-005
 MAP-72cccd537fb4,L2,reviewed implementation,internal/codexbridge/trust_config_test.go,21,reviewed-selector,TestWTR002AliasMirrorsOnlyExistingEffectiveRootTrustAndKeepsOtherFields,False,WTR-002
 MAP-70da38ef277c,L2,reviewed implementation,internal/codexbridge/trust_config_test.go,47,reviewed-selector,TestWTR002RefusalsLeaveOriginalFrameBytesUnchanged,False,WTR-002
 MAP-c59477e205b9,L2,reviewed implementation,internal/codexbridge/trust_config_test.go,109,reviewed-selector,TestWTR002CanceledAndLateProofCannotAuthorizeOrSpawnMoreReads,False,WTR-002

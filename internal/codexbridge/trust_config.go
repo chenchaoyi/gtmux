@@ -22,18 +22,19 @@ type trustRead struct {
 // uses an explicit Unix endpoint. This adapter mirrors only an existing backend
 // root trust decision; it never writes config or accepts a new trust decision.
 type trustConfig struct {
-	ctx          context.Context
-	homeVerified func() bool
-	read         func(context.Context, string) (worktreeTrustProof, bool)
-	now          func() time.Time
-	mu           sync.Mutex
-	pending      map[string]trustRead
-	seen         map[string]bool
-	proofSlot    chan struct{}
+	ctx            context.Context
+	homeVerified   func() bool
+	read           func(context.Context, string) (worktreeTrustProof, bool)
+	resolveProject func(context.Context, string) (trustProjectPath, bool)
+	now            func() time.Time
+	mu             sync.Mutex
+	pending        map[string]trustRead
+	seen           map[string]bool
+	proofSlot      chan struct{}
 }
 
 func newTrustConfig(ctx context.Context, verified func() bool) *trustConfig {
-	return &trustConfig{ctx: ctx, homeVerified: verified, read: readWorktreeTrust, now: time.Now, pending: map[string]trustRead{}, seen: map[string]bool{}, proofSlot: make(chan struct{}, 1)}
+	return &trustConfig{ctx: ctx, homeVerified: verified, read: readWorktreeTrust, resolveProject: readTrustProjectPath, now: time.Now, pending: map[string]trustRead{}, seen: map[string]bool{}, proofSlot: make(chan struct{}, 1)}
 }
 
 func trustID(raw json.RawMessage) (string, bool) {
@@ -176,34 +177,35 @@ func (t *trustConfig) response(data []byte) []byte {
 	}
 	ctx, cancel := context.WithTimeout(t.ctx, trustConfigBudget)
 	defer cancel()
-	type proofResult struct {
-		proof worktreeTrustProof
-		ok    bool
-	}
-	ready := make(chan proofResult, 1)
-	reader := t.read
+	ready := make(chan bool, 1)
+	reader, resolver := t.read, t.resolveProject
 	go func() {
 		defer func() { <-t.proofSlot }()
 		before, ok := reader(ctx, entry.cwd)
 		if !ok || ctx.Err() != nil {
-			ready <- proofResult{}
+			ready <- false
+			return
+		}
+		policyBefore, ok := canonicalTrustPolicy(ctx, entry.cwd, before, projects, resolver)
+		if !ok || ctx.Err() != nil {
+			ready <- false
 			return
 		}
 		after, ok := reader(ctx, entry.cwd)
-		ready <- proofResult{after, ok && before == after}
+		if !ok || before != after || ctx.Err() != nil {
+			ready <- false
+			return
+		}
+		policyAfter, ok := canonicalTrustPolicy(ctx, entry.cwd, after, projects, resolver)
+		ready <- ok && policyBefore == policyAfter && ctx.Err() == nil
 	}()
-	var proof worktreeTrustProof
 	select {
 	case <-ctx.Done():
 		return data
-	case got := <-ready:
-		if !got.ok || ctx.Err() != nil {
+	case ok := <-ready:
+		if !ok || ctx.Err() != nil {
 			return data
 		}
-		proof = got.proof
-	}
-	if !trustAliasAllowed(entry.cwd, proof, projects) {
-		return data
 	}
 	projects[entry.cwd] = json.RawMessage(`{"trust_level":"trusted"}`)
 	raw, err := json.Marshal(projects)

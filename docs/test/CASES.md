@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1069 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1070 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3761 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 1948 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 1951 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 93 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 94 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 12 | [M.csv](cases/M.csv) |
@@ -42,6 +42,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | WTR-002 | Only the transient exact cwd projects entry is added from an explicitly trusted verified main root; all other config/permission/hook/provider fields remain identical, no state is written and the adapter never grants a conversation binding. Every refusal and all other messages retain original bytes. Bounds prevent stale or unbounded tracking and late reads cannot authorize. |
 | WTR-003 | The actual forwarded config result contains the minimal alias only in the eligible case; other bytes and request IDs survive and no input is sent. Optional real TUI demonstrates removal of the reproduced gate without adding trust entries or weakening sandbox settings. Synthetic admission assumptions, actual TUI/CLI source and any unrun native acceptance are separately disclosed; all fixture roots/processes are isolated and bounded. |
 | WTR-004 | The current folder consent screen is waiting and cannot receive the goal; diagnostics name startup trust before an unavailable post-start native binding masks it. Old trust/hook screens retain protection, settled or historical prose does not become waiting, and no key is automatically pressed. All clients reuse the shared core classification. |
+| WTR-005 | Any canonical alias explicitly denying a relevant directory prevents transient trust inheritance. Existing checkout decisions and unknown/unowned/unresolvable or changed metadata also preserve the original response. Only stable registered paths with an explicit main trust may inherit. Canonical reads share the bounded single proof worker, return on deadline/cancel, and cannot authorize late or grow a replacement goroutine queue. Original nontrust fields and same-home/initialize/correlation guards remain unchanged. Real Unix forwarding checks use isolated sockets; no real TUI trust configuration or user input is changed. |
 | CT-HTTP | Real Go handler responses agree with independent RN/Web fake servers for transcript history/context, HQ overview/detail/cursor, document metadata/download, null/empty and permission errors. |
 | CT-DRAFT | Actual Detail and HQ composers isolate text across servers and reused panes/session identities, ignore delayed old draft loads, and persist/send to the current target only. |
 | CT-HQ | A current human question opens its original matter, prepares but does not auto-send a reply; an authoritative answer removes it from pending without completing the matter. Old client responses cannot replace current data. |

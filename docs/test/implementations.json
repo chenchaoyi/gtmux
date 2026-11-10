@@ -909,5 +909,15 @@
       "TestWTR004VisibleTrustNamesBlockerBeforePostStartTransport",
       "TestWTR004NormalTransportStillRequiredAndHistoricalTrustIgnored"
     ]
+  },
+  "internal/codexbridge/trust_alias_policy_test.go": {
+    "cases": [
+      "WTR-005"
+    ],
+    "selectors": [
+      "TestWTR005CanonicalProjectDecisionsKeepResponseUnchanged",
+      "TestWTR005ActualUnixForwardingKeepsCanonicalDenyAndSameHomeGuards",
+      "TestWTR005CanonicalObservationsAreStableAndBounded"
+    ]
   }
 }

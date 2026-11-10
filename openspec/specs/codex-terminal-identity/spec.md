@@ -70,3 +70,8 @@ A verified same-home frontend MAY mirror an existing effective trusted main repo
 #### Scenario: Caller supplies a copied Git pointer or an explicit untrusted checkout
 - **WHEN** registration is not reciprocal or an existing applicable decision forbids trust
 - **THEN** no inherited alias is supplied and Codex retains the original trust/permission behavior
+
+#### Scenario: A different path spelling names an explicitly denied directory
+- **WHEN** a project key resolves to the same owned directory or an ancestor through a symlink or other same-directory alias
+- **THEN** its explicit refusal is preserved for a canonical-cwd request
+- **AND** unknown ownership, unresolved or changing project identities keep the original response within the existing bounded proof worker
