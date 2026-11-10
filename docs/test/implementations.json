@@ -972,5 +972,22 @@
       "an upload failure keeps the file for retry and never sends an empty command",
       "cancelling the photo picker leaves nothing to send and the menu can open again"
     ]
+  },
+  "internal/agentclient/pending_retry_lifetime_test.go": {
+    "cases": [
+      "MSD-011"
+    ],
+    "selectors": [
+      "TestMSD011DurablePendingKeepsOneIdentityAcrossRetryAndPrune",
+      "TestMSD011PrunedOrReplacedNativePendingCannotRegainAuthority"
+    ]
+  },
+  "internal/dispatchbridge/pending_retry_overlap_test.go": {
+    "cases": [
+      "MSD-011"
+    ],
+    "selectors": [
+      "TestMSD011DelayedBridgeAndSameIDRetryCannotBothSubmit"
+    ]
   }
 }

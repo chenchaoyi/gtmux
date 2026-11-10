@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1075 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1077 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3759 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 1961 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 1964 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 92 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 94 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 12 | [M.csv](cases/M.csv) |
@@ -81,6 +81,7 @@
 | MSD-008 | Only corresponding current echo receives receipt; old failure cannot erase newer success. Old results/retry cannot move to a rotated HQ/client/pane; newer control-key screen remains. Confirmation retires only the matching new turn and accepted echo is not resurrected. |
 | MSD-009 | The matching text echo becomes accepted, but old snapshot neither invalidates current reads nor replaces newer text, geometry or cursor. No replay and target guards stay in place. |
 | MSD-010 | Picker/upload ordering, cancellation, retry, no auto-send, draft/server/session isolation and matter state assertions all remain. Only callback shape changes; new receipt semantics are covered separately by MSD007/008. |
+| MSD-011 | Unresolved durable retries reuse one requestID regardless of age and remain protected at the existing spool cap. Only one nested handler may claim/mutate. Matching pending proof and input lease are required before native claim; pruned/settled/replaced old requests cannot regain authority. Changed target/body, claimed/uncertain and historical accepted results retain their safeguards; completed retention is unchanged. No real queue or RPC is accessed. |
 | STOR-001 | Every carrier separates project-owned and task-temp output from gtmux configuration/runtime trees; no promoted entry required; user text and hand-edit protection preserved; second sync idempotent. |
 | STOR-002 | Both playbooks reserve gtmux-owned state and only reusable HQ knowledge tools for its home, direct project scripts/reports/builds to project/task storage, require external evidence references, and never grant automatic migration/deletion; upgrade backs up old charter, preserves LOCAL/notes and converges. |
 | PWR-001 | One production collection per producer tick, no extra REST collections within freshness; explicit next producer bypasses TTL; clone ownership preserved; failure/oversize never turns stale bytes into success; scopes never cross |

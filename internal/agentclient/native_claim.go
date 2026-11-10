@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // ClaimNative uses the existing durable input protocol for a direct addressed
@@ -15,8 +17,23 @@ func ClaimNative(r Request) error {
 	if !instancePattern.MatchString(r.ID) || r.Version != ProtocolVersion {
 		return errors.New("invalid native input")
 	}
+	lease, err := state.TryLease("terminal-input")
+	if err != nil {
+		return err
+	}
+	defer lease.Close()
 	if _, known := ReadReceipt(r); known {
 		return errors.New("native input already settled")
+	}
+	var pending Request
+	if readOwnedJSON(filepath.Join(InputDir(), r.ID+".pending.json"), &pending, 2<<20) != nil {
+		return errors.New("native input is no longer pending")
+	}
+	// Creation time drives retention, not authority. Every actual address and
+	// payload field must still match the original owned pending request.
+	pending.CreatedAt = r.CreatedAt
+	if pending != r {
+		return errors.New("native pending input changed")
 	}
 	b, err := json.Marshal(r)
 	if err != nil {

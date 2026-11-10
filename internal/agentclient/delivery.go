@@ -114,7 +114,7 @@ func Prepare(a Attachment, text, deliveryID string, force bool, now time.Time) (
 			if !old.MatchesTarget(a) {
 				return Request{}, errors.New("delivery target changed; the same delivery ID cannot retarget input")
 			}
-			if now.UnixMilli()-old.CreatedAt >= 0 && now.UnixMilli()-old.CreatedAt <= 15000 {
+			if deliveryID != "" || now.UnixMilli()-old.CreatedAt >= 0 && now.UnixMilli()-old.CreatedAt <= 15000 {
 				return old, nil
 			}
 		}
