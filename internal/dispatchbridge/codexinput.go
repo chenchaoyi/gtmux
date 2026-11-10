@@ -43,10 +43,13 @@ func codexNativeSubmit(pane string) func(dispatch.Opts, string, func() string) d
 			}
 			return dispatch.Result{State: dispatch.StateQueued, JudgedBy: dispatch.JudgedByDriver, Evidence: "codex-queue-already-accepted"}
 		}
+		if !r.MatchesTarget(a) {
+			return dispatch.Result{State: dispatch.StateRefusedWaiting, Evidence: "codex-input-target-changed"}
+		}
 		claimed := false
 		check := func() bool {
 			current, valid := codexInputTarget(pane)
-			if !valid || current.Instance != f.Instance || current.HomeID != f.HomeID || current.SessionID != f.SessionID || current.PID != f.PID || current.StartedAt != f.StartedAt || current.RootStart != f.RootStart || current.BackendPID != f.BackendPID || current.BackendStart != f.BackendStart || (hold != nil && hold() != "") {
+			if !r.MatchesTarget(a) || !valid || current.Instance != f.Instance || current.HomeID != f.HomeID || current.SessionID != f.SessionID || current.PID != f.PID || current.StartedAt != f.StartedAt || current.RootStart != f.RootStart || current.BackendPID != f.BackendPID || current.BackendStart != f.BackendStart || (hold != nil && hold() != "") {
 				return false
 			}
 			if claimed {

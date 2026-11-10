@@ -50,6 +50,15 @@ type Receipt struct {
 func InputDir() string            { return filepath.Join(state.Dir(), "terminal-input") }
 func (r Request) Command() string { return "/gtmux-send " + r.ID }
 
+// MatchesTarget compares the complete prepared address, not just a reused pane.
+// A historical accepted receipt may be read without matching the current target,
+// but an unclaimed request must never acquire authority over a different target.
+func (r Request) MatchesTarget(a Attachment) bool {
+	return r.Version == a.Version && r.Instance == a.Instance && r.HomeID == a.HomeID &&
+		r.SessionID == a.SessionID && r.PID == a.PID && r.Pane == a.Pane &&
+		r.ServerEpoch == a.ServerEpoch && r.BindingEpoch == a.BindingEpoch
+}
+
 // Prepare keeps a durable retry key. A claimed request with no outcome remains
 // uncertain; neither a timeout nor a server restart authorizes duplicate input.
 func Prepare(a Attachment, text, deliveryID string, force bool, now time.Time) (Request, error) {
@@ -102,11 +111,14 @@ func Prepare(a Attachment, text, deliveryID string, force bool, now time.Time) (
 			if _, err := os.Lstat(filepath.Join(dir, old.ID+".claimed.json")); err == nil {
 				return Request{}, errors.New("previous input was claimed without a receipt; do not retry automatically")
 			}
+			if !old.MatchesTarget(a) {
+				return Request{}, errors.New("delivery target changed; the same delivery ID cannot retarget input")
+			}
 			if now.UnixMilli()-old.CreatedAt >= 0 && now.UnixMilli()-old.CreatedAt <= 15000 {
 				return old, nil
 			}
 		}
-		if deliveryID != "" && (old.SessionID != a.SessionID || old.Instance != a.Instance || old.BindingEpoch != a.BindingEpoch || old.HomeID != a.HomeID) {
+		if deliveryID != "" && !old.MatchesTarget(a) {
 			return Request{}, errors.New("delivery target changed; the same delivery ID cannot retarget input")
 		}
 	}

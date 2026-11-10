@@ -1,3 +1,4 @@
+import {newSendId} from '../api/sendId';
 import type {SendDelivery} from '../ui/sendReceipt';
 // DetailScreen — a read-only view of one pane's current screen (MOBILE §4), in
 // COLOR. It polls /api/pane (now `tmux capture-pane -e`) every ~1.5s and renders
@@ -100,12 +101,6 @@ const MODE_KEY = (paneId: string) => `detail.mode.${paneId}`;
 // Kept clearly legible (not the faint 0.5 default) since it's a "please wait" line.
 const TERM_LOADER_LABEL = 'rgba(235,235,245,0.78)';
 const TERM_LOADER_MARK = 'rgba(235,235,245,0.34)';
-
-// newSendId mints a client idempotency token for one send (reused across a Retry). Not
-// security-sensitive — just unique-enough that the server can dedup a retried delivery.
-function newSendId(): string {
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-}
 
 // DetailScreen is the stack route (compact); it wraps the presentational
 // DetailView, which the iPad split-view also renders directly in its main pane.
@@ -543,6 +538,9 @@ function PaneDetailView({
             // or replace feedback for a newer submission/control key.
             if (attempt === sendAttempt.current && note) setBusyHint({id: p.send_id!, text: note});
           }
+          // A late receipt can settle its message after a newer control key, but
+          // its older capture must not invalidate or replace the current screen.
+          if (attempt !== sendAttempt.current) return;
           // Retire a capture started before this accepted send.
           lane.invalidate();
           const snap = r.pane;
@@ -594,8 +592,9 @@ function PaneDetailView({
   const onLoadKeys = useCallback((version?: number, boot?: string) => client.inputCapabilities(agent.pane_id, version, boot), [client, agent.pane_id]);
   const onSendKey = useCallback(async (p: SendPayload) => {
     const lane = paneRead.current;
+    const attempt = ++sendAttempt.current;
     const r = await client.sendResult(agent.pane_id, p);
-    if (r.ok && r.pane && lane?.isActive() && paneRead.current === lane) {
+    if (attempt === sendAttempt.current && r.ok && r.pane && lane?.isActive() && paneRead.current === lane) {
       lane.invalidate();
       if (typeof r.pane.text === 'string') setText(r.pane.text);
       if (r.pane.cols) setPaneCols(r.pane.cols);

@@ -6,6 +6,7 @@ LEG-f0de792d23c8,L2,Worker,download-worker/test/service.test.mjs,100,test,publis
 LEG-43437c4aac58,L2,Worker,download-worker/test/service.test.mjs,108,test,"GET/HEAD, conditional reads, ranges and If-Range are consistent",False,legacy-not-retrospectively-reviewed
 LEG-acf4b90662e1,L2,Worker,download-worker/test/service.test.mjs,125,test,stable promotion uses an atomic conditional write,False,legacy-not-retrospectively-reviewed
 LEG-e6e66ce49ff1,L2,Worker,download-worker/test/service.test.mjs,134,test,metadata and artifact publication is bounded,False,legacy-not-retrospectively-reviewed
+MAP-e76ce32b2c0e,L2,reviewed implementation,internal/agentclient/pending_target_test.go,8,reviewed-selector,TestMSD006PendingTargetIdentity,False,MSD-006
 MAP-bf28343fb4c1,L2,reviewed implementation,internal/app/client_contract_test.go,30,reviewed-selector,TestClientHTTPContracts,False,CT-HTTP
 LEG-4c8a67259028,L2,Go core / CLI / server,internal/app/cloudflared_security_test.go,40,Test,TestCloudflaredMetricsTransportRefusesRedirectsAndOversizedBodies,False,legacy-not-retrospectively-reviewed
 LEG-ff081e20fac0,L2,Go core / CLI / server,internal/app/cloudflared_security_test.go,42,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
@@ -46,6 +47,7 @@ MAP-09d632a0de8e,L2,reviewed implementation,internal/codexrpc/direct_user_input_
 LEG-5eb1eb0e8cd5,L2,Go core / CLI / server,internal/connect/remotes_test.go,38,Test,TestAHostThatMovedIsFoundThroughTheAddressesItGave,False,legacy-not-retrospectively-reviewed
 LEG-953eea56e22d,L2,Go core / CLI / server,internal/connect/remotes_test.go,85,Test,TestAnAddressThatAnswersToSomeoneElseIsNotThisHost,False,legacy-not-retrospectively-reviewed
 MAP-e452620f505a,L2,reviewed implementation,internal/dispatchbridge/direct_user_input_test.go,14,reviewed-selector,TestMSD002DirectUserIngressPreservesReceiptAndNeverReplays,False,MSD-002
+MAP-d7bcff6e0143,L2,reviewed implementation,internal/dispatchbridge/pending_retry_target_test.go,14,reviewed-selector,TestMSD006PendingRetryCannotRetarget,False,MSD-006
 MAP-95475cf33bca,L2,reviewed implementation,internal/dispatchbridge/screenshot_input_test.go,19,reviewed-selector,TestSSI002NativeImageAcceptanceAndUncertainRetryKeepIdentity,False,SSI-002
 MAP-8691ea4c02c8,L2,reviewed implementation,internal/dispatchbridge/screenshot_input_test.go,103,reviewed-selector,TestSSI002OrdinaryTextKeepsExistingQueueSemantics,False,SSI-002
 MAP-7bf0b97f95d1,L2,reviewed implementation,internal/hook/codex_completed_turn_test.go,38,reviewed-selector,TestCompletedCodexTurnRejectsExplicitLateRearm,False,"CET-004,CET-005"
@@ -543,6 +545,7 @@ LEG-358ed9368a35,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.
 LEG-a55ca1449b8b,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,183,test,the matching transcript retires a working receipt before the next idle transition,False,legacy-not-retrospectively-reviewed
 LEG-f975c92f4762,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,196,test,a late send response cannot recreate its receipt after transcript confirmation,False,legacy-not-retrospectively-reviewed
 LEG-cf861ad50359,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,210,test,a newer success gets its own expiry instead of inheriting the old timer,False,legacy-not-retrospectively-reviewed
+MAP-1dd1e525111d,L2,reviewed implementation,mobileapp/src/screens/DetailSendSnapshot.test.tsx,26,reviewed-selector,MSD-009 late text receipt cannot replace newer %s control-key screen,False,MSD-009
 LEG-3311f5104ff9,L2,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,82,test,opening and closing Trace shares Chat’s in-flight read without aborting or starting a second subscription,False,legacy-not-retrospectively-reviewed
 LEG-383eef0af50a,L2,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,109,test,the same pane and session in a different home cannot show or accept the old reply,False,legacy-not-retrospectively-reviewed
 LEG-27bb0cdcad2a,L2,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,135,test.each(),pane denial %s closes tools and clears old records,True,legacy-not-retrospectively-reviewed
@@ -599,6 +602,12 @@ MAP-70f5d7f57ea0,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test
 MAP-8a3e8378dfee,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,354,reviewed-selector,"a stalled usage read retires at its own deadline, then a new read recovers",False,UR-001
 MAP-517de42c0dfa,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,292,reviewed-selector,shortcut distinguishes loading and failed reads from an empty resource,False,UR-001
 MAP-ec30d4e015f6,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,369,reviewed-selector,the Usage sheet retry action starts a new read immediately after failure,False,UR-001
+MAP-915625a761e2,L2,reviewed implementation,mobileapp/src/screens/HQSendOrdering.test.tsx,30,reviewed-selector,MSD-008 old HQ %s cannot replace a newer accepted message,False,MSD-008
+MAP-237c6db2e2b9,L2,reviewed implementation,mobileapp/src/screens/HQSendOrdering.test.tsx,38,reviewed-selector,MSD-008 HQ old reply and old retry cannot cross a session change,False,MSD-008
+MAP-e29e72e87767,L2,reviewed implementation,mobileapp/src/screens/HQSendOrdering.test.tsx,46,reviewed-selector,MSD-008 a later %s key does not leave the current HQ text Sending,False,MSD-008
+MAP-3b5d6821faa3,L2,reviewed implementation,mobileapp/src/screens/HQSendReceipt.test.tsx,30,reviewed-selector,MSD-007 HQ exposes %s receipt with stable message identity,False,MSD-007
+MAP-ded59df19538,L2,reviewed implementation,mobileapp/src/screens/HQSendReceipt.test.tsx,36,reviewed-selector,MSD-007 HQ timeout retry after 21 seconds reuses original send ID,False,MSD-007
+MAP-d2c0d68a6059,L2,reviewed implementation,mobileapp/src/screens/HQSendReceipt.test.tsx,46,reviewed-selector,MSD-007 old identical transcript cannot retire the new HQ message,False,MSD-007
 LEG-b6b3543d24b4,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,99,test,"overview opens a matter, distinguishes delivery from completion and only prefills input",False,legacy-not-retrospectively-reviewed
 LEG-3eb43796d7e1,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,126,test,resource summaries lead the overview with real facts and keep resource navigation,False,legacy-not-retrospectively-reviewed
 LEG-d8c2e0716810,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,143,test,an unavailable workspace in the conversation stays unknown instead of becoming an empty legacy queue,False,legacy-not-retrospectively-reviewed
@@ -616,8 +625,8 @@ LEG-bac98f7862bc,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.te
 LEG-d22e65fd05b5,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,399,test,a failed older page can return to latest without reopening the matter,False,legacy-not-retrospectively-reviewed
 LEG-a6d4bed85074,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,421,test,closing a resource returns to its originating overview; composing from it stays in HQ,False,legacy-not-retrospectively-reviewed
 MAP-f38035a7c2fe,L2,reviewed implementation,mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx,112,reviewed-selector,pending HQ question opens the original matter,False,"CT-DRAFT,CT-HQ"
-MAP-f119dbaabb64,L2,reviewed implementation,mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx,161,reviewed-selector,late HQ overview and matter responses,False,"CT-DRAFT,CT-HQ"
-MAP-acb5ed213eb0,L2,reviewed implementation,mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx,208,reviewed-selector,a prepared HQ question stays scoped,False,"CT-DRAFT,CT-HQ"
+MAP-f119dbaabb64,L2,reviewed implementation,mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx,162,reviewed-selector,late HQ overview and matter responses,False,"CT-DRAFT,CT-HQ"
+MAP-acb5ed213eb0,L2,reviewed implementation,mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx,209,reviewed-selector,a prepared HQ question stays scoped,False,"CT-DRAFT,CT-HQ"
 LEG-22a168587a71,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,58,test,"the promotion queue leads, and an overdue one is marked",False,legacy-not-retrospectively-reviewed
 LEG-515eaf56d0e0,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,77,test,"a base nobody has written to says so once, with no sections",False,legacy-not-retrospectively-reviewed
 LEG-a37ada8694d8,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,83,test,an empty topic is not listed,False,legacy-not-retrospectively-reviewed

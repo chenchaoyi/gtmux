@@ -65,7 +65,7 @@ const makeClient = (base = 'https://a.invalid') => ({
   hqEvents: jest.fn(async () => []),
   pane: jest.fn(async () => ({ text: '', cols: 80 })),
   transcript: jest.fn(async () => ({ turns: [], dropped: 0 })),
-  send: jest.fn(async () => ({ text: '', cols: 80 })),
+  sendResult: jest.fn(async () => ({ ok: true, pane: {text: '', cols: 80} })),
 });
 let mockContext = {
   client: makeClient(),
@@ -131,15 +131,16 @@ test('pending HQ question opens the original matter, prepares a real composer an
   expect(tree.root.findAllByType(TextInput)[0].props.value).toBe(
     'Which scope?\nAll',
   );
-  expect(mockContext.client.send).not.toHaveBeenCalled();
+  expect(mockContext.client.sendResult).not.toHaveBeenCalled();
   await act(async () =>
     tree.root.findByProps({ testID: 'composer-send' }).props.onPress(),
   );
   await flush();
-  expect(mockContext.client.send).toHaveBeenCalledTimes(1);
-  expect(mockContext.client.send).toHaveBeenCalledWith('%6', {
+  expect(mockContext.client.sendResult).toHaveBeenCalledTimes(1);
+  expect(mockContext.client.sendResult).toHaveBeenCalledWith('%6', {
     text: 'Which scope?\nAll',
     enter: true,
+    send_id: expect.any(String),
   });
   const answered = structuredClone(seed.workspace) as HQWorkspace;
   answered.revision++;
@@ -227,7 +228,7 @@ test.each(['server', 'session'])(
     expect(
       tree.root.findAllByProps({ testID: 'hq-overview' }).length,
     ).toBeGreaterThan(0);
-    expect(old.send).not.toHaveBeenCalled();
-    expect(mockContext.client.send).not.toHaveBeenCalled();
+    expect(old.sendResult).not.toHaveBeenCalled();
+    expect(mockContext.client.sendResult).not.toHaveBeenCalled();
   },
 );
