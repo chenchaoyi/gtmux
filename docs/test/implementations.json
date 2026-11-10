@@ -930,5 +930,14 @@
     "selectors": [
       "TestCFR009PostUpgradeUsesActualCancellationBeforeDeadline"
     ]
+  },
+  "internal/codexterminal/readiness_visible_ancestry_test.go": {
+    "cases": [
+      "CFR-010"
+    ],
+    "selectors": [
+      "TestCFR010VisibleOutsideAncestryMustStayHard",
+      "TestCFR010VisibleCycleStaysHardWithMissingBridge"
+    ]
   }
 }

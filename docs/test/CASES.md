@@ -2,11 +2,11 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1071 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1072 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
-| L1 · Unit / pure logic | 3768 | [L1.csv](cases/L1.csv) |
+| L1 · Unit / pure logic | 3770 | [L1.csv](cases/L1.csv) |
 | L2 · Component / contract | 1944 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 90 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 94 | [L4.csv](cases/L4.csv) |
@@ -47,6 +47,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | CFR-007 | Context cancellation/deadline take precedence over generic daemon-unavailable; errors returned as context values remain specific even before ctx.Err updates. Ordinary dial failure remains daemon-unavailable and no retry mutation/fallback occurs. |
 | CFR-008 | Missing rows refuse without client authority and report process-unavailable with retry eligibility. A later complete stable snapshot can succeed within the same parent budget. Genuine observed mismatch or ambiguity remains a hard refusal even when another row is unavailable. No live process or session is used. |
 | CFR-009 | Canceled upgrade records admission-cancelled; exhausted budget records admission-deadline; live completion continues. A rejected completion does not activate the epoch and no HTTP reply is fabricated after upgrade. Existing epoch and identity checks are unchanged. |
+| CFR-010 | Visible outside/cyclic ancestry is always a hard client-unverified refusal with no PID/authority and no retry. Missing required rows cannot mask that conflict. An actually incomplete peer path remains retryable process-unavailable, and complete valid later evidence may succeed. Existing TTY, foreground, ambiguity and birth checks unchanged. |
 | CT-HTTP | Real Go handler responses agree with independent RN/Web fake servers for transcript history/context, HQ overview/detail/cursor, document metadata/download, null/empty and permission errors. |
 | CT-DRAFT | Actual Detail and HQ composers isolate text across servers and reused panes/session identities, ignore delayed old draft loads, and persist/send to the current target only. |
 | CT-HQ | A current human question opens its original matter, prepares but does not auto-send a reply; an authoritative answer removes it from pending without completing the matter. Old client responses cannot replace current data. |

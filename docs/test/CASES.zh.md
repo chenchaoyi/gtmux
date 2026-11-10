@@ -2,11 +2,11 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1071 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1072 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
-| L1 · 单元/纯逻辑 | 3768 | [L1.csv](cases/L1.csv) |
+| L1 · 单元/纯逻辑 | 3770 | [L1.csv](cases/L1.csv) |
 | L2 · 组件/契约 | 1944 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 90 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 94 | [L4.csv](cases/L4.csv) |
@@ -47,6 +47,7 @@
 | CFR-007 | Context cancellation/deadline take precedence over generic daemon-unavailable; errors returned as context values remain specific even before ctx.Err updates. Ordinary dial failure remains daemon-unavailable and no retry mutation/fallback occurs. |
 | CFR-008 | Missing rows refuse without client authority and report process-unavailable with retry eligibility. A later complete stable snapshot can succeed within the same parent budget. Genuine observed mismatch or ambiguity remains a hard refusal even when another row is unavailable. No live process or session is used. |
 | CFR-009 | Canceled upgrade records admission-cancelled; exhausted budget records admission-deadline; live completion continues. A rejected completion does not activate the epoch and no HTTP reply is fabricated after upgrade. Existing epoch and identity checks are unchanged. |
+| CFR-010 | Visible outside/cyclic ancestry is always a hard client-unverified refusal with no PID/authority and no retry. Missing required rows cannot mask that conflict. An actually incomplete peer path remains retryable process-unavailable, and complete valid later evidence may succeed. Existing TTY, foreground, ambiguity and birth checks unchanged. |
 | CT-HTTP | Real Go handler responses agree with independent RN/Web fake servers for transcript history/context, HQ overview/detail/cursor, document metadata/download, null/empty and permission errors. |
 | CT-DRAFT | Actual Detail and HQ composers isolate text across servers and reused panes/session identities, ignore delayed old draft loads, and persist/send to the current target only. |
 | CT-HQ | A current human question opens its original matter, prepares but does not auto-send a reply; an authoritative answer removes it from pending without completing the matter. Old client responses cannot replace current data. |

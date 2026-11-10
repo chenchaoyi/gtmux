@@ -112,9 +112,9 @@ func ObserveLaunch(parent context.Context, p Pane, childPID, bridgePID, peerPID 
 	snapshot := func() map[int]process {
 		procs := parseProcesses(launchRead(ctx, "ps", "-axo", "pid=,ppid=,pgid=,tpgid=,tty=,lstart=,comm="))
 		if len(procs) > 0 {
-			if missingLaunchAncestry(procs, p.PID, childPID, bridgePID, peerPID) {
-				missingEvidence = true
-			}
+			missing, conflict := launchAncestryEvidence(procs, p.PID, childPID, bridgePID, peerPID)
+			missingEvidence = missingEvidence || missing
+			observedConflict = observedConflict || conflict
 			if peer, exists := procs[peerPID]; exists {
 				root, rootExists := procs[p.PID]
 				if filepath.Base(peer.command) != "codex" || tty(peer.tty) != tty(p.TTY) || (rootExists && root.foreground > 0 && (peer.group != root.foreground || peer.foreground != root.foreground)) {
@@ -156,25 +156,28 @@ func ReadLaunchPane(ctx context.Context, pane string) (Pane, bool) {
 
 // Missing rows are unavailable evidence, never an authorization. Only walk the
 // exact peer ancestry; a cycle or a complete path outside the pane is a conflict.
-func missingLaunchAncestry(procs map[int]process, pane, child, bridge, peer int) bool {
+func launchAncestryEvidence(procs map[int]process, pane, child, bridge, peer int) (missing, conflict bool) {
 	for _, pid := range []int{pane, child, bridge, peer} {
 		if pid > 1 {
 			if _, ok := procs[pid]; !ok {
-				return true
+				missing = true
 			}
 		}
 	}
 	seen := map[int]bool{}
-	for pid := peer; pid > 1 && pid != pane; {
+	pid := peer
+	for pid > 1 && pid != pane {
 		if seen[pid] || len(seen) >= 16 {
-			return false
+			return missing, true
 		}
 		seen[pid] = true
 		proc, ok := procs[pid]
 		if !ok {
-			return true
+			return true, false
 		}
 		pid = proc.parent
 	}
-	return false
+	// Missing an unrelated required row does not erase a completely observed
+	// path to a different root. Only a gap in the peer path leaves that unknown.
+	return missing, pid != pane
 }

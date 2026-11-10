@@ -779,6 +779,8 @@ MAP-c1d7cc8624a4,L1,reviewed implementation,internal/codexterminal/readiness_mis
 MAP-3c9928c51d3c,L1,reviewed implementation,internal/codexterminal/readiness_review_test.go,10,reviewed-selector,TestCFR005ReadinessPreservesStrictTerminalProof,False,CFR-005
 MAP-46db7daae336,L1,reviewed implementation,internal/codexterminal/readiness_review_test.go,76,reviewed-selector,TestCFR005FullTreeLaunchScopeAndParentCancellation,False,CFR-005
 MAP-c1532da18337,L1,reviewed implementation,internal/codexterminal/readiness_review_test.go,113,reviewed-selector,TestCFR005DirectLaunchRetainsFullTreeAndMissingEvidenceRefuses,False,CFR-005
+MAP-e331f6b9597b,L1,reviewed implementation,internal/codexterminal/readiness_visible_ancestry_test.go,9,reviewed-selector,TestCFR010VisibleOutsideAncestryMustStayHard,False,CFR-010
+MAP-bc7b5ad2bc4f,L1,reviewed implementation,internal/codexterminal/readiness_visible_ancestry_test.go,34,reviewed-selector,TestCFR010VisibleCycleStaysHardWithMissingBridge,False,CFR-010
 LEG-28aabe798834,L1,Go core / CLI / server,internal/codexterminal/stdin_lsof_test.go,5,Test,TestWrappedCodexStdinDescriptor,False,legacy-not-retrospectively-reviewed
 LEG-abc84f7d187c,L1,Go core / CLI / server,internal/connect/attach_url_test.go,5,Test,TestWSURL,False,legacy-not-retrospectively-reviewed
 LEG-c9022aeadd0c,L1,Go core / CLI / server,internal/connect/attach_url_test.go,21,Test,TestWSURL_EmptyTERM,False,legacy-not-retrospectively-reviewed
