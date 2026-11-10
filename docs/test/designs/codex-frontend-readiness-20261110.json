@@ -1,0 +1,46 @@
+{
+  "id": "codex-frontend-readiness-20261110",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-10",
+    "decision": "Preserve exact frontend authentication while separating transient observation gaps and diagnosing bounded startup admission",
+    "notes": "User authorized diagnostics/startup readiness; no real restore or live input. A local frontend handshake currently coalesces missing process/TTY evidence and hard mismatches into 403 without diagnostic reason. Admit only kernel peer tied to this controlled child launch, stable pane/root/client birth and foreground TTY. Wait for cmd.Start identity publication before evaluating an early connection. Use a single 4s admission context, at most 4 attempts and cancellable pauses only for unavailable observations; peer/home/pane/TTY/birth/ambiguity conflicts refuse without retry. Inspect direct child launches with two snapshots of exact pane/bridge/client PIDs; generic launchers retain full ancestry resolution and ambiguity protection. Reuse the existing terminal verifier and legacy Resolve contract, preserve excluded/native modes and no relaunch/fallback after child starts. Emit value-free stage/cause/attempt/timing diagnostics and an actionable local error without prompt/argv/credentials. Record old-red/new-green using isolated deterministic inspector/gate seams; no production daemon, user thread, permissions or installed services. Runtime/real reboot acceptance is separate. Planned source changes may add context-aware inspection and ReadAgent while legacy wrappers retain budgets."
+  },
+  "cases": [
+    {
+      "id": "CFR-001",
+      "layer": "L1",
+      "description": "Terminal readiness observations retain strict identity and use a bounded exact-launch fast path",
+      "setup": "Synthetic before/after process records, actual inspector/findClient logic, controlled stdin/pane reads and direct/native versus generic launcher ancestry",
+      "action": "Resolve valid direct and wrapped clients; vary absent snapshots/stdin, foreground/TTY/peer/birth changes, ambiguous branches and pane metadata; inspect exact PID selection and parent-context cancellation",
+      "expected": "Only stable unique foreground Codex with verified stdin and exact launch ancestry is accepted. Missing reads classify transient; explicit conflicts classify hard refusal. Direct child snapshots are scoped to pane/bridge/client; generic ancestry keeps existing protections. Cancellation does not extend the parent deadline; legacy Resolve behavior is unchanged. No real process or terminal mutation.",
+      "planned_files": [
+        "internal/codexterminal/readiness_test.go"
+      ]
+    },
+    {
+      "id": "CFR-002",
+      "layer": "L2",
+      "description": "Frontend admission reports typed causes and binds only the controlled launch",
+      "setup": "Actual Begin frontend function with isolated HOME/CODEX_HOME, injected current pane/client observation and process incarnation readers",
+      "action": "Admit exact launch; vary peer versus client, launch ancestry, backend command/birth availability, invalid request, pane disappearance and canceled inspection; compare persistent files before/after",
+      "expected": "Known peer/launch mismatch, invalid identity and changed pane cannot acquire authority; transient unreadable evidence is distinguishable from mismatch. No thread discovery/resume/input or persisted binding occurs during admission. Legacy Begin API and current binding/freshness checks remain valid.",
+      "planned_files": [
+        "internal/resume/codexfrontend_ready_test.go"
+      ]
+    },
+    {
+      "id": "CFR-003",
+      "layer": "L2",
+      "description": "Bridge waits for launch publication and retries only transient admission within one deadline",
+      "setup": "Actual readiness/admission driver, controlled attempt and wait functions, real cancellation channels with deterministic ordering and synthetic typed errors",
+      "action": "Deliver an early request before launch publication, then open the gate; exercise transient-then-ready, mismatch, exhausted attempts, deadline/cancel and launch failure; inspect HTTP/status reason and diagnostic fields",
+      "expected": "No check executes before publication; successful transient retry authorizes exactly once. Hard refusal runs once, no second child or native fallback, failures preserve specific nonsecret reason and retry eligibility. All attempts share a 4s parent budget and at most four checks; canceled/deadline work cannot later authorize. Old immediate refusal fails the transient/early-publication expectations; cancellation does not require a timing-race sleep.",
+      "planned_files": [
+        "internal/codexbridge/readiness_test.go"
+      ]
+    }
+  ],
+  "seal": "63f2c1129b21d6317f925168cd30ad2ebfbf8272bb13af94a9e2e34470426f0a"
+}
