@@ -30,7 +30,7 @@ type Input struct {
 type Outcome struct {
 	Accepted, Attempted, Unsupported bool
 	QueueID, Reason                  string
-	ActiveTurnID                     string
+	ActiveTurnID, StartedTurnID      string
 }
 
 type wireResponse struct {
@@ -64,17 +64,23 @@ func QueueChecked(ctx context.Context, target Target, messageID, text string, ch
 }
 
 func QueueInputs(ctx context.Context, target Target, messageID string, inputs []Input, check func() bool) Outcome {
-	return submitInputs(ctx, target, messageID, inputs, check, false)
+	return submitInputs(ctx, target, messageID, inputs, check, false, false)
 }
 
 // ImageInputs supplements an exact active turn when the loaded server explicitly
 // supports it. Older servers keep their queue semantics. Existing queue entries
 // are never consumed, deleted or resubmitted by this path.
 func ImageInputs(ctx context.Context, target Target, messageID string, inputs []Input, check func() bool) Outcome {
-	return submitInputs(ctx, target, messageID, inputs, check, true)
+	return submitInputs(ctx, target, messageID, inputs, check, true, false)
 }
 
-func submitInputs(ctx context.Context, target Target, messageID string, inputs []Input, check func() bool, preferActive bool) Outcome {
+// UserInputs delivers explicit phone input to a loaded idle or eligible active
+// thread. It never resumes a thread or consumes/replays existing queued inputs.
+func UserInputs(ctx context.Context, target Target, messageID string, inputs []Input, check func() bool) Outcome {
+	return submitInputs(ctx, target, messageID, inputs, check, true, true)
+}
+
+func submitInputs(ctx context.Context, target Target, messageID string, inputs []Input, check func() bool, preferActive, userInput bool) Outcome {
 	bytes := 0
 	valid := len(inputs) > 0 && len(inputs) <= 17
 	for _, input := range inputs {
@@ -139,10 +145,10 @@ func submitInputs(ctx context.Context, target Target, messageID string, inputs [
 	if enc.Encode(map[string]any{"method": "initialized", "params": map[string]any{}}) != nil {
 		return Outcome{Reason: "initialize-unavailable"}
 	}
-	id, turnID := 2, ""
+	id, turnID, startIdle := 2, "", false
 	if preferActive {
 		var why string
-		turnID, id, why = activeInputTurn(target.ThreadID, id, send, read)
+		turnID, startIdle, id, why = inputTurnPlan(target.ThreadID, id, send, read, userInput)
 		if why != "" {
 			return Outcome{Reason: why}
 		}
@@ -150,7 +156,39 @@ func submitInputs(ctx context.Context, target Target, messageID string, inputs [
 	if check != nil && !check() {
 		return Outcome{Reason: "target-changed"}
 	}
+	if ctx.Err() != nil {
+		return Outcome{Reason: "input-deadline"}
+	}
 	result := Outcome{Attempted: true, Reason: "acceptance-unconfirmed"}
+	if startIdle {
+		if send(id, "turn/start", map[string]any{"threadId": target.ThreadID, "clientUserMessageId": messageID, "input": inputs}) != nil {
+			return result
+		}
+		r, err = read(id)
+		if err != nil {
+			return result
+		}
+		if r.Error == nil {
+			var accepted struct {
+				Turn struct{ ID, Status string } `json:"turn"`
+			}
+			if json.Unmarshal(r.Result, &accepted) != nil || accepted.Turn.ID == "" || len(accepted.Turn.ID) > 256 || (accepted.Turn.Status != "inProgress" && accepted.Turn.Status != "completed") {
+				return result
+			}
+			return Outcome{Accepted: true, Attempted: true, StartedTurnID: accepted.Turn.ID}
+		}
+		// A definitive unknown-method rejection is the only safe legacy fallback.
+		if r.Error.Code != -32601 {
+			return result
+		}
+		id++
+		if check != nil && !check() {
+			return Outcome{Reason: "target-changed"}
+		}
+		if ctx.Err() != nil {
+			return Outcome{Reason: "input-deadline"}
+		}
+	}
 	if turnID != "" {
 		if send(id, "turn/steer", map[string]any{"threadId": target.ThreadID, "expectedTurnId": turnID, "clientUserMessageId": messageID, "input": inputs}) != nil {
 			return result

@@ -470,6 +470,8 @@ LEG-e74a5cb0ba7f,L1,Go core / CLI / server,internal/app/panes_hq_test.go,9,Test,
 LEG-99051be6780b,L1,Go core / CLI / server,internal/app/participantprofile_test.go,10,Test,TestParticipantProfileBindsHistoricalExternalConversation,False,legacy-not-retrospectively-reviewed
 LEG-78edea1b6214,L1,Go core / CLI / server,internal/app/participantprofile_test.go,45,Test,TestProfileTurnIntervalRejectsAmbiguity,False,legacy-not-retrospectively-reviewed
 LEG-dd7f444b9c39,L1,Go core / CLI / server,internal/app/pendingask_test.go,14,Test,TestHasPendingAsk,False,legacy-not-retrospectively-reviewed
+MAP-7a5ae9fb2039,L2,reviewed implementation,internal/app/phone_delivery_receipt_test.go,10,reviewed-selector,TestMSD002PhoneInputOptsIntoDirectUserDeliveryAndKeepsDraftProtection,False,MSD-002
+MAP-308489bd281c,L2,reviewed implementation,internal/app/phone_delivery_receipt_test.go,20,reviewed-selector,TestMSD002PhoneReceiptCacheKeepsQueueMeaningAndExpiry,False,MSD-002
 LEG-5a268635ada6,L1,Go core / CLI / server,internal/app/phonedraft_test.go,14,Test,TestPhoneSendKeepsTheDraftGuard,False,legacy-not-retrospectively-reviewed
 LEG-fffbc5a11383,L1,Go core / CLI / server,internal/app/plainsend_test.go,14,Test,TestPlainTermPane,False,legacy-not-retrospectively-reviewed
 LEG-f3542ee21c1a,L1,Go core / CLI / server,internal/app/plainsend_test.go,61,Test,TestStaleScrollbackBoxHidesPlainPaneEcho,False,legacy-not-retrospectively-reviewed
@@ -864,6 +866,9 @@ LEG-60862a5464ac,L1,Go core / CLI / server,internal/codexbridge/observe_test.go,
 LEG-cc26f78d8d87,L1,Go core / CLI / server,internal/codexbridge/observe_test.go,93,Test,TestObserverRequiresMatchingServerHome,False,legacy-not-retrospectively-reviewed
 LEG-d876071a5552,L1,Go core / CLI / server,internal/codexbridge/observe_test.go,104,Test,TestObserverResumesLargeHistoryWithoutRetainingCatalogs,False,legacy-not-retrospectively-reviewed
 LEG-878e735aba01,L1,Go core / CLI / server,internal/codexbridge/observe_test.go,114,Test,TestObserverKeepsSuccessfulRootWorkspace,False,legacy-not-retrospectively-reviewed
+MAP-d24568194d08,L2,reviewed implementation,internal/codexrpc/direct_user_input_test.go,10,reviewed-selector,TestMSD001ExplicitUserInputSelectsExactActiveOrLoadedIdleTurn,False,MSD-001
+MAP-b2659a0a9502,L2,reviewed implementation,internal/codexrpc/direct_user_input_test.go,49,reviewed-selector,TestMSD001LegacyQueueRemainsExplicitAndOnlyUnknownMethodCanFallback,False,MSD-001
+MAP-09d632a0de8e,L2,reviewed implementation,internal/codexrpc/direct_user_input_test.go,76,reviewed-selector,TestMSD001UserInputRefusesUnsafeMetadataAndNeverReplaysAmbiguousWrite,False,MSD-001
 LEG-e6e48b36723f,L1,Go core / CLI / server,internal/codexrpc/peer_unix_test.go,12,Test,TestUnixPeerIdentityComesFromKernel,False,legacy-not-retrospectively-reviewed
 LEG-093de95f9c8b,L1,Go core / CLI / server,internal/codexrpc/queue_test.go,56,Test,TestQueueTargetsExactConversation,False,legacy-not-retrospectively-reviewed
 LEG-62a9833f529c,L1,Go core / CLI / server,internal/codexrpc/queue_test.go,83,Test,TestQueueRefusesDifferentServerHomeBeforeInput,False,legacy-not-retrospectively-reviewed
@@ -1128,6 +1133,7 @@ LEG-cc1cccdd73ac,L1,Go core / CLI / server,internal/dispatchbridge/codexinput_te
 LEG-52820930ba83,L1,Go core / CLI / server,internal/dispatchbridge/codexinput_test.go,59,Test,TestCodexQueueRechecksDestinationBeforeClaim,False,legacy-not-retrospectively-reviewed
 LEG-5472059d210e,L1,Go core / CLI / server,internal/dispatchbridge/codexinput_test.go,81,Test,TestCodexAttachmentsKeepImageTypeAndRejectOutsideLinks,False,legacy-not-retrospectively-reviewed
 LEG-8ac8b9704838,L1,Go core / CLI / server,internal/dispatchbridge/codexinput_test.go,106,Test,TestManagedCodexReadyGateRequiresVerifiedFrontend,False,legacy-not-retrospectively-reviewed
+MAP-e452620f505a,L2,reviewed implementation,internal/dispatchbridge/direct_user_input_test.go,14,reviewed-selector,TestMSD002DirectUserIngressPreservesReceiptAndNeverReplays,False,MSD-002
 LEG-6d9bb63bffbe,L1,Go core / CLI / server,internal/dispatchbridge/dispatchbridge_test.go,12,Test,TestHookEquipped,False,legacy-not-retrospectively-reviewed
 LEG-2f8d9a6d25fe,L1,Go core / CLI / server,internal/dispatchbridge/dispatchbridge_test.go,26,Test,TestEventsForPane_MapsAndFilters,False,legacy-not-retrospectively-reviewed
 LEG-2a7faf1826c2,L1,Go core / CLI / server,internal/dispatchbridge/dispatchbridge_test.go,58,Test,TestEventsForPaneSession_RejectsOwnerlessCodexReceipts,False,legacy-not-retrospectively-reviewed
@@ -2669,6 +2675,8 @@ LEG-b3c2ead7e7fd,L2,Go core / CLI / server,internal/server/routes_test.go,84,Tes
 LEG-41bc7f2b3094,L2,Go core / CLI / server,internal/server/routes_test.go,107,Test,TestARouteThisMacMayNotUseIsRefusedWithoutMoving,False,legacy-not-retrospectively-reviewed
 LEG-fc69cefac1e9,L2,Go core / CLI / server,internal/server/routes_test.go,119,Test,TestNamingNoRouteIsABadRequest,False,legacy-not-retrospectively-reviewed
 LEG-72095df06f97,L2,Go core / CLI / server,internal/server/routes_test.go,128,Test,TestNoRoutesConfiguredSaysSo,False,legacy-not-retrospectively-reviewed
+MAP-5c6d75362085,L3,reviewed implementation,internal/server/send_receipt_test.go,9,reviewed-selector,TestMSD003HTTPPreservesActualReceiptAndLegacySend,False,MSD-003
+MAP-7d2c5e5ac242,L3,reviewed implementation,internal/server/send_receipt_test.go,48,reviewed-selector,TestMSD003PreferredReceiptCannotBypassGuestScope,False,MSD-003
 LEG-01715e1c5fa7,L2,Go core / CLI / server,internal/server/server_test.go,43,Test,TestPanesEndpoint,False,legacy-not-retrospectively-reviewed
 LEG-7874d5d6b177,L2,Go core / CLI / server,internal/server/server_test.go,69,Test,TestSendReturnsPaneSnapshot,False,legacy-not-retrospectively-reviewed
 LEG-aca4eda17c9e,L2,Go core / CLI / server,internal/server/server_test.go,135,Test,TestHealthNoAuth,False,legacy-not-retrospectively-reviewed
@@ -4274,6 +4282,8 @@ LEG-fb700444ec3e,L1,RN / mobile harness,mobileapp/src/api/events.test.ts,38,test
 LEG-e0457d0d24da,L1,RN / mobile harness,mobileapp/src/api/events.test.ts,47,test,"intentional unsubscribe ignores late stream errors, data and open callbacks",False,legacy-not-retrospectively-reviewed
 LEG-5e72fc2ccb19,L1,RN / mobile harness,mobileapp/src/api/requestAbort.test.ts,3,test,only an observed signal abort is cancellation; marked deadlines remain timeouts,False,legacy-not-retrospectively-reviewed
 LEG-9317901a472a,L1,RN / mobile harness,mobileapp/src/api/requestAbort.test.ts,17,test,records the configured deadline independently of delayed JS execution,False,legacy-not-retrospectively-reviewed
+MAP-d269546f4a32,L2,reviewed implementation,mobileapp/src/api/sendDeadline.test.ts,10,reviewed-selector,MSD-004 bounds a hung %s and never retries or accepts a late answer,False,MSD-004
+MAP-b95d01602bb2,L2,reviewed implementation,mobileapp/src/api/sendDeadline.test.ts,29,reviewed-selector,"MSD-004 keeps exact receipts, legacy success and the server refusal",False,MSD-004
 LEG-95727cbfc7d0,L1,RN / mobile harness,mobileapp/src/api/types.test.ts,4,it,decodes a fully populated agent,False,legacy-not-retrospectively-reviewed
 LEG-b118b4a2d386,L1,RN / mobile harness,mobileapp/src/api/types.test.ts,27,it,decodes the errored-idle modifier,False,legacy-not-retrospectively-reviewed
 LEG-dc0cc85093ef,L1,RN / mobile harness,mobileapp/src/api/types.test.ts,37,it,decodes the background-running modifier,False,legacy-not-retrospectively-reviewed
@@ -4583,6 +4593,9 @@ LEG-ce5d181e23e4,L2,RN / mobile harness,mobileapp/src/screens/DetailPinned.test.
 LEG-d51de694fa1f,L2,RN / mobile harness,mobileapp/src/screens/DetailPinned.test.tsx,193,test,"two logged prompts that open the same way: the row stays, nothing is named",False,legacy-not-retrospectively-reviewed
 LEG-78f3ef5088b1,L2,RN / mobile harness,mobileapp/src/screens/DetailPinned.test.tsx,203,test,display menu drives the shared terminal and survives full-screen/chat switches,False,legacy-not-retrospectively-reviewed
 LEG-33d0c3c4ceaf,L2,RN / mobile harness,mobileapp/src/screens/DetailPinned.test.tsx,232,test,slow terminal reads do not overlap and cannot roll the picture back after a deadline,False,legacy-not-retrospectively-reviewed
+MAP-7107ec518922,L2,reviewed implementation,mobileapp/src/screens/DetailSendReceipt.test.tsx,27,reviewed-selector,MSD-005 %s releases failed sends and preserves explicit retry identity,False,MSD-005
+MAP-199b34196f32,L2,reviewed implementation,mobileapp/src/screens/DetailSendReceipt.test.tsx,39,reviewed-selector,MSD-005 old failure cannot replace the newer accepted send,False,MSD-005
+MAP-135b77c8e14c,L2,reviewed implementation,mobileapp/src/screens/DetailSendReceipt.test.tsx,48,reviewed-selector,MSD-005 a control key cannot leave a prior text receipt permanently Sending,False,MSD-005
 LEG-7a048f25b768,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,62,test,conversation navigation exposes its action and selected mode to accessibility,False,legacy-not-retrospectively-reviewed
 LEG-90313f24599a,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,77,test,"refused: pair again, no retry, and the text is back in the box",False,legacy-not-retrospectively-reviewed
 LEG-3f37c79e8bc1,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,93,test,any other refusal keeps its retry and does not refill the box,False,legacy-not-retrospectively-reviewed
@@ -5915,6 +5928,7 @@ LEG-0c775f8b820d,L2,RN / mobile harness,mobileapp/src/ui/sendFailure.test.ts,70,
 LEG-b7d364a5d3ea,L2,RN / mobile harness,mobileapp/src/ui/sendFailure.test.ts,85,it,"is its own kind, read off the status, whatever the body says",False,legacy-not-retrospectively-reviewed
 LEG-3d2cf5c3d1c8,L2,RN / mobile harness,mobileapp/src/ui/sendFailure.test.ts,93,it,"offers pairing again, never a retry, in both languages",False,legacy-not-retrospectively-reviewed
 LEG-dc3744336a17,L2,RN / mobile harness,mobileapp/src/ui/sendFailure.test.ts,105,it,"says so, offers neither a retry nor pairing again, and keeps the text",False,legacy-not-retrospectively-reviewed
+MAP-7bdcf65678f4,L2,reviewed implementation,mobileapp/src/ui/sendReceipt.test.ts,3,reviewed-selector,MSD-005 receipt wording distinguishes queueing and acceptance without claiming execution,False,MSD-005
 LEG-dace89ea2a33,L2,RN / mobile harness,mobileapp/src/ui/term.test.ts,5,it,resolves every pref to the system monospace (native links no picker fonts yet),False,legacy-not-retrospectively-reviewed
 LEG-8a4994c167f1,L2,RN / mobile harness,mobileapp/src/ui/term.test.ts,13,it,maps U+23FA record glyph to U+25CF black circle,False,legacy-not-retrospectively-reviewed
 LEG-458a9ee509a3,L2,RN / mobile harness,mobileapp/src/ui/term.test.ts,17,it,replaces every occurrence,False,legacy-not-retrospectively-reviewed

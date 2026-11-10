@@ -18,6 +18,8 @@ MAP-9a346dda931b,L2,reviewed implementation,internal/app/hqworkspace_reconcile_t
 MAP-4a6d3760f38d,L2,reviewed implementation,internal/app/hqworkspace_reconcile_test.go,104,reviewed-selector,TestPhase1WorkspaceActionAuthorizationAndCompatibility,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
 MAP-c7c7feed6e2a,L2,reviewed implementation,internal/app/hqworkspace_reconcile_test.go,148,reviewed-selector,TestPhase1HQCanClaimDryRunAndCommit,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
 MAP-c746f11a537e,L2,reviewed implementation,internal/app/hqworkspace_stored_test.go,10,reviewed-selector,TestWorkspaceStoredCLILeavesDiscoveryAndRecordsUntouched,False,MC-HQ-READ
+MAP-7a5ae9fb2039,L2,reviewed implementation,internal/app/phone_delivery_receipt_test.go,10,reviewed-selector,TestMSD002PhoneInputOptsIntoDirectUserDeliveryAndKeepsDraftProtection,False,MSD-002
+MAP-308489bd281c,L2,reviewed implementation,internal/app/phone_delivery_receipt_test.go,20,reviewed-selector,TestMSD002PhoneReceiptCacheKeepsQueueMeaningAndExpiry,False,MSD-002
 MAP-93c5d85ec366,L2,reviewed implementation,internal/app/relay_sender_contract_test.go,52,reviewed-selector,TestHRS003ReceiptAwareSharedTranscript,False,HRS-003
 MAP-d400cc0846af,L2,reviewed implementation,internal/app/relay_sender_contract_test.go,89,reviewed-selector,TestHRS003EarlierPagesKeepFirstAttribution,False,HRS-003
 MAP-59b391120a04,L2,reviewed implementation,internal/app/serve_energy_snapshot_test.go,14,reviewed-selector,TestPWR003SSEPublishesItsActualNativeObservationForREST,False,PWR-003
@@ -38,8 +40,12 @@ LEG-463c4daa87c6,L2,Go core / CLI / server,internal/app/tunnelservers_test.go,20
 LEG-82215133e21d,L2,Go core / CLI / server,internal/app/tunnelservers_test.go,321,Test,TestAProvisionerWithNoServerListIsNotAnError,False,legacy-not-retrospectively-reviewed
 LEG-a148094d1182,L2,Go core / CLI / server,internal/app/tunnelstatus_test.go,33,Test,TestStandardTunnelCountsRegisteredConnectionsNotDials,False,legacy-not-retrospectively-reviewed
 LEG-31e32aaa4339,L2,Go core / CLI / server,internal/app/tunnelstatus_test.go,45,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
+MAP-d24568194d08,L2,reviewed implementation,internal/codexrpc/direct_user_input_test.go,10,reviewed-selector,TestMSD001ExplicitUserInputSelectsExactActiveOrLoadedIdleTurn,False,MSD-001
+MAP-b2659a0a9502,L2,reviewed implementation,internal/codexrpc/direct_user_input_test.go,49,reviewed-selector,TestMSD001LegacyQueueRemainsExplicitAndOnlyUnknownMethodCanFallback,False,MSD-001
+MAP-09d632a0de8e,L2,reviewed implementation,internal/codexrpc/direct_user_input_test.go,76,reviewed-selector,TestMSD001UserInputRefusesUnsafeMetadataAndNeverReplaysAmbiguousWrite,False,MSD-001
 LEG-5eb1eb0e8cd5,L2,Go core / CLI / server,internal/connect/remotes_test.go,38,Test,TestAHostThatMovedIsFoundThroughTheAddressesItGave,False,legacy-not-retrospectively-reviewed
 LEG-953eea56e22d,L2,Go core / CLI / server,internal/connect/remotes_test.go,85,Test,TestAnAddressThatAnswersToSomeoneElseIsNotThisHost,False,legacy-not-retrospectively-reviewed
+MAP-e452620f505a,L2,reviewed implementation,internal/dispatchbridge/direct_user_input_test.go,14,reviewed-selector,TestMSD002DirectUserIngressPreservesReceiptAndNeverReplays,False,MSD-002
 MAP-95475cf33bca,L2,reviewed implementation,internal/dispatchbridge/screenshot_input_test.go,19,reviewed-selector,TestSSI002NativeImageAcceptanceAndUncertainRetryKeepIdentity,False,SSI-002
 MAP-8691ea4c02c8,L2,reviewed implementation,internal/dispatchbridge/screenshot_input_test.go,103,reviewed-selector,TestSSI002OrdinaryTextKeepsExistingQueueSemantics,False,SSI-002
 MAP-7bf0b97f95d1,L2,reviewed implementation,internal/hook/codex_completed_turn_test.go,38,reviewed-selector,TestCompletedCodexTurnRejectsExplicitLateRearm,False,"CET-004,CET-005"
@@ -454,6 +460,8 @@ MAP-01cd8c62d09e,L2,reviewed implementation,mobileapp/e2e/fake-serve/backend-con
 MAP-f2ed2637baa9,L2,reviewed implementation,mobileapp/e2e/fake-serve/server.ts,95,reviewed-selector,startFake,False,CT-HTTP
 MAP-f4f657590af5,L2,reviewed implementation,mobileapp/e2e/fake-serve/world.ts,111,reviewed-selector,export class World,False,CT-HTTP
 MAP-0d65b1b0bf00,L2,RN / mobile harness,mobileapp/src/api/client.test.ts,651,reviewed-selector,"usage accepts a real empty report but keeps refusals, bad bodies and network failures",False,UR-002
+MAP-d269546f4a32,L2,reviewed implementation,mobileapp/src/api/sendDeadline.test.ts,10,reviewed-selector,MSD-004 bounds a hung %s and never retries or accepts a late answer,False,MSD-004
+MAP-b95d01602bb2,L2,reviewed implementation,mobileapp/src/api/sendDeadline.test.ts,29,reviewed-selector,"MSD-004 keeps exact receipts, legacy success and the server refusal",False,MSD-004
 LEG-81cfbfd439f8,L2,RN / mobile harness,mobileapp/src/screens/AccessHistoryControls.test.tsx,21,test,same-name device choices expose full IDs and preserve the other filters,False,legacy-not-retrospectively-reviewed
 LEG-d880c9025607,L2,RN / mobile harness,mobileapp/src/screens/AccessHistoryControls.test.tsx,31,test,a full ID outside the discovered choices can be entered in a native prompt,False,legacy-not-retrospectively-reviewed
 LEG-f08efac25751,L2,RN / mobile harness,mobileapp/src/screens/AccessHistoryHelp.test.tsx,6,test.each(),recording rules are clickable and explain actual external coverage (Chinese=%s),True,legacy-not-retrospectively-reviewed
@@ -520,6 +528,9 @@ LEG-ce5d181e23e4,L2,RN / mobile harness,mobileapp/src/screens/DetailPinned.test.
 LEG-d51de694fa1f,L2,RN / mobile harness,mobileapp/src/screens/DetailPinned.test.tsx,193,test,"two logged prompts that open the same way: the row stays, nothing is named",False,legacy-not-retrospectively-reviewed
 LEG-78f3ef5088b1,L2,RN / mobile harness,mobileapp/src/screens/DetailPinned.test.tsx,203,test,display menu drives the shared terminal and survives full-screen/chat switches,False,legacy-not-retrospectively-reviewed
 LEG-33d0c3c4ceaf,L2,RN / mobile harness,mobileapp/src/screens/DetailPinned.test.tsx,232,test,slow terminal reads do not overlap and cannot roll the picture back after a deadline,False,legacy-not-retrospectively-reviewed
+MAP-7107ec518922,L2,reviewed implementation,mobileapp/src/screens/DetailSendReceipt.test.tsx,27,reviewed-selector,MSD-005 %s releases failed sends and preserves explicit retry identity,False,MSD-005
+MAP-199b34196f32,L2,reviewed implementation,mobileapp/src/screens/DetailSendReceipt.test.tsx,39,reviewed-selector,MSD-005 old failure cannot replace the newer accepted send,False,MSD-005
+MAP-135b77c8e14c,L2,reviewed implementation,mobileapp/src/screens/DetailSendReceipt.test.tsx,48,reviewed-selector,MSD-005 a control key cannot leave a prior text receipt permanently Sending,False,MSD-005
 LEG-7a048f25b768,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,62,test,conversation navigation exposes its action and selected mode to accessibility,False,legacy-not-retrospectively-reviewed
 LEG-90313f24599a,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,77,test,"refused: pair again, no retry, and the text is back in the box",False,legacy-not-retrospectively-reviewed
 LEG-3f37c79e8bc1,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,93,test,any other refusal keeps its retry and does not refill the box,False,legacy-not-retrospectively-reviewed
@@ -1702,6 +1713,7 @@ LEG-0c775f8b820d,L2,RN / mobile harness,mobileapp/src/ui/sendFailure.test.ts,70,
 LEG-b7d364a5d3ea,L2,RN / mobile harness,mobileapp/src/ui/sendFailure.test.ts,85,it,"is its own kind, read off the status, whatever the body says",False,legacy-not-retrospectively-reviewed
 LEG-3d2cf5c3d1c8,L2,RN / mobile harness,mobileapp/src/ui/sendFailure.test.ts,93,it,"offers pairing again, never a retry, in both languages",False,legacy-not-retrospectively-reviewed
 LEG-dc3744336a17,L2,RN / mobile harness,mobileapp/src/ui/sendFailure.test.ts,105,it,"says so, offers neither a retry nor pairing again, and keeps the text",False,legacy-not-retrospectively-reviewed
+MAP-7bdcf65678f4,L2,reviewed implementation,mobileapp/src/ui/sendReceipt.test.ts,3,reviewed-selector,MSD-005 receipt wording distinguishes queueing and acceptance without claiming execution,False,MSD-005
 LEG-dace89ea2a33,L2,RN / mobile harness,mobileapp/src/ui/term.test.ts,5,it,resolves every pref to the system monospace (native links no picker fonts yet),False,legacy-not-retrospectively-reviewed
 LEG-8a4994c167f1,L2,RN / mobile harness,mobileapp/src/ui/term.test.ts,13,it,maps U+23FA record glyph to U+25CF black circle,False,legacy-not-retrospectively-reviewed
 LEG-458a9ee509a3,L2,RN / mobile harness,mobileapp/src/ui/term.test.ts,17,it,replaces every occurrence,False,legacy-not-retrospectively-reviewed

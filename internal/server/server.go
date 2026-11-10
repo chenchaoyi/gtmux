@@ -123,6 +123,9 @@ type Deps struct {
 	// text is typed literally, plus Enter when enter is true. err if the pane is
 	// gone or the key isn't allowed. Optional: nil → POST /api/send returns 503.
 	Send func(id, text, key string, enter bool, sendID string) error
+	// SendWithReceipt is preferred when present. Acceptance is distinct from a
+	// queued submission and neither means the model has read/completed the input.
+	SendWithReceipt func(id, text, key string, enter bool, sendID string) (InputReceipt, error)
 
 	// Upload saves an uploaded file on the Mac and returns its local path (so the
 	// phone can hand a photo/file to an agent by path). Optional: nil → POST
@@ -868,7 +871,7 @@ func (s *Server) handleSend(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusMethodNotAllowed, errBody("method not allowed"))
 		return
 	}
-	if s.deps.Send == nil && s.deps.InputKey == nil {
+	if s.deps.Send == nil && s.deps.SendWithReceipt == nil && s.deps.InputKey == nil {
 		writeJSON(w, http.StatusServiceUnavailable, errBody("input not available"))
 		return
 	}
@@ -899,7 +902,7 @@ func (s *Server) handleSend(w http.ResponseWriter, r *http.Request) {
 		s.writeSendResponse(w, req.ID)
 		return
 	}
-	if s.deps.Send == nil {
+	if s.deps.Send == nil && s.deps.SendWithReceipt == nil {
 		writeJSON(w, http.StatusServiceUnavailable, errBody("input not available"))
 		return
 	}
@@ -907,7 +910,19 @@ func (s *Server) handleSend(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, errBody("nothing to send"))
 		return
 	}
-	if err := s.deps.Send(req.ID, req.Text, req.Key, req.Enter, req.SendID); err != nil {
+	var receipt *InputReceipt
+	var sendErr error
+	if s.deps.SendWithReceipt != nil {
+		got, err := s.deps.SendWithReceipt(req.ID, req.Text, req.Key, req.Enter, req.SendID)
+		sendErr = err
+		if got.State == "queued" || got.State == "accepted" || got.State == "submitted" {
+			got.SendID = req.SendID
+			receipt = &got
+		}
+	} else {
+		sendErr = s.deps.Send(req.ID, req.Text, req.Key, req.Enter, req.SendID)
+	}
+	if err := sendErr; err != nil {
 		outcome := diag.Failed
 		if strings.Contains(err.Error(), "draft") {
 			outcome = diag.Refused // the box held someone's unsent text
@@ -917,17 +932,34 @@ func (s *Server) handleSend(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, errBody("send failed: "+err.Error()))
 		return
 	}
-	lg.Act("act.send", actorOf(r.Context()), req.ID, diag.OK, "typed into a pane",
-		"bytes", len(req.Text), "sha", diag.Sum(req.Text), "key", req.Key, "enter", req.Enter, "via", via(r))
+	lg.Act("act.send", actorOf(r.Context()), req.ID, diag.OK, "accepted input for a pane",
+		"bytes", len(req.Text), "sha", diag.Sum(req.Text), "key", req.Key, "enter", req.Enter, "via", via(r), "delivery", receiptState(receipt))
 	// Return the freshly-redrawn screen WITH the send so the client renders the echo
 	// in a SINGLE round-trip instead of a separate /api/pane fetch — the big latency
 	// win over a remote tunnel (two RTTs → one). Settle briefly first so the agent's
 	// TUI has a frame to redraw the typed input into the captured screen.
-	s.writeSendResponse(w, req.ID)
+	s.writeSendResponse(w, req.ID, receipt)
 }
 
-func (s *Server) writeSendResponse(w http.ResponseWriter, id string) {
+// InputReceipt describes only this ingress attempt, never current queue state,
+// transcript confirmation or completion. Legacy senders omit it.
+func receiptState(receipt *InputReceipt) string {
+	if receipt == nil {
+		return ""
+	}
+	return receipt.State
+}
+
+type InputReceipt struct {
+	State  string `json:"state"`
+	SendID string `json:"send_id,omitempty"`
+}
+
+func (s *Server) writeSendResponse(w http.ResponseWriter, id string, receipts ...*InputReceipt) {
 	resp := sendResponse{Status: "ok"}
+	if len(receipts) > 0 {
+		resp.Delivery = receipts[0]
+	}
 	if s.deps.PaneText != nil {
 		if sendSettle > 0 {
 			time.Sleep(sendSettle)
@@ -959,10 +991,11 @@ var sendSettle = 90 * time.Millisecond
 // back-compat with older clients that only checked it; `text`/`cursor` are omitted
 // when the pane couldn't be read (the client then falls back to its poll).
 type sendResponse struct {
-	Status string      `json:"status"`
-	Text   string      `json:"text,omitempty"`
-	Cols   int         `json:"cols,omitempty"`
-	Cursor *paneCursor `json:"cursor,omitempty"`
+	Status   string        `json:"status"`
+	Delivery *InputReceipt `json:"delivery,omitempty"`
+	Text     string        `json:"text,omitempty"`
+	Cols     int           `json:"cols,omitempty"`
+	Cursor   *paneCursor   `json:"cursor,omitempty"`
 }
 
 // handleUpload accepts a multipart "file" and saves it on the Mac (≤ 30 MB),

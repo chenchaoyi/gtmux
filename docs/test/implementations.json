@@ -854,5 +854,68 @@
     "selectors": [
       "TestClosedFrontendObservationSurvivesPositivePIDReuseOnly"
     ]
+  },
+  "internal/codexrpc/direct_user_input_test.go": {
+    "cases": [
+      "MSD-001"
+    ],
+    "selectors": [
+      "TestMSD001ExplicitUserInputSelectsExactActiveOrLoadedIdleTurn",
+      "TestMSD001LegacyQueueRemainsExplicitAndOnlyUnknownMethodCanFallback",
+      "TestMSD001UserInputRefusesUnsafeMetadataAndNeverReplaysAmbiguousWrite"
+    ]
+  },
+  "internal/dispatchbridge/direct_user_input_test.go": {
+    "cases": [
+      "MSD-002"
+    ],
+    "selectors": [
+      "TestMSD002DirectUserIngressPreservesReceiptAndNeverReplays"
+    ]
+  },
+  "internal/app/phone_delivery_receipt_test.go": {
+    "cases": [
+      "MSD-002"
+    ],
+    "selectors": [
+      "TestMSD002PhoneInputOptsIntoDirectUserDeliveryAndKeepsDraftProtection",
+      "TestMSD002PhoneReceiptCacheKeepsQueueMeaningAndExpiry"
+    ]
+  },
+  "internal/server/send_receipt_test.go": {
+    "cases": [
+      "MSD-003"
+    ],
+    "selectors": [
+      "TestMSD003HTTPPreservesActualReceiptAndLegacySend",
+      "TestMSD003PreferredReceiptCannotBypassGuestScope"
+    ]
+  },
+  "mobileapp/src/api/sendDeadline.test.ts": {
+    "cases": [
+      "MSD-004"
+    ],
+    "selectors": [
+      "MSD-004 bounds a hung %s and never retries or accepts a late answer",
+      "MSD-004 keeps exact receipts, legacy success and the server refusal"
+    ]
+  },
+  "mobileapp/src/screens/DetailSendReceipt.test.tsx": {
+    "cases": [
+      "MSD-005"
+    ],
+    "selectors": [
+      "MSD-005 %s releases failed sends and preserves explicit retry identity",
+      "MSD-005 old failure cannot replace the newer accepted send",
+      "MSD-005 a control key cannot leave a prior text receipt permanently Sending"
+    ]
+  },
+  "mobileapp/src/ui/sendReceipt.test.ts": {
+    "cases": [
+      "MSD-005"
+    ],
+    "selectors": [
+      "MSD-005 receipt wording distinguishes queueing and acceptance without claiming execution"
+    ]
   }
 }
