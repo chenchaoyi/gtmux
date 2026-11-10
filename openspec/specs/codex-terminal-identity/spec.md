@@ -58,3 +58,15 @@ The adapter SHALL preserve implicit launch cwd and explicit directory overrides.
 #### Scenario: A child hook carries its parent's session ID
 - **WHEN** a Codex hook also carries agent_id
 - **THEN** it does not complete the parent turn or overwrite its profile
+
+### Requirement: Verified local worktree trust preserves existing decisions
+A verified same-home frontend MAY mirror an existing effective trusted main repository into a transient exact-cwd projects entry only for a correlated config/read with includeLayers=true and a stable owned reciprocal worktree registration. It SHALL NOT persist trust, copy hooks, change sandbox/approval settings, authorize a conversation or automatically answer a folder consent screen. Existing exact checkout or untrusted ancestor decisions, project/disabled/unknown config layers, stale or ambiguous correlation and unavailable evidence SHALL preserve original response bytes. Metadata work SHALL be bounded and request-driven.
+
+#### Scenario: Remote transport loses native main-worktree fallback
+- **WHEN** an initialized local frontend requests trust for a genuinely registered worktree and its effective response already trusts the verified main root
+- **THEN** only a transient exact-cwd trust alias is added
+- **AND** a real folder access gate remains a startup blocker before native attachment readiness, without sending confirmation keys
+
+#### Scenario: Caller supplies a copied Git pointer or an explicit untrusted checkout
+- **WHEN** registration is not reciprocal or an existing applicable decision forbids trust
+- **THEN** no inherited alias is supplied and Codex retains the original trust/permission behavior

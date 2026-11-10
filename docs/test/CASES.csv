@@ -864,6 +864,14 @@ LEG-60862a5464ac,L1,Go core / CLI / server,internal/codexbridge/observe_test.go,
 LEG-cc26f78d8d87,L1,Go core / CLI / server,internal/codexbridge/observe_test.go,93,Test,TestObserverRequiresMatchingServerHome,False,legacy-not-retrospectively-reviewed
 LEG-d876071a5552,L1,Go core / CLI / server,internal/codexbridge/observe_test.go,104,Test,TestObserverResumesLargeHistoryWithoutRetainingCatalogs,False,legacy-not-retrospectively-reviewed
 LEG-878e735aba01,L1,Go core / CLI / server,internal/codexbridge/observe_test.go,114,Test,TestObserverKeepsSuccessfulRootWorkspace,False,legacy-not-retrospectively-reviewed
+MAP-72cccd537fb4,L2,reviewed implementation,internal/codexbridge/trust_config_test.go,21,reviewed-selector,TestWTR002AliasMirrorsOnlyExistingEffectiveRootTrustAndKeepsOtherFields,False,WTR-002
+MAP-70da38ef277c,L2,reviewed implementation,internal/codexbridge/trust_config_test.go,47,reviewed-selector,TestWTR002RefusalsLeaveOriginalFrameBytesUnchanged,False,WTR-002
+MAP-c59477e205b9,L2,reviewed implementation,internal/codexbridge/trust_config_test.go,109,reviewed-selector,TestWTR002CanceledAndLateProofCannotAuthorizeOrSpawnMoreReads,False,WTR-002
+MAP-99060310ce85,L2,reviewed implementation,internal/codexbridge/trust_config_test.go,142,reviewed-selector,TestWTR002UnknownOrReusedRequestIDsNeverAccumulateUnboundedState,False,WTR-002
+MAP-8b7815d10836,L3,reviewed implementation,internal/codexbridge/trust_interop_test.go,64,reviewed-selector,TestWTR003ActualUnixForwardingUsesVerifiedHomeAndPreservesOtherFrames,False,WTR-003
+MAP-f4e5b80196e1,L3,reviewed implementation,internal/codexbridge/trust_interop_test.go,165,reviewed-selector,TestWTR003NativeTUIGateway,False,WTR-003
+MAP-60dd54884dac,L1,reviewed implementation,internal/codexbridge/worktree_trust_test.go,30,reviewed-selector,TestWTR001OnlyReciprocallyRegisteredWorktreesHaveStableEvidence,False,WTR-001
+MAP-2f03f0629104,L1,reviewed implementation,internal/codexbridge/worktree_trust_test.go,62,reviewed-selector,TestWTR001MalformedCopiedSymlinkAndUnsupportedMetadataCannotBorrowTrust,False,WTR-001
 LEG-e6e48b36723f,L1,Go core / CLI / server,internal/codexrpc/peer_unix_test.go,12,Test,TestUnixPeerIdentityComesFromKernel,False,legacy-not-retrospectively-reviewed
 LEG-093de95f9c8b,L1,Go core / CLI / server,internal/codexrpc/queue_test.go,56,Test,TestQueueTargetsExactConversation,False,legacy-not-retrospectively-reviewed
 LEG-62a9833f529c,L1,Go core / CLI / server,internal/codexrpc/queue_test.go,83,Test,TestQueueRefusesDifferentServerHomeBeforeInput,False,legacy-not-retrospectively-reviewed
@@ -1141,6 +1149,8 @@ LEG-6d4054d7d099,L1,Go core / CLI / server,internal/dispatchbridge/dispatchbridg
 MAP-95475cf33bca,L2,reviewed implementation,internal/dispatchbridge/screenshot_input_test.go,19,reviewed-selector,TestSSI002NativeImageAcceptanceAndUncertainRetryKeepIdentity,False,SSI-002
 MAP-8691ea4c02c8,L2,reviewed implementation,internal/dispatchbridge/screenshot_input_test.go,103,reviewed-selector,TestSSI002OrdinaryTextKeepsExistingQueueSemantics,False,SSI-002
 LEG-aa275da099d8,L1,Go core / CLI / server,internal/dispatchbridge/terminal_ready_test.go,8,Test,TestTerminalReadinessWaitsForItsNativeReceiverAndGrant,False,legacy-not-retrospectively-reviewed
+MAP-3f6433329ad1,L2,reviewed implementation,internal/dispatchbridge/trust_gate_test.go,10,reviewed-selector,TestWTR004VisibleTrustNamesBlockerBeforePostStartTransport,False,WTR-004
+MAP-cdcf768bbc4e,L2,reviewed implementation,internal/dispatchbridge/trust_gate_test.go,19,reviewed-selector,TestWTR004NormalTransportStillRequiredAndHistoricalTrustIgnored,False,WTR-004
 LEG-c90a78f18b0d,L1,Go core / CLI / server,internal/docs/docs_test.go,87,Test,TestMarkedDocsAreFoundAtAnyDepth,False,legacy-not-retrospectively-reviewed
 LEG-a60e497f43ad,G,Go core / CLI / server,internal/docs/docs_test.go,124,Test,TestDocExamples,False,legacy-not-retrospectively-reviewed
 LEG-9860cbf4f709,L1,Go core / CLI / server,internal/docs/docs_test.go,210,Test,TestRegions_ParsesTheFenceBody,False,legacy-not-retrospectively-reviewed
@@ -2175,6 +2185,8 @@ LEG-2573a770c60b,L1,Go core / CLI / server,internal/panefocus/panefocus_test.go,
 LEG-3ef35845ce99,L1,Go core / CLI / server,internal/panefocus/panefocus_test.go,226,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-d19606c0da2b,L1,Go core / CLI / server,internal/panefocus/panefocus_test.go,241,Test,TestHeadlessFocusRefusesBeforeChangingTmux,False,legacy-not-retrospectively-reviewed
 LEG-dbd3eed82f2a,L1,Go core / CLI / server,internal/prompt/dsh_test.go,5,Test,TestDSHCompactComposerReadiness,False,legacy-not-retrospectively-reviewed
+MAP-c381a2b0e2db,L2,reviewed implementation,internal/prompt/prompt_codex_folder_access_test.go,10,reviewed-selector,TestWTR004CurrentFolderAccessBlocksReadiness,False,WTR-004
+MAP-ecbb737dd817,L2,reviewed implementation,internal/prompt/prompt_codex_folder_access_test.go,20,reviewed-selector,TestWTR004ReportsAndSettledComposersAreNotConsent,False,WTR-004
 LEG-2cbd2d6fc712,L1,Go core / CLI / server,internal/prompt/prompt_codex_test.go,101,Test,TestCodexStartupGates_RealFrames,False,legacy-not-retrospectively-reviewed
 LEG-6d1d5c5843f7,L1,Go core / CLI / server,internal/prompt/prompt_codex_test.go,129,Test,TestCodexBootBanner_MCPStartingBlocks_StandingWarnDoesNot,False,legacy-not-retrospectively-reviewed
 LEG-a4f63710811d,L1,Go core / CLI / server,internal/prompt/prompt_codex_test.go,154,Test,TestCodexApprovalMenu_RealFrame,False,legacy-not-retrospectively-reviewed
@@ -6239,6 +6251,7 @@ LEG-0c717f4e72ec,L1,Worker,shared/worker-json.test.mts,36,test,invalid lengths f
 LEG-e87190413922,L1,Worker,shared/worker-json.test.mts,41,test,a stricter caller budget keeps its boundary and nonblocking cancellation,False,legacy-not-retrospectively-reviewed
 MAP-2a8e1df3263e,L2,reviewed implementation,tests/contracts/http-contract.cjs,5,reviewed-selector,async function observe,False,CT-HTTP
 MAP-c856d62bb0c7,L2,reviewed implementation,tests/contracts/http-contract.cjs,36,reviewed-selector,function verify,False,CT-HTTP
+MAP-0776a6d8933b,L3,reviewed implementation,tests/manual/codex-worktree-trust.py,96,reviewed-selector,def main():,False,WTR-003
 LEG-4d0986af07f7,L3,Browser,tests/web/alignment.test.cjs,6,scenario,"`App-aligned roster status, summaries and persistent sections at ${width}`",True,legacy-not-retrospectively-reviewed
 LEG-d5140dc35e4a,L3,Browser,tests/web/alignment.test.cjs,26,scenario,"`Settings change actual Chat and Terminal typography, immediately and after reload at ${width}`",True,legacy-not-retrospectively-reviewed
 LEG-630bd7aac308,G,Browser,tests/web/alignment.test.cjs,59,scenario,Human profiles share App identity and quote without irrelevant browser permissions,False,legacy-not-retrospectively-reviewed

@@ -38,10 +38,16 @@ LEG-463c4daa87c6,L2,Go core / CLI / server,internal/app/tunnelservers_test.go,20
 LEG-82215133e21d,L2,Go core / CLI / server,internal/app/tunnelservers_test.go,321,Test,TestAProvisionerWithNoServerListIsNotAnError,False,legacy-not-retrospectively-reviewed
 LEG-a148094d1182,L2,Go core / CLI / server,internal/app/tunnelstatus_test.go,33,Test,TestStandardTunnelCountsRegisteredConnectionsNotDials,False,legacy-not-retrospectively-reviewed
 LEG-31e32aaa4339,L2,Go core / CLI / server,internal/app/tunnelstatus_test.go,45,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
+MAP-72cccd537fb4,L2,reviewed implementation,internal/codexbridge/trust_config_test.go,21,reviewed-selector,TestWTR002AliasMirrorsOnlyExistingEffectiveRootTrustAndKeepsOtherFields,False,WTR-002
+MAP-70da38ef277c,L2,reviewed implementation,internal/codexbridge/trust_config_test.go,47,reviewed-selector,TestWTR002RefusalsLeaveOriginalFrameBytesUnchanged,False,WTR-002
+MAP-c59477e205b9,L2,reviewed implementation,internal/codexbridge/trust_config_test.go,109,reviewed-selector,TestWTR002CanceledAndLateProofCannotAuthorizeOrSpawnMoreReads,False,WTR-002
+MAP-99060310ce85,L2,reviewed implementation,internal/codexbridge/trust_config_test.go,142,reviewed-selector,TestWTR002UnknownOrReusedRequestIDsNeverAccumulateUnboundedState,False,WTR-002
 LEG-5eb1eb0e8cd5,L2,Go core / CLI / server,internal/connect/remotes_test.go,38,Test,TestAHostThatMovedIsFoundThroughTheAddressesItGave,False,legacy-not-retrospectively-reviewed
 LEG-953eea56e22d,L2,Go core / CLI / server,internal/connect/remotes_test.go,85,Test,TestAnAddressThatAnswersToSomeoneElseIsNotThisHost,False,legacy-not-retrospectively-reviewed
 MAP-95475cf33bca,L2,reviewed implementation,internal/dispatchbridge/screenshot_input_test.go,19,reviewed-selector,TestSSI002NativeImageAcceptanceAndUncertainRetryKeepIdentity,False,SSI-002
 MAP-8691ea4c02c8,L2,reviewed implementation,internal/dispatchbridge/screenshot_input_test.go,103,reviewed-selector,TestSSI002OrdinaryTextKeepsExistingQueueSemantics,False,SSI-002
+MAP-3f6433329ad1,L2,reviewed implementation,internal/dispatchbridge/trust_gate_test.go,10,reviewed-selector,TestWTR004VisibleTrustNamesBlockerBeforePostStartTransport,False,WTR-004
+MAP-cdcf768bbc4e,L2,reviewed implementation,internal/dispatchbridge/trust_gate_test.go,19,reviewed-selector,TestWTR004NormalTransportStillRequiredAndHistoricalTrustIgnored,False,WTR-004
 MAP-7bf0b97f95d1,L2,reviewed implementation,internal/hook/codex_completed_turn_test.go,38,reviewed-selector,TestCompletedCodexTurnRejectsExplicitLateRearm,False,"CET-004,CET-005"
 MAP-6752a622a3e4,L2,reviewed implementation,internal/hook/codex_completed_turn_test.go,72,reviewed-selector,TestCompletedCodexTurnKeepsLegacyAndUncertainCallbacks,False,"CET-004,CET-005"
 MAP-2dd42a3caeb8,L2,reviewed implementation,internal/hook/codex_completed_turn_test.go,114,reviewed-selector,TestCodexContinuationPreservesActiveStart,False,"CET-004,CET-005"
@@ -58,6 +64,8 @@ LEG-6d1949576208,L2,Go core / CLI / server,internal/memdiag/server_test.go,243,T
 LEG-55882c09c2ba,L2,Go core / CLI / server,internal/memdiag/server_test.go,284,subtest,cancel and busy,False,legacy-not-retrospectively-reviewed
 MAP-ef51509f7325,L2,reviewed implementation,internal/native/closed_frontend_reuse_test.go,9,reviewed-selector,TestClosedFrontendObservationSurvivesPositivePIDReuseOnly,False,HXF-003
 MAP-1176b6e7ceff,L2,reviewed implementation,internal/native/closed_frontend_test.go,10,reviewed-selector,TestClosedFrontendObservationRequiresExactSnapshotAndGoneProcess,False,HXF-001
+MAP-c381a2b0e2db,L2,reviewed implementation,internal/prompt/prompt_codex_folder_access_test.go,10,reviewed-selector,TestWTR004CurrentFolderAccessBlocksReadiness,False,WTR-004
+MAP-ecbb737dd817,L2,reviewed implementation,internal/prompt/prompt_codex_folder_access_test.go,20,reviewed-selector,TestWTR004ReportsAndSettledComposersAreNotConsent,False,WTR-004
 MAP-e88c0ded5ae1,L2,reviewed implementation,internal/radar/closed_frontend_test.go,18,reviewed-selector,TestClosedBoundResumedWorkerHistoryAndPreservation,False,HXF-002
 MAP-8c62d9a14381,L2,reviewed implementation,internal/radar/codex_foreign_marker_test.go,15,reviewed-selector,TestForeignActiveRequiresCurrentIdentityEndedTurnAndReadyFrame,False,CORE-CODEX-FOREIGN-ACTIVE
 MAP-d562c313395b,L2,reviewed implementation,internal/radar/codex_foreign_marker_test.go,107,reviewed-selector,TestForeignActiveProductionReaderRejectsLegacyResumeWithoutFrontend,False,CORE-CODEX-FOREIGN-ACTIVE

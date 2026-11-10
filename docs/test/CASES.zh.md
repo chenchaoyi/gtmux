@@ -2,13 +2,13 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1063 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1069 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
-| L1 · 单元/纯逻辑 | 3759 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 1940 | [L2.csv](cases/L2.csv) |
-| L3 · 运行时集成 | 90 | [L3.csv](cases/L3.csv) |
+| L1 · 单元/纯逻辑 | 3761 | [L1.csv](cases/L1.csv) |
+| L2 · 组件/契约 | 1948 | [L2.csv](cases/L2.csv) |
+| L3 · 运行时集成 | 93 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 94 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 12 | [M.csv](cases/M.csv) |
 | G · 质量门禁 | 496 | [G.csv](cases/G.csv) |
@@ -38,6 +38,10 @@
 | CET-006 | A real manual PostCompact receipt is recorded once, active stays absent and exact completion/current turn remain intact. Only actual rearm decisions are eligible for the completed-turn fence. |
 | CORE-CODEX-FOREIGN-ACTIVE | Only a verified current Codex home/session/cwd, a named foreign active marker, a completed/aborted own rollout and a ready nonworking nonapproval frame can contradict false working. Own/empty/unknown/stale binding or actual start/work/wait remains conservative. Reads never remove a foreign marker or mint a completion. |
 | CORE-CODEX-FOREIGN-GATHER | The real radar gather with isolated HOME, a completed own rollout, another session marker and recent window activity reports idle without changing marker content/mtime, binding or completion records; genuine own turns, approvals and legacy unknown ownership still work. |
+| WTR-001 | Only a stable registered linked checkout resolves to its actual main repository. A copied .git pointer, path-prefix similarity or shared title cannot borrow trust. No git command, hook, config mutation or live pane is executed. Changed/unavailable/unsupported metadata refuses compatibility while preserving the original trust flow. |
+| WTR-002 | Only the transient exact cwd projects entry is added from an explicitly trusted verified main root; all other config/permission/hook/provider fields remain identical, no state is written and the adapter never grants a conversation binding. Every refusal and all other messages retain original bytes. Bounds prevent stale or unbounded tracking and late reads cannot authorize. |
+| WTR-003 | The actual forwarded config result contains the minimal alias only in the eligible case; other bytes and request IDs survive and no input is sent. Optional real TUI demonstrates removal of the reproduced gate without adding trust entries or weakening sandbox settings. Synthetic admission assumptions, actual TUI/CLI source and any unrun native acceptance are separately disclosed; all fixture roots/processes are isolated and bounded. |
+| WTR-004 | The current folder consent screen is waiting and cannot receive the goal; diagnostics name startup trust before an unavailable post-start native binding masks it. Old trust/hook screens retain protection, settled or historical prose does not become waiting, and no key is automatically pressed. All clients reuse the shared core classification. |
 | CT-HTTP | Real Go handler responses agree with independent RN/Web fake servers for transcript history/context, HQ overview/detail/cursor, document metadata/download, null/empty and permission errors. |
 | CT-DRAFT | Actual Detail and HQ composers isolate text across servers and reused panes/session identities, ignore delayed old draft loads, and persist/send to the current target only. |
 | CT-HQ | A current human question opens its original matter, prepares but does not auto-send a reply; an authoritative answer removes it from pending without completing the matter. Old client responses cannot replace current data. |
