@@ -854,5 +854,106 @@
     "selectors": [
       "TestClosedFrontendObservationSurvivesPositivePIDReuseOnly"
     ]
+  },
+  "internal/app/screenshot_test.go": {
+    "cases": [
+      "ASC-001",
+      "ASC-006"
+    ],
+    "selectors": [
+      "TestASC001ScreenshotCLIRefusesAmbiguousOrUnsupportedInput",
+      "TestASC006UnavailableNativeCapabilityIsTruthfulAndNonMutating"
+    ]
+  },
+  "internal/screenshot/artifact_test.go": {
+    "cases": [
+      "ASC-001",
+      "ASC-003"
+    ],
+    "selectors": [
+      "TestASC001ArtifactPublicationIsAtomicAndPreservesExistingFiles",
+      "TestASC003CoordinatesAndEditableImagesStayBoundToExactBytes"
+    ]
+  },
+  "internal/screenshot/transport_test.go": {
+    "cases": [
+      "ASC-002"
+    ],
+    "selectors": [
+      "TestASC002NativeTransportPinsHostAndBoundsReplies",
+      "TestASC006NativeInterop"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotAgentIPCTests.swift": {
+    "cases": [
+      "ASC-002",
+      "ASC-006"
+    ],
+    "selectors": [
+      "testASC002ProtocolAndDescriptorsRefuseUnexpectedAuthority",
+      "testASC006GoConsumerUsesActualSwiftSocketAndRenderer"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotAgentRenderingTests.swift": {
+    "cases": [
+      "ASC-003",
+      "ASC-006"
+    ],
+    "selectors": [
+      "testASC003RedactionUsesSharedRetinaRendererAndExactFrame",
+      "testASC006EditorRoundtripPreservesBusyDraftAndDoesNotSend"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotAgentSourceTests.swift": {
+    "cases": [
+      "ASC-003"
+    ],
+    "selectors": [
+      "testASC003SourcesExpireAndNeverWidenChangedOwnershipOrRegion",
+      "testASC003MissingPermissionDoesNotPromptOrListOtherApps"
+    ]
+  },
+  "internal/screenshot/target_test.go": {
+    "cases": [
+      "ASC-004"
+    ],
+    "selectors": [
+      "TestASC004TargetReferencesBindWholeIncarnationAndExpire",
+      "TestASC004TargetQueriesDoNotMintKeys"
+    ]
+  },
+  "internal/app/screenshot_send_test.go": {
+    "cases": [
+      "ASC-004",
+      "ASC-005"
+    ],
+    "selectors": [
+      "TestASC004And005ScreenshotDeliveryUsesExactTargetAndDurableAcceptance"
+    ]
+  },
+  "internal/dispatchbridge/expected_target_test.go": {
+    "cases": [
+      "ASC-004"
+    ],
+    "selectors": [
+      "TestASC004ExpectedCodexIdentityRefusesBeforePreparingInput"
+    ]
+  },
+  "internal/agentclient/expected_target_test.go": {
+    "cases": [
+      "ASC-004"
+    ],
+    "selectors": [
+      "TestASC004ExpectedHarnessIdentityRefusesBeforePreparingInput"
+    ]
+  },
+  "internal/screenshot/receipts_test.go": {
+    "cases": [
+      "ASC-005"
+    ],
+    "selectors": [
+      "TestASC005ReceiptsNeverReplayUncertainOrChangedRequests",
+      "TestASC005ReceiptStoreRefusesCorruptionAndCapacity"
+    ]
   }
 }

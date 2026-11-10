@@ -201,6 +201,10 @@ func WrapIO(pane string, io dispatch.IO, lookup func(string) (Attachment, bool))
 			beginErr = errors.New("DeepSeek Harness terminal bridge is not loaded or its input grant is unavailable")
 			return
 		}
+		if !opts.MatchesTarget(a.SessionID, a.HomeID, a.Instance, a.PID) {
+			beginErr = errors.New("expected conversation changed before preparation")
+			return
+		}
 		r, err := Prepare(a, text, opts.DeliveryID, opts.Force && opts.DeliveryID == "", time.Now())
 		beginErr = err
 		if err == nil {

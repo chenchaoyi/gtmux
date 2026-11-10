@@ -61,6 +61,9 @@ struct Annotation: Equatable, Identifiable {
         case ellipse(CGRect)
         /// The capture under the rectangle, in blocks: for what must not be read.
         case mosaic(CGRect)
+        /// Irreversible opaque coverage in the derived pixels; unlike mosaic it
+        /// does not retain an approximation of the original content.
+        case redact(CGRect)
         case text(String, at: CGPoint)
     }
     let id: UUID
@@ -224,6 +227,9 @@ enum AnnotationRenderer {
             ctx.scaleBy(x: 1, y: -1)
             ctx.interpolationQuality = .none
             ctx.draw(t, in: CGRect(origin: .zero, size: r.size))
+        case .redact(let r):
+            ctx.setFillColor(NSColor.black.cgColor)
+            ctx.fill(r)
         case let .arrow(from, to):
             let head = arrowHead(from: from, to: to, width: a.width.stroke)
             // The shaft stops at the head's base so the round cap does not poke through the tip.

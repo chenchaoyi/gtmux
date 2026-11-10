@@ -27,6 +27,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var resourceTimer: Timer?
     private var hotkey: GlobalHotkey?
     private var screenshotHotkey: GlobalHotkey?
+    private var screenshotAgent: ScreenshotAgentSocket?
     private var cancellables = Set<AnyCancellable>()
     private var upgradeNotesPending = false
 
@@ -58,6 +59,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // the menu bar. This one is the freshly-launched (newest) bundle, so it stays
         // and the older process goes. The updater's pkill is belt; this is suspenders.
         terminateOtherInstances()
+        startScreenshotAgent()
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         // Stable autosave name so macOS restores the item's menu-bar slot across
         // relaunches. Without it, an ad-hoc `make app` (new code identity every
@@ -719,7 +721,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// Bounded handover only; no idle polling or takeover of a held endpoint.
+    @MainActor private func startScreenshotAgent(attempt: Int = 0) {
+        guard screenshotAgent == nil else { return }
+        do {
+            let service = ScreenshotAgentService { [weak self] doc, data in
+                guard let self else { throw ScreenshotAgentFailure.refused("app-unavailable", "The screenshot editor is unavailable") }
+                let file = ScreenshotCapture.temporaryURL()
+                try data.write(to: file, options: .atomic)
+                ScreenshotEditorController.shared.show(doc: doc, captureFile: file, target: nil, store: self.store, l10n: self.l10n)
+            }
+            let host = try ScreenshotAgentSocket(service: service)
+            try host.start()
+            screenshotAgent = host
+        } catch {
+            if (error as? ScreenshotAgentFailure)?.code == "host-busy", attempt < 8 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in self?.startScreenshotAgent(attempt: attempt+1) }
+                return
+            }
+            let reason = (error as? ScreenshotAgentFailure)?.code ?? "host-unavailable"
+            DiagLog.warn("screenshot.agent.host", "local screenshot interface unavailable", ["reason": reason])
+        }
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
+        screenshotAgent?.stop()
         LocalWorkspace.shared.stop()
         usageWidgetPublisher.stop()
     }

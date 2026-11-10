@@ -64,6 +64,7 @@ var helpGroups = []cmdGroup{
 }
 
 var helpCommands = []command{
+	{Name: "screenshot", Args: "<operation> [--json]", Group: "more", Writes: true, OwnHelp: true, EN: "capture, annotate and deliver screenshots through the CLI", ZH: "通过 CLI 截图、标注并投递给准确会话"},
 	{Name: "opencode", Args: "[OpenCode arguments]", Group: "more", Writes: true, OwnHelp: true, EN: "launch OpenCode with terminal ownership (V1/V2)", ZH: "启动 OpenCode，兼容新旧版终端会话"},
 	{Name: "codex", Args: "[Codex arguments]", Group: "more", Writes: true, OwnHelp: true,
 		EN: "launch Codex with verified terminal identity", ZH: "启动 Codex 并核实终端会话归属"},

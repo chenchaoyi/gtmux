@@ -2616,3 +2616,8 @@ and copies already downloaded by devices remain. See
 [document preview](design/conversation-documents.md) for supported formats and limits.
 
 HQ UI readers may use `gtmux hq workspace list --overview --stored --json` for authoritative stored matters without session discovery; `sources_included:false` denotes unavailable optional session metadata. Ordinary list retains live/historical sources. See [HQ choice response](design/HQ-CHOICE-RESPONSE.md).
+
+
+## Screenshots for agents
+
+`gtmux screenshot` provides capabilities, source selection, region capture, import, structured annotation, editing and exact conversation delivery. See the [agent screenshot workflow](guides/agent-screenshots.md). Local CLI use requires no MCP server.

@@ -234,12 +234,7 @@ final class SelectionSession: SelectionViewDelegate {
         guard let scWindow = freeze.shareable.windows.first(where: { $0.windowID == info.id }) else {
             return report(.failed("the window is gone"))
         }
-        let config = SCStreamConfiguration()
-        config.width = Int((info.bounds.width * scale).rounded())
-        config.height = Int((info.bounds.height * scale).rounded())
-        config.showsCursor = false
-        config.ignoreShadowsSingleWindow = true
-        config.captureResolution = .best
+        let config = ScreenshotCapture.configuration(pointSize: info.bounds.size, scale: scale, window: true)
         Task { @MainActor in
             do {
                 let image = try await SCScreenshotManager.captureImage(

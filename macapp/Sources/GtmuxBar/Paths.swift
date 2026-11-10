@@ -11,6 +11,7 @@ enum Paths {
 
     /// The local log store, shared with every gtmux process (see DiagLog).
     static var logsDir: String { dataDir + "/logs" }
+    static var screenshotBridgeDir: String { dataDir + "/capture-bridge" }
 
     static func config(_ name: String) -> String { configDir + "/" + name }
     static func data(_ name: String) -> String { dataDir + "/" + name }
