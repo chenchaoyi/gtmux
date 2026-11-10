@@ -1,0 +1,89 @@
+{
+  "id": "agent-screenshot-cli-20261110",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-10",
+    "decision": "Implement the user-approved screenshot workflow through CLI only; no MCP server or framework dependency",
+    "notes": "User accepted implementation and questioned MCP necessity; local CLI/JSON plus image paths are sufficient for this increment. Reuse ScreenCaptureKit, existing ScreenshotDocument/AnnotationRenderer and common Go dispatch/attachment guards. Existing App owns recording permission; no hotkey simulation, focus change, implicit TCC request, public upload or shared-service restart. A same-user Unix host authenticates peer PID/incarnation and a private per-host nonce. The CLI passes opened input/output descriptors, not privileged arbitrary paths; bounded versioned JSON, exact FD cardinality, operation allowlist, absolute deadline and staged atomic publication. Source references are opaque and expiring, bound to owner process birth/window/display/geometry and rechecked before/after capture. ROI uses existing geometry; image/preview coordinates and hashes are explicit. Import never invents live provenance. Structured annotations reuse renderer, including irreversible solid redaction in sent derived image; keep base+marks for explicit local editor roundtrip, never send originals implicitly. Mint exact session/home/pane/root/server target references on demand, not during global agents polling. Shared native dispatch checks expected session/home before Prepare and mutations; all draft/wait/duplicate/uncertain protections remain. Durable request receipts are written before possible mutation and unknown acceptance never replays; status is last observed receipt, not proof that agent read/completed or that a previously queued message remains queued now. Product state holds bounded transport/receipt metadata only, images/sidecars in caller task output. No real user capture, input or App install is required to validate isolated contracts; actual TCC/window capture remains a separately reported native acceptance boundary. All fixtures isolate HOME/socket paths, no existing editor or live daemon is touched. Test design includes early refusal and fail-closed negative controls; do not interpret mocked UI/TCC as native acceptance."
+  },
+  "cases": [
+    {
+      "id": "ASC-001",
+      "layer": "L2",
+      "description": "CLI parses the versioned screenshot workflow and preserves project-owned outputs",
+      "setup": "Isolated CLI dependencies and task directory; invalid/unknown options and synthetic protocol replies",
+      "action": "Run capabilities/sources/capture/import/annotate/edit/target/send/status paths including errors",
+      "expected": "Machine JSON has consistent ok/error/result and exit semantics; command discovery/help is truthful; no implicit App launch, capture, focus, clipboard, input or MCP. Images/sidecars publish only after valid timely result; output collision/symlink/failed decode or partial write preserves existing files. Explicit task output paths and hashes survive.",
+      "planned_files": [
+        "internal/app/screenshot_test.go",
+        "internal/screenshot/artifact_test.go"
+      ]
+    },
+    {
+      "id": "ASC-002",
+      "layer": "L2",
+      "description": "Native transport is descriptor-scoped, authenticated and budgeted",
+      "setup": "Real isolated Unix sockets/file descriptors plus synthetic host registry and controlled clock; native Swift producer and Go consumer fixtures",
+      "action": "Exercise valid frames, changed host/nonce/UID/PID, corrupt/truncated JSON, wrong/excess descriptors, unsupported version/operation, deadline, late replies and output FD validation",
+      "expected": "Only authenticated exact host and same-user client communicate; no socket TCP fallback, arbitrary shell/path IO or permission prompt. Bound request/response/decoded size and FD ownership/cardinality; descriptors close on all outcomes, canceled work cannot publish user outputs. Synthetic contract checks are not real recording permission evidence.",
+      "planned_files": [
+        "internal/screenshot/transport_test.go",
+        "macapp/Tests/GtmuxBarTests/ScreenshotAgentIPCTests.swift"
+      ]
+    },
+    {
+      "id": "ASC-003",
+      "layer": "L1",
+      "description": "Image/preview/ROI geometry and structured annotation reuse existing native rendering",
+      "setup": "Synthetic 1x/2x images, negative display origin, selected window metadata and preview transforms; real AnnotationRenderer",
+      "action": "Decode imported image and validated annotation JSON, crop ROI, compare raw/exported pixels and simulate stale or changed source; edit document roundtrip model",
+      "expected": "Coordinates tied to exact image hash/capture/preview reference; known transforms align ROI and marks, originals unchanged, invalid/NaN/outside/bomb images refuse. Rectangle/arrow/text/redaction export correctly using common renderer; redacted output contains no original covered pixels. Source mismatches never widen capture; imported files remain imported. Existing editor draft must not be replaced.",
+      "planned_files": [
+        "internal/screenshot/artifact_test.go",
+        "macapp/Tests/GtmuxBarTests/ScreenshotAgentRenderingTests.swift",
+        "macapp/Tests/GtmuxBarTests/ScreenshotAgentSourceTests.swift"
+      ]
+    },
+    {
+      "id": "ASC-004",
+      "layer": "L2",
+      "description": "Screenshot delivery references remain exact across pane/process/home changes",
+      "setup": "Synthetic signed target reference, isolated resume/native bindings and production dispatch with injected target/process readers",
+      "action": "Mint reference on demand, then switch session/home/agent/pane root/server incarnation before or during send; compare expected-target native behavior",
+      "expected": "Changed/expired/tampered identity refuses before input; supported native paths check expected session/home before preparing another recipient payload and again at mutation. No bare-shell delivery or unsafe fallback. Existing draft/approval protections and agent/HQ attribution persist.",
+      "planned_files": [
+        "internal/screenshot/target_test.go",
+        "internal/app/screenshot_send_test.go",
+        "internal/dispatchbridge/expected_target_test.go",
+        "internal/agentclient/expected_target_test.go"
+      ]
+    },
+    {
+      "id": "ASC-005",
+      "layer": "L2",
+      "description": "Durable screenshot receipts distinguish acceptance from completion and prevent blind replay",
+      "setup": "Actual isolated receipt store and dispatch results, duplicate requests and failures before/after possible acceptance",
+      "action": "Submit same request ID and changed image/note/target; simulate queued/active accepted/landed/blocked/transport failure/crash and query status",
+      "expected": "Same request payload cannot create a second mutation; changed payload under ID refuses. Unknown retains uncertainty and cannot auto retry; queued and active accepted never claim user read or task completion. status labels last observed time/state truthfully, without resumed threads/history-body scans. Metadata is private and budgeted; no image or note body is logged.",
+      "planned_files": [
+        "internal/screenshot/receipts_test.go",
+        "internal/app/screenshot_send_test.go"
+      ]
+    },
+    {
+      "id": "ASC-006",
+      "layer": "L3",
+      "description": "CLI/native golden contracts and synthetic full workflow agree",
+      "setup": "Shared versioned synthetic JSON/PNG fixture through actual socket framing, native renderer and CLI artifact metadata; no real sessions/screens",
+      "action": "Capture fixture or import, annotate, preview, optional editor model and fake addressed dispatcher; inject permission/source/transport failures",
+      "expected": "Same protocol/artifact/coordinate/receipt semantics on both ends; outputs contain correct bytes and metadata, original file unchanged and exact fake target used once. Permission or source failure is observable, never fabricated success. Native recording/TCC, signed installation and human interaction remain explicitly separate until actually exercised.",
+      "planned_files": [
+        "macapp/Tests/GtmuxBarTests/ScreenshotAgentIPCTests.swift",
+        "macapp/Tests/GtmuxBarTests/ScreenshotAgentRenderingTests.swift",
+        "internal/app/screenshot_test.go"
+      ]
+    }
+  ],
+  "seal": "b5bdb28215f937537d3c82d30e5b86b636305c84bfdda8af274ebe7b638ee32e"
+}
