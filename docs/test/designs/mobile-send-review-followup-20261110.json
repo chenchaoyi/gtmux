@@ -1,0 +1,58 @@
+{
+  "id": "mobile-send-review-followup-20261110",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review; independent reviewer findings are evidence, not approval of this design)",
+    "date": "2026-11-10",
+    "decision": "Address four confirmed exact-Q review findings before merge",
+    "notes": "Review 53dab0f produced deterministic pending retarget, HQ missing receipt/ID, HQ late failure and stale Detail screen counterexamples. New cases live in new files to preserve prior design chronology. Preserve exact target, draft/menu/approval checks, stable retry, unknown no-replay and old accepted receipt compatibility. Isolated fixtures only; do not replay real queues, resume sessions, deploy or release. Existing full-core/cloud results apply only to old Q; new revision gets appropriate fresh gates and bounded independent delta review."
+  },
+  "cases": [
+    {
+      "id": "MSD-006",
+      "layer": "L2",
+      "description": "Retry stays bound to its original complete native target",
+      "setup": "Real private Prepare/ClaimNative/FinishNative spool, fake native RPC, synthetic homes only",
+      "action": "Retry pending within and beyond 15 seconds while changing session, instance, binding, home, PID or server epoch; repeat unchanged and accepted old targets",
+      "expected": "No pending request is reused or claimed for a changed target; bridge rechecks prepared identity before RPC mutation. An already accepted historical receipt remains a no-op; unchanged pending preserves its ID and unknown outcomes never replay.",
+      "planned_files": [
+        "internal/agentclient/pending_target_test.go",
+        "internal/dispatchbridge/pending_retry_target_test.go"
+      ]
+    },
+    {
+      "id": "MSD-007",
+      "layer": "L2",
+      "description": "HQ shares stable send identity and actual ingress receipt with ordinary conversation",
+      "setup": "Real HQConsoleView and Composer with fake transport/timers and shared transcript echo helper",
+      "action": "Send queued/accepted/submitted/legacy, timeout then explicit retry after 21 seconds, and a repeated prompt already in history",
+      "expected": "HQ uses sendResult and a stable ID reused on explicit retry; exposes actual receipt, not endless Sending; old identical history cannot clear new echo. Failed reason retained, no automatic retry or real input.",
+      "planned_files": [
+        "mobileapp/src/screens/HQSendReceipt.test.tsx"
+      ]
+    },
+    {
+      "id": "MSD-008",
+      "layer": "L2",
+      "description": "HQ late results and retries cannot cross a newer attempt or target identity",
+      "setup": "Real HQConsoleView with deferred requests and mutable client/pane/session/home identity",
+      "action": "Overlap first/second success/refusal/timeout, later key then text receipt; change target or unmount before response; confirm transcript",
+      "expected": "Only corresponding current echo receives receipt; old failure cannot erase newer success. Old results/retry cannot move to a rotated HQ/client/pane; newer control-key screen remains. Confirmation retires only the matching new turn and accepted echo is not resurrected.",
+      "planned_files": [
+        "mobileapp/src/screens/HQSendOrdering.test.tsx"
+      ]
+    },
+    {
+      "id": "MSD-009",
+      "layer": "L2",
+      "description": "Late Detail text receipt settles delivery without reverting a newer terminal snapshot",
+      "setup": "Real DetailView, deferred text send and later control-key success with distinct screen/cursor/columns",
+      "action": "Resolve old text receipt after newer key snapshot",
+      "expected": "The matching text echo becomes accepted, but old snapshot neither invalidates current reads nor replaces newer text, geometry or cursor. No replay and target guards stay in place.",
+      "planned_files": [
+        "mobileapp/src/screens/DetailSendSnapshot.test.tsx"
+      ]
+    }
+  ],
+  "seal": "0415c2f00d7080446da849a3fd1568b588564916e9d75b2c19fff58ee17c132e"
+}
