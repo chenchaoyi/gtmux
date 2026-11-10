@@ -37,7 +37,7 @@ func ReadSpec(path string) (Spec, error) {
 	return s, err
 }
 func readBounded(path string, limit int64) ([]byte, error) {
-	f, err := state.OpenFile(path, os.O_RDONLY|syscall.O_NOFOLLOW, 0)
+	f, err := state.OpenFile(path, os.O_RDONLY|syscall.O_NOFOLLOW|syscall.O_NONBLOCK, 0)
 	if err != nil {
 		return nil, Fail("file-unavailable", "The input must be an accessible regular file")
 	}
@@ -54,7 +54,7 @@ func readBounded(path string, limit int64) ([]byte, error) {
 }
 
 func OpenImage(path, expected string) (*os.File, error) {
-	f, err := state.OpenFile(path, os.O_RDONLY|syscall.O_NOFOLLOW, 0)
+	f, err := state.OpenFile(path, os.O_RDONLY|syscall.O_NOFOLLOW|syscall.O_NONBLOCK, 0)
 	if err != nil {
 		return nil, Fail("image-unavailable", "The input image is not accessible")
 	}

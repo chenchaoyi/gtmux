@@ -18,6 +18,10 @@ final class ScreenshotAgentSocket: @unchecked Sendable {
     private let slots = DispatchSemaphore(value: 2)
     private let lock = NSLock()
     private var listener: Int32 = -1
+    private var generation = UUID()
+    private var connections: [UUID: ScreenshotAgentConnection] = [:]
+    private static let serviceAdmission = ScreenshotAgentAdmission(limit: 2)
+    var activeConnectionCount: Int { lock.lock(); defer { lock.unlock() }; return connections.count }
     private var lease: Int32 = -1
     private var boundIdentity: (dev_t, ino_t)?
 
@@ -60,12 +64,15 @@ final class ScreenshotAgentSocket: @unchecked Sendable {
             try data.write(to: URL(fileURLWithPath: directory + "/host.json"), options: .atomic)
             guard chmod(directory + "/host.json", 0o600) == 0 else { throw ScreenshotAgentFailure.refused("host-unavailable", "Could not protect screenshot host metadata") }
         } catch { Darwin.close(fd); stop(); throw error }
-        lock.lock(); listener = fd; lock.unlock()
-        DispatchQueue.global(qos: .utility).async { [weak self] in self?.acceptLoop(fd) }
+        let token = UUID()
+        lock.lock(); listener = fd; generation = token; lock.unlock()
+        DispatchQueue.global(qos: .utility).async { [weak self] in self?.acceptLoop(fd, generation: token) }
     }
 
     func stop() {
-        lock.lock(); let fd = listener; listener = -1; lock.unlock()
+        lock.lock(); let fd = listener; listener = -1
+        let active = Array(connections.values); lock.unlock()
+        active.forEach { $0.cancel() }
         if fd >= 0 { _ = Darwin.shutdown(fd, SHUT_RDWR); Darwin.close(fd) }
         if let identity = boundIdentity {
             var current = stat()
@@ -78,21 +85,35 @@ final class ScreenshotAgentSocket: @unchecked Sendable {
         if lease >= 0 { _ = flock(lease, LOCK_UN); Darwin.close(lease); lease = -1 }
     }
 
-    private func acceptLoop(_ fd: Int32) {
+    private func acceptLoop(_ fd: Int32, generation token: UUID) {
         while true {
-            lock.lock(); let live = listener == fd; lock.unlock()
+            lock.lock(); let live = listener == fd && generation == token; lock.unlock()
             guard live else { return }
             let client = Darwin.accept(fd, nil, nil)
             if client < 0 { if errno == EINTR { continue }; return }
             guard slots.wait(timeout: .now()) == .success else { Darwin.close(client); continue }
-            DispatchQueue.global(qos: .utility).async { [self] in receive(client) }
+            let connection = ScreenshotAgentConnection(socket: client)
+            let id = UUID()
+            lock.lock()
+            guard listener == fd && generation == token else { lock.unlock(); connection.close(); slots.signal(); return }
+            connections[id] = connection; lock.unlock()
+            DispatchQueue.global(qos: .utility).async { [self] in
+                defer {
+                    connection.close()
+                    lock.lock(); connections.removeValue(forKey: id); lock.unlock()
+                    slots.signal()
+                }
+                receive(connection)
+            }
         }
     }
 
-    private func receive(_ fd: Int32) {
+    private func receive(_ connection: ScreenshotAgentConnection) {
+        let fd = connection.socket
         var files: [Int32] = []
         var id = ""
-        let readEnd = ProcessInfo.processInfo.systemUptime+10
+        let readEnd = connection.context.end
+        var writeEnd = readEnd
         do {
             _ = fcntl(fd, F_SETFD, FD_CLOEXEC)
             _ = fcntl(fd, F_SETFL, O_NONBLOCK)
@@ -104,25 +125,31 @@ final class ScreenshotAgentSocket: @unchecked Sendable {
             id = request.request_id
             guard request.host_nonce == host.nonce else { throw ScreenshotAgentFailure.refused("host-changed", "Screenshot host identity changed") }
             let budget = ScreenshotAgentBudget(end: min(readEnd, ScreenshotAgentBudget(deadlineMS: request.deadline_ms).end))
+            writeEnd = budget.end
             try budget.check()
             try Self.validateDescriptors(files, operation: request.operation, count: request.descriptorCount)
-            let resources = ScreenshotAgentResources(socket: fd, files: files)
-            Task { @MainActor [self, resources] in
-                let response: Data
+            let resources = ScreenshotAgentFiles(files, owned: true)
+            files = [] // exactly one owner from this point onward.
+            connection.attach(resources)
+            // Request deadline can be shorter than the frame-receive budget.
+            connection.limit(to: budget.end)
+            guard Self.serviceAdmission.take() else { throw ScreenshotAgentFailure.refused("native-busy", "Earlier native requests are still completing") }
+            let context = connection.context
+            Task { @MainActor [service, resources, weak connection] in
+                defer { Self.serviceAdmission.release() }
                 do {
-                    let result = try await service.perform(request, files: resources.files, budget: budget)
-                    try budget.check()
-                    response = try Self.reply(id: request.request_id, result: result)
-                } catch { response = Self.failure(id: request.request_id, error: error) }
-                DispatchQueue.global(qos: .utility).async { [self, resources] in
-                    defer { resources.close(); slots.signal() }
-                    try? Self.sendFrame(response, to: resources.socket, end: budget.end)
-                }
+                    let result = try await service.perform(request, resources: resources, context: context)
+                    try context.check()
+                    connection?.complete(.success(result))
+                } catch { connection?.complete(.failure(error)) }
             }
+            let result = try connection.waitForResult()
+            try context.check()
+            try Self.sendFrame(Self.reply(id: id, result: result), to: fd, end: budget.end)
         } catch {
-            try? Self.sendFrame(Self.failure(id: id, error: error), to: fd, end: readEnd)
-            files.forEach { Darwin.close($0) }; Darwin.close(fd); slots.signal()
+            try? Self.sendFrame(Self.failure(id: id, error: error), to: fd, end: writeEnd)
         }
+        files.forEach { Darwin.close($0) }
     }
 
     static func peerIsCurrentUser(_ fd: Int32) -> Bool {
@@ -247,11 +274,61 @@ final class ScreenshotAgentSocket: @unchecked Sendable {
     }
 }
 
-private final class ScreenshotAgentResources: @unchecked Sendable {
+private final class ScreenshotAgentConnection: @unchecked Sendable {
     let socket: Int32
-    let files: [Int32]
+    let context = ScreenshotAgentCancellation(end: ProcessInfo.processInfo.systemUptime+10)
+    private let socketLock = NSLock()
+    private let condition = NSCondition()
+    private var files: ScreenshotAgentFiles?
     private var closed = false
-    init(socket: Int32, files: [Int32]) { self.socket = socket; self.files = files }
-    func close() { guard !closed else { return }; closed = true; files.forEach { Darwin.close($0) }; Darwin.close(socket) }
+    private var result: Result<Data, Error>?
+    private var settled = false
+
+    init(socket: Int32) { self.socket = socket }
+    func attach(_ files: ScreenshotAgentFiles) {
+        socketLock.lock()
+        if closed { files.close() } else { self.files = files }
+        socketLock.unlock()
+    }
+    func limit(to end: TimeInterval) { context.limit(to: end) }
+
+    func complete(_ value: Result<Data, Error>) {
+        condition.lock(); defer { condition.unlock() }
+        guard result == nil, !settled else { return }
+        result = value; condition.broadcast()
+    }
+    func waitForResult() throws -> Data {
+        let remove = context.onCancel { [weak self] in self?.complete(.failure($0)) }
+        defer { remove() }
+        condition.lock()
+        defer { settled = true; result = nil; condition.unlock() }
+        while result == nil {
+            _ = condition.wait(until: Date().addingTimeInterval(0.05))
+            if result != nil { break }
+            // Only this transport worker uses the original socket number. stop
+            // shuts it down under socketLock; close happens after this returns.
+            var byte: UInt8 = 0
+            let count = Darwin.recv(socket, &byte, 1, MSG_PEEK | MSG_DONTWAIT)
+            if count == 0 || count > 0 || (count < 0 && errno != EAGAIN && errno != EINTR) {
+                condition.unlock()
+                context.cancel(.refused("transport-closed", "Screenshot caller disconnected or sent an unexpected frame"))
+                condition.lock()
+            }
+        }
+        return try result!.get()
+    }
+    func cancel() {
+        context.cancel()
+        socketLock.lock()
+        if !closed { _ = Darwin.shutdown(socket, SHUT_RDWR) }
+        socketLock.unlock()
+    }
+    func close() {
+        cancel()
+        socketLock.lock()
+        if !closed { closed = true; files?.close(); files = nil; Darwin.close(socket) }
+        socketLock.unlock()
+        context.finish()
+    }
     deinit { close() }
 }

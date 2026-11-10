@@ -228,8 +228,16 @@ enum AnnotationRenderer {
             ctx.interpolationQuality = .none
             ctx.draw(t, in: CGRect(origin: .zero, size: r.size))
         case .redact(let r):
-            ctx.setFillColor(NSColor.black.cgColor)
-            ctx.fill(r)
+            // Expand in the actual device space, including a downscaled editor
+            // preview. Fractional edge coverage must never blend source pixels.
+            let device = ctx.convertToDeviceSpace(r).standardized
+            let x0 = floor(device.minX), y0 = floor(device.minY)
+            let x1 = ceil(device.maxX), y1 = ceil(device.maxY)
+            let covered = ctx.convertToUserSpace(CGRect(x: x0, y: y0, width: x1-x0, height: y1-y0)).standardized
+            ctx.setShouldAntialias(false)
+            ctx.setBlendMode(.copy)
+            ctx.setFillColor(CGColor(gray: 0, alpha: 1))
+            ctx.fill(covered)
         case let .arrow(from, to):
             let head = arrowHead(from: from, to: to, width: a.width.stroke)
             // The shaft stops at the head's base so the round cap does not poke through the tip.

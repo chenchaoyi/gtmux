@@ -59014,6 +59014,138 @@
         }
       ],
       "sha256": "4e327ea50bda9a8ef15ac77dc9516b02aae11fbe97257e4a901cd030be579e16"
+    },
+    "internal/app/screenshot_send_input_budget_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-a7175f174f65",
+          "line": 16,
+          "kind": "reviewed-selector",
+          "name": "TestASC009StalledNoteHasNoClaimOrSendAfterDeadline",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-009"
+        }
+      ],
+      "sha256": "0a0db9a8d0b1a401de35a7b8523906ceaf7fd07f52e2bd2005f2fb34867549ca"
+    },
+    "internal/screenshot/input_budget_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-c1899f32ed50",
+          "line": 17,
+          "kind": "reviewed-selector",
+          "name": "TestASC009FIFOPathsNeverBlockBeforeRegularFileValidation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-009"
+        },
+        {
+          "id": "MAP-edcd3683485b",
+          "line": 66,
+          "kind": "reviewed-selector",
+          "name": "TestASC009PipeDeadlineCancellationBytesAndOriginalFlags",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-009"
+        }
+      ],
+      "sha256": "2284107f1ecf02dd20f332479794271e66df28e97edb4c4f9307f782e08ef1f7"
+    },
+    "macapp/Tests/GtmuxBarTests/ScreenshotAgentLifecycleTests.swift": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-165be0cea83d",
+          "line": 64,
+          "kind": "reviewed-selector",
+          "name": "testASC010RealSocketDeadlineDisconnectAndStopCloseRequestsWithoutSDKCompletion",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-010"
+        },
+        {
+          "id": "MAP-54aacd7dd432",
+          "line": 97,
+          "kind": "reviewed-selector",
+          "name": "testASC010QuarantinedSDKDoesNotBlockCapabilitiesOrOversubscribeAfterHostRestart",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-010"
+        }
+      ],
+      "sha256": "c7e278fb90cec2e7fb7a630e430b58e5730a4471d019cf2f817fd47c7c5f0bb8"
+    },
+    "macapp/Tests/GtmuxBarTests/ScreenshotAgentWorkTests.swift": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-5c9188dc266b",
+          "line": 6,
+          "kind": "reviewed-selector",
+          "name": "testASC010CancelledCallbacksRemainBoundedUntilActualCompletion",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-010"
+        },
+        {
+          "id": "MAP-2917de6a2699",
+          "line": 50,
+          "kind": "reviewed-selector",
+          "name": "testASC010BackgroundWorkOwnsBoundedDuplicatesAndCannotReuseClosedDescriptors",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-010"
+        }
+      ],
+      "sha256": "005f03f74026d0b4e930ee62186158adb0b474684a695cf9571d1918b22e5e03"
+    },
+    "macapp/Tests/GtmuxBarTests/ScreenshotRedactionCoverageTests.swift": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-ef73ff4b694c",
+          "line": 20,
+          "kind": "reviewed-selector",
+          "name": "testASC008FractionalRedactionOverwritesEveryIntersectedDevicePixel",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-008"
+        },
+        {
+          "id": "MAP-eb6d9f0a3446",
+          "line": 53,
+          "kind": "reviewed-selector",
+          "name": "testASC008DerivedArtifactPreviewKeepsSmallRedactionsOpaque",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-008"
+        }
+      ],
+      "sha256": "bb338744bc35e6f8046f0bda00d3b7dc7edf7b1188c8754e5facfe49f0c6d210"
+    },
+    "macapp/Tests/GtmuxBarTests/ScreenshotSourceMappingTests.swift": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-6e2c5d1a0073",
+          "line": 6,
+          "kind": "reviewed-selector",
+          "name": "testASC011ChangedDisplayMappingAndScaleRefuseBeforeAndAfterCapture",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-011"
+        }
+      ],
+      "sha256": "8417bd98aeea1b084b08033d32e984ba805fdbc471fbc8492529b0470f081e26"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2"

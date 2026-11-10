@@ -3,11 +3,14 @@ import Darwin
 
 struct ScreenshotAgentBudget {
     let end: TimeInterval
-    init(end: TimeInterval) { self.end = end }
+    let cancellation: ScreenshotAgentCancellation?
+    init(end: TimeInterval, cancellation: ScreenshotAgentCancellation? = nil) { self.end = end; self.cancellation = cancellation }
     init(deadlineMS: Int64, uptime: TimeInterval = ProcessInfo.processInfo.systemUptime, now: Date = Date()) {
+        cancellation = nil
         end = uptime + min(10, max(0, Double(deadlineMS)/1000-now.timeIntervalSince1970))
     }
     func check() throws {
+        try cancellation?.check()
         guard ProcessInfo.processInfo.systemUptime < end else { throw ScreenshotAgentFailure.refused("deadline-exceeded", "Screenshot request deadline expired") }
     }
 }
@@ -23,8 +26,16 @@ struct ScreenshotAgentBudget {
     }
 
     func perform(_ request: ScreenshotAgentRequest, files: [Int32], budget: ScreenshotAgentBudget) async throws -> Data {
-        try budget.check()
-        guard files.count == request.descriptorCount else { throw ScreenshotAgentFailure.refused("descriptor-count", "Wrong number of image/output descriptors") }
+        let context = ScreenshotAgentCancellation(end: budget.end)
+        defer { context.finish() }
+        let resources = ScreenshotAgentFiles(files, owned: false)
+        defer { resources.close() }
+        return try await perform(request, resources: resources, context: context)
+    }
+
+    func perform(_ request: ScreenshotAgentRequest, resources: ScreenshotAgentFiles, context: ScreenshotAgentCancellation) async throws -> Data {
+        try context.check()
+        guard resources.count == request.descriptorCount else { throw ScreenshotAgentFailure.refused("descriptor-count", "Wrong number of image/output descriptors") }
         switch request.operation {
         case "capabilities":
             return try JSONSerialization.data(withJSONObject: ["platform": "macOS", "schema_version": 1,
@@ -32,54 +43,68 @@ struct ScreenshotAgentBudget {
                 "operations": ["sources", "capture", "import", "annotate", "edit"],
                 "screen_recording_prompted": false, "mcp_required": false])
         case "sources":
-            let list = try await sources.inventory(app: request.app, displays: request.source_kind == "display")
-            try budget.check()
+            let list = try await sources.inventory(app: request.app, displays: request.source_kind == "display", context: context)
+            try context.check()
             return try JSONSerialization.data(withJSONObject: ["sources": list])
         case "capture":
             guard let reference = request.source_ref else { throw ScreenshotAgentFailure.refused("source-required", "Choose a source reference first") }
-            let (image, size, rect, scale, kind) = try await sources.capture(reference: reference, rect: request.rect)
-            try budget.check()
-            let result = try ScreenshotAgentRendering.encode(image: image, pointSize: size, kind: kind, rect: rect, sourceScale: scale)
-            return try write(result, files: files, budget: budget)
-        case "import", "annotate", "edit":
-            let data = try Self.readImage(files[0], budget: budget)
-            guard request.image_sha256 == ScreenshotAgentRendering.hash(data) else { throw ScreenshotAgentFailure.refused("image-changed", "Input image hash changed") }
-            let (image, importedSize) = try ScreenshotAgentRendering.decode(data)
-            if request.operation == "import" {
-                return try write(ScreenshotAgentRendering.encode(image: image, pointSize: importedSize, kind: "imported"), files: Array(files.dropFirst()), budget: budget)
+            let (image, size, rect, scale, kind) = try await sources.capture(reference: reference, rect: request.rect, context: context)
+            return try await ScreenshotAgentWork.run(context: context, files: resources, indices: [0, 1]) { files, budget in
+                let result = try ScreenshotAgentRendering.encode(image: image, pointSize: size, kind: kind, rect: rect, sourceScale: scale)
+                return try Self.write(result, files: files, budget: budget)
             }
-            guard let frame = request.document, let spec = request.spec else { throw ScreenshotAgentFailure.refused("document-required", "Provide image metadata and its annotation specification") }
-            guard frame.image_sha256 == request.image_sha256 else { throw ScreenshotAgentFailure.refused("image-changed", "Image and document hash differ") }
-            let items = try spec.items(frame: frame, image: image)
-            let size = CGSize(width: frame.point_width, height: frame.point_height)
-            let doc = ScreenshotDocument(image: image, pointSize: size)
-            items.forEach { doc.add($0) }
-            if request.operation == "edit" {
+        case "import", "annotate":
+            return try await ScreenshotAgentWork.run(context: context, files: resources, indices: [0, 1, 2]) { files, budget in
+                let (image, size, items, _) = try Self.prepare(request, fd: files[0], budget: budget)
+                let result: (Data, Data, ScreenshotAgentFrame)
+                if request.operation == "import" {
+                    result = try ScreenshotAgentRendering.encode(image: image, pointSize: size, kind: "imported")
+                } else {
+                    guard let flattened = AnnotationRenderer.flatten(image: image, pointSize: size, items: items), let frame = request.document else { throw ScreenshotAgentFailure.refused("render-failed", "Could not render annotations") }
+                    var annotated = try ScreenshotAgentRendering.encode(image: flattened, pointSize: size, kind: frame.source_kind, annotations: items)
+                    annotated.2.captured_at = frame.captured_at
+                    annotated.2.source_rect_pt = frame.source_rect_pt
+                    annotated.2.source_to_image = frame.source_to_image
+                    result = annotated
+                }
+                return try Self.write(result, files: Array(files.dropFirst()), budget: budget)
+            }
+        case "edit":
+            let (image, size, items, data) = try await ScreenshotAgentWork.run(context: context, files: resources, indices: [0]) { files, budget in
+                try Self.prepare(request, fd: files[0], budget: budget)
+            }
+            return try context.commit {
                 guard !editorOpen() else { throw ScreenshotAgentFailure.refused("editor-busy", "An existing screenshot draft is open; it was preserved") }
-                try budget.check()
-                try openEditor(doc, data)
+                let document = ScreenshotDocument(image: image, pointSize: size)
+                items.forEach { document.add($0) }
+                try openEditor(document, data)
                 return try JSONSerialization.data(withJSONObject: ["editor_opened": true, "sent": false])
             }
-            guard let flattened = AnnotationRenderer.flatten(doc) else { throw ScreenshotAgentFailure.refused("render-failed", "Could not render annotations") }
-            var result = try ScreenshotAgentRendering.encode(image: flattened, pointSize: size, kind: frame.source_kind)
-            result.2.captured_at = frame.captured_at
-            result.2.source_rect_pt = frame.source_rect_pt
-            result.2.source_to_image = frame.source_to_image
-            return try write(result, files: Array(files.dropFirst()), budget: budget)
         default: throw ScreenshotAgentFailure.refused("unsupported-operation", "Unsupported screenshot operation")
         }
     }
 
-    private func write(_ output: (Data, Data, ScreenshotAgentFrame), files: [Int32], budget: ScreenshotAgentBudget) throws -> Data {
+    nonisolated private static func prepare(_ request: ScreenshotAgentRequest, fd: Int32, budget: ScreenshotAgentBudget) throws -> (CGImage, CGSize, [Annotation], Data) {
+        let data = try readImage(fd, budget: budget)
+        guard request.image_sha256 == ScreenshotAgentRendering.hash(data) else { throw ScreenshotAgentFailure.refused("image-changed", "Input image hash changed") }
+        let (image, importedSize) = try ScreenshotAgentRendering.decode(data)
+        try budget.check()
+        if request.operation == "import" { return (image, importedSize, [], data) }
+        guard let frame = request.document, let spec = request.spec else { throw ScreenshotAgentFailure.refused("document-required", "Provide image metadata and its annotation specification") }
+        guard frame.image_sha256 == request.image_sha256 else { throw ScreenshotAgentFailure.refused("image-changed", "Image and document hash differ") }
+        return (image, CGSize(width: frame.point_width, height: frame.point_height), try spec.items(frame: frame, image: image), data)
+    }
+
+    nonisolated private static func write(_ output: (Data, Data, ScreenshotAgentFrame), files: [Int32], budget: ScreenshotAgentBudget) throws -> Data {
         try budget.check()
         guard files.count == 2 else { throw ScreenshotAgentFailure.refused("descriptor-count", "Two output descriptors are required") }
-        try Self.writeImage(output.0, to: files[0], budget: budget)
-        try Self.writeImage(output.1, to: files[1], budget: budget)
+        try writeImage(output.0, to: files[0], budget: budget)
+        try writeImage(output.1, to: files[1], budget: budget)
         try budget.check()
         return try JSONEncoder().encode(output.2)
     }
 
-    static func readImage(_ fd: Int32, budget: ScreenshotAgentBudget) throws -> Data {
+    nonisolated static func readImage(_ fd: Int32, budget: ScreenshotAgentBudget) throws -> Data {
         guard lseek(fd, 0, SEEK_SET) >= 0 else { throw ScreenshotAgentFailure.refused("image-unavailable", "Input is not a seekable image") }
         var result = Data(), buffer = [UInt8](repeating: 0, count: 64 << 10)
         while true {
@@ -91,7 +116,7 @@ struct ScreenshotAgentBudget {
         }
     }
 
-    static func writeImage(_ data: Data, to fd: Int32, budget: ScreenshotAgentBudget) throws {
+    nonisolated static func writeImage(_ data: Data, to fd: Int32, budget: ScreenshotAgentBudget) throws {
         try data.withUnsafeBytes { raw in
             var offset = 0
             while offset < raw.count {

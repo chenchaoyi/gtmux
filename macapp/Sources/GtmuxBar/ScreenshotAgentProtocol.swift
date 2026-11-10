@@ -191,10 +191,21 @@ enum ScreenshotAgentRendering {
         return output
     }
 
-    static func encode(image: CGImage, pointSize: CGSize, kind: String, rect: CGRect? = nil, sourceScale: CGFloat = 1) throws -> (Data, Data, ScreenshotAgentFrame) {
+    static func encode(image: CGImage, pointSize: CGSize, kind: String, rect: CGRect? = nil, sourceScale: CGFloat = 1, annotations: [Annotation] = []) throws -> (Data, Data, ScreenshotAgentFrame) {
         guard image.width > 0, image.height > 0, Int64(image.width)*Int64(image.height) <= maximumPixels,
               let full = AnnotationRenderer.pngData(image, pointSize: pointSize) else { throw ScreenshotAgentFailure.refused("render-failed", "Could not encode the image") }
-        let small = try preview(image)
+        let thumbnail = try preview(image)
+        let redactions = annotations.filter { if case .redact = $0.kind { return true }; return false }
+        let small: CGImage
+        if redactions.isEmpty { small = thumbnail }
+        else {
+            // Resampling a flattened image mixes edge pixels with neighbors.
+            // Reapply only opaque privacy masks at the preview's device scale.
+            guard let covered = AnnotationRenderer.flatten(image: thumbnail, pointSize: pointSize, items: redactions) else {
+                throw ScreenshotAgentFailure.refused("render-failed", "Could not preserve redactions in the preview")
+            }
+            small = covered
+        }
         guard let png = AnnotationRenderer.pngData(small, pointSize: CGSize(width: small.width, height: small.height)),
               full.count <= maximumBytes, png.count <= maximumBytes else { throw ScreenshotAgentFailure.refused("image-too-large", "PNG exceeds the 30 MiB attachment budget") }
         var frame = ScreenshotAgentFrame(capture_id: UUID().uuidString.lowercased(), source_kind: kind, image_sha256: hash(full), pixel_width: image.width, pixel_height: image.height,

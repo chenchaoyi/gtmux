@@ -22,6 +22,7 @@ MAP-c746f11a537e,L2,reviewed implementation,internal/app/hqworkspace_stored_test
 MAP-93c5d85ec366,L2,reviewed implementation,internal/app/relay_sender_contract_test.go,52,reviewed-selector,TestHRS003ReceiptAwareSharedTranscript,False,HRS-003
 MAP-d400cc0846af,L2,reviewed implementation,internal/app/relay_sender_contract_test.go,89,reviewed-selector,TestHRS003EarlierPagesKeepFirstAttribution,False,HRS-003
 MAP-5a676c7255b7,L2,reviewed implementation,internal/app/screenshot_deadline_test.go,13,reviewed-selector,TestASC007TargetReadStopsAtCancellationBeforeMintOrSend,False,ASC-007
+MAP-a7175f174f65,L2,reviewed implementation,internal/app/screenshot_send_input_budget_test.go,16,reviewed-selector,TestASC009StalledNoteHasNoClaimOrSendAfterDeadline,False,ASC-009
 MAP-8890e9017044,L2,reviewed implementation,internal/app/screenshot_send_test.go,16,reviewed-selector,TestASC004And005ScreenshotDeliveryUsesExactTargetAndDurableAcceptance,False,"ASC-004,ASC-005"
 MAP-15420f2c2dd0,L2,reviewed implementation,internal/app/screenshot_test.go,31,reviewed-selector,TestASC001ScreenshotCLIRefusesAmbiguousOrUnsupportedInput,False,"ASC-001,ASC-006"
 MAP-b25f69eecf52,L2,reviewed implementation,internal/app/screenshot_test.go,49,reviewed-selector,TestASC006UnavailableNativeCapabilityIsTruthfulAndNonMutating,False,"ASC-001,ASC-006"
@@ -72,6 +73,8 @@ MAP-fb260993ae4c,L2,reviewed implementation,internal/screenshot/artifact_test.go
 MAP-6431b235fa37,L2,reviewed implementation,internal/screenshot/artifact_test.go,98,reviewed-selector,TestASC003CoordinatesAndEditableImagesStayBoundToExactBytes,False,"ASC-001,ASC-003"
 MAP-28e4c80d7a50,L2,reviewed implementation,internal/screenshot/host_readiness_test.go,10,reviewed-selector,TestASC007HostObservationCannotAuthorizeAfterCancellation,False,ASC-007
 MAP-cad2cb987926,L2,reviewed implementation,internal/screenshot/host_readiness_test.go,42,reviewed-selector,TestASC007HostIncarnationUsesExactUTCMetadata,False,ASC-007
+MAP-c1899f32ed50,L2,reviewed implementation,internal/screenshot/input_budget_test.go,17,reviewed-selector,TestASC009FIFOPathsNeverBlockBeforeRegularFileValidation,False,ASC-009
+MAP-edcd3683485b,L2,reviewed implementation,internal/screenshot/input_budget_test.go,66,reviewed-selector,TestASC009PipeDeadlineCancellationBytesAndOriginalFlags,False,ASC-009
 MAP-e27b2d2ffff7,L2,reviewed implementation,internal/screenshot/receipts_test.go,13,reviewed-selector,TestASC005ReceiptsNeverReplayUncertainOrChangedRequests,False,ASC-005
 MAP-fa5a12e1d46f,L2,reviewed implementation,internal/screenshot/receipts_test.go,57,reviewed-selector,TestASC005ReceiptStoreRefusesCorruptionAndCapacity,False,ASC-005
 MAP-58e7e7500da8,L2,reviewed implementation,internal/screenshot/target_test.go,12,reviewed-selector,TestASC004TargetReferencesBindWholeIncarnationAndExpire,False,ASC-004
@@ -462,6 +465,13 @@ MAP-a968227ee19e,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/Screensho
 MAP-f5d04607e020,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotActiveInputTests.swift,30,reviewed-selector,testSSI003BothLanguagesDescribeQueuedAndActiveInputTruthfully,False,SSI-003
 MAP-31d7a6a6f502,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotAgentIPCTests.swift,6,reviewed-selector,testASC002ProtocolAndDescriptorsRefuseUnexpectedAuthority,False,"ASC-002,ASC-006"
 MAP-31827d0afbb7,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotAgentIPCTests.swift,39,reviewed-selector,testASC006GoConsumerUsesActualSwiftSocketAndRenderer,False,"ASC-002,ASC-006"
+MAP-165be0cea83d,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotAgentLifecycleTests.swift,64,reviewed-selector,testASC010RealSocketDeadlineDisconnectAndStopCloseRequestsWithoutSDKCompletion,False,ASC-010
+MAP-54aacd7dd432,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotAgentLifecycleTests.swift,97,reviewed-selector,testASC010QuarantinedSDKDoesNotBlockCapabilitiesOrOversubscribeAfterHostRestart,False,ASC-010
+MAP-5c9188dc266b,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotAgentWorkTests.swift,6,reviewed-selector,testASC010CancelledCallbacksRemainBoundedUntilActualCompletion,False,ASC-010
+MAP-2917de6a2699,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotAgentWorkTests.swift,50,reviewed-selector,testASC010BackgroundWorkOwnsBoundedDuplicatesAndCannotReuseClosedDescriptors,False,ASC-010
+MAP-ef73ff4b694c,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotRedactionCoverageTests.swift,20,reviewed-selector,testASC008FractionalRedactionOverwritesEveryIntersectedDevicePixel,False,ASC-008
+MAP-eb6d9f0a3446,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotRedactionCoverageTests.swift,53,reviewed-selector,testASC008DerivedArtifactPreviewKeepsSmallRedactionsOpaque,False,ASC-008
+MAP-6e2c5d1a0073,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotSourceMappingTests.swift,6,reviewed-selector,testASC011ChangedDisplayMappingAndScaleRefuseBeforeAndAfterCapture,False,ASC-011
 MAP-435d839b0a83,L2,reviewed implementation,mobileapp/e2e/android/permissionJourney.test.ts,63,reviewed-selector,ACP-002 registered journey survives,False,ACP-002
 MAP-255b356248a5,L2,reviewed implementation,mobileapp/e2e/android/permissionJourney.test.ts,70,reviewed-selector,ACP-002 registered journey still fails,False,ACP-002
 MAP-04ea0e0d7ec3,L2,reviewed implementation,mobileapp/e2e/android/permissionJourney.test.ts,76,reviewed-selector,ACP-002 registered journey cannot pass,False,ACP-002

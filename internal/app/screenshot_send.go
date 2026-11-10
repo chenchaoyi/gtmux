@@ -113,8 +113,13 @@ func screenshotSend(ctx context.Context, path, token, id, notePath string) (scre
 	}
 	note := ""
 	if notePath != "" {
-		note, err = dispatch.ReadPayload(notePath, os.Stdin)
-		if err != nil && !errors.Is(err, dispatch.ErrPayloadEmpty) {
+		var payload []byte
+		payload, err = screenshot.ReadInput(ctx, notePath, os.Stdin, dispatch.PayloadMax)
+		note = dispatch.TrimPayload(string(payload))
+		if strings.TrimSpace(note) == "" {
+			note = ""
+		}
+		if err != nil {
 			return empty, screenshot.Fail("note-unavailable", "The message file could not be read")
 		}
 	}

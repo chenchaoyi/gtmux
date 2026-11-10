@@ -13,7 +13,7 @@ gtmux screenshot sources --app com.mitchellh.ghostty
 gtmux screenshot capture --source-ref REF --rect 40,60,800,500 --unit pt --output /tmp/my-task-shots/terminal.png
 ```
 
-Choose `REF` from the returned window inventory. To select a display explicitly, use `sources --displays`. References expire after 30 seconds. The window's owner, process birth and geometry are checked again before and after capture. A changed source is refused rather than silently widening to a whole display. Regions use source-local top-left **points**; a window can have a negative global display origin. Very large full sources and regions crossing different display scales are refused; select a smaller source or separate regions.
+Choose `REF` from the returned window inventory. To select a display explicitly, use `sources --displays`. References expire after 30 seconds. The window's owner, process birth, geometry, display mapping and backing scale are checked again before and after capture. A scale change with unchanged point bounds also expires the observation. A changed source is refused rather than silently widening to a whole display. Regions use source-local top-left **points**; a window can have a negative global display origin. Very large full sources and regions crossing different display scales are refused; select a smaller source or separate regions.
 
 Read the returned `preview_path` through your agent's image viewer. The sidecar includes full/preview dimensions and hashes, a capture ID and the point-to-image transform. Use exactly that coordinate frame when marking. An existing PNG/JPEG/other supported ImageIO image can instead be normalized with:
 
@@ -38,7 +38,7 @@ Imported images are identified as imported, without invented live-window provena
 }
 ```
 
-`preview_px` is also supported when the matching `preview_id` is supplied. Other marks are `ellipse`, `mosaic`, and `line` with `points: [[x,y], ...]`. Colors are red/blue/yellow; stroke styles are thin/medium/thick. Solid `redact` removes covered pixels from the derived PNG; mosaic is visual obscuring and is not equivalent. The unredacted base still exists locally: keep it private, and send **only the derived file**.
+`preview_px` is also supported when the matching `preview_id` is supplied. Other marks are `ellipse`, `mosaic`, and `line` with `points: [[x,y], ...]`. Colors are red/blue/yellow; stroke styles are thin/medium/thick. Solid `redact` rounds coverage outward to intersected pixels, including in the downsampled preview, and removes covered pixels from the derived PNG; mosaic is visual obscuring and is not equivalent. The unredacted base still exists locally: keep it private, and send **only the derived file**.
 
 ```sh
 gtmux screenshot annotate --capture /tmp/my-task-shots/terminal.capture.json --spec /tmp/my-task-shots/marks.json --output /tmp/my-task-shots/marked.png
@@ -71,7 +71,7 @@ None means the agent read the image or completed work. `status` reads the durabl
 
 ## Limits and storage
 
-Requests have a ten-second maximum budget, 256 KiB JSON, 30 MiB/image, 32 million pixels, 500 marks and 10,000 path points. Preview long edge is at most 1600 pixels. The App accepts local same-user Unix connections with pinned host identity, a per-host nonce and opened file descriptors; requests cannot name arbitrary native output paths. No TCP, shell execution, clipboard changes or implicit Screen Recording prompt occurs. The App blocks on its listener when idle, with two concurrent slots.
+Requests have a ten-second maximum budget, 256 KiB JSON, 30 MiB/image, 32 million pixels, 500 marks and 10,000 path points. Preview long edge is at most 1600 pixels. The App accepts local same-user Unix connections with pinned host identity, a per-host nonce and opened file descriptors; requests cannot name arbitrary native output paths. No TCP, shell execution, clipboard changes or implicit Screen Recording prompt occurs. The App blocks on its listener when idle, with two concurrent request slots. Deadline expiry, caller disconnect and host stop revoke the request and close its transport. Image decoding, rendering and file IO run away from the UI thread. An OS callback or filesystem call may itself be uninterruptible: the host retains a bounded outstanding-work permit until it actually completes, rejects replacement work with `native-busy`, and discards late results instead of opening an editor or publishing an artifact. A stalled OS capture does not prevent a capabilities query; it does not authorize automatically retrying an uncertain send.
 
 The caller owns PNG/preview/sidecar outputs. Product-managed `capture-bridge` holds only the host/socket lease and identity. `capture-requests` holds a private target-signing key and hashed delivery receipts, capped at 1000 directory entries; it stores no note or image body. A full receipt budget returns an explicit error and does not discard unresolved receipts. This increment does not automatically migrate or delete existing archives. Existing attachment delivery retains its established product-managed uploads behavior.
 

@@ -972,5 +972,57 @@
     "selectors": [
       "TestASC007TargetReadStopsAtCancellationBeforeMintOrSend"
     ]
+  },
+  "internal/screenshot/input_budget_test.go": {
+    "cases": [
+      "ASC-009"
+    ],
+    "selectors": [
+      "TestASC009FIFOPathsNeverBlockBeforeRegularFileValidation",
+      "TestASC009PipeDeadlineCancellationBytesAndOriginalFlags"
+    ]
+  },
+  "internal/app/screenshot_send_input_budget_test.go": {
+    "cases": [
+      "ASC-009"
+    ],
+    "selectors": [
+      "TestASC009StalledNoteHasNoClaimOrSendAfterDeadline"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotRedactionCoverageTests.swift": {
+    "cases": [
+      "ASC-008"
+    ],
+    "selectors": [
+      "testASC008FractionalRedactionOverwritesEveryIntersectedDevicePixel",
+      "testASC008DerivedArtifactPreviewKeepsSmallRedactionsOpaque"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotSourceMappingTests.swift": {
+    "cases": [
+      "ASC-011"
+    ],
+    "selectors": [
+      "testASC011ChangedDisplayMappingAndScaleRefuseBeforeAndAfterCapture"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotAgentLifecycleTests.swift": {
+    "cases": [
+      "ASC-010"
+    ],
+    "selectors": [
+      "testASC010RealSocketDeadlineDisconnectAndStopCloseRequestsWithoutSDKCompletion",
+      "testASC010QuarantinedSDKDoesNotBlockCapabilitiesOrOversubscribeAfterHostRestart"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotAgentWorkTests.swift": {
+    "cases": [
+      "ASC-010"
+    ],
+    "selectors": [
+      "testASC010CancelledCallbacksRemainBoundedUntilActualCompletion",
+      "testASC010BackgroundWorkOwnsBoundedDuplicatesAndCannotReuseClosedDescriptors"
+    ]
   }
 }
