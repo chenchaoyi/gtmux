@@ -5,6 +5,19 @@ TBD - created by archiving change codex-terminal-identity. Update Purpose after 
 
 ## Requirements
 
+### Requirement: Startup admission is bounded and diagnosable
+The bridge SHALL wait for its controlled child launch to publish before checking a frontend connection. Transient missing process or stdin evidence MAY be checked again under one four-second admission deadline and at most four attempts. Explicit peer, launch, pane, process-incarnation, terminal or ambiguity conflicts SHALL refuse without retry or weaker fallback. All accepted clients SHALL satisfy the existing foreground, stdin, ancestry, peer and birth checks. A direct native child MAY use only the known pane, bridge and client PID snapshots; generic launchers SHALL retain full ancestry and ambiguity checks. Diagnostics SHALL record a fixed cause, attempt count and elapsed admission time without arguments, credentials or prompt content. Connection readiness SHALL NOT be presented as target conversation confirmation.
+
+#### Scenario: A cold-start inspection is temporarily unreadable
+- **WHEN** the verified controlled child is connecting and process or stdin evidence is temporarily unavailable
+- **THEN** only read-only checks may repeat within the same deadline and attempt limit
+- **AND** no new Codex process, alternative resume or input is sent
+
+#### Scenario: A different client or terminal connects
+- **WHEN** an explicit identity or terminal conflict is observed
+- **THEN** admission refuses immediately with its specific diagnostic cause
+- **AND** missing evidence at exhaustion is reported as unavailability rather than an account permission instruction
+
 ### Requirement: Codex terminal attachment is per frontend
 The core SHALL associate an eligible shared-server Codex TUI with its own successful root thread start, resume or fork response after verifying local socket peer identity, frontend PID/birth, terminal, pane incarnation and Codex home. Backend PID, inherited environment, cwd, title, loaded threads and unsolicited notifications SHALL NOT establish ownership. Ephemeral helpers and subagent views SHALL NOT replace the root binding. Reordered responses and older connections SHALL NOT reclaim a newer attachment. Expired or exited attachments SHALL lose live authority while saved history remains restorable.
 

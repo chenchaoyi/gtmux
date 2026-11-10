@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1063 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1066 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
-| L1 · 单元/纯逻辑 | 3759 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 1940 | [L2.csv](cases/L2.csv) |
+| L1 · 单元/纯逻辑 | 3761 | [L1.csv](cases/L1.csv) |
+| L2 · 组件/契约 | 1943 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 90 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 94 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 12 | [M.csv](cases/M.csv) |
@@ -38,6 +38,9 @@
 | CET-006 | A real manual PostCompact receipt is recorded once, active stays absent and exact completion/current turn remain intact. Only actual rearm decisions are eligible for the completed-turn fence. |
 | CORE-CODEX-FOREIGN-ACTIVE | Only a verified current Codex home/session/cwd, a named foreign active marker, a completed/aborted own rollout and a ready nonworking nonapproval frame can contradict false working. Own/empty/unknown/stale binding or actual start/work/wait remains conservative. Reads never remove a foreign marker or mint a completion. |
 | CORE-CODEX-FOREIGN-GATHER | The real radar gather with isolated HOME, a completed own rollout, another session marker and recent window activity reports idle without changing marker content/mtime, binding or completion records; genuine own turns, approvals and legacy unknown ownership still work. |
+| CFR-001 | Only stable unique foreground Codex with verified stdin and exact launch ancestry is accepted. Missing reads classify transient; explicit conflicts classify hard refusal. Direct child snapshots are scoped to pane/bridge/client; generic ancestry keeps existing protections. Cancellation does not extend the parent deadline; legacy Resolve behavior is unchanged. No real process or terminal mutation. |
+| CFR-002 | Known peer/launch mismatch, invalid identity and changed pane cannot acquire authority; transient unreadable evidence is distinguishable from mismatch. No thread discovery/resume/input or persisted binding occurs during admission. Legacy Begin API and current binding/freshness checks remain valid. |
+| CFR-003 | No check executes before publication; successful transient retry authorizes exactly once. Hard refusal runs once, no second child or native fallback, failures preserve specific nonsecret reason and retry eligibility. All attempts share a 4s parent budget and at most four checks; canceled/deadline work cannot later authorize. Old immediate refusal fails the transient/early-publication expectations; cancellation does not require a timing-race sleep. |
 | CT-HTTP | Real Go handler responses agree with independent RN/Web fake servers for transcript history/context, HQ overview/detail/cursor, document metadata/download, null/empty and permission errors. |
 | CT-DRAFT | Actual Detail and HQ composers isolate text across servers and reused panes/session identities, ignore delayed old draft loads, and persist/send to the current target only. |
 | CT-HQ | A current human question opens its original matter, prepares but does not auto-send a reply; an authoritative answer removes it from pending without completing the matter. Old client responses cannot replace current data. |

@@ -68,7 +68,13 @@ func (i inspector) agent(pid int, commands []string, now int64) AgentProcess {
 
 // ReadAgent reads one current process incarnation, without arguments or a scan.
 func ReadAgent(pid int) (AgentProcess, bool) {
-	ctx, cancel := context.WithTimeout(context.Background(), budget)
+	return ReadAgentContext(context.Background(), pid)
+}
+
+// ReadAgentContext never grants a process read a new budget past its caller's
+// startup deadline. Legacy readers retain the same per-read bound.
+func ReadAgentContext(parent context.Context, pid int) (AgentProcess, bool) {
+	ctx, cancel := context.WithTimeout(parent, budget)
 	defer cancel()
 	p, ok := readProcess(ctx, pid)
 	if !ok {

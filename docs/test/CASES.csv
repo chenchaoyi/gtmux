@@ -864,6 +864,8 @@ LEG-60862a5464ac,L1,Go core / CLI / server,internal/codexbridge/observe_test.go,
 LEG-cc26f78d8d87,L1,Go core / CLI / server,internal/codexbridge/observe_test.go,93,Test,TestObserverRequiresMatchingServerHome,False,legacy-not-retrospectively-reviewed
 LEG-d876071a5552,L1,Go core / CLI / server,internal/codexbridge/observe_test.go,104,Test,TestObserverResumesLargeHistoryWithoutRetainingCatalogs,False,legacy-not-retrospectively-reviewed
 LEG-878e735aba01,L1,Go core / CLI / server,internal/codexbridge/observe_test.go,114,Test,TestObserverKeepsSuccessfulRootWorkspace,False,legacy-not-retrospectively-reviewed
+MAP-4bb0cccd29ff,L2,reviewed implementation,internal/codexbridge/readiness_test.go,12,reviewed-selector,TestCFR003AdmissionRetriesOnlyTransientEvidence,False,CFR-003
+MAP-3cb7a6a952c7,L2,reviewed implementation,internal/codexbridge/readiness_test.go,68,reviewed-selector,TestCFR003LaunchPublicationAndCancellation,False,CFR-003
 LEG-e6e48b36723f,L1,Go core / CLI / server,internal/codexrpc/peer_unix_test.go,12,Test,TestUnixPeerIdentityComesFromKernel,False,legacy-not-retrospectively-reviewed
 LEG-093de95f9c8b,L1,Go core / CLI / server,internal/codexrpc/queue_test.go,56,Test,TestQueueTargetsExactConversation,False,legacy-not-retrospectively-reviewed
 LEG-62a9833f529c,L1,Go core / CLI / server,internal/codexrpc/queue_test.go,83,Test,TestQueueRefusesDifferentServerHomeBeforeInput,False,legacy-not-retrospectively-reviewed
@@ -887,6 +889,8 @@ LEG-7d21e1339a80,L1,Go core / CLI / server,internal/codexterminal/client_test.go
 LEG-80c194b2199e,L1,Go core / CLI / server,internal/codexterminal/client_test.go,145,Test,TestWrappedCodexPaneRevalidation,False,legacy-not-retrospectively-reviewed
 LEG-de26ba12a73d,L1,Go core / CLI / server,internal/codexterminal/mode_test.go,5,Test,TestProcessRecoveryRejectsHeadlessModesEvenWithTerminalStdin,False,legacy-not-retrospectively-reviewed
 LEG-3c028c0e4888,L1,Go core / CLI / server,internal/codexterminal/mode_test.go,30,Test,TestManagedBackendRequiresUnambiguousDaemonCommand,False,legacy-not-retrospectively-reviewed
+MAP-36a7e5ff2edf,L1,reviewed implementation,internal/codexterminal/readiness_test.go,10,reviewed-selector,TestCFR001ReadinessPreservesStrictTerminalProof,False,CFR-001
+MAP-2e57929e00a5,L1,reviewed implementation,internal/codexterminal/readiness_test.go,76,reviewed-selector,TestCFR001DirectLaunchScopeAndParentCancellation,False,CFR-001
 LEG-28aabe798834,L1,Go core / CLI / server,internal/codexterminal/stdin_lsof_test.go,5,Test,TestWrappedCodexStdinDescriptor,False,legacy-not-retrospectively-reviewed
 LEG-abc84f7d187c,L1,Go core / CLI / server,internal/connect/attach_url_test.go,5,Test,TestWSURL,False,legacy-not-retrospectively-reviewed
 LEG-c9022aeadd0c,L1,Go core / CLI / server,internal/connect/attach_url_test.go,21,Test,TestWSURL_EmptyTERM,False,legacy-not-retrospectively-reviewed
@@ -2422,6 +2426,7 @@ LEG-6f45952ad6bb,L1,Go core / CLI / server,internal/resume/codexbinding_test.go,
 LEG-012ad71f55a1,L1,Go core / CLI / server,internal/resume/codexbinding_test.go,202,Test,TestCodexBindingExpiryPrunesOnlyExpiredIntents,False,legacy-not-retrospectively-reviewed
 LEG-4cf50a248c8a,L1,Go core / CLI / server,internal/resume/codexbinding_test.go,215,Test,TestCodexClientIdentityFollowsProcessNotShell,False,legacy-not-retrospectively-reviewed
 LEG-725d447f35f5,L1,Go core / CLI / server,internal/resume/codexbinding_test.go,229,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
+MAP-0ff0e3ef33b9,L2,reviewed implementation,internal/resume/codexfrontend_ready_test.go,14,reviewed-selector,TestCFR002AdmissionCausesAndControlledLaunch,False,CFR-002
 LEG-a4077e009448,L1,Go core / CLI / server,internal/resume/codexfrontend_test.go,46,Test,TestFrontendBindingSurvivesHooksButNotExit,False,legacy-not-retrospectively-reviewed
 LEG-d34c1689f253,L1,Go core / CLI / server,internal/resume/codexfrontend_test.go,75,Test,TestFrontendRejectsPeerBirthAndHomeConflicts,False,legacy-not-retrospectively-reviewed
 LEG-816cc71d59a8,L1,Go core / CLI / server,internal/resume/codexfrontend_test.go,98,Test,TestNewConnectionPreventsLateOldBinding,False,legacy-not-retrospectively-reviewed

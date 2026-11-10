@@ -854,5 +854,31 @@
     "selectors": [
       "TestClosedFrontendObservationSurvivesPositivePIDReuseOnly"
     ]
+  },
+  "internal/codexterminal/readiness_test.go": {
+    "cases": [
+      "CFR-001"
+    ],
+    "selectors": [
+      "TestCFR001ReadinessPreservesStrictTerminalProof",
+      "TestCFR001DirectLaunchScopeAndParentCancellation"
+    ]
+  },
+  "internal/resume/codexfrontend_ready_test.go": {
+    "cases": [
+      "CFR-002"
+    ],
+    "selectors": [
+      "TestCFR002AdmissionCausesAndControlledLaunch"
+    ]
+  },
+  "internal/codexbridge/readiness_test.go": {
+    "cases": [
+      "CFR-003"
+    ],
+    "selectors": [
+      "TestCFR003AdmissionRetriesOnlyTransientEvidence",
+      "TestCFR003LaunchPublicationAndCancellation"
+    ]
   }
 }

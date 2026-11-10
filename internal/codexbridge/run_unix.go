@@ -42,6 +42,7 @@ func Run(bin string, args []string, pane string) int {
 	var lifecycle sync.Mutex
 	closing := false
 	var sequence atomic.Uint64
+	launch := newLaunchGate()
 	server := &http.Server{ReadHeaderTimeout: 5 * time.Second, MaxHeaderBytes: 16 << 10}
 	type peerKey struct{}
 	server.ConnContext = func(ctx context.Context, c net.Conn) context.Context {
@@ -63,25 +64,49 @@ func Run(bin string, args []string, pane string) int {
 		lifecycle.Unlock()
 		defer connections.Done()
 		peer, _ := r.Context().Value(peerKey{}).(int)
+		started := time.Now()
+		admitCtx, admitCancel := context.WithTimeout(r.Context(), admissionBudget)
+		defer admitCancel()
+		refuse := func(err error, attempts, status int) {
+			reason := admissionReason(err)
+			diag.For("codex-bridge").Warn("codex.frontend.startup.refused", "local frontend startup admission failed",
+				"pane", pane, "reason", reason, "attempts", attempts, "elapsed_ms", time.Since(started).Milliseconds())
+			fmt.Fprintf(os.Stderr, "gtmux: local Codex startup refused (%s); inspect gtmux logs --since 10m --event 'codex.frontend.startup.*'\n", reason)
+			http.Error(w, "local frontend admission: "+reason, status)
+		}
+		childPID, err := launch.wait(admitCtx)
+		if err != nil {
+			refuse(err, 0, http.StatusServiceUnavailable)
+			return
+		}
 		instance, err := instanceID()
 		if err != nil {
 			http.Error(w, "unavailable", http.StatusServiceUnavailable)
 			return
 		}
-		up, err := codexrpc.DialLocal(ctx)
+		up, err := codexrpc.DialLocal(admitCtx)
 		if err != nil {
-			http.Error(w, "local daemon unavailable", http.StatusServiceUnavailable)
+			refuse(&resume.FrontendAdmissionError{Code: "daemon-unavailable"}, 0, http.StatusServiceUnavailable)
 			return
 		}
 		defer up.Close()
 		backendPID, verified := codexrpc.LocalPeerPID(up.UnderlyingConn())
 		if !verified {
-			http.Error(w, "unverified daemon", http.StatusForbidden)
+			refuse(&resume.FrontendAdmissionError{Code: "daemon-peer-unverified"}, 0, http.StatusForbidden)
 			return
 		}
-		attachment, err := resume.BeginCodexFrontend(pane, instance, peer, backendPID, sequence.Add(1))
+		connectionSequence := sequence.Add(1)
+		attachment, attempts, err := awaitFrontend(admitCtx, func(c context.Context) (resume.CodexFrontend, error) {
+			return resume.BeginCodexFrontendFromLaunch(c, pane, instance, peer, backendPID, connectionSequence, childPID)
+		}, admissionPause)
 		if err != nil {
-			http.Error(w, "unverified frontend", http.StatusForbidden)
+			refuse(err, attempts, admissionStatus(err))
+			return
+		}
+		// The admission deadline bounds readiness only, not the lifetime of the
+		// accepted interactive transport.
+		if err := up.UnderlyingConn().SetDeadline(time.Time{}); err != nil {
+			refuse(&resume.FrontendAdmissionError{Code: "daemon-transport-unavailable"}, attempts, http.StatusServiceUnavailable)
 			return
 		}
 		// This endpoint has a same-user, exact foreground Codex PID gate above.
@@ -92,6 +117,8 @@ func Run(bin string, args []string, pane string) int {
 			return
 		}
 		defer down.Close()
+		diag.For("codex-bridge").Info("codex.frontend.startup.ready", "verified local frontend connection",
+			"pane", pane, "attempts", attempts, "elapsed_ms", time.Since(started).Milliseconds())
 		down.SetReadLimit(64 << 20)
 		var mu sync.Mutex
 		defer func() { mu.Lock(); resume.EndCodexFrontend(attachment); mu.Unlock() }()
@@ -158,9 +185,11 @@ func Run(bin string, args []string, pane string) int {
 	cmd := exec.Command(bin, argv...)
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
 	if err := cmd.Start(); err != nil {
+		launch.publish(0)
 		fmt.Fprintln(os.Stderr, "gtmux:", err)
 		return 1
 	}
+	launch.publish(cmd.Process.Pid)
 	diag.Did("act.codex.launch", pane, diag.OK, "started local Codex terminal client", "mode", "frontend-bridge")
 	// Terminal-generated signals already reach both processes in the foreground
 	// group. Catching SIGINT prevents the bridge from dying before Codex handles it.
