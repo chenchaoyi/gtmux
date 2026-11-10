@@ -913,5 +913,22 @@
       "TestCFR005FullTreeLaunchScopeAndParentCancellation",
       "TestCFR005DirectLaunchRetainsFullTreeAndMissingEvidenceRefuses"
     ]
+  },
+  "internal/codexterminal/readiness_missing_ancestor_test.go": {
+    "cases": [
+      "CFR-008"
+    ],
+    "selectors": [
+      "TestCFR008MissingAncestorIsUnavailableAndACompleteRecheckCanSucceed",
+      "TestCFR008ObservedConflictsStayHardWhenAnotherRequiredRowIsMissing"
+    ]
+  },
+  "internal/codexbridge/upgrade_admission_test.go": {
+    "cases": [
+      "CFR-009"
+    ],
+    "selectors": [
+      "TestCFR009PostUpgradeUsesActualCancellationBeforeDeadline"
+    ]
   }
 }

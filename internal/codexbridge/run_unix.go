@@ -115,19 +115,19 @@ func Run(bin string, args []string, pane string) int {
 			refuse(err, attempts, http.StatusServiceUnavailable)
 			return
 		}
-		deadline, _ := admitCtx.Deadline()
 		u := websocket.Upgrader{HandshakeTimeout: upgradeTimeout, CheckOrigin: func(*http.Request) bool { return true }}
 		down, err := u.Upgrade(w, r, nil)
 		if err != nil {
 			return
 		}
 		defer down.Close()
-		if admitCtx.Err() != nil || time.Until(deadline) <= 0 {
-			diag.For("codex-bridge").Warn("codex.frontend.startup.refused", "frontend upgrade exceeded admission deadline",
-				"pane", pane, "reason", "admission-deadline", "attempts", attempts, "elapsed_ms", time.Since(started).Milliseconds())
+		active, err := completeAdmission(admitCtx, &sequence, connectionSequence)
+		if err != nil {
+			diag.For("codex-bridge").Warn("codex.frontend.startup.refused", "frontend upgrade admission did not complete",
+				"pane", pane, "reason", admissionReason(err), "attempts", attempts, "elapsed_ms", time.Since(started).Milliseconds())
 			return
 		}
-		if !sequence.activate(connectionSequence) {
+		if !active {
 			return
 		}
 		diag.For("codex-bridge").Info("codex.frontend.startup.ready", "verified local frontend connection",

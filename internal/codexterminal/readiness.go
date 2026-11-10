@@ -2,6 +2,7 @@ package codexterminal
 
 import (
 	"context"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -64,7 +65,7 @@ func (i inspector) observe(panes []Pane) map[string]Observation {
 			for _, pid := range c.chain {
 				if _, exists := after[pid]; !exists {
 					code = "process-unavailable"
-					break
+					continue // another observed row can still prove a hard birth/identity conflict
 				}
 				if before[pid] != after[pid] {
 					code = "process-changed"
@@ -107,12 +108,18 @@ func (i inspector) observe(panes []Pane) map[string]Observation {
 func ObserveLaunch(parent context.Context, p Pane, childPID, bridgePID, peerPID int) Observation {
 	ctx, cancel := context.WithTimeout(parent, 2*time.Second)
 	defer cancel()
-	missingPeer := false
+	missingEvidence, observedConflict := false, false
 	snapshot := func() map[int]process {
 		procs := parseProcesses(launchRead(ctx, "ps", "-axo", "pid=,ppid=,pgid=,tpgid=,tty=,lstart=,comm="))
 		if len(procs) > 0 {
-			if _, exists := procs[peerPID]; !exists {
-				missingPeer = true
+			if missingLaunchAncestry(procs, p.PID, childPID, bridgePID, peerPID) {
+				missingEvidence = true
+			}
+			if peer, exists := procs[peerPID]; exists {
+				root, rootExists := procs[p.PID]
+				if filepath.Base(peer.command) != "codex" || tty(peer.tty) != tty(p.TTY) || (rootExists && root.foreground > 0 && (peer.group != root.foreground || peer.foreground != root.foreground)) {
+					observedConflict = true
+				}
 			}
 		}
 		return procs
@@ -122,8 +129,12 @@ func ObserveLaunch(parent context.Context, p Pane, childPID, bridgePID, peerPID 
 			"#{pane_id}\t#{pane_pid}\t#{pane_tty}\t#{pane_current_command}\t#{pane_current_path}\t#{session_name}:#{window_index}.#{pane_index}"))
 	}}
 	o := i.observe([]Pane{p})[p.ID]
-	if missingPeer && (o.Code == "" || o.Code == "client-unverified" || o.Code == "client-changed" || o.Code == "process-unavailable") {
-		o = Observation{Code: "process-unavailable"}
+	if o.Code == "" || o.Code == "client-unverified" || o.Code == "client-changed" || o.Code == "process-unavailable" {
+		if observedConflict {
+			o = Observation{Code: "client-unverified"}
+		} else if missingEvidence {
+			o = Observation{Code: "process-unavailable"}
+		}
 	}
 	if ctx.Err() != nil {
 		return Observation{Code: "snapshot-unavailable"}
@@ -141,4 +152,29 @@ func ReadLaunchPane(ctx context.Context, pane string) (Pane, bool) {
 	}
 	pid, err := strconv.Atoi(f[2])
 	return Pane{ID: pane, Command: f[1], PID: pid, TTY: f[3], Cwd: f[4], Loc: f[5]}, err == nil && pid > 1
+}
+
+// Missing rows are unavailable evidence, never an authorization. Only walk the
+// exact peer ancestry; a cycle or a complete path outside the pane is a conflict.
+func missingLaunchAncestry(procs map[int]process, pane, child, bridge, peer int) bool {
+	for _, pid := range []int{pane, child, bridge, peer} {
+		if pid > 1 {
+			if _, ok := procs[pid]; !ok {
+				return true
+			}
+		}
+	}
+	seen := map[int]bool{}
+	for pid := peer; pid > 1 && pid != pane; {
+		if seen[pid] || len(seen) >= 16 {
+			return false
+		}
+		seen[pid] = true
+		proc, ok := procs[pid]
+		if !ok {
+			return true
+		}
+		pid = proc.parent
+	}
+	return false
 }

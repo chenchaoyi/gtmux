@@ -24,6 +24,15 @@ func admissionUpgradeTimeout(ctx context.Context) (time.Duration, error) {
 	return remaining, nil
 }
 
+// completeAdmission is used only after transport upgrade. A canceled/expired
+// attempt cannot replace the incumbent, and cancellation keeps its actual cause.
+func completeAdmission(ctx context.Context, epoch *connectionEpoch, id uint64) (bool, error) {
+	if _, err := admissionUpgradeTimeout(ctx); err != nil {
+		return false, err
+	}
+	return epoch.activate(id), nil
+}
+
 // The listener can receive the child's connection before cmd.Start returns.
 // Closing this channel publishes the exact child PID without an arbitrary sleep.
 type launchGate struct {
