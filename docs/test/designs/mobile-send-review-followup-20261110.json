@@ -36,7 +36,7 @@
       "layer": "L2",
       "description": "HQ late results and retries cannot cross a newer attempt or target identity",
       "setup": "Real HQConsoleView with deferred requests and mutable client/pane/session/home identity",
-      "action": "Overlap first/second success/refusal/timeout, later key then text receipt; change target or unmount before response; confirm transcript",
+      "action": "Overlap first/second success/refusal/timeout, later key then text receipt; change target or unmount before response; confirm transcript; use both legacy onSend key and production onSendKey callback",
       "expected": "Only corresponding current echo receives receipt; old failure cannot erase newer success. Old results/retry cannot move to a rotated HQ/client/pane; newer control-key screen remains. Confirmation retires only the matching new turn and accepted echo is not resurrected.",
       "planned_files": [
         "mobileapp/src/screens/HQSendOrdering.test.tsx"
@@ -47,7 +47,7 @@
       "layer": "L2",
       "description": "Late Detail text receipt settles delivery without reverting a newer terminal snapshot",
       "setup": "Real DetailView, deferred text send and later control-key success with distinct screen/cursor/columns",
-      "action": "Resolve old text receipt after newer key snapshot",
+      "action": "Resolve old text receipt after newer key snapshot through both Composer onSend legacy keys and the production onSendKey callback",
       "expected": "The matching text echo becomes accepted, but old snapshot neither invalidates current reads nor replaces newer text, geometry or cursor. No replay and target guards stay in place.",
       "planned_files": [
         "mobileapp/src/screens/DetailSendSnapshot.test.tsx"
@@ -66,5 +66,5 @@
       ]
     }
   ],
-  "seal": "f11ebbe3debc8cffd68233d339bcc3813b29f275c7525b04327d3fb536bdaf33"
+  "seal": "734c0ea62aac92b90430b0ac5df20e30d9e06a6a673cbb20f7b08c6d0a3ed606"
 }
