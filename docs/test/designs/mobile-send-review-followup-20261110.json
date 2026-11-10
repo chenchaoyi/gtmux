@@ -52,7 +52,19 @@
       "planned_files": [
         "mobileapp/src/screens/DetailSendSnapshot.test.tsx"
       ]
+    },
+    {
+      "id": "MSD-010",
+      "layer": "L2",
+      "description": "Existing HQ attachment and matter journeys use the new structured send callback without weakening their assertions",
+      "setup": "Existing real HQ/Composer synthetic attachment, draft and matter workflows",
+      "action": "Keep existing interactions, mock sendResult rather than removed boolean send path, require a generated send ID in exact target/body assertions",
+      "expected": "Picker/upload ordering, cancellation, retry, no auto-send, draft/server/session isolation and matter state assertions all remain. Only callback shape changes; new receipt semantics are covered separately by MSD007/008.",
+      "planned_files": [
+        "mobileapp/src/screens/HQScreen.attach.test.tsx",
+        "mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx"
+      ]
     }
   ],
-  "seal": "0415c2f00d7080446da849a3fd1568b588564916e9d75b2c19fff58ee17c132e"
+  "seal": "f11ebbe3debc8cffd68233d339bcc3813b29f275c7525b04327d3fb536bdaf33"
 }
