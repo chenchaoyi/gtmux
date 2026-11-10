@@ -1,3 +1,6 @@
+import {newSendId} from '../api/sendId';
+import {beginChatEcho, chatEchoRecorded, type PendingChatEcho} from './pendingChatEcho';
+import type {SendDelivery} from '../ui/sendReceipt';
 import {HQWorkspaceView} from './HQWorkspaceView';
 // HQ opens the shared matter overview when supported. HQConsoleView retains the
 // existing mediated input, live transcript, decisions and resource readers; it is
@@ -111,6 +114,14 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   const chatIdentity = useMemo(() => ({client, pane: hq.pane_id, session: live.session_id, home: live.home_id, agent: live.agent}), [client, hq.pane_id, live.session_id, live.home_id, live.agent]);
   const [chatRecord, setChatRecord] = useState<{identity: typeof chatIdentity; turns: TranscriptTurn[]; reset?: SessionReset; loaded: boolean; failed?: boolean; earlierAvailable: boolean}>({identity: chatIdentity, turns: [], loaded: false, earlierAvailable: false});
   const turns = chatRecord.identity === chatIdentity ? chatRecord.turns : EMPTY_TURNS;
+  const latestTurns = useRef(turns); latestTurns.current = turns;
+  const sendIdentity = useRef(chatIdentity); sendIdentity.current = chatIdentity;
+  const sendMounted = useRef(true);
+  useEffect(() => {sendMounted.current = true; return () => {sendMounted.current = false;};}, []);
+  const sendAttempt = useRef(0);
+  const pendingAttempt = useRef(0);
+  const pendingEcho = useRef<PendingChatEcho | null>(null);
+  const echoAttempts = useRef(new Map<string, PendingChatEcho>());
   // Set when the supervisor's session began with a `/clear`/`/new` — including the
   // `gtmux hq --rotate` HQ performs on itself. The console then shows this shift whole
   // and the shift before it not at all, which without a word reads as a broken app: on
@@ -118,6 +129,8 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   const sessionReset = chatRecord.identity === chatIdentity ? chatRecord.reset : undefined;
   const loaded = chatRecord.identity === chatIdentity && chatRecord.loaded;
   const [pending, setPending] = useState<string | undefined>();
+  const [pendingDelivered, setPendingDelivered] = useState(false);
+  const [pendingDelivery, setPendingDelivery] = useState<SendDelivery | undefined>();
   const [selected, setSelected] = useState<DigestRow | null>(null);
   const [zone, setZone] = useState<Zone | null>(null); // null until the first digest picks it
   const [boardOpen, setBoardOpen] = useState(openResource?.page === 'board');
@@ -231,6 +244,13 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   const [paneText, setPaneText] = useState('');
   // A command the server declined to submit — held so it can be retried, not lost.
   const [failedSend, setFailedSend] = useState<SendPayload | null>(null);
+  const [failedReason, setFailedReason] = useState('');
+  const [failedStatus, setFailedStatus] = useState<number | undefined>();
+  useEffect(() => {
+    pendingEcho.current = null; echoAttempts.current.clear();
+    setPending(undefined); setPendingDelivered(false); setPendingDelivery(undefined);
+    setFailedSend(null); setFailedReason(''); setFailedStatus(undefined);
+  }, [chatIdentity]);
 
   // The live supervisor row (status can change) — fall back to the route agent.
 
@@ -321,16 +341,13 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   );traceRetry.current = task.run;return startReadPolling(task, live.status === 'working' ? HQ_ACTIVE_POLL_MS : HQ_IDLE_POLL_MS);},
   [client, hq.pane_id, chatIdentity, live.status, pending, earlier]);
 
-  // Retire the optimistic echo the moment the real turn is in the transcript, with a
-  // long safety net so a send that never lands can't pin a ghost bubble forever.
+  // The shared echo model requires a new recorded occurrence. Old identical
+  // prompts in the transcript cannot confirm this new send or its manual retry.
   useEffect(() => {
-    if (!pending) return;
-    if (turns.length > 0 && turns[turns.length - 1].prompt === pending) {
-      setPending(undefined);
-      return;
+    const echo = pendingEcho.current;
+    if (echo && chatEchoRecorded(echo, turns)) {
+      pendingEcho.current = null; setPending(undefined);
     }
-    const id = setTimeout(() => setPending(undefined), 10 * 60_000);
-    return () => clearTimeout(id);
   }, [turns, pending]);
 
   const calls = useMemo(() => decisions(digest), [digest]);
@@ -360,47 +377,53 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   // payloads here made the HQ row look tappable while every key was a no-op.
   const sendHQ = useCallback(
     (input: SendPayload) => {
+      if (!sendMounted.current || sendIdentity.current !== chatIdentity) return;
       const body = input.text?.trim() ?? '';
       if (!body && !input.key) return;
-      const payload: SendPayload = input.key ? {key: input.key} : {text: body, enter: input.enter ?? true};
-      if (body) setPending(body);
-      setFailedSend(null);
-      setZone('console'); // you asked HQ something — show you the answer arriving
-      // The echo is cleared by the effect below — when the transcript actually carries
-      // the turn — NOT on a timer. A blind 4s clear could erase your message while HQ
-      // was still thinking, leaving the console showing nothing at all.
-      //
-      // A null result means the server refused to submit (it couldn't confirm the full
-      // command reached HQ's input box). Say so and keep the text — otherwise the
-      // console shows your command echoed forever, waiting on a turn that never started.
-      client
-        .send(hq.pane_id, payload)
-        .then(snap => {
-          if (!snap) {
-            setFailedSend(payload);
-            if (body) setPending(undefined);
-          }
-        })
-        .catch(() => {
-          setFailedSend(payload);
-          if (body) setPending(undefined);
-        });
+      const payload: SendPayload = input.key ? {key: input.key, send_id: input.send_id ?? newSendId()} : {text: body, enter: input.enter ?? true, send_id: input.send_id ?? newSendId()};
+      const attempt = ++sendAttempt.current;
+      if (body) {
+        const echo = echoAttempts.current.get(payload.send_id!) ?? beginChatEcho(payload.send_id!, body, latestTurns.current);
+        echoAttempts.current.set(echo.id, echo);
+        if (echoAttempts.current.size > 16) echoAttempts.current.delete(echoAttempts.current.keys().next().value!);
+        pendingEcho.current = chatEchoRecorded(echo, latestTurns.current) ? null : echo;
+        pendingAttempt.current = attempt;
+        setPending(pendingEcho.current?.text); setPendingDelivered(false); setPendingDelivery(undefined);
+      }
+      setFailedSend(null); setFailedReason(''); setFailedStatus(undefined);
+      setZone('console');
+      const current = () => sendMounted.current && sendIdentity.current === chatIdentity;
+      const currentEcho = () => pendingEcho.current?.id === payload.send_id && pendingAttempt.current === attempt;
+      const currentResult = () => current() && (attempt === sendAttempt.current || currentEcho());
+      const fail = (reason: string, status?: number) => {
+        if (!currentResult()) return;
+        setFailedSend(payload); setFailedReason(reason); setFailedStatus(status);
+        if (currentEcho()) {pendingEcho.current = null; setPending(undefined);}
+      };
+      client.sendResult(hq.pane_id, payload).then(result => {
+        if (!currentResult()) return;
+        if (!result.ok) {fail(result.reason, result.status); return;}
+        if (currentEcho()) {setPendingDelivered(true); setPendingDelivery(result.delivery);}
+        // Receipt settlement and the terminal capture are separate generations.
+        if (attempt === sendAttempt.current && result.pane) setPaneText(result.pane.text ?? '');
+      }).catch(() => fail(zh
+        ? '未能确认发送结果，请先查看会话；重试会沿用同一消息编号。'
+        : 'Send confirmation unavailable. Check the conversation first; Retry keeps the same message ID.'));
     },
-    [client, hq.pane_id],
+    [client, hq.pane_id, chatIdentity, zh],
   );
   const onComposerUpload = useCallback(
     (uri: string, name: string, type: string, onProgress?: (fraction: number) => void) => client.upload(uri, name, type, onProgress, hq.pane_id),
     [client, hq.pane_id],
   );
-  const keyRoute = useRef('');
-  keyRoute.current = `${client.base}|${hq.pane_id}`;
   const onLoadKeys = useCallback((version?: number, boot?: string) => client.inputCapabilities(hq.pane_id, version, boot), [client, hq.pane_id]);
   const onSendKey = useCallback(async (payload: SendPayload) => {
-    const route = keyRoute.current;
+    if (!sendMounted.current || sendIdentity.current !== chatIdentity) return {ok: false as const, reason: 'Input target changed'};
+    const attempt = ++sendAttempt.current;
     const result = await client.sendResult(hq.pane_id, payload);
-    if (keyRoute.current === route && result.ok && result.pane) setPaneText(result.pane.text ?? '');
+    if (sendMounted.current && sendIdentity.current === chatIdentity && attempt === sendAttempt.current && result.ok && result.pane) setPaneText(result.pane.text ?? '');
     return result;
-  }, [client, hq.pane_id]);
+  }, [client, hq.pane_id, chatIdentity]);
   const command = useCallback((text: string) => sendHQ({text, enter: true}), [sendHQ]);
   // What the composer opens with: the radar's pane mention on arrival, or a board
   // item's quote when the commander chose to word a decision himself (board-ask-reply).
@@ -601,6 +624,8 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
               onOpenAct={openAct}
               loading={!loaded}
               pendingPrompt={pending}
+              pendingDelivered={pendingDelivered}
+              pendingDelivery={pendingDelivery}
               // Header shows at the live tail (newest), hides when you scroll up into
               // history. The old loop (showing the header bumped you off the bottom →
               // it re-hid → …) is broken in ChatView: it re-pins to the bottom when its
@@ -643,6 +668,8 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
         {failedSend && (
           <SendFailedBar
             text={failedSend.text ?? failedSend.key ?? ''}
+            reason={failedReason}
+            status={failedStatus}
             pal={pal}
             lang={lang}
             onRetry={() => sendHQ(failedSend)}

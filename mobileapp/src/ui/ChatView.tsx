@@ -1,3 +1,4 @@
+import {sendReceiptLabel, type SendDelivery} from './sendReceipt';
 // ChatView — 对话模式 (B1 / mockup §10): a glance-friendly conversation view.
 // It shows the REAL chat history (GET /api/transcript): each turn = your prompt,
 // the agent's collapsed middle steps (tap to expand), and its final response.
@@ -82,6 +83,7 @@ interface Props {
   // transcript refetch catches up — so sending feels instant over the tunnel.
   pendingPrompt?: string;
   pendingDelivered?: boolean;
+  pendingDelivery?: SendDelivery;
   // Font-family config (same value the terminal uses), so chat text matches the
   // terminal font — resolved via the shared nativeFontFamily().
   fontPref?: string;
@@ -179,7 +181,7 @@ export function liveLabel(since: number | undefined, nowSec: number, lang: Lang)
   return el ? `${base} · ${el}` : base;
 }
 
-export function ChatView({client, readOnly = false, agent, lines, status, fontSize, pal, lang, turns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, pendingPrompt, pendingDelivered = false, fontPref, workingSince, onLiveEdge, topPad = 0, controlsTop, controlsShift, maxWidth}: Props) {
+export function ChatView({client, readOnly = false, agent, lines, status, fontSize, pal, lang, turns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, pendingPrompt, pendingDelivered = false, pendingDelivery, fontPref, workingSince, onLiveEdge, topPad = 0, controlsTop, controlsShift, maxWidth}: Props) {
   // Radar timestamps and temporary status changes are observations, not a new reader.
   const liveScope = JSON.stringify([client?.base, agent.pane_id, agent.home_id, agent.session_id]);
   const [liveDisclosure, setLiveDisclosure] = useState({scope: liveScope, open: false});
@@ -649,7 +651,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
         <View style={styles.userRow}>
           <View testID="chat-pending-echo" style={[styles.userBubble, !pendingDelivered && styles.userBubblePending]}>
             <Text style={[styles.userText, {fontFamily, fontSize, lineHeight}]}>{pendingPrompt}</Text>
-            <Text style={styles.echoStatus}>{pendingDelivered ? (lang === 'zh' ? '已发送' : 'Sent') : (lang === 'zh' ? '正在发送…' : 'Sending…')}</Text>
+            <Text style={styles.echoStatus}>{sendReceiptLabel(pendingDelivery, pendingDelivered, lang === 'zh')}</Text>
           </View>
           {avatar(<UserAvatar size={26} />, {kind: 'human', agent})}
         </View>

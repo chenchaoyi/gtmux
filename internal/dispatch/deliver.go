@@ -40,6 +40,7 @@ const (
 // Result is what Deliver returns. Delivered is true ONLY for StateLanded.
 type Result struct {
 	Delivered bool
+	Delivery  string // optional native receipt: active-turn or started-turn; never completion
 	State     State
 	Evidence  string // capture tail on failure, or a short note
 	Attempts  int    // submit (Enter) attempts made
@@ -123,6 +124,7 @@ func held(io IO) string {
 // Opts configures a delivery.
 type Opts struct {
 	DeliveryID       string // caller idempotency key for an addressed native transport
+	DirectUserInput  bool   // explicit phone text+Enter; default CLI/HQ retains queue semantics
 	ActiveImageInput bool   // explicit attachment ingress; never inferred from message text
 	Pane             string
 	HookEquipped     bool // prefer the deterministic event stream over the screen

@@ -288,6 +288,14 @@ interlock.
 The successful response includes the post-send pane snapshot when it can be read.
 `cols` and `cursor` are optional, with the same meanings as `GET /api/pane`.
 
+Successful text input may add `delivery:{"state":"queued|accepted|submitted","send_id":"<request send_id>"}`
+to the existing `status:"ok"` pane snapshot. `queued` is accepted into a pending queue;
+`accepted` is a native ingress receipt; `submitted` records the ordinary terminal
+submission. None proves model execution or completion. Clients predating this
+field may ignore it; clients talking to an older server retain their legacy status.
+The mobile client bounds the whole send response, including JSON parsing, at 20s,
+keeps the original send ID for explicit retry and never automatically replays a write.
+
 ### `GET /api/input-capabilities?id=%N` — terminal key catalog
 
 Authenticated and subject to the caller's view grant. Only a live tmux pane route is

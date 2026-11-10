@@ -39,8 +39,10 @@ func pruneInput(dir string, now time.Time) error {
 		if known && receipt.State == "uncertain" || !known && !os.IsNotExist(claimErr) {
 			continue
 		}
-		if !known && r.DurableRetry && age < int64(24*time.Hour/time.Millisecond) {
-			_ = os.Remove(filepath.Join(dir, r.ID+".pending.json"))
+		if !known && r.DurableRetry {
+			// An earlier handler can still hold this pending request. Expiry must
+			// not mint another identity for the same durable delivery. Preserve
+			// unresolved authority under the hard spool cap, just like a claim.
 			continue
 		}
 		if known && age < int64(24*time.Hour/time.Millisecond) {

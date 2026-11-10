@@ -383,11 +383,12 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		// attach-predictive-echo: the pane's cursor CELL + alt-screen flag, streamed as
 		// OpCursor frames so the attach client has the authoritative cursor without
 		// emulating a terminal. `alternate_on` is the precise full-screen-TUI signal.
-		AttachCursor: attachCursor,
-		Focus:        func(id string) error { return panefocus.FocusPaneByID(id) },
-		Send:         sendToPane,
-		InputTarget:  terminalInputTarget,
-		InputKey:     sendTerminalKey,
+		AttachCursor:    attachCursor,
+		Focus:           func(id string) error { return panefocus.FocusPaneByID(id) },
+		Send:            sendToPane,
+		SendWithReceipt: sendToPaneWithReceipt,
+		InputTarget:     terminalInputTarget,
+		InputKey:        sendTerminalKey,
 		// `gtmux attach` bridges a tmux client (spawned in a server-side PTY) to a WS.
 		// Resolve the pane's session and attach to it. Only owners and paired devices get
 		// here: the handler refuses a share link before this runs, because this client
@@ -1061,6 +1062,58 @@ func turnsWithinBudget(turns []transcript.Turn, budget int) (kept []transcript.T
 // Enter). The pre-submit confirm removes that race without the CLI's post-submit
 // verify budget, so the phone path stays fast (a healthy paste confirms in a frame).
 func sendToPane(id, text, key string, enter bool, sendID string) error {
+	_, err := sendToPaneWithReceipt(id, text, key, enter, sendID)
+	return err
+}
+
+func sendToPaneWithReceipt(id, text, key string, enter bool, sendID string) (server.InputReceipt, error) {
+	receipt := server.InputReceipt{State: "submitted", SendID: sendID}
+	cacheKey := id + "\x00" + sendID
+	cached, known := readPhoneReceipt(cacheKey)
+	if known {
+		receipt = cached
+	}
+	err := sendToPaneObserved(id, text, key, enter, sendID, func(result dispatch.Result) {
+		if known {
+			return
+		}
+		receipt.State = "queued"
+		if result.Delivered || result.Delivery == "active-turn" || result.Delivery == "started-turn" {
+			receipt.State = "accepted"
+		}
+	})
+	if err == nil && sendID != "" && text != "" && enter {
+		rememberPhoneReceipt(cacheKey, receipt)
+	}
+	return receipt, err
+}
+
+type phoneReceipt struct {
+	receipt server.InputReceipt
+	at      int64
+}
+
+var phoneReceipts = map[string]phoneReceipt{}
+
+func readPhoneReceipt(key string) (server.InputReceipt, bool) {
+	sendCacheMu.Lock()
+	defer sendCacheMu.Unlock()
+	r, ok := phoneReceipts[key]
+	return r.receipt, ok && time.Now().Unix()-r.at < sendCacheTTLSec
+}
+func rememberPhoneReceipt(key string, receipt server.InputReceipt) {
+	sendCacheMu.Lock()
+	defer sendCacheMu.Unlock()
+	now := time.Now().Unix()
+	phoneReceipts[key] = phoneReceipt{receipt: receipt, at: now}
+	for k, r := range phoneReceipts {
+		if now-r.at >= sendCacheTTLSec {
+			delete(phoneReceipts, k)
+		}
+	}
+}
+
+func sendToPaneObserved(id, text, key string, enter bool, sendID string, observe func(dispatch.Result)) error {
 	if tmux.Bin == "" || tmux.Display(id, "#{pane_id}") == "" {
 		return fmt.Errorf("pane not found")
 	}
@@ -1087,8 +1140,11 @@ func sendToPane(id, text, key string, enter bool, sendID string) error {
 		// confirms the full draft reliably, and the agent's own submit still lands on the
 		// event stream for anyone who wants it. IDEMPOTENCY (A) is preserved — a retry with
 		// a sendID that already landed is a no-op — and MarkAwaited still arms the done-wake.
-		if sendID != "" && sendCacheSucceeded(sendID) {
-			return nil // already landed under this id — idempotent no-op
+		if sendID != "" && sendCacheSucceeded(id+"\x00"+sendID) {
+			if observe != nil {
+				observe(dispatch.Result{Delivery: "active-turn"})
+			} // known accepted, not proof of execution
+			return nil // already accepted under this id; never submit again
 		}
 		// Resolve the agent from the pane's PROCESS SUBTREE, not pane_current_command
 		// (Claude renames its process to its version, so the foreground command misses
@@ -1106,12 +1162,32 @@ func sendToPane(id, text, key string, enter bool, sendID string) error {
 				return err
 			}
 			if sendID != "" {
-				sendCacheRecord(sendID)
+				sendCacheRecord(id + "\x00" + sendID)
 			}
 			return nil
 		}
 		opts := phoneDeliverOpts(id, agentCmd, sendID, dispatch.LoadTuning())
-		if ok, refused := dispatch.PasteAndSubmit(dispatchbridge.DispatchIO(id), opts, text); !ok {
+		var nativeResult *dispatch.Result
+		dio := dispatchbridge.DispatchIO(id)
+		if native := dio.SubmitNative; native != nil && observe != nil {
+			dio.SubmitNative = func(o dispatch.Opts, text string, hold func() string) dispatch.Result {
+				result := native(o, text, hold)
+				nativeResult = &result
+				if result.Delivered || result.State == dispatch.StateQueued {
+					observe(result)
+				}
+				return result
+			}
+		}
+		if ok, refused := dispatch.PasteAndSubmit(dio, opts, text); !ok {
+			if nativeResult != nil {
+				if strings.Contains(nativeResult.Evidence, "input-thread-not-loaded") {
+					return fmt.Errorf("not sent: the session is not loaded; open it on the Mac first")
+				}
+				if strings.Contains(nativeResult.Evidence, "uncertain") || strings.Contains(nativeResult.Evidence, "receipt-unconfirmed") {
+					return fmt.Errorf("send outcome unconfirmed; inspect the conversation before retrying; the same message ID will not be replayed")
+				}
+			}
 			if refused == dispatch.StateRefusedDraft {
 				// Say WHOSE text stopped it. A generic "not confirmed" would read as a gtmux
 				// fault and invite a retry, when the honest answer is that someone is typing
@@ -1127,7 +1203,7 @@ func sendToPane(id, text, key string, enter bool, sendID string) error {
 		}
 		dispatch.MarkAwaited(id)
 		if sendID != "" {
-			sendCacheRecord(sendID)
+			sendCacheRecord(id + "\x00" + sendID)
 		}
 		return nil
 	}
@@ -1398,6 +1474,7 @@ func hasPendingAsk(id string) bool {
 func phoneDeliverOpts(pane, agentCmd, sendID string, tune dispatch.Tuning) dispatch.Opts {
 	opts := dispatchbridge.DeliverOpts(pane, agentCmd, sendID != "", tune)
 	opts.DeliveryID = sendID
+	opts.DirectUserInput = true
 	opts.ClobberDraft = false
 	return opts
 }

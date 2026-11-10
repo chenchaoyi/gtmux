@@ -41708,7 +41708,7 @@
       ]
     },
     "mobileapp/src/screens/HQScreen.attach.test.tsx": {
-      "sha256": "378b694fe2f7ab5ff8c5412da2577e6131d58162daf429959a69e8f0737c2f2d",
+      "sha256": "dbbb24106e95112d093c0b66ca5a49449715da429262f40eadddcc23cdf4de17",
       "layer": "L2",
       "stack": "RN / mobile harness",
       "cases": [
@@ -57319,7 +57319,7 @@
         },
         {
           "id": "MAP-f119dbaabb64",
-          "line": 161,
+          "line": 162,
           "kind": "reviewed-selector",
           "name": "late HQ overview and matter responses",
           "dynamic": false,
@@ -57328,7 +57328,7 @@
         },
         {
           "id": "MAP-acb5ed213eb0",
-          "line": 208,
+          "line": 209,
           "kind": "reviewed-selector",
           "name": "a prepared HQ question stays scoped",
           "dynamic": false,
@@ -57336,7 +57336,7 @@
           "design": "CT-DRAFT,CT-HQ"
         }
       ],
-      "sha256": "107da128c440e1fee3714ecca5bfb76ccc53bf221f378c8ac0944e0588373047"
+      "sha256": "9c626499c441712ab149719bfd9d233c342baad60124f31d6963f5758071d418"
     },
     "mobileapp/src/screens/ServerModeBehavior.test.tsx": {
       "layer": "L2",
@@ -58725,6 +58725,338 @@
         }
       ],
       "sha256": "a2047f16ba4d9d5da401986dceb58577e8028bb8f52481fd2c093744f2cef3f7"
+    },
+    "internal/app/phone_delivery_receipt_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-7a5ae9fb2039",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestMSD002PhoneInputOptsIntoDirectUserDeliveryAndKeepsDraftProtection",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-002"
+        },
+        {
+          "id": "MAP-308489bd281c",
+          "line": 20,
+          "kind": "reviewed-selector",
+          "name": "TestMSD002PhoneReceiptCacheKeepsQueueMeaningAndExpiry",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-002"
+        }
+      ],
+      "sha256": "fee612deb83d2b9f71a9d7a044976d915a614413de9e4fb1b6e763d467cbfcea"
+    },
+    "internal/codexrpc/direct_user_input_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d24568194d08",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestMSD001ExplicitUserInputSelectsExactActiveOrLoadedIdleTurn",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-001"
+        },
+        {
+          "id": "MAP-b2659a0a9502",
+          "line": 49,
+          "kind": "reviewed-selector",
+          "name": "TestMSD001LegacyQueueRemainsExplicitAndOnlyUnknownMethodCanFallback",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-001"
+        },
+        {
+          "id": "MAP-09d632a0de8e",
+          "line": 76,
+          "kind": "reviewed-selector",
+          "name": "TestMSD001UserInputRefusesUnsafeMetadataAndNeverReplaysAmbiguousWrite",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-001"
+        }
+      ],
+      "sha256": "9d8d714bdfdc05826ad671bf328d820b37a7b102621553fad457e39d51d00dee"
+    },
+    "internal/dispatchbridge/direct_user_input_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e452620f505a",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestMSD002DirectUserIngressPreservesReceiptAndNeverReplays",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-002"
+        }
+      ],
+      "sha256": "31b2e63509764464bb3cc9c9870f461a1e5273889070d7207fe014a6ceac484c"
+    },
+    "internal/server/send_receipt_test.go": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-5c6d75362085",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "TestMSD003HTTPPreservesActualReceiptAndLegacySend",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "MSD-003"
+        },
+        {
+          "id": "MAP-7d2c5e5ac242",
+          "line": 48,
+          "kind": "reviewed-selector",
+          "name": "TestMSD003PreferredReceiptCannotBypassGuestScope",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "MSD-003"
+        }
+      ],
+      "sha256": "8bd1c2b24027143c033f68b36d64374fb55b1e8a887945d66802bd55c3266903"
+    },
+    "mobileapp/src/api/sendDeadline.test.ts": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d269546f4a32",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "MSD-004 bounds a hung %s and never retries or accepts a late answer",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-004"
+        },
+        {
+          "id": "MAP-b95d01602bb2",
+          "line": 29,
+          "kind": "reviewed-selector",
+          "name": "MSD-004 keeps exact receipts, legacy success and the server refusal",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-004"
+        }
+      ],
+      "sha256": "3a96ba726877b22d6a9aa5aa1af7902be4c3e623c80c238c0f93a0ec23c9b25f"
+    },
+    "mobileapp/src/screens/DetailSendReceipt.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-7107ec518922",
+          "line": 27,
+          "kind": "reviewed-selector",
+          "name": "MSD-005 %s releases failed sends and preserves explicit retry identity",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-005"
+        },
+        {
+          "id": "MAP-199b34196f32",
+          "line": 39,
+          "kind": "reviewed-selector",
+          "name": "MSD-005 old failure cannot replace the newer accepted send",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-005"
+        },
+        {
+          "id": "MAP-135b77c8e14c",
+          "line": 48,
+          "kind": "reviewed-selector",
+          "name": "MSD-005 a control key cannot leave a prior text receipt permanently Sending",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-005"
+        }
+      ],
+      "sha256": "70b7592eda9a63777250d495872db7630cc7dacdb89bdddbd08c25adfc8e82fb"
+    },
+    "mobileapp/src/ui/sendReceipt.test.ts": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-7bdcf65678f4",
+          "line": 3,
+          "kind": "reviewed-selector",
+          "name": "MSD-005 receipt wording distinguishes queueing and acceptance without claiming execution",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-005"
+        }
+      ],
+      "sha256": "70433435f60498454ed1b7151e0067d5895f9638533862391f83d1054f9af64b"
+    },
+    "internal/agentclient/pending_target_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e76ce32b2c0e",
+          "line": 8,
+          "kind": "reviewed-selector",
+          "name": "TestMSD006PendingTargetIdentity",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-006"
+        }
+      ],
+      "sha256": "f8e2182bb257fa0e287bd205db7f3196bbe26bffae5d71a836f8c769064cc43f"
+    },
+    "internal/dispatchbridge/pending_retry_target_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d7bcff6e0143",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestMSD006PendingRetryCannotRetarget",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-006"
+        }
+      ],
+      "sha256": "bae177f3d725a9b5a0cba6502aa34e6e9598074ddee3f70700e9f332915a44b9"
+    },
+    "mobileapp/src/screens/DetailSendSnapshot.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-1dd1e525111d",
+          "line": 26,
+          "kind": "reviewed-selector",
+          "name": "MSD-009 late text receipt cannot replace newer %s control-key screen",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-009"
+        }
+      ],
+      "sha256": "63ef76a606952ac61c78287eeb062f97de5fe78d2c4fed4cd54412ad3605d7db"
+    },
+    "mobileapp/src/screens/HQSendOrdering.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-915625a761e2",
+          "line": 30,
+          "kind": "reviewed-selector",
+          "name": "MSD-008 old HQ %s cannot replace a newer accepted message",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-008"
+        },
+        {
+          "id": "MAP-237c6db2e2b9",
+          "line": 38,
+          "kind": "reviewed-selector",
+          "name": "MSD-008 HQ old reply and old retry cannot cross a session change",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-008"
+        },
+        {
+          "id": "MAP-e29e72e87767",
+          "line": 46,
+          "kind": "reviewed-selector",
+          "name": "MSD-008 a later %s key does not leave the current HQ text Sending",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-008"
+        }
+      ],
+      "sha256": "68fa5a4b956e57f3deb00edf620ef6cc902e53f9c4f2dbc71bb437827831d824"
+    },
+    "mobileapp/src/screens/HQSendReceipt.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-3b5d6821faa3",
+          "line": 30,
+          "kind": "reviewed-selector",
+          "name": "MSD-007 HQ exposes %s receipt with stable message identity",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-007"
+        },
+        {
+          "id": "MAP-ded59df19538",
+          "line": 36,
+          "kind": "reviewed-selector",
+          "name": "MSD-007 HQ timeout retry after 21 seconds reuses original send ID",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-007"
+        },
+        {
+          "id": "MAP-d2c0d68a6059",
+          "line": 46,
+          "kind": "reviewed-selector",
+          "name": "MSD-007 old identical transcript cannot retire the new HQ message",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-007"
+        }
+      ],
+      "sha256": "7b66c5ad44b4a85f671fc8398e64dae1ef03ca0cd91b93c96b44c34536779210"
+    },
+    "internal/agentclient/pending_retry_lifetime_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-0090673148dd",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "TestMSD011DurablePendingKeepsOneIdentityAcrossRetryAndPrune",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-011"
+        },
+        {
+          "id": "MAP-daaea5392f1c",
+          "line": 39,
+          "kind": "reviewed-selector",
+          "name": "TestMSD011PrunedOrReplacedNativePendingCannotRegainAuthority",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-011"
+        }
+      ],
+      "sha256": "c21d55c7558b311dd89de202546c65f5314c8e31e7c70020f800fc96479cfb7c"
+    },
+    "internal/dispatchbridge/pending_retry_overlap_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-98c91aed6905",
+          "line": 20,
+          "kind": "reviewed-selector",
+          "name": "TestMSD011DelayedBridgeAndSameIDRetryCannotBothSubmit",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-011"
+        }
+      ],
+      "sha256": "4b459fd1af03c2f51220f8e5e8213bfd2e212380c7db2e62d4a5ab0a973cf35b"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2"
