@@ -18,6 +18,11 @@ The bridge SHALL wait for its controlled child launch to publish before checking
 - **THEN** admission refuses immediately with its specific diagnostic cause
 - **AND** missing evidence at exhaustion is reported as unavailability rather than an account permission instruction
 
+#### Scenario: A reconnect is rejected or completes out of order
+- **WHEN** a new attempt is reserved but has not successfully upgraded
+- **THEN** the existing verified connection retains its heartbeat and binding authority
+- **AND** only a successful newer connection may activate; a late older success cannot reclaim authority
+
 ### Requirement: Codex terminal attachment is per frontend
 The core SHALL associate an eligible shared-server Codex TUI with its own successful root thread start, resume or fork response after verifying local socket peer identity, frontend PID/birth, terminal, pane incarnation and Codex home. Backend PID, inherited environment, cwd, title, loaded threads and unsolicited notifications SHALL NOT establish ownership. Ephemeral helpers and subagent views SHALL NOT replace the root binding. Reordered responses and older connections SHALL NOT reclaim a newer attachment. Expired or exited attachments SHALL lose live authority while saved history remains restorable.
 

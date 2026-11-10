@@ -853,6 +853,8 @@ LEG-111c7716670b,L1,Go core / CLI / server,internal/artifact/store_test.go,56,Te
 LEG-a17e70893eb8,L1,Go core / CLI / server,internal/artifact/store_test.go,103,Test,TestTamperingAndEscapingIDsFailClosed,False,legacy-not-retrospectively-reviewed
 LEG-77f52af6f569,G,Go core / CLI / server,internal/artifact/store_test.go,126,Test,TestRepublishingUsesExactReferencesAndNewestRegisteredPath,False,legacy-not-retrospectively-reviewed
 LEG-5cd7ac080740,L1,Go core / CLI / server,internal/artifact/store_test.go,169,Test,TestRegistryQuotaAndRemoval,False,legacy-not-retrospectively-reviewed
+MAP-61b29ce6decb,L1,reviewed implementation,internal/codexbridge/connection_epoch_test.go,9,reviewed-selector,TestCFR004OnlySuccessfulNewerConnectionChangesAuthority,False,CFR-004
+MAP-d0efecbb0cb2,L1,reviewed implementation,internal/codexbridge/connection_epoch_test.go,31,reviewed-selector,TestCFR004UpgradeRetainsOnlyTheRemainingAdmissionBudget,False,CFR-004
 LEG-b6d992ad636f,L1,Go core / CLI / server,internal/codexbridge/launch_test.go,8,Test,TestLaunchAdmissionPreservesNativeModes,False,legacy-not-retrospectively-reviewed
 LEG-713653817b18,L1,Go core / CLI / server,internal/codexbridge/launch_test.go,21,Test,TestLocalBridgePreservesWorkingDirectoryAndExplicitOverride,False,legacy-not-retrospectively-reviewed
 LEG-c59dbe4a3e9e,L1,Go core / CLI / server,internal/codexbridge/launch_test.go,35,Test,TestInstalledSubcommandsRemainNativeIncludingFutureCommands,False,legacy-not-retrospectively-reviewed

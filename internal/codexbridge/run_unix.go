@@ -17,7 +17,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"sync"
-	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -41,7 +40,7 @@ func Run(bin string, args []string, pane string) int {
 	var connections sync.WaitGroup
 	var lifecycle sync.Mutex
 	closing := false
-	var sequence atomic.Uint64
+	var sequence connectionEpoch
 	launch := newLaunchGate()
 	server := &http.Server{ReadHeaderTimeout: 5 * time.Second, MaxHeaderBytes: 16 << 10}
 	type peerKey struct{}
@@ -95,7 +94,7 @@ func Run(bin string, args []string, pane string) int {
 			refuse(&resume.FrontendAdmissionError{Code: "daemon-peer-unverified"}, 0, http.StatusForbidden)
 			return
 		}
-		connectionSequence := sequence.Add(1)
+		connectionSequence := sequence.reserve()
 		attachment, attempts, err := awaitFrontend(admitCtx, func(c context.Context) (resume.CodexFrontend, error) {
 			return resume.BeginCodexFrontendFromLaunch(c, pane, instance, peer, backendPID, connectionSequence, childPID)
 		}, admissionPause)
@@ -111,12 +110,26 @@ func Run(bin string, args []string, pane string) int {
 		}
 		// This endpoint has a same-user, exact foreground Codex PID gate above.
 		// It is a private Unix socket, never a browser or TCP authentication path.
-		u := websocket.Upgrader{CheckOrigin: func(*http.Request) bool { return true }}
+		upgradeTimeout, err := admissionUpgradeTimeout(admitCtx)
+		if err != nil {
+			refuse(err, attempts, http.StatusServiceUnavailable)
+			return
+		}
+		deadline, _ := admitCtx.Deadline()
+		u := websocket.Upgrader{HandshakeTimeout: upgradeTimeout, CheckOrigin: func(*http.Request) bool { return true }}
 		down, err := u.Upgrade(w, r, nil)
 		if err != nil {
 			return
 		}
 		defer down.Close()
+		if admitCtx.Err() != nil || time.Until(deadline) <= 0 {
+			diag.For("codex-bridge").Warn("codex.frontend.startup.refused", "frontend upgrade exceeded admission deadline",
+				"pane", pane, "reason", "admission-deadline", "attempts", attempts, "elapsed_ms", time.Since(started).Milliseconds())
+			return
+		}
+		if !sequence.activate(connectionSequence) {
+			return
+		}
 		diag.For("codex-bridge").Info("codex.frontend.startup.ready", "verified local frontend connection",
 			"pane", pane, "attempts", attempts, "elapsed_ms", time.Since(started).Milliseconds())
 		down.SetReadLimit(64 << 20)
@@ -125,7 +138,7 @@ func Run(bin string, args []string, pane string) int {
 		o := &observer{home: attachment.HomeID, bind: func(sid, cwd string) {
 			mu.Lock()
 			defer mu.Unlock()
-			if attachment.Sequence != sequence.Load() {
+			if !sequence.current(attachment.Sequence) {
 				return
 			}
 			bound, err := resume.BindCodexFrontend(attachment, sid, cwd)
@@ -159,7 +172,7 @@ func Run(bin string, args []string, pane string) int {
 				return
 			case <-tick.C:
 				mu.Lock()
-				if attachment.SessionID != "" && attachment.Sequence == sequence.Load() {
+				if attachment.SessionID != "" && sequence.current(attachment.Sequence) {
 					if fresh, err := resume.RefreshCodexFrontend(attachment); err == nil {
 						attachment = fresh
 					}

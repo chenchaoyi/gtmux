@@ -880,5 +880,14 @@
       "TestCFR003AdmissionRetriesOnlyTransientEvidence",
       "TestCFR003LaunchPublicationAndCancellation"
     ]
+  },
+  "internal/codexbridge/connection_epoch_test.go": {
+    "cases": [
+      "CFR-004"
+    ],
+    "selectors": [
+      "TestCFR004OnlySuccessfulNewerConnectionChangesAuthority",
+      "TestCFR004UpgradeRetainsOnlyTheRemainingAdmissionBudget"
+    ]
   }
 }

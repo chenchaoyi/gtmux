@@ -12,6 +12,18 @@ import (
 
 const admissionBudget = 4 * time.Second
 
+func admissionUpgradeTimeout(ctx context.Context) (time.Duration, error) {
+	if err := ctx.Err(); err != nil {
+		return 0, err
+	}
+	deadline, ok := ctx.Deadline()
+	remaining := time.Until(deadline)
+	if !ok || remaining <= 0 {
+		return 0, context.DeadlineExceeded
+	}
+	return remaining, nil
+}
+
 // The listener can receive the child's connection before cmd.Start returns.
 // Closing this channel publishes the exact child PID without an arbitrary sleep.
 type launchGate struct {
