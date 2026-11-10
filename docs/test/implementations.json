@@ -857,11 +857,13 @@
   },
   "internal/codexterminal/readiness_test.go": {
     "cases": [
-      "CFR-001"
+      "CFR-001",
+      "CFR-005"
     ],
     "selectors": [
       "TestCFR001ReadinessPreservesStrictTerminalProof",
-      "TestCFR001DirectLaunchScopeAndParentCancellation"
+      "TestCFR001DirectLaunchScopeAndParentCancellation",
+      "TestCFR005DirectLaunchRetainsFullTreeAndMissingEvidenceRefuses"
     ]
   },
   "internal/resume/codexfrontend_ready_test.go": {
@@ -888,6 +890,22 @@
     "selectors": [
       "TestCFR004OnlySuccessfulNewerConnectionChangesAuthority",
       "TestCFR004UpgradeRetainsOnlyTheRemainingAdmissionBudget"
+    ]
+  },
+  "internal/launchhost/agent_readiness_test.go": {
+    "cases": [
+      "CFR-006"
+    ],
+    "selectors": [
+      "TestCFR006AgentReadReturnsBeforeBlockedReaderSettles"
+    ]
+  },
+  "internal/codexbridge/daemon_readiness_test.go": {
+    "cases": [
+      "CFR-007"
+    ],
+    "selectors": [
+      "TestCFR007ActualAdmissionDialKeepsCancellationAndDeadlineReasons"
     ]
   }
 }

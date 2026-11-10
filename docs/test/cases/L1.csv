@@ -775,6 +775,7 @@ LEG-de26ba12a73d,L1,Go core / CLI / server,internal/codexterminal/mode_test.go,5
 LEG-3c028c0e4888,L1,Go core / CLI / server,internal/codexterminal/mode_test.go,30,Test,TestManagedBackendRequiresUnambiguousDaemonCommand,False,legacy-not-retrospectively-reviewed
 MAP-36a7e5ff2edf,L1,reviewed implementation,internal/codexterminal/readiness_test.go,10,reviewed-selector,TestCFR001ReadinessPreservesStrictTerminalProof,False,CFR-001
 MAP-2e57929e00a5,L1,reviewed implementation,internal/codexterminal/readiness_test.go,76,reviewed-selector,TestCFR001DirectLaunchScopeAndParentCancellation,False,CFR-001
+MAP-db4e1830e9db,L1,reviewed implementation,internal/codexterminal/readiness_test.go,113,reviewed-selector,TestCFR005DirectLaunchRetainsFullTreeAndMissingEvidenceRefuses,False,"CFR-001,CFR-005"
 LEG-28aabe798834,L1,Go core / CLI / server,internal/codexterminal/stdin_lsof_test.go,5,Test,TestWrappedCodexStdinDescriptor,False,legacy-not-retrospectively-reviewed
 LEG-abc84f7d187c,L1,Go core / CLI / server,internal/connect/attach_url_test.go,5,Test,TestWSURL,False,legacy-not-retrospectively-reviewed
 LEG-c9022aeadd0c,L1,Go core / CLI / server,internal/connect/attach_url_test.go,21,Test,TestWSURL_EmptyTERM,False,legacy-not-retrospectively-reviewed
@@ -1807,6 +1808,7 @@ LEG-9d378b2f943d,L1,Go core / CLI / server,internal/knowledge/voice_test.go,27,T
 LEG-cd7219eb16d3,L1,Go core / CLI / server,internal/knowledge/voice_test.go,50,Test,TestVoiceReadsProseOnly,False,legacy-not-retrospectively-reviewed
 LEG-c6e04c876979,L1,Go core / CLI / server,internal/knowledge/voice_test.go,67,Test,TestVoiceCountsADoubleDashOnce,False,legacy-not-retrospectively-reviewed
 LEG-32bc165bd27b,L1,Go core / CLI / server,internal/knowledge/voice_test.go,75,Test,TestVoiceLeavesAPlainEntryAlone,False,legacy-not-retrospectively-reviewed
+MAP-25bce7c30ce2,L1,reviewed implementation,internal/launchhost/agent_readiness_test.go,9,reviewed-selector,TestCFR006AgentReadReturnsBeforeBlockedReaderSettles,False,CFR-006
 LEG-bd9336c63bfb,L1,Go core / CLI / server,internal/launchhost/agent_test.go,8,Test,TestAgentSnapshotDoesNotRequireHostAndRevalidatesChain,False,legacy-not-retrospectively-reviewed
 LEG-081c45c3897d,L1,Go core / CLI / server,internal/launchhost/agent_test.go,10,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-913821ce623a,L1,Go core / CLI / server,internal/launchhost/agent_test.go,63,Test,TestAgentHandoffRejectsInvalidOrStaleEvidence,False,legacy-not-retrospectively-reviewed

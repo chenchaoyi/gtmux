@@ -74,10 +74,6 @@ func TestCFR001ReadinessPreservesStrictTerminalProof(t *testing.T) {
 }
 
 func TestCFR001DirectLaunchScopeAndParentCancellation(t *testing.T) {
-	procs := parseProcesses(fixture)
-	if !directLaunch(procs, 100, 200, 300) || directLaunch(procs, 100, 200, 400) || directLaunch(procs, 100, 999, 300) {
-		t.Fatal("direct launch proof changed")
-	}
 	oldRead, oldStdin := launchRead, launchStdin
 	t.Cleanup(func() { launchRead, launchStdin = oldRead, oldStdin })
 	for _, wrapped := range []bool{false, true} {
@@ -88,17 +84,11 @@ func TestCFR001DirectLaunchScopeAndParentCancellation(t *testing.T) {
 			}
 			if name == "ps" {
 				psCalls++
-				want := []string{"-p", "100,200,300", "-o", "pid=,ppid=,pgid=,tpgid=,tty=,lstart=,comm="}
-				if wrapped {
-					want = []string{"-axo", "pid=,ppid=,pgid=,tpgid=,tty=,lstart=,comm="}
-				}
+				want := []string{"-axo", "pid=,ppid=,pgid=,tpgid=,tty=,lstart=,comm="}
 				if !reflect.DeepEqual(args, want) {
 					t.Fatalf("unexpected process scope: %v", args)
 				}
-				if wrapped {
-					return fixture
-				}
-				return strings.Join(strings.Split(strings.TrimSpace(fixture), "\n")[:3], "\n")
+				return fixture
 			}
 			return "%7\t100\t/dev/ttys001\tsample-launcher\t/synthetic\ttest:0.0"
 		}
@@ -117,5 +107,61 @@ func TestCFR001DirectLaunchScopeAndParentCancellation(t *testing.T) {
 	o := ObserveLaunch(ctx, Pane{ID: "%7", PID: 100, TTY: "/dev/ttys001"}, 300, 200, 300)
 	if o.PID != 0 || o.Code != "snapshot-unavailable" {
 		t.Fatal("cancelled observation accepted", o)
+	}
+}
+
+func TestCFR005DirectLaunchRetainsFullTreeAndMissingEvidenceRefuses(t *testing.T) {
+	oldRead, oldStdin := launchRead, launchStdin
+	t.Cleanup(func() { launchRead, launchStdin = oldRead, oldStdin })
+	for _, kind := range []string{"ready", "sibling-before", "sibling-after", "peer-before", "peer-after", "changed-birth"} {
+		t.Run(kind, func(t *testing.T) {
+			calls := 0
+			launchRead = func(_ context.Context, name string, args ...string) string {
+				if name != "ps" {
+					return "%7\t100\t/dev/ttys001\tsample-launcher\t/synthetic\ttest:0.0"
+				}
+				calls++
+				full := len(args) > 0 && args[0] == "-axo"
+				raw := fixture
+				if full && ((kind == "sibling-before") || (kind == "sibling-after" && calls == 2)) {
+					raw += "\n301 200 200 200 ttys001 Mon Sep 28 01:02:03 2026 /opt/codex\n"
+				}
+				if (kind == "peer-before" && calls == 1) || (kind == "peer-after" && calls == 2) {
+					lines := strings.Split(raw, "\n")
+					var keep []string
+					for _, line := range lines {
+						if !strings.HasPrefix(strings.TrimSpace(line), "300 ") {
+							keep = append(keep, line)
+						}
+					}
+					raw = strings.Join(keep, "\n")
+				}
+				if kind == "changed-birth" && calls == 2 {
+					raw = strings.Replace(raw, "300 200 200 200 ttys001 Mon Oct 19 00:00:02 2026", "300 200 200 200 ttys001 Mon Oct 19 00:00:09 2026", 1)
+				}
+				return raw
+			}
+			launchStdin = func(context.Context, int) string { return "/dev/ttys001" }
+			p := Pane{ID: "%7", PID: 100, Command: "sample-launcher", TTY: "/dev/ttys001", Cwd: "/synthetic", Loc: "test:0.0"}
+			o := ObserveLaunch(context.Background(), p, 300, 200, 300)
+			switch kind {
+			case "ready":
+				if o.PID != 300 || o.Code != "" {
+					t.Fatal(o)
+				}
+			case "sibling-before", "sibling-after":
+				if o.Code != "ambiguous-client" || o.PID != 0 || o.Retryable() {
+					t.Fatal("sibling admitted", kind, o)
+				}
+			case "peer-before", "peer-after":
+				if o.Code != "process-unavailable" || !o.Retryable() || o.PID != 0 {
+					t.Fatal("missing evidence misclassified", kind, o)
+				}
+			default:
+				if o.Code != "process-changed" || o.Retryable() {
+					t.Fatal(o)
+				}
+			}
+		})
 	}
 }

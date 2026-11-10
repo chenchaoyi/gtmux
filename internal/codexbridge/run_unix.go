@@ -83,9 +83,9 @@ func Run(bin string, args []string, pane string) int {
 			http.Error(w, "unavailable", http.StatusServiceUnavailable)
 			return
 		}
-		up, err := codexrpc.DialLocal(admitCtx)
+		up, err := dialForAdmission(admitCtx, codexrpc.DialLocal)
 		if err != nil {
-			refuse(&resume.FrontendAdmissionError{Code: "daemon-unavailable"}, 0, http.StatusServiceUnavailable)
+			refuse(err, 0, http.StatusServiceUnavailable)
 			return
 		}
 		defer up.Close()

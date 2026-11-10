@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1067 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1069 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
-| L1 · Unit / pure logic | 3763 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 1943 | [L2.csv](cases/L2.csv) |
+| L1 · Unit / pure logic | 3765 | [L1.csv](cases/L1.csv) |
+| L2 · Component / contract | 1944 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 90 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 94 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 12 | [M.csv](cases/M.csv) |
@@ -38,10 +38,13 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | CET-006 | A real manual PostCompact receipt is recorded once, active stays absent and exact completion/current turn remain intact. Only actual rearm decisions are eligible for the completed-turn fence. |
 | CORE-CODEX-FOREIGN-ACTIVE | Only a verified current Codex home/session/cwd, a named foreign active marker, a completed/aborted own rollout and a ready nonworking nonapproval frame can contradict false working. Own/empty/unknown/stale binding or actual start/work/wait remains conservative. Reads never remove a foreign marker or mint a completion. |
 | CORE-CODEX-FOREIGN-GATHER | The real radar gather with isolated HOME, a completed own rollout, another session marker and recent window activity reports idle without changing marker content/mtime, binding or completion records; genuine own turns, approvals and legacy unknown ownership still work. |
-| CFR-001 | Only stable unique foreground Codex with verified stdin and exact launch ancestry is accepted. Missing reads classify transient; explicit conflicts classify hard refusal. Direct child snapshots are scoped to pane/bridge/client; generic ancestry keeps existing protections. Cancellation does not extend the parent deadline; legacy Resolve behavior is unchanged. No real process or terminal mutation. |
+| CFR-001 | Only stable unique foreground Codex with verified stdin and exact launch ancestry is accepted. Missing reads classify transient; explicit conflicts classify hard refusal. All launches use two full-tree process snapshots, so a known direct child cannot hide a second frontend. Cancellation does not extend the parent deadline; legacy Resolve success criteria are unchanged. |
 | CFR-002 | Known peer/launch mismatch, invalid identity and changed pane cannot acquire authority; transient unreadable evidence is distinguishable from mismatch. No thread discovery/resume/input or persisted binding occurs during admission. Legacy Begin API and current binding/freshness checks remain valid. |
 | CFR-003 | No check executes before publication; successful transient retry authorizes exactly once. Hard refusal runs once, no second child or native fallback, failures preserve specific nonsecret reason and retry eligibility. All attempts share a 4s parent budget and at most four checks; canceled/deadline work cannot later authorize. Old immediate refusal fails the transient/early-publication expectations; cancellation does not require a timing-race sleep. |
 | CFR-004 | Reservation does not change active authority. Only a successfully upgraded reserved connection can activate; a failed or older connection cannot suppress incumbent heartbeat/binding. A newer successful connection retires only the prior active epoch. Original pre-admission sequence-guard semantics fail the failed-reservation assertion. One admission deadline includes the WebSocket upgrade; no deadline is retained on the accepted interactive transport. |
+| CFR-005 | Every launch checks full-tree uniqueness. Existing or new eligible sibling refuses without verified PID. Missing peer or ancestor rows yield retryable process-unavailable; a genuinely changed birth remains hard process-changed. No input or authority is granted on incomplete evidence. The old exact-PID path fails the paired sibling counterexample. |
+| CFR-006 | Caller returns unavailable promptly at cancellation without awaiting underlying reader; a late result cannot authorize or write shared output. Exact process result remains unchanged for timely valid reads. No real hung process or service is created. |
+| CFR-007 | Context cancellation/deadline take precedence over generic daemon-unavailable; errors returned as context values remain specific even before ctx.Err updates. Ordinary dial failure remains daemon-unavailable and no retry mutation/fallback occurs. |
 | CT-HTTP | Real Go handler responses agree with independent RN/Web fake servers for transcript history/context, HQ overview/detail/cursor, document metadata/download, null/empty and permission errors. |
 | CT-DRAFT | Actual Detail and HQ composers isolate text across servers and reused panes/session identities, ignore delayed old draft loads, and persist/send to the current target only. |
 | CT-HQ | A current human question opens its original matter, prepares but does not auto-send a reply; an authoritative answer removes it from pending without completing the matter. Old client responses cannot replace current data. |

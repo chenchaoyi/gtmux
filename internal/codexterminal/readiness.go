@@ -62,6 +62,10 @@ func (i inspector) observe(panes []Pane) map[string]Observation {
 			code = "snapshot-unavailable"
 		} else {
 			for _, pid := range c.chain {
+				if _, exists := after[pid]; !exists {
+					code = "process-unavailable"
+					break
+				}
 				if before[pid] != after[pid] {
 					code = "process-changed"
 					break
@@ -81,7 +85,9 @@ func (i inspector) observe(panes []Pane) map[string]Observation {
 		}
 		if code == "" {
 			fresh, _, reason := inspectClient(c.pane, after)
-			if reason != "" || fresh != c.client {
+			if reason != "" {
+				code = reason
+			} else if fresh != c.client {
 				code = "client-changed"
 			}
 		}
@@ -95,25 +101,18 @@ func (i inspector) observe(panes []Pane) map[string]Observation {
 	return out
 }
 
-// ObserveLaunch shares the legacy strict verifier. A direct child needs only the
-// known pane/bridge/client processes. Generic launchers keep full ancestry and
-// ambiguity checks; neither a supplied PID nor inherited environment is proof.
+// ObserveLaunch uses the same two full-tree snapshots as legacy resolution.
+// A known child PID proves launch ancestry, not absence of another foreground
+// client. Missing rows remain unavailable evidence, never authority.
 func ObserveLaunch(parent context.Context, p Pane, childPID, bridgePID, peerPID int) Observation {
 	ctx, cancel := context.WithTimeout(parent, 2*time.Second)
 	defer cancel()
-	small := childPID == peerPID && childPID > 1 && bridgePID > 1
-	first := true
+	missingPeer := false
 	snapshot := func() map[int]process {
-		if !small {
-			return parseProcesses(launchRead(ctx, "ps", "-axo", "pid=,ppid=,pgid=,tpgid=,tty=,lstart=,comm="))
-		}
-		ids := strconv.Itoa(p.PID) + "," + strconv.Itoa(bridgePID) + "," + strconv.Itoa(childPID)
-		procs := parseProcesses(launchRead(ctx, "ps", "-p", ids, "-o", "pid=,ppid=,pgid=,tpgid=,tty=,lstart=,comm="))
-		if first {
-			first = false
-			if !directLaunch(procs, p.PID, bridgePID, childPID) && len(procs) > 0 {
-				small = false
-				return parseProcesses(launchRead(ctx, "ps", "-axo", "pid=,ppid=,pgid=,tpgid=,tty=,lstart=,comm="))
+		procs := parseProcesses(launchRead(ctx, "ps", "-axo", "pid=,ppid=,pgid=,tpgid=,tty=,lstart=,comm="))
+		if len(procs) > 0 {
+			if _, exists := procs[peerPID]; !exists {
+				missingPeer = true
 			}
 		}
 		return procs
@@ -123,16 +122,13 @@ func ObserveLaunch(parent context.Context, p Pane, childPID, bridgePID, peerPID 
 			"#{pane_id}\t#{pane_pid}\t#{pane_tty}\t#{pane_current_command}\t#{pane_current_path}\t#{session_name}:#{window_index}.#{pane_index}"))
 	}}
 	o := i.observe([]Pane{p})[p.ID]
+	if missingPeer && (o.Code == "" || o.Code == "client-unverified" || o.Code == "client-changed" || o.Code == "process-unavailable") {
+		o = Observation{Code: "process-unavailable"}
+	}
 	if ctx.Err() != nil {
 		return Observation{Code: "snapshot-unavailable"}
 	}
 	return o
-}
-
-func directLaunch(procs map[int]process, panePID, bridgePID, childPID int) bool {
-	b, bridgeOK := procs[bridgePID]
-	c, childOK := procs[childPID]
-	return bridgeOK && childOK && c.parent == bridgePID && (bridgePID == panePID || b.parent == panePID)
 }
 
 // ReadLaunchPane reads only the requested current pane, within the shared budget.
