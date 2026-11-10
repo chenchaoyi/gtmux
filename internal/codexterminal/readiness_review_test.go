@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestCFR001ReadinessPreservesStrictTerminalProof(t *testing.T) {
+func TestCFR005ReadinessPreservesStrictTerminalProof(t *testing.T) {
 	for _, kind := range []string{"ready", "snapshot", "stdin-unavailable", "stdin-mismatch", "birth", "pane", "ambiguous", "foreground"} {
 		t.Run(kind, func(t *testing.T) {
 			before, after := parseProcesses(fixture), parseProcesses(fixture)
@@ -73,7 +73,7 @@ func TestCFR001ReadinessPreservesStrictTerminalProof(t *testing.T) {
 	}
 }
 
-func TestCFR001DirectLaunchScopeAndParentCancellation(t *testing.T) {
+func TestCFR005FullTreeLaunchScopeAndParentCancellation(t *testing.T) {
 	oldRead, oldStdin := launchRead, launchStdin
 	t.Cleanup(func() { launchRead, launchStdin = oldRead, oldStdin })
 	for _, wrapped := range []bool{false, true} {

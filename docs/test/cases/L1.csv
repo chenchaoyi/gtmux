@@ -773,9 +773,9 @@ LEG-7d21e1339a80,L1,Go core / CLI / server,internal/codexterminal/client_test.go
 LEG-80c194b2199e,L1,Go core / CLI / server,internal/codexterminal/client_test.go,145,Test,TestWrappedCodexPaneRevalidation,False,legacy-not-retrospectively-reviewed
 LEG-de26ba12a73d,L1,Go core / CLI / server,internal/codexterminal/mode_test.go,5,Test,TestProcessRecoveryRejectsHeadlessModesEvenWithTerminalStdin,False,legacy-not-retrospectively-reviewed
 LEG-3c028c0e4888,L1,Go core / CLI / server,internal/codexterminal/mode_test.go,30,Test,TestManagedBackendRequiresUnambiguousDaemonCommand,False,legacy-not-retrospectively-reviewed
-MAP-36a7e5ff2edf,L1,reviewed implementation,internal/codexterminal/readiness_test.go,10,reviewed-selector,TestCFR001ReadinessPreservesStrictTerminalProof,False,CFR-001
-MAP-2e57929e00a5,L1,reviewed implementation,internal/codexterminal/readiness_test.go,76,reviewed-selector,TestCFR001DirectLaunchScopeAndParentCancellation,False,CFR-001
-MAP-db4e1830e9db,L1,reviewed implementation,internal/codexterminal/readiness_test.go,113,reviewed-selector,TestCFR005DirectLaunchRetainsFullTreeAndMissingEvidenceRefuses,False,"CFR-001,CFR-005"
+MAP-3c9928c51d3c,L1,reviewed implementation,internal/codexterminal/readiness_review_test.go,10,reviewed-selector,TestCFR005ReadinessPreservesStrictTerminalProof,False,CFR-005
+MAP-46db7daae336,L1,reviewed implementation,internal/codexterminal/readiness_review_test.go,76,reviewed-selector,TestCFR005FullTreeLaunchScopeAndParentCancellation,False,CFR-005
+MAP-c1532da18337,L1,reviewed implementation,internal/codexterminal/readiness_review_test.go,113,reviewed-selector,TestCFR005DirectLaunchRetainsFullTreeAndMissingEvidenceRefuses,False,CFR-005
 LEG-28aabe798834,L1,Go core / CLI / server,internal/codexterminal/stdin_lsof_test.go,5,Test,TestWrappedCodexStdinDescriptor,False,legacy-not-retrospectively-reviewed
 LEG-abc84f7d187c,L1,Go core / CLI / server,internal/connect/attach_url_test.go,5,Test,TestWSURL,False,legacy-not-retrospectively-reviewed
 LEG-c9022aeadd0c,L1,Go core / CLI / server,internal/connect/attach_url_test.go,21,Test,TestWSURL_EmptyTERM,False,legacy-not-retrospectively-reviewed

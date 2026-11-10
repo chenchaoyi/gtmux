@@ -857,14 +857,10 @@
   },
   "internal/codexterminal/readiness_test.go": {
     "cases": [
-      "CFR-001",
-      "CFR-005"
+      "CFR-001"
     ],
-    "selectors": [
-      "TestCFR001ReadinessPreservesStrictTerminalProof",
-      "TestCFR001DirectLaunchScopeAndParentCancellation",
-      "TestCFR005DirectLaunchRetainsFullTreeAndMissingEvidenceRefuses"
-    ]
+    "removed": true,
+    "reason": "Retire obsolete three-PID scope expectation after Q independent review. Preserve all still-valid strict identity, stdin, birth, pane, ambiguity and cancellation assertions in readiness_review_test.go under prior-reviewed CFR-005; actual full-tree scope supersedes the former optimization. Original design and rejection remain in Git history; no checks waived."
   },
   "internal/resume/codexfrontend_ready_test.go": {
     "cases": [
@@ -906,6 +902,16 @@
     ],
     "selectors": [
       "TestCFR007ActualAdmissionDialKeepsCancellationAndDeadlineReasons"
+    ]
+  },
+  "internal/codexterminal/readiness_review_test.go": {
+    "cases": [
+      "CFR-005"
+    ],
+    "selectors": [
+      "TestCFR005ReadinessPreservesStrictTerminalProof",
+      "TestCFR005FullTreeLaunchScopeAndParentCancellation",
+      "TestCFR005DirectLaunchRetainsFullTreeAndMissingEvidenceRefuses"
     ]
   }
 }
