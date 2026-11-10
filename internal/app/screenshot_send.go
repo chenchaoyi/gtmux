@@ -65,8 +65,8 @@ func currentScreenshotTarget(pane string) (screenshot.Target, error) {
 	return t, screenshot.Fail("target-unverified", "An exact managed Codex or DSH native binding is required; other clients retain gtmux send --attach")
 }
 
-func screenshotResolveTarget(pane, session string) (any, error) {
-	t, err := screenshotCurrentTarget(pane)
+func screenshotResolveTarget(ctx context.Context, pane, session string) (any, error) {
+	t, err := screenshotReadTarget(ctx, pane)
 	if err != nil {
 		return nil, err
 	}
@@ -88,8 +88,11 @@ func screenshotSend(ctx context.Context, path, token, id, notePath string) (scre
 	if err != nil {
 		return empty, err
 	}
-	current, err := screenshotCurrentTarget(t.Pane)
-	if err != nil || !t.SameBinding(current) {
+	current, err := screenshotReadTarget(ctx, t.Pane)
+	if err != nil {
+		return empty, err
+	}
+	if !t.SameBinding(current) {
 		return empty, screenshot.Fail("target-changed", "The target changed; resolve it again before a new submission")
 	}
 	f, err := screenshot.OpenImage(path, "")
@@ -157,7 +160,15 @@ func screenshotSend(ctx context.Context, path, token, id, notePath string) (scre
 		if ctx.Err() != nil {
 			return "screenshot request deadline expired"
 		}
-		root, loc, server, start, err := screenshotPhysical(t.Pane)
+		read := screenshotPhysical
+		observation, err := screenshot.ReadWithin(ctx, func() screenshotPaneObservation {
+			r, l, s, b, e := read(t.Pane)
+			return screenshotPaneObservation{r, l, s, b, e}
+		})
+		root, loc, server, start := observation.root, observation.loc, observation.server, observation.start
+		if err == nil {
+			err = observation.err
+		}
 		if err != nil || root != t.PanePID || loc != t.Loc || server != t.ServerPID || start != t.ServerStart {
 			return "screenshot target incarnation changed"
 		}
@@ -224,4 +235,25 @@ func screenshotSend(ctx context.Context, path, token, id, notePath string) (scre
 		return finish("blocked", string(result.State), false)
 	}
 	return finish("unknown", "no-confirmed-input-receipt", false)
+}
+
+type screenshotTargetObservation struct {
+	target screenshot.Target
+	err    error
+}
+type screenshotPaneObservation struct {
+	root   int
+	loc    string
+	server int
+	start  string
+	err    error
+}
+
+func screenshotReadTarget(ctx context.Context, pane string) (screenshot.Target, error) {
+	read := screenshotCurrentTarget
+	observed, err := screenshot.ReadWithin(ctx, func() screenshotTargetObservation { t, e := read(pane); return screenshotTargetObservation{t, e} })
+	if err != nil {
+		return screenshot.Target{}, err
+	}
+	return observed.target, observed.err
 }

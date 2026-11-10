@@ -116,7 +116,7 @@ func cmdScreenshot(args []string) int {
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()
 	if op == "target" {
-		result, err := screenshotResolveTarget(pane, session)
+		result, err := screenshotResolveTarget(ctx, pane, session)
 		return screenshotOutput(result, err)
 	}
 	if op == "send" {

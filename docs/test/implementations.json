@@ -955,5 +955,22 @@
       "TestASC005ReceiptsNeverReplayUncertainOrChangedRequests",
       "TestASC005ReceiptStoreRefusesCorruptionAndCapacity"
     ]
+  },
+  "internal/screenshot/host_readiness_test.go": {
+    "cases": [
+      "ASC-007"
+    ],
+    "selectors": [
+      "TestASC007HostObservationCannotAuthorizeAfterCancellation",
+      "TestASC007HostIncarnationUsesExactUTCMetadata"
+    ]
+  },
+  "internal/app/screenshot_deadline_test.go": {
+    "cases": [
+      "ASC-007"
+    ],
+    "selectors": [
+      "TestASC007TargetReadStopsAtCancellationBeforeMintOrSend"
+    ]
   }
 }

@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"github.com/chenchaoyi/gtmux/internal/state"
 	"io"
 	"os"
 	"path/filepath"
@@ -38,7 +39,7 @@ func targetKey(create bool) ([]byte, error) {
 	path := filepath.Join(dir, "target.key")
 	var f *os.File
 	if create {
-		f, err = os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL|syscall.O_NOFOLLOW, 0600)
+		f, err = state.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL|syscall.O_NOFOLLOW, 0600)
 	} else {
 		err = os.ErrExist
 	}
@@ -59,7 +60,7 @@ func targetKey(create bool) ([]byte, error) {
 	if !os.IsExist(err) {
 		return nil, err
 	}
-	f, err = os.OpenFile(path, os.O_RDONLY|syscall.O_NOFOLLOW, 0)
+	f, err = state.OpenFile(path, os.O_RDONLY|syscall.O_NOFOLLOW, 0)
 	if err != nil {
 		return nil, err
 	}

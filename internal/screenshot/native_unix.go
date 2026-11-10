@@ -43,9 +43,7 @@ func Native(ctx context.Context, request Request, files []*os.File) (Reply, erro
 	}
 	return nativeAt(ctx, filepath.Join(dir, "agent.sock"), host, request, files, func(pid int) bool {
 		p, ok := launchhost.ReadAgent(pid)
-		observed, e1 := time.Parse("Mon Jan 2 15:04:05 2006", p.Start)
-		birth, e2 := time.Parse(time.RFC3339Nano, host.Start)
-		return ok && p.PID == host.PID && p.Comm == "GtmuxBar" && e1 == nil && e2 == nil && birth.Sub(observed) >= 0 && birth.Sub(observed) < time.Second
+		return ok && hostProcessMatches(host, p)
 	})
 }
 
@@ -81,9 +79,17 @@ func nativeAt(ctx context.Context, path string, host Host, request Request, file
 		return Reply{}, Fail("host-unverified", "Invalid local transport")
 	}
 	pid, valid := codexrpc.LocalPeerPID(c)
-	if !valid || pid != host.PID || !verify(pid) {
+	if !valid || pid != host.PID {
 		return Reply{}, Fail("host-unverified", "Screenshot host process changed")
 	}
+	verifiedHost, err := ReadWithin(ctx, func() bool { return verify(pid) })
+	if err != nil {
+		return Reply{}, err
+	}
+	if !verifiedHost {
+		return Reply{}, Fail("host-unverified", "Screenshot host process changed")
+	}
+
 	if err := c.SetDeadline(deadline); err != nil {
 		return Reply{}, err
 	}
@@ -149,7 +155,7 @@ func nativeAt(ctx context.Context, path string, host Host, request Request, file
 }
 
 func ownedJSON(path string, v any) error {
-	f, err := os.OpenFile(path, os.O_RDONLY|syscall.O_NOFOLLOW, 0)
+	f, err := state.OpenFile(path, os.O_RDONLY|syscall.O_NOFOLLOW, 0)
 	if err != nil {
 		return err
 	}
@@ -205,4 +211,11 @@ func transportFailure(ctx context.Context, code, message string) error {
 		return context.DeadlineExceeded
 	}
 	return Fail(code, message)
+}
+
+func hostProcessMatches(host Host, p launchhost.AgentProcess) bool {
+	// launchhost runs ps with TZ=UTC. Do not interpret lstart in local time.
+	observed, e1 := time.Parse("Mon Jan 2 15:04:05 2006", p.Start)
+	birth, e2 := time.Parse(time.RFC3339Nano, host.Start)
+	return p.PID == host.PID && p.Comm == "GtmuxBar" && e1 == nil && e2 == nil && birth.Sub(observed) >= 0 && birth.Sub(observed) < time.Second
 }

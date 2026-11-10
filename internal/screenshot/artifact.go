@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"github.com/chenchaoyi/gtmux/internal/state"
 	"image"
 	_ "image/png"
 	"io"
@@ -36,7 +37,7 @@ func ReadSpec(path string) (Spec, error) {
 	return s, err
 }
 func readBounded(path string, limit int64) ([]byte, error) {
-	f, err := os.OpenFile(path, os.O_RDONLY|syscall.O_NOFOLLOW, 0)
+	f, err := state.OpenFile(path, os.O_RDONLY|syscall.O_NOFOLLOW, 0)
 	if err != nil {
 		return nil, Fail("file-unavailable", "The input must be an accessible regular file")
 	}
@@ -53,7 +54,7 @@ func readBounded(path string, limit int64) ([]byte, error) {
 }
 
 func OpenImage(path, expected string) (*os.File, error) {
-	f, err := os.OpenFile(path, os.O_RDONLY|syscall.O_NOFOLLOW, 0)
+	f, err := state.OpenFile(path, os.O_RDONLY|syscall.O_NOFOLLOW, 0)
 	if err != nil {
 		return nil, Fail("image-unavailable", "The input image is not accessible")
 	}
@@ -120,7 +121,7 @@ func Produce(ctx context.Context, request Request, input, output string, call Na
 		}
 	}()
 	for range 2 {
-		f, err := os.CreateTemp(parent, ".gtmux-shot-")
+		f, err := state.CreateTemp(parent, ".gtmux-shot-")
 		if err != nil {
 			return zero, err
 		}
@@ -176,7 +177,7 @@ func Produce(ctx context.Context, request Request, input, output string, call Na
 		}
 		// Publish a CLI-owned copy, never the inode handed to a native producer.
 		// A late native writer therefore cannot mutate a published artifact.
-		copy, err := os.CreateTemp(parent, ".gtmux-shot-final-")
+		copy, err := state.CreateTemp(parent, ".gtmux-shot-final-")
 		if err != nil {
 			return zero, err
 		}
@@ -231,7 +232,7 @@ func Produce(ctx context.Context, request Request, input, output string, call Na
 	if len(data)+1 > MaxJSON {
 		return zero, Fail("json-too-large", "Editable metadata exceeds its size budget")
 	}
-	meta, err := os.CreateTemp(parent, ".gtmux-shot-")
+	meta, err := state.CreateTemp(parent, ".gtmux-shot-")
 	if err != nil {
 		return zero, err
 	}

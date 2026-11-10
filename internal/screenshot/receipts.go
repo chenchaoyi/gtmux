@@ -57,7 +57,7 @@ func Claim(id, target, image, note string) (Receipt, bool, error) {
 		return empty, false, Fail("receipt-budget-full", "Screenshot receipt budget is full; preserve unresolved receipts before retiring old metadata")
 	}
 	r := Receipt{Version: Version, ID: id, PayloadSHA: sum, TargetSHA: Digest([]byte(target)), ImageSHA: image, State: "unknown", ObservedAt: time.Now().UTC().Format(time.RFC3339Nano), Reason: "submission-not-yet-confirmed"}
-	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+	f, err := state.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
 	if os.IsExist(err) {
 		r, e := ReadReceipt(id)
 		if e != nil {

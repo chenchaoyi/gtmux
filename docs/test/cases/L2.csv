@@ -21,6 +21,7 @@ MAP-c7c7feed6e2a,L2,reviewed implementation,internal/app/hqworkspace_reconcile_t
 MAP-c746f11a537e,L2,reviewed implementation,internal/app/hqworkspace_stored_test.go,10,reviewed-selector,TestWorkspaceStoredCLILeavesDiscoveryAndRecordsUntouched,False,MC-HQ-READ
 MAP-93c5d85ec366,L2,reviewed implementation,internal/app/relay_sender_contract_test.go,52,reviewed-selector,TestHRS003ReceiptAwareSharedTranscript,False,HRS-003
 MAP-d400cc0846af,L2,reviewed implementation,internal/app/relay_sender_contract_test.go,89,reviewed-selector,TestHRS003EarlierPagesKeepFirstAttribution,False,HRS-003
+MAP-5a676c7255b7,L2,reviewed implementation,internal/app/screenshot_deadline_test.go,13,reviewed-selector,TestASC007TargetReadStopsAtCancellationBeforeMintOrSend,False,ASC-007
 MAP-8890e9017044,L2,reviewed implementation,internal/app/screenshot_send_test.go,16,reviewed-selector,TestASC004And005ScreenshotDeliveryUsesExactTargetAndDurableAcceptance,False,"ASC-004,ASC-005"
 MAP-15420f2c2dd0,L2,reviewed implementation,internal/app/screenshot_test.go,31,reviewed-selector,TestASC001ScreenshotCLIRefusesAmbiguousOrUnsupportedInput,False,"ASC-001,ASC-006"
 MAP-b25f69eecf52,L2,reviewed implementation,internal/app/screenshot_test.go,49,reviewed-selector,TestASC006UnavailableNativeCapabilityIsTruthfulAndNonMutating,False,"ASC-001,ASC-006"
@@ -69,6 +70,8 @@ MAP-d562c313395b,L2,reviewed implementation,internal/radar/codex_foreign_marker_
 MAP-981c45e6de6f,L2,reviewed implementation,internal/radar/energy_gather_test.go,8,reviewed-selector,TestPWR002GatherSharesFramesOnlyInsideOnePass,False,PWR-002
 MAP-fb260993ae4c,L2,reviewed implementation,internal/screenshot/artifact_test.go,45,reviewed-selector,TestASC001ArtifactPublicationIsAtomicAndPreservesExistingFiles,False,"ASC-001,ASC-003"
 MAP-6431b235fa37,L2,reviewed implementation,internal/screenshot/artifact_test.go,98,reviewed-selector,TestASC003CoordinatesAndEditableImagesStayBoundToExactBytes,False,"ASC-001,ASC-003"
+MAP-28e4c80d7a50,L2,reviewed implementation,internal/screenshot/host_readiness_test.go,10,reviewed-selector,TestASC007HostObservationCannotAuthorizeAfterCancellation,False,ASC-007
+MAP-cad2cb987926,L2,reviewed implementation,internal/screenshot/host_readiness_test.go,42,reviewed-selector,TestASC007HostIncarnationUsesExactUTCMetadata,False,ASC-007
 MAP-e27b2d2ffff7,L2,reviewed implementation,internal/screenshot/receipts_test.go,13,reviewed-selector,TestASC005ReceiptsNeverReplayUncertainOrChangedRequests,False,ASC-005
 MAP-fa5a12e1d46f,L2,reviewed implementation,internal/screenshot/receipts_test.go,57,reviewed-selector,TestASC005ReceiptStoreRefusesCorruptionAndCapacity,False,ASC-005
 MAP-58e7e7500da8,L2,reviewed implementation,internal/screenshot/target_test.go,12,reviewed-selector,TestASC004TargetReferencesBindWholeIncarnationAndExpire,False,ASC-004
