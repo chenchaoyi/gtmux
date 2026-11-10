@@ -48,7 +48,7 @@ func TestMSD003HTTPPreservesActualReceiptAndLegacySend(t *testing.T) {
 func TestMSD003PreferredReceiptCannotBypassGuestScope(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	enroll := NewEnrollManager(nil, nil)
-	share := NewShareManager(ShareConfig{}, nil)
+	share := NewShareManager(ShareState{}, nil)
 	calls := 0
 	s := New(Config{Token: testToken}, Deps{Enroll: enroll, Share: share, SendWithReceipt: func(string, string, string, bool, string) (InputReceipt, error) {
 		calls++

@@ -35,7 +35,11 @@ func codexNativeSubmit(pane string) func(dispatch.Opts, string, func() string) d
 		}
 		if receipt, known := agentclient.ReadReceipt(r); known && receipt.State == "accepted" {
 			if receipt.Delivery == "active-turn" || receipt.Delivery == "started-turn" {
-				return dispatch.Result{State: dispatch.StateQueued, JudgedBy: dispatch.JudgedByDriver, Delivery: receipt.Delivery, Evidence: "codex-direct-already-accepted"}
+				evidence := "codex-active-already-accepted"
+				if receipt.Delivery == "started-turn" {
+					evidence = "codex-turn-already-accepted"
+				}
+				return dispatch.Result{State: dispatch.StateQueued, JudgedBy: dispatch.JudgedByDriver, Delivery: receipt.Delivery, Evidence: evidence}
 			}
 			return dispatch.Result{State: dispatch.StateQueued, JudgedBy: dispatch.JudgedByDriver, Evidence: "codex-queue-already-accepted"}
 		}
