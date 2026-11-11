@@ -1,0 +1,24 @@
+{
+  "id": "hq-association-isolation-20261111",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-11",
+    "decision": "Move only the new HQ association regression into an independent fixture, preserving the existing usage tests exactly",
+    "notes": "Actual frozen candidate77fe875458721f72c4ba846572e884b79a2696cd failed PR history for unchanged historical UR-001 mapped to HQScreen.poll.test.tsx. No retrospective UR approval is claimed. Restore that file and its catalogue/mapping to exact base935d6ae1ce90536258bc9b767ecd4087fcda94f2; retire prototype selector MAP-d488ef3677eb because it moves, not because its assertions are removed. Review the same association error/preserve/retry expectations before implementing them in a new self-contained HQ fixture under CAS-008. Existing CAS-005 API/ChatView/Detail cases and their prior exact review remain unchanged; CAS-008 replaces only the planned HQ placement. No checker, gate, base, original commits, production behavior or UR assertions are changed. Source/full tests from77fe remain recorded; new fixture must run real HQView with only environment/native/child views mocked, preserving transcript polling and reason propagation."
+  },
+  "cases": [
+    {
+      "id": "CAS-008",
+      "layer": "L3",
+      "description": "HQ association error retains history and retry clears the reason in a self-contained fixture",
+      "setup": "Mounted production HQView with an isolated mocked server/context and shared ChatView replaced only to inspect actual passed props. Begin with a loaded idle HQ response; no usage fixtures or real services.",
+      "action": "Make the next transcript read reject with the structured409 association reason, inspect error and retained turns, then retry a successful read and inspect clearing.",
+      "expected": "HQ passes associationFailed=true and keeps the already loaded reply after failure; its visible Retry handler performs another read and clears associationFailed on success. Existing HQScreen.poll.test.tsx/UR-001 source, selectors and catalogue metadata remain byte-for-byte the base versions. No arbitrary old delivery is replayed and no real session input occurs.",
+      "planned_files": [
+        "mobileapp/src/screens/HQScreen.association.test.tsx"
+      ]
+    }
+  ],
+  "seal": "7aca44544e75ecc4eb167b3627389ed910036ca3a6bb1521abb306a73e6c19eb"
+}

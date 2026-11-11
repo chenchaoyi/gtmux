@@ -1976,7 +1976,7 @@
     externalSettings = null;
     externalBusy = false;
     externalError = '';
-    chatSig = '';
+    chatSig = ''; chatReadFailure = '';
     lastTurns = [];
     chatExpanded = {};
     showChatLoader();
@@ -2167,7 +2167,7 @@
     syncModeButtons();
     if (paneMode !== 'term') {
       clearInterval(paneTimer); paneTimer = null;
-      show('chat'); chatSig = ''; lastTurns = []; chatHistory = null; chatExpanded = {}; curTurnIdx = 1e9;
+      show('chat'); chatSig = ''; chatReadFailure = ''; lastTurns = []; chatHistory = null; chatExpanded = {}; curTurnIdx = 1e9;
       showChatLoader();
       showFocusChrome(false);
       pollChat(); clearInterval(chatTimer); chatTimer = setInterval(pollChat, 2500);
@@ -2200,18 +2200,34 @@
   // ---- chat (对话 mode) -------------------------------------------------
   // Renders the parsed transcript (GET /api/transcript) as prompt → collapsed
   // steps → final response, mirroring the phone's ChatView. Input uses the shared composer.
+  var chatReadFailure = '';
+  function chatReadResponse(r) {
+    if (r.ok) return r.json();
+    return r.json().catch(function () { return null; }).then(function (body) {
+      throw Object.assign(new Error('transcript'), {association: r.status === 409 && body && body.code === 'conversation-unassociated'});
+    });
+  }
+  function chatReadBanner(reason, retry) {
+    var box = el('div', 'chat-history chat-read-error'); box.setAttribute('role', 'alert');
+    box.appendChild(el('span', '', reason === 'association'
+      ? T('Conversation association is unavailable. Existing messages are kept; switch to Terminal to view this session.', '会话关联暂不可用，无法确认这段终端对应的对话。当前内容已保留，可切换到终端查看。')
+      : T('Could not load the conversation. Existing messages are kept.', '对话暂时无法载入，当前内容已保留。')));
+    var button = el('button', '', T('Retry', '重试')); button.type = 'button'; button.onclick = retry; box.appendChild(button); return box;
+  }
   function pollChat() {
     pollConversationStatus();
     runRead('chat', function (signal) {
       if (!curPane) return;
-      var current = currentRead('chat', signal);
+      var scope = chatScope(curAgent), read = currentRead('chat', signal);
+      var current = function (visible) { return read(visible) && scope === chatScope(curAgent); };
       return api('/api/transcript?id=' + encodeURIComponent(curPane), {signal: signal}).then(function (r) {
         if (!current()) return null;
         if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
+        if (r.status === 403) { chatHistory = null; lastTurns = []; throw new Error('forbidden'); }
         if (r.status === 404) { setConn(true); return []; } // no resume record / not available
-        if (!r.ok) throw new Error('transcript'); return r.json();
-      }).then(function (turns) { if (turns === null || !current(true)) return; setConn(true); hideChatLoader(); renderChat(turns || []); })
-        .catch(function () { if (current()) setConn(false); });
+        return chatReadResponse(r);
+      }).then(function (turns) { if (turns === null || !current(true)) return; setConn(true); hideChatLoader(); chatReadFailure = ''; renderChat(turns || []); })
+        .catch(function (error) { if (current()) { hideChatLoader(); chatReadFailure = error.association ? 'association' : 'failed'; renderChat(lastTurns); } });
     }, 15000, function () { setConn(false); });
   }
 
@@ -2275,7 +2291,7 @@
     reconcilePendingPrompts(curPane, turns);
     lastTurns = turns;
     // only repaint when content changed (keeps scroll position + expanded steps)
-    var sig = JSON.stringify(turns);
+    var sig = JSON.stringify([turns, chatReadFailure]);
     if (sig === chatSig) return;
     chatSig = sig;
     drawChat(turns);
@@ -2311,13 +2327,14 @@
       collapse.type = 'button'; collapse.dataset.chatFocus = 'collapse'; collapse.onclick = collapseAllSteps; sr.appendChild(collapse);
     }
 
-    if (!turns.length && !(pendingPrompts[curPane] || []).length) {
+    if (chatReadFailure) col.appendChild(chatReadBanner(chatReadFailure, pollChat));
+    if (!chatReadFailure && !turns.length && !(pendingPrompts[curPane] || []).length) {
       var e = document.createElement('div'); e.className = 'chat-empty';
       e.textContent = readableConversation(a) ? T('No recorded conversation yet.','尚无已记录的对话。') : T('No conversation yet. Switch to Terminal to see the current screen.',
         '暂无对话记录。可切换到「终端」查看当前屏幕。');
       col.appendChild(e);
     }
-    var history = chatHistoryControl(chatHistory, a, function () { lastTurns = chatHistory.turns; chatSig = JSON.stringify(lastTurns); drawChat(lastTurns); }, function () { return chatHistory && chatHistory.scope === chatScope(a) && chatScope(curAgent) === chatScope(a) && !$('chat').hidden; });
+    var history = chatHistoryControl(chatHistory, a, function () { lastTurns = chatHistory.turns; chatSig = JSON.stringify([lastTurns, chatReadFailure]); drawChat(lastTurns); }, function () { return chatHistory && chatHistory.scope === chatScope(a) && chatScope(curAgent) === chatScope(a) && !$('chat').hidden; });
     if(history) col.appendChild(history);
     var seps = sepLabels(turns);
     turns.forEach(function (t, idx) { col.appendChild(conversationTurn(t, a, idx, chatExpanded, seps[idx], true)); });
@@ -3676,12 +3693,16 @@
         if(r.status === 401) {token=null;localStorage.removeItem(TOKEN_KEY);gate('expired');return null;}
         if(r.status === 403 || readableConversation(t.agent) && (r.status === 404 || r.status === 422)) {removeTile(t);return null;}
         t.dropped = Number(r.headers.get('X-Gtmux-Turns-Dropped') || 0) || 0;
-        return r.status === 404 ? [] : r.ok ? r.json() : null;
+        return r.status === 404 ? [] : chatReadResponse(r);
       }).then(function (turns) {
         if (signal.aborted || turns === null || t.removed || epoch !== t.readEpoch || scope !== chatScope(t.agent) || t.mode !== 'chat') return;
-        t.history = historyState(t.history, t.agent); turns = chatTail(t.history, turns || []);
-        var sig = JSON.stringify([turns, t.dropped || 0]); if (sig === t.chatSig) return; t.chatSig = sig; renderTileChat(t, turns);
-      }).catch(function () {});
+        t.chatReadFailure = ''; t.history = historyState(t.history, t.agent); turns = chatTail(t.history, turns || []);
+        var sig = JSON.stringify([turns, t.dropped || 0, t.chatReadFailure]); if (sig === t.chatSig) return; t.chatSig = sig; renderTileChat(t, turns);
+      }).catch(function (error) {
+        if (!signal.aborted && !t.removed && epoch === t.readEpoch && scope === chatScope(t.agent) && t.mode === 'chat') {
+          t.chatReadFailure = error.association ? 'association' : 'failed'; t.chatSig = ''; renderTileChat(t, t.lastTurns || []);
+        }
+      });
     });
   }
 
@@ -3692,7 +3713,8 @@
     var atBottom = !old || old.scrollHeight - old.scrollTop - old.clientHeight < 48;
     var top = old ? old.scrollTop : 0, anchor=readingAnchor(old), prepended=hasPrependedTurns(old,turns,t.agent);
     var wrap = document.createElement('div'); wrap.className = 'tile-chat';
-    if (!turns.length && !(pendingPrompts[t.id] || []).length) { var e = document.createElement('div'); e.className = 'chat-empty'; e.textContent = T('No conversation yet.', '还没有对话。'); wrap.appendChild(e); }
+    if (t.chatReadFailure) wrap.appendChild(chatReadBanner(t.chatReadFailure, function () { tilePollChat(t); }));
+    if (!t.chatReadFailure && !turns.length && !(pendingPrompts[t.id] || []).length) { var e = document.createElement('div'); e.className = 'chat-empty'; e.textContent = T('No conversation yet.', '还没有对话。'); wrap.appendChild(e); }
     var history = chatHistoryControl(t.history, t.agent, function () { t.chatSig = JSON.stringify(t.history.turns); renderTileChat(t, t.history.turns); }, function () { return WB.on && !t.removed && t.mode === 'chat' && t.history && t.history.scope === chatScope(t.agent); });
     if(history) wrap.appendChild(history);
     if(readableConversation(t.agent) && t.dropped > 0 && !(turns[0] && turns[0].history_before)) wrap.appendChild(el('p', 'chat-source-note', T('Earlier messages omitted by the source: ', '源记录省略了更早消息：') + t.dropped));

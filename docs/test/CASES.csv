@@ -180,6 +180,7 @@ LEG-c93943b11bf4,L1,Go core / CLI / server,internal/app/continuumtrigger_test.go
 LEG-5fdf91d47a66,L1,Go core / CLI / server,internal/app/continuumtrigger_test.go,39,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-beca86f5c9e4,L1,Go core / CLI / server,internal/app/continuumtrigger_test.go,50,Test,TestNoTriggerIsZero,False,legacy-not-retrospectively-reviewed
 LEG-c3950c269cbe,L1,Go core / CLI / server,internal/app/continuumtrigger_test.go,63,Test,TestMoreThanTwoIsCountedExactly,False,legacy-not-retrospectively-reviewed
+MAP-f767974bfca8,L2,reviewed implementation,internal/app/conversation_read_test.go,14,reviewed-selector,TestCAS003PaneAssociationIsNotAnEmptyConversation,False,CAS-003
 LEG-39ed7f066416,L1,Go core / CLI / server,internal/app/desktoptranscript_test.go,28,Test,TestDesktopTranscriptUsesIdentityAndDoesNotGrantFollow,False,legacy-not-retrospectively-reviewed
 LEG-063dd8595c91,L1,Go core / CLI / server,internal/app/desktoptranscript_test.go,74,Test,TestDesktopTranscriptEmptyAndBudgetAreExplicit,False,legacy-not-retrospectively-reviewed
 LEG-a2878da734c1,G,Go core / CLI / server,internal/app/desktoptranscript_test.go,95,Test,TestCodexReaderScopeAndForkDoNotAlias,False,legacy-not-retrospectively-reviewed
@@ -331,9 +332,9 @@ LEG-53346c9f4ca9,L1,Go core / CLI / server,internal/app/dsh_recovery_test.go,136
 LEG-1ed9a789df9a,G,Go core / CLI / server,internal/app/dsh_recovery_test.go,152,Test,TestOwnedDSHRefreshRefusesLinksAndConcurrentChanges,False,legacy-not-retrospectively-reviewed
 LEG-87a401a77ea6,L1,Go core / CLI / server,internal/app/dsh_terminal_test.go,11,Test,TestDSHTerminalNativeRequestContract,False,legacy-not-retrospectively-reviewed
 LEG-f77bf015624b,G,Go core / CLI / server,internal/app/dsh_terminal_test.go,88,Test,TestDSHTerminalArtifactPreflightPreservesForeignFiles,False,legacy-not-retrospectively-reviewed
-LEG-d9c80714fb30,G,Go core / CLI / server,internal/app/dsh_transcript_test.go,20,Test,TestDSHReaderUsesHomeAndLeavesSourceAndConsentUnchanged,False,legacy-not-retrospectively-reviewed
-LEG-1852de415a12,G,Go core / CLI / server,internal/app/dsh_transcript_test.go,54,Test,TestDSHHistoryRetainsHQSenderWithoutLivePaneAndRefreshesETag,False,legacy-not-retrospectively-reviewed
-LEG-2bdd59ce9930,L1,Go core / CLI / server,internal/app/dsh_transcript_test.go,121,Test,TestDSHTerminalRevocationDoesNotServeStalePaneHistory,False,legacy-not-retrospectively-reviewed
+LEG-d9c80714fb30,G,Go core / CLI / server,internal/app/dsh_transcript_test.go,22,Test,TestDSHReaderUsesHomeAndLeavesSourceAndConsentUnchanged,False,legacy-not-retrospectively-reviewed
+LEG-1852de415a12,G,Go core / CLI / server,internal/app/dsh_transcript_test.go,56,Test,TestDSHHistoryRetainsHQSenderWithoutLivePaneAndRefreshesETag,False,legacy-not-retrospectively-reviewed
+LEG-2bdd59ce9930,L1,Go core / CLI / server,internal/app/dsh_transcript_test.go,123,Test,TestDSHTerminalRevocationDoesNotServeStalePaneHistory,False,legacy-not-retrospectively-reviewed
 LEG-9cc9e8b441c1,G,Go core / CLI / server,internal/app/focusheadless_test.go,11,Test,TestHeadlessFocusRequiresInteractiveClientAndChecksSelection,False,legacy-not-retrospectively-reviewed
 LEG-752bc75bd93e,L1,Go core / CLI / server,internal/app/follow_test.go,14,Test,TestFollowCLIUsesOneConversationAndRecordsItsReceipt,False,legacy-not-retrospectively-reviewed
 LEG-2f8348a37e4c,L1,Go core / CLI / server,internal/app/follow_test.go,57,Test,TestDesktopPushDoesNotOfferUnusablePaneActions,False,legacy-not-retrospectively-reviewed
@@ -346,6 +347,7 @@ LEG-30dbe6974ed8,L1,Go core / CLI / server,internal/app/goalfile_test.go,60,Test
 LEG-bf4fcb3bac82,L1,Go core / CLI / server,internal/app/goalfile_test.go,70,Test,TestSpawnGoal_EmptyAndMissingFile,False,legacy-not-retrospectively-reviewed
 LEG-724ae7168ffd,L1,Go core / CLI / server,internal/app/goalfile_test.go,82,Test,TestOneshotGoalStaging_RoundTrip,False,legacy-not-retrospectively-reviewed
 LEG-b61637e77b7b,L1,Go core / CLI / server,internal/app/goalfile_test.go,117,Test,TestGoalFile_TrailingNewlineContract,False,legacy-not-retrospectively-reviewed
+MAP-0ac93543b761,L2,reviewed implementation,internal/app/help_readability_test.go,9,reviewed-selector,TestCAS006HelpKeepsLongSyntaxSeparateAndScreenshotsVisible,False,CAS-006
 LEG-d03c42bfc599,L1,Go core / CLI / server,internal/app/help_test.go,53,Test,TestEveryCommandYouCanRunIsInTheHelp,False,legacy-not-retrospectively-reviewed
 LEG-b1e2526e8893,L1,Go core / CLI / server,internal/app/help_test.go,64,Test,TestTheHelpFitsAnEightyColumnTerminal,False,legacy-not-retrospectively-reviewed
 LEG-cadd64584b7d,L1,Go core / CLI / server,internal/app/help_test.go,83,Test,TestAFlagSaysWhatItTakesBeforeYouGuessWrong,False,legacy-not-retrospectively-reviewed
@@ -714,7 +716,7 @@ LEG-8695311a8d76,L1,Go core / CLI / server,internal/app/sharecmd_test.go,76,Test
 LEG-f34facf83811,L1,Go core / CLI / server,internal/app/sharecmd_test.go,102,Test,TestBuildShareStatus_PerLinkScope,False,legacy-not-retrospectively-reviewed
 LEG-3d87c808315b,L1,Go core / CLI / server,internal/app/sharecmd_test.go,123,Test,TestGuestScopeSummary,False,legacy-not-retrospectively-reviewed
 LEG-156eebe9aa64,L1,Go core / CLI / server,internal/app/sharecmd_test.go,137,Test,TestBuildShareStatusFlagsStaleGrants,False,legacy-not-retrospectively-reviewed
-LEG-8aed3735cb05,L1,Go core / CLI / server,internal/app/spawn_binding_test.go,16,Test,TestSpawnBindingRestoresTranscriptEndpoint,False,legacy-not-retrospectively-reviewed
+LEG-8aed3735cb05,L1,Go core / CLI / server,internal/app/spawn_binding_test.go,18,Test,TestSpawnBindingRestoresTranscriptEndpoint,False,legacy-not-retrospectively-reviewed
 LEG-16085aeeb0e9,L1,Go core / CLI / server,internal/app/spawn_handle_test.go,7,Test,TestSpawnHandle,False,legacy-not-retrospectively-reviewed
 LEG-c015a50a27ef,L1,Go core / CLI / server,internal/app/spawn_paneid_test.go,20,Test,TestNameDispatchWindowBackfillsPaneIDs,False,legacy-not-retrospectively-reviewed
 LEG-448935afb4cf,L1,Go core / CLI / server,internal/app/spawn_paneid_test.go,48,subtest,--title,False,legacy-not-retrospectively-reviewed
@@ -2499,6 +2501,11 @@ LEG-afc1ffe41bfd,L1,Go core / CLI / server,internal/resume/codexprocess_test.go,
 LEG-7c6949a4cf98,G,Go core / CLI / server,internal/resume/codexwrapper_test.go,14,Test,TestWrappedCodexBindingUsesVerifiedClientAndLauncher,False,legacy-not-retrospectively-reviewed
 LEG-0979274119e5,L1,Go core / CLI / server,internal/resume/codexwrapper_test.go,88,Test,TestWrappedCodexLiveMetadata,False,legacy-not-retrospectively-reviewed
 LEG-4436aa9216d5,L1,Go core / CLI / server,internal/resume/commandwords_test.go,8,Test,TestCommandWords,False,legacy-not-retrospectively-reviewed
+MAP-498880a35c6c,L2,reviewed implementation,internal/resume/conversation_test.go,20,reviewed-selector,TestCAS001IndependentConversationRecovery,False,"CAS-001,CAS-002"
+MAP-a549d442247a,L2,reviewed implementation,internal/resume/conversation_test.go,54,reviewed-selector,TestCAS001ConversationRecoveryRejectsUnknownOrConflictingProof,False,"CAS-001,CAS-002"
+MAP-fa6914665340,L2,reviewed implementation,internal/resume/conversation_test.go,134,reviewed-selector,TestCAS002OwnHeartbeatRepairsLostIndex,False,"CAS-001,CAS-002"
+MAP-67dd266a7a62,L2,reviewed implementation,internal/resume/conversation_test.go,158,reviewed-selector,TestCAS002HeartbeatCannotReclaimReplacementOrUnknownEvidence,False,"CAS-001,CAS-002"
+MAP-d797af1a2534,L2,reviewed implementation,internal/resume/conversation_test.go,214,reviewed-selector,TestCAS001LegacyEmptyAndForeignHome,False,"CAS-001,CAS-002"
 LEG-3036a69fd5c3,L1,Go core / CLI / server,internal/resume/dsh_test.go,11,Test,TestDSHResumeRequiresVerifiedTerminalHomeAndExistingRoot,False,legacy-not-retrospectively-reviewed
 LEG-6efe6b04d63b,L1,Go core / CLI / server,internal/resume/fromcommand_test.go,5,Test,TestFromCommand,False,legacy-not-retrospectively-reviewed
 LEG-df6a4e30461b,L1,Go core / CLI / server,internal/resume/fromcommand_test.go,38,Test,TestFromCommandRoundTripsCommand,False,legacy-not-retrospectively-reviewed
@@ -2594,6 +2601,7 @@ LEG-83f7e5572350,L2,Go core / CLI / server,internal/server/completion_test.go,8,
 LEG-9fd20b906ea7,L2,Go core / CLI / server,internal/server/completion_test.go,20,Test,TestCompletionPendingBoundaries,False,legacy-not-retrospectively-reviewed
 LEG-0a95c2908352,L2,Go core / CLI / server,internal/server/completion_test.go,42,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-a5e3434b37a4,L2,Go core / CLI / server,internal/server/completion_test.go,60,Test,TestCompletionPendingRespectsConsent,False,legacy-not-retrospectively-reviewed
+MAP-28ded370695d,L2,reviewed implementation,internal/server/conversation_read_test.go,10,reviewed-selector,TestCAS003ConversationFailureContractAndGuestBoundary,False,CAS-003
 LEG-5bfe57c2ddae,L2,Go core / CLI / server,internal/server/diaglog_test.go,23,Test,TestARejectedPairingSaysWhy,False,legacy-not-retrospectively-reviewed
 LEG-8759783d1709,L2,Go core / CLI / server,internal/server/diaglog_test.go,62,Test,TestASendIsRecordedWithoutItsText,False,legacy-not-retrospectively-reviewed
 LEG-e722fcd337ac,L2,Go core / CLI / server,internal/server/diaglog_test.go,87,Test,TestRejectedTokensAreAggregated,False,legacy-not-retrospectively-reviewed
@@ -2908,6 +2916,8 @@ LEG-4fd9f327715a,L2,Browser,internal/server/web/app.test.cjs,1276,test,Return se
 LEG-3eddecec9a49,L2,Browser,internal/server/web/app.test.cjs,1289,test,"pending prompts require a newly recorded occurrence, including identical messages without clocks",False,legacy-not-retrospectively-reviewed
 LEG-46dcc46b1b27,L2,Browser,internal/server/web/app.test.cjs,1299,test,an unchanged retry keeps its send id while a new acknowledged message gets a new id,False,legacy-not-retrospectively-reviewed
 LEG-1307ca617db3,L2,Browser,internal/server/web/app.test.cjs,1313,test,radar keyboard selection skips rows inside a collapsed section,False,legacy-not-retrospectively-reviewed
+MAP-e2feefc515a3,L3,Browser,internal/server/web/app.test.cjs,1324,reviewed-selector,CAS004 focused and tile chats disclose association failures and recover without losing messages,False,CAS-004
+MAP-328002d4dfc3,L3,Browser,internal/server/web/app.test.cjs,1351,reviewed-selector,CAS004 stale tile association failure cannot repaint a changed target,False,CAS-004
 MAP-3bd1a5cb9551,L1,reviewed implementation,internal/server/web/argv-reading.test.cjs,2,reviewed-selector,ARGV-001 browser uses,False,ARGV-001
 LEG-a24ee8487c6a,G,Browser,internal/server/web/documents.test.cjs,7,test,browser document references and validation are generated from the App contract,False,legacy-not-retrospectively-reviewed
 LEG-dd62d73a080e,G,Browser,internal/server/web/reading.test.cjs,2,test,file+' follows its native model',True,legacy-not-retrospectively-reviewed
@@ -4379,6 +4389,7 @@ LEG-4cb2832ee3d5,L1,RN / mobile harness,mobileapp/src/api/clock.test.ts,18,test,
 LEG-9389674970ae,L1,RN / mobile harness,mobileapp/src/api/clock.test.ts,42,test,a phone running slow still falls back rather than counting backwards,False,legacy-not-retrospectively-reviewed
 LEG-9f5914205aba,L1,RN / mobile harness,mobileapp/src/api/clock.test.ts,50,test,an unreadable or absent header leaves the estimate alone,False,legacy-not-retrospectively-reviewed
 LEG-8ffc5536b2a3,L1,RN / mobile harness,mobileapp/src/api/clock.test.ts,58,test,"the latest reading wins, so a corrected phone clock is followed at once",False,legacy-not-retrospectively-reviewed
+MAP-f0ea1c518382,L3,reviewed implementation,mobileapp/src/api/conversation.test.ts,5,reviewed-selector,CAS005 transcript rejects association and source failures instead of returning empty history,False,CAS-005
 LEG-e4ccbe92b909,L1,RN / mobile harness,mobileapp/src/api/events.test.ts,23,test,"a refused stream reports the status the Mac answered with, and only that",False,legacy-not-retrospectively-reviewed
 LEG-fb700444ec3e,L1,RN / mobile harness,mobileapp/src/api/events.test.ts,38,test,"an awake event asks for a server-mode re-read, and is harmless unhandled",False,legacy-not-retrospectively-reviewed
 LEG-e0457d0d24da,L1,RN / mobile harness,mobileapp/src/api/events.test.ts,47,test,"intentional unsubscribe ignores late stream errors, data and open callbacks",False,legacy-not-retrospectively-reviewed
@@ -4713,7 +4724,9 @@ LEG-cf861ad50359,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.
 MAP-1dd1e525111d,L2,reviewed implementation,mobileapp/src/screens/DetailSendSnapshot.test.tsx,26,reviewed-selector,MSD-009 late text receipt cannot replace newer %s control-key screen,False,MSD-009
 LEG-3311f5104ff9,L2,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,82,test,opening and closing Trace shares Chat’s in-flight read without aborting or starting a second subscription,False,legacy-not-retrospectively-reviewed
 LEG-383eef0af50a,L2,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,109,test,the same pane and session in a different home cannot show or accept the old reply,False,legacy-not-retrospectively-reviewed
-LEG-27bb0cdcad2a,L2,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,135,test.each(),pane denial %s closes tools and clears old records,True,legacy-not-retrospectively-reviewed
+LEG-27bb0cdcad2a,L2,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,136,test.each(),pane denial %s closes tools and clears old records,True,legacy-not-retrospectively-reviewed
+MAP-4811f4f9249d,L3,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,150,reviewed-selector,"CAS005 Detail propagates association failures, preserves history and clears on retry",False,CAS-005
+MAP-761f8dca626a,L3,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,160,reviewed-selector,CAS007 unchanged transcript polls reuse the ChatView element,False,"CAS-005,CAS-007"
 LEG-bdaca444f3d6,L2,RN / mobile harness,mobileapp/src/screens/HQActsSheet.test.tsx,35,test,"lists what HQ did: what the list is for, the 24-hour tally, and every act",False,legacy-not-retrospectively-reviewed
 LEG-9439b91c1a3b,L2,RN / mobile harness,mobileapp/src/screens/HQActsSheet.test.tsx,43,test,"an act leads where it acted: the session, or the knowledge entry it wrote",False,legacy-not-retrospectively-reviewed
 LEG-06208debd045,L2,RN / mobile harness,mobileapp/src/screens/HQActsSheet.test.tsx,53,test,"nothing recent says so, and the sheet closes",False,legacy-not-retrospectively-reviewed
@@ -4743,6 +4756,7 @@ LEG-3791df07c7cd,L2,RN / mobile harness,mobileapp/src/screens/HQResourceCards.te
 LEG-676004ffc6bc,L2,RN / mobile harness,mobileapp/src/screens/HQResourceCards.test.tsx,73,test.each(),machine %s warning is visible in Board rather than the token card,True,legacy-not-retrospectively-reviewed
 LEG-57bed87db168,L2,RN / mobile harness,mobileapp/src/screens/HQResourceCards.test.tsx,91,test,a retained resource warning stays labelled as a previous reading after refresh failure,False,legacy-not-retrospectively-reviewed
 LEG-8a79b39c6646,L2,RN / mobile harness,mobileapp/src/screens/HQResourceCards.test.tsx,99,test.each(),missing or unwarned machine readings do not invent a warning or healthy verdict,True,legacy-not-retrospectively-reviewed
+MAP-104c84ca28d9,L3,reviewed implementation,mobileapp/src/screens/HQScreen.association.test.tsx,26,reviewed-selector,CAS008 HQ association failure keeps history and clears after retry,False,CAS-008
 LEG-1bfb47100323,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.attach.test.tsx,72,test,the enabled plus opens the menu; cancelling and reopening neither uploads nor sends,False,legacy-not-retrospectively-reviewed
 LEG-5eabcc2569fc,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.attach.test.tsx,84,test,"a selected file stays staged until send, which uploads to HQ before sending its path",False,legacy-not-retrospectively-reviewed
 LEG-f787efe69fa7,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.attach.test.tsx,96,test,cancelling the photo picker leaves nothing to send and the menu can open again,False,legacy-not-retrospectively-reviewed
@@ -5396,6 +5410,7 @@ LEG-e6e7b244f26a,L2,RN / mobile harness,mobileapp/src/ui/AttachSheet.test.tsx,43
 LEG-a2ee828f06f8,L2,RN / mobile harness,mobileapp/src/ui/AttachSheet.test.tsx,56,it,still slides when you dismiss it by the backdrop — there the motion IS the answer,False,legacy-not-retrospectively-reviewed
 LEG-9ebc3d2fb720,L2,RN / mobile harness,mobileapp/src/ui/AttachSheet.test.tsx,63,it,runs the chosen action only after the sheet has actually gone,False,legacy-not-retrospectively-reviewed
 LEG-8b9b6cbb1dad,L2,RN / mobile harness,mobileapp/src/ui/AttachSheet.test.tsx,76,it,slides again the next time it opens,False,legacy-not-retrospectively-reviewed
+MAP-23737a6180b1,L3,reviewed implementation,mobileapp/src/ui/ChatView.association.test.tsx,8,reviewed-selector,CAS005 association banner preserves messages and retries without claiming empty history,False,CAS-005
 LEG-10b2f4580849,L2,RN / mobile harness,mobileapp/src/ui/ChatView.follow.test.tsx,45,test,"a new turn does not drag a reader out of history, nor tell the host it did",False,legacy-not-retrospectively-reviewed
 LEG-067d2f8bfcb3,L2,RN / mobile harness,mobileapp/src/ui/ChatView.follow.test.tsx,71,test,a new turn DOES follow for a reader sitting at the tail,False,legacy-not-retrospectively-reviewed
 LEG-dc47da40588f,L2,RN / mobile harness,mobileapp/src/ui/ChatView.follow.test.tsx,89,test,the host revealing its chrome does not count as leaving the tail,False,legacy-not-retrospectively-reviewed

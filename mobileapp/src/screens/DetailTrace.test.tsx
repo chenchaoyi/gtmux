@@ -146,3 +146,21 @@ test.each([401, 403])(
     expect(tree.root.findByType(ChatView).props.turns).toEqual([]);
   },
 );
+
+test('CAS005 Detail propagates association failures, preserves history and clears on retry', async () => {
+  await mount();
+  client.transcript.mockRejectedValueOnce(new (require('../api/client').ConversationReadError)(409, true));
+  await act(async () => tree.root.findByType(ChatView).props.onRetry());
+  expect(tree.root.findByType(ChatView).props.associationFailed).toBe(true);
+  expect(tree.root.findByType(ChatView).props.turns[0].response).toBe('answer');
+  await act(async () => tree.root.findByType(ChatView).props.onRetry());
+  expect(tree.root.findByType(ChatView).props.associationFailed).toBeFalsy();
+});
+
+test('CAS007 unchanged transcript polls reuse the ChatView element', async () => {
+  await mount();
+  const before = tree.root.findByType(ChatView).props;
+  client.transcript.mockResolvedValueOnce({turns: [], dropped: 0, unchanged: true, etag: 'one'});
+  await act(async () => before.onRetry());
+  expect(tree.root.findByType(ChatView).props).toBe(before);
+});

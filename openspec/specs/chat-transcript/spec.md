@@ -40,10 +40,20 @@ or no readable log.
 - **AND** a later `final_answer`, `agent_message`, and `task_complete` carrying the
   same closing text produce one final bubble
 
-#### Scenario: No session
+#### Scenario: Verified session without messages
 
-- **WHEN** the pane has no resolvable session log
+- **WHEN** the pane has a verified association but no recorded messages
 - **THEN** the parser returns an empty list (not an error)
+
+#### Scenario: Missing or damaged association
+
+- **WHEN** a pane's primary association is missing or malformed
+- **THEN** history MAY recover from one independently saved, fresh frontend receipt only after exact home, location, process birth and terminal checks
+- **AND** invalid, ambiguous, newer conflicting or excessive receipt evidence MUST prevent recovery
+- **AND** read-only recovery MUST NOT modify the primary index or authorize terminal input or restore
+- **AND** only its authenticated current bridge MAY republish its own index under the existing lease and epoch guard, from its exact fresh receipt, without replacing a valid incumbent
+- **AND** unavailable association or source reads MUST be distinguished from empty history
+- **AND** browser and App MUST retain displayed messages and offer clear retry guidance
 
 ### Requirement: Keep every reply segment with its interleaved steps
 

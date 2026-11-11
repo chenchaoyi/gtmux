@@ -1,3 +1,4 @@
+import {ConversationReadError} from '../api/client';
 import {newSendId} from '../api/sendId';
 import type {SendDelivery} from '../ui/sendReceipt';
 // DetailScreen — a read-only view of one pane's current screen (MOBILE §4), in
@@ -335,7 +336,7 @@ function PaneDetailView({
   // flipping 终端→对话 shows the cached history instantly instead of re-fetching +
   // spinning every time. Polled on status/prompt change; turns are never cleared.
   const chatIdentity = useMemo(() => ({client, pane: agent.pane_id, session: live.session_id, home: live.home_id, agent: live.agent}), [client, agent.pane_id, live.session_id, live.home_id, live.agent]);
-  const [chatRecord, setChatRecord] = useState<{identity: typeof chatIdentity; turns: TranscriptTurn[]; dropped: number; reset?: SessionReset; loaded: boolean; failed?: boolean}>({identity: chatIdentity, turns: [], dropped: 0, loaded: false});
+  const [chatRecord, setChatRecord] = useState<{identity: typeof chatIdentity; turns: TranscriptTurn[]; dropped: number; reset?: SessionReset; loaded: boolean; failed?: boolean; associationFailed?: boolean}>({identity: chatIdentity, turns: [], dropped: 0, loaded: false});
   const turns = chatRecord.identity === chatIdentity ? chatRecord.turns : EMPTY_TURNS;
   const latestTurns = useRef(turns); latestTurns.current = turns;
   useEffect(() => {
@@ -346,6 +347,7 @@ function PaneDetailView({
   useEffect(() => {pendingEcho.current = null; echoAttempts.current.clear(); setPendingPrompt(''); setPendingDelivered(false); setBusyHint(null);}, [client, agent.pane_id]);
   const chatLoaded = chatRecord.identity === chatIdentity && chatRecord.loaded;
   const chatFailed = chatRecord.identity === chatIdentity && !!chatRecord.failed;
+  const chatAssociationFailed = chatRecord.identity === chatIdentity && !!chatRecord.associationFailed;
   // How many OLDER turns the server left out to bound the payload — shown by ChatView so
   // a truncated history never reads as the whole conversation (transcript-render-bounds).
   const droppedTurns = chatRecord.identity === chatIdentity ? chatRecord.dropped : 0;
@@ -647,14 +649,14 @@ function PaneDetailView({
       }, ({turns: ts, dropped, reset, etag, unchanged}) => {
         if (etagIdentity.current !== chatIdentity) return;
         etagRef.current = etag;
-        setChatRecord(previous => unchanged && previous.identity === chatIdentity ? {...previous, loaded: true, failed: false} : {identity: chatIdentity, turns: ts, dropped, reset, loaded: true});
+        setChatRecord(previous => unchanged && previous.identity === chatIdentity ? {...previous, loaded: true, failed: false, associationFailed: false} : {identity: chatIdentity, turns: ts, dropped, reset, loaded: true});
       }, {onError: error => {
         if (etagIdentity.current !== chatIdentity) return;
         if (isAuthError(error)) {
           etagRef.current = undefined;
           setTraceOpen(false); setDiffOpen(false);
-          setChatRecord({identity: chatIdentity, turns: [], dropped: 0, loaded: true, failed: true});
-        } else setChatRecord(previous => previous.identity === chatIdentity ? {...previous, loaded: true, failed: true} : {identity: chatIdentity, turns: [], dropped: 0, loaded: true, failed: true});
+          setChatRecord({identity: chatIdentity, turns: [], dropped: 0, loaded: true, failed: true, associationFailed: error instanceof ConversationReadError && error.association});
+        } else setChatRecord(previous => previous.identity === chatIdentity ? {...previous, loaded: true, failed: true, associationFailed: error instanceof ConversationReadError && error.association} : {identity: chatIdentity, turns: [], dropped: 0, loaded: true, failed: true, associationFailed: error instanceof ConversationReadError && error.association});
       }},
     );
     loadTurnsRef.current = task.run;
@@ -676,9 +678,9 @@ function PaneDetailView({
   // trees in JS even when nothing changed — that was the "停顿 on unchanging content".
   const chatEl = useMemo(
     () => (
-      <ChatView client={isGuest ? undefined : client} agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} failed={chatFailed} onRetry={() => loadTurnsRef.current()} pendingPrompt={pendingPrompt} pendingDelivered={pendingDelivered} pendingDelivery={pendingDelivery} fontPref={fontPref} onLiveEdge={chatEdge} topPad={chromeH + questionInset} controlsTop={fullscreen ? insets.top : chromeH + questionInset} controlsShift={fullscreen ? undefined : collapse.interpolate({inputRange: [0, 1], outputRange: [0, -chromeH]})} maxWidth={isWide ? READING_WIDTH : undefined} />
+      <ChatView client={isGuest ? undefined : client} agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} failed={chatFailed} associationFailed={chatAssociationFailed} onRetry={() => loadTurnsRef.current()} pendingPrompt={pendingPrompt} pendingDelivered={pendingDelivered} pendingDelivery={pendingDelivery} fontPref={fontPref} onLiveEdge={chatEdge} topPad={chromeH + questionInset} controlsTop={fullscreen ? insets.top : chromeH + questionInset} controlsShift={fullscreen ? undefined : collapse.interpolate({inputRange: [0, 1], outputRange: [0, -chromeH]})} maxWidth={isWide ? READING_WIDTH : undefined} />
     ),
-    [client, isGuest, live, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, chatFailed, pendingPrompt, pendingDelivered, pendingDelivery, fontPref, chatEdge, chromeH, questionInset, fullscreen, insets.top, isWide, collapse],
+    [client, isGuest, live, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, chatFailed, chatAssociationFailed, pendingPrompt, pendingDelivered, pendingDelivery, fontPref, chatEdge, chromeH, questionInset, fullscreen, insets.top, isWide, collapse],
   );
   // Codex pins the prompt of the turn on screen to the top row, cut to the pane's width
   // (ui/codexPinned). When that row is recognised, the full prompt from the conversation

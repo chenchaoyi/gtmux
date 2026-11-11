@@ -1126,7 +1126,12 @@ func (s *Server) handleDiff(w http.ResponseWriter, r *http.Request) {
 // the two reasons the history on screen may not be the whole conversation. Both ride
 // response headers rather than an envelope, so the body stays the plain turn array a
 // client predating either signal already parses.
+var ErrConversationUnassociated = errors.New("conversation association unavailable")
+var ErrConversationUnavailable = errors.New("conversation source unavailable")
+
 type TranscriptMeta struct {
+	AssociationRecovered bool
+
 	History func(context.Context, string) ([]byte, TranscriptMeta, error)
 
 	// EarlierAvailable is set when a session before the oldest one served is known (the
@@ -1181,6 +1186,14 @@ func (s *Server) handleTranscript(w http.ResponseWriter, r *http.Request) {
 		b, meta, err = s.deps.Transcript(id, earlier)
 	}
 	if err != nil {
+		if errors.Is(err, ErrConversationUnassociated) {
+			writeJSON(w, http.StatusConflict, map[string]string{"error": "conversation association unavailable", "code": "conversation-unassociated"})
+			return
+		}
+		if errors.Is(err, ErrConversationUnavailable) {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "conversation source unavailable", "code": "conversation-unavailable"})
+			return
+		}
 		writeJSON(w, http.StatusNotFound, errBody("transcript failed: "+err.Error()))
 		return
 	}
@@ -1189,6 +1202,9 @@ func (s *Server) handleTranscript(w http.ResponseWriter, r *http.Request) {
 }
 
 func writeTranscript(w http.ResponseWriter, r *http.Request, b []byte, meta TranscriptMeta) {
+	if meta.AssociationRecovered {
+		w.Header().Set("X-Gtmux-Conversation-State", "recovered")
+	}
 	var err error
 	if before := r.URL.Query().Get("before"); before != "" {
 		if len(before) > 2048 {

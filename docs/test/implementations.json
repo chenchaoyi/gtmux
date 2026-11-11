@@ -1,4 +1,12 @@
 {
+  "internal/agentclient/expected_target_test.go": {
+    "cases": [
+      "ASC-004"
+    ],
+    "selectors": [
+      "TestASC004ExpectedHarnessIdentityRefusesBeforePreparingInput"
+    ]
+  },
   "internal/agentclient/pending_retry_lifetime_test.go": {
     "cases": [
       "MSD-011"
@@ -22,6 +30,30 @@
     ],
     "selectors": [
       "TestClientHTTPContracts"
+    ]
+  },
+  "internal/app/conversation_read_test.go": {
+    "cases": [
+      "CAS-003"
+    ],
+    "selectors": [
+      "TestCAS003PaneAssociationIsNotAnEmptyConversation"
+    ]
+  },
+  "internal/app/dsh_transcript_test.go": {
+    "cases": [
+      "CAS-003"
+    ],
+    "selectors": [
+      "TestDSHTerminalRevocationDoesNotServeStalePaneHistory"
+    ]
+  },
+  "internal/app/help_readability_test.go": {
+    "cases": [
+      "CAS-006"
+    ],
+    "selectors": [
+      "TestCAS006HelpKeepsLongSyntaxSeparateAndScreenshotsVisible"
     ]
   },
   "internal/app/hqworkspace_cursor_test.go": {
@@ -80,6 +112,23 @@
       "TestMSD002PhoneReceiptCacheKeepsQueueMeaningAndExpiry"
     ]
   },
+  "internal/app/recent_transcript_test.go": {
+    "cases": [
+      "LCL-002"
+    ],
+    "selectors": [
+      "TestLCL002RecentPaneKeepsOrdinalsCursorAndFullDefault"
+    ]
+  },
+  "internal/app/relay_inbox_test.go": {
+    "cases": [
+      "RBL-003"
+    ],
+    "selectors": [
+      "TestRBL003CodexReplyBodyNeverEntersQueuedOrLegacyInput",
+      "TestRBL003CompactNoticeHasVerifiedHQProvenanceAndHumanCopiesDoNot"
+    ]
+  },
   "internal/app/relay_sender_contract_test.go": {
     "cases": [
       "HRS-003"
@@ -97,12 +146,55 @@
       "TestHRS002TrustedReceiptAndFirstSourceOnly"
     ]
   },
+  "internal/app/screenshot_deadline_test.go": {
+    "cases": [
+      "ASC-007"
+    ],
+    "selectors": [
+      "TestASC007TargetReadStopsAtCancellationBeforeMintOrSend"
+    ]
+  },
+  "internal/app/screenshot_send_input_budget_test.go": {
+    "cases": [
+      "ASC-009"
+    ],
+    "selectors": [
+      "TestASC009StalledNoteHasNoClaimOrSendAfterDeadline"
+    ]
+  },
+  "internal/app/screenshot_send_test.go": {
+    "cases": [
+      "ASC-004",
+      "ASC-005"
+    ],
+    "selectors": [
+      "TestASC004And005ScreenshotDeliveryUsesExactTargetAndDurableAcceptance"
+    ]
+  },
+  "internal/app/screenshot_test.go": {
+    "cases": [
+      "ASC-001",
+      "ASC-006"
+    ],
+    "selectors": [
+      "TestASC001ScreenshotCLIRefusesAmbiguousOrUnsupportedInput",
+      "TestASC006UnavailableNativeCapabilityIsTruthfulAndNonMutating"
+    ]
+  },
   "internal/app/serve_energy_snapshot_test.go": {
     "cases": [
       "PWR-003"
     ],
     "selectors": [
       "TestPWR003SSEPublishesItsActualNativeObservationForREST"
+    ]
+  },
+  "internal/app/spawn_binding_test.go": {
+    "cases": [
+      "CAS-003"
+    ],
+    "selectors": [
+      "TestSpawnBindingRestoresTranscriptEndpoint"
     ]
   },
   "internal/codexbridge/connection_epoch_test.go": {
@@ -131,12 +223,60 @@
       "TestCFR003LaunchPublicationAndCancellation"
     ]
   },
+  "internal/codexbridge/trust_alias_policy_test.go": {
+    "cases": [
+      "WTR-005"
+    ],
+    "selectors": [
+      "TestWTR005CanonicalProjectDecisionsKeepResponseUnchanged",
+      "TestWTR005ActualUnixForwardingKeepsCanonicalDenyAndSameHomeGuards",
+      "TestWTR005CanonicalObservationsAreStableAndBounded"
+    ]
+  },
+  "internal/codexbridge/trust_config_test.go": {
+    "cases": [
+      "WTR-002"
+    ],
+    "selectors": [
+      "TestWTR002AliasMirrorsOnlyExistingEffectiveRootTrustAndKeepsOtherFields",
+      "TestWTR002RefusalsLeaveOriginalFrameBytesUnchanged",
+      "TestWTR002CanceledAndLateProofCannotAuthorizeOrSpawnMoreReads",
+      "TestWTR002UnknownOrReusedRequestIDsNeverAccumulateUnboundedState"
+    ]
+  },
+  "internal/codexbridge/trust_interop_test.go": {
+    "cases": [
+      "WTR-003"
+    ],
+    "selectors": [
+      "TestWTR003ActualUnixForwardingUsesVerifiedHomeAndPreservesOtherFrames",
+      "TestWTR003NativeTUIGateway"
+    ]
+  },
   "internal/codexbridge/upgrade_admission_test.go": {
     "cases": [
       "CFR-009"
     ],
     "selectors": [
       "TestCFR009PostUpgradeUsesActualCancellationBeforeDeadline"
+    ]
+  },
+  "internal/codexbridge/worktree_trust_test.go": {
+    "cases": [
+      "WTR-001"
+    ],
+    "selectors": [
+      "TestWTR001OnlyReciprocallyRegisteredWorktreesHaveStableEvidence",
+      "TestWTR001MalformedCopiedSymlinkAndUnsupportedMetadataCannotBorrowTrust"
+    ]
+  },
+  "internal/codexrpc/coordination_input_test.go": {
+    "cases": [
+      "RBL-001"
+    ],
+    "selectors": [
+      "TestRBL001CoordinationOnlySteersExactActiveTurn",
+      "TestRBL001CoordinationGuardPreventsMutation"
     ]
   },
   "internal/codexrpc/direct_user_input_test.go": {
@@ -203,6 +343,14 @@
       "TestMSD002DirectUserIngressPreservesReceiptAndNeverReplays"
     ]
   },
+  "internal/dispatchbridge/expected_target_test.go": {
+    "cases": [
+      "ASC-004"
+    ],
+    "selectors": [
+      "TestASC004ExpectedCodexIdentityRefusesBeforePreparingInput"
+    ]
+  },
   "internal/dispatchbridge/pending_retry_overlap_test.go": {
     "cases": [
       "MSD-011"
@@ -226,6 +374,15 @@
     "selectors": [
       "TestSSI002NativeImageAcceptanceAndUncertainRetryKeepIdentity",
       "TestSSI002OrdinaryTextKeepsExistingQueueSemantics"
+    ]
+  },
+  "internal/dispatchbridge/trust_gate_test.go": {
+    "cases": [
+      "WTR-004"
+    ],
+    "selectors": [
+      "TestWTR004VisibleTrustNamesBlockerBeforePostStartTransport",
+      "TestWTR004NormalTransportStillRequiredAndHistoricalTrustIgnored"
     ]
   },
   "internal/ghostty/session_identity_test.go": {
@@ -340,6 +497,15 @@
       "TestClosedFrontendObservationRequiresExactSnapshotAndGoneProcess"
     ]
   },
+  "internal/prompt/prompt_codex_folder_access_test.go": {
+    "cases": [
+      "WTR-004"
+    ],
+    "selectors": [
+      "TestWTR004CurrentFolderAccessBlocksReadiness",
+      "TestWTR004ReportsAndSettledComposersAreNotConsent"
+    ]
+  },
   "internal/radar/closed_frontend_test.go": {
     "cases": [
       "HXF-002"
@@ -374,6 +540,16 @@
       "TestForeignActiveProductionReaderRejectsLegacyResumeWithoutFrontend"
     ]
   },
+  "internal/radar/codex_stale_state_test.go": {
+    "cases": [
+      "CSR-001",
+      "CSR-002"
+    ],
+    "selectors": [
+      "TestCSR001StaleActiveCannotReviveReadyFinishedPane",
+      "TestCSR002SupersededActiveDoesNotDateCurrentWork"
+    ]
+  },
   "internal/radar/energy_gather_test.go": {
     "cases": [
       "PWR-002"
@@ -391,12 +567,116 @@
       "TestPWR001ConcurrentProducerCannotBeOverwrittenByOlderREST"
     ]
   },
+  "internal/relay/inbox_test.go": {
+    "cases": [
+      "RBL-002"
+    ],
+    "selectors": [
+      "TestRBL002InboxCoalescesConcurrentNoticesAndPreservesReceipts",
+      "TestRBL002FreshnessLegacyAndBoundedSourceWait",
+      "TestRBL002InboxSortsReplyTimeAndRechecksStalenessAtClaim",
+      "TestRBL002SourceWaitCancelsWhileLedgerIsLocked"
+    ]
+  },
   "internal/resume/codexfrontend_ready_test.go": {
     "cases": [
       "CFR-002"
     ],
     "selectors": [
       "TestCFR002AdmissionCausesAndControlledLaunch"
+    ]
+  },
+  "internal/resume/conversation_test.go": {
+    "cases": [
+      "CAS-001",
+      "CAS-002"
+    ],
+    "selectors": [
+      "TestCAS001IndependentConversationRecovery",
+      "TestCAS001ConversationRecoveryRejectsUnknownOrConflictingProof",
+      "TestCAS002OwnHeartbeatRepairsLostIndex",
+      "TestCAS002HeartbeatCannotReclaimReplacementOrUnknownEvidence",
+      "TestCAS001LegacyEmptyAndForeignHome"
+    ]
+  },
+  "internal/resume/state_publication_test.go": {
+    "cases": [
+      "CSR-003"
+    ],
+    "selectors": [
+      "TestCSR003SavePublishesAnAtomicResumeSnapshot",
+      "TestCSR003CodexSaveAndHeartbeatRespectBindingLease"
+    ]
+  },
+  "internal/screenshot/artifact_test.go": {
+    "cases": [
+      "ASC-001",
+      "ASC-003"
+    ],
+    "selectors": [
+      "TestASC001ArtifactPublicationIsAtomicAndPreservesExistingFiles",
+      "TestASC003CoordinatesAndEditableImagesStayBoundToExactBytes"
+    ]
+  },
+  "internal/screenshot/host_readiness_test.go": {
+    "cases": [
+      "ASC-007"
+    ],
+    "selectors": [
+      "TestASC007HostObservationCannotAuthorizeAfterCancellation",
+      "TestASC007HostIncarnationUsesExactUTCMetadata"
+    ]
+  },
+  "internal/screenshot/input_budget_test.go": {
+    "cases": [
+      "ASC-009"
+    ],
+    "selectors": [
+      "TestASC009FIFOPathsNeverBlockBeforeRegularFileValidation",
+      "TestASC009PipeDeadlineCancellationBytesAndOriginalFlags"
+    ]
+  },
+  "internal/screenshot/receipts_test.go": {
+    "cases": [
+      "ASC-005"
+    ],
+    "selectors": [
+      "TestASC005ReceiptsNeverReplayUncertainOrChangedRequests",
+      "TestASC005ReceiptStoreRefusesCorruptionAndCapacity"
+    ]
+  },
+  "internal/screenshot/target_test.go": {
+    "cases": [
+      "ASC-004"
+    ],
+    "selectors": [
+      "TestASC004TargetReferencesBindWholeIncarnationAndExpire",
+      "TestASC004TargetQueriesDoNotMintKeys"
+    ]
+  },
+  "internal/screenshot/transport_test.go": {
+    "cases": [
+      "ASC-002"
+    ],
+    "selectors": [
+      "TestASC002NativeTransportPinsHostAndBoundsReplies",
+      "TestASC006NativeInterop"
+    ]
+  },
+  "internal/server/conversation_read_test.go": {
+    "cases": [
+      "CAS-003"
+    ],
+    "selectors": [
+      "TestCAS003ConversationFailureContractAndGuestBoundary"
+    ]
+  },
+  "internal/server/recent_transcript_test.go": {
+    "cases": [
+      "LCL-002"
+    ],
+    "selectors": [
+      "TestLCL002RecentAndHistoryReadersAreOptInAndAuthorized"
     ]
   },
   "internal/server/send_receipt_test.go": {
@@ -408,12 +688,55 @@
       "TestMSD003PreferredReceiptCannotBypassGuestScope"
     ]
   },
+  "internal/server/web/app.test.cjs": {
+    "cases": [
+      "CAS-004"
+    ],
+    "selectors": [
+      "CAS004 focused and tile chats disclose association failures and recover without losing messages",
+      "CAS004 stale tile association failure cannot repaint a changed target"
+    ]
+  },
   "internal/server/web/argv-reading.test.cjs": {
     "cases": [
       "ARGV-001"
     ],
     "selectors": [
       "ARGV-001 browser uses"
+    ]
+  },
+  "internal/server/web/state-duration.test.cjs": {
+    "cases": [
+      "CSR-004"
+    ],
+    "selectors": [
+      "CSR-004 browser row"
+    ]
+  },
+  "internal/servermode/verified_os_test.go": {
+    "cases": [
+      "SMC-001"
+    ],
+    "selectors": [
+      "TestSMC001VerifiedServerModeOSPreservesUnknownVersionCaution"
+    ]
+  },
+  "internal/state/cpu_repeated_poll_test.go": {
+    "cases": [
+      "CSR-005"
+    ],
+    "selectors": [
+      "TestCSR005RepeatedPollPreservesObservedCPUWork",
+      "TestCSR005RepeatedPollRequiresValidPriorEvidence"
+    ]
+  },
+  "internal/transcript/codex_large_cache_test.go": {
+    "cases": [
+      "LCL-001"
+    ],
+    "selectors": [
+      "TestLCL001LargeCodexTailStaysCachedAndEarlierHistoryRemainsReadable",
+      "TestLCL001IndividuallyOversizedTurnIsCompleteAndUncached"
     ]
   },
   "internal/transcript/codex_turn_event_test.go": {
@@ -503,6 +826,120 @@
     "selectors": [
       "testSSI003ActiveQueueAndDeliveryReceiptsStayDistinct",
       "testSSI003BothLanguagesDescribeQueuedAndActiveInputTruthfully"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotAgentIPCTests.swift": {
+    "cases": [
+      "ASC-002",
+      "ASC-006"
+    ],
+    "selectors": [
+      "testASC002ProtocolAndDescriptorsRefuseUnexpectedAuthority",
+      "testASC006GoConsumerUsesActualSwiftSocketAndRenderer"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotAgentLifecycleTests.swift": {
+    "cases": [
+      "ASC-010"
+    ],
+    "selectors": [
+      "testASC010RealSocketDeadlineDisconnectAndStopCloseRequestsWithoutSDKCompletion",
+      "testASC010QuarantinedSDKDoesNotBlockCapabilitiesOrOversubscribeAfterHostRestart"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotAgentRenderingTests.swift": {
+    "cases": [
+      "ASC-003",
+      "ASC-006"
+    ],
+    "selectors": [
+      "testASC003RedactionUsesSharedRetinaRendererAndExactFrame",
+      "testASC006EditorRoundtripPreservesBusyDraftAndDoesNotSend"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotAgentSourceTests.swift": {
+    "cases": [
+      "ASC-003"
+    ],
+    "selectors": [
+      "testASC003SourcesExpireAndNeverWidenChangedOwnershipOrRegion",
+      "testASC003MissingPermissionDoesNotPromptOrListOtherApps"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotAgentWorkTests.swift": {
+    "cases": [
+      "ASC-010"
+    ],
+    "selectors": [
+      "testASC010CancelledCallbacksRemainBoundedUntilActualCompletion",
+      "testASC010BackgroundWorkOwnsBoundedDuplicatesAndCannotReuseClosedDescriptors"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotPreviewAspectTests.swift": {
+    "cases": [
+      "ASC-012"
+    ],
+    "selectors": [
+      "testASC012OddAspectImageAndPreviewCoordinatesCoverBothAxes",
+      "testASC012CroppedSourceRegionRetainsOpaquePreviewCoverageAndTransforms"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotRedactionCoverageTests.swift": {
+    "cases": [
+      "ASC-008"
+    ],
+    "selectors": [
+      "testASC008FractionalRedactionOverwritesEveryIntersectedDevicePixel",
+      "testASC008DerivedArtifactPreviewKeepsSmallRedactionsOpaque"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotSourceMappingTests.swift": {
+    "cases": [
+      "ASC-011"
+    ],
+    "selectors": [
+      "testASC011ChangedDisplayMappingAndScaleRefuseBeforeAndAfterCapture"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotWorkCompletionOrderTests.swift": {
+    "cases": [
+      "ASC-013"
+    ],
+    "selectors": [
+      "testASC013SuccessAndErrorCloseActualDuplicatesBeforeAdmissionReturn"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/StateDurationTests.swift": {
+    "cases": [
+      "CSR-004"
+    ],
+    "selectors": [
+      "testCSR004DecodedUncertainDurationDoesNotUseEitherClock"
+    ]
+  },
+  "mobileapp/__tests__/chatHistoryContinuity.test.tsx": {
+    "cases": [
+      "LCL-004"
+    ],
+    "selectors": [
+      "LCL-004 rolling recent snapshots retain observed intervening records exactly once",
+      "LCL-004 disconnected latest tail waits behind Jump before selecting its authoritative history cursor",
+      "LCL-004 an in-flight earlier page preserves snapshots observed after it started"
+    ]
+  },
+  "mobileapp/__tests__/chatRecentHistory.test.tsx": {
+    "cases": [
+      "LCL-003"
+    ],
+    "selectors": [
+      "LCL-003 %s requests recent data and exposes a working error/retry action",
+      "LCL-003 earlier source pages survive latest polling and a failed page keeps the content",
+      "LCL-003 target changes reject late history and noncooperative history reads stop showing loading after 15 seconds",
+      "LCL-003 actual client recent query is opt-in and record identity survives prepending",
+      "LCL-003 authorization loss retires the paged snapshot until a new source snapshot arrives",
+      "LCL-003 HQ predecessor stitch stays chronological and a source page mounts at most twenty more turns",
+      "LCL-003 expanded history stays visible while newer turns wait behind the live edge control",
+      "LCL-003 unmount cancels the deadline even when a history reader ignores AbortSignal"
     ]
   },
   "mobileapp/e2e/__tests__/hq-header-shot.test.ts": {
@@ -761,6 +1198,14 @@
       "usage accepts a real empty report but keeps refusals, bad bodies and network failures"
     ]
   },
+  "mobileapp/src/api/conversation.test.ts": {
+    "cases": [
+      "CAS-005"
+    ],
+    "selectors": [
+      "CAS005 transcript rejects association and source failures instead of returning empty history"
+    ]
+  },
   "mobileapp/src/api/sendDeadline.test.ts": {
     "cases": [
       "MSD-004"
@@ -795,6 +1240,24 @@
     ],
     "selectors": [
       "MSD-009 late text receipt cannot replace newer %s control-key screen"
+    ]
+  },
+  "mobileapp/src/screens/DetailTrace.test.tsx": {
+    "cases": [
+      "CAS-005",
+      "CAS-007"
+    ],
+    "selectors": [
+      "CAS005 Detail propagates association failures, preserves history and clears on retry",
+      "CAS007 unchanged transcript polls reuse the ChatView element"
+    ]
+  },
+  "mobileapp/src/screens/HQScreen.association.test.tsx": {
+    "cases": [
+      "CAS-008"
+    ],
+    "selectors": [
+      "CAS008 HQ association failure keeps history and clears after retry"
     ]
   },
   "mobileapp/src/screens/HQScreen.attach.test.tsx": {
@@ -877,6 +1340,22 @@
     "selectors": [
       "Trace loads recorded query details and both Preview and Raw are useful",
       "Chat reuses the same query details, failure retries and late reads retire on home change"
+    ]
+  },
+  "mobileapp/src/ui/AgentStateDuration.test.tsx": {
+    "cases": [
+      "CSR-004"
+    ],
+    "selectors": [
+      "CSR-004 real decoded rows"
+    ]
+  },
+  "mobileapp/src/ui/ChatView.association.test.tsx": {
+    "cases": [
+      "CAS-005"
+    ],
+    "selectors": [
+      "CAS005 association banner preserves messages and retries without claiming empty history"
     ]
   },
   "mobileapp/src/ui/CommandArgvPanel.test.tsx": {
@@ -985,6 +1464,14 @@
       "function verify"
     ]
   },
+  "tests/manual/codex-worktree-trust.py": {
+    "cases": [
+      "WTR-003"
+    ],
+    "selectors": [
+      "def main():"
+    ]
+  },
   "tests/web/backend-contract.test.cjs": {
     "cases": [
       "CT-HTTP"
@@ -1073,397 +1560,6 @@
     "selectors": [
       "Typed query details in Chat and Trace ",
       "Recorded query failure retries and large results page without losing full copy"
-    ]
-  },
-  "internal/codexbridge/worktree_trust_test.go": {
-    "cases": [
-      "WTR-001"
-    ],
-    "selectors": [
-      "TestWTR001OnlyReciprocallyRegisteredWorktreesHaveStableEvidence",
-      "TestWTR001MalformedCopiedSymlinkAndUnsupportedMetadataCannotBorrowTrust"
-    ]
-  },
-  "internal/codexbridge/trust_config_test.go": {
-    "cases": [
-      "WTR-002"
-    ],
-    "selectors": [
-      "TestWTR002AliasMirrorsOnlyExistingEffectiveRootTrustAndKeepsOtherFields",
-      "TestWTR002RefusalsLeaveOriginalFrameBytesUnchanged",
-      "TestWTR002CanceledAndLateProofCannotAuthorizeOrSpawnMoreReads",
-      "TestWTR002UnknownOrReusedRequestIDsNeverAccumulateUnboundedState"
-    ]
-  },
-  "internal/codexbridge/trust_interop_test.go": {
-    "cases": [
-      "WTR-003"
-    ],
-    "selectors": [
-      "TestWTR003ActualUnixForwardingUsesVerifiedHomeAndPreservesOtherFrames",
-      "TestWTR003NativeTUIGateway"
-    ]
-  },
-  "tests/manual/codex-worktree-trust.py": {
-    "cases": [
-      "WTR-003"
-    ],
-    "selectors": [
-      "def main():"
-    ]
-  },
-  "internal/prompt/prompt_codex_folder_access_test.go": {
-    "cases": [
-      "WTR-004"
-    ],
-    "selectors": [
-      "TestWTR004CurrentFolderAccessBlocksReadiness",
-      "TestWTR004ReportsAndSettledComposersAreNotConsent"
-    ]
-  },
-  "internal/dispatchbridge/trust_gate_test.go": {
-    "cases": [
-      "WTR-004"
-    ],
-    "selectors": [
-      "TestWTR004VisibleTrustNamesBlockerBeforePostStartTransport",
-      "TestWTR004NormalTransportStillRequiredAndHistoricalTrustIgnored"
-    ]
-  },
-  "internal/codexbridge/trust_alias_policy_test.go": {
-    "cases": [
-      "WTR-005"
-    ],
-    "selectors": [
-      "TestWTR005CanonicalProjectDecisionsKeepResponseUnchanged",
-      "TestWTR005ActualUnixForwardingKeepsCanonicalDenyAndSameHomeGuards",
-      "TestWTR005CanonicalObservationsAreStableAndBounded"
-    ]
-  },
-  "internal/app/screenshot_test.go": {
-    "cases": [
-      "ASC-001",
-      "ASC-006"
-    ],
-    "selectors": [
-      "TestASC001ScreenshotCLIRefusesAmbiguousOrUnsupportedInput",
-      "TestASC006UnavailableNativeCapabilityIsTruthfulAndNonMutating"
-    ]
-  },
-  "internal/screenshot/artifact_test.go": {
-    "cases": [
-      "ASC-001",
-      "ASC-003"
-    ],
-    "selectors": [
-      "TestASC001ArtifactPublicationIsAtomicAndPreservesExistingFiles",
-      "TestASC003CoordinatesAndEditableImagesStayBoundToExactBytes"
-    ]
-  },
-  "internal/screenshot/transport_test.go": {
-    "cases": [
-      "ASC-002"
-    ],
-    "selectors": [
-      "TestASC002NativeTransportPinsHostAndBoundsReplies",
-      "TestASC006NativeInterop"
-    ]
-  },
-  "macapp/Tests/GtmuxBarTests/ScreenshotAgentIPCTests.swift": {
-    "cases": [
-      "ASC-002",
-      "ASC-006"
-    ],
-    "selectors": [
-      "testASC002ProtocolAndDescriptorsRefuseUnexpectedAuthority",
-      "testASC006GoConsumerUsesActualSwiftSocketAndRenderer"
-    ]
-  },
-  "macapp/Tests/GtmuxBarTests/ScreenshotAgentRenderingTests.swift": {
-    "cases": [
-      "ASC-003",
-      "ASC-006"
-    ],
-    "selectors": [
-      "testASC003RedactionUsesSharedRetinaRendererAndExactFrame",
-      "testASC006EditorRoundtripPreservesBusyDraftAndDoesNotSend"
-    ]
-  },
-  "macapp/Tests/GtmuxBarTests/ScreenshotAgentSourceTests.swift": {
-    "cases": [
-      "ASC-003"
-    ],
-    "selectors": [
-      "testASC003SourcesExpireAndNeverWidenChangedOwnershipOrRegion",
-      "testASC003MissingPermissionDoesNotPromptOrListOtherApps"
-    ]
-  },
-  "internal/screenshot/target_test.go": {
-    "cases": [
-      "ASC-004"
-    ],
-    "selectors": [
-      "TestASC004TargetReferencesBindWholeIncarnationAndExpire",
-      "TestASC004TargetQueriesDoNotMintKeys"
-    ]
-  },
-  "internal/app/screenshot_send_test.go": {
-    "cases": [
-      "ASC-004",
-      "ASC-005"
-    ],
-    "selectors": [
-      "TestASC004And005ScreenshotDeliveryUsesExactTargetAndDurableAcceptance"
-    ]
-  },
-  "internal/dispatchbridge/expected_target_test.go": {
-    "cases": [
-      "ASC-004"
-    ],
-    "selectors": [
-      "TestASC004ExpectedCodexIdentityRefusesBeforePreparingInput"
-    ]
-  },
-  "internal/agentclient/expected_target_test.go": {
-    "cases": [
-      "ASC-004"
-    ],
-    "selectors": [
-      "TestASC004ExpectedHarnessIdentityRefusesBeforePreparingInput"
-    ]
-  },
-  "internal/screenshot/receipts_test.go": {
-    "cases": [
-      "ASC-005"
-    ],
-    "selectors": [
-      "TestASC005ReceiptsNeverReplayUncertainOrChangedRequests",
-      "TestASC005ReceiptStoreRefusesCorruptionAndCapacity"
-    ]
-  },
-  "internal/screenshot/host_readiness_test.go": {
-    "cases": [
-      "ASC-007"
-    ],
-    "selectors": [
-      "TestASC007HostObservationCannotAuthorizeAfterCancellation",
-      "TestASC007HostIncarnationUsesExactUTCMetadata"
-    ]
-  },
-  "internal/app/screenshot_deadline_test.go": {
-    "cases": [
-      "ASC-007"
-    ],
-    "selectors": [
-      "TestASC007TargetReadStopsAtCancellationBeforeMintOrSend"
-    ]
-  },
-  "internal/screenshot/input_budget_test.go": {
-    "cases": [
-      "ASC-009"
-    ],
-    "selectors": [
-      "TestASC009FIFOPathsNeverBlockBeforeRegularFileValidation",
-      "TestASC009PipeDeadlineCancellationBytesAndOriginalFlags"
-    ]
-  },
-  "internal/app/screenshot_send_input_budget_test.go": {
-    "cases": [
-      "ASC-009"
-    ],
-    "selectors": [
-      "TestASC009StalledNoteHasNoClaimOrSendAfterDeadline"
-    ]
-  },
-  "macapp/Tests/GtmuxBarTests/ScreenshotRedactionCoverageTests.swift": {
-    "cases": [
-      "ASC-008"
-    ],
-    "selectors": [
-      "testASC008FractionalRedactionOverwritesEveryIntersectedDevicePixel",
-      "testASC008DerivedArtifactPreviewKeepsSmallRedactionsOpaque"
-    ]
-  },
-  "macapp/Tests/GtmuxBarTests/ScreenshotSourceMappingTests.swift": {
-    "cases": [
-      "ASC-011"
-    ],
-    "selectors": [
-      "testASC011ChangedDisplayMappingAndScaleRefuseBeforeAndAfterCapture"
-    ]
-  },
-  "macapp/Tests/GtmuxBarTests/ScreenshotAgentLifecycleTests.swift": {
-    "cases": [
-      "ASC-010"
-    ],
-    "selectors": [
-      "testASC010RealSocketDeadlineDisconnectAndStopCloseRequestsWithoutSDKCompletion",
-      "testASC010QuarantinedSDKDoesNotBlockCapabilitiesOrOversubscribeAfterHostRestart"
-    ]
-  },
-  "macapp/Tests/GtmuxBarTests/ScreenshotAgentWorkTests.swift": {
-    "cases": [
-      "ASC-010"
-    ],
-    "selectors": [
-      "testASC010CancelledCallbacksRemainBoundedUntilActualCompletion",
-      "testASC010BackgroundWorkOwnsBoundedDuplicatesAndCannotReuseClosedDescriptors"
-    ]
-  },
-  "macapp/Tests/GtmuxBarTests/ScreenshotPreviewAspectTests.swift": {
-    "cases": [
-      "ASC-012"
-    ],
-    "selectors": [
-      "testASC012OddAspectImageAndPreviewCoordinatesCoverBothAxes",
-      "testASC012CroppedSourceRegionRetainsOpaquePreviewCoverageAndTransforms"
-    ]
-  },
-  "macapp/Tests/GtmuxBarTests/ScreenshotWorkCompletionOrderTests.swift": {
-    "cases": [
-      "ASC-013"
-    ],
-    "selectors": [
-      "testASC013SuccessAndErrorCloseActualDuplicatesBeforeAdmissionReturn"
-    ]
-  },
-  "internal/servermode/verified_os_test.go": {
-    "cases": [
-      "SMC-001"
-    ],
-    "selectors": [
-      "TestSMC001VerifiedServerModeOSPreservesUnknownVersionCaution"
-    ]
-  },
-  "internal/radar/codex_stale_state_test.go": {
-    "cases": [
-      "CSR-001",
-      "CSR-002"
-    ],
-    "selectors": [
-      "TestCSR001StaleActiveCannotReviveReadyFinishedPane",
-      "TestCSR002SupersededActiveDoesNotDateCurrentWork"
-    ]
-  },
-  "internal/resume/state_publication_test.go": {
-    "cases": [
-      "CSR-003"
-    ],
-    "selectors": [
-      "TestCSR003SavePublishesAnAtomicResumeSnapshot",
-      "TestCSR003CodexSaveAndHeartbeatRespectBindingLease"
-    ]
-  },
-  "mobileapp/src/ui/AgentStateDuration.test.tsx": {
-    "cases": [
-      "CSR-004"
-    ],
-    "selectors": [
-      "CSR-004 real decoded rows"
-    ]
-  },
-  "macapp/Tests/GtmuxBarTests/StateDurationTests.swift": {
-    "cases": [
-      "CSR-004"
-    ],
-    "selectors": [
-      "testCSR004DecodedUncertainDurationDoesNotUseEitherClock"
-    ]
-  },
-  "internal/server/web/state-duration.test.cjs": {
-    "cases": [
-      "CSR-004"
-    ],
-    "selectors": [
-      "CSR-004 browser row"
-    ]
-  },
-  "internal/state/cpu_repeated_poll_test.go": {
-    "cases": [
-      "CSR-005"
-    ],
-    "selectors": [
-      "TestCSR005RepeatedPollPreservesObservedCPUWork",
-      "TestCSR005RepeatedPollRequiresValidPriorEvidence"
-    ]
-  },
-  "internal/transcript/codex_large_cache_test.go": {
-    "cases": [
-      "LCL-001"
-    ],
-    "selectors": [
-      "TestLCL001LargeCodexTailStaysCachedAndEarlierHistoryRemainsReadable",
-      "TestLCL001IndividuallyOversizedTurnIsCompleteAndUncached"
-    ]
-  },
-  "internal/codexrpc/coordination_input_test.go": {
-    "cases": [
-      "RBL-001"
-    ],
-    "selectors": [
-      "TestRBL001CoordinationOnlySteersExactActiveTurn",
-      "TestRBL001CoordinationGuardPreventsMutation"
-    ]
-  },
-  "internal/relay/inbox_test.go": {
-    "cases": [
-      "RBL-002"
-    ],
-    "selectors": [
-      "TestRBL002InboxCoalescesConcurrentNoticesAndPreservesReceipts",
-      "TestRBL002FreshnessLegacyAndBoundedSourceWait",
-      "TestRBL002InboxSortsReplyTimeAndRechecksStalenessAtClaim",
-      "TestRBL002SourceWaitCancelsWhileLedgerIsLocked"
-    ]
-  },
-  "internal/app/relay_inbox_test.go": {
-    "cases": [
-      "RBL-003"
-    ],
-    "selectors": [
-      "TestRBL003CodexReplyBodyNeverEntersQueuedOrLegacyInput",
-      "TestRBL003CompactNoticeHasVerifiedHQProvenanceAndHumanCopiesDoNot"
-    ]
-  },
-  "internal/server/recent_transcript_test.go": {
-    "cases": [
-      "LCL-002"
-    ],
-    "selectors": [
-      "TestLCL002RecentAndHistoryReadersAreOptInAndAuthorized"
-    ]
-  },
-  "internal/app/recent_transcript_test.go": {
-    "cases": [
-      "LCL-002"
-    ],
-    "selectors": [
-      "TestLCL002RecentPaneKeepsOrdinalsCursorAndFullDefault"
-    ]
-  },
-  "mobileapp/__tests__/chatRecentHistory.test.tsx": {
-    "cases": [
-      "LCL-003"
-    ],
-    "selectors": [
-      "LCL-003 %s requests recent data and exposes a working error/retry action",
-      "LCL-003 earlier source pages survive latest polling and a failed page keeps the content",
-      "LCL-003 target changes reject late history and noncooperative history reads stop showing loading after 15 seconds",
-      "LCL-003 actual client recent query is opt-in and record identity survives prepending",
-      "LCL-003 authorization loss retires the paged snapshot until a new source snapshot arrives",
-      "LCL-003 HQ predecessor stitch stays chronological and a source page mounts at most twenty more turns",
-      "LCL-003 expanded history stays visible while newer turns wait behind the live edge control",
-      "LCL-003 unmount cancels the deadline even when a history reader ignores AbortSignal"
-    ]
-  },
-  "mobileapp/__tests__/chatHistoryContinuity.test.tsx": {
-    "cases": [
-      "LCL-004"
-    ],
-    "selectors": [
-      "LCL-004 rolling recent snapshots retain observed intervening records exactly once",
-      "LCL-004 disconnected latest tail waits behind Jump before selecting its authoritative history cursor",
-      "LCL-004 an in-flight earlier page preserves snapshots observed after it started"
     ]
   }
 }

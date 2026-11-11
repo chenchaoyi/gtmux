@@ -153,6 +153,7 @@ func confirmFrontendStartup(f CodexFrontend) error {
 // RefreshCodexFrontend is a bounded liveness heartbeat from the bridge process.
 // It does not promote a different thread or reclaim an incumbent's location.
 func RefreshCodexFrontend(f CodexFrontend) (CodexFrontend, error) {
+	previous := f
 	previousTick := f.UpdatedAt
 	f.UpdatedAt = time.Now().UnixMilli()
 	if !validFrontend(f) || f.BridgePID != os.Getpid() {
@@ -164,6 +165,20 @@ func RefreshCodexFrontend(f CodexFrontend) (CodexFrontend, error) {
 	}
 	defer lease.Close()
 	r, ok := Load(f.Loc)
+	if !ok {
+		// Only the authenticated current bridge can republish its own index. A
+		// standalone history read never writes or gains terminal-input authority.
+		saved, exists := readFrontend(f.Instance)
+		unique, verified := conversationFrontend(f.Loc)
+		if !exists || saved != previous || !verified || unique != saved || !freshFrontend(saved, true) {
+			return f, errors.New("frontend recovery evidence unavailable")
+		}
+		r = frontendRecord(f)
+		if err := writeBindingJSON(fileFor(f.Loc), r); err != nil {
+			return f, err
+		}
+		ok = true
+	}
 	if !ok || r.Agent != "codex" || r.SessionID != f.SessionID || r.HomeID != f.HomeID || r.Frontend != "" && r.Frontend != f.Instance {
 		return f, errors.New("frontend binding replaced")
 	}
@@ -229,7 +244,8 @@ func readFrontend(instance string) (CodexFrontend, bool) {
 	if err != nil || !os.SameFile(info, opened) {
 		return f, false
 	}
-	if json.NewDecoder(io.LimitReader(file, 8193)).Decode(&f) != nil {
+	b, err := io.ReadAll(io.LimitReader(file, 8193))
+	if err != nil || len(b) > 8192 || json.Unmarshal(b, &f) != nil {
 		return f, false
 	}
 	return f, f.Instance == instance && validFrontend(f)

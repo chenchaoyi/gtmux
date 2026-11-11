@@ -1,0 +1,96 @@
+{
+  "id": "chat-association-20261111",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-11",
+    "decision": "Recover history only from independently revalidated live frontend evidence; preserve strict input authority and surface association/source failures",
+    "notes": "Current private record has invalid trailing data and its named frontend receipt is missing. No automatic recovery is promised for that irrecoverable evidence combination. No prefix parsing, launch-argument identity guesses, live record edits, restore/restart, queues or release/install. Recovery uses bounded independently saved frontend metadata and is read-only unless its authenticated current bridge repairs its own primary index. Existing lease/epoch/incumbent and guest boundaries remain. All synthetic fixtures use task temporary storage. Source review and synthetic tests do not certify current running175 or real mobile behavior. Follow-up design review before editing legacy endpoint tests: the unbound-spawn and revoked-DSH checks retain their no-borrowed/no-stale-history assertions and additionally require the typed association error, replacing the former nil-error empty-success contract. Non-EOF source I/O failures must propagate from the legacy parser; ordinary EOF and empty history remain valid. Preserve previously accepted home-less legacy records while rejecting explicit foreign homes; recovery receipts always require the exact current home. Use canonical /private/tmp as TMPDIR for existing alias-sensitive fixtures; do not weaken their path assertions. Final owner review found a new whole-record dependency in the Detail ChatView memo. Before adding a regression, reviewed retaining the existing unchanged-poll memo boundary: depend on a scalar association flag, not the chat state object."
+  },
+  "cases": [
+    {
+      "id": "CAS-001",
+      "layer": "L2",
+      "description": "Read-only conversation recovery from an independent live frontend",
+      "setup": "Isolated home, corrupt or missing pane record, a separately saved owner-only root frontend receipt and deterministic process/pane witnesses.",
+      "action": "Resolve pane history and independently call normal LoadLive/input binding APIs.",
+      "expected": "Recover only one fresh, exact-home, exact-location frontend after full client/root/backend birth and TTY verification. Ignore the corrupt JSON prefix. Read recovery does not write files or grant input through LoadLive. Missing, stale, foreign, changed, ambiguous, oversized directory and malformed/trailing receipt evidence fail closed.",
+      "planned_files": [
+        "internal/resume/conversation_test.go"
+      ]
+    },
+    {
+      "id": "CAS-002",
+      "layer": "L2",
+      "description": "Authenticated bridge heartbeat repairs only its own lost primary index",
+      "setup": "Own current frontend snapshot is independently persisted; missing or malformed primary record; isolated bridge identity and process seams.",
+      "action": "Refresh own heartbeat; then repeat with a valid replacement, conflicting frontend, expired/missing receipt, changed process, or a newer receipt.",
+      "expected": "The current bridge can atomically republish its matching primary record only with its own exact persisted fresh snapshot, unique verified frontend and repeated verification under the binding lease. Valid conflicting primary records, unknown/missing proof and changed/newer frontend refuse without writes. Existing recovery checkpoints are preserved on normal refresh. Caller epoch guard remains unchanged; no real-session restoration or inputs.",
+      "planned_files": [
+        "internal/resume/conversation_test.go"
+      ]
+    },
+    {
+      "id": "CAS-003",
+      "layer": "L2",
+      "description": "Pane history distinguishes failed association and log reads from a genuinely empty conversation",
+      "setup": "Synthetic tmux and history fixtures; valid-empty, missing/corrupt/stale bindings and unavailable history.",
+      "action": "Call actual pane reader and HTTP transcript endpoint, including history paging and a guest restricted to another pane.",
+      "expected": "Valid empty history stays 200 []; association unavailable returns 409 with stable conversation-unassociated code and no private record content; source read failure returns 503 conversation-unavailable. Verified recovered history carries a recovered status header and normal ordinals/cursors. Guest checks run before readers. No change to input, restore or session-list authority.",
+      "planned_files": [
+        "internal/app/conversation_read_test.go",
+        "internal/server/conversation_read_test.go",
+        "internal/app/spawn_binding_test.go",
+        "internal/app/dsh_transcript_test.go"
+      ]
+    },
+    {
+      "id": "CAS-004",
+      "layer": "L3",
+      "description": "Browser focused and workbench chats preserve content and disclose association failure",
+      "setup": "Browser VM executes actual request/render handlers; responses include 409, generic failure, recovery success and stale-target reply.",
+      "action": "Poll focused and tile chat; click Retry; then respond successfully or change target before old completion.",
+      "expected": "Neither failure is rendered as No conversation yet. Visible bilingual association guidance and Retry appear, previously loaded turns remain visible, and a successful poll clears the banner. Stale-target completions do not modify a new view; authentication rejection retains existing removal behavior. No automatic send/restore/rebind.",
+      "planned_files": [
+        "internal/server/web/app.test.cjs"
+      ]
+    },
+    {
+      "id": "CAS-005",
+      "layer": "L3",
+      "description": "RN pane and HQ chats expose association failures without clearing history",
+      "setup": "Synthetic API client and mounted Detail/HQ/shared ChatView fixtures, no device or actual session.",
+      "action": "Read a structured 409 and 503, render association failure in English/Chinese, retry, recover, and switch identities.",
+      "expected": "API rejects structured failures instead of returning empty turns. Shared chat banner gives association-specific guidance and retry, suppresses empty state, preserves already loaded content and clears after a successful read. Detail and HQ propagate the reason scoped to chat identity; old responses cannot overwrite a new identity.",
+      "planned_files": [
+        "mobileapp/src/api/conversation.test.ts",
+        "mobileapp/src/ui/ChatView.association.test.tsx",
+        "mobileapp/src/screens/DetailTrace.test.tsx",
+        "mobileapp/src/screens/HQScreen.poll.test.tsx"
+      ]
+    },
+    {
+      "id": "CAS-006",
+      "layer": "L2",
+      "description": "CLI help is readable and the shipped screenshot workflow is discoverable in both languages",
+      "setup": "Synthetic language and terminal widths40/60/80; actual command registry and screenshot help renderer; no native host call.",
+      "action": "Render top-level and screenshot help in English/Chinese, inspect command summaries, long argument rows and JSON registry.",
+      "expected": "Screenshot has a visible described row, localized operation guidance and valid examples. Long command arguments cannot collide with descriptions; rows wrap within terminal width, command tokens remain intact, full flags stay available through command help/JSON. Chinese summaries use clear product language. Dispatch, accepted flags, mutation/access semantics and English meaning remain unchanged. Existing help width and registry tests remain.",
+      "planned_files": [
+        "internal/app/help_readability_test.go"
+      ]
+    },
+    {
+      "id": "CAS-007",
+      "layer": "L3",
+      "description": "Unchanged Detail transcript polls preserve the existing ChatView element",
+      "setup": "Mounted Detail with a completed initial transcript and stable agent/context, using existing screen fixture without real networking.",
+      "action": "Return unchanged:true for a Retry-triggered read while turns/status/error reason remain identical.",
+      "expected": "The actual shared ChatView props object is reused rather than rebuilt merely because the screen stores a new polling result object. Association error/recovery transitions must still repaint correctly as covered by CAS-005. A whole-chat-record dependency must fail the identity assertion, not setup or timing.",
+      "planned_files": [
+        "mobileapp/src/screens/DetailTrace.test.tsx"
+      ]
+    }
+  ],
+  "seal": "1683ed7078d7aae5e469c9d37dc46b1462e440f055871d3af559717d8577ab01"
+}

@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/resume"
+	"github.com/chenchaoyi/gtmux/internal/server"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
@@ -52,7 +54,7 @@ esac
 	if transcript.SessionBindingToken(wire) == "" {
 		t.Fatal("fresh Codex spawn did not prepare a witness")
 	}
-	if b, _, err := transcriptForPane("%27", 0); err != nil || string(b) != "[]" {
+	if b, _, err := transcriptForPane("%27", 0); !errors.Is(err, server.ErrConversationUnassociated) || string(b) != "[]" {
 		t.Fatal("unbound pane should not borrow another conversation", string(b), err)
 	}
 	dir := filepath.Join(os.Getenv("CODEX_HOME"), "sessions", "2026", "10", "03")

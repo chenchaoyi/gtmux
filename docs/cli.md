@@ -2636,3 +2636,14 @@ HQ UI readers may use `gtmux hq workspace list --overview --stored --json` for a
 ## Screenshots for agents
 
 `gtmux screenshot` provides capabilities, source selection, region capture, import, structured annotation, editing and exact conversation delivery. See the [agent screenshot workflow](guides/agent-screenshots.md). Local CLI use requires no MCP server.
+
+### Finding screenshot commands
+
+`gtmux --help` lists screenshots in a dedicated **SCREENSHOTS** group. Run
+`gtmux screenshot --help` for the operation sequence and flags; it follows the
+selected English/Chinese help language. Start with `gtmux screenshot capabilities`
+to check the running Mac App without prompting for permissions. Capture and
+annotation are separate from explicit delivery. See the [screenshot guide](guides/agent-screenshots.md).
+
+Long top-level command syntax is shown in full on a separate line when it would
+collide with its description; narrow terminals use stacked descriptions.

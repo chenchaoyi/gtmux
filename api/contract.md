@@ -514,10 +514,23 @@ without source/time evidence show identity without guessing historical facts.
 
 Parses the agent's on-disk session log for the pane's cwd/session into an ordered
 list of turns (one user prompt → the agent's reply, with its tool calls folded
-into collapsible steps). Drives the phone's and browser's "对话/chat" view. `[]`
-when the pane has no resumable session or no agent log. See the `chat-transcript`
+into collapsible steps). Drives the phone's and browser's "对话/chat" view. A verified association with no recorded messages returns `[]`. For an existing pane, missing, malformed or stale association proof returns 409 with `code: "conversation-unassociated"`; source read failures return 503 with `code: "conversation-unavailable"`. Error bodies do not expose stored records or paths. See the `chat-transcript`
 capability for the parsing rules (multi-segment replies, reject-feedback, harness
 stripping, incremental cache).
+
+**Independent recovery.** When the primary index is missing or malformed, a bounded
+scan of at most 128 independent frontend receipts may recover a read-only history
+identity. It requires one fresh, exact-home/location attachment and strict client,
+root, backend birth and TTY checks; ambiguity, newer conflicting receipts, invalid
+receipts or an oversized store fail closed. Successful fallback adds
+`X-Gtmux-Conversation-State: recovered` (also on 304). Reads do not rewrite the
+index or grant input/restore authority. Only the authenticated current bridge's
+heartbeat, under the existing binding lease and epoch guard, can republish its own
+primary record from its exact still-fresh saved receipt. Valid replacement records
+are never reclaimed. Missing independent proof requires a new verified binding;
+old JSON prefixes, launch arguments, titles and directory similarity are not proof.
+Browser and App preserve already displayed messages, show association-specific
+guidance and offer Retry instead of claiming the conversation is empty.
 
 **A turn says who delivered its prompt, when it was not you** (`who-sent-this-turn`). A
 turn carries an additive `from` whenever gtmux itself put that prompt in the pane on

@@ -79,6 +79,7 @@ interface Props {
   onOpenAct?: (link: NonNullable<Act['link']>) => void;
   loading: boolean;
   failed?: boolean;
+  associationFailed?: boolean;
   onRetry?: () => void;
   /** Desktop reader: no terminal fallback or suggestion to type in this view. */
   readOnly?: boolean;
@@ -184,7 +185,7 @@ export function liveLabel(since: number | undefined, nowSec: number, lang: Lang)
   return el ? `${base} · ${el}` : base;
 }
 
-export function ChatView({client, readOnly = false, agent, lines, status, fontSize, pal, lang, turns: recentTurns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, failed = false, onRetry, pendingPrompt, pendingDelivered = false, pendingDelivery, fontPref, workingSince, onLiveEdge, topPad = 0, controlsTop, controlsShift, maxWidth}: Props) {
+export function ChatView({client, readOnly = false, agent, lines, status, fontSize, pal, lang, turns: recentTurns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, failed = false, associationFailed = false, onRetry, pendingPrompt, pendingDelivered = false, pendingDelivery, fontPref, workingSince, onLiveEdge, topPad = 0, controlsTop, controlsShift, maxWidth}: Props) {
   // Radar timestamps and temporary status changes are observations, not a new reader.
   const liveScope = JSON.stringify([client?.base, agent.pane_id, agent.home_id, agent.session_id]);
   const [liveDisclosure, setLiveDisclosure] = useState({scope: liveScope, open: false});
@@ -493,9 +494,9 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
         </View>
       )}
 
-      {(failed || history.denied) && (
+      {(failed || associationFailed || history.denied) && (
         <View testID="chat-read-error" style={styles.seamRow}>
-          <Text style={styles.earlierText}>{lang === 'zh' ? (turns.length ? '暂时无法更新，已保留当前内容。' : '对话暂时无法载入。') : (turns.length ? 'Could not refresh. Your conversation is still shown.' : 'Conversation could not be loaded.')}</Text>
+          <Text style={styles.earlierText}>{associationFailed ? (lang === 'zh' ? '会话关联暂不可用，无法确认这段终端对应的对话。当前内容已保留，可切换到终端查看。' : 'Conversation association is unavailable. Existing messages are kept; switch to Terminal to view this session.') : lang === 'zh' ? (turns.length ? '暂时无法更新，已保留当前内容。' : '对话暂时无法载入。') : (turns.length ? 'Could not refresh. Your conversation is still shown.' : 'Conversation could not be loaded.')}</Text>
           {onRetry && <TouchableOpacity testID="chat-read-retry" accessibilityRole="button" onPress={onRetry} style={styles.earlierRow}><Text style={styles.earlierText}>{lang === 'zh' ? '重试' : 'Retry'}</Text></TouchableOpacity>}
         </View>
       )}
@@ -508,7 +509,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
         </View>
       )}
 
-      {!loading && !failed && !history.failed && turns.length === 0 && (
+      {!loading && !failed && !associationFailed && !history.failed && turns.length === 0 && (
         <Text style={[styles.empty, {color: CHAT_FG_DIM}]}>
           {lang === 'zh'
             ? (readOnly ? '尚无已记录的对话。' : '还没有对话历史。\n历史来自 agent 在服务器上的会话记录，你们聊起来就会出现。想看当前屏幕，切到「终端」。')

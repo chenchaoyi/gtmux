@@ -80,8 +80,8 @@ function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
   const marker = "  if (document.readyState === 'loading')";
   assert.ok(source.includes(marker), 'web boot marker changed');
   const script = source.replace(marker, `
-    var realFetchShare = fetchShare;
-    globalThis.__test = {fetchShare, enableShare: () => {fetchShare = realFetchShare;}, share: () => SHARE, pollWB, paneCanInput, copyText, clipboardAction, toolStepsEl, updateInputBar, setupFocus,
+    var realFetchShare = fetchShare, realPollChat = pollChat;
+    globalThis.__test = {enableChatPolling: () => {pollChat = realPollChat;}, fetchShare, enableShare: () => {fetchShare = realFetchShare;}, share: () => SHARE, pollWB, paneCanInput, copyText, clipboardAction, toolStepsEl, updateInputBar, setupFocus,
       setupKeyboard, openConversation, pollConversation, conversationControls, readableConversation, nativeSourceLabel, nativeEvidenceLabel, launchHost, setExternalSettings: s => {externalSettings=s;},
       promptObservations, pendingPromptRecorded, setCredential: value => {token = value;}, flushComposer: () => saveCompose(composeCache, true), drawChat, renderTileChat, liveTail, mdRender, labelChrome, setupCodeBox, connStateFor, makeComposer, isHQPane, paneSessionTitle, paneToAgent, renderPanes, renderRadar,
       show, gate, runRead, cancelReads, pollPane, pollChat, pollRadar, renderChat, tilePollChat, renderTree, treeRow, renderCmdk, cyclePane,
@@ -1319,4 +1319,40 @@ test('radar keyboard selection skips rows inside a collapsed section', () => {
   keydown({key:'ArrowDown',target:{tagName:'BODY'},preventDefault(){}});
   keydown({key:'Enter',target:{tagName:'BODY'},preventDefault(){}});
   assert.equal(visible.clicked,true); assert.equal(hidden.clicked,undefined);
+});
+
+test('CAS004 focused and tile chats disclose association failures and recover without losing messages', async () => {
+  for (const language of ['en-US', 'zh-CN']) for (const tileMode of [false, true]) {
+    const h = harness({}, language);
+    h.api.enableChatPolling();
+    const agent = {pane_id: '%1', agent: 'Codex', status: 'idle'};
+    h.api.setPin('%1', agent, 'chat', []);
+    h.node('chat').hidden = false;
+    h.api.workbench().on = true;
+    const tile = {id: '%1', agent, mode: 'chat', readEpoch: 1, body: h.node('tile-body')};
+    let failed = false;
+    h.context.fetch = async url => url.includes('/transcript')
+      ? {ok: !failed, status: failed ? 409 : 200, headers: {get: () => null}, json: async () => failed ? {code: 'conversation-unassociated'} : [{prompt: 'kept question', response: 'kept reply'}]}
+      : {ok: true, status: 200, headers: {get: () => null}, json: async () => []};
+    const poll = () => tileMode ? h.api.tilePollChat(tile) : h.api.pollChat();
+    const root = tileMode ? tile.body : h.node('chat');
+    const text = () => descendants(root).map(n => n.textContent).join(' ');
+    poll(); await flush(); assert.match(text(), /kept reply/);
+    failed = true; poll(); await flush();
+    assert.match(text(), language === 'zh-CN' ? /会话关联/ : /Conversation association/);
+    assert.match(text(), /kept reply/);
+    assert.doesNotMatch(text(), /No conversation yet|还没有对话/);
+    const retry = descendants(root).find(n => n.tagName === 'button' && n.textContent === (language === 'zh-CN' ? '重试' : 'Retry'));
+    assert.ok(retry, 'visible Retry missing'); failed = false; retry.onclick(); await flush();
+    assert.match(text(), /kept reply/); assert.doesNotMatch(text(), /Conversation association|会话关联/);
+  }
+});
+
+test('CAS004 stale tile association failure cannot repaint a changed target', async () => {
+  const h = harness({}); h.api.workbench().on = true;
+  let answer; h.context.fetch = () => new Promise(resolve => {answer = resolve;});
+  const tile = {id: '%1', agent: {pane_id: '%1', agent: 'Codex'}, mode: 'chat', readEpoch: 1, body: h.node('tile-body')};
+  h.api.tilePollChat(tile); tile.agent = {pane_id: '%2', agent: 'Codex'};
+  answer({ok: false, status: 409, headers: {get: () => null}, json: async () => ({code: 'conversation-unassociated'})});
+  await flush(); assert.equal(tile.chatReadFailure, undefined); assert.equal(tile.body.children.length, 0);
 });

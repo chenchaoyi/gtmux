@@ -866,8 +866,8 @@ const transcriptByteBudget = 512 << 10
 // transcriptForPane returns the pane's parsed chat history as a JSON array of
 // turns for GET /api/transcript. It maps the pane → its resume record (agent +
 // session id, captured by the hooks) → the agent's on-disk conversation log.
-// Always returns a valid JSON array — "[]" when the pane has no resumable
-// session or the agent's log can't be found — never a hard error for those.
+// A verified session without recorded messages returns []; unavailable identity
+// or a source read failure is reported separately, never disguised as empty chat.
 func transcriptForPane(id string, earlier int) ([]byte, server.TranscriptMeta, error) {
 	return transcriptPaneRead(id, earlier, maxTranscriptTurns)
 }
@@ -892,15 +892,18 @@ func transcriptPaneRead(id string, earlier, limit int) ([]byte, server.Transcrip
 	if loc == "" {
 		return empty, meta, nil
 	}
-	rec, ok := resume.LoadLive(loc)
+	rec, recovered, associationErr := resume.ConversationRecord(loc)
+	ok := associationErr == nil
 	if a, bound := agentclient.ForPane(id); bound {
 		rec, ok = resume.Record{Agent: a.Agent, SessionID: a.SessionID, HomeID: a.HomeID, Cwd: a.Cwd, TerminalClient: a.Client}, true
+		recovered = false
 	} else if ok && rec.Agent == "dsh" {
-		return empty, meta, nil
+		return empty, meta, server.ErrConversationUnassociated
 	}
 	if !ok {
-		return empty, meta, nil
+		return empty, meta, server.ErrConversationUnassociated
 	}
+	meta.AssociationRecovered = recovered
 	meta.History = func(ctx context.Context, before string) ([]byte, server.TranscriptMeta, error) {
 		sid := transcript.HistorySession(before)
 		agent := rec.Agent
@@ -944,7 +947,7 @@ func transcriptPaneRead(id string, earlier, limit int) ([]byte, server.Transcrip
 	turns, err := transcript.Load(rec.Agent, rec.SessionID, limit)
 	turns = append([]transcript.Turn(nil), turns...)
 	if err != nil {
-		return empty, meta, nil
+		return empty, meta, server.ErrConversationUnavailable
 	}
 	for i := range turns {
 		turns[i].Agent = rec.Agent
