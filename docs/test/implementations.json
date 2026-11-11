@@ -1032,5 +1032,14 @@
     "selectors": [
       "CSR-004 browser row"
     ]
+  },
+  "internal/state/cpu_repeated_poll_test.go": {
+    "cases": [
+      "CSR-005"
+    ],
+    "selectors": [
+      "TestCSR005RepeatedPollPreservesObservedCPUWork",
+      "TestCSR005RepeatedPollRequiresValidPriorEvidence"
+    ]
   }
 }
