@@ -1,4 +1,10 @@
-# 给本地 agent 使用的截图能力
+---
+title: 给本地 agent 使用的截图能力
+description: 通过 CLI 截取、查看、标注截图，并投递到准确的 agent 会话。
+order: 7
+---
+
+[English](agent-screenshots.md) · **中文**
 
 本地 agent 直接通过命令工具运行 `gtmux screenshot` 即可，返回带版本号的 JSON、图片路径和 SHA256。此工作流不需要额外 MCP 服务。原生截图/标注需要兼容且**正在运行**的 Mac App；能力查询不会启动 App 或弹权限申请。更新 App 时，本地接口最多用两秒等待旧实例交接。
 

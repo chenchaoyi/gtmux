@@ -149,6 +149,7 @@ gtmux agent · 7 agent · 1 等输入 · 2 运行中 · 3 空闲 · 1 只有 she
 - [安装、更新与卸载](docs/install.zh.md)：PATH、Homebrew、指定版本和换 Mac。
 - [连接排障](docs/phone.zh.md)：网络选择、常驻隧道、配对、权限与通知。
 - [Agent 接入与支持范围](docs/guides/agent-integrations.zh.md)：hook、历史读取及各 agent 的边界。
+- [给本地 agent 使用的截图能力](docs/guides/agent-screenshots.zh.md)：截取、查看、标注并投递到准确会话。
 - [CLI 参考](docs/cli.zh.md)：命令参数、语言与持久设置。
 - [HQ 知识库](docs/knowledge.zh.md)：档案、知识和你自己的规则。
 - [DeepSeek Harness 接入](docs/guides/deepseek-harness.zh.md)：终端和历史集成。

@@ -149,6 +149,7 @@ Double-click a tmux row or drag it onto the board. Choose **Chat**, **Terminal**
 - [Install, update and uninstall](docs/install.md): PATH, Homebrew, pinned versions and moving to a new Mac.
 - [Connection troubleshooting](docs/phone.md): network choices, persistent tunnels, pairing, permissions and push delivery.
 - [Agent setup and support](docs/guides/agent-integrations.md): hooks, history readers and each agent's limits.
+- [Screenshots for local agents](docs/guides/agent-screenshots.md): capture, inspect, annotate and deliver to an exact conversation.
 - [CLI reference](docs/cli.md): command options, language and persistent settings.
 - [HQ knowledge base](docs/knowledge.md): records, knowledge and your own rules.
 - [DeepSeek Harness setup](docs/guides/deepseek-harness.md): terminal and history integration.
