@@ -210,21 +210,31 @@ func WaitAgentReady(pane, agentCmd string, timeout time.Duration) bool {
 // the agent never launched at all, and a composer that IS ready-looking on this frame —
 // which means the gate died on the settle requirement, i.e. the screen kept repainting.
 func ReadyBlocker(pane, agentCmd string) (blocker, capture string) {
-	cmd := readyCommand(pane, tmux.Display(pane, "#{pane_current_command}"), agentKey(agentCmd))
+	agent := agentKey(agentCmd)
+	cmd := readyCommand(pane, tmux.Display(pane, "#{pane_current_command}"), agent)
 	if cmd == "" {
 		return "the pane is gone", ""
 	}
+	capture = tmux.CaptureFull(pane)
+	return readyBlockerSnapshot(cmd, capture, agent, func() bool { return terminalTransportReady(pane, agent, agentclient.ForPane) }), capture
+}
+
+// Startup consent exists before a thread can establish its native attachment.
+// Name that visible gate before an absent post-start attachment masks it.
+func readyBlockerSnapshot(cmd, capture, agent string, transport func() bool) string {
+	if prompt.IsStartupGate(capture, agent) {
+		return readyBlockerOf(capture, agent)
+	}
 	if cmd == SelfCommand {
-		return "gtmux itself is still the foreground command in that pane, so the agent has not taken it over", tmux.CaptureFull(pane)
+		return "gtmux itself is still the foreground command in that pane, so the agent has not taken it over"
 	}
 	if ShellCommands[cmd] {
-		return "the agent never started — the pane is still a bare shell (" + cmd + ")", tmux.CaptureFull(pane)
+		return "the agent never started — the pane is still a bare shell (" + cmd + ")"
 	}
-	capture = tmux.CaptureFull(pane)
-	if !terminalTransportReady(pane, agentKey(agentCmd), agentclient.ForPane) {
-		return "the native terminal attachment or its input grant is not ready", capture
+	if !transport() {
+		return "the native terminal attachment or its input grant is not ready"
 	}
-	return readyBlockerOf(capture, agentKey(agentCmd)), capture
+	return readyBlockerOf(capture, agent)
 }
 
 var codexReadyTarget = resume.CodexFrontendForPane

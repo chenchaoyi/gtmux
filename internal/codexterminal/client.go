@@ -64,58 +64,36 @@ func paneMatches(p Pane, raw string) bool {
 }
 
 func (i inspector) resolve(panes []Pane) map[string]Client {
-	before := i.snapshot()
-	type candidate struct {
-		pane   Pane
-		client process
-		chain  []int
-	}
-	var candidates []candidate
-	for _, p := range panes {
-		client, chain := findClient(p, before)
-		if client.pid > 0 && tty(i.stdin(client.pid)) == tty(p.TTY) {
-			candidates = append(candidates, candidate{p, client, chain})
-		}
-	}
-	if len(candidates) == 0 {
-		return nil
-	}
-	after := i.snapshot()
 	out := map[string]Client{}
-	for _, c := range candidates {
-		stable := true
-		for _, pid := range c.chain {
-			if before[pid] != after[pid] {
-				stable = false
-				break
-			}
+	for id, observation := range i.observe(panes) {
+		if observation.Code == "" {
+			out[id] = observation.Client
 		}
-		if !stable || !i.pane(c.pane) || tty(i.stdin(c.client.pid)) != tty(c.pane.TTY) {
-			continue
-		}
-		// A changed branch must not create a second candidate between snapshots.
-		fresh, _ := findClient(c.pane, after)
-		if fresh != c.client {
-			continue
-		}
-		out[c.pane.ID] = Client{c.client.pid, c.client.start, before[c.pane.PID].start, tty(c.pane.TTY)}
 	}
 	return out
 }
 
 func findClient(p Pane, procs map[int]process) (process, []int) {
+	c, chain, _ := inspectClient(p, procs)
+	return c, chain
+}
+
+func inspectClient(p Pane, procs map[int]process) (process, []int, string) {
 	// A tool child must not turn a different registered harness into a Codex
 	// launcher. Claude also reports a version as its foreground command.
 	if key, known := agents.CommandKeys()[filepath.Base(p.Command)]; known && key != "codex" {
-		return process{}, nil
+		return process{}, nil, "other-agent"
 	}
 	if agents.LooksLikeVersion(filepath.Base(p.Command)) {
-		return process{}, nil
+		return process{}, nil, "other-agent"
 	}
 	root, ok := procs[p.PID]
 	wantTTY := tty(p.TTY)
-	if !ok || p.ID == "" || p.PID <= 1 || wantTTY == "" || tty(root.tty) != wantTTY || root.foreground <= 0 {
-		return process{}, nil
+	if !ok || root.start == "" || root.foreground <= 0 {
+		return process{}, nil, "process-unavailable"
+	}
+	if p.ID == "" || p.PID <= 1 || wantTTY == "" || tty(root.tty) != wantTTY {
+		return process{}, nil, "terminal-mismatch"
 	}
 	type step struct {
 		pid   int
@@ -129,7 +107,7 @@ func findClient(p Pane, procs map[int]process) (process, []int) {
 		cur := queue[0]
 		queue = queue[1:]
 		if seen[cur.pid] || len(cur.chain) > 16 || len(seen) >= 256 {
-			return process{}, nil
+			return process{}, nil, "ambiguous-client"
 		}
 		seen[cur.pid] = true
 		proc, ok := procs[cur.pid]
@@ -140,7 +118,7 @@ func findClient(p Pane, procs map[int]process) (process, []int) {
 		if filepath.Base(proc.command) == "codex" {
 			if proc.start != "" && tty(proc.tty) == wantTTY && proc.group == root.foreground && proc.foreground == root.foreground {
 				if found.pid != 0 {
-					return process{}, nil
+					return process{}, nil, "ambiguous-client"
 				}
 				found, path = proc, chain
 			}
@@ -152,7 +130,10 @@ func findClient(p Pane, procs map[int]process) (process, []int) {
 			}
 		}
 	}
-	return found, path
+	if found.pid == 0 {
+		return found, path, "client-unverified"
+	}
+	return found, path, ""
 }
 
 func tty(s string) string {

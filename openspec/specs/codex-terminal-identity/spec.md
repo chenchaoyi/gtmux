@@ -5,6 +5,24 @@ TBD - created by archiving change codex-terminal-identity. Update Purpose after 
 
 ## Requirements
 
+### Requirement: Startup admission is bounded and diagnosable
+The bridge SHALL wait for its controlled child launch to publish before checking a frontend connection. Transient missing process or stdin evidence MAY be checked again under one four-second admission deadline and at most four attempts. Explicit peer, launch, pane, process-incarnation, terminal or ambiguity conflicts SHALL refuse without retry or weaker fallback. All accepted clients SHALL satisfy the existing foreground, stdin, ancestry, peer and birth checks. Both direct and wrapped launches SHALL retain full-tree ancestry and ambiguity checks; a known child PID SHALL NOT bypass uniqueness. Missing required rows SHALL remain unavailable evidence and never grant authority. Process reads SHALL return to their caller at cancellation even if an underlying read settles later. Diagnostics SHALL record a fixed cause, attempt count and elapsed admission time without arguments, credentials or prompt content. Connection readiness SHALL NOT be presented as target conversation confirmation.
+
+#### Scenario: A cold-start inspection is temporarily unreadable
+- **WHEN** the verified controlled child is connecting and process or stdin evidence is temporarily unavailable
+- **THEN** only read-only checks may repeat within the same deadline and attempt limit
+- **AND** no new Codex process, alternative resume or input is sent
+
+#### Scenario: A different client or terminal connects
+- **WHEN** an explicit identity or terminal conflict is observed
+- **THEN** admission refuses immediately with its specific diagnostic cause
+- **AND** missing evidence at exhaustion is reported as unavailability rather than an account permission instruction
+
+#### Scenario: A reconnect is rejected or completes out of order
+- **WHEN** a new attempt is reserved but has not successfully upgraded
+- **THEN** the existing verified connection retains its heartbeat and binding authority
+- **AND** only a successful newer connection may activate; a late older success cannot reclaim authority
+
 ### Requirement: Codex terminal attachment is per frontend
 The core SHALL associate an eligible shared-server Codex TUI with its own successful root thread start, resume or fork response after verifying local socket peer identity, frontend PID/birth, terminal, pane incarnation and Codex home. Backend PID, inherited environment, cwd, title, loaded threads and unsolicited notifications SHALL NOT establish ownership. Ephemeral helpers and subagent views SHALL NOT replace the root binding. Reordered responses and older connections SHALL NOT reclaim a newer attachment. Expired or exited attachments SHALL lose live authority while saved history remains restorable.
 
@@ -58,3 +76,20 @@ The adapter SHALL preserve implicit launch cwd and explicit directory overrides.
 #### Scenario: A child hook carries its parent's session ID
 - **WHEN** a Codex hook also carries agent_id
 - **THEN** it does not complete the parent turn or overwrite its profile
+
+### Requirement: Verified local worktree trust preserves existing decisions
+A verified same-home frontend MAY mirror an existing effective trusted main repository into a transient exact-cwd projects entry only for a correlated config/read with includeLayers=true and a stable owned reciprocal worktree registration. It SHALL NOT persist trust, copy hooks, change sandbox/approval settings, authorize a conversation or automatically answer a folder consent screen. Existing exact checkout or untrusted ancestor decisions, project/disabled/unknown config layers, stale or ambiguous correlation and unavailable evidence SHALL preserve original response bytes. Metadata work SHALL be bounded and request-driven.
+
+#### Scenario: Remote transport loses native main-worktree fallback
+- **WHEN** an initialized local frontend requests trust for a genuinely registered worktree and its effective response already trusts the verified main root
+- **THEN** only a transient exact-cwd trust alias is added
+- **AND** a real folder access gate remains a startup blocker before native attachment readiness, without sending confirmation keys
+
+#### Scenario: Caller supplies a copied Git pointer or an explicit untrusted checkout
+- **WHEN** registration is not reciprocal or an existing applicable decision forbids trust
+- **THEN** no inherited alias is supplied and Codex retains the original trust/permission behavior
+
+#### Scenario: A different path spelling names an explicitly denied directory
+- **WHEN** a project key resolves to the same owned directory or an ancestor through a symlink or other same-directory alias
+- **THEN** its explicit refusal is preserved for a canonical-cwd request
+- **AND** unknown ownership, unresolved or changing project identities keep the original response within the existing bounded proof worker

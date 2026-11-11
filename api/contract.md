@@ -762,8 +762,9 @@ reboot), `owned_by_gtmux`, `last_exit?{at,reason}`, `platform{ok,verified,reason
 Guests get `403` — this is a machine-level control, not a per-pane one.
 `guard.installed` means at least one of the guard script/plist exists, and
 `guard.healthy` means both exist; neither verifies launchd execution. After the runtime
-preflight succeeds, `platform.verified` is true for macOS major version 26, not a record
-of hardware-specific testing.
+preflight succeeds, `platform.verified` is true for the macOS 26.x baseline and the
+user-confirmed macOS 27.2.x baseline, not a record of independently testing every
+hardware or patch configuration. Unknown versions retain the unverified indication.
 
 ### `POST /api/awake` — turn it OFF (WRITE, OWNER only, one direction)
 

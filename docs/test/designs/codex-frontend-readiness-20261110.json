@@ -1,0 +1,123 @@
+{
+  "id": "codex-frontend-readiness-20261110",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-10",
+    "decision": "Preserve exact frontend authentication while separating transient observation gaps and diagnosing bounded startup admission",
+    "notes": "User authorized diagnostics/startup readiness; no real restore or live input. A local frontend handshake currently coalesces missing process/TTY evidence and hard mismatches into 403 without diagnostic reason. Admit only kernel peer tied to this controlled child launch, stable pane/root/client birth and foreground TTY. Wait for cmd.Start identity publication before evaluating an early connection. Use a single 4s admission context, at most 4 attempts and cancellable pauses only for unavailable observations; peer/home/pane/TTY/birth/ambiguity conflicts refuse without retry. Inspect direct child launches with two snapshots of exact pane/bridge/client PIDs; generic launchers retain full ancestry resolution and ambiguity protection. Reuse the existing terminal verifier and legacy Resolve contract, preserve excluded/native modes and no relaunch/fallback after child starts. Emit value-free stage/cause/attempt/timing diagnostics and an actionable local error without prompt/argv/credentials. Record old-red/new-green using isolated deterministic inspector/gate seams; no production daemon, user thread, permissions or installed services. Runtime/real reboot acceptance is separate. Planned source changes may add context-aware inspection and ReadAgent while legacy wrappers retain budgets. Follow-up owner review at frozen 81e800cb: the original active sequence advances before admission/upgrade, so a rejected or pending reconnect can silence the valid incumbent. Keep a separate monotonic issued counter and activate only successful upgraded connections; late older successes must not replace a newer active connection. Add CFR-004 before implementing this delta; original CFR-001..003 objects remain unchanged. Bound WebSocket upgrade by the remainder of the same admission deadline, then clear transport deadlines for a long-lived accepted client. Independent Q review c3e443da found uniqueness loss in exact-PID optimization, missing rows misclassified as conflicts, a synchronous process reader that can outlive parent cancellation, and dial errors masking context reasons. CFR-005/006/007 are reviewed before this correction: remove the reduced process scope and preserve two full-tree snapshots for every launch, keep exact controlled-child ancestry at Begin, classify absent required client rows as unavailable without accepting them, observe real unequal rows as hard conflicts, isolate a process reader in a single buffered-result worker so cancellation returns before a blocked read settles, and classify dial cancellation/deadline before daemon-unavailable. No live restore or stuck process experiment. Existing CFR-001 expectation is explicitly corrected here; its first design remains in prior Git history. Epoch delta CFR-004 remains unchanged. Follow-up accurate S history gate refused retroactively adding CFR005/mutating CFR001 on a file first implemented at Q. Preserve this real rejection and restore the original CFR001 object. Retire the obsolete direct-PID scope test file with explicit mapping rationale, and move every still-valid observation/cancellation assertion plus full-tree CFR005 regressions into readiness_review_test.go under CFR005. This new path is designed here before its first implementation edit; no force push, history/base/gate rewrite or waived checks. The full-tree production S bytes stay unchanged. The old fast-scope assumption is intentionally superseded, not silently counted as passing. Accurate S review still found missing intermediate ancestors classified hard while peer exists, and post-Upgrade cancellation mislabeled deadline. CFR-008/009 are reviewed before correction in new test files. Missing any required launch evidence or missing parent on the peer ancestry path is unavailable, never an accepted identity; observed conflicts stay hard. Post-upgrade classification must check actual parent context before the elapsed deadline. Preserve all prior case objects, migration history and S full-check evidence. Fresh self-review 2026-11-10 after accurate-V independent review: missing unrelated known bridge cannot hide an entirely visible peer ancestry outside the pane or in a cycle. Keep prior CFR001..009 case objects unchanged and add CFR010 in a new file before implementation. Evidence classification only, no live restore."
+  },
+  "cases": [
+    {
+      "id": "CFR-001",
+      "layer": "L1",
+      "description": "Terminal readiness observations retain strict identity and use a bounded exact-launch fast path",
+      "setup": "Synthetic before/after process records, actual inspector/findClient logic, controlled stdin/pane reads and direct/native versus generic launcher ancestry",
+      "action": "Resolve valid direct and wrapped clients; vary absent snapshots/stdin, foreground/TTY/peer/birth changes, ambiguous branches and pane metadata; inspect exact PID selection and parent-context cancellation",
+      "expected": "Only stable unique foreground Codex with verified stdin and exact launch ancestry is accepted. Missing reads classify transient; explicit conflicts classify hard refusal. Direct child snapshots are scoped to pane/bridge/client; generic ancestry keeps existing protections. Cancellation does not extend the parent deadline; legacy Resolve behavior is unchanged. No real process or terminal mutation.",
+      "planned_files": [
+        "internal/codexterminal/readiness_test.go"
+      ]
+    },
+    {
+      "id": "CFR-002",
+      "layer": "L2",
+      "description": "Frontend admission reports typed causes and binds only the controlled launch",
+      "setup": "Actual Begin frontend function with isolated HOME/CODEX_HOME, injected current pane/client observation and process incarnation readers",
+      "action": "Admit exact launch; vary peer versus client, launch ancestry, backend command/birth availability, invalid request, pane disappearance and canceled inspection; compare persistent files before/after",
+      "expected": "Known peer/launch mismatch, invalid identity and changed pane cannot acquire authority; transient unreadable evidence is distinguishable from mismatch. No thread discovery/resume/input or persisted binding occurs during admission. Legacy Begin API and current binding/freshness checks remain valid.",
+      "planned_files": [
+        "internal/resume/codexfrontend_ready_test.go"
+      ]
+    },
+    {
+      "id": "CFR-003",
+      "layer": "L2",
+      "description": "Bridge waits for launch publication and retries only transient admission within one deadline",
+      "setup": "Actual readiness/admission driver, controlled attempt and wait functions, real cancellation channels with deterministic ordering and synthetic typed errors",
+      "action": "Deliver an early request before launch publication, then open the gate; exercise transient-then-ready, mismatch, exhausted attempts, deadline/cancel and launch failure; inspect HTTP/status reason and diagnostic fields",
+      "expected": "No check executes before publication; successful transient retry authorizes exactly once. Hard refusal runs once, no second child or native fallback, failures preserve specific nonsecret reason and retry eligibility. All attempts share a 4s parent budget and at most four checks; canceled/deadline work cannot later authorize. Old immediate refusal fails the transient/early-publication expectations; cancellation does not require a timing-race sleep.",
+      "planned_files": [
+        "internal/codexbridge/readiness_test.go"
+      ]
+    },
+    {
+      "id": "CFR-004",
+      "layer": "L1",
+      "description": "Rejected or out-of-order connection attempts cannot retire a verified active frontend",
+      "setup": "Actual production connection epoch allocator and activation/current predicates; deterministic reservation/activation order, no sleeps or real sockets",
+      "action": "Activate A, reserve failed/in-flight B, activate C before late B; try zero, unreserved and repeated activation; inspect incumbent ownership after every step",
+      "expected": "Reservation does not change active authority. Only a successfully upgraded reserved connection can activate; a failed or older connection cannot suppress incumbent heartbeat/binding. A newer successful connection retires only the prior active epoch. Original pre-admission sequence-guard semantics fail the failed-reservation assertion. One admission deadline includes the WebSocket upgrade; no deadline is retained on the accepted interactive transport.",
+      "planned_files": [
+        "internal/codexbridge/connection_epoch_test.go"
+      ]
+    },
+    {
+      "id": "CFR-005",
+      "layer": "L1",
+      "description": "Direct launch cannot bypass ambiguity and partial snapshots never authorize",
+      "setup": "Actual ObserveLaunch with injected exact/full ps variants, known peer/child and controlled before/after rows; all still-valid strict identity and parent-cancellation assertions retained from the retired CFR001 file",
+      "action": "Observe direct and generic launches with second eligible foreground client existing or arriving in second snapshot; omit peer in nonempty before/after then restore full observation",
+      "expected": "Every launch checks full-tree uniqueness. Existing or new eligible sibling refuses without verified PID. Missing peer or ancestor rows yield retryable process-unavailable; a genuinely changed birth remains hard process-changed. No input or authority is granted on incomplete evidence. The old exact-PID path fails the paired sibling counterexample.",
+      "planned_files": [
+        "internal/codexterminal/readiness_review_test.go"
+      ]
+    },
+    {
+      "id": "CFR-006",
+      "layer": "L1",
+      "description": "Process admission reader returns at parent cancellation despite a blocked underlying read",
+      "setup": "Production ReadAgentContext wrapper and injected reader blocked by deterministic entered/release channels",
+      "action": "Enter blocked reader, cancel parent, observe return before release, then release worker; compare immediate valid and canceled reads",
+      "expected": "Caller returns unavailable promptly at cancellation without awaiting underlying reader; a late result cannot authorize or write shared output. Exact process result remains unchanged for timely valid reads. No real hung process or service is created.",
+      "planned_files": [
+        "internal/launchhost/agent_readiness_test.go"
+      ]
+    },
+    {
+      "id": "CFR-007",
+      "layer": "L2",
+      "description": "Daemon dial admission preserves fixed cancellation and deadline diagnostics",
+      "setup": "Production dial-and-classify helper used by handler, injected failed/successful/canceling dial",
+      "action": "Return context cancellation, deadline, ordinary dial error and success; inspect actual returned admission reason/status",
+      "expected": "Context cancellation/deadline take precedence over generic daemon-unavailable; errors returned as context values remain specific even before ctx.Err updates. Ordinary dial failure remains daemon-unavailable and no retry mutation/fallback occurs.",
+      "planned_files": [
+        "internal/codexbridge/daemon_readiness_test.go"
+      ]
+    },
+    {
+      "id": "CFR-008",
+      "layer": "L1",
+      "description": "A nonempty launch snapshot missing intermediate ancestry remains retryable evidence",
+      "setup": "Production ObserveLaunch with known pane/bridge/child/peer records and deterministic snapshot sequence, including peer-present missing bridge or unlisted intermediate parent",
+      "action": "Omit a required or intermediate ancestor in the first read, then restore complete ancestry on the next read; compare real birth/TTY conflict and ambiguous-client counterexamples",
+      "expected": "Missing rows refuse without client authority and report process-unavailable with retry eligibility. A later complete stable snapshot can succeed within the same parent budget. Genuine observed mismatch or ambiguity remains a hard refusal even when another row is unavailable. No live process or session is used.",
+      "planned_files": [
+        "internal/codexterminal/readiness_missing_ancestor_test.go"
+      ]
+    },
+    {
+      "id": "CFR-009",
+      "layer": "L1",
+      "description": "The actual post-upgrade decision preserves cancellation versus deadline causes",
+      "setup": "Production completion-classification helper used by the accepted WebSocket handler, controlled canceled/live/expired contexts and future/past deadlines",
+      "action": "Cancel a parent while its deadline is still future, expire a deadline, and keep a live budget; inspect the exact diagnostic reason used by the production branch",
+      "expected": "Canceled upgrade records admission-cancelled; exhausted budget records admission-deadline; live completion continues. A rejected completion does not activate the epoch and no HTTP reply is fabricated after upgrade. Existing epoch and identity checks are unchanged.",
+      "planned_files": [
+        "internal/codexbridge/upgrade_admission_test.go"
+      ]
+    },
+    {
+      "id": "CFR-010",
+      "layer": "L1",
+      "description": "Visible peer ancestry conflicts remain hard even when another launch row is missing",
+      "setup": "Actual ObserveLaunch with controlled full process rows; peer root path outside pane or cyclic, known bridge absent/present, plus genuinely missing peer ancestry",
+      "action": "Compare the same explicit outside/cycle path with bridge present and omitted; compare an incomplete peer path that later becomes complete",
+      "expected": "Visible outside/cyclic ancestry is always a hard client-unverified refusal with no PID/authority and no retry. Missing required rows cannot mask that conflict. An actually incomplete peer path remains retryable process-unavailable, and complete valid later evidence may succeed. Existing TTY, foreground, ambiguity and birth checks unchanged.",
+      "planned_files": [
+        "internal/codexterminal/readiness_visible_ancestry_test.go"
+      ]
+    }
+  ],
+  "seal": "85219ea17719933e9fe87124c9c07c2fb7727212b0be797dfe59c1bef99cc612"
+}

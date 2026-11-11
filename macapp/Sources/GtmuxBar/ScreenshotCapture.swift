@@ -1,5 +1,6 @@
 import AppKit
 import CoreGraphics
+import ScreenCaptureKit
 
 /// Screen Recording permission, as the capture sees it. The two calls are injectable so
 /// the flow can be tested without TCC.
@@ -25,6 +26,16 @@ enum CaptureOutcome: Equatable {
 /// cancel. A child of this app is attributed to it by TCC, so it needs Gtmux's Screen
 /// Recording permission like any in-process capture would.
 enum ScreenshotCapture {
+    /// Shared by the human window selector and noninteractive agent capture.
+    static func configuration(pointSize: CGSize, scale: CGFloat, window: Bool) -> SCStreamConfiguration {
+        let config = SCStreamConfiguration()
+        config.width = Int((pointSize.width * scale).rounded())
+        config.height = Int((pointSize.height * scale).rounded())
+        config.showsCursor = false
+        config.ignoreShadowsSingleWindow = window
+        config.captureResolution = .best
+        return config
+    }
     static let tool = "/usr/sbin/screencapture"
 
     /// -i interactive, -x no sound, -o no window shadow, PNG. The DPI metadata stays in

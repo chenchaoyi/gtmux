@@ -1,0 +1,169 @@
+{
+  "id": "agent-screenshot-cli-20261110",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-11",
+    "decision": "Implement the user-approved screenshot workflow through CLI only; no MCP server or framework dependency",
+    "notes": "User accepted implementation and questioned MCP necessity; local CLI/JSON plus image paths are sufficient for this increment. Reuse ScreenCaptureKit, existing ScreenshotDocument/AnnotationRenderer and common Go dispatch/attachment guards. Existing App owns recording permission; no hotkey simulation, focus change, implicit TCC request, public upload or shared-service restart. A same-user Unix host authenticates peer PID/incarnation and a private per-host nonce. The CLI passes opened input/output descriptors, not privileged arbitrary paths; bounded versioned JSON, exact FD cardinality, operation allowlist, absolute deadline and staged atomic publication. Source references are opaque and expiring, bound to owner process birth/window/display/geometry and rechecked before/after capture. ROI uses existing geometry; image/preview coordinates and hashes are explicit. Import never invents live provenance. Structured annotations reuse renderer, including irreversible solid redaction in sent derived image; keep base+marks for explicit local editor roundtrip, never send originals implicitly. Mint exact session/home/pane/root/server target references on demand, not during global agents polling. Shared native dispatch checks expected session/home before Prepare and mutations; all draft/wait/duplicate/uncertain protections remain. Durable request receipts are written before possible mutation and unknown acceptance never replays; status is last observed receipt, not proof that agent read/completed or that a previously queued message remains queued now. Product state holds bounded transport/receipt metadata only, images/sidecars in caller task output. No real user capture, input or App install is required to validate isolated contracts; actual TCC/window capture remains a separately reported native acceptance boundary. All fixtures isolate HOME/socket paths, no existing editor or live daemon is touched. Test design includes early refusal and fail-closed negative controls; do not interpret mocked UI/TCC as native acceptance. Follow-up owner review after frozen 61bd: the native verifier calls a synchronous metadata reader before socket cancellation handling; apply a caller-context result boundary to read-only host/target observations so late reads cannot authorize after timeout. Add ASC-007 in separate new test paths before implementation, preserving original six case objects. The first full core also found missing action-catalog registration and new raw writers outside the central state policy; use the existing state IO backend without guard exceptions, register the actual screenshot send event and regenerate its documentation. Fresh self-review 2026-11-10 for two confirmed review follow-ups only: fractional redaction must overwrite every intersected device pixel and a CLI deadline must cover stalled note stdin/FIFO preflight. Preserve original ASC001..007 objects and prior refusal/interop evidence. Native request lifecycle and display-scale findings remain open, not implied solved by this partial follow-up. New cases use new files after design commit. Additional bounded self-review before the artifact-preview assertion: a downsampled flattened image blends neighboring unredacted pixels. Preserve opaque masks by redrawing only redactions at preview resolution after resampling; full image, editable geometry and non-redaction annotations retain existing behavior. Fresh bounded self-review for ASC-011: record the intersecting display identity/bounds/backing scale at source discovery; re-observe both before and after capture. Reject unchanged logical window bounds when display mapping or scale changes, and reject a returned image at a different pixel scale. Extract injectable read-only observations for deterministic synthetic production-path checks; no physical display changes or ScreenCaptureKit permission claim. Fresh self-review for ASC-010 native lifecycle: Swift task cancellation is cooperative and task-group scope waits for children, so an uncancellable ScreenCaptureKit await cannot be made bounded merely by racing a task group. Use a cancellation/completion gate with one process-wide outstanding SDK call (quarantined until its actual callback), two bounded background image/IO work permits (held until actual work exits), and two bounded tracked service tasks. A request owns original descriptors; each background phase duplicates them under an ownership lock, never using a caller fd after cancellation/close. Deadline, peer close and host stop cancel request authority, wake the transport, close its originals, and suppress late output/editor effects. Only bounded duplicated private producer FDs can outlive an uninterruptible filesystem call; published CLI artifacts remain separate immutable inodes. Heavy image decode/render/hash/IO runs off MainActor; editor construction/open remains MainActor with cancellation serialized at its commit point. Existing seven native tests retain signatures/expectations; new cases in new files. No real screen, TCC, App launch, target input or shared service change. Fresh bounded self-review for exact bf1 independent findings only: ASC-012 requires real rounded thumbnail width and height independently when reapplying redactions, for odd aspect image_px and source-region/crop/preview_px production paths. Preserve all prior cases and source/input closed findings. ASC-013 observes the normal success resource boundary in actual Work.run with an injected admission-release observer; all owned duplicates must close before actual admission return/caller completion, matching the already-safe throw path. Observer seams do not alter production default admission or error behavior. First run new exact expectations against prior behavior (with only observation seams for success ordering), retain red controls, then minimal implementation. No actual screen/TCC/input/configuration changes."
+  },
+  "cases": [
+    {
+      "id": "ASC-001",
+      "layer": "L2",
+      "description": "CLI parses the versioned screenshot workflow and preserves project-owned outputs",
+      "setup": "Isolated CLI dependencies and task directory; invalid/unknown options and synthetic protocol replies",
+      "action": "Run capabilities/sources/capture/import/annotate/edit/target/send/status paths including errors",
+      "expected": "Machine JSON has consistent ok/error/result and exit semantics; command discovery/help is truthful; no implicit App launch, capture, focus, clipboard, input or MCP. Images/sidecars publish only after valid timely result; output collision/symlink/failed decode or partial write preserves existing files. Explicit task output paths and hashes survive.",
+      "planned_files": [
+        "internal/app/screenshot_test.go",
+        "internal/screenshot/artifact_test.go"
+      ]
+    },
+    {
+      "id": "ASC-002",
+      "layer": "L2",
+      "description": "Native transport is descriptor-scoped, authenticated and budgeted",
+      "setup": "Real isolated Unix sockets/file descriptors plus synthetic host registry and controlled clock; native Swift producer and Go consumer fixtures",
+      "action": "Exercise valid frames, changed host/nonce/UID/PID, corrupt/truncated JSON, wrong/excess descriptors, unsupported version/operation, deadline, late replies and output FD validation",
+      "expected": "Only authenticated exact host and same-user client communicate; no socket TCP fallback, arbitrary shell/path IO or permission prompt. Bound request/response/decoded size and FD ownership/cardinality; descriptors close on all outcomes, canceled work cannot publish user outputs. Synthetic contract checks are not real recording permission evidence.",
+      "planned_files": [
+        "internal/screenshot/transport_test.go",
+        "macapp/Tests/GtmuxBarTests/ScreenshotAgentIPCTests.swift"
+      ]
+    },
+    {
+      "id": "ASC-003",
+      "layer": "L1",
+      "description": "Image/preview/ROI geometry and structured annotation reuse existing native rendering",
+      "setup": "Synthetic 1x/2x images, negative display origin, selected window metadata and preview transforms; real AnnotationRenderer",
+      "action": "Decode imported image and validated annotation JSON, crop ROI, compare raw/exported pixels and simulate stale or changed source; edit document roundtrip model",
+      "expected": "Coordinates tied to exact image hash/capture/preview reference; known transforms align ROI and marks, originals unchanged, invalid/NaN/outside/bomb images refuse. Rectangle/arrow/text/redaction export correctly using common renderer; redacted output contains no original covered pixels. Source mismatches never widen capture; imported files remain imported. Existing editor draft must not be replaced.",
+      "planned_files": [
+        "internal/screenshot/artifact_test.go",
+        "macapp/Tests/GtmuxBarTests/ScreenshotAgentRenderingTests.swift",
+        "macapp/Tests/GtmuxBarTests/ScreenshotAgentSourceTests.swift"
+      ]
+    },
+    {
+      "id": "ASC-004",
+      "layer": "L2",
+      "description": "Screenshot delivery references remain exact across pane/process/home changes",
+      "setup": "Synthetic signed target reference, isolated resume/native bindings and production dispatch with injected target/process readers",
+      "action": "Mint reference on demand, then switch session/home/agent/pane root/server incarnation before or during send; compare expected-target native behavior",
+      "expected": "Changed/expired/tampered identity refuses before input; supported native paths check expected session/home before preparing another recipient payload and again at mutation. No bare-shell delivery or unsafe fallback. Existing draft/approval protections and agent/HQ attribution persist.",
+      "planned_files": [
+        "internal/screenshot/target_test.go",
+        "internal/app/screenshot_send_test.go",
+        "internal/dispatchbridge/expected_target_test.go",
+        "internal/agentclient/expected_target_test.go"
+      ]
+    },
+    {
+      "id": "ASC-005",
+      "layer": "L2",
+      "description": "Durable screenshot receipts distinguish acceptance from completion and prevent blind replay",
+      "setup": "Actual isolated receipt store and dispatch results, duplicate requests and failures before/after possible acceptance",
+      "action": "Submit same request ID and changed image/note/target; simulate queued/active accepted/landed/blocked/transport failure/crash and query status",
+      "expected": "Same request payload cannot create a second mutation; changed payload under ID refuses. Unknown retains uncertainty and cannot auto retry; queued and active accepted never claim user read or task completion. status labels last observed time/state truthfully, without resumed threads/history-body scans. Metadata is private and budgeted; no image or note body is logged.",
+      "planned_files": [
+        "internal/screenshot/receipts_test.go",
+        "internal/app/screenshot_send_test.go"
+      ]
+    },
+    {
+      "id": "ASC-006",
+      "layer": "L3",
+      "description": "CLI/native golden contracts and synthetic full workflow agree",
+      "setup": "Shared versioned synthetic JSON/PNG fixture through actual socket framing, native renderer and CLI artifact metadata; no real sessions/screens",
+      "action": "Capture fixture or import, annotate, preview, optional editor model and fake addressed dispatcher; inject permission/source/transport failures",
+      "expected": "Same protocol/artifact/coordinate/receipt semantics on both ends; outputs contain correct bytes and metadata, original file unchanged and exact fake target used once. Permission or source failure is observable, never fabricated success. Native recording/TCC, signed installation and human interaction remain explicitly separate until actually exercised.",
+      "planned_files": [
+        "macapp/Tests/GtmuxBarTests/ScreenshotAgentIPCTests.swift",
+        "macapp/Tests/GtmuxBarTests/ScreenshotAgentRenderingTests.swift",
+        "internal/app/screenshot_test.go"
+      ]
+    },
+    {
+      "id": "ASC-007",
+      "layer": "L2",
+      "description": "Read-only screenshot host and target checks return at cancellation without late authority",
+      "setup": "Production context-bound observation helper with deterministic entered/release channels and synthetic host incarnation values; isolated HOME",
+      "action": "Cancel a blocked host verifier and target reader before releasing their late success, compare timely exact/mismatched host identity and UTC birth, inspect status and no target claim/mutation",
+      "expected": "A canceled or expired caller returns before the underlying read settles and late success cannot send a request, mint a target or authorize input. Timely host checks still require exact peer PID, GtmuxBar command and matching UTC process birth; no trust, identity, TCC or fallback rule is weakened. No real stuck process, App or session is used.",
+      "planned_files": [
+        "internal/screenshot/host_readiness_test.go",
+        "internal/app/screenshot_deadline_test.go"
+      ]
+    },
+    {
+      "id": "ASC-008",
+      "layer": "L2",
+      "description": "Opaque redaction covers every intersected pixel at fractional and preview scales",
+      "setup": "Shared production annotation renderer; two solid source images with different colors, 1x/2x and downscaled editor contexts; fractional rectangle at quarter-pixel boundaries",
+      "action": "Render the same redaction over both sources and inspect every intersected output pixel and unaffected neighbors; exercise the actual encoded artifact preview after downsampling a large redacted image",
+      "expected": "Every intersected device pixel is identical opaque black independent of original color; rounding expands outward in actual device pixel coordinates, clamps to image bounds, disables antialias blending, and preserves untouched neighbors. Export and editor use the same rule; original image bytes unchanged. The derived artifact preview reapplies only redaction masks at its own device scale after resampling, so small redactions cannot become translucent preview pixels. Other annotations are not double-drawn.",
+      "planned_files": [
+        "macapp/Tests/GtmuxBarTests/ScreenshotRedactionCoverageTests.swift"
+      ]
+    },
+    {
+      "id": "ASC-009",
+      "layer": "L2",
+      "description": "Screenshot local input refuses FIFO paths and bounds stdin within the caller deadline",
+      "setup": "Real isolated FIFO and pipes, exact screenshot input helpers and screenshotSend with fake target/dispatcher; no native host or real input",
+      "action": "Read image/document/spec/note FIFO path with no writer; stall stdin pipe past deadline/cancellation; compare normal/oversized notes, one-newline normalization, no mutations and original descriptor/flags preserved",
+      "expected": "Path-based inputs open nonblocking and require bounded regular files; no FIFO open hang. Explicit stdin completes by the caller deadline or cancellation without an indefinitely blocked reader goroutine; original stdin remains open and flags restored. A failed or expired note read creates no delivery claim or send. Normal notes preserve existing limit and normalization.",
+      "planned_files": [
+        "internal/screenshot/input_budget_test.go",
+        "internal/app/screenshot_send_input_budget_test.go"
+      ]
+    },
+    {
+      "id": "ASC-011",
+      "layer": "L2",
+      "description": "Screenshot source identity includes its display mapping and backing scale before and after capture",
+      "setup": "Production source validator and capture result finalizer with injected display/window read-only snapshots and synthetic images; negative display origin and same logical source bounds",
+      "action": "Change scale 1 to 2 or display ID/bounds while keeping source owner/birth/point bounds fixed; change mapping during the capture closure and return mismatched pixel dimensions; compare stable mapping and untouched ownership/ROI refusals",
+      "expected": "Changed display or scale refuses before capture or before a result is returned; no stale observed reference authorizes a new geometry. Stable snapshots preserve exact ROI and expected pixel scale. Missing/ambiguous display information fails closed, mixed-scale ROI remains refused, and window owner/birth changes still refuse. Only read-only injected observations are used; no real recording, display reconfiguration, TCC or user input.",
+      "planned_files": [
+        "macapp/Tests/GtmuxBarTests/ScreenshotSourceMappingTests.swift"
+      ]
+    },
+    {
+      "id": "ASC-010",
+      "layer": "L2",
+      "description": "Native screenshot request lifetime is bounded across deadline, disconnect and host stop",
+      "setup": "Real isolated Swift Unix host/client with injected callback providers and background-work latches; borrowed/owned private regular descriptors, synthetic image/editor closures, exact production cancellation and admission helpers",
+      "action": "Hold SDK callbacks forever or release them after timeout/cancel/stop; disconnect real clients, saturate bounded SDK/background/service admissions, and compare normal completion plus borrowed descriptor ownership; invoke import/annotate/edit and capture phases without actual recording",
+      "expected": "Deadline/disconnect/stop close transport and original descriptors and release request slots without waiting for an SDK callback. At most one actual SDK call remains outstanding across host restart; an outstanding background phase keeps its bounded permit and owned duplicate until it really exits, with no unbounded replacement queue. Late completion cannot write a returned artifact or open editor; cancellation before the editor commit point refuses. Slow image/IO work does not block MainActor. Normal callbacks resolve once, preserve existing descriptor validation and output bytes; stale tasks cannot close a reused fd. Isolated synthetic tests do not certify real ScreenCaptureKit cancellation, filesystem interruption, TCC or native window interaction.",
+      "planned_files": [
+        "macapp/Tests/GtmuxBarTests/ScreenshotAgentLifecycleTests.swift",
+        "macapp/Tests/GtmuxBarTests/ScreenshotAgentWorkTests.swift"
+      ]
+    },
+    {
+      "id": "ASC-012",
+      "layer": "L2",
+      "description": "Redaction uses independent rounded preview scales across odd aspect and cropped source coordinates",
+      "setup": "Pure red and blue synthetic 3200x33 and 33x3200 images; actual service annotate, renderer, PNG encode/decode; synthetic source region/crop pipeline with negative display origin and exact frame metadata",
+      "action": "Apply fractional thin redactions using image_px and preview_px, including source-region to crop to frame to annotate to saved PNG; inspect all intersected preview pixels for both orientations",
+      "expected": "Every preview pixel intersected under actual preview_width/point_width and preview_height/point_height is opaque black independent of original colors. Neither axis may borrow the other axis rounded scale. Region/frame transforms and original image remain unchanged; ordinary scale and existing annotations keep their assertions. This is the actual synthetic production rendering path, without a ScreenCaptureKit capture or TCC claim.",
+      "planned_files": [
+        "macapp/Tests/GtmuxBarTests/ScreenshotPreviewAspectTests.swift"
+      ]
+    },
+    {
+      "id": "ASC-013",
+      "layer": "L2",
+      "description": "Normal background screenshot completion closes actual descriptor duplicates before returning its permit",
+      "setup": "Actual Work.run, owned regular producer descriptors and local admission with a read-only release observer; normal and throwing bodies",
+      "action": "Capture the duplicate descriptor in the body and inspect it precisely when admission is returned, then inspect caller completion and original descriptor ownership",
+      "expected": "The duplicate is already closed before admission return for both success and error. Caller success preserves the value, original caller descriptor stays open, and no permit is lost/double-released. Negative control retains the pre-fix success order with only the observation seam and fails on an open duplicate; no probabilistic scheduler race or actual OS leak is claimed. Existing cancellation and SDK quarantine tests retain their assertions.",
+      "planned_files": [
+        "macapp/Tests/GtmuxBarTests/ScreenshotWorkCompletionOrderTests.swift"
+      ]
+    }
+  ],
+  "seal": "5992d5000faaaaa0dd0453cc44528a84a40f3f0368eb99198609ec319f54d3ba"
+}

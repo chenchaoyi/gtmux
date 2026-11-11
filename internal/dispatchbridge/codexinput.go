@@ -26,6 +26,9 @@ func codexNativeSubmit(pane string) func(dispatch.Opts, string, func() string) d
 		if !ok {
 			return dispatch.Result{State: dispatch.StateRefusedWaiting, Evidence: "codex-frontend-unavailable"}
 		}
+		if !opts.MatchesTarget(f.SessionID, f.HomeID, f.Instance, f.PID) {
+			return dispatch.Result{State: dispatch.StateRefusedWaiting, Evidence: "expected-conversation-changed"}
+		}
 		a := agentclient.Attachment{Version: agentclient.ProtocolVersion, Agent: "codex", Client: "codex", Pane: pane,
 			PID: f.PID, Instance: f.Instance, HomeID: f.HomeID, SessionID: f.SessionID, Cwd: f.Cwd, ServerEpoch: f.RootStart,
 			BindingEpoch: f.StartedAt, StartedAt: f.StartedAt, UpdatedAt: time.Now().UnixMilli(), InputReady: true, NativeSession: true}
@@ -68,7 +71,11 @@ func codexNativeSubmit(pane string) func(dispatch.Opts, string, func() string) d
 		} else if opts.ActiveImageInput && len(inputs) > 1 {
 			submit = codexImageInputs
 		}
-		outcome := submit(context.Background(), codexrpc.Target{HomeID: f.HomeID, ThreadID: f.SessionID, BackendPID: f.BackendPID, BackendStart: f.BackendStart}, r.ID, inputs, check)
+		ctx := opts.Context
+		if ctx == nil {
+			ctx = context.Background()
+		}
+		outcome := submit(ctx, codexrpc.Target{HomeID: f.HomeID, ThreadID: f.SessionID, BackendPID: f.BackendPID, BackendStart: f.BackendStart}, r.ID, inputs, check)
 		if outcome.Accepted {
 			delivery, evidence := "", "codex-queue-accepted:"+outcome.QueueID
 			if outcome.ActiveTurnID != "" {

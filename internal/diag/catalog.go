@@ -59,6 +59,7 @@ var Catalog = []CatalogEntry{
 	{"act.resume.command", []string{"restore"}},
 	{"act.resume.confirmed", []string{"restore"}},
 	{"act.revoke", []string{"pair", "devices", "share", "serve"}},
+	{"act.screenshot.agent.send", []string{"screenshot"}},
 	{"act.screenshot.capture", []string{"app"}},
 	{"act.screenshot.freeze", []string{"app"}},
 	{"act.screenshot.send", []string{"app"}},

@@ -737,6 +737,8 @@ LEG-a4ca11590f1e,L1,Go core / CLI / server,internal/artifact/store_test.go,11,Te
 LEG-111c7716670b,L1,Go core / CLI / server,internal/artifact/store_test.go,56,Test,TestPublicationRefusesLinksSecretsAndOversize,False,legacy-not-retrospectively-reviewed
 LEG-a17e70893eb8,L1,Go core / CLI / server,internal/artifact/store_test.go,103,Test,TestTamperingAndEscapingIDsFailClosed,False,legacy-not-retrospectively-reviewed
 LEG-5cd7ac080740,L1,Go core / CLI / server,internal/artifact/store_test.go,169,Test,TestRegistryQuotaAndRemoval,False,legacy-not-retrospectively-reviewed
+MAP-61b29ce6decb,L1,reviewed implementation,internal/codexbridge/connection_epoch_test.go,9,reviewed-selector,TestCFR004OnlySuccessfulNewerConnectionChangesAuthority,False,CFR-004
+MAP-d0efecbb0cb2,L1,reviewed implementation,internal/codexbridge/connection_epoch_test.go,31,reviewed-selector,TestCFR004UpgradeRetainsOnlyTheRemainingAdmissionBudget,False,CFR-004
 LEG-b6d992ad636f,L1,Go core / CLI / server,internal/codexbridge/launch_test.go,8,Test,TestLaunchAdmissionPreservesNativeModes,False,legacy-not-retrospectively-reviewed
 LEG-713653817b18,L1,Go core / CLI / server,internal/codexbridge/launch_test.go,21,Test,TestLocalBridgePreservesWorkingDirectoryAndExplicitOverride,False,legacy-not-retrospectively-reviewed
 LEG-c59dbe4a3e9e,L1,Go core / CLI / server,internal/codexbridge/launch_test.go,35,Test,TestInstalledSubcommandsRemainNativeIncludingFutureCommands,False,legacy-not-retrospectively-reviewed
@@ -748,6 +750,9 @@ LEG-60862a5464ac,L1,Go core / CLI / server,internal/codexbridge/observe_test.go,
 LEG-cc26f78d8d87,L1,Go core / CLI / server,internal/codexbridge/observe_test.go,93,Test,TestObserverRequiresMatchingServerHome,False,legacy-not-retrospectively-reviewed
 LEG-d876071a5552,L1,Go core / CLI / server,internal/codexbridge/observe_test.go,104,Test,TestObserverResumesLargeHistoryWithoutRetainingCatalogs,False,legacy-not-retrospectively-reviewed
 LEG-878e735aba01,L1,Go core / CLI / server,internal/codexbridge/observe_test.go,114,Test,TestObserverKeepsSuccessfulRootWorkspace,False,legacy-not-retrospectively-reviewed
+MAP-5e69a5544cc0,L1,reviewed implementation,internal/codexbridge/upgrade_admission_test.go,10,reviewed-selector,TestCFR009PostUpgradeUsesActualCancellationBeforeDeadline,False,CFR-009
+MAP-60dd54884dac,L1,reviewed implementation,internal/codexbridge/worktree_trust_test.go,30,reviewed-selector,TestWTR001OnlyReciprocallyRegisteredWorktreesHaveStableEvidence,False,WTR-001
+MAP-2f03f0629104,L1,reviewed implementation,internal/codexbridge/worktree_trust_test.go,62,reviewed-selector,TestWTR001MalformedCopiedSymlinkAndUnsupportedMetadataCannotBorrowTrust,False,WTR-001
 LEG-e6e48b36723f,L1,Go core / CLI / server,internal/codexrpc/peer_unix_test.go,12,Test,TestUnixPeerIdentityComesFromKernel,False,legacy-not-retrospectively-reviewed
 LEG-093de95f9c8b,L1,Go core / CLI / server,internal/codexrpc/queue_test.go,56,Test,TestQueueTargetsExactConversation,False,legacy-not-retrospectively-reviewed
 LEG-62a9833f529c,L1,Go core / CLI / server,internal/codexrpc/queue_test.go,83,Test,TestQueueRefusesDifferentServerHomeBeforeInput,False,legacy-not-retrospectively-reviewed
@@ -771,6 +776,13 @@ LEG-7d21e1339a80,L1,Go core / CLI / server,internal/codexterminal/client_test.go
 LEG-80c194b2199e,L1,Go core / CLI / server,internal/codexterminal/client_test.go,145,Test,TestWrappedCodexPaneRevalidation,False,legacy-not-retrospectively-reviewed
 LEG-de26ba12a73d,L1,Go core / CLI / server,internal/codexterminal/mode_test.go,5,Test,TestProcessRecoveryRejectsHeadlessModesEvenWithTerminalStdin,False,legacy-not-retrospectively-reviewed
 LEG-3c028c0e4888,L1,Go core / CLI / server,internal/codexterminal/mode_test.go,30,Test,TestManagedBackendRequiresUnambiguousDaemonCommand,False,legacy-not-retrospectively-reviewed
+MAP-2160b366ce2a,L1,reviewed implementation,internal/codexterminal/readiness_missing_ancestor_test.go,9,reviewed-selector,TestCFR008MissingAncestorIsUnavailableAndACompleteRecheckCanSucceed,False,CFR-008
+MAP-c1d7cc8624a4,L1,reviewed implementation,internal/codexterminal/readiness_missing_ancestor_test.go,45,reviewed-selector,TestCFR008ObservedConflictsStayHardWhenAnotherRequiredRowIsMissing,False,CFR-008
+MAP-3c9928c51d3c,L1,reviewed implementation,internal/codexterminal/readiness_review_test.go,10,reviewed-selector,TestCFR005ReadinessPreservesStrictTerminalProof,False,CFR-005
+MAP-46db7daae336,L1,reviewed implementation,internal/codexterminal/readiness_review_test.go,76,reviewed-selector,TestCFR005FullTreeLaunchScopeAndParentCancellation,False,CFR-005
+MAP-c1532da18337,L1,reviewed implementation,internal/codexterminal/readiness_review_test.go,113,reviewed-selector,TestCFR005DirectLaunchRetainsFullTreeAndMissingEvidenceRefuses,False,CFR-005
+MAP-e331f6b9597b,L1,reviewed implementation,internal/codexterminal/readiness_visible_ancestry_test.go,9,reviewed-selector,TestCFR010VisibleOutsideAncestryMustStayHard,False,CFR-010
+MAP-bc7b5ad2bc4f,L1,reviewed implementation,internal/codexterminal/readiness_visible_ancestry_test.go,34,reviewed-selector,TestCFR010VisibleCycleStaysHardWithMissingBridge,False,CFR-010
 LEG-28aabe798834,L1,Go core / CLI / server,internal/codexterminal/stdin_lsof_test.go,5,Test,TestWrappedCodexStdinDescriptor,False,legacy-not-retrospectively-reviewed
 LEG-abc84f7d187c,L1,Go core / CLI / server,internal/connect/attach_url_test.go,5,Test,TestWSURL,False,legacy-not-retrospectively-reviewed
 LEG-c9022aeadd0c,L1,Go core / CLI / server,internal/connect/attach_url_test.go,21,Test,TestWSURL_EmptyTERM,False,legacy-not-retrospectively-reviewed
@@ -1803,6 +1815,7 @@ LEG-9d378b2f943d,L1,Go core / CLI / server,internal/knowledge/voice_test.go,27,T
 LEG-cd7219eb16d3,L1,Go core / CLI / server,internal/knowledge/voice_test.go,50,Test,TestVoiceReadsProseOnly,False,legacy-not-retrospectively-reviewed
 LEG-c6e04c876979,L1,Go core / CLI / server,internal/knowledge/voice_test.go,67,Test,TestVoiceCountsADoubleDashOnce,False,legacy-not-retrospectively-reviewed
 LEG-32bc165bd27b,L1,Go core / CLI / server,internal/knowledge/voice_test.go,75,Test,TestVoiceLeavesAPlainEntryAlone,False,legacy-not-retrospectively-reviewed
+MAP-25bce7c30ce2,L1,reviewed implementation,internal/launchhost/agent_readiness_test.go,9,reviewed-selector,TestCFR006AgentReadReturnsBeforeBlockedReaderSettles,False,CFR-006
 LEG-bd9336c63bfb,L1,Go core / CLI / server,internal/launchhost/agent_test.go,8,Test,TestAgentSnapshotDoesNotRequireHostAndRevalidatesChain,False,legacy-not-retrospectively-reviewed
 LEG-081c45c3897d,L1,Go core / CLI / server,internal/launchhost/agent_test.go,10,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-913821ce623a,L1,Go core / CLI / server,internal/launchhost/agent_test.go,63,Test,TestAgentHandoffRejectsInvalidOrStaleEvidence,False,legacy-not-retrospectively-reviewed
@@ -2244,6 +2257,7 @@ LEG-8e634b6679c9,L1,Go core / CLI / server,internal/servermode/sample_test.go,13
 LEG-f3e311d6eed2,L1,Go core / CLI / server,internal/servermode/sample_test.go,147,Test,TestRecordStale,False,legacy-not-retrospectively-reviewed
 LEG-602edc03f971,L1,Go core / CLI / server,internal/servermode/sample_test.go,163,Test,TestOSMajor,False,legacy-not-retrospectively-reviewed
 LEG-29434f0379e2,L1,Go core / CLI / server,internal/servermode/sample_test.go,185,Test,TestSupportedGateBothDirections,False,legacy-not-retrospectively-reviewed
+MAP-9c3c6ef20fb1,L1,reviewed implementation,internal/servermode/verified_os_test.go,5,reviewed-selector,TestSMC001VerifiedServerModeOSPreservesUnknownVersionCaution,False,SMC-001
 LEG-1ee723d1dbe1,L1,Go core / CLI / server,internal/sessionpolicy/dsh_test.go,22,Test,TestDSHConsentIsScopedIndependentAndFutureOnly,False,legacy-not-retrospectively-reviewed
 LEG-5ca0689ec163,L1,Go core / CLI / server,internal/sessionpolicy/dsh_test.go,60,Test,TestDSHRevocationAndStaleSave,False,legacy-not-retrospectively-reviewed
 LEG-a9a2442cb93f,L1,Go core / CLI / server,internal/sessionpolicy/policy_test.go,29,Test,TestConsentIsPerConversationAndReversible,False,legacy-not-retrospectively-reviewed
@@ -3013,6 +3027,10 @@ LEG-c88e3f431a01,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/RestoreAvai
 LEG-bb40d3a7a366,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/RestoreAvailabilityTests.swift,95,XCTest,testSlowRestoreReadDoesNotOverlap,False,legacy-not-retrospectively-reviewed
 LEG-cd538ac4e707,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/RestoreAvailabilityTests.swift,127,XCTest,testPendingSectionExpandsAndStaysUntilRecoveryCompletes,False,legacy-not-retrospectively-reviewed
 LEG-dcbaaa41b810,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/RestoreAvailabilityTests.swift,184,XCTest,testRestoreFailureRemainsVisibleAndRetryClearsIt,False,legacy-not-retrospectively-reviewed
+MAP-c2ab9a053f63,L1,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotAgentRenderingTests.swift,17,reviewed-selector,testASC003RedactionUsesSharedRetinaRendererAndExactFrame,False,"ASC-003,ASC-006"
+MAP-0c83eb465d22,L1,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotAgentRenderingTests.swift,37,reviewed-selector,testASC006EditorRoundtripPreservesBusyDraftAndDoesNotSend,False,"ASC-003,ASC-006"
+MAP-6374d12b4eea,L1,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotAgentSourceTests.swift,6,reviewed-selector,testASC003SourcesExpireAndNeverWidenChangedOwnershipOrRegion,False,ASC-003
+MAP-f38e69bff361,L1,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotAgentSourceTests.swift,24,reviewed-selector,testASC003MissingPermissionDoesNotPromptOrListOtherApps,False,ASC-003
 LEG-ddcbf015095e,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotDeliveryTests.swift,18,XCTest,testDeliveryLocksNativeEditorAndFailureRestoresWork,False,legacy-not-retrospectively-reviewed
 LEG-374d7125936a,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotDeliveryTests.swift,98,XCTest,testSuccessKeepsTheCapturedDestinationAndCannotCloseANewerEditor,False,legacy-not-retrospectively-reviewed
 LEG-2c6a162913d3,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotDeliveryTests.swift,132,XCTest,testOnlyConfirmedSuccessBlocksEditingAfterTheReceipt,False,legacy-not-retrospectively-reviewed

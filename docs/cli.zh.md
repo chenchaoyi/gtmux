@@ -73,6 +73,8 @@ emoji 字体去画它们，那样你给的颜色会被忽略，红色只落在�
 列会依次让位（先是 agent 名字，再是任务），所以任何一行都不会折。`--json` 输出同样的数据，
 给脚本和菜单栏 app 用。
 
+对于已信任仓库的关联工作树，经过核验的本地前端只在当前配置回执中沿用主仓库已有的信任决定，并核对双向 Git 登记及初始化后的 Codex home。它不会保存新的信任条目、复制 hooks 或改变权限。工作树或父目录已有明确决定时，包括符号链接与同目录别名，继续采用 Codex 自身流程。项目路径在同一个有界证明任务内保守解析；归属未知、路径缺失或陈旧、未知决定或超过 128 条时，保留原回执，不自动继承信任。项目配置层、未知布局或证据不可用时，也保留原流程。真实的 **Folder access** 页面会被识别为启动信任确认，gtmux 不会自动按键同意。
+
 ### 它是怎么认出来的（不只支持 Claude）
 
 - 状态取自 agent 自己写的 pane 标题。开头是盲文旋转符（`⠋⠙⠹…`，大多数 agent TUI
@@ -365,73 +367,74 @@ gtmux logs --since 1d --stats                # 存了多少，今天出了多少
 
 <!-- gtmux:rendered act-catalog -->
 ```
-act.adopt               adopt
-act.app.launch          app
-act.artifact            artifact
-act.attach              attach, serve
-act.awake.off           awake
-act.awake.on            awake
-act.capture             capture
-act.cleanup             doctor, serve
-act.codex.launch        codex
-act.opencode.launch     opencode
-act.config.set          config, quiet
-act.doctor.bundle       doctor
-act.doctor.fix          doctor
-act.focus               focus, serve
-act.session.follow      follow, serve
-act.session.review      transcript
-act.hq.brief            hq
-act.hq.export           hq
-act.hq.import           hq
-act.hq.migrate          hq
-act.hq.maintenance      hq
-act.hq.rotate           hq
-act.hq.start            hq
-act.install.app         install
-act.install.hooks       install
-act.advice              advice
-act.knowledge           knowledge, serve
-act.knowledge.sync      knowledge, doctor
-act.mint                pair, serve
-act.narrow              serve
-act.new                 new
-act.notify              hook
-act.notify.post         app
-act.notify.test         app
-act.notify.suppressed   hook
-act.device.rename       serve
-act.pair                serve
-act.push.forget         devices, serve
-act.push.register       serve
-act.reap                reap
-act.reap.snooze         reap
-act.relay               relay
-act.restore             restore
-act.resume.command      restore
-act.resume.confirmed    restore
-act.revoke              pair, devices, share, serve
-act.screenshot.capture  app
-act.screenshot.freeze   app
-act.screenshot.send     app
-act.send                send, serve
-act.share.config        share, serve
-act.share.create        share, serve
-act.share.set           share, serve
-act.spawn               spawn
-act.tunnel.off          tunnel
-act.tunnel.on           tunnel
-act.tunnel.move         tunnel
-act.tunnel.redeem       tunnel
-act.uninstall.app       uninstall
-act.uninstall.hooks     uninstall
-act.unwatch             panes
-act.update              update
-act.upload              serve
-act.wake.delivered      serve, hook
-act.wake.dropped        serve, hook
-act.wait.suppressed     hook
-act.watch               panes
+act.adopt                  adopt
+act.app.launch             app
+act.artifact               artifact
+act.attach                 attach, serve
+act.awake.off              awake
+act.awake.on               awake
+act.capture                capture
+act.cleanup                doctor, serve
+act.codex.launch           codex
+act.opencode.launch        opencode
+act.config.set             config, quiet
+act.doctor.bundle          doctor
+act.doctor.fix             doctor
+act.focus                  focus, serve
+act.session.follow         follow, serve
+act.session.review         transcript
+act.hq.brief               hq
+act.hq.export              hq
+act.hq.import              hq
+act.hq.migrate             hq
+act.hq.maintenance         hq
+act.hq.rotate              hq
+act.hq.start               hq
+act.install.app            install
+act.install.hooks          install
+act.advice                 advice
+act.knowledge              knowledge, serve
+act.knowledge.sync         knowledge, doctor
+act.mint                   pair, serve
+act.narrow                 serve
+act.new                    new
+act.notify                 hook
+act.notify.post            app
+act.notify.test            app
+act.notify.suppressed      hook
+act.device.rename          serve
+act.pair                   serve
+act.push.forget            devices, serve
+act.push.register          serve
+act.reap                   reap
+act.reap.snooze            reap
+act.relay                  relay
+act.restore                restore
+act.resume.command         restore
+act.resume.confirmed       restore
+act.revoke                 pair, devices, share, serve
+act.screenshot.agent.send  screenshot
+act.screenshot.capture     app
+act.screenshot.freeze      app
+act.screenshot.send        app
+act.send                   send, serve
+act.share.config           share, serve
+act.share.create           share, serve
+act.share.set              share, serve
+act.spawn                  spawn
+act.tunnel.off             tunnel
+act.tunnel.on              tunnel
+act.tunnel.move            tunnel
+act.tunnel.redeem          tunnel
+act.uninstall.app          uninstall
+act.uninstall.hooks        uninstall
+act.unwatch                panes
+act.update                 update
+act.upload                 serve
+act.wake.delivered         serve, hook
+act.wake.dropped           serve, hook
+act.wait.suppressed        hook
+act.watch                  panes
 ```
 
 restore 也一直往这里写它的判断过程：选了哪份存档、每个 pane 接回了哪段对话
@@ -1825,8 +1828,8 @@ gtmux awake off      # 请求守卫恢复睡眠；通常不用密码
   FileVault、没人在场的 Mac 上，心跳不会恢复，睡眠会被还回去，所以服务器模式扛不过
   一次无人值守的重启。gtmux 不会去动 FileVault 或自动登录来「修好」这件事。
 - 底层那个设置苹果没有文档。[已有真机记录](design/server-mode-research.zh.md)来自 M4 Pro、
-  macOS 26.5.2。CLI 的 `platform.verified` 把 macOS 26.x 归在一起，不代表所有机型和系统
-  配置都已实测。运行时检查发现设置或读回机制不可用时，`on` 会拒绝。
+  macOS 26.5.2；用户也已确认 macOS 27.2 上可正常运行。CLI 的 `platform.verified` 基线
+  包含 macOS 26.x 与 27.2.x，不代表所有机型或补丁配置都已独立实测。运行时检查发现设置或读回机制不可用时，`on` 会拒绝。
 
 手机界面只展示状态，没有开关。owner 可以通过
 [`POST /api/awake`](../api/contract.md#post-apiawake--turn-it-off-write-owner-only-one-direction)
@@ -2240,3 +2243,8 @@ gtmux artifact remove ID
 240 MiB。支持格式及限制见[会话文件预览](design/conversation-documents.zh.md)。
 
 HQ 界面可使用 `gtmux hq workspace list --overview --stored --json` 读取存储中的权威事项，不发现会话；`sources_included:false` 表示没有附带可选会话元数据。普通 list 仍提供实时及历史来源。详见 [HQ 选项反馈](design/HQ-CHOICE-RESPONSE.zh.md)。
+
+
+## 给 agent 使用的截图
+
+`gtmux screenshot` 提供能力查询、来源选择、区域截取、导入、结构化标注、编辑及准确会话投递。详见[截图工作流](guides/agent-screenshots.zh.md)。本地 CLI 即可，不要求 MCP。

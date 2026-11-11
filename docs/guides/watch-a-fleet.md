@@ -26,6 +26,10 @@ A tmux session and its agents can keep running when you close the terminal, lose
 
 After a reboot, `gtmux restore` rebuilds the sessions and layout from the latest tmux-resurrect snapshot. Programs start as new processes; by default, agents that support conversation recovery resume their saved conversations. Use `gtmux doctor` to configure snapshots.
 
+For managed Codex clients, startup checks distinguish temporarily unreadable process/TTY evidence from a different client, pane or process incarnation. Transient checks share one four-second admission budget and at most four attempts; mismatches refuse immediately. No second Codex process or alternate resume is launched after a child starts. Both direct and wrapped launches retain two full process-tree snapshots and strict ancestry/uniqueness checks. Knowing the child PID does not excuse checking for another eligible foreground client.
+
+If local startup fails, the terminal prints a fixed reason such as `stdin-unavailable` or `peer-mismatch`. Read `gtmux logs --since 10m --event 'codex.frontend.startup.*'` for the reason, attempt count and admission time. This is a local connection check, not an account-login instruction. A verified frontend connection still does not mean the requested conversation has resumed: use the separate conversation startup confirmation. Do not clear sockets, change permissions or start another copy merely because the result is unconfirmed.
+
 A MacBook normally sleeps when its lid closes; `gtmux awake on` keeps it running. For tmux basics, see the official [Getting Started](https://github.com/tmux/tmux/wiki/Getting-Started) guide.
 
 ## Put your agents on the radar

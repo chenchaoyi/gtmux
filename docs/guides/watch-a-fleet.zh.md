@@ -26,6 +26,10 @@ tmux new -s docs 'codex'
 
 重启后，`gtmux restore` 从最近保存的 tmux-resurrect 快照重建会话和布局；程序会作为新进程启动，支持恢复对话的 agent 默认续接原对话。`gtmux doctor` 可配置快照保存。
 
+gtmux 管理的 Codex 启动校验会区分“进程/TTY 信息暂时不可读”与“客户端、pane 或进程实例不匹配”。暂时不可读时，共用一次四秒的启动校验期限，最多检查四次；明确不匹配立即拒绝。子进程一旦启动，就不会再启动另一份 Codex 或改走另一条恢复路径。普通直启与通用启动器都保留两次完整进程树、祖先链及唯一性核验；已知子进程 PID 不能代替排除同 pane 的第二个合格前台客户端。
+
+本地启动失败时，终端会显示固定原因码，例如 `stdin-unavailable` 或 `peer-mismatch`。用 `gtmux logs --since 10m --event 'codex.frontend.startup.*'` 查看原因、检查次数和校验耗时。这是本地连接核验，不是要求重新登录账号。前端已核验也不代表目标对话已恢复，仍须看单独的对话启动确认；不要因为尚未确认就清 socket、改权限或重复起同一对话。
+
 MacBook 合盖默认休眠，`gtmux awake on` 可让它继续运行。tmux 基础操作见官方 [Getting Started](https://github.com/tmux/tmux/wiki/Getting-Started)。
 
 ## 让 agent 上雷达

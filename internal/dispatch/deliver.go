@@ -1,6 +1,7 @@
 package dispatch
 
 import (
+	"context"
 	"regexp"
 	"strconv"
 	"strings"
@@ -123,12 +124,20 @@ func held(io IO) string {
 
 // Opts configures a delivery.
 type Opts struct {
-	DeliveryID       string // caller idempotency key for an addressed native transport
-	DirectUserInput  bool   // explicit phone text+Enter; default CLI/HQ retains queue semantics
-	ActiveImageInput bool   // explicit attachment ingress; never inferred from message text
-	Pane             string
-	HookEquipped     bool // prefer the deterministic event stream over the screen
-	Force            bool // override the re-send interlock
+	Context context.Context // optional caller deadline; nil preserves legacy callers
+	// Optional exact-recipient guard for explicitly addressed artifact input.
+	// Empty retains existing callers' behavior; native adapters check this before
+	// preparing another recipient's payload as well as before input mutation.
+	ExpectedSessionID string
+	ExpectedHomeID    string
+	ExpectedInstance  string
+	ExpectedClientPID int
+	DeliveryID        string // caller idempotency key for an addressed native transport
+	DirectUserInput   bool   // explicit phone text+Enter; default CLI/HQ retains queue semantics
+	ActiveImageInput  bool   // explicit attachment ingress; never inferred from message text
+	Pane              string
+	HookEquipped      bool // prefer the deterministic event stream over the screen
+	Force             bool // override the re-send interlock
 	// ClobberDraft overrides the DRAFT guard — deliver even when the input box holds
 	// someone else's unsubmitted text. Deliberately NOT folded into Force: the phone sets
 	// Force on every send (it carries its own sendID idempotency), and letting that also
@@ -152,6 +161,11 @@ type Opts struct {
 	PasteRetries   int   // extra paste attempts on a fragment
 	PasteSettle    int   // extra frames to let a paste render before calling it a fragment
 	EnterRetries   int   // extra Enter attempts on a swallowed submit
+}
+
+func (o Opts) MatchesTarget(session, home, instance string, pid int) bool {
+	return o.ExpectedSessionID == "" || o.ExpectedSessionID == session && o.ExpectedHomeID == home &&
+		(o.ExpectedInstance == "" || o.ExpectedInstance == instance) && (o.ExpectedClientPID <= 0 || o.ExpectedClientPID == pid)
 }
 
 func (o *Opts) fillDefaults() {
