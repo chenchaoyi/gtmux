@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner (self-review, not independent approval)",
     "date": "2026-11-11",
     "decision": "Recover history only from independently revalidated live frontend evidence; preserve strict input authority and surface association/source failures",
-    "notes": "Current private record has invalid trailing data and its named frontend receipt is missing. No automatic recovery is promised for that irrecoverable evidence combination. No prefix parsing, launch-argument identity guesses, live record edits, restore/restart, queues or release/install. Recovery uses bounded independently saved frontend metadata and is read-only unless its authenticated current bridge repairs its own primary index. Existing lease/epoch/incumbent and guest boundaries remain. All synthetic fixtures use task temporary storage. Source review and synthetic tests do not certify current running175 or real mobile behavior. Follow-up design review before editing legacy endpoint tests: the unbound-spawn and revoked-DSH checks retain their no-borrowed/no-stale-history assertions and additionally require the typed association error, replacing the former nil-error empty-success contract. Non-EOF source I/O failures must propagate from the legacy parser; ordinary EOF and empty history remain valid. Preserve previously accepted home-less legacy records while rejecting explicit foreign homes; recovery receipts always require the exact current home. Use canonical /private/tmp as TMPDIR for existing alias-sensitive fixtures; do not weaken their path assertions."
+    "notes": "Current private record has invalid trailing data and its named frontend receipt is missing. No automatic recovery is promised for that irrecoverable evidence combination. No prefix parsing, launch-argument identity guesses, live record edits, restore/restart, queues or release/install. Recovery uses bounded independently saved frontend metadata and is read-only unless its authenticated current bridge repairs its own primary index. Existing lease/epoch/incumbent and guest boundaries remain. All synthetic fixtures use task temporary storage. Source review and synthetic tests do not certify current running175 or real mobile behavior. Follow-up design review before editing legacy endpoint tests: the unbound-spawn and revoked-DSH checks retain their no-borrowed/no-stale-history assertions and additionally require the typed association error, replacing the former nil-error empty-success contract. Non-EOF source I/O failures must propagate from the legacy parser; ordinary EOF and empty history remain valid. Preserve previously accepted home-less legacy records while rejecting explicit foreign homes; recovery receipts always require the exact current home. Use canonical /private/tmp as TMPDIR for existing alias-sensitive fixtures; do not weaken their path assertions. Final owner review found a new whole-record dependency in the Detail ChatView memo. Before adding a regression, reviewed retaining the existing unchanged-poll memo boundary: depend on a scalar association flag, not the chat state object."
   },
   "cases": [
     {
@@ -79,7 +79,18 @@
       "planned_files": [
         "internal/app/help_readability_test.go"
       ]
+    },
+    {
+      "id": "CAS-007",
+      "layer": "L3",
+      "description": "Unchanged Detail transcript polls preserve the existing ChatView element",
+      "setup": "Mounted Detail with a completed initial transcript and stable agent/context, using existing screen fixture without real networking.",
+      "action": "Return unchanged:true for a Retry-triggered read while turns/status/error reason remain identical.",
+      "expected": "The actual shared ChatView props object is reused rather than rebuilt merely because the screen stores a new polling result object. Association error/recovery transitions must still repaint correctly as covered by CAS-005. A whole-chat-record dependency must fail the identity assertion, not setup or timing.",
+      "planned_files": [
+        "mobileapp/src/screens/DetailTrace.test.tsx"
+      ]
     }
   ],
-  "seal": "9b81668d124c4c3b41f54ad4252b8efa584964f9bac975cc61a35fcca73bcf3e"
+  "seal": "1683ed7078d7aae5e469c9d37dc46b1462e440f055871d3af559717d8577ab01"
 }
