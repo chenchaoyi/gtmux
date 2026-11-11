@@ -87,6 +87,16 @@ the DRAFT before it.
 
 A live kernel-verified Codex frontend MAY instead use addressed `thread/queue/add` after the same draft, waiting, lease and target-recheck guards. It SHALL verify home and backend incarnation, bind a stable message ID and require a matching queue receipt. The durable exclusive attempt claim SHALL precede mutation; uncertain attempts SHALL NOT fall back to paste/Enter or replay. Queue acceptance SHALL NOT be reported as turn execution. Existing authorized upload images SHALL retain image input semantics; other files remain text paths.
 
+Explicit phone user input MAY instead steer the exact eligible active turn, or start
+an already-loaded idle thread, after metadata-only state and the same last-moment
+identity/draft/menu/hold checks. It SHALL retain the stable message ID, input types,
+thread settings and backend/home binding. It SHALL NOT resume threads or consume,
+delete or replay older queue entries. Only a definitive unsupported method permits
+legacy queue fallback; ambiguous writes or rejections SHALL NOT switch channels.
+The HTTP receipt SHALL preserve queue versus direct acceptance, and the App SHALL
+bound its full-response wait without an automatic retry. Default CLI/HQ queue
+semantics remain unchanged.
+
 #### Scenario: Shared Codex accepts input during a turn
 - **WHEN** its exact current home/thread accepts the guarded input with a matching queue receipt
 - **THEN** the result is queued rather than executed, and no terminal paste or Enter occurs

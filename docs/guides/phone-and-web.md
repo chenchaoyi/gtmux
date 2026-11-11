@@ -32,6 +32,15 @@ To add another device or browser, run `gtmux pair` on the host for a fresh code.
 On **iPhone**, tap an agent to read its conversation or terminal. When it needs a reply,
 choose an offered answer or type your own. You can also send control keys or a screenshot.
 
+Explicit phone messages to a verified Codex session use the current eligible turn, or
+start a turn when that session is already loaded and idle. They do not resume a closed
+session or replay older queued messages. A legacy server may still queue the input:
+**Queued** means it is waiting, while **Received** is an input receipt, not evidence
+that the agent has read or completed the request. The App stops waiting for a send
+confirmation after 20 seconds, keeps the text for an explicit retry with the same
+message ID, and never retries automatically. Check the conversation before retrying
+an uncertain result.
+
 Open the display icon in Chat or Terminal to adjust text size. Both modes use the same controls and size setting.
 Terminal also offers **Wrap lines** (default) / **Original width**.
 Wrap lines fits rows to your screen. Original width keeps the Mac's row widths and allows horizontal scrolling,

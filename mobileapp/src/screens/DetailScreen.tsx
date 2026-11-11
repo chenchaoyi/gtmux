@@ -1,3 +1,5 @@
+import {newSendId} from '../api/sendId';
+import type {SendDelivery} from '../ui/sendReceipt';
 // DetailScreen — a read-only view of one pane's current screen (MOBILE §4), in
 // COLOR. It polls /api/pane (now `tmux capture-pane -e`) every ~1.5s and renders
 // the ANSI output with a native SGR parser into colored <Text> spans — offline
@@ -99,12 +101,6 @@ const MODE_KEY = (paneId: string) => `detail.mode.${paneId}`;
 // Kept clearly legible (not the faint 0.5 default) since it's a "please wait" line.
 const TERM_LOADER_LABEL = 'rgba(235,235,245,0.78)';
 const TERM_LOADER_MARK = 'rgba(235,235,245,0.34)';
-
-// newSendId mints a client idempotency token for one send (reused across a Retry). Not
-// security-sensitive — just unique-enough that the server can dedup a retried delivery.
-function newSendId(): string {
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-}
 
 // DetailScreen is the stack route (compact); it wraps the presentational
 // DetailView, which the iPad split-view also renders directly in its main pane.
@@ -323,6 +319,7 @@ function PaneDetailView({
   const [fullscreen, setFullscreen] = useState(false);
   const [pendingPrompt, setPendingPrompt] = useState('');
   const [pendingDelivered, setPendingDelivered] = useState(false);
+  const [pendingDelivery, setPendingDelivery] = useState<SendDelivery | undefined>();
   const pendingEcho = useRef<PendingChatEcho | null>(null);
   const echoAttempts = useRef(new Map<string, PendingChatEcho>());
   const [diffOpen, setDiffOpen] = useState(false);
@@ -504,7 +501,7 @@ function PaneDetailView({
         echoAttempts.current.set(echo.id, echo);
         if (echoAttempts.current.size > 16) echoAttempts.current.delete(echoAttempts.current.keys().next().value!);
         pendingEcho.current = chatEchoRecorded(echo, latestTurns.current) ? null : echo;
-        setPendingPrompt(pendingEcho.current?.text ?? ''); setPendingDelivered(false);
+        setPendingPrompt(pendingEcho.current?.text ?? ''); setPendingDelivered(false); setPendingDelivery(undefined);
       }
       const clearEcho = () => {
         if (pendingEcho.current?.id !== p.send_id) return;
@@ -521,7 +518,7 @@ function PaneDetailView({
       client
         .sendResult(agent.pane_id, p)
         .then(r => {
-          if (!lane?.isActive() || paneRead.current !== lane) return;
+          if (!lane?.isActive() || paneRead.current !== lane || (attempt !== sendAttempt.current && pendingEcho.current?.id !== p.send_id)) return;
           if (!r.ok) {
             // KEEP the text: a silently dropped message is the one failure the user
             // can't recover from without retyping.
@@ -535,12 +532,15 @@ function PaneDetailView({
             return;
           }
           if (pendingEcho.current?.id === p.send_id) {
-            setPendingDelivered(true);
+            setPendingDelivered(true); setPendingDelivery(r.delivery);
             const note = busyNote(live.status, lang === 'zh');
             // A late receipt cannot resurrect a notice after transcript confirmation
             // or replace feedback for a newer submission/control key.
             if (attempt === sendAttempt.current && note) setBusyHint({id: p.send_id!, text: note});
           }
+          // A late receipt can settle its message after a newer control key, but
+          // its older capture must not invalidate or replace the current screen.
+          if (attempt !== sendAttempt.current) return;
           // Retire a capture started before this accepted send.
           lane.invalidate();
           const snap = r.pane;
@@ -551,7 +551,8 @@ function PaneDetailView({
           }
         })
         .catch(() => {
-          if (!lane?.isActive() || paneRead.current !== lane) return;
+          if (!lane?.isActive() || paneRead.current !== lane || (attempt !== sendAttempt.current && pendingEcho.current?.id !== p.send_id)) return;
+          setFailedReason(lang === 'zh' ? '未能确认发送结果，请先查看会话；重试会沿用同一消息编号。' : 'Send confirmation unavailable. Check the conversation first; Retry keeps the same message ID.');
           setFailedSend(p); clearEcho();
         })
         .finally(bumpPane);
@@ -591,8 +592,9 @@ function PaneDetailView({
   const onLoadKeys = useCallback((version?: number, boot?: string) => client.inputCapabilities(agent.pane_id, version, boot), [client, agent.pane_id]);
   const onSendKey = useCallback(async (p: SendPayload) => {
     const lane = paneRead.current;
+    const attempt = ++sendAttempt.current;
     const r = await client.sendResult(agent.pane_id, p);
-    if (r.ok && r.pane && lane?.isActive() && paneRead.current === lane) {
+    if (attempt === sendAttempt.current && r.ok && r.pane && lane?.isActive() && paneRead.current === lane) {
       lane.invalidate();
       if (typeof r.pane.text === 'string') setText(r.pane.text);
       if (r.pane.cols) setPaneCols(r.pane.cols);
@@ -673,9 +675,9 @@ function PaneDetailView({
   // trees in JS even when nothing changed — that was the "停顿 on unchanging content".
   const chatEl = useMemo(
     () => (
-      <ChatView client={isGuest ? undefined : client} agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} pendingPrompt={pendingPrompt} pendingDelivered={pendingDelivered} fontPref={fontPref} onLiveEdge={chatEdge} topPad={chromeH + questionInset} controlsTop={fullscreen ? insets.top : chromeH + questionInset} controlsShift={fullscreen ? undefined : collapse.interpolate({inputRange: [0, 1], outputRange: [0, -chromeH]})} maxWidth={isWide ? READING_WIDTH : undefined} />
+      <ChatView client={isGuest ? undefined : client} agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} pendingPrompt={pendingPrompt} pendingDelivered={pendingDelivered} pendingDelivery={pendingDelivery} fontPref={fontPref} onLiveEdge={chatEdge} topPad={chromeH + questionInset} controlsTop={fullscreen ? insets.top : chromeH + questionInset} controlsShift={fullscreen ? undefined : collapse.interpolate({inputRange: [0, 1], outputRange: [0, -chromeH]})} maxWidth={isWide ? READING_WIDTH : undefined} />
     ),
-    [client, isGuest, live, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, pendingPrompt, pendingDelivered, fontPref, chatEdge, chromeH, questionInset, fullscreen, insets.top, isWide, collapse],
+    [client, isGuest, live, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, pendingPrompt, pendingDelivered, pendingDelivery, fontPref, chatEdge, chromeH, questionInset, fullscreen, insets.top, isWide, collapse],
   );
   // Codex pins the prompt of the turn on screen to the top row, cut to the pane's width
   // (ui/codexPinned). When that row is recognised, the full prompt from the conversation

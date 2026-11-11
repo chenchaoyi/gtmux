@@ -1,3 +1,4 @@
+import {withSendDeadline, type SendDelivery} from './sendDeadline';
 import type {HQWorkspace, HQMatterDetail} from './hqWorkspace';
 import {DocumentError, documentReference} from '../documents/references';
 import type {DocumentRequest} from '../documents/nativePreview';
@@ -564,7 +565,7 @@ export function isAuthError(e: unknown): boolean {
 
 /** What a send did, including the server's own words when it refused. */
 export type SendResult =
-  | {ok: true; pane: PaneResponse | null}
+  | {ok: true; pane: PaneResponse | null; delivery?: SendDelivery}
   | {ok: false; status: number; reason: string};
 
 // How long an upload may go quiet before it is given up on. While the body is going out
@@ -1129,25 +1130,31 @@ export class GtmuxClient {
    * the reader is eventually TOLD is a separate question, deliberately left open.
    */
   async sendResult(id: string, payload: SendPayload): Promise<SendResult> {
-    const r = await tfetch(`${this.base}/api/send`, {
-      method: 'POST',
-      headers: {...this.h(), 'Content-Type': 'application/json'},
-      body: JSON.stringify({id, ...payload}),
+    return withSendDeadline(async signal => {
+      const r = await tfetch(`${this.base}/api/send`, {
+        method: 'POST',
+        signal,
+        headers: {...this.h(), 'Content-Type': 'application/json'},
+        body: JSON.stringify({id, ...payload}),
+      });
+      if (!r.ok) {
+        const j = await r.json().catch(() => null);
+        const reason =
+          j && typeof j === 'object' && typeof (j as {error?: string}).error === 'string'
+            ? (j as {error: string}).error
+            : `send failed (${r.status})`;
+        if (Debug.logNet) Debug.record({event: 'send-refused', id, status: r.status, reason});
+        return {ok: false, status: r.status, reason};
+      }
+      try {
+        const pane = (await r.json()) as PaneResponse & {delivery?: {state?: unknown; send_id?: unknown}};
+        const state = pane?.delivery?.state;
+        const delivery = pane?.delivery?.send_id === payload.send_id && (state === 'queued' || state === 'accepted' || state === 'submitted') ? state : undefined;
+        return {ok: true, pane, delivery};
+      } catch {
+        return {ok: true, pane: {id, text: ''}}; // accepted, no snapshot; caller polls
+      }
     });
-    if (!r.ok) {
-      const j = await r.json().catch(() => null);
-      const reason =
-        j && typeof j === 'object' && typeof (j as {error?: string}).error === 'string'
-          ? (j as {error: string}).error
-          : `send failed (${r.status})`;
-      if (Debug.logNet) Debug.record({event: 'send-refused', id, status: r.status, reason});
-      return {ok: false, status: r.status, reason};
-    }
-    try {
-      return {ok: true, pane: (await r.json()) as PaneResponse};
-    } catch {
-      return {ok: true, pane: {id, text: ''}}; // sent ok, no snapshot — caller polls
-    }
   }
 
   /**

@@ -25,7 +25,7 @@ const mockClient = {
   transcript: jest.fn(async () => ({turns: []})),
   inputCapabilities: jest.fn(async () => null),
   upload: jest.fn(),
-  send: jest.fn(async () => ({text: ''})),
+  sendResult: jest.fn(async () => ({ok: true, pane: {text: ''}})),
 };
 const mockContext = {client: mockClient, agents: [] as Agent[], conn: 'connected', demo: false};
 const hq = {pane_id: '%synthetic-hq', session_id: 'synthetic-session', agent: 'Codex', status: 'idle', role: 'supervisor'} as Agent;
@@ -78,7 +78,7 @@ describe.each(['compact', 'regular'] as const)('%s HQ attachments', layout => {
     tap('composer-attach');
     expect(tree.root.findByType(AttachSheet).props.visible).toBe(true);
     expect(mockClient.upload).not.toHaveBeenCalled();
-    expect(mockClient.send).not.toHaveBeenCalled();
+    expect(mockClient.sendResult).not.toHaveBeenCalled();
   });
 
   test('a selected file stays staged until send, which uploads to HQ before sending its path', async () => {
@@ -86,11 +86,11 @@ describe.each(['compact', 'regular'] as const)('%s HQ attachments', layout => {
     await choose(2);
     expect(pick).toHaveBeenCalledTimes(1);
     expect(mockClient.upload).not.toHaveBeenCalled();
-    expect(mockClient.send).not.toHaveBeenCalled();
+    expect(mockClient.sendResult).not.toHaveBeenCalled();
     await act(async () => {action('composer-send').props.onPress();});
     expect(mockClient.upload).toHaveBeenCalledWith(file.uri, file.name, file.type, expect.any(Function), hq.pane_id);
-    expect(mockClient.send).toHaveBeenCalledWith(hq.pane_id, {text: '/synthetic-host/notes.txt', enter: true});
-    expect(mockClient.upload.mock.invocationCallOrder[0]).toBeLessThan(mockClient.send.mock.invocationCallOrder[0]);
+    expect(mockClient.sendResult).toHaveBeenCalledWith(hq.pane_id, {text: '/synthetic-host/notes.txt', enter: true, send_id: expect.any(String)});
+    expect(mockClient.upload.mock.invocationCallOrder[0]).toBeLessThan(mockClient.sendResult.mock.invocationCallOrder[0]);
   });
 
   test('cancelling the photo picker leaves nothing to send and the menu can open again', async () => {
@@ -102,7 +102,7 @@ describe.each(['compact', 'regular'] as const)('%s HQ attachments', layout => {
     tap('composer-attach');
     expect(tree.root.findByType(AttachSheet).props.visible).toBe(true);
     expect(mockClient.upload).not.toHaveBeenCalled();
-    expect(mockClient.send).not.toHaveBeenCalled();
+    expect(mockClient.sendResult).not.toHaveBeenCalled();
   });
 
   test('an upload failure keeps the file for retry and never sends an empty command', async () => {
@@ -110,11 +110,11 @@ describe.each(['compact', 'regular'] as const)('%s HQ attachments', layout => {
     await mount();
     await choose(2);
     await act(async () => {action('composer-send').props.onPress();});
-    expect(mockClient.send).not.toHaveBeenCalled();
+    expect(mockClient.sendResult).not.toHaveBeenCalled();
     expect(action('composer-send').props.disabled).toBe(false);
     await act(async () => {action('composer-send').props.onPress();});
     expect(mockClient.upload).toHaveBeenCalledTimes(2);
-    expect(mockClient.send).toHaveBeenCalledTimes(1);
+    expect(mockClient.sendResult).toHaveBeenCalledTimes(1);
   });
 
   test('changing HQ routes the upload and message to the new pane', async () => {
@@ -125,6 +125,6 @@ describe.each(['compact', 'regular'] as const)('%s HQ attachments', layout => {
     await choose(2);
     await act(async () => {action('composer-send').props.onPress();});
     expect(mockClient.upload).toHaveBeenCalledWith(file.uri, file.name, file.type, expect.any(Function), next.pane_id);
-    expect(mockClient.send).toHaveBeenCalledWith(next.pane_id, {text: '/synthetic-host/notes.txt', enter: true});
+    expect(mockClient.sendResult).toHaveBeenCalledWith(next.pane_id, {text: '/synthetic-host/notes.txt', enter: true, send_id: expect.any(String)});
   });
 });

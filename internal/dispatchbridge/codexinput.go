@@ -18,6 +18,7 @@ import (
 var codexInputTarget = resume.CodexFrontendForPane
 var codexQueueInputs = codexrpc.QueueInputs
 var codexImageInputs = codexrpc.ImageInputs
+var codexUserInputs = codexrpc.UserInputs
 
 func codexNativeSubmit(pane string) func(dispatch.Opts, string, func() string) dispatch.Result {
 	return func(opts dispatch.Opts, text string, hold func() string) dispatch.Result {
@@ -33,15 +34,22 @@ func codexNativeSubmit(pane string) func(dispatch.Opts, string, func() string) d
 			return dispatch.Result{State: dispatch.StateFailed, Evidence: "codex-input-retry-held: " + err.Error()}
 		}
 		if receipt, known := agentclient.ReadReceipt(r); known && receipt.State == "accepted" {
-			if receipt.Delivery == "active-turn" {
-				return dispatch.Result{State: dispatch.StateQueued, JudgedBy: dispatch.JudgedByDriver, Evidence: "codex-active-already-accepted"}
+			if receipt.Delivery == "active-turn" || receipt.Delivery == "started-turn" {
+				evidence := "codex-active-already-accepted"
+				if receipt.Delivery == "started-turn" {
+					evidence = "codex-turn-already-accepted"
+				}
+				return dispatch.Result{State: dispatch.StateQueued, JudgedBy: dispatch.JudgedByDriver, Delivery: receipt.Delivery, Evidence: evidence}
 			}
 			return dispatch.Result{State: dispatch.StateQueued, JudgedBy: dispatch.JudgedByDriver, Evidence: "codex-queue-already-accepted"}
+		}
+		if !r.MatchesTarget(a) {
+			return dispatch.Result{State: dispatch.StateRefusedWaiting, Evidence: "codex-input-target-changed"}
 		}
 		claimed := false
 		check := func() bool {
 			current, valid := codexInputTarget(pane)
-			if !valid || current.Instance != f.Instance || current.HomeID != f.HomeID || current.SessionID != f.SessionID || current.PID != f.PID || current.StartedAt != f.StartedAt || current.RootStart != f.RootStart || current.BackendPID != f.BackendPID || current.BackendStart != f.BackendStart || (hold != nil && hold() != "") {
+			if !r.MatchesTarget(a) || !valid || current.Instance != f.Instance || current.HomeID != f.HomeID || current.SessionID != f.SessionID || current.PID != f.PID || current.StartedAt != f.StartedAt || current.RootStart != f.RootStart || current.BackendPID != f.BackendPID || current.BackendStart != f.BackendStart || (hold != nil && hold() != "") {
 				return false
 			}
 			if claimed {
@@ -55,7 +63,9 @@ func codexNativeSubmit(pane string) func(dispatch.Opts, string, func() string) d
 		}
 		inputs := codexInputs(text)
 		submit := codexQueueInputs
-		if opts.ActiveImageInput && len(inputs) > 1 {
+		if opts.DirectUserInput {
+			submit = codexUserInputs
+		} else if opts.ActiveImageInput && len(inputs) > 1 {
 			submit = codexImageInputs
 		}
 		outcome := submit(context.Background(), codexrpc.Target{HomeID: f.HomeID, ThreadID: f.SessionID, BackendPID: f.BackendPID, BackendStart: f.BackendStart}, r.ID, inputs, check)
@@ -64,10 +74,13 @@ func codexNativeSubmit(pane string) func(dispatch.Opts, string, func() string) d
 			if outcome.ActiveTurnID != "" {
 				delivery, evidence = "active-turn", "codex-active-accepted:"+outcome.ActiveTurnID
 			}
+			if outcome.StartedTurnID != "" {
+				delivery, evidence = "started-turn", "codex-turn-accepted:"+outcome.StartedTurnID
+			}
 			if err := agentclient.FinishNativeDelivery(r, "accepted", "", delivery); err != nil {
 				return dispatch.Result{State: dispatch.StateFailed, Evidence: "codex-input-receipt-unconfirmed"}
 			}
-			return dispatch.Result{State: dispatch.StateQueued, JudgedBy: dispatch.JudgedByDriver, Evidence: evidence, Attempts: 1}
+			return dispatch.Result{State: dispatch.StateQueued, JudgedBy: dispatch.JudgedByDriver, Delivery: delivery, Evidence: evidence, Attempts: 1}
 		}
 		if claimed {
 			verdict := "uncertain"

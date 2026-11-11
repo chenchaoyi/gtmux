@@ -1,0 +1,82 @@
+{
+  "id": "mobile-send-review-followup-20261110",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review; independent reviewer findings are evidence, not approval of this design)",
+    "date": "2026-11-10",
+    "decision": "Address four confirmed exact-Q review findings before merge",
+    "notes": "Review 53dab0f produced deterministic pending retarget, HQ missing receipt/ID, HQ late failure and stale Detail screen counterexamples. New cases live in new files to preserve prior design chronology. Preserve exact target, draft/menu/approval checks, stable retry, unknown no-replay and old accepted receipt compatibility. Isolated fixtures only; do not replay real queues, resume sessions, deploy or release. Existing full-core/cloud results apply only to old Q; new revision gets appropriate fresh gates and bounded independent delta review. Fresh self-review 2026-11-10 after exact-R independent review: unresolved durable IDs must not age into another request while an earlier handler can still continue. Add MSD011 in new files; preserve MSD006..010 objects. Reuse pending durable identity beyond 15s and after retention sweeps; retain unresolved records under existing hard spool cap. Native claim takes the same input lease and requires the matching pending request, so completed/pruned or replaced requests cannot regain mutation authority. Historical completed receipt retention and accepted/unknown guards remain unchanged. Deterministic logical time and nested real bridge claim, no sleeps or live input."
+  },
+  "cases": [
+    {
+      "id": "MSD-006",
+      "layer": "L2",
+      "description": "Retry stays bound to its original complete native target",
+      "setup": "Real private Prepare/ClaimNative/FinishNative spool, fake native RPC, synthetic homes only",
+      "action": "Retry pending within and beyond 15 seconds while changing session, instance, binding, home, PID or server epoch; repeat unchanged and accepted old targets",
+      "expected": "No pending request is reused or claimed for a changed target; bridge rechecks prepared identity before RPC mutation. An already accepted historical receipt remains a no-op; unchanged pending preserves its ID and unknown outcomes never replay.",
+      "planned_files": [
+        "internal/agentclient/pending_target_test.go",
+        "internal/dispatchbridge/pending_retry_target_test.go"
+      ]
+    },
+    {
+      "id": "MSD-007",
+      "layer": "L2",
+      "description": "HQ shares stable send identity and actual ingress receipt with ordinary conversation",
+      "setup": "Real HQConsoleView and Composer with fake transport/timers and shared transcript echo helper",
+      "action": "Send queued/accepted/submitted/legacy, timeout then explicit retry after 21 seconds, and a repeated prompt already in history",
+      "expected": "HQ uses sendResult and a stable ID reused on explicit retry; exposes actual receipt, not endless Sending; old identical history cannot clear new echo. Failed reason retained, no automatic retry or real input.",
+      "planned_files": [
+        "mobileapp/src/screens/HQSendReceipt.test.tsx"
+      ]
+    },
+    {
+      "id": "MSD-008",
+      "layer": "L2",
+      "description": "HQ late results and retries cannot cross a newer attempt or target identity",
+      "setup": "Real HQConsoleView with deferred requests and mutable client/pane/session/home identity",
+      "action": "Overlap first/second success/refusal/timeout, later key then text receipt; change target or unmount before response; confirm transcript; use both legacy onSend key and production onSendKey callback",
+      "expected": "Only corresponding current echo receives receipt; old failure cannot erase newer success. Old results/retry cannot move to a rotated HQ/client/pane; newer control-key screen remains. Confirmation retires only the matching new turn and accepted echo is not resurrected.",
+      "planned_files": [
+        "mobileapp/src/screens/HQSendOrdering.test.tsx"
+      ]
+    },
+    {
+      "id": "MSD-009",
+      "layer": "L2",
+      "description": "Late Detail text receipt settles delivery without reverting a newer terminal snapshot",
+      "setup": "Real DetailView, deferred text send and later control-key success with distinct screen/cursor/columns",
+      "action": "Resolve old text receipt after newer key snapshot through both Composer onSend legacy keys and the production onSendKey callback",
+      "expected": "The matching text echo becomes accepted, but old snapshot neither invalidates current reads nor replaces newer text, geometry or cursor. No replay and target guards stay in place.",
+      "planned_files": [
+        "mobileapp/src/screens/DetailSendSnapshot.test.tsx"
+      ]
+    },
+    {
+      "id": "MSD-010",
+      "layer": "L2",
+      "description": "Existing HQ attachment and matter journeys use the new structured send callback without weakening their assertions",
+      "setup": "Existing real HQ/Composer synthetic attachment, draft and matter workflows",
+      "action": "Keep existing interactions, mock sendResult rather than removed boolean send path, require a generated send ID in exact target/body assertions",
+      "expected": "Picker/upload ordering, cancellation, retry, no auto-send, draft/server/session isolation and matter state assertions all remain. Only callback shape changes; new receipt semantics are covered separately by MSD007/008.",
+      "planned_files": [
+        "mobileapp/src/screens/HQScreen.attach.test.tsx",
+        "mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx"
+      ]
+    },
+    {
+      "id": "MSD-011",
+      "layer": "L2",
+      "description": "Durable pending identity survives delayed retries and stale handlers cannot reclaim retired authority",
+      "setup": "Real Prepare/prune/ClaimNative/FinishNative state in isolated HOME; logical creation times and production bridge with controlled RPC-boundary interleaving",
+      "action": "Retry same target/body/sendID at +21s, +minute and +48h; interleave old handler with same-ID Retry; change target/body; retain unknown claim; expire settled metadata then try old claim",
+      "expected": "Unresolved durable retries reuse one requestID regardless of age and remain protected at the existing spool cap. Only one nested handler may claim/mutate. Matching pending proof and input lease are required before native claim; pruned/settled/replaced old requests cannot regain authority. Changed target/body, claimed/uncertain and historical accepted results retain their safeguards; completed retention is unchanged. No real queue or RPC is accessed.",
+      "planned_files": [
+        "internal/agentclient/pending_retry_lifetime_test.go",
+        "internal/dispatchbridge/pending_retry_overlap_test.go"
+      ]
+    }
+  ],
+  "seal": "04b06f58d4fe514f20a27cbd6361e05de2e3c8a468c113c487b5f6408d4b50b6"
+}
