@@ -989,5 +989,48 @@
     "selectors": [
       "TestMSD011DelayedBridgeAndSameIDRetryCannotBothSubmit"
     ]
+  },
+  "internal/radar/codex_stale_state_test.go": {
+    "cases": [
+      "CSR-001",
+      "CSR-002"
+    ],
+    "selectors": [
+      "TestCSR001StaleActiveCannotReviveReadyFinishedPane",
+      "TestCSR002SupersededActiveDoesNotDateCurrentWork"
+    ]
+  },
+  "internal/resume/state_publication_test.go": {
+    "cases": [
+      "CSR-003"
+    ],
+    "selectors": [
+      "TestCSR003SavePublishesAnAtomicResumeSnapshot",
+      "TestCSR003CodexSaveAndHeartbeatRespectBindingLease"
+    ]
+  },
+  "mobileapp/src/ui/AgentStateDuration.test.tsx": {
+    "cases": [
+      "CSR-004"
+    ],
+    "selectors": [
+      "CSR-004 real decoded rows"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/StateDurationTests.swift": {
+    "cases": [
+      "CSR-004"
+    ],
+    "selectors": [
+      "testCSR004DecodedUncertainDurationDoesNotUseEitherClock"
+    ]
+  },
+  "internal/server/web/state-duration.test.cjs": {
+    "cases": [
+      "CSR-004"
+    ],
+    "selectors": [
+      "CSR-004 browser row"
+    ]
   }
 }

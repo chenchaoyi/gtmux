@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1077 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1082 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3759 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 1964 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 1971 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 92 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 94 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 12 | [M.csv](cases/M.csv) |
@@ -38,6 +38,10 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | CET-006 | A real manual PostCompact receipt is recorded once, active stays absent and exact completion/current turn remain intact. Only actual rearm decisions are eligible for the completed-turn fence. |
 | CORE-CODEX-FOREIGN-ACTIVE | Only a verified current Codex home/session/cwd, a named foreign active marker, a completed/aborted own rollout and a ready nonworking nonapproval frame can contradict false working. Own/empty/unknown/stale binding or actual start/work/wait remains conservative. Reads never remove a foreign marker or mint a completion. |
 | CORE-CODEX-FOREIGN-GATHER | The real radar gather with isolated HOME, a completed own rollout, another session marker and recent window activity reports idle without changing marker content/mtime, binding or completion records; genuine own turns, approvals and legacy unknown ownership still work. |
+| CSR-001 | Only the narrow ready stale-active/newer-finished display becomes idle, keeps the existing finished time, and never mints Latest/Confirmed/CompletionID or clears/rewrites any lifecycle or binding marker. Real visible work, CPU, queues and waits win; fresh start and missing/older/future finished evidence remain conservative. Existing exact-session/home/turn guards are unchanged. Accurate baseline production must fail the false-working target assertion. |
+| CSR-002 | Current work remains working. A superseded start is replaced by bounded recognized TUI elapsed time, or since=0 with since_uncertain=true when not known, never the old multi-hour start/window activity. Original valid marker behavior and wire defaults remain compatible. No lifecycle proof/state mutation or work-start fabrication. |
+| CSR-003 | Old descriptor retains complete original JSON and new path contains complete new JSON. Busy lease returns existing ErrLeaseHeld without overwrite or heartbeat publication; released lease allows normal same-owner operation. Refresh legacy-field recovery releases before Bind reacquires. Foreign/newer/reused identities, symlink destinations, write failures and cancellation remain conservative. Exact old Save fails atomic pinned-reader/lease assertions. No unbounded waiting, real config or unique recovery deletion. |
+| CSR-004 | Explicit uncertain duration renders no elapsed text even with recent activity fallback. Known duration renders normally; absent flag keeps legacy fallback and all statuses/icons/groups remain unchanged. Both RN shells share AgentRow; Mac/browser use their real data/render path. No actual App launch/device or timing benchmark claim. |
 | CT-HTTP | Real Go handler responses agree with independent RN/Web fake servers for transcript history/context, HQ overview/detail/cursor, document metadata/download, null/empty and permission errors. |
 | CT-DRAFT | Actual Detail and HQ composers isolate text across servers and reused panes/session identities, ignore delayed old draft loads, and persist/send to the current target only. |
 | CT-HQ | A current human question opens its original matter, prepares but does not auto-send a reply; an authoritative answer removes it from pending without completing the matter. Old client responses cannot replace current data. |
