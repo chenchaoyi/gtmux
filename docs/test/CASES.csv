@@ -2922,7 +2922,7 @@ LEG-56506e843cd8,L1,Go core / CLI / server,internal/sessionpolicy/scope_test.go,
 LEG-ca6f3b862326,L1,Go core / CLI / server,internal/state/background_test.go,10,Test,TestBackgroundMarker,False,legacy-not-retrospectively-reviewed
 LEG-ddab946877a9,L1,Go core / CLI / server,internal/state/completion_test.go,9,Test,TestCompletionRequiresProducerEvidence,False,legacy-not-retrospectively-reviewed
 MAP-e5d2427c7d6d,L2,reviewed implementation,internal/state/cpu_repeated_poll_test.go,5,reviewed-selector,TestCSR005RepeatedPollPreservesObservedCPUWork,False,CSR-005
-MAP-33d2a35b1094,L2,reviewed implementation,internal/state/cpu_repeated_poll_test.go,27,reviewed-selector,TestCSR005RepeatedPollRequiresValidPriorEvidence,False,CSR-005
+MAP-33d2a35b1094,L2,reviewed implementation,internal/state/cpu_repeated_poll_test.go,30,reviewed-selector,TestCSR005RepeatedPollRequiresValidPriorEvidence,False,CSR-005
 LEG-bb83038fb70e,L1,Go core / CLI / server,internal/state/cpu_test.go,5,Test,TestCPUWorking,False,legacy-not-retrospectively-reviewed
 LEG-f894c6031547,L1,Go core / CLI / server,internal/state/cpu_test.go,23,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-b54b3cd60586,L1,Go core / CLI / server,internal/state/deadpanes_test.go,28,Test,TestReapDeadPaneStateClearsEveryPaneKeyedFamily,False,legacy-not-retrospectively-reviewed

@@ -15,6 +15,10 @@ cannot date that work. The current Working footer supplies elapsed time when
 recognized; otherwise the duration is hidden. Status remains working. Older
 servers keep their existing duration behavior.
 
+Repeated status reads in the same second retain recently observed CPU work,
+without extending its normal expiry. Clock rollback or a restarted CPU counter
+does not provide new activity evidence.
+
 Resume snapshots are published as complete atomic replacements. Codex hook saves
 and frontend heartbeats share the binding lease, preventing a contended writer
 from overwriting another binding. Unknown ownership and busy leases remain

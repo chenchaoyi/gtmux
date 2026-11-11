@@ -16,6 +16,9 @@ func TestCSR005RepeatedPollPreservesObservedCPUWork(t *testing.T) {
 			t.Fatalf("same-second reader %d erased observed CPU work", i)
 		}
 	}
+	if !PaneCPUWorking(pane, 11.999999999, 102) {
+		t.Fatal("floating-point sum noise looked like a restarted CPU counter")
+	}
 	if !PaneCPUWorking(pane, 12, 105) {
 		t.Fatal("repeated reads changed the original smoothing window")
 	}

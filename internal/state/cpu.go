@@ -2,6 +2,7 @@ package state
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -48,7 +49,9 @@ func cpuPath(pane string) string { return filepath.Join(CPUDir(), pane) }
 //   - A same-second reader retains recent observed work, without inferring a rise.
 //   - Otherwise busy if CPU rose at >= cpuBusyRate now, or did within cpuActiveSec.
 func cpuWorking(now, prevPoll, prevActive int64, prevCPU, curCPU float64) (newActive int64, working bool) {
-	if prevCPU < 0 || now-prevPoll > cpuStaleSec || now < prevPoll || curCPU < prevCPU {
+	// The persisted counter has two decimal places; subtree sums can have tiny
+	// representation differences without a real counter reset.
+	if prevCPU < 0 || now-prevPoll > cpuStaleSec || now < prevPoll || math.Round(curCPU*100) < math.Round(prevCPU*100) {
 		return 0, false
 	}
 	newActive = prevActive

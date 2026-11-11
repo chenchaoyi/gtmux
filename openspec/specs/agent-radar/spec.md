@@ -126,6 +126,14 @@ mechanism, and an agent with no hooks is unaffected.
   with no window-activity fallback across Mac, mobile and browser
 - **AND** this display clock SHALL NOT create a lifecycle start or completion
 
+#### Scenario: Repeated state readers preserve observed CPU activity
+
+- **WHEN** readers sample a pane more than once in the same wall-clock second
+- **THEN** already observed recent CPU activity SHALL be retained without
+  division by zero or extending its existing expiry
+- **AND** missing/stale evidence, a backward clock or a reset counter SHALL NOT
+  grant new activity; comparisons SHALL respect the persisted counter precision
+
 #### Scenario: Codex maintenance does not refresh idle completion time
 
 - **WHEN** an idle Codex rollout receives settings, usage or other non-conversation

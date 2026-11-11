@@ -450,7 +450,7 @@ LEG-48c1050764f9,L2,Browser,internal/server/web/trace-model.test.cjs,68,test,'sh
 LEG-9ba6285dc523,L2,Go core / CLI / server,internal/server/webui_test.go,16,Test,TestWebUIRouting,False,legacy-not-retrospectively-reviewed
 LEG-d0796bd9ffc4,L2,Go core / CLI / server,internal/server/webui_test.go,55,Test,TestWebHandlerCacheBusting,False,legacy-not-retrospectively-reviewed
 MAP-e5d2427c7d6d,L2,reviewed implementation,internal/state/cpu_repeated_poll_test.go,5,reviewed-selector,TestCSR005RepeatedPollPreservesObservedCPUWork,False,CSR-005
-MAP-33d2a35b1094,L2,reviewed implementation,internal/state/cpu_repeated_poll_test.go,27,reviewed-selector,TestCSR005RepeatedPollRequiresValidPriorEvidence,False,CSR-005
+MAP-33d2a35b1094,L2,reviewed implementation,internal/state/cpu_repeated_poll_test.go,30,reviewed-selector,TestCSR005RepeatedPollRequiresValidPriorEvidence,False,CSR-005
 MAP-18b153c61e83,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceFixture.swift,12,reviewed-selector,class ChoiceFixture,False,"MC-HQ-CHOICE,MC-HQ-WINDOW,MC-HQ-READ"
 MAP-d6fdd79aba67,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceFixture.swift,60,reviewed-selector,enum HQChoiceTestSupport,False,"MC-HQ-CHOICE,MC-HQ-WINDOW,MC-HQ-READ"
 MAP-0143ada6d861,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceResponseTests.swift,8,reviewed-selector,testChoicePreparesFocusWithoutSendingAndPreservesEditedDraft,False,"MC-HQ-CHOICE,MC-HQ-READ"
