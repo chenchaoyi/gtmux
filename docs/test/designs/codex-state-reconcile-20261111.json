@@ -1,0 +1,59 @@
+{
+  "id": "codex-state-reconcile-20261111",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review; not independent approval)",
+    "date": "2026-11-11",
+    "decision": "approved for implementation",
+    "notes": "Read-only production evidence is in the project pane-state-diagnosis-20261111 report. Fix display inference without weakening exact identity/turn authorization. A named stale active marker can outlive a later finished cache and get revived by idle terminal redraw. Only current Codex ready/no-work/no-approval evidence plus later finished time may override that obsolete DISPLAY; preserve fresh starts, real work/CPU/queues/approvals, all real markers, and producer completion separation. Use the current work indicator elapsed time when an old active timestamp predates finished; otherwise explicitly mark duration uncertain, with additive since_uncertain consumed across surfaces and legacy fallback unchanged. Resume Save publication becomes atomic and Codex Save/heartbeat share the existing binding lease, keeping unknown/error/foreign ownership conservative. No real session input, restore, permissions, marker edits, runtime restart/deployment or broad cleanup. No claim that a specific real hook/writer was proved responsible. Tests must use isolated HOME and deterministic barriers/pinned descriptors, not sleep races. Keep all prior CET identity/turn assertions unchanged. source tmp estimates256MiB/floor2GiB; builds currently gated by capacity."
+  },
+  "cases": [
+    {
+      "id": "CSR-001",
+      "layer": "L2",
+      "description": "Shared Go radar does not revive a visibly idle Codex from an obsolete active marker",
+      "setup": "Actual GatherAgents with isolated state, old named active/turn markers, a newer finished cache, missing or malformed resume/frontend, and fresh window activity. No actual pane or transcript body.",
+      "action": "Gather repeated ready frames/redraw hints, then work/queued/MCP/approval/fresh-start/CPU and no-finish or older-finish controls. Compare state bytes and mtimes before/after.",
+      "expected": "Only the narrow ready stale-active/newer-finished display becomes idle, keeps the existing finished time, and never mints Latest/Confirmed/CompletionID or clears/rewrites any lifecycle or binding marker. Real visible work, CPU, queues and waits win; fresh start and missing/older/future finished evidence remain conservative. Existing exact-session/home/turn guards are unchanged. Accurate baseline production must fail the false-working target assertion.",
+      "planned_files": [
+        "internal/radar/codex_stale_state_test.go"
+      ]
+    },
+    {
+      "id": "CSR-002",
+      "layer": "L2",
+      "description": "Current Codex work duration does not reuse a marker predating a finished observation",
+      "setup": "Actual GatherAgents and agentsJSONBytes with old active timestamp, newer finished observation, current Working elapsed cells and malformed/unknown elapsed variants.",
+      "action": "Gather and serialize actual working status; compare parsed observed duration, fresh-marker fallback and unknown-duration metadata.",
+      "expected": "Current work remains working. A superseded start is replaced by bounded recognized TUI elapsed time, or since=0 with since_uncertain=true when not known, never the old multi-hour start/window activity. Original valid marker behavior and wire defaults remain compatible. No lifecycle proof/state mutation or work-start fabrication.",
+      "planned_files": [
+        "internal/radar/codex_stale_state_test.go"
+      ]
+    },
+    {
+      "id": "CSR-003",
+      "layer": "L2",
+      "description": "Resume publication is atomic and serializes Codex hook writes with frontend owners",
+      "setup": "Isolated HOME, production Save/Bind/Refresh, incumbent record, pinned original read descriptor and actual existing binding flock lease.",
+      "action": "Save shorter record and inspect old descriptor/new pathname; hold binding lease during Save/Refresh, release then retry; keep existing frontend ownership tests.",
+      "expected": "Old descriptor retains complete original JSON and new path contains complete new JSON. Busy lease returns existing ErrLeaseHeld without overwrite or heartbeat publication; released lease allows normal same-owner operation. Refresh legacy-field recovery releases before Bind reacquires. Foreign/newer/reused identities, symlink destinations, write failures and cancellation remain conservative. Exact old Save fails atomic pinned-reader/lease assertions. No unbounded waiting, real config or unique recovery deletion.",
+      "planned_files": [
+        "internal/resume/state_publication_test.go"
+      ]
+    },
+    {
+      "id": "CSR-004",
+      "layer": "L2",
+      "description": "Mac, Phone/iPad and browser hide only explicitly uncertain state duration",
+      "setup": "Real Agent/AgentRow and browser row/time rendering with since_uncertain=true, known since, legacy flag absent, idle and working status. CLI consumes the same Go contract.",
+      "action": "Decode/render unknown and known duration using fixed synthetic clocks; inspect row content and defaults.",
+      "expected": "Explicit uncertain duration renders no elapsed text even with recent activity fallback. Known duration renders normally; absent flag keeps legacy fallback and all statuses/icons/groups remain unchanged. Both RN shells share AgentRow; Mac/browser use their real data/render path. No actual App launch/device or timing benchmark claim.",
+      "planned_files": [
+        "mobileapp/src/ui/AgentStateDuration.test.tsx",
+        "macapp/Tests/GtmuxBarTests/StateDurationTests.swift",
+        "internal/server/web/state-duration.test.cjs"
+      ]
+    }
+  ],
+  "seal": "39efc797a774e428057bb5bead80a55bff12ae77cb68f588bff0e0e9c969b785"
+}
