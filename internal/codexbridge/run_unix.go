@@ -152,9 +152,10 @@ func Run(bin string, args []string, pane string) int {
 			}
 			attachment = bound
 		}}
+		trust := newTrustConfig(r.Context(), o.homeVerified)
 		ended := make(chan error, 2)
-		go func() { ended <- forward(down, up, o.request) }()
-		go func() { ended <- forward(up, down, o.response) }()
+		go func() { ended <- forward(down, up, func(data []byte) { o.request(data); trust.request(data) }) }()
+		go func() { ended <- forward(up, down, o.response, trust.response) }()
 		tick := time.NewTicker(time.Second)
 		defer tick.Stop()
 		for {
@@ -233,13 +234,16 @@ func Run(bin string, args []string, pane string) int {
 	return 0
 }
 
-func forward(from, to *websocket.Conn, observe func([]byte)) error {
+func forward(from, to *websocket.Conn, observe func([]byte), transforms ...func([]byte) []byte) error {
 	for {
 		kind, body, err := from.ReadMessage()
 		if err != nil {
 			return err
 		}
 		if kind == websocket.TextMessage {
+			for _, transform := range transforms {
+				body = transform(body)
+			}
 			observe(body)
 		}
 		if err := to.WriteMessage(kind, body); err != nil {
@@ -254,8 +258,9 @@ func instanceID() (string, error) {
 	return hex.EncodeToString(id[:]), err
 }
 
-// Match the official verified_local_daemon_socket layout so the TUI retains
-// local-daemon semantics. Never replace the real daemon's rendezvous or socket.
+// Use the protected short-socket layout without replacing the real daemon.
+// An explicit non-default Unix endpoint is still Remote in Codex; worktree
+// trust compatibility is handled separately after verified same-home initialize.
 func frontendListener() (string, net.Listener, func(), error) {
 	root := filepath.Join(state.Dir(), "codex-frontends")
 	if err := state.MkdirAll(root, 0700); err != nil {

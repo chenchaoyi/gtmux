@@ -75,6 +75,8 @@ plan state: the tightest three windows, the full one in amber. Columns give way 
 terminal narrows (the agent name first, then the task) so no row ever wraps. `--json` emits the same
 data for scripts and the menu-bar app.
 
+For a linked worktree of an already trusted repository, the verified local frontend mirrors only the existing main-root trust decision into its current configuration response. It checks reciprocal Git registration and the same initialized Codex home. It does not save a new trust entry, copy hooks or change permissions. Explicit checkout/ancestor decisions, including symlink and same-directory aliases, retain Codex's own flow. Project paths are resolved conservatively within the same bounded proof worker: unknown ownership, missing/stale paths, unrecognized decisions or more than 128 entries preserve the original response instead of inheriting trust. Project configuration layers, unknown layouts and unavailable evidence also keep the original flow. A real **Folder access** screen is reported as a startup consent gate; gtmux does not press its confirmation key.
+
 ### How detection works (not Claude-only)
 
 - Status comes from the pane title the agent sets itself. A leading braille spinner

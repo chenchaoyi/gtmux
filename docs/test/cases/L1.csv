@@ -751,6 +751,8 @@ LEG-cc26f78d8d87,L1,Go core / CLI / server,internal/codexbridge/observe_test.go,
 LEG-d876071a5552,L1,Go core / CLI / server,internal/codexbridge/observe_test.go,104,Test,TestObserverResumesLargeHistoryWithoutRetainingCatalogs,False,legacy-not-retrospectively-reviewed
 LEG-878e735aba01,L1,Go core / CLI / server,internal/codexbridge/observe_test.go,114,Test,TestObserverKeepsSuccessfulRootWorkspace,False,legacy-not-retrospectively-reviewed
 MAP-5e69a5544cc0,L1,reviewed implementation,internal/codexbridge/upgrade_admission_test.go,10,reviewed-selector,TestCFR009PostUpgradeUsesActualCancellationBeforeDeadline,False,CFR-009
+MAP-60dd54884dac,L1,reviewed implementation,internal/codexbridge/worktree_trust_test.go,30,reviewed-selector,TestWTR001OnlyReciprocallyRegisteredWorktreesHaveStableEvidence,False,WTR-001
+MAP-2f03f0629104,L1,reviewed implementation,internal/codexbridge/worktree_trust_test.go,62,reviewed-selector,TestWTR001MalformedCopiedSymlinkAndUnsupportedMetadataCannotBorrowTrust,False,WTR-001
 LEG-e6e48b36723f,L1,Go core / CLI / server,internal/codexrpc/peer_unix_test.go,12,Test,TestUnixPeerIdentityComesFromKernel,False,legacy-not-retrospectively-reviewed
 LEG-093de95f9c8b,L1,Go core / CLI / server,internal/codexrpc/queue_test.go,56,Test,TestQueueTargetsExactConversation,False,legacy-not-retrospectively-reviewed
 LEG-62a9833f529c,L1,Go core / CLI / server,internal/codexrpc/queue_test.go,83,Test,TestQueueRefusesDifferentServerHomeBeforeInput,False,legacy-not-retrospectively-reviewed

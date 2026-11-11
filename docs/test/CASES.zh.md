@@ -2,13 +2,13 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1086 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1093 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
-| L1 · 单元/纯逻辑 | 3770 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 1968 | [L2.csv](cases/L2.csv) |
-| L3 · 运行时集成 | 92 | [L3.csv](cases/L3.csv) |
+| L1 · 单元/纯逻辑 | 3772 | [L1.csv](cases/L1.csv) |
+| L2 · 组件/契约 | 1979 | [L2.csv](cases/L2.csv) |
+| L3 · 运行时集成 | 95 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 94 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 12 | [M.csv](cases/M.csv) |
 | G · 质量门禁 | 496 | [G.csv](cases/G.csv) |
@@ -48,6 +48,11 @@
 | CFR-008 | Missing rows refuse without client authority and report process-unavailable with retry eligibility. A later complete stable snapshot can succeed within the same parent budget. Genuine observed mismatch or ambiguity remains a hard refusal even when another row is unavailable. No live process or session is used. |
 | CFR-009 | Canceled upgrade records admission-cancelled; exhausted budget records admission-deadline; live completion continues. A rejected completion does not activate the epoch and no HTTP reply is fabricated after upgrade. Existing epoch and identity checks are unchanged. |
 | CFR-010 | Visible outside/cyclic ancestry is always a hard client-unverified refusal with no PID/authority and no retry. Missing required rows cannot mask that conflict. An actually incomplete peer path remains retryable process-unavailable, and complete valid later evidence may succeed. Existing TTY, foreground, ambiguity and birth checks unchanged. |
+| WTR-001 | Only a stable registered linked checkout resolves to its actual main repository. A copied .git pointer, path-prefix similarity or shared title cannot borrow trust. No git command, hook, config mutation or live pane is executed. Changed/unavailable/unsupported metadata refuses compatibility while preserving the original trust flow. |
+| WTR-002 | Only the transient exact cwd projects entry is added from an explicitly trusted verified main root; all other config/permission/hook/provider fields remain identical, no state is written and the adapter never grants a conversation binding. Every refusal and all other messages retain original bytes. Bounds prevent stale or unbounded tracking and late reads cannot authorize. |
+| WTR-003 | The actual forwarded config result contains the minimal alias only in the eligible case; other bytes and request IDs survive and no input is sent. Optional real TUI demonstrates removal of the reproduced gate without adding trust entries or weakening sandbox settings. Synthetic admission assumptions, actual TUI/CLI source and any unrun native acceptance are separately disclosed; all fixture roots/processes are isolated and bounded. |
+| WTR-004 | The current folder consent screen is waiting and cannot receive the goal; diagnostics name startup trust before an unavailable post-start native binding masks it. Old trust/hook screens retain protection, settled or historical prose does not become waiting, and no key is automatically pressed. All clients reuse the shared core classification. |
+| WTR-005 | Any canonical alias explicitly denying a relevant directory prevents transient trust inheritance. Existing checkout decisions and unknown/unowned/unresolvable or changed metadata also preserve the original response. Only stable registered paths with an explicit main trust may inherit. Canonical reads share the bounded single proof worker, return on deadline/cancel, and cannot authorize late or grow a replacement goroutine queue. Original nontrust fields and same-home/initialize/correlation guards remain unchanged. Real Unix forwarding checks use isolated sockets; no real TUI trust configuration or user input is changed. |
 | CT-HTTP | Real Go handler responses agree with independent RN/Web fake servers for transcript history/context, HQ overview/detail/cursor, document metadata/download, null/empty and permission errors. |
 | CT-DRAFT | Actual Detail and HQ composers isolate text across servers and reused panes/session identities, ignore delayed old draft loads, and persist/send to the current target only. |
 | CT-HQ | A current human question opens its original matter, prepares but does not auto-send a reply; an authoritative answer removes it from pending without completing the matter. Old client responses cannot replace current data. |

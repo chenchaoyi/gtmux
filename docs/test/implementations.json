@@ -1074,5 +1074,70 @@
       "Typed query details in Chat and Trace ",
       "Recorded query failure retries and large results page without losing full copy"
     ]
+  },
+  "internal/codexbridge/worktree_trust_test.go": {
+    "cases": [
+      "WTR-001"
+    ],
+    "selectors": [
+      "TestWTR001OnlyReciprocallyRegisteredWorktreesHaveStableEvidence",
+      "TestWTR001MalformedCopiedSymlinkAndUnsupportedMetadataCannotBorrowTrust"
+    ]
+  },
+  "internal/codexbridge/trust_config_test.go": {
+    "cases": [
+      "WTR-002"
+    ],
+    "selectors": [
+      "TestWTR002AliasMirrorsOnlyExistingEffectiveRootTrustAndKeepsOtherFields",
+      "TestWTR002RefusalsLeaveOriginalFrameBytesUnchanged",
+      "TestWTR002CanceledAndLateProofCannotAuthorizeOrSpawnMoreReads",
+      "TestWTR002UnknownOrReusedRequestIDsNeverAccumulateUnboundedState"
+    ]
+  },
+  "internal/codexbridge/trust_interop_test.go": {
+    "cases": [
+      "WTR-003"
+    ],
+    "selectors": [
+      "TestWTR003ActualUnixForwardingUsesVerifiedHomeAndPreservesOtherFrames",
+      "TestWTR003NativeTUIGateway"
+    ]
+  },
+  "tests/manual/codex-worktree-trust.py": {
+    "cases": [
+      "WTR-003"
+    ],
+    "selectors": [
+      "def main():"
+    ]
+  },
+  "internal/prompt/prompt_codex_folder_access_test.go": {
+    "cases": [
+      "WTR-004"
+    ],
+    "selectors": [
+      "TestWTR004CurrentFolderAccessBlocksReadiness",
+      "TestWTR004ReportsAndSettledComposersAreNotConsent"
+    ]
+  },
+  "internal/dispatchbridge/trust_gate_test.go": {
+    "cases": [
+      "WTR-004"
+    ],
+    "selectors": [
+      "TestWTR004VisibleTrustNamesBlockerBeforePostStartTransport",
+      "TestWTR004NormalTransportStillRequiredAndHistoricalTrustIgnored"
+    ]
+  },
+  "internal/codexbridge/trust_alias_policy_test.go": {
+    "cases": [
+      "WTR-005"
+    ],
+    "selectors": [
+      "TestWTR005CanonicalProjectDecisionsKeepResponseUnchanged",
+      "TestWTR005ActualUnixForwardingKeepsCanonicalDenyAndSameHomeGuards",
+      "TestWTR005CanonicalObservationsAreStableAndBounded"
+    ]
   }
 }

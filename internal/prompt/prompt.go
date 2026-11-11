@@ -281,6 +281,10 @@ func gateSignatures(agent string) []string {
 //     prominent thing it can put on screen — dimmed; TestStartupGate_ColorCapture pins
 //     the other side of it, that a normal-brightness gate in a color capture still reads.
 func IsStartupGate(capture, agent string) bool {
+	key := agents.KeyForLabel(agent)
+	if (agent == "" || agent == "codex" || key == "codex") && codexFolderAccessGate(capture) {
+		return true
+	}
 	sigs := gateSignatures(agent)
 	for _, raw := range bottomLines(ansi.StripDroppingFaint(capture), gateRegionLines) {
 		line := strings.TrimLeft(raw, "│╭╰╮╯─ \t")
@@ -291,6 +295,32 @@ func IsStartupGate(capture, agent string) bool {
 		}
 	}
 	return false
+}
+
+// The current Codex folder screen has distinctive chrome. A bare phrase in a
+// report or code sample must not turn an ordinary composer into a consent gate.
+func codexFolderAccessGate(capture string) bool {
+	title, question, trust, back := false, false, false, false
+	for _, raw := range bottomLines(ansi.StripDroppingFaint(capture), gateRegionLines) {
+		line := strings.TrimSpace(strings.TrimLeft(raw, "│╭╰╮╯─ \t"))
+		if trust && (line == "›" || line == ">" || strings.HasPrefix(line, "› Ask Codex to do anything")) {
+			return false
+		}
+		if line == "Folder access" {
+			title = true
+		}
+		if strings.HasPrefix(line, "Trust this folder?") {
+			question = true
+		}
+		option := strings.TrimLeft(line, "›❯> \t")
+		if option == "1. Trust and continue" {
+			trust = true
+		}
+		if option == "2. Back to Agent Command Center" {
+			back = true
+		}
+	}
+	return title && question && trust && back
 }
 
 // bootBanners are an agent's still-BOOTING chrome — the startup banner it paints
