@@ -690,7 +690,6 @@ MAP-70f5d7f57ea0,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test
 MAP-8a3e8378dfee,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,354,reviewed-selector,"a stalled usage read retires at its own deadline, then a new read recovers",False,UR-001
 MAP-517de42c0dfa,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,292,reviewed-selector,shortcut distinguishes loading and failed reads from an empty resource,False,UR-001
 MAP-ec30d4e015f6,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,369,reviewed-selector,the Usage sheet retry action starts a new read immediately after failure,False,UR-001
-MAP-d488ef3677eb,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,512,reviewed-selector,"CAS005 HQ propagates association failures, preserves history and clears on retry",False,"UR-001,CAS-005"
 MAP-915625a761e2,L2,reviewed implementation,mobileapp/src/screens/HQSendOrdering.test.tsx,30,reviewed-selector,MSD-008 old HQ %s cannot replace a newer accepted message,False,MSD-008
 MAP-237c6db2e2b9,L2,reviewed implementation,mobileapp/src/screens/HQSendOrdering.test.tsx,38,reviewed-selector,MSD-008 HQ old reply and old retry cannot cross a session change,False,MSD-008
 MAP-e29e72e87767,L2,reviewed implementation,mobileapp/src/screens/HQSendOrdering.test.tsx,46,reviewed-selector,MSD-008 a later %s key does not leave the current HQ text Sending,False,MSD-008

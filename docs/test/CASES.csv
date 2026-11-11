@@ -4756,6 +4756,7 @@ LEG-3791df07c7cd,L2,RN / mobile harness,mobileapp/src/screens/HQResourceCards.te
 LEG-676004ffc6bc,L2,RN / mobile harness,mobileapp/src/screens/HQResourceCards.test.tsx,73,test.each(),machine %s warning is visible in Board rather than the token card,True,legacy-not-retrospectively-reviewed
 LEG-57bed87db168,L2,RN / mobile harness,mobileapp/src/screens/HQResourceCards.test.tsx,91,test,a retained resource warning stays labelled as a previous reading after refresh failure,False,legacy-not-retrospectively-reviewed
 LEG-8a79b39c6646,L2,RN / mobile harness,mobileapp/src/screens/HQResourceCards.test.tsx,99,test.each(),missing or unwarned machine readings do not invent a warning or healthy verdict,True,legacy-not-retrospectively-reviewed
+MAP-104c84ca28d9,L3,reviewed implementation,mobileapp/src/screens/HQScreen.association.test.tsx,26,reviewed-selector,CAS008 HQ association failure keeps history and clears after retry,False,CAS-008
 LEG-1bfb47100323,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.attach.test.tsx,72,test,the enabled plus opens the menu; cancelling and reopening neither uploads nor sends,False,legacy-not-retrospectively-reviewed
 LEG-5eabcc2569fc,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.attach.test.tsx,84,test,"a selected file stays staged until send, which uploads to HQ before sending its path",False,legacy-not-retrospectively-reviewed
 LEG-f787efe69fa7,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.attach.test.tsx,96,test,cancelling the photo picker leaves nothing to send and the menu can open again,False,legacy-not-retrospectively-reviewed
@@ -4780,7 +4781,6 @@ MAP-70f5d7f57ea0,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test
 MAP-8a3e8378dfee,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,354,reviewed-selector,"a stalled usage read retires at its own deadline, then a new read recovers",False,UR-001
 MAP-517de42c0dfa,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,292,reviewed-selector,shortcut distinguishes loading and failed reads from an empty resource,False,UR-001
 MAP-ec30d4e015f6,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,369,reviewed-selector,the Usage sheet retry action starts a new read immediately after failure,False,UR-001
-MAP-d488ef3677eb,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,512,reviewed-selector,"CAS005 HQ propagates association failures, preserves history and clears on retry",False,"UR-001,CAS-005"
 MAP-915625a761e2,L2,reviewed implementation,mobileapp/src/screens/HQSendOrdering.test.tsx,30,reviewed-selector,MSD-008 old HQ %s cannot replace a newer accepted message,False,MSD-008
 MAP-237c6db2e2b9,L2,reviewed implementation,mobileapp/src/screens/HQSendOrdering.test.tsx,38,reviewed-selector,MSD-008 HQ old reply and old retry cannot cross a session change,False,MSD-008
 MAP-e29e72e87767,L2,reviewed implementation,mobileapp/src/screens/HQSendOrdering.test.tsx,46,reviewed-selector,MSD-008 a later %s key does not leave the current HQ text Sending,False,MSD-008

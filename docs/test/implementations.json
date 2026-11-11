@@ -1252,6 +1252,14 @@
       "CAS007 unchanged transcript polls reuse the ChatView element"
     ]
   },
+  "mobileapp/src/screens/HQScreen.association.test.tsx": {
+    "cases": [
+      "CAS-008"
+    ],
+    "selectors": [
+      "CAS008 HQ association failure keeps history and clears after retry"
+    ]
+  },
   "mobileapp/src/screens/HQScreen.attach.test.tsx": {
     "cases": [
       "MSD-010"
@@ -1264,15 +1272,13 @@
   },
   "mobileapp/src/screens/HQScreen.poll.test.tsx": {
     "cases": [
-      "UR-001",
-      "CAS-005"
+      "UR-001"
     ],
     "selectors": [
       "a slow HQ usage answer is kept when the Mac takes longer than 15 seconds",
       "a stalled usage read retires at its own deadline, then a new read recovers",
       "shortcut distinguishes loading and failed reads from an empty resource",
-      "the Usage sheet retry action starts a new read immediately after failure",
-      "CAS005 HQ propagates association failures, preserves history and clears on retry"
+      "the Usage sheet retry action starts a new read immediately after failure"
     ]
   },
   "mobileapp/src/screens/HQSendOrdering.test.tsx": {

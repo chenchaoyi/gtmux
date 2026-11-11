@@ -14,6 +14,7 @@ MAP-9a63f420f1ec,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/HQOvervie
 MAP-f0ea1c518382,L3,reviewed implementation,mobileapp/src/api/conversation.test.ts,5,reviewed-selector,CAS005 transcript rejects association and source failures instead of returning empty history,False,CAS-005
 MAP-4811f4f9249d,L3,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,150,reviewed-selector,"CAS005 Detail propagates association failures, preserves history and clears on retry",False,CAS-005
 MAP-761f8dca626a,L3,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,160,reviewed-selector,CAS007 unchanged transcript polls reuse the ChatView element,False,"CAS-005,CAS-007"
+MAP-104c84ca28d9,L3,reviewed implementation,mobileapp/src/screens/HQScreen.association.test.tsx,26,reviewed-selector,CAS008 HQ association failure keeps history and clears after retry,False,CAS-008
 MAP-23737a6180b1,L3,reviewed implementation,mobileapp/src/ui/ChatView.association.test.tsx,8,reviewed-selector,CAS005 association banner preserves messages and retries without claiming empty history,False,CAS-005
 MAP-0776a6d8933b,L3,reviewed implementation,tests/manual/codex-worktree-trust.py,96,reviewed-selector,def main():,False,WTR-003
 LEG-4d0986af07f7,L3,Browser,tests/web/alignment.test.cjs,6,scenario,"`App-aligned roster status, summaries and persistent sections at ${width}`",True,legacy-not-retrospectively-reviewed

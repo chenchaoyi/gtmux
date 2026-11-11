@@ -44532,7 +44532,7 @@
       ]
     },
     "mobileapp/src/screens/HQScreen.poll.test.tsx": {
-      "sha256": "fafaf2c896db7ba5de1a112f06e142a05f21f6c084351a1a98f29e31c4033ca6",
+      "sha256": "4cedc32d06f75784ab0480316da8352187891c0315004ef3adc6d3cbab6ee5b6",
       "layer": "L2",
       "stack": "RN / mobile harness",
       "cases": [
@@ -44691,15 +44691,6 @@
           "dynamic": false,
           "layer": "L2",
           "design": "UR-001"
-        },
-        {
-          "id": "MAP-d488ef3677eb",
-          "line": 512,
-          "kind": "reviewed-selector",
-          "name": "CAS005 HQ propagates association failures, preserves history and clears on retry",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "UR-001,CAS-005"
         }
       ]
     },
@@ -60487,6 +60478,22 @@
         }
       ],
       "sha256": "08c8abff44715025b9e8df9fd15a999bcf7201c5978a1cc631dfd8fd17e28d72"
+    },
+    "mobileapp/src/screens/HQScreen.association.test.tsx": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-104c84ca28d9",
+          "line": 26,
+          "kind": "reviewed-selector",
+          "name": "CAS008 HQ association failure keeps history and clears after retry",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "CAS-008"
+        }
+      ],
+      "sha256": "6a89eb8ee784be94498bd661d267b3bd3b71185d73ab5baa963cc70ed402697c"
     }
   },
   "legacy_source": "f187564fcfdab24d7750efbea108958e469cdded",
