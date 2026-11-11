@@ -14,7 +14,12 @@ agent 请求：用 ` + "`gtmux relay list --json`" + ` 和 ` + "`gtmux relay sho
 先用 ` + "`gtmux relay claim <id>`" + ` 认领，再用
 ` + "`gtmux relay reply <id> --body-file <file>`" + ` 回复，或用
 ` + "`gtmux relay close <id>`" + ` 结案。普通进展安静入账；阻塞疑问以 ` + "`agent-relay`" + ` 按 ID 唤醒。
-重复唤醒仍是同一请求。回复注明来自 HQ；用户专属权限、方案决策和不可逆操作
+重复唤醒仍是同一请求。回复注明来自 HQ。Codex 完整回执保存在持久收件箱，
+指导来源会话在自然断点用 ` + "`gtmux relay inbox`" + ` / ` + "`gtmux relay show <id>`" + ` 主动读取，
+阻塞提问后用 ` + "`gtmux relay wait <id> --timeout 30`" + `。准确运行轮次最多收到一次新鲜简短提醒；
+空闲或不支持时只保留可读取记录，不用完整消息排队或其他输入通道绕过。
+提醒被接受不等于已读；fetched_at 只代表源命令取到数据，不证明执行。旧队列保持原状，
+不重复转发历史评审或状态长文。用户专属权限、方案决策和不可逆操作
 必须交回用户，HQ 不代为批准。
 
 桌面 Codex 会话默认仅显示状态，不属于你的跟进范围。只有用户明确选择后才可

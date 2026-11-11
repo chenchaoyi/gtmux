@@ -64,23 +64,33 @@ func QueueChecked(ctx context.Context, target Target, messageID, text string, ch
 }
 
 func QueueInputs(ctx context.Context, target Target, messageID string, inputs []Input, check func() bool) Outcome {
-	return submitInputs(ctx, target, messageID, inputs, check, false, false)
+	return submitInputs(ctx, target, messageID, inputs, check, false, false, nil)
 }
 
 // ImageInputs supplements an exact active turn when the loaded server explicitly
 // supports it. Older servers keep their queue semantics. Existing queue entries
 // are never consumed, deleted or resubmitted by this path.
 func ImageInputs(ctx context.Context, target Target, messageID string, inputs []Input, check func() bool) Outcome {
-	return submitInputs(ctx, target, messageID, inputs, check, true, false)
+	return submitInputs(ctx, target, messageID, inputs, check, true, false, nil)
 }
 
 // UserInputs delivers explicit phone input to a loaded idle or eligible active
 // thread. It never resumes a thread or consumes/replays existing queued inputs.
 func UserInputs(ctx context.Context, target Target, messageID string, inputs []Input, check func() bool) Outcome {
-	return submitInputs(ctx, target, messageID, inputs, check, true, true)
+	return submitInputs(ctx, target, messageID, inputs, check, true, true, nil)
 }
 
-func submitInputs(ctx context.Context, target Target, messageID string, inputs []Input, check func() bool, preferActive, userInput bool) Outcome {
+// CoordinationNotice addresses an eligible exact active turn only. It never
+// starts idle work, resumes a thread or falls back to persistent queued input.
+// check atomically claims a small notification for this turn, not a full reply.
+func CoordinationNotice(ctx context.Context, target Target, messageID, text string, check func(string) bool) Outcome {
+	if check == nil {
+		return Outcome{Reason: "notice-guard-required"}
+	}
+	return submitInputs(ctx, target, messageID, []Input{{Type: "text", Text: text}}, nil, true, false, check)
+}
+
+func submitInputs(ctx context.Context, target Target, messageID string, inputs []Input, check func() bool, preferActive, userInput bool, coordination func(string) bool) Outcome {
 	bytes := 0
 	valid := len(inputs) > 0 && len(inputs) <= 17
 	for _, input := range inputs {
@@ -153,6 +163,14 @@ func submitInputs(ctx context.Context, target Target, messageID string, inputs [
 			return Outcome{Reason: why}
 		}
 	}
+	if coordination != nil {
+		if turnID == "" || startIdle {
+			return Outcome{Reason: "notice-active-turn-required"}
+		}
+		if !coordination(turnID) {
+			return Outcome{Reason: "notice-coalesced-or-target-changed"}
+		}
+	}
 	if check != nil && !check() {
 		return Outcome{Reason: "target-changed"}
 	}
@@ -205,6 +223,9 @@ func submitInputs(ctx context.Context, target Target, messageID string, inputs [
 				return result
 			}
 			return Outcome{Accepted: true, Attempted: true, ActiveTurnID: turnID}
+		}
+		if coordination != nil {
+			return result
 		}
 		// Only a definitive unknown-method response permits legacy queue fallback.
 		// A timeout, rejection or generic error must never duplicate this input.

@@ -1285,8 +1285,18 @@ HQ 亲手连的 904 组 `[[link]]` 量，这个权重把前十条的召回从 36
 按请求 ID 唤醒 HQ。不阻塞的疑问加 `--nonblocking`；必须由用户决定的事项加
 `--for user`；重试时沿用 `--id`。HQ 用 `gtmux relay list --json` / `show <id>`
 查看，认领后用 `reply <id> --body-file <file>` 回复，或用 `close <id>` 结案。
-回复标注 HQ 来源，只送回原来的存活 pane。待用户决策的请求必须由用户在源 pane
-回答，HQ 不能代为批准。全部用法见 `gtmux relay --help`。
+回复标注 HQ 来源；Codex 的完整回执保存在原会话的持久收件箱。
+在工作自然断点执行 `gtmux relay inbox`；阻塞提问后用
+`gtmux relay wait <id> --timeout 30` 等待（1–60 秒），再用 `gtmux relay show <id>`
+读取具体回复。收件箱默认按新到旧列出 20 条未读回执，`--limit 1..100` 调整数量，
+`--all` 可查看旧回执。
+
+Codex 的同一个准确运行轮次最多收到一次简短收件箱提醒，只针对 15 分钟内保存的回复。
+完整回执不再进入待发送队列；空闲、等待审批、未加载或不支持的客户端只保留可主动读取的记录，
+不会启动新轮次。提醒回执不明确时不换通道重发。`notice.state=accepted` 只代表提醒被接受；
+`fetched_at` 只代表源会话的命令读取了保存数据，不证明模型已阅读或执行。
+已有旧队列和已接受回执不清除、不重放；其他 agent 继续使用核验后的 pane 投递。
+待用户决策的请求必须由用户在源 pane 回答，HQ 不能代为批准。全部用法见 `gtmux relay --help`。
 `gtmux knowledge sync` 会把简短入口写进 Claude、Codex、opencode、Kimi 的全局
 指令块，新会话启动时加载。其他类型的 agent 通过 `gtmux spawn` 派发内容得到说明。
 

@@ -46,6 +46,7 @@ import {ConsoleRow, placeActs} from './consoleActs';
 import {TestIds} from '../constants/testIds';
 import {CHAT_WINDOW, SessionReset, canLoadMore, earlierLabel, nextWindow, windowedTurns} from './chatWindow';
 import {edgeDistance} from './liveEdge';
+import {useChatHistory} from './useChatHistory';
 
 interface Props {
   client?: GtmuxClient;
@@ -77,6 +78,8 @@ interface Props {
   actsSince?: number;
   onOpenAct?: (link: NonNullable<Act['link']>) => void;
   loading: boolean;
+  failed?: boolean;
+  onRetry?: () => void;
   /** Desktop reader: no terminal fallback or suggestion to type in this view. */
   readOnly?: boolean;
   // The just-sent prompt, echoed optimistically as a trailing bubble until the
@@ -181,7 +184,7 @@ export function liveLabel(since: number | undefined, nowSec: number, lang: Lang)
   return el ? `${base} · ${el}` : base;
 }
 
-export function ChatView({client, readOnly = false, agent, lines, status, fontSize, pal, lang, turns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, pendingPrompt, pendingDelivered = false, pendingDelivery, fontPref, workingSince, onLiveEdge, topPad = 0, controlsTop, controlsShift, maxWidth}: Props) {
+export function ChatView({client, readOnly = false, agent, lines, status, fontSize, pal, lang, turns: recentTurns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, failed = false, onRetry, pendingPrompt, pendingDelivered = false, pendingDelivery, fontPref, workingSince, onLiveEdge, topPad = 0, controlsTop, controlsShift, maxWidth}: Props) {
   // Radar timestamps and temporary status changes are observations, not a new reader.
   const liveScope = JSON.stringify([client?.base, agent.pane_id, agent.home_id, agent.session_id]);
   const [liveDisclosure, setLiveDisclosure] = useState({scope: liveScope, open: false});
@@ -193,6 +196,11 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({}); // per step-group
   const scrollRef = React.useRef<ScrollView>(null);
   const offRef = React.useRef(0);
+  const contentHeight = React.useRef(0);
+  const prependAnchor = React.useRef<{height: number; y: number} | undefined>(undefined);
+  const history = useChatHistory(client, agent, recentTurns, () => {prependAnchor.current = {height: contentHeight.current, y: offRef.current};});
+  const turns = history.turns;
+  const historyDropped = turns[0]?.turn_ordinal ? Math.max(0, turns[0].turn_ordinal - 1) : droppedTurns;
   const frames = React.useRef<Set<number>>(new Set());
   const busyTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const scheduleFrame = (callback: () => void) => {
@@ -252,8 +260,8 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
     gapRef.current = edge;
     // Arriving at the tail always resumes following, whoever caused it; leaving it counts
     // only under a finger.
-    if (gap < 60) stick.current = true;
-    else if (dragging.current) stick.current = false;
+    if (gap < 60 && !hiddenAfter) stick.current = true;
+    else if (dragging.current || hiddenAfter) stick.current = false;
     setAtBottom(stick.current);
     onLiveEdge?.(edge);
   };
@@ -270,6 +278,9 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   // animation below, so the arrow flashed the chrome and went nowhere (2026-09-10). The
   // scroll's own frames report the arrival.
   const jumpToBottom = () => {
+    history.jumpToRecent();
+    setHistoryEnd(undefined);
+    setWindowSize(CHAT_WINDOW);
     scrollRef.current?.scrollToEnd({animated: true});
     stick.current = true;
     gapRef.current = 0;
@@ -284,6 +295,8 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   // Only the newest turns are MOUNTED. Rendering a long session whole is what killed the
   // app on switching to Chat — see chatWindow.ts for the measurements.
   const [windowSize, setWindowSize] = React.useState(CHAT_WINDOW);
+  const [historyEnd, setHistoryEnd] = React.useState<{scope: string; id: string} | undefined>();
+  React.useEffect(() => {setHistoryEnd(undefined); setWindowSize(CHAT_WINDOW);}, [client, liveScope]);
   // A 1s heartbeat WHILE WORKING only, so the "thinking" elapsed label moves. Idle
   // costs nothing: the interval isn't created unless a turn is actually running.
   // The SERVER's clock, not the phone's: `workingSince` is a timestamp the Mac produced,
@@ -299,8 +312,8 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   // A very long USER prompt (e.g. a pasted context dump) is auto-collapsed to a few
   // lines with a tap-to-expand toggle, so it doesn't bury the conversation. A prompt
   // HQ sent is never collapsed.
-  const [promptOpen, setPromptOpen] = React.useState<Record<number, boolean>>({});
-  const togglePrompt = (i: number) => setPromptOpen(o => ({...o, [i]: !o[i]}));
+  const [promptOpen, setPromptOpen] = React.useState<Record<string, boolean>>({});
+  const togglePrompt = (i: string) => setPromptOpen(o => ({...o, [i]: !o[i]}));
   // collapse/expand-ALL re-renders every turn (expand rebuilds all markdown), which
   // blocks JS for a beat — show the branded loader over it (it animates natively, so
   // it stays smooth through the hitch). Defer the state change one frame so the
@@ -356,8 +369,13 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
 
   // The MOUNTED slice. `offset` maps a windowed index back to its real turn index, so
   // the per-turn state maps (turnOpen / promptOpen / timeLabels) stay correct.
-  const {shown, hiddenHere} = windowedTurns(turns, windowSize);
-  const offset = turns.length - shown.length;
+  const savedEnd = historyEnd?.scope === liveScope ? turns.findIndex(t => t.record_id === historyEnd.id) : -1;
+  // Reading a full older window freezes its live edge rather than unmounting the
+  // oldest visible record whenever new turns arrive. Jump to bottom resumes live.
+  const visibleTurns = savedEnd >= 0 && turns.length > windowSize && !stick.current ? turns.slice(0, savedEnd + 1) : turns;
+  const hiddenAfter = turns.length - visibleTurns.length;
+  const {shown, hiddenHere} = windowedTurns(visibleTurns, windowSize);
+  const offset = visibleTurns.length - shown.length;
   // The recorded acts, placed against the MOUNTED turns (an act older than the oldest
   // mounted turn waits with the history it belongs to).
   const placed = useMemo(() => placeActs(shown, acts ?? [], actsSince), [shown, acts, actsSince]);
@@ -376,7 +394,9 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
         </TouchableOpacity>
       );
     });
-  const earlier = earlierLabel(hiddenHere, droppedTurns, lang === 'zh', sessionReset);
+  const earlier = !hiddenHere && history.available
+    ? (history.loading ? (lang === 'zh' ? '正在载入更早的对话…' : 'Loading earlier turns…') : (lang === 'zh' ? `▴ 载入更早的对话${historyDropped ? `（还有 ${historyDropped} 轮）` : ''}` : `▴ Load earlier turns${historyDropped ? ` (${historyDropped} more)` : ''}`))
+    : earlierLabel(hiddenHere, historyDropped, lang === 'zh', sessionReset);
 
   const lineHeight = Math.round(fontSize * 1.4);
   const sub =
@@ -443,7 +463,12 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
       // grows when its chrome is measured or its disclosure opens, which pushes the whole
       // content down by that much and leaves the tail that far below the viewport. A
       // reader who is following the tail keeps following it.
-      onContentSizeChange={onBodyLayout}
+      onContentSizeChange={(_width, height) => {
+        const anchor = prependAnchor.current;
+        contentHeight.current = height;
+        if (anchor) {prependAnchor.current = undefined; scrollRef.current?.scrollTo({y: Math.max(0, anchor.y + height - anchor.height), animated: false});}
+        else onBodyLayout();
+      }}
       scrollEventThrottle={16}>
       {/* current-state row: avatar + agent + status dot */}
       <View style={styles.stateRow}>
@@ -464,10 +489,18 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
       {loading && turns.length === 0 && (
         <View style={styles.center}>
           <BrandLoader size={36} neutral="rgba(255,255,255,0.18)" />
+          <Text style={styles.earlierText}>{lang === 'zh' ? '正在载入最近的对话…' : 'Loading recent conversation…'}</Text>
         </View>
       )}
 
-      {agent.role === 'supervisor' && turns.length > 0 && turns.every(t => !t.prompt) && (
+      {(failed || history.denied) && (
+        <View testID="chat-read-error" style={styles.seamRow}>
+          <Text style={styles.earlierText}>{lang === 'zh' ? (turns.length ? '暂时无法更新，已保留当前内容。' : '对话暂时无法载入。') : (turns.length ? 'Could not refresh. Your conversation is still shown.' : 'Conversation could not be loaded.')}</Text>
+          {onRetry && <TouchableOpacity testID="chat-read-retry" accessibilityRole="button" onPress={onRetry} style={styles.earlierRow}><Text style={styles.earlierText}>{lang === 'zh' ? '重试' : 'Retry'}</Text></TouchableOpacity>}
+        </View>
+      )}
+
+      {agent.role === 'supervisor'  && turns.length > 0 && turns.every(t => !t.prompt) && (
         <View style={styles.seamRow}>
           <Text style={styles.seamText}>
             {lang === 'zh' ? '这段 HQ 只有自动唤醒，没有手动输入。' : 'This HQ session has automatic wake-ups, with no manual messages.'}
@@ -475,7 +508,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
         </View>
       )}
 
-      {!loading && turns.length === 0 && (
+      {!loading && !failed && !history.failed && turns.length === 0 && (
         <Text style={[styles.empty, {color: CHAT_FG_DIM}]}>
           {lang === 'zh'
             ? (readOnly ? '尚无已记录的对话。' : '还没有对话历史。\n历史来自 agent 在服务器上的会话记录，你们聊起来就会出现。想看当前屏幕，切到「终端」。')
@@ -490,7 +523,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
       {/* The session before the oldest one shown, one tap away (hq-console-history). A
           `/clear` used to be a wall the reader stood at; the earlier conversation was
           always on disk and the HQ session chain says which log it is. */}
-      {earlierAvailable && onLoadEarlier && !hiddenHere && (
+      {earlierAvailable && onLoadEarlier && !hiddenHere && !history.available && (
         <TouchableOpacity
           testID={TestIds.detail.chatEarlierSession}
           accessibilityLabel={lang === 'zh' ? '载入上一段对话' : 'Load the earlier session'}
@@ -504,13 +537,22 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
         <TouchableOpacity
           testID={TestIds.detail.chatEarlier}
           accessibilityLabel={earlier}
-          disabled={!canLoadMore(hiddenHere)}
-          onPress={() => setWindowSize(n => nextWindow(n, turns.length))}
+          disabled={history.loading || (!canLoadMore(hiddenHere) && !history.available)}
+          onPress={() => {
+            stick.current = false;
+            setAtBottom(false);
+            const last = visibleTurns[visibleTurns.length - 1]?.record_id;
+            if (last) setHistoryEnd({scope: liveScope, id: last});
+            if (hiddenHere) {prependAnchor.current = {height: contentHeight.current, y: offRef.current}; setWindowSize(n => nextWindow(n, turns.length));}
+            else {history.load().then(count => {if (count) setWindowSize(n => Math.max(n, Math.min(n, visibleTurns.length) + Math.min(count, CHAT_WINDOW)));});}
+          }}
           activeOpacity={0.7}
           style={styles.earlierRow}>
           <Text style={styles.earlierText}>{earlier}</Text>
         </TouchableOpacity>
       )}
+
+      {history.failed && !history.denied && <Text testID="chat-history-error" style={styles.earlierText}>{lang === 'zh' ? '更早的对话暂时无法载入，请重试。当前内容已保留。' : 'Earlier history could not be loaded. Retry above; current content is preserved.'}</Text>}
 
       {/* the conversation: prompt → interleaved (text bubble / step group) segments */}
       {shown.map((t, w) => {
@@ -561,7 +603,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
               // dump: they are shown whole (2026-10-04, a 9-line HQ relay hid its ask
               // behind "…").
               const long = t.from?.kind !== 'hq' && (t.prompt.length > 600 || nLines > 12);
-              const collapsed = long && !promptOpen[i];
+              const collapsed = long && !promptOpen[turnKey];
               return (
                 <>
                   <View testID="chat-user-row" style={styles.userRow}>
@@ -588,9 +630,9 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
                     </Text>
                   )}
                   {long && (
-                    <TouchableOpacity onPress={() => togglePrompt(i)} activeOpacity={0.7} style={styles.userToggle}>
+                    <TouchableOpacity onPress={() => togglePrompt(turnKey)} activeOpacity={0.7} style={styles.userToggle}>
                       <Text style={styles.userToggleText}>
-                        {promptOpen[i]
+                        {promptOpen[turnKey]
                           ? lang === 'zh' ? '▴ 收起' : '▴ Collapse'
                           : lang === 'zh' ? `▾ 展开全部（${nLines} 行）` : `▾ Show all (${nLines} lines)`}
                       </Text>
@@ -672,7 +714,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
         </View>
       )}
       {profileTarget && <ParticipantProfileModal key={`${profileTarget.kind}:${profileTarget.turn?.session_id ?? ''}:${profileTarget.turn?.time ?? ''}`} target={profileTarget} client={client} lang={lang} onClose={() => setProfileTarget(null)} />}
-      <JumpToBottom visible={!atBottom && turns.length > 0} onPress={jumpToBottom} lang={lang} />
+      <JumpToBottom visible={(!atBottom || hiddenAfter > 0 || history.disconnected) && turns.length > 0} onPress={jumpToBottom} lang={lang} />
     </View>
     </TextSelectionContext.Provider>
     </CopyFeedbackContext.Provider>

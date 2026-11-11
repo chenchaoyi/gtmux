@@ -345,6 +345,7 @@ function PaneDetailView({
   }, [turns, pendingPrompt]);
   useEffect(() => {pendingEcho.current = null; echoAttempts.current.clear(); setPendingPrompt(''); setPendingDelivered(false); setBusyHint(null);}, [client, agent.pane_id]);
   const chatLoaded = chatRecord.identity === chatIdentity && chatRecord.loaded;
+  const chatFailed = chatRecord.identity === chatIdentity && !!chatRecord.failed;
   // How many OLDER turns the server left out to bound the payload — shown by ChatView so
   // a truncated history never reads as the whole conversation (transcript-render-bounds).
   const droppedTurns = chatRecord.identity === chatIdentity ? chatRecord.dropped : 0;
@@ -642,7 +643,7 @@ function PaneDetailView({
     const task = createReadTask(
       signal => {
         turnsAtRef.current = Date.now();
-        return client.transcript(agent.pane_id, etagRef.current, 0, signal);
+        return client.transcript(agent.pane_id, etagRef.current, 0, signal, true);
       }, ({turns: ts, dropped, reset, etag, unchanged}) => {
         if (etagIdentity.current !== chatIdentity) return;
         etagRef.current = etag;
@@ -675,9 +676,9 @@ function PaneDetailView({
   // trees in JS even when nothing changed — that was the "停顿 on unchanging content".
   const chatEl = useMemo(
     () => (
-      <ChatView client={isGuest ? undefined : client} agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} pendingPrompt={pendingPrompt} pendingDelivered={pendingDelivered} pendingDelivery={pendingDelivery} fontPref={fontPref} onLiveEdge={chatEdge} topPad={chromeH + questionInset} controlsTop={fullscreen ? insets.top : chromeH + questionInset} controlsShift={fullscreen ? undefined : collapse.interpolate({inputRange: [0, 1], outputRange: [0, -chromeH]})} maxWidth={isWide ? READING_WIDTH : undefined} />
+      <ChatView client={isGuest ? undefined : client} agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} failed={chatFailed} onRetry={() => loadTurnsRef.current()} pendingPrompt={pendingPrompt} pendingDelivered={pendingDelivered} pendingDelivery={pendingDelivery} fontPref={fontPref} onLiveEdge={chatEdge} topPad={chromeH + questionInset} controlsTop={fullscreen ? insets.top : chromeH + questionInset} controlsShift={fullscreen ? undefined : collapse.interpolate({inputRange: [0, 1], outputRange: [0, -chromeH]})} maxWidth={isWide ? READING_WIDTH : undefined} />
     ),
-    [client, isGuest, live, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, pendingPrompt, pendingDelivered, pendingDelivery, fontPref, chatEdge, chromeH, questionInset, fullscreen, insets.top, isWide, collapse],
+    [client, isGuest, live, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, chatFailed, pendingPrompt, pendingDelivered, pendingDelivery, fontPref, chatEdge, chromeH, questionInset, fullscreen, insets.top, isWide, collapse],
   );
   // Codex pins the prompt of the turn on screen to the top row, cut to the pane's width
   // (ui/codexPinned). When that row is recognised, the full prompt from the conversation
@@ -1136,7 +1137,7 @@ function PaneDetailView({
         }}
       />
 
-      <TraceModal visible={traceOpen && !isPlainPane && !isNative} agent={live} client={isGuest ? undefined : client} turns={turns} loading={!chatLoaded} failed={chatRecord.identity === chatIdentity && chatRecord.failed} onRetry={() => loadTurnsRef.current()} dropped={droppedTurns} pal={pal} lang={lang} fontSize={fontSize} onClose={() => setTraceOpen(false)} />
+      <TraceModal visible={traceOpen && !isPlainPane && !isNative} agent={live} client={isGuest ? undefined : client} turns={turns} loading={!chatLoaded} failed={chatFailed} onRetry={() => loadTurnsRef.current()} dropped={droppedTurns} pal={pal} lang={lang} fontSize={fontSize} onClose={() => setTraceOpen(false)} />
       <DiffModal
         fontSize={fontSize}
         visible={diffOpen}

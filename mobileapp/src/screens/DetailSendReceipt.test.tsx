@@ -14,6 +14,7 @@ jest.mock('../state/AppContext', () => ({useApp: jest.fn()}));
 const ComposerFn = (Composer as unknown as {type: React.ComponentType<any>}).type;
 let tree: renderer.ReactTestRenderer;
 const flush = async () => {for (let i = 0; i < 8; i++) await act(async () => {await Promise.resolve();});};
+beforeEach(() => {jest.useFakeTimers();});
 afterEach(() => {act(() => tree?.unmount()); jest.useRealTimers();});
 async function mount(sendResult: jest.Mock, mode: 'terminal' | 'chat') {
   const agent: any = {pane_id: '%1', session: 'synthetic', window: '0', pane: '0', loc: 'synthetic:0.0', agent: 'Codex', status: 'working', task: '', latest: false, activity: false, source: 'tmux'};
@@ -32,7 +33,11 @@ test.each(['chat', 'terminal'] as const)('MSD-005 %s releases failed sends and p
   const id = sendResult.mock.calls[0][1].send_id;
   await act(async () => tree.root.findByProps({testID: 'send-failed-retry'}).props.onPress()); await flush();
   expect(sendResult).toHaveBeenCalledTimes(2); expect(sendResult.mock.calls[1][1].send_id).toBe(id);
-  if (mode === 'terminal') {await act(async () => tree.root.findByProps({testID: 'detail-mode-chat'}).props.onPress()); await flush();}
+  if (mode === 'terminal') {
+    await act(async () => tree.root.findByProps({testID: 'detail-mode-chat'}).props.onPress());
+    await act(async () => {jest.advanceTimersByTime(64);});
+    await flush();
+  }
   expect(tree.root.findByType(ChatView).props).toMatchObject({pendingPrompt: 'synthetic prompt', pendingDelivered: true, pendingDelivery: 'queued'});
 });
 

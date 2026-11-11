@@ -1493,8 +1493,19 @@ question and wakes HQ with its request ID. Use `--nonblocking` for a question th
 can wait, `--for user` for a decision only the user can make, and reuse `--id` on a
 retry. HQ reads `gtmux relay list --json` / `show <id>`, claims an item, then uses
 `reply <id> --body-file <file>` or `close <id>`. A reply is attributed to HQ and
-returns only to the original live pane. User-directed items must be answered by
-the user in that pane; HQ cannot approve them. `gtmux relay --help` lists the verbs.
+stays in the original conversation's durable inbox for Codex. Read `gtmux relay inbox`
+at natural work boundaries; after a blocking ask, use `gtmux relay wait <id> --timeout 30`
+(1–60 seconds), then `gtmux relay show <id>` to fetch a selected reply. Inbox lists
+newest unread replies, 20 by default (`--limit 1..100`); `--all` includes older receipts.
+
+Codex receives at most one short inbox hint per exact eligible active turn, for replies
+saved within 15 minutes. Full replies never enter its persistent input queue, and an
+idle, approval-blocked, unloaded or unsupported client stays pull-only. An ambiguous
+notification receipt is not retried through a different channel. `notice.state=accepted`
+means only the hint was accepted; `fetched_at` means the source command fetched saved
+data, not that a model read or acted on it. Existing queued/accepted legacy records are
+not drained, deleted or re-sent. Other agent drivers retain their verified pane delivery.
+User-directed items must be answered by the user in that pane; HQ cannot approve them. `gtmux relay --help` lists the verbs.
 `gtmux knowledge sync` puts a short relay note in Claude, Codex, opencode, and Kimi's
 global instruction blocks; newly started sessions load it. Other agent types receive
 the note when dispatched by `gtmux spawn`.

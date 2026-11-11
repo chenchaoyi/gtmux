@@ -26,5 +26,6 @@ export function displayFacts(profile?: ParticipantProfile): ProfileFact[] {
 }
 // Source session and time, rather than an array index, survive prepended history.
 export function turnIdentity(turn: TranscriptTurn, index: number): string {
+  if (turn.record_id) return `${turn.session_id ?? turn.agent ?? ''}:${turn.record_id}`;
   return `${turn.session_id ?? turn.agent ?? ''}:${turn.time ?? `index-${index}`}:${turn.prompt.slice(0, 64)}`;
 }

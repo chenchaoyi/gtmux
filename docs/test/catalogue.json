@@ -1,6 +1,5 @@
 {
-  "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",
-  "legacy_source": "f187564fcfdab24d7750efbea108958e469cdded",
+  "classification": "Legacy boundary labels are structural triage, not individual semantic review or runtime passes. Reviewed new designs take precedence.",
   "files": {
     "assets/icons_test.go": {
       "sha256": "532bfde5e01763a6fdbb70d0d611021d9482eeb35cf7407ee2ff49102e0e6f21",
@@ -5066,6 +5065,47 @@
         }
       ]
     },
+    "internal/app/recent_transcript_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-6616de8ce6d1",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestLCL002RecentPaneKeepsOrdinalsCursorAndFullDefault",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-002"
+        }
+      ],
+      "sha256": "3d4d92a01a5a5a655ccfc0a387fb8b772499dff5ebb3ca9dfbebd75bff7b7c17"
+    },
+    "internal/app/relay_inbox_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f9c9dd791852",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestRBL003CodexReplyBodyNeverEntersQueuedOrLegacyInput",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RBL-003"
+        },
+        {
+          "id": "MAP-a70b04134255",
+          "line": 63,
+          "kind": "reviewed-selector",
+          "name": "TestRBL003CompactNoticeHasVerifiedHQProvenanceAndHumanCopiesDoNot",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RBL-003"
+        }
+      ],
+      "sha256": "bbc31b6768bdc34952bda0d8b6fb5039b09336228b8c5a9f2767cf24ba4c3e25"
+    },
     "internal/app/relay_sender_contract_test.go": {
       "layer": "L2",
       "stack": "reviewed implementation",
@@ -8579,6 +8619,31 @@
         }
       ],
       "sha256": "cdd5c6ad21f66ebe249267bf419bcf51d136680ba584505cc10856756044f1a9"
+    },
+    "internal/codexrpc/coordination_input_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-24eddeaaed12",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestRBL001CoordinationOnlySteersExactActiveTurn",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RBL-001"
+        },
+        {
+          "id": "MAP-1ce78495328b",
+          "line": 70,
+          "kind": "reviewed-selector",
+          "name": "TestRBL001CoordinationGuardPreventsMutation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RBL-001"
+        }
+      ],
+      "sha256": "383306ad66b7f17538a615be4773bf1d3ab51b1d4094843f561791313043c016"
     },
     "internal/codexrpc/direct_user_input_test.go": {
       "layer": "L2",
@@ -22774,6 +22839,49 @@
         }
       ]
     },
+    "internal/relay/inbox_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-081f78baa59f",
+          "line": 30,
+          "kind": "reviewed-selector",
+          "name": "TestRBL002InboxCoalescesConcurrentNoticesAndPreservesReceipts",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RBL-002"
+        },
+        {
+          "id": "MAP-6010cd28478a",
+          "line": 95,
+          "kind": "reviewed-selector",
+          "name": "TestRBL002FreshnessLegacyAndBoundedSourceWait",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RBL-002"
+        },
+        {
+          "id": "MAP-1e34bec3e596",
+          "line": 145,
+          "kind": "reviewed-selector",
+          "name": "TestRBL002InboxSortsReplyTimeAndRechecksStalenessAtClaim",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RBL-002"
+        },
+        {
+          "id": "MAP-9a0a983fad52",
+          "line": 183,
+          "kind": "reviewed-selector",
+          "name": "TestRBL002SourceWaitCancelsWhileLedgerIsLocked",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RBL-002"
+        }
+      ],
+      "sha256": "b6a09fb9fbbea285544f0180f2751550b7469522705b29a54f2c8bcf42b22efa"
+    },
     "internal/relay/relay_test.go": {
       "sha256": "f190e90178baf2215c2e2c532b07b95d47e7a5c703c078709e9b819d86620361",
       "layer": "L1",
@@ -25664,6 +25772,22 @@
           "layer": "L2"
         }
       ]
+    },
+    "internal/server/recent_transcript_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-0c62caec6a0a",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestLCL002RecentAndHistoryReadersAreOptInAndAuthorized",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-002"
+        }
+      ],
+      "sha256": "fe6932b345f5ea2d5463340f42cf30af08d611b775cd7b1eeb075cbe39e86178"
     },
     "internal/server/repeat_pairing_test.go": {
       "sha256": "9606cbdb3df1edff41e25a84a11544b228d81873aebd482b59274dc59d299d1f",
@@ -29324,6 +29448,31 @@
           "layer": "L1"
         }
       ]
+    },
+    "internal/transcript/codex_large_cache_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-79929223fc37",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "TestLCL001LargeCodexTailStaysCachedAndEarlierHistoryRemainsReadable",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-001"
+        },
+        {
+          "id": "MAP-9661b1f33d22",
+          "line": 112,
+          "kind": "reviewed-selector",
+          "name": "TestLCL001IndividuallyOversizedTurnIsCompleteAndUncached",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-001"
+        }
+      ],
+      "sha256": "8d512a80188850b7cd551286f6794b759da838646338598e01554d6af190b6cd"
     },
     "internal/transcript/codex_native_test.go": {
       "sha256": "0ee01c46634516d577a5595865664c53ffc69d1d985beffa7067ad0f59196104",
@@ -36450,6 +36599,119 @@
           "layer": "L1"
         }
       ]
+    },
+    "mobileapp/__tests__/chatHistoryContinuity.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-6035b934d888",
+          "line": 19,
+          "kind": "reviewed-selector",
+          "name": "LCL-004 rolling recent snapshots retain observed intervening records exactly once",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-004"
+        },
+        {
+          "id": "MAP-884d717bc4c2",
+          "line": 28,
+          "kind": "reviewed-selector",
+          "name": "LCL-004 disconnected latest tail waits behind Jump before selecting its authoritative history cursor",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-004"
+        },
+        {
+          "id": "MAP-447ac47553c6",
+          "line": 46,
+          "kind": "reviewed-selector",
+          "name": "LCL-004 an in-flight earlier page preserves snapshots observed after it started",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-004"
+        }
+      ],
+      "sha256": "6ebb11d9f802f633ba2f2e4f90ab70e541834eb068e3907a1674ef0142f8f905"
+    },
+    "mobileapp/__tests__/chatRecentHistory.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-77beb711ef2a",
+          "line": 35,
+          "kind": "reviewed-selector",
+          "name": "LCL-003 %s requests recent data and exposes a working error/retry action",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-003"
+        },
+        {
+          "id": "MAP-c954781c8bf5",
+          "line": 48,
+          "kind": "reviewed-selector",
+          "name": "LCL-003 earlier source pages survive latest polling and a failed page keeps the content",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-003"
+        },
+        {
+          "id": "MAP-b0c34596f9cc",
+          "line": 63,
+          "kind": "reviewed-selector",
+          "name": "LCL-003 target changes reject late history and noncooperative history reads stop showing loading after 15 seconds",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-003"
+        },
+        {
+          "id": "MAP-cd4f6ec38c32",
+          "line": 80,
+          "kind": "reviewed-selector",
+          "name": "LCL-003 actual client recent query is opt-in and record identity survives prepending",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-003"
+        },
+        {
+          "id": "MAP-1833b21d2dee",
+          "line": 96,
+          "kind": "reviewed-selector",
+          "name": "LCL-003 authorization loss retires the paged snapshot until a new source snapshot arrives",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-003"
+        },
+        {
+          "id": "MAP-01f7dd155465",
+          "line": 110,
+          "kind": "reviewed-selector",
+          "name": "LCL-003 HQ predecessor stitch stays chronological and a source page mounts at most twenty more turns",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-003"
+        },
+        {
+          "id": "MAP-493affc05225",
+          "line": 122,
+          "kind": "reviewed-selector",
+          "name": "LCL-003 expanded history stays visible while newer turns wait behind the live edge control",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-003"
+        },
+        {
+          "id": "MAP-3d83fcb9be78",
+          "line": 136,
+          "kind": "reviewed-selector",
+          "name": "LCL-003 unmount cancels the deadline even when a history reader ignores AbortSignal",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-003"
+        }
+      ],
+      "sha256": "477ef0948e513dfcdeb1559427f8d8324bf10ba3713c5b0532e48f6fb9d9368f"
     },
     "mobileapp/android/app/src/test/java/com/gtmux/app/DocumentPolicyTest.kt": {
       "sha256": "344481c8aca76af7acd08cd252d99780e19191b2e69eb5981c70b47883c92b58",
@@ -43741,7 +44003,7 @@
       "cases": [
         {
           "id": "MAP-7107ec518922",
-          "line": 27,
+          "line": 28,
           "kind": "reviewed-selector",
           "name": "MSD-005 %s releases failed sends and preserves explicit retry identity",
           "dynamic": false,
@@ -43750,7 +44012,7 @@
         },
         {
           "id": "MAP-199b34196f32",
-          "line": 39,
+          "line": 44,
           "kind": "reviewed-selector",
           "name": "MSD-005 old failure cannot replace the newer accepted send",
           "dynamic": false,
@@ -43759,7 +44021,7 @@
         },
         {
           "id": "MAP-135b77c8e14c",
-          "line": 48,
+          "line": 53,
           "kind": "reviewed-selector",
           "name": "MSD-005 a control key cannot leave a prior text receipt permanently Sending",
           "dynamic": false,
@@ -43767,7 +44029,7 @@
           "design": "MSD-005"
         }
       ],
-      "sha256": "70b7592eda9a63777250d495872db7630cc7dacdb89bdddbd08c25adfc8e82fb"
+      "sha256": "e92b2ddb0267b69e75322cfb0b03174f083ad756e204f2366248a01fed45439f"
     },
     "mobileapp/src/screens/DetailSendRefused.test.tsx": {
       "sha256": "05b581c8a70e4a21f43502e2fbf6911f368f9948f1d696b1a7a0392c7cb94710",
@@ -60050,6 +60312,7 @@
       ]
     }
   },
-  "classification": "Legacy boundary labels are structural triage, not individual semantic review or runtime passes. Reviewed new designs take precedence.",
-  "schema": 1
+  "legacy_source": "f187564fcfdab24d7750efbea108958e469cdded",
+  "schema": 1,
+  "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2"
 }

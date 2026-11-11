@@ -408,13 +408,14 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 			// internal/tmux uses for the radar.
 			return []string{tmux.Bin, "-u", "attach-session", "-t", session}, true
 		},
-		Upload:          saveUpload,
-		Icon:            agentIconPNG,
-		Diff:            diffForPane,
-		Transcript:      transcriptForPane,
-		ToolInput:       fullToolInput,
-		ArtifactResolve: resolveConversationDocument,
-		ArtifactRelated: artifact.Related,
+		Upload:           saveUpload,
+		Icon:             agentIconPNG,
+		Diff:             diffForPane,
+		Transcript:       transcriptForPane,
+		TranscriptWindow: transcriptWindowForPane,
+		ToolInput:        fullToolInput,
+		ArtifactResolve:  resolveConversationDocument,
+		ArtifactRelated:  artifact.Related,
 		ArtifactContent: func(id, sid, home string) (artifact.File, io.ReadSeekCloser, error) {
 			f, err := artifact.Resolve("gtmux-file:"+id, sid, home)
 			if err != nil {
@@ -868,6 +869,20 @@ const transcriptByteBudget = 512 << 10
 // Always returns a valid JSON array — "[]" when the pane has no resumable
 // session or the agent's log can't be found — never a hard error for those.
 func transcriptForPane(id string, earlier int) ([]byte, server.TranscriptMeta, error) {
+	return transcriptPaneRead(id, earlier, maxTranscriptTurns)
+}
+
+// The opt-in reader serves a small recent window. History requests resolve the
+// exact pane/session and cursor policy without first parsing the latest window.
+func transcriptWindowForPane(id string, earlier int, historyOnly bool) ([]byte, server.TranscriptMeta, error) {
+	limit := 20
+	if historyOnly {
+		limit = 0
+	}
+	return transcriptPaneRead(id, earlier, limit)
+}
+
+func transcriptPaneRead(id string, earlier, limit int) ([]byte, server.TranscriptMeta, error) {
 	empty := []byte("[]")
 	var meta server.TranscriptMeta
 	if tmux.Bin == "" || tmux.Display(id, "#{pane_id}") == "" {
@@ -919,11 +934,14 @@ func transcriptForPane(id string, earlier int) ([]byte, server.TranscriptMeta, e
 			return ts
 		})
 	}
+	if limit == 0 {
+		return empty, meta, nil
+	}
 	// Read BEFORE the turns and report it even when there are none: a session cleared a
 	// moment ago has an empty transcript, and that is exactly when the reader most needs
 	// to be told why rather than shown a blank screen.
 	meta.Reset, meta.ResetAt = transcript.SessionOrigin(rec.Agent, rec.SessionID)
-	turns, err := transcript.Load(rec.Agent, rec.SessionID, maxTranscriptTurns)
+	turns, err := transcript.Load(rec.Agent, rec.SessionID, limit)
 	turns = append([]transcript.Turn(nil), turns...)
 	if err != nil {
 		return empty, meta, nil
@@ -963,7 +981,7 @@ func transcriptForPane(id string, earlier int) ([]byte, server.TranscriptMeta, e
 	turns, relayRevision = stampRelaySenders(turns, rec.HomeID)
 	senderRevision += relayRevision
 	if revision := transcript.LogRevision(rec.Agent, rec.SessionID); revision != "" {
-		meta.Etag = fmt.Sprintf("W/%q", fmt.Sprintf("profile-v4-trace-history-%s-%s-%s-%s", rec.SessionID, revision, oldest, senderRevision))
+		meta.Etag = fmt.Sprintf("W/%q", fmt.Sprintf("profile-v6-window%d-%s-%s-%s-%s", limit, rec.SessionID, revision, oldest, senderRevision))
 	}
 	// Who put each prompt there, for the ones gtmux delivered on someone else's behalf
 	// (who-sent-this-turn). After the stitch, so an earlier session's turns are attributed

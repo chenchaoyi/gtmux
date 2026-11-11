@@ -24,6 +24,9 @@ MAP-c7c7feed6e2a,L2,reviewed implementation,internal/app/hqworkspace_reconcile_t
 MAP-c746f11a537e,L2,reviewed implementation,internal/app/hqworkspace_stored_test.go,10,reviewed-selector,TestWorkspaceStoredCLILeavesDiscoveryAndRecordsUntouched,False,MC-HQ-READ
 MAP-7a5ae9fb2039,L2,reviewed implementation,internal/app/phone_delivery_receipt_test.go,10,reviewed-selector,TestMSD002PhoneInputOptsIntoDirectUserDeliveryAndKeepsDraftProtection,False,MSD-002
 MAP-308489bd281c,L2,reviewed implementation,internal/app/phone_delivery_receipt_test.go,20,reviewed-selector,TestMSD002PhoneReceiptCacheKeepsQueueMeaningAndExpiry,False,MSD-002
+MAP-6616de8ce6d1,L2,reviewed implementation,internal/app/recent_transcript_test.go,14,reviewed-selector,TestLCL002RecentPaneKeepsOrdinalsCursorAndFullDefault,False,LCL-002
+MAP-f9c9dd791852,L2,reviewed implementation,internal/app/relay_inbox_test.go,12,reviewed-selector,TestRBL003CodexReplyBodyNeverEntersQueuedOrLegacyInput,False,RBL-003
+MAP-a70b04134255,L2,reviewed implementation,internal/app/relay_inbox_test.go,63,reviewed-selector,TestRBL003CompactNoticeHasVerifiedHQProvenanceAndHumanCopiesDoNot,False,RBL-003
 MAP-93c5d85ec366,L2,reviewed implementation,internal/app/relay_sender_contract_test.go,52,reviewed-selector,TestHRS003ReceiptAwareSharedTranscript,False,HRS-003
 MAP-d400cc0846af,L2,reviewed implementation,internal/app/relay_sender_contract_test.go,89,reviewed-selector,TestHRS003EarlierPagesKeepFirstAttribution,False,HRS-003
 MAP-5a676c7255b7,L2,reviewed implementation,internal/app/screenshot_deadline_test.go,13,reviewed-selector,TestASC007TargetReadStopsAtCancellationBeforeMintOrSend,False,ASC-007
@@ -59,6 +62,8 @@ MAP-72cccd537fb4,L2,reviewed implementation,internal/codexbridge/trust_config_te
 MAP-70da38ef277c,L2,reviewed implementation,internal/codexbridge/trust_config_test.go,47,reviewed-selector,TestWTR002RefusalsLeaveOriginalFrameBytesUnchanged,False,WTR-002
 MAP-c59477e205b9,L2,reviewed implementation,internal/codexbridge/trust_config_test.go,109,reviewed-selector,TestWTR002CanceledAndLateProofCannotAuthorizeOrSpawnMoreReads,False,WTR-002
 MAP-99060310ce85,L2,reviewed implementation,internal/codexbridge/trust_config_test.go,142,reviewed-selector,TestWTR002UnknownOrReusedRequestIDsNeverAccumulateUnboundedState,False,WTR-002
+MAP-24eddeaaed12,L2,reviewed implementation,internal/codexrpc/coordination_input_test.go,10,reviewed-selector,TestRBL001CoordinationOnlySteersExactActiveTurn,False,RBL-001
+MAP-1ce78495328b,L2,reviewed implementation,internal/codexrpc/coordination_input_test.go,70,reviewed-selector,TestRBL001CoordinationGuardPreventsMutation,False,RBL-001
 MAP-d24568194d08,L2,reviewed implementation,internal/codexrpc/direct_user_input_test.go,10,reviewed-selector,TestMSD001ExplicitUserInputSelectsExactActiveOrLoadedIdleTurn,False,MSD-001
 MAP-b2659a0a9502,L2,reviewed implementation,internal/codexrpc/direct_user_input_test.go,49,reviewed-selector,TestMSD001LegacyQueueRemainsExplicitAndOnlyUnknownMethodCanFallback,False,MSD-001
 MAP-09d632a0de8e,L2,reviewed implementation,internal/codexrpc/direct_user_input_test.go,76,reviewed-selector,TestMSD001UserInputRefusesUnsafeMetadataAndNeverReplaysAmbiguousWrite,False,MSD-001
@@ -96,6 +101,10 @@ MAP-d562c313395b,L2,reviewed implementation,internal/radar/codex_foreign_marker_
 MAP-3b7c2c0858d3,L2,reviewed implementation,internal/radar/codex_stale_state_test.go,58,reviewed-selector,TestCSR001StaleActiveCannotReviveReadyFinishedPane,False,"CSR-001,CSR-002"
 MAP-3a420ae89cea,L2,reviewed implementation,internal/radar/codex_stale_state_test.go,158,reviewed-selector,TestCSR002SupersededActiveDoesNotDateCurrentWork,False,"CSR-001,CSR-002"
 MAP-981c45e6de6f,L2,reviewed implementation,internal/radar/energy_gather_test.go,8,reviewed-selector,TestPWR002GatherSharesFramesOnlyInsideOnePass,False,PWR-002
+MAP-081f78baa59f,L2,reviewed implementation,internal/relay/inbox_test.go,30,reviewed-selector,TestRBL002InboxCoalescesConcurrentNoticesAndPreservesReceipts,False,RBL-002
+MAP-6010cd28478a,L2,reviewed implementation,internal/relay/inbox_test.go,95,reviewed-selector,TestRBL002FreshnessLegacyAndBoundedSourceWait,False,RBL-002
+MAP-1e34bec3e596,L2,reviewed implementation,internal/relay/inbox_test.go,145,reviewed-selector,TestRBL002InboxSortsReplyTimeAndRechecksStalenessAtClaim,False,RBL-002
+MAP-9a0a983fad52,L2,reviewed implementation,internal/relay/inbox_test.go,183,reviewed-selector,TestRBL002SourceWaitCancelsWhileLedgerIsLocked,False,RBL-002
 MAP-0ff0e3ef33b9,L2,reviewed implementation,internal/resume/codexfrontend_ready_test.go,14,reviewed-selector,TestCFR002AdmissionCausesAndControlledLaunch,False,CFR-002
 MAP-e0f0d6088eea,L2,reviewed implementation,internal/resume/state_publication_test.go,14,reviewed-selector,TestCSR003SavePublishesAnAtomicResumeSnapshot,False,CSR-003
 MAP-1808038b01b0,L2,reviewed implementation,internal/resume/state_publication_test.go,51,reviewed-selector,TestCSR003CodexSaveAndHeartbeatRespectBindingLease,False,CSR-003
@@ -298,6 +307,7 @@ LEG-4973082ccb1e,L2,Go core / CLI / server,internal/server/push_unattributed_tes
 LEG-1b54deea326c,L2,Go core / CLI / server,internal/server/push_unattributed_test.go,122,Test,TestPush_AnAttributionSurvivesARestart,False,legacy-not-retrospectively-reviewed
 LEG-3db12448f7a6,L2,Go core / CLI / server,internal/server/push_unattributed_test.go,146,Test,TestPush_TheTokenListSaysWhatIsPaused,False,legacy-not-retrospectively-reviewed
 LEG-11827f218259,L2,Go core / CLI / server,internal/server/pushtestscope_test.go,18,Test,TestAGuestCannotRingTheOwnersPhone,False,legacy-not-retrospectively-reviewed
+MAP-0c62caec6a0a,L2,reviewed implementation,internal/server/recent_transcript_test.go,10,reviewed-selector,TestLCL002RecentAndHistoryReadersAreOptInAndAuthorized,False,LCL-002
 LEG-4d62a9043dc2,L2,Go core / CLI / server,internal/server/repeat_pairing_test.go,16,Test,TestRepeatPairingHTTP,False,legacy-not-retrospectively-reviewed
 LEG-26bb95b84a0e,L2,Go core / CLI / server,internal/server/repeat_pairing_test.go,104,Test,TestRepeatPairingExpiryAndRestart,False,legacy-not-retrospectively-reviewed
 LEG-2308573a9eca,L2,Go core / CLI / server,internal/server/rostersave_test.go,17,Test,TestTheRosterOnDiskNeverGoesBackwards,False,legacy-not-retrospectively-reviewed
@@ -485,6 +495,8 @@ LEG-9ba6285dc523,L2,Go core / CLI / server,internal/server/webui_test.go,16,Test
 LEG-d0796bd9ffc4,L2,Go core / CLI / server,internal/server/webui_test.go,55,Test,TestWebHandlerCacheBusting,False,legacy-not-retrospectively-reviewed
 MAP-e5d2427c7d6d,L2,reviewed implementation,internal/state/cpu_repeated_poll_test.go,5,reviewed-selector,TestCSR005RepeatedPollPreservesObservedCPUWork,False,CSR-005
 MAP-33d2a35b1094,L2,reviewed implementation,internal/state/cpu_repeated_poll_test.go,30,reviewed-selector,TestCSR005RepeatedPollRequiresValidPriorEvidence,False,CSR-005
+MAP-79929223fc37,L2,reviewed implementation,internal/transcript/codex_large_cache_test.go,13,reviewed-selector,TestLCL001LargeCodexTailStaysCachedAndEarlierHistoryRemainsReadable,False,LCL-001
+MAP-9661b1f33d22,L2,reviewed implementation,internal/transcript/codex_large_cache_test.go,112,reviewed-selector,TestLCL001IndividuallyOversizedTurnIsCompleteAndUncached,False,LCL-001
 MAP-18b153c61e83,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceFixture.swift,12,reviewed-selector,class ChoiceFixture,False,"MC-HQ-CHOICE,MC-HQ-WINDOW,MC-HQ-READ"
 MAP-d6fdd79aba67,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceFixture.swift,60,reviewed-selector,enum HQChoiceTestSupport,False,"MC-HQ-CHOICE,MC-HQ-WINDOW,MC-HQ-READ"
 MAP-0143ada6d861,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceResponseTests.swift,8,reviewed-selector,testChoicePreparesFocusWithoutSendingAndPreservesEditedDraft,False,"MC-HQ-CHOICE,MC-HQ-READ"
@@ -509,6 +521,17 @@ MAP-eb6d9f0a3446,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/Screensho
 MAP-6e2c5d1a0073,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotSourceMappingTests.swift,6,reviewed-selector,testASC011ChangedDisplayMappingAndScaleRefuseBeforeAndAfterCapture,False,ASC-011
 MAP-e7b5f07e2603,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotWorkCompletionOrderTests.swift,20,reviewed-selector,testASC013SuccessAndErrorCloseActualDuplicatesBeforeAdmissionReturn,False,ASC-013
 MAP-47650912eb8d,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/StateDurationTests.swift,6,reviewed-selector,testCSR004DecodedUncertainDurationDoesNotUseEitherClock,False,CSR-004
+MAP-6035b934d888,L2,reviewed implementation,mobileapp/__tests__/chatHistoryContinuity.test.tsx,19,reviewed-selector,LCL-004 rolling recent snapshots retain observed intervening records exactly once,False,LCL-004
+MAP-884d717bc4c2,L2,reviewed implementation,mobileapp/__tests__/chatHistoryContinuity.test.tsx,28,reviewed-selector,LCL-004 disconnected latest tail waits behind Jump before selecting its authoritative history cursor,False,LCL-004
+MAP-447ac47553c6,L2,reviewed implementation,mobileapp/__tests__/chatHistoryContinuity.test.tsx,46,reviewed-selector,LCL-004 an in-flight earlier page preserves snapshots observed after it started,False,LCL-004
+MAP-77beb711ef2a,L2,reviewed implementation,mobileapp/__tests__/chatRecentHistory.test.tsx,35,reviewed-selector,LCL-003 %s requests recent data and exposes a working error/retry action,False,LCL-003
+MAP-c954781c8bf5,L2,reviewed implementation,mobileapp/__tests__/chatRecentHistory.test.tsx,48,reviewed-selector,LCL-003 earlier source pages survive latest polling and a failed page keeps the content,False,LCL-003
+MAP-b0c34596f9cc,L2,reviewed implementation,mobileapp/__tests__/chatRecentHistory.test.tsx,63,reviewed-selector,LCL-003 target changes reject late history and noncooperative history reads stop showing loading after 15 seconds,False,LCL-003
+MAP-cd4f6ec38c32,L2,reviewed implementation,mobileapp/__tests__/chatRecentHistory.test.tsx,80,reviewed-selector,LCL-003 actual client recent query is opt-in and record identity survives prepending,False,LCL-003
+MAP-1833b21d2dee,L2,reviewed implementation,mobileapp/__tests__/chatRecentHistory.test.tsx,96,reviewed-selector,LCL-003 authorization loss retires the paged snapshot until a new source snapshot arrives,False,LCL-003
+MAP-01f7dd155465,L2,reviewed implementation,mobileapp/__tests__/chatRecentHistory.test.tsx,110,reviewed-selector,LCL-003 HQ predecessor stitch stays chronological and a source page mounts at most twenty more turns,False,LCL-003
+MAP-493affc05225,L2,reviewed implementation,mobileapp/__tests__/chatRecentHistory.test.tsx,122,reviewed-selector,LCL-003 expanded history stays visible while newer turns wait behind the live edge control,False,LCL-003
+MAP-3d83fcb9be78,L2,reviewed implementation,mobileapp/__tests__/chatRecentHistory.test.tsx,136,reviewed-selector,LCL-003 unmount cancels the deadline even when a history reader ignores AbortSignal,False,LCL-003
 MAP-435d839b0a83,L2,reviewed implementation,mobileapp/e2e/android/permissionJourney.test.ts,63,reviewed-selector,ACP-002 registered journey survives,False,ACP-002
 MAP-255b356248a5,L2,reviewed implementation,mobileapp/e2e/android/permissionJourney.test.ts,70,reviewed-selector,ACP-002 registered journey still fails,False,ACP-002
 MAP-04ea0e0d7ec3,L2,reviewed implementation,mobileapp/e2e/android/permissionJourney.test.ts,76,reviewed-selector,ACP-002 registered journey cannot pass,False,ACP-002
@@ -587,9 +610,9 @@ LEG-ce5d181e23e4,L2,RN / mobile harness,mobileapp/src/screens/DetailPinned.test.
 LEG-d51de694fa1f,L2,RN / mobile harness,mobileapp/src/screens/DetailPinned.test.tsx,193,test,"two logged prompts that open the same way: the row stays, nothing is named",False,legacy-not-retrospectively-reviewed
 LEG-78f3ef5088b1,L2,RN / mobile harness,mobileapp/src/screens/DetailPinned.test.tsx,203,test,display menu drives the shared terminal and survives full-screen/chat switches,False,legacy-not-retrospectively-reviewed
 LEG-33d0c3c4ceaf,L2,RN / mobile harness,mobileapp/src/screens/DetailPinned.test.tsx,232,test,slow terminal reads do not overlap and cannot roll the picture back after a deadline,False,legacy-not-retrospectively-reviewed
-MAP-7107ec518922,L2,reviewed implementation,mobileapp/src/screens/DetailSendReceipt.test.tsx,27,reviewed-selector,MSD-005 %s releases failed sends and preserves explicit retry identity,False,MSD-005
-MAP-199b34196f32,L2,reviewed implementation,mobileapp/src/screens/DetailSendReceipt.test.tsx,39,reviewed-selector,MSD-005 old failure cannot replace the newer accepted send,False,MSD-005
-MAP-135b77c8e14c,L2,reviewed implementation,mobileapp/src/screens/DetailSendReceipt.test.tsx,48,reviewed-selector,MSD-005 a control key cannot leave a prior text receipt permanently Sending,False,MSD-005
+MAP-7107ec518922,L2,reviewed implementation,mobileapp/src/screens/DetailSendReceipt.test.tsx,28,reviewed-selector,MSD-005 %s releases failed sends and preserves explicit retry identity,False,MSD-005
+MAP-199b34196f32,L2,reviewed implementation,mobileapp/src/screens/DetailSendReceipt.test.tsx,44,reviewed-selector,MSD-005 old failure cannot replace the newer accepted send,False,MSD-005
+MAP-135b77c8e14c,L2,reviewed implementation,mobileapp/src/screens/DetailSendReceipt.test.tsx,53,reviewed-selector,MSD-005 a control key cannot leave a prior text receipt permanently Sending,False,MSD-005
 LEG-7a048f25b768,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,62,test,conversation navigation exposes its action and selected mode to accessibility,False,legacy-not-retrospectively-reviewed
 LEG-90313f24599a,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,77,test,"refused: pair again, no retry, and the text is back in the box",False,legacy-not-retrospectively-reviewed
 LEG-3f37c79e8bc1,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,93,test,any other refusal keeps its retry and does not refill the box,False,legacy-not-retrospectively-reviewed

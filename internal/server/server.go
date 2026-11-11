@@ -160,6 +160,9 @@ type Deps struct {
 	// (hq-console-history): 0 is the current session alone.
 	ToolInput  func(sessionID, homeID, ref string) ([]byte, error)
 	Transcript func(id string, earlier int) (turns []byte, meta TranscriptMeta, err error)
+	// TranscriptWindow is opt-in recent20 or metadata-only history preparation.
+	// Authorization above it and the cursor policy below it remain unchanged.
+	TranscriptWindow func(id string, earlier int, historyOnly bool) (turns []byte, meta TranscriptMeta, err error)
 	// SessionTranscript reads verified desktop sessions, never arbitrary file paths.
 	SessionTranscript func(id, homeID string) (turns []byte, meta TranscriptMeta, err error)
 	// Documents are snapshots of explicit publications or verified conversation links.
@@ -1169,7 +1172,14 @@ func (s *Server) handleTranscript(w http.ResponseWriter, r *http.Request) {
 	if earlier < 0 {
 		earlier = 0
 	}
-	b, meta, err := s.deps.Transcript(id, earlier)
+	var b []byte
+	var meta TranscriptMeta
+	var err error
+	if s.deps.TranscriptWindow != nil && (r.URL.Query().Get("recent") == "1" || r.URL.Query().Get("before") != "") {
+		b, meta, err = s.deps.TranscriptWindow(id, earlier, r.URL.Query().Get("before") != "")
+	} else {
+		b, meta, err = s.deps.Transcript(id, earlier)
+	}
 	if err != nil {
 		writeJSON(w, http.StatusNotFound, errBody("transcript failed: "+err.Error()))
 		return

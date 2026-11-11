@@ -550,6 +550,15 @@ A turn COUNT is not the bound: turns vary in size by orders of magnitude, and a 
 The signal is a header, not an envelope: the body stays the plain turn array, so a client
 predating this ignores the header instead of failing to decode.
 
+**Opt-in recent window.** `GET /api/transcript?id=%N&recent=1` asks for at most the
+newest 20 turns before the same byte budget. The default request remains unchanged.
+Validators distinguish recent/full bodies. The oldest returned turn retains its original
+`turn_ordinal` and `history_before`, so Chat can load earlier source pages using `before`.
+History resolves the authorized pane/session first without parsing a redundant recent
+window. Guest context stripping and cursor ownership checks remain the same. A parser
+cache may retain a bounded whole-turn tail; requests beyond its coverage still read the
+full requested source range, and a single oversized turn remains complete.
+
 **A session that was STARTED OVER is announced too.** By default this endpoint reads
 the pane's current resume record. A `/clear`, a `/new`, or the `gtmux hq --rotate` HQ
 performs on itself starts a new conversation; an HQ caller can request its predecessors
