@@ -61,6 +61,9 @@ struct Annotation: Equatable, Identifiable {
         case ellipse(CGRect)
         /// The capture under the rectangle, in blocks: for what must not be read.
         case mosaic(CGRect)
+        /// Irreversible opaque coverage in the derived pixels; unlike mosaic it
+        /// does not retain an approximation of the original content.
+        case redact(CGRect)
         case text(String, at: CGPoint)
     }
     let id: UUID
@@ -180,9 +183,9 @@ enum AnnotationRenderer {
         flatten(image: doc.image, pointSize: doc.pointSize, items: doc.items)
     }
 
-    static func flatten(image: CGImage, pointSize: CGSize, items: [Annotation]) -> CGImage? {
+    static func flatten(image: CGImage, pointSize: CGSize, items: [Annotation], pixelScaleY: CGFloat? = nil) -> CGImage? {
         let w = image.width, h = image.height
-        guard w > 0, h > 0, pointSize.width > 0,
+        guard w > 0, h > 0, pointSize.width > 0, pointSize.height > 0,
               let space = CGColorSpace(name: CGColorSpace.sRGB),
               let ctx = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: 0,
                                   space: space, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
@@ -190,8 +193,11 @@ enum AnnotationRenderer {
         ctx.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h))
         // Top-left origin, in points, like the editor: flip and scale once for every mark.
         let scale = CGFloat(w) / pointSize.width
+        // A rounded thumbnail can have different scales on its two axes.
+        let scaleY = pixelScaleY ?? scale
+        guard scale.isFinite, scale > 0, scaleY.isFinite, scaleY > 0 else { return nil }
         ctx.translateBy(x: 0, y: CGFloat(h))
-        ctx.scaleBy(x: scale, y: -scale)
+        ctx.scaleBy(x: scale, y: -scaleY)
         let source = Source(image: image, scale: scale)
         for a in items { draw(a, in: ctx, source: source) }
         return ctx.makeImage()
@@ -224,6 +230,17 @@ enum AnnotationRenderer {
             ctx.scaleBy(x: 1, y: -1)
             ctx.interpolationQuality = .none
             ctx.draw(t, in: CGRect(origin: .zero, size: r.size))
+        case .redact(let r):
+            // Expand in the actual device space, including a downscaled editor
+            // preview. Fractional edge coverage must never blend source pixels.
+            let device = ctx.convertToDeviceSpace(r).standardized
+            let x0 = floor(device.minX), y0 = floor(device.minY)
+            let x1 = ceil(device.maxX), y1 = ceil(device.maxY)
+            let covered = ctx.convertToUserSpace(CGRect(x: x0, y: y0, width: x1-x0, height: y1-y0)).standardized
+            ctx.setShouldAntialias(false)
+            ctx.setBlendMode(.copy)
+            ctx.setFillColor(CGColor(gray: 0, alpha: 1))
+            ctx.fill(covered)
         case let .arrow(from, to):
             let head = arrowHead(from: from, to: to, width: a.width.stroke)
             // The shaft stops at the head's base so the round cap does not poke through the tip.

@@ -55,11 +55,12 @@ type DigestRow struct {
 	Ask     string     `json:"ask,omitempty"`  // waiting only: the parsed prompt options
 	// Dispatch ledger (hq-dispatch): a pane dispatched by `gtmux spawn` carries its
 	// task goal + lifecycle status. Additive + omitempty — absent for untracked panes.
-	Task       string `json:"task,omitempty"`
-	TaskStatus string `json:"task_status,omitempty"` // undelivered | waiting | done | working | gone
-	Error      string `json:"error,omitempty"`       // errored-idle modifier text
-	Bg         string `json:"bg,omitempty"`          // background-running modifier label
-	Since      int64  `json:"since,omitempty"`       // epoch the current state began
+	Task           string `json:"task,omitempty"`
+	TaskStatus     string `json:"task_status,omitempty"` // undelivered | waiting | done | working | gone
+	Error          string `json:"error,omitempty"`       // errored-idle modifier text
+	Bg             string `json:"bg,omitempty"`          // background-running modifier label
+	Since          int64  `json:"since,omitempty"`       // epoch the current state began
+	SinceUncertain bool   `json:"since_uncertain,omitempty"`
 	// input-lock modifier: the pane is in tmux copy/view-mode, so typed input is
 	// swallowed until it exits (send/spawn auto-exit before delivering). Flags which
 	// pane is input-locked so the supervisor sees it. Absent = not in a mode.
@@ -255,7 +256,7 @@ func digestForScoped(panes []Pane, procs map[int]procInfo, paths *transcript.Cod
 		row := DigestRow{
 			PaneID: p.PaneID, Loc: p.Loc, Agent: p.Agent, Source: p.source,
 			Status: p.Status, Role: p.role, Project: p.project, Branch: p.branch, SessionID: p.sessionID, Client: p.client, Follow: p.Follow,
-			Error: p.ErrorText, Bg: p.BgText, Since: p.Since, InMode: p.inMode,
+			Error: p.ErrorText, Bg: p.BgText, Since: p.Since, SinceUncertain: p.SinceUncertain, InMode: p.inMode,
 		}
 		if p.source == "tmux" && p.pid > 0 {
 			row.RSSMB, row.CPU = subtreeUse(p.pid, procs, children)

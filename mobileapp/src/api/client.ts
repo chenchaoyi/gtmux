@@ -884,9 +884,10 @@ export class GtmuxClient {
     /** How many earlier sessions to stitch in front of the current one (HQ only). */
     earlier = 0,
     signal?: AbortSignal,
+    recent = false,
   ): Promise<{turns: TranscriptTurn[]; dropped: number; reset?: SessionReset; etag?: string; unchanged?: boolean; earlierAvailable?: boolean}> {
     const headers = etag ? {...this.h(), 'If-None-Match': etag} : this.h();
-    const q = earlier > 0 ? `&earlier=${earlier}` : '';
+    const q = (earlier > 0 ? `&earlier=${earlier}` : '') + (recent ? '&recent=1' : '');
     const r = await tfetch(`${this.base}/api/transcript?id=${encodeURIComponent(id)}${q}&context=1`, {headers, ...(signal ? {signal} : {})});
     // The chain's "one more exists" fact rides every response, the 304 included, so a
     // quiet conversation never loses its way back.

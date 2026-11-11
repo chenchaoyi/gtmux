@@ -189,3 +189,12 @@ HQ matters appear as individual briefing cards with their current state, latest 
 On current servers, Talk to HQ keeps one conversation surface. Use **Overview** to return to the same matters and pending count; waiting agent sessions no longer form a second attention tab. Tap the summary to show or hide board, knowledge, usage and HQ updates. Critical machine conditions remain visible in the compact headline, and expanded context can scroll.
 
 Tool-input details wrap and highlight recorded code; Full call keeps the complete source, and language tabs make embedded scripts easier to read. Copy keeps the original input. Partial or summary-only records are explicitly marked. Diff scrollbars stay visible against the dark canvas, including while long lines are panned horizontally.
+
+### Long conversation loading
+
+Chat initially requests the latest 20 turns. Use **Load earlier turns** to fetch older
+source pages; numbering stays relative to the original session. Already loaded pages
+remain visible when the latest turns refresh. A temporary read failure preserves the
+conversation and offers **Retry**, rather than showing an empty conversation. This is
+a read optimization, not deletion or truncation of the source log. The first cold read
+still scans the source; repeated reads reuse a bounded parsed snapshot.

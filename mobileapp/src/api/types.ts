@@ -65,6 +65,7 @@ export interface Agent {
   tab?: string;
   activity_at?: number;
   since?: number;
+  since_uncertain?: boolean;
   icon?: string;
   // errored-idle modifier: this idle session ended on an API/tool error. Surfaces
   // mark it with an amber ⚠ (NOT red — red is waiting). false/absent = finished ok.
@@ -215,6 +216,7 @@ export function toAgent(raw: any): Agent {
     tab: s('tab') || undefined,
     activity_at: n('activity_at'),
     since: n('since'),
+    since_uncertain: b('since_uncertain') || undefined,
     icon: s('icon') || undefined,
     error: b('error') || undefined,
     error_text: s('error_text') || undefined,

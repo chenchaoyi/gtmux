@@ -16,10 +16,14 @@ const relayReplyPrefix = "[gtmux HQ reply to agent request "
 // A header is only a bounded lookup hint into gtmux's own durable receipt. It
 // never establishes authority, and its `source` is the requester, not the sender.
 func relayReplyID(prompt string) string {
-	if !strings.HasPrefix(prompt, relayReplyPrefix) {
+	prefix := relayReplyPrefix
+	if strings.HasPrefix(prompt, relayInboxPrefix) {
+		prefix = relayInboxPrefix
+	}
+	if !strings.HasPrefix(prompt, prefix) {
 		return ""
 	}
-	rest := strings.TrimPrefix(prompt, relayReplyPrefix)
+	rest := strings.TrimPrefix(prompt, prefix)
 	n := strings.IndexByte(rest, ';')
 	if n < 3 || n > 80 {
 		return ""
@@ -56,19 +60,22 @@ func stampRelaySendersWith(turns []transcript.Turn, home string, get func(string
 			// transient Human snapshot after a late acceptance receipt is persisted.
 			if err == nil {
 				fmt.Fprintf(h, "%s:%t:%s:%s:%s:%s:%s:%d:%x;", id, r.Delivered, r.ReplyAttempt, r.State, r.For, r.HomeID, r.ThreadID, r.CreatedAt, sha256.Sum256([]byte(relayReplyText(r))))
+				fmt.Fprintf(h, "notice:%v;", r.Notice)
 			}
-			if err == nil && r.ID == id && r.Agent == "codex" && r.HomeID == home && r.State == "replied" && r.For == "hq" && r.Delivered && r.ReplyAttempt == "accepted" && r.CreatedAt > 0 && strings.TrimSpace(r.Reply) != "" {
+			_, _, accepted := relayPromptReceipt(r)
+			if err == nil && r.ID == id && r.Agent == "codex" && r.HomeID == home && r.State == "replied" && r.For == "hq" && accepted {
 				receipts[id] = r
 			}
 		}
 		r, ok := receipts[id]
-		if !ok || r.ThreadID != t.SessionID || t.Prompt != strings.TrimSpace(relayReplyText(r)) {
+		text, lower, _ := relayPromptReceipt(r)
+		if !ok || r.ThreadID != t.SessionID || t.Prompt != strings.TrimSpace(text) {
 			continue
 		}
 		if prompts[t.SessionID] == nil {
 			prompts[t.SessionID] = map[string]int64{}
 		}
-		prompts[t.SessionID][t.Prompt] = r.CreatedAt
+		prompts[t.SessionID][t.Prompt] = lower
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -92,4 +99,21 @@ func stampRelaySendersWith(turns []transcript.Turn, home string, get func(string
 		}
 	}
 	return turns, fmt.Sprintf("relay-v1-%x", h.Sum(nil)[:12])
+}
+
+// The short hint and legacy full reply have distinct receipt contracts. Text
+// alone never establishes HQ provenance, and notification is never a body read.
+func relayPromptReceipt(r relay.Request) (string, int64, bool) {
+	legacyAccepted := r.Delivered && r.ReplyAttempt == "accepted" && r.CreatedAt > 0 && strings.TrimSpace(r.Reply) != ""
+	if legacyAccepted {
+		return relayReplyText(r), r.CreatedAt, true
+	}
+	if r.ReplyChannel == "inbox" {
+		accepted := r.Notice != nil && r.Notice.State == "accepted" && r.Notice.At > 0
+		if accepted {
+			return relayInboxNoticeText(r), r.Notice.At, true
+		}
+		return "", 0, false
+	}
+	return "", 0, false
 }

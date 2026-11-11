@@ -73,6 +73,8 @@ emoji 字体去画它们，那样你给的颜色会被忽略，红色只落在�
 列会依次让位（先是 agent 名字，再是任务），所以任何一行都不会折。`--json` 输出同样的数据，
 给脚本和菜单栏 app 用。
 
+对于已信任仓库的关联工作树，经过核验的本地前端只在当前配置回执中沿用主仓库已有的信任决定，并核对双向 Git 登记及初始化后的 Codex home。它不会保存新的信任条目、复制 hooks 或改变权限。工作树或父目录已有明确决定时，包括符号链接与同目录别名，继续采用 Codex 自身流程。项目路径在同一个有界证明任务内保守解析；归属未知、路径缺失或陈旧、未知决定或超过 128 条时，保留原回执，不自动继承信任。项目配置层、未知布局或证据不可用时，也保留原流程。真实的 **Folder access** 页面会被识别为启动信任确认，gtmux 不会自动按键同意。
+
 ### 它是怎么认出来的（不只支持 Claude）
 
 - 状态取自 agent 自己写的 pane 标题。开头是盲文旋转符（`⠋⠙⠹…`，大多数 agent TUI
@@ -365,73 +367,74 @@ gtmux logs --since 1d --stats                # 存了多少，今天出了多少
 
 <!-- gtmux:rendered act-catalog -->
 ```
-act.adopt               adopt
-act.app.launch          app
-act.artifact            artifact
-act.attach              attach, serve
-act.awake.off           awake
-act.awake.on            awake
-act.capture             capture
-act.cleanup             doctor, serve
-act.codex.launch        codex
-act.opencode.launch     opencode
-act.config.set          config, quiet
-act.doctor.bundle       doctor
-act.doctor.fix          doctor
-act.focus               focus, serve
-act.session.follow      follow, serve
-act.session.review      transcript
-act.hq.brief            hq
-act.hq.export           hq
-act.hq.import           hq
-act.hq.migrate          hq
-act.hq.maintenance      hq
-act.hq.rotate           hq
-act.hq.start            hq
-act.install.app         install
-act.install.hooks       install
-act.advice              advice
-act.knowledge           knowledge, serve
-act.knowledge.sync      knowledge, doctor
-act.mint                pair, serve
-act.narrow              serve
-act.new                 new
-act.notify              hook
-act.notify.post         app
-act.notify.test         app
-act.notify.suppressed   hook
-act.device.rename       serve
-act.pair                serve
-act.push.forget         devices, serve
-act.push.register       serve
-act.reap                reap
-act.reap.snooze         reap
-act.relay               relay
-act.restore             restore
-act.resume.command      restore
-act.resume.confirmed    restore
-act.revoke              pair, devices, share, serve
-act.screenshot.capture  app
-act.screenshot.freeze   app
-act.screenshot.send     app
-act.send                send, serve
-act.share.config        share, serve
-act.share.create        share, serve
-act.share.set           share, serve
-act.spawn               spawn
-act.tunnel.off          tunnel
-act.tunnel.on           tunnel
-act.tunnel.move         tunnel
-act.tunnel.redeem       tunnel
-act.uninstall.app       uninstall
-act.uninstall.hooks     uninstall
-act.unwatch             panes
-act.update              update
-act.upload              serve
-act.wake.delivered      serve, hook
-act.wake.dropped        serve, hook
-act.wait.suppressed     hook
-act.watch               panes
+act.adopt                  adopt
+act.app.launch             app
+act.artifact               artifact
+act.attach                 attach, serve
+act.awake.off              awake
+act.awake.on               awake
+act.capture                capture
+act.cleanup                doctor, serve
+act.codex.launch           codex
+act.opencode.launch        opencode
+act.config.set             config, quiet
+act.doctor.bundle          doctor
+act.doctor.fix             doctor
+act.focus                  focus, serve
+act.session.follow         follow, serve
+act.session.review         transcript
+act.hq.brief               hq
+act.hq.export              hq
+act.hq.import              hq
+act.hq.migrate             hq
+act.hq.maintenance         hq
+act.hq.rotate              hq
+act.hq.start               hq
+act.install.app            install
+act.install.hooks          install
+act.advice                 advice
+act.knowledge              knowledge, serve
+act.knowledge.sync         knowledge, doctor
+act.mint                   pair, serve
+act.narrow                 serve
+act.new                    new
+act.notify                 hook
+act.notify.post            app
+act.notify.test            app
+act.notify.suppressed      hook
+act.device.rename          serve
+act.pair                   serve
+act.push.forget            devices, serve
+act.push.register          serve
+act.reap                   reap
+act.reap.snooze            reap
+act.relay                  relay
+act.restore                restore
+act.resume.command         restore
+act.resume.confirmed       restore
+act.revoke                 pair, devices, share, serve
+act.screenshot.agent.send  screenshot
+act.screenshot.capture     app
+act.screenshot.freeze      app
+act.screenshot.send        app
+act.send                   send, serve
+act.share.config           share, serve
+act.share.create           share, serve
+act.share.set              share, serve
+act.spawn                  spawn
+act.tunnel.off             tunnel
+act.tunnel.on              tunnel
+act.tunnel.move            tunnel
+act.tunnel.redeem          tunnel
+act.uninstall.app          uninstall
+act.uninstall.hooks        uninstall
+act.unwatch                panes
+act.update                 update
+act.upload                 serve
+act.wake.delivered         serve, hook
+act.wake.dropped           serve, hook
+act.wait.suppressed        hook
+act.watch                  panes
 ```
 
 restore 也一直往这里写它的判断过程：选了哪份存档、每个 pane 接回了哪段对话
@@ -1282,8 +1285,18 @@ HQ 亲手连的 904 组 `[[link]]` 量，这个权重把前十条的召回从 36
 按请求 ID 唤醒 HQ。不阻塞的疑问加 `--nonblocking`；必须由用户决定的事项加
 `--for user`；重试时沿用 `--id`。HQ 用 `gtmux relay list --json` / `show <id>`
 查看，认领后用 `reply <id> --body-file <file>` 回复，或用 `close <id>` 结案。
-回复标注 HQ 来源，只送回原来的存活 pane。待用户决策的请求必须由用户在源 pane
-回答，HQ 不能代为批准。全部用法见 `gtmux relay --help`。
+回复标注 HQ 来源；Codex 的完整回执保存在原会话的持久收件箱。
+在工作自然断点执行 `gtmux relay inbox`；阻塞提问后用
+`gtmux relay wait <id> --timeout 30` 等待（1–60 秒），再用 `gtmux relay show <id>`
+读取具体回复。收件箱默认按新到旧列出 20 条未读回执，`--limit 1..100` 调整数量，
+`--all` 可查看旧回执。
+
+Codex 的同一个准确运行轮次最多收到一次简短收件箱提醒，只针对 15 分钟内保存的回复。
+完整回执不再进入待发送队列；空闲、等待审批、未加载或不支持的客户端只保留可主动读取的记录，
+不会启动新轮次。提醒回执不明确时不换通道重发。`notice.state=accepted` 只代表提醒被接受；
+`fetched_at` 只代表源会话的命令读取了保存数据，不证明模型已阅读或执行。
+已有旧队列和已接受回执不清除、不重放；其他 agent 继续使用核验后的 pane 投递。
+待用户决策的请求必须由用户在源 pane 回答，HQ 不能代为批准。全部用法见 `gtmux relay --help`。
 `gtmux knowledge sync` 会把简短入口写进 Claude、Codex、opencode、Kimi 的全局
 指令块，新会话启动时加载。其他类型的 agent 通过 `gtmux spawn` 派发内容得到说明。
 
@@ -1825,8 +1838,8 @@ gtmux awake off      # 请求守卫恢复睡眠；通常不用密码
   FileVault、没人在场的 Mac 上，心跳不会恢复，睡眠会被还回去，所以服务器模式扛不过
   一次无人值守的重启。gtmux 不会去动 FileVault 或自动登录来「修好」这件事。
 - 底层那个设置苹果没有文档。[已有真机记录](design/server-mode-research.zh.md)来自 M4 Pro、
-  macOS 26.5.2。CLI 的 `platform.verified` 把 macOS 26.x 归在一起，不代表所有机型和系统
-  配置都已实测。运行时检查发现设置或读回机制不可用时，`on` 会拒绝。
+  macOS 26.5.2；用户也已确认 macOS 27.2 上可正常运行。CLI 的 `platform.verified` 基线
+  包含 macOS 26.x 与 27.2.x，不代表所有机型或补丁配置都已独立实测。运行时检查发现设置或读回机制不可用时，`on` 会拒绝。
 
 手机界面只展示状态，没有开关。owner 可以通过
 [`POST /api/awake`](../api/contract.md#post-apiawake--turn-it-off-write-owner-only-one-direction)
@@ -2240,3 +2253,8 @@ gtmux artifact remove ID
 240 MiB。支持格式及限制见[会话文件预览](design/conversation-documents.zh.md)。
 
 HQ 界面可使用 `gtmux hq workspace list --overview --stored --json` 读取存储中的权威事项，不发现会话；`sources_included:false` 表示没有附带可选会话元数据。普通 list 仍提供实时及历史来源。详见 [HQ 选项反馈](design/HQ-CHOICE-RESPONSE.zh.md)。
+
+
+## 给 agent 使用的截图
+
+`gtmux screenshot` 提供能力查询、来源选择、区域截取、导入、结构化标注、编辑及准确会话投递。详见[截图工作流](guides/agent-screenshots.zh.md)。本地 CLI 即可，不要求 MCP。

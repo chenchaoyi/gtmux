@@ -116,6 +116,7 @@ focused or sent input.
 | `watched` | bool? | a user-promoted PLAIN pane (tiered-pane-control), not an agent; omitted for agents |
 | `icon` | string? | identity-icon hint (`.app`/image path); omitted if none |
 | `activity_at` `since` | int? | epoch seconds (last activity / current-state start) |
+| `since_uncertain` | bool? | Explicitly unknown state duration. When true, omit elapsed text and do not borrow `activity_at`; absent/false retains legacy clock behavior. Also present on digest rows when applicable. |
 
 For an idle Codex row, `since` reflects supported conversation activity or a verified
 terminal turn boundary, not settings/usage telemetry, log mtime or a window repaint.
@@ -123,6 +124,15 @@ The core corrects an older cached idle time only against that same bound home/se
 without a newer message or active/wait marker. This correction is not a new completion
 and does not change `latest`. If no supported activity or prior marker is available,
 `since` is omitted/zero; consumers must not treat `activity_at` as a completion receipt.
+
+For a tmux Codex row without a verified live frontend, an old named active marker
+and a later finished cache can contradict one another. A ready composer with no
+visible work, queue, approval or observed CPU work may then display idle. This
+does not clear markers, create `completion_id`/`completed_at`, or set `latest`.
+Fresh starts and verified frontends retain their existing lifecycle rules. If
+current work is visible but its active timestamp predates a finished observation,
+`since` uses a recognized current Working footer clock, or zero with
+`since_uncertain:true`. This clock is display evidence, not a new turn-start event.
 
 ### `GET /api/session-follow` / `POST /api/session-follow` — external conversation follow (OWNER only)
 
@@ -540,6 +550,15 @@ A turn COUNT is not the bound: turns vary in size by orders of magnitude, and a 
 The signal is a header, not an envelope: the body stays the plain turn array, so a client
 predating this ignores the header instead of failing to decode.
 
+**Opt-in recent window.** `GET /api/transcript?id=%N&recent=1` asks for at most the
+newest 20 turns before the same byte budget. The default request remains unchanged.
+Validators distinguish recent/full bodies. The oldest returned turn retains its original
+`turn_ordinal` and `history_before`, so Chat can load earlier source pages using `before`.
+History resolves the authorized pane/session first without parsing a redundant recent
+window. Guest context stripping and cursor ownership checks remain the same. A parser
+cache may retain a bounded whole-turn tail; requests beyond its coverage still read the
+full requested source range, and a single oversized turn remains complete.
+
 **A session that was STARTED OVER is announced too.** By default this endpoint reads
 the pane's current resume record. A `/clear`, a `/new`, or the `gtmux hq --rotate` HQ
 performs on itself starts a new conversation; an HQ caller can request its predecessors
@@ -752,8 +771,9 @@ reboot), `owned_by_gtmux`, `last_exit?{at,reason}`, `platform{ok,verified,reason
 Guests get `403` — this is a machine-level control, not a per-pane one.
 `guard.installed` means at least one of the guard script/plist exists, and
 `guard.healthy` means both exist; neither verifies launchd execution. After the runtime
-preflight succeeds, `platform.verified` is true for macOS major version 26, not a record
-of hardware-specific testing.
+preflight succeeds, `platform.verified` is true for the macOS 26.x baseline and the
+user-confirmed macOS 27.2.x baseline, not a record of independently testing every
+hardware or patch configuration. Unknown versions retain the unverified indication.
 
 ### `POST /api/awake` — turn it OFF (WRITE, OWNER only, one direction)
 

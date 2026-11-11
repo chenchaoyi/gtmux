@@ -2,6 +2,7 @@ package state
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -44,17 +45,22 @@ func cpuPath(pane string) string { return filepath.Join(CPUDir(), pane) }
 // cpuWorking is the pure decision: given the previous record and the current
 // cumulative CPU, return the new lastActive time and whether the subtree is
 // actively computing. prevCPU < 0 means "no baseline".
-//   - No usable baseline, stale, or non-advancing clock → record, report idle.
+//   - No usable baseline, stale, backward clock or reset counter → report idle.
+//   - A same-second reader retains recent observed work, without inferring a rise.
 //   - Otherwise busy if CPU rose at >= cpuBusyRate now, or did within cpuActiveSec.
 func cpuWorking(now, prevPoll, prevActive int64, prevCPU, curCPU float64) (newActive int64, working bool) {
-	if prevCPU < 0 || now-prevPoll > cpuStaleSec || now <= prevPoll {
+	// The persisted counter has two decimal places; subtree sums can have tiny
+	// representation differences without a real counter reset.
+	if prevCPU < 0 || now-prevPoll > cpuStaleSec || now < prevPoll || math.Round(curCPU*100) < math.Round(prevCPU*100) {
 		return 0, false
 	}
 	newActive = prevActive
-	if rate := (curCPU - prevCPU) / float64(now-prevPoll); rate >= cpuBusyRate {
-		newActive = now
+	if now > prevPoll {
+		if rate := (curCPU - prevCPU) / float64(now-prevPoll); rate >= cpuBusyRate {
+			newActive = now
+		}
 	}
-	working = newActive != 0 && now-newActive < cpuActiveSec
+	working = newActive != 0 && newActive <= now && now-newActive < cpuActiveSec
 	return newActive, working
 }
 

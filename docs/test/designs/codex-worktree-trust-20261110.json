@@ -1,0 +1,70 @@
+{
+  "id": "codex-worktree-trust-20261110",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-10",
+    "decision": "Preserve existing repository trust through authenticated local frontend compatibility, without accepting an unknown folder or changing persisted trust",
+    "notes": "User reports spawned Codex stuck at Folder access and requests a better mechanism. Installed 0.167.0 isolated real TUI contrast: a main-only trusted registered worktree reaches an idle composer in embedded mode, but an explicit local Unix remote shows Trust this folder. Initial fixture without synthetic file authentication stopped at login and is not a valid contrast. Official 0.165/166/167 TUI classifies explicit endpoints as LocalDaemon only when equal to its default socket; protected physical-directory layout alone does not establish local-workspace semantics. Remote trust read omits local main-worktree fallback when there are no project config layers. Keep strict frontend/kernel peer/home checks and the actual backend's permissions. A bounded connection-scoped compatibility adapter may augment ONLY a correlated config/read includeLayers=true result: prove a genuine registered owned worktree with reciprocal gitdir/commondir/main-root metadata, require the effective response to explicitly trust that main root, no existing checkout/cwd trust decision and no untrusted ancestor or disabled/project layer, then add only a transient exact cwd trust-level alias. Do not persist config, copy hooks or permissions, send confirmation keys, trust parents, mask errors, touch arbitrary remote/TCP clients or pretend the socket is the default daemon. Unknown schemas, oversized/stale/unmatched responses, changed metadata or unavailable reads stay byte-for-byte unchanged. Other protocol requests and conversation authority remain unchanged. Metadata reads are bounded and request driven, never global polling. Update shared prompt recognition for the current literal Folder access/Trust this folder screen so a remaining real authorization is not called ready or running. No user session replay or approval changes. Implement only after this design commit, then independent review and normal exact head/main gates; no release or deployment in this task. Fresh self-review after independent Q2dfd finding: explicit project decisions must be evaluated by canonical directory identity, including symlink aliases, before transient inheritance. Preserve WTR001..004 unchanged. WTR005 in one new file covers actual same-home Unix forwarding plus isolated directory aliases, conflicting/unknown/unresolvable paths and cancellation while canonical metadata is stalled. Canonical resolution runs only inside the existing single proof worker and 250ms result budget, never on the forwarding caller after its timeout. Observe policy paths twice around the reciprocal worktree proof and compare stable canonical identities; missing ownership/unknown levels/oversized project sets preserve the original bytes. No actual config write, trust choice, menu key, foreign home or target input."
+  },
+  "cases": [
+    {
+      "id": "WTR-001",
+      "layer": "L1",
+      "description": "Repository trust inheritance requires a real reciprocally registered worktree",
+      "setup": "Owned synthetic filesystem metadata for main/linked checkout, subdirectories and canonical aliases; bounded regular metadata files",
+      "action": "Resolve valid linked worktrees and vary symlinked or missing metadata, wrong gitdir back-reference, commondir mismatch, unrelated clone, separate/unknown layout, oversized metadata and changes between observations",
+      "expected": "Only a stable registered linked checkout resolves to its actual main repository. A copied .git pointer, path-prefix similarity or shared title cannot borrow trust. No git command, hook, config mutation or live pane is executed. Changed/unavailable/unsupported metadata refuses compatibility while preserving the original trust flow.",
+      "planned_files": [
+        "internal/codexbridge/worktree_trust_test.go"
+      ]
+    },
+    {
+      "id": "WTR-002",
+      "layer": "L2",
+      "description": "Only exact correlated local trust reads receive an already-authorized alias",
+      "setup": "Production request/response adapter, initialized canonical home proof and deterministic registered-root reader; bounded synthetic config envelopes",
+      "action": "Match exact config/read ID/cwd/includeLayers; vary effective trusted root, explicit cwd/worktree/ancestor untrusted entries, project/disabled layers, failed initialize, expired/duplicate/unmatched IDs, malformed/oversized replies and canceled metadata reads",
+      "expected": "Only the transient exact cwd projects entry is added from an explicitly trusted verified main root; all other config/permission/hook/provider fields remain identical, no state is written and the adapter never grants a conversation binding. Every refusal and all other messages retain original bytes. Bounds prevent stale or unbounded tracking and late reads cannot authorize.",
+      "planned_files": [
+        "internal/codexbridge/trust_config_test.go"
+      ]
+    },
+    {
+      "id": "WTR-003",
+      "layer": "L3",
+      "description": "Real Unix forwarding preserves trust compatibility and native TUI behavior",
+      "setup": "Actual production forwarding/adapter with isolated Unix WebSocket peers and synthetic initialized backend responses; optional installed Codex TUI harness uses only task HOME/CODEX_HOME, fake file credentials and its own backend",
+      "action": "Run before/after trust reads and untouched frames through real forwarding, then compare main-only trusted worktree native startup; retain explicit untrusted and malformed registration negative controls",
+      "expected": "The actual forwarded config result contains the minimal alias only in the eligible case; other bytes and request IDs survive and no input is sent. Optional real TUI demonstrates removal of the reproduced gate without adding trust entries or weakening sandbox settings. Synthetic admission assumptions, actual TUI/CLI source and any unrun native acceptance are separately disclosed; all fixture roots/processes are isolated and bounded.",
+      "planned_files": [
+        "internal/codexbridge/trust_interop_test.go",
+        "tests/manual/codex-worktree-trust.py"
+      ]
+    },
+    {
+      "id": "WTR-004",
+      "layer": "L2",
+      "description": "Current folder-access chrome is a blocking startup state, not a ready composer",
+      "setup": "Literal user-provided Folder access/Trust this folder capture, older Codex directory/hook screens, settled composer and quoted/scrollback/faint negative cases",
+      "action": "Run shared prompt readiness/startup predicates and production spawn blocker classification with injected transport state",
+      "expected": "The current folder consent screen is waiting and cannot receive the goal; diagnostics name startup trust before an unavailable post-start native binding masks it. Old trust/hook screens retain protection, settled or historical prose does not become waiting, and no key is automatically pressed. All clients reuse the shared core classification.",
+      "planned_files": [
+        "internal/prompt/prompt_codex_folder_access_test.go",
+        "internal/dispatchbridge/trust_gate_test.go"
+      ]
+    },
+    {
+      "id": "WTR-005",
+      "layer": "L2",
+      "description": "Canonical project aliases cannot override explicit refusal or unknown trust decisions",
+      "setup": "Owned registered synthetic worktree, main-only trusted config, real symlink aliases to checkout/subdirectory/main or unrelated owned directories; production response adapter and same-home actual Unix forwarding",
+      "action": "Add untrusted aliases to the same worktree or an ancestor, unknown/existing canonical checkout decisions, dangling/looped/nonabsolute/oversized keys and changing/stalled canonical observations; compare eligible unrelated stable paths, cancellation and preserved payload bytes",
+      "expected": "Any canonical alias explicitly denying a relevant directory prevents transient trust inheritance. Existing checkout decisions and unknown/unowned/unresolvable or changed metadata also preserve the original response. Only stable registered paths with an explicit main trust may inherit. Canonical reads share the bounded single proof worker, return on deadline/cancel, and cannot authorize late or grow a replacement goroutine queue. Original nontrust fields and same-home/initialize/correlation guards remain unchanged. Real Unix forwarding checks use isolated sockets; no real TUI trust configuration or user input is changed.",
+      "planned_files": [
+        "internal/codexbridge/trust_alias_policy_test.go"
+      ]
+    }
+  ],
+  "seal": "a5a41c1cca45a2f0e95ccafa85caf066c4ef2b42fd2fc4602e45daf89440b29e"
+}

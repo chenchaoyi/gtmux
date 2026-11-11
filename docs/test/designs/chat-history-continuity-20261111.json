@@ -1,0 +1,24 @@
+{
+  "id": "chat-history-continuity-20261111",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-11",
+    "decision": "approved for implementation",
+    "notes": "Follow-up to exact f38: record.turns was updated only by source paging, so a rolling recent window could omit already observed intervening turns. Keep observed continuous records when polling; never render an unobserved ordinal gap as adjacent content. If a disconnected tail jumps beyond retained history, keep the current reading window and expose Jump to bottom; that explicit action may select the authoritative recent window and its cursor so earlier source paging can fill back. Preserve source identity, auth retirement, exact record IDs and existing mounted-row bound. This is a controlled RN behavior regression, not actual device acceptance. Additional interleaving review before the next test edit: while an earlier-page promise is pending, latest snapshots still arrive. The same observed-record preservation invariant must hold when that older page resolves; a captured pre-request array must not overwrite records observed meanwhile. Keep case fields and original expected coverage unchanged; add a controlled deferred-page interleaving under LCL-004, no sleeps or real network."
+  },
+  "cases": [
+    {
+      "id": "LCL-004",
+      "layer": "L2",
+      "description": "Phone and iPad shared Chat preserves observed polling history and exposes disconnected tails honestly",
+      "setup": "Actual shared hook/Chat with exact session/home, a paged prefix ending at101, sequential latest20 windows through145, and a separate fresh latest window starting200 without intervening records",
+      "action": "Load older history, advance recent snapshots until first observed new turns leave the20-turn window, then simulate a disconnected tail; inspect selected records, current reading window, Jump action and source cursor",
+      "expected": "Observed turns102..145 remain unique and ordered with the paged prefix. A gap between known ordinals is not rendered as adjacent content: the existing older reader stays visible and Jump to bottom remains available. Explicit Jump selects recent20 with the authoritative before cursor and can page earlier; it does not invent missing records. Identity/auth rejection and original prepend window/abort cases remain valid. Against f38 production, the rolling-window missing-record assertion fails; restore exact bytes after the old negative control.",
+      "planned_files": [
+        "mobileapp/__tests__/chatHistoryContinuity.test.tsx"
+      ]
+    }
+  ],
+  "seal": "fb67e43ad76ba75362470c577d9a61aea8947f4c9ac9cf2982ba34d5eafb5ae6"
+}

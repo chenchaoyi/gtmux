@@ -59,6 +59,13 @@ func fileFor(key string) string {
 
 // Save writes (overwriting) the record for a location key.
 func Save(key string, r Record) error {
+	if r.Agent == "codex" {
+		lease, err := state.TryLease("codex-frontend-binding")
+		if err != nil {
+			return err
+		}
+		defer lease.Close()
+	}
 	previous, _ := Load(key)
 	if previous.Frontend != "" && r.Agent == "codex" {
 		if previous.Agent == r.Agent && previous.SessionID == r.SessionID && previous.HomeID == r.HomeID {
@@ -75,7 +82,7 @@ func Save(key string, r Record) error {
 	if err != nil {
 		return err
 	}
-	return state.WriteFile(fileFor(key), b, 0o644)
+	return state.WritePrivateFile(fileFor(key), b)
 }
 
 // Load returns the record for a location key, ok=false if none/unreadable.

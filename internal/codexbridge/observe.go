@@ -1,11 +1,13 @@
 // Package codexbridge observes root-thread identity on one verified local TUI
-// connection while forwarding the protocol unchanged. It stores no message bodies.
+// connection. Frames are unchanged except for the narrow verified worktree-trust
+// compatibility read documented in trust_config.go. It stores no message bodies.
 package codexbridge
 
 import (
 	"bytes"
 	"encoding/json"
 	"sync"
+	"sync/atomic"
 
 	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
@@ -20,12 +22,13 @@ type operation struct {
 // Only requests that can establish this client's primary conversation enter
 // pending. Catalog, history, turn and global notifications never claim a pane.
 type observer struct {
-	mu      sync.Mutex
-	pending map[string]operation
-	home    string
-	ready   bool
-	latest  uint64
-	bind    func(string, string)
+	mu        sync.Mutex
+	pending   map[string]operation
+	home      string
+	ready     bool
+	homeReady atomic.Bool
+	latest    uint64
+	bind      func(string, string)
 }
 
 func (o *observer) request(data []byte) {
@@ -121,6 +124,7 @@ func (o *observer) response(data []byte) {
 	}
 	if op.initialize {
 		o.ready = v.Result.Home != "" && transcript.CodexHomeIDForPath(v.Result.Home) == o.home
+		o.homeReady.Store(o.ready)
 		o.mu.Unlock()
 		return
 	}
@@ -133,3 +137,5 @@ func (o *observer) response(data []byte) {
 	}
 	o.mu.Unlock()
 }
+
+func (o *observer) homeVerified() bool { return o.homeReady.Load() }

@@ -130,9 +130,13 @@ func (l *Loader) loadCodexFile(path string, maxTurns int) ([]Turn, error) {
 	if err != nil {
 		return nil, err
 	}
-	st := &parseState{turnCap: cacheTurnCap, sourceID: recordSourceID(path)}
+	limit := maxTurns
+	if limit <= 0 || limit > cacheTurnCap {
+		limit = cacheTurnCap
+	}
+	st := &parseState{turnCap: limit, sourceID: recordSourceID(path)}
 	start := int64(0)
-	if hit != nil && hit.file != nil && os.SameFile(hit.file, fi) {
+	if hit != nil && codexCacheCovers(hit.turns, limit) && hit.file != nil && os.SameFile(hit.file, fi) {
 		if fi.Size() == hit.size && fi.ModTime().Equal(hit.mtime) {
 			return lastN(hit.turns, maxTurns), nil
 		}
@@ -170,6 +174,31 @@ func (l *Loader) loadCodexFile(path string, maxTurns int) ([]Turn, error) {
 	if n := len(st.turnStarts); n > 0 {
 		last = st.turnStarts[n-1]
 	}
-	l.retain(&cacheEntry{path: path, size: fi.Size(), turns: st.turns, lastTurn: last, nextLine: next, file: fi, mtime: fi.ModTime(), pendingContexts: st.pendingContexts, pendingContextStart: st.pendingContextStart})
+	l.retainCodex(&cacheEntry{path: path, size: fi.Size(), turns: st.turns, lastTurn: last, nextLine: next, file: fi, mtime: fi.ModTime(), pendingContexts: st.pendingContexts, pendingContextStart: st.pendingContextStart})
 	return lastN(st.turns, maxTurns), nil
+}
+
+// A bounded snapshot is reusable only for requests it completely covers. Larger
+// requests re-read the authoritative source, including when that source appended.
+func codexCacheCovers(turns []Turn, limit int) bool {
+	return len(turns) == 0 || turns[0].Ordinal == 1 || len(turns) >= limit
+}
+
+// Keep a whole-turn tail without changing the caller's requested result. In
+// particular, an oversized last turn is returned intact even when it cannot fit.
+func (l *Loader) retainCodex(e *cacheEntry) {
+	metadata := int64(2*len(e.path) + 256)
+	for _, record := range e.pendingContexts {
+		metadata += int64(128 + len(record.Text) + len(record.Source) + len(record.Title) + len(record.Time))
+	}
+	total := cachedTurnBytes(e.turns) + metadata
+	first := 0
+	for total > cacheByteCap && first < len(e.turns)-1 {
+		total -= cachedTurnBytes(e.turns[first : first+1])
+		first++
+	}
+	// A new slice releases the omitted prefix; it also keeps cache retention from
+	// modifying slices already returned to an HTTP reader.
+	e.turns = append([]Turn(nil), e.turns[first:]...)
+	l.retain(e)
 }

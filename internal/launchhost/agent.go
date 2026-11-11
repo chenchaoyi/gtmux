@@ -66,12 +66,39 @@ func (i inspector) agent(pid int, commands []string, now int64) AgentProcess {
 	return AgentProcess{}
 }
 
+var agentProcessRead = readProcess
+
 // ReadAgent reads one current process incarnation, without arguments or a scan.
 func ReadAgent(pid int) (AgentProcess, bool) {
-	ctx, cancel := context.WithTimeout(context.Background(), budget)
+	return ReadAgentContext(context.Background(), pid)
+}
+
+// ReadAgentContext never grants a process read a new budget past its caller's
+// startup deadline. Legacy readers retain the same per-read bound.
+func ReadAgentContext(parent context.Context, pid int) (AgentProcess, bool) {
+	ctx, cancel := context.WithTimeout(parent, budget)
 	defer cancel()
-	p, ok := readProcess(ctx, pid)
-	if !ok {
+	if ctx.Err() != nil {
+		return AgentProcess{}, false
+	}
+	read := agentProcessRead
+	type result struct {
+		p  process
+		ok bool
+	}
+	done := make(chan result, 1)
+	// The worker owns the reader's output until it settles. Cancellation does
+	// not require waiting for an uninterruptible child process to exit.
+	go func() { p, ok := read(ctx, pid); done <- result{p, ok} }()
+	var p process
+	var ok bool
+	select {
+	case <-ctx.Done():
+		return AgentProcess{}, false
+	case r := <-done:
+		p, ok = r.p, r.ok
+	}
+	if ctx.Err() != nil || !ok {
 		return AgentProcess{}, false
 	}
 	return AgentProcess{p.PID, filepath.Base(p.Command), p.Start, time.Now().Unix()}, true

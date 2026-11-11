@@ -1,0 +1,4 @@
+• Load recent Chat turns first in long sessions, with earlier history available on demand and a stable reading position.
+• Keep HQ replies in their source inbox instead of delivering a delayed stream of full coordination messages.
+• Show clearer text and image delivery receipts, with stable retries for the intended conversation.
+• Correct stale working states and elapsed times while preserving genuine work and approval prompts.

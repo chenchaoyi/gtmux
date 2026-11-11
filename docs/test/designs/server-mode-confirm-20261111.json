@@ -1,0 +1,24 @@
+{
+  "id": "server-mode-confirm-20261111",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-11",
+    "decision": "Honor the user-reported macOS27.2 verification without weakening platform probes or administrator/readback requirements; align the existing inline status glyph by font metrics",
+    "notes": "User supplied screenshot and explicitly confirmed server mode works on their current system. Add27.2 patch family to the verified presentation baseline while preserving26 and leaving other/unknown versions unverified. This is user-provided hardware acceptance, not a new independent lid-close test. Pure version classification tests must not call pmset, change sleep state or ask for privileges. Inline layout is a reversible typography change; compile it and report the absence of real installed-App visual acceptance, without adding tests that mirror a baseline-offset formula."
+  },
+  "cases": [
+    {
+      "id": "SMC-001",
+      "layer": "L1",
+      "description": "Server-mode verified-version presentation includes the user-validated27.2 baseline and preserves unknown-version caution",
+      "setup": "Pure version strings only, no host probes, credentials, administrator prompts or state changes",
+      "action": "Classify26 baseline,27.2 and patch versions, future/older/unknown/malformed strings",
+      "expected": "26 and27.2 patch versions are verified; other or malformed versions retain unverified presentation. Supported() still requires macOS, recognized setting and readable kernel state before this classification; no permission, battery floor, enable/readback or server lifetime behavior changes. No independent real lid-close validation is claimed.",
+      "planned_files": [
+        "internal/servermode/verified_os_test.go"
+      ]
+    }
+  ],
+  "seal": "1d63f6edd1d662d6378b65e8e749e52f06c302ddf3fb4085dd91cf47fedf5e07"
+}

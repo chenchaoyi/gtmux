@@ -1804,3 +1804,15 @@ Supported emphasis preserves actionable links, including scoped local-document c
 ### HQ overview disclosures (2026-11-04)
 
 Phone and iPad share one grouped overview. Each section shows visible / total canonical matters. A full-width footer states the remaining count and Showing X of Y, exposes expanded accessibility state, and reverses to Show less. Missing or stale summary IDs fall back to the first three valid matters; no matter lifecycle state changes. Diff settings, session tools and action sheets share the file-plus/minus icon.
+
+### Recent conversation loading (2026-11-11)
+
+Phone and iPad use the same recent-first Chat reader: request at most20 latest turns
+before the existing byte budget, then fetch earlier source pages explicitly. Source
+ordinals and record IDs stay canonical. Each expansion mounts at most20 additional
+turns; a reader in older content keeps that window while the live tail grows and uses
+Jump to bottom to resume following. Continuous latest snapshots retain observed intervening turns; a disconnected tail waits behind Jump rather than hiding a gap. Jump then selects the authoritative recent window and its earlier cursor. A temporary failure retains content with Retry;
+401/403 retires the affected snapshot. Identity changes and unmount cancel the read
+and its deadline. The initial loading mark says it is reading recent conversation.
+The first cold source scan remains necessary; warm parser measurements are not
+end-to-end phone timings. The existing default HTTP read remains compatible.

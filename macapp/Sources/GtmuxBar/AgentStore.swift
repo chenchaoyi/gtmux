@@ -187,6 +187,7 @@ struct Agent: Identifiable, Equatable {
     var tab = ""
     var activityAt = 0 // epoch seconds of last activity (for relative time); 0 = unknown
     var since = 0      // epoch seconds the current state began (for a "working 7m" duration)
+    var sinceUncertain = false
     var icon = ""      // identity icon hint: a .app path (→ that app's real icon) or an image path
     // native (source=="native") only: the agent session id (adopt key) + the core's
     // verdict that `gtmux adopt` would take it now (idle, resumable, conversation on
@@ -268,6 +269,7 @@ extension Agent: Decodable {
         project = s(.project); terminal = s(.terminal); client = s(.client); tab = s(.tab)
         activityAt = (try? c.decode(Int.self, forKey: .activityAt)) ?? 0
         since = (try? c.decode(Int.self, forKey: .since)) ?? 0
+        sinceUncertain = b(.sinceUncertain)
         icon = s(.icon)
         sessionID = s(.sessionID); adoptable = b(.adoptable)
         errored = b(.errored); errorText = s(.errorText)
@@ -282,6 +284,7 @@ extension Agent: Decodable {
         case session, window, pane, loc, agent, status, task, latest, activity, watched
         case source, role, project, terminal, client, tab, icon, since, adoptable, bg, follow
         case activityAt = "activity_at"
+        case sinceUncertain = "since_uncertain"
         case sessionID = "session_id"
         case errored = "error"
         case detached

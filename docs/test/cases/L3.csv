@@ -1,4 +1,6 @@
 id,layer,stack,file,line,kind,description,dynamic,design
+MAP-8b7815d10836,L3,reviewed implementation,internal/codexbridge/trust_interop_test.go,64,reviewed-selector,TestWTR003ActualUnixForwardingUsesVerifiedHomeAndPreservesOtherFrames,False,WTR-003
+MAP-f4e5b80196e1,L3,reviewed implementation,internal/codexbridge/trust_interop_test.go,165,reviewed-selector,TestWTR003NativeTUIGateway,False,WTR-003
 MAP-c49705115ac9,L3,reviewed implementation,internal/radar/codex_completed_marker_test.go,15,reviewed-selector,TestGatherCompletedOwnTurnSurvivesLateActiveMarker,False,"CET-002,CET-003"
 MAP-226227944e48,L3,reviewed implementation,internal/radar/codex_foreign_marker_gather_test.go,14,reviewed-selector,TestGatherDoesNotReviveAnotherSessionsOldMarkerFromWindowActivity,False,CORE-CODEX-FOREIGN-GATHER
 MAP-5c6d75362085,L3,reviewed implementation,internal/server/send_receipt_test.go,9,reviewed-selector,TestMSD003HTTPPreservesActualReceiptAndLegacySend,False,MSD-003
@@ -7,6 +9,7 @@ MAP-d731318cd969,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceW
 MAP-a11ab8aaa94d,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceWindowTests.swift,92,reviewed-selector,testCurrentQuestionRemainsUsableWhileConversationReadWaits,False,MC-HQ-WINDOW
 MAP-80be9bb61842,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/HQOverviewMoreWindowTests.swift,27,reviewed-selector,testBottomRemainingControlOpensAllAndSelectsHiddenGoalWithoutSending,False,MC-HQ-OVERVIEW-MORE
 MAP-9a63f420f1ec,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/HQOverviewMoreWindowTests.swift,98,reviewed-selector,testFullyShownListHasNoRemainingControlAndUnknownRosterDoesNotSayIdle,False,MC-HQ-OVERVIEW-MORE
+MAP-0776a6d8933b,L3,reviewed implementation,tests/manual/codex-worktree-trust.py,96,reviewed-selector,def main():,False,WTR-003
 LEG-4d0986af07f7,L3,Browser,tests/web/alignment.test.cjs,6,scenario,"`App-aligned roster status, summaries and persistent sections at ${width}`",True,legacy-not-retrospectively-reviewed
 LEG-d5140dc35e4a,L3,Browser,tests/web/alignment.test.cjs,26,scenario,"`Settings change actual Chat and Terminal typography, immediately and after reload at ${width}`",True,legacy-not-retrospectively-reviewed
 LEG-5eb3da408f2c,L3,Browser,tests/web/alignment.test.cjs,70,scenario,`Touch input tools follow input device at ${width} touch=${touch}`,True,legacy-not-retrospectively-reviewed

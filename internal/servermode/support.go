@@ -16,8 +16,8 @@ const (
 	ReasonNoSetting     = "setting-unrecognized"
 	ReasonNoReadback    = "no-readback"
 	ReasonUnverifiedOS  = "unverified-os"
-	verifiedMajorMacOS  = 26 // the only major version this project has measured
-	verifiedOSForHumans = "macOS 26"
+	verifiedMajorMacOS  = 26 // original measured baseline; the user also verified 27.2
+	verifiedOSForHumans = "macOS 26 and 27.2"
 )
 
 // Support is the verdict on whether server mode can work here at all.
@@ -53,7 +53,7 @@ func Supported() Support {
 		return s
 	}
 	s.OK = true
-	if major := osMajor(s.OSVersion); major != verifiedMajorMacOS {
+	if !verifiedServerModeOS(s.OSVersion) {
 		s.Reason = ReasonUnverifiedOS
 		return s
 	}
@@ -106,4 +106,31 @@ func osMajor(v string) int {
 		return -1
 	}
 	return n
+}
+
+// Keep version presentation separate from live platform and readback probes.
+func verifiedServerModeOS(version string) bool {
+	parts := strings.Split(version, ".")
+	if len(parts) > 3 {
+		return false
+	}
+	values := make([]int, len(parts))
+	for i, part := range parts {
+		if part == "" {
+			return false
+		}
+		for _, char := range part {
+			if char < '0' || char > '9' {
+				return false
+			}
+		}
+		value, err := strconv.Atoi(part)
+		if err != nil {
+			return false
+		}
+		values[i] = value
+	}
+	// The 27.2 baseline comes from the user's real-system confirmation, not an
+	// additional privileged probe. Unknown future versions retain their caution.
+	return values[0] == verifiedMajorMacOS || len(values) >= 2 && values[0] == 27 && values[1] == 2
 }

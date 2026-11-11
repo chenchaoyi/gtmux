@@ -1,6 +1,4 @@
 {
-  "schema": 1,
-  "legacy_source": "f187564fcfdab24d7750efbea108958e469cdded",
   "classification": "Legacy boundary labels are structural triage, not individual semantic review or runtime passes. Reviewed new designs take precedence.",
   "files": {
     "assets/icons_test.go": {
@@ -457,6 +455,22 @@
         }
       ]
     },
+    "internal/agentclient/expected_target_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-62f498f7d987",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "TestASC004ExpectedHarnessIdentityRefusesBeforePreparingInput",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-004"
+        }
+      ],
+      "sha256": "690cb2460fb25a1d1821aefcdd9ee08e1a6448252db21edf4b4d0f3805a811f2"
+    },
     "internal/agentclient/launch_test.go": {
       "sha256": "e9215457e3a3f6fd9dc6b5bfb1e56913073a18620ef46be1ed50bd75b45fed36",
       "layer": "L1",
@@ -564,6 +578,47 @@
           "layer": "L1"
         }
       ]
+    },
+    "internal/agentclient/pending_retry_lifetime_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-0090673148dd",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "TestMSD011DurablePendingKeepsOneIdentityAcrossRetryAndPrune",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-011"
+        },
+        {
+          "id": "MAP-daaea5392f1c",
+          "line": 39,
+          "kind": "reviewed-selector",
+          "name": "TestMSD011PrunedOrReplacedNativePendingCannotRegainAuthority",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-011"
+        }
+      ],
+      "sha256": "c21d55c7558b311dd89de202546c65f5314c8e31e7c70020f800fc96479cfb7c"
+    },
+    "internal/agentclient/pending_target_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e76ce32b2c0e",
+          "line": 8,
+          "kind": "reviewed-selector",
+          "name": "TestMSD006PendingTargetIdentity",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-006"
+        }
+      ],
+      "sha256": "f8e2182bb257fa0e287bd205db7f3196bbe26bffae5d71a836f8c769064cc43f"
     },
     "internal/agentenv/agentenv_test.go": {
       "sha256": "d14f26db181bb44f7c8fc180d9633dde24808ea6aa0ee2edda599dc1f629956c",
@@ -1465,6 +1520,22 @@
           "layer": "L1"
         }
       ]
+    },
+    "internal/app/client_contract_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-bf28343fb4c1",
+          "line": 30,
+          "kind": "reviewed-selector",
+          "name": "TestClientHTTPContracts",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CT-HTTP"
+        }
+      ],
+      "sha256": "fa696ba17a2fd2935e8b3ca825f74cf8eea19036aace4793e1035b83674ccb5a"
     },
     "internal/app/cloudflared_security_test.go": {
       "sha256": "5041ea5afe125952ba197c624473db682fd1c83ac8d7fedae8828e6922534125",
@@ -3510,6 +3581,49 @@
         }
       ]
     },
+    "internal/app/hqworkspace_cursor_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-9931f487fae1",
+          "line": 109,
+          "kind": "reviewed-selector",
+          "name": "TestPhase1CursorEmptyScanConcurrentAppend",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
+        },
+        {
+          "id": "MAP-479200cd9eee",
+          "line": 142,
+          "kind": "reviewed-selector",
+          "name": "TestPhase1CursorProspectiveActivation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
+        },
+        {
+          "id": "MAP-b0e7a04d99c5",
+          "line": 179,
+          "kind": "reviewed-selector",
+          "name": "TestPhase1CursorEmptyRetentionGap",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
+        },
+        {
+          "id": "MAP-ec07edd88479",
+          "line": 203,
+          "kind": "reviewed-selector",
+          "name": "TestPhase1CursorFilteredPageBoundary",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
+        }
+      ],
+      "sha256": "9574464057f0fddd502bc4ad81f2b83fba58bdf10a57197033fc3600ca749e4d"
+    },
     "internal/app/hqworkspace_overview_test.go": {
       "sha256": "f485fe3bbd99f817308ce7fe4d9d10d8f33615b13efb791e6e6211e0de9eabc5",
       "layer": "L1",
@@ -3532,6 +3646,56 @@
           "layer": "L1"
         }
       ]
+    },
+    "internal/app/hqworkspace_reconcile_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-9a346dda931b",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "TestPhase1WorkspaceIngestionRecoveryAndReadIndependence",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
+        },
+        {
+          "id": "MAP-4a6d3760f38d",
+          "line": 104,
+          "kind": "reviewed-selector",
+          "name": "TestPhase1WorkspaceActionAuthorizationAndCompatibility",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
+        },
+        {
+          "id": "MAP-c7c7feed6e2a",
+          "line": 148,
+          "kind": "reviewed-selector",
+          "name": "TestPhase1HQCanClaimDryRunAndCommit",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
+        }
+      ],
+      "sha256": "55091bb335148ed8c88de08ba3ed603b8ce8c2c960c0bf617a1d79af873bd012"
+    },
+    "internal/app/hqworkspace_stored_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-c746f11a537e",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestWorkspaceStoredCLILeavesDiscoveryAndRecordsUntouched",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MC-HQ-READ"
+        }
+      ],
+      "sha256": "b3b513924665a8d79b689a731b5cd07187a6383e0d78ce9f793e0d3a4d13ef1a"
     },
     "internal/app/hqworkspace_test.go": {
       "sha256": "0fe11e5029a67dacbb45461267e47c0cbdff1df6df94c087048fc201b47125e1",
@@ -4406,6 +4570,31 @@
         }
       ]
     },
+    "internal/app/phone_delivery_receipt_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-7a5ae9fb2039",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestMSD002PhoneInputOptsIntoDirectUserDeliveryAndKeepsDraftProtection",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-002"
+        },
+        {
+          "id": "MAP-308489bd281c",
+          "line": 20,
+          "kind": "reviewed-selector",
+          "name": "TestMSD002PhoneReceiptCacheKeepsQueueMeaningAndExpiry",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-002"
+        }
+      ],
+      "sha256": "fee612deb83d2b9f71a9d7a044976d915a614413de9e4fb1b6e763d467cbfcea"
+    },
     "internal/app/phonedraft_test.go": {
       "sha256": "a3c9a2d11f34be9b9f4a653e730d673b52671c5b1cd1d1f666ae8906c9cac3ea",
       "layer": "L1",
@@ -4875,6 +5064,88 @@
           "layer": "L1"
         }
       ]
+    },
+    "internal/app/recent_transcript_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-6616de8ce6d1",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestLCL002RecentPaneKeepsOrdinalsCursorAndFullDefault",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-002"
+        }
+      ],
+      "sha256": "3d4d92a01a5a5a655ccfc0a387fb8b772499dff5ebb3ca9dfbebd75bff7b7c17"
+    },
+    "internal/app/relay_inbox_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f9c9dd791852",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestRBL003CodexReplyBodyNeverEntersQueuedOrLegacyInput",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RBL-003"
+        },
+        {
+          "id": "MAP-a70b04134255",
+          "line": 63,
+          "kind": "reviewed-selector",
+          "name": "TestRBL003CompactNoticeHasVerifiedHQProvenanceAndHumanCopiesDoNot",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RBL-003"
+        }
+      ],
+      "sha256": "bbc31b6768bdc34952bda0d8b6fb5039b09336228b8c5a9f2767cf24ba4c3e25"
+    },
+    "internal/app/relay_sender_contract_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-93c5d85ec366",
+          "line": 52,
+          "kind": "reviewed-selector",
+          "name": "TestHRS003ReceiptAwareSharedTranscript",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRS-003"
+        },
+        {
+          "id": "MAP-d400cc0846af",
+          "line": 89,
+          "kind": "reviewed-selector",
+          "name": "TestHRS003EarlierPagesKeepFirstAttribution",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRS-003"
+        }
+      ],
+      "sha256": "52adbf94dc1f7f8e00ebf1995f4ff0478a4cf406b4f0f28800e4419fee37e8bb"
+    },
+    "internal/app/relay_sender_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-0905ae049942",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "TestHRS002TrustedReceiptAndFirstSourceOnly",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "HRS-002"
+        }
+      ],
+      "sha256": "6a49035b4362e9451a56f0bed599a8b6af035dbf89ac80e63112716e7bcca344"
     },
     "internal/app/relay_test.go": {
       "sha256": "696ad81c4702ad365ea4aa5773009fda602b2a506e243ae4093afdb7df039442",
@@ -5820,6 +6091,79 @@
         }
       ]
     },
+    "internal/app/screenshot_deadline_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-5a676c7255b7",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "TestASC007TargetReadStopsAtCancellationBeforeMintOrSend",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-007"
+        }
+      ],
+      "sha256": "b92eaf00d1bf5040a97940b44fa33110dc3a82593f3abbb2fe6bc5481e9004b4"
+    },
+    "internal/app/screenshot_send_input_budget_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-a7175f174f65",
+          "line": 16,
+          "kind": "reviewed-selector",
+          "name": "TestASC009StalledNoteHasNoClaimOrSendAfterDeadline",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-009"
+        }
+      ],
+      "sha256": "0a0db9a8d0b1a401de35a7b8523906ceaf7fd07f52e2bd2005f2fb34867549ca"
+    },
+    "internal/app/screenshot_send_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-8890e9017044",
+          "line": 16,
+          "kind": "reviewed-selector",
+          "name": "TestASC004And005ScreenshotDeliveryUsesExactTargetAndDurableAcceptance",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-004,ASC-005"
+        }
+      ],
+      "sha256": "e7a84c9d7125b78bdba29fd9685e48a34171ab837b7c7dc63935ee4240608c95"
+    },
+    "internal/app/screenshot_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-15420f2c2dd0",
+          "line": 31,
+          "kind": "reviewed-selector",
+          "name": "TestASC001ScreenshotCLIRefusesAmbiguousOrUnsupportedInput",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-001,ASC-006"
+        },
+        {
+          "id": "MAP-b25f69eecf52",
+          "line": 49,
+          "kind": "reviewed-selector",
+          "name": "TestASC006UnavailableNativeCapabilityIsTruthfulAndNonMutating",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-001,ASC-006"
+        }
+      ],
+      "sha256": "148c8bfa1c7d3e756d78854f5ff4355078cbc3a4c9dd33f75e7e57b3f15738df"
+    },
     "internal/app/sendattach_test.go": {
       "sha256": "f1ed000ff85d428aae5de5ff06c1908c00eab3ba2cab46cab85e953b51874ddb",
       "layer": "L1",
@@ -6047,6 +6391,22 @@
           "layer": "L1"
         }
       ]
+    },
+    "internal/app/serve_energy_snapshot_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-59b391120a04",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestPWR003SSEPublishesItsActualNativeObservationForREST",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "PWR-003"
+        }
+      ],
+      "sha256": "31ff63621a5723178bbe21086bd8e1f73f6366f6ef234fd36fdf2a9e93092dac"
     },
     "internal/app/serve_startup_test.go": {
       "sha256": "85a72da9d9989f7a503057b34841d3c4208fe87cecd02d879d058d11fbf7c446",
@@ -7949,6 +8309,47 @@
         }
       ]
     },
+    "internal/codexbridge/connection_epoch_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-61b29ce6decb",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "TestCFR004OnlySuccessfulNewerConnectionChangesAuthority",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "CFR-004"
+        },
+        {
+          "id": "MAP-d0efecbb0cb2",
+          "line": 31,
+          "kind": "reviewed-selector",
+          "name": "TestCFR004UpgradeRetainsOnlyTheRemainingAdmissionBudget",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "CFR-004"
+        }
+      ],
+      "sha256": "9e921e78b5923656c5f6bd92c06b06b3b79c95854da0c5537cc6b07a32500f71"
+    },
+    "internal/codexbridge/daemon_readiness_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-67cdcc44a1a8",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestCFR007ActualAdmissionDialKeepsCancellationAndDeadlineReasons",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CFR-007"
+        }
+      ],
+      "sha256": "ed69c65f3428b6b13bcc586a670b662b7e445e7a421956eacac2575c8a401856"
+    },
     "internal/codexbridge/launch_test.go": {
       "sha256": "cfe2c78339a78864a3fd45302401792ba4c582705f6790d00f2c7f7edd57881c",
       "layer": "L1",
@@ -8050,6 +8451,233 @@
           "layer": "L1"
         }
       ]
+    },
+    "internal/codexbridge/readiness_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-4bb0cccd29ff",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestCFR003AdmissionRetriesOnlyTransientEvidence",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CFR-003"
+        },
+        {
+          "id": "MAP-3cb7a6a952c7",
+          "line": 68,
+          "kind": "reviewed-selector",
+          "name": "TestCFR003LaunchPublicationAndCancellation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CFR-003"
+        }
+      ],
+      "sha256": "20022389496d4d174d17ef81cf17855db6019f869caff34217815e968723a386"
+    },
+    "internal/codexbridge/trust_alias_policy_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-a35414decb85",
+          "line": 17,
+          "kind": "reviewed-selector",
+          "name": "TestWTR005CanonicalProjectDecisionsKeepResponseUnchanged",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "WTR-005"
+        },
+        {
+          "id": "MAP-092a68c52730",
+          "line": 86,
+          "kind": "reviewed-selector",
+          "name": "TestWTR005ActualUnixForwardingKeepsCanonicalDenyAndSameHomeGuards",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "WTR-005"
+        },
+        {
+          "id": "MAP-8c496a3dd18b",
+          "line": 150,
+          "kind": "reviewed-selector",
+          "name": "TestWTR005CanonicalObservationsAreStableAndBounded",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "WTR-005"
+        }
+      ],
+      "sha256": "1403ed181cd285444ddb63a19e87af72a491a3a2fbc44aef2d3fff02fc4f9a4b"
+    },
+    "internal/codexbridge/trust_config_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-72cccd537fb4",
+          "line": 21,
+          "kind": "reviewed-selector",
+          "name": "TestWTR002AliasMirrorsOnlyExistingEffectiveRootTrustAndKeepsOtherFields",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "WTR-002"
+        },
+        {
+          "id": "MAP-70da38ef277c",
+          "line": 47,
+          "kind": "reviewed-selector",
+          "name": "TestWTR002RefusalsLeaveOriginalFrameBytesUnchanged",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "WTR-002"
+        },
+        {
+          "id": "MAP-c59477e205b9",
+          "line": 109,
+          "kind": "reviewed-selector",
+          "name": "TestWTR002CanceledAndLateProofCannotAuthorizeOrSpawnMoreReads",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "WTR-002"
+        },
+        {
+          "id": "MAP-99060310ce85",
+          "line": 142,
+          "kind": "reviewed-selector",
+          "name": "TestWTR002UnknownOrReusedRequestIDsNeverAccumulateUnboundedState",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "WTR-002"
+        }
+      ],
+      "sha256": "80844f9e1c5556c79020e847687d03c304535dc033ea9a3c6fe8c6d21f90c6aa"
+    },
+    "internal/codexbridge/trust_interop_test.go": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-8b7815d10836",
+          "line": 64,
+          "kind": "reviewed-selector",
+          "name": "TestWTR003ActualUnixForwardingUsesVerifiedHomeAndPreservesOtherFrames",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "WTR-003"
+        },
+        {
+          "id": "MAP-f4e5b80196e1",
+          "line": 165,
+          "kind": "reviewed-selector",
+          "name": "TestWTR003NativeTUIGateway",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "WTR-003"
+        }
+      ],
+      "sha256": "49f35d70f1263ee87a58a57192233da50fe84d22114955aa284d5733609e869e"
+    },
+    "internal/codexbridge/upgrade_admission_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-5e69a5544cc0",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestCFR009PostUpgradeUsesActualCancellationBeforeDeadline",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "CFR-009"
+        }
+      ],
+      "sha256": "66ca6f0c68960acb04c5692d5d937b4fcd9a47d0c5c2b00707b2e92265015d52"
+    },
+    "internal/codexbridge/worktree_trust_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-60dd54884dac",
+          "line": 30,
+          "kind": "reviewed-selector",
+          "name": "TestWTR001OnlyReciprocallyRegisteredWorktreesHaveStableEvidence",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "WTR-001"
+        },
+        {
+          "id": "MAP-2f03f0629104",
+          "line": 62,
+          "kind": "reviewed-selector",
+          "name": "TestWTR001MalformedCopiedSymlinkAndUnsupportedMetadataCannotBorrowTrust",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "WTR-001"
+        }
+      ],
+      "sha256": "cdd5c6ad21f66ebe249267bf419bcf51d136680ba584505cc10856756044f1a9"
+    },
+    "internal/codexrpc/coordination_input_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-24eddeaaed12",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestRBL001CoordinationOnlySteersExactActiveTurn",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RBL-001"
+        },
+        {
+          "id": "MAP-1ce78495328b",
+          "line": 70,
+          "kind": "reviewed-selector",
+          "name": "TestRBL001CoordinationGuardPreventsMutation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RBL-001"
+        }
+      ],
+      "sha256": "383306ad66b7f17538a615be4773bf1d3ab51b1d4094843f561791313043c016"
+    },
+    "internal/codexrpc/direct_user_input_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d24568194d08",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestMSD001ExplicitUserInputSelectsExactActiveOrLoadedIdleTurn",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-001"
+        },
+        {
+          "id": "MAP-b2659a0a9502",
+          "line": 49,
+          "kind": "reviewed-selector",
+          "name": "TestMSD001LegacyQueueRemainsExplicitAndOnlyUnknownMethodCanFallback",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-001"
+        },
+        {
+          "id": "MAP-09d632a0de8e",
+          "line": 76,
+          "kind": "reviewed-selector",
+          "name": "TestMSD001UserInputRefusesUnsafeMetadataAndNeverReplaysAmbiguousWrite",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-001"
+        }
+      ],
+      "sha256": "9d8d714bdfdc05826ad671bf328d820b37a7b102621553fad457e39d51d00dee"
     },
     "internal/codexrpc/peer_unix_test.go": {
       "sha256": "2b002ebc23371ae7348e23fed7fd286af19bb5d0ffde18603cd9b1be1facfe18",
@@ -8153,6 +8781,49 @@
         }
       ]
     },
+    "internal/codexrpc/screenshot_input_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f930cf46c48d",
+          "line": 17,
+          "kind": "reviewed-selector",
+          "name": "TestSSI001ActiveScreenshotUsesExactTurnAndMetadataOnly",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SSI-001"
+        },
+        {
+          "id": "MAP-2f4616d9d325",
+          "line": 56,
+          "kind": "reviewed-selector",
+          "name": "TestSSI001OnlyExplicitUnsupportedOrIdleUsesLegacyQueue",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SSI-001"
+        },
+        {
+          "id": "MAP-7bcaec9ec776",
+          "line": 83,
+          "kind": "reviewed-selector",
+          "name": "TestSSI001RefusalsAndUncertaintyNeverMutateOrReplay",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SSI-001"
+        },
+        {
+          "id": "MAP-570ce9eacef7",
+          "line": 121,
+          "kind": "reviewed-selector",
+          "name": "TestSSI001LastMomentHoldStopsActiveInput",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SSI-001"
+        }
+      ],
+      "sha256": "1ecfdf8669c5a02dc1fed2afd951fc628e05d176040c476c8b922d84b7dff9e8"
+    },
     "internal/codexterminal/client_test.go": {
       "sha256": "5da1c3c9516a1548ffba50970f0e619e86ffeeb92eb84b93e87812f92fd60e14",
       "layer": "L1",
@@ -8230,6 +8901,90 @@
           "layer": "L1"
         }
       ]
+    },
+    "internal/codexterminal/readiness_missing_ancestor_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-2160b366ce2a",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "TestCFR008MissingAncestorIsUnavailableAndACompleteRecheckCanSucceed",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "CFR-008"
+        },
+        {
+          "id": "MAP-c1d7cc8624a4",
+          "line": 45,
+          "kind": "reviewed-selector",
+          "name": "TestCFR008ObservedConflictsStayHardWhenAnotherRequiredRowIsMissing",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "CFR-008"
+        }
+      ],
+      "sha256": "0234efd0574b1cbf572c4bbf47e5dcc6edd27bc1e67b528c7dfa8fa9c794fc18"
+    },
+    "internal/codexterminal/readiness_review_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-3c9928c51d3c",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestCFR005ReadinessPreservesStrictTerminalProof",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "CFR-005"
+        },
+        {
+          "id": "MAP-46db7daae336",
+          "line": 76,
+          "kind": "reviewed-selector",
+          "name": "TestCFR005FullTreeLaunchScopeAndParentCancellation",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "CFR-005"
+        },
+        {
+          "id": "MAP-c1532da18337",
+          "line": 113,
+          "kind": "reviewed-selector",
+          "name": "TestCFR005DirectLaunchRetainsFullTreeAndMissingEvidenceRefuses",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "CFR-005"
+        }
+      ],
+      "sha256": "ec313ed2618212c2804f7cb836e5ec125323c62ecdb229e15c9dee6d8460fe23"
+    },
+    "internal/codexterminal/readiness_visible_ancestry_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e331f6b9597b",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "TestCFR010VisibleOutsideAncestryMustStayHard",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "CFR-010"
+        },
+        {
+          "id": "MAP-bc7b5ad2bc4f",
+          "line": 34,
+          "kind": "reviewed-selector",
+          "name": "TestCFR010VisibleCycleStaysHardWithMissingBridge",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "CFR-010"
+        }
+      ],
+      "sha256": "24c66e29dd4063e9b6ed7c3cddd32f4d88fc571a36685a9f5e03ac5858abf624"
     },
     "internal/codexterminal/stdin_lsof_test.go": {
       "sha256": "cf8885f7bbc188fb89986275459a363943b48d52e097331e051db348ed9b9c80",
@@ -10390,6 +11145,22 @@
         }
       ]
     },
+    "internal/dispatchbridge/direct_user_input_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e452620f505a",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestMSD002DirectUserIngressPreservesReceiptAndNeverReplays",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-002"
+        }
+      ],
+      "sha256": "31b2e63509764464bb3cc9c9870f461a1e5273889070d7207fe014a6ceac484c"
+    },
     "internal/dispatchbridge/dispatchbridge_test.go": {
       "sha256": "d324f55f3ae8507098dbe5f34e7356ae994f3ea98466e0834e5eb1d279f3811c",
       "layer": "L1",
@@ -10477,6 +11248,79 @@
         }
       ]
     },
+    "internal/dispatchbridge/expected_target_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e4d59ee3405b",
+          "line": 11,
+          "kind": "reviewed-selector",
+          "name": "TestASC004ExpectedCodexIdentityRefusesBeforePreparingInput",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-004"
+        }
+      ],
+      "sha256": "9d66e079d234052a5d18e22162deb4fc895784bcfafb07e9a61c72ac8b51147a"
+    },
+    "internal/dispatchbridge/pending_retry_overlap_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-98c91aed6905",
+          "line": 20,
+          "kind": "reviewed-selector",
+          "name": "TestMSD011DelayedBridgeAndSameIDRetryCannotBothSubmit",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-011"
+        }
+      ],
+      "sha256": "4b459fd1af03c2f51220f8e5e8213bfd2e212380c7db2e62d4a5ab0a973cf35b"
+    },
+    "internal/dispatchbridge/pending_retry_target_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d7bcff6e0143",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestMSD006PendingRetryCannotRetarget",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-006"
+        }
+      ],
+      "sha256": "bae177f3d725a9b5a0cba6502aa34e6e9598074ddee3f70700e9f332915a44b9"
+    },
+    "internal/dispatchbridge/screenshot_input_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-95475cf33bca",
+          "line": 19,
+          "kind": "reviewed-selector",
+          "name": "TestSSI002NativeImageAcceptanceAndUncertainRetryKeepIdentity",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SSI-002"
+        },
+        {
+          "id": "MAP-8691ea4c02c8",
+          "line": 103,
+          "kind": "reviewed-selector",
+          "name": "TestSSI002OrdinaryTextKeepsExistingQueueSemantics",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SSI-002"
+        }
+      ],
+      "sha256": "2f3fe680ebcf82a7a4380433142f753c4dbc59c2708c7fd7d09155a5ebfbc40d"
+    },
     "internal/dispatchbridge/terminal_ready_test.go": {
       "sha256": "3506c643fec9c8477db1bbabd55e09a4e5b9e2a4dc473ec112cca8c77e0d20f2",
       "layer": "L1",
@@ -10491,6 +11335,31 @@
           "layer": "L1"
         }
       ]
+    },
+    "internal/dispatchbridge/trust_gate_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-3f6433329ad1",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestWTR004VisibleTrustNamesBlockerBeforePostStartTransport",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "WTR-004"
+        },
+        {
+          "id": "MAP-cdcf768bbc4e",
+          "line": 19,
+          "kind": "reviewed-selector",
+          "name": "TestWTR004NormalTransportStillRequiredAndHistoricalTrustIgnored",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "WTR-004"
+        }
+      ],
+      "sha256": "640d6ae2c380fddbd2694b88f05df022084518f5afff44fc1f980061964e6b3b"
     },
     "internal/docs/docs_test.go": {
       "sha256": "680dbb7681d55332b15991399576045fb07d9f95f2089a0ab1840e652d6634d1",
@@ -11813,6 +12682,31 @@
         }
       ]
     },
+    "internal/ghostty/session_identity_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d3cfa449d61c",
+          "line": 7,
+          "kind": "reviewed-selector",
+          "name": "TestTitleMatchesSessionPreservesLeadingSymbols",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "FOCUS-001,FOCUS-002"
+        },
+        {
+          "id": "MAP-761073fd4439",
+          "line": 39,
+          "kind": "reviewed-selector",
+          "name": "TestSessionTabPrefersLiteralIdentity",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "FOCUS-001,FOCUS-002"
+        }
+      ],
+      "sha256": "d39497db4173b773bb881661cc075fbe055efd574686b21c8f03b0f0c6f30bdd"
+    },
     "internal/ghostty/taborder_test.go": {
       "sha256": "ca324f532325e1d7630cd6f4111ec45d89f692d12aa90d7f1779644fa326403c",
       "layer": "L1",
@@ -11984,6 +12878,56 @@
           "layer": "L1"
         }
       ]
+    },
+    "internal/hook/codex_completed_turn_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-7bf0b97f95d1",
+          "line": 38,
+          "kind": "reviewed-selector",
+          "name": "TestCompletedCodexTurnRejectsExplicitLateRearm",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CET-004,CET-005"
+        },
+        {
+          "id": "MAP-6752a622a3e4",
+          "line": 72,
+          "kind": "reviewed-selector",
+          "name": "TestCompletedCodexTurnKeepsLegacyAndUncertainCallbacks",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CET-004,CET-005"
+        },
+        {
+          "id": "MAP-2dd42a3caeb8",
+          "line": 114,
+          "kind": "reviewed-selector",
+          "name": "TestCodexContinuationPreservesActiveStart",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CET-004,CET-005"
+        }
+      ],
+      "sha256": "f1a148ff3a362baefca2c295316c95eab1d55257d5c1c6e25907f4ef35af69f9"
+    },
+    "internal/hook/codex_manual_compact_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-cce8e70a6d32",
+          "line": 11,
+          "kind": "reviewed-selector",
+          "name": "TestCompletedCodexTurnPreservesManualCompactReceipt",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CET-006"
+        }
+      ],
+      "sha256": "639607ccc19de38963c65f855d6da6cba45e1639196d47556c5fa723b6370de6"
     },
     "internal/hook/codexbinding_test.go": {
       "sha256": "e02d9bb8d7b3b371b8c3b1b8547df3befd1dbad6b20ff994e073009fd367c5be",
@@ -17085,6 +18029,58 @@
         }
       ]
     },
+    "internal/hqworkspace/phase1_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-a9132845f95d",
+          "line": 45,
+          "kind": "reviewed-selector",
+          "name": "TestPhase1ReportsPreserveCompletedAndQuestion",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
+        },
+        {
+          "id": "MAP-8d3525e25015",
+          "line": 82,
+          "kind": "reviewed-selector",
+          "name": "TestPhase1TransitionCASAndQuestionIdentity",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
+        },
+        {
+          "id": "MAP-8c722e686be5",
+          "line": 151,
+          "kind": "reviewed-selector",
+          "name": "TestPhase1RecoveryFencingAtomicAssessment",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
+        },
+        {
+          "id": "MAP-6cde1202d0f1",
+          "line": 220,
+          "kind": "reviewed-selector",
+          "name": "TestPhase1OldObservationDeferralAndSchemaMigration",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
+        },
+        {
+          "id": "MAP-05f8c00db7ff",
+          "line": 281,
+          "kind": "reviewed-selector",
+          "name": "TestPhase1ExactAttributionAndAmbiguity",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
+        }
+      ],
+      "sha256": "23f843d99f339eb8b4f94bcf125e319fdee1e25c058d0053ad896080eeb4caad"
+    },
     "internal/hqworkspace/register_test.go": {
       "sha256": "ce8147d86846743f29f6284f310b9a3ec62f47b2e2286284b534be4b34f6cdc5",
       "layer": "L1",
@@ -18556,6 +19552,22 @@
         }
       ]
     },
+    "internal/launchhost/agent_readiness_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-25bce7c30ce2",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "TestCFR006AgentReadReturnsBeforeBlockedReaderSettles",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "CFR-006"
+        }
+      ],
+      "sha256": "d44704759099a617510f9ac09efd8b585a0b2e66fba061cb84ff6a59659f6ba5"
+    },
     "internal/launchhost/agent_test.go": {
       "sha256": "c235c4a207c49422f5a48c0d384a72275b95941c77b3ae792ff31344eb01e041",
       "layer": "L1",
@@ -19582,6 +20594,38 @@
         }
       ]
     },
+    "internal/native/closed_frontend_reuse_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-ef51509f7325",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "TestClosedFrontendObservationSurvivesPositivePIDReuseOnly",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HXF-003"
+        }
+      ],
+      "sha256": "a2047f16ba4d9d5da401986dceb58577e8028bb8f52481fd2c093744f2cef3f7"
+    },
+    "internal/native/closed_frontend_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-1176b6e7ceff",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestClosedFrontendObservationRequiresExactSnapshotAndGoneProcess",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HXF-001"
+        }
+      ],
+      "sha256": "1174caa3e91be9e8fd55a9ffa4c83861dc5d8e81cdede465d7824e9ceac473e6"
+    },
     "internal/native/native_test.go": {
       "sha256": "254e7f260cae6078de4e756b072568e074eb84745736afde26b5ba66e94adedb",
       "layer": "L1",
@@ -19878,6 +20922,31 @@
           "layer": "L1"
         }
       ]
+    },
+    "internal/prompt/prompt_codex_folder_access_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-c381a2b0e2db",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestWTR004CurrentFolderAccessBlocksReadiness",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "WTR-004"
+        },
+        {
+          "id": "MAP-ecbb737dd817",
+          "line": 20,
+          "kind": "reviewed-selector",
+          "name": "TestWTR004ReportsAndSettledComposersAreNotConsent",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "WTR-004"
+        }
+      ],
+      "sha256": "b270afdb25c6005e2be7ea91918aeb90b6c11a133c4a6f33a1a2930a6ff417db"
     },
     "internal/prompt/prompt_codex_test.go": {
       "sha256": "e5668ea91ac16feac24564a0b56f87f1b0daa6abe09c1e1275e5504a5850fdf2",
@@ -20368,6 +21437,79 @@
         }
       ]
     },
+    "internal/radar/closed_frontend_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e88c0ded5ae1",
+          "line": 18,
+          "kind": "reviewed-selector",
+          "name": "TestClosedBoundResumedWorkerHistoryAndPreservation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HXF-002"
+        }
+      ],
+      "sha256": "38055d72ccdeead07a52b7cd4a122317dab84417c6e223dc47bd41523c7c1893"
+    },
+    "internal/radar/codex_completed_marker_test.go": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-c49705115ac9",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "TestGatherCompletedOwnTurnSurvivesLateActiveMarker",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "CET-002,CET-003"
+        }
+      ],
+      "sha256": "b44f3bc0774a92005a869f4417a7acc01cbbca23e9ee9231530af573aa29ad2c"
+    },
+    "internal/radar/codex_foreign_marker_gather_test.go": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-226227944e48",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestGatherDoesNotReviveAnotherSessionsOldMarkerFromWindowActivity",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "CORE-CODEX-FOREIGN-GATHER"
+        }
+      ],
+      "sha256": "d0abb6fe93bcb80b3f3742be1652c0377235718a5ad0254834dc9f98ac9d0cb7"
+    },
+    "internal/radar/codex_foreign_marker_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-8c62d9a14381",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "TestForeignActiveRequiresCurrentIdentityEndedTurnAndReadyFrame",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CORE-CODEX-FOREIGN-ACTIVE"
+        },
+        {
+          "id": "MAP-d562c313395b",
+          "line": 107,
+          "kind": "reviewed-selector",
+          "name": "TestForeignActiveProductionReaderRejectsLegacyResumeWithoutFrontend",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CORE-CODEX-FOREIGN-ACTIVE"
+        }
+      ],
+      "sha256": "c6ce22a2cfa598de96de46e10d9065324d94ca13ba94ef3fdf6491e37e54a71a"
+    },
     "internal/radar/codex_idle_time_test.go": {
       "sha256": "b291664b39a04b8af213eb26edec760d2155b0ba369bb7453ab24b78b27afcc0",
       "layer": "L1",
@@ -20414,6 +21556,31 @@
           "layer": "L1"
         }
       ]
+    },
+    "internal/radar/codex_stale_state_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-3b7c2c0858d3",
+          "line": 58,
+          "kind": "reviewed-selector",
+          "name": "TestCSR001StaleActiveCannotReviveReadyFinishedPane",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CSR-001,CSR-002"
+        },
+        {
+          "id": "MAP-3a420ae89cea",
+          "line": 158,
+          "kind": "reviewed-selector",
+          "name": "TestCSR002SupersededActiveDoesNotDateCurrentWork",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CSR-001,CSR-002"
+        }
+      ],
+      "sha256": "2aa2714c96948686d778bb944e4cb73f3bf76e969e933be76709957df2ec6858"
     },
     "internal/radar/codexbinding_test.go": {
       "sha256": "61730e1526a23d34fc82b849c170a1b76b4b4eed80d48afbf9ddc3f56d2d4111",
@@ -20803,6 +21970,47 @@
           "layer": "L1"
         }
       ]
+    },
+    "internal/radar/energy_gather_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-981c45e6de6f",
+          "line": 8,
+          "kind": "reviewed-selector",
+          "name": "TestPWR002GatherSharesFramesOnlyInsideOnePass",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "PWR-002"
+        }
+      ],
+      "sha256": "25d6cbfcfe8242182d4310e4ac012a0f60ed358107790092195f761e1baac6ff"
+    },
+    "internal/radar/energy_snapshot_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-0670bffd7c6c",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestPWR001ProducerSharesFreshSnapshotAndKeepsBoundaries",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "PWR-001"
+        },
+        {
+          "id": "MAP-e4331da4fa54",
+          "line": 62,
+          "kind": "reviewed-selector",
+          "name": "TestPWR001ConcurrentProducerCannotBeOverwrittenByOlderREST",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "PWR-001"
+        }
+      ],
+      "sha256": "c1b68825831e08167c1d904d4fe561780a5e91680b4cda099f0bdc45a0fcc9fe"
     },
     "internal/radar/gather_test.go": {
       "sha256": "49c382017e84cd11b51617be69270968a26134e65bce7403d0de2dd5bf1468a5",
@@ -21631,6 +22839,49 @@
         }
       ]
     },
+    "internal/relay/inbox_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-081f78baa59f",
+          "line": 30,
+          "kind": "reviewed-selector",
+          "name": "TestRBL002InboxCoalescesConcurrentNoticesAndPreservesReceipts",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RBL-002"
+        },
+        {
+          "id": "MAP-6010cd28478a",
+          "line": 95,
+          "kind": "reviewed-selector",
+          "name": "TestRBL002FreshnessLegacyAndBoundedSourceWait",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RBL-002"
+        },
+        {
+          "id": "MAP-1e34bec3e596",
+          "line": 145,
+          "kind": "reviewed-selector",
+          "name": "TestRBL002InboxSortsReplyTimeAndRechecksStalenessAtClaim",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RBL-002"
+        },
+        {
+          "id": "MAP-9a0a983fad52",
+          "line": 183,
+          "kind": "reviewed-selector",
+          "name": "TestRBL002SourceWaitCancelsWhileLedgerIsLocked",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RBL-002"
+        }
+      ],
+      "sha256": "b6a09fb9fbbea285544f0180f2751550b7469522705b29a54f2c8bcf42b22efa"
+    },
     "internal/relay/relay_test.go": {
       "sha256": "f190e90178baf2215c2e2c532b07b95d47e7a5c703c078709e9b819d86620361",
       "layer": "L1",
@@ -22148,6 +23399,22 @@
         }
       ]
     },
+    "internal/resume/codexfrontend_ready_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-0ff0e3ef33b9",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestCFR002AdmissionCausesAndControlledLaunch",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CFR-002"
+        }
+      ],
+      "sha256": "0055d64647d13bfee6d510623005c72c0a863a4fa89b7e0ff969af9b1a5d0737"
+    },
     "internal/resume/codexfrontend_test.go": {
       "sha256": "b9e6f87c8f5330684d6a4d72fcc9843590a5eeb83197a74f65f93eaf60f66394",
       "layer": "L1",
@@ -22577,6 +23844,181 @@
           "layer": "L1"
         }
       ]
+    },
+    "internal/resume/state_publication_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e0f0d6088eea",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestCSR003SavePublishesAnAtomicResumeSnapshot",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CSR-003"
+        },
+        {
+          "id": "MAP-1808038b01b0",
+          "line": 51,
+          "kind": "reviewed-selector",
+          "name": "TestCSR003CodexSaveAndHeartbeatRespectBindingLease",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CSR-003"
+        }
+      ],
+      "sha256": "66f6c23a714efce67cf58d4496b1dee3c18be83cc9b27001ff92bebc9ed6212b"
+    },
+    "internal/screenshot/artifact_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-fb260993ae4c",
+          "line": 45,
+          "kind": "reviewed-selector",
+          "name": "TestASC001ArtifactPublicationIsAtomicAndPreservesExistingFiles",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-001,ASC-003"
+        },
+        {
+          "id": "MAP-6431b235fa37",
+          "line": 98,
+          "kind": "reviewed-selector",
+          "name": "TestASC003CoordinatesAndEditableImagesStayBoundToExactBytes",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-001,ASC-003"
+        }
+      ],
+      "sha256": "47fe8039779e6f71b92b16e406fc87c5a7c76ffd48ccee54a56e8fb9e143a561"
+    },
+    "internal/screenshot/host_readiness_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-28e4c80d7a50",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestASC007HostObservationCannotAuthorizeAfterCancellation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-007"
+        },
+        {
+          "id": "MAP-cad2cb987926",
+          "line": 42,
+          "kind": "reviewed-selector",
+          "name": "TestASC007HostIncarnationUsesExactUTCMetadata",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-007"
+        }
+      ],
+      "sha256": "4e327ea50bda9a8ef15ac77dc9516b02aae11fbe97257e4a901cd030be579e16"
+    },
+    "internal/screenshot/input_budget_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-c1899f32ed50",
+          "line": 17,
+          "kind": "reviewed-selector",
+          "name": "TestASC009FIFOPathsNeverBlockBeforeRegularFileValidation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-009"
+        },
+        {
+          "id": "MAP-edcd3683485b",
+          "line": 66,
+          "kind": "reviewed-selector",
+          "name": "TestASC009PipeDeadlineCancellationBytesAndOriginalFlags",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-009"
+        }
+      ],
+      "sha256": "2284107f1ecf02dd20f332479794271e66df28e97edb4c4f9307f782e08ef1f7"
+    },
+    "internal/screenshot/receipts_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e27b2d2ffff7",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "TestASC005ReceiptsNeverReplayUncertainOrChangedRequests",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-005"
+        },
+        {
+          "id": "MAP-fa5a12e1d46f",
+          "line": 57,
+          "kind": "reviewed-selector",
+          "name": "TestASC005ReceiptStoreRefusesCorruptionAndCapacity",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-005"
+        }
+      ],
+      "sha256": "6d2d13bacd4221d99586830bcc57b6625998277d48ed4158cf6a03adaa9d994c"
+    },
+    "internal/screenshot/target_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-58e7e7500da8",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestASC004TargetReferencesBindWholeIncarnationAndExpire",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-004"
+        },
+        {
+          "id": "MAP-a2779c009d7d",
+          "line": 42,
+          "kind": "reviewed-selector",
+          "name": "TestASC004TargetQueriesDoNotMintKeys",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-004"
+        }
+      ],
+      "sha256": "76950d26f8045c83d5ee57d4fbeee447a64dae1675c32e0294b7ef4fab1e390d"
+    },
+    "internal/screenshot/transport_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-7a98936d8577",
+          "line": 16,
+          "kind": "reviewed-selector",
+          "name": "TestASC002NativeTransportPinsHostAndBoundsReplies",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-002"
+        },
+        {
+          "id": "MAP-3c48c7bdd903",
+          "line": 145,
+          "kind": "reviewed-selector",
+          "name": "TestASC006NativeInterop",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-002"
+        }
+      ],
+      "sha256": "513888d0bf0ce03c762af18d4639d21028599d7953bf31e9d4d5135fd2c32e5d"
     },
     "internal/server/access_coverage_test.go": {
       "sha256": "d8fd2fcfec70e1894bd14e029dc91be19b5db98a9e4ee23bd1f671a9585fa6d3",
@@ -24331,6 +25773,22 @@
         }
       ]
     },
+    "internal/server/recent_transcript_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-0c62caec6a0a",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestLCL002RecentAndHistoryReadersAreOptInAndAuthorized",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-002"
+        }
+      ],
+      "sha256": "fe6932b345f5ea2d5463340f42cf30af08d611b775cd7b1eeb075cbe39e86178"
+    },
     "internal/server/repeat_pairing_test.go": {
       "sha256": "9606cbdb3df1edff41e25a84a11544b228d81873aebd482b59274dc59d299d1f",
       "layer": "L2",
@@ -24431,6 +25889,31 @@
           "layer": "L2"
         }
       ]
+    },
+    "internal/server/send_receipt_test.go": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-5c6d75362085",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "TestMSD003HTTPPreservesActualReceiptAndLegacySend",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "MSD-003"
+        },
+        {
+          "id": "MAP-7d2c5e5ac242",
+          "line": 48,
+          "kind": "reviewed-selector",
+          "name": "TestMSD003PreferredReceiptCannotBypassGuestScope",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "MSD-003"
+        }
+      ],
+      "sha256": "8bd1c2b24027143c033f68b36d64374fb55b1e8a887945d66802bd55c3266903"
     },
     "internal/server/server_test.go": {
       "sha256": "4a9f1b5ece1f8926ce006da9af81c62f71706846a4967cd7efdfa7e44387e268",
@@ -25897,6 +27380,22 @@
         }
       ]
     },
+    "internal/server/web/argv-reading.test.cjs": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-3bd1a5cb9551",
+          "line": 2,
+          "kind": "reviewed-selector",
+          "name": "ARGV-001 browser uses",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ARGV-001"
+        }
+      ],
+      "sha256": "100124e5653ba8932cf89f80608f880406635d803aed92cc042e623924bf6e83"
+    },
     "internal/server/web/documents.test.cjs": {
       "sha256": "53650bf3549a42b47388edd67ba39ef4ec45ae94f120d90efa8c5943f5030be1",
       "layer": "L2",
@@ -25934,6 +27433,22 @@
           "layer": "G"
         }
       ]
+    },
+    "internal/server/web/state-duration.test.cjs": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-ec276ea47d43",
+          "line": 19,
+          "kind": "reviewed-selector",
+          "name": "CSR-004 browser row",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CSR-004"
+        }
+      ],
+      "sha256": "139fb3a9f2daeee0a4d9d57cb0d7cbab6c77ab68a2450fcf55eb71899c3eae6a"
     },
     "internal/server/web/terminal-keys.test.cjs": {
       "sha256": "4075cb0b5a3517cf3408a3f91fc6f9f952d177c16b07a60a2d66c924f95cdd52",
@@ -26440,6 +27955,22 @@
         }
       ]
     },
+    "internal/servermode/verified_os_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-9c3c6ef20fb1",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "TestSMC001VerifiedServerModeOSPreservesUnknownVersionCaution",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SMC-001"
+        }
+      ],
+      "sha256": "fdaa5661a83dc9a635cb1b63880e2293fc0c214ba936c451cb20292a4bd932b7"
+    },
     "internal/sessionpolicy/dsh_test.go": {
       "sha256": "9250d23d31d12ce0d602ae30d928ac8fe62b79f67e1bd38238af6d89e4f933e0",
       "layer": "L1",
@@ -26554,6 +28085,31 @@
           "layer": "L1"
         }
       ]
+    },
+    "internal/state/cpu_repeated_poll_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e5d2427c7d6d",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "TestCSR005RepeatedPollPreservesObservedCPUWork",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CSR-005"
+        },
+        {
+          "id": "MAP-33d2a35b1094",
+          "line": 30,
+          "kind": "reviewed-selector",
+          "name": "TestCSR005RepeatedPollRequiresValidPriorEvidence",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CSR-005"
+        }
+      ],
+      "sha256": "ac0bf540ec0b94e8e14e5cce58f57d114b7603e2d4b9fde1a56ec33c578bfd76"
     },
     "internal/state/cpu_test.go": {
       "sha256": "f6bcc52865fed782e5dad14853d1794fcd1e0159a4e787d9ed3f19c4a5e96925",
@@ -27893,6 +29449,31 @@
         }
       ]
     },
+    "internal/transcript/codex_large_cache_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-79929223fc37",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "TestLCL001LargeCodexTailStaysCachedAndEarlierHistoryRemainsReadable",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-001"
+        },
+        {
+          "id": "MAP-9661b1f33d22",
+          "line": 112,
+          "kind": "reviewed-selector",
+          "name": "TestLCL001IndividuallyOversizedTurnIsCompleteAndUncached",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-001"
+        }
+      ],
+      "sha256": "8d512a80188850b7cd551286f6794b759da838646338598e01554d6af190b6cd"
+    },
     "internal/transcript/codex_native_test.go": {
       "sha256": "0ee01c46634516d577a5595865664c53ffc69d1d985beffa7067ad0f59196104",
       "layer": "L1",
@@ -28057,6 +29638,31 @@
           "layer": "L1"
         }
       ]
+    },
+    "internal/transcript/codex_turn_event_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-cfb5148b253b",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestCodexTurnEventIdentityAndFreshness",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "CET-001"
+        },
+        {
+          "id": "MAP-d042219d39df",
+          "line": 68,
+          "kind": "reviewed-selector",
+          "name": "TestCodexTurnEventTailBudget",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "CET-001"
+        }
+      ],
+      "sha256": "17d89cd71ab3ee97b127d737b8d91239cafb6939caa2bddc7e42efa5d7af73a4"
     },
     "internal/transcript/dsh_test.go": {
       "sha256": "03b59ddacf1862912763e05ea679d4470587955c5999102e36623845ee00a7e3",
@@ -28341,6 +29947,22 @@
         }
       ]
     },
+    "internal/transcript/prompt_witness_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-13e8ea24978b",
+          "line": 28,
+          "kind": "reviewed-selector",
+          "name": "TestHRS001FirstPromptWitnesses",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "HRS-001"
+        }
+      ],
+      "sha256": "a81ad565e63d7b10cf13bd1264a02efa2e60a284ae952c34b5efd6d7812bf725"
+    },
     "internal/transcript/promptmedia_test.go": {
       "sha256": "2b4972c71575febfdcec9ba3f5d838e8140546b6334b6c6a065296945a4a1f2b",
       "layer": "L1",
@@ -28517,6 +30139,40 @@
           "layer": "L1"
         }
       ]
+    },
+    "internal/transcript/tool_call_detail_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d8d563bbd03e",
+          "line": 11,
+          "kind": "reviewed-selector",
+          "name": "TestNativeCallDetailsAreLazyScopedAndRedacted",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "TCV-001,TCV-002"
+        },
+        {
+          "id": "MAP-78516b06d8fd",
+          "line": 64,
+          "kind": "reviewed-selector",
+          "name": "TestNativeCallMirrorPreservesOriginalInputAndResultReference",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "TCV-001,TCV-002"
+        },
+        {
+          "id": "MAP-4895957e9e8f",
+          "line": 97,
+          "kind": "reviewed-selector",
+          "name": "TestNativeCallMissingResultIsNotAnEmptyResult",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "TCV-001,TCV-002"
+        }
+      ],
+      "sha256": "d8492eb786c580d8fbb1d92da6c901a4ea1674eb15c0d9d8344b10262e73cb57"
     },
     "internal/transcript/tool_detail_test.go": {
       "sha256": "a2476e1b8d6ae654c67517eb6059c97f35e74ed722f354045ab95d4fb44cc1fc",
@@ -30956,6 +32612,108 @@
         }
       ]
     },
+    "macapp/Tests/GtmuxBarTests/HQChoiceFixture.swift": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-18b153c61e83",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "class ChoiceFixture",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MC-HQ-CHOICE,MC-HQ-WINDOW,MC-HQ-READ"
+        },
+        {
+          "id": "MAP-d6fdd79aba67",
+          "line": 60,
+          "kind": "reviewed-selector",
+          "name": "enum HQChoiceTestSupport",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MC-HQ-CHOICE,MC-HQ-WINDOW,MC-HQ-READ"
+        }
+      ],
+      "sha256": "8174bb500aece9dcb828d19c855f39503fd84ff93e9bc8b3a4f53dca1318aee2"
+    },
+    "macapp/Tests/GtmuxBarTests/HQChoiceResponseTests.swift": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-0143ada6d861",
+          "line": 8,
+          "kind": "reviewed-selector",
+          "name": "testChoicePreparesFocusWithoutSendingAndPreservesEditedDraft",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MC-HQ-CHOICE,MC-HQ-READ"
+        },
+        {
+          "id": "MAP-ae59716ae51d",
+          "line": 31,
+          "kind": "reviewed-selector",
+          "name": "testSlowSourceDiscoveryCannotBlockReplyOrRollBackNewCanonicalData",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MC-HQ-CHOICE,MC-HQ-READ"
+        },
+        {
+          "id": "MAP-fa1c60fa2d92",
+          "line": 62,
+          "kind": "reviewed-selector",
+          "name": "testSourceTimeoutDoesNotBecomeTheQuestionOrDraftError",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MC-HQ-CHOICE,MC-HQ-READ"
+        },
+        {
+          "id": "MAP-ed56b3b277a8",
+          "line": 79,
+          "kind": "reviewed-selector",
+          "name": "testStoredClientUsesReadOnlyFlagAndOnlyLegacyUsageFallsBack",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MC-HQ-CHOICE,MC-HQ-READ"
+        },
+        {
+          "id": "MAP-b135d4ac2897",
+          "line": 117,
+          "kind": "reviewed-selector",
+          "name": "testUnavailableSourceMetadataNeverClaimsTheSessionIsGone",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MC-HQ-CHOICE,MC-HQ-READ"
+        }
+      ],
+      "sha256": "35a885eabfdcb6cf909fc124c99679a32550a0e7cbb1d11b724275a68986d864"
+    },
+    "macapp/Tests/GtmuxBarTests/HQChoiceWindowTests.swift": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d731318cd969",
+          "line": 8,
+          "kind": "reviewed-selector",
+          "name": "testCompleteWindowPinsComposerAndNativeChoiceUpdatesAndFocusesEditor",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "MC-HQ-WINDOW"
+        },
+        {
+          "id": "MAP-a11ab8aaa94d",
+          "line": 92,
+          "kind": "reviewed-selector",
+          "name": "testCurrentQuestionRemainsUsableWhileConversationReadWaits",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "MC-HQ-WINDOW"
+        }
+      ],
+      "sha256": "49ac2114150d419318aac3909df2cdae53a516130b5283b952390626d7120cb5"
+    },
     "macapp/Tests/GtmuxBarTests/HQConversationScrollIntentTests.swift": {
       "sha256": "3d1ad91fd9a940dbb1dc7a14c7f16e26c3542136607e6163b41b0d66fdd3b20b",
       "layer": "L1",
@@ -31214,6 +32972,56 @@
           "layer": "L1"
         }
       ]
+    },
+    "macapp/Tests/GtmuxBarTests/HQOverviewClarityTests.swift": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-b4f647d0a506",
+          "line": 44,
+          "kind": "reviewed-selector",
+          "name": "testCanonicalGroupsAndHiddenCountIgnoreEndedMergedStaleAndDuplicateRows",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MC-HQ-OVERVIEW-STATE,MC-HQ-OVERVIEW-BRIEF"
+        },
+        {
+          "id": "MAP-67fdd9c30f6e",
+          "line": 63,
+          "kind": "reviewed-selector",
+          "name": "testCurrentAssessmentTakesPriorityWithoutBorrowingReceiptOrMetadataTime",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MC-HQ-OVERVIEW-STATE,MC-HQ-OVERVIEW-BRIEF"
+        }
+      ],
+      "sha256": "7762a7adc56b442a3f9847aea6abba94556e3b079f5198827fb5e0a61add651d"
+    },
+    "macapp/Tests/GtmuxBarTests/HQOverviewMoreWindowTests.swift": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-80be9bb61842",
+          "line": 27,
+          "kind": "reviewed-selector",
+          "name": "testBottomRemainingControlOpensAllAndSelectsHiddenGoalWithoutSending",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "MC-HQ-OVERVIEW-MORE"
+        },
+        {
+          "id": "MAP-9a63f420f1ec",
+          "line": 98,
+          "kind": "reviewed-selector",
+          "name": "testFullyShownListHasNoRemainingControlAndUnknownRosterDoesNotSayIdle",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "MC-HQ-OVERVIEW-MORE"
+        }
+      ],
+      "sha256": "6b9678313b56e9d142eac9e64eda3bf820454858426bb977ad1f8e71418ec7af"
     },
     "macapp/Tests/GtmuxBarTests/HQOverviewTests.swift": {
       "sha256": "284ca13eac4e7e8bf1bfb42a57cfa3a8cd1219583ea4b8ccdcf658ff447bd267",
@@ -33579,6 +35387,156 @@
         }
       ]
     },
+    "macapp/Tests/GtmuxBarTests/ScreenshotActiveInputTests.swift": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-a968227ee19e",
+          "line": 7,
+          "kind": "reviewed-selector",
+          "name": "testSSI003ActiveQueueAndDeliveryReceiptsStayDistinct",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SSI-003"
+        },
+        {
+          "id": "MAP-f5d04607e020",
+          "line": 30,
+          "kind": "reviewed-selector",
+          "name": "testSSI003BothLanguagesDescribeQueuedAndActiveInputTruthfully",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SSI-003"
+        }
+      ],
+      "sha256": "1a0e1a096238bc3ec520c8ec36299d2a70a59e4ef0c3effa62d8a922c486617f"
+    },
+    "macapp/Tests/GtmuxBarTests/ScreenshotAgentIPCTests.swift": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-31d7a6a6f502",
+          "line": 6,
+          "kind": "reviewed-selector",
+          "name": "testASC002ProtocolAndDescriptorsRefuseUnexpectedAuthority",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-002,ASC-006"
+        },
+        {
+          "id": "MAP-31827d0afbb7",
+          "line": 39,
+          "kind": "reviewed-selector",
+          "name": "testASC006GoConsumerUsesActualSwiftSocketAndRenderer",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-002,ASC-006"
+        }
+      ],
+      "sha256": "bad27e5ce70f39f06ff2897c0b7d63bf0f48c24f051bbd267eebcf02631a28e5"
+    },
+    "macapp/Tests/GtmuxBarTests/ScreenshotAgentLifecycleTests.swift": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-165be0cea83d",
+          "line": 64,
+          "kind": "reviewed-selector",
+          "name": "testASC010RealSocketDeadlineDisconnectAndStopCloseRequestsWithoutSDKCompletion",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-010"
+        },
+        {
+          "id": "MAP-54aacd7dd432",
+          "line": 97,
+          "kind": "reviewed-selector",
+          "name": "testASC010QuarantinedSDKDoesNotBlockCapabilitiesOrOversubscribeAfterHostRestart",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-010"
+        }
+      ],
+      "sha256": "c7e278fb90cec2e7fb7a630e430b58e5730a4471d019cf2f817fd47c7c5f0bb8"
+    },
+    "macapp/Tests/GtmuxBarTests/ScreenshotAgentRenderingTests.swift": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-c2ab9a053f63",
+          "line": 17,
+          "kind": "reviewed-selector",
+          "name": "testASC003RedactionUsesSharedRetinaRendererAndExactFrame",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ASC-003,ASC-006"
+        },
+        {
+          "id": "MAP-0c83eb465d22",
+          "line": 37,
+          "kind": "reviewed-selector",
+          "name": "testASC006EditorRoundtripPreservesBusyDraftAndDoesNotSend",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ASC-003,ASC-006"
+        }
+      ],
+      "sha256": "d6b6198bffb409bfd2696ebaff3623171d12041edac086b6a7424757a4503951"
+    },
+    "macapp/Tests/GtmuxBarTests/ScreenshotAgentSourceTests.swift": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-6374d12b4eea",
+          "line": 6,
+          "kind": "reviewed-selector",
+          "name": "testASC003SourcesExpireAndNeverWidenChangedOwnershipOrRegion",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ASC-003"
+        },
+        {
+          "id": "MAP-f38e69bff361",
+          "line": 24,
+          "kind": "reviewed-selector",
+          "name": "testASC003MissingPermissionDoesNotPromptOrListOtherApps",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ASC-003"
+        }
+      ],
+      "sha256": "4cedf3356093483c1fcb6a3f610fdf464a2f766636ad330fe1e9c63fcc55451a"
+    },
+    "macapp/Tests/GtmuxBarTests/ScreenshotAgentWorkTests.swift": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-5c9188dc266b",
+          "line": 6,
+          "kind": "reviewed-selector",
+          "name": "testASC010CancelledCallbacksRemainBoundedUntilActualCompletion",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-010"
+        },
+        {
+          "id": "MAP-2917de6a2699",
+          "line": 50,
+          "kind": "reviewed-selector",
+          "name": "testASC010BackgroundWorkOwnsBoundedDuplicatesAndCannotReuseClosedDescriptors",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-010"
+        }
+      ],
+      "sha256": "005f03f74026d0b4e930ee62186158adb0b474684a695cf9571d1918b22e5e03"
+    },
     "macapp/Tests/GtmuxBarTests/ScreenshotDeliveryTests.swift": {
       "sha256": "5fdbe594f3eed938eab203f698af68137bcb5ce4353eb9cfa825e0b8b3f8f941",
       "layer": "L1",
@@ -33617,6 +35575,56 @@
           "layer": "L1"
         }
       ]
+    },
+    "macapp/Tests/GtmuxBarTests/ScreenshotPreviewAspectTests.swift": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-0a3b7055a31c",
+          "line": 54,
+          "kind": "reviewed-selector",
+          "name": "testASC012OddAspectImageAndPreviewCoordinatesCoverBothAxes",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-012"
+        },
+        {
+          "id": "MAP-196ea6b01422",
+          "line": 69,
+          "kind": "reviewed-selector",
+          "name": "testASC012CroppedSourceRegionRetainsOpaquePreviewCoverageAndTransforms",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-012"
+        }
+      ],
+      "sha256": "b14e78cb984a01da637e49416f2e38e82f4d0ec0cbb6ced5700769c6169acb77"
+    },
+    "macapp/Tests/GtmuxBarTests/ScreenshotRedactionCoverageTests.swift": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-ef73ff4b694c",
+          "line": 20,
+          "kind": "reviewed-selector",
+          "name": "testASC008FractionalRedactionOverwritesEveryIntersectedDevicePixel",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-008"
+        },
+        {
+          "id": "MAP-eb6d9f0a3446",
+          "line": 53,
+          "kind": "reviewed-selector",
+          "name": "testASC008DerivedArtifactPreviewKeepsSmallRedactionsOpaque",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-008"
+        }
+      ],
+      "sha256": "bb338744bc35e6f8046f0bda00d3b7dc7edf7b1188c8754e5facfe49f0c6d210"
     },
     "macapp/Tests/GtmuxBarTests/ScreenshotSelectorTests.swift": {
       "sha256": "7b50899406bc4c69a1818d69a345fb055fc5bf040ec7debfff3374f34ab62d7f",
@@ -33712,6 +35720,22 @@
           "layer": "L1"
         }
       ]
+    },
+    "macapp/Tests/GtmuxBarTests/ScreenshotSourceMappingTests.swift": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-6e2c5d1a0073",
+          "line": 6,
+          "kind": "reviewed-selector",
+          "name": "testASC011ChangedDisplayMappingAndScaleRefuseBeforeAndAfterCapture",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-011"
+        }
+      ],
+      "sha256": "8417bd98aeea1b084b08033d32e984ba805fdbc471fbc8492529b0470f081e26"
     },
     "macapp/Tests/GtmuxBarTests/ScreenshotTests.swift": {
       "sha256": "2c09f9673bc76a667f526716d44142b62ec40112863c82a7ffed7893ed5904a1",
@@ -34056,6 +36080,22 @@
         }
       ]
     },
+    "macapp/Tests/GtmuxBarTests/ScreenshotWorkCompletionOrderTests.swift": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e7b5f07e2603",
+          "line": 20,
+          "kind": "reviewed-selector",
+          "name": "testASC013SuccessAndErrorCloseActualDuplicatesBeforeAdmissionReturn",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASC-013"
+        }
+      ],
+      "sha256": "2f6ef956288ebcab38206276cf9e21e0628dd6fade20e3ecc5d72edd06cddd9a"
+    },
     "macapp/Tests/GtmuxBarTests/ServerModeStatusTests.swift": {
       "sha256": "0fb17de24dc7f9c1d22f1711a3778fbc66e40292d50eac8821da86389c51c2f3",
       "layer": "L1",
@@ -34252,6 +36292,22 @@
           "layer": "L1"
         }
       ]
+    },
+    "macapp/Tests/GtmuxBarTests/StateDurationTests.swift": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-47650912eb8d",
+          "line": 6,
+          "kind": "reviewed-selector",
+          "name": "testCSR004DecodedUncertainDurationDoesNotUseEitherClock",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CSR-004"
+        }
+      ],
+      "sha256": "e024d61d71d42013c1cf8df1ba8dce1b64985d8b50a51b7a2859c34858796a96"
     },
     "macapp/Tests/GtmuxBarTests/SurfaceTeardownTests.swift": {
       "sha256": "e5c0b8d411c85d19de1fdedc2c5be953384e31815d45f4c572f4cff56b892c18",
@@ -34543,6 +36599,119 @@
           "layer": "L1"
         }
       ]
+    },
+    "mobileapp/__tests__/chatHistoryContinuity.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-6035b934d888",
+          "line": 19,
+          "kind": "reviewed-selector",
+          "name": "LCL-004 rolling recent snapshots retain observed intervening records exactly once",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-004"
+        },
+        {
+          "id": "MAP-884d717bc4c2",
+          "line": 28,
+          "kind": "reviewed-selector",
+          "name": "LCL-004 disconnected latest tail waits behind Jump before selecting its authoritative history cursor",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-004"
+        },
+        {
+          "id": "MAP-447ac47553c6",
+          "line": 46,
+          "kind": "reviewed-selector",
+          "name": "LCL-004 an in-flight earlier page preserves snapshots observed after it started",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-004"
+        }
+      ],
+      "sha256": "6ebb11d9f802f633ba2f2e4f90ab70e541834eb068e3907a1674ef0142f8f905"
+    },
+    "mobileapp/__tests__/chatRecentHistory.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-77beb711ef2a",
+          "line": 35,
+          "kind": "reviewed-selector",
+          "name": "LCL-003 %s requests recent data and exposes a working error/retry action",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-003"
+        },
+        {
+          "id": "MAP-c954781c8bf5",
+          "line": 48,
+          "kind": "reviewed-selector",
+          "name": "LCL-003 earlier source pages survive latest polling and a failed page keeps the content",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-003"
+        },
+        {
+          "id": "MAP-b0c34596f9cc",
+          "line": 63,
+          "kind": "reviewed-selector",
+          "name": "LCL-003 target changes reject late history and noncooperative history reads stop showing loading after 15 seconds",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-003"
+        },
+        {
+          "id": "MAP-cd4f6ec38c32",
+          "line": 80,
+          "kind": "reviewed-selector",
+          "name": "LCL-003 actual client recent query is opt-in and record identity survives prepending",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-003"
+        },
+        {
+          "id": "MAP-1833b21d2dee",
+          "line": 96,
+          "kind": "reviewed-selector",
+          "name": "LCL-003 authorization loss retires the paged snapshot until a new source snapshot arrives",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-003"
+        },
+        {
+          "id": "MAP-01f7dd155465",
+          "line": 110,
+          "kind": "reviewed-selector",
+          "name": "LCL-003 HQ predecessor stitch stays chronological and a source page mounts at most twenty more turns",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-003"
+        },
+        {
+          "id": "MAP-493affc05225",
+          "line": 122,
+          "kind": "reviewed-selector",
+          "name": "LCL-003 expanded history stays visible while newer turns wait behind the live edge control",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-003"
+        },
+        {
+          "id": "MAP-3d83fcb9be78",
+          "line": 136,
+          "kind": "reviewed-selector",
+          "name": "LCL-003 unmount cancels the deadline even when a history reader ignores AbortSignal",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-003"
+        }
+      ],
+      "sha256": "477ef0948e513dfcdeb1559427f8d8324bf10ba3713c5b0532e48f6fb9d9368f"
     },
     "mobileapp/android/app/src/test/java/com/gtmux/app/DocumentPolicyTest.kt": {
       "sha256": "344481c8aca76af7acd08cd252d99780e19191b2e69eb5981c70b47883c92b58",
@@ -34871,21 +37040,6 @@
         }
       ]
     },
-    "mobileapp/e2e/capture/hq-header-shot.test.ts": {
-      "sha256": "34a455ad003d73e5b6138aa8119e5137b19f19b16d11101251dd3351dc928fa7",
-      "layer": "M",
-      "stack": "RN / mobile harness",
-      "cases": [
-        {
-          "id": "LEG-95b0bcda12ce",
-          "line": 15,
-          "kind": "it",
-          "name": "opens the disclosure",
-          "dynamic": false,
-          "layer": "M"
-        }
-      ]
-    },
     "mobileapp/e2e/__tests__/hq-keyboard.test.ts": {
       "sha256": "fc64ae3d0f0d3a65783b5bb1127c1216cb668ac25190e490d87730f48dc2f607",
       "layer": "L4",
@@ -34951,21 +37105,6 @@
           "name": "is the regular shell over sample data",
           "dynamic": false,
           "layer": "L4"
-        }
-      ]
-    },
-    "mobileapp/e2e/diagnostics/ipad-keys-probe.test.ts": {
-      "sha256": "f82e88ed8101fe1258f4f21afbd9bd2fdfd7c6a43eff1db89b707fc3d232f980",
-      "layer": "M",
-      "stack": "RN / mobile harness",
-      "cases": [
-        {
-          "id": "LEG-34eb45b46408",
-          "line": 12,
-          "kind": "it",
-          "name": "types into the pane search with mobile: keys",
-          "dynamic": false,
-          "layer": "M"
         }
       ]
     },
@@ -35049,30 +37188,6 @@
           "name": "opens a knowledge search result on the first tap while the keyboard is visible",
           "dynamic": false,
           "layer": "L4"
-        }
-      ]
-    },
-    "mobileapp/e2e/capture/knowledge-shot.test.ts": {
-      "sha256": "2c2f3733fea47bc0e77dcb70519b8ed03916306a3958edb2b0be03c66c567911",
-      "layer": "M",
-      "stack": "RN / mobile harness",
-      "cases": [
-        {
-          "id": "LEG-490318c4a70a",
-          "line": 14,
-          "kind": "it",
-          "name": "opens from the header and drills into an entry",
-          "dynamic": false,
-          "layer": "M"
-        },
-        {
-          "id": "MAP-38c67a93a00d",
-          "line": 13,
-          "kind": "reviewed-selector",
-          "name": "gated(",
-          "dynamic": false,
-          "layer": "G",
-          "design": "DG-001"
         }
       ]
     },
@@ -35255,21 +37370,6 @@
           "name": "a send into a running session says it went, and that the agent may finish first",
           "dynamic": false,
           "layer": "L4"
-        }
-      ]
-    },
-    "mobileapp/e2e/diagnostics/send-repro.test.ts": {
-      "sha256": "747c1dcc96d9e0ac30ecfb510ea618220fb43d7551a8baf48d115284706d0061",
-      "layer": "M",
-      "stack": "RN / mobile harness",
-      "cases": [
-        {
-          "id": "LEG-f17f27ea8cb4",
-          "line": 21,
-          "kind": "it",
-          "name": "types + sends 继续 and reports whether a failed-send bar appears",
-          "dynamic": false,
-          "layer": "M"
         }
       ]
     },
@@ -35554,6 +37654,264 @@
         }
       ]
     },
+    "mobileapp/e2e/android/journey.cjs": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f84810b94765",
+          "line": 37,
+          "kind": "reviewed-selector",
+          "name": "function selection",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "CT-ANDROID-POLICY,CT-TIMING"
+        },
+        {
+          "id": "MAP-87d616e2f9f2",
+          "line": 68,
+          "kind": "reviewed-selector",
+          "name": "function createJourney",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "CT-ANDROID-POLICY,CT-TIMING"
+        }
+      ],
+      "sha256": "063d7263848872ef43d3b13fa4205cd9e0ea8899d51a5318eeeac3658da15c46"
+    },
+    "mobileapp/e2e/android/journey.test.ts": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-845b52602a47",
+          "line": 2,
+          "kind": "reviewed-selector",
+          "name": "full Android journey retains",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "CT-ANDROID-POLICY,CT-TIMING"
+        },
+        {
+          "id": "MAP-591fe2c43846",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "setup failure blocks",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "CT-ANDROID-POLICY,CT-TIMING"
+        },
+        {
+          "id": "MAP-bd791291b35e",
+          "line": 39,
+          "kind": "reviewed-selector",
+          "name": "first assertion and disconnect causes",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "CT-ANDROID-POLICY,CT-TIMING"
+        },
+        {
+          "id": "MAP-e9a3452907ab",
+          "line": 67,
+          "kind": "reviewed-selector",
+          "name": "an out of order selected check",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "CT-ANDROID-POLICY,CT-TIMING"
+        },
+        {
+          "id": "MAP-fc216f83479b",
+          "line": 79,
+          "kind": "reviewed-selector",
+          "name": "timing records setup action",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "CT-ANDROID-POLICY,CT-TIMING"
+        }
+      ],
+      "sha256": "cc1947840a1550e77fa0cfff2c043e54f58a1bf26150ee7089e5e05fe2d486aa"
+    },
+    "mobileapp/e2e/android/permission.cjs": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-bc82a09365cb",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "async function denyCameraPermission(",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ACP-001"
+        }
+      ],
+      "sha256": "da48f2283128e300fccad5447456e0b3a7979a7876dfb770fc2b4f80bddb0cb0"
+    },
+    "mobileapp/e2e/android/permission.fixture.cjs": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-9aff6c097646",
+          "line": 3,
+          "kind": "reviewed-selector",
+          "name": "function fixture(",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ACP-001"
+        }
+      ],
+      "sha256": "d2116d6fc0061a1cd5d4010bfb1d0110680d676f9683dee85f2d184bf97e0bc1"
+    },
+    "mobileapp/e2e/android/permission.test.ts": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f136a33c6b39",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "ACP-001 enabled camera dialog",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ACP-001"
+        },
+        {
+          "id": "MAP-4d0201e65f7a",
+          "line": 18,
+          "kind": "reviewed-selector",
+          "name": "ACP-001 one ignored interaction",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ACP-001"
+        },
+        {
+          "id": "MAP-8136ad9cefc9",
+          "line": 25,
+          "kind": "reviewed-selector",
+          "name": "ACP-001 unchanged dialog",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ACP-001"
+        },
+        {
+          "id": "MAP-56833c4f4204",
+          "line": 37,
+          "kind": "reviewed-selector",
+          "name": "ACP-001 another permission owner",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ACP-001"
+        },
+        {
+          "id": "MAP-beb32ac8514d",
+          "line": 46,
+          "kind": "reviewed-selector",
+          "name": "ACP-001 original driver failure",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ACP-001"
+        },
+        {
+          "id": "MAP-35b873f04f0a",
+          "line": 54,
+          "kind": "reviewed-selector",
+          "name": "ACP-001 late readiness",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ACP-001"
+        },
+        {
+          "id": "MAP-84e63684ac34",
+          "line": 61,
+          "kind": "reviewed-selector",
+          "name": "ACP-001 a slow read",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ACP-001"
+        },
+        {
+          "id": "MAP-28799ec04e66",
+          "line": 72,
+          "kind": "reviewed-selector",
+          "name": "ACP-001 absent dialog",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ACP-001"
+        },
+        {
+          "id": "MAP-34da68cfb864",
+          "line": 92,
+          "kind": "reviewed-selector",
+          "name": "ACP-001 a newly repeated camera prompt",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ACP-001"
+        },
+        {
+          "id": "MAP-9f336e94e7b3",
+          "line": 81,
+          "kind": "reviewed-selector",
+          "name": "ACP-001 closing before any Deny",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ACP-001"
+        }
+      ],
+      "sha256": "96b5496ae6d9ba44e0504bc16b2f2c2c52018c7d0703d8d0563f5e27f1b9a2ee"
+    },
+    "mobileapp/e2e/android/permissionJourney.test.ts": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-435d839b0a83",
+          "line": 63,
+          "kind": "reviewed-selector",
+          "name": "ACP-002 registered journey survives",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ACP-002"
+        },
+        {
+          "id": "MAP-255b356248a5",
+          "line": 70,
+          "kind": "reviewed-selector",
+          "name": "ACP-002 registered journey still fails",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ACP-002"
+        },
+        {
+          "id": "MAP-04ea0e0d7ec3",
+          "line": 76,
+          "kind": "reviewed-selector",
+          "name": "ACP-002 registered journey cannot pass",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ACP-002"
+        },
+        {
+          "id": "MAP-5c6662fed7bd",
+          "line": 80,
+          "kind": "reviewed-selector",
+          "name": "ACP-002 registered journey cannot click",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ACP-002"
+        },
+        {
+          "id": "MAP-2ba0c888b1bb",
+          "line": 85,
+          "kind": "reviewed-selector",
+          "name": "ACP-002 registered journey preserves",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ACP-002"
+        }
+      ],
+      "sha256": "36d69a913e5c4703cbb329d3948d521de3d35273227029bb7527ddf6bf48f9be"
+    },
     "mobileapp/e2e/android/run.cjs": {
       "sha256": "7c4e8057da35d28a4883133ed4dd2a2f525053fe927df8f089309a63c377fefd",
       "layer": "L4",
@@ -35835,6 +38193,100 @@
           "design": "CT-ANDROID,CT-TIMING,ACP-003"
         }
       ]
+    },
+    "mobileapp/e2e/capture/hq-header-shot.test.ts": {
+      "sha256": "34a455ad003d73e5b6138aa8119e5137b19f19b16d11101251dd3351dc928fa7",
+      "layer": "M",
+      "stack": "RN / mobile harness",
+      "cases": [
+        {
+          "id": "LEG-95b0bcda12ce",
+          "line": 15,
+          "kind": "it",
+          "name": "opens the disclosure",
+          "dynamic": false,
+          "layer": "M"
+        }
+      ]
+    },
+    "mobileapp/e2e/capture/knowledge-shot.test.ts": {
+      "sha256": "2c2f3733fea47bc0e77dcb70519b8ed03916306a3958edb2b0be03c66c567911",
+      "layer": "M",
+      "stack": "RN / mobile harness",
+      "cases": [
+        {
+          "id": "LEG-490318c4a70a",
+          "line": 14,
+          "kind": "it",
+          "name": "opens from the header and drills into an entry",
+          "dynamic": false,
+          "layer": "M"
+        },
+        {
+          "id": "MAP-38c67a93a00d",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "gated(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "DG-001"
+        }
+      ]
+    },
+    "mobileapp/e2e/diagnostics/ipad-keys-probe.test.ts": {
+      "sha256": "f82e88ed8101fe1258f4f21afbd9bd2fdfd7c6a43eff1db89b707fc3d232f980",
+      "layer": "M",
+      "stack": "RN / mobile harness",
+      "cases": [
+        {
+          "id": "LEG-34eb45b46408",
+          "line": 12,
+          "kind": "it",
+          "name": "types into the pane search with mobile: keys",
+          "dynamic": false,
+          "layer": "M"
+        }
+      ]
+    },
+    "mobileapp/e2e/diagnostics/send-repro.test.ts": {
+      "sha256": "747c1dcc96d9e0ac30ecfb510ea618220fb43d7551a8baf48d115284706d0061",
+      "layer": "M",
+      "stack": "RN / mobile harness",
+      "cases": [
+        {
+          "id": "LEG-f17f27ea8cb4",
+          "line": 21,
+          "kind": "it",
+          "name": "types + sends 继续 and reports whether a failed-send bar appears",
+          "dynamic": false,
+          "layer": "M"
+        }
+      ]
+    },
+    "mobileapp/e2e/fake-serve/backend-contract.test.ts": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-2fd3cafb008c",
+          "line": 46,
+          "kind": "reviewed-selector",
+          "name": "RN fake / Go contract:",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CT-HTTP"
+        },
+        {
+          "id": "MAP-01cd8c62d09e",
+          "line": 53,
+          "kind": "reviewed-selector",
+          "name": "RN client consumes original ordinals",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CT-HTTP"
+        }
+      ],
+      "sha256": "111c3c26ceb13c0cc7a2226f2600aea6c9dc39cca14aaeb5574dc93c985be9fe"
     },
     "mobileapp/e2e/fake-serve/contract.test.ts": {
       "sha256": "b5f337c03dc1a01a397f941966a20fce4fda829829411a50be6996f313a12d29",
@@ -36334,6 +38786,22 @@
         }
       ]
     },
+    "mobileapp/e2e/fake-serve/server.ts": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f2ed2637baa9",
+          "line": 95,
+          "kind": "reviewed-selector",
+          "name": "startFake",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CT-HTTP"
+        }
+      ],
+      "sha256": "79d8be5f47afc60d6725ac9b4c72c04d329ffd08d10aa46d92c9f69ba054d5ef"
+    },
     "mobileapp/e2e/fake-serve/verdict.test.ts": {
       "sha256": "466b40dc8d9f58a6ea36925cb8403906250465356cddcd05a89dae55b77f5f12",
       "layer": "L1",
@@ -36388,6 +38856,47 @@
           "layer": "L1"
         }
       ]
+    },
+    "mobileapp/e2e/fake-serve/world.ts": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f4f657590af5",
+          "line": 111,
+          "kind": "reviewed-selector",
+          "name": "export class World",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CT-HTTP"
+        }
+      ],
+      "sha256": "e969f4c7051c2748d9dfbfdb800724351df2f78d4b1a62a0935c32e2d61d6711"
+    },
+    "mobileapp/e2e/jest.config.manual.js": {
+      "layer": "G",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-befb8569059f",
+          "line": 2,
+          "kind": "reviewed-selector",
+          "name": "manualMode(process.env)",
+          "dynamic": false,
+          "layer": "G",
+          "design": "DG-001,DG-002"
+        },
+        {
+          "id": "MAP-a88b539daecf",
+          "line": 3,
+          "kind": "reviewed-selector",
+          "name": "sendTarget(process.env)",
+          "dynamic": false,
+          "layer": "G",
+          "design": "DG-001,DG-002"
+        }
+      ],
+      "sha256": "563af7937735b01d1de6733f1ccca324ab625069cc0add0b97f06209cbddccdc"
     },
     "mobileapp/e2e/setup/capabilities.test.ts": {
       "sha256": "ba3d68a275f7261a1c1a553ce1da526b28c8083f0122ae25f72fe38a7b5c5022",
@@ -36449,6 +38958,90 @@
           "name": "only hosted multi-screen store captures receive the longer journey budget",
           "dynamic": false,
           "layer": "L1"
+        }
+      ]
+    },
+    "mobileapp/e2e/setup/global-setup-manual.ts": {
+      "layer": "G",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-cb2da71006dd",
+          "line": 6,
+          "kind": "reviewed-selector",
+          "name": "await setupManual(process.env, verifySendTarget, globalSetup)",
+          "dynamic": false,
+          "layer": "G",
+          "design": "DG-004"
+        }
+      ],
+      "sha256": "bde1a92584ba4e0029f4bf326642fa116f1806c7cdac493bacc21443cce77c82"
+    },
+    "mobileapp/e2e/setup/manual-tools.cjs": {
+      "layer": "G",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-c8767994a252",
+          "line": 2,
+          "kind": "reviewed-selector",
+          "name": "function manualMode(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "DG-001,DG-002,DG-003"
+        },
+        {
+          "id": "MAP-64142db61c66",
+          "line": 8,
+          "kind": "reviewed-selector",
+          "name": "function sendTarget(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "DG-001,DG-002,DG-003"
+        },
+        {
+          "id": "MAP-ad9860024fc0",
+          "line": 19,
+          "kind": "reviewed-selector",
+          "name": "async function verifySendTarget(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "DG-001,DG-002,DG-003"
+        }
+      ],
+      "sha256": "6daa5d322a46b8137d49b8061d2b134d252b457e045e86e77f5259ec7339a021"
+    },
+    "mobileapp/e2e/setup/manual-tools.test.ts": {
+      "sha256": "0798f66366fdec526266b30167ec30bc902f7bdb2a5b39cf667c9b4a8886850f",
+      "layer": "L1",
+      "stack": "RN / mobile harness",
+      "cases": [
+        {
+          "id": "DG-001-f069a0",
+          "line": 6,
+          "kind": "test",
+          "name": "DG-001 ordinary discovery",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DG-001"
+        },
+        {
+          "id": "DG-002-f069a0",
+          "line": 19,
+          "kind": "test",
+          "name": "DG-002 rejects missing target",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DG-002"
+        },
+        {
+          "id": "DG-003-f069a0",
+          "line": 39,
+          "kind": "test",
+          "name": "DG-003 confirms one exact fixture pane",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DG-003"
         }
       ]
     },
@@ -36622,6 +39215,22 @@
       "layer": "L1",
       "stack": "iOS Swift",
       "cases": []
+    },
+    "mobileapp/metro.config.js": {
+      "layer": "G",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-40893b89cbd9",
+          "line": 11,
+          "kind": "reviewed-selector",
+          "name": "const config =",
+          "dynamic": false,
+          "layer": "G",
+          "design": "CT-SCOPE"
+        }
+      ],
+      "sha256": "5c8073c6156d2a6db9c795705f70f82c21df119475c02f0f86dab7765bb29d1f"
     },
     "mobileapp/scripts/android_delivery_test.py": {
       "sha256": "ea57694030b1620d5479547b42aff83dd5ac48d8e77cf67856590c013284fb18",
@@ -37024,6 +39633,22 @@
           "layer": "G"
         }
       ]
+    },
+    "mobileapp/scripts/check-native-documents.py": {
+      "layer": "G",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-8a0c52a03bf4",
+          "line": 8,
+          "kind": "reviewed-selector",
+          "name": "def run(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "ND-003"
+        }
+      ],
+      "sha256": "39c3ab7a862f23dea5cbee340251ea4260c68ede5fb1ec4825c3a2c74ce21aa7"
     },
     "mobileapp/scripts/creative-layout.test.mjs": {
       "sha256": "edadeed96fdfad8e0c5637151c544f13efc6d1caa8913ebe1055893d8e050885",
@@ -37584,6 +40209,22 @@
           "layer": "G"
         }
       ]
+    },
+    "mobileapp/scripts/test-boundary.test.ts": {
+      "layer": "G",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-bc30d081ec5f",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "actual Metro resolver refuses",
+          "dynamic": false,
+          "layer": "G",
+          "design": "CT-SCOPE"
+        }
+      ],
+      "sha256": "88630b9166bd08480bc6d706845bb9bdc46564a09a016fdfb881636adaacb71d"
     },
     "mobileapp/scripts/test-copy-text.sh": {
       "sha256": "13c1cfbba8a1e9f54140c86b4e0310c741dc88210bb9b4be234fe238f8384bc6",
@@ -38639,6 +41280,31 @@
           "layer": "L1"
         }
       ]
+    },
+    "mobileapp/src/api/sendDeadline.test.ts": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d269546f4a32",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "MSD-004 bounds a hung %s and never retries or accepts a late answer",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-004"
+        },
+        {
+          "id": "MAP-b95d01602bb2",
+          "line": 29,
+          "kind": "reviewed-selector",
+          "name": "MSD-004 keeps exact receipts, legacy success and the server refusal",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-004"
+        }
+      ],
+      "sha256": "3a96ba726877b22d6a9aa5aa1af7902be4c3e623c80c238c0f93a0ec23c9b25f"
     },
     "mobileapp/src/api/types.test.ts": {
       "sha256": "b764479464b4862debad4d63a6b06ae3bd0f83418f63508cd0e340f3319d0db8",
@@ -41157,6 +43823,31 @@
         }
       ]
     },
+    "mobileapp/src/screens/DetailDraftSwitch.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-418e70e2cded",
+          "line": 93,
+          "kind": "reviewed-selector",
+          "name": "mounted Detail isolates drafts",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CT-DRAFT"
+        },
+        {
+          "id": "MAP-9341e742825a",
+          "line": 129,
+          "kind": "reviewed-selector",
+          "name": "late draft storage result",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CT-DRAFT"
+        }
+      ],
+      "sha256": "183243065aa35c57dd4c4d691f37c2bd514b965b76d830a94bcc9f69544a8200"
+    },
     "mobileapp/src/screens/DetailInteraction.test.tsx": {
       "sha256": "c45a0a181ada01a22153e6a192a07463757a759efb0d4364aa033752b4fb2be9",
       "layer": "L2",
@@ -41306,6 +43997,40 @@
         }
       ]
     },
+    "mobileapp/src/screens/DetailSendReceipt.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-7107ec518922",
+          "line": 28,
+          "kind": "reviewed-selector",
+          "name": "MSD-005 %s releases failed sends and preserves explicit retry identity",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-005"
+        },
+        {
+          "id": "MAP-199b34196f32",
+          "line": 44,
+          "kind": "reviewed-selector",
+          "name": "MSD-005 old failure cannot replace the newer accepted send",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-005"
+        },
+        {
+          "id": "MAP-135b77c8e14c",
+          "line": 53,
+          "kind": "reviewed-selector",
+          "name": "MSD-005 a control key cannot leave a prior text receipt permanently Sending",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-005"
+        }
+      ],
+      "sha256": "e92b2ddb0267b69e75322cfb0b03174f083ad756e204f2366248a01fed45439f"
+    },
     "mobileapp/src/screens/DetailSendRefused.test.tsx": {
       "sha256": "05b581c8a70e4a21f43502e2fbf6911f368f9948f1d696b1a7a0392c7cb94710",
       "layer": "L2",
@@ -41408,6 +44133,22 @@
           "layer": "L2"
         }
       ]
+    },
+    "mobileapp/src/screens/DetailSendSnapshot.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-1dd1e525111d",
+          "line": 26,
+          "kind": "reviewed-selector",
+          "name": "MSD-009 late text receipt cannot replace newer %s control-key screen",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-009"
+        }
+      ],
+      "sha256": "63ef76a606952ac61c78287eeb062f97de5fe78d2c4fed4cd54412ad3605d7db"
     },
     "mobileapp/src/screens/DetailTrace.test.tsx": {
       "sha256": "52d0f7c5f6baee5675d998ab3accec005374d50c6790303fcff63920769e2388",
@@ -41917,6 +44658,74 @@
         }
       ]
     },
+    "mobileapp/src/screens/HQSendOrdering.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-915625a761e2",
+          "line": 30,
+          "kind": "reviewed-selector",
+          "name": "MSD-008 old HQ %s cannot replace a newer accepted message",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-008"
+        },
+        {
+          "id": "MAP-237c6db2e2b9",
+          "line": 38,
+          "kind": "reviewed-selector",
+          "name": "MSD-008 HQ old reply and old retry cannot cross a session change",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-008"
+        },
+        {
+          "id": "MAP-e29e72e87767",
+          "line": 46,
+          "kind": "reviewed-selector",
+          "name": "MSD-008 a later %s key does not leave the current HQ text Sending",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-008"
+        }
+      ],
+      "sha256": "68fa5a4b956e57f3deb00edf620ef6cc902e53f9c4f2dbc71bb437827831d824"
+    },
+    "mobileapp/src/screens/HQSendReceipt.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-3b5d6821faa3",
+          "line": 30,
+          "kind": "reviewed-selector",
+          "name": "MSD-007 HQ exposes %s receipt with stable message identity",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-007"
+        },
+        {
+          "id": "MAP-ded59df19538",
+          "line": 36,
+          "kind": "reviewed-selector",
+          "name": "MSD-007 HQ timeout retry after 21 seconds reuses original send ID",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-007"
+        },
+        {
+          "id": "MAP-d2c0d68a6059",
+          "line": 46,
+          "kind": "reviewed-selector",
+          "name": "MSD-007 old identical transcript cannot retire the new HQ message",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-007"
+        }
+      ],
+      "sha256": "7b66c5ad44b4a85f671fc8398e64dae1ef03ca0cd91b93c96b44c34536779210"
+    },
     "mobileapp/src/screens/HQWorkspaceView.test.tsx": {
       "sha256": "51cf4824ab7ab41905a57e196294e97d26c94d345970c2e877446cee7a127e3b",
       "layer": "L2",
@@ -42051,6 +44860,40 @@
           "layer": "L2"
         }
       ]
+    },
+    "mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f38035a7c2fe",
+          "line": 112,
+          "kind": "reviewed-selector",
+          "name": "pending HQ question opens the original matter",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CT-DRAFT,CT-HQ"
+        },
+        {
+          "id": "MAP-f119dbaabb64",
+          "line": 162,
+          "kind": "reviewed-selector",
+          "name": "late HQ overview and matter responses",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CT-DRAFT,CT-HQ"
+        },
+        {
+          "id": "MAP-acb5ed213eb0",
+          "line": 209,
+          "kind": "reviewed-selector",
+          "name": "a prepared HQ question stays scoped",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CT-DRAFT,CT-HQ"
+        }
+      ],
+      "sha256": "9c626499c441712ab149719bfd9d233c342baad60124f31d6963f5758071d418"
     },
     "mobileapp/src/screens/KnowledgeSheet.test.tsx": {
       "sha256": "00e4ffebe55b8a8047378319ab7a4967ef4f9c422e06b976b4d81f6570441a86",
@@ -42712,6 +45555,31 @@
           "layer": "L2"
         }
       ]
+    },
+    "mobileapp/src/screens/ServerModeBehavior.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-00de085feb2a",
+          "line": 85,
+          "kind": "reviewed-selector",
+          "name": "awake and reconnect subscription events",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CT-SUB"
+        },
+        {
+          "id": "MAP-32838a7dcdf1",
+          "line": 104,
+          "kind": "reviewed-selector",
+          "name": "late server mode response",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CT-SUB"
+        }
+      ],
+      "sha256": "0d0db6ccaec91d3d9c3052ad9be51c9ae2d006d1a9d139238574279d245c32c4"
     },
     "mobileapp/src/screens/ServersScreen.test.tsx": {
       "sha256": "448272dfa64ea468379586e005b1a6fcfa049c67e8c00c5323298fd67813b247",
@@ -46814,6 +49682,31 @@
         }
       ]
     },
+    "mobileapp/src/trace/TraceModal.toolCall.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-6249b500ee15",
+          "line": 104,
+          "kind": "reviewed-selector",
+          "name": "Trace loads recorded query details and both Preview and Raw are useful",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "TCV-004"
+        },
+        {
+          "id": "MAP-d46d85f17b03",
+          "line": 139,
+          "kind": "reviewed-selector",
+          "name": "Chat reuses the same query details, failure retries and late reads retire on home change",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "TCV-004"
+        }
+      ],
+      "sha256": "d6aa4c04d75db6b4f437b4b52301138e8543ef9fbf6d4be1a56652966834eb4d"
+    },
     "mobileapp/src/trace/history.test.ts": {
       "sha256": "e44f546207e8845c2dd7a6c74eaae2d471f9a68185344e558e6a147afa61d90b",
       "layer": "L1",
@@ -47151,6 +50044,22 @@
           "layer": "L2"
         }
       ]
+    },
+    "mobileapp/src/ui/AgentStateDuration.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e95ed96f473a",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "CSR-004 real decoded rows",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CSR-004"
+        }
+      ],
+      "sha256": "5d592a741d52940b8da7c5beb25864d8bc490edd9c5782825141bb56d53b8216"
     },
     "mobileapp/src/ui/AnchoredMenu.test.tsx": {
       "sha256": "410e5d55107cc5e6b08c3995aeaf10f1655d0fce49c9542f87d9f25ae6091b05",
@@ -47793,6 +50702,22 @@
         }
       ]
     },
+    "mobileapp/src/ui/CommandArgvPanel.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-9027d26c2a63",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "ARGV-002 shared readers",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ARGV-002"
+        }
+      ],
+      "sha256": "b43432176610aec219c2dae775d0502f10335e1b0a074ae13af2562d9fee22dc"
+    },
     "mobileapp/src/ui/Composer.attach.test.tsx": {
       "sha256": "ac6fe2f85903a986d38177258c93a4c118695166e57cfc2a81366d3b3d14f723",
       "layer": "L2",
@@ -48222,6 +51147,40 @@
           "name": "every selectable Markdown block supplies its own copy scope, not the complete reply",
           "dynamic": false,
           "layer": "L2"
+        }
+      ]
+    },
+    "mobileapp/src/ui/CrossClientContract.test.tsx": {
+      "sha256": "b298744eb42d68d449c05464259dcd042f321cbc728ce1c40aa6472c0aaa8dc2",
+      "layer": "L2",
+      "stack": "RN / mobile harness",
+      "cases": [
+        {
+          "id": "CP-001-8fc86a",
+          "line": 24,
+          "kind": "parameter-template",
+          "name": "CP-001 %s renders",
+          "dynamic": true,
+          "layer": "L2",
+          "design": "CP-001"
+        },
+        {
+          "id": "CP-002-8fc86a",
+          "line": 46,
+          "kind": "test",
+          "name": "CP-002 HQ request",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CP-002"
+        },
+        {
+          "id": "CP-003-8fc86a",
+          "line": 57,
+          "kind": "test",
+          "name": "CP-003 document actions",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CP-003"
         }
       ]
     },
@@ -51682,6 +54641,40 @@
         }
       ]
     },
+    "mobileapp/src/ui/commandArgv.test.ts": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-b958aa95a388",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "ARGV-001 shell argv",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ARGV-001"
+        },
+        {
+          "id": "MAP-952a93df29d6",
+          "line": 20,
+          "kind": "reviewed-selector",
+          "name": "ARGV-001 cmd fields",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ARGV-001"
+        },
+        {
+          "id": "MAP-c8ee897131ac",
+          "line": 40,
+          "kind": "reviewed-selector",
+          "name": "ARGV-001 ordinary argv",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "ARGV-001"
+        }
+      ],
+      "sha256": "de7cb1d658a21ea55fa8de57e97820f6aa821b83b53e660f3c80d4d20a328e45"
+    },
     "mobileapp/src/ui/consoleActs.test.ts": {
       "sha256": "616cd66cbf5c314fc21ab6557378b0e05a3b654fa4759ba31ad8f9a0487c1476",
       "layer": "L2",
@@ -52992,6 +55985,22 @@
         }
       ]
     },
+    "mobileapp/src/ui/sendReceipt.test.ts": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-7bdcf65678f4",
+          "line": 3,
+          "kind": "reviewed-selector",
+          "name": "MSD-005 receipt wording distinguishes queueing and acceptance without claiming execution",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-005"
+        }
+      ],
+      "sha256": "70433435f60498454ed1b7151e0067d5895f9638533862391f83d1054f9af64b"
+    },
     "mobileapp/src/ui/term.test.ts": {
       "sha256": "fb4cf64a8f74ea85f145d3f9842e0456a134045898b48c5b6553231a9b78e786",
       "layer": "L2",
@@ -54233,6 +57242,49 @@
         }
       ]
     },
+    "mobileapp/src/ui/toolPresentation.test.ts": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-47222e9f745a",
+          "line": 27,
+          "kind": "reviewed-selector",
+          "name": "query details show named parameters, structured results, provenance and complete raw",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "TCV-003"
+        },
+        {
+          "id": "MAP-3813fdfe8df1",
+          "line": 75,
+          "kind": "reviewed-selector",
+          "name": "command, file changes, waits, text/errors and missing/empty results stay distinct",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "TCV-003"
+        },
+        {
+          "id": "MAP-f94f19b784ef",
+          "line": 152,
+          "kind": "reviewed-selector",
+          "name": "full reads preserve original command and distinct native result references",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "TCV-003"
+        },
+        {
+          "id": "MAP-aedc42ce6351",
+          "line": 190,
+          "kind": "reviewed-selector",
+          "name": "large rendering pages disclose bounds and preserve all characters",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "TCV-003"
+        }
+      ],
+      "sha256": "9a55da56d2ea9698610193f912be434d501af18d100d11ce5e34f19cfb2cd92a"
+    },
     "mobileapp/src/ui/useKeyboardChrome.test.tsx": {
       "sha256": "f0648db65d719e9c75a1bd3757bf42c3a2a8f0784feab9516c73035ac2d8ca5d",
       "layer": "L2",
@@ -54771,6 +57823,22 @@
           "layer": "G"
         }
       ]
+    },
+    "scripts/ci.py": {
+      "layer": "G",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-41a5bc78e4e8",
+          "line": 33,
+          "kind": "reviewed-selector",
+          "name": "confirmed_unit_test_isolation",
+          "dynamic": false,
+          "layer": "G",
+          "design": "CT-SCOPE"
+        }
+      ],
+      "sha256": "b62e0024676d64ec379b69b502e913a83e69abd4d0a514696aacaa84d3d01a0f"
     },
     "scripts/ci_test.py": {
       "sha256": "e43020b01b551df7dcd03432cfda64a38d8ca7d585f52edc919b8f3bb2af0aca",
@@ -55437,6 +58505,101 @@
         }
       ]
     },
+    "scripts/test_design.py": {
+      "layer": "G",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-253bbd74b924",
+          "line": 51,
+          "kind": "reviewed-selector",
+          "name": "def validate(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "TD-001,TD-002,TD-003,TD-004,TD-005"
+        },
+        {
+          "id": "MAP-0fe56134bb6e",
+          "line": 102,
+          "kind": "reviewed-selector",
+          "name": "def history_errors(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "TD-001,TD-002,TD-003,TD-004,TD-005"
+        },
+        {
+          "id": "MAP-c8a2197482da",
+          "line": 174,
+          "kind": "reviewed-selector",
+          "name": "def refresh_catalogue(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "TD-001,TD-002,TD-003,TD-004,TD-005"
+        }
+      ],
+      "sha256": "9b204d3c0f2b4bc06a1b40c2e6df822ca594837b140854f9a4b043c7b12cae72"
+    },
+    "scripts/test_design_test.py": {
+      "sha256": "68fdb3fbbf3dba605cb8c53cb1e962a16c6fb7f6f1fcd9859dd7b50abde07c71",
+      "layer": "G",
+      "stack": "CI / tooling",
+      "cases": [
+        {
+          "id": "TD-001-bb7e1e",
+          "line": 29,
+          "kind": "test",
+          "name": "test_TD_001_valid_review_and_changed_source_guard",
+          "dynamic": false,
+          "layer": "G",
+          "design": "TD-001"
+        },
+        {
+          "id": "TD-002-bb7e1e",
+          "line": 41,
+          "kind": "test",
+          "name": "test_TD_002_seal_required_fields_layers_paths",
+          "dynamic": false,
+          "layer": "G",
+          "design": "TD-002"
+        },
+        {
+          "id": "TD-003-bb7e1e",
+          "line": 54,
+          "kind": "test",
+          "name": "test_TD_003_unlisted_test_missing_source_and_missing_case",
+          "dynamic": false,
+          "layer": "G",
+          "design": "TD-003"
+        },
+        {
+          "id": "TD-004-bb7e1e",
+          "line": 71,
+          "kind": "test",
+          "name": "test_TD_004_history_rejects_same_commit_review_and_accepts_prior_review",
+          "dynamic": false,
+          "layer": "G",
+          "design": "TD-004"
+        },
+        {
+          "id": "TD-005-bb7e1e",
+          "line": 103,
+          "kind": "test",
+          "name": "test_TD_005_removal_requires_rationale_and_absence",
+          "dynamic": false,
+          "layer": "G",
+          "design": "TD-005"
+        },
+        {
+          "id": "ND-003-bb7e1e",
+          "line": 128,
+          "kind": "test",
+          "name": "test_ND_003_native_runner_uses_production_sources_and_propagates_failures",
+          "dynamic": false,
+          "layer": "G",
+          "design": "ND-003"
+        }
+      ]
+    },
     "scripts/vulncheck_test.py": {
       "sha256": "42cccef26fa35fe884ab039e46b5227b102fcad194f5f1c84631ffd614bc64aa",
       "layer": "G",
@@ -55689,6 +58852,47 @@
         }
       ]
     },
+    "tests/contracts/http-contract.cjs": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-2a8e1df3263e",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "async function observe",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CT-HTTP"
+        },
+        {
+          "id": "MAP-c856d62bb0c7",
+          "line": 36,
+          "kind": "reviewed-selector",
+          "name": "function verify",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CT-HTTP"
+        }
+      ],
+      "sha256": "416a7359f4fd1d778bc176bd15693e9a59cfff1e1a0ae48e2ca5913364bc031d"
+    },
+    "tests/manual/codex-worktree-trust.py": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-0776a6d8933b",
+          "line": 96,
+          "kind": "reviewed-selector",
+          "name": "def main():",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "WTR-003"
+        }
+      ],
+      "sha256": "6675b979d36c0e4785dc422ec3006341c218d667e61b05680700dd76d41cdbac"
+    },
     "tests/web/alignment.test.cjs": {
       "sha256": "ee4283fb7106a64233c1fb22ab916a3e74faa2a25342d7f6a0e0417136c7b220",
       "layer": "L3",
@@ -55735,6 +58939,88 @@
           "layer": "L3"
         }
       ]
+    },
+    "tests/web/backend-contract.test.cjs": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-184f052913f1",
+          "line": 34,
+          "kind": "reviewed-selector",
+          "name": "Web fake / Go contract:",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CT-HTTP"
+        }
+      ],
+      "sha256": "99bd6f0656c0261bfc980d5f9bec2edf9fcbcede4274b0672d1d91a4f6be545e"
+    },
+    "tests/web/behavior-contract.test.cjs": {
+      "sha256": "efb9fc32596ac2392f2ad7c3d287a374b5b8f93827bd6d6a38f4a1b04f548706",
+      "layer": "L3",
+      "stack": "Browser",
+      "cases": [
+        {
+          "id": "CP-001-f8c339",
+          "line": 13,
+          "kind": "test",
+          "name": "CP-001 shared rendered Trace",
+          "dynamic": true,
+          "layer": "L3",
+          "design": "CP-001"
+        },
+        {
+          "id": "CP-002-f8c339",
+          "line": 30,
+          "kind": "test",
+          "name": "CP-002 CP-003 CP-004 shared HQ",
+          "dynamic": true,
+          "layer": "L3",
+          "design": "CP-002"
+        }
+      ]
+    },
+    "tests/web/browser-pool.cjs": {
+      "layer": "G",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-75f2ed302427",
+          "line": 2,
+          "kind": "reviewed-selector",
+          "name": "function browserPool",
+          "dynamic": false,
+          "layer": "G",
+          "design": "CT-BROWSER-POLICY,CT-TIMING"
+        }
+      ],
+      "sha256": "8cdff69f77a199fb4a7e6b9c110dd66de0d70916099267a9116ed0b08675c5cf"
+    },
+    "tests/web/browser-pool.test.cjs": {
+      "layer": "G",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-faa984b171bf",
+          "line": 4,
+          "kind": "reviewed-selector",
+          "name": "concurrent borrowers share",
+          "dynamic": false,
+          "layer": "G",
+          "design": "CT-BROWSER-POLICY,CT-TIMING"
+        },
+        {
+          "id": "MAP-c7ca48106233",
+          "line": 30,
+          "kind": "reviewed-selector",
+          "name": "failed launch propagates",
+          "dynamic": false,
+          "layer": "G",
+          "design": "CT-BROWSER-POLICY,CT-TIMING"
+        }
+      ],
+      "sha256": "cb594d5a470c76cef3c41987213ac5029380e1dae114dcda297a20b17fd9e960"
     },
     "tests/web/client-consistency.test.cjs": {
       "sha256": "844612bc676a6f0eeaacf7a4c7e9e8cf786e3a3ba133687941682eb54943f1b6",
@@ -55783,6 +59069,22 @@
         }
       ]
     },
+    "tests/web/command-argv.test.cjs": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-23fe7f83abc2",
+          "line": 4,
+          "kind": "reviewed-selector",
+          "name": "ARGV-003 Trace argv scripts",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "ARGV-003"
+        }
+      ],
+      "sha256": "4406c38a3cf63286e5a66b4b7c107b2ae327cf758d3717a15749023c0139fa3b"
+    },
     "tests/web/conversation-map.test.cjs": {
       "sha256": "9881d9d2ff9ec2f5f40a4670c60b050d8bb261c16ce43d576f5f253ea668335b",
       "layer": "L3",
@@ -55830,6 +59132,22 @@
         }
       ]
     },
+    "tests/web/fixture.cjs": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-c9d3762e7230",
+          "line": 18,
+          "kind": "reviewed-selector",
+          "name": "async function start",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CT-HTTP"
+        }
+      ],
+      "sha256": "e5680209e52d0d592b794015230823527b9d35ac4d1aa9a5d6774dd62ed247af"
+    },
     "tests/web/full-input.test.cjs": {
       "sha256": "39b7c70f6cab29614e317d24056cc85db3506c60e10511062ce56fe32a73aaa4",
       "layer": "L3",
@@ -55852,6 +59170,63 @@
           "layer": "L3"
         }
       ]
+    },
+    "tests/web/harness-isolation.test.cjs": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-31ae43976a8b",
+          "line": 4,
+          "kind": "reviewed-selector",
+          "name": "shared browser first case",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "CT-BROWSER"
+        },
+        {
+          "id": "MAP-7fb866f795f7",
+          "line": 25,
+          "kind": "reviewed-selector",
+          "name": "shared browser next case",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "CT-BROWSER"
+        }
+      ],
+      "sha256": "4c4a70bcbe2f385c4800637b001bcba870fb31aa9a61d6b09f015b8e50c7b994"
+    },
+    "tests/web/harness.cjs": {
+      "layer": "G",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-eda764da861f",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "function scenario",
+          "dynamic": false,
+          "layer": "G",
+          "design": "CT-TIMING,CT-BROWSER"
+        }
+      ],
+      "sha256": "66df285c37dae227f2d2e74c6670203de76863587b9760d2a9728f6954ff29ca"
+    },
+    "tests/web/http-contract-validator.test.cjs": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e5604b1208c7",
+          "line": 4,
+          "kind": "reviewed-selector",
+          "name": "wire contract rejects type, permission, ordinal, omission and security-header drift",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CT-HTTP"
+        }
+      ],
+      "sha256": "a620ff866d1e1f4786f1402bce978987ad8b1dc9c6920e2d073157e296f1b969"
     },
     "tests/web/presentation.test.cjs": {
       "sha256": "4e3289bfb9e72a2c72c9661c271cadde9e7f620a2dc1d18679d40113dafe9ee2",
@@ -56261,6 +59636,31 @@
           "layer": "L3"
         }
       ]
+    },
+    "tests/web/tool-call-detail.test.cjs": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-8fceb6b39ede",
+          "line": 6,
+          "kind": "reviewed-selector",
+          "name": "Typed query details in Chat and Trace ",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "TCV-005"
+        },
+        {
+          "id": "MAP-e962ab9f86bc",
+          "line": 20,
+          "kind": "reviewed-selector",
+          "name": "Recorded query failure retries and large results page without losing full copy",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "TCV-005"
+        }
+      ],
+      "sha256": "1a6c30f4fc326948b521176ea37967d3fa72dc16ced092a42422598a7251ce43"
     },
     "tests/web/trace-folding.test.cjs": {
       "sha256": "110e2ef8d76e3ffc83ef02c536f382ef1a4c9131714dcb62de65c88cf6b204d4",
@@ -56910,2154 +60310,9 @@
           "layer": "L2"
         }
       ]
-    },
-    "scripts/test_design_test.py": {
-      "sha256": "68fdb3fbbf3dba605cb8c53cb1e962a16c6fb7f6f1fcd9859dd7b50abde07c71",
-      "layer": "G",
-      "stack": "CI / tooling",
-      "cases": [
-        {
-          "id": "TD-001-bb7e1e",
-          "line": 29,
-          "kind": "test",
-          "name": "test_TD_001_valid_review_and_changed_source_guard",
-          "dynamic": false,
-          "layer": "G",
-          "design": "TD-001"
-        },
-        {
-          "id": "TD-002-bb7e1e",
-          "line": 41,
-          "kind": "test",
-          "name": "test_TD_002_seal_required_fields_layers_paths",
-          "dynamic": false,
-          "layer": "G",
-          "design": "TD-002"
-        },
-        {
-          "id": "TD-003-bb7e1e",
-          "line": 54,
-          "kind": "test",
-          "name": "test_TD_003_unlisted_test_missing_source_and_missing_case",
-          "dynamic": false,
-          "layer": "G",
-          "design": "TD-003"
-        },
-        {
-          "id": "TD-004-bb7e1e",
-          "line": 71,
-          "kind": "test",
-          "name": "test_TD_004_history_rejects_same_commit_review_and_accepts_prior_review",
-          "dynamic": false,
-          "layer": "G",
-          "design": "TD-004"
-        },
-        {
-          "id": "TD-005-bb7e1e",
-          "line": 103,
-          "kind": "test",
-          "name": "test_TD_005_removal_requires_rationale_and_absence",
-          "dynamic": false,
-          "layer": "G",
-          "design": "TD-005"
-        },
-        {
-          "id": "ND-003-bb7e1e",
-          "line": 128,
-          "kind": "test",
-          "name": "test_ND_003_native_runner_uses_production_sources_and_propagates_failures",
-          "dynamic": false,
-          "layer": "G",
-          "design": "ND-003"
-        }
-      ]
-    },
-    "mobileapp/e2e/setup/manual-tools.test.ts": {
-      "sha256": "0798f66366fdec526266b30167ec30bc902f7bdb2a5b39cf667c9b4a8886850f",
-      "layer": "L1",
-      "stack": "RN / mobile harness",
-      "cases": [
-        {
-          "id": "DG-001-f069a0",
-          "line": 6,
-          "kind": "test",
-          "name": "DG-001 ordinary discovery",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "DG-001"
-        },
-        {
-          "id": "DG-002-f069a0",
-          "line": 19,
-          "kind": "test",
-          "name": "DG-002 rejects missing target",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "DG-002"
-        },
-        {
-          "id": "DG-003-f069a0",
-          "line": 39,
-          "kind": "test",
-          "name": "DG-003 confirms one exact fixture pane",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "DG-003"
-        }
-      ]
-    },
-    "mobileapp/src/ui/CrossClientContract.test.tsx": {
-      "sha256": "b298744eb42d68d449c05464259dcd042f321cbc728ce1c40aa6472c0aaa8dc2",
-      "layer": "L2",
-      "stack": "RN / mobile harness",
-      "cases": [
-        {
-          "id": "CP-001-8fc86a",
-          "line": 24,
-          "kind": "parameter-template",
-          "name": "CP-001 %s renders",
-          "dynamic": true,
-          "layer": "L2",
-          "design": "CP-001"
-        },
-        {
-          "id": "CP-002-8fc86a",
-          "line": 46,
-          "kind": "test",
-          "name": "CP-002 HQ request",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CP-002"
-        },
-        {
-          "id": "CP-003-8fc86a",
-          "line": 57,
-          "kind": "test",
-          "name": "CP-003 document actions",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CP-003"
-        }
-      ]
-    },
-    "tests/web/behavior-contract.test.cjs": {
-      "sha256": "efb9fc32596ac2392f2ad7c3d287a374b5b8f93827bd6d6a38f4a1b04f548706",
-      "layer": "L3",
-      "stack": "Browser",
-      "cases": [
-        {
-          "id": "CP-001-f8c339",
-          "line": 13,
-          "kind": "test",
-          "name": "CP-001 shared rendered Trace",
-          "dynamic": true,
-          "layer": "L3",
-          "design": "CP-001"
-        },
-        {
-          "id": "CP-002-f8c339",
-          "line": 30,
-          "kind": "test",
-          "name": "CP-002 CP-003 CP-004 shared HQ",
-          "dynamic": true,
-          "layer": "L3",
-          "design": "CP-002"
-        }
-      ]
-    },
-    "mobileapp/e2e/jest.config.manual.js": {
-      "layer": "G",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-befb8569059f",
-          "line": 2,
-          "kind": "reviewed-selector",
-          "name": "manualMode(process.env)",
-          "dynamic": false,
-          "layer": "G",
-          "design": "DG-001,DG-002"
-        },
-        {
-          "id": "MAP-a88b539daecf",
-          "line": 3,
-          "kind": "reviewed-selector",
-          "name": "sendTarget(process.env)",
-          "dynamic": false,
-          "layer": "G",
-          "design": "DG-001,DG-002"
-        }
-      ],
-      "sha256": "563af7937735b01d1de6733f1ccca324ab625069cc0add0b97f06209cbddccdc"
-    },
-    "mobileapp/e2e/setup/manual-tools.cjs": {
-      "layer": "G",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-c8767994a252",
-          "line": 2,
-          "kind": "reviewed-selector",
-          "name": "function manualMode(",
-          "dynamic": false,
-          "layer": "G",
-          "design": "DG-001,DG-002,DG-003"
-        },
-        {
-          "id": "MAP-64142db61c66",
-          "line": 8,
-          "kind": "reviewed-selector",
-          "name": "function sendTarget(",
-          "dynamic": false,
-          "layer": "G",
-          "design": "DG-001,DG-002,DG-003"
-        },
-        {
-          "id": "MAP-ad9860024fc0",
-          "line": 19,
-          "kind": "reviewed-selector",
-          "name": "async function verifySendTarget(",
-          "dynamic": false,
-          "layer": "G",
-          "design": "DG-001,DG-002,DG-003"
-        }
-      ],
-      "sha256": "6daa5d322a46b8137d49b8061d2b134d252b457e045e86e77f5259ec7339a021"
-    },
-    "mobileapp/scripts/check-native-documents.py": {
-      "layer": "G",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-8a0c52a03bf4",
-          "line": 8,
-          "kind": "reviewed-selector",
-          "name": "def run(",
-          "dynamic": false,
-          "layer": "G",
-          "design": "ND-003"
-        }
-      ],
-      "sha256": "39c3ab7a862f23dea5cbee340251ea4260c68ede5fb1ec4825c3a2c74ce21aa7"
-    },
-    "scripts/test_design.py": {
-      "layer": "G",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-253bbd74b924",
-          "line": 51,
-          "kind": "reviewed-selector",
-          "name": "def validate(",
-          "dynamic": false,
-          "layer": "G",
-          "design": "TD-001,TD-002,TD-003,TD-004,TD-005"
-        },
-        {
-          "id": "MAP-0fe56134bb6e",
-          "line": 102,
-          "kind": "reviewed-selector",
-          "name": "def history_errors(",
-          "dynamic": false,
-          "layer": "G",
-          "design": "TD-001,TD-002,TD-003,TD-004,TD-005"
-        },
-        {
-          "id": "MAP-c8a2197482da",
-          "line": 174,
-          "kind": "reviewed-selector",
-          "name": "def refresh_catalogue(",
-          "dynamic": false,
-          "layer": "G",
-          "design": "TD-001,TD-002,TD-003,TD-004,TD-005"
-        }
-      ],
-      "sha256": "9b204d3c0f2b4bc06a1b40c2e6df822ca594837b140854f9a4b043c7b12cae72"
-    },
-    "mobileapp/e2e/setup/global-setup-manual.ts": {
-      "layer": "G",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-cb2da71006dd",
-          "line": 6,
-          "kind": "reviewed-selector",
-          "name": "await setupManual(process.env, verifySendTarget, globalSetup)",
-          "dynamic": false,
-          "layer": "G",
-          "design": "DG-004"
-        }
-      ],
-      "sha256": "bde1a92584ba4e0029f4bf326642fa116f1806c7cdac493bacc21443cce77c82"
-    },
-    "mobileapp/e2e/fake-serve/backend-contract.test.ts": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-2fd3cafb008c",
-          "line": 46,
-          "kind": "reviewed-selector",
-          "name": "RN fake / Go contract:",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CT-HTTP"
-        },
-        {
-          "id": "MAP-01cd8c62d09e",
-          "line": 53,
-          "kind": "reviewed-selector",
-          "name": "RN client consumes original ordinals",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CT-HTTP"
-        }
-      ],
-      "sha256": "111c3c26ceb13c0cc7a2226f2600aea6c9dc39cca14aaeb5574dc93c985be9fe"
-    },
-    "mobileapp/e2e/fake-serve/server.ts": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-f2ed2637baa9",
-          "line": 95,
-          "kind": "reviewed-selector",
-          "name": "startFake",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CT-HTTP"
-        }
-      ],
-      "sha256": "79d8be5f47afc60d6725ac9b4c72c04d329ffd08d10aa46d92c9f69ba054d5ef"
-    },
-    "mobileapp/e2e/fake-serve/world.ts": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-f4f657590af5",
-          "line": 111,
-          "kind": "reviewed-selector",
-          "name": "export class World",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CT-HTTP"
-        }
-      ],
-      "sha256": "e969f4c7051c2748d9dfbfdb800724351df2f78d4b1a62a0935c32e2d61d6711"
-    },
-    "mobileapp/metro.config.js": {
-      "layer": "G",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-40893b89cbd9",
-          "line": 11,
-          "kind": "reviewed-selector",
-          "name": "const config =",
-          "dynamic": false,
-          "layer": "G",
-          "design": "CT-SCOPE"
-        }
-      ],
-      "sha256": "5c8073c6156d2a6db9c795705f70f82c21df119475c02f0f86dab7765bb29d1f"
-    },
-    "mobileapp/scripts/test-boundary.test.ts": {
-      "layer": "G",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-bc30d081ec5f",
-          "line": 5,
-          "kind": "reviewed-selector",
-          "name": "actual Metro resolver refuses",
-          "dynamic": false,
-          "layer": "G",
-          "design": "CT-SCOPE"
-        }
-      ],
-      "sha256": "88630b9166bd08480bc6d706845bb9bdc46564a09a016fdfb881636adaacb71d"
-    },
-    "mobileapp/src/screens/DetailDraftSwitch.test.tsx": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-418e70e2cded",
-          "line": 93,
-          "kind": "reviewed-selector",
-          "name": "mounted Detail isolates drafts",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CT-DRAFT"
-        },
-        {
-          "id": "MAP-9341e742825a",
-          "line": 129,
-          "kind": "reviewed-selector",
-          "name": "late draft storage result",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CT-DRAFT"
-        }
-      ],
-      "sha256": "183243065aa35c57dd4c4d691f37c2bd514b965b76d830a94bcc9f69544a8200"
-    },
-    "mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-f38035a7c2fe",
-          "line": 112,
-          "kind": "reviewed-selector",
-          "name": "pending HQ question opens the original matter",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CT-DRAFT,CT-HQ"
-        },
-        {
-          "id": "MAP-f119dbaabb64",
-          "line": 162,
-          "kind": "reviewed-selector",
-          "name": "late HQ overview and matter responses",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CT-DRAFT,CT-HQ"
-        },
-        {
-          "id": "MAP-acb5ed213eb0",
-          "line": 209,
-          "kind": "reviewed-selector",
-          "name": "a prepared HQ question stays scoped",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CT-DRAFT,CT-HQ"
-        }
-      ],
-      "sha256": "9c626499c441712ab149719bfd9d233c342baad60124f31d6963f5758071d418"
-    },
-    "mobileapp/src/screens/ServerModeBehavior.test.tsx": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-00de085feb2a",
-          "line": 85,
-          "kind": "reviewed-selector",
-          "name": "awake and reconnect subscription events",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CT-SUB"
-        },
-        {
-          "id": "MAP-32838a7dcdf1",
-          "line": 104,
-          "kind": "reviewed-selector",
-          "name": "late server mode response",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CT-SUB"
-        }
-      ],
-      "sha256": "0d0db6ccaec91d3d9c3052ad9be51c9ae2d006d1a9d139238574279d245c32c4"
-    },
-    "scripts/ci.py": {
-      "layer": "G",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-41a5bc78e4e8",
-          "line": 33,
-          "kind": "reviewed-selector",
-          "name": "confirmed_unit_test_isolation",
-          "dynamic": false,
-          "layer": "G",
-          "design": "CT-SCOPE"
-        }
-      ],
-      "sha256": "b62e0024676d64ec379b69b502e913a83e69abd4d0a514696aacaa84d3d01a0f"
-    },
-    "tests/contracts/http-contract.cjs": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-2a8e1df3263e",
-          "line": 5,
-          "kind": "reviewed-selector",
-          "name": "async function observe",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CT-HTTP"
-        },
-        {
-          "id": "MAP-c856d62bb0c7",
-          "line": 36,
-          "kind": "reviewed-selector",
-          "name": "function verify",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CT-HTTP"
-        }
-      ],
-      "sha256": "416a7359f4fd1d778bc176bd15693e9a59cfff1e1a0ae48e2ca5913364bc031d"
-    },
-    "tests/web/backend-contract.test.cjs": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-184f052913f1",
-          "line": 34,
-          "kind": "reviewed-selector",
-          "name": "Web fake / Go contract:",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CT-HTTP"
-        }
-      ],
-      "sha256": "99bd6f0656c0261bfc980d5f9bec2edf9fcbcede4274b0672d1d91a4f6be545e"
-    },
-    "tests/web/fixture.cjs": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-c9d3762e7230",
-          "line": 18,
-          "kind": "reviewed-selector",
-          "name": "async function start",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CT-HTTP"
-        }
-      ],
-      "sha256": "e5680209e52d0d592b794015230823527b9d35ac4d1aa9a5d6774dd62ed247af"
-    },
-    "tests/web/harness-isolation.test.cjs": {
-      "layer": "L3",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-31ae43976a8b",
-          "line": 4,
-          "kind": "reviewed-selector",
-          "name": "shared browser first case",
-          "dynamic": false,
-          "layer": "L3",
-          "design": "CT-BROWSER"
-        },
-        {
-          "id": "MAP-7fb866f795f7",
-          "line": 25,
-          "kind": "reviewed-selector",
-          "name": "shared browser next case",
-          "dynamic": false,
-          "layer": "L3",
-          "design": "CT-BROWSER"
-        }
-      ],
-      "sha256": "4c4a70bcbe2f385c4800637b001bcba870fb31aa9a61d6b09f015b8e50c7b994"
-    },
-    "tests/web/harness.cjs": {
-      "layer": "G",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-eda764da861f",
-          "line": 13,
-          "kind": "reviewed-selector",
-          "name": "function scenario",
-          "dynamic": false,
-          "layer": "G",
-          "design": "CT-TIMING,CT-BROWSER"
-        }
-      ],
-      "sha256": "66df285c37dae227f2d2e74c6670203de76863587b9760d2a9728f6954ff29ca"
-    },
-    "tests/web/http-contract-validator.test.cjs": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-e5604b1208c7",
-          "line": 4,
-          "kind": "reviewed-selector",
-          "name": "wire contract rejects type, permission, ordinal, omission and security-header drift",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CT-HTTP"
-        }
-      ],
-      "sha256": "a620ff866d1e1f4786f1402bce978987ad8b1dc9c6920e2d073157e296f1b969"
-    },
-    "internal/app/client_contract_test.go": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-bf28343fb4c1",
-          "line": 30,
-          "kind": "reviewed-selector",
-          "name": "TestClientHTTPContracts",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CT-HTTP"
-        }
-      ],
-      "sha256": "fa696ba17a2fd2935e8b3ca825f74cf8eea19036aace4793e1035b83674ccb5a"
-    },
-    "mobileapp/e2e/android/journey.cjs": {
-      "layer": "L1",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-f84810b94765",
-          "line": 37,
-          "kind": "reviewed-selector",
-          "name": "function selection",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "CT-ANDROID-POLICY,CT-TIMING"
-        },
-        {
-          "id": "MAP-87d616e2f9f2",
-          "line": 68,
-          "kind": "reviewed-selector",
-          "name": "function createJourney",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "CT-ANDROID-POLICY,CT-TIMING"
-        }
-      ],
-      "sha256": "063d7263848872ef43d3b13fa4205cd9e0ea8899d51a5318eeeac3658da15c46"
-    },
-    "mobileapp/e2e/android/journey.test.ts": {
-      "layer": "L1",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-845b52602a47",
-          "line": 2,
-          "kind": "reviewed-selector",
-          "name": "full Android journey retains",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "CT-ANDROID-POLICY,CT-TIMING"
-        },
-        {
-          "id": "MAP-591fe2c43846",
-          "line": 14,
-          "kind": "reviewed-selector",
-          "name": "setup failure blocks",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "CT-ANDROID-POLICY,CT-TIMING"
-        },
-        {
-          "id": "MAP-bd791291b35e",
-          "line": 39,
-          "kind": "reviewed-selector",
-          "name": "first assertion and disconnect causes",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "CT-ANDROID-POLICY,CT-TIMING"
-        },
-        {
-          "id": "MAP-e9a3452907ab",
-          "line": 67,
-          "kind": "reviewed-selector",
-          "name": "an out of order selected check",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "CT-ANDROID-POLICY,CT-TIMING"
-        },
-        {
-          "id": "MAP-fc216f83479b",
-          "line": 79,
-          "kind": "reviewed-selector",
-          "name": "timing records setup action",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "CT-ANDROID-POLICY,CT-TIMING"
-        }
-      ],
-      "sha256": "cc1947840a1550e77fa0cfff2c043e54f58a1bf26150ee7089e5e05fe2d486aa"
-    },
-    "tests/web/browser-pool.cjs": {
-      "layer": "G",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-75f2ed302427",
-          "line": 2,
-          "kind": "reviewed-selector",
-          "name": "function browserPool",
-          "dynamic": false,
-          "layer": "G",
-          "design": "CT-BROWSER-POLICY,CT-TIMING"
-        }
-      ],
-      "sha256": "8cdff69f77a199fb4a7e6b9c110dd66de0d70916099267a9116ed0b08675c5cf"
-    },
-    "tests/web/browser-pool.test.cjs": {
-      "layer": "G",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-faa984b171bf",
-          "line": 4,
-          "kind": "reviewed-selector",
-          "name": "concurrent borrowers share",
-          "dynamic": false,
-          "layer": "G",
-          "design": "CT-BROWSER-POLICY,CT-TIMING"
-        },
-        {
-          "id": "MAP-c7ca48106233",
-          "line": 30,
-          "kind": "reviewed-selector",
-          "name": "failed launch propagates",
-          "dynamic": false,
-          "layer": "G",
-          "design": "CT-BROWSER-POLICY,CT-TIMING"
-        }
-      ],
-      "sha256": "cb594d5a470c76cef3c41987213ac5029380e1dae114dcda297a20b17fd9e960"
-    },
-    "internal/app/hqworkspace_stored_test.go": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-c746f11a537e",
-          "line": 10,
-          "kind": "reviewed-selector",
-          "name": "TestWorkspaceStoredCLILeavesDiscoveryAndRecordsUntouched",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MC-HQ-READ"
-        }
-      ],
-      "sha256": "b3b513924665a8d79b689a731b5cd07187a6383e0d78ce9f793e0d3a4d13ef1a"
-    },
-    "macapp/Tests/GtmuxBarTests/HQChoiceFixture.swift": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-18b153c61e83",
-          "line": 12,
-          "kind": "reviewed-selector",
-          "name": "class ChoiceFixture",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MC-HQ-CHOICE,MC-HQ-WINDOW,MC-HQ-READ"
-        },
-        {
-          "id": "MAP-d6fdd79aba67",
-          "line": 60,
-          "kind": "reviewed-selector",
-          "name": "enum HQChoiceTestSupport",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MC-HQ-CHOICE,MC-HQ-WINDOW,MC-HQ-READ"
-        }
-      ],
-      "sha256": "8174bb500aece9dcb828d19c855f39503fd84ff93e9bc8b3a4f53dca1318aee2"
-    },
-    "macapp/Tests/GtmuxBarTests/HQChoiceResponseTests.swift": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-0143ada6d861",
-          "line": 8,
-          "kind": "reviewed-selector",
-          "name": "testChoicePreparesFocusWithoutSendingAndPreservesEditedDraft",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MC-HQ-CHOICE,MC-HQ-READ"
-        },
-        {
-          "id": "MAP-ae59716ae51d",
-          "line": 31,
-          "kind": "reviewed-selector",
-          "name": "testSlowSourceDiscoveryCannotBlockReplyOrRollBackNewCanonicalData",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MC-HQ-CHOICE,MC-HQ-READ"
-        },
-        {
-          "id": "MAP-fa1c60fa2d92",
-          "line": 62,
-          "kind": "reviewed-selector",
-          "name": "testSourceTimeoutDoesNotBecomeTheQuestionOrDraftError",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MC-HQ-CHOICE,MC-HQ-READ"
-        },
-        {
-          "id": "MAP-ed56b3b277a8",
-          "line": 79,
-          "kind": "reviewed-selector",
-          "name": "testStoredClientUsesReadOnlyFlagAndOnlyLegacyUsageFallsBack",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MC-HQ-CHOICE,MC-HQ-READ"
-        },
-        {
-          "id": "MAP-b135d4ac2897",
-          "line": 117,
-          "kind": "reviewed-selector",
-          "name": "testUnavailableSourceMetadataNeverClaimsTheSessionIsGone",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MC-HQ-CHOICE,MC-HQ-READ"
-        }
-      ],
-      "sha256": "35a885eabfdcb6cf909fc124c99679a32550a0e7cbb1d11b724275a68986d864"
-    },
-    "macapp/Tests/GtmuxBarTests/HQChoiceWindowTests.swift": {
-      "layer": "L3",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-d731318cd969",
-          "line": 8,
-          "kind": "reviewed-selector",
-          "name": "testCompleteWindowPinsComposerAndNativeChoiceUpdatesAndFocusesEditor",
-          "dynamic": false,
-          "layer": "L3",
-          "design": "MC-HQ-WINDOW"
-        },
-        {
-          "id": "MAP-a11ab8aaa94d",
-          "line": 92,
-          "kind": "reviewed-selector",
-          "name": "testCurrentQuestionRemainsUsableWhileConversationReadWaits",
-          "dynamic": false,
-          "layer": "L3",
-          "design": "MC-HQ-WINDOW"
-        }
-      ],
-      "sha256": "49ac2114150d419318aac3909df2cdae53a516130b5283b952390626d7120cb5"
-    },
-    "macapp/Tests/GtmuxBarTests/HQOverviewClarityTests.swift": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-b4f647d0a506",
-          "line": 44,
-          "kind": "reviewed-selector",
-          "name": "testCanonicalGroupsAndHiddenCountIgnoreEndedMergedStaleAndDuplicateRows",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MC-HQ-OVERVIEW-STATE,MC-HQ-OVERVIEW-BRIEF"
-        },
-        {
-          "id": "MAP-67fdd9c30f6e",
-          "line": 63,
-          "kind": "reviewed-selector",
-          "name": "testCurrentAssessmentTakesPriorityWithoutBorrowingReceiptOrMetadataTime",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MC-HQ-OVERVIEW-STATE,MC-HQ-OVERVIEW-BRIEF"
-        }
-      ],
-      "sha256": "7762a7adc56b442a3f9847aea6abba94556e3b079f5198827fb5e0a61add651d"
-    },
-    "macapp/Tests/GtmuxBarTests/HQOverviewMoreWindowTests.swift": {
-      "layer": "L3",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-80be9bb61842",
-          "line": 27,
-          "kind": "reviewed-selector",
-          "name": "testBottomRemainingControlOpensAllAndSelectsHiddenGoalWithoutSending",
-          "dynamic": false,
-          "layer": "L3",
-          "design": "MC-HQ-OVERVIEW-MORE"
-        },
-        {
-          "id": "MAP-9a63f420f1ec",
-          "line": 98,
-          "kind": "reviewed-selector",
-          "name": "testFullyShownListHasNoRemainingControlAndUnknownRosterDoesNotSayIdle",
-          "dynamic": false,
-          "layer": "L3",
-          "design": "MC-HQ-OVERVIEW-MORE"
-        }
-      ],
-      "sha256": "6b9678313b56e9d142eac9e64eda3bf820454858426bb977ad1f8e71418ec7af"
-    },
-    "internal/radar/codex_foreign_marker_gather_test.go": {
-      "layer": "L3",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-226227944e48",
-          "line": 14,
-          "kind": "reviewed-selector",
-          "name": "TestGatherDoesNotReviveAnotherSessionsOldMarkerFromWindowActivity",
-          "dynamic": false,
-          "layer": "L3",
-          "design": "CORE-CODEX-FOREIGN-GATHER"
-        }
-      ],
-      "sha256": "d0abb6fe93bcb80b3f3742be1652c0377235718a5ad0254834dc9f98ac9d0cb7"
-    },
-    "internal/radar/codex_foreign_marker_test.go": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-8c62d9a14381",
-          "line": 15,
-          "kind": "reviewed-selector",
-          "name": "TestForeignActiveRequiresCurrentIdentityEndedTurnAndReadyFrame",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CORE-CODEX-FOREIGN-ACTIVE"
-        },
-        {
-          "id": "MAP-d562c313395b",
-          "line": 107,
-          "kind": "reviewed-selector",
-          "name": "TestForeignActiveProductionReaderRejectsLegacyResumeWithoutFrontend",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CORE-CODEX-FOREIGN-ACTIVE"
-        }
-      ],
-      "sha256": "c6ce22a2cfa598de96de46e10d9065324d94ca13ba94ef3fdf6491e37e54a71a"
-    },
-    "internal/ghostty/session_identity_test.go": {
-      "layer": "L1",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-d3cfa449d61c",
-          "line": 7,
-          "kind": "reviewed-selector",
-          "name": "TestTitleMatchesSessionPreservesLeadingSymbols",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "FOCUS-001,FOCUS-002"
-        },
-        {
-          "id": "MAP-761073fd4439",
-          "line": 39,
-          "kind": "reviewed-selector",
-          "name": "TestSessionTabPrefersLiteralIdentity",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "FOCUS-001,FOCUS-002"
-        }
-      ],
-      "sha256": "d39497db4173b773bb881661cc075fbe055efd574686b21c8f03b0f0c6f30bdd"
-    },
-    "internal/app/hqworkspace_reconcile_test.go": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-9a346dda931b",
-          "line": 15,
-          "kind": "reviewed-selector",
-          "name": "TestPhase1WorkspaceIngestionRecoveryAndReadIndependence",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
-        },
-        {
-          "id": "MAP-4a6d3760f38d",
-          "line": 104,
-          "kind": "reviewed-selector",
-          "name": "TestPhase1WorkspaceActionAuthorizationAndCompatibility",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
-        },
-        {
-          "id": "MAP-c7c7feed6e2a",
-          "line": 148,
-          "kind": "reviewed-selector",
-          "name": "TestPhase1HQCanClaimDryRunAndCommit",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
-        }
-      ],
-      "sha256": "55091bb335148ed8c88de08ba3ed603b8ce8c2c960c0bf617a1d79af873bd012"
-    },
-    "internal/hqworkspace/phase1_test.go": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-a9132845f95d",
-          "line": 45,
-          "kind": "reviewed-selector",
-          "name": "TestPhase1ReportsPreserveCompletedAndQuestion",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
-        },
-        {
-          "id": "MAP-8d3525e25015",
-          "line": 82,
-          "kind": "reviewed-selector",
-          "name": "TestPhase1TransitionCASAndQuestionIdentity",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
-        },
-        {
-          "id": "MAP-8c722e686be5",
-          "line": 151,
-          "kind": "reviewed-selector",
-          "name": "TestPhase1RecoveryFencingAtomicAssessment",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
-        },
-        {
-          "id": "MAP-6cde1202d0f1",
-          "line": 220,
-          "kind": "reviewed-selector",
-          "name": "TestPhase1OldObservationDeferralAndSchemaMigration",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
-        },
-        {
-          "id": "MAP-05f8c00db7ff",
-          "line": 281,
-          "kind": "reviewed-selector",
-          "name": "TestPhase1ExactAttributionAndAmbiguity",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
-        }
-      ],
-      "sha256": "23f843d99f339eb8b4f94bcf125e319fdee1e25c058d0053ad896080eeb4caad"
-    },
-    "internal/app/hqworkspace_cursor_test.go": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-9931f487fae1",
-          "line": 109,
-          "kind": "reviewed-selector",
-          "name": "TestPhase1CursorEmptyScanConcurrentAppend",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
-        },
-        {
-          "id": "MAP-479200cd9eee",
-          "line": 142,
-          "kind": "reviewed-selector",
-          "name": "TestPhase1CursorProspectiveActivation",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
-        },
-        {
-          "id": "MAP-b0e7a04d99c5",
-          "line": 179,
-          "kind": "reviewed-selector",
-          "name": "TestPhase1CursorEmptyRetentionGap",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
-        },
-        {
-          "id": "MAP-ec07edd88479",
-          "line": 203,
-          "kind": "reviewed-selector",
-          "name": "TestPhase1CursorFilteredPageBoundary",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
-        }
-      ],
-      "sha256": "9574464057f0fddd502bc4ad81f2b83fba58bdf10a57197033fc3600ca749e4d"
-    },
-    "internal/hook/codex_completed_turn_test.go": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-7bf0b97f95d1",
-          "line": 38,
-          "kind": "reviewed-selector",
-          "name": "TestCompletedCodexTurnRejectsExplicitLateRearm",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CET-004,CET-005"
-        },
-        {
-          "id": "MAP-6752a622a3e4",
-          "line": 72,
-          "kind": "reviewed-selector",
-          "name": "TestCompletedCodexTurnKeepsLegacyAndUncertainCallbacks",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CET-004,CET-005"
-        },
-        {
-          "id": "MAP-2dd42a3caeb8",
-          "line": 114,
-          "kind": "reviewed-selector",
-          "name": "TestCodexContinuationPreservesActiveStart",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CET-004,CET-005"
-        }
-      ],
-      "sha256": "f1a148ff3a362baefca2c295316c95eab1d55257d5c1c6e25907f4ef35af69f9"
-    },
-    "internal/radar/codex_completed_marker_test.go": {
-      "layer": "L3",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-c49705115ac9",
-          "line": 15,
-          "kind": "reviewed-selector",
-          "name": "TestGatherCompletedOwnTurnSurvivesLateActiveMarker",
-          "dynamic": false,
-          "layer": "L3",
-          "design": "CET-002,CET-003"
-        }
-      ],
-      "sha256": "b44f3bc0774a92005a869f4417a7acc01cbbca23e9ee9231530af573aa29ad2c"
-    },
-    "internal/transcript/codex_turn_event_test.go": {
-      "layer": "L1",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-cfb5148b253b",
-          "line": 12,
-          "kind": "reviewed-selector",
-          "name": "TestCodexTurnEventIdentityAndFreshness",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "CET-001"
-        },
-        {
-          "id": "MAP-d042219d39df",
-          "line": 68,
-          "kind": "reviewed-selector",
-          "name": "TestCodexTurnEventTailBudget",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "CET-001"
-        }
-      ],
-      "sha256": "17d89cd71ab3ee97b127d737b8d91239cafb6939caa2bddc7e42efa5d7af73a4"
-    },
-    "internal/hook/codex_manual_compact_test.go": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-cce8e70a6d32",
-          "line": 11,
-          "kind": "reviewed-selector",
-          "name": "TestCompletedCodexTurnPreservesManualCompactReceipt",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CET-006"
-        }
-      ],
-      "sha256": "639607ccc19de38963c65f855d6da6cba45e1639196d47556c5fa723b6370de6"
-    },
-    "internal/transcript/tool_call_detail_test.go": {
-      "layer": "L1",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-d8d563bbd03e",
-          "line": 11,
-          "kind": "reviewed-selector",
-          "name": "TestNativeCallDetailsAreLazyScopedAndRedacted",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "TCV-001,TCV-002"
-        },
-        {
-          "id": "MAP-78516b06d8fd",
-          "line": 64,
-          "kind": "reviewed-selector",
-          "name": "TestNativeCallMirrorPreservesOriginalInputAndResultReference",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "TCV-001,TCV-002"
-        },
-        {
-          "id": "MAP-4895957e9e8f",
-          "line": 97,
-          "kind": "reviewed-selector",
-          "name": "TestNativeCallMissingResultIsNotAnEmptyResult",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "TCV-001,TCV-002"
-        }
-      ],
-      "sha256": "d8492eb786c580d8fbb1d92da6c901a4ea1674eb15c0d9d8344b10262e73cb57"
-    },
-    "mobileapp/src/trace/TraceModal.toolCall.test.tsx": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-6249b500ee15",
-          "line": 104,
-          "kind": "reviewed-selector",
-          "name": "Trace loads recorded query details and both Preview and Raw are useful",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "TCV-004"
-        },
-        {
-          "id": "MAP-d46d85f17b03",
-          "line": 139,
-          "kind": "reviewed-selector",
-          "name": "Chat reuses the same query details, failure retries and late reads retire on home change",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "TCV-004"
-        }
-      ],
-      "sha256": "d6aa4c04d75db6b4f437b4b52301138e8543ef9fbf6d4be1a56652966834eb4d"
-    },
-    "mobileapp/src/ui/toolPresentation.test.ts": {
-      "layer": "L1",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-47222e9f745a",
-          "line": 27,
-          "kind": "reviewed-selector",
-          "name": "query details show named parameters, structured results, provenance and complete raw",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "TCV-003"
-        },
-        {
-          "id": "MAP-3813fdfe8df1",
-          "line": 75,
-          "kind": "reviewed-selector",
-          "name": "command, file changes, waits, text/errors and missing/empty results stay distinct",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "TCV-003"
-        },
-        {
-          "id": "MAP-f94f19b784ef",
-          "line": 152,
-          "kind": "reviewed-selector",
-          "name": "full reads preserve original command and distinct native result references",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "TCV-003"
-        },
-        {
-          "id": "MAP-aedc42ce6351",
-          "line": 190,
-          "kind": "reviewed-selector",
-          "name": "large rendering pages disclose bounds and preserve all characters",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "TCV-003"
-        }
-      ],
-      "sha256": "9a55da56d2ea9698610193f912be434d501af18d100d11ce5e34f19cfb2cd92a"
-    },
-    "tests/web/tool-call-detail.test.cjs": {
-      "layer": "L3",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-8fceb6b39ede",
-          "line": 6,
-          "kind": "reviewed-selector",
-          "name": "Typed query details in Chat and Trace ",
-          "dynamic": false,
-          "layer": "L3",
-          "design": "TCV-005"
-        },
-        {
-          "id": "MAP-e962ab9f86bc",
-          "line": 20,
-          "kind": "reviewed-selector",
-          "name": "Recorded query failure retries and large results page without losing full copy",
-          "dynamic": false,
-          "layer": "L3",
-          "design": "TCV-005"
-        }
-      ],
-      "sha256": "1a6c30f4fc326948b521176ea37967d3fa72dc16ced092a42422598a7251ce43"
-    },
-    "internal/app/relay_sender_contract_test.go": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-93c5d85ec366",
-          "line": 52,
-          "kind": "reviewed-selector",
-          "name": "TestHRS003ReceiptAwareSharedTranscript",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "HRS-003"
-        },
-        {
-          "id": "MAP-d400cc0846af",
-          "line": 89,
-          "kind": "reviewed-selector",
-          "name": "TestHRS003EarlierPagesKeepFirstAttribution",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "HRS-003"
-        }
-      ],
-      "sha256": "52adbf94dc1f7f8e00ebf1995f4ff0478a4cf406b4f0f28800e4419fee37e8bb"
-    },
-    "internal/app/relay_sender_test.go": {
-      "layer": "L1",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-0905ae049942",
-          "line": 15,
-          "kind": "reviewed-selector",
-          "name": "TestHRS002TrustedReceiptAndFirstSourceOnly",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "HRS-002"
-        }
-      ],
-      "sha256": "6a49035b4362e9451a56f0bed599a8b6af035dbf89ac80e63112716e7bcca344"
-    },
-    "internal/transcript/prompt_witness_test.go": {
-      "layer": "L1",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-13e8ea24978b",
-          "line": 28,
-          "kind": "reviewed-selector",
-          "name": "TestHRS001FirstPromptWitnesses",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "HRS-001"
-        }
-      ],
-      "sha256": "a81ad565e63d7b10cf13bd1264a02efa2e60a284ae952c34b5efd6d7812bf725"
-    },
-    "mobileapp/e2e/android/permission.test.ts": {
-      "layer": "L1",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-f136a33c6b39",
-          "line": 9,
-          "kind": "reviewed-selector",
-          "name": "ACP-001 enabled camera dialog",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "ACP-001"
-        },
-        {
-          "id": "MAP-4d0201e65f7a",
-          "line": 18,
-          "kind": "reviewed-selector",
-          "name": "ACP-001 one ignored interaction",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "ACP-001"
-        },
-        {
-          "id": "MAP-8136ad9cefc9",
-          "line": 25,
-          "kind": "reviewed-selector",
-          "name": "ACP-001 unchanged dialog",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "ACP-001"
-        },
-        {
-          "id": "MAP-56833c4f4204",
-          "line": 37,
-          "kind": "reviewed-selector",
-          "name": "ACP-001 another permission owner",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "ACP-001"
-        },
-        {
-          "id": "MAP-beb32ac8514d",
-          "line": 46,
-          "kind": "reviewed-selector",
-          "name": "ACP-001 original driver failure",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "ACP-001"
-        },
-        {
-          "id": "MAP-35b873f04f0a",
-          "line": 54,
-          "kind": "reviewed-selector",
-          "name": "ACP-001 late readiness",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "ACP-001"
-        },
-        {
-          "id": "MAP-84e63684ac34",
-          "line": 61,
-          "kind": "reviewed-selector",
-          "name": "ACP-001 a slow read",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "ACP-001"
-        },
-        {
-          "id": "MAP-28799ec04e66",
-          "line": 72,
-          "kind": "reviewed-selector",
-          "name": "ACP-001 absent dialog",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "ACP-001"
-        },
-        {
-          "id": "MAP-34da68cfb864",
-          "line": 92,
-          "kind": "reviewed-selector",
-          "name": "ACP-001 a newly repeated camera prompt",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "ACP-001"
-        },
-        {
-          "id": "MAP-9f336e94e7b3",
-          "line": 81,
-          "kind": "reviewed-selector",
-          "name": "ACP-001 closing before any Deny",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "ACP-001"
-        }
-      ],
-      "sha256": "96b5496ae6d9ba44e0504bc16b2f2c2c52018c7d0703d8d0563f5e27f1b9a2ee"
-    },
-    "mobileapp/e2e/android/permissionJourney.test.ts": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-435d839b0a83",
-          "line": 63,
-          "kind": "reviewed-selector",
-          "name": "ACP-002 registered journey survives",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "ACP-002"
-        },
-        {
-          "id": "MAP-255b356248a5",
-          "line": 70,
-          "kind": "reviewed-selector",
-          "name": "ACP-002 registered journey still fails",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "ACP-002"
-        },
-        {
-          "id": "MAP-04ea0e0d7ec3",
-          "line": 76,
-          "kind": "reviewed-selector",
-          "name": "ACP-002 registered journey cannot pass",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "ACP-002"
-        },
-        {
-          "id": "MAP-5c6662fed7bd",
-          "line": 80,
-          "kind": "reviewed-selector",
-          "name": "ACP-002 registered journey cannot click",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "ACP-002"
-        },
-        {
-          "id": "MAP-2ba0c888b1bb",
-          "line": 85,
-          "kind": "reviewed-selector",
-          "name": "ACP-002 registered journey preserves",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "ACP-002"
-        }
-      ],
-      "sha256": "36d69a913e5c4703cbb329d3948d521de3d35273227029bb7527ddf6bf48f9be"
-    },
-    "mobileapp/e2e/android/permission.cjs": {
-      "layer": "L1",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-bc82a09365cb",
-          "line": 13,
-          "kind": "reviewed-selector",
-          "name": "async function denyCameraPermission(",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "ACP-001"
-        }
-      ],
-      "sha256": "da48f2283128e300fccad5447456e0b3a7979a7876dfb770fc2b4f80bddb0cb0"
-    },
-    "mobileapp/e2e/android/permission.fixture.cjs": {
-      "layer": "L1",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-9aff6c097646",
-          "line": 3,
-          "kind": "reviewed-selector",
-          "name": "function fixture(",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "ACP-001"
-        }
-      ],
-      "sha256": "d2116d6fc0061a1cd5d4010bfb1d0110680d676f9683dee85f2d184bf97e0bc1"
-    },
-    "internal/server/web/argv-reading.test.cjs": {
-      "layer": "L1",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-3bd1a5cb9551",
-          "line": 2,
-          "kind": "reviewed-selector",
-          "name": "ARGV-001 browser uses",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "ARGV-001"
-        }
-      ],
-      "sha256": "100124e5653ba8932cf89f80608f880406635d803aed92cc042e623924bf6e83"
-    },
-    "mobileapp/src/ui/CommandArgvPanel.test.tsx": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-9027d26c2a63",
-          "line": 9,
-          "kind": "reviewed-selector",
-          "name": "ARGV-002 shared readers",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "ARGV-002"
-        }
-      ],
-      "sha256": "b43432176610aec219c2dae775d0502f10335e1b0a074ae13af2562d9fee22dc"
-    },
-    "mobileapp/src/ui/commandArgv.test.ts": {
-      "layer": "L1",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-b958aa95a388",
-          "line": 5,
-          "kind": "reviewed-selector",
-          "name": "ARGV-001 shell argv",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "ARGV-001"
-        },
-        {
-          "id": "MAP-952a93df29d6",
-          "line": 20,
-          "kind": "reviewed-selector",
-          "name": "ARGV-001 cmd fields",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "ARGV-001"
-        },
-        {
-          "id": "MAP-c8ee897131ac",
-          "line": 40,
-          "kind": "reviewed-selector",
-          "name": "ARGV-001 ordinary argv",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "ARGV-001"
-        }
-      ],
-      "sha256": "de7cb1d658a21ea55fa8de57e97820f6aa821b83b53e660f3c80d4d20a328e45"
-    },
-    "tests/web/command-argv.test.cjs": {
-      "layer": "L3",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-23fe7f83abc2",
-          "line": 4,
-          "kind": "reviewed-selector",
-          "name": "ARGV-003 Trace argv scripts",
-          "dynamic": false,
-          "layer": "L3",
-          "design": "ARGV-003"
-        }
-      ],
-      "sha256": "4406c38a3cf63286e5a66b4b7c107b2ae327cf758d3717a15749023c0139fa3b"
-    },
-    "internal/app/serve_energy_snapshot_test.go": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-59b391120a04",
-          "line": 14,
-          "kind": "reviewed-selector",
-          "name": "TestPWR003SSEPublishesItsActualNativeObservationForREST",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "PWR-003"
-        }
-      ],
-      "sha256": "31ff63621a5723178bbe21086bd8e1f73f6366f6ef234fd36fdf2a9e93092dac"
-    },
-    "internal/radar/energy_gather_test.go": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-981c45e6de6f",
-          "line": 8,
-          "kind": "reviewed-selector",
-          "name": "TestPWR002GatherSharesFramesOnlyInsideOnePass",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "PWR-002"
-        }
-      ],
-      "sha256": "25d6cbfcfe8242182d4310e4ac012a0f60ed358107790092195f761e1baac6ff"
-    },
-    "internal/radar/energy_snapshot_test.go": {
-      "layer": "L1",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-0670bffd7c6c",
-          "line": 12,
-          "kind": "reviewed-selector",
-          "name": "TestPWR001ProducerSharesFreshSnapshotAndKeepsBoundaries",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "PWR-001"
-        },
-        {
-          "id": "MAP-e4331da4fa54",
-          "line": 62,
-          "kind": "reviewed-selector",
-          "name": "TestPWR001ConcurrentProducerCannotBeOverwrittenByOlderREST",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "PWR-001"
-        }
-      ],
-      "sha256": "c1b68825831e08167c1d904d4fe561780a5e91680b4cda099f0bdc45a0fcc9fe"
-    },
-    "internal/codexrpc/screenshot_input_test.go": {
-      "layer": "L1",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-f930cf46c48d",
-          "line": 17,
-          "kind": "reviewed-selector",
-          "name": "TestSSI001ActiveScreenshotUsesExactTurnAndMetadataOnly",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "SSI-001"
-        },
-        {
-          "id": "MAP-2f4616d9d325",
-          "line": 56,
-          "kind": "reviewed-selector",
-          "name": "TestSSI001OnlyExplicitUnsupportedOrIdleUsesLegacyQueue",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "SSI-001"
-        },
-        {
-          "id": "MAP-7bcaec9ec776",
-          "line": 83,
-          "kind": "reviewed-selector",
-          "name": "TestSSI001RefusalsAndUncertaintyNeverMutateOrReplay",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "SSI-001"
-        },
-        {
-          "id": "MAP-570ce9eacef7",
-          "line": 121,
-          "kind": "reviewed-selector",
-          "name": "TestSSI001LastMomentHoldStopsActiveInput",
-          "dynamic": false,
-          "layer": "L1",
-          "design": "SSI-001"
-        }
-      ],
-      "sha256": "1ecfdf8669c5a02dc1fed2afd951fc628e05d176040c476c8b922d84b7dff9e8"
-    },
-    "internal/dispatchbridge/screenshot_input_test.go": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-95475cf33bca",
-          "line": 19,
-          "kind": "reviewed-selector",
-          "name": "TestSSI002NativeImageAcceptanceAndUncertainRetryKeepIdentity",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "SSI-002"
-        },
-        {
-          "id": "MAP-8691ea4c02c8",
-          "line": 103,
-          "kind": "reviewed-selector",
-          "name": "TestSSI002OrdinaryTextKeepsExistingQueueSemantics",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "SSI-002"
-        }
-      ],
-      "sha256": "2f3fe680ebcf82a7a4380433142f753c4dbc59c2708c7fd7d09155a5ebfbc40d"
-    },
-    "macapp/Tests/GtmuxBarTests/ScreenshotActiveInputTests.swift": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-a968227ee19e",
-          "line": 7,
-          "kind": "reviewed-selector",
-          "name": "testSSI003ActiveQueueAndDeliveryReceiptsStayDistinct",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "SSI-003"
-        },
-        {
-          "id": "MAP-f5d04607e020",
-          "line": 30,
-          "kind": "reviewed-selector",
-          "name": "testSSI003BothLanguagesDescribeQueuedAndActiveInputTruthfully",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "SSI-003"
-        }
-      ],
-      "sha256": "1a0e1a096238bc3ec520c8ec36299d2a70a59e4ef0c3effa62d8a922c486617f"
-    },
-    "internal/native/closed_frontend_test.go": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-1176b6e7ceff",
-          "line": 10,
-          "kind": "reviewed-selector",
-          "name": "TestClosedFrontendObservationRequiresExactSnapshotAndGoneProcess",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "HXF-001"
-        }
-      ],
-      "sha256": "1174caa3e91be9e8fd55a9ffa4c83861dc5d8e81cdede465d7824e9ceac473e6"
-    },
-    "internal/radar/closed_frontend_test.go": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-e88c0ded5ae1",
-          "line": 18,
-          "kind": "reviewed-selector",
-          "name": "TestClosedBoundResumedWorkerHistoryAndPreservation",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "HXF-002"
-        }
-      ],
-      "sha256": "38055d72ccdeead07a52b7cd4a122317dab84417c6e223dc47bd41523c7c1893"
-    },
-    "internal/native/closed_frontend_reuse_test.go": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-ef51509f7325",
-          "line": 9,
-          "kind": "reviewed-selector",
-          "name": "TestClosedFrontendObservationSurvivesPositivePIDReuseOnly",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "HXF-003"
-        }
-      ],
-      "sha256": "a2047f16ba4d9d5da401986dceb58577e8028bb8f52481fd2c093744f2cef3f7"
-    },
-    "internal/app/phone_delivery_receipt_test.go": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-7a5ae9fb2039",
-          "line": 10,
-          "kind": "reviewed-selector",
-          "name": "TestMSD002PhoneInputOptsIntoDirectUserDeliveryAndKeepsDraftProtection",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MSD-002"
-        },
-        {
-          "id": "MAP-308489bd281c",
-          "line": 20,
-          "kind": "reviewed-selector",
-          "name": "TestMSD002PhoneReceiptCacheKeepsQueueMeaningAndExpiry",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MSD-002"
-        }
-      ],
-      "sha256": "fee612deb83d2b9f71a9d7a044976d915a614413de9e4fb1b6e763d467cbfcea"
-    },
-    "internal/codexrpc/direct_user_input_test.go": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-d24568194d08",
-          "line": 10,
-          "kind": "reviewed-selector",
-          "name": "TestMSD001ExplicitUserInputSelectsExactActiveOrLoadedIdleTurn",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MSD-001"
-        },
-        {
-          "id": "MAP-b2659a0a9502",
-          "line": 49,
-          "kind": "reviewed-selector",
-          "name": "TestMSD001LegacyQueueRemainsExplicitAndOnlyUnknownMethodCanFallback",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MSD-001"
-        },
-        {
-          "id": "MAP-09d632a0de8e",
-          "line": 76,
-          "kind": "reviewed-selector",
-          "name": "TestMSD001UserInputRefusesUnsafeMetadataAndNeverReplaysAmbiguousWrite",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MSD-001"
-        }
-      ],
-      "sha256": "9d8d714bdfdc05826ad671bf328d820b37a7b102621553fad457e39d51d00dee"
-    },
-    "internal/dispatchbridge/direct_user_input_test.go": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-e452620f505a",
-          "line": 14,
-          "kind": "reviewed-selector",
-          "name": "TestMSD002DirectUserIngressPreservesReceiptAndNeverReplays",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MSD-002"
-        }
-      ],
-      "sha256": "31b2e63509764464bb3cc9c9870f461a1e5273889070d7207fe014a6ceac484c"
-    },
-    "internal/server/send_receipt_test.go": {
-      "layer": "L3",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-5c6d75362085",
-          "line": 9,
-          "kind": "reviewed-selector",
-          "name": "TestMSD003HTTPPreservesActualReceiptAndLegacySend",
-          "dynamic": false,
-          "layer": "L3",
-          "design": "MSD-003"
-        },
-        {
-          "id": "MAP-7d2c5e5ac242",
-          "line": 48,
-          "kind": "reviewed-selector",
-          "name": "TestMSD003PreferredReceiptCannotBypassGuestScope",
-          "dynamic": false,
-          "layer": "L3",
-          "design": "MSD-003"
-        }
-      ],
-      "sha256": "8bd1c2b24027143c033f68b36d64374fb55b1e8a887945d66802bd55c3266903"
-    },
-    "mobileapp/src/api/sendDeadline.test.ts": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-d269546f4a32",
-          "line": 10,
-          "kind": "reviewed-selector",
-          "name": "MSD-004 bounds a hung %s and never retries or accepts a late answer",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MSD-004"
-        },
-        {
-          "id": "MAP-b95d01602bb2",
-          "line": 29,
-          "kind": "reviewed-selector",
-          "name": "MSD-004 keeps exact receipts, legacy success and the server refusal",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MSD-004"
-        }
-      ],
-      "sha256": "3a96ba726877b22d6a9aa5aa1af7902be4c3e623c80c238c0f93a0ec23c9b25f"
-    },
-    "mobileapp/src/screens/DetailSendReceipt.test.tsx": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-7107ec518922",
-          "line": 27,
-          "kind": "reviewed-selector",
-          "name": "MSD-005 %s releases failed sends and preserves explicit retry identity",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MSD-005"
-        },
-        {
-          "id": "MAP-199b34196f32",
-          "line": 39,
-          "kind": "reviewed-selector",
-          "name": "MSD-005 old failure cannot replace the newer accepted send",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MSD-005"
-        },
-        {
-          "id": "MAP-135b77c8e14c",
-          "line": 48,
-          "kind": "reviewed-selector",
-          "name": "MSD-005 a control key cannot leave a prior text receipt permanently Sending",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MSD-005"
-        }
-      ],
-      "sha256": "70b7592eda9a63777250d495872db7630cc7dacdb89bdddbd08c25adfc8e82fb"
-    },
-    "mobileapp/src/ui/sendReceipt.test.ts": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-7bdcf65678f4",
-          "line": 3,
-          "kind": "reviewed-selector",
-          "name": "MSD-005 receipt wording distinguishes queueing and acceptance without claiming execution",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MSD-005"
-        }
-      ],
-      "sha256": "70433435f60498454ed1b7151e0067d5895f9638533862391f83d1054f9af64b"
-    },
-    "internal/agentclient/pending_target_test.go": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-e76ce32b2c0e",
-          "line": 8,
-          "kind": "reviewed-selector",
-          "name": "TestMSD006PendingTargetIdentity",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MSD-006"
-        }
-      ],
-      "sha256": "f8e2182bb257fa0e287bd205db7f3196bbe26bffae5d71a836f8c769064cc43f"
-    },
-    "internal/dispatchbridge/pending_retry_target_test.go": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-d7bcff6e0143",
-          "line": 14,
-          "kind": "reviewed-selector",
-          "name": "TestMSD006PendingRetryCannotRetarget",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MSD-006"
-        }
-      ],
-      "sha256": "bae177f3d725a9b5a0cba6502aa34e6e9598074ddee3f70700e9f332915a44b9"
-    },
-    "mobileapp/src/screens/DetailSendSnapshot.test.tsx": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-1dd1e525111d",
-          "line": 26,
-          "kind": "reviewed-selector",
-          "name": "MSD-009 late text receipt cannot replace newer %s control-key screen",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MSD-009"
-        }
-      ],
-      "sha256": "63ef76a606952ac61c78287eeb062f97de5fe78d2c4fed4cd54412ad3605d7db"
-    },
-    "mobileapp/src/screens/HQSendOrdering.test.tsx": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-915625a761e2",
-          "line": 30,
-          "kind": "reviewed-selector",
-          "name": "MSD-008 old HQ %s cannot replace a newer accepted message",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MSD-008"
-        },
-        {
-          "id": "MAP-237c6db2e2b9",
-          "line": 38,
-          "kind": "reviewed-selector",
-          "name": "MSD-008 HQ old reply and old retry cannot cross a session change",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MSD-008"
-        },
-        {
-          "id": "MAP-e29e72e87767",
-          "line": 46,
-          "kind": "reviewed-selector",
-          "name": "MSD-008 a later %s key does not leave the current HQ text Sending",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MSD-008"
-        }
-      ],
-      "sha256": "68fa5a4b956e57f3deb00edf620ef6cc902e53f9c4f2dbc71bb437827831d824"
-    },
-    "mobileapp/src/screens/HQSendReceipt.test.tsx": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-3b5d6821faa3",
-          "line": 30,
-          "kind": "reviewed-selector",
-          "name": "MSD-007 HQ exposes %s receipt with stable message identity",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MSD-007"
-        },
-        {
-          "id": "MAP-ded59df19538",
-          "line": 36,
-          "kind": "reviewed-selector",
-          "name": "MSD-007 HQ timeout retry after 21 seconds reuses original send ID",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MSD-007"
-        },
-        {
-          "id": "MAP-d2c0d68a6059",
-          "line": 46,
-          "kind": "reviewed-selector",
-          "name": "MSD-007 old identical transcript cannot retire the new HQ message",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MSD-007"
-        }
-      ],
-      "sha256": "7b66c5ad44b4a85f671fc8398e64dae1ef03ca0cd91b93c96b44c34536779210"
-    },
-    "internal/agentclient/pending_retry_lifetime_test.go": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-0090673148dd",
-          "line": 9,
-          "kind": "reviewed-selector",
-          "name": "TestMSD011DurablePendingKeepsOneIdentityAcrossRetryAndPrune",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MSD-011"
-        },
-        {
-          "id": "MAP-daaea5392f1c",
-          "line": 39,
-          "kind": "reviewed-selector",
-          "name": "TestMSD011PrunedOrReplacedNativePendingCannotRegainAuthority",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MSD-011"
-        }
-      ],
-      "sha256": "c21d55c7558b311dd89de202546c65f5314c8e31e7c70020f800fc96479cfb7c"
-    },
-    "internal/dispatchbridge/pending_retry_overlap_test.go": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-98c91aed6905",
-          "line": 20,
-          "kind": "reviewed-selector",
-          "name": "TestMSD011DelayedBridgeAndSameIDRetryCannotBothSubmit",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MSD-011"
-        }
-      ],
-      "sha256": "4b459fd1af03c2f51220f8e5e8213bfd2e212380c7db2e62d4a5ab0a973cf35b"
     }
   },
+  "legacy_source": "f187564fcfdab24d7750efbea108958e469cdded",
+  "schema": 1,
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2"
 }

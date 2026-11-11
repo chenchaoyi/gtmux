@@ -94,7 +94,7 @@ export function buildRowSheet(a: Agent, lang: Lang, nowSecs: number): RowSheetMo
     whereParts.splice(1, 0, secondary(a, lang));
   }
 
-  const dur = humanSince(a.since || a.activity_at, nowSecs, lang);
+  const dur = a.since_uncertain ? '' : humanSince(a.since || a.activity_at, nowSecs, lang);
   let status: string | undefined;
   if (!watched) {
     // One sentence, not two facts joined by a middle dot. "等输入 · 4 分钟" made the

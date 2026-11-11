@@ -3,9 +3,9 @@
   "status": "reviewed",
   "review": {
     "reviewer": "Codex implementation owner (self-review, not independent approval)",
-    "date": "2026-11-10",
+    "date": "2026-11-11",
     "decision": "Fix explicit phone input transport and accurate bounded send feedback",
-    "notes": "User identifies current dev21 and HQ22. Five exact phone text length/SHA8 matches remain in their correctly bound Codex queues while metadata active/direct true. HTTP collapses queue acceptance to bool/status ok and RN fetch/body has no send deadline. Use authenticated exact thread metadata and one stable request ID: explicit phone text may steer an active eligible turn or start a loaded idle turn; do not resume threads or operate old queues. Ordinary HQ/CLI queue behavior unchanged. Only definitive unsupported API permits legacy queue fallback; timeouts/generic rejections never replay. Preserve draft/menu/hold, same-home/backend and exact binding guards. Add structured receipt and bounded RN full response wait, without claiming execution/completion or auto retry. Synthetic tests only; no live input, restore, service restart/deploy or release. Source first self-review then independent review/normal final gates."
+    "notes": "User identifies current dev21 and HQ22. Five exact phone text length/SHA8 matches remain in their correctly bound Codex queues while metadata active/direct true. HTTP collapses queue acceptance to bool/status ok and RN fetch/body has no send deadline. Use authenticated exact thread metadata and one stable request ID: explicit phone text may steer an active eligible turn or start a loaded idle turn; do not resume threads or operate old queues. Ordinary HQ/CLI queue behavior unchanged. Only definitive unsupported API permits legacy queue fallback; timeouts/generic rejections never replay. Preserve draft/menu/hold, same-home/backend and exact binding guards. Add structured receipt and bounded RN full response wait, without claiming execution/completion or auto retry. Synthetic tests only; no live input, restore, service restart/deploy or release. Source first self-review then independent review/normal final gates. Follow-up review before changing the existing MSD-005 fixture: exact f38 cloud run42959182675 failed only the terminal-to-Chat receipt assertion because the fixture flushed microtasks but did not wait for the two production requestAnimationFrame callbacks. Use controlled timers and explicitly advance those two frames before querying ChatView; preserve all send-count, stable sendID, delivery, retry and stale-result assertions and original test timeout. This is deterministic fixture scheduling, not evidence that a real device send failed. Keep the original CI failure."
   },
   "cases": [
     {
@@ -66,5 +66,5 @@
       ]
     }
   ],
-  "seal": "c46bee398a943b2e397708ee8d451d835f13588b7524cec5f3e55773b8499585"
+  "seal": "263b938d174a29ea08c4d7883aecb78e054b3e6e31333d591ef704fa7a287914"
 }
