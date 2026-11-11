@@ -2142,8 +2142,9 @@ Two boundaries:
   restored, so server mode does not survive an unattended reboot. gtmux will not "fix"
   that by touching FileVault or auto-login.
 - The underlying setting is undocumented by Apple. The [recorded physical check](design/server-mode-research.md)
-  used an M4 Pro on macOS 26.5.2. The CLI's `platform.verified` flag groups macOS 26.x
-  together; it is not evidence that every model and OS configuration was tested.
+  used an M4 Pro on macOS 26.5.2. The user has also confirmed operation on macOS 27.2.
+  The CLI's `platform.verified` baseline includes macOS 26.x and 27.2.x; it is not
+  evidence that every model or patch configuration was independently tested.
   Runtime checks refuse `on` if the setting or its readback is unavailable.
 
 The phone UI shows this state but offers no switch. The owner-only

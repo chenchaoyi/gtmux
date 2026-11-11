@@ -1828,8 +1828,8 @@ gtmux awake off      # 请求守卫恢复睡眠；通常不用密码
   FileVault、没人在场的 Mac 上，心跳不会恢复，睡眠会被还回去，所以服务器模式扛不过
   一次无人值守的重启。gtmux 不会去动 FileVault 或自动登录来「修好」这件事。
 - 底层那个设置苹果没有文档。[已有真机记录](design/server-mode-research.zh.md)来自 M4 Pro、
-  macOS 26.5.2。CLI 的 `platform.verified` 把 macOS 26.x 归在一起，不代表所有机型和系统
-  配置都已实测。运行时检查发现设置或读回机制不可用时，`on` 会拒绝。
+  macOS 26.5.2；用户也已确认 macOS 27.2 上可正常运行。CLI 的 `platform.verified` 基线
+  包含 macOS 26.x 与 27.2.x，不代表所有机型或补丁配置都已独立实测。运行时检查发现设置或读回机制不可用时，`on` 会拒绝。
 
 手机界面只展示状态，没有开关。owner 可以通过
 [`POST /api/awake`](../api/contract.md#post-apiawake--turn-it-off-write-owner-only-one-direction)

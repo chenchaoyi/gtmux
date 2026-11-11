@@ -2257,6 +2257,7 @@ LEG-8e634b6679c9,L1,Go core / CLI / server,internal/servermode/sample_test.go,13
 LEG-f3e311d6eed2,L1,Go core / CLI / server,internal/servermode/sample_test.go,147,Test,TestRecordStale,False,legacy-not-retrospectively-reviewed
 LEG-602edc03f971,L1,Go core / CLI / server,internal/servermode/sample_test.go,163,Test,TestOSMajor,False,legacy-not-retrospectively-reviewed
 LEG-29434f0379e2,L1,Go core / CLI / server,internal/servermode/sample_test.go,185,Test,TestSupportedGateBothDirections,False,legacy-not-retrospectively-reviewed
+MAP-9c3c6ef20fb1,L1,reviewed implementation,internal/servermode/verified_os_test.go,5,reviewed-selector,TestSMC001VerifiedServerModeOSPreservesUnknownVersionCaution,False,SMC-001
 LEG-1ee723d1dbe1,L1,Go core / CLI / server,internal/sessionpolicy/dsh_test.go,22,Test,TestDSHConsentIsScopedIndependentAndFutureOnly,False,legacy-not-retrospectively-reviewed
 LEG-5ca0689ec163,L1,Go core / CLI / server,internal/sessionpolicy/dsh_test.go,60,Test,TestDSHRevocationAndStaleSave,False,legacy-not-retrospectively-reviewed
 LEG-a9a2442cb93f,L1,Go core / CLI / server,internal/sessionpolicy/policy_test.go,29,Test,TestConsentIsPerConversationAndReversible,False,legacy-not-retrospectively-reviewed

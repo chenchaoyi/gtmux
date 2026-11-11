@@ -1326,5 +1326,13 @@
     "selectors": [
       "testASC013SuccessAndErrorCloseActualDuplicatesBeforeAdmissionReturn"
     ]
+  },
+  "internal/servermode/verified_os_test.go": {
+    "cases": [
+      "SMC-001"
+    ],
+    "selectors": [
+      "TestSMC001VerifiedServerModeOSPreservesUnknownVersionCaution"
+    ]
   }
 }

@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// The explainer shown before macOS asks for the administrator password.
@@ -42,12 +43,14 @@ struct ServerModeConfirmView: View {
     /// The first point ends with the menu-bar mark as it will actually look once this
     /// is on, drawn by the same code that draws the real one. Saying "a red dot
     /// appears" and then showing it is the difference between a claim and an
-    /// instruction. Inline in the Text so it sits on the sentence's own baseline.
+    /// instruction. Center the image at the text's cap height instead of placing
+    /// its lower edge on the baseline, which raises the 18pt glyph above 12pt text.
     private var firstPoint: Text {
         Text(points[0]) + Text("  ")
             + Text(Image(nsImage: StatusItemGlyph.image(mostUrgent: .running, empty: true,
                                                         dark: scheme == .dark,
                                                         awake: true, phase: 0.5)))
+                .baselineOffset((NSFont.systemFont(ofSize: 12).capHeight - StatusItemGlyph.size)/2)
     }
 
     private var cautionInk: Color {
