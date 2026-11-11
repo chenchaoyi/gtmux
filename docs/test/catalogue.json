@@ -59073,7 +59073,7 @@
         },
         {
           "id": "MAP-3a420ae89cea",
-          "line": 157,
+          "line": 158,
           "kind": "reviewed-selector",
           "name": "TestCSR002SupersededActiveDoesNotDateCurrentWork",
           "dynamic": false,
@@ -59081,7 +59081,7 @@
           "design": "CSR-001,CSR-002"
         }
       ],
-      "sha256": "eb350e22de738b63c76f53464e1fbe365e9bc9c87866a751c88b563058bd58f9"
+      "sha256": "2aa2714c96948686d778bb944e4cb73f3bf76e969e933be76709957df2ec6858"
     },
     "internal/resume/state_publication_test.go": {
       "layer": "L2",

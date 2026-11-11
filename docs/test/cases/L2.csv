@@ -73,7 +73,7 @@ MAP-e88c0ded5ae1,L2,reviewed implementation,internal/radar/closed_frontend_test.
 MAP-8c62d9a14381,L2,reviewed implementation,internal/radar/codex_foreign_marker_test.go,15,reviewed-selector,TestForeignActiveRequiresCurrentIdentityEndedTurnAndReadyFrame,False,CORE-CODEX-FOREIGN-ACTIVE
 MAP-d562c313395b,L2,reviewed implementation,internal/radar/codex_foreign_marker_test.go,107,reviewed-selector,TestForeignActiveProductionReaderRejectsLegacyResumeWithoutFrontend,False,CORE-CODEX-FOREIGN-ACTIVE
 MAP-3b7c2c0858d3,L2,reviewed implementation,internal/radar/codex_stale_state_test.go,58,reviewed-selector,TestCSR001StaleActiveCannotReviveReadyFinishedPane,False,"CSR-001,CSR-002"
-MAP-3a420ae89cea,L2,reviewed implementation,internal/radar/codex_stale_state_test.go,157,reviewed-selector,TestCSR002SupersededActiveDoesNotDateCurrentWork,False,"CSR-001,CSR-002"
+MAP-3a420ae89cea,L2,reviewed implementation,internal/radar/codex_stale_state_test.go,158,reviewed-selector,TestCSR002SupersededActiveDoesNotDateCurrentWork,False,"CSR-001,CSR-002"
 MAP-981c45e6de6f,L2,reviewed implementation,internal/radar/energy_gather_test.go,8,reviewed-selector,TestPWR002GatherSharesFramesOnlyInsideOnePass,False,PWR-002
 MAP-e0f0d6088eea,L2,reviewed implementation,internal/resume/state_publication_test.go,14,reviewed-selector,TestCSR003SavePublishesAnAtomicResumeSnapshot,False,CSR-003
 MAP-1808038b01b0,L2,reviewed implementation,internal/resume/state_publication_test.go,51,reviewed-selector,TestCSR003CodexSaveAndHeartbeatRespectBindingLease,False,CSR-003

@@ -114,7 +114,8 @@ func TestCSR001StaleActiveCannotReviveReadyFinishedPane(t *testing.T) {
 				old := foreignCodexFrontend
 				t.Cleanup(func() { foreignCodexFrontend = old })
 				foreignCodexFrontend = func(string) (resume.CodexFrontend, bool) {
-					return resume.CodexFrontend{Pane: pane, Loc: "synthetic:0.0", HomeID: transcript.CodexHomeID(), SessionID: "thread", Cwd: "/work"}, true
+					return resume.CodexFrontend{HomeID: transcript.CodexHomeID(), SessionID: "thread",
+						CodexBindingTarget: resume.CodexBindingTarget{Pane: pane, Loc: "synthetic:0.0", Cwd: "/work"}}, true
 				}
 			}
 			activityAt := now.Unix()

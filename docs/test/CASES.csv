@@ -2252,7 +2252,7 @@ LEG-2e729e7c14cd,L1,Go core / CLI / server,internal/radar/codex_idle_time_test.g
 LEG-36b09543fbc8,L1,Go core / CLI / server,internal/radar/codex_idle_time_test.go,86,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-50173aa4b1d3,L1,Go core / CLI / server,internal/radar/codex_idle_time_test.go,134,Test,TestCodexMaintenanceOnlyRolloutHasUnknownIdleTime,False,legacy-not-retrospectively-reviewed
 MAP-3b7c2c0858d3,L2,reviewed implementation,internal/radar/codex_stale_state_test.go,58,reviewed-selector,TestCSR001StaleActiveCannotReviveReadyFinishedPane,False,"CSR-001,CSR-002"
-MAP-3a420ae89cea,L2,reviewed implementation,internal/radar/codex_stale_state_test.go,157,reviewed-selector,TestCSR002SupersededActiveDoesNotDateCurrentWork,False,"CSR-001,CSR-002"
+MAP-3a420ae89cea,L2,reviewed implementation,internal/radar/codex_stale_state_test.go,158,reviewed-selector,TestCSR002SupersededActiveDoesNotDateCurrentWork,False,"CSR-001,CSR-002"
 LEG-472d4eb498eb,L1,Go core / CLI / server,internal/radar/codexbinding_test.go,17,Test,TestNativeCodexReconciliationUsesSubmittedWitness,False,legacy-not-retrospectively-reviewed
 LEG-9f6338c3f65a,L1,Go core / CLI / server,internal/radar/codexbinding_test.go,19,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-bfa6e20897d8,L1,Go core / CLI / server,internal/radar/codexcompletion_test.go,12,Test,TestCodexTurnCompletedRequiresCurrentPaneAndTurn,False,legacy-not-retrospectively-reviewed
