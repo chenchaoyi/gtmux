@@ -9,6 +9,8 @@ Uploads use multipart `file` with `POST /api/upload?id=<pane_id>`. Guest links r
 
 ## Positioning
 
+Renderer decision record: the [2026-11-10 libghostty evaluation](libghostty-research.md) retained xterm at its pinned baseline. Read its capability gaps, version distinctions and reopening conditions before proposing a replacement; it does not change the input-authorization contract below.
+
 A browser has a big screen and a real keyboard and mouse. The web mirror must not be a port of the phone's single column layout; it is a desktop workbench. An agent directory grouped by state and window on the left; drag a listed pane onto a board, arrange and resize freely, compose your own view the way you would in tmux. Typing is available only for panes the caller may control.
 
 ## Red line: layout stays local; input is authorized
