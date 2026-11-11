@@ -1,4 +1,10 @@
-# Screenshots for local agents
+---
+title: Screenshots for local agents
+description: Capture, inspect, annotate and deliver screenshots to an exact agent conversation through the CLI.
+order: 7
+---
+
+**English** · [中文](agent-screenshots.zh.md)
 
 Use `gtmux screenshot` from a local agent's command tool. It emits versioned JSON, image paths and SHA256 hashes. A second MCP service is not needed for this workflow. The native operations require a compatible **running** Gtmux macOS App; querying capabilities never launches it or opens a permission prompt. A new App can take up to two seconds to acquire the screenshot endpoint from an older instance.
 
