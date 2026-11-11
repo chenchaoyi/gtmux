@@ -17,6 +17,7 @@ current in the same PR (dated logs are single-language; `scripts/check-design.sh
 | `hq-move-between-macs.md` | Implemented move to a new Mac: preview, stage and review selected knowledge and user instructions; keep the old board and generated instructions out of the migration. |
 | `knowledge-engineering-research.md` | The survey behind the knowledge engine: nine practices compared, what was borrowed and what was not. |
 | `terminal-keyboard-research.md` | Shared terminal-key input: mobile terminal precedents, function/modifier keys, a Keys panel, compatibility and acceptance boundaries. Implementation and acceptance limits included. |
+| [libghostty research](libghostty-research.md) | The 2026-11-10 native/Web PoCs, pinned versions, renderer failures and paired measurements; why replacement was rejected and what would justify another evaluation. |
 | [Agent integration map](../guides/agent-integrations.md) | Every built-in agent: discovery, events, history, input, installation and limits, with implementation links. |
 | `agent-onboarding.md` | How to add or iterate a coding agent: support tiers, the registry as the single source of identity, the step list and the pitfalls. |
 | `HANDOFF.md` | The order of landing and the acceptance checks for a design round. |

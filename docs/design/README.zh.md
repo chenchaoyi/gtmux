@@ -16,6 +16,7 @@
 | `hq-move-between-macs.md` | 已实现的新 Mac 迁移：预览、暂存并核对选中的知识和个人要求；不迁入旧态势板和生成的指令。 |
 | `knowledge-engineering-research.md` | 知识引擎背后的调研：九种做法的对照，借了什么、没借什么。 |
 | `terminal-keyboard-research.md` | 终端通用按键：移动终端借鉴、功能键/修饰键、按键面板、兼容和验收边界。包含实现和验证边界。 |
+| [libghostty 调研](libghostty-research.zh.md) | 2026-11-10 原生/Web PoC、固定版本、渲染缺陷与配对测量；本轮为何不替换，以及何时值得重新评估。 |
 | [各 Agent 接入机制](../guides/agent-integrations.zh.md) | 按每个内置 agent 说明发现、事件、历史、输入、安装与边界，链接具体实现。 |
 | `agent-onboarding.md` | 接入或迭代一个 coding agent：支持分层、注册表是身份唯一来源、逐步流程、踩坑清单。 |
 | `HANDOFF.md` | 一轮设计的落地顺序与验收。 |
