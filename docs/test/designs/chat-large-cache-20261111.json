@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner (self-review, not independent approval)",
     "date": "2026-11-11",
     "decision": "Keep a bounded recent Codex parse snapshot instead of discarding a large session cache entirely",
-    "notes": "Read-only current-session measurements found300 turns/~25.8MB serialized, cold Load1.77s and a repeat1.16s; source retains up to800 turns then drops a cache entry above32MiB. New code must bound retention while streaming and across append resumes, keep full individual turn content and original ordinals/record IDs, expose omitted prefix via existing count/cursor contracts, and keep source history recoverable. No real-session mutation, transcript copy, cache-limit increase or production deployment. Existing cache/history tests stay unchanged. Current-session timing is not a synthetic benchmark or device/UI acceptance; the first /usr/bin/time wrapper returned1 only because sandbox denied sysctl after the probe finished, and a direct rerun exited0; preserve both records."
+    "notes": "Read-only current-session measurements found300 turns/~25.8MB serialized, cold Load1.77s and a repeat1.16s; source retains up to800 turns then drops a cache entry above32MiB. New code must bound retention while streaming and across append resumes, keep full individual turn content and original ordinals/record IDs, expose omitted prefix via existing count/cursor contracts, and keep source history recoverable. No real-session mutation, transcript copy, cache-limit increase or production deployment. Existing cache/history tests stay unchanged. Current-session timing is not a synthetic benchmark or device/UI acceptance; the first /usr/bin/time wrapper returned1 only because sandbox denied sysctl after the probe finished, and a direct rerun exited0; preserve both records. Refined before production implementation: raw requests for300 turns must still return all available requested turns; only the stored cache may keep a bounded whole-turn tail. A later request for20 may hit that tail, but a request beyond cached coverage must reparse rather than silently return fewer turns. App recent-window endpoint must opt in separately. The first fixture accidentally expected trailing whitespace removed by existing transcript normalization; preserve that fixture failure and correct the synthetic string, not production normalization."
   },
   "cases": [
     {
@@ -13,12 +13,12 @@
       "layer": "L2",
       "description": "Large Codex history keeps a bounded reusable recent cache and lossless source history access",
       "setup": "Isolated Codex rollout with enough complete public turns to exceed the existing32MiB retention budget, a fresh Loader and exact source-based history cursor; no real HOME/session data",
-      "action": "Read newest turns twice unchanged, append a complete turn then reread, and page into the omitted prefix using the source history API",
-      "expected": "After the first read a cache entry remains within32MiB and an unchanged read reuses that entry rather than rescanning; latest public prompt/response/tool data, original ordinal and record identity remain exact. Appended input extends the cached active turn safely and preserves prior returned snapshots; retained budget remains bounded. Earlier source turns are still readable by valid cursor and no source bytes are changed. A single individually oversized turn stays complete even if it cannot be cached. Old implementation must fail the large-entry-retained assertion, not a timeout/compile/setup assertion.",
+      "action": "Read a large300-turn request and retain its bounded cached tail; repeat with20 newest turns, then request300 again, append a complete turn and read20, and page into the omitted prefix using source history",
+      "expected": "The full300-turn request returns every available requested complete turn unchanged, while a cache entry remains within32MiB by retaining only whole recent turns. An unchanged20-turn read reuses that entry rather than rescanning; a later300-turn request beyond its coverage returns full requested history by parsing again, never falsely claims a complete cache hit. Latest content, original ordinals and record IDs remain exact. Append resumes safely when coverage suffices and preserves prior returned snapshots; older source turns remain readable by valid cursor and reads never modify source bytes. A single individually oversized turn stays complete even if uncached. Old behavior must fail the large-entry-retained assertion, not normalization/setup/timeout. No global history truncation or cache budget increase.",
       "planned_files": [
         "internal/transcript/codex_large_cache_test.go"
       ]
     }
   ],
-  "seal": "04587a5c65381126da3c333df9bb0226bc9e68b7e8781f01857100eeb3624fe2"
+  "seal": "7b103683bdb7bde320f4d5a4005d951241a1ba59bd053f4ea63797391036c318"
 }
