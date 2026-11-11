@@ -107,6 +107,8 @@ func Run(argv []string) int {
 		defer diag.PushProcess("cli", actor)()
 	}
 	switch sub {
+	case "screenshot":
+		return cmdScreenshot(args)
 	case "codex":
 		return cmdCodex(args)
 	case "opencode":

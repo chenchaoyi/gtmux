@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1093 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1114 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
-| L1 · 单元/纯逻辑 | 3772 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 1979 | [L2.csv](cases/L2.csv) |
+| L1 · 单元/纯逻辑 | 3776 | [L1.csv](cases/L1.csv) |
+| L2 · 组件/契约 | 2010 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 95 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 94 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 12 | [M.csv](cases/M.csv) |
@@ -21,6 +21,19 @@
 
 | ID | 预期行为（源码英文） |
 | --- | --- |
+| ASC-001 | Machine JSON has consistent ok/error/result and exit semantics; command discovery/help is truthful; no implicit App launch, capture, focus, clipboard, input or MCP. Images/sidecars publish only after valid timely result; output collision/symlink/failed decode or partial write preserves existing files. Explicit task output paths and hashes survive. |
+| ASC-002 | Only authenticated exact host and same-user client communicate; no socket TCP fallback, arbitrary shell/path IO or permission prompt. Bound request/response/decoded size and FD ownership/cardinality; descriptors close on all outcomes, canceled work cannot publish user outputs. Synthetic contract checks are not real recording permission evidence. |
+| ASC-003 | Coordinates tied to exact image hash/capture/preview reference; known transforms align ROI and marks, originals unchanged, invalid/NaN/outside/bomb images refuse. Rectangle/arrow/text/redaction export correctly using common renderer; redacted output contains no original covered pixels. Source mismatches never widen capture; imported files remain imported. Existing editor draft must not be replaced. |
+| ASC-004 | Changed/expired/tampered identity refuses before input; supported native paths check expected session/home before preparing another recipient payload and again at mutation. No bare-shell delivery or unsafe fallback. Existing draft/approval protections and agent/HQ attribution persist. |
+| ASC-005 | Same request payload cannot create a second mutation; changed payload under ID refuses. Unknown retains uncertainty and cannot auto retry; queued and active accepted never claim user read or task completion. status labels last observed time/state truthfully, without resumed threads/history-body scans. Metadata is private and budgeted; no image or note body is logged. |
+| ASC-006 | Same protocol/artifact/coordinate/receipt semantics on both ends; outputs contain correct bytes and metadata, original file unchanged and exact fake target used once. Permission or source failure is observable, never fabricated success. Native recording/TCC, signed installation and human interaction remain explicitly separate until actually exercised. |
+| ASC-007 | A canceled or expired caller returns before the underlying read settles and late success cannot send a request, mint a target or authorize input. Timely host checks still require exact peer PID, GtmuxBar command and matching UTC process birth; no trust, identity, TCC or fallback rule is weakened. No real stuck process, App or session is used. |
+| ASC-008 | Every intersected device pixel is identical opaque black independent of original color; rounding expands outward in actual device pixel coordinates, clamps to image bounds, disables antialias blending, and preserves untouched neighbors. Export and editor use the same rule; original image bytes unchanged. The derived artifact preview reapplies only redaction masks at its own device scale after resampling, so small redactions cannot become translucent preview pixels. Other annotations are not double-drawn. |
+| ASC-009 | Path-based inputs open nonblocking and require bounded regular files; no FIFO open hang. Explicit stdin completes by the caller deadline or cancellation without an indefinitely blocked reader goroutine; original stdin remains open and flags restored. A failed or expired note read creates no delivery claim or send. Normal notes preserve existing limit and normalization. |
+| ASC-011 | Changed display or scale refuses before capture or before a result is returned; no stale observed reference authorizes a new geometry. Stable snapshots preserve exact ROI and expected pixel scale. Missing/ambiguous display information fails closed, mixed-scale ROI remains refused, and window owner/birth changes still refuse. Only read-only injected observations are used; no real recording, display reconfiguration, TCC or user input. |
+| ASC-010 | Deadline/disconnect/stop close transport and original descriptors and release request slots without waiting for an SDK callback. At most one actual SDK call remains outstanding across host restart; an outstanding background phase keeps its bounded permit and owned duplicate until it really exits, with no unbounded replacement queue. Late completion cannot write a returned artifact or open editor; cancellation before the editor commit point refuses. Slow image/IO work does not block MainActor. Normal callbacks resolve once, preserve existing descriptor validation and output bytes; stale tasks cannot close a reused fd. Isolated synthetic tests do not certify real ScreenCaptureKit cancellation, filesystem interruption, TCC or native window interaction. |
+| ASC-012 | Every preview pixel intersected under actual preview_width/point_width and preview_height/point_height is opaque black independent of original colors. Neither axis may borrow the other axis rounded scale. Region/frame transforms and original image remain unchanged; ordinary scale and existing annotations keep their assertions. This is the actual synthetic production rendering path, without a ScreenCaptureKit capture or TCC claim. |
+| ASC-013 | The duplicate is already closed before admission return for both success and error. Caller success preserves the value, original caller descriptor stays open, and no permit is lost/double-released. Negative control retains the pre-fix success order with only the observation seam and fails on an open duplicate; no probabilistic scheduler race or actual OS leak is claimed. Existing cancellation and SDK quarantine tests retain their assertions. |
 | ACP-001 | Fresh enabled Deny elements only; ignored first click can use one further explicit click in the same camera dialog, maximum two; no click starts after 10s; no unrelated permission acted upon; original command error preserved; no permission grant or settings mutation. |
 | ACP-002 | New case survives a single lost OS denial touch; old frozen callback fails. Missing alert, grant=true, wrong/stuck system dialog still fail. Original App alert 30s remains; read-only QA CAMERA granted=false is required. Other 30 journeys and case orchestration unchanged. |
 | ACP-003 | Both sizes retain complete suite and existing expectations; no denied permission granted, hidden blocked results or inflated timing budget. Failed driver evidence remains separate from product assertions. |

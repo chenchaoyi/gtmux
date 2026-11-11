@@ -410,73 +410,74 @@ browser, a share link or the CLI; `hook` is the agent hook; `app` is the menu ba
 
 <!-- gtmux:rendered act-catalog -->
 ```
-act.adopt               adopt
-act.app.launch          app
-act.artifact            artifact
-act.attach              attach, serve
-act.awake.off           awake
-act.awake.on            awake
-act.capture             capture
-act.cleanup             doctor, serve
-act.codex.launch        codex
-act.opencode.launch     opencode
-act.config.set          config, quiet
-act.doctor.bundle       doctor
-act.doctor.fix          doctor
-act.focus               focus, serve
-act.session.follow      follow, serve
-act.session.review      transcript
-act.hq.brief            hq
-act.hq.export           hq
-act.hq.import           hq
-act.hq.migrate          hq
-act.hq.maintenance      hq
-act.hq.rotate           hq
-act.hq.start            hq
-act.install.app         install
-act.install.hooks       install
-act.advice              advice
-act.knowledge           knowledge, serve
-act.knowledge.sync      knowledge, doctor
-act.mint                pair, serve
-act.narrow              serve
-act.new                 new
-act.notify              hook
-act.notify.post         app
-act.notify.test         app
-act.notify.suppressed   hook
-act.device.rename       serve
-act.pair                serve
-act.push.forget         devices, serve
-act.push.register       serve
-act.reap                reap
-act.reap.snooze         reap
-act.relay               relay
-act.restore             restore
-act.resume.command      restore
-act.resume.confirmed    restore
-act.revoke              pair, devices, share, serve
-act.screenshot.capture  app
-act.screenshot.freeze   app
-act.screenshot.send     app
-act.send                send, serve
-act.share.config        share, serve
-act.share.create        share, serve
-act.share.set           share, serve
-act.spawn               spawn
-act.tunnel.off          tunnel
-act.tunnel.on           tunnel
-act.tunnel.move         tunnel
-act.tunnel.redeem       tunnel
-act.uninstall.app       uninstall
-act.uninstall.hooks     uninstall
-act.unwatch             panes
-act.update              update
-act.upload              serve
-act.wake.delivered      serve, hook
-act.wake.dropped        serve, hook
-act.wait.suppressed     hook
-act.watch               panes
+act.adopt                  adopt
+act.app.launch             app
+act.artifact               artifact
+act.attach                 attach, serve
+act.awake.off              awake
+act.awake.on               awake
+act.capture                capture
+act.cleanup                doctor, serve
+act.codex.launch           codex
+act.opencode.launch        opencode
+act.config.set             config, quiet
+act.doctor.bundle          doctor
+act.doctor.fix             doctor
+act.focus                  focus, serve
+act.session.follow         follow, serve
+act.session.review         transcript
+act.hq.brief               hq
+act.hq.export              hq
+act.hq.import              hq
+act.hq.migrate             hq
+act.hq.maintenance         hq
+act.hq.rotate              hq
+act.hq.start               hq
+act.install.app            install
+act.install.hooks          install
+act.advice                 advice
+act.knowledge              knowledge, serve
+act.knowledge.sync         knowledge, doctor
+act.mint                   pair, serve
+act.narrow                 serve
+act.new                    new
+act.notify                 hook
+act.notify.post            app
+act.notify.test            app
+act.notify.suppressed      hook
+act.device.rename          serve
+act.pair                   serve
+act.push.forget            devices, serve
+act.push.register          serve
+act.reap                   reap
+act.reap.snooze            reap
+act.relay                  relay
+act.restore                restore
+act.resume.command         restore
+act.resume.confirmed       restore
+act.revoke                 pair, devices, share, serve
+act.screenshot.agent.send  screenshot
+act.screenshot.capture     app
+act.screenshot.freeze      app
+act.screenshot.send        app
+act.send                   send, serve
+act.share.config           share, serve
+act.share.create           share, serve
+act.share.set              share, serve
+act.spawn                  spawn
+act.tunnel.off             tunnel
+act.tunnel.on              tunnel
+act.tunnel.move            tunnel
+act.tunnel.redeem          tunnel
+act.uninstall.app          uninstall
+act.uninstall.hooks        uninstall
+act.unwatch                panes
+act.update                 update
+act.upload                 serve
+act.wake.delivered         serve, hook
+act.wake.dropped           serve, hook
+act.wait.suppressed        hook
+act.watch                  panes
 ```
 
 restore writes its reasoning here too, always: which save it picked and which conversation
@@ -2618,3 +2619,8 @@ and copies already downloaded by devices remain. See
 [document preview](design/conversation-documents.md) for supported formats and limits.
 
 HQ UI readers may use `gtmux hq workspace list --overview --stored --json` for authoritative stored matters without session discovery; `sources_included:false` denotes unavailable optional session metadata. Ordinary list retains live/historical sources. See [HQ choice response](design/HQ-CHOICE-RESPONSE.md).
+
+
+## Screenshots for agents
+
+`gtmux screenshot` provides capabilities, source selection, region capture, import, structured annotation, editing and exact conversation delivery. See the [agent screenshot workflow](guides/agent-screenshots.md). Local CLI use requires no MCP server.

@@ -3026,6 +3026,10 @@ LEG-c88e3f431a01,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/RestoreAvai
 LEG-bb40d3a7a366,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/RestoreAvailabilityTests.swift,95,XCTest,testSlowRestoreReadDoesNotOverlap,False,legacy-not-retrospectively-reviewed
 LEG-cd538ac4e707,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/RestoreAvailabilityTests.swift,127,XCTest,testPendingSectionExpandsAndStaysUntilRecoveryCompletes,False,legacy-not-retrospectively-reviewed
 LEG-dcbaaa41b810,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/RestoreAvailabilityTests.swift,184,XCTest,testRestoreFailureRemainsVisibleAndRetryClearsIt,False,legacy-not-retrospectively-reviewed
+MAP-c2ab9a053f63,L1,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotAgentRenderingTests.swift,17,reviewed-selector,testASC003RedactionUsesSharedRetinaRendererAndExactFrame,False,"ASC-003,ASC-006"
+MAP-0c83eb465d22,L1,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotAgentRenderingTests.swift,37,reviewed-selector,testASC006EditorRoundtripPreservesBusyDraftAndDoesNotSend,False,"ASC-003,ASC-006"
+MAP-6374d12b4eea,L1,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotAgentSourceTests.swift,6,reviewed-selector,testASC003SourcesExpireAndNeverWidenChangedOwnershipOrRegion,False,ASC-003
+MAP-f38e69bff361,L1,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotAgentSourceTests.swift,24,reviewed-selector,testASC003MissingPermissionDoesNotPromptOrListOtherApps,False,ASC-003
 LEG-ddcbf015095e,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotDeliveryTests.swift,18,XCTest,testDeliveryLocksNativeEditorAndFailureRestoresWork,False,legacy-not-retrospectively-reviewed
 LEG-374d7125936a,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotDeliveryTests.swift,98,XCTest,testSuccessKeepsTheCapturedDestinationAndCannotCloseANewerEditor,False,legacy-not-retrospectively-reviewed
 LEG-2c6a162913d3,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotDeliveryTests.swift,132,XCTest,testOnlyConfirmedSuccessBlocksEditingAfterTheReceipt,False,legacy-not-retrospectively-reviewed

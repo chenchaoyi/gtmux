@@ -1139,5 +1139,192 @@
       "TestWTR005ActualUnixForwardingKeepsCanonicalDenyAndSameHomeGuards",
       "TestWTR005CanonicalObservationsAreStableAndBounded"
     ]
+  },
+  "internal/app/screenshot_test.go": {
+    "cases": [
+      "ASC-001",
+      "ASC-006"
+    ],
+    "selectors": [
+      "TestASC001ScreenshotCLIRefusesAmbiguousOrUnsupportedInput",
+      "TestASC006UnavailableNativeCapabilityIsTruthfulAndNonMutating"
+    ]
+  },
+  "internal/screenshot/artifact_test.go": {
+    "cases": [
+      "ASC-001",
+      "ASC-003"
+    ],
+    "selectors": [
+      "TestASC001ArtifactPublicationIsAtomicAndPreservesExistingFiles",
+      "TestASC003CoordinatesAndEditableImagesStayBoundToExactBytes"
+    ]
+  },
+  "internal/screenshot/transport_test.go": {
+    "cases": [
+      "ASC-002"
+    ],
+    "selectors": [
+      "TestASC002NativeTransportPinsHostAndBoundsReplies",
+      "TestASC006NativeInterop"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotAgentIPCTests.swift": {
+    "cases": [
+      "ASC-002",
+      "ASC-006"
+    ],
+    "selectors": [
+      "testASC002ProtocolAndDescriptorsRefuseUnexpectedAuthority",
+      "testASC006GoConsumerUsesActualSwiftSocketAndRenderer"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotAgentRenderingTests.swift": {
+    "cases": [
+      "ASC-003",
+      "ASC-006"
+    ],
+    "selectors": [
+      "testASC003RedactionUsesSharedRetinaRendererAndExactFrame",
+      "testASC006EditorRoundtripPreservesBusyDraftAndDoesNotSend"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotAgentSourceTests.swift": {
+    "cases": [
+      "ASC-003"
+    ],
+    "selectors": [
+      "testASC003SourcesExpireAndNeverWidenChangedOwnershipOrRegion",
+      "testASC003MissingPermissionDoesNotPromptOrListOtherApps"
+    ]
+  },
+  "internal/screenshot/target_test.go": {
+    "cases": [
+      "ASC-004"
+    ],
+    "selectors": [
+      "TestASC004TargetReferencesBindWholeIncarnationAndExpire",
+      "TestASC004TargetQueriesDoNotMintKeys"
+    ]
+  },
+  "internal/app/screenshot_send_test.go": {
+    "cases": [
+      "ASC-004",
+      "ASC-005"
+    ],
+    "selectors": [
+      "TestASC004And005ScreenshotDeliveryUsesExactTargetAndDurableAcceptance"
+    ]
+  },
+  "internal/dispatchbridge/expected_target_test.go": {
+    "cases": [
+      "ASC-004"
+    ],
+    "selectors": [
+      "TestASC004ExpectedCodexIdentityRefusesBeforePreparingInput"
+    ]
+  },
+  "internal/agentclient/expected_target_test.go": {
+    "cases": [
+      "ASC-004"
+    ],
+    "selectors": [
+      "TestASC004ExpectedHarnessIdentityRefusesBeforePreparingInput"
+    ]
+  },
+  "internal/screenshot/receipts_test.go": {
+    "cases": [
+      "ASC-005"
+    ],
+    "selectors": [
+      "TestASC005ReceiptsNeverReplayUncertainOrChangedRequests",
+      "TestASC005ReceiptStoreRefusesCorruptionAndCapacity"
+    ]
+  },
+  "internal/screenshot/host_readiness_test.go": {
+    "cases": [
+      "ASC-007"
+    ],
+    "selectors": [
+      "TestASC007HostObservationCannotAuthorizeAfterCancellation",
+      "TestASC007HostIncarnationUsesExactUTCMetadata"
+    ]
+  },
+  "internal/app/screenshot_deadline_test.go": {
+    "cases": [
+      "ASC-007"
+    ],
+    "selectors": [
+      "TestASC007TargetReadStopsAtCancellationBeforeMintOrSend"
+    ]
+  },
+  "internal/screenshot/input_budget_test.go": {
+    "cases": [
+      "ASC-009"
+    ],
+    "selectors": [
+      "TestASC009FIFOPathsNeverBlockBeforeRegularFileValidation",
+      "TestASC009PipeDeadlineCancellationBytesAndOriginalFlags"
+    ]
+  },
+  "internal/app/screenshot_send_input_budget_test.go": {
+    "cases": [
+      "ASC-009"
+    ],
+    "selectors": [
+      "TestASC009StalledNoteHasNoClaimOrSendAfterDeadline"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotRedactionCoverageTests.swift": {
+    "cases": [
+      "ASC-008"
+    ],
+    "selectors": [
+      "testASC008FractionalRedactionOverwritesEveryIntersectedDevicePixel",
+      "testASC008DerivedArtifactPreviewKeepsSmallRedactionsOpaque"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotSourceMappingTests.swift": {
+    "cases": [
+      "ASC-011"
+    ],
+    "selectors": [
+      "testASC011ChangedDisplayMappingAndScaleRefuseBeforeAndAfterCapture"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotAgentLifecycleTests.swift": {
+    "cases": [
+      "ASC-010"
+    ],
+    "selectors": [
+      "testASC010RealSocketDeadlineDisconnectAndStopCloseRequestsWithoutSDKCompletion",
+      "testASC010QuarantinedSDKDoesNotBlockCapabilitiesOrOversubscribeAfterHostRestart"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotAgentWorkTests.swift": {
+    "cases": [
+      "ASC-010"
+    ],
+    "selectors": [
+      "testASC010CancelledCallbacksRemainBoundedUntilActualCompletion",
+      "testASC010BackgroundWorkOwnsBoundedDuplicatesAndCannotReuseClosedDescriptors"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotPreviewAspectTests.swift": {
+    "cases": [
+      "ASC-012"
+    ],
+    "selectors": [
+      "testASC012OddAspectImageAndPreviewCoordinatesCoverBothAxes",
+      "testASC012CroppedSourceRegionRetainsOpaquePreviewCoverageAndTransforms"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotWorkCompletionOrderTests.swift": {
+    "cases": [
+      "ASC-013"
+    ],
+    "selectors": [
+      "testASC013SuccessAndErrorCloseActualDuplicatesBeforeAdmissionReturn"
+    ]
   }
 }

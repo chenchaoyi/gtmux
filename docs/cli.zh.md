@@ -367,73 +367,74 @@ gtmux logs --since 1d --stats                # 存了多少，今天出了多少
 
 <!-- gtmux:rendered act-catalog -->
 ```
-act.adopt               adopt
-act.app.launch          app
-act.artifact            artifact
-act.attach              attach, serve
-act.awake.off           awake
-act.awake.on            awake
-act.capture             capture
-act.cleanup             doctor, serve
-act.codex.launch        codex
-act.opencode.launch     opencode
-act.config.set          config, quiet
-act.doctor.bundle       doctor
-act.doctor.fix          doctor
-act.focus               focus, serve
-act.session.follow      follow, serve
-act.session.review      transcript
-act.hq.brief            hq
-act.hq.export           hq
-act.hq.import           hq
-act.hq.migrate          hq
-act.hq.maintenance      hq
-act.hq.rotate           hq
-act.hq.start            hq
-act.install.app         install
-act.install.hooks       install
-act.advice              advice
-act.knowledge           knowledge, serve
-act.knowledge.sync      knowledge, doctor
-act.mint                pair, serve
-act.narrow              serve
-act.new                 new
-act.notify              hook
-act.notify.post         app
-act.notify.test         app
-act.notify.suppressed   hook
-act.device.rename       serve
-act.pair                serve
-act.push.forget         devices, serve
-act.push.register       serve
-act.reap                reap
-act.reap.snooze         reap
-act.relay               relay
-act.restore             restore
-act.resume.command      restore
-act.resume.confirmed    restore
-act.revoke              pair, devices, share, serve
-act.screenshot.capture  app
-act.screenshot.freeze   app
-act.screenshot.send     app
-act.send                send, serve
-act.share.config        share, serve
-act.share.create        share, serve
-act.share.set           share, serve
-act.spawn               spawn
-act.tunnel.off          tunnel
-act.tunnel.on           tunnel
-act.tunnel.move         tunnel
-act.tunnel.redeem       tunnel
-act.uninstall.app       uninstall
-act.uninstall.hooks     uninstall
-act.unwatch             panes
-act.update              update
-act.upload              serve
-act.wake.delivered      serve, hook
-act.wake.dropped        serve, hook
-act.wait.suppressed     hook
-act.watch               panes
+act.adopt                  adopt
+act.app.launch             app
+act.artifact               artifact
+act.attach                 attach, serve
+act.awake.off              awake
+act.awake.on               awake
+act.capture                capture
+act.cleanup                doctor, serve
+act.codex.launch           codex
+act.opencode.launch        opencode
+act.config.set             config, quiet
+act.doctor.bundle          doctor
+act.doctor.fix             doctor
+act.focus                  focus, serve
+act.session.follow         follow, serve
+act.session.review         transcript
+act.hq.brief               hq
+act.hq.export              hq
+act.hq.import              hq
+act.hq.migrate             hq
+act.hq.maintenance         hq
+act.hq.rotate              hq
+act.hq.start               hq
+act.install.app            install
+act.install.hooks          install
+act.advice                 advice
+act.knowledge              knowledge, serve
+act.knowledge.sync         knowledge, doctor
+act.mint                   pair, serve
+act.narrow                 serve
+act.new                    new
+act.notify                 hook
+act.notify.post            app
+act.notify.test            app
+act.notify.suppressed      hook
+act.device.rename          serve
+act.pair                   serve
+act.push.forget            devices, serve
+act.push.register          serve
+act.reap                   reap
+act.reap.snooze            reap
+act.relay                  relay
+act.restore                restore
+act.resume.command         restore
+act.resume.confirmed       restore
+act.revoke                 pair, devices, share, serve
+act.screenshot.agent.send  screenshot
+act.screenshot.capture     app
+act.screenshot.freeze      app
+act.screenshot.send        app
+act.send                   send, serve
+act.share.config           share, serve
+act.share.create           share, serve
+act.share.set              share, serve
+act.spawn                  spawn
+act.tunnel.off             tunnel
+act.tunnel.on              tunnel
+act.tunnel.move            tunnel
+act.tunnel.redeem          tunnel
+act.uninstall.app          uninstall
+act.uninstall.hooks        uninstall
+act.unwatch                panes
+act.update                 update
+act.upload                 serve
+act.wake.delivered         serve, hook
+act.wake.dropped           serve, hook
+act.wait.suppressed        hook
+act.watch                  panes
 ```
 
 restore 也一直往这里写它的判断过程：选了哪份存档、每个 pane 接回了哪段对话
@@ -2242,3 +2243,8 @@ gtmux artifact remove ID
 240 MiB。支持格式及限制见[会话文件预览](design/conversation-documents.zh.md)。
 
 HQ 界面可使用 `gtmux hq workspace list --overview --stored --json` 读取存储中的权威事项，不发现会话；`sources_included:false` 表示没有附带可选会话元数据。普通 list 仍提供实时及历史来源。详见 [HQ 选项反馈](design/HQ-CHOICE-RESPONSE.zh.md)。
+
+
+## 给 agent 使用的截图
+
+`gtmux screenshot` 提供能力查询、来源选择、区域截取、导入、结构化标注、编辑及准确会话投递。详见[截图工作流](guides/agent-screenshots.zh.md)。本地 CLI 即可，不要求 MCP。
