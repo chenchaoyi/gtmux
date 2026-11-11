@@ -42,3 +42,17 @@ test('LCL-004 disconnected latest tail waits behind Jump before selecting its au
  expect(client.traceHistory.mock.calls[1][1]).toBe('before-200');
  expect(text()).toContain('question 180');
 });
+
+test('LCL-004 an in-flight earlier page preserves snapshots observed after it started', async () => {
+ let history!: ReturnType<typeof useChatHistory>;
+ function Harness({recent}: {recent: TranscriptTurn[]}) {history = useChatHistory(client, agent, recent, () => {}); return null;}
+ await act(async () => {tree = renderer.create(<Harness recent={[turn(102)]} />);});
+ await act(async () => {await history.load();});
+ let resolve!: (turns: TranscriptTurn[]) => void;
+ client.traceHistory.mockReturnValueOnce(new Promise<TranscriptTurn[]>(r => {resolve = r;}));
+ let loading!: Promise<number>;
+ act(() => {loading = history.load();});
+ for (let n = 103; n <= 145; n++) await act(async () => {tree.update(<Harness recent={windowAt(n)} />);});
+ await act(async () => {resolve(Array.from({length: 20}, (_, i) => turn(i + 80))); await loading;});
+ expect(history.turns.map(t => t.turn_ordinal)).toEqual(Array.from({length: 66}, (_, i) => i + 80));
+});

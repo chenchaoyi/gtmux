@@ -1065,7 +1065,8 @@
     ],
     "selectors": [
       "LCL-004 rolling recent snapshots retain observed intervening records exactly once",
-      "LCL-004 disconnected latest tail waits behind Jump before selecting its authoritative history cursor"
+      "LCL-004 disconnected latest tail waits behind Jump before selecting its authoritative history cursor",
+      "LCL-004 an in-flight earlier page preserves snapshots observed after it started"
     ]
   }
 }

@@ -64,13 +64,13 @@ export function useChatHistory(client: GtmuxClient | undefined, agent: Agent, re
       controller.signal.addEventListener('abort', abortDeadline, {once: true});
       timer = setTimeout(() => controller.abort(), 15000);
     });
-    setRecord(previous => ({identity, turns: previous.identity === identity ? previous.turns : [], loading: true, failed: false}));
+    setRecord({identity, turns, loading: true, failed: false});
     try {
       const page = await Promise.race([client.traceHistory(agent, cursor, controller.signal), deadline]);
       if (controller.signal.aborted || current.current !== identity || request.current !== controller) return 0;
       if (!page.length || page.some(t => !t.record_id) || page[0].record_id === turns[0]?.record_id) throw new Error('History did not progress');
       beforePrepend();
-      setRecord({identity, turns: mergeChatHistory(page, turns), loading: false, failed: false});
+      setRecord(previous => ({identity, turns: mergeChatHistory(page, previous.identity === identity ? previous.turns : turns), loading: false, failed: false}));
       return page.length;
     } catch (error) {
       if (current.current === identity && request.current === controller) setRecord(previous => ({identity, turns: isAuthError(error) ? [] : previous.identity === identity ? previous.turns : [], loading: false, failed: true, ...(isAuthError(error) ? {deniedFor: recent} : {})}));

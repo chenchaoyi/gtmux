@@ -59308,9 +59308,18 @@
           "dynamic": false,
           "layer": "L2",
           "design": "LCL-004"
+        },
+        {
+          "id": "MAP-447ac47553c6",
+          "line": 46,
+          "kind": "reviewed-selector",
+          "name": "LCL-004 an in-flight earlier page preserves snapshots observed after it started",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-004"
         }
       ],
-      "sha256": "a38534640ea913d890e732186cecd098ded49047342f00097858593048ab6d06"
+      "sha256": "6ebb11d9f802f633ba2f2e4f90ab70e541834eb068e3907a1674ef0142f8f905"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2"
