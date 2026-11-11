@@ -1,0 +1,69 @@
+{
+  "id": "chat-relay-inbox-20261111",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-11",
+    "decision": "Separate durable HQ replies from Codex queued human turns, and make recent chat reads explicit and recoverable",
+    "notes": "User explicitly requested repair of overnight relay backlog and large-session chat loading. Keep original queues and original records intact. New Codex replies stay in a source-scoped durable inbox; at most one small notice per exact active turn, fresh replies only, no queued full bodies, no idle turn/start or queue fallback on unsupported/ambiguous outcomes. A notice acceptance is not a read; fetched means only the source CLI returned the reply, never proof a model acted. New source guidance uses inbox/wait at natural boundaries. Preserve legacy accepted delivery attribution and other agent dispatch behavior. Recent chat is an opt-in20-turn read; older API default and context/authorization remain. Mobile paging must preserve original identities, update latest data without dropping fetched older pages, reject stale cross-target results and leave content on transient failure. No live queue, restore, service, App, TCC or deployment operation. Existing valid tests remain unchanged; new files use controlled transport/ledger/RN fixtures. Static/isolated checks do not certify live Codex/frontend or device behavior."
+  },
+  "cases": [
+    {
+      "id": "RBL-001",
+      "layer": "L2",
+      "description": "Strict active-only HQ notice RPC never queues or starts turns",
+      "setup": "Synthetic initialized Codex peer with exact home/backend/thread, active/idle/unloaded/approval/unsupported/direct capability and receipt cases",
+      "action": "Call actual coordination input path; decode every wire request and final guard/turn ID",
+      "expected": "Only eligible active exact turn can receive one turn/steer. Idle/unloaded/unsupported/mismatched/blocked states cause zero mutating writes; even definitive unknown-method after steer has no queue fallback. Missing acceptance remains attempted/unknown. No thread catalog/resume, no turn/start or thread/queue/add. Required scope check runs before mutation; rejected check has no side effects. A negative control restoring old queued semantics fails wire assertions, not setup.",
+      "planned_files": [
+        "internal/codexrpc/coordination_input_test.go"
+      ]
+    },
+    {
+      "id": "RBL-002",
+      "layer": "L2",
+      "description": "Durable inbox owns receipt truth, freshness and per-turn burst coalescing",
+      "setup": "Isolated state directory with multiple requests across homes/threads and old accepted legacy entries",
+      "action": "Resolve replies, claim notice concurrently for same active turn, complete notification/fetch, list inbox, expire a reply, and re-open store",
+      "expected": "ReplyAt is set once, legacy entries unchanged/readable, never reset age on identical resolve. Only one notification claim per home/thread/active turn; unknown blocks another notice in that turn. Different turn or identity independent. Expired/legacy/already fetched replies do not auto notify; body stays durable. Source fetch is exact-identity checked and idempotent and does not set Delivered or claim model execution. Unfetched listing bounded and deterministic; no existing request deletion/replay.",
+      "planned_files": [
+        "internal/relay/inbox_test.go"
+      ]
+    },
+    {
+      "id": "RBL-003",
+      "layer": "L2",
+      "description": "Application uses inbox plus short active notice and source-owned pull/wait",
+      "setup": "Isolated real relay ledger with controlled native RPC seam; source identities exact and changed; no actual process/session input",
+      "action": "Call actual Codex relay delivery and source inbox/show/wait helpers against saved replies",
+      "expected": "Codex delivery never enters legacy tmux/queue fallback; notice text excludes complete reply/private body, accepted status describes notice only. Burst guard and freshness rechecked at mutation. CLI source pull fetches only own home/thread/pane lifetime; timeout/cancel bounded with reply left intact, no busy indefinite wait. Late reply returned through tool output on pull, not new human turn. Legacy delivered rows not replayed; original caller authorization retained.",
+      "planned_files": [
+        "internal/app/relay_inbox_test.go"
+      ]
+    },
+    {
+      "id": "LCL-002",
+      "layer": "L2",
+      "description": "Recent transcript endpoint is opt-in and history does not require a heavy default load",
+      "setup": "Authorized isolated server/pane transcript dependencies with independent default/recent counters and history cursor hook",
+      "action": "Request recent=1/default/before/guest and compare ETAG scopes and original ordinals",
+      "expected": "Default stays compatible; recent request selects20-turn producer; before page invokes history after identity authorization using metadata-only producer without default full parse. ETag distinguishes recent/full; request scope and guest context stripping unchanged. History cursor reaches all earlier source turns with original numbering; unsupported recent dependency falls back safely. Invalid recent value rejected or treated as default, never guessed limits.",
+      "planned_files": [
+        "internal/server/recent_transcript_test.go",
+        "internal/app/recent_transcript_test.go"
+      ]
+    },
+    {
+      "id": "LCL-003",
+      "layer": "L2",
+      "description": "Shared App chat fetches recent data and loads source history with honest failure UX",
+      "setup": "Controlled RN Detail/HQ/Chat fixtures with deferred transcript/history requests and original session/home/client identity",
+      "action": "Open chat, fail then retry, load earlier pages, poll latest, switch target while old page resolves",
+      "expected": "Initial requests opt into recent20, prior API call defaults preserved. Shared chat offers real load-earlier control for server-dropped records/cursor; already fetched earlier turns survive live polling; duplicate IDs not doubled; no stale result or content crosses target/client/home/session. Loading/error/retry is explicit; transient failures retain shown content and allow retry instead of blank or endless spinner. Source history error retains content/cursor. No caching credentials or unverified identities. Actual RN interaction assertions cover both screens and shared UI; no native/device performance claim.",
+      "planned_files": [
+        "mobileapp/__tests__/chatRecentHistory.test.tsx"
+      ]
+    }
+  ],
+  "seal": "33d8c7618a602935044cd9a98533694f72ae59720f938abfbf6e0554edf0d2fc"
+}
