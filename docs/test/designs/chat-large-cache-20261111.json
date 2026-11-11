@@ -1,0 +1,24 @@
+{
+  "id": "chat-large-cache-20261111",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-11",
+    "decision": "Keep a bounded recent Codex parse snapshot instead of discarding a large session cache entirely",
+    "notes": "Read-only current-session measurements found300 turns/~25.8MB serialized, cold Load1.77s and a repeat1.16s; source retains up to800 turns then drops a cache entry above32MiB. New code must bound retention while streaming and across append resumes, keep full individual turn content and original ordinals/record IDs, expose omitted prefix via existing count/cursor contracts, and keep source history recoverable. No real-session mutation, transcript copy, cache-limit increase or production deployment. Existing cache/history tests stay unchanged. Current-session timing is not a synthetic benchmark or device/UI acceptance; the first /usr/bin/time wrapper returned1 only because sandbox denied sysctl after the probe finished, and a direct rerun exited0; preserve both records."
+  },
+  "cases": [
+    {
+      "id": "LCL-001",
+      "layer": "L2",
+      "description": "Large Codex history keeps a bounded reusable recent cache and lossless source history access",
+      "setup": "Isolated Codex rollout with enough complete public turns to exceed the existing32MiB retention budget, a fresh Loader and exact source-based history cursor; no real HOME/session data",
+      "action": "Read newest turns twice unchanged, append a complete turn then reread, and page into the omitted prefix using the source history API",
+      "expected": "After the first read a cache entry remains within32MiB and an unchanged read reuses that entry rather than rescanning; latest public prompt/response/tool data, original ordinal and record identity remain exact. Appended input extends the cached active turn safely and preserves prior returned snapshots; retained budget remains bounded. Earlier source turns are still readable by valid cursor and no source bytes are changed. A single individually oversized turn stays complete even if it cannot be cached. Old implementation must fail the large-entry-retained assertion, not a timeout/compile/setup assertion.",
+      "planned_files": [
+        "internal/transcript/codex_large_cache_test.go"
+      ]
+    }
+  ],
+  "seal": "04587a5c65381126da3c333df9bb0226bc9e68b7e8781f01857100eeb3624fe2"
+}
