@@ -3146,13 +3146,13 @@
       ]
     },
     "internal/app/dsh_transcript_test.go": {
-      "sha256": "2c6cc430a1c20360c7e05c138574a90dc807a93b3694360b3ee1865aaee08d3e",
+      "sha256": "b333bf3ecba6ea276cc3997e449de6116d3f63a00bf894ff9b9714546ba75f5f",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
         {
           "id": "LEG-d9c80714fb30",
-          "line": 20,
+          "line": 22,
           "kind": "Test",
           "name": "TestDSHReaderUsesHomeAndLeavesSourceAndConsentUnchanged",
           "dynamic": false,
@@ -3160,7 +3160,7 @@
         },
         {
           "id": "LEG-1852de415a12",
-          "line": 54,
+          "line": 56,
           "kind": "Test",
           "name": "TestDSHHistoryRetainsHQSenderWithoutLivePaneAndRefreshesETag",
           "dynamic": false,
@@ -3168,7 +3168,7 @@
         },
         {
           "id": "LEG-2bdd59ce9930",
-          "line": 121,
+          "line": 123,
           "kind": "Test",
           "name": "TestDSHTerminalRevocationDoesNotServeStalePaneHistory",
           "dynamic": false,
@@ -6848,13 +6848,13 @@
       ]
     },
     "internal/app/spawn_binding_test.go": {
-      "sha256": "7ebce22ce9567835b686174d67a850ec59e992d22be2e9f81a3e2bf9c3757989",
+      "sha256": "65757bb882beabb803d51dcd25e4d95a213101c35ac12827824deee335002f64",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
         {
           "id": "LEG-8aed3735cb05",
-          "line": 16,
+          "line": 18,
           "kind": "Test",
           "name": "TestSpawnBindingRestoresTranscriptEndpoint",
           "dynamic": false,
@@ -26774,7 +26774,7 @@
       ]
     },
     "internal/server/web/app.test.cjs": {
-      "sha256": "629be8882fd17742380d59bdc2505c2b4d4e29fbb57f474faa9aa2dcd0427d0e",
+      "sha256": "c47c13365e5d0bd050949f4d49858ec2e5519af0eba04e70f15cce3179ff30cd",
       "layer": "L2",
       "stack": "Browser",
       "cases": [
@@ -27377,6 +27377,24 @@
           "name": "radar keyboard selection skips rows inside a collapsed section",
           "dynamic": false,
           "layer": "L2"
+        },
+        {
+          "id": "MAP-e2feefc515a3",
+          "line": 1324,
+          "kind": "reviewed-selector",
+          "name": "CAS004 focused and tile chats disclose association failures and recover without losing messages",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "CAS-004"
+        },
+        {
+          "id": "MAP-328002d4dfc3",
+          "line": 1351,
+          "kind": "reviewed-selector",
+          "name": "CAS004 stale tile association failure cannot repaint a changed target",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "CAS-004"
         }
       ]
     },
@@ -44151,7 +44169,7 @@
       "sha256": "63ef76a606952ac61c78287eeb062f97de5fe78d2c4fed4cd54412ad3605d7db"
     },
     "mobileapp/src/screens/DetailTrace.test.tsx": {
-      "sha256": "52d0f7c5f6baee5675d998ab3accec005374d50c6790303fcff63920769e2388",
+      "sha256": "dd028862c176d87b0617371624ddd5b8cf54a722db8e84fe57a3a0bd6d4516b7",
       "layer": "L2",
       "stack": "RN / mobile harness",
       "cases": [
@@ -44173,11 +44191,29 @@
         },
         {
           "id": "LEG-27bb0cdcad2a",
-          "line": 135,
+          "line": 136,
           "kind": "test.each()",
           "name": "pane denial %s closes tools and clears old records",
           "dynamic": true,
           "layer": "L2"
+        },
+        {
+          "id": "MAP-4811f4f9249d",
+          "line": 150,
+          "kind": "reviewed-selector",
+          "name": "CAS005 Detail propagates association failures, preserves history and clears on retry",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "CAS-005"
+        },
+        {
+          "id": "MAP-761f8dca626a",
+          "line": 160,
+          "kind": "reviewed-selector",
+          "name": "CAS007 unchanged transcript polls reuse the ChatView element",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "CAS-005,CAS-007"
         }
       ]
     },
@@ -44496,7 +44532,7 @@
       ]
     },
     "mobileapp/src/screens/HQScreen.poll.test.tsx": {
-      "sha256": "4cedc32d06f75784ab0480316da8352187891c0315004ef3adc6d3cbab6ee5b6",
+      "sha256": "fafaf2c896db7ba5de1a112f06e142a05f21f6c084351a1a98f29e31c4033ca6",
       "layer": "L2",
       "stack": "RN / mobile harness",
       "cases": [
@@ -44655,6 +44691,15 @@
           "dynamic": false,
           "layer": "L2",
           "design": "UR-001"
+        },
+        {
+          "id": "MAP-d488ef3677eb",
+          "line": 512,
+          "kind": "reviewed-selector",
+          "name": "CAS005 HQ propagates association failures, preserves history and clears on retry",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "UR-001,CAS-005"
         }
       ]
     },
@@ -60310,6 +60355,138 @@
           "layer": "L2"
         }
       ]
+    },
+    "internal/app/conversation_read_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f767974bfca8",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestCAS003PaneAssociationIsNotAnEmptyConversation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CAS-003"
+        }
+      ],
+      "sha256": "f116e76800b507ffdc81658ee0edc5816f2635cc848576474cff269c955f42b1"
+    },
+    "internal/app/help_readability_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-0ac93543b761",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "TestCAS006HelpKeepsLongSyntaxSeparateAndScreenshotsVisible",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CAS-006"
+        }
+      ],
+      "sha256": "d69850c2ba5c82950db7a1d4b90f3ea5581c7f5bb18ff7439d100957ffc760d8"
+    },
+    "internal/resume/conversation_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-498880a35c6c",
+          "line": 20,
+          "kind": "reviewed-selector",
+          "name": "TestCAS001IndependentConversationRecovery",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CAS-001,CAS-002"
+        },
+        {
+          "id": "MAP-a549d442247a",
+          "line": 54,
+          "kind": "reviewed-selector",
+          "name": "TestCAS001ConversationRecoveryRejectsUnknownOrConflictingProof",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CAS-001,CAS-002"
+        },
+        {
+          "id": "MAP-fa6914665340",
+          "line": 134,
+          "kind": "reviewed-selector",
+          "name": "TestCAS002OwnHeartbeatRepairsLostIndex",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CAS-001,CAS-002"
+        },
+        {
+          "id": "MAP-67dd266a7a62",
+          "line": 158,
+          "kind": "reviewed-selector",
+          "name": "TestCAS002HeartbeatCannotReclaimReplacementOrUnknownEvidence",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CAS-001,CAS-002"
+        },
+        {
+          "id": "MAP-d797af1a2534",
+          "line": 214,
+          "kind": "reviewed-selector",
+          "name": "TestCAS001LegacyEmptyAndForeignHome",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CAS-001,CAS-002"
+        }
+      ],
+      "sha256": "cd98679669d80371a7c2e9785328a2ba799364398053be69b4e26200fc5acbf3"
+    },
+    "internal/server/conversation_read_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-28ded370695d",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestCAS003ConversationFailureContractAndGuestBoundary",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CAS-003"
+        }
+      ],
+      "sha256": "634a7ec15fc0a3c6dcda914f897bb510fd7acc84802863375e00c00badefde2d"
+    },
+    "mobileapp/src/api/conversation.test.ts": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f0ea1c518382",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "CAS005 transcript rejects association and source failures instead of returning empty history",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "CAS-005"
+        }
+      ],
+      "sha256": "52a1c79abe21fb094d3ae9f517c1d5342b23103c77f1c6548c17046a8088e4b1"
+    },
+    "mobileapp/src/ui/ChatView.association.test.tsx": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-23737a6180b1",
+          "line": 8,
+          "kind": "reviewed-selector",
+          "name": "CAS005 association banner preserves messages and retries without claiming empty history",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "CAS-005"
+        }
+      ],
+      "sha256": "08c8abff44715025b9e8df9fd15a999bcf7201c5978a1cc631dfd8fd17e28d72"
     }
   },
   "legacy_source": "f187564fcfdab24d7750efbea108958e469cdded",

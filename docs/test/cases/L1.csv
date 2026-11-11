@@ -277,7 +277,7 @@ LEG-c262a5c213d1,L1,Go core / CLI / server,internal/app/dsh_profile_test.go,8,Te
 LEG-04f6eb8b1366,L1,Go core / CLI / server,internal/app/dsh_recovery_test.go,13,Test,TestRestorePlanRecognizesVerifiedDSHOuterCLI,False,legacy-not-retrospectively-reviewed
 LEG-53346c9f4ca9,L1,Go core / CLI / server,internal/app/dsh_recovery_test.go,136,Test,TestRefreshOwnedHookCLIHasNoFreshInstallFallback,False,legacy-not-retrospectively-reviewed
 LEG-87a401a77ea6,L1,Go core / CLI / server,internal/app/dsh_terminal_test.go,11,Test,TestDSHTerminalNativeRequestContract,False,legacy-not-retrospectively-reviewed
-LEG-2bdd59ce9930,L1,Go core / CLI / server,internal/app/dsh_transcript_test.go,121,Test,TestDSHTerminalRevocationDoesNotServeStalePaneHistory,False,legacy-not-retrospectively-reviewed
+LEG-2bdd59ce9930,L1,Go core / CLI / server,internal/app/dsh_transcript_test.go,123,Test,TestDSHTerminalRevocationDoesNotServeStalePaneHistory,False,legacy-not-retrospectively-reviewed
 LEG-752bc75bd93e,L1,Go core / CLI / server,internal/app/follow_test.go,14,Test,TestFollowCLIUsesOneConversationAndRecordsItsReceipt,False,legacy-not-retrospectively-reviewed
 LEG-2f8348a37e4c,L1,Go core / CLI / server,internal/app/follow_test.go,57,Test,TestDesktopPushDoesNotOfferUnusablePaneActions,False,legacy-not-retrospectively-reviewed
 LEG-f56017086a37,L1,Go core / CLI / server,internal/app/follow_test.go,68,Test,TestUnconfirmedPushDoesNotInventChatGPTOrigin,False,legacy-not-retrospectively-reviewed
@@ -611,7 +611,7 @@ LEG-8695311a8d76,L1,Go core / CLI / server,internal/app/sharecmd_test.go,76,Test
 LEG-f34facf83811,L1,Go core / CLI / server,internal/app/sharecmd_test.go,102,Test,TestBuildShareStatus_PerLinkScope,False,legacy-not-retrospectively-reviewed
 LEG-3d87c808315b,L1,Go core / CLI / server,internal/app/sharecmd_test.go,123,Test,TestGuestScopeSummary,False,legacy-not-retrospectively-reviewed
 LEG-156eebe9aa64,L1,Go core / CLI / server,internal/app/sharecmd_test.go,137,Test,TestBuildShareStatusFlagsStaleGrants,False,legacy-not-retrospectively-reviewed
-LEG-8aed3735cb05,L1,Go core / CLI / server,internal/app/spawn_binding_test.go,16,Test,TestSpawnBindingRestoresTranscriptEndpoint,False,legacy-not-retrospectively-reviewed
+LEG-8aed3735cb05,L1,Go core / CLI / server,internal/app/spawn_binding_test.go,18,Test,TestSpawnBindingRestoresTranscriptEndpoint,False,legacy-not-retrospectively-reviewed
 LEG-16085aeeb0e9,L1,Go core / CLI / server,internal/app/spawn_handle_test.go,7,Test,TestSpawnHandle,False,legacy-not-retrospectively-reviewed
 LEG-c015a50a27ef,L1,Go core / CLI / server,internal/app/spawn_paneid_test.go,20,Test,TestNameDispatchWindowBackfillsPaneIDs,False,legacy-not-retrospectively-reviewed
 LEG-448935afb4cf,L1,Go core / CLI / server,internal/app/spawn_paneid_test.go,48,subtest,--title,False,legacy-not-retrospectively-reviewed

@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/screenshot"
 )
 
@@ -37,6 +38,43 @@ other agents keep the existing explicit gtmux send --attach interface.
 Every operation emits versioned JSON; --timeout defaults to 10s (maximum 10s).
 `
 
+func screenshotHelpText() string {
+	text := screenshotHelp
+	if i18n.Lang() == "zh" {
+		text = `gtmux screenshot <operation> [--json]
+截图、标注并发送到指定会话。所有操作均输出 JSON，可直接用于脚本。
+
+操作步骤：
+  capabilities
+    检查 Mac App 的截图和标注能力，不申请录屏权限。
+  sources --app <bundle-id> | --displays
+    列出指定应用窗口或显示器；来源引用有效期为 30 秒。
+  capture --source-ref REF --output FILE.png
+    截图并保存；可加 --rect x,y,w,h --unit pt 选择区域。
+  import --input FILE --output FILE.png
+    导入已有图片，不创建实时截图来源。
+  annotate --capture FILE.capture.json --spec MARKS.json --output FILE.png
+    按标注文件生成图片；支持箭头、矩形、文字和遮挡。
+  edit --document FILE.capture.json
+    打开 Mac App 的截图编辑器。
+  target --pane %N [--session-id SID]
+    核对目标会话，取得发送引用。
+  send --image FILE --target-ref REF --request-id ID [--message-file FILE]
+    发送图片，可附文字；同一次发送须沿用同一 request-id。
+  status ID
+    查询已保存的发送回执；回执不代表助手已完成处理。
+
+截图和标注需要兼容的 Mac App 正在运行，无需 MCP。
+截图、导入和标注不会自动发送；输出保存在 --output 指定的位置。
+有未提交草稿、待确认选项、目标变化或发送结果未知时，会拒绝发送。
+精确目标引用目前支持已核实关联的 Codex 和 DSH 会话；
+其他助手可使用 gtmux send --attach 显式发送。
+--timeout 默认 10 秒，最大 10 秒。
+`
+	}
+	return wrapHelpLines(text, helpWidth())
+}
+
 func screenshotOutput(result any, err error) int {
 	reply := struct {
 		Version int               `json:"schema_version"`
@@ -59,7 +97,7 @@ func screenshotOutput(result any, err error) int {
 
 func cmdScreenshot(args []string) int {
 	if len(args) == 0 || args[0] == "--help" || args[0] == "-h" {
-		fmt.Print(screenshotHelp)
+		fmt.Print(screenshotHelpText())
 		return 0
 	}
 	op := args[0]
@@ -102,7 +140,7 @@ func cmdScreenshot(args []string) int {
 	}
 	if err := fs.Parse(args[1:]); err != nil {
 		if err == flag.ErrHelp {
-			fmt.Print(screenshotHelp)
+			fmt.Print(screenshotHelpText())
 			return 0
 		}
 		return screenshotOutput(nil, screenshot.Fail("invalid-options", "Check this operation's flags"))

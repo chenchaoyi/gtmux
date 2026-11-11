@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,6 +13,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/dsh"
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/resume"
+	"github.com/chenchaoyi/gtmux/internal/server"
 	"github.com/chenchaoyi/gtmux/internal/sessionpolicy"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
@@ -135,7 +137,7 @@ func TestDSHTerminalRevocationDoesNotServeStalePaneHistory(t *testing.T) {
 		t.Fatal(err)
 	}
 	b, _, err := transcriptForPane("%44", 0)
-	if err != nil || strings.Contains(string(b), "stale conversation text") {
+	if !errors.Is(err, server.ErrConversationUnassociated) || strings.Contains(string(b), "stale conversation text") {
 		t.Fatalf("revoked binding returned stale history: %s %v", b, err)
 	}
 }

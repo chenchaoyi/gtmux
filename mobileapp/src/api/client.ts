@@ -592,6 +592,10 @@ export function uploadFailureFor(status: number): UploadFailure {
   return status === 413 ? 'too-large' : 'failed';
 }
 
+export class ConversationReadError extends ApiError {
+  constructor(status: number, public association = false) { super(status, 'transcript'); }
+}
+
 export class DesktopTranscriptError extends Error {
   constructor(public status: number) { super(`desktop transcript: ${status}`); }
 }
@@ -893,6 +897,10 @@ export class GtmuxClient {
     // quiet conversation never loses its way back.
     const earlierAvailable = r.headers?.get?.('X-Gtmux-Earlier-Available') === '1';
     if (r.status === 304) return {turns: [], dropped: 0, etag, unchanged: true, ...(earlierAvailable ? {earlierAvailable} : {})};
+    if (r.status === 409 || r.status === 503) {
+      const failure = await r.json().catch(() => null);
+      throw new ConversationReadError(r.status, r.status === 409 && failure?.code === 'conversation-unassociated');
+    }
     if (r.status >= 500 || r.status === 401 || r.status === 403) throw new ApiError(r.status, 'transcript');
     if (!r.ok) return {turns: [], dropped: 0};
     const j = await r.json().catch(() => null);

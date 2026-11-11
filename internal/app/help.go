@@ -44,15 +44,15 @@ func usageText() string {
 	fmt.Fprintf(&b, "gtmux %s · %s\n\n", Version, tagline())
 
 	if zh {
-		fmt.Fprintf(&b, "  %s这一屏\n", i18n.PadRight("gtmux", helpNameW+2))
-		fmt.Fprintf(&b, "  %s跑一个命令\n", i18n.PadRight("gtmux <命令> [参数]", helpNameW+2))
-		fmt.Fprintf(&b, "  %s只看这一个命令，含全部参数\n", i18n.PadRight("gtmux <命令> --help", helpNameW+2))
-		fmt.Fprintf(&b, "  %s同样的内容，输出成 JSON\n", i18n.PadRight("gtmux --help --json", helpNameW+2))
+		writeHelpRow(&b, "gtmux", "显示命令帮助", width)
+		writeHelpRow(&b, "gtmux <命令> [参数]", "执行命令", width)
+		writeHelpRow(&b, "gtmux <命令> --help", "查看命令说明及全部参数", width)
+		writeHelpRow(&b, "gtmux --help --json", "以 JSON 输出命令帮助", width)
 	} else {
-		fmt.Fprintf(&b, "  %sthis screen\n", i18n.PadRight("gtmux", helpNameW+2))
-		fmt.Fprintf(&b, "  %srun one command\n", i18n.PadRight("gtmux <command> [options]", helpNameW+2))
-		fmt.Fprintf(&b, "  %sthat command alone, with every flag\n", i18n.PadRight("gtmux <command> --help", helpNameW+2))
-		fmt.Fprintf(&b, "  %sthe same, as JSON\n", i18n.PadRight("gtmux --help --json", helpNameW+2))
+		writeHelpRow(&b, "gtmux", "this screen", width)
+		writeHelpRow(&b, "gtmux <command> [options]", "run one command", width)
+		writeHelpRow(&b, "gtmux <command> --help", "that command alone, with every flag", width)
+		writeHelpRow(&b, "gtmux --help --json", "the same, as JSON", width)
 	}
 
 	for _, g := range helpGroups {
@@ -60,7 +60,10 @@ func usageText() string {
 		if zh {
 			head, mode = g.ZH, g.ModeZH
 		}
-		fmt.Fprintf(&b, "\n%s %s\n", head, mode)
+		b.WriteString("\n")
+		for _, line := range i18n.WrapDisp(head+" "+mode, width) {
+			b.WriteString(line + "\n")
+		}
 		if g.Compact {
 			var names []string
 			for _, c := range helpCommands {
@@ -85,18 +88,49 @@ func usageText() string {
 			if zh {
 				sum = c.ZH
 			}
-			fmt.Fprintf(&b, "  %s%s\n", i18n.PadRight(line, helpNameW), sum)
+			writeHelpRow(&b, line, sum, width)
 		}
 	}
 
 	if zh {
-		b.WriteString("\n第一次用：gtmux doctor 体检这台 Mac，gtmux doctor --fix 把缺的配上。\n")
+		b.WriteString("\n首次使用可运行 gtmux doctor 检查环境，确认后用 --fix 修复。\n")
 		b.WriteString("语言跟随系统，也可以用 --lang=en|zh 或 GTMUX_LANG 指定。\n")
 	} else {
 		b.WriteString("\nNew here: gtmux doctor checks this Mac, gtmux doctor --fix sets up the rest.\n")
 		b.WriteString("Language follows the system; --lang=en|zh or GTMUX_LANG overrides it.\n")
 	}
 
+	return wrapHelpLines(b.String(), width)
+}
+
+// Stack long syntax instead of truncating flags or joining them to prose.
+func writeHelpRow(b *strings.Builder, syntax, description string, width int) {
+	if width < 64 || i18n.DispWidth(syntax) >= helpNameW {
+		for _, line := range i18n.WrapDisp(syntax, width-2) {
+			b.WriteString("  " + line + "\n")
+		}
+		for _, line := range i18n.WrapDisp(description, width-4) {
+			b.WriteString("    " + line + "\n")
+		}
+		return
+	}
+	for i, line := range i18n.WrapDisp(description, width-helpNameW-4) {
+		if i == 0 {
+			b.WriteString("  " + i18n.PadRight(syntax, helpNameW) + "  " + line + "\n")
+		} else {
+			b.WriteString(strings.Repeat(" ", helpNameW+4) + line + "\n")
+		}
+	}
+}
+
+func wrapHelpLines(text string, width int) string {
+	var b strings.Builder
+	for _, line := range strings.Split(strings.TrimSuffix(text, "\n"), "\n") {
+		indent := line[:len(line)-len(strings.TrimLeft(line, " "))]
+		for _, part := range i18n.WrapDisp(strings.TrimLeft(line, " "), width-len(indent)) {
+			b.WriteString(indent + part + "\n")
+		}
+	}
 	return b.String()
 }
 
@@ -178,7 +212,7 @@ func commandHelpText(name string) string {
 
 	if c.OwnHelp && len(c.Flags) == 0 {
 		if zh {
-			fmt.Fprintf(&b, "\n参数在它自己那儿：gtmux %s --help\n", c.Name)
+			fmt.Fprintf(&b, "\n查看完整参数：gtmux %s --help\n", c.Name)
 		} else {
 			fmt.Fprintf(&b, "\nIts flags are its own: gtmux %s --help\n", c.Name)
 		}
@@ -201,7 +235,7 @@ func modeOf(c *command, zh bool) string {
 		return strings.TrimPrefix(g.ModeEN, "· ")
 	}
 	if c.Writes {
-		return i18n.Tr("changes something", "会改东西")
+		return i18n.Tr("changes something", "会修改本机状态")
 	}
 	return i18n.Tr("reads only", "只读")
 }

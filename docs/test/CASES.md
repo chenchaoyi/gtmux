@@ -2,13 +2,13 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1129 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1135 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3777 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2042 | [L2.csv](cases/L2.csv) |
-| L3 · Runtime integration | 95 | [L3.csv](cases/L3.csv) |
+| L2 · Component / contract | 2051 | [L2.csv](cases/L2.csv) |
+| L3 · Runtime integration | 101 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 94 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 12 | [M.csv](cases/M.csv) |
 | G · Qualification guards | 496 | [G.csv](cases/G.csv) |
@@ -46,6 +46,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | CAS-004 | Neither failure is rendered as No conversation yet. Visible bilingual association guidance and Retry appear, previously loaded turns remain visible, and a successful poll clears the banner. Stale-target completions do not modify a new view; authentication rejection retains existing removal behavior. No automatic send/restore/rebind. |
 | CAS-005 | API rejects structured failures instead of returning empty turns. Shared chat banner gives association-specific guidance and retry, suppresses empty state, preserves already loaded content and clears after a successful read. Detail and HQ propagate the reason scoped to chat identity; old responses cannot overwrite a new identity. |
 | CAS-006 | Screenshot has a visible described row, localized operation guidance and valid examples. Long command arguments cannot collide with descriptions; rows wrap within terminal width, command tokens remain intact, full flags stay available through command help/JSON. Chinese summaries use clear product language. Dispatch, accepted flags, mutation/access semantics and English meaning remain unchanged. Existing help width and registry tests remain. |
+| CAS-007 | The actual shared ChatView props object is reused rather than rebuilt merely because the screen stores a new polling result object. Association error/recovery transitions must still repaint correctly as covered by CAS-005. A whole-chat-record dependency must fail the identity assertion, not setup or timing. |
 | LCL-004 | Observed turns102..145 remain unique and ordered with the paged prefix. A gap between known ordinals is not rendered as adjacent content: the existing older reader stays visible and Jump to bottom remains available. Explicit Jump selects recent20 with the authoritative before cursor and can page earlier; it does not invent missing records. Identity/auth rejection and original prepend window/abort cases remain valid. Against f38 production, the rolling-window missing-record assertion fails; restore exact bytes after the old negative control. |
 | LCL-001 | The full300-turn request returns every available requested complete turn unchanged, while a cache entry remains within32MiB by retaining only whole recent turns. An unchanged20-turn read reuses that entry rather than rescanning; a later300-turn request beyond its coverage returns full requested history by parsing again, never falsely claims a complete cache hit. Latest content, original ordinals and record IDs remain exact. Append resumes safely when coverage suffices and preserves prior returned snapshots; older source turns remain readable by valid cursor and reads never modify source bytes. A single individually oversized turn stays complete even if uncached. Old behavior must fail the large-entry-retained assertion, not normalization/setup/timeout. No global history truncation or cache budget increase. |
 | RBL-001 | Only eligible active exact turn can receive one turn/steer. Idle/unloaded/unsupported/mismatched/blocked states cause zero mutating writes; even definitive unknown-method after steer has no queue fallback. Missing acceptance remains attempted/unknown. No thread catalog/resume, no turn/start or thread/queue/add. Required scope check runs before mutation; rejected check has no side effects. A negative control restoring old queued semantics fails wire assertions, not setup. |

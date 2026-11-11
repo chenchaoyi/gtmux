@@ -38,8 +38,8 @@ LEG-94f430e0a191,G,Go core / CLI / server,internal/app/dsh_recovery_test.go,60,T
 LEG-0011fdb66668,G,Go core / CLI / server,internal/app/dsh_recovery_test.go,116,Test,TestOwnedDSHRefreshRefusesForeignFilesBeforeWriting,False,legacy-not-retrospectively-reviewed
 LEG-1ed9a789df9a,G,Go core / CLI / server,internal/app/dsh_recovery_test.go,152,Test,TestOwnedDSHRefreshRefusesLinksAndConcurrentChanges,False,legacy-not-retrospectively-reviewed
 LEG-f77bf015624b,G,Go core / CLI / server,internal/app/dsh_terminal_test.go,88,Test,TestDSHTerminalArtifactPreflightPreservesForeignFiles,False,legacy-not-retrospectively-reviewed
-LEG-d9c80714fb30,G,Go core / CLI / server,internal/app/dsh_transcript_test.go,20,Test,TestDSHReaderUsesHomeAndLeavesSourceAndConsentUnchanged,False,legacy-not-retrospectively-reviewed
-LEG-1852de415a12,G,Go core / CLI / server,internal/app/dsh_transcript_test.go,54,Test,TestDSHHistoryRetainsHQSenderWithoutLivePaneAndRefreshesETag,False,legacy-not-retrospectively-reviewed
+LEG-d9c80714fb30,G,Go core / CLI / server,internal/app/dsh_transcript_test.go,22,Test,TestDSHReaderUsesHomeAndLeavesSourceAndConsentUnchanged,False,legacy-not-retrospectively-reviewed
+LEG-1852de415a12,G,Go core / CLI / server,internal/app/dsh_transcript_test.go,56,Test,TestDSHHistoryRetainsHQSenderWithoutLivePaneAndRefreshesETag,False,legacy-not-retrospectively-reviewed
 LEG-9cc9e8b441c1,G,Go core / CLI / server,internal/app/focusheadless_test.go,11,Test,TestHeadlessFocusRequiresInteractiveClientAndChecksSelection,False,legacy-not-retrospectively-reviewed
 LEG-03ff1b3ab31d,G,Go core / CLI / server,internal/app/hook_presence_test.go,163,Test,TestExplicitHookSelectionStillAllowsPreconfiguration,False,legacy-not-retrospectively-reviewed
 LEG-2782a5c94c22,G,Go core / CLI / server,internal/app/hooks_test.go,43,Test,TestUpdateSettingsInstallIsIdempotent,False,legacy-not-retrospectively-reviewed

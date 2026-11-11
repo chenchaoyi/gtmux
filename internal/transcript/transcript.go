@@ -756,6 +756,9 @@ func parseTurnsFrom(path string, startOffset int64, step stepFn, ordinal int) ([
 			off += int64(len(line))
 		}
 		if rerr != nil {
+			if rerr != io.EOF {
+				return nil, -1, size, rerr
+			}
 			break
 		}
 	}

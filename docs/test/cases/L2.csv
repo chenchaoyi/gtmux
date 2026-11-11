@@ -13,7 +13,9 @@ MAP-e76ce32b2c0e,L2,reviewed implementation,internal/agentclient/pending_target_
 MAP-bf28343fb4c1,L2,reviewed implementation,internal/app/client_contract_test.go,30,reviewed-selector,TestClientHTTPContracts,False,CT-HTTP
 LEG-4c8a67259028,L2,Go core / CLI / server,internal/app/cloudflared_security_test.go,40,Test,TestCloudflaredMetricsTransportRefusesRedirectsAndOversizedBodies,False,legacy-not-retrospectively-reviewed
 LEG-ff081e20fac0,L2,Go core / CLI / server,internal/app/cloudflared_security_test.go,42,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
+MAP-f767974bfca8,L2,reviewed implementation,internal/app/conversation_read_test.go,14,reviewed-selector,TestCAS003PaneAssociationIsNotAnEmptyConversation,False,CAS-003
 LEG-ba12d8af1486,L2,Go core / CLI / server,internal/app/devices_push_test.go,16,Test,TestListPush_ShowsEveryPausedToken,False,legacy-not-retrospectively-reviewed
+MAP-0ac93543b761,L2,reviewed implementation,internal/app/help_readability_test.go,9,reviewed-selector,TestCAS006HelpKeepsLongSyntaxSeparateAndScreenshotsVisible,False,CAS-006
 MAP-9931f487fae1,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,109,reviewed-selector,TestPhase1CursorEmptyScanConcurrentAppend,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
 MAP-479200cd9eee,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,142,reviewed-selector,TestPhase1CursorProspectiveActivation,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
 MAP-b0e7a04d99c5,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,179,reviewed-selector,TestPhase1CursorEmptyRetentionGap,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
@@ -106,6 +108,11 @@ MAP-6010cd28478a,L2,reviewed implementation,internal/relay/inbox_test.go,95,revi
 MAP-1e34bec3e596,L2,reviewed implementation,internal/relay/inbox_test.go,145,reviewed-selector,TestRBL002InboxSortsReplyTimeAndRechecksStalenessAtClaim,False,RBL-002
 MAP-9a0a983fad52,L2,reviewed implementation,internal/relay/inbox_test.go,183,reviewed-selector,TestRBL002SourceWaitCancelsWhileLedgerIsLocked,False,RBL-002
 MAP-0ff0e3ef33b9,L2,reviewed implementation,internal/resume/codexfrontend_ready_test.go,14,reviewed-selector,TestCFR002AdmissionCausesAndControlledLaunch,False,CFR-002
+MAP-498880a35c6c,L2,reviewed implementation,internal/resume/conversation_test.go,20,reviewed-selector,TestCAS001IndependentConversationRecovery,False,"CAS-001,CAS-002"
+MAP-a549d442247a,L2,reviewed implementation,internal/resume/conversation_test.go,54,reviewed-selector,TestCAS001ConversationRecoveryRejectsUnknownOrConflictingProof,False,"CAS-001,CAS-002"
+MAP-fa6914665340,L2,reviewed implementation,internal/resume/conversation_test.go,134,reviewed-selector,TestCAS002OwnHeartbeatRepairsLostIndex,False,"CAS-001,CAS-002"
+MAP-67dd266a7a62,L2,reviewed implementation,internal/resume/conversation_test.go,158,reviewed-selector,TestCAS002HeartbeatCannotReclaimReplacementOrUnknownEvidence,False,"CAS-001,CAS-002"
+MAP-d797af1a2534,L2,reviewed implementation,internal/resume/conversation_test.go,214,reviewed-selector,TestCAS001LegacyEmptyAndForeignHome,False,"CAS-001,CAS-002"
 MAP-e0f0d6088eea,L2,reviewed implementation,internal/resume/state_publication_test.go,14,reviewed-selector,TestCSR003SavePublishesAnAtomicResumeSnapshot,False,CSR-003
 MAP-1808038b01b0,L2,reviewed implementation,internal/resume/state_publication_test.go,51,reviewed-selector,TestCSR003CodexSaveAndHeartbeatRespectBindingLease,False,CSR-003
 MAP-fb260993ae4c,L2,reviewed implementation,internal/screenshot/artifact_test.go,45,reviewed-selector,TestASC001ArtifactPublicationIsAtomicAndPreservesExistingFiles,False,"ASC-001,ASC-003"
@@ -170,6 +177,7 @@ LEG-83f7e5572350,L2,Go core / CLI / server,internal/server/completion_test.go,8,
 LEG-9fd20b906ea7,L2,Go core / CLI / server,internal/server/completion_test.go,20,Test,TestCompletionPendingBoundaries,False,legacy-not-retrospectively-reviewed
 LEG-0a95c2908352,L2,Go core / CLI / server,internal/server/completion_test.go,42,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-a5e3434b37a4,L2,Go core / CLI / server,internal/server/completion_test.go,60,Test,TestCompletionPendingRespectsConsent,False,legacy-not-retrospectively-reviewed
+MAP-28ded370695d,L2,reviewed implementation,internal/server/conversation_read_test.go,10,reviewed-selector,TestCAS003ConversationFailureContractAndGuestBoundary,False,CAS-003
 LEG-5bfe57c2ddae,L2,Go core / CLI / server,internal/server/diaglog_test.go,23,Test,TestARejectedPairingSaysWhy,False,legacy-not-retrospectively-reviewed
 LEG-8759783d1709,L2,Go core / CLI / server,internal/server/diaglog_test.go,62,Test,TestASendIsRecordedWithoutItsText,False,legacy-not-retrospectively-reviewed
 LEG-e722fcd337ac,L2,Go core / CLI / server,internal/server/diaglog_test.go,87,Test,TestRejectedTokensAreAggregated,False,legacy-not-retrospectively-reviewed
@@ -628,7 +636,7 @@ LEG-cf861ad50359,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.
 MAP-1dd1e525111d,L2,reviewed implementation,mobileapp/src/screens/DetailSendSnapshot.test.tsx,26,reviewed-selector,MSD-009 late text receipt cannot replace newer %s control-key screen,False,MSD-009
 LEG-3311f5104ff9,L2,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,82,test,opening and closing Trace shares Chat’s in-flight read without aborting or starting a second subscription,False,legacy-not-retrospectively-reviewed
 LEG-383eef0af50a,L2,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,109,test,the same pane and session in a different home cannot show or accept the old reply,False,legacy-not-retrospectively-reviewed
-LEG-27bb0cdcad2a,L2,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,135,test.each(),pane denial %s closes tools and clears old records,True,legacy-not-retrospectively-reviewed
+LEG-27bb0cdcad2a,L2,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,136,test.each(),pane denial %s closes tools and clears old records,True,legacy-not-retrospectively-reviewed
 LEG-bdaca444f3d6,L2,RN / mobile harness,mobileapp/src/screens/HQActsSheet.test.tsx,35,test,"lists what HQ did: what the list is for, the 24-hour tally, and every act",False,legacy-not-retrospectively-reviewed
 LEG-9439b91c1a3b,L2,RN / mobile harness,mobileapp/src/screens/HQActsSheet.test.tsx,43,test,"an act leads where it acted: the session, or the knowledge entry it wrote",False,legacy-not-retrospectively-reviewed
 LEG-06208debd045,L2,RN / mobile harness,mobileapp/src/screens/HQActsSheet.test.tsx,53,test,"nothing recent says so, and the sheet closes",False,legacy-not-retrospectively-reviewed
@@ -682,6 +690,7 @@ MAP-70f5d7f57ea0,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test
 MAP-8a3e8378dfee,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,354,reviewed-selector,"a stalled usage read retires at its own deadline, then a new read recovers",False,UR-001
 MAP-517de42c0dfa,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,292,reviewed-selector,shortcut distinguishes loading and failed reads from an empty resource,False,UR-001
 MAP-ec30d4e015f6,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,369,reviewed-selector,the Usage sheet retry action starts a new read immediately after failure,False,UR-001
+MAP-d488ef3677eb,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,512,reviewed-selector,"CAS005 HQ propagates association failures, preserves history and clears on retry",False,"UR-001,CAS-005"
 MAP-915625a761e2,L2,reviewed implementation,mobileapp/src/screens/HQSendOrdering.test.tsx,30,reviewed-selector,MSD-008 old HQ %s cannot replace a newer accepted message,False,MSD-008
 MAP-237c6db2e2b9,L2,reviewed implementation,mobileapp/src/screens/HQSendOrdering.test.tsx,38,reviewed-selector,MSD-008 HQ old reply and old retry cannot cross a session change,False,MSD-008
 MAP-e29e72e87767,L2,reviewed implementation,mobileapp/src/screens/HQSendOrdering.test.tsx,46,reviewed-selector,MSD-008 a later %s key does not leave the current HQ text Sending,False,MSD-008

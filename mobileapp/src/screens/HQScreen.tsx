@@ -1,3 +1,4 @@
+import {ConversationReadError} from '../api/client';
 import {newSendId} from '../api/sendId';
 import {beginChatEcho, chatEchoRecorded, type PendingChatEcho} from './pendingChatEcho';
 import type {SendDelivery} from '../ui/sendReceipt';
@@ -112,7 +113,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   const [actFeed, setActFeed] = useState<HQEvent[]>([]);
   const [traceOpen, setTraceOpen] = useState(false), [diffOpen, setDiffOpen] = useState(false);
   const chatIdentity = useMemo(() => ({client, pane: hq.pane_id, session: live.session_id, home: live.home_id, agent: live.agent}), [client, hq.pane_id, live.session_id, live.home_id, live.agent]);
-  const [chatRecord, setChatRecord] = useState<{identity: typeof chatIdentity; turns: TranscriptTurn[]; reset?: SessionReset; loaded: boolean; failed?: boolean; earlierAvailable: boolean}>({identity: chatIdentity, turns: [], loaded: false, earlierAvailable: false});
+  const [chatRecord, setChatRecord] = useState<{identity: typeof chatIdentity; turns: TranscriptTurn[]; reset?: SessionReset; loaded: boolean; failed?: boolean; associationFailed?: boolean; earlierAvailable: boolean}>({identity: chatIdentity, turns: [], loaded: false, earlierAvailable: false});
   const turns = chatRecord.identity === chatIdentity ? chatRecord.turns : EMPTY_TURNS;
   const latestTurns = useRef(turns); latestTurns.current = turns;
   const sendIdentity = useRef(chatIdentity); sendIdentity.current = chatIdentity;
@@ -329,14 +330,14 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
     ({turns: ts, reset, etag, unchanged, earlierAvailable: more}) => {
       if (etagIdentity.current !== chatIdentity) return;
       etagRef.current = etag;
-      setChatRecord(previous => unchanged && previous.identity === chatIdentity ? {...previous, loaded: true, failed: false, earlierAvailable: !!more} : {identity: chatIdentity, turns: ts, reset: earlier > 0 ? undefined : reset, loaded: true, earlierAvailable: !!more});
+      setChatRecord(previous => unchanged && previous.identity === chatIdentity ? {...previous, loaded: true, failed: false, associationFailed: false, earlierAvailable: !!more} : {identity: chatIdentity, turns: ts, reset: earlier > 0 ? undefined : reset, loaded: true, earlierAvailable: !!more});
     }, {onError: error => {
       if (etagIdentity.current !== chatIdentity) return;
       if (isAuthError(error)) {
         etagRef.current = undefined;
         setTraceOpen(false); setDiffOpen(false);
-        setChatRecord({identity: chatIdentity, turns: [], loaded: true, failed: true, earlierAvailable: false});
-      } else setChatRecord(previous => previous.identity === chatIdentity ? {...previous, loaded: true, failed: true} : {identity: chatIdentity, turns: [], loaded: true, failed: true, earlierAvailable: false});
+        setChatRecord({identity: chatIdentity, turns: [], loaded: true, failed: true, associationFailed: error instanceof ConversationReadError && error.association, earlierAvailable: false});
+      } else setChatRecord(previous => previous.identity === chatIdentity ? {...previous, loaded: true, failed: true, associationFailed: error instanceof ConversationReadError && error.association} : {identity: chatIdentity, turns: [], loaded: true, failed: true, associationFailed: error instanceof ConversationReadError && error.association, earlierAvailable: false});
     }, onSettled: () => setEarlierLoading(false)},
   );traceRetry.current = task.run;return startReadPolling(task, live.status === 'working' ? HQ_ACTIVE_POLL_MS : HQ_IDLE_POLL_MS);},
   [client, hq.pane_id, chatIdentity, live.status, pending, earlier]);
@@ -623,6 +624,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
               actsSince={earlier > 0 ? 0 : sessionReset?.at ?? 0}
               onOpenAct={openAct}
               loading={!loaded}
+              associationFailed={chatRecord.identity === chatIdentity && chatRecord.associationFailed}
               failed={chatRecord.identity === chatIdentity && chatRecord.failed}
               onRetry={() => traceRetry.current()}
               pendingPrompt={pending}

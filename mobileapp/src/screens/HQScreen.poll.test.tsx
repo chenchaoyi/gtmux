@@ -508,3 +508,15 @@ test('workspace-backed conversations use the same matters and keep them current 
     tree!.root.findAllByProps({ testID: 'hq-overview-talk' }).length,
   ).toBeGreaterThan(0);
 });
+
+test('CAS005 HQ propagates association failures, preserves history and clears on retry', async () => {
+  mockClient.digest.mockResolvedValue([]);
+  mockClient.transcript.mockResolvedValue({turns: [{prompt: 'kept question', response: 'kept HQ reply', time: ''}], dropped: 0});
+  await mount('idle', 'compact');
+  mockClient.transcript.mockRejectedValueOnce(new (require('../api/client').ConversationReadError)(409, true));
+  await act(async () => tree!.root.findByType(ChatView).props.onRetry());
+  expect(tree!.root.findByType(ChatView).props.associationFailed).toBe(true);
+  expect(shown()).toBe('kept HQ reply');
+  await act(async () => tree!.root.findByType(ChatView).props.onRetry());
+  expect(tree!.root.findByType(ChatView).props.associationFailed).toBeFalsy();
+});
