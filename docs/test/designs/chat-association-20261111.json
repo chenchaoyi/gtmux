@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner (self-review, not independent approval)",
     "date": "2026-11-11",
     "decision": "Recover history only from independently revalidated live frontend evidence; preserve strict input authority and surface association/source failures",
-    "notes": "Current private record has invalid trailing data and its named frontend receipt is missing. No automatic recovery is promised for that irrecoverable evidence combination. No prefix parsing, launch-argument identity guesses, live record edits, restore/restart, queues or release/install. Recovery uses bounded independently saved frontend metadata and is read-only unless its authenticated current bridge repairs its own primary index. Existing lease/epoch/incumbent and guest boundaries remain. All synthetic fixtures use task temporary storage. Source review and synthetic tests do not certify current running175 or real mobile behavior."
+    "notes": "Current private record has invalid trailing data and its named frontend receipt is missing. No automatic recovery is promised for that irrecoverable evidence combination. No prefix parsing, launch-argument identity guesses, live record edits, restore/restart, queues or release/install. Recovery uses bounded independently saved frontend metadata and is read-only unless its authenticated current bridge repairs its own primary index. Existing lease/epoch/incumbent and guest boundaries remain. All synthetic fixtures use task temporary storage. Source review and synthetic tests do not certify current running175 or real mobile behavior. Follow-up design review before editing legacy endpoint tests: the unbound-spawn and revoked-DSH checks retain their no-borrowed/no-stale-history assertions and additionally require the typed association error, replacing the former nil-error empty-success contract. Non-EOF source I/O failures must propagate from the legacy parser; ordinary EOF and empty history remain valid. Preserve previously accepted home-less legacy records while rejecting explicit foreign homes; recovery receipts always require the exact current home. Use canonical /private/tmp as TMPDIR for existing alias-sensitive fixtures; do not weaken their path assertions."
   },
   "cases": [
     {
@@ -39,7 +39,9 @@
       "expected": "Valid empty history stays 200 []; association unavailable returns 409 with stable conversation-unassociated code and no private record content; source read failure returns 503 conversation-unavailable. Verified recovered history carries a recovered status header and normal ordinals/cursors. Guest checks run before readers. No change to input, restore or session-list authority.",
       "planned_files": [
         "internal/app/conversation_read_test.go",
-        "internal/server/conversation_read_test.go"
+        "internal/server/conversation_read_test.go",
+        "internal/app/spawn_binding_test.go",
+        "internal/app/dsh_transcript_test.go"
       ]
     },
     {
@@ -79,5 +81,5 @@
       ]
     }
   ],
-  "seal": "68d01fe0e6d4935cde6e294f1189bca25b555d6f37c89cb42c3b7bade8fd0f89"
+  "seal": "9b81668d124c4c3b41f54ad4252b8efa584964f9bac975cc61a35fcca73bcf3e"
 }
