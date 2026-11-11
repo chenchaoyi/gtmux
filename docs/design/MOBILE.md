@@ -1811,7 +1811,7 @@ Phone and iPad use the same recent-first Chat reader: request at most20 latest t
 before the existing byte budget, then fetch earlier source pages explicitly. Source
 ordinals and record IDs stay canonical. Each expansion mounts at most20 additional
 turns; a reader in older content keeps that window while the live tail grows and uses
-Jump to bottom to resume following. A temporary failure retains content with Retry;
+Jump to bottom to resume following. Continuous latest snapshots retain observed intervening turns; a disconnected tail waits behind Jump rather than hiding a gap. Jump then selects the authoritative recent window and its earlier cursor. A temporary failure retains content with Retry;
 401/403 retires the affected snapshot. Identity changes and unmount cancel the read
 and its deadline. The initial loading mark says it is reading recent conversation.
 The first cold source scan remains necessary; warm parser measurements are not

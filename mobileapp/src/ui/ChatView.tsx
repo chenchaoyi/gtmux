@@ -278,6 +278,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   // animation below, so the arrow flashed the chrome and went nowhere (2026-09-10). The
   // scroll's own frames report the arrival.
   const jumpToBottom = () => {
+    history.jumpToRecent();
     setHistoryEnd(undefined);
     setWindowSize(CHAT_WINDOW);
     scrollRef.current?.scrollToEnd({animated: true});
@@ -713,7 +714,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
         </View>
       )}
       {profileTarget && <ParticipantProfileModal key={`${profileTarget.kind}:${profileTarget.turn?.session_id ?? ''}:${profileTarget.turn?.time ?? ''}`} target={profileTarget} client={client} lang={lang} onClose={() => setProfileTarget(null)} />}
-      <JumpToBottom visible={(!atBottom || hiddenAfter > 0) && turns.length > 0} onPress={jumpToBottom} lang={lang} />
+      <JumpToBottom visible={(!atBottom || hiddenAfter > 0 || history.disconnected) && turns.length > 0} onPress={jumpToBottom} lang={lang} />
     </View>
     </TextSelectionContext.Provider>
     </CopyFeedbackContext.Provider>

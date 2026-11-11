@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1084 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1085 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3759 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 1984 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 1986 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 92 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 94 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 12 | [M.csv](cases/M.csv) |
@@ -27,6 +27,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | ARGV-001 | Complete original first; only explicit interpreter script arguments or complete heredocs become previews; literal escapes decode once, no guess from prose/paths, dynamic/unsupported wrappers stay raw; repeated extraction stable and bounded |
 | ARGV-002 | Actual shared CodeText receives the exact script and language, formatting toggles; selected script never replaces original copy; raw reader has no derived tabs |
 | ARGV-003 | Typed derived tabs and compact syntax rendering visible, original JSON copy and Raw unchanged; no API sends or nested execution; existing layout can scroll without clipping |
+| LCL-004 | Observed turns102..145 remain unique and ordered with the paged prefix. A gap between known ordinals is not rendered as adjacent content: the existing older reader stays visible and Jump to bottom remains available. Explicit Jump selects recent20 with the authoritative before cursor and can page earlier; it does not invent missing records. Identity/auth rejection and original prepend window/abort cases remain valid. Against f38 production, the rolling-window missing-record assertion fails; restore exact bytes after the old negative control. |
 | LCL-001 | The full300-turn request returns every available requested complete turn unchanged, while a cache entry remains within32MiB by retaining only whole recent turns. An unchanged20-turn read reuses that entry rather than rescanning; a later300-turn request beyond its coverage returns full requested history by parsing again, never falsely claims a complete cache hit. Latest content, original ordinals and record IDs remain exact. Append resumes safely when coverage suffices and preserves prior returned snapshots; older source turns remain readable by valid cursor and reads never modify source bytes. A single individually oversized turn stays complete even if uncached. Old behavior must fail the large-entry-retained assertion, not normalization/setup/timeout. No global history truncation or cache budget increase. |
 | RBL-001 | Only eligible active exact turn can receive one turn/steer. Idle/unloaded/unsupported/mismatched/blocked states cause zero mutating writes; even definitive unknown-method after steer has no queue fallback. Missing acceptance remains attempted/unknown. No thread catalog/resume, no turn/start or thread/queue/add. Required scope check runs before mutation; rejected check has no side effects. A negative control restoring old queued semantics fails wire assertions, not setup. |
 | RBL-002 | ReplyAt is set once, legacy entries unchanged/readable, never reset age on identical resolve. Only one notification claim per home/thread/active turn; unknown blocks another notice in that turn. Different turn or identity independent. Expired/legacy/already fetched replies do not auto notify; body stays durable. Source fetch is exact-identity checked and idempotent and does not set Delivered or claim model execution. Unfetched listing bounded and deterministic; no existing request deletion/replay. A source Wait cancelled after observing a real contended ledger lock returns without waiting for lock release and leaves fetched_at zero. |

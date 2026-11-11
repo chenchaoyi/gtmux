@@ -3834,6 +3834,8 @@ LEG-5fde771eaebb,L1,macOS / Widgets Swift,macapp/Tests/MacUsageWidgetSupportTest
 LEG-450dbd890cc5,L1,macOS / Widgets Swift,macapp/Tests/MacUsageWidgetSupportTests/MacUsageWidgetSupportTests.swift,73,XCTest,testUsageShortcutCannotCarryAnAlternateActionOrCredentials,False,legacy-not-retrospectively-reviewed
 LEG-fbddf3db8aa3,L1,macOS / Widgets Swift,macapp/Tests/MacUsageWidgetSupportTests/MacUsageWidgetSupportTests.swift,80,XCTest,testNoPollingWithoutWidgetNoOverlapAndBoundedReloads,False,legacy-not-retrospectively-reviewed
 LEG-a93ae72a5022,L1,RN / mobile harness,mobileapp/__tests__/App.test.tsx,9,test,renders correctly,False,legacy-not-retrospectively-reviewed
+MAP-6035b934d888,L2,reviewed implementation,mobileapp/__tests__/chatHistoryContinuity.test.tsx,19,reviewed-selector,LCL-004 rolling recent snapshots retain observed intervening records exactly once,False,LCL-004
+MAP-884d717bc4c2,L2,reviewed implementation,mobileapp/__tests__/chatHistoryContinuity.test.tsx,28,reviewed-selector,LCL-004 disconnected latest tail waits behind Jump before selecting its authoritative history cursor,False,LCL-004
 MAP-77beb711ef2a,L2,reviewed implementation,mobileapp/__tests__/chatRecentHistory.test.tsx,35,reviewed-selector,LCL-003 %s requests recent data and exposes a working error/retry action,False,LCL-003
 MAP-c954781c8bf5,L2,reviewed implementation,mobileapp/__tests__/chatRecentHistory.test.tsx,48,reviewed-selector,LCL-003 earlier source pages survive latest polling and a failed page keeps the content,False,LCL-003
 MAP-b0c34596f9cc,L2,reviewed implementation,mobileapp/__tests__/chatRecentHistory.test.tsx,63,reviewed-selector,LCL-003 target changes reject late history and noncooperative history reads stop showing loading after 15 seconds,False,LCL-003
@@ -4618,9 +4620,9 @@ LEG-ce5d181e23e4,L2,RN / mobile harness,mobileapp/src/screens/DetailPinned.test.
 LEG-d51de694fa1f,L2,RN / mobile harness,mobileapp/src/screens/DetailPinned.test.tsx,193,test,"two logged prompts that open the same way: the row stays, nothing is named",False,legacy-not-retrospectively-reviewed
 LEG-78f3ef5088b1,L2,RN / mobile harness,mobileapp/src/screens/DetailPinned.test.tsx,203,test,display menu drives the shared terminal and survives full-screen/chat switches,False,legacy-not-retrospectively-reviewed
 LEG-33d0c3c4ceaf,L2,RN / mobile harness,mobileapp/src/screens/DetailPinned.test.tsx,232,test,slow terminal reads do not overlap and cannot roll the picture back after a deadline,False,legacy-not-retrospectively-reviewed
-MAP-7107ec518922,L2,reviewed implementation,mobileapp/src/screens/DetailSendReceipt.test.tsx,27,reviewed-selector,MSD-005 %s releases failed sends and preserves explicit retry identity,False,MSD-005
-MAP-199b34196f32,L2,reviewed implementation,mobileapp/src/screens/DetailSendReceipt.test.tsx,39,reviewed-selector,MSD-005 old failure cannot replace the newer accepted send,False,MSD-005
-MAP-135b77c8e14c,L2,reviewed implementation,mobileapp/src/screens/DetailSendReceipt.test.tsx,48,reviewed-selector,MSD-005 a control key cannot leave a prior text receipt permanently Sending,False,MSD-005
+MAP-7107ec518922,L2,reviewed implementation,mobileapp/src/screens/DetailSendReceipt.test.tsx,28,reviewed-selector,MSD-005 %s releases failed sends and preserves explicit retry identity,False,MSD-005
+MAP-199b34196f32,L2,reviewed implementation,mobileapp/src/screens/DetailSendReceipt.test.tsx,44,reviewed-selector,MSD-005 old failure cannot replace the newer accepted send,False,MSD-005
+MAP-135b77c8e14c,L2,reviewed implementation,mobileapp/src/screens/DetailSendReceipt.test.tsx,53,reviewed-selector,MSD-005 a control key cannot leave a prior text receipt permanently Sending,False,MSD-005
 LEG-7a048f25b768,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,62,test,conversation navigation exposes its action and selected mode to accessibility,False,legacy-not-retrospectively-reviewed
 LEG-90313f24599a,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,77,test,"refused: pair again, no retry, and the text is back in the box",False,legacy-not-retrospectively-reviewed
 LEG-3f37c79e8bc1,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,93,test,any other refusal keeps its retry and does not refill the box,False,legacy-not-retrospectively-reviewed

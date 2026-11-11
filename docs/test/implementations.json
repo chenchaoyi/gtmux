@@ -1058,5 +1058,14 @@
       "LCL-003 expanded history stays visible while newer turns wait behind the live edge control",
       "LCL-003 unmount cancels the deadline even when a history reader ignores AbortSignal"
     ]
+  },
+  "mobileapp/__tests__/chatHistoryContinuity.test.tsx": {
+    "cases": [
+      "LCL-004"
+    ],
+    "selectors": [
+      "LCL-004 rolling recent snapshots retain observed intervening records exactly once",
+      "LCL-004 disconnected latest tail waits behind Jump before selecting its authoritative history cursor"
+    ]
   }
 }

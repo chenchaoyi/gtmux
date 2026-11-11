@@ -388,4 +388,4 @@ Chat SHALL request a recent window, retain fetched source pages across latest re
 
 #### Scenario: Earlier history and a later refresh
 - **WHEN** the reader loads an earlier page and a latest-window refresh arrives
-- **THEN** the earlier records SHALL remain chronological with updated matching source IDs, and a late response for another conversation SHALL NOT enter the current view
+- **THEN** the earlier records SHALL remain chronological with updated matching source IDs, a late response for another conversation SHALL NOT enter the current view, and an unobserved gap SHALL stay behind an explicit Jump to the authoritative recent window

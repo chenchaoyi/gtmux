@@ -58857,7 +58857,7 @@
       "cases": [
         {
           "id": "MAP-7107ec518922",
-          "line": 27,
+          "line": 28,
           "kind": "reviewed-selector",
           "name": "MSD-005 %s releases failed sends and preserves explicit retry identity",
           "dynamic": false,
@@ -58866,7 +58866,7 @@
         },
         {
           "id": "MAP-199b34196f32",
-          "line": 39,
+          "line": 44,
           "kind": "reviewed-selector",
           "name": "MSD-005 old failure cannot replace the newer accepted send",
           "dynamic": false,
@@ -58875,7 +58875,7 @@
         },
         {
           "id": "MAP-135b77c8e14c",
-          "line": 48,
+          "line": 53,
           "kind": "reviewed-selector",
           "name": "MSD-005 a control key cannot leave a prior text receipt permanently Sending",
           "dynamic": false,
@@ -58883,7 +58883,7 @@
           "design": "MSD-005"
         }
       ],
-      "sha256": "70b7592eda9a63777250d495872db7630cc7dacdb89bdddbd08c25adfc8e82fb"
+      "sha256": "e92b2ddb0267b69e75322cfb0b03174f083ad756e204f2366248a01fed45439f"
     },
     "mobileapp/src/ui/sendReceipt.test.ts": {
       "layer": "L2",
@@ -59286,6 +59286,31 @@
         }
       ],
       "sha256": "477ef0948e513dfcdeb1559427f8d8324bf10ba3713c5b0532e48f6fb9d9368f"
+    },
+    "mobileapp/__tests__/chatHistoryContinuity.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-6035b934d888",
+          "line": 19,
+          "kind": "reviewed-selector",
+          "name": "LCL-004 rolling recent snapshots retain observed intervening records exactly once",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-004"
+        },
+        {
+          "id": "MAP-884d717bc4c2",
+          "line": 28,
+          "kind": "reviewed-selector",
+          "name": "LCL-004 disconnected latest tail waits behind Jump before selecting its authoritative history cursor",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-004"
+        }
+      ],
+      "sha256": "a38534640ea913d890e732186cecd098ded49047342f00097858593048ab6d06"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2"
