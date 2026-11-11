@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner (self-review, not independent approval)",
     "date": "2026-11-11",
     "decision": "approved for implementation",
-    "notes": "Follow-up to exact f38: record.turns was updated only by source paging, so a rolling recent window could omit already observed intervening turns. Keep observed continuous records when polling; never render an unobserved ordinal gap as adjacent content. If a disconnected tail jumps beyond retained history, keep the current reading window and expose Jump to bottom; that explicit action may select the authoritative recent window and its cursor so earlier source paging can fill back. Preserve source identity, auth retirement, exact record IDs and existing mounted-row bound. This is a controlled RN behavior regression, not actual device acceptance."
+    "notes": "Follow-up to exact f38: record.turns was updated only by source paging, so a rolling recent window could omit already observed intervening turns. Keep observed continuous records when polling; never render an unobserved ordinal gap as adjacent content. If a disconnected tail jumps beyond retained history, keep the current reading window and expose Jump to bottom; that explicit action may select the authoritative recent window and its cursor so earlier source paging can fill back. Preserve source identity, auth retirement, exact record IDs and existing mounted-row bound. This is a controlled RN behavior regression, not actual device acceptance. Additional interleaving review before the next test edit: while an earlier-page promise is pending, latest snapshots still arrive. The same observed-record preservation invariant must hold when that older page resolves; a captured pre-request array must not overwrite records observed meanwhile. Keep case fields and original expected coverage unchanged; add a controlled deferred-page interleaving under LCL-004, no sleeps or real network."
   },
   "cases": [
     {
@@ -20,5 +20,5 @@
       ]
     }
   ],
-  "seal": "4ff8ddfc94a2fe91cd76df4c8c3efe63c1f305532f9a3890e4f25c6f3478b448"
+  "seal": "fb67e43ad76ba75362470c577d9a61aea8947f4c9ac9cf2982ba34d5eafb5ae6"
 }
