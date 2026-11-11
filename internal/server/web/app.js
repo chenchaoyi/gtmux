@@ -622,7 +622,7 @@
 
     var right = document.createElement('div'); right.className = 'right';
     // An unknown completion must not be dated by a window repaint.
-    var t = relTime(a.since || (a.status !== 'idle' ? a.activity_at : 0));
+    var t = a.since_uncertain === true ? '' : relTime(a.since || (a.status !== 'idle' ? a.activity_at : 0));
     if (t) { var tm = document.createElement('span'); tm.className = 'time'; tm.textContent = t; right.appendChild(tm); }
     var ag = document.createElement('span'); ag.className = 'agent'; ag.textContent = a.agent || ''; ag.hidden = isNative(a); right.appendChild(ag);
     // Native (non-tmux) agents are SENSED read-only: no pane to open → a "native" tag
@@ -643,7 +643,7 @@
 
   function renderRadar(agents) {
     // only repaint when something actually changed (avoids list flicker every poll)
-    var sig = JSON.stringify(agents.map(function (a) { return [a.pane_id, a.source, a.session_id, a.home_id, a.current_client, a.launch_host, a.client, a.follow, a.project, a.terminal, a.session, a.loc, a.agent, a.role, a.activity_at, a.status, a.task, a.since, a.icon, a.error, a.error_text, a.bg, a.bg_count, a.bg_text]; }));
+    var sig = JSON.stringify(agents.map(function (a) { return [a.pane_id, a.source, a.session_id, a.home_id, a.current_client, a.launch_host, a.client, a.follow, a.project, a.terminal, a.session, a.loc, a.agent, a.role, a.activity_at, a.status, a.task, a.since, a.since_uncertain, a.icon, a.error, a.error_text, a.bg, a.bg_count, a.bg_text]; }));
     if (sig === lastSig) return;
     lastSig = sig;
     // tmux agents bucket by status; native (non-tmux) agents are SENSED read-only, so
@@ -2515,7 +2515,7 @@
     if (value) { serverClock = value; serverClockAt = Date.now(); }
   }
   function liveDuration(agent) {
-    if (!serverClock || !(agent.since > 0)) return '';
+    if (!serverClock || agent.since_uncertain === true || !(agent.since > 0)) return '';
     var seconds = Math.floor((serverClock + Date.now() - serverClockAt) / 1000 - agent.since);
     if (seconds < 0) return '';
     if (seconds < 60) return seconds + T('s', '秒');

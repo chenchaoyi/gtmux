@@ -72,8 +72,8 @@ MAP-1176b6e7ceff,L2,reviewed implementation,internal/native/closed_frontend_test
 MAP-e88c0ded5ae1,L2,reviewed implementation,internal/radar/closed_frontend_test.go,18,reviewed-selector,TestClosedBoundResumedWorkerHistoryAndPreservation,False,HXF-002
 MAP-8c62d9a14381,L2,reviewed implementation,internal/radar/codex_foreign_marker_test.go,15,reviewed-selector,TestForeignActiveRequiresCurrentIdentityEndedTurnAndReadyFrame,False,CORE-CODEX-FOREIGN-ACTIVE
 MAP-d562c313395b,L2,reviewed implementation,internal/radar/codex_foreign_marker_test.go,107,reviewed-selector,TestForeignActiveProductionReaderRejectsLegacyResumeWithoutFrontend,False,CORE-CODEX-FOREIGN-ACTIVE
-MAP-3b7c2c0858d3,L2,reviewed implementation,internal/radar/codex_stale_state_test.go,57,reviewed-selector,TestCSR001StaleActiveCannotReviveReadyFinishedPane,False,"CSR-001,CSR-002"
-MAP-3a420ae89cea,L2,reviewed implementation,internal/radar/codex_stale_state_test.go,143,reviewed-selector,TestCSR002SupersededActiveDoesNotDateCurrentWork,False,"CSR-001,CSR-002"
+MAP-3b7c2c0858d3,L2,reviewed implementation,internal/radar/codex_stale_state_test.go,58,reviewed-selector,TestCSR001StaleActiveCannotReviveReadyFinishedPane,False,"CSR-001,CSR-002"
+MAP-3a420ae89cea,L2,reviewed implementation,internal/radar/codex_stale_state_test.go,157,reviewed-selector,TestCSR002SupersededActiveDoesNotDateCurrentWork,False,"CSR-001,CSR-002"
 MAP-981c45e6de6f,L2,reviewed implementation,internal/radar/energy_gather_test.go,8,reviewed-selector,TestPWR002GatherSharesFramesOnlyInsideOnePass,False,PWR-002
 MAP-e0f0d6088eea,L2,reviewed implementation,internal/resume/state_publication_test.go,14,reviewed-selector,TestCSR003SavePublishesAnAtomicResumeSnapshot,False,CSR-003
 MAP-1808038b01b0,L2,reviewed implementation,internal/resume/state_publication_test.go,51,reviewed-selector,TestCSR003CodexSaveAndHeartbeatRespectBindingLease,False,CSR-003
@@ -1078,7 +1078,7 @@ LEG-972a4a56b878,L2,RN / mobile harness,mobileapp/src/ui/AgentRow.test.tsx,114,i
 LEG-99b93d1468c9,L2,RN / mobile harness,mobileapp/src/ui/AgentRow.test.tsx,122,it,fires ONE impact at recognition — the system s own language for a long press,False,legacy-not-retrospectively-reviewed
 LEG-ba19d4beeeee,L2,RN / mobile harness,mobileapp/src/ui/AgentRow.test.tsx,132,it,does none of it on a row that has no long press to give,False,legacy-not-retrospectively-reviewed
 LEG-d3f9a8c7de9a,L2,RN / mobile harness,mobileapp/src/ui/AgentRow.test.tsx,142,it,holds for the shared delay rather than a number of its own,False,legacy-not-retrospectively-reviewed
-MAP-e95ed96f473a,L2,reviewed implementation,mobileapp/src/ui/AgentStateDuration.test.tsx,8,reviewed-selector,CSR-004 real decoded rows,False,CSR-004
+MAP-e95ed96f473a,L2,reviewed implementation,mobileapp/src/ui/AgentStateDuration.test.tsx,9,reviewed-selector,CSR-004 real decoded rows,False,CSR-004
 LEG-e688ad6112b3,L2,RN / mobile harness,mobileapp/src/ui/AnchoredMenu.test.tsx,46,test,"it says what it belongs to, and lists the groups in order with the empty one left out",False,legacy-not-retrospectively-reviewed
 LEG-a70a1297a3bb,L2,RN / mobile harness,mobileapp/src/ui/AnchoredMenu.test.tsx,54,test,every item is a button to accessibility,False,legacy-not-retrospectively-reviewed
 LEG-8e628c761783,L2,RN / mobile harness,mobileapp/src/ui/AnchoredMenu.test.tsx,62,test,"the opening control is drawn lit over the dim, centred on it",False,legacy-not-retrospectively-reviewed

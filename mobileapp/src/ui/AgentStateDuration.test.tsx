@@ -4,6 +4,7 @@ import renderer, {act} from 'react-test-renderer';
 import {AgentRow} from './AgentRow';
 import {paletteFor} from './theme';
 import {toAgent} from '../api/types';
+import {buildRowSheet} from './rowSheetModel';
 
 test('CSR-004 real decoded rows hide explicit uncertain duration and retain legacy clocks', () => {
   const now = 1_800_000_000;
@@ -21,6 +22,9 @@ test('CSR-004 real decoded rows hide explicit uncertain duration and retain lega
       .concat(n.props.children as unknown[])).filter(c => typeof c === 'string');
   };
   try {
+    const unknown = toAgent({pane_id: '%17', agent: 'Codex', status: 'working',
+      since: now - 17 * 3600, activity_at: now, since_uncertain: true});
+    expect(buildRowSheet(unknown, 'en', now).status).not.toContain('17h');
     expect(render({since_uncertain: true, since: now - 17 * 3600})).not.toContain('17h');
     expect(render({since_uncertain: true, since: 0})).not.toContain('0s');
     expect(render({since_uncertain: true, status: 'idle', since: now - 60})).not.toContain('1m');

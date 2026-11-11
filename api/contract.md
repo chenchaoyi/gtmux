@@ -116,6 +116,7 @@ focused or sent input.
 | `watched` | bool? | a user-promoted PLAIN pane (tiered-pane-control), not an agent; omitted for agents |
 | `icon` | string? | identity-icon hint (`.app`/image path); omitted if none |
 | `activity_at` `since` | int? | epoch seconds (last activity / current-state start) |
+| `since_uncertain` | bool? | Explicitly unknown state duration. When true, omit elapsed text and do not borrow `activity_at`; absent/false retains legacy clock behavior. Also present on digest rows when applicable. |
 
 For an idle Codex row, `since` reflects supported conversation activity or a verified
 terminal turn boundary, not settings/usage telemetry, log mtime or a window repaint.
@@ -123,6 +124,15 @@ The core corrects an older cached idle time only against that same bound home/se
 without a newer message or active/wait marker. This correction is not a new completion
 and does not change `latest`. If no supported activity or prior marker is available,
 `since` is omitted/zero; consumers must not treat `activity_at` as a completion receipt.
+
+For a tmux Codex row without a verified live frontend, an old named active marker
+and a later finished cache can contradict one another. A ready composer with no
+visible work, queue, approval or observed CPU work may then display idle. This
+does not clear markers, create `completion_id`/`completed_at`, or set `latest`.
+Fresh starts and verified frontends retain their existing lifecycle rules. If
+current work is visible but its active timestamp predates a finished observation,
+`since` uses a recognized current Working footer clock, or zero with
+`since_uncertain:true`. This clock is display evidence, not a new turn-start event.
 
 ### `GET /api/session-follow` / `POST /api/session-follow` — external conversation follow (OWNER only)
 

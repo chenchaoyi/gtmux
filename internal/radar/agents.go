@@ -310,6 +310,7 @@ type Pane struct {
 	tab                 string
 	activityAt          int64  // epoch seconds of last activity (relative time)
 	Since               int64  // epoch seconds the current state began (for a duration)
+	SinceUncertain      bool   // explicit unknown clock; do not borrow window activity
 	icon                string // identity icon hint (.app path or image path); "" = monogram
 	// input-lock modifier: the pane is in tmux copy/view-mode (the user is scrolling
 	// the scrollback), so typed input — manual OR gtmux send/spawn — is swallowed as
@@ -397,7 +398,8 @@ type agentJSON struct {
 	Tab                 string                  `json:"tab,omitempty"`    // native: terminal tab title (jump key)
 	ActivityAt          int64                   `json:"activity_at,omitempty"`
 	Since               int64                   `json:"since,omitempty"` // epoch the current state began (duration)
-	Icon                string                  `json:"icon,omitempty"`  // identity icon hint (.app/image path)
+	SinceUncertain      bool                    `json:"since_uncertain,omitempty"`
+	Icon                string                  `json:"icon,omitempty"` // identity icon hint (.app/image path)
 	// native rows only: the agent session id (the `gtmux adopt <id>` key) + whether
 	// it can be adopted into tmux (resumable). Absent/false for tmux rows.
 	SessionID string `json:"session_id,omitempty"`
@@ -1131,10 +1133,12 @@ func gatherAgentsScoped(codexScope *transcript.CodexPathScope, targetPane string
 		// OR its process subtree is burning CPU (a local tool running quietly), else
 		// idle. Both are sampled every poll to keep their baselines fresh.
 		hfsCalled := false // whether the frame/CPU signal was sampled for this pane
+		cpuObservedWorking := false
 		hookFreeStatus := func(paneID string, panePid int) string {
 			hfsCalled = true
 			frameW := state.PaneFrameWorking(paneID, capture(paneID), now)
 			cpuW := state.PaneCPUWorking(paneID, subtreeCPU(panePid, procs, children), now)
+			cpuObservedWorking = cpuW
 			if frameW || cpuW {
 				return "working"
 			}
@@ -1170,6 +1174,7 @@ func gatherAgentsScoped(codexScope *transcript.CodexPathScope, targetPane string
 		codexFrame := ""
 		foreignEnd := ""
 		var foreignEndAt time.Time
+		staleDisplayAt := int64(0)
 		if agents.KeyForLabel(agent) == "codex" {
 			codexFrame = capture(id)
 			codexError = codexTerminalFailureForPane(id, codexFrame, now)
@@ -1296,12 +1301,21 @@ func gatherAgentsScoped(codexScope *transcript.CodexPathScope, targetPane string
 					status, foreignEnd, foreignEndAt = "idle", kind, at
 				}
 			}
+			if (status == "working" || status == "idle" || status == "running") && codexError == "" && agents.KeyForLabel(agent) == "codex" {
+				if !hfsCalled {
+					hookFreeStatus(id, panePid)
+				}
+				if at, ok := codexStaleActiveDisplay(id, codexFrame, now, cpuObservedWorking); ok {
+					status, staleDisplayAt = "idle", at
+				}
+			}
 		}
 
 		// since = when the agent entered its CURRENT state, for a "working 7m" /
 		// "waiting 11m" / "idle 3m" duration. Hook markers give the turn/wait/finish
 		// start; otherwise fall back to last activity.
 		since := activityAt
+		sinceUncertain := false
 		var errored bool
 		var errorText string
 		// Codex can end an API-failed turn without a hook or durable error record.
@@ -1344,6 +1358,13 @@ func gatherAgentsScoped(codexScope *transcript.CodexPathScope, targetPane string
 			case "working":
 				if mt := FileMtime(state.ActivePath(id)); mt > 0 {
 					since = mt
+					// A finished observation supersedes this old clock, but does not
+					// end current visible work or establish a new lifecycle start.
+					if finished := FileMtime(state.FinishedPath(id)); agents.KeyForLabel(agent) == "codex" && finished > mt && finished <= now {
+						var known bool
+						since, known = codexWorkingSince(codexFrame, now)
+						sinceUncertain = !known
+					}
 				}
 			case "waiting":
 				if mt := FileMtime(state.WaitingPath(id)); mt > 0 {
@@ -1354,7 +1375,9 @@ func gatherAgentsScoped(codexScope *transcript.CodexPathScope, targetPane string
 				if len(f) > 9 {
 					paneCwd = f[9]
 				}
-				if foreignEnd != "" {
+				if staleDisplayAt != 0 {
+					since = staleDisplayAt
+				} else if foreignEnd != "" {
 					// The ended time is display evidence; do not refresh this pane's
 					// idle cache from another session's active-marker transition.
 					since = foreignEndAt.Unix()
@@ -1384,7 +1407,7 @@ func gatherAgentsScoped(codexScope *transcript.CodexPathScope, targetPane string
 			}
 		}
 		endReason := failedTurnOutcome(outcome, errored)
-		latest := foreignEnd == "" && id == lastFinished && status != "working" && status != "waiting"
+		latest := staleDisplayAt == 0 && foreignEnd == "" && id == lastFinished && status != "working" && status != "waiting"
 		if nativeLifecycle {
 			native := terminalStatus(terminal[id], time.Unix(now, 0))
 			status, since, endReason = native.status, native.since, native.reason
@@ -1416,29 +1439,33 @@ func gatherAgentsScoped(codexScope *transcript.CodexPathScope, targetPane string
 		// never "detached", so a missing field can't invent a warning.
 		detached := len(f) >= 13 && f[12] == "0"
 		completionID, completedAt, instance := paneCompletion(id, fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3]), cwd, agent, panePid, status, terminal[id], codexScope)
+		if staleDisplayAt != 0 {
+			completionID, completedAt = "", 0
+		}
 		panes = append(panes, Pane{
-			PaneID:     id,
-			session:    f[1],
-			window:     f[2],
-			pane:       f[3],
-			Loc:        fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3]),
-			Agent:      agent,
-			Task:       task,
-			Status:     status,
-			Activity:   f[6] == "1",
-			Latest:     latest,
-			source:     "tmux",
-			cwd:        cwd,
-			role:       roleForCwd(cwd),
-			project:    project,
-			branch:     branch,
-			icon:       IconFor(agent, profiles),
-			activityAt: activityAt,
-			Since:      since,
-			Errored:    errored,
-			EndReason:  endReason,
-			ErrorText:  errorText,
-			Confirmed:  completionID != "", CompletionID: completionID, CompletedAt: completedAt, Instance: instance,
+			PaneID:         id,
+			session:        f[1],
+			window:         f[2],
+			pane:           f[3],
+			Loc:            fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3]),
+			Agent:          agent,
+			Task:           task,
+			Status:         status,
+			Activity:       f[6] == "1",
+			Latest:         latest,
+			source:         "tmux",
+			cwd:            cwd,
+			role:           roleForCwd(cwd),
+			project:        project,
+			branch:         branch,
+			icon:           IconFor(agent, profiles),
+			activityAt:     activityAt,
+			Since:          since,
+			SinceUncertain: sinceUncertain,
+			Errored:        errored,
+			EndReason:      endReason,
+			ErrorText:      errorText,
+			Confirmed:      completionID != "", CompletionID: completionID, CompletedAt: completedAt, Instance: instance,
 			Bg:        bg,
 			BgCount:   bgCount,
 			BgText:    bgText,
@@ -2093,7 +2120,7 @@ func agentsJSONBytes(panes []Pane) ([]byte, error) {
 			Latest: p.Latest, Activity: p.Activity,
 			LaunchHost: p.launchHost, HomeID: p.homeID, CreationClient: p.client, CurrentClient: p.currentClient, CanReadConversation: p.canReadConversation,
 			Source: src, Role: p.role, Project: p.project, Branch: p.branch, Terminal: p.terminal, Client: p.client, Tab: p.tab,
-			ActivityAt: p.activityAt, Since: p.Since, Icon: p.icon,
+			ActivityAt: p.activityAt, Since: p.Since, SinceUncertain: p.SinceUncertain, Icon: p.icon,
 			SessionID: p.sessionID, Adoptable: p.adoptable, Follow: p.Follow,
 			Error: p.Errored, ErrorText: p.ErrorText,
 			Bg: p.Bg, BgCount: p.BgCount, BgText: p.BgText,

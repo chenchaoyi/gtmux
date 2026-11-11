@@ -2251,8 +2251,8 @@ LEG-2e444dfc9c9d,L1,Go core / CLI / server,internal/radar/codex_idle_time_test.g
 LEG-2e729e7c14cd,L1,Go core / CLI / server,internal/radar/codex_idle_time_test.go,72,Test,TestCodexIdleTimeCorrectionRequiresSettledMatchingSession,False,legacy-not-retrospectively-reviewed
 LEG-36b09543fbc8,L1,Go core / CLI / server,internal/radar/codex_idle_time_test.go,86,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-50173aa4b1d3,L1,Go core / CLI / server,internal/radar/codex_idle_time_test.go,134,Test,TestCodexMaintenanceOnlyRolloutHasUnknownIdleTime,False,legacy-not-retrospectively-reviewed
-MAP-3b7c2c0858d3,L2,reviewed implementation,internal/radar/codex_stale_state_test.go,57,reviewed-selector,TestCSR001StaleActiveCannotReviveReadyFinishedPane,False,"CSR-001,CSR-002"
-MAP-3a420ae89cea,L2,reviewed implementation,internal/radar/codex_stale_state_test.go,143,reviewed-selector,TestCSR002SupersededActiveDoesNotDateCurrentWork,False,"CSR-001,CSR-002"
+MAP-3b7c2c0858d3,L2,reviewed implementation,internal/radar/codex_stale_state_test.go,58,reviewed-selector,TestCSR001StaleActiveCannotReviveReadyFinishedPane,False,"CSR-001,CSR-002"
+MAP-3a420ae89cea,L2,reviewed implementation,internal/radar/codex_stale_state_test.go,157,reviewed-selector,TestCSR002SupersededActiveDoesNotDateCurrentWork,False,"CSR-001,CSR-002"
 LEG-472d4eb498eb,L1,Go core / CLI / server,internal/radar/codexbinding_test.go,17,Test,TestNativeCodexReconciliationUsesSubmittedWitness,False,legacy-not-retrospectively-reviewed
 LEG-9f6338c3f65a,L1,Go core / CLI / server,internal/radar/codexbinding_test.go,19,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-bfa6e20897d8,L1,Go core / CLI / server,internal/radar/codexcompletion_test.go,12,Test,TestCodexTurnCompletedRequiresCurrentPaneAndTurn,False,legacy-not-retrospectively-reviewed
@@ -5286,7 +5286,7 @@ LEG-972a4a56b878,L2,RN / mobile harness,mobileapp/src/ui/AgentRow.test.tsx,114,i
 LEG-99b93d1468c9,L2,RN / mobile harness,mobileapp/src/ui/AgentRow.test.tsx,122,it,fires ONE impact at recognition — the system s own language for a long press,False,legacy-not-retrospectively-reviewed
 LEG-ba19d4beeeee,L2,RN / mobile harness,mobileapp/src/ui/AgentRow.test.tsx,132,it,does none of it on a row that has no long press to give,False,legacy-not-retrospectively-reviewed
 LEG-d3f9a8c7de9a,L2,RN / mobile harness,mobileapp/src/ui/AgentRow.test.tsx,142,it,holds for the shared delay rather than a number of its own,False,legacy-not-retrospectively-reviewed
-MAP-e95ed96f473a,L2,reviewed implementation,mobileapp/src/ui/AgentStateDuration.test.tsx,8,reviewed-selector,CSR-004 real decoded rows,False,CSR-004
+MAP-e95ed96f473a,L2,reviewed implementation,mobileapp/src/ui/AgentStateDuration.test.tsx,9,reviewed-selector,CSR-004 real decoded rows,False,CSR-004
 LEG-e688ad6112b3,L2,RN / mobile harness,mobileapp/src/ui/AnchoredMenu.test.tsx,46,test,"it says what it belongs to, and lists the groups in order with the empty one left out",False,legacy-not-retrospectively-reviewed
 LEG-a70a1297a3bb,L2,RN / mobile harness,mobileapp/src/ui/AnchoredMenu.test.tsx,54,test,every item is a button to accessibility,False,legacy-not-retrospectively-reviewed
 LEG-8e628c761783,L2,RN / mobile harness,mobileapp/src/ui/AnchoredMenu.test.tsx,62,test,"the opening control is drawn lit over the dim, centred on it",False,legacy-not-retrospectively-reviewed

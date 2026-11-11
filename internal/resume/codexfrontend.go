@@ -158,6 +158,11 @@ func RefreshCodexFrontend(f CodexFrontend) (CodexFrontend, error) {
 	if !validFrontend(f) || f.BridgePID != os.Getpid() {
 		return f, errors.New("invalid frontend heartbeat")
 	}
+	lease, err := state.TryLease("codex-frontend-binding")
+	if err != nil {
+		return f, err
+	}
+	defer lease.Close()
 	r, ok := Load(f.Loc)
 	if !ok || r.Agent != "codex" || r.SessionID != f.SessionID || r.HomeID != f.HomeID || r.Frontend != "" && r.Frontend != f.Instance {
 		return f, errors.New("frontend binding replaced")
@@ -165,6 +170,7 @@ func RefreshCodexFrontend(f CodexFrontend) (CodexFrontend, error) {
 	if r.Frontend == "" {
 		// Older hook binaries omit the additive field when publishing the SAME
 		// thread. Recover only from our own still-verified connection evidence.
+		lease.Close() // Bind reacquires and revalidates; never recursively hold it.
 		return BindCodexFrontend(f, f.SessionID, f.ThreadCwd)
 	}
 	// New threads may acquire history after thread/start. Once promoted, normal

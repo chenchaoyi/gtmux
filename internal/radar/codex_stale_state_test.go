@@ -10,6 +10,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/state"
+	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
 
 func staleCodexFixture(t *testing.T, corrupt bool, activeAt, finishedAt time.Time) string {
@@ -56,11 +57,13 @@ func staleCodexFixture(t *testing.T, corrupt bool, activeAt, finishedAt time.Tim
 
 func TestCSR001StaleActiveCannotReviveReadyFinishedPane(t *testing.T) {
 	for _, tc := range []struct {
-		name, prefix, want                                             string
-		corrupt, fresh, noFinish, olderFinish, futureFinish, wait, cpu bool
+		name, prefix, want                                                              string
+		corrupt, fresh, noFinish, olderFinish, futureFinish, wait, cpu, verified, quiet bool
 	}{
 		{name: "missing frontend", want: "idle"},
 		{name: "corrupt resume", corrupt: true, want: "idle"},
+		{name: "quiet window", quiet: true, want: "idle"},
+		{name: "verified frontend retains strict turn rules", verified: true, want: "working"},
 		{name: "visible work", prefix: "• Working (3s • esc to interrupt)\n", want: "working"},
 		{name: "queued", prefix: "Messages to be submitted after next tool call\n", want: "working"},
 		{name: "startup", prefix: "• Starting MCP servers (1/4): tools (0s • esc to interrupt)\n", want: "working"},
@@ -107,7 +110,18 @@ func TestCSR001StaleActiveCannotReviveReadyFinishedPane(t *testing.T) {
 			capture := paneCapture
 			t.Cleanup(func() { paneCapture = capture })
 			paneCapture = func(string) string { return frame }
-			withFixture(t, []string{paneLine(pane, "synthetic", "0", "0", "Codex", "codex", now.Unix(), 900017, "/work")}, func() {
+			if tc.verified {
+				old := foreignCodexFrontend
+				t.Cleanup(func() { foreignCodexFrontend = old })
+				foreignCodexFrontend = func(string) (resume.CodexFrontend, bool) {
+					return resume.CodexFrontend{Pane: pane, Loc: "synthetic:0.0", HomeID: transcript.CodexHomeID(), SessionID: "thread", Cwd: "/work"}, true
+				}
+			}
+			activityAt := now.Unix()
+			if tc.quiet {
+				activityAt -= activeQuietGrace + 1
+			}
+			withFixture(t, []string{paneLine(pane, "synthetic", "0", "0", "Codex", "codex", activityAt, 900017, "/work")}, func() {
 				if tc.cpu {
 					state.PaneCPUWorking(pane, 0, now.Unix()-2)
 					procSnapshot = func() map[int]procInfo { return map[int]procInfo{900017: {cpu: 20, command: "codex"}} }

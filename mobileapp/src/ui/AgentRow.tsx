@@ -48,7 +48,7 @@ export function AgentRow({
 }) {
   const isWaiting = agent.status === 'waiting';
   // A window repaint is not a completion time when the core cannot establish one.
-  const time = relTime(agent.since || (agent.status !== 'idle' ? agent.activity_at : undefined));
+  const time = agent.since_uncertain ? '' : relTime(agent.since || (agent.status !== 'idle' ? agent.activity_at : undefined));
 
   // Line 1 (task) is clamped to one line for density; the long-press sheet is where
   // the clamped text becomes reachable.

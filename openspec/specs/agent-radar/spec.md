@@ -108,6 +108,24 @@ mechanism, and an agent with no hooks is unaffected.
   hook) and the agent is not currently working
 - **THEN** the agent's status is `waiting` and sorts to the top
 
+#### Scenario: Stale Codex activity does not outvote an idle terminal
+
+- **WHEN** an old named active marker predates a nonfuture finished observation,
+  the frontend cannot be verified, and the current Codex composer is ready with no
+  work, queued input, approval or observed process work
+- **THEN** the core SHALL display idle without changing lifecycle markers,
+  publishing completion proof or marking the pane latest-completed
+- **AND** a fresh start, real work, approval, missing/older/future finished evidence
+  or a verified frontend SHALL retain its existing conservative handling
+
+#### Scenario: Current Codex duration has an obsolete start
+
+- **WHEN** current work is visible but the active timestamp predates a finished observation
+- **THEN** a recognized current Working footer MAY provide the display duration
+- **AND** an unknown duration SHALL use zero `since` and `since_uncertain:true`,
+  with no window-activity fallback across Mac, mobile and browser
+- **AND** this display clock SHALL NOT create a lifecycle start or completion
+
 #### Scenario: Codex maintenance does not refresh idle completion time
 
 - **WHEN** an idle Codex rollout receives settings, usage or other non-conversation

@@ -59064,7 +59064,7 @@
       "cases": [
         {
           "id": "MAP-3b7c2c0858d3",
-          "line": 57,
+          "line": 58,
           "kind": "reviewed-selector",
           "name": "TestCSR001StaleActiveCannotReviveReadyFinishedPane",
           "dynamic": false,
@@ -59073,7 +59073,7 @@
         },
         {
           "id": "MAP-3a420ae89cea",
-          "line": 143,
+          "line": 157,
           "kind": "reviewed-selector",
           "name": "TestCSR002SupersededActiveDoesNotDateCurrentWork",
           "dynamic": false,
@@ -59081,7 +59081,7 @@
           "design": "CSR-001,CSR-002"
         }
       ],
-      "sha256": "7b2a7b0e64cfb712d78371436224f32ca605b789f2f6d2dfaea781b63f939ace"
+      "sha256": "eb350e22de738b63c76f53464e1fbe365e9bc9c87866a751c88b563058bd58f9"
     },
     "internal/resume/state_publication_test.go": {
       "layer": "L2",
@@ -59146,7 +59146,7 @@
       "cases": [
         {
           "id": "MAP-e95ed96f473a",
-          "line": 8,
+          "line": 9,
           "kind": "reviewed-selector",
           "name": "CSR-004 real decoded rows",
           "dynamic": false,
@@ -59154,7 +59154,7 @@
           "design": "CSR-004"
         }
       ],
-      "sha256": "1689bafdf348c6c7c1e032368e3e43922de7899fe8770e2843502b96e10b084c"
+      "sha256": "5d592a741d52940b8da7c5beb25864d8bc490edd9c5782825141bb56d53b8216"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2"
