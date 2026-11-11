@@ -20,9 +20,6 @@ func codexStaleActiveDisplay(pane, frame string, now int64, cpuWorking bool) (in
 		!prompt.IsComposerReady(frame, "codex") || prompt.WaitingOptions(frame) != nil || codexScreenWorking(frame) {
 		return 0, false
 	}
-	if _, live := foreignCodexFrontend(pane); live {
-		return 0, false
-	}
 	active, err := os.Stat(state.ActivePath(pane))
 	if err != nil || !active.ModTime().Before(time.Unix(now-2, 0)) {
 		return 0, false // a newly accepted turn can precede its first Working frame
@@ -30,6 +27,11 @@ func codexStaleActiveDisplay(pane, frame string, now int64, cpuWorking bool) (in
 	sid, turn := state.ReadMarker(state.ActivePath(pane)), state.ReadMarker(state.TurnIDPath(pane))
 	finished, err := os.Stat(state.FinishedPath(pane))
 	if sid == "" || err != nil || !finished.ModTime().After(active.ModTime()) || finished.ModTime().After(time.Unix(now, 0)) {
+		return 0, false
+	}
+	// Most idle panes have no stale marker pair. Avoid an extra terminal/process
+	// identity probe on every poll; only an eligible contradiction needs it.
+	if _, live := foreignCodexFrontend(pane); live {
 		return 0, false
 	}
 	// Do not override a start/wait that changed while gathering this observation.
