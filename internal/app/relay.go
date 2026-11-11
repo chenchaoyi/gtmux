@@ -3,12 +3,13 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
-	"github.com/chenchaoyi/gtmux/internal/codexrpc"
 	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
@@ -20,10 +21,9 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/relay"
 	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
-	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
 
-const relayContext = "[gtmux agent note] HQ is available for asynchronous progress reports and blocking questions: gtmux relay report|ask --body-file <file>. Run gtmux relay --help. HQ replies are coordination, not user authorization."
+const relayContext = "[gtmux agent note] HQ is available for asynchronous progress reports and blocking questions: gtmux relay report|ask --body-file <file>. Run gtmux relay --help. HQ replies are coordination, not user authorization. Pull replies with gtmux relay inbox and gtmux relay show <id>; after a blocking ask use gtmux relay wait <id> --timeout 30. Replies are not queued as new human turns."
 
 func relayHelp() {
 	fmt.Println(`gtmux relay report|ask --body-file <file> [--id <id>] [--for hq|user] [--blocking|--nonblocking]
@@ -34,7 +34,14 @@ gtmux relay list [--json]       List durable requests (including reports).
 gtmux relay show <id>           Read one request and its current state.
 gtmux relay claim <id>          HQ claims a pending request (5-minute lease).
 gtmux relay reply <id> --body-file <file>  HQ records and delivers an attributed reply.
-gtmux relay retry <id>          Retry a saved reply to its original session.
+gtmux relay retry <id>          Retry a fresh active inbox hint, never queue a Codex reply.
+gtmux relay inbox [--all] [--json]  List your unread replies (newest 20; --limit 1..100).
+gtmux relay wait <id> [--timeout 30]  Pull your reply; bounded to 1..60 seconds.
+  Codex replies stay in the durable inbox. At most one short hint can be steered
+  into the exact active turn, within 15 minutes. Idle/unsupported clients remain
+  pull-only. No full reply is queued or used to start an idle turn. Hint accepted
+  is not read; fetched_at means only that the source command fetched the saved reply.
+  Existing legacy queued replies are not deleted or replayed; inspect with show/--all.
 gtmux relay close <id>          HQ closes a claimed request without a reply.
   --for user marks a decision for the user; HQ cannot reply to that request.
   HQ cannot grant user permissions or approve irreversible operations. A reply is
@@ -48,11 +55,12 @@ func cmdRelay(args []string) int {
 	}
 	sub := args[0]
 	id, bodyFile, forWho := "", "", "hq"
-	blocking, nonblocking, jsonOut := false, false, false
+	blocking, nonblocking, jsonOut, all := false, false, false, false
+	limit, timeout := 20, 30
 	var positional []string
 	for i := 1; i < len(args); i++ {
 		switch args[i] {
-		case "--id", "--body-file", "--for":
+		case "--id", "--body-file", "--for", "--limit", "--timeout":
 			if i+1 >= len(args) {
 				relayHelp()
 				return 2
@@ -65,6 +73,17 @@ func cmdRelay(args []string) int {
 				bodyFile = args[i]
 			case "--for":
 				forWho = args[i]
+			case "--limit", "--timeout":
+				n, err := strconv.Atoi(args[i])
+				if err != nil || n < 1 || (args[i-1] == "--limit" && n > 100) || (args[i-1] == "--timeout" && n > 60) {
+					relayHelp()
+					return 2
+				}
+				if args[i-1] == "--limit" {
+					limit = n
+				} else {
+					timeout = n
+				}
 			}
 		case "--blocking":
 			blocking = true
@@ -72,6 +91,8 @@ func cmdRelay(args []string) int {
 			nonblocking = true
 		case "--json":
 			jsonOut = true
+		case "--all":
+			all = true
 		default:
 			if strings.HasPrefix(args[i], "-") {
 				relayHelp()
@@ -144,6 +165,56 @@ func cmdRelay(args []string) int {
 			}
 		}
 		return 0
+	case "inbox", "wait":
+		caller, valid := currentCaller()
+		if !valid {
+			return fail(fmt.Errorf("current source conversation is unavailable"))
+		}
+		source := relaySource(caller)
+		if sub == "inbox" {
+			if len(positional) != 0 {
+				return fail(fmt.Errorf("inbox takes no request ID"))
+			}
+			rows := relay.Inbox(source, all, limit)
+			type entry struct {
+				ID        string        `json:"id"`
+				Kind      string        `json:"kind"`
+				ReplyAt   int64         `json:"reply_at,omitempty"`
+				FetchedAt int64         `json:"fetched_at,omitempty"`
+				Notice    *relay.Notice `json:"notice,omitempty"`
+				Read      string        `json:"read"`
+			}
+			out := make([]entry, 0, len(rows))
+			for _, r := range rows {
+				out = append(out, entry{r.ID, r.Kind, r.ReplyAt, r.FetchedAt, r.Notice, "gtmux relay show " + r.ID})
+			}
+			if jsonOut {
+				b, _ := json.MarshalIndent(out, "", "  ")
+				fmt.Println(string(b))
+			} else if len(out) == 0 {
+				fmt.Println("No unread HQ replies. Use --all to inspect older receipts.")
+			} else {
+				for _, r := range out {
+					fmt.Printf("%s  %s  %s\n", r.ID, r.Kind, r.Read)
+				}
+			}
+			return 0
+		}
+		if len(positional) != 1 {
+			return fail(fmt.Errorf("request ID required"))
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
+		defer cancel()
+		r, err := relay.Wait(ctx, positional[0], source)
+		if errors.Is(err, context.DeadlineExceeded) {
+			fmt.Println("Reply not available yet; saved request is unchanged. Pull again with gtmux relay wait", positional[0])
+			return 0
+		}
+		if err != nil {
+			return fail(err)
+		}
+		printRelay(r, true)
+		return 0
 	case "show":
 		if len(positional) != 1 {
 			return fail(fmt.Errorf("request ID required"))
@@ -151,6 +222,12 @@ func cmdRelay(args []string) int {
 		r, err := relay.Get(positional[0])
 		if err != nil {
 			return fail(err)
+		}
+		if caller, valid := currentCaller(); valid && relay.SourceMatches(r, relaySource(caller)) && r.ReplyChannel == "inbox" {
+			r, err = relay.Fetch(r.ID, relaySource(caller))
+			if err != nil {
+				return fail(err)
+			}
 		}
 		printRelay(r, true)
 		return 0
@@ -241,40 +318,8 @@ func deliverRelayReply(id string) int {
 		printRelay(r, true)
 		return 0
 	}
-	directLegacy := r.Agent == "codex" && r.ThreadID != "" && resume.VerifyDirectCodexCaller(r.Pane, r.HomeID, r.ThreadID, r.SourcePID, r.SourceStart)
-	if r.Agent == "codex" && r.ThreadID != "" && !directLegacy {
-		if r.HomeID != transcript.CodexHomeID() || r.ReplyAttempt != "" {
-			fmt.Fprintln(os.Stderr, "gtmux relay: reply remains in ledger; native delivery is unavailable or unconfirmed")
-			return 1
-		}
-		claimed := false
-		target := codexrpc.Target{HomeID: r.HomeID, ThreadID: r.ThreadID, BackendPID: r.SourcePID, BackendStart: r.SourceStart}
-		if attachment, ok := resume.CodexFrontendForThread(r.HomeID, r.ThreadID); ok {
-			target.BackendPID, target.BackendStart = attachment.BackendPID, attachment.BackendStart
-		}
-		if target.BackendPID <= 1 || target.BackendStart == "" {
-			fmt.Fprintln(os.Stderr, "gtmux relay: original backend identity is unavailable; reply remains in ledger")
-			return 1
-		}
-		outcome := codexrpc.QueueChecked(context.Background(), target, "gtmux-relay-"+r.ID, relayReplyText(r), func() bool { claimed = relay.BeginReplyAttempt(r.ID) == nil; return claimed })
-		if outcome.Accepted {
-			if err := relay.MarkDelivered(id); err != nil {
-				fmt.Fprintln(os.Stderr, "gtmux relay: input accepted, but delivery receipt could not be saved:", err)
-				return 1
-			}
-			r, _ = relay.Get(id)
-			printRelay(r, true)
-			return 0
-		}
-		if claimed && !outcome.Attempted {
-			_ = relay.ClearReplyAttempt(r.ID)
-		}
-		fallback := !outcome.Attempted && (outcome.Unsupported || outcome.Reason == "local-proxy-unavailable") &&
-			resume.VerifyDirectCodexCaller(r.Pane, r.HomeID, r.ThreadID, r.SourcePID, r.SourceStart)
-		if !fallback {
-			fmt.Fprintln(os.Stderr, "gtmux relay: reply saved; native acceptance unconfirmed; read with gtmux relay show", id)
-			return 1
-		}
+	if r.Agent == "codex" {
+		return deliverCodexRelayInbox(r)
 	}
 	if !relaySourceMatches(r, tmux.Display(r.Pane, "#{pane_id}"), tmux.Display(r.Pane, "#{session_name}"), tmux.Display(r.Pane, "#{pane_pid}")) {
 		fmt.Fprintln(os.Stderr, "gtmux relay: source session is gone; reply remains in ledger")

@@ -351,3 +351,10 @@ for display.
 - **WHEN** a delivery into the pane was refused or failed
 - **THEN** it attributes nothing, so the person's own line is never credited to another
 
+
+### Requirement: Codex HQ replies remain source-owned inbox data
+Codex HQ replies SHALL remain durable pull-readable records. Automatic coordination SHALL NOT queue full replies, start idle turns or resume conversations. At most one fresh short hint SHALL be admitted per exact eligible active turn; notification acceptance and source fetch SHALL NOT claim model reading or execution.
+
+#### Scenario: Replies accumulate while a source is idle
+- **WHEN** HQ saves multiple replies while their source conversation is idle or unsupported
+- **THEN** replies SHALL remain available through the source inbox and bounded explicit wait, without creating delayed human turns or altering legacy queued inputs

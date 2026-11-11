@@ -757,3 +757,10 @@ The system SHALL preserve bounded selected inputs in ordinary transcript polls a
 - **WHEN** a recorded detail fits the existing 32 MiB source-record bound but is too large for a compact reader
 - **THEN** the visible content is explicitly paged and complete section copying remains available
 - **AND** oversized, incomplete or rewritten records fail explicitly rather than appearing complete
+
+### Requirement: Recent chat reads preserve full source history
+The pane transcript endpoint SHALL support an opt-in recent window of at most20 turns before its existing byte budget. The default API SHALL remain compatible, original source ordinals and history cursors SHALL remain intact, and cache eviction SHALL NOT truncate requested public content.
+
+#### Scenario: Large cached tail and explicit earlier page
+- **WHEN** a large session exceeds the parse retention budget and a reader requests its recent window
+- **THEN** a bounded whole-turn tail MAY be cached, a larger request beyond coverage SHALL still read its complete requested range, and an authorized earlier-history request SHALL resolve its cursor without first parsing a redundant recent window

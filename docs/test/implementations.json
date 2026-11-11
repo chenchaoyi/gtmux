@@ -989,5 +989,74 @@
     "selectors": [
       "TestMSD011DelayedBridgeAndSameIDRetryCannotBothSubmit"
     ]
+  },
+  "internal/transcript/codex_large_cache_test.go": {
+    "cases": [
+      "LCL-001"
+    ],
+    "selectors": [
+      "TestLCL001LargeCodexTailStaysCachedAndEarlierHistoryRemainsReadable",
+      "TestLCL001IndividuallyOversizedTurnIsCompleteAndUncached"
+    ]
+  },
+  "internal/codexrpc/coordination_input_test.go": {
+    "cases": [
+      "RBL-001"
+    ],
+    "selectors": [
+      "TestRBL001CoordinationOnlySteersExactActiveTurn",
+      "TestRBL001CoordinationGuardPreventsMutation"
+    ]
+  },
+  "internal/relay/inbox_test.go": {
+    "cases": [
+      "RBL-002"
+    ],
+    "selectors": [
+      "TestRBL002InboxCoalescesConcurrentNoticesAndPreservesReceipts",
+      "TestRBL002FreshnessLegacyAndBoundedSourceWait",
+      "TestRBL002InboxSortsReplyTimeAndRechecksStalenessAtClaim",
+      "TestRBL002SourceWaitCancelsWhileLedgerIsLocked"
+    ]
+  },
+  "internal/app/relay_inbox_test.go": {
+    "cases": [
+      "RBL-003"
+    ],
+    "selectors": [
+      "TestRBL003CodexReplyBodyNeverEntersQueuedOrLegacyInput",
+      "TestRBL003CompactNoticeHasVerifiedHQProvenanceAndHumanCopiesDoNot"
+    ]
+  },
+  "internal/server/recent_transcript_test.go": {
+    "cases": [
+      "LCL-002"
+    ],
+    "selectors": [
+      "TestLCL002RecentAndHistoryReadersAreOptInAndAuthorized"
+    ]
+  },
+  "internal/app/recent_transcript_test.go": {
+    "cases": [
+      "LCL-002"
+    ],
+    "selectors": [
+      "TestLCL002RecentPaneKeepsOrdinalsCursorAndFullDefault"
+    ]
+  },
+  "mobileapp/__tests__/chatRecentHistory.test.tsx": {
+    "cases": [
+      "LCL-003"
+    ],
+    "selectors": [
+      "LCL-003 %s requests recent data and exposes a working error/retry action",
+      "LCL-003 earlier source pages survive latest polling and a failed page keeps the content",
+      "LCL-003 target changes reject late history and noncooperative history reads stop showing loading after 15 seconds",
+      "LCL-003 actual client recent query is opt-in and record identity survives prepending",
+      "LCL-003 authorization loss retires the paged snapshot until a new source snapshot arrives",
+      "LCL-003 HQ predecessor stitch stays chronological and a source page mounts at most twenty more turns",
+      "LCL-003 expanded history stays visible while newer turns wait behind the live edge control",
+      "LCL-003 unmount cancels the deadline even when a history reader ignores AbortSignal"
+    ]
   }
 }

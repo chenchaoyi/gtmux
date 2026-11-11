@@ -1,6 +1,7 @@
 package relay
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -16,26 +17,30 @@ import (
 )
 
 type Request struct {
-	Agent        string `json:"agent,omitempty"`
-	HomeID       string `json:"home_id,omitempty"`
-	ThreadID     string `json:"thread_id,omitempty"`
-	ReplyAttempt string `json:"reply_attempt,omitempty"`
-	SourcePID    int    `json:"source_pid,omitempty"`
-	SourceStart  string `json:"source_start,omitempty"`
-	ID           string `json:"id"`
-	Kind         string `json:"kind"`
-	Pane         string `json:"pane"`
-	Session      string `json:"session"`
-	PanePID      string `json:"pane_pid"`
-	TaskID       string `json:"task_id,omitempty"`
-	Body         string `json:"body"`
-	For          string `json:"for"`
-	Blocking     bool   `json:"blocking"`
-	State        string `json:"state"`
-	CreatedAt    int64  `json:"created_at"`
-	ClaimedAt    int64  `json:"claimed_at,omitempty"`
-	Reply        string `json:"reply,omitempty"`
-	Delivered    bool   `json:"delivered,omitempty"`
+	Agent        string  `json:"agent,omitempty"`
+	HomeID       string  `json:"home_id,omitempty"`
+	ThreadID     string  `json:"thread_id,omitempty"`
+	ReplyAttempt string  `json:"reply_attempt,omitempty"`
+	SourcePID    int     `json:"source_pid,omitempty"`
+	SourceStart  string  `json:"source_start,omitempty"`
+	ID           string  `json:"id"`
+	Kind         string  `json:"kind"`
+	Pane         string  `json:"pane"`
+	Session      string  `json:"session"`
+	PanePID      string  `json:"pane_pid"`
+	TaskID       string  `json:"task_id,omitempty"`
+	Body         string  `json:"body"`
+	For          string  `json:"for"`
+	Blocking     bool    `json:"blocking"`
+	State        string  `json:"state"`
+	CreatedAt    int64   `json:"created_at"`
+	ClaimedAt    int64   `json:"claimed_at,omitempty"`
+	Reply        string  `json:"reply,omitempty"`
+	ReplyAt      int64   `json:"reply_at,omitempty"`
+	ReplyChannel string  `json:"reply_channel,omitempty"`
+	FetchedAt    int64   `json:"fetched_at,omitempty"`
+	Notice       *Notice `json:"notice,omitempty"`
+	Delivered    bool    `json:"delivered,omitempty"`
 }
 
 var ErrConflict = errors.New("request ID already belongs to different content")
@@ -62,7 +67,13 @@ func NewID() string {
 	return hex.EncodeToString(b[:])
 }
 func path(id string) string { return filepath.Join(dir(), id+".json") }
+
+var tryFlock = syscall.Flock
+
 func transaction(fn func() error) error {
+	return transactionContext(context.Background(), fn)
+}
+func transactionContext(ctx context.Context, fn func() error) error {
 	if err := state.MkdirAll(dir(), 0700); err != nil {
 		return err
 	}
@@ -71,10 +82,33 @@ func transaction(fn func() error) error {
 		return err
 	}
 	defer f.Close()
-	if err = syscall.Flock(int(f.Fd()), syscall.LOCK_EX); err != nil {
-		return err
+	if ctx.Done() == nil {
+		if err = syscall.Flock(int(f.Fd()), syscall.LOCK_EX); err != nil {
+			return err
+		}
+	} else {
+		for {
+			if err = ctx.Err(); err != nil {
+				return err
+			}
+			err = tryFlock(int(f.Fd()), syscall.LOCK_EX|syscall.LOCK_NB)
+			if err == nil {
+				break
+			}
+			if !errors.Is(err, syscall.EWOULDBLOCK) && !errors.Is(err, syscall.EAGAIN) {
+				return err
+			}
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(20 * time.Millisecond):
+			}
+		}
 	}
 	defer syscall.Flock(int(f.Fd()), syscall.LOCK_UN)
+	if err = ctx.Err(); err != nil {
+		return err
+	}
 	return fn()
 }
 func read(id string) (Request, error) {
@@ -249,6 +283,10 @@ func Resolve(id, reply string) (Request, error) {
 		} else {
 			r.State = "replied"
 			r.Reply = reply
+			r.ReplyAt = time.Now().Unix()
+			if r.Agent == "codex" {
+				r.ReplyChannel = "inbox"
+			}
 		}
 		if e = write(r); e == nil {
 			out = r

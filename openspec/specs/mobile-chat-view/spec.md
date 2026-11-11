@@ -382,3 +382,10 @@ Shared App Markdown SHALL preserve link activation inside supported emphasis and
 
 - **WHEN** a recorded wrapper includes a static command and a dynamic command expression
 - **THEN** the static command can be inspected as input while the dynamic expression remains only in Full call
+
+### Requirement: Chat loads recent turns and pages earlier content
+Chat SHALL request a recent window, retain fetched source pages across latest refreshes, preserve source-session order and reader position, and mount at most20 additional turns per expansion. Temporary failures SHALL preserve visible content and offer retry; authorization loss SHALL retire the affected snapshot.
+
+#### Scenario: Earlier history and a later refresh
+- **WHEN** the reader loads an earlier page and a latest-window refresh arrives
+- **THEN** the earlier records SHALL remain chronological with updated matching source IDs, and a late response for another conversation SHALL NOT enter the current view

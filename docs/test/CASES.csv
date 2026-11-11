@@ -525,6 +525,9 @@ LEG-0cc13e334eb1,L1,Go core / CLI / server,internal/app/reap_test.go,253,Test,Te
 LEG-8b3719fc6024,L1,Go core / CLI / server,internal/app/reap_test.go,269,Test,TestReap_FailedStepIsReportedNotSwallowed,False,legacy-not-retrospectively-reviewed
 LEG-bd49be230ba3,L1,Go core / CLI / server,internal/app/reap_test.go,285,Test,TestReap_BarePane_PaneOnly,False,legacy-not-retrospectively-reviewed
 LEG-549c5db99316,L1,Go core / CLI / server,internal/app/reap_test.go,297,Test,TestReap_BarePane_MissingIdentityCannotClaimSuccess,False,legacy-not-retrospectively-reviewed
+MAP-6616de8ce6d1,L2,reviewed implementation,internal/app/recent_transcript_test.go,14,reviewed-selector,TestLCL002RecentPaneKeepsOrdinalsCursorAndFullDefault,False,LCL-002
+MAP-f9c9dd791852,L2,reviewed implementation,internal/app/relay_inbox_test.go,12,reviewed-selector,TestRBL003CodexReplyBodyNeverEntersQueuedOrLegacyInput,False,RBL-003
+MAP-a70b04134255,L2,reviewed implementation,internal/app/relay_inbox_test.go,63,reviewed-selector,TestRBL003CompactNoticeHasVerifiedHQProvenanceAndHumanCopiesDoNot,False,RBL-003
 MAP-93c5d85ec366,L2,reviewed implementation,internal/app/relay_sender_contract_test.go,52,reviewed-selector,TestHRS003ReceiptAwareSharedTranscript,False,HRS-003
 MAP-d400cc0846af,L2,reviewed implementation,internal/app/relay_sender_contract_test.go,89,reviewed-selector,TestHRS003EarlierPagesKeepFirstAttribution,False,HRS-003
 MAP-0905ae049942,L1,reviewed implementation,internal/app/relay_sender_test.go,15,reviewed-selector,TestHRS002TrustedReceiptAndFirstSourceOnly,False,HRS-002
@@ -869,6 +872,8 @@ LEG-60862a5464ac,L1,Go core / CLI / server,internal/codexbridge/observe_test.go,
 LEG-cc26f78d8d87,L1,Go core / CLI / server,internal/codexbridge/observe_test.go,93,Test,TestObserverRequiresMatchingServerHome,False,legacy-not-retrospectively-reviewed
 LEG-d876071a5552,L1,Go core / CLI / server,internal/codexbridge/observe_test.go,104,Test,TestObserverResumesLargeHistoryWithoutRetainingCatalogs,False,legacy-not-retrospectively-reviewed
 LEG-878e735aba01,L1,Go core / CLI / server,internal/codexbridge/observe_test.go,114,Test,TestObserverKeepsSuccessfulRootWorkspace,False,legacy-not-retrospectively-reviewed
+MAP-24eddeaaed12,L2,reviewed implementation,internal/codexrpc/coordination_input_test.go,10,reviewed-selector,TestRBL001CoordinationOnlySteersExactActiveTurn,False,RBL-001
+MAP-1ce78495328b,L2,reviewed implementation,internal/codexrpc/coordination_input_test.go,70,reviewed-selector,TestRBL001CoordinationGuardPreventsMutation,False,RBL-001
 MAP-d24568194d08,L2,reviewed implementation,internal/codexrpc/direct_user_input_test.go,10,reviewed-selector,TestMSD001ExplicitUserInputSelectsExactActiveOrLoadedIdleTurn,False,MSD-001
 MAP-b2659a0a9502,L2,reviewed implementation,internal/codexrpc/direct_user_input_test.go,49,reviewed-selector,TestMSD001LegacyQueueRemainsExplicitAndOnlyUnknownMethodCanFallback,False,MSD-001
 MAP-09d632a0de8e,L2,reviewed implementation,internal/codexrpc/direct_user_input_test.go,76,reviewed-selector,TestMSD001UserInputRefusesUnsafeMetadataAndNeverReplaysAmbiguousWrite,False,MSD-001
@@ -2378,6 +2383,10 @@ LEG-e9af77b1611a,L1,Go core / CLI / server,internal/radar/turninprogress_test.go
 LEG-29923298a331,L1,Go core / CLI / server,internal/radar/turninprogress_test.go,117,Test,TestErroredTranscriptEndsTheTurn,False,legacy-not-retrospectively-reviewed
 LEG-a0bf615b6e23,L1,Go core / CLI / server,internal/radar/turninprogress_test.go,148,Test,TestRecoveredTranscriptKeepsWorking,False,legacy-not-retrospectively-reviewed
 LEG-0916ceda3959,L1,Go core / CLI / server,internal/radar/usagesources_test.go,9,Test,TestUsageSourcesFollowInstallationAndEvidenceWithoutInventingPlans,False,legacy-not-retrospectively-reviewed
+MAP-081f78baa59f,L2,reviewed implementation,internal/relay/inbox_test.go,30,reviewed-selector,TestRBL002InboxCoalescesConcurrentNoticesAndPreservesReceipts,False,RBL-002
+MAP-6010cd28478a,L2,reviewed implementation,internal/relay/inbox_test.go,95,reviewed-selector,TestRBL002FreshnessLegacyAndBoundedSourceWait,False,RBL-002
+MAP-1e34bec3e596,L2,reviewed implementation,internal/relay/inbox_test.go,145,reviewed-selector,TestRBL002InboxSortsReplyTimeAndRechecksStalenessAtClaim,False,RBL-002
+MAP-9a0a983fad52,L2,reviewed implementation,internal/relay/inbox_test.go,183,reviewed-selector,TestRBL002SourceWaitCancelsWhileLedgerIsLocked,False,RBL-002
 LEG-60f4094c7da5,L1,Go core / CLI / server,internal/relay/relay_test.go,10,Test,TestOfflineRequestSurvivesAndRetryDoesNotDuplicate,False,legacy-not-retrospectively-reviewed
 LEG-3b7ec691b3e1,L1,Go core / CLI / server,internal/relay/relay_test.go,30,Test,TestClaimRotationAndReplyReceipt,False,legacy-not-retrospectively-reviewed
 LEG-61c0e338ed69,L1,Go core / CLI / server,internal/relay/relay_test.go,69,Test,TestReportCanCloseWithoutReply,False,legacy-not-retrospectively-reviewed
@@ -2670,6 +2679,7 @@ LEG-4973082ccb1e,L2,Go core / CLI / server,internal/server/push_unattributed_tes
 LEG-1b54deea326c,L2,Go core / CLI / server,internal/server/push_unattributed_test.go,122,Test,TestPush_AnAttributionSurvivesARestart,False,legacy-not-retrospectively-reviewed
 LEG-3db12448f7a6,L2,Go core / CLI / server,internal/server/push_unattributed_test.go,146,Test,TestPush_TheTokenListSaysWhatIsPaused,False,legacy-not-retrospectively-reviewed
 LEG-11827f218259,L2,Go core / CLI / server,internal/server/pushtestscope_test.go,18,Test,TestAGuestCannotRingTheOwnersPhone,False,legacy-not-retrospectively-reviewed
+MAP-0c62caec6a0a,L2,reviewed implementation,internal/server/recent_transcript_test.go,10,reviewed-selector,TestLCL002RecentAndHistoryReadersAreOptInAndAuthorized,False,LCL-002
 LEG-4d62a9043dc2,L2,Go core / CLI / server,internal/server/repeat_pairing_test.go,16,Test,TestRepeatPairingHTTP,False,legacy-not-retrospectively-reviewed
 LEG-26bb95b84a0e,L2,Go core / CLI / server,internal/server/repeat_pairing_test.go,104,Test,TestRepeatPairingExpiryAndRestart,False,legacy-not-retrospectively-reviewed
 LEG-2308573a9eca,L2,Go core / CLI / server,internal/server/rostersave_test.go,17,Test,TestTheRosterOnDiskNeverGoesBackwards,False,legacy-not-retrospectively-reviewed
@@ -3057,6 +3067,8 @@ LEG-487ef17dabe5,L1,Go core / CLI / server,internal/transcript/codex_client_test
 LEG-07ede38e045f,L1,Go core / CLI / server,internal/transcript/codex_client_test.go,38,Test,TestCodexClientRejectsMismatchedSession,False,legacy-not-retrospectively-reviewed
 LEG-b4a5217277b9,L1,Go core / CLI / server,internal/transcript/codex_custom_test.go,19,Test,TestCodexCustomCallsAndLegacyCallsShareOrderedPublicHistory,False,legacy-not-retrospectively-reviewed
 LEG-9d0c078e3523,L1,Go core / CLI / server,internal/transcript/codex_custom_test.go,67,Test,TestCodexCustomCallsSurviveIncrementalReadAndBoundUTF8,False,legacy-not-retrospectively-reviewed
+MAP-79929223fc37,L2,reviewed implementation,internal/transcript/codex_large_cache_test.go,13,reviewed-selector,TestLCL001LargeCodexTailStaysCachedAndEarlierHistoryRemainsReadable,False,LCL-001
+MAP-9661b1f33d22,L2,reviewed implementation,internal/transcript/codex_large_cache_test.go,112,reviewed-selector,TestLCL001IndividuallyOversizedTurnIsCompleteAndUncached,False,LCL-001
 LEG-ec957babc468,L1,Go core / CLI / server,internal/transcript/codex_native_test.go,28,Test,TestCodexNativeActionsAppearBesideOriginalCodeWithoutResults,False,legacy-not-retrospectively-reviewed
 LEG-68a4ca75622d,L1,Go core / CLI / server,internal/transcript/codex_native_test.go,60,Test,TestCodexNativeDeduplicatesOnlyExactIDsAndKeepsLegacyInput,False,legacy-not-retrospectively-reviewed
 LEG-2d999c1f2d16,L1,Go core / CLI / server,internal/transcript/codex_native_test.go,77,Test,TestCodexNativeFileChangesKeepFullInputAndIncrementalIdentity,False,legacy-not-retrospectively-reviewed
@@ -3822,6 +3834,14 @@ LEG-5fde771eaebb,L1,macOS / Widgets Swift,macapp/Tests/MacUsageWidgetSupportTest
 LEG-450dbd890cc5,L1,macOS / Widgets Swift,macapp/Tests/MacUsageWidgetSupportTests/MacUsageWidgetSupportTests.swift,73,XCTest,testUsageShortcutCannotCarryAnAlternateActionOrCredentials,False,legacy-not-retrospectively-reviewed
 LEG-fbddf3db8aa3,L1,macOS / Widgets Swift,macapp/Tests/MacUsageWidgetSupportTests/MacUsageWidgetSupportTests.swift,80,XCTest,testNoPollingWithoutWidgetNoOverlapAndBoundedReloads,False,legacy-not-retrospectively-reviewed
 LEG-a93ae72a5022,L1,RN / mobile harness,mobileapp/__tests__/App.test.tsx,9,test,renders correctly,False,legacy-not-retrospectively-reviewed
+MAP-77beb711ef2a,L2,reviewed implementation,mobileapp/__tests__/chatRecentHistory.test.tsx,35,reviewed-selector,LCL-003 %s requests recent data and exposes a working error/retry action,False,LCL-003
+MAP-c954781c8bf5,L2,reviewed implementation,mobileapp/__tests__/chatRecentHistory.test.tsx,48,reviewed-selector,LCL-003 earlier source pages survive latest polling and a failed page keeps the content,False,LCL-003
+MAP-b0c34596f9cc,L2,reviewed implementation,mobileapp/__tests__/chatRecentHistory.test.tsx,63,reviewed-selector,LCL-003 target changes reject late history and noncooperative history reads stop showing loading after 15 seconds,False,LCL-003
+MAP-cd4f6ec38c32,L2,reviewed implementation,mobileapp/__tests__/chatRecentHistory.test.tsx,80,reviewed-selector,LCL-003 actual client recent query is opt-in and record identity survives prepending,False,LCL-003
+MAP-1833b21d2dee,L2,reviewed implementation,mobileapp/__tests__/chatRecentHistory.test.tsx,96,reviewed-selector,LCL-003 authorization loss retires the paged snapshot until a new source snapshot arrives,False,LCL-003
+MAP-01f7dd155465,L2,reviewed implementation,mobileapp/__tests__/chatRecentHistory.test.tsx,110,reviewed-selector,LCL-003 HQ predecessor stitch stays chronological and a source page mounts at most twenty more turns,False,LCL-003
+MAP-493affc05225,L2,reviewed implementation,mobileapp/__tests__/chatRecentHistory.test.tsx,122,reviewed-selector,LCL-003 expanded history stays visible while newer turns wait behind the live edge control,False,LCL-003
+MAP-3d83fcb9be78,L2,reviewed implementation,mobileapp/__tests__/chatRecentHistory.test.tsx,136,reviewed-selector,LCL-003 unmount cancels the deadline even when a history reader ignores AbortSignal,False,LCL-003
 LEG-43b35034f78d,L1,Android native,mobileapp/android/app/src/test/java/com/gtmux/app/DocumentPolicyTest.kt,7,JUnit,imageBoundsAreSharedByDocumentAndClipboardReaders,False,legacy-not-retrospectively-reviewed
 LEG-818e29919768,L1,Android native,mobileapp/android/app/src/test/java/com/gtmux/app/DocumentPolicyTest.kt,13,JUnit,resolverKeepsOriginAndRejectsCredentialOrQueryConfusion,False,legacy-not-retrospectively-reviewed
 LEG-8c6ac38aa254,L1,Android native,mobileapp/android/app/src/test/java/com/gtmux/app/DocumentPolicyTest.kt,19,JUnit,onlyParentLocalImagesUseAuthenticatedTransport,False,legacy-not-retrospectively-reviewed

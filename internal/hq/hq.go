@@ -188,12 +188,13 @@ import (
 // v57 — explicit DSH public-message review and coverage boundaries.
 // v59 — explicit goal closure, concise remaining work and human-action boundaries.
 // v60 — reserve gtmux homes for managed state; project work uses project/task storage.
-const hqPlaybookVersion = 61
+const hqPlaybookVersion = 62
 
 // playbookFingerprints files the charter text under the version that carries it, so an
 // edit that forgets to bump the number fails instead of shipping to nobody (see
 // playbook_version_test.go for why the floors above cannot catch that).
 var playbookFingerprints = map[int]string{
+	62: "e70d57ca0a35a34e",
 	61: "c40ff19d752452f0",
 	60: "2ac9abbfc3b8fab0",
 	59: "9322033b5d9a0c3e",
@@ -1194,7 +1195,13 @@ Claim a pending item with ` + "`gtmux relay claim <id>`" + `, then use
 ` + "`gtmux relay reply <id> --body-file <file>`" + ` or ` + "`gtmux relay close <id>`" + `.
 Reports go to the ledger quietly; blocking questions wake you as ` + "`agent-relay`" + ` by ID. A repeated
 wake is the same request, not another assignment. Replies are marked as HQ
-coordination. Never grant a user's permission, decide a user-reserved plan, or
+coordination. Codex full replies stay in the durable inbox: teach sources to pull with
+` + "`gtmux relay inbox`" + ` / ` + "`gtmux relay show <id>`" + `, or use ` + "`gtmux relay wait <id> --timeout 30`" + ` after a blocking ask.
+At most one fresh short hint can reach an eligible active turn; idle/unsupported clients
+stay pull-only. Never work around that with queued full messages or another input channel.
+A hint accepted is not read; fetched_at is a source command fetch, not execution. Legacy
+queue records remain unchanged. Do not repeatedly forward historical review/status text.
+Never grant a user's permission, decide a user-reserved plan, or
 authorize an irreversible operation for the user; relay those decisions to them.
 
 

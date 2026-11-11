@@ -325,7 +325,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   useEffect(() => {setChatRecord({identity: chatIdentity, turns: [], loaded: false, earlierAvailable: false}); setEarlier(0); setEarlierLoading(false); setTraceOpen(false); setDiffOpen(false);}, [chatIdentity]);
   const traceRetry = useRef<() => void>(() => {});
   useEffect(() => {const task = createReadTask(
-    signal => client.transcript(hq.pane_id, etagRef.current, earlier, signal),
+    signal => client.transcript(hq.pane_id, etagRef.current, earlier, signal, true),
     ({turns: ts, reset, etag, unchanged, earlierAvailable: more}) => {
       if (etagIdentity.current !== chatIdentity) return;
       etagRef.current = etag;
@@ -623,6 +623,8 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
               actsSince={earlier > 0 ? 0 : sessionReset?.at ?? 0}
               onOpenAct={openAct}
               loading={!loaded}
+              failed={chatRecord.identity === chatIdentity && chatRecord.failed}
+              onRetry={() => traceRetry.current()}
               pendingPrompt={pending}
               pendingDelivered={pendingDelivered}
               pendingDelivery={pendingDelivery}

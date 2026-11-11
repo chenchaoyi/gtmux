@@ -59057,6 +59057,235 @@
         }
       ],
       "sha256": "4b459fd1af03c2f51220f8e5e8213bfd2e212380c7db2e62d4a5ab0a973cf35b"
+    },
+    "internal/app/recent_transcript_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-6616de8ce6d1",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestLCL002RecentPaneKeepsOrdinalsCursorAndFullDefault",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-002"
+        }
+      ],
+      "sha256": "3d4d92a01a5a5a655ccfc0a387fb8b772499dff5ebb3ca9dfbebd75bff7b7c17"
+    },
+    "internal/app/relay_inbox_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f9c9dd791852",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestRBL003CodexReplyBodyNeverEntersQueuedOrLegacyInput",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RBL-003"
+        },
+        {
+          "id": "MAP-a70b04134255",
+          "line": 63,
+          "kind": "reviewed-selector",
+          "name": "TestRBL003CompactNoticeHasVerifiedHQProvenanceAndHumanCopiesDoNot",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RBL-003"
+        }
+      ],
+      "sha256": "bbc31b6768bdc34952bda0d8b6fb5039b09336228b8c5a9f2767cf24ba4c3e25"
+    },
+    "internal/codexrpc/coordination_input_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-24eddeaaed12",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestRBL001CoordinationOnlySteersExactActiveTurn",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RBL-001"
+        },
+        {
+          "id": "MAP-1ce78495328b",
+          "line": 70,
+          "kind": "reviewed-selector",
+          "name": "TestRBL001CoordinationGuardPreventsMutation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RBL-001"
+        }
+      ],
+      "sha256": "383306ad66b7f17538a615be4773bf1d3ab51b1d4094843f561791313043c016"
+    },
+    "internal/relay/inbox_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-081f78baa59f",
+          "line": 30,
+          "kind": "reviewed-selector",
+          "name": "TestRBL002InboxCoalescesConcurrentNoticesAndPreservesReceipts",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RBL-002"
+        },
+        {
+          "id": "MAP-6010cd28478a",
+          "line": 95,
+          "kind": "reviewed-selector",
+          "name": "TestRBL002FreshnessLegacyAndBoundedSourceWait",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RBL-002"
+        },
+        {
+          "id": "MAP-1e34bec3e596",
+          "line": 145,
+          "kind": "reviewed-selector",
+          "name": "TestRBL002InboxSortsReplyTimeAndRechecksStalenessAtClaim",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RBL-002"
+        },
+        {
+          "id": "MAP-9a0a983fad52",
+          "line": 183,
+          "kind": "reviewed-selector",
+          "name": "TestRBL002SourceWaitCancelsWhileLedgerIsLocked",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RBL-002"
+        }
+      ],
+      "sha256": "b6a09fb9fbbea285544f0180f2751550b7469522705b29a54f2c8bcf42b22efa"
+    },
+    "internal/server/recent_transcript_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-0c62caec6a0a",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestLCL002RecentAndHistoryReadersAreOptInAndAuthorized",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-002"
+        }
+      ],
+      "sha256": "fe6932b345f5ea2d5463340f42cf30af08d611b775cd7b1eeb075cbe39e86178"
+    },
+    "internal/transcript/codex_large_cache_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-79929223fc37",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "TestLCL001LargeCodexTailStaysCachedAndEarlierHistoryRemainsReadable",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-001"
+        },
+        {
+          "id": "MAP-9661b1f33d22",
+          "line": 112,
+          "kind": "reviewed-selector",
+          "name": "TestLCL001IndividuallyOversizedTurnIsCompleteAndUncached",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-001"
+        }
+      ],
+      "sha256": "8d512a80188850b7cd551286f6794b759da838646338598e01554d6af190b6cd"
+    },
+    "mobileapp/__tests__/chatRecentHistory.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-77beb711ef2a",
+          "line": 35,
+          "kind": "reviewed-selector",
+          "name": "LCL-003 %s requests recent data and exposes a working error/retry action",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-003"
+        },
+        {
+          "id": "MAP-c954781c8bf5",
+          "line": 48,
+          "kind": "reviewed-selector",
+          "name": "LCL-003 earlier source pages survive latest polling and a failed page keeps the content",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-003"
+        },
+        {
+          "id": "MAP-b0c34596f9cc",
+          "line": 63,
+          "kind": "reviewed-selector",
+          "name": "LCL-003 target changes reject late history and noncooperative history reads stop showing loading after 15 seconds",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-003"
+        },
+        {
+          "id": "MAP-cd4f6ec38c32",
+          "line": 80,
+          "kind": "reviewed-selector",
+          "name": "LCL-003 actual client recent query is opt-in and record identity survives prepending",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-003"
+        },
+        {
+          "id": "MAP-1833b21d2dee",
+          "line": 96,
+          "kind": "reviewed-selector",
+          "name": "LCL-003 authorization loss retires the paged snapshot until a new source snapshot arrives",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-003"
+        },
+        {
+          "id": "MAP-01f7dd155465",
+          "line": 110,
+          "kind": "reviewed-selector",
+          "name": "LCL-003 HQ predecessor stitch stays chronological and a source page mounts at most twenty more turns",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-003"
+        },
+        {
+          "id": "MAP-493affc05225",
+          "line": 122,
+          "kind": "reviewed-selector",
+          "name": "LCL-003 expanded history stays visible while newer turns wait behind the live edge control",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-003"
+        },
+        {
+          "id": "MAP-3d83fcb9be78",
+          "line": 136,
+          "kind": "reviewed-selector",
+          "name": "LCL-003 unmount cancels the deadline even when a history reader ignores AbortSignal",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LCL-003"
+        }
+      ],
+      "sha256": "477ef0948e513dfcdeb1559427f8d8324bf10ba3713c5b0532e48f6fb9d9368f"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2"
