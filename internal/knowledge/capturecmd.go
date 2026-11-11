@@ -369,13 +369,13 @@ func captureList(asJSON bool, header func(now int64) string) int {
 
 func captureUsage() int {
 	i18n.Say("usage: gtmux capture \"<one-line lesson> @<topic>\"   |   gtmux capture --list [--json]",
-		"用法：gtmux capture \"<一句话教训> @<topic>\"   |   gtmux capture --list [--json]")
+		"用法：gtmux capture \"<一句话经验> @<topic>\"   |   gtmux capture --list [--json]")
 	i18n.Say("  topic ∈ "+strings.Join(BuiltinTopics, " | ")+", plus any topic HQ declared (`gtmux knowledge topic`)",
-		"  topic ∈ "+strings.Join(BuiltinTopics, " | ")+"，以及 HQ 用 `gtmux knowledge topic` 声明的主题")
+		"  topic ∈ "+strings.Join(BuiltinTopics, " | ")+"；也支持 HQ 用 `gtmux knowledge topic` 登记的主题")
 	i18n.Say("  Record a durable, cross-cutting fact as a candidate: cheap, in the moment.",
-		"  把一条持久、横向的事实作为候选记下来：便宜，当场。")
+		"  提交可跨任务复用的经验或事实，加入待整理列表。")
 	i18n.Say("  Any worker can capture; HQ's distill pass is the quality gate that files it.",
-		"  任何 worker 都能记；HQ 的蒸馏回合是把它归档入库的质量闸。")
+		"  任何执行者都可提交，由 HQ 评审后写入知识库。")
 	return 0
 }
 

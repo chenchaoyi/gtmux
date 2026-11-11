@@ -955,35 +955,36 @@ func knowledgeUsage() int {
   retire    <id> --why "<原因>"
   dismiss   --capture <键>[,<键>…] --why "<原因>"
   receipts  [--capture <键>] [--json]                       # 已提交的处理结果与来源
-  topic     <名称> --desc "<这里放什么>"               # 声明你自己的主题
-            add/supersede 还接受 --kind <facts|howto|pitfalls|judgment|decisions>
-            以及另一种语言的那一半：--lang <zh|en> --alt-lang <en|zh> --alt-title … [--alt-body-file -]
+  topic     <名称> --desc "<主题说明>"               # 登记自定义主题
+            add 和 supersede 支持 --kind <facts|howto|pitfalls|judgment|decisions>
+            另一语言版本使用：--lang <zh|en> --alt-lang <en|zh> --alt-title … [--alt-body-file -]
             [--tags a,b] [--provenance <correction|recurrence|mined|capture|self>] [--hypothesis]
-            [--sensitive --confirmed "<司令的原话>"]   # 司令自己的敏感信息：只留本机，问过才记
-  kind      <id> <种类>                               # 确认或改正一条的种类
-  sensitive <id> [--off] --confirmed "<原话>"         # 把一条标成（或取消）司令的敏感信息
-  alt       <id> --lang <zh|en> --title … [--body-file -]  # 写入或替换另一种语言的那一半
-  hit       <id> [--n N] [--why "<在哪>"]             # 这条教训又被踩到了
-  confirm   <id>                                      # 猜想被证实，转正
-  promote   <id> --why "<理由>" --for <hq|machine|repo:<路径>|everyone>   # 这条给谁看
-  land      <id> [--ref "<落在哪>"] [--force]   # 不带 --ref 就由 gtmux 写进去（LOCAL.md / 各 agent 的块 / 仓库文件）
-  withdraw  <id> --why "<原因>"                 # 条目没错，只是不值得搬
-  sync      [--force] [--repo <路径>] [--json]  # 刷新每个 agent 的知识块（或某个仓库的）
-  carriers  [--json]                            # 各 agent 的指令文件与是否同步
-  lint      [--json]                            # 体检：孤儿、断链/过时链接、疑似重复、超期、待确认的种类
-  style     [--json]                            # 条目该怎么写：每条规则配一组改前改后
-  search    "<要找什么>" [--topic 主题] [--kind 种类] [--json]  # 用一句话问知识库
-  neighbours <id> | --capture <键> | --text "…"    # 最相近的已有条目（先按种类，再看词重合）
-  promotions [--json]                                 # 待落地队列
-  mine      [--dry-run] [--since <N>d|all] [--status] # 从会话日志采矿进待蒸馏队列
+            [--sensitive --confirmed "<用户原话>"]   # 用户的个人敏感信息仅保存在本机，须事先确认
+  kind      <id> <种类>                               # 确认或修改条目分类
+  sensitive <id> [--off] --confirmed "<原话>"         # 标记或取消个人敏感信息标记
+  alt       <id> --lang <zh|en> --title … [--body-file -]  # 新增或替换另一语言版本
+  hit       <id> [--n N] [--why "<场景>"]             # 记录再次遇到的同类问题
+  confirm   <id>                                      # 确认条目中的假设
+  promote   <id> --why "<理由>" --for <hq|machine|repo:<路径>|everyone>   # 设置条目的分发范围
+  land      <id> [--ref "<分发位置>"] [--force]   # 记录分发结果；未指定 --ref 时直接写入对应引导文件
+  withdraw  <id> --why "<原因>"                 # 撤回分发，保留知识条目
+  sync      [--force] [--repo <路径>] [--json]  # 同步各助手或指定仓库的知识引导
+  carriers  [--json]                            # 查看各助手的引导文件及同步状态
+  lint      [--json]                            # 检查条目关联、链接、重复、过期及待确认分类
+  style     [--json]                            # 查看写作规范和修改示例
+  search    "<要找什么>" [--topic 主题] [--kind 种类] [--json]  # 检索知识条目
+  neighbours <id> | --capture <键> | --text "…"    # 查找相似条目（按分类和关键词匹配）
+  promotions [--json]                                 # 查看待分发条目
+  mine      [--dry-run] [--since <N>d|all] [--status] # 从会话记录提取待整理的经验候选
   list      [--topic <主题>] [--kind <种类>] [--lang zh|en] [--json]     show <id> [--lang zh|en] [--json]     render [--check]
-  知识库以追加式台账为准，主题 .md 由它生成；条目携带来源证据（seq/pane/task/capture），
-  每次变更都写入事件流。守则级教训经 promote 生成 knowledge/promotions/ 下的简报,
-  落地后用 land 闭环。变更只能在 HQ 目录执行；worker 用 `+"`gtmux capture`"+`。
+  知识库以只追加的台账为准，主题 .md 文件由台账生成。条目保留来源
+  （seq/pane/task/capture），变更操作记入事件流。
+  需要分发的条目先用 promote 设置范围，再用 land 写入或登记分发结果。
+  分发简报保存在 knowledge/promotions/。写入操作仅可在 HQ 目录执行；
+  其他执行者可用 `+"`gtmux capture`"+` 提交经验。
 
-  本台账是「规矩能存放的三处」之一：gtmux 出厂章程（AGENTS.md，靠升版本号下发到每台
-  机器）、你自己的 LOCAL.md（永不覆盖，每轮都在上下文里），以及本台账，它是这台机器的，
-  派活时才浮出来，不常驻。放错一层，需要它的人就读不到。
+  规则按用途分为三层：AGENTS.md 随 gtmux 版本发布到各机器；LOCAL.md
+  保存用户本机规则，供每轮加载，不自动覆盖；本机知识库按任务需要提供。
   详见 docs/design/knowledge-layers.zh.md。`)
 	return 0
 }
