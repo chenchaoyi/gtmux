@@ -1,0 +1,35 @@
+{
+  "id": "chat-retry-auto-refresh-20261113",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; self-review, not independent approval",
+    "date": "2026-11-13",
+    "decision": "Separate explicit Retry from automatic Codex prompt refresh after independent R2/P2 review",
+    "notes": "Full6c5c read. ExactSfa021222 explicitRetry closure remains; same loadTurnsRef is used by unmatchedCut4s automatic timer. Preserve task.run automatic in-flight coalescing/ETag/15s deadline; only visible Chat/Trace Retry invalidates and clears validator. Actual mounted Detail terminal with real GtmuxClient.transcript over controlled slow fetch6s must succeed; no extracted simulated timer, shortened budgets or mocked readTask/Detail. Preserve all existing27 paging/history+6 recovery and originalDetailPinned assertions. New design before test implementation. Refresh notes source fingerprint only after final production source stable; same bilingual177 notes/permissions/channels unchanged."
+  },
+  "cases": [
+    {
+      "id": "CPG-008",
+      "layer": "L2",
+      "description": "Slow initial transcript completes while the actual Codex cut-row timer is active",
+      "setup": "Actual DetailView terminal, synthetic Codex cut row accepted by production matcher, real GtmuxClient parser and fetch resolving after6s, no known prompt initially; normal15s read deadline.",
+      "action": "Advance fake time in500ms increments with actual React/effects and Promise settlement for6s, then20s after matching prompt applies.",
+      "expected": "Exactly one transcript request, original signal not aborted before completion, full prompt bar appears at6s; after match automatic timer stops. OldS should fail signal/count/render expectations because the4s timer retires normal slow read.",
+      "planned_files": [
+        "mobileapp/__tests__/chatAutoRefresh.test.tsx"
+      ]
+    },
+    {
+      "id": "CPG-009",
+      "layer": "L2",
+      "description": "Quiet automatic retries retain ETag and do not replace an in-flight conditional read",
+      "setup": "Actual DetailView terminal with persistent unmatched cut row; initial200 empty transcript/ETag then6s304 conditional request.",
+      "action": "Advance through second read crossing one automatic4s interval, inspect request headers/signal/count, then next normal refresh.",
+      "expected": "At10s only two requests, second signal remains active through normal completion, If-None-Match retained on second and subsequent reads; no repeated unconditional fetch or starvation. Explicit Retry recovery tests remain unchanged and passing.",
+      "planned_files": [
+        "mobileapp/__tests__/chatAutoRefresh.test.tsx"
+      ]
+    }
+  ],
+  "seal": "b9d83a377c5c62fa0798b81557081c47bba1b4982f6e4d9091b7547da53de28a"
+}
