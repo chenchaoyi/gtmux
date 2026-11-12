@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1165 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1166 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3777 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2062 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2068 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 132 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 105 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -63,6 +63,10 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | HXF-001 | Only the exact original backend observation tied to a positively gone verified frontend matches; every incomplete/changed/unknown case returns false; later generation wins even within one second; no observation, history or binding is removed or rewritten |
 | HXF-002 | Only completed exact closed-backend observations become idle/history; unfollowed history is absent, explicit follow remains idle and status-only without new input/read/knowledge authority. New starts/submits/waits, different turns/homes, changed generations and uncertain evidence remain visible with their existing states. Observation/history/consent bytes persist unchanged; backend role is evaluated once per process in a gather. The exact old radar code fails the new historical-worker visibility assertion while preservation controls pass |
 | HXF-003 | ESRCH or a positively later nonfuture process birth proves only the old frontend is gone; every unknown/original/overlapping/future case remains conservative, and a newly written observation wins; no native state is deleted or rewritten. The previous ESRCH-only implementation fails the replacement-incarnation case |
+| CBP-001 | Old baseline overwrites or strips the newer frontend; repaired source refuses stale publication, keeps the exact new primary/receipt, retains retry witness and leaves leases available. Same destination session does not justify dropping a newer frontend. No sleep/probability race. |
+| CBP-002 | Contention returns/defer without changing primary, receipts or intent. Eligible retry publishes only after a fresh exact index comparison. Both previously uncovered writer paths are covered; existing Save/Refresh CSR003 assertions remain untouched. |
+| CBP-003 | Failure preserves incumbent and pending intent as appropriate; committed-index/failed-retirement remains explicitly retryable. No deadlock or leaked shared/location lock. Same owner retains Frontend and TerminalClient; changed owner cannot be reclaimed by retry. Existing valid assertions and budgets are not weakened. |
+| CBP-004 | Held lease prevents publication and consumption across OS processes; after release the exact valid fixture succeeds. No real state directory, target, backend or service is touched. Helper entry is not separate product acceptance. |
 | CET-001 | Return the latest kind, time and explicit turn ID; tied conflicting metadata is unusable as exact completion proof. Legacy kind/time callers still work and scoped facts stay fresh. |
 | CET-002 | Idle since actual boundary; active content/mtime and turn ID remain untouched; no fabricated completion, latest flag or done notification evidence. |
 | CET-003 | Only verified same-session exact-ended-turn ready evidence overrides working. Real waiting/start/work survives, missing identity follows existing legacy behavior; no input authority or real marker mutation. |

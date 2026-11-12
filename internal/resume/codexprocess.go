@@ -71,7 +71,7 @@ func processTarget(r native.Record, panes []codexterminal.Pane) (CodexBindingTar
 }
 
 // commitProcessBinding preserves the observation and compares both the incumbent
-// and live frontend again under the location's existing binding lease. It never
+// and live frontend again, then joins the shared publication lease. It never
 // fabricates a submitted-task witness or retires conversation history.
 func commitProcessBinding(r native.Record, target CodexBindingTarget, incumbent Record, stored bool, now int64) error {
 	if target.Pane == "" || target.Loc == "" || target.PID != r.PID || now < r.UpdatedAt ||
@@ -112,9 +112,11 @@ func commitProcessBinding(r native.Record, target CodexBindingTarget, incumbent 
 	if !ok || target != fresh {
 		return errors.New("terminal process or pane changed")
 	}
-	if current, _ := Load(target.Loc); current != incumbent {
-		return errors.New("process binding acquired a newer owner")
+	lease, err := lockCodexPublication(target.Loc, incumbent)
+	if err != nil {
+		return err
 	}
+	defer lease.Close()
 	if stored {
 		if current, ok := native.Load(r.SessionID, r.HomeID); !ok || current != r {
 			return errors.New("process observation changed during verification")
@@ -123,6 +125,9 @@ func commitProcessBinding(r native.Record, target CodexBindingTarget, incumbent 
 	record := Record{Agent: "codex", HomeID: r.HomeID, SessionID: r.SessionID, Cwd: target.Cwd, UpdatedAt: now, Launcher: target.Launcher}
 	if incumbent.SessionID == r.SessionID && incumbent.HomeID == r.HomeID {
 		record.TerminalClient = incumbent.TerminalClient
+		if incumbent.Agent == "codex" {
+			record.Frontend = incumbent.Frontend
+		}
 	}
 	if err := writeBindingJSON(fileFor(target.Loc), record); err != nil {
 		return err
