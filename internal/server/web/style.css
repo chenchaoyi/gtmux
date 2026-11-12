@@ -724,7 +724,7 @@ body:has(#gate:not([hidden])) #gear { margin-left: auto; }
 
 /* ---- board: single-click maximize a tile to fill the board (§05) ---------- */
 #board.maximized .tile:not(.max) { opacity: 0; pointer-events: none; }
-.tile.max { left: 8px !important; top: 8px !important; }
+.tile.max { left: 8px !important; top: 8px !important; width: calc(100% - 16px) !important; height: calc(100% - 16px) !important; }
 #board.maximized .tile.max { z-index: 1 !important; } /* Restore stays above a repeatedly focused tile. */
 .tile.max .tile-resize { display: none; }
 .tile.max .tile-head { cursor: default; }
@@ -1622,3 +1622,21 @@ select:disabled { opacity: .55; cursor: not-allowed; }
 
 /* Typed call details share analysis with App; long values cannot escape a panel. */
 .tool-call-details{display:grid;gap:18px;min-width:0}.call-section{min-width:0}.call-section-head{display:flex;align-items:center;gap:8px;min-height:36px}.call-section-head h4{font:600 12px var(--font-ui,system-ui);color:var(--fg2);margin:0;flex:1}.call-parameters{margin:0;display:grid;grid-template-columns:minmax(90px,28%) minmax(0,1fr);gap:0 12px;font-size:13px}.call-parameters dt,.call-parameters dd{padding:9px 0;margin:0;border-bottom:1px solid var(--border);overflow-wrap:anywhere;white-space:pre-wrap;min-width:0}.call-parameters dt{color:var(--fg2)}.call-notice{font-size:13px;color:var(--fg2);line-height:1.5;overflow-wrap:anywhere}.call-pages{display:flex;align-items:center;justify-content:center;gap:16px;font-size:12px;color:var(--fg2)}.call-pages button{min-width:44px;min-height:44px;background:transparent;border:0;color:inherit;font-size:22px}.call-pages button:disabled{opacity:.35}.tool-call-details .code-panel{min-width:0;max-width:100%}@media(max-width:420px){.call-parameters{grid-template-columns:minmax(0,1fr);gap:0}.call-parameters dt{border:0;padding:10px 0 0}.call-parameters dd{padding:4px 0 10px}}
+
+/* Compact reading rows for a mouse; touch targets retain the shared 44px base. */
+@media (hover: hover) and (pointer: fine) {
+  .tool-steps .step-toggle { min-height: 30px; padding-top: 4px; padding-bottom: 4px; }
+  .tool-steps .steps-toggle { min-height: 32px; padding-top: 4px; padding-bottom: 4px; }
+}
+
+/* Maximize changes the header layout, never overlays its return control. */
+.tile.max .tile-head { grid-template-columns: auto 36px minmax(0, 1fr) auto; }
+.tile.max .max-exit { position: static; z-index: auto; min-width: var(--control-size); max-width: 100%; padding: 6px 8px; white-space: nowrap; }
+.tile.max .tile-head > .max-exit { grid-column: 1; grid-row: 1; }
+.tile.max .tile-head > .speaker-avatar { grid-column: 2; grid-row: 1; }
+.tile.max .tile-head > .tile-name { grid-column: 3; grid-row: 1; }
+.tile.max .tile-head > .tile-window-controls { grid-column: 4; grid-row: 1; }
+@container (max-width: 600px) {
+  .tile.max .max-exit-label { display: none; }
+  .tile.max .max-exit { justify-content: center; }
+}

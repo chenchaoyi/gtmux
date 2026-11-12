@@ -150,7 +150,7 @@ for (const viewport of [{width:1280,height:850},{width:390,height:844}]) {
 }
 
 for (const width of [320, 1280]) {
-  scenario(`Structured activity at ${width}px`, {viewport: {width, height: 850}, locale: 'en-US'}, async (page, fixture) => {
+  scenario(`Structured activity at ${width}px`, {viewport: {width, height: 850}, locale: 'en-US', hasTouch: width < 800}, async (page, fixture) => {
     const steps = [
       ...Array.from({length: 6}, (_, i) => ({kind: 'tool', title: 'js', detail: `Inspect layout ${i + 1}`})),
       {kind: 'tool', title: 'wait', detail: '<img src=x onerror=alert(1)>'},
@@ -174,7 +174,9 @@ for (const width of [320, 1280]) {
     assert.equal(await card.locator('.step-row').count(), 0);
     assert.match(await card.innerText(), /8 calls/);
     assert.equal(await card.locator('.steps-summary').count(),0);
-    assert.ok((await toggle.boundingBox()).height >= 44);
+    const fine=await page.evaluate(()=>matchMedia('(hover: hover) and (pointer: fine)').matches);assert.equal(fine,width>=800);
+    const groupHeight=(await toggle.boundingBox()).height;assert.ok(groupHeight >= (fine?32:44));
+    if(fine)assert.ok(groupHeight<=34,'mouse group remains compact');
     await toggle.click();
     assert.equal(await toggle.getAttribute('aria-expanded'), 'true');
     assert.equal(await card.locator('summary').count(),0,'summary-only records have no empty inspectors');

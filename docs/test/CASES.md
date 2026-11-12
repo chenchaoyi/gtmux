@@ -2,14 +2,14 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1150 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1155 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3777 | [L1.csv](cases/L1.csv) |
 | L2 · Component / contract | 2058 | [L2.csv](cases/L2.csv) |
-| L3 · Runtime integration | 111 | [L3.csv](cases/L3.csv) |
-| L4 · Application journeys | 94 | [L4.csv](cases/L4.csv) |
+| L3 · Runtime integration | 121 | [L3.csv](cases/L3.csv) |
+| L4 · Application journeys | 96 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
 | G · Qualification guards | 496 | [G.csv](cases/G.csv) |
 
@@ -21,6 +21,10 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 
 | ID | Expected behavior |
 | --- | --- |
+| AOP-001 | Known normalized operations take primary title; unknown methods retain real provider/name. Call facts, inputs, count and ordering are unchanged. Actual RN row and browser inspector/Trace agree; no fabricated children, successes or per-file calls. |
+| AOP-002 | Readable actual command instead of serialized argv when structure is complete and recognized; semantic file/query summaries remain. Never execute/parse shell text as authority, infer read/search from arbitrary words, unescape malformed JSON, change Raw input, invent output or expand record count. Keep 160-character spoken bound and surrogate safety. |
+| AOP-003 | Fine pointer row min-height30px with bounded one-line summary and visible focus; touch/coarse remains44px and RN44pt. Full details remain keyboard accessible, long content stays within edge, record label matches icon and accessibility name. Static fixtures do not certify real iOS/Android VoiceOver or device accessibility. |
+| AOP-005 | Actual fine pointer has30..32px reading rows and32..34px group controls; touch rows remain44..46px and group at least44px. Context pointer capability is asserted. Settings and unrelated interactive targets remain44px, raw input/order/count/keyboard/overflow/state and no-send checks remain unchanged. Old44px-for-every-context assertions are intentionally superseded only for Activity mouse density. Synthetic browser is not device/VO acceptance. |
 | ASC-001 | Machine JSON has consistent ok/error/result and exit semantics; command discovery/help is truthful; no implicit App launch, capture, focus, clipboard, input or MCP. Images/sidecars publish only after valid timely result; output collision/symlink/failed decode or partial write preserves existing files. Explicit task output paths and hashes survive. |
 | ASC-002 | Only authenticated exact host and same-user client communicate; no socket TCP fallback, arbitrary shell/path IO or permission prompt. Bound request/response/decoded size and FD ownership/cardinality; descriptors close on all outcomes, canceled work cannot publish user outputs. Synthetic contract checks are not real recording permission evidence. |
 | ASC-003 | Coordinates tied to exact image hash/capture/preview reference; known transforms align ROI and marks, originals unchanged, invalid/NaN/outside/bomb images refuse. Rectangle/arrow/text/redaction export correctly using common renderer; redacted output contains no original covered pixels. Source mismatches never widen capture; imported files remain imported. Existing editor draft must not be replaced. |
@@ -40,6 +44,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | ARGV-001 | Complete original first; only explicit interpreter script arguments or complete heredocs become previews; literal escapes decode once, no guess from prose/paths, dynamic/unsupported wrappers stay raw; repeated extraction stable and bounded |
 | ARGV-002 | Actual shared CodeText receives the exact script and language, formatting toggles; selected script never replaces original copy; raw reader has no derived tabs |
 | ARGV-003 | Typed derived tabs and compact syntax rendering visible, original JSON copy and Raw unchanged; no API sends or nested execution; existing layout can scroll without clipping |
+| AOP-004 | Restore button belongs to tile header and precedes its other children, never floats over the title or terminal. Header grid reserves its column; narrow layout shows a named return icon and leaves title/actions usable. Only one restore control exists. Restoring removes it and restores prior tile dimensions; other tiles and existing terminal-fit/Escape behavior are unchanged. No real user session or service is driven. |
 | CAS-001 | Recover only one fresh, exact-home, exact-location frontend after full client/root/backend birth and TTY verification. Ignore the corrupt JSON prefix. Read recovery does not write files or grant input through LoadLive. Missing, stale, foreign, changed, ambiguous, oversized directory and malformed/trailing receipt evidence fail closed. |
 | CAS-002 | The current bridge can atomically republish its matching primary record only with its own exact persisted fresh snapshot, unique verified frontend and repeated verification under the binding lease. Valid conflicting primary records, unknown/missing proof and changed/newer frontend refuse without writes. Existing recovery checkpoints are preserved on normal refresh. Caller epoch guard remains unchanged; no real-session restoration or inputs. |
 | CAS-003 | Valid empty history stays 200 []; association unavailable returns 409 with stable conversation-unassociated code and no private record content; source read failure returns 503 conversation-unavailable. Verified recovered history carries a recovered status header and normal ordinals/cursors. Guest checks run before readers. No change to input, restore or session-list authority. |

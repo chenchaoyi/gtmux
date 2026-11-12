@@ -1,5 +1,5 @@
-// Generated from shared App trace analysis and presentation; SHA256 e58e67ef299faae3445ae353a0b406a462f7dfc58e1c061fad1809c9b902894d
-// Body SHA256 e429b113ff7382335d67843aba293fe49ae08d1381fe491da5b5967d7473052d
+// Generated from shared App trace analysis and presentation; SHA256 c97ff0ace85efb74561eefddcf1fc804be73f59eb1e1c2c1dbeba06d31d85f76
+// Body SHA256 54747b1d224b32e9b3341b15b6693242a84adaa8258943dd82e4c623a9c1a7c0
 (function(root){var modules={"model":function(exports,require){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -487,8 +487,40 @@ function compactPreview(value) {
     // Bound the spoken label too; the inspector retains the complete recorded input.
     return text.length <= 160 ? text : text.slice(0, 159).replace(/[\uD800-\uDBFF]$/, '') + '…';
 }
+// Decode complete recorded argv for display only. No command is evaluated and
+// no read/search meaning is inferred from script text. Raw remains unchanged.
+function commandPreview(step) {
+    if (step.input_kind !== 'arguments' || !step.input || step.input.length > 8192 || step.details_truncated)
+        return undefined;
+    let value;
+    try {
+        value = JSON.parse(step.input);
+    }
+    catch {
+        return undefined;
+    }
+    if (!Array.isArray(value) || value.length === 0 || value.length > 64 || !value.every(v => typeof v === 'string'))
+        return undefined;
+    const args = value;
+    const shell = args[0].split('/').at(-1);
+    if (args.length === 3 && ['sh', 'bash', 'zsh', 'dash', 'ksh'].includes(shell || '') && ['-c', '-lc'].includes(args[1]))
+        return compactPreview(args[2]);
+    // A display argv is not a shell command. Quote individual arguments so spaces
+    // and metacharacters are not presented as a different invocation.
+    return compactPreview(args.map(v => /^[a-zA-Z0-9_./:@%+=,-]+$/.test(v) ? v : JSON.stringify(v)).join(' '));
+}
 function activityPreview(step, lang = 'en') {
     const operation = activityOperation(step);
+    if (operation === 'command' || ['read', 'search', 'list'].includes(operation)) {
+        // A parsed file/query summary is more useful than the transport argv.
+        const detail = step.detail?.trim();
+        const transportSummary = detail && detail.length >= 16 && step.input?.startsWith(detail.replace(/…$/, ''));
+        if (!detail || transportSummary || detail === step.input) {
+            const command = commandPreview(step);
+            if (command)
+                return command;
+        }
+    }
     const structured = step.input_kind === 'parameters' ||
         step.input_kind === 'arguments' && (operation === 'agent' || operation === 'wait');
     if (structured && step.input) {
@@ -600,9 +632,7 @@ function traceEventLabel(event, lang) {
     if (event.kind === 'context')
         return (0, model_1.contextLabel)(event, lang);
     return event.kind === 'tool'
-        ? event.step?.call
-            ? (0, toolPresentation_1.callTitle)(recordedStep(event))
-            : (0, activity_1.activityLabel)((0, activity_1.activityOperation)(recordedStep(event)), lang)
+        ? (0, toolPresentation_1.callTitle)(recordedStep(event), lang) || (0, activity_1.activityLabel)((0, activity_1.activityOperation)(recordedStep(event)), lang)
         : event.kind === 'user'
             ? event.from?.label || (lang === 'zh' ? '请求' : 'Request')
             : lang === 'zh'
@@ -696,9 +726,13 @@ exports.callRaw = callRaw;
 exports.toolDetailRefs = toolDetailRefs;
 exports.loadToolDetails = loadToolDetails;
 exports.callPage = callPage;
+const activity_1 = require("./activity");
 // Canonical Chat/Trace interpretation, also generated for the browser. These
 // fields describe recorded evidence; never infer success from a tool name.
-function callTitle(step) {
+function callTitle(step, lang = 'en') {
+    const operation = (0, activity_1.activityOperation)(step);
+    if (operation !== 'tool')
+        return (0, activity_1.activityLabel)(operation, lang);
     const call = step.call;
     if (!call)
         return step.title;
@@ -975,5 +1009,5 @@ function callPage(source, page) {
     };
 }
 
-}},cache={};function load(key){if(cache[key])return cache[key];var exports={};cache[key]=exports;modules[key](exports,function(name){var id={"./model":"model","../ui/activity":"activity","./timeline":"timeline","../ui/toolPresentation":"toolPresentation"}[name];if(!id)throw new Error("Unknown shared trace module");return load(id);});return exports;}var api=Object.assign({},load("model"),load("presentation"),load("toolPresentation"));
+}},cache={};function load(key){if(cache[key])return cache[key];var exports={};cache[key]=exports;modules[key](exports,function(name){var id={"./model":"model","../ui/activity":"activity","./activity":"activity","./timeline":"timeline","../ui/toolPresentation":"toolPresentation"}[name];if(!id)throw new Error("Unknown shared trace module");return load(id);});return exports;}var api=Object.assign({},load("model"),load("presentation"),load("toolPresentation"));
 if(typeof module==="object"&&module.exports)module.exports=api;else root.GtmuxTrace=api;})(typeof window!=="undefined"?window:globalThis);

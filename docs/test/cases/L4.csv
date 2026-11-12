@@ -93,3 +93,5 @@ LEG-ee0968c7d8ff,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,310,check,
 MAP-d4637161f816,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,98,reviewed-selector,async function check,False,"CT-ANDROID,CT-TIMING"
 MAP-c6dfe48e744e,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,104,reviewed-selector,async function run,False,"CT-ANDROID,CT-TIMING"
 MAP-24f51091f511,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,225,reviewed-selector,await check('21-camera-permission-denial',False,"CT-ANDROID,CT-TIMING,ACP-003"
+MAP-1d1a8964b720,L4,Browser,tests/web/presentation.test.cjs,159,reviewed-selector,Compact settings expose direct appearance choices and bounded call rows at ${width},False,AOP-005
+MAP-be17f88f3a1c,L4,Browser,tests/web/smoke.test.cjs,153,reviewed-selector,Structured activity at ${width}px,False,AOP-005
