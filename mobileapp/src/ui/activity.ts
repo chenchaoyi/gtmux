@@ -35,8 +35,32 @@ function compactPreview(value: string): string {
   return text.length <= 160 ? text : text.slice(0, 159).replace(/[\uD800-\uDBFF]$/, '') + '…';
 }
 
+// Decode complete recorded argv for display only. No command is evaluated and
+// no read/search meaning is inferred from script text. Raw remains unchanged.
+function commandPreview(step: TranscriptStep): string | undefined {
+  if (step.input_kind !== 'arguments' || !step.input || step.input.length > 8192 || step.details_truncated) return undefined;
+  let value: unknown;
+  try { value = JSON.parse(step.input); } catch { return undefined; }
+  if (!Array.isArray(value) || value.length === 0 || value.length > 64 || !value.every(v => typeof v === 'string')) return undefined;
+  const args = value as string[];
+  const shell = args[0].split('/').at(-1);
+  if (args.length === 3 && ['sh', 'bash', 'zsh', 'dash', 'ksh'].includes(shell || '') && ['-c', '-lc'].includes(args[1])) return compactPreview(args[2]);
+  // A display argv is not a shell command. Quote individual arguments so spaces
+  // and metacharacters are not presented as a different invocation.
+  return compactPreview(args.map(v => /^[a-zA-Z0-9_./:@%+=,-]+$/.test(v) ? v : JSON.stringify(v)).join(' '));
+}
+
 export function activityPreview(step: TranscriptStep, lang: 'en' | 'zh' = 'en'): string {
   const operation = activityOperation(step);
+  if (operation === 'command' || ['read', 'search', 'list'].includes(operation)) {
+    // A parsed file/query summary is more useful than the transport argv.
+    const detail = step.detail?.trim();
+    const transportSummary = detail && detail.length >= 16 && step.input?.startsWith(detail.replace(/…$/, ''));
+    if (!detail || transportSummary || detail === step.input) {
+      const command = commandPreview(step);
+      if (command) return command;
+    }
+  }
   const structured = step.input_kind === 'parameters' ||
     step.input_kind === 'arguments' && (operation === 'agent' || operation === 'wait');
   if (structured && step.input) {

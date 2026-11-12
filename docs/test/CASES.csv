@@ -2837,6 +2837,9 @@ LEG-09f518398798,L2,Go core / CLI / server,internal/server/transcript_history_te
 LEG-9d098d6161a4,L2,Go core / CLI / server,internal/server/upload_test.go,11,Test,TestUploadEnforcesTheCallersInputScope,False,legacy-not-retrospectively-reviewed
 LEG-50d7928d258f,L2,Go core / CLI / server,internal/server/upload_test.go,28,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-580a9541cf20,L2,Go core / CLI / server,internal/server/usage_test.go,11,Test,TestUsageEndpoint,False,legacy-not-retrospectively-reviewed
+MAP-6acf30600cc5,L3,reviewed implementation,internal/server/web/activity-semantics.test.cjs,8,reviewed-selector,AOP001 generated browser presenter shows read/search while retaining actual calls,False,"AOP-001,AOP-002,AOP-003"
+MAP-9ce52cb7c368,L3,reviewed implementation,internal/server/web/activity-semantics.test.cjs,16,reviewed-selector,AOP002 browser command preview unwraps complete shell argv only for display,False,"AOP-001,AOP-002,AOP-003"
+MAP-86b06e4fbd45,L3,reviewed implementation,internal/server/web/activity-semantics.test.cjs,23,reviewed-selector,AOP003 compact density is pointer-scoped and focus/overflow affordances remain,False,"AOP-001,AOP-002,AOP-003"
 LEG-6147f8559fe3,G,Browser,internal/server/web/activity.test.cjs,8,test,"browser activity tables match the phone labels, aliases and icon family",False,legacy-not-retrospectively-reviewed
 LEG-1b433e4e5c31,L2,Browser,internal/server/web/activity.test.cjs,18,test,activity uses own known operations and qualified aliases without inventing outcomes,False,legacy-not-retrospectively-reviewed
 LEG-a01ff337ffdb,L2,Browser,internal/server/web/activity.test.cjs,28,test,delegation and wait previews explain only explicit recorded parameters,False,legacy-not-retrospectively-reviewed
@@ -2920,6 +2923,9 @@ MAP-e2feefc515a3,L3,Browser,internal/server/web/app.test.cjs,1324,reviewed-selec
 MAP-328002d4dfc3,L3,Browser,internal/server/web/app.test.cjs,1351,reviewed-selector,CAS004 stale tile association failure cannot repaint a changed target,False,CAS-004
 MAP-3bd1a5cb9551,L1,reviewed implementation,internal/server/web/argv-reading.test.cjs,2,reviewed-selector,ARGV-001 browser uses,False,ARGV-001
 LEG-a24ee8487c6a,G,Browser,internal/server/web/documents.test.cjs,7,test,browser document references and validation are generated from the App contract,False,legacy-not-retrospectively-reviewed
+MAP-452a61a1d04e,L3,reviewed implementation,internal/server/web/maximize-layout.test.cjs,25,reviewed-selector,AOP004 Restore layout occupies the actual header before the title,False,AOP-004
+MAP-cd44b26604d6,L3,reviewed implementation,internal/server/web/maximize-layout.test.cjs,31,reviewed-selector,AOP004 switching and restoring keep one control and restore prior dimensions,False,AOP-004
+MAP-f159c36e253b,L3,reviewed implementation,internal/server/web/maximize-layout.test.cjs,38,reviewed-selector,AOP004 maximized header reserves grid space and names its narrow icon,False,AOP-004
 LEG-dd62d73a080e,G,Browser,internal/server/web/reading.test.cjs,2,test,file+' follows its native model',True,legacy-not-retrospectively-reviewed
 LEG-25aecd2608d3,G,Browser,internal/server/web/reading.test.cjs,6,test,offline browser formatter and syntax reader retain complete inputs,False,legacy-not-retrospectively-reviewed
 MAP-ec276ea47d43,L2,reviewed implementation,internal/server/web/state-duration.test.cjs,19,reviewed-selector,CSR-004 browser row,False,CSR-004
@@ -5371,6 +5377,7 @@ LEG-ca142d751be2,L1,RN / mobile harness,mobileapp/src/trace/presentation.test.ts
 LEG-5ccd9c82fd62,L1,RN / mobile harness,mobileapp/src/trace/presentation.test.ts,79,test,"native and browser share trace labels, summaries, icons, categories and original ordinals",False,legacy-not-retrospectively-reviewed
 LEG-2dd00245c60d,L1,RN / mobile harness,mobileapp/src/trace/presentation.test.ts,122,test,outline summaries use the requested language for image-only prompts,False,legacy-not-retrospectively-reviewed
 LEG-e922a535ef25,L1,RN / mobile harness,mobileapp/src/trace/presentation.test.ts,136,test,overview preserves Markdown destinations and bookmark identity across history pages and home scopes,False,legacy-not-retrospectively-reviewed
+MAP-22e8f7f44f76,L3,reviewed implementation,mobileapp/src/trace/semantic-title.test.ts,5,reviewed-selector,AOP001 Trace preserves every real call while labels follow normalized actions,False,AOP-001
 LEG-88486f8eeb41,L1,RN / mobile harness,mobileapp/src/trace/timeline.test.ts,15,test,turn identity and expansion survive prepend while calls remain individually reachable,False,legacy-not-retrospectively-reviewed
 LEG-39add4eb8ec5,L1,RN / mobile harness,mobileapp/src/trace/timeline.test.ts,53,test,search reveals matching individual calls regardless of collapsed history,False,legacy-not-retrospectively-reviewed
 LEG-4386362cb604,L1,RN / mobile harness,mobileapp/src/trace/timeline.test.ts,62,test,only recognized image envelopes are removed from a preview; source remains literal,False,legacy-not-retrospectively-reviewed
@@ -5765,6 +5772,7 @@ LEG-bd8a819ecc3d,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,
 LEG-089667cd0076,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,97,test,"two turns minutes apart share one separator, at the start",False,legacy-not-retrospectively-reviewed
 LEG-b0f2a61e9b9e,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,104,test,"a night and a pause each earn one, the turn between them earns none",False,legacy-not-retrospectively-reviewed
 LEG-b404805fe1df,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,110,test,a conversation with no clocks draws none,False,legacy-not-retrospectively-reviewed
+MAP-2d6c205f3027,L3,reviewed implementation,mobileapp/src/ui/ToolSteps.semantic.test.tsx,7,reviewed-selector,AOP001 AOP003 real Activity rows share semantic visible and spoken titles with touch targets,False,"AOP-001,AOP-003"
 LEG-89ff3e67a8c8,L2,RN / mobile harness,mobileapp/src/ui/ToolSteps.test.tsx,60,test,native file changes are labeled as recorded changes and preserve complete copy,False,legacy-not-retrospectively-reviewed
 LEG-1f4a8322a751,L2,RN / mobile harness,mobileapp/src/ui/ToolSteps.test.tsx,96,test,whole group folds to a labelled summary and unmounts all command content,False,legacy-not-retrospectively-reviewed
 LEG-69fa3bc440bd,L2,RN / mobile harness,mobileapp/src/ui/ToolSteps.test.tsx,107,test,individual input wraps without horizontal controls and copies the complete recorded input,False,legacy-not-retrospectively-reviewed
@@ -5785,6 +5793,8 @@ LEG-c1dcae648f3a,L2,RN / mobile harness,mobileapp/src/ui/WhatsNewModal.test.tsx,
 LEG-bde490778c31,L2,RN / mobile harness,mobileapp/src/ui/WhatsNewModal.test.tsx,91,test,no Pressable wraps the ScrollView,False,legacy-not-retrospectively-reviewed
 LEG-147ace8d3cd1,L2,RN / mobile harness,mobileapp/src/ui/WhatsNewModal.test.tsx,103,test,tapping the backdrop closes,False,legacy-not-retrospectively-reviewed
 LEG-f8eb4ad15194,L2,RN / mobile harness,mobileapp/src/ui/WhatsNewModal.test.tsx,121,test,the newest version opens even when the entries arrive after mount,False,legacy-not-retrospectively-reviewed
+MAP-4a512680e430,L3,reviewed implementation,mobileapp/src/ui/activity-semantics.test.ts,9,reviewed-selector,AOP001 semantic actions override raw transport names without rewriting tool facts,False,"AOP-001,AOP-002"
+MAP-8a7265b6c0d7,L3,reviewed implementation,mobileapp/src/ui/activity-semantics.test.ts,21,reviewed-selector,"AOP002 argv preview is bounded, cross-surface and leaves ambiguous input verbatim",False,"AOP-001,AOP-002"
 LEG-c8dea3de822d,L2,RN / mobile harness,mobileapp/src/ui/activity.test.ts,6,test,delegation previews the purpose instead of JSON or an internal task key,False,legacy-not-retrospectively-reviewed
 LEG-6e25f30d9b2c,L2,RN / mobile harness,mobileapp/src/ui/activity.test.ts,13,test.each(),%s previews recorded timing without claiming elapsed time or a result,True,legacy-not-retrospectively-reviewed
 LEG-68925287819f,L2,RN / mobile harness,mobileapp/src/ui/activity.test.ts,22,test,old object arguments work and unknown units are never inferred,False,legacy-not-retrospectively-reviewed

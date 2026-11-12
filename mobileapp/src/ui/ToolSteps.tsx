@@ -83,7 +83,7 @@ export function ToolSteps({
           {steps.map((step, i) => {
             const expanded = selected === i;
             const operation = activityOperation(step);
-            const label = activityLabel(operation, lang);
+            const label = callTitle(step, lang) || activityLabel(operation, lang);
             const preview = activityPreview(step, lang);
             const showPreview =
               preview.toLowerCase() !== (step.title || '').toLowerCase() &&
@@ -104,11 +104,7 @@ export function ToolSteps({
                   style={[styles.rowText, { fontSize: size }]}
                   numberOfLines={2}
                 >
-                  {step.call
-                    ? callTitle(step)
-                    : operation === 'tool'
-                    ? step.title || label
-                    : label}
+                  {label}
                   {showPreview && (
                     <Text
                       style={[

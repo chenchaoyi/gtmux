@@ -2407,7 +2407,7 @@
         var summary = el(inspectable ? 'summary' : 'div', 'step-toggle' + (inspectable ? '' : ' step-static')); summary.dataset.chatFocus = key;
         summary.appendChild(activityIcon(op));
         var body = el('span', 'step-body');
-        body.appendChild(el('span', 'step-label', s.call ? window.GtmuxTrace.callTitle(s) : activity.label(op, lang)));
+        body.appendChild(el('span', 'step-label', window.GtmuxTrace.callTitle(s, lang) || activity.label(op, lang)));
         body.appendChild(el('span', 'step-detail' + (op === 'agent' || op === 'wait' ? ' step-prose' : ''), activity.preview(s, lang)));
         summary.appendChild(body); details.appendChild(summary);
         if (!inspectable) { row.appendChild(details); list.appendChild(row); return; }
@@ -3891,6 +3891,8 @@
     maximizeTile(top);
   }
   function maximizeTile(t) {
+    var header = t && t.el && t.el.querySelector('.tile-head');
+    if (!header) return;
     if (maxedTile === t) { restoreBoard(); return; }
     if (maxedTile) restoreBoard();
     maxedTile = t; t.prevRect = {w: t.w, h: t.h};
@@ -3898,7 +3900,9 @@
     board.classList.add('maximized'); t.el.classList.add('max'); t.el.style.zIndex = ++zTop;
     t.el.style.width = (br.width - 16) + 'px'; t.el.style.height = (br.height - 16) + 'px';
     refitTile(t);
-    var ex = document.createElement('button'); ex.type = 'button'; ex.className = 'max-exit'; ex.id = 'max-exit'; ex.innerHTML = uiIcon('back') + T('Restore layout', '恢复布局'); ex.onclick = restoreBoard; board.appendChild(ex);
+    var label = T('Restore layout', '恢复布局'), ex = document.createElement('button'); ex.type = 'button'; ex.className = 'max-exit'; ex.id = 'max-exit'; ex.innerHTML = uiIcon('back'); ex.setAttribute('aria-label', label); ex.title = label;
+    var caption = document.createElement('span'); caption.className = 'max-exit-label'; caption.textContent = label; ex.appendChild(caption);
+    ex.onclick = restoreBoard; header.insertBefore(ex, header.firstChild);
   }
   function restoreBoard() {
     if (!maxedTile) return; var t = maxedTile; maxedTile = null;

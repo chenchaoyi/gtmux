@@ -688,6 +688,18 @@
       "TestMSD003PreferredReceiptCannotBypassGuestScope"
     ]
   },
+  "internal/server/web/activity-semantics.test.cjs": {
+    "cases": [
+      "AOP-001",
+      "AOP-002",
+      "AOP-003"
+    ],
+    "selectors": [
+      "AOP001 generated browser presenter shows read/search while retaining actual calls",
+      "AOP002 browser command preview unwraps complete shell argv only for display",
+      "AOP003 compact density is pointer-scoped and focus/overflow affordances remain"
+    ]
+  },
   "internal/server/web/app.test.cjs": {
     "cases": [
       "CAS-004"
@@ -703,6 +715,16 @@
     ],
     "selectors": [
       "ARGV-001 browser uses"
+    ]
+  },
+  "internal/server/web/maximize-layout.test.cjs": {
+    "cases": [
+      "AOP-004"
+    ],
+    "selectors": [
+      "AOP004 Restore layout occupies the actual header before the title",
+      "AOP004 switching and restoring keep one control and restore prior dimensions",
+      "AOP004 maximized header reserves grid space and names its narrow icon"
     ]
   },
   "internal/server/web/state-duration.test.cjs": {
@@ -1342,6 +1364,14 @@
       "Chat reuses the same query details, failure retries and late reads retire on home change"
     ]
   },
+  "mobileapp/src/trace/semantic-title.test.ts": {
+    "cases": [
+      "AOP-001"
+    ],
+    "selectors": [
+      "AOP001 Trace preserves every real call while labels follow normalized actions"
+    ]
+  },
   "mobileapp/src/ui/AgentStateDuration.test.tsx": {
     "cases": [
       "CSR-004"
@@ -1376,6 +1406,25 @@
       "CP-001 %s renders",
       "CP-002 HQ request",
       "CP-003 document actions"
+    ]
+  },
+  "mobileapp/src/ui/ToolSteps.semantic.test.tsx": {
+    "cases": [
+      "AOP-001",
+      "AOP-003"
+    ],
+    "selectors": [
+      "AOP001 AOP003 real Activity rows share semantic visible and spoken titles with touch targets"
+    ]
+  },
+  "mobileapp/src/ui/activity-semantics.test.ts": {
+    "cases": [
+      "AOP-001",
+      "AOP-002"
+    ],
+    "selectors": [
+      "AOP001 semantic actions override raw transport names without rewriting tool facts",
+      "AOP002 argv preview is bounded, cross-surface and leaves ambiguous input verbatim"
     ]
   },
   "mobileapp/src/ui/commandArgv.test.ts": {

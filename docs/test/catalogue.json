@@ -60494,6 +60494,131 @@
         }
       ],
       "sha256": "6a89eb8ee784be94498bd661d267b3bd3b71185d73ab5baa963cc70ed402697c"
+    },
+    "internal/server/web/activity-semantics.test.cjs": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-6acf30600cc5",
+          "line": 8,
+          "kind": "reviewed-selector",
+          "name": "AOP001 generated browser presenter shows read/search while retaining actual calls",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "AOP-001,AOP-002,AOP-003"
+        },
+        {
+          "id": "MAP-9ce52cb7c368",
+          "line": 16,
+          "kind": "reviewed-selector",
+          "name": "AOP002 browser command preview unwraps complete shell argv only for display",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "AOP-001,AOP-002,AOP-003"
+        },
+        {
+          "id": "MAP-86b06e4fbd45",
+          "line": 23,
+          "kind": "reviewed-selector",
+          "name": "AOP003 compact density is pointer-scoped and focus/overflow affordances remain",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "AOP-001,AOP-002,AOP-003"
+        }
+      ],
+      "sha256": "8d43dc1b4cec6ea68c4f06362eaf58b0e4be221b6975ac5424ea37f55641ebc1"
+    },
+    "mobileapp/src/trace/semantic-title.test.ts": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-22e8f7f44f76",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "AOP001 Trace preserves every real call while labels follow normalized actions",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "AOP-001"
+        }
+      ],
+      "sha256": "335b4cda7d7796fdb813bc00204b7ff39842cb8b57b6df23a39e235762f01370"
+    },
+    "mobileapp/src/ui/ToolSteps.semantic.test.tsx": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-2d6c205f3027",
+          "line": 7,
+          "kind": "reviewed-selector",
+          "name": "AOP001 AOP003 real Activity rows share semantic visible and spoken titles with touch targets",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "AOP-001,AOP-003"
+        }
+      ],
+      "sha256": "39e97983760d848b086429d779e2e0f692888944983264fef2fbfcdbb23c7def"
+    },
+    "mobileapp/src/ui/activity-semantics.test.ts": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-4a512680e430",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "AOP001 semantic actions override raw transport names without rewriting tool facts",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "AOP-001,AOP-002"
+        },
+        {
+          "id": "MAP-8a7265b6c0d7",
+          "line": 21,
+          "kind": "reviewed-selector",
+          "name": "AOP002 argv preview is bounded, cross-surface and leaves ambiguous input verbatim",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "AOP-001,AOP-002"
+        }
+      ],
+      "sha256": "2b8235446ff0944a51b0313c150e2f5944f215b970b0fa95ced8a032b9b19bf4"
+    },
+    "internal/server/web/maximize-layout.test.cjs": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-452a61a1d04e",
+          "line": 25,
+          "kind": "reviewed-selector",
+          "name": "AOP004 Restore layout occupies the actual header before the title",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "AOP-004"
+        },
+        {
+          "id": "MAP-cd44b26604d6",
+          "line": 31,
+          "kind": "reviewed-selector",
+          "name": "AOP004 switching and restoring keep one control and restore prior dimensions",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "AOP-004"
+        },
+        {
+          "id": "MAP-f159c36e253b",
+          "line": 38,
+          "kind": "reviewed-selector",
+          "name": "AOP004 maximized header reserves grid space and names its narrow icon",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "AOP-004"
+        }
+      ],
+      "sha256": "5613c6f76338be976248841bc3cfc01d2ee401f41ef0642d95abd76153f09d73"
     }
   },
   "legacy_source": "f187564fcfdab24d7750efbea108958e469cdded",
