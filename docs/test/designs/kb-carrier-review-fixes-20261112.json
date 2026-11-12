@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex KB implementation owner (self-review of regression design)",
+    "date": "2026-11-12",
+    "decision": "repair independent review F1/F2 in existing draft PR",
+    "notes": "Independent REVIEW SHA f5f158dff54c5f266d0e434c3b8c8e1e0911b530469eb5a32c17fca8de82203e requested changes at 21576f9. This is author review of new test design, not peer approval of the fix. Commit this seal before tests. Reuse the ledger lock and state atomic writer; explicit revision required for manual receipts, including old clients which must fail safely if absent. No new framework/service or actual model. Baseline full gates/CI already passed; do not rerun unchanged costly matrices for this design-only commit. Sequential affected and required core checks will bind source hashes before/after the new run."
+  },
+  "cases": [
+    {
+      "id": "KBCARRIER-REVISION",
+      "layer": "L2",
+      "description": "Carry and manual landing settle only the revision actually read; CLI, owner API, Mac and phone/tablet clients preserve that revision",
+      "setup": "Disposable HOME and synthetic ledger/carriers. Deterministic barriers between two writers and an already prepared stale receipt; no production, model, pane, or device operations. Old implementation must fail targeted semantic assertions, not compilation.",
+      "action": "Prepare R0 completion, apply R1 at the same ID, then submit R0 at the final locked boundary. Hold carrier publication while another writer attempts review. Exercise CLI and owner API manual ref with missing/stale/matching versions, and verify client payload captures the viewed version when the dialog opens. Retain legacy historical land folding.",
+      "expected": "Stale/missing new receipts append nothing and leave R1 pending; old publication cannot overwrite an already landed R1. Carry publication and settlement share the existing ledger lock. Review following successful R0 carry leaves R1 pending. Current manual ref succeeds; clients propagate the read version and do not silently fetch a new version for an old confirmation.",
+      "planned_files": [
+        "internal/knowledge/landing_revision_test.go",
+        "internal/knowledge/knowledgeapi_test.go",
+        "internal/knowledge/knowledgecmd_test.go",
+        "internal/server/hq_test.go",
+        "macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift",
+        "mobileapp/src/screens/KnowledgeSheet.test.tsx"
+      ]
+    },
+    {
+      "id": "KBCARRIER-ATOMIC",
+      "layer": "L2",
+      "description": "LOCAL updates publish complete private files without truncating operator text",
+      "setup": "Only synthetic LOCAL.md in a disposable managed HOME; file descriptors pinned to the old inode. Existing state private writer, injected pre-publication failure and ordinary permission/link refusal, no real LOCAL or filesystem corruption.",
+      "action": "Upgrade a historical generated section and append a new section with human text before/after it; inspect pinned readers and final file. Inject failure immediately before private-file rename, verify original bytes/mode, staged-file cleanup and pending state; exercise read-only and symlink refusals.",
+      "expected": "Successful publication yields complete new content and 0600 private mode while pinned readers retain complete original content. Failure before publish leaves original bytes/mode intact and cannot settle landing. File fsync precedes publication and parent sync follows it; errors propagate. Existing manually changed or duplicate sections stay conflicts. No claim of real power-loss simulation.",
+      "planned_files": [
+        "internal/knowledge/memory_carrier_test.go",
+        "internal/state/privatewrite_test.go"
+      ]
+    }
+  ],
+  "seal": "851849ebf78be08acc2e11a6f5eeaab6cb8ae4d95cb9ed063e4fe930a5b45747"
+}
