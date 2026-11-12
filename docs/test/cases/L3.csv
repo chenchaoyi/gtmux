@@ -1,9 +1,11 @@
 id,layer,stack,file,line,kind,description,dynamic,design
+MAP-12689bc816c9,L3,reviewed implementation,internal/app/diff_context_test.go,12,reviewed-selector,TestDTV004DiffNamesActualLinkedWorktreeFromNestedCwd,False,DTV-004
 MAP-ad442623e007,L3,reviewed implementation,internal/app/observed_conversation_test.go,15,reviewed-selector,TestSID005ObservedReaderKeepsBoundedWindowAndExactCursor,False,SID-005
 MAP-8b7815d10836,L3,reviewed implementation,internal/codexbridge/trust_interop_test.go,64,reviewed-selector,TestWTR003ActualUnixForwardingUsesVerifiedHomeAndPreservesOtherFrames,False,WTR-003
 MAP-f4e5b80196e1,L3,reviewed implementation,internal/codexbridge/trust_interop_test.go,165,reviewed-selector,TestWTR003NativeTUIGateway,False,WTR-003
 MAP-c49705115ac9,L3,reviewed implementation,internal/radar/codex_completed_marker_test.go,15,reviewed-selector,TestGatherCompletedOwnTurnSurvivesLateActiveMarker,False,"CET-002,CET-003"
 MAP-226227944e48,L3,reviewed implementation,internal/radar/codex_foreign_marker_gather_test.go,14,reviewed-selector,TestGatherDoesNotReviveAnotherSessionsOldMarkerFromWindowActivity,False,CORE-CODEX-FOREIGN-GATHER
+MAP-6de233bbcc8c,L3,reviewed implementation,internal/server/diff_privacy_test.go,10,reviewed-selector,TestDTV005WorktreePathIsOwnerOnlyAndPaneGateRunsFirst,False,DTV-005
 MAP-b4dde0e66e09,L3,reviewed implementation,internal/server/observed_conversation_test.go,10,reviewed-selector,TestSID005OwnerOptInHistoryAndGuestFence,False,SID-005
 MAP-48bb55755c3f,L3,reviewed implementation,internal/server/observed_conversation_test.go,54,reviewed-selector,TestSID005SharedRosterOmitsHistoricalIdentifiers,False,SID-005
 MAP-5c6d75362085,L3,reviewed implementation,internal/server/send_receipt_test.go,9,reviewed-selector,TestMSD003HTTPPreservesActualReceiptAndLegacySend,False,MSD-003
@@ -26,13 +28,19 @@ MAP-f0ea1c518382,L3,reviewed implementation,mobileapp/src/api/conversation.test.
 MAP-2c624a8ebee0,L3,reviewed implementation,mobileapp/src/api/observed-client-contract.test.ts,3,reviewed-selector,SID009 ordinary reads stay compatible while UI history explicitly opts in,False,SID-009
 MAP-51014f850982,L3,reviewed implementation,mobileapp/src/api/observed-history.test.ts,4,reviewed-selector,SID006 observed history stays separate from current session authority and survives 304,False,SID-006
 MAP-d9561a5b54f1,L3,reviewed implementation,mobileapp/src/screens/DetailObserved.test.tsx,13,reviewed-selector,SID006 mounted Detail fences historical chat and clears restriction after verified refresh,False,SID-006
+MAP-108bcc59dc3f,L3,reviewed implementation,mobileapp/src/screens/DetailObserved.test.tsx,30,reviewed-selector,CKD003 Detail keeps the pending draft scope when the same conversation is verified,False,"SID-006,CKD-002,CKD-003"
 MAP-4811f4f9249d,L3,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,150,reviewed-selector,"CAS005 Detail propagates association failures, preserves history and clears on retry",False,CAS-005
 MAP-761f8dca626a,L3,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,160,reviewed-selector,CAS007 unchanged transcript polls reuse the ChatView element,False,"CAS-005,CAS-007"
 MAP-104c84ca28d9,L3,reviewed implementation,mobileapp/src/screens/HQScreen.association.test.tsx,26,reviewed-selector,CAS008 HQ association failure keeps history and clears after retry,False,CAS-008
 MAP-3c318e90a20b,L3,reviewed implementation,mobileapp/src/screens/HQScreen.observed.test.tsx,17,reviewed-selector,SID006 mounted HQ cannot send from last-known history and resets on verified response,False,SID-006
+MAP-5327be537213,L3,reviewed implementation,mobileapp/src/screens/HQScreen.observed.test.tsx,30,reviewed-selector,CKD003 HQ keeps the pending draft scope when the same conversation is verified,False,"SID-006,CKD-002,CKD-003"
 MAP-22e8f7f44f76,L3,reviewed implementation,mobileapp/src/trace/semantic-title.test.ts,5,reviewed-selector,AOP001 Trace preserves every real call while labels follow normalized actions,False,AOP-001
 MAP-23737a6180b1,L3,reviewed implementation,mobileapp/src/ui/ChatView.association.test.tsx,8,reviewed-selector,CAS005 association banner preserves messages and retries without claiming empty history,False,CAS-005
 MAP-eee81c4abb59,L3,reviewed implementation,mobileapp/src/ui/ChatView.observed.test.tsx,7,reviewed-selector,SID006 last-known history is explicitly read only in both languages,False,SID-006
+MAP-8f2c8637a6cc,L3,reviewed implementation,mobileapp/src/ui/Composer.readonly-draft.test.tsx,15,reviewed-selector,CKD001 local-only draft opens and survives blocked submits in %s,False,CKD-001
+MAP-b3a080fcff12,L3,reviewed implementation,mobileapp/src/ui/Composer.readonly-draft.test.tsx,42,reviewed-selector,CKD001 verified sends remain enabled and ordinary disabled input stays disabled,False,CKD-001
+MAP-85ca470caec6,L3,reviewed implementation,mobileapp/src/ui/DiffTreeModal.test.tsx,11,reviewed-selector,DTV002 native Diff starts with directory summaries and identifies its worktree,False,DTV-002
+MAP-4cea8e8aaefc,L3,reviewed implementation,mobileapp/src/ui/DiffTreeModal.test.tsx,38,reviewed-selector,DTV002 a clean worktree keeps context without showing metadata as code,False,DTV-002
 MAP-2d6c205f3027,L3,reviewed implementation,mobileapp/src/ui/ToolSteps.semantic.test.tsx,7,reviewed-selector,AOP001 AOP003 real Activity rows share semantic visible and spoken titles with touch targets,False,"AOP-001,AOP-003"
 MAP-4a512680e430,L3,reviewed implementation,mobileapp/src/ui/activity-semantics.test.ts,9,reviewed-selector,AOP001 semantic actions override raw transport names without rewriting tool facts,False,"AOP-001,AOP-002"
 MAP-8a7265b6c0d7,L3,reviewed implementation,mobileapp/src/ui/activity-semantics.test.ts,21,reviewed-selector,"AOP002 argv preview is bounded, cross-surface and leaves ambiguous input verbatim",False,"AOP-001,AOP-002"
@@ -77,28 +85,28 @@ LEG-6e18769ca32f,L3,Browser,tests/web/profile.test.cjs,93,scenario,Agent profile
 LEG-c7ce877293ae,L3,Browser,tests/web/profile.test.cjs,105,scenario,Historical profile reads current ancestry only on expansion and only for the same conversation,False,legacy-not-retrospectively-reviewed
 LEG-76a130aa8589,L3,Browser,tests/web/prompt-echo.test.cjs,5,scenario,'Recorded Codex image retires only its new sent echo at ' + width,True,legacy-not-retrospectively-reviewed
 LEG-b945c9c2c6ea,L3,Browser,tests/web/reading-controls.test.cjs,20,scenario,"`Diff preserves recorded layout, syntax and original copy at ${width}`",True,legacy-not-retrospectively-reviewed
-LEG-d86159318241,L3,Browser,tests/web/reading-controls.test.cjs,42,scenario,`Trace defaults to folded turns and preserves manual disclosure at ${width}`,True,legacy-not-retrospectively-reviewed
+LEG-d86159318241,L3,Browser,tests/web/reading-controls.test.cjs,44,scenario,`Trace defaults to folded turns and preserves manual disclosure at ${width}`,True,legacy-not-retrospectively-reviewed
 LEG-053ee45ae83a,L3,Browser,tests/web/shared-code.test.cjs,9,scenario,`Shared code and nested trace calls ${width} ${colorScheme}`,True,legacy-not-retrospectively-reviewed
 LEG-3e130ccd4ec6,L3,Browser,tests/web/smoke.test.cjs,10,scenario,"Desktop enrollment, sidebar, restore and live chat",False,legacy-not-retrospectively-reviewed
-LEG-8d3affad6fad,L3,Browser,tests/web/smoke.test.cjs,46,scenario,Narrow Chinese read-only share and shell layout,False,legacy-not-retrospectively-reviewed
-LEG-ee4287aa5e63,L3,Browser,tests/web/smoke.test.cjs,69,scenario,Idle rows never date an unknown completion from window activity,False,legacy-not-retrospectively-reviewed
-LEG-27b4d64159e0,L3,Browser,tests/web/smoke.test.cjs,84,scenario,Revocation clears private content and permits re-enrollment,False,legacy-not-retrospectively-reviewed
-LEG-4fcea4cf4d89,L3,Browser,tests/web/smoke.test.cjs,102,scenario,Slow chat reads stay single and render when they finish,False,legacy-not-retrospectively-reviewed
-LEG-a839d9aac5bd,L3,Browser,tests/web/smoke.test.cjs,127,scenario,`DSH external reader and scoped follow ${viewport.width}`,True,legacy-not-retrospectively-reviewed
-LEG-5aa3406c3cf3,L3,Browser,tests/web/smoke.test.cjs,153,scenario,`Structured activity at ${width}px`,True,legacy-not-retrospectively-reviewed
-LEG-70493de6794f,L3,Browser,tests/web/smoke.test.cjs,201,scenario,`Activity inspector and clipboard at ${width}px`,True,legacy-not-retrospectively-reviewed
-LEG-56091c5b974d,L3,Browser,tests/web/smoke.test.cjs,273,scenario,`Compact tile controls stay readable in ${locale}`,True,legacy-not-retrospectively-reviewed
-LEG-9fb6fb4f5960,L3,Browser,tests/web/smoke.test.cjs,293,scenario,Chat operates an unparsed picker without visiting Terminal,False,legacy-not-retrospectively-reviewed
-LEG-3e1421f2c918,L3,Browser,tests/web/smoke.test.cjs,319,scenario,Chat shows choices only while waiting and folds an answered prompt,False,legacy-not-retrospectively-reviewed
-LEG-338a1654affd,L3,Browser,tests/web/smoke.test.cjs,336,scenario,`View question reveals the picker without submitting a draft at ${width}px`,True,legacy-not-retrospectively-reviewed
-LEG-e526198ccd27,L3,Browser,tests/web/smoke.test.cjs,355,scenario,"Workspace conversation keeps drafts, shows identities and inspectable calls",False,legacy-not-retrospectively-reviewed
-LEG-a88f9e388b83,L3,Browser,tests/web/smoke.test.cjs,440,scenario,Narrow chat supports input and touch copy while trace remains within viewport,False,legacy-not-retrospectively-reviewed
-LEG-eb05aa918933,L3,Browser,tests/web/smoke.test.cjs,474,scenario,Workspace controls support keyboard access and truthful copy feedback,False,legacy-not-retrospectively-reviewed
-LEG-b946e51a9044,L3,Browser,tests/web/smoke.test.cjs,529,scenario,"Live chat shows current work, retains disclosure state and clears after completion or revocation",False,legacy-not-retrospectively-reviewed
-LEG-fb1c9cc17ccb,L3,Browser,tests/web/smoke.test.cjs,606,scenario,Appearance follows the system and persists an explicit choice without recoloring terminals,False,legacy-not-retrospectively-reviewed
-LEG-b055e62dee7c,L3,Browser,tests/web/smoke.test.cjs,650,scenario,Trace tool closes details and returns to the original panel draft,False,legacy-not-retrospectively-reviewed
-LEG-f0e15e31d7c2,L3,Browser,tests/web/smoke.test.cjs,792,scenario,Mobile composer and speaker profiles expose identity without redundant writable badges,False,legacy-not-retrospectively-reviewed
-LEG-05c9e13ce4c2,L3,Browser,tests/web/smoke.test.cjs,877,scenario,'Native file actions keep readable labels and recorded changes at ' + width,True,legacy-not-retrospectively-reviewed
+LEG-8d3affad6fad,L3,Browser,tests/web/smoke.test.cjs,83,scenario,Narrow Chinese read-only share and shell layout,False,legacy-not-retrospectively-reviewed
+LEG-ee4287aa5e63,L3,Browser,tests/web/smoke.test.cjs,106,scenario,Idle rows never date an unknown completion from window activity,False,legacy-not-retrospectively-reviewed
+LEG-27b4d64159e0,L3,Browser,tests/web/smoke.test.cjs,121,scenario,Revocation clears private content and permits re-enrollment,False,legacy-not-retrospectively-reviewed
+LEG-4fcea4cf4d89,L3,Browser,tests/web/smoke.test.cjs,139,scenario,Slow chat reads stay single and render when they finish,False,legacy-not-retrospectively-reviewed
+LEG-a839d9aac5bd,L3,Browser,tests/web/smoke.test.cjs,164,scenario,`DSH external reader and scoped follow ${viewport.width}`,True,legacy-not-retrospectively-reviewed
+LEG-5aa3406c3cf3,L3,Browser,tests/web/smoke.test.cjs,190,scenario,`Structured activity at ${width}px`,True,legacy-not-retrospectively-reviewed
+LEG-70493de6794f,L3,Browser,tests/web/smoke.test.cjs,238,scenario,`Activity inspector and clipboard at ${width}px`,True,legacy-not-retrospectively-reviewed
+LEG-56091c5b974d,L3,Browser,tests/web/smoke.test.cjs,310,scenario,`Compact tile controls stay readable in ${locale}`,True,legacy-not-retrospectively-reviewed
+LEG-9fb6fb4f5960,L3,Browser,tests/web/smoke.test.cjs,330,scenario,Chat operates an unparsed picker without visiting Terminal,False,legacy-not-retrospectively-reviewed
+LEG-3e1421f2c918,L3,Browser,tests/web/smoke.test.cjs,356,scenario,Chat shows choices only while waiting and folds an answered prompt,False,legacy-not-retrospectively-reviewed
+LEG-338a1654affd,L3,Browser,tests/web/smoke.test.cjs,373,scenario,`View question reveals the picker without submitting a draft at ${width}px`,True,legacy-not-retrospectively-reviewed
+LEG-e526198ccd27,L3,Browser,tests/web/smoke.test.cjs,392,scenario,"Workspace conversation keeps drafts, shows identities and inspectable calls",False,legacy-not-retrospectively-reviewed
+LEG-a88f9e388b83,L3,Browser,tests/web/smoke.test.cjs,477,scenario,Narrow chat supports input and touch copy while trace remains within viewport,False,legacy-not-retrospectively-reviewed
+LEG-eb05aa918933,L3,Browser,tests/web/smoke.test.cjs,511,scenario,Workspace controls support keyboard access and truthful copy feedback,False,legacy-not-retrospectively-reviewed
+LEG-b946e51a9044,L3,Browser,tests/web/smoke.test.cjs,566,scenario,"Live chat shows current work, retains disclosure state and clears after completion or revocation",False,legacy-not-retrospectively-reviewed
+LEG-fb1c9cc17ccb,L3,Browser,tests/web/smoke.test.cjs,643,scenario,Appearance follows the system and persists an explicit choice without recoloring terminals,False,legacy-not-retrospectively-reviewed
+LEG-b055e62dee7c,L3,Browser,tests/web/smoke.test.cjs,687,scenario,Trace tool closes details and returns to the original panel draft,False,legacy-not-retrospectively-reviewed
+LEG-f0e15e31d7c2,L3,Browser,tests/web/smoke.test.cjs,829,scenario,Mobile composer and speaker profiles expose identity without redundant writable badges,False,legacy-not-retrospectively-reviewed
+LEG-05c9e13ce4c2,L3,Browser,tests/web/smoke.test.cjs,914,scenario,'Native file actions keep readable labels and recorded changes at ' + width,True,legacy-not-retrospectively-reviewed
 LEG-245fb0545893,L3,Browser,tests/web/terminal-fit.test.cjs,23,scenario,`Terminal grid fits desktop tile and focus at DPR ${deviceScaleFactor}`,True,legacy-not-retrospectively-reviewed
 LEG-5fc1eee042c5,L3,Browser,tests/web/terminal-fit.test.cjs,41,scenario,Terminal grid fits narrow browser after rotation,False,legacy-not-retrospectively-reviewed
 MAP-8fceb6b39ede,L3,reviewed implementation,tests/web/tool-call-detail.test.cjs,6,reviewed-selector,Typed query details in Chat and Trace ,False,TCV-005

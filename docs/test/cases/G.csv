@@ -493,5 +493,5 @@ MAP-75f2ed302427,G,reviewed implementation,tests/web/browser-pool.cjs,2,reviewed
 MAP-faa984b171bf,G,reviewed implementation,tests/web/browser-pool.test.cjs,4,reviewed-selector,concurrent borrowers share,False,"CT-BROWSER-POLICY,CT-TIMING"
 MAP-c7ca48106233,G,reviewed implementation,tests/web/browser-pool.test.cjs,30,reviewed-selector,failed launch propagates,False,"CT-BROWSER-POLICY,CT-TIMING"
 MAP-eda764da861f,G,reviewed implementation,tests/web/harness.cjs,13,reviewed-selector,function scenario,False,"CT-TIMING,CT-BROWSER"
-LEG-00a1f7cbea36,G,Browser,tests/web/smoke.test.cjs,673,scenario,"Composer stages files, annotates images, recalls input and matches app send controls",False,legacy-not-retrospectively-reviewed
-LEG-f81adc301549,G,Browser,tests/web/smoke.test.cjs,848,scenario,Clipboard images and dropped files stay staged until an explicit send,False,legacy-not-retrospectively-reviewed
+LEG-00a1f7cbea36,G,Browser,tests/web/smoke.test.cjs,710,scenario,"Composer stages files, annotates images, recalls input and matches app send controls",False,legacy-not-retrospectively-reviewed
+LEG-f81adc301549,G,Browser,tests/web/smoke.test.cjs,885,scenario,Clipboard images and dropped files stay staged until an explicit send,False,legacy-not-retrospectively-reviewed

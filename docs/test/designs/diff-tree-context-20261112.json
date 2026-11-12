@@ -1,0 +1,72 @@
+{
+  "id": "diff-tree-context-20261112",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review; not independent approval",
+    "date": "2026-11-12",
+    "decision": "Shared directory hierarchy and explicit worktree context, collapsed by default, preserving original patches and read-only authorization",
+    "notes": "User screenshot flat Diff lacks directory identity/title and requests default collapse plus industry research. Official VS Code tree/list, GitHub file-tree and per-file progressive disclosure, JetBrains root/branch context informed design; no objective universal best claim. Git capture adds JSON-quoted worktree preamble from the same captured cwd within original8s/400KiB budget; old API{id,diff} unchanged. Parse only metadata outside hunk payload. Truncation and untracked names never count as code lines. Shared native/browser tree construction is display-only, bounded depth, prototype-safe; no file opens, execution, writes, user repo modifications, native build, release or installation. Browser rendered QA uses isolated synthetic fixture, no real user messages. Preserve existing diff reader/virtualization/Unicode/late-read and owner/guest gates. Tests updated for explicit opening rather than removing their former source/geometry assertions. Before changing existing browser full-input/reading-controls tests: replace their implicit initial-open setup with explicit file and hunk clicks, retain all source, whitespace, line-number, wrapping and large-input assertions. Narrow browser fixture includes dark scheme and desktop light; no expectation is relaxed. Before metadata-only boundary assertions: a clean worktree now still has the metadata preamble. Show its identity with an explicit no-changes state instead of rendering metadata as patch code; preserve nonempty legacy/plain diff fallback. Final source review before DTV005 test/implementation: the new absolute worktree root is owner context. Shared guest views keep their original diff/branch scope and must not gain this host path. Strip only the generated preamble field for guests, never patch body text, and keep pane gate before capture. Before presentation.test.cjs edits: complete browser run has193pass/4 failures from the former auto-open setup. Add real file/hunk clicks before the existing .add visibility assertion; retain all layout/tool assertions and timeouts. Fresh integration self-review on2026-11-12 against exact frozen source eda260dbfaa966e1a39cbb327f6dbfefc4041f7d before the new integration port. Original development history is preserved, including its rejected inherited-case history check; this is not a claim this review preceded the original edits. Review covers CKD001..003/DTV001..005 and the inherited SID006 and AOP005 mappings on the touched files. SID006 remote-send/identity assertions remain intact while an explicit local-only editor is allowed; AOP005 pointer density, touch targets, ordering and original journey assertions are unchanged, with explicit Diff opening only. Original case objects, checker, base and assertions are not weakened. The checked implementation will be copied only after this real design commit."
+  },
+  "cases": [
+    {
+      "id": "DTV-001",
+      "layer": "L2",
+      "description": "Shared diff model preserves original code while adding collapsed directory navigation and accurate metadata",
+      "setup": "Synthetic multi-directory, same-basename, renamed/binary/Unicode, prototype-like and deep path patches with worktree/branch preamble, untracked footer and truncation.",
+      "action": "Build native/browser tree rows, expand folders/files/hunks, collapse again, inspect total counts and original file source.",
+      "expected": "Default rows are folder/root-file summaries only; deterministic hierarchy and directory aggregate counts, stable keys. Expanded original patch lines/numbers remain unchanged. Worktree path/branch parsed from preamble only; untracked filenames never inflate added lines, partial payload is labeled truncated. Deep/unsafe-looking names do not mutate prototypes or overflow recursion. Legacy diffPresentation semantics remain unchanged for callers not using tree mode. Metadata-only clean worktrees retain context and explicitly show no changes, with no metadata rendered as code.",
+      "planned_files": [
+        "mobileapp/src/ui/diffTree.test.ts"
+      ]
+    },
+    {
+      "id": "DTV-002",
+      "layer": "L3",
+      "description": "RN Diff shows context and collapsed tree, preserves expansion, full source and narrow reading",
+      "setup": "Actual mounted DiffModal with synthetic patch, nested folders, long worktree path and fontScale3; legacy server with no metadata and stale pane read.",
+      "action": "Open, inspect header/stats, expand directory/file/hunk and complete reader, collapse all, change pane, render long code with original tests.",
+      "expected": "Header identifies actual supplied worktree/branch and file/add/delete totals. All folder/file/hunk content starts collapsed, can be opened by44pt controls and collapsed together. FlatList windowing, wrap/scroll gutter, original source and line numbering remain. Unknown metadata stays unnamed instead of guessing a worktree. Stale replies cannot replace new pane context. Metadata-only clean worktrees retain context and explicitly show no changes, with no metadata rendered as code.",
+      "planned_files": [
+        "mobileapp/src/ui/DiffTreeModal.test.tsx",
+        "mobileapp/src/ui/DiffModal.test.tsx"
+      ]
+    },
+    {
+      "id": "DTV-003",
+      "layer": "L4",
+      "description": "Browser Diff matches shared tree, defaults and metadata in actual production UI",
+      "setup": "Existing isolated browser fixture serving actual production assets with nested synthetic diff and metadata; narrow390 and desktop1440.",
+      "action": "Open Diff tools, inspect context and collapsed details, expand directory/file/hunk, collapse all, verify no clipped controls or console errors.",
+      "expected": "Correct worktree/branch/stat totals and directory grouping, no pre-opened code. Explicit expansion reveals original colored diff lines; collapse-all hides contents. Existing smoke assertion opens the file/hunk before checking original code. No unsafe HTML for context/path names. Metadata-only clean worktrees retain context and explicitly show no changes, with no metadata rendered as code.",
+      "planned_files": [
+        "tests/web/smoke.test.cjs",
+        "tests/web/full-input.test.cjs",
+        "tests/web/reading-controls.test.cjs",
+        "tests/web/presentation.test.cjs"
+      ]
+    },
+    {
+      "id": "DTV-004",
+      "layer": "L3",
+      "description": "Git capture reports actual linked worktree root from nested cwd without changing capture budgets",
+      "setup": "Task-temporary real Git repository and linked worktree, nested cwd and quoted/spaced root. No live tmux or user files.",
+      "action": "Call production diffForCwd from linked worktree nested directory; parse preamble and inspect tracked/untracked changes; retain existing limit tests.",
+      "expected": "JSON-quoted root identifies linked worktree, branch matches that worktree, diff/untracked data stay present. Existing8s deadline,400KiB cap and no-repo/error semantics remain; the extra metadata read uses the same deadline. Server pane authorization and response envelope are unchanged.",
+      "planned_files": [
+        "internal/app/diff_context_test.go"
+      ]
+    },
+    {
+      "id": "DTV-005",
+      "layer": "L3",
+      "description": "Absolute worktree root is owner-only; shared pane diff remains usable",
+      "setup": "Actual HTTP handler with in-memory enrollment, owner token, one explicitly shared guest pane and another denied pane; synthetic patch/preamble, no live service.",
+      "action": "Request identical Diff as owner, allowed guest, denied guest and unauthenticated caller. Include root-looking text in an actual patch line.",
+      "expected": "Owner receives original root/branch/patch byte-for-byte. Allowed guest receives branch and original patch without the new absolute root preamble; root-looking code remains. Denied/unauthenticated requests do not call the capture dependency. No audience/credential/permission setting changes.",
+      "planned_files": [
+        "internal/server/diff_privacy_test.go"
+      ]
+    }
+  ],
+  "seal": "d8ffb6699f3582d5f19c4b7efe0e971907827a1e759aeb9541cfc6b641fcbdf8"
+}

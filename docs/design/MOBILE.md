@@ -1816,3 +1816,11 @@ Jump to bottom to resume following. Continuous latest snapshots retain observed 
 and its deadline. The initial loading mark says it is reading recent conversation.
 The first cold source scan remains necessary; warm parser measurements are not
 end-to-end phone timings. The existing default HTTP read remains compatible.
+
+## Local drafts and worktree review (2026-11-12)
+
+A chat whose historical association is pending permits local draft editing and shows why sending is unavailable. The keyboard and expanded editor remain usable; Return, send, upload and terminal keys keep the remote-input fence. Draft persistence uses the observed conversation only as a local scope, preserving the draft when that same identity is verified. It does not supply control authority.
+
+Diff identifies the actual Git worktree root and branch above its file/add/delete totals. Directories, files and hunks start folded; directory rows aggregate file and line counts. Native and browser views share one tree model. Expand a file/hunk to read, or collapse everything again; the complete-file reader preserves original source and line numbers. Untracked filenames are listed separately from code line counts, and a truncated response explicitly limits the statistics to loaded content. The root comes from the same bounded Git capture as the patch, including when the pane is in a subdirectory.
+
+The full worktree path is owner-only. Shared guests retain the authorized branch and original patch without the new absolute host path.

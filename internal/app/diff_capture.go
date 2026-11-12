@@ -2,10 +2,12 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -82,6 +84,18 @@ func diffForCwd(cwd string) (string, error) {
 			return "", err
 		}
 		return out, nil
+	}
+	root, err := git("rev-parse", "--show-toplevel")
+	if err != nil {
+		return "", err
+	}
+	if root = strings.TrimSuffix(root, "\n"); filepath.IsAbs(root) {
+		// Diff paths and untracked paths use one worktree root, even when the
+		// terminal is in a subdirectory. Quote metadata so newlines cannot create
+		// fake preamble fields. This shares the existing deadline and byte cap.
+		cwd = root
+		quoted, _ := json.Marshal(root)
+		write("# worktree " + string(quoted) + "\n")
 	}
 	branch, err := git("rev-parse", "--abbrev-ref", "HEAD")
 	if err != nil {

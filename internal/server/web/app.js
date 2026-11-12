@@ -3054,19 +3054,21 @@
   function renderDiff(host, diff) {
     var root = el('div', 'session-diff diff-view'); root.tabIndex = 0; root.setAttribute('aria-label', T('Working tree changes', '工作区改动'));
     if (!diff) { root.textContent = T('No changes, or this session is outside a Git repository.', '没有改动，或当前会话不在 Git 仓库中。'); host.replaceChildren(root); return; }
-    var files = window.GtmuxDiffModel.diffFiles(diff);
-    if (!files.length) { var raw = el('pre', ''); diff.split('\n').forEach(function(line){raw.appendChild(el('span',line[0]==='+'?'add':line[0]==='-'?'del':'',line+'\n'));}); root.appendChild(raw); host.replaceChildren(root); return; }
+    var model=window.GtmuxDiffModel, context=model.diffContext(diff), files=model.diffFiles(diff);
+    if(context.worktree||context.branch){var identity=el('div','diff-context');identity.appendChild(el('strong','',context.worktree?context.worktree.split('/').filter(Boolean).pop()||'/':T('Working tree','工作区改动')));if(context.branch)identity.appendChild(el('span','',context.branch+' · HEAD'));if(context.worktree)identity.appendChild(el('small','',context.worktree));root.appendChild(identity);}
+    if(context.truncated)root.appendChild(el('p','diff-partial',T('Partial diff loaded. Counts exclude content not loaded.','仅加载了部分改动，以下统计不包含未加载内容。')));
+    if (!files.length) { var body=model.diffTreePresentation(diff).lines.join('\n');if(!body.trim()){root.appendChild(el('p','diff-meta',T('No changes in this worktree.','当前工作树没有改动。')));host.replaceChildren(root);return;}var raw = el('pre', ''); body.split('\n').forEach(function(line){raw.appendChild(el('span',line[0]==='+'?'add':line[0]==='-'?'del':'',line+'\n'));}); root.appendChild(raw); host.replaceChildren(root); return; }
     var maximumLine = 1; files.forEach(function(file){file.rows.forEach(function(row){maximumLine=Math.max(maximumLine,row.meta.old||0,row.meta.next||0);});}); root.style.setProperty('--diff-gutter',Math.max(26,String(maximumLine).length*7+6)+'px');
     var stats = el('div', 'diff-summary'); stats.appendChild(el('span', '', T('Working tree', '工作区改动') + ' · ' + files.length + T(files.length === 1 ? ' file' : ' files', ' 个文件'))); stats.appendChild(el('span', 'diff-added', '+' + files.reduce(function(n,f){return n+f.added;},0))); stats.appendChild(el('span', 'diff-removed', '−' + files.reduce(function(n,f){return n+f.removed;},0))); stats.appendChild(clipboardAction(T('Copy complete diff', '复制完整改动'), '', diff));
     var wrap = el('button', 'diff-wrap', T('Wrap lines', '自动换行')); wrap.type = 'button';wrap.setAttribute('aria-pressed','true');var wrapped=true;wrap.onclick=function(){wrapped=!wrapped;root.classList.toggle('diff-no-wrap',!wrapped);wrap.setAttribute('aria-pressed',String(wrapped));};stats.appendChild(wrap);
     root.appendChild(stats);
-    files.forEach(function(file,fileIndex){
-      var card=el('details','diff-file');card.open=true;
-      var heading=el('summary','diff-file-heading'),names=el('span','diff-file-names');names.appendChild(el('strong','',file.path.split('/').pop()));names.appendChild(el('small','',file.path.split('/').slice(0,-1).join('/')||'.'));heading.appendChild(names);heading.appendChild(el('span','diff-added','+'+file.added));heading.appendChild(el('span','diff-removed','−'+file.removed));card.appendChild(heading);
-      var current = null, first = true;
+    function fileCard(file){
+      var card=el('details','diff-file');card.open=false;
+      var heading=el('summary','diff-file-heading'),names=el('span','diff-file-names');names.appendChild(el('strong','',file.path.split('/').pop()));names.appendChild(el('small','',file.untracked?T('Untracked · line count unavailable','未跟踪 · 未计入增删行数'):file.path.split('/').slice(0,-1).join('/')||'.'));heading.appendChild(names);heading.appendChild(el('span','diff-added','+'+file.added));heading.appendChild(el('span','diff-removed','−'+file.removed));card.appendChild(heading);
+      var current = null;
       file.rows.forEach(function(row){
         if(row.meta.kind==='hunk'){
-          current={node:el('details','diff-hunk'),rows:[],mounted:0};current.node.open=fileIndex===0&&first;first=false;
+          current={node:el('details','diff-hunk'),rows:[],mounted:0};current.node.open=false;
           var hunkTitle=el('summary','diff-hunk-heading',T('Lines ','行 ')+window.GtmuxDiffModel.hunkRange(row.text));hunkTitle.appendChild(el('span','diff-hunk-count','+'+row.meta.added+' −'+row.meta.removed));current.node.appendChild(hunkTitle);
           var hunk=current;
           function fill(){var end=Math.min(hunk.rows.length,hunk.mounted+400);for(;hunk.mounted<end;hunk.mounted++)appendRow(hunk.node,hunk.rows[hunk.mounted]);if(hunk.more)hunk.more.remove();if(hunk.mounted<hunk.rows.length){hunk.more=el('button','diff-more',T('Show more lines','展开更多行')+' · '+hunk.mounted+'/'+hunk.rows.length);hunk.more.onclick=fill;hunk.node.appendChild(hunk.more);}}
@@ -3075,9 +3077,14 @@
       });
       if(current&&current.node.open)current.fill();
       // Earlier open hunks are filled by their toggle after insertion.
-      root.appendChild(card);
+      if(file.untracked)card.appendChild(el('p','diff-meta',T('Untracked file. Contents are not included in this diff.','未跟踪文件，当前 diff 未包含文件内容。')));
+      return card;
       function appendRow(parent,row){var line=el('div','diff-line '+(row.meta.role||'meta'));var number=row.meta.role==='del'?row.meta.old:row.meta.next;line.appendChild(el('span','diff-line-number',number===undefined?'':String(number)));line.appendChild(el('span','diff-sign',row.meta.role?row.text[0]:''));var code=el('code','diff-code');renderCode(code,row.meta.role?row.text.slice(1):row.text,file.path.split('.').pop());line.appendChild(code);parent.appendChild(line);}
-    });
+    }
+    function appendTree(parent,nodes){nodes.forEach(function(node){if(node.file){parent.appendChild(fileCard(node.file));return;}var folder=el('details','diff-directory'),heading=el('summary','diff-directory-heading');heading.appendChild(el('strong','',node.name+'/'));heading.appendChild(el('span','diff-folder-count',String(node.fileCount)));heading.appendChild(el('span','diff-added','+'+node.added));heading.appendChild(el('span','diff-removed','−'+node.removed));folder.appendChild(heading);var children=el('div','diff-directory-children');appendTree(children,node.children);folder.appendChild(children);parent.appendChild(folder);});}
+    var collapse=el('button','diff-collapse',T('Collapse all','全部折叠'));collapse.type='button';collapse.onclick=function(){root.querySelectorAll('details').forEach(function(node){node.open=false;});};stats.appendChild(collapse);
+    var untracked=files.filter(function(file){return file.untracked;}).length;if(untracked)stats.appendChild(el('span','diff-folder-count',untracked+T(' untracked',' 个未跟踪')));
+    appendTree(root,model.diffTree(files));
     host.replaceChildren(root);
   }
   function resetTrace(state) { if (state && state.view) state.view.dispose(); return {}; }

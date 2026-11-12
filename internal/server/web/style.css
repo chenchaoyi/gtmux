@@ -1533,7 +1533,7 @@ select:disabled { opacity: .55; cursor: not-allowed; }
 .diff-file-heading::before{content:'›';font-size:20px;transform:rotate(90deg);width:12px;text-align:center}.diff-file:not([open])>.diff-file-heading::before{transform:none}
 .diff-line.add .diff-sign{color:#36723a}.diff-line.del .diff-sign{color:#b63843}[data-theme=dark] .diff-line.add .diff-sign{color:#A8C997}[data-theme=dark] .diff-line.del .diff-sign{color:#EEA3AC}
 
-.diff-file{border-color:var(--divider)}.diff-hunk-count{float:right;margin-left:12px;color:var(--fg2);font-variant-numeric:tabular-nums}.diff-wrap{border:0;border-radius:7px;padding:6px 10px;background:var(--control);color:var(--fg2);font:inherit;cursor:pointer}.diff-wrap[aria-pressed=true]{color:var(--accent-ink);background:var(--sel)}.diff-wrap:focus-visible{outline:2px solid var(--accent-ink);outline-offset:2px}
+.diff-file{border-color:var(--divider)}.diff-hunk-count{float:right;margin-left:12px;color:var(--fg2);font-variant-numeric:tabular-nums}.diff-wrap,.diff-collapse{border:0;border-radius:7px;padding:6px 10px;background:var(--control);color:var(--fg2);font:inherit;cursor:pointer}.diff-wrap[aria-pressed=true]{color:var(--accent-ink);background:var(--sel)}.diff-wrap:focus-visible,.diff-collapse:focus-visible{outline:2px solid var(--accent-ink);outline-offset:2px}
 
 .diff-line-number{flex-basis:var(--diff-gutter,26px);white-space:nowrap}
 
@@ -1641,3 +1641,13 @@ select:disabled { opacity: .55; cursor: not-allowed; }
   .tile.max .max-exit-label { display: none; }
   .tile.max .max-exit { justify-content: center; }
 }
+
+/* Hierarchical, initially folded Diff navigation. */
+.diff-context{display:flex;flex-wrap:wrap;gap:6px 12px;padding:12px;min-width:0}
+.diff-context strong{font-size:16px}.diff-context small{flex-basis:100%;overflow-wrap:anywhere;color:var(--fg3)}
+.diff-directory{margin:6px 0}.diff-directory-heading{display:flex;align-items:center;gap:8px;min-height:44px;padding:8px 10px;cursor:pointer;min-width:0}
+.diff-directory-heading:before{content:'›';flex:none;font-size:20px}.diff-directory[open]>.diff-directory-heading:before{transform:rotate(90deg)}
+.diff-directory-heading strong{flex:1;min-width:0;overflow-wrap:anywhere}.diff-directory-heading .diff-folder-count{flex:none}
+.diff-directory-children{margin-left:12px;padding-left:8px;border-left:1px solid var(--divider)}
+.diff-folder-count{color:var(--fg3);font-size:12px}.diff-partial{padding:8px 12px;color:var(--fg2)}
+.diff-collapse{min-height:44px;padding:0 8px}.diff-summary{flex-wrap:wrap}

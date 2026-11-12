@@ -194,6 +194,7 @@ LEG-ba12d8af1486,L2,Go core / CLI / server,internal/app/devices_push_test.go,16,
 LEG-3e93dc004875,L1,Go core / CLI / server,internal/app/diff_capture_test.go,15,Test,TestCommandPrefixChild,False,legacy-not-retrospectively-reviewed
 LEG-1c88b98cc813,L1,Go core / CLI / server,internal/app/diff_capture_test.go,27,Test,TestCommandPrefixBoundsAndStopsProducer,False,legacy-not-retrospectively-reviewed
 LEG-6e024a889e97,L1,Go core / CLI / server,internal/app/diff_capture_test.go,39,Test,TestDiffForCwdBoundsLargeDiffAndKeepsSmallOutput,False,legacy-not-retrospectively-reviewed
+MAP-12689bc816c9,L3,reviewed implementation,internal/app/diff_context_test.go,12,reviewed-selector,TestDTV004DiffNamesActualLinkedWorktreeFromNestedCwd,False,DTV-004
 LEG-ba9d2ad9cd78,L1,Go core / CLI / server,internal/app/digest_test.go,38,Test,TestRenderDigestTable,False,legacy-not-retrospectively-reviewed
 LEG-2b337d74fcbc,L1,Go core / CLI / server,internal/app/digest_test.go,92,Test,TestDigestBucket,False,legacy-not-retrospectively-reviewed
 LEG-43539f89e3dd,L1,Go core / CLI / server,internal/app/digest_test.go,112,Test,TestDigestBadge,False,legacy-not-retrospectively-reviewed
@@ -2658,6 +2659,7 @@ LEG-8759783d1709,L2,Go core / CLI / server,internal/server/diaglog_test.go,62,Te
 LEG-e722fcd337ac,L2,Go core / CLI / server,internal/server/diaglog_test.go,87,Test,TestRejectedTokensAreAggregated,False,legacy-not-retrospectively-reviewed
 LEG-90e1b768607f,L2,Go core / CLI / server,internal/server/diaglog_test.go,102,Test,TestAPanickingHandlerIsRecordedAndAnswered,False,legacy-not-retrospectively-reviewed
 LEG-4befd9b55b79,L2,Go core / CLI / server,internal/server/diaglog_test.go,116,Test,TestDeviceActorsSayWhatTheDeviceIs,False,legacy-not-retrospectively-reviewed
+MAP-6de233bbcc8c,L3,reviewed implementation,internal/server/diff_privacy_test.go,10,reviewed-selector,TestDTV005WorktreePathIsOwnerOnlyAndPaneGateRunsFirst,False,DTV-005
 LEG-7ea4a6a3765b,L2,Go core / CLI / server,internal/server/digest_test.go,12,Test,TestDigestEndpoint,False,legacy-not-retrospectively-reviewed
 LEG-243c09fea790,L2,Go core / CLI / server,internal/server/enroll_body_test.go,28,Test,TestEnrollBodySizeBoundary,False,legacy-not-retrospectively-reviewed
 LEG-2864e2fe7b64,L2,Go core / CLI / server,internal/server/enroll_body_test.go,33,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
@@ -4765,6 +4767,7 @@ LEG-05b0ed8892cb,L2,RN / mobile harness,mobileapp/src/screens/DetailNative.test.
 LEG-d2c628311f96,L2,RN / mobile harness,mobileapp/src/screens/DetailNative.test.tsx,57,test,a native row with no session id takes nothing from the list,False,legacy-not-retrospectively-reviewed
 LEG-75ba09780ff0,L2,RN / mobile harness,mobileapp/src/screens/DetailNative.test.tsx,62,test,the polled row wins over the snapshot it was opened with,False,legacy-not-retrospectively-reviewed
 MAP-d9561a5b54f1,L3,reviewed implementation,mobileapp/src/screens/DetailObserved.test.tsx,13,reviewed-selector,SID006 mounted Detail fences historical chat and clears restriction after verified refresh,False,SID-006
+MAP-108bcc59dc3f,L3,reviewed implementation,mobileapp/src/screens/DetailObserved.test.tsx,30,reviewed-selector,CKD003 Detail keeps the pending draft scope when the same conversation is verified,False,"SID-006,CKD-002,CKD-003"
 LEG-d492e3b75b36,L2,RN / mobile harness,mobileapp/src/screens/DetailPinned.test.tsx,76,test,"Codex: the full prompt takes the bar, the cut row leaves the terminal, the bar is made room for",False,legacy-not-retrospectively-reviewed
 LEG-7794d6f4687f,L2,RN / mobile harness,mobileapp/src/screens/DetailPinned.test.tsx,86,test,"Claude Code with the very same screen: untouched, no bar, no extra padding",False,legacy-not-retrospectively-reviewed
 LEG-dc302ed92bc9,L2,RN / mobile harness,mobileapp/src/screens/DetailPinned.test.tsx,95,test,"full screen hides the chrome, so the captured row stays in the terminal",False,legacy-not-retrospectively-reviewed
@@ -4831,6 +4834,7 @@ LEG-f787efe69fa7,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.attach.te
 LEG-8b29f93c234e,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.attach.test.tsx,108,test,an upload failure keeps the file for retry and never sends an empty command,False,legacy-not-retrospectively-reviewed
 LEG-1f81433b485a,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.attach.test.tsx,120,test,changing HQ routes the upload and message to the new pane,False,legacy-not-retrospectively-reviewed
 MAP-3c318e90a20b,L3,reviewed implementation,mobileapp/src/screens/HQScreen.observed.test.tsx,17,reviewed-selector,SID006 mounted HQ cannot send from last-known history and resets on verified response,False,SID-006
+MAP-5327be537213,L3,reviewed implementation,mobileapp/src/screens/HQScreen.observed.test.tsx,30,reviewed-selector,CKD003 HQ keeps the pending draft scope when the same conversation is verified,False,"SID-006,CKD-002,CKD-003"
 LEG-99bcff10d6bb,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,94,test,a narrow iPad HQ uses zone tabs while keeping its resource sheets regular,False,legacy-not-retrospectively-reviewed
 LEG-23fa02d36e37,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,111,test,"the software keyboard hides HQ chrome and secondary composer rows, then restores them",False,legacy-not-retrospectively-reviewed
 LEG-075f3c52f53f,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,146,test,HQ zone tabs expose their selected state and change the active zone,False,legacy-not-retrospectively-reviewed
@@ -5553,6 +5557,8 @@ LEG-28f705f86458,L2,RN / mobile harness,mobileapp/src/ui/Composer.draft.test.tsx
 LEG-c2d7f3008dfe,L2,RN / mobile harness,mobileapp/src/ui/Composer.prefill.test.tsx,29,it,rests as the key row with no field,False,legacy-not-retrospectively-reviewed
 LEG-9940bd4cbec0,L2,RN / mobile harness,mobileapp/src/ui/Composer.prefill.test.tsx,34,it,opens the field and fills it when a hand-off arrives,False,legacy-not-retrospectively-reviewed
 LEG-cf0c8df37025,L2,RN / mobile harness,mobileapp/src/ui/Composer.prefill.test.tsx,44,it,opens the field when mounted with one already,False,legacy-not-retrospectively-reviewed
+MAP-8f2c8637a6cc,L3,reviewed implementation,mobileapp/src/ui/Composer.readonly-draft.test.tsx,15,reviewed-selector,CKD001 local-only draft opens and survives blocked submits in %s,False,CKD-001
+MAP-b3a080fcff12,L3,reviewed implementation,mobileapp/src/ui/Composer.readonly-draft.test.tsx,42,reviewed-selector,CKD001 verified sends remain enabled and ordinary disabled input stays disabled,False,CKD-001
 LEG-d38db74e25e1,L2,RN / mobile harness,mobileapp/src/ui/Composer.rerender.test.tsx,28,test,the key row is not torn down and rebuilt by a keystroke,False,legacy-not-retrospectively-reviewed
 LEG-3401c7d12df9,L2,RN / mobile harness,mobileapp/src/ui/Composer.rerender.test.tsx,47,test,a re-render above with the same props does not re-render the composer,False,legacy-not-retrospectively-reviewed
 LEG-a46fc739513d,L2,RN / mobile harness,mobileapp/src/ui/Composer.test.ts,8,it,"NEVER drops a button send (fromSubmit=false), even within the window",False,legacy-not-retrospectively-reviewed
@@ -5583,14 +5589,16 @@ LEG-06c2d30c28c9,L2,RN / mobile harness,mobileapp/src/ui/CopyableText.test.tsx,5
 CP-001-8fc86a,L2,RN / mobile harness,mobileapp/src/ui/CrossClientContract.test.tsx,24,parameter-template,CP-001 %s renders,True,CP-001
 CP-002-8fc86a,L2,RN / mobile harness,mobileapp/src/ui/CrossClientContract.test.tsx,46,test,CP-002 HQ request,False,CP-002
 CP-003-8fc86a,L2,RN / mobile harness,mobileapp/src/ui/CrossClientContract.test.tsx,57,test,CP-003 document actions,False,CP-003
-LEG-d8b24286f7cc,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,18,test,large diffs mount only a window of native rows and retain the final line,False,legacy-not-retrospectively-reviewed
-LEG-6e9e4223d32d,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,36,test,"a failed read is an error with retry, not an empty repository",False,legacy-not-retrospectively-reviewed
-LEG-8bdd11a1e0bf,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,58,test,changing a pane retires an earlier read,False,legacy-not-retrospectively-reviewed
-LEG-a2223a5b082a,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,79,test,minified lines have a bounded native text measurement and disclose shortening,False,legacy-not-retrospectively-reviewed
-LEG-4e88520e6ccc,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,87,test,wide diffs keep a contrasting position indicator in a fixed viewport gutter,False,legacy-not-retrospectively-reviewed
-LEG-1878ffde2d08,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,142,test,"file cards, hunk folding, line numbers and full source reader share the original diff",False,legacy-not-retrospectively-reviewed
-LEG-12947bbfb7b6,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,170,test,large Dynamic Type keeps chrome and six-digit line numbers within the wrapped viewport,False,legacy-not-retrospectively-reviewed
-LEG-0a6ffbb0563a,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,219,test,wrapping preserves recorded layout and code rows use one compact source gutter,False,legacy-not-retrospectively-reviewed
+LEG-d8b24286f7cc,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,28,test,large diffs mount only a window of native rows and retain the final line,False,legacy-not-retrospectively-reviewed
+LEG-6e9e4223d32d,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,46,test,"a failed read is an error with retry, not an empty repository",False,legacy-not-retrospectively-reviewed
+LEG-8bdd11a1e0bf,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,68,test,changing a pane retires an earlier read,False,legacy-not-retrospectively-reviewed
+LEG-a2223a5b082a,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,89,test,minified lines have a bounded native text measurement and disclose shortening,False,legacy-not-retrospectively-reviewed
+LEG-4e88520e6ccc,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,97,test,wide diffs keep a contrasting position indicator in a fixed viewport gutter,False,legacy-not-retrospectively-reviewed
+LEG-1878ffde2d08,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,152,test,"file cards, hunk folding, line numbers and full source reader share the original diff",False,legacy-not-retrospectively-reviewed
+LEG-12947bbfb7b6,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,182,test,large Dynamic Type keeps chrome and six-digit line numbers within the wrapped viewport,False,legacy-not-retrospectively-reviewed
+LEG-0a6ffbb0563a,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,232,test,wrapping preserves recorded layout and code rows use one compact source gutter,False,legacy-not-retrospectively-reviewed
+MAP-85ca470caec6,L3,reviewed implementation,mobileapp/src/ui/DiffTreeModal.test.tsx,11,reviewed-selector,DTV002 native Diff starts with directory summaries and identifies its worktree,False,DTV-002
+MAP-4cea8e8aaefc,L3,reviewed implementation,mobileapp/src/ui/DiffTreeModal.test.tsx,38,reviewed-selector,DTV002 a clean worktree keeps context without showing metadata as code,False,DTV-002
 LEG-5d47ba2c967a,L2,RN / mobile harness,mobileapp/src/ui/HQCard.test.tsx,26,test,fleetHeadline synthesizes a chief-of-staff conclusion,False,legacy-not-retrospectively-reviewed
 LEG-8e4d3be1c3c6,L2,RN / mobile harness,mobileapp/src/ui/HQCard.test.tsx,41,test,one other session reads in the singular,False,legacy-not-retrospectively-reviewed
 LEG-5a7992f8e39b,L2,RN / mobile harness,mobileapp/src/ui/HQCard.test.tsx,46,test,no fleet pips are rendered anymore,False,legacy-not-retrospectively-reviewed
@@ -6027,6 +6035,9 @@ LEG-5f46ca5c5ad8,L2,RN / mobile harness,mobileapp/src/ui/diffModel.test.ts,31,te
 LEG-fb593b360b74,L2,RN / mobile harness,mobileapp/src/ui/diffModel.test.ts,40,test,Git octal-quoted UTF-8 and literal percent filenames remain recognizable,False,legacy-not-retrospectively-reviewed
 LEG-5e40ddb60392,L2,RN / mobile harness,mobileapp/src/ui/diffModel.test.ts,54,test,display rows preserve recorded whitespace and original patch numbers,False,legacy-not-retrospectively-reviewed
 LEG-5e116c005d4d,L2,RN / mobile harness,mobileapp/src/ui/diffModel.test.ts,66,test,complete long lines are split without losing Unicode or the final character,False,legacy-not-retrospectively-reviewed
+MAP-758d838f23f9,L2,reviewed implementation,mobileapp/src/ui/diffTree.test.ts,7,reviewed-selector,DTV001 directories start closed and preserve exact code and totals on expansion,False,DTV-001
+MAP-aa15f8368607,L2,reviewed implementation,mobileapp/src/ui/diffTree.test.ts,21,reviewed-selector,DTV001 context stays outside hunks and untracked names never count as code additions,False,DTV-001
+MAP-5fa6cffb6b12,L2,reviewed implementation,mobileapp/src/ui/diffTree.test.ts,35,reviewed-selector,DTV001 prototype-like and deep folder names stay inert with bounded hierarchy,False,DTV-001
 LEG-2e8af30a2233,L2,RN / mobile harness,mobileapp/src/ui/fontSettings.test.ts,2,test,one-point adjustments reach every size and clamp at the ends,False,legacy-not-retrospectively-reviewed
 LEG-25c58a077d2c,L2,RN / mobile harness,mobileapp/src/ui/fontSettings.test.ts,15,test,saved sizes override old indices; migration retains actual old text size,False,legacy-not-retrospectively-reviewed
 LEG-2599255c85b0,L2,RN / mobile harness,mobileapp/src/ui/footerSpacing.test.tsx,10,test.each(),footer notices keep spacing and actionable targets (%s),True,legacy-not-retrospectively-reviewed
@@ -6479,6 +6490,7 @@ LEG-d361c87ff22e,L3,Browser,tests/web/conversation-map.test.cjs,136,scenario,`Ov
 MAP-c9d3762e7230,L2,reviewed implementation,tests/web/fixture.cjs,18,reviewed-selector,async function start,False,CT-HTTP
 LEG-c27b6d5dee1f,L3,Browser,tests/web/full-input.test.cjs,4,scenario,'Full tool input and compact formatting at '+width,True,legacy-not-retrospectively-reviewed
 LEG-e24c4d62b6eb,L3,Browser,tests/web/full-input.test.cjs,35,scenario,'Diff file cards and independent hunks at '+width,True,legacy-not-retrospectively-reviewed
+MAP-60e68185ef5d,L4,Browser,tests/web/full-input.test.cjs,35,reviewed-selector,Diff file cards and independent hunks at ,False,DTV-003
 MAP-31ae43976a8b,L3,reviewed implementation,tests/web/harness-isolation.test.cjs,4,reviewed-selector,shared browser first case,False,CT-BROWSER
 MAP-7fb866f795f7,L3,reviewed implementation,tests/web/harness-isolation.test.cjs,25,reviewed-selector,shared browser next case,False,CT-BROWSER
 MAP-eda764da861f,G,reviewed implementation,tests/web/harness.cjs,13,reviewed-selector,function scenario,False,"CT-TIMING,CT-BROWSER"
@@ -6499,6 +6511,7 @@ LEG-fa3fc17abe22,L3,Browser,tests/web/presentation.test.cjs,143,scenario,Browser
 LEG-e465e544353f,L3,Browser,tests/web/presentation.test.cjs,159,scenario,`Compact settings expose direct appearance choices and bounded call rows at ${width}`,True,legacy-not-retrospectively-reviewed
 LEG-a56921dc9990,L3,Browser,tests/web/presentation.test.cjs,188,scenario,External conversations share compact calls and preserve full input,False,legacy-not-retrospectively-reviewed
 MAP-1d1a8964b720,L4,Browser,tests/web/presentation.test.cjs,159,reviewed-selector,Compact settings expose direct appearance choices and bounded call rows at ${width},False,AOP-005
+MAP-fa13c1acffbc,L4,Browser,tests/web/presentation.test.cjs,59,reviewed-selector,Focused Chat is a conversation with session tools at ${width},False,"AOP-005,DTV-003"
 LEG-cf4609b8e9ec,L3,Browser,tests/web/profile.test.cjs,23,scenario,HQ roster avatars retain supervisor identity without a pane-browser tier,False,legacy-not-retrospectively-reviewed
 LEG-168611b7caf3,L3,Browser,tests/web/profile.test.cjs,37,scenario,Message profiles use recorded session/time instead of another same-agent live session,False,legacy-not-retrospectively-reviewed
 LEG-91ba6c97b7c6,L3,Browser,tests/web/profile.test.cjs,56,scenario,Closing a profile retires a delayed response before a different profile opens,False,legacy-not-retrospectively-reviewed
@@ -6507,31 +6520,33 @@ LEG-6e18769ca32f,L3,Browser,tests/web/profile.test.cjs,93,scenario,Agent profile
 LEG-c7ce877293ae,L3,Browser,tests/web/profile.test.cjs,105,scenario,Historical profile reads current ancestry only on expansion and only for the same conversation,False,legacy-not-retrospectively-reviewed
 LEG-76a130aa8589,L3,Browser,tests/web/prompt-echo.test.cjs,5,scenario,'Recorded Codex image retires only its new sent echo at ' + width,True,legacy-not-retrospectively-reviewed
 LEG-b945c9c2c6ea,L3,Browser,tests/web/reading-controls.test.cjs,20,scenario,"`Diff preserves recorded layout, syntax and original copy at ${width}`",True,legacy-not-retrospectively-reviewed
-LEG-d86159318241,L3,Browser,tests/web/reading-controls.test.cjs,42,scenario,`Trace defaults to folded turns and preserves manual disclosure at ${width}`,True,legacy-not-retrospectively-reviewed
+LEG-d86159318241,L3,Browser,tests/web/reading-controls.test.cjs,44,scenario,`Trace defaults to folded turns and preserves manual disclosure at ${width}`,True,legacy-not-retrospectively-reviewed
+MAP-f023f66b7dac,L4,Browser,tests/web/reading-controls.test.cjs,20,reviewed-selector,"Diff preserves recorded layout, syntax and original copy at ${width}",False,DTV-003
 LEG-053ee45ae83a,L3,Browser,tests/web/shared-code.test.cjs,9,scenario,`Shared code and nested trace calls ${width} ${colorScheme}`,True,legacy-not-retrospectively-reviewed
 LEG-3e130ccd4ec6,L3,Browser,tests/web/smoke.test.cjs,10,scenario,"Desktop enrollment, sidebar, restore and live chat",False,legacy-not-retrospectively-reviewed
-LEG-8d3affad6fad,L3,Browser,tests/web/smoke.test.cjs,46,scenario,Narrow Chinese read-only share and shell layout,False,legacy-not-retrospectively-reviewed
-LEG-ee4287aa5e63,L3,Browser,tests/web/smoke.test.cjs,69,scenario,Idle rows never date an unknown completion from window activity,False,legacy-not-retrospectively-reviewed
-LEG-27b4d64159e0,L3,Browser,tests/web/smoke.test.cjs,84,scenario,Revocation clears private content and permits re-enrollment,False,legacy-not-retrospectively-reviewed
-LEG-4fcea4cf4d89,L3,Browser,tests/web/smoke.test.cjs,102,scenario,Slow chat reads stay single and render when they finish,False,legacy-not-retrospectively-reviewed
-LEG-a839d9aac5bd,L3,Browser,tests/web/smoke.test.cjs,127,scenario,`DSH external reader and scoped follow ${viewport.width}`,True,legacy-not-retrospectively-reviewed
-LEG-5aa3406c3cf3,L3,Browser,tests/web/smoke.test.cjs,153,scenario,`Structured activity at ${width}px`,True,legacy-not-retrospectively-reviewed
-LEG-70493de6794f,L3,Browser,tests/web/smoke.test.cjs,201,scenario,`Activity inspector and clipboard at ${width}px`,True,legacy-not-retrospectively-reviewed
-LEG-56091c5b974d,L3,Browser,tests/web/smoke.test.cjs,273,scenario,`Compact tile controls stay readable in ${locale}`,True,legacy-not-retrospectively-reviewed
-LEG-9fb6fb4f5960,L3,Browser,tests/web/smoke.test.cjs,293,scenario,Chat operates an unparsed picker without visiting Terminal,False,legacy-not-retrospectively-reviewed
-LEG-3e1421f2c918,L3,Browser,tests/web/smoke.test.cjs,319,scenario,Chat shows choices only while waiting and folds an answered prompt,False,legacy-not-retrospectively-reviewed
-LEG-338a1654affd,L3,Browser,tests/web/smoke.test.cjs,336,scenario,`View question reveals the picker without submitting a draft at ${width}px`,True,legacy-not-retrospectively-reviewed
-LEG-e526198ccd27,L3,Browser,tests/web/smoke.test.cjs,355,scenario,"Workspace conversation keeps drafts, shows identities and inspectable calls",False,legacy-not-retrospectively-reviewed
-LEG-a88f9e388b83,L3,Browser,tests/web/smoke.test.cjs,440,scenario,Narrow chat supports input and touch copy while trace remains within viewport,False,legacy-not-retrospectively-reviewed
-LEG-eb05aa918933,L3,Browser,tests/web/smoke.test.cjs,474,scenario,Workspace controls support keyboard access and truthful copy feedback,False,legacy-not-retrospectively-reviewed
-LEG-b946e51a9044,L3,Browser,tests/web/smoke.test.cjs,529,scenario,"Live chat shows current work, retains disclosure state and clears after completion or revocation",False,legacy-not-retrospectively-reviewed
-LEG-fb1c9cc17ccb,L3,Browser,tests/web/smoke.test.cjs,606,scenario,Appearance follows the system and persists an explicit choice without recoloring terminals,False,legacy-not-retrospectively-reviewed
-LEG-b055e62dee7c,L3,Browser,tests/web/smoke.test.cjs,650,scenario,Trace tool closes details and returns to the original panel draft,False,legacy-not-retrospectively-reviewed
-LEG-00a1f7cbea36,G,Browser,tests/web/smoke.test.cjs,673,scenario,"Composer stages files, annotates images, recalls input and matches app send controls",False,legacy-not-retrospectively-reviewed
-LEG-f0e15e31d7c2,L3,Browser,tests/web/smoke.test.cjs,792,scenario,Mobile composer and speaker profiles expose identity without redundant writable badges,False,legacy-not-retrospectively-reviewed
-LEG-f81adc301549,G,Browser,tests/web/smoke.test.cjs,848,scenario,Clipboard images and dropped files stay staged until an explicit send,False,legacy-not-retrospectively-reviewed
-LEG-05c9e13ce4c2,L3,Browser,tests/web/smoke.test.cjs,877,scenario,'Native file actions keep readable labels and recorded changes at ' + width,True,legacy-not-retrospectively-reviewed
-MAP-be17f88f3a1c,L4,Browser,tests/web/smoke.test.cjs,153,reviewed-selector,Structured activity at ${width}px,False,AOP-005
+LEG-8d3affad6fad,L3,Browser,tests/web/smoke.test.cjs,83,scenario,Narrow Chinese read-only share and shell layout,False,legacy-not-retrospectively-reviewed
+LEG-ee4287aa5e63,L3,Browser,tests/web/smoke.test.cjs,106,scenario,Idle rows never date an unknown completion from window activity,False,legacy-not-retrospectively-reviewed
+LEG-27b4d64159e0,L3,Browser,tests/web/smoke.test.cjs,121,scenario,Revocation clears private content and permits re-enrollment,False,legacy-not-retrospectively-reviewed
+LEG-4fcea4cf4d89,L3,Browser,tests/web/smoke.test.cjs,139,scenario,Slow chat reads stay single and render when they finish,False,legacy-not-retrospectively-reviewed
+LEG-a839d9aac5bd,L3,Browser,tests/web/smoke.test.cjs,164,scenario,`DSH external reader and scoped follow ${viewport.width}`,True,legacy-not-retrospectively-reviewed
+LEG-5aa3406c3cf3,L3,Browser,tests/web/smoke.test.cjs,190,scenario,`Structured activity at ${width}px`,True,legacy-not-retrospectively-reviewed
+LEG-70493de6794f,L3,Browser,tests/web/smoke.test.cjs,238,scenario,`Activity inspector and clipboard at ${width}px`,True,legacy-not-retrospectively-reviewed
+LEG-56091c5b974d,L3,Browser,tests/web/smoke.test.cjs,310,scenario,`Compact tile controls stay readable in ${locale}`,True,legacy-not-retrospectively-reviewed
+LEG-9fb6fb4f5960,L3,Browser,tests/web/smoke.test.cjs,330,scenario,Chat operates an unparsed picker without visiting Terminal,False,legacy-not-retrospectively-reviewed
+LEG-3e1421f2c918,L3,Browser,tests/web/smoke.test.cjs,356,scenario,Chat shows choices only while waiting and folds an answered prompt,False,legacy-not-retrospectively-reviewed
+LEG-338a1654affd,L3,Browser,tests/web/smoke.test.cjs,373,scenario,`View question reveals the picker without submitting a draft at ${width}px`,True,legacy-not-retrospectively-reviewed
+LEG-e526198ccd27,L3,Browser,tests/web/smoke.test.cjs,392,scenario,"Workspace conversation keeps drafts, shows identities and inspectable calls",False,legacy-not-retrospectively-reviewed
+LEG-a88f9e388b83,L3,Browser,tests/web/smoke.test.cjs,477,scenario,Narrow chat supports input and touch copy while trace remains within viewport,False,legacy-not-retrospectively-reviewed
+LEG-eb05aa918933,L3,Browser,tests/web/smoke.test.cjs,511,scenario,Workspace controls support keyboard access and truthful copy feedback,False,legacy-not-retrospectively-reviewed
+LEG-b946e51a9044,L3,Browser,tests/web/smoke.test.cjs,566,scenario,"Live chat shows current work, retains disclosure state and clears after completion or revocation",False,legacy-not-retrospectively-reviewed
+LEG-fb1c9cc17ccb,L3,Browser,tests/web/smoke.test.cjs,643,scenario,Appearance follows the system and persists an explicit choice without recoloring terminals,False,legacy-not-retrospectively-reviewed
+LEG-b055e62dee7c,L3,Browser,tests/web/smoke.test.cjs,687,scenario,Trace tool closes details and returns to the original panel draft,False,legacy-not-retrospectively-reviewed
+LEG-00a1f7cbea36,G,Browser,tests/web/smoke.test.cjs,710,scenario,"Composer stages files, annotates images, recalls input and matches app send controls",False,legacy-not-retrospectively-reviewed
+LEG-f0e15e31d7c2,L3,Browser,tests/web/smoke.test.cjs,829,scenario,Mobile composer and speaker profiles expose identity without redundant writable badges,False,legacy-not-retrospectively-reviewed
+LEG-f81adc301549,G,Browser,tests/web/smoke.test.cjs,885,scenario,Clipboard images and dropped files stay staged until an explicit send,False,legacy-not-retrospectively-reviewed
+LEG-05c9e13ce4c2,L3,Browser,tests/web/smoke.test.cjs,914,scenario,'Native file actions keep readable labels and recorded changes at ' + width,True,legacy-not-retrospectively-reviewed
+MAP-be17f88f3a1c,L4,Browser,tests/web/smoke.test.cjs,190,reviewed-selector,Structured activity at ${width}px,False,AOP-005
+MAP-57dbbd511453,L4,Browser,tests/web/smoke.test.cjs,48,reviewed-selector,DTV003 Diff tree and worktree context at ${width}px,False,"AOP-005,DTV-003"
 LEG-245fb0545893,L3,Browser,tests/web/terminal-fit.test.cjs,23,scenario,`Terminal grid fits desktop tile and focus at DPR ${deviceScaleFactor}`,True,legacy-not-retrospectively-reviewed
 LEG-5fc1eee042c5,L3,Browser,tests/web/terminal-fit.test.cjs,41,scenario,Terminal grid fits narrow browser after rotation,False,legacy-not-retrospectively-reviewed
 MAP-8fceb6b39ede,L3,reviewed implementation,tests/web/tool-call-detail.test.cjs,6,reviewed-selector,Typed query details in Chat and Trace ,False,TCV-005

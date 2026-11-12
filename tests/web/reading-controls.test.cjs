@@ -22,6 +22,8 @@ for (const width of [320, 390, 1440]) {
     fixture.state.diff = raw;
     await session(page, fixture, width); await openTools(page, 'diff');
     const diff = page.locator('.session-diff'), code = diff.locator('.diff-line.add .diff-code');
+    await diff.locator('.diff-file > summary').click();
+    await diff.locator('.diff-hunk > summary').click();
     assert.equal(await code.innerText(), 'const next={value:1};');
     assert.equal(await diff.locator('.diff-line.add .diff-line-number').count(), 1);
     assert.equal(await diff.locator('.diff-line.add .diff-line-number').innerText(), '9');

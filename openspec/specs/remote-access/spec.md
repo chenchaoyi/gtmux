@@ -1580,3 +1580,19 @@ The browser conversation overview SHALL render bounded Markdown previews using t
 - **WHEN** reading or writing local bookmark storage is refused or quota-exhausted
 - **THEN** marked turns remain available through transcript redraws for this page lifetime and the preview states that limit
 - **AND** authorization revocation clears those page-only marks before the connection can be used again
+
+### Requirement: Shared Diff context preserves pane and host-path boundaries
+GET /api/diff SHALL retain its id/diff envelope, original capture deadline and byte budget. It SHALL check pane reachability before capture. Owner and paired-device readers MAY receive the JSON-quoted actual worktree root in the generated preamble. Guest readers SHALL retain their authorized branch and original patch without this new absolute host-root field. Root-looking text inside a real patch SHALL remain unchanged.
+
+#### Scenario: Read an allowed guest pane with worktree context
+- **WHEN** a guest requests Diff for an explicitly shared pane
+- **THEN** it receives that pane's branch and original patch without the new absolute worktree-root preamble
+- **AND** a denied or unauthenticated request never invokes capture
+
+### Requirement: Browser Diff shares collapsed hierarchy and loaded statistics
+The browser Diff SHALL use the same directory model and context interpretation as the native reader. It SHALL start directories, files and hunks collapsed, offer Collapse all, preserve original copying and independent wrapping, label incomplete statistics and distinguish a clean metadata-only worktree from patch code. Path and branch text SHALL be rendered as text rather than HTML.
+
+#### Scenario: Expand a directory on a narrow or desktop display
+- **WHEN** the reader opens Diff and explicitly expands its directory, file and hunk
+- **THEN** the original colored change lines become visible without horizontal overflow of controls
+- **AND** Collapse all closes the tree while worktree context and totals remain visible
