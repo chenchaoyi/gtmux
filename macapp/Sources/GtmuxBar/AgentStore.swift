@@ -182,6 +182,7 @@ struct Agent: Identifiable, Equatable {
     var creationClient = ""
     var currentClient = ""
     var launchHost: LaunchHost?
+    var observedConversation: ConversationObservation?
     var canReadConversation: Bool?
     var client = ""  // native Codex origin: chatgpt_desktop | terminal
     var tab = ""
@@ -240,7 +241,8 @@ struct Agent: Identifiable, Equatable {
     var secondary: String {
         if isNative { return terminal }
         let base = session.isEmpty ? loc : session
-        return paneID.isEmpty ? base : "\(base) · \(paneID)"
+        let location = paneID.isEmpty ? base : "\(base) · \(paneID)"
+        return observedConversation == nil ? location : location + " · " + (L10n.shared.lang == "zh" ? "关联待确认" : "Association pending")
     }
 
     /// CLI args to jump to this agent (DESIGN §7): tmux by pane id, native by
@@ -249,6 +251,13 @@ struct Agent: Identifiable, Equatable {
         if isNative { return ["focus", "--terminal", terminal, "--tab", tab] }
         return ["focus", paneID]
     }
+}
+
+struct ConversationObservation: Decodable, Equatable {
+    let sessionID: String
+    let homeID: String
+    let state: String
+    enum CodingKeys: String, CodingKey { case sessionID = "session_id", homeID = "home_id", state }
 }
 
 extension Agent: Decodable {
@@ -264,6 +273,7 @@ extension Agent: Decodable {
         role = s(.role)
         homeID = s(.homeID); creationClient = s(.creationClient); currentClient = s(.currentClient)
         launchHost = try? c.decode(LaunchHost.self, forKey: .launchHost)
+        observedConversation = try? c.decode(ConversationObservation.self, forKey: .observedConversation)
         canReadConversation = try? c.decode(Bool.self, forKey: .canReadConversation)
         follow = try? c.decode(SessionFollowSettings.self, forKey: .follow)
         project = s(.project); terminal = s(.terminal); client = s(.client); tab = s(.tab)
@@ -278,6 +288,7 @@ extension Agent: Decodable {
         watched = b(.watched)
     }
     enum CodingKeys: String, CodingKey {
+        case observedConversation = "observed_conversation"
         case launchHost = "launch_host"
         case homeID = "home_id", creationClient = "creation_client", currentClient = "current_client", canReadConversation = "can_read_conversation"
         case paneID = "pane_id"

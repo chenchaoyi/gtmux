@@ -24,6 +24,15 @@
       "TestMSD006PendingTargetIdentity"
     ]
   },
+  "internal/agents/codex_presentation_config_test.go": {
+    "cases": [
+      "SID-001"
+    ],
+    "selectors": [
+      "TestSID001PresentationConfigKeepsManagedIdentity",
+      "TestSID001HelpStillRecognizesCommandsAfterDisplayConfig"
+    ]
+  },
   "internal/app/client_contract_test.go": {
     "cases": [
       "CT-HTTP"
@@ -101,6 +110,14 @@
     ],
     "selectors": [
       "TestSpawnMatterValidationBeforeAnyLaunch"
+    ]
+  },
+  "internal/app/observed_conversation_test.go": {
+    "cases": [
+      "SID-005"
+    ],
+    "selectors": [
+      "TestSID005ObservedReaderKeepsBoundedWindowAndExactCursor"
     ]
   },
   "internal/app/phone_delivery_receipt_test.go": {
@@ -195,6 +212,15 @@
     ],
     "selectors": [
       "TestSpawnBindingRestoresTranscriptEndpoint"
+    ]
+  },
+  "internal/codexbridge/analytics_identity_test.go": {
+    "cases": [
+      "SID-002"
+    ],
+    "selectors": [
+      "TestSID002AnalyticsLabelDoesNotEraseRootIdentity",
+      "TestSID002AnalyticsCannotPromoteChildOrGlobalTraffic"
     ]
   },
   "internal/codexbridge/connection_epoch_test.go": {
@@ -422,6 +448,14 @@
       "TestStorageBoundaryUpgradePreservesLocalRulesAndExistingRecords"
     ]
   },
+  "internal/hq/identity_launch_test.go": {
+    "cases": [
+      "SID-001"
+    ],
+    "selectors": [
+      "TestSID001ActualHQRecipeRetainsManagedFrontend"
+    ]
+  },
   "internal/hqworkspace/input_test.go": {
     "cases": [
       "HQP1-003"
@@ -567,6 +601,14 @@
       "TestPWR001ConcurrentProducerCannotBeOverwrittenByOlderREST"
     ]
   },
+  "internal/radar/observed_identity_test.go": {
+    "cases": [
+      "SID-004"
+    ],
+    "selectors": [
+      "TestSID004HistoricalProjectionIsUniqueAndDoesNotBorrowAuthority"
+    ]
+  },
   "internal/relay/inbox_test.go": {
     "cases": [
       "RBL-002"
@@ -597,6 +639,15 @@
       "TestCAS002OwnHeartbeatRepairsLostIndex",
       "TestCAS002HeartbeatCannotReclaimReplacementOrUnknownEvidence",
       "TestCAS001LegacyEmptyAndForeignHome"
+    ]
+  },
+  "internal/resume/observed_conversation_test.go": {
+    "cases": [
+      "SID-003"
+    ],
+    "selectors": [
+      "TestSID003LastKnownHistoryHasNoLiveAuthority",
+      "TestSID003UnknownConflictingAndUnsafeHistoryStaysUnassociated"
     ]
   },
   "internal/resume/state_publication_test.go": {
@@ -671,6 +722,15 @@
       "TestCAS003ConversationFailureContractAndGuestBoundary"
     ]
   },
+  "internal/server/observed_conversation_test.go": {
+    "cases": [
+      "SID-005"
+    ],
+    "selectors": [
+      "TestSID005OwnerOptInHistoryAndGuestFence",
+      "TestSID005SharedRosterOmitsHistoricalIdentifiers"
+    ]
+  },
   "internal/server/recent_transcript_test.go": {
     "cases": [
       "LCL-002"
@@ -703,6 +763,14 @@
     ],
     "selectors": [
       "ARGV-001 browser uses"
+    ]
+  },
+  "internal/server/web/observed_identity.test.cjs": {
+    "cases": [
+      "SID-007"
+    ],
+    "selectors": [
+      "SID007 focused and tile history cannot dispatch input or become an external row"
     ]
   },
   "internal/server/web/state-duration.test.cjs": {
@@ -817,6 +885,14 @@
     "selectors": [
       "testBottomRemainingControlOpensAllAndSelectsHiddenGoalWithoutSending",
       "testFullyShownListHasNoRemainingControlAndUnknownRosterDoesNotSayIdle"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ObservedIdentityTests.swift": {
+    "cases": [
+      "SID-008"
+    ],
+    "selectors": [
+      "testSID008HistoryNeverPopulatesCurrentIdentity"
     ]
   },
   "macapp/Tests/GtmuxBarTests/ScreenshotActiveInputTests.swift": {
@@ -1206,6 +1282,14 @@
       "CAS005 transcript rejects association and source failures instead of returning empty history"
     ]
   },
+  "mobileapp/src/api/observed-history.test.ts": {
+    "cases": [
+      "SID-006"
+    ],
+    "selectors": [
+      "SID006 observed history stays separate from current session authority and survives 304"
+    ]
+  },
   "mobileapp/src/api/sendDeadline.test.ts": {
     "cases": [
       "MSD-004"
@@ -1222,6 +1306,14 @@
     "selectors": [
       "mounted Detail isolates drafts",
       "late draft storage result"
+    ]
+  },
+  "mobileapp/src/screens/DetailObserved.test.tsx": {
+    "cases": [
+      "SID-006"
+    ],
+    "selectors": [
+      "SID006 mounted Detail fences historical chat and clears restriction after verified refresh"
     ]
   },
   "mobileapp/src/screens/DetailSendReceipt.test.tsx": {
@@ -1268,6 +1360,14 @@
       "changing HQ routes the upload and message to the new pane",
       "an upload failure keeps the file for retry and never sends an empty command",
       "cancelling the photo picker leaves nothing to send and the menu can open again"
+    ]
+  },
+  "mobileapp/src/screens/HQScreen.observed.test.tsx": {
+    "cases": [
+      "SID-006"
+    ],
+    "selectors": [
+      "SID006 mounted HQ cannot send from last-known history and resets on verified response"
     ]
   },
   "mobileapp/src/screens/HQScreen.poll.test.tsx": {
@@ -1356,6 +1456,14 @@
     ],
     "selectors": [
       "CAS005 association banner preserves messages and retries without claiming empty history"
+    ]
+  },
+  "mobileapp/src/ui/ChatView.observed.test.tsx": {
+    "cases": [
+      "SID-006"
+    ],
+    "selectors": [
+      "SID006 last-known history is explicitly read only in both languages"
     ]
   },
   "mobileapp/src/ui/CommandArgvPanel.test.tsx": {
@@ -1560,6 +1668,14 @@
     "selectors": [
       "Typed query details in Chat and Trace ",
       "Recorded query failure retries and large results page without losing full copy"
+    ]
+  },
+  "mobileapp/src/api/observed-client-contract.test.ts": {
+    "cases": [
+      "SID-009"
+    ],
+    "selectors": [
+      "SID009 ordinary reads stay compatible while UI history explicitly opts in"
     ]
   }
 }

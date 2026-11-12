@@ -1,0 +1,106 @@
+{
+  "id": "session-identity-20261112",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review; not independent approval",
+    "date": "2026-11-12",
+    "decision": "Separate verified current frontend authority from explicitly historical display/read-only association; close managed-launch presentation config gap and validate actual protocol semantics",
+    "notes": "User asks to fix repeated native/tmux duplicate. Installed175/current primary407B JSON is the same corrupt record seen yesterday; current native row has exact scoped SID while tmux row lacks identity. Old exact frontend binding independently names still-live terminal client, but backend and frontend receipts changed; it must not become command authority. Existing1845 was read recovery only and not deployed, radar unchanged. No actual state repair, restores, input, queue replay/deletion, service restart, installation or release. HQ user manual restart is not automatic recovery; startup notification override is a proven adapter eligibility gap. Original terminal disconnect and corruption writer are not yet established and must remain unknown rather than blamed on quota/memory. Strict unique private evidence and incarnation checks, truthful pending/last-known semantics, guest fencing and no effective privilege escalation reviewed before any test/source implementation. Generated local schema is contract evidence, not real device/runtime acceptance. All fixtures/builds/raw in task temp; shared dirty root and old retained/refused resources protected. Scope changes require a new reviewed seal before changed assertions."
+  },
+  "cases": [
+    {
+      "id": "SID-001",
+      "layer": "L2",
+      "description": "Managed Codex presentation options keep the frontend adapter",
+      "setup": "Synthetic argv and the actual HQ launch recipe; no process or configuration mutations.",
+      "action": "Admit plain HQ argv and presentation-only tui.notifications in separated/inline config forms; attempt provider/home/endpoint/permissions/profile and malformed or mixed config values.",
+      "expected": "Only a narrowly parsed display-only notification override is newly admitted. Arguments remain byte-for-byte unchanged at launch; provider/home/remote/profile/headless/unknown configuration remains native. Help admission consumes config values and still sees later subcommands. No permission, auth, proxy or user configuration change.",
+      "planned_files": [
+        "internal/agents/codex_presentation_config_test.go",
+        "internal/hq/identity_launch_test.go"
+      ]
+    },
+    {
+      "id": "SID-002",
+      "layer": "L2",
+      "description": "Root identity follows protocol semantics rather than analytics labels",
+      "setup": "Observer with independently verified same home and synthetic own request/response frames; generated installed Codex0.167.2 schema documents threadSource as analytics string.",
+      "action": "Send start/resume/fork with analytics labels, then ephemeral/helper/subagent/foreign-home/failure/unknown provenance/unmatched and out-of-order responses.",
+      "expected": "A successful own non-ephemeral root operation from cli/vscode can bind despite analytics label. Response provenance and parent/ephemeral facts remain decisive. Global notifications, arbitrary reads/catalogs, subagent parents, errors, foreign home, old responses and missing provenance never bind. Keep bounded pending/observation limits and source payload forwarding unchanged.",
+      "planned_files": [
+        "internal/codexbridge/analytics_identity_test.go"
+      ]
+    },
+    {
+      "id": "SID-003",
+      "layer": "L2",
+      "description": "Independent last-known conversation evidence is a display-only relation",
+      "setup": "Isolated private native binding receipt and exact-home terminal-origin native record, deterministic live Codex client/pane process witnesses and process births; primary absent/corrupt or expired same-session.",
+      "action": "Resolve historical relation, then vary PID incarnation, pane root, TTY, ambiguity, home, valid incumbent owner, receipt permissions/type/size and unknown/future timestamps.",
+      "expected": "Return last-known history only for one independently recorded relation whose exact terminal process and pane incarnation still match. Never parse a corrupt JSON prefix, infer by title/cwd/shared backend PID or change disk. A changed valid incumbent, missing/unsafe/ambiguous proof or PID/pane reuse fails closed. New live backend identity may differ only because this relation is explicitly historical; it never yields LoadLive, input, restore, HQ or lifecycle authority.",
+      "planned_files": [
+        "internal/resume/observed_conversation_test.go"
+      ]
+    },
+    {
+      "id": "SID-004",
+      "layer": "L2",
+      "description": "Radar represents one conversation without fabricating live identity",
+      "setup": "Production native/tmux assembly with synthetic independent receipt and process probes; include same-directory and same-daemon unrelated threads, multiple homes and a verified newer conversation.",
+      "action": "Gather a pane plus the native copy, then remove/change/ambiguate the observation; check source records before/after.",
+      "expected": "Only the independently established unique last-known relation folds the native history into its pane presentation. Expose explicit association-pending/read-only history metadata; do not fill the authoritative session ID, change lifecycle status, grant input or prune the native observation. Genuine external clients and other threads remain. Existing verified identity takes precedence; absent evidence retains honest separate unknown data. Both projection and parser preserve no-write read semantics for this new fallback.",
+      "planned_files": [
+        "internal/radar/observed_identity_test.go"
+      ]
+    },
+    {
+      "id": "SID-005",
+      "layer": "L3",
+      "description": "Owner can view last-known history while guest and inputs stay fenced",
+      "setup": "Actual app pane reader and server endpoints with synthetic history and independent relation, scoped owner/guest requests; no real TTY or history.",
+      "action": "Read association-failed pane as owner and guest, use recent/history/304 cursors, switch association to a new verified thread and attempt existing input admission.",
+      "expected": "Owner may explicitly see last-known history with an unconfirmed/read-only response state and no false current-session assertion. Guest cannot take this fallback or receive candidate identifiers/content; deny before its history reader. Input and restore continue requiring original strict current evidence. ETag/cursors include identity/state; old headers cannot falsely persist after verification. Normal valid-empty/errors/recovered behavior remains.",
+      "planned_files": [
+        "internal/app/observed_conversation_test.go",
+        "internal/server/observed_conversation_test.go"
+      ]
+    },
+    {
+      "id": "SID-006",
+      "layer": "L3",
+      "description": "RN history state is visible and cannot enable sending",
+      "setup": "Mounted actual API/Detail/HQ/shared ChatView with isolated responses and existing send spies; no device or actual user conversation.",
+      "action": "Load unconfirmed last-known history, refresh304, switch pane while old request returns, then establish verified history.",
+      "expected": "Show bilingual last-known/read-only guidance, preserve visible turns, disable relevant chat send controls while this state applies and restore normal verified behavior afterward. Keep identity-scoped late-result guards and unchanged-poll memo behavior. No automatic resend, rebind or restore.",
+      "planned_files": [
+        "mobileapp/src/api/observed-history.test.ts",
+        "mobileapp/src/ui/ChatView.observed.test.tsx",
+        "mobileapp/src/screens/DetailObserved.test.tsx",
+        "mobileapp/src/screens/HQScreen.observed.test.tsx"
+      ]
+    },
+    {
+      "id": "SID-007",
+      "layer": "L3",
+      "description": "Browser focused and tile views keep explicit read-only identity state",
+      "setup": "Actual browser handlers in isolated VM/synthetic server with unconfirmed/recovered/verified/guest and stale-target responses.",
+      "action": "Render focused and tile chats and row metadata, attempt send with unconfirmed state, refresh304 and change targets.",
+      "expected": "One server conversation projection stays one row; association-pending and last-known-history labels are consistent and never described as confirmed external ownership. Unconfirmed history is visibly read-only and cannot dispatch send. Verified recovery removes the restriction; stale responses cannot affect a new target. Normal external and existing owner/guest boundaries stay unchanged.",
+      "planned_files": [
+        "internal/server/web/observed_identity.test.cjs"
+      ]
+    },
+    {
+      "id": "SID-008",
+      "layer": "M",
+      "description": "Mac menu reflects pending association without duplicating server records",
+      "setup": "Actual Swift decoding and row-description helpers using synthetic agent JSON, no App/TCC/window interaction.",
+      "action": "Decode ordinary verified and last-known/read-only observations and render their status descriptions.",
+      "expected": "A missing verified session ID stays missing. Pending relation is labeled as such, distinct from confirmed external placement, and source row keys/targets retain existing meaning. No focus, input, installation or real screenshot is performed.",
+      "planned_files": [
+        "macapp/Tests/GtmuxBarTests/ObservedIdentityTests.swift"
+      ]
+    }
+  ],
+  "seal": "7e5152cb08c068b3f05f91b37a30b0c4e9120eff2cbc61afc91180ac2ec7348a"
+}

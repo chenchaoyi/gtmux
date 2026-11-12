@@ -64,6 +64,21 @@ func HelpAdmits(args []string, help string) bool {
 		}
 		key, _, inline := strings.Cut(a, "=")
 		switch key {
+		case "-c", "--config":
+			value := ""
+			if inline {
+				_, value, _ = strings.Cut(a, "=")
+			} else {
+				i++
+				if i >= len(args) {
+					return false
+				}
+				value = args[i]
+			}
+			if !agents.CodexPresentationOverride(value) {
+				return false
+			}
+			continue
 		case "--model", "-m", "--sandbox", "-s", "--ask-for-approval", "-a", "--cd", "-C", "--add-dir", "--image", "-i":
 			if !inline {
 				i++

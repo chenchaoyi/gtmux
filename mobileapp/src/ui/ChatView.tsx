@@ -80,6 +80,7 @@ interface Props {
   loading: boolean;
   failed?: boolean;
   associationFailed?: boolean;
+  readOnlyHistory?: boolean;
   onRetry?: () => void;
   /** Desktop reader: no terminal fallback or suggestion to type in this view. */
   readOnly?: boolean;
@@ -185,8 +186,9 @@ export function liveLabel(since: number | undefined, nowSec: number, lang: Lang)
   return el ? `${base} · ${el}` : base;
 }
 
-export function ChatView({client, readOnly = false, agent, lines, status, fontSize, pal, lang, turns: recentTurns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, failed = false, associationFailed = false, onRetry, pendingPrompt, pendingDelivered = false, pendingDelivery, fontPref, workingSince, onLiveEdge, topPad = 0, controlsTop, controlsShift, maxWidth}: Props) {
+export function ChatView({client, readOnly = false, agent, lines, status, fontSize, pal, lang, turns: recentTurns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, failed = false, associationFailed = false, readOnlyHistory = false, onRetry, pendingPrompt, pendingDelivered = false, pendingDelivery, fontPref, workingSince, onLiveEdge, topPad = 0, controlsTop, controlsShift, maxWidth}: Props) {
   // Radar timestamps and temporary status changes are observations, not a new reader.
+  readOnly = readOnly || readOnlyHistory;
   const liveScope = JSON.stringify([client?.base, agent.pane_id, agent.home_id, agent.session_id]);
   const [liveDisclosure, setLiveDisclosure] = useState({scope: liveScope, open: false});
   const liveOpen = liveDisclosure.scope === liveScope && liveDisclosure.open;
@@ -403,8 +405,8 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   const sub =
     status === 'waiting'
       ? lang === 'zh'
-        ? (readOnly ? '请在 ChatGPT 桌面版处理' : '等你回应，用下面的审批卡，或直接输入')
-        : (readOnly ? 'Continue in ChatGPT desktop' : 'Waiting on you. Use the approval card below, or type')
+        ? (readOnlyHistory ? '请在终端处理' : readOnly ? '请在 ChatGPT 桌面版处理' : '等你回应，用下面的审批卡，或直接输入')
+        : (readOnlyHistory ? 'Continue in Terminal' : readOnly ? 'Continue in ChatGPT desktop' : 'Waiting on you. Use the approval card below, or type')
       : status === 'working'
       ? lang === 'zh'
         ? '正在运行…'
@@ -494,6 +496,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
         </View>
       )}
 
+      {readOnlyHistory && <Text testID="history-read-only" accessibilityRole="text" style={styles.earlierText}>{lang === 'zh' ? '以下为上次关联的对话，只供查看；当前会话关联待确认，请在终端继续。' : 'Last-known conversation, read only. The current association is unconfirmed; continue in Terminal.'}</Text>}
       {(failed || associationFailed || history.denied) && (
         <View testID="chat-read-error" style={styles.seamRow}>
           <Text style={styles.earlierText}>{associationFailed ? (lang === 'zh' ? '会话关联暂不可用，无法确认这段终端对应的对话。当前内容已保留，可切换到终端查看。' : 'Conversation association is unavailable. Existing messages are kept; switch to Terminal to view this session.') : lang === 'zh' ? (turns.length ? '暂时无法更新，已保留当前内容。' : '对话暂时无法载入。') : (turns.length ? 'Could not refresh. Your conversation is still shown.' : 'Conversation could not be loaded.')}</Text>

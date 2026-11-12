@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -408,14 +409,15 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 			// internal/tmux uses for the radar.
 			return []string{tmux.Bin, "-u", "attach-session", "-t", session}, true
 		},
-		Upload:           saveUpload,
-		Icon:             agentIconPNG,
-		Diff:             diffForPane,
-		Transcript:       transcriptForPane,
-		TranscriptWindow: transcriptWindowForPane,
-		ToolInput:        fullToolInput,
-		ArtifactResolve:  resolveConversationDocument,
-		ArtifactRelated:  artifact.Related,
+		Upload:             saveUpload,
+		Icon:               agentIconPNG,
+		Diff:               diffForPane,
+		Transcript:         transcriptForPane,
+		TranscriptWindow:   transcriptWindowForPane,
+		TranscriptObserved: transcriptObservedForPane,
+		ToolInput:          fullToolInput,
+		ArtifactResolve:    resolveConversationDocument,
+		ArtifactRelated:    artifact.Related,
 		ArtifactContent: func(id, sid, home string) (artifact.File, io.ReadSeekCloser, error) {
 			f, err := artifact.Resolve("gtmux-file:"+id, sid, home)
 			if err != nil {
@@ -903,13 +905,18 @@ func transcriptPaneRead(id string, earlier, limit int) ([]byte, server.Transcrip
 	if !ok {
 		return empty, meta, server.ErrConversationUnassociated
 	}
-	meta.AssociationRecovered = recovered
+	return transcriptRecordRead(id, rec, recovered, earlier, limit)
+}
+
+func transcriptRecordRead(id string, rec resume.Record, recovered bool, earlier, limit int) ([]byte, server.TranscriptMeta, error) {
+	empty := []byte("[]")
+	meta := server.TranscriptMeta{AssociationRecovered: recovered}
 	meta.History = func(ctx context.Context, before string) ([]byte, server.TranscriptMeta, error) {
 		sid := transcript.HistorySession(before)
 		agent := rec.Agent
 		if sid != rec.SessionID {
 			allowed := false
-			if hqpane.Find() == id {
+			if id != "" && hqpane.Find() == id {
 				current := rec.SessionID
 				for n := 0; n < 64; n++ {
 					previous, a := events.HQSessionPredecessorLink(current, time.Now().Unix())
@@ -960,7 +967,7 @@ func transcriptPaneRead(id string, earlier, limit int) ([]byte, server.Transcrip
 	// sessions are chained; any other pane has nothing before its current log.
 	now := time.Now().Unix()
 	oldest := rec.SessionID
-	if hqpane.Find() == id {
+	if id != "" && hqpane.Find() == id {
 		turns, oldest = stitchEarlier(turns, rec.SessionID, meta.Reset, meta.ResetAt, earlier, now)
 		if predecessor, agent := events.HQSessionPredecessorLink(oldest, now); predecessor != "" {
 			if agent == "" {
@@ -1536,3 +1543,27 @@ func serveAgentStatuses() []server.AgentStatus {
 	}
 	return out
 }
+
+// Explicit owner-only history selection. The caller must first try the ordinary
+// reader and opt into this weaker, visibly read-only association. It never grants
+// current-session or input authority, nor stitches an unconfirmed HQ chain.
+func transcriptObservedForPane(id string, earlier, limit int) ([]byte, server.TranscriptMeta, error) {
+	loc := tmux.Display(id, "#{session_name}:#{window_index}.#{pane_index}")
+	views := observedConversationViews(transcript.NewCodexPathScope(), map[string]string{id: loc}, time.Now().Unix())
+	view, ok := views[id]
+	if !ok || loc == "" {
+		return nil, server.TranscriptMeta{}, server.ErrConversationUnassociated
+	}
+	b, meta, err := transcriptRecordRead("", resume.Record{Agent: "codex", SessionID: view.SessionID, HomeID: view.HomeID}, false, 0, limit)
+	meta.AssociationReadOnly = true
+	meta.Etag = fmt.Sprintf("W/%q", fmt.Sprintf("observed-v1-%x", sha256.Sum256([]byte(view.HomeID+"\x00"+view.SessionID+"\x00"+meta.Etag))))
+	history := meta.History
+	meta.History = func(ctx context.Context, before string) ([]byte, server.TranscriptMeta, error) {
+		b, m, e := history(ctx, before)
+		m.AssociationReadOnly = true
+		return b, m, e
+	}
+	return b, meta, err
+}
+
+var observedConversationViews = resume.ObservedCodexConversations

@@ -295,23 +295,24 @@ type Pane struct {
 	Activity bool
 	Latest   bool // the most-recently-finished pane (claude-notify last-finished)
 	// terminal generalization (DESIGN §7)
-	source              string // "tmux" | "native"
-	cwd                 string // the pane's working dir (drives project/branch + supervisor detection)
-	role                string // "supervisor" when this is the hq (中控) session, else ""
-	project             string
-	branch              string // git branch of the pane's cwd (radar++), "" if not a repo
-	terminal            string
-	client              string // compatibility creation metadata; never current owner
-	homeID              string
-	launchHost          *launchhost.Display
-	currentClient       string
-	canReadConversation bool
-	Follow              *sessionpolicy.Settings
-	tab                 string
-	activityAt          int64  // epoch seconds of last activity (relative time)
-	Since               int64  // epoch seconds the current state began (for a duration)
-	SinceUncertain      bool   // explicit unknown clock; do not borrow window activity
-	icon                string // identity icon hint (.app path or image path); "" = monogram
+	source               string // "tmux" | "native"
+	cwd                  string // the pane's working dir (drives project/branch + supervisor detection)
+	role                 string // "supervisor" when this is the hq (中控) session, else ""
+	project              string
+	branch               string // git branch of the pane's cwd (radar++), "" if not a repo
+	terminal             string
+	client               string // compatibility creation metadata; never current owner
+	homeID               string
+	launchHost           *launchhost.Display
+	currentClient        string
+	canReadConversation  bool
+	observedConversation *resume.ConversationObservation
+	Follow               *sessionpolicy.Settings
+	tab                  string
+	activityAt           int64  // epoch seconds of last activity (relative time)
+	Since                int64  // epoch seconds the current state began (for a duration)
+	SinceUncertain       bool   // explicit unknown clock; do not borrow window activity
+	icon                 string // identity icon hint (.app path or image path); "" = monogram
 	// input-lock modifier: the pane is in tmux copy/view-mode (the user is scrolling
 	// the scrollback), so typed input — manual OR gtmux send/spawn — is swallowed as
 	// mode-nav until it exits. Surfaces flag which pane is input-locked. tmux rows only.
@@ -384,22 +385,23 @@ type agentJSON struct {
 	// (中控) session. A pane carrying the `gtmux hq` stamp for this home is the sole
 	// holder; a cwd in the hq home counts only when no pane is stamped (legacy homes;
 	// see applyRolePrecedence). Additive + omitempty: absent for normal agents.
-	Role                string                  `json:"role,omitempty"`
-	Project             string                  `json:"project,omitempty"`  // repo root basename (tmux: cwd; native: cwd)
-	Branch              string                  `json:"branch,omitempty"`   // git branch of the pane's cwd (radar++)
-	Terminal            string                  `json:"terminal,omitempty"` // native: terminal app
-	Follow              *sessionpolicy.Settings `json:"follow,omitempty"`
-	HomeID              string                  `json:"home_id,omitempty"`
-	CreationClient      string                  `json:"creation_client,omitempty"`
-	LaunchHost          *launchhost.Display     `json:"launch_host,omitempty"`
-	CurrentClient       string                  `json:"current_client,omitempty"`
-	CanReadConversation bool                    `json:"can_read_conversation,omitempty"`
-	Client              string                  `json:"client,omitempty"` // native Codex: chatgpt_desktop | terminal
-	Tab                 string                  `json:"tab,omitempty"`    // native: terminal tab title (jump key)
-	ActivityAt          int64                   `json:"activity_at,omitempty"`
-	Since               int64                   `json:"since,omitempty"` // epoch the current state began (duration)
-	SinceUncertain      bool                    `json:"since_uncertain,omitempty"`
-	Icon                string                  `json:"icon,omitempty"` // identity icon hint (.app/image path)
+	Role                 string                          `json:"role,omitempty"`
+	Project              string                          `json:"project,omitempty"`  // repo root basename (tmux: cwd; native: cwd)
+	Branch               string                          `json:"branch,omitempty"`   // git branch of the pane's cwd (radar++)
+	Terminal             string                          `json:"terminal,omitempty"` // native: terminal app
+	Follow               *sessionpolicy.Settings         `json:"follow,omitempty"`
+	HomeID               string                          `json:"home_id,omitempty"`
+	CreationClient       string                          `json:"creation_client,omitempty"`
+	LaunchHost           *launchhost.Display             `json:"launch_host,omitempty"`
+	CurrentClient        string                          `json:"current_client,omitempty"`
+	CanReadConversation  bool                            `json:"can_read_conversation,omitempty"`
+	ObservedConversation *resume.ConversationObservation `json:"observed_conversation,omitempty"`
+	Client               string                          `json:"client,omitempty"` // native Codex: chatgpt_desktop | terminal
+	Tab                  string                          `json:"tab,omitempty"`    // native: terminal tab title (jump key)
+	ActivityAt           int64                           `json:"activity_at,omitempty"`
+	Since                int64                           `json:"since,omitempty"` // epoch the current state began (duration)
+	SinceUncertain       bool                            `json:"since_uncertain,omitempty"`
+	Icon                 string                          `json:"icon,omitempty"` // identity icon hint (.app/image path)
 	// native rows only: the agent session id (the `gtmux adopt <id>` key) + whether
 	// it can be adopted into tmux (resumable). Absent/false for tmux rows.
 	SessionID string `json:"session_id,omitempty"`
@@ -1608,6 +1610,8 @@ func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 	return nativePanesScoped(tmuxPanes, profiles, now, nil)
 }
 
+var observedConversations = resume.ObservedCodexConversations
+
 func nativePanesScoped(tmuxPanes []Pane, profiles []agentProfile, now int64, codexScope *transcript.CodexPathScope) []Pane {
 	recs := native.Live(now)
 	seenDSH := map[string]int{}
@@ -1690,13 +1694,18 @@ func nativePanesScoped(tmuxPanes []Pane, profiles []agentProfile, now int64, cod
 		}
 	}
 	resume.ReconcileCodexProcesses(codexScope, recs, locations, now)
+	observed := observedConversations(codexScope, locations, now)
 	inTmux := map[string]bool{}
 	for _, a := range terminalAttachments() {
 		inTmux[a.HomeID+"\x00"+a.SessionID] = true
 	}
-	for _, p := range tmuxPanes {
+	for i := range tmuxPanes {
+		p := &tmuxPanes[i]
 		if rec, ok := boundResume(p.Loc, p.Agent); ok {
 			inTmux[rec.HomeID+"\x00"+rec.SessionID] = true
+		} else if view, ok := observed[p.PaneID]; ok {
+			p.observedConversation = &view
+			inTmux[view.HomeID+"\x00"+view.SessionID] = true
 		}
 	}
 	var out []Pane
@@ -2121,7 +2130,7 @@ func agentsJSONBytes(panes []Pane) ([]byte, error) {
 			LaunchHost: p.launchHost, HomeID: p.homeID, CreationClient: p.client, CurrentClient: p.currentClient, CanReadConversation: p.canReadConversation,
 			Source: src, Role: p.role, Project: p.project, Branch: p.branch, Terminal: p.terminal, Client: p.client, Tab: p.tab,
 			ActivityAt: p.activityAt, Since: p.Since, SinceUncertain: p.SinceUncertain, Icon: p.icon,
-			SessionID: p.sessionID, Adoptable: p.adoptable, Follow: p.Follow,
+			ObservedConversation: p.observedConversation, SessionID: p.sessionID, Adoptable: p.adoptable, Follow: p.Follow,
 			Error: p.Errored, ErrorText: p.ErrorText,
 			Bg: p.Bg, BgCount: p.BgCount, BgText: p.BgText,
 			UsageWarn: p.usageWarn,
