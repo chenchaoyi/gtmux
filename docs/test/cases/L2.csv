@@ -543,6 +543,8 @@ MAP-eb6d9f0a3446,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/Screensho
 MAP-6e2c5d1a0073,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotSourceMappingTests.swift,6,reviewed-selector,testASC011ChangedDisplayMappingAndScaleRefuseBeforeAndAfterCapture,False,ASC-011
 MAP-e7b5f07e2603,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotWorkCompletionOrderTests.swift,20,reviewed-selector,testASC013SuccessAndErrorCloseActualDuplicatesBeforeAdmissionReturn,False,ASC-013
 MAP-47650912eb8d,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/StateDurationTests.swift,6,reviewed-selector,testCSR004DecodedUncertainDurationDoesNotUseEitherClock,False,CSR-004
+MAP-8146b69754a9,L2,reviewed implementation,mobileapp/__tests__/chatAutoRefresh.test.tsx,37,reviewed-selector,CPG008 automatic cut-row refresh lets a six-second initial read finish,False,"CPG-008,CPG-009"
+MAP-0e35f06c8ffa,L2,reviewed implementation,mobileapp/__tests__/chatAutoRefresh.test.tsx,47,reviewed-selector,CPG009 automatic quiet refresh keeps ETag and coalesces a slow conditional read,False,"CPG-008,CPG-009"
 MAP-6035b934d888,L2,reviewed implementation,mobileapp/__tests__/chatHistoryContinuity.test.tsx,19,reviewed-selector,LCL-004 rolling recent snapshots retain observed intervening records exactly once,False,LCL-004
 MAP-884d717bc4c2,L2,reviewed implementation,mobileapp/__tests__/chatHistoryContinuity.test.tsx,28,reviewed-selector,LCL-004 disconnected latest tail waits behind Jump before selecting its authoritative history cursor,False,LCL-004
 MAP-447ac47553c6,L2,reviewed implementation,mobileapp/__tests__/chatHistoryContinuity.test.tsx,46,reviewed-selector,LCL-004 an in-flight earlier page preserves snapshots observed after it started,False,LCL-004

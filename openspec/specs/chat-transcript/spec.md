@@ -792,7 +792,7 @@ The shared React Native Chat reader SHALL retire all snapshots already observed 
 - **WHEN** pagination is refused and subsequent conditional reads reuse the retired snapshot
 - **THEN** explicit Retry in Detail and HQ SHALL retire a pending read and request a complete recent response without its previous ETag
 - **AND** only a successful current-reader response restores content; failed retries and late or old-reader responses SHALL NOT restore it
-- **AND** ordinary polling SHALL retain conditional-read behavior
+- **AND** ordinary polling and automatic Codex prompt refresh SHALL retain conditional-read behavior and in-flight coalescing, without cancelling a slow valid response
 
 ### Requirement: Explicit owner-only historical observation reads
 

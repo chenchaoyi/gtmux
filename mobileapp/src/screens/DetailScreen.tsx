@@ -646,6 +646,7 @@ function PaneDetailView({
   useEffect(() => {setChatRecord({identity: chatIdentity, turns: [], dropped: 0, loaded: false}); setTraceOpen(false); setDiffOpen(false);}, [chatIdentity]);
   // The latest loader and when it last ran, for the Codex refresh below.
   const loadTurnsRef = useRef<() => void>(() => {});
+  const retryTurnsRef = useRef<() => void>(() => {});
   const turnsAtRef = useRef(0);
   const pollTranscript = mode === 'chat' || traceOpen;
   useEffect(() => {
@@ -668,7 +669,8 @@ function PaneDetailView({
     );
     // A page refusal may have retired the hook's snapshot while this parent
     // still has its ETag. Explicit Retry must fetch a body, even for quiet chat.
-    loadTurnsRef.current = () => {task.invalidate(); etagRef.current = undefined; task.run();};
+    loadTurnsRef.current = task.run;
+    retryTurnsRef.current = () => {task.invalidate(); etagRef.current = undefined; task.run();};
     if (pollTranscript) return startReadPolling(task, live.status === 'working' ? CHAT_ACTIVE_POLL_MS : CHAT_IDLE_POLL_MS);
     task.run();
     return task.dispose;
@@ -687,7 +689,7 @@ function PaneDetailView({
   // trees in JS even when nothing changed — that was the "停顿 on unchanging content".
   const chatEl = useMemo(
     () => (
-      <ChatView readOnlyHistory={historyReadOnly} client={isGuest ? undefined : client} agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} failed={chatFailed} associationFailed={chatAssociationFailed} onRetry={() => loadTurnsRef.current()} pendingPrompt={pendingPrompt} pendingDelivered={pendingDelivered} pendingDelivery={pendingDelivery} fontPref={fontPref} onLiveEdge={chatEdge} topPad={chromeH + questionInset} controlsTop={fullscreen ? insets.top : chromeH + questionInset} controlsShift={fullscreen ? undefined : collapse.interpolate({inputRange: [0, 1], outputRange: [0, -chromeH]})} maxWidth={isWide ? READING_WIDTH : undefined} />
+      <ChatView readOnlyHistory={historyReadOnly} client={isGuest ? undefined : client} agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} failed={chatFailed} associationFailed={chatAssociationFailed} onRetry={() => retryTurnsRef.current()} pendingPrompt={pendingPrompt} pendingDelivered={pendingDelivered} pendingDelivery={pendingDelivery} fontPref={fontPref} onLiveEdge={chatEdge} topPad={chromeH + questionInset} controlsTop={fullscreen ? insets.top : chromeH + questionInset} controlsShift={fullscreen ? undefined : collapse.interpolate({inputRange: [0, 1], outputRange: [0, -chromeH]})} maxWidth={isWide ? READING_WIDTH : undefined} />
     ),
     [client, isGuest, live, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, chatFailed, chatAssociationFailed, historyReadOnly, pendingPrompt, pendingDelivered, pendingDelivery, fontPref, chatEdge, chromeH, questionInset, fullscreen, insets.top, isWide, collapse],
   );
@@ -1149,7 +1151,7 @@ function PaneDetailView({
         }}
       />
 
-      <TraceModal visible={traceOpen && !isPlainPane && !isNative} agent={live} client={isGuest ? undefined : client} turns={turns} loading={!chatLoaded} failed={chatFailed} onRetry={() => loadTurnsRef.current()} dropped={droppedTurns} pal={pal} lang={lang} fontSize={fontSize} onClose={() => setTraceOpen(false)} />
+      <TraceModal visible={traceOpen && !isPlainPane && !isNative} agent={live} client={isGuest ? undefined : client} turns={turns} loading={!chatLoaded} failed={chatFailed} onRetry={() => retryTurnsRef.current()} dropped={droppedTurns} pal={pal} lang={lang} fontSize={fontSize} onClose={() => setTraceOpen(false)} />
       <DiffModal
         fontSize={fontSize}
         visible={diffOpen}

@@ -1913,5 +1913,15 @@
       "CPG006 %s failed Retry stays denied and retires a pending conditional poll",
       "CPG007 %s reader switch ignores a late recovery response"
     ]
+  },
+  "mobileapp/__tests__/chatAutoRefresh.test.tsx": {
+    "cases": [
+      "CPG-008",
+      "CPG-009"
+    ],
+    "selectors": [
+      "CPG008 automatic cut-row refresh lets a six-second initial read finish",
+      "CPG009 automatic quiet refresh keeps ETag and coalesces a slow conditional read"
+    ]
   }
 }

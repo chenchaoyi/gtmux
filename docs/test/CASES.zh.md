@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1168 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1169 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3777 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2078 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2080 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 132 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 105 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -67,6 +67,8 @@
 | RBL-003 | Codex delivery never enters legacy tmux/queue fallback; notice text excludes complete reply/private body, accepted status describes notice only. Burst guard and freshness rechecked at mutation. CLI source pull fetches only own home/thread/pane lifetime; timeout/cancel bounded with reply left intact, no busy indefinite wait. Late reply returned through tool output on pull, not new human turn. Legacy delivered rows not replayed; original caller authorization retained. The canonical short inbox hint is attributed to HQ only with accepted exact-home/thread receipt and first source witness; a later human copy remains human. |
 | LCL-002 | Default stays compatible; recent request selects20-turn producer; before page invokes history after identity authorization using metadata-only producer without default full parse. ETag distinguishes recent/full; request scope and guest context stripping unchanged. History cursor reaches all earlier source turns with original numbering; unsupported recent dependency falls back safely. Invalid recent value rejected or treated as default, never guessed limits. |
 | LCL-003 | Initial requests opt into recent20, prior API call defaults preserved. Shared chat offers real load-earlier control for server-dropped records/cursor; already fetched earlier turns survive live polling; duplicate IDs not doubled; no stale result or content crosses target/client/home/session. Loading/error/retry is explicit; transient failures retain shown content and allow retry instead of blank or endless spinner. Source history error retains content/cursor. No caching credentials or unverified identities. Actual RN interaction assertions cover both screens and shared UI; no native/device performance claim. Prefer stable record_id for disclosure keys across prepends. Verify actual GtmuxClient recent query opt-in and default URL compatibility. History401/403 retires its exact displayed snapshot and prefix immediately; a fresh authoritative snapshot recovers, while a stale denial does not overwrite newer content. Existing current-session pages and explicit predecessor-session stitching stay chronological; source paging grows the mounted window by at most20, with anchor retained on both source and in-memory prepends. Unmount/identity abort releases the deadline timer without waiting for a noncooperative reader; no update reaches the disposed view. |
+| CPG-008 | Exactly one transcript request, original signal not aborted before completion, full prompt bar appears at6s; after match automatic timer stops. OldS should fail signal/count/render expectations because the4s timer retires normal slow read. |
+| CPG-009 | At10s only two requests, second signal remains active through normal completion, If-None-Match retained on second and subsequent reads; no repeated unconditional fetch or starvation. Explicit Retry recovery tests remain unchanged and passing. |
 | HXF-001 | Only the exact original backend observation tied to a positively gone verified frontend matches; every incomplete/changed/unknown case returns false; later generation wins even within one second; no observation, history or binding is removed or rewritten |
 | HXF-002 | Only completed exact closed-backend observations become idle/history; unfollowed history is absent, explicit follow remains idle and status-only without new input/read/knowledge authority. New starts/submits/waits, different turns/homes, changed generations and uncertain evidence remain visible with their existing states. Observation/history/consent bytes persist unchanged; backend role is evaluated once per process in a gather. The exact old radar code fails the new historical-worker visibility assertion while preservation controls pass |
 | HXF-003 | ESRCH or a positively later nonfuture process birth proves only the old frontend is gone; every unknown/original/overlapping/future case remains conservative, and a newly written observation wins; no native state is deleted or rewritten. The previous ESRCH-only implementation fails the replacement-incarnation case |
