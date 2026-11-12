@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner; self-review, not independent approval",
     "date": "2026-11-12",
     "decision": "Close inherited Chat auth-denial ordering and Jump/paging cancellation in a separate candidate before release",
-    "notes": "Full independent REVIEW1159 read and SHA-verified; current base7d1366 hook is exact blob6edc from S834/175/176, and current ChatView callbacks retain both reviewed conditions. Preserve existing LCL-003/004 continuity, identity/cursor semantics, timeouts and all old test assertions. New tests mount actual React hook/ChatView with synthetic deferred GtmuxClient reads and normal RN native mocks; no extracted callback toy, real session, device or pixel claim. Denial must bind the currently rendered snapshot at failure, not the request-start array. Jump always invalidates active pagination, leaves intentional same-reader cached history policy intact, and cancels stale window continuations/offset anchors; new valid reads still work. Keep source P1 PR1855/Q frozen; this follows fresh main7d1366 after independent approval and normal merge. UI failure assertions must be semantic, not compile/mock/setup failure; save old-red/source and new-green snapshots. No new dependencies, transport fallback, weaker auth, forced input, broader mount count or shortened original budgets."
+    "notes": "Full independent REVIEW1159 read and SHA-verified; current base7d1366 hook is exact blob6edc from S834/175/176, and current ChatView callbacks retain both reviewed conditions. Preserve existing LCL-003/004 continuity, identity/cursor semantics, timeouts and all old test assertions. New tests mount actual React hook/ChatView with synthetic deferred GtmuxClient reads and normal RN native mocks; no extracted callback toy, real session, device or pixel claim. Denial must bind the currently rendered snapshot at failure, not the request-start array. Jump always invalidates active pagination, leaves intentional same-reader cached history policy intact, and cancels stale window continuations/offset anchors; new valid reads still work. Keep source P1 PR1855/Q frozen; this follows fresh main7d1366 after independent approval and normal merge. UI failure assertions must be semantic, not compile/mock/setup failure; save old-red/source and new-green snapshots. No new dependencies, transport fallback, weaker auth, forced input, broader mount count or shortened original budgets. Follow-up review before adding CPG-004: an already observed array must not count as a post-denial authorized snapshot merely because its reference differs from the most recent one. Scope weak reference-generation labels to the reader and retire all observed generations through failure; this also avoids allowing an older render after refusal. Keep no additional turn payload cache and no new server authority."
   },
   "cases": [
     {
@@ -40,7 +40,18 @@
       "planned_files": [
         "mobileapp/__tests__/chatPagingOrder.test.tsx"
       ]
+    },
+    {
+      "id": "CPG-004",
+      "layer": "L2",
+      "description": "Revisiting an already observed snapshot never lifts a refusal",
+      "setup": "Actual React hook has observed arrays A and B; page starts and is refused while B remains current, with an initial same-reference refusal control.",
+      "action": "After refusal, render old A and B again, then supply a genuinely fresh array C for the same reader.",
+      "expected": "Both previously observed snapshots stay retired and failed/denied remain visible; only C restores content. Reader-local weak generation metadata must not turn an old cached array into a new authorization or retain turn payloads.",
+      "planned_files": [
+        "mobileapp/__tests__/chatPagingOrder.test.tsx"
+      ]
     }
   ],
-  "seal": "d09da63527543a41262dd22b79c9987f97d1ae7a2615f81449384b06d7fdc305"
+  "seal": "992231bda9d3a34c4e628a438f574ea8935a6ea46be11c61200f6be011e3c720"
 }
