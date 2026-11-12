@@ -2823,3 +2823,19 @@ accessible expanded state. The presentation SHALL preserve canonical matter stat
 - **WHEN** only three of twenty matters are shown
 - **THEN** the remaining seventeen are visibly indicated beside the preview and an
   explicit action expands them; collapsing restores the preview without losing matters
+
+### Requirement: Historical chat permits an explicitly local draft
+Phone and iPad historical Chat views SHALL permit local text editing while conversation association is pending, and SHALL explain that sending remains unavailable. This opt-in SHALL NOT enable uploads, remote submit, terminal keys or send-history mutation. A local draft SHALL use the observed conversation identity only for persistence; verification of that same identity SHALL retain it and another identity SHALL have a separate draft. Other disabled composers SHALL remain disabled.
+
+#### Scenario: Open the keyboard over read-only historical Chat
+- **WHEN** the reader opens the compact or full-screen input for historical Chat
+- **THEN** the local text field is editable and its pending-association reason is visible
+- **AND** Return or a previously captured send callback cannot upload, send or clear the local draft
+
+### Requirement: Diff identifies the worktree and starts with a collapsed directory tree
+The shared phone/iPad Diff SHALL show the supplied worktree identity, branch and HEAD comparison context with file and loaded-line addition/deletion totals. Directories, files and hunks SHALL start collapsed with explicit disclosure and Collapse all. Untracked names SHALL NOT count as added code, and truncated payload counts SHALL be labelled partial. A clean worktree SHALL retain context without displaying metadata as code. Original source, line numbers, complete-file reading, Unicode-safe wrapping and virtualized rows SHALL remain available.
+
+#### Scenario: Review a linked worktree from a nested pane directory
+- **WHEN** the reader opens Diff for a pane whose directory is inside a linked worktree
+- **THEN** the heading identifies that actual worktree and branch, and directory rows summarize its loaded changes
+- **AND** explicit directory, file and hunk disclosures reveal the original patch while Collapse all hides them again

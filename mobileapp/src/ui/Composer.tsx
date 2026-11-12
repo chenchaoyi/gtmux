@@ -219,6 +219,7 @@ export const Composer = React.memo(function Composer({
   pal,
   lang,
   enabled = true,
+  draftOnly = false,
   returnSends = false,
   demo = false,
   draftKey,
@@ -237,6 +238,8 @@ export const Composer = React.memo(function Composer({
   pal: Palette;
   lang: Lang;
   enabled?: boolean;
+  /** Local draft editing is allowed while remote chat identity is unconfirmed. */
+  draftOnly?: boolean;
   keyTarget?: string;
   onLoadKeys?: LoadKeys;
   onSendKey?: SendKey;
@@ -422,6 +425,9 @@ export const Composer = React.memo(function Composer({
   // cleared — the text + attachments stay staged and `sendError` invites a retry.
   // `fromSubmit` = triggered by Return (onSubmitEditing); the ↑ button passes false.
   const sendText = async (fromSubmit = false) => {
+    // Disabled remote input must not upload attachments, save send history or
+    // clear a local draft when Return/captured callbacks are invoked.
+    if (!enabled || !onSend) return;
     if (terminalKeys.isBlocked()) return;
     if (sending) return;
     const body = text.trim();
@@ -655,6 +661,9 @@ export const Composer = React.memo(function Composer({
         </ScrollView>
       )}
       {sendError && <Text style={[styles.sendError, {color: StatusColor.waiting}]}>{sendError}</Text>}
+      {draftOnly && !enabled && <Text testID="composer-draft-only" style={{color: pal.fg2, fontSize: 12, lineHeight: 18, paddingHorizontal: 16, paddingBottom: 6}}>
+        {lang === 'zh' ? '会话关联待确认。可以先写草稿，确认后才能发送。' : 'Session association pending. You can write a draft; sending is unavailable until confirmed.'}
+      </Text>}
       <View style={styles.inputRow}>
         <TouchableOpacity
           testID={TestIds.composer.attach}
@@ -672,7 +681,7 @@ export const Composer = React.memo(function Composer({
           typed.current = true;
           setText(t);
         }}
-        editable={enabled}
+        editable={enabled || draftOnly}
         autoFocus
         placeholder={lang === 'zh' ? '输入…' : 'Type a message…'}
         placeholderTextColor={pal.fg3}
@@ -860,7 +869,7 @@ export const Composer = React.memo(function Composer({
           typed.current = true;
           setText(t);
         }}
-            editable={enabled}
+            editable={enabled || draftOnly}
             multiline
             autoFocus
             textAlignVertical="top"

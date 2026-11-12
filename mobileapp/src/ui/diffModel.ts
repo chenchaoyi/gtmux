@@ -1,7 +1,7 @@
 // Unified-diff structure shared by native and browser readers. Only actual hunks
 // contribute line counts; headers, binary changes and rename metadata remain visible.
 export type DiffRowMeta = {
-  kind: 'file' | 'hunk' | 'code' | 'meta';
+  kind: 'directory' | 'file' | 'hunk' | 'code' | 'meta';
   key: string;
   file?: string;
   hunk?: string;
@@ -13,16 +13,20 @@ export type DiffRowMeta = {
   removed?: number;
   open?: boolean;
   continuation?: boolean;
+  depth?: number;
+  fileCount?: number;
+  untracked?: boolean;
 };
 export type DiffFile = {
   key: string;
   path: string;
   added: number;
   removed: number;
+  untracked?: boolean;
   raw: string;
   rows: Array<{ text: string; meta: DiffRowMeta }>;
 };
-function gitPath(value: string) {
+function gitPath(value: string, stripPrefix = true) {
   if (value.startsWith('"') && value.endsWith('"')) {
     try {
       value = JSON.parse(value) as string;
@@ -57,7 +61,7 @@ function gitPath(value: string) {
       }
     }
   }
-  return value.replace(/^[ab]\//, '');
+  return stripPrefix ? value.replace(/^[ab]\//, '') : value;
 }
 
 export function diffFiles(text: string): DiffFile[] {
@@ -67,7 +71,14 @@ export function diffFiles(text: string): DiffFile[] {
   let old = 0,
     next = 0,
     inHunk = false;
+  let untracked = false;
   for (const [i, line] of text.replace(/\n$/, '').split('\n').entries()) {
+    if (line === '# untracked:') {untracked = true; file = undefined; continue;}
+    if (line === '… (diff truncated)') {untracked = false; file = undefined; continue;}
+    if (untracked) {
+      if (line.startsWith('+ ')) files.push({key: 'untracked:' + i, path: gitPath(line.slice(2), false), added: 0, removed: 0, untracked: true, raw: line, rows: []});
+      continue;
+    }
     if (line.startsWith('diff --git ')) {
       const match =
         /^diff --git (?:"(?:[^"\\]|\\.)*"|a\/.*?) ("(?:[^"\\]|\\.)*"|b\/.*)$/.exec(
@@ -146,6 +157,7 @@ export function diffFiles(text: string): DiffFile[] {
 export function diffPresentation(
   text: string,
   folded: Record<string, boolean> = {},
+  initiallyFolded = false,
 ) {
   const files = diffFiles(text),
     lines: string[] = [],
@@ -160,7 +172,7 @@ export function diffPresentation(
     };
   }
   for (const [index, file] of files.entries()) {
-    const open = !folded[file.key];
+    const open = folded[file.key] === undefined ? !initiallyFolded : !folded[file.key];
     lines.push(file.path);
     meta.push({
       kind: 'file',
@@ -170,6 +182,7 @@ export function diffPresentation(
       added: file.added,
       removed: file.removed,
       open,
+      untracked: file.untracked,
     });
     if (!open) continue;
     let show = true,
@@ -178,7 +191,7 @@ export function diffPresentation(
       if (row.meta.kind === 'hunk') {
         show =
           folded[row.meta.key] === undefined
-            ? index === 0 && first
+            ? !initiallyFolded && index === 0 && first
             : !folded[row.meta.key];
         first = false;
         lines.push(row.text);
@@ -205,6 +218,89 @@ export function hunkRange(header: string): string {
   const start = Number(count > 0 ? match[3] : match[1]);
   const span = count > 0 ? count : Number(match[2] ?? 1);
   return span > 1 ? `${start}–${start + span - 1}` : String(start);
+}
+
+/** Metadata emitted by the bounded Git capture, never inferred from a session title. */
+export function diffContext(text: string) {
+  let worktree = '', branch = '';
+  for (const line of text.split('\n')) {
+    if (line.startsWith('diff --git ') || line === '# untracked:') break;
+    if (line.startsWith('# branch ')) branch = line.slice(9);
+    if (line.startsWith('# worktree ')) {
+      try {const value: unknown = JSON.parse(line.slice(11)); if (typeof value === 'string' && value.startsWith('/')) worktree = value;} catch { /* Older servers may not provide context. */ }
+    }
+  }
+  return {worktree, branch, truncated: text.trimEnd().endsWith('… (diff truncated)')};
+}
+
+export type DiffTreeNode = {
+  key: string; name: string; path: string; depth: number;
+  added: number; removed: number; fileCount: number;
+  file?: DiffFile; children: DiffTreeNode[];
+};
+
+/** Shared directory aggregation; Maps keep filenames such as __proto__ inert. */
+export function diffTree(files: DiffFile[]): DiffTreeNode[] {
+  const root: DiffTreeNode = {key: '', name: '', path: '', depth: -1, added: 0, removed: 0, fileCount: 0, children: []};
+  const directories = new Map<string, DiffTreeNode>([['', root]]);
+  for (const file of files) {
+    const parts = file.path.split('/');
+    const name = parts.pop() || file.path;
+    // Preserve very deep paths as a compact final directory, with bounded stack depth.
+    if (parts.length > 24) parts.splice(23, parts.length - 23, parts.slice(23).join('/'));
+    let parent = root, path = '';
+    for (const [depth, part] of parts.entries()) {
+      path += (path ? '/' : '') + part;
+      let node = directories.get(path);
+      if (!node) {
+        node = {key: 'directory:' + path, name: part, path, depth, added: 0, removed: 0, fileCount: 0, children: []};
+        directories.set(path, node); parent.children.push(node);
+      }
+      node.added += file.added; node.removed += file.removed; node.fileCount++;
+      parent = node;
+    }
+    parent.children.push({key: file.key, name, path: file.path, depth: parts.length, fileCount: 1, added: file.added, removed: file.removed, file, children: []});
+  }
+  const sort = (nodes: DiffTreeNode[]) => {
+    nodes.sort((a, b) => Number(!!a.file) - Number(!!b.file) || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+    nodes.forEach(node => sort(node.children));
+  };
+  sort(root.children);
+  return root.children;
+}
+
+/** Native virtualized rows; source parsing and counts are identical to the browser tree. */
+export function diffTreePresentation(text: string, folded: Record<string, boolean> = {}) {
+  const parsed = diffPresentation(text, folded, true);
+  const tree = diffTree(parsed.files);
+  if (!parsed.files.length) {
+    const context = diffContext(text);
+    const lines = context.worktree || context.branch
+      ? parsed.lines.filter(line => !line.startsWith('# worktree ') && !line.startsWith('# branch '))
+      : parsed.lines;
+    return {...parsed, tree, lines};
+  }
+  const byFile = new Map<string, number[]>();
+  parsed.meta.forEach((meta, index) => {
+    if (!meta.file) return;
+    const indices = byFile.get(meta.file) || []; indices.push(index); byFile.set(meta.file, indices);
+  });
+  const lines: string[] = [], meta: DiffRowMeta[] = [];
+  const visit = (nodes: DiffTreeNode[]) => {
+    for (const node of nodes) {
+      if (node.file) {
+        for (const index of byFile.get(node.key) || []) {
+          lines.push(parsed.lines[index]); meta.push({...parsed.meta[index], depth: node.depth});
+        }
+      } else {
+        const open = folded[node.key] === false;
+        lines.push(node.name); meta.push({kind: 'directory', key: node.key, path: node.path, depth: node.depth, fileCount: node.fileCount, added: node.added, removed: node.removed, open});
+        if (open) visit(node.children);
+      }
+    }
+  };
+  visit(tree);
+  return {...parsed, tree, lines, meta};
 }
 
 /** Split recorded patch lines into bounded native rows without reformatting source. */

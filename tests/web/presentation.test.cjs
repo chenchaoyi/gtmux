@@ -82,7 +82,7 @@ for(const width of [320,390,768,1440]) scenario(`Focused Chat is a conversation 
   const input=page.locator('#chat-input .cx-input');await input.fill('Keep this draft');
   await page.locator('#chat .conv-scroll').evaluate(e=>{e.scrollTop=1234;});
   const readingPosition=await page.locator('#chat .conv-scroll').evaluate(e=>e.scrollTop);
-  await openTools(page,'diff');await page.locator('.session-diff .add').waitFor();await closeTools(page);
+  await openTools(page,'diff');await page.locator('.session-diff .diff-file > summary').click();await page.locator('.session-diff .diff-hunk > summary').click();await page.locator('.session-diff .add').waitFor();await closeTools(page);
   assert.equal(await input.inputValue(),'Keep this draft');
   await openTools(page,'trace');await page.locator('.trace-event').first().waitFor();await closeTools(page);
   assert.equal(await input.inputValue(),'Keep this draft');

@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner, self-review; not independent approval",
     "date": "2026-11-12",
     "decision": "Align existing rendered browser assertions with the reviewed pointer-specific density contract",
-    "notes": "Full CI exposed three old unconditional 44px Activity assertions. Retain all settings, content, count, disclosure, clipboard, focus and bounds assertions. Change only Activity dimensions to fine-pointer30px rows/32px group and touch44px; assert actual pointer capability rather than equating width with touch. Add explicit touch context for narrow structured-activity cases. New review precedes modifications of these legacy files; no timeout or gate weakening."
+    "notes": "Full CI exposed three old unconditional 44px Activity assertions. Retain all settings, content, count, disclosure, clipboard, focus and bounds assertions. Change only Activity dimensions to fine-pointer30px rows/32px group and touch44px; assert actual pointer capability rather than equating width with touch. Add explicit touch context for narrow structured-activity cases. New review precedes modifications of these legacy files; no timeout or gate weakening. Fresh integration self-review on2026-11-12 against exact frozen source eda260dbfaa966e1a39cbb327f6dbfefc4041f7d before the new integration port. Original development history is preserved, including its rejected inherited-case history check; this is not a claim this review preceded the original edits. Review covers CKD001..003/DTV001..005 and the inherited SID006 and AOP005 mappings on the touched files. SID006 remote-send/identity assertions remain intact while an explicit local-only editor is allowed; AOP005 pointer density, touch targets, ordering and original journey assertions are unchanged, with explicit Diff opening only. Original case objects, checker, base and assertions are not weakened. The checked implementation will be copied only after this real design commit."
   },
   "cases": [
     {
@@ -21,5 +21,5 @@
       ]
     }
   ],
-  "seal": "2d2fa6f2ea924d6a7d90b375860c92121ae91d06237f5e98a99c0dbaa56c09dc"
+  "seal": "3c791ae14c6afc285816df4e16cc744088f0548024048c2034c17e962802cf15"
 }

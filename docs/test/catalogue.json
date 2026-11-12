@@ -44353,9 +44353,18 @@
           "dynamic": false,
           "layer": "L3",
           "design": "SID-006"
+        },
+        {
+          "id": "MAP-108bcc59dc3f",
+          "line": 30,
+          "kind": "reviewed-selector",
+          "name": "CKD003 Detail keeps the pending draft scope when the same conversation is verified",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SID-006,CKD-002,CKD-003"
         }
       ],
-      "sha256": "0887cc6a79558c1ff0e3cf61ccfc1ed87bd7e8a56e20769d23f01b12f0560adc"
+      "sha256": "e0a384b38bc979d9d838a7fa499a161db3b23366d893106529ca75a3c3c09cd8"
     },
     "mobileapp/src/screens/DetailPinned.test.tsx": {
       "sha256": "b9bea41a98ea973f535faad4f84423cf2fe15b27a7baa1c9afd53323c6134ed2",
@@ -44980,9 +44989,18 @@
           "dynamic": false,
           "layer": "L3",
           "design": "SID-006"
+        },
+        {
+          "id": "MAP-5327be537213",
+          "line": 30,
+          "kind": "reviewed-selector",
+          "name": "CKD003 HQ keeps the pending draft scope when the same conversation is verified",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SID-006,CKD-002,CKD-003"
         }
       ],
-      "sha256": "d2e6c2134917e8ea049570c27409090cb962422e35f75f039528a6b627b96836"
+      "sha256": "64a7d326c8e647ec955732cb4ba97c082f7b5ba7cea555cfd1d4e3a182351a52"
     },
     "mobileapp/src/screens/HQScreen.poll.test.tsx": {
       "sha256": "4cedc32d06f75784ab0480316da8352187891c0315004ef3adc6d3cbab6ee5b6",
@@ -51722,13 +51740,13 @@
       ]
     },
     "mobileapp/src/ui/DiffModal.test.tsx": {
-      "sha256": "7abb0070f0e0f33d617dc267a38a985481b5ccf7f6e096f660943d7975042dba",
+      "sha256": "0663ad47d09a979323916a691ffa682679089cb035c64095a3be5a557e4d136b",
       "layer": "L2",
       "stack": "RN / mobile harness",
       "cases": [
         {
           "id": "LEG-d8b24286f7cc",
-          "line": 18,
+          "line": 28,
           "kind": "test",
           "name": "large diffs mount only a window of native rows and retain the final line",
           "dynamic": false,
@@ -51736,7 +51754,7 @@
         },
         {
           "id": "LEG-6e9e4223d32d",
-          "line": 36,
+          "line": 46,
           "kind": "test",
           "name": "a failed read is an error with retry, not an empty repository",
           "dynamic": false,
@@ -51744,7 +51762,7 @@
         },
         {
           "id": "LEG-8bdd11a1e0bf",
-          "line": 58,
+          "line": 68,
           "kind": "test",
           "name": "changing a pane retires an earlier read",
           "dynamic": false,
@@ -51752,7 +51770,7 @@
         },
         {
           "id": "LEG-a2223a5b082a",
-          "line": 79,
+          "line": 89,
           "kind": "test",
           "name": "minified lines have a bounded native text measurement and disclose shortening",
           "dynamic": false,
@@ -51760,7 +51778,7 @@
         },
         {
           "id": "LEG-4e88520e6ccc",
-          "line": 87,
+          "line": 97,
           "kind": "test",
           "name": "wide diffs keep a contrasting position indicator in a fixed viewport gutter",
           "dynamic": false,
@@ -51768,7 +51786,7 @@
         },
         {
           "id": "LEG-1878ffde2d08",
-          "line": 142,
+          "line": 152,
           "kind": "test",
           "name": "file cards, hunk folding, line numbers and full source reader share the original diff",
           "dynamic": false,
@@ -51776,7 +51794,7 @@
         },
         {
           "id": "LEG-12947bbfb7b6",
-          "line": 170,
+          "line": 182,
           "kind": "test",
           "name": "large Dynamic Type keeps chrome and six-digit line numbers within the wrapped viewport",
           "dynamic": false,
@@ -51784,7 +51802,7 @@
         },
         {
           "id": "LEG-0a6ffbb0563a",
-          "line": 219,
+          "line": 232,
           "kind": "test",
           "name": "wrapping preserves recorded layout and code rows use one compact source gutter",
           "dynamic": false,
@@ -59727,7 +59745,7 @@
       "sha256": "e5680209e52d0d592b794015230823527b9d35ac4d1aa9a5d6774dd62ed247af"
     },
     "tests/web/full-input.test.cjs": {
-      "sha256": "39b7c70f6cab29614e317d24056cc85db3506c60e10511062ce56fe32a73aaa4",
+      "sha256": "95eb1ce8fd86c4884441e694932d1fd3b1e69ebd20beebb8bf9be62ee3e13c6b",
       "layer": "L3",
       "stack": "Browser",
       "cases": [
@@ -59746,6 +59764,15 @@
           "name": "'Diff file cards and independent hunks at '+width",
           "dynamic": true,
           "layer": "L3"
+        },
+        {
+          "id": "MAP-60e68185ef5d",
+          "line": 35,
+          "kind": "reviewed-selector",
+          "name": "Diff file cards and independent hunks at ",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "DTV-003"
         }
       ]
     },
@@ -59807,7 +59834,7 @@
       "sha256": "a620ff866d1e1f4786f1402bce978987ad8b1dc9c6920e2d073157e296f1b969"
     },
     "tests/web/presentation.test.cjs": {
-      "sha256": "19315cb667e6393928914176220e3003b7772067bec2c0587430d2b721498674",
+      "sha256": "05bb286087d996de0f913e54eabb29bc4d75d87909f852cdc2b02ea55b9d4f8f",
       "layer": "L3",
       "stack": "Browser",
       "cases": [
@@ -59907,6 +59934,15 @@
           "dynamic": false,
           "layer": "L4",
           "design": "AOP-005"
+        },
+        {
+          "id": "MAP-fa13c1acffbc",
+          "line": 59,
+          "kind": "reviewed-selector",
+          "name": "Focused Chat is a conversation with session tools at ${width}",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "AOP-005,DTV-003"
         }
       ]
     },
@@ -59981,7 +60017,7 @@
       ]
     },
     "tests/web/reading-controls.test.cjs": {
-      "sha256": "e0948572f715bf4d7b5027e3d0f9379196856e6421015e9eddfda5e55a22627d",
+      "sha256": "0e1ad1cf9b5dca3b04adb1d70140e94f06c3ed87e1808b6dc8e38631c6e64ad6",
       "layer": "L3",
       "stack": "Browser",
       "cases": [
@@ -59995,11 +60031,20 @@
         },
         {
           "id": "LEG-d86159318241",
-          "line": 42,
+          "line": 44,
           "kind": "scenario",
           "name": "`Trace defaults to folded turns and preserves manual disclosure at ${width}`",
           "dynamic": true,
           "layer": "L3"
+        },
+        {
+          "id": "MAP-f023f66b7dac",
+          "line": 20,
+          "kind": "reviewed-selector",
+          "name": "Diff preserves recorded layout, syntax and original copy at ${width}",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "DTV-003"
         }
       ]
     },
@@ -60019,7 +60064,7 @@
       ]
     },
     "tests/web/smoke.test.cjs": {
-      "sha256": "7eb144726e1c6a64c2080b13e430a0ee0c95a1d33597c3dba573a9f0ee477b2e",
+      "sha256": "2ed0f6ea48cc2b6336effa35ae477bd014d263b4016746ab838c1df96ed54b7d",
       "layer": "L3",
       "stack": "Browser",
       "cases": [
@@ -60033,7 +60078,7 @@
         },
         {
           "id": "LEG-8d3affad6fad",
-          "line": 46,
+          "line": 83,
           "kind": "scenario",
           "name": "Narrow Chinese read-only share and shell layout",
           "dynamic": false,
@@ -60041,7 +60086,7 @@
         },
         {
           "id": "LEG-ee4287aa5e63",
-          "line": 69,
+          "line": 106,
           "kind": "scenario",
           "name": "Idle rows never date an unknown completion from window activity",
           "dynamic": false,
@@ -60049,7 +60094,7 @@
         },
         {
           "id": "LEG-27b4d64159e0",
-          "line": 84,
+          "line": 121,
           "kind": "scenario",
           "name": "Revocation clears private content and permits re-enrollment",
           "dynamic": false,
@@ -60057,7 +60102,7 @@
         },
         {
           "id": "LEG-4fcea4cf4d89",
-          "line": 102,
+          "line": 139,
           "kind": "scenario",
           "name": "Slow chat reads stay single and render when they finish",
           "dynamic": false,
@@ -60065,7 +60110,7 @@
         },
         {
           "id": "LEG-a839d9aac5bd",
-          "line": 127,
+          "line": 164,
           "kind": "scenario",
           "name": "`DSH external reader and scoped follow ${viewport.width}`",
           "dynamic": true,
@@ -60073,7 +60118,7 @@
         },
         {
           "id": "LEG-5aa3406c3cf3",
-          "line": 153,
+          "line": 190,
           "kind": "scenario",
           "name": "`Structured activity at ${width}px`",
           "dynamic": true,
@@ -60081,7 +60126,7 @@
         },
         {
           "id": "LEG-70493de6794f",
-          "line": 201,
+          "line": 238,
           "kind": "scenario",
           "name": "`Activity inspector and clipboard at ${width}px`",
           "dynamic": true,
@@ -60089,7 +60134,7 @@
         },
         {
           "id": "LEG-56091c5b974d",
-          "line": 273,
+          "line": 310,
           "kind": "scenario",
           "name": "`Compact tile controls stay readable in ${locale}`",
           "dynamic": true,
@@ -60097,7 +60142,7 @@
         },
         {
           "id": "LEG-9fb6fb4f5960",
-          "line": 293,
+          "line": 330,
           "kind": "scenario",
           "name": "Chat operates an unparsed picker without visiting Terminal",
           "dynamic": false,
@@ -60105,7 +60150,7 @@
         },
         {
           "id": "LEG-3e1421f2c918",
-          "line": 319,
+          "line": 356,
           "kind": "scenario",
           "name": "Chat shows choices only while waiting and folds an answered prompt",
           "dynamic": false,
@@ -60113,7 +60158,7 @@
         },
         {
           "id": "LEG-338a1654affd",
-          "line": 336,
+          "line": 373,
           "kind": "scenario",
           "name": "`View question reveals the picker without submitting a draft at ${width}px`",
           "dynamic": true,
@@ -60121,7 +60166,7 @@
         },
         {
           "id": "LEG-e526198ccd27",
-          "line": 355,
+          "line": 392,
           "kind": "scenario",
           "name": "Workspace conversation keeps drafts, shows identities and inspectable calls",
           "dynamic": false,
@@ -60129,7 +60174,7 @@
         },
         {
           "id": "LEG-a88f9e388b83",
-          "line": 440,
+          "line": 477,
           "kind": "scenario",
           "name": "Narrow chat supports input and touch copy while trace remains within viewport",
           "dynamic": false,
@@ -60137,7 +60182,7 @@
         },
         {
           "id": "LEG-eb05aa918933",
-          "line": 474,
+          "line": 511,
           "kind": "scenario",
           "name": "Workspace controls support keyboard access and truthful copy feedback",
           "dynamic": false,
@@ -60145,7 +60190,7 @@
         },
         {
           "id": "LEG-b946e51a9044",
-          "line": 529,
+          "line": 566,
           "kind": "scenario",
           "name": "Live chat shows current work, retains disclosure state and clears after completion or revocation",
           "dynamic": false,
@@ -60153,7 +60198,7 @@
         },
         {
           "id": "LEG-fb1c9cc17ccb",
-          "line": 606,
+          "line": 643,
           "kind": "scenario",
           "name": "Appearance follows the system and persists an explicit choice without recoloring terminals",
           "dynamic": false,
@@ -60161,7 +60206,7 @@
         },
         {
           "id": "LEG-b055e62dee7c",
-          "line": 650,
+          "line": 687,
           "kind": "scenario",
           "name": "Trace tool closes details and returns to the original panel draft",
           "dynamic": false,
@@ -60169,7 +60214,7 @@
         },
         {
           "id": "LEG-00a1f7cbea36",
-          "line": 673,
+          "line": 710,
           "kind": "scenario",
           "name": "Composer stages files, annotates images, recalls input and matches app send controls",
           "dynamic": false,
@@ -60177,7 +60222,7 @@
         },
         {
           "id": "LEG-f0e15e31d7c2",
-          "line": 792,
+          "line": 829,
           "kind": "scenario",
           "name": "Mobile composer and speaker profiles expose identity without redundant writable badges",
           "dynamic": false,
@@ -60185,7 +60230,7 @@
         },
         {
           "id": "LEG-f81adc301549",
-          "line": 848,
+          "line": 885,
           "kind": "scenario",
           "name": "Clipboard images and dropped files stay staged until an explicit send",
           "dynamic": false,
@@ -60193,7 +60238,7 @@
         },
         {
           "id": "LEG-05c9e13ce4c2",
-          "line": 877,
+          "line": 914,
           "kind": "scenario",
           "name": "'Native file actions keep readable labels and recorded changes at ' + width",
           "dynamic": true,
@@ -60201,12 +60246,21 @@
         },
         {
           "id": "MAP-be17f88f3a1c",
-          "line": 153,
+          "line": 190,
           "kind": "reviewed-selector",
           "name": "Structured activity at ${width}px",
           "dynamic": false,
           "layer": "L4",
           "design": "AOP-005"
+        },
+        {
+          "id": "MAP-57dbbd511453",
+          "line": 48,
+          "kind": "reviewed-selector",
+          "name": "DTV003 Diff tree and worktree context at ${width}px",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "AOP-005,DTV-003"
         }
       ]
     },
@@ -60949,6 +61003,122 @@
         }
       ],
       "sha256": "916fa4007e8ea08bb45baae910f3d3c0bf9a8570b85a5dac2d2fe11b1db2a6e3"
+    },
+    "mobileapp/src/ui/Composer.readonly-draft.test.tsx": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-8f2c8637a6cc",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "CKD001 local-only draft opens and survives blocked submits in %s",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "CKD-001"
+        },
+        {
+          "id": "MAP-b3a080fcff12",
+          "line": 42,
+          "kind": "reviewed-selector",
+          "name": "CKD001 verified sends remain enabled and ordinary disabled input stays disabled",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "CKD-001"
+        }
+      ],
+      "sha256": "dd2b7b2e54381fdc0f157455721745d2b4ee14ed6c250e585284155f831a888f"
+    },
+    "internal/app/diff_context_test.go": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-12689bc816c9",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestDTV004DiffNamesActualLinkedWorktreeFromNestedCwd",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "DTV-004"
+        }
+      ],
+      "sha256": "641eccdab3b447e9cd56a02bef3548a10f43b15296fabc7c32950ae53f7b9a5c"
+    },
+    "mobileapp/src/ui/DiffTreeModal.test.tsx": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-85ca470caec6",
+          "line": 11,
+          "kind": "reviewed-selector",
+          "name": "DTV002 native Diff starts with directory summaries and identifies its worktree",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "DTV-002"
+        },
+        {
+          "id": "MAP-4cea8e8aaefc",
+          "line": 38,
+          "kind": "reviewed-selector",
+          "name": "DTV002 a clean worktree keeps context without showing metadata as code",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "DTV-002"
+        }
+      ],
+      "sha256": "6a92df5c063a09e74d4830094b12fdd27306b9797de7b9726d2ec4d3c10ecbe4"
+    },
+    "mobileapp/src/ui/diffTree.test.ts": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-758d838f23f9",
+          "line": 7,
+          "kind": "reviewed-selector",
+          "name": "DTV001 directories start closed and preserve exact code and totals on expansion",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DTV-001"
+        },
+        {
+          "id": "MAP-aa15f8368607",
+          "line": 21,
+          "kind": "reviewed-selector",
+          "name": "DTV001 context stays outside hunks and untracked names never count as code additions",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DTV-001"
+        },
+        {
+          "id": "MAP-5fa6cffb6b12",
+          "line": 35,
+          "kind": "reviewed-selector",
+          "name": "DTV001 prototype-like and deep folder names stay inert with bounded hierarchy",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DTV-001"
+        }
+      ],
+      "sha256": "d3d1cfa5a177512fc9a8c3b18a893dfeaa9f4aaf7c570bdafedb7547f6ca1c4c"
+    },
+    "internal/server/diff_privacy_test.go": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-6de233bbcc8c",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestDTV005WorktreePathIsOwnerOnlyAndPaneGateRunsFirst",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "DTV-005"
+        }
+      ],
+      "sha256": "f12732b1a0c4068f18b1b5c49e4554e73b944d19f6e73e60634ed4848b5c6c30"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

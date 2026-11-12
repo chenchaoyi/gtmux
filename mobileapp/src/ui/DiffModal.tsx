@@ -28,7 +28,7 @@ import { GtmuxClient } from '../api/client';
 import { Lang } from '../i18n';
 import { Palette } from './theme';
 import { diffLineColor, diffRows } from './diff';
-import { diffDisplayRows, diffPresentation, hunkRange } from './diffModel';
+import { diffContext, diffDisplayRows, diffTreePresentation, hunkRange } from './diffModel';
 import { ChromeText } from './ChromeText';
 import { CHROME_MAX_SCALE } from './textScale';
 import { CodeText } from './CodeText';
@@ -106,9 +106,10 @@ export function DiffModal({
   }, [visible, paneId, client, attempt, verticalOffset]);
 
   const structured = useMemo(
-    () => diffPresentation(text ?? '', folded),
+    () => diffTreePresentation(text ?? '', folded),
     [text, folded],
   );
+  const context = useMemo(() => diffContext(text ?? ''), [text]);
   const rows = useMemo(
     () => structured.files.length
       ? diffDisplayRows(structured)
@@ -144,7 +145,7 @@ export function DiffModal({
     return rows.lines.map((_, index) => {
       const kind = rows.meta[index]?.kind;
       const length =
-        kind === 'file' ? fileHeight : kind === 'hunk' ? hunkHeight : rowHeight;
+        kind === 'file' ? fileHeight : kind === 'hunk' || kind === 'directory' ? hunkHeight : rowHeight;
       const value = { length, offset, index };
       offset += length;
       return value;
@@ -154,36 +155,51 @@ export function DiffModal({
     ({ item, index }: { item: string; index: number }) => {
       const meta = rows.meta[index];
       const hint = meta?.path?.split('.').pop() || 'text';
+      const indent = Math.min(meta?.depth || 0, 8) * 12;
+      if (meta?.kind === 'directory')
+        return (
+          <TouchableOpacity testID={'diff-directory-' + meta.key} accessibilityRole="button"
+            accessibilityState={{expanded: !!meta.open}}
+            style={[styles.hunk, {width: Math.max(1, viewportWidth - 24 - indent), marginLeft: indent, height: hunkHeight}]}
+            onPress={() => setFolded(v => ({...v, [meta.key]: !!meta.open}))}>
+            <Chevron open={!!meta.open} color="#B5B5BE" size={14} />
+            <ChromeText numberOfLines={1} style={[styles.hunkText, {fontWeight:'600'}]}>{item}/</ChromeText>
+            <ChromeText style={styles.filePath}>{meta.fileCount}</ChromeText>
+            <ChromeText style={styles.added}>+{meta.added}</ChromeText>
+            <ChromeText style={styles.removed}>−{meta.removed}</ChromeText>
+          </TouchableOpacity>
+        );
       if (meta?.kind === 'file')
         return (
           <View
             style={[
               styles.fileCard,
-              { width: Math.max(1, viewportWidth - 24), height: fileHeight },
+              { width: Math.max(1, viewportWidth - 24 - indent), height: fileHeight, marginLeft: indent },
             ]}
           >
             <TouchableOpacity
               testID={'diff-file-' + meta.key}
-              accessibilityRole="button"
-              accessibilityState={{ expanded: meta.open }}
+              accessibilityRole={meta.untracked ? 'text' : 'button'}
+              disabled={meta.untracked}
+              accessibilityState={meta.untracked ? {disabled:true} : {expanded:meta.open}}
               onPress={() =>
                 setFolded(v => ({ ...v, [meta.key]: !!meta.open }))
               }
               style={styles.fileTitle}
             >
-              <Chevron open={!!meta.open} color="#B5B5BE" size={14} />
+              {!meta.untracked && <Chevron open={!!meta.open} color="#B5B5BE" size={14} />}
               <View style={{ flex: 1, minWidth: 0 }}>
                 <ChromeText numberOfLines={1} style={styles.fileName}>
                   {meta.path?.split('/').pop()}
                 </ChromeText>
                 <ChromeText numberOfLines={1} style={styles.filePath}>
-                  {meta.path?.split('/').slice(0, -1).join('/') || '.'}
+                  {meta.untracked ? (lang === 'zh' ? '未跟踪 · 未计入增删行数' : 'Untracked · line count unavailable') : meta.path?.split('/').slice(0, -1).join('/') || '.'}
                 </ChromeText>
               </View>
-              <ChromeText style={styles.added}>+{meta.added}</ChromeText>
-              <ChromeText style={styles.removed}>−{meta.removed}</ChromeText>
+              {!meta.untracked && <ChromeText style={styles.added}>+{meta.added}</ChromeText>}
+              {!meta.untracked && <ChromeText style={styles.removed}>−{meta.removed}</ChromeText>}
             </TouchableOpacity>
-            <TouchableOpacity
+            {!meta.untracked && <TouchableOpacity
               accessibilityRole="button"
               accessibilityLabel={
                 lang === 'zh'
@@ -200,7 +216,7 @@ export function DiffModal({
               }
             >
               <ExpandIcon size={20} color="#B5B5BE" />
-            </TouchableOpacity>
+            </TouchableOpacity>}
           </View>
         );
       if (meta?.kind === 'hunk')
@@ -328,7 +344,7 @@ export function DiffModal({
     outputRange: [0, Math.max(0, trackHeight - thumbHeight)],
     extrapolate: 'clamp',
   });
-  const empty = !loading && (text ?? '') === '';
+  const empty = !loading && !structured.files.length && rows.lines.every(line => !line.trim());
 
   return (
     <Modal
@@ -345,7 +361,7 @@ export function DiffModal({
             numberOfLines={2}
             style={[styles.title, { color: pal.fg }]}
           >
-            {lang === 'zh' ? '工作区改动' : 'Working tree'}
+            {context.worktree ? context.worktree.split('/').filter(Boolean).pop() || '/' : lang === 'zh' ? '工作区改动' : 'Working tree'}
           </ChromeText>
           <TouchableOpacity
             onPress={onClose}
@@ -365,6 +381,12 @@ export function DiffModal({
           </TouchableOpacity>
         </View>
 
+        {(!!context.worktree || !!context.branch) && <View style={{paddingHorizontal:16, paddingVertical:8, gap:4}}>
+          {!!context.branch && <ChromeText style={{color:pal.fg2, fontSize:13}}>{context.branch} · HEAD</ChromeText>}
+          {!!context.worktree && <ChromeText selectable numberOfLines={2} ellipsizeMode="middle" style={{color:pal.fg3, fontSize:12}}>{context.worktree}</ChromeText>}
+        </View>}
+        {context.truncated && <ChromeText style={styles.notice}>{lang === 'zh' ? '仅加载了部分改动，以下统计不包含未加载内容。' : 'Partial diff loaded. Counts exclude content not loaded.'}</ChromeText>}
+
         {!!structured.files.length && (
           <View style={styles.summary}>
             <ChromeText style={styles.filePath}>
@@ -374,6 +396,9 @@ export function DiffModal({
             <ChromeText style={styles.removed}>
               −{structured.removed}
             </ChromeText>
+            <TouchableOpacity testID="diff-collapse-all" accessibilityRole="button" accessibilityLabel={lang === 'zh' ? '全部折叠' : 'Collapse all'} style={[styles.fileAction, {paddingHorizontal:6}]} onPress={() => setFolded({})}>
+              <ChromeText style={styles.filePath}>{lang === 'zh' ? '全部折叠' : 'Collapse all'}</ChromeText>
+            </TouchableOpacity>
             <TouchableOpacity
               testID="diff-wrap"
               accessibilityRole="button"
@@ -429,7 +454,9 @@ export function DiffModal({
           </View>
         ) : empty ? (
           <Text style={[styles.empty, { color: pal.fg3 }]}>
-            {lang === 'zh'
+            {context.worktree || context.branch
+              ? lang === 'zh' ? '当前工作树没有改动。' : 'No changes in this worktree.'
+              : lang === 'zh'
               ? '没有改动（或这个目录不是 git 仓库）。'
               : 'No changes (or the directory isn’t a git repo).'}
           </Text>
