@@ -1,0 +1,57 @@
+{
+  "id": "chat-pagination-order-20261112",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; self-review, not independent approval",
+    "date": "2026-11-12",
+    "decision": "Close inherited Chat auth-denial ordering and Jump/paging cancellation in a separate candidate before release",
+    "notes": "Full independent REVIEW1159 read and SHA-verified; current base7d1366 hook is exact blob6edc from S834/175/176, and current ChatView callbacks retain both reviewed conditions. Preserve existing LCL-003/004 continuity, identity/cursor semantics, timeouts and all old test assertions. New tests mount actual React hook/ChatView with synthetic deferred GtmuxClient reads and normal RN native mocks; no extracted callback toy, real session, device or pixel claim. Denial must bind the currently rendered snapshot at failure, not the request-start array. Jump always invalidates active pagination, leaves intentional same-reader cached history policy intact, and cancels stale window continuations/offset anchors; new valid reads still work. Keep source P1 PR1855/Q frozen; this follows fresh main7d1366 after independent approval and normal merge. UI failure assertions must be semantic, not compile/mock/setup failure; save old-red/source and new-green snapshots. No new dependencies, transport fallback, weaker auth, forced input, broader mount count or shortened original budgets. Follow-up review before adding CPG-004: an already observed array must not count as a post-denial authorized snapshot merely because its reference differs from the most recent one. Scope weak reference-generation labels to the reader and retire all observed generations through failure; this also avoids allowing an older render after refusal. Keep no additional turn payload cache and no new server authority."
+  },
+  "cases": [
+    {
+      "id": "CPG-001",
+      "layer": "L2",
+      "description": "Current snapshot retires when a pending earlier-page read is refused after recent polling changed",
+      "setup": "Actual React useChatHistory/ChatView, recent A then B while a synthetic deferred page is pending; ApiError401/403 and normal failure/identity controls.",
+      "action": "Reject the old page after recent B is rendered, inspect turns/refusal/error, then supply a subsequent fresh recent snapshot; also reject an old reader after target change.",
+      "expected": "At refusal the current content is retired, denied/failed visible and loading false; only subsequent fresh source data for the same reader restores content, without resurrecting cached prefix. Network errors retain current content; stale reader errors never erase a new reader.",
+      "planned_files": [
+        "mobileapp/__tests__/chatPagingOrder.test.tsx"
+      ]
+    },
+    {
+      "id": "CPG-002",
+      "layer": "L2",
+      "description": "Jump supersedes pending pages in continuous and disconnected history",
+      "setup": "Actual mounted hook and ChatView with controlled noncooperative history promise, continuous20-turn recent window and disconnected-tail control; no animation/frame completion before late result.",
+      "action": "Start earlier page, Jump to latest, resolve late page, inspect AbortSignal/window/error/prepend callback and issue a later legitimate page.",
+      "expected": "Old request is invalidated, loading resets, late page produces no insertion/window enlargement/compensation, latest20-turn intent remains. New paging still works with authoritative cursor; existing disconnected behavior and20-turn-per-page mounting remain.",
+      "planned_files": [
+        "mobileapp/__tests__/chatPagingOrder.test.tsx"
+      ]
+    },
+    {
+      "id": "CPG-003",
+      "layer": "L2",
+      "description": "Jump retires pending scroll anchors and UI continuation without disabling normal history",
+      "setup": "Actual ChatView and observed RN ScrollView mock imperative methods; accepted earlier page has an unconsumed content-size anchor.",
+      "action": "Jump before the delayed content-size callback or a late page continuation, then emit content size and selected next reader controls.",
+      "expected": "No obsolete history-offset scrollTo or window re-expansion after Jump; current follow-tail behavior remains and new legitimate paging can insert normally. These are actual React/imperative-call observations, not device pixel/animation certification.",
+      "planned_files": [
+        "mobileapp/__tests__/chatPagingOrder.test.tsx"
+      ]
+    },
+    {
+      "id": "CPG-004",
+      "layer": "L2",
+      "description": "Revisiting an already observed snapshot never lifts a refusal",
+      "setup": "Actual React hook has observed arrays A and B; page starts and is refused while B remains current, with an initial same-reference refusal control.",
+      "action": "After refusal, render old A and B again, then supply a genuinely fresh array C for the same reader.",
+      "expected": "Both previously observed snapshots stay retired and failed/denied remain visible; only C restores content. Reader-local weak generation metadata must not turn an old cached array into a new authorization or retain turn payloads.",
+      "planned_files": [
+        "mobileapp/__tests__/chatPagingOrder.test.tsx"
+      ]
+    }
+  ],
+  "seal": "992231bda9d3a34c4e628a438f574ea8935a6ea46be11c61200f6be011e3c720"
+}

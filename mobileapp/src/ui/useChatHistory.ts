@@ -35,23 +35,33 @@ export function useChatHistory(client: GtmuxClient | undefined, agent: Agent, re
   const base = client?.base;
   const identity = useMemo(() => ({client, base, pane: agent.pane_id, session: agent.session_id, home: agent.home_id, agent: agent.agent}), [client, base, agent.pane_id, agent.session_id, agent.home_id, agent.agent]);
   const current = useRef(identity); current.current = identity;
-  const [record, setRecord] = useState<{identity: typeof identity; turns: TranscriptTurn[]; loading: boolean; failed: boolean; deniedFor?: TranscriptTurn[]}>({identity, turns: [], loading: false, failed: false});
+  // A refusal retires every snapshot observed before it, including an older
+  // cached array rendered again later. Weak keys do not retain turn payloads.
+  const snapshots = useMemo(() => ({identity, ids: new WeakMap<TranscriptTurn[], number>(), latest: 0}), [identity]);
+  const recentGeneration = snapshots.ids.get(recent) ?? ++snapshots.latest;
+  snapshots.ids.set(recent, recentGeneration);
+  const [record, setRecord] = useState<{identity: typeof identity; turns: TranscriptTurn[]; loading: boolean; failed: boolean; deniedThrough?: number}>({identity, turns: [], loading: false, failed: false});
   const request = useRef<AbortController | undefined>(undefined);
   useEffect(() => {setRecord({identity, turns: [], loading: false, failed: false}); return () => {request.current?.abort(); request.current = undefined;};}, [identity]);
   const disconnected = record.identity === identity && disconnectedTail(record.turns, recent);
-  const turns = useMemo(() => record.identity === identity && record.deniedFor === recent ? [] : record.identity === identity ? disconnected ? record.turns : mergeChatHistory(record.turns, recent) : recent, [record, identity, recent, disconnected]);
+  const denied = record.identity === identity && record.deniedThrough !== undefined && recentGeneration <= record.deniedThrough;
+  const turns = useMemo(() => denied ? [] : record.identity === identity ? disconnected ? record.turns : mergeChatHistory(record.turns, recent) : recent, [record, identity, recent, disconnected, denied]);
   // Once the reader has loaded a prefix, preserve each observed recent snapshot.
   // A disconnected tail stays behind Jump instead of hiding an unobserved gap.
   useEffect(() => {setRecord(previous => {
-    if (previous.identity !== identity || !previous.turns.length || previous.deniedFor === recent || disconnectedTail(previous.turns, recent)) return previous;
+    if (previous.identity !== identity || !previous.turns.length || previous.deniedThrough !== undefined && recentGeneration <= previous.deniedThrough || disconnectedTail(previous.turns, recent)) return previous;
     const merged = mergeChatHistory(previous.turns, recent);
     if (merged.length === previous.turns.length && merged.every((t, i) => t === previous.turns[i])) return previous;
     return {...previous, turns: merged};
-  });}, [identity, recent]);
+  });}, [identity, recent, recentGeneration]);
   const jumpToRecent = () => {
-    if (!disconnected || current.current !== identity || record.deniedFor === recent) return;
+    if (current.current !== identity) return;
     request.current?.abort(); request.current = undefined;
-    setRecord({identity, turns: [], loading: false, failed: false});
+    setRecord(previous => {
+      if (previous.identity !== identity) return previous;
+      const refused = previous.deniedThrough !== undefined && recentGeneration <= previous.deniedThrough;
+      return disconnected && !refused ? {identity, turns: [], loading: false, failed: false} : {...previous, loading: false};
+    });
   };
   const cursor = turns[0]?.history_before;
   const load = async () => {
@@ -73,7 +83,9 @@ export function useChatHistory(client: GtmuxClient | undefined, agent: Agent, re
       setRecord(previous => ({identity, turns: mergeChatHistory(page, previous.identity === identity ? previous.turns : turns), loading: false, failed: false}));
       return page.length;
     } catch (error) {
-      if (current.current === identity && request.current === controller) setRecord(previous => ({identity, turns: isAuthError(error) ? [] : previous.identity === identity ? previous.turns : [], loading: false, failed: true, ...(isAuthError(error) ? {deniedFor: recent} : {})}));
+      const refused = isAuthError(error);
+      const deniedThrough = snapshots.latest;
+      if (current.current === snapshots.identity && request.current === controller) setRecord(previous => ({identity, turns: refused ? [] : previous.identity === identity ? previous.turns : [], loading: false, failed: true, ...(refused ? {deniedThrough} : {})}));
       return 0;
     } finally {
       clearTimeout(timer!);
@@ -81,5 +93,5 @@ export function useChatHistory(client: GtmuxClient | undefined, agent: Agent, re
       if (request.current === controller) request.current = undefined;
     }
   };
-  return {turns, load, disconnected, jumpToRecent, denied: record.identity === identity && record.deniedFor === recent, available: !!client && !!cursor, loading: record.identity === identity && record.loading, failed: record.identity === identity && record.failed && (!record.deniedFor || record.deniedFor === recent)};
+  return {turns, load, disconnected, jumpToRecent, denied, available: !!client && !!cursor, loading: record.identity === identity && record.loading, failed: record.identity === identity && record.failed && (record.deniedThrough === undefined || denied)};
 }

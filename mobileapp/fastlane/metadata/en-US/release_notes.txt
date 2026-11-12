@@ -1,2 +1,5 @@
-• Read last-known conversation history when the current session association needs confirmation, with a clear read-only state.
-• Show recorded file reads and searches consistently in Activity and Trace, while keeping the original tool details available.
+• Open Live while conversation history loads, with previews kept within the selected session.
+• Draft text with the keyboard on read-only history; sending stays disabled until the current session is verified.
+• Review a collapsed Diff tree with worktree context, file counts and line totals.
+• Show history access refusals during polling, and keep late pages from undoing Jump to latest.
+• Keep new Codex session bindings when bootstrap and frontend updates happen together.
