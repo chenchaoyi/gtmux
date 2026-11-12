@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.0.176",
+    "en": [
+      "Read last-known conversation history when the current session association needs confirmation, with a clear read-only state.",
+      "Show recorded file reads and searches consistently in Activity and Trace, while keeping the original tool details available."
+    ],
+    "zh": [
+      "会话关联待确认时，可只读查看已记录的对话历史，明确说明当前状态。",
+      "Activity 和 Trace 统一显示实际记录的文件读取、搜索等动作，保留原始工具详情。"
+    ]
+  },
+  {
     "version": "1.0.175",
     "en": [
       "Load recent Chat turns first in long sessions, with earlier history available on demand and a stable reading position.",
