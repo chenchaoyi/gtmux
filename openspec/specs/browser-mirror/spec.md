@@ -886,3 +886,12 @@ SHALL have reading space clear of the final text baseline.
 #### Scenario: Code and execution paths scroll horizontally
 - **WHEN** the reader reaches the bottom and scrolls a long line horizontally
 - **THEN** the last line stays readable and its copy action remains reachable
+
+### Requirement: Compact semantic activity and non-overlapping maximized headers
+
+Browser Activity and Trace SHALL use the shared App presenter for recorded semantic actions while preserving raw method names, inputs and record counts in details. Complete bounded argv MAY be formatted for previews without evaluation or inferred call hierarchy. Fine-pointer Activity rows SHALL retain a minimum 30px height; touch rows SHALL retain 44px targets. A maximized pane SHALL reserve header space for Restore layout, title and window controls, follow board resizing, and restore its original dimensions.
+
+#### Scenario: Narrow maximized pane with a long title
+- **WHEN** the reader maximizes a pane and narrows the browser
+- **THEN** the named return icon, ellipsized title and window controls remain separate and usable
+- **AND** restoring returns the prior pane dimensions
