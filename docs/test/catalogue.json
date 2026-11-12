@@ -61244,6 +61244,135 @@
         }
       ],
       "sha256": "bc2e88bb7ddcd4c783b1e412baa92fd0e1ca0e559cb0973a29d6541cd97782f8"
+    },
+    "mobileapp/__tests__/chatPagingOrder.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-5ae15253a598",
+          "line": 31,
+          "kind": "reviewed-selector",
+          "name": "CPG001 refusal %i retires the current snapshot, not the request-start array",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CPG-001,CPG-002,CPG-003,CPG-004"
+        },
+        {
+          "id": "MAP-4de05f44fcb1",
+          "line": 47,
+          "kind": "reviewed-selector",
+          "name": "CPG001 an ordinary page failure keeps intervening recent data",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CPG-001,CPG-002,CPG-003,CPG-004"
+        },
+        {
+          "id": "MAP-5d81675668f6",
+          "line": 58,
+          "kind": "reviewed-selector",
+          "name": "CPG001 an old reader refusal cannot retire a new session",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CPG-001,CPG-002,CPG-003,CPG-004"
+        },
+        {
+          "id": "MAP-346e06fc7fb0",
+          "line": 72,
+          "kind": "reviewed-selector",
+          "name": "CPG004 revisiting an observed array cannot reauthorize a refused snapshot",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CPG-001,CPG-002,CPG-003,CPG-004"
+        },
+        {
+          "id": "MAP-41773acb1e19",
+          "line": 94,
+          "kind": "reviewed-selector",
+          "name": "CPG002 Jump supersedes a late page in a disconnected=%s reader",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CPG-001,CPG-002,CPG-003,CPG-004"
+        },
+        {
+          "id": "MAP-649611c9aaca",
+          "line": 117,
+          "kind": "reviewed-selector",
+          "name": "CPG002 Jump invalidates the hook operation without a late prepend callback",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CPG-001,CPG-002,CPG-003,CPG-004"
+        },
+        {
+          "id": "MAP-b2eda37db109",
+          "line": 129,
+          "kind": "reviewed-selector",
+          "name": "CPG003 Jump drops an accepted page anchor before its delayed size callback",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CPG-001,CPG-002,CPG-003,CPG-004"
+        }
+      ],
+      "sha256": "399fafc7b95121be215922bb6802bbd81a3a4dce37c7b678c336dc09b3a284dc"
+    },
+    "mobileapp/__tests__/chatPagingRecovery.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-8a9fdb5510fe",
+          "line": 54,
+          "kind": "reviewed-selector",
+          "name": "CPG005 %s explicit Retry recovers quiet history after authorized 304",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CPG-005,CPG-006,CPG-007"
+        },
+        {
+          "id": "MAP-a05144919f81",
+          "line": 72,
+          "kind": "reviewed-selector",
+          "name": "CPG006 %s failed Retry stays denied and retires a pending conditional poll",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CPG-005,CPG-006,CPG-007"
+        },
+        {
+          "id": "MAP-bc6bb62c04c3",
+          "line": 94,
+          "kind": "reviewed-selector",
+          "name": "CPG007 %s reader switch ignores a late recovery response",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CPG-005,CPG-006,CPG-007"
+        }
+      ],
+      "sha256": "70ba40d0860564dd0835c3bda5efdb10371f1d73a4286eb98a91a0eb050cd2d5"
+    },
+    "mobileapp/__tests__/chatAutoRefresh.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-8146b69754a9",
+          "line": 37,
+          "kind": "reviewed-selector",
+          "name": "CPG008 automatic cut-row refresh lets a six-second initial read finish",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CPG-008,CPG-009"
+        },
+        {
+          "id": "MAP-0e35f06c8ffa",
+          "line": 47,
+          "kind": "reviewed-selector",
+          "name": "CPG009 automatic quiet refresh keeps ETag and coalesces a slow conditional read",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CPG-008,CPG-009"
+        }
+      ],
+      "sha256": "d17c4b5b0968e44187c4ab91c1333dec62b491cb41c194ba924834eed5c5044b"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

@@ -1,5 +1,22 @@
 [
   {
+    "version": "1.0.177",
+    "en": [
+      "Open Live while conversation history loads, with previews kept within the selected session.",
+      "Draft text with the keyboard on read-only history; sending stays disabled until the current session is verified.",
+      "Review a collapsed Diff tree with worktree context, file counts and line totals.",
+      "Show history access refusals during polling, and keep late pages from undoing Jump to latest.",
+      "Keep new Codex session bindings when bootstrap and frontend updates happen together."
+    ],
+    "zh": [
+      "对话历史还在加载时，也能展开 Live 查看当前会话的实时终端。",
+      "查看只读历史时可以先打开键盘写草稿，确认当前会话后才能发送。",
+      "Diff 默认按目录折叠，标题显示工作树、文件数和增删行数。",
+      "历史读取被拒绝时明确显示提示；回到最新后，迟到旧页不再把页面拉回过去。",
+      "修复 Codex 并发建立绑定时，旧记录覆盖新会话的问题。"
+    ]
+  },
+  {
     "version": "1.0.176",
     "en": [
       "Read last-known conversation history when the current session association needs confirmation, with a clear read-only state.",
