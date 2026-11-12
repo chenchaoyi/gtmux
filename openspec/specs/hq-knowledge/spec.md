@@ -220,7 +220,7 @@ work or publish anything on its own.
 The four audiences replace free-text `--target`; the required audience rule below
 continues to apply.
 
-`gtmux knowledge land <id> [--ref "…"]` SHALL close a pending promotion. With `--ref`,
+`gtmux knowledge land <id> [--ref "…" --revision <read revision>]` SHALL close a pending promotion. With `--ref`,
 the caller records where the lesson already landed (a PR, issue URL, runbook or file),
 without asking gtmux to write that carrier. Without `--ref`, gtmux SHALL carry an `hq`
 entry into `LOCAL.md`, a `machine` entry into the canonical file and the agents' managed
@@ -228,6 +228,22 @@ blocks, or a `repo` entry into that repository's instruction file, then record t
 Repository writes SHALL remain uncommitted. `everyone` SHALL require a ref naming the
 issue a person opened; gtmux SHALL NOT open or publish an issue itself. Managed-block
 writes SHALL keep the hand-edit safeguards in the distribution requirement.
+
+New landing receipts SHALL bind the exact read revision. Manual CLI/API receipts
+SHALL require that revision from `show/list/promotions --json` or owner index/detail.
+The final locked append SHALL refuse a missing/stale revision even when a precheck
+passed. Automatic carry SHALL validate, publish the carrier and append its receipt
+under the same knowledge ledger lock; a delayed writer cannot overwrite a newer
+carrier or settle a newer same-ID review. Historical unversioned land operations
+SHALL keep their existing fold semantics.
+
+LOCAL publication SHALL replace a complete staged private file atomically, syncing
+the file before rename and the parent afterwards. Exact historical generated sections
+MAY be upgraded; unrelated manual text SHALL survive. Symlinks, read-only leaves,
+duplicate markers and hand-edited generated sections SHALL be refused. Pre-publication
+failure SHALL preserve the original bytes and permissions; a carrier failure SHALL
+leave the promotion pending. A post-publication error MAY leave complete new bytes,
+so retry SHALL remain idempotent rather than assume nothing was written.
 
 Landing SHALL remove the brief while the ledger keeps the lifecycle; a later `promote`
 MAY re-open a landed entry. The write path SHALL refuse promoting a dead or

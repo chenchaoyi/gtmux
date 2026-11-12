@@ -29,7 +29,11 @@ func TestPromotionsStatus(t *testing.T) {
 	if r := PromotionsStatus(promotedAt + promotionStaleSecs + 1); r.State != MaintenanceSlipped {
 		t.Fatalf("a stale pending promotion must flag: %+v", r)
 	}
-	if rc := knowledge.CmdKnowledge([]string{"land", id, "--ref", "#1"}); rc != 0 {
+	entry, ok := knowledge.KnowledgeEntry(id)
+	if !ok {
+		t.Fatal("missing promoted entry")
+	}
+	if rc := CmdKnowledge([]string{"land", id, "--ref", "#1", "--revision", entry.Revision}); rc != 0 {
 		t.Fatal("land failed")
 	}
 	if r := PromotionsStatus(promotedAt + promotionStaleSecs + 2); r.Pending != 0 || r.State != MaintenanceOK {

@@ -95,3 +95,22 @@ Calls use a disposable empty directory with tools/plugins/session persistence di
 `knowledge usage record <receipt.json>` records explicit self-reports separately from hits. `usage summary` covers 30 days. Receipts carry version 1, hashed task/plan keys, purpose, stage, observation `self_report`, and item IDs/revisions/card hashes. Stages: retrieved, shown, adopted, outcome; outcomes: succeeded, failed, unknown. Duplicate receipts are idempotent. Evaluation is separate, audits are rejected, and storage stops at 8 MiB pending explicit archival.
 
 Missing reports do not mean unused, and reported success does not prove causal improvement. No trusted receiver receipt or A/B result is claimed. History remains intact. Restore erroneous prose with a new proposal against the current revision, not by overwriting a whole ledger containing concurrent work. Retired content uses existing history/add recovery. Back up ledger and workspace before rollout. Older schema-3 readers retain basic fields but do not understand new memory/usage semantics; pause these new writes during a downgrade.
+## Landing a reviewed revision
+
+Automatic `gtmux knowledge land <id>` checks the version, writes its carrier and
+records completion under the existing ledger lock. Same-ID review reopens landing;
+a delayed old carry cannot settle or overwrite the new revision.
+
+For a lesson you carried yourself, first read `gtmux knowledge show <id> --json`,
+verify that exact text reached the destination, then use
+`gtmux knowledge land <id> --ref '<destination>' --revision '<revision from that read>'`.
+A missing or stale revision is refused. Read again and check the actual destination
+before confirming again; do not simply substitute a fresh token. Mac and mobile
+confirmation keep the version originally viewed. Older clients without a revision
+must refresh/upgrade for manual landing; automatic carry remains available.
+
+LOCAL updates preserve unrelated manual rules and atomically replace complete private
+bytes (0600). Read-only/link targets and edited generated sections require review.
+If publication fails, landing stays pending. If bytes reached disk before a later
+error, retry is idempotent; inspect the receipt before deciding whether to retry or
+repair rendered views. Historical landing records remain readable without migration.

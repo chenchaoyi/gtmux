@@ -24,11 +24,12 @@ import (
 
 // KnowledgeEntryRow is one live entry WITHOUT its body — the index unit.
 type KnowledgeEntryRow struct {
-	ID    string `json:"id"`
-	Topic string `json:"topic"`
-	Title string `json:"title"`
-	At    int64  `json:"at"`
-	Seq   int64  `json:"seq,omitempty"`
+	ID       string `json:"id"`
+	Revision string `json:"revision"`
+	Topic    string `json:"topic"`
+	Title    string `json:"title"`
+	At       int64  `json:"at"`
+	Seq      int64  `json:"seq,omitempty"`
 	// Provenance of a consumed capture candidate, when this entry folded one in.
 	Pane    string `json:"pane,omitempty"`
 	Task    string `json:"task,omitempty"`
@@ -101,7 +102,7 @@ type KnowledgeIndexPayload struct {
 // rowOf projects a folded live op onto the index row.
 func rowOf(op knowledgeOp) KnowledgeEntryRow {
 	row := KnowledgeEntryRow{
-		ID: op.ID, Topic: op.Topic, Title: op.Title, At: op.At, Seq: op.Seq,
+		ID: op.ID, Revision: entryRevision(op), Topic: op.Topic, Title: op.Title, At: op.At, Seq: op.Seq,
 		Pane: op.Pane, Task: op.Task, Capture: op.Capture, Legacy: op.Legacy,
 		PromotedAt: op.PromotedAt, PromoteWhy: op.PromoteWhy, PromoteTarget: op.PromoteTarget,
 		LandedAt: op.LandedAt, LandedRef: op.LandedRef,
@@ -120,6 +121,10 @@ func rowOf(op knowledgeOp) KnowledgeEntryRow {
 // (hq / machine / repo) and lands it with the path it wrote to. For `everyone` it
 // refuses: the exit is an issue a person opens. The surfaces' "write it in" button.
 func KnowledgeCarry(id string) (ref string, err error) {
+	return carryKnowledge(id, false)
+}
+
+func carryKnowledge(id string, force bool) (ref string, err error) {
 	live, err := liveKnowledge()
 	if err != nil {
 		return "", err
@@ -131,11 +136,13 @@ func KnowledgeCarry(id string) (ref string, err error) {
 	if !promotionPending(entry) {
 		return "", fmt.Errorf("%s is not pending, so there is nothing to carry", id)
 	}
-	ref, err = carryEntry(entry, false)
-	if err != nil {
-		return "", err
-	}
-	return ref, KnowledgeLand(id, ref)
+	op := knowledgeOp{Op: knowledgeOpLand, ID: id, Topic: entry.Topic,
+		At: time.Now().Unix(), Seq: events.LatestSeq(), ExpectedRevision: entryRevision(entry)}
+	err = commitKnowledge(op, nil, "land "+id, func(current knowledgeOp) (string, error) {
+		ref, err = carryEntry(current, force)
+		return ref, err
+	})
+	return ref, err
 }
 
 // KnowledgeIndex reports the base without bodies.
@@ -223,7 +230,7 @@ func KnowledgeEntryJSON(id string) ([]byte, bool, error) {
 // This is the verb that most needed a second door. HQ can decide a lesson is
 // charter-level, but it cannot know it was carried — only the person who carried it can,
 // and they are not always at the Mac.
-func KnowledgeLand(id, ref string) error {
+func KnowledgeLand(id, ref, revision string) error {
 	// A blank ref or reason is no ref or reason: the ledger keeps it as the record of why,
 	// and withdraw already refused whitespace while these took it (2026-10-06).
 	if id == "" || strings.TrimSpace(ref) == "" {
@@ -242,7 +249,7 @@ func KnowledgeLand(id, ref string) error {
 	}
 	op := knowledgeOp{
 		Op: knowledgeOpLand, ID: id, Topic: entry.Topic,
-		At: time.Now().Unix(), Seq: events.LatestSeq(), Ref: ref,
+		At: time.Now().Unix(), Seq: events.LatestSeq(), Ref: ref, ExpectedRevision: revision,
 	}
 	return commitKnowledgeOp(op, "land "+id+" → "+ref)
 }
@@ -293,4 +300,23 @@ func KnowledgeWithdraw(id, why string) error {
 	}
 	op := knowledgeOp{Op: knowledgeOpWithdraw, ID: id, At: time.Now().Unix(), Seq: events.LatestSeq(), Why: why}
 	return commitKnowledgeOp(op, "withdraw "+id+": "+why)
+}
+
+// entryRead preserves the CLI's existing fields and adds the CAS token. Keeping
+// this projection separate avoids making a revision hash include itself.
+type entryRead struct {
+	knowledgeOp
+	Revision string `json:"revision"`
+}
+
+func readEntry(op knowledgeOp) entryRead { return entryRead{op, entryRevision(op)} }
+func readEntries(ops []knowledgeOp) []entryRead {
+	var out []entryRead
+	if ops != nil {
+		out = make([]entryRead, 0, len(ops))
+	}
+	for _, op := range ops {
+		out = append(out, readEntry(op))
+	}
+	return out
 }

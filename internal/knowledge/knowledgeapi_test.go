@@ -84,7 +84,7 @@ func TestKnowledgeRemoteVerbsMatchTheCLI(t *testing.T) {
 
 	// Landing something that was never promoted is refused, and changes nothing.
 	before, _ := readKnowledgeOps()
-	if err := KnowledgeLand(id, "PR #1"); err == nil {
+	if err := KnowledgeLand(id, "PR #1", "unpromoted"); err == nil {
 		t.Error("landing an unpromoted entry must fail")
 	}
 	if after, _ := readKnowledgeOps(); len(after) != len(before) {
@@ -97,7 +97,8 @@ func TestKnowledgeRemoteVerbsMatchTheCLI(t *testing.T) {
 	if idx := KnowledgeIndex(time.Now().Unix()); idx.Promotions.Pending != 1 {
 		t.Fatalf("promotion queue says %d pending", idx.Promotions.Pending)
 	}
-	if err := KnowledgeLand(id, "AGENTS.md"); err != nil {
+	e, _ := KnowledgeEntry(id)
+	if err := KnowledgeLand(id, "AGENTS.md", e.Revision); err != nil {
 		t.Fatalf("land: %v", err)
 	}
 	idx := KnowledgeIndex(time.Now().Unix())

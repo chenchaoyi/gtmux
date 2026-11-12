@@ -214,7 +214,7 @@ type Deps struct {
 	// promotion back to live, why survives). The CLI's cwd-keyed HQ-home gate is untouched:
 	// it keeps workers out, while this door is the owner, who outranks the supervisor.
 	// Optional: nil → 503.
-	HQKnowledgeAct func(op, id, ref, why string) error
+	HQKnowledgeAct func(op, id, ref, why, revision string) error
 
 	// AgentStatuses returns a lean snapshot of current agents for the SSE loop
 	// to diff (status transitions → `alert` events + push). Optional: if nil,

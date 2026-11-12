@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/diag"
@@ -114,10 +115,11 @@ func hqEventsLimit(raw string) int {
 
 // knowledgeAct is the request shape of POST /api/hq/knowledge/act.
 type knowledgeAct struct {
-	Op  string `json:"op"`  // "land" | "retire" | "carry" | "withdraw"
-	ID  string `json:"id"`  // the entry
-	Ref string `json:"ref"` // land: where it landed
-	Why string `json:"why"` // retire: the reason, which survives
+	Op       string `json:"op"`       // "land" | "retire" | "carry" | "withdraw"
+	ID       string `json:"id"`       // the entry
+	Ref      string `json:"ref"`      // land: where it landed
+	Why      string `json:"why"`      // retire: the reason, which survives
+	Revision string `json:"revision"` // land: the revision the reader actually confirmed
 }
 
 // handleHQKnowledge serves the index — every live entry's identity and state, no bodies.
@@ -195,10 +197,14 @@ func (s *Server) handleHQKnowledgeAct(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, errBody("unknown op (land|retire|carry|withdraw)"))
 		return
 	}
+	if act.Op == "land" && strings.TrimSpace(act.Revision) == "" {
+		writeJSON(w, http.StatusBadRequest, errBody("land needs the revision read with the entry; refresh and confirm again"))
+		return
+	}
 	// The verb's own record is written deep inside it; As makes that record name the
 	// device instead of serve.
 	err := diag.As(actorOf(r.Context()), func() error {
-		return s.deps.HQKnowledgeAct(act.Op, act.ID, act.Ref, act.Why)
+		return s.deps.HQKnowledgeAct(act.Op, act.ID, act.Ref, act.Why, act.Revision)
 	})
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, errBody(err.Error()))

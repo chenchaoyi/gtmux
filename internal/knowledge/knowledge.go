@@ -102,6 +102,8 @@ type knowledgeOp struct {
 	Why        string `json:"why,omitempty"`
 	Target     string `json:"target,omitempty"`
 	Ref        string `json:"ref,omitempty"`
+	// New landing receipts bind the read revision; historical receipts remain readable.
+	ExpectedRevision string `json:"expected_revision,omitempty"`
 	// Folded promotion state — set by foldKnowledge on the LIVE entry, never
 	// written to disk by an append (ops carry why/target/ref natively). Pending
 	// means PromotedAt > 0 with LandedAt == 0; a later promote re-opens a landed

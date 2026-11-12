@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1168 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1169 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3782 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2085 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2095 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 122 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 100 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -127,6 +127,9 @@
 | HQP1-006 | Source ingestion uses exact conversation/time attribution, records ambiguous/unassigned observations and source gaps; cursor advances only with durable inbox. |
 | HQP1-007 | CLI operations enforce HQ authority and expose pending reconciliation; periodic ingestion/wake is independent from delivery and restart-safe. |
 | HQP1-008 | Schema 1 reads migrate without invented history, schema 2 prevents old writer loss, and seeded bilingual playbook explains safe processing. |
+| KBCARRIER-COMPAT | Manual landing succeeds with the exact read token. Everyone remains manual-only; other audiences keep their own exit. Generated manual instructions name the required revision; legacy receipts still fold. |
+| KBCARRIER-REVISION | Stale/missing new receipts append nothing and leave R1 pending; old publication cannot overwrite an already landed R1. Carry publication and settlement share the existing ledger lock. Review following successful R0 carry leaves R1 pending. Current manual ref succeeds; clients propagate the read version and do not silently fetch a new version for an old confirmation. |
+| KBCARRIER-ATOMIC | Successful publication yields complete new content and 0600 private mode while pinned readers retain complete original content. Failure before publish leaves original bytes/mode intact and cannot settle landing. File fsync precedes publication and parent sync follows it; errors propagate. Existing manually changed or duplicate sections stay conflicts. No claim of real power-loss simulation. |
 | KBDREAM-ALLOWANCE | The original journal prefix/plan/run ID remains; only one reasoned allowance event is appended; failed and completed costs remain; completed IDs never run again; current writer gate and shared budget/retry checks stay in force; no KB changes. |
 | KBDREAM-DIAGNOSTICS | Only allowlisted category and numeric exit code reach errors/journal; raw diagnostics never appear; bounded capture drains without blocking; failed attempt/time/unknown usage preserved; old journal records remain readable; success stays diagnostic-free. Nonterminal diagnostic items cannot masquerade as tool execution; they neither invalidate a successful terminal receipt nor turn a fatal/missing receipt into success. Actual tool/action items remain rejected. |
 | KBDREAM-JOURNAL | Completed items are not called again; interrupted item remains identifiable; model choices, input revisions, visible results, reasons, times and costs stay in durable sequence; no ledger/hit mutation. |

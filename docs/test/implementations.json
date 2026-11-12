@@ -501,10 +501,12 @@
   },
   "internal/knowledge/distribute_test.go": {
     "cases": [
-      "STOR-001"
+      "STOR-001",
+      "KBCARRIER-COMPAT"
     ],
     "selectors": [
-      "TestBuiltinStorageBoundariesReachEveryCarrierWithoutPromotions"
+      "TestBuiltinStorageBoundariesReachEveryCarrierWithoutPromotions",
+      "TestLandCarriesByAudience"
     ]
   },
   "internal/launchhost/agent_readiness_test.go": {
@@ -1791,10 +1793,13 @@
   },
   "internal/knowledge/memory_carrier_test.go": {
     "cases": [
-      "KBMEM-CARRIER"
+      "KBMEM-CARRIER",
+      "KBCARRIER-ATOMIC"
     ],
     "selectors": [
-      "TestMemoryCarrierUpdatesHistoricalTextAndPreservesManualEdits"
+      "TestMemoryCarrierUpdatesHistoricalTextAndPreservesManualEdits",
+      "TestMemoryCarrierAtomicPublicationKeepsOldReader",
+      "TestMemoryCarrierRefusesUnsafeTargetsWithoutSettling"
     ]
   },
   "internal/app/spawn_paneid_test.go": {
@@ -1898,6 +1903,75 @@
     "selectors": [
       "TestDreamAllowancePreservesProgressCostsAndIdempotency",
       "TestDreamAllowanceRejectsInvalidActiveAndRetryBypass"
+    ]
+  },
+  "internal/knowledge/landing_revision_test.go": {
+    "cases": [
+      "KBCARRIER-REVISION"
+    ],
+    "selectors": [
+      "TestLandingRejectsStaleReceiptAtCommit",
+      "TestLandingSerializesCarrierAndReceiptWithReview",
+      "TestLandingCarrierFailureKeepsPendingAndRetryIsSafe",
+      "TestLandingManualRevisionAndLegacyHistory",
+      "TestLandingCLIRequiresViewedRevision"
+    ]
+  },
+  "internal/knowledge/knowledgeapi_test.go": {
+    "cases": [
+      "KBCARRIER-REVISION"
+    ],
+    "selectors": [
+      "TestKnowledgeRemoteVerbsMatchTheCLI"
+    ]
+  },
+  "internal/knowledge/knowledgecmd_test.go": {
+    "cases": [
+      "KBCARRIER-REVISION"
+    ],
+    "selectors": [
+      "TestKnowledgePromotionVerbChain",
+      "TestABlankReasonIsNoReason"
+    ]
+  },
+  "internal/server/hq_test.go": {
+    "cases": [
+      "KBCARRIER-REVISION"
+    ],
+    "selectors": [
+      "TestHQKnowledgeActClosesTheVerbList"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift": {
+    "cases": [
+      "KBCARRIER-REVISION"
+    ],
+    "selectors": [
+      "testLandingCarriesTheViewedRevision"
+    ]
+  },
+  "mobileapp/src/screens/KnowledgeSheet.test.tsx": {
+    "cases": [
+      "KBCARRIER-REVISION"
+    ],
+    "selectors": [
+      "landing preserves the viewed revision even when the entry changes during confirmation"
+    ]
+  },
+  "internal/state/privatewrite_test.go": {
+    "cases": [
+      "KBCARRIER-ATOMIC"
+    ],
+    "selectors": [
+      "TestPrivateWritePrePublicationFailurePreservesOriginal"
+    ]
+  },
+  "internal/hq/knowledgeshim_test.go": {
+    "cases": [
+      "KBCARRIER-COMPAT"
+    ],
+    "selectors": [
+      "TestPromotionsStatus"
     ]
   }
 }

@@ -437,10 +437,10 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		HQKnowledge:      func() ([]byte, error) { return knowledge.KnowledgeIndexJSON(time.Now().Unix()) },
 		HQMemory:         hq.WriteMemoryArchive,
 		HQKnowledgeEntry: knowledge.KnowledgeEntryJSON,
-		HQKnowledgeAct: func(op, id, ref, why string) error {
+		HQKnowledgeAct: func(op, id, ref, why, revision string) error {
 			switch op {
 			case "land":
-				return knowledge.KnowledgeLand(id, ref)
+				return knowledge.KnowledgeLand(id, ref, revision)
 			case "retire":
 				return knowledge.KnowledgeRetire(id, why)
 			case "carry": // gtmux writes it where the audience reads, then lands it

@@ -1756,10 +1756,10 @@ LEG-00bf626c6453,L1,Go core / CLI / server,internal/knowledge/knowledgeapi_test.
 LEG-32cc81d4651f,L1,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,28,Test,TestKnowledgeMutationsRefusedOutsideHQHome,False,legacy-not-retrospectively-reviewed
 LEG-1dc0d5e00b4d,L1,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,142,Test,TestKnowledgeDismissLeavesATrace,False,legacy-not-retrospectively-reviewed
 LEG-e5fd71edfa28,L1,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,170,Test,TestKnowledgeRenderCheckCLI,False,legacy-not-retrospectively-reviewed
-LEG-da18cca049bb,L1,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,264,Test,TestPromotionBriefRegeneratesOnUnrelatedMutation,False,legacy-not-retrospectively-reviewed
-LEG-5ae3d725e444,L1,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,398,Test,TestEntryIDRefusesATitleWithNoASCII,False,legacy-not-retrospectively-reviewed
-LEG-1cc87e0e6ee1,L1,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,423,Test,TestEntryStampIsLocalNotUTC,False,legacy-not-retrospectively-reviewed
-LEG-b5a59ede94fa,L1,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,441,Test,TestKnowledgeAddConsumesSeveralKeysAsOneLesson,False,legacy-not-retrospectively-reviewed
+LEG-da18cca049bb,L1,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,265,Test,TestPromotionBriefRegeneratesOnUnrelatedMutation,False,legacy-not-retrospectively-reviewed
+LEG-5ae3d725e444,L1,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,399,Test,TestEntryIDRefusesATitleWithNoASCII,False,legacy-not-retrospectively-reviewed
+LEG-1cc87e0e6ee1,L1,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,424,Test,TestEntryStampIsLocalNotUTC,False,legacy-not-retrospectively-reviewed
+LEG-b5a59ede94fa,L1,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,442,Test,TestKnowledgeAddConsumesSeveralKeysAsOneLesson,False,legacy-not-retrospectively-reviewed
 LEG-61d49ea56ad0,L1,Go core / CLI / server,internal/knowledge/knowledgematch_test.go,23,Test,TestMatchKnowledgeSurfacesHits,False,legacy-not-retrospectively-reviewed
 LEG-0ba23a030426,L1,Go core / CLI / server,internal/knowledge/knowledgematch_test.go,54,Test,TestEchoTopicsAreADecision,False,legacy-not-retrospectively-reviewed
 LEG-758e3dbf8295,L1,Go core / CLI / server,internal/knowledge/knowledgematch_test.go,72,Test,TestMatchKnowledgeNoMatch,False,legacy-not-retrospectively-reviewed
@@ -2751,15 +2751,15 @@ LEG-6bd70e72cb0d,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQImportTes
 LEG-d813a9e7ad04,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQImportTests.swift,168,XCTest,testArchiveHeaderDrivesPasswordAndSelectionResetsSecrets,False,legacy-not-retrospectively-reviewed
 LEG-12437900bcff,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQImportTests.swift,195,XCTest,testEncryptedBackupCannotPreviewUntilPasswordIsProvided,False,legacy-not-retrospectively-reviewed
 LEG-2658421c4e5f,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQImportTests.swift,207,XCTest,testHostedLayoutsAreCompactUntilReviewInBothLanguagesAndAppearances,False,legacy-not-retrospectively-reviewed
-LEG-7666b436e535,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,23,XCTest,testEachActIsTheCLIVerbOfTheSameName,False,legacy-not-retrospectively-reviewed
-LEG-4bfdcb31952c,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,49,XCTest,testTheReasonIsNeverDroppedOrReordered,False,legacy-not-retrospectively-reviewed
-LEG-f2610d008cdb,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,67,XCTest,testAPendingPromotionOffersTheExitItsAudienceHas,False,legacy-not-retrospectively-reviewed
-LEG-e90be67ab6f7,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,90,XCTest,testOnlyTheTwoThatTakeSomethingAwayReadAsRemovals,False,legacy-not-retrospectively-reviewed
-LEG-00aca75e5c95,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,99,XCTest,testTheAxesReadAsOneLine,False,legacy-not-retrospectively-reviewed
-LEG-206d9b93b229,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,110,XCTest,testEveryActHasCopyInBothLanguages,False,legacy-not-retrospectively-reviewed
-LEG-795d812d64c4,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,131,XCTest,testLookupStandingInstructionsAndUnknownLegacyRecordsStayDistinct,False,legacy-not-retrospectively-reviewed
-LEG-06a08e20f7a1,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,159,XCTest,testResolvesByTheReadersLanguage,False,legacy-not-retrospectively-reviewed
-LEG-5f8ace08940d,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,168,XCTest,testFallsBackToTheSourceWithATag,False,legacy-not-retrospectively-reviewed
+LEG-7666b436e535,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,24,XCTest,testEachActIsTheCLIVerbOfTheSameName,False,legacy-not-retrospectively-reviewed
+LEG-4bfdcb31952c,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,58,XCTest,testTheReasonIsNeverDroppedOrReordered,False,legacy-not-retrospectively-reviewed
+LEG-f2610d008cdb,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,76,XCTest,testAPendingPromotionOffersTheExitItsAudienceHas,False,legacy-not-retrospectively-reviewed
+LEG-e90be67ab6f7,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,99,XCTest,testOnlyTheTwoThatTakeSomethingAwayReadAsRemovals,False,legacy-not-retrospectively-reviewed
+LEG-00aca75e5c95,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,108,XCTest,testTheAxesReadAsOneLine,False,legacy-not-retrospectively-reviewed
+LEG-206d9b93b229,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,119,XCTest,testEveryActHasCopyInBothLanguages,False,legacy-not-retrospectively-reviewed
+LEG-795d812d64c4,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,139,XCTest,testLookupStandingInstructionsAndUnknownLegacyRecordsStayDistinct,False,legacy-not-retrospectively-reviewed
+LEG-06a08e20f7a1,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,168,XCTest,testResolvesByTheReadersLanguage,False,legacy-not-retrospectively-reviewed
+LEG-5f8ace08940d,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,177,XCTest,testFallsBackToTheSourceWithATag,False,legacy-not-retrospectively-reviewed
 LEG-aa6ce457a2ff,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQOverviewTests.swift,67,XCTest,testQuestionSummaryKeepsDistinctContentWithSharedFixtures,False,legacy-not-retrospectively-reviewed
 LEG-9e0d5a7bc26c,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQOverviewTests.swift,77,XCTest,testExplicitProjectionAndIdentityDoNotInferTaskCompletionOrPaneOwnership,False,legacy-not-retrospectively-reviewed
 LEG-f3daf6b0f9aa,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQOverviewTests.swift,99,XCTest,testNativeBriefRendersBoundedRowsAndOpensSourceWithoutSending,False,legacy-not-retrospectively-reviewed

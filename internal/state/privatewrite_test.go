@@ -1,7 +1,10 @@
 package state
 
 import (
+	"errors"
 	"fmt"
+	"golang.org/x/sys/unix"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -192,5 +195,65 @@ func TestPrivateWritePublishesCompletePrivateBytes(t *testing.T) {
 	}
 	if writeErr != nil {
 		t.Fatal(writeErr)
+	}
+}
+
+func TestPrivateWritePrePublicationFailurePreservesOriginal(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	path := filepath.Join(Dir(), "local", "LOCAL.md")
+	if err := WritePrivateFile(path, []byte("original manual rules")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(path, 0640); err != nil {
+		t.Fatal(err)
+	}
+	old, err := os.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer old.Close()
+	failure := errors.New("synthetic failure before rename")
+	called := false
+	err = writePrivateFile(path, []byte("complete replacement"), func(from int, tmp string, to int, name string) error {
+		called = true
+		fd, err := unix.Openat(from, tmp, unix.O_RDONLY|unix.O_CLOEXEC|unix.O_NOFOLLOW, 0)
+		if err != nil {
+			return err
+		}
+		staged := os.NewFile(uintptr(fd), tmp)
+		defer staged.Close()
+		content, err := io.ReadAll(staged)
+		if err != nil {
+			return err
+		}
+		st, err := staged.Stat()
+		if err != nil {
+			return err
+		}
+		if string(content) != "complete replacement" || st.Mode().Perm() != 0600 {
+			return errors.New("incomplete or public staging bytes")
+		}
+		return failure
+	})
+	if !called || !errors.Is(err, failure) {
+		t.Fatalf("publish failure not propagated: %v", err)
+	}
+	content, err := os.ReadFile(path)
+	if err != nil || string(content) != "original manual rules" || mode(t, path) != 0640 {
+		t.Fatal("failure changed original bytes or permissions")
+	}
+	pinned, err := io.ReadAll(old)
+	if err != nil || string(pinned) != string(content) {
+		t.Fatal("failure changed pinned reader")
+	}
+	entries, err := os.ReadDir(filepath.Dir(path))
+	if err != nil || len(entries) != 1 || entries[0].Name() != "LOCAL.md" {
+		t.Fatalf("temporary file leaked: %v %v", entries, err)
+	}
+	if err := WritePrivateFile(path, []byte("complete replacement")); err != nil {
+		t.Fatal(err)
+	}
+	if mode(t, path) != 0600 {
+		t.Fatal("retry did not publish privately")
 	}
 }

@@ -140,7 +140,7 @@ func fromHQHome() bool {
 // knowledgeFlags is the shared flag set of the content-carrying verbs.
 type knowledgeFlags struct {
 	topic, title, bodyFile, seqRange, why string
-	target, ref, descText                 string
+	target, ref, revision, descText       string
 	// captures: every --capture key given (repeatable, or comma-separated). Same-family
 	// candidates are ONE lesson; consuming them into one entry keeps every provenance,
 	// where accepting one and dismissing ten scattered it across dismissal records.
@@ -221,6 +221,10 @@ func parseKnowledgeFlags(args []string) (knowledgeFlags, error) {
 		case strings.HasPrefix(a, "--ref="):
 			f.ref = strings.TrimPrefix(a, "--ref=")
 			f.refGiven = true
+		case a == "--revision":
+			f.revision, err = take(&i, a)
+		case strings.HasPrefix(a, "--revision="):
+			f.revision = strings.TrimPrefix(a, "--revision=")
 		case a == "--desc":
 			f.descText, err = take(&i, a)
 		case strings.HasPrefix(a, "--desc="):
@@ -555,28 +559,17 @@ func knowledgeLand(args []string) error {
 		return err
 	}
 	if len(f.positional) != 1 {
-		return fmt.Errorf("land needs <id> [--ref <where it landed>]")
+		return fmt.Errorf("land needs <id> [--ref <where it landed> --revision <read revision>]")
 	}
 	id := f.positional[0]
-	if f.refGiven { // a given ref, blank or not, is the person's landing; never a carry
-		return KnowledgeLand(id, f.ref)
+	if f.refGiven { // an explicit ref is a person's receipt, never an automatic carry
+		return KnowledgeLand(id, f.ref, f.revision)
 	}
-	live, err := liveKnowledge()
-	if err != nil {
-		return err
+	if f.revision != "" {
+		return fmt.Errorf("--revision requires --ref; automatic land binds its own read")
 	}
-	entry, ok := findLive(live, id)
-	if !ok {
-		return fmt.Errorf("no live entry %q (gtmux knowledge list)", id)
-	}
-	if !promotionPending(entry) {
-		return fmt.Errorf("%s is not pending, so there is nothing to land", id)
-	}
-	ref, err := carryEntry(entry, f.force)
-	if err != nil {
-		return err
-	}
-	return KnowledgeLand(id, ref)
+	_, err = carryKnowledge(id, f.force)
+	return err
 }
 
 // carryEntry writes a pending entry where its audience reads and returns the ref to land
@@ -611,7 +604,7 @@ func carryEntry(entry knowledgeOp, force bool) (string, error) {
 		i18n.Say("✓ written into "+path+", and not committed; committing is yours to do", "✓ 已写进 "+path+"，未提交，提交由你来")
 		return path, nil
 	case AudienceEveryone:
-		return "", fmt.Errorf("everyone: open the issue first (%s), then `land %s --ref <issue url>`", IssueURL(entry), id)
+		return "", fmt.Errorf("everyone: open the issue first (%s), then `land %s --ref <issue url> --revision %s`", IssueURL(entry), id, entryRevision(entry))
 	default:
 		return "", fmt.Errorf("%s has no audience; `withdraw %s` then `promote %s --why … --for <hq|machine|repo:<path>|everyone>`, or land it yourself with --ref", id, id, id)
 	}
@@ -758,7 +751,7 @@ func knowledgePromotions(args []string) int {
 		if pending == nil {
 			pending = []knowledgeOp{}
 		}
-		b, _ := json.Marshal(pending)
+		b, _ := json.Marshal(readEntries(pending))
 		fmt.Println(string(b))
 		return 0
 	}
@@ -852,7 +845,7 @@ func knowledgeList(args []string) int {
 		}
 	}
 	if f.jsonOut {
-		b, _ := json.Marshal(out)
+		b, _ := json.Marshal(readEntries(out))
 		fmt.Println(string(b))
 		return 0
 	}
@@ -898,7 +891,7 @@ func knowledgeShow(args []string) int {
 		op = old
 	}
 	if f.jsonOut {
-		if err := json.NewEncoder(os.Stdout).Encode(op); err != nil {
+		if err := json.NewEncoder(os.Stdout).Encode(readEntry(op)); err != nil {
 			i18n.Sae(err.Error(), err.Error())
 			return 1
 		}
@@ -936,7 +929,7 @@ func knowledgeUsage() int {
   hit       <id> [--n N] [--why "<where>"]                 # the lesson was hit again
   confirm   <id>                                           # a hypothesis held up
   promote   <id> --why "<case>" --for <hq|machine|repo:<path>|everyone>   # who must know it
-  land      <id> [--ref "<where>"] [--force]   # no --ref: gtmux writes it (LOCAL.md / machine blocks / repo file)
+  land      <id> [--ref "<where>" --revision <revision>] [--force]   # no --ref: gtmux writes it (LOCAL.md / machine blocks / repo file)
   withdraw  <id> --why "<reason>"              # the entry was right, the promotion was not
   sync      [--force] [--repo <path>] [--json] # refresh every agent's knowledge block (or one repo's)
   carriers  [--json]                           # each agent's instruction file and whether it is in sync
@@ -979,7 +972,7 @@ func knowledgeUsage() int {
   hit       <id> [--n N] [--why "<场景>"]             # 记录再次遇到的同类问题
   confirm   <id>                                      # 确认条目中的假设
   promote   <id> --why "<理由>" --for <hq|machine|repo:<路径>|everyone>   # 设置条目的分发范围
-  land      <id> [--ref "<分发位置>"] [--force]   # 记录分发结果；未指定 --ref 时直接写入对应引导文件
+  land      <id> [--ref "<分发位置>" --revision <版本>] [--force]   # 记录分发结果；未指定 --ref 时直接写入对应引导文件
   withdraw  <id> --why "<原因>"                 # 撤回分发，保留知识条目
   sync      [--force] [--repo <路径>] [--json]  # 同步各助手或指定仓库的知识引导
   carriers  [--json]                            # 查看各助手的引导文件及同步状态

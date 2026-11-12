@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1168 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1169 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3782 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2085 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2095 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 122 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 100 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -127,6 +127,9 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | HQP1-006 | Source ingestion uses exact conversation/time attribution, records ambiguous/unassigned observations and source gaps; cursor advances only with durable inbox. |
 | HQP1-007 | CLI operations enforce HQ authority and expose pending reconciliation; periodic ingestion/wake is independent from delivery and restart-safe. |
 | HQP1-008 | Schema 1 reads migrate without invented history, schema 2 prevents old writer loss, and seeded bilingual playbook explains safe processing. |
+| KBCARRIER-COMPAT | Manual landing succeeds with the exact read token. Everyone remains manual-only; other audiences keep their own exit. Generated manual instructions name the required revision; legacy receipts still fold. |
+| KBCARRIER-REVISION | Stale/missing new receipts append nothing and leave R1 pending; old publication cannot overwrite an already landed R1. Carry publication and settlement share the existing ledger lock. Review following successful R0 carry leaves R1 pending. Current manual ref succeeds; clients propagate the read version and do not silently fetch a new version for an old confirmation. |
+| KBCARRIER-ATOMIC | Successful publication yields complete new content and 0600 private mode while pinned readers retain complete original content. Failure before publish leaves original bytes/mode intact and cannot settle landing. File fsync precedes publication and parent sync follows it; errors propagate. Existing manually changed or duplicate sections stay conflicts. No claim of real power-loss simulation. |
 | KBDREAM-ALLOWANCE | The original journal prefix/plan/run ID remains; only one reasoned allowance event is appended; failed and completed costs remain; completed IDs never run again; current writer gate and shared budget/retry checks stay in force; no KB changes. |
 | KBDREAM-DIAGNOSTICS | Only allowlisted category and numeric exit code reach errors/journal; raw diagnostics never appear; bounded capture drains without blocking; failed attempt/time/unknown usage preserved; old journal records remain readable; success stays diagnostic-free. Nonterminal diagnostic items cannot masquerade as tool execution; they neither invalidate a successful terminal receipt nor turn a fatal/missing receipt into success. Actual tool/action items remain rejected. |
 | KBDREAM-JOURNAL | Completed items are not called again; interrupted item remains identifiable; model choices, input revisions, visible results, reasons, times and costs stay in durable sequence; no ledger/hit mutation. |

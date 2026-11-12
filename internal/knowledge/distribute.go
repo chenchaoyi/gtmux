@@ -400,6 +400,14 @@ func localSection(op knowledgeOp) string {
 // historical section. It never guesses where an operator-owned section ends.
 func carryIntoLocal(op knowledgeOp) (string, error) {
 	path := LocalPath()
+	// Renaming can bypass a read-only leaf's mode; respect it before staging.
+	if st, err := os.Lstat(path); err == nil {
+		if !st.Mode().IsRegular() || st.Mode().Perm()&0200 == 0 {
+			return path, fmt.Errorf("LOCAL destination requires review: %s", path)
+		}
+	} else if !os.IsNotExist(err) {
+		return path, err
+	}
 	marker := "<!-- gtmux:knowledge " + op.ID + " -->"
 	b, err := os.ReadFile(path)
 	if err != nil && !os.IsNotExist(err) {
@@ -425,7 +433,7 @@ func carryIntoLocal(op knowledgeOp) (string, error) {
 			section := localSection(old)
 			if strings.Count(content, section) == 1 {
 				updated := strings.Replace(content, section, localSection(op), 1)
-				return path, state.WriteFile(path, []byte(updated), 0o644)
+				return path, state.WritePrivateFile(path, []byte(updated))
 			}
 		}
 		return path, fmt.Errorf("LOCAL carrier for %s differs from ledger history; compare the user edit before landing", op.ID)
@@ -438,7 +446,7 @@ func carryIntoLocal(op knowledgeOp) (string, error) {
 	if err := state.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return path, err
 	}
-	return path, state.WriteFile(path, []byte(content+s.String()), 0o644)
+	return path, state.WritePrivateFile(path, []byte(content+s.String()))
 }
 
 // IssueURL is the everyone audience's exit for a person who never opens a pull request:

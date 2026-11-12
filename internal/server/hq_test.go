@@ -125,7 +125,7 @@ func TestHQSurfacesAreRefusedToAGuest(t *testing.T) {
 		HQKnowledgeEntry: func(string) ([]byte, bool, error) {
 			return []byte(`{"body":"secret lesson"}`), true, nil
 		},
-		HQKnowledgeAct: func(string, string, string, string) error { return nil },
+		HQKnowledgeAct: func(string, string, string, string, string) error { return nil },
 		HQMemory: func(w io.Writer) (int64, error) {
 			n, _ := w.Write([]byte("secret archive"))
 			return int64(n), nil
@@ -377,8 +377,8 @@ func TestHQKnowledgeEntryNeedsAnID(t *testing.T) {
 func TestHQKnowledgeActClosesTheVerbList(t *testing.T) {
 	var ran []string
 	s := hqTestServer(t, Deps{
-		HQKnowledgeAct: func(op, id, ref, why string) error {
-			ran = append(ran, op+" "+id+" "+ref+why)
+		HQKnowledgeAct: func(op, id, ref, why, revision string) error {
+			ran = append(ran, op+" "+id+" "+ref+why+revision)
 			if id == "" {
 				return errTest
 			}
@@ -392,7 +392,7 @@ func TestHQKnowledgeActClosesTheVerbList(t *testing.T) {
 		s.Handler().ServeHTTP(w, req)
 		return w
 	}
-	if w := post(`{"op":"land","id":"pitfalls/x","ref":"AGENTS.md"}`); w.Code != http.StatusOK {
+	if w := post(`{"op":"land","id":"pitfalls/x","ref":"AGENTS.md","revision":"read-version"}`); w.Code != http.StatusOK {
 		t.Errorf("land -> %d %s; want 200", w.Code, w.Body.String())
 	}
 	if w := post(`{"op":"retire","id":"pitfalls/x","why":"wrong"}`); w.Code != http.StatusOK {
@@ -412,8 +412,14 @@ func TestHQKnowledgeActClosesTheVerbList(t *testing.T) {
 	}
 	// The domain's own refusal (a missing id, an unpromoted entry) surfaces as 400 with
 	// its message, not as a 500.
-	if w := post(`{"op":"land"}`); w.Code != http.StatusBadRequest {
+	if w := post(`{"op":"land","revision":"read-version"}`); w.Code != http.StatusBadRequest {
 		t.Errorf("land with no id -> %d; want 400", w.Code)
+	}
+	if w := post(`{"op":"land","id":"pitfalls/x","ref":"AGENTS.md"}`); w.Code != http.StatusBadRequest {
+		t.Errorf("missing revision -> %d; want 400", w.Code)
+	}
+	if len(ran) == 0 || ran[0] != "land pitfalls/x AGENTS.mdread-version" {
+		t.Errorf("lost revision: %v", ran)
 	}
 	if len(ran) != 5 {
 		t.Errorf("the dep must see only the accepted verbs: %v", ran)

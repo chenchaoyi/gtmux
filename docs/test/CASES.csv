@@ -2022,15 +2022,15 @@ LEG-7d3af991f89a,G,Go core / CLI / server,internal/knowledge/knowledgecmd_test.g
 LEG-1dc0d5e00b4d,L1,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,142,Test,TestKnowledgeDismissLeavesATrace,False,legacy-not-retrospectively-reviewed
 LEG-e5fd71edfa28,L1,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,170,Test,TestKnowledgeRenderCheckCLI,False,legacy-not-retrospectively-reviewed
 LEG-d4f96f012a17,G,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,194,Test,TestKnowledgePromotionVerbChain,False,legacy-not-retrospectively-reviewed
-LEG-da18cca049bb,L1,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,264,Test,TestPromotionBriefRegeneratesOnUnrelatedMutation,False,legacy-not-retrospectively-reviewed
-LEG-8fd703ae0981,G,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,289,Test,TestCustomTopicWholeLoop,False,legacy-not-retrospectively-reviewed
-LEG-51bee4543a4d,G,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,359,Test,TestPromotionBriefClosesWithTheAudienceExit,False,legacy-not-retrospectively-reviewed
-LEG-5ae3d725e444,L1,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,398,Test,TestEntryIDRefusesATitleWithNoASCII,False,legacy-not-retrospectively-reviewed
-LEG-1cc87e0e6ee1,L1,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,423,Test,TestEntryStampIsLocalNotUTC,False,legacy-not-retrospectively-reviewed
-LEG-b5a59ede94fa,L1,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,441,Test,TestKnowledgeAddConsumesSeveralKeysAsOneLesson,False,legacy-not-retrospectively-reviewed
-LEG-333701c648fc,G,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,491,Test,TestTheErrorNamesEveryVerb,False,legacy-not-retrospectively-reviewed
-LEG-a401726e3111,G,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,526,Test,TestPromoteRefusesAMissingAudience,False,legacy-not-retrospectively-reviewed
-LEG-cb2a5dab8378,G,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,563,Test,TestABlankReasonIsNoReason,False,legacy-not-retrospectively-reviewed
+LEG-da18cca049bb,L1,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,265,Test,TestPromotionBriefRegeneratesOnUnrelatedMutation,False,legacy-not-retrospectively-reviewed
+LEG-8fd703ae0981,G,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,290,Test,TestCustomTopicWholeLoop,False,legacy-not-retrospectively-reviewed
+LEG-51bee4543a4d,G,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,360,Test,TestPromotionBriefClosesWithTheAudienceExit,False,legacy-not-retrospectively-reviewed
+LEG-5ae3d725e444,L1,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,399,Test,TestEntryIDRefusesATitleWithNoASCII,False,legacy-not-retrospectively-reviewed
+LEG-1cc87e0e6ee1,L1,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,424,Test,TestEntryStampIsLocalNotUTC,False,legacy-not-retrospectively-reviewed
+LEG-b5a59ede94fa,L1,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,442,Test,TestKnowledgeAddConsumesSeveralKeysAsOneLesson,False,legacy-not-retrospectively-reviewed
+LEG-333701c648fc,G,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,492,Test,TestTheErrorNamesEveryVerb,False,legacy-not-retrospectively-reviewed
+LEG-a401726e3111,G,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,382,Test,TestPromoteRefusesAMissingAudience,False,legacy-not-retrospectively-reviewed
+LEG-cb2a5dab8378,G,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,564,Test,TestABlankReasonIsNoReason,False,legacy-not-retrospectively-reviewed
 LEG-61d49ea56ad0,L1,Go core / CLI / server,internal/knowledge/knowledgematch_test.go,23,Test,TestMatchKnowledgeSurfacesHits,False,legacy-not-retrospectively-reviewed
 LEG-0ba23a030426,L1,Go core / CLI / server,internal/knowledge/knowledgematch_test.go,54,Test,TestEchoTopicsAreADecision,False,legacy-not-retrospectively-reviewed
 LEG-758e3dbf8295,L1,Go core / CLI / server,internal/knowledge/knowledgematch_test.go,72,Test,TestMatchKnowledgeNoMatch,False,legacy-not-retrospectively-reviewed
@@ -2040,6 +2040,11 @@ LEG-8d95d0483386,G,Go core / CLI / server,internal/knowledge/knowledgerender_tes
 LEG-ff5acb314f34,L1,Go core / CLI / server,internal/knowledge/knowledgerender_test.go,92,Test,TestMigrationDropsUntouchedPlaceholder,False,legacy-not-retrospectively-reviewed
 LEG-dbc8e32aa747,L1,Go core / CLI / server,internal/knowledge/knowledgerender_test.go,109,Test,TestKnowledgeDriftDetection,False,legacy-not-retrospectively-reviewed
 LEG-a41675fcc734,L1,Go core / CLI / server,internal/knowledge/knowledgerender_test.go,137,Test,TestKnowledgeEchoCapSpansRenderAndLegacy,False,legacy-not-retrospectively-reviewed
+MAP-121ec3bd5aed,L2,reviewed implementation,internal/knowledge/landing_revision_test.go,28,reviewed-selector,TestLandingRejectsStaleReceiptAtCommit,False,KBCARRIER-REVISION
+MAP-f9245b11d56a,L2,reviewed implementation,internal/knowledge/landing_revision_test.go,68,reviewed-selector,TestLandingSerializesCarrierAndReceiptWithReview,False,KBCARRIER-REVISION
+MAP-ccbea4028144,L2,reviewed implementation,internal/knowledge/landing_revision_test.go,153,reviewed-selector,TestLandingCarrierFailureKeepsPendingAndRetryIsSafe,False,KBCARRIER-REVISION
+MAP-6759f82b89d2,L2,reviewed implementation,internal/knowledge/landing_revision_test.go,188,reviewed-selector,TestLandingManualRevisionAndLegacyHistory,False,KBCARRIER-REVISION
+MAP-238d336301ba,L2,reviewed implementation,internal/knowledge/landing_revision_test.go,228,reviewed-selector,TestLandingCLIRequiresViewedRevision,False,KBCARRIER-REVISION
 LEG-49140565b210,L1,Go core / CLI / server,internal/knowledge/lang_test.go,12,Test,TestInferLangReadsTheText,False,legacy-not-retrospectively-reviewed
 LEG-b61def78b2f0,L1,Go core / CLI / server,internal/knowledge/lang_test.go,32,Test,TestOldRecordsGetTheirLanguageInferredNotRewritten,False,legacy-not-retrospectively-reviewed
 LEG-b8975e7b1b2a,L1,Go core / CLI / server,internal/knowledge/lang_test.go,47,Test,TestAddCarriesTheOtherHalf,False,legacy-not-retrospectively-reviewed
@@ -2065,7 +2070,9 @@ LEG-af96f8befee1,L1,Go core / CLI / server,internal/knowledge/lint_test.go,345,T
 LEG-09fcb37aa82e,L1,Go core / CLI / server,internal/knowledge/lint_test.go,354,Test,TestACycleStopsRatherThanSpins,False,legacy-not-retrospectively-reviewed
 LEG-7105f4ae950e,L1,Go core / CLI / server,internal/knowledge/lint_test.go,379,Test,TestNoOutdatedLinksSurviveTheFold,False,legacy-not-retrospectively-reviewed
 LEG-2b6cbd7c398b,L1,Go core / CLI / server,internal/knowledge/lint_test.go,394,Test,TestANumericTailSurvivesTheRewrite,False,legacy-not-retrospectively-reviewed
-MAP-eb3912a57551,L2,reviewed implementation,internal/knowledge/memory_carrier_test.go,10,reviewed-selector,TestMemoryCarrierUpdatesHistoricalTextAndPreservesManualEdits,False,KBMEM-CARRIER
+MAP-eb3912a57551,L2,reviewed implementation,internal/knowledge/memory_carrier_test.go,11,reviewed-selector,TestMemoryCarrierUpdatesHistoricalTextAndPreservesManualEdits,False,KBMEM-CARRIER
+MAP-c36afc0340a4,L2,reviewed implementation,internal/knowledge/memory_carrier_test.go,50,reviewed-selector,TestMemoryCarrierAtomicPublicationKeepsOldReader,False,"KBMEM-CARRIER,KBCARRIER-ATOMIC"
+MAP-1a3ae6d00fce,L2,reviewed implementation,internal/knowledge/memory_carrier_test.go,106,reviewed-selector,TestMemoryCarrierRefusesUnsafeTargetsWithoutSettling,False,"KBMEM-CARRIER,KBCARRIER-ATOMIC"
 LEG-d2c8e807a23b,G,Go core / CLI / server,internal/knowledge/migration_test.go,39,Test,TestMigrationPreservesHistoryAndResetsAudience,False,legacy-not-retrospectively-reviewed
 LEG-2e5e27be68d2,L1,Go core / CLI / server,internal/knowledge/migration_test.go,73,Test,TestMigrationSensitiveHistoryAndUnrelatedEntriesExcluded,False,legacy-not-retrospectively-reviewed
 LEG-72016a7301ff,G,Go core / CLI / server,internal/knowledge/migration_test.go,97,Test,TestMigrationConflictAndInvalidInputKeepPriorBytes,False,legacy-not-retrospectively-reviewed
@@ -2719,7 +2726,7 @@ LEG-4732f168f7f4,L2,Go core / CLI / server,internal/server/hq_test.go,307,Test,T
 LEG-075b99ad3353,L2,Go core / CLI / server,internal/server/hq_test.go,341,Test,TestHQKnowledgeAbsentIsAnEmptyBase,False,legacy-not-retrospectively-reviewed
 LEG-9e21f165c34f,L2,Go core / CLI / server,internal/server/hq_test.go,356,Test,TestHQKnowledgeEntryNeedsAnID,False,legacy-not-retrospectively-reviewed
 LEG-999cbe994014,L2,Go core / CLI / server,internal/server/hq_test.go,377,Test,TestHQKnowledgeActClosesTheVerbList,False,legacy-not-retrospectively-reviewed
-LEG-e2adf69aeafa,L2,Go core / CLI / server,internal/server/hq_test.go,425,Test,TestTranscriptStitchesEarlierSessionsOnRequest,False,legacy-not-retrospectively-reviewed
+LEG-e2adf69aeafa,L2,Go core / CLI / server,internal/server/hq_test.go,431,Test,TestTranscriptStitchesEarlierSessionsOnRequest,False,legacy-not-retrospectively-reviewed
 LEG-e9aaa583dc91,L2,Go core / CLI / server,internal/server/hqmemory_test.go,16,Test,TestHQMemoryStreamsAnArchiveToTheOwner,False,legacy-not-retrospectively-reviewed
 LEG-2bd02dda27e0,L2,Go core / CLI / server,internal/server/hqmemory_test.go,58,Test,TestHQMemoryOnAMachineWithNoSupervisor,False,legacy-not-retrospectively-reviewed
 LEG-72a7828cf6f0,L2,Go core / CLI / server,internal/server/hqworkspace_test.go,13,Test,TestHQWorkspaceReadBoundary,False,legacy-not-retrospectively-reviewed
@@ -3071,10 +3078,11 @@ LEG-aef7b9a5e192,L1,Go core / CLI / server,internal/state/privateio_test.go,127,
 LEG-a1aded2430f4,L1,Go core / CLI / server,internal/state/privateio_test.go,165,Test,TestPrivateIOLeavesExternalAncestorsAndRootTargetsAlone,False,legacy-not-retrospectively-reviewed
 LEG-35e8f43bca42,L1,Go core / CLI / server,internal/state/privateio_test.go,188,Test,TestPrivateIODefaultTemporaryDirectoryKeepsOSMeaning,False,legacy-not-retrospectively-reviewed
 LEG-0be8a3a5c4c5,L1,Go core / CLI / server,internal/state/privateio_test.go,211,Test,TestPolicyOpenDoesNotRepairReadOnlyInspection,False,legacy-not-retrospectively-reviewed
-LEG-cd86dfe66edf,G,Go core / CLI / server,internal/state/privatewrite_test.go,11,Test,TestPrivateWriteRefusesLinksAndSpecialTargets,False,legacy-not-retrospectively-reviewed
+LEG-cd86dfe66edf,G,Go core / CLI / server,internal/state/privatewrite_test.go,14,Test,TestPrivateWriteRefusesLinksAndSpecialTargets,False,legacy-not-retrospectively-reviewed
 LEG-cf083bd826fc,L1,Go core / CLI / server,internal/state/privatewrite_test.go,13,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
-LEG-cae3dab26188,G,Go core / CLI / server,internal/state/privatewrite_test.go,73,Test,TestPrivateWriteReplacesOnlyOwnedDestination,False,legacy-not-retrospectively-reviewed
-LEG-37fad2143d15,G,Go core / CLI / server,internal/state/privatewrite_test.go,132,Test,TestPrivateWritePublishesCompletePrivateBytes,False,legacy-not-retrospectively-reviewed
+LEG-cae3dab26188,G,Go core / CLI / server,internal/state/privatewrite_test.go,76,Test,TestPrivateWriteReplacesOnlyOwnedDestination,False,legacy-not-retrospectively-reviewed
+LEG-37fad2143d15,G,Go core / CLI / server,internal/state/privatewrite_test.go,135,Test,TestPrivateWritePublishesCompletePrivateBytes,False,legacy-not-retrospectively-reviewed
+MAP-495d9fb7b0a9,L2,Go core / CLI / server,internal/state/privatewrite_test.go,201,reviewed-selector,TestPrivateWritePrePublicationFailurePreservesOriginal,False,KBCARRIER-ATOMIC
 LEG-83346481ddd8,L1,Go core / CLI / server,internal/state/privatewriters_test.go,17,Test,TestRawWritersHaveAnExplicitBoundary,False,legacy-not-retrospectively-reviewed
 LEG-0dd1f2e228c6,L1,Go core / CLI / server,internal/state/runlock_test.go,12,Test,TestRunLockRefusesASecondRun,False,legacy-not-retrospectively-reviewed
 LEG-1a07211e56f5,L1,Go core / CLI / server,internal/state/runlock_test.go,36,Test,TestRunLockTakesOverAStaleLock,False,legacy-not-retrospectively-reviewed
@@ -3554,15 +3562,16 @@ LEG-6bd70e72cb0d,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQImportTes
 LEG-d813a9e7ad04,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQImportTests.swift,168,XCTest,testArchiveHeaderDrivesPasswordAndSelectionResetsSecrets,False,legacy-not-retrospectively-reviewed
 LEG-12437900bcff,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQImportTests.swift,195,XCTest,testEncryptedBackupCannotPreviewUntilPasswordIsProvided,False,legacy-not-retrospectively-reviewed
 LEG-2658421c4e5f,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQImportTests.swift,207,XCTest,testHostedLayoutsAreCompactUntilReviewInBothLanguagesAndAppearances,False,legacy-not-retrospectively-reviewed
-LEG-7666b436e535,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,23,XCTest,testEachActIsTheCLIVerbOfTheSameName,False,legacy-not-retrospectively-reviewed
-LEG-4bfdcb31952c,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,49,XCTest,testTheReasonIsNeverDroppedOrReordered,False,legacy-not-retrospectively-reviewed
-LEG-f2610d008cdb,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,67,XCTest,testAPendingPromotionOffersTheExitItsAudienceHas,False,legacy-not-retrospectively-reviewed
-LEG-e90be67ab6f7,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,90,XCTest,testOnlyTheTwoThatTakeSomethingAwayReadAsRemovals,False,legacy-not-retrospectively-reviewed
-LEG-00aca75e5c95,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,99,XCTest,testTheAxesReadAsOneLine,False,legacy-not-retrospectively-reviewed
-LEG-206d9b93b229,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,110,XCTest,testEveryActHasCopyInBothLanguages,False,legacy-not-retrospectively-reviewed
-LEG-795d812d64c4,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,131,XCTest,testLookupStandingInstructionsAndUnknownLegacyRecordsStayDistinct,False,legacy-not-retrospectively-reviewed
-LEG-06a08e20f7a1,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,159,XCTest,testResolvesByTheReadersLanguage,False,legacy-not-retrospectively-reviewed
-LEG-5f8ace08940d,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,168,XCTest,testFallsBackToTheSourceWithATag,False,legacy-not-retrospectively-reviewed
+LEG-7666b436e535,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,24,XCTest,testEachActIsTheCLIVerbOfTheSameName,False,legacy-not-retrospectively-reviewed
+LEG-4bfdcb31952c,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,58,XCTest,testTheReasonIsNeverDroppedOrReordered,False,legacy-not-retrospectively-reviewed
+LEG-f2610d008cdb,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,76,XCTest,testAPendingPromotionOffersTheExitItsAudienceHas,False,legacy-not-retrospectively-reviewed
+LEG-e90be67ab6f7,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,99,XCTest,testOnlyTheTwoThatTakeSomethingAwayReadAsRemovals,False,legacy-not-retrospectively-reviewed
+LEG-00aca75e5c95,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,108,XCTest,testTheAxesReadAsOneLine,False,legacy-not-retrospectively-reviewed
+LEG-206d9b93b229,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,119,XCTest,testEveryActHasCopyInBothLanguages,False,legacy-not-retrospectively-reviewed
+LEG-795d812d64c4,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,139,XCTest,testLookupStandingInstructionsAndUnknownLegacyRecordsStayDistinct,False,legacy-not-retrospectively-reviewed
+LEG-06a08e20f7a1,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,168,XCTest,testResolvesByTheReadersLanguage,False,legacy-not-retrospectively-reviewed
+LEG-5f8ace08940d,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,177,XCTest,testFallsBackToTheSourceWithATag,False,legacy-not-retrospectively-reviewed
+MAP-e8bd09658f70,L2,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,50,reviewed-selector,testLandingCarriesTheViewedRevision,False,KBCARRIER-REVISION
 MAP-b4f647d0a506,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQOverviewClarityTests.swift,44,reviewed-selector,testCanonicalGroupsAndHiddenCountIgnoreEndedMergedStaleAndDuplicateRows,False,"MC-HQ-OVERVIEW-STATE,MC-HQ-OVERVIEW-BRIEF"
 MAP-67fdd9c30f6e,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQOverviewClarityTests.swift,63,reviewed-selector,testCurrentAssessmentTakesPriorityWithoutBorrowingReceiptOrMetadataTime,False,"MC-HQ-OVERVIEW-STATE,MC-HQ-OVERVIEW-BRIEF"
 MAP-80be9bb61842,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/HQOverviewMoreWindowTests.swift,27,reviewed-selector,testBottomRemainingControlOpensAllAndSelectsHiddenGoalWithoutSending,False,MC-HQ-OVERVIEW-MORE
@@ -4867,22 +4876,23 @@ LEG-515eaf56d0e0,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.tes
 LEG-a37ada8694d8,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,83,test,an empty topic is not listed,False,legacy-not-retrospectively-reviewed
 LEG-3de101752eb2,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,91,test,"an entry opens to its body, and only a pending promotion offers landing",False,legacy-not-retrospectively-reviewed
 LEG-a83d6d3351de,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,103,test,landing asks for the ref and sends exactly it,False,legacy-not-retrospectively-reviewed
-LEG-b04b9d221814,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,123,test,a refusal shows the server's own words and keeps the draft,False,legacy-not-retrospectively-reviewed
-LEG-4464583ab870,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,167,it,"says so, because the counts made the reader ask",False,legacy-not-retrospectively-reviewed
-LEG-5e0fef7f87eb,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,176,it,expands in place instead of only being enterable,False,legacy-not-retrospectively-reviewed
-LEG-1a5856c44dab,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,184,it,"shows a glance, not the whole list, and offers the whole list",False,legacy-not-retrospectively-reviewed
-LEG-2ca6afcfc7fb,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,193,it,closes again,False,legacy-not-retrospectively-reviewed
-LEG-8fd8d301753c,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,202,it,"returns to the topic you were reading, not to the index",False,legacy-not-retrospectively-reviewed
-LEG-9b9674853b13,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,236,it,"replaces the index with results, rather than showing both",False,legacy-not-retrospectively-reviewed
-LEG-9f56f0bae6e2,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,247,it,"says so when nothing matches, naming what was typed",False,legacy-not-retrospectively-reviewed
-LEG-7f8734e05ef0,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,253,it,gives the index back when the query is cleared,False,legacy-not-retrospectively-reviewed
-LEG-5dafab2473bb,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,269,it,"is closed by default — it is read once, then it is just height",False,legacy-not-retrospectively-reviewed
-LEG-6fe8920934d5,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,275,it,opens on tap,False,legacy-not-retrospectively-reviewed
-LEG-09e75b3686bf,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,289,it,describes the result instead of the ledger verb,False,legacy-not-retrospectively-reviewed
-LEG-1f953e2ba615,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,302,test,"write-it-in sends carry with no text, after one confirmation",False,legacy-not-retrospectively-reviewed
-LEG-92617ba47c99,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,322,test,withdrawing asks why and sends it; everyone opens the issue instead of carrying,False,legacy-not-retrospectively-reviewed
-LEG-e7c4a17d81df,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,350,test,knowledge navigation and search expose readable actions,False,legacy-not-retrospectively-reviewed
-LEG-01caacff2459,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,362,test,"an in-flight write cannot be submitted twice, and completion keeps the entry open",False,legacy-not-retrospectively-reviewed
+LEG-b04b9d221814,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,125,test,a refusal shows the server's own words and keeps the draft,False,legacy-not-retrospectively-reviewed
+LEG-4464583ab870,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,169,it,"says so, because the counts made the reader ask",False,legacy-not-retrospectively-reviewed
+LEG-5e0fef7f87eb,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,178,it,expands in place instead of only being enterable,False,legacy-not-retrospectively-reviewed
+LEG-1a5856c44dab,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,186,it,"shows a glance, not the whole list, and offers the whole list",False,legacy-not-retrospectively-reviewed
+LEG-2ca6afcfc7fb,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,195,it,closes again,False,legacy-not-retrospectively-reviewed
+LEG-8fd8d301753c,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,204,it,"returns to the topic you were reading, not to the index",False,legacy-not-retrospectively-reviewed
+LEG-9b9674853b13,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,238,it,"replaces the index with results, rather than showing both",False,legacy-not-retrospectively-reviewed
+LEG-9f56f0bae6e2,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,249,it,"says so when nothing matches, naming what was typed",False,legacy-not-retrospectively-reviewed
+LEG-7f8734e05ef0,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,255,it,gives the index back when the query is cleared,False,legacy-not-retrospectively-reviewed
+LEG-5dafab2473bb,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,271,it,"is closed by default — it is read once, then it is just height",False,legacy-not-retrospectively-reviewed
+LEG-6fe8920934d5,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,277,it,opens on tap,False,legacy-not-retrospectively-reviewed
+LEG-09e75b3686bf,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,291,it,describes the result instead of the ledger verb,False,legacy-not-retrospectively-reviewed
+LEG-1f953e2ba615,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,304,test,"write-it-in sends carry with no text, after one confirmation",False,legacy-not-retrospectively-reviewed
+LEG-92617ba47c99,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,324,test,withdrawing asks why and sends it; everyone opens the issue instead of carrying,False,legacy-not-retrospectively-reviewed
+LEG-e7c4a17d81df,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,352,test,knowledge navigation and search expose readable actions,False,legacy-not-retrospectively-reviewed
+LEG-01caacff2459,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,364,test,"an in-flight write cannot be submitted twice, and completion keeps the entry open",False,legacy-not-retrospectively-reviewed
+MAP-c2bb7e3c4204,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,103,reviewed-selector,landing preserves the viewed revision even when the entry changes during confirmation,False,KBCARRIER-REVISION
 LEG-95a2e8c8c96b,L2,RN / mobile harness,mobileapp/src/screens/ManageMacScreen.test.tsx,62,test,"nothing answered: said, the switch stays where the server has it, and Retry runs the same change",False,legacy-not-retrospectively-reviewed
 LEG-2888efda7a0b,L2,RN / mobile harness,mobileapp/src/screens/ManageMacScreen.test.tsx,88,test,"server mode that cannot be read is said, not hidden",False,legacy-not-retrospectively-reviewed
 LEG-de5871aa3c13,L2,RN / mobile harness,mobileapp/src/screens/ManageMacScreen.test.tsx,105,test,"refused (401/403): pair again, and no Retry that could never work",False,legacy-not-retrospectively-reviewed
