@@ -1,5 +1,18 @@
 [
   {
+    "version": "1.0.178",
+    "en": [
+      "Knowledge landing keeps the revision you viewed; changed entries require a fresh review before confirmation.",
+      "Failed publication stays pending. Retrying confirms the complete durable write before settling and preserves personal rules.",
+      "The companion core adds a knowledge review workspace and resumable Dreaming. Model results remain proposals and never apply knowledge changes automatically."
+    ],
+    "zh": [
+      "知识落地确认保留打开条目时的版本；条目已经修订时，刷新后再核对，避免把旧确认记到新内容上。",
+      "知识写入失败时继续显示待落地；重试确认完整写入后再结清，并保留个人规则。",
+      "本版服务端同时提供知识审阅工作台和可续跑的 Dreaming；模型只生成待审提案，不自动修改知识。"
+    ]
+  },
+  {
     "version": "1.0.177",
     "en": [
       "Open Live while conversation history loads, with previews kept within the selected session.",
