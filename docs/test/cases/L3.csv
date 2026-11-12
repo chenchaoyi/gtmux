@@ -34,9 +34,11 @@ MAP-761f8dca626a,L3,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.t
 MAP-104c84ca28d9,L3,reviewed implementation,mobileapp/src/screens/HQScreen.association.test.tsx,26,reviewed-selector,CAS008 HQ association failure keeps history and clears after retry,False,CAS-008
 MAP-3c318e90a20b,L3,reviewed implementation,mobileapp/src/screens/HQScreen.observed.test.tsx,17,reviewed-selector,SID006 mounted HQ cannot send from last-known history and resets on verified response,False,SID-006
 MAP-5327be537213,L3,reviewed implementation,mobileapp/src/screens/HQScreen.observed.test.tsx,30,reviewed-selector,CKD003 HQ keeps the pending draft scope when the same conversation is verified,False,"SID-006,CKD-002,CKD-003"
+MAP-21ca1ef67e70,L3,reviewed implementation,mobileapp/src/screens/LivePreviewScope.test.tsx,19,reviewed-selector,LPV002,False,LPV-002
 MAP-22e8f7f44f76,L3,reviewed implementation,mobileapp/src/trace/semantic-title.test.ts,5,reviewed-selector,AOP001 Trace preserves every real call while labels follow normalized actions,False,AOP-001
 MAP-23737a6180b1,L3,reviewed implementation,mobileapp/src/ui/ChatView.association.test.tsx,8,reviewed-selector,CAS005 association banner preserves messages and retries without claiming empty history,False,CAS-005
 MAP-eee81c4abb59,L3,reviewed implementation,mobileapp/src/ui/ChatView.observed.test.tsx,7,reviewed-selector,SID006 last-known history is explicitly read only in both languages,False,SID-006
+MAP-23239eea42c8,L3,reviewed implementation,mobileapp/src/ui/ChatView.pendingLive.test.tsx,13,reviewed-selector,LPV001,False,LPV-001
 MAP-8f2c8637a6cc,L3,reviewed implementation,mobileapp/src/ui/Composer.readonly-draft.test.tsx,15,reviewed-selector,CKD001 local-only draft opens and survives blocked submits in %s,False,CKD-001
 MAP-b3a080fcff12,L3,reviewed implementation,mobileapp/src/ui/Composer.readonly-draft.test.tsx,42,reviewed-selector,CKD001 verified sends remain enabled and ordinary disabled input stays disabled,False,CKD-001
 MAP-85ca470caec6,L3,reviewed implementation,mobileapp/src/ui/DiffTreeModal.test.tsx,11,reviewed-selector,DTV002 native Diff starts with directory summaries and identifies its worktree,False,DTV-002

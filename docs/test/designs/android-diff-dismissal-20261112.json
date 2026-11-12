@@ -1,0 +1,25 @@
+{
+  "id": "android-diff-dismissal-20261112",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; self-review, not independent approval",
+    "date": "2026-11-12",
+    "decision": "Wait for actual Diff dismissal before the existing false assertion",
+    "notes": "Evidence: exact e16 tablet case10 failure; Back returns203ms, immediate lookup/displayed returns true; failure screenshot/XML after1s already show Chat and no diff-wrap. React Native Modal uses slide animation. Product/runtime bytes do not change. Only the existing Android case10 awaits reverse visibility with10s upper bound after one Back; no extra taps/back/relaunch/retry, no change to other assertions/31-case selection or CI policy. Test the actual registered callback parsed by TypeScript AST. Old source must fail delayed/stuck controls; direct transport error and final false oracle remain. Synthetic controls do not replace exact new-head phone/tablet cloud journeys."
+  },
+  "cases": [
+    {
+      "id": "DTV-006",
+      "layer": "L2",
+      "description": "Actual Android Diff journey waits for a bounded dismissal and retains failure semantics",
+      "setup": "Parse exact case10 callback from production run.cjs; controlled synthetic control visibility/deferred close and errors, no device or real app.",
+      "action": "Invoke actual callback with delayed close, permanently visible control, immediate close and Back failure; frozen old callback is the red control.",
+      "expected": "One Back only; delayed close cannot finish before visibility is false; reverse wait has10s upper bound; stuck close and original transport errors reject, and the final false assertion cannot be replaced by a successful wait alone. Other journey assertions/setup/budgets stay unchanged.",
+      "planned_files": [
+        "mobileapp/e2e/android/run.cjs",
+        "mobileapp/e2e/android/diffDismissal.test.ts"
+      ]
+    }
+  ],
+  "seal": "55b177071a25f9ac104d860ac225cb0d51b56e6f68006aab24bab099637595ce"
+}

@@ -4069,6 +4069,7 @@ LEG-b299aa1923fd,L4,RN / mobile harness,mobileapp/e2e/__tests__/usage-sheet.test
 LEG-a4f8ad2fa819,L4,RN / mobile harness,mobileapp/e2e/android/diagnostics.test.ts,3,test,emulator logs retain a bounded tail across chunks and a single oversized write,False,legacy-not-retrospectively-reviewed
 LEG-b1cec21ac170,L4,RN / mobile harness,mobileapp/e2e/android/diagnostics.test.ts,8,test,driver loss is distinct from an application assertion or a missing UI element,False,legacy-not-retrospectively-reviewed
 LEG-fe63dcd3db05,L4,RN / mobile harness,mobileapp/e2e/android/diagnostics.test.ts,12,test,a broken screenshot still collects source and late independent device diagnostics,False,legacy-not-retrospectively-reviewed
+MAP-524a5acdfd5b,L2,reviewed implementation,mobileapp/e2e/android/diffDismissal.test.ts,23,reviewed-selector,DTV006,False,DTV-006
 MAP-f84810b94765,L1,reviewed implementation,mobileapp/e2e/android/journey.cjs,37,reviewed-selector,function selection,False,"CT-ANDROID-POLICY,CT-TIMING"
 MAP-87d616e2f9f2,L1,reviewed implementation,mobileapp/e2e/android/journey.cjs,68,reviewed-selector,function createJourney,False,"CT-ANDROID-POLICY,CT-TIMING"
 MAP-845b52602a47,L1,reviewed implementation,mobileapp/e2e/android/journey.test.ts,2,reviewed-selector,full Android journey retains,False,"CT-ANDROID-POLICY,CT-TIMING"
@@ -4901,6 +4902,7 @@ LEG-92617ba47c99,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.tes
 LEG-e7c4a17d81df,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,352,test,knowledge navigation and search expose readable actions,False,legacy-not-retrospectively-reviewed
 LEG-01caacff2459,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,364,test,"an in-flight write cannot be submitted twice, and completion keeps the entry open",False,legacy-not-retrospectively-reviewed
 MAP-c2bb7e3c4204,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,103,reviewed-selector,landing preserves the viewed revision even when the entry changes during confirmation,False,KBCARRIER-REVISION
+MAP-21ca1ef67e70,L3,reviewed implementation,mobileapp/src/screens/LivePreviewScope.test.tsx,19,reviewed-selector,LPV002,False,LPV-002
 LEG-95a2e8c8c96b,L2,RN / mobile harness,mobileapp/src/screens/ManageMacScreen.test.tsx,62,test,"nothing answered: said, the switch stays where the server has it, and Retry runs the same change",False,legacy-not-retrospectively-reviewed
 LEG-2888efda7a0b,L2,RN / mobile harness,mobileapp/src/screens/ManageMacScreen.test.tsx,88,test,"server mode that cannot be read is said, not hidden",False,legacy-not-retrospectively-reviewed
 LEG-de5871aa3c13,L2,RN / mobile harness,mobileapp/src/screens/ManageMacScreen.test.tsx,105,test,"refused (401/403): pair again, and no Retry that could never work",False,legacy-not-retrospectively-reviewed
@@ -5515,6 +5517,7 @@ LEG-62da14bfdb16,L2,RN / mobile harness,mobileapp/src/ui/ChatView.markdown.test.
 LEG-acfa5e4f58f6,L2,RN / mobile harness,mobileapp/src/ui/ChatView.markdown.test.tsx,44,test,share opens the system sheet with full reply; tool-only turns have no actions,False,legacy-not-retrospectively-reviewed
 LEG-a9597d6f59dc,L2,RN / mobile harness,mobileapp/src/ui/ChatView.markdown.test.tsx,53,test,"local references use the preview adapter, never an OS file URL or script",False,legacy-not-retrospectively-reviewed
 MAP-eee81c4abb59,L3,reviewed implementation,mobileapp/src/ui/ChatView.observed.test.tsx,7,reviewed-selector,SID006 last-known history is explicitly read only in both languages,False,SID-006
+MAP-23239eea42c8,L3,reviewed implementation,mobileapp/src/ui/ChatView.pendingLive.test.tsx,13,reviewed-selector,LPV001,False,LPV-001
 LEG-24dc79367b63,L2,RN / mobile harness,mobileapp/src/ui/ChatView.seam.test.tsx,33,test,no seam under the session-start line when the break is on the first shown turn,False,legacy-not-retrospectively-reviewed
 LEG-203affee0cef,L2,RN / mobile harness,mobileapp/src/ui/ChatView.seam.test.tsx,37,test,a seam between two shown turns when the later one began a session,False,legacy-not-retrospectively-reviewed
 LEG-b2b057903399,L2,RN / mobile harness,mobileapp/src/ui/ChatView.seam.test.tsx,41,test,HQ history keeps Claude and Codex replies under their own agents,False,legacy-not-retrospectively-reviewed
@@ -6495,6 +6498,7 @@ MAP-31ae43976a8b,L3,reviewed implementation,tests/web/harness-isolation.test.cjs
 MAP-7fb866f795f7,L3,reviewed implementation,tests/web/harness-isolation.test.cjs,25,reviewed-selector,shared browser next case,False,CT-BROWSER
 MAP-eda764da861f,G,reviewed implementation,tests/web/harness.cjs,13,reviewed-selector,function scenario,False,"CT-TIMING,CT-BROWSER"
 MAP-e5604b1208c7,L2,reviewed implementation,tests/web/http-contract-validator.test.cjs,4,reviewed-selector,"wire contract rejects type, permission, ordinal, omission and security-header drift",False,CT-HTTP
+MAP-e9c53ab15ef5,L4,reviewed implementation,tests/web/live-pending.test.cjs,4,reviewed-selector,LPV003,False,LPV-003
 MAP-ce9e69e4a686,L4,reviewed implementation,tests/web/maximized-header.test.cjs,4,reviewed-selector,AOP006 real maximized header wide,False,AOP-006
 MAP-5e76ed85dc75,L4,reviewed implementation,tests/web/maximized-header.test.cjs,5,reviewed-selector,AOP006 real maximized header medium,False,AOP-006
 MAP-1752da0e5a5c,L4,reviewed implementation,tests/web/maximized-header.test.cjs,6,reviewed-selector,AOP006 real maximized header narrow board,False,AOP-006

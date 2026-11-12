@@ -1,0 +1,46 @@
+{
+  "id": "live-pane-inspection-20261112",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review; not independent approval",
+    "date": "2026-11-12",
+    "decision": "Separate authorized pane-screen reading from historical conversation input restrictions",
+    "notes": "User reports working Live row cannot expand while association is pending. Exact main9a534a9c ChatView merges readOnlyHistory into readOnly, then hides the Live disclosure; parents already read the separately authorized current pane. Keep conversation sends, uploads, input keys, exact-session binding and explicit desktop/native readOnly fences unchanged. Allow read-only current-pane preview with a visible pane-source/association-pending caption, never claiming the current pane is the saved conversation. Scope parent captures to the exact client object and pane so switching server/token/pane cannot display a previous capture before the new read settles; preserve existing cancellation/late-response guards. Browser already permits this read and receives the same source caption. No new API, polling loop, live session input, restore, deployment, TCC or installation. Existing valid tests stay byte-for-byte unchanged; new files carry only these cases. MainPR1853 CI continues independently, no reuse of its pass as proof of this change."
+  },
+  "cases": [
+    {
+      "id": "LPV-001",
+      "layer": "L3",
+      "description": "Historical Chat can disclose its authorized current pane without gaining input authority",
+      "setup": "Mounted actual ChatView/LiveProgress with readOnlyHistory, a real synthetic pane ID and bounded synthetic ANSI output; English/Chinese, explicit readOnly, native and no-pane variants.",
+      "action": "Open, inspect source caption and bounded output, close; refresh and switch conversation scope; inject output into terminal-unavailable variants.",
+      "expected": "Pending historical Chat shows a real disclosure and its current-pane caption; raw output mounts only after expansion and remains bounded14lines/220pt. No terminal output/disclosure for explicit desktop readOnly, native or missing pane. Existing input/read-only guidance and scope reset/retention semantics remain.",
+      "planned_files": [
+        "mobileapp/src/ui/ChatView.pendingLive.test.tsx"
+      ]
+    },
+    {
+      "id": "LPV-002",
+      "layer": "L3",
+      "description": "Detail and HQ pane captures do not cross client or pane identities",
+      "setup": "Actual mounted Detail/HQ with controlled deferred pane responses and read-only historical transcripts, isolated context mocks and send spies.",
+      "action": "Read A, switch client (including same URL/new client) or pane before B resolves, settle late A, then settle B; inspect Live data and try original Chat send callback.",
+      "expected": "Old capture is absent immediately in the new Live scope; late A cannot replace B. Current B capture appears only after its read settles. Historical Chat send/keys/uploads remain disabled and no send is made. No additional poller is introduced.",
+      "planned_files": [
+        "mobileapp/src/screens/LivePreviewScope.test.tsx"
+      ]
+    },
+    {
+      "id": "LPV-003",
+      "layer": "L4",
+      "description": "Browser current-pane Live preview labels pending history and keeps input fenced",
+      "setup": "Existing isolated production browser fixture at390dark and1440light, working pane with observed historical conversation,20 synthetic screen lines and explicit readonly transcript state.",
+      "action": "Open Chat, expand Live, inspect tail/source caption, collapse; verify no send and pending conversation input remains unavailable.",
+      "expected": "Existing disclosure works and displays only the bounded current-pane tail, with explicit pane/association caption. Closing hides output. No send or authority promotion and no page/console errors.",
+      "planned_files": [
+        "tests/web/live-pending.test.cjs"
+      ]
+    }
+  ],
+  "seal": "933e326bebd27a00c4f9b45dda166dfa941d10af4eefc2253772a3a5b9f4b5c3"
+}

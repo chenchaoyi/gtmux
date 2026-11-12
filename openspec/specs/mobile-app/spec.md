@@ -2839,3 +2839,16 @@ The shared phone/iPad Diff SHALL show the supplied worktree identity, branch and
 - **WHEN** the reader opens Diff for a pane whose directory is inside a linked worktree
 - **THEN** the heading identifies that actual worktree and branch, and directory rows summarize its loaded changes
 - **AND** explicit directory, file and hunk disclosures reveal the original patch while Collapse all hides them again
+
+
+### Requirement: Pending history retains scoped Live inspection
+Last-known history SHALL retain the authorized current-pane Live disclosure while conversation input remains restricted. Expanded output SHALL identify its current pane and unconfirmed history association. Explicit desktop-only readers, native sources and missing panes SHALL NOT disclose terminal output. Detail and HQ SHALL immediately retire captures from a different API client or pane and reject late old-scope responses.
+
+#### Scenario: History is read-only but the pane is readable
+- **WHEN** a working pane has last-known history and an authorized screen read
+- **THEN** Live opens and closes with a source caption, retaining the existing bounded output
+- **AND** conversation sends, keys and uploads remain restricted
+
+#### Scenario: The pane or API client changes
+- **WHEN** a screen from the previous client or pane is cached or arrives late
+- **THEN** it is absent from the new Live preview until the current scope supplies its own screen

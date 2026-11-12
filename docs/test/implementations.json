@@ -1143,7 +1143,8 @@
     "cases": [
       "CT-ANDROID",
       "CT-TIMING",
-      "ACP-003"
+      "ACP-003",
+      "DTV-006"
     ],
     "selectors": [
       "async function check",
@@ -2083,6 +2084,38 @@
     ],
     "selectors": [
       "TestDTV005WorktreePathIsOwnerOnlyAndPaneGateRunsFirst"
+    ]
+  },
+  "mobileapp/src/ui/ChatView.pendingLive.test.tsx": {
+    "cases": [
+      "LPV-001"
+    ],
+    "selectors": [
+      "LPV001"
+    ]
+  },
+  "mobileapp/src/screens/LivePreviewScope.test.tsx": {
+    "cases": [
+      "LPV-002"
+    ],
+    "selectors": [
+      "LPV002"
+    ]
+  },
+  "tests/web/live-pending.test.cjs": {
+    "cases": [
+      "LPV-003"
+    ],
+    "selectors": [
+      "LPV003"
+    ]
+  },
+  "mobileapp/e2e/android/diffDismissal.test.ts": {
+    "cases": [
+      "DTV-006"
+    ],
+    "selectors": [
+      "DTV006"
     ]
   }
 }

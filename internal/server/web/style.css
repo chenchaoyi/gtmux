@@ -1051,6 +1051,7 @@ button.appr-opt { width: 100%; background: transparent; color: inherit; text-ali
 .chat-live[open] .live-summary strong, .chat-live[open] .live-action, .chat-live[open] .live-chevron { color: #27c7e6; }
 .chat-live[open] .live-summary:hover { background: rgba(255,255,255,.04); }
 .chat-live[open] .live-output { color: #d6d6da; line-height: 1.4; white-space: pre; overflow-wrap: normal; max-height: 220px; padding-bottom: 18px; tab-size: 4; }
+.live-source { margin: 0; padding: 0 18px 4px; color: rgba(235,235,245,.65); font-size: 12px; line-height: 18px; overflow-wrap: anywhere; }
 .live-output { margin: 0; padding: 12px 18px 16px; max-height: 210px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--fg); font: 12px/1.65 ui-monospace, Menlo, monospace; }
 .live-note { margin: 0; padding: 0 18px 12px; color: var(--amber); font-size: 12px; }
 @keyframes live-pulse { 50% { opacity: .45; } }

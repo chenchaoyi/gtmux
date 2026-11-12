@@ -2,14 +2,14 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1178 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1182 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3782 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2102 | [L2.csv](cases/L2.csv) |
-| L3 · 运行时集成 | 130 | [L3.csv](cases/L3.csv) |
-| L4 · 应用操作流程 | 104 | [L4.csv](cases/L4.csv) |
+| L2 · 组件/契约 | 2103 | [L2.csv](cases/L2.csv) |
+| L3 · 运行时集成 | 132 | [L3.csv](cases/L3.csv) |
+| L4 · 应用操作流程 | 105 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
 | G · 质量门禁 | 496 | [G.csv](cases/G.csv) |
 
@@ -41,6 +41,7 @@
 | ACP-001 | Fresh enabled Deny elements only; ignored first click can use one further explicit click in the same camera dialog, maximum two; no click starts after 10s; no unrelated permission acted upon; original command error preserved; no permission grant or settings mutation. |
 | ACP-002 | New case survives a single lost OS denial touch; old frozen callback fails. Missing alert, grant=true, wrong/stuck system dialog still fail. Original App alert 30s remains; read-only QA CAMERA granted=false is required. Other 30 journeys and case orchestration unchanged. |
 | ACP-003 | Both sizes retain complete suite and existing expectations; no denied permission granted, hidden blocked results or inflated timing budget. Failed driver evidence remains separate from product assertions. |
+| DTV-006 | One Back only; delayed close cannot finish before visibility is false; reverse wait has10s upper bound; stuck close and original transport errors reject, and the final false assertion cannot be replaced by a successful wait alone. Other journey assertions/setup/budgets stay unchanged. |
 | APPFIX-BOOT-ISOLATION | Server starts and contains only the requested session; caller PATH reaches server, caller config marker does not; HOME/socket belong to fixture. Failure cleanup stays scoped to the test. |
 | APPFIX-NAME-STABILITY | No rename/options change for empty slug; regular slugs still include pane IDs and headless marker. No sleeps, retries or relaxed equality. |
 | APPFIX-PTY-COVERAGE | All 400+ advertised combinations remain exercised and byte-exact; count is recorded, no production transport guard bypass, no raw user input. Test cleanup restores global binary and owns only the private server. |
@@ -155,6 +156,9 @@
 | KBSYNC-SERIALIZATION | Old implementation fails held-lock and final R1-content assertions. New sync holds the same ledger lock across read/publication; independent review/carry cannot interleave and final R1 remains landed with its full carrier. Errors/refusals release the lock. Carry uses an internal already-locked implementation; no recursive deadlock. |
 | KBLOCAL-DURABILITY-RETRY | Both failures leave ledger unchanged, same revision pending and carrier complete/private; every retry invokes the durable writer even with identical content. Only successful writer completion allows exactly one land append. Existing readonly/link/edited-target protections and original revision token contract remain. Old equal-content early return fails actual ledger/callback assertions. |
 | PRIVATEWRITE-DIRECTORY-SYNC | EIO is returned after complete visible replacement, repeated same-byte writes reach directory synchronization again, successful directory fsync returns nil. No truncated inode, exposed permissions or leaked staging file. No hardware durability claim. |
+| LPV-001 | Pending historical Chat shows a real disclosure and its current-pane caption; raw output mounts only after expansion and remains bounded14lines/220pt. No terminal output/disclosure for explicit desktop readOnly, native or missing pane. Existing input/read-only guidance and scope reset/retention semantics remain. |
+| LPV-002 | Old capture is absent immediately in the new Live scope; late A cannot replace B. Current B capture appears only after its read settles. Historical Chat send/keys/uploads remain disabled and no send is made. No additional poller is introduced. |
+| LPV-003 | Existing disclosure works and displays only the bounded current-pane tail, with explicit pane/association caption. Closing hides output. No send or authority promotion and no page/console errors. |
 | AOP-006 | Return button, avatar, tile-identity and window controls occupy separate columns with no overlap; title wrapper uses flexible remaining width (at least180px in these fixtures), metadata remains visible. Narrow actual board keeps the named return control. Restore removes maximized state and returns original dimensions. Production strings/source/raw records unchanged. No device/VO or real-session acceptance claimed. Both direct avatar forms occupy column2 without covering the return control. |
 | MSD-001 | Active uses one exact expectedTurnId steer; loaded idle uses one start with original stable message ID and input; legacy returns honest queue receipt; notLoaded never resume; permissions/cwd/model unchanged; flags, state change and ambiguous writes never queue/replay; no real server input. |
 | MSD-002 | Only phone explicit submitted text opts into direct user semantics. Receipt keeps queued vs active/start accepted; persistent retries preserve known outcome. Native failure never types fallback; draft/menu/hold/identity/idempotency unchanged. |

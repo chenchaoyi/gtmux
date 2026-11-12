@@ -1824,3 +1824,8 @@ A chat whose historical association is pending permits local draft editing and s
 Diff identifies the actual Git worktree root and branch above its file/add/delete totals. Directories, files and hunks start folded; directory rows aggregate file and line counts. Native and browser views share one tree model. Expand a file/hunk to read, or collapse everything again; the complete-file reader preserves original source and line numbers. Untracked filenames are listed separately from code line counts, and a truncated response explicitly limits the statistics to loaded content. The root comes from the same bounded Git capture as the patch, including when the pane is in a subdirectory.
 
 The full worktree path is owner-only. Shared guests retain the authorized branch and original patch without the new absolute host path.
+
+
+### Live preview while history association is pending
+
+A last-known transcript restricts conversation input, independently of the existing authorized current-pane read. Its working row still offers Show live view. The expanded preview identifies the current pane and the unconfirmed history association; it does not claim that terminal output belongs to the saved conversation. Explicit desktop-only readers, native sources and missing panes keep a status-only row. Detail and HQ scope captures to the exact API client and pane: switching either immediately retires the old capture, including late replies, before showing the new screen. Existing send, key, upload and strict session-binding gates remain. No additional polling loop is introduced.

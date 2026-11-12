@@ -8,7 +8,7 @@ import {ChromeText} from './ChromeText';
 import {Lang} from '../i18n';
 
 /** The conversation owns disclosure state; this row can disappear between observations. */
-export function LiveProgress({avatar, label, lines, fontSize, fontFamily, lang, open, onToggle, inspectAvailable = true}: {
+export function LiveProgress({avatar, label, lines, fontSize, fontFamily, lang, open, onToggle, inspectAvailable = true, sourceLabel}: {
   avatar: React.ReactNode;
   label: string;
   lines: AnsiLine[];
@@ -18,6 +18,7 @@ export function LiveProgress({avatar, label, lines, fontSize, fontFamily, lang, 
   open: boolean;
   onToggle: () => void;
   inspectAvailable?: boolean;
+  sourceLabel?: string;
 }) {
   const action = lang === 'zh' ? (open ? '收起实时画面' : '展开实时画面') : (open ? 'Hide live view' : 'Show live view');
   const marker = <>
@@ -39,6 +40,7 @@ export function LiveProgress({avatar, label, lines, fontSize, fontFamily, lang, 
       </TouchableOpacity> : <View style={styles.disclosure}>{marker}</View>}
     </View>
     {inspectAvailable && open && <View testID={TestIds.detail.chatLivePreview} style={styles.preview}>
+      {sourceLabel && <ChromeText testID="live-pane-source" style={styles.source}>{sourceLabel}</ChromeText>}
       {lines.length ? <ScrollView style={styles.viewport} nestedScrollEnabled>
         <ScrollView horizontal nestedScrollEnabled contentContainerStyle={styles.screen}>
           <Text selectable style={[styles.mono, {fontFamily, fontSize, lineHeight: Math.round(fontSize * 1.4)}]}>
@@ -64,6 +66,7 @@ const styles = StyleSheet.create({
   action: {flexDirection: 'row', alignItems: 'center', gap: 5, flexShrink: 1},
   actionText: {fontSize: 12, color: '#27C7E6', flexShrink: 1},
   preview: {marginTop: 5, overflow: 'hidden'},
+  source: {color: 'rgba(235,235,245,0.65)', fontSize: 12, lineHeight: 18, marginBottom: 4},
   viewport: {maxHeight: 220},
   screen: {paddingVertical: 4},
   mono: {color: '#D6D6DA'},
