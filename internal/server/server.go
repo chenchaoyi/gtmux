@@ -1128,7 +1128,27 @@ func (s *Server) handleDiff(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusNotFound, errBody("diff failed: "+err.Error()))
 		return
 	}
+	if callerScope(r.Context()) == scopeGuest {
+		diff = diffWithoutWorktreePath(diff)
+	}
 	writeJSON(w, http.StatusOK, diffResponse{ID: id, Diff: diff})
+}
+
+// The absolute host worktree root is owner context, not part of a shared patch.
+// Preserve branch metadata and every byte after the first actual diff header.
+func diffWithoutWorktreePath(diff string) string {
+	var out strings.Builder
+	preamble := true
+	for _, line := range strings.SplitAfter(diff, "\n") {
+		if strings.HasPrefix(line, "diff --git ") || strings.HasPrefix(line, "# untracked:") {
+			preamble = false
+		}
+		if preamble && strings.HasPrefix(line, "# worktree ") {
+			continue
+		}
+		out.WriteString(line)
+	}
+	return out.String()
 }
 
 // TranscriptMeta is everything GET /api/transcript reports ALONGSIDE the turn array —

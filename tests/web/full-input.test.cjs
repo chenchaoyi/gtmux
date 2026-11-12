@@ -38,14 +38,18 @@ for(const width of [390,1440])scenario('Diff file cards and independent hunks at
  if(width<700){await page.locator('#radar').getByText('Investigate retries',{exact:true}).click();}
  else{await page.locator('#tree').getByText('Investigate retries',{exact:true}).dblclick();}
  await openTools(page,'diff',width>=700);
- await page.locator('.diff-file').first().waitFor();
+ await page.locator('.diff-directory').first().waitFor();
  assert.equal(await page.locator('.diff-file').count(),2);
  assert.match(await page.locator('.diff-summary').innerText(),/2 files/);
- await page.locator('.diff-file').first().locator('.diff-hunk').first().locator('.diff-code').last().waitFor();
- assert.equal(await page.locator('.diff-file').nth(1).locator('.diff-code').count(),0);
- await page.locator('.diff-file').nth(1).locator('.diff-hunk-heading').click();
- assert.equal(await page.locator('.diff-file').nth(1).locator('.diff-line.add .diff-code').innerText(),'after');
- const header=page.locator('.diff-file-heading').first();await header.click();assert.equal(await page.locator('.diff-file').first().evaluate(n=>n.open),false);await header.click();
+ for(const name of ['docs/','internal/'])await page.locator('.diff-directory-heading').filter({hasText:name}).click();
+ const review=page.locator('.diff-file').filter({has:page.getByText('review.go',{exact:true})});
+ const report=page.locator('.diff-file').filter({has:page.getByText('report.md',{exact:true})});
+ await review.locator(':scope > summary').click();await review.locator('.diff-hunk > summary').first().click();
+ await review.locator('.diff-hunk').first().locator('.diff-code').last().waitFor();
+ assert.equal(await report.locator('.diff-code').count(),0);
+ await report.locator(':scope > summary').click();await report.locator('.diff-hunk-heading').click();
+ assert.equal(await report.locator('.diff-line.add .diff-code').innerText(),'after');
+ const header=review.locator(':scope > summary');await header.click();assert.equal(await review.evaluate(n=>n.open),false);await header.click();
  await page.locator('.diff-wrap').click();assert.equal(await page.locator('.diff-wrap').getAttribute('aria-pressed'),'false');await page.locator('.diff-wrap').click();
  assert.ok(await page.locator('.diff-code span').count()>0);
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);

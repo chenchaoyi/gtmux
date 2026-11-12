@@ -1342,10 +1342,13 @@
   },
   "mobileapp/src/screens/DetailObserved.test.tsx": {
     "cases": [
-      "SID-006"
+      "SID-006",
+      "CKD-002",
+      "CKD-003"
     ],
     "selectors": [
-      "SID006 mounted Detail fences historical chat and clears restriction after verified refresh"
+      "SID006 mounted Detail fences historical chat and clears restriction after verified refresh",
+      "CKD003 Detail keeps the pending draft scope when the same conversation is verified"
     ]
   },
   "mobileapp/src/screens/DetailSendReceipt.test.tsx": {
@@ -1396,10 +1399,13 @@
   },
   "mobileapp/src/screens/HQScreen.observed.test.tsx": {
     "cases": [
-      "SID-006"
+      "SID-006",
+      "CKD-002",
+      "CKD-003"
     ],
     "selectors": [
-      "SID006 mounted HQ cannot send from last-known history and resets on verified response"
+      "SID006 mounted HQ cannot send from last-known history and resets on verified response",
+      "CKD003 HQ keeps the pending draft scope when the same conversation is verified"
     ]
   },
   "mobileapp/src/screens/HQScreen.poll.test.tsx": {
@@ -1722,18 +1728,22 @@
   },
   "tests/web/presentation.test.cjs": {
     "cases": [
-      "AOP-005"
+      "AOP-005",
+      "DTV-003"
     ],
     "selectors": [
-      "Compact settings expose direct appearance choices and bounded call rows at ${width}"
+      "Compact settings expose direct appearance choices and bounded call rows at ${width}",
+      "Focused Chat is a conversation with session tools at ${width}"
     ]
   },
   "tests/web/smoke.test.cjs": {
     "cases": [
-      "AOP-005"
+      "AOP-005",
+      "DTV-003"
     ],
     "selectors": [
-      "Structured activity at ${width}px"
+      "Structured activity at ${width}px",
+      "DTV003 Diff tree and worktree context at ${width}px"
     ]
   },
   "tests/web/tool-call-detail.test.cjs": {
@@ -1754,6 +1764,76 @@
       "AOP006 real maximized header medium",
       "AOP006 real maximized header narrow board",
       "AOP006 real maximized header plain terminal"
+    ]
+  },
+  "mobileapp/src/ui/Composer.readonly-draft.test.tsx": {
+    "cases": [
+      "CKD-001"
+    ],
+    "selectors": [
+      "CKD001 local-only draft opens and survives blocked submits in %s",
+      "CKD001 verified sends remain enabled and ordinary disabled input stays disabled"
+    ]
+  },
+  "mobileapp/src/ui/diffTree.test.ts": {
+    "cases": [
+      "DTV-001"
+    ],
+    "selectors": [
+      "DTV001 directories start closed and preserve exact code and totals on expansion",
+      "DTV001 context stays outside hunks and untracked names never count as code additions",
+      "DTV001 prototype-like and deep folder names stay inert with bounded hierarchy"
+    ]
+  },
+  "mobileapp/src/ui/DiffTreeModal.test.tsx": {
+    "cases": [
+      "DTV-002"
+    ],
+    "selectors": [
+      "DTV002 native Diff starts with directory summaries and identifies its worktree",
+      "DTV002 a clean worktree keeps context without showing metadata as code"
+    ]
+  },
+  "mobileapp/src/ui/DiffModal.test.tsx": {
+    "cases": [
+      "DTV-002"
+    ],
+    "selectors": [
+      "file cards, hunk folding, line numbers and full source reader share the original diff",
+      "large Dynamic Type keeps chrome and six-digit line numbers within the wrapped viewport",
+      "wrapping preserves recorded layout and code rows use one compact source gutter"
+    ]
+  },
+  "internal/app/diff_context_test.go": {
+    "cases": [
+      "DTV-004"
+    ],
+    "selectors": [
+      "TestDTV004DiffNamesActualLinkedWorktreeFromNestedCwd"
+    ]
+  },
+  "tests/web/full-input.test.cjs": {
+    "cases": [
+      "DTV-003"
+    ],
+    "selectors": [
+      "Diff file cards and independent hunks at "
+    ]
+  },
+  "tests/web/reading-controls.test.cjs": {
+    "cases": [
+      "DTV-003"
+    ],
+    "selectors": [
+      "Diff preserves recorded layout, syntax and original copy at ${width}"
+    ]
+  },
+  "internal/server/diff_privacy_test.go": {
+    "cases": [
+      "DTV-005"
+    ],
+    "selectors": [
+      "TestDTV005WorktreePathIsOwnerOnlyAndPaneGateRunsFirst"
     ]
   }
 }

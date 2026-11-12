@@ -15,6 +15,16 @@ let tree: renderer.ReactTestRenderer;
 afterEach(() => {
   if (tree) act(() => tree.unmount());
 });
+function expandFirstFileAndHunk() {
+  const press = (index: number) => {
+    const list = tree.root.findByType(FlatList);
+    let row!: renderer.ReactTestRenderer;
+    act(() => {row = renderer.create(list.props.renderItem({item:list.props.data[index],index}));});
+    act(() => row.root.findAllByType(TouchableOpacity)[0].props.onPress());
+    act(() => row.unmount());
+  };
+  press(0); press(1);
+}
 test('large diffs mount only a window of native rows and retain the final line', async () => {
   const lines = Array.from({ length: 40000 }, (_, i) => '+line ' + i);
   await act(async () => {
@@ -148,6 +158,8 @@ test('file cards, hunk folding, line numbers and full source reader share the or
     );
   });
   const list = () => tree.root.findByType(FlatList);
+  expect(list().props.data).toEqual(['a.go']);
+  expandFirstFileAndHunk();
   expect(list().props.data).toContain('+package current');
   expect(list().props.data).not.toContain('+after');
   expect(list().props.getItemLayout).toBeUndefined();
@@ -198,6 +210,7 @@ test('large Dynamic Type keeps chrome and six-digit line numbers within the wrap
     expect(header.width + 24).toBeLessThanOrEqual(list.props.style.width);
     expect(header.height).toBeGreaterThan(64);
     act(() => rowTree!.unmount());
+    expandFirstFileAndHunk();
     const index = list.props.data.findIndex((line: string) => line === '-old');
     act(() => {
       rowTree = renderer.create(list.props.renderItem({ item: '-old', index }));
@@ -220,6 +233,7 @@ test('wrapping preserves recorded layout and code rows use one compact source gu
   const text = 'diff --git a/a.js b/a.js\n--- a/a.js\n+++ b/a.js\n@@ -9 +9 @@\n-const old=1;\n+const next={value:1};';
   await act(async () => {tree = renderer.create(<DiffModal {...props} client={{diff: async () => text} as any} />);});
   const list = () => tree.root.findByType(FlatList);
+  expandFirstFileAndHunk();
   const original = list().props.data;
   expect(original).toContain('+const next={value:1};');
   expect(tree.root.findAll(n => n.props.testID === 'diff-format')).toHaveLength(0);

@@ -20,9 +20,27 @@ test('SID006 mounted HQ cannot send from last-known history and resets on verifi
   mockClient.transcript.mockResolvedValue({turns:[],dropped:0,readOnlyHistory:true});
   await act(async()=>{tree=renderer.create(<HQView agent={agent} layout="compact"/>);});
   const chat=()=>tree!.root.findByType(ChatView).props;const composer=()=>tree!.root.findByType(Composer).props;
-  expect(chat().readOnlyHistory).toBe(true);expect(composer().enabled).toBe(false);
+  expect(chat().readOnlyHistory).toBe(true);expect(composer().enabled).toBe(false);expect(composer().draftOnly).toBe(true);
   await act(async()=>composer().onSend({text:'blocked'}));expect(mockClient.sendResult).not.toHaveBeenCalled();
   mockClient.transcript.mockResolvedValue({turns:[],dropped:0,readOnlyHistory:false,unchanged:true});
-  await act(async()=>chat().onRetry());expect(composer().enabled).toBe(true);
+  await act(async()=>chat().onRetry());expect(composer().enabled).toBe(true);expect(composer().draftOnly).toBe(false);
  }finally{act(()=>tree?.unmount());jest.clearAllTimers();jest.useRealTimers();globalThis.fetch=original;}
+});
+
+test('CKD003 HQ keeps the pending draft scope when the same conversation is verified', async () => {
+ jest.useFakeTimers();let tree:renderer.ReactTestRenderer|undefined;
+ const original=globalThis.fetch;globalThis.fetch=jest.fn(()=>{throw new Error('no real HTTP');}) as typeof fetch;
+ const observed={...agent,observed_conversation:{session_id:'history-a',home_id:'home',state:'last-known'}} as Agent;
+ const verified={...agent,session_id:'history-a'} as Agent;
+ const other={...observed,observed_conversation:{...observed.observed_conversation!,session_id:'history-b'}} as Agent;
+ try {
+  mockClient.transcript.mockResolvedValue({turns:[],dropped:0,readOnlyHistory:false});mockContext.agents=[observed];
+  await act(async()=>{tree=renderer.create(<HQView agent={observed} layout="compact"/>);});
+  const composer=()=>tree!.root.findByType(Composer).props;const pendingKey=composer().draftKey;
+  expect(composer().enabled).toBe(false);
+  mockContext.agents=[verified];await act(async()=>tree!.update(<HQView agent={verified} layout="compact"/>));
+  expect(composer().draftKey).toBe(pendingKey);expect(composer().enabled).toBe(true);
+  mockContext.agents=[other];await act(async()=>tree!.update(<HQView agent={other} layout="compact"/>));
+  expect(composer().draftKey).not.toBe(pendingKey);expect(composer().enabled).toBe(false);
+ } finally {mockContext.agents=[agent];act(()=>tree?.unmount());jest.clearAllTimers();jest.useRealTimers();globalThis.fetch=original;}
 });

@@ -684,11 +684,12 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
         )}
         <Composer
             enabled={!historyReadOnly}
+            draftOnly={historyReadOnly}
             pal={pal}
             lang={lang}
             demo={demo}
-            key={draftKeyFor(client.base, hq.pane_id, hq.session_id)}
-            draftKey={draftKeyFor(client.base, hq.pane_id, hq.session_id)}
+            key={draftKeyFor(client.base, hq.pane_id, live.session_id || live.observed_conversation?.session_id)}
+            draftKey={draftKeyFor(client.base, hq.pane_id, live.session_id || live.observed_conversation?.session_id)}
             paneId={hq.pane_id}
             historyScope={historyScope(hq)}
             onSend={sendHQ}

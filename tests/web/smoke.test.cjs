@@ -32,6 +32,8 @@ scenario('Desktop enrollment, sidebar, restore and live chat', {viewport: {width
   fixture.state.turns['%901'] = updated;
   await page.getByText('Updated live segment', {exact: true}).waitFor();
   await openTools(page, 'diff', true);
+  await page.locator('.session-diff .diff-file > summary').click();
+  await page.locator('.session-diff .diff-hunk > summary').click();
   await page.locator('.session-diff .diff-line.add .diff-code').waitFor();
   assert.equal(await page.locator('.session-diff .diff-line.add .diff-code').innerText(), 'new');
   await closeTools(page);
@@ -41,6 +43,41 @@ scenario('Desktop enrollment, sidebar, restore and live chat', {viewport: {width
   for (let i = 0; i < 60; i++) await page.locator('.tile-body').click({position: {x: 100, y: 60}});
   await page.locator('#max-exit').click();
   assert.equal(await page.locator('#board').evaluate(e => e.classList.contains('maximized')), false);
+});
+
+for (const width of [390, 1440]) scenario(`DTV003 Diff tree and worktree context at ${width}px`, {viewport:{width,height:900},locale:'en-US',colorScheme:width===390?'dark':'light',hasTouch:width<800}, async (page,fixture) => {
+  fixture.state.diff = '# worktree "/tmp/task-worktree"\n# branch feature/diff-tree\n' +
+    'diff --git a/docs/a.md b/docs/a.md\n--- a/docs/a.md\n+++ b/docs/a.md\n@@ -1 +1 @@\n-old\n+new\n' +
+    'diff --git a/src/a.ts b/src/a.ts\n--- a/src/a.ts\n+++ b/src/a.ts\n@@ -1 +1 @@\n-before\n+after\n# untracked:\n+ notes/draft.md\n';
+  await page.goto(fixture.url+'/#code=TEST-1234');
+  if(width<800) await page.locator('#radar').getByText('Investigate retries',{exact:true}).click();
+  else await page.locator('#tree').getByText('Investigate retries',{exact:true}).dblclick();
+  await openTools(page,'diff',width>=800);
+  const diff=page.locator('.session-diff');
+  assert.equal(await diff.locator('.diff-context strong').textContent(),'task-worktree');
+  assert.match(await diff.locator('.diff-context').innerText(),/feature\/diff-tree/);
+  assert.deepEqual(await diff.locator('.diff-directory-heading strong').allTextContents(),['docs/','notes/','src/']);
+  assert.equal(await diff.locator('details[open]').count(),0);
+  assert.match(await diff.locator('.diff-summary').innerText(),/3 files/);
+  assert.match(await diff.locator('.diff-summary').innerText(),/\+2/);
+  assert.match(await diff.locator('.diff-summary').innerText(),/−2/);
+  assert.match(await diff.locator('.diff-summary').innerText(),/1 untracked/);
+  assert.equal(await diff.evaluate(n=>n.scrollWidth<=n.clientWidth+1),true);
+  const directory=diff.locator('.diff-directory').filter({has:page.getByText('docs/',{exact:true})});
+  await directory.locator(':scope > summary').click();
+  await directory.locator('.diff-file > summary').click();
+  assert.equal(await directory.locator('.diff-line').count(),0);
+  await directory.locator('.diff-hunk > summary').click();
+  await directory.locator('.diff-line.add .diff-code').waitFor();
+  assert.equal(await directory.locator('.diff-line.add .diff-code').innerText(),'new');
+  await diff.getByRole('button',{name:'Collapse all',exact:true}).click();
+  assert.equal(await diff.locator('details[open]').count(),0);
+  if(process.env.GTMUX_WEB_RESULTS){await fs.mkdir(process.env.GTMUX_WEB_RESULTS,{recursive:true});await page.screenshot({path:path.join(process.env.GTMUX_WEB_RESULTS,`diff-tree-${width}.png`)});}
+  await closeTools(page);
+  fixture.state.diff='# worktree "/tmp/task-worktree"\n# branch feature/diff-tree\n';
+  await openTools(page,'diff',width>=800);
+  assert.match(await page.locator('.session-diff').innerText(),/No changes/);
+  assert.equal(await page.locator('.session-diff pre').count(),0);
 });
 
 scenario('Narrow Chinese read-only share and shell layout', {viewport: {width: 390, height: 844}, locale: 'zh-CN'}, async (page, fixture) => {

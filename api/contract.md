@@ -433,8 +433,8 @@ The mobile app uses this endpoint for agent avatars.
 ### `GET /api/diff?id=<pane>` — what the agent changed (read-only)
 
 Returns a unified `git diff` (working tree vs `HEAD`, plus a list of untracked
-files) of the pane's current working directory — for reviewing an agent's edits
-from the phone. `diff` is `""` when the cwd isn't a git repo. Capped at ~400 KB.
+files) of the worktree containing the pane's current directory — for reviewing an agent's edits
+from the phone or browser. `diff` is `""` when the cwd isn't a git repo. Capped at ~400 KB within the existing 8-second capture budget.
 
 ```
 200 {"id":"%12","diff":"# branch main\ndiff --git a/… …"}
@@ -442,6 +442,8 @@ from the phone. `diff` is `""` when the cwd isn't a git repo. Capped at ~400 KB.
 404 {"error":"diff failed: pane not found"}
 503 {"error":"diff not available"}   // Diff dep not wired
 ```
+
+Owner and paired-device responses may begin with `# worktree <JSON string>` followed by `# branch <name>`. The root is obtained from that Git worktree, including when the pane is in a subdirectory; clients must not infer it from the session title. Guest responses omit the new absolute-root preamble, retain branch and patch text, and remain subject to the existing pane allowlist before capture. `# untracked:` contains file names only, not new-file contents. A trailing truncation marker means counts describe only the loaded prefix. The JSON envelope remains unchanged for older clients.
 
 ### `GET /api/session/transcript?session_id=<id>` — verified external history
 

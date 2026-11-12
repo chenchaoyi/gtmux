@@ -1283,14 +1283,14 @@ LEG-06c2d30c28c9,L2,RN / mobile harness,mobileapp/src/ui/CopyableText.test.tsx,5
 CP-001-8fc86a,L2,RN / mobile harness,mobileapp/src/ui/CrossClientContract.test.tsx,24,parameter-template,CP-001 %s renders,True,CP-001
 CP-002-8fc86a,L2,RN / mobile harness,mobileapp/src/ui/CrossClientContract.test.tsx,46,test,CP-002 HQ request,False,CP-002
 CP-003-8fc86a,L2,RN / mobile harness,mobileapp/src/ui/CrossClientContract.test.tsx,57,test,CP-003 document actions,False,CP-003
-LEG-d8b24286f7cc,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,18,test,large diffs mount only a window of native rows and retain the final line,False,legacy-not-retrospectively-reviewed
-LEG-6e9e4223d32d,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,36,test,"a failed read is an error with retry, not an empty repository",False,legacy-not-retrospectively-reviewed
-LEG-8bdd11a1e0bf,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,58,test,changing a pane retires an earlier read,False,legacy-not-retrospectively-reviewed
-LEG-a2223a5b082a,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,79,test,minified lines have a bounded native text measurement and disclose shortening,False,legacy-not-retrospectively-reviewed
-LEG-4e88520e6ccc,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,87,test,wide diffs keep a contrasting position indicator in a fixed viewport gutter,False,legacy-not-retrospectively-reviewed
-LEG-1878ffde2d08,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,142,test,"file cards, hunk folding, line numbers and full source reader share the original diff",False,legacy-not-retrospectively-reviewed
-LEG-12947bbfb7b6,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,170,test,large Dynamic Type keeps chrome and six-digit line numbers within the wrapped viewport,False,legacy-not-retrospectively-reviewed
-LEG-0a6ffbb0563a,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,219,test,wrapping preserves recorded layout and code rows use one compact source gutter,False,legacy-not-retrospectively-reviewed
+LEG-d8b24286f7cc,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,28,test,large diffs mount only a window of native rows and retain the final line,False,legacy-not-retrospectively-reviewed
+LEG-6e9e4223d32d,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,46,test,"a failed read is an error with retry, not an empty repository",False,legacy-not-retrospectively-reviewed
+LEG-8bdd11a1e0bf,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,68,test,changing a pane retires an earlier read,False,legacy-not-retrospectively-reviewed
+LEG-a2223a5b082a,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,89,test,minified lines have a bounded native text measurement and disclose shortening,False,legacy-not-retrospectively-reviewed
+LEG-4e88520e6ccc,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,97,test,wide diffs keep a contrasting position indicator in a fixed viewport gutter,False,legacy-not-retrospectively-reviewed
+LEG-1878ffde2d08,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,152,test,"file cards, hunk folding, line numbers and full source reader share the original diff",False,legacy-not-retrospectively-reviewed
+LEG-12947bbfb7b6,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,182,test,large Dynamic Type keeps chrome and six-digit line numbers within the wrapped viewport,False,legacy-not-retrospectively-reviewed
+LEG-0a6ffbb0563a,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,232,test,wrapping preserves recorded layout and code rows use one compact source gutter,False,legacy-not-retrospectively-reviewed
 LEG-5d47ba2c967a,L2,RN / mobile harness,mobileapp/src/ui/HQCard.test.tsx,26,test,fleetHeadline synthesizes a chief-of-staff conclusion,False,legacy-not-retrospectively-reviewed
 LEG-8e4d3be1c3c6,L2,RN / mobile harness,mobileapp/src/ui/HQCard.test.tsx,41,test,one other session reads in the singular,False,legacy-not-retrospectively-reviewed
 LEG-5a7992f8e39b,L2,RN / mobile harness,mobileapp/src/ui/HQCard.test.tsx,46,test,no fleet pips are rendered anymore,False,legacy-not-retrospectively-reviewed
@@ -1719,6 +1719,9 @@ LEG-5f46ca5c5ad8,L2,RN / mobile harness,mobileapp/src/ui/diffModel.test.ts,31,te
 LEG-fb593b360b74,L2,RN / mobile harness,mobileapp/src/ui/diffModel.test.ts,40,test,Git octal-quoted UTF-8 and literal percent filenames remain recognizable,False,legacy-not-retrospectively-reviewed
 LEG-5e40ddb60392,L2,RN / mobile harness,mobileapp/src/ui/diffModel.test.ts,54,test,display rows preserve recorded whitespace and original patch numbers,False,legacy-not-retrospectively-reviewed
 LEG-5e116c005d4d,L2,RN / mobile harness,mobileapp/src/ui/diffModel.test.ts,66,test,complete long lines are split without losing Unicode or the final character,False,legacy-not-retrospectively-reviewed
+MAP-758d838f23f9,L2,reviewed implementation,mobileapp/src/ui/diffTree.test.ts,7,reviewed-selector,DTV001 directories start closed and preserve exact code and totals on expansion,False,DTV-001
+MAP-aa15f8368607,L2,reviewed implementation,mobileapp/src/ui/diffTree.test.ts,21,reviewed-selector,DTV001 context stays outside hunks and untracked names never count as code additions,False,DTV-001
+MAP-5fa6cffb6b12,L2,reviewed implementation,mobileapp/src/ui/diffTree.test.ts,35,reviewed-selector,DTV001 prototype-like and deep folder names stay inert with bounded hierarchy,False,DTV-001
 LEG-2e8af30a2233,L2,RN / mobile harness,mobileapp/src/ui/fontSettings.test.ts,2,test,one-point adjustments reach every size and clamp at the ends,False,legacy-not-retrospectively-reviewed
 LEG-25c58a077d2c,L2,RN / mobile harness,mobileapp/src/ui/fontSettings.test.ts,15,test,saved sizes override old indices; migration retains actual old text size,False,legacy-not-retrospectively-reviewed
 LEG-2599255c85b0,L2,RN / mobile harness,mobileapp/src/ui/footerSpacing.test.tsx,10,test.each(),footer notices keep spacing and actionable targets (%s),True,legacy-not-retrospectively-reviewed

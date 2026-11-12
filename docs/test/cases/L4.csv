@@ -93,9 +93,13 @@ LEG-ee0968c7d8ff,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,310,check,
 MAP-d4637161f816,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,98,reviewed-selector,async function check,False,"CT-ANDROID,CT-TIMING"
 MAP-c6dfe48e744e,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,104,reviewed-selector,async function run,False,"CT-ANDROID,CT-TIMING"
 MAP-24f51091f511,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,225,reviewed-selector,await check('21-camera-permission-denial',False,"CT-ANDROID,CT-TIMING,ACP-003"
+MAP-60e68185ef5d,L4,Browser,tests/web/full-input.test.cjs,35,reviewed-selector,Diff file cards and independent hunks at ,False,DTV-003
 MAP-ce9e69e4a686,L4,reviewed implementation,tests/web/maximized-header.test.cjs,4,reviewed-selector,AOP006 real maximized header wide,False,AOP-006
 MAP-5e76ed85dc75,L4,reviewed implementation,tests/web/maximized-header.test.cjs,5,reviewed-selector,AOP006 real maximized header medium,False,AOP-006
 MAP-1752da0e5a5c,L4,reviewed implementation,tests/web/maximized-header.test.cjs,6,reviewed-selector,AOP006 real maximized header narrow board,False,AOP-006
 MAP-dd8842bbedae,L4,reviewed implementation,tests/web/maximized-header.test.cjs,7,reviewed-selector,AOP006 real maximized header plain terminal,False,AOP-006
 MAP-1d1a8964b720,L4,Browser,tests/web/presentation.test.cjs,159,reviewed-selector,Compact settings expose direct appearance choices and bounded call rows at ${width},False,AOP-005
-MAP-be17f88f3a1c,L4,Browser,tests/web/smoke.test.cjs,153,reviewed-selector,Structured activity at ${width}px,False,AOP-005
+MAP-fa13c1acffbc,L4,Browser,tests/web/presentation.test.cjs,59,reviewed-selector,Focused Chat is a conversation with session tools at ${width},False,"AOP-005,DTV-003"
+MAP-f023f66b7dac,L4,Browser,tests/web/reading-controls.test.cjs,20,reviewed-selector,"Diff preserves recorded layout, syntax and original copy at ${width}",False,DTV-003
+MAP-be17f88f3a1c,L4,Browser,tests/web/smoke.test.cjs,190,reviewed-selector,Structured activity at ${width}px,False,AOP-005
+MAP-57dbbd511453,L4,Browser,tests/web/smoke.test.cjs,48,reviewed-selector,DTV003 Diff tree and worktree context at ${width}px,False,"AOP-005,DTV-003"

@@ -312,3 +312,9 @@ If browser storage is denied or full, marks remain in page memory through transc
 Trace turn headers use Turn N without repeating the provider; session identity remains in mixed histories and details. Expanded Live uses the App’s dark terminal surface, monospace 1.4 line height, horizontal reading and a separate scrollbar safe area. Chat and Trace reuse the App history merge: focus, pane tiles and readable external tiles offer bounded earlier pages, retain explicitly loaded records across tail refreshes, preserve the visible message anchor and reject stale scope/credential replies. A changed source or discontinuity keeps the current window and offers an explicit latest-window reset. Code actions share flat, themed controls with selected format state and exact-original copy. Horizontal execution paths reserve padding below text for the scrollbar. Diff uses the same file-plus/minus geometry as App settings and action sheets.
 
 Maximized tiles place Restore layout inside the header grid, with a separate column for the title and window controls. Narrow tiles retain a named return icon. Maximized dimensions follow the board; restoring returns the prior tile dimensions.
+
+## Worktree Diff hierarchy (2026-11-12)
+
+The read-only Diff inspector shares the native directory model and initially folds directories, files and hunks. Worktree root, branch, file totals and additions/deletions remain visible above the tree; Collapse all affects this inspector only. Paths are rendered as text. Hunk code is mounted on explicit expansion in bounded batches. Untracked names are not added code lines; partial payloads disclose that their counts are incomplete. This keeps existing pane authorization, original patch copying and failure handling.
+
+The full worktree path is owner-only. Shared guests retain the authorized branch and original patch without the new absolute host path.

@@ -1106,11 +1106,12 @@ function PaneDetailView({
           pal={pal}
           lang={lang}
           demo={demo}
-          key={draftKeyFor(client.base, live.pane_id || agent.pane_id, live.session_id)}
-            draftKey={draftKeyFor(client.base, live.pane_id || agent.pane_id, live.session_id)}
+          key={draftKeyFor(client.base, live.pane_id || agent.pane_id, live.session_id || live.observed_conversation?.session_id)}
+            draftKey={draftKeyFor(client.base, live.pane_id || agent.pane_id, live.session_id || live.observed_conversation?.session_id)}
             paneId={live.pane_id || agent.pane_id}
           historyScope={historyScope(live)}
           enabled={inputEnabled}
+          draftOnly={mode === 'chat' && historyReadOnly}
           keyController={keyControl}
           showActions={false}
           returnSends={returnSends}

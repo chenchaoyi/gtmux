@@ -1,12 +1,15 @@
-// Generated from mobileapp/src/ui/diffModel.ts; SHA256 20401f8c7eabf2a1bfaed4f9b09fea265ff712845d7f51f006dad3d73fe788a8
+// Generated from mobileapp/src/ui/diffModel.ts; SHA256 20567486bab3b24d0870f70548436a93e241293da198b71c3e01f66fcb6a99f8
 (function(root){var exports={};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.diffFiles = diffFiles;
 exports.diffPresentation = diffPresentation;
 exports.hunkRange = hunkRange;
+exports.diffContext = diffContext;
+exports.diffTree = diffTree;
+exports.diffTreePresentation = diffTreePresentation;
 exports.diffDisplayRows = diffDisplayRows;
-function gitPath(value) {
+function gitPath(value, stripPrefix = true) {
     if (value.startsWith('"') && value.endsWith('"')) {
         try {
             value = JSON.parse(value);
@@ -42,14 +45,30 @@ function gitPath(value) {
             }
         }
     }
-    return value.replace(/^[ab]\//, '');
+    return stripPrefix ? value.replace(/^[ab]\//, '') : value;
 }
 function diffFiles(text) {
     const files = [];
     let file;
     let hunk = '';
     let old = 0, next = 0, inHunk = false;
+    let untracked = false;
     for (const [i, line] of text.replace(/\n$/, '').split('\n').entries()) {
+        if (line === '# untracked:') {
+            untracked = true;
+            file = undefined;
+            continue;
+        }
+        if (line === '… (diff truncated)') {
+            untracked = false;
+            file = undefined;
+            continue;
+        }
+        if (untracked) {
+            if (line.startsWith('+ '))
+                files.push({ key: 'untracked:' + i, path: gitPath(line.slice(2), false), added: 0, removed: 0, untracked: true, raw: line, rows: [] });
+            continue;
+        }
         if (line.startsWith('diff --git ')) {
             const match = /^diff --git (?:"(?:[^"\\]|\\.)*"|a\/.*?) ("(?:[^"\\]|\\.)*"|b\/.*)$/.exec(line);
             file = {
@@ -127,7 +146,7 @@ function diffFiles(text) {
     }
     return files;
 }
-function diffPresentation(text, folded = {}) {
+function diffPresentation(text, folded = {}, initiallyFolded = false) {
     const files = diffFiles(text), lines = [], meta = [];
     if (!files.length) {
         return {
@@ -139,7 +158,7 @@ function diffPresentation(text, folded = {}) {
         };
     }
     for (const [index, file] of files.entries()) {
-        const open = !folded[file.key];
+        const open = folded[file.key] === undefined ? !initiallyFolded : !folded[file.key];
         lines.push(file.path);
         meta.push({
             kind: 'file',
@@ -149,6 +168,7 @@ function diffPresentation(text, folded = {}) {
             added: file.added,
             removed: file.removed,
             open,
+            untracked: file.untracked,
         });
         if (!open)
             continue;
@@ -157,7 +177,7 @@ function diffPresentation(text, folded = {}) {
             if (row.meta.kind === 'hunk') {
                 show =
                     folded[row.meta.key] === undefined
-                        ? index === 0 && first
+                        ? !initiallyFolded && index === 0 && first
                         : !folded[row.meta.key];
                 first = false;
                 lines.push(row.text);
@@ -185,6 +205,98 @@ function hunkRange(header) {
     const start = Number(count > 0 ? match[3] : match[1]);
     const span = count > 0 ? count : Number(match[2] ?? 1);
     return span > 1 ? `${start}–${start + span - 1}` : String(start);
+}
+/** Metadata emitted by the bounded Git capture, never inferred from a session title. */
+function diffContext(text) {
+    let worktree = '', branch = '';
+    for (const line of text.split('\n')) {
+        if (line.startsWith('diff --git ') || line === '# untracked:')
+            break;
+        if (line.startsWith('# branch '))
+            branch = line.slice(9);
+        if (line.startsWith('# worktree ')) {
+            try {
+                const value = JSON.parse(line.slice(11));
+                if (typeof value === 'string' && value.startsWith('/'))
+                    worktree = value;
+            }
+            catch { /* Older servers may not provide context. */ }
+        }
+    }
+    return { worktree, branch, truncated: text.trimEnd().endsWith('… (diff truncated)') };
+}
+/** Shared directory aggregation; Maps keep filenames such as __proto__ inert. */
+function diffTree(files) {
+    const root = { key: '', name: '', path: '', depth: -1, added: 0, removed: 0, fileCount: 0, children: [] };
+    const directories = new Map([['', root]]);
+    for (const file of files) {
+        const parts = file.path.split('/');
+        const name = parts.pop() || file.path;
+        // Preserve very deep paths as a compact final directory, with bounded stack depth.
+        if (parts.length > 24)
+            parts.splice(23, parts.length - 23, parts.slice(23).join('/'));
+        let parent = root, path = '';
+        for (const [depth, part] of parts.entries()) {
+            path += (path ? '/' : '') + part;
+            let node = directories.get(path);
+            if (!node) {
+                node = { key: 'directory:' + path, name: part, path, depth, added: 0, removed: 0, fileCount: 0, children: [] };
+                directories.set(path, node);
+                parent.children.push(node);
+            }
+            node.added += file.added;
+            node.removed += file.removed;
+            node.fileCount++;
+            parent = node;
+        }
+        parent.children.push({ key: file.key, name, path: file.path, depth: parts.length, fileCount: 1, added: file.added, removed: file.removed, file, children: [] });
+    }
+    const sort = (nodes) => {
+        nodes.sort((a, b) => Number(!!a.file) - Number(!!b.file) || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+        nodes.forEach(node => sort(node.children));
+    };
+    sort(root.children);
+    return root.children;
+}
+/** Native virtualized rows; source parsing and counts are identical to the browser tree. */
+function diffTreePresentation(text, folded = {}) {
+    const parsed = diffPresentation(text, folded, true);
+    const tree = diffTree(parsed.files);
+    if (!parsed.files.length) {
+        const context = diffContext(text);
+        const lines = context.worktree || context.branch
+            ? parsed.lines.filter(line => !line.startsWith('# worktree ') && !line.startsWith('# branch '))
+            : parsed.lines;
+        return { ...parsed, tree, lines };
+    }
+    const byFile = new Map();
+    parsed.meta.forEach((meta, index) => {
+        if (!meta.file)
+            return;
+        const indices = byFile.get(meta.file) || [];
+        indices.push(index);
+        byFile.set(meta.file, indices);
+    });
+    const lines = [], meta = [];
+    const visit = (nodes) => {
+        for (const node of nodes) {
+            if (node.file) {
+                for (const index of byFile.get(node.key) || []) {
+                    lines.push(parsed.lines[index]);
+                    meta.push({ ...parsed.meta[index], depth: node.depth });
+                }
+            }
+            else {
+                const open = folded[node.key] === false;
+                lines.push(node.name);
+                meta.push({ kind: 'directory', key: node.key, path: node.path, depth: node.depth, fileCount: node.fileCount, added: node.added, removed: node.removed, open });
+                if (open)
+                    visit(node.children);
+            }
+        }
+    };
+    visit(tree);
+    return { ...parsed, tree, lines, meta };
 }
 /** Split recorded patch lines into bounded native rows without reformatting source. */
 function diffDisplayRows(presentation) {
