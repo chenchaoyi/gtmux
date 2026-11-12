@@ -61425,6 +61425,63 @@
         }
       ],
       "sha256": "58d0971635204351f97699b48ebbd9487b49045addf90ae847674b1e0575e73f"
+    },
+    "internal/knowledge/local_durability_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-1b068f1eace7",
+          "line": 17,
+          "kind": "reviewed-selector",
+          "name": "TestLocalDurabilityRetryMustReachWriterBeforeLanding",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBLOCAL-DURABILITY-RETRY"
+        }
+      ],
+      "sha256": "cee5fac55a3968b5614801c1d3117e1ec35bdab7152777aeaf2dfb4ba0acf9f6"
+    },
+    "internal/knowledge/sync_serialization_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e5314cedb7a1",
+          "line": 78,
+          "kind": "reviewed-selector",
+          "name": "TestPublicSyncSerializesSnapshotAndPublication",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBSYNC-SERIALIZATION"
+        },
+        {
+          "id": "MAP-59a004277dc8",
+          "line": 218,
+          "kind": "reviewed-selector",
+          "name": "TestPublicSyncReleasesLockOnErrorAndRefusal",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBSYNC-SERIALIZATION"
+        }
+      ],
+      "sha256": "a1c9254f2d2716f02de72ccc69c535d08722957ecba9e6a1e3f6c85f401e7608"
+    },
+    "internal/state/privatewrite_durability_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-c2cbd0d02497",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestPrivateWriteRetriesDirectorySyncAfterRename",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "PRIVATEWRITE-DIRECTORY-SYNC"
+        }
+      ],
+      "sha256": "aa06bbf71ef74b48ee2da3a25b37c7d87974560d65d6bf55dc92077455a8807f"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

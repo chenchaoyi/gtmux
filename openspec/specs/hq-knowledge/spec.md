@@ -237,6 +237,11 @@ under the same knowledge ledger lock; a delayed writer cannot overwrite a newer
 carrier or settle a newer same-ID review. Historical unversioned land operations
 SHALL keep their existing fold semantics.
 
+Public machine/repository sync, including CLI and doctor callers, SHALL hold the
+same ledger lock from reading its snapshot through publication. Already-locked
+carry SHALL use internal implementations without recursively acquiring that lock.
+An old independent sync SHALL NOT overwrite a newer landed carrier.
+
 LOCAL publication SHALL replace a complete staged private file atomically, syncing
 the file before rename and the parent afterwards. Exact historical generated sections
 MAY be upgraded; unrelated manual text SHALL survive. Symlinks, read-only leaves,
@@ -244,6 +249,8 @@ duplicate markers and hand-edited generated sections SHALL be refused. Pre-publi
 failure SHALL preserve the original bytes and permissions; a carrier failure SHALL
 leave the promotion pending. A post-publication error MAY leave complete new bytes,
 so retry SHALL remain idempotent rather than assume nothing was written.
+Identical LOCAL content SHALL still pass durable publication, including directory
+sync, before retry can append land. Repeated durability errors SHALL remain pending.
 
 Landing SHALL remove the brief while the ledger keeps the lifecycle; a later `promote`
 MAY re-open a landed entry. The write path SHALL refuse promoting a dead or

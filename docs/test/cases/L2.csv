@@ -115,6 +115,7 @@ MAP-f9245b11d56a,L2,reviewed implementation,internal/knowledge/landing_revision_
 MAP-ccbea4028144,L2,reviewed implementation,internal/knowledge/landing_revision_test.go,153,reviewed-selector,TestLandingCarrierFailureKeepsPendingAndRetryIsSafe,False,KBCARRIER-REVISION
 MAP-6759f82b89d2,L2,reviewed implementation,internal/knowledge/landing_revision_test.go,188,reviewed-selector,TestLandingManualRevisionAndLegacyHistory,False,KBCARRIER-REVISION
 MAP-238d336301ba,L2,reviewed implementation,internal/knowledge/landing_revision_test.go,228,reviewed-selector,TestLandingCLIRequiresViewedRevision,False,KBCARRIER-REVISION
+MAP-1b068f1eace7,L2,reviewed implementation,internal/knowledge/local_durability_test.go,17,reviewed-selector,TestLocalDurabilityRetryMustReachWriterBeforeLanding,False,KBLOCAL-DURABILITY-RETRY
 MAP-ad36a7389edc,L2,reviewed implementation,internal/knowledge/local_publication_test.go,13,reviewed-selector,TestMemoryCarrierAtomicPublicationKeepsOldReader,False,KBCARRIER-LOCAL-PUBLICATION
 MAP-25b9dd679b77,L2,reviewed implementation,internal/knowledge/local_publication_test.go,69,reviewed-selector,TestMemoryCarrierRefusesUnsafeTargetsWithoutSettling,False,KBCARRIER-LOCAL-PUBLICATION
 MAP-eb3912a57551,L2,reviewed implementation,internal/knowledge/memory_carrier_test.go,10,reviewed-selector,TestMemoryCarrierUpdatesHistoricalTextAndPreservesManualEdits,False,KBMEM-CARRIER
@@ -123,6 +124,8 @@ MAP-def3fe83ca29,L2,reviewed implementation,internal/knowledge/review_test.go,64
 MAP-32cc723818f0,L2,reviewed implementation,internal/knowledge/review_test.go,103,reviewed-selector,TestReviewDryRunWritesNothingAndProtectedRetireRefused,False,KBMEM-REVIEW
 MAP-3e5f78db15d6,L2,reviewed implementation,internal/knowledge/review_test.go,132,reviewed-selector,TestReviewedRevisionReopensCarrierAndDoesNotRefreshVerification,False,KBMEM-REVIEW
 MAP-99965bdacab5,L2,reviewed implementation,internal/knowledge/review_test.go,79,reviewed-selector,TestReviewConcurrentRevisionHasOneWinner,False,KBMEM-REVIEW
+MAP-e5314cedb7a1,L2,reviewed implementation,internal/knowledge/sync_serialization_test.go,78,reviewed-selector,TestPublicSyncSerializesSnapshotAndPublication,False,KBSYNC-SERIALIZATION
+MAP-59a004277dc8,L2,reviewed implementation,internal/knowledge/sync_serialization_test.go,218,reviewed-selector,TestPublicSyncReleasesLockOnErrorAndRefusal,False,KBSYNC-SERIALIZATION
 MAP-9fe9287c0104,L2,reviewed implementation,internal/knowledge/usage_test.go,14,reviewed-selector,TestUsageDoesNotBecomeHitAndRetryIsIdempotent,False,KBMEM-USAGE
 MAP-76d1fe9047e3,L2,reviewed implementation,internal/knowledge/usage_test.go,41,reviewed-selector,TestUsageRejectsAuditAndForgedMeasurement,False,KBMEM-USAGE
 MAP-c93b792249fd,L2,reviewed implementation,internal/knowledge/vault_test.go,12,reviewed-selector,TestVaultRoundTripRenameAndDeletion,False,KBMEM-VAULT
@@ -545,6 +548,7 @@ LEG-9ba6285dc523,L2,Go core / CLI / server,internal/server/webui_test.go,16,Test
 LEG-d0796bd9ffc4,L2,Go core / CLI / server,internal/server/webui_test.go,55,Test,TestWebHandlerCacheBusting,False,legacy-not-retrospectively-reviewed
 MAP-e5d2427c7d6d,L2,reviewed implementation,internal/state/cpu_repeated_poll_test.go,5,reviewed-selector,TestCSR005RepeatedPollPreservesObservedCPUWork,False,CSR-005
 MAP-33d2a35b1094,L2,reviewed implementation,internal/state/cpu_repeated_poll_test.go,30,reviewed-selector,TestCSR005RepeatedPollRequiresValidPriorEvidence,False,CSR-005
+MAP-c2cbd0d02497,L2,reviewed implementation,internal/state/privatewrite_durability_test.go,14,reviewed-selector,TestPrivateWriteRetriesDirectorySyncAfterRename,False,PRIVATEWRITE-DIRECTORY-SYNC
 MAP-495d9fb7b0a9,L2,Go core / CLI / server,internal/state/privatewrite_test.go,201,reviewed-selector,TestPrivateWritePrePublicationFailurePreservesOriginal,False,KBCARRIER-ATOMIC
 MAP-79929223fc37,L2,reviewed implementation,internal/transcript/codex_large_cache_test.go,13,reviewed-selector,TestLCL001LargeCodexTailStaysCachedAndEarlierHistoryRemainsReadable,False,LCL-001
 MAP-9661b1f33d22,L2,reviewed implementation,internal/transcript/codex_large_cache_test.go,112,reviewed-selector,TestLCL001IndividuallyOversizedTurnIsCompleteAndUncached,False,LCL-001

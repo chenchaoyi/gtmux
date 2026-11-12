@@ -1979,5 +1979,30 @@
       "TestMemoryCarrierAtomicPublicationKeepsOldReader",
       "TestMemoryCarrierRefusesUnsafeTargetsWithoutSettling"
     ]
+  },
+  "internal/knowledge/sync_serialization_test.go": {
+    "cases": [
+      "KBSYNC-SERIALIZATION"
+    ],
+    "selectors": [
+      "TestPublicSyncSerializesSnapshotAndPublication",
+      "TestPublicSyncReleasesLockOnErrorAndRefusal"
+    ]
+  },
+  "internal/knowledge/local_durability_test.go": {
+    "cases": [
+      "KBLOCAL-DURABILITY-RETRY"
+    ],
+    "selectors": [
+      "TestLocalDurabilityRetryMustReachWriterBeforeLanding"
+    ]
+  },
+  "internal/state/privatewrite_durability_test.go": {
+    "cases": [
+      "PRIVATEWRITE-DIRECTORY-SYNC"
+    ],
+    "selectors": [
+      "TestPrivateWriteRetriesDirectorySyncAfterRename"
+    ]
   }
 }

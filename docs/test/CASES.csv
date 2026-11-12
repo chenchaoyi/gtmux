@@ -2070,6 +2070,7 @@ LEG-af96f8befee1,L1,Go core / CLI / server,internal/knowledge/lint_test.go,345,T
 LEG-09fcb37aa82e,L1,Go core / CLI / server,internal/knowledge/lint_test.go,354,Test,TestACycleStopsRatherThanSpins,False,legacy-not-retrospectively-reviewed
 LEG-7105f4ae950e,L1,Go core / CLI / server,internal/knowledge/lint_test.go,379,Test,TestNoOutdatedLinksSurviveTheFold,False,legacy-not-retrospectively-reviewed
 LEG-2b6cbd7c398b,L1,Go core / CLI / server,internal/knowledge/lint_test.go,394,Test,TestANumericTailSurvivesTheRewrite,False,legacy-not-retrospectively-reviewed
+MAP-1b068f1eace7,L2,reviewed implementation,internal/knowledge/local_durability_test.go,17,reviewed-selector,TestLocalDurabilityRetryMustReachWriterBeforeLanding,False,KBLOCAL-DURABILITY-RETRY
 MAP-ad36a7389edc,L2,reviewed implementation,internal/knowledge/local_publication_test.go,13,reviewed-selector,TestMemoryCarrierAtomicPublicationKeepsOldReader,False,KBCARRIER-LOCAL-PUBLICATION
 MAP-25b9dd679b77,L2,reviewed implementation,internal/knowledge/local_publication_test.go,69,reviewed-selector,TestMemoryCarrierRefusesUnsafeTargetsWithoutSettling,False,KBCARRIER-LOCAL-PUBLICATION
 MAP-eb3912a57551,L2,reviewed implementation,internal/knowledge/memory_carrier_test.go,10,reviewed-selector,TestMemoryCarrierUpdatesHistoricalTextAndPreservesManualEdits,False,KBMEM-CARRIER
@@ -2111,6 +2112,8 @@ LEG-af82b006f9d1,L1,Go core / CLI / server,internal/knowledge/sensitive_test.go,
 LEG-8b1ecde3115f,L1,Go core / CLI / server,internal/knowledge/sensitive_test.go,33,Test,TestASensitiveEntryDoesNotTravel,False,legacy-not-retrospectively-reviewed
 LEG-d6b1859d0bad,L1,Go core / CLI / server,internal/knowledge/sensitive_test.go,58,Test,TestSupersedeKeepsTheMarkAndTheVerbFlipsIt,False,legacy-not-retrospectively-reviewed
 LEG-693f614997fb,L1,Go core / CLI / server,internal/knowledge/sensitive_test.go,83,Test,TestLintNamesACredentialWrittenWithoutAsking,False,legacy-not-retrospectively-reviewed
+MAP-e5314cedb7a1,L2,reviewed implementation,internal/knowledge/sync_serialization_test.go,78,reviewed-selector,TestPublicSyncSerializesSnapshotAndPublication,False,KBSYNC-SERIALIZATION
+MAP-59a004277dc8,L2,reviewed implementation,internal/knowledge/sync_serialization_test.go,218,reviewed-selector,TestPublicSyncReleasesLockOnErrorAndRefusal,False,KBSYNC-SERIALIZATION
 MAP-9fe9287c0104,L2,reviewed implementation,internal/knowledge/usage_test.go,14,reviewed-selector,TestUsageDoesNotBecomeHitAndRetryIsIdempotent,False,KBMEM-USAGE
 MAP-76d1fe9047e3,L2,reviewed implementation,internal/knowledge/usage_test.go,41,reviewed-selector,TestUsageRejectsAuditAndForgedMeasurement,False,KBMEM-USAGE
 MAP-c93b792249fd,L2,reviewed implementation,internal/knowledge/vault_test.go,12,reviewed-selector,TestVaultRoundTripRenameAndDeletion,False,KBMEM-VAULT
@@ -3078,6 +3081,7 @@ LEG-aef7b9a5e192,L1,Go core / CLI / server,internal/state/privateio_test.go,127,
 LEG-a1aded2430f4,L1,Go core / CLI / server,internal/state/privateio_test.go,165,Test,TestPrivateIOLeavesExternalAncestorsAndRootTargetsAlone,False,legacy-not-retrospectively-reviewed
 LEG-35e8f43bca42,L1,Go core / CLI / server,internal/state/privateio_test.go,188,Test,TestPrivateIODefaultTemporaryDirectoryKeepsOSMeaning,False,legacy-not-retrospectively-reviewed
 LEG-0be8a3a5c4c5,L1,Go core / CLI / server,internal/state/privateio_test.go,211,Test,TestPolicyOpenDoesNotRepairReadOnlyInspection,False,legacy-not-retrospectively-reviewed
+MAP-c2cbd0d02497,L2,reviewed implementation,internal/state/privatewrite_durability_test.go,14,reviewed-selector,TestPrivateWriteRetriesDirectorySyncAfterRename,False,PRIVATEWRITE-DIRECTORY-SYNC
 LEG-cd86dfe66edf,G,Go core / CLI / server,internal/state/privatewrite_test.go,14,Test,TestPrivateWriteRefusesLinksAndSpecialTargets,False,legacy-not-retrospectively-reviewed
 LEG-cf083bd826fc,L1,Go core / CLI / server,internal/state/privatewrite_test.go,13,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-cae3dab26188,G,Go core / CLI / server,internal/state/privatewrite_test.go,76,Test,TestPrivateWriteReplacesOnlyOwnedDestination,False,legacy-not-retrospectively-reviewed

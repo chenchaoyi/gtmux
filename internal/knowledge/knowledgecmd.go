@@ -573,7 +573,8 @@ func knowledgeLand(args []string) error {
 }
 
 // carryEntry writes a pending entry where its audience reads and returns the ref to land
-// with. Shared by the CLI's `land` and the surfaces' KnowledgeCarry.
+// with. Shared by the CLI's `land` and the surfaces' KnowledgeCarry. The caller must
+// hold the ledger lock through publication and receipt append.
 func carryEntry(entry knowledgeOp, force bool) (string, error) {
 	id := entry.ID
 	switch entry.Audience {
@@ -585,7 +586,7 @@ func carryEntry(entry knowledgeOp, force bool) (string, error) {
 		i18n.Say("✓ written into "+path, "✓ 已写进 "+path)
 		return "LOCAL.md", nil
 	case AudienceMachine:
-		rep, err := SyncMachine(force)
+		rep, err := syncMachineLocked(force)
 		if err != nil {
 			return "", err
 		}
@@ -594,7 +595,7 @@ func carryEntry(entry knowledgeOp, force bool) (string, error) {
 			fmt.Sprintf("✓ 已渲染 %s · 写入：%s · 已一致：%s", MachinePath(), orNone(rep.Written), orNone(rep.Kept)))
 		return MachinePath(), nil
 	case AudienceRepo:
-		path, refused, err := SyncRepo(entry.AudienceRepo, force)
+		path, refused, err := syncRepoLocked(entry.AudienceRepo, force)
 		if err != nil {
 			return "", err
 		}

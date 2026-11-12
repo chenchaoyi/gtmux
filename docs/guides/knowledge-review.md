@@ -100,6 +100,9 @@ Missing reports do not mean unused, and reported success does not prove causal i
 Automatic `gtmux knowledge land <id>` checks the version, writes its carrier and
 records completion under the existing ledger lock. Same-ID review reopens landing;
 a delayed old carry cannot settle or overwrite the new revision.
+Public machine/repository sync, including doctor repair, holds the same lock from
+reading the ledger through publication. It cannot write an older snapshot after a
+newer carry has completed. External editors do not participate in this lock.
 
 For a lesson you carried yourself, first read `gtmux knowledge show <id> --json`,
 verify that exact text reached the destination, then use
@@ -112,5 +115,7 @@ must refresh/upgrade for manual landing; automatic carry remains available.
 LOCAL updates preserve unrelated manual rules and atomically replace complete private
 bytes (0600). Read-only/link targets and edited generated sections require review.
 If publication fails, landing stays pending. If bytes reached disk before a later
-error, retry is idempotent; inspect the receipt before deciding whether to retry or
+error, retry republishes even identical content and confirms file/directory sync
+before settling; repeated sync failure leaves landing pending without duplicate
+sections. Inspect the receipt before deciding whether to retry or
 repair rendered views. Historical landing records remain readable without migration.
