@@ -243,6 +243,8 @@ function PaneDetailView({
       : (lang === 'zh' ? `${where}重连中 · ` : `${where}reconnecting · `);
   })();
   const [text, setText] = useState('');
+  const paneReadIdentity = useMemo(() => ({client, pane: agent.pane_id}), [client, agent.pane_id]);
+  const [captureIdentity, setCaptureIdentity] = useState<typeof paneReadIdentity>();
   const [cursor, setCursor] = useState<{x: number; up: number; visible: boolean} | undefined>();
   // The tmux pane's width, which tells Codex's cut prompt row from a row that merely ends in
   // "…" (ui/codexPinned). Absent on a Mac server older than v1.0.53.
@@ -567,6 +569,7 @@ function PaneDetailView({
   );
 
   useEffect(() => {
+    setCaptureIdentity(undefined);
     const task = createReadTask(signal => client.pane(agent.pane_id, signal), r => {
       // Skip the update when the screen is unchanged so a re-render doesn't
       // clobber an in-progress text selection (React bails on an equal value).
@@ -581,11 +584,12 @@ function PaneDetailView({
         if (prev && c && prev.x === c.x && prev.up === c.up && prev.visible === c.visible) return prev;
         return c;
       });
+      setCaptureIdentity(paneReadIdentity);
     }, {onSettled: () => setLoading(false)});
     paneRead.current = task;
     const stop = startReadPolling(task, 1500);
     return () => {stop(); if (paneRead.current === task) paneRead.current = null;};
-  }, [client, agent.pane_id]);
+  }, [client, agent.pane_id, paneReadIdentity]);
 
   // The composer's callbacks keep their identity across renders, so the memoized
   // Composer skips the re-render every terminal refresh causes (see ComposerKey). They
@@ -672,7 +676,7 @@ function PaneDetailView({
   // was opened. Parsing the whole capture (screen plus 2000 lines of scrollback) on every
   // terminal change for a view that does not exist was work the composer's keystrokes
   // waited behind (2026-10-05).
-  const lines: AnsiLine[] = useMemo(() => (seenChat ? paneLines(text) : NO_LINES), [text, seenChat]);
+  const lines: AnsiLine[] = useMemo(() => (seenChat && captureIdentity === paneReadIdentity ? paneLines(text) : NO_LINES), [text, seenChat, captureIdentity, paneReadIdentity]);
 
   // Memoize the two HEAVY views by their real data deps so a mode switch (which
   // changes only `mode`/`switching`, not these deps) reuses the SAME element refs

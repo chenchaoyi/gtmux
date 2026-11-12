@@ -548,6 +548,7 @@ MAP-1833b21d2dee,L2,reviewed implementation,mobileapp/__tests__/chatRecentHistor
 MAP-01f7dd155465,L2,reviewed implementation,mobileapp/__tests__/chatRecentHistory.test.tsx,110,reviewed-selector,LCL-003 HQ predecessor stitch stays chronological and a source page mounts at most twenty more turns,False,LCL-003
 MAP-493affc05225,L2,reviewed implementation,mobileapp/__tests__/chatRecentHistory.test.tsx,122,reviewed-selector,LCL-003 expanded history stays visible while newer turns wait behind the live edge control,False,LCL-003
 MAP-3d83fcb9be78,L2,reviewed implementation,mobileapp/__tests__/chatRecentHistory.test.tsx,136,reviewed-selector,LCL-003 unmount cancels the deadline even when a history reader ignores AbortSignal,False,LCL-003
+MAP-524a5acdfd5b,L2,reviewed implementation,mobileapp/e2e/android/diffDismissal.test.ts,23,reviewed-selector,DTV006,False,DTV-006
 MAP-435d839b0a83,L2,reviewed implementation,mobileapp/e2e/android/permissionJourney.test.ts,63,reviewed-selector,ACP-002 registered journey survives,False,ACP-002
 MAP-255b356248a5,L2,reviewed implementation,mobileapp/e2e/android/permissionJourney.test.ts,70,reviewed-selector,ACP-002 registered journey still fails,False,ACP-002
 MAP-04ea0e0d7ec3,L2,reviewed implementation,mobileapp/e2e/android/permissionJourney.test.ts,76,reviewed-selector,ACP-002 registered journey cannot pass,False,ACP-002

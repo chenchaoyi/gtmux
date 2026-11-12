@@ -2,14 +2,14 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1161 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1165 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3777 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2061 | [L2.csv](cases/L2.csv) |
-| L3 · Runtime integration | 130 | [L3.csv](cases/L3.csv) |
-| L4 · Application journeys | 104 | [L4.csv](cases/L4.csv) |
+| L2 · Component / contract | 2062 | [L2.csv](cases/L2.csv) |
+| L3 · Runtime integration | 132 | [L3.csv](cases/L3.csv) |
+| L4 · Application journeys | 105 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
 | G · Qualification guards | 496 | [G.csv](cases/G.csv) |
 
@@ -41,6 +41,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | ACP-001 | Fresh enabled Deny elements only; ignored first click can use one further explicit click in the same camera dialog, maximum two; no click starts after 10s; no unrelated permission acted upon; original command error preserved; no permission grant or settings mutation. |
 | ACP-002 | New case survives a single lost OS denial touch; old frozen callback fails. Missing alert, grant=true, wrong/stuck system dialog still fail. Original App alert 30s remains; read-only QA CAMERA granted=false is required. Other 30 journeys and case orchestration unchanged. |
 | ACP-003 | Both sizes retain complete suite and existing expectations; no denied permission granted, hidden blocked results or inflated timing budget. Failed driver evidence remains separate from product assertions. |
+| DTV-006 | One Back only; delayed close cannot finish before visibility is false; reverse wait has10s upper bound; stuck close and original transport errors reject, and the final false assertion cannot be replaced by a successful wait alone. Other journey assertions/setup/budgets stay unchanged. |
 | ARGV-001 | Complete original first; only explicit interpreter script arguments or complete heredocs become previews; literal escapes decode once, no guess from prose/paths, dynamic/unsupported wrappers stay raw; repeated extraction stable and bounded |
 | ARGV-002 | Actual shared CodeText receives the exact script and language, formatting toggles; selected script never replaces original copy; raw reader has no derived tabs |
 | ARGV-003 | Typed derived tabs and compact syntax rendering visible, original JSON copy and Raw unchanged; no API sends or nested execution; existing layout can scroll without clipping |
@@ -132,6 +133,9 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | HQP1-006 | Source ingestion uses exact conversation/time attribution, records ambiguous/unassigned observations and source gaps; cursor advances only with durable inbox. |
 | HQP1-007 | CLI operations enforce HQ authority and expose pending reconciliation; periodic ingestion/wake is independent from delivery and restart-safe. |
 | HQP1-008 | Schema 1 reads migrate without invented history, schema 2 prevents old writer loss, and seeded bilingual playbook explains safe processing. |
+| LPV-001 | Pending historical Chat shows a real disclosure and its current-pane caption; raw output mounts only after expansion and remains bounded14lines/220pt. No terminal output/disclosure for explicit desktop readOnly, native or missing pane. Existing input/read-only guidance and scope reset/retention semantics remain. |
+| LPV-002 | Old capture is absent immediately in the new Live scope; late A cannot replace B. Current B capture appears only after its read settles. Historical Chat send/keys/uploads remain disabled and no send is made. No additional poller is introduced. |
+| LPV-003 | Existing disclosure works and displays only the bounded current-pane tail, with explicit pane/association caption. Closing hides output. No send or authority promotion and no page/console errors. |
 | AOP-006 | Return button, avatar, tile-identity and window controls occupy separate columns with no overlap; title wrapper uses flexible remaining width (at least180px in these fixtures), metadata remains visible. Narrow actual board keeps the named return control. Restore removes maximized state and returns original dimensions. Production strings/source/raw records unchanged. No device/VO or real-session acceptance claimed. Both direct avatar forms occupy column2 without covering the return control. |
 | MSD-001 | Active uses one exact expectedTurnId steer; loaded idle uses one start with original stable message ID and input; legacy returns honest queue receipt; notLoaded never resume; permissions/cwd/model unchanged; flags, state change and ambiguous writes never queue/replay; no real server input. |
 | MSD-002 | Only phone explicit submitted text opts into direct user semantics. Receipt keeps queued vs active/start accepted; persistent retries preserve known outcome. Native failure never types fallback; draft/menu/hold/identity/idempotency unchanged. |
