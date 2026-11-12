@@ -1,0 +1,3 @@
+Knowledge landing keeps the revision you viewed; changed entries require a fresh review before confirmation.
+Failed publication stays pending. Retrying confirms the complete durable write before settling and preserves personal rules.
+The companion core adds a knowledge review workspace and resumable Dreaming. Model results remain proposals and never apply knowledge changes automatically.
