@@ -1,6 +1,10 @@
-# Command help
+---
+title: Command help
+description: Find common commands, select a language and read structured help from a script.
+order: 8
+---
 
-[中文](cli-help.zh.md)
+**English** · [中文](cli-help.zh.md)
 
 `gtmux --help` groups common commands by purpose: status and usage, sessions and terminals, HQ, remote access, setup, and screenshots. Less frequently used commands remain under **ALSO**.
 
