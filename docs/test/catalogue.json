@@ -59265,7 +59265,7 @@
       "sha256": "a620ff866d1e1f4786f1402bce978987ad8b1dc9c6920e2d073157e296f1b969"
     },
     "tests/web/presentation.test.cjs": {
-      "sha256": "4e3289bfb9e72a2c72c9661c271cadde9e7f620a2dc1d18679d40113dafe9ee2",
+      "sha256": "19315cb667e6393928914176220e3003b7772067bec2c0587430d2b721498674",
       "layer": "L3",
       "stack": "Browser",
       "cases": [
@@ -59351,11 +59351,20 @@
         },
         {
           "id": "LEG-a56921dc9990",
-          "line": 186,
+          "line": 188,
           "kind": "scenario",
           "name": "External conversations share compact calls and preserve full input",
           "dynamic": false,
           "layer": "L3"
+        },
+        {
+          "id": "MAP-1d1a8964b720",
+          "line": 159,
+          "kind": "reviewed-selector",
+          "name": "Compact settings expose direct appearance choices and bounded call rows at ${width}",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "AOP-005"
         }
       ]
     },
@@ -59468,7 +59477,7 @@
       ]
     },
     "tests/web/smoke.test.cjs": {
-      "sha256": "4d825d0a16b872f37514e4376bb249af9b918fc82949ea2b18b5849a4cdd17bd",
+      "sha256": "7eb144726e1c6a64c2080b13e430a0ee0c95a1d33597c3dba573a9f0ee477b2e",
       "layer": "L3",
       "stack": "Browser",
       "cases": [
@@ -59530,7 +59539,7 @@
         },
         {
           "id": "LEG-70493de6794f",
-          "line": 199,
+          "line": 201,
           "kind": "scenario",
           "name": "`Activity inspector and clipboard at ${width}px`",
           "dynamic": true,
@@ -59538,7 +59547,7 @@
         },
         {
           "id": "LEG-56091c5b974d",
-          "line": 271,
+          "line": 273,
           "kind": "scenario",
           "name": "`Compact tile controls stay readable in ${locale}`",
           "dynamic": true,
@@ -59546,7 +59555,7 @@
         },
         {
           "id": "LEG-9fb6fb4f5960",
-          "line": 291,
+          "line": 293,
           "kind": "scenario",
           "name": "Chat operates an unparsed picker without visiting Terminal",
           "dynamic": false,
@@ -59554,7 +59563,7 @@
         },
         {
           "id": "LEG-3e1421f2c918",
-          "line": 317,
+          "line": 319,
           "kind": "scenario",
           "name": "Chat shows choices only while waiting and folds an answered prompt",
           "dynamic": false,
@@ -59562,7 +59571,7 @@
         },
         {
           "id": "LEG-338a1654affd",
-          "line": 334,
+          "line": 336,
           "kind": "scenario",
           "name": "`View question reveals the picker without submitting a draft at ${width}px`",
           "dynamic": true,
@@ -59570,7 +59579,7 @@
         },
         {
           "id": "LEG-e526198ccd27",
-          "line": 353,
+          "line": 355,
           "kind": "scenario",
           "name": "Workspace conversation keeps drafts, shows identities and inspectable calls",
           "dynamic": false,
@@ -59578,7 +59587,7 @@
         },
         {
           "id": "LEG-a88f9e388b83",
-          "line": 438,
+          "line": 440,
           "kind": "scenario",
           "name": "Narrow chat supports input and touch copy while trace remains within viewport",
           "dynamic": false,
@@ -59586,7 +59595,7 @@
         },
         {
           "id": "LEG-eb05aa918933",
-          "line": 472,
+          "line": 474,
           "kind": "scenario",
           "name": "Workspace controls support keyboard access and truthful copy feedback",
           "dynamic": false,
@@ -59594,7 +59603,7 @@
         },
         {
           "id": "LEG-b946e51a9044",
-          "line": 527,
+          "line": 529,
           "kind": "scenario",
           "name": "Live chat shows current work, retains disclosure state and clears after completion or revocation",
           "dynamic": false,
@@ -59602,7 +59611,7 @@
         },
         {
           "id": "LEG-fb1c9cc17ccb",
-          "line": 604,
+          "line": 606,
           "kind": "scenario",
           "name": "Appearance follows the system and persists an explicit choice without recoloring terminals",
           "dynamic": false,
@@ -59610,7 +59619,7 @@
         },
         {
           "id": "LEG-b055e62dee7c",
-          "line": 648,
+          "line": 650,
           "kind": "scenario",
           "name": "Trace tool closes details and returns to the original panel draft",
           "dynamic": false,
@@ -59618,7 +59627,7 @@
         },
         {
           "id": "LEG-00a1f7cbea36",
-          "line": 671,
+          "line": 673,
           "kind": "scenario",
           "name": "Composer stages files, annotates images, recalls input and matches app send controls",
           "dynamic": false,
@@ -59626,7 +59635,7 @@
         },
         {
           "id": "LEG-f0e15e31d7c2",
-          "line": 790,
+          "line": 792,
           "kind": "scenario",
           "name": "Mobile composer and speaker profiles expose identity without redundant writable badges",
           "dynamic": false,
@@ -59634,7 +59643,7 @@
         },
         {
           "id": "LEG-f81adc301549",
-          "line": 846,
+          "line": 848,
           "kind": "scenario",
           "name": "Clipboard images and dropped files stay staged until an explicit send",
           "dynamic": false,
@@ -59642,11 +59651,20 @@
         },
         {
           "id": "LEG-05c9e13ce4c2",
-          "line": 875,
+          "line": 877,
           "kind": "scenario",
           "name": "'Native file actions keep readable labels and recorded changes at ' + width",
           "dynamic": true,
           "layer": "L3"
+        },
+        {
+          "id": "MAP-be17f88f3a1c",
+          "line": 153,
+          "kind": "reviewed-selector",
+          "name": "Structured activity at ${width}px",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "AOP-005"
         }
       ]
     },

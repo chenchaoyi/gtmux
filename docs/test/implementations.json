@@ -1610,5 +1610,21 @@
       "Typed query details in Chat and Trace ",
       "Recorded query failure retries and large results page without losing full copy"
     ]
+  },
+  "tests/web/presentation.test.cjs": {
+    "cases": [
+      "AOP-005"
+    ],
+    "selectors": [
+      "Compact settings expose direct appearance choices and bounded call rows at ${width}"
+    ]
+  },
+  "tests/web/smoke.test.cjs": {
+    "cases": [
+      "AOP-005"
+    ],
+    "selectors": [
+      "Structured activity at ${width}px"
+    ]
   }
 }

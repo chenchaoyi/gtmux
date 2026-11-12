@@ -58,7 +58,7 @@ LEG-bf431df6774e,L3,Browser,tests/web/presentation.test.cjs,120,scenario,Legacy 
 LEG-1e207c9becb9,L3,Browser,tests/web/presentation.test.cjs,130,scenario,`Browser title follows session tools and returns to Chat at ${width}`,True,legacy-not-retrospectively-reviewed
 LEG-fa3fc17abe22,L3,Browser,tests/web/presentation.test.cjs,143,scenario,Browser tool title returns to the workspace or Terminal without changing presentation,False,legacy-not-retrospectively-reviewed
 LEG-e465e544353f,L3,Browser,tests/web/presentation.test.cjs,159,scenario,`Compact settings expose direct appearance choices and bounded call rows at ${width}`,True,legacy-not-retrospectively-reviewed
-LEG-a56921dc9990,L3,Browser,tests/web/presentation.test.cjs,186,scenario,External conversations share compact calls and preserve full input,False,legacy-not-retrospectively-reviewed
+LEG-a56921dc9990,L3,Browser,tests/web/presentation.test.cjs,188,scenario,External conversations share compact calls and preserve full input,False,legacy-not-retrospectively-reviewed
 LEG-cf4609b8e9ec,L3,Browser,tests/web/profile.test.cjs,23,scenario,HQ roster avatars retain supervisor identity without a pane-browser tier,False,legacy-not-retrospectively-reviewed
 LEG-168611b7caf3,L3,Browser,tests/web/profile.test.cjs,37,scenario,Message profiles use recorded session/time instead of another same-agent live session,False,legacy-not-retrospectively-reviewed
 LEG-91ba6c97b7c6,L3,Browser,tests/web/profile.test.cjs,56,scenario,Closing a profile retires a delayed response before a different profile opens,False,legacy-not-retrospectively-reviewed
@@ -76,19 +76,19 @@ LEG-27b4d64159e0,L3,Browser,tests/web/smoke.test.cjs,84,scenario,Revocation clea
 LEG-4fcea4cf4d89,L3,Browser,tests/web/smoke.test.cjs,102,scenario,Slow chat reads stay single and render when they finish,False,legacy-not-retrospectively-reviewed
 LEG-a839d9aac5bd,L3,Browser,tests/web/smoke.test.cjs,127,scenario,`DSH external reader and scoped follow ${viewport.width}`,True,legacy-not-retrospectively-reviewed
 LEG-5aa3406c3cf3,L3,Browser,tests/web/smoke.test.cjs,153,scenario,`Structured activity at ${width}px`,True,legacy-not-retrospectively-reviewed
-LEG-70493de6794f,L3,Browser,tests/web/smoke.test.cjs,199,scenario,`Activity inspector and clipboard at ${width}px`,True,legacy-not-retrospectively-reviewed
-LEG-56091c5b974d,L3,Browser,tests/web/smoke.test.cjs,271,scenario,`Compact tile controls stay readable in ${locale}`,True,legacy-not-retrospectively-reviewed
-LEG-9fb6fb4f5960,L3,Browser,tests/web/smoke.test.cjs,291,scenario,Chat operates an unparsed picker without visiting Terminal,False,legacy-not-retrospectively-reviewed
-LEG-3e1421f2c918,L3,Browser,tests/web/smoke.test.cjs,317,scenario,Chat shows choices only while waiting and folds an answered prompt,False,legacy-not-retrospectively-reviewed
-LEG-338a1654affd,L3,Browser,tests/web/smoke.test.cjs,334,scenario,`View question reveals the picker without submitting a draft at ${width}px`,True,legacy-not-retrospectively-reviewed
-LEG-e526198ccd27,L3,Browser,tests/web/smoke.test.cjs,353,scenario,"Workspace conversation keeps drafts, shows identities and inspectable calls",False,legacy-not-retrospectively-reviewed
-LEG-a88f9e388b83,L3,Browser,tests/web/smoke.test.cjs,438,scenario,Narrow chat supports input and touch copy while trace remains within viewport,False,legacy-not-retrospectively-reviewed
-LEG-eb05aa918933,L3,Browser,tests/web/smoke.test.cjs,472,scenario,Workspace controls support keyboard access and truthful copy feedback,False,legacy-not-retrospectively-reviewed
-LEG-b946e51a9044,L3,Browser,tests/web/smoke.test.cjs,527,scenario,"Live chat shows current work, retains disclosure state and clears after completion or revocation",False,legacy-not-retrospectively-reviewed
-LEG-fb1c9cc17ccb,L3,Browser,tests/web/smoke.test.cjs,604,scenario,Appearance follows the system and persists an explicit choice without recoloring terminals,False,legacy-not-retrospectively-reviewed
-LEG-b055e62dee7c,L3,Browser,tests/web/smoke.test.cjs,648,scenario,Trace tool closes details and returns to the original panel draft,False,legacy-not-retrospectively-reviewed
-LEG-f0e15e31d7c2,L3,Browser,tests/web/smoke.test.cjs,790,scenario,Mobile composer and speaker profiles expose identity without redundant writable badges,False,legacy-not-retrospectively-reviewed
-LEG-05c9e13ce4c2,L3,Browser,tests/web/smoke.test.cjs,875,scenario,'Native file actions keep readable labels and recorded changes at ' + width,True,legacy-not-retrospectively-reviewed
+LEG-70493de6794f,L3,Browser,tests/web/smoke.test.cjs,201,scenario,`Activity inspector and clipboard at ${width}px`,True,legacy-not-retrospectively-reviewed
+LEG-56091c5b974d,L3,Browser,tests/web/smoke.test.cjs,273,scenario,`Compact tile controls stay readable in ${locale}`,True,legacy-not-retrospectively-reviewed
+LEG-9fb6fb4f5960,L3,Browser,tests/web/smoke.test.cjs,293,scenario,Chat operates an unparsed picker without visiting Terminal,False,legacy-not-retrospectively-reviewed
+LEG-3e1421f2c918,L3,Browser,tests/web/smoke.test.cjs,319,scenario,Chat shows choices only while waiting and folds an answered prompt,False,legacy-not-retrospectively-reviewed
+LEG-338a1654affd,L3,Browser,tests/web/smoke.test.cjs,336,scenario,`View question reveals the picker without submitting a draft at ${width}px`,True,legacy-not-retrospectively-reviewed
+LEG-e526198ccd27,L3,Browser,tests/web/smoke.test.cjs,355,scenario,"Workspace conversation keeps drafts, shows identities and inspectable calls",False,legacy-not-retrospectively-reviewed
+LEG-a88f9e388b83,L3,Browser,tests/web/smoke.test.cjs,440,scenario,Narrow chat supports input and touch copy while trace remains within viewport,False,legacy-not-retrospectively-reviewed
+LEG-eb05aa918933,L3,Browser,tests/web/smoke.test.cjs,474,scenario,Workspace controls support keyboard access and truthful copy feedback,False,legacy-not-retrospectively-reviewed
+LEG-b946e51a9044,L3,Browser,tests/web/smoke.test.cjs,529,scenario,"Live chat shows current work, retains disclosure state and clears after completion or revocation",False,legacy-not-retrospectively-reviewed
+LEG-fb1c9cc17ccb,L3,Browser,tests/web/smoke.test.cjs,606,scenario,Appearance follows the system and persists an explicit choice without recoloring terminals,False,legacy-not-retrospectively-reviewed
+LEG-b055e62dee7c,L3,Browser,tests/web/smoke.test.cjs,650,scenario,Trace tool closes details and returns to the original panel draft,False,legacy-not-retrospectively-reviewed
+LEG-f0e15e31d7c2,L3,Browser,tests/web/smoke.test.cjs,792,scenario,Mobile composer and speaker profiles expose identity without redundant writable badges,False,legacy-not-retrospectively-reviewed
+LEG-05c9e13ce4c2,L3,Browser,tests/web/smoke.test.cjs,877,scenario,'Native file actions keep readable labels and recorded changes at ' + width,True,legacy-not-retrospectively-reviewed
 LEG-245fb0545893,L3,Browser,tests/web/terminal-fit.test.cjs,23,scenario,`Terminal grid fits desktop tile and focus at DPR ${deviceScaleFactor}`,True,legacy-not-retrospectively-reviewed
 LEG-5fc1eee042c5,L3,Browser,tests/web/terminal-fit.test.cjs,41,scenario,Terminal grid fits narrow browser after rotation,False,legacy-not-retrospectively-reviewed
 MAP-8fceb6b39ede,L3,reviewed implementation,tests/web/tool-call-detail.test.cjs,6,reviewed-selector,Typed query details in Chat and Trace ,False,TCV-005

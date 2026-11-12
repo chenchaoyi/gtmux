@@ -32,3 +32,5 @@ are not real-device accessibility certification. Changes to this contract follow
 the [test design workflow](test/DESIGN-WORKFLOW.md).
 
 In a maximized browser pane, Restore layout occupies its own header column beside the title and window controls. Narrow panes retain a named return icon. The maximized pane follows container resizing; restoring through the button or existing Escape path returns its previous dimensions. AOP-004 records the layout and restore checks.
+
+AOP-005 updates existing rendered Activity journeys to assert density against actual mouse/touch capabilities while preserving settings, disclosure, content, count and bounds checks. A narrow viewport alone does not imply a touch device.

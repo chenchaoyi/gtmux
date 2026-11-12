@@ -176,7 +176,9 @@ for(const [width,locale] of [[320,'zh-CN'],[390,'en-US'],[1440,'en-US']]) scenar
   else await page.locator('#radar').getByText('Investigate retries',{exact:true}).click();
   await page.locator('#mode [data-mode="chat"]').click();await page.locator('#chat .steps-toggle').click();
   const rows=page.locator('#chat .steps-list .step-toggle');assert.equal(await rows.count(),12);
-  for(const row of await rows.all()){const box=await row.boundingBox();assert.ok(box.height>=44&&box.height<=46,`call target ${box.height} preserves touch size without doubled padding`);}
+  const fine=await page.evaluate(()=>matchMedia('(hover: hover) and (pointer: fine)').matches);assert.equal(fine,width>=800);
+  const minimum=fine?30:44;
+  for(const row of await rows.all()){const box=await row.boundingBox();assert.ok(box.height>=minimum&&box.height<=minimum+2,`call target ${box.height} follows the actual pointer density`);}
   assert.equal(await page.locator('#chat .step-row').first().evaluate(e=>e.getBoundingClientRect().height),await rows.first().evaluate(e=>e.getBoundingClientRect().height));
   await rows.first().click();assert.equal(await page.locator('#chat .step-input').first().innerText(),'/fixture/analysis-0.md');
   if(process.env.GTMUX_WEB_EVIDENCE)await page.screenshot({path:require('node:path').join(process.env.GTMUX_WEB_EVIDENCE,'compact-calls-'+width+'.png')});
