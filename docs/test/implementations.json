@@ -1284,8 +1284,7 @@
   },
   "mobileapp/src/api/observed-history.test.ts": {
     "cases": [
-      "SID-006",
-      "SID-009"
+      "SID-006"
     ],
     "selectors": [
       "SID006 observed history stays separate from current session authority and survives 304"
