@@ -100,15 +100,17 @@ test('an entry opens to its body, and only a pending promotion offers landing', 
   expect(t.root.findAllByProps({testID: 'knowledge-act-retire'}).length).toBeGreaterThan(0);
 });
 
-test('landing asks for the ref and sends exactly it', async () => {
+test('landing preserves the viewed revision even when the entry changes during confirmation', async () => {
   const acts: KnowledgeAct[] = [];
-  const t = render(index({entries: [entry({promoted_at: NOW - 60})], promotions: {pending: 1}}), acts);
+  const viewed = entry({promoted_at: NOW - 60, revision: 'R0'});
+  const t = render(index({entries: [viewed], promotions: {pending: 1}}), acts);
   await act(async () => {
     t.root.findByProps({testID: 'knowledge-entry-pitfalls/x'}).props.onPress();
   });
   await act(async () => {
     t.root.findByProps({testID: 'knowledge-act-land'}).props.onPress();
   });
+  viewed.revision = 'R1'; // the pending receipt must keep the version originally confirmed
   // The action asks before it acts: nothing is sent by the tap that opened the prompt.
   expect(acts).toHaveLength(0);
   await act(async () => {
@@ -117,7 +119,7 @@ test('landing asks for the ref and sends exactly it', async () => {
   await act(async () => {
     await t.root.findByProps({testID: 'knowledge-act-submit'}).props.onPress();
   });
-  expect(acts).toEqual([{op: 'land', id: 'pitfalls/x', ref: 'AGENTS.md'}]);
+  expect(acts).toEqual([{op: 'land', id: 'pitfalls/x', ref: 'AGENTS.md', revision: 'R0'}]);
 });
 
 test("a refusal shows the server's own words and keeps the draft", async () => {

@@ -77,6 +77,14 @@ func CmdKnowledge(args []string) int {
 		return knowledgeShow(rest)
 	case "receipts":
 		return knowledgeReceipts(rest)
+	case "consult":
+		return knowledgeConsult(rest)
+	case "review":
+		return knowledgeReview(rest)
+	case "usage":
+		return knowledgeMemoryUsage(rest)
+	case "dream":
+		return knowledgeDream(rest)
 	case "-h", "--help":
 		return knowledgeUsage()
 	default:
@@ -101,6 +109,7 @@ var knowledgeVerbs = []string{
 	"add", "supersede", "retire", "dismiss", "render", "promote", "land", "withdraw",
 	"sync", "lint", "style", "search", "neighbours", "carriers", "topic", "kind", "sensitive", "alt",
 	"hit", "confirm", "promotions", "list", "show", "receipts",
+	"consult", "review", "usage", "dream",
 }
 
 // knowledgeMutation is the shared mutation wrapper: the HQ-home role gate first
@@ -131,7 +140,7 @@ func fromHQHome() bool {
 // knowledgeFlags is the shared flag set of the content-carrying verbs.
 type knowledgeFlags struct {
 	topic, title, bodyFile, seqRange, why string
-	target, ref, descText                 string
+	target, ref, revision, descText       string
 	// captures: every --capture key given (repeatable, or comma-separated). Same-family
 	// candidates are ONE lesson; consuming them into one entry keeps every provenance,
 	// where accepting one and dismissing ten scattered it across dismissal records.
@@ -212,6 +221,10 @@ func parseKnowledgeFlags(args []string) (knowledgeFlags, error) {
 		case strings.HasPrefix(a, "--ref="):
 			f.ref = strings.TrimPrefix(a, "--ref=")
 			f.refGiven = true
+		case a == "--revision":
+			f.revision, err = take(&i, a)
+		case strings.HasPrefix(a, "--revision="):
+			f.revision = strings.TrimPrefix(a, "--revision=")
 		case a == "--desc":
 			f.descText, err = take(&i, a)
 		case strings.HasPrefix(a, "--desc="):
@@ -546,32 +559,22 @@ func knowledgeLand(args []string) error {
 		return err
 	}
 	if len(f.positional) != 1 {
-		return fmt.Errorf("land needs <id> [--ref <where it landed>]")
+		return fmt.Errorf("land needs <id> [--ref <where it landed> --revision <read revision>]")
 	}
 	id := f.positional[0]
-	if f.refGiven { // a given ref, blank or not, is the person's landing; never a carry
-		return KnowledgeLand(id, f.ref)
+	if f.refGiven { // an explicit ref is a person's receipt, never an automatic carry
+		return KnowledgeLand(id, f.ref, f.revision)
 	}
-	live, err := liveKnowledge()
-	if err != nil {
-		return err
+	if f.revision != "" {
+		return fmt.Errorf("--revision requires --ref; automatic land binds its own read")
 	}
-	entry, ok := findLive(live, id)
-	if !ok {
-		return fmt.Errorf("no live entry %q (gtmux knowledge list)", id)
-	}
-	if !promotionPending(entry) {
-		return fmt.Errorf("%s is not pending, so there is nothing to land", id)
-	}
-	ref, err := carryEntry(entry, f.force)
-	if err != nil {
-		return err
-	}
-	return KnowledgeLand(id, ref)
+	_, err = carryKnowledge(id, f.force)
+	return err
 }
 
 // carryEntry writes a pending entry where its audience reads and returns the ref to land
-// with. Shared by the CLI's `land` and the surfaces' KnowledgeCarry.
+// with. Shared by the CLI's `land` and the surfaces' KnowledgeCarry. The caller must
+// hold the ledger lock through publication and receipt append.
 func carryEntry(entry knowledgeOp, force bool) (string, error) {
 	id := entry.ID
 	switch entry.Audience {
@@ -583,7 +586,7 @@ func carryEntry(entry knowledgeOp, force bool) (string, error) {
 		i18n.Say("✓ written into "+path, "✓ 已写进 "+path)
 		return "LOCAL.md", nil
 	case AudienceMachine:
-		rep, err := SyncMachine(force)
+		rep, err := syncMachineLocked(force)
 		if err != nil {
 			return "", err
 		}
@@ -592,7 +595,7 @@ func carryEntry(entry knowledgeOp, force bool) (string, error) {
 			fmt.Sprintf("✓ 已渲染 %s · 写入：%s · 已一致：%s", MachinePath(), orNone(rep.Written), orNone(rep.Kept)))
 		return MachinePath(), nil
 	case AudienceRepo:
-		path, refused, err := SyncRepo(entry.AudienceRepo, force)
+		path, refused, err := syncRepoLocked(entry.AudienceRepo, force)
 		if err != nil {
 			return "", err
 		}
@@ -602,7 +605,7 @@ func carryEntry(entry knowledgeOp, force bool) (string, error) {
 		i18n.Say("✓ written into "+path+", and not committed; committing is yours to do", "✓ 已写进 "+path+"，未提交，提交由你来")
 		return path, nil
 	case AudienceEveryone:
-		return "", fmt.Errorf("everyone: open the issue first (%s), then `land %s --ref <issue url>`", IssueURL(entry), id)
+		return "", fmt.Errorf("everyone: open the issue first (%s), then `land %s --ref <issue url> --revision %s`", IssueURL(entry), id, entryRevision(entry))
 	default:
 		return "", fmt.Errorf("%s has no audience; `withdraw %s` then `promote %s --why … --for <hq|machine|repo:<path>|everyone>`, or land it yourself with --ref", id, id, id)
 	}
@@ -749,7 +752,7 @@ func knowledgePromotions(args []string) int {
 		if pending == nil {
 			pending = []knowledgeOp{}
 		}
-		b, _ := json.Marshal(pending)
+		b, _ := json.Marshal(readEntries(pending))
 		fmt.Println(string(b))
 		return 0
 	}
@@ -843,7 +846,7 @@ func knowledgeList(args []string) int {
 		}
 	}
 	if f.jsonOut {
-		b, _ := json.Marshal(out)
+		b, _ := json.Marshal(readEntries(out))
 		fmt.Println(string(b))
 		return 0
 	}
@@ -889,7 +892,7 @@ func knowledgeShow(args []string) int {
 		op = old
 	}
 	if f.jsonOut {
-		if err := json.NewEncoder(os.Stdout).Encode(op); err != nil {
+		if err := json.NewEncoder(os.Stdout).Encode(readEntry(op)); err != nil {
 			i18n.Sae(err.Error(), err.Error())
 			return 1
 		}
@@ -927,13 +930,17 @@ func knowledgeUsage() int {
   hit       <id> [--n N] [--why "<where>"]                 # the lesson was hit again
   confirm   <id>                                           # a hypothesis held up
   promote   <id> --why "<case>" --for <hq|machine|repo:<path>|everyone>   # who must know it
-  land      <id> [--ref "<where>"] [--force]   # no --ref: gtmux writes it (LOCAL.md / machine blocks / repo file)
+  land      <id> [--ref "<where>" --revision <revision>] [--force]   # no --ref: gtmux writes it (LOCAL.md / machine blocks / repo file)
   withdraw  <id> --why "<reason>"              # the entry was right, the promotion was not
   sync      [--force] [--repo <path>] [--json] # refresh every agent's knowledge block (or one repo's)
   carriers  [--json]                           # each agent's instruction file and whether it is in sync
   lint      [--json]                           # issues, similar-pair review candidates, standalone-entry info
   style     [--json]                           # how an entry should read: every rule with a before and an after
   search    "<text>" [--topic t] [--kind k] [--json]   # ask the base a question in words
+  consult   --query "task" [--action action] [--repo path] [--budget 1200] # scoped, bounded cards; read-only
+  review    export|diff <vault> | check|apply <proposal.json> # Markdown review with revision checks
+  usage     record <receipt.json> | summary # explicit self-reported stages; never increments hit
+  dream     plan <request.json>             # bounded review packet for HQ; no model call or token spending
   neighbours <id> | --capture <key> | --text "…"   # the closest live entries (kind, then keyword overlap)
   promotions [--json]                                      # the pending export queue
   mine      [--dry-run] [--since <Nd>|all] [--status]      # mine session logs into the spool
@@ -966,13 +973,17 @@ func knowledgeUsage() int {
   hit       <id> [--n N] [--why "<场景>"]             # 记录再次遇到的同类问题
   confirm   <id>                                      # 确认条目中的假设
   promote   <id> --why "<理由>" --for <hq|machine|repo:<路径>|everyone>   # 设置条目的分发范围
-  land      <id> [--ref "<分发位置>"] [--force]   # 记录分发结果；未指定 --ref 时直接写入对应引导文件
+  land      <id> [--ref "<分发位置>" --revision <版本>] [--force]   # 记录分发结果；未指定 --ref 时直接写入对应引导文件
   withdraw  <id> --why "<原因>"                 # 撤回分发，保留知识条目
   sync      [--force] [--repo <路径>] [--json]  # 同步各助手或指定仓库的知识引导
   carriers  [--json]                            # 查看各助手的引导文件及同步状态
   lint      [--json]                            # 检查条目关联、链接、重复、过期及待确认分类
   style     [--json]                            # 查看写作规范和修改示例
   search    "<要找什么>" [--topic 主题] [--kind 种类] [--json]  # 检索知识条目
+  consult   --query "任务" [--action 动作] [--repo 路径] [--budget 1200] # 按范围与预算取卡片；只读
+  review    export|diff <vault> | check|apply <proposal.json> # Markdown 审阅与版本校验
+  usage     record <receipt.json> | summary # 明确自报的使用阶段；不增加 hit
+  dream     plan <request.json>             # 给 HQ 的有界审阅包；不调用模型、不花费 token
   neighbours <id> | --capture <键> | --text "…"    # 查找相似条目（按分类和关键词匹配）
   promotions [--json]                                 # 查看待分发条目
   mine      [--dry-run] [--since <N>d|all] [--status] # 从会话记录提取待整理的经验候选

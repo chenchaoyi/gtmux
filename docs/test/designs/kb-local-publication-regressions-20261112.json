@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex KB implementation owner (self-review)",
+    "date": "2026-11-12",
+    "decision": "isolate the already reviewed LOCAL regression additions in a new test file",
+    "notes": "The exact-base PR history guard applies each current mapping to the first edit of a file in the whole PR. Adding KBCARRIER-ATOMIC to memory_carrier_test.go after its original 21576f9 addition cannot satisfy that rule. Preserve all old commits and the guard: restore that file byte-for-byte to its reviewed baseline and move the two unchanged LOCAL regressions into a new file after this sealed design commit. Keep state private-writer regressions under their original b3a10a6 design. This records relocation, not new independent approval."
+  },
+  "cases": [
+    {
+      "id": "KBCARRIER-LOCAL-PUBLICATION",
+      "layer": "L2",
+      "description": "Atomic LOCAL append/upgrade and unsafe-target refusal, isolated from the earlier carrier test history",
+      "setup": "Same disposable HOME, synthetic manual rules and ledger as KBCARRIER-ATOMIC. No live carriers, models or sessions.",
+      "action": "Run the unchanged pinned-reader append/upgrade assertions and read-only/symlink/duplicate-marker refusal assertions from the current draft. Keep the original carrier-content test intact.",
+      "expected": "Old reader retains original complete bytes; new carrier retains manual prefix/suffix and is 0600. Unsafe or conflicted destinations preserve bytes and mode and never append a landing receipt. This is a file relocation only; no new production behavior and no power-loss claim.",
+      "planned_files": [
+        "internal/knowledge/local_publication_test.go"
+      ]
+    }
+  ],
+  "seal": "e34621237bf912eb18fca5bb0753d5b2dee9f5a5867ab695df2ecd7f22d3b58b"
+}

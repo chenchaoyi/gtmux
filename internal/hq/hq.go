@@ -188,12 +188,16 @@ import (
 // v57 — explicit DSH public-message review and coverage boundaries.
 // v59 — explicit goal closure, concise remaining work and human-action boundaries.
 // v60 — reserve gtmux homes for managed state; project work uses project/task storage.
-const hqPlaybookVersion = 62
+// v63 — consult before planning; evidence-gated capture and bounded review on distill.
+// v64 — durable per-item dreaming, HQ-selected existing CLI, truthful cost limits.
+const hqPlaybookVersion = 64
 
 // playbookFingerprints files the charter text under the version that carries it, so an
 // edit that forgets to bump the number fails instead of shipping to nobody (see
 // playbook_version_test.go for why the floors above cannot catch that).
 var playbookFingerprints = map[int]string{
+	64: "a15fe47202f4e190",
+	63: "42d58cd9950f40cc",
 	62: "e70d57ca0a35a34e",
 	61: "c40ff19d752452f0",
 	60: "2ac9abbfc3b8fab0",
@@ -1850,7 +1854,10 @@ honor. The built-ins:
 
 Discipline:
 - **Capture (a VERIFIED loop step):** the moment you (or a session you observe) learn
-  something durable and reusable, land it with ` + "`gtmux knowledge add --topic <t> --title … --kind <facts|howto|pitfalls|judgment|decisions>`" + `
+  something durable and reusable, first identify its information gain, evidence, scope
+  and next action. A one-off status belongs in project records; an uncertain lead stays
+  a candidate, not a fact. An explicit user correction or rare costly failure can qualify
+  without recurrence. Search for the same lesson before creating another. Then land it with ` + "`gtmux knowledge add --topic <t> --title … --kind <facts|howto|pitfalls|judgment|decisions>`" + `
   (the kind says WHAT it is: a fact / how to / never do / how to judge / why this was chosen;
   ` + "`--hypothesis`" + ` shelves an unverified lead; add names the three closest live entries first —
   the same lesson means ` + "`supersede`" + `, not a second entry; ` + "`gtmux knowledge lint`" + `'s one-line
@@ -1880,15 +1887,19 @@ Discipline:
   it holds the mechanical half only, and the reading stays yours. Whatever the commander
   has said about how they want to be written to (` + "`LOCAL.md`" + `) is the authority, and this
   is the floor under it.
-- **Consult (a HARD PRECONDITION, not a suggestion):** BEFORE you advise the commander or
-  DISPATCH a task, you MUST first consult the base, and when you advise, name the entry
-  your advice rests on. ` + "`" + `gtmux knowledge search "<the question in your own words>"` + "`" + `
-  ranks every live entry against that sentence, in either language, and returns ten;
-  ` + "`" + `neighbours <id>` + "`" + ` walks outward from one you already have. Both read the same
-  retrieval, so a topic you did not think to open is still reachable. If NO entry covers
-  the case, that gap is ITSELF a capture trigger: record the fact afterward so the next
-  occurrence is covered. (This never loosens #2 — you still never answer another agent's
-  permission/plan/design choice.)
+- **Consult (a HARD PRECONDITION, not a suggestion):** BEFORE advice or writing a task's
+  goal, run ` + "`" + `gtmux knowledge consult --query "<task intent>" --action <action> --repo <path> --role hq --budget 1200` + "`" + `.
+  Set the actual repository and exact tool versions (` + "`" + `--tool name=version` + "`" + `) when known;
+  do not invent a match. Read the whole selected cards and exceptions, resolve
+  ` + "`" + `missing_required` + "`" + `, then carry only applicable rules into the plan/goal, with IDs and
+  revisions. HQ-only and unknown-scope content is not portable worker instruction.
+  Use ` + "`" + `gtmux knowledge search "<question>"` + "`" + ` / ` + "`" + `neighbours <id>` + "`" + ` for a specific coverage
+  gap; ` + "`" + `--include-legacy` + "`" + ` is HQ investigation, not automatic scope approval. A search
+  miss is NOT a reason to add knowledge: apply the admission gate above. No relevant
+  knowledge is a valid result. The lookup writes no hit or usage record. Explicit
+  ` + "`" + `knowledge usage record` + "`" + ` receipts are ` + "`" + `self_report` + "`" + `: retrieved/shown/adopted/outcome
+  differ, and neither retrieval nor reported success proves benefit. Do not count audit
+  reads. This never loosens #2 or the user's delegation/permission boundary.
 - **Iterate (TRIGGERED, never "when you remember"):** on a ` + "`distill`" + ` wake — or the
   matching ` + "`[CONTROL gtmux:distill]`" + ` record if you find one unactioned in your event
   delta — run a RETROSPECTIVE distillation over the fleet's activity since the last
@@ -1899,12 +1910,12 @@ Discipline:
   agents' session logs LLM-free and queues two kinds of LEAD — a correction-shaped exchange
   (what a person typed right after an agent's reply, with the tail of that reply as
   context) and a recurring tool error (one signature, several sessions, with its count).
-  A lead is NOT a lesson: it is high-recall by design, and YOU are the precision. For each:
-  consult the KB FIRST — if the lesson already exists, the RECURRENCE is the finding (the
-  carrier failed, not the memory: supersede the entry with the new exemplar, or promote it
-  to a carrier that is actually read); if it is new, file it WITH the exchange as its
-  exemplar (an agent follows a raw example where it ignores a condensed rule); if it is
-  noise, dismiss with the reason. ` + "`gtmux knowledge mine --status`" + ` shows the tally.
+  A lead is NOT a lesson: apply the admission gate and consult the KB FIRST. Repetition
+  alone does not prove the carrier failed: check applicability, retrieval, exposure and
+  action before changing content or promotion. Keep a new exemplar only when it adds
+  evidence or a useful boundary; dismiss noise with a reason. Use only authorized
+  candidates and sources; learning-disabled conversations remain excluded. An audit
+  packet is not authorization for another native-session scan. ` + "`gtmux knowledge mine --status`" + ` shows the tally.
   DRAIN the spool
   CANDIDATE BY CANDIDATE, never by truncation: ` + "`gtmux knowledge add … --capture <key>`" + `
   ACCEPTS one (every same-key line merges into that ONE entry, provenance inherited) —
@@ -1920,6 +1931,31 @@ Discipline:
   un-carried promotion is silent rot. Default SILENT; a one-line brief only on real
   curation; a charter-level lesson still gets PROMOTED (as below), never just a local
   note. Treat the base as code that rots if untended.
+- **Resumable review on the SAME distill wake:** evidence changes, disputes or due
+  reviews trigger a small fixed-version packet (default 20); no new scheduler.
+  Start with ` + "`" + `gtmux knowledge dream list` + "`" + `, then ` + "`" + `gtmux knowledge dream status <run-id>` + "`" + `:
+  continue unfinished work before creating ` + "`" + `gtmux knowledge dream start <run.json>` + "`" + `.
+  Use ` + "`" + `gtmux knowledge dream plan <request.json>` + "`" + ` for read-only selection; supplied
+  ` + "`" + `reviewed_revisions` + "`" + ` and the runner's stored completions skip unchanged versions.
+  HQ chooses codex/claude, exact model, effort, reason and timeout in a project-owned
+  choice file, then ` + "`" + `gtmux knowledge dream run <run-id> <HQ-choice.json>` + "`" + ` uses the
+  existing CLI account. Do not auto-escalate models. Each item starts and finishes in
+  managed action history; completed items are skipped after restart. Inspect
+  ` + "`" + `gtmux knowledge dream history <run-id>` + "`" + ` after interruption; an uncertain attempt is
+  archived without relaunching it, and requires another deliberate continuation after
+  verifying the prior process ended. ` + "`" + `dream defer` + "`" + ` records an unresolved item and reason.
+  Keep/revise/defer or propose retirement; low hits/age alone prove nothing. Protected
+  corrections/access rules cannot be retired. ` + "`" + `dream proposal` + "`" + ` exports inert changes;
+  ` + "`" + `gtmux knowledge review check <proposal.json>` + "`" + ` then authorized HQ/owner
+  ` + "`" + `gtmux knowledge review apply <proposal.json>` + "`" + ` use the SAME contract as Obsidian.
+  Reports/proposals belong in project storage; HQ notes keep pointers. No direct
+  ledger edits. Do not acknowledge maintenance completion while a packet is deferred.
+  CLI execution enforces call/time/retry limits and archives reported token receipts.
+  Missing usage stays unknown: ` + "`" + `usage_known:false` + "`" + ` means ` + "`" + `can_start:false` + "`" + ` in the
+  advisory plan, not verified token affordability. The CLI route uses its separate
+  operational limits; it cannot promise an in-flight token/billing cap. Do not label
+  unknown usage zero or erase history to reset allowances. Defer new packets while
+  earlier proposals await review. See ` + "`" + `docs/guides/knowledge-review.md` + "`" + ` in the checkout.
 - **LEARN FROM CORRECTIONS (a first-class ritual, not an afterthought):** when the
   commander CORRECTS you, or the SAME footgun is hit more than once, DISTILL the durable
   lesson into the ` + "`corrections`" + ` topic (` + "`gtmux knowledge add --topic corrections …`" + `)

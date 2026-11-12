@@ -273,7 +273,7 @@ func TestLandCarriesByAudience(t *testing.T) {
 	if !strings.Contains(brief, "github.com/chenchaoyi/gtmux/issues/new?title=") {
 		t.Fatalf("the brief must carry the issue link:\n%s", brief)
 	}
-	if rc := CmdKnowledge([]string{"land", "pitfalls/for-everyone", "--ref", "https://github.com/chenchaoyi/gtmux/issues/1"}); rc != 0 {
+	if rc := CmdKnowledge([]string{"land", "pitfalls/for-everyone", "--ref", "https://github.com/chenchaoyi/gtmux/issues/1", "--revision", entryRevision(mustLive(t, "pitfalls/for-everyone"))}); rc != 0 {
 		t.Fatal("land everyone with ref")
 	}
 	// Landed entries stay in the ledger with their ref.

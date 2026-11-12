@@ -6772,13 +6772,13 @@
       ]
     },
     "internal/app/serverstart_test.go": {
-      "sha256": "e9a39b4d4b338d6f6fec7650a068ff9fe3eeef58cb7696e7f9db2273692e6cff",
+      "sha256": "a4b2dbd78f4a1b4b76fab732fa63188cfad42f254f6e4c9da4d5159b364b9b1f",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
         {
           "id": "LEG-3a382f316a8b",
-          "line": 34,
+          "line": 37,
           "kind": "Test",
           "name": "TestStartBootServerViaLaunchd",
           "dynamic": false,
@@ -6786,7 +6786,7 @@
         },
         {
           "id": "LEG-d559987adf97",
-          "line": 48,
+          "line": 58,
           "kind": "subtest",
           "name": "list-sessions",
           "dynamic": false,
@@ -6794,7 +6794,7 @@
         },
         {
           "id": "LEG-6aca551c6ad4",
-          "line": 63,
+          "line": 73,
           "kind": "subtest",
           "name": "show-environment",
           "dynamic": false,
@@ -6802,7 +6802,7 @@
         },
         {
           "id": "LEG-14fe89e07d2e",
-          "line": 72,
+          "line": 88,
           "kind": "Test",
           "name": "TestStartBootServerDirectByDefault",
           "dynamic": false,
@@ -6810,7 +6810,7 @@
         },
         {
           "id": "LEG-ad5520d103d2",
-          "line": 82,
+          "line": 58,
           "kind": "subtest",
           "name": "list-sessions",
           "dynamic": false,
@@ -6818,7 +6818,7 @@
         },
         {
           "id": "LEG-58e532797422",
-          "line": 89,
+          "line": 105,
           "kind": "Test",
           "name": "TestStartBootServerFallsBackWhenLaunchdFails",
           "dynamic": false,
@@ -6826,7 +6826,7 @@
         },
         {
           "id": "LEG-0ff339c17b5d",
-          "line": 102,
+          "line": 58,
           "kind": "subtest",
           "name": "list-sessions",
           "dynamic": false,
@@ -6951,7 +6951,7 @@
       ]
     },
     "internal/app/spawn_paneid_test.go": {
-      "sha256": "56420f66250c713e3403a9a3f27fc4994e5b4fbcad8f30d1c90a1a6e4eeed378",
+      "sha256": "7b4dd201ac2d6da20670ba7243c806e1d52ac4495e94fa3a63861e51c583f15d",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -6965,7 +6965,7 @@
         },
         {
           "id": "LEG-448935afb4cf",
-          "line": 48,
+          "line": 16,
           "kind": "subtest",
           "name": "--title",
           "dynamic": false,
@@ -6989,7 +6989,7 @@
         },
         {
           "id": "LEG-cf6e3e30468e",
-          "line": 89,
+          "line": 91,
           "kind": "subtest",
           "name": "empty slug is left alone",
           "dynamic": false,
@@ -7207,7 +7207,7 @@
       ]
     },
     "internal/app/terminalkeys_pty_test.go": {
-      "sha256": "3122c944bb456aa94febf7944cd1c10b59288fce28b9d1e30248ad35f31ccd49",
+      "sha256": "a5d7d2011d2a166d44813c9413617170f3021c7dbd454fe0f28a5c9518d1ab55",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -15640,7 +15640,7 @@
       "sha256": "c553eb91cbdf0db49326bf20241a7314399b7ef02e646d31ca7b75a1c8d7abd3"
     },
     "internal/hq/knowledgeshim_test.go": {
-      "sha256": "04b61270392272dfbd3740d37b98d7eb957acf68b216953fcb11da0ee5b62503",
+      "sha256": "2b1b2b5d070b540e1805a247e6bca9c8e1f4f5bcefae10d30ed790a613407159",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -18675,7 +18675,7 @@
       ]
     },
     "internal/knowledge/distribute_test.go": {
-      "sha256": "bc833819a8095a6ab47855b0ea5edd4ed77fb99402774723d1a0c066a0acb588",
+      "sha256": "7c5c2fb33bf0eea6b3365d87cfe329edd4db2d45eb4de20c62b68a6b2d5c1af7",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -18855,7 +18855,7 @@
       ]
     },
     "internal/knowledge/knowledgeapi_test.go": {
-      "sha256": "d1203808bdd69d260e2c1c35d493cfdfd2ec14ac7306e9ad6303cb57d9b871de",
+      "sha256": "1645664a4374ba9b9c8b394679f219d33d39a0516fc7561dbe486192361375de",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -18894,7 +18894,7 @@
       ]
     },
     "internal/knowledge/knowledgecmd_test.go": {
-      "sha256": "7d8272867e9d80210f60e0134375a9fff977038b2ce691fefbc2e0565af55fdb",
+      "sha256": "dfec16ddbaeeff32ae030612fa23b675ad7d218266180ef89d5c1ee12ca56bac",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -18948,7 +18948,7 @@
         },
         {
           "id": "LEG-da18cca049bb",
-          "line": 264,
+          "line": 265,
           "kind": "Test",
           "name": "TestPromotionBriefRegeneratesOnUnrelatedMutation",
           "dynamic": false,
@@ -18956,7 +18956,7 @@
         },
         {
           "id": "LEG-8fd703ae0981",
-          "line": 289,
+          "line": 290,
           "kind": "Test",
           "name": "TestCustomTopicWholeLoop",
           "dynamic": false,
@@ -18964,7 +18964,7 @@
         },
         {
           "id": "LEG-51bee4543a4d",
-          "line": 359,
+          "line": 360,
           "kind": "Test",
           "name": "TestPromotionBriefClosesWithTheAudienceExit",
           "dynamic": false,
@@ -18972,7 +18972,7 @@
         },
         {
           "id": "LEG-5ae3d725e444",
-          "line": 398,
+          "line": 399,
           "kind": "Test",
           "name": "TestEntryIDRefusesATitleWithNoASCII",
           "dynamic": false,
@@ -18980,7 +18980,7 @@
         },
         {
           "id": "LEG-1cc87e0e6ee1",
-          "line": 423,
+          "line": 424,
           "kind": "Test",
           "name": "TestEntryStampIsLocalNotUTC",
           "dynamic": false,
@@ -18988,7 +18988,7 @@
         },
         {
           "id": "LEG-b5a59ede94fa",
-          "line": 441,
+          "line": 442,
           "kind": "Test",
           "name": "TestKnowledgeAddConsumesSeveralKeysAsOneLesson",
           "dynamic": false,
@@ -18996,7 +18996,7 @@
         },
         {
           "id": "LEG-333701c648fc",
-          "line": 491,
+          "line": 492,
           "kind": "Test",
           "name": "TestTheErrorNamesEveryVerb",
           "dynamic": false,
@@ -19004,7 +19004,7 @@
         },
         {
           "id": "LEG-a401726e3111",
-          "line": 526,
+          "line": 382,
           "kind": "Test",
           "name": "TestPromoteRefusesAMissingAudience",
           "dynamic": false,
@@ -19012,7 +19012,7 @@
         },
         {
           "id": "LEG-cb2a5dab8378",
-          "line": 563,
+          "line": 564,
           "kind": "Test",
           "name": "TestABlankReasonIsNoReason",
           "dynamic": false,
@@ -25289,7 +25289,7 @@
       ]
     },
     "internal/server/hq_test.go": {
-      "sha256": "d6aaf74733a3e6f92bc4af61c62c650b09548ebc3b0bc390c1ff9a72a30b4def",
+      "sha256": "95186c4a530c5325b10f718d4a30eb43ee16f1cccbb77082171f77b4c1b2bb27",
       "layer": "L2",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -25423,7 +25423,7 @@
         },
         {
           "id": "LEG-e2adf69aeafa",
-          "line": 425,
+          "line": 431,
           "kind": "Test",
           "name": "TestTranscriptStitchesEarlierSessionsOnRequest",
           "dynamic": false,
@@ -28743,13 +28743,13 @@
       ]
     },
     "internal/state/privatewrite_test.go": {
-      "sha256": "83c6899b77e38439e57d41898c7b70374f37f29f82b374dcf3e6f9a5d6b22a9a",
+      "sha256": "7fa707b14f33f764713fbc056efeed27d08b4ddc0764cf75cad4e3187bc086bb",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
         {
           "id": "LEG-cd86dfe66edf",
-          "line": 11,
+          "line": 14,
           "kind": "Test",
           "name": "TestPrivateWriteRefusesLinksAndSpecialTargets",
           "dynamic": false,
@@ -28765,7 +28765,7 @@
         },
         {
           "id": "LEG-cae3dab26188",
-          "line": 73,
+          "line": 76,
           "kind": "Test",
           "name": "TestPrivateWriteReplacesOnlyOwnedDestination",
           "dynamic": false,
@@ -28773,11 +28773,20 @@
         },
         {
           "id": "LEG-37fad2143d15",
-          "line": 132,
+          "line": 135,
           "kind": "Test",
           "name": "TestPrivateWritePublishesCompletePrivateBytes",
           "dynamic": false,
           "layer": "G"
+        },
+        {
+          "id": "MAP-495d9fb7b0a9",
+          "line": 201,
+          "kind": "reviewed-selector",
+          "name": "TestPrivateWritePrePublicationFailurePreservesOriginal",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBCARRIER-ATOMIC"
         }
       ]
     },
@@ -33254,13 +33263,13 @@
       ]
     },
     "macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift": {
-      "sha256": "eed6fc8530ffaa81b77de3c7863c80bb9626041563ce41239585873cea3211e4",
+      "sha256": "06dc94c0b86d443c05bd34db06d490ebdab7259af4617af5089cbe7cc237765f",
       "layer": "L1",
       "stack": "macOS / Widgets Swift",
       "cases": [
         {
           "id": "LEG-7666b436e535",
-          "line": 23,
+          "line": 24,
           "kind": "XCTest",
           "name": "testEachActIsTheCLIVerbOfTheSameName",
           "dynamic": false,
@@ -33268,7 +33277,7 @@
         },
         {
           "id": "LEG-4bfdcb31952c",
-          "line": 49,
+          "line": 58,
           "kind": "XCTest",
           "name": "testTheReasonIsNeverDroppedOrReordered",
           "dynamic": false,
@@ -33276,7 +33285,7 @@
         },
         {
           "id": "LEG-f2610d008cdb",
-          "line": 67,
+          "line": 76,
           "kind": "XCTest",
           "name": "testAPendingPromotionOffersTheExitItsAudienceHas",
           "dynamic": false,
@@ -33284,7 +33293,7 @@
         },
         {
           "id": "LEG-e90be67ab6f7",
-          "line": 90,
+          "line": 99,
           "kind": "XCTest",
           "name": "testOnlyTheTwoThatTakeSomethingAwayReadAsRemovals",
           "dynamic": false,
@@ -33292,7 +33301,7 @@
         },
         {
           "id": "LEG-00aca75e5c95",
-          "line": 99,
+          "line": 108,
           "kind": "XCTest",
           "name": "testTheAxesReadAsOneLine",
           "dynamic": false,
@@ -33300,7 +33309,7 @@
         },
         {
           "id": "LEG-206d9b93b229",
-          "line": 110,
+          "line": 119,
           "kind": "XCTest",
           "name": "testEveryActHasCopyInBothLanguages",
           "dynamic": false,
@@ -33308,7 +33317,7 @@
         },
         {
           "id": "LEG-795d812d64c4",
-          "line": 131,
+          "line": 139,
           "kind": "XCTest",
           "name": "testLookupStandingInstructionsAndUnknownLegacyRecordsStayDistinct",
           "dynamic": false,
@@ -33316,7 +33325,7 @@
         },
         {
           "id": "LEG-06a08e20f7a1",
-          "line": 159,
+          "line": 168,
           "kind": "XCTest",
           "name": "testResolvesByTheReadersLanguage",
           "dynamic": false,
@@ -33324,11 +33333,20 @@
         },
         {
           "id": "LEG-5f8ace08940d",
-          "line": 168,
+          "line": 177,
           "kind": "XCTest",
           "name": "testFallsBackToTheSourceWithATag",
           "dynamic": false,
           "layer": "L1"
+        },
+        {
+          "id": "MAP-e8bd09658f70",
+          "line": 50,
+          "kind": "reviewed-selector",
+          "name": "testLandingCarriesTheViewedRevision",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBCARRIER-REVISION"
         }
       ]
     },
@@ -45403,7 +45421,7 @@
       "sha256": "9c626499c441712ab149719bfd9d233c342baad60124f31d6963f5758071d418"
     },
     "mobileapp/src/screens/KnowledgeSheet.test.tsx": {
-      "sha256": "00e4ffebe55b8a8047378319ab7a4967ef4f9c422e06b976b4d81f6570441a86",
+      "sha256": "eebff2fb211534e80c0dfb03a2309c353aa2e6b84820adbaf8f492c64dcffba5",
       "layer": "L2",
       "stack": "RN / mobile harness",
       "cases": [
@@ -45449,7 +45467,7 @@
         },
         {
           "id": "LEG-b04b9d221814",
-          "line": 123,
+          "line": 125,
           "kind": "test",
           "name": "a refusal shows the server's own words and keeps the draft",
           "dynamic": false,
@@ -45457,7 +45475,7 @@
         },
         {
           "id": "LEG-4464583ab870",
-          "line": 167,
+          "line": 169,
           "kind": "it",
           "name": "says so, because the counts made the reader ask",
           "dynamic": false,
@@ -45465,7 +45483,7 @@
         },
         {
           "id": "LEG-5e0fef7f87eb",
-          "line": 176,
+          "line": 178,
           "kind": "it",
           "name": "expands in place instead of only being enterable",
           "dynamic": false,
@@ -45473,7 +45491,7 @@
         },
         {
           "id": "LEG-1a5856c44dab",
-          "line": 184,
+          "line": 186,
           "kind": "it",
           "name": "shows a glance, not the whole list, and offers the whole list",
           "dynamic": false,
@@ -45481,7 +45499,7 @@
         },
         {
           "id": "LEG-2ca6afcfc7fb",
-          "line": 193,
+          "line": 195,
           "kind": "it",
           "name": "closes again",
           "dynamic": false,
@@ -45489,7 +45507,7 @@
         },
         {
           "id": "LEG-8fd8d301753c",
-          "line": 202,
+          "line": 204,
           "kind": "it",
           "name": "returns to the topic you were reading, not to the index",
           "dynamic": false,
@@ -45497,7 +45515,7 @@
         },
         {
           "id": "LEG-9b9674853b13",
-          "line": 236,
+          "line": 238,
           "kind": "it",
           "name": "replaces the index with results, rather than showing both",
           "dynamic": false,
@@ -45505,7 +45523,7 @@
         },
         {
           "id": "LEG-9f56f0bae6e2",
-          "line": 247,
+          "line": 249,
           "kind": "it",
           "name": "says so when nothing matches, naming what was typed",
           "dynamic": false,
@@ -45513,7 +45531,7 @@
         },
         {
           "id": "LEG-7f8734e05ef0",
-          "line": 253,
+          "line": 255,
           "kind": "it",
           "name": "gives the index back when the query is cleared",
           "dynamic": false,
@@ -45521,7 +45539,7 @@
         },
         {
           "id": "LEG-5dafab2473bb",
-          "line": 269,
+          "line": 271,
           "kind": "it",
           "name": "is closed by default — it is read once, then it is just height",
           "dynamic": false,
@@ -45529,7 +45547,7 @@
         },
         {
           "id": "LEG-6fe8920934d5",
-          "line": 275,
+          "line": 277,
           "kind": "it",
           "name": "opens on tap",
           "dynamic": false,
@@ -45537,7 +45555,7 @@
         },
         {
           "id": "LEG-09e75b3686bf",
-          "line": 289,
+          "line": 291,
           "kind": "it",
           "name": "describes the result instead of the ledger verb",
           "dynamic": false,
@@ -45545,7 +45563,7 @@
         },
         {
           "id": "LEG-1f953e2ba615",
-          "line": 302,
+          "line": 304,
           "kind": "test",
           "name": "write-it-in sends carry with no text, after one confirmation",
           "dynamic": false,
@@ -45553,7 +45571,7 @@
         },
         {
           "id": "LEG-92617ba47c99",
-          "line": 322,
+          "line": 324,
           "kind": "test",
           "name": "withdrawing asks why and sends it; everyone opens the issue instead of carrying",
           "dynamic": false,
@@ -45561,7 +45579,7 @@
         },
         {
           "id": "LEG-e7c4a17d81df",
-          "line": 350,
+          "line": 352,
           "kind": "test",
           "name": "knowledge navigation and search expose readable actions",
           "dynamic": false,
@@ -45569,11 +45587,20 @@
         },
         {
           "id": "LEG-01caacff2459",
-          "line": 362,
+          "line": 364,
           "kind": "test",
           "name": "an in-flight write cannot be submitted twice, and completion keeps the entry open",
           "dynamic": false,
           "layer": "L2"
+        },
+        {
+          "id": "MAP-c2bb7e3c4204",
+          "line": 103,
+          "kind": "reviewed-selector",
+          "name": "landing preserves the viewed revision even when the entry changes during confirmation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBCARRIER-REVISION"
         }
       ]
     },
@@ -61003,6 +61030,512 @@
         }
       ],
       "sha256": "916fa4007e8ea08bb45baae910f3d3c0bf9a8570b85a5dac2d2fe11b1db2a6e3"
+    },
+    "internal/hq/knowledge_workflow_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-125403c4d59d",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestKnowledgeWorkflowUsesBoundedReviewWithoutManufacturedReuse",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "KBMEM-HQ-WORKFLOW"
+        }
+      ],
+      "sha256": "5a2e888d43cceabede4ac60086b47d74d56f3f26dfed1209ef349f2153d4e4bf"
+    },
+    "internal/knowledge/usage_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-9fe9287c0104",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestUsageDoesNotBecomeHitAndRetryIsIdempotent",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBMEM-USAGE"
+        },
+        {
+          "id": "MAP-76d1fe9047e3",
+          "line": 41,
+          "kind": "reviewed-selector",
+          "name": "TestUsageRejectsAuditAndForgedMeasurement",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBMEM-USAGE"
+        }
+      ],
+      "sha256": "b701c88cec5747a287078d14027746fc0ec6bf8fee37987431b982443639d3a8"
+    },
+    "internal/knowledge/dreamrun_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d152352d38fd",
+          "line": 39,
+          "kind": "reviewed-selector",
+          "name": "TestDreamResumeRetainsCompletedItemsAndModelHistory",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+        },
+        {
+          "id": "MAP-66789ff45c6b",
+          "line": 102,
+          "kind": "reviewed-selector",
+          "name": "TestDreamConcurrentResumeAndSourceChanges",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+        },
+        {
+          "id": "MAP-37e83b935fa4",
+          "line": 138,
+          "kind": "reviewed-selector",
+          "name": "TestDreamBudgetsPrivacyAndCorruptionStopBeforeCalls",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+        },
+        {
+          "id": "MAP-5b7c1b481c95",
+          "line": 166,
+          "kind": "reviewed-selector",
+          "name": "TestDreamPrivateReclassificationAndInvalidResults",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+        },
+        {
+          "id": "MAP-76ec490f5726",
+          "line": 186,
+          "kind": "reviewed-selector",
+          "name": "TestDreamModelProposalsRemainInertAndStatusIsReadOnly",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+        },
+        {
+          "id": "MAP-2d51451e35cf",
+          "line": 221,
+          "kind": "reviewed-selector",
+          "name": "TestDreamSharedLifetimeBudgetAndUnresolvedRun",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+        },
+        {
+          "id": "MAP-740e472a4247",
+          "line": 285,
+          "kind": "reviewed-selector",
+          "name": "TestDreamExplicitDeferRetainsFailedAttempts",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+        },
+        {
+          "id": "MAP-9eeedf9690cc",
+          "line": 316,
+          "kind": "reviewed-selector",
+          "name": "TestDreamRejectsInventedEvidenceAndJournalIdentity",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+        }
+      ],
+      "sha256": "3dd38ac4757ec3ba9326bd77bec19f9bc50b2caad3108f156509bb30667f53d9"
+    },
+    "internal/knowledge/dreamdiagnostics_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-0006a0195b2d",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestDreamDiagnosticsJournalAllowlistAndLegacyEncoding",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBDREAM-DIAGNOSTICS"
+        }
+      ],
+      "sha256": "d530c49a9ce4a63e4ff7daf1bf40eadd730d65e774f4c8daaf3df0ea40d189af"
+    },
+    "internal/knowledge/memory_carrier_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-eb3912a57551",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestMemoryCarrierUpdatesHistoricalTextAndPreservesManualEdits",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBMEM-CARRIER"
+        }
+      ],
+      "sha256": "be3617c8794443bc19140a9522df798674c070fca3e029218f48d7895a09b739"
+    },
+    "internal/knowledge/vault_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-c93b792249fd",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestVaultRoundTripRenameAndDeletion",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBMEM-VAULT"
+        },
+        {
+          "id": "MAP-bb0c4b4f89c6",
+          "line": 65,
+          "kind": "reviewed-selector",
+          "name": "TestVaultConflictPrivacyAndRecovery",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBMEM-VAULT"
+        },
+        {
+          "id": "MAP-6d6742c69a23",
+          "line": 107,
+          "kind": "reviewed-selector",
+          "name": "TestVaultRefusesSymlinksAndUnrelatedDirectory",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBMEM-VAULT"
+        },
+        {
+          "id": "MAP-e5c7426d0d21",
+          "line": 128,
+          "kind": "reviewed-selector",
+          "name": "TestVaultPublicationKeepsOldSnapshotsAndReadOnlyFiles",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBMEM-VAULT"
+        }
+      ],
+      "sha256": "a8535f1e186428edf901f3e7cb16054be8d492d640f9149aef279c632e943856"
+    },
+    "internal/knowledge/review_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-0f80e5899da6",
+          "line": 30,
+          "kind": "reviewed-selector",
+          "name": "TestReviewAtomicConflictAndIdempotentRetry",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBMEM-REVIEW"
+        },
+        {
+          "id": "MAP-def3fe83ca29",
+          "line": 64,
+          "kind": "reviewed-selector",
+          "name": "TestReviewRejectsWholeBatchBeforeAnyAppend",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBMEM-REVIEW"
+        },
+        {
+          "id": "MAP-32cc723818f0",
+          "line": 103,
+          "kind": "reviewed-selector",
+          "name": "TestReviewDryRunWritesNothingAndProtectedRetireRefused",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBMEM-REVIEW"
+        },
+        {
+          "id": "MAP-3e5f78db15d6",
+          "line": 132,
+          "kind": "reviewed-selector",
+          "name": "TestReviewedRevisionReopensCarrierAndDoesNotRefreshVerification",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBMEM-REVIEW"
+        },
+        {
+          "id": "MAP-99965bdacab5",
+          "line": 79,
+          "kind": "reviewed-selector",
+          "name": "TestReviewConcurrentRevisionHasOneWinner",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBMEM-REVIEW"
+        }
+      ],
+      "sha256": "40ea210dd92b8110d5ec26f9ffcc77149205ba329a1f994e9130ac498622cc64"
+    },
+    "internal/hq/dreamexec_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f188a5a64e53",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "TestDreamCLIModelSelectionAndIsolation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBDREAM-EXECUTOR"
+        },
+        {
+          "id": "MAP-21a1b3d6966f",
+          "line": 43,
+          "kind": "reviewed-selector",
+          "name": "TestDreamCLIParsesTerminalUsageAndRejectsTools",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBDREAM-EXECUTOR"
+        },
+        {
+          "id": "MAP-cb02aefedb71",
+          "line": 72,
+          "kind": "reviewed-selector",
+          "name": "TestDreamCLIProcessCompletionCancellationAndBoundedOutput",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBDREAM-EXECUTOR"
+        }
+      ],
+      "sha256": "a2cdaeaee9cd096785c70be14c4d34d331fe81453428b824eb3f9f0870b62023"
+    },
+    "internal/knowledge/consult_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-1022c99343fa",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestConsultScopeVersionAndEvidenceBoundaries",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "KBMEM-CONSULT"
+        },
+        {
+          "id": "MAP-a90ab6e921bd",
+          "line": 59,
+          "kind": "reviewed-selector",
+          "name": "TestConsultWholeCardsProtectedOverflowAndNegativeQuery",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "KBMEM-CONSULT"
+        }
+      ],
+      "sha256": "a38de9e5fc89811b37abcd7dec1cee44d77488cb727a1bc8b37227c0dc17c787"
+    },
+    "internal/knowledge/dream_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-fbbfed83e95b",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "TestDreamBudgetUnknownExhaustedAndFingerprint",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "KBMEM-DREAM"
+        },
+        {
+          "id": "MAP-ce9b5fe45f2e",
+          "line": 39,
+          "kind": "reviewed-selector",
+          "name": "TestDreamPacketExcludesPrivateAndRejectsMissingIDs",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "KBMEM-DREAM"
+        }
+      ],
+      "sha256": "5dce3f4f379872f883447b76fdb87ca3d8cac30ec1bb37b3de63a2af28f01fa9"
+    },
+    "internal/hq/dreamdiagnostics_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-99b86a9378f3",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "TestDreamDiagnosticsClassifiedBoundedAndPrivate",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBDREAM-DIAGNOSTICS"
+        }
+      ],
+      "sha256": "bfdbe107e64303f2eb56537c3f8370e1bdcfcad17b285dadeecc0d5851efb407"
+    },
+    "internal/knowledge/dreamallowance_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f2c2067e1564",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "TestDreamAllowancePreservesProgressCostsAndIdempotency",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBDREAM-ALLOWANCE"
+        },
+        {
+          "id": "MAP-ff7b915f1ef1",
+          "line": 72,
+          "kind": "reviewed-selector",
+          "name": "TestDreamAllowanceRejectsInvalidActiveAndRetryBypass",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBDREAM-ALLOWANCE"
+        }
+      ],
+      "sha256": "72ae584b0a5b5ff7ce26b4c819637d84b21a130dd4d9b6ee7adfc5371fcc72fb"
+    },
+    "internal/knowledge/landing_revision_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-121ec3bd5aed",
+          "line": 28,
+          "kind": "reviewed-selector",
+          "name": "TestLandingRejectsStaleReceiptAtCommit",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBCARRIER-REVISION"
+        },
+        {
+          "id": "MAP-f9245b11d56a",
+          "line": 68,
+          "kind": "reviewed-selector",
+          "name": "TestLandingSerializesCarrierAndReceiptWithReview",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBCARRIER-REVISION"
+        },
+        {
+          "id": "MAP-ccbea4028144",
+          "line": 153,
+          "kind": "reviewed-selector",
+          "name": "TestLandingCarrierFailureKeepsPendingAndRetryIsSafe",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBCARRIER-REVISION"
+        },
+        {
+          "id": "MAP-6759f82b89d2",
+          "line": 188,
+          "kind": "reviewed-selector",
+          "name": "TestLandingManualRevisionAndLegacyHistory",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBCARRIER-REVISION"
+        },
+        {
+          "id": "MAP-238d336301ba",
+          "line": 228,
+          "kind": "reviewed-selector",
+          "name": "TestLandingCLIRequiresViewedRevision",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBCARRIER-REVISION"
+        }
+      ],
+      "sha256": "cad4dded37fba85463378ce146c1cedf25001101204a36fcb8001e284fc24f84"
+    },
+    "internal/knowledge/local_publication_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-ad36a7389edc",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "TestMemoryCarrierAtomicPublicationKeepsOldReader",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBCARRIER-LOCAL-PUBLICATION"
+        },
+        {
+          "id": "MAP-25b9dd679b77",
+          "line": 69,
+          "kind": "reviewed-selector",
+          "name": "TestMemoryCarrierRefusesUnsafeTargetsWithoutSettling",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBCARRIER-LOCAL-PUBLICATION"
+        }
+      ],
+      "sha256": "58d0971635204351f97699b48ebbd9487b49045addf90ae847674b1e0575e73f"
+    },
+    "internal/knowledge/local_durability_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-1b068f1eace7",
+          "line": 17,
+          "kind": "reviewed-selector",
+          "name": "TestLocalDurabilityRetryMustReachWriterBeforeLanding",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBLOCAL-DURABILITY-RETRY"
+        }
+      ],
+      "sha256": "cee5fac55a3968b5614801c1d3117e1ec35bdab7152777aeaf2dfb4ba0acf9f6"
+    },
+    "internal/knowledge/sync_serialization_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e5314cedb7a1",
+          "line": 78,
+          "kind": "reviewed-selector",
+          "name": "TestPublicSyncSerializesSnapshotAndPublication",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBSYNC-SERIALIZATION"
+        },
+        {
+          "id": "MAP-59a004277dc8",
+          "line": 218,
+          "kind": "reviewed-selector",
+          "name": "TestPublicSyncReleasesLockOnErrorAndRefusal",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBSYNC-SERIALIZATION"
+        }
+      ],
+      "sha256": "a1c9254f2d2716f02de72ccc69c535d08722957ecba9e6a1e3f6c85f401e7608"
+    },
+    "internal/state/privatewrite_durability_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-c2cbd0d02497",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestPrivateWriteRetriesDirectorySyncAfterRename",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "PRIVATEWRITE-DIRECTORY-SYNC"
+        }
+      ],
+      "sha256": "aa06bbf71ef74b48ee2da3a25b37c7d87974560d65d6bf55dc92077455a8807f"
     },
     "mobileapp/src/ui/Composer.readonly-draft.test.tsx": {
       "layer": "L3",

@@ -17,6 +17,7 @@ struct KBAlt: Decodable, Equatable {
 /// One knowledge entry, as `gtmux knowledge list --json` prints it.
 struct KBEntry: Decodable, Identifiable {
     let id: String
+    let revision: String?
     let topic: String
     let title: String
     let at: Int64?
@@ -49,7 +50,7 @@ struct KBEntry: Decodable, Identifiable {
     let sensitive: Bool?
 
     enum CodingKeys: String, CodingKey {
-        case id, topic, title, at, body
+        case id, revision, topic, title, at, body
         case promotedAt, landedAt, promoteWhy, promoteTarget, landedRef
         case kind, kindAssumed, provenance, hits, audience, audienceRepo, status, issueUrl
         case lang, langAssumed, alt, sensitive
@@ -83,9 +84,10 @@ struct KBEntry: Decodable, Identifiable {
         kind: String? = nil, kindAssumed: Bool? = nil, provenance: String? = nil, hits: Int? = nil,
         audience: String? = nil, audienceRepo: String? = nil, status: String? = nil,
         issueUrl: String? = nil,
-        lang: String? = nil, langAssumed: Bool? = nil, alt: KBAlt? = nil, sensitive: Bool? = nil
+        lang: String? = nil, langAssumed: Bool? = nil, alt: KBAlt? = nil, sensitive: Bool? = nil, revision: String? = nil
     ) {
         self.id = id
+        self.revision = revision
         self.topic = topic
         self.title = title
         self.at = at

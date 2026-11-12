@@ -102,6 +102,8 @@ type knowledgeOp struct {
 	Why        string `json:"why,omitempty"`
 	Target     string `json:"target,omitempty"`
 	Ref        string `json:"ref,omitempty"`
+	// New landing receipts bind the read revision; historical receipts remain readable.
+	ExpectedRevision string `json:"expected_revision,omitempty"`
 	// Folded promotion state — set by foldKnowledge on the LIVE entry, never
 	// written to disk by an append (ops carry why/target/ref natively). Pending
 	// means PromotedAt > 0 with LandedAt == 0; a later promote re-opens a landed
@@ -123,7 +125,8 @@ type knowledgeOp struct {
 	Audience     string   `json:"audience,omitempty"`
 	AudienceRepo string   `json:"audienceRepo,omitempty"`
 	Status       string   `json:"status,omitempty"`
-	// Computed at fold, never written by an append (a fresh op leaves them zero):
+	// Usually computed at fold. Reviewed revisions also persist distribution
+	// intent, so older schema-3 readers reopen it without claiming the old landing.
 	// KindAssumed says the record predates the kind axis and its kind is the migration
 	// table's guess; IssueURL is the everyone audience's exit, for a pending promotion.
 	// Both ride `list --json`, which is what the menu-bar window reads.
@@ -139,8 +142,14 @@ type knowledgeOp struct {
 	// personal fact, a credential they chose to keep here. It stays on this machine: never
 	// promoted past `hq`, never in machine.md, the agents' blocks or an issue. Confirmed is
 	// the commander's own words agreeing to this entry, verbatim — the record that HQ asked.
-	Sensitive bool   `json:"sensitive,omitempty"`
-	Confirmed string `json:"confirmed,omitempty"`
+	Sensitive bool        `json:"sensitive,omitempty"`
+	Confirmed string      `json:"confirmed,omitempty"`
+	Memory    *MemoryRule `json:"memory,omitempty"`
+	// Reviewed revisions keep the distribution intent, but reopen landing:
+	// an old receipt must never claim that the new content reached its carrier.
+	Reviewed       bool     `json:"reviewed,omitempty"`
+	ReviewEvidence []string `json:"review_evidence,omitempty"`
+	ReviewOrigin   string   `json:"review_origin,omitempty"`
 }
 
 // promotionPending reports whether a folded live entry has an open promotion.
@@ -344,12 +353,24 @@ func foldKnowledge(ops []knowledgeOp) []knowledgeOp {
 			applyMigration(&op)
 			place(op)
 		case knowledgeOpSupersede:
-			// Promotion state deliberately does NOT transfer: the content changed,
-			// so the successor is re-judged (the write path never copies it either).
+			// Ordinary supersede re-judges distribution. Reviewed same-ID revisions
+			// retain the intent but reopen landing; no old receipt proves new content.
 			// The axes DO transfer when the successor does not restate them: a
 			// rewording is the same lesson, and its recurrence history stays with it.
 			if i, ok := index[op.Supersedes]; ok && i >= 0 {
 				pred := out[i]
+				if op.Memory == nil {
+					if pred.Memory != nil {
+						m := *pred.Memory
+						m.Confidence, m.VerifiedAt = "tentative", 0
+						op.Memory = &m
+					}
+				}
+				if op.Reviewed {
+					op.Status = pred.Status
+					op.PromotedAt, op.PromoteWhy, op.PromoteTarget = pred.PromotedAt, pred.PromoteWhy, pred.PromoteTarget
+					op.Audience, op.AudienceRepo = pred.Audience, pred.AudienceRepo
+				}
 				op.Sources = mergeSources(pred.Sources, op.Sources)
 				if op.Kind == "" {
 					op.Kind, op.KindAssumed = pred.Kind, pred.KindAssumed

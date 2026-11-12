@@ -77,6 +77,13 @@ func (e *CommitError) Error() string {
 func (e *CommitError) Unwrap() error { return e.Err }
 
 func commitKnowledgeWithSources(op knowledgeOp, keys []string, note string) error {
+	return commitKnowledge(op, keys, note, nil)
+}
+
+// publish is only used by automatic landing. Validation, carrier publication and
+// receipt append share the ledger lock so review cannot advance the revision in
+// between. The callback must not acquire this lock again.
+func commitKnowledge(op knowledgeOp, keys []string, note string, publish func(knowledgeOp) (string, error)) error {
 	op.OpID = diag.NewOpID()
 	committed, phase := false, "selection"
 	err := withKnowledgeLock(func() error {
@@ -136,6 +143,30 @@ func commitKnowledgeWithSources(op knowledgeOp, keys []string, note string) erro
 				}
 			}
 		}
+		if op.Op == knowledgeOpLand {
+			entry, exists := findLive(live, op.ID)
+			if !exists {
+				return fmt.Errorf("no live entry %q", op.ID)
+			}
+			if op.ExpectedRevision == "" || op.ExpectedRevision != entryRevision(entry) {
+				return fmt.Errorf("%s: landing revision is missing or changed; read the entry again and confirm that revision", op.ID)
+			}
+			if !promotionPending(entry) {
+				return fmt.Errorf("%s has no pending promotion to land", op.ID)
+			}
+			if publish != nil {
+				phase = "carrier"
+				op.Ref, err = publish(entry)
+				if err != nil {
+					return err
+				}
+				note = "land " + op.ID + " → " + op.Ref
+			}
+			if strings.TrimSpace(op.Ref) == "" {
+				return fmt.Errorf("land needs a ref")
+			}
+		}
+		phase = "ledger"
 		committed, err = appendKnowledgeOpLocked(op)
 		if !committed {
 			return err

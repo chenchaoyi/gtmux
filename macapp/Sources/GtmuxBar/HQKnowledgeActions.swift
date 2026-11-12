@@ -24,7 +24,7 @@ enum KnowledgeAct: Hashable {
     /// audience is who must know it — "hq" | "machine" | "repo:<path>" | "everyone" — or
     /// "" when the reader has not chosen yet (the sheet asks).
     case promote(id: String, audience: String)
-    case land(id: String)
+    case land(id: String, revision: String = "")
     /// gtmux writes it where the audience reads (LOCAL.md / every agent's block / the
     /// repository's file) and lands it — `land` without a ref.
     case carry(id: String)
@@ -43,7 +43,7 @@ enum KnowledgeAct: Hashable {
             var a = ["knowledge", "promote", id, "--why", reason]
             if !audience.isEmpty { a += ["--for", audience] }
             return a
-        case let .land(id): return ["knowledge", "land", id, "--ref", reason]
+        case let .land(id, revision): return ["knowledge", "land", id, "--revision", revision, "--ref", reason]
         case let .carry(id): return ["knowledge", "land", id]
         case let .withdraw(id): return ["knowledge", "withdraw", id, "--why", reason]
         case let .retire(id): return ["knowledge", "retire", id, "--why", reason]
@@ -200,8 +200,8 @@ func knowledgeActs(for entry: KBEntry) -> [KnowledgeAct] {
     case "everyone":
         var acts: [KnowledgeAct] = []
         if let url = entry.issueUrl, !url.isEmpty { acts.append(.feedback(url: url)) }
-        return acts + [.land(id: id), .withdraw(id: id), .retire(id: id)]
+        return acts + [.land(id: id, revision: entry.revision ?? ""), .withdraw(id: id), .retire(id: id)]
     default:
-        return [.land(id: id), .withdraw(id: id), .retire(id: id)]
+        return [.land(id: id, revision: entry.revision ?? ""), .withdraw(id: id), .retire(id: id)]
     }
 }

@@ -87,6 +87,10 @@ MAP-7bf0b97f95d1,L2,reviewed implementation,internal/hook/codex_completed_turn_t
 MAP-6752a622a3e4,L2,reviewed implementation,internal/hook/codex_completed_turn_test.go,72,reviewed-selector,TestCompletedCodexTurnKeepsLegacyAndUncertainCallbacks,False,"CET-004,CET-005"
 MAP-2dd42a3caeb8,L2,reviewed implementation,internal/hook/codex_completed_turn_test.go,114,reviewed-selector,TestCodexContinuationPreservesActiveStart,False,"CET-004,CET-005"
 MAP-cce8e70a6d32,L2,reviewed implementation,internal/hook/codex_manual_compact_test.go,11,reviewed-selector,TestCompletedCodexTurnPreservesManualCompactReceipt,False,CET-006
+MAP-99b86a9378f3,L2,reviewed implementation,internal/hq/dreamdiagnostics_test.go,13,reviewed-selector,TestDreamDiagnosticsClassifiedBoundedAndPrivate,False,KBDREAM-DIAGNOSTICS
+MAP-f188a5a64e53,L2,reviewed implementation,internal/hq/dreamexec_test.go,15,reviewed-selector,TestDreamCLIModelSelectionAndIsolation,False,KBDREAM-EXECUTOR
+MAP-21a1b3d6966f,L2,reviewed implementation,internal/hq/dreamexec_test.go,43,reviewed-selector,TestDreamCLIParsesTerminalUsageAndRejectsTools,False,KBDREAM-EXECUTOR
+MAP-cb02aefedb71,L2,reviewed implementation,internal/hq/dreamexec_test.go,72,reviewed-selector,TestDreamCLIProcessCompletionCancellationAndBoundedOutput,False,KBDREAM-EXECUTOR
 MAP-d6cd13ff80b3,L2,Go core / CLI / server,internal/hq/hq_test.go,194,reviewed-selector,TestStorageBoundaryUpgradePreservesLocalRulesAndExistingRecords,False,STOR-002
 MAP-426d8c4b1e7f,L2,reviewed implementation,internal/hq/identity_launch_test.go,11,reviewed-selector,TestSID001ActualHQRecipeRetainsManagedFrontend,False,SID-001
 MAP-a9132845f95d,L2,reviewed implementation,internal/hqworkspace/phase1_test.go,45,reviewed-selector,TestPhase1ReportsPreserveCompletedAndQuestion,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
@@ -95,6 +99,39 @@ MAP-8c722e686be5,L2,reviewed implementation,internal/hqworkspace/phase1_test.go,
 MAP-6cde1202d0f1,L2,reviewed implementation,internal/hqworkspace/phase1_test.go,220,reviewed-selector,TestPhase1OldObservationDeferralAndSchemaMigration,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
 MAP-05f8c00db7ff,L2,reviewed implementation,internal/hqworkspace/phase1_test.go,281,reviewed-selector,TestPhase1ExactAttributionAndAmbiguity,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
 MAP-259bfbcda714,L2,Go core / CLI / server,internal/knowledge/distribute_test.go,161,reviewed-selector,TestBuiltinStorageBoundariesReachEveryCarrierWithoutPromotions,False,STOR-001
+MAP-f2c2067e1564,L2,reviewed implementation,internal/knowledge/dreamallowance_test.go,13,reviewed-selector,TestDreamAllowancePreservesProgressCostsAndIdempotency,False,KBDREAM-ALLOWANCE
+MAP-ff7b915f1ef1,L2,reviewed implementation,internal/knowledge/dreamallowance_test.go,72,reviewed-selector,TestDreamAllowanceRejectsInvalidActiveAndRetryBypass,False,KBDREAM-ALLOWANCE
+MAP-0006a0195b2d,L2,reviewed implementation,internal/knowledge/dreamdiagnostics_test.go,12,reviewed-selector,TestDreamDiagnosticsJournalAllowlistAndLegacyEncoding,False,KBDREAM-DIAGNOSTICS
+MAP-d152352d38fd,L2,reviewed implementation,internal/knowledge/dreamrun_test.go,39,reviewed-selector,TestDreamResumeRetainsCompletedItemsAndModelHistory,False,"KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+MAP-66789ff45c6b,L2,reviewed implementation,internal/knowledge/dreamrun_test.go,102,reviewed-selector,TestDreamConcurrentResumeAndSourceChanges,False,"KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+MAP-37e83b935fa4,L2,reviewed implementation,internal/knowledge/dreamrun_test.go,138,reviewed-selector,TestDreamBudgetsPrivacyAndCorruptionStopBeforeCalls,False,"KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+MAP-5b7c1b481c95,L2,reviewed implementation,internal/knowledge/dreamrun_test.go,166,reviewed-selector,TestDreamPrivateReclassificationAndInvalidResults,False,"KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+MAP-76ec490f5726,L2,reviewed implementation,internal/knowledge/dreamrun_test.go,186,reviewed-selector,TestDreamModelProposalsRemainInertAndStatusIsReadOnly,False,"KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+MAP-2d51451e35cf,L2,reviewed implementation,internal/knowledge/dreamrun_test.go,221,reviewed-selector,TestDreamSharedLifetimeBudgetAndUnresolvedRun,False,"KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+MAP-740e472a4247,L2,reviewed implementation,internal/knowledge/dreamrun_test.go,285,reviewed-selector,TestDreamExplicitDeferRetainsFailedAttempts,False,"KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+MAP-9eeedf9690cc,L2,reviewed implementation,internal/knowledge/dreamrun_test.go,316,reviewed-selector,TestDreamRejectsInventedEvidenceAndJournalIdentity,False,"KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+MAP-121ec3bd5aed,L2,reviewed implementation,internal/knowledge/landing_revision_test.go,28,reviewed-selector,TestLandingRejectsStaleReceiptAtCommit,False,KBCARRIER-REVISION
+MAP-f9245b11d56a,L2,reviewed implementation,internal/knowledge/landing_revision_test.go,68,reviewed-selector,TestLandingSerializesCarrierAndReceiptWithReview,False,KBCARRIER-REVISION
+MAP-ccbea4028144,L2,reviewed implementation,internal/knowledge/landing_revision_test.go,153,reviewed-selector,TestLandingCarrierFailureKeepsPendingAndRetryIsSafe,False,KBCARRIER-REVISION
+MAP-6759f82b89d2,L2,reviewed implementation,internal/knowledge/landing_revision_test.go,188,reviewed-selector,TestLandingManualRevisionAndLegacyHistory,False,KBCARRIER-REVISION
+MAP-238d336301ba,L2,reviewed implementation,internal/knowledge/landing_revision_test.go,228,reviewed-selector,TestLandingCLIRequiresViewedRevision,False,KBCARRIER-REVISION
+MAP-1b068f1eace7,L2,reviewed implementation,internal/knowledge/local_durability_test.go,17,reviewed-selector,TestLocalDurabilityRetryMustReachWriterBeforeLanding,False,KBLOCAL-DURABILITY-RETRY
+MAP-ad36a7389edc,L2,reviewed implementation,internal/knowledge/local_publication_test.go,13,reviewed-selector,TestMemoryCarrierAtomicPublicationKeepsOldReader,False,KBCARRIER-LOCAL-PUBLICATION
+MAP-25b9dd679b77,L2,reviewed implementation,internal/knowledge/local_publication_test.go,69,reviewed-selector,TestMemoryCarrierRefusesUnsafeTargetsWithoutSettling,False,KBCARRIER-LOCAL-PUBLICATION
+MAP-eb3912a57551,L2,reviewed implementation,internal/knowledge/memory_carrier_test.go,10,reviewed-selector,TestMemoryCarrierUpdatesHistoricalTextAndPreservesManualEdits,False,KBMEM-CARRIER
+MAP-0f80e5899da6,L2,reviewed implementation,internal/knowledge/review_test.go,30,reviewed-selector,TestReviewAtomicConflictAndIdempotentRetry,False,KBMEM-REVIEW
+MAP-def3fe83ca29,L2,reviewed implementation,internal/knowledge/review_test.go,64,reviewed-selector,TestReviewRejectsWholeBatchBeforeAnyAppend,False,KBMEM-REVIEW
+MAP-32cc723818f0,L2,reviewed implementation,internal/knowledge/review_test.go,103,reviewed-selector,TestReviewDryRunWritesNothingAndProtectedRetireRefused,False,KBMEM-REVIEW
+MAP-3e5f78db15d6,L2,reviewed implementation,internal/knowledge/review_test.go,132,reviewed-selector,TestReviewedRevisionReopensCarrierAndDoesNotRefreshVerification,False,KBMEM-REVIEW
+MAP-99965bdacab5,L2,reviewed implementation,internal/knowledge/review_test.go,79,reviewed-selector,TestReviewConcurrentRevisionHasOneWinner,False,KBMEM-REVIEW
+MAP-e5314cedb7a1,L2,reviewed implementation,internal/knowledge/sync_serialization_test.go,78,reviewed-selector,TestPublicSyncSerializesSnapshotAndPublication,False,KBSYNC-SERIALIZATION
+MAP-59a004277dc8,L2,reviewed implementation,internal/knowledge/sync_serialization_test.go,218,reviewed-selector,TestPublicSyncReleasesLockOnErrorAndRefusal,False,KBSYNC-SERIALIZATION
+MAP-9fe9287c0104,L2,reviewed implementation,internal/knowledge/usage_test.go,14,reviewed-selector,TestUsageDoesNotBecomeHitAndRetryIsIdempotent,False,KBMEM-USAGE
+MAP-76d1fe9047e3,L2,reviewed implementation,internal/knowledge/usage_test.go,41,reviewed-selector,TestUsageRejectsAuditAndForgedMeasurement,False,KBMEM-USAGE
+MAP-c93b792249fd,L2,reviewed implementation,internal/knowledge/vault_test.go,12,reviewed-selector,TestVaultRoundTripRenameAndDeletion,False,KBMEM-VAULT
+MAP-bb0c4b4f89c6,L2,reviewed implementation,internal/knowledge/vault_test.go,65,reviewed-selector,TestVaultConflictPrivacyAndRecovery,False,KBMEM-VAULT
+MAP-6d6742c69a23,L2,reviewed implementation,internal/knowledge/vault_test.go,107,reviewed-selector,TestVaultRefusesSymlinksAndUnrelatedDirectory,False,KBMEM-VAULT
+MAP-e5c7426d0d21,L2,reviewed implementation,internal/knowledge/vault_test.go,128,reviewed-selector,TestVaultPublicationKeepsOldSnapshotsAndReadOnlyFiles,False,KBMEM-VAULT
 LEG-c41c1a54df5d,L2,Go core / CLI / server,internal/memdiag/server_test.go,224,Test,TestRequestBoundaries,False,legacy-not-retrospectively-reviewed
 LEG-6d1949576208,L2,Go core / CLI / server,internal/memdiag/server_test.go,243,Test,TestProfileBudgetsFailureCancellationAndConcurrency,False,legacy-not-retrospectively-reviewed
 LEG-55882c09c2ba,L2,Go core / CLI / server,internal/memdiag/server_test.go,284,subtest,cancel and busy,False,legacy-not-retrospectively-reviewed
@@ -267,7 +304,7 @@ LEG-4732f168f7f4,L2,Go core / CLI / server,internal/server/hq_test.go,307,Test,T
 LEG-075b99ad3353,L2,Go core / CLI / server,internal/server/hq_test.go,341,Test,TestHQKnowledgeAbsentIsAnEmptyBase,False,legacy-not-retrospectively-reviewed
 LEG-9e21f165c34f,L2,Go core / CLI / server,internal/server/hq_test.go,356,Test,TestHQKnowledgeEntryNeedsAnID,False,legacy-not-retrospectively-reviewed
 LEG-999cbe994014,L2,Go core / CLI / server,internal/server/hq_test.go,377,Test,TestHQKnowledgeActClosesTheVerbList,False,legacy-not-retrospectively-reviewed
-LEG-e2adf69aeafa,L2,Go core / CLI / server,internal/server/hq_test.go,425,Test,TestTranscriptStitchesEarlierSessionsOnRequest,False,legacy-not-retrospectively-reviewed
+LEG-e2adf69aeafa,L2,Go core / CLI / server,internal/server/hq_test.go,431,Test,TestTranscriptStitchesEarlierSessionsOnRequest,False,legacy-not-retrospectively-reviewed
 LEG-e9aaa583dc91,L2,Go core / CLI / server,internal/server/hqmemory_test.go,16,Test,TestHQMemoryStreamsAnArchiveToTheOwner,False,legacy-not-retrospectively-reviewed
 LEG-2bd02dda27e0,L2,Go core / CLI / server,internal/server/hqmemory_test.go,58,Test,TestHQMemoryOnAMachineWithNoSupervisor,False,legacy-not-retrospectively-reviewed
 LEG-72a7828cf6f0,L2,Go core / CLI / server,internal/server/hqworkspace_test.go,13,Test,TestHQWorkspaceReadBoundary,False,legacy-not-retrospectively-reviewed
@@ -517,6 +554,8 @@ LEG-9ba6285dc523,L2,Go core / CLI / server,internal/server/webui_test.go,16,Test
 LEG-d0796bd9ffc4,L2,Go core / CLI / server,internal/server/webui_test.go,55,Test,TestWebHandlerCacheBusting,False,legacy-not-retrospectively-reviewed
 MAP-e5d2427c7d6d,L2,reviewed implementation,internal/state/cpu_repeated_poll_test.go,5,reviewed-selector,TestCSR005RepeatedPollPreservesObservedCPUWork,False,CSR-005
 MAP-33d2a35b1094,L2,reviewed implementation,internal/state/cpu_repeated_poll_test.go,30,reviewed-selector,TestCSR005RepeatedPollRequiresValidPriorEvidence,False,CSR-005
+MAP-c2cbd0d02497,L2,reviewed implementation,internal/state/privatewrite_durability_test.go,14,reviewed-selector,TestPrivateWriteRetriesDirectorySyncAfterRename,False,PRIVATEWRITE-DIRECTORY-SYNC
+MAP-495d9fb7b0a9,L2,Go core / CLI / server,internal/state/privatewrite_test.go,201,reviewed-selector,TestPrivateWritePrePublicationFailurePreservesOriginal,False,KBCARRIER-ATOMIC
 MAP-79929223fc37,L2,reviewed implementation,internal/transcript/codex_large_cache_test.go,13,reviewed-selector,TestLCL001LargeCodexTailStaysCachedAndEarlierHistoryRemainsReadable,False,LCL-001
 MAP-9661b1f33d22,L2,reviewed implementation,internal/transcript/codex_large_cache_test.go,112,reviewed-selector,TestLCL001IndividuallyOversizedTurnIsCompleteAndUncached,False,LCL-001
 MAP-18b153c61e83,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceFixture.swift,12,reviewed-selector,class ChoiceFixture,False,"MC-HQ-CHOICE,MC-HQ-WINDOW,MC-HQ-READ"
@@ -526,6 +565,7 @@ MAP-ae59716ae51d,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceR
 MAP-fa1c60fa2d92,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceResponseTests.swift,62,reviewed-selector,testSourceTimeoutDoesNotBecomeTheQuestionOrDraftError,False,"MC-HQ-CHOICE,MC-HQ-READ"
 MAP-ed56b3b277a8,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceResponseTests.swift,79,reviewed-selector,testStoredClientUsesReadOnlyFlagAndOnlyLegacyUsageFallsBack,False,"MC-HQ-CHOICE,MC-HQ-READ"
 MAP-b135d4ac2897,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceResponseTests.swift,117,reviewed-selector,testUnavailableSourceMetadataNeverClaimsTheSessionIsGone,False,"MC-HQ-CHOICE,MC-HQ-READ"
+MAP-e8bd09658f70,L2,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,50,reviewed-selector,testLandingCarriesTheViewedRevision,False,KBCARRIER-REVISION
 MAP-b4f647d0a506,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQOverviewClarityTests.swift,44,reviewed-selector,testCanonicalGroupsAndHiddenCountIgnoreEndedMergedStaleAndDuplicateRows,False,"MC-HQ-OVERVIEW-STATE,MC-HQ-OVERVIEW-BRIEF"
 MAP-67fdd9c30f6e,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQOverviewClarityTests.swift,63,reviewed-selector,testCurrentAssessmentTakesPriorityWithoutBorrowingReceiptOrMetadataTime,False,"MC-HQ-OVERVIEW-STATE,MC-HQ-OVERVIEW-BRIEF"
 MAP-a968227ee19e,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotActiveInputTests.swift,7,reviewed-selector,testSSI003ActiveQueueAndDeliveryReceiptsStayDistinct,False,SSI-003
@@ -747,22 +787,23 @@ LEG-515eaf56d0e0,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.tes
 LEG-a37ada8694d8,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,83,test,an empty topic is not listed,False,legacy-not-retrospectively-reviewed
 LEG-3de101752eb2,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,91,test,"an entry opens to its body, and only a pending promotion offers landing",False,legacy-not-retrospectively-reviewed
 LEG-a83d6d3351de,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,103,test,landing asks for the ref and sends exactly it,False,legacy-not-retrospectively-reviewed
-LEG-b04b9d221814,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,123,test,a refusal shows the server's own words and keeps the draft,False,legacy-not-retrospectively-reviewed
-LEG-4464583ab870,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,167,it,"says so, because the counts made the reader ask",False,legacy-not-retrospectively-reviewed
-LEG-5e0fef7f87eb,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,176,it,expands in place instead of only being enterable,False,legacy-not-retrospectively-reviewed
-LEG-1a5856c44dab,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,184,it,"shows a glance, not the whole list, and offers the whole list",False,legacy-not-retrospectively-reviewed
-LEG-2ca6afcfc7fb,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,193,it,closes again,False,legacy-not-retrospectively-reviewed
-LEG-8fd8d301753c,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,202,it,"returns to the topic you were reading, not to the index",False,legacy-not-retrospectively-reviewed
-LEG-9b9674853b13,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,236,it,"replaces the index with results, rather than showing both",False,legacy-not-retrospectively-reviewed
-LEG-9f56f0bae6e2,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,247,it,"says so when nothing matches, naming what was typed",False,legacy-not-retrospectively-reviewed
-LEG-7f8734e05ef0,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,253,it,gives the index back when the query is cleared,False,legacy-not-retrospectively-reviewed
-LEG-5dafab2473bb,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,269,it,"is closed by default — it is read once, then it is just height",False,legacy-not-retrospectively-reviewed
-LEG-6fe8920934d5,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,275,it,opens on tap,False,legacy-not-retrospectively-reviewed
-LEG-09e75b3686bf,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,289,it,describes the result instead of the ledger verb,False,legacy-not-retrospectively-reviewed
-LEG-1f953e2ba615,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,302,test,"write-it-in sends carry with no text, after one confirmation",False,legacy-not-retrospectively-reviewed
-LEG-92617ba47c99,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,322,test,withdrawing asks why and sends it; everyone opens the issue instead of carrying,False,legacy-not-retrospectively-reviewed
-LEG-e7c4a17d81df,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,350,test,knowledge navigation and search expose readable actions,False,legacy-not-retrospectively-reviewed
-LEG-01caacff2459,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,362,test,"an in-flight write cannot be submitted twice, and completion keeps the entry open",False,legacy-not-retrospectively-reviewed
+LEG-b04b9d221814,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,125,test,a refusal shows the server's own words and keeps the draft,False,legacy-not-retrospectively-reviewed
+LEG-4464583ab870,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,169,it,"says so, because the counts made the reader ask",False,legacy-not-retrospectively-reviewed
+LEG-5e0fef7f87eb,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,178,it,expands in place instead of only being enterable,False,legacy-not-retrospectively-reviewed
+LEG-1a5856c44dab,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,186,it,"shows a glance, not the whole list, and offers the whole list",False,legacy-not-retrospectively-reviewed
+LEG-2ca6afcfc7fb,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,195,it,closes again,False,legacy-not-retrospectively-reviewed
+LEG-8fd8d301753c,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,204,it,"returns to the topic you were reading, not to the index",False,legacy-not-retrospectively-reviewed
+LEG-9b9674853b13,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,238,it,"replaces the index with results, rather than showing both",False,legacy-not-retrospectively-reviewed
+LEG-9f56f0bae6e2,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,249,it,"says so when nothing matches, naming what was typed",False,legacy-not-retrospectively-reviewed
+LEG-7f8734e05ef0,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,255,it,gives the index back when the query is cleared,False,legacy-not-retrospectively-reviewed
+LEG-5dafab2473bb,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,271,it,"is closed by default — it is read once, then it is just height",False,legacy-not-retrospectively-reviewed
+LEG-6fe8920934d5,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,277,it,opens on tap,False,legacy-not-retrospectively-reviewed
+LEG-09e75b3686bf,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,291,it,describes the result instead of the ledger verb,False,legacy-not-retrospectively-reviewed
+LEG-1f953e2ba615,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,304,test,"write-it-in sends carry with no text, after one confirmation",False,legacy-not-retrospectively-reviewed
+LEG-92617ba47c99,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,324,test,withdrawing asks why and sends it; everyone opens the issue instead of carrying,False,legacy-not-retrospectively-reviewed
+LEG-e7c4a17d81df,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,352,test,knowledge navigation and search expose readable actions,False,legacy-not-retrospectively-reviewed
+LEG-01caacff2459,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,364,test,"an in-flight write cannot be submitted twice, and completion keeps the entry open",False,legacy-not-retrospectively-reviewed
+MAP-c2bb7e3c4204,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,103,reviewed-selector,landing preserves the viewed revision even when the entry changes during confirmation,False,KBCARRIER-REVISION
 LEG-95a2e8c8c96b,L2,RN / mobile harness,mobileapp/src/screens/ManageMacScreen.test.tsx,62,test,"nothing answered: said, the switch stays where the server has it, and Retry runs the same change",False,legacy-not-retrospectively-reviewed
 LEG-2888efda7a0b,L2,RN / mobile harness,mobileapp/src/screens/ManageMacScreen.test.tsx,88,test,"server mode that cannot be read is said, not hidden",False,legacy-not-retrospectively-reviewed
 LEG-de5871aa3c13,L2,RN / mobile harness,mobileapp/src/screens/ManageMacScreen.test.tsx,105,test,"refused (401/403): pair again, and no Retry that could never work",False,legacy-not-retrospectively-reviewed

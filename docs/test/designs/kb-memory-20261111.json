@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not HQ/user approval)",
+    "date": "2026-11-12",
+    "decision": "proceed with isolated implementation",
+    "notes": "Original design delivery preceded implementation. Four review tests existed before this machine-readable record; this seal does not claim prior committed test design or satisfy PR-history ordering. No commits/releases in this task yet. Other cases recorded before test implementation; mobile UI and production causal outcomes unverified. Continuation review before HQ workflow test: bilingual seed teaches consult before goal construction, quality admission without empty-query capture, scoped evidence and bounded review on existing distill, and honest advisory budget/receipts. Version/reseed regression is covered by existing HQ tests; no active home is reseeded. User no-commit constraint still overrides design-first commit convention; history gate remains unverified. Follow-up review before vault publication test: direct truncating export could lose the editor baseline on interruption; require atomic same-directory publication, old open snapshot preservation, 0600 new inode, and read-only destination refusal. Existing raw-writer guard must remain unchanged."
+  },
+  "cases": [
+    {
+      "id": "KBMEM-REVIEW",
+      "layer": "L2",
+      "description": "Versioned batch repair and replay",
+      "setup": "Synthetic entries; disposable HOME for filesystem cases. CLI/core only; no production, cloud, pane input or native conversations.",
+      "action": "Exercise positive, conflict, negative and boundary cases through the production functions.",
+      "expected": "Reject stale or partial batch; no duplicate append; preserve ID/hits/sources/protection; reopened landing and tentative stale card",
+      "planned_files": [
+        "internal/knowledge/review_test.go"
+      ]
+    },
+    {
+      "id": "KBMEM-VAULT",
+      "layer": "L2",
+      "description": "Local Markdown round trip",
+      "setup": "Synthetic entries; disposable HOME for filesystem cases. CLI/core only; no production, cloud, pane input or native conversations.",
+      "action": "Exercise positive, conflict, negative and boundary cases through the production functions.",
+      "expected": "Safe export, edited text yields inert diff, conflicting revisions preserved, rename stable, deletion never retires, private entries excluded and symlinks refused; each note/baseline publication is atomic, open pre-publication snapshots remain complete, read-only destinations remain untouched, and no temporary file is left after completion/failure",
+      "planned_files": [
+        "internal/knowledge/vault_test.go"
+      ]
+    },
+    {
+      "id": "KBMEM-CONSULT",
+      "layer": "L1",
+      "description": "Action and scope bounded retrieval",
+      "setup": "Synthetic entries; disposable HOME for filesystem cases. CLI/core only; no production, cloud, pane input or native conversations.",
+      "action": "Exercise positive, conflict, negative and boundary cases through the production functions.",
+      "expected": "Correct scope and exact tool version only; hypotheses/stale excluded; whole cards including exceptions; protected overflow explicit; no ledger mutation",
+      "planned_files": [
+        "internal/knowledge/consult_test.go"
+      ]
+    },
+    {
+      "id": "KBMEM-CARRIER",
+      "layer": "L2",
+      "description": "Revision-aware LOCAL landing",
+      "setup": "Synthetic entries; disposable HOME for filesystem cases. CLI/core only; no production, cloud, pane input or native conversations.",
+      "action": "Exercise positive, conflict, negative and boundary cases through the production functions.",
+      "expected": "Exact historical generated section replaced once; human-edited or duplicate markers rejected with bytes preserved",
+      "planned_files": [
+        "internal/knowledge/memory_carrier_test.go"
+      ]
+    },
+    {
+      "id": "KBMEM-USAGE",
+      "layer": "L2",
+      "description": "Separate explicit use receipts",
+      "setup": "Synthetic entries; disposable HOME for filesystem cases. CLI/core only; no production, cloud, pane input or native conversations.",
+      "action": "Exercise positive, conflict, negative and boundary cases through the production functions.",
+      "expected": "Record reported stages with card/revision identity; no hits update; deduplicate, bounded size and strict input, audit excluded",
+      "planned_files": [
+        "internal/knowledge/usage_test.go"
+      ]
+    },
+    {
+      "id": "KBMEM-DREAM",
+      "layer": "L1",
+      "description": "Bounded review work packets",
+      "setup": "Synthetic entries; disposable HOME for filesystem cases. CLI/core only; no production, cloud, pane input or native conversations.",
+      "action": "Exercise positive, conflict, negative and boundary cases through the production functions.",
+      "expected": "Deterministic candidates and fingerprint; budget split input/generation; spent and unknown usage explicit; no session collection, model call or mutation",
+      "planned_files": [
+        "internal/knowledge/dream_test.go"
+      ]
+    },
+    {
+      "id": "KBMEM-HQ-WORKFLOW",
+      "layer": "L1",
+      "description": "HQ charter integrates action-time consultation and bounded review",
+      "setup": "English/Chinese shipped seed constants only, no active HQ, event cursor, pane, native transcript, or knowledge writes. Existing seed-upgrade tests cover version-driven adoption in disposable homes.",
+      "action": "Read both seed contracts and check the action-before-goal sequence and existing distill/review entry points; reject the former empty-search capture incentive and recurrence-as-proof assertion.",
+      "expected": "Both seeds teach scoped consult, explicit missing_required handling, durable evidence admission, existing dream plan and review check/apply workflow, non-causal self reports and unknown-usage disclosure, HQ-selected CLI execution, persisted per-item progress and interruption inspection. Charter version is greater than installed 62.",
+      "planned_files": [
+        "internal/hq/knowledge_workflow_test.go"
+      ]
+    }
+  ],
+  "seal": "8744cc3bd722d76dbcaec1c64b288d8a4a67dd482899ee2168e9daeff3e9b5c7"
+}

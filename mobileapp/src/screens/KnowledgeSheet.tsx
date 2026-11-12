@@ -68,7 +68,7 @@ type Pane =
   | {kind: 'topic'; name: string}
   | {kind: 'entry'; id: string; from: {kind: 'index'} | {kind: 'topic'; name: string}};
 type PendingKind = 'land' | 'retire' | 'withdraw' | 'carry';
-type Pending = {kind: PendingKind; id: string} | null;
+type Pending = {kind: PendingKind; id: string; revision?: string} | null;
 
 /** How many entries an expanded topic shows before "All N". A glance, not the list. */
 const TOPIC_PEEK = 5;
@@ -204,7 +204,7 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
     if (pending.kind !== 'carry' && draft.trim() === '') return;
     const a: KnowledgeAct =
       pending.kind === 'land'
-        ? {op: 'land', id: pending.id, ref: draft.trim()}
+        ? {op: 'land', id: pending.id, ref: draft.trim(), revision: pending.revision ?? ''}
         : pending.kind === 'retire'
           ? {op: 'retire', id: pending.id, why: draft.trim()}
           : pending.kind === 'withdraw'
@@ -364,7 +364,7 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
               t={t}
               ageOf={ageOf}
               onAct={(kind, id) => {
-                setPending({kind, id});
+                setPending({kind, id, revision: entry?.revision});
                 setDraft('');
                 setError(null);
               }}
@@ -421,7 +421,7 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
               t={t}
               ageOf={ageOf}
               onAct={(kind, id) => {
-                setPending({kind, id});
+                setPending({kind, id, revision: entry?.revision});
                 setDraft('');
                 setError(null);
               }}

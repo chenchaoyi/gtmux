@@ -14,6 +14,9 @@ import (
 // CmdKnowledge dispatches `gtmux knowledge <verb>`; `mine` is the supervisor's (it drives
 // internal/mine), everything else is the ledger's.
 func CmdKnowledge(args []string) int {
+	if len(args) > 1 && args[0] == "dream" && args[1] == "run" {
+		return knowledgeDreamRun(args[1:])
+	}
 	if len(args) > 0 && args[0] == "mine" {
 		return knowledgeMine(args[1:])
 	}

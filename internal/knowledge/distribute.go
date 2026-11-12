@@ -246,9 +246,22 @@ type SyncReport struct {
 }
 
 // SyncMachine refreshes the machine block in every carrier. A missing file is created
-// holding only the block; a hand-edited block is refused unless force.
+// holding only the block; a hand-edited block is refused unless force. All public
+// writers hold the ledger lock from the snapshot read through carrier publication.
 func SyncMachine(force bool) (SyncReport, error) {
-	live, custom, err := readKnowledgeState()
+	var rep SyncReport
+	err := withKnowledgeLock(func() error {
+		var err error
+		rep, err = syncMachineLocked(force)
+		return err
+	})
+	return rep, err
+}
+
+// syncMachineLocked is also used by carry, which already owns the ledger lock
+// through its final receipt append. Do not call a public writer from that path.
+func syncMachineLocked(force bool) (SyncReport, error) {
+	live, _, err := readKnowledgeState()
 	if err != nil {
 		return SyncReport{}, err
 	}
@@ -256,7 +269,6 @@ func SyncMachine(force bool) (SyncReport, error) {
 	if err := writeMachineRender(live); err != nil {
 		return SyncReport{}, err
 	}
-	_ = custom
 	return syncBlocks(live, force)
 }
 
@@ -356,8 +368,19 @@ func repoBlock(live []knowledgeOp, repo string) string {
 }
 
 // SyncRepo writes the repo block into that repository's instruction file. It never
-// commits; the caller says so to the person.
+// commits; the caller says so to the person. Snapshot and publication share the
+// ledger lock with review, carry, and the public machine sync.
 func SyncRepo(repo string, force bool) (path string, refused bool, err error) {
+	err = withKnowledgeLock(func() error {
+		var err error
+		path, refused, err = syncRepoLocked(repo, force)
+		return err
+	})
+	return path, refused, err
+}
+
+// syncRepoLocked requires the caller to hold the ledger lock.
+func syncRepoLocked(repo string, force bool) (path string, refused bool, err error) {
 	live, err := liveKnowledge()
 	if err != nil {
 		return "", false, err
@@ -386,11 +409,34 @@ func cleanRepo(p string) string {
 // LocalPath is the supervisor's own LOCAL.md — the hq audience's carrier.
 func LocalPath() string { return filepath.Join(state.HQHome(), "LOCAL.md") }
 
-// carryIntoLocal appends one entry to LOCAL.md as its own section, once: the marker
-// carrying the id makes a second land a no-op instead of a duplicate. LOCAL.md is the
-// operator's file; nothing already in it is touched.
+// localSection matches the historical carrier format exactly. Only a section
+// reproducible from the ledger may be replaced; operator edits are conflicts.
+func localSection(op knowledgeOp) string {
+	s := "\n## " + op.Title + "\n\n"
+	if body := strings.TrimSpace(op.Body); body != "" {
+		s += body + "\n\n"
+	}
+	return s + "<!-- gtmux:knowledge " + op.ID + " -->\n"
+}
+
+// carryIntoLocal is idempotent for the current revision, and upgrades an exact
+// historical section. It never guesses where an operator-owned section ends.
 func carryIntoLocal(op knowledgeOp) (string, error) {
+	return carryIntoLocalWithWriter(op, state.WritePrivateFile)
+}
+
+// Keep fault injection local to one call; production always uses the private
+// atomic writer, and tests can inspect the carrier/ledger error contract.
+func carryIntoLocalWithWriter(op knowledgeOp, write func(string, []byte) error) (string, error) {
 	path := LocalPath()
+	// Renaming can bypass a read-only leaf's mode; respect it before staging.
+	if st, err := os.Lstat(path); err == nil {
+		if !st.Mode().IsRegular() || st.Mode().Perm()&0200 == 0 {
+			return path, fmt.Errorf("LOCAL destination requires review: %s", path)
+		}
+	} else if !os.IsNotExist(err) {
+		return path, err
+	}
 	marker := "<!-- gtmux:knowledge " + op.ID + " -->"
 	b, err := os.ReadFile(path)
 	if err != nil && !os.IsNotExist(err) {
@@ -398,21 +444,40 @@ func carryIntoLocal(op knowledgeOp) (string, error) {
 	}
 	content := string(b)
 	if strings.Contains(content, marker) {
-		return path, nil
+		if strings.Count(content, marker) != 1 {
+			return path, fmt.Errorf("duplicate LOCAL carrier marker for %s", op.ID)
+		}
+		if strings.Contains(content, localSection(op)) {
+			// A previous rename may be visible even though its directory sync
+			// failed. Repeat the durable publication before settling the receipt.
+			return path, write(path, b)
+		}
+		ops, err := readKnowledgeOps()
+		if err != nil {
+			return path, err
+		}
+		for i := len(ops) - 1; i >= 0; i-- {
+			old := ops[i]
+			if old.ID != op.ID || (old.Op != knowledgeOpAdd && old.Op != knowledgeOpSupersede) {
+				continue
+			}
+			section := localSection(old)
+			if strings.Count(content, section) == 1 {
+				updated := strings.Replace(content, section, localSection(op), 1)
+				return path, write(path, []byte(updated))
+			}
+		}
+		return path, fmt.Errorf("LOCAL carrier for %s differs from ledger history; compare the user edit before landing", op.ID)
 	}
 	var s strings.Builder
 	if len(content) > 0 && !strings.HasSuffix(content, "\n") {
 		s.WriteString("\n")
 	}
-	s.WriteString("\n## " + op.Title + "\n\n")
-	if body := strings.TrimSpace(op.Body); body != "" {
-		s.WriteString(body + "\n\n")
-	}
-	s.WriteString(marker + "\n")
+	s.WriteString(localSection(op))
 	if err := state.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return path, err
 	}
-	return path, state.WriteFile(path, []byte(content+s.String()), 0o644)
+	return path, write(path, []byte(content+s.String()))
 }
 
 // IssueURL is the everyone audience's exit for a person who never opens a pull request:

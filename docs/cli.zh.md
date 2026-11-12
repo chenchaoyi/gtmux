@@ -1160,6 +1160,9 @@ gtmux advice --tally [--since 30d|12h|all] [--json]
 
 ## `gtmux knowledge`：知识台账（带来源的条目）
 
+[知识审阅指南](guides/knowledge-review.zh.md)：按动作与范围读取 `consult`、本地 Markdown `review export/diff/check/apply`、显式 `usage` 回执，以及由 HQ 选 Codex/Claude CLI 执行的可续跑 `dream` 审阅。动作历史持久保存，修改仍须 review/apply。复用 distill 唤醒，不改 spawn 注入。
+
+
 ```
 gtmux knowledge add --topic pitfalls --title "wrangler TLS-resets; retry" [--body-file -] [--capture <key>[,<key>…]] [--seq-range a..b]
 gtmux knowledge supersede <id> --title "…" [--body-file -]   # replaces an entry; history stays in the ledger

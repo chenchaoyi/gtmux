@@ -43,14 +43,14 @@ func TestTerminalKeyRawPTY(t *testing.T) {
 	if err := os.WriteFile(receiver, []byte(script), 0600); err != nil {
 		t.Fatal(err)
 	}
-	wrapper := filepath.Join(dir, "tmux")
-	if err := os.WriteFile(wrapper, []byte("#!/bin/sh\nexec "+shellQuote(bin)+" -S "+shellQuote(filepath.Join(dir, "s"))+" -f /dev/null \"$@\"\n"), 0700); err != nil {
-		t.Fatal(err)
-	}
+	// Select the private socket via the native client environment. A shell
+	// wrapper adds another executable to each of the 1200+ client invocations.
+	t.Setenv("TMUX_TMPDIR", dir)
+	t.Setenv("TMUX_PANE", "")
 	old := tmux.Bin
-	tmux.Bin = wrapper
+	tmux.Bin = bin
 	t.Cleanup(func() { _ = tmux.OK("kill-server"); tmux.Bin = old })
-	if !tmux.OK("new-session", "-d", "-s", "keys", shellQuote(py)+" "+shellQuote(receiver)) {
+	if !tmux.OK("-f", "/dev/null", "new-session", "-d", "-s", "keys", shellQuote(py)+" "+shellQuote(receiver)) {
 		t.Fatal("private tmux start failed")
 	}
 	deadline := time.Now().Add(5 * time.Second)
@@ -70,6 +70,7 @@ func TestTerminalKeyRawPTY(t *testing.T) {
 	}
 	var expected []byte
 	n := 0
+	started := time.Now()
 	for _, key := range terminalkeys.Catalog() {
 		for _, mods := range key.ModifierSets {
 			want, ok := baselineKeyBytes(key.Key, mods)
@@ -95,6 +96,9 @@ func TestTerminalKeyRawPTY(t *testing.T) {
 				time.Sleep(time.Millisecond)
 			}
 			n++
+			if n%100 == 0 {
+				t.Logf("verified %d key combinations after %s", n, time.Since(started).Round(time.Millisecond))
+			}
 		}
 	}
 	if n < 400 {

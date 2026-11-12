@@ -31,7 +31,7 @@ final class HQKnowledgeActionsTests: XCTestCase {
         XCTAssertEqual(KnowledgeAct.promote(id: "pitfalls/x", audience: "repo:/w/api").argv(reason: "r"),
                        ["knowledge", "promote", "pitfalls/x", "--why", "r", "--for", "repo:/w/api"])
         XCTAssertEqual(KnowledgeAct.land(id: "pitfalls/x").argv(reason: "PR #888"),
-                       ["knowledge", "land", "pitfalls/x", "--ref", "PR #888"])
+                       ["knowledge", "land", "pitfalls/x", "--revision", "", "--ref", "PR #888"])
         // carry is land WITHOUT a ref: gtmux writes it where the audience reads.
         XCTAssertEqual(KnowledgeAct.carry(id: "pitfalls/x").argv(reason: ""),
                        ["knowledge", "land", "pitfalls/x"])
@@ -45,6 +45,14 @@ final class HQKnowledgeActionsTests: XCTestCase {
         // feedback is a browser, not a process.
         XCTAssertEqual(KnowledgeAct.feedback(url: "https://x").argv(reason: ""), [])
         XCTAssertFalse(KnowledgeAct.feedback(url: "https://x").runsCLI)
+    }
+
+    func testLandingCarriesTheViewedRevision() throws {
+        let old = try JSONDecoder().decode(KBEntry.self, from: Data(#"{"id":"x","topic":"pitfalls","title":"old","promotedAt":1,"revision":"R0"}"#.utf8))
+        let action = try XCTUnwrap(knowledgeActs(for: old).first)
+        let next = try JSONDecoder().decode(KBEntry.self, from: Data(#"{"id":"x","topic":"pitfalls","title":"new","promotedAt":1,"revision":"R1"}"#.utf8))
+        XCTAssertEqual(knowledgeActs(for: next).first, .land(id: "x", revision: "R1"))
+        XCTAssertEqual(action.argv(reason: "runbook"), ["knowledge", "land", "x", "--revision", "R0", "--ref", "runbook"])
     }
 
     func testTheReasonIsNeverDroppedOrReordered() {

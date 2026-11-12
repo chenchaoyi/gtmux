@@ -981,6 +981,12 @@ ordinary state a client renders, not a failure it has to tell apart from a read 
 404 {"error":"no such entry"}           // unknown, or retired (gone from the live set)
 ```
 
+Both reads carry an opaque `revision` for the folded entry. Manual `land` MUST send
+that exact read revision; missing or stale versions fail with 400 before any ledger
+append. A client captures it when confirmation opens, never refreshes it behind an
+old confirmation. Older clients without the field must refresh/upgrade before manual
+landing; automatic `carry` binds its own read under the ledger lock.
+
 Both reads carry the entry's language (kb-bilingual): `lang` (`zh` | `en`, what it was
 written in), `lang_assumed` (true when the record predates the field and the language
 was inferred from the text), and — when HQ wrote the other half — `alt_lang` and
@@ -1002,7 +1008,7 @@ knowledge distribution. Older entries and servers may omit the array.
 
 Knowledge audit records may carry `outcome` (`accepted`, `dismissed`, `committed`,
 `failed`, `committed-view-failed`) and `phase` (`selection`, `ledger`, `directory-sync`,
-`render`, `render-or-sync`, `local`). `op_id` correlates them with the ledger and diagnostics. A post-commit
+`render`, `render-or-sync`, `local`, `carrier`). `op_id` correlates them with the ledger and diagnostics. A post-commit
 failure does not undo a settlement; repair views with `knowledge render`. Missing
 fields on older audit records mean unavailable. These fields do not change agent state.
 
@@ -1032,7 +1038,7 @@ WORKERS out, while this door is the owner, who outranks the supervisor. Both doo
 the same `gtmux:audit:knowledge` record.
 
 ```
-POST {"op":"land","id":"pitfalls/office-tls-resets","ref":"AGENTS.md"}
+POST {"op":"land","id":"pitfalls/office-tls-resets","ref":"AGENTS.md","revision":"<read revision>"}
 POST {"op":"retire","id":"pitfalls/office-tls-resets","why":"the office network was fixed"}
 200 {"ok":true}
 400 {"error":"unknown op (land|retire|carry|withdraw)"}

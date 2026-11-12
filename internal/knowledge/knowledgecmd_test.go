@@ -236,7 +236,8 @@ func TestKnowledgePromotionVerbChain(t *testing.T) {
 	if rc := CmdKnowledge([]string{"land", id}); rc == 0 {
 		t.Fatal("land without --ref must refuse")
 	}
-	if rc := CmdKnowledge([]string{"land", id, "--ref", "gtmux#812"}); rc != 0 {
+	e, _ := KnowledgeEntry(id)
+	if rc := CmdKnowledge([]string{"land", id, "--ref", "gtmux#812", "--revision", e.Revision}); rc != 0 {
 		t.Fatal("land failed")
 	}
 	// The brief is gone, the badge flips, the queue is clear.
@@ -592,7 +593,7 @@ func TestABlankReasonIsNoReason(t *testing.T) {
 	})
 	// The HTTP door's own calls first, while the entries are still in the state they need.
 	refused("KnowledgeRetire blank", func() bool { return KnowledgeRetire(id, "  ") == nil })
-	refused("KnowledgeLand blank", func() bool { return KnowledgeLand(pending, " \t") == nil })
+	refused("KnowledgeLand blank", func() bool { return KnowledgeLand(pending, " \t", "") == nil })
 	refused("retire --why blank", func() bool { return CmdKnowledge([]string{"retire", id, "--why", "\t"}) == 0 })
 	refused("dismiss --why blank", func() bool {
 		return CmdKnowledge([]string{"dismiss", "--capture", key, "--why", " "}) == 0

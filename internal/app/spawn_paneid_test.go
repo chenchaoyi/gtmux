@@ -86,11 +86,21 @@ func TestNameDispatchWindowBackfillsPaneIDs(t *testing.T) {
 		}
 	})
 
+	// An unnamed window may independently change from tmux to its shell name.
+	// Use a stable explicit name so this assertion observes only our function.
 	t.Run("empty slug is left alone", func(t *testing.T) {
-		pane := run("new-window", "-t", "probe", "-P", "-F", "#{pane_id}")
+		pane := run("new-window", "-t", "probe", "-n", "unchanged", "-P", "-F", "#{pane_id}")
 		before := run("display-message", "-p", "-t", pane, "#{window_name}")
+		if before != "unchanged" {
+			t.Fatalf("explicit fixture name = %q, want unchanged", before)
+		}
+		autoBefore := run("show-window-options", "-v", "-t", pane, "automatic-rename")
 		nameDispatchWindow(pane, "", false)
 		after := run("display-message", "-p", "-t", pane, "#{window_name}")
+		autoAfter := run("show-window-options", "-v", "-t", pane, "automatic-rename")
+		if autoBefore != autoAfter {
+			t.Errorf("empty slug changed automatic-rename: %q -> %q", autoBefore, autoAfter)
+		}
 		if before != after {
 			t.Errorf("an empty slug must not touch the window name: %q -> %q", before, after)
 		}

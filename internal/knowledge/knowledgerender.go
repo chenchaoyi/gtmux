@@ -104,7 +104,7 @@ func renderPromotionExit(b *strings.Builder, op knowledgeOp) {
 		b.WriteString("Exit: this is feedback to gtmux. Open the prefilled issue, or paste this brief into one:\n\n")
 		b.WriteString("    " + IssueURL(op) + "\n\n")
 		b.WriteString("then close with the issue's URL:\n\n")
-		b.WriteString("    gtmux knowledge land " + op.ID + " --ref \"<issue url>\"\n")
+		b.WriteString("    gtmux knowledge land " + op.ID + " --ref \"<issue url>\" --revision " + entryRevision(op) + "\n")
 	default:
 		if op.PromoteTarget != "" {
 			b.WriteString("Land it at: " + op.PromoteTarget + " — then close:\n\n")
@@ -112,7 +112,7 @@ func renderPromotionExit(b *strings.Builder, op knowledgeOp) {
 			b.WriteString("No audience was chosen. `gtmux knowledge withdraw " + op.ID + " --why …` and promote again with " +
 				"`--for <hq|machine|repo:<path>|everyone>`, or land it yourself and say where:\n\n")
 		}
-		b.WriteString("    gtmux knowledge land " + op.ID + " --ref \"<pr / issue / runbook>\"\n")
+		b.WriteString("    gtmux knowledge land " + op.ID + " --ref \"<pr / issue / runbook>\" --revision " + entryRevision(op) + "\n")
 	}
 
 }

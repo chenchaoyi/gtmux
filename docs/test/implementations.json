@@ -501,11 +501,12 @@
   },
   "internal/knowledge/distribute_test.go": {
     "cases": [
-      "STOR-001"
+      "KBCARRIER-COMPAT"
     ],
     "selectors": [
-      "TestBuiltinStorageBoundariesReachEveryCarrierWithoutPromotions"
-    ]
+      "TestLandCarriesByAudience"
+    ],
+    "reason": "This revision changes the manual land caller only; unchanged storage-boundary assertions retain their existing historical design record in Git."
   },
   "internal/launchhost/agent_readiness_test.go": {
     "cases": [
@@ -1798,6 +1799,254 @@
       "AOP006 real maximized header medium",
       "AOP006 real maximized header narrow board",
       "AOP006 real maximized header plain terminal"
+    ]
+  },
+  "internal/knowledge/dreamdiagnostics_test.go": {
+    "cases": [
+      "KBDREAM-DIAGNOSTICS"
+    ],
+    "selectors": [
+      "TestDreamDiagnosticsJournalAllowlistAndLegacyEncoding"
+    ]
+  },
+  "internal/knowledge/dreamrun_test.go": {
+    "cases": [
+      "KBDREAM-JOURNAL",
+      "KBDREAM-GUARDS",
+      "KBDREAM-BUDGET"
+    ],
+    "selectors": [
+      "TestDreamResumeRetainsCompletedItemsAndModelHistory",
+      "TestDreamConcurrentResumeAndSourceChanges",
+      "TestDreamBudgetsPrivacyAndCorruptionStopBeforeCalls",
+      "TestDreamPrivateReclassificationAndInvalidResults",
+      "TestDreamModelProposalsRemainInertAndStatusIsReadOnly",
+      "TestDreamSharedLifetimeBudgetAndUnresolvedRun",
+      "TestDreamExplicitDeferRetainsFailedAttempts",
+      "TestDreamRejectsInventedEvidenceAndJournalIdentity"
+    ]
+  },
+  "internal/hq/knowledge_workflow_test.go": {
+    "cases": [
+      "KBMEM-HQ-WORKFLOW"
+    ],
+    "selectors": [
+      "TestKnowledgeWorkflowUsesBoundedReviewWithoutManufacturedReuse"
+    ]
+  },
+  "internal/knowledge/memory_carrier_test.go": {
+    "cases": [
+      "KBMEM-CARRIER"
+    ],
+    "selectors": [
+      "TestMemoryCarrierUpdatesHistoricalTextAndPreservesManualEdits"
+    ],
+    "reason": "Original 21576f9 test restored byte-for-byte; incremental publication regressions moved to local_publication_test.go after a fresh file-specific reviewed design."
+  },
+  "internal/app/spawn_paneid_test.go": {
+    "cases": [
+      "APPFIX-NAME-STABILITY"
+    ],
+    "selectors": [
+      "TestNameDispatchWindowBackfillsPaneIDs"
+    ]
+  },
+  "internal/app/terminalkeys_pty_test.go": {
+    "cases": [
+      "APPFIX-PTY-COVERAGE"
+    ],
+    "selectors": [
+      "TestTerminalKeyRawPTY"
+    ]
+  },
+  "internal/knowledge/vault_test.go": {
+    "cases": [
+      "KBMEM-VAULT"
+    ],
+    "selectors": [
+      "TestVaultRoundTripRenameAndDeletion",
+      "TestVaultConflictPrivacyAndRecovery",
+      "TestVaultRefusesSymlinksAndUnrelatedDirectory",
+      "TestVaultPublicationKeepsOldSnapshotsAndReadOnlyFiles"
+    ]
+  },
+  "internal/knowledge/review_test.go": {
+    "cases": [
+      "KBMEM-REVIEW"
+    ],
+    "selectors": [
+      "TestReviewAtomicConflictAndIdempotentRetry",
+      "TestReviewRejectsWholeBatchBeforeAnyAppend",
+      "TestReviewConcurrentRevisionHasOneWinner",
+      "TestReviewDryRunWritesNothingAndProtectedRetireRefused",
+      "TestReviewedRevisionReopensCarrierAndDoesNotRefreshVerification"
+    ]
+  },
+  "internal/knowledge/usage_test.go": {
+    "cases": [
+      "KBMEM-USAGE"
+    ],
+    "selectors": [
+      "TestUsageDoesNotBecomeHitAndRetryIsIdempotent",
+      "TestUsageRejectsAuditAndForgedMeasurement"
+    ]
+  },
+  "internal/app/serverstart_test.go": {
+    "cases": [
+      "APPFIX-BOOT-ISOLATION"
+    ],
+    "selectors": [
+      "TestStartBootServerViaLaunchd",
+      "TestStartBootServerDirectByDefault",
+      "TestStartBootServerFallsBackWhenLaunchdFails"
+    ]
+  },
+  "internal/hq/dreamexec_test.go": {
+    "cases": [
+      "KBDREAM-EXECUTOR"
+    ],
+    "selectors": [
+      "TestDreamCLIModelSelectionAndIsolation",
+      "TestDreamCLIParsesTerminalUsageAndRejectsTools",
+      "TestDreamCLIProcessCompletionCancellationAndBoundedOutput"
+    ]
+  },
+  "internal/knowledge/consult_test.go": {
+    "cases": [
+      "KBMEM-CONSULT"
+    ],
+    "selectors": [
+      "TestConsultScopeVersionAndEvidenceBoundaries",
+      "TestConsultWholeCardsProtectedOverflowAndNegativeQuery"
+    ]
+  },
+  "internal/knowledge/dream_test.go": {
+    "cases": [
+      "KBMEM-DREAM"
+    ],
+    "selectors": [
+      "TestDreamBudgetUnknownExhaustedAndFingerprint",
+      "TestDreamPacketExcludesPrivateAndRejectsMissingIDs"
+    ]
+  },
+  "internal/hq/dreamdiagnostics_test.go": {
+    "cases": [
+      "KBDREAM-DIAGNOSTICS"
+    ],
+    "selectors": [
+      "TestDreamDiagnosticsClassifiedBoundedAndPrivate"
+    ]
+  },
+  "internal/knowledge/dreamallowance_test.go": {
+    "cases": [
+      "KBDREAM-ALLOWANCE"
+    ],
+    "selectors": [
+      "TestDreamAllowancePreservesProgressCostsAndIdempotency",
+      "TestDreamAllowanceRejectsInvalidActiveAndRetryBypass"
+    ]
+  },
+  "internal/knowledge/landing_revision_test.go": {
+    "cases": [
+      "KBCARRIER-REVISION"
+    ],
+    "selectors": [
+      "TestLandingRejectsStaleReceiptAtCommit",
+      "TestLandingSerializesCarrierAndReceiptWithReview",
+      "TestLandingCarrierFailureKeepsPendingAndRetryIsSafe",
+      "TestLandingManualRevisionAndLegacyHistory",
+      "TestLandingCLIRequiresViewedRevision"
+    ]
+  },
+  "internal/knowledge/knowledgeapi_test.go": {
+    "cases": [
+      "KBCARRIER-REVISION"
+    ],
+    "selectors": [
+      "TestKnowledgeRemoteVerbsMatchTheCLI"
+    ]
+  },
+  "internal/knowledge/knowledgecmd_test.go": {
+    "cases": [
+      "KBCARRIER-REVISION"
+    ],
+    "selectors": [
+      "TestKnowledgePromotionVerbChain",
+      "TestABlankReasonIsNoReason"
+    ]
+  },
+  "internal/server/hq_test.go": {
+    "cases": [
+      "KBCARRIER-REVISION"
+    ],
+    "selectors": [
+      "TestHQKnowledgeActClosesTheVerbList"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift": {
+    "cases": [
+      "KBCARRIER-REVISION"
+    ],
+    "selectors": [
+      "testLandingCarriesTheViewedRevision"
+    ]
+  },
+  "mobileapp/src/screens/KnowledgeSheet.test.tsx": {
+    "cases": [
+      "KBCARRIER-REVISION"
+    ],
+    "selectors": [
+      "landing preserves the viewed revision even when the entry changes during confirmation"
+    ]
+  },
+  "internal/state/privatewrite_test.go": {
+    "cases": [
+      "KBCARRIER-ATOMIC"
+    ],
+    "selectors": [
+      "TestPrivateWritePrePublicationFailurePreservesOriginal"
+    ]
+  },
+  "internal/hq/knowledgeshim_test.go": {
+    "cases": [
+      "KBCARRIER-COMPAT"
+    ],
+    "selectors": [
+      "TestPromotionsStatus"
+    ]
+  },
+  "internal/knowledge/local_publication_test.go": {
+    "cases": [
+      "KBCARRIER-LOCAL-PUBLICATION"
+    ],
+    "selectors": [
+      "TestMemoryCarrierAtomicPublicationKeepsOldReader",
+      "TestMemoryCarrierRefusesUnsafeTargetsWithoutSettling"
+    ]
+  },
+  "internal/knowledge/sync_serialization_test.go": {
+    "cases": [
+      "KBSYNC-SERIALIZATION"
+    ],
+    "selectors": [
+      "TestPublicSyncSerializesSnapshotAndPublication",
+      "TestPublicSyncReleasesLockOnErrorAndRefusal"
+    ]
+  },
+  "internal/knowledge/local_durability_test.go": {
+    "cases": [
+      "KBLOCAL-DURABILITY-RETRY"
+    ],
+    "selectors": [
+      "TestLocalDurabilityRetryMustReachWriterBeforeLanding"
+    ]
+  },
+  "internal/state/privatewrite_durability_test.go": {
+    "cases": [
+      "PRIVATEWRITE-DIRECTORY-SYNC"
+    ],
+    "selectors": [
+      "TestPrivateWriteRetriesDirectorySyncAfterRename"
     ]
   },
   "mobileapp/src/ui/Composer.readonly-draft.test.tsx": {

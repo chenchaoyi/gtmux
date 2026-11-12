@@ -15,6 +15,19 @@ import (
 // it never imports the source mode. Temporary bytes are private from creation.
 // Existing links, special files and foreign-owned targets require review.
 func WritePrivateFile(path string, data []byte) error {
+	return writePrivateFile(path, data, unix.Renameat)
+}
+
+// A narrow publication seam permits deterministic failure tests without global
+// hooks. Before rename errors preserve the old file; after rename errors may
+// report an unsynced directory, but readers still see complete replacement bytes.
+func writePrivateFile(path string, data []byte, publish func(int, string, int, string) error) error {
+	return writePrivateFileWithSync(path, data, publish, unix.Fsync)
+}
+
+// The directory sync seam exercises errors after a real atomic replacement,
+// without changing process-global filesystem behavior.
+func writePrivateFileWithSync(path string, data []byte, publish func(int, string, int, string) error, syncDirectory func(int) error) error {
 	parent, err := privateWriteParent(path)
 	if err != nil {
 		return err
@@ -42,10 +55,16 @@ func WritePrivateFile(path string, data []byte) error {
 	if _, err := f.Write(data); err != nil {
 		return err
 	}
+	if err := f.Sync(); err != nil {
+		return err
+	}
 	if err := f.Close(); err != nil {
 		return err
 	}
-	return unix.Renameat(parent, tmp, parent, name)
+	if err := publish(parent, tmp, parent, name); err != nil {
+		return err
+	}
+	return syncDirectory(parent)
 }
 
 // Only directories at/below the selected managed root are narrowed. The existing

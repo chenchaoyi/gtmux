@@ -1338,6 +1338,9 @@ the point.
 
 ## `gtmux knowledge`: the knowledge ledger (entries with provenance)
 
+[Knowledge review guide](guides/knowledge-review.md): action-scoped `consult`, local Markdown `review export/diff/check/apply`, explicit `usage` reports and resumable `dream` reviews using an HQ-selected Codex/Claude CLI. Action history survives interruption; proposals still require review/apply. Existing distill wakes provide the opportunity; spawn injection is unchanged.
+
+
 ```
 gtmux knowledge add --topic pitfalls --title "wrangler TLS-resets; retry" [--body-file -] [--capture <key>[,<key>…]] [--seq-range a..b]
 gtmux knowledge supersede <id> --title "…" [--body-file -]   # replaces an entry; history stays in the ledger

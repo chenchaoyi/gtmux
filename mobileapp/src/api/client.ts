@@ -167,6 +167,8 @@ export interface HQVerdict {
 // tunnel — so a body is fetched per entry when a finger lands on one.
 export interface KnowledgeEntry {
   id: string;
+  /** Opaque read revision for manual landing; older servers may omit it. */
+  revision?: string;
   topic: string;
   title: string;
   at: number;
@@ -227,7 +229,7 @@ export interface KnowledgeIndex {
 
 /** The two mutations a phone can honestly perform, each one short line of text. */
 export type KnowledgeAct =
-  | {op: 'land'; id: string; ref: string}
+  | {op: 'land'; id: string; ref: string; revision: string}
   | {op: 'retire'; id: string; why: string}
   /** gtmux writes a pending promotion where its audience reads, then lands it. */
   | {op: 'carry'; id: string}

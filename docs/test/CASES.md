@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1169 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1186 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
-| L1 · Unit / pure logic | 3777 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2080 | [L2.csv](cases/L2.csv) |
+| L1 · Unit / pure logic | 3782 | [L1.csv](cases/L1.csv) |
+| L2 · Component / contract | 2121 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 132 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 105 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -42,6 +42,9 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | ACP-002 | New case survives a single lost OS denial touch; old frozen callback fails. Missing alert, grant=true, wrong/stuck system dialog still fail. Original App alert 30s remains; read-only QA CAMERA granted=false is required. Other 30 journeys and case orchestration unchanged. |
 | ACP-003 | Both sizes retain complete suite and existing expectations; no denied permission granted, hidden blocked results or inflated timing budget. Failed driver evidence remains separate from product assertions. |
 | DTV-006 | One Back only; delayed close cannot finish before visibility is false; reverse wait has10s upper bound; stuck close and original transport errors reject, and the final false assertion cannot be replaced by a successful wait alone. Other journey assertions/setup/budgets stay unchanged. |
+| APPFIX-BOOT-ISOLATION | Server starts and contains only the requested session; caller PATH reaches server, caller config marker does not; HOME/socket belong to fixture. Failure cleanup stays scoped to the test. |
+| APPFIX-NAME-STABILITY | No rename/options change for empty slug; regular slugs still include pane IDs and headless marker. No sleeps, retries or relaxed equality. |
+| APPFIX-PTY-COVERAGE | All 400+ advertised combinations remain exercised and byte-exact; count is recorded, no production transport guard bypass, no raw user input. Test cleanup restores global binary and owns only the private server. |
 | ARGV-001 | Complete original first; only explicit interpreter script arguments or complete heredocs become previews; literal escapes decode once, no guess from prose/paths, dynamic/unsupported wrappers stay raw; repeated extraction stable and bounded |
 | ARGV-002 | Actual shared CodeText receives the exact script and language, formatting toggles; selected script never replaces original copy; raw reader has no derived tabs |
 | ARGV-003 | Typed derived tabs and compact syntax rendering visible, original JSON copy and Raw unchanged; no API sends or nested execution; existing layout can scroll without clipping |
@@ -146,6 +149,26 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | HQP1-006 | Source ingestion uses exact conversation/time attribution, records ambiguous/unassigned observations and source gaps; cursor advances only with durable inbox. |
 | HQP1-007 | CLI operations enforce HQ authority and expose pending reconciliation; periodic ingestion/wake is independent from delivery and restart-safe. |
 | HQP1-008 | Schema 1 reads migrate without invented history, schema 2 prevents old writer loss, and seeded bilingual playbook explains safe processing. |
+| KBCARRIER-COMPAT | Manual landing succeeds with the exact read token. Everyone remains manual-only; other audiences keep their own exit. Generated manual instructions name the required revision; legacy receipts still fold. |
+| KBCARRIER-REVISION | Stale/missing new receipts append nothing and leave R1 pending; old publication cannot overwrite an already landed R1. Carry publication and settlement share the existing ledger lock. Review following successful R0 carry leaves R1 pending. Current manual ref succeeds; clients propagate the read version and do not silently fetch a new version for an old confirmation. |
+| KBCARRIER-ATOMIC | Successful publication yields complete new content and 0600 private mode while pinned readers retain complete original content. Failure before publish leaves original bytes/mode intact and cannot settle landing. File fsync precedes publication and parent sync follows it; errors propagate. Existing manually changed or duplicate sections stay conflicts. No claim of real power-loss simulation. |
+| KBDREAM-ALLOWANCE | The original journal prefix/plan/run ID remains; only one reasoned allowance event is appended; failed and completed costs remain; completed IDs never run again; current writer gate and shared budget/retry checks stay in force; no KB changes. |
+| KBDREAM-DIAGNOSTICS | Only allowlisted category and numeric exit code reach errors/journal; raw diagnostics never appear; bounded capture drains without blocking; failed attempt/time/unknown usage preserved; old journal records remain readable; success stays diagnostic-free. Nonterminal diagnostic items cannot masquerade as tool execution; they neither invalidate a successful terminal receipt nor turn a fatal/missing receipt into success. Actual tool/action items remain rejected. |
+| KBDREAM-JOURNAL | Completed items are not called again; interrupted item remains identifiable; model choices, input revisions, visible results, reasons, times and costs stay in durable sequence; no ledger/hit mutation. |
+| KBDREAM-GUARDS | Only one runner obtains the stable lock; no call on corruption/stale/private input; status reads create nothing; no retry erases earlier charges or history. |
+| KBDREAM-BUDGET | Reserve before generation; completed usage reconciles once; interrupted or unknown charges never reset; stop at limits or errors without applying KB proposals. Pilot/bootstrap stop thresholds are shared across runs over their lifetime, not reset weekly; unresolved attempts block other runs. Unknown usage is not zero. |
+| KBDREAM-EXECUTOR | Forward exact HQ model/reason; bounded timeout/output; strict final JSON, usage provenance and cancellation; secrets/raw private session URLs never logged. |
+| KBCARRIER-LOCAL-PUBLICATION | Old reader retains original complete bytes; new carrier retains manual prefix/suffix and is 0600. Unsafe or conflicted destinations preserve bytes and mode and never append a landing receipt. This is a file relocation only; no new production behavior and no power-loss claim. |
+| KBMEM-REVIEW | Reject stale or partial batch; no duplicate append; preserve ID/hits/sources/protection; reopened landing and tentative stale card |
+| KBMEM-VAULT | Safe export, edited text yields inert diff, conflicting revisions preserved, rename stable, deletion never retires, private entries excluded and symlinks refused; each note/baseline publication is atomic, open pre-publication snapshots remain complete, read-only destinations remain untouched, and no temporary file is left after completion/failure |
+| KBMEM-CONSULT | Correct scope and exact tool version only; hypotheses/stale excluded; whole cards including exceptions; protected overflow explicit; no ledger mutation |
+| KBMEM-CARRIER | Exact historical generated section replaced once; human-edited or duplicate markers rejected with bytes preserved |
+| KBMEM-USAGE | Record reported stages with card/revision identity; no hits update; deduplicate, bounded size and strict input, audit excluded |
+| KBMEM-DREAM | Deterministic candidates and fingerprint; budget split input/generation; spent and unknown usage explicit; no session collection, model call or mutation |
+| KBMEM-HQ-WORKFLOW | Both seeds teach scoped consult, explicit missing_required handling, durable evidence admission, existing dream plan and review check/apply workflow, non-causal self reports and unknown-usage disclosure, HQ-selected CLI execution, persisted per-item progress and interruption inspection. Charter version is greater than installed 62. |
+| KBSYNC-SERIALIZATION | Old implementation fails held-lock and final R1-content assertions. New sync holds the same ledger lock across read/publication; independent review/carry cannot interleave and final R1 remains landed with its full carrier. Errors/refusals release the lock. Carry uses an internal already-locked implementation; no recursive deadlock. |
+| KBLOCAL-DURABILITY-RETRY | Both failures leave ledger unchanged, same revision pending and carrier complete/private; every retry invokes the durable writer even with identical content. Only successful writer completion allows exactly one land append. Existing readonly/link/edited-target protections and original revision token contract remain. Old equal-content early return fails actual ledger/callback assertions. |
+| PRIVATEWRITE-DIRECTORY-SYNC | EIO is returned after complete visible replacement, repeated same-byte writes reach directory synchronization again, successful directory fsync returns nil. No truncated inode, exposed permissions or leaked staging file. No hardware durability claim. |
 | LPV-001 | Pending historical Chat shows a real disclosure and its current-pane caption; raw output mounts only after expansion and remains bounded14lines/220pt. No terminal output/disclosure for explicit desktop readOnly, native or missing pane. Existing input/read-only guidance and scope reset/retention semantics remain. |
 | LPV-002 | Old capture is absent immediately in the new Live scope; late A cannot replace B. Current B capture appears only after its read settles. Historical Chat send/keys/uploads remain disabled and no send is made. No additional poller is introduced. |
 | LPV-003 | Existing disclosure works and displays only the bounded current-pane tail, with explicit pane/association caption. Closing hides output. No send or authority promotion and no page/console errors. |

@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review)",
+    "date": "2026-11-12",
+    "decision": "implement and validate isolated fixtures",
+    "notes": "User explicitly requests resumable action history and HQ-selected models. Review before new test implementation. No independent review or commit-order claim. Preserve existing no-subagent/no-live-input boundary during tests; actual model execution is a future authorized HQ action. User selected existing CLI reuse with HQ model choice. New cases cover evidence allowlist, explicit defer, shared lifetime token thresholds and unresolved attempts across runs; tests use fake processes only."
+  },
+  "cases": [
+    {
+      "id": "KBDREAM-JOURNAL",
+      "layer": "L2",
+      "description": "Interrupt/restart preserves exact item-level progress",
+      "setup": "Synthetic KB and disposable HOME; fake provider only.",
+      "action": "Create a two-item frozen packet in a disposable HOME; interrupt after a persisted first result and one reservation. Reopen and resume with another explicit HQ model choice.",
+      "expected": "Completed items are not called again; interrupted item remains identifiable; model choices, input revisions, visible results, reasons, times and costs stay in durable sequence; no ledger/hit mutation.",
+      "planned_files": [
+        "internal/knowledge/dreamrun_test.go"
+      ]
+    },
+    {
+      "id": "KBDREAM-GUARDS",
+      "layer": "L2",
+      "description": "Concurrent runners and stale/private inputs are refused",
+      "setup": "Synthetic KB and disposable HOME; fake provider only.",
+      "action": "Run competing synthetic executors, corrupt/truncate the journal, change or retire an input, or make it sensitive before execution. Reject fabricated evidence; explicitly defer a failed pending item with a reason while retaining its history.",
+      "expected": "Only one runner obtains the stable lock; no call on corruption/stale/private input; status reads create nothing; no retry erases earlier charges or history.",
+      "planned_files": [
+        "internal/knowledge/dreamrun_test.go"
+      ]
+    },
+    {
+      "id": "KBDREAM-BUDGET",
+      "layer": "L2",
+      "description": "Shared cost reservations and bounded attempts",
+      "setup": "Synthetic KB and disposable HOME; fake provider only.",
+      "action": "Synthetic usage success/unknown/over-limit and interrupted requests; multiple runs share the journal.",
+      "expected": "Reserve before generation; completed usage reconciles once; interrupted or unknown charges never reset; stop at limits or errors without applying KB proposals. Pilot/bootstrap stop thresholds are shared across runs over their lifetime, not reset weekly; unresolved attempts block other runs. Unknown usage is not zero.",
+      "planned_files": [
+        "internal/knowledge/dreamrun_test.go"
+      ]
+    },
+    {
+      "id": "KBDREAM-EXECUTOR",
+      "layer": "L2",
+      "description": "Explicit model selection and bounded model process/protocol",
+      "setup": "Synthetic KB and disposable HOME; fake provider only.",
+      "action": "Fake process or in-memory HTTP transport only. No credentials or real model/window invocation.",
+      "expected": "Forward exact HQ model/reason; bounded timeout/output; strict final JSON, usage provenance and cancellation; secrets/raw private session URLs never logged.",
+      "planned_files": [
+        "internal/hq/dreamexec_test.go"
+      ]
+    }
+  ],
+  "seal": "845002ed69633c365e9abc4825503b7a3d24e1f5d630cf8f992fd3e8339ca202"
+}

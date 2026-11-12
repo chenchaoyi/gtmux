@@ -220,7 +220,7 @@ work or publish anything on its own.
 The four audiences replace free-text `--target`; the required audience rule below
 continues to apply.
 
-`gtmux knowledge land <id> [--ref "…"]` SHALL close a pending promotion. With `--ref`,
+`gtmux knowledge land <id> [--ref "…" --revision <read revision>]` SHALL close a pending promotion. With `--ref`,
 the caller records where the lesson already landed (a PR, issue URL, runbook or file),
 without asking gtmux to write that carrier. Without `--ref`, gtmux SHALL carry an `hq`
 entry into `LOCAL.md`, a `machine` entry into the canonical file and the agents' managed
@@ -228,6 +228,29 @@ blocks, or a `repo` entry into that repository's instruction file, then record t
 Repository writes SHALL remain uncommitted. `everyone` SHALL require a ref naming the
 issue a person opened; gtmux SHALL NOT open or publish an issue itself. Managed-block
 writes SHALL keep the hand-edit safeguards in the distribution requirement.
+
+New landing receipts SHALL bind the exact read revision. Manual CLI/API receipts
+SHALL require that revision from `show/list/promotions --json` or owner index/detail.
+The final locked append SHALL refuse a missing/stale revision even when a precheck
+passed. Automatic carry SHALL validate, publish the carrier and append its receipt
+under the same knowledge ledger lock; a delayed writer cannot overwrite a newer
+carrier or settle a newer same-ID review. Historical unversioned land operations
+SHALL keep their existing fold semantics.
+
+Public machine/repository sync, including CLI and doctor callers, SHALL hold the
+same ledger lock from reading its snapshot through publication. Already-locked
+carry SHALL use internal implementations without recursively acquiring that lock.
+An old independent sync SHALL NOT overwrite a newer landed carrier.
+
+LOCAL publication SHALL replace a complete staged private file atomically, syncing
+the file before rename and the parent afterwards. Exact historical generated sections
+MAY be upgraded; unrelated manual text SHALL survive. Symlinks, read-only leaves,
+duplicate markers and hand-edited generated sections SHALL be refused. Pre-publication
+failure SHALL preserve the original bytes and permissions; a carrier failure SHALL
+leave the promotion pending. A post-publication error MAY leave complete new bytes,
+so retry SHALL remain idempotent rather than assume nothing was written.
+Identical LOCAL content SHALL still pass durable publication, including directory
+sync, before retry can append land. Repeated durability errors SHALL remain pending.
 
 Landing SHALL remove the brief while the ledger keeps the lifecycle; a later `promote`
 MAY re-open a landed entry. The write path SHALL refuse promoting a dead or
@@ -814,3 +837,97 @@ Mac and mobile SHALL show recorded use and processing state without opening sett
 #### Scenario: A phone write is already in progress
 - **WHEN** the submit action is triggered again before its first request completes
 - **THEN** only one mutation is sent and the interface shows processing until completion or failure
+
+
+### Requirement: Action-scoped consultation is bounded and read-only
+
+The CLI SHALL offer structured consult results with stable entry/revision/card identities, applicability reasons and a conservative token estimate. Sensitive/accounts, hypotheses, wrong scope/tool versions and unreviewed/expired cards SHALL NOT be automatically selected. Whole cards including exceptions SHALL fit 1–2000 estimated tokens and at most six cards. Applicable protected omissions SHALL be reported. Unscoped legacy content SHALL require explicit HQ investigation. Consultation SHALL NOT increment hits or usage.
+
+#### Scenario: A protected card exceeds the budget
+- **WHEN** an applicable protected action card cannot fit
+- **THEN** the result reports missing_required rather than truncating its conditions or claiming coverage
+
+### Requirement: Markdown edits use a shared revision-checked transaction
+
+The CLI SHALL export eligible entries to a project-owned local vault and produce inert review proposals. Generated identity properties SHALL be checked; renames preserve identity, missing files do not retire entries, duplicate IDs/symlinks/conflicting edits are refused or reported. Initial export SHALL require an empty directory. A refresh SHALL preserve unapplied edits and recover an interrupted note/baseline update. Each note and baseline SHALL be published atomically as a complete private file; a read-only destination SHALL be refused. External editors do not participate in the ledger lock, so refresh SHALL be documented as requiring no concurrent edit of the same file. Excluded previously exported content SHALL require explicit local-copy handling.
+
+HQ/owner apply SHALL validate all 1–25 changes before a single atomic ledger append, check each base revision, keep ID/recurrence/sources/hypothesis state, and make identical retry idempotent. Review reasons/evidence SHALL survive. Ordinary review SHALL NOT retire corrections, promoted rules or protected cards, remove protection, or change an existing card's scope. A prose edit without a replacement card SHALL invalidate old card confidence. Distribution intent SHALL reopen landing; old landing SHALL NOT certify revised content. Exact historical LOCAL sections MAY be updated; manual edits SHALL be preserved with a conflict.
+
+#### Scenario: One change in a batch is stale
+- **WHEN** any change's base revision no longer matches
+- **THEN** no change in that batch is committed
+
+#### Scenario: The file was removed in the editor
+- **WHEN** a tracked Markdown file is missing
+- **THEN** diff reports it without proposing retirement
+
+### Requirement: Use reports do not become recurrence or causal evidence
+
+Explicit CLI usage receipts SHALL be labeled self_report, store hashed task/plan keys and item revisions/card hashes, distinguish retrieved/shown/adopted/outcome, deduplicate retries and exclude audit activity. Evaluation SHALL be separate. Summaries SHALL NOT infer causal reuse or non-use from missing records. An 8 MiB storage ceiling SHALL require explicit archival rather than silently deleting history.
+
+#### Scenario: A reported outcome succeeded
+- **WHEN** a caller reports success
+- **THEN** the summary reports a self-reported stage, not proof of a knowledge-caused improvement or a hit
+
+### Requirement: Dreaming reuses the existing review executor
+
+The read-only dream plan command SHALL prepare bounded evidence packets for the existing HQ distill executor without reading native conversations, invoking a model, spending tokens or advancing queue state. Packets SHALL include base revisions, review reasons, protected status, deterministic identity and separate input/billed-generation allowances. Unknown reported usage SHALL prevent a can_start recommendation. Completed identical revisions MAY be excluded through supplied progress. Low hit counts SHALL NOT be deletion evidence. Budget figures SHALL explicitly remain advisory until an executor reserves and reconciles provider usage.
+
+#### Scenario: Usage cannot be verified by the caller
+- **WHEN** usage_known is false
+- **THEN** the packet remains readable but can_start is false and no model is launched
+
+### Requirement: HQ instructions connect consultation and review to existing work
+
+Both shipped HQ language seeds SHALL teach consultation before advice or goal construction, applicable whole-card transfer with IDs/revisions, and resolution of protected omissions. A retrieval miss SHALL NOT itself justify capture. Admission SHALL require information gain, evidence, scope and a reusable action; a user correction or rare costly failure need not recur to qualify. Recurrence SHALL NOT alone prove failed delivery or non-use.
+
+Existing distill wakes SHALL be the review opportunity without a new scheduler. The seed SHALL teach fixed-version dream packets, project-owned progress, shared check/apply proposals and truthful completion receipts. The CLI execution route SHALL disclose unknown token usage and use separate call/time/retry limits; it SHALL NOT claim in-flight token or billing enforcement. The seed version SHALL advance for adoption by existing homes; changing source SHALL NOT itself reseed an active home.
+
+#### Scenario: Consultation finds no applicable knowledge
+- **WHEN** HQ finds no applicable entry before writing a goal
+- **THEN** it may continue without knowledge and admits a later candidate only if the evidence and reuse gate is met
+
+#### Scenario: A previous review finished with no entry changes
+- **WHEN** HQ considers the same unchanged revision again
+- **THEN** supplied review progress can skip it without inventing a hit, a new learning pass or a provider budget reservation
+
+
+### Requirement: Dreaming execution has durable item checkpoints
+
+Existing distill wakes SHALL be the opportunity for HQ-selected Codex/Claude CLI execution without a new scheduler. HQ SHALL explicitly supply agent, model, reasoning effort if desired, reason and timeout. The core SHALL persist a fixed-version packet and each start/result in one private atomic, integrity-checked managed journal, separate from knowledge and recurrence. Completed items SHALL not run again on resume. List/status/history/proposal SHALL be read-only. Current audience and memory metadata SHALL accompany the evidence.
+
+#### Scenario: Controller disappears after a start
+- **WHEN** a resumed run has a start without a durable result
+- **THEN** record interrupted/unknown usage, charge its timeout conservatively and return without another model call
+- **AND** HQ must inspect and verify prior process termination before explicit continuation; other runs cannot bypass the unresolved attempt
+
+#### Scenario: A reviewed item fails repeatedly
+- **WHEN** three attempts have failed
+- **THEN** further calls for that item are refused; HQ may record an explained defer and continue remaining items without erasing history/cost
+
+### Requirement: CLI review is bounded and produces inert proposals
+
+Execution SHALL serialize runners and bound call count, per-call/run/shared-week time, output size and attempts. Pilot/bootstrap reported token thresholds SHALL accumulate across packets over the retained lifetime; routine SHALL count the current UTC week. Unknown usage SHALL remain explicit. CLI receipts SHALL not be represented as verified billing or an in-flight token cap. Active source changes/private reclassification SHALL invalidate results. Model-cited evidence SHALL be allowlisted to the packet/frozen revision. A model-only review SHALL not claim supported/current verification. Outputs SHALL require the existing review check/apply flow. No model-induced KB writes, native transcript collection, pane actions or auto-escalation SHALL occur.
+
+#### Scenario: Process exits zero without a terminal result
+- **WHEN** no supported terminal result is observed, or tool events appear
+- **THEN** execution fails and retains an unknown or reported usage receipt; it cannot create an accepted decision
+
+#### Scenario: CLI usage is unavailable
+- **WHEN** a valid decision has no token receipt
+- **THEN** retain the decision with unknown usage, preserve hard operational bounds and do not invent zero cost
+
+#### Scenario: Journal reaches its bounded capacity
+- **WHEN** another safe durable receipt cannot fit, or the journal is corrupted
+- **THEN** refuse execution and preserve history; never prune it to reset progress or budget
+
+This iteration exposes the workflow through CLI and versioned HQ instructions. HTTP, desktop, mobile and browser consumers retain existing knowledge views; no model-execution endpoint or UI control is implied.
+
+### Requirement: Explicit allowance extensions retain original history
+
+The existing HQ writer MAY increase a run's absolute call/time ceilings with a nonempty decision reason. Extension SHALL append an event under the existing lock, retain the original plan and all consumed/unknown usage, and launch no model. Limits SHALL only increase within 60 calls and 14400 seconds. Identical retries SHALL be idempotent; unresolved active attempts and increases for completed packets SHALL be refused. Per-item retry and shared weekly/token guards SHALL remain unchanged.
+
+#### Scenario: User adds allowance after an exhausted run
+- **WHEN** the authorized writer extends a paused run and explicitly resumes it
+- **THEN** completed items are skipped and prior failures/costs remain in that same run
+- **AND** changing the allowance cannot reset global or item retry counters

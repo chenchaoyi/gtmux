@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review)",
+    "date": "2026-11-12",
+    "decision": "Fix observed app regression failures without weakening contracts",
+    "notes": "User explicitly asks to repair the app failures. Design recorded before test changes; no independent approval or commit-order claim. Preserve no-commit/no-live-window boundary. Only task-owned synthetic fixtures, isolated tmux sockets/HOME, test-scoped launchd label. Keep every advertised key combination and actual launchd readiness assertion; do not skip failed cases or substitute mocks for existing integration coverage."
+  },
+  "cases": [
+    {
+      "id": "APPFIX-BOOT-ISOLATION",
+      "layer": "L2",
+      "description": "Boot-server integration excludes caller HOME/config and checks actual readiness",
+      "setup": "Disposable caller HOME with a synthetic tmux config marker; short private socket; actual test-scoped launchd job on macOS.",
+      "action": "Use isolatedTmux then start the boot server via launchd; inspect session and server environment. Retain direct/fallback tests.",
+      "expected": "Server starts and contains only the requested session; caller PATH reaches server, caller config marker does not; HOME/socket belong to fixture. Failure cleanup stays scoped to the test.",
+      "planned_files": [
+        "internal/app/serverstart_test.go"
+      ]
+    },
+    {
+      "id": "APPFIX-NAME-STABILITY",
+      "layer": "L2",
+      "description": "Empty dispatch slug leaves a stable explicit window name/options unchanged",
+      "setup": "Private tmux server and disposable HOME; explicitly named window to exclude the unrelated automatic command renamer.",
+      "action": "Call nameDispatchWindow with empty slug; compare fixed baseline and automatic-rename option before/after. Keep title, branch and multi-pane tests.",
+      "expected": "No rename/options change for empty slug; regular slugs still include pane IDs and headless marker. No sleeps, retries or relaxed equality.",
+      "planned_files": [
+        "internal/app/spawn_paneid_test.go"
+      ]
+    },
+    {
+      "id": "APPFIX-PTY-COVERAGE",
+      "layer": "L2",
+      "description": "Full advertised terminal-key matrix remains byte-exact through isolated native tmux",
+      "setup": "Private socket selected directly via TMUX_TMPDIR, disposable HOME, raw Python receiver and actual tmux binary; no wrapper shell on each client invocation.",
+      "action": "Send every advertised key/modifier via production sendTerminalKey with fresh binding validation, check cumulative bytes after each event and reject unknown key. Record bounded progress for diagnosis.",
+      "expected": "All 400+ advertised combinations remain exercised and byte-exact; count is recorded, no production transport guard bypass, no raw user input. Test cleanup restores global binary and owns only the private server.",
+      "planned_files": [
+        "internal/app/terminalkeys_pty_test.go"
+      ]
+    }
+  ],
+  "seal": "f01227ddcefbb15aaafacf530950bd820e132fb9e03fbc06de9f82ef220aee38"
+}
