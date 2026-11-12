@@ -39,8 +39,7 @@ func (o *observer) request(data []byte) {
 		ID     json.RawMessage `json:"id"`
 		Method string          `json:"method"`
 		Params struct {
-			Ephemeral    bool            `json:"ephemeral"`
-			ThreadSource json.RawMessage `json:"threadSource"`
+			Ephemeral bool `json:"ephemeral"`
 		} `json:"params"`
 	}
 	if json.Unmarshal(data, &v) != nil || len(v.ID) == 0 || len(v.ID) > 256 {
@@ -50,7 +49,7 @@ func (o *observer) request(data []byte) {
 	switch v.Method {
 	case "initialize":
 	case "thread/start", "thread/resume", "thread/fork":
-		if v.Params.Ephemeral || len(v.Params.ThreadSource) > 0 && string(v.Params.ThreadSource) != `"user"` && string(v.Params.ThreadSource) != "null" {
+		if v.Params.Ephemeral {
 			return
 		}
 	default:
@@ -105,10 +104,11 @@ func (o *observer) response(data []byte) {
 		Result struct {
 			Home   string `json:"codexHome"`
 			Thread struct {
-				ID        string          `json:"id"`
-				Cwd       string          `json:"cwd"`
-				Ephemeral bool            `json:"ephemeral"`
-				Source    json.RawMessage `json:"source"`
+				ID             string          `json:"id"`
+				ParentThreadID string          `json:"parentThreadId"`
+				Cwd            string          `json:"cwd"`
+				Ephemeral      bool            `json:"ephemeral"`
+				Source         json.RawMessage `json:"source"`
 			} `json:"thread"`
 		} `json:"result"`
 	}
@@ -131,7 +131,7 @@ func (o *observer) response(data []byte) {
 	t := v.Result.Thread
 	var source string
 	_ = json.Unmarshal(t.Source, &source)
-	valid := o.ready && op.sequence == o.latest && t.ID != "" && len(t.ID) <= 256 && !t.Ephemeral && (source == "cli" || source == "vscode")
+	valid := o.ready && op.sequence == o.latest && t.ID != "" && len(t.ID) <= 256 && !t.Ephemeral && t.ParentThreadID == "" && (source == "cli" || source == "vscode")
 	if valid {
 		o.bind(t.ID, t.Cwd)
 	}

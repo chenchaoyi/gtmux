@@ -1,4 +1,5 @@
 id,layer,stack,file,line,kind,description,dynamic,design
+MAP-79ce2b9cc2d9,M,reviewed implementation,macapp/Tests/GtmuxBarTests/ObservedIdentityTests.swift,5,reviewed-selector,testSID008HistoryNeverPopulatesCurrentIdentity,False,SID-008
 LEG-2d3a6b1e37ba,M,RN / mobile harness,mobileapp/e2e/__tests__/appstore-shots-ipad.test.ts,53,it,"captures the split shell, HQ matters, the pane grid and the knowledge sheet",False,legacy-not-retrospectively-reviewed
 LEG-1b162166dec9,M,RN / mobile harness,mobileapp/e2e/__tests__/appstore-shots.test.ts,45,it,"captures the radar, the terminal, HQ, its work, usage and the Macs",False,legacy-not-retrospectively-reviewed
 LEG-cb21d0627bd2,M,RN / mobile harness,mobileapp/e2e/__tests__/composer-shots.test.ts,25,it,captures the composer input row + the attach sheet,False,legacy-not-retrospectively-reviewed

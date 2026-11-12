@@ -335,8 +335,8 @@ function PaneDetailView({
   // Chat transcript lives HERE (DetailScreen stays mounted across mode switches) so
   // flipping 终端→对话 shows the cached history instantly instead of re-fetching +
   // spinning every time. Polled on status/prompt change; turns are never cleared.
-  const chatIdentity = useMemo(() => ({client, pane: agent.pane_id, session: live.session_id, home: live.home_id, agent: live.agent}), [client, agent.pane_id, live.session_id, live.home_id, live.agent]);
-  const [chatRecord, setChatRecord] = useState<{identity: typeof chatIdentity; turns: TranscriptTurn[]; dropped: number; reset?: SessionReset; loaded: boolean; failed?: boolean; associationFailed?: boolean}>({identity: chatIdentity, turns: [], dropped: 0, loaded: false});
+  const chatIdentity = useMemo(() => ({client, pane: agent.pane_id, session: live.session_id, home: live.home_id, agent: live.agent, observation: JSON.stringify([live.observed_conversation?.session_id, live.observed_conversation?.home_id, live.observed_conversation?.state])}), [client, agent.pane_id, live.session_id, live.home_id, live.agent, live.observed_conversation?.session_id, live.observed_conversation?.home_id, live.observed_conversation?.state]);
+  const [chatRecord, setChatRecord] = useState<{identity: typeof chatIdentity; turns: TranscriptTurn[]; dropped: number; reset?: SessionReset; loaded: boolean; failed?: boolean; associationFailed?: boolean; readOnlyHistory?: boolean}>({identity: chatIdentity, turns: [], dropped: 0, loaded: false});
   const turns = chatRecord.identity === chatIdentity ? chatRecord.turns : EMPTY_TURNS;
   const latestTurns = useRef(turns); latestTurns.current = turns;
   useEffect(() => {
@@ -345,6 +345,7 @@ function PaneDetailView({
     }
   }, [turns, pendingPrompt]);
   useEffect(() => {pendingEcho.current = null; echoAttempts.current.clear(); setPendingPrompt(''); setPendingDelivered(false); setBusyHint(null);}, [client, agent.pane_id]);
+  const historyReadOnly = (chatRecord.identity === chatIdentity && !!chatRecord.readOnlyHistory) || !!live.observed_conversation;
   const chatLoaded = chatRecord.identity === chatIdentity && chatRecord.loaded;
   const chatFailed = chatRecord.identity === chatIdentity && !!chatRecord.failed;
   const chatAssociationFailed = chatRecord.identity === chatIdentity && !!chatRecord.associationFailed;
@@ -376,6 +377,7 @@ function PaneDetailView({
   // An explicit route mode (the HQ card opens CHAT — talking to the supervisor is
   // the point) beats the global default.
   const [mode, setMode] = useState<DetailMode>(initialMode ?? defaultDetailMode);
+  const historyReadOnlyRef = useRef(false); historyReadOnlyRef.current = mode === 'chat' && historyReadOnly;
   modeRef.current = mode; // only the layer you are looking at may drive the chrome (above)
   // Each view (terminal = hundreds of dual-layer <Text> rows; chat = many markdown
   // turns) is expensive to MOUNT, so we keep BOTH mounted once visited and just
@@ -494,6 +496,7 @@ function PaneDetailView({
   // (the big win over a remote tunnel). Late bumps catch a slow TUI redraw.
   const sendPane = useCallback(
     (payload: SendPayload) => {
+      if (historyReadOnlyRef.current) return;
       // Attach a client idempotency token the FIRST time. A Retry re-sends this SAME
       // payload object (send_id preserved), so an ambiguous network failure — where the
       // send may have landed on the Mac but the response never came back — can be retried
@@ -611,7 +614,7 @@ function PaneDetailView({
     [client, agent.pane_id],
   );
 
-  const inputEnabled = !isNative && (!isGuest || inputPanes.includes(agent.pane_id));
+  const inputEnabled = !isNative && !(mode === 'chat' && historyReadOnly) && (!isGuest || inputPanes.includes(agent.pane_id));
   const interaction = usePaneInteraction(client, agent.pane_id, !isNative && live.status === 'waiting', answeredAt);
   const refreshInteraction = interaction.refresh;
   const interactionRefresh = useRef(refreshInteraction); interactionRefresh.current = refreshInteraction;
@@ -645,11 +648,11 @@ function PaneDetailView({
     const task = createReadTask(
       signal => {
         turnsAtRef.current = Date.now();
-        return client.transcript(agent.pane_id, etagRef.current, 0, signal, true);
-      }, ({turns: ts, dropped, reset, etag, unchanged}) => {
+        return client.transcript(agent.pane_id, etagRef.current, 0, signal, true, true);
+      }, ({turns: ts, dropped, reset, etag, unchanged, readOnlyHistory}) => {
         if (etagIdentity.current !== chatIdentity) return;
         etagRef.current = etag;
-        setChatRecord(previous => unchanged && previous.identity === chatIdentity ? {...previous, loaded: true, failed: false, associationFailed: false} : {identity: chatIdentity, turns: ts, dropped, reset, loaded: true});
+        setChatRecord(previous => unchanged && previous.identity === chatIdentity ? {...previous, loaded: true, failed: false, associationFailed: false, readOnlyHistory} : {identity: chatIdentity, turns: ts, dropped, reset, loaded: true, readOnlyHistory});
       }, {onError: error => {
         if (etagIdentity.current !== chatIdentity) return;
         if (isAuthError(error)) {
@@ -678,9 +681,9 @@ function PaneDetailView({
   // trees in JS even when nothing changed — that was the "停顿 on unchanging content".
   const chatEl = useMemo(
     () => (
-      <ChatView client={isGuest ? undefined : client} agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} failed={chatFailed} associationFailed={chatAssociationFailed} onRetry={() => loadTurnsRef.current()} pendingPrompt={pendingPrompt} pendingDelivered={pendingDelivered} pendingDelivery={pendingDelivery} fontPref={fontPref} onLiveEdge={chatEdge} topPad={chromeH + questionInset} controlsTop={fullscreen ? insets.top : chromeH + questionInset} controlsShift={fullscreen ? undefined : collapse.interpolate({inputRange: [0, 1], outputRange: [0, -chromeH]})} maxWidth={isWide ? READING_WIDTH : undefined} />
+      <ChatView readOnlyHistory={historyReadOnly} client={isGuest ? undefined : client} agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} failed={chatFailed} associationFailed={chatAssociationFailed} onRetry={() => loadTurnsRef.current()} pendingPrompt={pendingPrompt} pendingDelivered={pendingDelivered} pendingDelivery={pendingDelivery} fontPref={fontPref} onLiveEdge={chatEdge} topPad={chromeH + questionInset} controlsTop={fullscreen ? insets.top : chromeH + questionInset} controlsShift={fullscreen ? undefined : collapse.interpolate({inputRange: [0, 1], outputRange: [0, -chromeH]})} maxWidth={isWide ? READING_WIDTH : undefined} />
     ),
-    [client, isGuest, live, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, chatFailed, chatAssociationFailed, pendingPrompt, pendingDelivered, pendingDelivery, fontPref, chatEdge, chromeH, questionInset, fullscreen, insets.top, isWide, collapse],
+    [client, isGuest, live, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, chatFailed, chatAssociationFailed, historyReadOnly, pendingPrompt, pendingDelivered, pendingDelivery, fontPref, chatEdge, chromeH, questionInset, fullscreen, insets.top, isWide, collapse],
   );
   // Codex pins the prompt of the turn on screen to the top row, cut to the pane's width
   // (ui/codexPinned). When that row is recognised, the full prompt from the conversation

@@ -399,6 +399,7 @@
     return a.terminal || a.agent;
   }
   function nativeEvidenceLabel(a) {
+    if (observedReadOnly(a)) return T('Association pending · history read only', '会话关联待确认 · 历史只读');
     var h = launchHost(a), parts = [];
     if (h) parts.push(T('Launch host: ', '启动宿主：') + h.name + T(' · observed ', ' · 记录于 ') + new Date(h.observed_at * 1000).toLocaleString(ZH ? 'zh' : 'en'));
     if (a && a.current_client === 'unconfirmed') parts.push(T('Current input client unconfirmed', '当前输入客户端未确认'));
@@ -407,7 +408,8 @@
   function secondary(a) {
     if (isNative(a)) return nativeSourceLabel(a); // sensed agent, no pane locator
     var b = a.session || a.loc || '';
-    return a.pane_id ? b + ' · ' + a.pane_id : b;
+    var location = a.pane_id ? b + ' · ' + a.pane_id : b;
+    return observedReadOnly(a) ? location + ' · ' + T('Association pending', '关联待确认') : location;
   }
 
   function agentMark(name) {
@@ -643,7 +645,7 @@
 
   function renderRadar(agents) {
     // only repaint when something actually changed (avoids list flicker every poll)
-    var sig = JSON.stringify(agents.map(function (a) { return [a.pane_id, a.source, a.session_id, a.home_id, a.current_client, a.launch_host, a.client, a.follow, a.project, a.terminal, a.session, a.loc, a.agent, a.role, a.activity_at, a.status, a.task, a.since, a.since_uncertain, a.icon, a.error, a.error_text, a.bg, a.bg_count, a.bg_text]; }));
+    var sig = JSON.stringify(agents.map(function (a) { return [a.pane_id, a.source, a.session_id, a.home_id, a.current_client, a.observed_conversation, a.launch_host, a.client, a.follow, a.project, a.terminal, a.session, a.loc, a.agent, a.role, a.activity_at, a.status, a.task, a.since, a.since_uncertain, a.icon, a.error, a.error_text, a.bg, a.bg_count, a.bg_text]; }));
     if (sig === lastSig) return;
     lastSig = sig;
     // tmux agents bucket by status; native (non-tmux) agents are SENSED read-only, so
@@ -1523,7 +1525,11 @@
       ? '协作视图 · 访客 · 可查看 ' + SHARE.viewCount + ' 个会话 · 可输入 ' + SHARE.typeCount + ' 个。分享者可随时撤销访问。'
       : 'shared view · guest · ' + SHARE.viewCount + ' visible · ' + SHARE.typeCount + ' open for input. The person who shared the link can revoke access at any time.';
   }
-  function paneCanInput(id) { return !!id && SHARE.input && (SHARE.all || (!SHARE.stale && !!SHARE.panes[id])); }
+  function observedReadOnly(a) { return !!(a && (a.observed_conversation || a.history_read_only)); }
+  function paneCanInput(id) {
+    if (curAgent && curPane === id && paneMode === 'chat' && observedReadOnly(curAgent)) return false;
+    if (WB && WB.tiles.some(function(t){ return !t.removed && t.id === id && t.mode === 'chat' && observedReadOnly(t.agent); })) return false;
+    return !!id && SHARE.input && (SHARE.all || (!SHARE.stale && !!SHARE.panes[id])); }
   // The composer makes input capability visible. Only read-only needs a label.
   function setCapChip(el, can) {
     if (!el) return;
@@ -2072,7 +2078,8 @@
         if (!current(true) || !Array.isArray(rows)) return;
         var next = rows.find(function (row) {return isNative(a) ? row.source === 'native' && row.session_id === a.session_id && row.home_id === a.home_id : row.pane_id === a.pane_id;});
         if (!next) return;
-        var changed = next.status !== a.status || next.task !== a.task || next.can_read_conversation !== a.can_read_conversation || next.current_client !== a.current_client || JSON.stringify(next.launch_host) !== JSON.stringify(a.launch_host);
+        var changed = next.status !== a.status || next.task !== a.task || next.can_read_conversation !== a.can_read_conversation || next.current_client !== a.current_client || JSON.stringify(next.observed_conversation) !== JSON.stringify(a.observed_conversation) || JSON.stringify(next.launch_host) !== JSON.stringify(a.launch_host);
+        if (chatScope(next) === chatScope(a)) next.history_read_only = a.history_read_only;
         curAgent = next;
         if (isNative(next) && !readableConversation(next)) {lastTurns = []; externalSettings = null;}
         if (changed) {$('title').textContent = primary(next) || next.agent; $('sub').textContent = isNative(next) ? nativeSourceLabel(next) : (next.agent ? next.agent + ' · ' : '') + secondary(next); drawChat(lastTurns);updateInputBar();}
@@ -2207,6 +2214,7 @@
       throw Object.assign(new Error('transcript'), {association: r.status === 409 && body && body.code === 'conversation-unassociated'});
     });
   }
+  function lastKnownBanner() { return el('p', 'chat-history', T('Last-known conversation, read only. The current association is unconfirmed; continue in Terminal.', '以下为上次关联的对话，只供查看；当前会话关联待确认，请在终端继续。')); }
   function chatReadBanner(reason, retry) {
     var box = el('div', 'chat-history chat-read-error'); box.setAttribute('role', 'alert');
     box.appendChild(el('span', '', reason === 'association'
@@ -2220,11 +2228,12 @@
       if (!curPane) return;
       var scope = chatScope(curAgent), read = currentRead('chat', signal);
       var current = function (visible) { return read(visible) && scope === chatScope(curAgent); };
-      return api('/api/transcript?id=' + encodeURIComponent(curPane), {signal: signal}).then(function (r) {
+      return api(transcriptPath(curAgent), {signal: signal}).then(function (r) {
         if (!current()) return null;
         if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
         if (r.status === 403) { chatHistory = null; lastTurns = []; throw new Error('forbidden'); }
         if (r.status === 404) { setConn(true); return []; } // no resume record / not available
+        curAgent.history_read_only = r.headers.get('X-Gtmux-Conversation-State') === 'last-known'; updateInputBar();
         return chatReadResponse(r);
       }).then(function (turns) { if (turns === null || !current(true)) return; setConn(true); hideChatLoader(); chatReadFailure = ''; renderChat(turns || []); })
         .catch(function (error) { if (current()) { hideChatLoader(); chatReadFailure = error.association ? 'association' : 'failed'; renderChat(lastTurns); } });
@@ -2233,8 +2242,8 @@
 
   // The same bounded history contract and stable merge as App/Trace. Each reader
   // owns its window; background tail polls never discard explicitly loaded pages.
-  function chatScope(a) { return JSON.stringify([a && a.pane_id || '', a && a.home_id || '', a && a.session_id || '']); }
-  function transcriptPath(a) { return hasPane(a) ? '/api/transcript?id=' + encodeURIComponent(a.pane_id) : '/api/session/transcript' + conversationQuery(a); }
+  function chatScope(a) { return JSON.stringify([a && a.pane_id || '', a && a.home_id || '', a && a.session_id || '', a && a.observed_conversation || null]); }
+  function transcriptPath(a) { return hasPane(a) ? '/api/transcript?id=' + encodeURIComponent(a.pane_id) + '&observation=1' : '/api/session/transcript' + conversationQuery(a); }
   function historyState(state, a) {
     return state && state.scope === chatScope(a) && state.credential === token ? state : {scope: chatScope(a), credential: token, held: [], latest: [], turns: [], busy: false, error: '', gap: false};
   }
@@ -2291,7 +2300,7 @@
     reconcilePendingPrompts(curPane, turns);
     lastTurns = turns;
     // only repaint when content changed (keeps scroll position + expanded steps)
-    var sig = JSON.stringify([turns, chatReadFailure]);
+    var sig = JSON.stringify([turns, chatReadFailure, observedReadOnly(curAgent)]);
     if (sig === chatSig) return;
     chatSig = sig;
     drawChat(turns);
@@ -2327,6 +2336,7 @@
       collapse.type = 'button'; collapse.dataset.chatFocus = 'collapse'; collapse.onclick = collapseAllSteps; sr.appendChild(collapse);
     }
 
+    if (observedReadOnly(a)) col.appendChild(lastKnownBanner());
     if (chatReadFailure) col.appendChild(chatReadBanner(chatReadFailure, pollChat));
     if (!chatReadFailure && !turns.length && !(pendingPrompts[curPane] || []).length) {
       var e = document.createElement('div'); e.className = 'chat-empty';
@@ -3692,12 +3702,13 @@
         if(signal.aborted || t.removed || epoch !== t.readEpoch || scope !== chatScope(t.agent)) return null;
         if(r.status === 401) {token=null;localStorage.removeItem(TOKEN_KEY);gate('expired');return null;}
         if(r.status === 403 || readableConversation(t.agent) && (r.status === 404 || r.status === 422)) {removeTile(t);return null;}
+        t.agent.history_read_only = r.headers.get('X-Gtmux-Conversation-State') === 'last-known'; tileInputSync(t);
         t.dropped = Number(r.headers.get('X-Gtmux-Turns-Dropped') || 0) || 0;
         return r.status === 404 ? [] : chatReadResponse(r);
       }).then(function (turns) {
         if (signal.aborted || turns === null || t.removed || epoch !== t.readEpoch || scope !== chatScope(t.agent) || t.mode !== 'chat') return;
         t.chatReadFailure = ''; t.history = historyState(t.history, t.agent); turns = chatTail(t.history, turns || []);
-        var sig = JSON.stringify([turns, t.dropped || 0, t.chatReadFailure]); if (sig === t.chatSig) return; t.chatSig = sig; renderTileChat(t, turns);
+        var sig = JSON.stringify([turns, t.dropped || 0, t.chatReadFailure, observedReadOnly(t.agent)]); if (sig === t.chatSig) return; t.chatSig = sig; renderTileChat(t, turns);
       }).catch(function (error) {
         if (!signal.aborted && !t.removed && epoch === t.readEpoch && scope === chatScope(t.agent) && t.mode === 'chat') {
           t.chatReadFailure = error.association ? 'association' : 'failed'; t.chatSig = ''; renderTileChat(t, t.lastTurns || []);
@@ -3713,6 +3724,7 @@
     var atBottom = !old || old.scrollHeight - old.scrollTop - old.clientHeight < 48;
     var top = old ? old.scrollTop : 0, anchor=readingAnchor(old), prepended=hasPrependedTurns(old,turns,t.agent);
     var wrap = document.createElement('div'); wrap.className = 'tile-chat';
+    if (observedReadOnly(t.agent)) wrap.appendChild(lastKnownBanner());
     if (t.chatReadFailure) wrap.appendChild(chatReadBanner(t.chatReadFailure, function () { tilePollChat(t); }));
     if (!t.chatReadFailure && !turns.length && !(pendingPrompts[t.id] || []).length) { var e = document.createElement('div'); e.className = 'chat-empty'; e.textContent = T('No conversation yet.', '还没有对话。'); wrap.appendChild(e); }
     var history = chatHistoryControl(t.history, t.agent, function () { t.chatSig = JSON.stringify(t.history.turns); renderTileChat(t, t.history.turns); }, function () { return WB.on && !t.removed && t.mode === 'chat' && t.history && t.history.scope === chatScope(t.agent); });

@@ -770,6 +770,31 @@
         }
       ]
     },
+    "internal/agents/codex_presentation_config_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f6200d4fe8c9",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "TestSID001PresentationConfigKeepsManagedIdentity",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SID-001"
+        },
+        {
+          "id": "MAP-410b581f2c06",
+          "line": 35,
+          "kind": "reviewed-selector",
+          "name": "TestSID001HelpStillRecognizesCommandsAfterDisplayConfig",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SID-001"
+        }
+      ],
+      "sha256": "04a5b3d6546b7fcd87b9e2958d348166934c3cd23c6926fbba435b902ca6f2d7"
+    },
     "internal/agents/interactive_test.go": {
       "sha256": "0f59ce89796145e145fbc3d5331cf62c1fdf41ca22464ed405e943186155539b",
       "layer": "L1",
@@ -1747,6 +1772,22 @@
           "layer": "L1"
         }
       ]
+    },
+    "internal/app/conversation_read_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f767974bfca8",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestCAS003PaneAssociationIsNotAnEmptyConversation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CAS-003"
+        }
+      ],
+      "sha256": "f116e76800b507ffdc81658ee0edc5816f2635cc848576474cff269c955f42b1"
     },
     "internal/app/desktoptranscript_test.go": {
       "sha256": "6289e0af73945af3e155100c0c584be54f953f9b9b320a0fee42b85c26cff697",
@@ -3293,6 +3334,22 @@
         }
       ]
     },
+    "internal/app/help_readability_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-0ac93543b761",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "TestCAS006HelpKeepsLongSyntaxSeparateAndScreenshotsVisible",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CAS-006"
+        }
+      ],
+      "sha256": "d69850c2ba5c82950db7a1d4b90f3ea5581c7f5bb18ff7439d100957ffc760d8"
+    },
     "internal/app/help_test.go": {
       "sha256": "71c04f1f92e35a7bd5ade5446423fd31abf2772961134c3ebbea358137cfb21a",
       "layer": "L1",
@@ -4213,6 +4270,22 @@
           "layer": "L1"
         }
       ]
+    },
+    "internal/app/observed_conversation_test.go": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-ad442623e007",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "TestSID005ObservedReaderKeepsBoundedWindowAndExactCursor",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SID-005"
+        }
+      ],
+      "sha256": "35d94de59f4a17f1f54dad6a95a3d139d175c778bca05bb31823704c97bd6998"
     },
     "internal/app/oneshot_test.go": {
       "sha256": "17d64e492a1e3910bbe78f868cae270edc1d73b7e4a8e6bb5a859170319bb1c1",
@@ -8308,6 +8381,31 @@
           "layer": "L1"
         }
       ]
+    },
+    "internal/codexbridge/analytics_identity_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-087141967dfd",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "TestSID002AnalyticsLabelDoesNotEraseRootIdentity",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SID-002"
+        },
+        {
+          "id": "MAP-e319389af183",
+          "line": 22,
+          "kind": "reviewed-selector",
+          "name": "TestSID002AnalyticsCannotPromoteChildOrGlobalTraffic",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SID-002"
+        }
+      ],
+      "sha256": "84387964b1b32949a11d04317b71384d965f2266ad53b09a4c8c7df12dee515c"
     },
     "internal/codexbridge/connection_epoch_test.go": {
       "layer": "L1",
@@ -15525,6 +15623,22 @@
         }
       ]
     },
+    "internal/hq/identity_launch_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-426d8c4b1e7f",
+          "line": 11,
+          "kind": "reviewed-selector",
+          "name": "TestSID001ActualHQRecipeRetainsManagedFrontend",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SID-001"
+        }
+      ],
+      "sha256": "c553eb91cbdf0db49326bf20241a7314399b7ef02e646d31ca7b75a1c8d7abd3"
+    },
     "internal/hq/knowledgeshim_test.go": {
       "sha256": "04b61270392272dfbd3740d37b98d7eb957acf68b216953fcb11da0ee5b62503",
       "layer": "L1",
@@ -22389,6 +22503,22 @@
         }
       ]
     },
+    "internal/radar/observed_identity_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-95b503a0bcfb",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "TestSID004HistoricalProjectionIsUniqueAndDoesNotBorrowAuthority",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SID-004"
+        }
+      ],
+      "sha256": "d92a7a24d6b2a1c899348710537410e02939f1ceb6bb4326bb1834d8c304b2ab"
+    },
     "internal/radar/pane_scope_test.go": {
       "sha256": "22e4909716212de29d28b7848bcc8add154b1447034de0c02ac623c422712465",
       "layer": "L1",
@@ -23587,6 +23717,58 @@
         }
       ]
     },
+    "internal/resume/conversation_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-498880a35c6c",
+          "line": 20,
+          "kind": "reviewed-selector",
+          "name": "TestCAS001IndependentConversationRecovery",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CAS-001,CAS-002"
+        },
+        {
+          "id": "MAP-a549d442247a",
+          "line": 54,
+          "kind": "reviewed-selector",
+          "name": "TestCAS001ConversationRecoveryRejectsUnknownOrConflictingProof",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CAS-001,CAS-002"
+        },
+        {
+          "id": "MAP-fa6914665340",
+          "line": 134,
+          "kind": "reviewed-selector",
+          "name": "TestCAS002OwnHeartbeatRepairsLostIndex",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CAS-001,CAS-002"
+        },
+        {
+          "id": "MAP-67dd266a7a62",
+          "line": 158,
+          "kind": "reviewed-selector",
+          "name": "TestCAS002HeartbeatCannotReclaimReplacementOrUnknownEvidence",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CAS-001,CAS-002"
+        },
+        {
+          "id": "MAP-d797af1a2534",
+          "line": 214,
+          "kind": "reviewed-selector",
+          "name": "TestCAS001LegacyEmptyAndForeignHome",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CAS-001,CAS-002"
+        }
+      ],
+      "sha256": "cd98679669d80371a7c2e9785328a2ba799364398053be69b4e26200fc5acbf3"
+    },
     "internal/resume/dsh_test.go": {
       "sha256": "00734c26e206baf3cab2df4596f05bd36d735a31ce9e1f5ff9ff3a356279c5d0",
       "layer": "L1",
@@ -23711,6 +23893,31 @@
           "layer": "L1"
         }
       ]
+    },
+    "internal/resume/observed_conversation_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-56aadbd19e58",
+          "line": 35,
+          "kind": "reviewed-selector",
+          "name": "TestSID003LastKnownHistoryHasNoLiveAuthority",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SID-003"
+        },
+        {
+          "id": "MAP-64bbe883d24c",
+          "line": 68,
+          "kind": "reviewed-selector",
+          "name": "TestSID003UnknownConflictingAndUnsafeHistoryStaysUnassociated",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SID-003"
+        }
+      ],
+      "sha256": "31b19dc4f40b069a0d13fc99af59dea36735a56309f589f7824efa1066db47e6"
     },
     "internal/resume/registry_test.go": {
       "sha256": "26122230599241cfc5b386f021be2e9ebc89a9e12e588efcae22ac5a0cb448a4",
@@ -24522,6 +24729,22 @@
         }
       ]
     },
+    "internal/server/conversation_read_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-28ded370695d",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestCAS003ConversationFailureContractAndGuestBoundary",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CAS-003"
+        }
+      ],
+      "sha256": "634a7ec15fc0a3c6dcda914f897bb510fd7acc84802863375e00c00badefde2d"
+    },
     "internal/server/diaglog_test.go": {
       "sha256": "6207c930abc9c57959c957a311e6cc5ae3012961c4dbc0ceae7519e48046d36e",
       "layer": "L2",
@@ -25307,6 +25530,31 @@
           "layer": "L2"
         }
       ]
+    },
+    "internal/server/observed_conversation_test.go": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-b4dde0e66e09",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestSID005OwnerOptInHistoryAndGuestFence",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SID-005"
+        },
+        {
+          "id": "MAP-48bb55755c3f",
+          "line": 54,
+          "kind": "reviewed-selector",
+          "name": "TestSID005SharedRosterOmitsHistoricalIdentifiers",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SID-005"
+        }
+      ],
+      "sha256": "637a5a426749874523c2ba858a8ec4b94adda7e9cbbde985a9c6566921817618"
     },
     "internal/server/options_test.go": {
       "sha256": "6a881c2aa10325cafd3259651f3f8bfab563b11aea0f5d3b377c39519626f667",
@@ -26734,6 +26982,40 @@
         }
       ]
     },
+    "internal/server/web/activity-semantics.test.cjs": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-6acf30600cc5",
+          "line": 8,
+          "kind": "reviewed-selector",
+          "name": "AOP001 generated browser presenter shows read/search while retaining actual calls",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "AOP-001,AOP-002,AOP-003"
+        },
+        {
+          "id": "MAP-9ce52cb7c368",
+          "line": 16,
+          "kind": "reviewed-selector",
+          "name": "AOP002 browser command preview unwraps complete shell argv only for display",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "AOP-001,AOP-002,AOP-003"
+        },
+        {
+          "id": "MAP-86b06e4fbd45",
+          "line": 23,
+          "kind": "reviewed-selector",
+          "name": "AOP003 compact density is pointer-scoped and focus/overflow affordances remain",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "AOP-001,AOP-002,AOP-003"
+        }
+      ],
+      "sha256": "8d43dc1b4cec6ea68c4f06362eaf58b0e4be221b6975ac5424ea37f55641ebc1"
+    },
     "internal/server/web/activity.test.cjs": {
       "sha256": "e577ef0c3d44e5cc3c97c981f03c33eb99cf21410a9bcedf91eb3e1d6d4b9c96",
       "layer": "L2",
@@ -27428,6 +27710,56 @@
           "layer": "G"
         }
       ]
+    },
+    "internal/server/web/maximize-layout.test.cjs": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-452a61a1d04e",
+          "line": 25,
+          "kind": "reviewed-selector",
+          "name": "AOP004 Restore layout occupies the actual header before the title",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "AOP-004"
+        },
+        {
+          "id": "MAP-cd44b26604d6",
+          "line": 31,
+          "kind": "reviewed-selector",
+          "name": "AOP004 switching and restoring keep one control and restore prior dimensions",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "AOP-004"
+        },
+        {
+          "id": "MAP-f159c36e253b",
+          "line": 38,
+          "kind": "reviewed-selector",
+          "name": "AOP004 maximized header reserves grid space and names its narrow icon",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "AOP-004"
+        }
+      ],
+      "sha256": "5613c6f76338be976248841bc3cfc01d2ee401f41ef0642d95abd76153f09d73"
+    },
+    "internal/server/web/observed_identity.test.cjs": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-07e13a073c16",
+          "line": 16,
+          "kind": "reviewed-selector",
+          "name": "SID007 focused and tile history cannot dispatch input or become an external row",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SID-007"
+        }
+      ],
+      "sha256": "e1116ceba0274b20ab1be2c6c61c693663efdeea114a61c2610e7400eecbcadf"
     },
     "internal/server/web/reading.test.cjs": {
       "sha256": "dfc24fcce4160579e46cbadee4ab04082ff6541d30aed39fc822ff6c1021c675",
@@ -34541,6 +34873,22 @@
         }
       ]
     },
+    "macapp/Tests/GtmuxBarTests/ObservedIdentityTests.swift": {
+      "layer": "M",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-79ce2b9cc2d9",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "testSID008HistoryNeverPopulatesCurrentIdentity",
+          "dynamic": false,
+          "layer": "M",
+          "design": "SID-008"
+        }
+      ],
+      "sha256": "415e71562b3c80ec65ad31a9b96e2a5d919028d17dc423ee655a04bd234ec225"
+    },
     "macapp/Tests/GtmuxBarTests/PairStoreTests.swift": {
       "sha256": "5f5f1970a3a19a2d9cb27edc3d2d3db95ea2c7bfe6371db9e8fe2e282af583f0",
       "layer": "L1",
@@ -41245,6 +41593,22 @@
         }
       ]
     },
+    "mobileapp/src/api/conversation.test.ts": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f0ea1c518382",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "CAS005 transcript rejects association and source failures instead of returning empty history",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "CAS-005"
+        }
+      ],
+      "sha256": "52a1c79abe21fb094d3ae9f517c1d5342b23103c77f1c6548c17046a8088e4b1"
+    },
     "mobileapp/src/api/events.test.ts": {
       "sha256": "733143c5797fd0822fc38d892f8afa09fca47f5491a0f4cb429fb7eeca4efaa6",
       "layer": "L1",
@@ -41275,6 +41639,38 @@
           "layer": "L1"
         }
       ]
+    },
+    "mobileapp/src/api/observed-client-contract.test.ts": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-2c624a8ebee0",
+          "line": 3,
+          "kind": "reviewed-selector",
+          "name": "SID009 ordinary reads stay compatible while UI history explicitly opts in",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SID-009"
+        }
+      ],
+      "sha256": "0ab77243375b08ec2e5897b3052a3215c6e8d1cb27a72787cf76b88c19bdbfdb"
+    },
+    "mobileapp/src/api/observed-history.test.ts": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-51014f850982",
+          "line": 4,
+          "kind": "reviewed-selector",
+          "name": "SID006 observed history stays separate from current session authority and survives 304",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SID-006"
+        }
+      ],
+      "sha256": "2cbb215a7e1badbe2f85ec8d36657e609d0ea1a50d8e4d74d1296d35c80e8545"
     },
     "mobileapp/src/api/requestAbort.test.ts": {
       "sha256": "4eb2ac0ef8cfdbaaefc21d5ede8d3023de80f8eeefa2f83796d2113ed3eb6d6c",
@@ -43936,6 +44332,22 @@
         }
       ]
     },
+    "mobileapp/src/screens/DetailObserved.test.tsx": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d9561a5b54f1",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "SID006 mounted Detail fences historical chat and clears restriction after verified refresh",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SID-006"
+        }
+      ],
+      "sha256": "0887cc6a79558c1ff0e3cf61ccfc1ed87bd7e8a56e20769d23f01b12f0560adc"
+    },
     "mobileapp/src/screens/DetailPinned.test.tsx": {
       "sha256": "b9bea41a98ea973f535faad4f84423cf2fe15b27a7baa1c9afd53323c6134ed2",
       "layer": "L2",
@@ -44484,6 +44896,22 @@
         }
       ]
     },
+    "mobileapp/src/screens/HQScreen.association.test.tsx": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-104c84ca28d9",
+          "line": 26,
+          "kind": "reviewed-selector",
+          "name": "CAS008 HQ association failure keeps history and clears after retry",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "CAS-008"
+        }
+      ],
+      "sha256": "6a89eb8ee784be94498bd661d267b3bd3b71185d73ab5baa963cc70ed402697c"
+    },
     "mobileapp/src/screens/HQScreen.attach.test.tsx": {
       "sha256": "dbbb24106e95112d093c0b66ca5a49449715da429262f40eadddcc23cdf4de17",
       "layer": "L2",
@@ -44530,6 +44958,22 @@
           "layer": "L2"
         }
       ]
+    },
+    "mobileapp/src/screens/HQScreen.observed.test.tsx": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-3c318e90a20b",
+          "line": 17,
+          "kind": "reviewed-selector",
+          "name": "SID006 mounted HQ cannot send from last-known history and resets on verified response",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SID-006"
+        }
+      ],
+      "sha256": "d2e6c2134917e8ea049570c27409090cb962422e35f75f039528a6b627b96836"
     },
     "mobileapp/src/screens/HQScreen.poll.test.tsx": {
       "sha256": "4cedc32d06f75784ab0480316da8352187891c0315004ef3adc6d3cbab6ee5b6",
@@ -49900,6 +50344,22 @@
         }
       ]
     },
+    "mobileapp/src/trace/semantic-title.test.ts": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-22e8f7f44f76",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "AOP001 Trace preserves every real call while labels follow normalized actions",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "AOP-001"
+        }
+      ],
+      "sha256": "335b4cda7d7796fdb813bc00204b7ff39842cb8b57b6df23a39e235762f01370"
+    },
     "mobileapp/src/trace/timeline.test.ts": {
       "sha256": "cd3c68fe346aa2e6b002fda64b07b46e5e08cffeb426b0a3f7a2006108cc26f7",
       "layer": "L1",
@@ -50262,6 +50722,22 @@
         }
       ]
     },
+    "mobileapp/src/ui/ChatView.association.test.tsx": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-23737a6180b1",
+          "line": 8,
+          "kind": "reviewed-selector",
+          "name": "CAS005 association banner preserves messages and retries without claiming empty history",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "CAS-005"
+        }
+      ],
+      "sha256": "08c8abff44715025b9e8df9fd15a999bcf7201c5978a1cc631dfd8fd17e28d72"
+    },
     "mobileapp/src/ui/ChatView.follow.test.tsx": {
       "sha256": "5b6aee0399fae3c6fad42e6980299a50f4b224fa8f5e628cb7c91292bed3e33a",
       "layer": "L2",
@@ -50534,6 +51010,22 @@
           "layer": "L2"
         }
       ]
+    },
+    "mobileapp/src/ui/ChatView.observed.test.tsx": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-eee81c4abb59",
+          "line": 7,
+          "kind": "reviewed-selector",
+          "name": "SID006 last-known history is explicitly read only in both languages",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SID-006"
+        }
+      ],
+      "sha256": "3ca9c92b32044dfa04e9fbd032478b0d87953d093484ef9770d053ee9aa473d2"
     },
     "mobileapp/src/ui/ChatView.seam.test.tsx": {
       "sha256": "2f4589238c0b7d618993b32534cbad1953a297eefa834de1db72fc0606e58619",
@@ -53504,6 +53996,22 @@
         }
       ]
     },
+    "mobileapp/src/ui/ToolSteps.semantic.test.tsx": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-2d6c205f3027",
+          "line": 7,
+          "kind": "reviewed-selector",
+          "name": "AOP001 AOP003 real Activity rows share semantic visible and spoken titles with touch targets",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "AOP-001,AOP-003"
+        }
+      ],
+      "sha256": "39e97983760d848b086429d779e2e0f692888944983264fef2fbfcdbb23c7def"
+    },
     "mobileapp/src/ui/ToolSteps.test.tsx": {
       "sha256": "1b4794d4c531f2433e5e881ec9b4fa1cdc297a48bb5faf2fc94df8ce53c69fb3",
       "layer": "L2",
@@ -53677,6 +54185,31 @@
           "layer": "L2"
         }
       ]
+    },
+    "mobileapp/src/ui/activity-semantics.test.ts": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-4a512680e430",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "AOP001 semantic actions override raw transport names without rewriting tool facts",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "AOP-001,AOP-002"
+        },
+        {
+          "id": "MAP-8a7265b6c0d7",
+          "line": 21,
+          "kind": "reviewed-selector",
+          "name": "AOP002 argv preview is bounded, cross-surface and leaves ambiguous input verbatim",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "AOP-001,AOP-002"
+        }
+      ],
+      "sha256": "2b8235446ff0944a51b0313c150e2f5944f215b970b0fa95ced8a032b9b19bf4"
     },
     "mobileapp/src/ui/activity.test.ts": {
       "sha256": "3a1768767b472feb8f0bbc5bbe1afb972b74eb8071304ff059613862b2c99103",
@@ -60364,282 +60897,9 @@
           "layer": "L2"
         }
       ]
-    },
-    "internal/app/conversation_read_test.go": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-f767974bfca8",
-          "line": 14,
-          "kind": "reviewed-selector",
-          "name": "TestCAS003PaneAssociationIsNotAnEmptyConversation",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CAS-003"
-        }
-      ],
-      "sha256": "f116e76800b507ffdc81658ee0edc5816f2635cc848576474cff269c955f42b1"
-    },
-    "internal/app/help_readability_test.go": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-0ac93543b761",
-          "line": 9,
-          "kind": "reviewed-selector",
-          "name": "TestCAS006HelpKeepsLongSyntaxSeparateAndScreenshotsVisible",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CAS-006"
-        }
-      ],
-      "sha256": "d69850c2ba5c82950db7a1d4b90f3ea5581c7f5bb18ff7439d100957ffc760d8"
-    },
-    "internal/resume/conversation_test.go": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-498880a35c6c",
-          "line": 20,
-          "kind": "reviewed-selector",
-          "name": "TestCAS001IndependentConversationRecovery",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CAS-001,CAS-002"
-        },
-        {
-          "id": "MAP-a549d442247a",
-          "line": 54,
-          "kind": "reviewed-selector",
-          "name": "TestCAS001ConversationRecoveryRejectsUnknownOrConflictingProof",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CAS-001,CAS-002"
-        },
-        {
-          "id": "MAP-fa6914665340",
-          "line": 134,
-          "kind": "reviewed-selector",
-          "name": "TestCAS002OwnHeartbeatRepairsLostIndex",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CAS-001,CAS-002"
-        },
-        {
-          "id": "MAP-67dd266a7a62",
-          "line": 158,
-          "kind": "reviewed-selector",
-          "name": "TestCAS002HeartbeatCannotReclaimReplacementOrUnknownEvidence",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CAS-001,CAS-002"
-        },
-        {
-          "id": "MAP-d797af1a2534",
-          "line": 214,
-          "kind": "reviewed-selector",
-          "name": "TestCAS001LegacyEmptyAndForeignHome",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CAS-001,CAS-002"
-        }
-      ],
-      "sha256": "cd98679669d80371a7c2e9785328a2ba799364398053be69b4e26200fc5acbf3"
-    },
-    "internal/server/conversation_read_test.go": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-28ded370695d",
-          "line": 10,
-          "kind": "reviewed-selector",
-          "name": "TestCAS003ConversationFailureContractAndGuestBoundary",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CAS-003"
-        }
-      ],
-      "sha256": "634a7ec15fc0a3c6dcda914f897bb510fd7acc84802863375e00c00badefde2d"
-    },
-    "mobileapp/src/api/conversation.test.ts": {
-      "layer": "L3",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-f0ea1c518382",
-          "line": 5,
-          "kind": "reviewed-selector",
-          "name": "CAS005 transcript rejects association and source failures instead of returning empty history",
-          "dynamic": false,
-          "layer": "L3",
-          "design": "CAS-005"
-        }
-      ],
-      "sha256": "52a1c79abe21fb094d3ae9f517c1d5342b23103c77f1c6548c17046a8088e4b1"
-    },
-    "mobileapp/src/ui/ChatView.association.test.tsx": {
-      "layer": "L3",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-23737a6180b1",
-          "line": 8,
-          "kind": "reviewed-selector",
-          "name": "CAS005 association banner preserves messages and retries without claiming empty history",
-          "dynamic": false,
-          "layer": "L3",
-          "design": "CAS-005"
-        }
-      ],
-      "sha256": "08c8abff44715025b9e8df9fd15a999bcf7201c5978a1cc631dfd8fd17e28d72"
-    },
-    "mobileapp/src/screens/HQScreen.association.test.tsx": {
-      "layer": "L3",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-104c84ca28d9",
-          "line": 26,
-          "kind": "reviewed-selector",
-          "name": "CAS008 HQ association failure keeps history and clears after retry",
-          "dynamic": false,
-          "layer": "L3",
-          "design": "CAS-008"
-        }
-      ],
-      "sha256": "6a89eb8ee784be94498bd661d267b3bd3b71185d73ab5baa963cc70ed402697c"
-    },
-    "internal/server/web/activity-semantics.test.cjs": {
-      "layer": "L3",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-6acf30600cc5",
-          "line": 8,
-          "kind": "reviewed-selector",
-          "name": "AOP001 generated browser presenter shows read/search while retaining actual calls",
-          "dynamic": false,
-          "layer": "L3",
-          "design": "AOP-001,AOP-002,AOP-003"
-        },
-        {
-          "id": "MAP-9ce52cb7c368",
-          "line": 16,
-          "kind": "reviewed-selector",
-          "name": "AOP002 browser command preview unwraps complete shell argv only for display",
-          "dynamic": false,
-          "layer": "L3",
-          "design": "AOP-001,AOP-002,AOP-003"
-        },
-        {
-          "id": "MAP-86b06e4fbd45",
-          "line": 23,
-          "kind": "reviewed-selector",
-          "name": "AOP003 compact density is pointer-scoped and focus/overflow affordances remain",
-          "dynamic": false,
-          "layer": "L3",
-          "design": "AOP-001,AOP-002,AOP-003"
-        }
-      ],
-      "sha256": "8d43dc1b4cec6ea68c4f06362eaf58b0e4be221b6975ac5424ea37f55641ebc1"
-    },
-    "mobileapp/src/trace/semantic-title.test.ts": {
-      "layer": "L3",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-22e8f7f44f76",
-          "line": 5,
-          "kind": "reviewed-selector",
-          "name": "AOP001 Trace preserves every real call while labels follow normalized actions",
-          "dynamic": false,
-          "layer": "L3",
-          "design": "AOP-001"
-        }
-      ],
-      "sha256": "335b4cda7d7796fdb813bc00204b7ff39842cb8b57b6df23a39e235762f01370"
-    },
-    "mobileapp/src/ui/ToolSteps.semantic.test.tsx": {
-      "layer": "L3",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-2d6c205f3027",
-          "line": 7,
-          "kind": "reviewed-selector",
-          "name": "AOP001 AOP003 real Activity rows share semantic visible and spoken titles with touch targets",
-          "dynamic": false,
-          "layer": "L3",
-          "design": "AOP-001,AOP-003"
-        }
-      ],
-      "sha256": "39e97983760d848b086429d779e2e0f692888944983264fef2fbfcdbb23c7def"
-    },
-    "mobileapp/src/ui/activity-semantics.test.ts": {
-      "layer": "L3",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-4a512680e430",
-          "line": 9,
-          "kind": "reviewed-selector",
-          "name": "AOP001 semantic actions override raw transport names without rewriting tool facts",
-          "dynamic": false,
-          "layer": "L3",
-          "design": "AOP-001,AOP-002"
-        },
-        {
-          "id": "MAP-8a7265b6c0d7",
-          "line": 21,
-          "kind": "reviewed-selector",
-          "name": "AOP002 argv preview is bounded, cross-surface and leaves ambiguous input verbatim",
-          "dynamic": false,
-          "layer": "L3",
-          "design": "AOP-001,AOP-002"
-        }
-      ],
-      "sha256": "2b8235446ff0944a51b0313c150e2f5944f215b970b0fa95ced8a032b9b19bf4"
-    },
-    "internal/server/web/maximize-layout.test.cjs": {
-      "layer": "L3",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-452a61a1d04e",
-          "line": 25,
-          "kind": "reviewed-selector",
-          "name": "AOP004 Restore layout occupies the actual header before the title",
-          "dynamic": false,
-          "layer": "L3",
-          "design": "AOP-004"
-        },
-        {
-          "id": "MAP-cd44b26604d6",
-          "line": 31,
-          "kind": "reviewed-selector",
-          "name": "AOP004 switching and restoring keep one control and restore prior dimensions",
-          "dynamic": false,
-          "layer": "L3",
-          "design": "AOP-004"
-        },
-        {
-          "id": "MAP-f159c36e253b",
-          "line": 38,
-          "kind": "reviewed-selector",
-          "name": "AOP004 maximized header reserves grid space and names its narrow icon",
-          "dynamic": false,
-          "layer": "L3",
-          "design": "AOP-004"
-        }
-      ],
-      "sha256": "5613c6f76338be976248841bc3cfc01d2ee401f41ef0642d95abd76153f09d73"
     }
   },
+  "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",
   "legacy_source": "f187564fcfdab24d7750efbea108958e469cdded",
-  "schema": 1,
-  "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2"
+  "schema": 1
 }

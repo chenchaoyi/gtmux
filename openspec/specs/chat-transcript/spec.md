@@ -774,3 +774,11 @@ The pane transcript endpoint SHALL support an opt-in recent window of at most20 
 #### Scenario: Large cached tail and explicit earlier page
 - **WHEN** a large session exceeds the parse retention budget and a reader requests its recent window
 - **THEN** a bounded whole-turn tail MAY be cached, a larger request beyond coverage SHALL still read its complete requested range, and an authorized earlier-history request SHALL resolve its cursor without first parsing a redundant recent window
+
+### Requirement: Explicit owner-only historical observation reads
+
+The pane transcript endpoint MAY provide an owner-only historical observation with explicit observation=1 when current association is unavailable and verified historical evidence is sufficient. Ordinary reads SHALL retain their contract. Observation reads SHALL keep existing response/recent/page bounds, distinguish last-known history in response state and conditional responses, and SHALL NOT stitch unverified earlier HQ sessions or alter live metadata. Supported UI SHALL visibly restrict Chat sending while history is last-known; a verified response may remove that restriction without replacing unchanged turns.
+
+#### Scenario: Conditional read changes association state
+- **WHEN** an explicit observation read receives an unchanged response with verified conversation state
+- **THEN** existing turns remain visible and the last-known-only Chat restriction is removed

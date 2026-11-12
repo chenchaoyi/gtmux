@@ -26,3 +26,9 @@ conservative. This does not automatically repair damaged historical records or
 restore a session.
 
 See the [Chinese version](session-state.zh.md) and [API contract](../api/contract.md).
+
+## Association pending
+
+When current conversation metadata cannot be verified, a private historical binding may still identify readable history for the same verified terminal process. GTmux shows **Association pending · history read only** and folds that history into the pane instead of listing the same conversation again as external. Conflicting, ambiguous or missing process evidence does not authorize this fallback.
+
+This observation is separate from the current session identity. It does not enable Chat sending, adoption, restore or lifecycle updates, change status or borrow a task timestamp. Use the Terminal view for existing manual controls. Guest views do not receive this fallback identity. Ordinary transcript clients retain their existing contract; the supported UI explicitly requests the read-only observation. A successful verified refresh removes the history restriction, including on an unchanged response. Original history files and live bindings are not rewritten.

@@ -2,7 +2,7 @@ import {withSendDeadline, type SendDelivery} from './sendDeadline';
 import type {HQWorkspace, HQMatterDetail} from './hqWorkspace';
 import {DocumentError, documentReference} from '../documents/references';
 import type {DocumentRequest} from '../documents/nativePreview';
-import type {ParticipantProfile} from './types';
+import type {ParticipantProfile, ConversationObservation} from './types';
 import type {AccessPage, AccessFilter} from './accessHistory';
 import {parseInputCapabilities, type InputCapabilities, type InputContext, type TerminalKeyEvent} from './terminalKeys';
 // GtmuxClient — every /api/* call sends `Authorization: Bearer <token>`.
@@ -889,14 +889,16 @@ export class GtmuxClient {
     earlier = 0,
     signal?: AbortSignal,
     recent = false,
-  ): Promise<{turns: TranscriptTurn[]; dropped: number; reset?: SessionReset; etag?: string; unchanged?: boolean; earlierAvailable?: boolean}> {
+    observation = false,
+  ): Promise<{turns: TranscriptTurn[]; dropped: number; reset?: SessionReset; etag?: string; unchanged?: boolean; earlierAvailable?: boolean; readOnlyHistory?: boolean}> {
     const headers = etag ? {...this.h(), 'If-None-Match': etag} : this.h();
     const q = (earlier > 0 ? `&earlier=${earlier}` : '') + (recent ? '&recent=1' : '');
-    const r = await tfetch(`${this.base}/api/transcript?id=${encodeURIComponent(id)}${q}&context=1`, {headers, ...(signal ? {signal} : {})});
+    const r = await tfetch(`${this.base}/api/transcript?id=${encodeURIComponent(id)}${q}&context=1${observation ? '&observation=1' : ''}`, {headers, ...(signal ? {signal} : {})});
     // The chain's "one more exists" fact rides every response, the 304 included, so a
     // quiet conversation never loses its way back.
+    const readOnlyHistory = r.headers?.get?.('X-Gtmux-Conversation-State') === 'last-known';
     const earlierAvailable = r.headers?.get?.('X-Gtmux-Earlier-Available') === '1';
-    if (r.status === 304) return {turns: [], dropped: 0, etag, unchanged: true, ...(earlierAvailable ? {earlierAvailable} : {})};
+    if (r.status === 304) return {turns: [], dropped: 0, etag, unchanged: true, readOnlyHistory, ...(earlierAvailable ? {earlierAvailable} : {})};
     if (r.status === 409 || r.status === 503) {
       const failure = await r.json().catch(() => null);
       throw new ConversationReadError(r.status, r.status === 409 && failure?.code === 'conversation-unassociated');
@@ -904,6 +906,7 @@ export class GtmuxClient {
     if (r.status >= 500 || r.status === 401 || r.status === 403) throw new ApiError(r.status, 'transcript');
     if (!r.ok) return {turns: [], dropped: 0};
     const j = await r.json().catch(() => null);
+    if (!Array.isArray(j)) return {turns: [], dropped: 0};
     const dropped = parseInt(r.headers?.get?.('X-Gtmux-Turns-Dropped') ?? '', 10);
     const kind = r.headers?.get?.('X-Gtmux-Session-Reset') ?? '';
     // The clock is optional: a kind with no usable timestamp is still worth saying, so
@@ -912,6 +915,7 @@ export class GtmuxClient {
     const at = parseInt(r.headers?.get?.('X-Gtmux-Session-Reset-At') ?? '', 10);
     return {
       turns: Array.isArray(j) ? j : [],
+      readOnlyHistory,
       dropped: Number.isFinite(dropped) && dropped > 0 ? dropped : 0,
       reset: kind === 'clear' || kind === 'new' ? {kind, at: Number.isFinite(at) && at > 0 ? at : 0} : undefined,
       etag: r.headers?.get?.('ETag') ?? undefined,
@@ -919,11 +923,11 @@ export class GtmuxClient {
     };
   }
 
-  async traceHistory(agent: {pane_id?: string; session_id?: string; home_id?: string}, before: string, signal?: AbortSignal): Promise<TranscriptTurn[]> {
+  async traceHistory(agent: {pane_id?: string; session_id?: string; home_id?: string; observed_conversation?: ConversationObservation}, before: string, signal?: AbortSignal): Promise<TranscriptTurn[]> {
     const path = agent.pane_id?.startsWith('%')
       ? `/api/transcript?id=${encodeURIComponent(agent.pane_id)}`
       : `/api/session/transcript?session_id=${encodeURIComponent(agent.session_id || '')}&home_id=${encodeURIComponent(agent.home_id || '')}`;
-    const r = await tfetch(`${this.base}${path}&context=1&before=${encodeURIComponent(before)}`, {headers: this.h(), signal});
+    const r = await tfetch(`${this.base}${path}&context=1&before=${encodeURIComponent(before)}${agent.observed_conversation && agent.pane_id?.startsWith('%') ? '&observation=1' : ''}`, {headers: this.h(), signal});
     if (!r.ok || r.headers?.get?.('X-Gtmux-History-Page') !== '1') throw new ApiError(r.status, 'trace-history');
     const turns = await r.json();
     if (!Array.isArray(turns) || !turns.length) throw new Error('Empty history page');
