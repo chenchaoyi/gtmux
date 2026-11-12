@@ -27,12 +27,18 @@ export function parseLaunchHost(raw: unknown): LaunchHost | undefined {
 }
 // The timestamp describes a past hook observation, not the currently attached client.
 export const nativeEvidenceLabel = (a: Agent, lang: 'en' | 'zh' = 'en'): string => {
+  if (a.observed_conversation) return lang === 'zh' ? '会话关联待确认 · 历史只读' : 'Association pending · history read only';
   const h = parseLaunchHost(a.launch_host), parts: string[] = [];
   if (h) parts.push(lang === 'zh' ? `启动宿主：${h.name} · 记录于 ${new Date(h.observed_at * 1000).toLocaleString(lang)}` : `Launch host: ${h.name} · observed ${new Date(h.observed_at * 1000).toLocaleString(lang)}`);
   if (a.current_client === 'unconfirmed') parts.push(lang === 'zh' ? '当前输入客户端未确认' : 'Current input client unconfirmed');
   return parts.join(' · ');
 };
 
+export interface ConversationObservation { session_id: string; home_id: string; state: 'last-known' | 'recovered' }
+export function parseConversationObservation(raw: any): ConversationObservation | undefined {
+  return raw && typeof raw.session_id === 'string' && raw.session_id.length > 0 && raw.session_id.length <= 256 && typeof raw.home_id === 'string' && raw.home_id.length > 0 && (raw.state === 'last-known' || raw.state === 'recovered')
+    ? {session_id: raw.session_id, home_id: raw.home_id, state: raw.state} : undefined;
+}
 export interface Agent {
   pane_id: string;
   session: string;
@@ -53,6 +59,7 @@ export interface Agent {
   follow?: SessionFollowSettings;
   home_id?: string;
   creation_client?: string;
+  observed_conversation?: ConversationObservation;
   current_client?: string;
   launch_host?: LaunchHost;
   can_read_conversation?: boolean;
@@ -208,7 +215,7 @@ export function toAgent(raw: any): Agent {
     terminal: s('terminal') || undefined,
     client: s('client') || undefined,
     launch_host: parseLaunchHost(raw?.launch_host),
-    home_id: s('home_id') || undefined, creation_client: s('creation_client') || undefined, current_client: s('current_client') || undefined,
+    observed_conversation: parseConversationObservation(raw?.observed_conversation), home_id: s('home_id') || undefined, creation_client: s('creation_client') || undefined, current_client: s('current_client') || undefined,
     can_read_conversation: typeof raw?.can_read_conversation === 'boolean' ? raw.can_read_conversation : undefined,
     follow: raw?.follow && typeof raw.follow.revision === 'number' ? {hq: raw.follow.hq === true, notify: raw.follow.notify === true, knowledge: raw.follow.knowledge === true, revision: raw.follow.revision} : undefined,
     session_id: s('session_id') || undefined,
@@ -265,7 +272,8 @@ export const secondary = (a: Agent, lang: 'en' | 'zh' = 'en'): string => {
     return a.terminal || a.agent;
   }
   const base = a.session || a.loc;
-  return a.pane_id ? `${base} · ${a.pane_id}` : base;
+  const location = a.pane_id ? `${base} · ${a.pane_id}` : base;
+  return a.observed_conversation ? `${location} · ${lang === 'zh' ? '关联待确认' : 'Association pending'}` : location;
 };
 
 // The line a native session's Detail shows where the composer would be. It points to

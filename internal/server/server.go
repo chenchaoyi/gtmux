@@ -163,6 +163,8 @@ type Deps struct {
 	// TranscriptWindow is opt-in recent20 or metadata-only history preparation.
 	// Authorization above it and the cursor policy below it remain unchanged.
 	TranscriptWindow func(id string, earlier int, historyOnly bool) (turns []byte, meta TranscriptMeta, err error)
+	// Owner opt-in only; this is history, never current input authority.
+	TranscriptObserved func(id string, earlier, limit int) (turns []byte, meta TranscriptMeta, err error)
 	// SessionTranscript reads verified desktop sessions, never arbitrary file paths.
 	SessionTranscript func(id, homeID string) (turns []byte, meta TranscriptMeta, err error)
 	// Documents are snapshots of explicit publications or verified conversation links.
@@ -645,6 +647,13 @@ func filterAgentsForGuest(raw []byte, dev EnrolledDevice, stale bool) []byte {
 			PaneID string `json:"pane_id"`
 		}
 		if json.Unmarshal(row, &id) == nil && id.PaneID != "" && dev.MayView(id.PaneID) {
+			// Historical candidate IDs are owner-only, even for a shared pane.
+			var fields map[string]json.RawMessage
+			if json.Unmarshal(row, &fields) != nil {
+				continue
+			}
+			delete(fields, "observed_conversation")
+			row, _ = json.Marshal(fields)
 			kept = append(kept, row)
 		}
 	}
@@ -1131,6 +1140,7 @@ var ErrConversationUnavailable = errors.New("conversation source unavailable")
 
 type TranscriptMeta struct {
 	AssociationRecovered bool
+	AssociationReadOnly  bool
 
 	History func(context.Context, string) ([]byte, TranscriptMeta, error)
 
@@ -1185,6 +1195,16 @@ func (s *Server) handleTranscript(w http.ResponseWriter, r *http.Request) {
 	} else {
 		b, meta, err = s.deps.Transcript(id, earlier)
 	}
+	if errors.Is(err, ErrConversationUnassociated) && callerScope(r.Context()) != scopeGuest && r.URL.Query().Get("observation") == "1" && s.deps.TranscriptObserved != nil {
+		limit := 300
+		if r.URL.Query().Get("recent") == "1" {
+			limit = 20
+		}
+		if r.URL.Query().Get("before") != "" {
+			limit = 0
+		}
+		b, meta, err = s.deps.TranscriptObserved(id, earlier, limit)
+	}
 	if err != nil {
 		if errors.Is(err, ErrConversationUnassociated) {
 			writeJSON(w, http.StatusConflict, map[string]string{"error": "conversation association unavailable", "code": "conversation-unassociated"})
@@ -1202,7 +1222,10 @@ func (s *Server) handleTranscript(w http.ResponseWriter, r *http.Request) {
 }
 
 func writeTranscript(w http.ResponseWriter, r *http.Request, b []byte, meta TranscriptMeta) {
-	if meta.AssociationRecovered {
+	w.Header().Set("X-Gtmux-Conversation-State", "verified")
+	if meta.AssociationReadOnly {
+		w.Header().Set("X-Gtmux-Conversation-State", "last-known")
+	} else if meta.AssociationRecovered {
 		w.Header().Set("X-Gtmux-Conversation-State", "recovered")
 	}
 	var err error

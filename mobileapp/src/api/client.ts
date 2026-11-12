@@ -889,14 +889,15 @@ export class GtmuxClient {
     earlier = 0,
     signal?: AbortSignal,
     recent = false,
-  ): Promise<{turns: TranscriptTurn[]; dropped: number; reset?: SessionReset; etag?: string; unchanged?: boolean; earlierAvailable?: boolean}> {
+  ): Promise<{turns: TranscriptTurn[]; dropped: number; reset?: SessionReset; etag?: string; unchanged?: boolean; earlierAvailable?: boolean; readOnlyHistory?: boolean}> {
     const headers = etag ? {...this.h(), 'If-None-Match': etag} : this.h();
     const q = (earlier > 0 ? `&earlier=${earlier}` : '') + (recent ? '&recent=1' : '');
-    const r = await tfetch(`${this.base}/api/transcript?id=${encodeURIComponent(id)}${q}&context=1`, {headers, ...(signal ? {signal} : {})});
+    const r = await tfetch(`${this.base}/api/transcript?id=${encodeURIComponent(id)}${q}&context=1&observation=1`, {headers, ...(signal ? {signal} : {})});
     // The chain's "one more exists" fact rides every response, the 304 included, so a
     // quiet conversation never loses its way back.
+    const readOnlyHistory = r.headers?.get?.('X-Gtmux-Conversation-State') === 'last-known';
     const earlierAvailable = r.headers?.get?.('X-Gtmux-Earlier-Available') === '1';
-    if (r.status === 304) return {turns: [], dropped: 0, etag, unchanged: true, ...(earlierAvailable ? {earlierAvailable} : {})};
+    if (r.status === 304) return {turns: [], dropped: 0, etag, unchanged: true, readOnlyHistory, ...(earlierAvailable ? {earlierAvailable} : {})};
     if (r.status === 409 || r.status === 503) {
       const failure = await r.json().catch(() => null);
       throw new ConversationReadError(r.status, r.status === 409 && failure?.code === 'conversation-unassociated');
@@ -912,6 +913,7 @@ export class GtmuxClient {
     const at = parseInt(r.headers?.get?.('X-Gtmux-Session-Reset-At') ?? '', 10);
     return {
       turns: Array.isArray(j) ? j : [],
+      readOnlyHistory,
       dropped: Number.isFinite(dropped) && dropped > 0 ? dropped : 0,
       reset: kind === 'clear' || kind === 'new' ? {kind, at: Number.isFinite(at) && at > 0 ? at : 0} : undefined,
       etag: r.headers?.get?.('ETag') ?? undefined,
@@ -921,7 +923,7 @@ export class GtmuxClient {
 
   async traceHistory(agent: {pane_id?: string; session_id?: string; home_id?: string}, before: string, signal?: AbortSignal): Promise<TranscriptTurn[]> {
     const path = agent.pane_id?.startsWith('%')
-      ? `/api/transcript?id=${encodeURIComponent(agent.pane_id)}`
+      ? `/api/transcript?id=${encodeURIComponent(agent.pane_id)}&observation=1`
       : `/api/session/transcript?session_id=${encodeURIComponent(agent.session_id || '')}&home_id=${encodeURIComponent(agent.home_id || '')}`;
     const r = await tfetch(`${this.base}${path}&context=1&before=${encodeURIComponent(before)}`, {headers: this.h(), signal});
     if (!r.ok || r.headers?.get?.('X-Gtmux-History-Page') !== '1') throw new ApiError(r.status, 'trace-history');

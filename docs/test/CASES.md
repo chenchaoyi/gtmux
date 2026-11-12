@@ -2,15 +2,15 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1136 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1149 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3777 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2050 | [L2.csv](cases/L2.csv) |
-| L3 · Runtime integration | 102 | [L3.csv](cases/L3.csv) |
+| L2 · Component / contract | 2058 | [L2.csv](cases/L2.csv) |
+| L3 · Runtime integration | 110 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 94 | [L4.csv](cases/L4.csv) |
-| M · Manual / device | 12 | [M.csv](cases/M.csv) |
+| M · Manual / device | 13 | [M.csv](cases/M.csv) |
 | G · Qualification guards | 496 | [G.csv](cases/G.csv) |
 
 Numbers are not passes. The legacy 6,223 positions came from the 4fad6119 inventory (declarations, subtests, dynamic templates); explicit new cases, native oracles and reviewed selectors are indexed separately. Dynamic instances are not expanded. Harnesses without named cases retain their hashes. Legacy layers are structural triage; mixed boundaries need semantic review when touched, not fictional historical review/results. A reviewed-selector is not a framework-discovered declaration. Gates catch source/index/mapping drift; names cannot prove assertion quality.
@@ -139,6 +139,14 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | SSI-002 | Only existing authorized image inputs request active submission; ordinary text stays existing queue. Exact target and image survive, accepted mode persists, retry does not resubmit, uncertain never enters queue or alternate pane; receipt mode backward compatible. |
 | SSI-003 | Queued never claims terminal receipt; active acceptance says current task, never task completion. Nonzero/unrecognized receipt cannot falsely succeed; accepted receipts keep existing fast-close semantics and failure preserves editable draft. Logs distinguish accepted queue from immediate input without content. |
 | SMC-001 | 26 and27.2 patch versions are verified; other or malformed versions retain unverified presentation. Supported() still requires macOS, recognized setting and readable kernel state before this classification; no permission, battery floor, enable/readback or server lifetime behavior changes. No independent real lid-close validation is claimed. |
+| SID-001 | Only a narrowly parsed display-only notification override is newly admitted. Arguments remain byte-for-byte unchanged at launch; provider/home/remote/profile/headless/unknown configuration remains native. Help admission consumes config values and still sees later subcommands. No permission, auth, proxy or user configuration change. |
+| SID-002 | A successful own non-ephemeral root operation from cli/vscode can bind despite analytics label. Response provenance and parent/ephemeral facts remain decisive. Global notifications, arbitrary reads/catalogs, subagent parents, errors, foreign home, old responses and missing provenance never bind. Keep bounded pending/observation limits and source payload forwarding unchanged. |
+| SID-003 | Return last-known history only for one independently recorded relation whose exact terminal process and pane incarnation still match. Never parse a corrupt JSON prefix, infer by title/cwd/shared backend PID or change disk. A changed valid incumbent, missing/unsafe/ambiguous proof or PID/pane reuse fails closed. New live backend identity may differ only because this relation is explicitly historical; it never yields LoadLive, input, restore, HQ or lifecycle authority. |
+| SID-004 | Only the independently established unique last-known relation folds the native history into its pane presentation. Expose explicit association-pending/read-only history metadata; do not fill the authoritative session ID, change lifecycle status, grant input or prune the native observation. Genuine external clients and other threads remain. Existing verified identity takes precedence; absent evidence retains honest separate unknown data. Both projection and parser preserve no-write read semantics for this new fallback. |
+| SID-005 | Owner may explicitly see last-known history with an unconfirmed/read-only response state and no false current-session assertion. Guest cannot take this fallback or receive candidate identifiers/content; deny before its history reader. Input and restore continue requiring original strict current evidence. ETag/cursors include identity/state; old headers cannot falsely persist after verification. Normal valid-empty/errors/recovered behavior remains. |
+| SID-006 | Show bilingual last-known/read-only guidance, preserve visible turns, disable relevant chat send controls while this state applies and restore normal verified behavior afterward. Keep identity-scoped late-result guards and unchanged-poll memo behavior. No automatic resend, rebind or restore. |
+| SID-007 | One server conversation projection stays one row; association-pending and last-known-history labels are consistent and never described as confirmed external ownership. Unconfirmed history is visibly read-only and cannot dispatch send. Verified recovery removes the restriction; stale responses cannot affect a new target. Normal external and existing owner/guest boundaries stay unchanged. |
+| SID-008 | A missing verified session ID stays missing. Pending relation is labeled as such, distinct from confirmed external placement, and source row keys/targets retain existing meaning. No focus, input, installation or real screenshot is performed. |
 | TD-001 | Reject a changed/new test without a reviewed design; accept a mapped implementation |
 | TD-002 | Reject a tampered review seal, missing assertion description, invalid layer or unsafe path |
 | TD-003 | Reject missing/changed catalogue files and missing named implementation selectors |

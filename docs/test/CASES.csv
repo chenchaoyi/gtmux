@@ -78,6 +78,8 @@ LEG-78ba1d22724b,L1,Go core / CLI / server,internal/agentprofile/profile_test.go
 LEG-cd411f4d0016,L1,Go core / CLI / server,internal/agentprofile/profile_test.go,225,Test,TestDSHCompressedProfileAppendsAndResets,False,legacy-not-retrospectively-reviewed
 LEG-dd0c29b375f7,L1,Go core / CLI / server,internal/agentprofile/profile_test.go,263,Test,TestCurrentHookCannotOverrideNewerNativeRequest,False,legacy-not-retrospectively-reviewed
 LEG-63991dece2bd,L1,Go core / CLI / server,internal/agentprofile/profile_test.go,275,Test,TestCursorUnknownOptionalParametersPreserveIdentityFacts,False,legacy-not-retrospectively-reviewed
+MAP-f6200d4fe8c9,L2,reviewed implementation,internal/agents/codex_presentation_config_test.go,9,reviewed-selector,TestSID001PresentationConfigKeepsManagedIdentity,False,SID-001
+MAP-410b581f2c06,L2,reviewed implementation,internal/agents/codex_presentation_config_test.go,35,reviewed-selector,TestSID001HelpStillRecognizesCommandsAfterDisplayConfig,False,SID-001
 LEG-f7b1efd8cea3,L1,Go core / CLI / server,internal/agents/interactive_test.go,5,Test,TestInteractiveCommandScrollbackDefaults,False,legacy-not-retrospectively-reviewed
 LEG-a14053e02a2d,L1,Go core / CLI / server,internal/agents/opencode_test.go,5,Test,TestOpenCodeInteractiveRecipes,False,legacy-not-retrospectively-reviewed
 LEG-bf8b8b3b0ad7,L1,Go core / CLI / server,internal/agents/registry_test.go,21,Test,TestHookEquippedKeys_matchesLegacy,False,legacy-not-retrospectively-reviewed
@@ -442,6 +444,7 @@ LEG-dcc101e003ab,L1,Go core / CLI / server,internal/app/newsession_test.go,101,T
 LEG-a7723a2f8737,L1,Go core / CLI / server,internal/app/newsession_test.go,114,Test,TestSessionReceiptLookupFailureDoesNotCreate,False,legacy-not-retrospectively-reviewed
 LEG-71a71f42c474,L1,Go core / CLI / server,internal/app/newsession_test.go,132,Test,TestSessionStartDir,False,legacy-not-retrospectively-reviewed
 LEG-6d9f5f428095,L1,Go core / CLI / server,internal/app/newsession_test.go,153,Test,TestANewSessionFromTheRootStartsAtHome,False,legacy-not-retrospectively-reviewed
+MAP-ad442623e007,L3,reviewed implementation,internal/app/observed_conversation_test.go,15,reviewed-selector,TestSID005ObservedReaderKeepsBoundedWindowAndExactCursor,False,SID-005
 LEG-d0f2364153b7,L1,Go core / CLI / server,internal/app/oneshot_test.go,18,Test,TestScrubHookEnv,False,legacy-not-retrospectively-reviewed
 LEG-70dd41271d72,L1,Go core / CLI / server,internal/app/oneshot_test.go,40,Test,TestShellQuote,False,legacy-not-retrospectively-reviewed
 LEG-a4632e6272a2,L1,Go core / CLI / server,internal/app/oneshot_test.go,52,Test,TestFinishOneshot,False,legacy-not-retrospectively-reviewed
@@ -869,6 +872,8 @@ LEG-111c7716670b,L1,Go core / CLI / server,internal/artifact/store_test.go,56,Te
 LEG-a17e70893eb8,L1,Go core / CLI / server,internal/artifact/store_test.go,103,Test,TestTamperingAndEscapingIDsFailClosed,False,legacy-not-retrospectively-reviewed
 LEG-77f52af6f569,G,Go core / CLI / server,internal/artifact/store_test.go,126,Test,TestRepublishingUsesExactReferencesAndNewestRegisteredPath,False,legacy-not-retrospectively-reviewed
 LEG-5cd7ac080740,L1,Go core / CLI / server,internal/artifact/store_test.go,169,Test,TestRegistryQuotaAndRemoval,False,legacy-not-retrospectively-reviewed
+MAP-087141967dfd,L2,reviewed implementation,internal/codexbridge/analytics_identity_test.go,9,reviewed-selector,TestSID002AnalyticsLabelDoesNotEraseRootIdentity,False,SID-002
+MAP-e319389af183,L2,reviewed implementation,internal/codexbridge/analytics_identity_test.go,22,reviewed-selector,TestSID002AnalyticsCannotPromoteChildOrGlobalTraffic,False,SID-002
 MAP-61b29ce6decb,L1,reviewed implementation,internal/codexbridge/connection_epoch_test.go,9,reviewed-selector,TestCFR004OnlySuccessfulNewerConnectionChangesAuthority,False,CFR-004
 MAP-d0efecbb0cb2,L1,reviewed implementation,internal/codexbridge/connection_epoch_test.go,31,reviewed-selector,TestCFR004UpgradeRetainsOnlyTheRemainingAdmissionBudget,False,CFR-004
 MAP-67cdcc44a1a8,L2,reviewed implementation,internal/codexbridge/daemon_readiness_test.go,10,reviewed-selector,TestCFR007ActualAdmissionDialKeepsCancellationAndDeadlineReasons,False,CFR-007
@@ -1632,6 +1637,7 @@ LEG-86e6df833232,L1,Go core / CLI / server,internal/hq/hqinput_test.go,41,Test,T
 LEG-c1132026ca2c,L1,Go core / CLI / server,internal/hq/hqwhere_test.go,15,Test,TestHQWhereNamesWindowAndPane,False,legacy-not-retrospectively-reviewed
 LEG-65da120cb8d7,L1,Go core / CLI / server,internal/hq/hqwhere_test.go,53,Test,TestHQWhereFallsBackToThePaneID,False,legacy-not-retrospectively-reviewed
 LEG-c13392dd49a3,L1,Go core / CLI / server,internal/hq/hqwhere_test.go,63,Test,TestNoteAtPaneIsHarmlessWithoutTmux,False,legacy-not-retrospectively-reviewed
+MAP-426d8c4b1e7f,L2,reviewed implementation,internal/hq/identity_launch_test.go,11,reviewed-selector,TestSID001ActualHQRecipeRetainsManagedFrontend,False,SID-001
 LEG-44fc72d69358,L1,Go core / CLI / server,internal/hq/knowledgeshim_test.go,12,Test,TestPromotionsStatus,False,legacy-not-retrospectively-reviewed
 LEG-1b6109077040,L1,Go core / CLI / server,internal/hq/launchtarget_test.go,7,Test,TestResolveLaunchTarget,False,legacy-not-retrospectively-reviewed
 LEG-db2e10739955,L1,Go core / CLI / server,internal/hq/launchtarget_test.go,33,Test,TestShq,False,legacy-not-retrospectively-reviewed
@@ -2379,6 +2385,7 @@ LEG-aeef80d76ff4,L1,Go core / CLI / server,internal/radar/nativerow_test.go,352,
 LEG-bcd69f1c9042,L1,Go core / CLI / server,internal/radar/nativerow_test.go,361,Test,TestNativeRowEndedOnAnErrorIsErrored,False,legacy-not-retrospectively-reviewed
 LEG-f2057de54d07,L1,Go core / CLI / server,internal/radar/nativerow_test.go,384,Test,TestDefaultHomeScopedObservationShadowsLegacyWithoutDeletion,False,legacy-not-retrospectively-reviewed
 LEG-655ccbe3bb3c,L1,Go core / CLI / server,internal/radar/nativerow_test.go,420,Test,TestNativeCodexSharedBackendRequiresMatchingRollout,False,legacy-not-retrospectively-reviewed
+MAP-95b503a0bcfb,L2,reviewed implementation,internal/radar/observed_identity_test.go,13,reviewed-selector,TestSID004HistoricalProjectionIsUniqueAndDoesNotBorrowAuthority,False,SID-004
 LEG-01cb384900f5,L1,Go core / CLI / server,internal/radar/pane_scope_test.go,12,Test,TestTargetPaneUsesFreshSharedVerdictWithoutScanningOthersOrReaping,False,legacy-not-retrospectively-reviewed
 LEG-02c20c434761,L1,Go core / CLI / server,internal/radar/pane_scope_test.go,50,Test,TestTargetPaneKeepsNativeLifecycleAuthority,False,legacy-not-retrospectively-reviewed
 LEG-2c81c3a53600,L1,Go core / CLI / server,internal/radar/panes_readonly_test.go,55,Test,TestPanesReadWritesNothing,False,legacy-not-retrospectively-reviewed
@@ -2519,6 +2526,8 @@ LEG-75667cf67db3,L1,Go core / CLI / server,internal/resume/launcher_test.go,34,T
 LEG-b5690ed3f961,L1,Go core / CLI / server,internal/resume/launcher_test.go,43,Test,TestLauncherKeepsTheCwdGuard,False,legacy-not-retrospectively-reviewed
 LEG-ed9b13910ea5,L1,Go core / CLI / server,internal/resume/launcher_test.go,50,Test,TestCodexInlineFlagDoesNotInspectSessionIdentity,False,legacy-not-retrospectively-reviewed
 LEG-7fefbcefa784,L1,Go core / CLI / server,internal/resume/launcher_test.go,73,Test,TestResolveKeepsTheLauncher,False,legacy-not-retrospectively-reviewed
+MAP-56aadbd19e58,L2,reviewed implementation,internal/resume/observed_conversation_test.go,35,reviewed-selector,TestSID003LastKnownHistoryHasNoLiveAuthority,False,SID-003
+MAP-64bbe883d24c,L2,reviewed implementation,internal/resume/observed_conversation_test.go,68,reviewed-selector,TestSID003UnknownConflictingAndUnsafeHistoryStaysUnassociated,False,SID-003
 LEG-cfd5daadb019,L1,Go core / CLI / server,internal/resume/registry_test.go,12,Test,TestEveryRegistryResumableIsResumable,False,legacy-not-retrospectively-reviewed
 LEG-072ded3e34a1,L1,Go core / CLI / server,internal/resume/resolve_test.go,29,Test,TestResolveUsesTheDirTheConversationIsFiledUnder,False,legacy-not-retrospectively-reviewed
 LEG-5cacfa389ca3,L1,Go core / CLI / server,internal/resume/resolve_test.go,46,Test,TestResolveReportsAMissingConversationDead,False,legacy-not-retrospectively-reviewed
@@ -2688,6 +2697,8 @@ LEG-127eca75ef50,L2,Go core / CLI / server,internal/server/keyinput_test.go,19,T
 LEG-2ebb6bdab54a,L2,Go core / CLI / server,internal/server/keyinput_test.go,91,Test,TestTerminalKeyInputGuestAndAction,False,legacy-not-retrospectively-reviewed
 LEG-cb03da69313b,L2,Go core / CLI / server,internal/server/keyinput_test.go,146,Test,TestTerminalKeyInputStrictAndUnconfirmed,False,legacy-not-retrospectively-reviewed
 LEG-f87af3fe8508,L2,Go core / CLI / server,internal/server/keyinput_test.go,216,Test,TestTerminalKeyCatalogCacheRequiresCurrentBoot,False,legacy-not-retrospectively-reviewed
+MAP-b4dde0e66e09,L3,reviewed implementation,internal/server/observed_conversation_test.go,10,reviewed-selector,TestSID005OwnerOptInHistoryAndGuestFence,False,SID-005
+MAP-48bb55755c3f,L3,reviewed implementation,internal/server/observed_conversation_test.go,54,reviewed-selector,TestSID005SharedRosterOmitsHistoricalIdentifiers,False,SID-005
 LEG-7a45d6010348,L2,Go core / CLI / server,internal/server/options_test.go,11,Test,TestOptionsEndpoint,False,legacy-not-retrospectively-reviewed
 LEG-c69c6fff5fde,L2,Go core / CLI / server,internal/server/options_test.go,71,Test,TestOptionsGatedByHookWaiting,False,legacy-not-retrospectively-reviewed
 LEG-9f1da3d90162,L2,Go core / CLI / server,internal/server/panereadscope_test.go,51,Test,TestAGuestCannotReadAPaneOutsideItsLink,False,legacy-not-retrospectively-reviewed
@@ -2920,6 +2931,7 @@ MAP-e2feefc515a3,L3,Browser,internal/server/web/app.test.cjs,1324,reviewed-selec
 MAP-328002d4dfc3,L3,Browser,internal/server/web/app.test.cjs,1351,reviewed-selector,CAS004 stale tile association failure cannot repaint a changed target,False,CAS-004
 MAP-3bd1a5cb9551,L1,reviewed implementation,internal/server/web/argv-reading.test.cjs,2,reviewed-selector,ARGV-001 browser uses,False,ARGV-001
 LEG-a24ee8487c6a,G,Browser,internal/server/web/documents.test.cjs,7,test,browser document references and validation are generated from the App contract,False,legacy-not-retrospectively-reviewed
+MAP-07e13a073c16,L3,reviewed implementation,internal/server/web/observed_identity.test.cjs,16,reviewed-selector,SID007 focused and tile history cannot dispatch input or become an external row,False,SID-007
 LEG-dd62d73a080e,G,Browser,internal/server/web/reading.test.cjs,2,test,file+' follows its native model',True,legacy-not-retrospectively-reviewed
 LEG-25aecd2608d3,G,Browser,internal/server/web/reading.test.cjs,6,test,offline browser formatter and syntax reader retain complete inputs,False,legacy-not-retrospectively-reviewed
 MAP-ec276ea47d43,L2,reviewed implementation,internal/server/web/state-duration.test.cjs,19,reviewed-selector,CSR-004 browser row,False,CSR-004
@@ -3687,6 +3699,7 @@ LEG-66c4149c72a4,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/Notificatio
 LEG-85ba98704b83,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,183,XCTest,testOffAndStaleRequestsDoNotPost,False,legacy-not-retrospectively-reviewed
 LEG-563fd6673864,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,193,XCTest,testExplicitTestHasNoAgentTargetAndReportsAcceptanceOnly,False,legacy-not-retrospectively-reviewed
 LEG-d80028d0991c,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationPreferencesLayoutTests.swift,32,XCTest,testTestFeedbackAndPermissionStatesRemainVisible,False,legacy-not-retrospectively-reviewed
+MAP-79ce2b9cc2d9,M,reviewed implementation,macapp/Tests/GtmuxBarTests/ObservedIdentityTests.swift,5,reviewed-selector,testSID008HistoryNeverPopulatesCurrentIdentity,False,SID-008
 LEG-659408c65bf3,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/PairStoreTests.swift,8,XCTest,testParseDevicesFiltersGuests,False,legacy-not-retrospectively-reviewed
 LEG-7b153f97837b,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/PairStoreTests.swift,22,XCTest,testDeviceKind,False,legacy-not-retrospectively-reviewed
 LEG-d6717b3f8471,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/PairStoreTests.swift,36,XCTest,testLegacyPrefixIsStrippedForDisplay,False,legacy-not-retrospectively-reviewed
@@ -4393,6 +4406,7 @@ MAP-f0ea1c518382,L3,reviewed implementation,mobileapp/src/api/conversation.test.
 LEG-e4ccbe92b909,L1,RN / mobile harness,mobileapp/src/api/events.test.ts,23,test,"a refused stream reports the status the Mac answered with, and only that",False,legacy-not-retrospectively-reviewed
 LEG-fb700444ec3e,L1,RN / mobile harness,mobileapp/src/api/events.test.ts,38,test,"an awake event asks for a server-mode re-read, and is harmless unhandled",False,legacy-not-retrospectively-reviewed
 LEG-e0457d0d24da,L1,RN / mobile harness,mobileapp/src/api/events.test.ts,47,test,"intentional unsubscribe ignores late stream errors, data and open callbacks",False,legacy-not-retrospectively-reviewed
+MAP-51014f850982,L3,reviewed implementation,mobileapp/src/api/observed-history.test.ts,4,reviewed-selector,SID006 observed history stays separate from current session authority and survives 304,False,SID-006
 LEG-5e72fc2ccb19,L1,RN / mobile harness,mobileapp/src/api/requestAbort.test.ts,3,test,only an observed signal abort is cancellation; marked deadlines remain timeouts,False,legacy-not-retrospectively-reviewed
 LEG-9317901a472a,L1,RN / mobile harness,mobileapp/src/api/requestAbort.test.ts,17,test,records the configured deadline independently of delayed JS execution,False,legacy-not-retrospectively-reviewed
 MAP-d269546f4a32,L2,reviewed implementation,mobileapp/src/api/sendDeadline.test.ts,10,reviewed-selector,MSD-004 bounds a hung %s and never retries or accepts a late answer,False,MSD-004
@@ -4697,6 +4711,7 @@ LEG-4748be2d2729,L2,RN / mobile harness,mobileapp/src/screens/DetailInteraction.
 LEG-05b0ed8892cb,L2,RN / mobile harness,mobileapp/src/screens/DetailNative.test.tsx,52,test.each(),the selected session is the one shown (%s),True,legacy-not-retrospectively-reviewed
 LEG-d2c628311f96,L2,RN / mobile harness,mobileapp/src/screens/DetailNative.test.tsx,57,test,a native row with no session id takes nothing from the list,False,legacy-not-retrospectively-reviewed
 LEG-75ba09780ff0,L2,RN / mobile harness,mobileapp/src/screens/DetailNative.test.tsx,62,test,the polled row wins over the snapshot it was opened with,False,legacy-not-retrospectively-reviewed
+MAP-d9561a5b54f1,L3,reviewed implementation,mobileapp/src/screens/DetailObserved.test.tsx,13,reviewed-selector,SID006 mounted Detail fences historical chat and clears restriction after verified refresh,False,SID-006
 LEG-d492e3b75b36,L2,RN / mobile harness,mobileapp/src/screens/DetailPinned.test.tsx,76,test,"Codex: the full prompt takes the bar, the cut row leaves the terminal, the bar is made room for",False,legacy-not-retrospectively-reviewed
 LEG-7794d6f4687f,L2,RN / mobile harness,mobileapp/src/screens/DetailPinned.test.tsx,86,test,"Claude Code with the very same screen: untouched, no bar, no extra padding",False,legacy-not-retrospectively-reviewed
 LEG-dc302ed92bc9,L2,RN / mobile harness,mobileapp/src/screens/DetailPinned.test.tsx,95,test,"full screen hides the chrome, so the captured row stays in the terminal",False,legacy-not-retrospectively-reviewed
@@ -4762,6 +4777,7 @@ LEG-5eabcc2569fc,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.attach.te
 LEG-f787efe69fa7,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.attach.test.tsx,96,test,cancelling the photo picker leaves nothing to send and the menu can open again,False,legacy-not-retrospectively-reviewed
 LEG-8b29f93c234e,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.attach.test.tsx,108,test,an upload failure keeps the file for retry and never sends an empty command,False,legacy-not-retrospectively-reviewed
 LEG-1f81433b485a,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.attach.test.tsx,120,test,changing HQ routes the upload and message to the new pane,False,legacy-not-retrospectively-reviewed
+MAP-3c318e90a20b,L3,reviewed implementation,mobileapp/src/screens/HQScreen.observed.test.tsx,17,reviewed-selector,SID006 mounted HQ cannot send from last-known history and resets on verified response,False,SID-006
 LEG-99bcff10d6bb,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,94,test,a narrow iPad HQ uses zone tabs while keeping its resource sheets regular,False,legacy-not-retrospectively-reviewed
 LEG-23fa02d36e37,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,111,test,"the software keyboard hides HQ chrome and secondary composer rows, then restores them",False,legacy-not-retrospectively-reviewed
 LEG-075f3c52f53f,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,146,test,HQ zone tabs expose their selected state and change the active zone,False,legacy-not-retrospectively-reviewed
@@ -5439,6 +5455,7 @@ LEG-17bcf63fd7e8,L2,RN / mobile harness,mobileapp/src/ui/ChatView.markdown.test.
 LEG-62da14bfdb16,L2,RN / mobile harness,mobileapp/src/ui/ChatView.markdown.test.tsx,36,test,copy from a collapsed reply includes all segments without prompt or tools,False,legacy-not-retrospectively-reviewed
 LEG-acfa5e4f58f6,L2,RN / mobile harness,mobileapp/src/ui/ChatView.markdown.test.tsx,44,test,share opens the system sheet with full reply; tool-only turns have no actions,False,legacy-not-retrospectively-reviewed
 LEG-a9597d6f59dc,L2,RN / mobile harness,mobileapp/src/ui/ChatView.markdown.test.tsx,53,test,"local references use the preview adapter, never an OS file URL or script",False,legacy-not-retrospectively-reviewed
+MAP-eee81c4abb59,L3,reviewed implementation,mobileapp/src/ui/ChatView.observed.test.tsx,7,reviewed-selector,SID006 last-known history is explicitly read only in both languages,False,SID-006
 LEG-24dc79367b63,L2,RN / mobile harness,mobileapp/src/ui/ChatView.seam.test.tsx,33,test,no seam under the session-start line when the break is on the first shown turn,False,legacy-not-retrospectively-reviewed
 LEG-203affee0cef,L2,RN / mobile harness,mobileapp/src/ui/ChatView.seam.test.tsx,37,test,a seam between two shown turns when the later one began a session,False,legacy-not-retrospectively-reviewed
 LEG-b2b057903399,L2,RN / mobile harness,mobileapp/src/ui/ChatView.seam.test.tsx,41,test,HQ history keeps Claude and Codex replies under their own agents,False,legacy-not-retrospectively-reviewed

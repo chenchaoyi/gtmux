@@ -60494,6 +60494,250 @@
         }
       ],
       "sha256": "6a89eb8ee784be94498bd661d267b3bd3b71185d73ab5baa963cc70ed402697c"
+    },
+    "internal/agents/codex_presentation_config_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f6200d4fe8c9",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "TestSID001PresentationConfigKeepsManagedIdentity",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SID-001"
+        },
+        {
+          "id": "MAP-410b581f2c06",
+          "line": 35,
+          "kind": "reviewed-selector",
+          "name": "TestSID001HelpStillRecognizesCommandsAfterDisplayConfig",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SID-001"
+        }
+      ],
+      "sha256": "04a5b3d6546b7fcd87b9e2958d348166934c3cd23c6926fbba435b902ca6f2d7"
+    },
+    "internal/app/observed_conversation_test.go": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-ad442623e007",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "TestSID005ObservedReaderKeepsBoundedWindowAndExactCursor",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SID-005"
+        }
+      ],
+      "sha256": "35d94de59f4a17f1f54dad6a95a3d139d175c778bca05bb31823704c97bd6998"
+    },
+    "internal/codexbridge/analytics_identity_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-087141967dfd",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "TestSID002AnalyticsLabelDoesNotEraseRootIdentity",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SID-002"
+        },
+        {
+          "id": "MAP-e319389af183",
+          "line": 22,
+          "kind": "reviewed-selector",
+          "name": "TestSID002AnalyticsCannotPromoteChildOrGlobalTraffic",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SID-002"
+        }
+      ],
+      "sha256": "84387964b1b32949a11d04317b71384d965f2266ad53b09a4c8c7df12dee515c"
+    },
+    "internal/hq/identity_launch_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-426d8c4b1e7f",
+          "line": 11,
+          "kind": "reviewed-selector",
+          "name": "TestSID001ActualHQRecipeRetainsManagedFrontend",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SID-001"
+        }
+      ],
+      "sha256": "c553eb91cbdf0db49326bf20241a7314399b7ef02e646d31ca7b75a1c8d7abd3"
+    },
+    "internal/radar/observed_identity_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-95b503a0bcfb",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "TestSID004HistoricalProjectionIsUniqueAndDoesNotBorrowAuthority",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SID-004"
+        }
+      ],
+      "sha256": "d92a7a24d6b2a1c899348710537410e02939f1ceb6bb4326bb1834d8c304b2ab"
+    },
+    "internal/resume/observed_conversation_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-56aadbd19e58",
+          "line": 35,
+          "kind": "reviewed-selector",
+          "name": "TestSID003LastKnownHistoryHasNoLiveAuthority",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SID-003"
+        },
+        {
+          "id": "MAP-64bbe883d24c",
+          "line": 68,
+          "kind": "reviewed-selector",
+          "name": "TestSID003UnknownConflictingAndUnsafeHistoryStaysUnassociated",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SID-003"
+        }
+      ],
+      "sha256": "31b19dc4f40b069a0d13fc99af59dea36735a56309f589f7824efa1066db47e6"
+    },
+    "internal/server/observed_conversation_test.go": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-b4dde0e66e09",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestSID005OwnerOptInHistoryAndGuestFence",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SID-005"
+        },
+        {
+          "id": "MAP-48bb55755c3f",
+          "line": 54,
+          "kind": "reviewed-selector",
+          "name": "TestSID005SharedRosterOmitsHistoricalIdentifiers",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SID-005"
+        }
+      ],
+      "sha256": "637a5a426749874523c2ba858a8ec4b94adda7e9cbbde985a9c6566921817618"
+    },
+    "internal/server/web/observed_identity.test.cjs": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-07e13a073c16",
+          "line": 16,
+          "kind": "reviewed-selector",
+          "name": "SID007 focused and tile history cannot dispatch input or become an external row",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SID-007"
+        }
+      ],
+      "sha256": "e1116ceba0274b20ab1be2c6c61c693663efdeea114a61c2610e7400eecbcadf"
+    },
+    "macapp/Tests/GtmuxBarTests/ObservedIdentityTests.swift": {
+      "layer": "M",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-79ce2b9cc2d9",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "testSID008HistoryNeverPopulatesCurrentIdentity",
+          "dynamic": false,
+          "layer": "M",
+          "design": "SID-008"
+        }
+      ],
+      "sha256": "415e71562b3c80ec65ad31a9b96e2a5d919028d17dc423ee655a04bd234ec225"
+    },
+    "mobileapp/src/api/observed-history.test.ts": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-51014f850982",
+          "line": 4,
+          "kind": "reviewed-selector",
+          "name": "SID006 observed history stays separate from current session authority and survives 304",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SID-006"
+        }
+      ],
+      "sha256": "c89ac10ed076c89db674e7ca9c08c2db0610cdfd98021ef096a0ed0b2b64f17c"
+    },
+    "mobileapp/src/screens/DetailObserved.test.tsx": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d9561a5b54f1",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "SID006 mounted Detail fences historical chat and clears restriction after verified refresh",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SID-006"
+        }
+      ],
+      "sha256": "0887cc6a79558c1ff0e3cf61ccfc1ed87bd7e8a56e20769d23f01b12f0560adc"
+    },
+    "mobileapp/src/screens/HQScreen.observed.test.tsx": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-3c318e90a20b",
+          "line": 17,
+          "kind": "reviewed-selector",
+          "name": "SID006 mounted HQ cannot send from last-known history and resets on verified response",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SID-006"
+        }
+      ],
+      "sha256": "d2e6c2134917e8ea049570c27409090cb962422e35f75f039528a6b627b96836"
+    },
+    "mobileapp/src/ui/ChatView.observed.test.tsx": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-eee81c4abb59",
+          "line": 7,
+          "kind": "reviewed-selector",
+          "name": "SID006 last-known history is explicitly read only in both languages",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SID-006"
+        }
+      ],
+      "sha256": "3ca9c92b32044dfa04e9fbd032478b0d87953d093484ef9770d053ee9aa473d2"
     }
   },
   "legacy_source": "f187564fcfdab24d7750efbea108958e469cdded",

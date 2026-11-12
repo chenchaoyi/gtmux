@@ -112,8 +112,10 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   // The supervisor's own acts (a separate, narrowed feed — see the poll below).
   const [actFeed, setActFeed] = useState<HQEvent[]>([]);
   const [traceOpen, setTraceOpen] = useState(false), [diffOpen, setDiffOpen] = useState(false);
-  const chatIdentity = useMemo(() => ({client, pane: hq.pane_id, session: live.session_id, home: live.home_id, agent: live.agent}), [client, hq.pane_id, live.session_id, live.home_id, live.agent]);
-  const [chatRecord, setChatRecord] = useState<{identity: typeof chatIdentity; turns: TranscriptTurn[]; reset?: SessionReset; loaded: boolean; failed?: boolean; associationFailed?: boolean; earlierAvailable: boolean}>({identity: chatIdentity, turns: [], loaded: false, earlierAvailable: false});
+  const chatIdentity = useMemo(() => ({client, pane: hq.pane_id, session: live.session_id, home: live.home_id, agent: live.agent, observation: JSON.stringify([live.observed_conversation?.session_id, live.observed_conversation?.home_id, live.observed_conversation?.state])}), [client, hq.pane_id, live.session_id, live.home_id, live.agent, live.observed_conversation?.session_id, live.observed_conversation?.home_id, live.observed_conversation?.state]);
+  const [chatRecord, setChatRecord] = useState<{identity: typeof chatIdentity; turns: TranscriptTurn[]; reset?: SessionReset; loaded: boolean; failed?: boolean; associationFailed?: boolean; readOnlyHistory?: boolean; earlierAvailable: boolean}>({identity: chatIdentity, turns: [], loaded: false, earlierAvailable: false});
+  const historyReadOnly = (chatRecord.identity === chatIdentity && !!chatRecord.readOnlyHistory) || !!live.observed_conversation;
+  const historyReadOnlyRef = useRef(false); historyReadOnlyRef.current = historyReadOnly;
   const turns = chatRecord.identity === chatIdentity ? chatRecord.turns : EMPTY_TURNS;
   const latestTurns = useRef(turns); latestTurns.current = turns;
   const sendIdentity = useRef(chatIdentity); sendIdentity.current = chatIdentity;
@@ -327,10 +329,10 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   const traceRetry = useRef<() => void>(() => {});
   useEffect(() => {const task = createReadTask(
     signal => client.transcript(hq.pane_id, etagRef.current, earlier, signal, true),
-    ({turns: ts, reset, etag, unchanged, earlierAvailable: more}) => {
+    ({turns: ts, reset, etag, unchanged, earlierAvailable: more, readOnlyHistory}) => {
       if (etagIdentity.current !== chatIdentity) return;
       etagRef.current = etag;
-      setChatRecord(previous => unchanged && previous.identity === chatIdentity ? {...previous, loaded: true, failed: false, associationFailed: false, earlierAvailable: !!more} : {identity: chatIdentity, turns: ts, reset: earlier > 0 ? undefined : reset, loaded: true, earlierAvailable: !!more});
+      setChatRecord(previous => unchanged && previous.identity === chatIdentity ? {...previous, loaded: true, failed: false, associationFailed: false, earlierAvailable: !!more, readOnlyHistory} : {identity: chatIdentity, turns: ts, reset: earlier > 0 ? undefined : reset, loaded: true, earlierAvailable: !!more, readOnlyHistory});
     }, {onError: error => {
       if (etagIdentity.current !== chatIdentity) return;
       if (isAuthError(error)) {
@@ -378,7 +380,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   // payloads here made the HQ row look tappable while every key was a no-op.
   const sendHQ = useCallback(
     (input: SendPayload) => {
-      if (!sendMounted.current || sendIdentity.current !== chatIdentity) return;
+      if (historyReadOnlyRef.current || !sendMounted.current || sendIdentity.current !== chatIdentity) return;
       const body = input.text?.trim() ?? '';
       if (!body && !input.key) return;
       const payload: SendPayload = input.key ? {key: input.key, send_id: input.send_id ?? newSendId()} : {text: body, enter: input.enter ?? true, send_id: input.send_id ?? newSendId()};
@@ -608,7 +610,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
     }
   };
   const consoleEl = (topPad: number, onEdge?: (gap: number) => void) => (
-    <ChatView client={isGuest ? undefined : client}
+    <ChatView readOnlyHistory={historyReadOnly} client={isGuest ? undefined : client}
               agent={live}
               lines={hqPaneLines}
               status={live.status}
@@ -681,6 +683,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
           />
         )}
         <Composer
+            enabled={!historyReadOnly}
             pal={pal}
             lang={lang}
             demo={demo}
