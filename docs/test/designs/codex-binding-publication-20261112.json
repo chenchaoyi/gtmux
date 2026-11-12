@@ -1,0 +1,57 @@
+{
+  "id": "codex-binding-publication-20261112",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; self-review, not independent approval",
+    "date": "2026-11-12",
+    "decision": "Close the inherited cross-publisher Codex resume-index race using the existing shared lease and a post-preparation snapshot check",
+    "notes": "Read and SHA-verified independent REVIEW790e. Fresh main9318 still has bootstrap blob933f and reachable radar call. Audit: Save(codex), Bind, Refresh including index repair/checkpoint, and End index touch use codex-frontend-binding; completeCodexBinding and commitProcessBinding use only the per-location O_EXCL file. Keep existing eligibility, TTL, receipts, per-location legacy exclusion and atomic JSON writes. Prepare history outside the global lease, then acquire the same nonblocking kernel lease and re-read exact incumbent before publication/retirement; any field change defers rather than overwriting newer identity/checkpoint. Both newly covered publishers use one helper. Process same-owner updates preserve Frontend as well as TerminalClient. Lock order remains location O_EXCL then nonblocking global; no global holder acquires that location lock. Failure releases both, witnesses remain retryable. Explicit validation seam only at bootstrap checkpoint I/O, defaulting to original function; negative baseline is exact main plus this behavior-neutral seam, not a deployed binary or protocol-only toy. Actual public Go publishers perform reads, writes, Bind and Refresh in isolated HOME/CODEX_HOME. No production session/process/queue/frontend registry/service/TCC changes. Non-Codex Save retains its existing separate legacy ownership policy; Remove has no production caller in this tree and is administrative, not a Codex publisher. Old binaries ignoring the shared lease remain a rollout compatibility limit, not covered by a file rename. No claim these changes explain current HQ identity/queue symptoms. No worker or independent approval inferred."
+  },
+  "cases": [
+    {
+      "id": "CBP-001",
+      "layer": "L2",
+      "description": "Actual bootstrap cannot overwrite a frontend published after its incumbent snapshot",
+      "setup": "Isolated real resume/intents/rollout files; existing synthetic strict foreground/birth sensors; actual Complete and Bind functions. A checkpoint I/O barrier pauses bootstrap after owner validation.",
+      "action": "Pause old bootstrap, successfully bind a new frontend to another session or the bootstrap destination session, release old checkpoint and inspect primary index, frontend receipt, intent and heartbeat.",
+      "expected": "Old baseline overwrites or strips the newer frontend; repaired source refuses stale publication, keeps the exact new primary/receipt, retains retry witness and leaves leases available. Same destination session does not justify dropping a newer frontend. No sleep/probability race.",
+      "planned_files": [
+        "internal/resume/codex_publication_test.go"
+      ]
+    },
+    {
+      "id": "CBP-002",
+      "layer": "L2",
+      "description": "Bootstrap and process fallback obey the same cross-publisher kernel lease",
+      "setup": "Real temporary state lease held externally; actual Complete and public process reconcile/hook paths with isolated records and process sensors.",
+      "action": "Attempt each publication while the global lease is held, then retry normally after release.",
+      "expected": "Contention returns/defer without changing primary, receipts or intent. Eligible retry publishes only after a fresh exact index comparison. Both previously uncovered writer paths are covered; existing Save/Refresh CSR003 assertions remain untouched.",
+      "planned_files": [
+        "internal/resume/codex_publication_test.go"
+      ]
+    },
+    {
+      "id": "CBP-003",
+      "layer": "L2",
+      "description": "Publication failures do not leak locks or lose owner/frontend/retry evidence",
+      "setup": "Isolated changed/missing intent, occupied legacy lock, record-path blocker and receipt-path blocker; same-owner verified frontend/process control.",
+      "action": "Run real publication paths, check explicit error/receipt-error and repeat after correcting fixture failure; verify a subsequent Bind/Refresh can acquire the lease.",
+      "expected": "Failure preserves incumbent and pending intent as appropriate; committed-index/failed-retirement remains explicitly retryable. No deadlock or leaked shared/location lock. Same owner retains Frontend and TerminalClient; changed owner cannot be reclaimed by retry. Existing valid assertions and budgets are not weakened.",
+      "planned_files": [
+        "internal/resume/codex_publication_test.go"
+      ]
+    },
+    {
+      "id": "CBP-004",
+      "layer": "L2",
+      "description": "Cross-process lease excludes the actual bootstrap publisher",
+      "setup": "Parent holds real state lease; child is the same compiled test binary with only temporary synthetic HOME/CODEX_HOME and serialized fixture input.",
+      "action": "Run actual Complete in child while held and after release, with bounded child execution and full source snapshots.",
+      "expected": "Held lease prevents publication and consumption across OS processes; after release the exact valid fixture succeeds. No real state directory, target, backend or service is touched. Helper entry is not separate product acceptance.",
+      "planned_files": [
+        "internal/resume/codex_publication_test.go"
+      ]
+    }
+  ],
+  "seal": "e0caf78967cd17f8f28a6ce0054799fd270339f62335b287434fa0bef49a9901"
+}
