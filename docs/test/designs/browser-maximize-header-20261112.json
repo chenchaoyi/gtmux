@@ -1,0 +1,24 @@
+{
+  "id": "browser-maximize-header-20261112",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review; not independent approval",
+    "date": "2026-11-12",
+    "decision": "Place Restore layout within the actual tile header grid instead of a floating overlay",
+    "notes": "New user screenshot shows the restore control covering the session title. Exact source appends it to board with absolute top/left and no title reservation. Keep original maximize/restore geometry, single-max ownership, terminal fit and Escape behavior. Use normal header flow, a narrow icon with accessible name, long-title ellipsis and bounded controls. Synthetic real-handler/CSS fixtures only; no actual terminal/session/input. Reviewed before this new test implementation."
+  },
+  "cases": [
+    {
+      "id": "AOP-004",
+      "layer": "L3",
+      "description": "Maximized workspace header keeps Restore layout separate from the title and tools",
+      "setup": "Actual maximizeTile/restoreBoard functions with isolated DOM and board/tile geometry; shipped CSS in a synthetic browser at wide/narrow widths with long mixed-language title and keyboard controls.",
+      "action": "Maximize a tile, resize, switch to another tile, restore via button and existing Escape path; inspect header order, title/restore/control bounds and original dimensions.",
+      "expected": "Restore button belongs to tile header and precedes its other children, never floats over the title or terminal. Header grid reserves its column; narrow layout shows a named return icon and leaves title/actions usable. Only one restore control exists. Restoring removes it and restores prior tile dimensions; other tiles and existing terminal-fit/Escape behavior are unchanged. No real user session or service is driven.",
+      "planned_files": [
+        "internal/server/web/maximize-layout.test.cjs"
+      ]
+    }
+  ],
+  "seal": "c7ab7c8194ba9f03389bbbb24e902894da9dc6d04427b61e3341f138e83a6560"
+}
