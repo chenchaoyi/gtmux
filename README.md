@@ -153,6 +153,7 @@ Double-click a tmux row or drag it onto the board. Choose **Chat**, **Terminal**
 - [Find command help](docs/guides/cli-help.md): common commands, language selection and structured help for scripts.
 - [CLI reference](docs/cli.md): command options, language and persistent settings.
 - [HQ knowledge base](docs/knowledge.md): records, knowledge and your own rules.
+- [Using and reviewing knowledge](docs/guides/knowledge-review.md): consult relevant cards, review Markdown changes and resume Dreaming packets.
 - [DeepSeek Harness setup](docs/guides/deepseek-harness.md): terminal and history integration.
 
 For development, see [CONTRIBUTING.md](CONTRIBUTING.md) and the [design documents](docs/design/README.md).
