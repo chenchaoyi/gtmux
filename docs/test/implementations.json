@@ -1142,7 +1142,8 @@
     "cases": [
       "CT-ANDROID",
       "CT-TIMING",
-      "ACP-003"
+      "ACP-003",
+      "DTV-006"
     ],
     "selectors": [
       "async function check",
@@ -1858,6 +1859,14 @@
     ],
     "selectors": [
       "LPV003"
+    ]
+  },
+  "mobileapp/e2e/android/diffDismissal.test.ts": {
+    "cases": [
+      "DTV-006"
+    ],
+    "selectors": [
+      "DTV006"
     ]
   }
 }
