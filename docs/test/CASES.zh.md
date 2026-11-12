@@ -2,7 +2,7 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1169 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1170 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
@@ -136,6 +136,7 @@
 | KBDREAM-GUARDS | Only one runner obtains the stable lock; no call on corruption/stale/private input; status reads create nothing; no retry erases earlier charges or history. |
 | KBDREAM-BUDGET | Reserve before generation; completed usage reconciles once; interrupted or unknown charges never reset; stop at limits or errors without applying KB proposals. Pilot/bootstrap stop thresholds are shared across runs over their lifetime, not reset weekly; unresolved attempts block other runs. Unknown usage is not zero. |
 | KBDREAM-EXECUTOR | Forward exact HQ model/reason; bounded timeout/output; strict final JSON, usage provenance and cancellation; secrets/raw private session URLs never logged. |
+| KBCARRIER-LOCAL-PUBLICATION | Old reader retains original complete bytes; new carrier retains manual prefix/suffix and is 0600. Unsafe or conflicted destinations preserve bytes and mode and never append a landing receipt. This is a file relocation only; no new production behavior and no power-loss claim. |
 | KBMEM-REVIEW | Reject stale or partial batch; no duplicate append; preserve ID/hits/sources/protection; reopened landing and tentative stale card |
 | KBMEM-VAULT | Safe export, edited text yields inert diff, conflicting revisions preserved, rename stable, deletion never retires, private entries excluded and symlinks refused; each note/baseline publication is atomic, open pre-publication snapshots remain complete, read-only destinations remain untouched, and no temporary file is left after completion/failure |
 | KBMEM-CONSULT | Correct scope and exact tool version only; hypotheses/stale excluded; whole cards including exceptions; protected overflow explicit; no ledger mutation |

@@ -2070,9 +2070,9 @@ LEG-af96f8befee1,L1,Go core / CLI / server,internal/knowledge/lint_test.go,345,T
 LEG-09fcb37aa82e,L1,Go core / CLI / server,internal/knowledge/lint_test.go,354,Test,TestACycleStopsRatherThanSpins,False,legacy-not-retrospectively-reviewed
 LEG-7105f4ae950e,L1,Go core / CLI / server,internal/knowledge/lint_test.go,379,Test,TestNoOutdatedLinksSurviveTheFold,False,legacy-not-retrospectively-reviewed
 LEG-2b6cbd7c398b,L1,Go core / CLI / server,internal/knowledge/lint_test.go,394,Test,TestANumericTailSurvivesTheRewrite,False,legacy-not-retrospectively-reviewed
-MAP-eb3912a57551,L2,reviewed implementation,internal/knowledge/memory_carrier_test.go,11,reviewed-selector,TestMemoryCarrierUpdatesHistoricalTextAndPreservesManualEdits,False,KBMEM-CARRIER
-MAP-c36afc0340a4,L2,reviewed implementation,internal/knowledge/memory_carrier_test.go,50,reviewed-selector,TestMemoryCarrierAtomicPublicationKeepsOldReader,False,"KBMEM-CARRIER,KBCARRIER-ATOMIC"
-MAP-1a3ae6d00fce,L2,reviewed implementation,internal/knowledge/memory_carrier_test.go,106,reviewed-selector,TestMemoryCarrierRefusesUnsafeTargetsWithoutSettling,False,"KBMEM-CARRIER,KBCARRIER-ATOMIC"
+MAP-ad36a7389edc,L2,reviewed implementation,internal/knowledge/local_publication_test.go,13,reviewed-selector,TestMemoryCarrierAtomicPublicationKeepsOldReader,False,KBCARRIER-LOCAL-PUBLICATION
+MAP-25b9dd679b77,L2,reviewed implementation,internal/knowledge/local_publication_test.go,69,reviewed-selector,TestMemoryCarrierRefusesUnsafeTargetsWithoutSettling,False,KBCARRIER-LOCAL-PUBLICATION
+MAP-eb3912a57551,L2,reviewed implementation,internal/knowledge/memory_carrier_test.go,10,reviewed-selector,TestMemoryCarrierUpdatesHistoricalTextAndPreservesManualEdits,False,KBMEM-CARRIER
 LEG-d2c8e807a23b,G,Go core / CLI / server,internal/knowledge/migration_test.go,39,Test,TestMigrationPreservesHistoryAndResetsAudience,False,legacy-not-retrospectively-reviewed
 LEG-2e5e27be68d2,L1,Go core / CLI / server,internal/knowledge/migration_test.go,73,Test,TestMigrationSensitiveHistoryAndUnrelatedEntriesExcluded,False,legacy-not-retrospectively-reviewed
 LEG-72016a7301ff,G,Go core / CLI / server,internal/knowledge/migration_test.go,97,Test,TestMigrationConflictAndInvalidInputKeepPriorBytes,False,legacy-not-retrospectively-reviewed

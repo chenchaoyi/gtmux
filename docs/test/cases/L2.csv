@@ -115,9 +115,9 @@ MAP-f9245b11d56a,L2,reviewed implementation,internal/knowledge/landing_revision_
 MAP-ccbea4028144,L2,reviewed implementation,internal/knowledge/landing_revision_test.go,153,reviewed-selector,TestLandingCarrierFailureKeepsPendingAndRetryIsSafe,False,KBCARRIER-REVISION
 MAP-6759f82b89d2,L2,reviewed implementation,internal/knowledge/landing_revision_test.go,188,reviewed-selector,TestLandingManualRevisionAndLegacyHistory,False,KBCARRIER-REVISION
 MAP-238d336301ba,L2,reviewed implementation,internal/knowledge/landing_revision_test.go,228,reviewed-selector,TestLandingCLIRequiresViewedRevision,False,KBCARRIER-REVISION
-MAP-eb3912a57551,L2,reviewed implementation,internal/knowledge/memory_carrier_test.go,11,reviewed-selector,TestMemoryCarrierUpdatesHistoricalTextAndPreservesManualEdits,False,KBMEM-CARRIER
-MAP-c36afc0340a4,L2,reviewed implementation,internal/knowledge/memory_carrier_test.go,50,reviewed-selector,TestMemoryCarrierAtomicPublicationKeepsOldReader,False,"KBMEM-CARRIER,KBCARRIER-ATOMIC"
-MAP-1a3ae6d00fce,L2,reviewed implementation,internal/knowledge/memory_carrier_test.go,106,reviewed-selector,TestMemoryCarrierRefusesUnsafeTargetsWithoutSettling,False,"KBMEM-CARRIER,KBCARRIER-ATOMIC"
+MAP-ad36a7389edc,L2,reviewed implementation,internal/knowledge/local_publication_test.go,13,reviewed-selector,TestMemoryCarrierAtomicPublicationKeepsOldReader,False,KBCARRIER-LOCAL-PUBLICATION
+MAP-25b9dd679b77,L2,reviewed implementation,internal/knowledge/local_publication_test.go,69,reviewed-selector,TestMemoryCarrierRefusesUnsafeTargetsWithoutSettling,False,KBCARRIER-LOCAL-PUBLICATION
+MAP-eb3912a57551,L2,reviewed implementation,internal/knowledge/memory_carrier_test.go,10,reviewed-selector,TestMemoryCarrierUpdatesHistoricalTextAndPreservesManualEdits,False,KBMEM-CARRIER
 MAP-0f80e5899da6,L2,reviewed implementation,internal/knowledge/review_test.go,30,reviewed-selector,TestReviewAtomicConflictAndIdempotentRetry,False,KBMEM-REVIEW
 MAP-def3fe83ca29,L2,reviewed implementation,internal/knowledge/review_test.go,64,reviewed-selector,TestReviewRejectsWholeBatchBeforeAnyAppend,False,KBMEM-REVIEW
 MAP-32cc723818f0,L2,reviewed implementation,internal/knowledge/review_test.go,103,reviewed-selector,TestReviewDryRunWritesNothingAndProtectedRetireRefused,False,KBMEM-REVIEW

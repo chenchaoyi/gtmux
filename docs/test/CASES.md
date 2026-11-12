@@ -2,7 +2,7 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1169 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1170 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
@@ -136,6 +136,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | KBDREAM-GUARDS | Only one runner obtains the stable lock; no call on corruption/stale/private input; status reads create nothing; no retry erases earlier charges or history. |
 | KBDREAM-BUDGET | Reserve before generation; completed usage reconciles once; interrupted or unknown charges never reset; stop at limits or errors without applying KB proposals. Pilot/bootstrap stop thresholds are shared across runs over their lifetime, not reset weekly; unresolved attempts block other runs. Unknown usage is not zero. |
 | KBDREAM-EXECUTOR | Forward exact HQ model/reason; bounded timeout/output; strict final JSON, usage provenance and cancellation; secrets/raw private session URLs never logged. |
+| KBCARRIER-LOCAL-PUBLICATION | Old reader retains original complete bytes; new carrier retains manual prefix/suffix and is 0600. Unsafe or conflicted destinations preserve bytes and mode and never append a landing receipt. This is a file relocation only; no new production behavior and no power-loss claim. |
 | KBMEM-REVIEW | Reject stale or partial batch; no duplicate append; preserve ID/hits/sources/protection; reopened landing and tentative stale card |
 | KBMEM-VAULT | Safe export, edited text yields inert diff, conflicting revisions preserved, rename stable, deletion never retires, private entries excluded and symlinks refused; each note/baseline publication is atomic, open pre-publication snapshots remain complete, read-only destinations remain untouched, and no temporary file is left after completion/failure |
 | KBMEM-CONSULT | Correct scope and exact tool version only; hypotheses/stale excluded; whole cards including exceptions; protected overflow explicit; no ledger mutation |

@@ -501,13 +501,12 @@
   },
   "internal/knowledge/distribute_test.go": {
     "cases": [
-      "STOR-001",
       "KBCARRIER-COMPAT"
     ],
     "selectors": [
-      "TestBuiltinStorageBoundariesReachEveryCarrierWithoutPromotions",
       "TestLandCarriesByAudience"
-    ]
+    ],
+    "reason": "This revision changes the manual land caller only; unchanged storage-boundary assertions retain their existing historical design record in Git."
   },
   "internal/launchhost/agent_readiness_test.go": {
     "cases": [
@@ -1793,14 +1792,12 @@
   },
   "internal/knowledge/memory_carrier_test.go": {
     "cases": [
-      "KBMEM-CARRIER",
-      "KBCARRIER-ATOMIC"
+      "KBMEM-CARRIER"
     ],
     "selectors": [
-      "TestMemoryCarrierUpdatesHistoricalTextAndPreservesManualEdits",
-      "TestMemoryCarrierAtomicPublicationKeepsOldReader",
-      "TestMemoryCarrierRefusesUnsafeTargetsWithoutSettling"
-    ]
+      "TestMemoryCarrierUpdatesHistoricalTextAndPreservesManualEdits"
+    ],
+    "reason": "Original 21576f9 test restored byte-for-byte; incremental publication regressions moved to local_publication_test.go after a fresh file-specific reviewed design."
   },
   "internal/app/spawn_paneid_test.go": {
     "cases": [
@@ -1972,6 +1969,15 @@
     ],
     "selectors": [
       "TestPromotionsStatus"
+    ]
+  },
+  "internal/knowledge/local_publication_test.go": {
+    "cases": [
+      "KBCARRIER-LOCAL-PUBLICATION"
+    ],
+    "selectors": [
+      "TestMemoryCarrierAtomicPublicationKeepsOldReader",
+      "TestMemoryCarrierRefusesUnsafeTargetsWithoutSettling"
     ]
   }
 }
