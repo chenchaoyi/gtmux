@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review)",
+    "date": "2026-11-12",
+    "decision": "implement bounded failure diagnostics before the one remaining authorized live attempt",
+    "notes": "First authorized real CLI attempt failed without terminal receipt; prior implementation discarded all diagnostics. Add only fixed-vocabulary failure category and numeric exit code, not raw stderr/provider errors/URLs. No credentials, native session reads, model fallback, or permission changes. User prohibits commits; snapshot seal records review before implementation, no PR order claim. Local installed-CLI reproduction with a credential-free loopback fixture confirms item.completed/type=error is a nonterminal Code Mode disabled notice followed by a valid result; previous parser misclassified it as a tool action. Reviewed before adding the warning regression; do not enable tools or ignore fatal terminal errors."
+  },
+  "cases": [
+    {
+      "id": "KBDREAM-DIAGNOSTICS",
+      "layer": "L2",
+      "description": "CLI failures retain useful classified evidence without private diagnostics",
+      "setup": "Disposable HOME, fake executable only; no account or network call.",
+      "action": "Emit a provider authentication error containing a synthetic secret/URL, stderr config failure with nonzero exit, overlong stderr, cancellation, and no terminal receipt. Complete one failed Dream run with malicious arbitrary diagnostic text. Replay a nonterminal item.error notice before a valid terminal result, plus a real command_execution item and fatal turn.failed event.",
+      "expected": "Only allowlisted category and numeric exit code reach errors/journal; raw diagnostics never appear; bounded capture drains without blocking; failed attempt/time/unknown usage preserved; old journal records remain readable; success stays diagnostic-free. Nonterminal diagnostic items cannot masquerade as tool execution; they neither invalidate a successful terminal receipt nor turn a fatal/missing receipt into success. Actual tool/action items remain rejected.",
+      "planned_files": [
+        "internal/hq/dreamdiagnostics_test.go",
+        "internal/knowledge/dreamdiagnostics_test.go"
+      ]
+    }
+  ],
+  "seal": "376c2786d7188c477ffece33d891e8ae2656e0d16e9c74f7e5707d172fa3a3dd"
+}

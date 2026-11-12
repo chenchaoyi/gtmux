@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review)",
+    "date": "2026-11-12",
+    "decision": "add an explicit append-only allowance extension before live acceptance continuation",
+    "notes": "User explicitly authorized additional calls until acceptance is complete. Do not alter created events or switch modes to reset counters. Extend absolute per-run limits within existing 60-call/4-hour ceilings with a reason and existing HQ writer gate; all spend/retry/shared-week limits remain. Same limits retry is idempotent. Self-reviewed before implementation; no commit/independent-review claim."
+  },
+  "cases": [
+    {
+      "id": "KBDREAM-ALLOWANCE",
+      "layer": "L2",
+      "description": "Explicit allowance extension resumes the same packet without resetting evidence or costs",
+      "setup": "Disposable HOME with synthetic KB, fake executor; never real model or production state.",
+      "action": "Exhaust one-call runs after a failure or a completed item; extend call/time limits, repeat the extension, and resume. Reject reductions, empty reason, absolute ceiling violations, completed-work expansion and unresolved active attempts. Preserve per-item retry ceiling and exercise the CLI writer gate.",
+      "expected": "The original journal prefix/plan/run ID remains; only one reasoned allowance event is appended; failed and completed costs remain; completed IDs never run again; current writer gate and shared budget/retry checks stay in force; no KB changes.",
+      "planned_files": [
+        "internal/knowledge/dreamallowance_test.go"
+      ]
+    }
+  ],
+  "seal": "39d3525a69b9ea9592bd43270de75122872f11d7a2c36a360997a12aa2bd00ee"
+}
