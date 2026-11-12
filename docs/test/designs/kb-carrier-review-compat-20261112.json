@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex KB implementation owner (self-review)",
+    "date": "2026-11-12",
+    "decision": "extend KBCARRIER revision regression to legacy audience and HQ shim callers",
+    "notes": "Call-site audit found two existing successful manual-land tests that must explicitly forward the read revision. Review and seal this scope before editing those test files. This is not independent approval. Core implementation/tests are still uncommitted; no production or model use."
+  },
+  "cases": [
+    {
+      "id": "KBCARRIER-COMPAT",
+      "layer": "L2",
+      "description": "Existing everyone-audience CLI and HQ shim manual receipts carry the observed revision",
+      "setup": "Existing disposable HOME fixtures, synthetic entries and refs. No external issue or real carrier access.",
+      "action": "Read the promoted entry revision, pass it with the explicit ref through the legacy CLI and HQ shim paths; keep existing audience and lifecycle assertions.",
+      "expected": "Manual landing succeeds with the exact read token. Everyone remains manual-only; other audiences keep their own exit. Generated manual instructions name the required revision; legacy receipts still fold.",
+      "planned_files": [
+        "internal/knowledge/distribute_test.go",
+        "internal/hq/knowledgeshim_test.go"
+      ]
+    }
+  ],
+  "seal": "2fe1645961a4ce2be193f632d71d23f02f3c45c86d634cfec86ceae570c7e2c9"
+}
