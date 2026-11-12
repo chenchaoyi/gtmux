@@ -1,0 +1,46 @@
+{
+  "id": "chat-pagination-retry-20261112",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; self-review, not independent approval",
+    "date": "2026-11-12",
+    "decision": "Close independent R1/P2 via explicit current-reader unconditional Retry; preserve auth denial until a successful response",
+    "notes": "Read full independent REVIEW SHA26e63699 at exactQ7e3f. Both actual Detail/HQ loaders retain turns on304; Retry currently reuses ETag. Tests must mount actual screens, ChatView/hook and use real GtmuxClient.transcript over controlled synthetic fetch. Regular conditional304 stays cheap and does not by itself lift denial. Explicit Retry retires any in-flight read and clears only its reader ETag before normal read; failure cannot resurrect retired data, old304/old reader cannot overwrite a successful current result. Do not clone arrays per render, alter server auth, add fallback transport, reduce old assertions/budgets or run live sessions. Preserve original nine selectors byte-for-byte; record exactQ-production semantic old-red and new-green, bounded fixtures only."
+  },
+  "cases": [
+    {
+      "id": "CPG-005",
+      "layer": "L2",
+      "description": "Explicit Retry recovers refused quiet history through actual Detail/HQ conditional loaders",
+      "setup": "Mount actual DetailView/HQConsoleView and actual ChatView/useChatHistory; real GtmuxClient.transcript uses synthetic fetch. Successful initial200+ETag, page401/403, then successful unchanged304 retains original parent turns reference.",
+      "action": "Press visible chat Retry without changing content or reader. Inspect request validator and render same content from normal200 response.",
+      "expected": "Regular poll remains conditional and denial stays visible after304; Retry sends no If-None-Match, succeeds with same content from actual parser and removes denial/error. Existing cached prefix never returns; no fake array clone or changed server data is needed.",
+      "planned_files": [
+        "mobileapp/__tests__/chatPagingRecovery.test.tsx"
+      ]
+    },
+    {
+      "id": "CPG-006",
+      "layer": "L2",
+      "description": "Retry failure and a superseded conditional read cannot resurrect refused content",
+      "setup": "Actual Detail/HQ screens, initial200, refused history, conditional poll waiting in controlled noncooperative fetch.",
+      "action": "Explicit Retry while poll pending; failed unconditional Retry leaves blank/error. Retry again to200, then release old304.",
+      "expected": "Old poll signal is aborted and lane retired, each explicit attempt is unconditional, failures leave denial intact, only valid successful response restores. Late304 cannot replace newer current content or reset retry validator.",
+      "planned_files": [
+        "mobileapp/__tests__/chatPagingRecovery.test.tsx"
+      ]
+    },
+    {
+      "id": "CPG-007",
+      "layer": "L2",
+      "description": "Reader switch fences a noncooperative recovery response in actual parent loaders",
+      "setup": "Actual Detail/HQ reader A with ETag and refused page; explicit Retry pending; switch same pane to sessionB with different transcript.",
+      "action": "Let current readerB200 finish, then resolve old readerA200 containing sentinel private text.",
+      "expected": "Old request is aborted/retired and cannot apply turns/ETag or clear current failure; B remains shown, A sentinel absent, no input/send side effects.",
+      "planned_files": [
+        "mobileapp/__tests__/chatPagingRecovery.test.tsx"
+      ]
+    }
+  ],
+  "seal": "16802db35f0c940f37305be0942e732d4aec9d3249c5ddd59a3880317ff42e05"
+}
