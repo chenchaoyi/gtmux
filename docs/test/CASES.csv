@@ -1725,6 +1725,12 @@ LEG-d4b834e4cf65,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,347,T
 LEG-9d15885fe97d,L1,Go core / CLI / server,internal/hq/rotation_durability_test.go,25,Test,TestRotationDoesNotConfirmAnUnsavedNewThread,False,legacy-not-retrospectively-reviewed
 LEG-a65be3d25bf9,L1,Go core / CLI / server,internal/hq/rotation_durability_test.go,57,Test,TestRotationQueuesOneGuardedHandoffAfterReleasingInput,False,legacy-not-retrospectively-reviewed
 LEG-974db74f29ef,L1,Go core / CLI / server,internal/hq/rotation_durability_test.go,93,Test,TestRotationDoesNotTrustReissuedPaneNumbers,False,legacy-not-retrospectively-reviewed
+MAP-f07cf6ea366b,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,84,reviewed-selector,TestHQR001RefreshOnlyUpdatesManagedRules,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
+MAP-f3c6fa0664ed,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,137,reviewed-selector,TestHQR002RefreshKeepsLanguageAndConverges,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
+MAP-26c222f9b436,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,180,reviewed-selector,TestHQR003RefreshRejectsConflictingOptions,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
+MAP-27e9b5f03486,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,198,reviewed-selector,TestHQR004RefreshUsesExistingApplyLock,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
+MAP-564acb685125,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,219,reviewed-selector,TestHQR005RefreshRefusesUnsafeManagedFiles,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
+MAP-1b8457abb5dd,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,278,reviewed-selector,TestHQR006RefreshPreservesBackupNamesAndFailsSafely,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
 LEG-2a593377c08f,L1,Go core / CLI / server,internal/hq/selfcheck_test.go,5,Test,TestShouldSelfCheck,False,legacy-not-retrospectively-reviewed
 LEG-aed11f21a248,L1,Go core / CLI / server,internal/hq/selfcheck_test.go,44,Test,TestSelfCheckMarkerRoundTrip,False,legacy-not-retrospectively-reviewed
 LEG-372c52d5f12f,L1,Go core / CLI / server,internal/hq/selfrotate_test.go,19,Test,TestSessionRefForLiveAgentRejectsPreviousHQAgent,False,legacy-not-retrospectively-reviewed

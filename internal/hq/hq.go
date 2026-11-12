@@ -452,6 +452,11 @@ var legacyBackupNow = time.Now
 // call created, is removed and the caller migrates nothing.
 func writeLegacyBackup(path string, body []byte) (string, error) {
 	stem := path + ".bak-legacy-" + legacyBackupNow().Format("20060102")
+	return writeHQBackup(path, stem, body)
+}
+
+// writeHQBackup creates an exclusive, verified backup without retiring prior copies.
+func writeHQBackup(path, stem string, body []byte) (string, error) {
 	for i := 1; i <= 100; i++ {
 		bak := stem
 		if i > 1 {
@@ -505,6 +510,12 @@ func upgradePlaybookIfNewer(r *seedResult, wantLang string) error {
 	if err != nil {
 		return err
 	}
+	return upgradePlaybookBody(r, wantLang, body, publishStartupPlaybook)
+}
+
+// The renderer and version/language decision are shared; rules-only maintenance
+// uses a stricter reader and publisher without invoking startup's other actions.
+func upgradePlaybookBody(r *seedResult, wantLang string, body []byte, publish func(string, []byte, []byte) (string, error)) error {
 	installed := parsePlaybookVersion(string(body))
 	installedLang := parsePlaybookLang(string(body))
 
@@ -540,11 +551,8 @@ func upgradePlaybookIfNewer(r *seedResult, wantLang string) error {
 		bakLang = "legacy"
 	}
 	bak := hqInstructionsPath() + fmt.Sprintf(".bak-v%d-%s", installed, bakLang)
-	if err := state.WriteFile(bak, body, 0o644); err != nil {
-		return err
-	}
-	prunePlaybookBackups()
-	if err := state.WriteFile(hqInstructionsPath(), []byte(playbookIn(writeLang)), 0o644); err != nil {
+	bak, err := publish(bak, body, []byte(playbookIn(writeLang)))
+	if err != nil {
 		return err
 	}
 	r.Upgraded = true
@@ -555,6 +563,15 @@ func upgradePlaybookIfNewer(r *seedResult, wantLang string) error {
 	r.BackupPath = bak
 	r.Migrated = installed == 0
 	return nil
+}
+
+// Startup retains its existing backup retention and overwrite behavior.
+func publishStartupPlaybook(backup string, prior, replacement []byte) (string, error) {
+	if err := state.WriteFile(backup, prior, 0o644); err != nil {
+		return "", err
+	}
+	prunePlaybookBackups()
+	return backup, state.WriteFile(hqInstructionsPath(), replacement, 0o644)
 }
 
 // seedHQLocal writes the LOCAL.md personalization template IF ABSENT (seed-once,
@@ -814,11 +831,12 @@ func CmdHQ(args []string) int {
 	}
 	agentCmd := ""
 	rotate := false
-	board := false       // --board: print the situation board instead of opening HQ
-	boardJSON := false   // --json alongside --board, for a surface that wants the mtime too
-	home := false        // --home: print where a knowledge mutation has to run
-	memoryState := false // --memory: what is at risk and what protects it
-	exportTo := ""       // --export <path>: the memory as one portable file
+	refreshRules := false // standalone: managed rules only, no session actions
+	board := false        // --board: print the situation board instead of opening HQ
+	boardJSON := false    // --json alongside --board, for a surface that wants the mtime too
+	home := false         // --home: print where a knowledge mutation has to run
+	memoryState := false  // --memory: what is at risk and what protects it
+	exportTo := ""        // --export <path>: the memory as one portable file
 	expectedArchive := ""
 	importFrom := ""        // --import <path>: put one back
 	exportPlain := false    // --plain: an export without a passphrase (the pre-1.0.21 form)
@@ -833,6 +851,8 @@ func CmdHQ(args []string) int {
 		case a == "-h" || a == "--help" || a == "--help-all":
 			fmt.Print(HelpText(helpWidth(), a == "--help-all"))
 			return 0
+		case a == "--refresh-rules":
+			refreshRules = true
 		case a == "--rotate":
 			rotate = true
 		case a == "--maintenance-done":
@@ -921,6 +941,14 @@ func CmdHQ(args []string) int {
 			i18n.Sae("gtmux hq: unknown option '"+a+"'", "gtmux hq: 未知选项 '"+a+"'")
 			return 2
 		}
+	}
+	// Resolve this mode before ANY other action, including the detached watcher.
+	if refreshRules {
+		if len(args) != 1 {
+			i18n.Sae("gtmux hq: --refresh-rules must be used on its own", "gtmux hq：--refresh-rules 请单独使用")
+			return 2
+		}
+		return refreshHQRulesCmd()
 	}
 	// The detached briefing watcher (self-pane hand-over, see briefhere.go) does one thing
 	// and exits; it never seeds, spawns or focuses anything.

@@ -2172,5 +2172,23 @@
       "CPG008 automatic cut-row refresh lets a six-second initial read finish",
       "CPG009 automatic quiet refresh keeps ETag and coalesces a slow conditional read"
     ]
+  },
+  "internal/hq/rulesrefresh_test.go": {
+    "cases": [
+      "HQR-001",
+      "HQR-002",
+      "HQR-003",
+      "HQR-004",
+      "HQR-005",
+      "HQR-006"
+    ],
+    "selectors": [
+      "TestHQR001RefreshOnlyUpdatesManagedRules",
+      "TestHQR002RefreshKeepsLanguageAndConverges",
+      "TestHQR003RefreshRejectsConflictingOptions",
+      "TestHQR004RefreshUsesExistingApplyLock",
+      "TestHQR005RefreshRefusesUnsafeManagedFiles",
+      "TestHQR006RefreshPreservesBackupNamesAndFailsSafely"
+    ]
   }
 }
