@@ -666,7 +666,9 @@ function PaneDetailView({
         } else setChatRecord(previous => previous.identity === chatIdentity ? {...previous, loaded: true, failed: true, associationFailed: error instanceof ConversationReadError && error.association} : {identity: chatIdentity, turns: [], dropped: 0, loaded: true, failed: true, associationFailed: error instanceof ConversationReadError && error.association});
       }},
     );
-    loadTurnsRef.current = task.run;
+    // A page refusal may have retired the hook's snapshot while this parent
+    // still has its ETag. Explicit Retry must fetch a body, even for quiet chat.
+    loadTurnsRef.current = () => {task.invalidate(); etagRef.current = undefined; task.run();};
     if (pollTranscript) return startReadPolling(task, live.status === 'working' ? CHAT_ACTIVE_POLL_MS : CHAT_IDLE_POLL_MS);
     task.run();
     return task.dispose;

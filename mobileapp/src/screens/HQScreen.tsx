@@ -344,7 +344,12 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
         setChatRecord({identity: chatIdentity, turns: [], loaded: true, failed: true, associationFailed: error instanceof ConversationReadError && error.association, earlierAvailable: false});
       } else setChatRecord(previous => previous.identity === chatIdentity ? {...previous, loaded: true, failed: true, associationFailed: error instanceof ConversationReadError && error.association} : {identity: chatIdentity, turns: [], loaded: true, failed: true, associationFailed: error instanceof ConversationReadError && error.association, earlierAvailable: false});
     }, onSettled: () => setEarlierLoading(false)},
-  );traceRetry.current = task.run;return startReadPolling(task, live.status === 'working' ? HQ_ACTIVE_POLL_MS : HQ_IDLE_POLL_MS);},
+  );
+    // Retry replaces a pending conditional read and requests a fresh body;
+    // normal polling can still reuse the quiet conversation's ETag.
+    traceRetry.current = () => {task.invalidate(); etagRef.current = undefined; task.run();};
+    return startReadPolling(task, live.status === 'working' ? HQ_ACTIVE_POLL_MS : HQ_IDLE_POLL_MS);
+  },
   [client, hq.pane_id, chatIdentity, live.status, pending, earlier]);
 
   // The shared echo model requires a new recorded occurrence. Old identical

@@ -1901,5 +1901,17 @@
     "selectors": [
       "DTV006"
     ]
+  },
+  "mobileapp/__tests__/chatPagingRecovery.test.tsx": {
+    "cases": [
+      "CPG-005",
+      "CPG-006",
+      "CPG-007"
+    ],
+    "selectors": [
+      "CPG005 %s explicit Retry recovers quiet history after authorized 304",
+      "CPG006 %s failed Retry stays denied and retires a pending conditional poll",
+      "CPG007 %s reader switch ignores a late recovery response"
+    ]
   }
 }

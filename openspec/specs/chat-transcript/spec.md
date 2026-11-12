@@ -788,6 +788,12 @@ The shared React Native Chat reader SHALL retire all snapshots already observed 
 - **THEN** the old operation cannot expand that window or apply a history offset, even before the Jump animation ends
 - **AND** deliberate later expansion still uses the current authoritative cursor and valid cached history
 
+#### Scenario: A quiet conversation recovers after a refused page
+- **WHEN** pagination is refused and subsequent conditional reads reuse the retired snapshot
+- **THEN** explicit Retry in Detail and HQ SHALL retire a pending read and request a complete recent response without its previous ETag
+- **AND** only a successful current-reader response restores content; failed retries and late or old-reader responses SHALL NOT restore it
+- **AND** ordinary polling SHALL retain conditional-read behavior
+
 ### Requirement: Explicit owner-only historical observation reads
 
 The pane transcript endpoint MAY provide an owner-only historical observation with explicit observation=1 when current association is unavailable and verified historical evidence is sufficient. Ordinary reads SHALL retain their contract. Observation reads SHALL keep existing response/recent/page bounds, distinguish last-known history in response state and conditional responses, and SHALL NOT stitch unverified earlier HQ sessions or alter live metadata. Supported UI SHALL visibly restrict Chat sending while history is last-known; a verified response may remove that restriction without replacing unchanged turns.

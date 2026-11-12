@@ -1819,6 +1819,8 @@ end-to-end phone timings. The existing default HTTP read remains compatible.
 
 An authorization refusal retires every snapshot already observed for that reader, even when polling advanced during the page read or an older array is reused. Only a newer successful source snapshot restores content. Jump invalidates active pagination in continuous as well as disconnected history, retires its UI continuation and pending prepend anchor, and preserves valid continuous history for deliberate expansion later. A late page cannot enlarge the reset window or offset a new reader.
 
+Explicit Retry in Detail and HQ retires any pending recent read and clears that reader's ETag before requesting a complete response. A successful response can restore an unchanged quiet conversation after a page refusal. Failed retries and superseded or old-reader responses cannot restore retired content. Regular polling remains conditional; a 304 that reuses an already retired snapshot does not by itself lift the refusal.
+
 ## Local drafts and worktree review (2026-11-12)
 
 A chat whose historical association is pending permits local draft editing and shows why sending is unavailable. The keyboard and expanded editor remain usable; Return, send, upload and terminal keys keep the remote-input fence. Draft persistence uses the observed conversation only as a local scope, preserving the draft when that same identity is verified. It does not supply control authority.

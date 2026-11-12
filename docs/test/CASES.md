@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1167 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1168 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3777 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2075 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2078 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 132 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 105 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -59,6 +59,9 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | CPG-002 | Old request is invalidated, loading resets, late page produces no insertion/window enlargement/compensation, latest20-turn intent remains. New paging still works with authoritative cursor; existing disconnected behavior and20-turn-per-page mounting remain. |
 | CPG-003 | No obsolete history-offset scrollTo or window re-expansion after Jump; current follow-tail behavior remains and new legitimate paging can insert normally. These are actual React/imperative-call observations, not device pixel/animation certification. |
 | CPG-004 | Both previously observed snapshots stay retired and failed/denied remain visible; only C restores content. Reader-local weak generation metadata must not turn an old cached array into a new authorization or retain turn payloads. |
+| CPG-005 | Regular poll remains conditional and denial stays visible after304; Retry sends no If-None-Match, succeeds with same content from actual parser and removes denial/error. Existing cached prefix never returns; no fake array clone or changed server data is needed. |
+| CPG-006 | Old poll signal is aborted and lane retired, each explicit attempt is unconditional, failures leave denial intact, only valid successful response restores. Late304 cannot replace newer current content or reset retry validator. |
+| CPG-007 | Old request is aborted/retired and cannot apply turns/ETag or clear current failure; B remains shown, A sentinel absent, no input/send side effects. |
 | RBL-001 | Only eligible active exact turn can receive one turn/steer. Idle/unloaded/unsupported/mismatched/blocked states cause zero mutating writes; even definitive unknown-method after steer has no queue fallback. Missing acceptance remains attempted/unknown. No thread catalog/resume, no turn/start or thread/queue/add. Required scope check runs before mutation; rejected check has no side effects. A negative control restoring old queued semantics fails wire assertions, not setup. |
 | RBL-002 | ReplyAt is set once, legacy entries unchanged/readable, never reset age on identical resolve. Only one notification claim per home/thread/active turn; unknown blocks another notice in that turn. Different turn or identity independent. Expired/legacy/already fetched replies do not auto notify; body stays durable. Source fetch is exact-identity checked and idempotent and does not set Delivered or claim model execution. Unfetched listing bounded and deterministic; no existing request deletion/replay. A source Wait cancelled after observing a real contended ledger lock returns without waiting for lock release and leaves fetched_at zero. |
 | RBL-003 | Codex delivery never enters legacy tmux/queue fallback; notice text excludes complete reply/private body, accepted status describes notice only. Burst guard and freshness rechecked at mutation. CLI source pull fetches only own home/thread/pane lifetime; timeout/cancel bounded with reply left intact, no busy indefinite wait. Late reply returned through tool output on pull, not new human turn. Legacy delivered rows not replayed; original caller authorization retained. The canonical short inbox hint is attributed to HQ only with accepted exact-home/thread receipt and first source witness; a later human copy remains human. |
