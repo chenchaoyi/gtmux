@@ -1,0 +1,25 @@
+{
+  "id": "activity-rendered-density-20261112",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review; not independent approval",
+    "date": "2026-11-12",
+    "decision": "Align existing rendered browser assertions with the reviewed pointer-specific density contract",
+    "notes": "Full CI exposed three old unconditional 44px Activity assertions. Retain all settings, content, count, disclosure, clipboard, focus and bounds assertions. Change only Activity dimensions to fine-pointer30px rows/32px group and touch44px; assert actual pointer capability rather than equating width with touch. Add explicit touch context for narrow structured-activity cases. New review precedes modifications of these legacy files; no timeout or gate weakening."
+  },
+  "cases": [
+    {
+      "id": "AOP-005",
+      "layer": "L4",
+      "description": "Rendered existing Activity journeys verify compact mouse density and unchanged touch targets",
+      "setup": "Production synthetic server and shipped browser assets; settings/calls at320,390,1440 and structured Activity at320,1280, explicit touch/nontouch contexts.",
+      "action": "Inspect matchMedia pointer capabilities, measure group/row bounds, expand/collapse and update Activity while preserving other original journey checks.",
+      "expected": "Actual fine pointer has30..32px reading rows and32..34px group controls; touch rows remain44..46px and group at least44px. Context pointer capability is asserted. Settings and unrelated interactive targets remain44px, raw input/order/count/keyboard/overflow/state and no-send checks remain unchanged. Old44px-for-every-context assertions are intentionally superseded only for Activity mouse density. Synthetic browser is not device/VO acceptance.",
+      "planned_files": [
+        "tests/web/presentation.test.cjs",
+        "tests/web/smoke.test.cjs"
+      ]
+    }
+  ],
+  "seal": "2d2fa6f2ea924d6a7d90b375860c92121ae91d06237f5e98a99c0dbaa56c09dc"
+}
