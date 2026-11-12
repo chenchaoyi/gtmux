@@ -18,7 +18,7 @@ function fixture(){
  const context={document:{createElement:tag=>new Element(tag),getElementById:id=>find(board,id)},$:id=>id==='board'?board:null,uiIcon:()=>'<svg></svg>',T:(en)=>en,refitTile:t=>fits.push(t),maxedTile:null,zTop:0};
  const begin=source.indexOf('  function maximizeTile('),end=source.indexOf('  function refitTile(',begin);assert.ok(begin>0&&end>begin);
  vm.runInNewContext(source.slice(begin,end)+';globalThis.api={maximizeTile,restoreBoard};',context);
- const tile=()=>{const el=new Element('tile'),head=new Element('header'),title=new Element('title');head.className='tile-head';title.className='tile-name';head.appendChild(title);el.appendChild(head);board.appendChild(el);return {el,head,title,w:420,h:300,mode:'chat'};};
+ const tile=()=>{const el=new Element('tile'),head=new Element('header'),title=new Element('title'),identity=new Element('div'),avatar=new Element('button');head.className='tile-head';avatar.className='speaker-avatar';identity.className='tile-identity';title.className='tile-name';head.appendChild(avatar);identity.appendChild(title);head.appendChild(identity);el.appendChild(head);board.appendChild(el);return {el,head,title,identity,w:420,h:300,mode:'chat'};};
  return {...context.api,board,tile,fits,find};
 }
 
@@ -41,4 +41,11 @@ test('AOP004 maximized header reserves grid space and names its narrow icon',()=
  assert.ok(/\.tile\.max \.tile-head\s*\{[^}]*grid-template-columns:/.test(css),'maximized header has no reserved grid');
  assert.ok(css.includes('.max-exit-label'),'narrow icon label rule missing');
  assert.ok(/\.tile\.max\s*\{[^}]*width:\s*calc\(100% - 16px\)/.test(css),'maximized width does not follow board resize');
+});
+
+test('AOP006 real identity wrapper occupies the flexible maximized column',()=>{
+ const f=fixture(),t=f.tile();f.maximizeTile(t);assert.equal(t.title.parent,t.identity);
+ assert.ok(source.includes("identity.className = 'tile-identity'"),'fixture must model the production buildTile wrapper');
+ const css=fs.readFileSync(path.join(__dirname,'style.css'),'utf8');
+ assert.match(css,/\.tile\.max \.tile-head > \.tile-identity\s*\{[^}]*grid-column:\s*3/);
 });

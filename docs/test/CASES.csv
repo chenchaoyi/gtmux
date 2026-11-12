@@ -2937,6 +2937,7 @@ LEG-a24ee8487c6a,G,Browser,internal/server/web/documents.test.cjs,7,test,browser
 MAP-452a61a1d04e,L3,reviewed implementation,internal/server/web/maximize-layout.test.cjs,25,reviewed-selector,AOP004 Restore layout occupies the actual header before the title,False,AOP-004
 MAP-cd44b26604d6,L3,reviewed implementation,internal/server/web/maximize-layout.test.cjs,31,reviewed-selector,AOP004 switching and restoring keep one control and restore prior dimensions,False,AOP-004
 MAP-f159c36e253b,L3,reviewed implementation,internal/server/web/maximize-layout.test.cjs,38,reviewed-selector,AOP004 maximized header reserves grid space and names its narrow icon,False,AOP-004
+MAP-97d5f314aecb,L3,reviewed implementation,internal/server/web/maximize-layout.test.cjs,46,reviewed-selector,AOP006 real identity wrapper occupies the flexible maximized column,False,"AOP-004,AOP-006"
 MAP-07e13a073c16,L3,reviewed implementation,internal/server/web/observed_identity.test.cjs,16,reviewed-selector,SID007 focused and tile history cannot dispatch input or become an external row,False,SID-007
 LEG-dd62d73a080e,G,Browser,internal/server/web/reading.test.cjs,2,test,file+' follows its native model',True,legacy-not-retrospectively-reviewed
 LEG-25aecd2608d3,G,Browser,internal/server/web/reading.test.cjs,6,test,offline browser formatter and syntax reader retain complete inputs,False,legacy-not-retrospectively-reviewed
@@ -6436,6 +6437,10 @@ MAP-31ae43976a8b,L3,reviewed implementation,tests/web/harness-isolation.test.cjs
 MAP-7fb866f795f7,L3,reviewed implementation,tests/web/harness-isolation.test.cjs,25,reviewed-selector,shared browser next case,False,CT-BROWSER
 MAP-eda764da861f,G,reviewed implementation,tests/web/harness.cjs,13,reviewed-selector,function scenario,False,"CT-TIMING,CT-BROWSER"
 MAP-e5604b1208c7,L2,reviewed implementation,tests/web/http-contract-validator.test.cjs,4,reviewed-selector,"wire contract rejects type, permission, ordinal, omission and security-header drift",False,CT-HTTP
+MAP-ce9e69e4a686,L4,reviewed implementation,tests/web/maximized-header.test.cjs,4,reviewed-selector,AOP006 real maximized header wide,False,AOP-006
+MAP-5e76ed85dc75,L4,reviewed implementation,tests/web/maximized-header.test.cjs,5,reviewed-selector,AOP006 real maximized header medium,False,AOP-006
+MAP-1752da0e5a5c,L4,reviewed implementation,tests/web/maximized-header.test.cjs,6,reviewed-selector,AOP006 real maximized header narrow board,False,AOP-006
+MAP-dd8842bbedae,L4,reviewed implementation,tests/web/maximized-header.test.cjs,7,reviewed-selector,AOP006 real maximized header plain terminal,False,AOP-006
 LEG-9543b7b6751c,L3,Browser,tests/web/presentation.test.cjs,5,scenario,`Session section casing matches App headings at ${width}`,True,legacy-not-retrospectively-reviewed
 LEG-ba614971d0a3,L3,Browser,tests/web/presentation.test.cjs,37,scenario,Empty workspace has a clear first action and a scene-specific attributed excerpt,False,legacy-not-retrospectively-reviewed
 LEG-54719aa9487c,L3,Browser,tests/web/presentation.test.cjs,49,scenario,Only the actual supervisor is pinned above status groups,False,legacy-not-retrospectively-reviewed
