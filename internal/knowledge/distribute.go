@@ -386,9 +386,18 @@ func cleanRepo(p string) string {
 // LocalPath is the supervisor's own LOCAL.md — the hq audience's carrier.
 func LocalPath() string { return filepath.Join(state.HQHome(), "LOCAL.md") }
 
-// carryIntoLocal appends one entry to LOCAL.md as its own section, once: the marker
-// carrying the id makes a second land a no-op instead of a duplicate. LOCAL.md is the
-// operator's file; nothing already in it is touched.
+// localSection matches the historical carrier format exactly. Only a section
+// reproducible from the ledger may be replaced; operator edits are conflicts.
+func localSection(op knowledgeOp) string {
+	s := "\n## " + op.Title + "\n\n"
+	if body := strings.TrimSpace(op.Body); body != "" {
+		s += body + "\n\n"
+	}
+	return s + "<!-- gtmux:knowledge " + op.ID + " -->\n"
+}
+
+// carryIntoLocal is idempotent for the current revision, and upgrades an exact
+// historical section. It never guesses where an operator-owned section ends.
 func carryIntoLocal(op knowledgeOp) (string, error) {
 	path := LocalPath()
 	marker := "<!-- gtmux:knowledge " + op.ID + " -->"
@@ -398,17 +407,34 @@ func carryIntoLocal(op knowledgeOp) (string, error) {
 	}
 	content := string(b)
 	if strings.Contains(content, marker) {
-		return path, nil
+		if strings.Count(content, marker) != 1 {
+			return path, fmt.Errorf("duplicate LOCAL carrier marker for %s", op.ID)
+		}
+		if strings.Contains(content, localSection(op)) {
+			return path, nil
+		}
+		ops, err := readKnowledgeOps()
+		if err != nil {
+			return path, err
+		}
+		for i := len(ops) - 1; i >= 0; i-- {
+			old := ops[i]
+			if old.ID != op.ID || (old.Op != knowledgeOpAdd && old.Op != knowledgeOpSupersede) {
+				continue
+			}
+			section := localSection(old)
+			if strings.Count(content, section) == 1 {
+				updated := strings.Replace(content, section, localSection(op), 1)
+				return path, state.WriteFile(path, []byte(updated), 0o644)
+			}
+		}
+		return path, fmt.Errorf("LOCAL carrier for %s differs from ledger history; compare the user edit before landing", op.ID)
 	}
 	var s strings.Builder
 	if len(content) > 0 && !strings.HasSuffix(content, "\n") {
 		s.WriteString("\n")
 	}
-	s.WriteString("\n## " + op.Title + "\n\n")
-	if body := strings.TrimSpace(op.Body); body != "" {
-		s.WriteString(body + "\n\n")
-	}
-	s.WriteString(marker + "\n")
+	s.WriteString(localSection(op))
 	if err := state.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return path, err
 	}

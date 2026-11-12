@@ -1755,5 +1755,149 @@
       "AOP006 real maximized header narrow board",
       "AOP006 real maximized header plain terminal"
     ]
+  },
+  "internal/knowledge/dreamdiagnostics_test.go": {
+    "cases": [
+      "KBDREAM-DIAGNOSTICS"
+    ],
+    "selectors": [
+      "TestDreamDiagnosticsJournalAllowlistAndLegacyEncoding"
+    ]
+  },
+  "internal/knowledge/dreamrun_test.go": {
+    "cases": [
+      "KBDREAM-JOURNAL",
+      "KBDREAM-GUARDS",
+      "KBDREAM-BUDGET"
+    ],
+    "selectors": [
+      "TestDreamResumeRetainsCompletedItemsAndModelHistory",
+      "TestDreamConcurrentResumeAndSourceChanges",
+      "TestDreamBudgetsPrivacyAndCorruptionStopBeforeCalls",
+      "TestDreamPrivateReclassificationAndInvalidResults",
+      "TestDreamModelProposalsRemainInertAndStatusIsReadOnly",
+      "TestDreamSharedLifetimeBudgetAndUnresolvedRun",
+      "TestDreamExplicitDeferRetainsFailedAttempts",
+      "TestDreamRejectsInventedEvidenceAndJournalIdentity"
+    ]
+  },
+  "internal/hq/knowledge_workflow_test.go": {
+    "cases": [
+      "KBMEM-HQ-WORKFLOW"
+    ],
+    "selectors": [
+      "TestKnowledgeWorkflowUsesBoundedReviewWithoutManufacturedReuse"
+    ]
+  },
+  "internal/knowledge/memory_carrier_test.go": {
+    "cases": [
+      "KBMEM-CARRIER"
+    ],
+    "selectors": [
+      "TestMemoryCarrierUpdatesHistoricalTextAndPreservesManualEdits"
+    ]
+  },
+  "internal/app/spawn_paneid_test.go": {
+    "cases": [
+      "APPFIX-NAME-STABILITY"
+    ],
+    "selectors": [
+      "TestNameDispatchWindowBackfillsPaneIDs"
+    ]
+  },
+  "internal/app/terminalkeys_pty_test.go": {
+    "cases": [
+      "APPFIX-PTY-COVERAGE"
+    ],
+    "selectors": [
+      "TestTerminalKeyRawPTY"
+    ]
+  },
+  "internal/knowledge/vault_test.go": {
+    "cases": [
+      "KBMEM-VAULT"
+    ],
+    "selectors": [
+      "TestVaultRoundTripRenameAndDeletion",
+      "TestVaultConflictPrivacyAndRecovery",
+      "TestVaultRefusesSymlinksAndUnrelatedDirectory",
+      "TestVaultPublicationKeepsOldSnapshotsAndReadOnlyFiles"
+    ]
+  },
+  "internal/knowledge/review_test.go": {
+    "cases": [
+      "KBMEM-REVIEW"
+    ],
+    "selectors": [
+      "TestReviewAtomicConflictAndIdempotentRetry",
+      "TestReviewRejectsWholeBatchBeforeAnyAppend",
+      "TestReviewConcurrentRevisionHasOneWinner",
+      "TestReviewDryRunWritesNothingAndProtectedRetireRefused",
+      "TestReviewedRevisionReopensCarrierAndDoesNotRefreshVerification"
+    ]
+  },
+  "internal/knowledge/usage_test.go": {
+    "cases": [
+      "KBMEM-USAGE"
+    ],
+    "selectors": [
+      "TestUsageDoesNotBecomeHitAndRetryIsIdempotent",
+      "TestUsageRejectsAuditAndForgedMeasurement"
+    ]
+  },
+  "internal/app/serverstart_test.go": {
+    "cases": [
+      "APPFIX-BOOT-ISOLATION"
+    ],
+    "selectors": [
+      "TestStartBootServerViaLaunchd",
+      "TestStartBootServerDirectByDefault",
+      "TestStartBootServerFallsBackWhenLaunchdFails"
+    ]
+  },
+  "internal/hq/dreamexec_test.go": {
+    "cases": [
+      "KBDREAM-EXECUTOR"
+    ],
+    "selectors": [
+      "TestDreamCLIModelSelectionAndIsolation",
+      "TestDreamCLIParsesTerminalUsageAndRejectsTools",
+      "TestDreamCLIProcessCompletionCancellationAndBoundedOutput"
+    ]
+  },
+  "internal/knowledge/consult_test.go": {
+    "cases": [
+      "KBMEM-CONSULT"
+    ],
+    "selectors": [
+      "TestConsultScopeVersionAndEvidenceBoundaries",
+      "TestConsultWholeCardsProtectedOverflowAndNegativeQuery"
+    ]
+  },
+  "internal/knowledge/dream_test.go": {
+    "cases": [
+      "KBMEM-DREAM"
+    ],
+    "selectors": [
+      "TestDreamBudgetUnknownExhaustedAndFingerprint",
+      "TestDreamPacketExcludesPrivateAndRejectsMissingIDs"
+    ]
+  },
+  "internal/hq/dreamdiagnostics_test.go": {
+    "cases": [
+      "KBDREAM-DIAGNOSTICS"
+    ],
+    "selectors": [
+      "TestDreamDiagnosticsClassifiedBoundedAndPrivate"
+    ]
+  },
+  "internal/knowledge/dreamallowance_test.go": {
+    "cases": [
+      "KBDREAM-ALLOWANCE"
+    ],
+    "selectors": [
+      "TestDreamAllowancePreservesProgressCostsAndIdempotency",
+      "TestDreamAllowanceRejectsInvalidActiveAndRetryBypass"
+    ]
   }
 }

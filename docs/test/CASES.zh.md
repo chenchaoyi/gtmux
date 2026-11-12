@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1156 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1168 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
-| L1 · 单元/纯逻辑 | 3777 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2058 | [L2.csv](cases/L2.csv) |
+| L1 · 单元/纯逻辑 | 3782 | [L1.csv](cases/L1.csv) |
+| L2 · 组件/契约 | 2085 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 122 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 100 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -41,6 +41,9 @@
 | ACP-001 | Fresh enabled Deny elements only; ignored first click can use one further explicit click in the same camera dialog, maximum two; no click starts after 10s; no unrelated permission acted upon; original command error preserved; no permission grant or settings mutation. |
 | ACP-002 | New case survives a single lost OS denial touch; old frozen callback fails. Missing alert, grant=true, wrong/stuck system dialog still fail. Original App alert 30s remains; read-only QA CAMERA granted=false is required. Other 30 journeys and case orchestration unchanged. |
 | ACP-003 | Both sizes retain complete suite and existing expectations; no denied permission granted, hidden blocked results or inflated timing budget. Failed driver evidence remains separate from product assertions. |
+| APPFIX-BOOT-ISOLATION | Server starts and contains only the requested session; caller PATH reaches server, caller config marker does not; HOME/socket belong to fixture. Failure cleanup stays scoped to the test. |
+| APPFIX-NAME-STABILITY | No rename/options change for empty slug; regular slugs still include pane IDs and headless marker. No sleeps, retries or relaxed equality. |
+| APPFIX-PTY-COVERAGE | All 400+ advertised combinations remain exercised and byte-exact; count is recorded, no production transport guard bypass, no raw user input. Test cleanup restores global binary and owns only the private server. |
 | ARGV-001 | Complete original first; only explicit interpreter script arguments or complete heredocs become previews; literal escapes decode once, no guess from prose/paths, dynamic/unsupported wrappers stay raw; repeated extraction stable and bounded |
 | ARGV-002 | Actual shared CodeText receives the exact script and language, formatting toggles; selected script never replaces original copy; raw reader has no derived tabs |
 | ARGV-003 | Typed derived tabs and compact syntax rendering visible, original JSON copy and Raw unchanged; no API sends or nested execution; existing layout can scroll without clipping |
@@ -124,6 +127,19 @@
 | HQP1-006 | Source ingestion uses exact conversation/time attribution, records ambiguous/unassigned observations and source gaps; cursor advances only with durable inbox. |
 | HQP1-007 | CLI operations enforce HQ authority and expose pending reconciliation; periodic ingestion/wake is independent from delivery and restart-safe. |
 | HQP1-008 | Schema 1 reads migrate without invented history, schema 2 prevents old writer loss, and seeded bilingual playbook explains safe processing. |
+| KBDREAM-ALLOWANCE | The original journal prefix/plan/run ID remains; only one reasoned allowance event is appended; failed and completed costs remain; completed IDs never run again; current writer gate and shared budget/retry checks stay in force; no KB changes. |
+| KBDREAM-DIAGNOSTICS | Only allowlisted category and numeric exit code reach errors/journal; raw diagnostics never appear; bounded capture drains without blocking; failed attempt/time/unknown usage preserved; old journal records remain readable; success stays diagnostic-free. Nonterminal diagnostic items cannot masquerade as tool execution; they neither invalidate a successful terminal receipt nor turn a fatal/missing receipt into success. Actual tool/action items remain rejected. |
+| KBDREAM-JOURNAL | Completed items are not called again; interrupted item remains identifiable; model choices, input revisions, visible results, reasons, times and costs stay in durable sequence; no ledger/hit mutation. |
+| KBDREAM-GUARDS | Only one runner obtains the stable lock; no call on corruption/stale/private input; status reads create nothing; no retry erases earlier charges or history. |
+| KBDREAM-BUDGET | Reserve before generation; completed usage reconciles once; interrupted or unknown charges never reset; stop at limits or errors without applying KB proposals. Pilot/bootstrap stop thresholds are shared across runs over their lifetime, not reset weekly; unresolved attempts block other runs. Unknown usage is not zero. |
+| KBDREAM-EXECUTOR | Forward exact HQ model/reason; bounded timeout/output; strict final JSON, usage provenance and cancellation; secrets/raw private session URLs never logged. |
+| KBMEM-REVIEW | Reject stale or partial batch; no duplicate append; preserve ID/hits/sources/protection; reopened landing and tentative stale card |
+| KBMEM-VAULT | Safe export, edited text yields inert diff, conflicting revisions preserved, rename stable, deletion never retires, private entries excluded and symlinks refused; each note/baseline publication is atomic, open pre-publication snapshots remain complete, read-only destinations remain untouched, and no temporary file is left after completion/failure |
+| KBMEM-CONSULT | Correct scope and exact tool version only; hypotheses/stale excluded; whole cards including exceptions; protected overflow explicit; no ledger mutation |
+| KBMEM-CARRIER | Exact historical generated section replaced once; human-edited or duplicate markers rejected with bytes preserved |
+| KBMEM-USAGE | Record reported stages with card/revision identity; no hits update; deduplicate, bounded size and strict input, audit excluded |
+| KBMEM-DREAM | Deterministic candidates and fingerprint; budget split input/generation; spent and unknown usage explicit; no session collection, model call or mutation |
+| KBMEM-HQ-WORKFLOW | Both seeds teach scoped consult, explicit missing_required handling, durable evidence admission, existing dream plan and review check/apply workflow, non-causal self reports and unknown-usage disclosure, HQ-selected CLI execution, persisted per-item progress and interruption inspection. Charter version is greater than installed 62. |
 | AOP-006 | Return button, avatar, tile-identity and window controls occupy separate columns with no overlap; title wrapper uses flexible remaining width (at least180px in these fixtures), metadata remains visible. Narrow actual board keeps the named return control. Restore removes maximized state and returns original dimensions. Production strings/source/raw records unchanged. No device/VO or real-session acceptance claimed. Both direct avatar forms occupy column2 without covering the return control. |
 | MSD-001 | Active uses one exact expectedTurnId steer; loaded idle uses one start with original stable message ID and input; legacy returns honest queue receipt; notLoaded never resume; permissions/cwd/model unchanged; flags, state change and ambiguous writes never queue/replay; no real server input. |
 | MSD-002 | Only phone explicit submitted text opts into direct user semantics. Receipt keeps queued vs active/start accepted; persistent retries preserve known outcome. Native failure never types fallback; draft/menu/hold/identity/idempotency unchanged. |

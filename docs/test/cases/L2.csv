@@ -87,6 +87,10 @@ MAP-7bf0b97f95d1,L2,reviewed implementation,internal/hook/codex_completed_turn_t
 MAP-6752a622a3e4,L2,reviewed implementation,internal/hook/codex_completed_turn_test.go,72,reviewed-selector,TestCompletedCodexTurnKeepsLegacyAndUncertainCallbacks,False,"CET-004,CET-005"
 MAP-2dd42a3caeb8,L2,reviewed implementation,internal/hook/codex_completed_turn_test.go,114,reviewed-selector,TestCodexContinuationPreservesActiveStart,False,"CET-004,CET-005"
 MAP-cce8e70a6d32,L2,reviewed implementation,internal/hook/codex_manual_compact_test.go,11,reviewed-selector,TestCompletedCodexTurnPreservesManualCompactReceipt,False,CET-006
+MAP-99b86a9378f3,L2,reviewed implementation,internal/hq/dreamdiagnostics_test.go,13,reviewed-selector,TestDreamDiagnosticsClassifiedBoundedAndPrivate,False,KBDREAM-DIAGNOSTICS
+MAP-f188a5a64e53,L2,reviewed implementation,internal/hq/dreamexec_test.go,15,reviewed-selector,TestDreamCLIModelSelectionAndIsolation,False,KBDREAM-EXECUTOR
+MAP-21a1b3d6966f,L2,reviewed implementation,internal/hq/dreamexec_test.go,43,reviewed-selector,TestDreamCLIParsesTerminalUsageAndRejectsTools,False,KBDREAM-EXECUTOR
+MAP-cb02aefedb71,L2,reviewed implementation,internal/hq/dreamexec_test.go,72,reviewed-selector,TestDreamCLIProcessCompletionCancellationAndBoundedOutput,False,KBDREAM-EXECUTOR
 MAP-d6cd13ff80b3,L2,Go core / CLI / server,internal/hq/hq_test.go,194,reviewed-selector,TestStorageBoundaryUpgradePreservesLocalRulesAndExistingRecords,False,STOR-002
 MAP-426d8c4b1e7f,L2,reviewed implementation,internal/hq/identity_launch_test.go,11,reviewed-selector,TestSID001ActualHQRecipeRetainsManagedFrontend,False,SID-001
 MAP-a9132845f95d,L2,reviewed implementation,internal/hqworkspace/phase1_test.go,45,reviewed-selector,TestPhase1ReportsPreserveCompletedAndQuestion,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
@@ -95,6 +99,29 @@ MAP-8c722e686be5,L2,reviewed implementation,internal/hqworkspace/phase1_test.go,
 MAP-6cde1202d0f1,L2,reviewed implementation,internal/hqworkspace/phase1_test.go,220,reviewed-selector,TestPhase1OldObservationDeferralAndSchemaMigration,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
 MAP-05f8c00db7ff,L2,reviewed implementation,internal/hqworkspace/phase1_test.go,281,reviewed-selector,TestPhase1ExactAttributionAndAmbiguity,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
 MAP-259bfbcda714,L2,Go core / CLI / server,internal/knowledge/distribute_test.go,161,reviewed-selector,TestBuiltinStorageBoundariesReachEveryCarrierWithoutPromotions,False,STOR-001
+MAP-f2c2067e1564,L2,reviewed implementation,internal/knowledge/dreamallowance_test.go,13,reviewed-selector,TestDreamAllowancePreservesProgressCostsAndIdempotency,False,KBDREAM-ALLOWANCE
+MAP-ff7b915f1ef1,L2,reviewed implementation,internal/knowledge/dreamallowance_test.go,72,reviewed-selector,TestDreamAllowanceRejectsInvalidActiveAndRetryBypass,False,KBDREAM-ALLOWANCE
+MAP-0006a0195b2d,L2,reviewed implementation,internal/knowledge/dreamdiagnostics_test.go,12,reviewed-selector,TestDreamDiagnosticsJournalAllowlistAndLegacyEncoding,False,KBDREAM-DIAGNOSTICS
+MAP-d152352d38fd,L2,reviewed implementation,internal/knowledge/dreamrun_test.go,39,reviewed-selector,TestDreamResumeRetainsCompletedItemsAndModelHistory,False,"KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+MAP-66789ff45c6b,L2,reviewed implementation,internal/knowledge/dreamrun_test.go,102,reviewed-selector,TestDreamConcurrentResumeAndSourceChanges,False,"KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+MAP-37e83b935fa4,L2,reviewed implementation,internal/knowledge/dreamrun_test.go,138,reviewed-selector,TestDreamBudgetsPrivacyAndCorruptionStopBeforeCalls,False,"KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+MAP-5b7c1b481c95,L2,reviewed implementation,internal/knowledge/dreamrun_test.go,166,reviewed-selector,TestDreamPrivateReclassificationAndInvalidResults,False,"KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+MAP-76ec490f5726,L2,reviewed implementation,internal/knowledge/dreamrun_test.go,186,reviewed-selector,TestDreamModelProposalsRemainInertAndStatusIsReadOnly,False,"KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+MAP-2d51451e35cf,L2,reviewed implementation,internal/knowledge/dreamrun_test.go,221,reviewed-selector,TestDreamSharedLifetimeBudgetAndUnresolvedRun,False,"KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+MAP-740e472a4247,L2,reviewed implementation,internal/knowledge/dreamrun_test.go,285,reviewed-selector,TestDreamExplicitDeferRetainsFailedAttempts,False,"KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+MAP-9eeedf9690cc,L2,reviewed implementation,internal/knowledge/dreamrun_test.go,316,reviewed-selector,TestDreamRejectsInventedEvidenceAndJournalIdentity,False,"KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+MAP-eb3912a57551,L2,reviewed implementation,internal/knowledge/memory_carrier_test.go,10,reviewed-selector,TestMemoryCarrierUpdatesHistoricalTextAndPreservesManualEdits,False,KBMEM-CARRIER
+MAP-0f80e5899da6,L2,reviewed implementation,internal/knowledge/review_test.go,30,reviewed-selector,TestReviewAtomicConflictAndIdempotentRetry,False,KBMEM-REVIEW
+MAP-def3fe83ca29,L2,reviewed implementation,internal/knowledge/review_test.go,64,reviewed-selector,TestReviewRejectsWholeBatchBeforeAnyAppend,False,KBMEM-REVIEW
+MAP-32cc723818f0,L2,reviewed implementation,internal/knowledge/review_test.go,103,reviewed-selector,TestReviewDryRunWritesNothingAndProtectedRetireRefused,False,KBMEM-REVIEW
+MAP-3e5f78db15d6,L2,reviewed implementation,internal/knowledge/review_test.go,132,reviewed-selector,TestReviewedRevisionReopensCarrierAndDoesNotRefreshVerification,False,KBMEM-REVIEW
+MAP-99965bdacab5,L2,reviewed implementation,internal/knowledge/review_test.go,79,reviewed-selector,TestReviewConcurrentRevisionHasOneWinner,False,KBMEM-REVIEW
+MAP-9fe9287c0104,L2,reviewed implementation,internal/knowledge/usage_test.go,14,reviewed-selector,TestUsageDoesNotBecomeHitAndRetryIsIdempotent,False,KBMEM-USAGE
+MAP-76d1fe9047e3,L2,reviewed implementation,internal/knowledge/usage_test.go,41,reviewed-selector,TestUsageRejectsAuditAndForgedMeasurement,False,KBMEM-USAGE
+MAP-c93b792249fd,L2,reviewed implementation,internal/knowledge/vault_test.go,12,reviewed-selector,TestVaultRoundTripRenameAndDeletion,False,KBMEM-VAULT
+MAP-bb0c4b4f89c6,L2,reviewed implementation,internal/knowledge/vault_test.go,65,reviewed-selector,TestVaultConflictPrivacyAndRecovery,False,KBMEM-VAULT
+MAP-6d6742c69a23,L2,reviewed implementation,internal/knowledge/vault_test.go,107,reviewed-selector,TestVaultRefusesSymlinksAndUnrelatedDirectory,False,KBMEM-VAULT
+MAP-e5c7426d0d21,L2,reviewed implementation,internal/knowledge/vault_test.go,128,reviewed-selector,TestVaultPublicationKeepsOldSnapshotsAndReadOnlyFiles,False,KBMEM-VAULT
 LEG-c41c1a54df5d,L2,Go core / CLI / server,internal/memdiag/server_test.go,224,Test,TestRequestBoundaries,False,legacy-not-retrospectively-reviewed
 LEG-6d1949576208,L2,Go core / CLI / server,internal/memdiag/server_test.go,243,Test,TestProfileBudgetsFailureCancellationAndConcurrency,False,legacy-not-retrospectively-reviewed
 LEG-55882c09c2ba,L2,Go core / CLI / server,internal/memdiag/server_test.go,284,subtest,cancel and busy,False,legacy-not-retrospectively-reviewed

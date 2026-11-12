@@ -26,6 +26,9 @@ func isolatedTmux(t *testing.T) {
 	}
 	t.Setenv("TMUX_TMPDIR", sock)
 	t.Setenv("TMUX", "")
+	t.Setenv("TMUX_PANE", "")
+	// Socket isolation alone still loads the caller's tmux configuration.
+	t.Setenv("HOME", dir)
 }
 
 // The launchd path must produce a WORKING server, not merely a submitted job. It is the
@@ -38,12 +41,19 @@ func TestStartBootServerViaLaunchd(t *testing.T) {
 	if _, err := exec.LookPath("launchctl"); err != nil {
 		t.Skip("no launchctl")
 	}
+	// A synthetic caller config makes accidental inheritance observable without
+	// reading or changing the operator's own configuration.
+	callerHome := t.TempDir()
+	if err := os.WriteFile(filepath.Join(callerHome, ".tmux.conf"), []byte("set-environment -g GTMUX_CALLER_CONFIG_MARKER inherited\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("HOME", callerHome)
 	isolatedTmux(t)
+	t.Cleanup(func() { _, _ = tmux.Run("kill-server") })
 
 	if !startBootServerViaLaunchd("gtmux-test-boot") {
 		t.Fatal("launchd start reported failure")
 	}
-	t.Cleanup(func() { _, _ = tmux.Run("kill-server") })
 
 	if got, _ := tmux.Run("list-sessions", "-F", "#{session_name}"); got != "gtmux-test-boot" {
 		t.Fatalf("server holds %q, want the boot session", got)
@@ -61,6 +71,12 @@ func TestStartBootServerViaLaunchd(t *testing.T) {
 	// (tmux 3.7 handles UTF-8 regardless of locale — the v0.11.3 failure was an older
 	// tmux). What is still load-bearing today is PATH, and this checks it directly.
 	env, _ := tmux.Run("show-environment", "-g")
+	if os.Getenv("HOME") == callerHome || strings.Contains(env, "GTMUX_CALLER_CONFIG_MARKER=") {
+		t.Fatal("boot fixture inherited the caller's HOME/config")
+	}
+	if !strings.Contains(env, "HOME="+os.Getenv("HOME")+"\n") {
+		t.Fatal("server HOME is not the isolated fixture")
+	}
 	if !strings.Contains(env, "PATH="+os.Getenv("PATH")) {
 		t.Errorf("the server did not inherit the caller's PATH — it will not find tmux, git or any agent: %q",
 			firstLineContaining(env, "PATH="))

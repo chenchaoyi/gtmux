@@ -703,13 +703,13 @@ LEG-b6eb0765a54f,L1,Go core / CLI / server,internal/app/servermode_exit_test.go,
 LEG-d0f8029756f0,L1,Go core / CLI / server,internal/app/servermode_exit_test.go,131,Test,TestTurningOnClearsAnOldLocalOff,False,legacy-not-retrospectively-reviewed
 LEG-d3c982d95570,L1,Go core / CLI / server,internal/app/servermodesig_test.go,12,Test,TestServerModeSigMovesOnlyWithWhatIsShown,False,legacy-not-retrospectively-reviewed
 LEG-c571bcf09008,L1,Go core / CLI / server,internal/app/servermodesig_test.go,48,Test,TestServerModeSignatureIsEmptyUntilRead,False,legacy-not-retrospectively-reviewed
-LEG-3a382f316a8b,L1,Go core / CLI / server,internal/app/serverstart_test.go,34,Test,TestStartBootServerViaLaunchd,False,legacy-not-retrospectively-reviewed
-LEG-d559987adf97,L1,Go core / CLI / server,internal/app/serverstart_test.go,48,subtest,list-sessions,False,legacy-not-retrospectively-reviewed
-LEG-6aca551c6ad4,L1,Go core / CLI / server,internal/app/serverstart_test.go,63,subtest,show-environment,False,legacy-not-retrospectively-reviewed
-LEG-14fe89e07d2e,L1,Go core / CLI / server,internal/app/serverstart_test.go,72,Test,TestStartBootServerDirectByDefault,False,legacy-not-retrospectively-reviewed
-LEG-ad5520d103d2,L1,Go core / CLI / server,internal/app/serverstart_test.go,82,subtest,list-sessions,False,legacy-not-retrospectively-reviewed
-LEG-58e532797422,L1,Go core / CLI / server,internal/app/serverstart_test.go,89,Test,TestStartBootServerFallsBackWhenLaunchdFails,False,legacy-not-retrospectively-reviewed
-LEG-0ff339c17b5d,L1,Go core / CLI / server,internal/app/serverstart_test.go,102,subtest,list-sessions,False,legacy-not-retrospectively-reviewed
+LEG-3a382f316a8b,L1,Go core / CLI / server,internal/app/serverstart_test.go,37,Test,TestStartBootServerViaLaunchd,False,legacy-not-retrospectively-reviewed
+LEG-d559987adf97,L1,Go core / CLI / server,internal/app/serverstart_test.go,58,subtest,list-sessions,False,legacy-not-retrospectively-reviewed
+LEG-6aca551c6ad4,L1,Go core / CLI / server,internal/app/serverstart_test.go,73,subtest,show-environment,False,legacy-not-retrospectively-reviewed
+LEG-14fe89e07d2e,L1,Go core / CLI / server,internal/app/serverstart_test.go,88,Test,TestStartBootServerDirectByDefault,False,legacy-not-retrospectively-reviewed
+LEG-ad5520d103d2,L1,Go core / CLI / server,internal/app/serverstart_test.go,58,subtest,list-sessions,False,legacy-not-retrospectively-reviewed
+LEG-58e532797422,L1,Go core / CLI / server,internal/app/serverstart_test.go,105,Test,TestStartBootServerFallsBackWhenLaunchdFails,False,legacy-not-retrospectively-reviewed
+LEG-0ff339c17b5d,L1,Go core / CLI / server,internal/app/serverstart_test.go,58,subtest,list-sessions,False,legacy-not-retrospectively-reviewed
 LEG-3ebc0ec3de0f,L1,Go core / CLI / server,internal/app/servetasks_test.go,11,Test,TestJoinTasksCarriesTheLivePaneStatus,False,legacy-not-retrospectively-reviewed
 LEG-993ad17b1f5d,L1,Go core / CLI / server,internal/app/servetasks_test.go,34,Test,TestAGonePaneIsReportedNotDropped,False,legacy-not-retrospectively-reviewed
 LEG-ba5902b8ee18,L1,Go core / CLI / server,internal/app/servetasks_test.go,60,Test,TestTaskSinceFallsBackToFirstSeen,False,legacy-not-retrospectively-reviewed
@@ -722,10 +722,10 @@ LEG-156eebe9aa64,L1,Go core / CLI / server,internal/app/sharecmd_test.go,137,Tes
 LEG-8aed3735cb05,L1,Go core / CLI / server,internal/app/spawn_binding_test.go,18,Test,TestSpawnBindingRestoresTranscriptEndpoint,False,legacy-not-retrospectively-reviewed
 LEG-16085aeeb0e9,L1,Go core / CLI / server,internal/app/spawn_handle_test.go,7,Test,TestSpawnHandle,False,legacy-not-retrospectively-reviewed
 LEG-c015a50a27ef,L1,Go core / CLI / server,internal/app/spawn_paneid_test.go,20,Test,TestNameDispatchWindowBackfillsPaneIDs,False,legacy-not-retrospectively-reviewed
-LEG-448935afb4cf,L1,Go core / CLI / server,internal/app/spawn_paneid_test.go,48,subtest,--title,False,legacy-not-retrospectively-reviewed
+LEG-448935afb4cf,L1,Go core / CLI / server,internal/app/spawn_paneid_test.go,16,subtest,--title,False,legacy-not-retrospectively-reviewed
 LEG-e069f901d45e,L1,Go core / CLI / server,internal/app/spawn_paneid_test.go,61,subtest,no --title (branch/goal fallback slug),False,legacy-not-retrospectively-reviewed
 LEG-829b1f75d0c5,L1,Go core / CLI / server,internal/app/spawn_paneid_test.go,74,subtest,"multiple panes list every id, headless marker still leads",False,legacy-not-retrospectively-reviewed
-LEG-cf6e3e30468e,L1,Go core / CLI / server,internal/app/spawn_paneid_test.go,89,subtest,empty slug is left alone,False,legacy-not-retrospectively-reviewed
+LEG-cf6e3e30468e,L1,Go core / CLI / server,internal/app/spawn_paneid_test.go,91,subtest,empty slug is left alone,False,legacy-not-retrospectively-reviewed
 LEG-ce854f471753,L1,Go core / CLI / server,internal/app/spawn_quarantine_test.go,27,Test,TestSpawnDir_ExplicitCwdInHQHomeRefused,False,legacy-not-retrospectively-reviewed
 LEG-63fdd04c4c02,L1,Go core / CLI / server,internal/app/spawn_quarantine_test.go,34,Test,TestSpawnDir_InheritedCwdInHQHomeRefused,False,legacy-not-retrospectively-reviewed
 LEG-fc33e35288ff,L1,Go core / CLI / server,internal/app/spawn_quarantine_test.go,47,Test,TestSpawnDir_NormalProjectAllowed,False,legacy-not-retrospectively-reviewed
@@ -1545,6 +1545,10 @@ LEG-247cd98ca75c,L1,Go core / CLI / server,internal/hq/diskhygiene_test.go,150,T
 LEG-4c52936d0ced,L1,Go core / CLI / server,internal/hq/diskhygiene_test.go,229,Test,TestHygieneKeepsALivePanesMarkers,False,legacy-not-retrospectively-reviewed
 LEG-203ef54cdfff,L1,Go core / CLI / server,internal/hq/diskhygiene_test.go,243,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-4aac3058d408,L1,Go core / CLI / server,internal/hq/distill_test.go,5,Test,TestShouldDistill,False,legacy-not-retrospectively-reviewed
+MAP-99b86a9378f3,L2,reviewed implementation,internal/hq/dreamdiagnostics_test.go,13,reviewed-selector,TestDreamDiagnosticsClassifiedBoundedAndPrivate,False,KBDREAM-DIAGNOSTICS
+MAP-f188a5a64e53,L2,reviewed implementation,internal/hq/dreamexec_test.go,15,reviewed-selector,TestDreamCLIModelSelectionAndIsolation,False,KBDREAM-EXECUTOR
+MAP-21a1b3d6966f,L2,reviewed implementation,internal/hq/dreamexec_test.go,43,reviewed-selector,TestDreamCLIParsesTerminalUsageAndRejectsTools,False,KBDREAM-EXECUTOR
+MAP-cb02aefedb71,L2,reviewed implementation,internal/hq/dreamexec_test.go,72,reviewed-selector,TestDreamCLIProcessCompletionCancellationAndBoundedOutput,False,KBDREAM-EXECUTOR
 LEG-b93c1dc8efc6,L1,Go core / CLI / server,internal/hq/eventsattr_test.go,13,Test,TestAttributedPaneFromSession,False,legacy-not-retrospectively-reviewed
 LEG-21646333b344,L1,Go core / CLI / server,internal/hq/eventsattr_test.go,25,Test,TestRecordedPaneIsNeverOverridden,False,legacy-not-retrospectively-reviewed
 LEG-885fbff68cea,L1,Go core / CLI / server,internal/hq/eventsattr_test.go,35,Test,TestNoSessionMeansNoAttribution,False,legacy-not-retrospectively-reviewed
@@ -1638,6 +1642,7 @@ LEG-c1132026ca2c,L1,Go core / CLI / server,internal/hq/hqwhere_test.go,15,Test,T
 LEG-65da120cb8d7,L1,Go core / CLI / server,internal/hq/hqwhere_test.go,53,Test,TestHQWhereFallsBackToThePaneID,False,legacy-not-retrospectively-reviewed
 LEG-c13392dd49a3,L1,Go core / CLI / server,internal/hq/hqwhere_test.go,63,Test,TestNoteAtPaneIsHarmlessWithoutTmux,False,legacy-not-retrospectively-reviewed
 MAP-426d8c4b1e7f,L2,reviewed implementation,internal/hq/identity_launch_test.go,11,reviewed-selector,TestSID001ActualHQRecipeRetainsManagedFrontend,False,SID-001
+MAP-125403c4d59d,L1,reviewed implementation,internal/hq/knowledge_workflow_test.go,10,reviewed-selector,TestKnowledgeWorkflowUsesBoundedReviewWithoutManufacturedReuse,False,KBMEM-HQ-WORKFLOW
 LEG-44fc72d69358,L1,Go core / CLI / server,internal/hq/knowledgeshim_test.go,12,Test,TestPromotionsStatus,False,legacy-not-retrospectively-reviewed
 LEG-1b6109077040,L1,Go core / CLI / server,internal/hq/launchtarget_test.go,7,Test,TestResolveLaunchTarget,False,legacy-not-retrospectively-reviewed
 LEG-db2e10739955,L1,Go core / CLI / server,internal/hq/launchtarget_test.go,33,Test,TestShq,False,legacy-not-retrospectively-reviewed
@@ -1973,6 +1978,8 @@ LEG-2ff7bafe4bb4,L1,Go core / CLI / server,internal/knowledge/capturecmd_test.go
 LEG-d7a99e4504c6,L1,Go core / CLI / server,internal/knowledge/capturecmd_test.go,73,Test,TestCaptureList,False,legacy-not-retrospectively-reviewed
 LEG-1f1654805ed6,L1,Go core / CLI / server,internal/knowledge/capturecmd_test.go,90,Test,TestCaptureListJSONCarriesTheDismissKey,False,legacy-not-retrospectively-reviewed
 LEG-5385ad1bcb3d,L1,Go core / CLI / server,internal/knowledge/capturecmd_test.go,133,Test,TestCaptureListTextStaysText,False,legacy-not-retrospectively-reviewed
+MAP-1022c99343fa,L1,reviewed implementation,internal/knowledge/consult_test.go,14,reviewed-selector,TestConsultScopeVersionAndEvidenceBoundaries,False,KBMEM-CONSULT
+MAP-a90ab6e921bd,L1,reviewed implementation,internal/knowledge/consult_test.go,59,reviewed-selector,TestConsultWholeCardsProtectedOverflowAndNegativeQuery,False,KBMEM-CONSULT
 LEG-2596ee310590,L1,Go core / CLI / server,internal/knowledge/distribute_test.go,23,Test,TestCarriersResolveHomeAndEnv,False,legacy-not-retrospectively-reviewed
 LEG-6fa8f54f1668,G,Go core / CLI / server,internal/knowledge/distribute_test.go,51,Test,TestBlockInstallRefreshAndRefusal,False,legacy-not-retrospectively-reviewed
 LEG-e683294c2736,L1,Go core / CLI / server,internal/knowledge/distribute_test.go,109,Test,TestMachineSyncWritesIndexNotText,False,legacy-not-retrospectively-reviewed
@@ -1981,6 +1988,19 @@ LEG-c8340ac94855,L1,Go core / CLI / server,internal/knowledge/distribute_test.go
 LEG-133a79e07b8d,L1,Go core / CLI / server,internal/knowledge/distribute_test.go,287,Test,TestWithdrawAndTheEveryoneExemption,False,legacy-not-retrospectively-reviewed
 LEG-130c95843839,L1,Go core / CLI / server,internal/knowledge/distribute_test.go,317,Test,TestMachineIndexKeepsTheTitleOnItsOwnLine,False,legacy-not-retrospectively-reviewed
 MAP-259bfbcda714,L2,Go core / CLI / server,internal/knowledge/distribute_test.go,161,reviewed-selector,TestBuiltinStorageBoundariesReachEveryCarrierWithoutPromotions,False,STOR-001
+MAP-fbbfed83e95b,L1,reviewed implementation,internal/knowledge/dream_test.go,9,reviewed-selector,TestDreamBudgetUnknownExhaustedAndFingerprint,False,KBMEM-DREAM
+MAP-ce9b5fe45f2e,L1,reviewed implementation,internal/knowledge/dream_test.go,39,reviewed-selector,TestDreamPacketExcludesPrivateAndRejectsMissingIDs,False,KBMEM-DREAM
+MAP-f2c2067e1564,L2,reviewed implementation,internal/knowledge/dreamallowance_test.go,13,reviewed-selector,TestDreamAllowancePreservesProgressCostsAndIdempotency,False,KBDREAM-ALLOWANCE
+MAP-ff7b915f1ef1,L2,reviewed implementation,internal/knowledge/dreamallowance_test.go,72,reviewed-selector,TestDreamAllowanceRejectsInvalidActiveAndRetryBypass,False,KBDREAM-ALLOWANCE
+MAP-0006a0195b2d,L2,reviewed implementation,internal/knowledge/dreamdiagnostics_test.go,12,reviewed-selector,TestDreamDiagnosticsJournalAllowlistAndLegacyEncoding,False,KBDREAM-DIAGNOSTICS
+MAP-d152352d38fd,L2,reviewed implementation,internal/knowledge/dreamrun_test.go,39,reviewed-selector,TestDreamResumeRetainsCompletedItemsAndModelHistory,False,"KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+MAP-66789ff45c6b,L2,reviewed implementation,internal/knowledge/dreamrun_test.go,102,reviewed-selector,TestDreamConcurrentResumeAndSourceChanges,False,"KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+MAP-37e83b935fa4,L2,reviewed implementation,internal/knowledge/dreamrun_test.go,138,reviewed-selector,TestDreamBudgetsPrivacyAndCorruptionStopBeforeCalls,False,"KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+MAP-5b7c1b481c95,L2,reviewed implementation,internal/knowledge/dreamrun_test.go,166,reviewed-selector,TestDreamPrivateReclassificationAndInvalidResults,False,"KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+MAP-76ec490f5726,L2,reviewed implementation,internal/knowledge/dreamrun_test.go,186,reviewed-selector,TestDreamModelProposalsRemainInertAndStatusIsReadOnly,False,"KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+MAP-2d51451e35cf,L2,reviewed implementation,internal/knowledge/dreamrun_test.go,221,reviewed-selector,TestDreamSharedLifetimeBudgetAndUnresolvedRun,False,"KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+MAP-740e472a4247,L2,reviewed implementation,internal/knowledge/dreamrun_test.go,285,reviewed-selector,TestDreamExplicitDeferRetainsFailedAttempts,False,"KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+MAP-9eeedf9690cc,L2,reviewed implementation,internal/knowledge/dreamrun_test.go,316,reviewed-selector,TestDreamRejectsInventedEvidenceAndJournalIdentity,False,"KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
 LEG-9bbf8a519df6,G,Go core / CLI / server,internal/knowledge/golden_test.go,105,Test,TestKnowledgeGolden,False,legacy-not-retrospectively-reviewed
 LEG-7ce264f75bde,G,Go core / CLI / server,internal/knowledge/knowledge_test.go,15,Test,TestKnowledgeMutationJoinsAllThreeStores,False,legacy-not-retrospectively-reviewed
 LEG-7cf3c18c3e40,L1,Go core / CLI / server,internal/knowledge/knowledge_test.go,42,Test,TestKnowledgeMutationAuditedWhenRenderFails,False,legacy-not-retrospectively-reviewed
@@ -2045,6 +2065,7 @@ LEG-af96f8befee1,L1,Go core / CLI / server,internal/knowledge/lint_test.go,345,T
 LEG-09fcb37aa82e,L1,Go core / CLI / server,internal/knowledge/lint_test.go,354,Test,TestACycleStopsRatherThanSpins,False,legacy-not-retrospectively-reviewed
 LEG-7105f4ae950e,L1,Go core / CLI / server,internal/knowledge/lint_test.go,379,Test,TestNoOutdatedLinksSurviveTheFold,False,legacy-not-retrospectively-reviewed
 LEG-2b6cbd7c398b,L1,Go core / CLI / server,internal/knowledge/lint_test.go,394,Test,TestANumericTailSurvivesTheRewrite,False,legacy-not-retrospectively-reviewed
+MAP-eb3912a57551,L2,reviewed implementation,internal/knowledge/memory_carrier_test.go,10,reviewed-selector,TestMemoryCarrierUpdatesHistoricalTextAndPreservesManualEdits,False,KBMEM-CARRIER
 LEG-d2c8e807a23b,G,Go core / CLI / server,internal/knowledge/migration_test.go,39,Test,TestMigrationPreservesHistoryAndResetsAudience,False,legacy-not-retrospectively-reviewed
 LEG-2e5e27be68d2,L1,Go core / CLI / server,internal/knowledge/migration_test.go,73,Test,TestMigrationSensitiveHistoryAndUnrelatedEntriesExcluded,False,legacy-not-retrospectively-reviewed
 LEG-72016a7301ff,G,Go core / CLI / server,internal/knowledge/migration_test.go,97,Test,TestMigrationConflictAndInvalidInputKeepPriorBytes,False,legacy-not-retrospectively-reviewed
@@ -2074,10 +2095,21 @@ LEG-3a3b0ab2e658,L1,Go core / CLI / server,internal/knowledge/retrieve_test.go,1
 LEG-d530a53cc97a,L1,Go core / CLI / server,internal/knowledge/retrieve_test.go,40,Test,TestATinyBaseStillMatches,False,legacy-not-retrospectively-reviewed
 LEG-5d7c60772948,L1,Go core / CLI / server,internal/knowledge/retrieve_test.go,55,Test,TestSearchNarrowsByTopic,False,legacy-not-retrospectively-reviewed
 LEG-74e7858d3763,L1,Go core / CLI / server,internal/knowledge/retrieve_test.go,70,Test,TestSearchIsQuietWhenNothingIsClose,False,legacy-not-retrospectively-reviewed
+MAP-0f80e5899da6,L2,reviewed implementation,internal/knowledge/review_test.go,30,reviewed-selector,TestReviewAtomicConflictAndIdempotentRetry,False,KBMEM-REVIEW
+MAP-def3fe83ca29,L2,reviewed implementation,internal/knowledge/review_test.go,64,reviewed-selector,TestReviewRejectsWholeBatchBeforeAnyAppend,False,KBMEM-REVIEW
+MAP-32cc723818f0,L2,reviewed implementation,internal/knowledge/review_test.go,103,reviewed-selector,TestReviewDryRunWritesNothingAndProtectedRetireRefused,False,KBMEM-REVIEW
+MAP-3e5f78db15d6,L2,reviewed implementation,internal/knowledge/review_test.go,132,reviewed-selector,TestReviewedRevisionReopensCarrierAndDoesNotRefreshVerification,False,KBMEM-REVIEW
+MAP-99965bdacab5,L2,reviewed implementation,internal/knowledge/review_test.go,79,reviewed-selector,TestReviewConcurrentRevisionHasOneWinner,False,KBMEM-REVIEW
 LEG-af82b006f9d1,L1,Go core / CLI / server,internal/knowledge/sensitive_test.go,11,Test,TestASensitiveWriteNeedsTheCommandersWords,False,legacy-not-retrospectively-reviewed
 LEG-8b1ecde3115f,L1,Go core / CLI / server,internal/knowledge/sensitive_test.go,33,Test,TestASensitiveEntryDoesNotTravel,False,legacy-not-retrospectively-reviewed
 LEG-d6b1859d0bad,L1,Go core / CLI / server,internal/knowledge/sensitive_test.go,58,Test,TestSupersedeKeepsTheMarkAndTheVerbFlipsIt,False,legacy-not-retrospectively-reviewed
 LEG-693f614997fb,L1,Go core / CLI / server,internal/knowledge/sensitive_test.go,83,Test,TestLintNamesACredentialWrittenWithoutAsking,False,legacy-not-retrospectively-reviewed
+MAP-9fe9287c0104,L2,reviewed implementation,internal/knowledge/usage_test.go,14,reviewed-selector,TestUsageDoesNotBecomeHitAndRetryIsIdempotent,False,KBMEM-USAGE
+MAP-76d1fe9047e3,L2,reviewed implementation,internal/knowledge/usage_test.go,41,reviewed-selector,TestUsageRejectsAuditAndForgedMeasurement,False,KBMEM-USAGE
+MAP-c93b792249fd,L2,reviewed implementation,internal/knowledge/vault_test.go,12,reviewed-selector,TestVaultRoundTripRenameAndDeletion,False,KBMEM-VAULT
+MAP-bb0c4b4f89c6,L2,reviewed implementation,internal/knowledge/vault_test.go,65,reviewed-selector,TestVaultConflictPrivacyAndRecovery,False,KBMEM-VAULT
+MAP-6d6742c69a23,L2,reviewed implementation,internal/knowledge/vault_test.go,107,reviewed-selector,TestVaultRefusesSymlinksAndUnrelatedDirectory,False,KBMEM-VAULT
+MAP-e5c7426d0d21,L2,reviewed implementation,internal/knowledge/vault_test.go,128,reviewed-selector,TestVaultPublicationKeepsOldSnapshotsAndReadOnlyFiles,False,KBMEM-VAULT
 LEG-8a77e8ae81cf,L1,Go core / CLI / server,internal/knowledge/voice_test.go,10,Test,TestVoiceStrongTellsFireOnOneSighting,False,legacy-not-retrospectively-reviewed
 LEG-9d378b2f943d,L1,Go core / CLI / server,internal/knowledge/voice_test.go,27,Test,TestVoiceWeakTellsNeedCompany,False,legacy-not-retrospectively-reviewed
 LEG-cd7219eb16d3,L1,Go core / CLI / server,internal/knowledge/voice_test.go,50,Test,TestVoiceReadsProseOnly,False,legacy-not-retrospectively-reviewed

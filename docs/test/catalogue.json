@@ -6772,13 +6772,13 @@
       ]
     },
     "internal/app/serverstart_test.go": {
-      "sha256": "e9a39b4d4b338d6f6fec7650a068ff9fe3eeef58cb7696e7f9db2273692e6cff",
+      "sha256": "a4b2dbd78f4a1b4b76fab732fa63188cfad42f254f6e4c9da4d5159b364b9b1f",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
         {
           "id": "LEG-3a382f316a8b",
-          "line": 34,
+          "line": 37,
           "kind": "Test",
           "name": "TestStartBootServerViaLaunchd",
           "dynamic": false,
@@ -6786,7 +6786,7 @@
         },
         {
           "id": "LEG-d559987adf97",
-          "line": 48,
+          "line": 58,
           "kind": "subtest",
           "name": "list-sessions",
           "dynamic": false,
@@ -6794,7 +6794,7 @@
         },
         {
           "id": "LEG-6aca551c6ad4",
-          "line": 63,
+          "line": 73,
           "kind": "subtest",
           "name": "show-environment",
           "dynamic": false,
@@ -6802,7 +6802,7 @@
         },
         {
           "id": "LEG-14fe89e07d2e",
-          "line": 72,
+          "line": 88,
           "kind": "Test",
           "name": "TestStartBootServerDirectByDefault",
           "dynamic": false,
@@ -6810,7 +6810,7 @@
         },
         {
           "id": "LEG-ad5520d103d2",
-          "line": 82,
+          "line": 58,
           "kind": "subtest",
           "name": "list-sessions",
           "dynamic": false,
@@ -6818,7 +6818,7 @@
         },
         {
           "id": "LEG-58e532797422",
-          "line": 89,
+          "line": 105,
           "kind": "Test",
           "name": "TestStartBootServerFallsBackWhenLaunchdFails",
           "dynamic": false,
@@ -6826,7 +6826,7 @@
         },
         {
           "id": "LEG-0ff339c17b5d",
-          "line": 102,
+          "line": 58,
           "kind": "subtest",
           "name": "list-sessions",
           "dynamic": false,
@@ -6951,7 +6951,7 @@
       ]
     },
     "internal/app/spawn_paneid_test.go": {
-      "sha256": "56420f66250c713e3403a9a3f27fc4994e5b4fbcad8f30d1c90a1a6e4eeed378",
+      "sha256": "7b4dd201ac2d6da20670ba7243c806e1d52ac4495e94fa3a63861e51c583f15d",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -6965,7 +6965,7 @@
         },
         {
           "id": "LEG-448935afb4cf",
-          "line": 48,
+          "line": 16,
           "kind": "subtest",
           "name": "--title",
           "dynamic": false,
@@ -6989,7 +6989,7 @@
         },
         {
           "id": "LEG-cf6e3e30468e",
-          "line": 89,
+          "line": 91,
           "kind": "subtest",
           "name": "empty slug is left alone",
           "dynamic": false,
@@ -7207,7 +7207,7 @@
       ]
     },
     "internal/app/terminalkeys_pty_test.go": {
-      "sha256": "3122c944bb456aa94febf7944cd1c10b59288fce28b9d1e30248ad35f31ccd49",
+      "sha256": "a5d7d2011d2a166d44813c9413617170f3021c7dbd454fe0f28a5c9518d1ab55",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -60949,6 +60949,378 @@
         }
       ],
       "sha256": "916fa4007e8ea08bb45baae910f3d3c0bf9a8570b85a5dac2d2fe11b1db2a6e3"
+    },
+    "internal/hq/knowledge_workflow_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-125403c4d59d",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestKnowledgeWorkflowUsesBoundedReviewWithoutManufacturedReuse",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "KBMEM-HQ-WORKFLOW"
+        }
+      ],
+      "sha256": "5a2e888d43cceabede4ac60086b47d74d56f3f26dfed1209ef349f2153d4e4bf"
+    },
+    "internal/knowledge/usage_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-9fe9287c0104",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestUsageDoesNotBecomeHitAndRetryIsIdempotent",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBMEM-USAGE"
+        },
+        {
+          "id": "MAP-76d1fe9047e3",
+          "line": 41,
+          "kind": "reviewed-selector",
+          "name": "TestUsageRejectsAuditAndForgedMeasurement",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBMEM-USAGE"
+        }
+      ],
+      "sha256": "b701c88cec5747a287078d14027746fc0ec6bf8fee37987431b982443639d3a8"
+    },
+    "internal/knowledge/dreamrun_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d152352d38fd",
+          "line": 39,
+          "kind": "reviewed-selector",
+          "name": "TestDreamResumeRetainsCompletedItemsAndModelHistory",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+        },
+        {
+          "id": "MAP-66789ff45c6b",
+          "line": 102,
+          "kind": "reviewed-selector",
+          "name": "TestDreamConcurrentResumeAndSourceChanges",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+        },
+        {
+          "id": "MAP-37e83b935fa4",
+          "line": 138,
+          "kind": "reviewed-selector",
+          "name": "TestDreamBudgetsPrivacyAndCorruptionStopBeforeCalls",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+        },
+        {
+          "id": "MAP-5b7c1b481c95",
+          "line": 166,
+          "kind": "reviewed-selector",
+          "name": "TestDreamPrivateReclassificationAndInvalidResults",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+        },
+        {
+          "id": "MAP-76ec490f5726",
+          "line": 186,
+          "kind": "reviewed-selector",
+          "name": "TestDreamModelProposalsRemainInertAndStatusIsReadOnly",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+        },
+        {
+          "id": "MAP-2d51451e35cf",
+          "line": 221,
+          "kind": "reviewed-selector",
+          "name": "TestDreamSharedLifetimeBudgetAndUnresolvedRun",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+        },
+        {
+          "id": "MAP-740e472a4247",
+          "line": 285,
+          "kind": "reviewed-selector",
+          "name": "TestDreamExplicitDeferRetainsFailedAttempts",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+        },
+        {
+          "id": "MAP-9eeedf9690cc",
+          "line": 316,
+          "kind": "reviewed-selector",
+          "name": "TestDreamRejectsInventedEvidenceAndJournalIdentity",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBDREAM-JOURNAL,KBDREAM-GUARDS,KBDREAM-BUDGET"
+        }
+      ],
+      "sha256": "3dd38ac4757ec3ba9326bd77bec19f9bc50b2caad3108f156509bb30667f53d9"
+    },
+    "internal/knowledge/dreamdiagnostics_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-0006a0195b2d",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestDreamDiagnosticsJournalAllowlistAndLegacyEncoding",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBDREAM-DIAGNOSTICS"
+        }
+      ],
+      "sha256": "d530c49a9ce4a63e4ff7daf1bf40eadd730d65e774f4c8daaf3df0ea40d189af"
+    },
+    "internal/knowledge/memory_carrier_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-eb3912a57551",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestMemoryCarrierUpdatesHistoricalTextAndPreservesManualEdits",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBMEM-CARRIER"
+        }
+      ],
+      "sha256": "be3617c8794443bc19140a9522df798674c070fca3e029218f48d7895a09b739"
+    },
+    "internal/knowledge/vault_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-c93b792249fd",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestVaultRoundTripRenameAndDeletion",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBMEM-VAULT"
+        },
+        {
+          "id": "MAP-bb0c4b4f89c6",
+          "line": 65,
+          "kind": "reviewed-selector",
+          "name": "TestVaultConflictPrivacyAndRecovery",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBMEM-VAULT"
+        },
+        {
+          "id": "MAP-6d6742c69a23",
+          "line": 107,
+          "kind": "reviewed-selector",
+          "name": "TestVaultRefusesSymlinksAndUnrelatedDirectory",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBMEM-VAULT"
+        },
+        {
+          "id": "MAP-e5c7426d0d21",
+          "line": 128,
+          "kind": "reviewed-selector",
+          "name": "TestVaultPublicationKeepsOldSnapshotsAndReadOnlyFiles",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBMEM-VAULT"
+        }
+      ],
+      "sha256": "a8535f1e186428edf901f3e7cb16054be8d492d640f9149aef279c632e943856"
+    },
+    "internal/knowledge/review_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-0f80e5899da6",
+          "line": 30,
+          "kind": "reviewed-selector",
+          "name": "TestReviewAtomicConflictAndIdempotentRetry",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBMEM-REVIEW"
+        },
+        {
+          "id": "MAP-def3fe83ca29",
+          "line": 64,
+          "kind": "reviewed-selector",
+          "name": "TestReviewRejectsWholeBatchBeforeAnyAppend",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBMEM-REVIEW"
+        },
+        {
+          "id": "MAP-32cc723818f0",
+          "line": 103,
+          "kind": "reviewed-selector",
+          "name": "TestReviewDryRunWritesNothingAndProtectedRetireRefused",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBMEM-REVIEW"
+        },
+        {
+          "id": "MAP-3e5f78db15d6",
+          "line": 132,
+          "kind": "reviewed-selector",
+          "name": "TestReviewedRevisionReopensCarrierAndDoesNotRefreshVerification",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBMEM-REVIEW"
+        },
+        {
+          "id": "MAP-99965bdacab5",
+          "line": 79,
+          "kind": "reviewed-selector",
+          "name": "TestReviewConcurrentRevisionHasOneWinner",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBMEM-REVIEW"
+        }
+      ],
+      "sha256": "40ea210dd92b8110d5ec26f9ffcc77149205ba329a1f994e9130ac498622cc64"
+    },
+    "internal/hq/dreamexec_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f188a5a64e53",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "TestDreamCLIModelSelectionAndIsolation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBDREAM-EXECUTOR"
+        },
+        {
+          "id": "MAP-21a1b3d6966f",
+          "line": 43,
+          "kind": "reviewed-selector",
+          "name": "TestDreamCLIParsesTerminalUsageAndRejectsTools",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBDREAM-EXECUTOR"
+        },
+        {
+          "id": "MAP-cb02aefedb71",
+          "line": 72,
+          "kind": "reviewed-selector",
+          "name": "TestDreamCLIProcessCompletionCancellationAndBoundedOutput",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBDREAM-EXECUTOR"
+        }
+      ],
+      "sha256": "a2cdaeaee9cd096785c70be14c4d34d331fe81453428b824eb3f9f0870b62023"
+    },
+    "internal/knowledge/consult_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-1022c99343fa",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestConsultScopeVersionAndEvidenceBoundaries",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "KBMEM-CONSULT"
+        },
+        {
+          "id": "MAP-a90ab6e921bd",
+          "line": 59,
+          "kind": "reviewed-selector",
+          "name": "TestConsultWholeCardsProtectedOverflowAndNegativeQuery",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "KBMEM-CONSULT"
+        }
+      ],
+      "sha256": "a38de9e5fc89811b37abcd7dec1cee44d77488cb727a1bc8b37227c0dc17c787"
+    },
+    "internal/knowledge/dream_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-fbbfed83e95b",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "TestDreamBudgetUnknownExhaustedAndFingerprint",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "KBMEM-DREAM"
+        },
+        {
+          "id": "MAP-ce9b5fe45f2e",
+          "line": 39,
+          "kind": "reviewed-selector",
+          "name": "TestDreamPacketExcludesPrivateAndRejectsMissingIDs",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "KBMEM-DREAM"
+        }
+      ],
+      "sha256": "5dce3f4f379872f883447b76fdb87ca3d8cac30ec1bb37b3de63a2af28f01fa9"
+    },
+    "internal/hq/dreamdiagnostics_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-99b86a9378f3",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "TestDreamDiagnosticsClassifiedBoundedAndPrivate",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBDREAM-DIAGNOSTICS"
+        }
+      ],
+      "sha256": "bfdbe107e64303f2eb56537c3f8370e1bdcfcad17b285dadeecc0d5851efb407"
+    },
+    "internal/knowledge/dreamallowance_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f2c2067e1564",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "TestDreamAllowancePreservesProgressCostsAndIdempotency",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBDREAM-ALLOWANCE"
+        },
+        {
+          "id": "MAP-ff7b915f1ef1",
+          "line": 72,
+          "kind": "reviewed-selector",
+          "name": "TestDreamAllowanceRejectsInvalidActiveAndRetryBypass",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBDREAM-ALLOWANCE"
+        }
+      ],
+      "sha256": "72ae584b0a5b5ff7ce26b4c819637d84b21a130dd4d9b6ee7adfc5371fcc72fb"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

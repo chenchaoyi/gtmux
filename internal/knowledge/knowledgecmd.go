@@ -77,6 +77,14 @@ func CmdKnowledge(args []string) int {
 		return knowledgeShow(rest)
 	case "receipts":
 		return knowledgeReceipts(rest)
+	case "consult":
+		return knowledgeConsult(rest)
+	case "review":
+		return knowledgeReview(rest)
+	case "usage":
+		return knowledgeMemoryUsage(rest)
+	case "dream":
+		return knowledgeDream(rest)
 	case "-h", "--help":
 		return knowledgeUsage()
 	default:
@@ -101,6 +109,7 @@ var knowledgeVerbs = []string{
 	"add", "supersede", "retire", "dismiss", "render", "promote", "land", "withdraw",
 	"sync", "lint", "style", "search", "neighbours", "carriers", "topic", "kind", "sensitive", "alt",
 	"hit", "confirm", "promotions", "list", "show", "receipts",
+	"consult", "review", "usage", "dream",
 }
 
 // knowledgeMutation is the shared mutation wrapper: the HQ-home role gate first
@@ -934,6 +943,10 @@ func knowledgeUsage() int {
   lint      [--json]                           # issues, similar-pair review candidates, standalone-entry info
   style     [--json]                           # how an entry should read: every rule with a before and an after
   search    "<text>" [--topic t] [--kind k] [--json]   # ask the base a question in words
+  consult   --query "task" [--action action] [--repo path] [--budget 1200] # scoped, bounded cards; read-only
+  review    export|diff <vault> | check|apply <proposal.json> # Markdown review with revision checks
+  usage     record <receipt.json> | summary # explicit self-reported stages; never increments hit
+  dream     plan <request.json>             # bounded review packet for HQ; no model call or token spending
   neighbours <id> | --capture <key> | --text "…"   # the closest live entries (kind, then keyword overlap)
   promotions [--json]                                      # the pending export queue
   mine      [--dry-run] [--since <Nd>|all] [--status]      # mine session logs into the spool
@@ -973,6 +986,10 @@ func knowledgeUsage() int {
   lint      [--json]                            # 检查条目关联、链接、重复、过期及待确认分类
   style     [--json]                            # 查看写作规范和修改示例
   search    "<要找什么>" [--topic 主题] [--kind 种类] [--json]  # 检索知识条目
+  consult   --query "任务" [--action 动作] [--repo 路径] [--budget 1200] # 按范围与预算取卡片；只读
+  review    export|diff <vault> | check|apply <proposal.json> # Markdown 审阅与版本校验
+  usage     record <receipt.json> | summary # 明确自报的使用阶段；不增加 hit
+  dream     plan <request.json>             # 给 HQ 的有界审阅包；不调用模型、不花费 token
   neighbours <id> | --capture <键> | --text "…"    # 查找相似条目（按分类和关键词匹配）
   promotions [--json]                                 # 查看待分发条目
   mine      [--dry-run] [--since <N>d|all] [--status] # 从会话记录提取待整理的经验候选
