@@ -61716,6 +61716,67 @@
         }
       ],
       "sha256": "304acd8c6d41b1309bd89546b35bcbc580f632b0c8fd785ba4f4fb07408a0f66"
+    },
+    "internal/resume/codex_publication_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-de016b5ab612",
+          "line": 62,
+          "kind": "reviewed-selector",
+          "name": "TestCBP001ActualBootstrapCannotOverwriteNewFrontend",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CBP-001,CBP-002,CBP-003,CBP-004"
+        },
+        {
+          "id": "MAP-159ba17d2bde",
+          "line": 137,
+          "kind": "reviewed-selector",
+          "name": "TestCBP002ActualPublishersRespectSharedLease",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CBP-001,CBP-002,CBP-003,CBP-004"
+        },
+        {
+          "id": "MAP-7889427ed249",
+          "line": 185,
+          "kind": "reviewed-selector",
+          "name": "TestCBP003FailurePathsReleasePublicationLocks",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CBP-001,CBP-002,CBP-003,CBP-004"
+        },
+        {
+          "id": "MAP-7f9599b6572b",
+          "line": 247,
+          "kind": "reviewed-selector",
+          "name": "TestCBP003SameOwnerProcessPreservesFrontend",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CBP-001,CBP-002,CBP-003,CBP-004"
+        },
+        {
+          "id": "MAP-bc7e34c61d14",
+          "line": 313,
+          "kind": "reviewed-selector",
+          "name": "TestCBP004CrossProcessPublication",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CBP-001,CBP-002,CBP-003,CBP-004"
+        },
+        {
+          "id": "MAP-76dadd73f4b9",
+          "line": 284,
+          "kind": "reviewed-selector",
+          "name": "TestCBP004Child",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CBP-001,CBP-002,CBP-003,CBP-004"
+        }
+      ],
+      "sha256": "bc2e88bb7ddcd4c783b1e412baa92fd0e1ca0e559cb0973a29d6541cd97782f8"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

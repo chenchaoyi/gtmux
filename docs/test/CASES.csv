@@ -2524,6 +2524,12 @@ LEG-f75c1937016c,L1,Go core / CLI / server,internal/resource/sample_read_test.go
 LEG-f06919d3cd7f,L1,Go core / CLI / server,internal/resume/checkpoint_test.go,22,Test,TestCheckpointDoesNotReplaceLiveIdentityWithOlderHistory,False,legacy-not-retrospectively-reviewed
 LEG-1545ce9c15a0,L1,Go core / CLI / server,internal/resume/checkpoint_test.go,60,Test,TestCheckpointPromotionDoesNotChangeBindingOwner,False,legacy-not-retrospectively-reviewed
 LEG-bfdec40564a7,L1,Go core / CLI / server,internal/resume/checkpoint_test.go,73,Test,TestResolveLegacyCodexPinsTheVerifiedHome,False,legacy-not-retrospectively-reviewed
+MAP-de016b5ab612,L2,reviewed implementation,internal/resume/codex_publication_test.go,62,reviewed-selector,TestCBP001ActualBootstrapCannotOverwriteNewFrontend,False,"CBP-001,CBP-002,CBP-003,CBP-004"
+MAP-159ba17d2bde,L2,reviewed implementation,internal/resume/codex_publication_test.go,137,reviewed-selector,TestCBP002ActualPublishersRespectSharedLease,False,"CBP-001,CBP-002,CBP-003,CBP-004"
+MAP-7889427ed249,L2,reviewed implementation,internal/resume/codex_publication_test.go,185,reviewed-selector,TestCBP003FailurePathsReleasePublicationLocks,False,"CBP-001,CBP-002,CBP-003,CBP-004"
+MAP-7f9599b6572b,L2,reviewed implementation,internal/resume/codex_publication_test.go,247,reviewed-selector,TestCBP003SameOwnerProcessPreservesFrontend,False,"CBP-001,CBP-002,CBP-003,CBP-004"
+MAP-bc7e34c61d14,L2,reviewed implementation,internal/resume/codex_publication_test.go,313,reviewed-selector,TestCBP004CrossProcessPublication,False,"CBP-001,CBP-002,CBP-003,CBP-004"
+MAP-76dadd73f4b9,L2,reviewed implementation,internal/resume/codex_publication_test.go,284,reviewed-selector,TestCBP004Child,False,"CBP-001,CBP-002,CBP-003,CBP-004"
 LEG-b0ef2f4ddd8b,G,Go core / CLI / server,internal/resume/codexbinding_test.go,41,Test,TestCodexBindingRetirementFailureKeepsRetryWitnessAndHistory,False,legacy-not-retrospectively-reviewed
 LEG-9aebf1f7a549,G,Go core / CLI / server,internal/resume/codexbinding_test.go,84,Test,TestCodexBindingExactPayloadAndOneUse,False,legacy-not-retrospectively-reviewed
 LEG-1c83950db245,L1,Go core / CLI / server,internal/resume/codexbinding_test.go,121,Test,TestCodexBindingRejectsChangedTargets,False,legacy-not-retrospectively-reviewed

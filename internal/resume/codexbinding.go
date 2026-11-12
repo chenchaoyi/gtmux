@@ -63,6 +63,9 @@ func codexBindingPath(token string) string { return filepath.Join(codexBindingDi
 
 var resolveWrappedCodexTarget = codexterminal.Resolve
 
+// Keep checkpoint I/O controllable independently of the publication protocol.
+var codexBindingCheckpoint = withRecoveryCheckpoint
+
 // LiveCodexBindingTarget reads identity and foreground command together. Callers
 // must not populate a live target from a stale radar snapshot or inherited env.
 func LiveCodexBindingTarget(pane string) (CodexBindingTarget, bool) {
@@ -311,7 +314,12 @@ func completeCodexBinding(scope *transcript.CodexPathScope, intent CodexBindingI
 	if current.Agent == "codex" && current.HomeID == transcript.CodexHomeID() && current.SessionID == sid {
 		frontend = current.Frontend
 	}
-	record := withRecoveryCheckpoint(Record{Agent: "codex", HomeID: transcript.CodexHomeID(), SessionID: sid, Cwd: live.Cwd, UpdatedAt: now, Launcher: live.Launcher, Frontend: frontend}, current)
+	record := codexBindingCheckpoint(Record{Agent: "codex", HomeID: transcript.CodexHomeID(), SessionID: sid, Cwd: live.Cwd, UpdatedAt: now, Launcher: live.Launcher, Frontend: frontend}, current)
+	lease, err := lockCodexPublication(live.Loc, current)
+	if err != nil {
+		return err
+	}
+	defer lease.Close()
 	if err := writeBindingJSON(fileFor(live.Loc), record); err != nil {
 		return err
 	}

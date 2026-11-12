@@ -621,6 +621,22 @@
       "TestRBL002SourceWaitCancelsWhileLedgerIsLocked"
     ]
   },
+  "internal/resume/codex_publication_test.go": {
+    "cases": [
+      "CBP-001",
+      "CBP-002",
+      "CBP-003",
+      "CBP-004"
+    ],
+    "selectors": [
+      "TestCBP001ActualBootstrapCannotOverwriteNewFrontend",
+      "TestCBP002ActualPublishersRespectSharedLease",
+      "TestCBP003FailurePathsReleasePublicationLocks",
+      "TestCBP003SameOwnerProcessPreservesFrontend",
+      "TestCBP004CrossProcessPublication",
+      "TestCBP004Child"
+    ]
+  },
   "internal/resume/codexfrontend_ready_test.go": {
     "cases": [
       "CFR-002"

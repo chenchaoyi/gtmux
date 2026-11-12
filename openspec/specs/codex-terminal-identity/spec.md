@@ -35,6 +35,19 @@ The core SHALL associate an eligible shared-server Codex TUI with its own succes
 - **WHEN** its heartbeat expires, bridge exits or process/terminal incarnation changes
 - **THEN** live input and role authority are withheld without deleting history or stopping the shared daemon
 
+### Requirement: Codex binding publishers serialize ownership changes
+Codex resume-index publishers SHALL share the frontend publication lease. Bootstrap and process fallback MAY prepare outside that lease, but SHALL compare the complete incumbent record again after acquiring it and hold it through publication and any bootstrap receipt/intent retirement. A changed record or contended lease SHALL defer without consuming the pending intent. Same-owner process publication SHALL preserve frontend and terminal-client identity. Existing eligibility, per-location legacy exclusion and retry semantics SHALL remain enforced. This contract applies to participating writers, not an older binary that ignores the lease or a different agent's legacy ownership policy.
+
+#### Scenario: A root binding is published during old bootstrap preparation
+- **WHEN** an old bootstrap has checked its incumbent and a verified root Bind successfully publishes before the bootstrap resumes
+- **THEN** the old publication refuses, even when both refer to the same destination session
+- **AND** the new primary index and frontend receipt remain unchanged and the new heartbeat stays valid
+
+#### Scenario: Publication is contended or its receipt cannot be written
+- **WHEN** another publisher holds the lease or a publication step fails
+- **THEN** all acquired locks are released on return and a rejected publication keeps its pending intent
+- **AND** an index already committed before receipt failure remains explicitly distinguishable from a complete success and may retry under the same ownership checks
+
 ### Requirement: Launch integration preserves native behavior
 The system SHALL use capability admission rather than a version threshold. Managed ordinary tmux-shell integration SHALL be removable and preserve existing aliases/functions. Spawn, HQ and restore SHALL share the adapter. Older embedded clients, explicit no-daemon/remote/custom/profile/config/headless or unsupported launches SHALL retain original arguments, environment, stdin and native exit behavior. A missing supported local daemon MAY be started only as part of an explicit eligible interactive launch using the official start operation. Discovery SHALL NOT start or resume agents.
 
