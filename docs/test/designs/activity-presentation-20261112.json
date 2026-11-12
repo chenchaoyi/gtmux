@@ -1,0 +1,51 @@
+{
+  "id": "activity-presentation-20261112",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review; not independent approval",
+    "date": "2026-11-12",
+    "decision": "Use shared semantic operation labels without dropping raw calls; compact mouse-first rows, retain touch targets",
+    "notes": "User provided Activity/Codex comparison. Source inspection proves native parsed_cmd already normalizes read/search/list; raw callTitle currently overrides it. Implement bounded first batch only: labels, complete argv previews, density. Preserve calls/count/raw evidence, unknown and mixed operations, no invented hierarchy or execution success. Shared App/Trace model is generated for browser. No live user sessions, product service, installation or release. Original screenshots are user evidence, not independent UI/device acceptance. Cases reviewed before edits."
+  },
+  "cases": [
+    {
+      "id": "AOP-001",
+      "layer": "L3",
+      "description": "Activity/App/Trace share semantic titles and retain raw tool facts across agents",
+      "setup": "Actual ToolSteps, shared call presentation and generated browser artifact with Codex parsed operations and Claude/DSH/OpenCode/Kimi-style aliases; unknown provider tools and a Run code parent plus Exec records.",
+      "action": "Render read/list/search/command/code/edit operations with and without call metadata in both languages; inspect raw facts and record counts.",
+      "expected": "Known normalized operations take primary title; unknown methods retain real provider/name. Call facts, inputs, count and ordering are unchanged. Actual RN row and browser inspector/Trace agree; no fabricated children, successes or per-file calls.",
+      "planned_files": [
+        "mobileapp/src/ui/activity-semantics.test.ts",
+        "mobileapp/src/ui/ToolSteps.semantic.test.tsx",
+        "mobileapp/src/trace/semantic-title.test.ts",
+        "internal/server/web/activity-semantics.test.cjs"
+      ]
+    },
+    {
+      "id": "AOP-002",
+      "layer": "L2",
+      "description": "Command preview unwraps only complete bounded argv and leaves scripts/raw intact",
+      "setup": "Canonical activity preview with shell -c/-lc arrays, ordinary argv, multiline scripts, meaningful target summaries, malformed/truncated/oversize input and nonstring values.",
+      "action": "Generate bounded one-line preview for each case; compare native/browser results and input bytes.",
+      "expected": "Readable actual command instead of serialized argv when structure is complete and recognized; semantic file/query summaries remain. Never execute/parse shell text as authority, infer read/search from arbitrary words, unescape malformed JSON, change Raw input, invent output or expand record count. Keep 160-character spoken bound and surrogate safety.",
+      "planned_files": [
+        "mobileapp/src/ui/activity-semantics.test.ts",
+        "internal/server/web/activity-semantics.test.cjs"
+      ]
+    },
+    {
+      "id": "AOP-003",
+      "layer": "L3",
+      "description": "Mouse Activity rows become compact while touch and accessible content remain usable",
+      "setup": "Actual shipped CSS/DOM and RN ToolSteps row, isolated synthetic long filenames, code, both languages and large text; no user conversation.",
+      "action": "Inspect fine-pointer/coarse-pointer layout, narrow edge and keyboard expanded state; verify RN minimum hit area.",
+      "expected": "Fine pointer row min-height30px with bounded one-line summary and visible focus; touch/coarse remains44px and RN44pt. Full details remain keyboard accessible, long content stays within edge, record label matches icon and accessibility name. Static fixtures do not certify real iOS/Android VoiceOver or device accessibility.",
+      "planned_files": [
+        "internal/server/web/activity-semantics.test.cjs",
+        "mobileapp/src/ui/ToolSteps.semantic.test.tsx"
+      ]
+    }
+  ],
+  "seal": "43d87ee5cdff89769bf5b7df8c79202008d38a6cbef92eae67772e83b3ade6d7"
+}
