@@ -1,0 +1,25 @@
+{
+  "id": "observed-client-compatibility-20261112",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review; not independent approval",
+    "date": "2026-11-12",
+    "decision": "Keep ordinary client read contracts unchanged and make historical observation explicit at UI call sites",
+    "notes": "Exact candidate CI exposed four legacy API assertions: unconditional observation query and malformed response shape. Preserve original assertions rather than weakening them. Review before new/changed tests. Production screens/Trace explicitly opt in; observation never grants send authority. Synthetic responses only."
+  },
+  "cases": [
+    {
+      "id": "SID-009",
+      "layer": "L3",
+      "description": "Observed reads are explicit while ordinary transcript and trace contracts remain compatible",
+      "setup": "Actual GtmuxClient with isolated fetch; existing legacy API/history assertions unchanged. Existing SID006 API regression is updated to make its observation request explicit.",
+      "action": "Read ordinary and opt-in recent transcripts, malformed response and 304; read ordinary/opt-in pane Trace and external Trace.",
+      "expected": "Default URLs and malformed empty result remain exactly compatible. Only explicit UI observation requests add observation=1, preserving recent/context/cursor/conditional headers. Last-known state survives 304; verified removes restriction. External session routes retain their exact identity and never receive observation fallback. Detail/HQ/Trace UI opt in, input paths unchanged. No network/session/device operations.",
+      "planned_files": [
+        "mobileapp/src/api/observed-client-contract.test.ts",
+        "mobileapp/src/api/observed-history.test.ts"
+      ]
+    }
+  ],
+  "seal": "621bce2b4f41e7ab8c78cc11ee4c36503e3088b022a28b494c8642026f9d5147"
+}
