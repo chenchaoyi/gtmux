@@ -201,6 +201,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   const offRef = React.useRef(0);
   const contentHeight = React.useRef(0);
   const prependAnchor = React.useRef<{height: number; y: number} | undefined>(undefined);
+  const historyOperation = React.useRef(0);
   const history = useChatHistory(client, agent, recentTurns, () => {prependAnchor.current = {height: contentHeight.current, y: offRef.current};});
   const turns = history.turns;
   const historyDropped = turns[0]?.turn_ordinal ? Math.max(0, turns[0].turn_ordinal - 1) : droppedTurns;
@@ -281,6 +282,8 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   // animation below, so the arrow flashed the chrome and went nowhere (2026-09-10). The
   // scroll's own frames report the arrival.
   const jumpToBottom = () => {
+    historyOperation.current++;
+    prependAnchor.current = undefined;
     history.jumpToRecent();
     setHistoryEnd(undefined);
     setWindowSize(CHAT_WINDOW);
@@ -299,7 +302,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   // app on switching to Chat — see chatWindow.ts for the measurements.
   const [windowSize, setWindowSize] = React.useState(CHAT_WINDOW);
   const [historyEnd, setHistoryEnd] = React.useState<{scope: string; id: string} | undefined>();
-  React.useEffect(() => {setHistoryEnd(undefined); setWindowSize(CHAT_WINDOW);}, [client, liveScope]);
+  React.useEffect(() => {historyOperation.current++; prependAnchor.current = undefined; setHistoryEnd(undefined); setWindowSize(CHAT_WINDOW);}, [client, liveScope, agent.agent]);
   // A 1s heartbeat WHILE WORKING only, so the "thinking" elapsed label moves. Idle
   // costs nothing: the interval isn't created unless a turn is actually running.
   // The SERVER's clock, not the phone's: `workingSince` is a timestamp the Mac produced,
@@ -548,7 +551,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
             const last = visibleTurns[visibleTurns.length - 1]?.record_id;
             if (last) setHistoryEnd({scope: liveScope, id: last});
             if (hiddenHere) {prependAnchor.current = {height: contentHeight.current, y: offRef.current}; setWindowSize(n => nextWindow(n, turns.length));}
-            else {history.load().then(count => {if (count) setWindowSize(n => Math.max(n, Math.min(n, visibleTurns.length) + Math.min(count, CHAT_WINDOW)));});}
+            else {const operation = historyOperation.current; history.load().then(count => {if (count && operation === historyOperation.current) setWindowSize(n => Math.max(n, Math.min(n, visibleTurns.length) + Math.min(count, CHAT_WINDOW)));});}
           }}
           activeOpacity={0.7}
           style={styles.earlierRow}>

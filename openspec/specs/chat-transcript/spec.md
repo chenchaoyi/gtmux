@@ -775,6 +775,19 @@ The pane transcript endpoint SHALL support an opt-in recent window of at most20 
 - **WHEN** a large session exceeds the parse retention budget and a reader requests its recent window
 - **THEN** a bounded whole-turn tail MAY be cached, a larger request beyond coverage SHALL still read its complete requested range, and an authorized earlier-history request SHALL resolve its cursor without first parsing a redundant recent window
 
+### Requirement: History paging respects refusal and newer reading intent
+The shared React Native Chat reader SHALL retire all snapshots already observed for the current reader after a pagination authorization refusal. Rolling recent updates or reusing an old snapshot SHALL NOT hide that refusal; only a newer authorized source snapshot MAY restore content. Jump to latest SHALL invalidate an in-flight page in both continuous and disconnected history, retire stale UI continuations and prepend anchors, and preserve existing identity, deadline and incremental mount limits.
+
+#### Scenario: Polling advances before an earlier page is refused
+- **WHEN** the recent source window changes during a page request and that page then returns 401 or 403
+- **THEN** the current and previously observed snapshots remain retired with a visible refusal until newer authorized source data arrives
+- **AND** an old reader failure cannot retire a new selected session
+
+#### Scenario: A late page returns after Jump
+- **WHEN** the reader chooses the latest window before a pending page or its layout callback settles
+- **THEN** the old operation cannot expand that window or apply a history offset, even before the Jump animation ends
+- **AND** deliberate later expansion still uses the current authoritative cursor and valid cached history
+
 ### Requirement: Explicit owner-only historical observation reads
 
 The pane transcript endpoint MAY provide an owner-only historical observation with explicit observation=1 when current association is unavailable and verified historical evidence is sufficient. Ordinary reads SHALL retain their contract. Observation reads SHALL keep existing response/recent/page bounds, distinguish last-known history in response state and conditional responses, and SHALL NOT stitch unverified earlier HQ sessions or alter live metadata. Supported UI SHALL visibly restrict Chat sending while history is last-known; a verified response may remove that restriction without replacing unchanged turns.

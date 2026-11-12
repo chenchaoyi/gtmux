@@ -1817,6 +1817,8 @@ and its deadline. The initial loading mark says it is reading recent conversatio
 The first cold source scan remains necessary; warm parser measurements are not
 end-to-end phone timings. The existing default HTTP read remains compatible.
 
+An authorization refusal retires every snapshot already observed for that reader, even when polling advanced during the page read or an older array is reused. Only a newer successful source snapshot restores content. Jump invalidates active pagination in continuous as well as disconnected history, retires its UI continuation and pending prepend anchor, and preserves valid continuous history for deliberate expansion later. A late page cannot enlarge the reset window or offset a new reader.
+
 ## Local drafts and worktree review (2026-11-12)
 
 A chat whose historical association is pending permits local draft editing and shows why sending is unavailable. The keyboard and expanded editor remain usable; Return, send, upload and terminal keys keep the remote-input fence. Draft persistence uses the observed conversation only as a local scope, preserving the draft when that same identity is verified. It does not supply control authority.

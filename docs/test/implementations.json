@@ -1043,6 +1043,23 @@
       "LCL-004 an in-flight earlier page preserves snapshots observed after it started"
     ]
   },
+  "mobileapp/__tests__/chatPagingOrder.test.tsx": {
+    "cases": [
+      "CPG-001",
+      "CPG-002",
+      "CPG-003",
+      "CPG-004"
+    ],
+    "selectors": [
+      "CPG001 refusal %i retires the current snapshot, not the request-start array",
+      "CPG001 an ordinary page failure keeps intervening recent data",
+      "CPG001 an old reader refusal cannot retire a new session",
+      "CPG004 revisiting an observed array cannot reauthorize a refused snapshot",
+      "CPG002 Jump supersedes a late page in a disconnected=%s reader",
+      "CPG002 Jump invalidates the hook operation without a late prepend callback",
+      "CPG003 Jump drops an accepted page anchor before its delayed size callback"
+    ]
+  },
   "mobileapp/__tests__/chatRecentHistory.test.tsx": {
     "cases": [
       "LCL-003"
