@@ -1,0 +1,2 @@
+• Read last-known conversation history when the current session association needs confirmation, with a clear read-only state.
+• Show recorded file reads and searches consistently in Activity and Trace, while keeping the original tool details available.
