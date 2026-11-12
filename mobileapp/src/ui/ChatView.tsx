@@ -188,7 +188,7 @@ export function liveLabel(since: number | undefined, nowSec: number, lang: Lang)
 
 export function ChatView({client, readOnly = false, agent, lines, status, fontSize, pal, lang, turns: recentTurns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, failed = false, associationFailed = false, readOnlyHistory = false, onRetry, pendingPrompt, pendingDelivered = false, pendingDelivery, fontPref, workingSince, onLiveEdge, topPad = 0, controlsTop, controlsShift, maxWidth}: Props) {
   // Radar timestamps and temporary status changes are observations, not a new reader.
-  readOnly = readOnly || readOnlyHistory;
+  const conversationReadOnly = readOnly || readOnlyHistory;
   const liveScope = JSON.stringify([client?.base, agent.pane_id, agent.home_id, agent.session_id]);
   const [liveDisclosure, setLiveDisclosure] = useState({scope: liveScope, open: false});
   const liveOpen = liveDisclosure.scope === liveScope && liveDisclosure.open;
@@ -515,8 +515,8 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
       {!loading && !failed && !associationFailed && !history.failed && turns.length === 0 && (
         <Text style={[styles.empty, {color: CHAT_FG_DIM}]}>
           {lang === 'zh'
-            ? (readOnly ? '尚无已记录的对话。' : '还没有对话历史。\n历史来自 agent 在服务器上的会话记录，你们聊起来就会出现。想看当前屏幕，切到「终端」。')
-            : (readOnly ? 'No messages have been recorded yet.' : 'No conversation history yet.\nHistory comes from the agent’s session log on the server, and fills in once you start talking. Switch to Terminal for the current screen.')}
+            ? (conversationReadOnly ? '尚无已记录的对话。' : '还没有对话历史。\n历史来自 agent 在服务器上的会话记录，你们聊起来就会出现。想看当前屏幕，切到「终端」。')
+            : (conversationReadOnly ? 'No messages have been recorded yet.' : 'No conversation history yet.\nHistory comes from the agent’s session log on the server, and fills in once you start talking. Switch to Terminal for the current screen.')}
         </Text>
       )}
 
@@ -708,7 +708,8 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
         open={liveOpen} onToggle={() => setLiveDisclosure({scope: liveScope, open: !liveOpen})}
         avatar={avatar(<AgentAvatar agent={agent} size={26} radius={7} bg="#1C1C1F" fg="rgba(235,235,245,0.7)" />, {kind: 'agent', agent})}
         label={liveShown.length ? liveLabel(workingSince, nowSec, lang) : thinkingLabel(workingSince, nowSec, lang)}
-        inspectAvailable={!readOnly && agent.source !== 'native'}
+        inspectAvailable={!readOnly && !!agent.pane_id && agent.source !== 'native'}
+        sourceLabel={readOnlyHistory ? (lang === 'zh' ? `当前 pane ${agent.pane_id} · 历史对话关联待确认` : `Current pane ${agent.pane_id} · History association unconfirmed`) : undefined}
         lines={liveShown} fontSize={fontSize} fontFamily={fontFamily} lang={lang} />}
     </ScrollView>
       {/* branded loader over the list while collapse/expand-all re-renders. */}

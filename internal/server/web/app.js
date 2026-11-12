@@ -2572,6 +2572,7 @@
       panel.clock = document.createElement('span'); panel.clock.className = 'live-clock'; summary.appendChild(panel.clock);
       panel.action = document.createElement('span'); panel.action.className = 'live-action'; summary.appendChild(panel.action);
       var chevron = document.createElement('span'); chevron.className = 'live-chevron'; chevron.innerHTML = uiIcon('chevron'); summary.appendChild(chevron); panel.appendChild(summary);
+      panel.source = document.createElement('p'); panel.source.className = 'live-source'; panel.appendChild(panel.source);
       panel.output = document.createElement('pre'); panel.output.className = 'live-output'; panel.output.setAttribute('aria-label', T('Live terminal output', '实时终端输出')); panel.appendChild(panel.output);
       panel.note = document.createElement('p'); panel.note.className = 'live-note'; panel.note.setAttribute('role', 'status'); panel.appendChild(panel.note);
       panel.viewport = host.querySelector('.conv-scroll, .tile-chat');
@@ -2586,6 +2587,9 @@
   }
   function paintLive(panel, state) {
     var viewport = panel.viewport, following = viewport && viewport.clientHeight > 0 && viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < 48;
+    var pendingHistory = !!(state.agent.observed_conversation || state.agent.history_read_only);
+    panel.source.hidden = !pendingHistory;
+    panel.source.textContent = pendingHistory ? T('Current pane ', '当前 pane ') + state.agent.pane_id + T(' · History association unconfirmed', ' · 历史对话关联待确认') : '';
     panel.clock.textContent = liveDuration(state.agent);
     panel.action.textContent = state.open ? T('Collapse', '收起') : T('Live output', '展开实时输出');
     var text = state.text || (state.error ? T('Live output is unavailable.', '暂时无法读取实时输出。') : state.loading ? T('Loading live output…', '正在加载实时输出…') : T('Waiting for output…', '等待实时输出…'));

@@ -318,3 +318,8 @@ Maximized tiles place Restore layout inside the header grid, with a separate col
 The read-only Diff inspector shares the native directory model and initially folds directories, files and hunks. Worktree root, branch, file totals and additions/deletions remain visible above the tree; Collapse all affects this inspector only. Paths are rendered as text. Hunk code is mounted on explicit expansion in bounded batches. Untracked names are not added code lines; partial payloads disclose that their counts are incomplete. This keeps existing pane authorization, original patch copying and failure handling.
 
 The full worktree path is owner-only. Shared guests retain the authorized branch and original patch without the new absolute host path.
+
+
+### Pending-history Live source
+
+An expanded Live preview for last-known history labels the current pane and its unconfirmed conversation association. The existing authorized pane read is independent of transcript input restrictions. Pending-history input remains unavailable; disclosure, bounded tail, cancellation and credential guards remain unchanged.

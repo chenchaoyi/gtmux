@@ -245,6 +245,8 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   // indistinguishable from a dead app. ChatView renders it as the same "live" card the
   // worker Detail has —HQ was the only place passing an empty screen.
   const [paneText, setPaneText] = useState('');
+  const paneReadIdentity = useMemo(() => ({client, pane: hq.pane_id}), [client, hq.pane_id]);
+  const [captureIdentity, setCaptureIdentity] = useState<typeof paneReadIdentity>();
   // A command the server declined to submit — held so it can be retried, not lost.
   const [failedSend, setFailedSend] = useState<SendPayload | null>(null);
   const [failedReason, setFailedReason] = useState('');
@@ -300,13 +302,14 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   }, [client, zh]);
 
   useEffect(() => {
+    setCaptureIdentity(undefined);
     if (live.status !== 'working') {setPaneText(''); return;}
     return startReadPolling(createReadTask(
-      signal => client.pane(hq.pane_id, signal), p => setPaneText(p?.text ?? ''),
+      signal => client.pane(hq.pane_id, signal), p => {setPaneText(p.text ?? ''); setCaptureIdentity(paneReadIdentity);},
     ), 1500);
-  }, [client, hq.pane_id, live.status]);
+  }, [client, hq.pane_id, live.status, paneReadIdentity]);
 
-  const hqPaneLines: AnsiLine[] = useMemo(() => paneLines(paneText), [paneText]);
+  const hqPaneLines: AnsiLine[] = useMemo(() => captureIdentity === paneReadIdentity ? paneLines(paneText) : [], [paneText, captureIdentity, paneReadIdentity]);
 
   // How many earlier sessions the reader has asked to see (hq-console-history: a
   // `/clear` used to be the end of the visible past; now it is a seam), and whether the

@@ -1596,3 +1596,12 @@ The browser Diff SHALL use the same directory model and context interpretation a
 - **WHEN** the reader opens Diff and explicitly expands its directory, file and hunk
 - **THEN** the original colored change lines become visible without horizontal overflow of controls
 - **AND** Collapse all closes the tree while worktree context and totals remain visible
+
+
+### Requirement: Pending-history Live names its pane
+Browser Live SHALL identify the current pane and unconfirmed history association when showing last-known conversation history. It SHALL retain existing input restrictions, bounded output and scope/credential cancellation.
+
+#### Scenario: A pending-history reader opens Live
+- **WHEN** the reader expands an authorized current-pane preview
+- **THEN** its pane and association status are visible with the bounded screen tail
+- **AND** pending-history input remains unavailable
