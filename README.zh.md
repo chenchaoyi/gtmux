@@ -153,6 +153,7 @@ gtmux agent · 7 agent · 1 等输入 · 2 运行中 · 3 空闲 · 1 只有 she
 - [查看命令帮助](docs/guides/cli-help.zh.md)：查找常用命令、切换语言，以及供脚本读取的帮助目录。
 - [CLI 参考](docs/cli.zh.md)：命令参数、语言与持久设置。
 - [HQ 知识库](docs/knowledge.zh.md)：档案、知识和你自己的规则。
+- [使用与审阅知识](docs/guides/knowledge-review.zh.md)：查阅相关条目、审阅 Markdown 修改，以及续跑 Dreaming 批次。
 - [DeepSeek Harness 接入](docs/guides/deepseek-harness.zh.md)：终端和历史集成。
 
 参与开发可看 [CONTRIBUTING.md](CONTRIBUTING.md) 和[设计文档](docs/design/README.zh.md)。
