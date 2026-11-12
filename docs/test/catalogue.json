@@ -60689,7 +60689,7 @@
           "design": "SID-006"
         }
       ],
-      "sha256": "c89ac10ed076c89db674e7ca9c08c2db0610cdfd98021ef096a0ed0b2b64f17c"
+      "sha256": "2cbb215a7e1badbe2f85ec8d36657e609d0ea1a50d8e4d74d1296d35c80e8545"
     },
     "mobileapp/src/screens/DetailObserved.test.tsx": {
       "layer": "L3",
@@ -60738,6 +60738,22 @@
         }
       ],
       "sha256": "3ca9c92b32044dfa04e9fbd032478b0d87953d093484ef9770d053ee9aa473d2"
+    },
+    "mobileapp/src/api/observed-client-contract.test.ts": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-2c624a8ebee0",
+          "line": 3,
+          "kind": "reviewed-selector",
+          "name": "SID009 ordinary reads stay compatible while UI history explicitly opts in",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "SID-009"
+        }
+      ],
+      "sha256": "0ab77243375b08ec2e5897b3052a3215c6e8d1cb27a72787cf76b88c19bdbfdb"
     }
   },
   "legacy_source": "f187564fcfdab24d7750efbea108958e469cdded",

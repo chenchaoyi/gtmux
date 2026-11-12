@@ -16,6 +16,7 @@ MAP-a11ab8aaa94d,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceW
 MAP-80be9bb61842,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/HQOverviewMoreWindowTests.swift,27,reviewed-selector,testBottomRemainingControlOpensAllAndSelectsHiddenGoalWithoutSending,False,MC-HQ-OVERVIEW-MORE
 MAP-9a63f420f1ec,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/HQOverviewMoreWindowTests.swift,98,reviewed-selector,testFullyShownListHasNoRemainingControlAndUnknownRosterDoesNotSayIdle,False,MC-HQ-OVERVIEW-MORE
 MAP-f0ea1c518382,L3,reviewed implementation,mobileapp/src/api/conversation.test.ts,5,reviewed-selector,CAS005 transcript rejects association and source failures instead of returning empty history,False,CAS-005
+MAP-2c624a8ebee0,L3,reviewed implementation,mobileapp/src/api/observed-client-contract.test.ts,3,reviewed-selector,SID009 ordinary reads stay compatible while UI history explicitly opts in,False,SID-009
 MAP-51014f850982,L3,reviewed implementation,mobileapp/src/api/observed-history.test.ts,4,reviewed-selector,SID006 observed history stays separate from current session authority and survives 304,False,SID-006
 MAP-d9561a5b54f1,L3,reviewed implementation,mobileapp/src/screens/DetailObserved.test.tsx,13,reviewed-selector,SID006 mounted Detail fences historical chat and clears restriction after verified refresh,False,SID-006
 MAP-4811f4f9249d,L3,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,150,reviewed-selector,"CAS005 Detail propagates association failures, preserves history and clears on retry",False,CAS-005

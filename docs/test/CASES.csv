@@ -4406,6 +4406,7 @@ MAP-f0ea1c518382,L3,reviewed implementation,mobileapp/src/api/conversation.test.
 LEG-e4ccbe92b909,L1,RN / mobile harness,mobileapp/src/api/events.test.ts,23,test,"a refused stream reports the status the Mac answered with, and only that",False,legacy-not-retrospectively-reviewed
 LEG-fb700444ec3e,L1,RN / mobile harness,mobileapp/src/api/events.test.ts,38,test,"an awake event asks for a server-mode re-read, and is harmless unhandled",False,legacy-not-retrospectively-reviewed
 LEG-e0457d0d24da,L1,RN / mobile harness,mobileapp/src/api/events.test.ts,47,test,"intentional unsubscribe ignores late stream errors, data and open callbacks",False,legacy-not-retrospectively-reviewed
+MAP-2c624a8ebee0,L3,reviewed implementation,mobileapp/src/api/observed-client-contract.test.ts,3,reviewed-selector,SID009 ordinary reads stay compatible while UI history explicitly opts in,False,SID-009
 MAP-51014f850982,L3,reviewed implementation,mobileapp/src/api/observed-history.test.ts,4,reviewed-selector,SID006 observed history stays separate from current session authority and survives 304,False,SID-006
 LEG-5e72fc2ccb19,L1,RN / mobile harness,mobileapp/src/api/requestAbort.test.ts,3,test,only an observed signal abort is cancellation; marked deadlines remain timeouts,False,legacy-not-retrospectively-reviewed
 LEG-9317901a472a,L1,RN / mobile harness,mobileapp/src/api/requestAbort.test.ts,17,test,records the configured deadline independently of delayed JS execution,False,legacy-not-retrospectively-reviewed

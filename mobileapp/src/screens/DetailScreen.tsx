@@ -648,7 +648,7 @@ function PaneDetailView({
     const task = createReadTask(
       signal => {
         turnsAtRef.current = Date.now();
-        return client.transcript(agent.pane_id, etagRef.current, 0, signal, true);
+        return client.transcript(agent.pane_id, etagRef.current, 0, signal, true, true);
       }, ({turns: ts, dropped, reset, etag, unchanged, readOnlyHistory}) => {
         if (etagIdentity.current !== chatIdentity) return;
         etagRef.current = etag;

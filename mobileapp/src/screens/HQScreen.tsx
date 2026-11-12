@@ -328,7 +328,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   useEffect(() => {setChatRecord({identity: chatIdentity, turns: [], loaded: false, earlierAvailable: false}); setEarlier(0); setEarlierLoading(false); setTraceOpen(false); setDiffOpen(false);}, [chatIdentity]);
   const traceRetry = useRef<() => void>(() => {});
   useEffect(() => {const task = createReadTask(
-    signal => client.transcript(hq.pane_id, etagRef.current, earlier, signal, true),
+    signal => client.transcript(hq.pane_id, etagRef.current, earlier, signal, true, true),
     ({turns: ts, reset, etag, unchanged, earlierAvailable: more, readOnlyHistory}) => {
       if (etagIdentity.current !== chatIdentity) return;
       etagRef.current = etag;

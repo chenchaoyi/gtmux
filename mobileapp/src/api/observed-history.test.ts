@@ -10,11 +10,11 @@ test('SID006 observed history stays separate from current session authority and 
   expect(a.session_id).toBeUndefined();expect(nativeEvidenceLabel(a,'en')).toContain('Association pending');
   const client=new GtmuxClient('https://synthetic.invalid','fixture');
   fetch.mockResolvedValueOnce(response(200,'last-known'));
-  expect((await client.transcript('%1')).readOnlyHistory).toBe(true);
+  expect((await client.transcript('%1',undefined,0,undefined,false,true)).readOnlyHistory).toBe(true);
   expect(fetch.mock.calls[0][0]).toContain('&observation=1');
   fetch.mockResolvedValueOnce(response(304,'last-known'));
-  expect(await client.transcript('%1','old')).toMatchObject({unchanged:true,readOnlyHistory:true});
+  expect(await client.transcript('%1','old',0,undefined,false,true)).toMatchObject({unchanged:true,readOnlyHistory:true});
   fetch.mockResolvedValueOnce(response(304,'verified'));
-  expect((await client.transcript('%1','new')).readOnlyHistory).toBe(false);
+  expect((await client.transcript('%1','new',0,undefined,false,true)).readOnlyHistory).toBe(false);
  } finally {globalThis.fetch=original;}
 });

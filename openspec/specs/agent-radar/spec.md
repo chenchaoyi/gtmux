@@ -859,3 +859,12 @@ Radar SHALL use the shared bounded rollout metadata parser to identify a current
 - **AND** continuing own-turn callbacks preserve the original active start time, while an actual new prompt/turn or ownership change refreshes it
 - **AND** callbacks without explicit turn identity retain existing compatibility behavior
 - **AND** a state-neutral manual compaction still records its real lifecycle receipt without restarting work or clearing the completed turn
+
+### Requirement: Historical conversation observations remain distinct from live authority
+
+Radar MAY fold an otherwise duplicated native Codex conversation into a managed pane only when bounded private bindings, the exact live frontend/root/terminal incarnation, same-home public provenance and unique ownership agree. It SHALL expose that history as a separate observation, never fill an unverified authoritative session ID or borrow lifecycle status, task time, input, adoption or restore authority. Ambiguous or conflicting evidence SHALL fail closed, and guest views SHALL omit the fallback identity.
+
+#### Scenario: Unreadable resume record with a uniquely verified historical binding
+- **WHEN** the current resume record cannot establish identity but the private historical and live terminal evidence agree uniquely
+- **THEN** the matching history appears once with its managed pane and explicit association-pending status
+- **AND** input and lifecycle validation continue to require their original live authority

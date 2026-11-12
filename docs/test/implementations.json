@@ -1284,7 +1284,8 @@
   },
   "mobileapp/src/api/observed-history.test.ts": {
     "cases": [
-      "SID-006"
+      "SID-006",
+      "SID-009"
     ],
     "selectors": [
       "SID006 observed history stays separate from current session authority and survives 304"
@@ -1668,6 +1669,14 @@
     "selectors": [
       "Typed query details in Chat and Trace ",
       "Recorded query failure retries and large results page without losing full copy"
+    ]
+  },
+  "mobileapp/src/api/observed-client-contract.test.ts": {
+    "cases": [
+      "SID-009"
+    ],
+    "selectors": [
+      "SID009 ordinary reads stay compatible while UI history explicitly opts in"
     ]
   }
 }

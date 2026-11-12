@@ -2,13 +2,13 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1149 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1150 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3777 | [L1.csv](cases/L1.csv) |
 | L2 · Component / contract | 2058 | [L2.csv](cases/L2.csv) |
-| L3 · Runtime integration | 110 | [L3.csv](cases/L3.csv) |
+| L3 · Runtime integration | 111 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 94 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
 | G · Qualification guards | 496 | [G.csv](cases/G.csv) |
@@ -130,6 +130,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | MSD-009 | The matching text echo becomes accepted, but old snapshot neither invalidates current reads nor replaces newer text, geometry or cursor. No replay and target guards stay in place. |
 | MSD-010 | Picker/upload ordering, cancellation, retry, no auto-send, draft/server/session isolation and matter state assertions all remain. Only callback shape changes; new receipt semantics are covered separately by MSD007/008. |
 | MSD-011 | Unresolved durable retries reuse one requestID regardless of age and remain protected at the existing spool cap. Only one nested handler may claim/mutate. Matching pending proof and input lease are required before native claim; pruned/settled/replaced old requests cannot regain authority. Changed target/body, claimed/uncertain and historical accepted results retain their safeguards; completed retention is unchanged. No real queue or RPC is accessed. |
+| SID-009 | Default URLs and malformed empty result remain exactly compatible. Detail/HQ transcript call sites explicitly opt in; pane Trace opts in only when the supplied agent contains observed_conversation metadata. Preserve recent/context/cursor/conditional headers and the existing TraceReader three-argument call contract. Last-known state survives 304; verified removes restriction. External session routes retain exact identity and never receive observation fallback. Input paths unchanged; no network/session/device operations. |
 | STOR-001 | Every carrier separates project-owned and task-temp output from gtmux configuration/runtime trees; no promoted entry required; user text and hand-edit protection preserved; second sync idempotent. |
 | STOR-002 | Both playbooks reserve gtmux-owned state and only reusable HQ knowledge tools for its home, direct project scripts/reports/builds to project/task storage, require external evidence references, and never grant automatic migration/deletion; upgrade backs up old charter, preserves LOCAL/notes and converges. |
 | PWR-001 | One production collection per producer tick, no extra REST collections within freshness; explicit next producer bypasses TTL; clone ownership preserved; failure/oversize never turns stale bytes into success; scopes never cross |
