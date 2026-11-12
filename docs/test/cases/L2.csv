@@ -113,6 +113,12 @@ MAP-081f78baa59f,L2,reviewed implementation,internal/relay/inbox_test.go,30,revi
 MAP-6010cd28478a,L2,reviewed implementation,internal/relay/inbox_test.go,95,reviewed-selector,TestRBL002FreshnessLegacyAndBoundedSourceWait,False,RBL-002
 MAP-1e34bec3e596,L2,reviewed implementation,internal/relay/inbox_test.go,145,reviewed-selector,TestRBL002InboxSortsReplyTimeAndRechecksStalenessAtClaim,False,RBL-002
 MAP-9a0a983fad52,L2,reviewed implementation,internal/relay/inbox_test.go,183,reviewed-selector,TestRBL002SourceWaitCancelsWhileLedgerIsLocked,False,RBL-002
+MAP-de016b5ab612,L2,reviewed implementation,internal/resume/codex_publication_test.go,62,reviewed-selector,TestCBP001ActualBootstrapCannotOverwriteNewFrontend,False,"CBP-001,CBP-002,CBP-003,CBP-004"
+MAP-159ba17d2bde,L2,reviewed implementation,internal/resume/codex_publication_test.go,137,reviewed-selector,TestCBP002ActualPublishersRespectSharedLease,False,"CBP-001,CBP-002,CBP-003,CBP-004"
+MAP-7889427ed249,L2,reviewed implementation,internal/resume/codex_publication_test.go,185,reviewed-selector,TestCBP003FailurePathsReleasePublicationLocks,False,"CBP-001,CBP-002,CBP-003,CBP-004"
+MAP-7f9599b6572b,L2,reviewed implementation,internal/resume/codex_publication_test.go,247,reviewed-selector,TestCBP003SameOwnerProcessPreservesFrontend,False,"CBP-001,CBP-002,CBP-003,CBP-004"
+MAP-bc7e34c61d14,L2,reviewed implementation,internal/resume/codex_publication_test.go,313,reviewed-selector,TestCBP004CrossProcessPublication,False,"CBP-001,CBP-002,CBP-003,CBP-004"
+MAP-76dadd73f4b9,L2,reviewed implementation,internal/resume/codex_publication_test.go,284,reviewed-selector,TestCBP004Child,False,"CBP-001,CBP-002,CBP-003,CBP-004"
 MAP-0ff0e3ef33b9,L2,reviewed implementation,internal/resume/codexfrontend_ready_test.go,14,reviewed-selector,TestCFR002AdmissionCausesAndControlledLaunch,False,CFR-002
 MAP-498880a35c6c,L2,reviewed implementation,internal/resume/conversation_test.go,20,reviewed-selector,TestCAS001IndependentConversationRecovery,False,"CAS-001,CAS-002"
 MAP-a549d442247a,L2,reviewed implementation,internal/resume/conversation_test.go,54,reviewed-selector,TestCAS001ConversationRecoveryRejectsUnknownOrConflictingProof,False,"CAS-001,CAS-002"
