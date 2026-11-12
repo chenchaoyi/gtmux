@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner, self-review; not independent approval",
     "date": "2026-11-12",
     "decision": "Place Restore layout within the actual tile header grid instead of a floating overlay",
-    "notes": "New user screenshot shows the restore control covering the session title. Exact source appends it to board with absolute top/left and no title reservation. Keep original maximize/restore geometry, single-max ownership, terminal fit and Escape behavior. Use normal header flow, a narrow icon with accessible name, long-title ellipsis and bounded controls. Synthetic real-handler/CSS fixtures only; no actual terminal/session/input. Reviewed before this new test implementation."
+    "notes": "New user screenshot shows the restore control covering the session title. Exact source appends it to board with absolute top/left and no title reservation. Keep original maximize/restore geometry, single-max ownership, terminal fit and Escape behavior. Use normal header flow, a narrow icon with accessible name, long-title ellipsis and bounded controls. Synthetic real-handler/CSS fixtures only; no actual terminal/session/input. Reviewed before this new test implementation. Follow-up review before fixture correction: real buildTile wraps title and metadata in .tile-identity. The earlier simplified DOM omitted that wrapper, so its bounds proof did not cover the production header. Keep original controls/restore checks, correct only fixture structure and add actual factory coverage. No independent approval."
   },
   "cases": [
     {
@@ -20,5 +20,5 @@
       ]
     }
   ],
-  "seal": "c7ab7c8194ba9f03389bbbb24e902894da9dc6d04427b61e3341f138e83a6560"
+  "seal": "2eb6c88af939f6989a66cc30fbeb299ffebd9639bd72a4ba7ff232e9b74c38db"
 }

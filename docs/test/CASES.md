@@ -2,14 +2,14 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1155 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1156 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3777 | [L1.csv](cases/L1.csv) |
 | L2 · Component / contract | 2058 | [L2.csv](cases/L2.csv) |
-| L3 · Runtime integration | 121 | [L3.csv](cases/L3.csv) |
-| L4 · Application journeys | 96 | [L4.csv](cases/L4.csv) |
+| L3 · Runtime integration | 122 | [L3.csv](cases/L3.csv) |
+| L4 · Application journeys | 100 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
 | G · Qualification guards | 496 | [G.csv](cases/G.csv) |
 
@@ -124,6 +124,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | HQP1-006 | Source ingestion uses exact conversation/time attribution, records ambiguous/unassigned observations and source gaps; cursor advances only with durable inbox. |
 | HQP1-007 | CLI operations enforce HQ authority and expose pending reconciliation; periodic ingestion/wake is independent from delivery and restart-safe. |
 | HQP1-008 | Schema 1 reads migrate without invented history, schema 2 prevents old writer loss, and seeded bilingual playbook explains safe processing. |
+| AOP-006 | Return button, avatar, tile-identity and window controls occupy separate columns with no overlap; title wrapper uses flexible remaining width (at least180px in these fixtures), metadata remains visible. Narrow actual board keeps the named return control. Restore removes maximized state and returns original dimensions. Production strings/source/raw records unchanged. No device/VO or real-session acceptance claimed. Both direct avatar forms occupy column2 without covering the return control. |
 | MSD-001 | Active uses one exact expectedTurnId steer; loaded idle uses one start with original stable message ID and input; legacy returns honest queue receipt; notLoaded never resume; permissions/cwd/model unchanged; flags, state change and ambiguous writes never queue/replay; no real server input. |
 | MSD-002 | Only phone explicit submitted text opts into direct user semantics. Receipt keeps queued vs active/start accepted; persistent retries preserve known outcome. Native failure never types fallback; draft/menu/hold/identity/idempotency unchanged. |
 | MSD-003 | Preferred receipt returned as additive JSON while legacy clients retain status ok; no mutation when unauthorized, guest out of scope or key invalid; queue acceptance not claimed read/completed; no message body or secrets in diagnostics. |

@@ -1,0 +1,25 @@
+{
+  "id": "maximized-header-identity-20261112",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review; not independent approval",
+    "date": "2026-11-12",
+    "decision": "Keep the real tile identity wrapper in its own flexible maximized header column",
+    "notes": "A full production-page screenshot on main6b revealed avatar and .tile-identity both in column2, compressing title to36px. Earlier simplified fixture used a direct title child. New actual buildTile journeys must fail before the one-selector CSS fix; prior simplified screenshots are not production-header acceptance. No live service, session or install. Include the existing terminal-only direct .avatar branch of buildTile, not only the agent .speaker-avatar button. Review recorded before adding this fourth actual-page variant."
+  },
+  "cases": [
+    {
+      "id": "AOP-006",
+      "layer": "L4",
+      "description": "Production maximize header separates real avatar, identity wrapper and controls",
+      "setup": "Existing synthetic HTTP server loads unchanged embedded app/buildTile; long title and metadata; viewport960/1440 and actual board constrained480px, no custom header DOM. Correct the earlier isolated fixture to include the real identity wrapper. Include both agent profile-avatar and plain terminal-avatar production branches.",
+      "action": "Open a real fixture pane, maximize by its actual header, inspect bounds and identity text; restore by its real button, then check original dimensions.",
+      "expected": "Return button, avatar, tile-identity and window controls occupy separate columns with no overlap; title wrapper uses flexible remaining width (at least180px in these fixtures), metadata remains visible. Narrow actual board keeps the named return control. Restore removes maximized state and returns original dimensions. Production strings/source/raw records unchanged. No device/VO or real-session acceptance claimed. Both direct avatar forms occupy column2 without covering the return control.",
+      "planned_files": [
+        "tests/web/maximized-header.test.cjs",
+        "internal/server/web/maximize-layout.test.cjs"
+      ]
+    }
+  ],
+  "seal": "a2032b855bcddafa684817cd9fa1f575ea1a0e2c4005367ee36251c7b6045da7"
+}

@@ -779,12 +779,14 @@
   },
   "internal/server/web/maximize-layout.test.cjs": {
     "cases": [
-      "AOP-004"
+      "AOP-004",
+      "AOP-006"
     ],
     "selectors": [
       "AOP004 Restore layout occupies the actual header before the title",
       "AOP004 switching and restoring keep one control and restore prior dimensions",
-      "AOP004 maximized header reserves grid space and names its narrow icon"
+      "AOP004 maximized header reserves grid space and names its narrow icon",
+      "AOP006 real identity wrapper occupies the flexible maximized column"
     ]
   },
   "internal/server/web/observed_identity.test.cjs": {
@@ -1741,6 +1743,17 @@
     "selectors": [
       "Typed query details in Chat and Trace ",
       "Recorded query failure retries and large results page without losing full copy"
+    ]
+  },
+  "tests/web/maximized-header.test.cjs": {
+    "cases": [
+      "AOP-006"
+    ],
+    "selectors": [
+      "AOP006 real maximized header wide",
+      "AOP006 real maximized header medium",
+      "AOP006 real maximized header narrow board",
+      "AOP006 real maximized header plain terminal"
     ]
   }
 }

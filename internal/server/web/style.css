@@ -1633,8 +1633,9 @@ select:disabled { opacity: .55; cursor: not-allowed; }
 .tile.max .tile-head { grid-template-columns: auto 36px minmax(0, 1fr) auto; }
 .tile.max .max-exit { position: static; z-index: auto; min-width: var(--control-size); max-width: 100%; padding: 6px 8px; white-space: nowrap; }
 .tile.max .tile-head > .max-exit { grid-column: 1; grid-row: 1; }
-.tile.max .tile-head > .speaker-avatar { grid-column: 2; grid-row: 1; }
-.tile.max .tile-head > .tile-name { grid-column: 3; grid-row: 1; }
+.tile.max .tile-head > .speaker-avatar,
+.tile.max .tile-head > .avatar { grid-column: 2; grid-row: 1; }
+.tile.max .tile-head > .tile-identity { grid-column: 3; grid-row: 1; }
 .tile.max .tile-head > .tile-window-controls { grid-column: 4; grid-row: 1; }
 @container (max-width: 600px) {
   .tile.max .max-exit-label { display: none; }

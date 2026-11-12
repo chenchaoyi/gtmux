@@ -16,6 +16,7 @@ MAP-328002d4dfc3,L3,Browser,internal/server/web/app.test.cjs,1351,reviewed-selec
 MAP-452a61a1d04e,L3,reviewed implementation,internal/server/web/maximize-layout.test.cjs,25,reviewed-selector,AOP004 Restore layout occupies the actual header before the title,False,AOP-004
 MAP-cd44b26604d6,L3,reviewed implementation,internal/server/web/maximize-layout.test.cjs,31,reviewed-selector,AOP004 switching and restoring keep one control and restore prior dimensions,False,AOP-004
 MAP-f159c36e253b,L3,reviewed implementation,internal/server/web/maximize-layout.test.cjs,38,reviewed-selector,AOP004 maximized header reserves grid space and names its narrow icon,False,AOP-004
+MAP-97d5f314aecb,L3,reviewed implementation,internal/server/web/maximize-layout.test.cjs,46,reviewed-selector,AOP006 real identity wrapper occupies the flexible maximized column,False,"AOP-004,AOP-006"
 MAP-07e13a073c16,L3,reviewed implementation,internal/server/web/observed_identity.test.cjs,16,reviewed-selector,SID007 focused and tile history cannot dispatch input or become an external row,False,SID-007
 MAP-d731318cd969,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceWindowTests.swift,8,reviewed-selector,testCompleteWindowPinsComposerAndNativeChoiceUpdatesAndFocusesEditor,False,MC-HQ-WINDOW
 MAP-a11ab8aaa94d,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceWindowTests.swift,92,reviewed-selector,testCurrentQuestionRemainsUsableWhileConversationReadWaits,False,MC-HQ-WINDOW
