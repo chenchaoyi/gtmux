@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex KB implementation owner (self-review of R1/R2 regression design)",
+    "date": "2026-11-12",
+    "decision": "close independent fc5 review R1/P1 and R2/P2 using existing lock and atomic writer",
+    "notes": "Formal review e3f2dcc8d4a6575da5e497dd9325305fefc32419f882d808bb8bdcd5c5e17f25. Author design review only, not independent fix approval. Commit this sealed design before new test files. Preserve earlier tests, gates and history. Design-only commit reuses unchanged fc5 code validation; new production code will receive bounded affected and required core gates with runtime source snapshots. Do not call real models or production KB."
+  },
+  "cases": [
+    {
+      "id": "KBSYNC-SERIALIZATION",
+      "layer": "L2",
+      "description": "Public machine and repo sync cannot publish an old snapshot after reviewed R1 has landed",
+      "setup": "Disposable HOME and normal public SyncMachine/SyncRepo entry points. A FIFO carrier provides a deterministic post-ledger-read barrier without production hooks. Probe the stable ledger flock nonblockingly; no pane/service/native data.",
+      "action": "Pause R0 sync in carrier read, replace fixture FIFO path with an ordinary carrier, then attempt review and carry of R1. On old unlocked code complete R1 before releasing R0; on locked code queue R1, release R0 and let the writer finish. Check all final carriers, canonical machine, ledger revision/pending, and normal error/refusal lock release. Exercise CLI sync and automatic carry without recursive locking.",
+      "expected": "Old implementation fails held-lock and final R1-content assertions. New sync holds the same ledger lock across read/publication; independent review/carry cannot interleave and final R1 remains landed with its full carrier. Errors/refusals release the lock. Carry uses an internal already-locked implementation; no recursive deadlock.",
+      "planned_files": [
+        "internal/knowledge/sync_serialization_test.go"
+      ]
+    },
+    {
+      "id": "KBLOCAL-DURABILITY-RETRY",
+      "layer": "L2",
+      "description": "Same-content LOCAL retry must confirm publication durability before appending a landing receipt",
+      "setup": "Synthetic managed LOCAL with manual prefix/suffix. Narrow per-call writer injection, no mutable global hooks. Layered fault evidence: state tests inject EIO at the actual post-rename directory-sync callback; knowledge tests inject the writer error contract after complete replacement and check real ledger/pending transitions. These are fault-path tests, not power-loss experiments or a claim of a full cross-package syscall fault.",
+      "action": "First publication returns an error with complete new bytes visible. Retry identical content with another writer error, then successful writer; independently test immediate successful retry. Inspect exact ledger bytes, current revision, pending, callback invocation, one section/land receipt, file mode/manual text and error phase.",
+      "expected": "Both failures leave ledger unchanged, same revision pending and carrier complete/private; every retry invokes the durable writer even with identical content. Only successful writer completion allows exactly one land append. Existing readonly/link/edited-target protections and original revision token contract remain. Old equal-content early return fails actual ledger/callback assertions.",
+      "planned_files": [
+        "internal/knowledge/local_durability_test.go"
+      ]
+    },
+    {
+      "id": "PRIVATEWRITE-DIRECTORY-SYNC",
+      "layer": "L2",
+      "description": "Atomic private writer propagates post-rename directory-sync failure and repeats that sync on a same-byte publication",
+      "setup": "Synthetic managed root and narrow per-call directory-sync callback below the existing rename seam. Existing pre-publication tests remain unchanged.",
+      "action": "Run the real stage/write/file-sync/close/rename sequence; callback verifies new destination and parent fd before returning EIO twice, then performs real unix.Fsync on retry. Inspect bytes, old reader, 0600 and temporary cleanup.",
+      "expected": "EIO is returned after complete visible replacement, repeated same-byte writes reach directory synchronization again, successful directory fsync returns nil. No truncated inode, exposed permissions or leaked staging file. No hardware durability claim.",
+      "planned_files": [
+        "internal/state/privatewrite_durability_test.go"
+      ]
+    }
+  ],
+  "seal": "24e4b80c322a73e04c4f2cda3d5948062a618fe0ece87752e41ada1427b1bc78"
+}
