@@ -1,0 +1,48 @@
+{
+  "id": "composer-local-draft-20261112",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review; not independent approval",
+    "date": "2026-11-12",
+    "decision": "Separate local draft editing from remote sending only for explicitly read-only historical chat; keep all input authority fences",
+    "notes": "User screenshot176 shows active keyboard button and non-editable chat input. Detail/HQ pass enabled=false for observed history; Composer incorrectly applies the remote fence to native TextInput. New draftOnly opts in to local editing and bilingual reason. Every remote path including Return must return before uploads/history/draft clearing when disabled. Existing guest and ordinary disabled defaults remain unchanged. Actual OS keyboard/device interaction is not certified by mounted React fixtures; no live pane input or release in this fix. Follow-up before CKD003 implementation: local-only drafts must use the observed conversation ID as a persistence scope only, so confirming that same conversation preserves the draft. A different observed ID must not reuse its draft. This never supplies a send target or grants input authority. Fresh integration self-review on2026-11-12 against exact frozen source eda260dbfaa966e1a39cbb327f6dbfefc4041f7d before the new integration port. Original development history is preserved, including its rejected inherited-case history check; this is not a claim this review preceded the original edits. Review covers CKD001..003/DTV001..005 and the inherited SID006 and AOP005 mappings on the touched files. SID006 remote-send/identity assertions remain intact while an explicit local-only editor is allowed; AOP005 pointer density, touch targets, ordering and original journey assertions are unchanged, with explicit Diff opening only. Original case objects, checker, base and assertions are not weakened. The checked implementation will be copied only after this real design commit."
+  },
+  "cases": [
+    {
+      "id": "CKD-001",
+      "layer": "L3",
+      "description": "Local-only composer opens editable draft without remote side effects",
+      "setup": "Actual mounted Composer with enabled=false,draftOnly=true, send/upload spies and isolated draft storage. Include English/Chinese, compact and expanded editors.",
+      "action": "Tap keyboard, type, use Return sends and captured send callback; expand editor, attempt submit, hide/reopen and restore remote enabled.",
+      "expected": "TextInput is editable/autoFocus and a local-draft-only reason is visible; draft persists across blocked sends, send/upload/control callbacks remain unused, send controls remain disabled. Verified enabled mode can send exactly once. Ordinary disabled without draftOnly remains noneditable.",
+      "planned_files": [
+        "mobileapp/src/ui/Composer.readonly-draft.test.tsx"
+      ]
+    },
+    {
+      "id": "CKD-002",
+      "layer": "L3",
+      "description": "Detail and HQ wire local draft mode to historical read-only status",
+      "setup": "Existing mounted observed-history Detail/HQ fixtures with original server mutation assertions.",
+      "action": "Receive readOnlyHistory, inspect Composer props, attempt parent onSend, then refresh verified history.",
+      "expected": "Both screens set draftOnly=true and enabled=false for unconfirmed history and remove draftOnly after verified refresh. Existing no-send assertions and identity fences remain intact; Terminal mode retains current pane controls.",
+      "planned_files": [
+        "mobileapp/src/screens/DetailObserved.test.tsx",
+        "mobileapp/src/screens/HQScreen.observed.test.tsx"
+      ]
+    },
+    {
+      "id": "CKD-003",
+      "layer": "L3",
+      "description": "Pending association drafts use conversation-scoped persistence independently of control identity",
+      "setup": "Mounted Detail/HQ with an explicit observed conversation, then a verified refresh of that same ID and a separate observed ID. Shared Composer draft behavior remains real in Detail.",
+      "action": "Compare Composer draftKey during pending and verified states and when observation changes.",
+      "expected": "Pending and same verified conversation keep one draftKey; a different observed conversation has a different key. Observed ID does not populate send authority; existing no-send assertions remain.",
+      "planned_files": [
+        "mobileapp/src/screens/DetailObserved.test.tsx",
+        "mobileapp/src/screens/HQScreen.observed.test.tsx"
+      ]
+    }
+  ],
+  "seal": "184606ce4d056c4b8f3439e5528549528ccfe322936258df9df818b309e92647"
+}
